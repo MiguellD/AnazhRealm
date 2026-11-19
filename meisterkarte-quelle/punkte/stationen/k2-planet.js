@@ -327,12 +327,21 @@ const KERN = (() => {
         return stationen;
     }
 
-    // DAS KAPITEL: sammelt die Perspektiven, die Datei exportiert `stationen()`
+    // DAS KAPITEL: sammelt die Perspektiven, die Datei exportiert `stationen()`. EINE Perspektive darf aus mehreren Teilen kommen
+    // (19.11., zusammenspiel.same: neun Leitern, gebaut von mehreren Händen): jedes Teil ruft L.perspektive(pid, { leitern }), das
+    // Kapitel sammelt die Leitern je pid und baut daraus EINE Probe (eine Welt, eine Gruppen-Zeile) — zwei Teile mit derselben Leiter werfen
     function kapitel(name) {
-        const alle = [];
+        const defs = new Map();
         return {
-            perspektive: (pid, def) => alle.push(...perspektive(name, pid, def)),
-            stationen: () => alle.slice(),
+            perspektive: (pid, def) => {
+                const d = defs.get(pid) || { leitern: {} };
+                for (const id of Object.keys((def && def.leitern) || {})) {
+                    if (d.leitern[id]) throw new Error(id + ": zwei Teile der Perspektive " + name + "." + pid + " bauen dieselbe Leiter (Gebot 4)");
+                    d.leitern[id] = def.leitern[id];
+                }
+                defs.set(pid, d);
+            },
+            stationen: () => [...defs].flatMap(([pid, d]) => perspektive(name, pid, d)),
         };
     }
     return { kapitel, soll, zahlVon, zahlenIn, sprosseVon, leiterVon, perspektiveVon, belegt, haelt, deutsch, leitern, urteilBauen, probenBauen, knapp };

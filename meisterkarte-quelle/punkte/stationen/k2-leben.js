@@ -1492,6 +1492,2298 @@ L.perspektive("pflanzen", (() => {
     };
 })());
 
+// ── DIE PERSPEKTIVE leben.tiere (7 Leitern, 52 Sprossen; belegt: mensch S1 · masse S1 · verhalten S1 · wanderung S1 · lebenszyklus S1 —
+// die Stationen FLUCHT_SITZUNG (g1.js), HERDE/VERHALTEN/KASKADE (g2.js)): die Tiere der Welt in der warmen Welt der Sitzung.
+// Die Leser des Spiels: der Leib (stamm/kreatur-leben.js `spawnCreatureAt` · `removeCreature` · `damageCreature`, die Gattung
+// `_kreaturGattung` stamm/studio-glieder.js), der Takt der Tiere wie im Sim-Schritt (stamm/dirigent-takt.js: `_kreaturStossSchritt` →
+// `_trittDerLeiber` → `_leibKontakte`, dann `updateCreatures` stamm/kreatur-verhalten.js), der Bestand (`_bestandRegion` ·
+// `_bestandNah` · `_bestandStirbt`), die Furcht (stamm/kreatur-furcht.js), der Verband (`_kreaturVerbinden`), der Gang (die Linse
+// scripts/diag-tier-gang.cjs LAUF/SCHLUPF/gangart über H.quelle — die EINE Quelle der Gang-Messung), die gezeichneten Pools der Luft
+// und des Wassers (`vogelPool` · `vogelSchwarmPool` · `fischPool` · `bestaeuberPool`), die Seele des Spielers (`applyPlayerSoul`
+// stamm/koerper-fahrt.js), der Tritt (stamm/siedlung-wege.js `_tritt`, worldMeta.tritt), die Uhr (`_uhrSetzen`), die Jahreszeit
+// (`setSeason`) und das Wetter (`window.__wetterSetzen`). Jede Leiter stellt am Ende zurück, was sie änderte (G.zurueck: Leiber,
+// Spieler, Modus, Kappe, Wurf des Felds, Schwere, Uhr, Jahreszeit, Wetter, Tritt-Zellen, Regionen).
+L.perspektive("tiere", (() => {
+    const AR = "leben.tiere.arten";
+    const BW = "leben.tiere.bewegung";
+    const VH = "leben.tiere.verhalten";
+    const LZ = "leben.tiere.lebenszyklus";
+    const MA = "leben.tiere.masse";
+    const WA = "leben.tiere.wanderung";
+    const ME = "leben.tiere.mensch";
+    const PFAD = [
+        "tetrapoda-core.js",
+        "koerper-core.js",
+        "stamm/kreatur-*.js",
+        "stamm/koerper-leib.js",
+        "stamm/koerper-fahrt.js",
+        "stamm/studio-glieder.js",
+        "stamm/dirigent-takt.js",
+        "stamm/siedlung-wege.js",
+        "stamm/bild-himmel.js",
+        "scripts/diag-tier-gang.cjs",
+        "scripts/werkbank.cjs",
+    ];
+    // DER ZEUGE DER WELT: N Antworten der Welt (Leiber, Läufe, Takte …) mit Streuung > 0; mit `aenderung` dazu vor ≠ nach (die Welt hat
+    // sich beobachtbar geändert, beim Gegenlauf R7 verschwindet die Wirkung)
+    const zeugeWelt = (min, aenderung) => (roh) => {
+        const z = roh.zeuge || {};
+        if (!(z.antworten >= min)) return "nur " + (z.antworten || 0) + " Antworten der Welt (Soll ≥ " + min + ")";
+        if (!(z.streuung > 0)) return "die Antworten tragen keine Streuung (eine Konstante, nicht die Welt)";
+        if (aenderung && !(z.vor !== undefined && z.nach !== undefined && z.vor !== z.nach)) return "die Welt änderte sich nicht (vor " + z.vor + " = nach " + z.nach + ")";
+        return null;
+    };
+    const gut = (werte, n, extra) => ({ werte, zeuge: Object.assign({ antworten: n, streuung: 1.7, vor: 0, nach: 1 }, extra || {}) });
+    const flach = (werte) => ({ werte, zeuge: { antworten: 0, streuung: 0 } });
+    const konstant = (werte, n) => ({ werte, zeuge: { antworten: n, streuung: 0, vor: 0, nach: 1 } });
+    const still = (werte, n) => ({ werte, zeuge: { antworten: n, streuung: 1.7, vor: 3, nach: 3 } });
+    // die Attrappen je Sprosse: der Wortlaut ohne Antwort der Welt, als Konstante, ohne Änderung
+    const atr = (werte, n, aenderung) => [
+        { name: "die Zahl ohne Antwort der Welt (eine Tabelle)", roh: flach(werte) },
+        { name: "die Zahl als Konstante (keine Streuung)", roh: konstant(werte, n) },
+        ...(aenderung ? [{ name: "die Welt änderte sich nicht (vor = nach)", roh: still(werte, n) }] : []),
+    ];
+    const AUGE_ORT = { ort: "wiese" };
+    return {
+        leitern: {
+            // ═══ ARTEN: wie viele unterscheidbare Arten die Welt in allen Medien trägt — gezählt im Spielgang an drei Biomen ═══
+            [AR]: {
+                sek: 30,
+                mutiert: true,
+                pfad: PFAD,
+                ungefahren: "die Klassen-Maske des Bilds (/bild --klasse) und die Bilder der Auge-Sprossen S2–S4, S6, S8 — headless zählt die Probe die projizierte Leib-Box (1920 × 1080)",
+                mess: async function (H, U, M) {
+                    const grund = function (r, T) {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const fl = s.faunaLifecycle;
+                        const wm = s.worldMeta;
+                        const alt = { p: pm.clone(), yaw: s.yaw, pitch: s.pitch, modus: r.getGameMode(), max: s.maxCreatures, wurf: fl ? fl.lastTick : null, vor: new Set(s.creatures), perf: s.perfRegulator, grav: s.gravity, tod: s.timeOfDay, wetter: s.weather, season: s.season, tritt: new Set(Object.keys((wm && wm.tritt) || {})), schwach: new Set((r._trittSchwach || new Map()).keys()), reg: new Set(Object.keys(r._bestandRegionen().regionen)), lf: s.lifeField ? new Map([...s.lifeField].map(([k, e]) => [k, Object.assign({}, e)])) : null, seele: s.player && s.player.soul };
+                        const RUHE = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                        const flicken = [];
+                        const flick = (n, f) => {
+                            if (Object.prototype.hasOwnProperty.call(r, n)) throw new Error("flick: " + n + " trägt schon eine eigene Zeile");
+                            flicken.push(n);
+                            r[n] = f;
+                        };
+                        let t = performance.now();
+                        const welt = (n) => {
+                            s.perfRegulator = false;
+                            for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+                        };
+                        const takt = (n, d) => {
+                            for (let i = 0; i < n; i++) {
+                                r._kreaturStossSchritt(d || 1 / 60);
+                                r._trittDerLeiber();
+                                r._leibKontakte();
+                                r.updateCreatures(d || 1 / 60);
+                            }
+                        };
+                        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+                        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        const ruhig = (c) => (c.userData.emotions = Object.assign({}, RUHE));
+                        const ruhigSpieler = () => s.player.emotions && Object.assign(s.player.emotions, RUHE);
+                        const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z) && !(typeof r._imGrundriss === "function" && r._imGrundriss(x, z));
+                        const land = (x0, z0, R, dMin) => {
+                            for (let d = dMin || 0; d <= 600; d += 15) {
+                                const n = Math.max(1, Math.round(d / 10));
+                                for (let q = 0; q < n; q++) {
+                                    const w = (q / n) * 2 * Math.PI;
+                                    const x = x0 + Math.cos(w) * d;
+                                    const z = z0 + Math.sin(w) * d;
+                                    let ok = trocken(x, z);
+                                    for (let k = 0; ok && k < 8; k++) ok = trocken(x + Math.cos(k * 0.785) * R, z + Math.sin(k * 0.785) * R);
+                                    if (ok) return { x, z };
+                                }
+                            }
+                            return null;
+                        };
+                        const tier = (x, z, seele, bs) => {
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            let nein = null;
+                            const c = r.spawnCreatureAt(x, boden(x, z), z, "happy", seele, { precise: true, bodySize: bs || 1, absage: (g) => (nein = g) });
+                            if (!c) throw new Error("spawnCreatureAt " + seele + ": " + nein);
+                            ruhig(c);
+                            return c;
+                        };
+                        const stelle = (x, z) => {
+                            pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                        };
+                        const stillFeld = () => {
+                            if (fl) fl.lastTick = 1e12;
+                        };
+                        const zurueck = () => {
+                            for (const n of flicken.splice(0)) delete r[n];
+                            if (s.player && alt.seele && s.player.soul !== alt.seele) r.applyPlayerSoul(alt.seele);
+                            for (const c of [...s.creatures]) if (!alt.vor.has(c)) r.removeCreature(c);
+                            s.maxCreatures = alt.max;
+                            if (fl) fl.lastTick = alt.wurf;
+                            if (r.getGameMode() !== alt.modus) r.setGameMode(alt.modus);
+                            pm.copy(alt.p);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                            [s.yaw, s.pitch, s.perfRegulator, s.gravity] = [alt.yaw, alt.pitch, alt.perf, alt.grav];
+                            if (s.season !== alt.season) r.setSeason(alt.season);
+                            if (Math.abs(s.timeOfDay - alt.tod) > 1e-6) r._uhrSetzen(alt.tod, "regler");
+                            if (s.weather !== alt.wetter && window.__wetterSetzen) window.__wetterSetzen(alt.wetter);
+                            if (wm && wm.tritt) for (const k of Object.keys(wm.tritt)) if (!alt.tritt.has(k)) delete wm.tritt[k];
+                            if (r._trittSchwach) for (const k of [...r._trittSchwach.keys()]) if (!alt.schwach.has(k)) r._trittSchwach.delete(k);
+                            const F = r._bestandRegionen().regionen;
+                            for (const k of Object.keys(F)) if (!alt.reg.has(k)) delete F[k];
+                            if (alt.lf && s.lifeField) {
+                                for (const k of [...s.lifeField.keys()]) if (!alt.lf.has(k)) s.lifeField.delete(k);
+                                for (const [k, e] of alt.lf) {
+                                    const n = s.lifeField.get(k);
+                                    if (n) Object.assign(n, e);
+                                    else s.lifeField.set(k, e);
+                                }
+                            }
+                        };
+                        return { s, A, pm, fl, wm, alt, RUHE, flick, welt, takt, boden, ab, r3, ruhig, ruhigSpieler, trocken, land, tier, stelle, stillFeld, zurueck };
+                    };
+                    const lauf = (fn, a) => H.seite("const G = (" + grund + ")(r, T); try { return await (" + fn + ")(r, T, " + JSON.stringify(a || {}) + ", G); } finally { G.zurueck(); }");
+                    // DER SPIELGANG: drei Orte verschiedener Boden-Klasse (`_bodenKlasseAt`, die Klasse des Lebensraums) um den Spieler, je Ort
+                    // der Takt des Spiels (`_gameLoopTick`), dann je Ort 8 Blicke (1920 × 1080, das fov der Kamera) über die gezeichneten Leiber:
+                    // die Tiere (Leib oder Feld) und die Pools der Luft und des Wassers — je Art die Box ≥ minPx im Bild; dazu die Angetroffenen
+                    // im Umkreis (Chao1, Massen-Dekaden, Nische) und die Duplikate (gleiche Gestalt, Maßstab ±5 %)
+                    const zensus = async function (r, T, a, G) {
+                        const { s, A, pm, welt, r3, trocken, stelle, alt } = G;
+                        const LG = A._lebensraumGesetz();
+                        const [W, HH] = [1920, 1080];
+                        const K = new T.PerspectiveCamera(s.camera.fov || 75, W / HH, 0.1, 4000);
+                        const v = new T.Vector3();
+                        const m4 = new T.Matrix4();
+                        const px = (bx) => {
+                            let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity];
+                            for (let i = 0; i < 8; i++) {
+                                v.set(i & 1 ? bx.max.x : bx.min.x, i & 2 ? bx.max.y : bx.min.y, i & 4 ? bx.max.z : bx.min.z).project(K);
+                                if (!(v.z > -1 && v.z < 1)) return 0;
+                                [x0, x1, y0, y1] = [Math.min(x0, v.x), Math.max(x1, v.x), Math.min(y0, v.y), Math.max(y1, v.y)];
+                            }
+                            [x0, x1, y0, y1] = [Math.max(x0, -1), Math.min(x1, 1), Math.max(y0, -1), Math.min(y1, 1)];
+                            return x1 > x0 && y1 > y0 ? ((x1 - x0) / 2) * W * (((y1 - y0) / 2) * HH) : 0;
+                        };
+                        const sig = (c) => {
+                            const t = [];
+                            c.traverse((o) => {
+                                if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
+                                const p = o.geometry.attributes.position.array;
+                                let h = p.length;
+                                for (let i = 0; i < p.length; i += 7) h = (h * 31 + Math.round(p[i] * 1000)) % 1000000007;
+                                t.push(h + ":" + (o.material && o.material.color ? o.material.color.getHexString() : "-"));
+                            });
+                            return t.sort().join("|");
+                        };
+                        const masse = (c) => {
+                            try {
+                                return r._leibMasse(c);
+                            } catch (_e) {
+                                return null;
+                            }
+                        };
+                        const POOLS = { vogelPool: ["singvogel", "luft"], vogelSchwarmPool: ["star", "luft"], fischPool: ["forelle", "wasser"], bestaeuberPool: ["hummel", "luft"] };
+                        const leiber = () => {
+                            const L = [];
+                            for (const c of s.creatures) {
+                                const b = new T.Box3().setFromObject(c);
+                                if (b.isEmpty()) continue;
+                                L.push({ art: r._kreaturGattung(c), medium: "land", box: b, kg: masse(c), x: c.position.x, z: c.position.z, sig: sig(c), sc: c.scale.x });
+                            }
+                            for (const k of Object.keys(POOLS)) {
+                                const m = s[k] && s[k].mesh;
+                                if (!m || !m.count) continue;
+                                if (!m.geometry.boundingBox) m.geometry.computeBoundingBox();
+                                m.updateMatrixWorld(true);
+                                for (let i = 0; i < m.count; i++) {
+                                    m.getMatrixAt(i, m4);
+                                    m4.premultiply(m.matrixWorld);
+                                    const b = m.geometry.boundingBox.clone().applyMatrix4(m4);
+                                    const g = b.getSize(new T.Vector3());
+                                    if (!(g.x > 0 && g.y > 0 && g.z > 0)) continue;
+                                    L.push({ art: POOLS[k][0], medium: POOLS[k][1], box: b, kg: g.x * g.y * g.z * 1000 * 0.52, x: (b.min.x + b.max.x) / 2, z: (b.min.z + b.max.z) / 2, sig: k, sc: Math.cbrt(g.x * g.y * g.z) });
+                                }
+                            }
+                            return L;
+                        };
+                        if (window.__wetterSetzen) window.__wetterSetzen("sunny");
+                        r._uhrSetzen(0.42, "regler");
+                        const KL = ["fluss", "hang", "wald", "waldrand", "wiese"];
+                        const orte = [];
+                        const da = new Set();
+                        for (let d = 0; d <= 1500 && orte.length < 3; d += 60) {
+                            const n = Math.max(1, Math.round(d / 40));
+                            for (let q = 0; q < n && orte.length < 3; q++) {
+                                const w = (q / n) * 2 * Math.PI;
+                                const [x, z] = [alt.p.x + Math.cos(w) * d, alt.p.z + Math.sin(w) * d];
+                                if (!trocken(x, z)) continue;
+                                const kl = r._bodenKlasseAt(x, z);
+                                if (!KL.includes(kl) || da.has(kl)) continue;
+                                da.add(kl);
+                                orte.push({ x, z, kl });
+                            }
+                        }
+                        const [imBild, angetroffen, kg, nische, dupl, pxAlle, jeOrt] = [{}, {}, [], [0, 0], [0, 0], [], []];
+                        let [n, takte] = [0, 0];
+                        for (const o of orte) {
+                            stelle(o.x, o.z);
+                            welt(a.takte);
+                            takte += a.takte;
+                            const L = leiber();
+                            const y = pm.y + 1.6;
+                            const hier = new Set();
+                            K.updateProjectionMatrix();
+                            for (let h = 0; h < 8; h++) {
+                                K.position.set(pm.x, y, pm.z);
+                                K.lookAt(pm.x + Math.sin((h * Math.PI) / 4) * 10, y, pm.z + Math.cos((h * Math.PI) / 4) * 10);
+                                K.updateMatrixWorld(true);
+                                for (const l of L) {
+                                    const p = px(l.box);
+                                    if (p > 0) pxAlle.push(p);
+                                    if (p >= a.minPx) {
+                                        hier.add(l.art);
+                                        imBild[l.art] = (imBild[l.art] || 0) + 1;
+                                    }
+                                }
+                            }
+                            const je = {};
+                            for (const l of L) {
+                                (je[l.art] = je[l.art] || []).push(l);
+                                if (Math.hypot(l.x - pm.x, l.z - pm.z) > a.nahM) continue;
+                                n++;
+                                angetroffen[l.art] = (angetroffen[l.art] || 0) + 1;
+                                if (Number.isFinite(l.kg) && l.kg > 0) kg.push(l.kg);
+                                if (l.medium === "land" && LG.L.gattung[l.art]) {
+                                    nische[1]++;
+                                    if (LG.lebensraum(l.art, r._bodenKlasseAt(l.x, l.z), LG.L) > 0) nische[0]++;
+                                }
+                            }
+                            for (const g of Object.values(je))
+                                for (let i = 0; i < g.length; i++)
+                                    for (let j = i + 1; j < g.length; j++) {
+                                        dupl[1]++;
+                                        if (g[i].sig === g[j].sig && Math.abs(g[i].sc / g[j].sc - 1) < 0.05) dupl[0]++;
+                                    }
+                            jeOrt.push({ kl: o.kl, x: Math.round(o.x), z: Math.round(o.z), leiber: L.length, arten: [...hier] });
+                        }
+                        const F = Object.values(angetroffen);
+                        const [f1, f2] = [F.filter((x) => x === 1).length, F.filter((x) => x === 2).length];
+                        const chao1 = F.length + (f2 > 0 ? (f1 * f1) / (2 * f2) : (f1 * (f1 - 1)) / 2);
+                        // die Massen-Dekaden der Angetroffenen gegen die Erde (Artenzahl je Dekade ∝ M^−0,5 über dem Gipfel, Siemann et al.
+                        // 1996): der größte Faktor zwischen gemessenem und erwartetem Anteil je besetzter Dekade des Bands
+                        let massenFaktor = null;
+                        if (kg.length) {
+                            const dek = kg.map((x) => Math.floor(Math.log10(x)));
+                            const [d0, d1] = [Math.min(...dek), Math.max(...dek)];
+                            const ref = [];
+                            for (let d = d0; d <= d1; d++) ref.push(Math.pow(10, -0.5 * d));
+                            const sr = ref.reduce((x, y) => x + y, 0);
+                            massenFaktor = 1;
+                            for (let d = d0; d <= d1; d++) {
+                                const ist = dek.filter((x) => x === d).length / dek.length;
+                                const soll = ref[d - d0] / sr;
+                                const da = Math.max(ist, 0.5 / dek.length);
+                                massenFaktor = Math.max(massenFaktor, da / soll, soll / da);
+                            }
+                        }
+                        const mittel = pxAlle.reduce((x, y) => x + y, 0) / Math.max(1, pxAlle.length);
+                        const katalog = { land: (A.CREATURE_SOUL_NAMES || []).length, luft: ["vogelPool", "vogelSchwarmPool", "bestaeuberPool"].filter((k) => s[k]).length, wasser: ["fischPool"].filter((k) => s[k]).length };
+                        return {
+                            orte: jeOrt,
+                            biome: orte.length,
+                            arten: Object.keys(imBild).length,
+                            imBild,
+                            angetroffen,
+                            n,
+                            chao1: r3(chao1),
+                            massenFaktor: r3(massenFaktor),
+                            kgMin: r3(Math.min(...kg)),
+                            kgMax: r3(Math.max(...kg)),
+                            nische: nische[1] ? r3(nische[0] / nische[1]) : null,
+                            nischeN: nische[1],
+                            duplProzent: dupl[1] ? r3((100 * dupl[0]) / dupl[1]) : null,
+                            paare: dupl[1],
+                            pxStreu: r3(Math.sqrt(pxAlle.reduce((x, y) => x + (y - mittel) * (y - mittel), 0) / Math.max(1, pxAlle.length))),
+                            leiber: pxAlle.length,
+                            spielStunden: r3((takte / 60 / (60 * A.DAY_LENGTH_DEFAULT_MINUTES)) * 24),
+                            katalog,
+                            artenWelt: katalog.land + katalog.luft + katalog.wasser,
+                        };
+                    };
+                    const z = await lauf(zensus, { takte: 40, minPx: 200, nahM: 150 });
+                    const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
+                    const auge = augeNoetig ? await M.auge("tiere-arten", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
+                    const zeuge = { antworten: z.leiber, streuung: z.pxStreu, vor: 0, nach: z.biome, biome: z.biome };
+                    const welt = "die Welt trägt " + z.artenWelt + " Arten (Land " + z.katalog.land + ", Luft " + z.katalog.luft + ", Wasser " + z.katalog.wasser + ")";
+                    const aus = {};
+                    const nimm = (nr, werte, nicht, mitAuge) => {
+                        if (!U[nr]) return;
+                        aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
+                    };
+                    nimm(1, { arten: z.arten, minPx: 200, spielStunden: z.spielStunden, biome: z.biome }, z.biome < 3 ? "nur " + z.biome + " Biome um den Spieler gefunden" : null);
+                    nimm(2, { duplProzent: z.duplProzent }, z.artenWelt < 100 ? welt + " statt 10² aus dem Samen; jedes Individuum gleicht dem anderen bis auf den Maßstab (Duplikate " + z.duplProzent + " % von " + z.paare + " Paaren)" : null, true);
+                    nimm(3, { arten: z.artenWelt }, z.artenWelt < 1000 ? welt + " statt 10³ in allen Wirbeltier-Klassen (nur Säuger, Vögel, Fisch)" : null, true);
+                    nimm(4, { arten: z.artenWelt }, welt + " statt 10⁴; kein Gliederfüßer außer der Hummel, kein Weichtier, kein Nesseltier", true);
+                    nimm(5, { chao1: z.chao1, massenFaktor: z.massenFaktor }, welt + ": Chao1 der Angetroffenen " + z.chao1 + " statt 10⁵");
+                    nimm(6, { chao1: z.chao1, nische: z.nische }, welt + ": Chao1 " + z.chao1 + " statt 10⁶", true);
+                    nimm(7, { chao1: z.chao1 }, welt + " je Planet (die Seelen-Liste liest keinen Samen): Chao1 " + z.chao1 + " statt 10⁷, keine zweite Fauna");
+                    nimm(8, { duplProzent: z.duplProzent }, "keine fremde Saat und keine Fauna aus fremder Schwere, Atmosphäre, Chemie; Duplikate " + z.duplProzent + " %", true);
+                    return { sprossen: aus, zensus: z };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [
+                            K.soll(AR, 1, "≥ 5 Arten im Bild", { key: "arten", einheit: "Arten" }),
+                            K.soll(AR, 1, "Klassen-Maske ≥ 200 px", { key: "minPx", einheit: "px" }),
+                            K.soll(AR, 1, "Spielgang 1 h an 3 Biomen", { rel: "≥", zahl: 1, key: "spielStunden", einheit: "Spielstunden" }),
+                            K.soll(AR, 1, "Spielgang 1 h an 3 Biomen", { rel: "≥", zahl: 3, key: "biome", einheit: "Biome" }),
+                        ],
+                        zeuge: zeugeWelt(5, true),
+                        taeter: "stamm/kreatur-leben.js spawnCreatureAt / die Pools der Luft und des Wassers (stamm/kreatur-fauna.js)",
+                        unklar: "1 h Spielgang passt in keinen Deckel ≤ 60 s: die Probe fährt 3 Biome × 40 Takte × 8 Blicke und urteilt die Stunde streng (ROT bis ein Zeitraffer des Gangs sie trägt).",
+                        gruen: gut({ arten: 6, minPx: 200, spielStunden: 1, biome: 3 }, 120, { biome: 3 }),
+                        attrappen: atr({ arten: 6, minPx: 200, spielStunden: 1, biome: 3 }, 120, true),
+                    },
+                    2: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(AR, 2, "Blind-Panel „echt möglich“ ≥ 0,7", { key: "panel" }), K.soll(AR, 2, "kein Paar im Bild-Embedding näher als zwei Fotos desselben realen Tiers", { rel: "≤", zahl: 1, key: "duplProzent", refQuelle: "die Duplikat-Schwelle von Sprosse 8 (≤ 1 %): ein Paar gleicher Gestalt und Größe ist näher als zwei Fotos eines Tiers", einheit: "%" })],
+                        auge: { pose: "Ego auf eine Herde von 20 aus 10 m (heute: die Wiese)", vorbild: "Fotos realer Tiere je Art; Blind-Panel „echt möglich“ ≥ 0,7, Bild-Embedding der Herde" },
+                        taeter: "tetrapoda-core.js GESTALTEN_JE_REZEPT = 1 (ein Leib je Gattung)",
+                        nicht: "8 Leib-Typen statt 10² Arten; jedes Individuum gleicht dem anderen bis auf den Maßstab",
+                        leser: "tetrapoda-core.js:39 — GESTALTEN_JE_REZEPT = 1: kein Individuum (Alter, Geschlecht, Fell, Narbe) trägt eine eigene Gestalt",
+                        gruen: gut({ panel: 0.8, duplProzent: 0 }, 50),
+                        attrappen: atr({ panel: 0.8, duplProzent: 0 }, 50),
+                    },
+                    3: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(AR, 3, "je Klasse Panel ≥ 0,7", { key: "panel" }), K.soll(AR, 3, "Schlankheit ↔ Reisetempo Rangkorrelation ≥ 0,6", { key: "rang" })],
+                        auge: { pose: "Ego auf ein Riff mit ≥ 30 Arten (heute: die Wiese)", vorbild: "Fotos je Wirbeltier-Klasse; Panel ≥ 0,7" },
+                        taeter: "stamm/kreatur-leben.js CREATURE_SOUL_NAMES (4 Säuger-Seelen)",
+                        nicht: "10³ Arten aller Wirbeltier-Klassen — die Welt trägt Säuger, Vögel, einen Fisch",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES aus CREATURE_SOULS von Hand, kein Leser erzeugt Arten aus dem Samen",
+                        gruen: gut({ panel: 0.8, rang: 0.7 }, 50),
+                        attrappen: atr({ panel: 0.8, rang: 0.7 }, 50),
+                    },
+                    4: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(AR, 4, "Makro-Bildpaar gegen Foto-Korpus Panel ≥ 0,7", { key: "panel" }), K.soll(AR, 4, "Klassifikator ordnet Tiefenzone ≥ 80 %", { key: "tiefenzone", einheit: "%" })],
+                        auge: { pose: "Makro 0,2 m an einem Gliederfüßer (heute: die Wiese)", vorbild: "Foto-Korpus Makro; Panel ≥ 0,7" },
+                        taeter: "tetrapoda-core.js BESTAEUBER_GESETZ (die Hummel als einziger Gliederfüßer)",
+                        nicht: "10⁴ Arten mit Gliederfüßern, Weichtieren, Nesseltieren",
+                        leser: "tetrapoda-core.js:2908 — BESTAEUBER_GESETZ trägt einen Leib; kein Leser baut Chitin, Facettenauge, Tentakel",
+                        gruen: gut({ panel: 0.8, tiefenzone: 85 }, 50),
+                        attrappen: atr({ panel: 0.8, tiefenzone: 85 }, 50),
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(AR, 5, "Chao1 der angetroffenen Arten ≥ 10⁵", { key: "chao1" }), K.soll(AR, 5, "Häufigkeit je Massen-Dekade der Angetroffenen gegen die reale Verteilung ≤ Faktor 2", { key: "massenFaktor" })],
+                        zeuge: zeugeWelt(5, true),
+                        taeter: "stamm/kreatur-leben.js CREATURE_SOUL_NAMES (kein Artbildner)",
+                        nicht: "10⁵ Arten — die Welt trägt 8",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES: kein Leser bildet Arten aus dem Samen",
+                        gruen: gut({ chao1: 120000, massenFaktor: 1.6 }, 1000),
+                        attrappen: atr({ chao1: 120000, massenFaktor: 1.6 }, 1000, true),
+                    },
+                    6: {
+                        u: { auge: AUGE_ORT },
+                        soll: [
+                            K.soll(AR, 6, "Chao1 ≥ 10⁶", { key: "chao1" }),
+                            K.soll(AR, 6, "2AFC gegen den Foto-Korpus ≤ 70 %", { key: "afc", einheit: "%" }),
+                            K.soll(AR, 6, "in ihrer Nische angetroffen ≥ 0,9", { key: "nische" }),
+                            K.soll(AR, 6, "paarweise trennbar ≥ 95 %", { key: "trennbar", einheit: "%" }),
+                        ],
+                        auge: { pose: "Ego an 1 000 angetroffenen Arten (heute: die Wiese)", vorbild: "Foto-Korpus je Art; 2AFC ≤ 70 %" },
+                        taeter: "stamm/kreatur-leben.js CREATURE_SOUL_NAMES (kein Artbildner)",
+                        nicht: "10⁶ Arten je Planet — die Welt trägt 8",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES: kein Leser bildet Arten aus dem Samen",
+                        gruen: gut({ chao1: 2e6, afc: 60, nische: 0.95, trennbar: 97 }, 1000),
+                        attrappen: atr({ chao1: 2e6, afc: 60, nische: 0.95, trennbar: 97 }, 1000),
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(AR, 7, "Chao1 je Planet ≥ 10⁷", { key: "chao1" }), K.soll(AR, 7, "Faunen paarweise im Bild-Embedding trennbar ≥ 0,95", { key: "trennbar" })],
+                        zeuge: zeugeWelt(5, true),
+                        taeter: "stamm/kreatur-leben.js CREATURE_SOUL_NAMES (eine Fauna für jeden Samen)",
+                        nicht: "10⁷ Arten je Planet und eine eigene Fauna je Same",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES liest keinen Samen: jede Saat trägt dieselben 4 Seelen",
+                        gruen: gut({ chao1: 2e7, trennbar: 0.97 }, 1000),
+                        attrappen: atr({ chao1: 2e7, trennbar: 0.97 }, 1000, true),
+                    },
+                    8: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(AR, 8, "im Bild ununterscheidbare Duplikate ≤ 1 %", { key: "duplProzent", einheit: "%" }), K.soll(AR, 8, "100 fremde Saaten", { rel: "≥", zahl: 100, key: "saaten" })],
+                        auge: { pose: "Ego an den angetroffenen Arten fremder Saaten (heute: die Wiese)", vorbild: "Fremdwelt-Probe R10 (Prüfer-Satz R11)" },
+                        taeter: "tetrapoda-core.js GESTALTEN_JE_REZEPT = 1 (Duplikate)",
+                        nicht: "keine fremde Saat, keine Fauna aus fremder Schwere, Atmosphäre, Chemie",
+                        leser: "tetrapoda-core.js:39 — GESTALTEN_JE_REZEPT = 1; stamm/kreatur-leben.js:3622 — die Seelen lesen keine Schwere, keine Atmosphäre",
+                        gruen: gut({ duplProzent: 0.5, saaten: 100 }, 1000),
+                        attrappen: atr({ duplProzent: 0.5, saaten: 100 }, 1000),
+                    },
+                },
+            },
+            // ═══ BEWEGUNG: der Gang aus dem Leib — die Linse LAUF (scripts/diag-tier-gang.cjs) in der Welt der Sitzung ═══
+            [BW]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD,
+                ungefahren: "die Third-Aufnahme im Fenster (S1), das Ausgabe-Bild (S2) und die Bilder der Auge-Sprossen S3, S5 — headless misst die Probe die Füße am Knochen",
+                mess: async function (H, U, M) {
+                    const grund = function (r, T) {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const fl = s.faunaLifecycle;
+                        const wm = s.worldMeta;
+                        const alt = { p: pm.clone(), yaw: s.yaw, pitch: s.pitch, modus: r.getGameMode(), max: s.maxCreatures, wurf: fl ? fl.lastTick : null, vor: new Set(s.creatures), perf: s.perfRegulator, grav: s.gravity, tod: s.timeOfDay, wetter: s.weather, season: s.season, tritt: new Set(Object.keys((wm && wm.tritt) || {})), schwach: new Set((r._trittSchwach || new Map()).keys()), reg: new Set(Object.keys(r._bestandRegionen().regionen)), lf: s.lifeField ? new Map([...s.lifeField].map(([k, e]) => [k, Object.assign({}, e)])) : null, seele: s.player && s.player.soul };
+                        const RUHE = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                        const flicken = [];
+                        const flick = (n, f) => {
+                            if (Object.prototype.hasOwnProperty.call(r, n)) throw new Error("flick: " + n + " trägt schon eine eigene Zeile");
+                            flicken.push(n);
+                            r[n] = f;
+                        };
+                        let t = performance.now();
+                        const welt = (n) => {
+                            s.perfRegulator = false;
+                            for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+                        };
+                        const takt = (n, d) => {
+                            for (let i = 0; i < n; i++) {
+                                r._kreaturStossSchritt(d || 1 / 60);
+                                r._trittDerLeiber();
+                                r._leibKontakte();
+                                r.updateCreatures(d || 1 / 60);
+                            }
+                        };
+                        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+                        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        const ruhig = (c) => (c.userData.emotions = Object.assign({}, RUHE));
+                        const ruhigSpieler = () => s.player.emotions && Object.assign(s.player.emotions, RUHE);
+                        const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z) && !(typeof r._imGrundriss === "function" && r._imGrundriss(x, z));
+                        const land = (x0, z0, R, dMin) => {
+                            for (let d = dMin || 0; d <= 600; d += 15) {
+                                const n = Math.max(1, Math.round(d / 10));
+                                for (let q = 0; q < n; q++) {
+                                    const w = (q / n) * 2 * Math.PI;
+                                    const x = x0 + Math.cos(w) * d;
+                                    const z = z0 + Math.sin(w) * d;
+                                    let ok = trocken(x, z);
+                                    for (let k = 0; ok && k < 8; k++) ok = trocken(x + Math.cos(k * 0.785) * R, z + Math.sin(k * 0.785) * R);
+                                    if (ok) return { x, z };
+                                }
+                            }
+                            return null;
+                        };
+                        const tier = (x, z, seele, bs) => {
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            let nein = null;
+                            const c = r.spawnCreatureAt(x, boden(x, z), z, "happy", seele, { precise: true, bodySize: bs || 1, absage: (g) => (nein = g) });
+                            if (!c) throw new Error("spawnCreatureAt " + seele + ": " + nein);
+                            ruhig(c);
+                            return c;
+                        };
+                        const stelle = (x, z) => {
+                            pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                        };
+                        const stillFeld = () => {
+                            if (fl) fl.lastTick = 1e12;
+                        };
+                        const zurueck = () => {
+                            for (const n of flicken.splice(0)) delete r[n];
+                            if (s.player && alt.seele && s.player.soul !== alt.seele) r.applyPlayerSoul(alt.seele);
+                            for (const c of [...s.creatures]) if (!alt.vor.has(c)) r.removeCreature(c);
+                            s.maxCreatures = alt.max;
+                            if (fl) fl.lastTick = alt.wurf;
+                            if (r.getGameMode() !== alt.modus) r.setGameMode(alt.modus);
+                            pm.copy(alt.p);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                            [s.yaw, s.pitch, s.perfRegulator, s.gravity] = [alt.yaw, alt.pitch, alt.perf, alt.grav];
+                            if (s.season !== alt.season) r.setSeason(alt.season);
+                            if (Math.abs(s.timeOfDay - alt.tod) > 1e-6) r._uhrSetzen(alt.tod, "regler");
+                            if (s.weather !== alt.wetter && window.__wetterSetzen) window.__wetterSetzen(alt.wetter);
+                            if (wm && wm.tritt) for (const k of Object.keys(wm.tritt)) if (!alt.tritt.has(k)) delete wm.tritt[k];
+                            if (r._trittSchwach) for (const k of [...r._trittSchwach.keys()]) if (!alt.schwach.has(k)) r._trittSchwach.delete(k);
+                            const F = r._bestandRegionen().regionen;
+                            for (const k of Object.keys(F)) if (!alt.reg.has(k)) delete F[k];
+                            if (alt.lf && s.lifeField) {
+                                for (const k of [...s.lifeField.keys()]) if (!alt.lf.has(k)) s.lifeField.delete(k);
+                                for (const [k, e] of alt.lf) {
+                                    const n = s.lifeField.get(k);
+                                    if (n) Object.assign(n, e);
+                                    else s.lifeField.set(k, e);
+                                }
+                            }
+                        };
+                        return { s, A, pm, fl, wm, alt, RUHE, flick, welt, takt, boden, ab, r3, ruhig, ruhigSpieler, trocken, land, tier, stelle, stillFeld, zurueck };
+                    };
+                    // die Linse des Gangs aus dem Spiel-Baum (H.quelle: LAUF, SCHLUPF, gangart — nie abgeschrieben)
+                    const Q = H.quelle("scripts/diag-tier-gang.cjs", ["SCHLUPF", "LAUF", "kreis", "zyklus", "gangart"]);
+                    const kopf = "const st = r.state; const AnazhRealm = r.constructor; window.__schlupf = " + String(Q.SCHLUPF) + "; const LAUF = " + String(Q.LAUF) + "; const kreis = " + String(Q.kreis) + "; const zyklus = " + String(Q.zyklus) + "; " + String(Q.gangart) + ";";
+                    const lauf = (fn, a) => H.seite("const G = (" + grund + ")(r, T); " + kopf + " try { return await (" + fn + ")(r, T, " + JSON.stringify(a || {}) + ", G, LAUF, gangart, kreis, zyklus); } finally { delete window.__schlupf; G.zurueck(); }");
+                    // DER GANG: je Gattung der Lauf bei v̂ 0,3 · 1,2 · 3,5 (Schlupf, Tastgrad, Fußfolge) und die Leiter der Froude-Zahl um die Schwellen
+                    // der Natur (Trab Fr 0,5, Galopp Fr 2,5 — Alexander & Jayes 1983): der Wechsel liegt zwischen der letzten Stufe der alten
+                    // und der ersten der neuen Gangart, gemessen an den Fußfolgen (gangart der Linse). Unter fremder Schwere (der Wolf bei g/2
+                    // und 2g, `state.gravity`) dieselbe Leiter: das Wechsel-Tempo v = √(Fr · g · L). Dazu der Sprung (Höhe und Flugzeit des
+                    // Tiers gegen die ballistische Bahn), die Spur eines gehenden Tiers im Boden (der Tritt) und die Massen der Bestände
+                    const gang = async function (r, T, a, G, LAUF, gangart, kreis) {
+                        const { s, A, pm, r3, takt, land, tier, stelle, stillFeld, wm } = G;
+                        const aus = { je: {}, laeufe: 0, schlupf: [], schwere: {} };
+                        const lf = (seele, vh, g) => {
+                            const e = LAUF({ seele, vh, g });
+                            if (e.fehler) throw new Error(e.fehler);
+                            aus.laeufe++;
+                            if (Number.isFinite(e.schlupf)) aus.schlupf.push(e.schlupf);
+                            const k = gangart(e.ph);
+                            return { art: k.art, rel: k.rel, schlupf: e.schlupf, stand: e.standAnteil };
+                        };
+                        const wechsel = (seele, gitter, von, nach, g) => {
+                            let vor = null;
+                            for (const fr of gitter) {
+                                const x = lf(seele, Math.sqrt(fr), g);
+                                if (x.art === nach && vor && vor.art !== nach) return r3((fr + vor.fr) / 2);
+                                if (x.art === nach && !vor) return r3(fr);
+                                vor = Object.assign(x, { fr });
+                            }
+                            return null;
+                        };
+                        for (const seele of a.seelen) {
+                            const J = { schritt: lf(seele, 0.3), trab: lf(seele, 1.2), galopp: lf(seele, 3.5) };
+                            J.frTrab = wechsel(seele, a.frT, "schritt", "trab");
+                            J.frGalopp = wechsel(seele, a.frG, "trab", "galopp");
+                            aus.je[seele] = J;
+                        }
+                        const g0 = -s.gravity;
+                        for (const f of a.gFaktor) aus.schwere[f] = wechsel("wolf", a.frT, "schritt", "trab", g0 * f);
+                        aus.schwere[1] = aus.je.wolf ? aus.je.wolf.frTrab : wechsel("wolf", a.frT, "schritt", "trab", g0);
+                        // die Fußfolge des Schritts gegen Muybridge (lateral: je ¼ Takt; beide Lesarten des Versatzes)
+                        const REF = [[0, 0.5, 0.25, 0.75], [0, 0.5, 0.75, 0.25]];
+                        aus.fussfallAbw = r3(Math.max(...a.seelen.map((x) => Math.min(...REF.map((R) => Math.max(...aus.je[x].schritt.rel.map((q, i) => kreis(q, R[i]))))))));
+                        // der Sprung: Höhe und Flugzeit des Tiers (`_kreaturSprungHoehe`, `_kreaturSprungZeit`) gegen die ballistische Bahn
+                        // 2·√(2h/g)
+                        stillFeld();
+                        const ort = land(pm.x, pm.z, 6, 30);
+                        if (!ort) throw new Error("kein trockenes Land 30–600 m um den Spieler");
+                        const w = tier(ort.x, ort.z, "wolf");
+                        const h = r._kreaturSprungHoehe(w);
+                        const tf = r._kreaturSprungZeit(w);
+                        aus.sprung = { h: r3(h), t: r3(tf), tBallistisch: r3(2 * Math.sqrt((2 * h) / g0)), abwProzent: r3(Math.abs(tf / (2 * Math.sqrt((2 * h) / g0)) - 1) * 100) };
+                        r.removeCreature(w);
+                        // die Spur: ein Hirsch geht 40 s im Takt des Spiels; die Zellen, die sein Gang trat (worldMeta.tritt sichtbar ab der Stufe
+                        // des Pfads, `_trittSchwach` darunter), gegen seine Bahn
+                        stelle(ort.x + 40, ort.z);
+                        const c = tier(ort.x, ort.z, "wesen");
+                        const bahn = [];
+                        const vorT = new Set(Object.keys((wm && wm.tritt) || {}));
+                        const vorS = new Set((r._trittSchwach || new Map()).keys());
+                        for (let k = 0; k < 2400; k++) {
+                            takt(1);
+                            if (k % 10 === 0) bahn.push([c.position.x, c.position.z]);
+                        }
+                        const zellen = (keys) => keys.map((k) => k.split(",").map((x) => (Number(x) + 0.5) * A.TRITT.zelleM));
+                        const sicht = zellen(Object.keys((wm && wm.tritt) || {}).filter((k) => !vorT.has(k)));
+                        const schwach = zellen([...(r._trittSchwach || new Map()).keys()].filter((k) => !vorS.has(k)));
+                        const abst = (p) => Math.min(...bahn.map((b) => Math.hypot(b[0] - p[0], b[1] - p[1])));
+                        let weg = 0;
+                        for (let i = 1; i < bahn.length; i++) weg += Math.hypot(bahn[i][0] - bahn[i - 1][0], bahn[i][1] - bahn[i - 1][1]);
+                        aus.spur = { wegM: r3(weg), sichtbar: sicht.length, schwach: schwach.length, abwM: sicht.length ? r3(sicht.reduce((x, p) => x + abst(p), 0) / sicht.length) : null, abwSchwachM: schwach.length ? r3(schwach.reduce((x, p) => x + abst(p), 0) / schwach.length) : null };
+                        r.removeCreature(c);
+                        // die Massen der Gang-Leiber (`_leibMasse` je Gattung): die Dekaden, über die der Gang läuft
+                        const kg = [];
+                        for (const seele of a.seelen) {
+                            const c2 = tier(ort.x, ort.z, seele);
+                            try {
+                                const m = r._leibMasse(c2);
+                                if (m > 0) kg.push(m);
+                            } catch (_e) {
+                                kg.push(NaN);
+                            }
+                            r.removeCreature(c2);
+                        }
+                        if (kg.some((x) => !(x > 0))) throw new Error("_leibMasse ohne Masse an einer der Gattungen " + a.seelen.join(","));
+                        aus.kg = kg.length ? { n: kg.length, min: r3(Math.min(...kg)), max: r3(Math.max(...kg)), dekaden: r3(Math.log10(Math.max(...kg) / Math.min(...kg))) } : { n: 0, dekaden: 0 };
+                        // der Fisch: seine Weise ist gesetzt (Schlag schlagHz eines starren Leibs), kein Leib mit Welle — die Pools zählen ihn
+                        aus.fisch = { gezeichnet: s.fischPool && s.fischPool.mesh ? s.fischPool.mesh.count : 0 };
+                        const m = aus.schlupf.reduce((x, y) => x + y, 0) / Math.max(1, aus.schlupf.length);
+                        aus.schlupfMax = r3(Math.max(...aus.schlupf));
+                        aus.schlupfStreu = r3(Math.sqrt(aus.schlupf.reduce((x, y) => x + (y - m) * (y - m), 0) / Math.max(1, aus.schlupf.length)));
+                        return aus;
+                    };
+                    const z = await lauf(gang, { seelen: ["wolf", "fuchs", "baer", "wesen"], frT: [0.36, 0.4, 0.44, 0.48, 0.52, 0.56, 0.6, 0.66], frG: [2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.3], gFaktor: [0.5, 2] });
+                    const NATUR = { trab: 0.5, galopp: 2.5 };
+                    const seelen = Object.keys(z.je);
+                    const abwT = seelen.map((x) => (Number.isFinite(z.je[x].frTrab) ? Math.abs(z.je[x].frTrab / NATUR.trab - 1) * 100 : Infinity));
+                    const abwG = seelen.map((x) => (Number.isFinite(z.je[x].frGalopp) ? Math.abs(z.je[x].frGalopp / NATUR.galopp - 1) * 100 : Infinity));
+                    const froudeAbw = Math.round(Math.max(...abwT, ...abwG) * 10) / 10;
+                    const SOLL_ART = { schritt: /^schritt/, trab: /^trab$/, galopp: /^galopp$/ };
+                    let [imBand, alle] = [0, 0];
+                    for (const x of seelen) for (const k of ["schritt", "trab", "galopp"]) (alle += 1), (imBand += SOLL_ART[k].test(z.je[x][k].art) ? 1 : 0);
+                    const gangBand = alle ? Math.round((1000 * imBand) / alle) / 1000 : null;
+                    const g1 = z.schwere[1];
+                    const tempoAbw = Math.max(...[0.5, 2].map((f) => (Number.isFinite(z.schwere[f]) && Number.isFinite(g1) ? Math.abs(Math.sqrt(z.schwere[f] / g1) - 1) * 100 : Infinity)));
+                    const zeuge = { antworten: z.laeufe, streuung: z.schlupfStreu, vor: 0, nach: z.laeufe };
+                    const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
+                    const auge = augeNoetig ? await M.auge("tiere-bewegung", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
+                    const aus = {};
+                    const nimm = (nr, werte, nicht, mitAuge, z2) => {
+                        if (!U[nr]) return;
+                        aus[nr] = { werte, zeuge: z2 || zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
+                    };
+                    const pct = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 10 : null);
+                    nimm(1, { gleitProzent: pct(z.schlupfMax), froudeAbw: Number.isFinite(froudeAbw) ? froudeAbw : null }, null, false, Object.assign({}, zeuge, { trab: seelen.map((x) => z.je[x].frTrab), galopp: seelen.map((x) => z.je[x].frGalopp) }));
+                    nimm(2, { fussfallAbw: z.fussfallAbw, massDekaden: z.kg.dekaden }, "kein Laufvogel, der Fisch ein starrer Leib ohne Körperwelle (gezeichnet " + z.fisch.gezeichnet + "); Massen des Bestands über " + z.kg.dekaden + " Dekaden");
+                    nimm(3, {}, "kein Flug aus der Körperform, keine Schwimmweise aus dem Leib (Aal, Barsch, Thun, Rückstoß, Flossenflug)", true);
+                    nimm(4, { spurAbwM: z.spur.abwM, sprungAbwProzent: z.sprung.abwProzent, spurSichtbar: z.spur.sichtbar }, "kein Kriechen, Klettern, Graben, kein Säuger oder Vogel im Wasser; die Spur eines Gangs " + z.spur.wegM + " m: " + z.spur.sichtbar + " sichtbare Zellen (" + z.spur.schwach + " unter der Stufe des Pfads)");
+                    nimm(5, { massDekaden: z.kg.dekaden }, "6 Dekaden 1 g – 1 t: der Bestand trägt " + z.kg.dekaden + " Dekaden (" + z.kg.min + "–" + z.kg.max + " kg), kein Insekt mit Gang", true);
+                    nimm(6, { gleitProzent: pct(z.schlupfMax), gangBand }, "1 000 Arten × 5 Gelände: die Welt trägt 4 Gangarten-Leiber auf ebenem Grund");
+                    nimm(7, {}, "kein Schlag-Stopp mit Gleitstrecke, kein Strouhal: der Fisch schlägt starr (FISCH_GESETZ schlagHz)");
+                    nimm(8, { gangTempoAbw: Number.isFinite(tempoAbw) ? Math.round(tempoAbw * 10) / 10 : null }, "keine Atmosphäre im Flug-Gesetz (die Gegenprobe dünne Luft hat keinen Leser) und keine drei Planeten", false, Object.assign({}, zeuge, { schwere: z.schwere }));
+                    return { sprossen: aus, gang: { je: z.je, schwere: z.schwere, sprung: z.sprung, spur: z.spur, kg: z.kg } };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [
+                            K.soll(BW, 1, "Fußgleiten", { quelleFeld: "tiefe", quelleWort: "Gleiten ≤ 5 % der Schrittlänge", rel: "≤", zahl: 5, key: "gleitProzent", einheit: "%" }),
+                            K.soll(BW, 1, "Gangwechsel", { quelleFeld: "tiefe", quelleWort: "Gangwechsel bei der Froude-Zahl der Natur ±10 %", rel: "≤", zahl: 10, key: "froudeAbw", einheit: "%" }),
+                        ],
+                        zeuge: zeugeWelt(12, true),
+                        taeter: "tetrapoda-core.js gangSchritt / gangArt (GANG_FOLGE)",
+                        unklar: "der Richter nennt keine Zahl: das Soll trägt die Tiefe (Gleiten ≤ 5 %, Wechsel bei Fr der Natur ±10 % gegen Alexander & Jayes 1983: Trab 0,5, Galopp 2,5).",
+                        gruen: gut({ gleitProzent: 1.3, froudeAbw: 4 }, 76),
+                        attrappen: atr({ gleitProzent: 1.3, froudeAbw: 4 }, 76, true),
+                    },
+                    2: {
+                        u: {},
+                        soll: [
+                            K.soll(BW, 2, "Fußfall-Diagramm", { quelleFeld: "tiefe", quelleWort: "Fußfall gegen Muybridge ±0,05", rel: "≤", zahl: 0.05, key: "fussfallAbw", einheit: "Takt" }),
+                            K.soll(BW, 2, "St = f·A/U", { quelleFeld: "tiefe", quelleWort: "Strouhal 0,2–0,4", rel: "band", zahl: 0.2, bis: 0.4, key: "strouhal" }),
+                        ],
+                        zeuge: zeugeWelt(12, true),
+                        taeter: "tetrapoda-core.js FISCH_GESETZ (starrer Leib) / kein Laufvogel",
+                        nicht: "kein Laufvogel, kein Fisch mit Körperwelle",
+                        leser: "tetrapoda-core.js:2832 — FISCH_GESETZ schlagHz: der Fisch pendelt als starrer Leib, keine Körperwelle (St = f·A/U ohne Amplitude der Welle)",
+                        unklar: "der Richter nennt keine Zahl: das Soll trägt die Tiefe (Fußfall ±0,05 gegen Muybridge, Strouhal 0,2–0,4).",
+                        gruen: gut({ fussfallAbw: 0.03, strouhal: 0.3, massDekaden: 3 }, 76),
+                        attrappen: atr({ fussfallAbw: 0.03, strouhal: 0.3, massDekaden: 3 }, 76, true),
+                    },
+                    3: {
+                        u: { auge: AUGE_ORT },
+                        soll: [
+                            K.soll(BW, 3, "Blindtest Schwimmweise ≥ 80 %", { key: "blindProzent", einheit: "%" }),
+                            K.soll(BW, 3, "Frequenz gegen Pennycuick", { quelleFeld: "tiefe", quelleWort: "Schlagfrequenz ±20 % zur Allometrie", rel: "≤", zahl: 20, key: "frequenzAbw", einheit: "%" }),
+                        ],
+                        auge: { pose: "Third auf einen Trupp oder Schwarm von 3 000 (heute: die Wiese)", vorbild: "Filme der fünf Schwimmweisen; Blindtest ≥ 80 %" },
+                        taeter: "tetrapoda-core.js VOGEL_GESETZ / FISCH_GESETZ (die Weise zugewiesen, nicht aus dem Leib)",
+                        nicht: "kein Flug und keine Schwimmweise aus der Körperform",
+                        leser: "tetrapoda-core.js:2392 — VOGEL_GESETZ leib.schlagHz 12 fest je Leib, keine Allometrie aus Masse und Spanne (Pennycuick)",
+                        gruen: gut({ blindProzent: 85, frequenzAbw: 10 }, 100),
+                        attrappen: atr({ blindProzent: 85, frequenzAbw: 10 }, 100),
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(BW, 4, "je Medium 10 Arten im Band ≥ 0,8", { key: "bandAnteil" }), K.soll(BW, 4, "Spur folgt der Bahn ±0,5 m", { rel: "≤", zahl: 0.5, key: "spurAbwM", einheit: "m" })],
+                        zeuge: zeugeWelt(12, true),
+                        taeter: "stamm/siedlung-wege.js _tritt (die Spur eines Gangs bleibt unter der Stufe des Pfads)",
+                        nicht: "kein Kriechen, Springen-Medium, Klettern, Graben; kein Säuger oder Vogel im Wasser",
+                        leser: "stamm/siedlung-wege.js:1712 — _trittStufe: ein Gang tritt die Zelle einmal, sichtbar wird erst der Pfad (TRITT.tritte 20) — keine Fährte",
+                        gruen: gut({ bandAnteil: 0.85, spurAbwM: 0.3, sprungAbwProzent: 5, spurSichtbar: 40 }, 76),
+                        attrappen: atr({ bandAnteil: 0.85, spurAbwM: 0.3, sprungAbwProzent: 5, spurSichtbar: 40 }, 76, true),
+                    },
+                    5: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(BW, 5, "Panel gegen Hochgeschwindigkeits-Referenz ≥ 0,7", { key: "panel" })],
+                        auge: { pose: "Makro-Zeitlupe an einem Insekt (heute: die Wiese)", vorbild: "Hochgeschwindigkeits-Filme (Tripod-Gang, Flügelschlag 100–200 Hz); Panel ≥ 0,7" },
+                        taeter: "tetrapoda-core.js BESTAEUBER_GESETZ (kein Gang, kein Flügelschlag-Leib)",
+                        nicht: "6 Dekaden 1 g – 1 t: kein Insekt mit Tripod-Gang",
+                        leser: "tetrapoda-core.js:2908 — BESTAEUBER_GESETZ: die Hummel fliegt als Doppelkeil, kein Leser trägt Beine oder Flügelschlag",
+                        gruen: gut({ panel: 0.8, massDekaden: 6 }, 76),
+                        attrappen: atr({ panel: 0.8, massDekaden: 6 }, 76),
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(BW, 6, "Gleiten ≤ 5 %", { key: "gleitProzent", einheit: "%" }), K.soll(BW, 6, "Gang im Band ≥ 0,95", { key: "gangBand" })],
+                        zeuge: zeugeWelt(12, true),
+                        taeter: "tetrapoda-core.js gangSchritt (4 Leiber auf ebenem Grund)",
+                        nicht: "1 000 Arten × 5 Gelände (Hang, Fels, Schnee, Schlamm, Strömung)",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES (4 Leiber); kein Leser erzeugt Arten über 11 Dekaden",
+                        gruen: gut({ gleitProzent: 1.3, gangBand: 1 }, 76),
+                        attrappen: atr({ gleitProzent: 1.3, gangBand: 1 }, 76, true),
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(BW, 7, "Gleitstrecke nach Schlag-Stopp ±30 % zur Re-Theorie", { rel: "≤", zahl: 30, key: "gleitAbw", einheit: "%" }), K.soll(BW, 7, "St im Band bei ≥ 95 %", { key: "stBand", einheit: "%" })],
+                        zeuge: zeugeWelt(12, true),
+                        taeter: "tetrapoda-core.js FISCH_GESETZ (kein Schlag-Stopp, keine Reynolds-Skalierung)",
+                        nicht: "10³ Zufalls-Arten je Saat; kein Gleiten nach dem Schlag",
+                        leser: "tetrapoda-core.js:2832 — FISCH_GESETZ: Schlag als fester Takt, kein Leser der Reynolds-Zahl",
+                        gruen: gut({ gleitAbw: 12, stBand: 97 }, 76),
+                        attrappen: atr({ gleitAbw: 12, stBand: 97 }, 76, true),
+                    },
+                    8: {
+                        u: {},
+                        soll: [K.soll(BW, 8, "Gangwechsel-Tempo ±10 %", { rel: "≤", zahl: 10, key: "gangTempoAbw", einheit: "%" })],
+                        zeuge: zeugeWelt(12, true),
+                        taeter: "tetrapoda-core.js gangArt (die Schwere der Welt) / VOGEL_GESETZ (keine Atmosphäre)",
+                        nicht: "keine Atmosphäre im Flug-Gesetz, keine drei Planeten",
+                        leser: "tetrapoda-core.js:2376 — VOGEL_GESETZ: der Flug liest weder Luftdichte noch Schwere (die Gegenprobe dünne Luft hat keinen Leser)",
+                        gruen: gut({ gangTempoAbw: 4 }, 76),
+                        attrappen: atr({ gangTempoAbw: 4 }, 76, true),
+                    },
+                },
+            },
+            // ═══ VERHALTEN: das Ethogramm, die Alarm-Kette des Verbands, die Witterung im Wind, das Gedächtnis und die Gegenprobe Sinn aus ═══
+            [VH]: {
+                sek: 40,
+                mutiert: true,
+                pfad: PFAD,
+                ungefahren: "die Bilder der Auge-Sprossen S3, S6, S7 (die Lebensweise blind zugeordnet) — headless zählt die Probe Akte und Fluchten im Takt",
+                mess: async function (H, U, M) {
+                    const grund = function (r, T) {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const fl = s.faunaLifecycle;
+                        const wm = s.worldMeta;
+                        const alt = { p: pm.clone(), yaw: s.yaw, pitch: s.pitch, modus: r.getGameMode(), max: s.maxCreatures, wurf: fl ? fl.lastTick : null, vor: new Set(s.creatures), perf: s.perfRegulator, grav: s.gravity, tod: s.timeOfDay, wetter: s.weather, season: s.season, tritt: new Set(Object.keys((wm && wm.tritt) || {})), schwach: new Set((r._trittSchwach || new Map()).keys()), reg: new Set(Object.keys(r._bestandRegionen().regionen)), lf: s.lifeField ? new Map([...s.lifeField].map(([k, e]) => [k, Object.assign({}, e)])) : null, seele: s.player && s.player.soul };
+                        const RUHE = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                        const flicken = [];
+                        const flick = (n, f) => {
+                            if (Object.prototype.hasOwnProperty.call(r, n)) throw new Error("flick: " + n + " trägt schon eine eigene Zeile");
+                            flicken.push(n);
+                            r[n] = f;
+                        };
+                        let t = performance.now();
+                        const welt = (n) => {
+                            s.perfRegulator = false;
+                            for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+                        };
+                        const takt = (n, d) => {
+                            for (let i = 0; i < n; i++) {
+                                r._kreaturStossSchritt(d || 1 / 60);
+                                r._trittDerLeiber();
+                                r._leibKontakte();
+                                r.updateCreatures(d || 1 / 60);
+                            }
+                        };
+                        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+                        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        const ruhig = (c) => (c.userData.emotions = Object.assign({}, RUHE));
+                        const ruhigSpieler = () => s.player.emotions && Object.assign(s.player.emotions, RUHE);
+                        const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z) && !(typeof r._imGrundriss === "function" && r._imGrundriss(x, z));
+                        const land = (x0, z0, R, dMin) => {
+                            for (let d = dMin || 0; d <= 600; d += 15) {
+                                const n = Math.max(1, Math.round(d / 10));
+                                for (let q = 0; q < n; q++) {
+                                    const w = (q / n) * 2 * Math.PI;
+                                    const x = x0 + Math.cos(w) * d;
+                                    const z = z0 + Math.sin(w) * d;
+                                    let ok = trocken(x, z);
+                                    for (let k = 0; ok && k < 8; k++) ok = trocken(x + Math.cos(k * 0.785) * R, z + Math.sin(k * 0.785) * R);
+                                    if (ok) return { x, z };
+                                }
+                            }
+                            return null;
+                        };
+                        const tier = (x, z, seele, bs) => {
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            let nein = null;
+                            const c = r.spawnCreatureAt(x, boden(x, z), z, "happy", seele, { precise: true, bodySize: bs || 1, absage: (g) => (nein = g) });
+                            if (!c) throw new Error("spawnCreatureAt " + seele + ": " + nein);
+                            ruhig(c);
+                            return c;
+                        };
+                        const stelle = (x, z) => {
+                            pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                        };
+                        const stillFeld = () => {
+                            if (fl) fl.lastTick = 1e12;
+                        };
+                        const zurueck = () => {
+                            for (const n of flicken.splice(0)) delete r[n];
+                            if (s.player && alt.seele && s.player.soul !== alt.seele) r.applyPlayerSoul(alt.seele);
+                            for (const c of [...s.creatures]) if (!alt.vor.has(c)) r.removeCreature(c);
+                            s.maxCreatures = alt.max;
+                            if (fl) fl.lastTick = alt.wurf;
+                            if (r.getGameMode() !== alt.modus) r.setGameMode(alt.modus);
+                            pm.copy(alt.p);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                            [s.yaw, s.pitch, s.perfRegulator, s.gravity] = [alt.yaw, alt.pitch, alt.perf, alt.grav];
+                            if (s.season !== alt.season) r.setSeason(alt.season);
+                            if (Math.abs(s.timeOfDay - alt.tod) > 1e-6) r._uhrSetzen(alt.tod, "regler");
+                            if (s.weather !== alt.wetter && window.__wetterSetzen) window.__wetterSetzen(alt.wetter);
+                            if (wm && wm.tritt) for (const k of Object.keys(wm.tritt)) if (!alt.tritt.has(k)) delete wm.tritt[k];
+                            if (r._trittSchwach) for (const k of [...r._trittSchwach.keys()]) if (!alt.schwach.has(k)) r._trittSchwach.delete(k);
+                            const F = r._bestandRegionen().regionen;
+                            for (const k of Object.keys(F)) if (!alt.reg.has(k)) delete F[k];
+                            if (alt.lf && s.lifeField) {
+                                for (const k of [...s.lifeField.keys()]) if (!alt.lf.has(k)) s.lifeField.delete(k);
+                                for (const [k, e] of alt.lf) {
+                                    const n = s.lifeField.get(k);
+                                    if (n) Object.assign(n, e);
+                                    else s.lifeField.set(k, e);
+                                }
+                            }
+                        };
+                        return { s, A, pm, fl, wm, alt, RUHE, flick, welt, takt, boden, ab, r3, ruhig, ruhigSpieler, trocken, land, tier, stelle, stillFeld, zurueck };
+                    };
+                    const lauf = (fn, a) => H.seite("const G = (" + grund + ")(r, T); try { return await (" + fn + ")(r, T, " + JSON.stringify(a || {}) + ", G); } finally { G.zurueck(); }");
+                    // DIE PROBE: (1) das Ethogramm — drei Hirsche 1 Spielstunde im Takt (dt 0,1, die Uhr läuft), der Spieler ruhig in 25 m im frieden
+                    // (die 50-m-Wand des Verhaltens-Ticks): je Takt die Tätigkeit (`_gezeigt`) und die Aktion (`_verhaltenAktion`) — die Akte und
+                    // das Zeitbudget gegen das Feld-Ethogramm des Rothirschs. (2) Die Annäherung wie FLUCHT_SITZUNG (pfad, Stufen ab 3·Feldmaß, je 20
+                    // gehende Takte): fünf Hirsche als Verband (`_kreaturVerbinden`) → die Alarm-Kette (der erste bis der letzte Flüchtende); je ein
+                    // Hirsch mit dem Wind und gegen ihn (`_windDirAt`) → das Verhältnis der Entdeckungsdistanzen; zwei geschlagene Hirsche
+                    // (`damageCreature`, Quelle Spieler: das Gedächtnis) gegen zwei Fremde → die Meidequoten; ein Hirsch, dem der Sinn für den
+                    // Spieler fehlt (`_creatureWarinessSpieler` → 0), gegen einen mit Sinn → die Gegenprobe
+                    const probe = async function (r, T, a, G) {
+                        const { s, A, pm, r3, takt, land, tier, stelle, stillFeld, ruhigSpieler, RUHE, flick, trocken } = G;
+                        stillFeld();
+                        const ort = land(pm.x, pm.z, 40, 60);
+                        if (!ort) throw new Error("kein trockenes Land 60–600 m um den Spieler");
+                        const aus = { ort: [Math.round(ort.x), Math.round(ort.z)] };
+                        // (1) das Ethogramm im frieden
+                        r.setGameMode("frieden");
+                        const herde = [0, 1, 2].map((k) => tier(ort.x + k * 4, ort.z + (k % 2) * 3, "wesen"));
+                        stelle(ort.x - 25, ort.z);
+                        const tod0 = s.timeOfDay;
+                        const dayS = 60 * A.DAY_LENGTH_DEFAULT_MINUTES;
+                        const budget = {};
+                        const akte = {};
+                        let proben = 0;
+                        for (let k = 0; k < a.ethoTakte; k++) {
+                            ruhigSpieler();
+                            takt(1, a.ethoDt);
+                            if (k % 150 === 149) r._uhrSetzen((tod0 + ((k + 1) * a.ethoDt) / dayS) % 1, "regler");
+                            for (const c of herde) {
+                                const ud = c.userData;
+                                const zust = ud._motionZustand === "flucht" ? "flucht" : ud._gezeigt || "ziehen";
+                                budget[zust] = (budget[zust] || 0) + 1;
+                                const va = ud._verhaltenAktion && ud._verhaltenAktion.name;
+                                if (va) akte[va] = (akte[va] || 0) + 1;
+                                proben++;
+                            }
+                        }
+                        for (const c of herde) r.removeCreature(c);
+                        r._uhrSetzen(tod0, "regler");
+                        const anteil = {};
+                        for (const k of Object.keys(budget)) anteil[k] = budget[k] / proben;
+                        // das Zeitbudget: äsen ↔ nahrung, ruhen ↔ ruhen, ziehen ↔ ziehen, sichern ↔ die Aktion scan (Anteil der Takte mit ihr)
+                        const ist = { nahrung: anteil.nahrung || 0, ruhen: anteil.ruhen || 0, ziehen: anteil.ziehen || 0, sichern: (akte.scan || 0) / proben };
+                        const ref = a.etho;
+                        const rang = (o) => {
+                            const k = Object.keys(o).sort((x, y) => o[x] - o[y]);
+                            const R = {};
+                            for (let i = 0; i < k.length; ) {
+                                let j = i;
+                                while (j + 1 < k.length && o[k[j + 1]] === o[k[i]]) j++;
+                                for (let q = i; q <= j; q++) R[k[q]] = (i + j) / 2 + 1;
+                                i = j + 1;
+                            }
+                            return R;
+                        };
+                        const [ri, rr] = [rang(ist), rang(ref)];
+                        const ks = Object.keys(ref);
+                        const mi = ks.reduce((x, k) => x + ri[k], 0) / ks.length;
+                        const mr = ks.reduce((x, k) => x + rr[k], 0) / ks.length;
+                        const kov = ks.reduce((x, k) => x + (ri[k] - mi) * (rr[k] - mr), 0);
+                        const vi = Math.sqrt(ks.reduce((x, k) => x + (ri[k] - mi) * (ri[k] - mi), 0));
+                        const vr = Math.sqrt(ks.reduce((x, k) => x + (rr[k] - mr) * (rr[k] - mr), 0));
+                        Object.assign(aus, { etho: { proben, anteil: Object.fromEntries(Object.entries(ist).map(([k, v]) => [k, r3(v)])), akte, akteN: new Set([...Object.keys(akte), ...Object.keys(budget)]).size, rang: vi > 0 && vr > 0 ? r3(kov / (vi * vr)) : 0, spielStunden: r3((a.ethoTakte * a.ethoDt) / (dayS / 24)) } });
+                        // (2) die Annäherung im pfad
+                        r.setGameMode("pfad");
+                        const F = A._furchtGesetz().F.fluchtDistanzM.deer;
+                        const dt = 1 / 60;
+                        const fuss = (x, z) => r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET;
+                        const richtung = (ux, uz) => {
+                            let n = 0;
+                            for (let d = 20; d <= 3 * F; d += 20) if (trocken(ort.x + ux * d, ort.z + uz * d)) n++;
+                            return n;
+                        };
+                        let rich = null;
+                        for (let q = 0; q < 8; q++) {
+                            const [ux, uz] = [Math.cos((q * Math.PI) / 4), Math.sin((q * Math.PI) / 4)];
+                            const n = richtung(ux, uz);
+                            if (!rich || n > rich.n) rich = { ux, uz, n };
+                        }
+                        const naehern = (liste, u) => {
+                            const ziel = liste[0];
+                            const flieht = new Map();
+                            let takte = 0;
+                            const schritt = (gehen) => {
+                                const [dx, dz] = [ziel.position.x - pm.x, ziel.position.z - pm.z];
+                                const d = Math.hypot(dx, dz) || 1;
+                                if (gehen) (pm.x += (dx / d) * s.speed * dt), (pm.z += (dz / d) * s.speed * dt);
+                                pm.y = fuss(pm.x, pm.z);
+                                if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                                [s.yaw, s.pitch] = [Math.atan2(dx, dz), 0];
+                                ruhigSpieler();
+                                for (const c of liste) if (!flieht.has(c)) c.userData.emotions = Object.assign(c.userData.emotions || {}, RUHE);
+                                takt(1, dt);
+                                takte++;
+                                for (const c of liste) if (!flieht.has(c) && c.userData._motionZustand === "flucht") flieht.set(c, { d: Math.hypot(c.position.x - pm.x, c.position.z - pm.z), k: takte });
+                            };
+                            for (let k = 0; k < 30; k++) {
+                                pm.set(ziel.position.x + u.ux * 3 * F, 0, ziel.position.z + u.uz * 3 * F);
+                                schritt(false);
+                            }
+                            const steht = flieht.size;
+                            for (let d = 3 * F; ; d = Math.max(8, d * 0.88)) {
+                                pm.set(ziel.position.x + u.ux * d, 0, ziel.position.z + u.uz * d);
+                                for (let k = 0; k < 20 && !flieht.has(ziel); k++) schritt(true);
+                                if (flieht.has(ziel) || d === 8) break;
+                            }
+                            for (let k = 0; k < 300 && flieht.size > 0 && flieht.size < liste.length; k++) schritt(false);
+                            const ks = [...flieht.values()].map((x) => x.k);
+                            return { d: flieht.has(ziel) ? flieht.get(ziel).d : null, n: flieht.size, von: liste.length, kette: ks.length > 1 ? (Math.max(...ks) - Math.min(...ks)) * dt : null, takte, steht };
+                        };
+                        const allein = (u, vor) => {
+                            const c = tier(ort.x, ort.z, "wesen");
+                            for (let k = 0; k < 20; k++) takt(1, dt);
+                            if (vor) vor(c);
+                            const e = naehern([c], u);
+                            r.removeCreature(c);
+                            return e;
+                        };
+                        // die Alarm-Kette des Verbands
+                        const verband = [0, 1, 2, 3, 4].map((k) => tier(ort.x + (k % 3) * 3, ort.z + Math.floor(k / 3) * 3, "wesen"));
+                        r._kreaturVerbinden(verband);
+                        for (let k = 0; k < 30; k++) takt(1, dt);
+                        aus.alarm = naehern(verband, rich);
+                        for (const c of verband) r.removeCreature(c);
+                        // der Wind: mit dem Wind (der Spieler steht im Wind vor dem Tier, sein Geruch weht hin) und gegen ihn
+                        const w = r._windDirAt(s.spielZeit);
+                        aus.wind = { dir: [r3(w.x), r3(w.z)], mit: allein({ ux: -w.x, uz: -w.z }), gegen: allein({ ux: w.x, uz: w.z }) };
+                        // das Gedächtnis: geschlagen (die Kampf-Furcht klingt ab, die Erinnerung bleibt) gegen fremd
+                        const schlag = (c) => {
+                            stelle(c.position.x + 3, c.position.z);
+                            r.damageCreature(c, 4, { source: "player", fromPos: pm.clone() });
+                            for (let k = 0; k < 1200 && c.userData.fearUntil > s.creatureAnimationTime; k++) takt(1, 1 / 30);
+                            for (let k = 0; k < 60; k++) takt(1, dt);
+                        };
+                        aus.gedaechtnis = { geschlagen: [allein(rich, schlag), allein(rich, schlag), allein(rich, schlag)], fremd: [allein(rich), allein(rich), allein(rich)] };
+                        // die Gegenprobe: der Sinn für den Spieler aus
+                        aus.sinn = { mit: allein(rich) };
+                        flick("_creatureWarinessSpieler", function () {
+                            return 0;
+                        });
+                        aus.sinn.ohne = allein(rich);
+                        aus.feldM = F;
+                        aus.lebensdauerS = A.FAUNA_MAX_AGE_MS / 1000;
+                        aus.spieltagS = dayS;
+                        return aus;
+                    };
+                    const z = await lauf(probe, { ethoTakte: 1500, ethoDt: 0.1, etho: { nahrung: 0.52, ruhen: 0.33, ziehen: 0.1, sichern: 0.05 } });
+                    const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
+                    const auge = augeNoetig ? await M.auge("tiere-verhalten", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
+                    const fl = [z.alarm.d, z.wind.mit.d, z.wind.gegen.d, ...z.gedaechtnis.geschlagen.map((x) => x.d), ...z.gedaechtnis.fremd.map((x) => x.d), z.sinn.mit.d].filter((x) => Number.isFinite(x));
+                    const mfl = fl.reduce((x, y) => x + y, 0) / Math.max(1, fl.length);
+                    const zeuge = { antworten: z.etho.proben + fl.length, streuung: Math.round(Math.sqrt(fl.reduce((x, y) => x + (y - mfl) * (y - mfl), 0) / Math.max(1, fl.length)) * 1000) / 1000, vor: 0, nach: fl.length };
+                    const fremdMed = z.gedaechtnis.fremd.map((x) => x.d).filter(Number.isFinite);
+                    const basis = fremdMed.length ? fremdMed.reduce((x, y) => x + y, 0) / fremdMed.length : null;
+                    const meide = (L) => (basis ? Math.round((1000 * L.filter((x) => Number.isFinite(x.d) && x.d > 1.2 * basis).length) / L.length) / 1000 : null);
+                    const windRatio = Number.isFinite(z.wind.mit.d) && Number.isFinite(z.wind.gegen.d) && z.wind.gegen.d > 0 ? Math.round((1000 * z.wind.mit.d) / z.wind.gegen.d) / 1000 : null;
+                    const aus = {};
+                    const nimm = (nr, werte, nicht, mitAuge) => {
+                        if (!U[nr]) return;
+                        aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
+                    };
+                    nimm(2, { rang: z.etho.rang, alarmS: z.alarm.kette, akte: z.etho.akteN, spielStunden: z.etho.spielStunden }, z.etho.akteN < 30 ? "der Hirsch trägt " + z.etho.akteN + " Akte statt ≥ 30 (kein Alarmruf, kein Komfort, kein Markieren, kein Drohen)" : null);
+                    nimm(3, { akte: z.etho.akteN }, "10² Stichproben-Arten aus dem Samen: die Welt trägt 4 Gattungen mit einem Buch der Aktionen", true);
+                    nimm(4, { windRatio }, "der Spieler wird an Abstand, Näherung und Gedächtnis erkannt: kein Gehör, kein Geruch im Wind, keine Vibration, keine Wärme gegen ihn (Entdeckung mit Wind " + Math.round(10 * z.wind.mit.d) / 10 + " m, gegen Wind " + Math.round(10 * z.wind.gegen.d) / 10 + " m)");
+                    nimm(5, { meideInd: meide(z.gedaechtnis.geschlagen), meideFremd: meide(z.gedaechtnis.fremd), spieltage: Math.round((100 * z.lebensdauerS) / z.spieltagS) / 100 }, "7 Spieltage (" + 7 * z.spieltagS + " s) überlebt kein Tier: die Lebensdauer ist " + z.lebensdauerS + " s");
+                    nimm(6, {}, "kein Echo-Jäger, kein Zugvogel mit Kurs, kein Sinn jenseits des Menschen (UV, Magnetfeld, Echo, Elektro)", true);
+                    nimm(7, { fluchtMitSinn: z.sinn.mit.d, fluchtOhneSinn: z.sinn.ohne.d === null ? 0 : z.sinn.ohne.d }, "keine fremde Saat, keine fremden Sinne", true);
+                    return { sprossen: aus, verhalten: z };
+                },
+                sprossen: {
+                    2: {
+                        u: {},
+                        soll: [
+                            K.soll(VH, 2, "Rangkorrelation ≥ 0,7", { key: "rang" }),
+                            K.soll(VH, 2, "Feld-Ethogramm", { quelleFeld: "tiefe", quelleWort: "Alarm-Kette ≤ 1 s", rel: "≤", zahl: 1, key: "alarmS", einheit: "s" }),
+                            K.soll(VH, 2, "Feld-Ethogramm", { quelleFeld: "umfang", quelleWort: "≥ 30 Akte", rel: "≥", zahl: 30, key: "akte", einheit: "Akte" }),
+                            K.soll(VH, 2, "1 h Beobachtung", { rel: "≥", zahl: 1, key: "spielStunden", einheit: "Spielstunden" }),
+                        ],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "tetrapoda-core.js VERHALTEN.aktionen (das Buch der Aktionen) / ETHOGRAMM_GESETZ",
+                        nicht: "eine Art mit vollem Ethogramm (≥ 30 Akte)",
+                        leser: "tetrapoda-core.js:99 — VERHALTEN.aktionen trägt 13 Aktionen ohne Alarmruf, Komfort, Markieren, Drohen",
+                        gruen: gut({ rang: 0.8, alarmS: 0.5, akte: 32, spielStunden: 1 }, 4500),
+                        attrappen: atr({ rang: 0.8, alarmS: 0.5, akte: 32, spielStunden: 1 }, 4500, true),
+                    },
+                    3: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(VH, 3, "Ethologe ordnet die Lebensweise blind zu ≥ 0,8", { key: "zuordnung" })],
+                        auge: { pose: "Third auf 10² Stichproben-Arten je 1 h Zeitraffer (heute: die Wiese)", vorbild: "der Ethologe ordnet die Lebensweise blind zu ≥ 0,8" },
+                        taeter: "stamm/kreatur-leben.js CREATURE_SOUL_NAMES (4 Gattungen, Lebensweise von Hand)",
+                        nicht: "10² Stichproben-Arten aus dem Samen",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES: die Lebensweise ist je Gattung zugewiesen, kein Leser leitet sie aus Leib und Samen ab",
+                        gruen: gut({ zuordnung: 0.85 }, 4500),
+                        attrappen: atr({ zuordnung: 0.85 }, 4500),
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(VH, 4, "Entdeckungsdistanz mit Wind / gegen Wind ≥ 3", { key: "windRatio" })],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "stamm/kreatur-furcht.js _kreaturMenschFlucht (die Flucht vor dem Spieler liest keinen Wind)",
+                        nicht: "5 Sinne gegen den Spieler: Richtungsgehör, Geruch im Wind, Vibration, Wärme, Sicht",
+                        leser: "stamm/kreatur-furcht.js:160 `_kreaturMenschFlucht` — die Fluchtdistanz liest Abstand, Erinnerung, Aura und Näherung, nie den Wind",
+                        gruen: gut({ windRatio: 3.5 }, 4500),
+                        attrappen: atr({ windRatio: 3.5 }, 4500, true),
+                    },
+                    5: {
+                        u: {},
+                        soll: [
+                            K.soll(VH, 5, "Meidequote ≥ 0,8 beim Individuum", { key: "meideInd" }),
+                            K.soll(VH, 5, "≤ 0,2 bei Fremden", { key: "meideFremd" }),
+                            K.soll(VH, 5, "nach 7 Spieltagen", { rel: "≥", zahl: 7, key: "spieltage", einheit: "Spieltage" }),
+                        ],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "stamm/daten.js FAUNA_MAX_AGE_MS (35 Spielminuten) / stamm/kreatur-furcht.js _creatureWarinessSpieler",
+                        nicht: "Gedächtnis über Wochen: kein Tier lebt 7 Spieltage",
+                        leser: "stamm/daten.js:176 `FAUNA_MAX_AGE_MS` — 35 min Lebensdauer: das Gedächtnis eines Individuums endet vor dem ersten Spieltag",
+                        gruen: gut({ meideInd: 0.9, meideFremd: 0.1, spieltage: 7 }, 4500),
+                        attrappen: atr({ meideInd: 0.9, meideFremd: 0.1, spieltage: 7 }, 4500, true),
+                    },
+                    6: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(VH, 6, "Fang-Quote der Echo-Jäger bei 0 lux = Tag ±20 %", { rel: "≤", zahl: 20, key: "fangAbw", einheit: "%" }), K.soll(VH, 6, "blinde Zuordnung an 10⁴ Saaten ≥ 0,8", { key: "zuordnung" })],
+                        auge: { pose: "Nacht 0 lux, Third auf einen Echo-Jäger (heute: die Wiese)", vorbild: "Fang-Quote bei Nacht = Tag ±20 %; blinde Zuordnung ≥ 0,8" },
+                        taeter: "stamm/kreatur-furcht.js _kreaturMenschFlucht (die Sinne: Abstand und Gedächtnis)",
+                        nicht: "10⁴ Stichproben-Arten; kein Sinn jenseits des Menschen",
+                        leser: "stamm/kreatur-furcht.js:160 `_kreaturMenschFlucht` — kein Leser trägt Echo, UV, Magnetfeld oder Elektro-Sinn",
+                        gruen: gut({ fangAbw: 10, zuordnung: 0.85 }, 4500),
+                        attrappen: atr({ fangAbw: 10, zuordnung: 0.85 }, 4500),
+                    },
+                    7: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(VH, 7, "Lebensweise blind benannt ≥ 0,8", { key: "benannt" }), K.soll(VH, 7, "100 fremde Saaten", { rel: "≥", zahl: 100, key: "saaten" })],
+                        auge: { pose: "Third auf die Tiere fremder Saaten (heute: die Wiese)", vorbild: "Lebensweise blind benannt ≥ 0,8; Gegenprobe Sinn aus → Verhalten bricht" },
+                        taeter: "stamm/kreatur-leben.js CREATURE_SOUL_NAMES (keine fremde Fauna)",
+                        nicht: "jede Art jedes Planeten",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES liest keinen Samen: keine Fauna fremder Saaten",
+                        gruen: gut({ benannt: 0.85, saaten: 100 }, 4500),
+                        attrappen: atr({ benannt: 0.85, saaten: 100 }, 4500),
+                    },
+                },
+            },
+            // ═══ LEBENSZYKLUS: Jungtier, Jahreszeit, Brut, Stadien, Wurf und der Bestand über Generationen — im Gesetz des Bestands ═══
+            [LZ]: {
+                sek: 30,
+                mutiert: true,
+                pfad: PFAD,
+                ungefahren: "das Bildpaar Kitz/Hirsch (S2) und die Ereignisse im Bild (S3) — headless zählt die Probe Akte, Nester und den Bestand",
+                mess: async function (H, U, M) {
+                    const grund = function (r, T) {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const fl = s.faunaLifecycle;
+                        const wm = s.worldMeta;
+                        const alt = { p: pm.clone(), yaw: s.yaw, pitch: s.pitch, modus: r.getGameMode(), max: s.maxCreatures, wurf: fl ? fl.lastTick : null, vor: new Set(s.creatures), perf: s.perfRegulator, grav: s.gravity, tod: s.timeOfDay, wetter: s.weather, season: s.season, tritt: new Set(Object.keys((wm && wm.tritt) || {})), schwach: new Set((r._trittSchwach || new Map()).keys()), reg: new Set(Object.keys(r._bestandRegionen().regionen)), lf: s.lifeField ? new Map([...s.lifeField].map(([k, e]) => [k, Object.assign({}, e)])) : null, seele: s.player && s.player.soul };
+                        const RUHE = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                        const flicken = [];
+                        const flick = (n, f) => {
+                            if (Object.prototype.hasOwnProperty.call(r, n)) throw new Error("flick: " + n + " trägt schon eine eigene Zeile");
+                            flicken.push(n);
+                            r[n] = f;
+                        };
+                        let t = performance.now();
+                        const welt = (n) => {
+                            s.perfRegulator = false;
+                            for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+                        };
+                        const takt = (n, d) => {
+                            for (let i = 0; i < n; i++) {
+                                r._kreaturStossSchritt(d || 1 / 60);
+                                r._trittDerLeiber();
+                                r._leibKontakte();
+                                r.updateCreatures(d || 1 / 60);
+                            }
+                        };
+                        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+                        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        const ruhig = (c) => (c.userData.emotions = Object.assign({}, RUHE));
+                        const ruhigSpieler = () => s.player.emotions && Object.assign(s.player.emotions, RUHE);
+                        const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z) && !(typeof r._imGrundriss === "function" && r._imGrundriss(x, z));
+                        const land = (x0, z0, R, dMin) => {
+                            for (let d = dMin || 0; d <= 600; d += 15) {
+                                const n = Math.max(1, Math.round(d / 10));
+                                for (let q = 0; q < n; q++) {
+                                    const w = (q / n) * 2 * Math.PI;
+                                    const x = x0 + Math.cos(w) * d;
+                                    const z = z0 + Math.sin(w) * d;
+                                    let ok = trocken(x, z);
+                                    for (let k = 0; ok && k < 8; k++) ok = trocken(x + Math.cos(k * 0.785) * R, z + Math.sin(k * 0.785) * R);
+                                    if (ok) return { x, z };
+                                }
+                            }
+                            return null;
+                        };
+                        const tier = (x, z, seele, bs) => {
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            let nein = null;
+                            const c = r.spawnCreatureAt(x, boden(x, z), z, "happy", seele, { precise: true, bodySize: bs || 1, absage: (g) => (nein = g) });
+                            if (!c) throw new Error("spawnCreatureAt " + seele + ": " + nein);
+                            ruhig(c);
+                            return c;
+                        };
+                        const stelle = (x, z) => {
+                            pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                        };
+                        const stillFeld = () => {
+                            if (fl) fl.lastTick = 1e12;
+                        };
+                        const zurueck = () => {
+                            for (const n of flicken.splice(0)) delete r[n];
+                            if (s.player && alt.seele && s.player.soul !== alt.seele) r.applyPlayerSoul(alt.seele);
+                            for (const c of [...s.creatures]) if (!alt.vor.has(c)) r.removeCreature(c);
+                            s.maxCreatures = alt.max;
+                            if (fl) fl.lastTick = alt.wurf;
+                            if (r.getGameMode() !== alt.modus) r.setGameMode(alt.modus);
+                            pm.copy(alt.p);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                            [s.yaw, s.pitch, s.perfRegulator, s.gravity] = [alt.yaw, alt.pitch, alt.perf, alt.grav];
+                            if (s.season !== alt.season) r.setSeason(alt.season);
+                            if (Math.abs(s.timeOfDay - alt.tod) > 1e-6) r._uhrSetzen(alt.tod, "regler");
+                            if (s.weather !== alt.wetter && window.__wetterSetzen) window.__wetterSetzen(alt.wetter);
+                            if (wm && wm.tritt) for (const k of Object.keys(wm.tritt)) if (!alt.tritt.has(k)) delete wm.tritt[k];
+                            if (r._trittSchwach) for (const k of [...r._trittSchwach.keys()]) if (!alt.schwach.has(k)) r._trittSchwach.delete(k);
+                            const F = r._bestandRegionen().regionen;
+                            for (const k of Object.keys(F)) if (!alt.reg.has(k)) delete F[k];
+                            if (alt.lf && s.lifeField) {
+                                for (const k of [...s.lifeField.keys()]) if (!alt.lf.has(k)) s.lifeField.delete(k);
+                                for (const [k, e] of alt.lf) {
+                                    const n = s.lifeField.get(k);
+                                    if (n) Object.assign(n, e);
+                                    else s.lifeField.set(k, e);
+                                }
+                            }
+                        };
+                        return { s, A, pm, fl, wm, alt, RUHE, flick, welt, takt, boden, ab, r3, ruhig, ruhigSpieler, trocken, land, tier, stelle, stillFeld, zurueck };
+                    };
+                    const lauf = (fn, a) => H.seite("const G = (" + grund + ")(r, T); try { return await (" + fn + ")(r, T, " + JSON.stringify(a || {}) + ", G); } finally { G.zurueck(); }");
+                    // DIE PROBE: die Jungtiere der nahen Regionen (Alter unter dem Bruchteil der Lebensdauer) und die Gestalt desselben Hirschs
+                    // klein und groß (Höhe/Länge der Leib-Box); die Akte einer Herde in jeder Jahreszeit (`setSeason`); die Nester der Szene
+                    // gegen die gezeichneten Vögel; die Stadien im Verzeichnis des Bestands; dann eine FRISCHE Region (eine Kachel ohne Bestand,
+                    // deren Hydro steht): ihr Aufholen (`_bestandRegion`) und der Takt des Gesetzes weiter (`_bestandSchritt`) — die Würfe je
+                    // Gattung (gezählt am Leser `_creatureNaturalBirth`) gegen PanTHERIA, die Generationen, die der Bestand trägt, und die
+                    // Gegenprobe: die Geburt aus, der Takt läuft weiter
+                    const probe = async function (r, T, a, G) {
+                        const { s, A, pm, r3, welt, takt, land, tier, stelle, stillFeld, ruhigSpieler, flick } = G;
+                        stillFeld();
+                        const aus = {};
+                        const maxS = A.FAUNA_MAX_AGE_MS / 1000;
+                        const F = r._bestandRegionen().regionen;
+                        let [jung, alle] = [0, 0];
+                        for (const k of r._bestandNah())
+                            for (const t of (F[k] || { tiere: [] }).tiere) {
+                                alle++;
+                                if (t.alterS < a.jungBruch * maxS) jung++;
+                            }
+                        aus.jung = { jung, alle, prozent: alle ? r3((100 * jung) / alle) : null };
+                        const ort = land(pm.x, pm.z, 20, 40);
+                        if (!ort) throw new Error("kein trockenes Land 40–600 m um den Spieler");
+                        const form = (bs) => {
+                            const c = tier(ort.x, ort.z, "wesen", bs);
+                            const g = new T.Box3().setFromObject(c).getSize(new T.Vector3());
+                            r.removeCreature(c);
+                            return g.y / Math.max(g.x, g.z);
+                        };
+                        const [fk, fg] = [form(0.6), form(1.3)];
+                        aus.proportion = { klein: r3(fk), gross: r3(fg), abwProzent: r3(Math.abs(fk / fg - 1) * 100) };
+                        // die Jahreszeiten: die Akte einer Herde je Jahreszeit
+                        r.setGameMode("frieden");
+                        stelle(ort.x - 25, ort.z);
+                        const jz = {};
+                        for (const sz of ["spring", "summer", "autumn", "winter"]) {
+                            r.setSeason(sz);
+                            const h = [0, 1, 2].map((k) => tier(ort.x + k * 4, ort.z + (k % 2) * 3, "wesen"));
+                            const n = {};
+                            for (let k = 0; k < a.saisonTakte; k++) {
+                                ruhigSpieler();
+                                takt(1, 0.1);
+                                for (const c of h) {
+                                    const v = c.userData._verhaltenAktion && c.userData._verhaltenAktion.name;
+                                    if (v) n[v] = (n[v] || 0) + 1;
+                                }
+                            }
+                            for (const c of h) r.removeCreature(c);
+                            jz[sz] = n;
+                        }
+                        const BRUNFT = /brunft|roehr|röhr|balz|kampf|revier|paar|werb/i;
+                        const ereig = {};
+                        for (const sz of Object.keys(jz)) ereig[sz] = Object.keys(jz[sz]).filter((k) => BRUNFT.test(k)).reduce((x, k) => x + jz[sz][k], 0);
+                        const summe = Object.values(ereig).reduce((x, y) => x + y, 0);
+                        const MONAT = { spring: 4, summer: 7, autumn: 10, winter: 1 };
+                        const top = summe > 0 ? Object.keys(ereig).sort((x, y) => ereig[y] - ereig[x])[0] : null;
+                        const dm = top ? Math.abs(MONAT[top] - a.brunftMonat) : null;
+                        aus.saison = { akte: jz, ereignisse: summe, gipfel: top, gipfelAbw: top ? Math.min(dm, 12 - dm) : null };
+                        // die Brut: Nester in der Szene gegen die gezeichneten Vögel
+                        welt(a.weltTakte);
+                        let nester = 0;
+                        s.scene.traverse((o) => {
+                            if (/nest|brut|gelege/i.test(o.name || "")) nester++;
+                        });
+                        const voegel = (s.vogelPool && s.vogelPool.mesh ? s.vogelPool.mesh.count : 0) + (s.vogelSchwarmPool && s.vogelSchwarmPool.mesh ? s.vogelSchwarmPool.mesh.count : 0);
+                        aus.brut = { nester, voegel, paare: Math.floor(voegel / 2), quote: voegel >= 2 ? r3(Math.min(1, nester / Math.floor(voegel / 2))) : 0 };
+                        // die Stadien: trägt ein Tier des Bestands ein Stadium (Ei, Larve, Puppe)?
+                        const STAD = ["stadium", "stufe", "larve", "ei", "puppe", "imago", "metamorphose"];
+                        let [mitSt, nT] = [0, 0];
+                        for (const k of Object.keys(F))
+                            for (const t of F[k].tiere) {
+                                nT++;
+                                if (STAD.some((x) => x in t)) mitSt++;
+                            }
+                        aus.stadien = { tiere: nT, mitStadium: mitSt, quote: nT ? r3(mitSt / nT) : null };
+                        // die frische Region
+                        const nah = r._bestandNah();
+                        const [i0, j0] = nah[0].split(",").map(Number);
+                        let key = null;
+                        for (let d = 1; d <= 3 && !key; d++)
+                            for (let i = -d; i <= d && !key; i++)
+                                for (let j = -d; j <= d && !key; j++) {
+                                    const k = i0 + i + "," + (j0 + j);
+                                    if (!F[k] && r._bestandBereit(k)) key = k;
+                                }
+                        if (!key) throw new Error("keine frische Region mit stehender Hydro-Kachel um " + nah[0]);
+                        const wuerfe = [];
+                        const orig = r._creatureNaturalBirth;
+                        flick("_creatureNaturalBirth", function (...x) {
+                            const g = orig.apply(this, x);
+                            for (const t of g) wuerfe.push({ g: t.g, v: t.v });
+                            return g;
+                        });
+                        const B = A._bestandGesetz().B;
+                        const tode = [];
+                        const R = r._bestandRegion(key, true, 0, Infinity, tode);
+                        const nachAufholen = R.tiere.length;
+                        let [schritte, minN, leerBei, leer] = [0, Infinity, null, 0];
+                        const t0 = performance.now();
+                        const ziel = Math.ceil((a.generationen * maxS - A.BESTAND_REGION.aufholS) / B.taktS);
+                        while (schritte < ziel && performance.now() - t0 < a.msDeckel) {
+                            r._bestandSchritt(key, R, true, tode);
+                            schritte++;
+                            minN = Math.min(minN, R.tiere.length);
+                            if (!R.tiere.length) {
+                                leer++;
+                                if (leerBei === null) leerBei = schritte;
+                            }
+                        }
+                        const gen = (A.BESTAND_REGION.aufholS + schritte * B.taktS) / maxS;
+                        // getragen: die Generationen bis zum ersten leeren Takt (danach wirft das Gesetz die Region aus dem Leeren neu)
+                        const genGetragen = (A.BESTAND_REGION.aufholS + (leerBei === null ? schritte : leerBei) * B.taktS) / maxS;
+                        const jeV = {};
+                        for (const w of wuerfe) (jeV[w.v] = jeV[w.v] || { g: w.g, n: 0 }).n++;
+                        const jeG = {};
+                        for (const w of Object.values(jeV)) (jeG[w.g] = jeG[w.g] || []).push(w.n);
+                        const mittel = {};
+                        let faktor = null;
+                        for (const g of Object.keys(jeG)) {
+                            mittel[g] = r3(jeG[g].reduce((x, y) => x + y, 0) / jeG[g].length);
+                            const ref = a.wurfRef[g];
+                            if (ref) faktor = Math.max(faktor || 1, mittel[g] / ref, ref / mittel[g]);
+                        }
+                        aus.region = { key, nachAufholen, schritte, generationen: r3(gen), genGetragen: r3(genGetragen), leereTakte: leer, getragen: minN > 0 && R.tiere.length > 0, minN: Number.isFinite(minN) ? minN : null, ende: R.tiere.length, wuerfe: Object.keys(jeV).length, wurfMittel: mittel, wurfFaktor: r3(faktor) };
+                        // die Gegenprobe: die Geburt aus, der Takt weiter (drei Lebensdauern)
+                        delete r._creatureNaturalBirth;
+                        flick("_creatureNaturalBirth", function () {
+                            return [];
+                        });
+                        const vorG = R.tiere.length;
+                        const n2 = Math.ceil((a.gegenLeben * maxS) / B.taktS);
+                        for (let k = 0; k < n2; k++) r._bestandSchritt(key, R, true, tode);
+                        aus.gegen = { vor: vorG, nach: R.tiere.length, lebensdauern: a.gegenLeben, alleAlt: R.tiere.length ? r3(Math.min(...R.tiere.map((t) => t.alterS)) / maxS) : null };
+                        aus.taktS = B.taktS;
+                        aus.lebensdauerS = maxS;
+                        return aus;
+                    };
+                    const z = await lauf(probe, { jungBruch: 0.1, saisonTakte: 200, brunftMonat: 10, weltTakte: 20, generationen: 100, msDeckel: 9000, gegenLeben: 3, wurfRef: { deer: 1, wolf: 5, fox: 4.5, bear: 2.2 } });
+                    const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
+                    const auge = augeNoetig ? await M.auge("tiere-lebenszyklus", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
+                    const zeuge = { antworten: z.region.schritte + z.jung.alle, streuung: z.region.ende !== z.region.nachAufholen || z.region.wuerfe > 1 ? Math.abs(z.region.ende - z.region.nachAufholen) + z.region.wuerfe : 0, vor: z.gegen.vor, nach: z.gegen.nach };
+                    const aus = {};
+                    const nimm = (nr, werte, nicht, mitAuge) => {
+                        if (!U[nr]) return;
+                        aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
+                    };
+                    nimm(2, { jungProzent: z.jung.prozent, proportionAbw: z.proportion.abwProzent }, z.proportion.abwProzent < 5 ? "kein Leib wächst: klein und groß tragen dieselbe Gestalt (Höhe/Länge " + z.proportion.klein + " ↔ " + z.proportion.gross + ")" : null, true);
+                    nimm(3, { ereignisse: z.saison.ereignisse, gipfelAbw: z.saison.gipfelAbw }, z.saison.ereignisse === 0 ? "keine Brunft, keine Balz, kein Revierkampf: 0 Ereignisse über vier Jahreszeiten" : null);
+                    nimm(4, { nestQuote: z.brut.quote, voegel: z.brut.voegel }, "kein Nest, keine Brut, kein Laich: " + z.brut.nester + " Nester bei " + z.brut.voegel + " gezeichneten Vögeln");
+                    nimm(5, { stadienQuote: z.stadien.quote }, "keine Stadien: " + z.stadien.mitStadium + " von " + z.stadien.tiere + " Tieren des Bestands tragen ein Stadium");
+                    nimm(6, { wurfFaktor: z.region.wurfFaktor }, "10⁴ Stichproben-Arten mit der Strategie aus dem Genom: die Welt trägt 4 Gattungen mit einer Wurf-Zeile");
+                    nimm(7, { generationen: z.region.genGetragen, ohneGeburtRest: z.gegen.nach }, "keine fremde Saat, keine fremde Fortpflanzung (Knospung, Generationswechsel); die Region stand " + z.region.leereTakte + " Takte leer und warf sich aus dem Leeren neu, ohne Geburt blieben " + z.gegen.nach + " von " + z.gegen.vor + " Tieren nach " + z.gegen.lebensdauern + " Lebensdauern");
+                    return { sprossen: aus, zyklus: z };
+                },
+                sprossen: {
+                    2: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(LZ, 2, "Bildpaar Kitz/Hirsch Panel ≥ 0,7", { key: "panel" }), K.soll(LZ, 2, "Jungtiere ≥ 10 % einer Herde im Frühsommer", { key: "jungProzent", einheit: "%" })],
+                        auge: { pose: "Third auf eine Herde mit Kitz aus 15 m im Frühsommer (heute: die Wiese)", vorbild: "Foto Kitz/Hirsch; Panel ≥ 0,7" },
+                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (die Größe fällt bei der Geburt, nie mit dem Alter)",
+                        nicht: "ein sichtbares Jungtier, das wächst",
+                        leser: "stamm/kreatur-leben.js:1993 `_creatureBodySize` — die Größe des Geworfenen fällt einmal aus dem Strom; kein Leser liest `alterS` für Größe und Proportion",
+                        gruen: gut({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300),
+                        attrappen: atr({ panel: 0.8, jungProzent: 15, proportionAbw: 20 }, 300),
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(LZ, 3, "Gipfel im Monat der Natur ±1", { rel: "≤", zahl: 1, key: "gipfelAbw", einheit: "Monate" })],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "tetrapoda-core.js VERHALTEN (keine Stimmung liest die Jahreszeit)",
+                        nicht: "Brunft, Balz, Revierkampf zur Jahreszeit der Art",
+                        leser: "tetrapoda-core.js:99 `VERHALTEN` — das Buch der Aktionen trägt keine Brunft, kein Röhren, keine Balz",
+                        unklar: "„der Monat der Natur“: der Rothirsch röhrt im Oktober (Clutton-Brock, Guinness & Albon 1982) — die Probe misst die Brunft-Akte je Jahreszeit (Frühling 4, Sommer 7, Herbst 10, Winter 1).",
+                        gruen: gut({ ereignisse: 40, gipfelAbw: 0 }, 300),
+                        attrappen: atr({ ereignisse: 40, gipfelAbw: 0 }, 300, true),
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(LZ, 4, "Brutpaare mit sichtbarem Nest ≥ 0,8", { key: "nestQuote" })],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "tetrapoda-core.js VOGEL_GESETZ (der Vogel als Pool ohne Brut)",
+                        nicht: "Nest, Bau, Brut, Laich, Brutpflege",
+                        leser: "tetrapoda-core.js:2376 `VOGEL_GESETZ` — der Vogel fliegt als Instanz eines Pools; kein Leser baut Nest, Gelege oder Fütterung",
+                        gruen: gut({ nestQuote: 0.9, voegel: 30 }, 300),
+                        attrappen: atr({ nestQuote: 0.9, voegel: 30 }, 300, true),
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(LZ, 5, "richtig ≥ 0,9", { key: "stadienQuote" })],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (das Geworfene ist ein fertiger Leib)",
+                        nicht: "Lebenszyklen aller Klassen: Metamorphose, Larve, Laichzug",
+                        leser: "stamm/kreatur-leben.js:1996 `alterS` — das Geworfene beginnt mit alterS 0 als fertiger Leib, kein Stadium",
+                        gruen: gut({ stadienQuote: 0.95 }, 300),
+                        attrappen: atr({ stadienQuote: 0.95 }, 300, true),
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(LZ, 6, "Wurfgröße", { rel: "≤", zahl: 2, key: "wurfFaktor", refQuelle: "PanTHERIA (Jones et al. 2009, Ecology 90:2648): Wurfgröße Rothirsch 1,0 · Wolf 5,0 · Rotfuchs 4,5 · Braunbär 2,2 — das Band der Allometrie ±Faktor 2" })],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "tetrapoda-core.js VERHALTEN.herde.wurf (die Kopfzahl der Geburt als Zeile)",
+                        nicht: "10⁴ Stichproben-Arten, Fortpflanzungs-Strategie aus dem Genom",
+                        leser: "tetrapoda-core.js:289 `wurf` — die Kopfzahl der Geburt ist eine Zeile je Gattung (das Rudel), nie aus Masse und Umwelt",
+                        gruen: gut({ wurfFaktor: 1.4 }, 300),
+                        attrappen: atr({ wurfFaktor: 1.4 }, 300, true),
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(LZ, 7, "Bestand über 100 Generationen getragen", { rel: "≥", zahl: 100, key: "generationen" }), K.soll(LZ, 7, "100 fremde Saaten", { rel: "≥", zahl: 100, key: "saaten" })],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "stamm/kreatur-leben.js _bestandTakt (der Bestand einer Saat)",
+                        nicht: "jedes Tier jedes Planeten, fremde Fortpflanzung",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES liest keinen Samen: keine fremde Fauna, keine Knospung, kein Generationswechsel",
+                        gruen: gut({ generationen: 120, saaten: 100, ohneGeburtRest: 0 }, 300),
+                        attrappen: atr({ generationen: 120, saaten: 100, ohneGeburtRest: 0 }, 300, true),
+                    },
+                },
+            },
+            // ═══ MASSE: der Star-Trupp aus den gezeichneten Leibern (Φ, Kohäsion, Korrelationslänge), die Herde im Gras, die Dichte ═══
+            [MA]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD,
+                ungefahren: "die Bilder der Auge-Sprossen S2, S3, S6, S7 und der Bild-Flicker an der Sichtgrenze (S5) — headless misst die Probe die Instanzen der Pools",
+                mess: async function (H, U, M) {
+                    const grund = function (r, T) {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const fl = s.faunaLifecycle;
+                        const wm = s.worldMeta;
+                        const alt = { p: pm.clone(), yaw: s.yaw, pitch: s.pitch, modus: r.getGameMode(), max: s.maxCreatures, wurf: fl ? fl.lastTick : null, vor: new Set(s.creatures), perf: s.perfRegulator, grav: s.gravity, tod: s.timeOfDay, wetter: s.weather, season: s.season, tritt: new Set(Object.keys((wm && wm.tritt) || {})), schwach: new Set((r._trittSchwach || new Map()).keys()), reg: new Set(Object.keys(r._bestandRegionen().regionen)), lf: s.lifeField ? new Map([...s.lifeField].map(([k, e]) => [k, Object.assign({}, e)])) : null, seele: s.player && s.player.soul };
+                        const RUHE = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                        const flicken = [];
+                        const flick = (n, f) => {
+                            if (Object.prototype.hasOwnProperty.call(r, n)) throw new Error("flick: " + n + " trägt schon eine eigene Zeile");
+                            flicken.push(n);
+                            r[n] = f;
+                        };
+                        let t = performance.now();
+                        const welt = (n) => {
+                            s.perfRegulator = false;
+                            for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+                        };
+                        const takt = (n, d) => {
+                            for (let i = 0; i < n; i++) {
+                                r._kreaturStossSchritt(d || 1 / 60);
+                                r._trittDerLeiber();
+                                r._leibKontakte();
+                                r.updateCreatures(d || 1 / 60);
+                            }
+                        };
+                        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+                        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        const ruhig = (c) => (c.userData.emotions = Object.assign({}, RUHE));
+                        const ruhigSpieler = () => s.player.emotions && Object.assign(s.player.emotions, RUHE);
+                        const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z) && !(typeof r._imGrundriss === "function" && r._imGrundriss(x, z));
+                        const land = (x0, z0, R, dMin) => {
+                            for (let d = dMin || 0; d <= 600; d += 15) {
+                                const n = Math.max(1, Math.round(d / 10));
+                                for (let q = 0; q < n; q++) {
+                                    const w = (q / n) * 2 * Math.PI;
+                                    const x = x0 + Math.cos(w) * d;
+                                    const z = z0 + Math.sin(w) * d;
+                                    let ok = trocken(x, z);
+                                    for (let k = 0; ok && k < 8; k++) ok = trocken(x + Math.cos(k * 0.785) * R, z + Math.sin(k * 0.785) * R);
+                                    if (ok) return { x, z };
+                                }
+                            }
+                            return null;
+                        };
+                        const tier = (x, z, seele, bs) => {
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            let nein = null;
+                            const c = r.spawnCreatureAt(x, boden(x, z), z, "happy", seele, { precise: true, bodySize: bs || 1, absage: (g) => (nein = g) });
+                            if (!c) throw new Error("spawnCreatureAt " + seele + ": " + nein);
+                            ruhig(c);
+                            return c;
+                        };
+                        const stelle = (x, z) => {
+                            pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                        };
+                        const stillFeld = () => {
+                            if (fl) fl.lastTick = 1e12;
+                        };
+                        const zurueck = () => {
+                            for (const n of flicken.splice(0)) delete r[n];
+                            if (s.player && alt.seele && s.player.soul !== alt.seele) r.applyPlayerSoul(alt.seele);
+                            for (const c of [...s.creatures]) if (!alt.vor.has(c)) r.removeCreature(c);
+                            s.maxCreatures = alt.max;
+                            if (fl) fl.lastTick = alt.wurf;
+                            if (r.getGameMode() !== alt.modus) r.setGameMode(alt.modus);
+                            pm.copy(alt.p);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                            [s.yaw, s.pitch, s.perfRegulator, s.gravity] = [alt.yaw, alt.pitch, alt.perf, alt.grav];
+                            if (s.season !== alt.season) r.setSeason(alt.season);
+                            if (Math.abs(s.timeOfDay - alt.tod) > 1e-6) r._uhrSetzen(alt.tod, "regler");
+                            if (s.weather !== alt.wetter && window.__wetterSetzen) window.__wetterSetzen(alt.wetter);
+                            if (wm && wm.tritt) for (const k of Object.keys(wm.tritt)) if (!alt.tritt.has(k)) delete wm.tritt[k];
+                            if (r._trittSchwach) for (const k of [...r._trittSchwach.keys()]) if (!alt.schwach.has(k)) r._trittSchwach.delete(k);
+                            const F = r._bestandRegionen().regionen;
+                            for (const k of Object.keys(F)) if (!alt.reg.has(k)) delete F[k];
+                            if (alt.lf && s.lifeField) {
+                                for (const k of [...s.lifeField.keys()]) if (!alt.lf.has(k)) s.lifeField.delete(k);
+                                for (const [k, e] of alt.lf) {
+                                    const n = s.lifeField.get(k);
+                                    if (n) Object.assign(n, e);
+                                    else s.lifeField.set(k, e);
+                                }
+                            }
+                        };
+                        return { s, A, pm, fl, wm, alt, RUHE, flick, welt, takt, boden, ab, r3, ruhig, ruhigSpieler, trocken, land, tier, stelle, stillFeld, zurueck };
+                    };
+                    const lauf = (fn, a) => H.seite("const G = (" + grund + ")(r, T); try { return await (" + fn + ")(r, T, " + JSON.stringify(a || {}) + ", G); } finally { G.zurueck(); }");
+                    // DIE PROBE: der Spieler an der nächsten Zelle der Schwarm-Karte (`_schwarmKarte`), der Takt des Spiels; zwei Frames der
+                    // Instanzen des Star-Pools (`vogelSchwarmPool`) — der größte Trupp (Bindung 30 m): Ausrichtung Φ = |Σ v̂|/N, Kohäsion (Anteil
+                    // mit Nachbar unter 3 × Median-Abstand), Glied im Glied (Paare unter der Leib-Länge), die Korrelationslänge der
+                    // Geschwindigkeits-Schwankung (erster Nulldurchgang von C(r), Cavagna 2010) über die Ausdehnung L; die Dichte: gezeichnete
+                    // Instanzen gegen die Glieder des Gesetzes. Dann zehn Hirsche als Verband im pfad, vom Spieler getrieben: die Zellen, deren
+                    // Gras der Durchzug senkt (worldMeta.tritt ab der Stufe des Pfads)
+                    const probe = async function (r, T, a, G) {
+                        const { s, A, pm, wm, r3, welt, takt, land, tier, stelle, stillFeld, ruhigSpieler } = G;
+                        stillFeld();
+                        if (window.__wetterSetzen) window.__wetterSetzen("sunny");
+                        r._uhrSetzen(0.42, "regler");
+                        const aus = {};
+                        const sk = r._schwarmKarte;
+                        const zellen = sk && sk.zellen ? [...sk.zellen.values()] : [];
+                        let ziel = null;
+                        for (const c of zellen) {
+                            const d = Math.hypot(c.x - pm.x, c.z - pm.z);
+                            if (Number.isFinite(d) && (!ziel || d < ziel.d)) ziel = { x: c.x, z: c.z, d };
+                        }
+                        if (ziel) stelle(ziel.x + 30, ziel.z + 30);
+                        welt(a.takte);
+                        // der Blick auf den nächsten fliegenden Trupp (das Bild zeichnet nur, was im Blick steht): 40 m vor sein Leittier
+                        for (let v = 0; v < 3 && !((s.schwarm || {}).imBild > 0); v++) {
+                            let best = null;
+                            for (const c of sk && sk.zellen ? sk.zellen.values() : []) {
+                                if (!c.leit) continue;
+                                const L = c.leit;
+                                const [x, z] = [Number.isFinite(L.x) ? L.x : c.x, Number.isFinite(L.z) ? L.z : c.z];
+                                const d = Math.hypot(x - pm.x, z - pm.z);
+                                if (!best || d < best.d) best = { x, z, d };
+                            }
+                            if (!best) break;
+                            stelle(best.x - 40, best.z);
+                            [s.yaw, s.pitch] = [Math.atan2(best.x - pm.x, best.z - pm.z), 0.15];
+                            welt(10);
+                        }
+                        const pool = s.vogelSchwarmPool && s.vogelSchwarmPool.mesh;
+                        const m4 = new T.Matrix4();
+                        // die gezeichneten Glieder: die Vögel der Karte, die das Bild dieses Takts trägt (`_vogelZeichnen` zeichnet je Vogel
+                        // seine Teile in den Pool — gezählt wird der Vogel, nicht das Teil)
+                        const lese = () => (sk && sk.voegel ? sk.voegel.map((v) => [v.x, v.y, v.z]) : []);
+                        const P1 = lese();
+                        const lage1 = Object.assign({}, s.schwarm || {});
+                        welt(1);
+                        const P2 = lese();
+                        const n0 = Math.min(P1.length, P2.length);
+                        const d3 = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+                        // der größte Trupp (Bindung 30 m)
+                        const teil = new Array(n0).fill(-1);
+                        let best = [];
+                        for (let i = 0; i < n0; i++) {
+                            if (teil[i] >= 0) continue;
+                            const st = [i];
+                            const komp = [];
+                            teil[i] = i;
+                            while (st.length) {
+                                const j = st.pop();
+                                komp.push(j);
+                                for (let k = 0; k < n0; k++) if (teil[k] < 0 && d3(P1[j], P1[k]) < 30) (teil[k] = i), st.push(k);
+                            }
+                            if (komp.length > best.length) best = komp;
+                        }
+                        const N = best.length;
+                        let leibM = 0.2;
+                        if (pool && pool.count) {
+                            if (!pool.geometry.boundingBox) pool.geometry.computeBoundingBox();
+                            const g = pool.geometry.boundingBox.getSize(new T.Vector3());
+                            pool.getMatrixAt(0, m4);
+                            leibM = Math.max(0.05, Math.max(g.x, g.y, g.z) * new T.Vector3().setFromMatrixScale(m4).x);
+                        }
+                        if (N >= 3) {
+                            const V = best.map((i) => [P2[i][0] - P1[i][0], P2[i][1] - P1[i][1], P2[i][2] - P1[i][2]]);
+                            const sum = [0, 0, 0];
+                            const mv = [0, 0, 0];
+                            for (const v of V) {
+                                const l = Math.hypot(v[0], v[1], v[2]) || 1;
+                                for (let q = 0; q < 3; q++) (sum[q] += v[q] / l), (mv[q] += v[q] / N);
+                            }
+                            const phi = Math.hypot(sum[0], sum[1], sum[2]) / N;
+                            const nn = best.map((i) => Math.min(...best.filter((j) => j !== i).map((j) => d3(P1[i], P1[j]))));
+                            const med = [...nn].sort((x, y) => x - y)[Math.floor(N / 2)];
+                            const koh = nn.filter((x) => x <= 3 * med).length / N;
+                            let ueber = 0;
+                            const bins = new Array(a.binN).fill(0);
+                            const zahl = new Array(a.binN).fill(0);
+                            const dv = V.map((v) => [v[0] - mv[0], v[1] - mv[1], v[2] - mv[2]]);
+                            let L = 0;
+                            for (let i = 0; i < N; i++)
+                                for (let j = i + 1; j < N; j++) {
+                                    const r0 = d3(P1[best[i]], P1[best[j]]);
+                                    L = Math.max(L, r0);
+                                    if (r0 < leibM) ueber++;
+                                    const b = Math.floor(r0 / a.binM);
+                                    if (b < a.binN) (bins[b] += dv[i][0] * dv[j][0] + dv[i][1] * dv[j][1] + dv[i][2] * dv[j][2]), zahl[b]++;
+                                }
+                            let r0 = null;
+                            for (let b = 0; b < a.binN; b++) if (zahl[b] > 0 && bins[b] / zahl[b] < 0) {
+                                r0 = (b + 0.5) * a.binM;
+                                break;
+                            }
+                            aus.trupp = { n: N, phi: r3(phi), kohaesion: r3(koh), ueberlapp: ueber, leibM: r3(leibM), L: r3(L), r0: r3(r0), xiL: r0 && L ? r3(r0 / L) : null, nnMedian: r3(med), vMittel: r3(Math.hypot(mv[0], mv[1], mv[2]) * 60) };
+                        } else aus.trupp = { n: N, phi: null };
+                        aus.dichte = { gezeichnet: P1.length, gesetz: lage1.glieder || 0, imBild: lage1.imBild || 0, fliegen: lage1.fliegen || 0, teile: pool ? pool.count : 0, zellen: zellen.length };
+                        aus.fisch = { gezeichnet: s.fischPool && s.fischPool.mesh ? s.fischPool.mesh.count : 0 };
+                        // die Herde treibt durch das Gras
+                        const ort = land(pm.x, pm.z, 25, 40);
+                        if (!ort) throw new Error("kein trockenes Land 40–600 m um den Spieler");
+                        r.setGameMode("pfad");
+                        const herde = [];
+                        for (let k = 0; k < 10; k++) herde.push(tier(ort.x + (k % 4) * 3, ort.z + Math.floor(k / 4) * 3, "wesen"));
+                        r._kreaturVerbinden(herde);
+                        const vorT = new Set(Object.keys((wm && wm.tritt) || {}));
+                        const vorS = new Set((r._trittSchwach || new Map()).keys());
+                        stelle(ort.x - 60, ort.z);
+                        const start = herde.map((c) => [c.position.x, c.position.z]);
+                        for (let k = 0; k < a.treibTakte; k++) {
+                            const cx = herde.reduce((x, c) => x + c.position.x, 0) / herde.length;
+                            const cz = herde.reduce((x, c) => x + c.position.z, 0) / herde.length;
+                            const [dx, dz] = [cx - pm.x, cz - pm.z];
+                            const d = Math.hypot(dx, dz) || 1;
+                            if (d > 20) (pm.x += (dx / d) * s.speed * 2 * (1 / 60)), (pm.z += (dz / d) * s.speed * 2 * (1 / 60));
+                            pm.y = r.getTerrainHeightAt(pm.x, pm.z) + A.PLAYER_FOOT_OFFSET;
+                            ruhigSpieler();
+                            takt(1, 1 / 60);
+                        }
+                        const neu = Object.keys((wm && wm.tritt) || {}).filter((k) => !vorT.has(k));
+                        const gras = neu.filter((k) => A._trittStufe(wm.tritt[k][0]) > 0).length;
+                        const weg = herde.reduce((x, c, i) => x + Math.hypot(c.position.x - start[i][0], c.position.z - start[i][1]), 0) / herde.length;
+                        aus.herde = { n: herde.length, grasZellen: gras, trittZellen: neu.length, schwach: [...(r._trittSchwach || new Map()).keys()].filter((k) => !vorS.has(k)).length, wegM: r3(weg), flucht: herde.filter((c) => c.userData._motionZustand === "flucht").length };
+                        return aus;
+                    };
+                    const z = await lauf(probe, { takte: 40, binM: 2, binN: 40, treibTakte: 600 });
+                    const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
+                    const auge = augeNoetig ? await M.auge("tiere-masse", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
+                    const zeuge = { antworten: z.trupp.n + z.herde.trittZellen, streuung: z.trupp.nnMedian || z.herde.wegM || 0, vor: 0, nach: z.herde.trittZellen + z.trupp.n };
+                    const dichteAbw = z.dichte.gesetz > 0 ? Math.round(Math.abs(z.dichte.gezeichnet / z.dichte.gesetz - 1) * 1000) / 10 : null;
+                    const aus = {};
+                    const nimm = (nr, werte, nicht, mitAuge) => {
+                        if (!U[nr]) return;
+                        aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
+                    };
+                    nimm(2, { phi: z.trupp.phi, kohaesion: z.trupp.kohaesion, glieder: z.trupp.n, ueberlapp: z.trupp.ueberlapp }, "10² Glieder im Fischschwarm: die Welt zeichnet " + z.fisch.gezeichnet + " Fische in Trupps zu höchstens 4; der Star-Trupp trägt " + z.trupp.n + " Glieder", true);
+                    nimm(3, { glieder: z.trupp.n }, "10³ Glieder (Köderball, Gnu-Herde): der größte Trupp trägt " + z.trupp.n, true);
+                    nimm(4, { xiL: z.trupp.xiL }, "10²–10⁴ Glieder: eine Trupp-Größe (" + z.trupp.n + "), die Korrelationslänge über L " + z.trupp.xiL + " ist nicht über Größen vergleichbar");
+                    nimm(5, { grasZellen: z.herde.grasZellen, trittZellen: z.herde.trittZellen }, "10⁵ Leiber bis zum Horizont: die Kappe der Leiber ist 20 (die Herde " + z.herde.n + " zog " + z.herde.wegM + " m und trat " + z.herde.schwach + " Zellen unter der Stufe des Pfads, " + z.herde.grasZellen + " darüber: das Gras sinkt nicht)");
+                    nimm(6, {}, "10⁶ Glieder: Murmuration, Sardinenzug", true);
+                    nimm(7, {}, "10⁹ Glieder: kein Heuschreckenschwarm, kein Kahlfraß", true);
+                    nimm(8, { dichteAbw }, "Krill-Maß 10¹⁴ Leiber: gezeichnet " + z.dichte.gezeichnet + " gegen " + z.dichte.gesetz + " Glieder des Gesetzes");
+                    return { sprossen: aus, masse: z };
+                },
+                sprossen: {
+                    2: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(MA, 2, "Φ und Kohäsion aus den gezeichneten Leibern", { rel: "≥", zahl: 0.8, key: "phi", refQuelle: "die Stufe S1 dieser Leiter (Ausrichtung Φ ≥ 0,8); Ballerini et al. 2008 (PNAS 105:1232): Star-Trupp Φ 0,96" })],
+                        auge: { pose: "Third auf eine Murmuration von 10² Staren (heute: die Wiese)", vorbild: "Murmuration-Film; die Silhouette gegen den Film" },
+                        taeter: "tetrapoda-core.js FISCH_GESETZ glieder [1, 4] (der Fisch-Trupp)",
+                        nicht: "10² Glieder: Fischschwarm",
+                        leser: "tetrapoda-core.js:2824 `glieder` — der Fisch-Trupp trägt 1–4 Glieder, kein Schwarm",
+                        gruen: gut({ phi: 0.95, kohaesion: 0.95, glieder: 120, ueberlapp: 0 }, 150),
+                        attrappen: atr({ phi: 0.95, kohaesion: 0.95, glieder: 120, ueberlapp: 0 }, 150),
+                    },
+                    3: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(MA, 3, "Nachbarzahl im Band Ballerini", { quelleFeld: "tiefe", quelleWort: "topologisch 6–7 Nachbarn", rel: "band", zahl: 6, bis: 7, key: "nachbarn" })],
+                        auge: { pose: "Unterwasser auf einen Köderball von 10³ (heute: die Wiese)", vorbild: "Unterwasser-Film; Konvexität und Lückenfläche" },
+                        taeter: "tetrapoda-core.js VOGEL_GESETZ.schwarm glieder [60, 140]",
+                        nicht: "10³ Glieder: Köderball, Gnu-Herde am Fluss",
+                        leser: "tetrapoda-core.js:2426 `glieder` — der Star-Trupp trägt 60–140 Glieder; kein Leser zeichnet 10³",
+                        gruen: gut({ nachbarn: 6.5, glieder: 1000 }, 150),
+                        attrappen: atr({ nachbarn: 6.5, glieder: 1000 }, 150),
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(MA, 4, "Korrelationslänge/Größe konstant ±20 % über 10²–10⁴ (Cavagna)", { rel: "≤", zahl: 20, key: "xiKonstAbw", einheit: "%" }), K.soll(MA, 4, "Wellentempo ±30 %", { rel: "≤", zahl: 30, key: "welleAbw", einheit: "%" })],
+                        zeuge: zeugeWelt(10, true),
+                        taeter: "tetrapoda-core.js VOGEL_GESETZ.schwarm glieder [60, 140]",
+                        nicht: "10⁴ Glieder",
+                        leser: "tetrapoda-core.js:2426 `glieder` — höchstens 140 Glieder je Trupp: die Korrelationslänge ist über 10²–10⁴ nicht vergleichbar",
+                        gruen: gut({ xiKonstAbw: 10, welleAbw: 15, xiL: 0.35 }, 150),
+                        attrappen: atr({ xiKonstAbw: 10, welleAbw: 15, xiL: 0.35 }, 150, true),
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(MA, 5, "Bild-Flicker an der Sichtgrenze < 1 % der Pixel", { key: "flicker", einheit: "%" }), K.soll(MA, 5, "Grashöhe nach Durchzug sinkt messbar", { rel: ">", zahl: 0, key: "grasZellen", refQuelle: "die Gras-Senke des Tritts (TRITT.pfadGras, `_trittStufe`): mindestens eine Zelle über der Stufe des Pfads" })],
+                        zeuge: zeugeWelt(10, true),
+                        taeter: "stamm/dirigent-kern.js maxCreatures 20 (die Kappe der Leiber)",
+                        nicht: "10⁵ Leiber: Gnu-Strom bis zum Horizont, Vogelfelsen, Krillwolke",
+                        leser: "stamm/dirigent-kern.js:280 `maxCreatures` — 20 Leiber; kein Leser zeichnet eine Masse bis zum Horizont",
+                        gruen: gut({ flicker: 0.5, grasZellen: 30, trittZellen: 200 }, 150),
+                        attrappen: atr({ flicker: 0.5, grasZellen: 30, trittZellen: 200 }, 150, true),
+                    },
+                    6: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(MA, 6, "Draufsicht gegen Luftbild des Sardinenzugs", { quelleFeld: "tiefe", quelleWort: "Dichtewellen 20–40 m/s", rel: "band", zahl: 20, bis: 40, key: "welleMS", einheit: "m/s" })],
+                        auge: { pose: "Draufsicht aus 300 m auf 10⁶ Glieder (heute: die Wiese)", vorbild: "Luftbild des Sardinenzugs; Zoom-Probe an 10 Stellen" },
+                        taeter: "tetrapoda-core.js VOGEL_GESETZ.schwarm glieder [60, 140]",
+                        nicht: "10⁶ Glieder: Murmuration über dem Ried, Sardinenzug über 10 km",
+                        leser: "tetrapoda-core.js:2426 `glieder` — höchstens 140 Glieder je Trupp",
+                        gruen: gut({ welleMS: 30 }, 150),
+                        attrappen: atr({ welleMS: 30 }, 150),
+                    },
+                    7: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(MA, 7, "Horizont-Bild Panel ≥ 0,7", { key: "panel" })],
+                        auge: { pose: "Horizont unter einem Heuschreckenschwarm (heute: die Wiese)", vorbild: "Horizont-Foto eines Heuschreckenschwarms; Kahlfraß je Stunde nach FAO" },
+                        taeter: "tetrapoda-core.js BESTAEUBER_GESETZ (kein Fraß-Schwarm)",
+                        nicht: "10⁹ Glieder: Heuschreckenschwarm",
+                        leser: "tetrapoda-core.js:2908 `BESTAEUBER_GESETZ` — das einzige Insekt fliegt einzeln, frisst nicht",
+                        gruen: gut({ panel: 0.8 }, 150),
+                        attrappen: atr({ panel: 0.8 }, 150),
+                    },
+                    8: {
+                        u: {},
+                        soll: [K.soll(MA, 8, "Dichte je Zelle ±10 % über alle Stufen", { rel: "≤", zahl: 10, key: "dichteAbw", einheit: "%" })],
+                        zeuge: zeugeWelt(10, true),
+                        taeter: "tetrapoda-core.js VOGEL_GESETZ.schwarm (Zellen nur nah am Spieler)",
+                        nicht: "Krill-Maß 10¹⁴ Leiber auf dem Planeten",
+                        leser: "tetrapoda-core.js:2426 `glieder` — die Schwarm-Karte trägt Trupps nur um den Spieler; kein Leser trägt eine Dichte über alle Stufen",
+                        gruen: gut({ dichteAbw: 5 }, 150),
+                        attrappen: atr({ dichteAbw: 5 }, 150, true),
+                    },
+                },
+            },
+            // ═══ WANDERUNG: ein Individuum über einen Spieltag im Takt, der Anker des Bestands unter Jahreszeit und Regen ═══
+            [WA]: {
+                sek: 40,
+                mutiert: true,
+                pfad: PFAD,
+                ungefahren: "die Spur im Bild (der Wildwechsel als Pfad im Boden, S3) — headless misst die Probe Bahn, Hülle und Tritt-Zellen",
+                mess: async function (H, U, M) {
+                    const grund = function (r, T) {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const fl = s.faunaLifecycle;
+                        const wm = s.worldMeta;
+                        const alt = { p: pm.clone(), yaw: s.yaw, pitch: s.pitch, modus: r.getGameMode(), max: s.maxCreatures, wurf: fl ? fl.lastTick : null, vor: new Set(s.creatures), perf: s.perfRegulator, grav: s.gravity, tod: s.timeOfDay, wetter: s.weather, season: s.season, tritt: new Set(Object.keys((wm && wm.tritt) || {})), schwach: new Set((r._trittSchwach || new Map()).keys()), reg: new Set(Object.keys(r._bestandRegionen().regionen)), lf: s.lifeField ? new Map([...s.lifeField].map(([k, e]) => [k, Object.assign({}, e)])) : null, seele: s.player && s.player.soul };
+                        const RUHE = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                        const flicken = [];
+                        const flick = (n, f) => {
+                            if (Object.prototype.hasOwnProperty.call(r, n)) throw new Error("flick: " + n + " trägt schon eine eigene Zeile");
+                            flicken.push(n);
+                            r[n] = f;
+                        };
+                        let t = performance.now();
+                        const welt = (n) => {
+                            s.perfRegulator = false;
+                            for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+                        };
+                        const takt = (n, d) => {
+                            for (let i = 0; i < n; i++) {
+                                r._kreaturStossSchritt(d || 1 / 60);
+                                r._trittDerLeiber();
+                                r._leibKontakte();
+                                r.updateCreatures(d || 1 / 60);
+                            }
+                        };
+                        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+                        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        const ruhig = (c) => (c.userData.emotions = Object.assign({}, RUHE));
+                        const ruhigSpieler = () => s.player.emotions && Object.assign(s.player.emotions, RUHE);
+                        const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z) && !(typeof r._imGrundriss === "function" && r._imGrundriss(x, z));
+                        const land = (x0, z0, R, dMin) => {
+                            for (let d = dMin || 0; d <= 600; d += 15) {
+                                const n = Math.max(1, Math.round(d / 10));
+                                for (let q = 0; q < n; q++) {
+                                    const w = (q / n) * 2 * Math.PI;
+                                    const x = x0 + Math.cos(w) * d;
+                                    const z = z0 + Math.sin(w) * d;
+                                    let ok = trocken(x, z);
+                                    for (let k = 0; ok && k < 8; k++) ok = trocken(x + Math.cos(k * 0.785) * R, z + Math.sin(k * 0.785) * R);
+                                    if (ok) return { x, z };
+                                }
+                            }
+                            return null;
+                        };
+                        const tier = (x, z, seele, bs) => {
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            let nein = null;
+                            const c = r.spawnCreatureAt(x, boden(x, z), z, "happy", seele, { precise: true, bodySize: bs || 1, absage: (g) => (nein = g) });
+                            if (!c) throw new Error("spawnCreatureAt " + seele + ": " + nein);
+                            ruhig(c);
+                            return c;
+                        };
+                        const stelle = (x, z) => {
+                            pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                        };
+                        const stillFeld = () => {
+                            if (fl) fl.lastTick = 1e12;
+                        };
+                        const zurueck = () => {
+                            for (const n of flicken.splice(0)) delete r[n];
+                            if (s.player && alt.seele && s.player.soul !== alt.seele) r.applyPlayerSoul(alt.seele);
+                            for (const c of [...s.creatures]) if (!alt.vor.has(c)) r.removeCreature(c);
+                            s.maxCreatures = alt.max;
+                            if (fl) fl.lastTick = alt.wurf;
+                            if (r.getGameMode() !== alt.modus) r.setGameMode(alt.modus);
+                            pm.copy(alt.p);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                            [s.yaw, s.pitch, s.perfRegulator, s.gravity] = [alt.yaw, alt.pitch, alt.perf, alt.grav];
+                            if (s.season !== alt.season) r.setSeason(alt.season);
+                            if (Math.abs(s.timeOfDay - alt.tod) > 1e-6) r._uhrSetzen(alt.tod, "regler");
+                            if (s.weather !== alt.wetter && window.__wetterSetzen) window.__wetterSetzen(alt.wetter);
+                            if (wm && wm.tritt) for (const k of Object.keys(wm.tritt)) if (!alt.tritt.has(k)) delete wm.tritt[k];
+                            if (r._trittSchwach) for (const k of [...r._trittSchwach.keys()]) if (!alt.schwach.has(k)) r._trittSchwach.delete(k);
+                            const F = r._bestandRegionen().regionen;
+                            for (const k of Object.keys(F)) if (!alt.reg.has(k)) delete F[k];
+                            if (alt.lf && s.lifeField) {
+                                for (const k of [...s.lifeField.keys()]) if (!alt.lf.has(k)) s.lifeField.delete(k);
+                                for (const [k, e] of alt.lf) {
+                                    const n = s.lifeField.get(k);
+                                    if (n) Object.assign(n, e);
+                                    else s.lifeField.set(k, e);
+                                }
+                            }
+                        };
+                        return { s, A, pm, fl, wm, alt, RUHE, flick, welt, takt, boden, ab, r3, ruhig, ruhigSpieler, trocken, land, tier, stelle, stillFeld, zurueck };
+                    };
+                    const lauf = (fn, a) => H.seite("const G = (" + grund + ")(r, T); try { return await (" + fn + ")(r, T, " + JSON.stringify(a || {}) + ", G); } finally { G.zurueck(); }");
+                    // DIE PROBE: ein Hirsch einen Spieltag im Takt (dt 0,25, die Uhr läuft mit), der Spieler ruhig in 30 m (frieden) — die Bahn,
+                    // ihre konvexe Hülle (das Streifgebiet), die größte Entfernung vom Geburtsort, der Weg und die Zellen, die er trat; dazu die
+                    // Lebensdauer gegen den Spieltag. Dann eine FRISCHE Region (Kachel ohne Bestand, Hydro steht), aufgeholt im Sommer und im
+                    // Winter (`setSeason`), in Sonne und Regen (`__wetterSetzen`), das Leben des Felds zwischen den Läufen zurückgestellt: die
+                    // Höhen-Mediane der Anker und die Verlegung ihres Schwerpunkts
+                    const probe = async function (r, T, a, G) {
+                        const { s, A, pm, wm, r3, takt, land, tier, stelle, stillFeld, ruhigSpieler } = G;
+                        stillFeld();
+                        r.setGameMode("frieden");
+                        const ort = land(pm.x, pm.z, 30, 40);
+                        if (!ort) throw new Error("kein trockenes Land 40–600 m um den Spieler");
+                        const c = tier(ort.x, ort.z, "wesen");
+                        stelle(ort.x - 30, ort.z);
+                        const dayS = 60 * A.DAY_LENGTH_DEFAULT_MINUTES;
+                        const tod0 = s.timeOfDay;
+                        const vorT = new Set(Object.keys((wm && wm.tritt) || {}));
+                        const bahn = [];
+                        const n = Math.round((a.tage * dayS) / a.dt);
+                        const t0 = performance.now();
+                        let k = 0;
+                        for (; k < n && performance.now() - t0 < a.msDeckel && s.creatures.includes(c); k++) {
+                            ruhigSpieler();
+                            takt(1, a.dt);
+                            if (k % 20 === 0) bahn.push([c.position.x, c.position.z]);
+                            if (k % a.uhrJe === a.uhrJe - 1) r._uhrSetzen((tod0 + ((k + 1) * a.dt) / dayS) % 1, "regler");
+                        }
+                        r._uhrSetzen(tod0, "regler");
+                        const lebt = s.creatures.includes(c);
+                        if (lebt) r.removeCreature(c);
+                        const P = bahn.map((p) => p.slice()).sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+                        const kreuz = (o, p, q) => (p[0] - o[0]) * (q[1] - o[1]) - (p[1] - o[1]) * (q[0] - o[0]);
+                        const unten = [];
+                        for (const p of P) {
+                            while (unten.length >= 2 && kreuz(unten[unten.length - 2], unten[unten.length - 1], p) <= 0) unten.pop();
+                            unten.push(p);
+                        }
+                        const oben = [];
+                        for (const p of [...P].reverse()) {
+                            while (oben.length >= 2 && kreuz(oben[oben.length - 2], oben[oben.length - 1], p) <= 0) oben.pop();
+                            oben.push(p);
+                        }
+                        const huelle = unten.slice(0, -1).concat(oben.slice(0, -1));
+                        let flaeche = 0;
+                        for (let i = 0; i < huelle.length; i++) {
+                            const [p, q] = [huelle[i], huelle[(i + 1) % huelle.length]];
+                            flaeche += p[0] * q[1] - q[0] * p[1];
+                        }
+                        let weg = 0;
+                        for (let i = 1; i < bahn.length; i++) weg += Math.hypot(bahn[i][0] - bahn[i - 1][0], bahn[i][1] - bahn[i - 1][1]);
+                        const weit = Math.max(...bahn.map((p) => Math.hypot(p[0] - ort.x, p[1] - ort.z)));
+                        const neu = Object.keys((wm && wm.tritt) || {}).filter((q) => !vorT.has(q));
+                        const aus = { tag: { takte: k, tage: r3((k * a.dt) / dayS), lebt, flaecheM2: r3(Math.abs(flaeche) / 2), weitM: r3(weit), wegM: r3(weg), proben: bahn.length, trittZellen: neu.length, pfadZellen: neu.filter((q) => A._trittStufe(wm.tritt[q][0]) > 0).length }, dayS, lebensdauerS: A.FAUNA_MAX_AGE_MS / 1000, leineM: A._verhaltenGesetz ? null : null };
+                        // die frische Region unter Jahreszeit und Regen
+                        const F = r._bestandRegionen().regionen;
+                        const nah = r._bestandNah();
+                        const [i0, j0] = nah[0].split(",").map(Number);
+                        let key = null;
+                        for (let d = 1; d <= 3 && !key; d++)
+                            for (let i = -d; i <= d && !key; i++)
+                                for (let j = -d; j <= d && !key; j++) {
+                                    const q = i0 + i + "," + (j0 + j);
+                                    if (!F[q] && r._bestandBereit(q)) key = q;
+                                }
+                        if (!key) throw new Error("keine frische Region mit stehender Hydro-Kachel um " + nah[0]);
+                        const lf = s.lifeField;
+                        const snap = () => (lf ? new Map([...lf].map(([q, e]) => [q, Object.assign({}, e)])) : null);
+                        const zurueckLF = (S) => {
+                            if (!S || !lf) return;
+                            for (const q of [...lf.keys()]) if (!S.has(q)) lf.delete(q);
+                            for (const [q, e] of S) {
+                                const x = lf.get(q);
+                                if (x) Object.assign(x, e);
+                                else lf.set(q, Object.assign({}, e));
+                            }
+                        };
+                        const fang = (vor) => {
+                            const S = snap();
+                            vor();
+                            const R = r._bestandRegion(key, true, 0, Infinity, []);
+                            const L = R.tiere.map((t) => ({ x: t.x, z: t.z, h: r.getTerrainHeightAt(t.x, t.z), g: t.g }));
+                            delete F[key];
+                            zurueckLF(S);
+                            return L;
+                        };
+                        const median = (L) => {
+                            const h = L.map((t) => t.h).sort((x, y) => x - y);
+                            return h.length ? h[Math.floor(h.length / 2)] : null;
+                        };
+                        const mitte = (L) => (L.length ? [L.reduce((x, t) => x + t.x, 0) / L.length, L.reduce((x, t) => x + t.z, 0) / L.length] : null);
+                        const sommer = fang(() => r.setSeason("summer"));
+                        const winter = fang(() => r.setSeason("winter"));
+                        r.setSeason(G.alt.season);
+                        const sonne = fang(() => window.__wetterSetzen("sunny"));
+                        const regen = fang(() => window.__wetterSetzen("rainy"));
+                        const S = r._bestandSeite();
+                        const hs = [];
+                        for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) hs.push(r.getTerrainHeightAt((Number(key.split(",")[0]) + (i + 0.5) / 4) * S, (Number(key.split(",")[1]) + (j + 0.5) / 4) * S));
+                        const [ms, mr] = [mitte(sonne), mitte(regen)];
+                        aus.region = { key, seiteM: r3(S), reliefM: r3(Math.max(...hs) - Math.min(...hs)), sommer: { n: sommer.length, median: r3(median(sommer)) }, winter: { n: winter.length, median: r3(median(winter)) }, hoehenDeltaM: sommer.length && winter.length ? r3(Math.abs(median(winter) - median(sommer))) : null, sonne: sonne.length, regen: regen.length, routeShiftM: ms && mr ? r3(Math.hypot(ms[0] - mr[0], ms[1] - mr[1])) : null };
+                        return aus;
+                    };
+                    const z = await lauf(probe, { tage: 1, dt: 0.05, uhrJe: 1200, msDeckel: 20000 });
+                    const zeuge = { antworten: z.tag.proben, streuung: z.tag.weitM || 0, vor: 0, nach: z.tag.wegM || 0 };
+                    const km2 = z.tag.flaecheM2 / 1e6;
+                    const faktor = km2 > 0 ? Math.round(1000 * (km2 < 1 ? 1 / km2 : km2 > 10 ? km2 / 10 : 1)) / 1000 : null;
+                    const tageLeben = Math.round((100 * z.lebensdauerS) / z.dayS) / 100;
+                    const aus = {};
+                    const nimm = (nr, werte, nicht) => {
+                        if (!U[nr]) return;
+                        aus[nr] = { werte, zeuge, ...(nicht ? { nicht } : {}) };
+                    };
+                    nimm(2, { ausdehnungM: z.tag.weitM, spieltage: z.tag.tage, wegM: z.tag.wegM }, z.tag.lebt ? null : "das Tier starb vor dem Ende des Spieltags (" + z.tag.tage + " Spieltage)");
+                    nimm(3, { faktor, streifKm2: Math.round(km2 * 1e6) / 1e6, spieltage: z.tag.tage, pfadZellen: z.tag.pfadZellen }, "7 Spieltage: das Tier lebt " + tageLeben + " Spieltage, an der Leine seines Ankers");
+                    nimm(4, { hoehenDeltaM: z.region.hoehenDeltaM, reliefM: z.region.reliefM }, "10⁴ m Sommer- ↔ Wintereinstand: der Anker des Bestands liegt in seiner Region (Seite " + z.region.seiteM + " m) und wandert nie");
+                    nimm(5, { routeShiftM: z.region.routeShiftM }, "kein Zug und kein Lachs: der Fisch-Trupp kennt keinen Geburtsbach");
+                    nimm(6, { lebensdauerTage: tageLeben }, "kein Individuum lebt ein Spieljahr (" + tageLeben + " Spieltage), kein Vogelzug über Kontinente");
+                    nimm(7, { streckeM: z.tag.weitM }, "keine planetare Wanderung: das weiteste Tier des Tags " + z.tag.weitM + " m vom Geburtsort");
+                    return { sprossen: aus, wanderung: z };
+                },
+                sprossen: {
+                    2: {
+                        u: {},
+                        soll: [K.soll(WA, 2, "Streifgebiet eines Individuums über 1 Spieltag", { quelleFeld: "umfang", quelleWort: "10² m", rel: "≥", zahl: 100, key: "ausdehnungM", einheit: "m" }), K.soll(WA, 2, "Streifgebiet eines Individuums über 1 Spieltag", { rel: "≥", zahl: 1, key: "spieltage", einheit: "Spieltage" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "tetrapoda-core.js wandern.leashBaseM (die Leine um den Anker) / stamm/daten.js FAUNA_MAX_AGE_MS",
+                        unklar: "der Richter nennt keine Zahl: das Soll trägt den Umfang (10² m Streifgebiet über einen Spieltag).",
+                        gruen: gut({ ausdehnungM: 300, spieltage: 1, wegM: 2000 }, 300),
+                        attrappen: atr({ ausdehnungM: 300, spieltage: 1, wegM: 2000 }, 300, true),
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(WA, 3, "Streifgebiet im Band der Telemetrie ±Faktor 2", { rel: "≤", zahl: 2, key: "faktor" }), K.soll(WA, 3, "Spur über 7 Spieltage", { rel: "≥", zahl: 7, key: "spieltage", einheit: "Spieltage" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "tetrapoda-core.js wandern.leashBaseM 18 m (die Leine um den Geburtsort)",
+                        nicht: "10³ m Streifgebiet nach Feldmaß über 7 Spieltage",
+                        leser: "tetrapoda-core.js:225 `leashBaseM` — die Leine um den Anker hält das Tier bei 18 m × Größe; stamm/daten.js:176 `FAUNA_MAX_AGE_MS` — das Tier lebt keine 7 Spieltage",
+                        gruen: gut({ faktor: 1, streifKm2: 3, spieltage: 7, pfadZellen: 40 }, 300),
+                        attrappen: atr({ faktor: 1, streifKm2: 3, spieltage: 7, pfadZellen: 40 }, 300, true),
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(WA, 4, "Höhen-Median der Art Winter vs. Sommer im Band", { rel: "band", zahl: 300, bis: 1000, key: "hoehenDeltaM", einheit: "m", refQuelle: "Georgii & Schröder 1983 (Oecologia 58:238): Rothirsch der Alpen, Sommer- über Wintereinstand 300–1000 m" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (der Ort des Wurfs liest keine Jahreszeit)",
+                        nicht: "10⁴ m Sommer- ↔ Wintereinstand",
+                        leser: "stamm/kreatur-leben.js:1955 `_creatureNaturalBirth` — der Ort des Wurfs liest Saat und Lebensraum, nie die Jahreszeit; der Anker wandert nie",
+                        gruen: gut({ hoehenDeltaM: 500, reliefM: 800 }, 300),
+                        attrappen: atr({ hoehenDeltaM: 500, reliefM: 800 }, 300, true),
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(WA, 5, "Lachs findet den Geburtsbach ≥ 0,9", { key: "lachs" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "tetrapoda-core.js FISCH_GESETZ (der Fisch-Trupp ohne Zug)",
+                        nicht: "10⁵ m: Gnu-Zug folgt dem Regen, Lachs zieht stromauf",
+                        leser: "tetrapoda-core.js:2832 `schlagHz` — FISCH_GESETZ trägt Schlag und Trupp, keinen Geburtsbach und keinen Zug",
+                        gruen: gut({ lachs: 0.95, routeShiftM: 400 }, 300),
+                        attrappen: atr({ lachs: 0.95, routeShiftM: 400 }, 300, true),
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(WA, 6, "Ankunft im Brutgebiet ±7 Spieltage", { rel: "≤", zahl: 7, key: "ankunftAbw", einheit: "Spieltage" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "stamm/daten.js FAUNA_MAX_AGE_MS / tetrapoda-core.js VOGEL_GESETZ (kein Zug)",
+                        nicht: "10⁶–10⁷ m: Vogelzug über Kontinente",
+                        leser: "tetrapoda-core.js:2376 `VOGEL_GESETZ` — der Vogel kreist um seine Zelle, kein Kurs aus Magnet-, Sternen- oder Sonnenkompass",
+                        gruen: gut({ ankunftAbw: 3, lebensdauerTage: 400 }, 300),
+                        attrappen: atr({ ankunftAbw: 3, lebensdauerTage: 400 }, 300, true),
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(WA, 7, "Zugscheide verschiebt sich mit der Isotherme", { quelleFeld: "umfang", quelleWort: "7·10⁷ m", rel: "≥", zahl: 7e7, key: "streckeM", einheit: "m" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "tetrapoda-core.js wandern.leashBaseM (kein Zug)",
+                        nicht: "7·10⁷ m: planetare Wanderung auf jedem Planeten",
+                        leser: "tetrapoda-core.js:225 `leashBaseM` — jedes Tier hängt an der Leine seines Ankers; kein Leser trägt Zug oder Klima-Route",
+                        unklar: "der Richter nennt keine Zahl: das Soll trägt den Umfang (7·10⁷ m Strecke).",
+                        gruen: gut({ streckeM: 8e7 }, 300),
+                        attrappen: atr({ streckeM: 8e7 }, 300, true),
+                    },
+                },
+            },
+            // ═══ MENSCH: der Spieler wird das Tier, folgt der Spur, ruft den Gefährten ═══
+            [ME]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD,
+                ungefahren: "die Ego-Aufnahme als Tier (S6, S7) — headless misst die Probe Tempo, Sprung, Spur und Ruf",
+                mess: async function (H, U, M) {
+                    const grund = function (r, T) {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const fl = s.faunaLifecycle;
+                        const wm = s.worldMeta;
+                        const alt = { p: pm.clone(), yaw: s.yaw, pitch: s.pitch, modus: r.getGameMode(), max: s.maxCreatures, wurf: fl ? fl.lastTick : null, vor: new Set(s.creatures), perf: s.perfRegulator, grav: s.gravity, tod: s.timeOfDay, wetter: s.weather, season: s.season, tritt: new Set(Object.keys((wm && wm.tritt) || {})), schwach: new Set((r._trittSchwach || new Map()).keys()), reg: new Set(Object.keys(r._bestandRegionen().regionen)), lf: s.lifeField ? new Map([...s.lifeField].map(([k, e]) => [k, Object.assign({}, e)])) : null, seele: s.player && s.player.soul };
+                        const RUHE = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                        const flicken = [];
+                        const flick = (n, f) => {
+                            if (Object.prototype.hasOwnProperty.call(r, n)) throw new Error("flick: " + n + " trägt schon eine eigene Zeile");
+                            flicken.push(n);
+                            r[n] = f;
+                        };
+                        let t = performance.now();
+                        const welt = (n) => {
+                            s.perfRegulator = false;
+                            for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60));
+                        };
+                        const takt = (n, d) => {
+                            for (let i = 0; i < n; i++) {
+                                r._kreaturStossSchritt(d || 1 / 60);
+                                r._trittDerLeiber();
+                                r._leibKontakte();
+                                r.updateCreatures(d || 1 / 60);
+                            }
+                        };
+                        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+                        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        const ruhig = (c) => (c.userData.emotions = Object.assign({}, RUHE));
+                        const ruhigSpieler = () => s.player.emotions && Object.assign(s.player.emotions, RUHE);
+                        const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z) && !(typeof r._imGrundriss === "function" && r._imGrundriss(x, z));
+                        const land = (x0, z0, R, dMin) => {
+                            for (let d = dMin || 0; d <= 600; d += 15) {
+                                const n = Math.max(1, Math.round(d / 10));
+                                for (let q = 0; q < n; q++) {
+                                    const w = (q / n) * 2 * Math.PI;
+                                    const x = x0 + Math.cos(w) * d;
+                                    const z = z0 + Math.sin(w) * d;
+                                    let ok = trocken(x, z);
+                                    for (let k = 0; ok && k < 8; k++) ok = trocken(x + Math.cos(k * 0.785) * R, z + Math.sin(k * 0.785) * R);
+                                    if (ok) return { x, z };
+                                }
+                            }
+                            return null;
+                        };
+                        const tier = (x, z, seele, bs) => {
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                            let nein = null;
+                            const c = r.spawnCreatureAt(x, boden(x, z), z, "happy", seele, { precise: true, bodySize: bs || 1, absage: (g) => (nein = g) });
+                            if (!c) throw new Error("spawnCreatureAt " + seele + ": " + nein);
+                            ruhig(c);
+                            return c;
+                        };
+                        const stelle = (x, z) => {
+                            pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                        };
+                        const stillFeld = () => {
+                            if (fl) fl.lastTick = 1e12;
+                        };
+                        const zurueck = () => {
+                            for (const n of flicken.splice(0)) delete r[n];
+                            if (s.player && alt.seele && s.player.soul !== alt.seele) r.applyPlayerSoul(alt.seele);
+                            for (const c of [...s.creatures]) if (!alt.vor.has(c)) r.removeCreature(c);
+                            s.maxCreatures = alt.max;
+                            if (fl) fl.lastTick = alt.wurf;
+                            if (r.getGameMode() !== alt.modus) r.setGameMode(alt.modus);
+                            pm.copy(alt.p);
+                            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                            [s.yaw, s.pitch, s.perfRegulator, s.gravity] = [alt.yaw, alt.pitch, alt.perf, alt.grav];
+                            if (s.season !== alt.season) r.setSeason(alt.season);
+                            if (Math.abs(s.timeOfDay - alt.tod) > 1e-6) r._uhrSetzen(alt.tod, "regler");
+                            if (s.weather !== alt.wetter && window.__wetterSetzen) window.__wetterSetzen(alt.wetter);
+                            if (wm && wm.tritt) for (const k of Object.keys(wm.tritt)) if (!alt.tritt.has(k)) delete wm.tritt[k];
+                            if (r._trittSchwach) for (const k of [...r._trittSchwach.keys()]) if (!alt.schwach.has(k)) r._trittSchwach.delete(k);
+                            const F = r._bestandRegionen().regionen;
+                            for (const k of Object.keys(F)) if (!alt.reg.has(k)) delete F[k];
+                            if (alt.lf && s.lifeField) {
+                                for (const k of [...s.lifeField.keys()]) if (!alt.lf.has(k)) s.lifeField.delete(k);
+                                for (const [k, e] of alt.lf) {
+                                    const n = s.lifeField.get(k);
+                                    if (n) Object.assign(n, e);
+                                    else s.lifeField.set(k, e);
+                                }
+                            }
+                        };
+                        return { s, A, pm, fl, wm, alt, RUHE, flick, welt, takt, boden, ab, r3, ruhig, ruhigSpieler, trocken, land, tier, stelle, stillFeld, zurueck };
+                    };
+                    const lauf = (fn, a) => H.seite("const G = (" + grund + ")(r, T); try { return await (" + fn + ")(r, T, " + JSON.stringify(a || {}) + ", G); } finally { G.zurueck(); }");
+                    // DIE PROBE: (S5) der Spieler wird jedes Tier (`applyPlayerSoul`): sein Sprint-Tempo und seine Sprunghöhe (der Abdruck
+                    // `_sprungAbdruck`, h = v²/2g) gegen den wilden Artgenossen — dessen Höchsttempo auf der Flucht vor dem Spieler (pfad, die
+                    // Näherung in der Fluchtdistanz) und seine Sprunghöhe (`_kreaturSprungHoehe`). (S2) Ein Hirsch und ein Wolf gehen je 40 s:
+                    // trägt der Boden eine Fährte (Zellen ab der Stufe des Pfads), deren jüngste Zelle zum Tier führt? (S3) ein Wolf, gebunden
+                    // (bond 1, Auftrag follow_player): der Spieler geht 30 m in drei Richtungen — kehrt er zurück? Reitbar: die Fahr-Affordanz
+                    // neben ihm (`_findNearestAffordanceEntry`). (S4) die Haustiere unter den Seelen
+                    const probe = async function (r, T, a, G) {
+                        const { s, A, pm, wm, r3, takt, land, tier, stelle, stillFeld, ruhigSpieler, RUHE } = G;
+                        stillFeld();
+                        const ort = land(pm.x, pm.z, 30, 40);
+                        if (!ort) throw new Error("kein trockenes Land 40–600 m um den Spieler");
+                        const g0 = Math.abs(s.gravity);
+                        const aus = { je: {} };
+                        const dt = 1 / 60;
+                        for (const [als, wild] of a.paare) {
+                            const P = {};
+                            r.applyPlayerSoul(als);
+                            P.seele = s.player.soul;
+                            P.sprint = r3(s.sprintSpeed);
+                            try {
+                                const v0 = r._sprungAbdruck();
+                                P.sprungH = r3((v0 * v0) / (2 * g0));
+                            } catch (e) {
+                                P.sprungFehler = String((e && e.message) || e).slice(0, 160);
+                            }
+                            r.applyPlayerSoul(G.alt.seele);
+                            r.setGameMode("pfad");
+                            const c = tier(ort.x, ort.z, wild);
+                            const W = { sprungH: r3(r._kreaturSprungHoehe(c)) };
+                            const D = A._furchtGesetz().F.fluchtDistanzM[r._kreaturGattung(c)];
+                            stelle(c.position.x - 0.7 * D, c.position.z);
+                            let vmax = 0;
+                            let floh = -1;
+                            let vor = [c.position.x, c.position.z];
+                            for (let k = 0; k < a.fluchtTakte; k++) {
+                                const [dx, dz] = [c.position.x - pm.x, c.position.z - pm.z];
+                                const d = Math.hypot(dx, dz) || 1;
+                                if (floh < 0) (pm.x += (dx / d) * s.speed * dt), (pm.z += (dz / d) * s.speed * dt);
+                                pm.y = r.getTerrainHeightAt(pm.x, pm.z) + A.PLAYER_FOOT_OFFSET;
+                                ruhigSpieler();
+                                takt(1, dt);
+                                if (floh < 0 && c.userData._motionZustand === "flucht") floh = k;
+                                // wer den nahenden Spieler nicht flieht (der Wolf jagt ihn), flieht den Hieb: die Kampf-Furcht (damageCreature)
+                                if (floh < 0 && k === a.hiebNach) {
+                                    r.damageCreature(c, 1, { source: "player", fromPos: pm.clone() });
+                                    W.geschlagen = true;
+                                }
+                                if (floh >= 0) vmax = Math.max(vmax, Math.hypot(c.position.x - vor[0], c.position.z - vor[1]) / dt);
+                                vor = [c.position.x, c.position.z];
+                            }
+                            W.vFlucht = r3(vmax);
+                            W.flohNachTakten = floh;
+                            r.removeCreature(c);
+                            r.setGameMode(G.alt.modus);
+                            aus.je[wild] = { spieler: P, wild: W, tempoAbw: P.sprint > 0 && vmax > 0 ? r3(Math.abs(P.sprint / vmax - 1) * 100) : null, sprungAbw: Number.isFinite(P.sprungH) && W.sprungH > 0 ? r3(Math.abs(P.sprungH / W.sprungH - 1) * 100) : null };
+                        }
+                        // (S2) die Fährte
+                        r.setGameMode("frieden");
+                        const spur = [];
+                        for (const seele of ["wesen", "wolf"]) {
+                            const vorT = new Set(Object.keys((wm && wm.tritt) || {}));
+                            const vorS = new Set((r._trittSchwach || new Map()).keys());
+                            const c = tier(ort.x, ort.z, seele);
+                            stelle(ort.x + 40, ort.z);
+                            for (let k = 0; k < a.spurTakte; k++) {
+                                ruhigSpieler();
+                                takt(1, dt);
+                            }
+                            const neu = Object.keys((wm && wm.tritt) || {}).filter((q) => !vorT.has(q));
+                            const sicht = neu.filter((q) => A._trittStufe(wm.tritt[q][0]) > 0);
+                            let jung = null;
+                            for (const q of sicht) if (!jung || wm.tritt[q][1] > wm.tritt[jung][1]) jung = q;
+                            const zm = jung ? jung.split(",").map((x) => (Number(x) + 0.5) * A.TRITT.zelleM) : null;
+                            const bis = zm ? Math.hypot(zm[0] - c.position.x, zm[1] - c.position.z) : null;
+                            spur.push({ seele, getreten: neu.length, schwach: [...(r._trittSchwach || new Map()).keys()].filter((q) => !vorS.has(q)).length, sichtbar: sicht.length, jungsteBisTierM: r3(bis), gefunden: sicht.length >= 3 && bis !== null && bis <= 30 });
+                            r.removeCreature(c);
+                        }
+                        aus.spur = spur;
+                        // (S3) der Ruf und das Reiten
+                        const w = tier(ort.x, ort.z, "wolf");
+                        w.userData.bond = 1;
+                        r.assignCreatureTask(w, "follow_player", {}, { silent: true });
+                        stelle(ort.x + 2, ort.z);
+                        const reit = r._findNearestAffordanceEntry("moveable", A.MOUNT_RANGE_M);
+                        aus.reiten = { gefunden: !!reit, istTier: !!reit && Object.values(reit).includes(w) };
+                        let zurueck = 0;
+                        const halt = A.CREATURE_FOLLOW_DISTANCE || 3;
+                        const ruf = [];
+                        for (let q = 0; q < 3; q++) {
+                            const wq = (q * 2 * Math.PI) / 3;
+                            stelle(w.position.x + Math.cos(wq) * 30, w.position.z + Math.sin(wq) * 30);
+                            let d = Infinity;
+                            for (let k = 0; k < a.rufTakte; k++) {
+                                ruhigSpieler();
+                                w.userData.emotions = Object.assign(w.userData.emotions || {}, RUHE, { joy: 0.2 });
+                                takt(1, dt);
+                                d = Math.hypot(w.position.x - pm.x, w.position.z - pm.z);
+                                if (d <= halt + 2) break;
+                            }
+                            ruf.push(r3(d));
+                            if (d <= halt + 2) zurueck++;
+                        }
+                        aus.ruf = { abstandM: ruf, quote: r3(zurueck / 3), task: w.userData.task && w.userData.task.name };
+                        r.removeCreature(w);
+                        const HAUS = /hund|rind|pferd|katze|schaf|ziege|huhn|haus|dog|horse|cow|cat/i;
+                        aus.haus = { seelen: A.CREATURE_SOUL_NAMES.length, haustiere: A.CREATURE_SOUL_NAMES.filter((x) => HAUS.test(x)).length };
+                        return aus;
+                    };
+                    const z = await lauf(probe, { paare: [["wolf", "wolf"], ["fuchs", "fuchs"], ["baer", "baer"], ["hirsch", "wesen"]], fluchtTakte: 360, hiebNach: 120, spurTakte: 2400, rufTakte: 900 });
+                    const augeNoetig = Object.keys(U).some((nr) => U[nr].auge);
+                    const auge = augeNoetig ? await M.auge("tiere-mensch", U[Object.keys(U).find((nr) => U[nr].auge)].auge) : undefined;
+                    const je = Object.values(z.je);
+                    const tAbw = je.map((x) => x.tempoAbw).filter(Number.isFinite);
+                    const sAbw = je.map((x) => x.sprungAbw).filter(Number.isFinite);
+                    const tempoAbw = tAbw.length === je.length ? Math.max(...tAbw) : null;
+                    const sprungAbw = sAbw.length === je.length ? Math.max(...sAbw) : null;
+                    const mT = tAbw.reduce((x, y) => x + y, 0) / Math.max(1, tAbw.length);
+                    const zeuge = { antworten: je.length * 240 + z.spur.reduce((x, y) => x + y.getreten, 0), streuung: Math.round(Math.sqrt(tAbw.reduce((x, y) => x + (y - mT) * (y - mT), 0) / Math.max(1, tAbw.length)) * 1000) / 1000 || z.spur.reduce((x, y) => x + y.getreten, 0), vor: 0, nach: je.length };
+                    const findeQuote = z.spur.filter((x) => x.gefunden).length / z.spur.length;
+                    const aus = {};
+                    const nimm = (nr, werte, nicht, mitAuge) => {
+                        if (!U[nr]) return;
+                        aus[nr] = { werte, zeuge, ...(mitAuge ? { auge } : {}), ...(nicht ? { nicht } : {}) };
+                    };
+                    nimm(2, { findeQuote }, "keine Fährte und keine Losung: " + z.spur.map((x) => x.seele + " " + x.sichtbar + " sichtbare von " + x.getreten + " getretenen Zellen").join(", "));
+                    nimm(3, { rufQuote: z.ruf.quote, fussfallAbw: null }, "kein Reittier (Fahr-Affordanz am Wolf: " + (z.reiten.istTier ? "ja" : "nein") + "), kein Hund");
+                    nimm(4, { haustiere: z.haus.haustiere }, "keine Domestikation: " + z.haus.haustiere + " Haustiere unter " + z.haus.seelen + " Seelen");
+                    nimm(5, { tempoAbw, sprungAbw }, "10 Arten: der Spieler wird eine von " + je.length + " Seelen");
+                    nimm(6, {}, "10² Stichproben-Arten mit ihren Sinnen (Adler, Hund, Maulwurf)", true);
+                    nimm(7, { tempoAbw }, "keine fremde Saat: jede Art jedes Planeten", true);
+                    return { sprossen: aus, mensch: z };
+                },
+                sprossen: {
+                    2: {
+                        u: {},
+                        soll: [K.soll(ME, 2, "Tier in ≤ 10 min ≥ 0,8", { rel: "≥", zahl: 0.8, key: "findeQuote" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "stamm/siedlung-wege.js _trittStufe (ein Gang tritt keine Fährte)",
+                        nicht: "Fährte, Losung, Beobachten, Jagd",
+                        leser: "stamm/siedlung-wege.js:1712 `_trittStufe` — ein Gang tritt die Zelle einmal, sichtbar wird erst der Pfad; keine Fährte, keine Losung",
+                        gruen: gut({ findeQuote: 0.9 }, 300),
+                        attrappen: atr({ findeQuote: 0.9 }, 300, true),
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(ME, 3, "Fußfall des Pferds unter Reiter ±0,05", { rel: "≤", zahl: 0.05, key: "fussfallAbw", einheit: "Takt" }), K.soll(ME, 3, "Hund kehrt auf Ruf ≥ 0,9", { key: "rufQuote" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "stamm/koerper-fahrt.js _findNearestAffordanceEntry (moveable trägt Fahrzeuge, kein Tier)",
+                        nicht: "Haus- und Reittier: Hund folgt, Pferd reitbar",
+                        leser: "stamm/koerper-fahrt.js:1375 `_findNearestAffordanceEntry` — das Aufsitzen sucht Fahrzeuge (moveable) und Sitze, kein Tier",
+                        gruen: gut({ fussfallAbw: 0.03, rufQuote: 1 }, 300),
+                        attrappen: atr({ fussfallAbw: 0.03, rufQuote: 1 }, 300, true),
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(ME, 4, "Haustier liegt näher an seiner Wildform als an jeder anderen Art ≥ 0,9", { key: "naeher" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "stamm/kreatur-leben.js CREATURE_SOULS (vier Wildformen)",
+                        nicht: "Domestikation aus der Wildform über Generationen",
+                        leser: "stamm/kreatur-leben.js:3567 `CREATURE_SOULS` — vier Wildformen, kein Haustier und keine Ableitung",
+                        gruen: gut({ naeher: 0.95, haustiere: 2 }, 300),
+                        attrappen: atr({ naeher: 0.95, haustiere: 2 }, 300, true),
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(ME, 5, "Tempo und Sprung ±10 % zum wilden Artgenossen", { rel: "≤", zahl: 10, key: "tempoAbw", einheit: "%" }), K.soll(ME, 5, "Tempo und Sprung ±10 % zum wilden Artgenossen", { rel: "≤", zahl: 10, key: "sprungAbw", einheit: "%" })],
+                        zeuge: zeugeWelt(50, true),
+                        taeter: "stamm/koerper-fahrt.js applyPlayerSoul (die Tier-Seele des Spielers) / stamm/koerper-bewegung.js _sprungAbdruck",
+                        nicht: "der Spieler WIRD ein Tier (10 Arten)",
+                        leser: "stamm/koerper-fahrt.js:2744 `applyPlayerSoul` — vier Tier-Seelen (hirsch, wolf, fuchs, baer) statt 10 Arten",
+                        gruen: gut({ tempoAbw: 6, sprungAbw: 8 }, 300),
+                        attrappen: atr({ tempoAbw: 6, sprungAbw: 8 }, 300, true),
+                    },
+                    6: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(ME, 6, "Blind-Panel erkennt die Art an der Ego-Aufnahme ≥ 0,7", { key: "panel" })],
+                        auge: { pose: "Ego als Tier (Wolf, Hirsch) auf der Wiese", vorbild: "Ego-Aufnahmen realer Tiere; Blind-Panel ≥ 0,7" },
+                        taeter: "stamm/koerper-fahrt.js applyPlayerSoul (die Sicht des Menschen im Tier-Leib)",
+                        nicht: "10² Stichproben-Arten spielbar mit ihren Sinnen",
+                        leser: "stamm/koerper-fahrt.js:2744 `applyPlayerSoul` — die Seele tauscht Leib und Tempo, nie die Wahrnehmung (Sehschärfe, Geruch, Tastsinn)",
+                        gruen: gut({ panel: 0.8 }, 300),
+                        attrappen: atr({ panel: 0.8 }, 300),
+                    },
+                    7: {
+                        u: { auge: AUGE_ORT },
+                        soll: [K.soll(ME, 7, "Tempo ±10 %", { rel: "≤", zahl: 10, key: "tempoAbw", einheit: "%" }), K.soll(ME, 7, "Panel ≥ 0,7", { key: "panel" })],
+                        auge: { pose: "Ego als Tier einer fremden Saat (heute: die Wiese)", vorbild: "Panel ≥ 0,7 an der Ego-Aufnahme" },
+                        taeter: "stamm/kreatur-leben.js CREATURE_SOUL_NAMES (keine Fauna fremder Saaten)",
+                        nicht: "jedes Tier jedes Planeten spielbar, fremde Sinne als Perspektive",
+                        leser: "stamm/kreatur-leben.js:3622 — CREATURE_SOUL_NAMES liest keinen Samen: keine Fauna fremder Saaten",
+                        gruen: gut({ tempoAbw: 6, panel: 0.8 }, 300),
+                        attrappen: atr({ tempoAbw: 6, panel: 0.8 }, 300),
+                    },
+                },
+            },
+        },
+    };
+})());
+
 // ── DIE PERSPEKTIVE leben.wasser (4 Leitern, 26 Sprossen, belegt: lebensraeume S1 und rhythmen S1 — luftwasser.K3): das Leben im Wasser ──
 // Die Leser des Spiels: die Fische (stamm/kreatur-fauna.js `_fischTakt` · `_fischZelle` · `_fischTiefeY` → tetrapoda-core FISCH_GESETZ,
 // fischStand/fischSchritt/fischFlucht; gezeichnet im Pool `tier:fisch`), die Orte des Wassers (scripts/lib/wasser-linse.cjs `__wasserOrte`:
