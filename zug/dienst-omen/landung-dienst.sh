@@ -374,7 +374,7 @@ st_lauf() { # $1 = Mutante (leer = echt)
 #!/bin/bash
 # kandidat.sh-Stummel: $1 Name, $3 die Teile („;“), KOPF; die Grenz-Flagge vor jeder STATION (wie kandidat.sh seit 19.11.: Grenze je
 # Station in der Sitzung), je Station 0,4 s; jede geurteilte Station ist sofort gebucht (im „Baum“ gepusht, eine GEPUSHT-Zeile je Station).
-# warter_kommt=<i>: in Station i kommt ein Wartender und geht wieder (je 3 s), bevor die Station endet
+# warter_kommt=<i>: in Station i kommt ein Wartender und geht wieder (je 8 s: lang genug für einen Takt unter Last), bevor die Station endet
 X=$(dirname "$0"); i=0; t=0
 LL=$3; [ "${LL#@}" != "$LL" ] && LL=$(<"${LL#@}") # die Liste reist als Datei, wie an kandidat.sh
 IFS=';' read -ra TT <<<"$LL"
@@ -386,7 +386,7 @@ for T in "${TT[@]}"; do
         [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date +%T) $1 SPRUNG an der Stations-Grenze vor $s (Teil $t)" >>"$X/kette.log"; exit 0; }
         i=$((i + 1))
         [ -f "$X/tod_in" ] && [ "$(cat "$X/tod_in")" = "$i" ] && { rm -f "$X/tod_in"; sleep 2; kill -9 $PPID; exit 9; }
-        [ -f "$X/warter_kommt" ] && [ "$(cat "$X/warter_kommt")" = "$i" ] && { echo macher-kommt-und-geht >"$X/warter"; sleep 3; rm -f "$X/warter"; sleep 3; }
+        [ -f "$X/warter_kommt" ] && [ "$(cat "$X/warter_kommt")" = "$i" ] && { echo macher-kommt-und-geht >"$X/warter"; sleep 8; rm -f "$X/warter"; sleep 8; }
         sleep 0.4
         echo "$KOPF:$s" >>"$X/gepusht"
         echo "$(date +%T) $1-$t GEPUSHT (Versuch 1) 1 Station(en)" >>"$X/kette.log"
@@ -573,8 +573,10 @@ if (was === "lauf") {
     const m = lies(), vn = path.join(X, "verdr_nach");
     let i = 0;
     for (const s of process.env.NUR.split(",")) {
-        // der Fall r: je Station 4 s (eine Sitzung, an deren Grenzen kandidat.sh wacht); grenze_nach=<n> legt die Flagge vor der n-ten
-        if (fs.existsSync(path.join(X, "langsam"))) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 4000);
+        // die Fälle r, t: je Station <langsam> ms (eine Sitzung, an deren Grenzen kandidat.sh wacht; lang genug, dass der Wächter jede
+        // Grenze auch unter der Last von 20 parallelen Läufen einzeln sieht); grenze_nach=<n> legt die Flagge vor der n-ten
+        const ls = path.join(X, "langsam");
+        if (fs.existsSync(ls)) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Number(fs.readFileSync(ls, "utf8")) || 4000);
         const gn = path.join(X, "grenze_nach");
         if (fs.existsSync(gn) && Number(fs.readFileSync(gn, "utf8")) === i + 1) fs.writeFileSync(path.join(X, "grenze"), "");
         if (fs.existsSync(vn) && Number(fs.readFileSync(vn, "utf8")) === i) {
@@ -606,11 +608,11 @@ ATTRAPPE
         echo "OK m  Roh-Bilder der OMEN: a hält GRÜN — Bild in der Ablage am Gerät, nur a-bild.png.sha256 reist; b wechselt ROT → GRÜN — das Beweis-Bild reist"
     else echo "ROT m  Roh-Bilder: Ablage a $([ -f "$KT/ablage/${k0:0:8}-gtx/a-bild.png" ] && echo ja || echo nein) (Soll ja), im Baum a $([ -f "$rd/a-bild.png" ] && echo ja || echo nein) (Soll nein), Prüfsumme a $([ -f "$rd/a-bild.png.sha256" ] && echo ja || echo nein), b $([ -f "$rd/b-bild.png" ] && echo ja || echo nein) (Soll ja)"; fi
     # r — GRENZE UND BUCHUNG JE STATION IN DER SITZUNG (Koordinator 19.11.; Befund: 252 Stationen in EINER Sitzung, 2 h 20 min nichts
-    # gebucht): das ECHTE kandidat.sh, EINE Sitzung „a,b,c,d,e“, je Station 4 s. a ist gepusht, während die Sitzung noch misst; vor b
+    # gebucht): das ECHTE kandidat.sh, EINE Sitzung „a,b,c,d,e“, je Station 10 s. a ist gepusht, während die Sitzung noch misst; vor b
     # legt der Dienst die Grenz-Flagge — die Sitzung endet an DIESER Grenze (c nie gemessen), b ist gepusht, die Liste endet (SPRUNG)
     local K2=$X/kt2 r1 r2 r3 r4
     mkdir -p "$K2/n" "$K2/kpm/meisterkarte-quelle/punkte/messung" "$K2/km"
-    : >"$K2/hook.log"; : >"$K2/dienst.log"; : >"$K2/n/pm-stand.cjs"; : >"$K2/n/zeile-erledigt.cjs"; touch "$K2/langsam"; echo 2 >"$K2/grenze_nach"
+    : >"$K2/hook.log"; : >"$K2/dienst.log"; : >"$K2/n/pm-stand.cjs"; : >"$K2/n/zeile-erledigt.cjs"; echo 10000 >"$K2/langsam"; echo 2 >"$K2/grenze_nach"
     cp "$KT/schloss.sh" "$K2/schloss.sh"; cp "$KT/n/punkte-offen.cjs" "$K2/n/punkte-offen.cjs"
     KANDIDAT_ABLAGE=$K2/ablage KT_X=$K2 KOPF=$k0 KANDIDAT_N=$K2/n KANDIDAT_PM=$K2/kpm KANDIDAT_M=$K2/km KANDIDAT_H=$K2/hook.log KANDIDAT_D=$K2/dienst.log \
         KANDIDAT_SCHLOSS=$K2/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 SPRUNG=$K2/grenze RUNDE_CJS=$RUNDE_CJS bash "$ke" kt2 x "a,b,c,d,e" >/dev/null 2>&1
@@ -623,21 +625,21 @@ ATTRAPPE
     else echo "ROT r  je Station: Pushes „$r1“ (Soll „a a,b“), gemessen „$r2“ (Soll a,b), GEPUSHT-Zeilen je Station $r3 (Soll 2), GRENZE+SPRUNG $r4 (Soll 2), Sitzungen $(wc -l <"$K2/laeufe.log" 2>/dev/null) (Soll 1)"; fi
     # t — DER DECKEL DER SITZUNG + EINE ZEILE JE STATION (Koordinator 11:07; Befund: Sitzung 1 am f68dbf09 lief von 08:11:40 an Stunden
     # weiter, Σ Deckel der Eich-Tafel 1 610 s gegen 2–3 min je Station, und die Kette schrieb seit START keine Zeile): das ECHTE
-    # kandidat.sh, EINE Sitzung „a,b,c,d“, je Station 4 s, Deckel 6 s — an der ersten Grenze nach 6 s (nach b) endet sie, der Rest c,d
+    # kandidat.sh, EINE Sitzung „a,b,c,d“, je Station 10 s, Deckel 15 s — an der ersten Grenze nach 15 s (nach b) endet sie, der Rest c,d
     # fährt SOFORT als neue Sitzung (kein Versuch, kein SPRUNG), je geurteilte Station EINE Zeile mit Uhr
     local K3=$X/kt3 t1 t2 t3 t4
     mkdir -p "$K3/n" "$K3/kpm/meisterkarte-quelle/punkte/messung" "$K3/km"
-    : >"$K3/hook.log"; : >"$K3/dienst.log"; : >"$K3/n/pm-stand.cjs"; : >"$K3/n/zeile-erledigt.cjs"; touch "$K3/langsam"
+    : >"$K3/hook.log"; : >"$K3/dienst.log"; : >"$K3/n/pm-stand.cjs"; : >"$K3/n/zeile-erledigt.cjs"; echo 10000 >"$K3/langsam"
     cp "$KT/schloss.sh" "$K3/schloss.sh"; cp "$KT/n/punkte-offen.cjs" "$K3/n/punkte-offen.cjs"
     KANDIDAT_ABLAGE=$K3/ablage KT_X=$K3 KOPF=$k0 KANDIDAT_N=$K3/n KANDIDAT_PM=$K3/kpm KANDIDAT_M=$K3/km KANDIDAT_H=$K3/hook.log KANDIDAT_D=$K3/dienst.log \
-        KANDIDAT_SCHLOSS=$K3/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 KANDIDAT_DECKEL_S=6 SPRUNG=$K3/grenze RUNDE_CJS=$RUNDE_CJS bash "$ke" kt3 x "a,b,c,d" >/dev/null 2>&1
+        KANDIDAT_SCHLOSS=$K3/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 KANDIDAT_DECKEL_S=15 SPRUNG=$K3/grenze RUNDE_CJS=$RUNDE_CJS bash "$ke" kt3 x "a,b,c,d" >/dev/null 2>&1
     t1=$(paste -sd' ' "$K3/laeufe.log" 2>/dev/null)
     t2=$(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).je).sort().join(","))' "$(cygpath -m "$K3/kpm/meisterkarte-quelle/punkte/messung/${k0:0:8}-gtx.json")" 2>/dev/null)
     t3=$(grep -cE "^[0-9]{2}:[0-9]{2}:[0-9]{2} kt3-1 STATION [a-d] geurteilt \([0-9]/[0-9]\)$" "$K3/n/kette-0711.log" 2>/dev/null)
-    t4=$(grep -c "kt3-1 DECKEL: der Deckel der Sitzung (6 s" "$K3/n/kette-0711.log" 2>/dev/null)
-    if echo "$t1" | grep -qxE "a,b,c,d (b,c,d|c,d|d)" && [ "$t2" = "a,b,c,d" ] && [ "$t3" -ge 3 ] && [ "$t4" = 1 ] && ! grep -q "SPRUNG\|OFFEN nach" "$K3/n/kette-0711.log"; then
-        echo "OK t  Deckel der Sitzung: die Sitzung a,b,c,d endete an der ersten Grenze nach 6 s, der Rest c,d fuhr sofort neu (Sitzungen „$t1“), gemessen $t2; $t3 Zeilen „STATION … geurteilt (k/N)“ mit Uhr"
-    else echo "ROT t  Deckel/Zeile je Station: Sitzungen „$t1“ (Soll „a,b,c,d“ und der Rest nach dem Schnitt), gemessen „$t2“ (Soll a,b,c,d), Stations-Zeilen mit Uhr $t3 (Soll ≥ 3), DECKEL-Zeilen $t4 (Soll 1)"; fi
+    t4=$(grep -c "kt3-1 DECKEL: der Deckel der Sitzung (15 s" "$K3/n/kette-0711.log" 2>/dev/null)
+    if echo "$t1" | grep -qE "^a,b,c,d [b-d]" && [ "$t2" = "a,b,c,d" ] && [ "$t3" -ge 4 ] && [ "$t4" -ge 1 ] && ! grep -q "SPRUNG\|OFFEN nach" "$K3/n/kette-0711.log"; then
+        echo "OK t  Deckel der Sitzung: die Sitzung a,b,c,d endete an der ersten Grenze nach 15 s, der Rest c,d fuhr sofort neu (Sitzungen „$t1“), gemessen $t2; $t3 Zeilen „STATION … geurteilt (k/N)“ mit Uhr"
+    else echo "ROT t  Deckel/Zeile je Station: Sitzungen „$t1“ (Soll „a,b,c,d“ und der Rest nach dem Schnitt), gemessen „$t2“ (Soll a,b,c,d), Stations-Zeilen mit Uhr $t3 (Soll ≥ 4), DECKEL-Zeilen $t4 (Soll ≥ 1)"; fi
     # g — die Baum-Sperre (14.11.)
     BAUM_WARTET=$X/wartet
     mkdir -p "$BAUM_WARTET"
@@ -778,7 +780,10 @@ MUTANTEN=${ST_MUTANTEN-"bucht-am-ende flagge-bleibt deckel-blind station-stumm l
 selbsttest() {
     local O m r rot=0 mr=0 mz=0
     O=$(mktemp -d)
-    for m in echt $MUTANTEN; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    # der echte Lauf ALLEIN zuerst (19.11.: die Fälle r, s, t urteilen über Uhr und Takt — neben 19 parallelen Mutanten verpasste der
+    # Wächter Grenzen von 10 s, 12:11–12:55), danach die Mutanten parallel (sie brauchen nur ein ROT)
+    (st_lauf "" >"$O/echt" 2>&1)
+    for m in $MUTANTEN; do (st_lauf "$m" >"$O/$m" 2>&1) & done
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1

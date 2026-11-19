@@ -126,6 +126,10 @@ teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
     REST_TEIL=$rest
   fi
   neu=$(ohne "$R" "$REST_TEIL" "$B")
+  # die Stationen, die erst nach der letzten Grenze geurteilt wurden (die Sitzung endete dazwischen): auch ihre Zeile mit Uhr
+  if [ -n "$neu" ]; then
+    for i in ${neu//,/ }; do k=$((k + 1)); echo "$(date '+%T') $name STATION $i geurteilt ($k/$(zahl "$R"))" >> $L; done
+  fi
   TEIL_GEBUCHT=$(zahl "${B:+$B,}$neu")
   [ "$TEIL_GEBUCHT" = 0 ] && return 1   # nichts fertig gemessen
   n=$(zahl "$neu")
