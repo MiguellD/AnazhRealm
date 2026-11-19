@@ -433,8 +433,10 @@ function fahrtSumme(stationen, geraet) {
 // oeko 90, teilen 75, ereignis 60, wetter-welt 45, physik 45) hoben die Fahrt von 6 619 auf 7 204 s (Radeon) über 4 × 1 740 s.
 // 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
-// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (108 Läufe × 120 s > 6 Teile)
-const FAHRT_TEILE_MAX = 6;
+// 19.11. 6 → 7: die Leiter-Richter der Karte 2 (richter-planet-leben-zusammenspiel: je Perspektive EINE Probe, ihr Deckel 10 s + Σ der
+// Leiter-Deckel; erde 30, wasser 225, same 55, pflanzen 129, leben-wasser 75 s) hoben die Radeon-Fahrt auf 10 578 s über 6 × 1 740 s.
+// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (117 Läufe × 120 s > 7 Teile)
+const FAHRT_TEILE_MAX = 7;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
