@@ -878,3 +878,4 @@
 2026-11-19T17:09 karte=219 (gebucht am 986eff04, buche.sh) karte2=36
 2026-11-19T17:36 karte=219 (gebucht am 986eff04, buche.sh) karte2=35
 2026-11-19T18:35 karte=219 (gebucht am 986eff04, buche.sh) karte2=35
+2026-11-19T20:02 karte=219 (gebucht am 7d9c4d51, buche.sh) karte2=35
