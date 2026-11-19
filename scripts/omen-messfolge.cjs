@@ -218,7 +218,7 @@ function taktZusammen(liste) {
 const ORT = opt("--ort", "wiese");
 if (!FOLGEN[ORT]) throw new Error(`omen-messfolge: kein Messort „${ORT}" (Folgen: ${Object.keys(FOLGEN).join(", ")})`);
 const FOLGE = FOLGEN[ORT];
-// DIE SICHT (K26, Pflicht-OFFEN E in Ego UND Third-Person): der Ort wird in ihr aufgestellt, die Band richtet die Ratsche
+// DIE SICHT (K26, Leiter same.preis.takt in Ego UND Third-Person): der Ort wird in ihr aufgestellt, die Band richtet die Ratsche
 // dieses Orts × Geräts × Sicht.
 const SICHT = opt("--sicht", "ego");
 if (!BAND.ladeSpec(ORT).haushalt.sichten[SICHT])
@@ -1151,7 +1151,7 @@ async function selbsttest() {
         pruefe("1110-12 w2B (Wiese)", bandBefunde(bandVon(probe.boots.w2B)), /^BAND-LINSE ratsche: einzelstuecke k0: 37964 dreiecke über der Ratsche 0/);
         pruefe("1110-12 g2B (Genesis)", bandBefunde(bandVon(probe.boots.g2B)), /^BAND-LINSE ratsche: boden haupt: 101954 dreiecke über der Ratsche 95817/);
         pruefe("1110-12 w2B mit sich selbst als Basis (alte Zeilen ohne Schlüssel)", bandBefunde(bandVon(probe.boots.w2B), bandVon(probe.boots.w2B)), /^BAND-LINSE ratsche: einzelstuecke k0/);
-        // DIE SICHT gehört zum gestellten Ort (Pflicht-OFFEN E in Ego und Third-Person): eine Wache in der anderen Sicht ist rot
+        // DIE SICHT gehört zum gestellten Ort (Leiter same.preis.takt in Ego und Third-Person): eine Wache in der anderen Sicht ist rot
         pruefe(
             "Third-Person gezählt, Ego verlangt (Ort-Wache)",
             wachenUrteil("band", wache(), wache({ ort: Object.assign({}, wache().ort, { sicht: "third" }) }), ort, true),

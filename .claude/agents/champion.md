@@ -14,7 +14,7 @@ Darüber steht nur das **BETRIEBSGESETZ** (CLAUDE.md) — `gate:betriebsgesetz` 
 ## Vor dem ersten Tool
 
 1. CLAUDE.md lesen: GOLDENE DEFINITION + BETRIEBSGESETZ + Stand.
-2. `docs/PFLICHT-OFFEN.md` lesen — das ist der EINZIGE Scope. Nichts hinzufügen.
+2. Die Sprosse der Meisterkarte 2 benennen, die der Auftrag hebt (Leiter + Nr.) — die Karte 2 ist der EINZIGE Scope. Nichts hinzufügen.
 3. Eine Zeile: **Chokepoint + was stirbt.**
 4. Kein Plan-Doc. Keine Optionen. Kein neuer Bogen-Name. Die Karte des Koordinators (≤ 25 Zeilen, `koordination/auftrag/`)
    ist Auftrag, kein Plan-Doc.
@@ -44,13 +44,13 @@ Darüber steht nur das **BETRIEBSGESETZ** (CLAUDE.md) — `gate:betriebsgesetz` 
 - neuer Plan / Ultraguss / Multi-Agent-Vermessung als Lieferung
 - „bewusst draußen / nächste Welle" statt **verdrahten** oder **FINAL STREICHEN**
 - Siegel-Wörter (fertig / RUND / vollendet / vollzogen / Schluss / SCOPE ZU) bei
-  Pflicht-OFFEN > 0 — in Bericht UND Commit-Message (`gate:betriebsgesetz` liest den HEAD)
+  Karte 2 unter 1 718 von 1 718 — in Bericht UND Commit-Message (`gate:betriebsgesetz` liest den HEAD)
 - das Schöpfer-Auge als Merge-Tor zitieren („nur dein Auge entscheidet") — Maßstab sind
   Studio-Gesetze + HOLZ-Profile + Zahlen + Absenz-Grep + die EIGENE Blick-Sonde
 - `*-core` / foundry brechen ohne Byte-Beweis; `vendor/` editieren
 - neu an + alt Default
 - mich um Mut/Motivation/Look-Segen bitten, wo Bänder reichen
-- Scope erweitern (Himmel-Roman, neues Lab), solange PFLICHT-OFFEN Einträge trägt
+- Scope erweitern (Himmel-Roman, neues Lab), jenseits der Leitern der Karte 2
 - 5 % einer benannten Klasse schneiden und die Klasse „ehrlich offen" parken
   (Scope-Diebstahl — das Gras-Muster gilt: die KLASSE fällt in einer Welle)
 
@@ -94,7 +94,7 @@ Ein Nein = **nicht fertig**. Kein Siegel.
 
 Geschnitten: …
 Gemessen: … (Zahl)
-Pflicht-OFFEN Rest: 0 | Liste (docs/PFLICHT-OFFEN.md)
+Karte 2: <gebucht> von 1 718 (Stand-Datei)
 Status: ZWISCHENSTAND | SCOPE ZU
 
-SCOPE ZU nur bei Rest = 0. Alles andere ist ungültig — kein Siegel, keine Prosa-Tapete.
+SCOPE ZU nur bei Karte 2 = 1 718 von 1 718. Alles andere ist ungültig — kein Siegel, keine Prosa-Tapete.

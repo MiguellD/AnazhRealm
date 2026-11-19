@@ -1612,7 +1612,7 @@ const MASS_RECHNER = {
     // DAS LICHT-VERHÄLTNIS: E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte (`werkbank licht`, die Licht-Bilanz) — nachts
     // trägt der Mond das Richtlicht; ihre Größen daneben (D3: `umgebungAzimut`; die Nacht: `mondTon`) urteilt die Tafel als
     // Neben-Größen (`sollTafelUrteil`), je Uhr der Messung. Der Täter nennt je Licht-Art ihren Anteil über dem Himmel (die Variante
-    // jeder Art trägt die Umgebung): das Richtlicht, Ambient und Hemi (nachts die Ersatz-Lichter der Welt). Der Schatten-Anteil
+    // jeder Art trägt die Umgebung): das Richtlicht (Ambient und Hemi fielen in licht-eine-skala). Der Schatten-Anteil
     // E(Himmel) / E(alle) fiel (w4-himmel-uhr) als Zwilling: er ist der Kehrwert dieses Maßes im selben Band derselben Quelle.
     lichtVerhaeltnis(ma) {
         const me = ma.messung;
@@ -1627,9 +1627,7 @@ const MASS_RECHNER = {
             ist,
             taeter:
                 `E Himmel ${me.E_umgebung} gegen E ${messSonne(me) < 0 ? "Mond" : "Sonne"} ` +
-                (me.E_richt == null
-                    ? ue(me.E_alle)
-                    : `${ue(me.E_richt)} · Ambient ${ue(me.E_ambient)} · Hemi ${ue(me.E_hemi)}`),
+                ue(me.E_richt == null ? me.E_alle : me.E_richt),
             teile: `lichtVerhaeltnis ${ist}`,
         };
     },

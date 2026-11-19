@@ -693,11 +693,14 @@ async function wasserLicht(o = {}) {
             await luft(0.5, spiegel - 3);
             const getaucht = await himmel();
             await luft(0.5, spiegel + 10);
+            // vier gültige Stellen (licht-eine-skala): die Nacht trägt in der EINEN Skala ~10⁻⁵ Welt-Einheiten (0,26 lx ÷ 16 090) —
+            // die feste Rundung auf 10⁻⁴ löschte sie zu 0, und K9 NACHT verglich 0 mit 0
+            const S = (x) => (Number.isFinite(x) ? +x.toPrecision(4) : null);
             aus.licht = {
-                nachtOben: R(nachtOben, 4),
-                nachtUnten: R(nachtUnten, 4),
-                mittagOben: R(mittagOben, 4),
-                mittagUnten: R(mittagUnten, 4),
+                nachtOben: S(nachtOben),
+                nachtUnten: S(nachtUnten),
+                mittagOben: S(mittagOben),
+                mittagUnten: S(mittagUnten),
                 himmelVor: vorTauchen,
                 himmelGetaucht: getaucht,
             };
@@ -1295,11 +1298,21 @@ async function wasserBild(o = {}) {
     const gefuehlAlt = U.emotion ? U.emotion.value : null;
     if (U.emotion) U.emotion.value = 0;
     const WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
+    // DIE LAMPE DER LINSE (das Licht der Welt trägt seit licht-eine-skala kein Ambient): allein das Richtlicht aus dem Zenit mit
+    // π, die Sonnen-Sicht frei (Horizont- und Wolken-Karte aus) — eine waagrechte Fläche nimmt E/π = 1
+    const [HKl, WKl] = [r._horizontKarte().U, r._wolkenKarte().U];
+    const sichtAlt = [HKl.aktiv.value, WKl.aktiv.value];
+    const lampe = () => {
+        WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
+        const L = r._weltLicht().U;
+        L.l0d.value.set(0, 1, 0);
+        L.l0c.value.setScalar(Math.PI);
+        [HKl.aktiv.value, WKl.aktiv.value] = [0, 0];
+    };
     const lichtAlt = U.light.value;
     const mess = async (zeit) => {
         U.time.value = zeit;
-        WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
-        r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI); // das Licht der Welt E/π = 1 (allein Ambient π)
+        lampe(); // das Licht der Welt E/π = 1 (allein die Lampe der Linse)
         U.light.value = 0;
         // DAS BILD OHNE SCHAUM: derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
         // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des
@@ -1381,8 +1394,7 @@ async function wasserBild(o = {}) {
     const kammMess = async (wind) => {
         U.wind.value = wind;
         U.time.value = o.t0 || 61.3;
-        WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
-        r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI);
+        lampe();
         U.light.value = 0;
         U.emotion.value = -1;
         const px0 = await lese(meerSzene, meerCam);
@@ -1415,8 +1427,7 @@ async function wasserBild(o = {}) {
         try {
             U.wind.value = 0.06;
             U.time.value = o.t0 || 61.3;
-            WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
-            r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI);
+            lampe();
             U.emotion.value = 0;
             U.light.value = 1;
             U.sunDir.value.set(0, 1, 0);
@@ -1460,6 +1471,7 @@ async function wasserBild(o = {}) {
         if (U.wind) U.wind.value = windAlt;
         U.time.value = zeitAlt;
         WL.forEach((u, i) => (u.value = u.value.copy ? u.value.copy(wlAlt[i]) : wlAlt[i]));
+        [HKl.aktiv.value, WKl.aktiv.value] = sichtAlt;
         U.light.value = lichtAlt;
         himmelMittag(tagAlt, weltTagAlt);
         if (U.emotion) U.emotion.value = gefuehlAlt;
@@ -1523,14 +1535,27 @@ async function wasserRegen(o = {}) {
     const rt = new T.RenderTarget(W, H);
     let px = null,
         mesh = null,
-        eltern = null;
+        eltern = null,
+        lage = null;
     try {
         r._setWeather("stormy", "human");
         window.__uebergangFaellt(r);
         st.camera = cam;
         r._bildZeit = t; // die Bild-Uhr (A9), die der Regen liest
+        // das Licht des Orts steht, ehe der Regen es zurückwirft (licht-eine-skala: die Schliere liest den Lichtmesser, `uLicht`):
+        // der Sturm wechselt das Medium, der Himmel verwirft seine Bestrahlungs-Tafel bis zur neuen Lesung (`_atmoTakt`) — die Probe
+        // wartet auf sie und wendet das Licht an; bis hier trug der Regen ein eigenes, unbeleuchtetes Licht
+        r._applyDayNightToScene();
+        for (let i = 0; i < 100 && !(st.atmoLut && st.atmoLut.tafel); i++) await sleep(30);
+        if (!(st.atmoLut && st.atmoLut.tafel)) return { fehler: "die Bestrahlungs-Tafel des Sturms kam nicht zurück (der Lichtmesser liest nichts)" };
+        r._applyDayNightToScene();
         r._tickRain();
         const sys = r._rainSystem;
+        // die Lage der Probe im Urteil: die Stunde und das Licht, das die Schliere zurückwirft
+        lage = {
+            uhr: +st.timeOfDay.toFixed(3),
+            uLicht: sys && sys.uLicht ? [sys.uLicht.value.x, sys.uLicht.value.y, sys.uLicht.value.z].map((v) => +v.toPrecision(3)) : null,
+        };
         mesh = sys && sys.mesh;
         if (!mesh) return { fehler: "kein Regen-Objekt" };
         eltern = mesh.parent;
@@ -1576,6 +1601,7 @@ async function wasserRegen(o = {}) {
         litAnteil: wasserRund(5)(n / (W * H)),
         schlieren,
         neigung: rechts + links > 0 ? wasserRund(3)((rechts - links) / (rechts + links)) : 0,
+        lage,
     };
 }
 

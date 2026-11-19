@@ -1166,18 +1166,30 @@ class AnazhRealm_feld_leben {
                 },
             },
             {
-                example: "erschaffe welt <slug> [mit person]",
+                example: "erschaffe welt <slug> [saat <saat>] [mit person]",
                 re: /^(?:erschaffe|neue)\s+welt(?:\s+(.+))?$/i,
                 run: (m, append) => {
                     // Ring 8: neue eigenständige Welt mit eigener worldId. Optional
                     // „mit person" am Ende → bisherige Spieler-Identität übernehmen.
-                    const rest = (m[1] || "").toLowerCase().trim();
-                    const inherit = / mit person$/i.test(rest) || / mit übernahme$/i.test(rest);
-                    const slug = rest
-                        .replace(/ mit person$/i, "")
-                        .replace(/ mit übernahme$/i, "")
+                    // DIE SAAT DES SCHÖPFERS (saat-im-lauf): „saat <Saat>“ nennt die Saat, aus der die neue Welt wächst (ihr Wortlaut
+                    // bleibt, wie er geschrieben ist) — dieselbe Saat, dieselbe Welt; ohne sie würfelt die Geburt.
+                    const roh = (m[1] || "").trim();
+                    const saatM = /(?:^|\s)saat\s+(\S+)/i.exec(roh);
+                    const rest = roh
+                        .replace(/(?:^|\s)saat\s+\S+/i, " ")
+                        .toLowerCase()
                         .trim();
-                    const newId = this.createNewWorld({ slug: slug || null, inheritPlayer: inherit, reload: true });
+                    const inherit = /(?:^| )mit person$/i.test(rest) || /(?:^| )mit übernahme$/i.test(rest);
+                    const slug = rest
+                        .replace(/(?:^| )mit person$/i, "")
+                        .replace(/(?:^| )mit übernahme$/i, "")
+                        .trim();
+                    const newId = this.createNewWorld({
+                        slug: slug || null,
+                        inheritPlayer: inherit,
+                        reload: true,
+                        saat: saatM ? saatM[1] : null,
+                    });
                     if (newId) {
                         append(
                             inherit

@@ -207,6 +207,9 @@ function sehUrteil(proben) {
     }
     return v;
 }
+// DER STEIN AUSSER DER ZEILE (E8.1): gegen die Zeile zählen die Dreiecke ohne die, die sie frei stellt — die Zahl des Ausgangs
+// (phyto-core `budgetFrei` vor der Faltung, Bericht `frei`); ohne Bericht (die Pflanzen) ist nichts frei.
+const gegenZeile = (mm) => mm.tris - (mm.budget?.frei || 0);
 function kostenUrteil(messungen, budget) {
     const v = [];
     for (const mm of messungen) {
@@ -216,7 +219,7 @@ function kostenUrteil(messungen, budget) {
             continue;
         }
         if (z.karte) continue;
-        if (mm.tris > z.tris) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.tris} Dreiecke > ${z.tris}`);
+        if (gegenZeile(mm) > z.tris) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${gegenZeile(mm)} Dreiecke > ${z.tris}`);
         if (mm.draws > z.draws) v.push(`${mm.kind}[${mm.lod}] ${mm.fall}: ${mm.draws} Draws > ${z.draws}`);
     }
     return v;
@@ -412,6 +415,56 @@ function wurfUrteil(mess, budget) {
     }
     return v;
 }
+// (Z3) DAS LEUCHTEN JEDER LIEFERUNG TRÄGT SEIN DATUM (licht-eine-skala, Entscheid des Koordinators; rein — der Selbsttest
+// füttert es): je gelieferter Fläche, die leuchtet (`mat.licht`, `mat.leucht` > 0 oder `mat.emissive`, foundry-bruecke.js
+// `out.mat`), EINE Quelle —
+//   licht      der Name eines Emitter-Datums: es steht im fachwerk `LICHT_GESETZ` und trägt `cdM2` (die Quelle im Gesetz);
+//   leucht     ohne `unbeleuchtet`: das Leucht-Gesetz des Feuers (Wert = fachwerk `LEUCHT_FEUER`);
+//   tor        `leucht` mit `unbeleuchtet` (Filigran · Saum · Scheibe) oder Emissiv (Rahmen-Glut · Tor-Beschläge) an der Art
+//              Tor (`kind` gate) — die Klasse Erscheinung;
+//   quelle     Emissiv der Seh-Klasse `glut`: die Lichter des Studios (die Zahl der Studio-Tafel in der Einheit der Welt);
+//   rest       Emissiv der Seh-Klasse `auge`: der EINE Rest ohne Gesetz, das Tierauge (Rückstrahl, kein Strahler).
+// Alles andere ist ROT beim Namen: Emissiv ohne Quellen-Datum außerhalb der Klasse.
+require("../fachwerk-core.js");
+const FC = globalThis.__fachwerkCore;
+function leuchtUrteil(flaechen, fc = FC) {
+    const zahl = { licht: 0, leucht: 0, tor: 0, quelle: 0, rest: 0 };
+    const [roh, rest] = [[], new Map()];
+    const em = (f) => `${f.emissive.map((x) => +(+x).toFixed(3)).join("/")} × ${f.emissiveIntensity == null ? 1 : f.emissiveIntensity}`;
+    const wer = (f) => `${f.fall} (${f.art || "?"}) Stoff ${f.stoff || "?"} Seh ${f.seh || "—"}`;
+    for (const f of flaechen) {
+        // je Befund der Text mit seiner Lieferung; gebündelt wird je Befund ohne den Namen der Lieferung
+        const rot = { push: (text) => roh.push({ text, fall: f.fall }) };
+        const leucht = typeof f.leucht === "number" && f.leucht > 0;
+        if (typeof f.licht === "string") {
+            const D = fc.LICHT_GESETZ[f.licht];
+            if (D && D.cdM2 > 0) zahl.licht++;
+            else rot.push(`Emitter-Datum ohne Gesetz: ${wer(f)} trägt licht „${f.licht}" — ${D ? "die Zeile trägt kein cdM2" : "keine Zeile im fachwerk LICHT_GESETZ"}`); // prettier-ignore
+        } else if (leucht && f.unbeleuchtet) {
+            if (f.art === "gate") zahl.tor++;
+            else rot.push(`Unbeleuchtetes außerhalb der Klasse: ${wer(f)} leuchtet ohne Licht-Antwort (leucht ${f.leucht}) — nur die Art Tor trägt Filigran, Saum und Scheibe`); // prettier-ignore
+        } else if (leucht) {
+            if (f.leucht === fc.LEUCHT_FEUER) zahl.leucht++;
+            else rot.push(`Leucht-Gesetz ohne Quelle: ${wer(f)} leuchtet × ${f.leucht} (das Gesetz des Feuers trägt LEUCHT_FEUER ${fc.LEUCHT_FEUER})`); // prettier-ignore
+        } else if (Array.isArray(f.emissive)) {
+            if (f.seh === "glut") zahl.quelle++;
+            else if (f.art === "gate") zahl.tor++;
+            else if (f.seh === "auge") {
+                zahl.rest++;
+                rest.set(f.fall, (rest.get(f.fall) || 0) + 1);
+            } else rot.push(`Emissiv ohne Quellen-Datum außerhalb der Klasse: ${f.fall} ${f.stoff || "?"} ${f.seh || "—"} ${em(f)} (Art ${f.art || "?"})`); // prettier-ignore
+        }
+    }
+    const je = new Map();
+    for (const { text, fall } of roh) {
+        const schl = fall ? text.split(fall).join("…") : text;
+        if (!je.has(schl)) je.set(schl, { text, faelle: new Set() });
+        je.get(schl).faelle.add(fall);
+    }
+    const gebuendelt = [...je.values()].map((b) => (b.faelle.size > 1 ? `${b.text} (dieselbe Fläche an ${b.faelle.size} Lieferungen: ${[...b.faelle].slice(0, 6).join(", ")}${b.faelle.size > 6 ? " …" : ""})` : b.text)); // prettier-ignore
+    return { rot: gebuendelt, flaechenRot: roh.length, zahl, rest };
+}
+
 // (J) DAS JAHR DER GESTALT (w21-laub-jahr-fern, rein — der Selbsttest füttert es): jede Baum-Gestalt (L0 und L1, die Quelle der
 // Karte) trägt die Ecken ihres Phänotyps (`artPhaenotyp`): die Nadel keine Laub- oder Blüten-Ecke — sie steht im Jahr
 // (SAISON_GESETZ: „Nadel 2 steht") —, eine Laub-Krone welche — sie fällt im Winter auf ihre Mitten. Ihre Leser: die Schale
@@ -541,6 +594,7 @@ hauptLauf(async () => {
     const wurfMess = [];
     const jahrMess = [];
     const [aehren, aehrenProbe, eckForm] = [[], {}, []];
+    const [leuchtFlaechen, leuchtGesehen] = [[], new Set()];
     let kronenProbe = null;
     await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
         // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
@@ -658,7 +712,18 @@ hauptLauf(async () => {
         // `teil: "schatten"` — das Gerüst als Dreikant (aDeckt 1) und die Schatten-Karten (aDeckt 0) —, höchstens
         // wurf.tris Dreiecke, seine Karten auf höchstens wurf.lagen Lagen (kronen-linse). Der Wirt bricht ohne das Teil
         // (KERN-PFLICHT); hier fällt der Bruch am Studio-Ausgang auf.
+        // (Z3) die leuchtenden Flächen jeder Lieferung (Goldens und Gestalten der Welt über `build`, die Zweit-Kern-Stufen der
+        // Welt über die Teile des Kosten-Zugs)
+        const leuchtNimm = (fall, art, meshes) => {
+            for (const m of meshes || []) {
+                const t = m && m.mat;
+                if (!t || !(typeof t.licht === "string" || t.leucht > 0 || Array.isArray(t.emissive))) continue;
+                leuchtFlaechen.push({ fall, art, stoff: m.kind, seh: t.seh, licht: t.licht, leucht: t.leucht, unbeleuchtet: t.unbeleuchtet, emissive: t.emissive, emissiveIntensity: t.emissiveIntensity }); // prettier-ignore
+            }
+            leuchtGesehen.add(fall);
+        };
         const waende = (c, a, fall) => {
+            leuchtNimm(fall, artVon(c.presetId), a.meshes);
             miss(c, a, fall);
             kroneWand(c, a, fall);
             kronenMass(c, a);
@@ -743,9 +808,10 @@ hauptLauf(async () => {
             return stufen[kind].find((l) => !(budget[kind][l] && budget[kind][l].karte));
         };
         const weltK = welt.length
-            ? await kostenListe(welt, (c) => gestaltenV(gestalten, c.presetId) >= 2 && c.lod === ersteStufe(c.presetId))
+            ? await kostenListe(welt, (c) => gestaltenV(gestalten, c.presetId) >= 2 && c.lod === ersteStufe(c.presetId), true)
             : [];
         welt.forEach((c, i) => miss(c, weltK[i], `${c.presetId}-s${c.seed}-L${c.lod}`));
+        welt.forEach((c, i) => leuchtNimm(`${c.presetId}-s${c.seed}-L${c.lod}`, artVon(c.presetId), weltK[i] && weltK[i].teile));
         const abdruecke = {};
         const abdruck = (c, h) => {
             const a = abdruecke[c.presetId] || (abdruecke[c.presetId] = { lod: c.lod, h: [] });
@@ -878,6 +944,29 @@ hauptLauf(async () => {
         const eOk = eS.some((x) => /in Float32Array × 3 statt/.test(x));
         console.log(`Eck-Wand (E): ${aehren.length} Gestalten, ${eckForm.length} Täter · Selbsttest ${eOk ? "✅" : "❌"} — ${eS[0] || "keine Mutante gebaut"}`);
         if (!eOk) fails.push("Selbsttest der Eck-Wand feuert nicht");
+        // (Z3) DAS LEUCHTEN und sein Selbsttest an einer Lieferung im Speicher: (m1) Emissiv auf einem Stoff der Seh-Klasse
+        // `stoff` an einem Nicht-Tor · (m2) `unbeleuchtet` an einem Nicht-Tor · (m3) `licht: "gibtEsNicht"` MÜSSEN rot werden
+        const LU = leuchtUrteil(leuchtFlaechen);
+        fails.push(...LU.rot.map((x) => "Leuchten: " + x));
+        const fremd = leuchtFlaechen.find((f) => f.art !== "gate" && f.seh === "stoff") || leuchtFlaechen.find((f) => f.art !== "gate") || { fall: "selbsttest-s1-L0", art: "weapon", stoff: "unknown" }; // prettier-ignore
+        const roh = { fall: fremd.fall, art: fremd.art, stoff: fremd.stoff };
+        const lM = [
+            leuchtUrteil([{ ...roh, seh: "stoff", emissive: [1, 0.4, 0.1], emissiveIntensity: 2 }]).rot,
+            leuchtUrteil([{ ...roh, seh: fremd.seh, leucht: 1, unbeleuchtet: true }]).rot,
+            leuchtUrteil([{ ...roh, seh: fremd.seh, licht: "gibtEsNicht" }]).rot,
+        ];
+        const lOk =
+            lM[0].length === 1 && lM[0][0].startsWith(`Emissiv ohne Quellen-Datum außerhalb der Klasse: ${roh.fall} ${roh.stoff} stoff 1/0.4/0.1 × 2`) &&
+            lM[1].length === 1 && lM[1][0].startsWith(`Unbeleuchtetes außerhalb der Klasse: ${roh.fall}`) &&
+            lM[2].length === 1 && /licht „gibtEsNicht" — keine Zeile/.test(lM[2][0]);
+        const Z = LU.zahl;
+        console.log(
+            `Leuchten-Wand (Z3): ${leuchtGesehen.size} Lieferungen, ${leuchtFlaechen.length} leuchtende Flächen — licht ${Z.licht} · leucht ${Z.leucht} · ` +
+                `Tor-Erscheinung ${Z.tor} · Lichtquelle ${Z.quelle} · Rest (Tierauge) ${Z.rest} an ${LU.rest.size} Lieferungen` +
+                ` (${[...new Set([...LU.rest.keys()].map((k) => k.replace(/-s\d+-L\d+.*$/, "")))].join(", ") || "keiner"}) · ` +
+                `ROT ${LU.rot.length} · Selbsttest ${lOk ? "✅" : "❌"} — ${lM.map((x) => x[0]).join(" · ")}`
+        );
+        if (!lOk) fails.push("Selbsttest der Leuchten-Wand feuert nicht");
         // DIE PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Golden-Fall mit Samen 7 im Sommer baut
         // in einem zweiten Worker noch einmal, während dessen Transzendenten ±1 ULP verschoben rechnen. Die Pflanzen
         // sind ungerastert: ihre Zeile in spec/asset-contract/plattform-ratsche.json nennt je Funktion die kippenden
@@ -932,11 +1021,15 @@ hauptLauf(async () => {
                     );
                     continue;
                 }
-                const top = mm.reduce((s, x) => (!s || x.tris > s.tris ? x : s), null);
+                const top = mm.reduce((s, x) => (!s || gegenZeile(x) > gegenZeile(s) ? x : s), null);
                 const dMax = mm.reduce((s, x) => Math.max(s, x.draws), 0);
                 const vor = mm.reduce((s, x) => Math.max(s, x.budget?.vorher ? x.budget.vorher.draws : 0), 0);
+                // gegen die Zeile ohne den freien Stein (E8.1); gebaut steht daneben, das Band misst den Bau
+                const frei = mm.reduce((s, x) => Math.max(s, x.budget?.frei || 0), 0);
                 zeilen.push(
-                    `${k}[${st}] ${top ? top.tris : "—"}/${z.tris} · Draws ${dMax}/${z.draws}` +
+                    `${k}[${st}] ${top ? gegenZeile(top) : "—"}/${z.tris}` +
+                        (frei ? ` (Stein frei bis ${frei}, gebaut ${top.tris})` : "") +
+                        ` · Draws ${dMax}/${z.draws}` +
                         (vor ? ` (ungefaltet bis ${vor})` : "") +
                         (z.band ? ` · Band ${z.band} (${top ? (top.tris / z.band).toFixed(1) : "—"}×)` : "") +
                         ` (${mm.length} Fälle, max ${top ? top.fall : "—"})`

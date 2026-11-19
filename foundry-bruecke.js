@@ -963,6 +963,9 @@ const foundryKanal = (() => {
                     vorher: res.bericht.vorher,
                     nachher: res.bericht.nachher,
                     faltungen: res.bericht.faltungen.length,
+                    // DER STEIN AUSSER DER ZEILE (E8.1, must-ignore): die Dreiecke, die die Zeile frei stellt (phyto-core
+                    // `budgetFrei`, vor der Faltung gezählt) — nur wo die Zeile `ohneVerband` trägt (das Haus), sonst byte-alt
+                    ...(res.bericht.frei > 0 ? { frei: res.bericht.frei } : {}),
                 };
                 if (res.bericht.bruch.length) {
                     budgetBruch = res.bericht.bruch;
