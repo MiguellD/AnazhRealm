@@ -1307,28 +1307,19 @@ class AnazhRealm_siedlung_bewohner {
         wurzel.updateMatrixWorld(true);
         return (R.pose = { wurzel, teile, ruhe });
     }
-    // DIE POSE EINES LEIBS AUF DER VORLAGE (w26-leib-raum, die Pose in der Ruhe ihres Knochens — SMPL: dieselbe Pose θ, die Gelenke
-    // des Raums): je Knochen der Vorlage die Drehung des gestellten Leibs `g` gegen seine Ruhe (`_tierBaum.ruhe`), auf die Ruhe der
-    // Vorlage gelegt, dazu der Schritt seiner Lage und das Maß seiner Skala. Die Gelenke der Person liegen dabei auf denen der
-    // Vorlage: gemessen weichen sie über die Achsen des Raums höchstens 21 mm quer ab (die Schulter, Geschlecht) — der Gang dreht
-    // die Glieder um die Querachse, die Querlage trägt er nicht.
-    // DIE POSE θ IST DIE DES GESETZES (koerper `leibRigPose`: jede Haltung ADDIERT ihre Winkel auf die Ruhe des Knochens): ruht ein
-    // Knochen des Leibs anders als der der Vorlage — die Arme seines Baus (`leibBauArme`) —, legt sie dieselben Winkel auf die Ruhe
-    // der Vorlage; die Drehung gegen die Ruhe (sr⁻¹ · s) hinge an der Ruhe selbst. Bis hier stand der Pfarrer #16036 (Gestalt 1, Zug
-    // fleißig, Arme 1,2° anders als die Vorlage) in der Haltung sad 1,3° anders als sein Stand im Satz (gate:kreatur-takt bewohner)
+    // DIE POSE EINES LEIBS AUF DER VORLAGE (w26-leib-raum, SMPL: dieselbe Pose θ, die Gelenke des Raums): je Knochen der Vorlage die
+    // Winkel des gestellten Leibs `g` über seiner Ruhe (`_tierBaum.ruhe`; das Pose-Gesetz koerper `leibRigPose` ADDIERT sie) auf der Ruhe
+    // der Vorlage — wo beide gleich ruhen, seine Drehung —, dazu der Schritt seiner Lage und das Maß seiner Skala (die Gelenke weichen quer
+    // höchstens 21 mm ab: Schulter, Geschlecht). Bis hier galt die Drehung auch, wo der Arm nach seinem Bau anders ruht (`leibBauArme`): der
+    // Pfarrer #16036 (1,2° anders) stand in sad 1,3° anders als sein Stand im Satz (gate:kreatur-takt bewohner, die Haltung)
     _bewohnerRaumStellen(S, g) {
-        const P = this._bewohnerRaumPose(S);
-        const tb = g.userData._tierBaum;
-        const q = this._bewohnerRaumQ || (this._bewohnerRaumQ = new THREE.Quaternion());
-        const [eR, eS] = this._bewohnerRaumE || (this._bewohnerRaumE = [new THREE.Euler(), new THREE.Euler()]);
+        const [P, tb] = [this._bewohnerRaumPose(S), g.userData._tierBaum];
+        const [q, eR, eS] = this._bewohnerRaumQ || (this._bewohnerRaumQ = [new THREE.Quaternion(), new THREE.Euler(), new THREE.Euler()]); // prettier-ignore
         for (const nm in P.teile) {
             const [d, r, s, sr] = [P.teile[nm], P.ruhe[nm], tb.teile[nm], tb.ruhe[nm]];
             if (!s || !sr) continue;
-            if (Math.abs(r.quaternion.dot(sr.quaternion)) < 1 - 1e-9) {
-                eR.setFromQuaternion(r.quaternion, s.rotation.order);
-                eS.setFromQuaternion(sr.quaternion, s.rotation.order);
-                d.rotation.set(eR.x + s.rotation.x - eS.x, eR.y + s.rotation.y - eS.y, eR.z + s.rotation.z - eS.z, s.rotation.order); // prettier-ignore
-            } else d.quaternion.copy(r.quaternion).multiply(q.copy(sr.quaternion).invert().multiply(s.quaternion));
+            if (Math.abs(r.quaternion.dot(sr.quaternion)) > 1 - 1e-9) d.quaternion.copy(r.quaternion).multiply(q.copy(sr.quaternion).invert().multiply(s.quaternion)); // prettier-ignore
+            else d.rotation.set(eR.setFromQuaternion(r.quaternion, s.rotation.order).x + s.rotation.x - eS.setFromQuaternion(sr.quaternion, s.rotation.order).x, eR.y + s.rotation.y - eS.y, eR.z + s.rotation.z - eS.z, s.rotation.order); // prettier-ignore
             d.position.copy(r.position).add(s.position).sub(sr.position);
             d.scale.copy(r.scale).multiply(s.scale).divide(sr.scale);
         }
