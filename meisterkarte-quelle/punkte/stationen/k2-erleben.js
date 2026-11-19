@@ -4,6 +4,7 @@
 // aus dem Strom der Sitzung (richter-akte.cjs), an der dichtesten Pose, an der die Probe endet.
 "use strict";
 const { leiter } = require("./k2-same.js").geruest;
+const { SAATEN } = require("./sitzung-seite.js");
 const LEITERN = [];
 
 // ═══════════════════════════════════════ Perspektive spieler ═══════════════════════════════════════
@@ -52,11 +53,22 @@ const LEITERN = [];
                     umfang: { verlangt: 1000, einheit: "(Saat, Art)-Paare der Sitzung", wortlaut: "N = 1 000 (Saat, Art, Lage)", feld: "richter" },
                 },
             },
+            seite: { SAATEN },
             lauf: async function praesenzLauf(H, P, L) {
                 const saat = await L.ev("return r.state.worldMeta && r.state.worldMeta.seed;");
-                await L.je(2, async () =>
-                    L.umfang(2, 1, "die Sitzung hält eine Saat (" + saat + "); die Lagen-Stichprobe verlangt " + P.sprossen[2].umfang.verlangt + " Saaten — kein Wechsel der Saat im Lauf")
-                );
+                // S2 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; gezählt
+                // ist die Saat, die die Welt trägt, mit ihrem Spawn (dort begänne die Stichprobe der Lagen). Die Schleife endet 25 s vor
+                // der Frist: die Stadt-Pose der Sprossen 3–6 bleibt gemessen. Trägt die Welt alle Saaten, nennt S2 den Leser je Lage.
+                await L.je(2, async () => {
+                    const v = P.sprossen[2].umfang.verlangt;
+                    const arg = { stamm: P.leiter + "-s2", n: v, bis: Date.now() + Math.max(0, (L.rest() - 25) * 1000) };
+                    const s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => { const p = r.state.playerMesh.position; return [Math.round(p.x), Math.round(p.z)]; });", Math.max(5, L.rest() - 2));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("praesenz S2 Saaten " + JSON.stringify(s));
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
+                    if (s.je.length < v) return L.umfang(2, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + zeit + "; Ende: " + s.grund + ")");
+                    L.leser(2, "die drei Schwellen je Zufallslage: kein Leser, der in jeder Saat Lagen zieht und Taste → Bild, Fuß und Kamera je Lage urteilt (scripts/werkbank.cjs:1892 `/latenz` misst nur am Ort der Pose) — " + zeit, s.je.length);
+                });
                 // die dichteste Pose der Leiter: der Markt der Stadt im Gedränge (dort fährt auch der Preis, R3)
                 await L.ort("stadt-voll", "third");
                 L.preisPose("stadt-voll", "third");
@@ -362,6 +374,7 @@ const LEITERN = [];
                 1: {
                     soll: [{ wort: "anteil_landmarke", richtung: "≥", wert: 0.9, wortlaut: "Kontrast ≥ 0,1, ≥ 0,9", feld: "richter" }],
                     umfang: { verlangt: 50, einheit: "Saaten der Sitzung", wortlaut: "N = 50 Saaten", feld: "richter" },
+                    welt: [{ wort: "saaten", ab: 1, was: "Saaten, in die die Welt am Ort wechselte (worldMeta.seed trägt die Saat)" }],
                 },
                 2: {
                     soll: [
@@ -405,10 +418,13 @@ const LEITERN = [];
                     umfang: { verlangt: 100, einheit: "Saaten der Sitzung", wortlaut: "N = 100 Saaten × 10 Ziele", feld: "richter" },
                 },
             },
+            seite: { SAATEN },
             lauf: async function wegfindungLauf(H, P, L) {
                 const path = require("path");
+                const tOrt = Date.now();
                 await L.ort("wiese", "ego");
                 L.preisPose("wiese", "ego");
+                const ortMs = Date.now() - tOrt;
                 const z = await L.ev(`
                     const st = r.state;
                     const p = st.playerMesh.position;
@@ -456,7 +472,6 @@ const LEITERN = [];
                 const K = PC.planetPlan(z.samen, PC.PLANET_ERDE).koerper;
                 const umfangKm = 2 * Math.PI * K.radiusKm;
                 const zahl = (x, n) => String(+Number(x).toFixed(n == null ? 1 : n)).replace(".", ",");
-                await L.je(1, async () => L.umfang(1, 1, "die Sitzung hält eine Saat (" + z.saat + "); an ihrer Wiese stehen " + z.lm13 + " Landmarken in 1–3 km (" + z.lmAlle + " geladen)"));
                 await L.je(2, async () => {
                     if (z.lm1 < P.sprossen[2].umfang.verlangt) return L.umfang(2, z.lm1, "in 1 km um die Wiese steht keine Landmarke (felsturm/felsbogen, stamm/vegetation-baum.js:1519; " + z.lm13 + " in 1–3 km, " + z.lmAlle + " geladen)");
                     L.leser(2, "Erfolg und Umweg eines menschlichen Testspielers: kein Leser des Ziel-Gangs (Start, Ziel, gegangener Weg) — der Ort wäre eine Route neben `/latenz` (scripts/werkbank.cjs:1892), der Testspieler ein Panel (R11)", z.lm1);
@@ -497,6 +512,51 @@ const LEITERN = [];
                     L.leser(6, "Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche", umfangKm);
                 });
                 await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Saat (" + z.saat + ") und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten"));
+                // S1 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort, ihr
+                // Spawn ist der Spawn-Ort der Karte; gezählt je Saat die Landmarken (felsturm/felsbogen, stamm/vegetation-baum.js:1519) in
+                // 1–3 km und davon die im Kegel der Kamera. Der Anteil mit ≥ 1 im Bild ist die Obergrenze des Solls (der Kontrast fehlt
+                // als Leser): verfehlt er 0,9, ist S1 ROT gemessen; hält er an allen Saaten, nennt S1 den Leser des Kontrasts. Gezählt ist
+                // nur die Saat, deren Welt gewachsen ist (≥ 1 Architektur geladen): die Landmarken sät der Chunk-Pump erst unter Bildern
+                // (`_enqueueVegetationSpawn`, stamm/vegetation-baum.js:1522) — eine Welt ohne Wuchs ist kein „0 Landmarken“. Die Schleife
+                // läuft zuletzt (S2–S7 lesen die Wiese vorher in ihrer Zeit) und nur, solange der Heimweg in die Frist passt: nach der
+                // Rückkehr wächst die Wiese neu (die Preis-Pose der Leiter, `/umstellen`) — die Probe misst ihn an ihrem ersten Gang zur Wiese
+                // (`ortMs`) und hält das Doppelte frei (headless 17 s → nach dem Heimweg 19–30 s).
+                await L.je(1, async () => {
+                    const v = P.sprossen[1].umfang.verlangt;
+                    const arg = { stamm: P.leiter + "-s1", n: v, bis: Date.now() + Math.max(0, (L.rest() - 3 - (2 * ortMs) / 1000) * 1000) };
+                    const zaehl = function (r) {
+                        r._loopCamera(performance.now());
+                        const cam = r.state.camera;
+                        cam.updateMatrixWorld(true);
+                        const F = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+                        const p = r.state.playerMesh.position;
+                        let n13 = 0, imBild = 0;
+                        for (const e of r.state.architectures || []) {
+                            if (!e || typeof e.type !== "string" || !e.position || !(e.type.indexOf("felsturm") === 0 || e.type.indexOf("felsbogen") === 0)) continue;
+                            const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+                            if (d < 1000 || d > 3000) continue;
+                            n13++;
+                            if (F.containsPoint(new T.Vector3(e.position.x, e.position.y, e.position.z))) imBild++;
+                        }
+                        return { n13, imBild, geladen: (r.state.architectures || []).length };
+                    };
+                    const s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + zaehl + ");", Math.max(5, L.rest() - 2));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("wegfindung S1 Saaten " + JSON.stringify(s));
+                    const gewachsen = s.je.filter((x) => x.z.geladen > 0);
+                    const treffer = gewachsen.filter((x) => x.z.imBild > 0).length;
+                    const anteil = gewachsen.length ? treffer / gewachsen.length : 0;
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)" + (s.grund ? "; Ende: " + s.grund : "");
+                    if (gewachsen.length < v && !(gewachsen.length && anteil < P.sprossen[1].soll[0].wert))
+                        return L.umfang(1, gewachsen.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten, gewachsen (≥ 1 Architektur am Erwachen) " + gewachsen.length + " — Architekturen je Saat " + (s.je.map((x) => x.z.geladen).join("/") || "—") + "; " + zeit + "; die Wiese wuchs in " + ortMs + " ms, der Heimweg hält das Doppelte frei");
+                    if (anteil >= P.sprossen[1].soll[0].wert)
+                        return L.leser(1, "Kontrast ≥ 0,1 der Landmarke gegen ihren Grund im Bild: kein Leser des Pixel-Kontrasts je Saat — " + zeit, gewachsen.length);
+                    L.gemessen(1, { anteil_landmarke: +anteil.toFixed(3) }, {
+                        erzeugt: gewachsen.length,
+                        welt: { saaten: gewachsen.length },
+                        taeter: treffer + " von " + gewachsen.length + " gewachsenen Saaten mit Landmarke in 1–3 km im Kegel (je Saat in 1–3 km " + gewachsen.map((x) => x.z.n13).join("/") + "; " + zeit + ")",
+                    });
+                });
             },
         })
     );
@@ -1790,6 +1850,7 @@ const LEITERN = [];
                     umfang: { verlangt: 1000, einheit: "Planeten", wortlaut: "jeder Bewohner auf 10³ Planeten über 10⁵ Jahre", feld: "umfang" },
                 },
             },
+            seite: { SAATEN },
             lauf: async function zieleLauf(H, P, L) {
                 // ── S2–S7 · Saat, Bewohner und Welten der Sitzung ──
                 const zaehlFn = function (r) {
@@ -1827,11 +1888,24 @@ const LEITERN = [];
                         "eine Not, die ein Bewohner im Blick äußert: kein Bewohner spricht — die Bedürfnisse sind die Bindung seiner Orte (koerper-core `tagesBindung` in `_bewohnerListe`, stamm/siedlung-bewohner.js:458), keine Äußerung; der Haken säße im Bewohner-Takt (stamm/siedlung-bewohner.js:1554 `_tickBewohner`)"
                     )
                 );
-                await L.je(3, async () => urteile(3, t.saat != null ? 1 : 0, "die Sitzung hält eine Saat (" + t.saat + ") — 10 Saaten verlangt", keinZiel));
                 await L.je(4, async () => urteile(4, t.maxBew, "die größte Siedlung der Sitzung trägt " + t.maxBew + " Bewohner (" + bewText + ") — keine Stadt mit 10⁴", keinZiel));
                 await L.je(5, async () => urteile(5, t.maxBew, "die größte Siedlung trägt " + t.maxBew + " Bewohner — keine Metropole mit 10⁶", keinZiel));
                 await L.je(6, async () => urteile(6, t.bew, "die Welt trägt " + bewText + " — kein Planet mit 10⁹ Bewohnern; ein Zeitsprung lädt die Welt neu (stamm/feld-leben.js:1265)", keinZiel));
                 await L.je(7, async () => urteile(7, t.welten, "der Speicher der Sitzung kennt " + t.welten + " Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231), je Welt ein Planet (`_planetSamen`, stamm/gelaende-chunks.js:672) — 10³ verlangt", keinZiel));
+                // S3 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat
+                // gezählt Bewohner und Siedlungen (die Domänen, an denen die Arten je Ort stiegen). Trägt die Welt alle Saaten, urteilt der
+                // fehlende Leser offener Ziele. Die Schleife läuft zuletzt bis 8 s vor der Frist (S4–S7 lasen die Welt der Sitzung).
+                await L.je(3, async () => {
+                    const v = P.sprossen[3].umfang.verlangt;
+                    const arg = { stamm: P.leiter + "-s3", n: v, bis: Date.now() + Math.max(0, (L.rest() - 8) * 1000) };
+                    const s = await L.ev("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", (r) => { const z = (" + zaehlFn + ")(r); return [z.bew, z.sied]; });", Math.max(5, L.rest() - 2));
+                    if (s.fehler) throw new Error(s.fehler);
+                    L.zeile("ziele S3 Saaten " + JSON.stringify(s));
+                    const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m)";
+                    const welten = "Bewohner/Siedlungen je Saat " + (s.je.map((x) => x.z.join("/")).join(" · ") || "—");
+                    if (s.je.length < v) return L.umfang(3, s.je.length, "die Welt wechselte am Ort in " + s.je.length + " von " + v + " Saaten (" + zeit + "; " + welten + "; Ende: " + s.grund + ")");
+                    L.leser(3, keinZiel + " — in " + v + " Saaten (" + welten + "; " + zeit + ")", s.je.length);
+                });
             },
         })
     );
