@@ -534,17 +534,17 @@ class AnazhRealm_speicher_laden {
         this._weltTagEichen();
         // das Jahr des Stands (speicher.K4): Tönung, Schneegrenze und Pegel folgen ihm im nächsten Takt der Saison (`_tickSeason`)
         if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1) {
-            // der Anker des Jahrs ist der des Stands (`saisonAnker`: Phase und Welt-Uhr als EIN Paar, feld.K2#2, `_saisonAnkerGilt`);
-            // ein Stand ohne ihn (ein angehaltenes Jahr, ein Stand vor w18-pegel-peers) trägt seine Phase zu seiner Welt-Uhr. Die Phase
-            // steht, wie der Stand sie trägt, bis der Takt der Saison sie zur Uhr der Seite rechnet (`_saisonPhaseZu`).
+            // der Anker des Jahrs ist der des Stands (`saisonAnker`: Phase und Kalender-Zeit als EIN Paar, feld.K2#2,
+            // `_saisonAnkerGilt`; die Kalender-Zeit reist mit ihrem Versatz im worldMeta); ein Stand ohne ihn (ein angehaltenes Jahr,
+            // ein Stand vor w18-pegel-peers) trägt seine Phase zur Kalender-Zeit seiner Welt-Uhr. Die Phase steht, wie der Stand sie
+            // trägt, bis der Takt der Saison sie zur Uhr der Seite rechnet (`_saisonPhaseZu`).
             const sa = state.saisonAnker;
-            const [anker, t] =
+            const [anker, k] =
                 Array.isArray(sa) && sa.length === 2 && sa.every(Number.isFinite) && sa[0] >= 0 && sa[0] < 1
                     ? sa
-                    : [state.seasonPhase, Number.isFinite(state.spielZeit) ? state.spielZeit : this.state.spielZeit];
-            const jahr = this._kalender().jahrS;
+                    : [state.seasonPhase, this._kalenderZeit()];
             this.state.seasonPhase = state.seasonPhase;
-            this._saisonAnker = { anker, t, jahr, phase: state.seasonPhase };
+            this._saisonAnker = { anker, k, phase: state.seasonPhase };
         }
         // DER LEBENSZYKLUS ZÄHLT AB DER UHR DES STANDS (halten.K5): seine Marke (`faunaLifecycle.lastTick`) ist eine Lesung der
         // Welt-Uhr und reist nicht; an der gereisten Uhr fand die Null der Sitzung den letzten Takt so alt wie den Stand, und das

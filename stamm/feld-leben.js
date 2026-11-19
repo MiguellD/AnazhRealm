@@ -2619,7 +2619,7 @@ class AnazhRealm_feld_leben {
     }
 
     // DER KALENDER DER WELT (zeit.K1, zeit-ein-kalender — `WELT_GESETZ_ERDE.kalender`): die EINE Tag-Länge `tagS` (die Wahl des
-    // Spielers, `dayLengthMinutes`, Sekunden der Welt-Uhr je Tag) und aus ihr das Jahr (`jahrS` = tagS ÷ `jahreJeTag`). Leser: der
+    // Spielers, `dayLengthMinutes`, Sekunden der Welt-Uhr je Tag) und das Jahr in Kalender-Zeit (`jahrK` = normS ÷ `jahreJeTag`: es folgt dem Tag). Leser: der
     // Gang der Uhr (`tickDayNight`), der Tag der Prozesse (`_weltTag`), der Pegel (über die Kalender-Zeit), die Nässe des Bodens,
     // das Jahr (`_saisonAnkerGilt`, `setSeason`, das Laden) und die Stunde der Bewohner. Fehlt die Tag-Länge, WIRFT er beim Namen
     // (kein Leser rechnet still mit einem anderen Tag). `normS`: der Standard-Tag (`DAY_LENGTH_DEFAULT_MINUTES`), die Einheit
@@ -2632,7 +2632,7 @@ class AnazhRealm_feld_leben {
             throw new Error(`Der Kalender: keine Tag-Länge (state.dayLengthMinutes ${min})`);
         const tagS = min * 60;
         const normS = AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES * 60;
-        return { tagS, normS, jahrS: tagS / K.jahreJeTag, tagStunden: K.tagStunden, jahrTage: K.jahrTage };
+        return { tagS, normS, jahrK: normS / K.jahreJeTag, tagStunden: K.tagStunden, jahrTage: K.jahrTage };
     }
 
     // DIE KALENDER-ZEIT zur Welt-Uhr `z` (s, ohne sie jetzt): die Welt-Uhr im Gang des Kalenders, gezählt in Sekunden des

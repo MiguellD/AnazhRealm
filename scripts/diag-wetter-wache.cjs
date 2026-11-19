@@ -24,7 +24,15 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest | --quelle]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    nullRenderer,
+    hauptLauf,
+    selbsttestEnde,
+    wandEnde,
+    SELBSTTEST,
+} = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -134,6 +142,185 @@ function uhrQuelle() {
     }
     return { rot: uhrRotVon(befunde, T), B: Object.values(befunde) };
 }
+// ── (K) DER KALENDER (zeit-ein-kalender): `spielZeit` ist die EINE laufende Größe; Tag, Tag der Prozesse, Pegel und Jahr sind
+// Funktionen von ihr durch die EINE Tag-Länge (`_kalender`, `_kalenderZeit`, das Gesetz `WELT_GESETZ_ERDE.kalender`). Statisch
+// (`--quelle`, am AST, je Datei und Glied): die Welt-Uhr und die Stunde schreiben nur ihre Schreiber (`schreiber`: der Takt, die
+// Regel der Welt-Uhr, der EINE Uhr-Schreiber — kein Takt biegt sie für seine Zeit), der Schritt 1/60 steht EINMAL (`FIXED_DT`),
+// eine Zahl 3600/2400 nur, wo die Tafel ihren Grund nennt (das Gesetz und was keine Länge des Kalenders ist), und die gefallenen
+// Zwillinge (`tot`) stehen in keinem Glied. Im Lauf (Null-Renderer): bei jeder Tag-Länge gehen Licht, Tag der Prozesse, Pegel
+// und Jahr im Verhältnis 1 (vor dem Kalender am 8-min-Tag 7,5 : 1 : 1 : 1). Jeder Täter ROT beim Namen (Datei:Zeile, Leser).
+const KALENDER_TAFEL = {
+    schreiber: [
+        "dirigent-takt startEternalLoop spielZeit",
+        "dirigent-takt _weltUhrNimm spielZeit",
+        "bild-himmel _uhrSetzen timeOfDay",
+    ],
+    schritt: ["koerper-bewegung FIXED_DT"],
+    zahlen: {
+        "daten WELT_GESETZ_ERDE": "das Gesetz: die Sekunden einer Stunde der Natur (`kalender.stundeS`)",
+        "bild-himmel _tickRain": "die Falte der Bild-Uhr im Vertex (float), keine Länge des Kalenders",
+        "dirigent-takt _wolkenSaat": "die Saat der Wolken-Uhr (< 1 h)",
+        "kreatur-leben BESTAND_REGION":
+            "aufholS: die Frist des Bestands auf der Welt-Uhr (das Leben rechnet in Sekunden)",
+        "vegetation-streu _wuchsPlan": "eine Anzahl (countCap)",
+        "netz-p2p _lockstepCaptureFrame": "die Länge der Spur (Einträge)",
+        "netz-p2p _lockstepTickPeers": "die Länge der Spur (Einträge)",
+        "werkstatt-hof _creatureLatestDeed": "die Anzeige des Alters (Wanduhr)",
+        "werkstatt-hof _renderHofChronik": "die Anzeige des Alters (Wanduhr)",
+    },
+    tot: ["PEGEL_TAG_S", "seasonYearSeconds", "WEATHER_TRANSITION_DURATION_MS"],
+};
+function kalenderBefund(t) {
+    const { ast, wandere, zeileVon } = require("./lib/stamm.cjs");
+    const aus = [];
+    const zustand = (o) => (o.type === "Identifier" && o.name === "st") || o.property?.name === "state";
+    wandere(ast(t), (n, A, k = klasse(A)) => {
+        const g =
+            k?.key.name ||
+            A.map((a) => (a.type === "FunctionDeclaration" ? a.id : istFn(a.init || a.value) && (a.id || a.key))).find(
+                Boolean
+            )?.name ||
+            A.find((a) => a.type === "AssignmentExpression" && a.left?.type === "MemberExpression")?.left.property.name;
+        const Z = zeileVon(t, n.start);
+        if (n.type === "Literal" && (n.value === 3600 || n.value === 2400)) aus.push(["zahl", g, Z, n.value]);
+        if (n.type === "BinaryExpression" && n.operator === "/" && n.left.value === 1 && n.right.value === 60)
+            aus.push(["schritt", g, Z, "1 / 60"]);
+        const l = n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && n.left;
+        if (l && /^(spielZeit|timeOfDay)$/.test(l.property.name) && zustand(l.object))
+            aus.push(["schreiber", g, Z, l.property.name]);
+        if ((n.type === "Identifier" || n.type === "PrivateName") && KALENDER_TAFEL.tot.includes(n.name))
+            aus.push(["tot", g, Z, n.name]);
+    });
+    return aus;
+}
+function kalenderRotVon(befunde, T = KALENDER_TAFEL) {
+    const rot = [];
+    for (const [d, B] of Object.entries(befunde))
+        for (const [art, g, z, w] of B) {
+            const wo = `${d}:${z}`;
+            if (art === "schreiber" && !T.schreiber.includes(`${d} ${g} ${w}`))
+                rot.push(
+                    `(K) KALENDER ${g} schreibt die Uhr (state.${w}) — ${wo}: nur der Takt, die Regel der Welt-Uhr und der EINE Uhr-Schreiber`
+                );
+            if (art === "schritt" && !T.schritt.includes(`${d} ${g}`))
+                rot.push(`(K) KALENDER ${g} trägt den Schritt 1/60 neben FIXED_DT — ${wo}`);
+            if (art === "zahl" && !T.zahlen[`${d} ${g}`])
+                rot.push(
+                    `(K) KALENDER ${g} trägt die Zahl ${w} als Zeit ohne Grund — ${wo}: der Tag und das Jahr liest der Kalender`
+                );
+            if (art === "tot") rot.push(`(K) KALENDER ${g} liest den gefallenen Zwilling ${w} — ${wo}`);
+        }
+    return rot;
+}
+function kalenderQuelle() {
+    const [fs, path] = [require("fs"), require("path")];
+    const R = path.resolve(__dirname, "..");
+    const befunde = {};
+    for (const f of require("./lib/stamm.cjs").dateien(R))
+        befunde[f.replace(/^stamm\/|\.js$/g, "")] = kalenderBefund(fs.readFileSync(path.join(R, f), "utf8"));
+    const n = (art) => Object.values(befunde).reduce((s, B) => s + B.filter((b) => b[0] === art).length, 0);
+    return {
+        rot: kalenderRotVon(befunde),
+        zahl: { schreiber: n("schreiber"), schritt: n("schritt"), zahl: n("zahl"), tot: n("tot") },
+    };
+}
+// (K) das Urteil des Laufs (rein): je Tag-Länge die Tage, die Licht, Tag der Prozesse, Pegel und Jahr im selben Fenster der
+// Welt-Uhr gingen — jedes Verhältnis zum Licht 1 (±1 %: der Pegel liest die volle Sekunde), sonst ROT beim Leser.
+function kalenderRot(je) {
+    const rot = [];
+    const leser = {
+        prozess: "der Tag der Prozesse (`_weltTag`)",
+        pegel: "der Pegel (`pegelLauf`)",
+        jahr: "das Jahr (`seasonPhase`)",
+    };
+    if (!(je && je.length >= 2)) return ["(K) KALENDER: der Lauf maß keine zwei Tag-Längen"];
+    for (const j of je)
+        for (const [k, name] of Object.entries(leser)) {
+            const v = j.licht / j[k];
+            if (!(Math.abs(v - 1) <= 0.01))
+                rot.push(
+                    `(K) KALENDER ${j.min} min: das Licht geht ${v.toFixed(3)}-mal so schnell wie ${name} — ${(+j[k]).toFixed(4)} gegen ${j.licht.toFixed(4)} Tage in ${j.welt.toFixed(0)} s Welt-Uhr`
+                );
+        }
+    return rot;
+}
+function kalenderSelbsttest() {
+    const K = (r) => `class A {\n${r}\n}`;
+    const Q = (text) =>
+        kalenderRotVon(
+            { a: kalenderBefund(K(text)) },
+            { ...KALENDER_TAFEL, schreiber: ["a _uhr timeOfDay"], schritt: [], zahlen: { "a _gesetz": 1 } }
+        );
+    const j = (o) => ({ min: 8, welt: 240, licht: 0.5, prozess: 0.5, pegel: 0.5, jahr: 0.5, ...o });
+    return [
+        [Q("_uhr(v) { this.state.timeOfDay = v; }\n_gesetz() { return 3600; }"), null],
+        [
+            Q("_bestandSchritt(R) { const st = this.state; st.spielZeit = R.t; }"),
+            /_bestandSchritt schreibt die Uhr \(state\.spielZeit\) — a:2/,
+        ],
+        [Q("_saisonAnkerGilt() { return 2400; }"), /_saisonAnkerGilt trägt die Zahl 2400/],
+        [Q("_tierSatzBacken() { return 1 / 60; }"), /_tierSatzBacken trägt den Schritt 1\/60/],
+        [Q("_jahr() { return this.state.seasonYearSeconds; }"), /liest den gefallenen Zwilling seasonYearSeconds/],
+        [kalenderRot([j(), j({ min: 60 })]), null],
+        [
+            kalenderRot([j({ pegel: 0.0667 }), j({ min: 60 })]),
+            /8 min: das Licht geht 7\.496-mal so schnell wie der Pegel/,
+        ],
+        [kalenderRot([j(), j({ min: 60, jahr: 0.3 })]), /60 min: .* wie das Jahr/],
+    ].flatMap(([rot, soll], i) =>
+        (soll ? rot.length === 1 && soll.test(rot) : !rot.length) ? [] : [`kalender Fall ${i}: ${rot}`]
+    );
+}
+// (K) die Probe im Seiten-Kontext (eine frische Welt, der echte Takt `_gameLoopTick`): je Tag-Länge `o.minuten` ein Fenster von
+// `o.sek` Sekunden Welt-Uhr; gelesen die Tage des Lichts (`worldMeta.tag` + `timeOfDay`), des Tags der Prozesse (`_weltTag`), des
+// Pegels (Zeit ÷ Tag, wie der Lauf des Kerns sie bekommt, `pegelLauf`) und des Jahrs (Phase ÷ `jahreJeTag`).
+function kalenderProbe(o) {
+    const [r, K] = [window.anazhRealm, globalThis.__gelaendeCore];
+    const st = r.state;
+    st.renderer.setAnimationLoop(null);
+    let arg = null;
+    const lauf = K.pegelLauf;
+    const spion = { value: (...a) => ((arg = { t: a[2], tagS: a[3] }), lauf.apply(K, a)) };
+    globalThis.__gelaendeCore = Object.create(K, { pegelLauf: spion });
+    const [tag0, jeTag] = [st.dayLengthMinutes, AnazhRealm.WELT_GESETZ_ERDE.kalender.jahreJeTag];
+    const lies = () => {
+        r._pegelStand = null;
+        r._pegelTafel();
+        return {
+            licht: (st.worldMeta.tag || 0) + st.timeOfDay,
+            prozess: r._weltTag(),
+            jahr: st.seasonPhase,
+            pegel: arg.t / arg.tagS,
+            z: st.spielZeit,
+        };
+    };
+    const [je, T0] = [[], performance.now()];
+    let k = 0;
+    const takt = () => r._gameLoopTick(T0 + ++k * o.schrittSek * 1000);
+    try {
+        for (const min of o.minuten) {
+            st.dayLengthMinutes = min;
+            for (let i = 0; i < 4; i++) takt();
+            const a = lies();
+            while (st.spielZeit - a.z < o.sek) takt();
+            const b = lies();
+            const jahr = ((((b.jahr - a.jahr) % 1) + 1) % 1) / jeTag;
+            je.push({
+                min,
+                welt: b.z - a.z,
+                licht: b.licht - a.licht,
+                prozess: b.prozess - a.prozess,
+                pegel: b.pegel - a.pegel,
+                jahr,
+            });
+        }
+    } finally {
+        globalThis.__gelaendeCore = K;
+        st.dayLengthMinutes = tag0;
+    }
+    return je;
+}
+
 // der Selbsttest: der erlaubte Leser grün; der neue Leser (auch `new Date()`), die Zahl darüber, der Eintrag ohne Leser, die Bild-Uhr
 // aus dem rAF-Stempel und die Spiel-Zeit ohne ihren Takt — je beim Namen
 function uhrSelbsttest() {
@@ -162,12 +349,16 @@ function uhrSelbsttest() {
 }
 if (process.argv.includes("--quelle")) {
     const { rot, B } = uhrQuelle();
+    const KQ = kalenderQuelle();
     const n = (k) => B.reduce((s, b) => s + b[k].length, 0);
     console.log(
         `=== (W) WANDUHR — ${n("leser")} Leser der Gerätezeit in ${B.length} Dateien, ${n("weiter")} Weitergaben des rAF-Stempels (${UHR_TAFEL}) ===`
     );
+    console.log(
+        `=== (K) KALENDER — ${KQ.zahl.schreiber} Schreiber der Uhr, ${KQ.zahl.schritt}× 1/60, ${KQ.zahl.zahl} Zahlen 3600/2400 mit Grund, ${KQ.zahl.tot} gefallene Zwillinge ===`
+    );
     wandEnde(
-        [...rot, ...uhrSelbsttest()],
+        [...rot, ...KQ.rot, ...uhrSelbsttest(), ...kalenderSelbsttest()],
         "jeder Leser der Gerätezeit steht mit Grund in der Tafel; die Welt liest ihre eigene Uhr."
     );
     process.exit(0);
@@ -178,7 +369,7 @@ if (SELBSTTEST) {
     const v = wetterSelbsttest()
         .map((x) => "wetter: " + x)
         .concat(himmelSelbsttest().map((x) => "himmel: " + x))
-        .concat(uhrSelbsttest());
+        .concat(uhrSelbsttest(), kalenderSelbsttest());
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };
         delete vor[ohne];
@@ -209,10 +400,18 @@ if (SELBSTTEST) {
         saatRot(stumm).length !== 1
     )
         v.push("saat: die Folge, Wanduhr, blinde Saat, blinder Ort, stehende Front oder stummer Zug");
-    const F = (o) => frontRot(Object.assign({ nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" }, o));
+    const F = (o) =>
+        frontRot(
+            Object.assign(
+                { nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" },
+                o
+            )
+        );
     if (
         F({}).length ||
-        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
+        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some(
+            (o) => F(o).length !== 1
+        )
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
     // der Selbsttest: jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.
@@ -276,7 +475,14 @@ function probe(o) {
     // WETTER_ZUG_SEK (Ereignis-Takte), die Folge ist das Wort nach jedem Takt
     const wm = st.worldMeta || (st.worldMeta = {});
     const pm = st.playerMesh.position;
-    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, st.spielZeit, AnazhRealm.WETTER_ZUG_SEK];
+    const [saat0, pn, x0, y0, uhr0, Z] = [
+        wm.seed,
+        performance.now,
+        pm.x,
+        pm.z,
+        st.spielZeit,
+        AnazhRealm.WETTER_ZUG_SEK,
+    ];
     const P = globalThis.__phytoCore;
     const zug = (saat, d) => {
         const g = P.windGrund(saat);
@@ -305,7 +511,9 @@ function probe(o) {
     const gleich = (k) => A.filter((w, i) => w === B[i + k]).length / (A.length - k);
     let lag = 0;
     for (let k = 1; k < A.length / 2; k++) if (gleich(k) > gleich(lag)) lag = k;
-    const worte = new Set(Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41)));
+    const worte = new Set(
+        Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41))
+    );
     const kern = P.wetterAt;
     P.wetterAt = () => ({ zeile: "sturm" });
     zug("saat-a", 0);
@@ -313,7 +521,11 @@ function probe(o) {
     r._loopWeatherAndGrowth(0);
     P.wetterAt = kern;
     const nass = (w) => r._weatherIsWet(w);
-    aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
+    aus.front = {
+        nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length,
+        lag: Z * lag,
+        worte: [...worte],
+    };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
     window.__uebergangFaellt(r);
     [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
@@ -369,7 +581,10 @@ function saatRot(Z) {
     const [a, au, b, bu, c] = Z.laeufe;
     const rot = Z.laeufe
         .filter(([, f]) => f.folge.split(" ").length !== Z.zuege || f.fade !== wechsel(f.folge) || !f.fade)
-        .map(([n, f]) => `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`);
+        .map(
+            ([n, f]) =>
+                `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`
+        );
     for (const [x, y] of [
         [a, au],
         [b, bu],
@@ -380,7 +595,8 @@ function saatRot(Z) {
         [c, "die Saat"],
         [b, "den Ort"],
     ])
-        if (x[1].folge === a[1].folge) rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
+        if (x[1].folge === a[1].folge)
+            rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
     return rot;
 }
 
@@ -420,7 +636,8 @@ function uhrRot(U) {
     for (const n of ["himmel", "wind", "böe"])
         if (!(n in U.vor)) rot.push(`(U) UHR ${n}: die Bühne kennt sie nicht (${Object.keys(U.vor).join(", ")})`);
     if (!(U.verweigert > 0)) rot.push(`(U) die Bild-Uhr: der Loop schrieb sie nicht — die Wache sah keinen Zug`);
-    if (U.wort !== 3) rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
+    if (U.wort !== 3)
+        rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
     return rot;
 }
 
@@ -673,6 +890,9 @@ hauptLauf(async () => {
         wesenSek: WESEN_SEK,
     });
     const laufS = (Date.now() - t0) / 1000;
+    // (K) in einer FRISCHEN Welt: der Kalender bei kurzem und langem Tag
+    const page3 = await boot(browser);
+    const KAL = await page3.evaluate(kalenderProbe, { minuten: [8, 60], sek: 240, schrittSek: SCHRITT_SEK });
     const lab = await browser.newPage();
     await server.zeige(lab, 60000, "worlds/terrain/index.html");
     await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
@@ -725,7 +945,11 @@ hauptLauf(async () => {
         `  Front · Regen an A bei trockenem B ${(100 * F.nassTrocken).toFixed(0)} % · Lag ${F.lag} s (Soll ${F.soll.toFixed(0)} s ±20 %)` +
             ` · Worte ${F.worte.length}/5 (${F.worte.join(" ")}) · Mutation des Kerns: Welt ${F.welt}, Labor ${F.labor}`
     );
-    const rot = urteil(S, H);
+    for (const j of KAL)
+        console.log(
+            `  Kalender ${String(j.min).padStart(2)} min · in ${j.welt.toFixed(0)} s Welt-Uhr: Licht ${j.licht.toFixed(4)} · Prozesse ${j.prozess.toFixed(4)} · Pegel ${j.pegel.toFixed(4)} · Jahr ${j.jahr.toFixed(4)} Tage (Licht : Pegel ${(j.licht / j.pegel).toFixed(3)})`
+        );
+    const rot = [...urteil(S, H), ...kalenderRot(KAL)];
     wandEnde(
         rot,
         "unter der Bühne dreht kein Schreiber das Wetter; frei gehen Uhr und Wetter nach dem Wort des Spielers, die Welt" +

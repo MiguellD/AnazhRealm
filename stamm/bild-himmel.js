@@ -928,27 +928,27 @@ class AnazhRealm_bild_himmel {
     // 0 —, nie am ersten Bild ihrer Bühne: bis w18-pegel-peers setzte jede Seite ihn, wenn ihr Drift begann, und der Stand trug die
     // Phase ihres letzten Takts neben einer Uhr aus einem anderen Bild (A 0,37552 zur Uhr 2,854 s statt 0,37619) — B lud ein Jahr,
     // das 1,6 s hinter A stand, und der Tag der Schmelze des Pegels (`_pegelTafel`) wechselte auf B 1,6 s später als auf A.
+    // Die Uhr des Ankers ist die KALENDER-ZEIT (`k`, zeit-ein-kalender): sie geht stetig über den Regler der Tag-Länge und reist
+    // im worldMeta — das Jahr folgt dem Tag, ohne bei einem Wechsel des Reglers oder einem Laden unter einem anderen Tag zu springen.
     _saisonAnkerGilt() {
         const st = this.state;
-        const jahr = this._kalender().jahrS; // das Jahr des Kalenders (zeit-ein-kalender): es folgt dem Tag
         let A = this._saisonAnker;
-        if (!A || A.phase !== st.seasonPhase || A.jahr !== jahr)
+        if (!A || A.phase !== st.seasonPhase)
             A = this._saisonAnker = {
                 anker: st.seasonPhase,
-                t: A === undefined ? 0 : st.spielZeit,
-                jahr,
+                k: A === undefined ? 0 : this._kalenderZeit(),
                 phase: st.seasonPhase,
             };
         return A;
     }
-    // DER ANKER IM STAND (`saisonAnker`): [Phase, Welt-Uhr] — die Phase des laufenden Jahrs zu jeder Uhr. Die Phase (Kopf) und die Uhr
+    // DER ANKER IM STAND (`saisonAnker`): [Phase, Kalender-Zeit] — die Phase des laufenden Jahrs zu jeder Uhr. Die Phase (Kopf) und die Uhr
     // (`spielZeit`, Augenblick) fragt der Stand in verschiedenen Bildern: bis w18-pegel-peers lud B das Jahr von A aus ihnen, 0,19–1,6 s
     // hinter A. Ein angehaltenes Jahr trägt keinen (seine Phase steht, `seasonPhase`).
     _saisonAnkerStand() {
         const st = this.state;
         if (st.autoSeason === false || typeof st.seasonPhase !== "number") return null;
         const A = this._saisonAnkerGilt();
-        return [A.anker, A.t];
+        return [A.anker, A.k];
     }
     // DIE PHASE DES JAHRS ZUR WELT-UHR `t`: die ihres Ankers plus die Welt-Zeit seitdem durch die Länge des Jahrs; ein angehaltenes
     // Jahr (`autoSeason` false) steht. Leser: der Takt der Saison (`_tickSeason`) und der Stand (`seasonPhase` zu seiner Uhr).
@@ -956,7 +956,7 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         if (st.autoSeason === false || typeof st.seasonPhase !== "number") return st.seasonPhase;
         const A = this._saisonAnkerGilt();
-        return (((A.anker + (t - A.t) / A.jahr) % 1) + 1) % 1;
+        return (((A.anker + (this._kalenderZeit(t) - A.k) / this._kalender().jahrK) % 1) + 1) % 1;
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
@@ -967,9 +967,8 @@ class AnazhRealm_bild_himmel {
         this.state.seasonPhase = phaseFor[key];
         this.state.season = key;
         // der Anker des Jahrs zur Zeit des Worts (`uhr`, die Tat-Uhr seines Akts — beim Mitspieler dieselbe, feld.K2#2)
-        const yearSec = this._kalender().jahrS;
-        const t = Number.isFinite(uhr) ? uhr : this.state.spielZeit;
-        this._saisonAnker = { anker: phaseFor[key], t, jahr: yearSec, phase: phaseFor[key] };
+        const k = this._kalenderZeit(Number.isFinite(uhr) ? uhr : this.state.spielZeit);
+        this._saisonAnker = { anker: phaseFor[key], k, phase: phaseFor[key] };
         return true;
     }
     // ==================== WETTER: sichtbarer Regen ====================

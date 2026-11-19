@@ -301,7 +301,7 @@ class AnazhRealm {
             // JAHRESZEIT (Vorlagen-Phaenologie): eine langsame Uhr treibt die Saison; die Foundry
             // backt die Assets in dieser Jahreszeit (Herbst golden, Winter kahl). Auto-Zyklus an,
             // per Chat/DSL setzbar. seasonPhase 0=Fruehling .25=Sommer .5=Herbst .75=Winter. Die Länge des Jahrs ist die des
-            // Kalenders (`_kalender().jahrS`: am Standard-Tag 40 min, sie folgt dem Tag).
+            // Kalenders (`_kalender().jahrK` Kalender-Zeit: am Standard-Tag 40 min, sie folgt dem Tag).
             season: "summer",
             seasonPhase: 0.375,
             autoSeason: true,

@@ -2198,7 +2198,8 @@ class AnazhRealm_kreatur_leben {
         for (const g in bestand) {
             const F = bestand[g].n * bestand[g].frass;
             const summe = F > 0 ? zellen.reduce((s, c) => s + c.je[g], 0) : 0;
-            if (summe > 0) for (const c of zellen) if (c.je[g] > 0) this._depositLife(c.x, c.z, (-F * c.je[g]) / summe, uhr);
+            if (summe > 0)
+                for (const c of zellen) if (c.je[g] > 0) this._depositLife(c.x, c.z, (-F * c.je[g]) / summe, uhr);
         }
     }
 
