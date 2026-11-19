@@ -59,6 +59,8 @@ const DAUER_S = {
     // (leben-erbe: headless an der Laptop-Maschine, eine Saat, ohne Täter)
     erbe: 6,
     muster: 16,
+    // (leben-gau C2a: headless an der Laptop-Maschine, samt den drei Tätern in EINEM Lauf)
+    gau: 21,
 };
 const TEIL = teilAus(argv);
 const gewaehlt = (() => {

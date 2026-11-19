@@ -423,6 +423,13 @@ function nachricht(e) {
             };
             sammle(g);
             self.postMessage({ type: "tuch-gitter-result", requestId: msg.requestId, gitter: g }, [...puffer]);
+        } else if (msg.type === "gau") {
+            // DER GAU IM FADEN (Leben C2a, `gauAuftrag`): der Bestand eines Gaus bis zu einem Takt, mit den Akten der Seite — der
+            // Stand reist per Transfer (Lehre 24)
+            const a = gauAuftrag(msg);
+            self.postMessage(Object.assign({ type: "gau-result", requestId: msg.requestId }, a.antwort), a.transfer);
+        } else if (msg.type === "gau-geht") {
+            gauGeht(msg.gx, msg.gz);
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -437,6 +444,205 @@ function nachricht(e) {
             stapel: err && err.stack ? String(err.stack) : null,
         });
     }
+}
+
+// ── DER GAU-WIRT (Kapitel Leben, C2a) ────────────────────────────────────────────────────────────────────────────────────────
+// Der Bestand der Gattungen unter dem Gesetz der Zeit und der Jagd (leben-core `bestand`: Beute und Jäger) lebt je GAU — n × n
+// Regionen an Welt-Koordinaten — in DIESEM Faden (der Gau-Faden des Wirts, `_gauFrage`: ein schlanker Faden aus der EINEN
+// Quelle, sein Stand trägt nur die Saat). Ein Gau ist eine Funktion von (Samen der Welt, Gau, Takt, Akte der Seite):
+//   das FELD  je Region zn × zn Zellen, je Zelle die Boden-Klasse (tetrapoda `bodenKlasse` aus Fluss-Rand, Hang der Saat und
+//             Bestandsdichte des Walds — dieselben Rufe wie `_bodenKlasseAt` des Stamms) → der Lebensraum der Beute (LR) und das
+//             Substrat der Äsung (S, Spiegel von `worldFieldAt().lebendig`; die Linse `--gau` hält ihn bit-gleich am Stamm).
+//             EINMAL je Gau gebaut; die Hydro-Kacheln über dem Gau rechnet der Faden selbst und lässt sie danach fallen.
+//   der STAND leben-core `gauAnfang` am Takt 0 (voller Gründer-Bestand), `gauBis` bis zum Takt des Auftrags mit den Akten; ein
+//             Stand, der hereinreist (`stand`, Laden oder Mitspieler), ersetzt ihn. Ein Auftrag VOR dem Stand des Gaus oder mit
+//             anderen Akten als den gewirkten rechnet ab Takt 0 neu (die Antwort nennt es: `zeit.abNull`).
+// Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, lebendig, takt, akte, lesen?, packen?, stand? }
+// Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, stand? }
+// Ein Gau, den die Seite nicht mehr hält, geht (`gau-geht`: Feld und Lauf — sein Stand lebt als Bytes bei der Seite).
+const gaue = new Map();
+const gauFelder = new Map();
+const gauKerne = new Map();
+function gauGeht(gx, gz) {
+    const vorn = JSON.stringify([gx, gz]).slice(0, -1) + ",";
+    for (const m of [gaue, gauFelder]) for (const k of [...m.keys()]) if (k.startsWith(vorn)) m.delete(k);
+}
+let gauWelt = null;
+function gauKern(wirt) {
+    if (!self.__tetrapodaCore) importScripts(QUELLE.spaet.tetrapoda);
+    if (!self.__lebenCore) importScripts(QUELLE.spaet.leben);
+    const key = JSON.stringify(wirt);
+    let K = gauKerne.get(key);
+    if (!K) {
+        const T = self.__tetrapodaCore;
+        const f = wirt.feld;
+        // K je Zelle = die Formel des Stamms (`_kreaturBestand`): Lebensraum × Fläche × Nahrung nach der Kost an der Äsung
+        const kZelle = (aes, lr) => lr * f.ha * T.bestandNahrung(f.diet, aes, 0);
+        K = self.__lebenCore.bestand(Object.assign({}, wirt, { feld: Object.assign({}, f, { kZelle }) }));
+        gauKerne.set(key, K);
+    }
+    return K;
+}
+// Spiegel von `worldFieldAt(x, z).lebendig` des Stamms (das Substrat der Äsung, `_kreaturNahrung` ohne Overlay): die Stimme
+// „lebendig“ am Samen, ab Genese 3 mit Domain-Warp und eigener Wellenlänge (`lebendig`: die Zahlen von FIELD_CHARACTER).
+let lebendigRausch = null;
+function lebenSubstrat(x, z, FC) {
+    const seed = state.seed || "anazh-realm-seed";
+    if (!lebendigRausch || lebendigRausch.seed !== seed)
+        lebendigRausch = { seed, n: new SimplexNoise(seed + "-veg-lebendig"), w: new SimplexNoise(seed + "-veg-warp") };
+    const { n, w } = lebendigRausch;
+    const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+    if (state.genVersion >= 3) {
+        const sL = 1 / FC.lambdaLebendig;
+        const wpX = w.noise2D(x * FC.warpScale, z * FC.warpScale) * FC.warpAmp;
+        const wpZ = w.noise2D(x * FC.warpScale + 51.7, z * FC.warpScale - 23.1) * FC.warpAmp;
+        const wx = x + wpX;
+        const wz = z + wpZ;
+        return n01(n.noise2D(wx * sL, wz * sL));
+    }
+    const s = 0.005;
+    return n01(n.noise2D(x * s, z * s));
+}
+// DAS FELD EINES GAUS aus der Saat (EINMAL je Gau und Feld-Gesetz der Welt, `gauFelder`): S und LR je Zelle
+function gauFeldBauen(msg, zeit) {
+    const { x0, z0, n, seite, zn } = msg;
+    const T = self.__tetrapodaCore;
+    const L = T.LEBENSRAUM_GESETZ;
+    // die stehende Hydro-Wahrheit über dem Gau, Kachel für Kachel (dieselbe Teilung wie `_ensureHydroTilesAround` des Stamms, die
+    // Heimat „0,0“ als `heim`): der Faden hält die Heimat (ohne sie liest das Gesetzbuch keine Kachel, gelaende-core
+    // `hydroRegion`) und je EINE ferne Kachel, liest die Zellen des Gaus in ihr und lässt sie fallen
+    const size = state.regionSize;
+    const half = size / 2;
+    const kachel = (v) => Math.floor((v + half) / size);
+    const [Z, N] = [zn * zn, n * n];
+    const [S, LR] = [new Float64Array(N * Z), new Float64Array(N * Z)];
+    const aus = {};
+    const k0 = performance.now();
+    hydroRegion("heim", null);
+    zeit.kacheln++;
+    zeit.hydroMs = performance.now() - k0;
+    for (let rx = kachel(x0 * seite); rx <= kachel((x0 + n) * seite); rx++)
+        for (let rz = kachel(z0 * seite); rz <= kachel((z0 + n) * seite); rz++) {
+            if (rx || rz) {
+                const h0 = performance.now();
+                state.hydroTiles = null;
+                hydroRegion(rx + "," + rz, { x: rx * size - half, z: rz * size - half });
+                zeit.kacheln++;
+                zeit.hydroMs += performance.now() - h0;
+            }
+            for (let i = 0; i < N; i++) {
+                const [ix, iz] = [x0 + (i % n), z0 + Math.floor(i / n)];
+                // die Region liegt mit keiner Zelle in dieser Kachel
+                if (
+                    kachel((ix + 1) * seite) < rx ||
+                    kachel(ix * seite) > rx ||
+                    kachel((iz + 1) * seite) < rz ||
+                    kachel(iz * seite) > rz
+                )
+                    continue;
+                for (let a = 0; a < zn; a++)
+                    for (let b = 0; b < zn; b++) {
+                        const [x, z] = [(ix + (a + 0.5) / zn) * seite, (iz + (b + 0.5) / zn) * seite];
+                        if (kachel(x) !== rx || kachel(z) !== rz) continue;
+                        const h = G.flussRand(state, x, z);
+                        G.hoehe(state, x, z, true, aus);
+                        const sd = self.__phytoCore.forestStandDensity(forestFbm, x, z);
+                        const lr = T.lebensraum(
+                            msg.beute,
+                            T.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, sd, L),
+                            L
+                        );
+                        if (!(lr > 0)) continue;
+                        const j = i * Z + a * zn + b;
+                        LR[j] = lr;
+                        S[j] = lebenSubstrat(x, z, msg.lebendig);
+                    }
+            }
+        }
+    // die Kacheln gehen wieder (der Speicher folgt dem Blick: ein Gau hält sein Feld, nie die Hydrosphäre)
+    state.hydrosphere = null;
+    state.hydroTiles = null;
+    hydroBandNeu();
+    zeit.feldOhneHydroMs = performance.now() - k0 - zeit.hydroMs;
+    return { S, LR };
+}
+// das Feld am Kern des Wirts (leben-core `gauFeld`) und seine Summe bei leerer Fraß-Schicht: Land (Reviere mit Lebensraum),
+// Zellen der Beute, Σ K
+function gauFeldAm(K, n, roh) {
+    const F = K.gauFeld({ W: n, H: n, S: roh.S, LR: roh.LR });
+    const Kap = new Float64Array(n * n);
+    K.feldTakt(F, new Float64Array(roh.S.length), Kap);
+    let [land, zellen, kSumme] = [0, 0, 0];
+    for (let i = 0; i < n * n; i++) ((land += F.C[i] > 0 ? 1 : 0), (zellen += F.C[i]), (kSumme += Kap[i]));
+    return { F, summe: { land, zellen, kSumme } };
+}
+function gauAuftrag(msg) {
+    if (state.seed !== msg.samen)
+        throw new Error(
+            "voxel-worker: der Gau-Auftrag nennt den Samen „" + msg.samen + "“, der Faden trägt „" + state.seed + "“"
+        );
+    if (state.erdbau) throw new Error("voxel-worker: der Gau-Faden liest nur die Saat — sein Stand trägt einen Erdbau");
+    // eine andere Welt (Samen und Welt der Regionen des Stands) räumt die Gaue der alten
+    const welt = state.seed + "|" + state.hydroWelt;
+    if (gauWelt !== welt) (gaue.clear(), gauFelder.clear(), (gauWelt = welt));
+    const K = gauKern(msg.wirt);
+    const zeit = { neu: false, kacheln: 0, hydroMs: 0, feldMs: 0, abNull: false, takte: 0, rechenMs: 0, packMs: 0 };
+    const feldKey = JSON.stringify([msg.gx, msg.gz, msg.x0, msg.z0, msg.n, msg.seite, msg.zn, msg.beute, msg.lebendig]);
+    let roh = gauFelder.get(feldKey);
+    if (!roh) {
+        const f0 = performance.now();
+        roh = gauFeldBauen(msg, zeit);
+        zeit.feldMs = performance.now() - f0;
+        zeit.neu = true;
+        gauFelder.set(feldKey, roh);
+    }
+    const key = [feldKey, msg.saat, JSON.stringify(msg.wirt)].join("|");
+    let e = gaue.get(key);
+    if (!e) gaue.set(key, (e = Object.assign(gauFeldAm(K, msg.n, roh), { gx: msg.gx, gz: msg.gz, g: null, akte: [] })));
+    const akte = msg.akte || [];
+    const zeilen = akte.map((a) => JSON.stringify(a));
+    if (msg.stand) {
+        // der Stand reist herein: er trägt, wie viele Akte in ihm schon wirkten (`aktN`) — die Liste des Auftrags beginnt mit ihnen
+        e.g = K.gauEntpack(msg.stand, e.F);
+        e.akte = zeilen.slice(0, e.g.aktN);
+    }
+    // derselbe Lauf geht weiter, wenn der Auftrag nicht vor ihm liegt und seine Akte mit den gewirkten beginnen; sonst ab Takt 0
+    const weiter =
+        e.g &&
+        msg.takt >= e.g.z.takt &&
+        e.akte.length >= e.g.aktN &&
+        e.akte.slice(0, e.g.aktN).every((s, k) => s === zeilen[k]) &&
+        !(zeilen.length > e.g.aktN && akte[e.g.aktN].takt < e.g.z.takt);
+    if (!weiter) {
+        zeit.abNull = !!e.g;
+        e.g = K.gauAnfang(e.F, msg.saat);
+    }
+    const [r0, von] = [performance.now(), e.g.z.takt];
+    K.gauBis(e.g, msg.takt, akte);
+    e.akte = zeilen;
+    zeit.rechenMs = performance.now() - r0;
+    zeit.takte = e.g.z.takt - von;
+    const z = e.g.z;
+    let [beute, jaeger] = [0, 0];
+    for (const l of z.beute) beute += l.length;
+    for (const R of z.rudel) jaeger += R.tiere.length;
+    const antwort = { gx: msg.gx, gz: msg.gz, takt: z.takt, beute, jaeger, rudel: z.rudel.length, feld: e.summe, zeit };
+    const transfer = [];
+    // DIE LESE-NAHT je Revier: Köpfe, Tiere (mit Verband und Mutter) und der Fraß je Zelle am Takt
+    if (msg.lesen)
+        antwort.reviere = msg.lesen.map((i) => ({
+            i,
+            koepfe: K.koepfe(z, i),
+            tiere: K.tiereIn(z, i),
+            frass: Array.from({ length: e.F.Z }, (_, c) => K.frassAm(e.g, i, c)),
+        }));
+    if (msg.packen) {
+        const p0 = performance.now();
+        antwort.stand = K.gauPack(e.g);
+        zeit.packMs = performance.now() - p0;
+        transfer.push(antwort.stand.buffer);
+    }
+    return { antwort, transfer };
 }
 
 // DIE ANTWORT EINES CHUNKS (per Transfer, Lehre 24): die Arrays des Baus; das Morph-Ziel (`morphZiel`, das der Geomorph des

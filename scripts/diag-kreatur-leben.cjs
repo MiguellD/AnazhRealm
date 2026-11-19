@@ -1493,9 +1493,190 @@ async function lebenBuehnen() {
         });
         return z;
     });
+    // ── gau (Leben C2a): DER GAU IM FADEN — der Bestand unter dem Gesetz der Zeit und der Jagd lebt je Gau im Gau-Faden
+    // (`_gauAuftrag` → voxel-worker `gauAuftrag` → leben-core `gauBis`). Die Bühne fragt den Gau (0, 0) der Heimat, mit der Saat
+    // und der Masse von Lauf 4 (E6: die Linse „Bestand = Gesetz“ bleibt an Lauf 4; das Spiel reicht die Masse des Gusses):
+    //   G1  der B4-Lauf (die Welt-Bindung, gemessen am Feld des HAUPT-Fadens: `_bodenKlasseAt` · `_kreaturNahrung`) zahlengleich
+    //       aus dem Faden — das Feld des Fadens (Boden-Klasse, Substrat-Spiegel) ist das des Stamms, sonst verlässt die Spur ihn
+    //   G3  zwei Fäden (der zweite frisch geboren: Feld und Lauf ab der Saat) geben denselben Stand, Byte für Byte; EIN Akt
+    //       „aus“ am Takt 100 ändert ihn; derselbe Akt wieder gibt denselben
+    //   G4  der Stand am Takt 100 reist heraus, herein und rechnet bis 160 weiter = der Lauf geradeaus, Byte für Byte
+    // Täter (alle in EINEM Lauf, je einer an seiner Sicht): gau-feld (der Spiegel des Substrats läuft weg) · gau-akt (der Wirt
+    // verliert den Akt) · gau-stand (der Stand verliert die Fraß-Schicht auf der Reise). `opts.gau.jahre` (nur `--gau`): das
+    // Aufholen eines Gaus ohne Akte über n Jahre, im Faden gemessen (G5); `haupt`: die längste Arbeit des Haupt-Fadens (G2).
+    await buehne("gau", async () => {
+        const O = (opts && opts.gau) || {};
+        const TT = [].concat(taeter || []);
+        const KG = { deer: 94.24042032034154, wolf: 64.01114942302421 };
+        const [T1, T2] = [100, 160];
+        const haupt = { maxMs: 0, wo: "", rufe: 0 };
+        const uhr = (wo, fn) =>
+            function (...a) {
+                const t = performance.now();
+                try {
+                    return fn.apply(this, a);
+                } finally {
+                    const d = performance.now() - t;
+                    haupt.rufe++;
+                    if (d > haupt.maxMs) [haupt.maxMs, haupt.wo] = [d, wo];
+                }
+            };
+        const faden = () => {
+            const f = r._gauFadenStand;
+            if (f && !f.worker.__uhr) [f.worker.onmessage, f.worker.__uhr] = [uhr("antwort", f.worker.onmessage), true];
+        };
+        decke("_gauAuftrag", (alt) => uhr("auftrag", alt));
+        decke("_gauFrage", (alt) => {
+            const mit = uhr("frage", alt);
+            return function (m, tr) {
+                const p = mit.call(this, m, tr);
+                faden();
+                return p;
+            };
+        });
+        const frage = (takt, akte, opt) => r._gauAuftrag(0, 0, takt, akte || [], Object.assign({ saat: 1, kg: KG }, opt));
+        const gleich = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+        const fnv = (b) => {
+            let h = 2166136261;
+            for (let i = 0; i < b.length; i++) h = Math.imul(h ^ b[i], 16777619);
+            return (h >>> 0).toString(16);
+        };
+        // ein Täter an seinem Ort: `tausch` deckt den Sender des Wirts, solange `fn` läuft
+        const unter = async (tausch, fn) => {
+            const ab = [];
+            decke("_gauFrage", (alt) => (m, tr) => alt.call(r, tausch(m) || m, tr), ab);
+            try {
+                return await fn();
+            } finally {
+                for (const f of ab) f();
+            }
+        };
+        const z = { sicht: {} };
+        // G1 — die Spur von B4: Wolf und Beute nach den Takten 1, 106, …, 946 (je 4 Jahre)
+        const zeit = { feldMs: 0, hydroMs: 0, kacheln: 0, rechenMs: 0, takte: 0 };
+        const [wolf, reh] = [[], []];
+        let a = null;
+        for (let k = 0; k < 10; k++) {
+            a = await frage(1 + 105 * k);
+            wolf.push(a.jaeger);
+            reh.push(a.beute);
+            for (const f of ["rechenMs", "takte"]) zeit[f] += a.zeit[f];
+            if (a.zeit.neu) Object.assign(zeit, { feldMs: a.zeit.feldMs, hydroMs: a.zeit.hydroMs, kacheln: a.zeit.kacheln });
+        }
+        Object.assign(z, { wolf, reh, feld: Object.assign({}, a.feld, { kSumme: rund(a.feld.kSumme, 0) }) });
+        z.zeit = {
+            feldS: rund(zeit.feldMs / 1000, 2),
+            hydroS: rund(zeit.hydroMs / 1000, 2),
+            kacheln: zeit.kacheln,
+            msJeJahr: rund((zeit.rechenMs / Math.max(1, zeit.takte)) * 26.25, 1),
+        };
+        if (TT.includes("gau-feld")) {
+            const lebendig = (m) => void (m.lebendig = Object.assign({}, m.lebendig, { lambdaLebendig: 210 }));
+            const b = await unter(lebendig, () => frage(1));
+            z.sicht["gau-feld"] = { wolf: [b.jaeger], reh: [b.beute], feld: Object.assign({}, b.feld, { kSumme: rund(b.feld.kSumme, 0) }) };
+        }
+        // DIE LESE-NAHT am Takt T1: die Reviere der mittleren Zeile — Köpfe, Tiere, Fraß; der erste Kopf der Beute fällt im Akt
+        const n = A.GAU.n;
+        const zeile = Array.from({ length: n }, (_, k) => r._gauOrt(k - n / 2, 0).revier);
+        const L = (await frage(T1, [], { lesen: zeile })).reviere;
+        const mitBeute = L.find((R) => R.tiere.some((t) => t.g === "beute"));
+        z.lesen = {
+            reviere: L.length,
+            beute: L.reduce((p, R) => p + R.koepfe.beute, 0),
+            jaeger: L.reduce((p, R) => p + R.koepfe.jaeger, 0),
+            // die Zeilen der Tiere sind die Köpfe; jede trägt Verband, Leib und Erbe; der Fraß je Zelle steht
+            treu: L.every(
+                (R) =>
+                    R.tiere.length === R.koepfe.beute + R.koepfe.jaeger &&
+                    R.frass.length === 16 &&
+                    R.tiere.every((t) => t.id && t.v && t.kg > 0 && t.M > 0 && t.a.length && t.e.length)
+            ),
+            abgeaest: L.reduce((p, R) => p + R.frass.filter((o) => o < 0).length, 0),
+        };
+        if (!mitBeute) return Object.assign(z, { fehler: "die mittlere Zeile des Gaus trägt am Takt " + T1 + " keine Beute" });
+        const AKT = [{ takt: T1, art: "aus", id: mitBeute.tiere.find((t) => t.g === "beute").id }];
+        const stand = async (akte, opt) => (await frage(T2, akte, Object.assign({ packen: true }, opt))).stand;
+        const neuerFaden = () => {
+            if (r._gauFadenStand) r._gauFadenStand.worker.terminate();
+            r._gauFadenStand = null;
+        };
+        // G3 — Faden A: ohne Akt, mit Akt; Faden B (frisch geboren): mit Akt, ohne Akt
+        const [a0, a1] = [await stand([]), await stand(AKT)];
+        neuerFaden();
+        const [b1, b0] = [await stand(AKT), await stand([])];
+        z.g3 = { gleich: gleich(a0, b0) && gleich(a1, b1), akt: !gleich(a0, a1), bytes: a0.length, hash: fnv(a0), hashAkt: fnv(a1) };
+        if (TT.includes("gau-akt")) {
+            const c1 = await unter((m) => void (m.akte = []), () => stand(AKT));
+            z.sicht["gau-akt"] = { g3: Object.assign({}, z.g3, { akt: !gleich(a0, c1) }) };
+        }
+        // G4 — der Stand am Takt T1 (mit dem Akt) reist heraus; geradeaus bis T2; dann herein und weiter bis T2
+        const s1 = (await frage(T1, AKT, { packen: true })).stand;
+        const gerade = await stand(AKT);
+        const reise = async (bytes) => {
+            const h = await frage(T2, AKT, { stand: bytes, packen: true });
+            return { gleich: gleich(gerade, h.stand), geradeaus: gleich(gerade, a1), takte: h.zeit.takte, soll: T2 - T1, bytes: s1.length };
+        };
+        z.g4 = await reise(s1.slice());
+        if (TT.includes("gau-stand")) {
+            // die Fraß-Schicht sind die letzten Zahlen des Float64-Teils: je Zelle der Beute eine
+            const ohne = s1.slice();
+            const kopfLang = new DataView(ohne.buffer).getUint32(0, true);
+            const kopf = JSON.parse(new TextDecoder().decode(ohne.subarray(8, 8 + kopfLang)));
+            const ende = ((8 + kopfLang + 7) & ~7) + kopf.nD * 8;
+            ohne.fill(0, ende - a.feld.zellen * 8, ende);
+            z.sicht["gau-stand"] = { g4: await reise(ohne) };
+        }
+        // DER WEG DES SPIELS (E6): der Wirt mit der Masse des GUSSES und der Saat des Gaus — die Geburt des Wirts (der Guss
+        // zweier Leiber, einmal je Sitzung) und der Gau am Takt 1
+        const w0 = performance.now();
+        const wirt = r._gauWirt();
+        const wirtMs = performance.now() - w0;
+        const echt = await r._gauAuftrag(0, 0, 1, []);
+        z.spiel = { kg: [rund(wirt.beute.M, 2), rund(wirt.jaeger.M, 2)], saat: r._gauSaat(0, 0), beute: echt.beute, jaeger: echt.jaeger, wirtMs: rund(wirtMs, 2) };
+        // G5 (nur `--gau`): das Aufholen eines Gaus ohne Akte — je Jahres-Zahl ab Takt 0 bis zu ihrem Takt, die Zeit im Faden
+        if (O.jahre) {
+            z.aufholen = [];
+            for (const j of O.jahre) {
+                await frage(0);
+                const t = Math.round(j * 26.25);
+                const h = await frage(t);
+                z.aufholen.push({ jahre: j, takte: h.zeit.takte, s: rund(h.zeit.rechenMs / 1000, 2), msJeJahr: rund((h.zeit.rechenMs / t) * 26.25, 1), beute: h.beute, jaeger: h.jaeger });
+            }
+        }
+        z.haupt = { maxMs: rund(haupt.maxMs, 2), wo: haupt.wo, rufe: haupt.rufe };
+        return z;
+    });
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
+// B4 — die Welt-Bindung, Saat 1 (gemessen am 18.11. am Feld des Haupt-Fadens, Kopf 2672c409: `--bestand-welt`): Wolf und Beute je
+// 4 Jahre, Land, Zellen der Beute und Σ K des Gaus (0, 0) der Heimat — das Soll des Gaus im Faden (G1)
+const GAU_B4 = {
+    wolf: [27, 42, 43, 39, 53, 59, 67, 52, 56, 58],
+    reh: [11339, 11999, 13778, 13772, 13920, 13611, 13935, 14041, 14370, 14476],
+    feld: { land: 2240, zellen: 10884, kSumme: 33989 },
+};
 function lebenUrteil(name, z, soll) {
+    if (name === "gau") {
+        const B = GAU_B4;
+        const feld = (f) => `Land ${f.land} · Zellen ${f.zellen} · Σ K ${f.kSumme}`;
+        soll(
+            z.wolf.join(" ") === B.wolf.join(" ") && z.reh.join(" ") === B.reh.join(" ") && feld(z.feld) === feld(B.feld),
+            `der Gau im Faden verlässt den B4-Lauf: Wolf ${z.wolf.join(" ")} (Soll ${B.wolf.join(" ")}) · Beute ${z.reh.join(" ")} (Soll ${B.reh.join(" ")}) · ${feld(z.feld)} (Soll ${feld(B.feld)})`
+        );
+        const L = z.lesen;
+        soll(
+            L.reviere === 48 && L.beute > 0 && L.treu && L.abgeaest > 0,
+            `die Lese-Naht des Gaus trägt nicht: ${L.reviere} Reviere, Beute ${L.beute}, Zeilen = Köpfe ${L.treu}, abgeäste Zellen ${L.abgeaest}`
+        );
+        soll(z.g3.gleich, `zwei Fäden geben nicht denselben Gau (Stand ${z.g3.hash} · mit Akt ${z.g3.hashAkt}, ${z.g3.bytes} Bytes)`);
+        soll(z.g3.akt, `der Akt ändert den Gau nicht: der Stand mit EINEM Akt „aus“ ist der ohne (${z.g3.hash})`);
+        soll(
+            z.g4.gleich && z.g4.geradeaus && z.g4.takte === z.g4.soll,
+            `der Stand des Gaus reist nicht: heraus, herein, weiter ≠ geradeaus (gleich ${z.g4.gleich}, geradeaus = erster Lauf ${z.g4.geradeaus}, ${z.g4.takte} von ${z.g4.soll} Takten ab dem Stand, ${z.g4.bytes} Bytes)`
+        );
+        soll(z.spiel.beute > 0 && z.spiel.jaeger > 0, `der Gau des Spiels (Masse des Gusses ${z.spiel.kg}) ist leer: Beute ${z.spiel.beute}, Wolf ${z.spiel.jaeger}`);
+        return;
+    }
     // DER ZIEL-PLAN (mensch Breite): zu jeder der fünf Stunden trägt höchstens jeder Zwanzigste kein Ziel, um 10 Uhr steht die
     // Hälfte an ihrem Werk-Ort, und jede Rolle des Plans hat einen Ort, den ein Fremder am Tag erreicht
     if (name === "zielplan") {
@@ -1765,8 +1946,15 @@ function lebenUrteil(name, z, soll) {
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
     BUEHNEN: `await (${lebenQuelle})();`,
-    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege", "erbe", "muster"],
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege", "erbe", "muster", "gau"],
+    // die Probe mit EINEM Lauf im Selbsttest (alle Täter in ihm, das Urteil je Täter an seiner Sicht)
+    EIN_LAUF: ["gau"],
     TAETER: {
+        gau: [
+            ["gau-feld", /der Gau im Faden verlässt den B4-Lauf/],
+            ["gau-akt", /der Akt ändert den Gau nicht/],
+            ["gau-stand", /der Stand des Gaus reist nicht/],
+        ],
         erbe: [["erbe-kind", /das Erbe reist nicht von den Eltern zum Kind \(kind\)/]],
         muster: [
             ["riss-aeltester", /nicht nach dem Ertrag \(rissGewicht\)/],
@@ -2127,6 +2315,52 @@ if (process.argv.includes("--bestand-welt")) {
             `${ok[2] ? "GRÜN" : "ROT"} W3 WÄ je Wolf: ${rund(W3, 1)} (Soll 180–390; je Saat ${P.map((p) => rund(p.W3, 1)).join(" ")})`,
         ];
         const text = [...Z0, "", ...zeilen, "", ...urteil].join("\n");
+        console.log(text);
+        const aus = argOpt("--aus", "");
+        if (aus) fs.writeFileSync(aus, text + "\n");
+    });
+    return;
+}
+// C2a — DER GAU IM FADEN, GEMESSEN (`--gau [--jahre 10,100,1000] [--aus <datei>]`): die Bühne `gau` (dieselbe wie gate:kreatur-takt)
+// in ZWEI Booten der Seite — G1 die B4-Spur aus dem Faden · G2 die längste Arbeit des Haupt-Fadens je Ruf des Wirts · G3 der Stand
+// beider Boote Byte für Byte (ihr Hash) · G4 die Rundreise · G5 ms je Jahres-Schritt im Faden und das Aufholen eines Gaus ohne
+// Akte über n Jahre (nur im ersten Boot). Das Urteil der Zeilen bleibt beim Tor; hier stehen die Zahlen.
+if (process.argv.includes("--gau")) {
+    const fs = require("fs");
+    const { statikServer, nullWelt, hauptLauf, argOpt } = require("./lib/welt-boot.cjs");
+    const { KREATUR_PROBEN_SRC, urteil } = require("./lib/kreatur-proben.cjs");
+    const jahre = argOpt("--jahre", "10,100,1000").split(",").map(Number);
+    hauptLauf(async () => {
+        const boot = async (gau) => {
+            const server = statikServer();
+            const port = Number(process.env.KREATUR_TAKT_PORT || 4478);
+            const { browser, page } = await nullWelt(server, { port, frist: 3600000 }, 120000, "index.html", "networkidle0");
+            page.setDefaultTimeout(3500000);
+            try {
+                await page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady));
+                await page.evaluate(() => window.__weltStehtNach(() => r._gameLoopTick(performance.now())));
+                const aus = await page.evaluate((src, o) => (0, eval)("(" + src + ")")(r, window.THREE, o), KREATUR_PROBEN_SRC, { proben: ["gau"], gau });
+                return aus.gau;
+            } finally {
+                await browser.close();
+                server.close();
+            }
+        };
+        const [A, B] = [await boot({ jahre }), await boot({})];
+        const [uA, uB] = [urteil("gau", A), urteil("gau", B)];
+        const boote = A.g3.hash === B.g3.hash && A.g3.hashAkt === B.g3.hashAkt;
+        const farbe = (ok) => (ok ? "GRÜN" : "ROT");
+        const text = [
+            `C2a — der Gau im Faden · Gau (0, 0) der Heimat, 48 × 48 Regionen · zwei Boote`,
+            `${farbe(uA.ok && uB.ok)} G1 der B4-Lauf aus dem Faden: Wolf je 4 Jahre ${A.wolf.join(" ")} · Beute ${A.reh.join(" ")} · Land ${A.feld.land} · Zellen ${A.feld.zellen} · Σ K ${A.feld.kSumme}${uA.ok ? "" : " — " + uA.grund}`,
+            `${farbe(Math.max(A.haupt.maxMs, B.haupt.maxMs) <= 1)} G2 Haupt-Faden je Ruf des Wirts: längste Arbeit ${A.haupt.maxMs} ms (${A.haupt.wo}, ${A.haupt.rufe} Rufe) · zweites Boot ${B.haupt.maxMs} ms (${B.haupt.wo}, ${B.haupt.rufe} Rufe) — Soll ≤ 1 ms; die Geburt des Wirts (Masse des Gusses) ${A.spiel.wirtMs} · ${B.spiel.wirtMs} ms`,
+            `${farbe(boote && A.g3.gleich && A.g3.akt && B.g3.gleich && B.g3.akt)} G3 Determinismus: Boot 1 ${A.g3.hash} · Boot 2 ${B.g3.hash} (ohne Akt) · mit EINEM Akt „aus“ am Takt 100 ${A.g3.hashAkt} · ${B.g3.hashAkt} · je Boot zwei Fäden gleich ${A.g3.gleich} · ${B.g3.gleich} · ${A.g3.bytes} Bytes am Takt 160`,
+            `${farbe(A.g4.gleich && B.g4.gleich)} G4 Stand-Rundreise: heraus am Takt 100 (${A.g4.bytes} Bytes), herein, ${A.g4.takte} Takte weiter = geradeaus ${A.g4.gleich} · ${B.g4.gleich}`,
+            `G5 Kosten im Faden: Feld des Gaus ${A.zeit.feldS} s (davon ${A.zeit.kacheln} Hydro-Kacheln ${A.zeit.hydroS} s) · zweites Boot ${B.zeit.feldS} s · ${A.zeit.msJeJahr} · ${B.zeit.msJeJahr} ms je Jahres-Schritt über die ersten 36 Jahre`,
+            ...(A.aufholen || []).map((h) => `   Aufholen ohne Akte ${h.jahre} Jahre (${h.takte} Takte): ${h.s} s = ${h.msJeJahr} ms je Jahres-Schritt · am Ende Beute ${h.beute} · Wolf ${h.jaeger}${h.jahre === 100 && h.s > 2 ? " — FUND: über 2 s" : ""}`),
+            `Der Weg des Spiels (Masse des Gusses ${A.spiel.kg.join(" · ")} kg, Saat des Gaus ${A.spiel.saat}): am Takt 1 Beute ${A.spiel.beute} · Wolf ${A.spiel.jaeger}`,
+            `Die Lese-Naht am Takt 100, mittlere Zeile: ${A.lesen.reviere} Reviere · Beute ${A.lesen.beute} · Wolf ${A.lesen.jaeger} · abgeäste Zellen ${A.lesen.abgeaest}`,
+        ].join("\n");
         console.log(text);
         const aus = argOpt("--aus", "");
         if (aus) fs.writeFileSync(aus, text + "\n");

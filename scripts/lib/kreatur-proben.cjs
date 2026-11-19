@@ -3280,6 +3280,6 @@ module.exports = {
     PROBEN: [...PROBEN, ...LEBEN.PROBEN, ...MENSCH.PROBEN],
     TAETER: Object.assign(TAETER, LEBEN.TAETER, MENSCH.TAETER, { "zielplan@stadt-voll": LEBEN.TAETER.zielplan }),
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
-    EIN_LAUF: MENSCH.EIN_LAUF,
+    EIN_LAUF: [...MENSCH.EIN_LAUF, ...LEBEN.EIN_LAUF],
     urteil,
 };
