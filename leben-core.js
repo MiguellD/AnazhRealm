@@ -426,11 +426,15 @@
         }
         const mutterW = (t) => wurfGewicht(t.kg) * t.eig;
         // die Verwundbarkeit: eine Stufe im Alter — unreif · Greis · sonst 1 (keine Masse: der Riss zieht nicht an der Größen-Erbanlage)
-        const verwundbar = (t) => (!t.r ? JAGD.jung : t.alterS >= JAGD.greisAb * t.tod ? JAGD.greis : 1);
+        const [VW_JUNG, VW_GREIS, GREIS_AB] = [JAGD.jung, JAGD.greis, JAGD.greisAb];
+        const verwundbar = (t) => (!t.r ? VW_JUNG : t.alterS >= GREIS_AB * t.tod ? VW_GREIS : 1);
 
+        // EINE Form je Kopf (C2a3): Beute und Jäger tragen dieselben Felder in derselben Reihe (`ab`, das Abwander-Alter, liest nur
+        // der Jäger) — die Schleifen des Schritts sehen EINE Gestalt, kein Feld wechselt seinen Typ nach der Geburt.
         function tier(g, id, a, e, mutter, alterS, weiblich) {
-            const M = masseAdult(M_ART[g], a, e);
-            const P = Math.log(M / M_ART[g]);
+            const mArt = g === "jaeger" ? M_ART.jaeger : M_ART.beute;
+            const M = masseAdult(mArt, a, e);
+            const P = Math.log(M / mArt);
             const t = {
                 id,
                 g,
@@ -440,7 +444,7 @@
                 w: weiblich,
                 M,
                 M34: Math.pow(M, 0.75),
-                Mw: Math.pow(M / M_ART[g], G.wurfExp), // das Wurf-Gewicht der Mutter relativ zur Art (leben-core wurfExp)
+                Mw: Math.pow(M / mArt, G.wurfExp), // das Wurf-Gewicht der Mutter relativ zur Art (leben-core wurfExp)
                 tau: reifeS(M) / REIFE_MASS,
                 tod: lebensdauerS(M),
                 reif: reifeS(M),
@@ -452,6 +456,7 @@
                 r: false,
                 jl: false, // ein Jahr alt (Beute: nicht mehr Kitz)
                 tot: null,
+                ab: 0, // das Abwander-Alter des Jägers (s) — die Beute liest es nie
             };
             wachse(t);
             t.r = t.alterS >= t.reif;
@@ -468,24 +473,29 @@
             return t;
         }
 
+        // die Nachbarn EINES Reviers (kante = nur die vier Kanten-Nachbarn), Zeile für Zeile, x zuerst; der Rand ist geschlossen.
+        // Je Revier EIN Ruf: die Karte entsteht in EINER flachen Schleife — eine verschachtelte, die nur einmal läuft, tauscht der
+        // Übersetzer mitten im Lauf (OSR) und fällt an jedem Ende der inneren Schleife wieder heraus (26 Ausfälle je Karte, C2a3).
+        function nachbarnVon(W, H, j, kante) {
+            const aus = [];
+            const [x, y] = [j % W, (j / W) | 0];
+            for (let dy = -1; dy <= 1; dy++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (!dx && !dy) continue;
+                    if (kante && dx && dy) continue;
+                    const [xx, yy] = [x + dx, y + dy];
+                    if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+                    aus.push(yy * W + xx);
+                }
+            return aus;
+        }
         function nachbarn(W, H) {
             const n8 = [];
             const n4 = [];
-            for (let y = 0; y < H; y++)
-                for (let x = 0; x < W; x++) {
-                    const a = [];
-                    const b = [];
-                    for (let dy = -1; dy <= 1; dy++)
-                        for (let dx = -1; dx <= 1; dx++) {
-                            if (!dx && !dy) continue;
-                            const [xx, yy] = [x + dx, y + dy];
-                            if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue; // der Rand ist geschlossen
-                            a.push(yy * W + xx);
-                            if (!dx || !dy) b.push(yy * W + xx);
-                        }
-                    n8.push(a);
-                    n4.push(b);
-                }
+            for (let j = 0; j < W * H; j++) {
+                n8.push(nachbarnVon(W, H, j, false));
+                n4.push(nachbarnVon(W, H, j, true));
+            }
             return { n8, n4 };
         }
         const NACHBAR = new Map();
@@ -523,10 +533,27 @@
             // rest = das Riss-Konto (kg): der Rest-Übertrag von Takt zu Takt · fRiss/fErh = die letzten FENSTER Takte (Riss, Erhaltung) · deck = D
             // kern = die Zahl der verteidigten Reviere (der Anfang von `reviere`, Satz 7a) · traegt = das Rudel-Revier trägt den Bedarf
             // (die Buchung von z.frei führt der Rufer: das Land einer Gründung ist frei ODER offenes Land eines Halters)
-            const R = { id: z.rudelZahl++, reviere: terr, ort, tiere: [], kg: 0, riss: 0, gedeckt: 0, satt: 0, erh: 0, rest: 0, v: 0, fRiss: [], fErh: [], deck: null, wurfAb, kern: terr.length, traegt: true };
+            // fRiss/fErh sind EIN Ring fester Länge (Float64Array, FENSTER Takte): `fN` Werte ab `f0`, der älteste zuerst
+            const R = rudelForm(z.rudelZahl++, terr, ort, 0, 0, 0, 0, 0, 0, 0, null, wurfAb, terr.length, true);
             for (const x of terr) z.besitz[x] = R.id;
             z.rudel.push(R);
             return R;
+        }
+        // die EINE Form des Rudels (Gründung und Stand bauen sie hier — dieselbe Reihe der Felder, dieselben Typen)
+        function rudelForm(id, reviere, ort, kg, riss, gedeckt, satt, erh, rest, v, deck, wurfAb, kern, traegt) {
+            return { id, reviere, ort, tiere: [], kg, riss, gedeckt, satt, erh, rest, v, fRiss: new Float64Array(FENSTER), fErh: new Float64Array(FENSTER), f0: 0, fN: 0, deck, wurfAb, kern, traegt };
+        }
+        // ein Takt in den Ring: über FENSTER fällt der älteste
+        function ringNimmt(R, riss, erh) {
+            if (R.fN < FENSTER) {
+                const k = (R.f0 + R.fN++) % FENSTER;
+                R.fRiss[k] = riss;
+                R.fErh[k] = erh;
+            } else {
+                R.fRiss[R.f0] = riss;
+                R.fErh[R.f0] = erh;
+                R.f0 = (R.f0 + 1) % FENSTER;
+            }
         }
         // ── SATZ 7a: der Bedarf und der Kern ─────────────────────────────────────────────────────────────────────────────────────────
         // Bedarf = V_halt × Köpfe (ALLE Köpfe des Rudels, wie V in Satz 3; Hirsch = 1 WÄ je Kopf), mindestens der eines Paars; ein
@@ -777,125 +804,202 @@
         const LN_KITZ = Math.log(BEUTE.ueberlebenKitz);
         const LN_ADULT = Math.log(BEUTE.ueberlebenAdult);
 
-        function schritt(z, saat, takt, welt) {
-            if (takt !== z.takt) throw new Error("leben-core bestand: schritt(takt " + takt + ") am Zustand des Takts " + z.takt);
-            const P = z.param;
-            const n = z.W * z.H;
-            const { n8 } = nachbarVon(z.W, z.H);
-            const ev = (z.ereignis = neuEreignis());
-            const tS = (takt + 1) * TAKT_S;
-            const { cum, vw, offen, marke, komp, stapel } = puffer(n);
-            const last = z.last;
+        // ── DER SCHRITT IN PHASEN (C2a3) ───────────────────────────────────────────────────────────────────────────────────────────
+        // Je Phase EINE Funktion, je Kopf-Schleife EINE Funktion mit festen Typen (ein Kopf = EINE Form, Zahlen-Listen getypt).
+        // `schritt` ruft sie in der Reihe 0–7; jede Phase rechnet dieselben Zahlen in derselben Reihenfolge wie der eine Rumpf
+        // davor (Lauf 4 und der Stand des Gaus byte-gleich). Der Grund des Schnitts: ein Ausfall aus dem übersetzten Code (ein
+        // selten begangener Weg, der zum ersten Mal läuft) wirft nur noch die Phase zurück, in der er liegt — nie die Schleifen
+        // über alle Köpfe.
+        const JAHR_S = ZEIT.jahrS;
+        const eigW = (t) => t.eig;
+        const vaterW = (t) => (t.r && !t.w ? t.eig : 0);
 
-            // 0 — das Alter, der Leib, die Reife, das erste Jahr; die Last des Reviers = Σ (kg ÷ M_Art)^¾
-            const jaehr = [];
-            for (let i = 0; i < n; i++) {
-                const list = z.beute[i];
-                let s = 0;
-                for (let k = 0; k < list.length; k++) {
-                    const t = list[k];
-                    t.alterS += TAKT_S;
-                    wachse(t);
-                    if (!t.r && t.alterS >= t.reif) (t.r = true), ev.reifReh++;
-                    if (!t.jl && t.alterS >= ZEIT.jahrS) (t.jl = true), ev.jaehrling++, jaehr.push(t, i);
-                    s += t.k34;
-                }
-                last[i] = s / M34_ART.beute;
+        // 0 — das Alter, der Leib, die Reife, das erste Jahr; die Last des Reviers = Σ (kg ÷ M_Art)^¾
+        function alterBeute(list, ev, jaehr, i) {
+            // die Reife ohne Zweig: `r` IST „Alter ≥ Reife“ (tier, gruenderTier und der Stand setzen es so) — der Wechsel zählt
+            let s = 0;
+            let reif = 0;
+            for (let k = 0; k < list.length; k++) {
+                const t = list[k];
+                t.alterS += TAKT_S;
+                wachse(t);
+                const r = t.alterS >= t.reif;
+                reif += r === t.r ? 0 : 1;
+                t.r = r;
+                if (!t.jl && t.alterS >= JAHR_S) (t.jl = true), ev.jaehrling++, jaehr.push(t, i);
+                s += t.k34;
             }
-            for (const R of z.rudel)
-                for (const t of R.tiere) {
-                    t.alterS += TAKT_S;
-                    wachse(t);
-                    if (!t.r && t.alterS >= t.reif) (t.r = true), ev.reifWolf++; // die Reife löst keine Abwanderung mehr aus (Satz 7b)
-                }
+            ev.reifReh += reif;
+            return s;
+        }
+        function alterRudel(tiere, ev) {
+            for (let k = 0; k < tiere.length; k++) {
+                const t = tiere[k];
+                t.alterS += TAKT_S;
+                wachse(t);
+                if (!t.r && t.alterS >= t.reif) (t.r = true), ev.reifWolf++; // die Reife löst keine Abwanderung mehr aus (Satz 7b)
+            }
+        }
+        function phaseAlter(z, ev, jaehr) {
+            const n = z.W * z.H;
+            const beute = z.beute;
+            const last = z.last;
+            // die Rudel zuerst (ihr Alter liest die Beute nicht): nach der langen Schleife über die Reviere steht kein Code mehr
+            for (const R of z.rudel) alterRudel(R.tiere, ev);
+            for (let i = 0; i < n; i++) last[i] = alterBeute(beute[i], ev, jaehr, i) / M34_ART.beute;
+        }
 
-            // 1 — das Futter: K je Revier liest der Kern vom Leser der Welt; der Fraß der Herde je kg^¾ geht als z.frass hinaus (der
-            //     Wirt schreibt ihn in seine Welt); der freie Platz unter K (für die Wanderung)
+        // 1 — das Futter: K je Revier liest der Kern vom Leser der Welt; der Fraß der Herde je kg^¾ geht als z.frass hinaus (der
+        //     Wirt schreibt ihn in seine Welt); der freie Platz unter K (für die Wanderung) → Summe, `cum` trägt sie laufend
+        function phaseFutter(z, welt, cum) {
+            const n = z.W * z.H;
             const K = z.K;
+            const last = z.last;
+            const frass = z.frass;
             let platz = 0;
             for (let i = 0; i < n; i++) {
                 const k = welt.futter(i);
                 if (!(k >= 0 && k < Infinity)) throw new Error("leben-core bestand: welt.futter(" + i + ") ist keine Tragfähigkeit (" + k + ")");
                 K[i] = k;
-                z.frass[i] = last[i] * FRASS_TAKT;
+                frass[i] = last[i] * FRASS_TAKT;
                 if (welt.land(i) && K[i] > last[i]) platz += K[i] - last[i];
                 cum[i] = platz;
             }
+            return platz;
+        }
 
-            // 2 — die Jagd (Satz 3, zweite Fassung): das Rudel begeht sein GANZES Rudel-Revier; der Riss des Takts ist eine MASSE:
-            //     Sattheit (Wölfe × Plateau, kg Riss-brutto) × V ÷ (V + V½), V = Beute-Köpfe im Rudel-Revier je Wolf des Rudels.
-            //     Die Masse fällt in Köpfe über das Riss-Konto des Rudels (Rest-Übertrag, kein Runden-Gewinn): ein Kopf fällt, solange
-            //     das Konto über 0 steht, und zieht sein Gewicht ab. Jeder Riss fällt in ein Revier nach dessen verwundbarem Bestand.
-            for (const R of z.rudel) {
-                let [jaeger, verband, s34, kg] = [0, 0, 0, 0];
-                for (const t of R.tiere) {
-                    kg += t.kg;
-                    s34 += t.k34;
-                    if (t.kg >= JAGD_KG) jaeger++, (verband += t.kg);
-                }
-                R.kg = kg;
-                R.riss = 0;
-                R.gedeckt = 0;
-                R.satt = WOLF.sattheit * s34 * TAGE;
-                R.erh = WOLF.erhaltung * s34 * TAGE;
-                ev.sattKg += R.satt;
-                ev.erhKg += R.erh;
-                if (!jaeger) continue;
-                ev.jagdTakte++;
-                const lim = BEUTE_MASSE * verband; // Beute ist, wer höchstens beuteMasse × die Masse des jagenden Verbands wiegt
-                const terr = R.reviere;
-                let [tot, koepfe] = [0, 0];
-                for (let k = 0; k < terr.length; k++) {
-                    const list = z.beute[terr[k]];
-                    let s = 0;
-                    for (let q = 0; q < list.length; q++) if (list[q].kg <= lim) s += verwundbar(list[q]);
-                    vw[k] = s;
-                    tot += s;
-                    koepfe += list.length;
-                }
-                const rng = strom(saat, takt, 4, R.id);
-                const V = koepfe / R.tiere.length; // Weißwedel-Äquivalente je Wolf: 1 WÄ je Beute-KOPF, je Kopf des Rudels
-                const soll = (R.satt * V) / (V + ANTWORT.vHalb);
-                R.v = V;
-                R.rest += soll;
-                ev.sollKg += soll;
-                ev.vSumme += V;
-                const wahl = (t) => (t.kg <= lim ? verwundbar(t) : 0);
-                while (R.rest > 0) {
-                    let r = rng() * tot;
-                    let k = -1;
-                    for (let q = 0; q < terr.length; q++) {
-                        if (!(vw[q] > 0)) continue;
-                        k = q;
-                        if ((r -= vw[q]) < 0) break;
-                    }
-                    if (k < 0) {
-                        ev.erschoepft++;
-                        break;
-                    }
-                    const list = z.beute[terr[k]];
-                    const o = zug(list, wahl, rng);
-                    if (!o) {
-                        tot -= vw[k];
-                        vw[k] = 0;
-                        continue;
-                    }
-                    const w = verwundbar(o);
-                    vw[k] = Math.max(0, vw[k] - w);
-                    tot = Math.max(0, tot - w);
-                    R.riss += o.kg;
-                    R.rest -= o.kg;
-                    R.gedeckt += P.nutz * o.kg;
-                    R.ort = terr[k];
-                    stirbAn(ev, list, list.indexOf(o), "jagd", terr[k]);
-                }
-                ev.rissKg += R.riss;
-                ev.gedecktKg += R.gedeckt;
+        // 2 — die Jagd (Satz 3, zweite Fassung): das Rudel begeht sein GANZES Rudel-Revier; der Riss des Takts ist eine MASSE:
+        //     Sattheit (Wölfe × Plateau, kg Riss-brutto) × V ÷ (V + V½), V = Beute-Köpfe im Rudel-Revier je Wolf des Rudels.
+        //     Die Masse fällt in Köpfe über das Riss-Konto des Rudels (Rest-Übertrag, kein Runden-Gewinn): ein Kopf fällt, solange
+        //     das Konto über 0 steht, und zieht sein Gewicht ab. Jeder Riss fällt in ein Revier nach dessen verwundbarem Bestand.
+        function verwundbarIn(list, lim) {
+            let s = 0;
+            for (let q = 0; q < list.length; q++) if (list[q].kg <= lim) s += verwundbar(list[q]);
+            return s;
+        }
+        function jagdRudel(z, R, saat, takt, ev, vw) {
+            const tiere = R.tiere;
+            let jaeger = 0;
+            let verband = 0;
+            let s34 = 0;
+            let kg = 0;
+            for (let k = 0; k < tiere.length; k++) {
+                const t = tiere[k];
+                kg += t.kg;
+                s34 += t.k34;
+                if (t.kg >= JAGD_KG) jaeger++, (verband += t.kg);
             }
+            R.kg = kg;
+            R.riss = 0;
+            R.gedeckt = 0;
+            R.satt = WOLF.sattheit * s34 * TAGE;
+            R.erh = WOLF.erhaltung * s34 * TAGE;
+            ev.sattKg += R.satt;
+            ev.erhKg += R.erh;
+            if (!jaeger) return;
+            ev.jagdTakte++;
+            const lim = BEUTE_MASSE * verband; // Beute ist, wer höchstens beuteMasse × die Masse des jagenden Verbands wiegt
+            const terr = R.reviere;
+            const beute = z.beute;
+            let tot = 0;
+            let koepfe = 0;
+            for (let k = 0; k < terr.length; k++) {
+                const list = beute[terr[k]];
+                const s = verwundbarIn(list, lim);
+                vw[k] = s;
+                tot += s;
+                koepfe += list.length;
+            }
+            const rng = strom(saat, takt, 4, R.id);
+            const V = koepfe / R.tiere.length; // Weißwedel-Äquivalente je Wolf: 1 WÄ je Beute-KOPF, je Kopf des Rudels
+            const soll = (R.satt * V) / (V + ANTWORT.vHalb);
+            R.v = V;
+            R.rest += soll;
+            ev.sollKg += soll;
+            ev.vSumme += V;
+            const nutz = z.param.nutz;
+            const wahl = (t) => (t.kg <= lim ? verwundbar(t) : 0);
+            while (R.rest > 0) {
+                let r = rng() * tot;
+                let k = -1;
+                for (let q = 0; q < terr.length; q++) {
+                    if (!(vw[q] > 0)) continue;
+                    k = q;
+                    if ((r -= vw[q]) < 0) break;
+                }
+                if (k < 0) {
+                    ev.erschoepft++;
+                    break;
+                }
+                const list = beute[terr[k]];
+                const o = zug(list, wahl, rng);
+                if (!o) {
+                    tot -= vw[k];
+                    vw[k] = 0;
+                    continue;
+                }
+                const w = verwundbar(o);
+                vw[k] = Math.max(0, vw[k] - w);
+                tot = Math.max(0, tot - w);
+                R.riss += o.kg;
+                R.rest -= o.kg;
+                R.gedeckt += nutz * o.kg;
+                R.ort = terr[k];
+                stirbAn(ev, list, list.indexOf(o), "jagd", terr[k]);
+            }
+            ev.rissKg += R.riss;
+            ev.gedecktKg += R.gedeckt;
+        }
 
-            // 3 — die Beute je Kopf: Hunger (Hazard ∝ Last ÷ K), Alter, Geburt je reifer Kuh
+        // 3 — die Beute je Kopf: Hunger (Hazard ∝ Last ÷ K), Alter, Geburt je reifer Kuh
+        function beuteKoepfe(list, rng, pK, pA, rJ, rA, ev, i) {
+            let muetter = null;
+            for (let k = list.length - 1; k >= 0; k--) {
+                const t = list[k];
+                if (rng() < (t.jl ? pA : pK)) {
+                    stirbAn(ev, list, k, "hunger", i);
+                    continue;
+                }
+                if (t.alterS > t.tod) {
+                    stirbAn(ev, list, k, "alter", i);
+                    continue;
+                }
+                if (t.r && t.w) {
+                    // die Rate der Quelle × das Erbe-Gewicht der Mutter (leben-core: Wurf-Gewicht kg^−0,25 relativ zur Art × Eignung)
+                    const p = ((t.alterS < t.reif + JAHR_S ? rJ : rA) * t.eig * t.Mw) / t.ww;
+                    if (rng() < p) (muetter || (muetter = [])).push(t);
+                }
+            }
+            return muetter;
+        }
+        function beuteGeburten(z, i, list, muetter, rng, ev, tS) {
+            const n8 = nachbarVon(z.W, z.H).n8;
+            let j = 0;
+            for (const mu of muetter) {
+                let va = zug(list, vaterW, rng);
+                if (!va) {
+                    // der Vater aus der Nachbarschaft (ein reifer Bock der acht Nachbar-Reviere), nie ein Gründer-Zug
+                    const kand = [];
+                    for (const y of n8[i]) for (const t of z.beute[y]) if (t.r && !t.w) kand.push(t);
+                    va = zug(kand, eigW, rng);
+                }
+                if (!va) {
+                    ev.vaterlos++;
+                    continue;
+                }
+                const a = kind(mu.a, va.a, normale(rng), normale(rng), normale(rng));
+                const t = tier("beute", indId(String(i), tS, j++), a, umwelt(normale(rng)), mu.id, 0, rng() < BEUTE.weiblich);
+                list.push(t);
+                ev.geburt.push(t);
+            }
+        }
+        function phaseBeute(z, saat, takt, ev, tS) {
+            const n = z.W * z.H;
+            const beute = z.beute;
+            const K = z.K;
+            const last = z.last;
             for (let i = 0; i < n; i++) {
-                const list = z.beute[i];
+                const list = beute[i];
                 if (!list.length) continue;
                 const rng = strom(saat, takt, 0, i);
                 const x = K[i] > 0 ? last[i] / K[i] : Infinity;
@@ -904,192 +1008,166 @@
                 const g = x < 1 ? 1 - x : 0;
                 const rA = (BEUTE.kitzeAdult[0] + (BEUTE.kitzeAdult[1] - BEUTE.kitzeAdult[0]) * g) / TJ;
                 const rJ = (BEUTE.kitzeJaehrling[0] + (BEUTE.kitzeJaehrling[1] - BEUTE.kitzeJaehrling[0]) * g) / TJ;
-                let muetter = null;
-                for (let k = list.length - 1; k >= 0; k--) {
-                    const t = list[k];
-                    if (rng() < (t.jl ? pA : pK)) {
-                        stirbAn(ev, list, k, "hunger", i);
+                const muetter = beuteKoepfe(list, rng, pK, pA, rJ, rA, ev, i);
+                if (muetter) beuteGeburten(z, i, list, muetter, rng, ev, tS);
+            }
+        }
+
+        // 4 — das Rudel (Satz 4, zweite Fassung): die Deckung D = Riss ÷ Erhaltung über das letzte Jahr (gleitend, FENSTER Takte);
+        //     Überleben je Kopf stetig in D (Welpe im ersten Jahr · ab einem Jahr), das Jahres-Überleben als Wurzel je Takt;
+        //     das Alter am Lebens-Ende (bleibt); der EINE Wurf je Jahr: Anteil der Würfe und Welpen je Wurf stetig in D
+        function rudelWurf(R, saat, takt, ev, tS, rng, D) {
+            R.wurfAb += TJ;
+            ev.wurfTag++;
+            const reife = R.tiere.filter((t) => t.r);
+            if (reife.length < 2) return void ev.ohnePaar++;
+            if (!(rng() < ankerZJ("faehen", D))) return void ev.ohneWurf++;
+            ev.wurfWolf++;
+            const w = ankerZJ("welpen", D);
+            let welpen = Math.floor(w);
+            if (rng() < w - welpen) welpen++;
+            const ar = strom(saat, takt, 5, R.id); // Satz 7b: das Abwander-Alter je Welpe, einmal aus der Saat (eigener Strom)
+            for (let k = 0; k < welpen; k++) {
+                const mu = zug(reife, mutterW, rng);
+                const va = zug(reife, (t) => (t === mu ? 0 : t.eig), rng);
+                const a = kind(mu.a, va.a, normale(rng), normale(rng), normale(rng));
+                const t = tier("jaeger", indId("r" + R.id, tS, k), a, umwelt(normale(rng)), mu.id, 0, rng() < BEUTE.weiblich);
+                t.ab = abwanderAlter(ar);
+                R.tiere.push(t);
+                ev.geburt.push(t);
+            }
+        }
+        function rudelTakt(R, saat, takt, ev, tS) {
+            const rng = strom(saat, takt, 1, R.id);
+            ringNimmt(R, R.riss, R.erh);
+            const fRiss = R.fRiss;
+            const fErh = R.fErh;
+            const f0 = R.f0;
+            const fN = R.fN;
+            let sRiss = 0;
+            let sErh = 0;
+            for (let k = 0; k < fN; k++) {
+                const q = (f0 + k) % FENSTER;
+                sRiss += fRiss[q];
+                sErh += fErh[q];
+            }
+            const D = sErh > 0 ? sRiss / sErh : 0;
+            R.deck = D;
+            const pWelpe = 1 - Math.pow(ankerZJ("welpeJaehrling", D), 1 / TJ);
+            const pAb1 = 1 - Math.pow(ankerZJ("ueberleben", D), 1 / TJ);
+            for (let k = R.tiere.length - 1; k >= 0; k--) {
+                const t = R.tiere[k];
+                const welpe = t.alterS < JAHR_S;
+                if (rng() < (welpe ? pWelpe : pAb1)) stirbAn(ev, R.tiere, k, welpe ? "welpe" : "deckung", R.ort);
+                else if (t.alterS > t.tod) stirbAn(ev, R.tiere, k, "alter", R.ort);
+            }
+            if (takt >= R.wurfAb) rudelWurf(R, saat, takt, ev, tS, rng, D);
+        }
+
+        // 5 — die Abwanderung der Beute im Jährlings-Jahr: Bock 0,80 · Kuh 0,13; Ziel nach dem freien Platz unter K
+        function phaseBeuteZug(z, saat, takt, ev, jaehr, platz, cum, welt) {
+            const n = z.W * z.H;
+            const rng = strom(saat, takt, 2, 0);
+            let habitat = null;
+            for (let q = 0; q < jaehr.length; q += 2) {
+                const [t, i] = [jaehr[q], jaehr[q + 1]];
+                if (t.tot) continue;
+                if (!(rng() < (t.w ? BEUTE.abwandernKuh : BEUTE.abwandernBock))) continue;
+                let nach;
+                if (platz > 0) {
+                    const u = rng() * platz;
+                    let [lo, hi] = [0, n - 1];
+                    while (lo < hi) {
+                        const mid = (lo + hi) >> 1;
+                        if (cum[mid] > u) hi = mid;
+                        else lo = mid + 1;
+                    }
+                    nach = lo;
+                } else {
+                    if (!habitat) {
+                        habitat = [];
+                        for (let j = 0; j < n; j++) if (welt.land(j)) habitat.push(j);
+                    }
+                    nach = habitat[Math.floor(rng() * habitat.length)];
+                }
+                if (nach === i) continue;
+                const list = z.beute[i];
+                list.splice(list.indexOf(t), 1);
+                z.beute[nach].push(t);
+                ev.zug.push({ t, von: i, nach, art: "reh" });
+            }
+        }
+
+        // 6 — die Abwanderung des Wolfs (Satz 7b, 7c): wer sein Abwander-Alter erreicht hat und nicht zum Paar gehört (die zwei
+        //     ältesten Köpfe des Rudels — das Paar wandert nie), SUCHT in jedem Takt, bis er geht:
+        //       (1) er füllt die leere Stelle des nächsten Rudels ohne Paar (weniger als zwei Reife — die Paar-Regel des Wurfs);
+        //           Beitritt vor Gründung (Satz 7d — das Paar kommt vor dem Land): EIN Kopf gründet, der nächste Sucher macht das Paar;
+        //       (2) sonst gründet er, wo offenes Land (frei oder Land eines Halters über dessen Bedarf) einem Paar V_halt trägt;
+        //           der Halter gibt das Land ab;
+        //       (3) sonst bleibt er als Kopf im Geburts-Rudel (zählt in V und D, isst mit) und sucht im nächsten Takt wieder.
+        //     Kein Auslöser „reif“, „hungert“, „voll“; kein Tod auf der Wanderung.
+        function phaseWolfZug(z, takt, ev, offen, marke, komp, stapel) {
+            let karte = false; // die Karte des offenen Lands dieses Takts (erst beim ersten Sucher gelesen)
+            let land = 0; // 0 = die Stücke sind neu zu lesen · 1 = ein Stück trägt ein Paar · −1 = keines
+            let summe = null;
+            let gesucht = null;
+            const paarWae = RAUM.vHalt * RAUM.paar;
+            for (const R of z.rudel.slice()) {
+                if (R.tiere.length <= RAUM.paar) continue;
+                let [p1, p2] = [null, null];
+                for (const t of R.tiere) {
+                    if (!p1 || t.alterS > p1.alterS) [p1, p2] = [t, p1];
+                    else if (!p2 || t.alterS > p2.alterS) p2 = t;
+                }
+                for (const t of R.tiere.slice()) {
+                    if (t === p1 || t === p2 || !(t.alterS >= t.ab) || (gesucht && gesucht.has(t))) continue;
+                    (gesucht || (gesucht = new Set())).add(t); // jeder Kopf sucht höchstens einmal je Takt
+                    ev.sucher++;
+                    let [ziel, d] = [null, Infinity];
+                    for (const Q of z.rudel) {
+                        if (Q === R || !Q.tiere.length) continue;
+                        let reife = 0;
+                        for (const u of Q.tiere) if (u.r) reife++;
+                        if (reife >= RAUM.paar) continue;
+                        const dq = cheb(z.W, Q.ort, R.ort);
+                        if (dq < d) [ziel, d] = [Q, dq];
+                    }
+                    if (ziel) {
+                        R.tiere.splice(R.tiere.indexOf(t), 1);
+                        ziel.tiere.push(t);
+                        ev.zug.push({ t, von: R.ort, nach: ziel.ort, art: "beitritt" });
                         continue;
                     }
-                    if (t.alterS > t.tod) {
-                        stirbAn(ev, list, k, "alter", i);
+                    if (!karte) offenKarte(z, offen), (karte = true);
+                    if (land === 0) {
+                        summe = offeneStuecke(z, offen, komp, stapel);
+                        land = summe.some((s) => s >= paarWae) ? 1 : -1;
+                    }
+                    const terr = land > 0 ? paarLand(z, R.ort, offen, komp, summe, marke) : null;
+                    if (terr) {
+                        R.tiere.splice(R.tiere.indexOf(t), 1);
+                        const ids = new Set();
+                        for (const x of terr) {
+                            if (z.besitz[x] >= 0) ids.add(z.besitz[x]);
+                            else z.frei--;
+                            offen[x] = 0;
+                        }
+                        const N = rudelNeu(z, terr, terr[0], takt + 1 + TJ);
+                        N.tiere.push(t);
+                        if (ids.size) gibAb(z, ids, offen, marke);
+                        land = 0;
+                        ev.zug.push({ t, von: R.ort, nach: N.ort, art: "gruendung" });
                         continue;
                     }
-                    if (t.r && t.w) {
-                        // die Rate der Quelle × das Erbe-Gewicht der Mutter (leben-core: Wurf-Gewicht kg^−0,25 relativ zur Art × Eignung)
-                        const p = ((t.alterS < t.reif + ZEIT.jahrS ? rJ : rA) * t.eig * t.Mw) / t.ww;
-                        if (rng() < p) (muetter || (muetter = [])).push(t);
-                    }
-                }
-                if (muetter) {
-                    const vaterW = (t) => (t.r && !t.w ? t.eig : 0);
-                    let j = 0;
-                    for (const mu of muetter) {
-                        let va = zug(list, vaterW, rng);
-                        if (!va) {
-                            // der Vater aus der Nachbarschaft (ein reifer Bock der acht Nachbar-Reviere), nie ein Gründer-Zug
-                            const kand = [];
-                            for (const y of n8[i]) for (const t of z.beute[y]) if (t.r && !t.w) kand.push(t);
-                            va = zug(kand, (t) => t.eig, rng);
-                        }
-                        if (!va) {
-                            ev.vaterlos++;
-                            continue;
-                        }
-                        const a = kind(mu.a, va.a, normale(rng), normale(rng), normale(rng));
-                        const t = tier("beute", indId(String(i), tS, j++), a, umwelt(normale(rng)), mu.id, 0, rng() < BEUTE.weiblich);
-                        list.push(t);
-                        ev.geburt.push(t);
-                    }
+                    ev.wartend++;
                 }
             }
+        }
 
-            // 4 — das Rudel (Satz 4, zweite Fassung): die Deckung D = Riss ÷ Erhaltung über das letzte Jahr (gleitend, FENSTER Takte);
-            //     Überleben je Kopf stetig in D (Welpe im ersten Jahr · ab einem Jahr), das Jahres-Überleben als Wurzel je Takt;
-            //     das Alter am Lebens-Ende (bleibt); der EINE Wurf je Jahr: Anteil der Würfe und Welpen je Wurf stetig in D
-            for (const R of z.rudel) {
-                const rng = strom(saat, takt, 1, R.id);
-                R.fRiss.push(R.riss);
-                R.fErh.push(R.erh);
-                if (R.fRiss.length > FENSTER) R.fRiss.shift(), R.fErh.shift();
-                let [sRiss, sErh] = [0, 0];
-                for (let k = 0; k < R.fRiss.length; k++) (sRiss += R.fRiss[k]), (sErh += R.fErh[k]);
-                const D = sErh > 0 ? sRiss / sErh : 0;
-                R.deck = D;
-                const pWelpe = 1 - Math.pow(ankerZJ("welpeJaehrling", D), 1 / TJ);
-                const pAb1 = 1 - Math.pow(ankerZJ("ueberleben", D), 1 / TJ);
-                for (let k = R.tiere.length - 1; k >= 0; k--) {
-                    const t = R.tiere[k];
-                    const welpe = t.alterS < ZEIT.jahrS;
-                    if (rng() < (welpe ? pWelpe : pAb1)) stirbAn(ev, R.tiere, k, welpe ? "welpe" : "deckung", R.ort);
-                    else if (t.alterS > t.tod) stirbAn(ev, R.tiere, k, "alter", R.ort);
-                }
-                if (takt >= R.wurfAb) {
-                    R.wurfAb += TJ;
-                    ev.wurfTag++;
-                    const reife = R.tiere.filter((t) => t.r);
-                    if (reife.length < 2) ev.ohnePaar++;
-                    else if (!(rng() < ankerZJ("faehen", D))) ev.ohneWurf++;
-                    else {
-                        ev.wurfWolf++;
-                        const w = ankerZJ("welpen", D);
-                        let welpen = Math.floor(w);
-                        if (rng() < w - welpen) welpen++;
-                        const ar = strom(saat, takt, 5, R.id); // Satz 7b: das Abwander-Alter je Welpe, einmal aus der Saat (eigener Strom)
-                        for (let k = 0; k < welpen; k++) {
-                            const mu = zug(reife, mutterW, rng);
-                            const va = zug(reife, (t) => (t === mu ? 0 : t.eig), rng);
-                            const a = kind(mu.a, va.a, normale(rng), normale(rng), normale(rng));
-                            const t = tier("jaeger", indId("r" + R.id, tS, k), a, umwelt(normale(rng)), mu.id, 0, rng() < BEUTE.weiblich);
-                            t.ab = abwanderAlter(ar);
-                            R.tiere.push(t);
-                            ev.geburt.push(t);
-                        }
-                    }
-                }
-            }
-
-            // 5 — die Abwanderung der Beute im Jährlings-Jahr: Bock 0,80 · Kuh 0,13; Ziel nach dem freien Platz unter K
-            if (jaehr.length) {
-                const rng = strom(saat, takt, 2, 0);
-                let habitat = null;
-                for (let q = 0; q < jaehr.length; q += 2) {
-                    const [t, i] = [jaehr[q], jaehr[q + 1]];
-                    if (t.tot) continue;
-                    if (!(rng() < (t.w ? BEUTE.abwandernKuh : BEUTE.abwandernBock))) continue;
-                    let nach;
-                    if (platz > 0) {
-                        const u = rng() * platz;
-                        let [lo, hi] = [0, n - 1];
-                        while (lo < hi) {
-                            const mid = (lo + hi) >> 1;
-                            if (cum[mid] > u) hi = mid;
-                            else lo = mid + 1;
-                        }
-                        nach = lo;
-                    } else {
-                        if (!habitat) {
-                            habitat = [];
-                            for (let j = 0; j < n; j++) if (welt.land(j)) habitat.push(j);
-                        }
-                        nach = habitat[Math.floor(rng() * habitat.length)];
-                    }
-                    if (nach === i) continue;
-                    const list = z.beute[i];
-                    list.splice(list.indexOf(t), 1);
-                    z.beute[nach].push(t);
-                    ev.zug.push({ t, von: i, nach, art: "reh" });
-                }
-            }
-
-            // 6 — die Abwanderung des Wolfs (Satz 7b, 7c): wer sein Abwander-Alter erreicht hat und nicht zum Paar gehört (die zwei
-            //     ältesten Köpfe des Rudels — das Paar wandert nie), SUCHT in jedem Takt, bis er geht:
-            //       (1) er füllt die leere Stelle des nächsten Rudels ohne Paar (weniger als zwei Reife — die Paar-Regel des Wurfs);
-            //           Beitritt vor Gründung (Satz 7d — das Paar kommt vor dem Land): EIN Kopf gründet, der nächste Sucher macht das Paar;
-            //       (2) sonst gründet er, wo offenes Land (frei oder Land eines Halters über dessen Bedarf) einem Paar V_halt trägt;
-            //           der Halter gibt das Land ab;
-            //       (3) sonst bleibt er als Kopf im Geburts-Rudel (zählt in V und D, isst mit) und sucht im nächsten Takt wieder.
-            //     Kein Auslöser „reif“, „hungert“, „voll“; kein Tod auf der Wanderung.
-            if (z.rudel.length) {
-                let karte = false; // die Karte des offenen Lands dieses Takts (erst beim ersten Sucher gelesen)
-                let land = 0; // 0 = die Stücke sind neu zu lesen · 1 = ein Stück trägt ein Paar · −1 = keines
-                let summe = null;
-                let gesucht = null;
-                const paarWae = RAUM.vHalt * RAUM.paar;
-                for (const R of z.rudel.slice()) {
-                    if (R.tiere.length <= RAUM.paar) continue;
-                    let [p1, p2] = [null, null];
-                    for (const t of R.tiere) {
-                        if (!p1 || t.alterS > p1.alterS) [p1, p2] = [t, p1];
-                        else if (!p2 || t.alterS > p2.alterS) p2 = t;
-                    }
-                    for (const t of R.tiere.slice()) {
-                        if (t === p1 || t === p2 || !(t.alterS >= t.ab) || (gesucht && gesucht.has(t))) continue;
-                        (gesucht || (gesucht = new Set())).add(t); // jeder Kopf sucht höchstens einmal je Takt
-                        ev.sucher++;
-                        let [ziel, d] = [null, Infinity];
-                        for (const Q of z.rudel) {
-                            if (Q === R || !Q.tiere.length) continue;
-                            let reife = 0;
-                            for (const u of Q.tiere) if (u.r) reife++;
-                            if (reife >= RAUM.paar) continue;
-                            const dq = cheb(z.W, Q.ort, R.ort);
-                            if (dq < d) [ziel, d] = [Q, dq];
-                        }
-                        if (ziel) {
-                            R.tiere.splice(R.tiere.indexOf(t), 1);
-                            ziel.tiere.push(t);
-                            ev.zug.push({ t, von: R.ort, nach: ziel.ort, art: "beitritt" });
-                            continue;
-                        }
-                        if (!karte) offenKarte(z, offen), (karte = true);
-                        if (land === 0) {
-                            summe = offeneStuecke(z, offen, komp, stapel);
-                            land = summe.some((s) => s >= paarWae) ? 1 : -1;
-                        }
-                        const terr = land > 0 ? paarLand(z, R.ort, offen, komp, summe, marke) : null;
-                        if (terr) {
-                            R.tiere.splice(R.tiere.indexOf(t), 1);
-                            const ids = new Set();
-                            for (const x of terr) {
-                                if (z.besitz[x] >= 0) ids.add(z.besitz[x]);
-                                else z.frei--;
-                                offen[x] = 0;
-                            }
-                            const N = rudelNeu(z, terr, terr[0], takt + 1 + TJ);
-                            N.tiere.push(t);
-                            if (ids.size) gibAb(z, ids, offen, marke);
-                            land = 0;
-                            ev.zug.push({ t, von: R.ort, nach: N.ort, art: "gruendung" });
-                            continue;
-                        }
-                        ev.wartend++;
-                    }
-                }
-            }
-            // 7 — ein Rudel ohne Köpfe gibt sein Revier frei; ein Rudel, dessen Revier seinen Bedarf nicht trägt, begeht das offene
-            //     Land an seiner Grenze (Satz 7a); ein Rudel unter dem Deckel begeht das freie Land an seiner Grenze;
-            //     zuletzt der Kern je Rudel am Stand des Takt-Endes
+        // 7 — ein Rudel ohne Köpfe gibt sein Revier frei; ein Rudel, dessen Revier seinen Bedarf nicht trägt, begeht das offene
+        //     Land an seiner Grenze (Satz 7a); ein Rudel unter dem Deckel begeht das freie Land an seiner Grenze;
+        //     zuletzt der Kern je Rudel am Stand des Takt-Endes
+        function phaseRevier(z, offen, marke) {
             if (z.rudel.some((R) => !R.tiere.length)) {
                 for (const R of z.rudel)
                     if (!R.tiere.length)
@@ -1102,6 +1180,22 @@
                 if (z.frei > 0) dehne(z);
                 for (const R of z.rudel) R.kern = kernVon(z, R);
             }
+        }
+
+        function schritt(z, saat, takt, welt) {
+            if (takt !== z.takt) throw new Error("leben-core bestand: schritt(takt " + takt + ") am Zustand des Takts " + z.takt);
+            const ev = (z.ereignis = neuEreignis());
+            const tS = (takt + 1) * TAKT_S;
+            const { cum, vw, offen, marke, komp, stapel } = puffer(z.W * z.H);
+            const jaehr = [];
+            phaseAlter(z, ev, jaehr);
+            const platz = phaseFutter(z, welt, cum);
+            for (const R of z.rudel) jagdRudel(z, R, saat, takt, ev, vw);
+            phaseBeute(z, saat, takt, ev, tS);
+            for (const R of z.rudel) rudelTakt(R, saat, takt, ev, tS);
+            if (jaehr.length) phaseBeuteZug(z, saat, takt, ev, jaehr, platz, cum, welt);
+            if (z.rudel.length) phaseWolfZug(z, takt, ev, offen, marke, komp, stapel);
+            phaseRevier(z, offen, marke);
             z.takt = takt + 1;
             return z;
         }
@@ -1301,12 +1395,13 @@
                 for (const t of z.beute[i]) kopf(t);
             }
             const rudel = z.rudel.map((R) => {
-                const { reviere, tiere, fRiss, fErh, ...zahlen } = R;
+                const { reviere, tiere, fRiss, fErh, f0, fN } = R;
                 for (const x of reviere) I.push(x);
                 for (const t of tiere) kopf(t);
-                for (const x of fRiss) D.push(x);
-                for (const x of fErh) D.push(x);
-                return Object.assign(zahlen, { nR: reviere.length, nT: tiere.length, nF: fRiss.length });
+                for (let k = 0; k < fN; k++) D.push(fRiss[(f0 + k) % FENSTER]);
+                for (let k = 0; k < fN; k++) D.push(fErh[(f0 + k) % FENSTER]);
+                // die Zahlen des Rudels in der Reihe der Stand-Zeile (v 1 — der Ring reist als Liste, der älteste zuerst)
+                return { id: R.id, ort: R.ort, kg: R.kg, riss: R.riss, gedeckt: R.gedeckt, satt: R.satt, erh: R.erh, rest: R.rest, v: R.v, deck: R.deck, wurfAb: R.wurfAb, kern: R.kern, traegt: R.traegt, nR: reviere.length, nT: tiere.length, nF: fN };
             });
             const LR = g.feld.LR;
             for (let j = 0; j < LR.length; j++) if (LR[j] > 0) D.push(g.O[j]);
@@ -1356,12 +1451,14 @@
                 z.beute.push(list);
             }
             for (const r of K0.rudel) {
-                const { nR, nT, nF, ...zahlen } = r;
-                const R = Object.assign(zahlen, { reviere: [], tiere: [], fRiss: [], fErh: [] });
+                const { nR, nT, nF } = r;
+                if (!(nF >= 0 && nF <= FENSTER)) throw new Error("leben-core bestand: der Stand nennt " + nF + " Takte im Ring des Rudels " + r.id + " (höchstens " + FENSTER + ")");
+                const R = rudelForm(r.id, [], r.ort, r.kg, r.riss, r.gedeckt, r.satt, r.erh, r.rest, r.v, r.deck, r.wurfAb, r.kern, r.traegt);
                 for (let c = 0; c < nR; c++) R.reviere.push(I[i++]);
                 for (let c = 0; c < nT; c++) R.tiere.push(kopf("jaeger"));
-                for (let c = 0; c < nF; c++) R.fRiss.push(D[d++]);
-                for (let c = 0; c < nF; c++) R.fErh.push(D[d++]);
+                for (let c = 0; c < nF; c++) R.fRiss[c] = D[d++];
+                for (let c = 0; c < nF; c++) R.fErh[c] = D[d++];
+                R.fN = nF;
                 z.rudel.push(R);
             }
             for (let j = 0; j < F.LR.length; j++) if (F.LR[j] > 0) g.O[j] = D[d++];
