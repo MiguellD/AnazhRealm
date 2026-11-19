@@ -249,8 +249,16 @@ class AnazhRealm_gelaende_kollision {
     // Solids des Gesetzbuchs (die der Stufe 0) — die Welt kollidiert in jeder Ferne, wie das Haus nah gezeichnet ist. Vorher
     // trug die Fernstufe ihre Bounding-Box: beim Hof-Haus 8,2 m vor den Solids, die Tür von vorn unerreichbar (die Stufe 0
     // kommt erst unter 8,6 m Mittelabstand). Ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
+    // GRUND VOR HÜLLE (S4, der Riegel): legt das Haus seinen Grund (`_grundOffen`, `_hausGrundSetzen` im Ort-Faden), wartet
+    // seine Hülle, bis er liegt — der Grund gibt sie frei (`_grundLos`). Bis hier liefen Slot-Plan (Foundry → Ort-Faden) und
+    // Hülle (Foundry build-asset → `_archInstanceAdd`) ohne Ordnung gegeneinander: kam die Hülle zuerst, stand das Haus
+    // kollidierend auf dem ungeschnittenen Feld, sein Keller Erde (gate:haus-welt W9 Plan „0 Gründe bei der Ankunft der Hülle“).
     _hausHuelleSetzen(entry, huelle) {
         if (!entry || !huelle) return;
+        if (this._grundOffen && this._grundOffen.has(entry)) {
+            entry._huelleWartet = huelle;
+            return;
+        }
         // DER KAMIN DES GEBAUTEN HAUSES (B3c): kennt der Eintrag seine Spitze noch nicht (das Solo-Haus: Vorschau, KI, Werkstatt —
         // der Slot des Dorfs bringt sie aus dem Export), liest er sie aus der Hülle (`kamin` [x, y, z] haus-lokal, null = kein
         // Kamin) und tritt mit „rauch" ins Verzeichnis; das Nein reist wie jede Spitze durch den Save (`chimney: null`).
@@ -336,7 +344,6 @@ class AnazhRealm_gelaende_kollision {
                 return this._ortWahlImFaden(plan, { x: pos.x, z: pos.z }, null, true);
             })
             .then((v2) => {
-                offen.delete(entry);
                 if (!v2 || !steht()) return false;
                 if (v2.wasserSlots)
                     this.log(
@@ -346,10 +353,19 @@ class AnazhRealm_gelaende_kollision {
                 return this._erdbauSetzen(key, v2.erdbau);
             })
             .catch((e) => {
-                offen.delete(entry);
                 this.log(`HAUS: der Plan von „${entry.type}" fiel im Ort-Faden — ${e && e.message}`, "ERROR");
                 return false;
-            });
+            })
+            .finally(() => this._grundLos(entry));
+    }
+    // DER GRUND STEHT (oder fiel beim Namen): der Riegel öffnet — die Hülle, die auf ihn wartete, kommt an (`_hausHuelleSetzen`),
+    // NACH dem Erdbau; ein Haus, das inzwischen fiel, nimmt keine.
+    _grundLos(entry) {
+        if (this._grundOffen) this._grundOffen.delete(entry);
+        const h = entry._huelleWartet;
+        if (!h) return;
+        entry._huelleWartet = null;
+        if (this.state.architectures && this.state.architectures.includes(entry)) this._hausHuelleSetzen(entry, h);
     }
 
     // DIE FREMD-SLOTS UM DEN ORT o (bauen.K2 Staffel 2): je gesetztem Haus, dessen Platte bis R an o reicht, die Platte seines
@@ -651,7 +667,9 @@ class AnazhRealm_gelaende_kollision {
     _blockerFugen(boxes) {
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
-        const E = this._fugenEcken || (this._fugenEcken = new Float64Array(10));
+        // die Ecken als Puffer DIESES Rufs (einmal je Eintrag, 80 Byte): bis w28-funktion-welt-2 lag er am Reich (`_fugenEcken`)
+        // und trug die Ecken der zuletzt geprüften Box — ein Rest der Folge der Einträge, den zwei Läufe verschieden hielten
+        const E = new Float64Array(10);
         // die vier Ecken und die Mitte der Grundfläche (gedreht: aus der obb)
         const ecken = (a) => {
             const ob = a.obb;

@@ -106,8 +106,10 @@ function wirtWache(r, gib, W) {
 }
 const wirtCode = (gib) => "return (" + wirtWache + ")(r, " + !!gib + ", window);";
 
-// DER RUMPF EINES /eval (die Werkbank und der Selbsttest teilen ihn): die Marke sitzt im äußersten Kontext, jeder Abschluss darin hält sie
-const evalRumpf = (code) => "return (async () => { void __wirtMarke; " + code + " })();";
+// DER RUMPF EINES /eval (die Werkbank und der Selbsttest teilen ihn): die Marke sitzt im äußersten Kontext, jeder Abschluss darin hält sie.
+// Der Code endet auf einer eigenen Zeile (ein Text, der mit einem Zeilen-Kommentar schließt, nimmt das Ende des Rahmens nicht mehr mit);
+// `url` (w28-seiten-stille, `werkbank/eval/<Name>.js`) gibt dem Text seinen Namen in jedem Stapel statt „(ohne Datei)"
+const evalRumpf = (code, url) => "return (async () => { void __wirtMarke; " + code + "\n})();" + (url ? "\n//# sourceURL=" + url : "");
 // die Marke eines Rumpfs (in der Seite, W = window; `code` der Code des /eval): ein Objekt, das nur der Kontext des Rumpfs hält — seine
 // WeakRef im Buch der Wache
 function wirtMarke(W, code) {

@@ -376,6 +376,18 @@
     ]
    ]
   ],
+  "riegel": [
+   [
+    "grund",
+    "W9 Plan"
+   ],
+   [
+    [
+     "        if (this._grundOffen && this._grundOffen.has(entry)) {\n            entry._huelleWartet = huelle;\n            return;\n        }\n",
+     ""
+    ]
+   ]
+  ],
   "vorplatz": [
    [
     "grund",

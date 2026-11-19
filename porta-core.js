@@ -289,6 +289,9 @@
     //   fuge     die halbe Fuge (m): 8 mm Fuge, die obere Grenze des Kleinpflasters (DIN 18318)
     //   kuppe    der Kopf des Steins: zur Fuge hin sieht er weniger Himmel (Albedo × 1 − kuppe · (1 − e)², e = 0 an der Fuge, 1 mittig)
     //   sehneM · stichM  der Segmentbogen: die Reihen heben sich je Bogen der Sehne um den Stich (ein Fünftel der Sehne)
+    // DIE FARBE DES PFLASTERS (w28-weg-koerper, 18.11.2026; Auge am Messort „dorf 7 4750“, Mittag: die Gasse stand fast weiß, heller als
+    // der Putz der Häuser): das Kleinpflaster trug die Farbe des gesägten Granits der Tore (`granit`, Albedo linear 0,28 — der
+    // frische Bruch); der begangene Stein der Gasse ist dunkler (`pflaster`, linear 0,17: trockenes Granit-Pflaster im Gebrauch).
     // DAS KORN (w28-stein-kamm): wie viel vom Mikro-Relief des Wirts (Neigung, Korn, Himmels-Bild in Oktaven am Schirm) der Stein
     // trägt — 0 keines, 1 das volle des Felsens. Eine ZAHL DES GESETZBUCHS je Zeile, nie die Rauheit des Stoffs: bis hier schaltete
     // die Rauheit 0,88 des Rahmens das volle Relief, seine Flecken standen am Ring gröber als die Fuge (Salz und Pfeffer über dem
@@ -297,8 +300,8 @@
     // (`fase` m breit, `fall` der Tangens ihres Winkels: 0,6 ≈ 31° — der gesägte Quader fällt 45°, ohne `fall` 1).
     var STEIN_GESETZ = {
         quader: { fase: 0.015, fuge: 0.008, fugeTon: 0.45, ton: 0.12, platteM: 0.9, korn: 0 },
-        farbe: { granit: 0x8e939a, sandstein: 0xb59a74 },
-        kopfstein: { steinM: 0.1, fuge: 0.004, fugeTon: 0.45, ton: 0.12, kuppe: 0.25, sehneM: 1.6, stichM: 0.32, stein: "granit", korn: 0, fase: 0.014, fall: 0.6 },
+        farbe: { granit: 0x8e939a, sandstein: 0xb59a74, pflaster: 0x70747a },
+        kopfstein: { steinM: 0.1, fuge: 0.004, fugeTon: 0.45, ton: 0.12, kuppe: 0.25, sehneM: 1.6, stichM: 0.32, stein: "pflaster", korn: 0, fase: 0.014, fall: 0.6 },
     };
     // DIE ZIEHUNG JE STEIN (w28-stein-kamm): h ∈ [0, 1) aus der Nummer des Steins in seiner Lage (i) und der Lage (j) — in ganzen
     // Zahlen unter 2^24 (32-Bit-Gleitkomma trägt sie genau): n = ((i + 128) mod 4096) · 61 + (j mod 4096) · 97, p = n mod 239,

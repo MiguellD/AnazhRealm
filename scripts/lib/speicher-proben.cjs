@@ -132,11 +132,12 @@ async function rundeFahrt({ umstellen, rufe }) {
         return o && o.ergebnis;
     };
     await ev("__geburtLinse(T, r.state.renderer); " + BILD_STROM + " return true;");
+    // die Start-Lesung (ohne Bild-Strom) setzt die Stichprobe des JS-Heaps auf, jede Lesung nach einer Runde nennt deren Besteller
     const stand = async (bildMax) => {
-        const puf = await rufe("/puffer", { top: 12 });
-        const halter = await ev("return __heapHalter(r, 3).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);"); // prettier-ignore
-        const z = await ev("return { geometries: r.state.renderer.info.memory.geometries, zensus: __behaelterZensus(r), geburt: __geburtZensus(), ort: r.state.playerMesh.position.toArray().map((x) => +x.toFixed(1)) };"); // prettier-ignore
-        return Object.assign({ heapMB: puf.heapMB, vramMB: puf.vram && puf.vram.mb, bildMax: bildMax ? bildMax.max : 0, bilder: bildMax ? bildMax.n : 0, ueber100: bildMax ? bildMax.ueber : 0, langeAufgabe: bildMax ? Math.round(bildMax.lang) : 0, langeAufgabeUmstellen: bildMax ? Math.round(bildMax.langAlle) : 0, halter }, z); // prettier-ignore
+        const puf = await rufe("/puffer", { top: 12, stichprobe: bildMax ? "lies" : "an" });
+        const halter = await ev(`return __heapHalter(r, ${+opt("--tiefe") || 3}).filter(([, b]) => b >= 131072).map(([k, b]) => [k, +(b / 1048576).toFixed(2)]);`); // prettier-ignore
+        const z = await ev("return { geometries: r.state.renderer.info.memory.geometries, textures: r.state.renderer.info.memory.textures, zensus: __behaelterZensus(r), zell: __zellZensus(r), ro: __renderObjektZensus(r), geburt: __geburtZensus(), ort: r.state.playerMesh.position.toArray().map((x) => +x.toFixed(1)) };"); // prettier-ignore
+        return Object.assign({ heapMB: puf.heapMB, vramMB: puf.vram && puf.vram.mb, bildMax: bildMax ? bildMax.max : 0, bilder: bildMax ? bildMax.n : 0, ueber100: bildMax ? bildMax.ueber : 0, langeAufgabe: bildMax ? Math.round(bildMax.lang) : 0, langeAufgabeUmstellen: bildMax ? Math.round(bildMax.langAlle) : 0, halter, besteller: puf.js.besteller, stelle: puf.js.stelle }, z); // prettier-ignore
     };
     const kamera = () =>
         ev("const p = r.state.playerMesh.position, y = (x, z) => r._voxelSurfaceY(x, z); return [p.x, y(p.x, p.z) + 1.7, p.z, p.x + 24, y(p.x + 24, p.z + 6) + 1.2, p.z + 6];"); // prettier-ignore

@@ -409,6 +409,212 @@ function zeige(ergebnis) {
     }
 }
 
+// DER LEIB-RAUM DES TIERS (w28-raum-ofen; der Spike Leib-Raum im Zweig `koordination`): eine Gestalt ist ein PUNKT auf
+// EINER Vorlage (foundry `__tierRaumVorlage` · `__tierRaumTafel` · `__tierRaumLeib`, der Re-Fit `__leibRaumRefit`). Die Linse mischt
+// die Tafel wie der Satz (je Achse stückweise linear zwischen zwei Knoten) und misst die gemischten Ecken an der WAHREN Fläche des
+// Leibs an diesem Punkt (sein Feld ohne Raster, `__leibRaumFeld`, im Primitiv-Satz der Vorlage), in mm beim Maßstab des Ziels:
+//   F1 das Individuum: Wolf, Hals · Bein · Statur · Größe zugleich an ±2σ, je Achse die Knoten −2σ · 0 · +2σ → max ≤ 2 mm, die
+//      Gelenk-Formziele ebenso;
+//   F3 das Jungtier: Hirsch → Kalb auf EINER Alters-Achse (Knoten Kalb · ½ · erwachsen), am Kalb und bei ¼ · ¾ → max ≤ 10 mm.
+// Rot nennt den Täter: `__leibRaumRefit: Kalb 21,6 % der Ecken > 10 mm neben der Fläche` (der Rahmen ohne Radius),
+// `__tierRaumTafel: F1 +2σ max 3,1 mm > 2` (die Mischung). σ 5 % (Hals, Bein, Größe) und 0,05 (Statur) sind gewählt (Spike), bis
+// die Achsen ihre σ aus leben-core lesen; das Kalb: Masse q = 0,06 der Mutter (Entscheid §1.1, Größe × q^⅓), Läufe relativ × 1,4.
+const RAUM = { f1MaxMm: 2, kalbMaxMm: 10, nebenMm: 10, sigma: 0.05, kalbQ: 0.06, kalbBein: 1.4 };
+// der Punkt eines Werts auf einer Achse (Knoten-Index samt Bruch) und die Mischung der Tafel an einem Punkt (je Achse ein Bruch)
+const raumBruch = (K, v) => {
+    if (v <= K[0]) return 0;
+    for (let j = 0; j < K.length - 1; j++) if (v <= K[j + 1]) return j + (v - K[j]) / (K[j + 1] - K[j]);
+    return K.length - 1;
+};
+function raumMisch(lage, ziele, achsen, punkt) {
+    const n = lage.length / 3,
+        breite = ziele.length / 3 / n;
+    const X = Float64Array.from(lage);
+    let s0 = 0;
+    achsen.forEach((a, ai) => {
+        const K = a.knoten.length;
+        const j = Math.max(0, Math.min(K - 2, Math.floor(punkt[ai])));
+        const u = punkt[ai] - j;
+        for (let i = 0; i < n; i++)
+            for (let c = 0; c < 3; c++) {
+                const o = (i * breite + s0 + j) * 3 + c;
+                X[i * 3 + c] += (1 - u) * ziele[o] + u * ziele[o + 3];
+            }
+        s0 += K;
+    });
+    return X;
+}
+function raumUrteil(sb, nurKalb) {
+    const TC = sb.__tetrapodaCore;
+    const mm = (u) => u * TC.MASSSTAB.meterJeEinheit * 1000;
+    const t0 = Date.now();
+    const v = [],
+        roh = {};
+    // je gemischte Ecke ihr Abstand zur wahren Fläche des Leibs L (mm beim Maßstab des Ziels) und je Gelenk sein Fehler
+    const miss = (V, T, punkt, L) => {
+        const s = L.H / V.H;
+        const X = raumMisch(T.lage, T.ziele, T.achsen, punkt);
+        const d = new Float64Array(T.n);
+        for (let i = 0; i < T.n; i++) d[i] = mm(Math.abs(sb.__leibRaumFeld(L.P, L.vox, X[i * 3] * s, X[i * 3 + 1] * s, X[i * 3 + 2] * s)));
+        const J = raumMisch(T.gelenke.lage, T.gelenke.ziele, T.achsen, punkt);
+        let gmax = 0;
+        for (let j = 0; j < J.length / 3; j++)
+            gmax = Math.max(gmax, mm(s * Math.hypot(J[j * 3] - L.gelenke[j * 3], J[j * 3 + 1] - L.gelenke[j * 3 + 1], J[j * 3 + 2] - L.gelenke[j * 3 + 2])));
+        const a = Float64Array.from(d).sort();
+        let neben = 0;
+        for (const x of d) if (x > RAUM.nebenMm) neben++;
+        return { p95: rang(a, 0.95), max: a[a.length - 1], neben: neben / d.length, gelenk: gmax };
+    };
+    const f1 = (x) => x.toFixed(1);
+    // F1 — das Individuum Wolf an ±2σ
+    if (!nurKalb) {
+        const g = TC.GATTUNGEN.wolf;
+        const sig = { neck: RAUM.sigma * g.neck, leg: RAUM.sigma * g.leg, build: RAUM.sigma, size: RAUM.sigma * g.size };
+        const achsen = Object.entries(sig).map(([k, s]) => ({ achse: k, knoten: [g[k] - 2 * s, g[k], g[k] + 2 * s] }));
+        const V = sb.__tierRaumVorlage(TC, "wolf", null, 1);
+        const T = sb.__tierRaumTafel(TC, V, achsen);
+        roh.f1 = { ecken: T.n, tafelKB: Math.round((T.ziele.byteLength + T.gelenke.ziele.byteLength) / 1024) };
+        for (const vz of [2, -2]) {
+            const d = Object.fromEntries(achsen.map((a) => [a.achse, g[a.achse] + vz * sig[a.achse]]));
+            const r = miss(V, T, achsen.map((a) => raumBruch(a.knoten, d[a.achse])), sb.__tierRaumLeib(V, d));
+            const nm = (vz > 0 ? "+" : "−") + "2σ";
+            roh.f1[nm] = r;
+            if (!(r.max <= RAUM.f1MaxMm)) v.push(`__tierRaumTafel: F1 Wolf ${nm} max ${f1(r.max)} mm > ${RAUM.f1MaxMm} neben der Fläche (p95 ${f1(r.p95)})`);
+            if (!(r.gelenk <= RAUM.f1MaxMm)) v.push(`__tierRaumTafel: F1 Wolf ${nm} Gelenk-Formziel ${f1(r.gelenk)} mm > ${RAUM.f1MaxMm}`);
+        }
+    }
+    // F3 — das Kalb auf der Alters-Achse des Hirschs
+    {
+        const g = TC.GATTUNGEN.deer;
+        const q3 = Math.cbrt(RAUM.kalbQ);
+        const alter = { achse: "alter", knoten: [0, 0.5, 1], dials: (t) => ({ size: g.size * (q3 + (1 - q3) * t), leg: g.leg * (RAUM.kalbBein - (RAUM.kalbBein - 1) * t) }) };
+        const V = sb.__tierRaumVorlage(TC, "deer", null, 1);
+        const T = sb.__tierRaumTafel(TC, V, [alter]);
+        roh.kalb = { ecken: T.n };
+        for (const t of [0, 0.25, 0.75]) {
+            const r = miss(V, T, [raumBruch(alter.knoten, t)], sb.__tierRaumLeib(V, Object.assign({}, V.dials, alter.dials(t))));
+            roh.kalb["t" + t] = r;
+            if (t === 0 && r.neben > 0)
+                v.push(`__leibRaumRefit: Kalb ${(100 * r.neben).toFixed(1)} % der Ecken > ${RAUM.nebenMm} mm neben der Fläche (max ${f1(r.max)} mm)`);
+            else if (!(r.max <= RAUM.kalbMaxMm)) v.push(`__tierRaumTafel: Kalb t ${t} max ${f1(r.max)} mm > ${RAUM.kalbMaxMm} neben der Fläche`);
+        }
+    }
+    roh.s = (Date.now() - t0) / 1000;
+    return { roh, v };
+}
+// E7, der Satz der Vorlage (foundry `__tierRaumSatz` → `__tierPrims` liest `userData.__haut`): an jeder Land-Wurzel (Wolf, Fuchs, Bär,
+// Hirsch) als Vorlage, nah und grob, findet jedes ihrer Primitive am Knoten (±2σ: Größe und Lauf; das Kalb: Größe × q^⅓, Lauf × 1,4)
+// seinen Partner und kein fremdes kommt hinzu: an 22 Knoten 0. Urteilte die Schwelle minVox je Art (an der Rasterweite des Knotens),
+// fehlten 6 Partner und kämen 3 fremde (Fuchs nah ±2σ und Kalb, Hirsch grob Kalb, Bär grob −2σ). Rot: `__tierPrims: Partner fehlt 2 ·
+// fremd 0 — fox lod 0 Kalb`.
+function satzUrteil(sb) {
+    const TC = sb.__tetrapodaCore;
+    const q3 = Math.cbrt(RAUM.kalbQ);
+    const v = [],
+        roh = { knoten: 0, fehlt: 0, extra: 0 };
+    const t0 = Date.now();
+    for (const art of ["wolf", "fox", "bear", "deer"])
+        for (const lod of [0, 1]) {
+            const V = sb.__tierRaumVorlage(TC, art, null, lod);
+            const g = V.dials;
+            const zwei = (vz) => ({ size: g.size * (1 + 2 * vz * RAUM.sigma), leg: g.leg * (1 + 2 * vz * RAUM.sigma) });
+            const knoten = [["+2σ", zwei(1)], ["−2σ", zwei(-1)]];
+            // der Welpe des Wolfs wechselt heute den Baum (die Glieder-Zahl folgt der Größe; EIN Bauplan mit fester Zahl ist T1)
+            if (art !== "wolf") knoten.push(["Kalb", { size: g.size * q3, leg: g.leg * RAUM.kalbBein }]);
+            for (const [nm, ov] of knoten) {
+                const S = sb.__tierRaumSatz(V, Object.assign({}, g, ov));
+                roh.knoten++;
+                roh.fehlt += S.fehlt;
+                roh.extra += S.extra;
+                if (S.fehlt || S.extra) v.push(`__tierPrims: Partner fehlt ${S.fehlt} · fremd ${S.extra} — ${art} lod ${lod} ${nm}`);
+            }
+        }
+    roh.s = (Date.now() - t0) / 1000;
+    return { roh, v };
+}
+// DIE KETTENRÖHRE (R2 ketten-haut, foundry `__kettenRoehre`; der Same: die Richter-Probe `kette.cjs` der zweiten Spike-Runde im Zweig
+// `koordination`): eine gerade Kette gleicher Kugeln (Radius r, Länge 0,30 H, n Glieder als Geschwister-Gruppen wie der Hals des
+// Baus) durch den echten `__tierPrims` → `__tierFeld`; gemessen der Radius der Null-Fläche quer zur Kette an 41 Stellen der mittleren
+// 60 %. Das Raster liegt verankert (`anker`: die Achse auf einer Raster-Linie) — sonst misst die Linse die Phase des Rasters (die
+// Röhre bei halber Zelle neben der Achse 0,957 r, bei jedem n gleich), nicht das Gesetz. Soll: jede Stelle Röhre/r ∈ [0,98; 1,02]
+// für n 4 … 16 bei r 0,035 und 0,05 H (gemessen 1,000); das Glied-für-Glied-smin trug 0,59 … 1,38 (smin(a, a) = a − blend/4: die
+// dichte Kette bläht, die spärliche trägt Perlen). Dazu der KONSUM: je Land-Wurzel sind Hals und Rute je EINE Kette aller ihrer
+// getragenen Glieder. Rot: `__kettenRoehre: Röhre/r 1,293 (1,289–1,294) bei n 16, r 0,05 H ∉ [0,98; 1,02]`.
+const KETTE = { L: 0.3, n: [4, 6, 8, 10, 12, 16], r: [0.035, 0.05], band: [0.98, 1.02] };
+function ketteUrteil(sb) {
+    const T = sb.THREE;
+    const TH = sb.TIER_HAUT || sb.eval("TIER_HAUT");
+    const vox = TH.voxNah,
+        bl = TH.blend;
+    const mat = Object.assign(new T.MeshBasicMaterial(), { userData: { __klasse: "fell" } });
+    const v = [],
+        roh = { roehre: [], konsum: [] };
+    const t0 = Date.now();
+    for (const r of KETTE.r)
+        for (const n of KETTE.n) {
+            const baum = new T.Group();
+            for (let i = 0; i < n; i++) {
+                const g = new T.Group();
+                g.position.x = -KETTE.L / 2 + (KETTE.L * i) / (n - 1);
+                g.add(new T.Mesh(new T.SphereGeometry(r, 4, 3), mat));
+                baum.add(g);
+            }
+            baum.updateMatrixWorld(true);
+            const F = sb.__tierFeld(sb.__tierPrims(baum, baum, () => true, vox, bl, () => "kette"), vox, bl, true);
+            const quer = (x) => {
+                let a = 0,
+                    b = 0.3;
+                if (sb.__feldWert(F, vox, x, 0, 0) >= 0) return 0;
+                for (let k = 0; k < 40; k++) {
+                    const m = (a + b) / 2;
+                    if (sb.__feldWert(F, vox, x, m, 0) < 0) a = m;
+                    else b = m;
+                }
+                return (a + b) / 2 / r;
+            };
+            const q = [];
+            for (let k = 0; k <= 40; k++) q.push(quer(-0.3 * KETTE.L + (0.6 * KETTE.L * k) / 40));
+            const mittel = q.reduce((s, x) => s + x, 0) / q.length;
+            roh.roehre.push({ r, n, mittel, min: Math.min(...q), max: Math.max(...q) });
+            const lo = Math.min(...q),
+                hi = Math.max(...q);
+            if (!(lo >= KETTE.band[0] && hi <= KETTE.band[1]))
+                v.push(`__kettenRoehre: Röhre/r ${mittel.toFixed(3)} (${lo.toFixed(3)}–${hi.toFixed(3)}) bei n ${n}, r ${r} H ∉ [${KETTE.band[0]}; ${KETTE.band[1]}]`);
+        }
+    // der Konsum: Hals und Rute jeder Land-Wurzel sind je EINE Kette (alle getragenen Glieder, in Bau-Folge)
+    const TC = sb.__tetrapodaCore;
+    for (const art of ["wolf", "fox", "bear", "deer"]) {
+        const b = sb.__tierRaumBaum(TC, TC.GATTUNGEN[art], []);
+        const P = sb.__tierPrims(b.root, b.root, sb.__tierRaumNimm(b, false), TH.voxNah * b.H, TH.blend * b.H, b.gelenkVon);
+        const zeile = { art };
+        for (const [teil, glieder] of [
+            ["Hals", b.B.neckSegs || []],
+            ["Rute", b.B.tailSegs || []],
+        ]) {
+            const getragen = P.filter((p) => glieder.includes(p.node.parent));
+            const ketten = new Set(getragen.map((p) => p.kette));
+            const K = getragen.length && getragen[0].kette;
+            const ganz = ketten.size === 1 && K && K.glieder.length === getragen.length && K.glieder.every((p, i) => p.node.parent === glieder[i]);
+            zeile[teil] = `${K ? K.glieder.length : 0}/${glieder.length}`;
+            if (!ganz && getragen.length > 1) v.push(`__kettenRoehre: ${art} ${teil} ist keine Kette (${ketten.size} Ketten, ${getragen.length} getragene Glieder)`);
+        }
+        roh.konsum.push(zeile);
+    }
+    roh.s = (Date.now() - t0) / 1000;
+    return { roh, v };
+}
+function zeigeKette(roh) {
+    const z = roh.roehre.map((e) => `n ${e.n} ${e.mittel.toFixed(3)} (${e.min.toFixed(3)}–${e.max.toFixed(3)})`);
+    console.log(`  Kettenröhre r 0,035 H: ${z.slice(0, KETTE.n.length).join(" · ")}`);
+    console.log(`  Kettenröhre r 0,05 H:  ${z.slice(KETTE.n.length).join(" · ")}`);
+    console.log(`  Ketten im Bau: ${roh.konsum.map((k) => `${k.art} Hals ${k.Hals} Rute ${k.Rute}`).join(" · ")} · ${roh.s.toFixed(1)} s`);
+}
+function zeigeRaum(roh) {
+    const z = (r) => `p95 ${r.p95.toFixed(1)} · max ${r.max.toFixed(1)} mm · Gelenke max ${r.gelenk.toFixed(1)} mm`;
+    console.log(`  Leib-Raum F1 Wolf (${roh.f1.ecken} Ecken, Tafel ${roh.f1.tafelKB} KB): +2σ ${z(roh.f1["+2σ"])} | −2σ ${z(roh.f1["−2σ"])}`);
+    console.log(`  Leib-Raum F3 Kalb (${roh.kalb.ecken} Ecken): Kalb ${z(roh.kalb.t0)} · ¼ ${z(roh.kalb["t0.25"])} · ¾ ${z(roh.kalb["t0.75"])} · ${roh.s.toFixed(1)} s`);
+}
+
 if (SELBSTTEST) {
     console.log("=== SELBST-TEST: die Anatomie-Linse feuert ===");
     let rot = 0;
@@ -512,6 +718,33 @@ if (SELBSTTEST) {
         const r = lauf(ladeWelt(), { verzerre });
         pruefe(name, r.fehler, muster);
     }
+    // S11: der Rahmen des Re-Fits ohne Radius (Mi_q⁻¹·Mi_p, der Stand vor w28-raum-ofen) — das Kalb fällt neben seine Fläche
+    {
+        const sb = ladeWelt();
+        sb.__leibRaumRahmen = (p) => new sb.THREE.Matrix4().fromArray(Array.from(p.Mi));
+        pruefe("S11 der Rahmen ohne Radius wird erkannt", raumUrteil(sb, true).v, /^__leibRaumRefit: Kalb/);
+    }
+    // S12: die Schwelle minVox je Art (der Satz der Vorlage `__haut` überhört) — Primitive der Vorlage verlieren ihren Partner
+    {
+        const sb = ladeWelt();
+        const alt = sb.__tierPrims;
+        sb.__tierPrims = (baum, ...rest) => {
+            baum.traverse((o) => delete o.userData.__haut);
+            return alt(baum, ...rest);
+        };
+        pruefe("S12 die Schwelle je Art wird erkannt", satzUrteil(sb).v, /^__tierPrims: Partner fehlt [1-9]/);
+    }
+    // S13: das smin je Glied (die Kette aus `__tierPrims` überhört, der Stand vor R2) — die Röhre bläht und trägt Perlen
+    {
+        const sb = ladeWelt();
+        const alt = sb.__tierPrims;
+        sb.__tierPrims = (...a) => {
+            const P = alt(...a);
+            for (const p of P) delete p.kette;
+            return P;
+        };
+        pruefe("S13 das smin je Glied wird erkannt", ketteUrteil(sb).v, /^__kettenRoehre: Röhre\/r/);
+    }
     urteilEnde(rot, `\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`, "\n✅ SELBST-TEST GRÜN.");
 }
 
@@ -519,5 +752,14 @@ console.log("=== DIE ANATOMIE-LINSE: die gebackene Gestalt gegen das Soll der Ar
 const sb = ladeWelt();
 const { ergebnis, fehler } = lauf(sb);
 zeige(ergebnis);
+const raum = raumUrteil(sb);
+zeigeRaum(raum.roh);
+fehler.push(...raum.v);
+const satz = satzUrteil(sb);
+console.log(`  Satz der Vorlage (E7): ${satz.roh.knoten} Knoten an 4 Land-Wurzeln · Partner fehlt ${satz.roh.fehlt} · fremd ${satz.roh.extra} · ${satz.roh.s.toFixed(1)} s`);
+fehler.push(...satz.v);
+const kette = ketteUrteil(sb);
+zeigeKette(kette.roh);
+fehler.push(...kette.v);
 if (process.argv.includes("--json")) console.log(JSON.stringify(ergebnis, null, 1));
 urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — jede Art steht in ihren Natur-Bändern (Gestalt + Fell-Muster) und hält ihr Budget.");

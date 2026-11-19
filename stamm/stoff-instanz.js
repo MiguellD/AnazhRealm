@@ -173,11 +173,15 @@ class AnazhRealm_stoff_instanz {
         const skala = this._foundryWorldScaleMatrix(preset).elements[5];
         const delta = globalThis.__phytoCore.windSchlankheit(rinde, top, skala);
         if (!(delta > 0)) throw new Error("_baumWindDaten: " + preset + " liefert keinen Stamm-Ring für den Wind");
+        // je Art die schlankste ihrer gelieferten Gestalten, das Mittel in der Folge der Werte (w28-funktion-welt): eine Funktion
+        // der gelieferten Gestalten, nie ihrer Ankunft — bis hier galt die ERSTE Gestalt je Art, summiert in der Folge der Arten,
+        // und zwei Läufe zum selben Ort neigten die Karten mit δ 0,03279 und 0,03274
         if (!this._windDeltaJeArt) this._windDeltaJeArt = new Map();
-        if (!this._windDeltaJeArt.has(preset)) {
+        const alt = this._windDeltaJeArt.get(preset);
+        if (alt === undefined || delta < alt) {
             this._windDeltaJeArt.set(preset, delta);
             let s = 0;
-            for (const d of this._windDeltaJeArt.values()) s += d;
+            for (const d of [...this._windDeltaJeArt.values()].sort((a, b) => a - b)) s += d;
             this._karteWindDelta().value = s / this._windDeltaJeArt.size;
         }
         return { ht: top, delta, an };
@@ -348,12 +352,17 @@ class AnazhRealm_stoff_instanz {
     // seinen Render-Objekten (`_renderObjekteLoesen`, nach dem Submit des Frames), der neue hat keines: kehrt die Senke zu ihm
     // zurück, legt r184 sein Render-Objekt mit dem Puffer von dann an. Befund 16.10. (G1-n2/diag8, Radeon, Genesis Third):
     // ein zurückgekehrter Zeichner band den gefallenen Puffer weiter — 615 Meldungen der GPU-Wache.
+    // Seine Fassade geht mit ihm, wie im Abschied der Senke (`_instanzAbschied`): bis w28-halter-register blieb sie ohne
+    // `dispose` — r184 zählte sie für immer (Geburts-Linse, Radeon: Runde b 5 geboren · 0 entsorgt · 5 verwaist, Runde reise 13).
     static _zeichnerFrisch(m) {
         const alt = m.__zeichner;
         if (!alt) return;
         if (alt.parent === m) m.remove(alt);
         m.__zeichner = new (AnazhRealm._instanzZeichnerKlasse())(m);
-        setTimeout(() => AnazhRealm._renderObjekteLoesen(alt), 0);
+        setTimeout(() => {
+            AnazhRealm._renderObjekteLoesen(alt);
+            alt.__fassade.dispose();
+        }, 0);
     }
     // Der Zeichner einer Senke: Stoff, Wurf, Schichten, Hülle, Welt-Matrix und `userData` sind die der Senke (gelesen, nie
     // kopiert); seine Geometrie ist eine Fassade über der Geometrie der Senke — dieselben Attribut-Objekte, dazu die Instanz-
@@ -448,6 +457,7 @@ class AnazhRealm_stoff_instanz {
                     q.farbe = s.instanceColor;
                     q.attr = Object.assign({}, a);
                     q.n = n;
+                    AnazhRealm._renderObjekteFolgen(this); // kein Pass hält die getauschten Attribute der Quelle
                 }
                 // die Fassade zeichnet, was ihre Quelle zeichnet (Bereich), so viele Instanzen, wie die Senke zählt
                 // (`_instanzZahl` bleibt der EINE Schreiber der Zahl — hier wird sie nur gelesen)
@@ -1475,6 +1485,7 @@ class AnazhRealm_stoff_instanz {
                 g.setIndex(L.index);
                 this._fassade(g);
                 this.geometry = g;
+                AnazhRealm._renderObjekteFolgen(this); // kein Pass hält die alte (auch einer, der die Arena nicht mehr zeichnet)
                 this._neuAuf(); // neue Vertex-/Index-Puffer
                 // DIE ALTE GEOMETRIE GEHT (Gegner Speicher F7, Runden-Zensus 16.11.): ihre Puffer gehören dem Lager und der neuen
                 // Geometrie (der Geometrie-Hörer des r184 fiel, `_renderObjektRegister`), ihr Entsorgen bucht nur ihren Abgang —
@@ -2082,6 +2093,19 @@ class AnazhRealm_stoff_instanz {
         if (!ros) return;
         obj.__renderObjekte = null;
         for (const ro of ros) AnazhRealm._renderObjektLoesen(ro);
+    }
+    // DIE RENDER-OBJEKTE FOLGEN DER GEOMETRIE ihres Objekts, sobald es seine Puffer tauscht (der Satz wächst oder schrumpft,
+    // `_chunkSatzGeometrie`; die Arena zieht ins neue Lager, `_geoNeu`). r184 hält in jedem Render-Objekt die Geometrie und die
+    // Attribut-Liste seines letzten Zeichnens und folgt erst, wenn sein Pass wieder zeichnet (`needsGeometryUpdate` →
+    // `setGeometry`) — ein Pass, der das Objekt nicht mehr zeichnet (eine Kaskade ohne Abschnitt), hielt die getauschten Arrays
+    // für immer. Befund w28-halter-register (Radeon, Genesis Runde b): main 22 Render-Objekte der Szene mit fremder Geometrie
+    // (12,1 MB) und 5 eines Satzes mit alten Attributen (0,60 MB). Dasselbe wie r184s `setGeometry`, dazu die Vertex-Puffer
+    // (`getVertexBuffers` baut nur bei null neu).
+    static _renderObjekteFolgen(obj) {
+        for (const ro of (obj && obj.__renderObjekte) || []) {
+            ro.setGeometry(obj.geometry);
+            ro.vertexBuffers = null;
+        }
     }
     // DIE LÖSUNG EINES RENDER-OBJEKTS — der Rumpf von `_renderObjekteLoesen` und die Naht N1 des Gesetzes „der Speicher folgt dem
     // Blick“ (Preis des Orts, Schnitt 2): fällt die Geometrie, die das Objekt noch trägt, hat das Render-Objekt keinen Leser mehr

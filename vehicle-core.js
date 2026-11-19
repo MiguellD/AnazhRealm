@@ -3180,13 +3180,12 @@
         // fail-soft-Pfad kalter Buecher). Werte byte-gleich den Lab-Literalen:
         // steerK/steerZentrK = die per-Frame-Lerps der Lenksaeule (60-fps-Basis;
         // Leser rechnen 1-(1-k)^(dt·60)), slipEps = Tiefpass im Schlupf-Nenner,
-        // handLatMul = Heck-Seitenfuehrungs-Rest unter Handbremse (FlatR·0.32),
-        // lowBlendV/lowLatK = kinematische Blende unterhalb Schritttempo. ──
+        // lowBlendV/lowLatK = kinematische Blende unterhalb Schritttempo (der Heck-Rest unter Handbremse handLatMul fiel mit
+        // w28-reibellipse: die Handbremse nimmt dem Heck sein Budget der Reibellipse, `fahrTakt`). ──
         zweispur: {
             steerK: 0.18,
             steerZentrK: 0.3,
             slipEps: 1.4,
-            handLatMul: 0.32,
             lowBlendV: 2.4,
             lowLatK: 0.6,
         },
@@ -3554,7 +3553,6 @@
                 steerK: FAHR.zweispur.steerK,
                 steerZentrK: FAHR.zweispur.steerZentrK,
                 slipEps: FAHR.zweispur.slipEps,
-                handLatMul: FAHR.zweispur.handLatMul,
                 lowBlendV: FAHR.zweispur.lowBlendV,
                 lowLatK: FAHR.zweispur.lowLatK,
                 pitchGain: FAHR.pitchGain,
@@ -3679,7 +3677,6 @@
             steerK: zs.steerK,
             steerZentrK: zs.steerZentrK,
             slipEps: zs.slipEps,
-            handLatMul: zs.handLatMul,
             lowBlendV: zs.lowBlendV,
             lowLatK: zs.lowLatK,
             pitchGain: zs.pitchGain,
@@ -3975,7 +3972,6 @@
             const cap = G.maxGrip * G.grip * haft;
             let FlatF = -reifenKraft(G.reifen, G.reifen.bdF, cap, slipF) * Wf;
             let FlatR = -reifenKraft(G.reifen, G.reifen.bdR, cap, slipR) * Wr;
-            if (hand) FlatR *= G.handLatMul; // HANDBREMSE: die Heck-Seitenfuehrung bricht weg → Drift
             // ── LAENGS am REIBKREIS: Antrieb, Bremse, Handbremse und Fahrwiderstand sind Reifenkraft — gedeckelt bei μ·N.
             //    Vorher trieb der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ.
             //    fahrzeug.K1 (24.10.): der quadratische Fahrwiderstand dragK·v² ist der Deckel des Tempos (das Gleichgewicht
@@ -3992,10 +3988,14 @@
             // traten im Bogen 14 m/s² gegen μ·g, das Heck brach aus. Taste (brk 1) byte-gleich.
             if (brk > 0) aDrive -= (vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0) * brk;
             let Fr = aDrive * m - G.dragK * m * vL * Math.abs(vL);
-            if (hand) Fr -= G.handDecel * m * sgn;
-            // der Wasserschlag sperrt die Antriebsraeder: Haftung wie die Handbremse, nie ueber den Stand hinaus (sie haelt,
-            // sie schiebt nicht zurueck)
-            else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
+            // DIE SPERRE — EIN Gesetz, zwei Griffe: die gesperrte Achse gleitet auf ihrem Kreis (unten), nie ueber den Stand
+            // hinaus (sie haelt, sie schiebt nicht zurueck). Die HANDBREMSE sperrt das Heck. Der WASSERSCHLAG sperrt, was der
+            // stehende Motor antreibt: der Antrieb des Kerns greift nach der Achslast an BEIDEN Achsen (FxF = Fr · aF, unten),
+            // also sperrt er beide, jede an ihrem μ·N.
+            let sperre = 0;
+            if (hand) sperre = -G.handDecel * m * sgn;
+            else if (!motor && dt > 0) sperre = -Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
+            const sperrF = !hand && sperre !== 0;
             // Das Schleppmoment (bzw. das haltende Gespann), STETIG im Zug: der Motor trägt zieht · Antrieb − (1 − zieht) ·
             // Schlepp (Volllast ist netto, geschlossen bremst er — unter Bremse und Handbremse weiter, die Kupplung bleibt; mit
             // dem Rollwiderstand zusammen FAHR.rollDecel: das Ausrollen von gestern bleibt); zieht = das Gas, im Rückwärtsgang
@@ -4009,33 +4009,56 @@
             // vollen Einschlag als Schlupf, und die gesaettigte Seitenkraft des Vorderrads bremste mit ihrem Laengsanteil
             // die Fahrt, die es nicht gibt: rueckwaerts mit Gegenlenkung stand jeder Wagen (GT eben 0,40 m in 1,3 s). Der
             // Laengsanteil folgt derselben Blende; geradeaus (Einschlag 0) und ueber Schritttempo byte-gleich.
+            // ── DIE REIBELLIPSE JE ACHSE (fahrzeug.K1, w28-reibellipse; der Reibkreis der Vektor-Summe von vorrat5-bremsweg je
+            //    Achse): Antrieb, Bremse, Handbremse, Schlepp und Fahrwiderstand laufen ueber den Reifen, EIN μ·N-Budget je
+            //    Achse. Die Laengskraft verteilt sich nach der Achslast (die Handbremse ganz hinten). Das GEREGELTE Rad (ABS,
+            //    ASR) fuehrt mit der Seitenkraft: Antrieb und Bremse nehmen den Rest des Kreises √((cap·W)² − Fy²) — der Wagen
+            //    lenkt, waehrend er bremst und zieht. Die GESPERRTE Achse (das Heck unter der Handbremse, beide im
+            //    Wasserschlag) gleitet: ihr Wunsch-Vektor faellt auf den Kreis, die Richtung bleibt, und die Achse verliert
+            //    die Seitenfuehrung im Mass ihrer Sperre. Vorher teilten sich beide Achsen EINEN Kreis des Wagens: die Handbremse zog am Deckel beider
+            //    Achsen (so stark wie die Vollbremsung) und nahm dem Heck einen festen Anteil (handLatMul 0,32) statt seines
+            //    Budgets. Geradeaus (keine Seitenkraft) ist die Summe der Kreise der alte Deckel cap · (Wf + Wr): der Bremsweg
+            //    bleibt. Ausserhalb wirkt nur der Rollwiderstand (cr · g). ──
+            const WS = Wf + Wr;
+            const aF = WS > 0 ? Wf / WS : 0.5;
+            const FsF = sperrF ? sperre * aF : 0;
+            const FxF = Fr * aF + FsF,
+                FxR = Fr - Fr * aF + sperre - FsF;
+            // die Kraft der Vorderachse im Koerperframe: ihr Laengsanteil, die Seitenkraft gedreht um den Einschlag — sie, nie ihr
+            // Wunsch im Rad, traegt das Budget. Unter Schritttempo ist die Seitenkraft kinematisch (die Blende lowF, unten: der
+            // gedaempfte Schlupf meldet am Stand den vollen Einschlag) und zehrt nicht am Budget — sonst nahm sie dem Antrieb
+            // rueckwaerts mit Gegenlenkung am 15°-Hang die Kraft (Limousine 3,07 → 2,91 m in 2,5 s).
             const lowF = Math.max(0, Math.min(1, 1 - Math.hypot(z.vlong, z.vlat) / G.lowBlendV));
-            // DER REIBKREIS DER VEKTOR-SUMME (vorrat5-bremsweg): Antrieb, Bremse, Handbremse, Schlepp und Fahrwiderstand
-            // laufen ueber den Reifen — ihre Summe teilt sich μ·N mit der Seitenkraft der Achsen (die Kurve zuerst, die
-            // Laenge im Rest: √(μ²N² − Q²) mit Q = |Seitenkraft vorn| + |hinten|, und die Summe mit dem Seitenkraft-Vektor
-            // (p, q) — dem Laengsanteil des gelenkten Rads samt der Querkraft — bleibt im Kreis: |(Fx + p, q)| ≤ μ·N; unter
-            // Schritttempo beide mit derselben Blende wie der Laengsanteil des Lenkrads). Ausserhalb wirkt nur der
-            // Rollwiderstand (cr · g). Vorher zog das Schleppmoment NACH dem Deckel: die volle Bremse stand bei μ·g + 1,0 m/s²
-            // (GT 50 → 0 km/h auf μ 0,6: 13,90 m gegen v²/(2μg) 16,40 m, −15,2 %), und Laenge und Kurve griffen je fuer sich
-            // bis μ·N (Kurvenbremse bis 1,56 μg). Geradeaus ohne Deckel (Ausrollen, Gas, vmax) dieselbe Zahl.
-            const capL = cap * m * gN;
-            const blende = 1 - lowF;
-            const Q = (Math.abs(FlatF) + Math.abs(FlatR)) * blende;
-            let lo = -capL,
-                hi = capL;
-            if (Q > 0) {
-                const capX = Math.sqrt(Math.max(0, capL * capL - Q * Q)),
-                    p = -FlatF * Math.sin(z.steer) * blende,
-                    q = (FlatF * Math.cos(z.steer) + FlatR) * blende,
-                    r = Math.sqrt(Math.max(0, capL * capL - q * q));
-                lo = Math.max(-capX, -p - r);
-                hi = Math.min(capX, -p + r);
-                if (lo > hi) lo = hi = Math.max(-capX, Math.min(capX, -p)); // die Kurve fuellt den Kreis: die Laenge so klein wie moeglich
+            const sL = Math.sin(z.steer) * (1 - lowF),
+                cL = Math.cos(z.steer);
+            const gF = cap * Wf,
+                gR = cap * Wr;
+            let xF;
+            if (sperrF) {
+                const fF = Math.hypot(FxF, FlatF * (1 - lowF));
+                const kF = fF > gF ? gF / fF : 1;
+                xF = FxF * kF;
+                FlatF *= kF;
+            } else {
+                const yF = FlatF * cL * (1 - lowF),
+                    rF = Math.sqrt(Math.max(0, gF * gF - yF * yF));
+                xF = Math.max(FlatF * sL - rF, Math.min(FlatF * sL + rF, FxF));
             }
-            let Fx = Math.max(lo, Math.min(hi, Fr));
+            let xR;
+            if (sperre) {
+                const fR = Math.hypot(FxR, FlatR * (1 - lowF));
+                const kR = fR > gR ? gR / fR : 1;
+                xR = FxR * kR;
+                FlatR *= kR;
+            } else {
+                const yR = FlatR * (1 - lowF),
+                    rR = Math.sqrt(Math.max(0, gR * gR - yR * yR));
+                xR = Math.max(-rR, Math.min(rR, FxR));
+            }
+            let Fx = xF === FxF && xR === FxR ? Fr + sperre : xF + xR;
             if (rollt) Fx -= G.reibung * m * sgn;
-            Fx -= FlatF * Math.sin(z.steer) * (1 - lowF);
-            const Fy = FlatF * Math.cos(z.steer) + FlatR;
+            Fx -= FlatF * sL;
+            const Fy = FlatF * cL + FlatR;
             // ── Newton-Euler im Koerperframe (mit Rotationskopplung vlat·ω / vlong·ω) ──
             const aLongB = Fx / m,
                 aLatB = Fy / m;

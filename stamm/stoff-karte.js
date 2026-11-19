@@ -1223,7 +1223,10 @@ class AnazhRealm_stoff_karte {
             if (c.userData && typeof c.userData.__teil === "string") continue;
             const m = B.huellen[h] || (B.huellen[h] = new T.Mesh());
             h++;
-            m.geometry = c.geometry;
+            if (m.geometry !== c.geometry) {
+                m.geometry = c.geometry;
+                AnazhRealm._renderObjekteFolgen(m); // die Hülle des letzten Baus hält ihre Geometrie nicht (`_renderObjekteFolgen`)
+            }
             m.material = c.material;
             m.matrixAutoUpdate = false;
             m.matrix.copy(c.matrix);

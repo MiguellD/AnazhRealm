@@ -12,7 +12,7 @@ const yaml = require("js-yaml");
 const R6 = require("./lib/ci-klasse.cjs");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber, R6_SHELL } = R6;
 const { schluessel } = require("./ci-schluessel.cjs");
-const { kopfUrteil } = require("./ci-kopf.cjs");
+const { kopfUrteil, kopfKette, KETTE } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
 const {
     taeterFaelle,
@@ -1128,6 +1128,36 @@ function selbsttestSchluessel() {
 }
 
 // (V) KOPF: das Urteil des Kopf-Richters (scripts/ci-kopf.cjs) gegen die Fälle
+// DER KOPF IST SEIN INHALT: die Kette der leeren Vorfahren (scripts/ci-kopf.cjs `kopfKette`, Leser: der Job `kopf`) —
+// die Fälle, dazu zwei Mutanten, die beim Namen fallen (blind für den Baum · blind für den Merge)
+function selbsttestKette(kette = kopfKette) {
+    const c = (sha, baum, ...eltern) => [sha, { sha, tree: { sha: baum }, parents: eltern.map((e) => ({ sha: e })) }];
+    const lang = Array.from({ length: KETTE + 3 }, (_, i) => c("L" + i, "T", "L" + (i + 1)));
+    // [Name, Kopf, Commits, Soll-Kette]
+    const faelle = [
+        ["der Stempel ohne Inhalt trägt das Urteil des geprüften Kopfs", "S", [c("S", "T1", "K"), c("K", "T1", "A"), c("A", "T0", "B")], "S K"],
+        ["ein Commit mit Inhalt erbt nichts", "S", [c("S", "T2", "K"), c("K", "T1", "A")], "S"],
+        ["ein Merge erbt nichts, auch bei gleichem Baum", "M", [c("M", "T1", "K", "X"), c("K", "T1", "A")], "M"],
+        ["zwei leere Commits in Folge (Vorprüfung, dann Stempel)", "S", [c("S", "T1", "V"), c("V", "T1", "K"), c("K", "T1", "A"), c("A", "T0")], "S V K"],
+        ["der Elter ist nicht geladen", "S", [c("S", "T1", "K")], "S"],
+        ["ein Wurzel-Commit", "S", [c("S", "T1")], "S"],
+        [`die Kette endet nach ${KETTE} Vorfahren`, "L0", lang, lang.slice(0, KETTE + 1).map((x) => x[0]).join(" ")],
+    ];
+    const urteil = (k) => faelle.filter(([, kopf, cs, soll]) => k(kopf, Object.fromEntries(cs)).join(" ") !== soll).map((x) => x[0]);
+    const f = urteil(kette).map((n) => `Kette „${n}": fällt`);
+    for (const [n] of faelle) console.log(`  ${f.some((x) => x.includes(n)) ? "❌" : "✅"} Selbsttest Kette „${n}"`);
+    const mutanten = [
+        ["blind für den Baum (jeder Elter vererbt)", (s, cs) => kopfKette(s, Object.fromEntries(Object.entries(cs).map(([k, v]) => [k, { ...v, tree: { sha: "gleich" } }])))],
+        ["blind für den Merge (der erste Elter vererbt)", (s, cs) => kopfKette(s, Object.fromEntries(Object.entries(cs).map(([k, v]) => [k, { ...v, parents: v.parents.slice(0, 1) }])))],
+    ];
+    if (kette === kopfKette)
+        for (const [n, m] of mutanten) {
+            const rot = urteil(m);
+            console.log(`  ${rot.length ? "✅" : "❌"} Selbsttest Kette, Mutant „${n}" → ${rot.length ? "ROT an „" + rot[0] + '"' : "bleibt grün"}`);
+            if (!rot.length) f.push(`Kette: der Mutant „${n}" bleibt grün — die Fälle sind vakuös`);
+        }
+    return f;
+}
 function selbsttestKopf(urteile = kopfUrteil) {
     // je Karte ein Bein: „echt omen (…)", „echt radeon (…)", „echt gtx1050 (…)"
     const BEINE = ["omen", "radeon", "gtx1050"];
@@ -1435,6 +1465,7 @@ function selbsttest() {
         selbsttestKlasse(),
         selbsttestSchluessel(),
         selbsttestKopf(),
+        selbsttestKette(),
         selbsttestZug()
     );
 }
