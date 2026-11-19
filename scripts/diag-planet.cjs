@@ -13,7 +13,7 @@
 //   Umgebung PLANET_KERN=<kern.js>: der Richter liest diesen Kern statt des Baums (vorher ↔ nachher unter gleicher Last)
 //   --kosten                                                  Kosten-Schwellen (Punkt, Platten-Zahl, Radius, Plan, Scheibe, Meer, Karte, Wasser)
 //   --bytes                                                   Determinismus (Absenz, Mathe-Genauigkeit, SHA über Prozesse/jitless/Reihenfolge)
-//   --selbsttest                                              gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden;
+//   --selftest (= --selbsttest, die Schreibung der Familie)   gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden;
 //                                                             der Kern vor der Welle 1 (b7ed8419, aus git) macht jede Zeile welle1 ROT
 //
 // Eingefroren vor dem ersten Lauf (14.11.): Saat-Liste erde-01 … erde-30 mit PLANET_ERDE; 16 384 Fibonacci-Proben je Saat, fuss 40 km;
@@ -1553,8 +1553,8 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
   else if (argv[0] === '--kontaktbogen') kontaktbogen(argv[1], argv[2]);
   else if (argv[0] === '--orte') orteDrucken(argv[1]);
   else if (argv[0] === '--bytes') drucken('Bytes', bytes());
-  else if (argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
+  else if (argv[0] === '--selftest' || argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
   else if (argv.length === 0) { const a = ns(), U = welle1(P, fs.readFileSync(KERN, 'utf8')); drucken('Richter welle1 · Kern ' + P.VERSION + ' · ' + ((ns() - a) / 1e9).toFixed(0) + ' s', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
-  else { console.log('diag-planet: (ohne Argument: Richter welle1) | --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2|bau3|gesicht|gegner2|ort | --kosten [bau2 <alt-kern.js>] | --bytes | --selbsttest'); process.exit(2); }
+  else { console.log('diag-planet: (ohne Argument: Richter welle1) | --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2|bau3|gesicht|gegner2|ort | --kosten [bau2 <alt-kern.js>] | --bytes | --selftest (= --selbsttest)'); process.exit(2); }
 }
 module.exports = { materialPunkte, materialTerme, stetigTaeter, taeterVon, png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, gestaltMasse, P };
