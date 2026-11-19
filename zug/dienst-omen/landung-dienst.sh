@@ -149,11 +149,12 @@ for s in ${3//,/ }; do
     echo "$s" >>"$X/gepusht"; echo "$(date +%T) $1-$i GEPUSHT (Versuch 1)" >>"$X/kette.log"
     [ -f "$X/warter_nach" ] && [ "$(cat "$X/warter_nach")" = "$i" ] && echo macher-hand >"$X/warter"
     [ -f "$X/halt_nach" ] && [ "$(cat "$X/halt_nach")" = "$i" ] && touch "$X/s/landung.halt"
+    [ -f "$X/landung_nach" ] && [ "$(cat "$X/landung_nach")" = "$i" ] && echo kopf2 >"$X/main"
 done
 STUMMEL
     puls() { echo "PULS $*" >>"$L"; }
     warter() { cat "$X/warter" 2>/dev/null; }
-    main_kopf() { echo kopf1; }
+    main_kopf() { cat "$X/main" 2>/dev/null || echo kopf1; }
     abstand() { echo 7; }
     case "$1" in
         blind) warter() { :; } ;;
@@ -165,6 +166,17 @@ STUMMEL
         kopf-begonnen) kopf_wahl() { local b; b=$(tr -dc 0-9a-f <"$S/landung.begonnen" 2>/dev/null); if [ ${#b} = 40 ]; then echo "$b"; else main_kopf; fi; } ;;
     esac
     alle=s1,s2,s3,s4,s5,s6,s7,s8
+    # a — DAS GESETZ DER RUNDE (19.11.): eine Landung mitten in der Liste bricht sie NICHT ab, alle 8 Stationen am Kopf der Runde
+    echo 2 >"$X/landung_nach"
+    TAKT_S=0.05
+    liste_fahren kopf1 gtx-kopf1-a "$alle" 8
+    rc=$?
+    n=$(wc -l <"$X/gepusht")
+    if [ $rc = 0 ] && [ "$n" = 8 ] && ! grep -q "SPRUNG" "$L"; then echo "OK a  Landung nach Station 2 (main kopf1 -> kopf2): die Liste fährt am Kopf der Runde zu Ende, 8 von 8, kein SPRUNG"
+    else echo "ROT a  Landung nach Station 2: Ende $rc (Soll 0) nach $n von 8 (Soll 8), Zeilen SPRUNG $(grep -c SPRUNG "$L") (Soll 0)"; fi
+    rm -f "$X/landung_nach" "$X/main" "$X/gepusht"
+    : >"$L"
+    TAKT_S=0.1
     # b
     echo 2 >"$X/warter_nach"
     liste_fahren kopf1 gtx-kopf1 "$alle" 8
@@ -242,13 +254,13 @@ selbsttest() {
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 7 ] || rot=1
+    [ "$(grep -c "^OK" "$O/echt")" = 8 ] || rot=1
     for m in blind halt-rm nur-schloss tafel-blind tafel-alle springt-nie kopf-begonnen; do
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = 7 ]; then echo "landung-dienst SELBSTTEST GRÜN: 7 Fälle grün, $mr/7 Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = 7 ]; then echo "landung-dienst SELBSTTEST GRÜN: 8 Fälle grün, $mr/7 Mutanten ROT"; return 0; fi
     echo "landung-dienst SELBSTTEST ROT"
     return 1
 }
