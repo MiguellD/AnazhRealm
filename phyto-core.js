@@ -4071,7 +4071,13 @@
                 (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
             // DER ORT VOR DEM WALD (K10): reserviert ein Ort den Grund (ctx.ortFrei, der Erdbau des Wirts), fällt die Krone,
             // die ihn berührt — NACH allen Würfen des Darts, die folgenden Darts bleiben byte-gleich.
-            if (ctx.ortFrei && !ctx.ortFrei(x, z, T)) continue;
+            // DER GRUND NIMMT NACH DEM WUCHS (laub-kante, wie die Lichtung unten): der Dart wird geboren und nimmt im Urteil des
+            // Dachs seinen Platz, der Grund nimmt ihn danach (`gelichtet`) — ein Haus im Wald nimmt die Kronen über seinem Grund
+            // und sonst keinen Baum. Bis hier fiel er vor der Geburt: unter der Selbst-Ausdünnung (Matérn III) wuchs, wen er
+            // überwuchs, in die Lücke, und wen DER überwächst, fiel — der Ort würfelte den Bestand um sich neu (gate:fernwald F,
+            // Eiche −2123/−2153, ein Haus über ihrer einzigen Nachbarin, der Birke 9,8 m: frisch standen zwei Tannen im
+            // Freistand-Kreis, 8,1 und 13,5 m, die vor dem Haus nicht standen — Gestalt gemerkt 3 · frisch 2).
+            const amGrund = !!ctx.ortFrei && !ctx.ortFrei(x, z, T);
             // DER SAUM AM SIEDLUNGSRAND (`forestOrt`, w20-wald-kosten): derselbe Wurf gegen die Geburt jenseits des Rands eines
             // Orts (ctx.ort: der Abstand, `forestOrtAbstand` über die Ränder des Wirts) — wie K10 NACH allen Würfen des Darts:
             // ein Ort dünnt den Bestand um sich, er würfelt ihn nie neu; ohne Ort bleibt jeder Wurf, wie er war.
@@ -4083,7 +4089,7 @@
             // nimmt ihn danach: er steht nicht (`forestStehende`) und schirmt keinen Unterstand. Bis hier fiel er vor der
             // Geburt — unter der Selbst-Ausdünnung (Matérn III) wuchs der gedünnte Rest in die Lücke, die Lichtung schloss
             // sich (Mess-Wiese, Ring 25 m: Kronen-Deckung 0,114 → 0,164, 12 Bäume); jetzt trägt sie Lichtung × Bestand.
-            if (wurf > gOrt * forestLichtung(st)) dart.gelichtet = true; // nur am genommenen Dart: kein Stehender trägt das Feld
+            if (amGrund || wurf > gOrt * forestLichtung(st)) dart.gelichtet = true; // nur am genommenen Dart: kein Stehender trägt das Feld
             out.push(dart);
         }
         return out;
