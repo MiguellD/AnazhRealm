@@ -2273,6 +2273,9 @@ class AnazhRealm_bild_kosten {
             (this._vorBelichtungU = {
                 k: T.toneMappingExposure,
                 deckel: T.float(32768),
+                // der Deckel wirkt am GRÖSSTEN Kanal (das Verhältnis der Kanäle bleibt): je Kanal gedeckelt stand die Flamme
+                // unter der Blende der Nacht auf (32 768, 32 768, B) — gelb-weiß statt orange
+                deckeln: (rgb) => rgb.mul(T.float(32768).div(T.max(rgb.r, T.max(rgb.g, rgb.b)).max(32768))),
                 // das k, mit dem das Szenen-Ziel ZULETZT geschrieben wurde (EIN Schreiber nach dem Bild, `_loopRender`): der
                 // Teiler jedes Rücklesers, der das Bild davor liest
                 kBild: T.uniform(1),
@@ -2316,7 +2319,7 @@ class AnazhRealm_bild_kosten {
             // `output` trägt die Ditherung des Ziels (`_ausgabeDither`): durch ihn schreibt jeder Stoff des Passes.
             // und die Vor-Belichtung (`_vorBelichtung`): L × k, gedeckelt am Format
             const VB = this._vorBelichtung();
-            const belichtet = TSL.vec4(TSL.output.rgb.mul(VB.k).min(VB.deckel), TSL.output.a);
+            const belichtet = TSL.vec4(VB.deckeln(TSL.output.rgb.mul(VB.k)), TSL.output.a);
             scenePass.setMRT(TSL.mrt({ output: this._ausgabeDither(belichtet), glanz: this._glanzKnoten() }));
             const glanz = scenePass.getTexture("glanz");
             glanz.type = THREE.UnsignedByteType;

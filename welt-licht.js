@@ -85,7 +85,8 @@ var __weltLicht = (function () {
     // E DES VOLLMONDS IM ZENIT (Welt-Einheiten, wie `_waagrechtIrradianz`): seine Stärke × die Luma seines Tons
     const MOND_E = MOND_STAERKE * lumaVon(KERN.ATMO_GESETZ.nacht.mond);
     const BELICHTUNG = Object.freeze({
-        kurve: "NeutralToneMapping",
+        kurve: "CustomToneMapping",
+        schulter: 0.76,
         zielKarte: 0.22,
         min: 0.05,
         steigung: 0.75,
@@ -95,6 +96,39 @@ var __weltLicht = (function () {
         nachtKnotenGrad: -6,
         nachtGrad: -32,
     });
+    // DIE TONKURVE DER AUSGABE (licht-eine-skala) — die EINE Funktion, die jedes Bild der Welt und der Bühne an den Schirm legt
+    // (`tonKurveSetzen`: der Platz `BELICHTUNG.kurve` in der Tafel des Renderers). Ihre Form ist Khronos PBR Neutral: Fuß
+    // 6,25·x² unter 0,08, bis zur Schulter (`schulter`) geht die Farbe unverändert ins Bild, darüber wird der GRÖSSTE Kanal
+    // gestaucht — das Verhältnis der Kanäle bleibt, über Bild-Weiß behält jede Quelle Farbton und Sättigung. Neutral selbst
+    // zieht darüber zu Weiß: 1 − 1 ÷ (0,15·(Spitze − gestaucht) + 1) steht bei 10 × Weiß auf 0,57, bei den 47 000 × Weiß einer
+    // Flamme unter der Blende der Nacht auf 1 — die Flamme, das Glutbett, das wache Fenster und die Rauch-Unterseite brannten
+    // weiß (gate:post-kette (j2), GTX 1050). Dieser Zug FIEL ganz (am Bild entschieden: eine Grenze 0,012 statt 0 änderte
+    // Herd, Dorf-Nacht und Sonnen-Scheibe nicht sichtbar). Ein grauer Eingang bleibt grau: die Eichung der Karte und jede
+    // Rückrechnung am Grau gelten weiter; der Tag steht zahlengleich (Wiese Mittag Luma 89,88 = 89,88).
+    function tonKurve(THREE, B = BELICHTUNG) {
+        const T = THREE.TSL;
+        const S = B.schulter;
+        const d = 1 - S;
+        return T.Fn(([farbe, k]) => {
+            const c = farbe.mul(k).toVar();
+            const x = T.min(c.r, T.min(c.g, c.b));
+            c.subAssign(T.select(x.lessThan(0.08), x.sub(x.mul(x).mul(6.25)), 0.04));
+            const spitze = T.max(c.r, T.max(c.g, c.b));
+            const ueber = spitze.greaterThanEqual(S);
+            const p = spitze.max(S);
+            const neu = T.float(1).sub(T.float(d * d).div(p.add(d - S)));
+            return c.mul(T.select(ueber, neu.div(p), 1));
+        });
+    }
+    // DER EINE SETZER: die Kurve in die Tafel des Renderers (einmal je Renderer) und auf seinen Platz
+    const _tonKurveAn = new WeakSet();
+    function tonKurveSetzen(R, THREE) {
+        if (R.library && !_tonKurveAn.has(R)) {
+            R.library.addToneMapping(tonKurve(THREE), THREE[BELICHTUNG.kurve]);
+            _tonKurveAn.add(R);
+        }
+        R.toneMapping = THREE[BELICHTUNG.kurve];
+    }
     // DIE GRENZGRÖSSE DER STERNE je Sonnenhöhe [Grad, Größe] (V18.530, `HIMMEL.grenzgroesse` der Welt): im hellen Tag (≥ 10°) ist
     // nichts zu sehen, am Ende der bürgerlichen Dämmerung (−6°) +1,5, der nautischen (−12°) +4, astronomische Nacht (−18°) +6 —
     // die Anker der EINEN Tag-Achse (`tagAchse`).
@@ -1247,7 +1281,7 @@ var __weltLicht = (function () {
         const sonne = o.sonne || new THREE.DirectionalLight();
         sonne.color.setRGB(a.col.r, a.col.g, a.col.b);
         sonne.intensity = E0 * a.lum;
-        R.toneMapping = THREE[BELICHTUNG.kurve];
+        tonKurveSetzen(R, THREE);
         R.outputColorSpace = THREE.SRGBColorSpace;
         // `knoten` (die Umgebung jedes Stoffs) und `staerke` (die Sonne des Gesetzes) liest die Treue der Bühne (`buehneZeichnet`):
         // die Bühne zeichnet unter diesem Licht allein — Identität, nie ein Nachbau
@@ -1373,6 +1407,8 @@ var __weltLicht = (function () {
         KEY_BASE,
         LEGACY_LICHT,
         BELICHTUNG,
+        tonKurve,
+        tonKurveSetzen,
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,
         EINHEIT_LX,

@@ -2410,7 +2410,7 @@ function luftTiefe(o) {
         const W = 480;
         const H = 270;
         const fov0 = cam.fov;
-        if (st.renderer.toneMapping !== T.NeutralToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Neutral-Kurve");
+        if (st.renderer.toneMapping !== T.CustomToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Tonkurve der Welt (welt-licht tonKurve)");
         st.renderer.setAnimationLoop(null);
         window.__buehne(o.wetter && { wetter: o.wetter });
         const PU = st.postProcessingUniforms;
@@ -2809,6 +2809,9 @@ const TONKURVE_GRAU = {
         return c < 0.76 ? c : 1 - (0.24 * 0.24) / (c + 0.24 - 0.76);
     },
 };
+// die Tonkurve der Welt (welt-licht `tonKurve`, der Platz CustomToneMapping): am Grau Khronos Neutral — ihre Grenze der
+// Entsättigung wirkt nur an der Farbe
+TONKURVE_GRAU.CustomToneMapping = TONKURVE_GRAU.NeutralToneMapping;
 function kartenEichung(kurve, ev = 1) {
     const f = TONKURVE_GRAU[kurve];
     if (!f) return null;
