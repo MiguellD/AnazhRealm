@@ -1812,7 +1812,15 @@ function rauchProbe(ort, P) {
                 return name === "rauch" ? [kaminHaus] : blockerAlt.apply(this, arguments);
             };
             st.dorfRauch = { quellen: [], teilchen: [] };
-            for (let i = 0; i < 200 && !st.dorfRauch.teilchen.length; i++) r._updateDorfRauch(0.1);
+            // die Uhr läuft mit, wie im Spiel: der Wurf des Kamins ist an `spielZeit` gesät — mit stehender Uhr zog jeder Ruf
+            // dieselbe Zahl, die Probe bestand nur mit p = 1 − 0,7⁶ = 0,88 (am Leser gezählt: 35 von 40 Starts; laufend 40 von 40;
+            // OMEN z624 ROT „legte keinen Satz an“)
+            const zeitVor = st.spielZeit;
+            for (let i = 0; i < 200 && !st.dorfRauch.teilchen.length; i++) {
+                r._updateDorfRauch(0.1);
+                st.spielZeit = (st.spielZeit || 0) + 0.1;
+            }
+            st.spielZeit = zeitVor;
             const kamin = leser("dorfRauchSatz", st.dorfRauch.teilchen, (KG.vyBase + KG.vyRange / 2) * tafelVor.labHz);
             delete r._blockerMit;
             st.dorfRauch = vor.dorfRauch;

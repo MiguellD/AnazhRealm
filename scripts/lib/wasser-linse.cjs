@@ -693,11 +693,14 @@ async function wasserLicht(o = {}) {
             await luft(0.5, spiegel - 3);
             const getaucht = await himmel();
             await luft(0.5, spiegel + 10);
+            // vier gültige Stellen (licht-eine-skala): die Nacht trägt in der EINEN Skala ~10⁻⁵ Welt-Einheiten (0,26 lx ÷ 16 090) —
+            // die feste Rundung auf 10⁻⁴ löschte sie zu 0, und K9 NACHT verglich 0 mit 0
+            const S = (x) => (Number.isFinite(x) ? +x.toPrecision(4) : null);
             aus.licht = {
-                nachtOben: R(nachtOben, 4),
-                nachtUnten: R(nachtUnten, 4),
-                mittagOben: R(mittagOben, 4),
-                mittagUnten: R(mittagUnten, 4),
+                nachtOben: S(nachtOben),
+                nachtUnten: S(nachtUnten),
+                mittagOben: S(mittagOben),
+                mittagUnten: S(mittagUnten),
                 himmelVor: vorTauchen,
                 himmelGetaucht: getaucht,
             };
@@ -1532,14 +1535,27 @@ async function wasserRegen(o = {}) {
     const rt = new T.RenderTarget(W, H);
     let px = null,
         mesh = null,
-        eltern = null;
+        eltern = null,
+        lage = null;
     try {
         r._setWeather("stormy", "human");
         window.__uebergangFaellt(r);
         st.camera = cam;
         r._bildZeit = t; // die Bild-Uhr (A9), die der Regen liest
+        // das Licht des Orts steht, ehe der Regen es zurückwirft (licht-eine-skala: die Schliere liest den Lichtmesser, `uLicht`):
+        // der Sturm wechselt das Medium, der Himmel verwirft seine Bestrahlungs-Tafel bis zur neuen Lesung (`_atmoTakt`) — die Probe
+        // wartet auf sie und wendet das Licht an; bis hier trug der Regen ein eigenes, unbeleuchtetes Licht
+        r._applyDayNightToScene();
+        for (let i = 0; i < 100 && !(st.atmoLut && st.atmoLut.tafel); i++) await new Promise((q) => setTimeout(q, 30));
+        if (!(st.atmoLut && st.atmoLut.tafel)) return { fehler: "die Bestrahlungs-Tafel des Sturms kam nicht zurück (der Lichtmesser liest nichts)" };
+        r._applyDayNightToScene();
         r._tickRain();
         const sys = r._rainSystem;
+        // die Lage der Probe im Urteil: die Stunde und das Licht, das die Schliere zurückwirft
+        lage = {
+            uhr: +st.timeOfDay.toFixed(3),
+            uLicht: sys && sys.uLicht ? [sys.uLicht.value.x, sys.uLicht.value.y, sys.uLicht.value.z].map((v) => +v.toPrecision(3)) : null,
+        };
         mesh = sys && sys.mesh;
         if (!mesh) return { fehler: "kein Regen-Objekt" };
         eltern = mesh.parent;
@@ -1585,6 +1601,7 @@ async function wasserRegen(o = {}) {
         litAnteil: wasserRund(5)(n / (W * H)),
         schlieren,
         neigung: rechts + links > 0 ? wasserRund(3)((rechts - links) / (rechts + links)) : 0,
+        lage,
     };
 }
 
