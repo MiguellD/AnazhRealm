@@ -1386,10 +1386,11 @@ async function checkBandLateMultiUser({ page, check }) {
             !!cmsg && Array.isArray(cmsg.list) && cmsg.list.some((e) => e.id === testC.userData.netId);
         r.p2pSend = origSend2;
 
-        // _p2pHandleCreaturePos legt eine Sicht-Kreatur an.
+        // _p2pHandleCreaturePos legt eine Sicht-Kreatur an — mit der Größe des Senders (`b`, leben-erbe: ein Eintrag ohne Größe
+        // ist kein Leib, wie ein Ort ohne Zahl).
         p2p.remoteCreatures.clear();
         r._p2pHandleCreaturePos("farPeer", {
-            list: [{ id: "c9", x: 5, y: 6, z: 5, yaw: 0, soul: "wesen" }],
+            list: [{ id: "c9", x: 5, y: 6, z: 5, yaw: 0, b: 1, soul: "wesen" }],
         });
         out.remoteCreatureCreated = p2p.remoteCreatures.has("farPeer:c9");
         // NICHT in state.creatures (updateCreatures ignoriert sie).
@@ -1398,7 +1399,7 @@ async function checkBandLateMultiUser({ page, check }) {
 
         // Reconcile: eine Liste OHNE c9 → die Sicht-Kreatur verschwindet.
         r._p2pHandleCreaturePos("farPeer", {
-            list: [{ id: "c10", x: 7, y: 6, z: 7, yaw: 0, soul: "fuchs" }],
+            list: [{ id: "c10", x: 7, y: 6, z: 7, yaw: 0, b: 0.9, soul: "fuchs" }],
         });
         out.reconcileRemoves = !p2p.remoteCreatures.has("farPeer:c9") && p2p.remoteCreatures.has("farPeer:c10");
 

@@ -2157,13 +2157,15 @@ async function WELLE_L(ort) {
             w.z.tod = tod;
             if (hT.parent) r.removeCreature(hT);
         });
-        // (T25) die Wunde reist als Anteil des Lebens: Hirsch (1,0) und Bär (1,75), ein alter Stand (hp absolut, leibV = 0)
-        // und ein neuer mit 30 %.
+        // (T25) die Wunde reist als Anteil des Lebens: Hirsch (1,0) und Bär am größten Erwachsenen des Gesetzes (+4σ,
+        // `__lebenCore.spanne()`), ein alter Stand (hp absolut, leibV = 0) und ein neuer mit 30 %. Bis leben-erbe der Bär
+        // 1,75 — jenseits der Spanne: der Restore stellt einen Leib ohne Tier auf die Grenze des Gesetzes, die absolute
+        // Wunde des alten Stands traf dann ein kleineres Leben (0,538 statt 0,5).
         await teil("T25", async () => {
             const wunde = [];
             for (const [seele, L] of [
                 ["wesen", 1],
-                ["baer", 1.75],
+                ["baer", A._lebenKern().spanne()[1]],
             ]) {
                 s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
                 const c = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 320, "happy", seele, {

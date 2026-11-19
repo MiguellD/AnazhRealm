@@ -1550,16 +1550,19 @@ async function kreaturProben(r, T, opts) {
             r.removeCreature(c);
             return t;
         };
-        for (const [seele, bs] of [
+        // der größte Hirsch ist der des Gesetzes (+4σ, `__lebenCore.spanne()`, ~207 kg) — bis leben-erbe der Gigant 2,5 (kolossKg
+        // 600 kg ab Größe 1,86: eine Größe, die das Gesetz des Lebens nicht mehr trägt)
+        const gross = A._lebenKern().spanne()[1];
+        for (const [seele, bs, name] of [
             ["wesen", 1],
             ["wolf", 1],
             ["baer", 1],
             ["fuchs", 1],
-            ["wesen", 2.5],
+            ["wesen", gross, "gross"],
             ["wolf", 0.6],
             ["baer", 0.7],
         ])
-            art[seele + "@" + bs] = probe(seele, bs);
+            art[seele + "@" + (name || bs)] = probe(seele, bs);
         // DIE EINE MASSE: Temperament und Beute lesen die Masse, die auch der Stoß liest (`_leibMasse`) — Beweis am Ruf.
         const leibRufe = (fn) => {
             const alt = r._leibMasse;
@@ -2994,7 +2997,7 @@ function urteil(name, z) {
             "wolf@1": "wild",
             "baer@1": "wehrhaft",
             "fuchs@1": "scheu",
-            "wesen@2.5": "wehrhaft",
+            "wesen@gross": "scheu", // das größte Erwachsene des Gesetzes (~207 kg) bleibt unter kolossKg 600
             "wolf@0.6": "scheu", // das Jungtier (13,8 kg) unter der Jagd-Grenze 21,5 kg
             "baer@0.7": "sanft",
         };
