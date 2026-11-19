@@ -901,7 +901,8 @@ const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c6
   'planet-h2-7': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
   'planet-h2-8': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
   'planet-h2-9': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
-  'planet-h2-10': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee' };   // h2-10 (Bau-Welle 1, FÄLLT): die drei Δ ≡ 0 der Wildnis (kontinentLambda, schichtDicke, hartAnteil) reisen nicht mehr — das Relief steht   // h2-9 (Bau-Welle 1, B5): der Anker im Band des Orts (fuss 16), er trägt Spende, Wuchs und kein E — das Relief steht   // h2-8 (Bau-Welle 1, B3): S5 Wasser im Kern (planetWasserGitter · planetWasserR, DIE PET) — Relief und Klima stehen   // h2-7 (Bau-Welle 1, B2): das Klima ohne Land-Schalter (EIN Land-Gewicht, EINE PET, die Feuchte-Knoten auf den Hüllen-Schritten) — das Relief steht   // h2-6 (Bau-Welle 1, B4): der Anden-Bogen eine Schürze + 150 km hinter dem Graben, EINE Lage je Platte — das Relief bewegt sich   // h2-5 (Bau-Welle 1, B1): die Naht gehört dem Paar — ω_p über ξ(p, j), stetig über Platte, Scholle und Kruste; das Relief bewegt sich   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
+  'planet-h2-10': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
+  'planet-h2-11': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee' };   // h2-11 (Bau-Welle 1, Jahreszeiten-Vertrag): das Δ des Jahres-Gangs zur selben Zeit des Jahres, „Sommer“ die wärmere Jahreszeit mit ihrer Phase — das Relief steht   // h2-10 (Bau-Welle 1, FÄLLT): die drei Δ ≡ 0 der Wildnis (kontinentLambda, schichtDicke, hartAnteil) reisen nicht mehr — das Relief steht   // h2-9 (Bau-Welle 1, B5): der Anker im Band des Orts (fuss 16), er trägt Spende, Wuchs und kein E — das Relief steht   // h2-8 (Bau-Welle 1, B3): S5 Wasser im Kern (planetWasserGitter · planetWasserR, DIE PET) — Relief und Klima stehen   // h2-7 (Bau-Welle 1, B2): das Klima ohne Land-Schalter (EIN Land-Gewicht, EINE PET, die Feuchte-Knoten auf den Hüllen-Schritten) — das Relief steht   // h2-6 (Bau-Welle 1, B4): der Anden-Bogen eine Schürze + 150 km hinter dem Graben, EINE Lage je Platte — das Relief bewegt sich   // h2-5 (Bau-Welle 1, B1): die Naht gehört dem Paar — ω_p über ξ(p, j), stetig über Platte, Scholle und Kruste; das Relief bewegt sich   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -1278,10 +1279,11 @@ function selbsttest() {
     // Reise, Welle 3: der Wuchs ist ein Verhältnis-Feld — gepflanzt: am Anker trägt der Wald 0,999 statt 1 → ROT
     dl.leit.huelleM[40] = 0; const vorW = deltaNull(dl); dl.wuchs.wald = 0.999; zeile('ort.delta.wuchs feuert', vorW && !deltaNull(dl), 'gepflanzt: das Wald-Verhältnis am Anker 0,999 → ROT'); }
   // Reise K: die Jahres-Phase ist ein Δ-Feld. erde-01 trägt seinen Anker auf der Süd-Halbkugel — dort ist das Δ am Anker +0 (die Heimat
-  // behält ihre Phase), jenseits des Äquators −0,5; gepflanzt: die Phase als Ort − Tafel (absolut gelesen) gäbe am Süd-Anker 0,5 → ROT
+  // behält ihre Phase), jenseits des Äquators 0,5 (Jahreszeiten-Vertrag: 0 oder 0,5, die Phase der wärmeren Jahreszeit); gepflanzt: die
+  // Phase als Ort − Tafel (absolut gelesen) gäbe am Süd-Anker 0,5 → ROT
   { const og = ortGesetz(), pl = planVon('erde-01'), S = P.planetScheibe(pl, 0), A = P.planetAnker(pl, 0, og), oA = P.planetOrt(S, A.breite, A.laenge, og), dA = oA.delta.klima.sommerPhase, absA = oA.klima.sommerPhase;
     const dN = P.planetOrt(S, -A.breite, A.laenge, og).delta.klima.sommerPhase, grad = (A.breite * 180 / Math.PI).toFixed(2);
-    zeile('ort.delta.phase', A.breite < 0 && Object.is(dA, 0) && dN === -0.5 && absA === (og.klimaHeute.sommerPhase + 0.5) % 1, 'Süd-Anker erde-01 (' + grad + '°): Phase-Δ am Anker ' + (Object.is(dA, 0) ? '+0' : dA) + ', auf der Nord-Halbkugel ' + dN + ' (absolut am Anker ' + absA + ', Tafel ' + og.klimaHeute.sommerPhase + ')');
+    zeile('ort.delta.phase', A.breite < 0 && Object.is(dA, 0) && dN === 0.5 && absA === (og.klimaHeute.sommerPhase + 0.5) % 1, 'Süd-Anker erde-01 (' + grad + '°): Phase-Δ am Anker ' + (Object.is(dA, 0) ? '+0' : dA) + ', auf der Nord-Halbkugel ' + dN + ' (absolut am Anker ' + absA + ', Tafel ' + og.klimaHeute.sommerPhase + ')');
     const am = P.planetOrt(S, A.breite, A.laenge, og).delta, mut = Object.assign({}, am, { klima: Object.assign({}, am.klima, { sommerPhase: absA - og.klimaHeute.sommerPhase }) });
     zeile('ort.delta.phase feuert', deltaNull(am) && !deltaNull(mut), 'gepflanzt: Phase als Ort − Tafel statt Ort − Anker (' + mut.klima.sommerPhase + ' am Süd-Anker) → ROT'); }
   { const Q = Object.assign({}, P, { planetOrtDerZeit: (pl, b, l, t0, t1, o) => { P.planetOrtDerZeit(pl, b, l, t0, t1, o); if (t1 === 0) o.laenge += 1e-6; return o; } });
@@ -1386,6 +1388,11 @@ function gegner2Selbsttest(zeile) {
 //                    Anteil Land nah Rand ≥ 2 in 10/10
 //  anker.traegt  B5  erde-01 … erde-30: der Anker bei fuss 16 Land, Wald > 0, Decke > 0, Spende > 0, kein Köppen E
 //  ort.faellt    FÄLLT planetOrt trägt kontinentLambda, schichtDicke, hartAnteil nicht mehr (Zensus e217/e222/e223)
+//  ort.jahreszeit    der Jahreszeiten-Vertrag Planet ↔ Ort-Gesetz, gelesen durch den Leser des Spiels (gelaende-core `ortGesetz(teil)`,
+//                    `schneePegel`): Raster 4° × 10° (±80°) der Samen JZ_SAMEN, Land-Ziele bei fuss 16 — Sommer < Winter 0 · Schnee zur
+//                    Sommer-Mitte auf der Höhe des Orts (Pegel ≥ `SCHMELZE.deckt`) bei Sommer > 10 °C dort 0. ROT nennt Samen, Lage und
+//                    beide Temperaturen. Der Kern vor der Welle hält sie (0 von 1 751: seine vier Anker tragen eine Rest-Spanne ≤ 0) —
+//                    der Selbsttest pflanzt die Täter: die Spanne gedreht, und das Δ am Namen (Sommer − Sommer, die Regel bis h2-10)
 const WELLE1_BASIS = 'b7ed8419', W1_SAATEN = SAATEN.slice(0, 10), W1_ZIEL = 400, PET_FORMEL = /\b400\s*\+\s*45\s*\*/g;
 function basisKern() { // der Kern vor der Welle: git show WELLE1_BASIS:planet-core.js → tmp; fehlt das Objekt, bricht der Selbsttest beim Namen
   const aus = path.join(os.tmpdir(), 'planet-core-' + WELLE1_BASIS + '-' + process.pid + '.js');
@@ -1451,6 +1458,34 @@ function saatWelle1(Q, samen) { // c3 über 40 000 Adressen, c6 über das Gitter
   }
   return Object.assign(r, { N: NW, endsee: wEnd / wLand, trocken: (tEnd / wEnd) / (tExo / (wLand - wEnd)), abflussKm3a: qMeer / 1e9, kreise });
 }
+const JZ_SAMEN = ['anazh-realm-seed', 'erde-01', '7', '42'], JZ_PLAENE = new Map();
+function jahreszeit(Q, og, ortVon) { // ortVon (Selbsttest): der gepflanzte Täter an der Stelle von planetOrt
+  require(path.join(__dirname, '..', 'gelaende-core.js')); const G = globalThis.__gelaendeCore, RAD = Math.PI / 180, a = ns(), p = {};
+  const F = { land: 0, inv: [], schnee: [], bruch: [], spanneMin: Infinity };
+  for (const s of JZ_SAMEN) {
+    const key = Q.VERSION + '|' + s; if (!JZ_PLAENE.has(key)) JZ_PLAENE.set(key, Q.planetPlan(s, Q.PLANET_ERDE));   // der Plan des Spiels (voxel-worker `planetPlanVon`)
+    const S = Q.planetScheibe(JZ_PLAENE.get(key), 0);
+    for (let b = -80; b <= 80; b += 4) for (let l = -180; l < 180; l += 10) {
+      Q.planetPunkt(S, b * RAD, l * RAD, 16, p); if (!(p.hoeheM > 0)) continue;
+      F.land++;
+      const o = (ortVon || Q.planetOrt)(S, b * RAD, l * RAD, og), d = o.delta, wo = s + ' ' + b + '°/' + l + '°';
+      // der Teil `ort`, wie ihn der Faden des Spiels reicht (voxel-worker `planetOrtAuftrag`)
+      const teil = { samen: s, version: Q.VERSION, breite: b, laenge: l, zeitMa: 0, delta: { klima: { sommer: d.klima.sommer, winter: d.klima.winter, tagAmp: d.klima.tagAmp, sommerPhase: d.klima.sommerPhase, spendeVerh: d.klima.spendeVerh },
+        meer: { waterLevelM: d.meer.waterLevelM }, wetter: { regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }, wuchs: { decke: d.wuchs.decke, wald: d.wuchs.wald }, wildnis: Object.assign({}, d.wildnis) } };
+      let O; try { O = G.ortGesetz(teil); } catch (e) { F.bruch.push(wo + ' ' + e.message.split('\n')[0]); continue; }
+      const K = O.klimaHeute, y = o.stauchung * p.hoeheM, tOrt = K.sommer - O.kuehlungKJeM * y, T = wo + ' Sommer ' + K.sommer.toFixed(1) + ' / Winter ' + K.winter.toFixed(1) + ' °C';
+      if (K.sommer - K.winter < F.spanneMin) F.spanneMin = K.sommer - K.winter;
+      if (K.sommer < K.winter) F.inv.push(T);
+      if (tOrt > 10 && G.schneePegel({ waterLevel: 0, ort: O }, y, K.sommerPhase) >= G.SCHMELZE.deckt) F.schnee.push(T + ' (am Ort ' + tOrt.toFixed(1) + ' °C auf ' + y.toFixed(0) + ' m)');
+    }
+  }
+  F.s = (ns() - a) / 1e9; return F;
+}
+function jahreszeitZeile(zeile, F) {
+  const nenn = (l) => l.length + (l.length ? ' (' + l.slice(0, 3).join(' · ') + (l.length > 3 ? ' · …' : '') + ')' : '');
+  zeile('ort.jahreszeit', F.inv.length + F.schnee.length + F.bruch.length === 0, 'von ' + F.land + ' Land-Zielen (' + JZ_SAMEN.join(', ') + '; 4° × 10°): Sommer < Winter ' + nenn(F.inv) + ' · Schnee zur Sommer-Mitte bei > 10 °C am Ort ' + nenn(F.schnee) +
+    (F.bruch.length ? ' · vom Ort-Gesetz abgelehnt ' + nenn(F.bruch) : '') + ' · kleinste Spanne ' + F.spanneMin.toFixed(3) + ' K · ' + F.s.toFixed(1) + ' s', '0 · 0 (Jahreszeiten-Vertrag)');
+}
 function welle1(Q, text) {
   const U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle }), pc = (v) => (100 * v).toFixed(1) + ' %';
   const Qr = querungen(Q, W1_ZIEL), fu = Qr.funde, sp = (a) => fu[a].filter(f => f.dh > 0.01).length, mx = (a, key) => Math.max(...fu[a].map(f => f[key]));
@@ -1476,6 +1511,7 @@ function welle1(Q, text) {
   const plan = planQ(Q, 'erde-01'), S0 = Q.planetScheibe(plan, 0), A = Q.planetAnker(plan, 0, og), wl = Q.planetOrt(S0, A.breite, A.laenge, og), FAELLT = ['kontinentLambda', 'schichtDicke', 'hartAnteil'];
   const traegt = FAELLT.filter(k => k in wl.wildnis || k in wl.delta.wildnis);
   zeile('ort.faellt', traegt.length === 0, 'planetOrt trägt ' + (traegt.length ? traegt.join(', ') : 'keinen der drei Δ ≡ 0') + ' · wildnis ' + Object.keys(wl.wildnis).join(', '), 'keiner (Zensus e217/e222/e223)');
+  jahreszeitZeile(zeile, jahreszeit(Q, og));
   return U;
 }
 function kostenWasser(Q) { // B3 an der Adresse und am Gitter: Wasser je Adresse ≤ 8 µs · Gitter 4R ÷ R ≤ 1,35 (N_W fest, nie die Weltgröße)
@@ -1496,7 +1532,20 @@ function kostenWasser(Q) { // B3 an der Adresse und am Gitter: Wasser je Adresse
 function welle1Selbsttest(zeile) { // der Kern vor der Welle macht jede Welle-1-Zeile ROT
   let B; try { B = basisKern(); } catch (e) { zeile('welle1.basis', false, 'Kern ' + WELLE1_BASIS + ' nicht lesbar aus git: ' + e.message.split('\n')[0]); return; }
   // dazu der Schätzer von kosten.platten/radius (G3, 19.11.): main trug +82 % und 1,382 (Zweig zensus-planet, vision/planet: bahnen), an ihm muss er ROT stehen
-  for (const u of [...welle1(B.Q, B.text), ...kostenWasser(B.Q), ...kostenSkala(B.Q)]) zeile(u.name + ' feuert', u.urteil === 'ROT', 'Kern ' + WELLE1_BASIS + ' (' + B.Q.VERSION + '): ' + u.wert);
+  for (const u of [...welle1(B.Q, B.text), ...kostenWasser(B.Q), ...kostenSkala(B.Q)]) if (u.name !== 'ort.jahreszeit') zeile(u.name + ' feuert', u.urteil === 'ROT', 'Kern ' + WELLE1_BASIS + ' (' + B.Q.VERSION + '): ' + u.wert);
+  // ort.jahreszeit: der Kern vor der Welle hält den Vertrag an diesen vier Samen (Rest-Spanne seiner Anker ≤ 0) — gepflanzt werden die
+  // Täter selbst. (1) die Spanne gedreht: Heimat + Δ trägt Sommer und Winter getauscht bei gleicher Phase. (2) das Δ am Namen, die
+  // Regel bis h2-10: Sommer − Sommer, Winter − Winter, die Phase nach der Halbkugel — die Rest-Spanne des Ankers zieht in den Tropen
+  // den Sommer unter den Winter.
+  const og = ortGesetz(), kh = og.klimaHeute, rot = (F) => { const U = []; jahreszeitZeile((name, ok, wert) => U.push({ ok, wert }), F); return U[0]; };
+  const gedreht = (S, b, l, g) => { const o = P.planetOrt(S, b, l, g), k = o.delta.klima, so = kh.sommer + k.sommer, wi = kh.winter + k.winter; k.sommer = wi - kh.sommer; k.winter = so - kh.winter; return o; };
+  const ankerKlima = new Map(), amAnker = (S, A, g) => { if (!ankerKlima.has(S)) ankerKlima.set(S, Object.assign({}, P.planetOrt(S, A.breite, A.laenge, g).klima)); return ankerKlima.get(S); };
+  const amNamen = (S, b, l, g) => { const A = P.planetAnker(S.plan, 0, g), a = amAnker(S, A, g), o = P.planetOrt(S, b, l, g), k = o.delta.klima, sued = b < 0, warmHoch = (o.klima.sommerPhase === kh.sommerPhase) !== sued;
+    const hoch = warmHoch ? o.klima.sommer : o.klima.winter, tief = warmHoch ? o.klima.winter : o.klima.sommer;
+    k.sommer = hoch - a.sommer; k.winter = tief - a.winter; k.sommerPhase = (sued ? 0.5 : 0) - (A.breite < 0 ? 0.5 : 0); return o; };
+  const u1 = rot(jahreszeit(P, og, gedreht)), u2 = rot(jahreszeit(P, og, amNamen));
+  zeile('ort.jahreszeit feuert', !u1.ok, 'gepflanzt: die Spanne des Jahres-Gangs gedreht → ' + u1.wert);
+  zeile('ort.jahreszeit nennt', !u2.ok && /Sommer < Winter [1-9]/.test(u2.wert), 'gepflanzt: das Δ am Namen (Sommer − Sommer, die Regel bis h2-10) → ' + u2.wert);
 }
 
 function drucken(titel, U) { console.log('── ' + titel); for (const u of U) console.log((u.urteil + '     ').slice(0, 6) + ' ' + u.name.padEnd(22) + ' ' + u.wert + (u.schwelle ? '   [Schwelle ' + u.schwelle + ']' : '')); }

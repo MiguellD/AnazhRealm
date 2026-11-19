@@ -1128,7 +1128,9 @@ Klima `KLIMA` (`planetKlimaGlobal`, `planetKlima`, `planetKlimaR`) mit den Klass
 `planetWasserGitter` (`PLANET_WASSER_N` Zellen, fest, nie die Weltgröße: Einzugsgebiet, Seen, Überlauf gegen die PET) und an der
 Adresse `planetWasserR` (Abfluss und See-Tiefe, stetig). DIE BRÜCKE ZUM ORT: der Anker `planetAnker` (der Ort, an dem das Ort-Gesetz der Heimat wahr ist, gelaende-core
 `ortGesetz`), die Würfel-Karte um ihn `planetFlaeche`/`planetKarteVon`, der Ort als Differenz zum Anker `planetOrt` (am Anker
-jedes Feld +0, Spende und Wuchs als Verhältnis 1) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
+jedes Feld +0, Spende und Wuchs als Verhältnis 1; DER JAHRESZEITEN-VERTRAG: „Sommer“ ist die wärmere Jahreszeit und trägt ihre
+Phase, das Δ des Jahres-Gangs wird zur selben Zeit des Jahres genommen — Heimat + Δ hält Sommer ≥ Winter an jedem Ort, die Phase
+reist als 0 oder 0,5; Richter: `scripts/diag-planet.cjs`, Zeile ort.jahreszeit) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
 Die Bytes sind Gesetz: die eigene Mathe `planetMathe`, der Hash `planetHash` und der zählerbasierte Zufall `planetZufall` —
 der Richter (`scripts/diag-planet.cjs --bytes`) hält den SHA je `VERSION`; `_intern` reicht ihm die Terme. Der Planet lebt nur
 im Faden: die Quelle der Fäden lädt ihn spät (`FADEN_QUELLE.spaet`), der Auftrag `planet-anker` des voxel-worker rechnet nach

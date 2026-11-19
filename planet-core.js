@@ -48,13 +48,14 @@
  *   klimaHeute samt spendeMm im Jahr der Tafel) — kein Aufrufer baut sie nach. s_v = 0,0065 / kuehlungKJeM wird daraus GELESEN,
  *   nie kopiert.
  *   DER ORT ALS DIFFERENZ (`planetOrt().delta`): Ort − Anker, die Spende und der Wuchs als Verhältnis — am Anker jedes Feld +0,
- *   jedes Verhältnis 1.
+ *   jedes Verhältnis 1. DER JAHRESZEITEN-VERTRAG: `klima.sommer` ist die WÄRMERE Jahreszeit, `klima.sommerPhase` ihre Phase —
+ *   absolut am Ort und als Heimat + Δ im Leser (Sommer ≥ Winter an jedem Ort; das Δ wird zur selben Zeit des Jahres genommen).
  *   Ein Leser bildet „Heimat plus Differenz“ an der Quelle seiner Heimat-Größe, nie aus einer absoluten Zahl des Planeten.
  */
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-10';
+  const VERSION = 'planet-h2-11';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2650,9 +2651,9 @@
   const _orP = {}, _orK = {}, _orB = {}, _orL = {}, _orV = new Float64Array(3), _orKV = {};
   // R2 der Ort als Differenz zur Heimat: delta = Ort − Anker (t = 0, dieselbe Funktion am Anker gerechnet), die Spende als Verhältnis;
   // am Anker ist jedes Feld +0 (x − x) und das Verhältnis 1 — die Heimat bleibt byte-gleich ohne Bedingung. Kein Aufrufer rechnet Δ nach.
-  // Die Jahres-Phase reist als Δ wie jede Größe (Reise K): 0 auf der Halbkugel des Ankers, ±0,5 jenseits des Äquators — ein Leser,
-  // der die absolute Phase läse, gäbe einer Heimat mit Süd-Anker den Sommer im Winter.
-  const ORT_DELTA_KLIMA = ['sommer', 'winter', 'tagAmp', 'sommerPhase'], ORT_DELTA_WETTER = ['windX', 'windZ', 'regenQuote', 'sturmQuote'];
+  // Die Jahres-Phase reist als Δ wie jede Größe (Reise K): 0, wo der Sommer des Orts in der Phase der Heimat liegt, sonst 0,5 — ein
+  // Leser, der die absolute Phase läse, gäbe einer Heimat mit Süd-Anker den Sommer im Winter.
+  const ORT_DELTA_WETTER = ['windX', 'windZ', 'regenQuote', 'sturmQuote'];
   // Reise, Welle 3: der Wuchs des Orts reist als Verhältnis zum Anker wie die Spende — am Anker genau 1 (x / x). Trägt der Anker
   // selbst nichts (0), fehlt das Maß: das Verhältnis ist 1, der Wuchs der Heimat gilt (immer endlich — der Ort reist als JSON).
   const ORT_WUCHS = ['decke', 'wald'];
@@ -2671,7 +2672,19 @@
     if (!d.wuchs) d.wuchs = {};
     for (const id in o.wildnis) d.wildnis[id] = o.wildnis[id] - a.wildnis[id];
     d.meer.waterLevelM = o.meer.waterLevelM - a.meer.waterLevelM;
-    for (const f of ORT_DELTA_KLIMA) d.klima[f] = o.klima[f] - a.klima[f];
+    // DER JAHRESZEITEN-VERTRAG: das Δ des Jahres-Gangs wird zur selben ZEIT des Jahres genommen, nie am selben Namen — der Ort zur
+    // warmen Zeit des Ankers gegen dessen Sommer, zur kalten gegen dessen Winter (bei Gegen-Phase ist das der Winter des Orts). Der
+    // Leser bildet Heimat + Δ; „Sommer“ heißt, was daraus wärmer ist, und die Phase folgt ihm (Δ 0 oder 0,5): Spanne ≥ 0 an jedem
+    // Ort. Vorher reiste Sommer − Sommer und Winter − Winter: die Rest-Spanne des Ankers (roh − Heimat, bis +1,1 K) zog in den Tropen
+    // den Sommer unter den Winter (46 von 1 814 Land-Zielen, gelaende-core `schneePegel` las „friert immer“) und sprang am Äquator.
+    const kh = og.klimaHeute, gleich = o.klima.sommerPhase === a.klima.sommerPhase;
+    const dWarm = (gleich ? o.klima.sommer : o.klima.winter) - a.klima.sommer, dKalt = (gleich ? o.klima.winter : o.klima.sommer) - a.klima.winter;
+    if (kh.sommer + dWarm >= kh.winter + dKalt) { d.klima.sommer = dWarm; d.klima.winter = dKalt; d.klima.sommerPhase = 0; }
+    else {
+      d.klima.sommer = (kh.winter + dKalt) - kh.sommer; d.klima.winter = (kh.sommer + dWarm) - kh.winter; d.klima.sommerPhase = 0.5;
+      while (kh.sommer + d.klima.sommer < kh.winter + d.klima.winter) d.klima.winter -= 1e-12;   // die Rundung von Heimat + Δ trägt die Spanne nie unter 0
+    }
+    d.klima.tagAmp = o.klima.tagAmp - a.klima.tagAmp;
     d.klima.spendeVerh = a.klima.spendeMm !== 0 ? o.klima.spendeMm / a.klima.spendeMm : (o.klima.spendeMm === 0 ? 1 : Infinity);
     for (const f of ORT_DELTA_WETTER) d.wetter[f] = o.wetter[f] - a.wetter[f];
     for (const f of ORT_WUCHS) d.wuchs[f] = a.wuchs[f] > 0 ? o.wuchs[f] / a.wuchs[f] : 1;
@@ -2705,8 +2718,11 @@
       tafel: klemm(rTa, glatt(400, 1500, _orP.randAbstandKm) * glatt(1500, 3500, schAlter)),
     };
     o.meer = { waterLevelM: -og.meerUnterBasisM + sv * (S.meerKm - S0.meerKm) * 1000 };
-    o.klima = { sommer: K.tSommerC + KLIMA.lapse * hk, winter: K.tWinterC + KLIMA.lapse * hk,
-      sommerPhase: sued ? (kh.sommerPhase + 0.5) % 1 : kh.sommerPhase, tagAmp: 0.5 * K.tagAmpC, tagGipfel: kh.tagGipfel, jahrTage: kp.jahrTage, spendeMm: K.abflussMm };
+    // der Jahres-Gang am Meer: die Luft zum Sonnen-Hoch und zum Sonnen-Tief der Halbkugel. „Sommer“ ist die WÄRMERE der beiden und
+    // trägt ihre Phase — wo die Winter-Advektion die Spanne dreht (Tropen, roh bis −0,39 K), liegt der Sommer des Orts im Sonnen-Tief
+    const tHoch = K.tSommerC + KLIMA.lapse * hk, tTief = K.tWinterC + KLIMA.lapse * hk, warmHoch = tHoch >= tTief;
+    o.klima = { sommer: warmHoch ? tHoch : tTief, winter: warmHoch ? tTief : tHoch,
+      sommerPhase: sued === warmHoch ? (kh.sommerPhase + 0.5) % 1 : kh.sommerPhase, tagAmp: 0.5 * K.tagAmpC, tagGipfel: kh.tagGipfel, jahrTage: kp.jahrTage, spendeMm: K.abflussMm };
     const G = planetKlimaGlobal(plan, S.zeitMa), aphi = breite < 0 ? -breite : breite, v = (aphi - 1.7 * G.zellBreite) / (0.4 * G.zellBreite);
     const wl = Math.sqrt(K.windOst * K.windOst + K.windNord * K.windNord);
     o.wetter = { windX: wl > 1e-9 ? -K.windOst / wl : 0, windZ: wl > 1e-9 ? K.windNord / wl : 0,   // wohin der Wind weht, Spiel-(x Ost, z Süd)
