@@ -8,21 +8,14 @@ Wort des Schöpfers: „ja bauen, bei 98% wip sichern und übergabe“. Datei-Be
 
 - Spike (b) abgegeben (c2b8b8cbd, `MUSTER.md`): die Stufe aus der L0 (`werkzeug/muster.js`) zeigt dasselbe Haus; alemannisch L2 26 m
   B1 4,81 % vorn / 2,98 % hinten (heute 65,11 / 45,31), 6 414 Dreiecke; Wagen L1 12 m unter heute. Urteil: die Wurzel trägt (E8).
-- Welle a, Punkt (1) **Zwilling der Steingröße** — in Arbeit: `infill` (`fachwerk-core.js:651`), der Giebel-Backstein (`:743`) und der
-  Verband `:1415` lesen `VERBAND_GESETZ.mauerwerk` (0,24 × 0,071, Fuge 0,011) statt 0,32 × 0,15 / 0,025. Mit nur `infill` geschnitten fiel
-  der Vertrag an der Split-Parität (23/24 — der Giebel und `:1415` trugen das alte Maß); die zwei weiteren Stellen sind geschnitten,
-  der Re-Mint ist gelaufen (`haeuser.json` im WIP, 258 Fälle), ABER der Vertrag ist ROT: **Split-Parität 22/24 Rezept×Stufe**
-  (`scripts/diag-fachwerk-contract.cjs:744`, Referenz „Shell-Komposition der Kern-Primitive“ ab `:93`) — mit nur `infill` 23/24, mit allen
-  drei Stellen 22/24. Ungelesen, warum: Verdacht (a) die Zahl der Steine verschiebt den Zufalls-Strom (`rnd()` je Stein/Teil) für die
-  folgenden Teile anders als in der Referenz-Komposition, (b) die Referenz baut eine Wand mit eigenem Maß. BENANNT (18:56, Kopie der Prüfung):
-  rot sind genau **alemannisch L0** und **hanseatisch L0** (die Backstein-Häuser, nur Stufe 0). Mit dem kleineren Stein überschreitet ihre
-  L0 die Budget-Zeile; `buildInstance` streckt dann ins GROSSFORMAT (`P.__sehne > 1`, `fachwerk-core.js:242`: Stein × √sehne bis 1,6),
-  der Labor-Pfad der Referenz (`shellPfad`, `FC.HAUS(…).build`) kennt die Streckung nicht. Folge über die Linse hinaus: über der Zeile
-  trägt die L0 wieder ein ANDERES Steinmaß als der Stoff — der Zwilling kehrt als Faktor zurück. ENTSCHEID nötig (Koordinator): der
-  Stoff liest denselben Faktor (`__sehne` reist zur Zone), ODER die Zeile der L0 hebt sich für den Stein, ODER der Stein bleibt im Großformat
-  ein Muster des Stoffs (keine Geometrie über der Zeile).
-  Kein Merge, solange der Vertrag rot ist.
-  Benannter Preis: L0 alemannisch 77 526 → 96 630 Dreiecke (+25 %, nur `infill` gemessen); an der Profi-Band-Pose NICHT gemessen.
+- Welle a, Punkt (1) **Zwilling der Steingröße — GRÜN** (WIP 73f317126, Entscheid b des Koordinators): der Stein liest
+  `VERBAND_GESETZ.mauerwerk` an allen drei Stellen (`infill`, Giebel, Verband `:1415`) und wird NIE nach dem Budget gestreckt
+  (`infill` und Giebel ohne `GROSSFORMAT`, `infill` ohne `UEBER_GROSSFORMAT`; in `buildInstance` zählt der Stein nicht gegen die Zeile
+  der Stufe — `ohneStein`). Re-Mint `haeuser.json`: gegen main 109 Fälle in 16 Häusern (L0 33 · L1 32 · L2 21 · L3 23).
+  gate:fachwerk-contract GRÜN, Split-Parität 24/24. L0-Dreiecke benannt (kein Tor): alemannisch 77 526 → 105 054 (+35 %; Same 7
+  92 994 → 138 678, +49 %), hanseatisch 85 266 → 118 830 (+39 %; Same 7 118 134 → 194 154, +64 %). `__sehne` trägt weiter, unberührt:
+  Ziegel/Deckung `:243`, Dielen `:870`, Keilsteine `:1069`, die Giebel-Bänder der Flächen-Stufe `:758` (`_zg > 1`), die Kuppel `:1756`.
+  Nicht gemessen: die +35–64 % an der Profi-Band-Pose; gate:asset-contract und gate:haus-fern am Kopf.
 - Punkt (5) **Rauschen des gt-Richters** — gelesen, nicht beim Namen: die Lieferungen des Fadens sind über Läufe bitgleich (L0 und L1:
   Lage, Normale, Farbe, FNV); im selben Lauf sind zwei Bauten der L1 bildgleich (0,00 %), zwei Bauten der L0 weichen um 0,82 % ab (116
   verstreute Pixel über das ganze Bild — Grasspitzen, nicht der Wagen). Zwischen zwei Läufen weicht die heutige L1 um 7,29 % ab, die L0 um
@@ -32,10 +25,15 @@ Wort des Schöpfers: „ja bauen, bei 98% wip sichern und übergabe“. Datei-Be
 
 ## Offen in Welle a (nicht begonnen)
 
-2. **Muster in der Phase der L0:** der Stoff webt (`stamm/studio-stoff.js` `_verbandStoff`) an der Welt (`positionWorld`/Steinmaß) — die
-   Steine der L0 legt `infill` in Feld-Koordinaten (Ursprung je Gefach, Lagen gestreckt: `rh = yl / nr`). Ursprung und Lage des Verbands
-   müssen aus demselben Anker kommen wie die Steine (z. B. die Zone trägt `aLage` = Lage in Steinen ab dem Feld-Ursprung, wie die
-   Fachwerk-Zeile `lage`).
+2. **Muster in der Phase der L0** (gelesen, nicht gebaut): der Weber `_verbandStoff` (`stamm/studio-stoff.js:141`) liest u, v an der WELT
+   (`dot(positionWorld, t) ÷ lM`), außer die Zeile trägt das Flag `lage` UND der Aufrufer reicht `ecke` (heute nur die Fachwerk-Zeile, im
+   Bau-Satz: `stamm/siedlung-satz.js` legt `aLage` in die vierten Stellen von Farbe und Glut). Die L0 legt ihre Steine im HAUS-Raster
+   (`infill`: `Math.floor((a0 - ox) / bw) · bw + ox` längs der Wand, Lagen je Gefach gestreckt `rh = yl / nr`) — ein Haus an anderer
+   Weltlage webt sein Muster also verschoben gegen seine Steine; die L0 selbst trägt Geometrie-Steine UND das gewebte Muster darüber.
+   Plan: `_steinLage` nach dem Vorbild `_wandLage` (`fachwerk-core.js:1939`) schreibt für die Rolle `backstein` je Ecke die Lage in Steinen
+   aus demselben Anker wie `infill` (u = a ÷ bw im Haus, v = Lage im Gefach), die Zeile `mauerwerk` bekommt `lage`, die Zonen in
+   `muster.js` erben die Lage ihrer Steine. VORHER prüfen: misst der Spike (`_foundryBuildGroup`) und zeichnet die Welt (Bau-Satz) dieselbe
+   Kette — reichen beide `ecke` an den Weber?
 3. **Relief als Ton:** Kanten unter `s` fallen (`muster.js` Schritt 3); ihr Mittel aus Eigenschatten und Kante soll als Ton in den Stoff
    der Zone (dasselbe Gesetz wie die Farbe). Differenz-Karte: Linien an Balken-Unterkanten und Traufe.
 4. **Draws falten in Opak und Glas** (Soll je Haus ≤ heute: 4): die Stufe trägt heute die Netze der L0 (Haus 12). Prüfen, ob der Bau-Satz
