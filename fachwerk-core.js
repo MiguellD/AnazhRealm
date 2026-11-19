@@ -228,6 +228,7 @@
   const mS = (ridgeY-eaveY)/(P.D/2);                                             // ░ EINE Dachneigung (Steigung) ░ Quelle für Hauptdach · beide Flügel · Notch · Fenster-Occlusion — ersetzt das alte 0.62-Duplikat
   const STACK_W = 0.84;                                                          // ░ EINE Kaminbreite ░ Stack-AABB UND fensterfreier Korridor leiten sich hieraus ab
   const W=P.W, Dp=P.D, doorW=P.doorW, doorH=P.doorH, doorX=0, ps=P.post/2;
+  const HOF_ARM_W=P.grundriss==='hof'?clamp(W*0.30,2.6,3.6):0;   // die Breite der Arme des Innenhofs (hof()) — die Fenster der Front lesen sie
   // ════ METAGESETZ · DACHUNTERKANTE: gibt die Höhe der HAUPTdach-Ziegelhaut an jedem (x,z). JEDE Vertikale (Treppengeländer, Ständer, …) duckt sich darunter — eine Quelle, kein Subsystem rät selbst. Außerhalb der Traufwände (|x|>W/2) → ∞ (Wing/Garage tragen eigene Dächer). ════
   const roofSkinY=(x,z)=>{ if(Math.abs(x)>W/2+0.01) return Infinity;
     const hz=Math.max(0.3,Dp/2), dY=ridgeY-eaveY, zP=ridgeY-dY*Math.min(1,Math.abs(z)/hz);          // Sattel-Ebene (Längsseiten)
@@ -553,6 +554,12 @@
   const GA=GAs[0]||null;                                                                            // Legacy-Alias
   GAs.forEach(A=>FOOTPRINT.push({x0:A.x0,x1:A.x1,z0:A.z0,z1:A.z1,h:A.yHigh+0.06,a:1}));           // JEDE Zelle wird Grundriss-Bürger
   GAs.forEach(A=>WALLS.forEach(w=>{ if(!w.horiz && w.fixed*A.sx>0 && w.win && w.c>A.z0-0.3 && w.c<A.z1+0.3 && w.yLo<A.yHigh-0.05){ w.type='wand'; w.win=null; } }));   // FENSTER-OKKLUSION je Zelle
+  // DIE ÖFFNUNG VOR DER QUERWAND DES HOF-ARMS (Bahn 1): die Arme des Innenhofs (hof(): Breite HOF_ARM_W an beiden Giebeln) stoßen mit
+  // ihrer Querwand (xWall bei zF = −Dp/2) in die Ebene der Hausfront — ein Fenster der Front, dessen Rahmen (wd/2 + 0,1, die Pfosten
+  // in fensterAt) in den Lauf eines Arms reicht, läge in dieser Wand: es fällt (die Front trägt ihre Fenster im Takt ihrer Felder,
+  // ein freies Feld daneben ist Pfeiler des Takts — die Öffnung rückt nicht, sie fällt wie vor dem Anbau).
+  if(HOF_ARM_W>0) WALLS.forEach(w=>{ if(!w.horiz || w.fixed>0 || !w.win) return; const r=w.win.wd/2+0.1, c=(w.lo+w.hi)/2;
+    if(c-r < -W/2+HOF_ARM_W || c+r > W/2-HOF_ARM_W){ w.type='pier'; w.win=null; } });
   const OCC=new Set(['S']); wings.forEach(w=>OCC.add(w.oz>0?'N':w.oz<0?'S':w.ox>0?'E':'W')); GAs.forEach(A=>OCC.add(A.sx>0?'E':'W'));   // BELEGUNGS-QUELLE (top-level): speist Balkontür-Wahl UND Turm-Standort
 
   // ── Balkontür-Seite erst HIER entscheiden (Flügel & Garage sind jetzt bekannt) ──
@@ -775,7 +782,12 @@
     if(P.treppgiebel && P.hip<0.5){ const sH=0.42, ledge=0.13;   // TREPPENGIEBEL (flämisch/schottisch/kapholländisch) — Kraehenstufen statt Schraege
       [1,-1].forEach(sx=>{ const xf=sx*(W/2), nS=Math.max(3,Math.floor((ridgeY-eaveY)/sH));
         for(let s=0;s<=nS;s++){ const y=eaveY+s*sH, fr=1-s/nS, zEx=eaveZ*fr;
-          beam(g,xf+sx*ledge*0.5,y,0,0.30+ledge,0.16,2*zEx+0.12,'stein');
+          // DIE ÖFFNUNG GEHT DURCH DEN TREPPENGIEBEL (Bahn 1): er IST hier die Giebelwand — sein Band spart das Giebelfenster aus (dessen
+          // Rahmen wz/2 + 0,1 breit, hy/2 + 0,1 hoch, wie fensterAt ihn setzt); die Enden des Bands sind die Laibung in seiner Dicke.
+          const gwT=(!wings.some(w=>(sx>0?w.side==='E':w.side==='W')) && gableWin && y+0.08>gableWin.cy-gableWin.hy/2-0.1 && y-0.08<gableWin.cy+gableWin.hy/2+0.1) ? gableWin : null;
+          if(gwT){ const a0=-zEx-0.06, a1=zEx+0.06, l=-gwT.wz/2-0.1, r=gwT.wz/2+0.1;
+            if(l-a0>0.02) beam(g,xf+sx*ledge*0.5,y,(a0+l)/2,0.30+ledge,0.16,l-a0,'stein'); if(a1-r>0.02) beam(g,xf+sx*ledge*0.5,y,(r+a1)/2,0.30+ledge,0.16,a1-r,'stein'); }
+          else beam(g,xf+sx*ledge*0.5,y,0,0.30+ledge,0.16,2*zEx+0.12,'stein');
           if(s<nS) [1,-1].forEach(zs=>beam(g,xf+sx*ledge*0.5,y+sH/2,zs*zEx,0.30,sH,0.34,'stein')); } }); }
     return g; }
 
@@ -1529,7 +1541,7 @@
     baum(HX-2.6,HZ-2.6); baum(-HX+2.6,HZ-3.6); baum(-HX+3.0,-HZ+3.2);                                     // Bäume an den hinteren Ecken
     return g; }
   function hof(){ const g=grp(); if(P.grundriss!=='hof') return g;   // INNENHOF (siheyuan/riad/cour d'honneur) — ADDITIV: zwei Arme + Torriegel um den offenen Hof, der Hof ist die Luft im Ring
-    const armW=clamp(W*0.30,2.6,3.6), courtD=clamp(W*1.0,5,9), gateW=2.8, zF=-Dp/2, zC=zF-courtD;
+    const armW=HOF_ARM_W, courtD=clamp(W*1.0,5,9), gateW=2.8, zF=-Dp/2, zC=zF-courtD;
     const wH=Math.min(eaveY-baseY-0.5, P.egH*0.92), wr=(P.stil==='stein'||P.stil==='klinker'||P.stil==='modern')?'putz':((P.stil==='huette'||P.stil==='stroh')?'holz':'gefach');
     // HOFMAUER-SOLIDS (Welle L, additiv — kein beam ändert sich, Kollision == Optik): Boden, Querwände mit Tor-Lücke und Sturz,
     // Lochwände der Arme, Pflaster und Brunnen tragen ihre Solids wie jede Wand des Hauses (vorher lief der Körper durch die

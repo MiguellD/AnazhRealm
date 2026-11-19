@@ -818,7 +818,20 @@ function fluegelStufe() {
     const rot = [];
     const g0 = FC.buildInstance("alemannisch", 1, 0);
     const mut = fluegelProbe(g0, "alemannisch", 1, 0.05);
+    // die Mutante „Wand vor der Öffnung": zwei dünne Wände (2 cm, quer zueinander) durch die Mitte des ersten Blatts — die eine steht
+    // quer zu ihm, zu wie offen: die Probe nennt es (eine Fläche, die das Blatt ganz umschließt, sähe sie nicht — sie schneidet Flächen)
+    const b0 = g0.children.find((c) => c.userData && c.userData.fenster);
+    const wand = new T.Group();
+    wand.add(new T.Mesh(new T.BoxGeometry(0.02, 2, 2), new T.MeshBasicMaterial()), new T.Mesh(new T.BoxGeometry(2, 2, 0.02), new T.MeshBasicMaterial()));
+    const bb0 = new T.Box3(), bas = new T.Matrix4().fromArray(b0.userData.fenster.basis);
+    b0.updateMatrixWorld(true);
+    b0.traverse((o) => { if (o.isMesh) { o.geometry.computeBoundingBox(); bb0.union(o.geometry.boundingBox.clone().applyMatrix4(bas.clone().multiply(o.matrixWorld))); } }); // prettier-ignore
+    bb0.getCenter(wand.position);
+    g0.add(wand);
+    const mut2 = fluegelProbe(g0, "alemannisch", 1);
     entsorge(g0);
+    if (!(mut2.offen.length || mut2.zu.length)) rot.push("SELBSTTEST F: eine Wand vor der Öffnung ist nicht rot");
+    console.log(`  Selbsttest F (eine Wand vor dem ersten Blatt): erkannt ${mut2.offen.length + mut2.zu.length} — ${mut2.zu[0] || mut2.offen[0] || "keins"}`);
     if (!(mut.n > 0 && mut.zu.length === mut.n))
         rot.push(`SELBSTTEST F: ein Flügel 5 cm in der Wand ist nicht rot (zu ${mut.zu.length}, offen ${mut.offen.length} von ${mut.n})`);
     console.log(`  Selbsttest F (alemannisch/s1, jedes Blatt zu 5 cm in der Wand): erkannt ${mut.zu.length} von ${mut.n} — ${mut.zu[0] || "keins"}`);
