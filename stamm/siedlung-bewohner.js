@@ -1879,8 +1879,8 @@ class AnazhRealm_siedlung_bewohner {
                     });
                     [b.armeOffen, armeFrei] = [false, false];
                 }
-                if (istNah !== !!b.nah) {
-                    b.nah = istNah;
+                if (istNah !== !!b.nah || g.visible !== istNah) {
+                    b.nah = istNah; // der Leib zeigt, was die Wahl sagt — auch wer nach dem Sprung der Uhr (nah: false) noch sichtbar stand
                     g.visible = istNah;
                     anders = true;
                 }
