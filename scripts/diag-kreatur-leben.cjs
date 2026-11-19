@@ -1501,7 +1501,7 @@ async function lebenBuehnen() {
     //   G3  zwei Fäden (der zweite frisch geboren: Feld und Lauf ab der Saat) geben denselben Stand, Byte für Byte; EIN Akt
     //       „aus“ am Takt 100 ändert ihn; derselbe Akt wieder gibt denselben
     //   G4  der Stand am Takt 100 reist heraus, herein und rechnet bis 160 weiter = der Lauf geradeaus, Byte für Byte
-    // Täter (alle in EINEM Lauf, je einer an seiner Sicht): gau-feld (der Spiegel des Substrats läuft weg) · gau-akt (der Wirt
+    // Täter (alle in EINEM Lauf, je einer an seiner Sicht): gau-feld (ein Formel-Zwilling: die Änderung am Kern erreicht nur die Seite) · gau-akt (der Wirt
     // verliert den Akt) · gau-stand (der Stand verliert die Fraß-Schicht auf der Reise) · gau-reihe (das Leben des Stands
     // verliert die Akte der Gaue). `opts.gau.jahre` (nur `--gau`): das
     // Aufholen eines Gaus ohne Akte über n Jahre, im Faden gemessen (G5); `haupt`: die längste Arbeit des Haupt-Fadens (G2).
@@ -1571,10 +1571,81 @@ async function lebenBuehnen() {
             kacheln: zeit.kacheln,
             msJeJahr: rund((zeit.rechenMs / Math.max(1, zeit.takte)) * 26.25, 1),
         };
-        if (TT.includes("gau-feld")) {
-            const lebendig = (m) => void (m.lebendig = Object.assign({}, m.lebendig, { lambdaLebendig: 210 }));
-            const b = await unter(lebendig, () => frage(1));
-            z.sicht["gau-feld"] = { wolf: [b.jaeger], reh: [b.beute], feld: Object.assign({}, b.feld, { kSumme: rund(b.feld.kSumme, 0) }) };
+        // Z — EINE QUELLE (C2a2): das Feld des Fadens ist das des Stamms, Zelle für Zelle (Substrat der Äsung: gelaende-core
+        // `weltFeld`; Lebensraum aus der Boden-Klasse: tetrapoda `bodenKlasseAm`), und EINE Änderung am Quelltext des Kerns —
+        // dem, den Seite UND Faden laden — bewegt beide, und sie bleiben gleich. Fährt irgendwo ein Formel-Zwilling, bewegt sich
+        // nur eine Seite. Gelesen an den 36 Regionen um den Ursprung (576 Zellen).
+        {
+            const [zn, seite] = [A.BESTAND_REGION.zellen, r._bestandSeite()];
+            const orte = [];
+            for (let iz = -3; iz < 3; iz++) for (let ix = -3; ix < 3; ix++) orte.push([ix, iz, r._gauOrt(ix, iz).revier]);
+            const stamm = () =>
+                orte.map(([ix, iz]) => {
+                    const [LG, lr, sub] = [A._lebensraumGesetz(), [], []];
+                    for (let a = 0; a < zn; a++)
+                        for (let b = 0; b < zn; b++) {
+                            const [x, zz] = [(ix + (a + 0.5) / zn) * seite, (iz + (b + 0.5) / zn) * seite];
+                            const v = LG.lebensraum(A.GAU.beute, r._bodenKlasseAt(x, zz), LG.L);
+                            lr.push(v);
+                            sub.push(v > 0 ? r.worldFieldAt(x, zz).lebendig : 0);
+                        }
+                    return { lr, s: sub };
+                });
+            const imFaden = async () => (await frage(0, [], { lesen: orte.map((o) => o[2]) })).reviere.map((R) => ({ lr: R.lr, s: R.s }));
+            const eins = (p, q) => JSON.stringify(p) === JSON.stringify(q);
+            const frisch = () => {
+                if (r._gauFadenStand) r._gauFadenStand.worker.terminate();
+                r._gauFadenStand = null;
+            };
+            const [s0, f0] = [stamm(), await imFaden()];
+            // der Kern mit EINER geänderten Stelle: sein Quelltext, wie ihn der Faden lädt (die Tafel der Quelle im Rumpf des
+            // Fadens), einmal ersetzt — die Seite wertet denselben Text aus, der Faden entsteht aus ihm
+            const mutant = async ([wer, datei, ns, von, zu], nurSeite) => {
+                const Q = r._quelleStand();
+                await r._fadenQuelle();
+                const FQ = A.FADEN_QUELLE;
+                const u = (p) => new URL(p + "?v=" + A.VERSION, location.href).href;
+                const text = await (await fetch(u(datei))).text();
+                if (text.split(von).length !== 2) return { wer, fehler: "der Kern " + datei + " trägt die Formel nicht" };
+                const neu = text.replace(von, () => zu);
+                // der Rumpf des Fadens, wie ihn die Quelle baut (`_quelleFaden`): die Tafel der Kerne vor dem Faden — der eine
+                // geänderte Kern als Blob, jeder andere an seiner Adresse
+                const blob = URL.createObjectURL(new Blob([neu], { type: "text/javascript" }));
+                const adr = (p) => (p === datei ? blob : u(p));
+                const tafel = { kerne: FQ.kerne.map(adr), spaet: Object.fromEntries(Object.entries(FQ.spaet).map(([k, p]) => [k, adr(p)])) };
+                const rumpf = await (await fetch(u(FQ.faden))).text();
+                const [altUrl, altKern] = [Q.url, globalThis[ns]];
+                await new Promise((ok, nein) => {
+                    const sk = document.createElement("script");
+                    [sk.src, sk.onload, sk.onerror] = [blob, ok, () => nein(new Error("der geänderte Kern " + datei + " lädt nicht"))];
+                    document.head.appendChild(sk);
+                });
+                A._lebensraumMemo = null;
+                let s1, f1;
+                try {
+                    s1 = stamm();
+                    if (!nurSeite) Q.url = URL.createObjectURL(new Blob(["self.__anazhQuelle = " + JSON.stringify(tafel) + ";", rumpf], { type: "text/javascript" }));
+                    frisch();
+                    f1 = await imFaden();
+                } finally {
+                    [Q.url, globalThis[ns], A._lebensraumMemo] = [altUrl, altKern, null];
+                    frisch();
+                }
+                const anders = (p, q) => p.reduce((n, R, i) => n + R.lr.filter((v, j) => v !== q[i].lr[j] || R.s[j] !== q[i].s[j]).length, 0);
+                return { wer, stamm: anders(s1, s0), faden: anders(f1, f0), gleich: eins(s1, f1) };
+            };
+            const M = [
+                ["Substrat (gelaende-core weltFeld)", "gelaende-core.js", "__gelaendeCore", "const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));", "const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2.5));"],
+                ["Boden-Klasse (tetrapoda bodenKlasseAm)", "tetrapoda-core.js", "__tetrapodaCore", "welt.hang(x, z) || 0, welt.bestand(x, z), L);", "welt.hang(x, z) || 0, welt.bestand(x, z) * 0.5, L);"],
+            ];
+            z.quelle = {
+                zellen: s0.length * zn * zn,
+                land: s0.reduce((n, R) => n + R.lr.filter((v) => v > 0).length, 0),
+                gleich: eins(s0, f0),
+                mut: [await mutant(M[0]), await mutant(M[1])],
+            };
+            // Täter gau-feld: der Zwilling — die Änderung erreicht nur die Seite, der Faden rechnet seine eigene Formel
+            if (TT.includes("gau-feld")) z.sicht["gau-feld"] = { quelle: Object.assign({}, z.quelle, { mut: [await mutant(M[0], true)] }) };
         }
         // DIE LESE-NAHT am Takt T1: die Reviere der mittleren Zeile — Köpfe, Tiere, Fraß; der erste Kopf der Beute fällt im Akt
         const n = A.GAU.n;
@@ -1687,6 +1758,16 @@ function lebenUrteil(name, z, soll) {
             z.wolf.join(" ") === B.wolf.join(" ") && z.reh.join(" ") === B.reh.join(" ") && feld(z.feld) === feld(B.feld),
             `der Gau im Faden verlässt den B4-Lauf: Wolf ${z.wolf.join(" ")} (Soll ${B.wolf.join(" ")}) · Beute ${z.reh.join(" ")} (Soll ${B.reh.join(" ")}) · ${feld(z.feld)} (Soll ${feld(B.feld)})`
         );
+        const Q = z.quelle;
+        soll(
+            Q.gleich && Q.zellen === 576 && Q.land > 0,
+            `das Feld des Gaus im Faden ist nicht das des Stamms: ${Q.zellen} Zellen um den Ursprung (Soll 576), davon Land ${Q.land}, Zelle für Zelle gleich ${Q.gleich}`
+        );
+        for (const m of Q.mut)
+            soll(
+                !m.fehler && m.stamm > 0 && m.faden > 0 && m.gleich,
+                `EINE Änderung am Kern bewegt Stamm und Gau-Feld nicht gleich — ${m.wer}: ${m.fehler || `Stamm ${m.stamm} Zellen anders · Faden ${m.faden} · danach gleich ${m.gleich}`}`
+            );
         const L = z.lesen;
         soll(
             L.reviere === 48 && L.beute > 0 && L.treu && L.abgeaest > 0,
@@ -1979,7 +2060,7 @@ module.exports = {
     EIN_LAUF: ["gau"],
     TAETER: {
         gau: [
-            ["gau-feld", /der Gau im Faden verlässt den B4-Lauf/],
+            ["gau-feld", /EINE Änderung am Kern bewegt Stamm und Gau-Feld nicht gleich/],
             ["gau-akt", /der Akt ändert den Gau nicht/],
             ["gau-stand", /der Stand des Gaus reist nicht/],
             ["gau-reihe", /der Stand der Seite trägt die Akte des Gaus nicht/],

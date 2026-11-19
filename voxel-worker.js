@@ -450,14 +450,14 @@ function nachricht(e) {
 // Der Bestand der Gattungen unter dem Gesetz der Zeit und der Jagd (leben-core `bestand`: Beute und Jäger) lebt je GAU — n × n
 // Regionen an Welt-Koordinaten — in DIESEM Faden (der Gau-Faden des Wirts, `_gauFrage`: ein schlanker Faden aus der EINEN
 // Quelle, sein Stand trägt nur die Saat). Ein Gau ist eine Funktion von (Samen der Welt, Gau, Takt, Akte der Seite):
-//   das FELD  je Region zn × zn Zellen, je Zelle die Boden-Klasse (tetrapoda `bodenKlasse` aus Fluss-Rand, Hang der Saat und
-//             Bestandsdichte des Walds — dieselben Rufe wie `_bodenKlasseAt` des Stamms) → der Lebensraum der Beute (LR) und das
-//             Substrat der Äsung (S, Spiegel von `worldFieldAt().lebendig`; die Linse `--gau` hält ihn bit-gleich am Stamm).
+//   das FELD  je Region zn × zn Zellen, je Zelle die Boden-Klasse (tetrapoda `bodenKlasseAm` aus Fluss-Rand, Hang der Saat und
+//             Bestandsdichte des Walds — die EINE Formel, die `_bodenKlasseAt` des Stamms ruft) → der Lebensraum der Beute (LR)
+//             und das Substrat der Äsung (S: gelaende-core `weltFeld`, die Stimme „lebendig“ — die Quelle von `worldFieldAt`).
 //             EINMAL je Gau gebaut; die Hydro-Kacheln über dem Gau rechnet der Faden selbst und lässt sie danach fallen.
 //   der STAND leben-core `gauAnfang` am Takt 0 (voller Gründer-Bestand), `gauBis` bis zum Takt des Auftrags mit den Akten; ein
 //             Stand, der hereinreist (`stand`, Laden oder Mitspieler), ersetzt ihn. Ein Auftrag VOR dem Stand des Gaus oder mit
 //             anderen Akten als den gewirkten rechnet ab Takt 0 neu (die Antwort nennt es: `zeit.abNull`).
-// Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, lebendig, takt, akte, lesen?, packen?, stand? }
+// Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, takt, akte, lesen?, packen?, stand? }
 // Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, stand? }
 // Ein Gau, den die Seite nicht mehr hält, geht (`gau-geht`: Feld und Lauf — sein Stand lebt als Bytes bei der Seite).
 const gaue = new Map();
@@ -483,26 +483,6 @@ function gauKern(wirt) {
     }
     return K;
 }
-// Spiegel von `worldFieldAt(x, z).lebendig` des Stamms (das Substrat der Äsung, `_kreaturNahrung` ohne Overlay): die Stimme
-// „lebendig“ am Samen, ab Genese 3 mit Domain-Warp und eigener Wellenlänge (`lebendig`: die Zahlen von FIELD_CHARACTER).
-let lebendigRausch = null;
-function lebenSubstrat(x, z, FC) {
-    const seed = state.seed || "anazh-realm-seed";
-    if (!lebendigRausch || lebendigRausch.seed !== seed)
-        lebendigRausch = { seed, n: new SimplexNoise(seed + "-veg-lebendig"), w: new SimplexNoise(seed + "-veg-warp") };
-    const { n, w } = lebendigRausch;
-    const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
-    if (state.genVersion >= 3) {
-        const sL = 1 / FC.lambdaLebendig;
-        const wpX = w.noise2D(x * FC.warpScale, z * FC.warpScale) * FC.warpAmp;
-        const wpZ = w.noise2D(x * FC.warpScale + 51.7, z * FC.warpScale - 23.1) * FC.warpAmp;
-        const wx = x + wpX;
-        const wz = z + wpZ;
-        return n01(n.noise2D(wx * sL, wz * sL));
-    }
-    const s = 0.005;
-    return n01(n.noise2D(x * s, z * s));
-}
 // DAS FELD EINES GAUS aus der Saat (EINMAL je Gau und Feld-Gesetz der Welt, `gauFelder`): S und LR je Zelle
 function gauFeldBauen(msg, zeit) {
     const { x0, z0, n, seite, zn } = msg;
@@ -516,7 +496,13 @@ function gauFeldBauen(msg, zeit) {
     const kachel = (v) => Math.floor((v + half) / size);
     const [Z, N] = [zn * zn, n * n];
     const [S, LR] = [new Float64Array(N * Z), new Float64Array(N * Z)];
+    // die Leser der Saat für die Boden-Klasse (tetrapoda `bodenKlasseAm`), wie der Stamm sie reicht (`_bodenKlasseAt`)
     const aus = {};
+    const welt = {
+        flussRand: (x, z) => G.flussRand(state, x, z),
+        hang: (x, z) => (G.hoehe(state, x, z, true, aus), aus.hang),
+        bestand: (x, z) => self.__phytoCore.forestStandDensity(forestFbm, x, z),
+    };
     const k0 = performance.now();
     hydroRegion("heim", null);
     zeit.kacheln++;
@@ -544,18 +530,11 @@ function gauFeldBauen(msg, zeit) {
                     for (let b = 0; b < zn; b++) {
                         const [x, z] = [(ix + (a + 0.5) / zn) * seite, (iz + (b + 0.5) / zn) * seite];
                         if (kachel(x) !== rx || kachel(z) !== rz) continue;
-                        const h = G.flussRand(state, x, z);
-                        G.hoehe(state, x, z, true, aus);
-                        const sd = self.__phytoCore.forestStandDensity(forestFbm, x, z);
-                        const lr = T.lebensraum(
-                            msg.beute,
-                            T.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, sd, L),
-                            L
-                        );
+                        const lr = T.lebensraum(msg.beute, T.bodenKlasseAm(welt, x, z, L), L);
                         if (!(lr > 0)) continue;
                         const j = i * Z + a * zn + b;
                         LR[j] = lr;
-                        S[j] = lebenSubstrat(x, z, msg.lebendig);
+                        S[j] = worldFieldAt(x, z).lebendig;
                     }
             }
         }
@@ -587,7 +566,7 @@ function gauAuftrag(msg) {
     if (gauWelt !== welt) (gaue.clear(), gauFelder.clear(), (gauWelt = welt));
     const K = gauKern(msg.wirt);
     const zeit = { neu: false, kacheln: 0, hydroMs: 0, feldMs: 0, abNull: false, takte: 0, rechenMs: 0, packMs: 0 };
-    const feldKey = JSON.stringify([msg.gx, msg.gz, msg.x0, msg.z0, msg.n, msg.seite, msg.zn, msg.beute, msg.lebendig]);
+    const feldKey = JSON.stringify([msg.gx, msg.gz, msg.x0, msg.z0, msg.n, msg.seite, msg.zn, msg.beute]);
     let roh = gauFelder.get(feldKey);
     if (!roh) {
         const f0 = performance.now();
@@ -635,6 +614,9 @@ function gauAuftrag(msg) {
             koepfe: K.koepfe(z, i),
             tiere: K.tiereIn(z, i),
             frass: Array.from({ length: e.F.Z }, (_, c) => K.frassAm(e.g, i, c)),
+            // das Feld des Reviers aus der Saat: je Zelle das Substrat der Äsung und der Lebensraum der Beute
+            s: Array.from(e.F.S.subarray(i * e.F.Z, (i + 1) * e.F.Z)),
+            lr: Array.from(e.F.LR.subarray(i * e.F.Z, (i + 1) * e.F.Z)),
         }));
     if (msg.packen) {
         const p0 = performance.now();
@@ -2197,65 +2179,13 @@ function voxelChunkConfig(lod) {
     return { dim: 24, step: 1.8, span: 43.2, dimY: 232, floorDrop: 135, lod: 0 };
 }
 
-// Lazy-Init der 5 worldField-Noises (separate Seeds für unkorrelierte Kanäle).
-// Gleiche Konstruktion wie `worldFieldAt` im Stamm — Determinismus
-// ist seed-abhängig, alle 5 leben vom worldMeta.seed.
+// DAS WELT-FELD an (x, z) am Samen dieses Fadens: die Ströme und die Formel sind Kern (gelaende-core `weltFeldRausch` ·
+// `weltFeld` — dieselben, die der Stamm ruft, `worldFieldAt`).
 let worldField = null;
-function ensureWorldField() {
-    if (worldField && worldField.seed === state.seed) return worldField;
-    if (!state.seed) return null;
-    worldField = {
-        seed: state.seed,
-        lebendigNoise: new SimplexNoise(state.seed + "-veg-lebendig"),
-        dichteNoise: new SimplexNoise(state.seed + "-veg-dichte"),
-        glutNoise: new SimplexNoise(state.seed + "-veg-glut"),
-        magieNoise: new SimplexNoise(state.seed + "-veg-magie"),
-        rngNoise: new SimplexNoise(state.seed + "-veg-rng"),
-        // V18.204 — Γ3 Domain-Warp Worker-Mirror.
-        warpNoise: new SimplexNoise(state.seed + "-veg-warp"),
-    };
-    return worldField;
-}
-
-// V18.203 — Γ3 FREQUENZ-FÄCHER Worker-Mirror (V17.100-Lehre: Konstanten hier
-// hardkodiert, bit-Vertrag mit Main AnazhRealm.FIELD_CHARACTER; bei
-// Änderung beide mit-ziehen). Aktiv nur bei genVersion >= 3 — Legacy bleibt
-// bit-identisch.
-const FC_LAMBDA_LEBENDIG = 200;
-const FC_LAMBDA_DICHTE = 340;
-const FC_LAMBDA_GLUT = 520;
-const FC_LAMBDA_MAGIE = 160;
-// V18.204 — Γ3 Domain-Warp Worker-Mirror Konstanten.
-const FC_WARP_AMP = 40;
-const FC_WARP_SCALE = 1 / 600;
 function worldFieldAt(x, z) {
-    const f = ensureWorldField();
-    if (!f) return { lebendig: 0, dichte: 0, glut: 0, magieleitung: 0 };
-    const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
-    if (state.genVersion >= 3) {
-        const sL = 1 / FC_LAMBDA_LEBENDIG;
-        const sD = 1 / FC_LAMBDA_DICHTE;
-        const sG = 1 / FC_LAMBDA_GLUT;
-        const sM = 1 / FC_LAMBDA_MAGIE;
-        // V18.204 — Γ3 DOMAIN-WARP Worker-Mirror, bit-identisch zum Main.
-        const wpX = f.warpNoise.noise2D(x * FC_WARP_SCALE, z * FC_WARP_SCALE) * FC_WARP_AMP;
-        const wpZ = f.warpNoise.noise2D(x * FC_WARP_SCALE + 51.7, z * FC_WARP_SCALE - 23.1) * FC_WARP_AMP;
-        const wx = x + wpX;
-        const wz = z + wpZ;
-        return {
-            lebendig: n01(f.lebendigNoise.noise2D(wx * sL, wz * sL)),
-            dichte: n01(f.dichteNoise.noise2D(wx * sD + 100, wz * sD - 200)),
-            glut: n01(f.glutNoise.noise2D(wx * sG + 500, wz * sG + 700)),
-            magieleitung: n01(f.magieNoise.noise2D(wx * sM - 333, wz * sM + 999)),
-        };
-    }
-    const s = 0.005;
-    return {
-        lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
-        dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
-        glut: n01(f.glutNoise.noise2D(x * s + 500, z * s + 700)),
-        magieleitung: n01(f.magieNoise.noise2D(x * s - 333, z * s + 999)),
-    };
+    if (!state.seed) return { lebendig: 0, dichte: 0, glut: 0, magieleitung: 0 };
+    if (!worldField || worldField.seed !== state.seed) worldField = G.weltFeldRausch(SimplexNoise, state.seed);
+    return G.weltFeld(worldField, state.genVersion, x, z);
 }
 
 // Der Fluss an (x, z), der Spiegel quer, der nächste Fluss-Rand, der Bezug der Ufer-Bänder und der Spiegel des Wassers: das

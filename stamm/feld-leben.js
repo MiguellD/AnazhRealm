@@ -1792,54 +1792,12 @@ class AnazhRealm_feld_leben {
     // dem Noise. state.worldMeta.seed fließt in die Noise → jede Welt eigen, Multi-User-deterministisch.
     worldFieldAt(x, z) {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        // Lazy-Init pro Welt — bei Welt-Wechsel automatisch neu, weil seed
-        // anders ist. state.worldField hält den Cache.
-        if (!this.state.worldField || this.state.worldField.seed !== seed) {
-            this.state.worldField = {
-                seed,
-                lebendigNoise: new SimplexNoise(seed + "-veg-lebendig"),
-                dichteNoise: new SimplexNoise(seed + "-veg-dichte"),
-                glutNoise: new SimplexNoise(seed + "-veg-glut"),
-                magieNoise: new SimplexNoise(seed + "-veg-magie"),
-                // Sampling-RNG (deterministisch pro Position) für Spawn-Probe.
-                rngNoise: new SimplexNoise(seed + "-veg-rng"),
-                // V18.204 — Γ3 Domain-Warp-Noise. Eigener Stream, gen≥3-Gate.
-                warpNoise: new SimplexNoise(seed + "-veg-warp"),
-            };
-        }
-        const f = this.state.worldField;
-        const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
-        // FREQUENZ-FÄCHER: ab genVersion >= 3 hat jede Welt-Stimme ihre eigene Wellenlänge (lebendig 200,
-        // dichte 340, glut 520, magie 160 m); gen < 3 bleibt bit-identisch (s=0.005 = λ200). Die OFFSETS je
-        // Achse bleiben (Dekorrelation).
-        if (this._genVersion() >= 3) {
-            const FC = AnazhRealm.FIELD_CHARACTER;
-            const sL = 1 / FC.lambdaLebendig;
-            const sD = 1 / FC.lambdaDichte;
-            const sG = 1 / FC.lambdaGlut;
-            const sM = 1 / FC.lambdaMagieleitung;
-            // DOMAIN-WARP: vor den vier Noise-Reads wird die Sample-Koordinate per Zwei-Noise-Vektor verschoben —
-            // langsam (λ~600 m, FC.warpScale), Amplitude FC.warpAmp m; eigener Stream f.warpNoise.
-            const wpX = f.warpNoise.noise2D(x * FC.warpScale, z * FC.warpScale) * FC.warpAmp;
-            const wpZ = f.warpNoise.noise2D(x * FC.warpScale + 51.7, z * FC.warpScale - 23.1) * FC.warpAmp;
-            const wx = x + wpX;
-            const wz = z + wpZ;
-            return {
-                lebendig: n01(f.lebendigNoise.noise2D(wx * sL, wz * sL)),
-                dichte: n01(f.dichteNoise.noise2D(wx * sD + 100, wz * sD - 200)),
-                glut: n01(f.glutNoise.noise2D(wx * sG + 500, wz * sG + 700)),
-                magieleitung: n01(f.magieNoise.noise2D(wx * sM - 333, wz * sM + 999)),
-            };
-        }
-        // Legacy-Pfad: alle vier Stimmen auf s=0.005 (λ~200 m). Bit-identisch
-        // zu Pre-V18.203 für alte Welten.
-        const s = 0.005;
-        return {
-            lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
-            dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
-            glut: n01(f.glutNoise.noise2D(x * s + 500, z * s + 700)),
-            magieleitung: n01(f.magieNoise.noise2D(x * s - 333, z * s + 999)),
-        };
+        // die Ströme je Welt (`state.worldField`; ein anderer Samen baut sie neu) und die Formel sind Kern: gelaende-core
+        // `weltFeldRausch` · `weltFeld` — dieselbe Quelle liest jeder Faden (voxel-worker `worldFieldAt`, das Feld des Gaus)
+        const G = globalThis.__gelaendeCore;
+        if (!this.state.worldField || this.state.worldField.seed !== seed)
+            this.state.worldField = G.weltFeldRausch(SimplexNoise, seed);
+        return G.weltFeld(this.state.worldField, this._genVersion(), x, z);
     }
 
     // === Das lebendige Feld — die LESE-Seite (docs/das-lebendige-feld.md) ===
@@ -3012,21 +2970,9 @@ AnazhRealm.KIND_CHARAKTER = Object.freeze({
     }),
 });
 
-// FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520,
-// magie λ160 m) — der Welt-Charakter emergiert aus dem Überlagerungs-Muster (Ecotone an
-// argmax-Grenzen + AFFINITY_FLOOR-Linie). Nur bei gen >= 3 aktiv (alte Welten bit-identisch).
-AnazhRealm.FIELD_CHARACTER = Object.freeze({
-    // Wellenlängen (m). Erst-Wurf aus genese-plan §Γ3.
-    lambdaLebendig: 200,
-    lambdaDichte: 340,
-    lambdaGlut: 520,
-    lambdaMagieleitung: 160,
-    // Domain-Warp-Amplitude (m): verschiebt die Sample-Koordinaten VOR den Stimmen-Reads → die Stimmen
-    // mäandern statt parallel zu liegen. Eigener Stream `seed + "-veg-warp"` (re-rollt keinen anderen);
-    // λ~600 m, langsamer als die Stimmen, sonst überdeckt der Warp ihre Struktur.
-    warpAmp: 40,
-    warpScale: 1 / 600,
-});
+// FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520, magie λ160 m) und der
+// Domain-Warp verschiebt die Lage vor dem Lesen — die Zahlen sind Kern (gelaende-core `WELT_FELD`, die Formel `weltFeld`).
+AnazhRealm.FIELD_CHARACTER = globalThis.__gelaendeCore.WELT_FELD;
 // Die Namen der Aktionen: je Aktion ihr Schlüssel der Sprach-Tafel (`taste.*`, der Leser ruft `_t`) — die Tasten-Liste, die
 // Hilfe und die Ankunfts-Linse lesen dieselbe Zeile.
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({

@@ -246,7 +246,6 @@ class AnazhRealm_kreatur_erbe {
     // → das Versprechen von { gx, gz, takt, beute, jaeger, rudel, feld, zeit, reviere?, stand? }.
     _gauAuftrag(gx, gz, takt, akte, opt = {}) {
         const G = AnazhRealm.GAU;
-        const FC = AnazhRealm.FIELD_CHARACTER;
         const msg = {
             type: "gau",
             samen: this._gelaende().seed,
@@ -260,7 +259,6 @@ class AnazhRealm_kreatur_erbe {
             beute: G.beute,
             saat: opt.saat === undefined ? this._gauSaat(gx, gz) : opt.saat,
             wirt: this._gauWirt(opt.kg),
-            lebendig: { lambdaLebendig: FC.lambdaLebendig, warpAmp: FC.warpAmp, warpScale: FC.warpScale },
             takt,
             akte: akte || [],
         };

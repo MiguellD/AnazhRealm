@@ -1092,6 +1092,9 @@ die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel`, de
 Kern-Probe (`gate:worker-dichte --kern`) mutiert sie. Die Felder selbst: der Überlauf `stauUeberlauf`, der Spiegel am Werk
 `stauWerkY` (die Wahl der Werke im Stamm) und die Felder der Werke `stauFelder` — jeder Faden rechnet sie, nie der Haupt-Faden
 (`gate:worker-dichte --faden` zählt sie).
+DAS WELT-FELD (Leben C2a2): die vier Stimmen der Saat `weltFeld` an den Strömen `weltFeldRausch` mit den Zahlen `WELT_FELD`
+(Wellenlängen, Domain-Warp) — die Stimme „lebendig“ ist das Substrat der Äsung; Stamm (`worldFieldAt`), jeder Faden und das
+Feld des Gaus lesen sie hier, die Probe `gau` in `gate:kreatur-takt` ändert die Formel EINMAL und sieht Stamm und Faden gleich gehen.
 DAS ORT-GESETZ DER HEIMAT `ortGesetz` (Reise): EINE Tafel dessen, was am Ort dieser Welt gilt — die Kühlung je Meter, das Meer
 unter der Basis, die Regler der Landform mit ihren Grenzen, das Klima von heute samt der Abflussspende im Jahr der Tafel —, in
 der Form, die der Planet als sein Ort-Gesetz liest; der Planet-Faden und der Richter des Planeten lesen sie, keiner baut sie nach.

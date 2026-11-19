@@ -2082,6 +2082,14 @@
         if (hangTan >= L.hangTan) return "hang";
         return sd >= L.waldSd ? "wald" : sd >= L.randSd ? "waldrand" : "wiese";
     }
+    // DIE BODEN-KLASSE AM ORT (Leben C2a2: EINE Quelle fuer Stamm und Gau-Faden — bis hier setzte jeder der beiden die drei
+    // Leser selbst zusammen). `welt` reicht die Leser der Saat: flussRand(x, z) -> { dist, halfW } (der naechste Fluss:
+    // Abstand zur Mittellinie und Halbbreite, m), hang(x, z) -> tan des Gelaendes der Saat, bestand(x, z) -> die
+    // Bestandsdichte des Walds (0..1). Der Rand des Flusses liegt mindestens 1 m neben seiner Mitte.
+    function bodenKlasseAm(welt, x, z, L) {
+        var h = welt.flussRand(x, z);
+        return bodenKlasse(h.dist - Math.max(1, h.halfW), welt.hang(x, z) || 0, welt.bestand(x, z), L);
+    }
     function lebensraum(gattung, klasse, L) {
         var g = L.gattung[gattung];
         return g && g[klasse] ? g[klasse] * (L.haeufigkeit[gattung] || 0) : 0;
@@ -5276,6 +5284,7 @@
         wundTempo: wundTempo,
         LEBENSRAUM_GESETZ: LEBENSRAUM_GESETZ,
         bodenKlasse: bodenKlasse,
+        bodenKlasseAm: bodenKlasseAm,
         lebensraum: lebensraum,
         lebensraumWahl: lebensraumWahl,
         DURST_GESETZ: DURST_GESETZ,

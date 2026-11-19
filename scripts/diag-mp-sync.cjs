@@ -1173,12 +1173,14 @@ hauptLauf(async () => {
                 for (let i = 2; i < Z; i += 4)
                     for (let j = 2; j < Z; j += 4)
                         P.push([(Math.floor(key / 65536) - 32768) * Z + i, ((key % 65536) - 32768) * Z + j]);
-            const alt = (x, z) => {
-                const h = r._hydroDistAt(x, z);
-                const aus = {};
-                r._terrainMacroSurfaceY(x, z, true, aus);
-                return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, r._forestStandDensity(x, z), LG.L);
+            // der alte Leser: die EINE Formel des Kerns (tetrapoda `bodenKlasseAm`) am Hang ÜBER dem Erdbau
+            const aus = {};
+            const altWelt = {
+                flussRand: (x, z) => r._hydroDistAt(x, z),
+                hang: (x, z) => (r._terrainMacroSurfaceY(x, z, true, aus), aus.hang),
+                bestand: (x, z) => r._forestStandDensity(x, z),
             };
+            const alt = (x, z) => LG.bodenKlasseAm(altWelt, x, z, LG.L);
             const lies = () => [P.map(([x, z]) => r._bodenKlasseAt(x, z)), P.map(([x, z]) => alt(x, z))];
             const mit = lies();
             const roh = wm.erdbau;

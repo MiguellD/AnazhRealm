@@ -7762,7 +7762,72 @@
         return level;
     }
 
+    // ── DAS WELT-FELD (Leben C2a2: EINE Quelle für Stamm und jeden Faden) ───────────────────────────────────────────────────
+    // Vier Stimmen der Saat in der Sprache der Stoff-Tags (lebendig · dichte · glut · magieleitung, je 0…1): keine Biom-Tafel,
+    // die Welt trägt, wo ihre Stimmen resonieren. `lebendig` ist das SUBSTRAT DER ÄSUNG (das Leben-Feld des Stamms hebt und
+    // senkt darüber, der Gau des Bestands äst darauf). Ab Genese 3 hat jede Stimme ihre eigene Wellenlänge und die Lage wird
+    // vor dem Lesen verschoben (Domain-Warp, eigener Strom); darunter lesen alle vier bei λ 200 m. Bis hier stand die Formel
+    // dreimal: im Stamm (`worldFieldAt`), als Spiegel im voxel-worker (`worldFieldAt`, Zahlen von Hand mitgezogen) und ein
+    // drittes Mal für den Gau (`lebenSubstrat`).
+    const WELT_FELD = Object.freeze({
+        // Wellenlängen der Stimmen (m)
+        lambdaLebendig: 200,
+        lambdaDichte: 340,
+        lambdaGlut: 520,
+        lambdaMagieleitung: 160,
+        // Domain-Warp: Hub (m) und Frequenz (λ ≈ 600 m, langsamer als jede Stimme)
+        warpAmp: 40,
+        warpScale: 1 / 600,
+    });
+    // die Rausch-Ströme des Welt-Felds am Samen (`Rausch` ist der SimplexNoise-Bau): je Stimme ein eigener Strom, der Strom
+    // der Würfe (`rngNoise`) und der des Warps
+    function weltFeldRausch(Rausch, seed) {
+        if (typeof Rausch !== "function") throw new Error("gelaende-core: weltFeldRausch braucht den SimplexNoise-Bau");
+        if (typeof seed !== "string" || !seed) throw new Error("gelaende-core: weltFeldRausch ohne Samen");
+        return {
+            seed: seed,
+            lebendigNoise: new Rausch(seed + "-veg-lebendig"),
+            dichteNoise: new Rausch(seed + "-veg-dichte"),
+            glutNoise: new Rausch(seed + "-veg-glut"),
+            magieNoise: new Rausch(seed + "-veg-magie"),
+            rngNoise: new Rausch(seed + "-veg-rng"),
+            warpNoise: new Rausch(seed + "-veg-warp"),
+        };
+    }
+    // das Welt-Feld an (x, z): `R` die Ströme (`weltFeldRausch`), `gen` die Genese der Welt → { lebendig, dichte, glut,
+    // magieleitung }
+    function weltFeld(R, gen, x, z) {
+        const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
+        if (gen >= 3) {
+            const FC = WELT_FELD;
+            const sL = 1 / FC.lambdaLebendig;
+            const sD = 1 / FC.lambdaDichte;
+            const sG = 1 / FC.lambdaGlut;
+            const sM = 1 / FC.lambdaMagieleitung;
+            const wpX = R.warpNoise.noise2D(x * FC.warpScale, z * FC.warpScale) * FC.warpAmp;
+            const wpZ = R.warpNoise.noise2D(x * FC.warpScale + 51.7, z * FC.warpScale - 23.1) * FC.warpAmp;
+            const wx = x + wpX;
+            const wz = z + wpZ;
+            return {
+                lebendig: n01(R.lebendigNoise.noise2D(wx * sL, wz * sL)),
+                dichte: n01(R.dichteNoise.noise2D(wx * sD + 100, wz * sD - 200)),
+                glut: n01(R.glutNoise.noise2D(wx * sG + 500, wz * sG + 700)),
+                magieleitung: n01(R.magieNoise.noise2D(wx * sM - 333, wz * sM + 999)),
+            };
+        }
+        const s = 0.005;
+        return {
+            lebendig: n01(R.lebendigNoise.noise2D(x * s, z * s)),
+            dichte: n01(R.dichteNoise.noise2D(x * s + 100, z * s - 200)),
+            glut: n01(R.glutNoise.noise2D(x * s + 500, z * s + 700)),
+            magieleitung: n01(R.magieNoise.noise2D(x * s - 333, z * s + 999)),
+        };
+    }
+
     root.__gelaendeCore = Object.freeze({
+        WELT_FELD: WELT_FELD,
+        weltFeldRausch: weltFeldRausch,
+        weltFeld: weltFeld,
         MESSUNG: MESSUNG,
         abdruckFeld: abdruckFeld,
         messStatistik: messStatistik,

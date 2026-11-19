@@ -1705,10 +1705,17 @@ class AnazhRealm_kreatur_leben {
     // 3 von 3 ROT, wo der Torplatz eines Orts auf der Mitte einer Zelle liegt).
     _bodenKlasseAt(x, z) {
         const LG = AnazhRealm._lebensraumGesetz();
-        const h = this._hydroDistAt(x, z);
-        const aus = this._bodenKlasseAus || (this._bodenKlasseAus = {});
-        this._terrainSaatY(x, z, true, aus);
-        return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, this._forestStandDensity(x, z), LG.L);
+        // die Leser der Saat; die Formel ist Kern (tetrapoda `bodenKlasseAm` — dieselbe ruft das Feld des Gaus im Faden)
+        let W = this._bodenKlasseWelt;
+        if (!W) {
+            const aus = {};
+            W = this._bodenKlasseWelt = {
+                flussRand: (x, z) => this._hydroDistAt(x, z),
+                hang: (x, z) => (this._terrainSaatY(x, z, true, aus), aus.hang),
+                bestand: (x, z) => this._forestStandDensity(x, z),
+            };
+        }
+        return LG.bodenKlasseAm(W, x, z, LG.L);
     }
 
     // [ATMOSPHERE] Lifecycle-Tod: Trauer (sorrow), journal-loss-Eintrag (mit der Ursache: hunger · alter), Aura-Pulse (ohne
@@ -3871,7 +3878,7 @@ AnazhRealm._lebensraumGesetz = function () {
         [L.flussM, L.hangTan, L.waldSd, L.randSd].every(Number.isFinite) &&
         L.gattung &&
         L.haeufigkeit &&
-        typeof k.bodenKlasse === "function" &&
+        typeof k.bodenKlasseAm === "function" &&
         typeof k.lebensraum === "function" &&
         typeof k.lebensraumWahl === "function" &&
         k.DURST_GESETZ &&
@@ -3883,7 +3890,7 @@ AnazhRealm._lebensraumGesetz = function () {
     ) {
         AnazhRealm._lebensraumMemo = Object.freeze({
             L,
-            bodenKlasse: k.bodenKlasse,
+            bodenKlasseAm: k.bodenKlasseAm,
             lebensraum: k.lebensraum,
             wahl: k.lebensraumWahl,
             D: k.DURST_GESETZ,
