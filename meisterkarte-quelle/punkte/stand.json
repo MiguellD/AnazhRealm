@@ -21,7 +21,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.62 dB · töten -0.03 -1.15 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.12 dB · pflegen 0.25 8.99 dB · nach 30 min 0.2463 8.75 dB (Ertrag 0.25) | zehn Taten: Antwort Tat 1 2.6 dB → Tat 10 0 dB (0.000 ≤ 0,3), Nachbar max 0 dB, Antwort Tat 1 nach 1 s (≤ 2) [2.6 -0.68 -0.47 -0.32 -0.2 -0.14 -0.1 -0.06 -0.04 0] GRÜN",
      "sha": "c8c840c98e144a6db41aec19b2208874aedb5a13",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +10)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -878,7 +878,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 21f279f5: die Seite warf: (b)(d) 14.4 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{",
+     "grund": "Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -936,7 +936,7 @@
   },
   "gelaende.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 7de938ab radeon · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an b7ed8419 gtx",
+   "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an f68dbf09 radeon · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an b7ed8419 gtx",
    "stationen": [
     {
      "id": "gelaende.K4#1",
@@ -963,9 +963,8 @@
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
-     "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +16)",
-     "gehalten": true,
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -1504,7 +1503,7 @@
      "gruen": true,
      "zahl": "✅ Schritte gras 6107 Hz (n 6) · laub 8779 Hz (n 6) · stein 4652 Hz (n 5), kleinster Abstand 1455 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 21.4 m/s 1.0665/1.0665 · -4.5 m 16.4 m/s 1.0504/1.0504 · -2 m 9.8 m/s 1.0294/1.0294 · 2 m -9.9 m/s 0.9719/0.9719 · 4.5 m -15.9 m/s 0.9557/0.9556 · 9 m -18.7 m/s 0.9484/0.9484)",
      "sha": "21f279f5f5b87f86c0bea764dab99fb36670725e",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +11)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +11) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2066,7 +2065,7 @@
   },
   "luftwasser.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 3745 / 0 px (unter dem Spiegel Bett 0.6 % aus 0.8 m, vom Ufer) an b7ed8419 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.785 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 3995 / 0 px an b7ed8419 gtx",
+   "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 3745 / 0 px (unter dem Spiegel Bett 0.6 % aus 0.8 m, vom Ufer) an b7ed8419 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.764 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 3508 / 0 px an f68dbf09 radeon · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.785 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 3995 / 0 px an b7ed8419 gtx",
    "stationen": [
     {
      "id": "luftwasser.K3#1",
@@ -2084,7 +2083,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -2111,10 +2110,10 @@
      "id": "luftwasser.K3#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px",
-     "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.764 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 3508 / 0 px",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "luftwasser.K3#2",
@@ -2421,7 +2420,7 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/diag-kreatur-leben.cjs +30)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/diag-kreatur-leben.cjs +30) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2509,7 +2508,7 @@
      "gruen": true,
      "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +35) — zuletzt an fe5b937d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +35) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3366,7 +3365,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.6 σ 21.5 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +73) — zuletzt an 21f279f5: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +73) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3560,7 +3559,7 @@
      "gruen": true,
      "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs) — zuletzt an b7ed8419: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4486,7 +4485,7 @@
   },
   "vegetation.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an f68dbf09 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
+   "beleg": "Maschine: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an f68dbf09 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
    "stationen": [
     {
      "id": "vegetation.K2#1",
@@ -4494,8 +4493,7 @@
      "gruen": true,
      "zahl": "Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs) — zuletzt an b269f840: Deckel 39 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
-     "gehalten": true,
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -4570,7 +4568,7 @@
   },
   "vegetation.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer an f68dbf09 radeon · gehalten: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
+   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer an f68dbf09 radeon · gehalten: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4597,8 +4595,7 @@
      "gruen": true,
      "zahl": "Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs, stamm/studio-gestalt.js) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
-     "gehalten": true,
+     "grund": null,
      "r6": "konsum"
     },
     {
@@ -4643,7 +4640,7 @@
      "gruen": true,
      "zahl": "Saat anazh-realm-seed: Regen an A bei trockenem B 40 % (Soll ≥ 20 %) · Lag 240 s (Soll 273 s ±20 %) · 10 Takte zu 120 s: A rainy cloudy sunny sunny sunny stormy rainy foggy foggy rainy | B sunny cloudy stormy rainy sunny sunny sunny stormy rainy foggy · Regenbild an A Takt 1 rainy (Regen 0.6)",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/draw-zaehler.cjs +13)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/draw-zaehler.cjs +13) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -5942,7 +5939,7 @@
      "gruen": true,
      "zahl": "✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +31)",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +31) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -15813,7 +15810,7 @@
      "gruen": true,
      "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs, stamm/siedlung-tor.js)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs, stamm/siedlung-tor.js) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -24709,7 +24706,7 @@
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +12)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +12) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -36440,7 +36437,7 @@
      "gruen": true,
      "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, index.html, scripts/lib/albedo-tafel.cjs +17)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, index.html, scripts/lib/albedo-tafel.cjs +17) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -37420,7 +37417,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 199,
+  "konsum": 200,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37582,10 +37579,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3427
+  "ohne": 3426
  },
  "kopfVoll": "dabd69bb4d26d8cb10c0a63bfb16f7800462a992",
- "zeit": "2026-11-19T08:17:19.201Z",
+ "zeit": "2026-11-19T08:33:20.769Z",
  "vorher": "dabd69bb",
  "bilanz": {
   "gewinn": [],

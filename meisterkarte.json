@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "dabd69bb",
-    "zeit": "2026-11-19T08:17:19.201Z",
+    "zeit": "2026-11-19T08:33:20.769Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -519,7 +519,7 @@
           "punkte": 2,
           "staffel": "1 = alle Leser folgen der 50-Punkte-Kern-Mutation an einem Ort · 2 = überall, dazu endet jeder Lauf in See oder Meer und die Strömung treibt",
           "messung": "gate:wasser-leben F + gate:kopplung F1 + Kern-Mutation: Wasser an 50 Zufalls-Punkten; Tier-Trinkziel, Tier-Scheu, Pflanzen-Wasserurteil, Klang-Nässe, Auftrieb und Leib folgen binnen eines Takts; 0 Pflanzen im gezeichneten Wasser, 0 Tiere trocken durch eine zweite Fläche. Jeder Lauf endet in See oder Meer (100 %), der Spiegel steigt stromab nie; die Strömung treibt Schwimmer, Boot und Tier > 0,5 m in 90 Takten. Die Leser-Liste steht nur hier (Wetter K3 verweist).",
-          "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an 7de938ab radeon · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an b7ed8419 gtx",
+          "beleg": "Maschine: gehalten: 10 von 10 Lesern folgen an 50 Punkten, Kontrolle 0, Pflanzen im Wasser 0 + 0 an d3708675 headless · gehalten: 6 von 6 Orten folgt jeder Leser · Läufe 293 von 293 in See oder Meer, Senken nass 10 von 10, steigt 0 · Strömung 4 von 4 Fluss-Orten (Schwimmer, Boot, Tier > 0,5 m) an d3708675 headless · Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an f68dbf09 radeon · gehalten: Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4 an b7ed8419 gtx",
           "schlupfloch": "Ein Ausnahme-Filter je Leser (das Tier meidet Wasser-Chunks) bestünde eine Zählung; die Kern-Mutation an Zufalls-Punkten verlangt, dass jeder Leser binnen eines Takts folgt.",
           "aenderung": "Synthese gab 1 ohne Staffel, während die eigenen Belege widersprachen (Natur ×3, Tier trocken) → 0 (B11); Schnitt wasser-leser 22.10. 0 → 1.",
           "maschine": true
@@ -1077,7 +1077,7 @@
           "punkte": 1,
           "staffel": "1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit · 2 = jeder Ring bis 300 m, Gras ↔ Krone r ≥ 0,6 längs uWindDir, Ruhe → Sturm hebt die Varianz ≥ 3×, Ego und Third, beide Geräte",
           "messung": "NEU: werkbank bild --zeit Δt nimmt zwei Ausgabe-Frames unter laufender _bildZeit bei fester Kamera; Rausch-Boden aus einer TAAU-Referenz bei Wind 0; Kreuzkorrelation Gras ↔ Krone mit der Laufzeit Abstand/Böen-Tempo ±20 %. Die Kopplung an den Klang zählt Klang K2, die Formung des Winds Wetter K5.",
-          "beleg": "Maschine: gehalten: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an f68dbf09 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
+          "beleg": "Maschine: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an f68dbf09 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
           "schlupfloch": "TAAU-Flimmern und ein eigener Sinus je Schicht erzeugen Varianz ohne gemeinsames Feld: Rausch-Boden aus der Wind-0-Referenz und die Kreuzkorrelation bei physikalischer Laufzeit — nur EINE wandernde Böe besteht.",
           "aenderung": "Der Klang-Teil wanderte nach Klang K2 (B16, V25); die Karte 1.0 gab 1 für die Existenz des Codes → 0.",
           "maschine": true
@@ -1107,7 +1107,7 @@
           "punkte": 2,
           "staffel": "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose · 2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
           "messung": "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (steht seit wetter-saat, 428fb6fe). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
-          "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer an f68dbf09 radeon · gehalten: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
+          "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer an f68dbf09 radeon · gehalten: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
           "schlupfloch": "Den Winter grau-braun zu färben (heute) erfüllt die Farbe, nicht die Gestalt: gezählt wird die Deckung (Pixel-Anteil der Krone).",
           "aenderung": "Wachstum und Spur wanderten in ihre Heime (Stoffe K5, Feld K4; V-Wachstum).",
           "maschine": true
@@ -1784,7 +1784,7 @@
           "punkte": 2,
           "staffel": "1 = Fische stehen gegen die Strömung des Kerns (Ausrichtung zur Strömung ≥ 0,8) · 2 = sie meiden den Spieler, folgen dem Pegel und sind unter Wasser sichtbar (Leib K3)",
           "messung": "werkbank eval am Bach: Ausrichtung gegen die Strömung aus gate:kopplung F1.",
-          "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 3745 / 0 px (unter dem Spiegel Bett 0.6 % aus 0.8 m, vom Ufer) an b7ed8419 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.83 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch — / 0 px an 105c9bd3 radeon · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.785 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 3995 / 0 px an b7ed8419 gtx",
+          "beleg": "Maschine: gehalten: Bach -309.768/-822.525 (1.027 m/s): 28 Fische im Wasser binnen 40 m, Ausrichtung gegen die Strömung 0.955 · umgekehrt 29 Fische, 0.973 (tier:fisch) · der Leser sieht 48 Tiere binnen 300 m (Soll ≥ 3 Fische, ≥ 0,8 in beiden) an d3708675 headless · gehalten: Lebensräume mit eigener Fauna im Bild 1 (Soll 1): Bach-Kolk -309.768/-822.525, 27 Fische binnen 40 m, Bild tier:fisch 3745 / 0 px (unter dem Spiegel Bett 0.6 % aus 0.8 m, vom Ufer) an b7ed8419 gtx · gehalten: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.748 m, heim 12 · Pegel 25.815 → 26.022 m nach 27 s Sturm, Fische 25.166 → 25.247 m (Anteil der Säule 0.335 → 0.363) · unter Wasser true, Sicht 19.56 m, im Bild 9 von 16 (Soll: am Stand ≤ 20 %, nächster ≥ 3 m, heim ≥ 60 %; Fisch-Hub ≥ 0,8·tiefe·Pegel-Hub; ≥ 3 im Kegel vor der Sicht) an d3708675 headless · Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.764 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 3508 / 0 px an f68dbf09 radeon · gehalten: Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.785 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 3995 / 0 px an b7ed8419 gtx",
           "schlupfloch": "Fische auf festen Bahnen sähen gut aus: die Mutation der Strömung muss die Ausrichtung ziehen.",
           "maschine": true
         },
@@ -4594,9 +4594,9 @@
     ],
     "art": {
       "linse": 1,
-      "ungemessen": 18,
+      "ungemessen": 19,
       "rot": 1,
-      "anderes": 29
+      "anderes": 28
     }
   },
   "ohneHebel": [
