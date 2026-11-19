@@ -86,3 +86,15 @@ Wort des Schöpfers: „ja bauen, bei 98% wip sichern und übergabe“. Datei-Be
   der Stoff einen Kanten-Term (eine Zeile im Verband-Gesetz, die die Lage im Feld schon kennt). Am Bild prüfen: die hellen Linien der
   Differenz-Karte verschwinden, B1 fällt.
 - VORHER: die Messung über den Bau-Satz der Welt führen (der Spike-Pfad `_foundryBuildGroup` reicht keine Zeile je Ecke und keine Lage).
+
+## Stand 20:27 — (3) Schritt 1 (Bild im Bau-Satz) begonnen, Budget 97 %
+
+- Geschossen: Dorf, Uhr 0,5, die vier Haus-Posen (Süd, Nord, Ost, West; `.git/gtx1050-werkzeug/tmp/haus-kopf.bef`) an `fa836365c` und an
+  main `7d9c4d51` (Bilder lokal `.git/gtx1050-werkzeug/gc/einheit/dorf/`). Pixel über 8/255: Süd 31,6 % · Nord 9,0 · Ost 9,9 · West 23,6.
+- **Diese Zahlen messen NICHT (a)/(b):** der Zweig steht auf main `986eff04`, main `7d9c4d51` trägt andere Landungen (sichtbar: das
+  Fensterkreuz der Licht-Welle). Das Haus an der Pose ist verputzt, kein Backstein im Bild.
+- Nächster Schritt: ENTWEDER main `7d9c4d51` in den Zweig mergen (Kreuzung beachten: `stein-ein-gesetz` erst auf das Wort des Koordinators)
+  ODER denselben Zweig vor/nach der Muster-Phase vergleichen (`aa25a930e` ↔ `fa836365c`), an einer Pose mit Backstein-Haus (eine Fachwerk-
+  Kultur des Dorf-Plans suchen oder ein Haus `haus_alemannisch` setzen und über den Bau-Satz zeichnen lassen).
+- (3) Schnitt laut Entscheid: Kanten-Term im Verband-Gesetz (EIN Gesetz im Kern), Ton = Anteil der gefallenen Kante am Bildpunkt × Ton der
+  Kante, in die tragende Fläche; Maß: Bildpaar L0 ↔ Stufe ohne Relief, Δ-Luma der Fläche gegen L0 an 6 Vorlagen; Linse in gate:haus-fern.
