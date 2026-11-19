@@ -865,7 +865,8 @@ class AnazhRealm_siedlung_tor {
     // gerufen gleich nach `_tickHausTueren`), tragen die Flügel ihrer wachen Fenster als Blätter (`tuer.fenster`). Ihr Zustand ist
     // eine Funktion von Samen, Uhr und Nässe (fachwerk `fensterZustand`): die Uhr der Welt (`timeOfDay`, auf die Minute — die Spanne
     // des Gesetzes trägt ~3 min Raster), die Nässe des Worts, das die Welt am Spieler zeigt (`state.weather`, der Wetter-Zug schreibt
-    // es aus `_wetterAmOrt`; `_weatherIsWet` wie jeder Leser der Nässe). Ändert sich keins von beiden und schwingt kein Flügel,
+    // es aus `_wetterAmOrt`; `_weatherIsWet` wie jeder Leser der Nässe) und der Tag des Menschen (koerper TAGES_GESETZ: wann die
+    // Bewohner aufstehen und zum Werk gehen). Ändert sich keins von beiden und schwingt kein Flügel,
     // kostet der Takt den Vergleich zweier Zahlen.
     _tickHausFensterRing() {
         const nah = this._hausTuerNah;
@@ -874,11 +875,13 @@ class AnazhRealm_siedlung_tor {
         if (!Number.isFinite(st.timeOfDay)) throw new Error("_tickHausFensterRing: die Uhr der Welt fehlt (timeOfDay)");
         const minute = Math.floor((((st.timeOfDay % 1) + 1) % 1) * 1440);
         const nass = this._weatherIsWet(st.weather);
+        const KC = globalThis.__koerperCore;
+        if (!KC || !KC.TAGES_GESETZ) throw new Error("_tickHausFensterRing: der Tag des Menschen fehlt (koerper TAGES_GESETZ)");
         for (const e of nah) {
             if (!e.instSlots) continue; // zwischenzeitlich geculled (wie der Tür-Takt)
             const rec = e._tuerRec;
             if (!rec) throw new Error("_tickHausFensterRing: der Tür-Takt lief nicht vor dem Fenster-Takt (kein _tuerRec)");
-            this._tickHausFenster(rec, e, minute / 60, nass);
+            this._tickHausFenster(rec, e, minute / 60, nass, KC.TAGES_GESETZ);
         }
     }
 
@@ -886,7 +889,7 @@ class AnazhRealm_siedlung_tor {
     // um sein Scharnier auf den gebackenen Geschlossen-Vertices (dieselbe Matrix wie `_tickTorFluegel`: Eintrag · Welt-Skala ·
     // T(h)·R_y·T(−h) · Basis der Flügel-Instanz). Neue Slots (das Haus tritt in den Ring, ein Neubau) stellen jeden Flügel SOFORT in
     // sein Ziel — er war nie sichtbar anders; ein Wechsel von Stunde oder Nässe schwingt ihn weich (der Schritt des Tür-Takts, 0,12).
-    _tickHausFenster(rec, entry, stunde, nass) {
+    _tickHausFenster(rec, entry, stunde, nass, tag) {
         const slots = entry.instSlots;
         if (!Array.isArray(slots) || !slots.length) return;
         if (entry._fluegelSlots !== slots) this._fluegelLeib(entry);
@@ -901,7 +904,7 @@ class AnazhRealm_siedlung_tor {
             for (const f of entry._fluegel) {
                 const t = f.tuer;
                 if (!t.fenster) continue;
-                const ziel = t.seite * FC.fensterZustand(t.fenster.samen, stunde, nass);
+                const ziel = t.seite * FC.fensterZustand(t.fenster.samen, stunde, nass, tag);
                 const alt = neu ? ziel : Number.isFinite(f._fensterWinkel) ? f._fensterWinkel : 0;
                 ziele.push({ f, ziel, winkel: alt, gesetzt: !neu });
             }

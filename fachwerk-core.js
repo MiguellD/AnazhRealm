@@ -331,11 +331,10 @@
   const strahl=[];
   function addStrahl(x0,y0,z0,x1,y1,z1){ strahl.push({min:[x0+SHIFT,y0,z0],max:[x1+SHIFT,y1,z1]}); }
   function strahlBeam(cx,cy,cz,lx,ly,lz){ addStrahl(cx-lx/2,cy-ly/2,cz-lz/2,cx+lx/2,cy+ly/2,cz+lz/2); }
-  // DER OFFENE FENSTER-FLÜGEL (leib.K4, w28-baum-ganz, additiv): der Flügel jedes Fensters steht 0,62 rad offen (`fensterAt`), sein
-  // freies Ende 0,58 × die Fenster-Breite vor der Wand-Mitte — gezeichnet, aber ohne Leib: die Kamera-Kugel (0,3 m vor der Wand)
-  // strich durch ihn (haus_alemannisch, der Gang der Linse: in 9 von 1 089 Bildern näher als 0,25 m am gezeichneten Flügel, kleinster
-  // Abstand 0,010 m — an main wie am Kopf; die Linse traf ihn nur, wo ihre Stichprobe je 6. Bild auf eines der neun fiel). Sein
-  // Leib ist die Hülle des Flügels vom Scharnier `L.position` zum freien Ende (dx, dz) über seine Höhe h, die Flügel-Stärke dazu.
+  // DER LEIB DES FENSTER-FLÜGELS (leib.K4, w28-baum-ganz, additiv): bis Bahn 1 stand jeder Flügel offen vor der Wand, gezeichnet,
+  // aber ohne Leib — die Kamera-Kugel (0,3 m vor der Wand) strich durch ihn (haus_alemannisch: in 9 von 1 089 Bildern näher als 0,25 m).
+  // Gebaut steht er jetzt ZU in der Laibung (`fensterAt`): sein Leib ist die Hülle des Flügels vom Scharnier `L.position` längs der
+  // Wand (dx, dz) über seine Höhe h, die Flügel-Stärke dazu — offen trägt ihn der Wirt als Leib des Blatts (`_fluegelLeib`).
   function strahlFluegel(L,dx,dz,h){ const p=L.position, s=0.04; addStrahl(Math.min(p.x,p.x+dx)-s,p.y-h/2,Math.min(p.z,p.z+dz)-s,Math.max(p.x,p.x+dx)+s,p.y+h/2,Math.max(p.z,p.z+dz)+s); }
   // der Strebe-Leib (`strut`: der Quader th × Länge × th, seine Y-Achse auf der Strecke) in n Stücken je ihre Hülle — die schräge
   // Wange und der Handlauf je Tritt eine Box, nie eine Box über den ganzen Lauf (die Spur darunter bliebe nie frei)
@@ -2788,29 +2787,32 @@
         return samenSchlaeft(fensterSamen(seed, perp, wand, u, cy));
     }
     // DER ZUSTAND DES FLÜGELS (Bahn 1 ÖFFNUNGEN) — Ursache statt Würfel. Bis hier stand jeder Flügel jedes Fensters jeder Stufe
-    // 0,62 rad nach außen offen (fensterAt nah, ein Zwilling des Winkels fern): die graue Tafel vor der Wand. Jetzt steht er zu, und er öffnet nur,
-    // wenn seine Bewohner lüften: ein Fenster, das nachts schläft (`samenSchlaeft` — kein Wohnraum), öffnet nie; ein waches öffnet
-    // morgens zu SEINER Stunde für SEINE Dauer, so weit, wie SEINE Bewohner den Flügel aufstoßen (die oberen 16 Bit des Samens:
-    // 6 Bit Beginn, 5 Bit Dauer, 5 Bit Winkel); nass (Regen, Sturm — das Wort am Ort, `_wetterAmOrt` des Wirts) bleibt jeder zu.
-    // Jede Differenz zweier Flügel ist eine dieser Ursachen: Samen (Schlaf, Stunde, Dauer, Winkel), Uhr, Nässe.
-    // Die Spannen sind GEWÄHLT (entscheid-v2 §4.3 Punkt 3, Status: gewählt, nicht gemessen): das Lüften nach dem Aufstehen
-    // zwischen 6 und 9 Uhr, eine halbe bis zwei Stunden, 0,3 bis 1,2 rad. Folge (gerechnet, nicht gemessen): um 8 Uhr trocken
-    // stehen 0,55 · E[min(Dauer, 2)]/3 = 0,55 · 1,25/3 ≈ 23 % der Flügel offen; zwischen 11 und 6 Uhr keiner.
-    var FENSTER_LUEFTEN = { beginnH: [6, 9], dauerH: [0.5, 2], winkelRad: [0.3, 1.2] };
-    function _luefteSpanne(sp, bits, n) {
-        return sp[0] + ((sp[1] - sp[0]) * bits) / n;
+    // 0,62 rad nach außen offen (fensterAt nah, ein Zwilling des Winkels fern): die graue Tafel vor der Wand. Jetzt steht er zu, und er
+    // öffnet nur, wenn seine Bewohner lüften: ein Fenster, das nachts schläft (`samenSchlaeft` — kein Wohnraum), öffnet nie; ein waches
+    // öffnet, wenn SEINE Bewohner aufstehen, und schließt, wenn sie zum Werk gehen — die Wenden des Tags sind das Gesetz des Menschen
+    // (koerper-core TAGES_GESETZ: `wach`, `werk[0]`, je Mensch ± `streuH`; der Wirt reicht es als `tag`), der Samen des Fensters
+    // streut beide Wenden wie der Same den Menschen (6 Bit Aufstehen, 5 Bit Aufbruch). Nass (Regen, Sturm — das Wort, das die Welt am
+    // Spieler zeigt) bleibt jeder zu. Wie weit er aufsteht, ist ein STELLWERT OHNE ANKER: FENSTER_WINKEL_RAD 0,3–1,2 rad (entscheid-v2
+    // §4.3 Punkt 3, gewählt), 5 Bit des Samens. Jede Differenz zweier Flügel ist eine dieser Ursachen: Samen (Schlaf, Wenden, Winkel),
+    // Uhr, Nässe. Folge (gerechnet am heutigen Tag: wach 6,5, werk 8, streuH 0,5): offen ab 6–7 Uhr bis 7,5–8,5 Uhr — um 8 Uhr
+    // trocken 0,55 · 0,5 ≈ 27 % der Flügel, vor 6 und ab 8,5 Uhr keiner.
+    var FENSTER_WINKEL_RAD = [0.3, 1.2];
+    function _streu(bits, n) {
+        return (2 * bits) / n - 1;
     }
     function fensterWinkel(samen) {
         if (!Number.isInteger(samen) || samen < 0) throw new Error("fachwerk fensterWinkel: kein Samen des Fensters (" + samen + ")");
-        return _luefteSpanne(FENSTER_LUEFTEN.winkelRad, (samen >>> 27) & 31, 31);
+        return FENSTER_WINKEL_RAD[0] + ((FENSTER_WINKEL_RAD[1] - FENSTER_WINKEL_RAD[0]) * ((samen >>> 27) & 31)) / 31;
     }
-    function fensterZustand(samen, stunde, nass) {
+    function fensterZustand(samen, stunde, nass, tag) {
         if (!Number.isFinite(stunde) || stunde < 0 || stunde >= 24) throw new Error("fachwerk fensterZustand: die Stunde der Welt fehlt (" + stunde + ")");
         if (typeof nass !== "boolean") throw new Error("fachwerk fensterZustand: die Nässe am Ort fehlt (" + nass + ")");
+        if (!tag || !Number.isFinite(tag.wach) || !tag.werk || !Number.isFinite(tag.werk[0]) || !Number.isFinite(tag.streuH))
+            throw new Error("fachwerk fensterZustand: der Tag des Menschen fehlt (koerper TAGES_GESETZ)");
         if (samenSchlaeft(samen) || nass) return 0;
-        var beginn = _luefteSpanne(FENSTER_LUEFTEN.beginnH, (samen >>> 16) & 63, 64),
-            dauer = _luefteSpanne(FENSTER_LUEFTEN.dauerH, (samen >>> 22) & 31, 31);
-        return stunde >= beginn && stunde < beginn + dauer ? fensterWinkel(samen) : 0;
+        var auf = tag.wach + tag.streuH * _streu((samen >>> 16) & 63, 63),
+            zu = tag.werk[0] + tag.streuH * _streu((samen >>> 22) & 31, 31);
+        return stunde >= auf && stunde < zu ? fensterWinkel(samen) : 0;
     }
     // DER INNENKÖRPER hinter dem Glas (INNENDÄMMER-GESETZ der L1, kalibriert auf die gemessene Voll-Interieur-Leuchtdichte
     // 176 vs 60 bei 0,34): der Raum × 0,92 — die L1 (der Körper hinter den Laibungen) und die Fern-Stufe (die Fläche hinter
