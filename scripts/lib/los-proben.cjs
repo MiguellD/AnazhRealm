@@ -294,9 +294,11 @@ function huelleProben(FC, check, { kernText, golden, taeter = false }) {
 // dorfLayout, sonst der Kern Zeichen für Zeichen) und zählt je Probe die ANDEREN Häuser, die fehlen, hinzukommen, weiter als
 // WURF_WANDER m wandern oder sich drehen. Bis zur Welle zogen alle Lose aus dem EINEN Strom `rnd`: kippte ein Los an einer Probe,
 // stand Same 431794 85 m weiter (p3/n1911/los-huelle/ursache). Der Täter des Selbsttests ist dieser EINE Strom: ROT beim Los.
+// die Städte der Grammatik (ummauert, Markt, Viertel), an denen der EINE Strom kippt (main 92b7afd07 bei +5 cm: 7/18 an 2 von 28
+// Losen 9 Häuser, 7/30 an 2 von 37 Losen 2 Häuser) — die Dörfer 3/12 und 12345/6 kippen auch an ihm nie (p3/n1911/samen/messung-26baeab7)
 const WURF_FAELLE = [
-    { seed: 3, nH: 12 },
-    { seed: 12345, nH: 6 },
+    { seed: 7, nH: 18 },
+    { seed: 7, nH: 30 },
 ];
 const [WURF_DELTA, WURF_WANDER] = [0.05, 0.5];
 const LOS_HAKEN = ["var L = dorfLayout(p, ext.slice(von, bis), ", "var L = dorfLayout(p, (globalThis.__losStoer || function (e) { return e; })(ext.slice(von, bis), von), "]; // prettier-ignore
