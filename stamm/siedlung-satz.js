@@ -85,6 +85,13 @@ class AnazhRealm_siedlung_satz {
     static _satzRegler(mat) {
         const u = (mat && mat.userData) || {};
         const R = globalThis.__phytoCore.budgetRegler(u.foundryKind, u.foundryMp || null);
+        // (die Glut je Ecke ist ein Bildwert des Labors, der Satz-Stoff teilt ihn durch die Belichtung, `_foundryTreeMaterial`;
+        // eine Lichtquelle — Seh-Klasse glut — trüge Leuchtdichte und stünde im Satz falsch; das Feuer leuchtet aus
+        // seiner Farbe)
+        if (R.em && u.foundryMp && u.foundryMp.seh === "glut" && !(u.foundryMp.leucht > 0))
+            throw new Error(
+                `_satzRegler: der Stoff „${u.foundryKind}“ ist eine Lichtquelle mit Emissiv — der Satz trägt nur Bildwerte`
+            );
         const e = R.em ? [R.em[0] * R.emI, R.em[1] * R.emI, R.em[2] * R.emI] : [0, 0, 0];
         // DER VERBAND des Stoffs (w28-haus-stoff, fachwerk `VERBAND_GESETZ`): die Nummer seiner Zeile — 0, wo er keinen trägt
         const vb = u.foundryMp && u.foundryMp.verband > 0 ? u.foundryMp.verband | 0 : 0;

@@ -55,42 +55,32 @@ Der benannte Modus — früh „fertig" melden · Scope still verkleinern · OFF
 nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wand: `gate:betriebsgesetz`
 (in `npm run check`), der Selbsttest feuert.
 
-1. **„fertig" ist illegal**, solange `docs/PFLICHT-OFFEN.md` Einträge trägt. Verbotene
+1. **„fertig" ist illegal**, solange die Meisterkarte 2 nicht ganz gebucht ist. Verbotene
    Siegel-Wörter in Commit-Messages: fertig · RUND · vollendet · vollzogen · Schluss · SCOPE ZU.
-   Jeder Bericht ist ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Pflicht-OFFEN Rest.
-2. **Die Frozen-Liste ist der EINZIGE Scope** (`docs/PFLICHT-OFFEN.md`, max 5 Einträge). Kein
+   Jeder Bericht ist ZWISCHENSTAND: Geschnitten · Gemessen (Zahl) · Karte 2 gebucht n von 1 718.
+2. **Die Meisterkarte 2 ist der EINZIGE Scope** (1 718 Sprossen, Leitern und Stand im Zweig `punkte-maschine`). Kein
    neuer Plan, keine neue Doktrin, kein neuer Wellen-Name, keine erfundene „nächste Chirurgie"
-   als OFFEN. Ein Eintrag fällt GANZ — die Zeile stirbt im selben Commit wie ihr Beweis — oder
-   er bleibt stehen. Neue Einträge setzt NUR der Schöpfer.
+   als OFFEN. Eine Sprosse zählt erst gebucht — oder sie bleibt stehen. Neue Leitern setzt NUR
+   der Schöpfer.
 3. **Scope-Diebstahl = Fail:** 5 % einer benannten Klasse als 100 % melden ist die Niederlage.
    Das Gras-Muster gilt: die KLASSE fällt in einer Welle, nicht das bequemste Beispiel.
 4. **Das Schöpfer-Auge ist KEIN Merge-Tor.** Maßstab: Studio-Gesetzbücher + HOLZ-Profile +
    Zahlen (Tris/dc/ms vorher↔nachher) + Absenz-Grep + das EIGENE Auge (Blick-Sonde). Jeder Satz
    „nur dein Auge entscheidet" in einem Arbeiter-Prompt ist gestrichen; der Schöpfer entscheidet
    Scope und Ship, nie jeden Pixel.
-5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
+5. **SCOPE ZU nur bei Karte 2 = 1 718 von 1 718** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.546.343 — main = integ-probe ff88b82d, 18.10.; offen ist NUR, was `docs/PFLICHT-OFFEN.md` trägt; die Chronik ist `git log`)
+## Stand (V18.546.345 — main = integ-probe ff88b82d, 18.10.; offen ist NUR, was die Meisterkarte 2 trägt; die Chronik ist `git log`)
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
 p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp bis dahin — außer der BREITE als Gesetzbuch-Tiefe (Schöpfer 10.11.: „Ja, Breite öffnen“): sie öffnet, sobald die Prozess-Schnitte stehen (der Richter im Zug, der versionierte Zug-Dienst, die entlasteten Karten); Befund und Staffel Breite im Zweig `koordination` (das Blatt „großes Bild“ vom 10.11.).
 
-**PFLICHT-OFFEN (Spiegel, nur Gemergtes):**
-- **A** AAAA je Klasse: die Soll-Tafel trägt 12 Klassen, an ihren Mittag-Posen 11 GRÜN, ROT laub-kante 0,2635 > 0,22 (Karte `fimp:atlas:L2`,
-  17.10., 5deb7cb1); am Spawn misst sie 3 von 12, Uhr × Sicht nie.
-- **B** Ankunft ≤ 5 s kalt: GTX Weltbild kalt 16,6 s (16,1–17,0), Zweit-Boot 12,0 s, der Haupt-Faden bis zum Bild 97 % belegt; Radeon ~11 s.
-- **C** Verkehr (gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt, nach der Messbühne Stadt-Gipfel; noch keine Station.
-- **E** Profi-Band (Radeon 890M + GTX 1060, Wiese + Genesis, Ego + Third): GTX stehend Frame p95 16,8 ms · VRAM 99,6–111,2 MB · CPU-Takt
-  p95 4,7–6,3 ms, reißt an Genesis Third (6,3 > 5,8); das Radeon-ABAB am Kopf steht aus.
-- **F** Prüfplatz (gesetzt 31.10., die Ausnahme vom Feature-Stopp: der Ort jeder Ankunft): EIN Plan im Ort-Gesetz; alle Zonen bauen parallel,
-  Spielplatz, Arena, Strecke und Stadt zuerst im Kern, in den Platz gehängt nach seiner Grau-Fassung in main.
-
-Belege im Zweig `koordination`: `bericht/1810-b5-befund.md` (B, GTX), `bericht/1710-n-b4.md` (B, Radeon), `bericht/1810-f6-gtx.md` (E).
+**SCOPE = die Meisterkarte 2** (Stand `vision/karte-2-stand.json` im Zweig `punkte-maschine`); die frühere Liste A–F fiel am 19.11. in ihre Leitern, die Zuordnung steht in `docs/README.md`.
 
 ## Die Karten
 
-- `docs/README.md` — die EINE Karte der Dokumente (Norm · Vision · Kompass · die Offen-Wahrheit `docs/PFLICHT-OFFEN.md`).
+- `docs/README.md` — die EINE Karte der Dokumente (Norm · Vision · Kompass · die Zuordnung der früheren Liste A–F zur Karte 2).
 - Die Systemkarte — neun Domänen, die Wurzeln W0–W9, Karte ≠ Code mit Datei und Zeile (`git show origin/koordination:SYSTEMKARTE.md`).
 - Der Skill `.claude/skills/anazh-lehren/SKILL.md` — Architektur, die Quelle je Domäne, die Lehren 1–27 (der Code zitiert „Lehre N"),
   Workflows und CI. LADEN vor Stamm-Chirurgie, Linse, Studio- oder Kern-Code, GPU-Messung und Merge.

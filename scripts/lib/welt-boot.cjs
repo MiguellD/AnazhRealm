@@ -851,6 +851,9 @@ function pulsSeite() {
         }
     };
     const stempel = (text) => ((Z.letzt = text), sende("stempel", text));
+    // DER WARTENDE BEIM NAMEN (los-huelle): eine Probe der Linse stempelt, worauf sie wartet, BEVOR sie wartet
+    // (`__probeWartet(name)`) — der Puls trägt den Namen, die Akte nennt ihn im Urteil (`akteUrteil` „die Probe …“)
+    window.__probeWartet = (name) => ((Z.probe = String(name)), stempel(`Probe wartet: ${Z.probe}`));   // das Wort liest `akteUrteil` (PROBE_WARTET)
     const G = window.WebGL2RenderingContext?.prototype;
     if (G) {
         const lp = G.linkProgram;
@@ -928,6 +931,7 @@ function pulsSeite() {
             if (W) t.push(`welt ${W.takte} Takte · Ruhe ${W.ruhe} · zuletzt ${W.grund}`);
         } else t.push("anazhRealm —");
         if (window.__weltDaWartet) t.push(`__weltDa wartet auf ${window.__weltDaWartet}`);
+        if (Z.probe) t.push(`Probe wartet: ${Z.probe}`);
         t.push(`programme ${Z.programme}`, `gl-sync ${Z.sync}`);
         if (Z.letzt) t.push(`zuletzt ${Z.letzt}`);
         return t.join(" · ");
@@ -1140,6 +1144,26 @@ function faedenText(a, z, ms) {
         : null;
 }
 
+// DAS URTEIL DER AKTE (rein, Selbsttest gate:haus-welt): KEIN PULS · AWAIT · JS-SCHLEIFE · NATIV · GPU-PROZESS · VERKLEMMUNG; dazu der
+// WARTENDE beim Namen — der letzte Stempel einer Probe der Linse (`__probeWartet`, PROBE_WARTET), auch wenn danach GL-Stempel kamen
+const PROBE_WARTET = "Probe wartet:";
+function akteUrteil({ puls, luecke, stapel, cpu, stempel }) {
+    const letzt = stempel.length ? stempel[stempel.length - 1] : "kein Stempel";
+    const probe = [...stempel].reverse().find((s) => s.includes(PROBE_WARTET));
+    const wer = probe ? ` · die Probe ${probe.slice(probe.indexOf(PROBE_WARTET) + PROBE_WARTET.length).trim()}` : " · keine Probe stempelte";
+    let urteil;
+    if (!puls) urteil = "KEIN PULS — das Dokument lief nie an (Navigation oder Dokument-Start)";
+    else if (luecke < 3000)
+        urteil = `AWAIT — der Haupt-Thread lebt (Puls vor ${sek(luecke)} s), ein Versprechen der Seite kehrt nie zurück; zuletzt ${letzt}`;
+    else if (stapel) urteil = `JS-SCHLEIFE — der Haupt-Thread rechnet in ${stapelText(stapel).split(" < ")[0]}`;
+    else if (cpu.renderer >= 0.5)
+        urteil = `NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (${(cpu.renderer * 100).toFixed(0)} %, kein JS-Stapel); zuletzt ${letzt}`;
+    else if (cpu.gpu >= 0.5)
+        urteil = `GPU-PROZESS — der Haupt-Thread wartet nativ, der GPU-Prozess rechnet (${(cpu.gpu * 100).toFixed(0)} %${cpu.faeden ? `: ${cpu.faeden.split(" · ").slice(0, 2).join(" · ")}` : ""}); zuletzt ${letzt}`;
+    else urteil = `VERKLEMMUNG — der Haupt-Thread wartet nativ, kein Prozess rechnet; zuletzt ${letzt}`;
+    return urteil + wer;
+}
+
 // DIE AKTE: was offen ist, der Puls, die Stempel, CPU, der Stapel, Konsole, Stderr — und das Urteil beim Namen.
 async function akte(page, grund) {
     const A = page.__akte;
@@ -1153,17 +1177,7 @@ async function akte(page, grund) {
     if (fragen) {
         stapel = await Promise.race([profilStapel(A, A.puls.an).catch(() => null), sleep(8000)]);
     }
-    const letzt = A.stempel.length ? A.stempel[A.stempel.length - 1] : "kein Stempel";
-    let urteil;
-    if (!A.puls) urteil = "KEIN PULS — das Dokument lief nie an (Navigation oder Dokument-Start)";
-    else if (luecke < 3000)
-        urteil = `AWAIT — der Haupt-Thread lebt (Puls vor ${sek(luecke)} s), ein Versprechen der Seite kehrt nie zurück; zuletzt ${letzt}`;
-    else if (stapel) urteil = `JS-SCHLEIFE — der Haupt-Thread rechnet in ${stapelText(stapel).split(" < ")[0]}`;
-    else if (cpu.renderer >= 0.5)
-        urteil = `NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (${(cpu.renderer * 100).toFixed(0)} %, kein JS-Stapel); zuletzt ${letzt}`;
-    else if (cpu.gpu >= 0.5)
-        urteil = `GPU-PROZESS — der Haupt-Thread wartet nativ, der GPU-Prozess rechnet (${(cpu.gpu * 100).toFixed(0)} %${cpu.faeden ? `: ${cpu.faeden.split(" · ").slice(0, 2).join(" · ")}` : ""}); zuletzt ${letzt}`;
-    else urteil = `VERKLEMMUNG — der Haupt-Thread wartet nativ, kein Prozess rechnet; zuletzt ${letzt}`;
+    const urteil = akteUrteil({ puls: A.puls, luecke, stapel, cpu, stempel: A.stempel });
     const z = [`═══ ${path.basename(process.argv[1] || "?")} · Seite #${A.id} ${kurz(page.url())} · ${grund}`];
     for (const o of A.offen.values()) z.push(`offen ${o.was} seit ${sek(Date.now() - o.an)} s`);
     z.push(A.puls ? `Puls ${A.pulsN}×, zuletzt vor ${sek(luecke)} s — ${A.puls.text}` : "Puls nie");
@@ -2035,47 +2049,6 @@ async function weltTor(page, welt) {
     return res.worldId;
 }
 
-// ZWEI SEITEN IM MESH (smoke-webrtc · smoke-copresence): save- und signaling-server auf den eigenen Ports (`eigenePorte` der
-// Variablen portEnv, signalEnv), im Browser des Aufrufers (sein Rezept) die Seiten A und B (1024×640); beide laden das Spiel, bis init
-// durchlief (`_gameLoopTick`: init wartet auf den IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft —
-// ein Raum-Beitritt davor fiele in init hinein), `vor(seite, i)` läuft vor dem Beitritt (die Namen der Ko-Präsenz), dann
-// tritt jede demselben Raum bei (der roomOverride zwingt Seiten verschiedener worldId zusammen), bis beide `meshActive`
-// melden (alle Peer-Kanäle offen). Liefert {seiten, peerIds, ende}; `ende` schließt Browser und Server.
-async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {}) {
-    const [port, signal] = await eigenePorte(portEnv, signalEnv);
-    const env = { PORT: String(port), ANAZH_SIGNALING_PORT: String(signal) };
-    const server = [
-        await startProc("save-server.js", /läuft/, env),
-        await startProc("signaling-server.js", /lauscht/, env),
-    ];
-    const ende = async () => (await browser.close().catch(() => {}), server.forEach((p) => p.kill()));
-    try {
-        const [seiten, peerIds] = [[await browser.newPage(), await browser.newPage()], []];
-        for (const p of seiten) {
-            await p.setViewport({ width: 1024, height: 640 });
-            await p.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-        }
-        for (const [i, p] of seiten.entries()) {
-            const r = () => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function";
-            await waitFor(p, r, `Seite ${"AB"[i]} initialisiert`);
-            await vor(p, i);
-            const beitritt = (url, roomOverride) => {
-                const r = window.anazhRealm;
-                Object.assign(r.state.p2p, { url, roomOverride });
-                r.initP2PSync(null);
-                return r.state.p2p.peerId;
-            };
-            peerIds.push(await p.evaluate(beitritt, `ws://127.0.0.1:${signal}`, raum));
-        }
-        for (const [i, p] of seiten.entries())
-            await waitFor(p, () => st.p2p.meshActive === true, `Mesh auf ${"AB"[i]} aktiv`);
-        return { seiten, peerIds, ende };
-    } catch (e) {
-        await ende();
-        throw e;
-    }
-}
-
 // DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR): ROT eine Schleife, die selbst auf einen Bau wartet, eine Wanduhr-Frist
 // (`performance.now()`/`Date.now()` im Kopf oder als break/return/throw), ein geschluckter `__gebautNach`; der REST
 // (spec/ci/frist-rest.json) schrumpft nur.
@@ -2219,6 +2192,8 @@ module.exports = {
     rahmen,
     pruefer,
     taeterFaelle,
+    akteUrteil, // das Urteil der Stall-Akte samt dem Wartenden beim Namen (Selbsttest gate:haus-welt)
+    PROBE_WARTET,
     bruchFaelle,
     selbstTafel,
     probeUrteil,
@@ -2242,7 +2217,6 @@ module.exports = {
     ausDatei,
     SELBSTTEST,
     waitFor,
-    zweiImMesh,
     booteWelt,
     weltTor,
     werkbankTor,

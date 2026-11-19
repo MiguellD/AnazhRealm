@@ -4,12 +4,15 @@ const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require(
 // gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
-//   1) SIEGEL-WORT-WAND: solange docs/PFLICHT-OFFEN.md Einträge trägt, ist ein
-//      HEAD-Commit mit fertig/RUND/vollendet/vollzogen/Schluss/SCOPE ZU rot.
-//   2) FROZEN-LISTEN-WAND: max 5 Einträge (je ein Buchstabe; F seit 31.10., der freie Platz von D), wohlgeformt — Scope wächst nie still;
-//      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
+//   1) SIEGEL-WORT-WAND: solange die Meisterkarte 2 nicht ganz gebucht ist (1 718 von 1 718, der Stand im Zweig
+//      punkte-maschine), ist ein HEAD-Commit mit fertig/RUND/vollendet/vollzogen/Schluss/SCOPE ZU rot; ein unlesbarer Stand
+//      zählt als offen (die Wand wird nie still grün).
+//   2) SCOPE-WAND (Schöpfer 19.11.: „Löse endlich die altlasten, entweder sie sind in den sprossen integriert oder du
+//      lässt es"): der EINZIGE Scope ist die Karte 2 — eine zurückgekehrte eigene Offen-Liste (`LISTE_ALT`, die
+//      gefallene Frozen-Liste) oder eine Bericht-Vorlage mit der Zeile „Pflicht-… Rest" ist ROT beim Namen.
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
-//   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
+//   4) ABSENZ-WAND: BETRIEBSGESETZ + Karte 2 in CLAUDE.md, die Schluss-Zeile „Karte 2: …" in champion.md — ein stilles
+//      Streichen ist rot.
 //   6) WACHSTUMS-WAND: scripts/ + spec/ wachsen höchstens um das Spiel + EIN Linsen-Maß, in Code-Atomen ohne Kommentare — sie
 //      urteilt am ZUG (er trägt sich selbst, dazu der Überschuss der Woche), jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 6 000 Zeilen je Skript;
 //   7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
@@ -20,26 +23,31 @@ const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require(
 const SIEGEL_CI = /\b(fertig|vollendet|vollzogen|schluss)\b|scope\s+zu/i;
 const SIEGEL_CS = /\bRUND\b/;
 
-function eintraege(text) {
-    return text.split("\n").filter((z) => /^[A-Z]\)\s+\S/.test(z));
-}
-
-// 2b) LOGBUCH-WAND: die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
-const LISTE_MAX_ZEILEN = 40;
-function logbuchBefund(text) {
-    const zeilen = text.split("\n");
-    const stempel = zeilen.filter((z) => /^>?\s*Stand-Stempel:/.test(z)).length;
-    const out = [];
-    if (stempel > 0) out.push(`PFLICHT-OFFEN trägt ${stempel} „Stand-Stempel:"-Zeilen — die Chronik ist git log`);
-    if (zeilen.length > LISTE_MAX_ZEILEN)
-        out.push(`PFLICHT-OFFEN trägt ${zeilen.length} Zeilen (max ${LISTE_MAX_ZEILEN}) — Liste, kein Logbuch`);
-    return out;
-}
-
-function siegelBefund(commitMsg, eintragZahl) {
-    if (!eintragZahl) return null; // leere Liste = SCOPE ZU legal
+// Die Karte 2: ihr Umfang und ihr Stand (`heute` = gebuchte Sprossen) im Zweig punkte-maschine.
+const KARTE_SPROSSEN = 1718;
+const KARTE_STAND = "origin/punkte-maschine:vision/karte-2-stand.json";
+// offen = die ungebuchten Sprossen; null (Stand unlesbar) zählt als offen
+function siegelBefund(commitMsg, offen) {
+    if (offen === 0) return null; // die ganze Karte gebucht = SCOPE ZU legal
     const m = commitMsg.match(SIEGEL_CI) || commitMsg.match(SIEGEL_CS);
     return m ? m[0] : null;
+}
+
+// 2) SCOPE-WAND: die gefallene Liste kehrt nicht zurück, keine Vorlage druckt ihre Rest-Zeile. Die Muster stehen aus
+//    Stücken, ebenso ihre Mutanten im Selbsttest — so liest die Wand auch diese Datei.
+const LISTE_ALT = "docs/" + "PFLICHT" + "-OFFEN.md";
+const REST_ZEILE = new RegExp("Pflicht" + "-OFFEN\\s+Rest", "i");
+const VORLAGEN_PFADE = /^(?:\.claude\/|docs\/|scripts\/|CLAUDE\.md$|README\.md$)/;
+function scopeBefund(dateien, listeDa) {
+    const out = [];
+    if (listeDa)
+        out.push(`SCOPE-WAND: ${LISTE_ALT} ist zurück — der EINZIGE Scope ist die Meisterkarte 2 (BETRIEBSGESETZ #2), keine eigene Offen-Liste`);
+    for (const { pfad, text } of dateien)
+        text.split("\n").forEach((z, i) => {
+            if (REST_ZEILE.test(z))
+                out.push(`SCOPE-WAND: ${pfad}:${i + 1} trägt die Bericht-Zeile der gefallenen Liste — der Bericht nennt „Karte 2: <gebucht> von 1 718"`);
+        });
+    return out;
 }
 
 function standZeilen(claudeText) {
@@ -310,7 +318,7 @@ function zitatWelt(dateien, lies, gates, ignoriert, monolith) {
     return { gates, pfade, namen, kennung, karte, code, ignoriert, monolith };
 }
 
-// 8) STRIPPER-WAND (PFLICHT-OFFEN D3): es gibt EINEN Kommentar-Stripper (`ohneKommentare` in
+// 8) STRIPPER-WAND (Klarheit D3): es gibt EINEN Kommentar-Stripper (`ohneKommentare` in
 //    scripts/lib/stamm.cjs) und EIN `__codeOf` (scripts/lib/welt-boot.cjs trägt es in jede Seite). Bis D3a lebten 171
 //    Stripper-Stellen in 65 Dateien mit verschiedener Semantik — dieselbe Quelle wurde je Linse anders bereinigt. Ein
 //    Kommentar-Regex in einem replace, ein Zeichen-Automat auf Schrägstrich-Paare oder ein eigener __codeOf-Einbau
@@ -434,18 +442,31 @@ function main() {
         errs.push(`STRIPPER-WAND: scripts/ oder die Tafel nicht lesbar (${String(e.message).split("\n")[0]})`);
     }
 
-    // 2) FROZEN-LISTEN-WAND
-    const listePfad = path.join(root, "docs", "PFLICHT-OFFEN.md");
-    let liste = null;
+    // 2) SCOPE-WAND: die alte Liste im Baum oder im Index, die Rest-Zeile in jeder Vorlage (.claude/, docs/, scripts/)
+    let vorlagen = 0;
     try {
-        liste = ausDatei(listePfad);
-    } catch {
-        errs.push("docs/PFLICHT-OFFEN.md fehlt — die Frozen-Liste ist das EINZIGE Offen-Dokument");
+        const listeDa =
+            fs.existsSync(path.join(root, LISTE_ALT)) || git(["ls-files", "--cached", "--", LISTE_ALT]).trim() !== "";
+        const dateien = git(["ls-files", "--cached"])
+            .split("\n")
+            .filter((p) => p && VORLAGEN_PFADE.test(p) && /\.(?:md|c?js|mjs|json|txt)$/.test(p))
+            .filter((p) => fs.existsSync(path.join(root, p)))
+            .map((p) => ({ pfad: p, text: ausDatei(path.join(root, p)) }));
+        vorlagen = dateien.length;
+        errs.push(...scopeBefund(dateien, listeDa));
+    } catch (e) {
+        errs.push(`SCOPE-WAND: der Index ist nicht lesbar (${String(e.message).split("\n")[0]})`);
     }
-    const posten = liste ? eintraege(liste) : [];
-    if (liste && posten.length > 5)
-        errs.push(`PFLICHT-OFFEN trägt ${posten.length} Einträge (max 5) — Scope wächst still`);
-    if (liste) errs.push(...logbuchBefund(liste));
+
+    // der Stand der Karte 2 (gebucht von 1 718); unlesbar = offen, nie still grün
+    let gebucht = null;
+    try {
+        const st = JSON.parse(git(["show", KARTE_STAND]));
+        if (st.sprossen === KARTE_SPROSSEN && Number.isInteger(st.heute)) gebucht = st.heute;
+    } catch {
+        gebucht = null;
+    }
+    const offen = gebucht === null ? null : KARTE_SPROSSEN - gebucht;
 
     // 1) SIEGEL-WORT-WAND am HEAD-Commit
     let headMsg = null;
@@ -457,11 +478,11 @@ function main() {
         errs.push("git log -1 nicht lesbar — die Siegel-Wort-Wand braucht den HEAD-Commit");
     }
     if (headMsg !== null) {
-        const befund = siegelBefund(headMsg, posten.length);
+        const befund = siegelBefund(headMsg, offen);
         if (befund)
             errs.push(
-                `HEAD-Commit trägt Siegel-Wort "${befund.trim()}" bei ${posten.length} Pflicht-OFFEN-Einträgen — ` +
-                    `„fertig" ist illegal bis die Frozen-Liste leer ist (BETRIEBSGESETZ #1)`
+                `HEAD-Commit trägt Siegel-Wort "${befund.trim()}" bei ${offen === null ? "ungelesenem Stand" : offen + " offenen Sprossen"} der Karte 2 — ` +
+                    `„fertig" ist illegal, bis die Karte 2 ganz gebucht ist (BETRIEBSGESETZ #1)`
             );
     }
 
@@ -473,12 +494,13 @@ function main() {
         errs.push(`CLAUDE.md Stand trägt ${sz} Zeilen (max 40) — Chronik gehört in git log, nicht in den Stand`);
     if (!claude.includes("## DAS BETRIEBSGESETZ"))
         errs.push("CLAUDE.md trägt kein BETRIEBSGESETZ mehr — stilles Streichen der Gesetze");
-    if (!claude.includes("PFLICHT-OFFEN.md")) errs.push("CLAUDE.md referenziert docs/PFLICHT-OFFEN.md nicht mehr");
+    if (!claude.includes("Meisterkarte 2 ist der EINZIGE Scope"))
+        errs.push("CLAUDE.md nennt die Meisterkarte 2 nicht mehr als den EINZIGEN Scope (BETRIEBSGESETZ #2)");
     const champ = ausDatei(".claude/agents/champion.md");
     if (!champ.includes("BETRIEBSGESETZ"))
         errs.push("champion.md trägt das BETRIEBSGESETZ nicht mehr — der Arbeiter läuft ungebunden");
-    if (!champ.includes("Pflicht-OFFEN Rest"))
-        errs.push("champion.md trägt das Pflicht-Output-Format (Pflicht-OFFEN Rest) nicht mehr");
+    if (!champ.includes("Karte 2: <gebucht> von 1 718"))
+        errs.push("champion.md trägt die Schluss-Zeile „Karte 2: <gebucht> von 1 718“ nicht mehr");
 
     // 5) ARCHIV-WAND (Lehre 15: git ist das Archiv, kein Doppel-Archiv im Baum): keine verfolgte Datei, die .gitignore
     // ausschließt.
@@ -493,20 +515,21 @@ function main() {
     // SELBSTTEST: die Wand muss feuern, sonst ist sie Theater.
     if (!archivBefund(["artifacts/profiband/x/bild.png"]).length || archivBefund([]).length)
         errs.push("Selbsttest der Archiv-Wand versagt");
-    const t1 = siegelBefund("welle vollendet, alles RUND", 2); // muss feuern
-    const t2 = siegelBefund("betriebsgesetz: siegel-wort-wand steht", 2); // darf nicht feuern
-    const t3 = siegelBefund("welle vollendet", 0); // leere Liste: Siegel legal
-    const t4 = siegelBefund("bericht: rund 60 assets pro sekunde", 2); // klein „rund" legal
-    if (!t1 || t2 || t3 || t4)
-        errs.push(`Selbsttest der Siegel-Wort-Wand versagt (t1=${t1} t2=${t2} t3=${t3} t4=${t4})`);
-    const l1 = logbuchBefund("> Stand-Stempel: 29.09. · V1.2.3\nA) x").length; // muss feuern
-    const l2 = logbuchBefund("# Liste\nA) x — Status: offen").length; // darf nicht feuern
-    const l3 = logbuchBefund(
-        Array(LISTE_MAX_ZEILEN + 5)
-            .fill("x")
-            .join("\n")
-    ).length; // muss feuern
-    if (!l1 || l2 || !l3) errs.push(`Selbsttest der Logbuch-Wand versagt (l1=${l1} l2=${l2} l3=${l3})`);
+    const t1 = siegelBefund("welle vollendet, alles RUND", 1682); // muss feuern
+    const t2 = siegelBefund("betriebsgesetz: siegel-wort-wand steht", 1682); // darf nicht feuern
+    const t3 = siegelBefund("welle vollendet", 0); // die ganze Karte gebucht: Siegel legal
+    const t4 = siegelBefund("bericht: rund 60 assets pro sekunde", 1682); // klein „rund" legal
+    const t5 = siegelBefund("SCOPE ZU", null); // Stand unlesbar zählt offen: muss feuern
+    if (!t1 || t2 || t3 || t4 || !t5)
+        errs.push(`Selbsttest der Siegel-Wort-Wand versagt (t1=${t1} t2=${t2} t3=${t3} t4=${t4} t5=${t5})`);
+    // die Scope-Wand: die zurückgekehrte Liste und die Rest-Zeile in einer Vorlage feuern beim Namen; die Karte-2-Zeile
+    // und ein Satz über die gefallene Liste schweigen
+    const restMutant = "Pflicht" + "-OFFEN Rest: 0 | Liste";
+    const p1 = scopeBefund([], true);
+    const p2 = scopeBefund([{ pfad: ".claude/agents/x.md", text: "Gemessen: 3\n" + restMutant }], false);
+    const p3 = scopeBefund([{ pfad: "docs/x.md", text: "Karte 2: 36 von 1 718 (Stand-Datei)\ndie frühere Liste A–F fiel" }], false);
+    if (p1.length !== 1 || !p1[0].includes(LISTE_ALT) || p2.length !== 1 || !p2[0].includes(".claude/agents/x.md:2") || p3.length)
+        errs.push(`Selbsttest der Scope-Wand versagt (p1=${p1.length} p2=${p2.join(" | ")} p3=${p3.length})`);
     // die Wachstums-Wand je Fall: die Zahl der Befunde am Zug (urteilt) und am Zweig (Stand); die Atome an einem Diff mit
     // voller Umgebung: die Summe der Code-Atome, „rot" = am Zug gegen Spiel 0 ROT beim Namen der Datei, dahinter die
     // Abweichung von Hand. Die Fälle fahren mit einem GIERIGEN Werkzeug, das jeden Kopf für abgeleitet erklärt: eine Datei
@@ -630,8 +653,9 @@ function main() {
 
     wandEnde(
         errs,
-        `gate:betriebsgesetz — Pflicht-OFFEN ${posten.length}/5 · Stand ${sz}/40 Zeilen · ` +
-            `Wachstum ${gemessen.join(" · ")} · Siegel-Wand + Logbuch-Wand + Absenz-Wand + Archiv-Wand + ` +
+        `gate:betriebsgesetz — Karte 2 ${gebucht === null ? "Stand unlesbar (Siegel verboten)" : gebucht + " von " + KARTE_SPROSSEN} · ` +
+            `Scope-Wand (${vorlagen} Vorlagen) · Stand ${sz}/40 Zeilen · ` +
+            `Wachstum ${gemessen.join(" · ")} · Siegel-Wand + Absenz-Wand + Archiv-Wand + ` +
             `Wachstums-Wand + Zitat-Wand + Stripper-Wand (${stripperDateien} Skripte, EIN Stripper, Tafel) stehen (Doku: ${dokuZeile}) · Selbsttest feuert`
     );
 }

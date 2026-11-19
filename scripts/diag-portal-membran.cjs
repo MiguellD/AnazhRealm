@@ -276,7 +276,7 @@ async function hellProbe() {
             window.__membranOhneFilm(false);
         }
         // DER MILCH-LESER (HS): die Öffnung als helles Weiß (dreifach über der Belichtung — die ACES-Schulter, das Bild vor D8)
-        setze(() => TSL.vec4(TSL.vec3(3.0).mul(r._torZiele().uBelicht), 1.0));
+        setze(() => TSL.vec4(TSL.vec3(3.0).div(r._vorBelichtung().k), 1.0));
         const R = await uhr("R", schuss);
         const Y = luma709;
         // EINE Maske für alle drei Bilder: die Pixel, in denen die Welt eine Membran zeigt — mit Membran steht ein Kanal um
@@ -684,7 +684,7 @@ hauptLauf(async () => {
                 lebt: !!recO,
                 fenster: !!recO?.mesh,
                 feuert: entered === 1,
-                licht: !!(r._portalLeuchte && r._portalLeuchte.L.staerke > 0 && Math.abs(r._portalLeuchte.x - e2.position.x) < 0.01),
+                licht: !!(r._portalLeuchte && r._portalLeuchte.L.cd > 0 && Math.abs(r._portalLeuchte.x - e2.position.x) < 0.01),
             };
         }
         r._bruchMelden = bruchAlt;

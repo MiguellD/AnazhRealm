@@ -1,6 +1,6 @@
 class AnazhRealm_siedlung_verkehr {
     // ===== ATLAS · Siedlung/verkehr — Wagen · Fahrer · Spur · Kreuzung · Wende · Platz =====
-    // ═══ DER VERKEHR (PFLICHT-OFFEN C, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
+    // ═══ DER VERKEHR (Leiter mensch.netz.verkehr, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
     // Eine städtische Siedlung (fachwerk `verkehrVon`) fährt so viele Wagen, wie ihr Gesetz nennt — jeder gefahren von einem
     // Bewohner ihrer Liste, auf dem Netz des Gesetzes (fachwerk `verkehrsNetz`: die zweispurigen Trassen, Kreuzungen, Engen,
     // Wenden und Plätze), mit dem EINEN Fahrer (`_fahrerSchritt`, `_fahrerLinie`) und dem EINEN Fahr-Schritt des Kerns
@@ -940,7 +940,7 @@ class AnazhRealm_siedlung_verkehr {
         W.heimWeg = this._verkehrWegZu(S, W.ki);
     }
 
-    // DAS ZIEL DER FAHRT (PFLICHT-OFFEN C: jeder Wagen erreicht sein Ziel): eine Wende der Stadt außer der, an der er ist (`von`),
+    // DAS ZIEL DER FAHRT (Leiter mensch.netz.verkehr: jeder Wagen erreicht sein Ziel): eine Wende der Stadt außer der, an der er ist (`von`),
     // gewählt vom Samen seines Wagens — dorthin fährt er den kürzesten Weg (`_verkehrWegZu`), durch ihren Kreis, dann zur nächsten.
     // Bis hier wählte der Same an jeder Kreuzung eine Strecke: der Wagen fuhr, kam aber nirgends an.
     _verkehrZielNeu(S, W, von) {

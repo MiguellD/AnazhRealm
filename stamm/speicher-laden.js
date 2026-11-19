@@ -1432,7 +1432,7 @@ class AnazhRealm_speicher_laden {
     }
 
     // DER WELT-WECHSEL AM ORT (Karte tore-k5-tuer): die Seite bleibt, die Welt tauscht — Renderer, Programme, Buch und Fäden
-    // bleiben warm; bis hierhin lud jeder Wechsel die Seite neu und zahlte ihren Zweit-Boot (GTX 12,0 s, Pflicht-Offen B).
+    // bleiben warm; bis hierhin lud jeder Wechsel die Seite neu und zahlte ihren Zweit-Boot (GTX 12,0 s, Leiter same.preis.ankunft).
     // DIE EINE SPERRE (Gegenprüfung Runde 3, 10.10.): bis die alte Welt gegangen ist, schreibt die Seite nichts — der Edit-Timer
     // fällt, `saveState` (jeder Speicher-Weg der lebenden Welt geht durch ihn) verweigert, der Zeiger zeigt auf die Ziel-Welt;
     // im Fenster des Reloads schrieb die lebende Seite unter den Namen der Ziel-Welt (6 698 Bytes mit dem Tier der alten im
@@ -2355,7 +2355,8 @@ class AnazhRealm_speicher_laden {
             terrainSteepness: steepness,
             terrainBaseHeight: baseHeight,
             weather,
-            worldMeta: {
+            // die Fusion gebiert eine Welt: ihr Tag der Prozesse beginnt bei 0 (`_weltGeburt`)
+            worldMeta: AnazhRealm._weltGeburt({
                 worldId: identity.newWorldId,
                 slug: identity.finalSlug,
                 creator: "local",
@@ -2368,7 +2369,7 @@ class AnazhRealm_speicher_laden {
                 // Γ1/Γ4 (genese-plan) — die Fusion gebiert NEUES Terrain (newSeed):
                 // kein Gesicht zu bewahren → die heutige Genese-Version (V18.179: 3).
                 genVersion: 3,
-            },
+            }),
             dslAbilities: mergedAbilities,
             dslHistory: mergedHistory,
             // Die fusionierte Welt trägt die Union beider Regel-Sätze (Dedup über die Signatur).

@@ -714,6 +714,75 @@ function raumLinse() {
     // Voll · Hülle · Destillat · Fernkörper
     check("Stufen-Wahrheit: L0 != L1 != L2 != L3 je Stichproben-Kultur", stufenEcht);
 
+    // 4b) DAS KREUZ STEHT VOR DER SCHEIBE, VON BEIDEN SEITEN (licht-eine-skala, windowSash): vor jeder großen Glas-Fläche des
+    // Flügels liegt in 2–11 mm eine parallele Fläche des Kreuzes (Scheibe ±12,5 mm in Kreuz ±22,5 mm; der Rahmen liegt 12,5 mm
+    // davor und zählt nicht). Bis 5ee7c2ce lag die Scheibe um −12 mm: auf einer Seite 2 mm VOR dem Kreuz — das wache Glas
+    // zeichnete nachts über die Sprosse (Dorf Nacht: Kreuz-Kontrast am Bild 0,023, mit dem Schnitt 0,168; main 0,034).
+    // Die Schwellen sind Ratschen AUS der Messung (L0 Kasten: 4 von 12 Dreiecken sind große Flächen, Ist 0,333; L1 Ist 0,861–0,868;
+    // der Rest ist das Oberlicht der Tür ohne Kreuz). Der Mutant „Scheibe an der alten Lage“ fällt ROT (Ist ≤ 0,03).
+    {
+        const dreiecke = (o, verschiebe) => {
+            const P = o.geometry.attributes.position, ix = o.geometry.index, L = []; // prettier-ignore
+            const N = ix ? ix.count : P.count;
+            const v = (i) => new THREE.Vector3().fromBufferAttribute(P, i);
+            for (let i = 0; i < N; i += 3) {
+                const e = (ix ? [ix.getX(i), ix.getX(i + 1), ix.getX(i + 2)] : [i, i + 1, i + 2]).map(v);
+                const nl = e[1].clone().sub(e[0]).cross(e[2].clone().sub(e[0]));
+                if (nl.length() < 1e-8) continue;
+                nl.normalize();
+                // der Mutant: die Scheibe um `verschiebe` längs ihrer Achse (beide Flächen in dieselbe Richtung)
+                if (verschiebe) for (const p of e) p.addScaledVector(nl, (nl.x + 2 * nl.z + 4 * nl.y > 0 ? 1 : -1) * verschiebe);
+                for (const p of e) p.applyMatrix4(o.matrixWorld);
+                const n = e[1].clone().sub(e[0]).cross(e[2].clone().sub(e[0])).normalize();
+                L.push({ n, c: e[0].clone().add(e[1]).add(e[2]).multiplyScalar(1 / 3), r: Math.max(e[0].distanceTo(e[1]), e[1].distanceTo(e[2]), e[2].distanceTo(e[0])) }); // prettier-ignore
+            }
+            return L;
+        };
+        const kreuzDeckt = (g, verschiebe = 0) => {
+            g.updateMatrixWorld(true);
+            const glas = [], rest = []; // prettier-ignore
+            g.traverse((o) => {
+                if (!o.geometry || !o.material) return;
+                if (o.material.opacity < 1) glas.push(...dreiecke(o, verschiebe));
+                else rest.push(...dreiecke(o, 0));
+            });
+            const Z = 0.5, G = new Map(); // prettier-ignore
+            for (const q of rest) {
+                const k = Math.floor(q.c.x / Z) + "," + Math.floor(q.c.y / Z) + "," + Math.floor(q.c.z / Z);
+                (G.get(k) || G.set(k, []).get(k)).push(q);
+            }
+            let gedeckt = 0;
+            const d = new THREE.Vector3();
+            for (const t of glas) {
+                const b = [Math.floor(t.c.x / Z), Math.floor(t.c.y / Z), Math.floor(t.c.z / Z)];
+                let ok = false;
+                for (let i = -2; i <= 2 && !ok; i++)
+                    for (let j = -2; j <= 2 && !ok; j++)
+                        for (let k = -2; k <= 2 && !ok; k++)
+                            for (const q of G.get(b[0] + i + "," + (b[1] + j) + "," + (b[2] + k)) || []) {
+                                if (q.n.dot(t.n) < 0.99) continue;
+                                const vor = d.copy(q.c).sub(t.c).dot(t.n);
+                                if (vor <= 0.002 || vor > 0.011) continue;
+                                if (Math.sqrt(Math.max(0, d.lengthSq() - vor * vor)) <= t.r) ok = true;
+                                if (ok) break;
+                            }
+                if (ok) gedeckt++;
+            }
+            return glas.length ? gedeckt / glas.length : 0;
+        };
+        const SOLL = [0.3, 0.8], bruch = [], mutant = [], ist = []; // prettier-ignore
+        for (const k of ["alemannisch", "tudor"])
+            for (const l of [0, 1]) {
+                const a = kreuzDeckt(FC.buildInstance(k, 7, l));
+                const m = kreuzDeckt(FC.buildInstance(k, 7, l), 0.012);
+                ist.push(`${k} L${l} ${a.toFixed(3)} (Mutant ${m.toFixed(3)})`);
+                if (!(a >= SOLL[l])) bruch.push(`${k} L${l}: nur ${a.toFixed(3)} der Glas-Dreiecke haben das Kreuz 2–11 mm vor sich (Soll ≥ ${SOLL[l]}) — die Scheibe steht vor dem Kreuz (fachwerk windowSash)`); // prettier-ignore
+                if (!(m <= 0.1)) mutant.push(`${k} L${l}: die Scheibe um 12 mm verschoben bleibt GRÜN (${m.toFixed(3)})`);
+            }
+        check("DAS KREUZ STEHT VOR DER SCHEIBE, VON BEIDEN SEITEN (windowSash, L0 und L1)", !bruch.length, bruch.length ? bruch.join(" ‖ ") : ist.join(" · ")); // prettier-ignore
+        check("DAS KREUZ VOR DER SCHEIBE SELBST-TEST: die Scheibe an der alten Lage (12 mm verschoben) ist ROT", !mutant.length, mutant.join(" ‖ ")); // prettier-ignore
+    }
+
     // 5) ov-Kanal wirkt (Override ändert die Geometrie wirklich — kein Passagier).
     check(
         "ov-Kanal: Parameter-Override ändert den Bau (alemannisch != alemannisch+storeys/turm)",

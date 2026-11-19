@@ -113,7 +113,9 @@ async function checkBandWEFrequenzband({ page, check }) {
             const i = Number.isFinite(m.emissiveIntensity) ? m.emissiveIntensity : 1;
             return (m.emissive.r + m.emissive.g + m.emissive.b) * i;
         };
-        out.tagsReisen = _glow(mGlut) > _glow(mStein) + 0.01;
+        // in der EINEN Skala (licht-eine-skala): das Glimmen trägt cd/m² ÷ `EINHEIT_LX` — der Abstand Glut ↔ Stein mindestens 0,01 cd/m²
+        // (ein Zehntel der Band-Untergrenze des Glimmens 0,1 cd/m²; bis hier 0,01 Welt-Einheiten = 161 cd/m², die Laborzahl)
+        out.tagsReisen = (_glow(mGlut) - _glow(mStein)) * __weltLicht.EINHEIT_LX > 0.01;
         // das Stein-Profil der Tags hält das Leaf ungeglüht und schaltet den Instanz-Ton (ohne Tags: werk-Default, es glüht)
         out.tagsImBuilder = mStein.userData.leafTint === true && _glow(mStein) === 0;
         // (4) KEIN PROFIL TRÄGT LICHT (F6): das additive Band (Rim, Nacht-Boden, Mond-Rim, der Gegenlicht-Glow) ist fort — kein Profil nennt

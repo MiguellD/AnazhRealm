@@ -9,7 +9,7 @@ async function checkBandW17Multiplayer({ page, check }) {
     // ### das Mesh-als-Server ###
     // Ein `ws-send` der fremden Welt wird ein subworld-net-Broadcast, jeder Peer im selben Sub-Welt-Raum
     // stellt ihn in sein iframe zu. Geprüft: Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
-    // Rate-Limit + Deckel; Zwei-Browser-Durchlauf: smoke-webrtc.cjs.
+    // Rate-Limit + Deckel; Zwei-Browser-Durchlauf: der Connected-Trip von erleben.spieler.gemeinsam S 1.
     const w17bResults = await safeEvaluate(page, () => {
         const out = {};
         const MAXB = AnazhRealm.SUBWORLD_NET_MAX_BYTES;
@@ -238,7 +238,7 @@ async function checkBandW17Multiplayer({ page, check }) {
     // ### der Compute-Host ###
     // Welten mit autoritativer Server-JS: ein Peer wird Compute-Host (Server-JS in einem verborgenen,
     // sandgesicherten iframe), Gäste routen an ihn (subworld-srv), Antworten kommen gezielt zurück
-    // (subworld-cli). Geprüft: Routing-Methoden; Zwei-Browser-Durchlauf: smoke-webrtc.
+    // (subworld-cli). Geprüft: Routing-Methoden; Zwei-Browser-Durchlauf: der Connected-Trip von erleben.spieler.gemeinsam S 1.
     const w17jsResults = await safeEvaluate(page, () => {
         const out = {};
         const MAXB = AnazhRealm.SUBWORLD_NET_MAX_BYTES;
@@ -1934,7 +1934,7 @@ async function checkBandG8R3Locality({ page, check }) {
 
 // KO-PRÄSENZ: das Mesh trägt Posen (subworld-pose, Welt-Schlüssel + Empfänger-Rate-Wand), die Heimat
 // injiziert peer-join/-state/-leave ins Sub-Welt-iframe, die WELT rendert die Gefährten
-// (worlds/begegnung). E2E: `npm run smoke:copresence`; dieses Band friert die Mechanik.
+// (worlds/begegnung). E2E: der Connected-Trip von erleben.spieler.gemeinsam S 1; dieses Band friert die Mechanik.
 async function checkBandW18CoPresence({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
@@ -2053,7 +2053,7 @@ async function checkBandW18CoPresence({ page, check }) {
 
 // INPUT-BRÜCKE: eine Welt, die im ready-Handshake `inputActions` deklariert, bekommt die Tasten als
 // SEMANTISCHE Aktionen ({type:"input", action, down} — Daten, nie Key-Codes). Eingefrorenes
-// Vokabular, Tipp-Feld-Wand, Listener lebt + stirbt mit dem Overlay. E2E: smoke:copresence.
+// Vokabular, Tipp-Feld-Wand, Listener lebt + stirbt mit dem Overlay. E2E: der Connected-Trip von erleben.spieler.gemeinsam S 1.
 async function checkBandW18InputBridge({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};

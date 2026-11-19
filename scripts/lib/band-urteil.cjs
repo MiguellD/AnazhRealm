@@ -5,7 +5,7 @@
 // Ist/Soll/Täter und ZWEI Urteile:
 //
 //   BAND     das Profi-Band selbst (Befehle · Dreiecke · VRAM · GPU-Zeit je Frame): ROT, solange ein Ist darüber liegt
-//            — die Zahl, die jede Welle senkt (Pflicht-OFFEN E). Nie grün gefärbt, wenn es überschritten ist.
+//            — die Zahl, die jede Welle senkt (Leiter same.preis.takt). Nie grün gefärbt, wenn es überschritten ist.
 //   LINSE    was die Messung selbst bricht oder einen Rückschritt zeigt:
 //     unbenannt  ein Befehl ohne Täter-Namen (`UNBENANNT:<type>`), ein Textur-Objekt ohne Erzeuger (Textur-Zensus)
 //                oder GPU-Bytes ohne Erzeuger (`tex:?` im VRAM-Abgriff)
