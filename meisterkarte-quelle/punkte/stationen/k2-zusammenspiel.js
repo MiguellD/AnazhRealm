@@ -2383,6 +2383,7 @@ L.perspektive("leben", (() => {
             // ═══ MENSCH, STADT UND MEER IM NETZ DES LEBENS (S2–S8; S1 trägt die Tafel vegetation.K4#1) ═══
             [SN]: {
                 sek: 30,
+                dorf: true,
                 mutiert: true,
                 pfad: PFAD,
                 ungefahren: "die Bilder der Auge-Sprossen (S2 Bildpaar übernutzt ↔ daneben, S5 Mündung, S7 Panel der Epochen, S8 Umland mit ↔ ohne Stadt) — swiftshader schießt nicht",
@@ -2574,6 +2575,16 @@ L.perspektive("leben", (() => {
                     // S4 — Kulturfolger am Ort gegen das Umland: der Bestand der Orts-Region gegen die Regionen im Ring
                     try {
                         const ortKeys = [...new Set(O.doerfer.map((d) => d.key))];
+                        // 19.11.: eine frisch gestartete Welt trägt an der Wiese noch keinen Ort (der Zug `_tickAutoSettlement` hebt die
+                        // Zelle erst, wenn der Spieler naht) — dann gibt es keinen Bestand am Ort, und die Zeile nennt die Zahl statt NaN
+                        if (!ortKeys.length) {
+                            aus[4] = {
+                                werte: { orte: 0, nutztierGattungen: 0, groessterOrt: 0 },
+                                zeuge: Z(0, 0, NaN, NaN),
+                                nicht: "keine Stadt mit 10⁴ Bewohnern und kein Ort an der Wiese: worldMeta.settlementCells trägt 0 Orte (" + O.staedte + " Städte) — kein Bestand am Ort gegen das Umland; keine Nutztiere im Buch (" + O.gattungen.join(", ") + ")",
+                            };
+                            throw null;
+                        }
                         const st = await S(bestand, { keys: ortKeys, n: ortKeys.length, ring: [0, 0], nahErlaubt: true, laeufe: [{ name: "jetzt", dauer: U[4].dauer, schritt: 600 }] });
                         const umKeys = [];
                         for (const k of ortKeys) {
@@ -2596,7 +2607,7 @@ L.perspektive("leben", (() => {
                             nicht: "keine Stadt mit 10⁴ Bewohnern (" + O.staedte + " Städte, der größte Ort " + groesster + " Häuser) und keine Nutztiere im Buch (" + O.gattungen.join(", ") + ") — der Wurf des Bestands fragt nie den Grundriss: Füchse " + ks.toFixed(1) + " /km² am Ort ↔ " + ku.toFixed(1) + " im Umland, Scheue " + ss.toFixed(1) + " ↔ " + su.toFixed(1),
                         };
                     } catch (e) {
-                        aus[4] = { werte: {}, zeuge: {}, nicht: warf(e) };
+                        if (e !== null) aus[4] = { werte: {}, zeuge: {}, nicht: warf(e) };
                     }
                     // S5 — die Metropole: Städte der Welt, ein Leser der Stoffströme
                     aus[5] = {
