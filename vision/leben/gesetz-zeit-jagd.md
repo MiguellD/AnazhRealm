@@ -190,3 +190,39 @@ S1 8 von 8 · S15 250–310 WÄ je Wolf · S2 3,2–4,0 · S3 0,085–0,11 · S4
 S14 bleibt ROT am reichen Ende (≈ +0,5 gegen Soll ≤ +0,45: meine Anker-Tafel ist dort reicher als die Gerade von Isle Royale —
 die Tafel bewege ich nicht nach dem Ergebnis) · S11 bleibt ROT. Benanntes Risiko: ≈ 75 Wölfe in 10–12 Rudeln schwingen nach dem
 Eingriff über, und der Zufall der kleinen Zahl trägt einzelne Saaten ins Aus.
+
+## Lauf 4 (19.11. 06:09–06:25, der erste und einzige Voll-Lauf, kein Bug geheilt) — 12 GRÜN, 3 ROT: der Wolf sättigt am FUTTER
+
+Tafel und Spur: `kern3/lauf-zeit-4.txt`. S1 8 von 8 (Wolf am Ende 68 80 61 66 74 56 63 69 in 9–15 Rudeln) · S2 3,99 · S3 0,084 ·
+S4 0,861 · S5 0,605 · S7 0,479 · S8 0,0011 · S9 0,013 · S10 0 · 0 · S12 0,969 · **S13 GRÜN: Fall 38,3 % (7 von 8 Saaten ≥ 25 %), Beute
+98,5 % nach 15 Jahren, Wolf lebt 8 von 8, Tief im Jahr 2–4** · S15 250,9 WÄ je Wolf, D 1,035. Wander-Tode 45 % → 0; Tode ab einem
+Jahr: Deckung 94,9 %, Alter 5,1 %. Vorhersagen: 9 Treffer (S1, S15, S2, S4, S13 samt Fall 30–50 % und Tief Jahr 2–3, S14 ROT am
+reichen Ende, S11 ROT), 1 Fehlschuss (S3 0,0841 gegen 0,085–0,11).
+
+ROT, jede beim Namen, kein Soll bewegt:
+- **S6 1,484 gegen 1,5–3** (Lauf 3: 2,26). Ursache ungemessen. Meine Lesart, als Hypothese: im stehenden, geschlossenen Bestand
+  ohne Wander-Tod ersetzt jeder Kopf sich selbst; das Feld-Band stammt aus bejagten Beständen (menschlich 0,09 je Jahr).
+- **S11 1,005 ms gegen 0,25** — das Gerät lief unter fremder Last 2,4 × langsamer; im selben Lauf kostet „ohne Wolf“ 1,222 ms, der
+  Wolf kostet also nichts dazu. Ruhig stand die Beute-Seite allein bei 0,416 ms (Lauf 1): die Kosten trägt der Bestand je KOPF.
+  Sie fallen nicht im Spike, sondern im Bau (Kosten an Schirm + Änderung, Satz „die Welt ist eine Funktion“).
+- **S14 +0,033 · +0,84 · −4,38**: mein Soll steht auf der falschen EBENE. Die Gerade von Isle Royale beschreibt den ganzen
+  Bestand je Jahr, ich habe sie an Rudel-Jahren geprüft — dort macht der EINE Wurf je Rudel das Wachstum zur Funktion der
+  Rudel-Größe (reich sind junge Paare mit 2,5 Köpfen). S14 bleibt ROT, wie gesetzt.
+
+Eigene Setzungen des Rechners, die das Gesetz nicht nennt (R1–R12 in der Lauf-Datei); die tragende und nach einem Blick gesetzte:
+**R9** — Reihenfolge „leere Stelle, dann Gründung, dann Bleiben“, umgestellt VOR dem Voll-Lauf, nachdem die Mechanik-Probe mit
+„Gründung zuerst“ im 24er-Raster ausstarb (49 Gründungen, 0 Beitritte). Die erste Reihenfolge ist nie voll gerechnet. Ich nehme
+R9 ins Gesetz als Satz 7 (d), mit diesem Makel offen benannt.
+
+### Nachtrag zum Soll (19.11. 06:30, gesetzt VOR der Auswertung, ersetzt S14 NICHT)
+
+| Nr | Probe | Soll | Feld-Anker |
+|---|---|---|---|
+| S14b | Wachstum des GANZEN Wolf-Bestands je Jahr gegen die mittlere Deckung D des Jahres (alle Saaten, Haupt-Lauf und S13-Zweige, Jahre in D-Klassen von 0,1) | Steigung 0,25–0,60 je D · Null-Durchgang bei D 0,95–1,15 | 0,418 · D − 0,44 (Vucetich & Peterson 2004) |
+
+### Urteil
+
+Das Gesetz der Zeit und der Jagd steht in sieben Sätzen (1, 2, 3 und 4 in zweiter Fassung, 5, 6, 7). Der Spike trägt die
+entscheidenden Proben: der Wolf lebt 8 von 8, das Verhältnis ist Probe (3,99 je 1 000, Feld 3,8–4,0), die Rückstell-Kraft wirkt mit
+dem Verzug des Felds. Damit öffnet der BAU: Welle 1 und die Jäger-Ebene als EINE Welle auf `leben-erbe`, der Bestand als reine
+Funktion im Kern, der Stamm als Leser. Erster Beweis des Baus: der Kern im Spiel rechnet `lauf-zeit-4` zahlengleich nach.
