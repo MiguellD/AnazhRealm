@@ -2044,8 +2044,8 @@ class AnazhRealm_bild_himmel {
     // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau zeigt wie am Mittag (die Belichtung
     // aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte; der Abfall des EINEN Punktlicht-Gesetzes, fachwerk `lichtAbfall`).
     // Es ist ein PLATZ DES LICHT-POOLS mit Himmels-Ersatz (K11, `_leuchtTakt`): kein Szenen-Licht (K15), kein eigener Term —
-    // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke in der Zahl des Labors (÷ LEGACY_LICHT), damit
-    // die EINE Übersetzung Labor → Welt sie trägt wie jede Quelle. Unter dem Himmel ist es aus (`_augenLeuchte` null).
+    // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke als `L.cd` = Welt-Einheiten × `EINHEIT_LX`,
+    // die `_leuchtStaerke` zurückteilt wie bei jeder Quelle (EINE Skala). Unter dem Himmel ist es aus (`_augenLeuchte` null).
     _dayNightApplyAugenLicht() {
         const st = this.state;
         const cam = st.camera;

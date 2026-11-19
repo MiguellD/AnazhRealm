@@ -25,7 +25,7 @@
 //   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma) und
 //       der Farbton des Lichts des Feuers auf dem Boden 1–3 m (28–45° netto, die Farbtemperatur des Gesetzes) bei der
 //       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder der Schüsse ab (die Figur
-//       und das Feuer aus 6 m fielen 08.11. ohne Leser). Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12), das Auge des Tages. DIE NACHT
+//       und das Feuer aus 6 m fielen 08.11. ohne Leser). Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, die Stärke des Welt-Feuers), das Auge des Tages. DIE NACHT
 //       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma, abgesoffen). Selbsttest: die
 //       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
@@ -810,7 +810,7 @@ const S0_LUMA_2M = 0.15;
 // die Nacht mit — die Glut-Palette des Selbsttests stand gemischt bei 35° im Band (BLIND). Gemessen wird das Licht des Feuers:
 // derselbe Ring im Schuss mit Feuer minus im Schuss ohne (`nacht`, dieselbe Kamera, dieselben Pixel), je Kanal in der Ausgabe
 // (sRGB, ≥ 0).
-const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 12 }, paletteUnter: 2 };
+const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35 }, paletteUnter: 2 };
 // ZWEI GRÖSSEN, ZWEI LESER (D3-2 mit K66): der FARBTON ist das Licht des Feuers (netto, die Nacht abgezogen — die Farbtemperatur
 // des Gesetzes), die SÄTTIGUNG ist, was das Auge sieht (brutto, das Bild mit der Nacht — die Wand des Auges der Nacht). Netto
 // gemessen trägt jedes Licht seine volle Sättigung (das Feuer allein, ohne den Boden der Nacht: 0,96).
@@ -1312,8 +1312,8 @@ async function lichtLauf() {
                     const AR = AnazhRealm;
                     const stufenAlt = AR._belichtungStufen;
                     if (schein === "kamera") AR._belichtungStufen = (h, q) => stufenAlt.call(AR, h, q) - 2;
-                    // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
-                    // der Nacht-Stärke von damals (nacht 12 statt des Datums) — die Farbe des Stoffs statt der Farbtemperatur
+                    // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b in der Glut-Palette (sRGB → linear) — die Farbe
+                    // des Stoffs statt der Farbtemperatur
                     // der Tag-Schein: das Auge des Tages — die Post-Kette ohne das Auge der Nacht (`nightFactor` 0, volle
                     // Sättigung wie bis K66), über jede Anwendung der Uhr hinweg
                     const tagUhr = r._applyDayNightToScene;
@@ -1322,9 +1322,12 @@ async function lichtLauf() {
                             tagUhr.call(this);
                             if (this.state.postProcessingUniforms) this.state.postProcessingUniforms.nightFactor.value = 0;
                         };
+                    // (licht-eine-skala) GENAU EINE Eigenschaft anders: der Ton. Die Stärke des Platzes bleibt die des Welt-Feuers
+                    // (`_leuchtStaerke`: cd ÷ EINHEIT_LX × Schaltplan, getragen vom hellsten Kanal — die Lichtfarbe ist auf ihn
+                    // normiert, `lichtFarbe`); die Palette auf ihren hellsten Kanal normiert, nie × Zeitplan (er fiel als Belichtung)
                     if (schein === "farbe") {
-                        const nacht = window.__fachwerkCore.LICHT_GESETZ.feuer.zeit.nacht;
-                        const pal = new T.Color().set(palette.hex).multiplyScalar(palette.nacht / nacht);
+                        const pal = new T.Color().set(palette.hex);
+                        pal.multiplyScalar(1 / Math.max(pal.r, pal.g, pal.b));
                         r._leuchtTakt = function () {
                             alt.call(this);
                             const A = this.state.atmoUniforms;
@@ -1332,7 +1335,10 @@ async function lichtLauf() {
                                 const p = A.lichtLage[k].value;
                                 const c = A.lichtFarbe[k].value;
                                 if (p.w > 0 && Math.hypot(p.x - f.x, p.z - f.z) <= 1.5)
-                                    c.set(pal.r * c.x, pal.g * c.x, pal.b * c.x, c.w);
+                                {
+                                    const hell = Math.max(c.x, c.y, c.z);
+                                    c.set(pal.r * hell, pal.g * hell, pal.b * hell, c.w);
+                                }
                             }
                         };
                     }
@@ -1604,7 +1610,7 @@ async function lichtLauf() {
         const fbUnter = fbTon && kopfTon ? +(kopfTon.hue - fbTon.hue).toFixed(1) : null;
         const farbGetroffen = fbUnter != null && fbUnter >= S0_TON.paletteUnter;
         console.log(
-            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°, ${fbUnter}° unter dem Kopf (${kopfTon.hue}°, Soll ≥ ${S0_TON.paletteUnter}°): die Farbtemperatur trägt ihn` : `BLIND — ${fbUnter}° unter dem Kopf (Soll ≥ ${S0_TON.paletteUnter}°) ` + JSON.stringify({ kopf: kopfTon, mutante: fbTon })}`
+            `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette bei der Stärke des Welt-Feuers): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°, ${fbUnter}° unter dem Kopf (${kopfTon.hue}°, Soll ≥ ${S0_TON.paletteUnter}°): die Farbtemperatur trägt ihn` : `BLIND — ${fbUnter}° unter dem Kopf (Soll ≥ ${S0_TON.paletteUnter}°) ` + JSON.stringify({ kopf: kopfTon, mutante: fbTon })}`
         );
         const tg = ergebnis.tag;
         const tgTon = tg && !tg.fehler ? s0Ton(tg, ergebnis.nacht) : null;

@@ -1817,7 +1817,8 @@ class AnazhRealm {
             nimm(b, { quelle: "brand", x: o.x, y: o.y, z: o.z, L: F.L, masse: F.masse * b.glut, phase: o.phase });
         });
         // DIE LAVA (stoffe.K3-2 · w28-lava-zuendet): jede glühende Decke leuchtet als FLAMMEN-FLÄCHE ihrer Zelle (`_flammenLicht`,
-        // der Weg des Brands: an der Decke die Bestrahlung `schein`, fern wächst ihr Licht mit ihrer Fläche), die Masse folgt ihrer
+        // der Weg des Brands: ihre Leuchtdichte die des schwarzen Körpers am Ausbruch, fachwerk `glutLeuchtdichte`; an der
+        // Decke π × Leuchtdichte ÷ EINHEIT_LX, fern wächst ihr Licht mit ihrer Fläche), die Masse folgt ihrer
         // Glut (`_lavaZustand`). Bis hier stand sie als Herdfeuer-Punkt × `BRAND.licht` 1 m über ihrer Mitte: nachts brannte die
         // Kruste dort weiß-rosa aus, die Risse verloren ihr Orange, und der Schein reichte kaum über ihren Rand.
         const lavaLicht = this._flammenLicht(cs / 2, globalThis.__fachwerkCore.glutLeuchtdichte(this._lavaSpanne()[1]));

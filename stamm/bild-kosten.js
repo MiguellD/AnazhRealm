@@ -2182,9 +2182,9 @@ class AnazhRealm_bild_kosten {
     // Nacht, EIN Schreiber `_dayNightApplyDirectionalLight` über die Post-Kette); mit `farbe` → der Versatz, den das Auge ihr
     // gibt (zum Grau ihrer Leuchtdichte, × Stäbchen-Anteil × Nacht — die Post-Kette addiert ihn). `vor`: der Ton, den das Auge
     // als `farbe` SIEHT (seine Umkehr — die Leuchtdichte bleibt unter dem Auge gleich, also derselbe Stäbchen-Anteil s:
-    // (farbe − L·s)/(1 − s)). Leser der Umkehr: die Flamme des Brands (`_brandFlammenZeichnen`) — ihr Ton ist an das BILD
-    // gebunden (`ziel` ÷ Belichtung, vor der Tonkurve), nicht an die Leuchtdichte einer Flamme: das Auge las sie nachts als
-    // 0,7 cd/m² (eine Flamme trägt Tausende) und nahm ihr 30 % der Farbe — cremeweiße Tropfen statt Feuer.
+    // (farbe − L·s)/(1 − s)). Leser der Umkehr: die Flamme des Brands (`_brandFlammenZeichnen`) — sie leuchtet in der
+    // Leuchtdichte der Flamme (fachwerk `FEUER_LEUCHTDICHTE` ÷ `EINHEIT_LX`, licht-eine-skala P8; bis dahin ein Bild-Ton
+    // `ziel` ÷ Belichtung) — und die Klasse Erscheinung (`_erscheinung`). Ohne Umkehr nahm das Auge ihr 30 % der Farbe.
     _nachtAuge(farbe, vor) {
         const [T, NA] = [THREE.TSL, AnazhRealm.NACHT_AUGE];
         const nacht = this._nachtAugeU || (this._nachtAugeU = T.uniform(0));

@@ -1551,13 +1551,22 @@ function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
 // `_vorBelichtung().k | .kBild` im Teiler — auch über einen Namen dafür: eine Variable, das Vor-Belichtungs-Objekt, den
 // Parameter eines Glieds, das ein Rufer mit der Belichtung füllt), steht in `BELICHTUNG_TEILER` mit seinem Grund; jeder
 // weitere ist ROT. Gelesen am AST (acorn über `stammLib.glieder`, Lehre 6): Kommentare tragen keinen Knoten.
+// (Z1) DIE KLASSE HAT GENAU ACHT NAMEN (Entscheid des Koordinators, licht-eine-skala): die Vereinigung der Namen aller
+// Ruf-Stellen ist genau `ERSCHEINUNG_KLASSE`. (Z2) DER REST OHNE GESETZ ist genau EINER: das Tierauge (tetrapoda-core
+// Seh-Klasse `auge`; physisch Rückstrahl, kein Strahler) — es läuft durch `_erscheinung`, ist aber kein Mitglied.
+const ERSCHEINUNG_KLASSE = ["Membran-Zielbild", "Filigran", "Saum", "Scheibe", "Rahmen-Glut", "Tor-Beschläge", "Kreatur-Aura", "Platzhalter eines Mitspielers"];
+const ERSCHEINUNG_REST = ["Tierauge"];
+// je Ruf-Stelle: [Glied, gerufener Name, Zahl der Rufe, die Stelle, ihre Namen der Klasse, ihr Rest ohne Gesetz] — die Rufe
+// eines Glieds zählen über seine Stellen zusammen
 const ERSCHEINUNG_MITGLIEDER = [
-    ["_erscheinungStoff", "_erscheinung", 1, "bild-kosten.js — der Marker (unbeleuchtet, mit oder ohne Karte): Farbe × Karte durch die EINE Stelle"],
-    ["_membranGraph", "_erscheinung", 1, "siedlung-tor.js — das Zielbild der Tor-Membran"],
-    ["_foundryTreeMaterial", "_erscheinung", 3, "studio-stoff.js — das Emissiv ohne Quellen-Datum (Rahmen-Glut, Beschläge, Tierauge) · der unbeleuchtete Stoff (Filigran, Saum, Scheibe) · die Glut je Ecke im Bau-Satz"],
-    ["_refreshCreatureTaskAura", "_erscheinungStoff", 1, "kreatur-verhalten.js — die Aura der Aufgabe einer Kreatur"],
-    ["_refreshCreatureCarryingVisual", "_erscheinungStoff", 1, "kreatur-verhalten.js — die Aura der tragenden Kreatur"],
-    ["_p2pBuildPlaceholderMesh", "_erscheinungStoff", 2, "netz-p2p.js — der Platzhalter eines Mitspielers (Leib, Kopf)"],
+    ["_erscheinungStoff", "_erscheinung", 1, "bild-kosten.js — der Marker (unbeleuchtet, mit oder ohne Karte) durch die EINE Stelle", [], []],
+    ["_membranGraph", "_erscheinung", 1, "siedlung-tor.js — das Zielbild der Tor-Membran", ["Membran-Zielbild"], []],
+    ["_foundryTreeMaterial", "_erscheinung", 1, "studio-stoff.js — der unbeleuchtete Stoff", ["Filigran", "Saum", "Scheibe"], []],
+    ["_foundryTreeMaterial", "_erscheinung", 1, "studio-stoff.js — das Emissiv ohne Lichtquelle", ["Rahmen-Glut", "Tor-Beschläge"], ["Tierauge"]],
+    ["_foundryTreeMaterial", "_erscheinung", 1, "studio-stoff.js — die Glut je Ecke im Bau-Satz (dieselben Tor-Stoffe im Satz)", ["Rahmen-Glut", "Tor-Beschläge"], []],
+    ["_refreshCreatureTaskAura", "_erscheinungStoff", 1, "kreatur-verhalten.js — die Aura der Aufgabe einer Kreatur", ["Kreatur-Aura"], []],
+    ["_refreshCreatureCarryingVisual", "_erscheinungStoff", 1, "kreatur-verhalten.js — die Aura der tragenden Kreatur", ["Kreatur-Aura"], []],
+    ["_p2pBuildPlaceholderMesh", "_erscheinungStoff", 2, "netz-p2p.js — der Platzhalter eines Mitspielers (Leib, Kopf)", ["Platzhalter eines Mitspielers"], []],
 ];
 const BELICHTUNG_TEILER = [
     ["_erscheinung", 1, "bild-kosten.js — der EINE Mechanismus der Klasse Erscheinung: Bildwert ÷ k, vor dem Auge der Nacht"],
@@ -1568,7 +1577,7 @@ const BELICHTUNG_TEILER = [
     ["_augenLichtStaerke", 1, "bild-himmel.js — das Licht des Auges eicht die 18-%-Karte der Höhle bei der Belichtung k auf Mittelgrau (das Auge adaptiert wie die Kamera)"],
 ];
 const BELICHTUNG_TERM = /\btoneMappingExposure\b|_vorBelichtung\(\)\s*\.\s*k(?:Bild)?\b/;
-function scanErscheinungsWand(t, mitglieder = ERSCHEINUNG_MITGLIEDER, teiler = BELICHTUNG_TEILER) {
+function scanErscheinungsWand(t, mitglieder = ERSCHEINUNG_MITGLIEDER, teiler = BELICHTUNG_TEILER, klasse = ERSCHEINUNG_KLASSE, rest = ERSCHEINUNG_REST) {
     const root = path.join(__dirname, "..");
     const gl = stammLib.glieder(t);
     const baum = stammLib.ast(t);
@@ -1648,7 +1657,18 @@ function scanErscheinungsWand(t, mitglieder = ERSCHEINUNG_MITGLIEDER, teiler = B
         return true;
     });
     const errs = [];
-    const soll = new Map(mitglieder.map(([g, name, z]) => [`${g}|${name}`, z]));
+    const soll = new Map();
+    for (const [g, name, z] of mitglieder) soll.set(`${g}|${name}`, (soll.get(`${g}|${name}`) || 0) + z);
+    // (Z1) die Vereinigung der Namen ist genau die Klasse, (Z2) der Rest genau einer
+    const vereint = (i) => [...new Set(mitglieder.flatMap((m) => m[i] || []))];
+    const [namenIst, restIst] = [vereint(4), vereint(5)];
+    const fremd = namenIst.filter((n) => !klasse.includes(n));
+    const fehlend = klasse.filter((n) => !namenIst.includes(n));
+    for (const n of fremd)
+        errs.push(`Klasse Erscheinung (Z1): „${n}" an ${mitglieder.filter((m) => (m[4] || []).includes(n)).map((m) => `\`${m[0]}\` (${m[3]})`).join(" · ")} ist kein Name der Klasse — sie hat genau ${klasse.length} (${klasse.join(" · ")})`); // prettier-ignore
+    for (const n of fehlend) errs.push(`Klasse Erscheinung (Z1): „${n}" trägt keine Ruf-Stelle — die Klasse hat genau ${klasse.length} Namen beim Ruf`);
+    if (restIst.length !== rest.length || restIst.some((n) => !rest.includes(n)))
+        errs.push(`Klasse Erscheinung (Z2): der Rest ohne Gesetz ist ${restIst.length} (${restIst.join(" · ") || "keiner"}) an ${mitglieder.filter((m) => (m[5] || []).length).map((m) => `\`${m[0]}\` (${m[3]})`).join(" · ") || "keiner Stelle"} — erlaubt ist genau ${rest.length} (${rest.join(" · ")})`); // prettier-ignore
     for (const [schl, ns] of bezug) {
         const [g, name] = schl.split("|");
         if (ns.length > (soll.get(schl) || 0))
@@ -3805,6 +3825,9 @@ function main() {
             name: scanErscheinungsWand(amLicht("\n        const kk = this.state.renderer.toneMappingExposure;\n        const w = 1 / kk;")),
             kommentar: scanErscheinungsWand(amLicht("\n        // this._erscheinung(x); farbe.div(this._vorBelichtung().k)")),
             tot: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.concat([["_gibtEsNicht", "_erscheinung", 1, "Selbsttest"]])),
+            // (Z1) ein neunter Name an einer Stelle · (Z2) ein zweiter Rest ohne Gesetz
+            neunter: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.map((m) => (m[0] === "_membranGraph" ? [...m.slice(0, 4), [...m[4], "Laternen-Kopf"], m[5]] : m))), // prettier-ignore
+            zweiterRest: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.map((m) => (m[3].includes("Bau-Satz") ? [...m.slice(0, 5), ["Funken"]] : m))), // prettier-ignore
         };
         const einer = (e, rx) => e.length === 1 && rx.test(e[0]);
         const erscheinungFeuert =
@@ -3813,10 +3836,12 @@ function main() {
             einer(erscheinung.teiler, /^Belichtungs-Teiler: stamm\/dirigent-kern\.js:\d+ `_flammenLicht` teilt die Belichtung heraus \(`farbe\.div\(this\._vorBelichtung\(\)\.k\)`\)/) &&
             einer(erscheinung.name, /^Belichtungs-Teiler: stamm\/dirigent-kern\.js:\d+ `_flammenLicht` teilt die Belichtung heraus \(`1 \/ kk`\)/) &&
             erscheinung.kommentar.length === 0 &&
-            einer(erscheinung.tot, /tote Zeile `_gibtEsNicht` → `_erscheinung`/);
+            einer(erscheinung.tot, /tote Zeile `_gibtEsNicht` → `_erscheinung`/) &&
+            einer(erscheinung.neunter, /^Klasse Erscheinung \(Z1\): „Laternen-Kopf" an `_membranGraph`/) &&
+            einer(erscheinung.zweiterRest, /^Klasse Erscheinung \(Z2\): der Rest ohne Gesetz ist 2 \(Tierauge · Funken\)/);
         console.log(
             erscheinungFeuert
-                ? `✅ SELBST-TEST: die Wand der Klasse Erscheinung feuert (fremder Rufer · fremder Teiler · Teiler über einen Namen · tote Zeile, je beim Glied; der Kommentar still; heute 0 bei ${ERSCHEINUNG_MITGLIEDER.length} Mitgliedern und ${BELICHTUNG_TEILER.length} Teilern) — ${erscheinung.rufer[0]} · ${erscheinung.teiler[0]}`
+                ? `✅ SELBST-TEST: die Wand der Klasse Erscheinung feuert (fremder Rufer · fremder Teiler · Teiler über einen Namen · tote Zeile · neunter Name · zweiter Rest, je beim Glied; der Kommentar still; heute 0: Erscheinung ${ERSCHEINUNG_KLASSE.length} Namen · Rest ohne Gesetz ${ERSCHEINUNG_REST.length} (${ERSCHEINUNG_REST.join(", ")}) · ${BELICHTUNG_TEILER.length} Belichtungs-Teiler) — ${erscheinung.rufer[0]} · ${erscheinung.teiler[0]} · ${erscheinung.neunter[0]} · ${erscheinung.zweiterRest[0]}`
                 : `❌ SELBST-TEST: die Wand der Klasse Erscheinung feuert nicht — ${JSON.stringify(erscheinung).slice(0, 900)}`
         );
         if (!erscheinungFeuert) process.exit(1);
@@ -3878,7 +3903,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, die Klasse Erscheinung trägt genau ihre ${ERSCHEINUNG_MITGLIEDER.length} Mitglieder und nur ${BELICHTUNG_TEILER.length} benannte Glieder teilen die Belichtung heraus, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau, keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, Erscheinung ${ERSCHEINUNG_KLASSE.length} Namen · Rest ohne Gesetz ${ERSCHEINUNG_REST.length} (${ERSCHEINUNG_REST.join(", ")}) · ${BELICHTUNG_TEILER.length} Belichtungs-Teiler (je Ruf-Stelle beim Glied), kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, kein Stoff fängt still (Stoff-Wand: kein schluckender catch im Render-Bau, keine Fehler-Variable und kein toter Fehler-Marker, kein Wenn um ein TSL-Glied, kein Null-Knoten; ${STOFF_ZWEIGE.length} benannte Zweige mit ihrem Bild (ohne Seite · der Sandbox-Weg des Voxel-Fadens), der EINE Melder meldet jede Meldung ERROR und dieselbe wieder mit Zähler, keine Kette steigt still aus, kein Bau wartet in einer Schleife auf die Uhr), die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, keine Probe setzt Spieler, Kamera oder Tier an ein Zahlen-Literal ohne BÜHNE, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup), der Name der Stamm-Datei steht als Lese-Ziel nur in scripts/lib/stamm.cjs (${stammLeserDateien(root).length} Dateien gesehen).`
     );
 }
 
