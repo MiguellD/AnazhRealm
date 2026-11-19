@@ -206,7 +206,7 @@ Welt bis der Bau ruht, dann 60 Einzel-Bilder der Bank (`__bankRunde`, Bühne, Sk
 | **S2** ≤ 1 % der Masken-Pixel > 8/255 Luma (ruhend) | Genesis Bild 0: **0,000 %** von 138 079 Masken-Pixeln (0 Pixel im ganzen Bild) — `genesis-third-blind0.png` gegen `genesis-third-mit0.png` | **GRÜN** |
 | **S3** Züge ≤ heute | Hauptbild Wiese 99 → **103**, Genesis 80 → **81** (Bau-Satz 2 → 4 und 8 → 14: je Satz ein früher und ein später indirekter Zug) | **ROT** |
 | **S4** Frame p95 ≤ heute (ABAB, ≥ 4 Boots je Seite) | Wiese Median p95 71,07 → **72,31 ms** (+1,7 %; A 63,9–78,1, B 68,8–78,5 — die Streuung je Seite ist über zehnmal der Abstand); Genesis 1 Boot 55,81 → 50,23 ms | **ROT** (in der Streuung, nicht getrennt) |
-| **S5** Bildpaar + Flug ohne sichtbares Poppen | Flug 24 × 1,5 m längs des Blicks an Genesis: Bild 0–17 unter 1 %, Bild 18–23 über 1 %, schlimmstes Bild 23 mit **15,0 %** — `genesis-third-schlimmst.png` (rot: > 8/255, grau: Maske), `genesis-third-schlimmstMit.png` | **ROT** |
+| **S5** Bildpaar + Flug ohne sichtbares Poppen | Flug 24 × 1,5 m längs des Blicks an Genesis: Bild 0–17 unter 1 %, Bild 18–23 über 1 %, schlimmstes Bild 23 mit **15,0 %**; gegen A gegen A (Prüfung 1 unten) über dem Rauschen nur Bild 21–23 mit +2,9 bis +3,6 Prozentpunkten — `genesis-third-schlimmst.png` (rot: > 8/255, grau: Maske), `genesis-third-schlimmstMit.png` | **ROT** |
 
 **Was die Zahlen sagen.** Die Sicht schneidet an den Häusern, was die Tiefe verdeckt, und nicht mehr: an der Wiese stehen die
 Häuser fern, ihr Bild ist zu 50 % UNTER dem Bildpunkt und nur zu 14,6 % verdeckt (Schritt 0) — gemessen fallen 6,6 %, weil ein
@@ -230,7 +230,14 @@ ebenfalls 1 Ding anders (Bewohner-Netz), der Dorf-Takt schwankt (eingeschwungen 
 ### Die drei Prüfungen an S5 (Entscheid des Koordinators, 19.11. abends)
 
 1. **A gegen A** (derselbe Kopf, derselbe Flug, ein zweiter blinder Flug gegen den ersten auf derselben Maske — der Boden des
-   Rauschens je Bild, `rauschen` in `mess-sicht.cjs`): läuft — der Flug steht in der GPU-Schlange hinter dem CI-echt-Lauf (WIP 19.11. abends).
+   Rauschens je Bild, `rauschen` in `mess-sicht.cjs`), Radeon 19.11. 21:14, Genesis Third, 24 × 1,5 m: zwei blinde Flüge am selben Kopf weichen in Bild 21–23 schon um
+   7,4 / 14,1 / 19,4 % der Maske voneinander ab (in Bild 0–4 und 17 um 0,0–0,3 %) — der größte Teil der S5-Zahl ist Rauschen
+   desselben Kopfs, nicht der Schnitt. Die Sicht gegen blind im selben Lauf: 10,3 / 17,3 / 23,0 %. Über dem Rauschen bleiben
+   3 von 24 Bildern mehr als 1 Prozentpunkt (Bild 21–23: +2,9 / +3,2 / +3,6), Bild 5–13 liegen +0,6 bis +0,9 darüber, der Rest
+   unter +0,5. **S5 bleibt ROT** — Rest-Ursache, benannt, nicht bewiesen: die Leser der Szenen-Tiefe (Wasser, Feld-Pass, jeder
+   Knoten auf `_szeneTiefe`) lesen das Abbild des Bruchs, und der späte Zug zeichnet NACH dem Bruch — was im Flug frisch
+   aufgedeckt wird, fehlt ihrer Tiefe. Die Heilung an der Wurzel ist ein zweites Abbild nach dem späten Zug oder der späte Zug
+   vor dem Abbild der Leser; beides ist nicht gebaut (Budget-Sicherung bei 98 %).
 2. **Schatten — die Kaskaden urteilen nie mit der Pyramide.** Die indirekten Züge werfen keinen Schatten
    (`stamm/bild-tiefe.js:202` `castShadow = false`) und ruhen in jedem Haken außer dem Hauptbild (`stamm/bild-wahl.js:43`
    `_sichtTiefeRuht`); `verdeckt` rechnet nur im Hauptbild (`stamm/bild-wahl.js:48` `_sichtTiefeRechnen`, der Bruch
