@@ -1471,7 +1471,9 @@ async function kreaturProben(r, T, opts) {
                 const Tt = tb.teile;
                 const F = G.fuss;
                 const art = G.art;
-                if (!F || !art || art === "stand") return;
+                // im Halt (art „stand“) endet jeder offene Stand ungezählt: die Stand-Pose des Halts ist kein Schritt des Gangs
+                // (ein Fuß, der vor dem Halt aufsetzte und nach ihm abhob, trug sonst den Weg der Ruhe-Pose als Schlupf)
+                if (!F || !art || art === "stand") return void natur.zu.delete(c);
                 // ausgewertet in DIESEM Takt (die Raten-Leiter wertet ferne Leiber jedes 2.–8. Bild aus): das Gesetz gilt nur dort,
                 // dazwischen zeigt das Bild die Pose der letzten Auswertung am weiter gezogenen Leib (der Schlupf des Bilds)
                 const aus = G.lastT === s.creatureAnimationTime;
@@ -1844,8 +1846,13 @@ async function kreaturProben(r, T, opts) {
                 }
                 const f = median(om) / TAU2;
                 const n = ys.length;
+                // ohne die Gerade des Wegs: am Hang (Boden-Spanne 2,46 m an der GPU) folgt die Senke des Rumpfs der Reichweite des
+                // Beins talwärts (tetrapoda SCHRITT 2) — ein Trend über 10 s ist kein Wippen und lag als Gipfel bei 0,1 Hz
                 const mw = ys.reduce((a, b) => a + b, 0) / n;
-                const y0 = ys.map((y) => y - mw);
+                const mi = (n - 1) / 2;
+                let [sxy, sxx] = [0, 0];
+                for (let i = 0; i < n; i++) ((sxy += (i - mi) * (ys[i] - mw)), (sxx += (i - mi) * (i - mi)));
+                const y0 = ys.map((y, i) => y - mw - (sxx > 0 ? sxy / sxx : 0) * (i - mi));
                 const dft = (fq, hann) => {
                     let [re, im] = [0, 0];
                     for (let i = 0; i < n; i++) {

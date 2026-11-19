@@ -2598,15 +2598,19 @@ class AnazhRealm_kreatur_verhalten {
     // Jenseits der Grenze friert nur ein Tier, das STEHT (Welle LF, der ferne Gang): wer läuft (laeuft), wird auf der
     // Stufe 1/8 weiter ausgewertet (nie gröber als ein Viertel seines Takts) — seine Knochen tragen die gelenkige
     // Grobstufe (EIN Skelett, S3) und die Glieder-Kapseln.
-    _creatureAnimDiv(dist, fernDist, omega, frameDt, laeuft) {
+    _creatureAnimDiv(dist, fernDist, omega, frameDt, laeuft, tast) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
         if (dist >= fernDist && laeuft !== true) return 0;
         const div = dist >= fernDist ? 8 : dist >= fernDist * 0.75 ? 4 : dist >= fernDist * 0.5 ? 2 : 1;
-        // Der Gang wird nie gröber als ein Viertel seines Takts abgetastet (ω des Gang-Gesetzes aus der letzten
-        // Auswertung): ein Fuchs im schnellen Trab (Takt 0,24 s) traf bei 30 fps und Stufe 1/4 (0,133 s je Auswertung)
-        // seine Stand-Phase nie zweimal — die Beine sprangen (gate:tier-gang unter Last, Schlupf 1,33).
+        // Der Gang wird nie gröber als ein Viertel seines STANDS abgetastet (ω und Tastgrad des Gang-Gesetzes aus der
+        // letzten Auswertung; ohne Tastgrad ein Viertel des Takts): ein Fuchs im schnellen Trab (Takt 0,24 s) traf bei 30 fps
+        // und Stufe 1/4 (0,133 s je Auswertung) seine Stand-Phase nie zweimal — die Beine sprangen (gate:tier-gang unter
+        // Last, Schlupf 1,33). Im Galopp (Tastgrad 0,25–0,35) traf ein Viertel des Takts den Stand einmal: der gehaltene
+        // Fuß (tierFussHalten) stand über das Ende seines Stands hinaus und schleifte (Probe herde-bild N1, Hirsch 0,18 m).
+        // mit Tastgrad: vier Auswertungen je Stand; ohne (Bewohner, Mensch): ein Viertel des Takts
+        const t = tast > 0 && tast < 1 ? tast : 1;
         if (div > 1 && omega > 0 && frameDt > 0)
-            return Math.max(1, Math.min(div, Math.floor((2 * Math.PI) / omega / (4 * frameDt))));
+            return Math.max(1, Math.min(div, Math.floor((((2 * Math.PI) / omega) * t) / (4 * frameDt))));
         return div;
     }
     // DER LAUF DES LEIBS (Welle LF, der ferne Gang): je Takt die Lage-Änderung des Leibs, geglättet (ein Sprung über das
@@ -3618,7 +3622,8 @@ class AnazhRealm_kreatur_verhalten {
                     // sieht — ein ferner Läufer hinter der Kamera steht still, bis er ins Bild kommt (39 Tiere, 32 fern:
                     // der Kreatur-Takt kostete mit jedem fernen Läufer 0,78 ms statt 0,41)
                     const laeuft = this._kreaturLaeuft(creature) && (inFrustum || dAuge < fernDist);
-                    let animDiv = this._creatureAnimDiv(dAuge, fernDist, omegaGang, dt, laeuft);
+                    const tastGang = tBA && tBA._gang ? tBA._gang.tast : 0;
+                    let animDiv = this._creatureAnimDiv(dAuge, fernDist, omegaGang, dt, laeuft, tastGang);
                     // ein offener Biss braucht seine Pose in jedem Takt (Posten 5): ob das Maul den Leib berührt, entscheidet
                     // der geneigte Kopf (_kreaturBissTakt), auch ungesehen — die Kosten trägt nur der Ansprung (unter 1 s)
                     const VAb = creature.userData._verhaltenAktion;
@@ -3634,7 +3639,7 @@ class AnazhRealm_kreatur_verhalten {
                         tBA &&
                         (U._haltZ !== U._motionZustand || U._haltA !== haltA || tBA._haltRuht === false)
                     )
-                        animDiv = this._creatureAnimDiv(dAuge, fernDist, omegaGang, dt, true);
+                        animDiv = this._creatureAnimDiv(dAuge, fernDist, omegaGang, dt, true, tastGang);
                     if (animDiv === 0) {
                         if (!creature.userData._animEingefroren) {
                             creature.userData._animEingefroren = true;

@@ -3086,7 +3086,6 @@
             return Infinity;
         });
         var v = new M3.Vector3();
-        var ecken = [[], [], [], []];
         t0.root.traverse(function (n) {
             var A = n.isSkinnedMesh && n.geometry.attributes;
             if (!A || A.aSchale) return; // die Haut, nie das Fell (wie minY)
@@ -3112,9 +3111,7 @@
                 for (var k = 0; k < 4; k++) {
                     var j = bi.indexOf(komp(SI, i, k));
                     if (j < 0 || !(komp(SW, i, k) > 0.5)) continue;
-                    v.fromBufferAttribute(A.position, i).applyMatrix4(n.matrixWorld);
-                    sohle[j] = Math.min(sohle[j], v.y);
-                    ecken[j].push(v.x, v.y, v.z);
+                    sohle[j] = Math.min(sohle[j], v.fromBufferAttribute(A.position, i).applyMatrix4(n.matrixWorld).y);
                 }
         });
         var mass = ketten.map(function (K, j) {
@@ -3126,20 +3123,7 @@
                 by = (p2.y - p1.y) * f,
                 bz = (p2.z - p1.z) * f;
             var p0w = T.wolf.worldToLocal(p0.clone());
-            // DIE SOHLE ALS FLÄCHE (e): das unterste Viertel der Pfoten-Haut, ihre Kante hinten/vorn (längs) und ihre halbe Breite
-            // — kippt die Pfote auf der Linie zur Hüfte (tierPose, Schritt 3), steht der Huf auf dieser Kante, nie im Grund
-            var E = ecken[j],
-                yS = Number.isFinite(sohle[j]) ? sohle[j] : t0.minY,
-                band = yS + 0.25 * Math.max(0, p2.y - yS),
-                e = [0, 0, 0];
-            for (var ie = 0; ie < E.length; ie += 3) {
-                if (E[ie + 1] > band) continue;
-                e[0] = Math.min(e[0], (E[ie + 2] - p2.z) * f);
-                e[1] = Math.max(e[1], (E[ie + 2] - p2.z) * f);
-                e[2] = Math.max(e[2], Math.abs(E[ie] - p2.x) * f);
-            }
             return {
-                e: e,
                 p0: [p0w.x * f, p0w.y * f, p0w.z * f],
                 a: [ay, az],
                 b: [by, bz],
@@ -3241,23 +3225,36 @@
     // DER GEHALTENE FUSS ZWISCHEN DEN AUSWERTUNGEN (Raten-Leiter, Probe herde-bild N1): ein ferner Leib wird nur jedes 2.–8. Bild
     // ausgewertet (stamm `_creatureAnimDiv`), sein Ort zieht jedes Bild weiter — die Beine hängen im Raum des Rumpfs, und jeder
     // stehende Fuß glitt mit dem Leib (Hirsch im Trab 0,32 m, im Galopp 0,61 m je Stand, das Bild schnappte bei der nächsten
-    // Auswertung zurück; gate:tier-gang maß nur in den Bildern der Auswertung). Je Bild löst die ebene Zwei-Knochen-IK der
-    // letzten Auswertung (tierPose, Schritt 3) jedes GEHALTENEN Beins neu, am Ziel, das der Leib seither hinter sich ließ: der Weg
-    // des Leibs in den Raum des Rumpfs (seine Matrix der Auswertung), Hüfte und Knie folgen, die Pfote hält ihre Lage zur Kette.
-    // Kosten: je stehendem Bein zwei atan2, ein acos — ohne Matrix-Aktualisierung des Baums.
+    // Auswertung zurück; gate:tier-gang maß nur in den Bildern der Auswertung). Je Bild löst dieselbe Kette wie tierPose
+    // (Schritt 3: Abspreizen, ebene Zwei-Knochen-IK, die Sohle auf der Linie zur Hüfte) jedes GEHALTENEN Beins neu, am Ziel der
+    // letzten Auswertung in der Welt, im Raum des Rumpfs, wie er JETZT steht (der Leib zog weiter, der Rumpf gleitet).
+    // Kosten: je stehendem Bein eine Matrix-Inverse je Leib, zwei atan2, ein acos, eine Quaternion.
     function tierFussHalten(group, tb) {
         var g = tb && tb._gang,
-            H = g && g.halt;
-        if (!H || !H.R.length || !(g.S > 0)) return 0;
+            H = g && g.halt,
+            T = tb && tb.teile;
+        if (!H || !(g.S > 0) || !T || !T.wolf) return 0;
         var dx = group.position.x - H.lage[0],
             dy = group.position.y - H.lage[1],
             dz = group.position.z - H.lage[2];
         if (dx * dx + dy * dy + dz * dz < 1e-8) return 0;
-        var R = H.R,
-            k = H.k || 1;
-        var ly = (R[1] * dx + R[5] * dy + R[9] * dz) * k,
-            lz = (R[2] * dx + R[6] * dy + R[10] * dz) * k;
-        var T = tb.teile,
+        var w = H.w;
+        if (!w) {
+            var V3 = group.position.constructor;
+            w = H.w = {
+                R: new T.wolf.matrixWorld.constructor(),
+                v: new V3(),
+                n: new V3(),
+                auf: new V3(),
+                x: new V3(1, 0, 0),
+                qA: new group.quaternion.constructor(),
+                qN: new group.quaternion.constructor(),
+                e: new group.rotation.constructor(),
+            };
+        }
+        T.wolf.updateWorldMatrix(true, false);
+        w.R.copy(T.wolf.matrixWorld).invert();
+        var k = H.k || 1,
             skala = group.scale.x || 1,
             n = 0;
         var ketten = [
@@ -3270,9 +3267,14 @@
             var hb = H.bein[i],
                 K = ketten[i],
                 B = tb.bein[i];
-            if (!hb[3] || !hb[2] || !K[0] || !K[2]) continue;
-            var ty = hb[0] - ly,
-                tz = hb[1] - lz;
+            if (!hb[6] || !K[0] || !K[2]) continue;
+            w.v.set(hb[0], hb[1], hb[2]).applyMatrix4(w.R).multiplyScalar(k);
+            w.n.set(hb[3], hb[4], hb[5]).transformDirection(w.R);
+            var lx = w.v.x - B.p0[0] * skala,
+                ly = w.v.y - B.p0[1] * skala;
+            var ab = Math.atan2(lx, -ly);
+            var ty = -Math.hypot(lx, ly),
+                tz = w.v.z - B.p0[2] * skala;
             var ay = B.a[0] * skala,
                 az = B.a[1] * skala,
                 by = B.b[0] * skala,
@@ -3286,18 +3288,16 @@
                 sK = Math.sin(thK);
             var thH = Math.atan2(tz, ty) - Math.atan2(az + (by * sK + bz * cK), ay + (by * cK - bz * sK));
             thH -= 2 * Math.PI * Math.round(thH / (2 * Math.PI));
-            var dH = thH - K[0].rotation.x,
-                dKn = thK - K[2].rotation.x;
+            K[0].rotation.order = "ZXY";
+            K[0].rotation.z = ab;
             K[0].rotation.x = thH;
             K[2].rotation.x = thK;
-            // die Pfote behält ihre Lage zur Welt: was Hüfte und Knie drehen, dreht sie zurück (um die Achse der Ebene)
-            // (im Raum des Unterglieds: dessen X ist die Achse der Bein-Ebene — die Pfote trägt die Neigung der Sohle davor)
+            // die Sohle auf der Linie zur Hüfte, wie tierPose sie legt (die Glieder darüber tragen die Pfote als Rz(ab)·Rx(Σ))
             if (K[3]) {
-                var hq = -(dH + dKn) / 2;
-                var qx = Math.sin(hq),
-                    qw = Math.cos(hq),
-                    q = K[3].quaternion;
-                q.set(qw * q.x + qx * q.w, qw * q.y - qx * q.z, qw * q.z + qx * q.y, qw * q.w - qx * q.x);
+                w.qA.setFromEuler(w.e.set(thH + (K[1] ? K[1].rotation.x : 0) + thK, 0, ab, "ZXY"));
+                w.qN.setFromUnitVectors(w.auf.set(-Math.sin(ab), Math.cos(ab), 0), w.n).multiply(w.qA);
+                w.qN.premultiply(w.qA.invert());
+                K[3].quaternion.setFromAxisAngle(w.x, -(thH + thK)).premultiply(w.qN);
             }
             n++;
         }
@@ -3715,7 +3715,17 @@
                 var quer = dx2 * vorZ - dz2 * vorX;
                 var weit = Math.max(steht2 ? Math.abs(dx2 * vorX + dz2 * vorZ) : 0, Math.abs(B2.zr) * skala + st / 2);
                 if (!steht2) quer = 0;
-                var lg = (glied(B2) + Math.hypot(B2.c[0], B2.c[1]) * skala) * 0.98;
+                // die Reichweite der Kette Hüfte → Sohle, das Pfoten-Glied auf der Halbierenden (SCHRITT 3): bei der Neigung θ
+                // der Linie D = c·cos(θ/2) + √(Glied² − c²·sin²(θ/2)), θ aus D selbst (zwei Schritte genügen)
+                var gl2 = glied(B2),
+                    c2 = Math.hypot(B2.c[0], B2.c[1]) * skala,
+                    hor2 = Math.hypot(weit, quer),
+                    lg = gl2 + c2;
+                for (var it2 = 0; it2 < 2; it2++) {
+                    var hw2 = Math.asin(Math.min(1, hor2 / lg)) / 2;
+                    lg = c2 * Math.cos(hw2) + Math.sqrt(Math.max(0, gl2 * gl2 - c2 * c2 * Math.sin(hw2) * Math.sin(hw2)));
+                }
+                lg *= 0.98;
                 var ueber = vHw.y - Z2[1]; // die Hüfte über der Sohle auf dem Boden
                 var noetig = ueber - Math.sqrt(Math.max(0, lg * lg - quer * quer - weit * weit));
                 if (noetig > senke) senke = Math.min(noetig, (B2.h * skala) / 3);
@@ -3742,6 +3752,7 @@
         // Lot), dann die ebene Zwei-Knochen-IK; die Pfote legt ihre Sohle auf die Normale des Bodens (Z[4..6], unten).
         // Dieselbe IK trägt den Stand mit seiner Gewichts-Unruhe.
         var vN = tmp.sohleN || (tmp.sohleN = new M3.Vector3());
+        var vZiel2 = tmp.sohleN2 || (tmp.sohleN2 = new M3.Vector3());
         var qA = tmp.sohleQA || (tmp.sohleQA = new M3.Quaternion());
         var qN = tmp.sohleQN || (tmp.sohleQN = new M3.Quaternion());
         var eA = tmp.sohleE || (tmp.sohleE = new M3.Euler());
@@ -3753,23 +3764,23 @@
             var p0x = BM3.p0[0] * skala,
                 p0y = BM3.p0[1] * skala,
                 p0z = BM3.p0[2] * skala;
-            // das Pfoten-Glied c steht auf der Linie Sohle → Hüfte (die Kette dreht um die Sohle, SCHRITT 2); im Lot und im
-            // Stand ist das die Normale des Bodens, am Ende des Stands rollt der Huf
+            // das Pfoten-Glied c steht auf der HALBIERENDEN zwischen der Normale des Bodens und der Linie Sohle → Hüfte (die
+            // Kette dreht um die Sohle, SCHRITT 2): im Lot ist das die Normale, unter dem gestreckten Bein kippt die Pfote um den
+            // halben Winkel — ganz auf der Linie tauchte ihre Kante im Stand bis 0,058 m in den Grund (Probe herde-bild Hufe),
+            // ganz auf der Normale fehlte dem Bein das Pfoten-Glied (der Rumpf an der Decke der Senke)
             vZiel.set(Z3[0], Z3[1] + hub3 * GG.hub * BM3.h * skala, Z3[2]);
             if (T.wolf) {
                 vN.set(BM3.p0[0] / fLab, BM3.p0[1] / fLab, BM3.p0[2] / fLab).applyMatrix4(T.wolf.matrixWorld).sub(vZiel);
                 if (!(vN.lengthSq() > 1e-8)) vN.set(Z3[4], Z3[5], Z3[6]);
-                else vN.normalize();
-                // der kippende Huf steht auf seiner Kante (tierBeinMass e): längs die Spitze (die Pfote hinter dem Lot, der Huf
-                // rollt über die Zehe) oder der Ballen (vor dem Lot), quer der Rand — die Sohle hebt sich um Kante × sin(Kippung)
-                // (vorher tauchte der kippende Huf im Stand bis 0,058 m in den Grund, Probe herde-bild Hufe)
-                if (BM3.e) {
-                    var kL = (vN.x - Z3[4]) * vorX + (vN.z - Z3[6]) * vorZ,
-                        kQ = (vN.x - Z3[4]) * vorZ - (vN.z - Z3[6]) * vorX;
-                    vZiel.y += ((kL > 0 ? BM3.e[1] : -BM3.e[0]) * Math.abs(kL) + BM3.e[2] * Math.abs(kQ)) * skala;
-                }
+                else vN.normalize().add(vZiel2.set(Z3[4], Z3[5], Z3[6])).normalize();
             } else vN.set(Z3[4], Z3[5], Z3[6]);
             vZiel.addScaledVector(vN, Math.hypot(BM3.c[0], BM3.c[1]) * skala);
+            var wX = vZiel.x,
+                wY = vZiel.y,
+                wZ = vZiel.z,
+                nX = vN.x,
+                nY = vN.y,
+                nZ = vN.z;
             if (Rinv) {
                 vZiel.applyMatrix4(Rinv).multiplyScalar(fLab * skala);
                 vN.transformDirection(Rinv);
@@ -3816,13 +3827,17 @@
                         tritt = true;
                     }
                 }
-                // die Lösung dieses Beins für das Bild zwischen den Auswertungen (tierFussHalten): Ziel im Rumpf-Raum und Kette
-                var hk = g.halt || (g.halt = { bein: [[], [], [], []], lage: [0, 0, 0], R: [] });
+                // das Ziel dieses Beins für die Bilder zwischen den Auswertungen (tierFussHalten): das Pfoten-Gelenk und die
+                // Linie zur Hüfte in der Welt, ob der Fuß gehalten steht
+                var hk = g.halt || (g.halt = { bein: [[], [], [], []], lage: [0, 0, 0], k: 1 });
                 var hb = hk.bein[i3];
-                hb[0] = ty;
-                hb[1] = tz;
-                hb[2] = stand ? 0 : 1;
-                hb[3] = fl[i3].an && !(fl[i3].tritt >= 0) ? 1 : 0;
+                hb[0] = wX;
+                hb[1] = wY;
+                hb[2] = wZ;
+                hb[3] = nX;
+                hb[4] = nY;
+                hb[5] = nZ;
+                hb[6] = !stand && fl[i3].an && !(fl[i3].tritt >= 0) ? 1 : 0;
                 var dK = Math.min(la + lb - 1e-4, Math.max(Math.abs(la - lb) + 1e-4, dZiel));
                 var gam = Math.acos(Math.max(-1, Math.min(1, (dK * dK - la * la - lb * lb) / (2 * la * lb))));
                 var thK = (BM3.phi0 < 0 ? -gam : gam) - BM3.phi0;
@@ -3889,8 +3904,6 @@
             g.halt.lage[0] = group.position.x;
             g.halt.lage[1] = group.position.y;
             g.halt.lage[2] = group.position.z;
-            var eR = Rinv.elements;
-            for (var kR = 0; kR < 16; kR++) g.halt.R[kR] = eR[kR];
             g.halt.k = fLab * skala;
         }
         // DAS NICKEN am Hals (H1): zweimal je Zyklus in der Phase des Federns, die Kopf-Mitte um nick × L

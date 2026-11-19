@@ -139,7 +139,7 @@ const LAUF = (k) => {
             N = 360;
         const fernDist = core.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * (cr.scale.x || 1);
         const stufe = () =>
-            k.last ? r._creatureAnimDiv(0.8 * fernDist, fernDist, tb._gang ? tb._gang.omega : 0, dt) : 1;
+            k.last ? r._creatureAnimDiv(0.8 * fernDist, fernDist, tb._gang ? tb._gang.omega : 0, dt, true, tb._gang ? tb._gang.tast : 0) : 1;
         let maxDiv = 1,
             auswertungen = 0;
         let t = 0,
