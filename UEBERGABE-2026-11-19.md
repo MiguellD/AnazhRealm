@@ -1,6 +1,6 @@
 # Übergabe 19.11. nachmittags (Konto 15, Koordinator an der Radeon — die letzte Fable-Sitzung)
 
-Stand nach LAGE 75a0ba45 (15:09). Budget gelesen 15:14: Woche alle Modelle 84 %, Fable 97 % (Woche endet 24.11. 08:59 Ortszeit),
+Stand nach LAGE 75a0ba45 (15:09). Budget gelesen kurz vor 15:13: Woche alle Modelle 84 %, Fable 97 % (Woche endet 24.11. 08:59 Ortszeit),
 Extra-Usage aus. Notbremse bei 98 % alle Modelle: TaskStop, notbremse.sh, dieses Blatt nachziehen.
 Wer hier weitermacht, liest zuerst den LAGE-Block, dann dieses Blatt, fährt den Blick (`messplatz-blick.cjs --kurz`), dann stempelt er.
 
