@@ -1747,8 +1747,8 @@
        "umfang": "1 Gebirge in Erd-Höhe",
        "tiefe": "Höhenstufen wie auf der Erde",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S1",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Horizont „Gebirge“",
        "richter": "Baum- und Schneegrenze im Bild auf Erd-Höhe ihrer Breite ±20 %"
       },
       {
@@ -1756,7 +1756,7 @@
        "umfang": "3 Klimata in einer Welt",
        "tiefe": "Kontinentalität: Jahresamplitude wächst mit der Meeresferne",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S2",
        "richter": "Jahresamplitude gegen Meeresabstand Rang ≥ 0,7 an 30 Orten"
       },
@@ -1765,7 +1765,7 @@
        "umfang": "Jahreszeit-Typen nach Breite",
        "tiefe": "Polarnacht, Monsun, Regen- und Trockenzeit",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S3",
        "richter": "Bildpaar Juli/Januar an 3 Breiten: Tageslänge, Sonnenhöhe, Laub, Eis ändern sich in die richtige Richtung"
       },
@@ -2566,7 +2566,7 @@
        "tiefe": "Roche-Grenze, Resonanzen",
        "preis": "P vom Orbit",
        "klasse": "Planet und Welten",
-       "klasseGrund": "geerbt:S2",
+       "klasseGrund": "pose:Orbit",
        "richter": "Ringe nur innerhalb der Roche-Grenze (100 %); Resonanzketten in ≥ 10 % der Riesen-Systeme"
       },
       {
@@ -4167,8 +4167,8 @@
        "umfang": "Wasserfarbe je Ort: alle 14 Jerlov-Typen",
        "tiefe": "Plankton und Schwebstoff AM ORT färben, die Mündung trübt",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Region ohne Größe „je Ort“",
        "richter": "Farbmessung gegen die Jerlov-Klasse des Orts: ΔE ≤ 10 je Typ"
       },
       {
@@ -4176,7 +4176,7 @@
        "umfang": "Tiefe 0 → 1 000 m",
        "tiefe": "Rot fällt, dann Grün, dann alles; Biolumineszenz trägt das Dunkel",
        "preis": "P · im Abstieg",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S4",
        "richter": "Spektrum am Auge je 100 m gegen Ozean-Profil, Fehler ≤ 20 %"
       },
@@ -4185,7 +4185,7 @@
        "umfang": "Riff und Kelpwald im Nahbild: Tausende Formen je Bild, Meeresschnee",
        "tiefe": "kaum vom Foto zu trennen",
        "preis": "P · am Riff",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S5",
        "richter": "Panel unterscheidet Spiel und Foto in ≤ 60 %"
       },
@@ -5882,8 +5882,8 @@
        "umfang": "jede Epoche × Kultur der Erde",
        "tiefe": "N = 100 zufällige (Ort, Jahr)",
        "preis": "P · Zeitsprung ≤ 5 s",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Planet-Maß „jede Epoche × Kultur der Erde“",
        "richter": "Blind-Zuordnung ≥ 0,7; keine zwei Saaten mit verwechselbarer Menge"
       },
       {
@@ -5892,7 +5892,7 @@
        "tiefe": "kohärent, nicht kostümiert, ohne Erd-Vorbild",
        "preis": "P · fremder Planet",
        "klasse": "Planet und Welten",
-       "klasseGrund": "zweifel:Welt-Wechsel „fremde Völker“",
+       "klasseGrund": "geerbt:S6",
        "richter": "100 Welten ohne Erd-Kultur: kohärent ≥ 0,8, ≥ 20 Stile; Person → Volk ≥ 0,8"
       }
      ],
@@ -7475,7 +7475,7 @@
        "tiefe": "Pendelmatrix nach Gravitationsmodell",
        "preis": "P · Stadt",
        "klasse": "Stadt",
-       "klasseGrund": "geerbt:S2",
+       "klasseGrund": "pose:Stadt",
        "richter": "Pendeldistanz gegen Zensus KS ≤ 0,15 in ≥ 0,8 von 20 Saaten"
       },
       {
@@ -7847,14 +7847,16 @@
        "umfang": "1 Ebene, Häuser bis 7 Geschosse",
        "tiefe": "Haus von Keller bis Dachboden",
        "preis": "P · Stadt",
-       "richter": "höchstes Gebäude im Bild, begehbare Ebenen = 1"
+       "richter": "höchstes Gebäude im Bild, begehbare Ebenen = 1",
+       "klasse": "Stadt",
+       "klasseGrund": "hand"
       },
       {
        "nr": 2,
        "umfang": "Türme 30 Geschosse",
        "tiefe": "Fassade aus 5 km lesbar",
        "preis": "P · Fernblick",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S1",
        "richter": "höchstes Gebäude ≥ 100 m, Silhouette aus 5 km erkennbar"
       },
@@ -7863,7 +7865,7 @@
        "umfang": "Supertall ≥ 400 m",
        "tiefe": "Fernform hält ohne Flackern",
        "preis": "P · Anflug",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S2",
        "richter": "Anflug 10 km bis Fuß ohne Formsprung, Pixel-Unruhe ≤ 1 %"
       },
@@ -7872,7 +7874,7 @@
        "umfang": "2 Ebenen: Brücken, Unterführung, U-Bahn",
        "tiefe": "Unterwelt beleuchtet und belebt",
        "preis": "P · Ebenenwechsel",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S3",
        "richter": "−1 → +1 ohne Ladeschirm; Bewohner auf beiden Ebenen"
       },
@@ -7881,7 +7883,7 @@
        "umfang": "≥ 5 Schichten, 10⁶ Menschen/km² lokal (Kowloon)",
        "tiefe": "Gänge, Höfe, Licht von oben",
        "preis": "P · im Block",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S4",
        "richter": "≥ 10 000 Bewohner je ha; Bildpaar gegen Fotos der Kowloon Walled City: 2AFC ≤ 70 %"
       },
@@ -7951,8 +7953,8 @@
        "umfang": "die Erde: Kulturräume aller Kontinente",
        "tiefe": "gegen Fotos realer Altstädte",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "wort:Kontinente",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Planet-Maß „die Erde“",
        "richter": "20 Referenz-Altstädte glaubhaft ≥ 70 %; Klimazone aus dem Stadtbild ≥ 60 %"
       },
       {
@@ -7960,7 +7962,7 @@
        "umfang": "10² Kultur × Epoche",
        "tiefe": "Bauweise folgt Klima, Stoff, Technik",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S3",
        "richter": "100 Saaten: 2AFC gegen Fotos des Kulturraums ≤ 80 %, paarweise unterscheidbar ≥ 90 %"
       },
@@ -7969,7 +7971,7 @@
        "umfang": "Zukunft 2100–3000",
        "tiefe": "Folge von Technik und Klima",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S4",
        "richter": "Fremdwelt-Probe (R10) an 100 Zukunfts-Städten: Ursache (Klima, Energie, Verkehrstechnik) aus dem Stadtbild gelesen Rang ≥ 0,7; Gegenlauf: Technik getauscht → Stadtform kippt ≥ 80 %; Neuheit gegen den Korpus gebauter Städte"
       },
@@ -7979,7 +7981,7 @@
        "tiefe": "Form folgt dem Bauenden",
        "preis": "P · fremder Planet",
        "klasse": "Planet und Welten",
-       "klasseGrund": "zweifel:Welt-Wechsel „fremde Städte“",
+       "klasseGrund": "geerbt:S5",
        "richter": "100 Saaten: Fremdwelt-Probe (R10) — Körperbau der Bauenden aus dem Stadtbild geschätzt Rang ≥ 0,7"
       },
       {
@@ -9762,8 +9764,8 @@
        "umfang": "10⁴ Waren (Gussteil, Chip)",
        "tiefe": "rückverfolgbar bis zur Lagerstätte",
        "preis": "P · Industriestadt",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Industriestadt",
        "richter": "50 Waren: Kette bis Gestein 100 %; H ≥ 10³"
       },
       {
@@ -9771,7 +9773,7 @@
        "umfang": "10⁷ Warenformen über Epochen",
        "tiefe": "Abfall, Rückgewinnung",
        "preis": "P · jeder Ort",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S5",
        "richter": "100 Saaten × 10 Epochen: Warenkörbe plausibel ≥ 95 %"
       },
@@ -9821,8 +9823,8 @@
        "umfang": "10² Berufe, Lehrling und Meister, Ketten",
        "tiefe": "Stoff ändert sich, Ware wandert",
        "preis": "P · Stadt 10³",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Stadt",
        "richter": "nach 2 h verändert ≥ 0,9; Ware am nächsten Glied ≥ 0,9"
       },
       {
@@ -9830,8 +9832,8 @@
        "umfang": "10³ Berufe als Bündel von Umwandlungen",
        "tiefe": "Schicht, Betrieb, Können wächst",
        "preis": "P · Stadt 10⁵",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Stadt",
        "richter": "1 000 Stichproben passen zu Werk, Uhr, Epoche ≥ 95 %"
       },
       {
@@ -9839,7 +9841,7 @@
        "umfang": "10⁴ Berufe über Epochen",
        "tiefe": "entstehen und verschwinden mit Technik",
        "preis": "P · jede Epoche",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S4",
        "richter": "Anachronismen ≤ 0,01; ≥ 0,2 stehen in keiner Liste des Codes"
       },
@@ -9909,8 +9911,8 @@
        "umfang": "10³ Märkte, Kredit, Bank",
        "tiefe": "Arbitrage schließt Lücken",
        "preis": "P · Handelsstadt",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Handelsstadt",
        "richter": "Spanne halbiert sich ≤ 30 Tage"
       },
       {
@@ -9918,8 +9920,8 @@
        "umfang": "10⁵ Märkte, Börse",
        "tiefe": "Blasen und Krisen entstehen",
        "preis": "P · Börsenstadt",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Börsenstadt",
        "richter": "20 Saaten: fette Ränder ≥ 80 %; Krise im Straßenbild ≥ 80 %"
       },
       {
@@ -9950,14 +9952,16 @@
        "umfang": "1 Ware, 1 Weg mit Fahrer",
        "tiefe": "Stand leert sich ohne Lieferung",
        "preis": "P · Stadt",
-       "richter": "Bildpaar leer/beladen; ohne Lieferung Stand leer binnen Tagesfrist"
+       "richter": "Bildpaar leer/beladen; ohne Lieferung Stand leer binnen Tagesfrist",
+       "klasse": "Stadt",
+       "klasseGrund": "hand"
       },
       {
        "nr": 2,
        "umfang": "10 Routen, Karawane, Lieferwagen",
        "tiefe": "Tier, Wagen, Träger je Gelände",
        "preis": "P · auf der Route",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S1",
        "richter": "Route ≤ 10 % teurer als die billigste (ORBIS-Maß)"
       },
@@ -9966,7 +9970,7 @@
        "umfang": "10² Routen, Hafen",
        "tiefe": "Hafen an geschütztem Wasser, Segelzeit aus Wind",
        "preis": "P · Hafen",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S2",
        "richter": "Hafenlage plausibel 100 %; Schiffe beladen ≥ 80 %"
       },
@@ -9975,7 +9979,7 @@
        "umfang": "10³ Knoten, Pässe, Zölle",
        "tiefe": "Verkehr folgt Anziehung; Engpass wirkt fern",
        "preis": "P · Pass",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S3",
        "richter": "Dichte ↔ Gravitationsmodell r ≥ 0,7; Hafen-Sperre leert ferne Regale in Reihenfolge"
       },
@@ -9984,7 +9988,7 @@
        "umfang": "10⁵ Routen, Container",
        "tiefe": "Megastadt versorgt",
        "preis": "P · Containerhafen",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S4",
        "richter": "≥ 10⁴ Frachtbewegungen; Kette 3 Tage gesperrt: Verhalten ändert sich nach Reserven"
       },
@@ -10061,8 +10065,8 @@
        "umfang": "Halbleiter, ≥ 10 Pfade",
        "tiefe": "lückenlose Kette Sand → Chip",
        "preis": "P · Chipstadt",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Chipstadt",
        "richter": "≥ 10 verschiedene Pfade mit lückenloser Kette"
       },
       {
@@ -10070,7 +10074,7 @@
        "umfang": "10 Epochen eines Orts",
        "tiefe": "jede folgt aus der vorigen",
        "preis": "P · Sprung ≤ 5 s",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S5",
        "richter": "0 Werkzeuge ohne Vorgänger; Ort wiedererkannt ≥ 80 %"
       },
@@ -10120,8 +10124,8 @@
        "umfang": "Kohle und Dampf",
        "tiefe": "Warenstrom je Kopf springt",
        "preis": "P · Kohlestadt",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Kohlestadt",
        "richter": "Strom je Arbeitendem ≥ 10× über den Übergang"
       },
       {
@@ -10129,8 +10133,8 @@
        "umfang": "Strom",
        "tiefe": "Ausfall wandert durch das Netz",
        "preis": "P · Stadt bei Nacht",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Stadt",
        "richter": "Kraftwerk aus → Viertel dunkel, Werke stehen"
       },
       {
@@ -10170,7 +10174,9 @@
        "umfang": "1 Herrschaftsgebiet",
        "tiefe": "Grenze im Land sichtbar, Herr mit Ursache",
        "preis": "P · Grenzübertritt",
-       "richter": "Grenze im Bild = Karte; Burg, wo Lage und Reichtum sie tragen"
+       "richter": "Grenze im Bild = Karte; Burg, wo Lage und Reichtum sie tragen",
+       "klasse": "Stadt",
+       "klasseGrund": "hand"
       },
       {
        "nr": 2,
@@ -10196,7 +10202,7 @@
        "tiefe": "Hauptort wandert mit dem Überschuss",
        "preis": "P · Hauptstadt",
        "klasse": "Stadt",
-       "klasseGrund": "geerbt:S3",
+       "klasseGrund": "pose:Hauptstadt",
        "richter": "Lebensdauer gegen Seshat KS p > 0,05"
       },
       {
@@ -10879,14 +10885,16 @@
        "umfang": "U_eff ≥ 10 (auch aus Liste)",
        "tiefe": "Bau und Tracht je Kultur und Epoche",
        "preis": "P · Dorf und Stadt",
-       "richter": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %"
+       "richter": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %",
+       "klasse": "Stadt",
+       "klasseGrund": "hand"
       },
       {
        "nr": 2,
        "umfang": "U_eff ≥ 10² aus dem Samen",
        "tiefe": "Merkmalsvektor aus dem Erbfeld",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S1",
        "richter": "Saat-Probe: getrennt ≥ 80 %, plausibel ≥ 90 %"
       },
@@ -11025,14 +11033,16 @@
        "umfang": "Technikstand je Ort",
        "tiefe": "wächst mit Größe und Vernetzung",
        "preis": "P",
-       "richter": "Stand ↔ Bevölkerung × Vernetzung r ≥ 0,5"
+       "richter": "Stand ↔ Bevölkerung × Vernetzung r ≥ 0,5",
+       "klasse": "Stadt",
+       "klasseGrund": "hand"
       },
       {
        "nr": 2,
        "umfang": "Schule, Bibliothek, Werkstatt",
        "tiefe": "Können folgt Lehrer und Buch",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S1",
        "richter": "Schüler eines Meisters ≥ 1 SD über dem Mittel"
       },
@@ -11041,7 +11051,7 @@
        "umfang": "Bücher und Medien lesbar und wahr",
        "tiefe": "zeigen Ereignisse der eigenen Welt",
        "preis": "P · Text am Blick",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S2",
        "richter": "≥ 70 % verweisen auf ein reales Ereignis der letzten Tage"
       },
@@ -11050,7 +11060,7 @@
        "umfang": "Verlust und Wiederfindung",
        "tiefe": "Katastrophe vernichtet, Fund hebt",
        "preis": "P · Jahreswechsel",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S3",
        "richter": "Stand fällt nach Ausbruch, steigt nach Fund"
       },
@@ -11722,8 +11732,8 @@
        "umfang": "die bewohnte Erde in jedem Jahrhundert seit −3000",
        "tiefe": "Siedlungsdichte, Reiche, Handelswege",
        "preis": "P · Schlüssel ≤ 5 MB",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "hand",
        "richter": "Bevölkerungsraster gegen HYDE je Jahrhundert: Rang-r ≥ 0,7; Reichsgrenzen gegen Seshat IoU ≥ 0,5"
       },
       {
@@ -11731,7 +11741,7 @@
        "umfang": "10⁴ Orte in jedem Jahr der Schriftzeit",
        "tiefe": "Alltag, Tracht, Sprache der Zeit",
        "preis": "P",
-       "klasse": "Stadt",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S4",
        "richter": "1 000 (Ort, Jahr): 2AFC gegen datierte Bildquellen ≤ 70 %; das Fach-Panel findet ≤ 1 Anachronismus je 10 Bilder"
       },
@@ -11740,8 +11750,8 @@
        "umfang": "jeder Ort der Erde in jedem Jahr, das ein Mensch erinnert",
        "tiefe": "die eigene Stadt im Jahr der Großeltern",
        "preis": "P · Schlüssel je besuchtem km² und Jahrzehnt, am Ort geladen und gezählt",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "hand",
        "richter": "Heimat-Probe über die Zeit: 100 Menschen erkennen ihren Ort um 1950 im 2AFC gegen alte Fotos ≤ 75 %"
       }
      ],
@@ -12491,8 +12501,8 @@
        "umfang": "10⁸ Jahre: Platten driften, Gebirge wachsen, Arten entstehen",
        "tiefe": "Planet als Film, jederzeit betretbar",
        "preis": "P · ≤ 5 s",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Horizont „Gebirge“",
        "richter": "Raffer an Zufallsdatum anhalten: Ego-Bild ≤ 5 s; Kontinentbild gegen Plattenmodell-Rekonstruktion"
       },
       {
@@ -12500,8 +12510,8 @@
        "umfang": "EIN ungeschnittener Raffer vom Magma-Ozean über die Gegenwart bis zur sterbenden Sonne, ein Planet",
        "tiefe": "Äon, Eiszeit, Epoche, Stunde auf EINER Achse — auch vorwärts: nächster Superkontinent, schwindende Biosphäre, Roter Riese",
        "preis": "P über die ganze Fahrt, kein Ladebild",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S7",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "hand",
        "richter": "10 min Raffer −4,5 Ga → +5 Ga an 20 Orten: P gehalten, Bild bei 0 = Ankunftsbild der Gegenwart; an 6 Halten der Zukunft Kontinentlage, Ozean und Sonnenscheibe im Band der Rechnung (Leuchtkraft +10 % je Ga, Ozeanverlust +0,5 bis +2 Ga)"
       },
       {
@@ -12611,14 +12621,16 @@
        "umfang": "EIN Ding der Welt: der Spieler ist ein Fluss",
        "tiefe": "er fließt nach dem Gefälle, schwillt mit dem Regen, trägt Geschiebe; sein Verb ist der Lauf",
        "preis": "P",
-       "richter": "10 min als Fluss: der Weg ist die Gefälle-Linie der Welt (Abweichung ≤ 5 %); ein Eingriff des Spielers (Lauf verlegen) ändert das Ufer im Bildpaar"
+       "richter": "10 min als Fluss: der Weg ist die Gefälle-Linie der Welt (Abweichung ≤ 5 %); ein Eingriff des Spielers (Lauf verlegen) ändert das Ufer im Bildpaar",
+       "klasse": "Stadt",
+       "klasseGrund": "hand"
       },
       {
        "nr": 2,
        "umfang": "10 Dinge: Wolke, Wind, Feuer, Lava, Gletscher",
        "tiefe": "jedes in seiner Zeit (Gletscher im Raffer, Feuer in Echtzeit) und mit seiner Grenze",
        "preis": "P · Wechsel ≤ 5 s",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S1",
        "richter": "je Ding 3 Verben mit Weltwirkung im Bildpaar; die Grenze hält (Feuer ohne Brennstoff erlischt)"
       },
@@ -12645,8 +12657,8 @@
        "umfang": "Planet und Stern sein",
        "tiefe": "Platten schieben, Klima kippen, im Raffer von 10⁶ Jahren je Minute; als Stern brennen und altern",
        "preis": "P · Raffer",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "hand",
        "richter": "als Planet: gesetzte Hebung → Gebirge → Regenschatten → Wüste im Bild; Gegenlauf ohne Hebung"
       },
       {
@@ -12654,7 +12666,7 @@
        "umfang": "jede Perspektive, die die Welt hat: 10³ Arten von Ding",
        "tiefe": "jede erdenkliche: auch Meer, Straße, Sprache, Seuche, Gerücht",
        "preis": "P · Wechsel ≤ 5 s",
-       "klasse": "Stadt",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S5",
        "richter": "N = 100 Zufalls-Dinge aus 10 Saaten: spielbar mit ≥ 3 Verben mit Weltwirkung ≥ 0,9"
       },
@@ -12686,14 +12698,16 @@
        "umfang": "EIN Instrument: Fernrohr auf den Mond der Welt",
        "tiefe": "es zeigt mehr, als das Auge sah, und dasselbe Ding",
        "preis": "P",
-       "richter": "das Fernrohr-Bild zeigt Krater, die beim Anflug an derselben Stelle liegen (Lagefehler ≤ 1 %)"
+       "richter": "das Fernrohr-Bild zeigt Krater, die beim Anflug an derselben Stelle liegen (Lagefehler ≤ 1 %)",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "hand"
       },
       {
        "nr": 2,
        "umfang": "5 Instrumente: dazu Mikroskop, Thermometer, Kompass, Lot",
        "tiefe": "der Messwert stimmt mit der Welt",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S1",
        "richter": "je Instrument 20 Messungen: Wert gegen den Zustand, den ein zweiter Weg zeigt (Eis schmilzt bei 0, Lot gegen Tauchgang) ±5 %"
       },
@@ -12702,7 +12716,7 @@
        "umfang": "Feldkarten: Wärme, Strömung, Wind, Bestand, Dichte der Menschen",
        "tiefe": "die Karte ist das Feld, das die Welt rechnet — nicht gemalt",
        "preis": "P · Karte ≤ 1 s",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S2",
        "richter": "20 Stichpunkte je Karte: die Karte sagt den Ort voraus, an dem der Spieler das Ding dann antrifft (Herde, Strömung) ≥ 90 %"
       },
@@ -12711,7 +12725,7 @@
        "umfang": "Zeit-Instrumente: Bohrkern, Jahresringe, Schichtprofil, Sternspektrum",
        "tiefe": "die Vergangenheit ist lesbar; die Zeitreise bestätigt sie",
        "preis": "P · Sprung ≤ 5 s",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S3",
        "richter": "10 Lesungen (Eiszeit im Kern, Brand im Ring): der Sprung in die gelesene Zeit zeigt das Ereignis ≥ 90 %"
       },
@@ -12720,7 +12734,7 @@
        "umfang": "Versuch und Vorhersage: der Spieler ändert eine Ursache und sagt die Folge voraus",
        "tiefe": "der Gegenlauf als Spiel (Damm bauen, Art entfernen, Hang roden)",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S4",
        "richter": "20 Versuche: die von der Feldkarte vorhergesagte Folge tritt ein ≥ 80 %"
       },
@@ -12729,7 +12743,7 @@
        "umfang": "Lernen an der Welt: blinde Neulinge lösen 20 Schulfragen (Warum Jahreszeiten? Warum Wüsten im Windschatten?)",
        "tiefe": "sie finden die Antwort durch Sehen und Versuch",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S5",
        "richter": "Anteil richtiger Antworten nach 60 min Spiel gegen vorher: +30 Prozentpunkte; eine Kontrollgruppe mit Lehrfilm gleicher Länge ist nicht besser"
       },
@@ -14973,8 +14987,8 @@
        "umfang": "jedes Biom der Erde (20 Zufallsorte)",
        "tiefe": "Dämmerungschor, Jahreszeit; Arten teilen das Spektrum",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "hand",
        "richter": "Bioakustik-Indizes (ACI, NDSI) ±25 % gegen Feldaufnahmen; Spektral-Überlappung der Rufer < Zufall"
       },
       {
@@ -14982,8 +14996,8 @@
        "umfang": "10⁴ Quellen einer Großstadt",
        "tiefe": "fern Feld, nah Einzelner; Schlucht hallt; Stadion-Chor synchron",
        "preis": "P",
-       "klasse": "Stadt",
-       "klasseGrund": "wort:Großstadt",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "geerbt:S4",
        "richter": "Tagpegel und Oktavspektrum an 10 Zufallsorten ±5 dB gegen Lärmkarten; FAD Straße/Markt/Stadion ≤ Schwelle"
       },
       {
@@ -14991,8 +15005,8 @@
        "umfang": "10⁶ Bewohner einer Metropole",
        "tiefe": "Rushhour, Feiertag, Stromausfall verändern den Klangkörper",
        "preis": "P",
-       "klasse": "Stadt",
-       "klasseGrund": "wort:Metropole",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "geerbt:S5",
        "richter": "24-h-Fahrt: Pegelkurve folgt der Aktivität r ≥ 0,9; Blindtest gegen Feldaufnahme ≥ 50 % „echt\""
       },
       {
@@ -17713,7 +17727,9 @@
        "umfang": "1 Gebirge",
        "tiefe": "Regenschatten",
        "preis": "P im Regen",
-       "richter": "Niederschlag Luv/Lee ≥ 2:1 an 30 Saaten; im Bild grün/braun an der Kammlinie getrennt"
+       "richter": "Niederschlag Luv/Lee ≥ 2:1 an 30 Saaten; im Bild grün/braun an der Kammlinie getrennt",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "hand"
       },
       {
        "nr": 2,
@@ -18025,8 +18041,8 @@
        "umfang": "Sturmflut bricht den Deich",
        "tiefe": "Stadtteile fluten, Bewohner fliehen, Verkehr stockt",
        "preis": "P während der Flut in der Stadt",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "pose:Stadt",
        "richter": "überflutete Fläche = Tiefenkarte ≥ 90 %; ≥ 90 % der Bewohner verlassen die Zone; Verkehr auf gefluteten Trassen 0"
       },
       {
@@ -18153,8 +18169,8 @@
        "umfang": "Gebirge und Becken",
        "tiefe": "jede Kette ihr Zusammenstoß, jedes Becken seine Absenkung",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S1",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Horizont „Gebirge“",
        "richter": "100 Saaten: Gipfel > 2 km an einer jemals konvergenten Grenze ≥ 95 %"
       },
       {
@@ -18162,7 +18178,7 @@
        "umfang": "Täler, Canyons, Fjorde",
        "tiefe": "antezedente Durchbrüche, Fjorde nur wo Eis war",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S2",
        "richter": "Bildpaar Durchbruch/Fjord gegen Foto; Fjorde außerhalb jemals vereister Küsten = 0"
       },
@@ -18171,7 +18187,7 @@
        "umfang": "Küsten",
        "tiefe": "Rias, ertrunkene Täler, gehobene Strände aus der Meeresspiegel-Geschichte",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S3",
        "richter": "100 Saaten: Rias nur an überfluteten Flusstälern ≥ 95 %; Strandterrassen auf Höhen früherer Stände ±10 m"
       },
@@ -18180,7 +18196,7 @@
        "umfang": "Erd-Saat, 10³ Orte",
        "tiefe": "Zeitreise vorwärts endet im Ankunftsbild",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S4",
        "richter": "1 000 Orte: Zustand(x, 0) aus der Zeit-Funktion = Ankunftsbild (Bildpaar)"
       },
@@ -18329,8 +18345,8 @@
        "umfang": "Eingriff des Spielers: Gebirge heben, Meerenge öffnen",
        "tiefe": "nach Zeitraffer andere Arten, deterministisch",
        "preis": "P · Zeitraffer 10⁶ Jahre ≤ 10 s",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Horizont „Gebirge“",
        "richter": "Paar mit/ohne Eingriff: Baum-Distanz über der Schwelle, Wiederholung byte-gleich"
       },
       {
@@ -19907,8 +19923,8 @@
        "umfang": "Erdgeschichte 4,5·10⁹ Jahre",
        "tiefe": "Schneeball-Erde, Massenaussterben, Deccan-Trapps bereisbar",
        "preis": "Zeitraffer, danach P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Planet-Maß „Erdgeschichte“",
        "richter": "fünf große Aussterben: Zeitpunkt Faktor 2, Arten-Verlust Faktor 1,5"
       }
      ],

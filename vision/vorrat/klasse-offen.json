@@ -7,80 +7,15 @@
   "Megastadt und Kontinent: ≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont — an keiner ersten Sprosse eindeutig.",
   "Planet und Welten: Orbit bis Boden, jede Welt, jede Zeit — an keiner ersten Sprosse eindeutig.",
   "Offen (bis 19.11., seither entscheidet das Klassen-Gesetz unten): eine Spanne zwischen 1 und 20 km ohne das Wort Stadt, Regionen ohne Größe oder über 10² km², ein Welt-Wechsel, der Erd-Schlüssel (Spalte Bytes), zwei Zeilen zugleich genannt.",
-  "Klassen-Gesetz (19.11., vision/buche-2.cjs, Entscheid des Koordinators): die Treppe ist eine Treppe — die Klasse ist die KLEINSTE Zeile, deren Obergrenze den Umfang fasst, die Lücke zwischen zwei Zeilen (10²–10³ Bauten, 10³–10⁴ Menschen, 1–20 km) gehört zur höheren; damit sind die Spanne 1–20 km und Regionen mit genannter Fläche entschieden. Im Zweifel die höhere Zeile (Regel 6, Entscheid des Koordinators 19.11.; bis dahin nahm die unsichere Sprosse die niedrigste sichere Lesart): Welt-Wechsel (auch EIN fremdes Ziel, auch ohne Welt-Wort) → Planet und Welten · Träger unklar zählt Leiber (über 10³ Stadt, ab 10⁷ Megastadt und Kontinent) · Region ohne Größe → Stadt · zwei Zeilen zugleich → die höhere · Horizont → Megastadt und Kontinent · Planet-Maß → Planet und Welten; Himmel und Feld vom Boden aus und der Erd-Schlüssel (Spalte Bytes) heben nicht. Eine so gehobene Sprosse trägt klasseGrund „zweifel:<Grund>“. Offen bleiben an ersten Sprossen nur, was keine Regel fasst: ein Umfang ohne Größe (auch unter einer Preis-Pose „Stadt“) und zwei Regeln gegeneinander; sie stehen mit Grund hier und in vision/richter/klassen-unsicher.md."
+  "Klassen-Gesetz (19.11., vision/buche-2.cjs, Entscheid des Koordinators): die Treppe ist eine Treppe — die Klasse ist die KLEINSTE Zeile, deren Obergrenze den Umfang fasst, die Lücke zwischen zwei Zeilen (10²–10³ Bauten, 10³–10⁴ Menschen, 1–20 km) gehört zur höheren; damit sind die Spanne 1–20 km und Regionen mit genannter Fläche entschieden. Im Zweifel die höhere Zeile (Regel 6, Entscheid des Koordinators 19.11.; bis dahin nahm die unsichere Sprosse die niedrigste sichere Lesart): Welt-Wechsel (auch EIN fremdes Ziel, auch ohne Welt-Wort) → Planet und Welten · Träger unklar zählt Leiber (über 10³ Stadt, ab 10⁷ Megastadt und Kontinent) · Region ohne Größe → Stadt · zwei Zeilen zugleich → die höhere · Horizont → Megastadt und Kontinent · Planet-Maß → Planet und Welten; Himmel und Feld vom Boden aus und der Erd-Schlüssel (Spalte Bytes) heben nicht — außer der Umfang nennt selbst das Ganze („die (bewohnte) Erde“, „jeder Ort der Erde“, „jedes Biom der Erde“, „Erdgeschichte“, ein Planet über seine ganze Geschichte, „Planet und Stern sein“): Planet und Welten. Stehen zwei Regeln gegeneinander, gilt die höhere Zeile („Fernrohr auf den Mond“: Himmel vom Boden gegen Welt-Wechsel → Planet und Welten). Region ohne Größe sind auch „Gebiet“, „je Ort“ (Orte jeder Größe) und der Fluss als Leib („ist ein Fluss“); ein „Gebirge“ liegt über den Horizont (Megastadt und Kontinent). Schweigt der Umfang zur Größe, liest das Gesetz die Preis-Pose mit (Regel 7, klasseGrund „pose:<Wort>“; „Dorf und Stadt“ = zwei Zeilen, die höhere). Eine im Zweifel gehobene Sprosse trägt klasseGrund „zweifel:<Grund>“. Seit dem zweiten Entscheid (19.11., 13 Urteile von Hand, das Gesetz liest sie selbst so) bleibt keine erste Sprosse leer; was künftig keine Regel fasst, steht mit Grund hier und in vision/richter/klassen-unsicher.md."
  ],
  "stand": {
   "karte": "vision/meisterkarte-2.json",
   "ersteSprossen": 253,
-  "gesetzt": 245,
-  "offen": 8
+  "gesetzt": 253,
+  "offen": 0
  },
- "offen": [
-  {
-   "leiter": "mensch.stadt.vertikal",
-   "sprosse": 1,
-   "umfang": "1 Ebene, Häuser bis 7 Geschosse",
-   "preis": "P · Stadt",
-   "richter": "höchstes Gebäude im Bild, begehbare Ebenen = 1",
-   "grund": "Umfang „1 Ebene, Häuser bis 7 Geschosse“ ohne Bauten-Zahl, Preis-Pose „Stadt“: Ort oder Stadt"
-  },
-  {
-   "leiter": "mensch.wirtschaft.handel",
-   "sprosse": 1,
-   "umfang": "1 Ware, 1 Weg mit Fahrer",
-   "preis": "P · Stadt",
-   "richter": "Bildpaar leer/beladen; ohne Lieferung Stand leer binnen Tagesfrist",
-   "grund": "„1 Weg mit Fahrer“ ohne Länge, Preis-Pose „Stadt“: Ort oder Stadt"
-  },
-  {
-   "leiter": "mensch.macht.grenze",
-   "sprosse": 1,
-   "umfang": "1 Herrschaftsgebiet",
-   "preis": "P · Grenzübertritt",
-   "richter": "Grenze im Bild = Karte; Burg, wo Lage und Reichtum sie tragen",
-   "grund": "„1 Herrschaftsgebiet“ ohne Größe (Burg, Grenze im Bild = Karte)"
-  },
-  {
-   "leiter": "mensch.kultur.gestalt",
-   "sprosse": 1,
-   "umfang": "U_eff ≥ 10 (auch aus Liste)",
-   "preis": "P · Dorf und Stadt",
-   "richter": "10 Kulturen an Häuser-Bildern blind getrennt ≥ 80 %",
-   "grund": "10 Kulturen an Häuser-Bildern, Preis-Pose „Dorf und Stadt“: zwei Zeilen zugleich genannt"
-  },
-  {
-   "leiter": "mensch.kultur.wissen",
-   "sprosse": 1,
-   "umfang": "Technikstand je Ort",
-   "preis": "P",
-   "richter": "Stand ↔ Bevölkerung × Vernetzung r ≥ 0,5",
-   "grund": "„Technikstand je Ort“ über Orte jeder Größe (Bevölkerung × Vernetzung): die Klasse wechselt mit der Stichprobe"
-  },
-  {
-   "leiter": "erleben.spieler.nichtleib",
-   "sprosse": 1,
-   "umfang": "EIN Ding der Welt: der Spieler ist ein Fluss",
-   "preis": "P",
-   "richter": "10 min als Fluss: der Weg ist die Gefälle-Linie der Welt (Abweichung ≤ 5 %); ein Eingriff des Spielers (Lauf verlegen) ändert das Ufer im Bildpaar",
-   "grund": "„der Spieler ist ein Fluss“, 10 min entlang der Gefälle-Linie: die Länge des Laufs (und damit die Sicht) nennt der Text nicht"
-  },
-  {
-   "leiter": "erleben.spieler.forscher",
-   "sprosse": 1,
-   "umfang": "EIN Instrument: Fernrohr auf den Mond der Welt",
-   "preis": "P",
-   "richter": "das Fernrohr-Bild zeigt Krater, die beim Anflug an derselben Stelle liegen (Lagefehler ≤ 1 %)",
-   "grund": "Fernrohr auf den Mond, verglichen mit dem Anflug an dieselbe Stelle: der Anflug ist ein Welt-Sprung (Planet und Welten), das Fernrohr ein Ort"
-  },
-  {
-   "leiter": "planet.kopplung.land-meer-luft",
-   "sprosse": 1,
-   "umfang": "1 Gebirge",
-   "preis": "P im Regen",
-   "richter": "Niederschlag Luv/Lee ≥ 2:1 an 30 Saaten; im Bild grün/braun an der Kammlinie getrennt",
-   "grund": "„1 Gebirge“, Luv/Lee an der Kammlinie: ein Gebirgszug misst über die Sicht von 1 km hinaus, Größe ungenannt"
-  }
- ],
+ "offen": [],
  "aufgeloest": [
   {
    "leiter": "planet.relief.grossform",

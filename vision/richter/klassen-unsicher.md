@@ -5,9 +5,11 @@ Erzeugt von `node vision/buche-2.cjs --klassen` (jeder Lauf schreibt das Blatt n
 
 Im Zweifel die höhere Zeile (Regel 6): Welt-Wechsel → Planet und Welten · Träger unklar zählt Leiber · Region ohne Größe → Stadt ·
 zwei Zeilen → die höhere · Horizont → Megastadt und Kontinent · Planet-Maß → Planet und Welten. Himmel vom Boden und der
-Erd-Schlüssel (Spalte Bytes) heben nicht. Eine gehobene Sprosse trägt `klasseGrund` `zweifel:<Grund>` und steht hier nicht.
+Erd-Schlüssel (Spalte Bytes) heben nicht — außer der Umfang nennt selbst das Ganze (die Erde, den Planeten über seine Geschichte).
+Stehen zwei Regeln gegeneinander, gilt die höhere Zeile. Schweigt der Umfang zur Größe, spricht die Preis-Pose (Regel 7, `pose:<Wort>`).
+Eine gehobene Sprosse trägt `klasseGrund` `zweifel:<Grund>` und steht hier nicht.
 
-Stand: 69 Sprossen tragen die höhere Zeile (Welt-Wechsel 32 · Region ohne Größe 7 · Planet-Maß 1 · Horizont 3 · Träger unklar 20 · zwei Zeilen 6).
+Stand: 75 Sprossen tragen die höhere Zeile (Welt-Wechsel 30 · Region ohne Größe 8 · Planet-Maß 4 · Horizont 7 · Träger unklar 20 · zwei Zeilen 6).
 
 ## A · Erste Sprossen aus klasse-offen.json, die das Gesetz löst (14)
 
@@ -28,28 +30,21 @@ Stand: 69 Sprossen tragen die höhere Zeile (Welt-Wechsel 32 · Region ohne Grö
 | same.kopplung.erdsaat | 1 Ort, 1 Ereignis-Typ | Ort | wort:1 Ort |
 | same.kopplung.terraform | EIN Eingriff, EINE Region: Wetter lenken über einer Stadt | Stadt | wort:Stadt |
 
-## B · Erste Sprossen, die leer bleiben (8) — keine Regel fasst sie; darüber gilt bis zum Entscheid ihr Boden
+## B · Erste Sprossen, die leer bleiben (0) — keine Regel fasst sie; darüber gilt bis zum Entscheid ihr Boden
 
 | Leiter | Umfang | Boden | erben ihn | Grund |
 | --- | --- | --- | --- | --- |
-| mensch.stadt.vertikal | 1 Ebene, Häuser bis 7 Geschosse | Ort | S 2, 3, 4, 5 | Umfang „1 Ebene, Häuser bis 7 Geschosse“ ohne Bauten-Zahl, Preis-Pose „Stadt“: Ort oder Stadt |
-| mensch.wirtschaft.handel | 1 Ware, 1 Weg mit Fahrer | Ort | S 2, 3, 4, 5 | „1 Weg mit Fahrer“ ohne Länge, Preis-Pose „Stadt“: Ort oder Stadt |
-| mensch.macht.grenze | 1 Herrschaftsgebiet | Ort | — | „1 Herrschaftsgebiet“ ohne Größe (Burg, Grenze im Bild = Karte) |
-| mensch.kultur.gestalt | U_eff ≥ 10 (auch aus Liste) | Ort | S 2 | 10 Kulturen an Häuser-Bildern, Preis-Pose „Dorf und Stadt“: zwei Zeilen zugleich genannt |
-| mensch.kultur.wissen | Technikstand je Ort | Ort | S 2, 3, 4 | „Technikstand je Ort“ über Orte jeder Größe (Bevölkerung × Vernetzung): die Klasse wechselt mit der Stichprobe |
-| erleben.spieler.nichtleib | EIN Ding der Welt: der Spieler ist ein Fluss | Ort | S 2 | „der Spieler ist ein Fluss“, 10 min entlang der Gefälle-Linie: die Länge des Laufs (und damit die Sicht) nennt der Text nicht |
-| erleben.spieler.forscher | EIN Instrument: Fernrohr auf den Mond der Welt | Ort | S 2, 3, 4, 5, 6 | Fernrohr auf den Mond, verglichen mit dem Anflug an dieselbe Stelle: der Anflug ist ein Welt-Sprung (Planet und Welten), das Fernrohr ein Ort |
-| planet.kopplung.land-meer-luft | 1 Gebirge | Ort | — | „1 Gebirge“, Luv/Lee an der Kammlinie: ein Gebirgszug misst über die Sicht von 1 km hinaus, Größe ungenannt |
 
 ## C · Sprossen darüber, die keine Regel fasst (0) — gesetzt ist die Lesart ohne den Zweifel, die andere steht daneben
 
 | Leiter | S | Umfang | gesetzt | andere Lesart | Grund |
 | --- | --- | --- | --- | --- | --- |
 
-## D · Das Gesetz gegen die Hand (6 anders, 0 unsicher, 228 gleich) — die Hand bleibt stehen
+## D · Das Gesetz gegen die Hand (7 anders, 0 unsicher, 240 gleich) — die Hand bleibt stehen
 
 | Leiter | S | Umfang | Hand | Gesetz | Grund |
 | --- | --- | --- | --- | --- | --- |
+| planet.geologie.lagerstaette | 1 | Gestein je Ort aus seiner Genese | Ort | Stadt | zweifel:Region ohne Größe „je Ort“ |
 | planet.relief.grossform | 1 | 1 Saat, Flussnetz bis zum Horizont | Ort | Megastadt und Kontinent | zweifel:Horizont |
 | planet.wasser.stroemung | 1 | Flüsse einer Region | Ort | Stadt | zweifel:Region ohne Größe „Region“ |
 | planet.wasser.kreislauf | 1 | Region 2 km | Ort | Stadt | zahl:2 km |

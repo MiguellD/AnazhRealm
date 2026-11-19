@@ -653,15 +653,26 @@ const schreibe = (karte) => JSON.stringify(karte, null, 1) + "\n";
 //                  Sechs Gründe heben, die Sprosse trägt dann klasseGrund `zweifel:<Grund>`:
 //                    Welt-Wechsel      fremde Welt, EIN fremdes Ziel, auch ohne Welt-Wort            → Planet und Welten
 //                    Träger unklar     die Zahl zählt LEIBER (Tiere, Glieder, Körper sind Leiber)     → über 10³ Stadt, ab 10⁷ Megastadt
-//                    Region ohne Größe die Tafel fasst „10–10² km²“ in der Zeile Stadt               → Stadt (ein Größen-Wort hebt weiter)
+//                    Region ohne Größe die Tafel fasst „10–10² km²“ in der Zeile Stadt               → Stadt (ein Größen-Wort hebt weiter);
+//                                      dazu „Gebiet“, „je Ort“ (Orte jeder Größe), der Fluss als Leib („ist ein Fluss“: sein Lauf)
 //                    zwei Zeilen       eine Zählung oder ein Ort-Wort neben einem Maß (km, km²)       → die höhere der beiden
-//                    Horizont          „Sicht bis zum Horizont“ ist der Wortlaut der Treppe          → Megastadt und Kontinent
+//                    Horizont          „Sicht bis zum Horizont“ ist der Wortlaut der Treppe          → Megastadt und Kontinent;
+//                                      dazu „Gebirge“ (Luv und Lee liegen über den Horizont)
 //                    Planet-Maß        eine Größe erreicht das Erd-Maß der Tafel                      → Planet und Welten
 //                  Zwei Gründe heben NICHT und sind kein offener Fall: Himmel und Feld vom Boden aus bleiben (die Sprosse erbt) ·
 //                  der Erd-Schlüssel betrifft die Spalte Bytes, nicht den Umfang (die Klasse folgt dem übrigen Umfang, sonst erbt sie).
+//                  DAS GANZE (19.11., zweiter Entscheid): beide heben doch, wo der Umfang selbst das Ganze nennt — „die (bewohnte)
+//                  Erde“, „jeder Ort der Erde“, „jedes Biom der Erde“, „Erdgeschichte“ (Planet-Maß) · „ein Planet“ über seine ganze
+//                  Geschichte („vom … bis zur …“), „Planet und Stern sein“ (das Wort Planet gilt)       → Planet und Welten.
+//                  ZWEI REGELN GEGENEINANDER: es gilt die höhere Zeile — „Fernrohr auf den Mond“ ist Himmel vom Boden (Ort) und ein
+//                  Ziel auf einer anderen Welt (Welt-Wechsel)                                         → Planet und Welten.
 //                  Im Blatt vision/richter/klassen-unsicher.md steht nur, was KEINE Regel fasst; eine solche ERSTE Sprosse bleibt
 //                  leer, mit Grund in klasse-offen.json.
-// klasseGrund: `wort:<Wort>` · `zahl:<Größe>` · `zweifel:<Grund>` · `geerbt:S<n>` (`geerbt:R5`: erste Sprosse ohne Maß ist EIN Ort) · `hand`.
+//   7  PREIS-POSE  schweigt der Umfang zur Größe (kein Größen-Wort, kein Maß, keine Zählung der Treppe, kein Zweifel), liest das
+//                  Gesetz die Preis-Pose mit: „P · Stadt“ ist die Zeile Stadt (`pose:<Wort>`); nennt die Pose zwei Zeilen
+//                  („Dorf und Stadt“), gilt die höhere (Regel 6, zwei Zeilen). Eine Zahl, die als Leiber bis 10³ liest, schweigt nicht.
+// klasseGrund: `wort:<Wort>` · `zahl:<Größe>` · `pose:<Wort>` · `zweifel:<Grund>` · `geerbt:S<n>` (`geerbt:R5`: erste Sprosse ohne Maß
+// ist EIN Ort) · `hand`.
 const KLASSE_OFFEN = path.join(__dirname, "vorrat", "klasse-offen.json");
 const KLASSEN_BLATT = path.join(AKTEN, "klassen-unsicher.md");
 const [ORT, STADT, MEGA, PLANET] = [0, 1, 2, 3];
@@ -773,7 +784,16 @@ const EINHEIT_RE = new RegExp(`^\\s?(km²|km|m²|m³|m|ha)(?![${B_}²³])`);
 const OHNE_MASS_RE = new RegExp(
     `^\\s?(?:Jahren?|Jahr|J|a|ka|Ma|Ga|d|h|min|s|Tagen?|Tag|Wochen|Monaten?|Stunden?|Minuten|Spieljahren?|Spieljahr|Spieltagen?|Spielstunden|Spielminuten|Übungsstunden|Generationen|Jahrhunderten?|Jahrtausenden?|Jahrzehnten?|Sitzungen|kg|t|g|mg|bar|K|W|dB|cd|Hz|kB|MB|%|µm|mm|cm|Lj|Geschosse|Etagen|Erdmassen)(?![${B_}])`
 );
-const REGION_RE = new RegExp(`(?<![${B_}-])(?:Region(?:en)?|Landes|Landschaft)(?![${B_}])`);
+// eine Fläche ohne Größe: Region, Land, Landschaft, Gebiet („Herrschaftsgebiet“), eine Stichprobe „je Ort“ über Orte jeder Größe und der
+// Fluss als Leib („der Spieler ist ein Fluss“: sein Lauf über Minuten) — „Flut …, ein Fluss“ an EINEM Ufer bleibt ein Ort
+const REGION_RE = new RegExp(`(?<![${B_}-])(?:Region(?:en)?|Landes|Landschaft|Gebiet(?:e|es|en)?|je Ort|ist ein Fluss)(?![${B_}])|[${B_}]+gebiet(?:e|es|en)?(?![${B_}])`);
+// ein Gebirge liegt mit Luv und Lee über den Horizont (Regel 6, Horizont)
+const GEBIRGE_RE = new RegExp(`(?<![${B_}])Gebirge(?![${B_}])`);
+// DAS GANZE (Regel 6): der Umfang nennt die Erde selbst, nicht einen Ort der Erd-Saat
+const GANZE_ERDE_RE = new RegExp(`(?<!unter )(?<![${B_}])[Dd]ie (?:ganze |bewohnte )?Erde(?![${B_}])|(?<![${B_}])[Jj]ede[rs]? [^,;()]*der Erde(?![${B_}])|Erdgeschichte`);
+// DAS GANZE (Regel 6): der Planet über seine ganze Geschichte („vom Magma-Ozean … bis zur sterbenden Sonne“) oder als Leib des Spielers
+// („Planet und Stern sein“) ist kein Ding am Himmel
+const GANZER_PLANET_RE = new RegExp(`vom [^,;]+ bis zu[rm]? |Planet[${B_}]*(?: und [${B_}-]+)? sein(?![${B_}])`);
 // die Erde als Vergleich („mehr Disparität als die Erde“, „die größte tägliche Tierwanderung der Erde“) ist kein Umfang
 const ERD_VERGLEICH_RE = new RegExp(`als die Erde|(?:größte|höchste|längste|tiefste|älteste)[^,;()]* der Erde`, "g");
 // Leiber ohne Zahl („Umstehende einer Szene“, „Paar“): sie heben nichts, nennen aber den Träger der Reihe
@@ -782,10 +802,10 @@ const MENGE_ORT_RE = new RegExp(`^ (?:im|am|in einer|in der|auf dem) [${B_}-]+|^
 const MENGE_RE =new RegExp(`(?<![${B_}-])(?:Leiber|Menschen|Bewohner|Personen|Einwohner|Zuschauer|Umstehende|Paar)(?![${B_}-])`);
 const HORIZONT_RE = /bis zum Horizont|Horizont \d/;
 const ERD_RE = new RegExp(`Erd-Saat|Erdgeschichte|(?<!unter )(?<![${B_}])[Dd](?:er|ie) (?:ganze |bewohnte )?Erde(?![${B_}])`);
-// ein Welt-Wechsel ohne Welt-Wort; dazu die Welt mit anderem Gesetz („EINE Konstante anders“), die Spanne der Schwere („g 0,3–3“) und
-// „jenseits der Erde“
+// ein Welt-Wechsel ohne Welt-Wort; dazu die Welt mit anderem Gesetz („EINE Konstante anders“), die Spanne der Schwere („g 0,3–3“),
+// „jenseits der Erde“ und der Mond als Ziel („Kolonie auf Mond“, „Fernrohr auf den Mond“: zwei Regeln gegeneinander, die höhere gilt)
 const WELTWECHSEL_RE = new RegExp(
-    `[Ff]remd(?!es Gerät)[${B_}-]*(?: [${B_}-]+)?|(?<![${B_}])Mars(?![${B_}])|Asteroid[${B_}-]*|im freien Raum|auf Mond|eines Systems|Gasriese[${B_}-]*|Konstanten? anders|(?<![${B_}])g \\d[\\d,]*–\\d[\\d,]*|jenseits der Erde`
+    `[Ff]remd(?!es Gerät)[${B_}-]*(?: [${B_}-]+)?|(?<![${B_}])Mars(?![${B_}])|Asteroid[${B_}-]*|im freien Raum|auf (?:den |dem )?Mond|eines Systems|Gasriese[${B_}-]*|Konstanten? anders|(?<![${B_}])g \\d[\\d,]*–\\d[\\d,]*|jenseits der Erde`
 );
 // die Leiter der Erd-Saat: ihr benannter Zweifel an der ersten Sprosse ist der Erd-Schlüssel (Spalte Bytes), auch wo Umfang und Preis ihn
 // nicht nennen („1 Ort, 1 Ereignis-Typ“ der Leiter same.kopplung.erdsaat)
@@ -822,8 +842,9 @@ function umfangLesen(G, s, reihe = [], erste = false) {
         sig.push({ rang: stufe(z.wert, G[art]), grund: "zahl:" + text, decke: true, zahl: true });
         if (art === "leiber") planetMass(z, text);
     };
-    // Träger unklar: die Zahl zählt Leiber (Regel 6) — bis 10³ ist das ein Ort und hebt nichts
-    const alsLeiber = (z, text) => z.wert > G.leiber[0] && (Z(stufe(z.wert, G.leiber), "Träger unklar", text), planetMass(z, text));
+    // Träger unklar: die Zahl zählt Leiber (Regel 6) — bis 10³ ist das ein Ort und hebt nichts, aber der Umfang hat gesprochen (Regel 7)
+    let leiberOrt = false;
+    const alsLeiber = (z, text) => (z.wert > G.leiber[0] ? (Z(stufe(z.wert, G.leiber), "Träger unklar", text), planetMass(z, text)) : (leiberOrt = true));
     for (const z of zahlenIn(u)) {
         const nach = u.slice(z.bis);
         let m;
@@ -899,20 +920,38 @@ function umfangLesen(G, s, reihe = [], erste = false) {
         sicher = ohneMass;
     }
     // Himmel und Feld vom Boden aus bleiben Ort: steht „Planet“ neben einem Himmels- oder Feld-Wort und nennt nichts die Reise, hebt das
-    // Wort nicht (R5: EIN Ort — „1 Stern, 1 Planet, 1 Mond“, „Kompass auf einem Dipol-Planeten“); über der ersten Sprosse erbt sie (Regel 6)
-    if (sicher && sicher.himmel && HIMMEL_RE.test(u) && !REISE_RE.test(u) && !sig.some((x) => x.rang === PLANET && !x.himmel)) {
+    // Wort nicht (R5: EIN Ort — „1 Stern, 1 Planet, 1 Mond“, „Kompass auf einem Dipol-Planeten“); über der ersten Sprosse erbt sie (Regel 6).
+    // Nennt der Umfang den Planeten als das Ganze (seine ganze Geschichte, der Spieler IST der Planet), gilt das Wort.
+    if (sicher && sicher.himmel && HIMMEL_RE.test(u) && !REISE_RE.test(u) && !GANZER_PLANET_RE.test(u) && !sig.some((x) => x.rang === PLANET && !x.himmel)) {
         if (!erste) bleibt.push(`Himmel vom Boden: „${sicher.grund.slice(5)}“ neben „${HIMMEL_RE.exec(u)[0]}“`);
         sicher = hoechst(sig.filter((x) => !x.himmel && !(x.mass && decke && x.rang > ohneMass.rang)));
     }
     if (!traeger && MENGE_RE.test(u)) traeger = { art: "leiber", wort: MENGE_RE.exec(u)[0], nr: s.nr };
-    const hoch = sicher ? sicher.rang : -1;
+    let hoch = sicher ? sicher.rang : -1;
     let m;
-    // der Erd-Schlüssel betrifft die Spalte Bytes, nicht den Umfang: er hebt nicht (Regel 6)
-    const erd = ERD_RE.test(u.replace(ERD_VERGLEICH_RE, "")) || /Schlüssel/.test(String(s.preis || ""));
-    if (erd) bleibt.push("Erd-Schlüssel (Spalte Bytes)");
+    // der Erd-Schlüssel betrifft die Spalte Bytes, nicht den Umfang: er hebt nicht (Regel 6) — außer der Umfang nennt die Erde als das Ganze
+    const uErde = u.replace(ERD_VERGLEICH_RE, "");
+    const ganz = GANZE_ERDE_RE.exec(uErde);
+    const erd = ERD_RE.test(uErde) || /Schlüssel/.test(String(s.preis || ""));
+    if (ganz && hoch < PLANET) Z(PLANET, "Planet-Maß", ganz[0]);
+    else if (erd) bleibt.push("Erd-Schlüssel (Spalte Bytes)");
+    // zwei Regeln gegeneinander (Himmel vom Boden gegen Welt-Wechsel): der Zweifel hebt, die höhere Zeile gilt
     if (hoch < PLANET && (m = WELTWECHSEL_RE.exec(uWort))) Z(PLANET, "Welt-Wechsel", m[0].trim());
     if (hoch < MEGA && HORIZONT_RE.test(u)) Z(MEGA, "Horizont");
+    else if (hoch < MEGA && GEBIRGE_RE.test(u)) Z(MEGA, "Horizont", "Gebirge");
     if (hoch < STADT && (m = REGION_RE.exec(u)) && !sig.some((x) => x.zahl)) Z(STADT, "Region ohne Größe", m[0]);
+    // PREIS-POSE (Regel 7): der Umfang schweigt zur Größe — die Pose spricht; zwei Zeilen in der Pose: die höhere (Regel 6)
+    if (!sig.length && !zw.length && !frag.length && !leiberOrt) {
+        const pose = KLASSEN_WORTE.filter((W) => !W.wechsel)
+            .map((W) => ({ rang: W.rang, m: W.re.exec(String(s.preis || "")) }))
+            .filter((x) => x.m);
+        const oben = hoechst(pose),
+            unten = pose.find((x) => oben && x.rang < oben.rang);
+        if (oben && oben.rang > ORT) {
+            if (unten) Z(oben.rang, "zwei Zeilen", `Pose ${unten.m[0]}“ gegen „Pose ${oben.m[0]}`);
+            else ((sicher = { rang: oben.rang, grund: "pose:" + oben.m[0] }), (hoch = oben.rang));
+        }
+    }
     const zweifel = hoechst(zw.filter((x) => x.rang > hoch));
     return { sicher, zweifel, bleibt, erd, fraglich: frag.filter((f) => f.rang > Math.max(hoch, zweifel ? zweifel.rang : -1)), traeger };
 }
@@ -969,7 +1008,7 @@ function klassenRechnen(karte, offenDatei) {
                     // der benannte Zweifel einer ersten Sprosse (klasse-offen.json) fällt, wo eine Regel spricht: die höhere Lesart
                     // (Regel 6), eine Größe ÜBER Ort (Regel 1) oder der Erd-Schlüssel, der den Umfang nicht betrifft (Regel 6)
                     const erd = lies.erd || ERD_LEITER_RE.test(L.id);
-                    const regel = zw ? "zweifel" : eigen && eigen.rang > ORT ? "treppe" : erd ? "erd" : null;
+                    const regel = zw ? "zweifel" : eigen && eigen.rang > ORT ? (eigen.grund.startsWith("pose:") ? "pose" : "treppe") : erd ? "erd" : null;
                     if (lies.fraglich.length || (alt && !regel)) {
                         // die erste Sprosse, die keine Regel fasst, bleibt leer (ein Wort nach unten löst den benannten Zweifel nie);
                         // darüber gilt als Boden ihre eigene Lesart
@@ -1037,6 +1076,7 @@ function klassenOffenNeu(datei, R, karte) {
     const warum = {
         treppe: (x) => `die kleinste Zeile der Treppe, die den Umfang „${x.umfang}“ fasst (Klassen-Gesetz Regel 1)`,
         zweifel: (x) => `im Zweifel die höhere Zeile für den Umfang „${x.umfang}“ (Klassen-Gesetz Regel 6)`,
+        pose: (x) => `der Umfang „${x.umfang}“ schweigt zur Größe, die Preis-Pose spricht (Klassen-Gesetz Regel 7)`,
         erd: (x) => `der Erd-Schlüssel betrifft die Spalte Bytes, die Klasse folgt dem übrigen Umfang „${x.umfang}“ (Klassen-Gesetz Regel 6)`,
     };
     neu.aufgeloest = (datei.aufgeloest || []).filter((a) => a.quelle !== "gesetz").concat(
@@ -1062,7 +1102,9 @@ function klassenBlatt(R) {
         "",
         "Im Zweifel die höhere Zeile (Regel 6): Welt-Wechsel → Planet und Welten · Träger unklar zählt Leiber · Region ohne Größe → Stadt ·",
         "zwei Zeilen → die höhere · Horizont → Megastadt und Kontinent · Planet-Maß → Planet und Welten. Himmel vom Boden und der",
-        "Erd-Schlüssel (Spalte Bytes) heben nicht. Eine gehobene Sprosse trägt `klasseGrund` `zweifel:<Grund>` und steht hier nicht.",
+        "Erd-Schlüssel (Spalte Bytes) heben nicht — außer der Umfang nennt selbst das Ganze (die Erde, den Planeten über seine Geschichte).",
+        "Stehen zwei Regeln gegeneinander, gilt die höhere Zeile. Schweigt der Umfang zur Größe, spricht die Preis-Pose (Regel 7, `pose:<Wort>`).",
+        "Eine gehobene Sprosse trägt `klasseGrund` `zweifel:<Grund>` und steht hier nicht.",
         "",
         `Stand: ${zweifelSumme(R)} Sprossen tragen die höhere Zeile (${zweifelZeile(R)}).`,
         "",
@@ -1123,6 +1165,8 @@ function klassenWache(karte, offenDatei, blatt) {
                     const eigen = umfangLesen(G, s).sicher; // ohne Reihe: nur was die Sprosse selbst trägt
                     if (soll.klasse && rang < G.namen.indexOf(soll.klasse) && soll.grund.startsWith("zweifel:"))
                         aus.push(`ZWEIFEL NACH UNTEN: ${wo} trägt „${s.klasse}“ (${s.klasseGrund}), der Umfang „${s.umfang}“ hat zwei Lesarten (${soll.grund.slice(8)}) — im Zweifel die höhere: ${soll.klasse}`);
+                    else if (soll.klasse && rang < G.namen.indexOf(soll.klasse) && eigen && eigen.rang > rang && eigen.grund.startsWith("pose:"))
+                        aus.push(`KLASSE UNTER DER PREIS-POSE: ${wo} gesetzt „${s.klasse}“, der Umfang „${s.umfang}“ schweigt zur Größe, die Preis-Pose „${s.preis}“ trägt ${eigen.grund} → ${soll.klasse}`);
                     else if (soll.klasse && rang < G.namen.indexOf(soll.klasse) && eigen && eigen.rang > rang) aus.push(`KLASSE UNTER DEM UMFANG: ${wo} gesetzt „${s.klasse}“, der Umfang „${s.umfang}“ trägt ${eigen.grund} → ${soll.klasse}`);
                     else aus.push(`KLASSE NICHT AM GESETZ: ${wo} trägt „${s.klasse}“ (${s.klasseGrund}), das Gesetz rechnet ${soll.klasse ? `„${soll.klasse}“ (${soll.grund})` : "keine (unsicher)"}`);
                 }
@@ -1703,9 +1747,48 @@ function selbsttest() {
             // der Erd-Schlüssel (Spalte Bytes) hebt nicht: die Klasse folgt dem übrigen Umfang
             const erd = stumm("1 Ort, 1 Ereignis-Typ", true, "P · Schlüssel ≤ 10 kB");
             if (!erd.erd || !erd.sicher || erd.sicher.grund !== "wort:1 Ort") f.push("Erd-Schlüssel: „1 Ort“ ist nicht Ort am Wort");
-            if (!stumm("die bewohnte Erde in jedem Jahrhundert seit −3000").erd) f.push("„die bewohnte Erde“ nennt den Erd-Schlüssel nicht");
+            if (!stumm("Erd-Saat, 10³ Orte").erd) f.push("„Erd-Saat“ nennt den Erd-Schlüssel nicht");
+            // DAS GANZE: nennt der Umfang die Erde oder den Planeten selbst, heben beide doch
+            hebt("die bewohnte Erde in jedem Jahrhundert seit −3000", P, "zweifel:Planet-Maß „die bewohnte Erde“");
+            hebt("jeder Ort der Erde in jedem Jahr, das ein Mensch erinnert", P, "zweifel:Planet-Maß „jeder Ort der Erde“");
+            hebt("jedes Biom der Erde (20 Zufallsorte)", P, "zweifel:Planet-Maß „jedes Biom der Erde“");
+            hebt("Erdgeschichte 4,5·10⁹ Jahre", P, "zweifel:Planet-Maß „Erdgeschichte“");
+            if (lies("mehr Disparität als die Erde").zweifel) f.push("der Vergleich „als die Erde“ hob");
+            for (const umfang of ["Planet und Stern sein", "EIN ungeschnittener Raffer vom Magma-Ozean über die Gegenwart bis zur sterbenden Sonne, ein Planet"]) {
+                const r = lies(umfang);
+                if (!r.sicher || GK.namen[r.sicher.rang] !== P || r.sicher.grund !== "wort:Planet" || r.bleibt.length) f.push(`das Ganze „${umfang.slice(0, 30)}“: ${JSON.stringify(r.sicher)}`);
+            }
+            // ZWEI REGELN GEGENEINANDER: Himmel vom Boden (Ort) gegen Welt-Wechsel — die höhere Zeile
+            hebt("EIN Instrument: Fernrohr auf den Mond der Welt", P, "zweifel:Welt-Wechsel „auf den Mond“", true);
+            // Region ohne Größe: Gebiet, „je Ort“, der Fluss als Leib — der Fluss an EINEM Ufer bleibt ein Ort; das Gebirge liegt über den Horizont
+            hebt("1 Herrschaftsgebiet", "Stadt", "zweifel:Region ohne Größe „Herrschaftsgebiet“", true);
+            hebt("Technikstand je Ort", "Stadt", "zweifel:Region ohne Größe „je Ort“", true);
+            hebt("EIN Ding der Welt: der Spieler ist ein Fluss", "Stadt", "zweifel:Region ohne Größe „ist ein Fluss“", true);
+            stumm("Flut über Tage, ein Fluss", true);
+            hebt("1 Gebirge", M, "zweifel:Horizont „Gebirge“", true);
             // ohne Regel bleibt allein die Zählung von Sternen
             if (!lies("10¹¹ Sterne über 10¹⁰ a").fraglich.length) f.push("„10¹¹ Sterne“ steht nicht ohne Regel");
+            return f.length ? f.join(" · ") : true;
+        });
+        pruefe("KLASSEN-GESETZ Regel 7: schweigt der Umfang zur Größe, spricht die Preis-Pose — zwei Zeilen in der Pose: die höhere", () => {
+            const f = [];
+            const pose = (umfang, preis, soll) => {
+                const r = lies(umfang, true, preis);
+                const ist = r.zweifel ? `${GK.namen[r.zweifel.rang]} (${r.zweifel.grund})` : r.sicher ? `${GK.namen[r.sicher.rang]} (${r.sicher.grund})` : "erbt";
+                if (ist !== soll) f.push(`„${umfang}“ mit „${preis}“ → ${ist}`);
+            };
+            pose("1 Ebene, Häuser bis 7 Geschosse", "P · Stadt", "Stadt (pose:Stadt)");
+            pose("1 Ware, 1 Weg mit Fahrer", "P · Stadt", "Stadt (pose:Stadt)");
+            pose("Kohle und Dampf", "P · Kohlestadt", "Stadt (pose:Kohlestadt)");
+            pose("U_eff ≥ 10 (auch aus Liste)", "P · Dorf und Stadt", "Stadt (zweifel:zwei Zeilen „Pose Dorf“ gegen „Pose Stadt“)");
+            // die Pose eines Dorfs hebt nichts, die Pose ohne Größen-Wort auch nicht
+            pose("1 Sprache: Orts- und Personennamen", "P · Dorf", "erbt");
+            pose("1 Ware, 1 Weg mit Fahrer", "P · Fahrt", "erbt");
+            // der Umfang spricht: ein Maß, eine Zählung, eine Zahl als Leiber bis 10³ — die Pose schweigt
+            pose("Sicht 800 m", "P · Stadt", "Ort (zahl:800 m)");
+            pose("10² Bewohner", "P · Stadt", "Ort (zahl:10² Bewohner)");
+            pose("10³", "P · Stadt", "erbt");
+            pose("10² Nahe tragen Wetter und Arbeit", "P · Test-Stadt bei Regen", "erbt");
             return f.length ? f.join(" · ") : true;
         });
         // der Fixpunkt im Speicher: die Karte, klasse-offen.json und das Blatt, wie `--klassen` sie schreibt
@@ -1726,14 +1809,14 @@ function selbsttest() {
             if (klassenBlatt(R2) !== F.blatt) return "das Blatt wandert im zweiten Lauf";
             return w.length ? `die Wache meldet am Fixpunkt ${w.length}: ${w[0]}` : true;
         });
-        pruefe("KLASSEN-GESETZ Soll: Monotonie 0 · ≥ 97 % der Hand gleich · ≤ 8 Sprossen leer, jede mit Zeile in klasse-offen.json · ≤ 10 ohne Regel", () => {
+        pruefe("KLASSEN-GESETZ Soll: Monotonie 0 · ≥ 97 % der Hand gleich · 0 Sprossen leer · ≤ 10 ohne Regel", () => {
             const { R, offen } = fix();
             const hand = R.hand.gleich + R.hand.abweichung.length + R.hand.enthaltung.length;
             const leer = [...R.je.entries()].filter(([, x]) => !x.klasse).map(([k]) => k);
             const zeilen = new Set(offen.offen.map((o) => o.leiter + "#" + o.sprosse));
             if (R.monotonie.length) return `Monotonie: ${R.monotonie[0]}`;
             if (R.hand.gleich / hand < 0.97) return `nur ${R.hand.gleich} von ${hand} der Hand gleich`;
-            if (leer.length > 8 || leer.some((k) => !zeilen.has(k) || !k.endsWith("#1"))) return `leer ${leer.length}: ${leer.filter((k) => !zeilen.has(k)).join(", ")}`;
+            if (leer.length > 0) return `leer ${leer.length}: ${leer.join(", ")}${leer.some((k) => !zeilen.has(k)) ? " — ohne Zeile in klasse-offen.json: " + leer.filter((k) => !zeilen.has(k)).join(", ") : ""}`;
             if (R.unsicher.length > 10) return `ohne Regel ${R.unsicher.length}: ${R.unsicher.slice(0, 3).map((x) => x.leiter + " S " + x.sprosse).join(", ")}`;
             return true;
         });
@@ -1801,6 +1884,50 @@ function selbsttest() {
         mutant("KLASSEN-WACHE Mutant (d) Welt-Wechsel: „fremde Monde“ unter Planet und Welten ist ROT beim Namen", /^ZWEIFEL NACH UNTEN: planet\.wasser\.gezeiten S 7 trägt „Megastadt und Kontinent“ \(geerbt:S6\).*Welt-Wechsel „fremde Monde“.*die höhere: Planet und Welten$/, (k) => {
             Object.assign(sprosse(k, "planet.wasser.gezeiten", 7), { klasse: "Megastadt und Kontinent", klasseGrund: "geerbt:S6" });
         });
+        // die Mutanten der Regeln vom zweiten Entscheid (19.11.): je Regel eine der 13 Sprossen, die der Koordinator von Hand setzte — ohne
+        // die Hand und auf der alten, niedrigeren Klasse ist sie ROT beim Namen (das Blatt folgt der genommenen Hand)
+        const ohneHand = (name, muster, id, nr, klasse, grund) =>
+            mutant(name, muster, (k, F) => {
+                const s = sprosse(k, id, nr);
+                if (s.klasseGrund !== "hand") throw new Error(`${id} S ${nr} steht nicht von Hand`);
+                Object.assign(s, { klasse, klasseGrund: grund });
+                F.blatt = klassenBlatt(klassenRechnen(k, F.offen));
+            });
+        ohneHand(
+            "KLASSEN-WACHE Mutant Preis-Pose: der Umfang schweigt, die Pose „Stadt“ unter der Klasse Ort ist ROT beim Namen",
+            /^KLASSE UNTER DER PREIS-POSE: mensch\.stadt\.vertikal S 1 gesetzt „Ort“.*die Preis-Pose „P · Stadt“ trägt pose:Stadt → Stadt$/,
+            "mensch.stadt.vertikal", 1, "Ort", "geerbt:R5"
+        );
+        ohneHand(
+            "KLASSEN-WACHE Mutant Preis-Pose mit zwei Zeilen: „Dorf und Stadt“ unter der Klasse Ort ist ROT beim Namen",
+            /^ZWEIFEL NACH UNTEN: mensch\.kultur\.gestalt S 1 trägt „Ort“.*zwei Zeilen „Pose Dorf“ gegen „Pose Stadt“.*die höhere: Stadt$/,
+            "mensch.kultur.gestalt", 1, "Ort", "geerbt:R5"
+        );
+        ohneHand(
+            "KLASSEN-WACHE Mutant zwei Regeln gegeneinander: „Fernrohr auf den Mond“ als Himmel vom Boden (Ort) ist ROT beim Namen",
+            /^ZWEIFEL NACH UNTEN: erleben\.spieler\.forscher S 1 trägt „Ort“.*Welt-Wechsel „auf den Mond“.*die höhere: Planet und Welten$/,
+            "erleben.spieler.forscher", 1, "Ort", "geerbt:R5"
+        );
+        ohneHand(
+            "KLASSEN-WACHE Mutant das Ganze (Erde): „die bewohnte Erde“ als Erd-Schlüssel ohne Hebung ist ROT beim Namen",
+            /^ZWEIFEL NACH UNTEN: mensch\.zeit\.erde S 4 trägt „Stadt“.*Planet-Maß „die bewohnte Erde“.*die höhere: Planet und Welten$/,
+            "mensch.zeit.erde", 4, "Stadt", "geerbt:S3"
+        );
+        ohneHand(
+            "KLASSEN-WACHE Mutant das Ganze (Planet): „Planet und Stern sein“ als Himmel vom Boden ist ROT beim Namen",
+            /^KLASSE UNTER DEM UMFANG: erleben\.spieler\.nichtleib S 5 gesetzt „Stadt“.*wort:Planet → Planet und Welten$/,
+            "erleben.spieler.nichtleib", 5, "Stadt", "geerbt:S4"
+        );
+        ohneHand(
+            "KLASSEN-WACHE Mutant Region ohne Größe: „1 Herrschaftsgebiet“ unter der Klasse Ort ist ROT beim Namen",
+            /^ZWEIFEL NACH UNTEN: mensch\.macht\.grenze S 1 trägt „Ort“.*Region ohne Größe „Herrschaftsgebiet“.*die höhere: Stadt$/,
+            "mensch.macht.grenze", 1, "Ort", "geerbt:R5"
+        );
+        ohneHand(
+            "KLASSEN-WACHE Mutant Horizont: „1 Gebirge“ unter Megastadt und Kontinent ist ROT beim Namen",
+            /^ZWEIFEL NACH UNTEN: planet\.kopplung\.land-meer-luft S 1 trägt „Ort“.*Horizont „Gebirge“.*die höhere: Megastadt und Kontinent$/,
+            "planet.kopplung.land-meer-luft", 1, "Ort", "geerbt:R5"
+        );
         mutant("KLASSEN-WACHE Mutant Blatt: ein Blatt, das dem Gesetz nicht folgt, ist ROT", /^BLATT nicht am Stand/, (k, F) => {
             F.blatt = F.blatt.replace("## C ·", "## C  ·");
         });
