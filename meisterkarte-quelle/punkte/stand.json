@@ -8782,16 +8782,16 @@
   },
   "karte2.erleben.sinn.tod": {
    "punkte": 0,
-   "beleg": "Maschine: S1 · GRÜN ✅ rueckkehr_s 3,21 (Soll ≤ 5) an f68dbf09 gtx — offen: karte2.erleben.sinn.tod#1 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#2 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#2 gtx: ungemessen (R10) · karte2.erleben.sinn.tod#3 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#3 gtx: ROT: S3 · ROT Leser fehlt: Zeugen erzählen den Tod, der Täter steigt im Ruf: kein Bewohner trägt ein Gedächtnis gesehener Taten, kein Ruf eines Täters — der Tod steht nur im Tagebuch (stamm/koerper-seele.js:379 journalAppend „loss“) an f68dbf09 · karte2.erleben.sinn.tod#4 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#4 gtx: ungemessen (R10) · karte2.erleben.sinn.tod#5 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#5 gtx: ROT: S5 · ROT Leser fehlt: kein Erbe: der Tod kehrt denselben Leib zurück (stamm/koerper-seele.js:355 `_playerDeathRespawn`), kein Kind, kein Gesetz des Erbes — 0 Bestände im Inventar bleiben beim selben Leib an f68dbf09 · karte2.erleben.sinn.tod#6 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#6 gtx: ROT: S6 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Bewohner in 0 Siedlungen — keine ferne Stadt, keine 10⁶ Bewohner, die den Spieler nie sahen (verlangt 1000000 Bewohner, die den Spieler nie sahen, die Welt erzeugte 0) an f68dbf09 · karte2.erleben.sinn.tod#7 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#7 gtx: ROT: S7 · ROT Leser fehlt: Tod als Wendepunkt in jeder Epoche, auf jedem Planeten, als jede Art: die Rückkehr kennt nur die Mitte des Genesis-Orts derselben Welt und Zeit (stamm/koerper-seele.js:355, `_genesisAnkunft` stamm/gelaende-boden.js:561); kein Leser der Beschreibung blinder Spieler an f68dbf09",
+   "beleg": "Maschine: S1 · GRÜN ✅ rueckkehr_s 3,51 (Soll ≤ 5) an f68dbf09 radeon · S1 · GRÜN ✅ rueckkehr_s 3,21 (Soll ≤ 5) an f68dbf09 gtx — offen: karte2.erleben.sinn.tod#2 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#2 gtx: ungemessen (R10) · karte2.erleben.sinn.tod#3 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#3 gtx: ROT: S3 · ROT Leser fehlt: Zeugen erzählen den Tod, der Täter steigt im Ruf: kein Bewohner trägt ein Gedächtnis gesehener Taten, kein Ruf eines Täters — der Tod steht nur im Tagebuch (stamm/koerper-seele.js:379 journalAppend „loss“) an f68dbf09 · karte2.erleben.sinn.tod#4 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#4 gtx: ungemessen (R10) · karte2.erleben.sinn.tod#5 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#5 gtx: ROT: S5 · ROT Leser fehlt: kein Erbe: der Tod kehrt denselben Leib zurück (stamm/koerper-seele.js:355 `_playerDeathRespawn`), kein Kind, kein Gesetz des Erbes — 0 Bestände im Inventar bleiben beim selben Leib an f68dbf09 · karte2.erleben.sinn.tod#6 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#6 gtx: ROT: S6 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Bewohner in 0 Siedlungen — keine ferne Stadt, keine 10⁶ Bewohner, die den Spieler nie sahen (verlangt 1000000 Bewohner, die den Spieler nie sahen, die Welt erzeugte 0) an f68dbf09 · karte2.erleben.sinn.tod#7 radeon: ungemessen (R10) · karte2.erleben.sinn.tod#7 gtx: ROT: S7 · ROT Leser fehlt: Tod als Wendepunkt in jeder Epoche, auf jedem Planeten, als jede Art: die Rückkehr kennt nur die Mitte des Genesis-Orts derselben Welt und Zeit (stamm/koerper-seele.js:355, `_genesisAnkunft` stamm/gelaende-boden.js:561); kein Leser der Beschreibung blinder Spieler an f68dbf09",
    "stationen": [
     {
      "id": "karte2.erleben.sinn.tod#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 · GRÜN ✅ rueckkehr_s 3,51 (Soll ≤ 5)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": null,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -20867,7 +20867,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#2 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: ROT: S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner in 20 Saaten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: ROT: S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: ROT: S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: ROT: S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: ROT: S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: ROT: S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: ROT: S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal an f68dbf09",
+   "beleg": "Maschine: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#2 radeon: ungemessen (R10) — zuletzt an f68dbf09: Deckel 45 s gerissen: Stille seit 44.8 s nach 45 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: ROT: S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner in 20 Saaten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: ROT: S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: ROT: S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: ROT: S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: ROT: S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: ROT: S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: ROT: S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal an f68dbf09",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -20897,7 +20897,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 45 s gerissen: Stille seit 44.8 s nach 45 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "ungemessen": true
     },
     {
@@ -37451,7 +37451,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 521,
+  "konsum": 522,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37613,221 +37613,14 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3105
+  "ohne": 3104
  },
  "kopfVoll": "986eff04e91381457c211607664671c49b5d9d0f",
- "zeit": "2026-11-19T16:09:25.187Z",
+ "zeit": "2026-11-19T16:36:51.780Z",
  "vorher": "986eff04",
  "bilanz": {
   "gewinn": [],
   "fall": [],
   "massenFall": false
- },
- "pflicht": {
-  "dokument": "docs/PFLICHT-OFFEN.md",
-  "eintraege": [
-   {
-    "id": "A",
-    "titel": "AAAA je Klasse",
-    "kriterium": "A fällt, wenn K5 jede Klasse GRÜN nennt und E dabei an beiden Messplätzen hält.",
-    "status": "ohne Richter",
-    "gruen": 2,
-    "gesamt": 8,
-    "prozent": 25,
-    "punkte": 3,
-    "max": 8,
-    "kriterien": [
-     "haar.K1",
-     "haar.K2",
-     "lod.K1",
-     "mensch.K4"
-    ],
-    "offen": [
-     {
-      "station": "lod.K1#1",
-      "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +65) — zuletzt an 11d8de3d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":1,\"nachher\":0"
-     },
-     {
-      "station": "lod.K1#1",
-      "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +38)"
-     },
-     {
-      "station": "mensch.K4#1",
-      "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +89) — zuletzt an fd5df4bf: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
-     },
-     {
-      "station": "haar.K1#1",
-      "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +93) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s"
-     },
-     {
-      "station": "haar.K2#1",
-      "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +92) — zuletzt an a6555b12: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s"
-     },
-     {
-      "station": "haar.K2#1",
-      "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +90)"
-     }
-    ],
-    "ohneRichter": [
-     "10 von 14 Klassen der Tafel ohne Station: boden-nah, himmel-licht, laub, haus, wasser, tor-fern, tor-bunt, tor-ziel, fels, boden-nah-farbe",
-     "jede Klasse aus jeder Perspektive über die Uhr: keine Station misst Uhr × Sicht (Ego und Third, nah und fern) — die Klassen-Stationen messen je eine Pose (lod.K1#1 Tafel-Pose und Spielgang, mensch.K4#1 Third, haar.K1#1 und haar.K2#1 Armlänge und Third)",
-     "der erste Blick am Spawn je Klasse: ankunft.K4 ohne Werkzeug (stationen/g6.js `fehlt`)"
-    ]
-   },
-   {
-    "id": "B",
-    "titel": "Ankunft ≤ 5 s kalt",
-    "kriterium": "B fällt, wenn die Kalt-Zeile an beiden Geräten ≤ 5 s ganz hält.",
-    "status": "offen",
-    "gruen": 0,
-    "gesamt": 4,
-    "prozent": 0,
-    "punkte": 0,
-    "max": 2,
-    "kriterien": [
-     "ankunft.K1"
-    ],
-    "offen": [
-     {
-      "station": "ankunft.K1#1",
-      "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an ee9c1965: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) —, Exit 3221226505) · [linse-gpu] amd/rdna-3)"
-     },
-     {
-      "station": "ankunft.K1#1",
-      "geraet": "gtx",
-      "zeile": "Station seit der Messung geändert — zuletzt an d39e0d6e: Last: Referenz f 1,825 (Faden 1,49 · alle Kerne 1,825; vor 103,6/295 ms, nach 134,7/423 ms, Ruhe 90,4/231,8 ms seit 2026-11-15) · fremd: Claude.exe --type=gpu-process --gpu-recent-cra"
-     },
-     {
-      "station": "ankunft.K1#2",
-      "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an ee9c1965: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) —, Exit 3221226505) · [linse-gpu] amd/rdna-3)"
-     },
-     {
-      "station": "ankunft.K1#2",
-      "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, index.html +17) — zuletzt an 08a8397b: Last: Referenz f 1,641 (Faden 1,509 · alle Kerne 1,641; vor 100/250,3 ms, nach 136,4/380 ms, Ruhe 90,4/231,6 ms seit 2026-11-"
-     }
-    ],
-    "ohneRichter": []
-   },
-   {
-    "id": "C",
-    "titel": "Verkehr",
-    "kriterium": "C fällt, wenn in der Stadt nH 300 bei Tag und bei Nacht mindestens 20 Wagen mit Bewohnern am Steuer 10 min lang auf den Trassen fahren — 0 Berührungen mit Leibern, Bauten und anderen Wagen, jeder Wagen erreicht sein Ziel — und dabei das Profi-Band (E) an beiden Messplätzen in Ego und Third hält.",
-    "status": "offen",
-    "gruen": 0,
-    "gesamt": 3,
-    "prozent": 0,
-    "punkte": 0,
-    "max": 2,
-    "kriterien": [
-     "pflicht.C"
-    ],
-    "offen": [
-     {
-      "station": "pflicht.C#1",
-      "geraet": "headless",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +15)"
-     },
-     {
-      "station": "pflicht.C#2",
-      "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "pflicht.C#2",
-      "geraet": "gtx",
-      "zeile": "ungemessen (R10)"
-     }
-    ],
-    "ohneRichter": []
-   },
-   {
-    "id": "E",
-    "titel": "Profi-Band",
-    "kriterium": "E fällt, wenn an beiden Messplätzen — Radeon 890M (iGPU) und GTX 1060 (alte dGPU) — an den Messorten Wiese UND Genesis (spec/profiband/haushalt.json), in BEIDEN Sichten (Ego und Third-Person, je Ort × Sicht), im ABAB unter Regler voll gilt: Frame p95 ≤ 33 ms, ≤ 208 Befehle, ≤ 680k Dreiecke, ≤ 118 MB VRAM, CPU-Takt p95 ≤ 5,8 ms.",
-    "status": "ohne Richter",
-    "gruen": 0,
-    "gesamt": 8,
-    "prozent": 0,
-    "punkte": 0,
-    "max": 8,
-    "kriterien": [
-     "pflicht.E",
-     "profiband.K1",
-     "profiband.K2",
-     "profiband.K3"
-    ],
-    "offen": [
-     {
-      "station": "profiband.K1#1",
-      "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "profiband.K1#1",
-      "geraet": "gtx",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "profiband.K2#1",
-      "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "profiband.K2#1",
-      "geraet": "gtx",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "profiband.K3#1",
-      "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "profiband.K3#1",
-      "geraet": "gtx",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "pflicht.E#1",
-      "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "pflicht.E#1",
-      "geraet": "gtx",
-      "zeile": "Station seit der Messung geändert"
-     }
-    ],
-    "ohneRichter": [
-     "das ABAB: die Sitzung misst jede Zelle einmal"
-    ]
-   },
-   {
-    "id": "F",
-    "titel": "Prüfplatz",
-    "kriterium": "F fällt, wenn jede Zone im Spielpfad benutzt wird — das Kind schaukelt nach dem Pendel des EINEN Leib-Lösers, die Arena antwortet dem Treffer über den EINEN Stoß mit allen Geräten der Schmiede, ein Wagen fährt die Runde in 55–65 s mit 18–22 m Flug am Kicker, vier Wagen mit Bewohnern am Steuer fahren 10 Runden ohne Berührung, die Silhouette der Stadt steht vom Platz aus —, jede Zone an ihrer Station das Profi-Band (E) an beiden Messplätzen hält und die Kalt-Zeile (B) dabei nicht langsamer wird.",
-    "status": "ohne Richter",
-    "gruen": 0,
-    "gesamt": 0,
-    "prozent": 0,
-    "punkte": 0,
-    "max": 0,
-    "kriterien": [],
-    "offen": [],
-    "ohneRichter": [
-     "keine Station misst eine Zone des Prüfplatzes: Schaukel (Pendel des Leib-Lösers), Arena (der EINE Stoß der Schmiede), Strecke (Runde 55–65 s, Flug 18–22 m am Kicker), vier Wagen mit Bewohnern × 10 Runden ohne Berührung, Silhouette der Stadt vom Platz"
-    ]
-   }
-  ],
-  "gefallen": []
  }
 }
