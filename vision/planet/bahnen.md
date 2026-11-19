@@ -105,6 +105,10 @@ Diese Bahnen gelten für den Kern auf main `b7ed8419`: `planet-core.js` mit sha2
   - Klima+Biom an Land, Median: 55,3 → **≤ 25 µs**;
   - Stellen der PET-Formel: 2 → **1**.
 - **Warum nach B1 und B4:** Die Küste ist dort, wo die Höhe durch 0 geht. Gemessen wird erst, wenn das Relief steht.
+- **Befund (Welle 1, 19.11.):** Der Spike-Richter `a-kosten` (Median EINES Durchgangs) liest Klima+Biom an Land am Kopf
+  20,7 · 36,9 · 20,2 µs und urteilt dabei über die Last der Maschine (Wasser derselben Fahrt 2,50 statt 1,30 µs), während
+  `diag-planet --kosten bau2` verschränkt 20,1 · 20,8 µs gegen main 44,5 · 49,1 µs misst — das Soll ≤ 25 hält am Kern, der
+  Richter a braucht den Schätzer von G3 (`welle-1.md`).
 
 ### B3 · S5 Wasser — der Prototyp zieht in den Kern
 
