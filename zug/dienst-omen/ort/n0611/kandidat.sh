@@ -63,6 +63,7 @@ VERSUCHE=${VERSUCHE:-4}
 #            VERDRÄNGT (er fing die Sitzung nach dem Job von vorn an), fällt ebenso sofort — der Rest stellt sich hinten an.
 # Ein Teil, der Stationen buchte, verbraucht keinen Versuch (die VERSUCHE zählen nur Sitzungen ohne eine einzige Station).
 TAKT=${KANDIDAT_TAKT:-5}
+DECKEL=${KANDIDAT_DECKEL_S:-1740} # die Uhr der Sitzung (= TEIL_BUDGET_S des Dienstes): an der ersten Stations-Grenze danach endet sie
 # ohne <liste> <a> <b> — die Stationen der Liste, die weder in a noch in b stehen (alles mit Komma)
 ohne() { echo "$1" | tr ',' '\n' | grep . | grep -vxF -f <(echo "$2,$3" | tr ',' '\n' | grep .) | paste -sd, -; }
 # grenze_grund — warum die Sitzung an dieser Stations-Grenze endet (leer: sie misst weiter)
@@ -86,23 +87,31 @@ buche() { local name=$1 v=$2 B=$3
   else ROH_BILDER_GEPRUEFT=1 PUSH_ROH_NUR=$B TEIL=$name-v$v NUR=$B node punkte-offen.cjs push $K >> $L 2>&1; fi; }
 # teil <name> <stationen> <versuch> — EINE Sitzung: 0 ganz gepusht · 1 gefallen (VERDRÄNGT oder ein CI-Job an einer Grenze; gepusht ist,
 # was sie fertig maß; REST_TEIL = der Rest) · 2 an der Grenz-Flagge des Dienstes beendet (REST_TEIL = der Rest); TEIL_GEBUCHT = Zahl
-teil() { local name=$1 R=$2 v=$3 rest n neu g grund= B=
+teil() { local name=$1 R=$2 v=$3 rest n neu g i grund= B=
   until frei; do sleep 10; done; local d0=$(verdr)
   echo "$(date '+%T') ${K:0:8} $name Versuch $v START ($R)" >> $L
   TEIL=$name-v$v NUR=$R node punkte-offen.cjs lauf $K >> $L 2>&1 & LP=$!
   WK=$(cat /proc/$LP/winpid 2>/dev/null)
-  local s=0
+  local s=0 k=0 t0=$(date +%s) wv= w AUS=$N/punkte-offen-${K:0:8}-$name-v$v.out
   while kill -0 $LP 2>/dev/null; do
     sleep 1
     s=$((s + 1))
     kill -0 $LP 2>/dev/null || break
     [ $((s % TAKT)) = 0 ] || continue
+    # die erste Station einer (Fortsetzungs-)Sitzung nennt punkte.cjs beim Beginn („SITZUNG die Welt vor <id>“): eine Zeile mit Uhr
+    w=$(tail -c 20000 "$AUS" 2>/dev/null | sed -n 's/^  SITZUNG die Welt vor \([^:]*\): .*/\1/p' | tail -n 1)
+    [ -n "$w" ] && [ "$w" != "$wv" ] && { wv=$w; echo "$(date '+%T') $name STATION $w beginnt" >> $L; }
     [ $(verdr) -gt $d0 ] && { grund="VERDRÄNGT von einem CI-Job"; halte_an; break; }
     rest=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$R" 2>/dev/null) || continue
     neu=$(ohne "$R" "$rest" "$B")
     [ -n "$neu" ] || continue
-    # EINE STATIONS-GRENZE: eine Station ist geurteilt, die nächste hat eben begonnen
+    # EINE STATIONS-GRENZE: eine Station ist geurteilt, die nächste hat eben begonnen — je Station EINE Zeile mit Uhr (der Puls liest sie)
+    for i in ${neu//,/ }; do k=$((k + 1)); echo "$(date '+%T') $name STATION $i geurteilt ($k/$(zahl "$R"))" >> $L; done
     g=$(grenze_grund)
+    # DER DECKEL DER SITZUNG (Koordinator 11:07): runde.cjs teile packt nach Σ Deckel der Eich-Tafel (je Lauf 40–90 s), ein Lauf dauert in
+    # der Sitzung 2–3 min, und punkte.cjs öffnet nach jeder gerissenen Fahrt eine Fortsetzung ohne Ende — die Uhr der Sitzung schneidet sie
+    [ -z "$g" ] && [ $(( $(date +%s) - t0 )) -ge "$DECKEL" ] && g="der Deckel der Sitzung ($DECKEL s, seit $(date -d @$t0 '+%T'))"
+    if [ -n "$g" ] && [ "${g#der Deckel}" != "$g" ]; then grund=$g; halte_an; echo "$(date '+%T') $name DECKEL: $g — die Sitzung endet an der Station nach $k von $(zahl "$R"), der Rest folgt sofort in einer neuen" >> $L; break; fi
     [ -n "$g" ] && { grund=$g; halte_an; echo "$(date '+%T') $name GRENZE: $g — die Sitzung endet an der Station nach $(zahl "${B:+$B,}$neu") von $(zahl "$R")" >> $L; break; }
     buche $name $v "$neu"
     B=${B:+$B,}$neu
@@ -125,6 +134,7 @@ teil() { local name=$1 R=$2 v=$3 rest n neu g grund= B=
   echo "$(date '+%T') $name GEPUSHT (Versuch $v) $n Station(en)${REST_TEIL:+ — BEHALTEN je Station, der Rest folgt: $REST_TEIL}" >> $L; node $N/zeile-erledigt.cjs $K $name "$(ohne "$R" "$REST_TEIL")" >> $L 2>&1
   [ -n "$REST_TEIL" ] || return 0
   [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && [ "${grund#die Grenz-Flagge}" != "$grund" ] && return 2
+  [ "${grund#der Deckel}" != "$grund" ] && return 3
   return 1; }
 # SPRUNG=<datei> (die Grenz-Flagge des Dienstes): liegt die Datei, endet die laufende Sitzung an ihrer nächsten Stations-Grenze (teil,
 # Exit 2) und die Liste vor der nächsten Sitzung (Halt, Weichen); der Rest folgt im nächsten Takt des Dienstes an derselben Station.
@@ -149,6 +159,8 @@ while [ ${#Q[@]} -gt 0 ]; do
   [ "$TEIL_GEBUCHT" -gt 0 ] && f=0 || f=$((f+1))
   # an der Grenz-Flagge beendet: der Rest bleibt vorn, die Liste endet oben (SPRUNG) — kein Versuch, kein Warten auf einen CI-Job
   [ $rc = 2 ] && { Q=("$nr|$((v+1))|$T|$f" "${Q[@]}"); continue; }
+  # am Deckel der Sitzung geschnitten: der Rest fährt SOFORT als nächste Sitzung (vorn, in seiner Reihe), kein Versuch, kein Warten
+  [ $rc = 3 ] && { Q=("$nr|$((v+1))|$T|$f" "${Q[@]}"); continue; }
   if [ $f -lt $VERSUCHE ]; then
     echo "$(date '+%T') $NAME-$nr Versuch $v VERDRÄNGT - der Rest ($(zahl "$T") Station(en)) stellt sich ans Ende der Liste (${#Q[@]} davor)" >> $L; Q+=("$nr|$((v+1))|$T|$f")
   else

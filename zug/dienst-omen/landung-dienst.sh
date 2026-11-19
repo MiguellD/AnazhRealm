@@ -58,7 +58,9 @@ darf_beginnen() { WT=$(warter); [ -z "$WT" ]; } # HINTEN AN: eine Liste beginnt 
 # gepusht <zeilen vorher> <name> — die STATIONEN, die seit Zeile n gepusht sind (kandidat.sh: „<name>-<k> GEPUSHT (Versuch v) <n> Station(en)“;
 # eine Zeile ohne Zahl ist eine Station, wie bis 19.11.)
 gepusht() { tail -n +$(($1 + 1)) "$KETTE_LOG" 2>/dev/null | grep -E " $2-[0-9]+ GEPUSHT" | awk '{ if (match($0, /GEPUSHT \(Versuch [0-9]+\) [0-9]+ Station/)) { split(substr($0, RSTART, RLENGTH), a, " "); s += a[4] } else s += 1 } END { print s + 0 }'; }
-station_jetzt() { tail -n +$(($1 + 1)) "$KETTE_LOG" 2>/dev/null | sed -n 's/.* Versuch [0-9]* START (\(.*\))$/\1/p' | tail -n 1 | awk -F, '{ print $1 (NF > 1 ? "+" (NF - 1) : "") }'; } # die erste Station der laufenden Sitzung (+ wie viele mit ihr)
+# station_jetzt — die Station als EIN Wort (runde.txt station): aus der jüngsten Zeile der Kette („… STATION <id> beginnt“, „… STATION <id> geurteilt (k/N)“ —
+# kandidat.sh je Station mit Uhr, 19.11. 11:07 — oder die erste der laufenden Sitzung aus „Versuch v START (…)“, + wie viele mit ihr)
+station_jetzt() { tail -n +$(($1 + 1)) "$KETTE_LOG" 2>/dev/null | awk '/ Versuch [0-9]+ START [(]/ { s = $0; sub(/.* START [(]/, "", s); sub(/[)]$/, "", s); n = split(s, a, ","); z = a[1] (n > 1 ? "+" (n - 1) : "") } / STATION [^ ]+ beginnt$/ { z = $(NF - 1) } / STATION [^ ]+ geurteilt [(]/ { z = $(NF - 2) } END { print z }'; }
 zahl() { echo "$1" | tr ',|' '\n\n' | grep -c .; }
 # runde <verb> … — zug/dienst/runde.cjs gegen den Klon $RUNDE_REPO (stdout = die Antwort, stderr ins Log)
 runde() { node "$RUNDE_CJS" "$@" 2>>"$L"; }
@@ -341,7 +343,8 @@ runde_takt() {
 #    mit Notiz in zug/runde.txt. Mutanten dazu: liste-als-argument · leere-liste-laeuft
 # r  Grenze und Buchung je STATION in der Sitzung (das echte kandidat.sh): gepusht, während die Sitzung misst; die Flagge beendet sie an
 #    der nächsten Stations-Grenze, nie erst nach der Sitzung · s  der Wartende kommt und geht → die Flagge fällt, der Zähler steigt, der
-#    Puls nennt ihn nicht mehr. Mutanten dazu: bucht-am-ende · flagge-bleibt
+#    Puls nennt ihn nicht mehr · t  der Deckel der Sitzung (Uhr, KANDIDAT_DECKEL_S) schneidet an der Grenze, je Station eine Zeile mit Uhr.
+#    Mutanten dazu: bucht-am-ende · flagge-bleibt · deckel-blind · station-stumm
 # j  die Platte unter PLATTE_UNTEN: EIN Alarm mit GB, Station und Kopf (Koordinator 19.11. 02:35), nicht doppelt
 # Mutanten (je eine Regel alt): sprung (der Kopf ist der jüngste main, wie bis 19.11.) · von-vorn (Fortsetzung blind: die ganze Liste) ·
 #    volle-liste (der Richter nimmt jede Station der Liste) · tafel-reihe (die Reihe der Tafel) · still (kein Alarm) · blind (kein Warter) ·
@@ -431,6 +434,8 @@ STUMMEL
         leere-liste-laeuft) liste_rot() { :; } ;; # die alte Regel: eine leere Liste ist still
         je-station) teile_von() { echo "$1" | tr ',' ';'; } ;; # die alte Regel: je Station eine eigene Sitzung
         bucht-am-ende) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^  while kill -0 \$LP 2>/dev/null; do$|  while false; do|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: die Sitzung bucht erst an ihrem Ende, die Flagge wirkt nur zwischen Sitzungen
+        deckel-blind) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^DECKEL=.*$|DECKEL=999999|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: die Sitzung kennt keine Uhr, nur Σ Deckel beim Packen
+        station-stumm) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^    for i in ${neu//,/ }; do k=.*$|    :|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: keine Zeile je Station
         flagge-bleibt) grenze_pruefen() { [ -f "$GRENZE" ] && return 0; if [ -f "$S/landung.halt" ]; then grund=halt; touch "$GRENZE"; return 0; fi; WEICHT_VOR=$(warter); [ -n "$WEICHT_VOR" ] && { grund=weicht; touch "$GRENZE"; }; return 0; } ;; # die alte Regel: die Flagge bleibt liegen
         volle-liste) richte_runde() { local s; for s in $(echo "$3" | tr ',|' '  '); do bash "$RICHTER" "$GERAET" --fall "$s" "$2" "$1" >>"$L" 2>&1; done; } ;;
         tafel-reihe) runde() { if [ "$1" = reihe ]; then echo "$4|"; else node "$RUNDE_CJS" "$@" 2>>"$L"; fi; } ;;
@@ -616,6 +621,23 @@ ATTRAPPE
     if [ "$r1" = "a a,b" ] && [ "$r2" = "a,b" ] && [ "$r3" = 2 ] && [ "$r4" = 2 ] && [ "$(wc -l <"$K2/laeufe.log")" = 1 ]; then
         echo "OK r  Grenze und Buchung je Station in der Sitzung: a gepusht, während die Sitzung maß; die Flagge vor b beendete sie an der Grenze nach b (c nie gemessen), Pushes „$r1“, die Liste endete"
     else echo "ROT r  je Station: Pushes „$r1“ (Soll „a a,b“), gemessen „$r2“ (Soll a,b), GEPUSHT-Zeilen je Station $r3 (Soll 2), GRENZE+SPRUNG $r4 (Soll 2), Sitzungen $(wc -l <"$K2/laeufe.log" 2>/dev/null) (Soll 1)"; fi
+    # t — DER DECKEL DER SITZUNG + EINE ZEILE JE STATION (Koordinator 11:07; Befund: Sitzung 1 am f68dbf09 lief von 08:11:40 an Stunden
+    # weiter, Σ Deckel der Eich-Tafel 1 610 s gegen 2–3 min je Station, und die Kette schrieb seit START keine Zeile): das ECHTE
+    # kandidat.sh, EINE Sitzung „a,b,c,d“, je Station 4 s, Deckel 6 s — an der ersten Grenze nach 6 s (nach b) endet sie, der Rest c,d
+    # fährt SOFORT als neue Sitzung (kein Versuch, kein SPRUNG), je geurteilte Station EINE Zeile mit Uhr
+    local K3=$X/kt3 t1 t2 t3 t4
+    mkdir -p "$K3/n" "$K3/kpm/meisterkarte-quelle/punkte/messung" "$K3/km"
+    : >"$K3/hook.log"; : >"$K3/dienst.log"; : >"$K3/n/pm-stand.cjs"; : >"$K3/n/zeile-erledigt.cjs"; touch "$K3/langsam"
+    cp "$KT/schloss.sh" "$K3/schloss.sh"; cp "$KT/n/punkte-offen.cjs" "$K3/n/punkte-offen.cjs"
+    KANDIDAT_ABLAGE=$K3/ablage KT_X=$K3 KOPF=$k0 KANDIDAT_N=$K3/n KANDIDAT_PM=$K3/kpm KANDIDAT_M=$K3/km KANDIDAT_H=$K3/hook.log KANDIDAT_D=$K3/dienst.log \
+        KANDIDAT_SCHLOSS=$K3/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 KANDIDAT_DECKEL_S=6 SPRUNG=$K3/grenze RUNDE_CJS=$RUNDE_CJS bash "$ke" kt3 x "a,b,c,d" >/dev/null 2>&1
+    t1=$(paste -sd' ' "$K3/laeufe.log" 2>/dev/null)
+    t2=$(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).je).sort().join(","))' "$(cygpath -m "$K3/kpm/meisterkarte-quelle/punkte/messung/${k0:0:8}-gtx.json")" 2>/dev/null)
+    t3=$(grep -cE "^[0-9]{2}:[0-9]{2}:[0-9]{2} kt3-1 STATION [a-d] geurteilt \([0-9]/[0-9]\)$" "$K3/n/kette-0711.log" 2>/dev/null)
+    t4=$(grep -c "kt3-1 DECKEL: der Deckel der Sitzung (6 s" "$K3/n/kette-0711.log" 2>/dev/null)
+    if echo "$t1" | grep -qxE "a,b,c,d (b,c,d|c,d|d)" && [ "$t2" = "a,b,c,d" ] && [ "$t3" -ge 3 ] && [ "$t4" = 1 ] && ! grep -q "SPRUNG\|OFFEN nach" "$K3/n/kette-0711.log"; then
+        echo "OK t  Deckel der Sitzung: die Sitzung a,b,c,d endete an der ersten Grenze nach 6 s, der Rest c,d fuhr sofort neu (Sitzungen „$t1“), gemessen $t2; $t3 Zeilen „STATION … geurteilt (k/N)“ mit Uhr"
+    else echo "ROT t  Deckel/Zeile je Station: Sitzungen „$t1“ (Soll „a,b,c,d“ und der Rest nach dem Schnitt), gemessen „$t2“ (Soll a,b,c,d), Stations-Zeilen mit Uhr $t3 (Soll ≥ 3), DECKEL-Zeilen $t4 (Soll 1)"; fi
     # g — die Baum-Sperre (14.11.)
     BAUM_WARTET=$X/wartet
     mkdir -p "$BAUM_WARTET"
@@ -752,7 +774,7 @@ ATTRAPPE
     else echo "ROT s  kommt und geht: Zeile „$(echo "$e1" | cut -c1-24)“ (Soll durch 8/8), am Kopf $(am "$k3") (Soll 8), Zähler-Stände $s0 → $s1 (Soll mehr), WEICHT+WEITER $s2 (Soll 2), Puls nach dem Gehen mit „WEICHT vor“ $s3 (Soll 0)"; fi
     command rm -rf "$X"
 }
-MUTANTEN=${ST_MUTANTEN-"bucht-am-ende flagge-bleibt liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
+MUTANTEN=${ST_MUTANTEN-"bucht-am-ende flagge-bleibt deckel-blind station-stumm liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
 selbsttest() {
     local O m r rot=0 mr=0 mz=0
     O=$(mktemp -d)
@@ -760,14 +782,14 @@ selbsttest() {
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 20 ] || rot=1
+    [ "$(grep -c "^OK" "$O/echt")" = 21 ] || rot=1
     for m in $MUTANTEN; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 20 Fälle grün (a–s), $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 21 Fälle grün (a–t), $mr/$mz Mutanten ROT"; return 0; fi
     echo "landung-dienst SELBSTTEST ROT: $(grep -c "^OK" "$O/echt" 2>/dev/null) Fälle OK, $mr/$mz Mutanten ROT"
     return 1
 }
