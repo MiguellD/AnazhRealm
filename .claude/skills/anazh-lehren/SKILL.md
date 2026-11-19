@@ -142,9 +142,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     Walds und der Wuchs der Spawn-Baupläne ebenso — `--faden` in gate:worker-dichte zählt K4/K5, den Stau und den Wuchs). Heute
     ist der Faden bis zum ersten Weltbild 97 % belegt (W6).
 15. **git ist das Archiv:** kein Doppel-Archiv im Baum; Chronik = Commit-Message (Rumpf ≤ 600 Zeichen), vollendete Pläne fallen, Lehre =
-    EINE Zeile hier, Offenes = PFLICHT-OFFEN; vor jedem Schnitt KONSUM prüfen (transitiv). Siegel-Wörter meiden auch Auftrags-, Zweig- und
+    EINE Zeile hier, Offenes = die Meisterkarte 2; vor jedem Schnitt KONSUM prüfen (transitiv). Siegel-Wörter meiden auch Auftrags-, Zweig- und
     Bericht-Namen: der Name wandert in die Merge-Message, und die liest `gate:betriebsgesetz` am HEAD.
-16. **Der Null-Renderer ist blind** für Feld-Fit, Slots, March — Analog-Befunde nur mit echtem Renderer (`diag-arch-feld`);
+16. **Der Null-Renderer ist blind** für Feld-Fit, Slots, March — Analog-Befunde nur mit echtem Renderer (Werkbank `--echt`);
     ein Fit liest eine FERTIGE Quelle (Foundry-Flat), nie ein Async-Mesh (leer → ausgebrannt → für immer unsichtbar); Budgets: Lehre 25.
 17. **Sonden mit echtem Renderer:** je Schuss ruht der Loop, `__buehne` hält die Uhr der Zelle (`uhr`, ohne Wort Mittag) · Sonne · Sommer
     (Wetter-Zug 120 s, Saison-Drift 2400 s), die Schatten-Map wird neu markiert, die Blick-Wahl sucht freie Sicht; `Number(null) === 0` — Default-Helfer prüfen `v == null`

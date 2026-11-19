@@ -551,16 +551,18 @@ class AnazhRealm_siedlung_wege {
     // unter der Lava kein Leuchten. `kalt` = 1/t0 − 1/T (1/K) der Oberfläche, T in der Spanne (`_lavaKruste` rechnet ihn).
     _lavaGlutNode(_T, kalt) {
         const FW = globalThis.__fachwerkCore;
-        if (!FW || !(FW.LEUCHT_FEUER > 0) || typeof FW.lichtFarbe !== "function")
+        if (!FW || typeof FW.glutLeuchtdichte !== "function" || typeof FW.lichtFarbe !== "function")
             throw new Error("_lavaGlutNode: fachwerk trägt das Leucht-Gesetz der Glut oder den Planck-Ort nicht");
         const t0 = this._lavaSpanne()[1];
         const G = AnazhRealm.GLUT_BILD;
         const farbe = FW.lichtFarbe(t0);
         const k7 = AnazhRealm._f32; // die kürzeste Zahl desselben f32 (`_f32`)
+        // die Leuchtdichte des Ausbruchs: der schwarze Körper bei t0 (fachwerk `glutLeuchtdichte`, cd/m²) in der EINEN Skala,
+        // auf die Farbe des Orts verteilt (ihre Luma trägt sie) — bis licht-eine-skala die Zahl des Labors `LEUCHT_FEUER`
+        const luma = 0.2126 * farbe[0] + 0.7152 * farbe[1] + 0.0722 * farbe[2];
+        const hell = FW.glutLeuchtdichte(t0) / __weltLicht.EINHEIT_LX / luma;
         const kanal = (k) =>
-            farbe[k] > 0
-                ? _T.exp(kalt.mul(k7(G.c2 / (G.lambdaNm[k] * 1e-9)))).mul(k7(farbe[k] * FW.LEUCHT_FEUER))
-                : _T.float(0);
+            farbe[k] > 0 ? _T.exp(kalt.mul(k7(G.c2 / (G.lambdaNm[k] * 1e-9)))).mul(k7(farbe[k] * hell)) : _T.float(0);
         return _T.vec3(kanal(0), kanal(1), kanal(2));
     }
 

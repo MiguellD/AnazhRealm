@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-boot-stage.cjs — „VOLLE BÜHNE" ALS PRÄDIKAT (W2) und DIE KALT-ZEILE (K30, Pflicht-OFFEN B; ankunft K1–K3)
+// diag-boot-stage.cjs — „VOLLE BÜHNE" ALS PRÄDIKAT (W2) und DIE KALT-ZEILE (K30, Leiter same.preis.ankunft; ankunft K1–K3)
 //
 // Die volle Bühne ist ein PRÄDIKAT aus kanonischen Quellen (nichts hartkodiert, die Impostor-Erwartung aus der Bibliothek):
 //   RING ≥ Ziel · GRAS/WASSER ohne Wartende · STREU `_streuWartet` 0 (keine Region fehlt, wartet auf ihr Asset oder trägt
@@ -15,7 +15,7 @@
 // Streu, Bauten, Gruppen-Bau, Buch, Ort-Wahl, Dorf und der Knoten-Bau der Zeichnung, aus der Spur),
 // die Phase des Vorrats (`f._vorrat` wörtlich) und die Foundry-Schlange; der Adapter vom Gerät (`device.adapterInfo`).
 // DIE KONTROLLE VON AUSSEN (ankunft K1): t = die Prozess-Uhr ab Navigation, als die gehaltene Taste W den Leib um ≥ 0,1 m trug
-// — nie `_weltbildDa` (die Eigenmeldung steht daneben). Urteil: t ≤ 5 s ohne halbes Weltbild (kalt: Pflicht-OFFEN B; mit
+// — nie `_weltbildDa` (die Eigenmeldung steht daneben). Urteil: t ≤ 5 s ohne halbes Weltbild (kalt: Leiter same.preis.ankunft; mit
 // `--profil` am Zweit-Boot: die Wiederkehr, ankunft K3). `--bild`: das Bild der Kontrolle gegen dieselbe Pose nach 60 s Ruhe
 // (ankunft K2: ≤ 2 % Lücke, nichts offen im Bild). `--mutante eigenmeldung|bild|bruch`: die Schlupflöcher, ROT beim Namen.
 // Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
@@ -70,7 +70,7 @@ const HL = require("./lib/haenger-linse.cjs");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
 const ARGV = process.argv.slice(2);
-// Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
+// Das Soll der Ankunft (Leiter same.preis.ankunft S 4, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 // Die Kontrolle von außen (ankunft K1): die Taste trägt den Leib ≥ 0,1 m; nach 1500 Atemzügen ohne Weg hat er sie nie.
 // Das ganze Bild (ankunft K2 Staffel 1): in KEINER Kachel (8 × 6) weichen mehr als 2 % der Pixel gegen dieselbe Pose nach 60 s Ruhe
 // um mehr als ein Achtel ab (`lueckeKacheln`).

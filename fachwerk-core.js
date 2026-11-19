@@ -908,9 +908,11 @@
   function innenwaende(){const g=grp(); if(ROUND)return g; const t=0.12,dW=1.0,dH=2.0; let curK=0;
     const seg=(h,f,a0,a1,hh,y0)=>{ if(a1-a0<0.05)return; const ac=(a0+a1)/2,al=a1-a0; if(h){beam(g,ac,y0+hh/2,f,al,hh,t,'gefach');addSolid(ac,y0+hh/2,f,al,hh,t);} else {beam(g,f,y0+hh/2,ac,t,hh,al,'gefach');addSolid(f,y0+hh/2,ac,t,hh,al);} };
     const door=(h,f,c,y0,hh)=>{ const lw=dW-0.08,lh=dH-0.08,openA=h?1.4:1.4*Math.sign(f||1),yT=y0+dH+0.12,yB=y0+hh,yc=(yT+yB)/2,yh=yB-yT; let lg,block;
-      if(h){ beam(g,c-dW/2,y0+dH/2,f,0.1,dH,t+0.02,'holz');beam(g,c+dW/2,y0+dH/2,f,0.1,dH,t+0.02,'holz');beam(g,c,y0+dH+0.06,f,dW+0.2,0.12,t+0.02,'holz');
+      if(h){ oeffnung(g,()=>{ beam(g,c-dW/2,y0+dH/2,f,0.1,dH,t+0.02,'holz');beam(g,c+dW/2,y0+dH/2,f,0.1,dH,t+0.02,'holz');beam(g,c,y0+dH+0.06,f,dW+0.2,0.12,t+0.02,'holz'); });   // Stock + Sturz der Innentür (Öffnung)
+       
         if(yh>0.05){beam(g,c,yc,f,dW+0.2,yh,t,'gefach');addSolid(c,yc,f,dW+0.2,yh,t);} lg=grp(); bohle(lg,lw/2,y0+dH/2,0,lw,lh,true,'holz'); lg.position.set(...deform(c-dW/2+0.04,0,f)); block=[c-dW/2,y0,f-0.08,c+dW/2,y0+dH,f+0.08]; }
-      else { beam(g,f,y0+dH/2,c-dW/2,t+0.02,dH,0.1,'holz');beam(g,f,y0+dH/2,c+dW/2,t+0.02,dH,0.1,'holz');beam(g,f,y0+dH+0.06,c,t+0.02,0.12,dW+0.2,'holz');
+      else { oeffnung(g,()=>{ beam(g,f,y0+dH/2,c-dW/2,t+0.02,dH,0.1,'holz');beam(g,f,y0+dH/2,c+dW/2,t+0.02,dH,0.1,'holz');beam(g,f,y0+dH+0.06,c,t+0.02,0.12,dW+0.2,'holz'); });
+       
         if(yh>0.05){beam(g,f,yc,c,t,yh,dW+0.2,'gefach');addSolid(f,yc,c,t,yh,dW+0.2);} lg=grp(); bohle(lg,0,y0+dH/2,lw/2,lw,lh,false,'holz'); lg.position.set(...deform(f,0,c-dW/2+0.04)); block=[f-0.08,y0,c-dW/2,f+0.08,y0+dH,c+dW/2]; }
       lg.rotation.y=openA; lg.userData={door:true,preOpen:true,openA,block}; g.add(lg);
       if(h) addCircR(c-dW/2, f-0.8, c+dW/2, f+0.8, curK,'tür'); else addCircR(f-0.8, c-dW/2, f+0.8, c+dW/2, curK,'tür'); };   // Türschwung = volle Blattlänge ~0.8 m → kein Möbel im Schwenkbereich
@@ -977,6 +979,7 @@
     beam(lf,0,h*0.27,e*0.030,piw*0.82,upH*0.84,0.028,role); beam(lf,0,-h*0.30,e*0.030,piw*0.82,loH*0.84,0.028,role);        // erhabene Kassetten (Schauseite)
     return lf; }
   function tueren(){const g=grp(); if(ROUND)return g; const z=-Dp/2+0.07, lw=doorW/2-0.03, lh=doorH-0.08, cy=baseY+doorH/2, openA=1.15, openB=1.05;
+    oeffnung(g,()=>{   // die Haustür als Öffnung (Marke `oeffnung`): Stock, Sturz, Bogen, Oberlicht, Blätter, Schwelle — die Treppe davor ist Masse (addMasse)
     beam(g,-doorW/2-0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); beam(g,doorW/2+0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); // Türstock
     beam(g,0,baseY+doorH+0.05,-Dp/2,doorW+0.36,0.16,0.26,'holz'); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,0,baseY+doorH+0.13,-Dp/2,doorW*0.62,true,P.bogenTyp,'holz',{art:'tuer',cap:roofUnderY(0,-Dp/2)});                                                          // Sturz
     const olY0=baseY+doorH+0.13, olY1=Math.min(baseY+P.egH-P.raehm-0.02,olY0+0.42), olH=olY1-olY0;                            // Oberlicht
@@ -991,16 +994,16 @@
       beam(L,hex,-lh*0.02,0.05,0.04,0.30,0.045,'metall'); beam(L,hex+0.02,-lh*0.10,0.062,0.11,0.045,0.045,'metall');     // INNEN: Drücker-Stange + Griff, bündig (+z)
       L.position.set(...deform(hx,cy,z)); L.rotation.y=(P.doorClosed?0:-sgn*openA)+(DEF_bk>0?hx*DEF_bk:0);                                                  // GESETZ: Haustür schwingt nach AUSSEN (über die Eingangstreppe) → Innenflur zur Treppe bleibt frei
       L.userData={door:true,preOpen:(!P.doorClosed),openA:-sgn*openA,block:sgn<0?[-doorW/2,baseY,-Dp/2-0.1,0,baseY+doorH,-Dp/2+0.1]:[0,baseY,-Dp/2-0.1,doorW/2,baseY+doorH,-Dp/2+0.1],side:sgn,offen:(P.doorClosed?0:-sgn*openA)}; g.add(L); });   // DORF-ERLEBNIS: side+offen = die Flügel-DATEN für den Welt-Pfad (buildStufe separiert, __extractAssetMesh reicht sie als out.tuer — exakt das porta-Muster)
-    beam(g,0,baseY-0.02,-Dp/2+0.04,doorW+0.2,0.06,0.32,'stein');                                                            // Schwelle
+    beam(g,0,baseY-0.02,-Dp/2+0.04,doorW+0.2,0.06,0.32,'stein'); });                                                         // Schwelle
     if(!P.veranda&&!P.portikus)aussentreppe(g,0,-Dp/2,0,-1,doorW);                                                                                     // Haustür-Treppe (vorne) — geteiltes Gesetz
     if(backDoor){ const bw2=Math.min(1.0,backDoor.hi-backDoor.lo-0.2), bcx=backDoor.cx, blh=doorH-0.12, bcy=baseY+blh/2, bz=Dp/2-0.07;  // Hintertür
-      beam(g,bcx-bw2/2-0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz'); beam(g,bcx+bw2/2+0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz');     // Stock
+      oeffnung(g,()=>{ beam(g,bcx-bw2/2-0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz'); beam(g,bcx+bw2/2+0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz');     // Stock (die Hintertür als Öffnung)
       beam(g,bcx,baseY+doorH+0.0,Dp/2,bw2+0.32,0.14,0.24,'holz');                                                                  // Sturz
       const L=grp(); const inner=leafFrame(bw2-0.04,blh,'holz',+1); inner.position.x=(bw2-0.04)/2; L.add(inner);   // Schauseite +z = aussen (Rückseite Haus)
       beam(L,bw2-0.18,0,0.07,0.05,0.05,0.06,'metall'); beam(L,bw2-0.18,blh*0.10,-0.05,0.04,0.26,0.045,'metall');   // aussen Knauf bündig am Blatt (+z) · innen Drücker (−z) — kein schwebender Würfel mehr
       L.position.set(...deform(bcx-(bw2-0.04)/2,bcy,bz)); L.rotation.y=(P.doorClosed?0:-openB)+(DEF_bk>0?(bcx-(bw2-0.04)/2)*DEF_bk:0);
       L.userData={door:true,preOpen:(!P.doorClosed),openA:-openB,block:[bcx-bw2/2,baseY,Dp/2-0.1,bcx+bw2/2,baseY+doorH,Dp/2+0.1],side:1,offen:(P.doorClosed?0:-openB)}; g.add(L);   // DORF-ERLEBNIS: Hintertür-Flügel-DATEN (ein Blatt, Hinge an der Bandseite)
-      beam(g,bcx,baseY-0.02,Dp/2-0.04,bw2+0.2,0.06,0.3,'stein');                                                                   // Schwelle
+      beam(g,bcx,baseY-0.02,Dp/2-0.04,bw2+0.2,0.06,0.3,'stein'); });                                                               // Schwelle
       aussentreppe(g,bcx,Dp/2,0,1,bw2); }                                                                                          // Hintertür-Treppe — GLEICHES Gesetz wie vorne
     addCircR(-doorW/2-0.1,-Dp/2+0.05,doorW/2+0.1,-Dp/2+1.05,0,'haustür');                                                          // Haustür-Schwung (Flur)
     if(backDoor) addCircR(backDoor.cx-0.55,Dp/2-1.05,backDoor.cx+0.55,Dp/2-0.05,0,'hintertür');                                     // Hintertür-Schwung
@@ -1021,14 +1024,18 @@
   function windowSash(w,h,horiz,role,glasRolle){ const sg=grp(); const sw=0.06,t=0.05, gl=glasRolle||'glas';   // gl: das Glas des Fensters — wach oder schlafend (fensterSchlaeft, EIN Würfel für jede Stufe)
     if(P.flaechig){ const a=w/2, b=h/2, c=t/2, R=[];   // FLÄCHEN-STUFE: der Flügel in den Schichten der Stufe 0 — der Rahmen als Ring (vorn, hinten, die Außenkante), das Kreuz und die Scheibe als Flächen auf ihren Tiefen (die Scheibe liegt auf der einen Seite vor dem Kreuz, auf der anderen dahinter; durch sie sieht man hindurch wie nah) — 84 → 36 Dreiecke, keine Laibung und keine Stirn unter 3 cm
       for(const s of [1,-1]){ R.push(_fl(-a,-a+sw,-b,b,s*c,s),_fl(a-sw,a,-b,b,s*c,s),_fl(-a+sw,a-sw,b-sw,b,s*c,s),_fl(-a+sw,a-sw,-b,-b+sw,s*c,s), _fl(-0.02,0.02,-b+sw,b-sw,s*0.0225,s),_fl(-a+sw,a-sw,-0.02,0.02,s*0.0225,s));
-        R.push([[[s*a,-b,-c],[s*a,-b,c],[s*a,b,c],[s*a,b,-c]],[s,0,0]], [[[-a,s*b,-c],[a,s*b,-c],[a,s*b,c],[-a,s*b,c]],[0,s,0]]); }
-      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0005,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0245,-1)],!horiz,0,0,-0.012); return sg; }
+        R.push([[[s*a,-b,-c],[s*a,-b,c],[s*a,b,c],[s*a,b,-c]],[s,0,0]], [[[-a,s*b,-c],[a,s*b,-c],[a,s*b,c],[-a,s*b,c]],[0,s,0]]);
+        // DIE KANTEN DES KREUZES UND DIE LAIBUNG DES RAHMENS (licht-eine-skala): Sprosse (45 mm tief) und Rahmen (50 mm) tragen ihre Flanken — bis hier standen
+        // Vorder- und Rückfläche offen, am offenen Flügel leuchtete die Scheibe im schrägen Blick durch den Spalt (die Quer-Sprosse als zwei Linien). 36 → 52 Dreiecke
+        R.push([[[s*0.02,-b+sw,-0.0225],[s*0.02,-b+sw,0.0225],[s*0.02,b-sw,0.0225],[s*0.02,b-sw,-0.0225]],[s,0,0]], [[[-a+sw,s*0.02,-0.0225],[a-sw,s*0.02,-0.0225],[a-sw,s*0.02,0.0225],[-a+sw,s*0.02,0.0225]],[0,s,0]]);
+        R.push([[[s*(a-sw),-b+sw,-c],[s*(a-sw),-b+sw,c],[s*(a-sw),b-sw,c],[s*(a-sw),b-sw,-c]],[-s,0,0]], [[[-a+sw,s*(b-sw),-c],[a-sw,s*(b-sw),-c],[a-sw,s*(b-sw),c],[-a+sw,s*(b-sw),c]],[0,-s,0]]); }
+      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0125,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0125,-1)],!horiz,0,0,0); return sg; }   // DIE SCHEIBE STEHT MITTIG IN DER TIEFE DES KREUZES (licht-eine-skala): ±0,0125 in ±0,0225 — das Kreuz deckt sie von BEIDEN Seiten; bis hier lag sie um −0,012 (bis −0,0245), auf einer Seite 2 mm VOR dem Kreuz: das wache Glas zeichnete dort über die Sprosse (Dorf Nacht: eine flache Scheibe ohne Kreuz)
     if(horiz){ beam(sg,-w/2+sw/2,0,0,sw,h,t,role); beam(sg,w/2-sw/2,0,0,sw,h,t,role);
       beam(sg,0,h/2-sw/2,0,w,sw,t,role); beam(sg,0,-h/2+sw/2,0,w,sw,t,role);
-      beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,-0.012,w-2*sw,h-2*sw,0.025,gl);
+      beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,0,w-2*sw,h-2*sw,0.025,gl);
     } else { beam(sg,0,0,-w/2+sw/2,t,h,sw,role); beam(sg,0,0,w/2-sw/2,t,h,sw,role);
       beam(sg,0,h/2-sw/2,0,t,sw,w,role); beam(sg,0,-h/2+sw/2,0,t,sw,w,role);
-      beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,-0.012,0,0,0.025,h-2*sw,w-2*sw,gl); }
+      beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,0,0,0,0.025,h-2*sw,w-2*sw,gl); }
     return sg; }
   // ════ DAS BOGEN-GESETZ (K66): Keilsteine im VERBAND — jede Stoßfuge radial zur Mitte ihrer Kurve, jeder Stein ein Keil zwischen zwei Fugen
   //    (gleiche Bogenlänge, N ungerade: der Schlussstein im Scheitel, 2 cm vorstehend), die Kämpfersteine mit ihrem Lager auf dem Kämpfer
@@ -1088,7 +1095,7 @@
         zw.push(st); vor=st; } }
     if(zw.length) prisma(g,zw,eb(dp-0.06),role,{zwickel:{bogen:B}});
     return B; }
-  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1); const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
+  function fensterTeile(g,cx,cy,cz,w,h,horiz,capY){ lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1); const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
@@ -1099,12 +1106,17 @@
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
       L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
       strahlFluegel(L,w*Math.sin(L.rotation.y),w*Math.cos(L.rotation.y),h); } }
+  // DIE ÖFFNUNG IST KEIN KÖRPER (los-huelle): was eine Öffnung baut — Flügel, Rahmen, Bank, Bogen, Gitter, Türblatt und -stock —, trägt
+  // die Marke `oeffnung`; die Hülle des Mass-Baus (`massBau`, die EINE Box, die das Los liest) überspringt sie. Bis hier maß die Box den
+  // 0,62 rad offenen Flügel mit: ein zugestellter Flügel versetzte die Stadt 7/4750 um Median 90,9 m (p3/n1911/los/vergleich.log).
+  function oeffnung(g,f){ const n=g.children.length, r=f(); for(let i=n;i<g.children.length;i++) g.children[i].userData.oeffnung=true; return r; }
+  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ return oeffnung(g,()=>fensterTeile(g,cx,cy,cz,w,h,horiz,capY)); }
   function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
-    if(P.stil==='stein' && P.pitchDeg>=45){ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
+    if(P.stil==='stein' && P.pitchDeg>=45) oeffnung(g,()=>{ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
       const c=(w.lo+w.hi)/2, wd=winW(w), zf=w.fixed, y0=w.win.cy-w.win.ch/2-0.05, rH=1.0, zr=zf-0.20, rW=wd+0.5;
       beam(g,c,y0+rH,zr,rW,0.06,0.05,'metall'); beam(g,c,y0+0.10,zr,rW,0.05,0.05,'metall');   // Handlauf + Fussschiene
       const nb=Math.max(3,Math.round(rW/0.16)); for(let i=0;i<=nb;i++)beam(g,c-rW/2+i*rW/nb,y0+rH/2,zr,0.025,rH,0.025,'metall');
-      [-1,1].forEach(s=>beam(g,c+s*rW/2,y0+rH/2,zf-0.10,0.05,rH,0.20,'metall')); }); }   // seitliche Konsolen an die Wand
+      [-1,1].forEach(s=>beam(g,c+s*rW/2,y0+rH/2,zf-0.10,0.05,rH,0.20,'metall')); }); });   // seitliche Konsolen an die Wand — das Gitter der Öffnung (Marke `oeffnung`)
     return g; }   // Giebel-Spitzfenster wird bündig in giebel() gebaut (mit echter Backstein-Aussparung)
 
   function moebel(){const g=grp(); if(ROUND)return g;
@@ -1303,7 +1315,7 @@
       addSolid(xout,wy0+(yLow-wy0)/2,zc,0.12,yLow-wy0,gd); fensterAt(g,xout,wy,zc,0.8,wH,false, yLow-0.06); }   // BOGEN-DECKEL lokal: Pult-Traufe schlägt Hauptdach
     const pdw=0.85, pd0=xin+sx*0.35, plo=Math.min(pd0,pd0+sx*pdw), phi=Math.max(pd0,pd0+sx*pdw), pdH=2.0, pdY=wy0+pdH;   // Personentür an der HOHEN Seite
     stripTrap(x0,plo,z1,wy0); stripTrap(phi,x1,z1,wy0); stripTrap(plo,phi,z1,pdY);
-    beam(g,(plo+phi)/2,pdY+0.07,z1,pdw+0.24,0.13,0.16,'holz'); [plo,phi].forEach(d=>beam(g,d,(wy0+pdY)/2,z1,0.12,pdH,0.14,'holz'));
+    oeffnung(g,()=>{ beam(g,(plo+phi)/2,pdY+0.07,z1,pdw+0.24,0.13,0.16,'holz'); [plo,phi].forEach(d=>beam(g,d,(wy0+pdY)/2,z1,0.12,pdH,0.14,'holz')); });   // Sturz + Stock der Personentür (Öffnung)
     { const L=grp(); const inner=grp(); const w=pdw-0.04,h=pdH-0.04; beam(inner,0,0,0.014,w,h,0.04,'holz');
       const nb=Math.max(2,Math.round(w/0.2)); for(let i=0;i<nb;i++)beam(inner,-w/2+(i+0.5)*w/nb,0,-0.014,w/nb,h,0.03,'holz');
       beam(inner,0,h/2-0.07,-0.03,w,0.09,0.04,'holz'); strut(inner,-w/2+0.06,-h/2+0.08,-0.04,w/2-0.06,h/2-0.08,-0.04,0.06,'holz');
@@ -1312,8 +1324,8 @@
       L.userData={door:true,preOpen:(!P.doorClosed),openA:sx*1.0, block:[plo,wy0,z1-0.12,phi,pdY,z1+0.12]}; g.add(L); }
     const tw=Math.min(2.45, gw-0.55), t0=xin+sx*0.30, tlo=Math.min(t0,t0+sx*tw), thi=Math.max(t0,t0+sx*tw), toH=2.0, toY=wy0+toH;   // TOR am hohen Ende, Einfahrt −z
     stripTrap(x0,tlo,z0,wy0); stripTrap(thi,x1,z0,wy0); stripTrap(tlo,thi,z0,toY);
-    beam(g,(tlo+thi)/2,toY+0.08,z0,tw+0.3,0.16,0.18,'holz'); [tlo,thi].forEach(d=>beam(g,d,(wy0+toY)/2,z0,0.14,toH,0.14,'holz'));
-    beam(g,(tlo+thi)/2,wy0-0.02,z0+0.03,tw+0.2,0.06,0.34,'stein');
+    oeffnung(g,()=>{ beam(g,(tlo+thi)/2,toY+0.08,z0,tw+0.3,0.16,0.18,'holz'); [tlo,thi].forEach(d=>beam(g,d,(wy0+toY)/2,z0,0.14,toH,0.14,'holz'));
+    beam(g,(tlo+thi)/2,wy0-0.02,z0+0.03,tw+0.2,0.06,0.34,'stein'); });   // Sturz, Stock und Schwelle des Tors (Öffnung)
     const tlw=tw/2;
     const torLeaf=(L,w,h,sec)=>{ beam(L,0,0,0.014,w,h,0.04,sec?'metall':'holz'); const nb=Math.max(3,Math.round(w/0.24));
       if(sec){ const nl=Math.max(3,Math.round(h/0.42)); for(let j=0;j<nl;j++)beam(L,0,-h/2+(j+0.5)*h/nl,-0.022,w*0.98,h/nl*0.86,0.05,'metall'); for(let j=1;j<nl;j++)beam(L,0,-h/2+j*h/nl,-0.04,w,0.025,0.06,'dunkel'); }
@@ -1391,7 +1403,7 @@
         const L=grp(); const inner=leafFrame(lw,lh,'holz',+1); inner.position.x=lw/2; L.add(inner); beam(L,lw-0.13,0,0.05,0.07,0.07,0.06,'metall');
         L.position.set(...deform(hx,dcy,hz)); L.rotation.y=base+(P.doorClosed?0:oA*sgn)+(DEF_bk>0?hx*DEF_bk:0);
         L.userData={door:true,preOpen:(!P.doorClosed),openA:base+oA*sgn,block:[dx-0.45,baseY,dz-0.45,dx+0.45,baseY+dh,dz+0.45]}; g.add(L);
-        beam(g,dx,baseY-0.02,dz, outIsX?0.30:dwid+0.2, 0.06, outIsX?dwid+0.2:0.30, 'stein');
+        oeffnung(g,()=>beam(g,dx,baseY-0.02,dz, outIsX?0.30:dwid+0.2, 0.06, outIsX?dwid+0.2:0.30, 'stein'));   // Schwelle der Schwingtür (Öffnung)
         aussentreppe(g,dx,dz,ox,oz,dwid); }
       if(w.door){ const ii=loc(uc,v0), ix=ii[0], iz=ii[1], dh=baseY+P.doorH, c=w.door.c;                  // Innendurchgang: bei merge BREITE Öffnung (Raum fließt), sonst Türbreite
         const owid = merge ? Math.min(breadth-1.0,(outIsX?sZ:sX)-1.0) : (w.door.hi-w.door.lo);
@@ -1463,7 +1475,7 @@
         const _co=(isX?base[0]:base[1]); eindeckenFlaeche(g,{rY:ry+0.05,eaveDropY:ry-0.35,eZ:bd+0.1,zMid:(isX?base[1]:base[0]),sign:outv[isX?1:0],xRangeAt:function(){return [_co+aB-bw-0.25,_co+aB+bw+0.25];},trim:true,lift:0.05,axis:(isX?'z':'x')});   // GESETZ: Balkon-Pultdach durch DASSELBE Deckungs-Gesetz geschnitten (Lattung+Ziegel, WINKEL ABGELEITET) — kein hand-gesetztes Sheet im falschen Winkel mehr
         for(let a=aB-bw;a<=aB+bw+0.01;a+=bw){ const s0=loc(a,0,ry+0.05),s1=loc(a,bd+0.05,ry-0.32); strut(g,s0[0],ry+0.05,s0[2],s1[0],ry-0.32,s1[2],0.07,'holz'); } }
       const dw=0.85,dh=2.0,dcy=yF+dh/2, lw=dw/2-0.02,lh=dh-0.06;                                        // Balkontür (Doppelflügel) je Etage
-      bm(aB-dw/2-0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB+dw/2+0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB,0,yF+dh+0.06,dw+0.3,0.16,0.12,'holz');
+      oeffnung(g,()=>{ bm(aB-dw/2-0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB+dw/2+0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB,0,yF+dh+0.06,dw+0.3,0.16,0.12,'holz'); });   // Stock + Sturz der Balkontür (Öffnung)
       const faceY = isX?0:(Math.PI/2);
       [[-1,aB-dw/2+0.02],[1,aB+dw/2-0.02]].forEach(([sgn,ha])=>{ const LL=grp(); const inner=leafFrame(lw,lh,'holz'); inner.position.x=-sgn*lw/2; LL.add(inner);
         const hp=loc(ha,-0.04,dcy); LL.position.set(...deform(hp[0],dcy,hp[2])); LL.rotation.y=faceY+sgn*1.1+(DEF_bk>0?hp[0]*DEF_bk:0);
@@ -1645,10 +1657,11 @@
       for(let lv=0;lv<nLev;lv++){ const y0=baseY+lv*P.egH, wH=P.egH;
         if(isDoor&&lv===0){ lichtAuf(x,y0+(wH-0.8)/2,z,chord,wH-0.8,'x',0); beam(g,x,y0+wH-0.4,z,chord,0.8,0.3,wr,[0,Math.PI/2-a,0]); continue; }
         if(s%2===0){ beam(g,x,y0+0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]); beam(g,x,y0+wH-0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]);
-          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; lichtAuf(x,wy,z,ww*0.9,wh,'x',1); beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);
-          beam(g,x,wy+wh/2+0.07,z,ww+0.18,0.1,0.16,'holz',rr); beam(g,x,wy-wh/2-0.07,z,ww+0.2,0.1,0.18,'holz',rr); beam(g,x,wy,z,0.06,wh,0.13,'holz',rr); beam(g,x,wy,z,ww,0.06,0.13,'holz',rr); }
+          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; lichtAuf(x,wy,z,ww*0.9,wh,'x',1); oeffnung(g,()=>{ beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);   // das Fenster des Rundbaus als Öffnung (Marke `oeffnung`): Glas, Sturz, Bank, Kreuz
+          beam(g,x,wy+wh/2+0.07,z,ww+0.18,0.1,0.16,'holz',rr); beam(g,x,wy-wh/2-0.07,z,ww+0.2,0.1,0.18,'holz',rr); beam(g,x,wy,z,0.06,wh,0.13,'holz',rr); beam(g,x,wy,z,ww,0.06,0.13,'holz',rr); }); }
         else beam(g,x,y0+wH/2,z,chord,wH,0.3,wr,[0,Math.PI/2-a,0]); } }
-    { const dHalf=Math.min(1.1,Math.max(0.7,2*Math.PI*rad/seg)), bt=(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund'; bogenRahmen(g,0,baseY+P.egH-0.6,-rad-0.04,dHalf,true,bt,wr); beam(g,0,baseY-0.02,-rad-0.02,2*dHalf+0.3,0.06,0.35,'stein'); for(let st=0;st<4;st++)beam(g,0,baseY-0.12-st*0.16,-rad-0.35-st*0.32,2*dHalf+0.1,0.16,0.4,'stein'); }   // RUNDBAU-TÜR: der Bogen fliesst auch hier durch + Eingangsstufen
+    { const dHalf=Math.min(1.1,Math.max(0.7,2*Math.PI*rad/seg)), bt=(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund'; oeffnung(g,()=>{ bogenRahmen(g,0,baseY+P.egH-0.6,-rad-0.04,dHalf,true,bt,wr); beam(g,0,baseY-0.02,-rad-0.02,2*dHalf+0.3,0.06,0.35,'stein'); });   // Bogen + Schwelle der Rundbau-Tür (Öffnung)
+      for(let st=0;st<4;st++)beam(g,0,baseY-0.12-st*0.16,-rad-0.35-st*0.32,2*dHalf+0.1,0.16,0.4,'stein'); }   // RUNDBAU-TÜR: der Bogen fliesst auch hier durch + Eingangsstufen
     { const iwr=(P.stil==='huette'||P.stil==='stroh')?'holz':'putz', tIW=0.18, gap=0.55, ri=rad-0.45;   // ECHTE INNENWAENDE: der Zylinder bekommt Raeume statt leerer Roehre
       for(let lv=0; lv<nLev; lv++){ const y0=baseY+lv*P.egH, wh=P.egH, ym=y0+wh/2;
         beam(g, 0, ym, -(ri+gap)/2, tIW, wh, ri-gap, iwr); beam(g, 0, ym, (ri+gap)/2, tIW, wh, ri-gap, iwr);   // Spine entlang z, mittige Tuerluecke
@@ -1762,7 +1775,7 @@
     [-Dp/2,Dp/2].forEach(zf=>beam(g,0,(base+springY)/2,zf,W,springY-base,0.22,'putz'));   // TAMBOUR-KASTEN: schliesst Wandkrone→Springlinie an den Seiten (Pendentifs bleiben innen) → kein Durchblick mehr
     [-W/2,W/2].forEach(xf=>beam(g,xf,(base+springY)/2,0,0.22,springY-base,Dp,'putz'));
     beam(g,0,springY-0.04,0,W,0.1,Dp,'putz');   // Deck auf dem Kasten → der Dom sitzt auf einer Flaeche
-    [-Dp/2,Dp/2].forEach(zf=>{ for(let i=-1;i<=1;i++) beam(g,i*W*0.27,base+(springY-base)*0.55,zf,W*0.13,(springY-base)*0.42,0.05,'glas'); }); [-W/2,W/2].forEach(xf=>{ for(let i=-1;i<=1;i++) beam(g,xf,base+(springY-base)*0.55,i*Dp*0.27,0.05,(springY-base)*0.42,Dp*0.13,'glas'); });   // Fenster im Tambour-Kasten (ersetzt die innen verdeckte Rundtrommel)
+    oeffnung(g,()=>{ [-Dp/2,Dp/2].forEach(zf=>{ for(let i=-1;i<=1;i++) beam(g,i*W*0.27,base+(springY-base)*0.55,zf,W*0.13,(springY-base)*0.42,0.05,'glas'); }); [-W/2,W/2].forEach(xf=>{ for(let i=-1;i<=1;i++) beam(g,xf,base+(springY-base)*0.55,i*Dp*0.27,0.05,(springY-base)*0.42,Dp*0.13,'glas'); }); });   // (Marke `oeffnung`) Fenster im Tambour-Kasten (ersetzt die innen verdeckte Rundtrommel)
     for(let bd=0;bd<bands;bd++){ const a=prof(bd/bands),bb=prof((bd+1)/bands),r0=a[0],y0=a[1],r1=bb[0],y1=bb[1];
       for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI,c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
         const P00=[r0*c0,y0,r0*s0],P01=[r0*c1,y0,r0*s1],P10=[r1*c0,y1,r1*s0],P11=[r1*c1,y1,r1*s1];
@@ -2819,7 +2832,7 @@
       [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], rahmenM, rahmenF);
     const pw=Math.max(0.1,o.w/2-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND), scheibe=(d)=>[[P(u-pw,o.cy-ph,d),P(u+pw,o.cy-ph,d),P(u+pw,o.cy+ph,d),P(u-pw,o.cy+ph,d)],aus];
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
-    else { teile([scheibe(d1+0.01)], M.putz, innen); teile([scheibe(d1+0.02)], M.glas, eins); }
+    else { teile([scheibe(d1+0.01)], M.putz, innen); if(Math.sign(z?o.cz:o.cx)!==s) teile([scheibe(d1+0.02)], M.glas, eins); }   // DAS GLAS STEHT IM FLÜGEL, NICHT IN DER ÖFFNUNG (licht-eine-skala): schwenkt der Flügel aus (unten, wie an der L0: fensterAt dreht jeden um 0,62 rad), ist die Öffnung leer — man sieht den Raum; bis hier glühte dort eine zweite Scheibe (gate:haus-fern G: Glut L2/L0 1,274)
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
     teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF);
     if(Math.sign(z?o.cz:o.cx)!==s) continue;   // der Flügel der L0 dreht nach dem Vorzeichen seiner Lage: zeigt die Wand dagegen, schlägt er in den Körper
@@ -4933,7 +4946,7 @@
         if(!naht) break;
         kante(naht[1],naht[2]); naehte.push([naht[1],naht[2]]); }
       return {knoten:kn, kanten:kan, naehte}; }
-    // ═══ DER VERKEHR (PFLICHT-OFFEN C, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
+    // ═══ DER VERKEHR (Leiter mensch.netz.verkehr, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
     // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über die Lose im Ring (ohne die
     // Vorstadt; ein Plan ohne sie: über jedes Los); ein Dorf fährt nicht.
@@ -5279,7 +5292,7 @@
         K.wenden.sort((p,q)=>(q.tor?1:0)-(p.tor?1:0)||p.L-q.L); });
       let laenge=0; for(const s of strecken) if(s.frei) laenge+=s.laenge;
       return {kreuzungen, strecken, laenge}; }
-    // DIE WENDE IST BODEN DER STADT (PFLICHT-OFFEN C, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende
+    // DIE WENDE IST BODEN DER STADT (Leiter mensch.netz.verkehr, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende
     // (die kürzeste Bahn zuerst), deren Kreis und Plätze Land tragen (ctx.wasserAt), deren Grund (ctx.hoeheAt) nicht steiler als
     // `hangMax` liegt und deren Band jede Fläche der Stadt trägt (DIE HÖHE DER WENDE, unten; `wende`, sonst null); ihr Ring (der
     // Wagen samt `ringRandM`), die Bahn hinein und heraus und ihre Plätze liegen als Erdbau — EINE Fläche mit dem Weg. Bis dahin
@@ -5348,7 +5361,7 @@
         lege(w.hEin,2*V.halbM); lege(w.hAus,2*V.halbM); delete w.hEin; delete w.hAus;
         for(const p of w.plaetze){ const fx=Math.sin(p.fahrt)*V.parkL*0.5, fz=Math.cos(p.fahrt)*V.parkL*0.5;
           trasse({x:p.x-fx,z:p.z-fz},{x:p.x+fx,z:p.z+fz},w.y,V.parkB); } }
-      // DER ABBIEGER IST BODEN DER STADT (PFLICHT-OFFEN C): die Bahn jedes Wegs durch eine Kreuzung (`wege`: vom Ende der Spur hinein
+      // DER ABBIEGER IST BODEN DER STADT (Leiter mensch.netz.verkehr): die Bahn jedes Wegs durch eine Kreuzung (`wege`: vom Ende der Spur hinein
       // gerade oder im Bogen bis an die Spur hinaus) liegt als Erdbau, breit wie die Bahn der Wende — je Meter auf der Höhe der
       // Fläche, die sie kreuzt (Kern, Saum, Platz), über die Ecke dazwischen gleichmäßig von Fläche zu Fläche. Bis hier lagen nur
       // die Wege: der Bogen schnitt die Ecke über den Hang — am Markt von stadt-voll stieg er dort 0,27 m je halben Meter, und der
@@ -5538,14 +5551,14 @@
   if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=stadt?Math.max(SD.marktTief[0],Math.min(SD.marktTief[1],PW*SD.marktJeBreite)):Math.max(6,PW*0.55);   /*der Markt der Stadt ist ein Platz, kein Streifen (stadt-voll: 34 × 9,4 m → 34 × 22 m)*/
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
     if(platz.typ==='weg'){ const MS=AUSSTATTUNG.marktstand.tritt, rS=Math.hypot(MS.ex,MS.ez), zt=plan.schnitt||plan;
-      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (PFLICHT-OFFEN C): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
+      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (Leiter mensch.netz.verkehr): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
       const reihen=stadt&&SG.viertel.markt.dinge.find(q=>q.art==='marktstand');                 /*DER MARKT DER STADT traegt die Staende seiner Zeile: Reihen im Raster ueber dem Platz, ausser der Trasse (bis hier zwei bis drei Staende an festen Bruchteilen des Platzes)*/
       if(reihen){ const [gx,gz]=reihen.rasterM; let zi=0;                                       /*je Reihe die Front (`th`) nach Norden oder Sueden: zwei Reihen stehen einander ueber ihrer Gasse gegenueber*/
         for(let z=platz.cz-platz.ez+SD.standRandM; z<=platz.cz+platz.ez-SD.standRandM+1e-6; z+=gz, zi++) for(let x=-PW+SD.standRandM; x<=PW-SD.standRandM+1e-6; x+=gx){ const s={x,z,th:zi%2?0:Math.PI}; if(staende.length<reihen.max&&Math.abs(z-platz.cz)>=SD.marktGangM&&standFrei(s)) staende.push(s); } }   /*die Gasse des Markts laengs seiner langen Achse bleibt frei (`marktGangM` beidseits der Mitte): wer auf dem Platz steht, sieht die Fassaden an seinen Enden — am Messort stadt fand die Pose des Orts sonst keinen Bau mit freier Sichtlinie (127 Bauten, 68 Hindernisse)*/
       else for(const s of [{x:-PW*0.45,z:sW/2+PD*0.45},{x:PW*0.45,z:sW/2+PD*0.55}].concat(nG>18?[{x:0,z:sW/2+PD*0.82}]:[])) if(standFrei(s)) staende.push(s); } }
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
   const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
-  const wegRand=(rd)=>rd.w/2+(staedt&&rd.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rd):0);   /*DER RAND DES WEGS FUER DIE AUSSTATTUNG (w28-stadt-grammatik, PFLICHT-OFFEN C): die Fahrbahn — an der Fahrstrasse der Stadt samt ihrem Gehweg. Der Gehweg der Trasse traegt zwei Leiber (STADT_DICHTE.gehwegFahrM) und ist der Raum, in den der Wagen ausschert, der einen Stehenden umfaehrt (der Wirt, `_verkehrUmfahren`): dort steht kein Mast und kein Brunnen. Bis hier trat der Mast bis an den Bordstein (`laterneQuer`), der Brunnen stand 0,6 m hinter ihm: an stadt-voll stiess jeder Wagen, der den Spieler in der Kreuzung am Markt umfuhr, an den Mast 828/443 (9,4 m von ihrer Mitte, 3,0 m von der Achse) — 531 Stoesse in 120 s. Leser: der Setzer der Laterne (`laterneWege`, `laterneQuer`), der Brunnen des Zugs, `mastWeicht` (ueber `laterneNeben`) und `brunnenWeicht` (das Layout traegt ihn)*/
+  const wegRand=(rd)=>rd.w/2+(staedt&&rd.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rd):0);   /*DER RAND DES WEGS FUER DIE AUSSTATTUNG (w28-stadt-grammatik, Leiter mensch.netz.verkehr): die Fahrbahn — an der Fahrstrasse der Stadt samt ihrem Gehweg. Der Gehweg der Trasse traegt zwei Leiber (STADT_DICHTE.gehwegFahrM) und ist der Raum, in den der Wagen ausschert, der einen Stehenden umfaehrt (der Wirt, `_verkehrUmfahren`): dort steht kein Mast und kein Brunnen. Bis hier trat der Mast bis an den Bordstein (`laterneQuer`), der Brunnen stand 0,6 m hinter ihm: an stadt-voll stiess jeder Wagen, der den Spieler in der Kreuzung am Markt umfuhr, an den Mast 828/443 (9,4 m von ihrer Mitte, 3,0 m von der Achse) — 531 Stoesse in 120 s. Leser: der Setzer der Laterne (`laterneWege`, `laterneQuer`), der Brunnen des Zugs, `mastWeicht` (ueber `laterneNeben`) und `brunnenWeicht` (das Layout traegt ihn)*/
   const tore=[], imTor=(x,z,d)=>tore.some(f=>distPunktOBB(x,z,f)<d);                           /*DER TORPLATZ (STADT_DICHTE.torplatz): am Ende jeder Trasse der Wagen (das Blatt des Strassengraphen an einer Strasse ab VERKEHR_GESETZ.breiteM — das Tor) haelt die Stadt ein Geviert frei, neben der Strasse, auf der Seite des flacheren Grunds, nie im Wasser: kein Los, keine Gasse, keine Laterne — dort wendet und steht der Wagen (`verkehrsNetz`: der Kreis `abM` vom Ende im Winkel `winkel`, einer seiner Kandidaten). Bis hier fand die Wende ihren Kreis in der Wiese neben der Strasse; die dichte Stadt schloss beide Fronten: an stadt-voll trugen 2 von 4 Enden eine Wende, 15 von 21 Wagen einen Platz (gate:fahr-leben VK, main 4 von 4 und 20 von 20)*/
   if(stadt){ const T=SD.torplatz, gradT=new Array(G.nodes.length).fill(0); for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradT[rd.a]++; gradT[rd.b]++; }
     for(const rd of roads){ if(!(rd.a>=0&&rd.b>=0)||(rd.w||0)<VERKEHR_GESETZ.breiteM) continue; const P=rd.pts;
@@ -5765,7 +5778,7 @@
   const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:wegRand(rd)})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
   let kreuzT=null; const laterneInKreuzung=(x,z)=>{ const VG=VERKEHR_GESETZ; if(!kreuzT){ const zt=plan.schnitt||plan; kreuzT=zt.staedtisch?verkehrsNetz({roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w})), feldwege},0,0,true).kreuzungen.filter(K=>!K.ende&&K.r>0):[]; }
-    return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (PFLICHT-OFFEN C): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
+    return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (Leiter mensch.netz.verkehr): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
   const laterneNeben=(x,z)=>!laterneImWeg(x,z)&&!laterneInKreuzung(x,z)&&!(stadt&&nassAm(x,z,1))&&!imTor(x,z,LATERNE_FUSS);   /*DER STAND OHNE DIE WAND (w28-stadt-grammatik): neben jedem Weg (`wegRand`: an der Trasse hinter ihrem Gehweg), ausser der Kreuzung der Trassen, trocken, ausser dem Torplatz (der Raum der Wende) — das Layout traegt ihn als `laterneNeben`, der Mast, der nach dem Snap der Wand weicht (`mastWeicht`), fragt DENSELBEN Stand statt eines Zwillings. Bis hier fragte er nur die Fahrbahn jedes Wegs*/
   const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&laterneNeben(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg UND ausser der Kreuzung der Trassen — Stadt, Platz, Knoten und Gasse fragen hier*/
   const laterneQuer=(rd,q,fl)=>{ const lo=wegRand(rd)+LATERNE_FUSS; for(let o=Math.max(lo,rd.w/2+gehwegVon(plan,rd)+0.35); ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
@@ -5926,13 +5939,36 @@
         return P;
     }
 
+    // DIE HÜLLE IST DER KÖRPER (los-huelle): die Box `ext`, die das Los liest (`hausSlot` → `dorfLayout`, `exportSettlement`), umfasst
+    // nur, was der Baukörper ist — Wand, Dach samt Überstand, Sockel, Anbau —, nie ein Teil, dessen Gestalt von einer Öffnung oder
+    // ihrem Zustand abhängt (die Marke `oeffnung` des Baus, das Flügel- und Türblatt `window`/`door`): eine Fassade bewegt kein Los.
+    // Dieselbe Rechnung wie Box3.setFromObject (je Geometrie ihre Box unter der Welt-Matrix), ohne die Teilbäume der Öffnungen.
+    // Befund (p3/n1911/los): der zugestellte Flügel änderte `ext` an 476 von 519 Plan-Häusern (≤ 0,360 m), die Stadt 7/4750 rückte
+    // um Median 90,9 m. Linse: gate:settlement Teil A, `huelleProben` (scripts/lib/los-proben.cjs).
+    function koerperHuelle(g) {
+        var bx = new THREE.Box3(),
+            b = new THREE.Box3();
+        g.updateMatrixWorld(true);
+        (function lies(o) {
+            var u = o.userData;
+            if (u && (u.oeffnung || u.window || u.door)) return;
+            if (o.geometry) {
+                var q = o.boundingBox !== undefined ? o : o.geometry; // die Instanz-Senke trägt ihre eigene Box (wie expandByObject)
+                if (q.boundingBox === null) q.computeBoundingBox();
+                b.copy(q.boundingBox).applyMatrix4(o.matrixWorld);
+                bx.union(b);
+            }
+            for (var i = 0; i < o.children.length; i++) lies(o.children[i]);
+        })(g);
+        return bx;
+    }
     // ── Der MASS-BAU → B-Struct — byte-Anker: buildHausLOD (Lab, LOD-Sonde)
     //    Z.„MASS-BUILD liefert ext/dims — identisch zu buildDorf": stapelBau
     //    (MASSNUR, LOD1F) einmal bauen, Hülle vermessen, sofort entsorgen.
     //    B trägt die Sonden-Identität (q am Ursprung, hofGap 2.5). ──
     function massBau(p) {
         var mass = stapelBau(Object.assign({}, p, { nur: MASSNUR, __nurMass: true }), LOD1F);
-        var bx = new THREE.Box3().setFromObject(mass.g);
+        var bx = koerperHuelle(mass.g);
         var B = {
             p: p,
             q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, // das Einzel-Haus des Ofens steht im eigenen Rahmen (y = 0; der Wirt setzt es auf seinen Slot)
@@ -6526,14 +6562,23 @@
     // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
     // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
     // Szene (physicallyCorrectLights).
+    // DIE EINE SKALA (licht-eine-skala, rein additiv): jede Zeile trägt neben der Zahl des Labors ihr Licht in SI — `cd` die
+    // Lichtstärke der Quelle in Candela (≙ lx in 1 m nach dem Abfall der Zeile, cd · (1 + kern²)/(d² + kern²)): das Herdfeuer 10,2
+    // (3,5 lx in 2 m, das Band 2–5 lx des Nordstern-Solls; Hypothese mit Band, kein Messwert eines Holzfeuers), die Laterne 25,7
+    // (2 lx am Boden unter 3,6 m, das Band 2–5 lx der Gasse; ein Gas-Brenner trägt 10–30 cd); `cdM2` die Leuchtdichte des
+    // erleuchteten Fensters (8 cd/m²: Hypothese „Raum im Licht einer Flamme hinter Glas", 50 lx auf heller Wand ÷ π) und des
+    // Laternen-Kopfs (640 cd/m²: seine 25,7 cd über die Ansicht des Glas-Kopfs von ≈ 0,04 m² — das Glas streut die Flamme); `schaltet`:
+    // der Zeitplan `zeit` ist ein SCHALTPLAN (der Anteil brennender Quellen je Tageszeit, auf seinen größten Wert bezogen) — ohne
+    // `schaltet` trägt `zeit` nur die Belichtung des Labors (das Herdfeuer brennt bei Tag und Nacht mit derselben Lichtstärke).
+    // Leser der SI-Spalten: die Welt (`_leuchtStaerke`, `_leuchtTakt`: Wert ÷ die Einheit der EINEN Skala).
     // DAS BOGEN-GESETZ (K66): die Kurven der Bögen — hufeisen: der Mittelpunkt um R·tan(hufeisenAlpha) über dem Kämpfer, der Bogen
     // läuft um hufeisenAlpha unter die Mitte; spitz: zwei Mittelpunkte im Abstand spitzE·R von der Achse auf der Kämpferlinie
     // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
     var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
     var LICHT_GESETZ = {
-        feuer: { kelvin: 2000, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
-        fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        feuer: { kelvin: 2000, staerke: 1, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        fenster: { kelvin: 2800, cdM2: 8, schaltet: true, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
+        laterne: { kelvin: 1900, staerke: 19, cd: 25.7, cdM2: 640, schaltet: true, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
     // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:
@@ -6551,6 +6596,9 @@
         return {
             kelvin: L.kelvin,
             staerke: r3(boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
+            cd: r3((L.cd / L.staerke) * boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
+            cdM2: L.cdM2,
+            schaltet: L.schaltet,
             reichweiteM: L.reichweiteM,
             abfall: L.abfall,
             kernM: r3(Math.sqrt(k2)),
@@ -6563,6 +6611,24 @@
     // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
     // hellsten Kanal 1 normiert. Linear — das FARB-GESETZ (das Hex ist eine sRGB-Absicht) gilt so ohne Hex: 1 900 K ist
     // (1, 0,232, 0), sRGB #ff8400. Leser: der Licht-Takt der Welt (`_leuchtTakt`) und das Labor (Herdfeuer, Fenster).
+    // DIE LEUCHTDICHTE DER GLUT (licht-eine-skala, rein additiv): ein schwarzer Körper der Temperatur T (K) in cd/m² — das
+    // Planck-Gesetz über 380–780 nm, gewogen mit der Hellempfindlichkeit V(λ) (Gauß-Näherung 1,019 · e^(−285,4 · (λ/µm − 0,559)²))
+    // × 683 lm/W: 900 K 0,19 · 1 100 K 22 · 1 400 K 2 370 · 1 650 K 33 300 · 2 000 K 457 000. EINE Funktion für Glut, Lava und
+    // glühenden Stahl; die Flamme ist optisch dünn (`FEUER_LEUCHTDICHTE`). Leser: die Welt (Lava, Licht der Lava).
+    function glutLeuchtdichte(T) {
+        if (!(T > 0)) return 0;
+        var s = 0, h = 6.62607e-34, c = 2.99792e8, k = 1.380649e-23;
+        for (var nm = 380; nm <= 780; nm += 5) {
+            var l = nm * 1e-9;
+            s += ((683 * 1.019 * Math.exp(-285.4 * Math.pow(nm / 1000 - 0.559, 2)) * 2 * h * c * c) / Math.pow(l, 5) / (Math.exp((h * c) / (l * k * T)) - 1)) * 5e-9;
+        }
+        return s;
+    }
+    // DIE LEUCHTDICHTE DER FLAMME: der leuchtende Leib eines Holz- oder Kerzenfeuers in cd/m² (13 800–16 000, Hollan: Messung
+    // an Kerzen- und Holzflammen; ein schwarzer Körper bei 2 000 K trüge das Dreißigfache — der Ruß der Flamme ist dünn).
+    // Der Stoff `feuer` (Glut, Flamme, Herdfeuer) leuchtet in seiner Vertex-Farbe × dieser Leuchtdichte, wo die Zahl des Labors
+    // `LEUCHT_FEUER` steht. Leser: die Welt (`_stoffAusStudio`, das Licht des Brands).
+    var FEUER_LEUCHTDICHTE = 15000;
     function lichtFarbe(kelvin) {
         var T = Math.min(25000, Math.max(1667, +kelvin)), T2 = T * T, T3 = T2 * T;
         var x = T <= 4000 ? -0.2661239e9 / T3 - 0.2343589e6 / T2 + 0.8776956e3 / T + 0.17991 : -3.0258469e9 / T3 + 2.1070379e6 / T2 + 0.2226347e3 / T + 0.24039;
@@ -10715,7 +10781,7 @@
         if (pz && isFinite(pz.cx) && isFinite(pz.cz) && isFinite(pz.ex) && isFinite(pz.ez))
             platzY = r6(median(rechteck(pz.cx, pz.cz, pz.phi || 0, pz.ex, pz.ez)));
         // AM PLATZ liegt ein Weg-Punkt, dessen Weg (die halbe Breite `hw`) die Platte des Platzes samt Saum berührt — er trägt
-        // die Höhe des Platzes (PFLICHT-OFFEN C: die Hauptstraße am Markt der Metropole lief 2,5 m neben ihm auf ihrer eigenen
+        // die Höhe des Platzes (Leiter mensch.netz.verkehr: die Hauptstraße am Markt der Metropole lief 2,5 m neben ihm auf ihrer eigenen
         // Höhe, die Platte überdeckte ihren Kern um 0,6 m — eine Stufe von 0,74 m quer durch die Fahrbahn, an der jeder Wagen
         // stand); mindestens 1 m um den Platz (der Weg, der ihn quert)
         var imPlatz = function (x, z, hw) {
@@ -10727,7 +10793,7 @@
             var rand = Math.max(1, hw + O.saumM);
             return Math.abs(dx * c - dz * s) <= pz.ex + rand && Math.abs(dx * s + dz * c) <= pz.ez + rand;
         };
-        // 1a) DER TORPLATZ IST BODEN DER STADT (STADT_DICHTE.torplatz, die Zone `torplatz` des Plans; PFLICHT-OFFEN C): eine Platte
+        // 1a) DER TORPLATZ IST BODEN DER STADT (STADT_DICHTE.torplatz, die Zone `torplatz` des Plans; Leiter mensch.netz.verkehr): eine Platte
         // auf der Höhe, mit der seine Trasse ihn erreicht — die Trasse (ab VERKEHR_GESETZ.breiteM, sie endet an ihm) liegt längs
         // seiner Front eben auf dieser Höhe, jeder spätere Weg, der ihn berührt, trägt sie wie am Platz (`torAn`), und die Wende
         // liegt auf EINER Fläche mit Ring, Bahn und Trasse (`verkehrsBoden`: der Torplatz ist Kern). Bis hier war er nur Belag:
@@ -10890,7 +10956,7 @@
             var b = (isFinite(r.w) ? r.w : 3) / 2;
             return { hw: b, lage: gelegt(r, b) };
         });
-        // DIE KREUZUNG (PFLICHT-OFFEN C): wo das Ende eines Wegs auf einem anderen liegt (an dessen Lauf oder Ende binnen seiner
+        // DIE KREUZUNG (Leiter mensch.netz.verkehr): wo das Ende eines Wegs auf einem anderen liegt (an dessen Lauf oder Ende binnen seiner
         // halben Breite samt Saum: Kreuzung, Einmündung, Knick), liegt EINE Fläche — jeder Weg-Punkt in ihrer Scheibe und der
         // erste dahinter tragen ihre Höhe. Bis dahin trug jeder Weg dort sein eigenes Profil, und der Erdbau (die letzte Trasse
         // gewinnt, ihr Ende ist rund) legte Stufen von 0,2–0,7 m quer durch die Fahrbahn, an denen jeder Wagen stand. Die Scheibe
@@ -12690,6 +12756,8 @@
         verbandZeilen: verbandZeilen,
         // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
         LEUCHT_FEUER: LEUCHT_FEUER,
+        FEUER_LEUCHTDICHTE: FEUER_LEUCHTDICHTE,
+        glutLeuchtdichte: glutLeuchtdichte,
         BOGEN_GESETZ: BOGEN_GESETZ,
         vorplatzFlaeche: vorplatzFlaeche,
         vorplatzBoden: vorplatzBoden,
@@ -12767,9 +12835,9 @@
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
         wegZwischen: wegZwischen, // fahrzeug.K2 — der Feldweg zwischen zwei Orten des Wegenetzes, dem Grund folgend (`trasseLenk`)
         wegeNetz: wegeNetz, // fahrzeug.K2 — das Wege-Netz eines Plans samt den Nähten, die es zu EINEM Netz schließen
-        VERKEHR_GESETZ: VERKEHR_GESETZ, // PFLICHT-OFFEN C — der Verkehr der Stadt (Wagen je Häuser, halbe Breite, der Platz)
-        verkehrVon: verkehrVon, // PFLICHT-OFFEN C — wie viele Wagen eine Siedlung fährt und aus welchen Häusern ihre Fahrer kommen
-        verkehrsNetz: verkehrsNetz, // PFLICHT-OFFEN C — das Netz der Wagen: die zweispurigen Trassen, ihre Kreuzungen, Spuren, Wenden und Plätze
+        VERKEHR_GESETZ: VERKEHR_GESETZ, // Leiter mensch.netz.verkehr — der Verkehr der Stadt (Wagen je Häuser, halbe Breite, der Platz)
+        verkehrVon: verkehrVon, // Leiter mensch.netz.verkehr — wie viele Wagen eine Siedlung fährt und aus welchen Häusern ihre Fahrer kommen
+        verkehrsNetz: verkehrsNetz, // Leiter mensch.netz.verkehr — das Netz der Wagen: die zweispurigen Trassen, ihre Kreuzungen, Spuren, Wenden und Plätze
         planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse und Tritte, um die halbe Wagen-Breite)
         BRUECKE_GESETZ: BRUECKE_GESETZ, // fahrzeug.K2 — die Jochbrücke des Wegs (Feld, lichte Breite, Geländer, Pfahl, Einbindung)
         GRABEN_GESETZ: GRABEN_GESETZ, // w28-graben-koerper — der Trockengraben des Geheges (Weite, Tiefe, Mauer, Krone, Sohle)
@@ -12797,6 +12865,7 @@
         LAB_SEED: LAB_SEED,
         hausParams: hausParams,
         massBau: massBau,
+        koerperHuelle: koerperHuelle, // DIE EINE Hülle des Baukörpers (los-huelle): Leser massBau und das Labor (worlds/fachwerk buildDorf, buildHausLOD)
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
         raumVon: raumVon,
 

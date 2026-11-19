@@ -20,7 +20,7 @@
 //       je Lade-Frame (`_ladeFrist`); Ring-Boden und Fern-Ring (Lade-Takt) auch nach ihr; der Selbsttest nennt jeden vakuösen Leser.
 //   T10 DER FADEN WARTET NIE AUF DEN HAUPT-FADEN (K60-2, B3a): die Buch-Frage reist IN der Geburt des Werks (Name „buch"), nie als
 //       Nachricht (Chrome reicht sie erst weiter, wenn der volle Haupt-Faden „Skript gelaufen" liest); seine Helfer kommen mit ihm.
-//   T11 DER VERKEHR KOSTET SCHIRM UND ÄNDERUNG (PFLICHT-OFFEN C, w4-verkehr-kosten): ein Wagen des Verkehrs 300 m fern fährt mit
+//   T11 DER VERKEHR KOSTET SCHIRM UND ÄNDERUNG (Leiter mensch.netz.verkehr, w4-verkehr-kosten): ein Wagen des Verkehrs 300 m fern fährt mit
 //       dem EINEN Schritt des Verkehrs (`_verkehrSchritt`), der Spieler steht — er schreitet höchstens jeden 8. Sim-Schritt (die
 //       Leiter `VERKEHR.leiter`; nie: vakuös), ist nie Beweger (`_blockerBewegt`: er zieht seinen Platz selbst nach — sonst
 //       marschierte die Decken-Probe der Ego-Kamera `_ceilingHeadroom` je Bild, und `_blockerUmPlatz` gäbe ihn jeder Frage am
@@ -34,7 +34,7 @@
 //       `_runFrameScheduler` 71,5 ms in EINEM Takt). Der Satz der Bauten (w25-stadt-takt-2) legt abgelaufen EIN Stück
 //       (BAU_SATZ_STUECK) seiner Raten und seines Alters — bis dahin je Takt seinen eigenen Deckel von 8 192 Ecken NEBEN der Frist
 //       (GTX, Messort stadt, erster Gang: `_tickBauSatz` 5,3 ms in der Takt-Mitte).
-//   T13 NACH DER FRIST NUR DER EINE, REIHUM (w28-takt-frist, PFLICHT-OFFEN E): die Frist zählt ab dem Kopf des Takts
+//   T13 NACH DER FRIST NUR DER EINE, REIHUM (w28-takt-frist, Leiter same.preis.takt): die Frist zählt ab dem Kopf des Takts
 //       (`_fristStellen`); ist sie abgelaufen, geht am Tor (`_bauer`) je Takt EIN Bauer sein Pflicht-Stück (`_bauPflichtGang`),
 //       der Hungrigste zuerst — vier Bauer mit Arbeit bauen in 12 Takten je 3 Stücke, keiner verhungert, und die Arbeit nach der
 //       Frist steht je Bauer im Hauptbuch (`_bauHunger`: „Arbeit nach der Frist: <Bauer> X ms“). Bis hier ging JEDER der 17 Bauer

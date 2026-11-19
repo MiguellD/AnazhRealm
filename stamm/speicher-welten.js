@@ -410,9 +410,11 @@ class AnazhRealm_speicher_welten {
         }
     }
 
-    // Generator-Helfer: erzeugt einen frischen worldMeta-Block (UUID + slug
-    // + bornAt). Nicht idempotent — jeder Aufruf eine neue ID. Rufer: createNewWorld, das Welt-Tor, die Reise.
-    _generateFreshWorldMeta(slug) {
+    // Generator-Helfer: ein frischer worldMeta-Block (UUID + slug + bornAt), jeder Aufruf eine neue ID. Rufer: createNewWorld, das
+    // Welt-Tor, die Reise. DIE SAAT IST EINE EINGABE (saat-im-lauf): nennt der Schöpfer sie (`saat`, „neue welt saat <Saat>“), wächst
+    // die Welt aus ihr — dieselbe Saat, dieselbe Welt; ohne sie würfelt die Geburt. Eine Saat, die kein Wort ist, WIRFT beim Namen.
+    _generateFreshWorldMeta(slug, saat = null) {
+        if (saat != null && !/^[\w.:@-]{1,64}$/.test(saat)) throw new Error(`Die Saat „${saat}“ ist kein Wort`);
         const worldId = AnazhRealm._neueWeltId();
         let finalSlug = (slug || "")
             .toString()
@@ -432,9 +434,8 @@ class AnazhRealm_speicher_welten {
             while (usedSlugs.has(`${finalSlug}-${n}`)) n++;
             finalSlug = `${finalSlug}-${n}`;
         }
-        // Jede neue Welt bekommt einen eigenen Terrain-Seed (UUID-Fragment + Zufall), in worldMeta
-        // persistiert und für die Welt-Lebensdauer konstant.
-        const seed = `w-${worldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
+        // Jede neue Welt trägt ihre Saat (die genannte, sonst UUID-Fragment + Zufall), persistiert und konstant für ihr Leben.
+        const seed = saat ?? `w-${worldId.replace(/-/g, "").slice(0, 12)}-${Math.random().toString(36).slice(2, 8)}`;
         // Jede NEUE Welt wird mit der heutigen Genese-Version geboren; bestehende Welten (Feld fehlt → 1)
         // behalten ihr Gesicht (Genese ist Welt-Identität). Der Varianten-Pool (variantSeed[]) ist
         // Genese-Konstante: je Art eine Zeile, gepinnt beim ersten Wuchs der Art (_variantSeedsFor).
@@ -534,8 +535,8 @@ class AnazhRealm_speicher_welten {
     }
 
     // Neue Welt anlegen, schreiben, aktiv setzen. reload standardmäßig aus (Tests prüfen die
-    // Daten-Schicht); mit `reload` läuft der Welt-Wechsel `_weltWechsel` (Sperre, Zeiger, Tausch am Ort).
-    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo" } = {}) {
+    // Daten-Schicht); mit `reload` läuft der Welt-Wechsel `_weltWechsel` (Sperre, Zeiger, Tausch am Ort); `saat` die Saat der Welt.
+    createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo", saat = null } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
             try {
@@ -544,7 +545,7 @@ class AnazhRealm_speicher_welten {
                 this.log(`Save vor New-World fehlgeschlagen: ${err.message}`, "WARN");
             }
         }
-        const meta = this._generateFreshWorldMeta(slug);
+        const meta = this._generateFreshWorldMeta(slug, saat);
         const snap = this._buildEmptyWorldSnapshot(meta, inheritPlayer);
         // Ring 11.5: Rolle in worldMeta einsetzen (default "solo"). Bei
         // "host"/"guest" startet die Ankunft automatisch Multi-User-Sync (`_weltAnschluss`).
@@ -3437,8 +3438,6 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "sunMesh",
         "moonMesh",
         "directionalLight",
-        "ambientLight",
-        "hemiLight",
         "csmNode",
         "luft",
         "atmoUniforms",

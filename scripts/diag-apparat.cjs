@@ -18,7 +18,7 @@
 // durch, zeit: nur auf die Band-Geräte.
 // Achte Aufgabe (Klinge 8, w27-gpu-wahl-heil): jede Linse liest einen GPU-Puffer über die EINE Puffer-Lesung, nie am Rohen.
 // Neunte Aufgabe (Klinge 9, w28-probe-urteil, Lehre 6): eine gedruckte ROTE Zeile ist Urteil — der Kopf der GPU-Probe urteilt Log UND
-// Exit über scripts/lib/urteil-zeile.cjs (ein ROT, das am gebuchten Stand schon ROT ist, steht als BEKANNT im Kopf), die Wache am
+// Exit über scripts/lib/urteil-zeile.cjs (BEKANNT heißt nur die Ratsche des Messorts, sichtbar im Kopf), die Wache am
 // Prozess-Ende macht aus ❌ bei Exit 0 Exit 1; Mutanten: die alte Zeile `elif RC=0 → GRÜN`, der Kopf ohne Grund, BEKANNT still.
 //
 // Selbst-Test: --selftest beweist alle acht Klingen (kein vakuöses Grün; der Grün-Satz nennt nur die Zahl, die Klingen
@@ -504,7 +504,7 @@ function probeGesetz(doc) {
     const post = JSON.stringify(doc.jobs.post.steps);
     if (
         /\$RC"? = 0 \]; then U=GRÜN/.test(lauf) ||
-        !/node scripts\/lib\/urteil-zeile\.cjs --log "\$LOG" --rc "\$RC" --stand/.test(lauf)
+        !/node scripts\/lib\/urteil-zeile\.cjs --log "\$LOG" --rc "\$RC"\)/.test(lauf)
     )
         v.push("Klinge 9: der Kopf der Probe urteilt am Exit allein — Log UND Exit über scripts/lib/urteil-zeile.cjs");
     if (!/KOPF="\$KOPF\$\{KOPF:\+ · \}\$p \$U \$d s\$\{GRUND:\+/.test(lauf))
@@ -514,11 +514,6 @@ function probeGesetz(doc) {
 }
 
 // Klinge 9, der Leser selbst: die Fälle der Augen-Karte 11.11. (Klasse A) und ihre Nachbarn — je [Name, Log, Exit, Gerät, Urteil]
-const STAND_PROBE = { je: { lod: { stationen: [
-    { id: "lod.K1#1", geraet: "radeon", gruen: false, zahl: "Tafel-Pose schlechteste fimp:strauch:L2 0.2728" },
-    { id: "lod.K2#1", geraet: "radeon", gruen: true, zahl: "0.031" },
-    { id: "lod.K2#1", geraet: "gtx", gruen: false, zahl: null },
-] } } }; // prettier-ignore
 // das Log von gate:tier-gang an a071dc5e (GTX 1050, Lauf 43399753542), gekürzt: Etikett-❌ des Selbsttests, sein GRÜN, die echten Zeilen, Exit 0
 const ETIKETT_LOG = [
     "[Selbsttest]   ❌ Gangart Welt wolf (Mond) v̂ 1.2 · schritt-lateral [0 0.5 0.25 0.75] — Soll trab · Tastgrad 0.67 (Soll 0.4–0.6) — Täter: tetrapoda gangSchritt",
@@ -536,16 +531,15 @@ const URTEIL_FAELLE = [
         "radeon",
         "ROT",
     ],
+    // eine ROTE Zeile einer Station reißt (der gebuchte Stand der alten Karte als Quelle des BEKANNT fiel am 19.11.)
     [
-        "laub-kante: lod.K1#1 ROT wie an main",
+        "laub-kante: lod.K1#1 ROT",
         'lod.K1#1 Tafel-Pose ROT [["fimp:strauch:L2",0.28,9000,0]]\nlod.K1#1 Spielgang GRÜN []',
         1,
         "radeon",
-        "BEKANNT",
+        "ROT",
     ],
-    ["pop 6ee4408f an der GTX: an main ungemessen", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "gtx", "BEKANNT"],
-    ["pop an der Radeon: an main GRÜN", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "radeon", "ROT"],
-    ["bekannt, dann ein Wurf", "lod.K1#1 Tafel-Pose ROT []\nTypeError: x is undefined", 1, "radeon", "ROT"],
+    ["pop an der GTX", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "gtx", "ROT"],
     ["Exit 1 ohne Zeile", "npm error code 1", 1, "radeon", "ROT"],
     ["ehrlich GRÜN (bild:wiese)", ' "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 %"', 0, "gtx", "GRÜN"],
     [
@@ -601,7 +595,7 @@ const URTEIL_FAELLE = [
 ];
 // je Leser (der echte, im Selbsttest die Mutante): der Fall a071dc5e urteilt GRÜN — sonst steht die Wolf-Zeile als Grund
 function etikettFall(U) {
-    const r = U.probeUrteil({ text: ETIKETT_LOG, rc: 0, stand: STAND_PROBE, geraet: "gtx" });
+    const r = U.probeUrteil({ text: ETIKETT_LOG, rc: 0 });
     return r.u === "GRÜN"
         ? []
         : [`Klinge 9: die Etikett-Zeile des Selbsttests urteilt → ${r.u} (${r.grund.slice(0, 160)})`];
@@ -609,13 +603,13 @@ function etikettFall(U) {
 function urteilFaelle() {
     const U = require("./lib/urteil-zeile.cjs");
     const v = [];
-    for (const [name, text, rc, geraet, soll] of URTEIL_FAELLE) {
-        const r = U.probeUrteil({ text, rc, stand: STAND_PROBE, geraet });
+    for (const [name, text, rc, , soll] of URTEIL_FAELLE) {
+        const r = U.probeUrteil({ text, rc });
         if (r.u !== soll || (soll !== "GRÜN" && !r.grund))
             v.push(`Klinge 9: ${name} → ${r.u} (${r.grund}) statt ${soll}`);
     }
-    if (U.probeUrteil({ text: "lod.K1#1 ROT", rc: 0, stand: null, geraet: "radeon" }).u !== "ROT")
-        v.push("Klinge 9: ohne Stand gilt ein ROT als bekannt");
+    if (U.probeUrteil({ text: "lod.K1#1 ROT", rc: 0 }).u !== "ROT")
+        v.push("Klinge 9: die ROTE Zeile einer Station gilt als bekannt");
     // der Aufruf, den gpu-probe.yml fährt (w28-tor-bruch c7d0aad4 strich den CLI-Block: der Leser schwieg, jede Probe wäre ROT
     // „antwortete nicht“): ein Log mit ❌ → `ROT\t…`, die Meldung des Maßes allein → `GRÜN\t`
     const cli = (z) => {

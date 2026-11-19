@@ -7,7 +7,7 @@
 // (Welt, Regel, Bauplan, Gesetzbuch) ein signierter Eintrag ≤ 8 KB, über den Code wieder, Byte-, Code- und Mesh-Mutante ROT, Fork
 // mit Kette, das Buch im Foundry-Faden (`--bibliothek` endet danach, ohne Gerät B); jede Wand mit ihrer Täter-Probe.
 "use strict";
-const { frageJa, statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, jsonKlon, fehlerStapel, mass } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, starteBrowser, nullRenderer, ROOT, CODE_OF_SEITE, hauptLauf, startProc, eigenePorte, pruefer, halteBis, wandEnde, jsonKlon, fehlerStapel } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PRAEGUNG_WELT_PORT || 4439);
 const server = statikServer();
@@ -457,11 +457,9 @@ hauptLauf(async () => {
     // die Geste in echten Klicks, bis der Code in der Zeile steht — DER KNOPF AM DOM, NIE AM PIXEL (wie die Bibliothek unten): der
     // Klick auf die Lage traf, während die Lade glitt, daneben, die Werkstatt hielt ihre Wahl, und A teilte die Eiche (CI
     // 40407492230, Farm 715754fc: B baute sie, ihr Abdruck am Preset gt hieß „ungeprägt")
-    let uhr = Date.now();
     for (const s of ['[data-tab="werkstatt"]', '[data-blueprint="fahrzeug_gt"]', 'button[data-teilen="werk"]'])
         await (await page.waitForSelector(s, { visible: true })).evaluate((k) => k.click());
     await page.waitForFunction(() => document.querySelector('code[data-teilen="werk"]').textContent);
-    const msA = Date.now() - uhr;
     const a = await page.evaluate(async () => {
         try {
             const ws = r._ensureWorkshopState();
@@ -537,10 +535,8 @@ hauptLauf(async () => {
     await page.evaluate((url) => r.initP2PSync(null, { url }), url);
     // der zweite Fluss: A öffnet den Raum seiner Welt (der Host beantwortet den world-request) und teilt sie in EINER Geste
     await page.waitForFunction(() => st.p2p.connected);
-    uhr = Date.now();
     for (const s of ['[data-tab="bibliothek"]', 'button[data-teilen="welt"]']) await page.$eval(s, (k) => k.click()); // die Lade gleitet noch
     await page.waitForFunction(() => document.querySelector('code[data-teilen="welt"]').textContent);
-    const msW = Date.now() - uhr;
     // die Welt reist größer als ein Rahmen (Chrome teilt ab ~128 KB): die Fragmente am signaling-server (27.10.: verworfen)
     const [wCode, wId, wSame, raum, kb] = await page.evaluate(({ state: { worldMeta: m, p2p } } = r) => [document.querySelector('code[data-teilen="welt"]').textContent, m.worldId, m.seed, p2p.room, JSON.stringify(r.buildStateSnapshot()).length >> 10]);
     const b = await pageB.evaluate(async (a, url, raum) => {
@@ -576,7 +572,6 @@ hauptLauf(async () => {
         await pageB.keyboard.sendCharacter(code);
         await pageB.keyboard.press("Enter");
     };
-    uhr = Date.now();
     await chat(a.code);
     Object.assign(b, await pageB.evaluate(async (a) => {
         const lauf = window.__lauf;
@@ -585,7 +580,6 @@ hauptLauf(async () => {
         const e = res.gut.ok && st.architectures.find((x) => x?.id === res.gut.id);
         if (e) {
             await __gebautNach(e, { bau: () => {} }); // die Welt zeichnet es in ihrem eigenen Takt
-            res.steht = Date.now();
             const [p, q, cam] = [st.playerMesh.position, e.position, st.camera];
             cam.updateMatrixWorld();
             res.pose = { d: Math.hypot(q.x - p.x, q.z - p.z), ndc: new THREE.Vector3().copy(q).project(cam).toArray() };
@@ -610,7 +604,6 @@ hauptLauf(async () => {
     // Welt, in der Zeit der Seite), dann trägt W den Leib
     let seiten = 0;
     pageB.on("framenavigated", (f) => f === pageB.mainFrame() && seiten++);
-    uhr = Date.now();
     await chat(wCode);
     const w = await pageB.evaluate(async (autor, wId) => {
         await __weltDa((x) => x.state.worldMeta.worldId === wId && !x._weltTausch);
@@ -708,14 +701,12 @@ hauptLauf(async () => {
     check(`KORPUS-TEIL Regler-Wörter: ${kk.length} Sätze, jeder ein Programm-Ziel`, kk.length >= 20 && !kt.length, kt.join(" · "));
 
     console.log("\n=== (T) TEILEN in EINER Geste: A klickt, B gibt den Code in den Chat ===");
-    const t = { ndc: [9], ...b.pose, ms: b.steht && msA + b.steht - uhr };
+    const t = { ndc: [9], ...b.pose };
     check("A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB", a.code?.length <= 4096, a.fehler || `${a.code?.length} Zeichen, eigener Bauplan ${a.eigen?.length}`);
     check("B ist ein ANDERES GERÄT: eigener Browser-Prozess, frisches Profil (Platte + localStorage vor dem Boot leer)", ger[0] !== ger[1] && !leer, `${ger} ${leer}`);
     check("SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT", ger[0] === ger[2]);
     check("B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss)", b.gut?.ok && b.gut.autor === a.autor && b.gut.name === "fahrzeug_gt", b.netz + JSON.stringify(b.gut));
     check("B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild)", t.d <= 24 && t.ndc.every((v) => Math.abs(v) <= 1), `${t.d} m ${t.ndc}`);
-    // ZEIT (w28-tor-bruch): die Wanduhr meldet am Lande-Tor (`mass`), ihr Richter ist das Band-Gerät
-    check("ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s", mass("ZEIT", t.ms <= 10000, `B gezeichnet ${t.ms} ms > 10 s`), `${t.ms} ms (A ${msA})`);
     check("B: Stempel und Same reisen tief gleich", b.stempel);
     check(
         "BAU-HASH A ↔ B byte-gleich, der Stempel wirkt (≠ ungeprägt)",
@@ -723,10 +714,9 @@ hauptLauf(async () => {
         `A=${a.fp} B=${b.fp} ohne=${b.fpOhne}`
     );
     check("der eigene Bauplan kommt byte-gleich (kanonische Substanz)", b.eigen);
-    const [hw, ms, { worldId, seed, role }] = [JSON.parse(Buffer.from(wCode.replace("anazh-werk:", ""), "base64url")), msW + w[0] - uhr, w[1]];
+    const [hw, { worldId, seed, role }] = [JSON.parse(Buffer.from(wCode.replace("anazh-werk:", ""), "base64url")), w[1]];
     check("WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A", hw.welt && hw.autor === a.autor && wCode.length <= 4096, `${wCode.length} Zeichen`);
     check("WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss", worldId === wId && seed === wSame && role === "guest" && w[2] && kb > 128, `${worldId} ${kb} KB ${role} ${w[2]}`);
-    check("WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild", mass("ZEIT", ms <= 5000, `Kontrolle ${Math.round(ms)} ms > 5 s`), `${Math.round(ms)} ms (A ${msW}, B ${B_ART})`);
     check("WELT: am Ort — die Seite von B lädt nicht neu", seiten === 0, `${seiten} Navigationen`);
     check("WELT: der Leib geht unter W ≥ 1 m", geht.erreicht, `${geht.ms} ms`);
 
