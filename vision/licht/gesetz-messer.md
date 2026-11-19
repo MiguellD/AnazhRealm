@@ -75,3 +75,40 @@ Wahrheit. Eine Glättung, die die Linse erst nach dem Einschwingen urteilen lie�
 | Q4 | Rest-Fehler: wie weit weicht die Wahrheit des Bildes von „Sprung 0“ unter 8° ab, und woran | nur Zahl | — |
 
 Reißt Q1 oder Q2, obwohl der Messer das E des Bildes liest, dann springt die Wahrheit — erst DANN öffnet M5.
+
+## Spike 2 (19.11., Opus, Tafel `spike-messer.txt` ab „SPIKE 2“) — M2' bricht den Anker: M1 hält, „dieselbe Normale“ fällt
+
+Kein Soll bewegt: Q1 GRÜN 0,085 EV (Uhr 0,272; meine Vorhersage ≤ 0,03 Fehlschuss) · Q2 ROT am Sprung 0,101 EV (Genesis Uhr 0,31 → 0,32,
+heute 0,34; Buckel −0,154 im Soll; Vorhersage 0,06–0,10 Fehlschuss) · Q3 ROT: am Mittag bewegt sich k an der Wiese um −0,188 EV, an
+Genesis um +0,055 — kein EINER Anker trägt beide Orte (zielKarte 0,251 gegen 0,212; Vorhersage 0,05–0,15 Fehlschuss) · Q4: unter 8°
+bleiben 0,085 EV; schon VOR der Sonne (Uhr 0,258–0,264) stehen 0,08–0,09 EV je Schritt 0,002 aus drei Ursachen: (1) die Knoten der
+Dämmerung heben die Karte gewollt um 0,031 EV je Schritt (`welt-licht.js:84`, :651–659), (2) die Szene des Bildes steigt je Schritt
+~0,02 EV schneller als der Himmel des Messers (`bild-himmel.js:2193`, Herkunft ungelesen), (3) der Fuß der Tonkurve dehnt +0,05 der
+Szene zu +0,07–0,08 im Bild. Am Kopf von main steht die Wiese damit selbst bei 0,09 von 0,10.
+Fund Genesis: der Sprung 0,31 → 0,32 ist kein fremder Körper — der Schatten EINER Karten-Krone verlässt den nahen Boden (4–13 m) und
+gibt 11 der 32 Strahlen frei; der Messer führt ihn als weiche Ellipse (Sicht 0,08–0,49), das Bild als harten Schatten.
+
+Meine Entscheide (alle VOR Spike 3):
+- **M1 hält, „dieselbe Normale“ aus M2' fällt mit Grund.** Zwei meiner Sätze widersprechen sich an der Messung (Q3); der Anker ist das
+  Fundament der Soll-Tafel (Pflicht A), also weicht M2'. Der Empfänger des Messers bleibt die waagrechte Karte. Der Zwilling
+  „Boden = waagrecht“ ist damit KEIN Zwilling, sondern die Definition der Karte; mein Satz dazu ist zurückgezogen.
+- **M5 ist zurückgezogen, beim Namen:** die Linse urteilt eingeschwungene Bilder; eine Zeitkonstante ändert keinen Schritt zwischen zwei
+  eingeschwungenen Zuständen. Der Satz war nicht zu Ende gedacht.
+- **M2 gilt für JEDES Licht, das der Messer zählt — Sonne UND Himmel:** der Himmel des Messers ist der des Bildes (Ursache 2 ist
+  derselbe Zwilling wie die Ellipse, nur am zweiten Licht).
+- **M6 (neu) — die Stichprobe ist eine FLÄCHE, keine 32 Punkte:** liest der Messer den harten Schatten des Bildes an 32 Punkten, hängt
+  k an EINER Krone (11 von 32 Strahlen). Die Sicht ist das Flächen-Mittel des Bild-Schattens über die untere Bildhälfte.
+- **Das Maß der Linse, vor-registriert (keine Schwelle bewegt sich):** SPRUNG urteilt 0,10 EV je Schritt — am Horizont im Feinschritt
+  0,002, sonst am Schritt 0,01, also an fünffacher Uhr-Spanne mit derselben Schwelle. Reißt nach Spike 3 ein Schritt 0,01, der im
+  Feinschritt 0,002 als Steigung ohne Einzel-Schritt > 0,10 steht, dann tastet die Linse JEDEN reißenden Schritt im Feinschritt nach
+  (wie heute schon am Horizont, `licht-linsen.cjs` `tagFeinUhren`) und urteilt dort. Steht im Feinschritt ein Einzel-Schritt > 0,10,
+  bleibt es ROT und der Täter ist das Bild.
+
+| Nr | Probe (Spike 3: Sicht = Flächen-Mittel des Bild-Schattens, Himmel = Himmel des Bildes, Empfänger waagrecht) | Soll | meine Vorhersage |
+|---|---|---|---|
+| R1 | Wiese am Wald-Kopf, Uhr 0,258–0,282, Feinschritt 0,002 | größter Sprung ≤ 0,10 EV | 0,06–0,09 |
+| R2 | Genesis am Wald-Kopf, Uhr 0,30–0,36, Schritt 0,01 | Sprung ≤ 0,10 EV · Buckel ≤ 0,15 EV | Sprung 0,10–0,13 (ROT: wahres Schatten-Ereignis) |
+| R3 | Mittag an Wiese und Genesis | k bewegt sich ≤ 0,05 EV | ≤ 0,05 |
+| R4 | Genesis Uhr 0,310–0,320 im Feinschritt 0,002 (neu gemessen): heute und unter Spike 3 | nur Zahl: größter Einzel-Schritt | heute ein Schritt > 0,15 · Spike 3 ≤ 0,05 |
+| R5 | Wiese vor der Sonne (Uhr 0,258–0,264) mit dem Himmel des Bildes | nur Zahl je Schritt | 0,04–0,05 |
+| R6 | Wiese am Inhalt von main (Basis e4e3f363), dieselbe Rechnung | größter Sprung ≤ 0,10 EV | 0,05–0,07 |
