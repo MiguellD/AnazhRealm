@@ -972,6 +972,7 @@
   // Kassetten-Türflügel (zentriert am Ursprung) — für die Haustür
   function leafFrame(w,h,role,extSign){ const lf=grp(); const sw=0.12,t=0.05; const e=extSign||1;   // e = welche lokale z-Seite die SCHAUSEITE (Kassetten) trägt (+1 = +z, −1 = −z)
     beam(lf,0,0,0,w,h,0.05,role);                                                             // massiver Kern (kein Durchblick), zentriert
+    if(P.flaechig) return lf;   // FLÄCHEN-STUFE: das Blatt als EINE Fläche wie die Bretterwand (`plankX`) — Stiele, Riegel, Kassetten stehen 18–30 mm vor (gate:fachwerk-contract DIE STUFE AM TEIL: das Hof-Tor trug in der Stufe 1 seine 2 × 108 Dreiecke, hof 0,83)
     beam(lf,-w/2+sw/2,0,e*0.018,sw,h,t,role); beam(lf,w/2-sw/2,0,e*0.018,sw,h,t,role);        // Stiele (auf der Schauseite vorstehend)
     beam(lf,0,h/2-sw/2,e*0.018,w,sw,t,role); beam(lf,0,-h/2+sw/2,e*0.018,w,sw,t,role); beam(lf,0,h*0.06,e*0.018,w,sw,t,role); // Riegel
     const piw=w-2*sw, upH=h*0.40, loH=h*0.30;
