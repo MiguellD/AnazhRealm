@@ -187,3 +187,18 @@ RECHNUNG (nicht Quelle): Untertrave 1709 Buden ÷ (Häuser + Buden) = 13 ÷ 122 
 1. „Breite = Funktion des Verkehrs" TRÄGT: die Rechtsnorm bindet die Breite an das Begegnen zweier Wagen (Sachsenspiegel), London 1667 begründet 24 ft wörtlich mit Karren und 9 ft mit Fußgang, und die Florentiner Planer stufen Haupt-/Wohn-/Dienst-/Fußgasse (14/10/8/3–4 braccia) nach Verkehrsrang und skalieren die Hauptstraße mit der erwarteten Stadtgröße (7,5 → 11,2 m) — keine Quelle gibt aber eine Zahl je Wagen oder Spurweite, die Zuordnung Funktion → Meter bleibt eine Setzung je Klasse.
 2. „Geschosse = min(Decke, Druck)" ist UNENTSCHEIDBAR: die Decke aus der Straße ist belegt (London 2/3/4, Paris 36/45/54 Fuß, dazu eine Licht-Decke aus Nachbarrecht 1615), die Lage-Seite steht aber als MINDEST-Vorschrift (Giglio: Hauptstraße ≥ 1 OG) und als gestufte Lostiefe am Text, nicht als Geschoss-Bedarf aus Zins — und an den einzigen Paaren (Cheapside 1638) trägt der Wert die Geschosszahl nicht (n = 4).
 3. Daraus folgt für die Hypothese eher max(Mindest aus Lage, …) ≤ Decke aus Klasse: die Quellen zeigen Lage als Untergrenze und Klasse als Obergrenze, der Druck dazwischen ist ohne Zinsbuch mit Baubeschreibung (Keene, Treswell-Edition) nicht messbar; einen Anteil Eingeschosser belegt keine gelesene Quelle, belegt sind nur Einzelfälle in Hof, Gang und an Licht-belasteten Stellen.
+
+## Berichtigung 19.11. (Gegenlesung OMEN am Blatt, nicht am Volltext; ab01e3dfe)
+
+Das Blatt wurde vom Koordinator ohne Gegenlesung gebucht. Beim Nachrechnen und Abgleich der Kurzfassung mit den eigenen Zeilen des Blatts:
+
+- 4 braccia = 2,33 m (Blatt 2,4), 16 braccia = 9,34 m (Blatt 9,4).
+- Band „Fußgasse 1,75–2,7 m“ schneidet die Zeilen 1,46 m und ~0,5 m des Blatts ab.
+- Band „Karrenstraße 4,7–7,3 m“: das Wort „Carts“ trägt nur 7,3 m (24 ft); die 4,7 m begründet die Quelle mit Zugang und Licht.
+- „Straßenmarkt bis 42 m“ lässt die 60 m und 45 m des Blatts aus.
+- San Giovanni 39 / 20 braccia sind HAUS-Tiefen; die Kurzfassung nannte sie Los-Tiefe. „Los-Tiefe nach Lage“ ist damit nur an den übrigen Zeilen belegt.
+- Berner Fuß steht ohne Wert und Fundstelle; keine Meter einsetzen.
+- Cheapside 1638: drei sichere Häuser, nicht vier Paare.
+- London- und Paris-Fuß stimmen.
+
+Folge für das Gesetz: die Bänder sind PRÜF-Bänder, kein Soll in Metern; die Meter kommen aus dem Verkehr-Gesetz (Wagenbreite plus Begegnung). Am Plan von heute liegen 1 830 Fronten in KEINEM Band (Kanten 2,8 / 3,0 / 3,2 / 3,9 m), an der absoluten Breite 7,5–13,7 m 0 Fronten; S8b zählt darum am Rang, bis der Plan Breiten trägt.
