@@ -1,7 +1,7 @@
 #!/bin/bash
 # gpu-lauf.sh der OMEN für die Punkte-Maschine (koordination meisterkarte-quelle/punkte/punkte.cjs, PUNKTE_GPU_LAUF=<dieser Pfad>):
 #   gpu-lauf.sh <name> <exe> [args…]
-# Nimmt DASSELBE Schloss wie der Runner-Hook (p3/gpu-schloss.sh: mkdir $TEMP/claude/gpu-schloss, besitzer.txt Zeile 1 der Name, Zeile 2
+# Nimmt DASSELBE Schloss wie der Runner-Hook (p3/gpu-schloss.sh, der Ort aus zug/dienst/schloss-ort.cjs — nie aus $TEMP; mkdir, besitzer.txt Zeile 1 der Name, Zeile 2
 # pid=<Windows-PID> dieses Laufs) mit Vorfahrt für einen wartenden oder laufenden CI-Job (Runner.Worker); keine Nachtruhe mehr (27.10., Schöpfer: „wir sind Maschinen, keine Pause“ —
 # den nächtlichen echt-Job schützt die Vorfahrt wie jeden echt-Job am Tag).
 # Ein Halter, dessen pid nicht lebt, ist verwaist (schloss_verwaist). Exit 75, wenn das Schloss nach GPU_LAUF_WARTE_S (Vorgabe 2700) nicht

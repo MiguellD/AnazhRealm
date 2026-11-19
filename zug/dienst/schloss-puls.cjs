@@ -28,7 +28,8 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 
 const TEMP_CLAUDE = path.join(process.env.TEMP || os.tmpdir(), "claude");
-const SCHLOSS = process.env.GPU_SCHLOSS_WIN || path.join(TEMP_CLAUDE, "gpu-schloss");
+// DER ORT (19.11.): EINE Quelle schloss-ort.cjs (daneben installiert) — bis zur Umstellung der bisherige Ordner, nie aus $TEMP gerechnet
+const SCHLOSS = process.env.GPU_SCHLOSS_WIN || require(path.join(__dirname, "schloss-ort.cjs")).schlossOrt();
 const HOOK_LOG = process.env.GPU_HOOK_LOG_WIN || "C:/actions-runner/hooks/hook.log";
 const TAKT_S = 30, AENDERUNG_S = 60, HERZ_S = 120;
 const REGT_CPU_S = 0.5; // so viel CPU-Zeit muss der Baum des Halters zwischen zwei Takten wachsen, damit er „regt“
