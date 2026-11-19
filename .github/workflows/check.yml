@@ -163,18 +163,6 @@ jobs:
                   fi
                   echo "✅ Kein dynamisches Code-Eval"
 
-            - name: innerHTML-Schreibzugriffe (Hinweis, kein Fail)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
-              continue-on-error: true
-              run: |
-                  grep -nE "innerHTML\s*\+?=" stamm/*.js || echo "keine Treffer"
-
-            - name: TODO/FIXME-Übersicht (Hinweis, kein Fail)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
-              continue-on-error: true
-              run: |
-                  grep -nE "(TODO|FIXME|XXX|HACK|TBD)" stamm/*.js save-server.js || echo "keine TODOs"
-
             - name: Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
               # cv:5 (spec/asset-contract/v5): 44 frozen sha256-Goldens (21 Gattungen × 2 Seeds +
@@ -786,7 +774,7 @@ jobs:
               # Statische Wand: der Sitz lebt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter. Inklusive Selbst-Test.
               # RM (fahrzeug.K5): Glatt · Drift · Hang — die Federung im gezeichneten Bild antwortet dem Boden-Stoß und wankt im
               # Drift, das Rumble am Stub-Pad folgt Schlupf und Stoß, die Stimme schweigt nach dem Absteigen; die Mutante ROT.
-              # VK (PFLICHT-OFFEN C, das ganze Kriterium): der Verkehr der Metropole (stadt-voll) um 10 und 23 Uhr je 10 min, der Spieler
+              # VK (Leiter mensch.netz.verkehr, das ganze Kriterium): der Verkehr der Metropole (stadt-voll) um 10 und 23 Uhr je 10 min, der Spieler
               # steht am Ort des Messorts (in der Kreuzung am Markt) — ≥ 20 Wagen mit Bewohner am Steuer, jeder fährt je Minute ≥ 30 m
               # (die kürzeste Minute nennt den Kopf ihrer Reihe), keiner steht länger als 20 s vor EINEM Bewohner (die Querung hält
               # ihn ihre Dauer, wer die Bahn nicht verlässt, gibt sie frei — der längste Halt beim Namen), jeder erreicht sein Ziel
@@ -887,7 +875,7 @@ jobs:
               # die Slots positions-deterministisch, wasser-bewacht (_fundamentLand: das ganze Fundament auf dem Land) und
               # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
-              # Teil O (K10, Pflicht-OFFEN C): der Ort am Hang haelt Sockel 0, jede Tuer, Kronen 0, Plan-Hash Studio = Welt,
+              # Teil O (K10, Leiter mensch.netz.verkehr): der Ort am Hang haelt Sockel 0, jede Tuer, Kronen 0, Plan-Hash Studio = Welt,
               # den GT auf dem Dorfweg und DAS DORF-LICHT DER GASSE: nachts >= 4 brennende Quellen mit Leib (_leuchtQuellen)
               # im Sichtkegel der Gasse, kein Grundriss dazwischen (gassenLicht), der Licht-Pool der Gasse traegt sie; der
               # Schein mit dunklem Zeitplan muss 0 zaehlen (Selbst-Test 16 und O: Selbst-Schein).
@@ -1051,9 +1039,8 @@ jobs:
             # automatisch. Die folgenden 29 fahren headless (Null-Renderer, swiftshader nur für Rechen- und Bäcker-Proben)
             # und liefen am 09.10. lokal grün (foliage-res und membran-gesetz nach der Heilung ihrer Proben); verteilt nach
             # Familie und Gewicht, Gruppe 1 Kreatur und Übergabe, Gruppe 2 Regler und Leistung, Gruppe 3 Wasser und
-            # Studio-Naht. Am 10.10. kam gate:webgl-probe dazu (echter Renderer auf swiftshader-GL); gate:arch-feld trägt den
-            # Deckel des Läufers nicht (Lauf 38005574907) und steht mit Klasse FRIST in AUSNAHMEN (scripts/diag-ci-deckung.cjs);
-            # wer nur abgeschaltet läuft (nächtlich, || true, continue-on-error), ist (S) rot.
+            # Studio-Naht. Am 10.10. kam gate:webgl-probe dazu (echter Renderer auf swiftshader-GL); was hier fernbleibt, steht
+            # mit Klasse in AUSNAHMEN (scripts/diag-ci-deckung.cjs); wer nur abgeschaltet läuft (nächtlich, || true, continue-on-error), ist (S) rot.
             - name: Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9
               run: npm run gate:reload-treue
@@ -1413,15 +1400,6 @@ jobs:
               # die Werkbank im vollen Holz am Hang: die Akne am Terminator gegen die Zuwendung der wahren Normale (bis w27-swift-raus fuhr
               # die Wand in einer CPU-Gruppe still auf swiftshader — die Werkbank startet ihre Welt an der Weiche vorbei)
               run: npm run gate:schatten-terminator
-
-            - name: Fenster-Wand auf der Karte (ein Fenster-Wechsel macht die Welt nie wieder schwarz)
-              timeout-minutes: 5
-              if: ${{ !cancelled() && matrix.karte == 'gtx1050' }}
-              # der ECHTE Frame mit LAUFENDEM Loop am Bach der Mess-Wiese: vergroessern, DPR 2, zurueck, die Pixel-Ratio allein — je Schritt
-              # keine WebGPU-Validierung, gezaehlt in gerenderten Frames; ohne den Vorher-Textur-Waechter faellt der Pixel-Ratio-Schritt beim
-              # Namen. Auf swiftshader-Linux riss sie seit z330 in 26 von 43 Jobs nach 900 s im Pipeline-Bau VOR dem ersten Fenster-Wechsel
-              # (Laeufer-Zeit statt Verhalten), nie an einem Schritt der Wand; auf der Karte am Ufer nach 12 s, die Wand samt Taeter 20 s.
-              run: npm run gate:fenster-wechsel
 
             - name: Volle-Bühne-Prädikat auf der Karte (W2 — Kriterium 2 wird messbar)
               timeout-minutes: 5

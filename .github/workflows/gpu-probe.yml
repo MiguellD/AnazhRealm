@@ -273,12 +273,6 @@ jobs:
                       wait $wb
                       return $rc
                   }
-                  # DER GEBUCHTE STAND (punkte-maschine meisterkarte-quelle/punkte/stand.json, die EINE Quelle der Punkte-Maschine): eine ROTE
-                  # Zeile einer Station, die dort nicht GRÜN ist, steht als „ROT wie an main (bekannt)“ und reißt den Zweig nicht.
-                  # Nicht lesbar: kein ROT gilt als bekannt (das Urteil nennt es beim Grund)
-                  STAND="$OUT/../stand.json"
-                  curl -sf -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.raw" -o "$STAND" \
-                      "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/contents/meisterkarte-quelle/punkte/stand.json?ref=punkte-maschine" || rm -f "$STAND"
                   URTEIL=GRÜN
                   KOPF=
                   BEKANNT=
@@ -317,8 +311,7 @@ jobs:
                       # das Urteil der Probe: nachgegeben, am Deckel ROT, auf swiftshader ROT (das ist nie die Karte), sonst LOG UND EXIT
                       # (Lehre 6, w28-probe-urteil — bis dahin urteilte hier der Exit allein, und 14 von 70 Paketen standen GRÜN über
                       # ihren eigenen ROT-/❌-Zeilen): der EINE Leser scripts/lib/urteil-zeile.cjs — eine ROTE Zeile macht die Probe ROT,
-                      # egal welcher Exit, ein ROT einer Station, die am gebuchten Stand nicht GRÜN ist, heißt BEKANNT und reißt nicht;
-                      # der Grund steht im Kopf
+                      # egal welcher Exit; BEKANNT heißt nur die Ratsche des Messorts; der Grund steht im Kopf
                       case "$GRUND" in
                           NACHGEGEBEN*) U=NACHGEGEBEN ;;
                           ?*) U=ROT ;;
@@ -327,7 +320,7 @@ jobs:
                                   U=ROT
                                   GRUND="kein Hardware-Adapter: $ADAPTER"
                               else
-                                  UG=$(node scripts/lib/urteil-zeile.cjs --log "$LOG" --rc "$RC" --stand "$STAND" --geraet "$RUNNER_NAME")
+                                  UG=$(node scripts/lib/urteil-zeile.cjs --log "$LOG" --rc "$RC")
                                   U=${UG%%$'\t'*}
                                   GRUND=${UG#*$'\t'}
                                   case "$U" in GRÜN | BEKANNT | ROT) ;; *) U=ROT && GRUND="der Leser des Urteils (scripts/lib/urteil-zeile.cjs) antwortete nicht: ${UG:0:200}" ;; esac

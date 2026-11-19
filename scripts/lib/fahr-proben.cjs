@@ -692,7 +692,7 @@ async function probeLeben(expected) {
             taeter,
         };
     };
-    // ── VK — DER VERKEHR DER STADT (PFLICHT-OFFEN C): die Metropole des Messorts `stadt-voll` („dorf 7 300" an ihrem Anker), der
+    // ── VK — DER VERKEHR DER STADT (Leiter mensch.netz.verkehr): die Metropole des Messorts `stadt-voll` („dorf 7 300" an ihrem Anker), der
     // Spieler an ihrem Markt neben der Trasse; je Stunde (`stunden`: Tag und Nacht) bis jeder Bewohner seinen Leib trägt und jeder
     // Fahrer am Steuer sitzt, dann `sek` Sekunden im Takt des Spiels. Gezählt: die Wagen (Gesetz, gestellt, fahrend), ihr Weg, wer
     // steckt, jeder Stoß der Hülle, jede Berührung eines Wagens mit einem Bewohner (die Kapsel tiefer als 0,1 m im Rechteck der
@@ -1000,7 +1000,7 @@ async function probeLeben(expected) {
             // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll]; der Bewegte urteilt im Takt seines Schritts, jede Probe
             // gilt. `nah`: Proben diesseits der Karten-Grenze (thresh12 − Hysterese); ohne sie misst die Probe nichts.
             const [LD, SK] = [A.LOD_DISTANCES, { nah: 0, ohneBild: 0, ohneBildOrte: [], ohneFahrer: 0, ohneFahrerOrte: [], veraltet: 0, veraltetOrte: [] }]; // prettier-ignore
-            // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1): DER BEWOHNER AM STEUER — die wenigsten fahrenden Wagen mit einem
+            // DER RICHTER VON Leiter mensch.netz.verkehr (pflicht.C#1): DER BEWOHNER AM STEUER — die wenigsten fahrenden Wagen mit einem
             // Bewohner am Steuer in einer Probe [Zahl, Probe, wer nicht fuhr]; DIE WEGE-KARTE — je fahrendem Wagen, ob seine Mitte auf
             // dem Boden liegt, den die Stadt als Weg malt (Straße samt Gehweg, Abbieger, Wende, Platz: der EINE Leser ihrer Formen,
             // `_aufWeg`, den die Natur-Wand liest) [Proben, ab, Orte]; DIE BEWEGUNG — je Wagen der Weg in jeder vollen Minute der Uhr

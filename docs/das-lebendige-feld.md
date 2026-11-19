@@ -18,7 +18,7 @@ Die drei Verben des Feldes stehen im Code:
 Darauf stehen der Emotion-Kern (dimensional · Substanz-Brücke · Mood · Contagion), die
 DSL-Weltregeln (Mensch · Nexus · KI am selben Regel-Satz), der Kampf-/Interaktions-Bogen, die
 Resonanz („ein Produkt-Vektor, viele Leser") und der Wasser-CA (Wasser fließt nach und ruht).
-Das Offene steht allein in `docs/PFLICHT-OFFEN.md`; die Chronik aller Bögen in `git log`.
+Das Offene steht allein in die Meisterkarte 2 (Zweig `punkte-maschine`); die Chronik aller Bögen in `git log`.
 
 ---
 
@@ -236,7 +236,7 @@ erbt:
 ## 6. Der Vektor vorwärts — wohin jede Achse noch zeigt
 
 Die Vision ist verkörpert; was bleibt, ist VERTIEFUNG — pro Achse die nächste Tiefe, Fundament vor
-Seele. Der Scope ist allein `docs/PFLICHT-OFFEN.md`; hier der Vektor, gruppiert nach Dimension:
+Seele. Der Scope ist allein die Meisterkarte 2; hier der Vektor, gruppiert nach Dimension:
 
 **Der Körper:** der Wasser-CA fließt (`_tickWaterCA`, Quellen-Pin, Flow-Regel; das Zell-Sheet
 ist der EINE Render). Offen: Seen/Flüsse jenseits ±1024 m · die Vereinigung der zwei
@@ -258,7 +258,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 
 ---
 
-## 7. Die Grenzen heute (Vertiefung, kein Fundament — der Scope ist allein `docs/PFLICHT-OFFEN.md`)
+## 7. Die Grenzen heute (Vertiefung, kein Fundament — der Scope ist allein die Meisterkarte 2)
 
 - Die Gesetze des Gemüts (`sorrow→rainy` u. ä.) sind Welt-Regeln, aber noch gesetzt, nicht evolviert.
 - Der Spieler schreibt Leben nur mit seinem Tod (`_playerDeathRespawn`), nicht als Pflege (Pflege = Co-Schöpfung).

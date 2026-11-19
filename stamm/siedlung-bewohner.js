@@ -2003,7 +2003,7 @@ class AnazhRealm_siedlung_bewohner {
                 S.liste = w.value;
                 this._bewohnerGenome(S);
                 this._bewohnerWacheSetzen(S);
-                if (S.plan.staedtisch) this._verkehrAnlegen(S); // die Wagen der Stadt und ihre Fahrer (PFLICHT-OFFEN C)
+                if (S.plan.staedtisch) this._verkehrAnlegen(S); // die Wagen der Stadt und ihre Fahrer (Leiter mensch.netz.verkehr)
                 S.listeWerk = this._bewohnerStandPruefen(S, null);
                 continue;
             }
@@ -2211,7 +2211,7 @@ class AnazhRealm_siedlung_bewohner {
     // (`_bewohnerZiel`), die Wende (`_bewohnerWende`). DER REGEN (mensch.kopplung.leben): das Gesetz liest den Regen, der fällt —
     // den Kanal `rain` des EINEN Wetter-Felds der Welt (`_weatherFieldFor`: das Wort am Spieler samt seinem Übergang, wie Himmel,
     // Tropfen und Nässe ihn lesen); je planH liest jeder seinen Plan neu (`_tickBewohner`), so leert der Regen den Platz.
-    // AM STEUER IST SEIN WERK SEIN WAGEN (PFLICHT-OFFEN C, w28-fahrer-am-steuer): wen sein Plan am Werk sieht und wer am Steuer
+    // AM STEUER IST SEIN WERK SEIN WAGEN (Leiter mensch.netz.verkehr, w28-fahrer-am-steuer): wen sein Plan am Werk sieht und wer am Steuer
     // sitzt, ist, wo sein Wagen ist — die EINE Lage, die der Verkehr schreibt und an der sein Leib sitzt (`_verkehrSitz`); der
     // Stand neben dem Platz ist nur der Ort, an dem er ein- und aussteigt. Bis hier nannte das Soll den Stand, während der Leib im
     // Wagen fuhr: zwei Orte für einen Menschen (bevoelkerung#1, main 7de938ab, Radeon: der Fahrer an Ort 0 und 1 zu jeder der
@@ -2549,7 +2549,7 @@ class AnazhRealm_siedlung_bewohner {
             );
             return null;
         }
-        // DER GEHWEG (PFLICHT-OFFEN C): auf der Trasse des Verkehrs (ein Weg ab fachwerk VERKEHR_GESETZ.breiteM) geht er an
+        // DER GEHWEG (Leiter mensch.netz.verkehr): auf der Trasse des Verkehrs (ein Weg ab fachwerk VERKEHR_GESETZ.breiteM) geht er an
         // ihrem Rand, auf der Seite seiner Spur (`gehwegM` von der Mitte, gestreut um `gehwegBreiteM`), um die Ecke auf dem
         // Schnitt der Ränder beider Beine (höchstens doppelt so fern) — die Fahrbahn quert er nur, wo sein Weg sie kreuzt. Bis
         // hier ging die Menge ±`spurM` um die Mitte der Trasse, und jeder Wagen hielt vor ihr (10 Uhr: die Kreuzung der
@@ -2642,7 +2642,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (this._verkehrQuert(S, a, pts[j]) && !this._bewohnerWand(a, pts[j])) pts.splice(i, j - i);
                 else i = j;
             }
-        // DIE SEITE DES GEHWEGS (PFLICHT-OFFEN C): wo Wagen fahren, geht er die Seite, die ihn weniger über die Fahrbahn führt
+        // DIE SEITE DES GEHWEGS (Leiter mensch.netz.verkehr): wo Wagen fahren, geht er die Seite, die ihn weniger über die Fahrbahn führt
         // (`_verkehrFahrbahnM`; gleich viel: seine) — bis w4-verkehr-c2 ging jeder die Seite seines Samens: vom Markt zur Tür des
         // Gasthauses querte der Weg vier Arme der Kreuzung (stadt-voll 23 Uhr, 7:1:1: 22,5 m von 94,6 m auf der Fahrbahn)
         if (beide && seite && breit < Infinity) {
@@ -2812,7 +2812,7 @@ class AnazhRealm_siedlung_bewohner {
         const dtW = (dt * b.tempoTag) / b.tempo;
         const [weg0, rest0] = [b.weg, b.wegRest];
         let lenk = b.drinnen || !(dt > 0) ? null : this._bewohnerAusweichen(S, b, dtW);
-        // DER VORRANG DER FAHRBAHN (PFLICHT-OFFEN C, das EINE Gesetz der Straße): wer neben der Bahn eines Wagens steht und mit dem
+        // DER VORRANG DER FAHRBAHN (Leiter mensch.netz.verkehr, das EINE Gesetz der Straße): wer neben der Bahn eines Wagens steht und mit dem
         // Tempo seines Wegs in sie träte, wartet am Rand, solange ein Wagen seine Querung beansprucht (`_verkehrVorrang`) — wer
         // schon in ihr geht, geht hinüber, und der Wagen wartet die Dauer seiner Querung. Bis hier nahm der
         // Strom der Menge jede Lücke: die Halter der Kreuzung am Markt warteten auf Querende, 18 Wagen standen dahinter, in 150 s
@@ -3689,7 +3689,7 @@ class AnazhRealm_siedlung_bewohner {
             };
             const gemerkt = (q) =>
                 Object.assign(o, { _standR: R, _standK: q ? q._knoten : undefined, _standSchmutz: false });
-            // DER STAND WEICHT DER SPUR (PFLICHT-OFFEN C): wer stundenlang steht, steht nie in der Spur eines Wagens
+            // DER STAND WEICHT DER SPUR (Leiter mensch.netz.verkehr): wer stundenlang steht, steht nie in der Spur eines Wagens
             // (`_verkehrAufSpur`) — er sucht den nächsten Ort, der sein Gesetz UND den Raum zu jedem Stand hält: erst die Gasse
             // daneben (`spurAuswegM`, die Lücke zwischen zwei Häusern), dann so weit sein Gesetz reicht (`gesetzAuswegM`, der
             // Platz endet am Ring ohne einen Punkt seines Gesetzes), dann wie bei seiner Geburt auch in der Gasse (`art`: am

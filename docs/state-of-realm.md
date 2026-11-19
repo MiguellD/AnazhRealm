@@ -1,7 +1,7 @@
 # AnazhRealm — Die Vision
 
 Dieses Dokument trägt **die Vision** und sonst nichts: die fünf Pfeiler, die heilige Lektion, die Ziellinie v1.0 und das
-Welten-Ultiversum. Der gemessene Stand lebt in `CLAUDE.md` (Stand), das Offene in `docs/PFLICHT-OFFEN.md`, der Tisch in
+Welten-Ultiversum. Der gemessene Stand lebt in `CLAUDE.md` (Stand), das Offene in die Meisterkarte 2 (Zweig `punkte-maschine`), der Tisch in
 `docs/roadmap.md`, die Chronik in `git log`.
 
 ---
@@ -52,7 +52,7 @@ wird über `spawn_studio` zum Foundry-Asset in der Welt, auch ohne Schlüssel. A
 16,7–16,8 ms an Wiese und Genesis in Ego und Third-Person, ≤ 191 Befehle, ≤ 587k Dreiecke, ≤ 104 MB VRAM (das letzte ABAB,
 Zweig `koordination` 1ae7ef17).
 
-**Was fehlt**, trägt allein `docs/PFLICHT-OFFEN.md`. Ehrlich bleibt: „~119 FPS" galt nie für die gefüllte Welt (V18.492).
+**Was fehlt**, trägt allein die Meisterkarte 2. Ehrlich bleibt: „~119 FPS" galt nie für die gefüllte Welt (V18.492).
 
 ---
 

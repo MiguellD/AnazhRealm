@@ -43,7 +43,7 @@ class AnazhRealm_siedlung_ort {
     // Orte); sein Erdbau liegt, bevor das erste Haus steht. Ein Plan, der schon v2 ist, bleibt. Leser: der Akt
     // (`spawnSettlement` über `_ortWahl`), der Export (`_spawnSettlementFromExport`) und das Auto-Dorf
     // (`_tickAutoSettlement`); die Slot-Quelle liest `slot.y`.
-    // DIE ORT-WAHL (K10, Pflicht-OFFEN C: „Häuser im Fluss-Bett heilen am Plan"): der Anker ist der Wunsch; der Plan steht am
+    // DIE ORT-WAHL (K10, Leiter mensch.netz.verkehr: „Häuser im Fluss-Bett heilen am Plan"): der Anker ist der Wunsch; der Plan steht am
     // nächsten Ort der Ringe um ihn (`ORT_WAHL`: je `schrittM` ein Ring bis zur halben Siedlungs-Zelle, auf jedem Ring Orte im
     // Abstand ≤ `schrittM`), an dem er JEDES Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`: jede Platte samt Saum und Vorplatz liegt auf dem
     // Boden des Plans, `WERK_LAND_M` über dem Wasser des Gesetzes — das Urteil der Wasser-Wand jedes Werks, `_fundamentLand` —,
@@ -845,7 +845,7 @@ class AnazhRealm_siedlung_ort {
             .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }))
             .map((b) => Object.assign(b, { d: Math.hypot(b.x - M.x, b.z - M.z) }))
             .sort((a, b) => a.d - b.d);
-        // DIE REGEL „trasse" (w28-verkehr-bild, PFLICHT-OFFEN C: der Verkehr im Bild): je Wagen in Fahrt der Punkt seiner Route
+        // DIE REGEL „trasse" (w28-verkehr-bild, Leiter mensch.netz.verkehr: der Verkehr im Bild): je Wagen in Fahrt der Punkt seiner Route
         // `trasseM` voraus; der dem Auge (dem Spieler, sonst dem Stand) nächste trägt den Stand — der erste Punkt quer zur Route
         // außer jeder Spur, `trasseRandM` vor jedem Grundriss (näher füllte die Fassade den Vordergrund: 24–36 % näher als 8 m) und 1,5 m neben jedem Baum, Stand, Brunnen und jeder Laterne des
         // Plans —, der Blick zurück auf den Wagen, `trasseNick` gehoben (das Ziel liegt über den Dächern, die ihm entgegenfahren:

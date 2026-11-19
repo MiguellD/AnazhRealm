@@ -726,7 +726,7 @@ function fingerabdruck(A) {
     return { zeilen, sha: sha(zeilen.join("\n")).slice(0, 16) };
 }
 
-// DER EINE KOMMENTAR-STRIPPER (PFLICHT-OFFEN D3): der Code eines Quelltexts ohne Kommentare, zeichenweise wie ein
+// DER EINE KOMMENTAR-STRIPPER (Klarheit D3): der Code eines Quelltexts ohne Kommentare, zeichenweise wie ein
 // Tokenizer — Strings, Template-Literale (samt Code in `${…}`), Regex-Literale und URLs bleiben stehen, nur `//`- und
 // `/* */`-Kommentare fallen, jeder Zeilenumbruch bleibt (Zeilennummern eines Befunds = die der Datei). `ohneLiterale`
 // leert dazu jedes Literal bis auf ein Leerzeichen (der Proben-Leser von gate:source-probes sucht nur Code-Tokens). Bis
@@ -898,7 +898,7 @@ function stripperTafel(root) {
     return rot;
 }
 
-// DER EINE ABSENZ-HELFER in Node (PFLICHT-OFFEN D3d), der Zwilling von `window.__fehlt` (welt-boot.cjs): true = `re` fehlt
+// DER EINE ABSENZ-HELFER in Node (Klarheit D3d), der Zwilling von `window.__fehlt` (welt-boot.cjs): true = `re` fehlt
 // im Code ohne Kommentare. `glied` ein Name (das Klassen-Glied wie `rumpf`), ein Kopf-Regex, eine Liste davon oder null (der
 // ganze Text); `quelle` der Text — ohne ihn der virtuelle Stamm der Wurzel, als Funktion gewandelt (der Vor-Stand eines
 // Selbsttests), als `{ datei, wandel, wurzel }` eine Datei (Kern, Studio, Worker, index.html) oder der Stamm einer anderen

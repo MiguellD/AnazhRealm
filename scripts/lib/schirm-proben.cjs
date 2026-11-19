@@ -11,7 +11,7 @@ const AA = require("./ausgabe-aufnahme.cjs");
 // DAS FENSTER (die Route `/fenster` der Werkbank, `werkbank fenster <w> <h>`): der Viewport wechselt wie bei einem Spieler (Fenster
 // ziehen, Vollbild) — das resize-Ereignis stellt die Leinwand und misst den Schirm sofort (`_schirmMessen`). NACH EINEM WECHSEL LEBT
 // DIE WELT AM NEUEN SCHIRM, ehe der Befehl antwortet (w28-probe-schirm): der Loop ruht zwischen den Befehlen — wer danach nur rendert
-// (`gpu-bank`), zeichnete sonst die Stufen-Wahl des alten Fensters in das neue. GENAU DANN (w28-fenster-wechsel, `schirmLeben`): die
+// (`gpu-bank`), zeichnete sonst die Stufen-Wahl des alten Fensters in das neue. GENAU DANN (`schirmLeben`): die
 // Frage ist die des Stamms (`_weltSteht`, `_weltStandTakt`) — trägt der Schirm andere Zeilen als der letzte Takt der Welt? Sie deckt
 // auch ein Fenster, das ein anderer Weg ohne Takt stehen ließ (`/bild` und `/stufen` stellen nach dem Schuss das Fenster der Sitzung
 // zurück). Wechselte der Schirm nicht, antwortet der Befehl sofort mit `takte: 0`: wer eine stehende Welt braucht, schwingt sie
@@ -71,7 +71,7 @@ async function stufenRoute(page, b) {
 // Ding unter dem Stufen-Gesetz trägt im Bild der ersten die Stufe der zweiten (0 Abweichungen). Der Täter steht daneben: der Zensus
 // direkt nach dem Fenster-Wechsel — trägt dort kein Ding eine andere Stufe, ist die Probe LEER. Ohne `--eigen`: nur die laufende
 // Sitzung, Stand ↔ Schuss (die schnelle Frage einer Pose: hängt hier eine Stufe am Schirm?).
-// DAS FENSTER AN DER KARTE (w28-fenster-wechsel, `fensterUrteil`): jede eigene Welt fragt `/fenster` frisch an ihrem eigenen Fenster
+// DAS FENSTER AN DER KARTE (`fensterUrteil`): jede eigene Welt fragt `/fenster` frisch an ihrem eigenen Fenster
 // (`gleich`: sie steht noch nicht, ihr Schirm wechselt nicht — 0 Takte); die Sitzung nach ihrem Schuss, der ihr Fenster ohne Takt
 // zurückließ, erst dorthin und dann auf das Bild (`wechsel`: Takte > 0, die Welt wählte zuletzt am Schirm).
 const [SITZUNG, BILD] = [[640, 360], [1920, 1080]]; // prettier-ignore
