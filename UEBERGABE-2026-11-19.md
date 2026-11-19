@@ -92,3 +92,26 @@ Gelesen an der Mess-Datei der GTX am Runden-Kopf f68dbf09: von 498 Urteilen 3 gr
    Leiter (104).
 4. Licht Welle 1: Macher-Kopf 9d821539, Vorprüfung 0c1af929 mit `[gpu-probe: gate:post-kette, gate:wasser-leben:bild]`; bei
    18/18 und grüner GPU-Probe Stempel `w28-licht-eine-skala-2`.
+
+## 9 STAND BEIM SICHERN (vorbereitet 20:28, Woche alle Modelle 97 %, Fable 99 %; die Koordinator-Sitzung läuft auf Opus 5.5)
+
+**main** 7d9c4d51 V18.546.344 (z627: licht-eine-skala-2, los-huelle, alte-tests-fallen, saat-im-lauf). Karte 2: 35 von 1 718. Heute 10 Landungen.
+
+**Gestempelt, wartet auf den nächsten Zug:** w28-welt-tag-null c456c97c (tagNull hat EINE Geburt, `_weltGeburt`; Ring 8 GEBURT), w28-kern-sprossen-heil a5f28552 (Haltung des Bewohners 1,299° → 0).
+
+**Vorprüfung läuft:** laub-kante-3 106b754a auf 1b06de47 ([gpu-probe: gate:post-kette, gate:wasser-leben:bild] [ci voll]). Inhalt: die Kamera auf Hand im EINEN Schreiber der Belichtung (`_belichtungHand`), beide Proben-Hüllen umgezogen, mit main gemergt. Bei grüner Batterie stempelst du w28-laub-kante-3. Die Radeon-Kette luft und tag-achse am Baum 1b06de47 fährt der Lichtmesser.
+
+**ROT, ein Heiler daran:** stein-ein-gesetz 3e76deb8 (E8.1: der Stein liest EINE Größe, er streckt nie nach dem Budget). Rot sind Regler wirkt Teil 2 und 3 und Asset-Vertrag v1. Weg: main mergen, die Regler-Linse liest dieselbe ohneStein-Regel wie buildInstance (keine Zeile heben), die v1-Goldens einmal am gemergten Stand neu prägen. Danach neue Vorprüfung mit [gpu-probe: gate:haus-fern, bild:dorf@0.5] [ci voll]. Erst dann merged der GTX 1050 stein-ein-gesetz in einheit-stufe-aus-l0.
+
+**Arbeiter in Fahrt (Opus, lokal), Köpfe 20:28:**
+- herde-gesetz 03154644: Hufe, S3, Flucht-Kamera. Vorprüfung mit [gpu-probe: gate:kreatur-leben].
+- kosmos-umfang 9814a9ae: Bildpaar, GPU-ms. richter-kosmos 509822dc buchst du nach seiner Landung in punkte-maschine.
+- einheit-sicht bde53a30: Spike SICHT, E7, Pixel-Fehler + Hi-Z. Die Zahl aus Schritt 0 steht noch aus.
+
+**Geräte:**
+- OMEN: los-huelle-2 1f125464 (die Brandwand liest die Hülle), danach los-wurf.
+- GTX 1050: ruht seit 97 % mit Übergabe in koordination bericht/1911-einheit-stufe-aus-l0/UEBERGABE.md. Muster-Phase 0,288 → 0,000 auf einheit-stufe-aus-l0 fa836365. Offen: das Bild B1 an einer Backstein-Pose nach dem Merge von main. Relief als Ton als Kanten-Term im Verband-Gesetz ist entschieden, aber noch nicht begonnen.
+
+**Gebucht seit 16:31:** richter-ohne-urteil (punkte-maschine c784e730), richter-saat (92cbf940). Entscheide E7 und E8 in vision/einheit/entscheid-einheit.md.
+
+**Ehrlich:** Die GPU-Probe von welt-tag-null 265c7f19 gab nach. Gestempelt wurde am GPU-Grün des baumgleichen Spielbaums 44e48a7e; das steht im Stempel-Text. Ob die 177 ungemessenen Stationen zurückkommen (tagNull), zeigt erst die nächste GTX-Runde.
