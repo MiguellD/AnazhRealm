@@ -412,7 +412,8 @@ function abdeckung() {
     }
     return je;
 }
-// nur: die eingefalteten Perspektiven (Komma-Liste) — die Datei vision/richter/zeilen-mensch.json trägt nur, was im Zweig liegt
+// nur: die eingefalteten Perspektiven (Komma-Liste) — die Zeilen stehen seit der Richter-Falte (19.11.) in vision/richter-tafel.json;
+// `--zeilen` druckt sie zum Einfalten, nie in eine Datei neben den Akten
 function zeilen(nur) {
     const aus = [];
     const je = nur ? new Set(String(nur).split(",")) : null;

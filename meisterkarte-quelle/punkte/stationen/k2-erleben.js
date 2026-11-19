@@ -1732,15 +1732,12 @@ const LEITERN = [];
 // ═══════════════════════════════════════ Perspektive sinn ═══════════════════════════════════════
 {
     // ─────────── erleben.sinn.ziele — Ziele aus dem Zustand der Welt ───────────
-    // S1 spricht dieselbe Tat 10× im echten Chat („pflege das land“ → deposit_life, je 30 s Spielzeit) an einem Ort, dessen Erwartung
-    // an die Tat vergessen ist, und liest die Antwort im Ausgabe-Pfad: der Zensus des Umwelt-Graphs gegen dieselbe Lage ohne Antwort
-    // (`_tatAntwortAm` → `_umweltLage().antwort`, der Port der Zehn Taten aus g2 wertGang) und 32 m daneben. Die Antwort im Licht hat
-    // keinen Leser (dann `leser`, sonst ROT beim Täter). S2–S7 zählen Saat, Bewohner (Liste oder `leuteVon` des Plans) und Welten.
+    // S1 trägt bestehend affekt.K1#2 (Tafel „gleich“, gebuchte Akten; Richter-Falte 19.11.: der Zwilling dieser Probe fiel).
+    // S2–S7 zählen Saat, Bewohner (Liste oder `leuteVon` des Plans) und Welten.
     LEITERN.push(
         leiter({
             leiter: "erleben.sinn.ziele",
             sek: 45,
-            mutiert: true,
             pfad: [
                 "stamm/feld-sprache.js",
                 "stamm/feld-leben.js",
@@ -1754,19 +1751,8 @@ const LEITERN = [];
                 "scripts/lib/ausgabe-aufnahme.cjs",
             ],
             welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Bewohner, Saat, Welten)" }],
+            bestehend: [1],
             sprossen: {
-                1: {
-                    soll: [
-                        { wort: "quote_pct", richtung: "≤", wert: 30, wortlaut: "fällt von Tat 1 auf Tat 10 auf ≤ 30 %", feld: "richter" },
-                        { wort: "nachbar_db", richtung: "≤", wert: 0, wortlaut: "Nachbarzelle 0", feld: "richter" },
-                        { wort: "antwort_s", richtung: "≤", wert: 2, wortlaut: "Antwort ≤ 2 s", feld: "preis" },
-                    ],
-                    umfang: { verlangt: 10, einheit: "gleiche Taten am Ort", wortlaut: "dieselbe Tat 10×", feld: "richter" },
-                    welt: [
-                        { wort: "taten_neu", ab: 10, was: "Taten, die das Buch der Wertung neu trägt (state.taten, je Satz ein Eintrag)" },
-                        { wort: "antwort_tat1_db", ab: 0.01, was: "Antwort der ersten Tat am Ohr in dB (Zensus des Umwelt-Graphs gegen dieselbe Lage ohne Antwort)" },
-                    ],
-                },
                 2: {
                     soll: [
                         { wort: "ziele_genannt", richtung: "≥", wert: 1, wortlaut: "nennt nach 60 min ≥ 1 Ziel", feld: "richter" },
@@ -1805,156 +1791,6 @@ const LEITERN = [];
                 },
             },
             lauf: async function zieleLauf(H, P, L) {
-                // ── S1 · dieselbe Tat 10× am Ort, die Antwort am Ohr (der Halt der Messung fällt für die Taten, danach steht alles wieder) ──
-                await L.je(1, async () => {
-                    const zehnFn = function (r) {
-                        const st = r.state;
-                        const K = globalThis.__klangCore;
-                        const pm = st.playerMesh.position;
-                        const y = (x, z) => r._voxelSurfaceY(x, z);
-                        const aus = { zehn: [] };
-                        const vor = {
-                            halt: st.weatherEffectTime,
-                            wetter: st.weather,
-                            regeln: st.worldRules,
-                            regler: st.perfRegulator,
-                            nexusEigen: Object.prototype.hasOwnProperty.call(r, "_loopNexusUpdate"),
-                            nexus: r._loopNexusUpdate,
-                            klang: !!(st.symphony && st.symphony.enabled),
-                            uhr: st.timeOfDay,
-                            modus: r.getGameMode(),
-                            pos: pm.clone(),
-                        };
-                        const gestellt = { wetter: false, uhr: false, modus: false };
-                        let uhr = performance.now();
-                        const takt = (n) => {
-                            for (let i = 0; i < n; i++) r._gameLoopTick((uhr += 1000 / 60));
-                        };
-                        try {
-                            // die ganze Probe läuft in EINEM synchronen Aufruf: kein Bild der Seite fällt zwischen die Takte
-                            if (!vor.klang && !r.initSymphony()) return Object.assign(aus, { fehler: "die Klang-Welt startet nicht (initSymphony, stamm/klang.js:8)" });
-                            const um = st.symphony.umwelt;
-                            if (!um || !um.graph) return Object.assign(aus, { fehler: "keine Klang-Welt am Ohr (state.symphony.umwelt)" });
-                            // der Nexus ruht und keine Regel feuert: die einzige Tat am Ort ist die des Spielers
-                            r._loopNexusUpdate = () => {};
-                            st.worldRules = [];
-                            st.perfRegulator = false;
-                            if (st.weather !== "sunny") (window.__wetterSetzen("sunny"), (gestellt.wetter = true));
-                            st.weatherEffectTime = 0; // „pflege das land“ ist ein Welt-Akt (deposit_life): unter dem Halt der Messung verweigert
-                            if (vor.modus !== "frieden") (r.setGameMode("frieden"), (gestellt.modus = true));
-                            // der Chor der Antwort ist der Vogel-Chor des Tags (klang:UMWELT.stimmen.vogel.antwort)
-                            if (!(r._sonnenRichtung().y > 0.1)) (r.setTimeOfDay(0.5, "regler"), (gestellt.uhr = true));
-                            // ein frischer Ort: die Erwartung der Zelle an die Tat (`_tatWerten`, tatTau) ist vergessen — sonst je 48 m weiter
-                            const erw = st.tatErwartung || new Map();
-                            const frisch = (x, z) => {
-                                const e = erw.get(r._wohlCellKey(x, z) + ":deposit_life");
-                                return !e || Math.abs(e.e) * Math.exp(-Math.max(0, st.spielZeit - e.t) / AnazhRealm.WERTUNG.tatTau) < 1e-3;
-                            };
-                            // der Stand am Baum (die Vögel singen aus der Deckung ihres Reviers, `_vogelTakt` stamm/kreatur-fauna.js:12), wie
-                            // die Zehn Taten in g2 wertGang: der nächste Baum ≤ 300 m mit frischer Zelle, sonst der Ort des Spielers je 48 m weiter
-                            const ab = (a) => Math.hypot(a.position.x - pm.x, a.position.z - pm.z);
-                            const baeume = (st.architectures || [])
-                                .filter((a) => a && a.position && /baum/.test(a._lodSpecies || a.type) && r._istNatur(a) && ab(a) <= 300)
-                                .sort((a, b) => ab(a) - ab(b))
-                                .slice(0, 12);
-                            let stand = null;
-                            for (const B of baeume) if (!stand && frisch(B.position.x + 2.2, B.position.z)) stand = { x: B.position.x + 2.2, z: B.position.z, baum: 1 };
-                            if (!stand) {
-                                stand = { x: pm.x, z: pm.z, baum: 0 };
-                                for (let i = 0; i < 6 && !frisch(stand.x, stand.z); i++) stand.x += 48;
-                            }
-                            aus.stand = [Math.round(stand.x), Math.round(stand.z)];
-                            aus.amBaum = stand.baum;
-                            aus.frisch = frisch(stand.x, stand.z);
-                            const halte = (n) => {
-                                for (let i = 0; i < n; i++) (pm.set(stand.x, y(stand.x, stand.z) + 1.8, stand.z), takt(1));
-                            };
-                            halte(30);
-                            aus.voegel = (st.voegel || []).length;
-                            const stimme = () => (Number.isFinite(K.umweltMischung(r._umweltLage()).vogel.db) ? "vogel" : "grille");
-                            const singt = () => {
-                                for (let w = 0; w < 24 && !Number.isFinite(K.umweltMischung(r._umweltLage())[stimme()].db); w++) (st.spielZeit += 5), halte(4);
-                            };
-                            // die Antwort: der Graph trägt die Mischung der Lage nach der Tat (Lage → Mischung → Graph), gegen dieselbe Lage
-                            // ohne Antwort; höchstens 120 Takte (2 s zu 60 Hz); dann dieselbe Rechnung 32 m daneben
-                            const antwort = () => {
-                                const alt = um.lage;
-                                um.letzteMischung = -Infinity;
-                                let takte = 0;
-                                let a = null;
-                                let vorMix = null;
-                                for (; takte < 120 && !a; takte++) {
-                                    halte(1);
-                                    if (um.lage !== alt && !vorMix) vorMix = um.mix;
-                                    const v = stimme();
-                                    const z = um.graph.zensus().find((x) => x.name === v);
-                                    if (vorMix && um.mix !== vorMix && um.folge !== 2 && z && Number.isFinite(z.db) && Math.abs(z.db - um.mix[v].db) < 0.3)
-                                        a = { stimme: v, db: +(z.db - K.umweltMischung({ ...um.lage, antwort: null })[v].db).toFixed(2) };
-                                }
-                                pm.x += 32;
-                                const l = r._umweltLage();
-                                pm.x -= 32;
-                                const v = stimme();
-                                const nachbar = +(K.umweltMischung(l)[v].db - K.umweltMischung({ ...l, antwort: null })[v].db).toFixed(2) || 0;
-                                return { ...(a || { stimme: v, db: null }), s: +(takte / 60).toFixed(3), nachbar };
-                            };
-                            for (let n = 0, t0 = st.spielZeit; n < 10; n++) {
-                                st.spielZeit = Math.max(st.spielZeit, t0 + 30 * n);
-                                halte(4);
-                                singt();
-                                const letzte = st.taten && st.taten[st.taten.length - 1];
-                                r.processChatCommand("pflege das land");
-                                const e = st.taten && st.taten[st.taten.length - 1];
-                                aus.zehn.push({ neu: e && e !== letzte ? 1 : 0, op: e ? e.op : null, delta: e && Number.isFinite(e.delta) ? +e.delta.toFixed(4) : null, ...antwort() });
-                            }
-                            aus.sonne = +r._sonnenRichtung().y.toFixed(2);
-                        } finally {
-                            pm.copy(vor.pos);
-                            if (st.playerVel && st.playerVel.setValue) st.playerVel.setValue(0, 0, 0);
-                            if (gestellt.modus) r.setGameMode(vor.modus);
-                            if (gestellt.uhr) r.setTimeOfDay(vor.uhr, "regler");
-                            if (gestellt.wetter) window.__wetterSetzen(vor.wetter);
-                            st.weatherEffectTime = vor.halt;
-                            st.worldRules = vor.regeln;
-                            st.perfRegulator = vor.regler;
-                            if (vor.nexusEigen) r._loopNexusUpdate = vor.nexus;
-                            else delete r._loopNexusUpdate;
-                            if (!vor.klang && st.symphony && st.symphony.enabled) r.disposeSymphony();
-                        }
-                        return aus;
-                    };
-                    const o = await L.ev("return (" + zehnFn + ")(r);", 40);
-                    if (o.fehler) throw new Error(o.fehler);
-                    const Z = o.zehn || [];
-                    const a1 = Z.length ? Z[0].db : null;
-                    const a10 = Z.length >= 10 ? Z[9].db : null;
-                    const erzeugt = Z.filter((x) => x.neu === 1).length;
-                    const werte = {
-                        quote_pct: Number.isFinite(a1) && a1 > 0 && Number.isFinite(a10) ? +((100 * Math.abs(a10)) / a1).toFixed(1) : null,
-                        nachbar_db: Z.length && Z.every((x) => Number.isFinite(x.nachbar)) ? Math.max(...Z.map((x) => Math.abs(x.nachbar))) : null,
-                        antwort_s: Number.isFinite(a1) ? Z[0].s : null,
-                    };
-                    const welt = { taten_neu: erzeugt, antwort_tat1_db: Number.isFinite(a1) && a1 > 0 ? a1 : 0 };
-                    L.zeile("ziele S1 " + JSON.stringify({ stand: o.stand, amBaum: o.amBaum, voegel: o.voegel, frisch: o.frisch, sonne: o.sonne, db: Z.map((x) => x.db), nachbar: Z.map((x) => x.nachbar), s: Z.map((x) => x.s), delta: Z.map((x) => x.delta) }));
-                    const ok =
-                        werte.quote_pct !== null && werte.quote_pct <= 30 && werte.nachbar_db !== null && werte.nachbar_db <= 0 && werte.antwort_s !== null && werte.antwort_s <= 2 && erzeugt >= 10 && welt.antwort_tat1_db >= 0.01;
-                    if (ok)
-                        return L.leser(
-                            1,
-                            "die Antwort im Licht: kein Leser — `_tatAntwortAm` (stamm/feld-sprache.js:1252) liest nur der Klang (stamm/klang.js:498), das Licht des Orts antwortet keiner Tat; gemessen am Ohr: Tat 1 " +
-                                a1 + " dB → Tat 10 " + a10 + " dB (" + werte.quote_pct + " %), Nachbar " + werte.nachbar_db + " dB, Antwort nach " + werte.antwort_s + " s (die Umkehr unter Schaden, die Tiefe, misst die Station nicht)",
-                            erzeugt
-                        );
-                    const fehlt = Z.findIndex((x) => x.neu !== 1 || !Number.isFinite(x.db) || !Number.isFinite(x.nachbar));
-                    const taeter = [
-                        Z.length !== 10 ? "Taten " + Z.length + "/10" : null,
-                        fehlt >= 0 ? "Tat " + (fehlt + 1) + " ohne Eintrag im Buch oder ohne Antwort am Ohr (" + JSON.stringify(Z[fehlt]) + ")" : null,
-                        o.frisch === false ? "kein Ort mit vergessener Erwartung (12 Bäume ≤ 300 m, dann 6 × 48 m)" : null,
-                        !o.voegel ? "kein singender Vogel am Stand " + JSON.stringify(o.stand) + (o.amBaum ? " (am Baum)" : " (kein Baum ≤ 300 m)") + " — die Antwort trägt der Vogel-Chor (klang-core.js:929)" : null,
-                        "Antwort Tat 1 " + a1 + " dB → Tat 10 " + a10 + " dB, Nachbar max " + werte.nachbar_db + " dB, Antwort nach " + werte.antwort_s + " s",
-                    ].filter(Boolean);
-                    L.gemessen(1, werte, { erzeugt, welt, taeter: taeter.join(" · ") });
-                });
                 // ── S2–S7 · Saat, Bewohner und Welten der Sitzung ──
                 const zaehlFn = function (r) {
                     const st = r.state;
@@ -4275,43 +4111,16 @@ const LEITERN = [];
     );
 
     // ─────────── erleben.klang.ereignis — Ereignis-Klang: Stoß, Bruch, Kaskade ───────────
-    // S1 misst im Fenster der Sitzung den Schritt je Stoff wie klang.K4#1 (`schrittSeite`): Orte, deren Gang-Strecke samt Rand
-    // `_schrittMaterialAt` ganz als EINEN trockenen Stoff nennt, je Stoff 3,5 s Gehen mit W, ein Analyser an jedem Schritt-Gain, je
-    // Schritt-Ereignis der Pegel-gewichtete Spektral-Schwerpunkt. S2 fährt den Körper-Teil der Klang-Linse (werkzeug + koerperSeite
-    // aus scripts/diag-klang-zensus.cjs, OfflineAudioContext): Motor [Upm, Hz], Landung [Aufprall, dB], Doppler [soll, ist] → r.
-    // S3–S6 urteilen „Leser fehlt“ bzw. zählen Bauten, S7 die Saaten.
+    // S1 und S2 trägt bestehend klang.K4#2 (Tafel „gleich“, gebuchte Akten; Richter-Falte 19.11.: der Zwilling dieser Probe —
+    // Schritt je Stoff und Körper-Teil der Klang-Linse — fiel). S3–S6 urteilen „Leser fehlt“ bzw. zählen Bauten, S7 die Saaten.
     LEITERN.push(
         leiter({
             leiter: "erleben.klang.ereignis",
             sek: 60,
-            mutiert: true,
             pfad: ["scripts/werkbank.cjs", "scripts/diag-klang-zensus.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json", "klang-core.js", "vehicle-core.js", "koerper-core.js", "stamm/klang.js", "stamm/koerper-seele.js", "stamm/koerper-fahrt.js"],
             welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            bestehend: [1, 2],
             sprossen: {
-                1: {
-                    soll: [
-                        { wort: "schwerpunkt_abstand_min_hz", richtung: "≥", wert: 300, wortlaut: "Spektralschwerpunkt je Stoff ≥ 300 Hz getrennt", feld: "richter" },
-                        { wort: "schritte_min", richtung: "≥", wert: 5, wortlaut: "≥ 5 Schritte je Stoff", feld: "richter" },
-                    ],
-                    umfang: { verlangt: 3, einheit: "Stoffe", wortlaut: "Schritt auf 3 Stoffen", feld: "umfang" },
-                    welt: [
-                        { wort: "gang_m_min", ab: 1, was: "kürzester Gang je Stoff (m)" },
-                        { wort: "schritt_ereignisse", ab: 15, was: "Schritt-Ereignisse des Spiels (`_playSchrittOneShot`) über alle Stoffe" },
-                    ],
-                },
-                2: {
-                    soll: [
-                        { wort: "motor_r", richtung: "≥", wert: 1, wortlaut: "Motor r = 1,0", feld: "richter" },
-                        { wort: "landung_r", richtung: "≥", wert: 0.99, wortlaut: "Landung r ≥ 0,99", feld: "richter" },
-                        { wort: "doppler_r", richtung: "≥", wert: 0.99, wortlaut: "Doppler r ≥ 0,99 am Abgriff", feld: "richter" },
-                    ],
-                    umfang: { verlangt: 10, einheit: "Ereignisklassen", wortlaut: "~10 Ereignisklassen", feld: "umfang" },
-                    welt: [
-                        { wort: "motor_abgriffe", ab: 10, was: "Abgriffe des Motors mit Drehzahl und Grundton" },
-                        { wort: "landungen", ab: 5, was: "Stürze, die genau einmal hörbar landeten" },
-                        { wort: "doppler_punkte", ab: 6, was: "Punkte der Vorbeifahrt mit hörbarem Abrollen" },
-                    ],
-                },
                 3: { soll: [{ wort: "stoff_erkannt_pct", richtung: "≥", wert: 70, wortlaut: "Stoff aus 10 nur am Klang ≥ 70 %", feld: "richter" }] },
                 4: {
                     soll: [
@@ -4350,153 +4159,6 @@ const LEITERN = [];
                         geologie: sti.concat(k).filter((n) => /vulkan|eruption|beben|geysir|kalben|infraschall/i.test(n)),
                     };
                 }
-                // DIE SEITE DES SCHRITTS (klang.K4#1, `schrittSeite` der Station g6 mit Wand-Deckel und ≤ fahrtenMax fernen Kandidaten)
-                async function schrittSeite(o) {
-                    const st = r.state, rend = st.renderer, A = window.BaseAudioContext.prototype, gn = A.createGain;
-                    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
-                    const taste = (typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: "w", code: "KeyW", bubbles: true }));
-                    const t0 = performance.now(), war = !!(st.symphony && st.symphony.enabled), sicht = st.cameraMode, yaw0 = st.yaw;
-                    let abgriff = null, takt = null;
-                    const schritte = [], spiel = r._playSchrittOneShot, eigen = Object.prototype.hasOwnProperty.call(r, "_playSchrittOneShot");
-                    r._playSchrittOneShot = function (param) {
-                        if (abgriff && param) schritte.push({ t: performance.now(), mat: param.material });
-                        return spiel.apply(this, arguments);
-                    };
-                    A.createGain = function () {
-                        const g = gn.apply(this, arguments);
-                        if (abgriff && String(new Error().stack).includes("_playSchrittOneShot"))
-                            try {
-                                g.connect(abgriff);
-                            } catch (_e) {}
-                        return g;
-                    };
-                    try {
-                        if (st.symphony.enabled) r.disposeSymphony();
-                        r.initSymphony();
-                        const s = st.symphony;
-                        if (s.ctx.state !== "running") await s.ctx.resume();
-                        if (st.cameraMode !== "first") r.setCameraMode("first");
-                        rend.setAnimationLoop((t) => r._gameLoopTick(t));
-                        const mat = (x, z, karte) => (karte && r._bodenSichtAt(x, z) === null ? null : r._schrittMaterialAt(x, z, r._voxelSurfaceY(x, z)));
-                        const LANG = o.gangM + o.randM;
-                        const strecke = (x, z, karte, schritt) => {
-                            const m = mat(x, z, karte);
-                            if (!m || m === "wasser") return null;
-                            for (let d = -o.randM; d <= LANG + 1e-9; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m) return null;
-                            return m;
-                        };
-                        const suche = (x0, z0, rad, schon) => {
-                            const fund = {};
-                            for (let rr = 0; rr <= rad && schon.length + Object.keys(fund).length < 3; rr += 3)
-                                for (let i = 0, n = Math.max(1, Math.round(rr * 1.2)); i < n; i++) {
-                                    const x = x0 + Math.cos((i / n) * 6.283) * rr, z = z0 + Math.sin((i / n) * 6.283) * rr;
-                                    const m = strecke(x, z, true, 0.5);
-                                    if (m && !fund[m] && !schon.includes(m) && schon.length + Object.keys(fund).length < 3) fund[m] = [Math.round(x * 10) / 10, Math.round(z * 10) / 10];
-                                }
-                            return fund;
-                        };
-                        const kandidaten = (x0, z0, schon) => {
-                            const je = {}, aus = [];
-                            for (let rr = 40; rr <= 2500; rr += 25)
-                                for (let i = 0; i < 64; i++) {
-                                    const x = x0 + Math.cos((i / 64) * 6.283) * rr, z = z0 + Math.sin((i / 64) * 6.283) * rr;
-                                    const m = strecke(x, z, false, 1);
-                                    if (!m || schon.includes(m) || (je[m] = je[m] || []).length >= 3 || je[m].some((p) => Math.hypot(p[0] - x, p[1] - z) < 150)) continue;
-                                    je[m].push([x, z]);
-                                    aus.push({ m, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10 });
-                                }
-                            return aus;
-                        };
-                        const hin = (x, z) => {
-                            st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-                            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
-                        };
-                        const karteDa = async (x, z) => {
-                            for (let i = 0; i < 200; i++) {
-                                if (r._bodenSichtAt(x + o.randM, z) !== null && r._bodenSichtAt(x - LANG, z) !== null) return true;
-                                await warte(50);
-                            }
-                            return false;
-                        };
-                        hin(o.x, o.z);
-                        await karteDa(o.x, o.z);
-                        const orte = suche(o.x, o.z, 120, []), fahrten = [];
-                        if (Object.keys(orte).length < 3)
-                            for (const k of kandidaten(o.x, o.z, Object.keys(orte))) {
-                                if (Object.keys(orte).length >= 3 || fahrten.length >= o.fahrtenMax || performance.now() - t0 > o.wandMs / 2) break;
-                                if (orte[k.m]) continue;
-                                hin(k.x, k.z);
-                                const karte = await karteDa(k.x, k.z);
-                                const neu = karte ? suche(k.x, k.z, 30, Object.keys(orte)) : {};
-                                fahrten.push({ hinweis: k.m, ort: [k.x, k.z], karte, neu: Object.keys(neu) });
-                                Object.assign(orte, neu);
-                            }
-                        const an = s.ctx.createAnalyser();
-                        an.fftSize = 1024;
-                        an.smoothingTimeConstant = 0;
-                        abgriff = an;
-                        const fd = new Float32Array(an.frequencyBinCount), td = new Float32Array(an.fftSize), proben = [];
-                        takt = setInterval(() => {
-                            an.getFloatTimeDomainData(td);
-                            let q = 0;
-                            for (let i = 0; i < td.length; i++) q += td[i] * td[i];
-                            const rms = Math.sqrt(q / td.length);
-                            if (rms < 1e-4) return;
-                            an.getFloatFrequencyData(fd);
-                            const hz = s.ctx.sampleRate / an.fftSize;
-                            let num = 0, den = 0;
-                            for (let k = 1; k < fd.length; k++) {
-                                const p = Math.pow(10, fd[k] / 10);
-                                (num += p * k * hz), (den += p);
-                            }
-                            proben.push({ t: performance.now(), rms, schwer: num / den });
-                        }, 8);
-                        const stoffe = {};
-                        let wand = false;
-                        for (const [m, [x, z]] of Object.entries(orte)) {
-                            if (performance.now() - t0 + o.gehMs + o.ruhMs + 1500 > o.wandMs) {
-                                wand = true;
-                                break;
-                            }
-                            st.yaw = -Math.PI / 2;
-                            hin(x, z);
-                            await karteDa(x, z);
-                            await warte(o.ruhMs);
-                            const p0 = [st.playerMesh.position.x, st.playerMesh.position.z];
-                            proben.length = 0;
-                            schritte.length = 0;
-                            taste("keydown");
-                            await warte(o.gehMs);
-                            taste("keyup");
-                            await warte(500);
-                            const ev = schritte.slice(), pr = proben.slice();
-                            const alle = ev
-                                .map((e, i) => {
-                                    const t1 = Math.min(i + 1 < ev.length ? ev[i + 1].t : Infinity, e.t + 300);
-                                    let w = 0, sw = 0;
-                                    for (const p of pr) if (p.t >= e.t && p.t < t1) (w += p.rms * p.rms), (sw += p.rms * p.rms * p.schwer);
-                                    return { schwerHz: w > 0 ? Math.round(sw / w) : null, mat: e.mat };
-                                })
-                                .filter((b) => b.schwerHz !== null);
-                            const sw = alle.map((b) => b.schwerHz).sort((a, b) => a - b);
-                            const p1 = st.playerMesh.position;
-                            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), fremd: ev.filter((e) => e.mat !== m).map((e) => e.mat), schritte: ev.length, bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null };
-                        }
-                        return { klang: { an: s.enabled, ctx: s.ctx.state }, orte, fahrten, stoffe, wand, ms: Math.round(performance.now() - t0) };
-                    } finally {
-                        clearInterval(takt);
-                        taste("keyup");
-                        rend.setAnimationLoop(null);
-                        abgriff = null;
-                        A.createGain = gn;
-                        if (eigen) r._playSchrittOneShot = spiel;
-                        else delete r._playSchrittOneShot;
-                        if (st.symphony.enabled) r.disposeSymphony();
-                        if (war) r.initSymphony();
-                        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
-                        st.yaw = yaw0;
-                    }
-                }
                 const z = await L.ev("return (" + ereignisZensus + ")();", 30);
                 L.zeile("Zensus Ereignis: " + JSON.stringify(z));
                 const neu = (nr, k) => {
@@ -4512,76 +4174,9 @@ const LEITERN = [];
                 await L.je(5, async () => (neu(5, "elementar"), L.leser(5, "kein Donner, keine Lawine, kein Hagel: UMWELT trägt die Stimmen " + z.stimmen.join(" · ") + " (klang-core.js:443); das Ufer schlägt aus dem Wind (ufer.wellenDb klang-core.js:451), nie aus der Wellenhöhe im Bild")));
                 await L.je(6, async () => (neu(6, "geologie"), L.leser(6, "kein Vulkan-, Beben- oder Geysir-Klang und kein Infraschall: keine Stimme der Geologie in UMWELT (klang-core.js:443), das weiteste Ohr hört 160 m (klang-core.js:1757)")));
                 await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 10⁶ Saaten verlangt; kein fremder Stoff, kein fremdes Medium"));
-                // AM MESSORT: erst der Körper (Offline, kurz), dann der Gang je Stoff (mit Wand-Deckel)
+                // die Pose des Preises (R3): die Wiese, Ego
                 await L.ort("wiese", "ego");
                 L.preisPose("wiese", "ego");
-                const M = require(require("path").resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
-                const pear = (a, b) => {
-                    const n = a.length;
-                    if (n < 3) return NaN;
-                    const ma = a.reduce((x, y) => x + y, 0) / n, mb = b.reduce((x, y) => x + y, 0) / n;
-                    let sab = 0, saa = 0, sbb = 0;
-                    for (let i = 0; i < n; i++) (sab += (a[i] - ma) * (b[i] - mb)), (saa += (a[i] - ma) ** 2), (sbb += (b[i] - mb) ** 2);
-                    return sab / Math.sqrt(saa * sbb);
-                };
-                const ab4 = (x) => (Number.isFinite(x) ? Math.floor(x * 1e4) / 1e4 : null);
-                await L.je(2, async () => {
-                    // die Linse des Spiels am Kopf: werkzeug und koerperSeite aus scripts/diag-klang-zensus.cjs (wie klang.K4#2)
-                    const text = require("fs").readFileSync("scripts/diag-klang-zensus.cjs", "utf8").split("\r\n").join("\n");
-                    const holen = (n) => {
-                        let i = text.indexOf("\nasync function " + n + "(");
-                        if (i < 0) i = text.indexOf("\nfunction " + n + "(");
-                        const e = i < 0 ? -1 : text.indexOf("\n}\n", i + 1);
-                        if (e < 0) throw new Error("scripts/diag-klang-zensus.cjs trägt " + n + " nicht mehr — die Linse änderte sich");
-                        return text.slice(i + 1, e + 2);
-                    };
-                    const F = await L.ev("window.__klangW = (" + holen("werkzeug") + ")(); try { return await (" + holen("koerperSeite") + ")(" + JSON.stringify({ x: M.x, z: M.z }) + ", null); } finally { delete window.__klangW; }", Math.max(10, L.rest() - 3));
-                    L.zeile("Körper am Abgriff: " + JSON.stringify(F).slice(0, 1600));
-                    if (!F || !Array.isArray(F.motor) || !Array.isArray(F.landung) || !Array.isArray(F.doppler)) throw new Error("koerperSeite gab keinen Körper-Teil: " + JSON.stringify(F).slice(0, 160));
-                    const Mo = F.motor.filter((x) => x[0] > 0 && x[1] > 0);
-                    const fall = F.landung.slice(1);
-                    const laut = fall.filter((x) => x[2] === 1 && x[4] > -90);
-                    const Dp = F.doppler.filter((x) => x[2] > 0);
-                    const rM = pear(Mo.map((x) => x[0]), Mo.map((x) => x[1]));
-                    const rL = pear(fall.map((x) => x[1]), fall.map((x) => x[4]));
-                    const rD = pear(Dp.map((x) => 343 * (1 - 1 / x[1])), Dp.map((x) => 343 * (1 - 1 / x[2])));
-                    // die Karte nennt „Motor r = 1,0“: r auf ihre Stelle gerundet; Landung und Doppler abgeschnitten auf vier Stellen (nie weicher)
-                    const werte = { motor_r: Number.isFinite(rM) ? Math.round(rM * 10) / 10 : null, landung_r: ab4(rL), doppler_r: ab4(rD) };
-                    const klassen = (laut.length ? 1 : 0) + (Mo.length || Dp.length ? 1 : 0);
-                    const fehlt = [["Motor", werte.motor_r, 1], ["Landung", werte.landung_r, 0.99], ["Doppler", werte.doppler_r, 0.99]].filter((x) => !(x[1] >= x[2]));
-                    L.gemessen(2, werte, {
-                        erzeugt: klassen,
-                        welt: { motor_abgriffe: Mo.length, landungen: laut.length, doppler_punkte: Dp.length },
-                        taeter: fehlt.length
-                            ? fehlt.map((x) => x[0] + " r " + x[1]).join(" · ") + " (koerperSeite, scripts/diag-klang-zensus.cjs:1191)"
-                            : "gemessen " + klassen + " von ~10 Ereignisklassen (Landung, Motor+Doppler) — Treffer, Glut, Substanz tragen keine Proportion am Abgriff, Bruch keinen Klang",
-                        beleg: "r roh: Motor " + ab4(rM) + " (" + Mo.length + ") · Landung " + ab4(rL) + " (" + fall.map((x) => x[0] + " m " + x[4]).join(", ") + ") · Doppler " + ab4(rD) + " (" + Dp.length + ") · Gesetze der Welt: " + z.gesetze.join(", "),
-                    });
-                });
-                await L.je(1, async () => {
-                    if (L.rest() < 16) throw new Error("Frist: der Gang je Stoff braucht ≥ 16 s, die Probe hält noch " + Math.round(L.rest()) + " s");
-                    const S = await L.ev("return await (" + schrittSeite + ")(" + JSON.stringify({ x: M.x, z: M.z, gehMs: 3500, gangM: 5, randM: 1, ruhMs: 600, fahrtenMax: 2, wandMs: Math.max(8000, (L.rest() - 6) * 1000) }) + ");", Math.max(10, L.rest() - 2));
-                    const S2 = Object.entries(S.stoffe || {});
-                    L.zeile("Schritt je Stoff: " + JSON.stringify({ orte: S.orte, fahrten: S.fahrten, wand: S.wand, ms: S.ms, stoffe: Object.fromEntries(S2.map(([m, v]) => [m, { n: v.bursts, hz: v.medianHz, weg: v.wegM, fremd: v.fremd.length }])) }));
-                    const verlangt = P.sprossen[1].umfang.verlangt;
-                    const orte = Object.keys(S.orte || {});
-                    if (orte.length < verlangt) throw new Error("nur " + orte.length + " Stoffe (" + orte.join(", ") + ") tragen eine ganze Gang-Strecke von 7 m um die Wiese (Fahrten " + (S.fahrten || []).length + ") — kein Ort, kein Urteil");
-                    if (S2.length < orte.length) throw new Error("Wand-Deckel: " + S2.length + " von " + orte.length + " Stoffen gegangen in " + S.ms + " ms");
-                    const weg = S2.filter(([, v]) => v.fremd.length || v.wegM > 5);
-                    if (weg.length) throw new Error("der Gang verließ den Stoff: " + weg.map(([m, v]) => m + " Weg " + v.wegM + " m, fremd " + (v.fremd.join(",") || "—")).join(" · "));
-                    let min = Infinity, paar = "";
-                    for (let a = 0; a < S2.length; a++)
-                        for (let b = a + 1; b < S2.length; b++) {
-                            const d = Math.abs(S2[a][1].medianHz - S2[b][1].medianHz);
-                            if (d < min) (min = d), (paar = S2[a][0] + " " + S2[a][1].medianHz + " Hz ↔ " + S2[b][0] + " " + S2[b][1].medianHz + " Hz");
-                        }
-                    const nMin = Math.min(...S2.map(([, v]) => v.bursts));
-                    L.gemessen(1, { schwerpunkt_abstand_min_hz: Number.isFinite(min) ? Math.round(min) : null, schritte_min: nMin }, {
-                        erzeugt: S2.length,
-                        welt: { gang_m_min: Math.min(...S2.map(([, v]) => v.wegM)), schritt_ereignisse: S2.reduce((a, [, v]) => a + v.schritte, 0) },
-                        taeter: "das nächste Paar " + paar + " · wenigste Schritte " + nMin + " (SCHRITT klang-core.js:1483, `_playSchrittOneShot` stamm/klang.js:978)",
-                    });
-                });
             },
         })
     );

@@ -913,15 +913,12 @@ LEITERN.push(
     );
 
     // ─────────── same.entfaltung.akte — Die Tat bleibt ───────────
-    // S1 misst am Messort wiese (Third, Neigung −0,5) wie speicher.K4#2: 50 Steine des Bau-Modus (`_naturSetzen`, Text-id `_newArchId`)
-    // und 50 Gruben (`carveVoxel` r 1 m) vor dem Spieler, Bild A und das Rauschen A2 (Ausgabe 320 × 180, Bühne), der Stand fest
-    // (`saveState` + `__stand`), /reload im warmen Browser der Sitzung, derselbe Ort, Bild B: diff = Anteil Pixel |ΔLuma| > 8; der
-    // Pflicht-Inhalt jede Tat im Stand (≤ 0,5 m) UND im Blick, vor und nach dem Laden. S2–S8 zählen Taten, Peers, Saaten, Versionen.
+    // S1 trägt bestehend speicher.K4#2 (Tafel „gleich“, gebuchte Akten; Richter-Falte 19.11.: der Zwilling dieser Probe — Bildpaar
+    // vor ↔ nach Reload — fiel). S2–S8 zählen Taten, Peers, Saaten, Versionen.
     LEITERN.push(
         leiter({
             leiter: "same.entfaltung.akte",
             sek: 60,
-            mutiert: true,
             pfad: [
                 "scripts/werkbank.cjs",
                 "spec/profiband/haushalt.json",
@@ -940,11 +937,8 @@ LEITERN.push(
                 { wort: "taten_gesetzt", ab: 100, was: "Taten, die der Spieler in diesem Lauf setzte (Bauten + Edits der Welt)" },
                 { wort: "neue_seite", ab: 1, was: "die Seite lud neu (performance.timeOrigin vor ↔ nach)" },
             ],
+            bestehend: [1],
             sprossen: {
-                1: {
-                    soll: [{ wort: "diff_pct", richtung: "≤", wert: 1, wortlaut: "Bildpaar vor ↔ nach Reload ≤ 1 % Diff mit Pflicht-Inhalt, beide Geräte", feld: "richter" }],
-                    umfang: { verlangt: 100, einheit: "Taten sichtbar an ihrem Ort vor und nach dem Reload", wortlaut: "10² Taten einer Sitzung", feld: "umfang" },
-                },
                 2: {
                     soll: [
                         { wort: "diff_pct", richtung: "≤", wert: 1, wortlaut: "Bildpaar ≤ 1 %", feld: "richter" },
@@ -987,64 +981,6 @@ LEITERN.push(
                     umfang: { verlangt: 10000, einheit: "zufällige Taten", wortlaut: "10 000 zufällige Taten", feld: "richter" },
                 },
             },
-            seite: {
-                // DIE TATEN UND IHR BILD (in der Seite, r = die Welt) — wie speicherBildSeite (stationen/g6.js speicher.K4#2): o.setzen
-                // setzt o.steine Steine des Bau-Modus und o.gruben Gruben auf dem Raster vor dem Spieler; danach (und mit o.plan) der Blick
-                // Third −0,5, die stehende Welt, die Bühne, das Ausgabe-Bild 320 × 180 und je Tat: im Stand an ihrem Ort UND im Blick
-                akteBild: async function akteBild(r, T, o) {
-                    const st = r.state, p = st.playerMesh.position;
-                    const ort = (vor, quer) => [p.x + Math.sin(st.yaw) * vor - Math.cos(st.yaw) * quer, p.z + Math.cos(st.yaw) * vor + Math.sin(st.yaw) * quer];
-                    const zahl = () => st.architectures.length + (st.worldMeta.voxelEdits || []).length;
-                    const vorher = zahl();
-                    let plan = o.plan || null;
-                    if (o.setzen) {
-                        const quer = (n, w) => Array.from({ length: n }, (_, i) => -w + (2 * w * i) / (n - 1));
-                        const mitte = (u, w) => Math.abs(u[1]) - Math.abs(w[1]) || u[0] - w[0];
-                        const steinRaster = [3, 4.1, 5.2, 6.3].flatMap((v) => quer(18, 10.2).map((q) => [v, q])).sort(mitte).map(([v, q]) => ort(v, q));
-                        const wand = steinRaster.map(([x, z]) => r._naturWand("stein_block", { x, y: r._terrainMacroSurfaceY(x, z), z }, {}));
-                        const frei = steinRaster.filter((_, i) => !wand[i]);
-                        if (frei.length < o.steine)
-                            throw new Error("der Bau-Modus setzt Steine nur an " + frei.length + " von " + steinRaster.length + " Plätzen vor dem Spieler (Soll " + o.steine + "): " + [...new Set(wand.filter((x) => x))].slice(0, 3).join(", "));
-                        const gruben = [7.5, 9, 10.5].flatMap((v) => quer(17, 10).map((q) => [v, q])).sort(mitte).slice(0, o.gruben).map(([v, q]) => ort(v, q));
-                        plan = { steine: frei.slice(0, o.steine), gruben };
-                        for (const g of plan.gruben) r.carveVoxel(g[0], r._voxelSurfaceY(g[0], g[1]), g[1], 1);
-                        for (const b of plan.steine) {
-                            const pos = { x: b[0], y: r._terrainMacroSurfaceY(b[0], b[1]), z: b[1] };
-                            const setze = () => r.spawnArchitecture("stein_block", pos, { id: r._newArchId(), rotationY: st.yaw });
-                            let w = null;
-                            const steht = r._istNatur({ type: "stein_block" }) ? r._naturSetzen("stein_block", pos, {}, setze, (wo) => (w = wo)) : setze();
-                            if (!steht) throw new Error("der Bau-Modus setzt den Stein nicht bei " + pos.x.toFixed(1) + "/" + pos.z.toFixed(1) + ": " + (w || "spawnArchitecture null"));
-                        }
-                    }
-                    if (!plan || !plan.steine || !plan.gruben) throw new Error("kein Plan der Taten für das Bild");
-                    if (st.cameraMode !== "third") r.setCameraMode("third");
-                    st.pitch = -0.5;
-                    await window.__weltStehtNach();
-                    window.__buehne();
-                    r._loopCamera(performance.now());
-                    const blick = (l, [x, z]) => {
-                        const v = new T.Vector3(x, r._voxelSurfaceY(x, z) + 0.3, z).project(st.camera);
-                        return l.some((e) => Math.hypot((e.position || e).x - x, (e.position || e).z - z) < 0.5) && Math.max(Math.abs(v.x), Math.abs(v.y), v.z) < 1;
-                    };
-                    const { u8 } = await window.__ausgabeAufnahme(320, 180);
-                    const c = new OffscreenCanvas(320, 180);
-                    c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(u8), 320, 180), 0, 0);
-                    const b64 = (a) => {
-                        let s = "";
-                        for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000));
-                        return btoa(s);
-                    };
-                    return {
-                        u8: b64(Uint8Array.from(u8)),
-                        png: b64(new Uint8Array(await (await c.convertToBlob()).arrayBuffer())),
-                        pflicht: { bau: plan.steine.filter((b) => blick(st.architectures, b)).length, grube: plan.gruben.filter((g) => blick(st.worldMeta.voxelEdits || [], g)).length, soll: plan.steine.length + plan.gruben.length },
-                        plan,
-                        gesetzt: zahl() - vorher,
-                        kamera: st.camera.position.toArray().map((v) => +v.toFixed(3)),
-                        seite: performance.timeOrigin,
-                    };
-                },
-            },
             lauf: async function akteLauf(H, P, L) {
                 // ZUERST DER UMFANG (billig): Taten des Spielers in der Sitzung, Peers, Saat, Version, KI-Bewohner
                 const w = await L.ev(
@@ -1067,39 +1003,6 @@ LEITERN.push(
                 await L.je(6, async () => L.umfang(6, w.menschen, "die Welt trägt " + w.menschen + " KI-Bewohner auf einem Planeten"));
                 await L.je(7, async () => L.umfang(7, new Set([String(w.version)]).size, "die Sitzung lädt eine Gesetzes-Version (" + w.version + ") — kein Korpus der Stände über Versionen"));
                 await L.je(8, async () => L.umfang(8, taten, "die Sitzung trägt " + taten + " Taten an einem Planeten — keine Galaxie"));
-                // S1 · 10² Taten, der Stand, das Neuladen, dasselbe Bild
-                await L.je(1, async () => {
-                    await L.ort("wiese", "third");
-                    L.preisPose("wiese", "third");
-                    if (H.rest() < 25) throw new Error("die Frist trägt den Rundlauf nicht mehr: " + Math.round(H.rest()) + " s Rest nach dem Ort");
-                    const bild = (o, s) => L.ev("return await (" + H.seite.akteBild + ")(r, T, " + JSON.stringify(o) + ");", s);
-                    const A = await bild({ setzen: true, steine: 50, gruben: 50 }, 60);
-                    const A2 = await bild({ setzen: false, plan: A.plan }, 30);
-                    const standB = await L.ev("r.saveState(); return new TextEncoder().encode(await window.__stand()).length;", 30);
-                    const neu = await L.wb("/reload", {}, 120);
-                    if (!neu || neu.neu !== true) throw new Error("/reload: " + JSON.stringify(neu).slice(0, 160));
-                    await L.ort("wiese", "third");
-                    const B = await bild({ setzen: false, plan: A.plan }, 60);
-                    const [a, a2, b] = [A, A2, B].map((x) => Buffer.from(x.u8, "base64"));
-                    const Y = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
-                    let diff = 0, rauschen = 0;
-                    for (let i = 0; i < a.length; i += 4) {
-                        if (Math.abs(Y(a, i) - Y(b, i)) > 8) diff += 400 / a.length;
-                        if (Math.abs(Y(a, i) - Y(a2, i)) > 8) rauschen += 400 / a.length;
-                    }
-                    const fs = require("fs"), path = require("path");
-                    fs.mkdirSync(L.D, { recursive: true });
-                    for (const [k, x] of [["vor", A], ["vor2", A2], ["nach", B]]) fs.writeFileSync(path.join(L.D, P.leiter + "-S1-" + k + ".png"), Buffer.from(x.png, "base64"));
-                    const sichtbar = Math.min(A.pflicht.bau + A.pflicht.grube, B.pflicht.bau + B.pflicht.grube);
-                    const kamM = Math.hypot(...A.kamera.map((v, i) => v - B.kamera[i]));
-                    L.zeile("Rundlauf: diff " + diff.toFixed(2) + " %, Rauschen " + rauschen.toFixed(2) + " %, Pflicht vor " + JSON.stringify(A.pflicht) + " nach " + JSON.stringify(B.pflicht) + ", Kamera Δ " + kamM.toFixed(3) + " m, Stand " + standB + " B");
-                    L.gemessen(1, { diff_pct: +diff.toFixed(3) }, {
-                        erzeugt: sichtbar,
-                        welt: { taten_gesetzt: A.gesetzt, neue_seite: A.seite !== B.seite ? 1 : 0 },
-                        taeter: "Bildpaar vor ↔ nach Reload " + diff.toFixed(2) + " % (Rauschen ohne Reload " + rauschen.toFixed(2) + " %), sichtbar vor " + (A.pflicht.bau + A.pflicht.grube) + " / nach " + (B.pflicht.bau + B.pflicht.grube) + " von " + A.pflicht.soll + ", Kamera Δ " + kamM.toFixed(3) + " m",
-                        beleg: { bilder: [P.leiter + "-S1-vor.png", P.leiter + "-S1-vor2.png", P.leiter + "-S1-nach.png"], standBytes: standB },
-                    });
-                });
             },
         })
     );

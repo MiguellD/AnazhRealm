@@ -590,15 +590,13 @@ function rechne(karte, akten, kern0, kopf) {
     return { heute: H, kern: K, beide, nachwache, sprossen: karte.summe.sprossen, anteil: karte.summe.anteilHeute, stand, bericht };
 }
 
-// DIE TAFEL-ZEILEN DER RICHTER-FABRIK (19.11., richter-mensch): `vision/richter/zeilen-<kapitel>.json` trägt neue Zeilen der Tafel, die
-// der Koordinator einfaltet — keine Akte. Vorher BRUCH „Akte „zeilen-mensch“: Name muss <leiter-id>.<sprosse>… sein“ an jedem Lauf;
-// jeder andere Name, der keine Akte ist, bricht weiter laut (rechne, AKTEN_NAME)
-const TAFEL_ZEILEN = /^zeilen-[a-z]+\.json$/;
+// in vision/richter/ liegen nur Akten: die Tafel-Zeilen der Richter-Fabrik (zeilen-<kapitel>.json) stehen seit der Richter-Falte (19.11.)
+// in vision/richter-tafel.json — jeder andere Name bricht laut (rechne, AKTEN_NAME)
 function aktenLesen(dir) {
     const akten = {};
     if (!fs.existsSync(dir)) return akten;
     for (const n of fs.readdirSync(dir).sort()) {
-        if (!n.endsWith(".json") || TAFEL_ZEILEN.test(n)) continue;
+        if (!n.endsWith(".json")) continue;
         let inhalt;
         try {
             inhalt = JSON.parse(fs.readFileSync(path.join(dir, n), "utf8"));
@@ -1068,14 +1066,11 @@ function selbsttest() {
             return /leben.pflanzen.kraft: Tafel 2/.test(e.message) ? true : e.message;
         }
     });
-    pruefe("die Tafel-Zeilen der Richter-Fabrik (zeilen-<kapitel>.json) sind keine Akte; ein anderer Nicht-Akten-Name bricht laut", () => {
+    pruefe("ein Nicht-Akten-Name in vision/richter/ bricht laut (die Tafel-Zeilen der Richter-Fabrik stehen in der Tafel, nie dort)", () => {
         const t = fs.mkdtempSync(path.join(require("os").tmpdir(), "buche-2-zeilen-"));
         try {
             fs.writeFileSync(path.join(t, "zeilen-mensch.json"), JSON.stringify({ lesart: "x", zeilen: [] }));
-            const still = Object.keys(aktenLesen(t)).length === 0;
-            fs.writeFileSync(path.join(t, "notiz.json"), "{}");
-            const laut = bricht(aktenLesen(t), /Akte „notiz“: Name muss/);
-            return still && laut === true ? true : JSON.stringify({ still, laut });
+            return bricht(aktenLesen(t), /Akte „zeilen-mensch“: Name muss/);
         } finally {
             fs.rmSync(t, { recursive: true, force: true });
         }
