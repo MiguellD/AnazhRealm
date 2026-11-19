@@ -866,16 +866,7 @@ class AnazhRealm_stoff_material {
         // Farbe = opts.color. NUR der glimmen-Anteil (emissiv − 0.5-Floor) — mit PBR-Skala ließe der Floor
         // jeden Stein glühen.
         const _glimmen = Math.max(0, (Number(responseProfile.emissiv) || 0) - 0.5);
-        if (opts.leuchtdichte > 0 && mat.emissive && opts.color !== undefined) {
-            // EIN STRAHLER BEI SEINER LEUCHTDICHTE (licht-eine-skala, die Daten-Leser): ein Teil, das `leuchtdichte` trägt (cd/m²,
-            // aus der EINEN Quelle — die Glut der Esse: fachwerk `glutLeuchtdichte` bei `ESSE.feuerK`), leuchtet in seiner Farbe
-            // auf Luma 1 (`_lichtLinear`, die EINE Norm der Lichtfarbe) × Leuchtdichte ÷ `EINHEIT_LX` — kein Glimmen, kein Boost.
-            // Bis hier trug das Glutbett der Esse das Glimmen × `emissiveBoost` 1,5/1,7 (≤ 1,7 cd/m², das 10⁻⁴-Fache seines Feuers).
-            emissiveColor = opts.color;
-            this._lichtLinear({ farbe: emissiveColor }, mat.emissive);
-            emissiveIntensity = opts.leuchtdichte / __weltLicht.EINHEIT_LX;
-            mat.emissiveIntensity = emissiveIntensity;
-        } else if (_glimmen > 0.01 && mat.emissive && opts.color !== undefined) {
+        if (_glimmen > 0.01 && mat.emissive && opts.color !== undefined) {
             emissiveColor = opts.color;
             mat.emissive.setHex(emissiveColor);
             // Per-Variante-Glanz: ein Genom reicht `emissiveBoost` durch; er SKALIERT nur das tag-getragene

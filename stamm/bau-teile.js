@@ -1767,13 +1767,11 @@ class AnazhRealm_bau_teile {
             P.push({ shape, material, position: { x, y, z }, size: { x: sx, y: sy, z: sz }, ...(extra || {}) });
         // (1) Feuerbox — der breite Herd (steht).
         add("box", bodyMat, 0, 0.55, 0, 2.0, 1.1, 1.6, { color: stoneCol });
-        // (2) Kohlen-Bett — die glühende Glut (latheProfile-Schale): ein schwarzer Körper beim Feuer der Esse (`ESSE.feuerK`, dieselbe
-        // Temperatur, gegen die der Stahl in der Hand strebt), seine Leuchtdichte aus der EINEN Quelle (fachwerk `glutLeuchtdichte`,
-        // cd/m²) — Basis- und Meister-Esse brennen im selben Feuer. Bis hier `emissiveBoost` 1,5/1,7 auf dem Glimmen (≤ 1,7 cd/m²).
+        // (2) Kohlen-Bett — die glühende Glut (latheProfile-Schale, emissiv).
         add("latheProfile", "glut", 0, 1.18, 0, 1.4, 0.5, 1.2, {
             color: 0xff7a2a,
             opacity: 0.88,
-            leuchtdichte: globalThis.__fachwerkCore.glutLeuchtdichte(AnazhRealm.ESSE.feuerK),
+            emissiveBoost: opts.master ? 1.7 : 1.5,
             profile: [
                 [0, 0],
                 [0.85, 0.05],
@@ -2191,7 +2189,6 @@ class AnazhRealm_bau_teile {
             // T3 — der per-Teil GLANZ-Boost (Kristall/Glut-Genom): skaliert den tag-getragenen
             // Emissiv-Glimmen je Variante (tag-neutral; das SEIN bleibt der Material-Tag).
             if (Number.isFinite(part.emissiveBoost)) matOpts.emissiveBoost = part.emissiveBoost;
-            if (part.leuchtdichte > 0) matOpts.leuchtdichte = part.leuchtdichte; // ein Strahler bei seiner Leuchtdichte (cd/m²)
             if (Number.isFinite(part.opacity) && part.opacity < 1) {
                 matOpts.transparent = true;
                 matOpts.opacity = part.opacity;
