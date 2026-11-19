@@ -95,4 +95,3 @@ ca9fb9938a0b029363489c4515a8926abb7cdde0 nicht-langsamer w28-horizont-gtx-abab
 a576a954d09f4324c1f8cb56de4f29fb6012b5b4 nicht-langsamer w28-putz-wand-abab
 05f2ba5f9d9aa2ee78b9d3724b5f0fa0550643ee nicht-langsamer w28-putz-wand-abab
 3c8dce7974b2aac836b1fbe929292422efdcc43d nicht-langsamer w28-putz-wand-abab
-00f9064aa897745c94887ed1b9aa145dc80d3f43 LANGSAMER radeon Kalt-Ankunft bis Weltbild, ABAB V Z N je 3 kalte Boots (V = 6113b27e, Z = 56777f23 = w28-laub-kante-2): Genesis 11,46 / 13,72 / 9,45 s -> 15,83 / 28,51 / 18,70 s (+9,5 s im Mittel), Wiese 7,83 / 10,62 / 7,26 -> 10,21 / 12,24 / 10,84 s (+2,5 s) — der Lichtmesser wartet unter dem Ladeschirm auf stehendes Licht; Stempel zurueckgezogen (Koordinator 19.11. 16:23)
