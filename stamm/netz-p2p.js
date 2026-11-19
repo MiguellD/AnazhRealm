@@ -2256,7 +2256,12 @@ class AnazhRealm_netz_p2p {
         // V12.0-vendor.3 — Canvas-Inhalt ist sRGB-encoded (fillStyle="#xxx").
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.needsUpdate = true;
-        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false });
+        // DAS SCHILD IST ERSCHEINUNG (licht-eine-skala, der neunte Name): seine Karte ist ein BILDWERT (sRGB des Canvas, kein
+        // Datum einer Quelle) — es steht im Maß des Auges, Bildwert ÷ k über die EINE Stelle (`_erscheinungStoff`). Bis hier
+        // trug es seine Karte roh in die EINE Skala: die Schrift #f0e6d2 Luma 0,80 Einheiten (12 830 cd/m²) × k — nachts weiß gebrannt.
+        const mat = this._erscheinungStoff(
+            new THREE.SpriteNodeMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false })
+        );
         const sprite = new THREE.Sprite(mat);
         sprite.name = "p2p-namensschild";
         sprite.scale.set(2.6, hasFp ? 0.98 : 0.65, 1);

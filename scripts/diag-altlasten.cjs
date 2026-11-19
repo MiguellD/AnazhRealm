@@ -1551,10 +1551,12 @@ function scanAbsenzErbe(srcRoh, liste = METHODEN_OHNE) {
 // `_vorBelichtung().k | .kBild` im Teiler — auch über einen Namen dafür: eine Variable, das Vor-Belichtungs-Objekt, den
 // Parameter eines Glieds, das ein Rufer mit der Belichtung füllt), steht in `BELICHTUNG_TEILER` mit seinem Grund; jeder
 // weitere ist ROT. Gelesen am AST (acorn über `stammLib.glieder`, Lehre 6): Kommentare tragen keinen Knoten.
-// (Z1) DIE KLASSE HAT GENAU ACHT NAMEN (Entscheid des Koordinators, licht-eine-skala): die Vereinigung der Namen aller
-// Ruf-Stellen ist genau `ERSCHEINUNG_KLASSE`. (Z2) DER REST OHNE GESETZ ist genau EINER: das Tierauge (tetrapoda-core
+// (Z1) DIE KLASSE HAT GENAU NEUN NAMEN (Entscheid des Koordinators, licht-eine-skala): die Vereinigung der Namen aller
+// Ruf-Stellen ist genau `ERSCHEINUNG_KLASSE`. KORREKTUR (die Daten-Leser): bis hier „genau acht" — das Namensschild eines
+// Mitspielers (netz-p2p `_p2pBuildNameLabel`, eine Canvas-Karte, Bildwert) trug seine Karte roh in die EINE Skala; es ist
+// der neunte Name, kein weiterer. (Z2) DER REST OHNE GESETZ ist genau EINER: das Tierauge (tetrapoda-core
 // Seh-Klasse `auge`; physisch Rückstrahl, kein Strahler) — es läuft durch `_erscheinung`, ist aber kein Mitglied.
-const ERSCHEINUNG_KLASSE = ["Membran-Zielbild", "Filigran", "Saum", "Scheibe", "Rahmen-Glut", "Tor-Beschläge", "Kreatur-Aura", "Platzhalter eines Mitspielers"];
+const ERSCHEINUNG_KLASSE = ["Membran-Zielbild", "Filigran", "Saum", "Scheibe", "Rahmen-Glut", "Tor-Beschläge", "Kreatur-Aura", "Platzhalter eines Mitspielers", "Namensschild eines Mitspielers"];
 const ERSCHEINUNG_REST = ["Tierauge"];
 // je Ruf-Stelle: [Glied, gerufener Name, Zahl der Rufe, die Stelle, ihre Namen der Klasse, ihr Rest ohne Gesetz] — die Rufe
 // eines Glieds zählen über seine Stellen zusammen
@@ -1567,13 +1569,16 @@ const ERSCHEINUNG_MITGLIEDER = [
     ["_refreshCreatureTaskAura", "_erscheinungStoff", 1, "kreatur-verhalten.js — die Aura der Aufgabe einer Kreatur", ["Kreatur-Aura"], []],
     ["_refreshCreatureCarryingVisual", "_erscheinungStoff", 1, "kreatur-verhalten.js — die Aura der tragenden Kreatur", ["Kreatur-Aura"], []],
     ["_p2pBuildPlaceholderMesh", "_erscheinungStoff", 2, "netz-p2p.js — der Platzhalter eines Mitspielers (Leib, Kopf)", ["Platzhalter eines Mitspielers"], []],
+    ["_p2pBuildNameLabel", "_erscheinungStoff", 1, "netz-p2p.js — das Namensschild eines Mitspielers (Canvas-Karte)", ["Namensschild eines Mitspielers"], []],
 ];
 const BELICHTUNG_TEILER = [
     ["_erscheinung", 1, "bild-kosten.js — der EINE Mechanismus der Klasse Erscheinung: Bildwert ÷ k, vor dem Auge der Nacht"],
     ["_nachtAuge", 1, "bild-kosten.js — das Auge der Nacht liest die LEUCHTDICHTE des vor-belichteten Bilds (L × k ÷ k) an seiner Stäbchen-Schwelle"],
-    ["_ensurePostProcessing", 1, "bild-kosten.js — das Ende der Post-Kette nimmt die Vor-Belichtung zurück (÷ k), die Tonkurve des Renderers belichtet"],
+    // KORREKTUR (die Daten-Leser): seit a3663ef5f teilt die Kette dreimal, die Zeile nannte 1 — die Wand stand ROT am Kopf
+    ["_ensurePostProcessing", 3, "bild-kosten.js — das Ende der Post-Kette nimmt die Vor-Belichtung zurück (÷ k) an BEIDEN Ausgaben (aus · farbsicht), die Tonkurve des Renderers belichtet; die Differenz des lokalen Kontrasts steht in L (÷ k), sonst wüchse ihr Term mit k²"],
     ["_rueckstrahlPass", 1, "bild-schatten.js — der Rückstrahl liest das Szenen-Ziel als Strahldichte zurück, ÷ das k seines Schreibens (kBild)"],
-    ["_spiegelPass", 1, "bild-sicht.js — der Spiegel-Pass liest das Szenen-Ziel als Strahldichte zurück, ÷ kBild"],
+    // KORREKTUR (die Daten-Leser): seit a3663ef5f liest der Spiegel zweimal zurück, die Zeile nannte 1 — die Wand stand ROT am Kopf
+    ["_spiegelPass", 2, "bild-sicht.js — der Spiegel-Pass liest das Szenen-Ziel als Strahldichte zurück, ÷ kBild: am Treffer (vier Abgriffe) und am Himmel des Bilds"],
     ["_augenLichtStaerke", 1, "bild-himmel.js — das Licht des Auges eicht die 18-%-Karte der Höhle bei der Belichtung k auf Mittelgrau (das Auge adaptiert wie die Kamera)"],
 ];
 const BELICHTUNG_TERM = /\btoneMappingExposure\b|_vorBelichtung\(\)\s*\.\s*k(?:Bild)?\b/;
@@ -3825,8 +3830,8 @@ function main() {
             name: scanErscheinungsWand(amLicht("\n        const kk = this.state.renderer.toneMappingExposure;\n        const w = 1 / kk;")),
             kommentar: scanErscheinungsWand(amLicht("\n        // this._erscheinung(x); farbe.div(this._vorBelichtung().k)")),
             tot: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.concat([["_gibtEsNicht", "_erscheinung", 1, "Selbsttest"]])),
-            // (Z1) ein neunter Name an einer Stelle · (Z2) ein zweiter Rest ohne Gesetz
-            neunter: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.map((m) => (m[0] === "_membranGraph" ? [...m.slice(0, 4), [...m[4], "Laternen-Kopf"], m[5]] : m))), // prettier-ignore
+            // (Z1) ein zehnter Name an einer Stelle · (Z2) ein zweiter Rest ohne Gesetz
+            zehnter: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.map((m) => (m[0] === "_membranGraph" ? [...m.slice(0, 4), [...m[4], "Laternen-Kopf"], m[5]] : m))), // prettier-ignore
             zweiterRest: scanErscheinungsWand(stamm, ERSCHEINUNG_MITGLIEDER.map((m) => (m[3].includes("Bau-Satz") ? [...m.slice(0, 5), ["Funken"]] : m))), // prettier-ignore
         };
         const einer = (e, rx) => e.length === 1 && rx.test(e[0]);
@@ -3837,11 +3842,11 @@ function main() {
             einer(erscheinung.name, /^Belichtungs-Teiler: stamm\/dirigent-kern\.js:\d+ `_flammenLicht` teilt die Belichtung heraus \(`1 \/ kk`\)/) &&
             erscheinung.kommentar.length === 0 &&
             einer(erscheinung.tot, /tote Zeile `_gibtEsNicht` → `_erscheinung`/) &&
-            einer(erscheinung.neunter, /^Klasse Erscheinung \(Z1\): „Laternen-Kopf" an `_membranGraph`/) &&
+            einer(erscheinung.zehnter, /^Klasse Erscheinung \(Z1\): „Laternen-Kopf" an `_membranGraph`/) &&
             einer(erscheinung.zweiterRest, /^Klasse Erscheinung \(Z2\): der Rest ohne Gesetz ist 2 \(Tierauge · Funken\)/);
         console.log(
             erscheinungFeuert
-                ? `✅ SELBST-TEST: die Wand der Klasse Erscheinung feuert (fremder Rufer · fremder Teiler · Teiler über einen Namen · tote Zeile · neunter Name · zweiter Rest, je beim Glied; der Kommentar still; heute 0: Erscheinung ${ERSCHEINUNG_KLASSE.length} Namen · Rest ohne Gesetz ${ERSCHEINUNG_REST.length} (${ERSCHEINUNG_REST.join(", ")}) · ${BELICHTUNG_TEILER.length} Belichtungs-Teiler) — ${erscheinung.rufer[0]} · ${erscheinung.teiler[0]} · ${erscheinung.neunter[0]} · ${erscheinung.zweiterRest[0]}`
+                ? `✅ SELBST-TEST: die Wand der Klasse Erscheinung feuert (fremder Rufer · fremder Teiler · Teiler über einen Namen · tote Zeile · zehnter Name · zweiter Rest, je beim Glied; der Kommentar still; heute 0: Erscheinung ${ERSCHEINUNG_KLASSE.length} Namen · Rest ohne Gesetz ${ERSCHEINUNG_REST.length} (${ERSCHEINUNG_REST.join(", ")}) · ${BELICHTUNG_TEILER.length} Belichtungs-Teiler) — ${erscheinung.rufer[0]} · ${erscheinung.teiler[0]} · ${erscheinung.zehnter[0]} · ${erscheinung.zweiterRest[0]}`
                 : `❌ SELBST-TEST: die Wand der Klasse Erscheinung feuert nicht — ${JSON.stringify(erscheinung).slice(0, 900)}`
         );
         if (!erscheinungFeuert) process.exit(1);
