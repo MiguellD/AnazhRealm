@@ -1,0 +1,3727 @@
+{
+ "lesart": "Die Zeilen der Leiter-Richter der Kapitel planet, leben und zusammenspiel (stationen/k2-planet.js, k2-leben.js, k2-zusammenspiel.js), im Format von vision/richter-tafel.json — der Koordinator faltet sie in die Tafel. „gleich“: die Station urteilt den ganzen Richter der Sprosse (auch das ROT „Umfang nicht erzeugbar“ ist ein Urteil). „fehlt“: eine Sprosse mit Auge — die Station schießt das Bild an der festen Pose, das Blindpaar urteilt am Gerät. Ersetzt 1 Zeile(n) der Tafel: planet.kopplung.wetter-welt S3: „fehlt“ an wetter.K2#2 (Pfützen in Senken r ≥ 0,5 misst nur headless; der Gegenlauf (R7: Regen gekappt → trocken) fehlt im Lauf) → „gleich“ an karte2.planet.kopplung.wetter-welt#3.",
+ "zeilen": [
+  {
+   "station": "karte2.planet.geologie.gebirge#1",
+   "leiter": "planet.geologie.gebirge",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego 45 m über dem Spawn vor der nächsten Felswand, Blick auf sie · Vorbild Fotos von Felswänden in Faltengebirgen und Kratonen (Feldfotos je Gestein), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.gebirge#2",
+   "leiter": "planet.geologie.gebirge",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.gebirge#3",
+   "leiter": "planet.geologie.gebirge",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.gebirge#4",
+   "leiter": "planet.geologie.gebirge",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Bruchstufe nach M7 (heute nicht erzeugbar) · Vorbild Feldfotos von Bruchstufen (Landers 1992, Kaikōura 2016), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.gebirge#5",
+   "leiter": "planet.geologie.gebirge",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.gebirge#6",
+   "leiter": "planet.geologie.gebirge",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.gebirge#7",
+   "leiter": "planet.geologie.gebirge",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#1",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Überflug 1 800 m über dem Spawn, Blick nach Norden (die Schummerung der Region) · Vorbild Schummerung einer realen Gebirgsregion 10⁴ km² (Copernicus DEM), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#2",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#3",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit 100 km über der Kugel (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn) · Vorbild Relief-Globus des Monds (LRO LOLA), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#4",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#5",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#6",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#7",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über der Erd-Saat an 10 Stichzeiten (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn) · Vorbild PALEOMAP-Paläokarten (Scotese) zu Rodinia, Pannotia, Pangäa und heute, Fach-Panel R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#8",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 8,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbitbild je Saat (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn) · Vorbild Ursachen-Probe R10: ein eingefrorener Leser sagt Wärmefluss und Alter aus dem Orbitbild voraus — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.platten#9",
+   "leiter": "planet.geologie.platten",
+   "sprosse": 9,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbitbild je Saat (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn) · Vorbild Ursachen-Probe R10 über Erd-, Deckel-, Venus-, Io- und Eiswelten — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.vulkan#1",
+   "leiter": "planet.geologie.vulkan",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Spawn, Blick auf den Boden (am Gerät: eine Lava-Tat an ihrer Zelle) · Vorbild Lava-Fotos (Kīlauea, USGS HVO), 2AFC ≤ 85 %, Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.vulkan#2",
+   "leiter": "planet.geologie.vulkan",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Hang, ein Strom 1 km (heute nicht erzeugbar) · Vorbild Ausbruchsfilm eines Lavastroms (USGS HVO), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.vulkan#3",
+   "leiter": "planet.geologie.vulkan",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.vulkan#4",
+   "leiter": "planet.geologie.vulkan",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego auf dem neuen Land nach dem Ausbruch (heute nicht erzeugbar) · Vorbild Fotos von Pāhoehoe und ʻAʻā (USGS HVO), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.vulkan#5",
+   "leiter": "planet.geologie.vulkan",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.vulkan#6",
+   "leiter": "planet.geologie.vulkan",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.vulkan#7",
+   "leiter": "planet.geologie.vulkan",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbitbild der Vulkanlandschaft je Saat (heute nicht erzeugbar) · Vorbild Ursachen-Probe R10 (Io, Venus, Mars: Sondenfotos) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.unterwelt#1",
+   "leiter": "planet.geologie.unterwelt",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego vor der nächsten Mündung am Spawn (1 km²), Blick in den Mund · Vorbild Fotos natürlicher Höhlen-Mündungen im Fels (Feldfotos je Form), Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.unterwelt#2",
+   "leiter": "planet.geologie.unterwelt",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Überflug über ein Karstfeld (heute nicht erzeugbar; geschossen über dem Spawn) · Vorbild Karstfeld-Fotos (Dinarischer Karst, Feldfotos je Form), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.unterwelt#3",
+   "leiter": "planet.geologie.unterwelt",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.unterwelt#4",
+   "leiter": "planet.geologie.unterwelt",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.unterwelt#5",
+   "leiter": "planet.geologie.unterwelt",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego in einer Halle 10⁷ m³ (heute nicht erzeugbar; geschossen über dem Spawn) · Vorbild Fotos von Son Doong und Mammoth Cave, Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.unterwelt#6",
+   "leiter": "planet.geologie.unterwelt",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.lagerstaette#1",
+   "leiter": "planet.geologie.lagerstaette",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego 45 m über dem Spawn vor der nächsten Felswand · Vorbild Feldfotos magmatischer, sedimentärer und metamorpher Wände (Jury, Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.lagerstaette#2",
+   "leiter": "planet.geologie.lagerstaette",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Karte der Region 10⁴ km² (heute nicht erzeugbar; geschossen über dem Spawn) · Vorbild geologische Karte einer realen Region (BGR GÜK 250), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.lagerstaette#3",
+   "leiter": "planet.geologie.lagerstaette",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.lagerstaette#4",
+   "leiter": "planet.geologie.lagerstaette",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Grube nach Abbau und Reload (heute: keine Lagerstätte) · Vorbild Fotos von Gruben, Halden und Bergsenkungen (Ruhrgebiet), Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.lagerstaette#5",
+   "leiter": "planet.geologie.lagerstaette",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Fundstufe in der Hand (heute nicht erzeugbar) · Vorbild Mineralfotos (mindat.org), Jury blind, Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.lagerstaette#6",
+   "leiter": "planet.geologie.lagerstaette",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.inneres#1",
+   "leiter": "planet.geologie.inneres",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.inneres#2",
+   "leiter": "planet.geologie.inneres",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.inneres#3",
+   "leiter": "planet.geologie.inneres",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.inneres#4",
+   "leiter": "planet.geologie.inneres",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.inneres#5",
+   "leiter": "planet.geologie.inneres",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.inneres#6",
+   "leiter": "planet.geologie.inneres",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbitbild je Saat (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn) · Vorbild Ursachen-Probe R10: Feldstärke aus Kern und Rotation (Sondenmessungen Merkur, Mars, Ganymed) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.einschlag#1",
+   "leiter": "planet.geologie.einschlag",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.einschlag#2",
+   "leiter": "planet.geologie.einschlag",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Kraterrand nach dem Einschlag (heute nicht erzeugbar; geschossen im Überflug über dem Spawn) · Vorbild Kraterfotos (Meteor Crater, Barringer), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.geologie.einschlag#3",
+   "leiter": "planet.geologie.einschlag",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.einschlag#4",
+   "leiter": "planet.geologie.einschlag",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.einschlag#5",
+   "leiter": "planet.geologie.einschlag",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.einschlag#6",
+   "leiter": "planet.geologie.einschlag",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.geologie.einschlag#7",
+   "leiter": "planet.geologie.einschlag",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.grossform#2",
+   "leiter": "planet.relief.grossform",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.grossform#3",
+   "leiter": "planet.relief.grossform",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.grossform#4",
+   "leiter": "planet.relief.grossform",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.grossform#5",
+   "leiter": "planet.relief.grossform",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Luftbild 2,1 km über dem Spawn, Blick nach Norden schräg nach unten · Vorbild Satellitenbild eines Kontinents gleichen Klimas (Blindpaar, Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.grossform#6",
+   "leiter": "planet.relief.grossform",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über dem Planeten (heute nicht erzeugbar; geschossen an der Wiese) · Vorbild Orbit-Mosaik der Erde (Blue Marble), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.grossform#7",
+   "leiter": "planet.relief.grossform",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.formschatz#1",
+   "leiter": "planet.relief.formschatz",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego 150 m vor der Schichtstufe der Heimat (gelaende-core schichtOrt), Blick auf die Treppe · Vorbild Fotos von V-Tal, Trogtal, Aue, Schichtstufe (Blind-Klassifikation, Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.formschatz#2",
+   "leiter": "planet.relief.formschatz",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego 8 m neben dem ersten nassen Lauf am Spawn · Vorbild Fotos der 10 Klassen und Ufer-Fotos (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.formschatz#3",
+   "leiter": "planet.relief.formschatz",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (die Formen der Küste und des Eises fehlen) · Vorbild 200 Fotos aus 20 Erd-Landschaften, Klasse aus Wellenenergie, Tidenhub, Sediment, Gefälle (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.formschatz#4",
+   "leiter": "planet.relief.formschatz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.formschatz#5",
+   "leiter": "planet.relief.formschatz",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego vor der Schichtstufe der Heimat · Vorbild Fotos derselben Landform in arid, humid, glazial (Foto-Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.formschatz#6",
+   "leiter": "planet.relief.formschatz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.formschatz#7",
+   "leiter": "planet.relief.formschatz",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am ersten nassen Lauf am Spawn · Vorbild Fotos von Gewässern und Landformen (Blindtest R11, 1 000 Posen aus 100 Saaten) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.formschatz#8",
+   "leiter": "planet.relief.formschatz",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.boden#1",
+   "leiter": "planet.relief.boden",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese, Blick auf den nächsten Hang · Vorbild Foto gleichen Hangs und Klimas (2AFC, Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.boden#2",
+   "leiter": "planet.relief.boden",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.boden#3",
+   "leiter": "planet.relief.boden",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.boden#4",
+   "leiter": "planet.relief.boden",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Anschnitt an der Wiese (heute: die Oberfläche, kein Graben) · Vorbild WRB-Referenzprofile (Blind-Klassierung R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.boden#5",
+   "leiter": "planet.relief.boden",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Anschnitt an der Wiese (heute: die Oberfläche) · Vorbild Referenzprofil-Fotos der 32 WRB-Gruppen (Munsell), Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.boden#6",
+   "leiter": "planet.relief.boden",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Anschnitt an der Wiese (heute: die Oberfläche) · Vorbild Mond-/Mars-Fotos des Regoliths (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.wandel#1",
+   "leiter": "planet.relief.wandel",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.wandel#2",
+   "leiter": "planet.relief.wandel",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.wandel#3",
+   "leiter": "planet.relief.wandel",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (der Lauf im Zeitraffer) · Vorbild Landsat-Zeitreihe eines Mäanders (Bildfolge, R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.relief.wandel#4",
+   "leiter": "planet.relief.wandel",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.wandel#5",
+   "leiter": "planet.relief.wandel",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.wandel#6",
+   "leiter": "planet.relief.wandel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.relief.wandel#7",
+   "leiter": "planet.relief.wandel",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (heute keine fremde Welt) · Vorbild Fremdwelt-Probe R10: Agens und Alter aus dem Bild gelesen — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.seegang#1",
+   "leiter": "planet.wasser.seegang",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.seegang#2",
+   "leiter": "planet.wasser.seegang",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.seegang#3",
+   "leiter": "planet.wasser.seegang",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Ufer der Bucht (~10,6 km nördlich des Spawns), Blick über die tiefste Stelle, Sturm · Vorbild 10 Fotos je Beaufort-Stufe 0–12 der offenen See (WMO-Bildtafel), Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.seegang#4",
+   "leiter": "planet.wasser.seegang",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.seegang#5",
+   "leiter": "planet.wasser.seegang",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.seegang#6",
+   "leiter": "planet.wasser.seegang",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.seegang#7",
+   "leiter": "planet.wasser.seegang",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Ufer der Bucht (~10,6 km nördlich des Spawns), Abend · Vorbild Küstenfotos zu Uhr und Wetter (Prüfer-Satz R11), 100 Posen aus 10 Saaten — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.seegang#8",
+   "leiter": "planet.wasser.seegang",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.gezeiten#1",
+   "leiter": "planet.wasser.gezeiten",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.gezeiten#2",
+   "leiter": "planet.wasser.gezeiten",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.gezeiten#3",
+   "leiter": "planet.wasser.gezeiten",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.gezeiten#4",
+   "leiter": "planet.wasser.gezeiten",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.gezeiten#5",
+   "leiter": "planet.wasser.gezeiten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.gezeiten#6",
+   "leiter": "planet.wasser.gezeiten",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.gezeiten#7",
+   "leiter": "planet.wasser.gezeiten",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose der Himmel über der Wiese bei Nacht (heute: ein Vollmond, kein Doppelmond) · Vorbild Bild der Gezeit eines Doppelmond-Planeten, Prüfer-Satz R11 (Fremdwelt-Probe R10) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.stroemung#2",
+   "leiter": "planet.wasser.stroemung",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.stroemung#3",
+   "leiter": "planet.wasser.stroemung",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.stroemung#4",
+   "leiter": "planet.wasser.stroemung",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.stroemung#5",
+   "leiter": "planet.wasser.stroemung",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.stroemung#6",
+   "leiter": "planet.wasser.stroemung",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.stroemung#7",
+   "leiter": "planet.wasser.stroemung",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.eis#1",
+   "leiter": "planet.wasser.eis",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.eis#2",
+   "leiter": "planet.wasser.eis",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.eis#3",
+   "leiter": "planet.wasser.eis",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Ufer der Bucht im Winter, Blick über die tiefste Stelle · Vorbild Foto einer Scholle im Packeis (Blindpaar, Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.eis#4",
+   "leiter": "planet.wasser.eis",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.eis#5",
+   "leiter": "planet.wasser.eis",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.eis#6",
+   "leiter": "planet.wasser.eis",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.eis#7",
+   "leiter": "planet.wasser.eis",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Wiese im Winter (kein Schneeball-Planet, kein Eismond in der Welt) · Vorbild Sondenfoto eines Eismonds (Europa, Galileo) im Blindpaar, Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.kreislauf#2",
+   "leiter": "planet.wasser.kreislauf",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.kreislauf#3",
+   "leiter": "planet.wasser.kreislauf",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Mess-Wiese (Werkbank /bild am Ort wiese), nach 60 Tagen ohne Regen · Vorbild Dürrefoto einer Frischwiese im Hochsommer (Blindpaar, Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.kreislauf#4",
+   "leiter": "planet.wasser.kreislauf",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.kreislauf#5",
+   "leiter": "planet.wasser.kreislauf",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.kreislauf#6",
+   "leiter": "planet.wasser.kreislauf",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.tiefsee#1",
+   "leiter": "planet.wasser.tiefsee",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.tiefsee#2",
+   "leiter": "planet.wasser.tiefsee",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose unter dem Spiegel der Bucht, 2 m tief, Blick waagrecht · Vorbild Taucherfotos im Küstenmeer 0–40 m (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.tiefsee#3",
+   "leiter": "planet.wasser.tiefsee",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.tiefsee#4",
+   "leiter": "planet.wasser.tiefsee",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wasser.tiefsee#5",
+   "leiter": "planet.wasser.tiefsee",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose 3 m über dem Grund der tiefsten Stelle der Bucht, Blick schräg auf den Boden · Vorbild Tiefsee-Fotos des Meeresbodens (Prüfer-Satz R11), 500 Posen aus 50 Saaten — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wasser.tiefsee#6",
+   "leiter": "planet.wasser.tiefsee",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.lagen#2",
+   "leiter": "planet.wetter.lagen",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.lagen#3",
+   "leiter": "planet.wetter.lagen",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Draufsicht 900 m über dem Spawn (die Kamera reicht wenige km — camera.far; 400 km nicht erzeugbar) · Vorbild Satellitenbilder eines Tiefs (EUMETSAT/GOES), Blindtest 20 Draufsichten ≤ 60 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.lagen#4",
+   "leiter": "planet.wetter.lagen",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.lagen#5",
+   "leiter": "planet.wetter.lagen",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.lagen#6",
+   "leiter": "planet.wetter.lagen",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese im Sturm (die Bühne setzt stormy) · Vorbild Sturmfotos einer Superzelle (NSSL-Archiv), Blindtest ≤ 60 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.lagen#7",
+   "leiter": "planet.wetter.lagen",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.wolken#1",
+   "leiter": "planet.wetter.wolken",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese, bewölkt, Zeitraffer der Schicht (Werkbank /bild am Ort) · Vorbild Zeitraffer-Film realer Schichtwolken (Stratocumulus), 2AFC ≤ 85 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.wolken#2",
+   "leiter": "planet.wetter.wolken",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese, Blick 30° über den Horizont, bewölkt · Vorbild Himmelsfotos mit drei Stockwerken (WMO-Wolkenatlas), Blindtest ≤ 70 %, Gattung ≥ 80 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.wolken#3",
+   "leiter": "planet.wetter.wolken",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.wolken#4",
+   "leiter": "planet.wetter.wolken",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.wolken#5",
+   "leiter": "planet.wetter.wolken",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.wolken#6",
+   "leiter": "planet.wetter.wolken",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.wolken#7",
+   "leiter": "planet.wetter.wolken",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese, bewölkt, Uhr 0,6 · Vorbild 100 Himmelsfotos (WMO-Wolkenatlas, alle Gattungen), Trefferquote ≤ 60 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.klimazonen#2",
+   "leiter": "planet.wetter.klimazonen",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese, Blick zum höchsten Grund, Mittag · Vorbild Foto eines Gebirges gleicher Breite (Pyrenäen/Alpen) mit Baum- und Schneegrenze — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.klimazonen#3",
+   "leiter": "planet.wetter.klimazonen",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.klimazonen#4",
+   "leiter": "planet.wetter.klimazonen",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese Mittag, Bildpaar Sommer/Winter (die Bühne setzt die Saison) · Vorbild Fotopaare Juli/Januar an 3 Breiten (Tromsø, München, Darwin) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.klimazonen#5",
+   "leiter": "planet.wetter.klimazonen",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.klimazonen#6",
+   "leiter": "planet.wetter.klimazonen",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über dem Planeten (heute nicht erzeugbar; geschossen an der Mess-Wiese) · Vorbild Blue-Marble-Mosaik (NASA 2004), Farbe je Breite — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.klimazonen#7",
+   "leiter": "planet.wetter.klimazonen",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese (die Reise an 50 Orte je Saat steht am Gerät aus) · Vorbild Prüfer-Satz R11: Widerspruch ja/nein an Bildern der Orte — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.extreme#1",
+   "leiter": "planet.wetter.extreme",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese, Bildpaar vor/nach dem Starkregen (die Bühne setzt stormy) · Vorbild Bildpaar eines Hochwassers über die Aue (Pegelfotos, z. B. Elbe 2002) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.extreme#2",
+   "leiter": "planet.wetter.extreme",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.extreme#3",
+   "leiter": "planet.wetter.extreme",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.extreme#4",
+   "leiter": "planet.wetter.extreme",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.extreme#5",
+   "leiter": "planet.wetter.extreme",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese im Sturm (der Sandsturm ist kein Wort der Welt) · Vorbild Fotos eines Haboob/Blizzard (NOAA), Blindtest ≤ 60 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.extreme#6",
+   "leiter": "planet.wetter.extreme",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese im Sturm (keine Megastadt, kein Hurrikan) · Vorbild Fotos eines Hurrikan-Landfalls in einer Großstadt, Blindtest ≤ 60 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.vorhersage#1",
+   "leiter": "planet.wetter.vorhersage",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.vorhersage#2",
+   "leiter": "planet.wetter.vorhersage",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese, Blick in den Himmel (bewölkt) · Vorbild Bildmodell, das NUR den Himmel sieht (Himmelsfotos mit Regen 12 h später), Skill ≥ 0,3 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.vorhersage#3",
+   "leiter": "planet.wetter.vorhersage",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.vorhersage#4",
+   "leiter": "planet.wetter.vorhersage",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.vorhersage#5",
+   "leiter": "planet.wetter.vorhersage",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.vorhersage#6",
+   "leiter": "planet.wetter.vorhersage",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#1",
+   "leiter": "planet.wetter.fremde-atmosphaeren",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese, Mittag und Abend (die Bühne setzt die Uhr) · Vorbild Himmelsfotos Mittag/Abend (klarer Tag, gemäßigte Breite) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#2",
+   "leiter": "planet.wetter.fremde-atmosphaeren",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#3",
+   "leiter": "planet.wetter.fremde-atmosphaeren",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#4",
+   "leiter": "planet.wetter.fremde-atmosphaeren",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit (nicht erzeugbar; geschossen an der Mess-Wiese) · Vorbild Orbitbilder bei Rotation ×0,1 / ×1 / ×5 (Bänder je Halbkugel 1 / 3 / ≥ 4) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#5",
+   "leiter": "planet.wetter.fremde-atmosphaeren",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#6",
+   "leiter": "planet.wetter.fremde-atmosphaeren",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Abstieg in einen Gasriesen (nicht erzeugbar; geschossen an der Mess-Wiese) · Vorbild Juno/Cassini-Bilder von Jupiter und Saturn, Blindtest ≤ 70 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.wetter.fremde-atmosphaeren#7",
+   "leiter": "planet.wetter.fremde-atmosphaeren",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Landeplatz an der Mess-Wiese (die Reise durch ein Sonnensystem steht aus) · Vorbild Prüfer-Satz R11: Widerspruch ja/nein; die Wolke vom Orbit über dem Landeplatz — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#1",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#2",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#3",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#4",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#5",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#6",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#7",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#8",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.klimageschichte#9",
+   "leiter": "planet.zeit.klimageschichte",
+   "sprosse": 9,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (heute keine Moräne, kein fremder Planet) · Vorbild Fremdwelt-Probe R10 an Eisrand, Meeresspiegel und Klimazonen — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.zeit.archiv#1",
+   "leiter": "planet.zeit.archiv",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.archiv#2",
+   "leiter": "planet.zeit.archiv",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego 150 m vor der Schichtstufe der Heimat · Vorbild Fotos des Colorado-Plateaus (Farbbänder, Rhythmus), Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.zeit.archiv#3",
+   "leiter": "planet.zeit.archiv",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.archiv#4",
+   "leiter": "planet.zeit.archiv",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.archiv#5",
+   "leiter": "planet.zeit.archiv",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.zeit.archiv#6",
+   "leiter": "planet.zeit.archiv",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego 2 km vor der Schichtstufe der Heimat (die Welt trägt keine Kilometer-Wand) · Vorbild Grand-Canyon-Fotos aus 2 km (Fachleute, R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.zeit.archiv#7",
+   "leiter": "planet.zeit.archiv",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an 50 Orten (heute: die Wiese) · Vorbild Fachjury, Prüfer-Satz R11 (Zufall 25 %) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.zeit.archiv#8",
+   "leiter": "planet.zeit.archiv",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.erde.gestalt#1",
+   "leiter": "planet.erde.gestalt",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an 3 Posen der Region (Werkbank /bild am Ort) · Vorbild Ortskundige wählen die Region aus 10 Kandidaten (≥ 70 %) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.erde.gestalt#2",
+   "leiter": "planet.erde.gestalt",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.erde.gestalt#3",
+   "leiter": "planet.erde.gestalt",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über der Erde (heute nicht erzeugbar; geschossen am Boden der Wiese) · Vorbild Satellitenmosaik der Erde, Panel-2AFC ≤ 70 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.erde.gestalt#4",
+   "leiter": "planet.erde.gestalt",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am benannten Ort (heute: die Wiese) · Vorbild ein Foto des Orts aus dem Ortsverzeichnis (GeoNames), Blindpaar ≤ 70 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.erde.gestalt#5",
+   "leiter": "planet.erde.gestalt",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.erde.gestalt#6",
+   "leiter": "planet.erde.gestalt",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Wohnort des Prüfers (heute: die Wiese) · Vorbild das eigene Foto des Prüfers vom Wohnort (Heimat-Probe, 100 Menschen) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.arten#1",
+   "leiter": "leben.pflanzen.arten",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Waldrand der Mess-Wiese, 10 Bilder je Gestalt · Vorbild Blindtest Gattung (≥ 80 %) und Herbarfoto je Gestalt (Bildpaar ≥ 0,7, R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.arten#2",
+   "leiter": "leben.pflanzen.arten",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose je Saat eine Pflanze freigestellt vor neutralem Grund (Werkbank /bild) · Vorbild Wuchsform-Blindtest (Baum, Strauch, Gras, Kletterer, Sukkulente, Farn, Moos) und Silhouetten-Paare ≥ 95 % (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.arten#3",
+   "leiter": "leben.pflanzen.arten",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose die artenreichste Szene des Bestands (heute die Mess-Wiese) · Vorbild Merkmalsverteilung TRY (Díaz 2016) aus Bild-Morphometrie; Artenzahl im Bild per Blindbenennung (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.arten#4",
+   "leiter": "leben.pflanzen.arten",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Regenwald-Hektar (heute nicht erzeugbar; geschossen an der Mess-Wiese) · Vorbild 200 Paare Foto ↔ Spiel, Trefferquote ≤ 60 % (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.arten#5",
+   "leiter": "leben.pflanzen.arten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.arten#6",
+   "leiter": "leben.pflanzen.arten",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose 500 fremde Arten am fremden Planeten (heute nicht erzeugbar; geschossen an der Mess-Wiese) · Vorbild Fremdwelt-Probe (R10): Ursache, Gegenlauf, Neuheit — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.arten#7",
+   "leiter": "leben.pflanzen.arten",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.biome#1",
+   "leiter": "leben.pflanzen.biome",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.biome#2",
+   "leiter": "leben.pflanzen.biome",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.biome#3",
+   "leiter": "leben.pflanzen.biome",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.biome#4",
+   "leiter": "leben.pflanzen.biome",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.biome#5",
+   "leiter": "leben.pflanzen.biome",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.biome#6",
+   "leiter": "leben.pflanzen.biome",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose 10 Punkte je Saat (heute: die Mess-Wiese der Heimat) · Vorbild Blindbewertung „lebendige Welt“ ≥ 80 % (R11); fremde Biome über die Fremdwelt-Probe (R10) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.lebenslauf#1",
+   "leiter": "leben.pflanzen.lebenslauf",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego im Wald am Rand der Mess-Wiese · Vorbild Höhenhistogramm des Bestands gegen die Ertragstafel (Prüfer-Satz R11, die Schwelle fehlt dem Richter) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.lebenslauf#2",
+   "leiter": "leben.pflanzen.lebenslauf",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose dieselbe Pflanze nach 0/10/50/150 Jahren der Welt-Uhr (Ego, 8 m) · Vorbild Fotoreihe derselben Art (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.lebenslauf#3",
+   "leiter": "leben.pflanzen.lebenslauf",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.lebenslauf#4",
+   "leiter": "leben.pflanzen.lebenslauf",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.lebenslauf#5",
+   "leiter": "leben.pflanzen.lebenslauf",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.lebenslauf#6",
+   "leiter": "leben.pflanzen.lebenslauf",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose 100 Orte × 5 Zeitabstände (heute die Mess-Wiese) · Vorbild Chronosequenz des Bioms; fremde Planeten über die Fremdwelt-Probe (R10) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.jahreslauf#2",
+   "leiter": "leben.pflanzen.jahreslauf",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.jahreslauf#3",
+   "leiter": "leben.pflanzen.jahreslauf",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Mess-Wiese, Ego, je Woche ein Bild über 12 Wochen der Blüte · Vorbild Webcam-Zeitreihe derselben Lage (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.jahreslauf#4",
+   "leiter": "leben.pflanzen.jahreslauf",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Flug über die Region im Austrieb (heute: die Mess-Wiese) · Vorbild Satelliten-NDVI des Austriebs über Höhe und Breite (Prüfer-Satz R11, die Schwelle fehlt dem Richter) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.jahreslauf#5",
+   "leiter": "leben.pflanzen.jahreslauf",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.jahreslauf#6",
+   "leiter": "leben.pflanzen.jahreslauf",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.dichte#1",
+   "leiter": "leben.pflanzen.dichte",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose stehend an der Mess-Wiese, Ego · Vorbild Wiesenfoto (Ring-Bildanteil 2–5/5–10/10–20 m) und REF real-mischwald (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.dichte#2",
+   "leiter": "leben.pflanzen.dichte",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose im Wald-Innern, gehend (heute: die Mess-Wiese) · Vorbild Bildpaar Wald-innen gegen REF real-mischwald (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.dichte#3",
+   "leiter": "leben.pflanzen.dichte",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose gehend und fahrend über 1 km (Werkbank /gang) · Vorbild Bildpaar 1 km gegen Foto (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.dichte#4",
+   "leiter": "leben.pflanzen.dichte",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Flug über die Mess-Wiese, Blick zum Kamm 10 km · Vorbild Landschaftsfoto, Blindtest ≤ 70 % (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.dichte#5",
+   "leiter": "leben.pflanzen.dichte",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.dichte#6",
+   "leiter": "leben.pflanzen.dichte",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.kraft#2",
+   "leiter": "leben.pflanzen.kraft",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.pflanzen.kraft#3",
+   "leiter": "leben.pflanzen.kraft",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose gehend durch Wiese und Gebüsch der Mess-Wiese (Werkbank /gang) · Vorbild Video derselben Lage (Prüfer-Satz R11, die Schwelle fehlt dem Richter) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.kraft#4",
+   "leiter": "leben.pflanzen.kraft",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose im Sturm über 1 km² Wald (heute: die Mess-Wiese) · Vorbild Sturm-Statistik (Windwurf über Windstärke und Wurzelboden; Prüfer-Satz R11, die Schwelle fehlt dem Richter) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.kraft#5",
+   "leiter": "leben.pflanzen.kraft",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Flug im Sturm über Wald und Feld, 10 km · Vorbild Sturm-Video, Blindtest ≤ 60 % (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.pflanzen.kraft#6",
+   "leiter": "leben.pflanzen.kraft",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.arten#1",
+   "leiter": "leben.tiere.arten",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.arten#2",
+   "leiter": "leben.tiere.arten",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego auf eine Herde von 20 aus 10 m (heute: die Wiese) · Vorbild Fotos realer Tiere je Art; Blind-Panel „echt möglich“ ≥ 0,7, Bild-Embedding der Herde — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.arten#3",
+   "leiter": "leben.tiere.arten",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego auf ein Riff mit ≥ 30 Arten (heute: die Wiese) · Vorbild Fotos je Wirbeltier-Klasse; Panel ≥ 0,7 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.arten#4",
+   "leiter": "leben.tiere.arten",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Makro 0,2 m an einem Gliederfüßer (heute: die Wiese) · Vorbild Foto-Korpus Makro; Panel ≥ 0,7 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.arten#5",
+   "leiter": "leben.tiere.arten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.arten#6",
+   "leiter": "leben.tiere.arten",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an 1 000 angetroffenen Arten (heute: die Wiese) · Vorbild Foto-Korpus je Art; 2AFC ≤ 70 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.arten#7",
+   "leiter": "leben.tiere.arten",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.arten#8",
+   "leiter": "leben.tiere.arten",
+   "sprosse": 8,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an den angetroffenen Arten fremder Saaten (heute: die Wiese) · Vorbild Fremdwelt-Probe R10 (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.bewegung#1",
+   "leiter": "leben.tiere.bewegung",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.bewegung#2",
+   "leiter": "leben.tiere.bewegung",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.bewegung#3",
+   "leiter": "leben.tiere.bewegung",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third auf einen Trupp oder Schwarm von 3 000 (heute: die Wiese) · Vorbild Filme der fünf Schwimmweisen; Blindtest ≥ 80 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.bewegung#4",
+   "leiter": "leben.tiere.bewegung",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.bewegung#5",
+   "leiter": "leben.tiere.bewegung",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Makro-Zeitlupe an einem Insekt (heute: die Wiese) · Vorbild Hochgeschwindigkeits-Filme (Tripod-Gang, Flügelschlag 100–200 Hz); Panel ≥ 0,7 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.bewegung#6",
+   "leiter": "leben.tiere.bewegung",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.bewegung#7",
+   "leiter": "leben.tiere.bewegung",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.bewegung#8",
+   "leiter": "leben.tiere.bewegung",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.verhalten#2",
+   "leiter": "leben.tiere.verhalten",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.verhalten#3",
+   "leiter": "leben.tiere.verhalten",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third auf 10² Stichproben-Arten je 1 h Zeitraffer (heute: die Wiese) · Vorbild der Ethologe ordnet die Lebensweise blind zu ≥ 0,8 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.verhalten#4",
+   "leiter": "leben.tiere.verhalten",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.verhalten#5",
+   "leiter": "leben.tiere.verhalten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.verhalten#6",
+   "leiter": "leben.tiere.verhalten",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Nacht 0 lux, Third auf einen Echo-Jäger (heute: die Wiese) · Vorbild Fang-Quote bei Nacht = Tag ±20 %; blinde Zuordnung ≥ 0,8 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.verhalten#7",
+   "leiter": "leben.tiere.verhalten",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third auf die Tiere fremder Saaten (heute: die Wiese) · Vorbild Lebensweise blind benannt ≥ 0,8; Gegenprobe Sinn aus → Verhalten bricht — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.lebenszyklus#2",
+   "leiter": "leben.tiere.lebenszyklus",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third auf eine Herde mit Kitz aus 15 m im Frühsommer (heute: die Wiese) · Vorbild Foto Kitz/Hirsch; Panel ≥ 0,7 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.lebenszyklus#3",
+   "leiter": "leben.tiere.lebenszyklus",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.lebenszyklus#4",
+   "leiter": "leben.tiere.lebenszyklus",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.lebenszyklus#5",
+   "leiter": "leben.tiere.lebenszyklus",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.lebenszyklus#6",
+   "leiter": "leben.tiere.lebenszyklus",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.lebenszyklus#7",
+   "leiter": "leben.tiere.lebenszyklus",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.masse#2",
+   "leiter": "leben.tiere.masse",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third auf eine Murmuration von 10² Staren (heute: die Wiese) · Vorbild Murmuration-Film; die Silhouette gegen den Film — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.masse#3",
+   "leiter": "leben.tiere.masse",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Unterwasser auf einen Köderball von 10³ (heute: die Wiese) · Vorbild Unterwasser-Film; Konvexität und Lückenfläche — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.masse#4",
+   "leiter": "leben.tiere.masse",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.masse#5",
+   "leiter": "leben.tiere.masse",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.masse#6",
+   "leiter": "leben.tiere.masse",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Draufsicht aus 300 m auf 10⁶ Glieder (heute: die Wiese) · Vorbild Luftbild des Sardinenzugs; Zoom-Probe an 10 Stellen — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.masse#7",
+   "leiter": "leben.tiere.masse",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Horizont unter einem Heuschreckenschwarm (heute: die Wiese) · Vorbild Horizont-Foto eines Heuschreckenschwarms; Kahlfraß je Stunde nach FAO — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.masse#8",
+   "leiter": "leben.tiere.masse",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.wanderung#2",
+   "leiter": "leben.tiere.wanderung",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.wanderung#3",
+   "leiter": "leben.tiere.wanderung",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.wanderung#4",
+   "leiter": "leben.tiere.wanderung",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.wanderung#5",
+   "leiter": "leben.tiere.wanderung",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.wanderung#6",
+   "leiter": "leben.tiere.wanderung",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.wanderung#7",
+   "leiter": "leben.tiere.wanderung",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.mensch#2",
+   "leiter": "leben.tiere.mensch",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.mensch#3",
+   "leiter": "leben.tiere.mensch",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.mensch#4",
+   "leiter": "leben.tiere.mensch",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.mensch#5",
+   "leiter": "leben.tiere.mensch",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.tiere.mensch#6",
+   "leiter": "leben.tiere.mensch",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego als Tier (Wolf, Hirsch) auf der Wiese · Vorbild Ego-Aufnahmen realer Tiere; Blind-Panel ≥ 0,7 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.tiere.mensch#7",
+   "leiter": "leben.tiere.mensch",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego als Tier einer fremden Saat (heute: die Wiese) · Vorbild Panel ≥ 0,7 an der Ego-Aufnahme — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.wasser.lebensraeume#2",
+   "leiter": "leben.wasser.lebensraeume",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose unter Wasser im Bach der Mess-Wiese (__wasserOrte bach), 2 m vor der Mitte, halbe Säule · Vorbild eingefrorener Klassifikator der Lebensräume (R11) gegen Unterwasser-Fotos von Bach, See und Küstenflachwasser — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.wasser.lebensraeume#3",
+   "leiter": "leben.wasser.lebensraeume",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose unter Wasser am Meer nächst der Mess-Wiese (__wasserOrte meer), 0,5 m unter dem Spiegel · Vorbild Unterwasserfoto von Kelpwald, Seegraswiese, Mangrove (Ähnlichkeit ≥ 0,7) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.wasser.lebensraeume#4",
+   "leiter": "leben.wasser.lebensraeume",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose unter Wasser am Meer nächst der Mess-Wiese, Blick über den Grund · Vorbild eingefrorener Klassifikator (R11) gegen Riff-Fotos (warm, klar, flach) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.wasser.lebensraeume#5",
+   "leiter": "leben.wasser.lebensraeume",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.lebensraeume#6",
+   "leiter": "leben.wasser.lebensraeume",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.lebensraeume#7",
+   "leiter": "leben.wasser.lebensraeume",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.bild#1",
+   "leiter": "leben.wasser.bild",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.bild#2",
+   "leiter": "leben.wasser.bild",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose 1 m stromab vor dem Stand der Forelle im Bach der Mess-Wiese, auf Höhe des Fischs · Vorbild Foto einer Bachforelle 1 m vor der Kamera (Blindtest erkennt die Art ≥ 80 %) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.wasser.bild#3",
+   "leiter": "leben.wasser.bild",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.bild#4",
+   "leiter": "leben.wasser.bild",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.bild#5",
+   "leiter": "leben.wasser.bild",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.bild#6",
+   "leiter": "leben.wasser.bild",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose unter Wasser am Meer nächst der Mess-Wiese (Riff und Kelp gibt es nicht) · Vorbild Fotos von Riff und Kelpwald im Nahbild (Panel ≤ 60 %) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.wasser.bild#7",
+   "leiter": "leben.wasser.bild",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose unter Wasser am Meer nächst der Mess-Wiese (eine Szene von 100) · Vorbild Unterwasser-Fotos (100 Szenen, Blindtest ≤ 55 %) und offline spektrales Path-Tracing (fremd, ΔE ≤ 5) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.wasser.netz#1",
+   "leiter": "leben.wasser.netz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.netz#2",
+   "leiter": "leben.wasser.netz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.netz#3",
+   "leiter": "leben.wasser.netz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.netz#4",
+   "leiter": "leben.wasser.netz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.netz#5",
+   "leiter": "leben.wasser.netz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.netz#6",
+   "leiter": "leben.wasser.netz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.rhythmen#2",
+   "leiter": "leben.wasser.rhythmen",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.rhythmen#3",
+   "leiter": "leben.wasser.rhythmen",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.rhythmen#4",
+   "leiter": "leben.wasser.rhythmen",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.rhythmen#5",
+   "leiter": "leben.wasser.rhythmen",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.wasser.rhythmen#6",
+   "leiter": "leben.wasser.rhythmen",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.netz#2",
+   "leiter": "leben.oeko.netz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.netz#3",
+   "leiter": "leben.oeko.netz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.netz#4",
+   "leiter": "leben.oeko.netz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.netz#5",
+   "leiter": "leben.oeko.netz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.netz#6",
+   "leiter": "leben.oeko.netz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.netz#7",
+   "leiter": "leben.oeko.netz",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (die Ankunft eines fremden Planeten ist nicht erzeugbar) · Vorbild Fremdwelt-Probe R10 am beobachteten Netz: Ursachen-Probe ≥ 0,7, Gegenlauf ≥ 80 %, Neuheit ≥ 30 %; Kennzahl-Tafeln gegen reale (Fachleute-2AFC) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.vielfalt#2",
+   "leiter": "leben.oeko.vielfalt",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.vielfalt#3",
+   "leiter": "leben.oeko.vielfalt",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.vielfalt#4",
+   "leiter": "leben.oeko.vielfalt",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.vielfalt#5",
+   "leiter": "leben.oeko.vielfalt",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.vielfalt#6",
+   "leiter": "leben.oeko.vielfalt",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.vielfalt#7",
+   "leiter": "leben.oeko.vielfalt",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.vielfalt#8",
+   "leiter": "leben.oeko.vielfalt",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.dynamik#2",
+   "leiter": "leben.oeko.dynamik",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese, dieselbe Kamera vor und nach 10 Spieljahren ohne Wölfe · Vorbild Bildpaar gegen den Gegenlauf mit Wölfen: Jungwuchs-Deckung im Bild (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.dynamik#3",
+   "leiter": "leben.oeko.dynamik",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.dynamik#4",
+   "leiter": "leben.oeko.dynamik",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Luftbild über dem Tal (heute: Ego an der Wiese) · Vorbild braune Waldfläche gegen die Luftbild-Reihe eines Borkenkäfer-Ausbruchs (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.dynamik#5",
+   "leiter": "leben.oeko.dynamik",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.dynamik#6",
+   "leiter": "leben.oeko.dynamik",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.dynamik#7",
+   "leiter": "leben.oeko.dynamik",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.zerfall#1",
+   "leiter": "leben.oeko.zerfall",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.zerfall#2",
+   "leiter": "leben.oeko.zerfall",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego vor 10 Kadavern jeder Größe (heute: die Wiese) · Vorbild Bildreihe 0/3/10/30 Tage gegen eine forensische Referenz; Gilde-Folge gegen Kamerafallen-Studien (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.zerfall#3",
+   "leiter": "leben.oeko.zerfall",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego im Altwald am selben Stamm (heute: die Wiese) · Vorbild Bildreihe 0/10/40 Spieljahre am selben Stamm (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.zerfall#4",
+   "leiter": "leben.oeko.zerfall",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.zerfall#5",
+   "leiter": "leben.oeko.zerfall",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.zerfall#6",
+   "leiter": "leben.oeko.zerfall",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Tiefsee am Walfall (heute: die Wiese) · Vorbild Walfall-Gemeinschaft über 50 Spieljahre in der Bildreihe (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.sukzession#1",
+   "leiter": "leben.oeko.sukzession",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.sukzession#2",
+   "leiter": "leben.oeko.sukzession",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Überflug über der Brandfläche (heute: Ego an der Wiese) · Vorbild Yellowstone-1988-Fotoreihe nach 1/5/25 Jahren (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.sukzession#3",
+   "leiter": "leben.oeko.sukzession",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.sukzession#4",
+   "leiter": "leben.oeko.sukzession",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.sukzession#5",
+   "leiter": "leben.oeko.sukzession",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Stadt im Bild (heute: Ego an der Wiese) · Vorbild Bildpaar 0/30/100 Jahre gegen Fotoreihen verlassener Städte (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.sukzession#6",
+   "leiter": "leben.oeko.sukzession",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.sukzession#7",
+   "leiter": "leben.oeko.sukzession",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.stoffe#1",
+   "leiter": "leben.oeko.stoffe",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Acker der Wiese vor und nach 15 Ernten · Vorbild Bildpaar gleicher Kamera: Wuchs sinkt sichtbar (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.stoffe#2",
+   "leiter": "leben.oeko.stoffe",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego zwischen zwei Wiesen (mit und ohne Klee) · Vorbild Bildpaar nach 5 Spieljahren: Wuchs-Unterschied (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.stoffe#3",
+   "leiter": "leben.oeko.stoffe",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.stoffe#4",
+   "leiter": "leben.oeko.stoffe",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.stoffe#5",
+   "leiter": "leben.oeko.stoffe",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.stoffe#6",
+   "leiter": "leben.oeko.stoffe",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Gestein der Wiese (Aufschluss) · Vorbild Bändereisen im Gestein sichtbar (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.stoffe#7",
+   "leiter": "leben.oeko.stoffe",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.partner#2",
+   "leiter": "leben.oeko.partner",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Mess-Wiese, dieselbe Kamera im Folgejahr mit und ohne Bestäuber · Vorbild Bildpaar: Blüten-Dichte im Folgejahr −≥ 30 % ohne Bestäuber (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.partner#3",
+   "leiter": "leben.oeko.partner",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.partner#4",
+   "leiter": "leben.oeko.partner",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.partner#5",
+   "leiter": "leben.oeko.partner",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.oeko.partner#6",
+   "leiter": "leben.oeko.partner",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose das Riff im Bild (heute: Ego an der Wiese) · Vorbild Bildpaar im Wärme-Gegenlauf: Korallenfarbe kippt (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.oeko.partner#7",
+   "leiter": "leben.oeko.partner",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.stammbaum#1",
+   "leiter": "leben.evolution.stammbaum",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.stammbaum#2",
+   "leiter": "leben.evolution.stammbaum",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.stammbaum#3",
+   "leiter": "leben.evolution.stammbaum",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.stammbaum#4",
+   "leiter": "leben.evolution.stammbaum",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.stammbaum#5",
+   "leiter": "leben.evolution.stammbaum",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.stammbaum#6",
+   "leiter": "leben.evolution.stammbaum",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.stammbaum#7",
+   "leiter": "leben.evolution.stammbaum",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third am ersten Tier der Welt (4 m seitlich, 1,8 m hoch) · Vorbild Natur-Fotos derselben Kladen, Blindtest ≤ 60 % (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.erbe#1",
+   "leiter": "leben.evolution.erbe",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.erbe#2",
+   "leiter": "leben.evolution.erbe",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.erbe#3",
+   "leiter": "leben.evolution.erbe",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.erbe#4",
+   "leiter": "leben.evolution.erbe",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.erbe#5",
+   "leiter": "leben.evolution.erbe",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.erbe#6",
+   "leiter": "leben.evolution.erbe",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.muster#1",
+   "leiter": "leben.evolution.muster",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.muster#2",
+   "leiter": "leben.evolution.muster",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.muster#3",
+   "leiter": "leben.evolution.muster",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.muster#4",
+   "leiter": "leben.evolution.muster",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.muster#5",
+   "leiter": "leben.evolution.muster",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.muster#6",
+   "leiter": "leben.evolution.muster",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zeitreise#1",
+   "leiter": "leben.evolution.zeitreise",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (Gegenwart; die Epoche lädt eine Reise-Welt) · Vorbild Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8 (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.zeitreise#2",
+   "leiter": "leben.evolution.zeitreise",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zeitreise#3",
+   "leiter": "leben.evolution.zeitreise",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zeitreise#4",
+   "leiter": "leben.evolution.zeitreise",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zeitreise#5",
+   "leiter": "leben.evolution.zeitreise",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (die Epochen laden je eine Reise-Welt) · Vorbild Blind-Sortierung von Bildern aus 10 Epochen nach Alter ≥ 90 % (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.zeitreise#6",
+   "leiter": "leben.evolution.zeitreise",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose unter Wasser an der Wiese (das Kambrium-Meer lädt eine Reise-Welt) · Vorbild Panel ordnet 20 Unterwasserbilder ≥ 70 % (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.zeitreise#7",
+   "leiter": "leben.evolution.zeitreise",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zeitreise#8",
+   "leiter": "leben.evolution.zeitreise",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.bauplan#1",
+   "leiter": "leben.evolution.bauplan",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.bauplan#2",
+   "leiter": "leben.evolution.bauplan",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.bauplan#3",
+   "leiter": "leben.evolution.bauplan",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.bauplan#4",
+   "leiter": "leben.evolution.bauplan",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third am ersten Tier der Welt (4 m seitlich, 1,8 m hoch), Video im Takt · Vorbild Natur-Video derselben Gangart, Blindtest ≤ 60 % (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.bauplan#5",
+   "leiter": "leben.evolution.bauplan",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.bauplan#6",
+   "leiter": "leben.evolution.bauplan",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third am ersten Tier der Welt · Vorbild Fremdwelt-Probe (R10): Lebensweise aus dem Körper gelesen, Rang ≥ 0,7 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.fremde-physik#1",
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fremde-physik#2",
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fremde-physik#3",
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fremde-physik#4",
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fremde-physik#5",
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fremde-physik#6",
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fremde-physik#7",
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (keine fremde Welt erzeugbar) · Vorbild Fremdwelt-Probe (R10): Morphoraum-Abstand zur Erde, Ursache aus dem Körper gelesen Rang ≥ 0,7 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.zivilisation#1",
+   "leiter": "leben.evolution.zivilisation",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zivilisation#2",
+   "leiter": "leben.evolution.zivilisation",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zivilisation#3",
+   "leiter": "leben.evolution.zivilisation",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zivilisation#4",
+   "leiter": "leben.evolution.zivilisation",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zivilisation#5",
+   "leiter": "leben.evolution.zivilisation",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zivilisation#6",
+   "leiter": "leben.evolution.zivilisation",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.zivilisation#7",
+   "leiter": "leben.evolution.zivilisation",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (keine nicht-menschliche Stadt erzeugbar) · Vorbild Blind-Sortierung nach Herkunft ≥ 90 %; Fremdwelt-Probe (R10) der Bauten — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.mikroben#1",
+   "leiter": "leben.evolution.mikroben",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese (keine heiße Quelle, kein Watt erzeugbar) · Vorbild Natur-Fotos der Zonierung (heiße Quelle, Watt, Fels), Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.mikroben#2",
+   "leiter": "leben.evolution.mikroben",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese, Kamera am Boden · Vorbild Mikroskop-Aufnahmen von Pilzfäden, Milben, Kolonien (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.mikroben#3",
+   "leiter": "leben.evolution.mikroben",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego an der Wiese, Kamera am Boden · Vorbild Lichtmikroskopie desselben Lebensraums, 2AFC ≤ 75 % (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.evolution.mikroben#4",
+   "leiter": "leben.evolution.mikroben",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.mikroben#5",
+   "leiter": "leben.evolution.mikroben",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.mikroben#6",
+   "leiter": "leben.evolution.mikroben",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fossil#1",
+   "leiter": "leben.evolution.fossil",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fossil#2",
+   "leiter": "leben.evolution.fossil",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fossil#3",
+   "leiter": "leben.evolution.fossil",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fossil#4",
+   "leiter": "leben.evolution.fossil",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fossil#5",
+   "leiter": "leben.evolution.fossil",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.evolution.fossil#6",
+   "leiter": "leben.evolution.fossil",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.siedlungslage#1",
+   "leiter": "planet.kopplung.siedlungslage",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose 50 m über dem ersten Uferpunkt, Blick aufs Ufer, vor ↔ nach der Hebung um 1 m · Vorbild Bildpaar: Ufer, Schilf, Steg, Boot und Fuß folgen dem Spiegel (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.siedlungslage#2",
+   "leiter": "planet.kopplung.siedlungslage",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Wiese, Bildpaar vor ↔ nach der Mutation der Bodenart · Vorbild ≥ 5 Leser ändern sich im Bild (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.siedlungslage#3",
+   "leiter": "planet.kopplung.siedlungslage",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.siedlungslage#4",
+   "leiter": "planet.kopplung.siedlungslage",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.siedlungslage#5",
+   "leiter": "planet.kopplung.siedlungslage",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.siedlungslage#6",
+   "leiter": "planet.kopplung.siedlungslage",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Geländekarte eines Kontinents ohne Städte (heute: Wiese) · Vorbild Jury rät die Lagen der Millionenstädte (Prüfer-Satz R11), Gegenlauf mit vertauschter Karte — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.siedlungslage#7",
+   "leiter": "planet.kopplung.siedlungslage",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Hauptstadt je Epoche im Zeitsprung (heute: Wiese) · Vorbild Jury erkennt die geologische Ursache (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.land-meer-luft#1",
+   "leiter": "planet.kopplung.land-meer-luft",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Kammlinie eines Gebirges der Heimat-Saat (heute: Wiese) · Vorbild im Bild grün/braun an der Kammlinie getrennt (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.land-meer-luft#2",
+   "leiter": "planet.kopplung.land-meer-luft",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.land-meer-luft#3",
+   "leiter": "planet.kopplung.land-meer-luft",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.land-meer-luft#4",
+   "leiter": "planet.kopplung.land-meer-luft",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.land-meer-luft#5",
+   "leiter": "planet.kopplung.land-meer-luft",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Region um den höchsten Kamm vor ↔ nach 10⁶ a (heute: Wiese) · Vorbild Bildpaar grün → Steppe (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.land-meer-luft#6",
+   "leiter": "planet.kopplung.land-meer-luft",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.bahn-klima#2",
+   "leiter": "planet.kopplung.bahn-klima",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Hang mit Schneelinie und Laub, Saat mit Neigung 0° ↔ 45° (heute: Wiese) · Vorbild Schneelinie und Laub im Bild (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.bahn-klima#3",
+   "leiter": "planet.kopplung.bahn-klima",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.bahn-klima#4",
+   "leiter": "planet.kopplung.bahn-klima",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.bahn-klima#5",
+   "leiter": "planet.kopplung.bahn-klima",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.bahn-klima#6",
+   "leiter": "planet.kopplung.bahn-klima",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Klima-Zonen im Bild (heute: Wiese) · Vorbild Zwei-Moden-Modell North 1975: T = 14,97 − 28,0·P₂(sin φ) °C, ±5 K — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.wetter-welt#2",
+   "leiter": "planet.kopplung.wetter-welt",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose ein Sturmbild an der Wiese: Gras, Bäume, Wolken, Rauch, Wasser · Vorbild dieselbe Richtung ±20°, Lee < frei < Düse (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.wetter-welt#3",
+   "leiter": "planet.kopplung.wetter-welt",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.wetter-welt#4",
+   "leiter": "planet.kopplung.wetter-welt",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose der Marktplatz des nächsten Orts, klar ↔ Sturm (heute: Wiese) · Vorbild Bildpaar Marktplatz (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.wetter-welt#5",
+   "leiter": "planet.kopplung.wetter-welt",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Küste vor ↔ nach 10 Spieljahren an derselben Pose (heute: Wiese) · Vorbild Bildpaar: Dünenversatz in Windrichtung, Küstenlinie verändert (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.wetter-welt#6",
+   "leiter": "planet.kopplung.wetter-welt",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.stadtklima#1",
+   "leiter": "planet.kopplung.stadtklima",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.stadtklima#2",
+   "leiter": "planet.kopplung.stadtklima",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Stadt in klarer Winternacht (heute: Wiese) · Vorbild Bildpaar: Schnee taut im Kern zuerst (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.stadtklima#3",
+   "leiter": "planet.kopplung.stadtklima",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.stadtklima#4",
+   "leiter": "planet.kopplung.stadtklima",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.stadtklima#5",
+   "leiter": "planet.kopplung.stadtklima",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.stadtklima#6",
+   "leiter": "planet.kopplung.stadtklima",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.kaskade#1",
+   "leiter": "planet.kopplung.kaskade",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose die gesperrte Straße nach der Rutschung (heute: Wiese) · Vorbild die Folge im Bild sichtbar (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.kaskade#2",
+   "leiter": "planet.kopplung.kaskade",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.kaskade#3",
+   "leiter": "planet.kopplung.kaskade",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.kaskade#4",
+   "leiter": "planet.kopplung.kaskade",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.kaskade#5",
+   "leiter": "planet.kopplung.kaskade",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.kaskade#6",
+   "leiter": "planet.kopplung.kaskade",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.kaskade#7",
+   "leiter": "planet.kopplung.kaskade",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.ereignis-spur#1",
+   "leiter": "planet.kopplung.ereignis-spur",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.ereignis-spur#2",
+   "leiter": "planet.kopplung.ereignis-spur",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.ereignis-spur#3",
+   "leiter": "planet.kopplung.ereignis-spur",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.ereignis-spur#4",
+   "leiter": "planet.kopplung.ereignis-spur",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.ereignis-spur#5",
+   "leiter": "planet.kopplung.ereignis-spur",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.ereignis-spur#6",
+   "leiter": "planet.kopplung.ereignis-spur",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.gegenwart#1",
+   "leiter": "planet.kopplung.gegenwart",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.gegenwart#2",
+   "leiter": "planet.kopplung.gegenwart",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.gegenwart#3",
+   "leiter": "planet.kopplung.gegenwart",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose ein Durchbruch und eine Fjord-Küste (heute: Wiese) · Vorbild Bildpaar gegen ein Foto (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.gegenwart#4",
+   "leiter": "planet.kopplung.gegenwart",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kopplung.gegenwart#5",
+   "leiter": "planet.kopplung.gegenwart",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ankunft am Spieler, Zeitreise −1 Ma → 0 (heute: Wiese) · Vorbild Bildpaar Zustand(x, 0) der Zeit-Funktion = Ankunftsbild (Blindpaar R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.planet.kopplung.gegenwart#6",
+   "leiter": "planet.kopplung.gegenwart",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.leben-formt-planet#2",
+   "leiter": "leben.kopplung.leben-formt-planet",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose der offene Hang im Starkregen (stormy), 30 m seitlich und 25 m über dem Hangpunkt · Vorbild Rutschung sichtbar am gerodeten, nicht am bewaldeten Hang (Prüfer-Satz R11, 2AFC gerodet ↔ bewaldet) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.leben-formt-planet#3",
+   "leiter": "leben.kopplung.leben-formt-planet",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose über dem nächsten Fluss außerhalb der nahen Regionen, 40 m hoch, Blick hinab (Jahr 0 und Jahr 10) · Vorbild Referenz-Luftbild eines Biberstaus: Wasserfläche und Totholz (Bildpaar 0/10 Jahre) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.leben-formt-planet#4",
+   "leiter": "leben.kopplung.leben-formt-planet",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.leben-formt-planet#5",
+   "leiter": "leben.kopplung.leben-formt-planet",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Draufsicht einer Küste (heute keine Küste im Umkreis — geschossen an der Wiese) · Vorbild Luftbilder Saum-, Barriere- und Atoll-Riff (Darwin 1842), Prüfer-Satz R11 ≥ 75 % richtig — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.leben-formt-planet#6",
+   "leiter": "leben.kopplung.leben-formt-planet",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose eine Felswand (heute keine Schicht im Fels — geschossen an der Wiese) · Vorbild Kohleflöze in der Felswand sichtbar (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.leben-formt-planet#7",
+   "leiter": "leben.kopplung.leben-formt-planet",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose der Anker der Welt (Orbit nicht erzeugbar — geschossen an der Wiese), je Saat mit und ohne Leben · Vorbild Bildvergleich 32 Saaten mit ↔ ohne Leben ≥ 90 % unterscheidbar (Prüfer-Satz R11); Zeitreise: jedes Glied im Bild — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.evolution-planet#1",
+   "leiter": "leben.kopplung.evolution-planet",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose 60 m schräg über der Mitte der ersten gemessenen Region, die Würfe im Bild · Vorbild die Würfe im Bild gezählt: ≥ 0,9 in der Boden-Klasse ihrer Gattung (Klassen-Maske der Tiere gegen die Boden-Klasse) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.evolution-planet#2",
+   "leiter": "leben.kopplung.evolution-planet",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Würfe der nördlichsten und der südlichsten Region nebeneinander · Vorbild Bildvergleich Nord ↔ Süd: Fell folgt dem Boden, Größe dem Klima (Bergmann 1847) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.evolution-planet#3",
+   "leiter": "leben.kopplung.evolution-planet",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.evolution-planet#4",
+   "leiter": "leben.kopplung.evolution-planet",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.evolution-planet#5",
+   "leiter": "leben.kopplung.evolution-planet",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.evolution-planet#6",
+   "leiter": "leben.kopplung.evolution-planet",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.stadt-im-netz#2",
+   "leiter": "leben.kopplung.stadt-im-netz",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose schräg über dem Ort der Welt (übernutzt ↔ daneben) · Vorbild Bildpaar übernutzter Ort gegen daneben (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.stadt-im-netz#3",
+   "leiter": "leben.kopplung.stadt-im-netz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.stadt-im-netz#4",
+   "leiter": "leben.kopplung.stadt-im-netz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.stadt-im-netz#5",
+   "leiter": "leben.kopplung.stadt-im-netz",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Mündung stromab der Stadt (heute keine Stadt — geschossen über dem Ort der Welt) · Vorbild Bildpaar Algenblüte und Sauerstoffloch gegen eine Saat ohne Stadt (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.stadt-im-netz#6",
+   "leiter": "leben.kopplung.stadt-im-netz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.leben.kopplung.stadt-im-netz#7",
+   "leiter": "leben.kopplung.stadt-im-netz",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose schräg über dem Ort der Welt, je Epoche · Vorbild Panel ordnet Fischerei und Hafen ihrer Epoche ≥ 70 % (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.leben.kopplung.stadt-im-netz#8",
+   "leiter": "leben.kopplung.stadt-im-netz",
+   "sprosse": 8,
+   "richter": "fehlt",
+   "grund": "auge: Pose das Umland des Orts der Welt, mit ↔ ohne Stadt · Vorbild Umland mit/ohne Stadt im Bildpaar verschieden (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leib#1",
+   "leiter": "mensch.kopplung.leib",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third über dem Dorfplatz (32 m, 9 m über Grund), Sonne 12 Uhr ↔ Regen 12 Uhr · Vorbild Bildpaar Sonne ↔ Regen desselben Platzes: Prüfer-Satz (R11) zählt Lagen und Kapuzen — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leib#2",
+   "leiter": "mensch.kopplung.leib",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leib#3",
+   "leiter": "mensch.kopplung.leib",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leib#4",
+   "leiter": "mensch.kopplung.leib",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third über dem Dorfplatz (heute: das Dorf der Probe; ein Hafen fehlt) · Vorbild Bildpaar Hafen ↔ Bergdorf gegen Zensus-Daten gemischter Häfen, Prüfer-Satz (R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leib#5",
+   "leiter": "mensch.kopplung.leib",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leib#6",
+   "leiter": "mensch.kopplung.leib",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third über dem Dorfplatz unter 2 g (Welt-Akt gravity) · Vorbild Fremdwelt-Probe (R10): ein eingefrorener Leser sagt aus dem Bild die Schwerkraft voraus, Kohärenz Leib ↔ Kultur ≥ 0,8 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.sport#1",
+   "leiter": "mensch.kopplung.sport",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.sport#2",
+   "leiter": "mensch.kopplung.sport",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.sport#3",
+   "leiter": "mensch.kopplung.sport",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.sport#4",
+   "leiter": "mensch.kopplung.sport",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.sport#5",
+   "leiter": "mensch.kopplung.sport",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third über dem Dorfplatz (heute ohne Sportstätte) · Vorbild Prüfer-Satz (R11): der Lebenslauf einer Sportart (Entstehen, Wandern, Sterben) gegen die Geschichte realer Sportarten, ≥ 70 % plausibel — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.sport#6",
+   "leiter": "mensch.kopplung.sport",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third über dem Dorfplatz zweier Geländesaaten zur gleichen Stunde · Vorbild Prüfer-Satz (R11) im Blindpaar: welche Sportkultur gehört zu welchem Gelände, stimmig — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leben#1",
+   "leiter": "mensch.kopplung.leben",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leben#2",
+   "leiter": "mensch.kopplung.leben",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leben#3",
+   "leiter": "mensch.kopplung.leben",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leben#4",
+   "leiter": "mensch.kopplung.leben",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leben#5",
+   "leiter": "mensch.kopplung.leben",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.leben#6",
+   "leiter": "mensch.kopplung.leben",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kultur#1",
+   "leiter": "mensch.kopplung.kultur",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third vor dem Haus der Zelle (32 Zellen; headless: Genesis) · Vorbild Prüfer-Satz (R11): die Region aus dem Hausbild ≥ 70 % gegen Hausbilder realer Regionen — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kultur#2",
+   "leiter": "mensch.kopplung.kultur",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kultur#3",
+   "leiter": "mensch.kopplung.kultur",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kultur#4",
+   "leiter": "mensch.kopplung.kultur",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kultur#5",
+   "leiter": "mensch.kopplung.kultur",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kultur#6",
+   "leiter": "mensch.kopplung.kultur",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego vor dem Ort (1 000 Orte; headless: Genesis) · Vorbild Prüfer-Satz (R11): Klima, Gestein und Epoche aus dem Bild ≥ 70 % gegen die Wahrheit der Welt — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kultur#7",
+   "leiter": "mensch.kopplung.kultur",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Third über 20 Städten unter 2 g (Welt-Akt gravity; headless: Genesis) · Vorbild Fremdwelt-Probe (R10): ein eingefrorener Leser sagt die Schwerkraft aus dem Stadtbild voraus ≥ 70 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kreislauf#1",
+   "leiter": "mensch.kopplung.kreislauf",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kreislauf#2",
+   "leiter": "mensch.kopplung.kreislauf",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kreislauf#3",
+   "leiter": "mensch.kopplung.kreislauf",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kreislauf#4",
+   "leiter": "mensch.kopplung.kreislauf",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kreislauf#5",
+   "leiter": "mensch.kopplung.kreislauf",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.kreislauf#6",
+   "leiter": "mensch.kopplung.kreislauf",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.antwort#2",
+   "leiter": "mensch.kopplung.antwort",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.antwort#3",
+   "leiter": "mensch.kopplung.antwort",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.antwort#4",
+   "leiter": "mensch.kopplung.antwort",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.antwort#5",
+   "leiter": "mensch.kopplung.antwort",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.mensch.kopplung.antwort#6",
+   "leiter": "mensch.kopplung.antwort",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.emergenz#1",
+   "leiter": "erleben.kopplung.emergenz",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose 150 m westlich der Mitte des Tals der Kaskade, 25 m über dem Boden (das Tal mit der größten Äsung des Rotwilds abseits des Genesis-Orts), Blick auf seine Mitte · Vorbild Bildpaar desselben Orts mit ↔ ohne Wölfe nach 6 Spielstunden (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.emergenz#2",
+   "leiter": "erleben.kopplung.emergenz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.emergenz#3",
+   "leiter": "erleben.kopplung.emergenz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.emergenz#4",
+   "leiter": "erleben.kopplung.emergenz",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose aus 30 m Höhe schräg über der Mitte der nahen Siedlung, Blick auf ihren Platz (vor ↔ nach) · Vorbild Bildpaar vor ↔ nach über Tage: leere Häuser, neue Stände (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.emergenz#5",
+   "leiter": "erleben.kopplung.emergenz",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Messort stadt nach 10 Spielstunden ohne Eingriff · Vorbild Blind-Spieler nennt ungefragt ≥ 3 Ereignisse, die er nicht verursachte (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.emergenz#6",
+   "leiter": "erleben.kopplung.emergenz",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Tal der Kaskade (je Saat am Ort der Geschichte; heute nur die Saat der Sitzung) · Vorbild Gutachter werten 100 Geschichten Vulkan → Küste → Stadt → Krieg (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.emergenz#7",
+   "leiter": "erleben.kopplung.emergenz",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.wahrnehmung#2",
+   "leiter": "erleben.kopplung.wahrnehmung",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.wahrnehmung#3",
+   "leiter": "erleben.kopplung.wahrnehmung",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.wahrnehmung#4",
+   "leiter": "erleben.kopplung.wahrnehmung",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.wahrnehmung#5",
+   "leiter": "erleben.kopplung.wahrnehmung",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.wahrnehmung#6",
+   "leiter": "erleben.kopplung.wahrnehmung",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Messort wiese je Planet (roter ↔ heller Stern; heute nur der Stern der Sitzung) · Vorbild Bildpaar zweier Planeten: Vegetationsfarbe und Augenspektren gesetzmäßig verschieden (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.bild#2",
+   "leiter": "erleben.kopplung.bild",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Messort dorf (spec/profiband/haushalt.json), Mittag · Vorbild Fotos ähnlicher Landschaft mit Dorf, Wald, Wasser, Himmel (Panel-2AFC, R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.bild#3",
+   "leiter": "erleben.kopplung.bild",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Messort stadt, Uhr 0,78 (Abendlicht) · Vorbild Fotos von Küstenstädten im Abendlicht mit Wetterfront (Panel-2AFC, R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.bild#4",
+   "leiter": "erleben.kopplung.bild",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Messort gipfel-blick, Uhr 0,02 (Nacht) · Vorbild Fotos realer Vulkanküsten bei Nacht (Panel-2AFC, R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.bild#5",
+   "leiter": "erleben.kopplung.bild",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Messort wiese der Saat der Sitzung (je Saat × Pose × Uhr × Wetter × Epoche am Gerät) · Vorbild Panel hält ≥ 0,4 der Bilder für Fotos (Zufall 0,5; R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.bild#6",
+   "leiter": "erleben.kopplung.bild",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Messort gipfel-blick (eine fremde Welt ist in der Sitzung nicht erzeugbar) · Vorbild Sondenfotos von Mars und Titan (Panel-2AFC, R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.klang#1",
+   "leiter": "erleben.kopplung.klang",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.klang#2",
+   "leiter": "erleben.kopplung.klang",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.klang#3",
+   "leiter": "erleben.kopplung.klang",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.klang#4",
+   "leiter": "erleben.kopplung.klang",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.klang#5",
+   "leiter": "erleben.kopplung.klang",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.klang#6",
+   "leiter": "erleben.kopplung.klang",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.geteilter-sinn#1",
+   "leiter": "erleben.kopplung.geteilter-sinn",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose Ego am Ort der Tat von A, bei A und bei B (dieselbe Saat; heute ein Gerät) · Vorbild Bildpaar A ↔ B am Ort der Tat zeigt dieselbe Spur (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.geteilter-sinn#2",
+   "leiter": "erleben.kopplung.geteilter-sinn",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.geteilter-sinn#3",
+   "leiter": "erleben.kopplung.geteilter-sinn",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.geteilter-sinn#4",
+   "leiter": "erleben.kopplung.geteilter-sinn",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.geteilter-sinn#5",
+   "leiter": "erleben.kopplung.geteilter-sinn",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.geteilter-sinn#6",
+   "leiter": "erleben.kopplung.geteilter-sinn",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.geteilter-sinn#7",
+   "leiter": "erleben.kopplung.geteilter-sinn",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.ein-ereignis#1",
+   "leiter": "erleben.kopplung.ein-ereignis",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.ein-ereignis#2",
+   "leiter": "erleben.kopplung.ein-ereignis",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.ein-ereignis#3",
+   "leiter": "erleben.kopplung.ein-ereignis",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.ein-ereignis#4",
+   "leiter": "erleben.kopplung.ein-ereignis",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über dem Feuer ↔ Ego am Messort wiese (Orbit ist nicht erzeugbar: geschossen nur Ego) · Vorbild Bildpaar Orbit ↔ Ego zeigt dieselbe Fahne (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.erleben.kopplung.ein-ereignis#5",
+   "leiter": "erleben.kopplung.ein-ereignis",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.ein-ereignis#6",
+   "leiter": "erleben.kopplung.ein-ereignis",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.epoche-ganz#1",
+   "leiter": "erleben.kopplung.epoche-ganz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.epoche-ganz#2",
+   "leiter": "erleben.kopplung.epoche-ganz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.epoche-ganz#3",
+   "leiter": "erleben.kopplung.epoche-ganz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.epoche-ganz#4",
+   "leiter": "erleben.kopplung.epoche-ganz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.epoche-ganz#5",
+   "leiter": "erleben.kopplung.epoche-ganz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.kopplung.epoche-ganz#6",
+   "leiter": "erleben.kopplung.epoche-ganz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.aufwaerts#1",
+   "leiter": "same.kopplung.aufwaerts",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.aufwaerts#2",
+   "leiter": "same.kopplung.aufwaerts",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.aufwaerts#3",
+   "leiter": "same.kopplung.aufwaerts",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.aufwaerts#4",
+   "leiter": "same.kopplung.aufwaerts",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.aufwaerts#5",
+   "leiter": "same.kopplung.aufwaerts",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.aufwaerts#6",
+   "leiter": "same.kopplung.aufwaerts",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.aufwaerts#7",
+   "leiter": "same.kopplung.aufwaerts",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über dem Planeten vor ↔ nach 300 a (heute keine Orbit-Pose: geschossen an der Wiese) · Vorbild Prüfer-Satz R11: Orbitbild-Paare an 100 Saaten, plausibel ≥ 90 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.aufwaerts#8",
+   "leiter": "same.kopplung.aufwaerts",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.ereignis#2",
+   "leiter": "same.kopplung.ereignis",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.ereignis#3",
+   "leiter": "same.kopplung.ereignis",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose 60 m schräg über dem Herd des Brands der Probe, nach dem Lauf bis 1 km² (die Front brennt im Schuss) · Vorbild Foto einer Brandfront im Grasland und eines Pahoehoe-Felds (Kīlauea, USGS HVO) — Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.ereignis#4",
+   "leiter": "same.kopplung.ereignis",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose der Brand der Probe über dem Herd (heute kein Stadtbrand: derselbe Schuss wie S3) · Vorbild historische Bilder (London 1666, Chicago 1871, Saint-Pierre 1902) — Blind-Urteil ≥ „glaubhaft“ bei 70 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.ereignis#5",
+   "leiter": "same.kopplung.ereignis",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.ereignis#6",
+   "leiter": "same.kopplung.ereignis",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose an der Zelle der Lava 2 m über Grund, Blick 80° hinauf (der Himmel über dem Ausbruch) · Vorbild Himmel nach Pinatubo 1991 / Tambora 1815 über 3 Jahre (Aerosol-Rekonstruktion, Gemälde-Farben Zerefos 2007) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.ereignis#7",
+   "leiter": "same.kopplung.ereignis",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Mess-Wiese der Sitzung (heute kein Krater: geschossen an der Wiese) · Vorbild Chicxulub-Modellierung (Collins et al. 2020, Morgan et al. 2016) — Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.erdsaat#1",
+   "leiter": "same.kopplung.erdsaat",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Mess-Wiese der Sitzung (heute keine Erd-Saat: der Golf von Neapel steht nicht) · Vorbild Relief-Modell des Golfs von Neapel mit dem Vesuv (SRTM 30 m / TINITALY) — Blindpaar R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.erdsaat#2",
+   "leiter": "same.kopplung.erdsaat",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.erdsaat#3",
+   "leiter": "same.kopplung.erdsaat",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Mess-Wiese der Sitzung (heute kein Pompeji, Lissabon, London: derselbe Schuss wie S1) · Vorbild Plinius d. J. (Briefe 6.16/6.20), Augenzeugen 1755, Pepys 1666 — Blind-Bildvergleich R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.erdsaat#4",
+   "leiter": "same.kopplung.erdsaat",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.erdsaat#5",
+   "leiter": "same.kopplung.erdsaat",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.erdsaat#6",
+   "leiter": "same.kopplung.erdsaat",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.gewalt#1",
+   "leiter": "same.kopplung.gewalt",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.gewalt#2",
+   "leiter": "same.kopplung.gewalt",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.gewalt#3",
+   "leiter": "same.kopplung.gewalt",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.gewalt#4",
+   "leiter": "same.kopplung.gewalt",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.gewalt#5",
+   "leiter": "same.kopplung.gewalt",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.gewalt#6",
+   "leiter": "same.kopplung.gewalt",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über dem Fremd-Planeten (heute keine Orbit-Pose: geschossen an der Wiese) · Vorbild Fremdwelt-Probe R10: Ursachen-Probe aus dem Bild Rang ≥ 0,7, Gegenlauf, Neuheit — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.stoerung#2",
+   "leiter": "same.kopplung.stoerung",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.stoerung#3",
+   "leiter": "same.kopplung.stoerung",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.stoerung#4",
+   "leiter": "same.kopplung.stoerung",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "auge: Pose die Stadt am Ausbruch vor ↔ 50 a danach (heute keine Stadt: geschossen an der Wiese) · Vorbild Prüfer-Satz R11: Wiederaufbau nach VEI 5 (Pinatubo 1991 / Angeles City) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.stoerung#5",
+   "leiter": "same.kopplung.stoerung",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.stoerung#6",
+   "leiter": "same.kopplung.stoerung",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Siedlung an der Gefahr je Saat (heute keine Gefahr-Saat: geschossen an der Wiese) · Vorbild Prüfer-Satz R11: Anteil angepasster Bauten im Bild (Pfahlbau, Erdbebenbau) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.stoerung#7",
+   "leiter": "same.kopplung.stoerung",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "auge: Pose Weltkarte vor ↔ nach der Mutation (heute keine Weltkarten-Pose: geschossen an der Wiese) · Vorbild Prüfer-Satz R11: Bildpaar Weltkarte, 10 Glieder am selben Ort — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.kaskade#2",
+   "leiter": "same.kopplung.kaskade",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kaskade#3",
+   "leiter": "same.kopplung.kaskade",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kaskade#4",
+   "leiter": "same.kopplung.kaskade",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kaskade#5",
+   "leiter": "same.kopplung.kaskade",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kaskade#6",
+   "leiter": "same.kopplung.kaskade",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kaskade#7",
+   "leiter": "same.kopplung.kaskade",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kohaerenz#1",
+   "leiter": "same.kopplung.kohaerenz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kohaerenz#2",
+   "leiter": "same.kopplung.kohaerenz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kohaerenz#3",
+   "leiter": "same.kopplung.kohaerenz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kohaerenz#4",
+   "leiter": "same.kopplung.kohaerenz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.kohaerenz#5",
+   "leiter": "same.kopplung.kohaerenz",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose der nächste Ort der Welt aus 80 m Abstand, 60 m Höhe (ohne Ort: die Wiese) · Vorbild Prüfer-Satz R11: 20 Stadtbilder blind ihrem Biom zugeordnet, ≥ 70 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.kohaerenz#6",
+   "leiter": "same.kopplung.kohaerenz",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über dem Planeten (heute keine Orbit-Pose: geschossen an der Wiese) · Vorbild Prüfer-Satz R11: 100 Planeten-Karten blind gegen Erdkarten-Ausschnitte, Verwechslung ≥ 50 % — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.kohaerenz#7",
+   "leiter": "same.kopplung.kohaerenz",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.zeitreise#1",
+   "leiter": "same.kopplung.zeitreise",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.zeitreise#2",
+   "leiter": "same.kopplung.zeitreise",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.zeitreise#3",
+   "leiter": "same.kopplung.zeitreise",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.zeitreise#4",
+   "leiter": "same.kopplung.zeitreise",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.zeitreise#5",
+   "leiter": "same.kopplung.zeitreise",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.zeitreise#6",
+   "leiter": "same.kopplung.zeitreise",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.zeitreise#7",
+   "leiter": "same.kopplung.zeitreise",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.terraform#1",
+   "leiter": "same.kopplung.terraform",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "auge: Pose 2 km über der Stadt, Ziel und Lee im Bild, mit ↔ ohne Eingriff an derselben Saat (heute kein Eingriff: geschossen an der Wiese) · Vorbild Radar-Bilder geimpfter Wolken (Wolkenimpfung, WMO 2017), Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.terraform#2",
+   "leiter": "same.kopplung.terraform",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.terraform#3",
+   "leiter": "same.kopplung.terraform",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über dem Kontinent des Ankers vor ↔ nach dem Eingriff (heute keine Orbit-Pose: geschossen an der Wiese) · Vorbild Klima-Rechnung 2–5 K je CO₂-Verdopplung (IPCC AR6) und Bilder der Folge (Monsun-Karten), Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.terraform#4",
+   "leiter": "same.kopplung.terraform",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.kopplung.terraform#5",
+   "leiter": "same.kopplung.terraform",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbit über der toten Welt an jedem der 10 Halte (heute keine tote Welt, keine Orbit-Pose: geschossen an der Wiese) · Vorbild Terraforming-Folgen der Planetologie (Mars: Druck → Wasser → Leben, McKay 1991), Prüfer-Satz R11 — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  },
+  {
+   "station": "karte2.same.kopplung.terraform#6",
+   "leiter": "same.kopplung.terraform",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "auge: Pose Orbitbild je Saat vor ↔ nach dem Eingriff (heute keine Orbit-Pose: geschossen an der Wiese) · Vorbild Fremdwelt-Probe R10: Prüfer lesen den Eingriff aus dem Orbitbild, Rang ≥ 0,7 (Prüfer-Satz R11) — das Blindpaar urteilt am Gerät (R11); die Station schießt das Bild und behauptet kein GRÜN"
+  }
+ ]
+}
