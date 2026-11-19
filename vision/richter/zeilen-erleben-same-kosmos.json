@@ -370,6 +370,498 @@
    "leiter": "same.preis.takt",
    "sprosse": 7,
    "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#1",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#2",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#3",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#4",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#5",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#6",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#7",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#8",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#2",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose stadt-voll Third, Mittag · Sonne · Sommer (Bühne der Werkbank) (Vorbild Fotos echter Altstädte im Blindtest (≥ 50 % der Häuser plausibel)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#3",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose stadt-voll Third, Mittag (Bühne der Werkbank) (Vorbild Foto einer Großstadt-Kreuzung (Dichte-Histogramm)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#4",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose stadt-voll Third, Nacht und Mittag (Bühne der Werkbank) (Vorbild Skyline-Fotos Hongkong, Manhattan, Shanghai (Blindtest ≥ 40 % Foto)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#5",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Luftbild aus 1 km über der Stadt und auf der Straße (Vorbild Luftbild Tokio (Blindtest ≥ 40 % Foto)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#6",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose aus Fenster, Ebene und 5 km Höhe der Hyperstadt (Vorbild Fotos realer Megastädte im Blindtest (≥ 40 %)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#7",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#1",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#2",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#3",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#4",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#5",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#6",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#7",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#8",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#1",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#2",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#3",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#4",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#5",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#6",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#7",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#1",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf Ego, Mittag · Sonne · Sommer (Bühne der Werkbank) — einer der 10 Orte (Vorbild Panel: der richtige von 10 Orten aus einem Zufallsbild (≥ 80 %), Gegenlauf Ursache getauscht) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#2",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf Third, Mittag (Bühne der Werkbank) — ein Stadtteil von 10² (Vorbild Panel: der richtige von 10 Zufalls-Orten aus 10² (≥ 80 %), Unterschied in ≥ 3 Domänen benannt) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#3",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese Ego, Mittag (Bühne der Werkbank) — eine Region von 10 (Vorbild Panel: die Region aus einem Bild (≥ 80 %), Übergangs-Bilder zwischen die Nachbarn) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#4",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose je Welt ein Bodenbild am Spawn (Vorbild Panel: die richtige von 10 Saaten aus einem Zufallsbild (≥ 90 %)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#5",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose je Welt ein Bodenbild am Spawn (Vorbild Panel: die richtige von 10 Zufalls-Welten aus 10² (≥ 90 %)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#6",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose je Welt ein Bodenbild, die Erd-nahen neben Fotos (Vorbild 2AFC gegen Fotos der Erde und ihrer Epochen (≤ 70 %)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#7",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose je Welt ein Bodenbild am Spawn (Vorbild Panel: die richtige von 10 Zufalls-Saaten aus 10⁴ (≥ 95 %), Fremdwelt-Probe) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#1",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#2",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#3",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#4",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#5",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#6",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#7",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#8",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#3",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#4",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#5",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#6",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#7",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#8",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#2",
+   "leiter": "same.preis.bytes",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#3",
+   "leiter": "same.preis.bytes",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#4",
+   "leiter": "same.preis.bytes",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#5",
+   "leiter": "same.preis.bytes",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#6",
+   "leiter": "same.preis.bytes",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#7",
+   "leiter": "same.preis.bytes",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#1",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#2",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#3",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#4",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#5",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#6",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#7",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#2",
+   "leiter": "same.preis.zugang",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#3",
+   "leiter": "same.preis.zugang",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#4",
+   "leiter": "same.preis.zugang",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#5",
+   "leiter": "same.preis.zugang",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#6",
+   "leiter": "same.preis.zugang",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#7",
+   "leiter": "same.preis.zugang",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#2",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#3",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#4",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#5",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#6",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#1",
+   "leiter": "same.preis.speicher",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#2",
+   "leiter": "same.preis.speicher",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#3",
+   "leiter": "same.preis.speicher",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#4",
+   "leiter": "same.preis.speicher",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#5",
+   "leiter": "same.preis.speicher",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#6",
+   "leiter": "same.preis.speicher",
+   "sprosse": 6,
+   "richter": "gleich"
   }
  ]
 }
