@@ -40,10 +40,11 @@
 //   (j) FLAMME (K66, w28-brand-kern) — der Ton der Brand-Flamme steht VOR dem Auge der Nacht: eine flache Fläche füllt das Bild
 //       (wie (h)), ihr Stoff trägt `_nachtAuge(c, true)` mit c = der Ton der Flamme vor der Tonkurve (fachwerk lichtFarbe(K) ×
 //       (K/kelvin[0])⁴ × fachwerk FEUER_LEUCHTDICHTE ÷ EINHEIT_LX, wie die Tafel in `_brandFlammenZeichnen`) für KERN (kelvin[0]) und
-//       MANTEL (2350 K, die Mitte der Tafel); gemessen die Bild-Mitte nach der ganzen Kette bei fester Belichtung 1,5.
+//       MANTEL (2350 K, die Mitte der Tafel), dazu das GLIMMEN (der Ton des Mantels in der Mitte des mesopischen Bands,
+//       √(staebchenCd · zapfenCd)); gemessen die Bild-Mitte nach der ganzen Kette bei fester Nacht-Belichtung 20 000 (licht-eine-skala).
 //       (j1) NACHT = TAG je Ton (nightFactor 1 gegen 0, je Kanal ≤ FLAMME_TOL); MUTANTE-J im selben Lauf: derselbe Ton OHNE die
-//       Umkehr reißt bei nightFactor 1 am MANTEL (die Nacht entsättigt — sonst ist die Probe blind); der KERN steht über Bild-Weiß
-//       und hält OHNE Umkehr (die Blende am Bild, `NACHT_AUGE.bildZapfen`, w28-glut-nacht) — reißt er, steht der Feuerschein rosa.
+//       Umkehr reißt bei nightFactor 1 am GLIMMEN (die Nacht entsättigt — sonst ist die Probe blind); KERN und MANTEL stehen in der
+//       Leuchtdichte des Gesetzes photopisch und halten OHNE Umkehr — reißen sie, fiel die Flamme aus ihrer Leuchtdichte.
 //       (j2) der Ton liest sich als Feuer: KERN gelb-orange, MANTEL orange-rot (Farbton und Sättigung HSV in ihren Bändern).
 //       (j3) EINE QUELLE: die Schwellen `NACHT_AUGE` liest im ganzen Stamm nur `_nachtAuge` (`stammLib.fehlt` außer dem Glied),
 //       seine Uniform ist die der Kette; die Post-Kette ruft es, die Flamme ruft seine Umkehr (`__fehlt` am lebenden Code).
@@ -113,10 +114,22 @@ const DUNKEL_TOL = 1.5;
 // Tag-Kurve bei 0,028) bei nightFactor 1 zeigt mindestens DUNKEL_LUMA_MIN Luma — der Kontrast fadet zur Nacht aus wie die
 // Entgrauung.
 const DUNKEL_NACHT_LICHT = 0.02;
-// (j) Die Flamme: beide Töne bei Belichtung FLAMME_PROBE.k (eine Nacht-Belichtung — Tag und Nacht unterscheidet NUR das Auge der
+// (j) Die Flamme: jeder Ton bei Belichtung FLAMME_PROBE.k (eine Nacht-Belichtung — Tag und Nacht unterscheidet NUR das Auge der
 // Nacht), der MANTEL bei FLAMME_PROBE.mantelK. FLAMME_TOL: so weit darf die Bild-Mitte je Kanal (8 Bit) zwischen nightFactor 0 und 1
 // auseinanderliegen — und um mehr muss die Mutante ohne Umkehr reißen. FLAMME_BAND: Farbton (Grad) und Sättigung (HSV) je Ton.
-const FLAMME_PROBE = { k: 1.5, mantelK: 2350 };
+// DIE NACHT-BELICHTUNG IN DER EINEN SKALA (licht-eine-skala): bis zur Welle stand k bei 1,5 — in der alten Skala eine Nacht, in
+// der EINEN Skala (das Auge urteilt in cd/m², `_nachtAuge`: Bildwert ÷ k × EINHEIT_LX) liegt bei 1,5 jeder Ton der Probe photopisch
+// (das Gold des Tors 7 000 cd/m²): das Auge der Nacht nimmt nichts, MUTANTE-J und MUTANTE-TOR rissen mit Δ 0 (GTX 1050, a3663ef5f).
+// 20 000 ist die Nacht unter der Kamera des Spiels (die Rauch-Probe misst k an der Uhr 0; im Spiel ≈ 47 000) und trägt das Gold bei
+// 0,52 cd/m² — GERECHNET (Auge + Neutral-Kurve + sRGB, ohne Bloom und Grading) liegt MUTANTE-TOR dort bei Δ 10 (Gold) / 46
+// (Dunkelrot), genau der Lage der Probe vor der Welle (gemessen Δ 10 / 47). Die Tonkurve sieht dasselbe Bild (L × k ist der Bildwert).
+// DIE FLAMME LEUCHTET PHYSIKALISCH (P8, S10): KERN und MANTEL tragen die Leuchtdichte des Gesetzes (fachwerk `FEUER_LEUCHTDICHTE`
+// 15 000 cd/m² an der Wurzel; der Mantel 2350 K 4 600 cd/m²) — weit über `NACHT_AUGE.zapfenCd`: das Auge der Nacht nimmt ihnen bei
+// JEDER Belichtung nichts, die Umkehr ist dort die Identität. Die Prämisse „ohne Umkehr entsättigt der Mantel" fiel mit der Physik;
+// beide stehen als `blende` (ohne Umkehr = Tag). DAS GLIMMEN trägt die Wand gegen die Mutante: der Ton des Mantels in der
+// Leuchtdichte `glimmen` = √(staebchenCd · zapfenCd) (die Mitte des mesopischen Bands in Dekaden, zur Laufzeit aus `NACHT_AUGE`,
+// 0,158 cd/m²) — dort entsättigt das Auge, die Umkehr gibt die Sättigung zurück, soweit ihre Grenze reicht (die Zeile `nachtSatt`).
+const FLAMME_PROBE = { k: 20000, mantelK: 2350, glimmen: true };
 // Gemessen (swiftshader, dfa9edee): KERN Tag [249,184,122] ↔ Nacht [249,184,124], Δ 2 (ohne Umkehr Δ 29); der MANTEL reißt — Tag
 // [200,118,18] ↔ Nacht [199,115,85], Δ 67 (ohne Umkehr Δ 73): sein Blau liegt unter Leuchtdichte × Stäbchen-Anteil, die Umkehr
 // klemmt bei 0 (Farbton 15,8°, Sättigung 0,573; ohne Umkehr 0,474). DIE GRENZE DER UMKEHR, benannt: unter einem Auge, das je
@@ -129,7 +142,14 @@ const FLAMME_PROBE = { k: 1.5, mantelK: 2350 };
 // Umkehr, steht der Feuerschein wieder rosa — der Täter von main (Δ 29) ist Selbsttest-Fall. MANTEL Tag [200,118,18] ↔ Nacht
 // [199,116,41] (Sättigung 0,794; das Blau klemmt bei 0) — ohne Umkehr [163,106,59] (0,638): die Ratsche `nachtSatt` 0,53 → 0,75.
 const FLAMME_TOL = 6;
-const FLAMME_BAND = { kern: { ton: [22, 40], satt: 0.42, name: "gelb-orange", blende: true }, mantel: { ton: [22, 42], satt: 0.75, name: "orange", nachtSatt: 0.75 } };
+// SEIT licht-eine-skala (gerechnet wie oben, k 20 000): KERN und MANTEL Tag = Nacht = ohne Umkehr; GLIMMEN Tag [171,100,10] ↔
+// Nacht [169,97,35] (Sättigung 0,79) — ohne Umkehr [131,84,45] (0,66): dieselbe Lage wie der Mantel vor der Welle (0,794 / 0,638),
+// die Ratsche `nachtSatt` 0,75 bleibt. Die Bänder `ton` / `satt` des Mantels gelten für das Glimmen (derselbe Planck-Ort).
+const FLAMME_BAND = {
+    kern: { ton: [22, 40], satt: 0.42, name: "gelb-orange", blende: true },
+    mantel: { ton: [22, 42], satt: 0.75, name: "orange", blende: true },
+    glimmen: { ton: [22, 42], satt: 0.75, name: "orange", nachtSatt: 0.75 },
+};
 // (j) Das Tor: je Ton der Wert des Zielbilds (lineares Licht der Ziel-Welt, wie der Atlas der Ziele es trägt), bei derselben
 // Belichtung FLAMME_PROBE.k und derselben Toleranz FLAMME_TOL wie die Flamme. Gemessen (swiftshader, d06ad11e, Gestalt drachentor,
 // zwei Läufe Zahl für Zahl gleich): GOLD Tag [235,198,125] ↔ Nacht [235,198,125], Δ 0 — MUTANTE-TOR (die Umkehr reicht den Ton
@@ -152,7 +172,7 @@ function torUrteil(to) {
     if (!to) return ["TOR: die Probe lief nicht"];
     if (to.abbruch) return [`TOR: ABBRUCH — ${to.abbruch}`];
     const v = [];
-    const belicht = +(1 / FLAMME_PROBE.k).toFixed(4);
+    const belicht = +(1 / FLAMME_PROBE.k).toPrecision(4);
     if (!(to.zeilen === Object.keys(TOR_BAND).length && to.belicht === belicht))
         v.push(`TOR: der Atlas der Probe trägt ${to.zeilen} Zeilen (Soll ${Object.keys(TOR_BAND).length}) und teilt durch die Belichtung mit ${to.belicht} (Soll ${belicht}) — die Probe ist blind`);
     for (const [name, band] of Object.entries(TOR_BAND)) {
@@ -198,10 +218,20 @@ const kanalAbstand = (a, b) => (a && b ? +Math.max(...[0, 1, 2].map((c) => Math.
 // dort Welt im Schein der Quelle (Ecken-Mittel 9,69 vor Schwarz), fünf Zeilen rissen. `stoerer` ist der Ton eines Streifens Welt
 // im unteren Viertel, der die ganze Probe über steht (die alte Probe misst mit ihm 49,78 / Hub 0,0147 / Form 0,234 und 0,224 —
 // dieselben fünf Zeilen); (k0) prüft jede Ecke gegen die Wand, MUTANTE-K0 stellt den Störer in die Schicht.
-const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6 };
+// DIE QUELLE IM BILD (licht-eine-skala): die Flammen-Fläche trägt seit P8 die Leuchtdichte des Gesetzes (15 000 cd/m², 2 m:
+// 37 700 cd) — unter der Kamera der Nacht (k an Uhr 0, ≈ 47 000) stand die Unterseite des Ballens an der Klemme des Bild-Weiß
+// (unten 252,84 / oben 110,4, Verhältnis 2,29, GTX 1050 vor cd2cd289c): die Probe maß die Klemme, nicht die Wölbung. Das
+// Verhältnis ist ein Maß der GEOMETRIE (die Normale sieht ins Feuer) — die Probe stellt darum die Quelle über denselben Schreiber
+// (`_flammenLicht(r, cdM2)`, `_leuchtTakt`) bei der Leuchtdichte, deren Stärke × Belichtung `quelleBild` trägt: die Lage der Probe
+// vor der Welle (Stärke 17,177 × k 1,505 = 25,85 Welt-Einheiten in 1 m, c5713056), an der die Bänder (k1) gemessen sind. Das
+// Bild des Kopfs bei der Leuchtdichte des Gesetzes misst die Probe daneben als Auskunft (`gesetz`, kein Urteil).
+const RAUCH_PROBE = { uhr: 0, abstandM: 4.5, wandM: 6, radiusM: 1, deck: 0.45, licht: [0, -2, 3], flammeM: 2, quelleBild: 25.85, versatz: 0.5, streck: 1, rand: 0.8, wand: 0.3, stoerer: 0.05, frames: 6 };
 // GEMESSEN (swiftshader, c5713056, Leinwand 321×241, der Lauf zweimal Zahl für Zahl gleich) — der Kopf und, im selben Lauf, jede
 // Mutante; der Selbsttest urteilt an genau diesen Zahlen (grün am Kopf, rot an jeder Mutanten-Zahl an seiner Stelle). Auf der
 // Karte (GTX 1050, ein Lauf): unten ÷ oben 5,97 / flach 3,28 · Korrelation 0,749 / −0,318 · Höhe zu Breite 2 / 0,926 / 0,926.
+// SEIT licht-eine-skala (GTX 1050, cd2cd289c, k 47 140, die Quelle 3,511 cd/m² über `quelleBild`): unten 54,18 / oben 8,92 = 6,07 ·
+// flach 61,51 / 19,35 = 3,18 · ohne Quelle 0,01 / 1,2 · Korrelation 0,75 / −0,311 · Höhe zu Breite 2,042 / 0,909 / 0,909 · Wand hell
+// 143,4 — jede Zeile im Band der Welle davor; bei der Leuchtdichte des Gesetzes (15 000 cd/m²) unten 254,15 / oben 114,12 (die Klemme).
 const RAUCH_GEMESSEN = {
     kopf: {
         gpuFehler: [],
@@ -332,7 +362,7 @@ function rauchZeilen(ra) {
     return [
         `Rauch (Uhr ${ra.uhr}, nightFactor ${ra.nf}, Belichtung ${ra.k}, Leinwand ${ra.leinwand.join("×")}, Radius ${ra.radiusPx} Pixel) · Licht-Pool ${j(ra.licht)}`,
         `Rauch (k0) WAND: die Ecken (oben links, oben rechts, unten links, unten rechts) schwarz ${j(ra.unten.ecken)} (Soll ≤ ${B.eckeSchwarz}) · hell ${j(ra.koerper.ecken)} (Soll ${B.eckeHell[0]}–${B.eckeHell[1]}) · MUTANTE-K0 der Störer in der Schicht der Probe: ${j(ra.mutWand)}`,
-        `Rauch (k1) UNTERSEITE: unten ${ra.unten.unten} / oben ${ra.unten.oben} (Wand ${ra.unten.grund}) = ${rauchVerh(ra.unten)} (Soll ${B.unten[0]}–${B.unten[1]}) · ohne Quelle unten ${ra.dunkel.unten} / oben ${ra.dunkel.oben} · MUTANTE-K1 woelbung 0: unten ${ra.mutUnten.unten} / oben ${ra.mutUnten.oben} = ${rauchVerh(ra.mutUnten)}`,
+        `Rauch (k1) UNTERSEITE: unten ${ra.unten.unten} / oben ${ra.unten.oben} (Wand ${ra.unten.grund}) = ${rauchVerh(ra.unten)} (Soll ${B.unten[0]}–${B.unten[1]}) · ohne Quelle unten ${ra.dunkel.unten} / oben ${ra.dunkel.oben} · MUTANTE-K1 woelbung 0: unten ${ra.mutUnten.unten} / oben ${ra.mutUnten.oben} = ${rauchVerh(ra.mutUnten)} · Quelle ${ra.quelleCd} cd/m² bei k ${ra.k} · AUSKUNFT bei der Leuchtdichte des Gesetzes (Stärke ${ra.gesetz ? ra.gesetz.staerke : "—"}): unten ${ra.gesetz ? ra.gesetz.unten : "—"} / oben ${ra.gesetz ? ra.gesetz.oben : "—"}`,
         `Rauch (k2) EIN KÖRPER: Korrelation ${ra.koerper.gleich} (Soll ≥ ${B.gleich}; ${ra.koerper.px} Pixel, Hub ${ra.koerper.hub}, Wand ${ra.koerper.wand}, derselbe zweimal ${ra.koerper.boden}) · MUTANTE-K2 am Ballen: ${ra.mutKoerper.gleich} (${ra.mutKoerper.px} Pixel, Hub ${ra.mutKoerper.hub})`,
         `Rauch (k3) ZUG ${ra.zug.tempo} m/s: quer ${j(ra.zug.quer)} (Soll ${B.quer[0]}–${B.quer[1]}) · längs ${j(ra.zug.laengs)} (Soll ${B.laengs[0]}–${B.laengs[1]}) · MUTANTE-K3 ohne Streckung: quer ${j(ra.mutZug.quer)}`,
         `Rauch (k4) BEIDE LESER: ${j(ra.leser)}`,
@@ -530,7 +560,7 @@ function urteil(z) {
                 );
             if (band.blende && !(dM <= FLAMME_TOL))
                 v.push(
-                    `FLAMME: ${N} — OHNE die Umkehr (nightFactor 1) zeigt ${JSON.stringify(tn.ohne)} gegen den Tag ${JSON.stringify(tn.tag)} (Δ ${dM} > ${FLAMME_TOL}) — das Auge der Nacht nimmt einem Ton über Bild-Weiß die Farbe: die Blende am Bild (\`NACHT_AUGE.bildZapfen\` in \`_nachtAuge\`, stamm/bild-kosten.js) fehlt oder greift nicht, der Feuerschein steht rosa`
+                    `FLAMME: ${N} — OHNE die Umkehr (nightFactor 1) zeigt ${JSON.stringify(tn.ohne)} gegen den Tag ${JSON.stringify(tn.tag)} (Δ ${dM} > ${FLAMME_TOL}) — das Auge der Nacht nimmt der Flamme (${tn.cd} cd/m², photopisch) die Farbe: sie steht nicht bei der Leuchtdichte ihres Gesetzes (fachwerk \`FEUER_LEUCHTDICHTE\` ÷ \`EINHEIT_LX\`, die Tafel in stamm/feld-brand.js \`_brandFlammenZeichnen\`), das Auge urteilt nicht in cd/m² (\`NACHT_AUGE.zapfenCd\`), oder die Blende am Bild (\`NACHT_AUGE.bildZapfen\` in \`_nachtAuge\`, stamm/bild-kosten.js) fehlt — der Feuerschein steht rosa`
                 );
             if (!band.nachtSatt && !band.blende && !(dM > FLAMME_TOL))
                 v.push(
@@ -655,8 +685,11 @@ function selbsttest() {
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
         flamme: {
             toene: {
-                kern: { kelvin: 3000, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [249, 184, 122], nacht: [249, 184, 121], ohne: [249, 184, 122] },
-                mantel: { kelvin: 2350, k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [200, 118, 18], nacht: [199, 116, 41], ohne: [163, 106, 59] },
+                // KERN und MANTEL: der Ton des Feuers, wie er vor der Welle im Bild stand (gemessen w28-glut-nacht) — photopisch, Tag =
+                // Nacht = ohne Umkehr; GLIMMEN: gerechnet bei k 20 000 (der Mantel in 0,158 cd/m²)
+                kern: { kelvin: 3000, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [249, 184, 122], nacht: [249, 184, 122], ohne: [249, 184, 122] },
+                mantel: { kelvin: 2350, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [200, 118, 18], nacht: [200, 118, 18], ohne: [200, 118, 18] },
+                glimmen: { kelvin: 2350, cd: 0.1581, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [171, 100, 10], nacht: [169, 97, 35], ohne: [131, 84, 45] },
             },
             quelle: { uniform: true, augeLiest: true, zwilling: null, kette: true, umkehr: true },
             // (j) Flamme und Tor: die Zahlen des gemessenen Laufs (GTX 1050, echte Karte, w28-glut-nacht), `ohne` = MUTANTE-TOR im selben Lauf
@@ -664,10 +697,10 @@ function selbsttest() {
                 gestalt: "drachentor",
                 rufe: 1,
                 zeilen: 2,
-                belicht: 0.6667,
+                belicht: 0.00005,
                 toene: {
-                    gold: { wert: [0.9, 0.62, 0.25], k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [235, 197, 125], nacht: [235, 197, 125], ohne: [231.5, 198, 135] },
-                    dunkelrot: { wert: [0.12, 0.012, 0.01], k: 1.5, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [93, 9, 2], nacht: [93, 8, 2], ohne: [46, 4, 3] },
+                    gold: { wert: [0.9, 0.62, 0.25], k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [235, 197, 125], nacht: [235, 197, 125], ohne: [231.5, 198, 135] },
+                    dunkelrot: { wert: [0.12, 0.012, 0.01], k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [93, 9, 2], nacht: [93, 8, 2], ohne: [46, 4, 3] },
                 },
             },
         },
@@ -737,11 +770,16 @@ function selbsttest() {
         ["Kern nicht vor dem Auge der Nacht (der Stand von main: ohne Blende, ohne Umkehr)", (z) => (z.flamme.toene.kern.nacht = [240, 200, 150]), /FLAMME: KERN \(3000 K\) — .*steht nicht vor dem Auge der Nacht/],
         ["der Täter von main: das Auge wäscht den Kern über Bild-Weiß (ohne Umkehr Δ 29)", (z) => (z.flamme.toene.kern.ohne = [240, 200, 151]), /FLAMME: KERN — OHNE die Umkehr .*Δ 29 > 6.*`NACHT_AUGE\.bildZapfen`.*rosa/],
         ["Kern ohne Umkehr ungemessen", (z) => delete z.flamme.toene.kern.ohne, /FLAMME: KERN — OHNE die Umkehr .*> 6/],
-        ["Mantel entsättigt in der Nacht", (z) => (z.flamme.toene.mantel.nacht = z.flamme.toene.mantel.ohne), /FLAMME: MANTEL \(2350 K\) — .*ohne dass seine Umkehr/],
-        ["Flammen-Mutante reißt nicht (blind)", (z) => (z.flamme.toene.mantel.ohne = z.flamme.toene.mantel.nacht), /FLAMME: MANTEL — MUTANTE-J .*Sättigung 0\.794 ≥ 0\.75.*die Probe ist blind/],
-        ["der Mantel am Stand von main (Sättigung 0,573)", (z) => (z.flamme.toene.mantel.nacht = [199, 115, 85]), /FLAMME: MANTEL \(2350 K\) — .*Sättigung 0\.573 < 0\.75/],
+        // licht-eine-skala: der Mantel steht bei der Leuchtdichte des Gesetzes photopisch — fällt er ins mesopische Band (ein Ton
+        // ÷ Belichtung wie vor P8, die Luma zweimal geteilt), nimmt ihm das Auge ohne Umkehr die Farbe (die Zahl vor der Welle)
+        ["der Mantel fällt ins mesopische Band (ohne Umkehr entsättigt)", (z) => (z.flamme.toene.mantel.ohne = [163, 106, 59]), /FLAMME: MANTEL — OHNE die Umkehr .*Δ 41 > 6.*`FEUER_LEUCHTDICHTE`/],
+        ["die Flamme brennt nachts weiß (die Klemme am Bild-Weiß)", (z) => (z.flamme.toene.kern.tag = z.flamme.toene.kern.nacht = z.flamme.toene.kern.ohne = [255, 255, 255]), /FLAMME: KERN \(3000 K\) liest sich nicht als Feuer — \[255,255,255\].*Sättigung 0 /],
+        ["Glimmen entsättigt in der Nacht", (z) => (z.flamme.toene.glimmen.nacht = z.flamme.toene.glimmen.ohne), /FLAMME: GLIMMEN \(2350 K\) — .*ohne dass seine Umkehr/],
+        ["Flammen-Mutante reißt nicht (blind)", (z) => (z.flamme.toene.glimmen.ohne = z.flamme.toene.glimmen.nacht), /FLAMME: GLIMMEN — MUTANTE-J .*Sättigung 0\.79\d ≥ 0\.75.*die Probe ist blind/],
+        ["das Glimmen am Stand von main (Sättigung 0,573)", (z) => (z.flamme.toene.glimmen.nacht = [199, 115, 85]), /FLAMME: GLIMMEN \(2350 K\) — .*Sättigung 0\.573 < 0\.75/],
+        ["Glimmen ungemessen", ["flamme.toene.glimmen"], /FLAMME: GLIMMEN — nicht gemessen/],
         ["Flammen-Probe ohne Nacht (blind)", ["flamme.toene.mantel.nfNacht=", 0], /FLAMME: MANTEL — .*nightFactor bei 0 \/ 0 \/ 1/],
-        ["Flammen-Probe bei fremder Belichtung (blind)", ["flamme.toene.kern.k=", 1], /FLAMME: KERN — die Belichtung stand bei 1 statt 1\.5/],
+        ["Flammen-Probe bei fremder Belichtung (blind)", ["flamme.toene.kern.k=", 1], /FLAMME: KERN — die Belichtung stand bei 1 statt 20000/],
         ["Kern cremeweiß", (z) => (z.flamme.toene.kern.tag = z.flamme.toene.kern.nacht = [250, 235, 200]), /FLAMME: KERN \(3000 K\) liest sich nicht als Feuer .*Sättigung 0\.2/],
         ["Mantel gelb statt orange-rot", (z) => (z.flamme.toene.mantel.tag = z.flamme.toene.mantel.nacht = [220, 190, 40]), /FLAMME: MANTEL \(2350 K\) liest sich nicht als Feuer — .*Farbton 50°/],
         // 46f69d7b: die Rechnung stand inline in der Post-Kette — neben dem Glied wäre sie der Zwilling
@@ -765,10 +803,10 @@ function selbsttest() {
         ["das Tor ruft die Umkehr nicht", ["flamme.tor.rufe=", 0], /TOR: EINE QUELLE — .*stamm\/siedlung-tor\.js `_membranGraph`, das Zielbild \(`ziel`\) die Umkehr `_nachtAuge\(…, true\)` 0×/],
         ["Tor-Rufe ungemessen", ["flamme.tor.rufe"], /TOR: EINE QUELLE — .*undefined×/],
         ["Tor-Probe ohne Nacht (blind)", ["flamme.tor.toene.gold.nfNacht=", 0], /TOR: GOLD — .*nightFactor bei 0 \/ 0 \/ 1/],
-        ["Tor-Probe bei fremder Belichtung (blind)", ["flamme.tor.toene.dunkelrot.k=", 1], /TOR: DUNKELROT — die Belichtung stand bei 1 statt 1\.5/],
+        ["Tor-Probe bei fremder Belichtung (blind)", ["flamme.tor.toene.dunkelrot.k=", 1], /TOR: DUNKELROT — die Belichtung stand bei 1 statt 20000/],
         ["der Atlas der Probe trägt die Zeile nicht (blind)", (z) => (z.flamme.tor.toene.gold.tag = z.flamme.tor.toene.gold.nacht = [0, 0, 0]), /TOR: GOLD — der Ton der Probe liest sich am Tag nicht als gold/],
         ["das Tor liest die Zeile des Nachbarn (blind)", (z) => (z.flamme.tor.toene.dunkelrot.tag = [235, 198, 125]), /TOR: DUNKELROT — der Ton der Probe liest sich am Tag nicht als dunkelrot: .*Farbton 39\.8°/],
-        ["der Atlas der Probe ohne Belichtung (blind)", ["flamme.tor.belicht=", 1], /TOR: der Atlas der Probe trägt 2 Zeilen .*mit 1 \(Soll 0\.6667\)/],
+        ["der Atlas der Probe ohne Belichtung (blind)", ["flamme.tor.belicht=", 1], /TOR: der Atlas der Probe trägt 2 Zeilen .*mit 1 \(Soll 0\.00005\)/],
         ["Tor-Ton ungemessen", ["flamme.tor.toene.dunkelrot"], /TOR: DUNKELROT — nicht gemessen/],
         ["Tor-Probe bricht ab", ["flamme.tor.abbruch=", "TypeError: r._torZielEinsetzen is not a function"], /TOR: ABBRUCH — TypeError/],
         ["Tor-Probe fehlt", ["flamme.tor"], /TOR: die Probe lief nicht/],
@@ -1279,9 +1317,14 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                 try {
                     if (!nachtU) throw new Error("die Post-Kette trägt keine Uniform nightFactor");
                     const [BF, FW, L] = [r.constructor.BRAND.bild.flamme, globalThis.__fachwerkCore, T.TSL];
-                    const flammenStoff = (K, umkehr) => {
+                    // der Ton wie die Tafel (8 Bit) × die Leuchtdichte ÷ die Luma der heißesten Zeile (S10, `_brandFlammenZeichnen`);
+                    // `cd` ohne Wort die der Flamme, sonst steht der Ton in GENAU dieser Leuchtdichte (das Glimmen)
+                    const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                    const flammenStoff = (K, umkehr, cd) => {
                         const [c, w] = [FW.lichtFarbe(K), Math.pow(K / BF.kelvin[0], 4)];
-                        const ton = L.vec3(...[0, 1, 2].map((i) => Math.round(255 * c[i] * w) / 255)).mul(L.float(FW.FEUER_LEUCHTDICHTE / __weltLicht.EINHEIT_LX));
+                        const t8 = [0, 1, 2].map((i) => Math.round(255 * c[i] * w) / 255);
+                        const faktor = cd > 0 ? cd / luma(t8) : FW.FEUER_LEUCHTDICHTE / luma(FW.lichtFarbe(BF.kelvin[0]));
+                        const ton = L.vec3(...t8).mul(L.float(faktor / __weltLicht.EINHEIT_LX));
                         const m = new T.MeshBasicNodeMaterial();
                         m.fog = false;
                         m.colorNode = L.vec4(umkehr ? r._nachtAuge(ton, true) : ton, 1);
@@ -1305,11 +1348,13 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                             nf: nachtU.value,
                         };
                     };
-                    for (const [name, K] of [["kern", BF.kelvin[0]], ["mantel", flammeProbe.mantelK]]) {
-                        const [mit, ohneUmkehr] = [flammenStoff(K, true), flammenStoff(K, false)];
+                    const NA = r.constructor.NACHT_AUGE;
+                    const glimmCd = +Math.sqrt(NA.staebchenCd * NA.zapfenCd).toPrecision(4);
+                    for (const [name, K, cd] of [["kern", BF.kelvin[0]], ["mantel", flammeProbe.mantelK], ["glimmen", flammeProbe.mantelK, glimmCd]]) {
+                        const [mit, ohneUmkehr] = [flammenStoff(K, true, cd), flammenStoff(K, false, cd)];
                         const [tag, nacht, ohne] = [await mitte(mit, 0), await mitte(mit, 1), await mitte(ohneUmkehr, 1)];
                         const k = [tag, nacht, ohne].every((x) => x.k === flammeProbe.k) ? flammeProbe.k : [tag.k, nacht.k, ohne.k].join("/");
-                        FL.toene[name] = { kelvin: K, k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
+                        FL.toene[name] = { kelvin: K, cd: cd || FW.FEUER_LEUCHTDICHTE, k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
                     }
                     // (j3) EINE QUELLE am lebenden Code (ohne Kommentare, `__fehlt`): die Uniform des Glieds IST die der Kette, das Glied
                     // liest die Stäbchen-Schwelle, die Kette ruft das Glied mit ihrer Farbe, die Flamme ruft seine Umkehr
@@ -1317,7 +1362,8 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                         uniform: r._nachtAuge(null) === nachtU,
                         augeLiest: !window.__fehlt(r._nachtAuge, /\.staebchenCd\b/),
                         kette: !window.__fehlt(r._ensurePostProcessing, /_nachtAuge\(\s*(?!null\b)[A-Za-z_]/),
-                        umkehr: !window.__fehlt(r._brandFlammenZeichnen, /_nachtAuge\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*,\s*true\s*\)/),
+                        // vier Klammer-Tiefen: seit S10 teilt der Ruf durch die Luma der heißesten Zeile, `((c) => …)(lichtFarbe(K0))`
+                        umkehr: !window.__fehlt(r._brandFlammenZeichnen, /_nachtAuge\((?:[^()]|\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\))*,\s*true\s*\)/),
                     };
                     // (j) DAS TOR: das Zielbild der Membran am ECHTEN Knoten des Stamms. Ein eigener Atlas der Ziele (der echte
                     // Bauer `_torZiele`, der echte Schreiber `_torZielEinsetzen`: je Ton EINE Zeile, die ganze Zeile dieser Ton),
@@ -1378,7 +1424,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                             const k = [tag, nacht, ohne].every((x) => x.k === flammeProbe.k) ? flammeProbe.k : [tag.k, nacht.k, ohne.k].join("/");
                             TOR.toene[name] = { wert: torProbe.toene[name], k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
                         }
-                        Object.assign(TOR, { gestalt, rufe, zeilen: atlas.uZeilen.value, belicht: +(1 / flammeProbe.k).toFixed(4) });
+                        Object.assign(TOR, { gestalt, rufe, zeilen: atlas.uZeilen.value, belicht: +(1 / flammeProbe.k).toPrecision(4) });
                     } catch (e) {
                         TOR.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
                     } finally {
@@ -1648,7 +1694,12 @@ function rauchProbe(ort, P) {
             };
             // DIE QUELLE DES LICHT-POOLS: eine Flammen-Fläche (`_flammenLicht`) unter dem Ballen — durch den EINEN Schreiber, bis
             // zum Fixpunkt ihrer Blende (wie die Bühne mit Uhr)
-            const F = r._flammenLicht(P.flammeM);
+            // die Leuchtdichte der Quelle: Stärke (cd ÷ EINHEIT_LX) × k = `quelleBild` (die Lage vor der Welle), über `_flammenLicht`
+            const FG = r._flammenLicht(P.flammeM);
+            const kNacht = rend.toneMappingExposure;
+            const quelleCd = (globalThis.__fachwerkCore.FEUER_LEUCHTDICHTE * (P.quelleBild * __weltLicht.EINHEIT_LX)) / (kNacht * FG.L.cd * FG.masse);
+            const F = r._flammenLicht(P.flammeM, quelleCd);
+            aus.quelleCd = +quelleCd.toPrecision(4);
             const quelle = { quelle: "brand", x: M.x + P.licht[0], y: M.y + P.licht[1], z: M.z + P.licht[2], L: F.L, masse: F.masse, phase: 0, rang: 0 };
             quelle.id = quelle;
             let brennt = false;
@@ -1663,7 +1714,8 @@ function rauchProbe(ort, P) {
                     Q.halter.forEach((h, j) => (Q.blende[j] = h && Q.wahl.some((w) => w.id === h.id) ? 1 : 0));
                 }
                 r._leuchtTakt();
-                return r._leuchtPool.plaetze.map((p) => ({ quelle: p.quelle, staerke: +p.staerke.toFixed(3), blende: p.blende, reichweite: p.reichweite }));
+                // die Stärke in vier Stellen: in der EINEN Skala trägt die Quelle der Probe 5,5·10⁻⁴ (toFixed(3) las 0 — „blind")
+                return r._leuchtPool.plaetze.map((p) => ({ quelle: p.quelle, staerke: +p.staerke.toPrecision(4), blende: p.blende, reichweite: p.reichweite }));
             };
             // (k1) UNTERSEITE: die untere Hälfte gegen die obere (je ab 0,15 Radien von der Mitte), dazu der Ton der Wand
             const haelften = async () => {
@@ -1749,6 +1801,13 @@ function rauchProbe(ort, P) {
             aus.licht = licht(true);
             aus.k = +rend.toneMappingExposure.toFixed(3);
             aus.unten = await haelften();
+            // AUSKUNFT: derselbe Kopf bei der Leuchtdichte des Gesetzes (`FEUER_LEUCHTDICHTE`) — was das Auge der Nacht am Rauch über
+            // einem Feuer von 2 m sieht (kein Urteil: das Verhältnis steht dort an der Klemme)
+            quelle.masse = FG.masse;
+            const lichtGesetz = licht(true);
+            aus.gesetz = Object.assign(await haelften(), { staerke: lichtGesetz[0] ? lichtGesetz[0].staerke : null });
+            quelle.masse = F.masse;
+            licht(true);
             // MUTANTE-K0: der Störer tritt in die Schicht der Probe — dasselbe Bild wie der Kopf, die unteren Ecken zeigen ihn
             stoerer.layers.set(SCHICHT);
             aus.mutWand = (await haelften()).ecken;

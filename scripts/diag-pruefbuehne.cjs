@@ -299,7 +299,7 @@ async function s0Probe(page, station, schein) {
                 s.scene.traverse((o) => {
                     if (!o.isPointLight || !(o.intensity > 0)) return;
                     o.getWorldPosition(v);
-                    if (v.distanceTo(um) <= umkreis) lichter.push({ art: "szene", I: +o.intensity.toFixed(3) });
+                    if (v.distanceTo(um) <= umkreis) lichter.push({ art: "szene", I: +o.intensity.toPrecision(4) });
                 });
                 let e2 = 0;
                 const pool = r._leuchtPool;
@@ -307,7 +307,7 @@ async function s0Probe(page, station, schein) {
                     if (!(p.staerke > 0) || Math.hypot(p.x - um.x, p.y - um.y, p.z - um.z) > umkreis) continue;
                     // das Licht DIESER Feuerstelle steht über ihrem Bett (≤ 1,5 m waagrecht); jedes andere zählt nur als Licht
                     const eigen = Math.hypot(p.x - um.x, p.z - um.z) <= 1.5;
-                    lichter.push({ art: "pool", quelle: p.quelle, I: +p.staerke.toFixed(3), eigen });
+                    lichter.push({ art: "pool", quelle: p.quelle, I: +p.staerke.toPrecision(4), eigen });
                     if (!eigen) continue;
                     // der Pool in 2 m: das EINE Gesetz (fachwerk `lichtAbfall`: 1/d^abfall mit Kern und Saum), die Farbe nach Luminanz
                     const ab = window.__fachwerkCore.lichtAbfall({ reichweiteM: p.reichweite, abfall: p.abfall, kernM: p.kern }, 2);
@@ -1477,7 +1477,7 @@ async function lichtLauf() {
                         kelvin: FC.LICHT_GESETZ.feuer.kelvin == null ? null : FC.LICHT_GESETZ.feuer.kelvin,
                         belichtung: +rend.toneMappingExposure.toFixed(3),
                         nacht: s.postProcessingUniforms ? +s.postProcessingUniforms.nightFactor.value.toFixed(3) : null,
-                        pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toFixed(2), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
+                        pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toPrecision(4), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
                         feuer: [feuer.type, ...[f.x, g, f.z].map((x) => +x.toFixed(2))],
                         dc: auf.info && auf.info.drawCalls,
                         nah: nahZahl,
