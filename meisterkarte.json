@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "dabd69bb",
-    "zeit": "2026-11-19T08:01:11.025Z",
+    "zeit": "2026-11-19T08:17:19.201Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1077,7 +1077,7 @@
           "punkte": 1,
           "staffel": "1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit · 2 = jeder Ring bis 300 m, Gras ↔ Krone r ≥ 0,6 längs uWindDir, Ruhe → Sturm hebt die Varianz ≥ 3×, Ego und Third, beide Geräte",
           "messung": "NEU: werkbank bild --zeit Δt nimmt zwei Ausgabe-Frames unter laufender _bildZeit bei fester Kamera; Rausch-Boden aus einer TAAU-Referenz bei Wind 0; Kreuzkorrelation Gras ↔ Krone mit der Laufzeit Abstand/Böen-Tempo ±20 %. Die Kopplung an den Klang zählt Klang K2, die Formung des Winds Wetter K5.",
-          "beleg": "Maschine: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an f68dbf09 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
+          "beleg": "Maschine: gehalten: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an f68dbf09 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
           "schlupfloch": "TAAU-Flimmern und ein eigener Sinus je Schicht erzeugen Varianz ohne gemeinsames Feld: Rausch-Boden aus der Wind-0-Referenz und die Kreuzkorrelation bei physikalischer Laufzeit — nur EINE wandernde Böe besteht.",
           "aenderung": "Der Klang-Teil wanderte nach Klang K2 (B16, V25); die Karte 1.0 gab 1 für die Existenz des Codes → 0.",
           "maschine": true
@@ -1097,7 +1097,7 @@
           "punkte": 1,
           "staffel": "1 = Halm- und Büschel-Pixel 0 in jeder Haus-Box des Start-Dorfs an einem Gerät · 2 = jedes Haus und jedes Wasser, auch gesetzte Bauten, beide Geräte",
           "messung": "werkbank bild mit Klassen-Maske (Schuss ohne Haus-Klasse, damit verdeckte Halme zählen) in jeder Haus-Box des Körper-Satzes und unter dem Wasser-Spiegel, Ego im Haus und Third davor. Der Pop unter Bewegung zählt LOD K2.",
-          "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px an d39e0d6e radeon · gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20415 px an b7ed8419 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20583 px an f68dbf09 radeon · gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20415 px an b7ed8419 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Haus-Böden abzudecken versteckt den Halm: die Klassen-Maske zählt ihn auch verdeckt. Ein Zwillings-Zähler im Quelltext bringt keinen Punkt mehr.",
           "aenderung": "EIN Heim der Wiese im Haus (vorher auch Siedlung K3, Bauen K2, Spielgang K4; B26, V19); der Pop ging zu LOD K2 (V20); gemessen 21.10. am Kopf 0 → 1 (M24).; nach R6 (751a7ac6 Nah-Streu, be20b015 `_naturRaeumen`) 23.10. 1 → 0.",
           "maschine": true
@@ -1107,7 +1107,7 @@
           "punkte": 2,
           "staffel": "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose · 2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
           "messung": "Zeitraffer-Linse an der Mess-Wiese: werkbank bild mit Saison-Phase 0,375 / 0,625 / 0,875 über das Spieler-Wort (steht seit wetter-saat, 428fb6fe). Schnee-Decke zählt Wetter K4, Wachstum Stoffe K5, die Spur der Tat Feld K4.",
-          "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer an f68dbf09 radeon · gehalten: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
+          "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer an f68dbf09 radeon · gehalten: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
           "schlupfloch": "Den Winter grau-braun zu färben (heute) erfüllt die Farbe, nicht die Gestalt: gezählt wird die Deckung (Pixel-Anteil der Krone).",
           "aenderung": "Wachstum und Spur wanderten in ihre Heime (Stoffe K5, Feld K4; V-Wachstum).",
           "maschine": true
@@ -1793,7 +1793,7 @@
           "punkte": 0,
           "staffel": "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5) · 2 = sie folgen der Pflege-Geste (Feld K5) und der Uhr",
           "messung": "werkbank bild --zeit an der Mess-Wiese mit Klassen-Maske insekt.",
-          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +8)",
+          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +8)",
           "schlupfloch": "Ein Partikel-Schwarm ohne Feld-Leser: die Korrelation mit Blüten am Ort und die Pflege-Mutation verlangen das Feld.",
           "maschine": true
         },
@@ -3231,7 +3231,7 @@
           "punkte": 1,
           "staffel": "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
           "messung": "Spielgang-Station haus: Tür öffnen, Treppe, Keller (kellerY −2,40 m), Dachboden, Ego und Third, mittags und nachts.",
-          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8549240975511525 · haus_schwarzwald 0.012803419825892911/0.8691313064567742 · haus_schwarzwald 0.019475803206190762/undefined · haus_schwarzwald 0.008852778068101074/0.9438434959542159 · haus_schwarzwald 0.012394732145086304/0.734640724771158 · haus_schwarzwald 0.006227011113940699/0.8740977446714471 · haus_alpenchalet 0.028719204992897353/undefined · haus_alpenchalet 0.016587501179385615/0.8850077448213388 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015030201412914718/0.886867066270181 · haus_schwarzwald 0.01629660666225693/0.9315550144951729 · haus_schwarzwald 0.018601118900204817/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018951486417467585/undefined · haus_skandinavisch 0.011180283997975304/undefined an f68dbf09 · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +41)",
+          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs, stamm/siedlung-tor.js) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +41)",
           "schlupfloch": "Den Keller zählen statt zu begehen: die Station geht hinein; Labor und Welt durch ein abgedunkeltes Labor anzugleichen: die Albedo zählt Material K1 absolut.",
           "aenderung": "Die 1 der Synthese stand auf Gesetz-Merkmalen, während die Klasse haus am Kopf kein Ist trägt (B60) → 0; Labor = Welt zählt Studios K4, der Ton Material K3 (V16, V22); Schnitt haus-innen 0 → 1 (W10, b9537781).",
           "maschine": true
@@ -4219,7 +4219,7 @@
           "punkte": 2,
           "staffel": "1 = der Zahlen-Rundlauf (Dichte, Bauten) über einen echten Reload ist bewiesen · 2 = bild-diff ≤ 1 % an derselben Pose bei festgehaltener Uhr und Wetter, Pflicht-Inhalt (Bauten, Edits, Wasser) im Bild, beide Geräte",
           "messung": "Station speichern: Pose und Ausgabe-Bild vor dem Speichern, Neuladen, dieselbe Pose.",
-          "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3 an f68dbf09 radeon · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.71 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an b7ed8419 gtx",
+          "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3 an f68dbf09 radeon · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.71 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an b7ed8419 gtx",
           "schlupfloch": "Eine leere Himmels-Pose vergleichen: Pflicht-Inhalt im Bild.",
           "maschine": true
         },
@@ -4594,8 +4594,8 @@
     ],
     "art": {
       "linse": 1,
-      "ungemessen": 17,
-      "rot": 2,
+      "ungemessen": 18,
+      "rot": 1,
       "anderes": 29
     }
   },

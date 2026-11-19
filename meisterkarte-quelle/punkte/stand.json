@@ -2130,7 +2130,7 @@
   },
   "luftwasser.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +8)",
+   "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +8)",
    "stationen": [
     {
      "id": "luftwasser.K4#1",
@@ -2148,7 +2148,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -2509,7 +2509,7 @@
      "gruen": true,
      "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +35) — zuletzt an f68dbf09: Last: Referenz f 1,646 (Faden 1,022 · alle Kerne 1,119 · Stoß in der Station 15,51 Kerne fremd → 1,646; vor 103,9/286,8 ms, nach 103,8/258,5 ms, Ruhe 101,7/256,4 ms seit 2026-11-15) · fremd: node scri",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +35) — zuletzt an fe5b937d: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3244,7 +3244,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8549240975511525 · haus_schwarzwald 0.012803419825892911/0.8691313064567742 · haus_schwarzwald 0.019475803206190762/undefined · haus_schwarzwald 0.008852778068101074/0.9438434959542159 · haus_schwarzwald 0.012394732145086304/0.734640724771158 · haus_schwarzwald 0.006227011113940699/0.8740977446714471 · haus_alpenchalet 0.028719204992897353/undefined · haus_alpenchalet 0.016587501179385615/0.8850077448213388 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015030201412914718/0.886867066270181 · haus_schwarzwald 0.01629660666225693/0.9315550144951729 · haus_schwarzwald 0.018601118900204817/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018951486417467585/undefined · haus_skandinavisch 0.011180283997975304/undefined an f68dbf09 · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +41)",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs, stamm/siedlung-tor.js) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +41)",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3260,9 +3260,10 @@
      "id": "siedlung.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8549240975511525 · haus_schwarzwald 0.012803419825892911/0.8691313064567742 · haus_schwarzwald 0.019475803206190762/undefined · haus_schwarzwald 0.008852778068101074/0.9438434959542159 · haus_schwarzwald 0.012394732145086304/0.734640724771158 · haus_schwarzwald 0.006227011113940699/0.8740977446714471 · haus_alpenchalet 0.028719204992897353/undefined · haus_alpenchalet 0.016587501179385615/0.8850077448213388 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015030201412914718/0.886867066270181 · haus_schwarzwald 0.01629660666225693/0.9315550144951729 · haus_schwarzwald 0.018601118900204817/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018951486417467585/undefined · haus_skandinavisch 0.011180283997975304/undefined",
-     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "ROT: 17 von 17 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 17 lesbar (Plan 17), innen ÷ Außen-Schatten min 0.007 · Median 0.017 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.007009477968855195/undefined · haus_alpenchalet 0.005669636273816779/undefined · haus_schwarzwald 0.008145415041473569/0.8549240975511525 · haus_schwarzwald 0.012803419825892911/0.8691313064567742 · haus_schwarzwald 0.019475803206190762/undefined · haus_schwarzwald 0.008852778068101074/0.9438434959542159 · haus_schwarzwald 0.012394732145086304/0.734640724771158 · haus_schwarzwald 0.006227011113940699/0.8740977446714471 · haus_alpenchalet 0.028719204992897353/undefined · haus_alpenchalet 0.016587501179385615/0.8850077448213388 · haus_alpenchalet 0.009787923598351775/undefined · haus_schwarzwald 0.015030201412914718/0.886867066270181 · haus_schwarzwald 0.01629660666225693/0.9315550144951729 · haus_schwarzwald 0.018601118900204817/undefined · haus_skandinavisch undefined/undefined · haus_alpenchalet 0.018951486417467585/undefined · haus_skandinavisch 0.011180283997975304/undefined",
+     "zahl": null,
+     "sha": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs, stamm/siedlung-tor.js) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN",
+     "ungemessen": true,
      "r6": "konsum"
     },
     {
@@ -3541,7 +3542,7 @@
   },
   "speicher.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3 an f68dbf09 radeon · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.71 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an b7ed8419 gtx",
+   "beleg": "Maschine: gehalten: ✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt an d3708675 headless · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3 an f68dbf09 radeon · gehalten: Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.71 % (Soll ≤ 1; Rauschen ohne Neuladen 0.21 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] nvidia/pascal an b7ed8419 gtx",
    "stationen": [
     {
      "id": "speicher.K4#1",
@@ -3559,7 +3560,8 @@
      "gruen": true,
      "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "GRÜN trotz Last: Referenz f 1,678 (Faden 1,678 · alle Kerne 1,676; vor 140,7/358,8 ms, nach 171/429,8 ms, Ruhe 101,9/256,4 ms seit 2026-11-16) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-31772-profil-AeDgb7 --no-p 166,6 CPU-s · node.exe spike-zeit-4b.cjs 53,0 CPU-s · sh.exe dienst/zug-dienst.sh 12,4 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 41,5 CPU-s · svchost.exe 30,9 CPU-s · SearchIndexer.exe 1,9 CPU-s",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs) — zuletzt an b7ed8419: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN",
+     "gehalten": true,
      "r6": "konsum"
     },
     {
@@ -4237,9 +4239,9 @@
      "id": "tiere.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "ego (first) 5 Sichtungen in 600 Spiel-s (wesen 203 px 64 m 361 s · wesen 1613 px 26 m 506 s · wesen 284 px 44 m 551 s · wesen 273 px 48 m 553 s · wesen 237 px 40 m 560 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 2 Sichtungen in 601 Spiel-s (baer 243 px 25 m 345 s · wesen 277 px 33 m 529 s), 618 Prüfungen, 36 Masken, Bestand bis 20, im Blick erschienen 0",
+     "zahl": "ego (first) 2 Sichtungen in 601 Spiel-s (wesen 675 px 49 m 103 s · wolf 727 px 29 m 505 s), 618 Prüfungen, 35 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 9 Sichtungen in 600 Spiel-s (wesen 404 px 50 m 65 s · wesen 272 px 89 m 234 s · baer 215 px 18 m 265 s · wolf 10797 px 5 m 280 s · wesen 208 px 96 m 456 s · wesen 293 px 34 m 476 s · wesen 313 px 19 m 516 s · wesen 230 px 28 m 526 s · wesen 251 px 88 m 597 s), 633 Prüfungen, 66 Masken, Bestand bis 20, im Blick erschienen 0",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "ROT: ego (first) 5 Sichtungen in 600 Spiel-s (wesen 203 px 64 m 361 s · wesen 1613 px 26 m 506 s · wesen 284 px 44 m 551 s · wesen 273 px 48 m 553 s · wesen 237 px 40 m 560 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 2 Sichtungen in 601 Spiel-s (baer 243 px 25 m 345 s · wesen 277 px 33 m 529 s), 618 Prüfungen, 36 Masken, Bestand bis 20, im Blick erschienen 0",
+     "grund": "ROT: ego (first) 2 Sichtungen in 601 Spiel-s (wesen 675 px 49 m 103 s · wolf 727 px 29 m 505 s), 618 Prüfungen, 35 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 9 Sichtungen in 600 Spiel-s (wesen 404 px 50 m 65 s · wesen 272 px 89 m 234 s · baer 215 px 18 m 265 s · wolf 10797 px 5 m 280 s · wesen 208 px 96 m 456 s · wesen 293 px 34 m 476 s · wesen 313 px 19 m 516 s · wesen 230 px 28 m 526 s · wesen 251 px 88 m 597 s), 633 Prüfungen, 66 Masken, Bestand bis 20, im Blick erschienen 0",
      "r6": "konsum"
     },
     {
@@ -4484,7 +4486,7 @@
   },
   "vegetation.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an f68dbf09 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
+   "beleg": "Maschine: gehalten: Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an f68dbf09 radeon · gehalten: Kamm 406.1 über Rausch-Boden 0.000 (×406.1), Tal 68.4 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s an b7ed8419 gtx",
    "stationen": [
     {
      "id": "vegetation.K2#1",
@@ -4492,7 +4494,8 @@
      "gruen": true,
      "zahl": "Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 68.3 — Kamm/Tal 5.94 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.5 % in 0–15 m, Δt 0.25 s",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs) — zuletzt an b269f840: Deckel 39 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "gehalten": true,
      "r6": "konsum"
     },
     {
@@ -4524,16 +4527,16 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px an d39e0d6e radeon · gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20415 px an b7ed8419 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20583 px an f68dbf09 radeon · gehalten: 44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20415 px an b7ed8419 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert · vegetation.K4#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "vegetation.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20586 px",
-     "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20583 px",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "vegetation.K4#1",
@@ -4567,7 +4570,7 @@
   },
   "vegetation.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer an f68dbf09 radeon · gehalten: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
+   "beleg": "Maschine: gehalten: Krone sommer 104101 px · winter 1917 px → Winter 0.018 × Sommer an 4ee205bd radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer an f68dbf09 radeon · gehalten: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.86 · fruehling 1.70 → Winter 0.356 × Sommer an 18058dba gtx",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4594,7 +4597,8 @@
      "gruen": true,
      "zahl": "Krone sommer 104461 px · winter 1911 px · fruehling 76641 px → Winter 0.018 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs, stamm/studio-gestalt.js) — zuletzt an 01a6714a: die Welt der Sitzung trägt nicht mehr (die Welt antwortet nicht (/fenster: {\"fehler\":\"/fenster ohne Antwort binnen 30 s\"})) — offen, UNGEMESSEN",
+     "gehalten": true,
      "r6": "konsum"
     },
     {
@@ -4824,7 +4828,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an fe885d9d: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein Maß der Stadt) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „5“: der Läufer ersetzt den Platzhalter SEK)",
+     "grund": "Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -10359,7 +10363,7 @@
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: Station seit der Messung geändert · karte2.erleben.spieler.praesenz#1 gtx: Station seit der Messung geändert — zuletzt an b7ed8419: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 229.1 →  · karte2.erleben.spieler.praesenz#2 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#2 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#3 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#3 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#4 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#4 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#5 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#5 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#6 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · karte2.erleben.spieler.praesenz#1 gtx: Station seit der Messung geändert — zuletzt an b7ed8419: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 229.1 →  · karte2.erleben.spieler.praesenz#2 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#2 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#3 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#3 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#4 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#4 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#5 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#5 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#6 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -10367,7 +10371,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -15801,7 +15805,7 @@
   },
   "karte2.mensch.bau.innen": {
    "punkte": 0,
-   "beleg": "Maschine: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an f68dbf09 radeon · gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an 18058dba gtx — offen: karte2.mensch.bau.innen#3 radeon: ungemessen (R10) · karte2.mensch.bau.innen#3 gtx: ungemessen (R10) · karte2.mensch.bau.innen#4 radeon: ungemessen (R10) · karte2.mensch.bau.innen#4 gtx: ungemessen (R10) · karte2.mensch.bau.innen#5 radeon: ungemessen (R10) · karte2.mensch.bau.innen#5 gtx: ungemessen (R10) · karte2.mensch.bau.innen#6 radeon: ungemessen (R10) · karte2.mensch.bau.innen#6 gtx: ungemessen (R10) · karte2.mensch.bau.innen#7 radeon: ungemessen (R10) · karte2.mensch.bau.innen#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an f68dbf09 radeon · gehalten: 6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet an 18058dba gtx — offen: karte2.mensch.bau.innen#3 radeon: ungemessen (R10) · karte2.mensch.bau.innen#3 gtx: ungemessen (R10) · karte2.mensch.bau.innen#4 radeon: ungemessen (R10) · karte2.mensch.bau.innen#4 gtx: ungemessen (R10) · karte2.mensch.bau.innen#5 radeon: ungemessen (R10) · karte2.mensch.bau.innen#5 gtx: ungemessen (R10) · karte2.mensch.bau.innen#6 radeon: ungemessen (R10) · karte2.mensch.bau.innen#6 gtx: ungemessen (R10) · karte2.mensch.bau.innen#7 radeon: ungemessen (R10) · karte2.mensch.bau.innen#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.bau.innen#1",
@@ -15809,7 +15813,8 @@
      "gruen": true,
      "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": null,
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs, stamm/siedlung-tor.js)",
+     "gehalten": true,
      "r6": "konsum",
      "beide": true
     },
@@ -29254,7 +29259,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an 7de938ab: Last: Referenz f 1,268 (Faden 1,118 · alle Kerne 1,147 · Stoß in der Station 6,42 Kerne fremd → 1,268; vor 90,2/301,3 ms, nach 80,1/276,8 ms, Ruhe 80,7/262,6 ms seit 2026-11-17) · fremd: Claude.exe -- · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Last: Referenz f 1,603 (Faden 1,479 · alle Kerne 1,603; vor 132,5/362,5 ms, nach 123,9/342,3 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: Last: Referenz f 1,496 (Faden 1,496 · alle Kerne 1,093; vor 116,4/287 ms, nach 109,8/268,4 ms, Ruhe 77,8/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/zug-dienst.sh 93,4 CPU-s · node scripts/diag-k · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Last: Referenz f 1,603 (Faden 1,479 · alle Kerne 1,603; vor 132,5/362,5 ms, nach 123,9/342,3 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29262,7 +29267,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 7de938ab: Last: Referenz f 1,268 (Faden 1,118 · alle Kerne 1,147 · Stoß in der Station 6,42 Kerne fremd → 1,268; vor 90,2/301,3 ms, nach 80,1/276,8 ms, Ruhe 80,7/262,6 ms seit 2026-11-17) · fremd: Claude.exe --",
+     "grund": "Station seit der Messung geändert — zuletzt an f68dbf09: Last: Referenz f 1,496 (Faden 1,496 · alle Kerne 1,093; vor 116,4/287 ms, nach 109,8/268,4 ms, Ruhe 77,8/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/zug-dienst.sh 93,4 CPU-s · node scripts/diag-k",
      "ungemessen": true,
      "beide": true
     },
@@ -37225,7 +37230,7 @@
      "gruen": true,
      "zahl": "0 harte UI-Zeilen im DOM von 635 Zeilen (625 aus der Tafel, 10 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2431, en 2431) · [linse-gpu] amd/rdna-3",
      "sha": "a635bfee2a64f47cdc7d1786b5a9fb09bd10b978",
-     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +62) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: index.html, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +62) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -37412,12 +37417,10 @@
    ]
   }
  },
- "rueckfall": [
-  "tiere.K5#1 radeon: ego (first) 5 Sichtungen in 600 Spiel-s (wesen 203 px 64 m 361 s · wesen 1613 px 26 m 506 s · wesen 284 px 44 m 551 s · wesen 273 px 48 m 553 s · wesen 237 px 40 m 560 s), 626 Prüfungen, 52 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 2 Sichtungen in 601 Spiel-s (baer 243 px 25 m 345 s · wesen 277 px 33 m 529 s), 618 Prüfungen, 36 Masken, Bestand bis 20, im Blick erschienen 0 an f68dbf09 (grün gebucht an fe5b937d)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 198,
+  "konsum": 199,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37579,10 +37582,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3428
+  "ohne": 3427
  },
  "kopfVoll": "dabd69bb4d26d8cb10c0a63bfb16f7800462a992",
- "zeit": "2026-11-19T08:01:11.025Z",
+ "zeit": "2026-11-19T08:17:19.201Z",
  "vorher": "dabd69bb",
  "bilanz": {
   "gewinn": [],
