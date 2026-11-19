@@ -965,6 +965,7 @@ class AnazhRealm_siedlung_bauten {
             matOpts.transparent = true;
             matOpts.opacity = part.opacity;
         }
+        if (part.leuchtdichte > 0) matOpts.leuchtdichte = part.leuchtdichte; // ein Strahler bei seiner Leuchtdichte (cd/m², Spiegel zu _buildFromBlueprint)
         if (AnazhRealm.ARCH_LEAF_MAT_SHARED === false) return this._buildToonNodeMaterial(matOpts); // A/B-Hebel (Linse)
         // Die Glüh-Frage über die EINE Profil-Quelle (_substanceResponseProfile;
         // tagless fällt wie im PBR-Bau auf defaults.werk → glüht → fail-closed
@@ -972,7 +973,7 @@ class AnazhRealm_siedlung_bauten {
         const profil = matOpts.tags
             ? this._substanceResponseProfile(matOpts.tags)
             : AnazhRealm.SUBSTANCE_RESPONSE.defaults.werk;
-        const glueht = Math.max(0, (Number(profil && profil.emissiv) || 0) - 0.5) > 0.01;
+        const glueht = part.leuchtdichte > 0 || Math.max(0, (Number(profil && profil.emissiv) || 0) - 0.5) > 0.01;
         if (!glueht) {
             matOpts.color = 0xffffff; // die Farbe reist als Instanz-Kanal (leaf.tint)
             matOpts.leafTint = true; // Signatur-Marker — keine Kollision mit echt-weiß gebackenen Signaturen
@@ -985,8 +986,10 @@ class AnazhRealm_siedlung_bauten {
     // Welle B — DIE LICHTQUELLE: ein Teil, dessen Genom das Leuchten trägt (`emissiveBoost`, das Glut-/Kristall-
     // Genom) UND dessen Substanz glimmt (dieselbe Klammer `emissiv − 0.5 > 0.01` wie _archLeafMaterial). Die Klammer
     // allein trifft auch Holz, Laub, Leder (ihr Glimmen ist ein Ton, kein Feuer) — erst die Genom-Deklaration macht
-    // den Teil zum Licht. Eine Lichtquelle wirft keinen Schatten (Glut-Bett und -Zungen; das Becken wirft).
+    // den Teil zum Licht. Eine Lichtquelle wirft keinen Schatten (Glut-Bett und -Zungen; das Becken wirft). Ein Teil, das seine
+    // Leuchtdichte trägt (`leuchtdichte`, das Glutbett der Esse), IST ein Strahler.
     _archTeilLeuchtet(part) {
+        if (part && part.leuchtdichte > 0) return true;
         if (!part || !Number.isFinite(part.emissiveBoost)) return false;
         const def =
             typeof part.material === "string" && this.state.materials ? this.state.materials[part.material] : null;

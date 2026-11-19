@@ -2494,7 +2494,8 @@ class AnazhRealm_feld_leben {
     // der Schmiede-Werkstatt, `_esseAmArm`), strebt sie gegen ihr Feuer (`ESSE.feuerK`), sonst gegen die Luft des Temperatur-Felds
     // an der Höhe der Hand (`_temperaturAt`) — der Gang des Kerns (`waermeGang`, τ = ρ·c·d/2 / α aus der Zeile ihres Stoffs),
     // exakt je Takt; unter der Ruhe über der Luft ist sie kalt, ihr Stand fällt. Ihre GLUT ist die des Kerns (`glutAus`: über dem
-    // Draper-Punkt ∝ T⁴, 1 am Feuer) und leuchtet in der Hand als Wärmestrahler in der Farbe ihrer Temperatur (`_stahlGlut` →
+    // Draper-Punkt ∝ T⁴, 1 am Feuer) und leuchtet in der Hand als Wärmestrahler in der Farbe und der Leuchtdichte ihrer Temperatur
+    // (fachwerk `glutLeuchtdichte`, `_stahlGlut` →
     // `_leuchtQuellen`). Bis stoffe.K3-2 las die Esse keine Temperatur: ihr Glutbett glühte, was man in es hielt, blieb kalt.
     _tickEsse(dt) {
         const pm = this.state.playerMesh;
@@ -2549,9 +2550,12 @@ class AnazhRealm_feld_leben {
         return null;
     }
 
-    // Das Licht des glühenden Geräts (`_leuchtQuellen`) oder null: an der Hand, das Herdfeuer des Gesetzbuchs (LICHT_GESETZ.feuer)
-    // in der Farbtemperatur des Stahls, ohne Flackern, mit dem Kern der Klinge; die Masse folgt der Glut über die strahlende
-    // Fläche der Klinge gegen das Glutbett der Studio-Feuerstelle (klang `bettRefM`, der Bezug jeder Glut).
+    // Das Licht des glühenden Geräts (`_leuchtQuellen`) oder null: an der Hand ein schwarzer Körper seiner Temperatur — Abfall und
+    // Reichweite des Feuers (LICHT_GESETZ.feuer), ohne Flackern und Zeitplan, mit dem Kern der Klinge, in der Farbtemperatur des
+    // Stahls; seine Lichtstärke ist Leuchtdichte × strahlende Fläche (fachwerk `glutLeuchtdichte(T)` × `ESSE.flaecheM2` ÷ (1 + k²) cd
+    // im Abfall des Datums, der Weg von `_flammenLicht`), die EINE Quelle jeder Glut (licht-eine-skala, die Daten-Leser). Ob sie
+    // glüht, sagt der Kern (`glutAus` über dem Draper-Punkt). Bis hier trug sie das Herdfeuer (10,2 cd) × `glutAus` × ihre Fläche ÷
+    // das Glutbett der Studio-Feuerstelle (klang `bettRefM`): am Feuer der Esse 1,35 cd — das 670-Tel ihres schwarzen Körpers.
     _stahlGlut() {
         const s = this._stahl;
         const pm = this.state.playerMesh;
@@ -2566,19 +2570,18 @@ class AnazhRealm_feld_leben {
             (this._stahlLicht = {
                 quelle: "stahl",
                 phase: 0,
-                L: Object.assign({}, L, { kernM: E.kernM, flacker: null }),
+                L: Object.assign({}, L, { cd: 1, zeit: null, schaltet: false, kernM: E.kernM, flacker: null }),
             });
         const hand = pm.userData && pm.userData.heldMesh;
         const v = this._stahlLage || (this._stahlLage = new THREE.Vector3());
         if (hand) hand.getWorldPosition(v);
         else v.set(pm.position.x, pm.position.y + E.handHoeheM, pm.position.z);
-        const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
         q.L.kelvin = s.T + 273.15;
         return Object.assign(q, {
             x: v.x,
             y: v.y,
             z: v.z,
-            masse: (g * E.flaecheM2) / ((Math.PI / 4) * bett * bett),
+            masse: (globalThis.__fachwerkCore.glutLeuchtdichte(q.L.kelvin) * E.flaecheM2) / (1 + E.kernM * E.kernM),
             glut: g,
         });
     }
@@ -3116,7 +3119,9 @@ AnazhRealm.FELD_LEER = Object.freeze({});
 // Klinge (`dickeM`, τ = ρ·c·d/2 / α — Stahl im Feuer 32 s, an der Luft 160 s: ab 16 s glüht sie, 2,3 min nach dem Feuer nicht
 // mehr), der Übergang im Glutbett (Strahlung und Kontakt der Kohle, W/(m²·K)) und an der Luft (Strahlung und Konvektion über den
 // Gang gemittelt), die Reichweite des Arms über den Rand des Betts, der Umkreis der Suche, die Ruhe (K über der Luft: darunter
-// ist sie kalt), die strahlende Fläche und der Kern der Klinge (ihr Licht) und die Hand über dem Fuß ohne Gerät-Netz.
+// ist sie kalt), die strahlende Fläche und der Kern der Klinge (ihr Licht) und die Hand über dem Fuß ohne Gerät-Netz. Die
+// Leuchtdichte trägt keine Zahl hier: Stahl und Glutbett (bau-teile `_buildForgeParts`) lesen fachwerk `glutLeuchtdichte` bei
+// ihrer Temperatur — `feuerK` 1 573 K sind 16 076 cd/m² (0,999 Welt-Einheiten).
 AnazhRealm.ESSE = Object.freeze({
     feuerK: 1573,
     dickeM: 0.005,
