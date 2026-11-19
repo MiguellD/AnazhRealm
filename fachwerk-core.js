@@ -5940,21 +5940,27 @@
     // Dieselbe Rechnung wie Box3.setFromObject (je Geometrie ihre Box unter der Welt-Matrix), ohne die Teilbäume der Öffnungen.
     // Befund (p3/n1911/los): der zugestellte Flügel änderte `ext` an 476 von 519 Plan-Häusern (≤ 0,360 m), die Stadt 7/4750 rückte
     // um Median 90,9 m. Linse: gate:settlement Teil A, `huelleProben` (scripts/lib/los-proben.cjs).
+    // DIE REICHWEITE DER ÖFFNUNGEN (los-huelle-2): derselbe Gang legt die Teile, die er am Körper überspringt, in ihre eigene Box und
+    // trägt je Seite, wie weit sie über den Körper reichen (`bx.reich` {x0, x1, z0, z1} ≥ 0, haus-lokal) — kein zweites Maß des
+    // Körpers, das Maß dessen, was er nicht ist. Leser: `brandwand` (vor welcher Seite ein fremder Körper näher steht, als ihre
+    // Öffnungen reichen); am Wohnturm 0,259 m je Giebel (der offene Flügel 0,51 m vor der Wand).
     function koerperHuelle(g) {
         var bx = new THREE.Box3(),
+            ob = new THREE.Box3(),
             b = new THREE.Box3();
         g.updateMatrixWorld(true);
-        (function lies(o) {
+        (function lies(o, auf) {
             var u = o.userData;
-            if (u && (u.oeffnung || u.window || u.door)) return;
+            if (u && (u.oeffnung || u.window || u.door)) auf = true;
             if (o.geometry) {
                 var q = o.boundingBox !== undefined ? o : o.geometry; // die Instanz-Senke trägt ihre eigene Box (wie expandByObject)
                 if (q.boundingBox === null) q.computeBoundingBox();
                 b.copy(q.boundingBox).applyMatrix4(o.matrixWorld);
-                bx.union(b);
+                (auf ? ob : bx).union(b);
             }
-            for (var i = 0; i < o.children.length; i++) lies(o.children[i]);
-        })(g);
+            for (var i = 0; i < o.children.length; i++) lies(o.children[i], auf);
+        })(g, false);
+        bx.reich = { x0: Math.max(0, bx.min.x - ob.min.x), x1: Math.max(0, ob.max.x - bx.max.x), z0: Math.max(0, bx.min.z - ob.min.z), z1: Math.max(0, ob.max.z - bx.max.z) };
         return bx;
     }
     // ── Der MASS-BAU → B-Struct — byte-Anker: buildHausLOD (Lab, LOD-Sonde)
@@ -5970,6 +5976,7 @@
             lod: "chunk",
             dyn: false,
             ext: { x0: bx.min.x, x1: bx.max.x, z0: bx.min.z, z1: bx.max.z, y1: bx.max.y },
+            reich: bx.reich, // DIE REICHWEITE DER ÖFFNUNGEN je Seite über die Hülle (los-huelle-2): `brandwand` liest sie
             dims: mass.H.dims,
             fp: fpVon(mass.H),
             masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
@@ -9840,25 +9847,27 @@
         lay.brunnen = neu;
         return aus;
     }
-    // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — parallele
-    // Nachbarn mit anliegender Fuge machen die anliegende Seite zur fensterlosen
-    // Brandmauer (der Same erfährt es via hp.brandwand). dorfB: [{dims,q,p}] —
-    // p wird MUTIERT (p.brandwand.{x0,x1,z0,z1}=1) · gap: plan.norm.gap.
-    // Rückgabe: Zahl der markierten anliegenden Seiten.
+    // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — die Seite eines Hauses, vor der ein fremder Körper steht, wird
+    // fensterlose Brandmauer (der Same erfährt es via hp.brandwand: keine Öffnung, kein Flügel in den Nachbarn). Gemessen an der EINEN
+    // Hülle (los-huelle-2): die obb des Loses (`q.obb`, die Körper-Hülle `koerperHuelle`) von A gegen die von B, B auf die Achsen von
+    // A projiziert (jede Gier), die Seite von A, die zu B zeigt (die dominante Achse), seitlich überdeckt (0,6 der Summe), die Fuge der
+    // Körper unter der Norm (gap + 0,15) oder unter der Reichweite der Öffnungen dieser Seite (`reich`, derselbe Gang der Hülle): keine
+    // Öffnung reicht in einen fremden Körper. Bis los-huelle-2 maß sie „anliegend“ an dims.W/D (den Wänden) um die Mitten der Hülle,
+    // nur parallel (≤ 0,26 rad) und nur vor dem Los-Gesetz — an der Stadt 7/4750 (3 × 3) ragte an 26 Paaren (25 Häusern) die Öffnung
+    // einer Seite ohne Brandwand > 1 cm in den Körper des Nachbarn, am Wohnturm 712412 die offenen Flügel 0,265 m ins Patrizierhaus
+    // 400335. Linse: gate:settlement Teil A `brandwandProben` (scripts/lib/los-proben.cjs). dorfB: [{q, p, reich}] — p wird MUTIERT
+    // (p.brandwand.{x0,x1,z0,z1}=1) · gap: plan.norm.gap. Rückgabe: Zahl der Treffer (Paar × Seite).
     function brandwand(dorfB, gap){
       let bwN=0;
-      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims||!imOrt(A.q)) continue;
-        const Wi=A.dims.W||8, Di=A.dims.D||8, ci=Math.cos(A.q.phi), si=Math.sin(A.q.phi);
-        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!Bj.dims||!imOrt(Bj.q)) continue;
-          let dphi=Math.abs(A.q.phi-Bj.q.phi)%Math.PI; if(dphi>Math.PI/2) dphi=Math.PI-dphi;
-          if(dphi>0.26) continue;                                                             // nur parallele Reihen bilden Brandwände
-          const dx=Bj.q.obb.cx-A.q.obb.cx, dz=Bj.q.obb.cz-A.q.obb.cz;
-          const lx=dx*ci-dz*si, lz=dx*si+dz*ci;                                               // ins Haus-Lokal von A (R(-phi))
-          const Wj=Bj.dims.W||8, Dj=Bj.dims.D||8;
-          if(Math.abs(lz)<(Di+Dj)/2*0.6 && Math.abs(Math.abs(lx)-(Wi+Wj)/2)<((gap||0.06)+0.15)){   // Schwelle an die NORM gekoppelt — gedockte Marktgassen (0.6) werden ebenso Brandwände wie Metropol-Fugen (0.06)
-            A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[lx>0?'x1':'x0']=1; bwN++; }
-          if(Math.abs(lx)<(Wi+Wj)/2*0.6 && Math.abs(Math.abs(lz)-(Di+Dj)/2)<((gap||0.06)+0.15)){
-            A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[lz>0?'z1':'z0']=1; bwN++; } } }
+      const halb=(o,ux,uz)=>{ const c=Math.cos(o.phi), s=Math.sin(o.phi); return o.ex*Math.abs(ux*c-uz*s)+o.ez*Math.abs(ux*s+uz*c); };   // die halbe Ausdehnung der obb o längs (ux, uz)
+      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!imOrt(A.q)) continue;
+        const a=A.q.obb, ci=Math.cos(a.phi), si=Math.sin(a.phi), norm=(gap||0.06)+0.15;      // Schwelle an die NORM gekoppelt — gedockte Marktgassen (0.6) werden ebenso Brandwände wie Metropol-Fugen (0.06)
+        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!imOrt(Bj.q)) continue;
+          const b=Bj.q.obb, dx=b.cx-a.cx, dz=b.cz-a.cz, lx=dx*ci-dz*si, lz=dx*si+dz*ci;          // ins Haus-Lokal von A (R(-phi))
+          const ex=a.ex+halb(b,ci,-si), ez=a.ez+halb(b,si,ci);                                  // die Summe der Körper längs der Achsen von A
+          const s=Math.abs(lx)/ex>=Math.abs(lz)/ez?(lx>0?'x1':'x0'):(lz>0?'z1':'z0'), aufX=s[0]==='x';
+          if(Math.abs(aufX?lz:lx)<(aufX?ez:ex)*0.6 && Math.abs(aufX?lx:lz)-(aufX?ex:ez)<Math.max(norm,A.reich[s])){
+            A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[s]=1; bwN++; } } }
       return bwN;
     }
     // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das BAU-GESETZ von der anderen Seite: dort (`bauProgramm`) folgt die
@@ -10177,6 +10186,14 @@
                 plan.norm.gap
             );
             L.loseRest = loseEntzerren(Bt, L.pl, p.lose).rest; // die Lose überdecken sich nie (nach Snap und Brandwand, vor den Wand-Stücken)
+            // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2): was das Los-Gesetz an einen Körper rückte, öffnet nicht zu ihm (der Ruf
+            // davor trägt die gedockte Reihe durch das Los-Gesetz, `losGrundriss`; wie das Labor, buildDorf)
+            brandwand(
+                Bt.filter(function (b) {
+                    return b.q;
+                }),
+                plan.norm.gap
+            );
             mastWeicht(L.pl, L);
             brunnenWeicht(Bt, L.pl, L);
             wandLaternen(Bt, L.pl, L);

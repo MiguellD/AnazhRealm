@@ -946,7 +946,7 @@ const ZWILLINGE = [
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
-        fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
+        fingerprint: "Math.max(norm,A.reich[s])",
         gesetzbuch: "fachwerk-core.js",
         verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
