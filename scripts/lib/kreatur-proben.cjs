@@ -1101,6 +1101,529 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── herde-bild: DIE ISOLIERTE BÜHNE DER HERDE, das Messgerät (Wort des Schöpfers 19.11.: „Bewegungen schienen schwach, wenig
+    // Tiere in der Kamera … nichts isoliert geprüft?“). Kein Zwilling: derselbe Wurf wie `herde` (`_kreaturWurf`, die volle Kopfzahl
+    // des Kerns — Hirsch 7, Wolf 6 —, gezogen, bis der Wurf sie trägt), derselbe Kreatur-Takt (`takt`: `tierPose`, `verbandZug`, der
+    // Satz), kein Tier gehalten (`__offen` tiere gegen den Halter der Werkbank), im Modus des Spiels (`pfad`: nur dort flieht das
+    // Wild den Menschen, `_kreaturMenschFlucht`). DIE KAMERA H: fest 40 m quer zur Anker-Achse (x durch den Wurf-Ort), 1,6 m über dem
+    // Grund, der Blick auf den Schwerpunkt des Verbands (das Muster `kamera.A` der Rampe s2-hang30); dort steht der Spieler, wie im
+    // Spiel das Auge am Spieler — die 50-m-Wand der Aktionen (Grasen) und die Fluchtdistanz messen von ihm; sie ist das Auge der
+    // Stufen (Leib · Satz · Rate). Zur Flucht geht er von ihr auf den Wurf-Ort zu, die Kamera bleibt.
+    // DER FAHRPLAN nach 3 s Vorlauf je 8 s: stehen → äsen → ziehen → flucht, über die Wege des Spiels — die Tätigkeit des Leittiers
+    // samt ihren Pegeln (`_taetigkeit`, `_ruhe`, `magen`; der Verband liest die des Leittiers, `_kreaturTaetigkeit`; „stehen“ ist
+    // die Tätigkeit ruhen, eine eigene gibt es nicht) und die Annäherung des Spielers (1,4 m/s, die Flucht des Gesetzes). Gemessen
+    // die Proben S1–S5 des Entscheids H3, je Zahl ihre Einheit; `opts.bilder` schießt an der echten GPU je Zustand drei Bilder im
+    // Ausgabe-Pfad (Schirm-Größe, die Tiere bewegt) und fügt den Kontaktbogen. Nicht in PROBEN: die Bühne misst den Stand, ihr
+    // Urteil ist das Soll der Bau-Welle (`werkbank lauf --buehne herde`, Selbsttest `diag-kreatur-takt --proben herde-bild`).
+    if (nur?.includes("herde-bild"))
+        await buehne("herde-bild", async (restore) => {
+            r.setGameMode("pfad");
+            const tStart = performance.now();
+            let schussMs = 0;
+            const wolfArt = opts?.art === "wolf";
+            const seele = wolfArt ? "wolf" : "wesen";
+            const gattung = A.TETRAPODA_SOUL_MAP[seele];
+            const soll = A._verhaltenGesetz().herde.wurf[gattung][1];
+            const KAM_M = taeter === "herde-bild-fern" ? 140 : 40; // Täter: die alte Kamera, 140 m fern
+            const ZUST = ["stehen", "aesen", "ziehen", "flucht"];
+            const TAET = { stehen: "ruhen", aesen: "nahrung", ziehen: "ziehen", flucht: "ziehen" };
+            const [PHASE, VOR, SCHUSS] = [8 * 60, 3 * 60, [2, 5, 7.5].map((t) => Math.round(t * 60))];
+            const dt = 1 / 60;
+            const g = -s.gravity;
+            const bilder = !!opts?.bilder;
+            if (bilder && !(echt && window.__ausgabeAufnahme))
+                throw new Error("herde-bild: Bilder nur an der echten GPU der Werkbank (`__ausgabeAufnahme`)");
+            // DIE TIERE LAUFEN: der Halter der Werkbank (`__halten` tiere, `werkbank bild`) bleibt für die Bühne offen
+            const offen = (window.__offen ||= new Set());
+            if (!offen.has("tiere")) (offen.add("tiere"), restore.push(() => window.__offen?.delete("tiere")));
+            // Täter: die Tiere gehalten — der Leib des Halters (ausgabe-aufnahme `halten` tiere: x/z nach dem Takt zurück)
+            if (taeter === "herde-bild-gehalten")
+                decke(
+                    "updateCreatures",
+                    (alt) =>
+                        function (d) {
+                            const v = this.state.creatures.map((c) => [c.position, c.position.x, c.position.z]);
+                            alt.call(this, d);
+                            for (const [p, x, z] of v) ((p.x = x), (p.z = z));
+                        }
+                );
+            // DER ORT: Lebensraum der Gattung, Wildnis ohne Hülle im Umkreis 40 m, Land am Ort der Kamera; zuerst ohne Wald auf der
+            // Sichtlinie (die Kronen deckten die Herde), sonst mit
+            const LG = A._lebensraumGesetz();
+            const lebt = (x, z) => LG.lebensraum(gattung, r._bodenKlasseAt(x, z), LG.L) > 0;
+            const platz = (sichtFrei) =>
+                spirale(0, 70, 40, 8, (x, z) => {
+                    if (!lebt(x, z) || !r._landAt(x, z) || !r._landAt(x, z - KAM_M) || !imUmkreisLand(x, z, 40)) return null;
+                    if (sichtFrei && [0, 0.5, 1].some((f) => r._bodenKlasseAt(x, z - KAM_M * f) === "wald")) return null;
+                    // und ohne Kuppe: der Grund unter der Sichtlinie (Auge 1,6 m → Rumpf 0,9 m) liegt ≥ 0,9 m unter ihr (das Gras
+                    // deckte die Herde hinter einer Kuppe ganz, Kontaktbogen v5)
+                    const [hA, hT] = [r.getTerrainHeightAt(x, z - KAM_M) + 1.6, r.getTerrainHeightAt(x, z) + 0.9];
+                    if (sichtFrei && [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].some((f) => r.getTerrainHeightAt(x, z - KAM_M * (1 - f)) + 0.9 > hA + (hT - hA) * f)) return null; // prettier-ignore
+                    // der Grund trägt den Wurf (`_kreaturGrundFrei`, die Frage jedes Geworfenen) am Ort und im Ring 8 m
+                    if ([-1, 0, 1, 2, 3, 4, 5, 6, 7].some((k) => !r._kreaturGrundFrei(x + (k < 0 ? 0 : 8 * Math.cos(k * 0.785)), z + (k < 0 ? 0 : 8 * Math.sin(k * 0.785))))) return null; // prettier-ignore
+                    const o = neben(x, z);
+                    return huelleNah(x, z, o.y - 0.5, 40) ? null : o;
+                });
+            const heimFrei = platz(true);
+            const heim = heimFrei || platz(false);
+            if (!heim) throw new Error(`herde-bild: kein Lebensraum ${gattung} ohne Hülle im Umkreis 40 m`);
+            // DER WURF: die volle Kopfzahl des Kerns — je Versuch eine eigene Saat, der Spieler 140 m fern (der Wurf wirft außer Blick)
+            const seq0 = s._creatureNetSeq || 0;
+            let [glieder, versuch] = [[], 0];
+            for (; versuch < 40 && glieder.length < soll; versuch++) {
+                leer();
+                Object.assign(s, { _creatureNetSeq: seq0, creatureAnimationTime: 100 });
+                Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
+                pm.set(heim.x + 140, heim.y, heim.z);
+                kamera(1, 0);
+                // zwei stille Takte: der Rand des Blicks (`_blickRand`) wird an der ruhenden Kamera gerechnet — nach dem Sprung
+                // der Kamera ist er −1 (keine Geburt in diesem Takt, `_kreaturLeibImBlick`)
+                (takt(dt), kamera(1, 0), takt(dt), kamera(1, 0), leer());
+                glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, seele, "happy", r._faunaRng("herde-bild:" + versuch), soll); // prettier-ignore
+            }
+            if (glieder.length < soll) {
+                // DER GRUND DER ABSAGE je Bedingung des Wurfs, im Ring 2–12 m um den Ort (die Fragen von `_kreaturWurf`)
+                const nein = { blick: 0, grund: 0, wildnis: 0, grundriss: 0, siedlung: 0, reich: 0, land: 0, lebt: 0 };
+                for (let k = 0; k < 48; k++) {
+                    const [x, z] = [heim.x + Math.cos(k * 2.4) * (2 + k / 4.8), heim.z + Math.sin(k * 2.4) * (2 + k / 4.8)];
+                    if (r._kreaturLeibImBlick(x, z, gattung, A._lebenKern().spanne()[1])) nein.blick++;
+                    if (!r._kreaturGrundFrei(x, z)) nein.grund++;
+                    if (!r._wildnisTraegt(x, z)) nein.wildnis++;
+                    if (r._imGrundriss(x, z)) nein.grundriss++;
+                    if ((s.wegeKarte?.siedlungen || []).some((b) => x >= b.x0 && x <= b.x1 && z >= b.z0 && z <= b.z1)) nein.siedlung++; // prettier-ignore
+                    if (r._imReichEinesOrts(x, z)) nein.reich++;
+                    if (!r._landAt(x, z)) nein.land++;
+                    if (!lebt(x, z)) nein.lebt++;
+                }
+                throw new Error(`herde-bild: der Wurf trägt ${glieder.length} statt ${soll} (${gattung}, 40 Saaten, Rand ${r._kreaturBlickRand().toFixed(3)}, Ort ${Math.round(heim.x)}/${Math.round(heim.z)}, Absage von 48: ${JSON.stringify(nein)})`); // prettier-ignore
+            }
+            const leit = r._kreaturLeittier(glieder[0]);
+            // DIE KAMERA H
+            const H = neben(heim.x, heim.z - KAM_M);
+            const cam = s.camera;
+            const v3 = new T.Vector3();
+            const mitte = () => glieder.reduce((m, c) => m.add(c.position), new T.Vector3()).divideScalar(glieder.length);
+            const kameraH = () => {
+                const m = mitte();
+                cam.position.set(H.x, H.y - 0.5 + 1.6, H.z);
+                cam.lookAt(m.x, m.y + 0.6, m.z);
+                cam.updateMatrixWorld(true);
+                r._lodAugeGesetzt();
+                r._loopFrustumCulling();
+            };
+            // DIE LÜCKE DES VERBANDS: die Tätigkeit des Leittiers beendet keine laufende Aktion (ruhen spielt 16 s, grasen 6 s zu
+            // Ende) — der neue Zustand stünde Sekunden unter dem alten. Der Fahrplan beendet sie je Tier an ihrem eigenen Ende (`bis`)
+            // und zählt jeden solchen Schnitt (`aktionGeschnitten`)
+            const geschnitten = {};
+            const setze = (z) => {
+                const u = leit.userData;
+                u._taetigkeit = TAET[z];
+                u._ruhe = z === "stehen" ? 2 : 0; // über schwelle.aktiv 1,5: das Leittier ruht, bis der Pegel leer ist
+                u.magen = z === "aesen" ? 0 : r._kreaturMagenVoll(leit);
+                geschnitten[z] = [];
+                for (const c of glieder) {
+                    const VA = c.userData._verhaltenAktion;
+                    if (VA && s.creatureAnimationTime < VA.bis)
+                        (geschnitten[z].push(`${VA.name} ${rund(VA.bis - s.creatureAnimationTime, 1)} s`), (VA.bis = s.creatureAnimationTime)); // prettier-ignore
+                }
+            };
+            // das Maß „Kopf unten“ an sich: die Kopf-Mitte über dem Grund je Leib-Takt im Zustand äsen, mit und ohne die Aktion grasen
+            const kopfHoehe = { grasen: [], sonst: [] };
+            // DIE STUFE des Tiers am Auge: Satz (gebacken), fern (jenseits ANALOG_NAH_M), Leib
+            const stufe = (c) =>
+                c.userData._satz
+                    ? "satz"
+                    : Math.hypot(c.position.x - cam.position.x, c.position.z - cam.position.z) > A.ANALOG_NAH_M
+                      ? "fern"
+                      : "leib";
+            // DER KOPF eines Leibs: die Mitte der Knoten seines Kopf-Baums (der Leib ist ein Knochen-Baum), die Schulter das
+            // Gelenk des Vorderbeins, der Boden der Träger des Leibs; „unten“ = die Kopf-Mitte unter der halben Schulterhöhe
+            const kopf = (c) => {
+                const tb = c.userData._tierBaum;
+                const Tt = tb && tb.teile;
+                if (!Tt || !Tt.headGroup || !Tt.legFL) return null;
+                Tt.headGroup.updateWorldMatrix(true, true);
+                Tt.legFL.updateWorldMatrix(true, false);
+                const k = new T.Vector3();
+                let n = 0;
+                Tt.headGroup.traverse((o) => (k.add(v3.setFromMatrixPosition(o.matrixWorld)), n++));
+                k.divideScalar(n);
+                const sch = v3.setFromMatrixPosition(Tt.legFL.matrixWorld).y;
+                const boden = r.getTerrainHeightAt(c.position.x, c.position.z);
+                return { kopfM: k.y - boden, schulterM: sch - boden, ueberSchulterM: k.y - sch, unten: k.y - boden < 0.5 * (sch - boden) };
+            };
+            // DAS RECHTECK eines Tiers im Bild (W × H px): die Knoten seines Baums, projiziert — die Höhe in px und die Fläche im Maß
+            // 1280 × 720 (die Einheit des Solls, zerlege-linse `kreisGang`)
+            const rechteck = (c, W, Hh) => {
+                const Tt = c.userData._tierBaum?.teile;
+                const R = [Infinity, Infinity, -Infinity, -Infinity];
+                c.updateWorldMatrix(true, false);
+                for (const o of Object.values(Tt || {})) {
+                    if (!o || !o.isObject3D) continue;
+                    o.updateWorldMatrix(true, false);
+                    v3.setFromMatrixPosition(o.matrixWorld).project(cam);
+                    if (v3.z > 1) continue;
+                    const [x, y] = [((v3.x + 1) / 2) * W, ((1 - v3.y) / 2) * Hh];
+                    [R[0], R[1], R[2], R[3]] = [Math.min(R[0], x), Math.min(R[1], y), Math.max(R[2], x), Math.max(R[3], y)];
+                }
+                if (!(R[2] > R[0])) return null;
+                const imBild = R[2] > 0 && R[0] < W && R[3] > 0 && R[1] < Hh;
+                return { R, imBild, hoehePx: rund(R[3] - R[1], 0), flaecheMass: imBild ? rund(((R[2] - R[0]) * (R[3] - R[1]) * 921600) / (W * Hh), 0) : 0 }; // prettier-ignore
+            };
+            // S3: die Profil-Winkel je Leib und Takt — Kopf (headGroup x), Ohr (earL z), Schwanz (erstes Glied y: Amplitude und Phase
+            // zugleich), Rumpf (x); der größte Sprung je Takt, dazu der größte fern jedes Wechsels (stetig: > 30 Takte danach)
+            const KAN = {
+                kopf: (tb) => tb.teile.headGroup?.rotation.x,
+                ohr: (tb) => tb.teile.earL?.rotation.z,
+                schwanz: (tb) => tb.tailSegs?.[0]?.rotation.y,
+                rumpf: (tb) => tb.teile.wolf?.rotation.x,
+            };
+            const sprung = Object.fromEntries(Object.keys(KAN).map((k) => [k, { max: 0, stetig: 0 }]));
+            const zustandVon = (c) => {
+                const u = c.userData;
+                const VA = u._verhaltenAktion;
+                return [u._motionZustand || "-", VA && s.creatureAnimationTime < VA.bis ? VA.name : "-", u._taetigkeit || "-", u._steuer?.v > 0.1 ? "läuft" : "steht"].join("/"); // prettier-ignore
+            };
+            const winkelAlt = new Map();
+            const spur = glieder.map(() => []);
+            const phasen = ZUST.map((z) => ({ zustand: z, taetigkeit: TAET[z], takte: 0, getroffen: 0, gezeigt: 0, flucht: 0, leib: 0, satz: 0, fern: 0, wegM: 0 })); // prettier-ignore
+            const aesen = { proben: 0, unten: 0, leibProben: 0, leibUnten: 0, leib: 0, satz: 0, fern: 0 };
+            const zug = { takte: 0, art: {}, diag: [], v: [] };
+            const schuesse = [];
+            const TAU2 = Math.PI * 2;
+            // DER SCHUSS (an der echten GPU): G mit den Tieren, O ohne (`toggleCreatures`, das Wort des Spiels: Leib, Feld und
+            // Satz) — ein Pixel ist Tier, wo G von O um mehr als 18 (Σ|ΔRGB|) abweicht, und gehört dem Tier, in dessen Rechteck
+            // (+30 %) es liegt, bei mehreren dem mit der nächsten Mitte; die Fläche im Maß 1280 × 720
+            const bild = async (W, Hh, tiere) => {
+                const z0 = performance.now();
+                const G = new Uint8Array((await window.__ausgabeAufnahme(W, Hh, 1, { satz: "messung" })).u8);
+                r.toggleCreatures(false);
+                let O;
+                try {
+                    O = (await window.__ausgabeAufnahme(W, Hh, 1, { satz: "messung" })).u8;
+                } finally {
+                    r.toggleCreatures(true);
+                }
+                const box = tiere.map((t) => {
+                    if (!t.rechteck) return null;
+                    const [x0, y0, x1, y1] = t.rechteck.R;
+                    const [mx, my, hx, hy] = [(x0 + x1) / 2, (y0 + y1) / 2, 0.65 * (x1 - x0) + 2, 0.65 * (y1 - y0) + 2];
+                    return { mx, my, hx, hy, px: 0 };
+                });
+                for (let p = 0, i = 0; p < W * Hh; p++, i += 4) {
+                    if (Math.abs(G[i] - O[i]) + Math.abs(G[i + 1] - O[i + 1]) + Math.abs(G[i + 2] - O[i + 2]) <= 18) continue;
+                    const [x, y] = [p % W, (p / W) | 0];
+                    let [q, e] = [null, Infinity];
+                    for (const b of box) {
+                        if (!b || Math.abs(x - b.mx) > b.hx || Math.abs(y - b.my) > b.hy) continue;
+                        const d = ((x - b.mx) / b.hx) ** 2 + ((y - b.my) / b.hy) ** 2;
+                        if (d < e) [q, e] = [b, d];
+                    }
+                    if (q) q.px++;
+                }
+                tiere.forEach((t, i) => (t.maskeMass = box[i] ? rund((box[i].px * 921600) / (W * Hh), 0) : 0));
+                schussMs += performance.now() - z0;
+                return G;
+            };
+            // das Bild als Leinwand (für JPG und Bogen)
+            const leinwand = (u8, W, Hh) => {
+                const cv = document.createElement("canvas");
+                [cv.width, cv.height] = [W, Hh];
+                const id = new ImageData(W, Hh);
+                id.data.set(u8);
+                for (let i = 3; i < id.data.length; i += 4) id.data[i] = 255;
+                cv.getContext("2d").putImageData(id, 0, 0);
+                return cv;
+            };
+            if (bilder && window.__buehne) window.__buehne({}); // Mittag, Sonne, Sommer — die Bühne der Beweisbilder, die Tiere frei
+            const db = bilder ? s.renderer.getDrawingBufferSize(new T.Vector2()) : { x: 1280, y: 720 };
+            const [W, Hh] = [Math.round(db.x), Math.round(db.y)];
+            // DER FAHRPLAN
+            for (let k = -VOR; k < ZUST.length * PHASE; k++) {
+                const pi = k < 0 ? -1 : Math.floor(k / PHASE);
+                const z = ZUST[pi];
+                const kp = k - pi * PHASE;
+                if (k >= 0 && kp === 0) setze(z);
+                const q = z === "flucht" ? neben(H.x, H.z + (1.4 * kp) / 60) : H;
+                pm.set(q.x, q.y, q.z);
+                // der Sprung vom Ort des Wurfs zur Kamera ist kein Gang: der Lauf des Spielers beginnt dort in Ruhe
+                if (k === -VOR) r._spielerLageAlt = null;
+                kameraH();
+                takt(dt);
+                r._ruheImBild();
+                glieder.forEach((c, i) => spur[i].push([c.position.x, c.position.z]));
+                if (k < 0) continue;
+                const P = phasen[pi];
+                P.takte++;
+                for (const [i, c] of glieder.entries()) {
+                    const u = c.userData;
+                    const st = stufe(c);
+                    P[st]++;
+                    P.getroffen += u._taetigkeit === TAET[z];
+                    P.gezeigt += u._gezeigt === TAET[z];
+                    P.flucht += u._motionZustand === "flucht";
+                    const sp = spur[i];
+                    P.wegM += Math.hypot(sp[sp.length - 1][0] - sp[sp.length - 2][0], sp[sp.length - 1][1] - sp[sp.length - 2][1]); // prettier-ignore
+                    const zs = zustandVon(c);
+                    const tb = u._tierBaum;
+                    if (st !== "leib" || !tb) {
+                        winkelAlt.delete(c);
+                        if (z === "aesen") (aesen.proben++, aesen[st]++);
+                        continue;
+                    }
+                    const w = Object.fromEntries(Object.entries(KAN).map(([n, f]) => [n, f(tb)]));
+                    const a = winkelAlt.get(c);
+                    const wechsel = !a ? k : a.z !== zs ? k : a.wechsel;
+                    if (a)
+                        for (const n in KAN) {
+                            if (!Number.isFinite(w[n]) || !Number.isFinite(a.w[n])) continue;
+                            const d = Math.abs(w[n] - a.w[n]);
+                            const S = sprung[n];
+                            if (d > S.max)
+                                Object.assign(S, { max: d, t: rund(k / 60, 2), phase: z, tier: i, von: rund(a.w[n], 3), nach: rund(w[n], 3), zustand: a.z === zs ? zs : `${a.z} → ${zs}`, taktNachWechsel: k - wechsel }); // prettier-ignore
+                            if (k - wechsel > 30 && d > S.stetig)
+                                Object.assign(S, { stetig: d, stetigBei: `t ${rund(k / 60, 2)} s, Tier ${i}, ${zs}, ${rund(a.w[n], 3)} → ${rund(w[n], 3)}` }); // prettier-ignore
+                        }
+                    winkelAlt.set(c, { w, z: zs, wechsel });
+                    if (z === "aesen") {
+                        const kf = kopf(c);
+                        aesen.proben++;
+                        if (kf) (aesen.leibProben++, (aesen.leibUnten += kf.unten), (aesen.unten += kf.unten));
+                        if (kf) kopfHoehe[/\/grasen\//.test(zs) ? "grasen" : "sonst"].push(kf.kopfM);
+                    }
+                    if (z === "ziehen" && tb._gang) {
+                        const G2 = tb._gang;
+                        zug.takte++;
+                        zug.art[G2.art] = (zug.art[G2.art] || 0) + 1;
+                        if (G2.art === "trab" && G2.ph) zug.diag.push(Math.abs(wrap(G2.ph[0] - G2.ph[3])) / TAU2);
+                    }
+                }
+                // S1 je Bild: drei Zeitpunkte je Zustand — Stufe, Rechteck, Kopf; an der GPU Bild und Maske
+                if (SCHUSS.includes(kp)) {
+                    const tiere = glieder.map((c) => ({ stufe: stufe(c), rechteck: rechteck(c, W, Hh), kopf: stufe(c) === "leib" ? kopf(c) : null })); // prettier-ignore
+                    const sch = { zustand: z, t: rund(kp / 60, 1), tiere };
+                    if (bilder) sch.G = await bild(W, Hh, tiere);
+                    schuesse.push(sch);
+                }
+            }
+            // DIE SPUR je Tier: Tempo (m/s) über 0,5 s und die Querbeschleunigung aus der Krümmung der Wurzel-Spur (drei Punkte je
+            // 0,1 s, Umkreis) × v²
+            const ab0 = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]);
+            const kruemmung = (a, b, c) => {
+                const [x1, y1, x2, y2] = [b[0] - a[0], b[1] - a[1], c[0] - a[0], c[1] - a[1]];
+                const flaeche2 = Math.abs(x1 * y2 - x2 * y1);
+                const n = ab0(a, b) * ab0(b, c) * ab0(a, c);
+                return n > 1e-9 ? (2 * flaeche2) / n : 0;
+            };
+            const s4Welt = { max: 0, vBeiMax: null, maxSprint: 0, sprintProben: 0 };
+            spur.forEach((sp) => {
+                for (let k = VOR + 3 * PHASE + 6; k + 6 < sp.length; k += 3) {
+                    const [a, b, c] = [sp[k - 6], sp[k], sp[k + 6]];
+                    const v = ab0(a, c) / 0.2;
+                    if (v < 2) continue;
+                    const aq = v * v * kruemmung(a, b, c);
+                    if (aq > s4Welt.max) Object.assign(s4Welt, { max: aq, vBeiMax: v });
+                    if (v >= 8) ((s4Welt.sprintProben++), (s4Welt.maxSprint = Math.max(s4Welt.maxSprint, aq)));
+                }
+            });
+            spur.forEach((sp) => {
+                for (let k = VOR + 2 * PHASE + 30; k < VOR + 3 * PHASE; k += 30) zug.v.push(ab0(sp[k - 30], sp[k]) / 0.5);
+            });
+            const median = (a) => (a.length ? a.slice().sort((x, y) => x - y)[Math.floor((a.length - 1) / 2)] : null);
+            // S4 im Gesetz: der Steuer-Schritt des Kerns (derselbe, den der Takt je Tier ruft) mit der Hüft-Höhe des Leittiers, aus
+            // dem Sprint geradeaus ein Wunsch 90° quer im Sprint, 3 s — die Wurzel-Spur, ihre Krümmung × v²
+            const tbL = leit.userData._tierBaum;
+            const L = tbL.beinL * (leit.scale.x || 1);
+            const vS = r._kreaturSprint(leit, L);
+            const s4Gesetz = (() => {
+                const SG = A._steuerGesetz();
+                const zz = { gier: 0, v: vS };
+                const P = [[0, 0]];
+                for (let i = 0; i < 180; i++) {
+                    SG.steuerSchritt(zz, vS, 0, dt, L);
+                    const [x, y] = P[P.length - 1];
+                    P.push([x + Math.sin(zz.gier) * zz.v * dt, y + Math.cos(zz.gier) * zz.v * dt]);
+                }
+                let [max, vBei] = [0, null];
+                for (let k = 3; k + 3 < P.length; k++) {
+                    const v = ab0(P[k - 3], P[k + 3]) / (6 * dt);
+                    const aq = v * v * kruemmung(P[k - 3], P[k], P[k + 3]);
+                    if (aq > max) [max, vBei] = [aq, v];
+                }
+                return { max, vBei };
+            })();
+            // S2: das Kopf-Spektrum — das Leittier im Schritt (v̂ 0,34 längs +x, der Leib zieht je Takt um v·dt wie gate:tier-gang,
+            // die Pose durch den EINEN Chokepoint `_animateCompoundMotion` mit seinem Gemüt), 3 s Einschwingen, dann 10 Zyklen; die
+            // Höhe der Kopf-Mitte über dem Grund, DFT (Hann) 0,1–6 Hz: der Gipfel gegen 2 · f_Schritt, die Amplitude dort
+            const s2 = (() => {
+                const u = leit.userData;
+                const roles = r._motionRolesForSoul(u.soul);
+                const v = 0.34 * Math.sqrt(g * L);
+                Object.assign(u, { _verhaltenAktion: null, _motionZustand: null, _animFade: 1 });
+                // die feste Strecke: ab 15 m vor dem Wurf-Ort längs +x — vorher und nachher derselbe Boden (der Sprung dorthin ist
+                // kein Lauf, `lageTempo`)
+                leit.position.set(heim.x - 15, heim.y, heim.z);
+                leit.rotation.set(0, Math.PI / 2, 0);
+                let [t, ph] = [s.creatureAnimationTime, u.walkPhase || 0];
+                const [ys, om, boden] = [[], [], []];
+                for (let i = 0; i < 60 * 60; i++) {
+                    leit.position.x += v * dt;
+                    const y = r.getTerrainHeightAt(leit.position.x, leit.position.z);
+                    if (i >= 180) boden.push(y);
+                    leit.position.y = u._traegerY = y;
+                    t += dt;
+                    s.creatureAnimationTime = t;
+                    ph += dt * 5;
+                    r._animateCompoundMotion(leit, roles, t, ph, true, u.emotions);
+                    if (i < 180) continue;
+                    const kf = kopf(leit);
+                    if (!kf) return { ungemessen: "der Leib trägt keinen Kopf-Baum" };
+                    ys.push(kf.kopfM);
+                    om.push(tbL._gang.omega);
+                    const f = median(om) / TAU2;
+                    if (f > 0 && ys.length >= (10 / f) * 60) break;
+                }
+                const f = median(om) / TAU2;
+                const n = ys.length;
+                const mw = ys.reduce((a, b) => a + b, 0) / n;
+                const y0 = ys.map((y) => y - mw);
+                const dft = (fq, hann) => {
+                    let [re, im] = [0, 0];
+                    for (let i = 0; i < n; i++) {
+                        const w = hann ? 0.5 - 0.5 * Math.cos((TAU2 * i) / (n - 1)) : 1;
+                        re += y0[i] * w * Math.cos((TAU2 * fq * i) / 60);
+                        im -= y0[i] * w * Math.sin((TAU2 * fq * i) / 60);
+                    }
+                    return (2 * Math.hypot(re, im)) / n;
+                };
+                let [gipfel, best] = [0, -1];
+                for (let fq = 0.1; fq <= 6; fq += 0.005) {
+                    const a = dft(fq, true);
+                    if (a > best) [best, gipfel] = [a, fq];
+                }
+                return {
+                    profil: r._motionProfileName(true, u.emotions, "kreatur", null),
+                    vMS: rund(v, 2),
+                    fSchrittHz: rund(f, 3),
+                    zyklen: rund((n / 60) * f, 1),
+                    gipfelHz: rund(gipfel, 3),
+                    gipfelGegen2f: rund(gipfel / (2 * f), 3),
+                    amplitudeCm: rund(100 * dft(gipfel, false), 2),
+                    amplitude2fCm: rund(100 * dft(2 * f, false), 2),
+                    amplitudeWanduhrCm: rund(100 * dft(1.7 / TAU2, false), 2),
+                    streckeM: rund((n / 60) * v, 1),
+                    bodenSpanneM: rund(Math.max(...boden) - Math.min(...boden), 2),
+                };
+            })();
+            // DER KONTAKTBOGEN: je Zustand eine Zeile, je Zeitpunkt ein Feld (640 px breit), das Rechteck jedes Tiers (grün Leib,
+            // gelb Satz, rot fern) und die Zeile der Zahlen
+            const jpg = [];
+            let bogen = null;
+            if (bilder) {
+                const cw = 640;
+                const ch = Math.round((cw * Hh) / W);
+                const B = document.createElement("canvas");
+                [B.width, B.height] = [3 * cw, 4 * ch];
+                const bx = B.getContext("2d");
+                schuesse.forEach((sc, i) => {
+                    const cv = leinwand(sc.G, W, Hh);
+                    jpg.push({ zustand: sc.zustand, t: sc.t, jpg: cv.toDataURL("image/jpeg", 0.9) });
+                    // DER AUSSCHNITT um die Herde (die Hülle der Rechtecke im Bild, 1:1 wo sie in das Feld passt, sonst verkleinert
+                    // bis zum ganzen Bild): bei 40 m trägt ein Tier ~20 px, im ganzen Bild auf 640 px verkleinert wäre es ein Punkt.
+                    // Das volle Bild liegt daneben als eigenes JPG.
+                    const im = sc.tiere.filter((t) => t.rechteck?.imBild).map((t) => t.rechteck.R);
+                    const hx = im.length ? [Math.min(...im.map((q) => q[0])), Math.max(...im.map((q) => q[2]))] : [0, W];
+                    const hy = im.length ? [Math.min(...im.map((q) => q[1])), Math.max(...im.map((q) => q[3]))] : [0, Hh];
+                    const sw = Math.min(W, Math.max(cw, 1.3 * (hx[1] - hx[0]), ((1.3 * (hy[1] - hy[0])) * W) / Hh));
+                    const sh = (sw * Hh) / W;
+                    const sx = Math.min(W - sw, Math.max(0, (hx[0] + hx[1]) / 2 - sw / 2));
+                    const sy = Math.min(Hh - sh, Math.max(0, (hy[0] + hy[1]) / 2 - sh / 2));
+                    const [ox, oy, f] = [(i % 3) * cw, Math.floor(i / 3) * ch, cw / sw];
+                    bx.drawImage(cv, sx, sy, sw, sh, ox, oy, cw, ch);
+                    bx.lineWidth = 1;
+                    for (const t of sc.tiere) {
+                        if (!t.rechteck?.imBild) continue;
+                        const [x0, y0, x1, y1] = t.rechteck.R;
+                        bx.strokeStyle = { leib: "#3f3", satz: "#fd2", fern: "#f33" }[t.stufe];
+                        bx.strokeRect(ox + (x0 - sx) * f - 2, oy + (y0 - sy) * f - 2, (x1 - x0) * f + 4, (y1 - y0) * f + 4); // prettier-ignore
+                    }
+                    const ab = sc.tiere.filter((t) => t.maskeMass >= 200).length;
+                    const un = sc.tiere.filter((t) => t.kopf?.unten).length;
+                    bx.fillStyle = "rgba(0,0,0,0.6)";
+                    bx.fillRect(ox, oy, cw, 22);
+                    bx.fillStyle = "#fff";
+                    bx.font = "14px monospace";
+                    bx.fillText(`${sc.zustand} ${sc.t}s · ${ab}/${glieder.length} ≥200px · Leib ${sc.tiere.filter((t) => t.stufe === "leib").length} · Kopf unten ${un} · ×${rund(f, 2)}`, ox + 6, oy + 16); // prettier-ignore
+                    delete sc.G;
+                });
+                bogen = B.toDataURL("image/jpeg", 0.9);
+            }
+            const proS = schuesse.map((sc) => ({
+                zustand: sc.zustand,
+                t: sc.t,
+                ab200: sc.tiere.filter((t) => (bilder ? t.maskeMass : t.rechteck?.flaecheMass) >= 200).length,
+                tiere: sc.tiere.map((t) => ({
+                    stufe: t.stufe,
+                    hoehePx: t.rechteck?.hoehePx ?? null,
+                    rechteckMass: t.rechteck?.flaecheMass ?? 0,
+                    maskeMass: bilder ? t.maskeMass : null,
+                    kopfUeberSchulterM: t.kopf ? rund(t.kopf.ueberSchulterM, 3) : null,
+                    schulterM: t.kopf ? rund(t.kopf.schulterM, 3) : null,
+                    kopfUnten: t.kopf ? t.kopf.unten : null,
+                })),
+            }));
+            const aesS = proS.filter((p) => p.zustand === "aesen");
+            const msOhneBild = performance.now() - tStart - schussMs;
+            return {
+                art: gattung,
+                n: glieder.length,
+                soll,
+                wurfSaat: versuch - 1,
+                ort: { x: rund(heim.x, 1), z: rund(heim.z, 1), sichtOhneWald: !!heimFrei, kameraM: KAM_M },
+                schirm: { W, H: Hh, quelle: bilder ? "Ausgabe-Pfad der GPU" : "Maß 1280 × 720 ohne Bild" },
+                weg: "Tätigkeit + Pegel des Leittiers (der Verband liest sie), Flucht: der Spieler geht mit 1,4 m/s auf den Wurf-Ort zu",
+                aktionGeschnitten: geschnitten,
+                phasen: phasen.map((P) => {
+                    const n = P.takte * glieder.length;
+                    return { zustand: P.zustand, taetigkeit: P.taetigkeit, getroffen: rund(P.getroffen / n, 3), gezeigt: rund(P.gezeigt / n, 3), flucht: rund(P.flucht / n, 3), leib: rund(P.leib / P.takte, 2), satz: rund(P.satz / P.takte, 2), fern: rund(P.fern / P.takte, 2), wegM: rund(P.wegM, 1) }; // prettier-ignore
+                }),
+                bewegungM: rund(phasen.reduce((a, P) => a + P.wegM, 0), 1),
+                s1: {
+                    quelle: bilder ? "Maske (G gegen O, Σ|ΔRGB| > 18)" : "Rechteck der Knoten (ohne Bild)",
+                    kopfUnten: "Kopf-Mitte unter der halben Schulterhöhe über dem Grund",
+                    aesen: {
+                        ab200: aesS.length ? Math.min(...aesS.map((p) => p.ab200)) : 0,
+                        ab200JeBild: aesS.map((p) => p.ab200),
+                        kopfUntenAnteil: aesen.proben ? rund(aesen.unten / aesen.proben, 3) : 0,
+                        kopfUntenAnteilLeib: aesen.leibProben ? rund(aesen.leibUnten / aesen.leibProben, 3) : null,
+                        tierTakte: aesen.proben,
+                        leibTakte: aesen.leibProben,
+                        satzTakte: aesen.satz,
+                        fernTakte: aesen.fern,
+                        kopfMitteM: Object.fromEntries(Object.entries(kopfHoehe).map(([k, a]) => [k, a.length ? { takte: a.length, min: rund(Math.min(...a), 3), median: rund(median(a), 3) } : null])), // prettier-ignore
+                    },
+                    bilder: proS,
+                },
+                s2,
+                s3: Object.fromEntries(Object.entries(sprung).map(([n, S]) => [n, { ...S, max: rund(S.max, 4), stetig: rund(S.stetig, 4) }])), // prettier-ignore
+                s4: {
+                    gesetz: { vMS: rund(vS, 2), querMS2: rund(s4Gesetz.max, 2), vBeiMax: s4Gesetz.vBei && rund(s4Gesetz.vBei, 2), rM: s4Gesetz.max > 0 ? rund(s4Gesetz.vBei ** 2 / s4Gesetz.max, 2) : null }, // prettier-ignore
+                    welt: { querMS2: rund(s4Welt.max, 2), vBeiMax: s4Welt.vBeiMax && rund(s4Welt.vBeiMax, 2), querSprintMS2: rund(s4Welt.maxSprint, 2), sprintProben: s4Welt.sprintProben }, // prettier-ignore
+                },
+                s5: {
+                    gang: Object.fromEntries(Object.entries(zug.art).map(([a, n]) => [a, rund(n / Math.max(1, zug.takte), 3)])),
+                    vMedianMS: zug.v.length ? rund(median(zug.v), 2) : null,
+                    vP90MS: zug.v.length ? rund(quantil(zug.v, 0.9), 2) : null,
+                    diagMedianZyklen: zug.diag.length ? rund(median(zug.diag), 3) : null,
+                    leibTakte: zug.takte,
+                },
+                ms: Math.round(msOhneBild),
+                schussMs: Math.round(schussMs),
+                jpg,
+                bogen,
+            };
+        });
+
     // ── schwarm (luftwasser.K2): der Vogel-Schwarm fliegt aus dem Verband der Herde (`_schwarmVerband`, tetrapoda verbandZug),
     // sein Leittier trägt Ereignisse (`_schwarmLeittier`, tetrapoda schwarmLeittier). Mittag und Sonne als Wort des Reglers; die
     // Schwarm-Karte frisch, die Zelle unter dem Auge trägt den festen Schwarm von 100 Gliedern (der tiefste, der weiteste Kreis),
@@ -3164,6 +3687,33 @@ function urteil(name, z) {
                     `Stand-Schlupf ${wo} (${Z.hangGrad}°): ${wer} ${sl} (Soll ≤ 0,05, Ratsche K07)`
                 );
     }
+    // DIE BÜHNE DER HERDE (herde-bild): erst die Bühne selbst (der volle Wurf, die Tiere bewegt), dann das Soll S1–S5 des Entscheids
+    // H3 — gesetzt vor jeder Messung, nie nach einem Ergebnis bewegt; S5 urteilt das Wolfsrudel (`art` wolf)
+    if (name === "herde-bild") {
+        soll(z.n === z.soll, `der Wurf trägt ${z.n} von ${z.soll} Tieren`);
+        soll(z.bewegungM > 1, `die Bühne steht: Bewegung ${z.bewegungM} m über den Fahrplan (Soll > 1 m)`);
+        const S1 = z.s1.aesen;
+        soll(S1.ab200 === z.n, `S1: ${S1.ab200} von ${z.n} Tieren ≥ 200 px im Zustand äsen (${z.s1.quelle}; Soll ${z.n} von ${z.n})`); // prettier-ignore
+        soll(S1.kopfUntenAnteil >= 0.4, `S1: Anteil Kopf unten ${S1.kopfUntenAnteil} im Zustand äsen (Soll ≥ 0,4)`);
+        const S2 = z.s2;
+        soll(
+            !S2.ungemessen && Math.abs(S2.gipfelGegen2f - 1) <= 0.1 && S2.amplitudeCm >= 2 && S2.amplitudeCm <= 5,
+            S2.ungemessen
+                ? `S2 ungemessen: ${S2.ungemessen}`
+                : `S2: Gipfel der Kopfhöhe bei ${S2.gipfelHz} Hz = ${S2.gipfelGegen2f} × 2·f_Schritt, Amplitude ${S2.amplitudeCm} cm (Soll 2·f ± 10 %, 2–5 cm)` // prettier-ignore
+        );
+        const S3 = Object.entries(z.s3).sort((a, b) => b[1].max - a[1].max)[0];
+        soll(S3[1].max <= 0.05, `S3: größter Sprung je Takt ${S3[1].max} rad am ${S3[0]} (${S3[1].zustand}, t ${S3[1].t} s; Soll ≤ 0,05 rad)`); // prettier-ignore
+        const S4 = Math.max(z.s4.gesetz.querMS2, z.s4.welt.querSprintMS2);
+        soll(S4 <= 9.8, `S4: Querbeschleunigung im Sprint ${S4} m/s² (Gesetz ${z.s4.gesetz.querMS2}, Welt ${z.s4.welt.querSprintMS2}; Soll ≤ 9,8)`); // prettier-ignore
+        if (z.art === "wolf") {
+            const S5 = z.s5;
+            soll(
+                (S5.gang.trab || 0) >= 0.5 && S5.vMedianMS >= 1.9 && S5.vMedianMS <= 2.8 && S5.diagMedianZyklen !== null && S5.diagMedianZyklen <= 0.05, // prettier-ignore
+                `S5: im Zug Trab ${S5.gang.trab || 0} der Leib-Takte, ${S5.vMedianMS} m/s, Diagonal-Versatz ${S5.diagMedianZyklen} Zyklen (Soll Trab, 1,9–2,8 m/s, ≤ 0,05)` // prettier-ignore
+            );
+        }
+    }
     LEBEN.urteil(name, z, soll);
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
@@ -3269,6 +3819,12 @@ const TAETER = {
         ["tiersatz-blick", /Satz außer Blick/],
         ["tiersatz-schreiben", /schreibt ohne Änderung/],
         ["tiersatz-kopie", /Sicht-Kopien zeichnen als Leib/],
+    ],
+    // die Bühne der Herde: die Tiere gehalten (der Halter der Werkbank) — sie steht; die Kamera am alten Ort 140 m fern — S1 sieht
+    // kein Tier
+    "herde-bild": [
+        ["herde-bild-gehalten", /die Bühne steht: Bewegung 0 m/],
+        ["herde-bild-fern", /S1: 0 von \d+ Tieren ≥ 200 px/],
     ],
 };
 

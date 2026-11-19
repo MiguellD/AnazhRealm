@@ -48,6 +48,8 @@
 //   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei|n] [--wetter w] [--ruhe max-s] [--wandern bahn|kreis]
 //                                                           | lauf --selbsttest — DER ECHTE LAUF: Frame- und GPU-Zeit, Befehle, Dreiecke und VRAM je Frame und Pass;
 //                                                           `kreis` geht eine Runde in [sek] Spiel-s und zählt die Tiere im Bild (`KREIS`, tiere.K5)
+//   node scripts/werkbank.cjs lauf --buehne herde [--art wolf] [--kontakt] [--ordner d] DIE BÜHNE DER HERDE (Probe herde-bild): Kamera H
+//                                                           40 m quer, stehen → äsen → ziehen → flucht, S1–S5; `--kontakt` der Bogen 4 × 3
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
 //   node scripts/werkbank.cjs bedienung [--runden 3]       DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und Menü
@@ -3979,6 +3981,46 @@ hauptLauf(async () => {
                 (neu ? `\nDer Re-Mint hebt ${hebt.length} Zeilen: ${hebt.join(" · ") || "keine"}` : ""),
             true
         );
+    } else if (cmd === "lauf" && opt("--buehne")) {
+        // DIE ISOLIERTE BÜHNE DER HERDE (`lauf --buehne herde [--art wolf] [--kontakt] [--ordner d] [--eigen]`): die Probe herde-bild der
+        // Familie gate:kreatur-takt (scripts/lib/kreatur-proben.cjs — derselbe Wurf, derselbe Takt, die Kamera H 40 m quer, der Fahrplan
+        // stehen → äsen → ziehen → flucht) in der laufenden Welt; `--kontakt` schießt je Zustand drei Bilder im Ausgabe-Pfad (Schirm-Größe,
+        // die Tiere frei) und fügt den Kontaktbogen. Abgelegt: kontakt-<art>.jpg, die zwölf Bilder, mess-<art>.json (S1–S5 mit Einheit).
+        // Exit 1 nur, wenn die Bühne selbst nicht misst (Wurf, Bewegung, Bilder); das Soll S1–S5 steht als Zeile, ROT ist der Stand.
+        if (opt("--buehne") !== "herde") endeMit(`--buehne kennt „herde“, nicht „${opt("--buehne")}“`);
+        const KP = require("./lib/kreatur-proben.cjs");
+        const art = opt("--art", "hirsch") === "wolf" ? "wolf" : "hirsch";
+        const halt = await eigeneWelt();
+        const t0 = Date.now();
+        // die EINE Warte der Familie (diag-kreatur-takt `bereit` + `einschwingen`): erwacht samt Voxel-Worker, dann steht die Welt
+        const a1 = await rufe("/eval", {
+            name: "herdeBild",
+            code: `if (!window.__fehlt) { ${require("./lib/welt-boot.cjs").CODE_OF_SEITE} } await window.__weltDa((r) => r.state.voxelWorkerReady); await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch {} }); return await (${KP.KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify({ proben: ["herde-bild"], art, bilder: hat("kontakt") })});`, // prettier-ignore
+        });
+        if (halt) halt();
+        const z = ergebnis(a1)["herde-bild"];
+        if (!z || z.fehler) endeMit(`BÜHNE ROT: ${z ? z.fehler : JSON.stringify(a1).slice(0, 600)}`);
+        const ordner = path.resolve(opt("--ordner") || ablage(`herde-${art}-${Date.now()}`));
+        fs.mkdirSync(ordner, { recursive: true });
+        const jpgAb = (datei, url) => fs.writeFileSync(path.join(ordner, datei), Buffer.from(url.split(",")[1], "base64"));
+        for (const b of z.jpg || []) jpgAb(`bild-${art}-${b.zustand}-${b.t}s.jpg`, b.jpg);
+        if (z.bogen) jpgAb(`kontakt-${art}.jpg`, z.bogen);
+        const u = KP.urteil("herde-bild", z);
+        const mess = Object.assign({}, z, { jpg: undefined, bogen: undefined, wandMs: Date.now() - t0, urteil: u.ok ? "GRÜN" : "ROT", befunde: u.grund ? u.grund.split(" · ") : [] }); // prettier-ignore
+        jsonAb(path.join(ordner, `mess-${art}.json`), mess);
+        const zeile = (s) => mess.befunde.filter((b) => b.startsWith(s + ":") || b.startsWith(s + " "));
+        for (const s of ["S1", "S2", "S3", "S4", "S5"]) {
+            const rot = zeile(s);
+            const ungemessen = s === "S5" && art !== "wolf";
+            console.log(`${s} ${ungemessen ? "ungemessen (S5 urteilt --art wolf)" : rot.length ? "ROT — " + rot.join(" · ") : "GRÜN"}`);
+        }
+        console.log(`BÜHNE ${z.n}/${z.soll} ${z.art}, Bewegung ${z.bewegungM} m, Stufen äsen Leib ${z.phasen[1].leib} · Satz ${z.phasen[1].satz} · fern ${z.phasen[1].fern}, ${z.ms} ms ohne Bilder, ${z.schussMs} ms Bilder → ${ordner}`); // prettier-ignore
+        const kaputt = [
+            z.n !== z.soll && `der Wurf trägt ${z.n} von ${z.soll}`,
+            !(z.bewegungM > 1) && `die Tiere stehen (Bewegung ${z.bewegungM} m)`,
+            hat("kontakt") && !(z.bogen && z.jpg.length === 12) && `der Bogen trägt ${(z.jpg || []).length} von 12 Bildern`,
+        ].filter(Boolean);
+        endeMit(kaputt.length ? `BÜHNE ROT: ${kaputt.join(" · ")}` : "BÜHNE GRÜN — sie misst; das Soll S1–S5 steht oben", !kaputt.length); // prettier-ignore
     } else if (cmd === "lauf") {
         if (SELBST) {
             selbsttestEnde([...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...buehneSelbsttest()], "die Pass-Teilung trennt zwei Gipfel " +
