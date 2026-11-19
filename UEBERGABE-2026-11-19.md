@@ -62,3 +62,24 @@ Scratch-Wurzel: `C:\Users\micha\AppData\Local\Temp\claude\b95c25d6c0e867eb\f6f6f
   Die Vorprüfung fährt das echt-Bein der Karten nicht — das ist die Lücke, an der Licht Welle 1 durchkam (noch ohne Heilung).
 - Den Lichtmesser-Stempel habe ich wegen der Kalt-Ankunft zurückgezogen und nach dem Wort des Schöpfers wieder eingesetzt.
 - Pflicht-OFFEN Rest A · B · C · E · F unverändert; die Stand-Zeile in CLAUDE.md trägt noch V18.546.339.
+
+## 7 Entscheide 16:40 (Wort des Schöpfers: „wo sind die lösungen?“ · „diese pflicht offen kann ich nicht mehr hören … in den sprossen integriert oder du lässt es“)
+1. **EIN Scope, EIN Zähler: die Karte 2.** Die Liste `docs/PFLICHT-OFFEN.md` stirbt; A–F werden benannte Leitern der Karte 2 oder
+   fallen offen mit Grund. Opus-Arbeiter im Baum `AnazhRealm-altlast`, Zweig `altlast-in-die-karte` (Commit 1: Liste, CLAUDE.md,
+   champion.md, gate:betriebsgesetz; Commit 2: Zensus alter Tests, Klassen ohne Leser fallen). Bei Abgabe: Vorprüfung, Stempel
+   `w28-altlast-in-die-karte`. Kein Bericht nennt die Pflicht-Liste mehr — Schluss-Zeile ist „Karte 2: n von 1 718“.
+   Der Blick ohne alte Karte (219/330) und ohne PFLICHT-Zeile kommt als Datei nach `altlast\messplatz-blick.cjs` → nach
+   `zug/dienst/` buchen.
+2. **Die Rate hängt am Paar, nicht am Bau.** Die Richter-Tafel trägt 1 716 Stationen; die GTX fährt Runde 1 am Kopf f68dbf09 mit
+   974 von 1 428, die Radeon hatte in Runde 1 nur 25 Stationen in der Liste und steht seit 09:30 „durch“. Gebucht wird nur das Paar.
+   **Entscheid: ab dem Ende der GTX-Runde gehört die Radeon-GPU der Runde 2 (volle Liste, derselbe Kopf wie die GTX).** Kein neuer
+   GPU-Arbeiter an der Radeon, bis die Runde durch ist; der Nachzug `licht-lesung-ev` ist deshalb beendet (WIP gepusht, fällt offen:
+   Schnitt wegen des Kaltstarts). Erster Handgriff morgens: in `zug/runde.txt` prüfen, dass die Radeon-Zeile der Runde 2 die volle
+   Liste trägt (nicht wieder 25) — sonst `runde.cjs zurueck` und den Radeon-Dienst neu starten (`bash zug/dienst/start.sh`).
+3. **Stempel, die halten:** die Vorprüfung trägt ab jetzt neben `[ci voll]` EIN `[gpu-probe: …]` mit den echt-Wänden der Domäne
+   der Welle (Licht: `gate:post-kette` + das Wasser-Bild; Tier: die Kreatur-Probe), damit ein Gerät sie VOR dem Stempel fährt.
+   Kein Stempel mit roter oder halber Batterie.
+4. **`w28-kern-sprossen`:** der Heiler von bau-rezept nimmt ihn direkt nach seiner Abgabe (dieselbe Probe `bewohner`, Kontext warm).
+5. **EINHEIT, Bild-Spike STUFE:** an die GTX 1050 nach ihrem Licht-Rest (B1–B4; B5 misst das Paar) — die Radeon misst nachts.
+6. **Herde:** `herde-gesetz` cc24899c, zweites Urteil am Bogen: groß im Bild, Äsen und Flucht geheilt; Reste T1 schwarzer Keil am
+   Tier, T2 S4 zurückgefallen (7,97 → 26,37 m/s²), T3 „stehen“ läuft an der GPU (1,17 m/s). Bogen `kontakt-nachher2-hirsch.jpg`.
