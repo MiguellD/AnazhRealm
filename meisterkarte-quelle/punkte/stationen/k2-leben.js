@@ -4789,4 +4789,1656 @@ L.perspektive("wasser", (() => {
     };
 })());
 
+// ── DIE PERSPEKTIVE leben.evolution (9 Leitern, 59 Sprossen; belegt: keine): Arten, Erbe, Muster, Zeitreise, Baupläne, fremde Physik,
+// Zivilisation, Mikroben, Fossilien ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Die Leser des Spiels: der BESTAND je Region (stamm/kreatur-leben.js `_bestandRegion` — das Verzeichnis der Tiere mit Gattung, Größe
+// bs, Alter, Verband v; sein Takt `_bestandSchritt` im Zeitraffer: die Spiel-Uhr synchron verschoben und im selben Zug zurückgestellt,
+// die Gaben ans Feld (`_depositLife`/`_depositEmotion`) für die Dauer des Zeitraffers stumm, das Verzeichnis danach byte-gleich
+// zurück), der GUSS des Leibs (stamm/koerper-leib.js `_buildCreatureGroup` → tetrapoda-core GATTUNGEN/ART_GESTALT, mit `dialsOv` das
+// Zufalls-Genom), der WURF eines Körpers (`spawnCreatureAt` mit dialsOv, dann der Takt der Welt `_gameLoopTick`), das LEBENSRAUM-Gesetz
+// (`_lebensraumGesetz`, `_bodenKlasseAt`), das FURCHT-Gesetz (`_furchtGesetz` fluchtDistanz), der GANG (`_gangZeile` + tetrapoda
+// gangSchritt an der Schwere der Welt `state.gravity`), der PLANET-FADEN (`r._planetAuftrag` planet-ort/planet-anker mit zeitMa —
+// derselbe Weg wie der Satz „reise“), die EPOCHE der Siedlung (`_siedlungEpoche` → fachwerk siedlungsEpoche) und das GESETZ DER WELT
+// (`_weltGesetz`: Schwere, Himmel, Wetter, Gelände, Ort). Was die Welt nicht trägt (Abstammung, Erbe, Epochen-Fauna, Mikroben,
+// Fossilien, fremde Sterne), stellt die Probe AN DER WELT fest (Felder, Zahl der Gattungen, Antwort des Fadens je Epoche) und urteilt
+// ROT „Umfang nicht erzeugbar“ mit dem fehlenden Leser. Ein Richter ohne Zahl bekommt sein Soll aus Umfang, Tiefe oder Preis der Sprosse
+// (`K.soll` mit quelleFeld, geprüft am Wortlaut) oder aus einer Referenz beim Namen und trägt `unklar`.
+L.perspektive("evolution", (() => {
+    const ST = "leben.evolution.stammbaum";
+    const ER = "leben.evolution.erbe";
+    const MU = "leben.evolution.muster";
+    const ZR = "leben.evolution.zeitreise";
+    const BP = "leben.evolution.bauplan";
+    const FP = "leben.evolution.fremde-physik";
+    const ZV = "leben.evolution.zivilisation";
+    const MI = "leben.evolution.mikroben";
+    const FO = "leben.evolution.fossil";
+    const PFAD_TIER = ["tetrapoda-core.js", "koerper-core.js", "stamm/kreatur-*.js", "stamm/koerper-leib.js", "stamm/koerper-fahrt.js", "scripts/werkbank.cjs"];
+    const PFAD_PLANET = ["planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "stamm/feld-leben.js", "stamm/netz-portal.js", "gelaende-core.js", "phyto-core.js", "stamm/kreatur-leben.js", "scripts/werkbank.cjs"];
+    const PFAD_KULTUR = ["tetrapoda-core.js", "fachwerk-core.js", "stamm/kreatur-*.js", "stamm/siedlung-*.js", "stamm/klang.js", "scripts/werkbank.cjs"];
+    const PFAD_GRUND = ["gelaende-core.js", "stamm/feld-leben.js", "stamm/dirigent-ankunft.js", "stamm/kreatur-leben.js", "stamm/gelaende-*.js", "tetrapoda-core.js", "scripts/werkbank.cjs"];
+
+    // Ein Wort des Richters ohne Zahl: die Zahl kommt über `K.soll` aus Umfang, Tiefe oder Preis der Sprosse (quelleFeld + quelleWort)
+    // oder aus einer Referenz beim Namen (refQuelle) — der EINE Weg des Kerns.
+    // DAS SOLL EINES AUGE-RICHTERS OHNE JEDE ZAHL („Bildvergleich … gegen Natur-Fotos“): wörtlich, sein Vergleich hält NIE ohne Schwelle —
+    // die Sprosse urteilt im Blindpaar am Gerät (R11), das Blatt nennt es `unklar`
+    const ohneZahl = (id, nr, wort, key) => {
+        const r = K.sprosseVon(id, nr).richter;
+        if (!r.includes(wort)) throw new Error("ohneZahl: „" + wort + "“ steht nicht im Richter " + id + " S" + nr);
+        if (K.zahlenIn(r).length) throw new Error(id + " S" + nr + ": der Richter trägt eine Zahl — das Soll gehört K.soll");
+        return { wort, key, rel: "gegen", a: "die Referenz (der Richter nennt keine Schwelle)", einheit: "" };
+    };
+
+    // DER ZEUGE DER WELT: N Antworten der Welt mit Streuung; je nach Sprosse die Änderung vor → nach, der Gegenlauf (R7) und das Erbe
+    const zeugeVon = (o) => (roh) => {
+        const z = roh.zeuge || {};
+        if (z.fehler) return "die Messung warf: " + z.fehler;
+        if (!(z.antworten >= o.min)) return "nur " + (z.antworten || 0) + " Antworten der Welt (" + o.was + ", Soll ≥ " + o.min + ")";
+        if (o.streu && !(z.streuung > 0)) return "die Antworten tragen keine Streuung (" + o.was + ": eine Konstante, nicht die Welt)";
+        if (o.aend && !(Number.isFinite(z.vor) && Number.isFinite(z.nach) && z.vor !== z.nach)) return "die Welt änderte sich nicht (" + o.aend + ": vor " + z.vor + " = nach " + z.nach + ")";
+        if (o.gegen && z.gegenlauf !== true) return "der Gegenlauf (" + o.gegen + ") ließ die Wirkung stehen — sie hat keine Ursache in der Welt";
+        if (o.erbe && z.erbe !== true) return "ohne Erbe in der Welt (" + o.erbe + ") — die Zahl entsteht nicht aus Abstammung";
+        return null;
+    };
+    // DIE SPROSSE aus ihren Teilen: der Selbsttest (gruen im Soll mit sprechendem Zeugen; je Bedingung des Zeugen eine Attrappe, die den
+    // Wortlaut erfüllt, ohne die Welt zu ändern)
+    const S = (d) => {
+        const zg = d.zeuge;
+        const gz = Object.assign({ antworten: Math.max(zg.min, 1) * 2, streuung: 1.7, vor: 1, nach: 2, gegenlauf: true, erbe: true }, d.gz || {});
+        const gruen = { werte: d.werte, zeuge: gz };
+        const attrappen = [{ name: "die Zahl als Konstante ohne Antwort der Welt (" + zg.was + ")", roh: { werte: d.werte, zeuge: { antworten: 0 } } }];
+        if (zg.streu) attrappen.push({ name: "N Antworten ohne Streuung — eine Konstante statt der Welt", roh: { werte: d.werte, zeuge: Object.assign({}, gz, { streuung: 0 }) } });
+        if (zg.aend) attrappen.push({ name: "die Welt blieb vor = nach (" + zg.aend + ")", roh: { werte: d.werte, zeuge: Object.assign({}, gz, { nach: gz.vor }) } });
+        if (zg.gegen) attrappen.push({ name: "der Gegenlauf ließ die Wirkung stehen (" + zg.gegen + ")", roh: { werte: d.werte, zeuge: Object.assign({}, gz, { gegenlauf: false }) } });
+        if (zg.erbe) attrappen.push({ name: "die Zahl ohne Erbe in der Welt (" + zg.erbe + ")", roh: { werte: d.werte, zeuge: Object.assign({}, gz, { erbe: false }) } });
+        const sp = { u: d.u || {}, soll: d.soll, zeuge: zeugeVon(zg), zeugeText: d.zeugeText || zg.was, gruen, attrappen, taeter: d.taeter };
+        for (const k of ["auge", "nicht", "leser", "unklar"]) if (d[k]) sp[k] = d[k];
+        return sp;
+    };
+
+    const L_BODY = "stamm/kreatur-leben.js:1993 _creatureBodySize — die Geburt (_creatureNaturalBirth) würfelt die Größe des Kindes aus dem Strom der Region, kein Eltern-Feld, kein Erbe";
+    const L_GATT = "tetrapoda-core.js:62 GATTUNGEN — 4 Gattungen aus 5 Dials ohne Ahn, ohne Klade (der STAMMBAUM des Kerns ist der Name eines Studios)";
+    const L_ZEIT = "stamm/kreatur-leben.js:1687 _pickFaunaSoulAtPlayer — liest keine Zeit: der Bestand jeder Epoche ist der von heute; voxel-worker.js:1175 planetOrtAuftrag trägt kein Feld der Fauna";
+
+    return {
+        leitern: {
+            // ═══ STAMMBAUM: Arten mit Abstammung ═══
+            [ST]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD_TIER.concat(["planet-core.js", "voxel-worker.js"]),
+                ungefahren: "die Third-Bilder des Gestalt-Baums und das Blindtest-Bild (S7) — auf swiftshader kein Schuss",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const mittel = (l) => (l.length ? l.reduce((s, x) => s + x, 0) / l.length : NaN);
+                        const sd = (l) => {
+                            const m = mittel(l);
+                            return l.length > 1 ? Math.sqrt(l.reduce((s, x) => s + (x - m) * (x - m), 0) / (l.length - 1)) : 0;
+                        };
+                        const s = r.state;
+                        const C = r.constructor;
+                        const TC = globalThis.__tetrapodaCore;
+                        const LG = C._lebensraumGesetz();
+                        const aus = { fehler: null };
+                        const meine = [];
+                        const alt = { wurf: s.faunaLifecycle ? s.faunaLifecycle.lastTick : null, max: s.maxCreatures, p: s.playerMesh.position.clone(), yaw: s.yaw, pitch: s.pitch };
+                        try {
+                            const gattungen = Object.keys(LG.L.gattung);
+                            const gesetze = ["_vogelGesetz", "_fischGesetz", "_bestaeuberGesetz"].filter((k) => typeof C[k] === "function");
+                            aus.arten = gattungen.length + gesetze.length;
+                            const AHN = ["ahn", "eltern", "klade", "vorfahr", "abstammung", "elter", "linie"];
+                            let ahnen = 0;
+                            for (const g of gattungen) {
+                                const q = Object.assign({}, (TC.GATTUNGEN && TC.GATTUNGEN[g]) || {}, (TC.ART_GESTALT && TC.ART_GESTALT[g]) || {});
+                                if (AHN.some((k) => q[k] !== undefined)) ahnen++;
+                            }
+                            aus.ahnen = ahnen;
+                            const B = new T.Box3();
+                            const V = new T.Vector3();
+                            const gest = [];
+                            for (const soul of C.CREATURE_SOUL_NAMES) {
+                                const g = r._buildCreatureGroup(soul);
+                                if (!g) continue;
+                                g.updateMatrixWorld(true);
+                                B.setFromObject(g).getSize(V);
+                                const tb = g.userData._tierBaum || {};
+                                gest.push([V.x, V.y, V.z, tb.beinL || 1e-6, tb.leibV || 1e-6].map((x) => Math.log(Math.max(1e-6, x))));
+                                r._disposeSoulGroup(g);
+                            }
+                            const dist = [];
+                            for (let i = 0; i < gest.length; i++) for (let j = i + 1; j < gest.length; j++) dist.push(Math.hypot(...gest[i].map((x, k) => x - gest[j][k])));
+                            aus.gestalten = gest.length;
+                            aus.gestaltStreuung = sd(dist);
+                            const F = r._bestandRegionen().regionen;
+                            const tiere = [];
+                            for (const k of r._bestandNah()) tiere.push(...(F[k] || r._bestandRegion(k)).tiere);
+                            aus.tiere = tiere.length;
+                            let passt = 0;
+                            for (const t of tiere) if (LG.lebensraum(t.g, r._bodenKlasseAt(t.x, t.z), LG.L) > 0) passt++;
+                            aus.passt = passt;
+                            aus.bsStreuung = sd(tiere.map((t) => t.bs));
+                            aus.gattungenImBestand = new Set(tiere.map((t) => t.g)).size;
+                            const fl = s.faunaLifecycle;
+                            if (fl) fl.lastTick = 1e12;
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, (s.creatures || []).length + 6);
+                            const pm = s.playerMesh.position;
+                            for (const soul of C.CREATURE_SOUL_NAMES) {
+                                const g = C.TETRAPODA_SOUL_MAP[soul];
+                                let ort = null;
+                                for (let d = 30; d <= 240 && !ort; d += 15)
+                                    for (let q = 0; q < 16 && !ort; q++) {
+                                        const x = pm.x + Math.cos((q * Math.PI) / 8 + d) * d;
+                                        const z = pm.z + Math.sin((q * Math.PI) / 8 + d) * d;
+                                        if (r._landAt(x, z) && !r._nassAt(x, z) && LG.lebensraum(g, r._bodenKlasseAt(x, z), LG.L) > 0) ort = { x, z };
+                                    }
+                                if (!ort) continue;
+                                const c = r.spawnCreatureAt(ort.x, r.getTerrainHeightAt(ort.x, ort.z) + 0.5, ort.z, "happy", soul, { precise: true, bodySize: 1 });
+                                if (c) meine.push({ c, g, x0: c.position.x, z0: c.position.z, weg: 0, lx: c.position.x, lz: c.position.z });
+                            }
+                            let t = performance.now();
+                            for (let i = 0; i < A.takte; i++) {
+                                r._gameLoopTick((t += 1000 / 60));
+                                for (const m of meine) {
+                                    m.weg += Math.hypot(m.c.position.x - m.lx, m.c.position.z - m.lz);
+                                    m.lx = m.c.position.x;
+                                    m.lz = m.c.position.z;
+                                }
+                            }
+                            aus.koerper = meine.length;
+                            aus.laufend = meine.filter((m) => m.weg > 0.3 && Math.abs(m.c.position.y - r.getTerrainHeightAt(m.c.position.x, m.c.position.z)) < 0.5 && LG.lebensraum(m.g, r._bodenKlasseAt(m.c.position.x, m.c.position.z), LG.L) > 0).length;
+                            aus.wege = meine.map((m) => Math.round(m.weg * 100) / 100);
+                            await r._fadenQuelle();
+                            const an = await r._planetAnker();
+                            const grad = (x) => Math.round(((x * 180) / Math.PI) * 100) / 100;
+                            const o = await r._planetAuftrag({ type: "planet-ort", samen: r._planetSamen(), breite: grad(an.breite), laenge: grad(an.laenge), zeitMa: -100 });
+                            aus.deltaFelder = Object.keys(o.delta || {});
+                            aus.faunaFelder = aus.deltaFelder.filter((k) => !["klima", "meer", "wetter", "wuchs", "wildnis"].includes(k)).length;
+                            const c0 = (s.creatures || []).find((c) => !meine.some((m) => m.c === c));
+                            if (c0) {
+                                const p = c0.position;
+                                aus.pose = { px: p.x + 4, py: p.y + 1.8, pz: p.z + 4, lx: p.x, ly: p.y + 0.6, lz: p.z };
+                            }
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        } finally {
+                            for (const m of meine) r.removeCreature(m.c);
+                            if (s.faunaLifecycle) s.faunaLifecycle.lastTick = alt.wurf;
+                            s.maxCreatures = alt.max;
+                            s.playerMesh.position.copy(alt.p);
+                            s.yaw = alt.yaw;
+                            s.pitch = alt.pitch;
+                        }
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ takte: 180 }) + ");");
+                    const ohneBaum = !(a.ahnen > 0) ? "kein Baum des Samens: " + a.arten + " Arten, " + (a.ahnen || 0) + " mit Ahn (tetrapoda-core GATTUNGEN), 0 ausgestorben" : null;
+                    const z = { fehler: a.fehler, antworten: a.gestalten || 0, streuung: a.gestaltStreuung || 0, blaetter: a.arten };
+                    const auge = await M.auge("evolution-stammbaum-s7", a.pose || { ort: "wiese" });
+                    const nichtA = (n) => (a.arten >= n ? null : "die Welt trägt " + a.arten + " Arten (4 Gattungen + Vogel, Fisch, Bestäuber), nicht " + n);
+                    const und = (...l) => l.filter(Boolean).join("; ") || undefined;
+                    return {
+                        sprossen: {
+                            1: { werte: { arten: a.arten }, zeuge: Object.assign({}, z, { antworten: a.arten }), nicht: und(ohneBaum, nichtA(10)) },
+                            2: { werte: { saaten: a.ahnen > 0 ? 1 : 0, arten: a.arten }, zeuge: Object.assign({}, z, { antworten: a.arten }), nicht: und(ohneBaum, nichtA(100)) },
+                            3: { werte: { laufendProzent: a.koerper ? (100 * a.laufend) / a.koerper : undefined, blaetter: a.koerper, arten: a.arten }, zeuge: { fehler: a.fehler, antworten: a.koerper || 0, streuung: (a.wege || []).length > 1 ? Math.max(...a.wege) - Math.min(...a.wege) : 0 }, nicht: und(nichtA(1000)) },
+                            4: { werte: { arten: a.arten }, zeuge: z, nicht: und(ohneBaum, nichtA(1e4)) },
+                            5: { werte: { plausibelProzent: a.tiere ? (100 * a.passt) / a.tiere : undefined, stichprobe: a.tiere, arten: a.arten }, zeuge: { fehler: a.fehler, antworten: a.tiere || 0, streuung: a.bsStreuung || 0 }, nicht: und(nichtA(1e6)) },
+                            6: { werte: { blaetter: a.faunaFelder, arten: a.arten }, zeuge: Object.assign({}, z, { antworten: a.arten }), nicht: und("kein ausgestorbenes Blatt: die Antwort des Planet-Fadens zur Epoche trägt " + (a.faunaFelder || 0) + " Felder der Fauna (" + (a.deltaFelder || []).join(", ") + ")", nichtA(1e9)) },
+                            7: { werte: { blaetter: a.arten, saaten: 1 }, zeuge: z, auge, nicht: und(nichtA(1e9)) },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [K.soll(ST, 1, "Robinson-Foulds ≤ 0,3", { key: "rf" }), K.soll(ST, 1, "Gestalt-Baum aus Third-Bildern gegen den Baum des Samens", { key: "arten", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "10 Arten" })],
+                        werte: { rf: 0.2, arten: 12 },
+                        zeuge: { min: 10, was: "Gestalten je Blatt aus dem Guss der Welt", streu: true },
+                        zeugeText: "Gestalt-Abstände aus dem Guss der Welt, Mutante „Erbe aus“ → Zufall",
+                        taeter: "tetrapoda-core.js GATTUNGEN (kein Baum des Samens)",
+                        nicht: "kein Baum des Samens (keine Abstammung)",
+                        leser: L_GATT,
+                        unklar: "„Mutante „Erbe aus“ → Zufall“ nennt keine Zahl — Vorschlag: RF der Mutante ≥ 0,8 (Zufallsbäume teilen fast keine Spaltung)",
+                    }),
+                    2: S({
+                        soll: [K.soll(ST, 2, "Colless aus 100 Saaten", { key: "saaten", rel: "≥", zahl: 100 }), K.soll(ST, 2, "Colless aus 100 Saaten gegen reale Kladen", { key: "arten", rel: "≥", zahl: 100, quelleFeld: "umfang", quelleWort: "10² Arten" })],
+                        werte: { saaten: 100, arten: 140 },
+                        zeuge: { min: 100, was: "Blätter der Bäume aus der Welt", streu: true },
+                        taeter: "tetrapoda-core.js GATTUNGEN (kein Baum, kein Colless)",
+                        nicht: "kein Baum des Samens",
+                        leser: L_GATT,
+                        unklar: "„gegen reale Kladen“ nennt kein Band — Vorschlag: normierter Colless-Index im Band realer Kladen (Blum & François 2006) als Zahl der Karte",
+                    }),
+                    3: S({
+                        soll: [K.soll(ST, 3, "≥ 90 %", { key: "laufendProzent", einheit: "%" }), K.soll(ST, 3, "100 Zufallsblätter", { key: "blaetter", rel: "≥", zahl: 100 }), K.soll(ST, 3, "als laufender Körper im Lebensraum", { key: "arten", rel: "≥", zahl: 1000, quelleFeld: "umfang", quelleWort: "10³ Arten" })],
+                        werte: { laufendProzent: 96, blaetter: 100, arten: 1200 },
+                        zeuge: { min: 100, was: "Körper im Lebensraum, gelaufen im Takt der Welt", streu: true },
+                        taeter: "stamm/kreatur-leben.js spawnCreatureAt / _lebensraumGesetz (4 Gattungen)",
+                        nicht: "10³ Arten — die Welt trägt 4 Gattungen",
+                        leser: L_GATT,
+                    }),
+                    4: S({
+                        soll: [K.soll(ST, 4, "r ≥ 0,5", { key: "mantelR" }), K.soll(ST, 4, "Mantel-Korrelation Bild-Deskriptoren ↔ Baum-Distanz", { key: "arten", rel: "≥", zahl: 1e4, quelleFeld: "umfang", quelleWort: "10⁴ Arten" })],
+                        werte: { mantelR: 0.62, arten: 12000 },
+                        zeuge: { min: 10, was: "Gestalten aus dem Guss der Welt", streu: true },
+                        taeter: "tetrapoda-core.js GATTUNGEN (keine Baum-Distanz)",
+                        nicht: "keine Baum-Distanz",
+                        leser: L_GATT,
+                    }),
+                    5: S({
+                        soll: [K.soll(ST, 5, "Zufallsstichprobe 1 000 ≥ 95 %", { key: "plausibelProzent", einheit: "%" }), K.soll(ST, 5, "Zufallsstichprobe 1 000", { key: "stichprobe", rel: "≥", zahl: 1000 }), K.soll(ST, 5, "Ankunft-ABAB 10⁶", { key: "arten", rel: "≥", zahl: 1e6 })],
+                        werte: { plausibelProzent: 97, stichprobe: 1000, arten: 1.2e6 },
+                        zeuge: { min: 1000, was: "Tiere des Bestands an ihrem Anker im Lebensraum", streu: true },
+                        taeter: "stamm/kreatur-leben.js _bestandRegion (4 Gattungen)",
+                        nicht: "10⁶ lebende Arten — die Welt trägt 4 Gattungen",
+                        leser: L_GATT,
+                        unklar: "„Ankunft-ABAB 10⁶ ↔ 10³“ nennt keine Schwelle — den Preis liest die Maschine aus dem Strom (R8)",
+                    }),
+                    6: S({
+                        soll: [K.soll(ST, 6, "≥ 95 %", { key: "epocheProzent", einheit: "%" }), K.soll(ST, 6, "100 Zufallsblätter", { key: "blaetter", rel: "≥", zahl: 100 }), K.soll(ST, 6, "100 Zufallsblätter der ganzen Geschichte", { key: "arten", rel: "≥", zahl: 1e9, quelleFeld: "umfang", quelleWort: "10⁹ Arten" })],
+                        werte: { epocheProzent: 96, blaetter: 100, arten: 1.5e9 },
+                        zeuge: { min: 100, was: "Blätter der Geschichte, als Körper in ihrer Epoche", streu: true },
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Fauna der Epoche)",
+                        nicht: "keine ausgestorbene Art, keine Epochen-Fauna",
+                        leser: L_ZEIT,
+                    }),
+                    7: S({
+                        soll: [K.soll(ST, 7, "Blindtest ≤ 60 %", { key: "blindProzent", einheit: "%" }), K.soll(ST, 7, "1 000 Blätter aus 10 Saaten", { key: "blaetter", rel: "≥", zahl: 1000 }), K.soll(ST, 7, "10 Saaten", { key: "saaten", rel: "≥", zahl: 10 })],
+                        werte: { blindProzent: 55, blaetter: 1000, saaten: 10 },
+                        zeuge: { min: 1000, was: "Blätter aus 10 Saaten", streu: true },
+                        auge: { pose: "Third am ersten Tier der Welt (4 m seitlich, 1,8 m hoch)", vorbild: "Natur-Fotos derselben Kladen, Blindtest ≤ 60 % (Prüfer-Satz R11)" },
+                        taeter: "tetrapoda-core.js GATTUNGEN (4 Gattungen)",
+                        nicht: "10⁹ Arten aus 10 Saaten — die Welt trägt 4 Gattungen in jeder Saat",
+                        leser: L_GATT,
+                    }),
+                },
+            },
+
+            // ═══ ERBE: Individuum und Abstammung im Zeitraffer des Bestands ═══
+            [ER]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD_TIER,
+                ungefahren: "die Morphometrie aus Third-Bildern (S1) und das Bild der Herde (S3, S4) — die Zahl misst die Größe bs des Verzeichnisses, das Bild am Gerät",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const mittel = (l) => (l.length ? l.reduce((s, x) => s + x, 0) / l.length : NaN);
+                        const sd = (l) => {
+                            const m = mittel(l);
+                            return l.length > 1 ? Math.sqrt(l.reduce((s, x) => s + (x - m) * (x - m), 0) / (l.length - 1)) : 0;
+                        };
+                        const steigung = (xs, ys) => {
+                            const mx = mittel(xs), my = mittel(ys);
+                            let a = 0, b = 0;
+                            for (let i = 0; i < xs.length; i++) {
+                                a += (xs[i] - mx) * (ys[i] - my);
+                                b += (xs[i] - mx) * (xs[i] - mx);
+                            }
+                            return b > 0 ? a / b : NaN;
+                        };
+                        const s = r.state;
+                        const C = r.constructor;
+                        const aus = { fehler: null };
+                        const jetzt = s.spielZeit;
+                        const eigen = (k) => (Object.prototype.hasOwnProperty.call(r, k) ? r[k] : undefined);
+                        const altF = { l: eigen("_depositLife"), e: eigen("_depositEmotion"), s: eigen("_bestandStirbt") };
+                        const F = r._bestandRegionen().regionen;
+                        const keys = r._bestandNah();
+                        const hier = r._bestandHier();
+                        for (const k of keys) if (!F[k]) r._bestandRegion(k);
+                        const sichern = (R) => ({ R, t: R.t, seq: R.seq, tiere: R.tiere.slice(), felder: R.tiere.map((t) => Object.assign({}, t)) });
+                        const zurueck = (a) => {
+                            a.R.t = a.t;
+                            a.R.seq = a.seq;
+                            a.R.tiere = a.tiere;
+                            a.tiere.forEach((t, i) => {
+                                for (const k of Object.keys(t)) if (!(k in a.felder[i])) delete t[k];
+                                Object.assign(t, a.felder[i]);
+                            });
+                        };
+                        const stand = keys.map((k) => sichern(F[k]));
+                        const tod = new Map();
+                        const ELTERN = ["eltern", "mutter", "vater", "ahn", "elter"];
+                        const lebensS = C.FAUNA_MAX_AGE_MS / 1000;
+                        const lauf = (key, dauer) => {
+                            const R = F[key];
+                            const geb = [];
+                            const tode = [];
+                            for (let t = 0; t < dauer;) {
+                                const dt = Math.min(3000, dauer - t);
+                                const vor = new Set(R.tiere.map((x) => x.id));
+                                const alte = {};
+                                for (const x of R.tiere) if (x.alterS > 300) (alte[x.g] = alte[x.g] || []).push(x.bs);
+                                t += dt;
+                                s.spielZeit = jetzt + t;
+                                try {
+                                    r._bestandRegion(key, true, 0, Infinity, tode);
+                                } finally {
+                                    s.spielZeit = jetzt;
+                                }
+                                for (const x of R.tiere) if (!vor.has(x.id)) geb.push({ g: x.g, bs: x.bs, v: x.v, eltern: ELTERN.some((k) => x[k] !== undefined), m: alte[x.g] ? mittel(alte[x.g]) : null });
+                            }
+                            return geb;
+                        };
+                        try {
+                            r._depositLife = function () {};
+                            r._depositEmotion = function () {};
+                            const orig = C.prototype._bestandStirbt;
+                            r._bestandStirbt = function (R, t, ursache, tode, j) {
+                                tod.set(t.id, ursache);
+                                return orig.call(this, R, t, ursache, tode, j);
+                            };
+                            const alle = [].concat(...keys.map((k) => F[k].tiere));
+                            aus.tiere = alle.length;
+                            aus.imSchirm = (s.creatures || []).length;
+                            aus.maxCreatures = s.maxCreatures;
+                            const cv = [];
+                            const je = {};
+                            for (const t of alle) (je[t.g] = je[t.g] || []).push(t.bs);
+                            for (const g of Object.keys(je)) if (je[g].length >= 3) cv.push((100 * sd(je[g])) / mittel(je[g]));
+                            aus.cvProzent = cv.length ? mittel(cv) : undefined;
+                            aus.bsStreuung = sd(alle.map((t) => t.bs));
+                            const herden = {};
+                            for (const t of alle) herden[t.v] = (herden[t.v] || 0) + 1;
+                            aus.herdeMax = Math.max(0, ...Object.values(herden));
+                            let nah = 0, fern = 0, nN = 0, nF = 0;
+                            for (const k of keys) {
+                                const T0 = F[k].tiere;
+                                for (let i = 0; i < T0.length; i++)
+                                    for (let j = i + 1; j < T0.length; j++) {
+                                        if (T0[i].g !== T0[j].g) continue;
+                                        const d = Math.abs(T0[i].bs - T0[j].bs);
+                                        if (T0[i].v === T0[j].v) {
+                                            nah += d;
+                                            nN++;
+                                        } else {
+                                            fern += d;
+                                            nF++;
+                                        }
+                                    }
+                            }
+                            aus.verwandtMinusFremd = nN && nF ? fern / nF - nah / nN : undefined;
+                            aus.paare = nN + nF;
+                            aus.paareVerwandt = nN;
+                            aus.mitAhnenlinie = alle.filter((t) => ELTERN.some((k) => t[k] !== undefined)).length;
+                            aus.regionN = Math.max(0, ...keys.map((k) => F[k].tiere.length));
+                            aus.alleRegionen = Object.values(F).reduce((n, R) => n + R.tiere.length, 0);
+                            const marke = new Map(alle.map((t) => [t.id, t.bs]));
+                            const einzig = (t, liste) => !liste.some((o) => o !== t && o.g === t.g && Math.abs(o.bs - t.bs) < 0.02);
+                            const tagS = C.DAY_LENGTH_DEFAULT_MINUTES * 60;
+                            for (const k of keys) lauf(k, tagS);
+                            const nachTag = [].concat(...keys.map((k) => F[k].tiere));
+                            aus.wiedererkannt = nachTag.filter((t) => marke.has(t.id) && Math.abs(marke.get(t.id) - t.bs) < 1e-9 && einzig(t, nachTag)).length;
+                            aus.markiert = marke.size;
+                            aus.lebensS = lebensS;
+                            const da = new Set(nachTag.map((t) => t.id));
+                            aus.wiedergefunden = [...marke.keys()].filter((id) => da.has(id)).length;
+                            aus.verbleibErklaert = [...marke.keys()].filter((id) => da.has(id) || tod.has(id)).length;
+                            aus.todAlter = [...marke.keys()].filter((id) => tod.get(id) === "alter").length;
+                            aus.nachher = nachTag.length;
+                            const lang = lauf(hier, A.generationen * lebensS - tagS);
+                            const geb = lang.filter((b) => b.m !== null);
+                            aus.geburten = lang.length;
+                            aus.mitEltern = lang.filter((b) => b.eltern).length;
+                            const gm = {};
+                            for (const b of geb) (gm[b.g] = gm[b.g] || []).push(b);
+                            const xs = [], ys = [];
+                            for (const g of Object.keys(gm)) {
+                                const mx = mittel(gm[g].map((b) => b.m)), my = mittel(gm[g].map((b) => b.bs));
+                                for (const b of gm[g]) {
+                                    xs.push(b.m - mx);
+                                    ys.push(b.bs - my);
+                                }
+                            }
+                            aus.ekRegression = geb.length >= 5 ? steigung(xs, ys) : undefined;
+                            aus.gebStreuung = sd(lang.map((b) => b.bs));
+                            aus.generationen = (A.generationen * lebensS) / lebensS;
+                            stand.forEach(zurueck);
+                            const R = F[hier];
+                            const hirsche = R.tiere.filter((t) => t.g === "deer");
+                            if (hirsche.length >= 4) {
+                                const m0 = mittel(hirsche.map((t) => t.bs));
+                                const grenze = hirsche.map((t) => t.bs).sort((a, b) => a - b)[Math.floor(hirsche.length / 2)];
+                                R.tiere = R.tiere.filter((t) => t.g !== "deer" || t.bs >= grenze);
+                                const S0 = mittel(R.tiere.filter((t) => t.g === "deer").map((t) => t.bs)) - m0;
+                                const nach = lauf(hier, 3 * 3600).filter((b) => b.g === "deer");
+                                aus.selektion = { m0, S: S0, n: nach.length, R: nach.length ? mittel(nach.map((b) => b.bs)) - m0 : undefined, sd: sd(nach.map((b) => b.bs)) };
+                                const h2 = aus.ekRegression;
+                                const soll = Number.isFinite(h2) ? h2 * S0 : NaN;
+                                aus.antwortAbwProzent = Number.isFinite(soll) && Math.abs(soll) > 1e-6 && Number.isFinite(aus.selektion.R) ? (100 * Math.abs(aus.selektion.R - soll)) / Math.abs(soll) : undefined;
+                            }
+                            stand.forEach(zurueck);
+                            const proto = [];
+                            for (let p = Object.getPrototypeOf(r); p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const k of Object.getOwnPropertyNames(p)) if (k.toLowerCase().includes("zucht") || k.toLowerCase().includes("zuecht") || k.toLowerCase().includes("paarung")) proto.push(k);
+                            aus.zuchtAkte = proto.length;
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        } finally {
+                            stand.forEach(zurueck);
+                            s.spielZeit = jetzt;
+                            for (const [k, v] of [["_depositLife", altF.l], ["_depositEmotion", altF.e], ["_bestandStirbt", altF.s]]) {
+                                if (v === undefined) delete r[k];
+                                else r[k] = v;
+                            }
+                        }
+                        aus.zurueck = keys.map((k) => F[k].tiere.length).join(",");
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ generationen: 10 }) + ");");
+                    const ohneErbe = !(a.mitEltern > 0) ? "kein Erbe: " + (a.geburten || 0) + " Geburten im Zeitraffer, " + (a.mitEltern || 0) + " mit Eltern — die Größe des Kindes würfelt der Strom der Region" : null;
+                    const und = (...l) => l.filter(Boolean).join("; ") || undefined;
+                    const pr = (x, n) => (n > 0 && Number.isFinite(x) ? (100 * x) / n : undefined);
+                    const sel = a.selektion || {};
+                    return {
+                        sprossen: {
+                            1: { werte: { ekRegression: a.ekRegression, generationen: a.generationen }, zeuge: { fehler: a.fehler, antworten: a.geburten || 0, streuung: a.gebStreuung || 0, erbe: a.mitEltern > 0 }, nicht: und(ohneErbe) },
+                            2: { werte: { wiedererkanntProzent: pr(a.wiedererkannt, a.markiert), herde: a.herdeMax, spieltage: 1 }, zeuge: { fehler: a.fehler, antworten: a.markiert || 0, streuung: a.bsStreuung || 0, vor: a.markiert, nach: a.wiedererkannt }, nicht: und(a.herdeMax < 100 ? "die größte Herde trägt " + a.herdeMax + " Tiere (tetrapoda-core.js:289 herde.wurf), und ein Tier trägt nur die Größe — kein Muster, keine Narbe, kein Gang je Individuum" : null) },
+                            3: { werte: { antwortAbwProzent: a.antwortAbwProzent, generationen: a.generationen }, zeuge: { fehler: a.fehler, antworten: sel.n || 0, streuung: sel.sd || 0, vor: sel.m0, nach: Number.isFinite(sel.R) ? sel.m0 + sel.R : undefined, erbe: a.mitEltern > 0 }, nicht: und(!(a.zuchtAkte > 0) ? "der Spieler züchtet nicht: kein Akt der Zucht im Spiel" : null, ohneErbe) },
+                            4: { werte: { cvProzent: a.cvProzent, imSchirm: a.imSchirm }, zeuge: { fehler: a.fehler, antworten: a.tiere || 0, streuung: a.bsStreuung || 0 }, nicht: und(a.imSchirm < 1e4 ? "10⁴ Individuen im Schirm: die Welt zeichnet " + a.imSchirm + " Leiber (maxCreatures " + a.maxCreatures + ")" : null) },
+                            5: { werte: { wiedergefundenProzent: pr(a.wiedergefunden, a.markiert), verbleibProzent: pr(a.verbleibErklaert, a.markiert), markiert: a.markiert, regionN: a.regionN }, zeuge: { fehler: a.fehler, antworten: a.markiert || 0, streuung: a.bsStreuung || 0, vor: a.markiert, nach: a.wiedergefunden }, nicht: und(a.regionN < 1e6 ? "10⁶ in einer Region: die volle Region trägt " + a.regionN + " Tiere" : null, "nach einem Spieltag fern leben " + a.wiedergefunden + " von " + a.markiert + " markierten Tieren, " + a.todAlter + " starben am Alter (FAUNA_MAX_AGE_MS: ein Leben von " + Math.round((a.lebensS || 0) / 60) + " Spielminuten)") },
+                            6: { werte: { mitAhnenlinie: a.mitAhnenlinie, verwandtMinusFremd: a.verwandtMinusFremd, planetN: a.alleRegionen }, zeuge: { fehler: a.fehler, antworten: a.paare || 0, streuung: a.bsStreuung || 0, erbe: a.mitEltern > 0 }, nicht: und(!(a.mitAhnenlinie > 0) ? "keine Ahnenlinie: 0 von " + a.tiere + " Tieren tragen Eltern (" + (a.paareVerwandt || 0) + " Paare aus einem Wurf, ihre Größe würfelt je Tier der Strom)" : null,"10¹⁰⁺ je Planet: der Bestand der gelesenen Regionen trägt " + a.alleRegionen + " Tiere") },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [K.soll(ER, 1, "Eltern-Kind-Regression 0,2–0,8", { key: "ekRegression" }), K.soll(ER, 1, "Morphometrie aus Third-Bildern", { key: "generationen", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "≥ 10 Generationen" })],
+                        werte: { ekRegression: 0.45, generationen: 12 },
+                        zeuge: { min: 20, was: "Geburten im Zeitraffer des Bestands", streu: true, erbe: "Kind mit Eltern im Verzeichnis" },
+                        zeugeText: "Geburten im Zeitraffer, Kind mit Eltern; Mutante „Erbe aus“ → ≈ 0",
+                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (die Größe aus dem Strom, kein Erbe)",
+                        nicht: "kein Erbe",
+                        leser: L_BODY,
+                        unklar: "„Mutante „Erbe aus“ → ≈ 0“ nennt keine Toleranz — Vorschlag: |Regression der Mutante| ≤ 0,05",
+                    }),
+                    2: S({
+                        soll: [K.soll(ER, 2, "ein Individuum nach 1 Spieltag aus 100 wiedererkannt ≥ 90 %", { key: "wiedererkanntProzent", einheit: "%" }), K.soll(ER, 2, "aus 100", { key: "herde", rel: "≥", zahl: 100 }), K.soll(ER, 2, "nach 1 Spieltag", { key: "spieltage", rel: "≥", zahl: 1 })],
+                        werte: { wiedererkanntProzent: 93, herde: 100, spieltage: 1 },
+                        zeuge: { min: 100, was: "markierte Tiere des Bestands nach einem Spieltag", streu: true, aend: "der Spieltag" },
+                        taeter: "tetrapoda-core.js VERHALTEN.herde.wurf (Herde 3–7) / stamm/kreatur-leben.js (ein Tier trägt nur bs)",
+                        nicht: "keine Herde mit 100, keine Merkmale je Individuum",
+                        leser: "stamm/kreatur-leben.js:1996 wurf.push — das Tier des Bestands trägt { id, soul, g, bs, alterS, x, z, v }: kein Muster, keine Narbe, kein Gang je Individuum",
+                    }),
+                    3: S({
+                        soll: [K.soll(ER, 3, "Merkmalsmittel vorher ↔ nachher", { key: "antwortAbwProzent", rel: "≤", zahl: 20, quelleFeld: "tiefe", quelleWort: "±20 %", einheit: "%" }), K.soll(ER, 3, "Merkmalsmittel vorher ↔ nachher im Bild der Herde", { key: "generationen", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "10 Generationen" })],
+                        werte: { antwortAbwProzent: 12, generationen: 10 },
+                        zeuge: { min: 10, was: "Geburten nach der Auslese im Zeitraffer", streu: true, aend: "das Merkmalsmittel", erbe: "Kind mit Eltern" },
+                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (kein Erbe — die Auslese verschiebt nichts)",
+                        nicht: "kein Züchten, kein Erbe",
+                        leser: "stamm/kreatur-leben.js:1949 _creatureNaturalBirth — kennt keine Eltern; kein Akt der Zucht des Spielers",
+                        unklar: "der Richter nennt keine Zahl — die Station liest die Antwort R = h²·S ±20 % aus der Tiefe (h² die Eltern-Kind-Regression der Welt)",
+                    }),
+                    4: S({
+                        soll: [K.soll(ER, 4, "Variationskoeffizient der Körpermaße", { key: "cvProzent", rel: "band", zahl: 4, bis: 10, refQuelle: "Säuger: CV linearer Körpermaße 4–10 % (Yablokov 1974; Lande 1977)", einheit: "%" }), K.soll(ER, 4, "Variationskoeffizient der Körpermaße aus dem Bild", { key: "imSchirm", rel: "≥", zahl: 1e4, quelleFeld: "umfang", quelleWort: "10⁴ Individuen" })],
+                        werte: { cvProzent: 7, imSchirm: 12000 },
+                        zeuge: { min: 30, was: "Tiere des Bestands mit ihrer Größe", streu: true },
+                        taeter: "stamm/koerper-leib.js _creatureBodySize (Größe aus dem Hash, Streuung ohne Natur-Band)",
+                        nicht: "10⁴ Individuen im Schirm",
+                        leser: "stamm/kreatur-leben.js:2557 _bestandVerkoerpern — zeichnet höchstens maxCreatures Leiber",
+                        unklar: "„im Band“ nennt kein Band — die Station misst gegen CV 4–10 % linearer Säuger-Maße",
+                    }),
+                    5: S({
+                        soll: [K.soll(ER, 5, "wiedergefunden ≥ 99 %", { key: "wiedergefundenProzent", einheit: "%" }), K.soll(ER, 5, "im Band der Sterbe- und Zugraten der Art ≥ 90 %", { key: "verbleibProzent", einheit: "%" }), K.soll(ER, 5, "100 markierte Tiere", { key: "markiert", rel: "≥", zahl: 100 }), K.soll(ER, 5, "100 markierte Tiere nach Abreise und Rückkehr", { key: "regionN", rel: "≥", zahl: 1e6, quelleFeld: "umfang", quelleWort: "10⁶ in einer Region" })],
+                        werte: { wiedergefundenProzent: 99.5, verbleibProzent: 95, markiert: 100, regionN: 1.2e6 },
+                        zeuge: { min: 100, was: "markierte Tiere nach Abreise und Rückkehr (Zeitraffer)", streu: true, aend: "die Abreise" },
+                        taeter: "stamm/kreatur-leben.js _bestandRegion (Bestand ~10 je Region)",
+                        nicht: "10⁶ in einer Region",
+                        leser: "stamm/kreatur-leben.js:2284 _bestandRegion — trägt die Tiere einer Kachel von revierM·√π (~10 Tiere); kein Zug",
+                    }),
+                    6: S({
+                        soll: [K.soll(ER, 6, "100 Zufallsindividuen", { key: "mitAhnenlinie", rel: "≥", zahl: 100 }), K.soll(ER, 6, "Verwandte im Revier gleichen ihm messbar mehr als Fremde", { key: "verwandtMinusFremd", rel: ">", zahl: 0, refQuelle: "das Wort des Richters: |Δ Größe| Fremder − |Δ Größe| Verwandter (Wurf-Geschwister, Verband v) > 0" }), K.soll(ER, 6, "Ahnenlinie zurück bis zur Klade", { key: "planetN", rel: "≥", zahl: 1e10, quelleFeld: "umfang", quelleWort: "10¹⁰⁺ je Planet" })],
+                        werte: { mitAhnenlinie: 100, verwandtMinusFremd: 0.08, planetN: 2e10 },
+                        zeuge: { min: 50, was: "Paare von Tieren einer Gattung im Revier", streu: true, erbe: "Ahnenlinie im Verzeichnis" },
+                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (keine Ahnenlinie)",
+                        nicht: "keine Ahnenlinie, kein Planet-Bestand",
+                        leser: L_BODY,
+                    }),
+                },
+            },
+
+            // ═══ MUSTER: die Experimente der Natur im Zeitraffer, mit Gegenlauf ═══
+            [MU]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD_TIER,
+                ungefahren: "das Bild der Herde (S1) und das Bild-Embedding der Inseln (S2) — gemessen an der Größe bs des Verzeichnisses",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const mittel = (l) => (l.length ? l.reduce((s, x) => s + x, 0) / l.length : NaN);
+                        const sd = (l) => {
+                            const m = mittel(l);
+                            return l.length > 1 ? Math.sqrt(l.reduce((s, x) => s + (x - m) * (x - m), 0) / (l.length - 1)) : 0;
+                        };
+                        const auc = (a, b) => {
+                            if (!a.length || !b.length) return NaN;
+                            let n = 0;
+                            for (const x of a) for (const y of b) n += x > y ? 1 : x === y ? 0.5 : 0;
+                            const v = n / (a.length * b.length);
+                            return Math.max(v, 1 - v);
+                        };
+                        const s = r.state;
+                        const C = r.constructor;
+                        const TC = globalThis.__tetrapodaCore;
+                        const aus = { fehler: null };
+                        const jetzt = s.spielZeit;
+                        const eigen = (k) => (Object.prototype.hasOwnProperty.call(r, k) ? r[k] : undefined);
+                        const altF = { l: eigen("_depositLife"), e: eigen("_depositEmotion") };
+                        const F = r._bestandRegionen().regionen;
+                        const keys = r._bestandNah();
+                        const hier = r._bestandHier();
+                        for (const k of keys) if (!F[k]) r._bestandRegion(k);
+                        const sichern = (R) => ({ R, t: R.t, seq: R.seq, tiere: R.tiere.slice(), felder: R.tiere.map((t) => Object.assign({}, t)) });
+                        const zurueck = (a) => {
+                            a.R.t = a.t;
+                            a.R.seq = a.seq;
+                            a.R.tiere = a.tiere;
+                            a.tiere.forEach((t, i) => {
+                                for (const k of Object.keys(t)) if (!(k in a.felder[i])) delete t[k];
+                                Object.assign(t, a.felder[i]);
+                            });
+                        };
+                        const stand = keys.map((k) => sichern(F[k]));
+                        const ELTERN = ["eltern", "mutter", "vater", "ahn", "elter"];
+                        const lauf = (key, dauer) => {
+                            const R = F[key];
+                            let eltern = 0, geb = 0;
+                            const tode = [];
+                            for (let t = 0; t < dauer;) {
+                                const dt = Math.min(3000, dauer - t);
+                                const vor = new Set(R.tiere.map((x) => x.id));
+                                t += dt;
+                                s.spielZeit = jetzt + t;
+                                try {
+                                    r._bestandRegion(key, true, 0, Infinity, tode);
+                                } finally {
+                                    s.spielZeit = jetzt;
+                                }
+                                for (const x of R.tiere)
+                                    if (!vor.has(x.id)) {
+                                        geb++;
+                                        if (ELTERN.some((k) => x[k] !== undefined)) eltern++;
+                                    }
+                            }
+                            return { geb, eltern };
+                        };
+                        try {
+                            r._depositLife = function () {};
+                            r._depositEmotion = function () {};
+                            const lebensS = C.FAUNA_MAX_AGE_MS / 1000;
+                            const raeuber = (k) => F[k].tiere.filter((t) => t.g === "wolf" || t.g === "bear").length;
+                            const kandidat = keys.filter((k) => F[k].tiere.filter((t) => t.g === "deer").length >= 2).sort((a, b) => raeuber(b) - raeuber(a));
+                            const ort = kandidat[0] || hier;
+                            aus.raeuberImOrt = raeuber(ort);
+                            const R = F[ort];
+                            const hirsch = () => R.tiere.filter((t) => t.g === "deer").map((t) => t.bs);
+                            const m0 = mittel(hirsch());
+                            const mit = lauf(ort, A.dauerS);
+                            const m1 = mittel(hirsch());
+                            const nMit = hirsch().length;
+                            stand.forEach(zurueck);
+                            R.tiere = R.tiere.filter((t) => t.g !== "wolf" && t.g !== "bear");
+                            const ohne = lauf(ort, A.dauerS);
+                            const m2 = mittel(hirsch());
+                            stand.forEach(zurueck);
+                            aus.selektion = { m0, mit: m1, ohne: m2, dMit: m1 - m0, dOhne: m2 - m0, nMit, geb: mit.geb + ohne.geb, eltern: mit.eltern + ohne.eltern };
+                            aus.generationen = A.dauerS / lebensS;
+                            const inseln = keys.map((k) => F[k].tiere.filter((t) => t.g === "deer").map((t) => t.bs)).filter((l) => l.length >= 2).sort((a, b) => a.length - b.length);
+                            aus.inseln = inseln.map((l) => l.length);
+                            aus.auc = inseln.length >= 2 ? auc(inseln[0], inseln[inseln.length - 1]) : undefined;
+                            aus.inselStreuung = sd([].concat(...inseln));
+                            aus.nKlein = inseln.length ? inseln[0].length : 0;
+                            aus.nGross = Math.max(0, ...keys.map((k) => F[k].tiere.length));
+                            const start = TC.PARAMS_BY_KIND.kreatur.map((p) => p.id);
+                            let neu = 0;
+                            for (const g of Object.keys(TC.GATTUNGEN)) for (const k of Object.keys(TC.GATTUNGEN[g])) if (!start.includes(k)) neu++;
+                            aus.neueMerkmale = neu;
+                            aus.gattungen = Object.keys(TC.GATTUNGEN).length;
+                            aus.spindelLinien = typeof C._fischGesetz === "function" ? 1 : 0;
+                            const hash = (g) => {
+                                let h = 0, n = 0;
+                                g.updateMatrixWorld(true);
+                                g.traverse((o) => {
+                                    const p = o.geometry && o.geometry.attributes && o.geometry.attributes.position;
+                                    if (!p) return;
+                                    const e = o.matrixWorld.elements;
+                                    for (let i = 0; i < p.array.length; i += 7) h = (h * 31 + Math.round(p.array[i] * 1e4) + Math.round(e[12] * 1e4)) % 2147483647;
+                                    n += p.count;
+                                });
+                                return h + ":" + n;
+                            };
+                            const bau = (d) => {
+                                const g = r._buildCreatureGroup("wolf", { dialsOv: d });
+                                const h = g ? hash(g) : null;
+                                if (g) r._disposeSoulGroup(g);
+                                return h;
+                            };
+                            const paare = [[{ size: 2.1, neck: 0.3, leg: 0.25, diet: 0.8, build: 0.5 }, { size: 3.3, neck: 0.2, leg: 0.3, diet: 0.2, build: 0.7 }], [{ size: 1.4, neck: 0.36, leg: 0.18, diet: 1, build: 0.3 }, { size: 2.6, neck: 0.25, leg: 0.33, diet: 0.4, build: 0.9 }]];
+                            let gleich = 0, anders = 0;
+                            for (const [a, b] of paare) {
+                                const h1 = bau(a), h2 = bau(a), h3 = bau(b);
+                                if (h1 && h1 === h2) gleich++;
+                                if (h1 && h3 && h1 !== h3) anders++;
+                            }
+                            aus.gleichAnteil = gleich / paare.length;
+                            aus.anderAnteil = anders / paare.length;
+                            aus.kontingenzPaare = paare.length * 3;
+                            aus.mutationsFolge = Object.keys(TC).filter((k) => /mutat|mutier|genom/i.test(k)).length;
+                            const G = C._weltGesetz(s.worldMeta);
+                            aus.gesetzTeile = Object.keys(G);
+                            aus.saatenFremd = aus.gesetzTeile.filter((k) => /stern|licht|loesung|lösung|solvens/i.test(k)).length;
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        } finally {
+                            stand.forEach(zurueck);
+                            s.spielZeit = jetzt;
+                            for (const [k, v] of [["_depositLife", altF.l], ["_depositEmotion", altF.e]]) {
+                                if (v === undefined) delete r[k];
+                                else r[k] = v;
+                            }
+                        }
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ dauerS: 6 * 3600 }) + ");");
+                    const se = a.selektion || {};
+                    const erbe = se.eltern > 0;
+                    const ohneErbe = !erbe ? "kein Erbe: " + (se.geb || 0) + " Geburten im Zeitraffer (Region mit " + (a.raeuberImOrt || 0) + " Räubern), 0 mit Eltern — die Auslese verschiebt, wer lebt, nie was geboren wird" : null;
+                    const selektion = erbe && se.dMit < 0 && se.dOhne - se.dMit > 0;
+                    const drift = a.auc >= 0.9;
+                    const kontingenz = a.mutationsFolge > 0 && a.gleichAnteil === 1 && a.anderAnteil === 1;
+                    const neuheit = a.neueMerkmale > 0;
+                    const konvergenz = a.spindelLinien >= 2;
+                    const musterZahl = [selektion, drift, kontingenz, neuheit, konvergenz].filter(Boolean).length;
+                    const und = (...l) => l.filter(Boolean).join("; ") || undefined;
+                    return {
+                        sprossen: {
+                            1: { werte: { dGroesseMit: se.dMit, gegenlauf: se.dOhne - se.dMit, generationen: a.generationen }, zeuge: { fehler: a.fehler, antworten: se.geb || 0, streuung: Math.abs(se.dMit || 0) + Math.abs(se.dOhne || 0), vor: se.m0, nach: se.mit, gegenlauf: se.dOhne - se.dMit > 0, erbe }, nicht: und(ohneErbe) },
+                            2: { werte: { auc: a.auc, nKlein: a.nKlein, nGross: a.nGross }, zeuge: { fehler: a.fehler, antworten: (a.inseln || []).reduce((s, x) => s + x, 0), streuung: a.inselStreuung || 0, erbe }, nicht: und(ohneErbe, a.nGross < 2000 ? "keine Insel mit 2 000: die volle Region trägt " + a.nGross + " Tiere" : null) },
+                            3: { werte: { saaten: 1, musterZahl }, zeuge: { fehler: a.fehler, antworten: (se.geb || 0) + (a.kontingenzPaare || 0), streuung: a.inselStreuung || 0, gegenlauf: se.dOhne - se.dMit > 0 }, nicht: und(musterZahl < 10 ? musterZahl + " von 5 gemessenen Mustern erscheinen (Selektion, Drift, Kontingenz, Neuheit, Konvergenz)" : null, ohneErbe) },
+                            4: { werte: { konvergenzProzent: konvergenz ? 100 : 0, neuheitProzent: neuheit ? 100 : 0, spindelLinien: a.spindelLinien, musterZahl }, zeuge: { fehler: a.fehler, antworten: a.gattungen || 0, streuung: a.gattungen > 1 ? 1 : 0 }, nicht: und(!neuheit ? "kein Merkmal außerhalb des Start-Bauplans: " + a.gattungen + " Gattungen tragen dieselben 5 Dials" : null, !konvergenz ? "Spindelform in " + a.spindelLinien + " Linie (das Fisch-Gesetz), nicht ≥ 2" : null) },
+                            5: { werte: { gleichAnteil: a.gleichAnteil, anderAnteil: a.anderAnteil, musterZahl }, zeuge: { fehler: a.fehler, antworten: a.kontingenzPaare || 0, streuung: a.anderAnteil || 0, erbe }, nicht: und(!(a.mutationsFolge > 0) ? "keine Mutations-Folge: der Guss liest 5 Dials, kein Genom, das mutiert" : null) },
+                            6: { werte: { musterZahl, saatenFremd: a.saatenFremd }, zeuge: { fehler: a.fehler, antworten: (a.gesetzTeile || []).length, streuung: musterZahl }, nicht: "das Gesetz der Welt trägt " + (a.gesetzTeile || []).join(", ") + " — keine Saat mit fremdem Licht oder Lösungsmittel" },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [
+                            K.soll(MU, 1, "Größe sinkt im Bild", { key: "dGroesseMit", rel: "<", zahl: 0, refQuelle: "das Vorzeichen des Richters: „Größe sinkt“ — Δ mittlere Größe der Hirsche unter Räuberdruck < 0" }),
+                            K.soll(MU, 1, "Gegenlauf ohne Räuber", { key: "gegenlauf", rel: ">", zahl: 0, refQuelle: "der Gegenlauf (R7): Δ Größe ohne Räuber − Δ Größe mit Räubern > 0" }),
+                            K.soll(MU, 1, "Räuberdruck auf große Hirsche", { key: "generationen", rel: "≥", zahl: 1000, quelleFeld: "preis", quelleWort: "10³ Generationen" }),
+                        ],
+                        werte: { dGroesseMit: -0.12, gegenlauf: 0.15, generationen: 1000 },
+                        zeuge: { min: 20, was: "Geburten im Zeitraffer mit und ohne Räuber", streu: true, aend: "der Räuberdruck", gegen: "ohne Räuber", erbe: "Kind mit Eltern" },
+                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (kein Erbe der Größe)",
+                        nicht: "kein Erbe — keine Antwort auf Selektion",
+                        leser: L_BODY,
+                        unklar: "„Steigung im Band der Natur“ nennt kein Band — Vorschlag: Haldane-Rate der Größe 0,01–0,1 (Gingerich 2009) als Zahl der Karte",
+                    }),
+                    2: S({
+                        soll: [K.soll(MU, 2, "trennbar ≥ 0,9", { key: "auc" }), K.soll(MU, 2, "Insel N = 20", { key: "nKlein" }), K.soll(MU, 2, "2 000", { key: "nGross", rel: "≥", zahl: 2000 })],
+                        werte: { auc: 0.94, nKlein: 20, nGross: 2000 },
+                        zeuge: { min: 20, was: "Hirsche zweier getrennter Bestände", streu: true, erbe: "Kind mit Eltern" },
+                        taeter: "stamm/kreatur-leben.js _bestandRegion (keine Insel, kein Erbe)",
+                        nicht: "kein Erbe, keine Insel mit 2 000",
+                        leser: L_BODY,
+                    }),
+                    3: S({
+                        soll: [K.soll(MU, 3, "Statistik aus 100 Saaten", { key: "saaten", rel: "≥", zahl: 100 }), K.soll(MU, 3, "je Muster mit Gegenlauf", { key: "musterZahl", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "10/30" })],
+                        werte: { saaten: 100, musterZahl: 11 },
+                        zeuge: { min: 20, was: "Experimente der Leiter in der Welt", streu: true, gegen: "je Muster" },
+                        taeter: "stamm/kreatur-leben.js (kein Erbe — kein Muster der Evolution)",
+                        nicht: "0 von 30 Mustern",
+                        leser: L_BODY,
+                    }),
+                    4: S({
+                        soll: [K.soll(MU, 4, "Konvergenz in ≥ 80 % der Saaten", { key: "konvergenzProzent", einheit: "%" }), K.soll(MU, 4, "Anteil Saaten mit neuer Funktion", { key: "neuheitProzent", rel: ">", zahl: 0, refQuelle: "das Wort des Richters: ein Anteil Saaten mit neuer Funktion > 0 (Tiefe: ein Merkmal, das nicht im Start-Bauplan stand)" }), K.soll(MU, 4, "Konvergenz in ≥ 80 % der Saaten", { key: "spindelLinien", rel: "≥", zahl: 2, quelleFeld: "tiefe", quelleWort: "≥ 2 getrennten Linien" }), K.soll(MU, 4, "Anteil Saaten mit neuer Funktion", { key: "musterZahl", rel: "≥", zahl: 20, quelleFeld: "umfang", quelleWort: "20/30" })],
+                        werte: { konvergenzProzent: 85, neuheitProzent: 30, spindelLinien: 2, musterZahl: 21 },
+                        zeuge: { min: 4, was: "Gattungen mit ihrem Bauplan", streu: true },
+                        taeter: "tetrapoda-core.js GATTUNGEN (5 Dials, kein neues Merkmal)",
+                        nicht: "keine Neuheit, keine Konvergenz",
+                        leser: L_GATT,
+                    }),
+                    5: S({
+                        soll: [
+                            K.soll(MU, 5, "gleiche Folge → byte-gleiches Bild", { key: "gleichAnteil", rel: "=", zahl: 1, refQuelle: "byte-gleich: jedes Paar gleicher Folge gießt denselben Leib (Anteil 1)" }),
+                            K.soll(MU, 5, "andere Folge → anderes", { key: "anderAnteil", rel: "=", zahl: 1, refQuelle: "jedes Paar anderer Folge gießt einen anderen Leib (Anteil 1)" }),
+                            K.soll(MU, 5, "Wiederholungs-Paare", { key: "musterZahl", rel: "≥", zahl: 30, quelleFeld: "umfang", quelleWort: "30/30" }),
+                        ],
+                        werte: { gleichAnteil: 1, anderAnteil: 1, musterZahl: 30 },
+                        zeuge: { min: 6, was: "Güsse gleicher und anderer Folge", streu: true, erbe: "eine Mutations-Folge" },
+                        taeter: "stamm/koerper-leib.js _buildCreatureGroup (5 Dials, keine Mutations-Folge)",
+                        nicht: "keine Mutations-Folge",
+                        leser: "stamm/koerper-leib.js:2469 _buildCreatureGroup — (soul, { dialsOv }) gießt aus 5 Dials, kein Genom mit Mutations-Folge",
+                    }),
+                    6: S({
+                        soll: [K.soll(MU, 6, "K30", { key: "musterZahl", rel: "≥", zahl: 30 }), K.soll(MU, 6, "10 Planeten-Saaten", { key: "saatenFremd", rel: "≥", zahl: 10 })],
+                        werte: { musterZahl: 30, saatenFremd: 10 },
+                        zeuge: { min: 4, was: "Teile des Gesetzes der Welt", streu: true },
+                        taeter: "stamm/speicher-welten.js _weltGesetz (kein Licht, kein Lösungsmittel)",
+                        nicht: "keine fremde Physik",
+                        leser: "stamm/speicher-welten.js:88 _weltGesetz — trägt Schwere, Himmel, Wetter, Gelände, Ort: keinen Stern, kein Lösungsmittel",
+                    }),
+                },
+            },
+
+            // ═══ ZEITREISE: die Geschichte des Planeten im Faden ═══
+            [ZR]: {
+                sek: 50,
+                pfad: PFAD_PLANET,
+                ungefahren: "die Bildpaare und Blind-Sortierungen (S1, S5, S6) — auf swiftshader kein Schuss; die Epoche selbst ist nur als Antwort des Fadens erreichbar (die Reise lädt eine Welt)",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const mittel = (l) => (l.length ? l.reduce((s, x) => s + x, 0) / l.length : NaN);
+                        const sd = (l) => {
+                            const m = mittel(l);
+                            return l.length > 1 ? Math.sqrt(l.reduce((s, x) => s + (x - m) * (x - m), 0) / (l.length - 1)) : 0;
+                        };
+                        const C = r.constructor;
+                        const LG = C._lebensraumGesetz();
+                        const aus = { fehler: null };
+                        try {
+                            await r._fadenQuelle();
+                            const samen = r._planetSamen();
+                            const an = await r._planetAnker();
+                            const grad = (x) => Math.round(((x * 180) / Math.PI) * 100) / 100;
+                            const B0 = grad(an.breite), L0 = grad(an.laenge);
+                            const frage = (sa, b, l, z) => r._planetAuftrag({ type: "planet-ort", samen: sa, breite: b, laenge: l, zeitMa: z });
+                            const rein = (o) => JSON.stringify(o, (k, v) => (k === "requestId" || k === "type" ? undefined : v));
+                            const punkte = [];
+                            for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) punkte.push([Math.round((B0 + (i - 1.5) * 1.5) * 100) / 100, Math.round((L0 + (j - 1) * 1.5) * 100) / 100]);
+                            const je = {};
+                            let antworten = 0;
+                            for (const z of A.epochen) {
+                                const o = await Promise.all(punkte.map((p) => frage(samen, p[0], p[1], z)));
+                                antworten += o.length;
+                                je[z] = o.map((x) => ({ land: x.land, sommer: x.delta.klima.sommer, wald: x.delta.wuchs.wald, decke: x.delta.wuchs.decke, extra: Object.keys(x.delta).filter((k) => !["klima", "meer", "wetter", "wuchs", "wildnis"].includes(k)).length, fp: JSON.stringify(x.delta.wuchs) }));
+                            }
+                            aus.antworten = antworten;
+                            aus.epochen = A.epochen.length;
+                            const sommer = (z) => je[z].map((x) => x.sommer);
+                            aus.klimaStreuung = sd(A.epochen.map((z) => mittel(sommer(z))));
+                            aus.dSommer = A.epochen.map((z) => Math.round((mittel(sommer(z)) - mittel(sommer(0))) * 100) / 100);
+                            const waldAnteil = (z) => {
+                                const l = je[z].filter((x) => x.land);
+                                return l.length ? mittel(l.map((x) => x.wald)) : NaN;
+                            };
+                            aus.waldVerh = waldAnteil(-0.1) / waldAnteil(0);
+                            aus.wuchsBilder = new Set([].concat(...A.epochen.map((z) => je[z].map((x) => x.fp)))).size;
+                            aus.faunaFelder = Math.max(...A.epochen.map((z) => Math.max(...je[z].map((x) => x.extra))));
+                            const h1 = await frage(samen, punkte[0][0], punkte[0][1], -0.01);
+                            const h0 = await frage(samen, punkte[0][0], punkte[0][1], 0);
+                            const h2 = await frage(samen, punkte[0][0], punkte[0][1], -0.01);
+                            aus.hinZurueckGleich = rein(h1) === rein(h2) && rein(h0) !== rein(h1) ? 1 : 0;
+                            const zeiten = [];
+                            for (let i = 0; i < 50; i++) zeiten.push(-Math.round((540 * i) / 49));
+                            const k50 = await Promise.all(zeiten.map((z) => frage(samen, B0, L0, z)));
+                            aus.zeitpunkte = k50.filter((x) => x && x.delta).length;
+                            aus.k50Streuung = sd(k50.map((x) => x.delta.klima.sommer));
+                            aus.artenJeZeit = 1;
+                            const saaten = [samen].concat(A.saaten);
+                            let gleich = 0, n = 0;
+                            for (const sa of saaten) {
+                                const E = [0, -1, -10, -50, -100, -200, -300, -500, -1000, -4000];
+                                const a1 = await Promise.all(E.map((z) => frage(sa, B0, L0, z)));
+                                const a2 = await Promise.all(E.map((z) => frage(sa, B0, L0, z)));
+                                for (let i = 0; i < E.length; i++) {
+                                    n++;
+                                    if (rein(a1[i]) === rein(a2[i])) gleich++;
+                                }
+                            }
+                            aus.konsistentProzent = n ? (100 * gleich) / n : undefined;
+                            aus.konsistentEpochen = n / saaten.length;
+                            aus.saaten = saaten.length;
+                            aus.konsistentN = n;
+                            const gattungen = Object.keys(LG.L.gattung);
+                            aus.arten = gattungen.length + ["_vogelGesetz", "_fischGesetz", "_bestaeuberGesetz"].filter((k) => typeof C[k] === "function").length;
+                            const TC = globalThis.__tetrapodaCore;
+                            aus.verwandt = gattungen.filter((g) => ["ahn", "schwester", "klade", "vorfahr"].some((k) => TC.GATTUNGEN[g] && TC.GATTUNGEN[g][k] !== undefined)).length;
+                            aus.bauplaene = aus.arten;
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        }
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ epochen: [0, -0.01, -0.1, -1, -10, -50, -100, -300, -500, -4000], saaten: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => "evo-saat-" + i) }) + ");");
+                    const ohneFauna = "Flora und Fauna der Epoche sind die von heute: die Antwort des Fadens trägt " + (a.faunaFelder || 0) + " Felder der Fauna, der Wuchs " + (a.wuchsBilder || 0) + " Bild(er) über " + (a.epochen || 0) + " Epochen";
+                    const z = { fehler: a.fehler, antworten: a.antworten || 0, streuung: a.klimaStreuung || 0 };
+                    const auge = (n) => M.auge("evolution-zeitreise-s" + n, { ort: "wiese" });
+                    return {
+                        sprossen: {
+                            1: { werte: { hinZurueckGleich: a.hinZurueckGleich }, zeuge: z, auge: await auge(1), nicht: ohneFauna + "; die Konsole reist nur in ganzen Ma (10⁴ Jahre nicht erreichbar)" },
+                            2: { werte: { waldVerh: a.waldVerh }, zeuge: z, nicht: ohneFauna + " — kein Körpermassen-Median der Eiszeit" },
+                            3: { werte: { arten: a.arten, verwandtProzent: a.arten ? (100 * (a.verwandt || 0)) / a.arten : undefined }, zeuge: z, nicht: ohneFauna + "; " + (a.verwandt || 0) + " Gattungen mit Ahn oder Schwester" },
+                            4: { werte: { heutigeArten: a.arten, vorfahrAnteil: a.arten ? (a.verwandt || 0) / a.arten : undefined }, zeuge: z, nicht: ohneFauna + "; kein Vorfahr auffindbar" },
+                            5: { werte: { epochen: a.epochen }, zeuge: z, auge: await auge(5), nicht: ohneFauna + " — keine Organe nach ihrem Erfinden" },
+                            6: { werte: {}, zeuge: z, auge: await auge(6), nicht: "Baupläne je Epoche: " + (a.bauplaene || 0) + " zu jeder Zeit (der Bestand liest keine Zeit)" },
+                            7: { werte: { zeitpunkte: a.zeitpunkte }, zeuge: { fehler: a.fehler, antworten: a.zeitpunkte || 0, streuung: a.k50Streuung || 0 }, nicht: "die Vielfalt liest keine Zeit: " + (a.arten || 0) + " Arten an jedem der " + (a.zeitpunkte || 0) + " Zeitpunkte — keine Kurve gegen Sepkoski" },
+                            8: { werte: { konsistentProzent: a.konsistentProzent, saaten: a.saaten, epochen: a.konsistentEpochen }, zeuge: { fehler: a.fehler, antworten: a.konsistentN || 0, streuung: a.klimaStreuung || 0 }, nicht: "kein Ereignis der Vergangenheit, das verlegt werden kann: die Scheibe liest den Plan und die Zeit (planet-core planetScheibe), keinen Verlauf; " + (a.saaten || 0) + " Saaten gefragt" },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [K.soll(ZR, 1, "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8", { key: "panel" }), K.soll(ZR, 1, "Hin- und Rücksprung byte-gleiches Bild", { key: "hinZurueckGleich", rel: "=", zahl: 1, refQuelle: "byte-gleich: Hin- und Rücksprung liefern dieselbe Antwort des Fadens (Anteil 1)" })],
+                        werte: { panel: 0.85, hinZurueckGleich: 1 },
+                        zeuge: { min: 24, was: "Antworten des Planet-Fadens je Epoche", streu: true },
+                        auge: { pose: "Ego an der Wiese (Gegenwart; die Epoche lädt eine Reise-Welt)", vorbild: "Panel ordnet Bildpaare Gegenwart/Epoche ≥ 0,8 (Prüfer-Satz R11)" },
+                        taeter: "stamm/kreatur-leben.js _pickFaunaSoulAtPlayer (keine Epochen-Fauna)",
+                        nicht: "keine Epochen-Flora und -Fauna",
+                        leser: L_ZEIT + "; stamm/feld-leben.js:1272 reise — der Satz der Konsole nimmt nur ganze Ma (10⁴ Jahre nicht erreichbar)",
+                    }),
+                    2: S({
+                        soll: [K.soll(ZR, 2, "Körpermassen-Median über dem der Gegenwart", { key: "medianVerh", rel: ">", zahl: 1, refQuelle: "das Wort des Richters: Median der Körpermasse der Eiszeit / der Gegenwart > 1" }), K.soll(ZR, 2, "Biom-Anteile gegen Paläo-Rekonstruktion ±20 %", { key: "waldVerh", ref: 0.5, refQuelle: "Erde, Letztes Glaziales Maximum: Waldfläche ≈ halb der heutigen (Adams & Faure 1997, QEN-Paläovegetations-Atlas)" })],
+                        werte: { medianVerh: 1.6, waldVerh: 0.52 },
+                        zeuge: { min: 24, was: "Antworten des Planet-Fadens je Epoche", streu: true },
+                        taeter: "phyto-core.js / stamm/kreatur-leben.js (keine Eiszeit-Biome, keine Megafauna)",
+                        nicht: "keine Megafauna, keine Tundra-Flora der Epoche",
+                        leser: L_ZEIT,
+                    }),
+                    3: S({
+                        soll: [K.soll(ZR, 3, "20 Arten am Zielpunkt", { key: "arten", rel: "≥", zahl: 20 }), K.soll(ZR, 3, "Ahn oder Schwester einer heutigen = 100 %", { key: "verwandtProzent", einheit: "%" })],
+                        werte: { arten: 22, verwandtProzent: 100 },
+                        zeuge: { min: 24, was: "Antworten des Planet-Fadens je Epoche", streu: true },
+                        taeter: "tetrapoda-core.js GATTUNGEN (keine Ahnen, keine Schwestern)",
+                        nicht: "keine Ahnen und Schwestern",
+                        leser: L_GATT,
+                    }),
+                    4: S({
+                        soll: [K.soll(ZR, 4, "100 heutige Arten", { key: "heutigeArten", rel: "≥", zahl: 100 }), K.soll(ZR, 4, "≥ 0,8", { key: "vorfahrAnteil" })],
+                        werte: { heutigeArten: 100, vorfahrAnteil: 0.85 },
+                        zeuge: { min: 24, was: "Antworten des Planet-Fadens je Epoche", streu: true },
+                        taeter: "tetrapoda-core.js GATTUNGEN (kein Vorfahr)",
+                        nicht: "kein Vorfahr, kein Grasland der Epoche",
+                        leser: L_GATT,
+                    }),
+                    5: S({
+                        soll: [K.soll(ZR, 5, "Blind-Sortierung von Bildern aus 10 Epochen nach Alter ≥ 90 %", { key: "blindProzent", einheit: "%" }), K.soll(ZR, 5, "aus 10 Epochen", { key: "epochen", rel: "≥", zahl: 10 })],
+                        werte: { blindProzent: 92, epochen: 10 },
+                        zeuge: { min: 24, was: "Antworten des Planet-Fadens je Epoche", streu: true },
+                        auge: { pose: "Ego an der Wiese (die Epochen laden je eine Reise-Welt)", vorbild: "Blind-Sortierung von Bildern aus 10 Epochen nach Alter ≥ 90 % (R11)" },
+                        taeter: "phyto-core.js (keine Epochen-Flora: Wuchs liest kein zeitMa)",
+                        nicht: "keine Epochen-Flora",
+                        leser: L_ZEIT,
+                    }),
+                    6: S({
+                        soll: [K.soll(ZR, 6, "Panel ordnet 20 Unterwasserbilder ≥ 70 %", { key: "panelProzent", einheit: "%" }), K.soll(ZR, 6, "Baupläne je Epoche steigen früh steil", { key: "bauplanAnstieg", rel: ">", zahl: 1, refQuelle: "Fossilbericht: Baupläne steigen im Kambrium steil an (Erwin et al. 2011) — Baupläne der späten / der frühen Epoche > 1" })],
+                        werte: { panelProzent: 75, bauplanAnstieg: 3 },
+                        zeuge: { min: 24, was: "Antworten des Planet-Fadens je Epoche", streu: true },
+                        auge: { pose: "unter Wasser an der Wiese (das Kambrium-Meer lädt eine Reise-Welt)", vorbild: "Panel ordnet 20 Unterwasserbilder ≥ 70 % (R11)" },
+                        taeter: "stamm/kreatur-leben.js (Baupläne je Epoche konstant)",
+                        nicht: "kein Kambrium-Meer",
+                        leser: L_ZEIT,
+                    }),
+                    7: S({
+                        soll: [K.soll(ZR, 7, "Rangkorrelation ≥ 0,6", { key: "rang" }), K.soll(ZR, 7, "Diversität an 50 Zeitpunkten", { key: "zeitpunkte", rel: "≥", zahl: 50 })],
+                        werte: { rang: 0.7, zeitpunkte: 50 },
+                        zeuge: { min: 50, was: "Antworten des Planet-Fadens an 50 Zeitpunkten", streu: true },
+                        taeter: "stamm/kreatur-leben.js _lebensraumGesetz (Vielfalt ohne Zeit)",
+                        nicht: "keine Vielfaltskurve",
+                        leser: L_ZEIT,
+                    }),
+                    8: S({
+                        soll: [K.soll(ZR, 8, "konsistent ≥ 95 %", { key: "konsistentProzent", einheit: "%" }), K.soll(ZR, 8, "100 Saaten", { key: "saaten", rel: "≥", zahl: 100 }), K.soll(ZR, 8, "10 Epochen", { key: "epochen", rel: "≥", zahl: 10 })],
+                        werte: { konsistentProzent: 98, saaten: 100, epochen: 10 },
+                        zeuge: { min: 20, was: "doppelt gefragte Antworten des Fadens je Saat und Epoche", streu: true },
+                        taeter: "planet-core.js planetScheibe (kein Ereignis-Verlauf)",
+                        nicht: "kein verlegbares Ereignis",
+                        leser: "planet-core.js:1633 planetScheibe — (plan, zeitMa) liest Plan und Zeit, keinen Verlauf von Ereignissen, den ein Eingriff verlegt",
+                        unklar: "„Ereignis der Vergangenheit verlegt → Gegenwart ändert sich“ nennt keine Zahl — Vorschlag: Anteil geänderter Gegenwart-Antworten > 0 bei verlegtem Ereignis, = 0 ohne",
+                    }),
+                },
+            },
+
+            // ═══ BAUPLAN: der Morphoraum der Zufalls-Genome ═══
+            [BP]: {
+                sek: 40,
+                mutiert: true,
+                pfad: PFAD_TIER,
+                ungefahren: "das Blindtest-Video (S4) und die Fremdwelt-Probe (S6) — auf swiftshader kein Schuss; die Silhouette misst die Hülle des Leibs, nicht das Bild",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const mittel = (l) => (l.length ? l.reduce((s, x) => s + x, 0) / l.length : NaN);
+                        const sd = (l) => {
+                            const m = mittel(l);
+                            return l.length > 1 ? Math.sqrt(l.reduce((s, x) => s + (x - m) * (x - m), 0) / (l.length - 1)) : 0;
+                        };
+                        const s = r.state;
+                        const C = r.constructor;
+                        const TC = globalThis.__tetrapodaCore;
+                        const LG = C._lebensraumGesetz();
+                        const aus = { fehler: null };
+                        const meine = [];
+                        const alt = { wurf: s.faunaLifecycle ? s.faunaLifecycle.lastTick : null, max: s.maxCreatures, p: s.playerMesh.position.clone(), yaw: s.yaw, pitch: s.pitch };
+                        const B = new T.Box3();
+                        const V = new T.Vector3();
+                        const desk = (g) => {
+                            g.updateMatrixWorld(true);
+                            B.setFromObject(g).getSize(V);
+                            const tb = g.userData._tierBaum || {};
+                            return [V.x, V.y, V.z, tb.beinL || 1e-6, tb.leibV || 1e-6].map((x) => Math.log(Math.max(1e-6, x)));
+                        };
+                        try {
+                            const heute = [];
+                            const F = r._bestandRegionen().regionen;
+                            const bs = {};
+                            for (const k of r._bestandNah()) for (const t of (F[k] || { tiere: [] }).tiere) (bs[t.g] = bs[t.g] || []).push(t.bs);
+                            for (const soul of C.CREATURE_SOUL_NAMES) {
+                                const g = r._buildCreatureGroup(soul);
+                                if (!g) continue;
+                                const d = desk(g);
+                                r._disposeSoulGroup(g);
+                                for (const b of bs[C.TETRAPODA_SOUL_MAP[soul]] || [1]) {
+                                    const l = Math.log(b);
+                                    heute.push([d[0] + l, d[1] + l, d[2] + l, d[3] + l, d[4] + 3 * l]);
+                                }
+                            }
+                            const PK = TC.PARAMS_BY_KIND.kreatur;
+                            let u = A.saat >>> 0;
+                            const zz = () => (u = (Math.imul(u, 1664525) + 1013904223) >>> 0) / 4294967296;
+                            const fl = s.faunaLifecycle;
+                            if (fl) fl.lastTick = 1e12;
+                            s.maxCreatures = Math.max(s.maxCreatures || 0, (s.creatures || []).length + A.n + 2);
+                            const pm = s.playerMesh.position;
+                            const zufall = [];
+                            for (let i = 0; i < A.n; i++) {
+                                const soul = C.CREATURE_SOUL_NAMES[Math.floor(zz() * C.CREATURE_SOUL_NAMES.length)];
+                                const dials = {};
+                                for (const p of PK) dials[p.id] = p.min + (p.max - p.min) * zz();
+                                const gat = C.TETRAPODA_SOUL_MAP[soul];
+                                let ort = null;
+                                for (let d = 25 + 6 * i; d <= 260 && !ort; d += 15)
+                                    for (let q = 0; q < 16 && !ort; q++) {
+                                        const x = pm.x + Math.cos((q * Math.PI) / 8 + d + i) * d;
+                                        const z = pm.z + Math.sin((q * Math.PI) / 8 + d + i) * d;
+                                        if (r._landAt(x, z) && !r._nassAt(x, z) && LG.lebensraum(gat, r._bodenKlasseAt(x, z), LG.L) > 0) ort = { x, z };
+                                    }
+                                if (!ort) continue;
+                                const c = r.spawnCreatureAt(ort.x, r.getTerrainHeightAt(ort.x, ort.z) + 0.5, ort.z, "happy", soul, { precise: true, bodySize: 1, dialsOv: dials });
+                                if (!c) continue;
+                                const alleBs = [].concat(...Object.values(bs));
+                                const l = alleBs.length ? Math.log(alleBs[i % alleBs.length]) : 0;
+                                const d0 = desk(c);
+                                const m = { c, d: [d0[0] + l, d0[1] + l, d0[2] + l, d0[3] + l, d0[4] + 3 * l], weg: 0, lx: c.position.x, lz: c.position.z, dials };
+                                meine.push(m);
+                                zufall.push(m.d);
+                            }
+                            let t = performance.now();
+                            for (let i = 0; i < A.takte; i++) {
+                                r._gameLoopTick((t += 1000 / 60));
+                                for (const m of meine) {
+                                    m.weg += Math.hypot(m.c.position.x - m.lx, m.c.position.z - m.lz);
+                                    m.lx = m.c.position.x;
+                                    m.lz = m.c.position.z;
+                                }
+                            }
+                            const ok = (m) => m.weg > 0.3 && Number.isFinite(m.c.position.y) && Math.abs(m.c.position.y - r.getTerrainHeightAt(m.c.position.x, m.c.position.z)) < 0.6;
+                            aus.genome = meine.length;
+                            aus.bewegt = meine.filter(ok).length;
+                            aus.wegStreuung = sd(meine.map((m) => m.weg));
+                            aus.tempoMs = meine.length ? mittel(meine.map((m) => m.weg)) / (A.takte / 60) : undefined;
+                            const vol = (l) => (l.length > 1 ? [0, 1, 2, 3, 4].reduce((p, k) => p * Math.max(1e-9, sd(l.map((d) => d[k]))), 1) : NaN);
+                            aus.volHeute = vol(heute);
+                            aus.volZufall = vol(zufall);
+                            aus.volumenFaktor = aus.volZufall / aus.volHeute;
+                            aus.heute = heute.length;
+                            const lo = [0, 1, 2, 3, 4].map((k) => Math.min(...heute.map((d) => d[k])));
+                            const hi = [0, 1, 2, 3, 4].map((k) => Math.max(...heute.map((d) => d[k])));
+                            const draussen = meine.filter((m) => m.d.some((x, k) => x < lo[k] - 1e-6 || x > hi[k] + 1e-6));
+                            aus.ausserhalb = draussen.length;
+                            aus.tragend = draussen.filter(ok).length;
+                            aus.modi = new Set(meine.filter(ok).map((m) => (Number.isFinite(m.c.position.y) && !r._nassAt(m.c.position.x, m.c.position.z) ? "lauf" : "schwimm"))).size;
+                            const c0 = (s.creatures || []).find((c) => !meine.some((m) => m.c === c));
+                            if (c0) {
+                                const p = c0.position;
+                                aus.pose = { px: p.x + 4, py: p.y + 1.8, pz: p.z + 4, lx: p.x, ly: p.y + 0.6, lz: p.z };
+                            }
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        } finally {
+                            for (const m of meine) r.removeCreature(m.c);
+                            if (s.faunaLifecycle) s.faunaLifecycle.lastTick = alt.wurf;
+                            s.maxCreatures = alt.max;
+                            s.playerMesh.position.copy(alt.p);
+                            s.yaw = alt.yaw;
+                            s.pitch = alt.pitch;
+                        }
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ n: 20, takte: 180, saat: 20261119 }) + ");");
+                    const pr = (x, n) => (n > 0 ? (100 * x) / n : undefined);
+                    const z = { fehler: a.fehler, antworten: a.genome || 0, streuung: a.wegStreuung || 0 };
+                    const und = (...l) => l.filter(Boolean).join("; ") || undefined;
+                    const ohneNatur = "kein Natur-Bildsatz in der Welt und keine Gangart aus dem Genom: die Zufalls-Genome laufen alle (Schwimmen und Fliegen sind eigene Gesetze, FISCH_GESETZ und Vogel)";
+                    return {
+                        sprossen: {
+                            1: { werte: { bewegtProzent: pr(a.bewegt, a.genome), genome: a.genome, volumenFaktor: a.volumenFaktor }, zeuge: z, nicht: und(a.genome < 1000 ? "1 000 Zufalls-Genome: im Deckel gegossen und gelaufen " + a.genome + " (der Guss eines Genoms kostet den Ofen der Gattung)" : null) },
+                            2: { werte: { volumenFaktor: a.volumenFaktor, modi: a.modi }, zeuge: z, nicht: ohneNatur },
+                            3: { werte: { volumenFaktor: a.volumenFaktor }, zeuge: z, nicht: "nur Tetrapoden: keine Gliederfüßer, Weichtiere oder Wuchsformen aus einem Genom; " + ohneNatur },
+                            4: { werte: { tempoMs: a.tempoMs }, zeuge: z, auge: await M.auge("evolution-bauplan-s4", a.pose || { ort: "wiese" }) },
+                            5: { werte: { ausserhalbProzent: pr(a.ausserhalb, a.genome), tragendProzent: pr(a.tragend, a.ausserhalb) }, zeuge: z },
+                            6: { werte: { wesen: a.genome, planeten: 1, volumenVsErde: a.volumenFaktor }, zeuge: z, auge: await M.auge("evolution-bauplan-s6", a.pose || { ort: "wiese" }), nicht: "ein Planet, 4 Gattungen — keine Wesen anderer Planeten" },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [K.soll(BP, 1, "Bewegungs-Anteil ≥ 95 %", { key: "bewegtProzent", einheit: "%" }), K.soll(BP, 1, "1 000 Zufalls-Genome", { key: "genome", rel: "≥", zahl: 1000 }), K.soll(BP, 1, "1 000 Zufalls-Genome", { key: "volumenFaktor", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "×10" })],
+                        werte: { bewegtProzent: 97, genome: 1000, volumenFaktor: 12 },
+                        zeuge: { min: 10, was: "Zufalls-Genome gegossen und im Takt der Welt gelaufen", streu: true },
+                        taeter: "stamm/koerper-leib.js _buildCreatureGroup (5 Dials — der Raum der Genome)",
+                        leser: "stamm/koerper-leib.js:2469 _buildCreatureGroup — gießt je neuem Genom den Ofen der Gattung (1 000 im Deckel nicht)",
+                    }),
+                    2: S({
+                        soll: [K.soll(BP, 2, "Deskriptoren gegen Natur-Bildsatz der Tetrapoden", { key: "abdeckungProzent", rel: "≥", zahl: 50, quelleFeld: "tiefe", quelleWort: "≥ 50 %", einheit: "%" }), K.soll(BP, 2, "Deskriptoren gegen Natur-Bildsatz der Tetrapoden", { key: "volumenFaktor", rel: "≥", zahl: 100, quelleFeld: "umfang", quelleWort: "×10²" }), K.soll(BP, 2, "Deskriptoren gegen Natur-Bildsatz", { key: "modi", rel: "≥", zahl: 4, refQuelle: "die vier Gangarten des Umfangs: Laufen, Schwimmen, Fliegen, Schlängeln ENTSTEHEN" })],
+                        werte: { abdeckungProzent: 55, volumenFaktor: 120, modi: 4 },
+                        zeuge: { min: 10, was: "Zufalls-Genome gegossen und gelaufen", streu: true },
+                        taeter: "tetrapoda-core.js (Gangarten als eigene Gesetze, kein Genom)",
+                        nicht: "kein Natur-Bildsatz, keine entstehende Gangart",
+                        leser: "tetrapoda-core.js:62 GATTUNGEN — 5 Dials eines Vierbeiners; Fisch und Vogel sind eigene Gesetze, keine Form des Genoms",
+                    }),
+                    3: S({
+                        soll: [K.soll(BP, 3, "über alle Natur-Bildsätze", { key: "abdeckungAlleProzent", rel: "≥", zahl: 50, quelleFeld: "tiefe", quelleWort: "≥ 50 %", einheit: "%" }), K.soll(BP, 3, "wie Sprosse 2, über alle Natur-Bildsätze", { key: "volumenFaktor", rel: "≥", zahl: 1000, quelleFeld: "umfang", quelleWort: "×10³" })],
+                        werte: { abdeckungAlleProzent: 55, volumenFaktor: 1200 },
+                        zeuge: { min: 10, was: "Zufalls-Genome gegossen und gelaufen", streu: true },
+                        taeter: "tetrapoda-core.js (nur Tetrapoden)",
+                        nicht: "keine Stämme jenseits der Tetrapoden",
+                        leser: "tetrapoda-core.js:62 GATTUNGEN — trägt nur Vierbeiner; kein Genom für Gliederfüßer, Weichtiere, Wuchsformen",
+                        unklar: "„wie Sprosse 2“ nennt die Zahl nicht selbst — die Station liest die Abdeckung ≥ 50 % aus der Tiefe",
+                    }),
+                    4: S({
+                        soll: [K.soll(BP, 4, "Blindtest Spiel-Video ↔ Natur-Video in Bewegung ≤ 60 %", { key: "blindProzent", einheit: "%" })],
+                        werte: { blindProzent: 55 },
+                        zeuge: { min: 10, was: "Zufalls-Genome gelaufen", streu: true },
+                        auge: { pose: "Third am ersten Tier der Welt (4 m seitlich, 1,8 m hoch), Video im Takt", vorbild: "Natur-Video derselben Gangart, Blindtest ≤ 60 % (R11)" },
+                        taeter: "tetrapoda-core.js gangSchritt / cpgStep",
+                    }),
+                    5: S({
+                        soll: [K.soll(BP, 5, "Hüllen-Abstand", { key: "ausserhalbProzent", rel: "≥", zahl: 30, quelleFeld: "umfang", quelleWort: "≥ 30 %", einheit: "%" }), K.soll(BP, 5, "Physik-Proben im Spiel", { key: "tragendProzent", rel: "≥", zahl: 90, quelleFeld: "tiefe", quelleWort: "≥ 90 %", einheit: "%" })],
+                        werte: { ausserhalbProzent: 35, tragendProzent: 92 },
+                        zeuge: { min: 10, was: "Zufalls-Genome gegossen und gelaufen", streu: true },
+                        taeter: "stamm/koerper-leib.js _buildCreatureGroup (Dials im Band der vier Erd-Gattungen)",
+                        unklar: "ein Natur-Bildsatz der irdischen Hülle fehlt — die Station misst gegen die Hülle der vier Erd-Gattungen der Welt (Hirsch, Wolf, Fuchs, Bär mit ihren Größen im Bestand)",
+                    }),
+                    6: S({
+                        soll: [K.soll(BP, 6, "1 000 Wesen", { key: "wesen", rel: "≥", zahl: 1000 }), K.soll(BP, 6, "10 Planeten", { key: "planeten", rel: "≥", zahl: 10 }), K.soll(BP, 6, "Rang ≥ 0,7", { key: "rang" }), K.soll(BP, 6, "Morphoraum-Volumen > Erde", { key: "volumenVsErde", rel: ">", zahl: 1, refQuelle: "das Wort des Richters: Volumen des Morphoraums / Volumen der Erde > 1" })],
+                        werte: { wesen: 1000, planeten: 10, rang: 0.75, volumenVsErde: 1.4 },
+                        zeuge: { min: 10, was: "Zufalls-Genome gegossen", streu: true },
+                        auge: { pose: "Third am ersten Tier der Welt", vorbild: "Fremdwelt-Probe (R10): Lebensweise aus dem Körper gelesen, Rang ≥ 0,7" },
+                        taeter: "tetrapoda-core.js GATTUNGEN (ein Planet, 4 Gattungen)",
+                        nicht: "keine Wesen anderer Planeten",
+                        leser: L_GATT,
+                        unklar: "„Erde“ ohne Natur-Morphoraum in der Welt — die Station misst gegen die vier Erd-Gattungen der Welt mit ihren Größen im Bestand (Produkt der Streuungen über 5 Deskriptoren)",
+                    }),
+                },
+            },
+
+            // ═══ FREMDE PHYSIK: Schwere, Luft, Stern, Lösungsmittel ═══
+            [FP]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD_TIER.concat(["stamm/speicher-welten.js", "planet-core.js", "voxel-worker.js"]),
+                ungefahren: "die Bilder der Statik (S1) und die Fremdwelt-Probe (S7) — auf swiftshader kein Schuss",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const mittel = (l) => (l.length ? l.reduce((s, x) => s + x, 0) / l.length : NaN);
+                        const sd = (l) => {
+                            const m = mittel(l);
+                            return l.length > 1 ? Math.sqrt(l.reduce((s, x) => s + (x - m) * (x - m), 0) / (l.length - 1)) : 0;
+                        };
+                        const steigung = (xs, ys) => {
+                            const mx = mittel(xs), my = mittel(ys);
+                            let a = 0, b = 0;
+                            for (let i = 0; i < xs.length; i++) {
+                                a += (xs[i] - mx) * (ys[i] - my);
+                                b += (xs[i] - mx) * (xs[i] - mx);
+                            }
+                            return b > 0 ? a / b : NaN;
+                        };
+                        const s = r.state;
+                        const C = r.constructor;
+                        const TC = globalThis.__tetrapodaCore;
+                        const aus = { fehler: null };
+                        const g0 = s.gravity;
+                        const B = new T.Box3();
+                        const V = new T.Vector3();
+                        try {
+                            const je = [];
+                            for (const f of A.g) {
+                                s.gravity = -9.81 * f;
+                                const g = r._buildCreatureGroup("wolf");
+                                g.updateMatrixWorld(true);
+                                const tb = g.userData._tierBaum || {};
+                                const q = (tb.quer || []).filter((x) => x > 0);
+                                const radius = q.length ? (q.reduce((a, b) => a + b, 0) / q.length) * (tb.f || 1) : NaN;
+                                const Z = r._gangZeile(false);
+                                const gs = TC.gangSchritt(1.5, tb.beinL, Z);
+                                je.push({ f, A: radius * radius, schritt: gs.schritt, omega: gs.omega });
+                                r._disposeSoulGroup(g);
+                            }
+                            aus.je = je;
+                            aus.steigung = steigung(je.map((x) => Math.log(x.f)), je.map((x) => Math.log(x.A)));
+                            aus.gangStreuung = sd(je.map((x) => x.omega));
+                            aus.gMin = Math.min(...A.g);
+                            aus.gMax = Math.max(...A.g);
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        } finally {
+                            s.gravity = g0;
+                        }
+                        try {
+                            const G = C._weltGesetz(s.worldMeta);
+                            aus.gesetzTeile = Object.keys(G);
+                            const hat = (w) => aus.gesetzTeile.some((k) => k.toLowerCase().includes(w));
+                            aus.luft = hat("luft") || hat("dichte") ? 1 : 0;
+                            aus.stern = hat("stern") || hat("sonne") ? 1 : 0;
+                            aus.loesung = hat("loesung") || hat("lösung") ? 1 : 0;
+                            const gattungen = Object.keys(C._lebensraumGesetz().L.gattung);
+                            const flieger = ["_vogelGesetz", "_bestaeuberGesetz"].filter((k) => typeof C[k] === "function").length;
+                            aus.arten = gattungen.length + flieger + (typeof C._fischGesetz === "function" ? 1 : 0);
+                            aus.fliegerAnteil = flieger / aus.arten;
+                            aus.lebensS = C.FAUNA_MAX_AGE_MS / 1000;
+                            await r._fadenQuelle();
+                            const an = await r._planetAnker();
+                            const grad = (x) => Math.round(((x * 180) / Math.PI) * 100) / 100;
+                            const saaten = [r._planetSamen()].concat(A.saaten);
+                            aus.saaten = [];
+                            for (const sa of saaten) {
+                                const o = await r._planetAuftrag({ type: "planet-ort", samen: sa, breite: grad(an.breite), laenge: grad(an.laenge), zeitMa: 0 });
+                                aus.saaten.push({ sa, sommer: o.delta.klima.sommer, arten: aus.arten });
+                            }
+                            aus.energieStreuung = sd(aus.saaten.map((x) => x.sommer));
+                            aus.artenStreuung = sd(aus.saaten.map((x) => x.arten));
+                        } catch (e) {
+                            aus.fehler = aus.fehler || String((e && e.message) || e).slice(0, 200);
+                        }
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ g: [0.3, 1, 3], saaten: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => "evo-saat-" + i) }) + ");");
+                    const je = a.je || [];
+                    const n = (a.saaten || []).length;
+                    const gesetz = "das Gesetz der Welt trägt " + (a.gesetzTeile || []).join(", ");
+                    const p1 = a.steigung >= 0.75 && a.steigung <= 1;
+                    const pruef = [p1, a.luft > 0, a.stern > 0, a.loesung > 0].filter(Boolean).length;
+                    return {
+                        sprossen: {
+                            1: { werte: { steigung: a.steigung, saatenJeG: 1, gMin: a.gMin, gMax: a.gMax }, zeuge: { fehler: a.fehler, antworten: je.length, streuung: a.gangStreuung || 0, vor: je[0] && je[0].A, nach: je.length && je[je.length - 1].A }, nicht: "eine Saat je g: die Schwere setzt das Gesetz der Welt, keine Planeten-Saat trägt ihr g; das Quer-Maß des Leibs unter g × " + je.map((x) => x.f).join(" / ") + ": " + je.map((x) => Math.round(x.A * 1e4) / 1e4).join(" / ") + " m², der Gang (ω) " + je.map((x) => Math.round(x.omega * 100) / 100).join(" / ") + " rad/s" },
+                            2: { werte: { saaten: a.luft > 0 ? n : 0, fliegerAnteil: a.fliegerAnteil }, zeuge: { fehler: a.fehler, antworten: a.arten || 0, streuung: a.fliegerAnteil || 0 }, nicht: gesetz + " — keine Luftdichte" },
+                            3: { werte: { sternKlassen: a.stern }, zeuge: { fehler: a.fehler, antworten: (a.gesetzTeile || []).length, streuung: 0 }, nicht: gesetz + " — kein Stern, keine gezeitengebundene Welt" },
+                            4: { werte: { milieus: 1 + a.loesung }, zeuge: { fehler: a.fehler, antworten: (a.gesetzTeile || []).length, streuung: 0 }, nicht: gesetz + " — kein Lösungsmittel; die Lebensdauer ist eine Zahl der Welt (" + a.lebensS + " s), kein Tempo liest die Temperatur" },
+                            5: { werte: { prueflisteProzent: (100 * pruef) / 4, saaten: n }, zeuge: { fehler: a.fehler, antworten: n, streuung: a.energieStreuung || 0 }, nicht: n + " Saaten gefragt — die Prüfliste trägt " + pruef + " von 4" },
+                            6: { werte: {}, zeuge: { fehler: a.fehler, antworten: n, streuung: a.energieStreuung || 0 }, nicht: "die Artenzahl liest keine Energie: " + a.arten + " Arten in jeder Saat (Streuung " + (a.artenStreuung || 0) + ")" },
+                            7: { werte: { welten: n, prueflisteProzent: (100 * pruef) / 4 }, zeuge: { fehler: a.fehler, antworten: n, streuung: a.energieStreuung || 0 }, auge: await M.auge("evolution-fremde-physik-s7", { ort: "wiese" }), nicht: "keine fremde Welt mit eigener Geschichte des Lebens" },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [
+                            K.soll(FP, 1, "Regression aus 50 Saaten je g", { key: "saatenJeG", rel: "≥", zahl: 50 }),
+                            K.soll(FP, 1, "Steigung im Band der Statik", { key: "steigung", rel: "band", zahl: 0.75, bis: 1, refQuelle: "Statik des Beins: Querschnitt A ∝ (M·g)^b, b 0,75 (elastische Ähnlichkeit, McMahon 1975) bis 1,0 (konstante Spannung, Galilei 1638)" }),
+                            K.soll(FP, 1, "Regression aus 50 Saaten je g aus Bildern", { key: "gMin", rel: "≤", zahl: 0.3, quelleFeld: "umfang", quelleWort: "g 0,3–3" }),
+                            K.soll(FP, 1, "Regression aus 50 Saaten je g aus Bildern", { key: "gMax", rel: "≥", zahl: 3, quelleFeld: "umfang", quelleWort: "g 0,3–3" }),
+                        ],
+                        werte: { saatenJeG: 50, steigung: 0.85, gMin: 0.3, gMax: 3 },
+                        zeuge: { min: 3, was: "Güsse des Leibs unter drei Schweren", streu: true, aend: "der Bein-Querschnitt unter anderer Schwere" },
+                        taeter: "stamm/koerper-leib.js _buildCreatureGroup (der Guss liest keine Schwere)",
+                        nicht: "keine Saat je g",
+                        leser: "stamm/koerper-leib.js:2469 _buildCreatureGroup — liest state.gravity nicht (nur der Gang, stamm/koerper-leib.js:492 _gangZeile): der Bein-Querschnitt folgt keiner Schwere",
+                    }),
+                    2: S({
+                        soll: [K.soll(FP, 2, "über 20 Saaten", { key: "saaten", rel: "≥", zahl: 20 }), K.soll(FP, 2, "Kurve monoton", { key: "monotonVerstoesse", rel: "=", zahl: 0, refQuelle: "das Wort „monoton“: kein Abstieg zwischen zwei Stufen der Dichte (0 Verstöße)" }), K.soll(FP, 2, "Anteil fliegender Arten", { key: "dichteMin", rel: "≤", zahl: 0.1, quelleFeld: "umfang", quelleWort: "0,1–10 bar" }), K.soll(FP, 2, "Anteil fliegender Arten über 20 Saaten", { key: "dichteMax", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "0,1–10 bar" })],
+                        werte: { saaten: 20, monotonVerstoesse: 0, dichteMin: 0.1, dichteMax: 10 },
+                        zeuge: { min: 20, was: "Saaten mit ihrer Luftdichte", streu: true },
+                        taeter: "stamm/speicher-welten.js _weltGesetz (keine Luftdichte)",
+                        nicht: "keine Luftdichte",
+                        leser: "stamm/speicher-welten.js:88 _weltGesetz — trägt keine Luftdichte (nur rayleighTiefe des Himmels)",
+                    }),
+                    3: S({
+                        soll: [K.soll(FP, 3, "Laubfarbe gegen Absorptions-Optimum", { key: "sternKlassen", rel: "≥", zahl: 4, refQuelle: "Morgan-Keenan: vom M- bis zum F-Stern 4 Klassen (M, K, G, F) — der Umfang der Sprosse" }), K.soll(FP, 3, "Biomasse-Profil über die Terminator-Linie", { key: "terminatorWelten", rel: "≥", zahl: 1, refQuelle: "eine gezeitengebundene Welt (Umfang: „gezeitengebundene Welten“)" })],
+                        werte: { sternKlassen: 4, terminatorWelten: 2 },
+                        zeuge: { min: 4, was: "Sterne und Welten mit ihrer Biomasse", streu: true },
+                        taeter: "stamm/speicher-welten.js _weltGesetz (kein Stern)",
+                        nicht: "kein Stern",
+                        leser: "stamm/speicher-welten.js:88 _weltGesetz — trägt keinen Stern; phyto-core färbt das Laub ohne Spektrum",
+                        unklar: "der Richter nennt keine Zahl — Vorschlag: Laub-Reflexionskante ±30 nm am Optimum des Sternspektrums (Kiang et al. 2007)",
+                    }),
+                    4: S({
+                        soll: [K.soll(FP, 4, "Bewegungs- und Lebensdauer-Tempo gegen Arrhenius", { key: "q10", rel: "band", zahl: 2, bis: 3, refQuelle: "biologische Raten: Q10 ≈ 2–3 (Gillooly et al. 2001, E ≈ 0,65 eV)" }), K.soll(FP, 4, "Bewegungs- und Lebensdauer-Tempo", { key: "milieus", rel: "≥", zahl: 4, refQuelle: "die vier Milieus des Umfangs: Wasser, Ammoniak, Methan-Kälte, Eis-Ozean" })],
+                        werte: { q10: 2.4, milieus: 4 },
+                        zeuge: { min: 4, was: "Milieus mit ihrem Lebenstempo", streu: true },
+                        taeter: "stamm/kreatur-leben.js FAUNA_MAX_AGE_MS (Lebensdauer ohne Temperatur)",
+                        nicht: "kein Lösungsmittel, kein Q10",
+                        leser: "stamm/kreatur-leben.js:2422 FAUNA_MAX_AGE_MS — der Tod am Alter liest eine Zahl, keine Temperatur; stamm/speicher-welten.js:88 _weltGesetz trägt kein Lösungsmittel",
+                        unklar: "der Richter nennt keine Zahl — die Station misst gegen Q10 2–3 (Gillooly et al. 2001)",
+                    }),
+                    5: S({
+                        soll: [K.soll(FP, 5, "auf 1 000 Saaten ≥ 95 %", { key: "prueflisteProzent", einheit: "%" }), K.soll(FP, 5, "1 000 Saaten", { key: "saaten", rel: "≥", zahl: 1000 })],
+                        werte: { prueflisteProzent: 96, saaten: 1000 },
+                        zeuge: { min: 2, was: "Planeten-Saaten mit ihrem Anker", streu: true },
+                        taeter: "stamm/speicher-welten.js _weltGesetz (Physik nicht je Saat)",
+                        nicht: "keine Saat mit eigener Physik",
+                        leser: "planet-core.js:307 planetPlan — (samen) trägt keine Schwere, keine Luft, keinen Stern je Saat",
+                    }),
+                    6: S({
+                        soll: [K.soll(FP, 6, "Korrelation positiv, Intervall ohne 0", { key: "ciUnten", rel: ">", zahl: 0 })],
+                        werte: { ciUnten: 0.2 },
+                        zeuge: { min: 2, was: "Planeten-Saaten mit Energie und Artenzahl", streu: true },
+                        taeter: "stamm/kreatur-leben.js _lebensraumGesetz (Artenzahl ohne Energie)",
+                        nicht: "Artenzahl ohne Energie",
+                        leser: "stamm/kreatur-leben.js:1687 _pickFaunaSoulAtPlayer — wählt aus 4 Gattungen in jeder Saat; kein Leser des Energieflusses",
+                    }),
+                    7: S({
+                        soll: [K.soll(FP, 7, "100 Welten", { key: "welten", rel: "≥", zahl: 100 }), K.soll(FP, 7, "Prüfliste ≥ 95 %", { key: "prueflisteProzent", einheit: "%" }), K.soll(FP, 7, "bei ≥ 50 %", { key: "fremdProzent", einheit: "%" }), K.soll(FP, 7, "Rang ≥ 0,7", { key: "rang" })],
+                        werte: { welten: 100, prueflisteProzent: 96, fremdProzent: 55, rang: 0.75 },
+                        zeuge: { min: 2, was: "Planeten-Saaten", streu: true },
+                        auge: { pose: "Ego an der Wiese (keine fremde Welt erzeugbar)", vorbild: "Fremdwelt-Probe (R10): Morphoraum-Abstand zur Erde, Ursache aus dem Körper gelesen Rang ≥ 0,7" },
+                        taeter: "stamm/speicher-welten.js _weltGesetz",
+                        nicht: "keine fremde Welt",
+                        leser: "planet-core.js:307 planetPlan — (samen) trägt keine eigene Geschichte des Lebens je Welt",
+                    }),
+                },
+            },
+
+            // ═══ ZIVILISATION: Verhalten, Kultur, fremde Personen ═══
+            [ZV]: {
+                sek: 15,
+                pfad: PFAD_KULTUR,
+                ungefahren: "die Bilder der Werkzeuge und Feuer (S3, S6) und die Blind-Sortierung (S7) — auf swiftshader kein Schuss",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const mittel = (l) => (l.length ? l.reduce((s, x) => s + x, 0) / l.length : NaN);
+                        const sd = (l) => {
+                            const m = mittel(l);
+                            return l.length > 1 ? Math.sqrt(l.reduce((s, x) => s + (x - m) * (x - m), 0) / (l.length - 1)) : 0;
+                        };
+                        const rang = (l) => {
+                            const o = l.map((x, i) => [x, i]).sort((a, b) => a[0] - b[0]);
+                            const rg = new Array(l.length);
+                            for (let i = 0; i < o.length;) {
+                                let j = i;
+                                while (j + 1 < o.length && o[j + 1][0] === o[i][0]) j++;
+                                for (let k = i; k <= j; k++) rg[o[k][1]] = (i + j) / 2;
+                                i = j + 1;
+                            }
+                            return rg;
+                        };
+                        const pearson = (a, b) => {
+                            const ma = mittel(a), mb = mittel(b);
+                            let x = 0, y = 0, z = 0;
+                            for (let i = 0; i < a.length; i++) {
+                                x += (a[i] - ma) * (b[i] - mb);
+                                y += (a[i] - ma) ** 2;
+                                z += (b[i] - mb) ** 2;
+                            }
+                            return y > 0 && z > 0 ? x / Math.sqrt(y * z) : NaN;
+                        };
+                        const auc = (a, b) => {
+                            if (!a.length || !b.length) return NaN;
+                            let n = 0;
+                            for (const x of a) for (const y of b) n += x > y ? 1 : x === y ? 0.5 : 0;
+                            const v = n / (a.length * b.length);
+                            return Math.max(v, 1 - v);
+                        };
+                        const s = r.state;
+                        const C = r.constructor;
+                        const aus = { fehler: null };
+                        try {
+                            const FG = C._furchtGesetz();
+                            const F = r._bestandRegionen().regionen;
+                            const regionen = Object.keys(F).filter((k) => F[k].tiere.length);
+                            const alle = [].concat(...regionen.map((k) => F[k].tiere));
+                            aus.tiere = alle.length;
+                            const flucht = {};
+                            for (const t of alle) (flucht[t.g] = flucht[t.g] || []).push(FG.fluchtDistanz(FG.F.fluchtDistanzM[t.g], 0, 0, 0, FG.F));
+                            aus.fluchtStreuungInnen = Math.max(0, ...Object.values(flucht).map(sd));
+                            aus.fluchtJeGattung = Object.fromEntries(Object.entries(flucht).map(([g, l]) => [g, Math.round(mittel(l))]));
+                            const gr = [], rd = [];
+                            for (const k of regionen) {
+                                const R = F[k];
+                                const herden = {};
+                                for (const t of R.tiere) if (t.g === "deer") herden[t.v] = (herden[t.v] || 0) + 1;
+                                const h = Object.values(herden);
+                                if (!h.length) continue;
+                                gr.push(mittel(h));
+                                rd.push(R.tiere.filter((t) => t.g === "wolf" || t.g === "bear").length);
+                            }
+                            aus.regionen = gr.length;
+                            aus.rho = gr.length >= 3 ? pearson(rang(gr), rang(rd)) : undefined;
+                            aus.herdeStreuung = sd(gr);
+                            const pops = regionen.map((k) => F[k].tiere.filter((t) => t.g === "deer").map((t) => t.bs)).filter((l) => l.length >= 2).sort((a, b) => b.length - a.length);
+                            aus.aucGesang = pops.length >= 2 ? auc(pops[0], pops[1]) : undefined;
+                            aus.rufer = pops.slice(0, 2).map((l) => l.length);
+                            if (pops.length >= 1 && pops[0].length >= 4) {
+                                const p = pops[0];
+                                aus.aucInnen = auc(p.slice(0, Math.floor(p.length / 2)), p.slice(Math.floor(p.length / 2)));
+                            }
+                            aus.rufStreuung = sd([].concat(...pops));
+                            const cs = s.creatures || [];
+                            aus.koerper = cs.length;
+                            aus.mitWerkzeug = cs.filter((c) => c.userData && c.userData.equipped && c.userData.equipped.tool).length;
+                            const ep = [];
+                            for (let sa = 1; sa <= A.saaten; sa++) ep.push(r._siedlungEpoche(sa));
+                            aus.saaten = ep.length;
+                            aus.epochen = new Set(ep.map((x) => x || "gewuerfelt")).size;
+                            aus.metallEpoche = ep.filter((x) => x).length;
+                            aus.siedlungen = Object.keys((s.worldMeta && s.worldMeta.settlementCells) || {}).length;
+                            const gattungen = Object.keys(C._lebensraumGesetz().L.gattung);
+                            aus.bauendeGattungen = gattungen.filter((g) => typeof C["_" + g + "Bau"] === "function").length;
+                            aus.nichtMenschlich = aus.bauendeGattungen;
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        }
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ saaten: 100 }) + ");");
+                    const z = { fehler: a.fehler, antworten: a.tiere || 0, streuung: a.rufStreuung || 0 };
+                    return {
+                        sprossen: {
+                            1: { werte: {}, zeuge: { fehler: a.fehler, antworten: a.tiere || 0, streuung: a.fluchtStreuungInnen || 0 }, nicht: "Verhalten nicht erblich: die Fluchtdistanz ist eine Zahl je Gattung " + JSON.stringify(a.fluchtJeGattung || {}) + " (Streuung innerhalb " + (a.fluchtStreuungInnen || 0) + "), kein Tier trägt Eltern" },
+                            2: { werte: { saaten: 1, rho: a.rho }, zeuge: { fehler: a.fehler, antworten: a.regionen || 0, streuung: a.herdeStreuung || 0 }, nicht: "Sozialität evolviert nicht: die Herde ist ein Wurf aus VERHALTEN.herde.wurf (deer 3–7) — keine Selektion; " + (a.regionen || 0) + " Regionen gelesen" },
+                            3: { werte: { aucGesang: a.aucGesang, aucInnen: a.aucInnen, werkzeugProzent: a.koerper ? (100 * a.mitWerkzeug) / a.koerper : undefined }, zeuge: z, nicht: "keine Tradition: der Ruf folgt nur dem Körper (stamm/klang.js _tierRuf: Länge und Stimmung), die Trennung zweier Rufer-Gruppen (" + (a.rufer || []).join(" / ") + " Hirsche) ist die Streuung ihrer gewürfelten Größe; kein Werkzeug an " + (a.koerper || 0) + " Tieren" },
+                            4: { werte: {}, zeuge: z, nicht: "keine kumulative Kultur: " + (a.mitWerkzeug || 0) + " Tiere mit Werkzeug, die Epoche der Siedlung würfelt der Samen (" + (a.epochen || 0) + " Epochen aus " + (a.saaten || 0) + " Saaten)" },
+                            5: { werte: { nichtMenschlich: a.nichtMenschlich }, zeuge: { fehler: a.fehler, antworten: a.siedlungen || 0, streuung: a.siedlungen || 0 }, nicht: "keine nicht-menschliche Siedlung: " + (a.siedlungen || 0) + " Siedlung(en) der Bewohner, " + (a.bauendeGattungen || 0) + " Gattungen bauen" },
+                            6: { werte: { saaten: a.saaten }, zeuge: { fehler: a.fehler, antworten: a.saaten || 0, streuung: a.epochen || 0 }, nicht: "kein Erz-Leser: die Epoche der Siedlung liest nur den Samen (" + (a.metallEpoche || 0) + " von " + (a.saaten || 0) + " Saaten in einer Metall-Epoche der Tafel), keine Wasserwesen" },
+                            7: { werte: { zivilisationen: a.nichtMenschlich }, zeuge: z, auge: await M.auge("evolution-zivilisation-s7", { ort: "wiese" }), nicht: "keine nicht-menschliche Zivilisation" },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [K.soll(ZV, 1, "Fluchtdistanz Eltern ↔ Kind korreliert", { key: "rEltern", rel: ">", zahl: 0, refQuelle: "das Wort des Richters „korreliert“: Korrelation der Fluchtdistanz Eltern ↔ Kind > 0" }), K.soll(ZV, 1, "Räuberdruck macht scheuer", { key: "scheuDelta", rel: ">", zahl: 0, refQuelle: "das Wort des Richters „scheuer“: Fluchtdistanz unter Räuberdruck − ohne > 0 (m)" })],
+                        werte: { rEltern: 0.35, scheuDelta: 12 },
+                        zeuge: { min: 20, was: "Tiere mit ihrer Fluchtdistanz", streu: true, gegen: "ohne Räuberdruck" },
+                        taeter: "tetrapoda-core.js FURCHT_GESETZ.fluchtDistanzM (eine Zahl je Gattung)",
+                        nicht: "Verhalten nicht erblich",
+                        leser: "tetrapoda-core.js:1998 fluchtDistanzM — { deer 120, wolf 106, bear 55, fox 40 }: eine Zahl je Gattung, kein Erbe je Tier",
+                        unklar: "der Richter nennt keine Zahl — Vorschlag: Eltern-Kind-Korrelation der Fluchtdistanz 0,2–0,5 (Heritabilität der Scheu, Møller 2014)",
+                    }),
+                    2: S({
+                        soll: [K.soll(ZV, 2, "über 100 Saaten", { key: "saaten", rel: "≥", zahl: 100 }), K.soll(ZV, 2, "Gruppengröße steigt mit Räuberdichte", { key: "rho", rel: ">", zahl: 0, refQuelle: "das Wort „steigt“: Rang-Korrelation Herdengröße ↔ Räuberdichte > 0" })],
+                        werte: { saaten: 100, rho: 0.4 },
+                        zeuge: { min: 3, was: "Regionen mit Herde und Räubern", streu: true },
+                        taeter: "tetrapoda-core.js VERHALTEN.herde.wurf (Herdengröße fest)",
+                        nicht: "Sozialität evolviert nicht",
+                        leser: "tetrapoda-core.js:289 wurf — herde.wurf { wolf 3–6, deer 3–7, fox 1, bear 1 }: fest, nicht aus Selektion",
+                    }),
+                    3: S({
+                        soll: [K.soll(ZV, 3, "trennbar ≥ 0,9", { key: "aucGesang" }), K.soll(ZV, 3, "innerhalb nicht", { key: "aucInnen", rel: "<", zahl: 0.9, refQuelle: "das Wort „innerhalb nicht“: innerhalb einer Population unter der Trennschwelle 0,9 des Richters" }), K.soll(ZV, 3, "Werkzeug in ≥ 10 % der Saaten im Bild", { key: "werkzeugProzent", einheit: "%" })],
+                        werte: { aucGesang: 0.93, aucInnen: 0.6, werkzeugProzent: 12 },
+                        zeuge: { min: 20, was: "Rufer zweier Populationen", streu: true },
+                        taeter: "stamm/klang.js _tierRuf (Ruf aus dem Körper, kein Dialekt)",
+                        nicht: "keine Tradition, kein Werkzeug",
+                        leser: "stamm/klang.js:506 _tierRuf — liest Körperlänge und Stimmung, keine Überlieferung je Population; stamm/kreatur-leben.js:413 equipCreatureTool legt ein Werkzeug nur von außen an, kein Tier erfindet eines",
+                    }),
+                    4: S({
+                        soll: [K.soll(ZV, 4, "Werkzeug-Komplexität über Generationen", { key: "komplexSteigung", rel: ">", zahl: 0, refQuelle: "das Wort des Richters: Werkzeug-Komplexität je Generation steigt (Steigung > 0)" }), K.soll(ZV, 4, "Gegenlauf ohne Weitergabe", { key: "gegenlaufSteigung", rel: "≤", zahl: 0, refQuelle: "der Gegenlauf (R7): ohne Weitergabe steigt die Komplexität nicht (Steigung ≤ 0)" })],
+                        werte: { komplexSteigung: 0.3, gegenlaufSteigung: 0 },
+                        zeuge: { min: 20, was: "Tiere und Siedlungen über Generationen", streu: true, gegen: "ohne Weitergabe" },
+                        taeter: "fachwerk-core.js siedlungsEpoche (Epoche aus dem Samen, keine Weitergabe)",
+                        nicht: "keine kumulative Kultur",
+                        leser: "fachwerk-core.js:3718 siedlungsEpoche — (seed) würfelt die Epoche aus dem Samen, keine Kultur, die weitergegeben wird",
+                    }),
+                    5: S({
+                        soll: [K.soll(ZV, 5, "Bau-Maße gegen Körper-Maße der Erbauer im Band", { key: "tuerJeKoerper", rel: "band", zahl: 1.1, bis: 1.3, refQuelle: "Mensch: Türhöhe 2,0–2,1 m (DIN 18101) bei Körperhöhe 1,6–1,9 m → 1,1–1,3" }), K.soll(ZV, 5, "Bau-Maße gegen Körper-Maße der Erbauer", { key: "nichtMenschlich", rel: "≥", zahl: 1, refQuelle: "eine Siedlung (Umfang: „erste nicht-menschliche Siedlung“)" })],
+                        werte: { tuerJeKoerper: 1.2, nichtMenschlich: 1 },
+                        zeuge: { min: 1, was: "Siedlungen mit ihren Erbauern", streu: true },
+                        taeter: "fachwerk-core.js (Türhöhe 2,05 m fest, nur menschliche Bauten)",
+                        nicht: "keine nicht-menschliche Siedlung",
+                        leser: "fachwerk-core.js:181 doorH — 2.05 fest, kein Leser des Körpers der Erbauer; keine Gattung baut",
+                    }),
+                    6: S({
+                        soll: [K.soll(ZV, 6, "an 100 Saaten", { key: "saaten", rel: "≥", zahl: 100 }), K.soll(ZV, 6, "Saat ohne Erz → 0 Metallwerkzeuge im Bild", { key: "ohneErzMetall", rel: "=", zahl: 0 }), K.soll(ZV, 6, "mit Erz ≥ 1 in ≥ 80 %", { key: "mitErzProzent", zahl: 80, einheit: "%" }), K.soll(ZV, 6, "Wasserwesen: 0 offene Feuer im Bild", { key: "wasserFeuer", rel: "=", zahl: 0 })],
+                        werte: { saaten: 100, ohneErzMetall: 0, mitErzProzent: 85, wasserFeuer: 0 },
+                        zeuge: { min: 100, was: "Saaten mit der Epoche ihrer Siedlung", streu: true },
+                        taeter: "fachwerk-core.js siedlungsEpoche (kein Erz-Leser)",
+                        nicht: "kein Erz-Leser, keine Wasserwesen",
+                        leser: "fachwerk-core.js:3718 siedlungsEpoche — (seed) liest kein Erz der Saat",
+                    }),
+                    7: S({
+                        soll: [K.soll(ZV, 7, "10 Zivilisationen", { key: "zivilisationen", rel: "≥", zahl: 10 }), K.soll(ZV, 7, "Blind-Sortierung nach Herkunft ≥ 90 %", { key: "blindProzent", einheit: "%" }), K.soll(ZV, 7, "Rang ≥ 0,7", { key: "rang" }), K.soll(ZV, 7, "bei ≥ 50 %", { key: "fremdProzent", einheit: "%" })],
+                        werte: { zivilisationen: 10, blindProzent: 92, rang: 0.75, fremdProzent: 55 },
+                        zeuge: { min: 10, was: "Zivilisationen aus Saaten", streu: true },
+                        auge: { pose: "Ego an der Wiese (keine nicht-menschliche Stadt erzeugbar)", vorbild: "Blind-Sortierung nach Herkunft ≥ 90 %; Fremdwelt-Probe (R10) der Bauten" },
+                        taeter: "fachwerk-core.js (nur menschliche Siedlungen)",
+                        nicht: "keine nicht-menschliche Zivilisation",
+                        leser: "fachwerk-core.js:3622 EPOCHEN — menschliche Epochen der Erde (antike … moderne), keine fremde Kultur",
+                    }),
+                },
+            },
+
+            // ═══ MIKROBEN: die unsichtbare Mehrheit ═══
+            [MI]: {
+                sek: 10,
+                pfad: PFAD_GRUND,
+                ungefahren: "die Bildvergleiche der Matten und des Zooms (S1–S3) — auf swiftshader kein Schuss",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const s = r.state;
+                        const C = r.constructor;
+                        const aus = { fehler: null };
+                        try {
+                            aus.nearM = s.camera.near;
+                            const WORTE = ["mikrob", "biofilm", "matte", "kolonie", "algen", "bakter", "pilzfaden"];
+                            let objekte = 0, treffer = 0;
+                            s.scene.traverse((o) => {
+                                objekte++;
+                                const n = String(o.name || "").toLowerCase() + " " + String((o.userData && (o.userData.kind || o.userData.type)) || "").toLowerCase();
+                                if (WORTE.some((w) => n.includes(w))) treffer++;
+                            });
+                            aus.objekte = objekte;
+                            aus.matten = treffer;
+                            const pm = s.playerMesh.position;
+                            const klassen = {};
+                            let n = 0;
+                            for (let i = 0; i < A.orte; i++) {
+                                const w = (i * 2.399963) % (2 * Math.PI);
+                                const d = 20 + 9 * i;
+                                const k = r._bodenKlasseAt(pm.x + Math.cos(w) * d, pm.z + Math.sin(w) * d);
+                                klassen[k] = (klassen[k] || 0) + 1;
+                                n++;
+                            }
+                            aus.orte = n;
+                            aus.klassen = Object.keys(klassen).length;
+                            aus.abbauProS = C.LIFE_FIELD.decayPerSec;
+                            aus.lebenZellen = s.lifeField ? s.lifeField.size : 0;
+                            const gattungen = Object.keys(C._lebensraumGesetz().L.gattung);
+                            aus.lebenJeSaat = gattungen.length;
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        }
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ orte: 40 }) + ");");
+                    const z = { fehler: a.fehler, antworten: a.orte || 0, streuung: Math.max(0, (a.klassen || 0) - 1) };
+                    const keine = "kein mikrobielles Leben: " + (a.matten || 0) + " Treffer unter " + (a.objekte || 0) + " Objekten der Szene";
+                    const zoom = "die Kamera sieht bis " + Math.round((a.nearM || 0) * 1000) + " mm (near)";
+                    return {
+                        sprossen: {
+                            1: { werte: { matten: a.matten }, zeuge: z, auge: await M.auge("evolution-mikroben-s1", { ort: "wiese" }), nicht: keine },
+                            2: { werte: { zoomMinMm: a.nearM * 1000 }, zeuge: z, auge: await M.auge("evolution-mikroben-s2", { ort: "wiese" }), nicht: keine + "; " + zoom },
+                            3: { werte: { orte: a.orte, zoomMinM: a.nearM }, zeuge: z, auge: await M.auge("evolution-mikroben-s3", { ort: "wiese" }), nicht: keine + "; " + zoom },
+                            4: { werte: { mikrobenArten: a.matten }, zeuge: { fehler: a.fehler, antworten: a.lebenZellen || 0, streuung: a.abbauProS || 0 }, nicht: keine + "; das Feld des Lebens zerfällt mit einer Konstante (" + a.abbauProS + "/s) — keine Mutante „Mikroben aus“" },
+                            5: { werte: {}, zeuge: z, nicht: "Leben entsteht nicht: jede Saat trägt dieselben " + (a.lebenJeSaat || 0) + " Gattungen (der Lebensraum liest keinen Samen, keine Energie)" },
+                            6: { werte: { orte: a.orte, planeten: 1 }, zeuge: z, nicht: keine + "; " + zoom },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [ohneZahl(MI, 1, "Bildvergleich der Zonierung gegen Natur-Fotos", "zonierung"), K.soll(MI, 1, "Bildvergleich der Zonierung", { key: "matten", rel: "≥", zahl: 1, refQuelle: "eine sichtbare Matte (Umfang: „Matten, Biofilme, Algenbeläge sichtbar“)" })],
+                        werte: { matten: 3 },
+                        zeuge: { min: 20, was: "Orte am Spieler", streu: true },
+                        auge: { pose: "Ego an der Wiese (keine heiße Quelle, kein Watt erzeugbar)", vorbild: "Natur-Fotos der Zonierung (heiße Quelle, Watt, Fels), Prüfer-Satz R11" },
+                        taeter: "gelaende-core.js / stamm/feld-leben.js (kein mikrobielles Leben)",
+                        nicht: "keine Matten",
+                        leser: "stamm/feld-leben.js:3079 LIFE_FIELD — ein Feld des Lebens ohne Mikroben; kein Leser einer Matte im Gelände",
+                        unklar: "der Richter nennt keine Schwelle — Vorschlag: Panel-2AFC gegen Natur-Fotos ≤ 70 %",
+                    }),
+                    2: S({
+                        soll: [ohneZahl(MI, 2, "Bildvergleich am Ende des Zooms gegen Mikroskop-Aufnahmen", "zoomBild"), K.soll(MI, 2, "Bildvergleich am Ende des Zooms", { key: "zoomMinMm", rel: "≤", zahl: 1, quelleFeld: "umfang", quelleWort: "1 mm", einheit: "mm" })],
+                        werte: { zoomMinMm: 0.8 },
+                        zeuge: { min: 20, was: "Orte am Spieler", streu: true },
+                        auge: { pose: "Ego an der Wiese, Kamera am Boden", vorbild: "Mikroskop-Aufnahmen von Pilzfäden, Milben, Kolonien (R11)" },
+                        taeter: "stamm/dirigent-ankunft.js (Kamera near 0,1 m)",
+                        nicht: "kein Zoom unter 0,1 m, keine Mikroben",
+                        leser: "stamm/dirigent-ankunft.js:468 PerspectiveCamera — die Kamera schneidet bei near 0,1 m; kein Zoom bis 1 mm",
+                        unklar: "der Richter nennt keine Schwelle — Vorschlag: 2AFC gegen Mikroskop-Aufnahmen ≤ 75 % (wie Sprosse 3)",
+                    }),
+                    3: S({
+                        soll: [K.soll(MI, 3, "2AFC Zoom-Bild gegen Lichtmikroskopie desselben Lebensraums ≤ 75 %", { key: "afcProzent", einheit: "%" }), K.soll(MI, 3, "Formen passen zum Lebensraum (Teich, Boden, Darm) ≥ 90 %", { key: "formenProzent", einheit: "%" }), K.soll(MI, 3, "100 Zufallsorte", { key: "orte", rel: "≥", zahl: 100 }), K.soll(MI, 3, "2AFC Zoom-Bild gegen Lichtmikroskopie", { key: "zoomMinM", rel: "≤", zahl: 1e-5, quelleFeld: "umfang", quelleWort: "10⁻⁵ m", einheit: "m" })],
+                        werte: { afcProzent: 70, formenProzent: 92, orte: 100, zoomMinM: 1e-5 },
+                        zeuge: { min: 100, was: "Zufallsorte", streu: true },
+                        auge: { pose: "Ego an der Wiese, Kamera am Boden", vorbild: "Lichtmikroskopie desselben Lebensraums, 2AFC ≤ 75 % (R11)" },
+                        taeter: "stamm/dirigent-ankunft.js (Kamera near 0,1 m)",
+                        nicht: "kein Zoom auf 10⁻⁵ m",
+                        leser: "stamm/dirigent-ankunft.js:468 PerspectiveCamera — near 0,1 m; kein Leser einer Gemeinschaft im Milieu",
+                    }),
+                    4: S({
+                        soll: [K.soll(MI, 4, "Mutante „Mikroben aus“ → Streu bleibt liegen", { key: "abbauVerh", rel: "<", zahl: 0.5, refQuelle: "das Wort „Streu bleibt liegen“: Abbau der Mutante / Abbau der Welt < 0,5" }), K.soll(MI, 4, "Kreisläufe brechen sichtbar", { key: "mikrobenArten", rel: "≥", zahl: 1e6, quelleFeld: "umfang", quelleWort: "10⁶ Mikroben-Arten" })],
+                        werte: { abbauVerh: 0.1, mikrobenArten: 2e6 },
+                        zeuge: { min: 20, was: "Zellen des Felds des Lebens", streu: true, gegen: "Mikroben aus" },
+                        taeter: "stamm/feld-leben.js LIFE_FIELD.decayPerSec (Abbau ohne Mikroben)",
+                        nicht: "keine Mikroben, keine Mutante",
+                        leser: "stamm/feld-leben.js:3079 decayPerSec — 0,008: der Abbau ist eine Konstante, kein Werk der Mikroben",
+                        unklar: "der Richter nennt keine Zahl — Vorschlag: mit der Mutante Abbau < 0,1 des Normalen (sterile Streu, Swift et al. 1979)",
+                    }),
+                    5: S({
+                        soll: [K.soll(MI, 5, "Anteil Planeten-Saaten mit Leben steigt monoton mit dem Energiefluss", { key: "rangLebenEnergie", rel: ">", zahl: 0, refQuelle: "das Wort „steigt monoton“: Rang-Korrelation Anteil mit Leben ↔ Energiefluss > 0" })],
+                        werte: { rangLebenEnergie: 0.8 },
+                        zeuge: { min: 20, was: "Saaten mit Leben und Energiefluss", streu: true },
+                        taeter: "stamm/kreatur-leben.js _lebensraumGesetz (Leben in jeder Saat)",
+                        nicht: "kein Ursprung des Lebens",
+                        leser: "stamm/kreatur-leben.js:1687 _pickFaunaSoulAtPlayer — dieselben Gattungen in jeder Saat, kein Ursprung aus Energie und Chemie",
+                    }),
+                    6: S({
+                        soll: [K.soll(MI, 6, "Zoom-Stichprobe 1 000 Orte auf 10 Planeten ≥ 95 %", { key: "zoomProzent", einheit: "%" }), K.soll(MI, 6, "1 000 Orte", { key: "orte", rel: "≥", zahl: 1000 }), K.soll(MI, 6, "10 Planeten", { key: "planeten", rel: "≥", zahl: 10 })],
+                        werte: { zoomProzent: 96, orte: 1000, planeten: 10 },
+                        zeuge: { min: 1000, was: "Zoom-Orte", streu: true },
+                        taeter: "stamm/dirigent-ankunft.js (kein Zoom)",
+                        nicht: "keine Mikroben, kein Zoom",
+                        leser: "stamm/dirigent-ankunft.js:468 PerspectiveCamera — near 0,1 m",
+                    }),
+                },
+            },
+
+            // ═══ FOSSIL: das Leben im Gestein ═══
+            [FO]: {
+                sek: 10,
+                pfad: PFAD_GRUND,
+                ungefahren: "das Bild der Fundstelle — auf swiftshader kein Schuss (keine Sprosse verlangt ein Auge)",
+                mess: async function (H, U, M) {
+                    const P = async (r, T, A) => {
+                        const s = r.state;
+                        const C = r.constructor;
+                        const TC = globalThis.__tetrapodaCore;
+                        const aus = { fehler: null };
+                        try {
+                            const WORTE = ["fossil", "faehrte", "fährte", "koprolith", "trittsiegel", "versteiner", "leitart"];
+                            let objekte = 0, treffer = 0;
+                            s.scene.traverse((o) => {
+                                objekte++;
+                                const n = String(o.name || "").toLowerCase() + " " + String((o.userData && (o.userData.kind || o.userData.type)) || "").toLowerCase();
+                                if (WORTE.some((w) => n.includes(w))) treffer++;
+                            });
+                            aus.objekte = objekte;
+                            aus.funde = treffer;
+                            const statisch = Object.getOwnPropertyNames(C).filter((k) => WORTE.some((w) => k.toLowerCase().includes(w))).length;
+                            aus.gesetzeFossil = statisch;
+                            const pm = s.playerMesh.position;
+                            const klassen = {};
+                            for (let i = 0; i < A.orte; i++) {
+                                const w = (i * 2.399963) % (2 * Math.PI);
+                                const d = 20 + 11 * i;
+                                const k = r._bodenKlasseAt(pm.x + Math.cos(w) * d, pm.z + Math.sin(w) * d);
+                                klassen[k] = (klassen[k] || 0) + 1;
+                            }
+                            aus.orte = A.orte;
+                            aus.klassen = Object.keys(klassen).length;
+                            const schritte = [];
+                            for (const soul of C.CREATURE_SOUL_NAMES) {
+                                const leib = r._buildCreatureGroup(soul);
+                                if (!leib) continue;
+                                const tb = leib.userData._tierBaum || {};
+                                const g = tb.beinL > 0 ? TC.gangSchritt(1.2, tb.beinL, r._gangZeile(false)) : null;
+                                r._disposeSoulGroup(leib);
+                                if (g && g.schritt > 0) schritte.push(g.schritt);
+                            }
+                            aus.gang = schritte.length;
+                            aus.schrittStreuung = schritte.length > 1 ? Math.max(...schritte) - Math.min(...schritte) : 0;
+                            aus.schrittMittel = schritte.length ? schritte.reduce((a, b) => a + b, 0) / schritte.length : undefined;
+                        } catch (e) {
+                            aus.fehler = String((e && e.message) || e).slice(0, 200);
+                        }
+                        return aus;
+                    };
+                    const a = await H.seite("return await (" + P.toString() + ")(r, T, " + JSON.stringify({ orte: 40 }) + ");");
+                    const z = { fehler: a.fehler, antworten: a.orte || 0, streuung: Math.max(0, (a.klassen || 0) - 1) };
+                    const keine = "keine Fossilien: " + (a.funde || 0) + " Funde unter " + (a.objekte || 0) + " Objekten der Szene, " + (a.gesetzeFossil || 0) + " Gesetze des Fossils";
+                    return {
+                        sprossen: {
+                            1: { werte: { funde: a.funde }, zeuge: z, nicht: keine },
+                            2: { werte: {}, zeuge: z, nicht: keine + " — keine Schichtfolge mit Leitfossilien" },
+                            3: { werte: {}, zeuge: { fehler: a.fehler, antworten: a.gang || 0, streuung: a.schrittStreuung || 0 }, nicht: keine + " — keine Fährte; der lebende Gang schreitet " + (a.schrittMittel ? Math.round(a.schrittMittel * 100) / 100 + " m" : "ungemessen") },
+                            4: { werte: {}, zeuge: z, nicht: keine },
+                            5: { werte: {}, zeuge: z, nicht: keine },
+                            6: { werte: { funde: a.funde }, zeuge: z, nicht: keine },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: S({
+                        soll: [K.soll(FO, 1, "Anteil im Baum des Samens = 100 %", { key: "imBaumProzent", einheit: "%" }), K.soll(FO, 1, "100 Funde", { key: "funde", rel: "≥", zahl: 100 })],
+                        werte: { imBaumProzent: 100, funde: 100 },
+                        zeuge: { min: 20, was: "Orte am Spieler, Objekte der Szene", streu: true },
+                        taeter: "gelaende-core.js (kein Fossil im Gestein)",
+                        nicht: "keine Fossilien",
+                        leser: "gelaende-core.js:397 schichtDicke — Schichten ohne Inhalt; kein Leser eines Fossils (0 Treffer im Spiel)",
+                    }),
+                    2: S({
+                        soll: [K.soll(FO, 2, "Superposition ≥ 99 %", { key: "superpositionProzent", einheit: "%" }), K.soll(FO, 2, "100 Aufschlüsse", { key: "aufschluesse", rel: "≥", zahl: 100 })],
+                        werte: { superpositionProzent: 99.5, aufschluesse: 100 },
+                        zeuge: { min: 20, was: "Orte am Spieler", streu: true },
+                        taeter: "gelaende-core.js (Schichten ohne Leitfossil)",
+                        nicht: "keine Leitfossilien",
+                        leser: "gelaende-core.js:1043 schichtDicke — die Schicht trägt Mächtigkeit, kein Alter und keine Form des Lebens",
+                    }),
+                    3: S({
+                        soll: [K.soll(FO, 3, "Schrittlänge und Fußfall der Fährte ±10 %", { key: "faehrteAbwProzent", rel: "≤", zahl: 10, einheit: "%" })],
+                        werte: { faehrteAbwProzent: 6 },
+                        zeuge: { min: 3, was: "lebende Gänge der Tiere", streu: true },
+                        taeter: "stamm/kreatur-*.js (keine Fährte)",
+                        nicht: "keine Fährte",
+                        leser: "stamm/koerper-leib.js:492 _gangZeile — der Gang schreitet, aber kein Leser legt seinen Fußfall als Spur ins Gestein",
+                    }),
+                    4: S({
+                        soll: [K.soll(FO, 4, "Paar-Aufschlüsse an getrennten Küsten", { key: "leitPaare", rel: "≥", zahl: 1, refQuelle: "Erde: Mesosaurus beidseits des Südatlantiks (du Toit 1937) — mindestens ein Paar mit derselben Leitart" })],
+                        werte: { leitPaare: 3 },
+                        zeuge: { min: 20, was: "Orte, Objekte der Szene", streu: true },
+                        taeter: "gelaende-core.js (keine Leitfossilien)",
+                        nicht: "keine Leitfossilien über Kontinente",
+                        leser: "gelaende-core.js:397 schichtDicke — kein Fossil in der Schicht",
+                        unklar: "der Richter nennt keine Zahl — Vorschlag: ≥ 80 % der Paar-Aufschlüsse tragen dieselbe Leitart",
+                    }),
+                    5: S({
+                        soll: [K.soll(FO, 5, "Erhaltungs-Anteile je Bauplan gegen die Natur", { key: "hartZuWeich", rel: ">", zahl: 1, refQuelle: "Erde: Hartteile weit häufiger fossil als Weichkörper (Allison & Briggs 1991, Konservat-Lagerstätten selten)" })],
+                        werte: { hartZuWeich: 8 },
+                        zeuge: { min: 20, was: "Orte, Objekte der Szene", streu: true },
+                        taeter: "gelaende-core.js (keine Erhaltung)",
+                        nicht: "keine Erhaltung",
+                        leser: "gelaende-core.js:397 schichtDicke — kein Fossil in der Schicht",
+                        unklar: "der Richter nennt keine Zahl — Vorschlag: Erhaltungs-Anteil Hartteile / Weichkörper ≥ 10 (Allison & Briggs 1991)",
+                    }),
+                    6: S({
+                        soll: [K.soll(FO, 6, "deckungsgleich ≥ 95 %", { key: "deckungProzent", einheit: "%" }), K.soll(FO, 6, "100 Funde", { key: "funde", rel: "≥", zahl: 100 })],
+                        werte: { deckungProzent: 96, funde: 100 },
+                        zeuge: { min: 20, was: "Orte, Objekte der Szene", streu: true },
+                        taeter: "gelaende-core.js (keine Fossilien) / stamm/kreatur-leben.js (keine Epochen-Fauna)",
+                        nicht: "keine Fossilien, keine Epochen-Fauna",
+                        leser: L_ZEIT,
+                    }),
+                },
+            },
+        },
+    };
+})());
+
 module.exports = L.stationen();
