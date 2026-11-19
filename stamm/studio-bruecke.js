@@ -966,7 +966,7 @@ class AnazhRealm_studio_bruecke {
         const schreibAuftrag = new Map(); // reqId (der Atlas: "blatt-atlas") → die Lieferung des Studio-Baus, der gerade läuft
         // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
         // synchroner Studio-Lauf, gerufen aus dem Lese-Erfolg, hält dessen Transaktion bis zu seinem Ende offen — und jede
-        // Transaktion des anderen Fadens wartet dahinter (gemessen 05.10., gate:arch-feld Erst-Boot: fünf L1-Körper des
+        // Transaktion des anderen Fadens wartet dahinter (gemessen 05.10., die frühere Feld-Linse der Bauten Erst-Boot: fünf L1-Körper des
         // Werks, in Takt 3 gesendet, kamen in Takt 746–753, einen Takt nach dem kalten Karten-Bake des Bäckers, der seine
         // Karten-Lese-Transaktion 742 Takte offen hielt). Darum läuft ein Studio-Auftrag erst, wenn DIESER Faden keine
         // Transaktion offen hat (`offen`), in Ankunfts-Reihenfolge — die Arbeits-Uhr des Hosts bleibt FIFO je Faden.
@@ -1726,7 +1726,7 @@ class AnazhRealm_studio_bruecke {
     // DER ABGELAUFENE BLEIBT IM FADEN: der Besteller bekommt null (seine Wiederhol-Disziplin läuft), aber der Worker baut
     // ihn weiter — als GEIST hält er seinen Platz und die Uhr der Späteren seines Fadens an, bis seine späte Antwort kommt
     // (höchstens GEIST_FACHE × die Frist, dann fällt er: nie verklemmt). Bis 05.10. startete die Uhr des Wiederholers,
-    // während der Faden den Abgelaufenen noch baute (gate:arch-feld, CPU-Raster unter Fremdlast: Weide und Eiche je 3
+    // während der Faden den Abgelaufenen noch baute (die frühere Feld-Linse der Bauten, CPU-Raster unter Fremdlast: Weide und Eiche je 3
     // Versuche, die Karte der fernen Eiche kam in Takt 3281; der dritte Ablauf macht eine Zelle für immer gescheitert).
     // DIE UHR STARTET AM EREIGNIS (K38-N2): ein Auftrag meldet seine Frist an (`f.fristen`), `_foundryUhren` stellt sie,
     // sobald kein früherer seines Fadens offen ist — beim Anmelden, nach jeder Antwort und beim Fall eines Geistes. Bis
@@ -1829,7 +1829,7 @@ class AnazhRealm_studio_bruecke {
     // DIE EINE WORKER-SCHLANGE: der Foundry-Worker arbeitet FIFO, ein Bau dauert 0,1–25 s. Vorher ging jede Anfrage
     // sofort per postMessage hinein — eine nahe Eiche-L0 wartete hinter JEDEM früher gestellten Vorrats- und
     // Fernauftrag (gemessen 03.10.: beim Boot 241 Aufträge im Worker, die nahe Eiche-L0 kam nach 9,0 s, die Tanne nach
-    // 9,4 s; gate:arch-feld: 17 offene Aufträge, Eiche in 10 m und Haus in 27 m 800 Takte ohne Mesh). Jetzt hält der
+    // 9,4 s; die frühere Feld-Linse der Bauten: 17 offene Aufträge, Eiche in 10 m und Haus in 27 m 800 Takte ohne Mesh). Jetzt hält der
     // Host die Schlange: höchstens FOUNDRY_IM_FLUG Aufträge je Studio-Faden (Werk · Helfer, `_foundryPumpe`; so viele,
     // dass er ohne Rundlauf-Lücke arbeitet:
     // der Vorrat läuft so schnell leer wie FIFO), der nächste geht NAH zuerst (d² zum Spieler,
@@ -3462,7 +3462,7 @@ class AnazhRealm_studio_bruecke {
     // stand der Laub-Rand unter dem Ladeschirm am gebauten Boot-Ring (Ring 2: 129,6 m), der Eintritt bei 97–130 m, die Mesh-Zone
     // bei 150 m: die Bäume dazwischen traten nie ein, das Weltbild wartete auf sie, der Ladeschirm wich nie, und die Pflanz-Schlange
     // hielt ihre Bäume außer Blick für immer (K6 Strafe am Prüfplatz, Radeon, 3 von 5 Läufen: „Wald offen 36“, Ring 2, Laub-Rand
-    // 129,6 m, 2 Bäume im Weltbild offen; z311 Kamera-Leib K2 und Fenster-Wand: „12 / 6 Bäume und Bauten wachsen“).
+    // 129,6 m, 2 Bäume im Weltbild offen; z311 Kamera-Leib K2 und Fenster-Linse: „12 / 6 Bäume und Bauten wachsen“).
     _archKartenHorizont(entry, eintritt = false) {
         const u = this._pcg2d(entry.seed >>> 0, AnazhRealm.KARTEN_HORIZONT_SALZ) / 4294967296;
         const saum = AnazhRealm.KARTEN_HORIZONT_SAUM_M * u;
@@ -3643,7 +3643,7 @@ class AnazhRealm_studio_bruecke {
         const A = entry._satzA > 0 ? entry._satzA : wm ? wm.ansichtTyp.get(entry.type) : 0; // ohne Maß (der erste seines Typs): jedem
         if (!vorab && !entry._ziegelWich && this._weltSatzWeichen(entry, A)) {
             // das freie Feld nimmt der Verdränger im selben Zug — bis zum nächsten Gang holte es sich der Verdrängte zurück
-            // (gate:arch-feld S2: 158 Wechsel in 120 Takten)
+            // (die frühere Feld-Linse der Bauten S2: 158 Wechsel in 120 Takten)
             entry._ziegelWich = true;
             this._archZiegelFern(entry);
             entry._ziegelWich = false;
@@ -3986,6 +3986,6 @@ AnazhRealm.FOUNDRY_ALTER_MS = 6000;
 // Die Werk-Fäden (`_foundryHelfer`, K60): höchstens so viele Fäden bauen Körper (das Werk zählt mit), einer je vier Kerne.
 AnazhRealm.FOUNDRY_WERK_FAEDEN = 4;
 // Wie lange ein abgelaufener Auftrag als Geist seinen Faden hält (× seine Frist, `_foundryFrist`): auf CPU-Raster unter
-// Fremdlast lief ein Karten-Bake über zwei Fristen (gate:arch-feld 05.10.: die Weide dreimal gesendet in ~1000 Takten) —
+// Fremdlast lief ein Karten-Bake über zwei Fristen (die frühere Feld-Linse der Bauten 05.10.: die Weide dreimal gesendet in ~1000 Takten) —
 // vier tragen ihn, ein toter Auftrag fällt.
 AnazhRealm.FOUNDRY_GEIST_FACH = 4;

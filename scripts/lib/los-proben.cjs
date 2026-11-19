@@ -49,4 +49,243 @@ function losProben(FC, check) {
     check("Los-Probe: kein Export trägt zwei Lose, die ineinander liegen, und keinen Rest (4 Pläne)", losFaelle.length === 0, losFaelle.slice(0, 4).join(" · "));
 }
 
-module.exports = { losProben };
+// DIE HÜLLE LIEST KEINE ÖFFNUNG (los-huelle): das Los (`dorfLayout` über `exportSettlement`) liest je Haus die Hülle `ext` des
+// Mass-Baus (fachwerk `massBau` → `koerperHuelle`) — nur den Baukörper, nie ein Teil mit der Marke `oeffnung` (Flügel, Rahmen,
+// Bank, Bogen, Gitter, Tür) oder ein Flügel-/Türblatt. Befund vor dem Schnitt (p3/n1911/los): der zugestellte Flügel änderte `ext`
+// an 476 von 519 Plan-Häusern und versetzte die Stadt 7/4750 um Median 90,9 m. Die Linse baut die Exporte der Fälle an drei
+// Mutanten des Fenster-Baus (am Kern-Text, jede greift genau einmal je Stelle) und vergleicht je Same mit dem Golden
+// (spec/asset-contract/v6/golden/siedlung-lose.json, gemintet nur ohne Datei): H1 die Hülle jedes Hauses gleich, H2 das Los
+// (Lage, Gier) gleich. Der Täter des Selbsttests ist die Hülle vor dem Schnitt (Box3.setFromObject über den ganzen Mass-Bau) am
+// zugestellten Flügel: ROT beim Namen. Leser: die Vorprüfung jeder Bau-Bahn (gate:settlement, check.yml Gruppe 18).
+const OEFFNUNG_MUTANTEN = {
+    "Flügel zu (0 statt 0,62 rad)": [
+        ["L.rotation.y=(cz<0?0.62:-0.62)+", "L.rotation.y=0+"],
+        ["L.rotation.y=(cx<0?-0.62:0.62)+", "L.rotation.y=0+"],
+    ],
+    // Rahmen vierfach tief: die doppelte Tiefe (Sturz, Pfosten 0,36 · Bank 0,48) reicht an keinem der 519 Plan-Häuser der Stadt 7/4750
+    // über Dach und Sockel, auch nicht an der Hülle vor dem Schnitt (p3/n1911/los-huelle/vergleich.log) — sie wäre vakuös; vierfach an 94
+    "Rahmen vierfach tief": [
+        ["beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr)", "beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.72,fr)"],
+        ["beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr)", "beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.96,fr)"],
+        ["beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);", "beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.72,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.72,fr);"],
+        ["beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr)", "beam(g,cx,cy+h/2+0.05,cz,0.72,0.1,w+0.2,fr)"],
+        ["beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr)", "beam(g,cx,cy-h/2-0.05,cz,0.96,0.1,w+0.22,fr)"],
+        ["beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);", "beam(g,cx,cy,cz-w/2-0.05,0.72,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.72,h+0.1,0.1,fr);"],
+    ],
+    // Tür achtfach: vierfach (Stock 1,04 m) bleibt an keinem der 519 Plan-Häuser vor der Treppe, auch an der Hülle des Täters (p3/n1911/los-huelle/vergleich.log)
+    "Türstock und Sturz achtfach tief": [
+        ["beam(g,-doorW/2-0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); beam(g,doorW/2+0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz');", "beam(g,-doorW/2-0.06,cy,-Dp/2,0.14,doorH+0.12,2.08,'holz'); beam(g,doorW/2+0.06,cy,-Dp/2,0.14,doorH+0.12,2.08,'holz');"],
+        ["beam(g,0,baseY+doorH+0.05,-Dp/2,doorW+0.36,0.16,0.26,'holz');", "beam(g,0,baseY+doorH+0.05,-Dp/2,doorW+0.36,0.16,2.08,'holz');"],
+        ["beam(g,bcx-bw2/2-0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz'); beam(g,bcx+bw2/2+0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz');", "beam(g,bcx-bw2/2-0.06,bcy,Dp/2,0.13,doorH+0.06,1.92,'holz'); beam(g,bcx+bw2/2+0.06,bcy,Dp/2,0.13,doorH+0.06,1.92,'holz');"],
+        ["beam(g,bcx,baseY+doorH+0.0,Dp/2,bw2+0.32,0.14,0.24,'holz');", "beam(g,bcx,baseY+doorH+0.0,Dp/2,bw2+0.32,0.14,1.92,'holz');"],
+    ],
+    "Läden an (offen, 0,45 m vor der Wand)": [
+        ["beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);", "beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx-w/2-0.12,cy,cz+(cz<0?-0.22:0.22),0.04,h,0.45,fr); beam(g,cx+w/2+0.12,cy,cz+(cz<0?-0.22:0.22),0.04,h,0.45,fr);"],
+        ["beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);", "beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr); beam(g,cx+(cx<0?-0.22:0.22),cy,cz-w/2-0.12,0.45,h,0.04,fr); beam(g,cx+(cx<0?-0.22:0.22),cy,cz+w/2+0.12,0.45,h,0.04,fr);"],
+    ],
+};
+// der Täter: die Hülle vor dem Schnitt (an main f68dbf09 `var bx = new THREE.Box3().setFromObject(mass.g);`)
+const HUELLE_TAETER = ["var bx = koerperHuelle(mass.g);", "var bx = new THREE.Box3().setFromObject(mass.g);"];
+// die Fälle: die Stadt der Lose (Teil A, 1 Paar), die Großstadt, ein Dorf, ein Weiler
+const LOSE_FAELLE = [
+    { seed: 7, nH: 60 },
+    { seed: 2, nH: 120 },
+    { seed: 3, nH: 12 },
+    { seed: 12345, nH: 6 },
+];
+// der Kern-Text mit den Ersetzungen R — oder das Wort, warum die Mutante nicht greift
+function kernMutante(text, R) {
+    let t = text;
+    for (const [a, b] of R) {
+        const n = t.split(a).length - 1;
+        if (n !== 1) return { fehlt: `„${a.slice(0, 48)}…“ greift ${n}×` };
+        t = t.replace(a, b);
+    }
+    return { text: t };
+}
+// ein Kern aus Text in diesem Prozess (dieselbe Engine THREE), ohne den geladenen zu verdrängen
+function kernAusText(text, name) {
+    const alt = globalThis.__fachwerkCore;
+    delete globalThis.__fachwerkCore;
+    try {
+        require("vm").runInThisContext(text, { filename: `fachwerk-core.${name}.js` });
+        return globalThis.__fachwerkCore;
+    } finally {
+        globalThis.__fachwerkCore = alt;
+    }
+}
+const r4 = (v) => Math.round(v * 1e4) / 1e4;
+// die Lose eines Kerns: je Fall je Haus [Same, x, z, phi] und die Hülle [x0, x1, z0, z1, y1] (auf 0,1 mm)
+function loseVon(K) {
+    const L = {};
+    for (const dp of LOSE_FAELLE) {
+        const ex = K.exportSettlement(dp);
+        L[JSON.stringify(dp)] = ex.slots.map((s) => [s.seed, r4(s.x), r4(s.z), r4(s.phi), ["x0", "x1", "z0", "z1", "y1"].map((k) => r4(s.ext[k]))]);
+    }
+    return L;
+}
+// das Urteil gegen das Golden: `huelle` je Haus, dessen Hülle anders ist, `los` je Haus, das anders liegt (oder fehlt)
+function loseUrteil(L, G) {
+    const v = { huelle: [], los: [] };
+    for (const k of Object.keys(G)) {
+        const g = new Map(G[k].map((h) => [h[0], h]));
+        const l = L[k] || [];
+        if (l.length !== G[k].length) v.los.push(`${k}: ${l.length} statt ${G[k].length} Häuser`);
+        for (const h of l) {
+            const q = g.get(h[0]);
+            if (!q) v.los.push(`${k} Same ${h[0]}: kein Haus im Golden`);
+            else {
+                if (h[4].some((x, i) => x !== q[4][i])) v.huelle.push(`${k} Same ${h[0]}: ext [${q[4]}] → [${h[4]}]`);
+                if (h[1] !== q[1] || h[2] !== q[2] || h[3] !== q[3]) v.los.push(`${k} Same ${h[0]}: Los ${q[1]}/${q[2]} → ${h[1]}/${h[2]} (${Math.hypot(h[1] - q[1], h[2] - q[2]).toFixed(2)} m)`);
+            }
+        }
+    }
+    return v;
+}
+// DER ZENSUS DER TEILBAUM-KLASSEN (H1b, los-huelle): je Mass-Bau (die Plan-Häuser der Fälle und je Haus-Rezept eins) jedes Mesh
+// in seiner Klasse „Teilsystem/Art“ — Art `fluegel` (unter einem Fenster-Flügel `window`), `blatt` (unter einem Türblatt `door`),
+// `marke` (unter der Marke `oeffnung`), sonst `koerper`. Ein Körper-Mesh, das an einer Öffnung des Baus (die Lichter `H.licht`,
+// die Haus- und Hintertür `dims.tuer`, die Tore und Türen der Anbauten `H.annexDoors`) vor die Wand ragt (> ÖFFNUNG_VOR m, im
+// Feld der Öffnung ± ÖFFNUNG_RAND m ganz, an der Wand sitzend: die innere Kante ≤ 0,05 m davor) und nicht in einer Masse der Erschließung liegt (Treppe,
+// Stufe, Sockel, Vordach: addMasse), ist ein UNMARKIERTES Öffnungs-Teil — die Linse nennt es mit Klasse, Rezept und Öffnung.
+const OEFFNUNG_VOR = 0.07,
+    OEFFNUNG_RAND = 0.35,
+    OEFFNUNG_WEIT = 0.8, // weiter vor der Wand steht ein Bau (Balkon, Laube, Portikus), kein Teil der Öffnung: der offene Flügel ragt ≤ 0,58 × 1,1 m
+    ERSCHLIESSUNG = new Set(["treppe", "stufe", "sockel", "vordach"]),
+    GLAS = new Set(["glas", "glasdunkel"]), // Glas trägt nur die Öffnung: jedes Glas ohne Marke ist ein Teil der Öffnung
+    RAHMEN = new Set(["holz", "metall", "stein"]); // die Rollen von Stock, Sturz, Bank, Gitter und Schwelle — die Wand des Stils trägt eigene Rollen
+function zensusBauten(FC) {
+    const hps = [];
+    for (const dp of LOSE_FAELLE) for (const hp of FC.DORF(dp).houses) hps.push(["dorf " + dp.seed + "/" + dp.nH, hp]);
+    for (const id of Object.keys(FC.PRESETS).filter((k) => /^haus_/.test(k))) hps.push([id, FC.hausParams(FC.PRESETS[id], null)]);
+    return hps;
+}
+function oeffnungsZensus(K, hps) {
+    const THREE = globalThis.THREE;
+    const klassen = {},
+        frei = [];
+    let gestapelt = 0;
+    const b = new THREE.Box3();
+    for (const [wer, hp] of hps) {
+        // der Mass-Bau im Rollen-Harness (wie gate:fachwerk-contract): jedes Mesh trägt die Rolle seines Baus (`__role`)
+        if ((hp.storeys || 1) > 11) {
+            gestapelt++; // der Stapel über 11 Geschossen: sein Aufsatz trägt eigene Öffnungen ohne Liste im Basis-Bau
+            continue;
+        }
+        const H = K.HAUS(THREE, (r) => ({ __role: r }), Object.assign({}, hp, { nur: K.MASSNUR, __nurMass: true })),
+            D = H.dims,
+            G = H.build(K.LOD1F);
+        G.updateMatrixWorld(true);
+        const KM = (H.masse || []).filter((m) => !ERSCHLIESSUNG.has(m.art));
+        // die Außenseite einer Öffnung: weg von der Mitte der Masse, an deren Rand sie liegt (Haupthaus, Turm, Hofarm …)
+        const aussen = (perp, wand, c) => {
+            const m = KM.find((m) => (perp === "z" ? Math.min(Math.abs(wand - m.z0), Math.abs(wand - m.z1)) < 0.35 && c >= m.x0 - 0.3 && c <= m.x1 + 0.3 : Math.min(Math.abs(wand - m.x0), Math.abs(wand - m.x1)) < 0.35 && c >= m.z0 - 0.3 && c <= m.z1 + 0.3));
+            return m ? (wand > (perp === "z" ? (m.z0 + m.z1) / 2 : (m.x0 + m.x1) / 2) ? 1 : -1) : wand < 0 ? -1 : 1;
+        };
+        const O = (H.licht || []).map((l) => ({ c: l.perp === "z" ? l.cx : l.cz, wand: l.perp === "z" ? l.cz : l.cx, perp: l.perp, cy: l.cy, w: l.w, h: l.h, art: l.glas ? "fenster" : "tür" }));
+        if (D.tuer) {
+            O.push({ c: D.tuer.x, wand: D.tuer.z, perp: "z", cy: D.tuer.y + D.tuer.h / 2, w: D.tuer.w, h: D.tuer.h, art: "haustür" });
+            if (D.tuer.hinten) O.push({ c: D.tuer.hinten.x, wand: D.tuer.hinten.z, perp: "z", cy: D.tuer.y + D.tuer.h / 2, w: D.tuer.hinten.w, h: D.tuer.h, art: "hintertür" });
+        }
+        for (const a of H.annexDoors || []) O.push({ c: (a.x0 + a.x1) / 2, wand: a.z, perp: "z", cy: (a.y0 + a.y1) / 2, w: a.x1 - a.x0, h: a.y1 - a.y0, art: a.kind });
+        for (const q of O) q.s = aussen(q.perp, q.wand, q.c);
+        const M = (H.masse || []).filter((m) => ERSCHLIESSUNG.has(m.art));
+        for (const [sub, grp] of Object.entries(H.subsystems)) {
+            (function lies(o, art) {
+                const u = o.userData || {};
+                art = art || (u.window ? "fluegel" : u.door ? "blatt" : u.oeffnung ? "marke" : null);
+                if (o.geometry) {
+                    const k = `${sub}/${art || "koerper"}`;
+                    klassen[k] = (klassen[k] || 0) + 1;
+                    const rolle = (o.material && o.material.__role) || "?";
+                    if (!art && GLAS.has(rolle)) frei.push(`${sub}/${rolle}: Glas ohne Marke (${wer})`);
+                    else if (!art && RAHMEN.has(rolle)) {
+                        if (o.geometry.boundingBox === null) o.geometry.computeBoundingBox();
+                        b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+                        const inMasse = M.some((m) => b.min.x >= m.x0 - 0.05 && b.max.x <= m.x1 + 0.05 && b.min.z >= m.z0 - 0.05 && b.max.z <= m.z1 + 0.05);
+                        for (const q of O) {
+                            if (inMasse) break;
+                            const [a0, a1] = q.perp === "z" ? [b.min.x, b.max.x] : [b.min.z, b.max.z];
+                            const [w0, w1] = q.perp === "z" ? [b.min.z, b.max.z] : [b.min.x, b.max.x];
+                            const s = q.s;
+                            const vor = s > 0 ? w1 - q.wand : q.wand - w0,
+                                fuss = s > 0 ? w0 - q.wand : q.wand - w1; // die innere Kante: das Teil sitzt an der Wand (≤ 0,05 m davor)
+                            if (a0 >= q.c - q.w / 2 - OEFFNUNG_RAND && a1 <= q.c + q.w / 2 + OEFFNUNG_RAND && b.min.y >= q.cy - q.h / 2 - OEFFNUNG_RAND && b.max.y <= q.cy + q.h / 2 + OEFFNUNG_RAND + 0.15 && fuss <= 0.05 && vor > OEFFNUNG_VOR && vor <= OEFFNUNG_WEIT) {
+                                frei.push(`${sub}/${rolle} an ${q.art} (${wer}, ${vor.toFixed(2)} m vor der Wand, ${[b.max.x - b.min.x, b.max.y - b.min.y, b.max.z - b.min.z].map((v) => v.toFixed(2)).join("×")} m bei y ${b.min.y.toFixed(2)})`);
+                                break;
+                            }
+                        }
+                    }
+                }
+                for (const c of o.children) lies(c, art);
+            })(grp, null);
+        }
+        G.traverse((o) => o.geometry && o.geometry.dispose && o.geometry.dispose());
+    }
+    return { klassen, frei, n: hps.length, gestapelt };
+}
+// der Täter des Zensus: der Fenster-Bau und die Haustür ohne die Marke (wie vor dem Schnitt)
+const MARKE_TAETER = {
+    "Fenster ohne Marke": [["return oeffnung(g,()=>fensterTeile(g,cx,cy,cz,w,h,horiz,capY));", "return fensterTeile(g,cx,cy,cz,w,h,horiz,capY);"]],
+    "Haustür ohne Marke": [["    oeffnung(g,()=>{   // die Haustür als Öffnung", "    ((f)=>f())(()=>{   // die Haustür als Öffnung"]],
+};
+// die Linse: `kernText` der Text von fachwerk-core.js, `golden` {datei, lesen, schreiben}; im Selbsttest (`taeter`) die Hülle vor
+// dem Schnitt am zugestellten Flügel — sie MUSS in H1 und H2 rot werden
+function huelleProben(FC, check, { kernText, golden, taeter = false }) {
+    const t0 = Date.now();
+    const fs = require("fs");
+    if (!fs.existsSync(golden.datei)) {
+        golden.schreiben(loseVon(FC));
+        console.log(`  🧊 Golden der Lose GEMINTET (${golden.datei}) — ab jetzt EINGEFROREN.`);
+    }
+    const G = golden.lesen();
+    const zu = Object.keys(OEFFNUNG_MUTANTEN)[0];
+    if (taeter) {
+        const T = [HUELLE_TAETER, ...OEFFNUNG_MUTANTEN[zu]];
+        const m = kernMutante(kernText, T);
+        const Lt = m.text ? loseVon(kernAusText(m.text, "taeter")) : null;
+        const v = Lt ? loseUrteil(Lt, G) : null;
+        check(
+            `Selbst-Test Hülle: die Hülle vor dem Schnitt (setFromObject über den ganzen Mass-Bau) am Mutanten „${zu}“ fällt in H1 und H2 beim Namen`,
+            !!v && v.huelle.length > 0 && v.los.length > 0,
+            m.fehlt || `H1 ${v.huelle.length} Häuser (${v.huelle[0] || "—"}) · H2 ${v.los.length} (${v.los[0] || "—"})`
+        );
+        // keine Mutante ist vakuös: an der Hülle des Täters (Flügel zu — sonst deckt der offene Flügel jedes andere Teil) reicht
+        // jede andere Mutante in die Hülle wenigstens eines Hauses
+        for (const [name, R] of Object.entries(OEFFNUNG_MUTANTEN).slice(1)) {
+            const mm = Lt && kernMutante(m.text, R);
+            const w = mm && mm.text ? loseUrteil(loseVon(kernAusText(mm.text, "taeter-" + name)), Lt) : null;
+            check(`Selbst-Test Hülle: die Mutante „${name}“ greift an der Hülle des Täters (nicht vakuös)`, !!w && w.huelle.length > 0, (mm && mm.fehlt) || (w ? `H1 ${w.huelle.length} Häuser (${w.huelle[0] || "—"})` : "kein Täter"));
+        }
+        const hps = zensusBauten(FC);
+        for (const [name, R] of Object.entries(MARKE_TAETER)) {
+            const mm = kernMutante(kernText, R);
+            const Z = mm.text ? oeffnungsZensus(kernAusText(mm.text, "marke-" + name), hps) : null;
+            check(`Selbst-Test Hülle H1b: „${name}“ — der Zensus nennt die unmarkierten Öffnungs-Teile beim Namen`, !!Z && Z.frei.length > 0, mm.fehlt || `${Z.frei.length} — ${Z.frei.slice(0, 2).join(" · ")}`);
+        }
+        console.log(`  Hülle/Los Selbsttest: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+        return;
+    }
+    const v0 = loseUrteil(loseVon(FC), G);
+    check(
+        `Los je Same wie am Golden (H2, ${LOSE_FAELLE.length} Fälle): der Kern legt jedes Haus wie das Golden`,
+        !v0.los.length && !v0.huelle.length,
+        v0.los.concat(v0.huelle).slice(0, 3).join(" · ")
+    );
+    for (const [name, R] of Object.entries(OEFFNUNG_MUTANTEN)) {
+        const m = kernMutante(kernText, R);
+        const v = m.text ? loseUrteil(loseVon(kernAusText(m.text, name)), G) : null;
+        check(`Hülle liest keine Öffnung (H1) und das Los bleibt (H2) am Mutanten „${name}“`, !!v && !v.huelle.length && !v.los.length, m.fehlt || v.huelle.concat(v.los).slice(0, 3).join(" · "));
+    }
+    const Z = oeffnungsZensus(FC, zensusBauten(FC));
+    const kl = Object.entries(Z.klassen).sort();
+    check(
+        `Hülle liest keine Öffnung je Teilbaum-Klasse (H1b, ${Z.n - Z.gestapelt} Mass-Bauten): kein Körper-Mesh ragt an einer Öffnung vor die Wand`,
+        !Z.frei.length,
+        `${Z.frei.length} — ${Z.frei.slice(0, 4).join(" · ")}`
+    );
+    console.log(`  Klassen (${kl.length}): ${kl.map(([k, n]) => k + " " + n).join(" · ")}`);
+    console.log(`  Hülle/Los: ${LOSE_FAELLE.length} Fälle × ${1 + Object.keys(OEFFNUNG_MUTANTEN).length} Kerne + Zensus ${Z.n} Bauten (${Z.gestapelt} gestapelt, ohne Liste) · ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+}
+
+module.exports = { losProben, huelleProben, oeffnungsZensus, zensusBauten, MARKE_TAETER, OEFFNUNG_MUTANTEN, HUELLE_TAETER, LOSE_FAELLE, kernMutante, kernAusText, loseVon, loseUrteil };

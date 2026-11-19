@@ -41,9 +41,9 @@ awk '/^        [a-zA-Z]/ {eight++} /^    [a-zA-Z]/ {four++} END {print "4-Space-
 - Größe und Top-Level-Keys via `node -e "const d=require('./anazhRealmState.json'); for (const [k, v] of Object.entries(d)) console.log(k, v && typeof v === 'object' ? Object.keys(v).length : v)"`
 - Sind `selfAwareness.weaknesses` oder `learningData` ungewöhnlich gewachsen (Ringpuffer-Verletzung)?
 
-## 5. Offen-Abgleich (`docs/PFLICHT-OFFEN.md`)
-- Welcher Eintrag bewegte sich seit dem letzten Audit (Zahl gegen sein Kriterium)?
-- Neue Probleme nennt der Bericht beim Namen; Einträge setzt nur der Schöpfer (BETRIEBSGESETZ 2).
+## 5. Offen-Abgleich (die Meisterkarte 2)
+- Welche Sprosse bewegte sich seit dem letzten Audit (Zahl gegen ihren Richter)?
+- Neue Probleme nennt der Bericht beim Namen; Leitern setzt nur der Schöpfer (BETRIEBSGESETZ 2).
 
 ## 6. Diff zu `main`
 - `git diff main...HEAD --stat`
@@ -66,7 +66,7 @@ Liefere am Ende **einen** Block:
 
 ### Status
 - Syntax: ✅/❌
-- Pflicht-OFFEN Rest: …
+- Karte 2: <gebucht> von 1 718 (Stand-Datei)
 - Branch: …
 ```
 

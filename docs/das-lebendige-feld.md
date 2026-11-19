@@ -18,7 +18,7 @@ Die drei Verben des Feldes stehen im Code:
 Darauf stehen der Emotion-Kern (dimensional · Substanz-Brücke · Mood · Contagion), die
 DSL-Weltregeln (Mensch · Nexus · KI am selben Regel-Satz), der Kampf-/Interaktions-Bogen, die
 Resonanz („ein Produkt-Vektor, viele Leser") und der Wasser-CA (Wasser fließt nach und ruht).
-Das Offene steht allein in `docs/PFLICHT-OFFEN.md`; die Chronik aller Bögen in `git log`.
+Das Offene steht allein in die Meisterkarte 2 (Zweig `punkte-maschine`); die Chronik aller Bögen in `git log`.
 
 ---
 
@@ -112,10 +112,10 @@ schreibt, wer liest, welche Zahl) sind am Stamm vom 16.10. nachgelesen, nicht nu
   magieleitung), aus 4 seed-deterministischen SimplexNoise-Instanzen, worldgen-cachebar.
 - **`auraAt(x,z,t)`** — die EINE Lese-API. Gibt den frozen Kern zurück, geblendet mit den
   Overlays: `lebendig = min(1, frozen + _lifeOverlayAt)`, `emotion = global ⊕ _emotionOverlayAt`,
-  die drei geologischen Achsen direkt frozen. **17 Lese-Stellen** teilen sie: die Fauna
+  die drei geologischen Achsen direkt frozen. **16 Lese-Stellen** teilen sie: die Fauna
   (Seele · Ziel · Max · Lebenslauf), die Nexus-Komposition (`dslComposeAtomic`, `dslComposeRule`), die DSL
   (`_dslFieldAxisAt`, Positionen), die Wertung (`_measureRuleReward`, `_observeFieldWohl`), die Appraisal
-  (`updatePlayerEmotions`, `_umweltLage`), der Welt-Tint (`_dayNightComputeTint`, `_dayNightApplyHemiUndLuft`),
+  (`updatePlayerEmotions`, `_umweltLage`), der Welt-Tint (`_dayNightComputeTint`),
   der Klang (`_lofiWorldField`), die Erkundung (`_exploreMagnitude`) und die Selbst-Analyse des Loops. Wer eine neue „lebendige Welt"-Wirkung baut, liest HIER — kein neues `_tickX`.
 - **Trennung frozen ↔ Overlay** (V12.0-perf.b): der teure frozen Teil ist cachebar; das
   billige mutable Overlay liegt sparse darüber (eine `Map` von 16-m-Zellen, lazy-decay
@@ -236,7 +236,7 @@ erbt:
 ## 6. Der Vektor vorwärts — wohin jede Achse noch zeigt
 
 Die Vision ist verkörpert; was bleibt, ist VERTIEFUNG — pro Achse die nächste Tiefe, Fundament vor
-Seele. Der Scope ist allein `docs/PFLICHT-OFFEN.md`; hier der Vektor, gruppiert nach Dimension:
+Seele. Der Scope ist allein die Meisterkarte 2; hier der Vektor, gruppiert nach Dimension:
 
 **Der Körper:** der Wasser-CA fließt (`_tickWaterCA`, Quellen-Pin, Flow-Regel; das Zell-Sheet
 ist der EINE Render). Offen: Seen/Flüsse jenseits ±1024 m · die Vereinigung der zwei
@@ -258,7 +258,7 @@ Wasser-Naturen · Licht+Terrain-Einheit.
 
 ---
 
-## 7. Die Grenzen heute (Vertiefung, kein Fundament — der Scope ist allein `docs/PFLICHT-OFFEN.md`)
+## 7. Die Grenzen heute (Vertiefung, kein Fundament — der Scope ist allein die Meisterkarte 2)
 
 - Die Gesetze des Gemüts (`sorrow→rainy` u. ä.) sind Welt-Regeln, aber noch gesetzt, nicht evolviert.
 - Der Spieler schreibt Leben nur mit seinem Tod (`_playerDeathRespawn`), nicht als Pflege (Pflege = Co-Schöpfung).

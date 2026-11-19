@@ -155,6 +155,7 @@ async function checkBandRing8({ page, check }) {
                 currentRegionKey: "r0_0",
                 visibility: "privat",
                 creator: "local",
+                tagNull: 7.25,
             });
             let leer = null;
             try {
@@ -165,9 +166,18 @@ async function checkBandRing8({ page, check }) {
             const NEU = new Set(["worldId", "slug", "bornAt", "seed", "genVersion", "variantSeed"]);
             const SCHNAPPSCHUSS = new Set(["parentWorlds", "bauSame", "schemaVersion", "gameMode"]);
             const POSITIV = new Set(["visibility", "creator"]);
+            // DIE GEBURTS-KONSTANTEN (welt-tag-null): was JEDE Geburt gleich setzt (der Null-Punkt des Tags der Prozesse),
+            // ist kein Erbe — die Liste liest der Ring am EINEN Geburtsort `_weltGeburt`, nie als zweite Abschrift; ein
+            // Feld der Liste zählt nur, wenn es den Wert der Geburt trägt (die alte Welt trägt 7.25).
+            const GEBURT = AnazhRealm._weltGeburt({});
             const wmNeu = leer?.worldMeta || {};
             out.geborenGeerbt = Object.keys(wmNeu).filter(
-                (k) => wmNeu[k] !== undefined && !NEU.has(k) && !SCHNAPPSCHUSS.has(k) && !POSITIV.has(k)
+                (k) =>
+                    wmNeu[k] !== undefined &&
+                    !NEU.has(k) &&
+                    !SCHNAPPSCHUSS.has(k) &&
+                    !POSITIV.has(k) &&
+                    !(k in GEBURT && wmNeu[k] === GEBURT[k])
             );
             out.geborenPositiv = wmNeu.visibility === "privat" && wmNeu.creator === "local";
         }

@@ -1,7 +1,7 @@
 // diag-pipeline-constitution.cjs — P8: DIE VERFASSUNG DER PIPELINE (Struktur ersetzt Ermahnung), im `check`-Gate.
 // Eine Absenz-Wand: jede Regel nennt das Anti-Muster eines vollzogenen Pipeline-Schnitts (Inline-Wuchs, Welt-Bäcker,
 // Bake-iframe, Formel-Kopie, Dichte-Zwilling, nackter Render-Zähler, kind-Zweig, Kern-ns-Literal, zweite Naht, mp-Zwilling,
-// Mesh-Gras, placeExtra-Griff) und liest über den EINEN Absenz-Helfer `stammLib.fehlt` (PFLICHT-OFFEN D3: keine
+// Mesh-Gras, placeExtra-Griff) und liest über den EINEN Absenz-Helfer `stammLib.fehlt` (Klarheit D3: keine
 // Präsenz-Probe liest Quelltext) — im Stamm, in einem Glied, im Stamm außer seiner Engstelle (`ausser`) oder in einer
 // Datei; ein Glied ohne Definition wirft. Die Anwesenheit des Baus beweisen die Verhaltens-Bänder. Der Immer-Selbsttest
 // trägt ein Anti-Muster in den Stamm zurück und muss ROT sehen. Vollständig: `docs/neues-kleid-verfassung.md`.
