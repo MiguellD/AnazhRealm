@@ -275,7 +275,10 @@ class AnazhRealm_siedlung_tor {
             Z.tex,
             TSL.vec2(eq.x, zielZeile.add(TSL.clamp(eq.y, F(zv), F(1 - zv))).div(Z.uZeilen))
         );
-        const ziel = this._nachtAuge(zielTex.rgb.mul(Z.uBelicht), true);
+        // DIE BELICHTUNG DER HEIMAT TEILT DAS ZIELBILD (licht-eine-skala P8): die EINE Belichtung des Bilds selbst
+        // (`_vorBelichtung`), nie ihre Kopie je Takt — die Kopie hinkte einem Bild nach, dessen Uhr zwischen zwei Takten sprang
+        // (Mittag 0,527 → Mondnacht 47 000: die Öffnung stand weiß, das 89 000-Fache)
+        const ziel = this._nachtAuge(zielTex.rgb.div(this._vorBelichtung().k), true);
         // ── DER SEIFENFILM: Dicke aus Bogen-Radius (die Ellipse rimAx × rimAy) und Welle, Gangunterschied je Blickwinkel ──
         const rr = TSL.length(xy.sub(centerXY).div(TSL.vec2(ga.y, ga.z)));
         const cosI = TSL.max(TSL.dot(N, Vd), F(0.0));
@@ -372,7 +375,6 @@ class AnazhRealm_siedlung_tor {
                 n: 0,
                 tex: null,
                 uZeilen: TSL.uniform(1),
-                uBelicht: TSL.uniform(1),
                 buendel: null,
             }))
         );
@@ -647,9 +649,6 @@ class AnazhRealm_siedlung_tor {
         }
         // ── pro Frame: Atem + Hindurchgehen ──
         const reach = AnazhRealm.PORTAL_REACH_M;
-        // die Belichtung der Heimat teilt die Bild-Werte des Ziels (die Heimat tont sie danach, wie die Welt sich zeigt)
-        if (this._torZielAtlas && st.renderer)
-            this._torZielAtlas.uBelicht.value = 1 / Math.max(1e-3, st.renderer.toneMappingExposure || 1);
         for (const rec of reg.values()) {
             const entry = rec.entry;
             const mu = rec.tor.mu;

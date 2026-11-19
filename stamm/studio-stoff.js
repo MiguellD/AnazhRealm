@@ -344,6 +344,16 @@ class AnazhRealm_studio_stoff {
         if (emis) {
             mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
             mat.emissiveIntensity = emisI;
+            // DAS STUDIO-LEUCHTEN IN DER EINEN SKALA (licht-eine-skala P8; die Familie Emissiv × Stärke): die Einheit des Labors
+            // ist die Einheit der Welt (`__weltLicht.EINHEIT_LX`), wo der Stoff eine LICHTQUELLE ist (Seh-Klasse `glut`,
+            // phyto-core BUDGET_GESETZ: die Lichter der Wagen — Tagfahrlicht 9 700, Rücklicht 3 100, Blinker 4 340, Laterne
+            // 8 790, Lichtkante 18 610 cd/m²; HYPOTHESE am Band der Zulassung: ECE R7 Rücklicht 4–12 cd auf ≈ 40 cm² =
+            // 1 000–3 000 cd/m², R87 Tagfahrlicht 400–1 200 cd auf 25–200 cm² = 2·10⁴–5·10⁵ cd/m²). Jeder andere Stoff mit
+            // Emissiv (der Rahmen und die Beschläge der Tore, das Tierauge) trägt einen BILDWERT des Labors, kein Datum
+            // einer Quelle: er steht im Maß des Auges, sein Wert ÷ Belichtung vor dem Auge der Nacht — wie die Membran. In
+            // der Skala selbst stand das Tor nachts als weißer Fleck (0,02–0,46 Einheiten = 300–7 400 cd/m² × 47 000).
+            if (!(mp && mp.seh === "glut"))
+                mat.emissiveNode = this._nachtAuge(TSL.materialEmissive.div(this._vorBelichtung().k), true);
         }
         // Tint-Kontinuität L0/L1↔L2: das Studio tintet NUR das Laub, multiplikativ, aus dem Positions-Hash
         // (foundry-core.js) — gleich über alle Stufen, sonst springt die Kronenfarbe beim Stufen-Wechsel. Das
@@ -358,16 +368,13 @@ class AnazhRealm_studio_stoff {
         const _tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
         // Die Rauheit (`rauh`) wiegt das Mikro-Relief des facettierten Felsens außerhalb des Satzes (`_mikroGestalt`): bis
         // w13-fels-korn stand sie als Zahl im Graphen, und der zweite Stoff einer Signatur zeichnete mit der Rauheit des ersten.
-        // DAS LEUCHTEN IN DER EINEN SKALA (licht-eine-skala P8, die EINE Stelle der Familie `leucht`): die Zahl des Labors
-        // (`mp.leucht`, am Feuer fachwerk `LEUCHT_FEUER`) ist relativ zum Feuer — ihr Stoff leuchtet in seiner Farbe ×
-        // der Leuchtdichte der Flamme (fachwerk `FEUER_LEUCHTDICHTE`, cd/m²) ÷ die Einheit der EINEN Skala. Bis hier stand die
-        // Zahl des Labors selbst im Bild (2,5 Einheiten = 40 000 cd/m², bei Tag und Nacht).
-        const _FW = globalThis.__fachwerkCore;
+        // DAS LEUCHTEN IN DER EINEN SKALA (licht-eine-skala P8, die EINE Stelle der Familie `leucht`): die Einheit des Labors
+        // IST die Einheit der Welt (`__weltLicht.EINHEIT_LX`, 16 090 cd/m²) — die Flamme des fachwerk-Feuers trägt an ihrer
+        // heißesten Ecke Farbe (Y 0,344) × `LEUCHT_FEUER` 2,5 = 0,86 Einheiten = 13 840 cd/m² (Hollan: 13 800–16 000 cd/m² am
+        // Holzfeuer). Ein Stoff ohne Licht-Antwort (`unbeleuchtet`: die Linien und die Scheibe der Tore) steht dagegen im
+        // Maß des Auges, wie die Membran (`_membranGraph`): sein Wert ÷ Belichtung, unten am Knoten.
         mat.userData.stoffWerte = {
-            leucht:
-                mp && typeof mp.leucht === "number" && mp.leucht > 0
-                    ? ((mp.leucht / _FW.LEUCHT_FEUER) * _FW.FEUER_LEUCHTDICHTE) / __weltLicht.EINHEIT_LX
-                    : 0,
+            leucht: mp && typeof mp.leucht === "number" && mp.leucht > 0 ? mp.leucht : 0,
             tonL: _tonA ? Math.max(1e-4, 0.2126 * _tonA[0] + 0.7152 * _tonA[1] + 0.0722 * _tonA[2]) : 1,
             rauh: rough,
             verband: mp && mp.verband > 0 ? mp.verband | 0 : 0, // die Zeile des Verband-Gesetzes (außerhalb des Satzes)
@@ -400,8 +407,13 @@ class AnazhRealm_studio_stoff {
         // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
         // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
         // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
-        if (mp && typeof mp.leucht === "number" && mp.leucht > 0)
-            mat.emissiveNode = vcol.mul(this._stoffWert(TSL, "userData.stoffWerte.leucht"));
+        if (mp && typeof mp.leucht === "number" && mp.leucht > 0) {
+            const hell = vcol.mul(this._stoffWert(TSL, "userData.stoffWerte.leucht"));
+            // DAS UNBELEUCHTETE STEHT IM MASS DES AUGES (licht-eine-skala P8): „zeigt seine Farbe, wie das Licht auch fällt“ ist
+            // ein Bildwert — in der EINEN Skala stand das Tor nachts als weißer Fleck (0,6–1,1 Einheiten × Belichtung 47 000)
+            mat.emissiveNode =
+                mp.unbeleuchtet === true ? this._nachtAuge(hell.div(this._vorBelichtung().k), true) : hell;
+        }
         // DIE FARBE DES JAHRS (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
         // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
         // Blüte). Rinde, Fels, Kristall bleiben ungetönt. Die Gestalt des Jahrs trägt die Lage (`jahr`, `_jahrLage`).
@@ -725,7 +737,12 @@ class AnazhRealm_studio_stoff {
                 mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(rg.z));
             }
             if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0))
-                mat.emissiveNode = TSL.attribute("aGlut", "vec4").xyz; // vier Stellen wie die Farbe (die vierte: die Lage hoch)
+                // (vier Stellen wie die Farbe, die vierte: die Lage hoch; ein Bildwert des Labors ÷ Belichtung wie oben — eine
+                // Lichtquelle im Satz bricht laut, `_satzRegler`)
+                mat.emissiveNode = this._nachtAuge(
+                    TSL.attribute("aGlut", "vec4").xyz.div(this._vorBelichtung().k),
+                    true
+                );
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }
@@ -845,7 +862,8 @@ class AnazhRealm_studio_stoff {
             kind,
             isBark ? "rinde" : "",
             klasseLook ? "look" : "",
-            mat.userData.stoffWerte.leucht > 0 ? "leucht" : "",
+            mat.userData.stoffWerte.leucht > 0 ? (mp.unbeleuchtet === true ? "leucht:bild" : "leucht") : "",
+            emis && !(mp && mp.seh === "glut") ? "emis:bild" : "", // der Bildwert ÷ Belichtung (oben am Emissiv)
             mp && mp.webe && !isBark && !klasseLook && kind !== "foliageTex" && kind !== "schatten"
                 ? "webe:" + mp.webe
                 : "",

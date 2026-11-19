@@ -1371,13 +1371,13 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                         });
                         for (const [zeile, name] of namen.entries()) {
                             kopf.userData.tor.ziel = mutante.userData.tor.ziel = zeile;
-                            // die Belichtung der Heimat teilt das Zielbild (der Schreiber `_tickPortalMembranes`: 1 ÷ Belichtung)
-                            const schuss = (m, nacht) => ((atlas.uBelicht.value = 1 / flammeProbe.k), mitte(m, nacht));
+                            // die Belichtung der Heimat teilt das Zielbild (die EINE Belichtung des Bilds, `_vorBelichtung`)
+                            const schuss = (m, nacht) => mitte(m, nacht);
                             const [tag, nacht, ohne] = [await schuss(kopf, 0), await schuss(kopf, 1), await schuss(mutante, 1)];
                             const k = [tag, nacht, ohne].every((x) => x.k === flammeProbe.k) ? flammeProbe.k : [tag.k, nacht.k, ohne.k].join("/");
                             TOR.toene[name] = { wert: torProbe.toene[name], k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
                         }
-                        Object.assign(TOR, { gestalt, rufe, zeilen: atlas.uZeilen.value, belicht: +atlas.uBelicht.value.toFixed(4) });
+                        Object.assign(TOR, { gestalt, rufe, zeilen: atlas.uZeilen.value, belicht: +(1 / flammeProbe.k).toFixed(4) });
                     } catch (e) {
                         TOR.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
                     } finally {
