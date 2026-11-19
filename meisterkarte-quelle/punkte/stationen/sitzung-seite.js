@@ -392,4 +392,64 @@ const ANKUNFT_AUSNAHME =
     "vier Stationen in EINER Probe (ankunft.K2#1, ankunft.K3#1, pipeline.K4#1, pipeline.K4#2): vier Ladungen der Seite — kalt mit leerer " +
     "Herkunft bis zur Ruhe der Foundry (die Platte füllt sich ganz), zwei Zweit-Boots, der Kern-Wechsel — je 15–25 s";
 
-module.exports = { sitzungWerkzeug, probeBefehl, probeAnkunft, ANKUNFT_PROBE, ANKUNFT_AUSNAHME };
+// DIE SAATEN EINER SPROSSE (die Seite der Welt, `H.seite.SAATEN`; EIN Werkzeug für jede Sprosse, deren Umfang Saaten verlangt — nie
+// ein Zwilling je Leiter). Das Spiel trägt die Saat als Eingabe der Geburt (saat-im-lauf, stamm/feld-leben.js „neue welt saat <Saat>“,
+// stamm/speicher-welten.js `_generateFreshWorldMeta`): je Saat fährt die Probe den Satz des Spielers, die Welt wechselt am Ort
+// (`_weltWechsel`), ihr Erwachen (`r.erwacht`) ist die Warte; dann zählt `zaehl(r)`, was die Welt in DIESER Saat trug. Die Saaten
+// stehen fest aus der Sprosse (`arg.stamm` + „-“ + i, nie gewürfelt — dieselbe Station fährt dieselben Welten). Erreicht ist eine Saat
+// nur, wenn `worldMeta.seed` sie trägt. Die Schleife endet vor `arg.bis` (die Wanduhr der Probe, `Date.now()` — die Warte der Werkbank
+// vor dem ersten Takt der Seite zählt mit; die Zeit je Saat schätzt die nächste); danach kehrt die
+// Sitzung in ihre Welt zurück (`switchToWorld`, der Weg von „wechsle zu“) und die besuchten Welten fallen (`deleteWorld`) — die
+// nächste Station der Sitzung findet keine Welt dieser Schleife. Ergebnis: je Saat { saat, ms, z }, die Zeit je Saat, der Heimweg.
+const SAATEN = async (r, T, arg, zaehl) => {
+    const heim = r.state.worldMeta && r.state.worldMeta.worldId;
+    if (!heim) return { fehler: "die Sitzung trägt keine Welt (worldMeta.worldId)" };
+    const t0 = performance.now();
+    const p0 = r.state.playerMesh ? r.state.playerMesh.position.clone() : null;
+    const je = [];
+    const besucht = [];
+    let grund = null;
+    let heimweg = null;
+    try {
+        for (let i = 1; i <= arg.n; i++) {
+            const schnitt = je.length ? (performance.now() - t0) / je.length : 0;
+            if (Date.now() + schnitt > arg.bis) {
+                grund = "die Frist: " + je.length + " Saaten in " + Math.round(performance.now() - t0) + " ms";
+                break;
+            }
+            const saat = arg.stamm + "-" + i;
+            const a = performance.now();
+            const vor = r.state.worldMeta.worldId;
+            r.processChatCommand("neue welt saat " + saat);
+            if (r.activeWorldGet() === vor) {
+                grund = "der Satz „neue welt saat " + saat + "“ erschuf keine Welt am Ort";
+                break;
+            }
+            besucht.push(r.activeWorldGet());
+            if (!(await r.erwacht)) {
+                grund = "die Welt der Saat " + saat + " erwachte nicht";
+                break;
+            }
+            const seed = r.state.worldMeta && r.state.worldMeta.seed;
+            if (seed !== saat) {
+                grund = "die Welt trägt die Saat " + seed + " statt " + saat;
+                break;
+            }
+            const ms = Math.round(performance.now() - a);
+            je.push({ saat, ms, z: zaehl ? await zaehl(r) : null });
+        }
+    } finally {
+        // der Heimweg: die Welt der Sitzung, der Spieler an seiner Lage vor der Schleife (`versatz` in m nennt, wie weit er nicht ist)
+        const h = performance.now();
+        const zurueck = !besucht.length || (r.switchToWorld(heim, { reload: true }) && (await r.erwacht));
+        let fort = 0;
+        for (const w of besucht) if (zurueck && r.deleteWorld(w)) fort++;
+        const p = r.state.playerMesh && r.state.playerMesh.position;
+        const versatz = p0 && p ? Math.round(p.distanceTo(p0) * 10) / 10 : null;
+        heimweg = { zurueck: !!zurueck && r.state.worldMeta.worldId === heim, ms: Math.round(performance.now() - h), geloescht: fort, versatz };
+    }
+    const msJe = je.map((x) => x.ms);
+    return { je, grund, heimweg, msJe, msSchnitt: msJe.length ? Math.round(msJe.reduce((a, b) => a + b, 0) / msJe.length) : null };
+};
+
+module.exports = { sitzungWerkzeug, probeBefehl, probeAnkunft, ANKUNFT_PROBE, ANKUNFT_AUSNAHME, SAATEN };

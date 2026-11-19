@@ -8,6 +8,7 @@
 // k2-mensch-geist.js.
 "use strict";
 const { STADT, ZENSUS, POSE } = require("./k2-mensch-geist.js");
+const { SAATEN } = require("./sitzung-seite.js");
 
 // 20 STICHPROBEN-PERSONEN (bevoelkerung S2): um die Stunde des Werks (Wohnort ≠ Arbeitsort) springt die Uhr, jeder kommt an, dann
 // 2 Spiel-Sekunden im Takt des Spiels (wie dorfZaehlung je Ort); je Person über die Liste gestreut ihr Soll der Stunde
@@ -379,7 +380,7 @@ module.exports = (F) => [
             8: nicht(um(1000000000, "Menschen eines Planeten"), [ge("rang", "Rang-r der Dichte gegen das Nachtlicht", 0.7), ge("saaten", "Anteil Saaten im Band", 0.8)], "10⁹–10¹⁰ Menschen eines Planeten"),
             9: nicht(um(10000000000, "Menschen je Planet und Jahr"), [ge("lebenslauf", "Anteil konsistenter Lebensläufe", 0.99), ge("dieselbe", "Anteil derselben Person gealtert in t und t + 20", 1)], "10¹⁰ Menschen je Planet über die Jahre"),
         },
-        seite: { STADT, ZENSUS, STICHPROBE },
+        seite: { STADT, ZENSUS, STICHPROBE, SAATEN },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const welt = (name, arg) =>
@@ -394,12 +395,12 @@ module.exports = (F) => [
             };
             let zen = null;
             const zensus = async () => zen || (zen = pruef(await welt("ZENSUS"), "der Zensus der Stadt"));
-            for (const [n, fehlt] of [[3, "10⁴ Bewohner in 20 Saaten"], [4, "10⁵ Bewohner einer Großstadt"], [5, "10⁶ Bewohner einer Metropole"], [6, "10⁷–4·10⁷ Bewohner einer Megastadt"], [7, "4·10⁸ Bewohner in einer Bebauung"], [8, "10⁹–10¹⁰ Menschen eines Planeten"], [9, "10¹⁰ Menschen je Planet über die Jahre"]])
+            for (const [n, fehlt] of [[4, "10⁵ Bewohner einer Großstadt"], [5, "10⁶ Bewohner einer Metropole"], [6, "10⁷–4·10⁷ Bewohner einer Megastadt"], [7, "4·10⁸ Bewohner in einer Bebauung"], [8, "10⁹–10¹⁰ Menschen eines Planeten"], [9, "10¹⁰ Menschen je Planet über die Jahre"]])
                 await K.schritt(n, async () => {
                     const z = await zensus();
                     K.nicht(n, { n: z.alle, fehlt: fehlt + ": die Welt trägt " + z.alle + " Bewohner in " + z.siedlungen + " Siedlungen (die Stadt " + z.stadt + " in " + z.haeuser + " Häusern)" });
                 });
-            // S2 zuletzt: die Probe endet an seiner Pose (der Spieler bleibt am Markt)
+            // S2 vor den Saaten: die Probe endet an seiner Pose (der Heimweg der Saaten stellt den Spieler zurück an den Markt)
             await K.schritt(2, async () => {
                 const p = pruef(await welt("STICHPROBE", { uhr: 10, n: 20 }), "die Stichprobe der Stadt");
                 H.zeile("S2 " + p.angetroffen + " von " + p.stichproben + " ± 2 m angetroffen um " + p.uhr + " Uhr");
@@ -409,6 +410,31 @@ module.exports = (F) => [
                     beleg: p.stichproben + " Personen über die Liste der Stadt (" + p.haeuser + " Häuser) um " + p.uhr + " Uhr, Wohnort ≠ Arbeitsort (> 20 m) " + p.pendler + " von " + p.stichproben,
                     taeter: p.wer.length ? "nicht angetroffen: " + p.wer.join(", ") : null,
                 });
+            });
+            // S3 DIE SAATEN (H.seite.SAATEN, sitzung-seite.js): je Saat der Satz „neue welt saat <s>“, die Welt wechselt am Ort; je Saat
+            // gezählt ihre Bewohner (die Liste der Siedlung oder `leuteVon` ihres Plans, stamm/siedlung-bewohner.js:839). Erreicht die
+            // Welt 20 Saaten mit ≥ 10⁴ Bewohnern, fehlt der Leser des KS-Abstands; sonst steht der Umfang mit der Zahl je Saat. Die
+            // Schleife läuft zuletzt, nach S2, bis 3 s vor der Frist — die Stadt-Pose von S2 (GTX 58 s) und der Zensus S4–S9 messen
+            // in der Zeit wie vorher; der Heimweg stellt den Spieler zurück an den Markt (`versatz`).
+            await K.schritt(3, async () => {
+                const arg = { stamm: "mensch.menge.bevoelkerung-s3", n: 20, bis: Date.now() + Math.max(0, (H.rest() - 3) * 1000) };
+                const zaehl = function (r) {
+                    const FC = globalThis.__fachwerkCore;
+                    let bew = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values())
+                        if (Array.isArray(S.liste)) bew += S.liste.length;
+                        else if (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === "function") bew += S.plan.slots.reduce((a, sl) => a + Math.max(0, FC.leuteVon(sl.ov) | 0), 0);
+                    return bew;
+                };
+                const s = await K.welt("return await (" + H.seite.SAATEN + ")(r, T, " + JSON.stringify(arg) + ", " + zaehl + ");", Math.max(5000, Math.floor((H.rest() - 2) * 1000)));
+                if (!s || s.fehler) throw new Error("die Saaten: " + ((s && s.fehler) || "ohne Antwort"));
+                H.zeile("S3 Saaten " + JSON.stringify(s));
+                const bew = s.je.map((x) => x.z);
+                const max = bew.length ? Math.max(...bew) : 0;
+                const zeit = "je Saat " + (s.msJe.join(" · ") || "—") + " ms, Heimweg " + s.heimweg.ms + " ms (zurück " + s.heimweg.zurueck + ", Versatz " + s.heimweg.versatz + " m); Bewohner je Saat am Erwachen ihrer Welt " + (bew.join(" · ") || "—");
+                if (s.je.length >= 20 && Math.min(...bew) >= 10000)
+                    return K.leser(3, { n: max, fehlt: "KS-Abstand Alter und Haushalt gegen den Zensus der Epoche: kein Leser je Saat — " + zeit, wo: "stamm/siedlung-bewohner.js:458" });
+                K.nicht(3, { n: max, fehlt: "10⁴ Bewohner in 20 Saaten: die Welt wechselte am Ort in " + s.je.length + " von 20 Saaten (" + zeit + (s.grund ? "; Ende: " + s.grund : "") + ")" });
             });
         },
         proben: {
