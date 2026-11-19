@@ -16946,7 +16946,7 @@
   },
   "karte2.mensch.geist.innenleben": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.innenleben#1 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#1 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#2 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.geist.innenleben#3 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#3 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#4 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.geist.innenleben#5 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.geist.innenleben#6 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.geist.innenleben#7 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.geist.innenleben#1 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#1 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#2 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego)) · karte2.mensch.geist.innenleben#3 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#3 gtx: ungemessen (R10) · karte2.mensch.geist.innenleben#4 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego)) · karte2.mensch.geist.innenleben#5 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego)) · karte2.mensch.geist.innenleben#6 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego)) · karte2.mensch.geist.innenleben#7 radeon: ungemessen (R10) · karte2.mensch.geist.innenleben#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
    "stationen": [
     {
      "id": "karte2.mensch.geist.innenleben#1",
@@ -16983,7 +16983,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
      "ungemessen": true
     },
     {
@@ -17019,7 +17019,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
      "ungemessen": true
     },
     {
@@ -17037,7 +17037,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
      "ungemessen": true
     },
     {
@@ -17055,7 +17055,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
      "ungemessen": true
     },
     {
@@ -17073,7 +17073,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
      "ungemessen": true
     }
    ]
@@ -20867,7 +20867,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#2 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#2 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -20906,7 +20906,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -20924,7 +20924,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -20942,7 +20942,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -20960,7 +20960,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -20978,7 +20978,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -20996,7 +20996,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21014,7 +21014,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21032,14 +21032,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "karte2.mensch.menge.bild": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 24.9 fps · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.mensch.menge.bild#2 radeon: ungemessen (R10) · karte2.mensch.menge.bild#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#3 radeon: ungemessen (R10) · karte2.mensch.menge.bild#3 gtx: ungemessen (R10) · karte2.mensch.menge.bild#4 radeon: ungemessen (R10) · karte2.mensch.menge.bild#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#5 radeon: ungemessen (R10) · karte2.mensch.menge.bild#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#6 radeon: ungemessen (R10) · karte2.mensch.menge.bild#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#7 radeon: ungemessen (R10) · karte2.mensch.menge.bild#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 24.9 fps · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.mensch.menge.bild#2 radeon: ungemessen (R10) · karte2.mensch.menge.bild#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#3 radeon: ungemessen (R10) · karte2.mensch.menge.bild#3 gtx: ungemessen (R10) · karte2.mensch.menge.bild#4 radeon: ungemessen (R10) · karte2.mensch.menge.bild#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#5 radeon: ungemessen (R10) · karte2.mensch.menge.bild#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#6 radeon: ungemessen (R10) · karte2.mensch.menge.bild#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#7 radeon: ungemessen (R10) · karte2.mensch.menge.bild#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bild#1",
@@ -21078,7 +21078,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21114,7 +21114,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21132,7 +21132,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21150,7 +21150,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21168,14 +21168,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "karte2.mensch.menge.dichte": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.dichte#2 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#3 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#4 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#5 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#6 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#7 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.dichte#2 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#3 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#4 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#5 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#6 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#7 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.mensch.menge.dichte#2",
@@ -21192,7 +21192,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21210,7 +21210,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21228,7 +21228,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21246,7 +21246,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21264,7 +21264,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -21282,7 +21282,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -29282,7 +29282,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: Last: Referenz f 1,496 (Faden 1,496 · alle Kerne 1,093; vor 116,4/287 ms, nach 109,8/268,4 ms, Ruhe 77,8/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/zug-dienst.sh 93,4 CPU-s · node scripts/diag-k · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Last: Referenz f 1,603 (Faden 1,479 · alle Kerne 1,603; vor 132,5/362,5 ms, nach 123,9/342,3 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: Last: Referenz f 1,496 (Faden 1,496 · alle Kerne 1,093; vor 116,4/287 ms, nach 109,8/268,4 ms, Ruhe 77,8/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/zug-dienst.sh 93,4 CPU-s · node scripts/diag-k · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Last: Referenz f 1,603 (Faden 1,479 · alle Kerne 1,603; vor 132,5/362,5 ms, nach 123,9/342,3 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29319,7 +29319,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29337,7 +29337,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29355,7 +29355,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29373,7 +29373,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29391,7 +29391,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29409,7 +29409,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29427,7 +29427,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -29550,7 +29550,7 @@
   },
   "karte2.planet.kosmos.sterne": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.sterne#1 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.sterne#1 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.sterne#1",
@@ -29568,7 +29568,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -29587,7 +29587,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29605,7 +29605,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29623,7 +29623,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29641,7 +29641,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29659,7 +29659,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29677,14 +29677,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "karte2.planet.kosmos.sternhimmel": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 61 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.98 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 22 Median 34 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 46 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 12 Median 20 · halbe Nacht bei Sonne -13.4° | -15.1° · γ 0.89 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔81 43↔50 49↔55 19↔20; roh 47↔52 25↔22 29↔25 23↔24) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0253,\"X\":0.0078,\"rb\":0.004 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -16.0° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 20 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔75 36↔44 47↔53 21↔23; roh 48↔49 35↔21 28↔29 16↔16) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.16,\"Y\":0.0117,\"X\":0.0063,\"rb\":0.00 · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kosmos.sternhimmel#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 61 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.98 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 22 Median 34 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 46 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 12 Median 20 · halbe Nacht bei Sonne -13.4° | -15.1° · γ 0.89 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔81 43↔50 49↔55 19↔20; roh 47↔52 25↔22 29↔25 23↔24) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0253,\"X\":0.0078,\"rb\":0.004 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -16.0° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 20 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔75 36↔44 47↔53 21↔23; roh 48↔49 35↔21 28↔29 16↔16) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.16,\"Y\":0.0117,\"X\":0.0063,\"rb\":0.00 · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kosmos.sternhimmel#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.sternhimmel#1",
@@ -29723,7 +29723,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29741,7 +29741,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29759,7 +29759,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29777,7 +29777,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29795,7 +29795,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -29813,7 +29813,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -29954,7 +29954,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Messort: kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBI · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Messort: kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBI · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -29991,7 +29991,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -30009,7 +30009,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -30027,7 +30027,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -30045,7 +30045,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -30063,7 +30063,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -32446,7 +32446,7 @@
   },
   "karte2.same.entfaltung.abwesenheit": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.abwesenheit#1 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#2 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#3 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#4 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#5 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#6 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#7 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.abwesenheit#1 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#2 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#3 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#4 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#5 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#6 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#7 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.abwesenheit#1",
@@ -32464,7 +32464,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -32483,7 +32483,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32501,7 +32501,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32519,7 +32519,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32537,7 +32537,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32555,7 +32555,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32573,7 +32573,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -36869,7 +36869,7 @@
   },
   "karte2.same.preis.eingabe": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) · karte2.same.preis.eingabe#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) · karte2.same.preis.eingabe#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.same.preis.eingabe#1",
@@ -36887,7 +36887,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -36906,7 +36906,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -36924,7 +36924,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -36942,7 +36942,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -36960,7 +36960,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -36978,7 +36978,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -36996,7 +36996,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -37616,8 +37616,8 @@
   "ohne": 3142
  },
  "kopfVoll": "986eff04e91381457c211607664671c49b5d9d0f",
- "zeit": "2026-11-19T13:18:38.046Z",
- "vorher": "dabd69bb",
+ "zeit": "2026-11-19T13:29:41.943Z",
+ "vorher": "986eff04",
  "bilanz": {
   "gewinn": [],
   "fall": [],
