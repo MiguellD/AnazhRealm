@@ -3379,6 +3379,11 @@
         var kopfX = haltungFolge(H.kopf, (Number(P.headX) || 0) - halsZiel, wH, dt);
         var kopfY = haltungFolge(H.kopfY, (Number(P.headY) || 0) + sweepY, wH, dt);
         var ohrZ = haltungFolge(H.ohr, Number(P.ear) || 0, wH, dt);
+        // die Haltung RUHT erst an ihrem Ziel (Rumpf, Hals, Kopf): die Raten-Leiter friert einen stehenden Leib erst dann ein
+        // (stamm updateCreatures) — vorher fror sie ihn in der Pose, die er vor dem Grasen trug, und der Hals blieb oben
+        tb._haltRuht =
+            Math.abs(H.rumpf.x - (Number(P.bodyX) || 0)) + Math.abs(H.hals.x - halsZiel) + Math.abs(kopfX - ((Number(P.headX) || 0) - halsZiel)) < 0.01 && // prettier-ignore
+            Math.abs(H.rumpf.v) + Math.abs(H.hals.v) + Math.abs(H.kopf.v) < 0.05;
         // der Ausklinge-Saum (fadeMul) nimmt nur den Rhythmus (Federn, Wiegen, Nicken, Schwanz); die Haltung bleibt — der
         // Stufen-Schalter trifft eine stehende Gestalt in ihrer Haltung, die Ruhe dahinter hält sie (stamm
         // _tierBaumNeutralStance mit haltHalten): ein äsender Hirsch an der Grenze senkt den Kopf wie der nahe

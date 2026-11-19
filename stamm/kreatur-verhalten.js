@@ -3619,6 +3619,18 @@ class AnazhRealm_kreatur_verhalten {
                     // der geneigte Kopf (_kreaturBissTakt), auch ungesehen — die Kosten trägt nur der Ansprung (unter 1 s)
                     const VAb = creature.userData._verhaltenAktion;
                     if (VAb && VAb.biss) animDiv = 1;
+                    // DIE HALTUNG VOR DER RUHE (H1): wer steht, friert erst, wenn seine Haltung an ihrem Ziel ruht
+                    // (`_haltRuht` des Kerns) und ihr Grund (Zustand + Aktion) seit dem Einfrieren derselbe ist — ein Hirsch,
+                    // der jenseits der Gestalt-Grenze zu grasen beginnt, senkt den Hals (bis hier blieb er in der Pose vor dem
+                    // Grasen stehen: Kopf unten im Leib 0,042 gegen 1,0 im Satz)
+                    const haltA = VAb && this.state.creatureAnimationTime < VAb.bis ? VAb.name : null;
+                    const U = creature.userData;
+                    if (
+                        animDiv === 0 &&
+                        tBA &&
+                        (U._haltZ !== U._motionZustand || U._haltA !== haltA || tBA._haltRuht === false)
+                    )
+                        animDiv = this._creatureAnimDiv(dAuge, fernDist, omegaGang, dt, true);
                     if (animDiv === 0) {
                         if (!creature.userData._animEingefroren) {
                             creature.userData._animEingefroren = true;
@@ -3626,6 +3638,8 @@ class AnazhRealm_kreatur_verhalten {
                         }
                     } else if (animDiv === 1 || (aiFrame + i) % animDiv === 0) {
                         creature.userData._animEingefroren = false;
+                        U._haltZ = U._motionZustand;
+                        U._haltA = haltA;
                         // der Ausklinge-Saum: vor der Schwelle blendet der Schritt in
                         // die Stand-Pose — der Stufen-Schalter trifft eine STEHENDE
                         // Gestalt (_animateTierBaum konsumiert _animFade).
