@@ -36,8 +36,12 @@ Wort des Schöpfers: „ja bauen, bei 98% wip sichern und übergabe“. Datei-Be
    Kette — reichen beide `ecke` an den Weber?
 3. **Relief als Ton:** Kanten unter `s` fallen (`muster.js` Schritt 3); ihr Mittel aus Eigenschatten und Kante soll als Ton in den Stoff
    der Zone (dasselbe Gesetz wie die Farbe). Differenz-Karte: Linien an Balken-Unterkanten und Traufe.
-4. **Draws falten in Opak und Glas** (Soll je Haus ≤ heute: 4): die Stufe trägt heute die Netze der L0 (Haus 12). Prüfen, ob der Bau-Satz
-   (`_satzStoff`: Rauheit/Metall/Deckkraft je Ecke aus `aRegler`) sie schon faltet; sonst in der Funktion nach Stoff-Klasse zusammenlegen.
+4. **Draws falten in Opak und Glas** (Soll je Haus ≤ heute: 4) — gelesen, wahrscheinlich schon getragen: der Bau-Satz der Welt
+   (`_satzStoff`, `stamm/siedlung-satz.js:70`) nimmt Rauheit, Metall, Emissiv, Deckkraft und Verband aus der Identität des Stoffs (sie
+   reisen je Ecke in `aRegler`, `_satzRegler :85`), Durchsichtiges trägt eine eigene Marke (Deckkraft 0,5 als Zeichen). Stoffe, die sich nur
+   darin unterscheiden, fallen in EINEN Satz — Opak und Glas getrennt; die Identität bleibt Art · Seh-Klasse · Seite · flach · Umgebung ·
+   Gewebe · Leucht-Gesetz · Zeitplan · Klarlack. Die „12 Netze“ der Stufe aus der L0 sind ein Maß meines Mess-Pfads (`_foundryBuildGroup`).
+   ZU MESSEN in der Welt: die Zahl der Satz-Arten (`st.satzStoffe`) je Haus heute gegen aus der L0.
 - **Der Ort:** die Funktion EINMAL im Kern hinter `_foundryWorkerRequest` — der gemeinsame Weg ist `foundry-bruecke.js:888–893`
   (`presetId, seed, lod` → `BAKERS_BY_KIND`/`kern.buildInstance`). Vorschlag: für `lod ≥ 1` baut die Brücke die L0 und reicht sie mit
   `s = grenze(lod) ÷ Brennweite` durch die Funktion (`muster.js` als Kern-Modul, Eingabe nur Netze + `s` + Glas-Flags aus dem Stoff),
