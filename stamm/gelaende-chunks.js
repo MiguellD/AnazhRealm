@@ -2175,6 +2175,20 @@ class AnazhRealm_gelaende_chunks {
                 // Fels-Gitterpunkt lag bis 1,2 m UNTER dem gezeichneten Boden (gemessen 01.10.: Haus, Tiere,
                 // Sonden-Kameras eingesunken; Kamera 0,5 m über dem Wert stand im Gelände).
                 const dLuft = prevD != null ? prevD : this._fieldDensityAt(x, y + 1.2, z, colCtx);
+                // ÜBER EINEM KELLER (S4, `erdbauHohl`) ist die Dichte im Schritt nicht linear: der Boden des Hohlraums ist ein Knick
+                // (unter ihm die Dichte des Grunds, über ihm der Abstand zur nächsten Wand) — die Gerade durch die beiden Proben lag
+                // in der Sohle des Grabens 0,41 m über dem Boden, den das Feld trägt (49,956 statt 49,548). Dort halbiert die Suche den
+                // Schritt, bis er 1,2 / 2^10 m misst; jede Spalte ohne Keller bleibt bei der einen Geraden (byte-gleich).
+                if (colCtx.keller) {
+                    let [lo, hi, dLo, dHi] = [y, y + 1.2, d, dLuft];
+                    for (let i = 0; i < 10; i++) {
+                        const m = (lo + hi) / 2;
+                        const dm = this._fieldDensityAt(x, m, z, colCtx);
+                        if (dm > 0) [lo, dLo] = [m, dm];
+                        else [hi, dHi] = [m, dm];
+                    }
+                    return lo + (hi - lo) * (dLo - dHi > 1e-9 ? dLo / (dLo - dHi) : 0);
+                }
                 const t = d - dLuft > 1e-9 ? d / (d - dLuft) : 0;
                 return y + 1.2 * Math.min(1, Math.max(0, t));
             }

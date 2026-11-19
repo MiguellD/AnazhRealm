@@ -2340,6 +2340,34 @@ class AnazhRealm_vegetation_baum {
         return n;
     }
 
+    // DIE SAAT FOLGT DEM GRUND (w28-funktion-welt-2): ein Erdbau (`_erdbauWirkt`) ändert den Boden der Chunks, die er in der
+    // feinsten Stufe trifft (`chunks`, Schlüssel „a,b“) — jeder Wurf des Gesetzes dort (`_ausGesetz` + `feldWurf`), wartend in
+    // der Schlange oder gesetzt, steht danach auf dem neuen Grund (0,5 m über dem Boden seiner Spalte, wie jeder Wurf). Bis
+    // hier blieb die Höhe der Saat, die vor dem Erdbau des erwachenden Dorfs fiel: ob ein Chunk vorher oder nachher säte,
+    // entschied der Takt — A gegen A an 2a1a6e1c drei Hasel am Dorf −4,−4 bis 3,6 m unter ihrem Grund in A, auf ihm in B.
+    // Die Saat räumt und sät hier NICHT neu: an ea7885fb wechselte der neu gesäte Glutbrunnen den Brand des Dorfs, und der
+    // Wald stand je Lauf anders (835 · 848 · 889 Bäume). → die Zahl der Würfe auf neuem Grund.
+    _saatFolgtGrund(x0, x1, z0, z1, chunks) {
+        if (!chunks.size) return 0;
+        const { span } = this._voxelChunkConfig();
+        const imChunk = (p) => chunks.has(`${Math.floor(p.x / span)},${Math.floor(p.z / span)}`);
+        const grund = (p) => {
+            const g = this._voxelSurfaceY(p.x, p.z);
+            return Number.isFinite(g) && g + 0.5 !== p.y ? ((p.y = g + 0.5), true) : false;
+        };
+        let n = 0;
+        for (const t of this.state.pendingVegSpawns || [])
+            if (t && t.position && imChunk(t.position) && grund(t.position)) n++;
+        for (const e of this._blockerUmPlatz((x0 + x1) / 2, (z0 + z1) / 2, Math.max(x1 - x0, z1 - z0) / 2, [])) {
+            if (!e || !e.position || e._ausGesetz !== true || e.feldWurf !== true || !imChunk(e.position)) continue;
+            if (!grund(e.position)) continue;
+            if (e.blockerAABBs) this._populateBlockerAABBs(e);
+            this._werkPoseZeigen(e);
+            n++;
+        }
+        return n;
+    }
+
     // DIE FLÄCHEN EINES DORFS RÄUMEN (K52): jede neue Fläche der Wege-Karte (Weg, Platz, Anger, Acker einer Siedlung —
     // `_stlWegeBuild`; die Trittfläche einer Ausstattung — `_trittFlaecheSetzen`) wartet in `wegeKarte.raeumen`, bis der
     // Takt der Wege-Karte sie räumt (`_naturRaeumen` über ihre Hülle): die Trittfläche entsteht im Instanz-Pfad, mitten im

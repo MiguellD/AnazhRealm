@@ -283,7 +283,13 @@ class AnazhRealm_stoff_material {
             const a = (di / 64) * 2 * Math.PI;
             const H = (hx, hz) => this._terrainMacroSurfaceY(hx, hz, false);
             f = globalThis.__gelaendeCore.windForm(H, (ci + 0.5) * 16, (cj + 0.5) * 16, Math.sin(a), Math.cos(a));
-            M.karte.set(k, f);
+            // GEMERKT NUR IN DER REICHWEITE SEINER TAFEL (w28-halter-register, `ZELL_GEDAECHTNISSE` _windFormMerk): ein Leser jenseits
+            // (die Nase eines fernen Fressers am Kadaver, `_kreaturAasZug` → `_scentAt`, Radeon 18.11. Runde reise 4 728 m) fragt
+            // dieselbe Funktion, sie bleibt nicht liegen — bis hier schrieb er nach dem letzten Gang des Räumers eine ferne Zelle
+            const p = this.state.playerMesh && this.state.playerMesh.position;
+            const rw = AnazhRealm._windFormReichweite(this);
+            if (!p || (Math.abs((ci + 0.5) * 16 - p.x) <= rw + 8 && Math.abs((cj + 0.5) * 16 - p.z) <= rw + 8))
+                M.karte.set(k, f);
         }
         return f;
     }

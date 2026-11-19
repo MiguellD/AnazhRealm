@@ -2747,7 +2747,20 @@ class AnazhRealm_kreatur_leben {
         if (!c) return null;
         // die Wiederkehr klemmt den Stand auf die Spanne (`_lebenSpanne`); das Tier trägt seine eine Masse ungeklemmt
         if (c.userData.bodySize !== bodySize) this._kreaturGroesseSetzen(c, bodySize);
-        Object.assign(c.userData, { alterS: t.alterS, wanderAnchor: { x: t.x, z: t.z }, name: this._bestandName(t) });
+        // DIE KENNUNG IST DIE DES TIERS (w28-funktion-welt-2): die netId des Leibs trägt den Kurs seines Wanderns, die Ziele
+        // seines Reviers und den Verband (`_kreaturVerbinden`) — aus der Adresse des Tiers im Bestand (`t.id`, seit leben-erbe `indId`),
+        // nie aus der Zahl der Leiber, die vor ihm gezeichnet wurden (`_creatureNetSeq`): A gegen A an ea7885fb `tier:wesen`
+        // anders, weil vor dem Sprung der Welt-Uhr je Lauf andere Leiber kamen und gingen
+        const s = String(t.id);
+        let h = 2166136261;
+        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+        const netId = "c" + (1e6 + ((h >>> 0) % 9e8));
+        Object.assign(c.userData, {
+            netId,
+            alterS: t.alterS,
+            wanderAnchor: { x: t.x, z: t.z },
+            name: this._bestandName(t),
+        });
         [c.userData._bestand, t.leib, t.snap] = [t, c, null];
         return c;
     }
@@ -2768,6 +2781,8 @@ class AnazhRealm_kreatur_leben {
         const L = st.faunaLifecycle;
         const B = AnazhRealm._bestandGesetz().B;
         if (!this._kreaturenBereit()) return;
+        const wu = this._weltUhrSprung | 0; // der Sprung der Welt-Uhr (`_weltUhrNimm`) nimmt die Leiber (`_bestandSprung`)
+        if ((this._faunaUhrSprung ?? wu) !== (this._faunaUhrSprung = wu)) this._bestandSprung();
         this._feldTakt();
         // zwischen zwei Takten zeichnet nur die Ankunft eines Geheges (`_gehegeKommtAn`: seine Tiere stehen im selben Bild)
         if (st.spielZeit - (L.lastTick || 0) < B.taktS)
@@ -2786,6 +2801,31 @@ class AnazhRealm_kreatur_leben {
             if (c.userData._faelltNach && !st.creatures.some((o) => o.userData._rissVon === c))
                 this._creatureNaturalDeath(c, c.userData._faelltNach, false);
         this._bestandVerkoerpern();
+    }
+
+    // DER SPRUNG DER UHR NIMMT DIE LEIBER (w28-funktion-welt-2): der Bestand ist eine Funktion der Welt-Uhr (`_feldTakt`), seine
+    // Leiber trugen die Takte davor — wann, wo und in welcher Reihe sie gezeichnet wurden, wohin sie liefen, ihr Stand im Tier
+    // (`snap`), die Frist der Orts-Suche (`_ohneOrt`) und die Ströme des Lebens (`_faunaRng`). Springt die Welt-Uhr (ein Stand
+    // lädt, die Uhr eines Mitspielers), wird jeder Leib des Bestands wieder Zahl, sein Stand fällt, die Ströme beginnen am Samen —
+    // gezeichnet wird danach aus dem Bestand der neuen Uhr, wie der Tag der Bewohner danach f(Same, t) ist (`_bewohnerTakt`). Der
+    // gebundene Leib (`bond`) und die Leiber eines offenen Risses bleiben. Bis hier hing die Herde nach dem Sprung an der Zahl
+    // der Takte davor: A gegen A an 2a1a6e1c unter Last 12 gegen 16 Tiere am Dorf, `tier:bestaeuber` und die Leiber anders.
+    _bestandSprung() {
+        const st = this.state;
+        // ein Leib ohne Tier (der Boot-Wurf, ein Ruf) tritt zuerst in den Bestand — sonst trüge er die Takte davor über den
+        // Sprung (A gegen A an 60231b1c fünf Leiber des Boot-Wurfs am Dorf ohne Tier in A, angenommen in B)
+        this._bestandAdoptieren();
+        const jagen = this._bestandJagen();
+        for (const c of st.creatures.slice()) {
+            const ud = c.userData;
+            if (ud._bestand && !(ud.bond > 0) && !ud._rissVon && !jagen.has(c)) this._bestandEntkoerpern(c);
+        }
+        for (const R of Object.values(this._bestandRegionen().regionen))
+            for (const t of R.tiere) {
+                t._ohneOrt = undefined;
+                if (!t.leib) t.snap = null;
+            }
+        this._faunaStroeme = null;
     }
 
     // DER FELD-TAKT (feld.K2#2, Lockstep): das Leben der nahen Regionen ist eine Funktion der Welt-Uhr und der Akte, nie der

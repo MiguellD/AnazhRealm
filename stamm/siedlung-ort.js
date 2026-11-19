@@ -2504,6 +2504,9 @@ class AnazhRealm_siedlung_ort {
         const nah = (p.x - o.x) ** 2 + (p.z - o.z) ** 2 <= R * R;
         const kontrolle = !!this.state._weltbildDa;
         return L.werke.filter((w) => {
+            // ein Werk des Grunds steht, solange sein Grund im Feld liegt (der Erdbau des Orts, immer): ohne es klaffte der
+            // geschnittene Boden ohne Mauer (gate:haus-welt W9 Waise: der Grund ohne Bau)
+            if (w.phase === "grund") return true;
             if (w.phase === "S1") return nah;
             if (w.phase === "S2") return nah && kontrolle;
             const q = L.buehnen[w.phase];
@@ -2561,6 +2564,18 @@ class AnazhRealm_siedlung_ort {
         });
         plan.haeuser.forEach((h, i) => w("haus", "S2", "haus_" + h.kultur, Object.assign({}, h, { gier: h.phi }), i));
         plan.formationen.forEach((f, i) => w("fels", "S2", "felsbogen", f, i, { dy: 0 }));
+        // DER GRABEN DES GEHEGES (w28-graben-koerper): sein Körper ist das Werk des Plans (`graben.werk`, Bauplan der Zeile B7) um
+        // die Mitte des Rands auf dem Grund des Zoos — sein Grund (S4: das Feld hohl, der gezeichnete Boden geschnitten) liegt im
+        // Erdbau des Orts, und mit ihm steht es (Phase `grund`). Bis hier zeichnete der Boden die Trassen des Plans als Mulde.
+        plan.gehege.forEach((g, i) =>
+            w(
+                "graben",
+                "grund",
+                FC.WERKE[g.graben.werk].kind + "_" + g.graben.werk,
+                { x: g.rand.cx, z: g.rand.cz, seed: g.graben.seed },
+                i
+            )
+        );
         // DIE BÜHNEN DER BREITE: der Spielplatz mit den Werken, die sein Gesetzbuch für ihn trägt (fachwerk WERKE `siteTag`
         // spielplatz, der Plan nennt sie: `spielplatzGeraete`; Bauplan `<kind>_<art>`), und den Bänken der Eltern. Die Arena bleibt
         // Fläche, bis ein Gesetzbuch ihren Hof trägt — nie eine Ersatz-Box.
@@ -2575,11 +2590,16 @@ class AnazhRealm_siedlung_ort {
             arena: { x: o.x + A.x, z: o.z + A.z, r: Math.hypot(A.ex, A.ez) },
             spielplatz: { x: o.x + SP.x, z: o.z + SP.z, r: SP.r },
         };
-        // auf der Prüfbühne (die Wildnis trägt nicht) nur Tore und Kern-Werke
+        // auf der Prüfbühne (die Wildnis trägt nicht) nur Tore, Kern-Werke und die Werke des Grunds (ihr Erdbau liegt auch dort)
         const wildnis = this._wildnisTraegt(o.x, o.z);
         const liste = wildnis
             ? werke
-            : werke.filter((x) => x.art === "tor" || ((x.art === "laterne" || x.art === "bank") && x.phase === "S1"));
+            : werke.filter(
+                  (x) =>
+                      x.art === "tor" ||
+                      x.phase === "grund" ||
+                      ((x.art === "laterne" || x.art === "bank") && x.phase === "S1")
+              );
         return (this._genesisWerkListe = { plan, werke: liste, buehnen, wildnis });
     }
     // EIN ELEMENT DES PLANS STEHT (der EINE Bau `spawnArchitecture`, mit seiner id und als Werk: es weicht keinem Bau und keiner

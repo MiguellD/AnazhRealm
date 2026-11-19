@@ -582,8 +582,9 @@ function abdruckKern(G) {
             art = {};
         // ein Tier ist, wer es ist (Seele, Gattung, Adresse und Erbe im Bestand, Größe, Gehege, Leben) — seine Lage ist die eines
         // Leibs in Bewegung (`leiber`), sein Ort im Bestand trägt der Halter (`_bestandRegion`). Die Adresse ist `indId` des
-        // Gesetzes (Region, Welt-Takt, Lauf-Nummer), das Erbe `a`; die netId ist reiner Sync-Schlüssel der Sitzung (sie zählt
-        // die Leiber der Seite) und kein Merkmal des Tiers — bis leben-erbe hashte der Abdruck sie, der Täter von A gegen A an tier:*.
+        // Gesetzes (Region, Welt-Takt, Lauf-Nummer), das Erbe `a`; die netId ist Sync-Schlüssel (am Leib des Bestands der Hash
+        // dieser Adresse, `_bestandLeib`; am Leib ohne Tier zählt sie die Leiber der Seite) und kein Merkmal des Tiers — bis
+        // leben-erbe hashte der Abdruck sie, der Täter von A gegen A an tier:*.
         const tier = (c, tot) => {
             const u = c.userData || {};
             const t = u._bestand || null;
@@ -887,7 +888,27 @@ async function abdruckLauf({
                         st.timeOfDay = 0.5;
                         await takt();
                     }
+                    // DIE WELT STEHT BEI DIESER UHR (w28-funktion-welt-2): was der Sprung und die Takte regten (der Schnee-Versatz
+                    // wandert mit der Uhr, jede Stufe baut die Chunks im Band neu — unter der Frist der Wanduhr, also je Last
+                    // verschieden weit), baut zu Ende in ZEITLOSEN Takten (der Stempel des letzten Takts: das Spiel baut und lebt
+                    // nicht, `zeitlos` im Loop) — gleich wie viele es braucht, die Uhr und das Leben stehen. Bis hier hashte der
+                    // Abdruck nach den Takten, gleich ob die Welt stand: an a1bf7f16 hielt sie beim Hash „Chunks offen 53“ (genesis)
+                    // und „Chunks offen 27“ (dorf), der Fege-Takt streuLod mitten in seiner Runde — er las, wie weit die Arbeit unter
+                    // der Last kam.
+                    const still = () => {
+                        st._frameOverBudget = false;
+                        if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
+                        try {
+                            r._gameLoopTick(t);
+                        } catch (e) {
+                            r._loopErrorBoundary(e);
+                        }
+                        return sleep(0);
+                    };
+                    // jeder Lauf geht mindestens einen stillen Takt (das EINE Einschwingen): sein letzter Takt sieht dieselbe Uhr
+                    const nStill = await __weltStehtNach(still, 1800);
                     return {
+                        still: nStill,
                         takte: n,
                         ring: r._builtRingRadius(),
                         uhr: st.spielZeit,
