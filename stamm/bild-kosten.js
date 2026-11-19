@@ -2216,8 +2216,8 @@ class AnazhRealm_bild_kosten {
     // DIE KETTE ZEICHNEN (`_loopRender`, nach `pp.render()`): sie liest das aufgelöste Szenen-Bild DIESES Bilds — dieselbe Textur,
     // die `sceneColor` der Post-Kette abtastet (das Ziel der zeitlichen Auflösung, ohne sie das Szenen-Ziel), linear, vor Belichtung
     // und Kurve. Jede Stufe EIN Quad-Pass: vier bilineare Taps je Ziel-Texel auf den Ecken der 2 × 2-Unterblöcke seines 4 × 4-Blocks
-    // (jeder Quell-Pixel zählt einmal mit gleichem Gewicht; wo die Quelle nicht durch 4 teilt, klemmt ClampToEdge — der Rand zählt
-    // dort mehrfach, benannt, nicht geflickt). Die ERSTE Stufe trägt je Tap R = min(Y, deckel) · w und G = w, w = cos³ θ =
+    // (jeder Quell-Pixel zählt einmal mit gleichem Gewicht; wo die Quelle nicht durch 4 teilt, trägt der Tap nur seine
+    // gültigen Pixel, mit ihrem Anteil als Gewicht in R und G). Die ERSTE Stufe trägt je Tap R = min(Y, deckel) · w und G = w, w = cos³ θ =
     // (1 + x² + y²)^(−3/2) (x, y in Einheiten der Brennweite); jede weitere mittelt. Am 1 × 1 ist Z = R ÷ G. Die Größen folgen der
     // Quelle (ihre Größe hat die Post-Kette in diesem Bild gesetzt). Rücklese des 1 × 1 asynchron, höchstens EINE im Flug, nach
     // `_augeZ` (Puffer-Einheiten) mit dem Stempel des Bilds. Ein Bruch meldet sich beim EINEN Melder (`_augeBruch`), still nie.
@@ -2267,11 +2267,20 @@ class AnazhRealm_bild_kosten {
                         [1, 3],
                         [3, 3],
                     ]) {
-                        const uv = b.add(vec2(dx, dy)).div(g);
+                        // DER RAND: ein Tap deckt die Quell-Pixel (b+d−1, b+d) je Achse; n zählt, wie viele davon in der Quelle
+                        // liegen (0…2). Er tastet die Mitte der GÜLTIGEN ab und trägt das Gewicht nx·ny ÷ 4 in R UND G — so
+                        // zählt jeder Quell-Pixel einmal, auch wo die Quelle nicht durch 4 teilt (ohne das trug bei 1 080
+                        // Zeilen die untere Bildhälfte 86,8 % des 1 × 1: ClampToEdge zählte den Rand mehrfach).
+                        const n = g.sub(b.add(vec2(dx - 1, dy - 1))).clamp(0, 2);
+                        const gew = n.x.mul(n.y).mul(0.25);
+                        const uv = b
+                            .add(vec2(dx, dy))
+                            .sub(vec2(2).sub(n.max(1)).mul(0.5))
+                            .div(g);
                         const c = q.sample(uv).level(0);
                         if (i > 0) {
-                            sr.addAssign(c.r);
-                            sg.addAssign(c.g);
+                            sr.addAssign(c.r.mul(gew));
+                            sg.addAssign(c.g.mul(gew));
                             continue;
                         }
                         const Y = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
@@ -2279,8 +2288,8 @@ class AnazhRealm_bild_kosten {
                         const x = uv.x.mul(2).sub(1).mul(K.U.tanH).mul(K.U.aspekt);
                         const y = float(1).sub(uv.y.mul(2)).mul(K.U.tanH);
                         const w = x.mul(x).add(y.mul(y)).add(1).pow(-1.5);
-                        sr.addAssign(ys.mul(w));
-                        sg.addAssign(w);
+                        sr.addAssign(ys.mul(w).mul(gew));
+                        sg.addAssign(w.mul(gew));
                     }
                     return vec4(sr.mul(0.25), sg.mul(0.25), 0, 1);
                 })();

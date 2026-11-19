@@ -3388,13 +3388,13 @@ AnazhRealm._schirmDreieck = __weltLicht.schirmDreieck; // der Baustein der Engin
 // Jupiter −2,3 cremeweiß, Mars −1,0 rötlich; Pixel knapp über dem hellsten Stern). `mondGegenHimmel` =
 // Leuchtdichte des Vollmonds gegen den blauen Tageshimmel (≈ 2500 : 5000 cd/m²) — am Tag ein blasser Schleier.
 // DAS AUGE (Licht-Spike, die Mess-Kette `_augeKetteZeichnen` und ihr EIN Schreiber `_dayNightApplyBelichtung`):
-// k(Z) = kEPuffer · (Z ÷ zE)^(−m) in Puffer-Einheiten, zE = zECdM2 ÷ einheitCdM2 (0,2654 Einheiten).
+// k(Z) = kEPuffer · (Z ÷ zE)^(−m) in Puffer-Einheiten, zE = zECdM2 ÷ einheitCdM2 (0,2046 Einheiten: im Spiel gemessen an der Mess-Wiese am Mittag, 1 920 × 1 080, k = kEPuffer; die Rechnung am Modell nannte 4 270).
 AnazhRealm.AUGE = Object.freeze({
     // die Kompensation (der EINE Stellwert, zur Laufzeit am Instanz-Feld `_augeM`): aus dem Anker Vollmond-Wiese 0,1 lx
     // Boden-Luma 36,5; 0,04 über dem sekundär belegten Band 0,2–0,9, Hood 1979 über Reinhard & Devlin 2005
     m: 0.9415,
     // das Raumwinkel-Mittel der Mess-Wiese am Mittag (cd/m²) — die Eich-Sicht
-    zECdM2: 4270,
+    zECdM2: 3292,
     // das gemessene k von main am Mittag der Mess-Wiese (Puffer-Einheiten) — das k an der Eich-Sicht
     kEPuffer: 0.527,
     // das S von K1 in k·L: der Deckel der ersten Stufe ist schulter ÷ k (Puffer-Einheiten)
