@@ -2985,10 +2985,10 @@
    "summe": {
     "kriterien": 33,
     "sprossen": 223,
-    "heute": 6,
+    "heute": 5,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 3.4,
+    "anteilHeute": 3.1,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -4505,7 +4505,7 @@
        "richter": "Rückkehr nach 1 Spieljahr an 100 Orte: Bestand verändert nach Saison und Jagd, nie zurückgesetzt"
       }
      ],
-     "heute": 1,
+     "heute": 0,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Alte Tiere K5 Staffel 1: ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät (Klassen-Maske tier ≥ 200 px); Herde ≥ 20 und 150 Tiere im Ring offen. — KARTE: 0 — Sichtungen nur an einem Gerät gebucht (tiere.K5).",
@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 5,
+    "heute": 6,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 2,
+    "anteilHeute": 2.4,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -15028,7 +15028,7 @@
        "richter": "100 Saaten: „lebendig und eigen\" ≥ 80 %, Paare unterscheidbar ≥ 90 %; Ruftonhöhe ↔ Körpergröße Allometrie-Steigung ±20 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "kern",
      "beleg": "neun Textur-Gesetze (klang-core.js:668-766), Tier-Ruf f0 ∝ L^−0,9 (:495-497), Wind r 0,81/0,79 (§32.K1, K2 je 2/2); Verkehr K-nah (stamm/klang.js:1092-1110); keine Bewohner-Klänge, kein Stadtteppich; Preis Radeon ROT. — KARTE: Kern 1 — Zensus am Abgriff, Wind gesehen = gehört an beiden Geräten (klang.K1, klang.K2); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget ist kein Preis mehr (R8).",
@@ -20102,8 +20102,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 34,
-  "nachwache": 0
+  "beide": 32,
+  "nachwache": 2
  },
  "zusammengelegt": [
   {
