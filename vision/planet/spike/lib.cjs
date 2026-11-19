@@ -67,91 +67,22 @@ function adresse(S, x, y, z, fussKm, aus) {
   return o;
 }
 
-// ══ STUFE S5 WASSER — der Prototyp des Gesetzes (nur im Spike) ══════════════════════════════════════════════
-// Das Nicht-Lokale (Einzugsgebiet, Senke, Überlauf) wird auf EINEM festen Gitter je (Same, Zeit) gelöst — N_W Fibonacci-Zellen,
-// unabhängig vom Radius; an der Adresse wird nur gelesen (Wendland-Gewichte über die Zellen im Umkreis 2·d).
-// Höhe der Zelle: planetPunktR mit fussKm = d/2 (Oktaven unter d fallen weich ab). Abfluss: planetKlimaR.abflussMm (Turc-Pike im
-// Kern). Lauf: Priority-Flood (Barnes et al. 2014) vom Meer aus → Empfänger je Zelle, Senken gefüllt. See: Zelle mit gefüllter
-// Höhe > Höhe. Überlauf: ein See läuft über, wenn sein Zufluss Q_in ≥ (PET − P)·A_See (PET des Kerns: 400 + 45·T mm/a);
-// sonst ist er ein Endsee und sein Zufluss erreicht das Meer nicht.
-class Halde { // binäre Halde über (Schlüssel, Index)
-  constructor(n) { this.k = new Float64Array(n); this.i = new Int32Array(n); this.n = 0; }
-  push(k, i) { let j = this.n++; while (j > 0) { const p = (j - 1) >> 1; if (this.k[p] < k || (this.k[p] === k && this.i[p] < i)) break; this.k[j] = this.k[p]; this.i[j] = this.i[p]; j = p; } this.k[j] = k; this.i[j] = i; }
-  pop() { const r = this.i[0], k = this.k[--this.n], i = this.i[this.n]; let j = 0; for (;;) { let c = 2 * j + 1; if (c >= this.n) break; if (c + 1 < this.n && (this.k[c + 1] < this.k[c] || (this.k[c + 1] === this.k[c] && this.i[c + 1] < this.i[c]))) c++; if (this.k[c] > k || (this.k[c] === k && this.i[c] > i)) break; this.k[j] = this.k[c]; this.i[j] = this.i[c]; j = c; } this.k[j] = k; this.i[j] = i; return r; }
-}
-function raster(F, N, zelle) { // Raumhash über Einheitsvektoren
-  const K = Math.ceil(2 / zelle) + 3, M = new Map();
-  const key = (x, y, z) => { const a = Math.floor((x + 1) / zelle) + 1, b = Math.floor((y + 1) / zelle) + 1, c = Math.floor((z + 1) / zelle) + 1; return a + K * (b + K * c); };
-  for (let i = 0; i < N; i++) { const k = key(F[3 * i], F[3 * i + 1], F[3 * i + 2]); let l = M.get(k); if (!l) M.set(k, l = []); l.push(i); }
-  return { K, zelle, M, key, um(x, y, z, r, cb) { const a = Math.floor((x + 1) / zelle) + 1, b = Math.floor((y + 1) / zelle) + 1, c = Math.floor((z + 1) / zelle) + 1, s = Math.ceil(r / zelle); for (let dz = -s; dz <= s; dz++) for (let dy = -s; dy <= s; dy++) for (let dx = -s; dx <= s; dx++) { const l = M.get((a + dx) + K * ((b + dy) + K * (c + dz))); if (l) for (const i of l) cb(i); } } };
-}
+// ══ STUFE S5 WASSER — das Gesetz steht im Kern (planet-core `planetWasserGitter` · `planetWasserR`, Bau-Welle 1 B3) ═════════════════
+// Hier nur der Mantel der Proben: dieselben Namen, die Zeit der beiden Gänge (Zellen = Höhe + Klima je Zelle, Lauf = Flut, Seen,
+// Überlauf; planetWasserGitter ist genau wasserLauf(wasserZellen(S))), und der Umkreis-Gang über den Index des Kerns (b-stetig sucht
+// die nächste Zelle). N_W steht im Kern fest; DIE PET liest der Kern (planetPet).
 function wasserGitter(S, NW) {
-  const t0 = ns();
-  const R = S.R, F = fib(NW), d = Math.sqrt(8 * Math.PI / (Math.sqrt(3) * NW)); // Gitterweite (rad), hexagonal
-  const fuss = 0.5 * d * R, A = 4 * Math.PI * R * R / NW; // km, km²
-  const h = new Float64Array(NW), q = new Float64Array(NW), pM = new Float64Array(NW), tJ = new Float64Array(NW);
-  const pp = {}, kk = {};
-  for (let i = 0; i < NW; i++) {
-    const x = F[3 * i], y = F[3 * i + 1], z = F[3 * i + 2];
-    h[i] = P.planetPunktR(S, x, y, z, fuss, pp);
-    P.planetKlimaR(S, x, y, z, -1, kk, pp);
-    q[i] = h[i] > 0 ? kk.abflussMm : 0; pM[i] = kk.niederschlagMm; tJ[i] = kk.tJahrC;
-  }
-  const t1 = ns();
-  const G = raster(F, NW, d), nb = [], rN = 1.45 * d, cN = Math.cos(rN);
-  for (let i = 0; i < NW; i++) { const l = []; G.um(F[3 * i], F[3 * i + 1], F[3 * i + 2], rN, (j) => { if (j !== i && F[3 * i] * F[3 * j] + F[3 * i + 1] * F[3 * j + 1] + F[3 * i + 2] * F[3 * j + 2] >= cN) l.push(j); }); nb.push(Int32Array.from(l)); }
-  // Priority-Flood vom Meer aus
-  const voll = new Float64Array(NW), emp = new Int32Array(NW).fill(-1), ord = new Int32Array(NW), gesehen = new Uint8Array(NW), H = new Halde(NW);
-  let n = 0;
-  for (let i = 0; i < NW; i++) if (h[i] <= 0) { voll[i] = h[i]; emp[i] = i; gesehen[i] = 1; H.push(h[i], i); }
-  while (H.n) { const c = H.pop(); ord[n++] = c; for (const j of nb[c]) { if (gesehen[j]) continue; gesehen[j] = 1; voll[j] = h[j] > voll[c] ? h[j] : voll[c]; emp[j] = c; H.push(voll[j], j); } }
-  // Abfluss-Summe (m³/a) und Einzugs-Fläche (km²) in umgekehrter Flut-Folge
-  const acc = new Float64Array(NW), fl = new Float64Array(NW), rang = new Int32Array(NW);
-  for (let k = 0; k < n; k++) rang[ord[k]] = k;
-  for (let k = n - 1; k >= 0; k--) { const i = ord[k]; if (h[i] > 0) { acc[i] += q[i] / 1000 * A * 1e6; fl[i] += A; } const e = emp[i]; if (e !== i && e >= 0) { acc[e] += acc[i]; fl[e] += fl[i]; } }
-  // Seen: Zusammenhangs-Komponenten der Zellen mit voll > h (nur über Land-Niveau)
-  const see = new Int32Array(NW).fill(-1), seen = [];
-  for (let i = 0; i < NW; i++) {
-    if (see[i] >= 0 || !(voll[i] > h[i] + 1e-6) || voll[i] <= 0) continue;
-    const id = seen.length, st = [i], zellen = []; see[i] = id;
-    while (st.length) { const c = st.pop(); zellen.push(c); for (const j of nb[c]) if (see[j] < 0 && voll[j] > h[j] + 1e-6 && voll[j] > 0) { see[j] = id; st.push(j); } }
-    let aus = -1, rMin = 1e9; for (const c of zellen) { if (!(emp[c] >= 0 && see[emp[c]] === id) && rang[c] < rMin) { rMin = rang[c]; aus = c; } }
-    let pSum = 0, eSum = 0; for (const c of zellen) { pSum += pM[c]; eSum += 400 + 45 * Math.max(0, tJ[c]); }
-    seen.push({ id, zellen, aus, A: zellen.length * A, pMm: pSum / zellen.length, petMm: eSum / zellen.length, endsee: false });
-  }
-  seen.sort((a, b) => rang[b.aus] - rang[a.aus]); // stromauf zuerst
-  let endN = 0;
-  for (const L of seen) {
-    const qIn = acc[L.aus], verlust = Math.max(0, L.petMm - L.pMm) / 1000 * L.A * 1e6;
-    if (qIn < verlust) { // Endsee: sein Zufluss erreicht das Meer nicht
-      L.endsee = true; endN++;
-      const a0 = acc[L.aus], f0 = fl[L.aus]; let c = emp[L.aus];
-      while (c >= 0 && h[c] > 0) { acc[c] -= a0; fl[c] -= f0; if (emp[c] === c) break; c = emp[c]; }
-    }
-  }
-  // Ziel jeder Zelle: Meer (Mündungs-Zelle) oder Endsee
-  // zielMeer: die Meeres-Zelle, in die der Lauf mündet (−1: endet in einem Endsee, dann zielSee = dessen id)
-  const zielMeer = new Int32Array(NW).fill(-1), zielSee = new Int32Array(NW).fill(-1), endseeVon = new Int32Array(NW).fill(-1);
-  for (const L of seen) if (L.endsee) for (const c of L.zellen) endseeVon[c] = L.id;
-  for (let k = 0; k < n; k++) {
-    const i = ord[k];
-    if (h[i] <= 0) { zielMeer[i] = i; continue; }
-    if (endseeVon[i] >= 0) { zielSee[i] = endseeVon[i]; continue; }
-    zielMeer[i] = zielMeer[emp[i]]; zielSee[i] = zielSee[emp[i]];
-  }
-  const ziel = { meer: zielMeer, see: zielSee };
-  const t2 = ns();
-  return { S, R, NW, F, d, A, h, q, pM, tJ, nb, voll, emp, ord, n, acc, fl, see, seen, endN, ziel, endseeVon, G, ms: { zellen: (t1 - t0) / 1e6, fluss: (t2 - t1) / 1e6 } };
+  if (NW !== P.PLANET_WASSER_N) throw new Error('wasserGitter: N_W steht im Kern fest (' + P.PLANET_WASSER_N + '), nicht ' + NW);
+  const t0 = ns(), Z = P._intern.wasserZellen(S), t1 = ns(), W = P._intern.wasserLauf(Z), t2 = ns(), I = W.idx;
+  const G = { um(x, y, z, r, cb) { // jede Zelle der Würfel um (x, y, z) bis r; der Leser prüft den Abstand selbst
+    const K = I.K, ze = I.ze, s = Math.ceil(r / ze), a = Math.floor((x + 1) / ze) + 1, b = Math.floor((y + 1) / ze) + 1, c = Math.floor((z + 1) / ze) + 1;
+    for (let dz = -s; dz <= s; dz++) for (let dy = -s; dy <= s; dy++) for (let dx = -s; dx <= s; dx++) {
+      const A = a + dx, B = b + dy, C = c + dz; if (A < 0 || B < 0 || C < 0 || A >= K || B >= K || C >= K) continue;
+      const k = A + K * (B + K * C); for (let e = I.kopf[k]; e < I.kopf[k + 1]; e++) cb(I.liste[e]);
+    } } };
+  return Object.assign({}, W, { NW: W.N, ziel: { meer: W.zielMeer, see: W.zielSee }, seen: { length: W.seeN }, G, ms: { zellen: (t1 - t0) / 1e6, fluss: (t2 - t1) / 1e6 } });
 }
-// Adresse → Wasser: Wendland-gewichtete Abfluss-Menge (m³/s) und See-Spiegel über die Zellen im Umkreis 2·d (stetig)
-function wasserAt(W, x, y, z, aus) {
-  const r = 2 * W.d, cR = Math.cos(r); let sw = 0, sq = 0, ss = 0;
-  W.G.um(x, y, z, r, (i) => {
-    const F = W.F, c = x * F[3 * i] + y * F[3 * i + 1] + z * F[3 * i + 2]; if (c < cR) return;
-    const t = Math.acos(Math.min(1, c)) / r, w = Math.pow(1 - t, 4) * (4 * t + 1);
-    sw += w; sq += w * W.acc[i] / 31557600; ss += w * (W.voll[i] - W.h[i]);
-  });
-  const o = aus || {}; o.qM3s = sw > 0 ? sq / sw : 0; o.seeTiefeM = sw > 0 ? ss / sw : 0; o.gewicht = sw; return o;
-}
+// Adresse → Wasser (m³/s, See-Tiefe m), stetig: der Kern
+function wasserAt(W, x, y, z, aus) { return P.planetWasserR(W, x, y, z, aus); }
 
-module.exports = { P, KERN, KERN_SHA, kopf, zufall, einheit, fib, verschiebe, zufallsTangente, bogen, breiteGrad, quantil, median, mittel, ns, planVon, erdKoerper, adresse, wasserGitter, wasserAt, raster };
+module.exports = { P, KERN, KERN_SHA, kopf, zufall, einheit, fib, verschiebe, zufallsTangente, bogen, breiteGrad, quantil, median, mittel, ns, planVon, erdKoerper, adresse, wasserGitter, wasserAt };
