@@ -3655,7 +3655,12 @@ class AnazhRealm_kreatur_verhalten {
                             movingNow,
                             creature.userData.emotions
                         );
+                        if (animDiv > 1) this._kreaturPoseZiel(creature);
+                        else U._poseBild = null;
                     }
+                    // DAS BILD ZWISCHEN DEN AUSWERTUNGEN (S3): auf einer gröberen Stufe der Leiter gleitet die Gestalt je Bild
+                    // zum Stand der letzten Auswertung, statt nach 2–8 stillen Bildern zu springen
+                    if (animDiv > 1) this._kreaturPoseGleit(creature, animDiv);
                 }
             }
             // DAS SCHNAPPEN (Posten 5): nach der Lage UND der Pose des Takts berührt der Kopf den Leib — oder nicht

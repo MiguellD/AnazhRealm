@@ -2421,6 +2421,52 @@ class AnazhRealm_koerper_leib {
         if (!Number.isFinite(ud._traegerY) || ud._motionZustand === "schwimmen" || ud._hopH > 0) return ebene;
         return this._fussBoden(x, z, ud._traegerY, ud._traegerStruktur === true);
     }
+    // DIE GESTALT ZWISCHEN DEN STUFEN DER LEITER (S3 der Herde H3, `KREATUR_POSE_SPRUNG` rad je Bild): wertet die Leiter nur
+    // jedes 2.–8. Bild aus, sprang die Gestalt — ein ziehender Hirsch auf 37–64 m nach 5–8 stillen Bildern um bis zu 0,28 rad
+    // am Hals und 0,26 am Schwanz. Die Kanäle der Gestalt (Rumpf, Hals, Kopf, jedes Schwanz-Glied; je Kanal die Achse, die der
+    // Kern stellt — die Beine der Auswertung stehen im Raum des Rumpfs: sein Nicken zwischen zwei Auswertungen, ≤ 0,05 rad je
+    // Bild, trägt die Pfoten um ≤ 4 cm je Meter Bein mit, nur auf den groben Stufen jenseits der halben Gestalt-Grenze), halten nach jeder
+    // Auswertung ihren Stand als Ziel (`_kreaturPoseZiel`) und das Bild gleitet je Bild ein `animDiv`-tel zu ihm
+    // (`_kreaturPoseGleit`, höchstens KREATUR_POSE_SPRUNG) — die Pose des Kerns (seine Haltung, sein Gang) bleibt unberührt,
+    // nur die gezeichneten Knoten gleiten. Kosten: eine Handvoll Winkel je Leib und Bild auf den groben Stufen.
+    _kreaturPoseKanaele(tb) {
+        const T = tb && tb.teile;
+        if (!T) return null;
+        const K = tb._poseKanaele || (tb._poseKanaele = []);
+        if (!K.length) {
+            if (T.wolf) K.push([T.wolf.rotation, "x"]);
+            if (T.neckRoot) K.push([T.neckRoot.rotation, "x"]);
+            if (T.headGroup) K.push([T.headGroup.rotation, "x"]);
+            for (const g of tb.tailSegs || []) K.push([g.rotation, "y"]);
+        }
+        return K;
+    }
+    _kreaturPoseZiel(creature) {
+        const U = creature.userData;
+        const K = this._kreaturPoseKanaele(U._tierBaum);
+        if (!K) return;
+        const Z = U._poseZiel || (U._poseZiel = new Array(K.length).fill(0));
+        const B = U._poseBild;
+        for (let k = 0; k < K.length; k++) {
+            Z[k] = K[k][0][K[k][1]];
+            // das Bild bleibt, wo es war: es gleitet ab hier zum neuen Ziel
+            if (B) K[k][0][K[k][1]] = B[k];
+        }
+        if (!B) U._poseBild = Z.slice();
+    }
+    _kreaturPoseGleit(creature, animDiv) {
+        const U = creature.userData;
+        const B = U._poseBild;
+        const Z = U._poseZiel;
+        const K = B && Z && this._kreaturPoseKanaele(U._tierBaum);
+        if (!K) return;
+        const S = AnazhRealm.KREATUR_POSE_SPRUNG;
+        for (let k = 0; k < K.length; k++) {
+            const d = (Z[k] - B[k]) / animDiv;
+            B[k] += d > S ? S : d < -S ? -S : d;
+            K[k][0][K[k][1]] = B[k];
+        }
+    }
 
     _tetrapodaSoulParts(soulKey, ovOpt) {
         const recId = AnazhRealm.TETRAPODA_SOUL_MAP[soulKey];
@@ -3572,6 +3618,9 @@ AnazhRealm.GANG_DECKEL_RAD = 0.6;
 // Höhle liegt die Karte um Höhlen-Höhe (≥ 2,4 m) plus Decke darüber, sie trägt dort die Oberkante der Säule, nie den Boden
 // unter dem Körper.
 AnazhRealm.STAND_SICHT_BAND = 2.0;
+// Der größte Sprung eines Gestalt-Kanals (Hals, Kopf, Rumpf, Schwanz) je Bild, den die Anim-Raten-Leiter zulässt (rad; S3 der
+// Herde H3): zwischen zwei Auswertungen gleitet das Bild höchstens so weit je Bild (`_kreaturPoseGleit`).
+AnazhRealm.KREATUR_POSE_SPRUNG = 0.05;
 AnazhRealm.SOHLE_PUNKT = Object.freeze([0]); // die Sohle ohne gebauten Fuß: die Stelle unter dem Knöchel (`_gaitProbe`)
 // Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
 AnazhRealm.PLAYER_KH = globalThis.__koerperCore.LEIB.kopfM; // die Kopf-Einheit des Gesetzbuchs (koerper-core LEIB.kopfM)

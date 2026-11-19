@@ -1350,38 +1350,48 @@ async function kreaturProben(r, T, opts) {
                 return { kopfM: k.y - bK, kopfMitteM: k.y - b0, schulterM: sch - bS, ueberSchulterM: k.y - sch, hangM: bK - b0, unten: k.y - bK < 0.5 * (sch - bS) }; // prettier-ignore
             };
             // DER LEIB AM BODEN (R1): der Widerrist — die höchste gehäutete Ecke im Band 0,15 hinter der Schulter (im Raum des
-            // Tiers, +z vorn) — und die vier Pfoten: über dem Grund an ihrem Ort, und ob sie unter dem Rumpf stehen (längs
-            // zwischen Hüfte − 0,1 und Schulter + 0,1, quer ≤ 0,3 im Raum des Tiers)
+            // Tiers, +z vorn) — und je Huf die SOHLE: die tiefste Ecke der Haut (nie das Fell, `aSchale`), deren Bindung am
+            // Fuß-Knochen der Kette hängt (Gewicht > 0,5 — wie `tierBeinMass` im Kern), gegen die Gelände-Höhe UNTER dieser Ecke.
+            // Vorher maß die Probe den Ursprung der Fuß-Gruppe (das Fessel-Gelenk, 0,25–0,32 m über dem Grund) als „Pfote“.
             const leibMass = (c) => {
                 const Tt = c.userData._tierBaum?.teile;
                 if (!Tt || !Tt.legFL || !Tt.legHL) return null;
                 c.updateMatrixWorld(true);
-                const lok = (o) => c.worldToLocal(new T.Vector3().setFromMatrixPosition(o.matrixWorld));
-                const [sz, hz] = [lok(Tt.legFL).z, lok(Tt.legHL).z];
+                const sz = c.worldToLocal(new T.Vector3().setFromMatrixPosition(Tt.legFL.matrixWorld)).z;
+                const fuss = [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP];
+                const sohle = fuss.map(() => null);
                 const q = new T.Vector3();
                 let wr = -Infinity;
                 c.traverse((m) => {
                     if (!m.isSkinnedMesh || !m.visible) return;
-                    const pos = m.geometry.attributes.position;
-                    for (let i = 0; i < pos.count; i++) {
-                        q.fromBufferAttribute(pos, i);
+                    const A = m.geometry.attributes;
+                    const bi = fuss.map((b) => (b ? m.skeleton.bones.indexOf(b) : -1));
+                    for (let i = 0; i < A.position.count; i++) {
+                        q.fromBufferAttribute(A.position, i);
                         (m.applyBoneTransform || m.boneTransform).call(m, i, q);
                         q.applyMatrix4(m.matrixWorld);
                         const l = c.worldToLocal(q.clone());
                         if (l.z < sz && l.z > sz - 0.15) wr = Math.max(wr, q.y);
+                        if (A.aSchale) continue;
+                        for (let k = 0; k < 4; k++) {
+                            const j = bi[k];
+                            if (j < 0) continue;
+                            let w = 0;
+                            for (let n = 0; n < 4; n++) if (A.skinIndex.getComponent(i, n) === j) w += A.skinWeight.getComponent(i, n);
+                            if (w > 0.5 && (!sohle[k] || q.y < sohle[k].y)) sohle[k] = { x: q.x, y: q.y, z: q.z };
+                        }
                     }
                 });
-                const pf = [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP].filter(Boolean);
-                const unter = pf.every((o) => {
-                    const l = lok(o);
-                    return l.z >= Math.min(sz, hz) - 0.1 && l.z <= Math.max(sz, hz) + 0.1 && Math.abs(l.x) <= 0.3;
-                });
-                const ueber = pf.map((o) => {
-                    const w = new T.Vector3().setFromMatrixPosition(o.matrixWorld);
-                    return rund(w.y - r.getTerrainHeightAt(w.x, w.z), 3);
-                });
                 const g0 = r.getTerrainHeightAt(c.position.x, c.position.z);
-                return { widerristM: Number.isFinite(wr) ? rund(wr - g0, 3) : null, pfotenUeberGrundM: ueber, pfotenUnterRumpf: unter };
+                // der Grund unter dem Huf, wie das Auge ihn sieht: die gezeichnete Boden-Karte (`_bodenSichtAt`), ohne Karte (ungebaut,
+                // headless — dort liest die Karte leer, weit außerhalb des Stand-Bands) das Gelände-Gesetz
+                const grund = (x, z) => {
+                    const g = r.getTerrainHeightAt(x, z);
+                    const k = typeof r._bodenSichtAt === "function" ? r._bodenSichtAt(x, z) : null;
+                    return Number.isFinite(k) && Math.abs(k - g) <= r.constructor.STAND_SICHT_BAND ? k : g;
+                };
+                const hufe = sohle.map((p) => (p ? rund(p.y - grund(p.x, p.z), 3) : null));
+                return { widerristM: Number.isFinite(wr) ? rund(wr - g0, 3) : null, sohleUeberGrundM: hufe };
             };
             // DAS RECHTECK eines Tiers im Bild (W × H px): die Knoten seines Baums, projiziert — die Höhe in px und die Fläche im Maß
             // 1280 × 720 (die Einheit des Solls, zerlege-linse `kreisGang`)
@@ -1419,6 +1429,7 @@ async function kreaturProben(r, T, opts) {
             const winkelAlt = new Map();
             const spur = glieder.map(() => []);
             const phasen = ZUST.map((z) => ({ zustand: z, taetigkeit: TAET[z], takte: 0, getroffen: 0, gezeigt: 0, flucht: 0, leib: 0, satz: 0, fern: 0, wegM: 0, zustaende: {}, sprungM: 0, sprungBei: null, laeufer: { n: 0, erstK: null, leit: 0, task: {}, zumLeitM: [] } })); // prettier-ignore
+            const hufe = [];
             const grasenLeib = { takte: 0, ohneHals: 0, eingefroren: 0, unten: 0, hals: [], fade: [], abstand: [], kopf: [], schulter: [], hang: [] };
             const aesen = { proben: 0, unten: 0, leibProben: 0, leibUnten: 0, leib: 0, satz: 0, satzUnten: 0, fern: 0 };
             const zug = { takte: 0, art: {}, diag: [], v: [] };
@@ -1527,11 +1538,16 @@ async function kreaturProben(r, T, opts) {
                             const d = Math.abs(w[n] - a.w[n]);
                             const S = sprung[n];
                             if (d > S.max)
-                                Object.assign(S, { max: d, t: rund(k / 60, 2), phase: z, tier: i, von: rund(a.w[n], 3), nach: rund(w[n], 3), zustand: a.z === zs ? zs : `${a.z} → ${zs}`, taktNachWechsel: k - wechsel }); // prettier-ignore
+                                Object.assign(S, { max: d, t: rund(k / 60, 2), phase: z, tier: i, von: rund(a.w[n], 3), nach: rund(w[n], 3), zustand: a.z === zs ? zs : `${a.z} → ${zs}`, taktNachWechsel: k - wechsel, still: k - (a.g[n] ?? k), augeM: rund(Math.hypot(c.position.x - cam.position.x, c.position.z - cam.position.z), 1) }); // prettier-ignore
                             if (k - wechsel > 30 && d > S.stetig)
                                 Object.assign(S, { stetig: d, stetigBei: `t ${rund(k / 60, 2)} s, Tier ${i}, ${zs}, ${rund(a.w[n], 3)} → ${rund(w[n], 3)}` }); // prettier-ignore
                         }
-                    winkelAlt.set(c, { w, z: zs, wechsel });
+                    // je Kanal der letzte Takt, in dem er sich bewegte (`still`: Takte ohne Änderung vor dem Sprung — die Raten-Leiter)
+                    const g = Object.fromEntries(Object.keys(KAN).map((n) => [n, a && w[n] === a.w[n] ? (a.g[n] ?? k) : k]));
+                    winkelAlt.set(c, { w, z: zs, wechsel, g });
+                    // DIE HUFE AM BODEN: je stehendem Leib in stehen und äsen alle 0,5 s die Sohle jedes Hufs über dem Grund unter ihr
+                    if ((z === "stehen" || z === "aesen") && zs.endsWith("/steht") && kp % 30 === 0)
+                        { const LM = leibMass(c); (LM?.sohleUeberGrundM || []).forEach((h, j) => { if (h !== null) hufe.push({ h, z, i, j, t: rund(k / 60, 2), frei: !!u._animEingefroren, a: zs }); }); } // prettier-ignore
                     if (z === "aesen") {
                         const kf = kopf(c);
                         aesen.proben++;
@@ -1580,7 +1596,30 @@ async function kreaturProben(r, T, opts) {
                         const lp = leit.position;
                         const [ex, ez] = [H.x - lp.x, H.z - lp.z];
                         const el = Math.hypot(ex, ez) || 1;
-                        const N = neben(lp.x + (ex / el) * NAH_M, lp.z + (ez / el) * NAH_M);
+                        // DIE SICHTLINIE (Flucht v14: bei 7,5 s stand N im Fels, bei 2 s füllte ein Stamm das Bild): N dreht in 30°-Schritten
+                        // um das Leittier, bis vom Auge zur Leib-Mitte kein Gelände (je 0,5 m unter der Linie) und kein Bau, Fels oder
+                        // Stamm (`_fieldRaycast`, Radius 0,15 m) liegt; `nahDreh` nennt die Drehung (null: keine freie Linie)
+                        const ziel = [lp.x, lp.y + 0.6, lp.z];
+                        const frei = (P) => {
+                            const ey = P.y - 0.5 + NAH_HOEHE;
+                            // das Auge in keinem Körper: von 2 m darüber hinab zum Auge trifft der Strahl nichts (der Fels um die Kamera)
+                            if (r._fieldRaycast(P.x, ey + 2, P.z, P.x, ey, P.z).hit) return false;
+                            for (let f = 0.06; f < 0.95; f += 0.5 / NAH_M) {
+                                const [x, y, z] = [P.x + (ziel[0] - P.x) * f, ey + (ziel[1] - ey) * f, P.z + (ziel[2] - P.z) * f];
+                                if (r.getTerrainHeightAt(x, z) > y - 0.05) return false;
+                            }
+                            return !r._fieldRaycast(P.x, ey, P.z, ziel[0], ziel[1], ziel[2], { radius: 0.15 }).hit;
+                        };
+                        const w0 = Math.atan2(ez / el, ex / el);
+                        let N = null;
+                        sch.nahDreh = null;
+                        for (const dg of [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180]) {
+                            const w = w0 + (dg * Math.PI) / 180;
+                            const P = neben(lp.x + Math.cos(w) * NAH_M, lp.z + Math.sin(w) * NAH_M);
+                            if (frei(P)) ((N = P), (sch.nahDreh = dg));
+                            if (N) break;
+                        }
+                        N ||= neben(lp.x + (ex / el) * NAH_M, lp.z + (ez / el) * NAH_M);
                         cam.position.set(N.x, N.y - 0.5 + NAH_HOEHE, N.z);
                         cam.lookAt(lp.x, lp.y + 0.6, lp.z);
                         cam.updateMatrixWorld(true);
@@ -1778,6 +1817,7 @@ async function kreaturProben(r, T, opts) {
                     kopfUnten: sc.nah.filter((t) => t.kopf?.unten).length,
                     maskeMass: sc.nah.map((t) => t.maskeMass),
                     leit: sc.leitLeib,
+                    dreh: sc.nahDreh,
                     dunkelPx: sc.nah.map((t) => t.dunkelPx),
                 },
                 dunkelPxH: sc.tiere.map((t) => t.dunkelPx ?? null),
@@ -1842,6 +1882,7 @@ async function kreaturProben(r, T, opts) {
                     bilder: proS,
                     leibN: Object.fromEntries(ZUST.map((zz) => [zz, proS.filter((p) => p.zustand === zz && p.nah).map((p) => p.nah.leib)])), // prettier-ignore
                 },
+                hufe: hufe.length ? (() => { const a = hufe.map((x) => x.h); const m = hufe.reduce((p, x) => (Math.abs(x.h) > Math.abs(p.h) ? x : p)); return { roh: hufe.filter((x) => Math.abs(x.h) > 0.03), proben: a.length, maxAbsM: rund(Math.abs(m.h), 3), bei: m, median: rund(median(a), 3), p10: rund(quantil(a, 0.1), 3), p90: rund(quantil(a, 0.9), 3) }; })() : null, // prettier-ignore
                 s2,
                 s3: Object.fromEntries(Object.entries(sprung).map(([n, S]) => [n, { ...S, max: rund(S.max, 4), stetig: rund(S.stetig, 4) }])), // prettier-ignore
                 s4: {
@@ -3937,7 +3978,9 @@ function urteil(name, z) {
         soll(z.bewegungM > 1, `die Bühne steht: Bewegung ${z.bewegungM} m über den Fahrplan (Soll > 1 m)`);
         const S1 = z.s1.aesen;
         soll(S1.ab200 === z.n, `S1: ${S1.ab200} von ${z.n} Tieren ≥ 200 px im Zustand äsen (${z.s1.quelle}; Soll ${z.n} von ${z.n})`); // prettier-ignore
-        soll(S1.kopfUntenAnteil >= 0.4, `S1: Anteil Kopf unten ${S1.kopfUntenAnteil} im Zustand äsen (Soll ≥ 0,4)`);
+        // Kopf unten urteilt, wer äst — der Wolf äst nicht (Ethogramm nahrung 0, `wolfSatt`): die Zeile fällt für ihn
+        if (!z.einstellung.wolfSatt) soll(S1.kopfUntenAnteil >= 0.4, `S1: Anteil Kopf unten ${S1.kopfUntenAnteil} im Zustand äsen (Soll ≥ 0,4)`); // prettier-ignore
+        soll(z.hufe && z.hufe.maxAbsM <= 0.03, z.hufe ? `Hufe: Sohle über dem Grund unter ihr bis ${z.hufe.maxAbsM} m (${z.hufe.proben} Proben stehender Leiber in stehen/äsen, Median ${z.hufe.median}; Soll ≤ 0,03)` : "Hufe ungemessen: kein stehender Leib in stehen/äsen"); // prettier-ignore
         const S2 = z.s2;
         soll(
             !S2.ungemessen && Math.abs(S2.gipfelGegen2f - 1) <= 0.1 && S2.amplitudeCm >= 2 && S2.amplitudeCm <= 5,
