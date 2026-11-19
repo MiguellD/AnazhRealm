@@ -47,3 +47,22 @@ Kennungen sind Gau-lokal (`Revier:Takt·10:Nummer`, Jäger `r<Rudel>:…`) — f
 
 Feld eines Gaus 1,6–2,0 s im Faden (25 Hydro-Kacheln 1,45 s) · 107–138 ms je Jahres-Schritt (4,1–5,3 ms je Takt) ·
 Haupt-Faden je Ruf ≤ 0,67 ms · Stand packen: Bytes per Transfer.
+
+## 5 · Zusatz C2a3 (19.11.): K je Revier und die Tode seit der letzten Antwort — nur NEUE Felder
+
+Kein bestehendes Feld ändert Form oder Namen; der gepackte Stand trägt nichts davon (Abdruck am Takt 160 unverändert).
+
+| Feld der Antwort (`_gauBis` mit `opt.lesen`) | Form | Bedeutung | Quelle |
+|---|---|---|---|
+| `reviere[].K` | `{ beute: Zahl, jaeger: null }` | Tragfähigkeit des Reviers in Köpfen der Beute an der Äsung des Takts (kopfJeHa × Σ kZelle, die Formel von `feldTakt` ohne Zerfall — reine Funktion des Stands, nach dem Laden dieselbe Zahl); der Jäger trägt im Gesetz kein K (er hängt an V und D), darum `null` | leben-core `tragAm(g, i)` · voxel-worker `gauAuftrag` |
+| `tode` | `[{ id, g, revier, takt, ursache, jaeger }]` | die Tode des Gesetzes in den GELESENEN Revieren seit der letzten Antwort mit `lesen` | leben-core `todeSeit(g)` (leert die Liste) · `todeMerken` in `gauSchritt` |
+
+- `id` Kennung des Kopfs (Gau-lokal, wie in `tiere[].id`) · `g` „beute“/„jaeger“ · `revier` Index des Reviers (beim Jäger der Ort des Rudels) ·
+  `takt` der Takt des Gaus NACH dem Tod.
+- `ursache`: „jagd“ (Riss) · „hunger“ · „alter“ · „welpe“ · „deckung“ — die Namen des Kerns (`z.ereignis.tod[].ursache`).
+- `jaeger`: beim Riss der Verband des Rudels („r“ + Kennung, derselbe Text wie `tiere[].v` der Wölfe), sonst `null`. Der Riss ist im
+  Gesetz die Tat des Rudels (Satz 3: eine Masse je Rudel und Takt) — einen einzelnen Wolf als Täter gibt es nicht.
+- Grenzen: die Liste ist Lese-Hilfe, kein Stand — sie reist nicht im gepackten Gau, ist nach Laden oder Neu-Rechnen ab Takt 0 leer und
+  hält höchstens die Tode des letzten Jahres (26 Takte); Tode in Revieren, die der Auftrag nicht liest, verfallen mit der Antwort.
+  Ein Akt „aus“ der Seite steht nicht darin (die Seite kennt ihn selbst).
+- `z.ereignis.tod[]` des Kerns trägt neu `von` (Kennung des Rudels beim Riss, sonst −1).
