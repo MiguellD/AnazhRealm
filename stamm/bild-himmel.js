@@ -1934,8 +1934,8 @@ class AnazhRealm_bild_himmel {
         const k = this._belichtungAusLicht(achse.e);
         this._raumBlendeTakt();
         const hand = this.state.belichtungHand;
-        if (!this.state.renderer || (k == null && !(hand > 0))) return;
-        this.state.renderer.toneMappingExposure = hand > 0 ? hand : k;
+        if (!this.state.renderer || (k == null && !(hand && hand.k > 0))) return;
+        this.state.renderer.toneMappingExposure = hand ? (hand.k > 0 ? hand.k : k * hand.blende) : k;
         // … und sie steht erst mit der Sicht des Bildes (`_bildSichtSteht`, laub-messer): der Messer misst die Schatten der Stunde
         // am Bild, seine Lesung kommt ein bis zwei Bilder später — der Ladeschirm der Ankunft weicht nach der Lesung
         // (`_weltbildLuecken`, Term „licht“), nie mit der Belichtung ohne Schatten. Steht sie einmal, bleibt der Term zu (je Stand
@@ -1943,14 +1943,17 @@ class AnazhRealm_bild_himmel {
         if (!this.state._belichtungSteht) this.state._belichtungSteht = this._bildSichtSteht();
     }
 
-    // DIE KAMERA AUF HAND (laub-kante-3): EINE feste Belichtung `k` (> 0) statt der Lesung des Lichts, null gibt die Kamera dem
-    // Lichtmesser zurück. Sie läuft durch den EINEN Schreiber (`_dayNightApplyBelichtung`, sofort und an jedem Takt danach) —
-    // der Messer misst weiter (Raum-Blende, die Sicht des Bildes), nur die Belichtung steht. Bis hier setzte, wer eine feste
-    // Belichtung brauchte, `toneMappingExposure` von außen, und der Messer schrieb sie mit seiner Lesung über: seit laub-kante-2
-    // misst jede Aufnahme die Sicht ihres Bilds (`_rueckstrahlJetzt`) und belichtet neu — gate:post-kette (Dunkel, Flamme, Tor)
-    // stand bei 1,4511 statt 1 / 4 / 1,5 (OMEN, z625).
-    _belichtungHand(k) {
-        this.state.belichtungHand = k > 0 ? k : null;
+    // DIE KAMERA AUF HAND (laub-kante-3), wie an einer Kamera die zwei Griffe neben der Automatik: EINE feste Belichtung `k` (> 0)
+    // statt der Lesung des Lichts — oder ohne k (null) die Korrektur `blende` (> 0, ≠ 1) als Faktor über der Lesung, die weiter
+    // dem Licht folgt; beides leer (null, 1) gibt die Kamera dem Lichtmesser zurück. Sie läuft durch den EINEN Schreiber
+    // (`_dayNightApplyBelichtung`, sofort und an jedem Takt danach) — der Messer misst weiter (Raum-Blende, die Sicht des Bildes).
+    // Bis hier setzte, wer eine feste Belichtung oder eine Blende brauchte, `toneMappingExposure` von außen oder umhüllte den
+    // Schreiber, und der Messer schrieb sie mit seiner Lesung über: seit laub-kante-2 misst jede Aufnahme die Sicht ihres Bilds
+    // (`_rueckstrahlJetzt`) und belichtet neu — gate:post-kette (Dunkel, Flamme, Tor) stand bei 1,4511 statt 1 / 4 / 1,5 (OMEN, z625).
+    _belichtungHand(k, blende = 1) {
+        const fest = k > 0 ? k : null;
+        const b = blende > 0 && blende !== 1 ? blende : 1;
+        this.state.belichtungHand = fest || b !== 1 ? { k: fest, blende: b } : null;
         this._dayNightApplyBelichtung(this._tagAchse(this._sonnenRichtung().y));
     }
 

@@ -2603,14 +2603,14 @@ function luftTiefe(o) {
             anwenden.apply(this, a);
             if (dichte != null) U.beta.value = dichte;
         };
-        // DIE BLENDE k ÜBER DER MESSUNG (laub-kante-3): die Kamera des Spiels liest das Licht dieses Blicks (die Hand frei), dann
-        // steht sie auf Hand bei k × ihrer Lesung (`_belichtungHand`, der EINE Kanal durch den EINEN Schreiber) — die drei Schüsse
-        // L, L0, S einer Sicht tragen dieselbe Belichtung, auch durch die Lesung der Aufnahme. Bis hier umhüllte die Linse den
-        // Schreiber (`toneMappingExposure *= blende`) und setzte die Belichtung neben ihm.
+        // DIE BLENDE k ÜBER DER MESSUNG (laub-kante-3): die Kamera des Spiels folgt der Lesung dieses Schusses, k ist ihre Korrektur
+        // (`_belichtungHand(null, k)`, der EINE Kanal durch den EINEN Schreiber — auch durch die Lesung der Aufnahme). Bis hier
+        // umhüllte die Linse den Schreiber (`toneMappingExposure *= blende`) und setzte die Belichtung neben ihm. GEMESSEN (Radeon,
+        // Genesis): die feste Hand bei k × der Lesung VOR dem Schuss riss K1-1 (T/T_soll 0,50–0,79) und K2-1 (0,041 > 0,02), die
+        // Korrektur über der Lesung DES Schusses steht wie die Hülle (K1-1, K2-1 GRÜN)
         const schuss = async (b, k) => {
             const alt = U.beta.value;
-            r._belichtungHand(null);
-            r._belichtungHand(st.renderer.toneMappingExposure * k);
+            r._belichtungHand(null, k);
             if (b != null) U.beta.value = dichte = b;
             if (st.fernRing) r._tickFeldPass(st.fernRing);
             try {
