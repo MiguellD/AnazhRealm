@@ -493,6 +493,9 @@ function fahrtSumme(stationen, geraet) {
 // 19.11. 10 → 12: die Fabrik planet/leben/zusammenspiel nach der Falte (11 neue Läufe je Perspektive: planet geologie 162, relief 155,
 // wetter 160, zeit 90; leben tiere 225, oeko 151, evolution 235; zusammenspiel planet 305, erleben 333, mensch 238, leben 160 — und
 // zusammenspiel.same 55 → 395 s; Σ +2 554 s): Radeon 274 Läufe Σ 19 347 s → ⌈19 347 ÷ 1 740⌉ = 12, GTX 273 Läufe Σ 19 140 s → 11
+// 19.11. 12 bleibt: der Rest der Fabrik erleben/same/kosmos (same.physik · massstab · gedaechtnis, 15 Leitern, 15 neue Läufe Σ +670 s;
+// ihr Zweig zählte 8 an der eigenen Liste: 189 Läufe, Radeon 13 099 s): Radeon 289 Läufe Σ 20 017 s → ⌈20 017 ÷ 1 740⌉ = 12, GTX 288
+// Läufe Σ 19 810 s → 12 — unter der Wand bleiben an der Radeon 863 s (12 × 1 740 − 20 017)
 const FAHRT_TEILE_MAX = 12;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
