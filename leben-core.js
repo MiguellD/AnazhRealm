@@ -789,11 +789,12 @@
                 rissKg: 0, // Σ Riss (Lebendmasse)
             };
         }
-        function stirbAn(ev, list, k, ursache, wo) {
+        // `von` = das Rudel, das riss (Kennung, nur bei „jagd“; sonst −1) — der Riss ist die Tat des Verbands (Satz 3), kein Kopf reißt allein
+        function stirbAn(ev, list, k, ursache, wo, von) {
             const t = list[k];
             list.splice(k, 1);
             t.tot = ursache;
-            ev.tod.push({ t, ursache, wo });
+            ev.tod.push({ t, ursache, wo, von });
         }
 
         const PUFFER = new Map();
@@ -945,7 +946,7 @@
                 R.rest -= o.kg;
                 R.gedeckt += nutz * o.kg;
                 R.ort = terr[k];
-                stirbAn(ev, list, list.indexOf(o), "jagd", terr[k]);
+                stirbAn(ev, list, list.indexOf(o), "jagd", terr[k], R.id);
             }
             ev.rissKg += R.riss;
             ev.gedecktKg += R.gedeckt;
@@ -957,11 +958,11 @@
             for (let k = list.length - 1; k >= 0; k--) {
                 const t = list[k];
                 if (rng() < (t.jl ? pA : pK)) {
-                    stirbAn(ev, list, k, "hunger", i);
+                    stirbAn(ev, list, k, "hunger", i, -1);
                     continue;
                 }
                 if (t.alterS > t.tod) {
-                    stirbAn(ev, list, k, "alter", i);
+                    stirbAn(ev, list, k, "alter", i, -1);
                     continue;
                 }
                 if (t.r && t.w) {
@@ -1058,8 +1059,8 @@
             for (let k = R.tiere.length - 1; k >= 0; k--) {
                 const t = R.tiere[k];
                 const welpe = t.alterS < JAHR_S;
-                if (rng() < (welpe ? pWelpe : pAb1)) stirbAn(ev, R.tiere, k, welpe ? "welpe" : "deckung", R.ort);
-                else if (t.alterS > t.tod) stirbAn(ev, R.tiere, k, "alter", R.ort);
+                if (rng() < (welpe ? pWelpe : pAb1)) stirbAn(ev, R.tiere, k, welpe ? "welpe" : "deckung", R.ort, -1);
+                else if (t.alterS > t.tod) stirbAn(ev, R.tiere, k, "alter", R.ort, -1);
             }
             if (takt >= R.wurfAb) rudelWurf(R, saat, takt, ev, tS, rng, D);
         }
@@ -1269,7 +1270,7 @@
         }
         function gauLeer(F, saat) {
             const n = F.W * F.H;
-            const g = { feld: F, saat, z: null, O: new Float64Array(n * F.Z), Kap: new Float64Array(n), aktN: 0, leser: null };
+            const g = { feld: F, saat, z: null, O: new Float64Array(n * F.Z), Kap: new Float64Array(n), aktN: 0, leser: null, tode: [] };
             g.leser = { land: (i) => F.C[i] > 0, futter: (i) => g.Kap[i] };
             return g;
         }
@@ -1283,6 +1284,7 @@
             feldTakt(g.feld, g.O, g.Kap);
             g.z = schritt(g.z, g.saat, g.z.takt, g.leser);
             feldAesen(g.feld, g.O, g.z.frass);
+            todeMerken(g);
             return g;
         }
         // DER AKT (E2) — die EINE Eingabe der Seite in den Gau, mit Takt-Stempel: er wirkt am Zustand SEINES Takts (sonst Wurf).
@@ -1361,6 +1363,32 @@
         }
         // der Fraß der Zelle c des Reviers i am Takt des Gaus (Feld-Einheiten, wie das Leben-Overlay des Wirts: ≤ 0 abgeäst)
         const frassAm = (g, i, c) => g.O[i * g.feld.Z + c];
+        // die Tragfähigkeit K des Reviers i (Köpfe der Beute) an der Äsung des Augenblicks: kopfJeHa × Σ kZelle — die Formel von
+        // feldTakt ohne Zerfall, reine Funktion des Stands (nach dem Laden dieselbe Zahl wie geradeaus). Der Jäger trägt kein K.
+        function tragAm(g, i) {
+            const { Z, S, LR } = g.feld;
+            const b = i * Z;
+            let summe = 0;
+            for (let c = 0; c < Z; c++) if (LR[b + c] > 0) summe += FELD.kZelle(aesVon(S[b + c], g.O[b + c]), LR[b + c]);
+            return FELD.kopfJeHa * summe;
+        }
+        // DIE TODE des Gesetzes seit dem letzten Lesen (todeSeit leert): je Tod { id, g, revier, takt, ursache, jaeger } — `takt` der
+        // Takt des Gaus NACH dem Tod, `ursache` „jagd“ (Riss) · „hunger“ · „alter“ · „welpe“ · „deckung“, `jaeger` beim Riss der
+        // Verband des Rudels („r“ + Kennung, wie `v` in tiereIn), sonst null. Die Liste ist Lese-Hilfe, kein Stand: sie reist nicht
+        // im gepackten Gau und hält höchstens die Tode der letzten FENSTER Takte (ein Jahr) — ein Aufholen füllt sie nicht.
+        function todeMerken(g) {
+            const [tod, takt, T] = [g.z.ereignis.tod, g.z.takt, g.tode];
+            for (let k = 0; k < tod.length; k++) {
+                const x = tod[k];
+                T.push({ id: x.t.id, g: x.t.g, revier: x.wo, takt, ursache: x.ursache, jaeger: x.von >= 0 ? "r" + x.von : null });
+            }
+            if (T.length && T[0].takt <= takt - 2 * FENSTER) g.tode = T.filter((x) => x.takt > takt - FENSTER);
+        }
+        function todeSeit(g) {
+            const aus = g.tode.filter((x) => x.takt > g.z.takt - FENSTER);
+            g.tode = [];
+            return aus;
+        }
         // ── DER STAND: der Gau als reines Datum (Uint8Array: Kopf-Zeile JSON · Float64 · Int32) ─────────────────────────────────────
         // Je Kopf reisen Kennung, Mutter, Alter, Erbe a, Umwelt e, Geschlecht, Reife, Jahr (und das Abwander-Alter des Jägers); der
         // Leib und alle Raten sind Funktion davon (tier). Die Fraß-Schicht reist nur an den Zellen der Beute. K, Last und Fraß des
@@ -1465,7 +1493,7 @@
             if (d !== K0.nD || i !== K0.nI) throw new Error("leben-core bestand: der Stand des Gaus geht nicht auf (" + d + " von " + K0.nD + " Zahlen, " + i + " von " + K0.nI + " Ganzzahlen)");
             return g;
         }
-        return Object.freeze({ ZEIT, RAUM, FENSTER, anfang, schritt, klon, verwundbar, bedarfVon, gauFeld, feldTakt, feldAesen, gauAnfang, gauSchritt, gauBis, akt, koepfe, tiereIn, frassAm, gauPack, gauEntpack });
+        return Object.freeze({ ZEIT, RAUM, FENSTER, anfang, schritt, klon, verwundbar, bedarfVon, gauFeld, feldTakt, feldAesen, gauAnfang, gauSchritt, gauBis, akt, koepfe, tiereIn, frassAm, tragAm, todeSeit, gauPack, gauEntpack });
     }
 
     // ── SELBSTTEST — der Prüf-Strom (mulberry32, feste Saat) lebt NUR hier, nie in einer Gesetz-Funktion ──────────────────────

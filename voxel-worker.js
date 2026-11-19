@@ -458,7 +458,9 @@ function nachricht(e) {
 //             Stand, der hereinreist (`stand`, Laden oder Mitspieler), ersetzt ihn. Ein Auftrag VOR dem Stand des Gaus oder mit
 //             anderen Akten als den gewirkten rechnet ab Takt 0 neu (die Antwort nennt es: `zeit.abNull`).
 // Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, takt, akte, lesen?, packen?, stand? }
-// Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, stand? }
+// Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, tode?, stand? }
+//   mit `lesen`: je Revier auch `K: { beute, jaeger: null }` und `tode`: die Tode des Gesetzes in den gelesenen Revieren seit
+//   der letzten Antwort mit `lesen` ({ id, g, revier, takt, ursache, jaeger } — höchstens das letzte Jahr, nie im Stand).
 // Ein Gau, den die Seite nicht mehr hält, geht (`gau-geht`: Feld und Lauf — sein Stand lebt als Bytes bei der Seite).
 const gaue = new Map();
 const gauFelder = new Map();
@@ -612,12 +614,19 @@ function gauAuftrag(msg) {
         antwort.reviere = msg.lesen.map((i) => ({
             i,
             koepfe: K.koepfe(z, i),
+            // K je Gattung: die Tragfähigkeit der Beute an der Äsung des Takts (leben-core `tragAm`); der Jäger trägt kein K (null)
+            K: { beute: K.tragAm(e.g, i), jaeger: null },
             tiere: K.tiereIn(z, i),
             frass: Array.from({ length: e.F.Z }, (_, c) => K.frassAm(e.g, i, c)),
             // das Feld des Reviers aus der Saat: je Zelle das Substrat der Äsung und der Lebensraum der Beute
             s: Array.from(e.F.S.subarray(i * e.F.Z, (i + 1) * e.F.Z)),
             lr: Array.from(e.F.LR.subarray(i * e.F.Z, (i + 1) * e.F.Z)),
         }));
+    // die Tode des Gesetzes seit der letzten Antwort mit `lesen` (leben-core `todeSeit`), nur in den gelesenen Revieren
+    if (msg.lesen) {
+        const gelesen = new Set(msg.lesen);
+        antwort.tode = K.todeSeit(e.g).filter((x) => gelesen.has(x.revier));
+    }
     if (msg.packen) {
         const p0 = performance.now();
         antwort.stand = K.gauPack(e.g);
