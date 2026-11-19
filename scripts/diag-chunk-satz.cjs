@@ -1078,13 +1078,17 @@ const { errs, check } = pruefer();
                 const fl = b.geom.fluechtig === true;
                 if (fl && (b.geom.index !== null || !Array.isArray(b.geom.quelle))) return false;
                 const nach = fl ? r._satzBlock(...b.geom.quelle) : null;
+                // … samt den Gewichten der gepackten Formen (die vierte Stelle: `aLageU`, `aLageV`, `aVerband` — `_satzBlock` legt sie
+                // nur in der Werkbank an, der flüchtige Block trägt sie nicht): die Nachrechnung liefert jedes Attribut, das der Block
+                // nicht hält. Bis hier las die Linse das Gewicht am Block — ein flüchtiger Bau-Block (Feuerstelle, unter Last: 3 von 20
+                // Läufen, CI voll 8/18 an 00f9064a und 106b754a) brach mit „reading 'array'“
                 const g = fl
                     ? {
                           attributes: Object.fromEntries(
-                              Object.entries(b.geom.attributes).map(([k, a]) => [
-                                  k,
-                                  a.array === null ? nach.attributes[k] : a,
-                              ])
+                              [...new Set([...Object.keys(nach.attributes), ...Object.keys(b.geom.attributes)])].map((k) => {
+                                  const a = b.geom.attributes[k];
+                                  return [k, !a || a.array === null ? nach.attributes[k] : a];
+                              })
                           ),
                           index: nach.index,
                       }
