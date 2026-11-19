@@ -88,3 +88,4 @@ Freie Zahlen je Takt im Kern: **0** (Soll 0). Es fallen `geburt 0,1`, `tod 0,2`,
 Takt bleibt EINE Einheit: die Erschöpfung des verwundbaren Bestands je Takt (oben, Wortlaut des Auftrags).
 HYPOTHESEN: wurfSchwelle 1,2 · nutz 0,7 · fastenTage 30 · dazu die ANNAHMEN Bock-Überleben = Kuh-Überleben und die
 Verwundbarkeits-Quote 16 des zweiten Gangs.
+**Lauf 2 (19.11., die EINE Korrektur, zeit-kern-2.cjs Z. 80 · 371 · 485 · 510):** `sattheit` 0,396 ist kg RISS-BRUTTO je Tag je kg^¾ (Stahler: Riss × Lebendmasse), nicht Verzehr — das Rudel reißt, bis Riss ≥ Sattheit; gefressen = nutz × Riss; Deckung = Gefressenes ÷ Erhaltung 0,1925; jede andere Zahl, Regel und Saat wie oben.

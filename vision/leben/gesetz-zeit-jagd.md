@@ -74,5 +74,23 @@ Nutz 0,7; Risse je Wolf je Jahr 24–44; bei Wurf-Schwelle 1,5 stirbt der Wolf a
 (1,23). Fällt Lauf 2 an S1, fallen die Sätze 3 und 4 des Gesetzes (feste Quote ohne Antwort auf die Beute-Dichte vor der
 Erschöpfung), und es geht an den Zensus der funktionellen Antwort (Messier) — ohne dritte Formel am selben Tag.
 
+## Lauf 2 (19.11. 05:20) — S1 ROT: Wolf 3 von 8; die Sätze 3 und 4 FALLEN
+
+Die eine Korrektur stand in 4 Kern-Zeilen, ohne Wolf sind Lauf 1 und 2 zahlengleich. Vorhersagen: Deckung am Plateau 1,43
+(gesetzt 1,44) trifft; Risse je Wolf je Jahr 46,2 (gesetzt 24–44) trifft nicht; „bei Wurf-Schwelle 1,5 stirbt der Wolf aus“
+trifft nicht (er lebt 4 von 4, Deckung 1,48). Die Spur: der Wolf bleibt bei 44–59 Köpfen satt (Deckung 1,36–1,50 bis hinab zu
+1 409 Beute-Köpfen), während die Beute 14 159 → 8 013 fällt — eine FESTE QUOTE; Riss ÷ Zuwachs 0,99–1,005 in den drei lebenden
+Saaten (die Beute driftet auch dort −1,2 bis −1,9 % je 10 Jahre), 1,06–1,10 in den fünf gefallenen. Es fehlt die Rückstell-Kraft.
+Die einzige Zelle der Reihe, die in 4 von 4 Saaten trägt (Wurf-Schwelle 1,5 × Nutz 0,7: Beute 15 803–17 066, S3 0,116, S4 0,768,
+S9 0,056, S2 1,42), trägt, WEIL dort die Schwelle am Plateau liegt und der Wurf auf das Futter antwortet — sie ist ein Zeiger auf
+die Ursache, kein Wert, den ich nachträglich setze.
+
+Was steht: die Sätze 1, 2, 5, 6 (EINE Uhr, je Kopf, Verhältnis als Probe, Leib als Aufführung) und die Beute-Seite (ohne Wolf
+Überleben Kitz 0,611 · Kuh 0,742 gegen Feld 0,59 · 0,76, CV 0,010). Was fällt: Satz 3 in der Fassung „der ganze verwundbare
+Bestand ist je Takt greifbar“ und Satz 4 „Wurf an einer Schwelle weit unter dem Plateau“. Zurück an den Zensus:
+`quellen/zensus-antwort-quellen.md` (funktionelle Antwort, numerische Antwort als Gradient, Revier gegen Beute-Dichte,
+dichte-abhängiger Tod, Zeit-Verzug). Mein Zusatz „keine dritte Formel am selben Tag“ war eine Kalender-Bremse ohne Mess-Zweck;
+es gilt die Methode selbst: das nächste Gesetz nur aus gelesenen Stütz-Punkten, Soll vor der Rechnung.
+
 Fällt das Gesetz an S1 oder an drei der Proben S2–S8, geht es zurück an den Zensus; ein Soll, das nach einem Ergebnis geändert
 wird, steht hier offen mit Datum und Grund.
