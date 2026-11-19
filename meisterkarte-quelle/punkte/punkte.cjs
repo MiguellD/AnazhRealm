@@ -430,7 +430,8 @@ function fahrtSumme(stationen, geraet) {
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
 // Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (108 Läufe × 120 s > 6 Teile)
 // 18.11. 6 → 9: die Richter-Fabrik mensch (stationen/k2-mensch*.js, je Leiter EINE Probe ≤ 60 s) — Radeon vorher 10 124 s in 112 Läufen
-// (6 × 1 740 = 10 440 s); 84 Leitern × 45–60 s heben sie auf 13 904–15 164 s, bis über 8 × 1 740 = 13 920 s
+// (6 × 1 740 = 10 440 s); gemessen mit allen 84 Proben: Radeon 196 Läufe Σ 13 974 s (Deckel 13 914 s, 8 Teile, 6 s unter 8 × 1 740),
+// GTX 195 Läufe Σ 13 767 s (8 Teile); der neunte Teil trägt die 84 Deckel, die noch kein Gerät geeicht hat (eichTafel)
 const FAHRT_TEILE_MAX = 9;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
