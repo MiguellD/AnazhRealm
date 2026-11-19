@@ -25,7 +25,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { albedoAuswerten, stoffPasst, TAFEL_BLICKE, kartenEichung } = require("./licht-linsen.cjs");
+const { albedoAuswerten, stoffPasst, wirtStoff, TAFEL_BLICKE, kartenEichung } = require("./licht-linsen.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
@@ -33,8 +33,10 @@ const TAFEL_PFAD = path.join(ROOT, "spec", "farbe", "albedo-tafel.json");
 // Die acht Klassen des Studio-Befunds (Synthese §4 W1e) — jede trägt mindestens eine Zeile.
 const PFLICHT_GRUPPEN = ["Rinde", "Laub", "Baum", "Fels", "Boden", "Haus", "Metall/Lack", "Haut/Fell", "Klinge"];
 
-// DIE STUDIOS des Labors (r128; garage und schmiede auf der Engine und Bühne der Welt, r184): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
+// DIE STUDIOS des Labors (r128; garage, schmiede, portale und tetrapoda auf der Engine und Bühne der Welt, r184): Seite, die globalen Namen ihrer Szene, ihres Renderers, ihres Ausgabe-Wegs (der
 // Composer oder der Renderer selbst) und die Bereitschaft. Jede Shell legt diese Namen als klassische Globale ab.
+// DIE UHR DER BÜHNE (w28-studio-seiten): ein Studio auf AnazhHuelle.studio steht ohne Wort im Streiflicht (früh, der Teller dreht
+// die Schauseite ins Licht) — Welt und Labor vergleichen am Mittag der Welt in ihren Achsen, die Adresse nennt ihn (`?uhr=mittag`).
 const STUDIOS = {
     terrain: {
         pfad: "worlds/terrain/index.html",
@@ -45,10 +47,10 @@ const STUDIOS = {
     },
     garage: { pfad: "worlds/garage/index.html", szene: "scene", renderer: "R", ausgabe: null, wurzel: "vehicle" },
     portale: {
-        pfad: "worlds/portale/index.html",
+        pfad: "worlds/portale/index.html?uhr=mittag",
         szene: "scene",
         renderer: "renderer",
-        ausgabe: "composer",
+        ausgabe: null,
         wurzel: "gate",
     },
     schmiede: {
@@ -461,13 +463,20 @@ function laborAlbedo(o) {
                 .filter(([m]) => m)
         );
         const artOf = (m) => ARTEN.get(m) || (m?.userData && typeof m.userData.__klasse === "string" ? m.userData.__klasse : "unknown");
-        const stoffOf = (m) => ({
-            kind: artOf(m),
-            r: m.roughness,
-            mt: m.metalness,
-            cc: m.clearcoat || 0,
-            seh: m.userData?.__seh || null,
-        });
+        // DAS WERK DER WELT AUF DER BÜHNE (AnazhHuelle.studio): sein Stoff ist ein Material des Wirts — Art, Rauheit, Metall,
+        // Klarlack und Seh-Klasse stehen in seinem Schlüssel (`_foundryMats`: Art|Rauheit|Metall … |cc:<k>@<r> … |v:<Seh>),
+        // gelesen vom EINEN Leser der Welt-Tafel (licht-linsen `wirtStoff`)
+        const stoffInv = new Map(Object.entries(window.STUDIO?.buehne?.wirt?._foundryMats || {}).map(([k, m]) => [m, k]));
+        const stoffOf = (m) =>
+            stoffInv.has(m)
+                ? window.__wirtStoff(stoffInv.get(m))
+                : {
+                      kind: artOf(m),
+                      r: m.roughness,
+                      mt: m.metalness,
+                      cc: m.clearcoat || 0,
+                      seh: m.userData?.__seh || null,
+                  };
         const matsOf = (x) => (Array.isArray(x.material) ? x.material : [x.material]).filter(Boolean);
         const alleMeshes = [];
         sc.traverse((x) => {
@@ -891,6 +900,7 @@ const LABOR_INSTALL =
     `window.__laborLaub = ${laborLaubGegenlicht.toString()};` +
     `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
     `window.__stoffPasst = ${stoffPasst.toString()};` +
+    `window.__wirtStoff = ${wirtStoff.toString()};` +
     `window.__tafelBlicke = ${JSON.stringify(TAFEL_BLICKE)};` +
     `window.__laborZiel = ${laborZiel.toString()};` +
     `window.__laborAlbedo = ${laborAlbedo.toString()};` +
