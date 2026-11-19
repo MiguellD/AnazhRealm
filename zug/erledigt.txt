@@ -1814,3 +1814,4 @@ omen-gtx-gtx-b7ed8419-42-b7ed8419 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · U
 2026-11-19 02:26 PLATTE 20.3 GB — weiter (ab 15 GB; die Landungs-Schleife startet neu und nimmt ihre Liste auf)
 2026-11-19 02:27 landung Zwischenstand main fe5b937d: misst 932 Stationen aus der Tafel der Karte 2 (Zeilen gleich) (932) je allein (0 tragen an diesem Kopf schon einen Eintrag, 0 profiband.* ruhen), rohe Zahl je Zeile
 2026-11-19 05:53 gpu-stufe gtx-f68dbf09 0 grün / 0 rot / 0 ungemessen (punkte-maschine messung/f68dbf09-gtx.json)
+2026-11-19 05:54 landung Runde 1 am f68dbf09: die OMEN ist durch (0 Stationen) — runde 1 f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41 gtx=durch radeon=offen
