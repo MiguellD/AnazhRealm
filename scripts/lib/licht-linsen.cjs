@@ -1301,7 +1301,7 @@ function tagKurve(o) {
 //   (`sofort`) steht als Zahl in der Zeile des Orts, ungeurteilt. Der Mutant (live, je Ort): die Lesung 8 Bilder später muss die
 //   Schranke reißen, sonst ist ASYNC blind. SICHT der Messer liest die Sicht des Bildes: |Sicht des Messers − Flächen-Mittel des
 //   Bild-Schattens| über 0,10 (an den Uhren mit Sonne der Wand).
-const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05, lesung: 3, sicht: 0.1 };
+const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: require("./welt-boot.cjs").fadenScope(["foundry-core.js", "welt-licht.js"]).__weltLicht.BELICHTUNG.async, lesung: 3, sicht: 0.1 };
 const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|SICHT|SCHREIBER|BLIND) /;
 // DER MESSER DES KOPFS 6113b27e (vor laub-messer: Ellipsen der Karten, Ebene unter dem Auge, 32-m-Gitter) neben dem Flächen-Mittel
 // des Bild-Schattens — GEMESSEN (Radeon 890M, Mess-Wiese Ego, 1920 × 1080, Uhr 0,27, Gier 0): der Mutant „Ellipse zurück“ des Selbsttests.
@@ -1320,6 +1320,55 @@ function tagFeinUhren(zeilen) {
         return horizont || reisst ? Array.from({ length: Math.round((b.uhr - a.uhr) / 0.002) - 1 }, (_, j) => +(a.uhr + 0.002 * (j + 1)).toFixed(3)) : [];
     });
 }
+// DIE LESUNG UNTER DEM LADESCHIRM (licht-lesung-ev, B10 des Gesetzes des Messers): die Schranke `lesung` gilt auch dort, wo die
+// Sonne in jedem Bild wandert — unter dem Ladeschirm trägt jedes Lade-Bild über eine Sekunde Spielzeit (`tickDayNight` läuft nur in
+// Takten mit Bild), am Tag des Spiels (DAY_LENGTH_DEFAULT_MINUTES) 0,1° je Bild. Gefahren wird das GESETZ des Stamms
+// (`_bildSichtSteht` → `_bildSichtSpanneEV`, `ladeKlasse`) an der wandernden Sonne: je Bild dreht das Licht, die Messung geht
+// mit dem Licht dieses Bilds hinaus und kommt zwei Bilder später zurück (die gemessene Lesung der Tag-Achse, B9: 2–3), gezählt die
+// Bilder bis zur stehenden Lesung. Die Fälle sind gemessen (Radeon, Mess-Wiese Ego, Kopf e6707798, Gier 0): Mittag Sonne 74,2°
+// Sicht 0,974, Anteil der Sonne an E 5,89/7,30 · Sonnenaufgang Uhr 0,27 Sonne 7,2° Sicht 0,301, 0,044/0,377 · Uhr 0,272 Sonne
+// 7,9° Sicht 0,444, 0,084/0,448.
+// `mutante` „grad“: die Lesung verfällt wie bis laub-messer, sobald das Licht 0,05° neben dem ihrer Messung steht — sie steht nie.
+let ladeLesungKlasse = null;
+function ladeLesungUrteil(mutante) {
+    const K = (ladeLesungKlasse ||= require("./stamm.cjs").ladeKlasse(__dirname + "/../.."));
+    const A = K.AnazhRealm;
+    const T = require("vm").runInContext("THREE", K.ctx);
+    const jeBild = (2 * Math.PI) / (A.DAY_LENGTH_DEFAULT_MINUTES * 60); // eine Sekunde Spielzeit je Lade-Bild
+    const befunde = [];
+    for (const [fall, grad, sicht, sonneAnteil] of [["mittag", 74.2, 0.974, 5.89 / 7.3], ["morgen", 7.2, 0.301, 0.044 / 0.377], ["morgen-hell", 7.9, 0.444, 0.084 / 0.448]]) {
+        const dl = { position: new T.Vector3(), target: null, color: { r: 1, g: 1, b: 1 }, intensity: 1 };
+        const L = { sicht, sichtRichtung: new T.Vector3() };
+        const w = Object.create(A.prototype);
+        w.state = { rueckstrahlLeser: L, directionalLight: dl };
+        w._bildSichtMisst = () => true;
+        // E der waagrechten Karte: die Sonne (E_s · sin h · s) ist ihr Anteil `sonneAnteil`
+        const sinH = Math.sin((grad * Math.PI) / 180);
+        const E = (sinH * sicht) / sonneAnteil;
+        w._belichtungE = [E, E, E];
+        if (mutante === "grad")
+            w._bildSichtSpanneEV = () => (L.sichtRichtung.lengthSq() > 0 && L.sichtRichtung.angleTo(dl.position.clone().normalize()) <= (0.05 * Math.PI) / 180 ? 0 : Infinity);
+        const licht = (n) => {
+            const h = (grad * Math.PI) / 180 + n * jeBild * 0.5;
+            const az = n * jeBild;
+            dl.position.set(Math.cos(h) * Math.cos(az), Math.sin(h), Math.cos(h) * Math.sin(az));
+        };
+        let bilder = 99;
+        const flug = [];
+        for (let n = 0; n < 60; n++) {
+            licht(n);
+            if (flug.length && flug[0].an <= n) L.sichtRichtung.copy(flug.shift().r);
+            if (L.sichtRichtung.lengthSq() > 0 && w._bildSichtSteht()) {
+                bilder = n;
+                break;
+            }
+            if (!flug.length) flug.push({ an: n + 2, r: dl.position.clone().normalize() });
+        }
+        if (!(bilder <= TAG_SOLL.lesung)) befunde.push(`ASYNC lade ${fall}: die Lesung nach ${bilder} Bildern unter dem Ladeschirm (Schranke ${TAG_SOLL.lesung})`);
+    }
+    return befunde.join();
+}
+
 function tagKurveUrteil(welt) {
     const S = TAG_SOLL;
     const R = require("../../spec/farbe/tag-ref.json").zeilen;
@@ -1385,6 +1434,9 @@ function tagKurveUrteil(welt) {
             `ASYNC ${mit(spitze((x) => ev(x.nach, x.frisch)))} nach ${lesung} Bildern${m.mutant ? ` (Mutant ${m.mutant.lesung})` : ""} · ` +
             `sofort ${mit(spitze((x) => ev(x.sofort, x.frisch)))} EV${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
     }
+    // die Lesung unter dem Ladeschirm (B10): dasselbe Gesetz der Lesung an der wandernden Sonne der Ankunft
+    const lade = ladeLesungUrteil();
+    if (lade) befunde.push(...lade.split(","));
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven, zahlen };
 }
 
@@ -1476,6 +1528,9 @@ function tagKurveSelbsttest() {
         [nur(kurve(T.kopf, "FEIN-RAMPE"), /SPRUNG/), ""],
         [gesetz(), ""],
         [gesetz({ steigung: 1, stufen: [[10, 0], [-20, 0]] }), /GESETZ Sonne 10°/],
+        // DIE LESUNG UNTER DEM LADESCHIRM: das Gesetz in Blenden-Stufen steht nach ≤ 3 Bildern; die Toleranz zurück auf Grad ROT
+        [ladeLesungUrteil(), ""],
+        [ladeLesungUrteil("grad"), /^ASYNC lade mittag: die Lesung nach 99 Bildern/],
     ];
 }
 

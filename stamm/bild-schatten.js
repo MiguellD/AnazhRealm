@@ -351,21 +351,39 @@ class AnazhRealm_bild_schatten {
     // erst das nächste Bild die Schatten der neuen Stunde, seine Lesung kommt ein bis zwei Bilder später — bis dahin trägt die
     // Belichtung die Sicht der Stunde davor. Leser: die Belichtung der Ankunft (`_belichtungSteht`, der Ladeschirm weicht erst
     // nach der Lesung) und die Tag-Achse (ASYNC: die Bilder vom Uhr-Wort bis zur Lesung).
-    // DIE SICHT GILT DER RICHTUNG DES LICHTS, nie dem Zähler der Himmels-Sprünge (`licht`, das Maß des Bodens: seine Farbe ist
-    // Sonne × Albedo): sie ist Geometrie — sie steht, wenn das Licht, unter dem sie maß, höchstens `HORIZONT_KARTE.lichtRad`
-    // neben dem Licht von jetzt steht. Unter dem Ladeschirm springt der Himmel an JEDEM Lade-Bild (`tickDayNight`: zwischen zwei
-    // Lade-Bildern liegt über eine Sekunde Spielzeit) — am Zähler verfiel jede Lesung im Flug, das Licht des Orts stand nie und
-    // die Welt hing (Radeon, 1920 × 1080, Umstellen an die Mess-Wiese: „das Licht des Orts wird gemessen“ nach 3 815 Takten;
-    // Genesis in der Welt des Tors 4 070 Sprünge in 89 Bildern).
+    // DIE SICHT GILT IN BLENDEN-STUFEN, nie in Grad (licht-lesung-ev): eine Lesung steht, solange die Wanderung des Lichts seit
+    // ihrer Messung die Belichtung höchstens um `BELICHTUNG.async` ändern kann (welt-licht.js — dieselbe Schwelle, an der die
+    // Tag-Achse ASYNC urteilt: Belichtung und Licht aus derselben Uhr). Bis hier verfiel sie, sobald das Licht 0,05° neben dem
+    // ihrer Messung stand: unter dem Ladeschirm wandert die Sonne in jedem Takt mit Bild (`tickDayNight`), die Lesung stand nie —
+    // die Phase „nur das Licht offen“ der Ankunft hielt 4–12 s (Radeon kalt, Kopf 56777f23; im vollen Lade-Takt 8–14 s).
+    // Die Spanne (`_bildSichtSpanneEV`) ist die Ableitung der Sicht nach dem Licht: ein Schatten der Höhe H fällt H·cot h lang,
+    // der beschattete Anteil (1 − s) wächst mit cot h, |ds/dh| ≤ (1 − s)/(sin h · cos h); die Sonne trägt E_s · sin h · s zur
+    // waagrechten Karte bei (`_waagrechtIrradianz`) — über den Winkel δ seit der Messung (Höhe und Azimut zusammen, nie kleiner
+    // als die Wanderung der Höhe) ändert sich die Lesung um höchstens E_s · (1 − s) · δ / cos h, in Stufen dieses ÷ (E · ln 2).
+    // Ohne Lesung steht sie nie; ein Licht unter dem Horizont trägt keine Sonne zur Karte: dort steht jede.
     _bildSichtSteht() {
         if (!this._bildSichtMisst()) return true;
-        const L = this.state.rueckstrahlLeser;
-        if (!L) return false;
-        const dl = this.state.directionalLight;
+        return this._bildSichtSpanneEV() <= AnazhRealm.BELICHTUNG.async;
+    }
+    _bildSichtSpanneEV() {
+        const st = this.state;
+        const L = st.rueckstrahlLeser;
+        const dl = st.directionalLight;
+        if (!L || !dl || !(L.sichtRichtung.lengthSq() > 0)) return Infinity;
         const l = this._bildSichtLicht || (this._bildSichtLicht = new THREE.Vector3());
         l.copy(dl.position);
         if (dl.target) l.sub(dl.target.position);
-        return l.lengthSq() > 0 && L.sichtRichtung.dot(l.normalize()) >= Math.cos(AnazhRealm.HORIZONT_KARTE.lichtRad);
+        if (!(l.lengthSq() > 0)) return Infinity;
+        l.normalize();
+        if (!(l.y > 0)) return 0;
+        const d = Math.acos(Math.min(1, Math.max(-1, L.sichtRichtung.dot(l))));
+        if (!(d > 0)) return 0;
+        const lu = (r, g, b) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        const W = this._belichtungE;
+        const E = W ? lu(W[0], W[1], W[2]) : 0;
+        if (!(E > 0)) return Infinity;
+        const Es = lu(dl.color.r, dl.color.g, dl.color.b) * dl.intensity;
+        return (Es * (1 - L.sicht) * d) / (Math.sqrt(1 - l.y * l.y) * E * Math.LN2);
     }
 
     // NACH DEM BILD (`_loopRender`, auf der Post-Kette, neben dem Spiegel): der Pass misst den Boden dieses Bilds in seiner
@@ -531,9 +549,9 @@ class AnazhRealm_bild_schatten {
     // DIE RUHE DES RÜCKSTRAHLS: er misst neu, wenn das Auge weiter als `ruheM` wandert oder der Blick weiter als `ruheRad` dreht (die
     // Ruhe des Auges wie beim Spiegel, `AnazhRealm.SPIEGEL`), das Licht der Welt eine neue Sonde trägt (`_weltLicht().stand`) oder
     // das Auge springt (`sprung`: der erste Lauf, ein Sprung der Zeit-Auflösung — auch jede Aufnahme beginnt so).
-    // DAS BILD ÄNDERT SICH AUCH AM STEHENDEN AUGE (laub-messer): die Sonne wandert — der Pass misst neu, wenn die Richtung des
-    // Lichts sich um `HORIZONT_KARTE.lichtRad` dreht (0,05°: das Maß, nach dem die Horizont-Karte neu malt; am Tag des Spiels
-    // zwei Messungen je Sekunde), solange das Licht wirft; und die Welt lädt nach — jede Regung der Welt und des Baus
+    // DAS BILD ÄNDERT SICH AUCH AM STEHENDEN AUGE (laub-messer): die Sonne wandert — der Pass misst neu, wenn die Lesung nach dem
+    // Gesetz der Lesung nicht mehr steht (`_bildSichtSteht`, in Blenden-Stufen: licht-lesung-ev; bis hier je 0,05° des Lichts),
+    // solange das Licht wirft; und die Welt lädt nach — jede Regung der Welt und des Baus
     // (`_weltRegung`, `_bauRegung`: der Weckruf vor jedem Schreiben) weckt ihn. Bis hier maß er am stehenden Auge unter stehender
     // Uhr nie neu, während Wald und Bauten ins Bild wuchsen: Boden und Sicht blieben die des leeren Bilds (Vor-Probe, Fund).
     // Nach einer Regung zeichnen die Kaskaden die neuen Werfer erst auf ihrem Takt (`_loopShadowUpdate`, die ferne bis sechs
@@ -548,22 +566,22 @@ class AnazhRealm_bild_schatten {
             if (dl.target) l.sub(dl.target.position);
             l.normalize();
         } else l.set(0, 0, 0);
-        const v = [e[12], e[13], e[14], e[8], e[9], e[10], this._weltLicht().stand, l.x, l.y, l.z];
+        const v = [e[12], e[13], e[14], e[8], e[9], e[10], this._weltLicht().stand];
         // … und die Horizont-Karte (`_sonnenSicht` liest sie in jedem Empfänger): ihr Gitter kommt erst nach dem ersten Weltbild
         // (`_horizontGitterTakt`), bei tiefer Sonne fällt mit ihm der Schatten des Grats ins Bild — das gemalte Gitter und ihr
         // Schalter wecken ihn (ihr Neu-Malen am Licht deckt die Richtung des Lichts oben, dasselbe Maß)
         const HK = this.state.horizontKarte;
         v.push(this._weltRegung | 0, this._bauRegung | 0, HK ? HK.gemalt | 0 : -1, HK ? +HK.U.aktiv.value : 0);
         const a = P.sig;
-        const lichtRad = AnazhRealm.HORIZONT_KARTE.lichtRad;
-        let wach = sprung || !a;
+        // die Richtung des Lichts (`l`, die Richtung der nächsten Messung) weckt ihn nur über das Gesetz der Lesung
+        let wach = sprung || !a || (!!P.sicht && !this._bildSichtSteht());
         for (let i = 0; !wach && i < v.length; i++) {
             const d = Math.abs(v[i] - a[i]);
-            wach = i < 3 ? d > K.ruheM : i < 6 ? d > K.ruheRad : i > 6 && i < 10 ? d > lichtRad : d !== 0;
+            wach = i < 3 ? d > K.ruheM : i < 6 ? d > K.ruheRad : d !== 0;
         }
         const jetzt = this._shadowFrame | 0;
         if (wach) {
-            if (a && (v[10] !== a[10] || v[11] !== a[11])) P.nachAb = jetzt;
+            if (a && (v[7] !== a[7] || v[8] !== a[8])) P.nachAb = jetzt;
             P.sig = v;
         } else if (P.nachAb != null) {
             const k = this._shadowLast ? this._shadowLast.k : [];

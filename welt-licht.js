@@ -85,6 +85,10 @@ var __weltLicht = (function () {
         nachtKnotenE: MOND_E,
         nachtKnotenGrad: -6,
         nachtGrad: -32,
+        // DIE STUFE DER UHR (EV): so weit dürfen Belichtung und Licht derselben Uhr auseinander liegen — die Tag-Achse urteilt
+        // daran (ASYNC, scripts/lib/licht-linsen.cjs `TAG_SOLL.async` liest sie hier), und die Lesung des Lichtmessers steht,
+        // solange die Wanderung des Lichts seit ihrer Messung die Belichtung um höchstens sie ändert (`_bildSichtSteht`)
+        async: 0.05,
     });
     // DIE GRENZGRÖSSE DER STERNE je Sonnenhöhe [Grad, Größe] (V18.530, `HIMMEL.grenzgroesse` der Welt): im hellen Tag (≥ 10°) ist
     // nichts zu sehen, am Ende der bürgerlichen Dämmerung (−6°) +1,5, der nautischen (−12°) +4, astronomische Nacht (−18°) +6 —
