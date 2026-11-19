@@ -1502,7 +1502,8 @@ async function lebenBuehnen() {
     //       „aus“ am Takt 100 ändert ihn; derselbe Akt wieder gibt denselben
     //   G4  der Stand am Takt 100 reist heraus, herein und rechnet bis 160 weiter = der Lauf geradeaus, Byte für Byte
     // Täter (alle in EINEM Lauf, je einer an seiner Sicht): gau-feld (der Spiegel des Substrats läuft weg) · gau-akt (der Wirt
-    // verliert den Akt) · gau-stand (der Stand verliert die Fraß-Schicht auf der Reise). `opts.gau.jahre` (nur `--gau`): das
+    // verliert den Akt) · gau-stand (der Stand verliert die Fraß-Schicht auf der Reise) · gau-reihe (das Leben des Stands
+    // verliert die Akte der Gaue). `opts.gau.jahre` (nur `--gau`): das
     // Aufholen eines Gaus ohne Akte über n Jahre, im Faden gemessen (G5); `haupt`: die längste Arbeit des Haupt-Fadens (G2).
     await buehne("gau", async () => {
         const O = (opts && opts.gau) || {};
@@ -1626,6 +1627,29 @@ async function lebenBuehnen() {
             ohne.fill(0, ende - a.feld.zellen * 8, ende);
             z.sicht["gau-stand"] = { g4: await reise(ohne) };
         }
+        // G4 AM STAND DER SEITE: der Akt tritt in die Reihe des Wirts (`_gauAkt`), das Leben des Stands trägt sie (`_lebenImStand`),
+        // und nach dem Laden (`_lebenAusStand`) rechnet ein frischer Faden aus Saat und Akten bis T2 = der Lauf geradeaus (a1).
+        // Was das Laden sonst setzt (Feld, Bestand, Reihe der Feld-Akte), kehrt danach zurück.
+        const halt = r._gauHalt();
+        const haltAlt = new Map(halt);
+        const merk = [s.lifeField, s.feldAkte, s.faunaBestand, r._lebenStand, r._lebenWecker, r._annahmeOffen, r._feldAktGewirkt];
+        halt.clear();
+        r._gauAkt(0, 0, AKT[0]);
+        const doppelt = r._gauAkt(0, 0, Object.assign({}, AKT[0]));
+        const laden = async (v) => {
+            neuerFaden();
+            halt.clear();
+            r._lebenAusStand(JSON.parse(JSON.stringify(v)));
+            const h = await r._gauBis(0, 0, T2, { saat: 1, kg: KG, packen: true });
+            return gleich(h.stand, a1);
+        };
+        const v = r._lebenImStand();
+        const reihen = v.gaue || [];
+        z.stand = { gleich: await laden(v), akte: reihen.reduce((p, g) => p + g[1].length, 0), doppelt, zeichen: JSON.stringify(reihen).length };
+        if (TT.includes("gau-reihe")) z.sicht["gau-reihe"] = { stand: Object.assign({}, z.stand, { gleich: await laden(Object.assign({}, v, { gaue: undefined })) }) };
+        halt.clear();
+        for (const [k, l] of haltAlt) halt.set(k, l);
+        [s.lifeField, s.feldAkte, s.faunaBestand, r._lebenStand, r._lebenWecker, r._annahmeOffen, r._feldAktGewirkt] = merk;
         // DER WEG DES SPIELS (E6): der Wirt mit der Masse des GUSSES und der Saat des Gaus — die Geburt des Wirts (der Guss
         // zweier Leiber, einmal je Sitzung) und der Gau am Takt 1
         const w0 = performance.now();
@@ -1673,6 +1697,10 @@ function lebenUrteil(name, z, soll) {
         soll(
             z.g4.gleich && z.g4.geradeaus && z.g4.takte === z.g4.soll,
             `der Stand des Gaus reist nicht: heraus, herein, weiter ≠ geradeaus (gleich ${z.g4.gleich}, geradeaus = erster Lauf ${z.g4.geradeaus}, ${z.g4.takte} von ${z.g4.soll} Takten ab dem Stand, ${z.g4.bytes} Bytes)`
+        );
+        soll(
+            z.stand.gleich && z.stand.akte === 1 && z.stand.doppelt === false,
+            `der Stand der Seite trägt die Akte des Gaus nicht: speichern, laden, weiter ≠ geradeaus (gleich ${z.stand.gleich}, ${z.stand.akte} Akt im Stand, derselbe Akt zweimal ${z.stand.doppelt}, ${z.stand.zeichen} Zeichen)`
         );
         soll(z.spiel.beute > 0 && z.spiel.jaeger > 0, `der Gau des Spiels (Masse des Gusses ${z.spiel.kg}) ist leer: Beute ${z.spiel.beute}, Wolf ${z.spiel.jaeger}`);
         return;
@@ -1954,6 +1982,7 @@ module.exports = {
             ["gau-feld", /der Gau im Faden verlässt den B4-Lauf/],
             ["gau-akt", /der Akt ändert den Gau nicht/],
             ["gau-stand", /der Stand des Gaus reist nicht/],
+            ["gau-reihe", /der Stand der Seite trägt die Akte des Gaus nicht/],
         ],
         erbe: [["erbe-kind", /das Erbe reist nicht von den Eltern zum Kind \(kind\)/]],
         muster: [
@@ -2355,7 +2384,7 @@ if (process.argv.includes("--gau")) {
             `${farbe(uA.ok && uB.ok)} G1 der B4-Lauf aus dem Faden: Wolf je 4 Jahre ${A.wolf.join(" ")} · Beute ${A.reh.join(" ")} · Land ${A.feld.land} · Zellen ${A.feld.zellen} · Σ K ${A.feld.kSumme}${uA.ok ? "" : " — " + uA.grund}`,
             `${farbe(Math.max(A.haupt.maxMs, B.haupt.maxMs) <= 1)} G2 Haupt-Faden je Ruf des Wirts: längste Arbeit ${A.haupt.maxMs} ms (${A.haupt.wo}, ${A.haupt.rufe} Rufe) · zweites Boot ${B.haupt.maxMs} ms (${B.haupt.wo}, ${B.haupt.rufe} Rufe) — Soll ≤ 1 ms; die Geburt des Wirts (Masse des Gusses) ${A.spiel.wirtMs} · ${B.spiel.wirtMs} ms`,
             `${farbe(boote && A.g3.gleich && A.g3.akt && B.g3.gleich && B.g3.akt)} G3 Determinismus: Boot 1 ${A.g3.hash} · Boot 2 ${B.g3.hash} (ohne Akt) · mit EINEM Akt „aus“ am Takt 100 ${A.g3.hashAkt} · ${B.g3.hashAkt} · je Boot zwei Fäden gleich ${A.g3.gleich} · ${B.g3.gleich} · ${A.g3.bytes} Bytes am Takt 160`,
-            `${farbe(A.g4.gleich && B.g4.gleich)} G4 Stand-Rundreise: heraus am Takt 100 (${A.g4.bytes} Bytes), herein, ${A.g4.takte} Takte weiter = geradeaus ${A.g4.gleich} · ${B.g4.gleich}`,
+            `${farbe(A.g4.gleich && B.g4.gleich)} G4 Stand-Rundreise: heraus am Takt 100 (${A.g4.bytes} Bytes), herein, ${A.g4.takte} Takte weiter = geradeaus ${A.g4.gleich} · ${B.g4.gleich} · am Stand der Seite (die Akte im Leben des Stands, ${A.stand.zeichen} Zeichen je Akt-Reihe): speichern, laden, ab der Saat weiter = geradeaus ${A.stand.gleich} · ${B.stand.gleich}`,
             `G5 Kosten im Faden: Feld des Gaus ${A.zeit.feldS} s (davon ${A.zeit.kacheln} Hydro-Kacheln ${A.zeit.hydroS} s) · zweites Boot ${B.zeit.feldS} s · ${A.zeit.msJeJahr} · ${B.zeit.msJeJahr} ms je Jahres-Schritt über die ersten 36 Jahre`,
             ...(A.aufholen || []).map((h) => `   Aufholen ohne Akte ${h.jahre} Jahre (${h.takte} Takte): ${h.s} s = ${h.msJeJahr} ms je Jahres-Schritt · am Ende Beute ${h.beute} · Wolf ${h.jaeger}${h.jahre === 100 && h.s > 2 ? " — FUND: über 2 s" : ""}`),
             `Der Weg des Spiels (Masse des Gusses ${A.spiel.kg.join(" · ")} kg, Saat des Gaus ${A.spiel.saat}): am Takt 1 Beute ${A.spiel.beute} · Wolf ${A.spiel.jaeger}`,

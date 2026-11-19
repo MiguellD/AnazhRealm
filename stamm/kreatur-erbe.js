@@ -275,6 +275,77 @@ class AnazhRealm_kreatur_erbe {
         const f = this._gauFadenStand;
         if (f) f.worker.postMessage({ type: "gau-geht", gx, gz });
     }
+    // DIE AKTE DER GAUE hält der Wirt (je Gau „gx,gz“ seine Liste; sie fällt mit der Saat der Welt): die EINE Eingabe der Seite
+    // in das Gesetz. Sie reisen im Stand (`_gauImStand` im Leben des Stands, `_lebenImStand`) — der Gau ist die Funktion von
+    // Saat, Akten und Takt, der Faden rechnet ihn nach dem Laden aus ihnen.
+    _gauHalt() {
+        const seed = this._gelaende().seed;
+        if (!this._gauHaltStand || this._gauHaltStand.seed !== seed) this._gauHaltStand = { seed, gaue: new Map() };
+        return this._gauHaltStand.gaue;
+    }
+    // EIN AKT TRITT IN DIE REIHE SEINES GAUS (leben-core `akt`: { takt, art: "aus", id } · { takt, art: "ein", g, revier, id, a,
+    // e, alterS, m?, w? }): an seine Stelle nach Takt, bei gleichem Takt nach Kennung und Art — dieselbe Reihe auf jeder Seite,
+    // gleich, in welcher Folge die Akte ankamen. Derselbe Akt ein zweites Mal (ein nachgeholter) tritt nicht ein.
+    _gauAkt(gx, gz, akt) {
+        if (!akt || !Number.isInteger(akt.takt) || akt.takt < 0 || typeof akt.id !== "string" || !akt.id)
+            throw new Error("gau: ein Akt ohne Takt oder Kennung (" + JSON.stringify(akt) + ")");
+        const H = this._gauHalt();
+        const key = gx + "," + gz;
+        const L = H.get(key) || H.set(key, []).get(key);
+        const rang = (a) => [a.takt, a.id, a.art];
+        const vor = (a, b) => {
+            const [x, y] = [rang(a), rang(b)];
+            for (let k = 0; k < 3; k++) if (x[k] !== y[k]) return x[k] < y[k] ? -1 : 1;
+            return 0;
+        };
+        let i = L.length;
+        while (i > 0 && vor(akt, L[i - 1]) < 0) i--;
+        if (i > 0 && vor(akt, L[i - 1]) === 0) return false;
+        L.splice(i, 0, akt);
+        this._lebenGen = (this._lebenGen || 0) + 1; // die Marke des Lebens im Stand (`_lebenImStand`)
+        return true;
+    }
+    // DER GAU BIS ZUM TAKT, mit den Akten, die der Wirt für ihn hält (`_gauAuftrag`) — der Ruf jedes Lesers der Seite.
+    _gauBis(gx, gz, takt, opt) {
+        return this._gauAuftrag(gx, gz, takt, (this._gauHalt().get(gx + "," + gz) || []).slice(), opt);
+    }
+    // DIE AKTE DER GAUE IM STAND: [[„gx,gz“, [Akt, …]], …] — nur Gaue mit Akten (ein Gau ohne Akte ist reine Funktion der Saat).
+    _gauImStand() {
+        return [...this._gauHalt()].filter(([, L]) => L.length).map(([k, L]) => [k, L.map((a) => ({ ...a }))]);
+    }
+    // … und zurück aus einem Stand: die Reihen ersetzen die der Sitzung; ein Akt ohne Form bricht beim Namen (kein stiller Weg:
+    // ohne ihn wäre der Gau ein anderer als der des Stands) und seine Reihe endet vor ihm.
+    _gauAusStand(v) {
+        const H = this._gauHalt();
+        H.clear();
+        const gilt = (a) =>
+            a &&
+            Number.isInteger(a.takt) &&
+            a.takt >= 0 &&
+            typeof a.id === "string" &&
+            a.id.length > 0 &&
+            a.id.length <= 96 &&
+            (a.art === "aus" ||
+                (a.art === "ein" &&
+                    (a.g === "beute" || a.g === "jaeger") &&
+                    Number.isInteger(a.revier) &&
+                    Number.isFinite(a.alterS) &&
+                    this._lebenErbeGilt(a.a) &&
+                    this._lebenErbeGilt(a.e)));
+        for (const z of Array.isArray(v) ? v : []) {
+            if (!Array.isArray(z) || !/^-?\d+,-?\d+$/.test(z[0]) || !Array.isArray(z[1])) continue;
+            const [gx, gz] = z[0].split(",").map(Number);
+            for (const a of z[1]) {
+                if (!gilt(a)) {
+                    this._bruchMelden(
+                        `GAU: der Stand trägt im Gau ${z[0]} einen Akt ohne Form — seine Reihe endet vor ihm`
+                    );
+                    break;
+                }
+                this._gauAkt(gx, gz, { ...a });
+            }
+        }
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_kreatur_erbe]);
 

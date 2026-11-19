@@ -2239,7 +2239,12 @@ class AnazhRealm_feld_leben {
         // die Akte, die schon wirkten (je Stempel und Inhalt): ein nachgeholter Akt (`_akteNachholen`) wirkt nach dem Reload nie zweimal
         const G = [...(this._feldAktGewirkt || [])];
         const bis = Math.max(-Infinity, ...G.map(([, w]) => w)) - 2 * AnazhRealm.AKT_NACHHOL_S;
-        return { feld, bestand, akte, gewirkt: G.filter(([, w]) => w >= bis).map(([k]) => k), seite: S };
+        const stand = { feld, bestand, akte, gewirkt: G.filter(([, w]) => w >= bis).map(([k]) => k), seite: S };
+        // DIE AKTE DER GAUE reisen mit (Leben C2a, `_gauImStand`): der Bestand unter dem Gesetz der Zeit und der Jagd ist die
+        // Funktion von Saat, Akten und Takt — ein Stand ohne Akte trägt das Feld nicht (seine Bytes bleiben, wie sie waren)
+        const gaue = this._gauImStand();
+        if (gaue.length) stand.gaue = gaue;
+        return stand;
     }
     _lebenAusStand(v) {
         const st = this.state;
@@ -2252,6 +2257,7 @@ class AnazhRealm_feld_leben {
         st.feldAkte = [];
         st.faunaBestand = undefined;
         this._lebenGen = (this._lebenGen || 0) + 1;
+        this._gauAusStand(v.gaue); // die Akte der Gaue (Leben C2a): die Reihen des Stands ersetzen die der Sitzung
         const gewirkt = (this._feldAktGewirkt = new Map());
         for (const k of Array.isArray(v.gewirkt) ? v.gewirkt : [])
             if (typeof k === "string" && k.length < 400) gewirkt.set(k, Number(k.split("|")[0]));
