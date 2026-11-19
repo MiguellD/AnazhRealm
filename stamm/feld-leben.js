@@ -2603,8 +2603,8 @@ class AnazhRealm_feld_leben {
     // und 23 Pflanzen mit tryMouseBreak — Δlebendig 0, kein Stumpf, nach dem Reload 23 von 23 Pflanzen zurück).
 
     // DER TAG DER PROZESSE (w28-lava-nachlauf): die EINE Zeit, an der alles altert, was ein Prozess ist — die Welt-Uhr
-    // (`spielZeit`: sie reist, geht nie zurück, die spätere gilt, `_weltUhrNimm`) im Tag des Gesetzes (`PEGEL_TAG_S` Welt-Uhr je
-    // Tag, nie die Tag-Länge einer Seite), ab dem Null-Punkt der Welt (`worldMeta.tagNull`, `_weltTagEichen`). Leser: die
+    // (`spielZeit`: sie reist, geht nie zurück, die spätere gilt, `_weltUhrNimm`) im Tag des Kalenders (die Kalender-Zeit, stetig
+    // über den Regler), ab dem Null-Punkt der Welt (`worldMeta.tagNull`, `_weltTagEichen`). Leser: die
     // Welt-Stunde (`_weltStunde`: das Erkalten der Lava, Stempel und Heilung der Taten, der Nachwuchs, die Sukzession), der
     // Pfad (`_trittJetzt`, sein Tag-Wechsel in `_tickWegeKarte`) und das Alter der Werke (`_werkAlter`, `_werkeAltern`). Bis
     // hier lasen sie den Tag der SICHT (`worldMeta.tag` + `timeOfDay`, der Sonnenstand des Spielers): ein Zug am Regler der Uhr

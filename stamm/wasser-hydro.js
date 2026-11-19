@@ -210,15 +210,17 @@ class AnazhRealm_wasser_hydro {
         if (st.pegelZustand) return;
         const K = globalThis.__gelaendeCore;
         const [Z, normS, dauer] = [AnazhRealm.WETTER_ZUG_SEK, this._kalender().normS, AnazhRealm.WETTER_UEBERGANG_S];
-        // der erste Stempel liegt in der Kalender-Zeit, die Züge auf der Welt-Uhr (zeit-ein-kalender: `_kalenderUhr` kehrt um)
+        // die Vergangenheit liegt in der Kalender-Zeit: das Raster der Züge läuft über die `fenster` Tage des Kalenders vor dem
+        // ersten Stempel (je Tag `normS` ÷ Zug Schritte, gleich bei jeder Tag-Länge — auch unter dem angehaltenen Tag der Bühne),
+        // das Wort und der Weg des Regens zur Welt-Uhr ihres Augenblicks (`_kalenderUhr`; am Standard-Tag die Kalender-Zeit selbst)
         const t0 = this._regenStempel()[0];
-        const [von0, bis] = [this._kalenderUhr(t0 - K.LAUF.fenster * normS), this._kalenderUhr(t0)];
+        const U = (k) => this._kalenderUhr(k * Z);
         const S = [];
         let von = null;
-        for (let k = Math.floor(von0 / Z); k * Z < bis; k++) {
-            if (von === null) von = this._wetterAmOrt(x, z, (k - 1) * Z);
-            const nach = this._wetterAmOrt(x, z, k * Z);
-            this._regenWeg(von, nach, k * Z, von === nach ? 0 : dauer, -Infinity, S);
+        for (let k = Math.floor((t0 - K.LAUF.fenster * normS) / Z); k * Z < t0; k++) {
+            if (von === null) von = this._wetterAmOrt(x, z, U(k - 1));
+            const nach = this._wetterAmOrt(x, z, U(k));
+            this._regenWeg(von, nach, U(k), von === nach ? 0 : dauer, -Infinity, S);
             von = nach;
         }
         st.pegelZustand = K.pegelZustand(S, t0, normS, this._regenMittel(), null);
