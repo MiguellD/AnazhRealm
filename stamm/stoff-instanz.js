@@ -761,7 +761,7 @@ class AnazhRealm_stoff_instanz {
                 const zug = a._zuege.get(camera);
                 if (!zug || !zug.bereit) throw new Error("GPU-WAHL: die Arena zieht ohne die Wahl ihres Passes");
                 zug.bereit = false;
-                a._wahlSicht(zug, renderer);
+                a._wahlSicht(zug);
                 a._stapel[a._stapel.length - 1] = zug;
                 return;
             }
@@ -1426,10 +1426,10 @@ class AnazhRealm_stoff_instanz {
             // nach dem Haken verborgen wurde (die Wahl einer Linse, `__linsenZiel`), fällt hier aus dem Zug. Befund (Radeon, die
             // Albedo-Tafel an Genesis, 900c28e6): jede Zeile zog Wiese, Kronen und Bänke der Wahl mit (Rinde 0,0807 → 0,1397, Tor
             // 0,6493 → 0,1256) — eine Zusage der Foundry zwischen zwei Schüssen schrieb `_instanzZahl` (visible = n > 0) vor dem Haken.
-            _wahlSicht(zug, renderer) {
+            _wahlSicht(zug) {
                 for (let j = zug.zuege.length - 1; j >= 0; j--) {
                     const m = zug.zuege[j];
-                    if (m === this || this._sichtbar(m, renderer)) continue;
+                    if (m === this || this._sichtbar(m)) continue;
                     const gz = zug.gpuZahl ? zug.gpuZahl.get(m) : undefined;
                     zug.tri -= (zug.arr[zug.offs[j] / 4 - zug.seg * this._segCap * 5] / 3) * (gz === undefined ? zug.wahl[j * 5 + 2] : gz); // prettier-ignore
                     zug.offs.splice(j, 1);
@@ -1685,12 +1685,11 @@ class AnazhRealm_stoff_instanz {
                 this._folgen();
                 return 0;
             }
-            _sichtbar(m, renderer) {
+            _sichtbar(m) {
                 if (m.visible === false) return false;
                 let p = m.parent;
                 while (p && p !== this.parent) {
                     if (p.visible === false) return false;
-                    if (p.occlusionTest === true && renderer.isOccluded(p)) return false;
                     p = p.parent;
                 }
                 return p === this.parent;
@@ -1877,7 +1876,7 @@ class AnazhRealm_stoff_instanz {
                     L.takt(renderer, jetzt);
                     if (haupt)
                         for (const m of this.glieder) {
-                            if ((m.count | 0) <= 0 || !this._sichtbar(m, renderer)) continue;
+                            if ((m.count | 0) <= 0 || !this._sichtbar(m)) continue;
                             if (blick && m.frustumCulled !== false) {
                                 if (m.boundingSphere === null) m.computeBoundingSphere();
                                 if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld)))
@@ -1914,7 +1913,7 @@ class AnazhRealm_stoff_instanz {
                 for (const m of this.glieder) {
                     let n = m.count | 0;
                     if (n > 0) lebend++;
-                    if (n > 0 && !this._sichtbar(m, renderer)) n = 0;
+                    if (n > 0 && !this._sichtbar(m)) n = 0;
                     if (n > 0 && !fest && m.frustumCulled !== false) {
                         if (!frust) {
                             const R = globalThis.anazhRealm; // die Wahl des Spiels, auch im Mess-Fenster (`_wahlMatrix`)

@@ -156,10 +156,17 @@ class AnazhRealm_bild_sicht {
                 pass.setBindGroup(0, A.gruppe);
                 pass.draw(3);
                 pass.end();
+                // DIE SICHT (Bild/tiefe): auf demselben Encoder, bevor der Szenen-Pass wieder beginnt — die Pyramide dieses
+                // Bilds und der späte Zug der Bau-Sätze
+                A.bruch(this);
                 return undefined;
             };
             A.haken = true;
         }
+        // der Schirm der Tiefe des Hauptbilds — die Pyramide der Sicht misst in ihm
+        A.w = quelle.width;
+        A.h = quelle.height;
+        if (!A.bruch) A.bruch = (enc) => this._sichtTiefeBruch(enc, A);
         A.scharf = true;
         try {
             be.copyFramebufferToTexture(A.attrappe, ctx, A.rechteck);

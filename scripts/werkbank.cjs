@@ -551,6 +551,8 @@ async function starte() {
     await page.evaluateOnNewDocument(FALTE_INSTALL);
     await page.evaluateOnNewDocument(require("./lib/gesicht-proben.cjs").GESICHT_INSTALL); // die Proben der Iris (`bild --klasse …:kopf/`)
     await page.evaluateOnNewDocument(vramAbgriff);
+    // DER PIXEL-ZENSUS (`start --pixel`, scripts/lib/pixel-zensus.cjs): Deskriptor je Pipeline und Text je Modul ab Dokument-Start
+    if (hat("pixel")) await page.evaluateOnNewDocument(require("./lib/pixel-zensus.cjs").PIXEL_INSTALL);
     // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
     if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
     if (START_ORT) await ortZug(page, START_ORT);

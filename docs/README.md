@@ -29,6 +29,7 @@
 | `docs/das-lebendige-feld.md` | **DER WAHRE NORDEN** — die Welt als EIN Feld, das alle lesen · schreiben · WERTEN. Vor Feld/Emotion/DSL zuerst.  |
 | `docs/das-feld-zeichnet.md`  | Der Render-Bogen des Feldes — drei Stufen, kein dritter Spiegel (die Ferne liest den Gelände-Kern), Warm-Start. |
 | `docs/abnahme-drehbuch.md`   | Die EINE Schöpfer-Runde — das Browser-Drehbuch in 19 Schritten (Scope/Ship, kein Merge-Tor).                    |
+| `spike/einheit-sicht/BLATT.md` | Der Spike SICHT der EINHEIT (E7) — Pixel-Zensus je System, die Orte der Sicht, Vendor-Befund, S1–S5 mit Bildern. |
 
 ## Norm
 
