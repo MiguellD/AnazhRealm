@@ -266,6 +266,87 @@
     width: auto;
     z-index: 60;
 }
+/* DIE EINE KOPFZEILE (w28-studio-seiten, huelle.js `kopf`): dieselbe über jedem Studio und der Übersicht — Studio-Wahl, die Zeile
+   der Bühne, die Kosten des Werks, der Ort des Knopfs „In der Welt ansehen". Die Tafeln eines Studios beginnen unter ihr
+   (`body.h-mit-oben`, --h-oben). */
+:root {
+    --h-oben: 40px;
+}
+.h-oben {
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: var(--h-oben);
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    background: var(--h-feld);
+    border-bottom: 1px solid var(--h-haar);
+    backdrop-filter: blur(8px);
+    font: 12px system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--h-tinte);
+    white-space: nowrap;
+}
+.h-oben-heim {
+    color: var(--h-akzent);
+    text-decoration: none;
+    font-weight: 600;
+}
+.h-oben-wahl {
+    font: inherit;
+    color: var(--h-tinte);
+    background: var(--h-knopf);
+    border: 1px solid var(--h-haar);
+    border-radius: 7px;
+    padding: 4px 6px;
+    max-width: 34vw;
+}
+.h-oben-wahl option {
+    color: #111;
+}
+.h-oben-buehne .h-sitzung {
+    margin: 0;
+    flex-wrap: nowrap;
+}
+.h-oben-kosten {
+    font: 11px var(--h-mono);
+    color: var(--h-matt);
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.h-oben-kosten.fail {
+    color: var(--h-fail);
+}
+.h-oben-werk .h-werk {
+    width: auto;
+    margin: 0;
+    padding: 6px 10px;
+}
+/* schmal (Telefon): die Zeile bricht in zwei Reihen, die Kosten weichen */
+@media (max-width: 620px) {
+    :root {
+        --h-oben: 76px;
+    }
+    .h-oben {
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        padding: 4px 8px;
+        align-content: center;
+    }
+    .h-oben-kosten {
+        display: none;
+    }
+    .h-oben-wahl {
+        max-width: 52vw;
+        flex: 1;
+    }
+    .h-oben-buehne .h-knopf {
+        padding: 4px 7px;
+    }
+}
 /* DIE MATRIX-TAFEL (w11-leib): der Kern-Zustand des gezeigten Leibs, schwebend oben rechts — auch im Spiel, wenn die UI ruht */
 .h-matrix {
     position: fixed;
