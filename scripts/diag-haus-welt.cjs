@@ -92,6 +92,8 @@ const BILD = process.argv.includes("--bild");
 //   grundbueschel: W9: der Kreis des Büschels ohne seine Skala (die Weite der Vorlage gilt je Skala 1)
 //   abbau: W9: der Abbau lässt den Grund liegen
 //   grundplan: W9: der Grund wartet auf die Hülle
+//   riegel: W9: die Hülle wartet nicht auf den Grund (der Riegel in `_hausHuelleSetzen` fehlt; die Linse erzwingt die Folge
+//       Hülle vor Grund im Ort-Faden — ohne Riegel ROT in jedem Lauf)
 //   vorplatz: W9 SLOT: das gesetzte Haus legt seinen Plan ohne Vorplatz
 //   fremdslot: W11: der Plan kennt keinen Fremd-Slot (die Gasse läuft durch das gesetzte Haus) · das Haus auf dem
 //       Erdbau eines Orts legt keinen Grund (sein Keller ist Erde)
@@ -345,8 +347,26 @@ async function proben(phasen) {
             if (bm.phantomMesh) bm.phantomMesh.position.set(x, hh(x, z), z);
             if (bm.phantomMesh) bm.phantomMesh.rotation.y = phi;
             r._newArchId = () => id;
+            // W9 PLAN, DIE WETTFAHRT ERZWUNGEN: der Ort-Faden liefert den Plan dieses Hauses erst, wenn seine Hülle angekommen ist —
+            // die ungünstige Folge in jedem Lauf, nie ein Würfel der Last (bis hier stand W9 Plan an a244e512 in 5 von 6 Läufen
+            // grün): ohne den Riegel des Stamms (`_hausHuelleSetzen` wartet auf `_grundOffen`) kommt die Hülle auf dem
+            // ungeschnittenen Feld an. Die Linse hängt nie: nach 60 s ohne Hülle liefert der Faden doch.
+            let huelleDa = null;
+            const huelleKam = new Promise((q) => (huelleDa = q));
+            const fristW9 = setTimeout(huelleDa, 60000);
+            const owVor = Object.getOwnPropertyDescriptor(r, "_ortWahlImFaden");
+            const ow = r._ortWahlImFaden;
+            r._ortWahlImFaden = function (plan, o2) {
+                const p = ow.apply(this, arguments);
+                const en = s.architectures.find((a) => a.id === id);
+                const meins = en && o2 && Math.hypot(o2.x - en.position.x, o2.z - en.position.z) < 0.05;
+                return meins ? Promise.all([p, huelleKam]).then((v) => v[0]) : p;
+            };
             const hs = r._hausHuelleSetzen; // W9 PLAN: die Gründe an seiner Mitte, wenn die Hülle seines Körpers ankommt
             r._hausHuelleSetzen = function (en, hu) {
+                // die Wettfahrt beim Namen: kam die Hülle, während der Grund im Ort-Faden lag (`_grundOffen`), hält sie der Riegel
+                if (en.id === id && r._grundOffen && r._grundOffen.has(en)) en.__w9Wartet = (en.__w9Wartet || 0) + 1;
+                if (en.id === id) huelleDa();
                 if (en.id === id && !en._hausHuelle)
                     en.__w9Plan = gruende().filter(
                         (g) => Math.hypot(g.cx - en.position.x, g.cz - en.position.z) < 0.05
@@ -365,6 +385,10 @@ async function proben(phasen) {
                 await window
                     .__gebautNach(e, { fertig: () => !!e._hausHuelle, bau: () => {}, takt: () => pumpe(4), max: 300 })
                     .catch(() => null);
+            clearTimeout(fristW9);
+            huelleDa();
+            if (owVor) Object.defineProperty(r, "_ortWahlImFaden", owVor);
+            else delete r._ortWahlImFaden;
             if (e?._hausHuelle) return e;
         }
         return null;
@@ -1816,7 +1840,7 @@ async function proben(phasen) {
             ["dorf", dorf],
             ["gesetzt", gesetzt],
         ]) {
-            const a = { art, plan: e && e.__w9Plan };
+            const a = { art, plan: e && e.__w9Plan, wartet: (e && e.__w9Wartet) || 0 };
             o.w9.abbau.push(a);
             if (!e) {
                 a.fehler = "kein Haus";

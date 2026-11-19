@@ -884,7 +884,27 @@ async function abdruckLauf({
                         st.timeOfDay = 0.5;
                         await takt();
                     }
+                    // DIE WELT STEHT BEI DIESER UHR (w28-funktion-welt-2): was der Sprung und die Takte regten (der Schnee-Versatz
+                    // wandert mit der Uhr, jede Stufe baut die Chunks im Band neu — unter der Frist der Wanduhr, also je Last
+                    // verschieden weit), baut zu Ende in ZEITLOSEN Takten (der Stempel des letzten Takts: das Spiel baut und lebt
+                    // nicht, `zeitlos` im Loop) — gleich wie viele es braucht, die Uhr und das Leben stehen. Bis hier hashte der
+                    // Abdruck nach den Takten, gleich ob die Welt stand: an a1bf7f16 hielt sie beim Hash „Chunks offen 53“ (genesis)
+                    // und „Chunks offen 27“ (dorf), der Fege-Takt streuLod mitten in seiner Runde — er las, wie weit die Arbeit unter
+                    // der Last kam.
+                    const still = () => {
+                        st._frameOverBudget = false;
+                        if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
+                        try {
+                            r._gameLoopTick(t);
+                        } catch (e) {
+                            r._loopErrorBoundary(e);
+                        }
+                        return sleep(0);
+                    };
+                    // jeder Lauf geht mindestens einen stillen Takt (das EINE Einschwingen): sein letzter Takt sieht dieselbe Uhr
+                    const nStill = await __weltStehtNach(still, 1800);
                     return {
+                        still: nStill,
                         takte: n,
                         ring: r._builtRingRadius(),
                         uhr: st.spielZeit,
