@@ -1817,3 +1817,4 @@ omen-gtx-gtx-b7ed8419-42-b7ed8419 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · U
 2026-11-19 05:54 landung Runde 1 am f68dbf09: die OMEN ist durch (0 Stationen) — runde 1 f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41 gtx=durch radeon=offen
 2026-11-19 08:09 RUNDE 1 ALARM gtx: ohne Fortschritt seit 76 min (offen, 0/0, Station -, Kopf f68dbf09) — gesehen von gtx (landung-dienst) · RUNDE 1 ALARM radeon: ohne Fortschritt seit 137 min (offen, 0/0, Station -, Kopf f68dbf09) — gesehen von gtx (landung-dienst)
 2026-11-19 08:10 RUNDE 1 ALARM gtx: OMEN: 1 Messungen ungepusht seit 05:53 — offen 0/0, Station -, Kopf f68dbf09; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
+2026-11-19 08:10 landung Runde 1 am f68dbf09: misst 1428 von 1428 Stationen (0 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
