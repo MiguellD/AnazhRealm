@@ -54,7 +54,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-9';
+  const VERSION = 'planet-h2-10';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2687,9 +2687,11 @@
     const K = planetKlima(S, breite, laenge, -1, _orK, _orP), B = planetBiom(K, _orP.hoeheM, _orB);
     const hk = _orP.hoeheKm > 0 ? _orP.hoeheKm : 0, sued = breite < 0;
     o.anker = { breite: anker.breite, laenge: anker.laenge, zeitMa: 0, ost: anker.ost, nord: anker.nord };
-    // Wildnis-Regler, geklemmt auf ihre Zeile in LANDFORM_REGLER (Abbildung §6)
-    const rL = reglerZeile(og, 'land'), rH = reglerZeile(og, 'hoehe'), rKL = reglerZeile(og, 'kontinentLambda'), rRL = reglerZeile(og, 'rauhLambda');
-    const rTr = reglerZeile(og, 'trog'), rKs = reglerZeile(og, 'ks'), rTa = reglerZeile(og, 'tafel'), rSD = reglerZeile(og, 'schichtDicke'), rHA = reglerZeile(og, 'hartAnteil');
+    // Wildnis-Regler, geklemmt auf ihre Zeile in LANDFORM_REGLER (Abbildung §6). Nur was der Ort trägt, reist: kontinentLambda,
+    // schichtDicke und hartAnteil standen hier als def der Heimat — Δ ≡ 0 per Bau an jedem Ort (Zensus e217, e222, e223: FÄLLT); ein
+    // fehlendes Δ liest ortErbgut des Gelände-Kerns als den Wert der Heimat, dieselbe Zahl
+    const rL = reglerZeile(og, 'land'), rH = reglerZeile(og, 'hoehe'), rRL = reglerZeile(og, 'rauhLambda');
+    const rTr = reglerZeile(og, 'trog'), rKs = reglerZeile(og, 'ks'), rTa = reglerZeile(og, 'tafel');
     const st = _orP.orogenStaerke, tJs = K.tJahrC + KLIMA.lapse * hk;
     const lam = rRL.min + (rRL.max - rRL.min) * glatt(0, 400, _orP.orogenAlterMa);
     const schAlter = _orP.scholle >= 0 ? plan.schollen[8 * _orP.scholle + 4] : 0;
@@ -2697,13 +2699,10 @@
     o.wildnis = {
       land: klemm(rL, landAus(_orP.kont)),
       hoehe: klemm(rH, 0.6 + 1.0 * st),
-      kontinentLambda: rKL.def,
       rauhLambda: klemm(rRL, rRL.def + (lam - rRL.def) * glatt(0.05, 0.3, st)),
       trog: klemm(rTr, glatt(16, -2, tJs)),
       ks: klemm(rKs, 3 + 12 * konv),
       tafel: klemm(rTa, glatt(400, 1500, _orP.randAbstandKm) * glatt(1500, 3500, schAlter)),
-      schichtDicke: rSD.def,
-      hartAnteil: rHA.def,
     };
     o.meer = { waterLevelM: -og.meerUnterBasisM + sv * (S.meerKm - S0.meerKm) * 1000 };
     o.klima = { sommer: K.tSommerC + KLIMA.lapse * hk, winter: K.tWinterC + KLIMA.lapse * hk,
