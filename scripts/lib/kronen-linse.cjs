@@ -463,9 +463,12 @@ function wechselProbe({ ids, kern, wirt, fern, grenze }) {
             const d = w && w !== g && w.userData, P = o.isMesh && o.geometry.attributes.position; // prettier-ignore
             const a = !d ? 0 : g.userData.kind === "gate" ? d.side * Math.sign(w.position.z) * fern : -(d.offen || 0);
             if (!P) return;
+            // der Fenster-Flügel (Bahn 1) ist die Einheit am Scharnier: seine Basis (fachwerk `fensterBlattBasis`) setzt ihn an seinen Platz
+            const fb = d && d.fenster ? new THREE.Matrix4().fromArray(d.fenster.basis) : null;
             const pos = new Float32Array(P.count * 3);
             for (let i = 0; i < P.count; i++) {
                 v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
+                if (fb) v.applyMatrix4(fb);
                 if (a) v.sub(w.position).applyAxisAngle(Y, a).add(w.position);
                 v.toArray(pos, i * 3);
             }

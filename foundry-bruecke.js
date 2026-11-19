@@ -661,9 +661,11 @@ const foundryKanal = (() => {
                 // DER FENSTER-FLÜGEL (Bahn 1 ÖFFNUNGEN, K2): das Blatt eines wachen Fensters reist mit seinem Samen — der Wirt
                 // fragt mit ihm, Uhr und Nässe den Zustand (fachwerk `fensterZustand`); Türen und Tore tragen das Feld nie.
                 if (anc.userData.fenster) {
-                    if (!Number.isInteger(anc.userData.fenster.samen))
-                        throw new Error("__extractAssetMesh: ein Fenster-Flügel ohne Samen");
-                    out.tuer.fenster = { samen: anc.userData.fenster.samen };
+                    const fb = anc.userData.fenster.basis;
+                    if (!Number.isInteger(anc.userData.fenster.samen) || !Array.isArray(fb) || fb.length !== 16 || !fb.every(Number.isFinite))
+                        throw new Error("__extractAssetMesh: ein Fenster-Flügel ohne Samen oder ohne Basis (Lage · Drehung · Skala der Einheit)");
+                    // die Basis: der Einheits-Flügel an seinen Platz (fachwerk `fensterBlattBasis`) — der Wirt zeichnet ihn als Instanz
+                    out.tuer.fenster = { samen: anc.userData.fenster.samen, basis: fb };
                 }
                 break;
             }

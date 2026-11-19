@@ -172,16 +172,22 @@ function dreiecke(g, nurWerfer, stoff) {
         if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
         // die Tür-Flügel (`userData.side`, buildStufe 0) drehen in der Welt um ihr Scharnier — in der Gruppe liegen sie
         // um ihren Ort doppelt versetzt (Bake-Lage + Scharnier); ihr Wurf ist der der Tür im Haus
-        // Der Fenster-Flügel (Bahn 1: `userData.fenster`) reist gebacken ZU, am Scharnier — er steht, wo er gezeichnet wird, und
-        // trägt das Glas des wachen Fensters: er zählt mit
+        // Der Fenster-Flügel (Bahn 1: `userData.fenster`) reist als Einheit am Scharnier, an seinen Platz gesetzt von seiner Basis
+        // (fachwerk `fensterBlattBasis`, die Matrix, die der Wirt der Instanz gibt): er trägt das Glas des wachen Fensters und zählt
+        // mit — nur nie als Werfer (`_foundryFensterInstanz`: der Wirt lässt ihn nicht werfen)
+        let basis = null;
         for (let a = o.parent; a; a = a.parent)
-            if (a.userData && typeof a.userData.side === "number" && !a.userData.fenster) return;
+            if (a.userData && typeof a.userData.side === "number") {
+                if (!a.userData.fenster) return;
+                if (nurWerfer) return;
+                basis = new T.Matrix4().fromArray(a.userData.fenster.basis);
+            }
         const m = o.material || {};
         const ud = m.userData || {};
         if (nurWerfer && (o.castShadow === false || ud.__seh === "glut" || (m.transparent && m.opacity < 1))) return;
         const { position: P, color: C } = o.geometry.attributes;
         const I = o.geometry.index ? o.geometry.index.array : null;
-        const e = o.matrixWorld.elements;
+        const e = (basis ? basis.multiply(o.matrixWorld) : o.matrixWorld).elements;
         const n = I ? I.length : P.count;
         const [w, c, mc] = [new Float64Array(n * 3), new Float32Array(n * 3), m.color ? m.color.toArray() : [1, 1, 1]];
         for (let i = 0; i < n; i++) {

@@ -1470,11 +1470,41 @@ class AnazhRealm_studio_gestalt {
     // Platz (`_tickTorFluegel`). Die Drehung bleibt in der Instanz-Matrix: ein Schwung kostet je Flügel eine Matrix, nie die
     // Ecken (die Drehung in der Geometrie kostete beim Gehen am Ring +2,9 ms CPU-Takt p95 und fiel). Links und rechts sind
     // Spiegel mit eigener Teilung — sie bleiben zwei Gestalten.
-    _foundryFluegelInstanz(group, leaves) {
+    // DER EINHEITS-FLÜGEL DER FENSTER (Bahn 1 ÖFFNUNGEN): jeder wache Fenster-Flügel eines Hauses trägt dasselbe Gitter (fachwerk
+    // `fensterFluegelTrennen`: die Einheit 1 × 1 am Scharnier, nur verschoben) und seine Basis (`tuer.fenster.basis`: Lage, Drehung,
+    // Skala — `fensterBlattBasis`). Der erste Flügel eines Stoffs ist die Vorlage, jeder (auch sie) zeichnet als Instanz ihrer
+    // Gruppe: je Haus EIN Holz- und EIN Glas-Zug, gleich wie viele Fenster. Er wirft nicht: zu steht er in der Achse, tief/2 hinter
+    // der Haut — seinen Wurf trägt die Laibung des Rumpfs (Sturz und Pfosten durch die Wand), sein eigener fiele hinter das Glas
+    // in den Raum; offen (morgens, `fensterZustand`) wären es Stäbe von 4–6 cm, das Glas wirft ohnehin nie (`_teilWirft`).
+    // Türblätter gehen den Weg darunter byte-gleich.
+    _foundryFensterInstanz(leaves) {
         const vorlagen = [];
         for (let i = 0; i < leaves.length; i++) {
             const lf = leaves[i];
-            if (!lf.tuer || lf.rad || lf.teil) continue;
+            if (!lf.tuer || !lf.tuer.fenster) continue;
+            let v = vorlagen.find((x) => x.mat === lf.mat);
+            const d = v ? AnazhRealm._geoVerschoben(v.geom, lf.geom) : [0, 0, 0];
+            if (!d) throw new Error("_foundryFensterInstanz: ein Fenster-Flügel trägt nicht das Gitter der Einheit seines Hauses");
+            if (!v) vorlagen.push((v = lf));
+            const basis = new THREE.Matrix4()
+                .fromArray(lf.tuer.fenster.basis)
+                .multiply(new THREE.Matrix4().makeTranslation(d[0], d[1], d[2]));
+            leaves[i] = Object.assign({}, lf, {
+                geom: v.geom,
+                leafKey: v.leafKey,
+                localMatrix: new THREE.Matrix4().multiplyMatrices(lf.localMatrix, basis),
+                tuer: Object.assign({}, lf.tuer, { basis }),
+                castShadow: false,
+                ...(v === lf ? {} : { _eigen: false }), // die Geometrie gehört der Vorlage
+            });
+        }
+    }
+    _foundryFluegelInstanz(group, leaves) {
+        this._foundryFensterInstanz(leaves);
+        const vorlagen = [];
+        for (let i = 0; i < leaves.length; i++) {
+            const lf = leaves[i];
+            if (!lf.tuer || lf.tuer.fenster || lf.rad || lf.teil) continue;
             let treffer = null;
             for (const v of vorlagen) {
                 if (v.mat !== lf.mat || v.castShadow !== lf.castShadow || v.teilWirft !== lf.teilWirft) continue;
