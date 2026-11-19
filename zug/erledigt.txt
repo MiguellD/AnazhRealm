@@ -1835,3 +1835,4 @@ omen-gtx-gtx-f68dbf09-1-f68dbf09 ROT 1 GRÜN / 198 ROT / 53 UNGEMESSEN · ROT ka
 2026-11-19 14:35 RUNDE 1 ALARM gtx: ohne Fortschritt seit 197 min (laeuft, 252/1428, Station karte2.same.entfaltung.abwesenheit#1+245, Kopf f68dbf09) — gesehen von gtx (landung-dienst)
 2026-11-19 14:44 RUNDE 1 ALARM radeon: RADEON: 1 Messungen ungepusht seit 00:00 — durch 25/25, Station -, Kopf f68dbf09; die Runde setzt an derselben Station fort — gesehen von radeon (radeon-dienst)
 2026-11-19 14:57 RUNDE 1 ALARM gtx: OMEN: 1 Messungen ungepusht seit 05:53 — laeuft 252/1428, Station karte2.same.entfaltung.abwesenheit#1+245, Kopf f68dbf09; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
+2026-11-19 14:57 landung Runde 1 am f68dbf09: misst 930 von 1428 Stationen (498 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
