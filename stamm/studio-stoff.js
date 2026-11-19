@@ -55,7 +55,9 @@ class AnazhRealm_studio_stoff {
             }
             direct(e, builder) {
                 super.direct(e, builder);
-                e.reflectedLight.directDiffuse.addAssign(e.lightColor.mul(this.saum).mul(1 / Math.PI));
+                // der Saum hat die Richtung seines Lichts: N·L wie jeder Rückwurf — bis hier trug ihn auch die Schattenseite
+                const nl = THREE.TSL.normalView.dot(e.lightDirection).clamp(0.0, 1.0);
+                e.reflectedLight.directDiffuse.addAssign(e.lightColor.mul(this.saum).mul(nl).mul(1 / Math.PI));
             }
             indirectSpecular(builder) {
                 super.indirectSpecular(builder);
