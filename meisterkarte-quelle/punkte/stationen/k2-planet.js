@@ -1736,6 +1736,1315 @@ return { start, profil: o.map((x) => [x.land, x.hoeheM]), version: o[0] && o[0].
     return { leitern: { [SEE]: seegang, [GZ]: gezeiten, [SR]: stroemung, [EI]: eis, [KR]: kreislauf, [TS]: tiefsee } };
 })());
 
+// ── DIE PERSPEKTIVE planet.wetter (6 Leitern, 38 Sprossen; lagen S1 trägt die Tafel wetter.K1#2, klimazonen S1 die Station SCHNEE_JAHR) ──
+// Die Leser des Spiels: das Wetter am Ort (`r._wetterAmOrt`, stamm/bild-himmel.js:2843 → phyto-core `wetterAt`: drei Sinus-Wellen längs
+// der Grundrichtung der Saat, der Zug WETTER_ZUG_SEK 120 s), der Wind (`_windDirAt` · `_windAt`, stamm/stoff-material.js:214/233), die
+// Luft (`_luftSichtM` · `_luftBeta`), die Wolken-Schicht (`skyboxUniforms.zug`, `_wolkenKarte` — der Wurf, welt-licht.js:864
+// WOLKEN_SCHICHT), die Temperatur (gelaende-core `temperaturAus` über `_temperaturFeld`), Schnee und Eis (`schnee`, `_eisLinien`), der
+// Pegel (`_pegelGilt`), die Sonne (`_sonnenRichtung`, `_atmoSonne`), die Welten des Ultiversums (`ULTIVERSUM`), und der Planet-Faden
+// (`r._planetAuftrag` planet-ort/planet-anker → delta.klima, delta.wetter, gelesen über gelaende-core `ortGesetz` wie die Reise).
+// Statistik über Saaten: das Wetter über `_wetterAmOrt` mit der Saat der Welt (worldMeta.seed, in EINER synchronen Auswertung gesetzt
+// und zurückgestellt), das Klima über den Faden mit den Samen „wetter-s<k>“ (planetPlan liest nur den Samen). Das Wetter setzt die
+// Probe NUR über `window.__wetterSetzen(wort)` und stellt es zurück; Saison, Uhr und Sonnen-Merk setzt sie nur synchron und stellt sie
+// in derselben Auswertung zurück.
+L.perspektive("wetter", (() => {
+    const PFAD = [
+        "stamm/bild-himmel.js",
+        "stamm/stoff-material.js",
+        "stamm/dirigent-takt.js",
+        "stamm/wasser-hydro.js",
+        "stamm/daten.js",
+        "stamm/gelaende-chunks.js",
+        "phyto-core.js",
+        "gelaende-core.js",
+        "planet-core.js",
+        "voxel-worker.js",
+        "welt-licht.js",
+        "foundry-core.js",
+        "scripts/werkbank.cjs",
+        "scripts/lib/ausgabe-aufnahme.cjs",
+    ];
+    // DER ZEUGE DER WELT: jede genannte Zahl in `roh.zeuge` hält ihr Mindestmaß (Antworten der Welt, Streuung, Ereignisse) — die
+    // Attrappe, die nur den Wortlaut der werte trägt, fällt hier
+    const zMin = (spec) => (roh) => {
+        const z = (roh && roh.zeuge) || {};
+        for (const [k, min] of Object.entries(spec))
+            if (!(typeof z[k] === "number" && Number.isFinite(z[k]) && z[k] >= min)) return "die Welt antwortete nicht: " + k + " " + (z[k] === undefined ? "fehlt" : z[k]) + " (Soll ≥ " + min + ")";
+        return null;
+    };
+    // die Streuung muss echt sein (> 0), nicht nur ≥ 0
+    const zMinStreu = (spec, streu) => (roh) => {
+        const f = zMin(spec)(roh);
+        if (f) return f;
+        const z = roh.zeuge || {};
+        for (const k of streu) if (!(typeof z[k] === "number" && z[k] > 0)) return "keine Streuung in " + k + " (" + z[k] + ") — eine Konstante, nicht die Welt";
+        return null;
+    };
+    const leer = (werte) => ({ werte, zeuge: {} });
+    // DER RICHTER OHNE ZAHL (fremde-atmosphaeren S1 „Himmelsfarbe Mittag/Abend gegen Foto“): K.soll kann ihn nicht fassen (keine Zahl
+    // im Wort) — das Soll steht wörtlich, sein Vergleich „gegen“ die Referenz hält nie; die Sprosse urteilt über den Prüfer-Satz (Auge)
+    const ohneZahl = (id, nr, wort, key, einheit) => {
+        const r = K.sprosseVon(id, nr).richter;
+        if (!r.includes(wort)) throw new Error("Soll „" + wort + "“ steht nicht wörtlich im Richter " + id + " S" + nr);
+        if (K.zahlenIn(r).length) throw new Error(id + " S" + nr + ": der Richter trägt eine Zahl — das Soll gehört K.soll");
+        return { wort, key, rel: "gegen", a: "die Referenz (der Richter nennt keine Schwelle)", einheit: einheit || "" };
+    };
+
+    // ════════════════════════════════════════ LAGEN ════════════════════════════════════════
+    const LA = "planet.wetter.lagen";
+    const lagen = {
+        sek: 25,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "die Draufsicht (S3) und das Bild unter der Superzelle (S6) schießt die Probe nur am Gerät (M.auge); headless misst sie das Wetter, den Wind und den Faden",
+        mess: async function (H, U, M) {
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const u2 = U[2] || {}, u4 = U[4] || {}, u5 = U[5] || {}, u7 = U[7] || {};
+            // DAS WETTER DER SAATEN: je Saat die Folge der Worte am Ort (0, 0) im Takt des Zugs (das Wort, das der Zug an k·Z zöge), der
+            // Wind `_windDirAt` um den ersten Regenbeginn; die Saat der Welt steht in EINER synchronen Auswertung und kehrt zurück
+            const welt = await H.seite(`
+const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, s0 = wm.seed;
+const FELD = A.WEATHER_FIELD, nass = (w) => r._weatherIsWet(w), grau = (w) => FELD[w].grey;
+const jahrS = st.seasonYearSeconds || 2400, tagS = A.DAY_LENGTH_DEFAULT_MINUTES * 60, P = globalThis.__phytoCore;
+const peil = (d) => { let b = Math.atan2(d.x, -d.z) * 180 / Math.PI; return b < 0 ? b + 360 : b; };
+const dreh = (a, b) => { let d = peil(b) - peil(a); while (d > 180) d -= 360; while (d < -180) d += 360; return d; };
+const out = { Z, jahrS, tagS, passagen: [], spellTage: [], sturmJahr: [], nassAnteil: [], wortZahl: 0 };
+const worte = new Set();
+try {
+for (let k = 0; k < ${Number(u2.saaten) || 50}; k++) {
+wm.seed = "wetter-s" + k;
+const W = [];
+for (let i = 0; i < 400; i++) { const w = r._wetterAmOrt(0, 0, i * Z); W.push(w); worte.add(w); }
+let i0 = 0;
+while (i0 < W.length) { if (nass(W[i0])) { let e = i0; while (e < W.length && nass(W[e])) e++; out.spellTage.push(((e - i0) * Z) / tagS); i0 = e; } else i0++; }
+let on = -1;
+for (let i = 6; i < 390; i++) if (nass(W[i]) && !nass(W[i - 1])) { on = i; break; }
+if (on < 0) { out.passagen.push(null); continue; }
+const vor = W.slice(on - 5, on);
+let ende = on;
+while (ende < W.length && nass(W[ende])) ende++;
+const schauer = W.slice(ende, ende + 5).some(nass);
+const anstieg = grau(vor[4]) >= FELD.cloudy.grey - 1e-9 && vor.slice(0, 4).some((w) => grau(w) < grau(vor[4]));
+const d0 = r._windDirAt((on - 3) * Z), d1 = r._windDirAt((on + 3) * Z);
+out.passagen.push({ on, vor: vor.join(","), anstieg, schauer, dreh: Math.round(dreh(d0, d1) * 10) / 10 });
+}
+for (let k = 0; k < ${Number(u5.saaten) || 100}; k++) {
+wm.seed = "wetter-s" + k;
+let n = 0, vor = null;
+const schritte = Math.round((10 * jahrS) / Z);
+for (let i = 0; i < schritte; i++) { const w = r._wetterAmOrt(0, 0, i * Z); if (w === "stormy" && vor !== "stormy") n++; vor = w; }
+out.sturmJahr.push(n / 10);
+}
+for (let k = 0; k < ${Number(u7.saaten) || 1000}; k++) {
+wm.seed = "wetter-s" + k;
+let n = 0;
+for (let i = 0; i < 60; i++) if (nass(r._wetterAmOrt(0, 0, i * 7 * Z))) n++;
+out.nassAnteil.push(n / 60);
+}
+} finally { wm.seed = s0; }
+out.saatZurueck = wm.seed === s0;
+out.wortZahl = worte.size;
+const blitz = [];
+r.state.scene.traverse((o) => { if (/blitz|lightning|donner|thunder/i.test(o.name || "")) blitz.push(o.name); });
+out.blitz = blitz.length;
+out.sturmMs = FELD.stormy.wind * P.WIND_FELD.sturmMS;
+out.zugMs = P.WIND_FELD.front.zugMS;
+out.far = r.state.camera.far;
+return out;
+`);
+            // DER PLANET: die Bedeckung je Breite über den Faden (das Ort-Gesetz `ortGesetz(o).wetter` ist die Verteilung, die das Wetter am
+            // Ort einer Reise liest — `wetterAt` mit `_gelaende().ort.wetter`); der Wind der Heimat (`_windDirAt`, 500 Proben)
+            const planet = await H.seite(`
+await r._fadenQuelle();
+const G = globalThis.__gelaendeCore, P = globalThis.__phytoCore, A = r.constructor, st = r.state, Z = A.WETTER_ZUG_SEK;
+const samen = r._planetSamen(), seed = st.worldMeta.seed, WW = A._weltGesetz(st.worldMeta).wetter;
+const anker = await r._planetAuftrag({ type: "planet-anker", samen });
+const breiten = ${JSON.stringify(u4.breiten || [-85, -75, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 75, 85])};
+const laengen = [0, 45, 90, 135, 180, 225, 270, 315];
+const fr = [];
+for (const b of breiten) for (const l of laengen) fr.push(r._planetAuftrag({ type: "planet-ort", samen, breite: b, laenge: l - 180, zeitMa: 0 }));
+const a = await Promise.all(fr);
+const deck = [];
+let antworten = 0, abgelehnt = 0;
+for (let i = 0; i < breiten.length; i++) {
+let n = 0, d = 0;
+for (let j = 0; j < laengen.length; j++) {
+const o = a[i * laengen.length + j];
+antworten++;
+let O = null;
+try { O = G.ortGesetz(o); } catch (e) { abgelehnt++; continue; }
+for (let k = 0; k < 40; k++) { const z = P.wetterAt(seed, 0, 0, k * 3 * Z, O.wetter).zeile; const w = WW[z]; n++; if (w === "cloudy" || w === "rainy" || w === "stormy") d++; }
+}
+deck.push(d / n);
+}
+const phi = anker.breite * 180 / Math.PI;
+const ziel = Math.abs(phi) < 30 || Math.abs(phi) > 60 ? 270 : 90;
+let treffer = 0;
+const N = ${Number(u4.proben) || 500};
+for (let k = 0; k < N; k++) { const d = r._windDirAt(k * 61); let b = Math.atan2(d.x, -d.z) * 180 / Math.PI; if (b < 0) b += 360; let x = Math.abs(b - ziel); if (x > 180) x = 360 - x; if (x <= 30) treffer++; }
+return { breiten, deck, antworten, abgelehnt, phi, ziel, treffer, N, version: a[0].version };
+`);
+            const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
+            const streu = (x) => (x.length > 1 ? Math.sqrt(mittel(x.map((v) => (v - mittel(x)) ** 2))) : 0);
+            const pearson = (x, y) => {
+                const mx = mittel(x), my = mittel(y);
+                let a = 0, b = 0, c = 0;
+                for (let i = 0; i < x.length; i++) (a += (x[i] - mx) * (y[i] - my)), (b += (x[i] - mx) ** 2), (c += (y[i] - my) ** 2);
+                return b > 0 && c > 0 ? a / Math.sqrt(b * c) : NaN;
+            };
+            const aus = {};
+            // S2 die Frontpassage: Abfolge (die Bedeckung steigt aus dünner Decke zur Decke bewölkt, nach dem Regen ein Schauer) und
+            // Winddrehung (rechtsdrehend ≥ 15° über ±3 Takte, Nordhalbkugel); einen Druck trägt die Welt nicht
+            const pas = welt.passagen.filter(Boolean);
+            const stimmt = pas.filter((p) => p.anstieg && p.schauer && p.dreh >= 15).length;
+            aus[2] = {
+                werte: { passagen: pas.length, stimmtProzent: pas.length ? R((100 * stimmt) / pas.length) : null, abfolgeProzent: pas.length ? R((100 * pas.filter((p) => p.anstieg && p.schauer).length) / pas.length) : null, drehungProzent: pas.length ? R((100 * pas.filter((p) => p.dreh >= 15).length) / pas.length) : null },
+                zeuge: { saaten: welt.passagen.length, passagen: pas.length, streuDreh: R(streu(pas.map((p) => p.dreh))), streuBeginn: R(streu(pas.map((p) => p.on))), worte: welt.wortZahl, je: pas.slice(0, 8) },
+                nicht: "kein Druckfeld und keine Wolkengattung (Cirrus, Nimbostratus) in der Welt — das Wetter am Ort ist ein Wort aus drei Sinus-Wellen (phyto-core.js:4423 wetterAt), der Druckfall ist nicht messbar",
+            };
+            // S3 das Tief mit Lebenslauf: die Dauer der nassen Strecken am Ort (Spieltage), das Bild von oben nur am Gerät
+            aus[3] = {
+                werte: { lebenslaufTage: R(mittel(welt.spellTage)), lebenslaufMaxTage: R(Math.max(0, ...welt.spellTage)), kameraFernM: welt.far },
+                zeuge: { strecken: welt.spellTage.length, streu: R(streu(welt.spellTage)) },
+                auge: await M.auge("wetter-lagen-s3", { px: 0, py: 900, pz: 0, lx: 0, ly: 0, lz: 40 }),
+                nicht: "keine Draufsicht 400 km (die Kamera reicht " + welt.far + " m) und kein Tief mit Lebenslauf: eine nasse Strecke dauert im Mittel " + R(mittel(welt.spellTage)) + " Spieltage, das Feld wandert starr (phyto-core.js:4423 wetterAt)",
+            };
+            // S4 das Breitenprofil der Bedeckung (Faden) gegen die Erde; der Wind der Heimat gegen die Zone ihrer Breite
+            const ISCCP = { "-85": 0.55, "-75": 0.62, "-65": 0.84, "-55": 0.85, "-45": 0.79, "-35": 0.66, "-25": 0.56, "-15": 0.56, "-5": 0.62, "5": 0.66, "15": 0.56, "25": 0.48, "35": 0.55, "45": 0.66, "55": 0.73, "65": 0.72, "75": 0.67, "85": 0.62 };
+            const erde = planet.breiten.map((b) => ISCCP[String(b)]);
+            aus[4] = {
+                werte: { bedeckungR: streu(planet.deck) < 1e-9 ? 0 : R(pearson(planet.deck, erde)), zonalHeimatProzent: R((100 * planet.treffer) / planet.N), passatProben: planet.N },
+                zeuge: { antworten: planet.antworten, abgelehnt: planet.abgelehnt, streuDeckung: R(streu(planet.deck)), proben: planet.N, deckung: planet.deck.map(R), heimatBreite: R(planet.phi), zielPeilung: planet.ziel, version: planet.version },
+                nicht: "der Wind des Planeten erreicht die Welt nicht: der Faden trägt nur regenQuote und sturmQuote (voxel-worker.js:1202), die Richtung des Passats (planet-core.js:2336 windX/windZ) liest kein Leser — gemessen ist nur die Zone der Heimat (" + R(planet.phi) + "°)",
+            };
+            // S5 Wirbelstürme: die Welt trägt keinen Wirbel — gezählt sind die Sturm-Einsätze am Ort je Spieljahr über 100 Saaten
+            aus[5] = {
+                werte: { saaten: welt.sturmJahr.length, sturmEinsaetzeJeJahr: R(mittel(welt.sturmJahr)) },
+                zeuge: { saaten: welt.sturmJahr.length, streu: R(streu(welt.sturmJahr)) },
+                nicht: "kein Wirbelsturm, keine Bahn: das Wetter kennt keinen Wirbel (phyto-core.js:4423 wetterAt — drei Sinus-Wellen), es gibt nichts gegen IBTrACS zu zählen",
+            };
+            // S6 Superzelle, Blitz, Donner: die Szene trägt keinen Blitz; das Bild unter dem Sturm nur am Gerät
+            aus[6] = {
+                werte: { blitzObjekte: welt.blitz, sturmMs: R(welt.sturmMs) },
+                zeuge: { szene: 1 },
+                auge: await M.auge("wetter-lagen-s6", { ort: "wiese" }, { wetter: "stormy" }),
+                nicht: "kein Blitz und kein Donner in der Welt (0 Objekte der Szene, keine Stimme des Donners), keine Superzelle — der Sturm ist ein Wort (WEATHER_FIELD.stormy)",
+            };
+            // S7 1 000 Saaten: der Regen-Anteil je Saat (60 Takte am Ort); Druck und Wind je Saat trägt die Welt nicht, ERA5 nicht im Korpus
+            aus[7] = {
+                werte: { saaten: welt.nassAnteil.length, nassMittel: R(mittel(welt.nassAnteil)), nassStreu: R(streu(welt.nassAnteil)) },
+                zeuge: { saaten: welt.nassAnteil.length, streu: R(streu(welt.nassAnteil)), saatZurueck: welt.saatZurueck ? 1 : 0 },
+                nicht: "kein Druckfeld und kein Niederschlags-Betrag je Saat (die Welt spricht Worte, phyto-core.js:4423 wetterAt) — ein KS-Test gegen ERA5 hat keine Größe der Welt",
+            };
+            return { sprossen: aus };
+        },
+        sprossen: {
+            2: {
+                u: { saaten: 50 },
+                soll: [K.soll(LA, 2, "Winddrehung stimmt ≥ 80 %", { key: "stimmtProzent", einheit: "%" }), K.soll(LA, 2, "50 Frontpassagen aus 50 Saaten", { key: "passagen", rel: "≥", zahl: 50 })],
+                zeuge: zMinStreu({ saaten: 50, passagen: 50, worte: 3 }, ["streuDreh", "streuBeginn"]),
+                taeter: "phyto-core.js wetterAt (drei Sinus-Wellen, kein Druck, keine Gattung)",
+                nicht: "kein Druckfeld, keine Wolkengattung",
+                leser: "phyto-core.js:4423 — wetterAt gibt nur zeile/front/feuchte, kein Druck und keine Gattung",
+                gruen: { werte: { passagen: 50, stimmtProzent: 84 }, zeuge: { saaten: 50, passagen: 50, streuDreh: 22, streuBeginn: 9, worte: 5 } },
+                attrappen: [
+                    { name: "84 % ohne eine Antwort der Welt", roh: leer({ passagen: 50, stimmtProzent: 84 }) },
+                    { name: "dieselbe Passage 50-mal (keine Streuung)", roh: { werte: { passagen: 50, stimmtProzent: 84 }, zeuge: { saaten: 50, passagen: 50, streuDreh: 0, streuBeginn: 0, worte: 5 } } },
+                ],
+            },
+            3: {
+                u: { draufsichten: 20 },
+                soll: [K.soll(LA, 3, "Trefferquote ≤ 60 %", { key: "trefferProzent", einheit: "%" }), K.soll(LA, 3, "Blindtest 20 Draufsichten", { key: "draufsichten", rel: "≥", zahl: 20 })],
+                auge: { pose: "Draufsicht 900 m über dem Spawn (die Kamera reicht wenige km — camera.far; 400 km nicht erzeugbar)", vorbild: "Satellitenbilder eines Tiefs (EUMETSAT/GOES), Blindtest 20 Draufsichten ≤ 60 %" },
+                taeter: "phyto-core.js wetterAt (kein Tief, das entsteht und vergeht)",
+                nicht: "keine Draufsicht 400 km, kein Tief mit Lebenslauf",
+                leser: "scripts/werkbank.cjs:2110 /bild — keine Pose 400 km über dem Boden (camera.far wenige km); phyto-core.js:4423 wetterAt kennt kein Tief",
+                gruen: { werte: { trefferProzent: 55, draufsichten: 20 }, zeuge: { strecken: 40, streu: 0.3 } },
+                attrappen: [{ name: "Trefferquote ohne Bild", roh: leer({ trefferProzent: 55, draufsichten: 20 }) }],
+            },
+            4: {
+                u: { breiten: [-85, -75, -65, -55, -45, -35, -25, -15, -5, 5, 15, 25, 35, 45, 55, 65, 75, 85], proben: 500, referenz: "ISCCP D2, zonales Jahresmittel der Bedeckung (Rossow & Schiffer 1999), gerundet je 10°" },
+                soll: [
+                    K.soll(LA, 4, "Breitenprofil der Bedeckung r ≥ 0,7", { key: "bedeckungR" }),
+                    K.soll(LA, 4, "Passatrichtung ±30° in ≥ 70 % von 500 Proben", { key: "passatProzent", rel: "≥", zahl: 70, einheit: "%" }),
+                    K.soll(LA, 4, "Passatrichtung ±30° in ≥ 70 % von 500 Proben", { key: "passatProben", rel: "≥", zahl: 500 }),
+                ],
+                zeuge: zMinStreu({ antworten: 100, proben: 500 }, ["streuDeckung"]),
+                taeter: "voxel-worker.js planetOrtAuftrag (der Wind des Planeten fällt am Faden)",
+                nicht: "der Passat des Planeten erreicht die Welt nicht",
+                leser: "voxel-worker.js:1202 — planetOrtAuftrag gibt delta.wetter nur regenQuote/sturmQuote weiter, nicht windX/windZ (planet-core.js:2336)",
+                gruen: { werte: { bedeckungR: 0.78, passatProzent: 74, passatProben: 500 }, zeuge: { antworten: 144, streuDeckung: 0.1, proben: 500 } },
+                attrappen: [
+                    { name: "r 0,78 aus einer Tabelle", roh: leer({ bedeckungR: 0.78, passatProzent: 74, passatProben: 500 }) },
+                    { name: "dieselbe Bedeckung an jeder Breite", roh: { werte: { bedeckungR: 0.78, passatProzent: 74, passatProben: 500 }, zeuge: { antworten: 144, streuDeckung: 0, proben: 500 } } },
+                ],
+            },
+            5: {
+                u: { saaten: 100, jahre: 10 },
+                soll: [
+                    K.soll(LA, 5, "Wirbelsturm-Zahl und -Bahnen gegen IBTrACS ±30 %", { key: "wirbelsturmZahl", ref: 86, refQuelle: "IBTrACS 1991–2020: ≈ 86 benannte tropische Wirbelstürme je Jahr auf der Erde (Knapp et al. 2010)" }),
+                    K.soll(LA, 5, "100 Erd-Saaten", { key: "saaten", rel: "≥", zahl: 100 }),
+                ],
+                zeuge: zMinStreu({ saaten: 100 }, ["streu"]),
+                taeter: "phyto-core.js wetterAt (kein Wirbel)",
+                nicht: "kein Wirbelsturm",
+                leser: "phyto-core.js:4423 — wetterAt trägt keinen Wirbel, keine Bahn, kein Auge",
+                gruen: { werte: { wirbelsturmZahl: 80, saaten: 100 }, zeuge: { saaten: 100, streu: 0.4 } },
+                attrappen: [{ name: "80 Wirbel aus der Liste", roh: leer({ wirbelsturmZahl: 80, saaten: 100 }) }],
+            },
+            6: {
+                u: {},
+                soll: [
+                    K.soll(LA, 6, "Blindtest gegen Sturmfotos ≤ 60 %", { key: "blindProzent", einheit: "%" }),
+                    K.soll(LA, 6, "Donner-Lag = Abstand/343 m/s ±10 %", { key: "donnerLagVerh", ref: 1, refQuelle: "Schall in Luft 343 m/s bei 20 °C: Lag ÷ (Abstand/343 m/s) = 1" }),
+                ],
+                auge: { pose: "Ego an der Mess-Wiese im Sturm (die Bühne setzt stormy)", vorbild: "Sturmfotos einer Superzelle (NSSL-Archiv), Blindtest ≤ 60 %" },
+                taeter: "die Welt trägt keinen Blitz (stamm/*: kein Leser)",
+                nicht: "kein Blitz, kein Donner, keine Superzelle",
+                leser: "stamm/bild-himmel.js:978 — der Regen ist das einzige Teilchen des Sturms; kein Leser zündet Blitz oder Donner",
+                gruen: { werte: { blindProzent: 58, donnerLagVerh: 1.02 }, zeuge: { szene: 1 } },
+                attrappen: [{ name: "Donner aus der Formel ohne Blitz", roh: leer({ blindProzent: 58, donnerLagVerh: 1 }) }],
+            },
+            7: {
+                u: { saaten: 1000 },
+                soll: [K.soll(LA, 7, "ununterscheidbar von ERA5 in ≥ 90 %", { key: "ksProzent", einheit: "%" }), K.soll(LA, 7, "1 000 Saaten", { key: "saaten", rel: "≥", zahl: 1000 })],
+                zeuge: zMinStreu({ saaten: 1000, saatZurueck: 1 }, ["streu"]),
+                taeter: "phyto-core.js wetterAt (kein Druck, kein Betrag)",
+                nicht: "kein Druckfeld, kein Niederschlags-Betrag",
+                leser: "phyto-core.js:4423 — wetterAt kennt keinen Druck und keinen Betrag in mm; ERA5 steht nicht im Korpus",
+                gruen: { werte: { ksProzent: 92, saaten: 1000 }, zeuge: { saaten: 1000, streu: 0.08, saatZurueck: 1 } },
+                attrappen: [{ name: "KS 92 % ohne Saat", roh: leer({ ksProzent: 92, saaten: 1000 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ WOLKEN ════════════════════════════════════════
+    const WO = "planet.wetter.wolken";
+    const wolken = {
+        sek: 20,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "der Wurf der Wolke (Karte `_wolkenKarte`) malt nur mit Schatten-Licht (`_lichtWirft`), headless nie — die Zuggeschwindigkeit der Schatten misst die Probe am Gerät aus zwei Lesungen der Karte; die Bilder (2AFC, Blindtest, Gattung) schießt M.auge am Gerät",
+        mess: async function (H, U, M) {
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const u3 = U[3] || {};
+            // DIE LUFT UND DIE SCHICHT: der Zug der Wolke (Uniform `zug`, Einheiten der Schicht je Sekunde) in m/s, die Sicht je Wort
+            // (`_luftSichtM` unter dem Wort, über `__wetterSetzen` und zurück), die Temperatur am Boden je Saison und Höhe, die
+            // Erscheinungen der Szene
+            const welt = await H.seite(`
+const st = r.state, A = r.constructor, u = st.skyboxUniforms, HG = A.Gesetz("terrain:HIMMEL_GESETZ", null), W = A.WOLKEN_SCHICHT;
+const G = globalThis.__gelaendeCore, FELD = A.WEATHER_FIELD, wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+const z0 = u && u.zug ? [u.zug.value.x, u.zug.value.y] : null;
+const out = { hoeheM: W.hoeheM, schichten: typeof W.hoeheM === "number" ? 1 : 0, far: st.camera.far, projY: HG.projY };
+out.wolkeZugMs = z0 ? Math.hypot(z0[0], z0[1]) * (1 + HG.projY) * W.hoeheM : null;
+out.lichtWirft = typeof r._lichtWirft === "function" ? !!r._lichtWirft() : false;
+const K = st.wolkenKarte;
+out.karteMal = K ? K.malZahl : 0;
+const Kk = -Math.log(A.LUFT.kontrast);
+const sicht = {};
+for (const w of Object.keys(FELD)) sicht[w] = Kk / r._luftBeta(FELD[w]);
+out.sichtJetzt = r._luftSichtM(st.camera.position.y);
+out.sicht = sicht;
+out.betaRegen = r._luftBeta(FELD.rainy);
+const T = [];
+for (const ph of [0.125, 0.375, 0.625, 0.875]) for (const dy of [0, 25, 50, 100, 200]) T.push(G.temperaturAus(r._temperaturFeld(wl + dy), ph, 0.5, FELD.rainy));
+out.T = T;
+const RG = A.Gesetz("terrain:REGEN_GESETZ", null);
+out.regenArten = Object.keys(RG).filter((k) => /schnee|snow|phase|graupel|hagel/i.test(k)).length;
+const ersch = [];
+st.scene.traverse((o) => { if (/regenbogen|rainbow|halo|blitz|lightning|staub|dust|nebelbank/i.test(o.name || "")) ersch.push(o.name); });
+out.erscheinungen = ersch.length;
+out.worte = Object.keys(FELD);
+out.ursachen = { regenbogen: FELD.rainy.rain > 0 && FELD.rainy.sun > 0.3 ? 1 : 0, blitz: FELD.stormy.rain >= 1 ? 1 : 0, nebel: FELD.foggy.fog >= 1 ? 1 : 0 };
+out.zeigt = { regenbogen: 0, blitz: 0, nebel: FELD.foggy.fog > FELD.sunny.fog && sicht.foggy < sicht.sunny ? 1 : 0 };
+out.uhrDerBild = u ? u.time.value : null;
+return out;
+`);
+            // DER WURF AM GERÄT: zwei Lesungen der Karte (der Regen trägt die Deckung, die Karte ist ganz Wolke-gewogen), 3 s Bild-Uhr
+            // auseinander, die Verschiebung des Musters (Korrelation ±8 Texel je Achse) in Metern je Sekunde
+            let schatten = { grund: "headless: kein Schatten-Licht, die Karte malt nicht (`_lichtWirft` falsch)" };
+            if (welt.lichtWirft && !M.swift) {
+                schatten = await H.seite(`
+const st = r.state, A = r.constructor, W = A.WOLKEN_SCHICHT, rend = st.renderer, alt = st.weather;
+const lies = async () => { const K = r._wolkenKarte(); const d = await rend.readRenderTargetPixelsAsync(K.rt, 0, 0, W.karte, W.karte); return { d: Array.from(d.filter((_, i) => i % (d.length / (W.karte * W.karte)) === 0)), t: K.zeit, mitte: K.mitte ? K.mitte.slice() : null }; };
+const ruhe = (ms) => new Promise((f) => setTimeout(f, ms));
+try {
+if (window.__wetterSetzen("rainy") !== "rainy") throw new Error("rainy gilt nicht");
+await ruhe(600);
+const a = await lies();
+await ruhe(3000);
+const b = await lies();
+const n = W.karte, m = 192, o = (n - m) / 2;
+let best = [-1e9, 0, 0];
+for (let dx = -8; dx <= 8; dx++) for (let dz = -8; dz <= 8; dz++) {
+let s = 0, sa = 0, sb = 0, saa = 0, sbb = 0, k = 0;
+for (let j = o; j < o + m; j += 2) for (let i = o; i < o + m; i += 2) { const x = a.d[j * n + i], y = b.d[(j + dz) * n + i + dx]; s += x * y; sa += x; sb += y; saa += x * x; sbb += y * y; k++; }
+const c = (s - (sa * sb) / k) / Math.sqrt(Math.max(1e-9, (saa - (sa * sa) / k) * (sbb - (sb * sb) / k)));
+if (c > best[0]) best = [c, dx, dz];
+}
+const verschub = a.mitte && b.mitte ? [(b.mitte[0] - a.mitte[0]) / W.zelleM, (b.mitte[1] - a.mitte[1]) / W.zelleM] : [0, 0];
+const px = Math.hypot(best[1] + verschub[0], best[2] + verschub[1]);
+return { korrelation: best[0], texel: px, dt: b.t - a.t, ms: b.t > a.t ? (px * W.zelleM) / (b.t - a.t) : null, streu: Math.max(...a.d) - Math.min(...a.d) };
+} finally { window.__wetterSetzen(alt); }
+`).catch((e) => ({ grund: String((e && e.message) || e).slice(0, 200) }));
+            }
+            const aus = {};
+            const zug = welt.wolkeZugMs;
+            const sch = Number.isFinite(schatten.ms) ? schatten.ms : null;
+            // S1 die Schicht: Zug der Wolke (Uniform) und des Wurfs (Karte, am Gerät), Versatz; das 2AFC am Gerät
+            aus[1] = {
+                werte: Object.assign({ wolkeZugMs: R(zug), schichtHoeheM: welt.hoeheM }, sch !== null ? { schattenZugMs: R(sch), versatzProzent: R((100 * Math.abs(sch - zug)) / zug) } : {}),
+                zeuge: { karteMal: welt.karteMal, korrelation: R(schatten.korrelation), dt: R(schatten.dt), grund: schatten.grund || null },
+                auge: await M.auge("wetter-wolken-s1", { ort: "wiese" }, { wetter: "cloudy" }),
+            };
+            // S2 drei Stockwerke: die Welt trägt EINE Schicht
+            aus[2] = {
+                werte: { schichten: welt.schichten, schichtHoeheM: welt.hoeheM },
+                zeuge: { schichten: welt.schichten },
+                auge: await M.auge("wetter-wolken-s2", { ort: "wiese" }, { wetter: "cloudy" }),
+                nicht: "EINE Wolkenschicht in " + welt.hoeheM + " m (welt-licht.js:864 WOLKEN_SCHICHT), keine drei Stockwerke, keine Gattung",
+            };
+            // S3 Gattung und Tagesgang: die Bedeckung je Stunde über 20 Saaten × 200 Momente (10 Spieltage), die Stunde des Gipfels
+            const tag = await H.seite(`
+const st = r.state, wm = st.worldMeta, A = r.constructor, s0 = wm.seed, FELD = A.WEATHER_FIELD, tagS = A.DAY_LENGTH_DEFAULT_MINUTES * 60;
+const gipfel = [];
+let momente = 0;
+try {
+for (let k = 0; k < ${Number(u3.saaten) || 20}; k++) {
+wm.seed = "wetter-s" + k;
+const h = new Array(24).fill(0), n = new Array(24).fill(0);
+for (let j = 0; j < ${Number(u3.momente) || 200}; j++) { const t = (j * 10 * tagS) / ${Number(u3.momente) || 200} + k * 37; const s = Math.floor(24 * ((t % tagS) / tagS)); h[s] += FELD[r._wetterAmOrt(0, 0, t)].grey; n[s]++; momente++; }
+let b = 0;
+for (let s = 1; s < 24; s++) if (n[s] && h[s] / n[s] > h[b] / Math.max(1, n[b])) b = s;
+gipfel.push(b);
+}
+} finally { wm.seed = s0; }
+return { gipfel, momente, saatZurueck: wm.seed === s0 };
+`);
+            const imFenster = tag.gipfel.filter((s) => s >= 14 && s <= 17).length;
+            const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
+            const streu = (x) => (x.length > 1 ? Math.sqrt(mittel(x.map((v) => (v - mittel(x)) ** 2))) : 0);
+            aus[3] = {
+                werte: { cumulusGipfelProzent: R((100 * imFenster) / tag.gipfel.length), momente: R(tag.momente / tag.gipfel.length), saaten: tag.gipfel.length },
+                zeuge: { saaten: tag.gipfel.length, streuGipfel: R(streu(tag.gipfel)), saatZurueck: tag.saatZurueck ? 1 : 0 },
+                nicht: "keine Gattung: die Wolke folgt keiner Feuchte, Hebung oder Stabilität — die Kuppel liest nur die Deckung des Worts (stamm/bild-himmel.js:1765 cloudCover), das Wort hängt nicht an der Uhr (phyto-core.js:4423 wetterAt)",
+            };
+            // S4 die Phase des Niederschlags gegen das Temperatur-Profil (4 Saisons × 5 Höhen unter Regen); der Vorhang auf 5 km
+            const warm = welt.T.filter((t) => t > 0).length;
+            const phaseWelt = welt.regenArten > 0 ? "mehrere" : "regen";
+            aus[4] = {
+                werte: { phaseProzent: R((100 * (phaseWelt === "regen" ? warm : welt.T.length)) / welt.T.length), kontrast5km: welt.far < 5000 ? 0 : R(Math.exp(-welt.betaRegen * 5000)), sichtRegenM: R(welt.sicht.rainy) },
+                zeuge: { proben: welt.T.length, streuT: R(streu(welt.T)), unterNull: welt.T.length - warm, kameraFernM: welt.far },
+            };
+            // S5 die Luft: Sicht im Nebel gegen die Nebel-Definition der Erde, die Erscheinungen und ihre Ursachen
+            const ursN = Object.values(welt.ursachen).reduce((s, v) => s + v, 0);
+            const zeigtN = Object.keys(welt.ursachen).filter((k) => welt.ursachen[k] && welt.zeigt[k]).length;
+            const sichten = Object.values(welt.sicht);
+            aus[5] = {
+                werte: { sichtNebelM: R(welt.sicht.foggy), ohneUrsache: 0, ursachenProzent: ursN ? R((100 * zeigtN) / ursN) : null, sichtMaxM: R(Math.max(...sichten)), sichtMinM: R(Math.min(...sichten)) },
+                zeuge: { worte: sichten.length, streuSicht: R(streu(sichten)), sichtJetztM: R(welt.sichtJetzt), erscheinungen: welt.erscheinungen, ursachen: welt.ursachen },
+                nicht: "Sicht 10 m – 200 km nicht erzeugbar: die Luft trägt höchstens " + R(Math.max(...sichten)) + " m (LUFT.sichtKlarM), gezeichnet wird bis " + welt.far + " m (camera.far); kein Regenbogen, kein Blitz, kein Staub in der Szene",
+            };
+            // S6 durchfliegbar: die Schicht ist eine Kuppel über dem Auge, kein Volumen
+            aus[6] = {
+                werte: { schichtHoeheM: welt.hoeheM, kameraFernM: welt.far },
+                zeuge: { schichten: welt.schichten },
+                nicht: "keine durchfliegbare Wolke: die Schicht ist eine Projektion über dem Auge (welt-licht.js wolkenFeld, projY " + welt.projY + "), die Kamera reicht " + welt.far + " m, kein Orbit",
+            };
+            // S7 10⁶ Wolken: eine Schicht, das Bild am Gerät
+            aus[7] = {
+                werte: { schichten: welt.schichten },
+                zeuge: { schichten: welt.schichten },
+                auge: await M.auge("wetter-wolken-s7", { ort: "wiese" }, { wetter: "cloudy", uhr: 0.6 }),
+                nicht: "keine einzelnen Wolken: EIN Feld in EINER Schicht (welt-licht.js:864 WOLKEN_SCHICHT)",
+            };
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { lesungenS: 3, karteTexel: 192 },
+                soll: [
+                    K.soll(WO, 1, "2AFC ≤ 85 %", { key: "afcProzent", einheit: "%" }),
+                    K.soll(WO, 1, "im Band realer Wolkenzüge (2–20 m/s)", { key: "schattenZugMs", einheit: "m/s" }),
+                    K.soll(WO, 1, "Versatz ≤ 5 %", { key: "versatzProzent", einheit: "%" }),
+                ],
+                auge: { pose: "Ego an der Mess-Wiese, bewölkt, Zeitraffer der Schicht (Werkbank /bild am Ort)", vorbild: "Zeitraffer-Film realer Schichtwolken (Stratocumulus), 2AFC ≤ 85 %" },
+                taeter: "stamm/bild-himmel.js _wolkenKarte · _dayNightApplySkybox (zug)",
+                gruen: { werte: { afcProzent: 80, schattenZugMs: 11, versatzProzent: 0.5 }, zeuge: { karteMal: 40, korrelation: 0.9, dt: 3 } },
+                attrappen: [{ name: "der Zug aus der Konstante zugMS", roh: leer({ afcProzent: 80, schattenZugMs: 11, versatzProzent: 0 }) }],
+            },
+            2: {
+                u: {},
+                soll: [K.soll(WO, 2, "Blindtest 20 Himmelsbilder gegen Foto ≤ 70 %", { key: "blindProzent", einheit: "%" }), K.soll(WO, 2, "Gattung vom Bildmodell erkannt ≥ 80 %", { key: "gattungProzent", einheit: "%" })],
+                auge: { pose: "Ego an der Mess-Wiese, Blick 30° über den Horizont, bewölkt", vorbild: "Himmelsfotos mit drei Stockwerken (WMO-Wolkenatlas), Blindtest ≤ 70 %, Gattung ≥ 80 %" },
+                taeter: "welt-licht.js WOLKEN_SCHICHT (eine Schicht)",
+                nicht: "eine Schicht, keine Stockwerke",
+                leser: "welt-licht.js:864 — WOLKEN_SCHICHT trägt EINE Höhe (800 m); kein Leser zeichnet Cirrus oder Altostratus",
+                gruen: { werte: { blindProzent: 65, gattungProzent: 85 }, zeuge: { schichten: 3 } },
+                attrappen: [{ name: "Gattung erkannt ohne Bild", roh: leer({ blindProzent: 65, gattungProzent: 85 }) }],
+            },
+            3: {
+                u: { saaten: 20, momente: 200, tag: "Spieltag = DAY_LENGTH_DEFAULT_MINUTES·60 s der Welt-Uhr, Stunde = 1/24" },
+                soll: [
+                    K.soll(WO, 3, "sichtbare Gattung = verlangte ≥ 80 %", { key: "gattungProzent", einheit: "%" }),
+                    K.soll(WO, 3, "Cumulus-Gipfel 14–17 Uhr in ≥ 80 %", { key: "cumulusGipfelProzent", rel: "≥", zahl: 80, einheit: "%" }),
+                    K.soll(WO, 3, "200 Momente × 20 Saaten", { key: "momente", rel: "≥", zahl: 200 }),
+                    K.soll(WO, 3, "200 Momente × 20 Saaten", { key: "saaten", rel: "≥", zahl: 20 }),
+                ],
+                zeuge: zMinStreu({ saaten: 20, saatZurueck: 1 }, ["streuGipfel"]),
+                taeter: "phyto-core.js wetterAt (keine Gattung, kein Tagesgang)",
+                nicht: "keine Wolkengattung",
+                leser: "stamm/bild-himmel.js:1765 — die Kuppel liest nur cloudCover des Worts; kein Leser von Feuchte, Hebung, Stabilität",
+                gruen: { werte: { gattungProzent: 82, cumulusGipfelProzent: 85, momente: 200, saaten: 20 }, zeuge: { saaten: 20, streuGipfel: 1.2, saatZurueck: 1 } },
+                attrappen: [{ name: "Gipfel 15 Uhr aus der Erwartung", roh: leer({ gattungProzent: 82, cumulusGipfelProzent: 85, momente: 200, saaten: 20 }) }],
+            },
+            4: {
+                u: { saisons: [0.125, 0.375, 0.625, 0.875], hoehenM: [0, 25, 50, 100, 200] },
+                soll: [K.soll(WO, 4, "Phase am Boden passt zum Profil ≥ 90 %", { key: "phaseProzent", einheit: "%" }), K.soll(WO, 4, "Regenvorhang auf 5 km Kontrast ≥ 0,1", { key: "kontrast5km" })],
+                zeuge: zMinStreu({ proben: 20 }, ["streuT"]),
+                taeter: "foundry-core.js REGEN_GESETZ (nur Regen, keine Phase) · stamm/bild-himmel.js Regen",
+                leser: "foundry-core.js:197 — REGEN_GESETZ kennt keine Phase (Schnee, Graupel): unter 0 °C fällt Regen",
+                gruen: { werte: { phaseProzent: 95, kontrast5km: 0.15 }, zeuge: { proben: 20, streuT: 6, unterNull: 6, kameraFernM: 8000 } },
+                attrappen: [{ name: "Phase 95 % ohne Temperatur", roh: leer({ phaseProzent: 95, kontrast5km: 0.15 }) }],
+            },
+            5: {
+                u: {},
+                soll: [
+                    K.soll(WO, 5, "Sichtweite gegen Feuchte und Aerosol ±30 %", { key: "sichtNebelM", ref: 1000, refQuelle: "WMO: Nebel heißt Sicht < 1 km (WMO-Nr. 8, Teil I Kap. 9) — das Wort foggy gegen 1 000 m" }),
+                    K.soll(WO, 5, "0 Erscheinungen ohne Ursache", { key: "ohneUrsache", rel: "≤", zahl: 0 }),
+                    K.soll(WO, 5, "≥ 80 % der Ursachen zeigen ihre", { key: "ursachenProzent", einheit: "%" }),
+                ],
+                zeuge: zMinStreu({ worte: 5 }, ["streuSicht"]),
+                taeter: "stamm/bild-sicht.js _luftSichtM (Sicht ≤ 22 km) · keine Erscheinungen",
+                nicht: "Sicht 200 km, Regenbogen, Blitz, Staub",
+                leser: "welt-licht.js:961 — die Luft trägt Dunst und Hof der Sonne, keinen Regenbogen, kein Halo der Eiswolke, keinen Blitz; die Kamera zeichnet wenige km (camera.far)",
+                gruen: { werte: { sichtNebelM: 900, ohneUrsache: 0, ursachenProzent: 85 }, zeuge: { worte: 5, streuSicht: 6000 } },
+                attrappen: [{ name: "Sicht 900 m aus der Tabelle", roh: leer({ sichtNebelM: 900, ohneUrsache: 0, ursachenProzent: 85 }) }],
+            },
+            6: {
+                u: {},
+                soll: [K.soll(WO, 6, "Positionsfehler ≤ 1 % der Höhe", { key: "positionsFehlerProzent", einheit: "%" }), K.soll(WO, 6, "kein Sprung > 5 % Luma", { key: "lumaSprungProzent", rel: "≤", zahl: 5, einheit: "%" })],
+                zeuge: zMin({ schichten: 1 }),
+                taeter: "welt-licht.js wolkenFeld (Kuppel, kein Volumen)",
+                nicht: "keine durchfliegbare Wolke, kein Orbit",
+                leser: "welt-licht.js:864 — WOLKEN_SCHICHT ist eine Projektion über dem Auge; scripts/werkbank.cjs /bild kennt keine Pose über der Wolke hinaus bis zum Orbit (camera.far wenige km)",
+                gruen: { werte: { positionsFehlerProzent: 0.6, lumaSprungProzent: 3 }, zeuge: { schichten: 1 } },
+                attrappen: [{ name: "Zoom ohne Flug", roh: leer({ positionsFehlerProzent: 0.6, lumaSprungProzent: 3 }) }],
+            },
+            7: {
+                u: {},
+                soll: [K.soll(WO, 7, "100 Himmelsbilder gegen Fotos: Trefferquote ≤ 60 %", { key: "trefferProzent", einheit: "%" })],
+                auge: { pose: "Ego an der Mess-Wiese, bewölkt, Uhr 0,6", vorbild: "100 Himmelsfotos (WMO-Wolkenatlas, alle Gattungen), Trefferquote ≤ 60 %" },
+                taeter: "welt-licht.js WOLKEN_SCHICHT (ein Feld)",
+                nicht: "keine 10⁶ einzelnen Wolken",
+                leser: "welt-licht.js:864 — EIN Wolkenfeld, keine Wolke als Ding",
+                gruen: { werte: { trefferProzent: 55 }, zeuge: { schichten: 1 } },
+                attrappen: [{ name: "Trefferquote ohne Bild", roh: leer({ trefferProzent: 55 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ KLIMAZONEN ════════════════════════════════════════
+    const KZ = "planet.wetter.klimazonen";
+    const klimazonen = {
+        sek: 45,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "die Bilder (Baum- und Schneegrenze im Bild, Bildpaar Juli/Januar, Orbitbild) schießt M.auge am Gerät; headless misst die Probe das Gesetz der Grenzen und den Faden",
+        mess: async function (H, U, M) {
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const u3 = U[3] || {}, u5 = U[5] || {};
+            // DIE HEIMAT: Schnee- und Baumgrenze (gelaende-core `schnee` zur Saison der Welt, die Waldgrenze bei Schnee-Anteil 0,1 —
+            // phyto-core forestWaldgrenze), die höchste Höhe binnen 6 km, die Jahreszeit (Sonne, Laub, Eis) Sommer gegen Winter
+            const heim = await H.seite(`
+const st = r.state, A = r.constructor, G = globalThis.__gelaendeCore, L = r._gelaende(), wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+const pm = (st.playerMesh || st.camera).position;
+const linie = (v, thr) => { let lo = wl - 50, hi = wl + 4000; if (G.schnee(L, hi, pm.x, pm.z, v) < thr) return null; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (G.schnee(L, m, pm.x, pm.z, v) >= thr) hi = m; else lo = m; } return hi - wl; };
+const out = { schnee: linie(r._schneeGilt(), 0.5), baum: linie(0, 0.1), far: st.camera.far };
+let hoch = -1e9;
+for (let dx = -6000; dx <= 6000; dx += 300) for (let dz = -6000; dz <= 6000; dz += 300) { const y = r._terrainMacroSurfaceY(pm.x + dx, pm.z + dz); if (y > hoch) hoch = y; }
+out.hoechsterM = hoch - wl;
+const ph0 = st.seasonPhase, tod0 = st.timeOfDay, s0 = st._sonne ? Object.assign({}, st._sonne) : null;
+const je = {};
+try {
+for (const [n, ph] of [["sommer", 0.375], ["winter", 0.875]]) {
+st.seasonPhase = ph;
+let maxY = -1, hell = 0;
+for (let i = 0; i < 96; i++) { st.timeOfDay = i / 96; const y = r._sonnenRichtung().y; if (y > maxY) maxY = y; if (y > 0) hell++; }
+je[n] = { sonneGrad: Math.asin(Math.max(-1, Math.min(1, maxY))) * 180 / Math.PI, tagStunden: hell / 4, laub: r._saisonPraesenz(ph, {}).x, eisAb: r._eisLinien().traegtAb };
+}
+} finally { st.seasonPhase = ph0; st.timeOfDay = tod0; if (s0) Object.assign(st._sonne, s0); r._eisLinien(); }
+out.je = je;
+out.zurueck = st.seasonPhase === ph0 && st.timeOfDay === tod0;
+return out;
+`);
+            // DER FADEN: 30 Orte um den Anker der Heimat (Jahresamplitude gegen Küstenabstand), dann die Saaten (Köppen-Gruppen nach
+            // Temperatur, Widersprüche, Wuchs je Breite) — Saat für Saat, bis die Uhr der Leiter das Budget schließt
+            const faden = await H.seite(`
+await r._fadenQuelle();
+const G = globalThis.__gelaendeCore, t0 = performance.now();
+const samen = r._planetSamen();
+const abgelehnt = [];
+let abgelehntN = 0;
+const kl = (o) => { try { return G.ortGesetz(o).klimaHeute; } catch (e) { abgelehntN++; if (abgelehnt.length < 3) abgelehnt.push([o.samen, Math.round(o.breite), Math.round(o.laenge), String(o.delta && o.delta.klima && o.delta.klima.spendeVerh), String((e && e.message) || e).slice(0, 90)]); return null; } };
+const anker = await r._planetAuftrag({ type: "planet-anker", samen });
+const aB = anker.breite * 180 / Math.PI, aL = anker.laenge * 180 / Math.PI;
+const orte = [];
+for (let i = 1; i <= 120; i++) { const q = Math.sqrt(i / 120); orte.push([aB + 14 * q * Math.sin(i * 2.399), aL + 20 * q * Math.cos(i * 2.399)]); }
+const a3 = await Promise.all(orte.map(([b, l]) => r._planetAuftrag({ type: "planet-ort", samen, breite: Math.max(-89, Math.min(89, b)), laenge: ((l + 540) % 360) - 180, zeitMa: 0 })));
+const land3 = a3.filter((o) => o.land).map((o) => { const k = kl(o); return k ? [o.kuesteKm, k.sommer - k.winter, o.breite] : null; }).filter(Boolean).slice(0, ${Number(u3.orte) || 30});
+const pk = [];
+const NP = ${Number(u5.orte) || 20};
+for (let i = 0; i < NP; i++) { const y = 1 - (2 * (i + 0.5)) / NP; pk.push([Math.asin(y) * 180 / Math.PI, (i * 137.508) % 360]); }
+const saaten = [];
+const budget = ${Number(u5.budgetMs) || 22000};
+for (let k = 0; k < ${Number(u5.saaten) || 100}; k++) {
+if (performance.now() - t0 > budget) break;
+const s = "wetter-s" + k;
+const a = await Promise.all(pk.map(([b, l]) => r._planetAuftrag({ type: "planet-ort", samen: s, breite: b, laenge: ((l + k * 17) % 360) - 180, zeitMa: 0 })));
+saaten.push(a.map((o) => { if (!o.land) return [0, o.breite]; const kh = kl(o); if (!kh) return [2, o.breite]; return [1, o.breite, kh.sommer, kh.winter, kh.tagAmp, kh.spendeMm, o.delta.wuchs.decke]; }));
+}
+return { land3, anker: [aB, aL], saaten, ms: performance.now() - t0, version: a3[0].version, abgelehnt, abgelehntN };
+`);
+            const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
+            const streu = (x) => (x.length > 1 ? Math.sqrt(mittel(x.map((v) => (v - mittel(x)) ** 2))) : 0);
+            const rang = (x) => {
+                const i = x.map((v, k) => [v, k]).sort((p, q) => p[0] - q[0]);
+                const r = new Array(x.length);
+                for (let k = 0; k < i.length; ) {
+                    let e = k;
+                    while (e + 1 < i.length && i[e + 1][0] === i[k][0]) e++;
+                    for (let j = k; j <= e; j++) r[i[j][1]] = (k + e) / 2;
+                    k = e + 1;
+                }
+                return r;
+            };
+            const spearman = (x, y) => {
+                const a = rang(x), b = rang(y), ma = mittel(a), mb = mittel(b);
+                let s = 0, sa = 0, sb = 0;
+                for (let k = 0; k < a.length; k++) (s += (a[k] - ma) * (b[k] - mb)), (sa += (a[k] - ma) ** 2), (sb += (b[k] - mb) ** 2);
+                return sa > 0 && sb > 0 ? s / Math.sqrt(sa * sb) : NaN;
+            };
+            const aus = {};
+            // S2 Schnee- und Baumgrenze (Gesetz) gegen die Erd-Höhe der Breite der Heimat
+            aus[2] = {
+                werte: { schneegrenzeM: R(heim.schnee), baumgrenzeM: R(heim.baum), hoechsterM: R(heim.hoechsterM) },
+                zeuge: { grenzen: (heim.schnee !== null ? 1 : 0) + (heim.baum !== null ? 1 : 0), abstandM: R(Math.abs((heim.schnee || 0) - (heim.baum || 0))) },
+                auge: await M.auge("wetter-klima-s2", { ort: "wiese" }, { uhr: 0.5 }),
+                nicht: "kein Gebirge in Erd-Höhe: die Höhe ist gestaucht (gelaende-core TEMPERATUR 0,11 K/m statt 0,0065 K/m), der höchste Grund binnen 6 km liegt " + R(heim.hoechsterM) + " m über dem Meer",
+            };
+            // S3 Kontinentalität: Spearman der Jahresamplitude gegen den Küstenabstand an 30 Land-Orten um den Anker
+            const l3 = faden.land3;
+            aus[3] = {
+                werte: { rang: R(spearman(l3.map((x) => x[0]), l3.map((x) => x[1]))), orte: l3.length },
+                zeuge: { orte: l3.length, streuAmplitude: R(streu(l3.map((x) => x[1]))), streuKuesteKm: R(streu(l3.map((x) => x[0]))), anker: faden.anker.map(R), version: faden.version },
+            };
+            // S4 die Jahreszeit der Heimat: Tageslänge, Sonnenhöhe, Laub, Eis Sommer gegen Winter (Nordhalbkugel, Breite des Ankers)
+            const S = heim.je.sommer, Wn = heim.je.winter;
+            const richtig = [S.tagStunden > Wn.tagStunden, S.sonneGrad > Wn.sonneGrad, S.laub > Wn.laub, Wn.eisAb < S.eisAb];
+            aus[4] = {
+                werte: { breitenRichtig: richtig.every(Boolean) ? 1 : 0, richtungenRichtig: richtig.filter(Boolean).length, tagSommerH: R(S.tagStunden), tagWinterH: R(Wn.tagStunden), sonneSommerGrad: R(S.sonneGrad), sonneWinterGrad: R(Wn.sonneGrad) },
+                zeuge: { je: heim.je, zurueck: heim.zurueck ? 1 : 0 },
+                auge: await M.auge("wetter-klima-s4", { ort: "wiese" }, { uhr: 0.5 }),
+                nicht: "die Sonnenbahn kennt weder Jahr noch Breite (welt-licht.js:711 sonnenRichtung — Tageslänge und Mittagshöhe gleich im Juli und Januar), und die Welt steht an EINER Breite (die Reise an andere Breiten trägt die Sonne nicht)",
+            };
+            // S5 Köppen: die Gruppe E (wärmster Monat < 10 °C, Peel 2007) aus den Temperaturen der Spieldaten über die Saaten; die Klasse
+            // selbst trägt der Faden nicht
+            const landOrte = [].concat(...faden.saaten.map((s) => s.filter((x) => x[0] === 1)));
+            const alleOrte = [].concat(...faden.saaten);
+            const fE = landOrte.length ? (100 * landOrte.filter((x) => x[2] < 10).length) / landOrte.length : NaN;
+            const fA = landOrte.length ? (100 * landOrte.filter((x) => x[3] >= 18).length) / landOrte.length : NaN;
+            aus[5] = {
+                werte: { flaecheE: R(fE), flaecheA: R(fA), saaten: faden.saaten.length, landOrte: landOrte.length },
+                zeuge: { saaten: faden.saaten.length, landOrte: landOrte.length, streuSommer: R(streu(landOrte.map((x) => x[2]))), ms: R(faden.ms), abgelehnt: faden.abgelehntN, abgelehntJe: faden.abgelehnt },
+                nicht: "der Faden trägt keine Köppen-Klasse (voxel-worker.js:1175 planetOrtAuftrag gibt planet-core o.biom nicht weiter) und keinen Niederschlag (spendeMm ist der Abfluss) — die Gruppe B ist nicht bestimmbar, die Klasse aus Spieldaten hat keinen Leser",
+            };
+            // S6 das Orbitbild: kein Orbit; gemessen der Wuchs je Breite (die Farbe des Landes folgt ihm)
+            const decke = landOrte.map((x) => x[6]).filter(Number.isFinite);
+            aus[6] = {
+                werte: { deckeMittel: R(mittel(decke)), deckeStreu: R(streu(decke)) },
+                zeuge: { landOrte: landOrte.length, streuDecke: R(streu(decke)) },
+                auge: await M.auge("wetter-klima-s6", { ort: "wiese" }, { uhr: 0.5 }),
+                nicht: "kein Orbitbild: die Werkbank kennt keine Pose über der Atmosphäre (scripts/werkbank.cjs /bild, camera.far " + heim.far + " m)",
+            };
+            // S7 kein sichtbarer Widerspruch: Winter wärmer als Sommer, Wald auf Eis, Temperaturen jenseits der Physik
+            const wid = landOrte.filter((x) => x[3] > x[2] + 0.01 || (x[2] < 0 && x[6] > 0.3) || x[2] > 50 || x[3] < -90 || x[4] < 0);
+            aus[7] = {
+                werte: { ohneWiderspruchProzent: landOrte.length ? R(100 - (100 * wid.length) / landOrte.length) : null, saaten: faden.saaten.length, orte: alleOrte.length && faden.saaten.length ? R(alleOrte.length / faden.saaten.length) : 0 },
+                zeuge: { landOrte: landOrte.length, widerspruch: wid.length, beispiel: wid.slice(0, 3), abgelehnt: faden.abgelehntN },
+                auge: await M.auge("wetter-klima-s7", { ort: "wiese" }, { uhr: 0.4 }),
+            };
+            return { sprossen: aus };
+        },
+        sprossen: {
+            2: {
+                u: { referenzBreite: "Breite des Ankers der Heimat (43,4° N)" },
+                soll: [
+                    K.soll(KZ, 2, "Baum- und Schneegrenze im Bild auf Erd-Höhe ihrer Breite ±20 %", { key: "schneegrenzeM", ref: 2900, refQuelle: "Erde 43–46° N: Schneegrenze ≈ 2 900 m (Gleichgewichtslinie der Alpen, Ohmura, Kasser & Funk 1992)", einheit: "m" }),
+                    K.soll(KZ, 2, "Baum- und Schneegrenze im Bild auf Erd-Höhe ihrer Breite ±20 %", { key: "baumgrenzeM", ref: 2100, refQuelle: "Erde 43–46° N: Baumgrenze ≈ 2 100 m (Körner & Paulsen 2004, J. Biogeogr.)", einheit: "m" }),
+                ],
+                auge: { pose: "Ego an der Mess-Wiese, Blick zum höchsten Grund, Mittag", vorbild: "Foto eines Gebirges gleicher Breite (Pyrenäen/Alpen) mit Baum- und Schneegrenze" },
+                taeter: "gelaende-core.js TEMPERATUR (Höhe gestaucht, 0,11 K/m)",
+                nicht: "kein Gebirge in Erd-Höhe (Höhe gestaucht)",
+                leser: "gelaende-core.js:5850 kuehlungKJeM — die Kühlung 18 K ÷ 162,5 m = 0,11 K/m (Erde 0,0065 K/m): Schnee- und Baumgrenze liegen bei ~150 m statt 2 000–3 000 m",
+                gruen: { werte: { schneegrenzeM: 2800, baumgrenzeM: 2000 }, zeuge: { grenzen: 2, abstandM: 800 } },
+                attrappen: [{ name: "die Grenzen aus der Erd-Tabelle", roh: leer({ schneegrenzeM: 2800, baumgrenzeM: 2000 }) }],
+            },
+            3: {
+                u: { orte: 30, radiusGrad: [14, 20] },
+                soll: [K.soll(KZ, 3, "Jahresamplitude gegen Meeresabstand Rang ≥ 0,7 an 30 Orten", { key: "rang" }), K.soll(KZ, 3, "Jahresamplitude gegen Meeresabstand Rang ≥ 0,7 an 30 Orten", { key: "orte", rel: "≥", zahl: 30 })],
+                zeuge: zMinStreu({ orte: 30 }, ["streuAmplitude", "streuKuesteKm"]),
+                taeter: "planet-core.js planetKlimaR (Kontinentalität) über voxel-worker.js planetOrtAuftrag",
+                gruen: { werte: { rang: 0.78, orte: 30 }, zeuge: { orte: 30, streuAmplitude: 6.5, streuKuesteKm: 420 } },
+                attrappen: [
+                    { name: "Rang 0,78 ohne Faden", roh: leer({ rang: 0.78, orte: 30 }) },
+                    { name: "30-mal derselbe Ort", roh: { werte: { rang: 0.78, orte: 30 }, zeuge: { orte: 30, streuAmplitude: 0, streuKuesteKm: 0 } } },
+                ],
+            },
+            4: {
+                u: { sommer: 0.375, winter: 0.875 },
+                soll: [K.soll(KZ, 4, "Bildpaar Juli/Januar an 3 Breiten", { key: "breitenRichtig", rel: "≥", zahl: 3 })],
+                auge: { pose: "Ego an der Mess-Wiese Mittag, Bildpaar Sommer/Winter (die Bühne setzt die Saison)", vorbild: "Fotopaare Juli/Januar an 3 Breiten (Tromsø, München, Darwin)" },
+                taeter: "welt-licht.js sonnenRichtung (keine Bahn aus Jahr × Breite)",
+                nicht: "keine Sonnenbahn aus Jahr und Breite, eine Breite",
+                leser: "welt-licht.js:711 — sonnenRichtung(winkel) liest weder Saison noch Breite (die Bahn nach Meeus Kap. 13 steht OFFEN)",
+                gruen: { werte: { breitenRichtig: 3 }, zeuge: { zurueck: 1 } },
+                attrappen: [{ name: "3 Breiten behauptet", roh: leer({ breitenRichtig: 3 }) }],
+            },
+            5: {
+                u: { saaten: 100, orte: 20, budgetMs: 22000, gruppe: "E: wärmster Monat < 10 °C (Peel, Finlayson & McMahon 2007)" },
+                soll: [
+                    K.soll(KZ, 5, "Klasse aus Spieldaten = Klasse aus Lage ≥ 80 %", { key: "klasseProzent", einheit: "%" }),
+                    K.soll(KZ, 5, "Flächenanteile über 100 Saaten ±50 % der Erde", { key: "flaecheE", ref: 12.8, refQuelle: "Peel, Finlayson & McMahon 2007: Gruppe E 12,8 % der Landfläche der Erde" }),
+                    K.soll(KZ, 5, "Flächenanteile über 100 Saaten ±50 % der Erde", { key: "saaten", rel: "≥", zahl: 100 }),
+                    K.soll(KZ, 5, "50 Zufallsorte", { key: "zufallsorte", rel: "≥", zahl: 50 }),
+                ],
+                zeuge: zMinStreu({ saaten: 30, landOrte: 100 }, ["streuSommer"]),
+                taeter: "voxel-worker.js planetOrtAuftrag (die Köppen-Klasse fällt am Faden)",
+                nicht: "keine Köppen-Klasse und kein Niederschlag im Faden",
+                leser: "voxel-worker.js:1175 — planetOrtAuftrag gibt o.biom.koeppen (planet-core.js:2338) und den Niederschlag nicht weiter; kein Leser der Klasse im Spiel",
+                gruen: { werte: { klasseProzent: 84, flaecheE: 14, saaten: 100, zufallsorte: 50 }, zeuge: { saaten: 100, landOrte: 600, streuSommer: 9 } },
+                attrappen: [{ name: "Köppen 84 % aus einer Tabelle", roh: leer({ klasseProzent: 84, flaecheE: 14, saaten: 100, zufallsorte: 50 }) }],
+            },
+            6: {
+                u: {},
+                soll: [K.soll(KZ, 6, "Farbverteilung je Breite r ≥ 0,7 gegen Blue-Marble-Mosaik", { key: "farbeR" })],
+                auge: { pose: "Orbit über dem Planeten (heute nicht erzeugbar; geschossen an der Mess-Wiese)", vorbild: "Blue-Marble-Mosaik (NASA 2004), Farbe je Breite" },
+                taeter: "scripts/werkbank.cjs /bild (keine Orbit-Pose)",
+                nicht: "kein Orbitbild",
+                leser: "scripts/werkbank.cjs:2110 /bild — keine Pose über der Atmosphäre (camera.far wenige km)",
+                gruen: { werte: { farbeR: 0.75 }, zeuge: { landOrte: 600, streuDecke: 0.3 } },
+                attrappen: [{ name: "r 0,75 ohne Bild", roh: leer({ farbeR: 0.75 }) }],
+            },
+            7: {
+                u: { saaten: 100, orte: 20 },
+                soll: [
+                    K.soll(KZ, 7, "1 000 Saaten × 50 Orte: kein sichtbarer Widerspruch in ≥ 95 %", { key: "ohneWiderspruchProzent", einheit: "%" }),
+                    K.soll(KZ, 7, "1 000 Saaten × 50 Orte: kein sichtbarer Widerspruch in ≥ 95 %", { key: "saaten", rel: "≥", zahl: 1000 }),
+                    K.soll(KZ, 7, "1 000 Saaten × 50 Orte: kein sichtbarer Widerspruch in ≥ 95 %", { key: "orte", rel: "≥", zahl: 50 }),
+                ],
+                auge: { pose: "Ego an der Mess-Wiese (die Reise an 50 Orte je Saat steht am Gerät aus)", vorbild: "Prüfer-Satz R11: Widerspruch ja/nein an Bildern der Orte" },
+                taeter: "planet-core.js planetKlimaR über voxel-worker.js planetOrtAuftrag",
+                gruen: { werte: { ohneWiderspruchProzent: 97, saaten: 1000, orte: 50 }, zeuge: { landOrte: 20000, widerspruch: 300 } },
+                attrappen: [{ name: "97 % ohne Faden", roh: leer({ ohneWiderspruchProzent: 97, saaten: 1000, orte: 50 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ EXTREME ════════════════════════════════════════
+    const EX = "planet.wetter.extreme";
+    const extreme = {
+        sek: 20,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "die Bildpaare (Flut, Sandsturm, Megastadt) schießt M.auge am Gerät; p95 headless ist die Zeit des Software-Renderers, nicht des Geräts",
+        mess: async function (H, U, M) {
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const u3 = U[3] || {}, u4 = U[4] || {};
+            // DAS WETTER DER HEIMAT ÜBER JAHRE: die Folge am Ort im Takt des Zugs; der Regen je Takt (Kanal rain × 10 mm je Stunde der
+            // Welt-Uhr, gelaende-core PEGEL: „der Regen der Stärke 1 mit 10 mm je Stunde“), die Strecken der Sonne, die Temperatur
+            // der Worte (gelaende-core temperaturAus mit dem Feld des Worts), der Pegel, die Sicht im Sturm, die Telekonnektion
+            const welt = await H.seite(`
+const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, G = globalThis.__gelaendeCore, P = globalThis.__phytoCore;
+const FELD = A.WEATHER_FIELD, tagS = A.PEGEL_TAG_S, stundeS = tagS / 24, jahrS = st.seasonYearSeconds || 2400, s0 = wm.seed;
+const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+const mmJeTakt = (w) => FELD[w].rain * 10 * (Z / stundeS);
+const jahre = ${Number(u3.jahre) || 100}, jeJahr = Math.max(1, Math.round(jahrS / Z));
+const W = [];
+for (let i = 0; i < jahre * jeJahr; i++) W.push(r._wetterAmOrt(0, 0, i * Z));
+const jahrMax = [];
+let lauf = 0, maxAll = 0;
+for (let y = 0; y < jahre; y++) { let m = 0; for (let i = y * jeJahr; i < (y + 1) * jeJahr; i++) { const mm = mmJeTakt(W[i]); lauf = mm > 0 ? lauf + mm : 0; if (lauf > m) m = lauf; } jahrMax.push(m); if (m > maxAll) maxAll = m; }
+const sonnig = [];
+for (let i = 0; i < W.length; ) { if (W[i] === "sunny") { let e = i; while (e < W.length && W[e] === "sunny") e++; sonnig.push(((e - i) * Z) / tagS); i = e; } else i++; }
+const Tw = {};
+for (const w of Object.keys(FELD)) Tw[w] = G.temperaturAus(r._temperaturFeld(wl), 0.375, 0.6, FELD[w]);
+const freq = {};
+for (const w of W) freq[w] = (freq[w] || 0) + 1;
+let tMittel = 0;
+for (const w of Object.keys(freq)) tMittel += (Tw[w] * freq[w]) / W.length;
+const T = r._pegelGilt();
+const tele = [];
+try {
+for (let k = 0; k < ${Number(u4.saaten) || 100}; k++) {
+wm.seed = "wetter-s" + k;
+const g = P.windGrund(wm.seed), qx = -g.z, qz = g.x, D = 5000000;
+const a = [], b = [];
+for (let y = 0; y < 30; y++) { let na = 0, nb = 0; for (let i = 0; i < jeJahr; i++) { const t = (y * jeJahr + i) * Z; if (r._weatherIsWet(r._wetterAmOrt(0, 0, t))) na++; if (r._weatherIsWet(r._wetterAmOrt(D * qx, D * qz, t))) nb++; } a.push(na / jeJahr); b.push(nb / jeJahr); }
+tele.push([a, b]);
+}
+} finally { wm.seed = s0; }
+const sichtSturm = -Math.log(A.LUFT.kontrast) / r._luftBeta(FELD.stormy);
+return { jahrMax, maxAll, sonnig, Tw, tMittel, krone: T ? T.krone : null, pegelKlassen: T && T.q ? T.q.length : 0, tele, sichtSturm, saatZurueck: wm.seed === s0, jeJahr, stundeS, worte: Object.keys(freq).length };
+`);
+            // die Bild-Zeit über 2,5 s im Wetter der Welt (requestAnimationFrame) — headless die Zeit des Software-Renderers
+            const takt = await H.seite(`
+const d = [];
+await new Promise((fertig) => { let v = performance.now(); const t0 = v; const f = (n) => { d.push(n - v); v = n; if (n - t0 < 2500) requestAnimationFrame(f); else fertig(); }; requestAnimationFrame(f); setTimeout(fertig, 4000); });
+d.sort((a, b) => a - b);
+return { n: d.length, p95: d.length ? d[Math.min(d.length - 1, Math.floor(0.95 * d.length))] : null };
+`).catch((e) => ({ n: 0, grund: String((e && e.message) || e).slice(0, 160) }));
+            const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
+            const streu = (x) => (x.length > 1 ? Math.sqrt(mittel(x.map((v) => (v - mittel(x)) ** 2))) : 0);
+            const pearson = (x, y) => {
+                const mx = mittel(x), my = mittel(y);
+                let a = 0, b = 0, c = 0;
+                for (let i = 0; i < x.length; i++) (a += (x[i] - mx) * (y[i] - my)), (b += (x[i] - mx) ** 2), (c += (y[i] - my) ** 2);
+                return b > 0 && c > 0 ? a / Math.sqrt(b * c) : 0;
+            };
+            const aus = {};
+            // S1 die Flut: der größte Regen einer nassen Strecke in 100 Jahren am Ort; der Hub ist an der Krone gedeckelt
+            aus[1] = {
+                werte: { regenMaxMm: R(welt.maxAll), kroneM: R(welt.krone) },
+                zeuge: { jahre: welt.jahrMax.length, streu: R(streu(welt.jahrMax)), pegelKlassen: welt.pegelKlassen },
+                auge: await M.auge("wetter-extreme-s1", { ort: "wiese" }, { wetter: "stormy" }),
+                nicht: "der Fluss verlässt das Bett nie: der Hub ist an der Krone gedeckelt (gelaende-core.js:1569 — „darüber trägt die Aue den Überschuss, nicht gerechnet“), Krone " + R(welt.krone) + " m; der größte Regen einer Strecke in 100 Jahren " + R(welt.maxAll) + " mm",
+            };
+            // S2 die Hitzewelle: die längste Strecke klarer Worte (Spieltage) und der Überschuss der Temperatur des klaren Worts über
+            // das Mittel der Worte (Sommer, Nachmittag)
+            aus[2] = {
+                werte: { dauerTage: R(Math.max(0, ...welt.sonnig)), amplitudeK: R(welt.Tw.sunny - welt.tMittel) },
+                zeuge: { strecken: welt.sonnig.length, streuDauer: R(streu(welt.sonnig)), streuT: R(streu(Object.values(welt.Tw))), worte: welt.worte },
+            };
+            // S3 die Wiederkehr: Gumbel über die Jahresmaxima des Strecken-Regens (Momente), x100 ÷ x2 gegen die Erd-Erwartung
+            const jm = welt.jahrMax;
+            const m = mittel(jm), sd = streu(jm), beta = (sd * Math.sqrt(6)) / Math.PI, mu = m - 0.5772 * beta;
+            const xT = (T) => mu + beta * -Math.log(-Math.log(1 - 1 / T));
+            const ERW = Number(u3.erwartungMm) || 100;
+            const q = xT(100) > 0 ? xT(100) / ERW : NaN;
+            aus[3] = {
+                werte: { faktor: Number.isFinite(q) && q > 0 ? R(Math.max(q, 1 / q)) : null, x100Mm: R(xT(100)), x2Mm: R(xT(2)), jahre: jm.length },
+                zeuge: { jahre: jm.length, streu: R(sd), saatZurueck: welt.saatZurueck ? 1 : 0 },
+            };
+            // S4 die Telekonnektion: Regen-Anteil je Jahr an A und 5 000 km quer zum Zug, Median |r| über 100 Saaten
+            const rs = welt.tele.map(([a, b]) => Math.abs(pearson(a, b))).sort((x, y) => x - y);
+            aus[4] = {
+                werte: { rBetrag: R(rs[Math.floor(rs.length / 2)]), saaten: rs.length },
+                zeuge: { saaten: rs.length, streu: R(streu(rs)) },
+                nicht: "kein Ozean-Index (warmes Meer hier → Dürre dort): das Wetter kennt kein Meer und keine Temperatur der See (phyto-core.js:4423 wetterAt)",
+            };
+            // S5 der Sandsturm: kein Wort der Welt; die Sicht im Sturm
+            aus[5] = {
+                werte: { sichtSturmM: R(welt.sichtSturm) },
+                zeuge: { worte: welt.worte },
+                auge: await M.auge("wetter-extreme-s5", { ort: "wiese" }, { wetter: "stormy" }),
+                nicht: "kein Sandsturm, kein Blizzard, kein Wirbelsturm-Landfall: die Wetter-Tafel trägt 5 Worte (stamm/daten.js:112 WEATHER_FIELD), die Sicht im Sturm " + R(welt.sichtSturm) + " m",
+            };
+            // S6 die Katastrophe in der Megastadt: kein Hurrikan; die Bild-Zeit headless
+            aus[6] = {
+                werte: Object.assign({}, Number.isFinite(takt.p95) ? { p95Ms: R(takt.p95) } : {}),
+                zeuge: { bilder: takt.n || 0, grund: takt.grund || null },
+                auge: await M.auge("wetter-extreme-s6", { ort: "wiese" }, { wetter: "stormy" }),
+                nicht: "kein Hurrikan und kein Sandsturm, keine Megastadt mit 10⁵ Dingen im Sturm (die Wetter-Tafel trägt 5 Worte)",
+            };
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { jahre: 100, mmJeStunde: 10 },
+                soll: [K.soll(EX, 1, "nach 100 mm Starkregen", { key: "regenMaxMm", rel: "≥", zahl: 100, einheit: "mm" })],
+                auge: { pose: "Ego an der Mess-Wiese, Bildpaar vor/nach dem Starkregen (die Bühne setzt stormy)", vorbild: "Bildpaar eines Hochwassers über die Aue (Pegelfotos, z. B. Elbe 2002)" },
+                taeter: "gelaende-core.js pegelHub (an der Krone gedeckelt)",
+                nicht: "der Fluss verlässt das Bett nie",
+                leser: "gelaende-core.js:1569 — der Hub ist an der Krone gedeckelt, die Aue trägt den Überschuss „nicht gerechnet“",
+                gruen: { werte: { regenMaxMm: 120 }, zeuge: { jahre: 100, streu: 12 } },
+                attrappen: [{ name: "120 mm behauptet", roh: leer({ regenMaxMm: 120 }) }],
+            },
+            2: {
+                u: { jahre: 100, saison: "Sommer 0,375, Uhr 0,6" },
+                soll: [
+                    K.soll(EX, 2, "Dauer und Amplitude gegen Erd-Statistik gleichen Klimas ±50 %", { key: "dauerTage", ref: 6, refQuelle: "Erde, gemäßigt: Hitzewelle ≥ 6 Tage (ETCCDI WSDI, Zhang et al. 2011)", einheit: "d" }),
+                    K.soll(EX, 2, "Dauer und Amplitude gegen Erd-Statistik gleichen Klimas ±50 %", { key: "amplitudeK", ref: 5, refQuelle: "Erde, gemäßigt: Hitzewelle ≥ 5 K über dem Normal (Frich et al. 2002, HWDI)", einheit: "K" }),
+                ],
+                zeuge: zMinStreu({ strecken: 10, worte: 3 }, ["streuDauer", "streuT"]),
+                taeter: "phyto-core.js wetterAt (keine Blockierlage)",
+                leser: "phyto-core.js:4423 — wetterAt kennt keine Blockierlage: die längste klare Strecke ist ein Bruchteil eines Tages",
+                gruen: { werte: { dauerTage: 7, amplitudeK: 5.5 }, zeuge: { strecken: 40, streuDauer: 2, streuT: 3, worte: 5 } },
+                attrappen: [
+                    { name: "Welle aus der Statistik ohne Welt", roh: leer({ dauerTage: 7, amplitudeK: 5.5 }) },
+                    { name: "eine einzige Strecke", roh: { werte: { dauerTage: 7, amplitudeK: 5.5 }, zeuge: { strecken: 1, streuDauer: 0, streuT: 3, worte: 5 } } },
+                ],
+            },
+            3: {
+                u: { jahre: 100, erwartungMm: 100, verfahren: "Gumbel (Momente) über die Jahresmaxima des Regens einer nassen Strecke (mm, 10 mm je Stunde der Stärke 1); Erd-Erwartung 100 mm (KOSTRA-DWD 2020, D = 24 h, T = 100 a, Flachland)" },
+                soll: [K.soll(EX, 3, "100-a-Wert innerhalb Faktor 2 der Erd-Erwartung", { key: "faktor", rel: "≤", zahl: 2 })],
+                zeuge: zMinStreu({ jahre: 100, saatZurueck: 1 }, ["streu"]),
+                zeugeText: "die Jahresmaxima der Welt streuen (Gumbel über 100 Spieljahre)",
+                taeter: "phyto-core.js wetterAt (periodisch, keine Extreme)",
+                leser: "phyto-core.js:4423 — drei Sinus-Wellen: die Jahresmaxima wiederholen sich, eine Jahrhundertflut entsteht nicht",
+                gruen: { werte: { faktor: 1.3 }, zeuge: { jahre: 100, streu: 9, saatZurueck: 1 } },
+                attrappen: [
+                    { name: "Faktor 1,2 ohne Jahre", roh: leer({ faktor: 1.2 }) },
+                    { name: "100 gleiche Jahre (Faktor des entarteten Gumbel)", roh: { werte: { faktor: 2 }, zeuge: { jahre: 100, streu: 0, saatZurueck: 1 } } },
+                ],
+                unklar: "Erd-Erwartung ohne Dauerstufe und Klimazone — Vorschlag: 24-h-Summe, T = 100 a, gleiche Klimazone (KOSTRA-DWD 2020: ~100 mm im Flachland)",
+            },
+            4: {
+                u: { saaten: 100, jahre: 30, abstandKm: 5000 },
+                soll: [K.soll(EX, 4, "Index ↔ Regen 5 000 km entfernt |r| ≥ 0,3 über 100 Saaten", { key: "rBetrag" }), K.soll(EX, 4, "Index ↔ Regen 5 000 km entfernt |r| ≥ 0,3 über 100 Saaten", { key: "saaten", rel: "≥", zahl: 100 })],
+                zeuge: zMinStreu({ saaten: 100 }, ["streu"]),
+                taeter: "phyto-core.js wetterAt (kein Meer, kein Index)",
+                nicht: "kein Ozean-Index",
+                leser: "phyto-core.js:4423 — wetterAt liest keine Temperatur der See; kein Index der Welt",
+                gruen: { werte: { rBetrag: 0.35, saaten: 100 }, zeuge: { saaten: 100, streu: 0.1 } },
+                attrappen: [{ name: "r 0,35 aus einer Reanalyse", roh: leer({ rBetrag: 0.35, saaten: 100 }) }],
+            },
+            5: {
+                u: {},
+                soll: [K.soll(EX, 5, "Sicht im Sandsturm < 100 m", { key: "sichtSandsturmM", einheit: "m" }), K.soll(EX, 5, "Blindtest gegen Sturmfotos ≤ 60 %", { key: "blindProzent", einheit: "%" })],
+                auge: { pose: "Ego an der Mess-Wiese im Sturm (der Sandsturm ist kein Wort der Welt)", vorbild: "Fotos eines Haboob/Blizzard (NOAA), Blindtest ≤ 60 %" },
+                taeter: "stamm/daten.js WEATHER_FIELD (5 Worte)",
+                nicht: "kein Sandsturm, kein Blizzard",
+                leser: "stamm/daten.js:112 — WEATHER_FIELD trägt sunny/cloudy/foggy/rainy/stormy, keinen Staub und keinen Schneesturm",
+                gruen: { werte: { sichtSandsturmM: 60, blindProzent: 55 }, zeuge: { worte: 6 } },
+                attrappen: [{ name: "Sicht 60 m behauptet", roh: leer({ sichtSandsturmM: 60, blindProzent: 55 }) }],
+            },
+            6: {
+                u: { dauerS: 2.5 },
+                soll: [K.soll(EX, 6, "p95 ≤ 33 ms über die Durchfahrt", { key: "p95Ms", einheit: "ms" }), K.soll(EX, 6, "Blindtest ≤ 60 %", { key: "blindProzent", einheit: "%" })],
+                auge: { pose: "Ego an der Mess-Wiese im Sturm (keine Megastadt, kein Hurrikan)", vorbild: "Fotos eines Hurrikan-Landfalls in einer Großstadt, Blindtest ≤ 60 %" },
+                taeter: "stamm/daten.js WEATHER_FIELD (kein Hurrikan)",
+                nicht: "kein Hurrikan, keine Megastadt im Sturm",
+                leser: "stamm/daten.js:112 — WEATHER_FIELD trägt keinen Hurrikan, keinen Sandsturm",
+                gruen: { werte: { p95Ms: 25, blindProzent: 55 }, zeuge: { bilder: 150 } },
+                attrappen: [{ name: "p95 25 ms ohne Bild", roh: leer({ p95Ms: 25, blindProzent: 55 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ VORHERSAGE ════════════════════════════════════════
+    const VH = "planet.wetter.vorhersage";
+    const vorhersage = {
+        sek: 25,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "das Bildmodell, das NUR den Himmel sieht (S2), urteilt am Gerät über die Bilder von M.auge; headless misst die Probe die Folge der Welt",
+        mess: async function (H, U, M) {
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const u3 = U[3] || {}, u6 = U[6] || {};
+            // DIE FOLGE DER HEIMAT (Saat der Welt): das Wort am Ort zu jeder Zeit der Welt-Uhr (`_wetterAmOrt`), der Wind `_windDirAt`;
+            // die Stunde ist 1/24 des Spieltags (DAY_LENGTH_DEFAULT_MINUTES), der Tag ebenso
+            const welt = await H.seite(`
+const st = r.state, wm = st.worldMeta, A = r.constructor, Z = A.WETTER_ZUG_SEK, P = globalThis.__phytoCore, FELD = A.WEATHER_FIELD;
+const tagS = A.DAY_LENGTH_DEFAULT_MINUTES * 60, h = tagS / 24, s0 = wm.seed;
+const nass = (w) => r._weatherIsWet(w), deck = (w) => FELD[w].grey;
+const out = { tagS, h };
+const beginne = [];
+for (let t = 30; beginne.length < 100 && t < 3000 * tagS; t += 30) {
+if (!nass(r._wetterAmOrt(0, 0, t)) || nass(r._wetterAmOrt(0, 0, t - 30))) continue;
+const d = r._windDirAt(t - h), D = P.WIND_FELD.front.zugMS * h;
+const luv = deck(r._wetterAmOrt(-d.x * D, -d.z * D, t - h)), hier = deck(r._wetterAmOrt(0, 0, t - h)), kurz = deck(r._wetterAmOrt(0, 0, t - 30)), jetzt = deck(r._wetterAmOrt(0, 0, t));
+beginne.push([t, luv, hier, kurz, jetzt]);
+t += 10 * h;
+}
+out.beginne = beginne;
+const lead12 = 12 * h, himmel = [];
+for (let k = 0; k < 500; k++) { const t = 1000 + k * 97; const w = r._wetterAmOrt(0, 0, t); himmel.push([deck(w) >= FELD.cloudy.grey - 1e-9 ? 1 : 0, nass(w) ? 1 : 0, nass(r._wetterAmOrt(0, 0, t + lead12)) ? 1 : 0]); }
+out.himmel = himmel;
+const schritt = Z, tage = ${Number(u3.lernTage) || 60}, nLern = Math.round((tage * tagS) / schritt);
+const obs = [];
+for (let i = 0; i < nLern + Math.round((40 * tagS) / schritt); i++) obs.push(r._wetterAmOrt(0, 0, i * schritt));
+out.obs = obs;
+out.grau = Object.fromEntries(Object.keys(FELD).map((w) => [w, FELD[w].grey]));
+out.nassW = Object.keys(FELD).filter(nass);
+out.nLern = nLern;
+out.schritt = schritt;
+const zwilling = [];
+for (let k = 0; k < 100; k++) { const t0 = 5000 + k * 3331; const z = []; for (const L of [1, 2, 4, 7, 10, 14]) z.push([nass(r._wetterAmOrt(0, 0, t0 + L * tagS)) ? 1 : 0, nass(r._wetterAmOrt(1, 0, t0 + L * tagS)) ? 1 : 0]); zwilling.push(z); }
+out.zwilling = zwilling;
+const g = P.windGrund(s0);
+const A0 = [], B0 = [];
+for (let t = 0; t < 4000; t += 5) { A0.push(nass(r._wetterAmOrt(0, 0, t)) ? 1 : 0); B0.push(nass(r._wetterAmOrt(3000 * g.x, 3000 * g.z, t)) ? 1 : 0); }
+let best = [-1, 0];
+for (let k = 0; k < 400; k++) { let s = 0; for (let i = 0; i + k < A0.length; i++) if (A0[i] === B0[i + k]) s++; s /= A0.length - k; if (s > best[0]) best = [s, k]; }
+out.lagS = best[1] * 5;
+out.lagGleich = best[0];
+const welten = [];
+try {
+for (let k = 0; k < ${Number(u6.welten) || 10}; k++) {
+wm.seed = "wetter-s" + k;
+const sk = [];
+for (const L of [1, 7, 14, 30, 60]) { let a = 0, n = 0, f = 0; for (let j = 0; j < 60; j++) { const t0 = 2000 + j * 1777; const o = nass(r._wetterAmOrt(0, 0, t0 + L * tagS)) ? 1 : 0, p = nass(r._wetterAmOrt(1, 0, t0 + L * tagS)) ? 1 : 0; a += (p - o) * (p - o); f += o; n++; } const c = f / n; sk.push([L, a / n, c * (1 - c)]); }
+welten.push(sk);
+}
+} finally { wm.seed = s0; }
+out.welten = welten;
+out.saatZurueck = wm.seed === s0;
+return out;
+`);
+            const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
+            const streu = (x) => (x.length > 1 ? Math.sqrt(mittel(x.map((v) => (v - mittel(x)) ** 2))) : 0);
+            const aus = {};
+            // S1 Regen kommt aus der Windrichtung: die Bedeckung im Luv (Zug × 1 h gegen den Wind) eine Stunde vor dem Beginn höher als
+            // am Ort, und sie stieg am Ort binnen der Stunde
+            const B = welt.beginne;
+            const ok = B.filter(([, luv, hier, kurz, jetzt]) => luv > hier && Math.max(kurz, jetzt) > hier).length;
+            aus[1] = {
+                werte: { beginne: B.length, windrichtungProzent: B.length ? R((100 * ok) / B.length) : null },
+                zeuge: { beginne: B.length, streuLuv: R(streu(B.map((x) => x[1]))), streuZeit: R(streu(B.map((x) => x[0]))) },
+            };
+            // S2 der Himmel als Zeichen: Regen in 12 h aus „bedeckt jetzt“ gegen die Persistenz (Brier-Skill) — das Bildmodell am Gerät
+            const Hm = welt.himmel;
+            const bs = (i) => mittel(Hm.map((x) => (x[i] - x[2]) ** 2));
+            const skillH = bs(1) > 0 ? 1 - bs(0) / bs(1) : NaN;
+            aus[2] = {
+                werte: { skillHimmel: R(skillH) },
+                zeuge: { momente: Hm.length, nass12: R(mittel(Hm.map((x) => x[2]))) },
+                auge: await M.auge("wetter-vorhersage-s2", { ort: "wiese" }, { wetter: "cloudy" }),
+            };
+            // S3 die Vorhersage aus Beobachtung: Analog-Verfahren über die gelernte Folge (60 Spieltage), 100 Vorhersagen 3 Tage voraus,
+            // Brier-Skill gegen die Klimatologie der Lern-Zeit
+            const obs = welt.obs.map((w) => welt.grau[w]), nassO = welt.obs.map((w) => (welt.nassW.includes(w) ? 1 : 0)), nL = welt.nLern, lead = Math.round((3 * welt.tagS) / welt.schritt), fen = 8;
+            const klima = mittel(nassO.slice(0, nL));
+            let bsA = 0, bsK = 0, nV = 0;
+            for (let v = 0; v < 100; v++) {
+                const t = nL + v * Math.max(1, Math.floor((obs.length - nL - lead - 1) / 100));
+                if (t + lead >= obs.length) break;
+                let bestJ = -1, bestD = Infinity;
+                for (let j = fen; j + lead < nL; j++) {
+                    let d = 0;
+                    for (let i = 0; i < fen; i++) d += Math.abs(obs[t - i] - obs[j - i]);
+                    if (d < bestD) (bestD = d), (bestJ = j);
+                }
+                const o = nassO[t + lead], p = nassO[bestJ + lead];
+                bsA += (p - o) ** 2;
+                bsK += (klima - o) ** 2;
+                nV++;
+            }
+            aus[3] = {
+                werte: { skill3: bsK > 0 ? R(1 - bsA / bsK) : null, vorhersagen: nV },
+                zeuge: { vorhersagen: nV, klima: R(klima), streuObs: R(streu(obs)) },
+            };
+            // S4 die winzige Störung: der Zwilling 1 m daneben als Vorhersage, Skill bei 1 und 14 Tagen
+            const Zw = welt.zwilling, leads = [1, 2, 4, 7, 10, 14];
+            const skillL = (i) => {
+                const o = Zw.map((z) => z[i][0]), p = Zw.map((z) => z[i][1]);
+                const c = mittel(o), bsz = mittel(o.map((x, k) => (p[k] - x) ** 2)), bsc = c * (1 - c);
+                return bsc > 0 ? 1 - bsz / bsc : NaN;
+            };
+            const sk = leads.map((_, i) => skillL(i));
+            aus[4] = {
+                werte: { skill14: R(sk[5]), skill1: R(sk[0]) },
+                zeuge: { vorhersagen: Zw.length, faellt: Number.isFinite(sk[0]) && Number.isFinite(sk[5]) ? R(sk[0] - sk[5]) : null, je: sk.map(R), klima14: R(mittel(Zw.map((z) => z[5][0]))) },
+            };
+            // S5 die Sturmbahn: kein Sturm als Ding; gemessen der Zug der Front aus dem Lag zweier Orte 3 km längs der Grundrichtung
+            aus[5] = {
+                werte: { frontZugMs: welt.lagS > 0 ? R(3000 / welt.lagS) : null, lagGleich: R(welt.lagGleich) },
+                zeuge: { lagS: welt.lagS },
+                nicht: "keine Sturmbahn und kein Orbitbild: das Wetter wandert als starres Feld (phyto-core.js:4423 wetterAt), ein Sturm ist kein Ding mit Bahn",
+            };
+            // S6 die Grenze der Vorhersage in 10 Welten: der Zwilling 1 m daneben, die Tage bis Skill ≤ 0,05 (sonst > 60)
+            const grenzen = welt.welten.map((s) => {
+                const x = s.find(([, bsz, bsc]) => bsc > 0 && 1 - bsz / bsc <= 0.05);
+                return x ? x[0] : 61;
+            });
+            aus[6] = {
+                werte: { grenzeTage: R(mittel(grenzen)), welten: grenzen.length },
+                zeuge: { welten: grenzen.length, saatZurueck: welt.saatZurueck ? 1 : 0, grenzen },
+                nicht: "kein Chaos und keine Dynamik je Welt: das Wetter ist eine feste Funktion von Saat, Ort und Zeit (phyto-core.js:4423 wetterAt), und jede Saat trägt den Körper der Erde (voxel-worker.js:1159 planetPlanVon: P.PLANET_ERDE) — Rotation und Wärmegefälle ändern sich nie",
+            };
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { beginne: 100, stunde: "1/24 Spieltag", luvKm: "zugMS × 1 h" },
+                soll: [K.soll(VH, 1, "Bedeckung stieg in den 60 min davor aus der Windrichtung in ≥ 70 %", { key: "windrichtungProzent", einheit: "%" }), K.soll(VH, 1, "100 Regenbeginne", { key: "beginne", rel: "≥", zahl: 100 })],
+                zeuge: zMinStreu({ beginne: 100 }, ["streuLuv", "streuZeit"]),
+                taeter: "phyto-core.js wetterAt · windRichtung (die Front zieht längs windGrund, der Wind am Ort dreht unabhängig)",
+                leser: "stamm/stoff-material.js:214 — _windDirAt (phyto-core windRichtung) ist nicht der Zug der Front (phyto-core windGrund)",
+                gruen: { werte: { beginne: 100, windrichtungProzent: 76 }, zeuge: { beginne: 100, streuLuv: 0.2, streuZeit: 9000 } },
+                attrappen: [
+                    { name: "76 % ohne Regenbeginn", roh: leer({ beginne: 100, windrichtungProzent: 76 }) },
+                    { name: "derselbe Beginn 100-mal", roh: { werte: { beginne: 100, windrichtungProzent: 76 }, zeuge: { beginne: 100, streuLuv: 0, streuZeit: 0 } } },
+                ],
+            },
+            2: {
+                u: { vorlaufH: 12 },
+                soll: [K.soll(VH, 2, "Regen in 12 h mit Skill ≥ 0,3 über Persistenz", { key: "skillHimmel" })],
+                auge: { pose: "Ego an der Mess-Wiese, Blick in den Himmel (bewölkt)", vorbild: "Bildmodell, das NUR den Himmel sieht (Himmelsfotos mit Regen 12 h später), Skill ≥ 0,3" },
+                taeter: "phyto-core.js wetterAt (kein Vorlauf der Front)",
+                gruen: { werte: { skillHimmel: 0.35 }, zeuge: { momente: 500 } },
+                attrappen: [{ name: "Skill ohne Himmel", roh: leer({ skillHimmel: 0.35 }) }],
+            },
+            3: {
+                u: { lernTage: 60, vorlaufTage: 3, fenster: 8, verfahren: "Analog-Vorhersage über die beobachtete Bedeckung am Ort" },
+                soll: [K.soll(VH, 3, "Skill ≥ 0,2 über Klimatologie bei 3 Tagen", { key: "skill3" })],
+                zeuge: zMinStreu({ vorhersagen: 90 }, ["streuObs", "klima"]),
+                taeter: "phyto-core.js wetterAt",
+                gruen: { werte: { skill3: 0.3 }, zeuge: { vorhersagen: 100, klima: 0.3, streuObs: 0.3 } },
+                attrappen: [{ name: "Skill 0,3 aus der Literatur", roh: leer({ skill3: 0.3 }) }],
+            },
+            4: {
+                u: { stoerungM: 1, tage: [1, 2, 4, 7, 10, 14] },
+                soll: [K.soll(VH, 4, "Skill fällt bis 14 Tage auf ≈ 0", { key: "skill14", rel: "≤", zahl: 0 })],
+                zeuge: (roh) => {
+                    const f = zMin({ vorhersagen: 100 })(roh);
+                    if (f) return f;
+                    const z = roh.zeuge || {};
+                    if (!(typeof z.faellt === "number" && z.faellt > 0.2)) return "der Skill fällt nicht (1 Tag → 14 Tage: " + z.faellt + ") — keine Vorhersage, die erst trug";
+                    return null;
+                },
+                zeugeText: "der Skill trug am ersten Tag und fiel bis 14 Tage",
+                taeter: "phyto-core.js wetterAt (deterministisch, kein Chaos)",
+                leser: "phyto-core.js:4423 — wetterAt ist eine Funktion von Saat, Ort und Zeit: eine Störung wächst nie",
+                unklar: "„≈ 0“ ohne Toleranz (die Station verlangt ≤ 0) — Vorschlag: |Skill| ≤ 0,1 bei 14 Tagen",
+                gruen: { werte: { skill14: -0.02, skill1: 0.8 }, zeuge: { vorhersagen: 100, faellt: 0.82 } },
+                attrappen: [
+                    { name: "Skill 0 ohne Zwilling", roh: leer({ skill14: -0.02, skill1: 0.8 }) },
+                    { name: "ein Skill, der nie trug", roh: { werte: { skill14: 0, skill1: 0 }, zeuge: { vorhersagen: 100, faellt: 0 } } },
+                ],
+            },
+            5: {
+                u: { abstandM: 3000 },
+                soll: [K.soll(VH, 5, "Bahn-Vorhersage 48 h aus dem Orbitbild: Fehler ≤ 300 km", { key: "bahnFehlerKm", einheit: "km" })],
+                zeuge: zMin({ lagS: 1 }),
+                taeter: "phyto-core.js wetterAt (kein Sturm als Ding)",
+                nicht: "keine Sturmbahn, kein Orbitbild",
+                leser: "phyto-core.js:4423 — wetterAt trägt keinen Sturm mit Bahn; scripts/werkbank.cjs /bild keine Orbit-Pose",
+                gruen: { werte: { bahnFehlerKm: 200 }, zeuge: { lagS: 270 } },
+                attrappen: [{ name: "Bahn ohne Sturm", roh: leer({ bahnFehlerKm: 200 }) }],
+            },
+            6: {
+                u: { welten: 10, tage: [1, 7, 14, 30, 60] },
+                soll: [K.soll(VH, 6, "Zeit bis Skill ≈ 0 gegen Fehlerwachstum aus Rotation und Wärmegefälle ±50 %", { key: "grenzeTage", ref: 15, refQuelle: "Erde: Vorhersagegrenze ≈ 15 Tage (Zhang et al. 2019, J. Atmos. Sci. 76)", einheit: "d" })],
+                zeuge: zMin({ welten: 10, saatZurueck: 1 }),
+                taeter: "voxel-worker.js planetPlanVon (immer PLANET_ERDE) · phyto-core.js wetterAt",
+                nicht: "kein Chaos, keine Dynamik je Welt",
+                leser: "voxel-worker.js:1159 — planetPlanVon baut jede Saat mit P.PLANET_ERDE; phyto-core.js:4423 wetterAt liest weder Rotation noch Wärmegefälle",
+                gruen: { werte: { grenzeTage: 14 }, zeuge: { welten: 10, saatZurueck: 1 } },
+                attrappen: [{ name: "14 Tage aus der Literatur", roh: leer({ grenzeTage: 14 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ FREMDE ATMOSPHÄREN ════════════════════════════════════════
+    const FA = "planet.wetter.fremde-atmosphaeren";
+    const fremde = {
+        sek: 15,
+        pfad: PFAD,
+        ungefahren: "die Himmelsbilder (Mittag/Abend, Mars, Gasriese, Landeplatz) schießt M.auge am Gerät; headless misst die Probe die Sonne durch die Atmosphäre (`_atmoSonne`, die Rechnung der Welt mit dem Gesetz der Ferne) und den Faden",
+        mess: async function (H, U, M) {
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const u4 = U[4] || {}, u7 = U[7] || {};
+            // DIE ATMOSPHÄRE: der Durchlass zur Sonne (Mittag, Abend) über die Rechnung der Welt (`_atmoRechnung().sonne` mit dem Gesetz
+            // dieser Welt und mit dem Himmel der Ferne, ULTIVERSUM.ferne), die Welten des Ultiversums, der Zug der Wolke
+            const welt = await H.seite(`
+const st = r.state, A = r.constructor, Rr = r._atmoRechnung(), G0 = r._atmoGesetz(), W = A.WOLKEN_SCHICHT, HG = A.Gesetz("terrain:HIMMEL_GESETZ", null);
+const hue = (c) => { const r0 = c.r, g = c.g, b = c.b, mx = Math.max(r0, g, b), mn = Math.min(r0, g, b), d = mx - mn; if (d <= 1e-9) return null; let h = mx === r0 ? ((g - b) / d) % 6 : mx === g ? (b - r0) / d + 2 : (r0 - g) / d + 4; h *= 60; return h < 0 ? h + 360 : h; };
+const sonne = (G, e) => { const Mm = Rr.medium(G, Rr.betaKlar(G), A.ATMO_BODEN); const s = Rr.sonne(G, Mm, 0.001, e, A.ATMO_LUT.schritte.durchlass, [0, 0, 0]); return { r: s.col.r, g: s.col.g, b: s.col.b, lum: s.lum }; };
+const welten = Object.keys(A.ULTIVERSUM);
+const Gf = Object.assign({}, G0, { rayleighTiefe: A.ULTIVERSUM.ferne.himmel.rayleighTiefe.slice() });
+const je = {};
+for (const [n, G] of [["erde", G0], ["ferne", Gf]]) je[n] = { mittag: sonne(G, 0.9), abend: sonne(G, 0.05) };
+for (const n of Object.keys(je)) for (const z of ["mittag", "abend"]) je[n][z].hue = hue(je[n][z]);
+const u = st.skyboxUniforms;
+const zug = u && u.zug ? Math.hypot(u.zug.value.x, u.zug.value.y) * (1 + HG.projY) * W.hoeheM : null;
+const tiefen = welten.map((w) => (A.ULTIVERSUM[w].himmel && A.ULTIVERSUM[w].himmel.rayleighTiefe) || null);
+const gas = Object.keys(G0).filter((k) => /gas|druck|stern|mol|masse|flucht|rotation/i.test(k));
+return { welten, je, zug, tiefen, gas, rayleigh: G0.rayleighTiefe };
+`);
+            // DER FADEN: die Bänder des Regens je Breite über dem Meer (Heimat-Samen, Nordhalbkugel) und der Widerspruch über 10 Saaten
+            const faden = await H.seite(`
+await r._fadenQuelle();
+const G = globalThis.__gelaendeCore, samen = r._planetSamen();
+const breiten = [];
+for (let b = 1; b <= 89; b += 4) breiten.push(b);
+const laengen = [-160, -120, -80, -40, 0, 40, 80, 120, 160];
+const a = await Promise.all([].concat(...breiten.map((b) => laengen.map((l) => r._planetAuftrag({ type: "planet-ort", samen, breite: b, laenge: l, zeitMa: 0 })))));
+let abgelehnt = 0;
+const rq = (o) => { try { return G.ortGesetz(o).wetter.regenQuote; } catch (e) { abgelehnt++; return null; } };
+const prof = breiten.map((b, i) => { const m = a.slice(i * laengen.length, (i + 1) * laengen.length).filter((o) => !o.land).map(rq).filter((v) => v !== null); return m.length ? m.reduce((s, v) => s + v, 0) / m.length : null; });
+const wid = [];
+for (let k = 0; k < ${Number(u7.saaten) || 10}; k++) {
+const s = "wetter-s" + k;
+const b = await Promise.all(Array.from({ length: ${Number(u7.orte) || 20} }, (_, i) => r._planetAuftrag({ type: "planet-ort", samen: s, breite: Math.asin(1 - (2 * (i + 0.5)) / ${Number(u7.orte) || 20}) * 180 / Math.PI, laenge: ((i * 137.508 + k * 29) % 360) - 180, zeitMa: 0 })));
+for (const o of b) { if (!o.land) continue; let kh = null; try { kh = G.ortGesetz(o).klimaHeute; } catch (e) { abgelehnt++; continue; } wid.push(kh.winter > kh.sommer + 0.01 || kh.sommer > 50 || kh.winter < -90 ? 1 : 0); }
+}
+return { breiten, prof, meerOrte: a.filter((o) => !o.land).length, wid, version: a[0].version, abgelehnt };
+`);
+            const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
+            const streu = (x) => (x.length > 1 ? Math.sqrt(mittel(x.map((v) => (v - mittel(x)) ** 2))) : 0);
+            // die Bänder: Gipfel des Regen-Profils je Halbkugel (geglättet über 3 Breiten, Gipfel ≥ 0,02 über beiden Tälern daneben)
+            const p = faden.prof.map((v, i, a) => {
+                const s = [a[i - 1], v, a[i + 1]].filter((x) => x !== null && x !== undefined);
+                return s.length ? mittel(s) : null;
+            });
+            let baender = 0;
+            for (let i = 0; i < p.length; i++) {
+                if (p[i] === null) continue;
+                const links = p.slice(0, i).filter((x) => x !== null), rechts = p.slice(i + 1).filter((x) => x !== null);
+                const lMin = links.length ? Math.min(...links.slice(-5)) : -Infinity, rMin = rechts.length ? Math.min(...rechts.slice(0, 5)) : -Infinity;
+                const lNah = links.length ? links[links.length - 1] : -Infinity, rNah = rechts.length ? rechts[0] : -Infinity;
+                if (p[i] >= lNah && p[i] >= rNah && p[i] - Math.max(lMin, rMin) >= 0.02) baender++;
+            }
+            const aus = {};
+            const E = welt.je.erde, F = welt.je.ferne;
+            // S1 die Erde: der Farbton der Sonne Mittag/Abend durch die Atmosphäre der Welt; die Himmelsfarbe im Bild am Gerät
+            aus[1] = {
+                werte: { sonneHueMittag: R(E.mittag.hue), sonneHueAbend: R(E.abend.hue), sonneLumAbend: R(E.abend.lum) },
+                zeuge: { welten: welt.welten.length },
+                auge: await M.auge("wetter-fremde-s1", { ort: "wiese" }, { uhr: 0.5 }),
+            };
+            // S2 Mars: der Himmel der Ferne ist gesetzt (Rayleigh-Tiefe), nicht aus Gas, Druck, Stern gefolgert
+            aus[2] = {
+                werte: { hueMarsAbend: R(F.abend.hue), hueFerneMittag: R(F.mittag.hue), welten: welt.welten.length },
+                zeuge: { welten: welt.welten.length, streuHue: R(Math.abs((F.abend.hue || 0) - (E.abend.hue || 0))) },
+                nicht: "der Himmel folgt nicht aus Gas, Druck und Stern: die Atmosphäre trägt " + (welt.gas.length ? welt.gas.join(", ") : "keinen dieser Parameter") + " (foundry-core.js:290 ATMO_GESETZ), die Ferne setzt nur die Rayleigh-Tiefe " + JSON.stringify(welt.tiefen[1]) + " (stamm/daten.js:89) — keine Mars- und keine Titan-Parameter",
+            };
+            // S3 was eine Welt hält: kein Leser der Fluchtgeschwindigkeit
+            aus[3] = {
+                werte: { welten: welt.welten.length },
+                zeuge: { welten: welt.welten.length },
+                nicht: "keine Atmosphäre aus Fluchtgeschwindigkeit und Einstrahlung: das Ultiversum trägt " + welt.welten.length + " gesetzte Welten (stamm/daten.js:89), jeder Planet des Fadens den Körper der Erde (voxel-worker.js:1159 P.PLANET_ERDE)",
+            };
+            // S4 Zirkulation aus Rotation: die Bänder bei ×1 aus dem Faden; ×0,1 und ×5 nicht setzbar
+            aus[4] = {
+                werte: { baenderX1: baender },
+                zeuge: { meerOrte: faden.meerOrte, streuProfil: R(streu(faden.prof.filter((x) => x !== null))), profil: faden.prof.map(R), version: faden.version },
+                auge: await M.auge("wetter-fremde-s4", { ort: "wiese" }, { uhr: 0.5 }),
+                nicht: "die Rotation ist nicht setzbar: jede Saat trägt den Körper der Erde (voxel-worker.js:1159 planetPlanVon: P.PLANET_ERDE) — ×0,1 und ×5 erzeugt die Welt nicht, und kein Orbitbild",
+            };
+            // S5 Venus: keine Superrotation, der Boden dreht nicht
+            aus[5] = {
+                werte: { wolkeZugMs: R(welt.zug) },
+                zeuge: { welten: welt.welten.length },
+                nicht: "keine gebundene und keine dichte Welt, keine Drehung des Bodens: die Wolke zieht mit " + R(welt.zug) + " m/s längs der Saat (stamm/bild-himmel.js:1765), Venus-Parameter setzt kein Leser",
+            };
+            // S6 Gasriesen: kein Gasriese in der Welt
+            aus[6] = {
+                werte: { welten: welt.welten.length },
+                zeuge: { welten: welt.welten.length },
+                auge: await M.auge("wetter-fremde-s6", { ort: "wiese" }, { uhr: 0.5 }),
+                nicht: "kein Gasriese: jeder Planet ist ein Gesteinskörper der Erde (voxel-worker.js:1159), kein Abstieg in eine Hülle",
+            };
+            // S7 10⁶ Planeten: der Widerspruch über 10 Saaten × 20 Orte; die Wolke vom Orbit am Landeplatz nicht erzeugbar
+            const w = faden.wid;
+            aus[7] = {
+                werte: { ohneWiderspruchProzent: w.length ? R(100 - (100 * w.reduce((s, v) => s + v, 0)) / w.length) : null, planeten: Number(u7.saaten) || 10 },
+                zeuge: { landOrte: w.length, abgelehnt: faden.abgelehnt },
+                auge: await M.auge("wetter-fremde-s7", { ort: "wiese" }, { uhr: 0.5 }),
+                nicht: "keine Reise durch ein Sonnensystem, kein Orbit: das Wetter am Landeplatz hängt an Saat und Ort der Welt (stamm/bild-himmel.js:2843 _wetterAmOrt), nicht an der Wolke, die man vom Orbit sähe",
+            };
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: {},
+                soll: [ohneZahl(FA, 1, "Himmelsfarbe Mittag/Abend gegen Foto", "himmelHue", "°")],
+                auge: { pose: "Ego an der Mess-Wiese, Mittag und Abend (die Bühne setzt die Uhr)", vorbild: "Himmelsfotos Mittag/Abend (klarer Tag, gemäßigte Breite)" },
+                taeter: "foundry-core.js ATMO_GESETZ · stamm/bild-himmel.js _atmoSonne",
+                unklar: "der Richter nennt keine Schwelle — Vorschlag: Farbton des Zenits mittags 205–225°, Abend am Horizont ±10° gegen das Foto",
+                gruen: { werte: { himmelHue: 215 }, zeuge: { welten: 2 } },
+                attrappen: [{ name: "Farbton ohne Bild", roh: leer({ himmelHue: 215 }) }],
+            },
+            2: {
+                u: { welt: "ferne (ULTIVERSUM)" },
+                soll: [K.soll(FA, 2, "Farbton ±10°", { key: "hueMarsAbend", ref: 210, refQuelle: "Mars: blaue Dämmerung um die Sonne, Farbton ≈ 210° (Curiosity Mastcam, Sol 956, NASA/JPL 2015)", einheit: "°" })],
+                zeuge: zMinStreu({ welten: 2 }, ["streuHue"]),
+                taeter: "foundry-core.js ATMO_GESETZ (kein Gas, kein Druck, kein Stern) · stamm/daten.js ULTIVERSUM.ferne",
+                nicht: "kein Himmel aus Gas, Druck und Stern",
+                leser: "foundry-core.js:290 — ATMO_GESETZ trägt Rayleigh-Tiefe und Mie, kein Gas, keinen Druck, keinen Stern; stamm/daten.js:89 ULTIVERSUM.ferne setzt die Rayleigh-Tiefe",
+                gruen: { werte: { hueMarsAbend: 212 }, zeuge: { welten: 2, streuHue: 150 } },
+                attrappen: [{ name: "Farbton 212° aus dem Foto", roh: leer({ hueMarsAbend: 212 }) }],
+            },
+            3: {
+                u: { welten: 1000 },
+                soll: [K.soll(FA, 3, "richtig eingeordnet ≥ 90 %", { key: "eingeordnetProzent", einheit: "%" }), K.soll(FA, 3, "1 000 Welten", { key: "welten", rel: "≥", zahl: 1000 })],
+                zeuge: zMin({ welten: 1000 }),
+                taeter: "voxel-worker.js planetPlanVon (immer PLANET_ERDE)",
+                nicht: "keine Atmosphäre aus Fluchtgeschwindigkeit",
+                leser: "voxel-worker.js:1159 — planetPlanVon(samen) setzt P.PLANET_ERDE; kein Leser der Fluchtgeschwindigkeit und Einstrahlung je Welt",
+                gruen: { werte: { eingeordnetProzent: 93, welten: 1000 }, zeuge: { welten: 1000 } },
+                attrappen: [{ name: "93 % aus dem Exoplaneten-Archiv", roh: leer({ eingeordnetProzent: 93, welten: 1000 }) }],
+            },
+            4: {
+                u: { breitenGrad: [1, 89, 4], laengen: 9 },
+                soll: [
+                    K.soll(FA, 4, "Bänder je Halbkugel 1 / 3 / ≥ 4", { key: "baenderX1", rel: "=", zahl: 3 }),
+                    K.soll(FA, 4, "Bänder je Halbkugel 1 / 3 / ≥ 4", { key: "baenderX01", rel: "=", zahl: 1 }),
+                    K.soll(FA, 4, "Bänder je Halbkugel 1 / 3 / ≥ 4", { key: "baenderX5", rel: "≥", zahl: 4 }),
+                ],
+                auge: { pose: "Orbit (nicht erzeugbar; geschossen an der Mess-Wiese)", vorbild: "Orbitbilder bei Rotation ×0,1 / ×1 / ×5 (Bänder je Halbkugel 1 / 3 / ≥ 4)" },
+                taeter: "voxel-worker.js planetPlanVon (immer PLANET_ERDE)",
+                nicht: "Rotation nicht setzbar, kein Orbitbild",
+                leser: "voxel-worker.js:1159 — planetPlanVon setzt P.PLANET_ERDE: die Rotation (planet-core planetKlimaGlobal zellen) ist nie anders als die der Erde",
+                gruen: { werte: { baenderX1: 3, baenderX01: 1, baenderX5: 4 }, zeuge: { meerOrte: 100, streuProfil: 0.1 } },
+                attrappen: [{ name: "Bänder aus der Theorie", roh: leer({ baenderX1: 3, baenderX01: 1, baenderX5: 4 }) }],
+            },
+            5: {
+                u: {},
+                soll: [K.soll(FA, 5, "Wolkendecke umläuft ≈ 60× schneller als der Boden", { key: "superrotation", rel: "=", zahl: 60 })],
+                zeuge: zMin({ welten: 2 }),
+                taeter: "voxel-worker.js planetPlanVon (kein Venus-Körper) · stamm/bild-himmel.js zug",
+                nicht: "keine Venus-Parameter, kein drehender Boden",
+                leser: "voxel-worker.js:1159 — kein Körper außer der Erde; stamm/bild-himmel.js:1765 — die Wolke zieht mit zugMS, nie relativ zu einer Drehung",
+                unklar: "„≈ 60×“ ohne Toleranz (die Station verlangt = 60) — Vorschlag: 60× ±20 %",
+                gruen: { werte: { superrotation: 60 }, zeuge: { welten: 2 } },
+                attrappen: [{ name: "60× aus der Literatur", roh: leer({ superrotation: 60 }) }],
+            },
+            6: {
+                u: {},
+                soll: [
+                    K.soll(FA, 6, "Bänderzahl nach Rhines-Skala ±30 %", { key: "baenderGas", ref: 6, refQuelle: "Jupiter: ≈ 6 prograde Strahlströme je Halbkugel (Porco et al. 2003, Cassini)" }),
+                    K.soll(FA, 6, "Wirbel lebt ≥ 100 Spieljahre", { key: "wirbelJahre", einheit: "a" }),
+                    K.soll(FA, 6, "Blindtest gegen Juno/Cassini ≤ 70 %", { key: "blindProzent", einheit: "%" }),
+                ],
+                auge: { pose: "Abstieg in einen Gasriesen (nicht erzeugbar; geschossen an der Mess-Wiese)", vorbild: "Juno/Cassini-Bilder von Jupiter und Saturn, Blindtest ≤ 70 %" },
+                taeter: "voxel-worker.js planetPlanVon (kein Gasriese)",
+                nicht: "kein Gasriese",
+                leser: "voxel-worker.js:1159 — jeder Planet ist der Gesteinskörper der Erde",
+                gruen: { werte: { baenderGas: 6, wirbelJahre: 150, blindProzent: 60 }, zeuge: { welten: 2 } },
+                attrappen: [{ name: "Jupiter behauptet", roh: leer({ baenderGas: 6, wirbelJahre: 150, blindProzent: 60 }) }],
+            },
+            7: {
+                u: { saaten: 10, orte: 20 },
+                soll: [
+                    K.soll(FA, 7, "1 000 Planeten × 20 Orte ohne sichtbaren Widerspruch ≥ 95 %", { key: "ohneWiderspruchProzent", einheit: "%" }),
+                    K.soll(FA, 7, "1 000 Planeten × 20 Orte ohne sichtbaren Widerspruch ≥ 95 %", { key: "planeten", rel: "≥", zahl: 1000 }),
+                    K.soll(FA, 7, "sah (≤ 1 %)", { key: "wolkeVersatzProzent", einheit: "%" }),
+                ],
+                auge: { pose: "Landeplatz an der Mess-Wiese (die Reise durch ein Sonnensystem steht aus)", vorbild: "Prüfer-Satz R11: Widerspruch ja/nein; die Wolke vom Orbit über dem Landeplatz" },
+                taeter: "stamm/bild-himmel.js _wetterAmOrt (das Wetter hängt nicht am Planeten)",
+                nicht: "keine Reise, kein Orbit",
+                leser: "stamm/bild-himmel.js:2843 — _wetterAmOrt liest Saat und Ort der Welt, nicht Breite und Länge des Planeten",
+                gruen: { werte: { ohneWiderspruchProzent: 97, planeten: 1000, wolkeVersatzProzent: 0.5 }, zeuge: { landOrte: 6000 } },
+                attrappen: [{ name: "97 % ohne Faden", roh: leer({ ohneWiderspruchProzent: 97, planeten: 1000, wolkeVersatzProzent: 0.5 }) }],
+            },
+        },
+    };
+
+    return {
+        leitern: {
+            [LA]: lagen,
+            [WO]: wolken,
+            [KZ]: klimazonen,
+            [EX]: extreme,
+            [VH]: vorhersage,
+            [FA]: fremde,
+        },
+    };
+})());
+
 // ── DIE PERSPEKTIVE planet.erde (1 Leiter, 6 Sprossen): die echte Erde ──────────────────────────────────────────────────────────
 // Der Leser des Spiels ist der Planet-Faden (`r._planetAuftrag`, stamm/gelaende-chunks.js:643 → voxel-worker.js planetOrtAuftrag:1175 →
 // planet-core planetOrt/planetPunkt): je Lage { land, hoeheM, kuesteKm } — derselbe Weg, den die Reise des Spiels ruft. Die Erd-Referenz
