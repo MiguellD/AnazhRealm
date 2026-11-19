@@ -54,7 +54,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-5';
+  const VERSION = 'planet-h2-6';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -1453,6 +1453,11 @@
   // G2.5 Die Ränder einer Platte am Punkt: Alter-Summe, Schablonen, Kegel, nächster Rand — EINE Funktion für jede Platte am Ort, ohne
   // Modus (vorher las die Partner-Seite ohne RX und ohne Kegel: dieselbe Platte gab je Rolle eine andere Höhe). Die Graben-Paare lesen
   // das Vorzeichen von ξ (EIN Profil), alle anderen Schablonen den Abstand |ξ|. Liest _xKm aus paarXi derselben Platte.
+  // B4 Anden-Bogen: knapp landein der Küste — die Küste liegt eine Schürze (K3) hinter dem Graben, der Bogen ANDEN_LANDEIN_KM dahinter
+  // (Zentral-Anden: Küste → Vulkan-Front 150–250 km). EINE Lage je Platte, beide Seiten des Paars lesen sie (vorher stand die Formel
+  // zweimal, +300 km: der Gürtel lag 450–750 km hinter dem Graben, c3 erde-04 ×1,13, erde-07 ×0,92)
+  const ANDEN_LANDEIN_KM = 150;
+  function andenBogenKm(S, A, p) { return p < S.nG ? A.schuerze[p] * S.R + ANDEN_LANDEIN_KM : 195; }
   const RS = { invA: 0, hTpl: 0, hOro: 0, oroAlter: 0, randMin: 1e9, randArt: 0, randRate: 0, vAbst: 1e9, vArt: 0, vAlter: 0, vId: -1, vAktiv: 0, hKegel: 0 };
   const _xKm = new Float64Array(MAX_P), _pr = new Float64Array(3 * MAX_P);
   const GR = { k: NaN, r: NaN };   // das Kamm- und das Rücken-Rauschen hängen nur am Punkt: einmal je Punkt, jede Platte und jedes Paar liest es
@@ -1499,13 +1504,12 @@
         // Grat-Rauschen der Kämme: stetig ein- und ausgeblendet (vorher sprang der Faktor 0,62…1 an x = 700 km und an Gewicht 0,05 auf 1)
         const wG = wa + wb + wd, grat = (wG > 0.03 && xa < 700) ? 1 + 0.38 * ((GR.k === GR.k ? GR.k : (GR.k = gratKm(k ^ 0x3c6ef372, x, y, z, R, 210))) - 1) * glatt(0.03, 0.08, wG) * (1 - glatt(600, 700, xa)) : 1;
         let oro = 0;
-        // Anden-Bogen: knapp landein der Küste — die Küste liegt eine Schürze (K3) hinter dem Graben
-        const xAnden = ownKont ? A.schuerze[own] * R + 300 : 195;
+        const xAnden = andenBogenKm(S, A, own);
         if (wa > 0) { oro += wa * 5.0 * s * gauss(xa - 110, 200) * grat; hTpl -= wa * 0.35 * s * gauss(xa - 440, 120); }
         // G2.5 jede Schablone ist EIN Profil in ξ und wird von beiden Seiten gelesen: die obere Platte trägt die Flanke des Grabens
         // (ξ = −x), die abtauchende den Ausläufer des Bogens bzw. der Anden (ξ = −x auf deren Seite)
         if (wb > 0) { oro += wb * 4.4 * s * gauss(xKm - xAnden, 85) * grat; hTpl += wb * graben(-xKm, s); }
-        if (wc > 0) { hTpl += wc * graben(xKm, s); oro += wc * 4.4 * s * gauss(-xKm - (j < S.nG ? A.schuerze[j] * R + 300 : 195), 85) * grat; }
+        if (wc > 0) { hTpl += wc * graben(xKm, s); oro += wc * 4.4 * s * gauss(-xKm - andenBogenKm(S, A, j), 85) * grat; }
         if (wd > 0) {
           if (sub === own) { hTpl += wd * graben(xKm, s); oro += wd * 3.2 * s * gauss(-xKm - 190, 55) * grat; }
           else { oro += wd * 3.2 * s * gauss(xKm - 190, 55) * grat; hTpl += wd * graben(-xKm, s); }
