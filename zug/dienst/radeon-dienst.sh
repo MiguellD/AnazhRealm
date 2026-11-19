@@ -291,6 +291,28 @@ offen_am() {
     git -C "$PM" fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
     runde offen "$PM" origin/punkte-maschine radeon "$RK" "$(liste_datei offen "$1")"
 }
+# gesetz_der_liste — DAS GESETZ DER LISTE (Koordinator 19.11., richter-ohne-urteil; am f68dbf09 urteilte die GTX 3 von 498 GRÜN, die
+# Radeon hätte alle 498 nachgemessen): die Optionen für `runde reihe` in GL, beim Eintritt in die Runde, mit dem Rest eingefroren.
+# (1) ist die OMEN an DIESEM Kopf durch, misst die Radeon nur, was die OMEN am Kopf GRÜN urteilte (--erst gtx).
+# (2) gibt es einen Vor-Kopf, kommt eine dort ROT gemessene Station nur zurück, wenn der Diff Vor-Kopf → Runden-Kopf ihre Leiter berührt
+#     — berührt nach dem EINEN Frische-Gesetz der Buchung (`punkte.cjs beruehrt`, R6: Konsum, Linse, Glob, Abdruck).
+# Beide lesen die Mess-Dateien am Ursprung (frisch geholt). Scheitert eine Quelle: LISTE ROT beim Namen, keine Fahrt — nie still die ganze Liste.
+GESETZ_ERST=gtx
+gesetz_der_liste() {
+    local gz
+    GL=(--kopf "$RK" --git "$PM" --ref origin/punkte-maschine)
+    git -C "$PM" fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null ||
+        { liste_rot "Gesetz der Liste: fetch punkte-maschine scheiterte"; return 1; }
+    gz=$(runde lies "$R" "$GESETZ_ERST")
+    [ "$(echo "$gz" | cut -d' ' -f2)" = "$RK" ] && [ "$(echo "$gz" | cut -d' ' -f4)" = durch ] && GL+=(--erst "$GESETZ_ERST")
+    if [ -n "$RV" ] && [ "$RV" != - ]; then
+        mkdir -p "$S/listen"
+        (cd "$PM/meisterkarte-quelle/punkte" && timeout 1200 node punkte.cjs beruehrt --basis "$RV" --kopf "$RK" --json >"$S/listen/beruehrt.json" 2>"$S/listen/beruehrt.err") ||
+            { liste_rot "Gesetz der Liste: punkte.cjs beruehrt ${RV:0:8} → ${RK:0:8} scheiterte (Exit $?: $(tail -1 "$S/listen/beruehrt.err" | cut -c1-120))"; return 1; }
+        GL+=(--vorher "$RV" --beruehrt "$(cygpath -m "$S/listen/beruehrt.json" 2>/dev/null || echo "$S/listen/beruehrt.json")")
+    fi
+    log "Gesetz der Liste am ${RK:0:8}: ${GL[*]:2}"
+}
 # takt — EIN Blick der Schleife (je 60 s): verwaiste Schlösser lösen, die Runde lesen, die eigene Liste am Kopf der Runde fahren oder
 # fortsetzen; ist sie durch: der Richter der Runde, „durch“, dann auf das andere Gerät warten (Alarm, nie still)
 takt() {
@@ -358,8 +380,16 @@ takt() {
         if [ "$RLISTE" = - ] || [ "$(zahl "$RLISTE")" = 0 ]; then
             nur=$(karte2_nur | tr -d '\r')
             if [ -z "$nur" ]; then puls radeon "Runde $RN: der Baum der Punkte-Maschine trägt keine Tafel der Karte 2 — keine Liste"; f=0; return 0; fi
-            RLISTE=$(runde reihe "$PM/meisterkarte-quelle/punkte/messung" radeon "$(liste_datei reihe "$nur")")
+            gesetz_der_liste || { f=0; return 0; }
+            RLISTE=$(runde reihe "$PM/meisterkarte-quelle/punkte/messung" radeon "$(liste_datei reihe "$nur")" "${GL[@]}")
             rc=$?
+            if [ $rc = 7 ]; then # das Gesetz der Liste ließ keine Station: an diesem Kopf durch, ohne Fahrt (nie ein Listen-Bruch)
+                log "Runde $RN am ${RK:0:8}: das Gesetz der Liste ließ von $(zahl "$nur") keine Station ($(grep "Gesetz der Liste" "$L" | tail -1 | cut -c1-200))"
+                runde stand "$R" radeon "$RK" laeuft --liste "$RLISTE" --gesamt 0 --erledigt 0 >>"$L" && runde durch "$R" radeon "$RK" "$(main_jetzt)" --erledigt 0 >>"$L" ||
+                    liste_rot "runde.cjs schrieb die leere Liste des Gesetzes nicht (Exit $?)"
+                f=0
+                return 0
+            fi
             if [ $rc != 0 ] || [ "$(zahl "$RLISTE")" = 0 ]; then liste_rot "Runde $RN am ${RK:0:8}: Tafel $(zahl "$nur"), Reihe $(zahl "$RLISTE") (Exit $rc)"; f=0; return 0; fi
             log "Runde $RN am ${RK:0:8}: die Liste (ungebucht | gebucht grün) $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen ($S/listen/runde.txt)"
             runde stand "$R" radeon "$RK" laeuft --liste "$(liste_datei runde "$RLISTE")" --gesamt "$(zahl "$RLISTE")" --erledigt 0 >>"$L" ||
@@ -400,6 +430,58 @@ takt() {
 # r  DAS GESETZ DER ROH-BILDER: ein Bild bei gehaltenem Urteil bleibt am Gerät (Prüfsumme in git), bei Wechsel geht es nach git
 # Mutanten (Forts.): pid-Quelle „^pid=“ · reihe (nach HAND_ZEIT_S vor die Hand von vorhin) · ziel (der Kopf ist der jüngste main, die
 # Regel bis 19.11.) · bild (git add -A nimmt jedes Roh-Bild mit, die Regel bis 19.11.) — jede ROT.
+# g · g0 · g1  DAS GESETZ DER LISTE: (1) nur GRÜN der OMEN am Kopf, (2) ROT am Vor-Kopf nur mit Berührung; leer → durch ohne Fahrt;
+#    Berührung scheitert → LISTE ROT. Mutanten: ohne-erst (die Radeon misst das ROT der OMEN nach) · ohne-vorher (ROT kehrt unberührt zurück).
+# st_gesetz — die Fälle g · g0 · g1 (im Sandkasten von st_lauf: X R PM L S STUB K, neu, feld, takt)
+st_gesetz() {
+    # g — DAS GESETZ DER LISTE (Koordinator 19.11., richter-ohne-urteil). Vor-Kopf: Radeon g.K1 ROT, g.K2 ROT, g.K3 GRÜN; GTX g.K4 ROT;
+    # berührt ist nur g.K2 (Radeon). Am Kopf ist die OMEN durch: GRÜN g.K1–g.K4, ROT g.K5, g.K6 ohne Urteil. (1) lässt g.K1–g.K4,
+    # (2) nimmt g.K1 (ROT, unberührt) und g.K4 (ROT auf der GTX, unberührt) → die Radeon misst genau g.K2 und g.K3.
+    # g0 — urteilt die OMEN am Kopf nichts GRÜN, ist die Radeon durch ohne Fahrt (Liste gesetz-leer, kein Listen-Bruch).
+    # g1 — scheitert die Berührung (punkte.cjs beruehrt ROT), ist es LISTE ROT beim Namen, keine Fahrt, die Zeile bleibt offen.
+    local gv gk g1 g2 gl
+    # pm_leg <datei> <json> — eine Mess-Datei (auch eines anderen Geräts) an den Ursprung, über einen eigenen Klon (der Mess-Baum bleibt unberührt)
+    pm_leg() {
+        [ -d "$X/leg" ] || git clone -q -b punkte-maschine "$X/pm.git" "$X/leg"
+        git -C "$X/leg" fetch -q origin && git -C "$X/leg" reset -q --hard origin/punkte-maschine &&
+            echo "$2" >"$X/leg/meisterkarte-quelle/punkte/messung/$1" && git -C "$X/leg" add -f "meisterkarte-quelle/punkte/messung/$1" &&
+            git -C "$X/leg" $A commit -qm "leg $1" && git -C "$X/leg" push -q origin HEAD:punkte-maschine
+    }
+    neu zehn
+    gk=$K gv=$(runde lies "$R" radeon | cut -d' ' -f3)
+    seq 1 6 | sed 's/^/g.K/;s/$/#1/' >"$STUB/alle.txt"
+    pm_leg "${gv:0:8}-radeon.json" '{"je":{"g.K1#1":{"gruen":false,"zeit":"2026-11-18T01:00:00Z"},"g.K2#1":{"gruen":false,"zeit":"2026-11-18T01:00:00Z"},"g.K3#1":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"}}}'
+    pm_leg "${gv:0:8}-gtx.json" '{"je":{"g.K4#1":{"gruen":false,"zeit":"2026-11-18T01:00:00Z"}}}'
+    pm_leg "${gk:0:8}-gtx.json" '{"je":{"g.K1#1":{"gruen":true},"g.K2#1":{"gruen":true},"g.K3#1":{"gruen":true},"g.K4#1":{"gruen":true},"g.K5#1":{"gruen":false}}}'
+    echo '{"je":{"radeon":{"beruehrt":[{"id":"g.K2#1","r6":"konsum"}],"offen":[],"tot":[]},"gtx":{"beruehrt":[],"offen":[],"tot":[]}}}' >"$STUB/beruehrt.json"
+    geraet_durch gtx "$gk" "$gk" # die OMEN ist an diesem Kopf durch
+    j=$(wc -l <"$STUB/nur.log")
+    for mp in 1 2 3 4 5 6; do takt; feld radeon | grep -q "^radeon durch " && break; done
+    g1=$(tail -n +$((j + 1)) "$STUB/nur.log" | tr ',' '\n' | sort | paste -sd' ' -)
+    gl=$(feld radeon | sed 's/.* liste //')
+    if [ "$g1" = "g.K2#1 g.K3#1" ] && feld radeon | grep -q "^radeon durch " && grep -qF "Gesetz der Liste radeon am ${gk:0:8}: 6 → 2 · (1) nicht GRÜN auf gtx: 2 · (2) ROT am ${gv:0:8} ohne Berührung: 2" "$L"; then
+        echo "OK g  Gesetz der Liste: von 6 misst die Radeon „$g1“ — (1) nur GRÜN der OMEN am Kopf (g.K5 ROT, g.K6 ohne Urteil fallen), (2) ROT am Vor-Kopf ohne Berührung fällt (g.K1 Radeon, g.K4 GTX), berührt kehrt zurück (g.K2)"
+    else echo "ROT g  Gesetz der Liste: gemessen „$g1“ (Soll „g.K2#1 g.K3#1“), Liste „$gl“, Zeile „$(feld radeon | cut -c1-30)“, Gesetz-Zeile: $(grep -h "Gesetz der Liste radeon" "$L" "$L.runde" 2>/dev/null | tail -1 | cut -c1-160)"; fi
+    neu elf
+    gk=$K
+    pm_leg "${gk:0:8}-gtx.json" '{"je":{"g.K1#1":{"gruen":false},"g.K2#1":{"gruen":false}}}'
+    geraet_durch gtx "$gk" "$gk"
+    j=$(wc -l <"$STUB/nur.log")
+    for mp in 1 2 3 4; do takt; feld radeon | grep -q "^radeon durch " && break; done
+    g2=$(tail -n +$((j + 1)) "$STUB/nur.log" | wc -l)
+    if [ "$g2" = 0 ] && feld radeon | grep -q "^radeon durch 0/0 .* liste gesetz-leer$" && feld runde | grep -q "kopf $gk "; then
+        echo "OK g0 Gesetz der Liste leer: die OMEN urteilte am Kopf nichts GRÜN → die Radeon ist durch ohne Fahrt (liste gesetz-leer), kein Listen-Bruch"
+    else echo "ROT g0 Gesetz der Liste leer: Fahrten $g2 (Soll 0), Zeile „$(feld radeon | cut -c1-120)“ (Soll durch 0/0 … liste gesetz-leer), Runde „$(feld runde | cut -c1-40)“"; fi
+    neu zwoelf
+    touch "$STUB/beruehrt-rot"
+    j=$(wc -l <"$STUB/nur.log")
+    for mp in 1 2 3; do takt; done
+    rm -f "$STUB/beruehrt-rot" "$STUB/beruehrt.json"
+    g2=$(tail -n +$((j + 1)) "$STUB/nur.log" | wc -l)
+    if [ "$g2" = 0 ] && grep -q "LISTE ROT: Gesetz der Liste: punkte.cjs beruehrt" "$L" && feld radeon | grep -q "^radeon offen .* liste -$"; then
+        echo "OK g1 Gesetz der Liste ohne Berührung: punkte.cjs beruehrt scheitert → LISTE ROT beim Namen, keine Fahrt, die Zeile bleibt offen"
+    else echo "ROT g1 Gesetz der Liste ohne Berührung: Fahrten $g2 (Soll 0), LISTE-ROT-Zeilen $(grep -c "LISTE ROT: Gesetz der Liste" "$L") (Soll ≥ 1), Zeile „$(feld radeon | cut -c1-80)“ (Soll offen … liste -)"; fi
+}
 st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ oder „ROT <fall> …“
     local X K j a1 a2 c3 b1 b2 vor mp alt z1 z2
     X=$(mktemp -d)
@@ -444,6 +526,11 @@ const schreib = (m) => fs.writeFileSync(d, JSON.stringify(m, null, 1) + "\n");
 const marke = (n) => (fs.existsSync(path.join(S, n)) ? fs.readFileSync(path.join(S, n), "utf8").trim() : null);
 const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
 (async () => {
+    if (a[0] === "beruehrt") { // die Berührung des Sandkastens: beruehrt.json, oder ROT mit Marke beruehrt-rot
+        if (marke("beruehrt-rot") !== null) { console.error("Stationen ROT: Stummel"); process.exitCode = 2; return; }
+        console.log(marke("beruehrt.json") || '{"je":{}}');
+        return;
+    }
     if (a[0] === "behalte") {
         const bis = Date.parse(arg("--bis")), m = lies();
         const z = cp.spawnSync("git", ["show", "HEAD:" + rel], { cwd: __dirname, encoding: "utf8" });
@@ -504,7 +591,15 @@ STUMMEL
     pushe-still) pushe() { node "$RUNDE_CJS" push-pfade "$PM" punkte-maschine radeon "$1" "$2" >>"$L" 2>&1; } ;; # die Regel bis 19.11.: keine PUSH-ROT-Zeile, keine Datei
     referenz-rechner) unset PUNKTE_REFERENZ_NAME ;; # die alte Regel: die Referenz heißt nach dem Rechner (geteilt)
     reihe) vor_mir_da() { return 1; } ;; # die alte Regel: nach HAND_ZEIT_S tritt die Fahrt wieder ein, gleich wer schon wartet
+    ohne-erst) GESETZ_ERST=keins ;; # die Regel bis 19.11. für (1): die Radeon misst, was die OMEN am Kopf ROT urteilte, noch einmal
+    ohne-vorher) RV_GESETZ_AUS=1 ;; # die Regel bis 19.11. für (2): ROT am Vor-Kopf kommt ohne Berührung zurück
     esac
+    [ -n "$RV_GESETZ_AUS" ] && gesetz_der_liste() {
+        GL=(--kopf "$RK" --git "$PM" --ref origin/punkte-maschine)
+        git -C "$PM" fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
+        [ "$(runde lies "$R" gtx | cut -d' ' -f4)" = durch ] && GL+=(--erst gtx)
+        return 0
+    }
     # neu <botschaft> — eine Landung auf main und (gespielt) beide Geräte durch: die nächste Runde am neuen Kopf
     geraet_durch() { runde stand "$R" "$1" "$2" laeuft --liste x.K1#1 --gesamt 1 >/dev/null; runde durch "$R" "$1" "$2" "$3" >/dev/null; } # durch nur MIT Liste
     neu() {
@@ -544,6 +639,7 @@ STUMMEL
         echo "OK d  Reihe der Ankunft: nach dem Weichen kein Eintritt vor der Hand von vorhin, die spätere Hand hält die Fahrt nicht auf"
     else echo "ROT d  Reihe der Ankunft: Fahrten bis zum Weichen $vor (Soll 1), solange die Hand von vorhin steht $a1 (Soll 1), mit der späteren Hand $a2 (Soll 2)"; fi
     [ "$1" = reihe ] && { command rm -rf "$X"; return; } # die Mutante prüft nur d
+    case "$1" in ohne-erst | ohne-vorher) st_gesetz; command rm -rf "$X"; return ;; esac # die Mutanten des Gesetzes der Liste prüfen nur g · g0 · g1
     f=0 T_FAHRT_ENDE= WEICH_VOR=
     # a — der Fall 23:28 in der Runde: CI-Job nach 9 von 61, die Fortsetzung am Kopf der Runde misst die 52, dann „durch“
     neu eins
@@ -672,6 +768,7 @@ STUMMEL
     z2=$(git -C "$X/pm.git" ls-tree --name-only punkte-maschine meisterkarte-quelle/punkte/messung/ | sed "s|.*/||" | grep "^referenz-" | tr '\n' ' ')
     if [ "$z2" = "referenz-radeon.json " ]; then echo "OK q  Absenz: am Ursprung nur referenz-radeon.json — kein Pfad eines Rechners oder eines anderen Geräts"
     else echo "ROT q  Absenz: Referenzen am Ursprung „$z2“ (Soll referenz-radeon.json)"; fi
+    st_gesetz
     # t — DIE ECHTE TAFEL an der Radeon (Koordinator 05:58: derselbe Windows-Laptop, dieselbe Grenze 32 767): die Stationen der Tafel des
     # koordination-Kopfs (vision/richter-tafel.json, sie wächst) laufen durch Reihe → runde.txt → offen → kappe bis zur ersten Fahrt;
     # kein node-Aufruf trägt mehr als 30 000 Zeichen in argv, die Liste ≥ Quelle − gebucht, an punkte.cjs reist ein Teil ≤ 8 000 Zeichen
@@ -713,21 +810,21 @@ STUMMEL
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
-    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
+    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument ohne-erst ohne-vorher"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
     for m in echt $MUT; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 13 ] || rot=1
+    [ "$(echo "$echt" | grep -c "^OK")" = 16 ] || rot=1
     for m in $MUT; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 13 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 16 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }

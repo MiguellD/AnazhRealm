@@ -21,7 +21,10 @@
 //   zurueck <repo> <geraet> <kopf40> <grund>  eine Zeile ohne Station (durch/laeuft 0/0, liste |) zurück auf offen, mit Notiz
 //   alarm <repo> <melder> [--geraet g --grund text]   jedes Geraet > RUNDE_ALARM_MIN ohne Fortschritt (oder: der genannte Grund,
 //                                           sofort, z. B. die Platte): Feld alarm + EINE Zeile zug/erledigt.txt
-//   reihe <messung-dir> <geraet> <liste>    → "<ungebucht,..>|<gebucht gruen,..>" (stderr: die Reihe mit Grund)
+//   reihe <messung-dir> <geraet> <liste> [--kopf <sha> [--erst <geraet>] [--vorher <sha> --beruehrt <json>] [--git <repo> --ref <ref>]]
+//                                           → "<ungebucht,..>|<gebucht gruen,..>" (stderr: die Reihe mit Grund); das Gesetz der Liste
+//                                           (1) nur GRÜN des ersten Geräts, (2) ROT am Vor-Kopf nur mit Berührung — Exit 6 ohne Quelle,
+//                                           Exit 7 + "gesetz-leer", wenn keine Station bleibt
 //   offen <git-dir> <ref> <geraet> <kopf> <liste>   → die Stationen der Liste ohne Eintrag in messung/<kopf8>-<geraet>.json am ref
 //   faelle <repo> <geraet> <vorher> <kopf> <liste>  → je Zeile eine Station: GRUEN am vorher, ROT am kopf (dieses Geraet)
 //   paare <repo> [anzahl]                   Paare am selben Kopf aus den Mess-Dateien von punkte-maschine (je Kopf + Summe)
@@ -50,7 +53,11 @@ const zeigIn = (repo) => (ref, pfad) => { try { return cp.execFileSync("git", ["
 // ≈ 50 000 Zeichen über der Windows-Grenze 32 767 — „node: Argument list too long“, die Runde stand `laeuft 0/0 … liste |`). Jedes
 // Listen-Argument darf „@<datei>“ sein (Komma, „|“ oder eine Station je Zeile); der Dienst reicht seine Listen nur noch so.
 const listenText = (s) => (String(s || "").startsWith("@") ? fs.readFileSync(String(s).slice(1), "utf8") : String(s || ""));
-const liste = (s) => listenText(s).split(/[,|\s]+/).map((x) => x.trim()).filter((x) => x && x !== "-");
+// GESETZ_LEER — die Liste, die das Gesetz der Liste (reihe --erst/--vorher) ganz leerte: keine Station, und doch eine Liste (die Zeile darf
+// „durch“ stehen, ohne als Listen-Bruch zu gelten); liste() zählt sie nie als Station
+const GESETZ_LEER = "gesetz-leer";
+const liste = (s) => listenText(s).split(/[,|\s]+/).map((x) => x.trim()).filter((x) => x && x !== "-" && x !== GESETZ_LEER);
+const traegtListe = (e) => liste(e.liste).length > 0 || String(e.liste || "").replace(/\s+/g, "") === GESETZ_LEER;
 
 // ── DIE DATEI ──
 const KOPF = [
@@ -135,7 +142,7 @@ function aendere(repo, botschaft, f) {
     process.exit(1);
 }
 // „durch“ zählt nur mit einer Liste (19.11. 06:17: „gtx durch 0/0 … liste |“ nach dem Listen-Bruch hätte sonst die nächste Runde geöffnet)
-const alleDurch = (r) => GERAETE.every((g) => r.g[g] && r.g[g].zustand === "durch" && liste(r.g[g].liste).length > 0);
+const alleDurch = (r) => GERAETE.every((g) => r.g[g] && r.g[g].zustand === "durch" && traegtListe(r.g[g]));
 function oeffne(r, main) { // die naechste Runde am main-Kopf des Moments
     const z = iso(jetzt());
     r.runde = { n: (r.runde ? r.runde.n : 0) + 1, kopf: main, start: z, vorher: r.runde ? r.runde.kopf : "-" };
@@ -170,7 +177,7 @@ if (was === "lies") {
     const [repo, g, kopf, zustand] = arg;
     let anders = false;
     // STILLES SCHEITERN (19.11. 05:54, `laeuft 0/0 … liste |`): eine Liste ohne Station wird nie geschrieben — ROT beim Namen, Exit 5
-    if (opt("liste") !== null && !liste(opt("liste")).length) { console.log("LEERE LISTE — die Zeile " + g + " bleibt, wie sie ist"); process.exit(5); }
+    if (opt("liste") !== null && !traegtListe({ liste: listenText(opt("liste")) })) { console.log("LEERE LISTE — die Zeile " + g + " bleibt, wie sie ist"); process.exit(5); }
     const { r } = aendere(repo, "Runde " + g + ": " + zustand + (opt("erledigt") ? " " + opt("erledigt") + "/" + (opt("gesamt") || "?") : "") + " am " + k8(kopf), (r) => {
         if (!r.runde || r.runde.kopf !== kopf) { anders = true; return false; }
         const e = r.g[g] || leer(r.runde.start), z = iso(jetzt());
@@ -203,7 +210,7 @@ if (was === "lies") {
         if (g) {
             if (r.runde.kopf !== kopf) { anders = true; return false; }
             const e = r.g[g] || leer(r.runde.start);
-            if (!liste(e.liste).length) { leerDurch = true; return false; } // nie „durch“ ohne Liste (LISTE ROT beim Rufer)
+            if (!traegtListe(e)) { leerDurch = true; return false; } // nie „durch“ ohne Liste (LISTE ROT beim Rufer)
             if (e.zustand !== "durch") { e.zustand = "durch"; e.station = "-"; e.fortschritt = iso(jetzt()); e.alarm = "-"; r.g[g] = e; neu = true; }
             if (opt("erledigt") !== null && e.erledigt !== Number(opt("erledigt"))) { e.erledigt = Number(opt("erledigt")); neu = true; } // der Endstand: was am Kopf einen Eintrag trägt
         }
@@ -222,7 +229,7 @@ if (was === "lies") {
     aendere(repo, "Runde " + g + ": zurück auf offen am " + k8(kopf), (r) => {
         if (!r.runde || r.runde.kopf !== kopf) { tat = "ANDERE RUNDE"; return false; }
         const e = r.g[g] || leer(r.runde.start);
-        if (liste(e.liste).length) { tat = "hat eine Liste — unverändert"; return false; }
+        if (traegtListe(e)) { tat = "hat eine Liste — unverändert"; return false; }
         if (e.zustand === "offen") { tat = "schon offen"; return false; }
         const z = iso(jetzt());
         (r.notizen = r.notizen || []).push("notiz " + z + " " + g + " " + (grund || "zurück auf offen") + " (vorher " + e.zustand + " " + e.erledigt + "/" + e.gesamt + " liste " + e.liste + ")");
@@ -292,7 +299,48 @@ if (was === "lies") {
     }
     const lang = (id) => (letzt[id] && letzt[id].min >= LANG_MIN ? 1 : 0);
     const ord = (xs) => xs.map((id, i) => ({ id, i })).sort((a, b) => lang(a.id) - lang(b.id) || ((letzt[a.id] || {}).z || "").localeCompare((letzt[b.id] || {}).z || "") || a.i - b.i).map((x) => x.id);
-    const gebucht = ids.filter((id) => paar[id] && paar[id].gruen), ungebucht = ids.filter((id) => !(paar[id] && paar[id].gruen));
+    // DAS GESETZ DER LISTE (Koordinator 19.11., richter-ohne-urteil; Befund am f68dbf09: die GTX urteilte 3 von 498 GRÜN, die Radeon
+    // fuhr dieselben 498 hinterher — jede ROT-Station misst ein zweites Mal, ohne dass ein Paar GRÜN werden kann). Zwei Sätze, beide
+    // nur mit dem Kopf der Runde (--kopf), beide lesen die Mess-Dateien am Ursprung (--git <repo> --ref <ref>, sonst der Ordner <dir>):
+    //  (1) --erst <geraet>: ist das andere Gerät an DIESEM Kopf durch (der Rufer prüft es in zug/runde.txt), misst dieses Gerät NUR die
+    //      Stationen, die jenes am Kopf GRÜN urteilte — ein Paar wird nur GRÜN, wenn beide GRÜN sind. Ohne Mess-Datei des ersten
+    //      Geräts am Kopf: Exit 6 beim Namen (nie still die ganze Liste).
+    //  (2) --vorher <sha>: eine Station, die am Vor-Kopf auf IRGENDEINEM Gerät ROT mit Grund stand (ein Urteil, nicht UNGEMESSEN),
+    //      kommt nur zurück, wenn ein Commit zwischen Vor-Kopf und Runden-Kopf ihre Leiter BERÜHRT. Berührt heißt: das EINE Frische-
+    //      Gesetz der Buchung (R6: Konsum, Linse, Glob, Abdruck) hielte die ROT-Messung des Vor-Kopfs am Runden-Kopf nicht mehr für
+    //      frisch — `punkte.cjs beruehrt --basis <vorher> --kopf <kopf> --json` (--beruehrt <datei>: je Gerät beruehrt ∪ offen ∪ tot).
+    //      Ohne lesbare Berührungs-Datei: Exit 6 beim Namen.
+    // Bleibt nach beiden Sätzen keine Station: die Liste ist GESETZ_LEER (Exit 7) — das Gerät ist an diesem Kopf durch, ohne Fahrt.
+    const RK = opt("kopf"), RV = opt("vorher"), ERST = opt("erst"), BER = opt("beruehrt");
+    let drin = ids;
+    const fallen = { erst: [], rot: [] };
+    if ((ERST || (RV && RV !== "-")) && !RK) { console.error("reihe: --erst/--vorher nur mit --kopf <sha>"); process.exit(6); }
+    const zeigRef = opt("git") && opt("ref") ? zeigIn(opt("git")) : null;
+    const lade = (k, gg) => {
+        const rel = k8(k) + "-" + gg + ".json";
+        const t = zeigRef ? zeigRef(opt("ref"), MDIR + "/" + rel) : (() => { try { return fs.readFileSync(path.join(dir, rel), "utf8"); } catch { return null; } })();
+        try { return t ? JSON.parse(t) : null; } catch { return null; }
+    };
+    if (ERST) {
+        const m = lade(RK, ERST);
+        if (!m) { console.error("reihe: GESETZ (1) ohne Mess-Datei " + k8(RK) + "-" + ERST + ".json — das erste Gerät ist durch, aber sein Urteil fehlt"); process.exit(6); }
+        fallen.erst = drin.filter((id) => urteil(m, id) !== "GRUEN");
+        drin = drin.filter((id) => urteil(m, id) === "GRUEN");
+    }
+    if (RV && RV !== "-") {
+        let ber;
+        // die JSON-Zeile von `punkte.cjs beruehrt --json` (die letzte, die mit „{“ beginnt — was der Läufer davor druckt, zählt nicht)
+        try { ber = JSON.parse(fs.readFileSync(String(BER), "utf8").split(/\r?\n/).filter((z) => z.startsWith("{")).pop()).je; if (!ber) throw new Error("ohne Feld je"); } catch (e) { console.error("reihe: GESETZ (2) ohne lesbare Berührung (--beruehrt " + BER + "): " + String(e.message).slice(0, 120)); process.exit(6); }
+        const rotAm = GERAETE.map((gg) => [gg, lade(RV, gg)]).filter(([, m]) => m);
+        const beruehrt = (id, gg) => { const z = (ber || {})[gg] || {}; return (z.beruehrt || []).some((x) => (x && x.id) === id) || (z.offen || []).includes(id) || (z.tot || []).includes(id); };
+        const bleibt = (id) => { const rot = rotAm.filter(([, m]) => urteil(m, id) === "ROT").map(([gg]) => gg); return !rot.length || rot.some((gg) => beruehrt(id, gg)); };
+        fallen.rot = drin.filter((id) => !bleibt(id));
+        drin = drin.filter(bleibt);
+    }
+    if (ERST || (RV && RV !== "-"))
+        process.stderr.write("Gesetz der Liste " + g + " am " + k8(RK) + ": " + ids.length + " → " + drin.length + (ERST ? " · (1) nicht GRÜN auf " + ERST + ": " + fallen.erst.length : "") + (RV && RV !== "-" ? " · (2) ROT am " + k8(RV) + " ohne Berührung: " + fallen.rot.length + (fallen.rot.length ? " (" + fallen.rot.slice(0, 40).join(" ") + (fallen.rot.length > 40 ? " …" : "") + ")" : "") : "") + "\n");
+    if (ids.length && !drin.length) { console.log(GESETZ_LEER); process.exit(7); }
+    const gebucht = drin.filter((id) => paar[id] && paar[id].gruen), ungebucht = drin.filter((id) => !(paar[id] && paar[id].gruen));
     const u = ord(ungebucht), b = ord(gebucht);
     process.stderr.write("Reihe " + g + ": ungebucht " + u.length + " (" + u.map((id) => id + (paar[id] ? " Paar " + paar[id].kopf + " ROT" : " ohne Paar")).join(" · ") + ") | gebucht gruen " + b.length + " (" + b.map((id) => id + " " + paar[id].kopf).join(" · ") + ")\n");
     console.log((u.join(",") || "") + "|" + (b.join(",") || ""));
