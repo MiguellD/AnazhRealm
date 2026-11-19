@@ -169,8 +169,9 @@ class AnazhRealm_studio_stoff {
     // DIE LAGE DER ECKE (`lage`, das Gefüge der fernen Fachwerk-Wand): die Zeile liest u und v nicht an der Welt, sondern aus der
     // Ecke (`ecke`, im Satz: die vierten Stellen von Farbe und Glut, fachwerk `_wandLage` — Felder quer · Felder hoch): der
     // Ständer steht an der Ecke des Hauses, die Schwelle an seinem Fuß. Außerhalb des Satzes (`ecke` fehlt) liest sie die Welt.
-    // DAS KREUZ: wo beide Fugen sich kreuzen, steht EINE (`kreuz` = der Zuschlag auf das Produkt der Achsen) — am Balken wäre das
-    // Produkt ein schwarzer Fleck; nah und fern dasselbe Mittel (`eins` rechnet ihn ein).
+    // DAS KREUZ: wo beide Fugen sich kreuzen, steht EINE (die dunklere je Kanal: der Zuschlag min − Produkt auf das Produkt der
+    // Achsen, dieselbe Regel wie `verbandZeilen`) — am Balken wäre das Produkt ein schwarzer Fleck; nah und fern dasselbe Mittel
+    // (`eins` rechnet ihn ein). Der Stoff rechnet ihn aus den Fugen-Tönen, die die Kante (unten) schon gewogen hat.
     _verbandStoff(T, nr, ecke = null) {
         const Z = AnazhRealm.Gesetz("fachwerk:verbandZeilen")();
         if (
@@ -183,9 +184,9 @@ class AnazhRealm_studio_stoff {
         )
             throw this._stoffBruch("das Verband-Gesetz fehlt in fachwerk:verbandZeilen");
         // die Tafel: [lM, hM, lM / halbe Fuge U, hM / halbe Fuge V] · [Versatz, Ton, Unruhe, Lage der Ecke] · [Fugen-Ton U, Tiefe] ·
-        // [Fugen-Ton V, Licht der Fuge] · eins · Kreuz — die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1).
+        // [Fugen-Ton V, Licht der Fuge] · eins — die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1).
         // Die Unruhe als Hub der zwei Wellen (unten: ihre Steigung zusammen höchstens `VERBAND_WELLE.steil` je Reihe)
-        const W = 6;
+        const W = 5;
         const VW = AnazhRealm.VERBAND_WELLE;
         const zeile = (z) => [
             new THREE.Vector4(z.lM, z.hM, z.lM / Math.max(z.fugeU, 1e-6), z.hM / Math.max(z.fugeV, 1e-6)),
@@ -193,7 +194,6 @@ class AnazhRealm_studio_stoff {
             new THREE.Vector4(z.tonU[0], z.tonU[1], z.tonU[2], z.tiefe || 0),
             new THREE.Vector4(z.tonV[0], z.tonV[1], z.tonV[2], z.licht == null ? 1 : z.licht),
             new THREE.Vector4(z.eins[0], z.eins[1], z.eins[2], 0),
-            new THREE.Vector4(z.kreuz ? z.kreuz[0] : 0, z.kreuz ? z.kreuz[1] : 0, z.kreuz ? z.kreuz[2] : 0, 0),
         ];
         const null0 = {
             lM: 1,
@@ -220,7 +220,7 @@ class AnazhRealm_studio_stoff {
                 .floor()
                 .clamp(0.0, Z.length - 1)
         ).mul(W);
-        const [mass, lage, tonU, tonV, eins, kreuz] = [0, 1, 2, 3, 4, 5].map((k) => tafel.element(i0.add(k)));
+        const [mass, lage, tonU, tonV, eins] = [0, 1, 2, 3, 4].map((k) => tafel.element(i0.add(k)));
         // der Rahmen der Fläche: t waagrecht in ihr, s ihre Falllinie (eine liegende Fläche nimmt die Achsen der Vorlage) — in der VORLAGE
         // (Einheit E8): das Muster liegt im Raster des Baus, in dem seine Steine liegen (fachwerk `infill`), nie am Ort der Welt; bis hier
         // webte jedes Haus sein Muster je nach Standort verschoben gegen seine Steine
@@ -238,11 +238,14 @@ class AnazhRealm_studio_stoff {
         );
         const u = u0.add(T.fract(T.floor(v).mul(0.5)).mul(2.0).mul(lage.x));
         // DIE KANTE (einheit-relief, `tiefe` · `licht` der Zeile): der Stein steht `tiefe` vor seiner Fuge. Schräg gesehen verdeckt
-        // seine Kante sie um tiefe · tan(Blickwinkel) je Achse — die Fuge wird schmaler (k = 1 − tiefe · tan ÷ Breite der Fuge, nah
-        // auf den Pixel, fern als ihr Anteil); ihr Grund sieht als Schlitz nur `licht` des Lichts. Der Blick in der Welt gegen die
-        // Achsen der Fläche (Vorlage → Welt). Ohne Tiefe (jede Zeile außer dem Mauerwerk) ist k = 1 und licht = 1: das Muster
-        // bleibt, was es war. Bis hier webte die L1 den Mörtel offen und voll beleuchtet über 17 % ihrer Fläche — an 12 m zeigt die
-        // L0 dort die Kanten ihrer Steine (an vier Posen: G der Ausfachung L1 ÷ L0 = 2,0 in linearem Licht).
+        // seine Kante sie um tiefe · tan(Blickwinkel) je Achse: in der Linie der Fuge steht dann die Flanke des Steins (sein Ton, nicht
+        // der des Mörtels) — sichtbar bleibt k = 1 − tiefe · tan ÷ Breite der Fuge vom Mörtel, die Linie behält ihre Breite (nah auf den
+        // Pixel, fern als ihr Anteil). Alles im Schlitz — Grund und Flanken — sieht nur `licht` des Lichts. Der Blick in der Welt gegen
+        // die Achsen der Fläche (Vorlage → Welt). Ohne Tiefe (jede Zeile außer dem Mauerwerk) ist k = 1 und licht = 1: das Muster
+        // bleibt, was es war (das Kreuz rechnet dieselbe Regel wie `verbandZeilen`: die dunklere Fuge je Kanal). Bis hier webte die L1
+        // den Mörtel offen und voll beleuchtet über 17 % ihrer Fläche — an 12 m zeigt die L0 dort die Flanken ihrer Steine (an vier
+        // Posen: G der Ausfachung L1 ÷ L0 = 2,0 in linearem Licht). Die schmalere Fuge allein (die Flanke im Ton der Stirn) ließ die
+        // Stoßfuge schräg verschwinden: der Kontrast der Fuge fiel auf 0,49–0,61 der L0.
         const tiefe = tonU.w;
         const zumAuge = T.normalize(T.cameraPosition.sub(T.positionWorld));
         const welt = (d) => T.normalize(T.modelWorldMatrix.mul(T.vec4(d, 0.0)).xyz);
@@ -256,20 +259,16 @@ class AnazhRealm_studio_stoff {
         const S = this._steinStoff(
             T,
             { fuge: 1, fase: 0, ton: 1, fugeTon: 1, kuppe: 0 },
-            {
-                u,
-                v,
-                mU: mass.z.div(sicht(t, mass.x, mass.z)),
-                mV: mass.w.div(sicht(s, mass.y, mass.w)),
-                sU: T.fwidth(u0),
-            }
+            { u, v, mU: mass.z, mV: mass.w, sU: T.fwidth(u0) }
         );
         const eine = T.vec3(1.0, 1.0, 1.0);
+        const fU = T.mix(eine, tonU.xyz, sicht(t, mass.x, mass.z));
+        const fV = T.mix(eine, tonV.xyz, sicht(s, mass.y, mass.w));
         return T.vec3(S.ton.sub(1.0).mul(lage.y).add(1.0))
             .mul(
-                T.mix(eine, tonU.xyz, S.achse[0])
-                    .mul(T.mix(eine, tonV.xyz, S.achse[1]))
-                    .add(kreuz.xyz.mul(S.achse[0].mul(S.achse[1])))
+                T.mix(eine, fU, S.achse[0])
+                    .mul(T.mix(eine, fV, S.achse[1]))
+                    .add(T.min(fU, fV).sub(fU.mul(fV)).mul(S.achse[0].mul(S.achse[1])))
             )
             .mul(eins.xyz)
             .mul(T.float(1.0).sub(S.fuge.mul(T.float(1.0).sub(tonV.w))));
