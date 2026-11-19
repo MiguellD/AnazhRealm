@@ -237,8 +237,9 @@
   const roofUnderY=(x,z)=> { if(ROOFMODE==='dome')return eaveY+0.35; if(ROOFMODE==='flat')return eaveY+0.05; const s=roofSkinY(x,z); return s===Infinity?Infinity:s-0.05; };   // knapp unter die Ziegel
   // ════ METAGESETZ · EINDECKEN einer Dachfläche (EINE Schräge): Lattung + Ziegelreihen, parametrisch über First(rY)/Traufabwurf(eaveDropY)/Spanne(eZ)/First-z(zMid)/Ortgang(xRangeAt). EINE Quelle für Haupt- UND Wing-Sattel­dach — kein paralleler Deckungscode mehr. ════
   // DIE RANGFOLGE DES VERZICHTS über der Zeile (P.__sehne, buildInstance streckt höchstens viermal; auf der Zeile bleibt jeder Bau byte-gleich): zuerst das GROSSFORMAT
-  // jedes Verbands — Ziegel, Backstein (Gefach und Giebel), Diele und Keilstein werden weniger und größer, dieselbe Fläche, bis 1,6 —, und das Feine fällt (der Holznagel,
-  // 3,5 cm); ÜBER dem Großformat trägt das Gefach seine Fläche (die Flächen-Stufe, der Fugen-Ton reist mit); in der fernen Stufe (ohne Ständer) fluchten die Riegel
+  // jedes Verbands — Ziegel, Diele und Keilstein werden weniger und größer, dieselbe Fläche, bis 1,6 —, und das Feine fällt (der Holznagel,
+  // 3,5 cm); DER BACKSTEIN NIE (Einheit E8, 19.11.): sein Maß ist das Verband-Gesetz in jeder Zeile und jeder L0, der Stoff webt dasselbe — ein Haus über der Zeile
+  // trüge sonst andere Steine als eines darunter; in der fernen Stufe (ohne Ständer) fluchten die Riegel
   const GROSSFORMAT=()=>(P&&P.__sehne>1)?Math.min(1.6,Math.sqrt(P.__sehne)):1, UEBER_GROSSFORMAT=()=>P.__sehne>2.56;
   function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
     const _fl2=(typeof P!=='undefined'&&P&&P.flaechig);   // FLÄCHEN-STUFE (Stufe 1): je Reihe EIN Ziegel-Band (Kehl-/Gauben-Lücken bleiben Segmente), keine Lattung darunter
@@ -648,8 +649,8 @@
   // Querwände treffen den Giebel daher am Pfosten ZWISCHEN den Fensterfeldern. Kein Veto nötig, kein Fenster blockiert.
   function infill(g,a0,a1,y0,y1,fixed,horiz,brick,dick){ if(a1-a0<0.04||y1-y0<0.04)return; const ac=(a0+a1)/2,yc=(y0+y1)/2,al=a1-a0,yl=y1-y0;   // dick (nur die glatte Wand, GLATT): die Zelle in voller Wandstärke, als Platte in EINEM Ton
     if(brick===false){ if(dick){ platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick); return; } if(horiz)beam(g,ac,yc,fixed,al,yl,0.09,'lehm'); else beam(g,fixed,yc,ac,0.09,yl,al,'lehm'); return; }  // glattes Putzfeld
-    const _zg=GROSSFORMAT(), _mw=VERBAND_GESETZ.mauerwerk, bw=(_mw.steinM+_mw.fugeM)*_zg,bh=(_mw.hoeheM+_mw.fugeM)*_zg,m=_mw.fugeM*_zg,bt=dick||0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen (über der Zeile im Großformat); EINE Quelle des Steins: das Verband-Gesetz (der Stoff webt dasselbe Maß; bis hier 0,32 × 0,15 m, Fuge 0,025)
-    if(P.flaechig||UEBER_GROSSFORMAT()){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
+    const _mw=VERBAND_GESETZ.mauerwerk, bw=_mw.steinM+_mw.fugeM,bh=_mw.hoeheM+_mw.fugeM,m=_mw.fugeM,bt=dick||0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen (über der Zeile im Großformat); EINE Quelle des Steins: das Verband-Gesetz (der Stoff webt dasselbe Maß; bis hier 0,32 × 0,15 m, Fuge 0,025)
+    if(P.flaechig){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
       const _s=dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
     if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick-0.03); else if(horiz)beam(g,ac,yc,fixed,al,yl,0.06,'lehm'); else beam(g,fixed,yc,ac,0.06,yl,al,'lehm');   // zurückgesetzte Hinterfüllung (Holz steht vor; in der glatten Wand der Stein 1,5 cm)
     for(let r=0;r<nr;r++){ const by=y0+(r+0.5)*rh, ox=(r%2)*bw*0.5;
@@ -740,7 +741,7 @@
       const xf=sx*(W/2-0.02), apexY=hipStartY, half=gzTop;
       if(!GLATT)beam(g,xf,eaveY-P.raehm/2,0,0.12,P.raehm,Dp-0.04,'holz');                                // Schwellrähm
       // GLATT: das Giebelfeld in Wandstärke und EINEM Ton, bündig über der Giebelwand — kein Ständer, kein Brustriegel; der Verband nur, wo der Stil ihn zeigt (der Würfel fällt wie gebaut)
-      const gbrick=rnd()>0.5&&VERBAND, _zg=GROSSFORMAT(), _mw=VERBAND_GESETZ.mauerwerk, bw=(_mw.steinM+_mw.fugeM)*_zg,bh=(_mw.hoeheM+_mw.fugeM)*_zg,m=_mw.fugeM*_zg,bt=GLATT?P.post:0.075, gd=GLATT?P.post-(gbrick?0.03:0):0.05, gl=GLATT?eben:wieGebaut;
+      const gbrick=rnd()>0.5&&VERBAND, _zg=GROSSFORMAT(), _mw=VERBAND_GESETZ.mauerwerk, bw=_mw.steinM+_mw.fugeM,bh=_mw.hoeheM+_mw.fugeM,m=_mw.fugeM,bt=GLATT?P.post:0.075, gd=GLATT?P.post-(gbrick?0.03:0):0.05, gl=GLATT?eben:wieGebaut;
       const zHalf=y=>eaveZ+(half-eaveZ)*(y-eaveY)/Math.max(0.1,apexY-eaveY);
       { const topY = half>0.02?apexY:ridgeY, nh=Math.max(3,Math.round((topY-eaveY)/0.24)), rh=(topY-eaveY)/nh;   // Hinterfüllung als Streifen — Fensteröffnung ECHT ausgespart (nicht nur Backstein)
         for(let r=0;r<nh;r++){ const by=eaveY+(r+0.5)*rh, zh=(half>0.02)?zHalf(by):eaveZ*(ridgeY-by)/Math.max(0.1,ridgeY-eaveY);
@@ -6438,11 +6439,14 @@
         var gm = buildStufe(p, stufe);
         // der Schritt folgt dem Überschuss (n / Zeile, mindestens 1,5); bewegt ein Schritt weniger als 2 %, trägt die Stufe
         // kein Feld und keine Fläche, die sich streckt — der Bau bleibt, die Linse nennt ihn
-        for (var versuch = 0, n = hausDreiecke(gm), vorher = Infinity; versuch < 4 && n > zeile && n < vorher * 0.98; versuch++) {
+        // DER STEIN ZÄHLT NICHT GEGEN DIE ZEILE (Einheit E8, 19.11.): sein Maß ist das Verband-Gesetz in jeder Zeile — ein Haus, das nur durch
+        // seinen Backstein über der Zeile stünde, streckt sich nicht (sonst trüge es ein anderes Großformat als ein Haus darunter)
+        var ohneStein = function (gm) { return hausDreiecke(gm) - (gm.backstein && gm.backstein.idx ? gm.backstein.idx.length / 3 : 0); };
+        for (var versuch = 0, n = ohneStein(gm), vorher = Infinity; versuch < 4 && n > zeile && n < vorher * 0.98; versuch++) {
             p.__sehne = (p.__sehne || 1) * Math.max(1.5, n / zeile);
             gm = buildStufe(p, stufe);
             vorher = n;
-            n = hausDreiecke(gm);
+            n = ohneStein(gm);
         }
         var g = geomsZuGruppe(gm);
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als

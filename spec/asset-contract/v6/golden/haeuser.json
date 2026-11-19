@@ -3,9 +3,9 @@
   "minted": "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall",
   "cases": {
     "alemannisch-s7-L0": {
-      "objects": 20,
-      "vertices": 198546,
-      "sha256": "b3da28323c24b1fc7e980e1e7dc0c9cca7ac1faf1be054b3af66e0f346fcd0eb"
+      "objects": 21,
+      "vertices": 277434,
+      "sha256": "5e5581e7b8bb2569537a3e40bd56d846a6999401b2d673aff2fde9cfeae4cdc5"
     },
     "alemannisch-s7-L1": {
       "objects": 15,
@@ -83,9 +83,9 @@
       "sha256": "25fd5b5bdd85d2a56193c60cb0b7799e9852bf8f5961565324a4ed856482d764"
     },
     "niedersaechsisch-s7-L0": {
-      "objects": 20,
-      "vertices": 208608,
-      "sha256": "3a838404a51f208d0f3e44d430c941beb9243e6fdd9b41b32294e2852fbe43a6"
+      "objects": 21,
+      "vertices": 277680,
+      "sha256": "44ead701fa6b6c4f5afd5c8b5ac7ff3b85c9710d3b140c9e849e6aea0a899626"
     },
     "niedersaechsisch-s7-L1": {
       "objects": 15,
@@ -524,8 +524,8 @@
     },
     "hollaendisch-s7-L0": {
       "objects": 16,
-      "vertices": 257322,
-      "sha256": "f13a16135aa8d7d5fa3c0391ab0575290fabef061ab516e42a37469c1a8fc1bb"
+      "vertices": 346626,
+      "sha256": "03caeccf25b4127321144bff8e7179cf3761e9becbf2eecaef07f032b22e7852"
     },
     "hollaendisch-s7-L1": {
       "objects": 10,
@@ -564,8 +564,8 @@
     },
     "hanseatisch-s7-L0": {
       "objects": 16,
-      "vertices": 222690,
-      "sha256": "62a4c03bef5dbb0c7299de3caa4a19c234470246d1ab64905f8030554a085209"
+      "vertices": 388386,
+      "sha256": "d835fac2679a5eadb7c7e089f3bd9c40c8e57a8e183b4c679bfa64217d71fd18"
     },
     "hanseatisch-s7-L1": {
       "objects": 10,
@@ -584,8 +584,8 @@
     },
     "hanseatisch-s12345-L0": {
       "objects": 16,
-      "vertices": 194418,
-      "sha256": "8afda483130fb35959eb209433fae21729973438334f5f061000e04ab7f8c590"
+      "vertices": 264810,
+      "sha256": "4b169d9b6e40977c4b772fb2b48e4135f85953a49db648690b6179140672c204"
     },
     "hanseatisch-s12345-L1": {
       "objects": 10,
@@ -604,8 +604,8 @@
     },
     "georgian-s7-L0": {
       "objects": 17,
-      "vertices": 212046,
-      "sha256": "60d816460e4f098f0efca694ea63ad59bbb777385f4bf2d6180e9ed60c4ae6fa"
+      "vertices": 284214,
+      "sha256": "8eedb925bd575f81ece53734ed247ff9cb27d89708c8bd89098f02fabcc5429e"
     },
     "georgian-s7-L1": {
       "objects": 10,
@@ -644,8 +644,8 @@
     },
     "viktorianisch-s7-L0": {
       "objects": 16,
-      "vertices": 206346,
-      "sha256": "ef421742ec3db74b193fdef7423ad64f2b3228a546c8eca7df64cbe2697d6af3"
+      "vertices": 278394,
+      "sha256": "8ed94e0e9ca1d9d0d8bdd859d8c83c47d3371d9d2dc331952f710ccea2dc1d10"
     },
     "viktorianisch-s7-L1": {
       "objects": 10,
@@ -1044,8 +1044,8 @@
     },
     "schwarzwald-s7-L0": {
       "objects": 16,
-      "vertices": 245394,
-      "sha256": "a571833ca6b32b50223783af1ce15d701641de34b68a81fa2668876769f3950d"
+      "vertices": 280578,
+      "sha256": "b4b8cdaa8b13b3c5e8bedb541dba399ffd03b76619a33bcf30f848315742f729"
     },
     "schwarzwald-s7-L1": {
       "objects": 11,
@@ -1064,8 +1064,8 @@
     },
     "schwarzwald-s12345-L0": {
       "objects": 16,
-      "vertices": 197970,
-      "sha256": "9ed28f4dfc3502e8baf07ee03df92214bca53a55f4951d4b9f7d2b6f89a75be0"
+      "vertices": 239994,
+      "sha256": "6edb8c7eac881a4c1e252175644c061429e339a5a22f94336d16d824816dd76a"
     },
     "schwarzwald-s12345-L1": {
       "objects": 11,
@@ -1283,9 +1283,9 @@
       "sha256": "a08eb7690b53712afd2f2777303b59e595f6af541e97e260c7461eb69c8d4a9a"
     },
     "alemannisch-s7-L0-ov_storeys_turm": {
-      "objects": 21,
-      "vertices": 206634,
-      "sha256": "d387d2f9afd8316a5e004d3bc4750a26954ea9921c22db843131ec46abef80ef"
+      "objects": 22,
+      "vertices": 369714,
+      "sha256": "148628f56e56cd8499549a349ff44a07555a8b10c9b7cbcfe9be02d839bf76b1"
     },
     "hochhaus-s7-L2-ov_W": {
       "objects": 5,
