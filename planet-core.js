@@ -54,7 +54,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-7';
+  const VERSION = 'planet-h2-8';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2393,6 +2393,150 @@
   // über √N (mm): 0 · 64 · 200 · 400 · 800 · 1 450 · 2 500 · 4 000 mm
   const NIED_RAMPE = [0, 110, 50, 20, 8, 200, 140, 60, 14, 230, 205, 120, 20, 225, 230, 150, 28, 120, 200, 110, 38, 40, 150, 150, 50, 30, 80, 170, 63, 50, 20, 120];
 
+  // ── S5 Wasser: Einzugsgebiet, Senke und Überlauf (B3; der Prototyp stand im Spike, vision/planet/spike/lib.cjs) ────────────────
+  // Das Nicht-Lokale wird auf EINEM festen Gitter je Scheibe gelöst — WASSER_N Fibonacci-Zellen, unabhängig vom Radius (die Kosten
+  // stehen fest, nie mit der Weltgröße); an der Adresse wird nur gelesen (Wendland-Gewichte über die Zellen im Umkreis 2·d, stetig).
+  // Höhe der Zelle: planetPunktR mit fussKm = d·R/2 (Oktaven unter d fallen weich ab); Abfluss: planetKlimaR.abflussMm (Turc-Pike).
+  // Lauf: Priority-Flood (Barnes et al. 2014) vom Meer aus → Empfänger je Zelle, Senken gefüllt. See: Zelle mit gefüllter Höhe über
+  // ihrer Höhe. Überlauf: ein See läuft über, wenn sein Zufluss Q_in ≥ (PET − P)·A_See (DIE PET, petMm); sonst ist er ein Endsee und
+  // sein Zufluss erreicht das Meer nie.
+  const WASSER_N = 40000, JAHR_S = 31557600, WASSER_NACHBAR = 1.45;   // Zellen (gesetzt) · s je Jahr · Nachbar-Umkreis in d
+  // Raum-Index über Einheitsvektoren: Würfel der Kante ze, CSR (kopf je Würfel, die Zellen aufsteigend) — ein Umkreis bis ze liegt in
+  // den 3 × 3 × 3 Würfeln um den Punkt, je Zeile (dy, dz) EIN zusammenhängender Abschnitt der Liste
+  function wasserIndex(F, N, ze) {
+    const K = Math.ceil(2 / ze) + 3, KKK = K * K * K, kopf = new Int32Array(KKK + 1), liste = new Int32Array(N), schl = new Int32Array(N);
+    for (let i = 0; i < N; i++) {
+      const k = (Math.floor((F[3 * i] + 1) / ze) + 1) + K * ((Math.floor((F[3 * i + 1] + 1) / ze) + 1) + K * (Math.floor((F[3 * i + 2] + 1) / ze) + 1));
+      schl[i] = k; kopf[k + 1]++;
+    }
+    for (let k = 0; k < KKK; k++) kopf[k + 1] += kopf[k];
+    for (let i = 0; i < N; i++) liste[kopf[schl[i]]++] = i;
+    for (let k = KKK; k > 0; k--) kopf[k] = kopf[k - 1];
+    kopf[0] = 0;
+    return { K, ze, kopf, liste };
+  }
+  const W_P = {}, W_K = {};
+  function wasserZellen(S) {
+    pruefScheibe(S);
+    const N = WASSER_N, R = S.R, F = fib(N), d = Math.sqrt(8 * PI / (Math.sqrt(3) * N)), fuss = 0.5 * d * R;   // Gitterweite (rad), hexagonal
+    const h = new Float64Array(N), q = new Float64Array(N), pM = new Float64Array(N), tJ = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const x = F[3 * i], y = F[3 * i + 1], z = F[3 * i + 2];
+      h[i] = planetPunktR(S, x, y, z, fuss, W_P);
+      planetKlimaR(S, x, y, z, -1, W_K, W_P);
+      q[i] = h[i] > 0 ? W_K.abflussMm : 0; pM[i] = W_K.niederschlagMm; tJ[i] = W_K.tJahrC;
+    }
+    return { S, N, R, F, d, A: 4 * PI * R * R / N, h, q, pM, tJ };
+  }
+  function wasserLauf(Z) {
+    const { N, F, d, A, h, q, pM, tJ } = Z, I = wasserIndex(F, N, 2 * d), K = I.K, ze = I.ze, kopf = I.kopf, li = I.liste;
+    // Nachbarn im Umkreis WASSER_NACHBAR·d (CSR, zwei Gänge: zählen, füllen)
+    const cN = kcos(WASSER_NACHBAR * d), nbKopf = new Int32Array(N + 1);
+    let nbListe = null;
+    for (let gang = 0; gang < 2; gang++) {
+      if (gang === 1) { for (let i = 0; i < N; i++) nbKopf[i + 1] += nbKopf[i]; nbListe = new Int32Array(nbKopf[N]); }
+      for (let i = 0; i < N; i++) {
+        const x = F[3 * i], y = F[3 * i + 1], z = F[3 * i + 2];
+        const a = Math.floor((x + 1) / ze) + 1, b = Math.floor((y + 1) / ze) + 1, c = Math.floor((z + 1) / ze) + 1;
+        let m = gang === 1 ? nbKopf[i] : 0;
+        for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) {
+          const k0 = a + K * ((b + dy) + K * (c + dz));
+          for (let e = kopf[k0 - 1], e1 = kopf[k0 + 2]; e < e1; e++) {
+            const j = li[e];
+            if (j !== i && x * F[3 * j] + y * F[3 * j + 1] + z * F[3 * j + 2] >= cN) { if (gang === 1) nbListe[m] = j; m++; }
+          }
+        }
+        if (gang === 0) nbKopf[i + 1] = m;
+      }
+    }
+    // Priority-Flood vom Meer aus (binäre Halde über Schlüssel und Index: dieselbe Folge bei gleicher Höhe)
+    const voll = new Float64Array(N), emp = new Int32Array(N).fill(-1), ord = new Int32Array(N), gesehen = new Uint8Array(N);
+    const hk = new Float64Array(N), hi = new Int32Array(N); let hn = 0, n = 0;
+    const push = (k, i) => {
+      let j = hn++;
+      while (j > 0) { const p = (j - 1) >> 1; if (hk[p] < k || (hk[p] === k && hi[p] < i)) break; hk[j] = hk[p]; hi[j] = hi[p]; j = p; }
+      hk[j] = k; hi[j] = i;
+    };
+    const pop = () => {
+      const r = hi[0], k = hk[--hn], i = hi[hn]; let j = 0;
+      for (;;) {
+        let c = 2 * j + 1; if (c >= hn) break;
+        if (c + 1 < hn && (hk[c + 1] < hk[c] || (hk[c + 1] === hk[c] && hi[c + 1] < hi[c]))) c++;
+        if (hk[c] > k || (hk[c] === k && hi[c] > i)) break;
+        hk[j] = hk[c]; hi[j] = hi[c]; j = c;
+      }
+      hk[j] = k; hi[j] = i; return r;
+    };
+    for (let i = 0; i < N; i++) if (h[i] <= 0) { voll[i] = h[i]; emp[i] = i; gesehen[i] = 1; push(h[i], i); }
+    while (hn) {
+      const c = pop(); ord[n++] = c;
+      for (let e = nbKopf[c], e1 = nbKopf[c + 1]; e < e1; e++) {
+        const j = nbListe[e]; if (gesehen[j]) continue;
+        gesehen[j] = 1; voll[j] = h[j] > voll[c] ? h[j] : voll[c]; emp[j] = c; push(voll[j], j);
+      }
+    }
+    // Abfluss-Summe (m³/a) in umgekehrter Flut-Folge
+    const acc = new Float64Array(N), rang = new Int32Array(N);
+    for (let k = 0; k < n; k++) rang[ord[k]] = k;
+    for (let k = n - 1; k >= 0; k--) { const i = ord[k]; if (h[i] > 0) acc[i] += q[i] / 1000 * A * 1e6; const e = emp[i]; if (e !== i && e >= 0) acc[e] += acc[i]; }
+    // Seen: Zusammenhangs-Komponenten der Zellen mit voll > h über dem Meer; je See sein Abfluss-Ort (der früheste Rang, dessen
+    // Empfänger außerhalb liegt), seine Fläche, sein mittlerer Niederschlag und DIE PET
+    const see = new Int32Array(N).fill(-1), stapel = new Int32Array(N), seeAus = [], seeFl = [], seeP = [], seePet = [];
+    for (let i = 0; i < N; i++) {
+      if (see[i] >= 0 || !(voll[i] > h[i] + 1e-6) || voll[i] <= 0) continue;
+      const id = seeAus.length; let sp = 0, pSum = 0, eSum = 0, nz = 0;
+      stapel[sp++] = i; see[i] = id;
+      while (sp) {
+        const c = stapel[--sp]; nz++; pSum += pM[c]; eSum += petMm(tJ[c]);
+        for (let e = nbKopf[c], e1 = nbKopf[c + 1]; e < e1; e++) { const j = nbListe[e]; if (see[j] < 0 && voll[j] > h[j] + 1e-6 && voll[j] > 0) { see[j] = id; stapel[sp++] = j; } }
+      }
+      seeAus.push(-1); seeFl.push(nz * A); seeP.push(pSum / nz); seePet.push(eSum / nz);
+    }
+    const seeN = seeAus.length, ausRang = new Float64Array(seeN).fill(1e9);
+    for (let c = 0; c < N; c++) {
+      const id = see[c]; if (id < 0) continue;
+      if (!(emp[c] >= 0 && see[emp[c]] === id) && rang[c] < ausRang[id]) { ausRang[id] = rang[c]; seeAus[id] = c; }
+    }
+    const folge = Array.from({ length: seeN }, (_, s) => s).sort((a, b) => rang[seeAus[b]] - rang[seeAus[a]]);   // stromauf zuerst
+    const seeEnd = new Uint8Array(seeN); let endN = 0;
+    for (const s of folge) {
+      const au = seeAus[s], verlust = Math.max(0, seePet[s] - seeP[s]) / 1000 * seeFl[s] * 1e6;
+      if (acc[au] < verlust) {   // Endsee: sein Zufluss erreicht das Meer nicht
+        seeEnd[s] = 1; endN++;
+        const a0 = acc[au]; let c = emp[au];
+        while (c >= 0 && h[c] > 0) { acc[c] -= a0; if (emp[c] === c) break; c = emp[c]; }
+      }
+    }
+    // Ziel jeder Zelle: die Meeres-Zelle, in die ihr Lauf mündet (zielMeer, −1: er endet im Endsee zielSee)
+    const zielMeer = new Int32Array(N).fill(-1), zielSee = new Int32Array(N).fill(-1), endseeVon = new Int32Array(N).fill(-1);
+    for (let c = 0; c < N; c++) if (see[c] >= 0 && seeEnd[see[c]]) endseeVon[c] = see[c];
+    for (let k = 0; k < n; k++) {
+      const i = ord[k];
+      if (h[i] <= 0) { zielMeer[i] = i; continue; }
+      if (endseeVon[i] >= 0) { zielSee[i] = endseeVon[i]; continue; }
+      zielMeer[i] = zielMeer[emp[i]]; zielSee[i] = zielSee[emp[i]];
+    }
+    return Object.freeze({ S: Z.S, N, R: Z.R, F, d, A, cR: kcos(2 * d), idx: I, h, q, pM, tJ, voll, emp, acc, seeN, endN, zielMeer, zielSee, endseeVon });
+  }
+  // DAS Wasser-Gitter der Scheibe (je Aufruf neu gerechnet, ~0,8 s; der Leser hält es)
+  function planetWasserGitter(S) { return wasserLauf(wasserZellen(S)); }
+  // Adresse → Wasser: Wendland-gewichtete Abfluss-Menge (m³/s) und See-Tiefe (m) über die Zellen im Umkreis 2·d (stetig in der Adresse)
+  function planetWasserR(W, x, y, z, aus) {
+    const I = W.idx, K = I.K, ze = I.ze, kopf = I.kopf, li = I.liste, F = W.F, acc = W.acc, voll = W.voll, h = W.h, cR = W.cR, ir = 0.5 / W.d;
+    const a = Math.floor((x + 1) / ze) + 1, b = Math.floor((y + 1) / ze) + 1, c = Math.floor((z + 1) / ze) + 1;
+    let sw = 0, sq = 0, ss = 0;
+    for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) {
+      const k0 = a + K * ((b + dy) + K * (c + dz));
+      for (let e = kopf[k0 - 1], e1 = kopf[k0 + 2]; e < e1; e++) {
+        const i = li[e], cc = x * F[3 * i] + y * F[3 * i + 1] + z * F[3 * i + 2]; if (cc < cR) continue;
+        const t = acosF(cc) * ir; if (t >= 1) continue;
+        const u = 1 - t, u2 = u * u, w = u2 * u2 * (4 * t + 1);
+        sw += w; sq += w * acc[i]; ss += w * (voll[i] - h[i]);
+      }
+    }
+    const o = aus || {}; o.qM3s = sw > 0 ? sq / sw / JAHR_S : 0; o.seeTiefeM = sw > 0 ? ss / sw : 0; o.gewicht = sw; return o;
+  }
+
   // ── bau3: die Brücke (Kopf §6 oben) ──────────────────────────────────────────────────────────────────────
   const ORT_KLIMA = ['sommer', 'winter', 'sommerPhase', 'tagAmp', 'tagGipfel', 'jahrTage', 'spendeMm'];
   function pruefOrtGesetz(og) {
@@ -2614,8 +2758,9 @@
     planetMathe, planetHash, planetZufall, PLANET_ERDE, RAND_ART, KRUSTE, VULKAN_ART, SCHICHT, BILD_ART,
     planetPlan, planetScheibe, planetRichtung, planetBreiteLaenge, planetPunkt, planetPunktR, planetHuelle, planetMeer, planetVulkane, planetKarte, planetKarteAusschnitt,
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom, planetPet: petMm,
+    PLANET_WASSER_N: WASSER_N, planetWasserGitter, planetWasserR,
     planetAnker, planetFlaeche, planetKarteVon, planetOrt, planetOrtDerZeit, NACHKLANG_MA,
-    _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
+    _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, wasserZellen, wasserLauf, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
   });
   root.__planetCore = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
