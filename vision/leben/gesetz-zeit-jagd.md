@@ -56,7 +56,7 @@ Wert, steht er als benannte Hypothese mit Spanne im Kern und in dieser Tafel.
 - NICHT gelesen: das Futter-Minimum für Reproduktion, Fuller im Original, r_max nach McCullough 1979, Rothirsch-Kälber je Kuh,
   Streifgebiet der Kuh in ha, der Riss-Anteil je Jahr für Isle Royale · Yellowstone · Białowieża · Minnesota.
 
-## Lauf 1 (19.11. 05:05) — S1 ROT: Wolf 0 von 8, die Beute stirbt in allen 8 Saaten mit aus
+## Lauf 1 (19.11. 04:50) — S1 ROT: Wolf 0 von 8, die Beute stirbt in allen 8 Saaten mit aus
 
 Lebende Phase (Jahre 0–16): Wölfe je 1 000 Köpfe 3,3–4,6 (S2-Band), Unreife am Riss 0,57–0,66, Geborene reif 0,29–0,41, ohne Wolf
 Überleben Kitz 0,611 · Kuh 0,742 (Feld 0,59 · 0,76) und CV 0,010. Aber: 51–59 Risse je Wolf je Jahr (Feld 15–28 Hirsche),
@@ -74,7 +74,7 @@ Nutz 0,7; Risse je Wolf je Jahr 24–44; bei Wurf-Schwelle 1,5 stirbt der Wolf a
 (1,23). Fällt Lauf 2 an S1, fallen die Sätze 3 und 4 des Gesetzes (feste Quote ohne Antwort auf die Beute-Dichte vor der
 Erschöpfung), und es geht an den Zensus der funktionellen Antwort (Messier) — ohne dritte Formel am selben Tag.
 
-## Lauf 2 (19.11. 05:20) — S1 ROT: Wolf 3 von 8; die Sätze 3 und 4 FALLEN
+## Lauf 2 (19.11. 05:08) — S1 ROT: Wolf 3 von 8; die Sätze 3 und 4 FALLEN
 
 Die eine Korrektur stand in 4 Kern-Zeilen, ohne Wolf sind Lauf 1 und 2 zahlengleich. Vorhersagen: Deckung am Plateau 1,43
 (gesetzt 1,44) trifft; Risse je Wolf je Jahr 46,2 (gesetzt 24–44) trifft nicht; „bei Wurf-Schwelle 1,5 stirbt der Wolf aus“
@@ -94,3 +94,59 @@ es gilt die Methode selbst: das nächste Gesetz nur aus gelesenen Stütz-Punkten
 
 Fällt das Gesetz an S1 oder an drei der Proben S2–S8, geht es zurück an den Zensus; ein Soll, das nach einem Ergebnis geändert
 wird, steht hier offen mit Datum und Grund.
+
+## Zweite Fassung der Sätze 3 und 4 (19.11. 05:22, gesetzt VOR Lauf 3, nur aus gelesenen Stütz-Punkten)
+
+Quelle: `quellen/zensus-antwort-quellen.md` (Zeilen 1.3, 1.4, 2.1, 2.2, 2.6, 5.1) und der Vorzensus (`zensus-zeit-quellen.md`
+Zeilen 8, 88–94). Die Sätze 1, 2, 5, 6 stehen unverändert.
+
+3. **Der Riss antwortet auf das VERHÄLTNIS, nie auf eine Quote.** Risse je Wolf = Plateau × V ÷ (V + V½). V = Beute im Rudel-Revier
+   je Wolf des Rudels, in Weißwedel-Äquivalenten (WÄ: Hirsch 1 · Elch 6). V½ = **246 WÄ je Wolf** (Isle Royale, 94 Rudel-Winter:
+   a = 4,19 × 10⁻², h = 0,58 → Halb-Sättigung 41 Elche je Wolf × 6; Vucetich 2002, Volltext). Das Plateau bleibt die Sattheit aus
+   Satz 4 alt (Kern-Wert unverändert). Der Raum bleibt das ganze Rudel-Revier; WELCHER Kopf fällt, entscheidet weiter der Rang der
+   Verwundbarkeit (Reife, Alter) — als Reihenfolge, nie als Zahl je Takt. Die Verwundbarkeits-Quote 16 des Kerns fällt ersatzlos.
+4. **Der Wolf antwortet auf seine Deckung als GRADIENT, nie als Schwelle.** Deckung D = Riss ÷ Erhaltung über das letzte Jahr.
+   Wurf und Überleben sind stetig in D, linear zwischen drei Ankern, außerhalb gehalten (Überleben und Anteile in 0…1 geklemmt):
+
+   | Anker | D | Fähen mit Wurf | Welpen je Wurf | Welpe wird Jährling | Überleben je Jahr (ab Jährling) |
+   |---|---|---|---|---|---|
+   | arm | 0,60 | 0,66 | 4,6 | 0 | 0,49 |
+   | Gleichgewicht | 1,05 | 0,97 | 5,7 | 0,36 | 0,66 |
+   | reich | 1,50 | 0,96 | 6,9 | 0,75 | 0,85 |
+
+   Gelesen sind die Werte: Fähen und Föten nach Beute je Wolf niedrig ↔ mittel ↔ hoch (Boertje 1992 Tab. 1), Überleben Einbruch ↔
+   Gleichgewicht ↔ Anstieg 0,49 ↔ 0,66–0,67 ↔ 0,84–0,87 und 2 Rekruten je Rudel im Gleichgewicht (Peterson & Page 1988, Abstract),
+   Welpen-Überleben 0,75 bei guter Beute (Hayes 2000). MEINE Zuordnung, nicht gelesen: welche Deckung die drei Phasen tragen. Sie
+   folgt aus Satz 3: Boertjes Stufen 100 · 285 · 675 WÄ je Wolf geben V ÷ (V + 246) = 0,29 · 0,54 · 0,73 des Plateaus, mal
+   Sattheit ÷ Erhaltung 2,057 = D 0,60 · 1,10 · 1,51. 0,36 = 2 Rekruten ÷ (5,7 × 0,97) ist Rechnung; die 0 am armen Anker ist die
+   Verlängerung der Geraden (Mech 1977: erst hungern die Welpen — nur Reihenfolge, Sekundär-Quelle).
+   Die Wurf-Schwelle und die Fasten-Tage 30 des Kerns fallen ersatzlos; ein Rudel hat weiter EINEN Wurf je Jahr.
+
+Gegenprobe vor der Rechnung, zwei unabhängige Quellen: Null-Wachstum liegt auf Isle Royale bei 0,88 Rissen je Wolf und Monat =
+0,51 des Plateaus (Vucetich & Peterson 2004); Erhaltung ÷ Sattheit der Stoffwechsel-Quellen ist 0,486 (Głowaciński 1997 ÷ Stahler
+2006). Und Null-Wachstum bei 43 Elchen je Wolf = 258 WÄ je Wolf trifft das Nordamerika-Mittel 249 WÄ je Wolf (Boertje 1992, n 25).
+
+### Soll, Zusatz (S1–S12 stehen unverändert; kein Soll wird nach dem Ergebnis bewegt)
+
+| Nr | Probe | Soll | Feld-Anker |
+|---|---|---|---|
+| S13 | Rückstell-Probe: im Jahr 40 fällt die Hälfte der Beute (Zufall je Kopf, als benannter Eingriff, 8 Saaten) | Wolf fällt binnen 4 Jahren um ≥ 25 % · Beute steht nach 15 Jahren bei ≥ 85 % des Vor-Stands · Wolf lebt 8 von 8 | Verzug 2–3 Jahre (Peterson & Page 1988) |
+| S14 | Wolf-Wachstum je Jahr gegen D (Rudel-Jahre in Klassen) | D 0,9–1,2: −0,10…+0,10 · D ≥ 1,5: +0,15…+0,45 · D ≤ 0,6: ≤ −0,15 | 0,418 · D − 0,44 (Vucetich & Peterson 2004, umgerechnet) |
+| S15 | Beute je Wolf am lebenden Plateau | 180–390 WÄ je Wolf | NA-Mittel 249, Null-Wachstum 258 |
+
+### Vorhersagen (vor der Rechnung, zählen als Treffer oder Fehlschuss)
+
+S1 8 von 8 · S2 3,5–4,5 Wölfe je 1 000 Köpfe · S3 0,10–0,16 je Jahr · S4 0,60–0,80 · S9 ≤ 0,15 · Verzug Wolf hinter Beute in S13
+2–4 Jahre. Benanntes Risiko: bei 55–70 Wölfen trägt der Zufall der kleinen Zahl (Feld: ≈ 30 % der Wachstums-Varianz) über 160
+Jahre einzelne Saaten ins Aus — fällt S1 daran, steht es als Befund, nicht als Formel-Fehler.
+
+### Nicht im Gesetz, benannt offen
+
+- Revier-Größe gegen Beute: das Feld sagt „das Revier antwortet, nicht die Rudel-Größe“ (Kittle 2015; Sand 2012: 960 ↔ 306 km²);
+  der Exponent ist NICHT gelesen. Der Revier-Deckel 744 des Kerns bleibt als benannte eigene Setzung.
+- Dichte-Bremse durch Rudel-Kampf: wirkt im Feld erst ab 55–60 Wölfen je 1 000 km² (Cubaynes 2014, Sekundär-Quelle), darunter kein
+  Bezug (Mech & Barber-Meyer 2017). Der Raum der Welt ist gerafft (48 × 48 Reviere = 92 km² mit 14 000 Köpfen), die Zahl je km²
+  ist nicht übertragbar; die Bremse steht NICHT im Kern.
+- Widerspruch Skandinavien: 3 × höhere Riss-Rate bei gleichem Verhältnis, kein Plateau bis 499 Elche je Wolf (Sand 2012). Das
+  Plateau des Gesetzes kommt aus dem Stoffwechsel, V½ von EINEM Ort; ob a vom Elch auf den Hirsch trägt, ist nicht gelesen —
+  die Brücke ist allein der WÄ-Faktor 6.
