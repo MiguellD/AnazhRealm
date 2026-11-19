@@ -1397,7 +1397,7 @@ class AnazhRealm_stoff_instanz {
             // Aufträge dieser Kamera schreiben, die Liste so groß wie ihre Abschnitte — ihr Zug (`_arenaZug`) nimmt sie. Die
             // Liste liegt ab ihrer Geburt auf der GPU: rechnete in ihrem Frame kein Zug (jedes Glied außer Sicht), fand ein Leser
             // nach dem Frame (der Band-Zähler, die Blick-Sonde) eine Liste ohne Puffer („reading 'size'").
-            _wahlVor(rend, camera) {
+            _wahlVor(rend, camera, lage = null) {
                 this._rend = rend;
                 // DER TAKT ORDNETE DIESES BILD SCHON (`_arenaTakt`, vor jedem Pass; w27-takt-streu): jeder Pass liest sein Ergebnis,
                 // solange kein Glied seither kam, ging oder seine Zahl wechselte (`_geordnet`) — ein zweites Ordnen je Pass ging
@@ -1417,7 +1417,7 @@ class AnazhRealm_stoff_instanz {
                     L.set(camera, (zug.liste = new IND(new Uint32Array(this._nCap), 1)));
                     rend._attributes.update(zug.liste, 3); // r184 AttributeType.STORAGE
                 }
-                this._auftraege(zug, camera, rend, false);
+                this._auftraege(zug, camera, rend, false, lage);
                 zug.bereit = true;
                 return zug;
             }
@@ -1747,6 +1747,9 @@ class AnazhRealm_stoff_instanz {
                     alt = z.n,
                     teil = m.__bereiche === true && alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[2] || x[0].updateRanges.length); // prettier-ignore
                 z.n = n;
+                // das Band der Sichthöhen des Glieds für das Fenster im Ganzen (`_fensterTraegt`, nur eine Stufe der Blende)
+                const F = m.__wahlFenster;
+                z.mass = F && F[0] >= 1 && F[0] <= 4 ? AnazhRealm._fensterMass(q, n, F[0]) : null;
                 for (const [a, d, anders] of quellen) {
                     if (teil && !anders && n <= alt) continue;
                     // die Plätze [i0, i1) der Quelle in den Block, im Schritt des Ziels (`_instanzSeite`: vec3 liegt auf 4)
@@ -1896,7 +1899,7 @@ class AnazhRealm_stoff_instanz {
             // füllt sie, und reichen sie nicht oder liegt mehr als die Hälfte brach, nimmt das Bündel neu auf — sonst nie, die
             // Wahl wechselt ohne Aufnahme. Befund 16.10. (Prüfung, Dorf): bis hier zog jedes Glied seinen Platz, auch leer —
             // die Züge des Hauptbilds 58 → 66.
-            _auftraege(zug, camera, renderer, auf) {
+            _auftraege(zug, camera, renderer, auf, lage = null) {
                 const fest = camera === null;
                 const args = zug.arr,
                     basis = zug.seg * this._segCap * 5,
@@ -1948,6 +1951,14 @@ class AnazhRealm_stoff_instanz {
                     if (jetzt === undefined || z.blockJetzt !== jetzt || z.n < 0 || n > z.n) {
                         z.blockJetzt = jetzt;
                         this._block(m, z, n);
+                    }
+                    // KOSTEN AM SCHIRM (laub-kante): behält die Maske der Blende keine seiner Instanzen in diesem Pass, zieht das
+                    // Glied nicht — die GPU zählte ihm 0, sein Befehl ginge leer ins Band (`_fensterTraegt`, das Auge der Wahl)
+                    const F = m.__wahlFenster;
+                    if (lage && wahl && F && F[0] >= 1 && F[0] <= 4) {
+                        if (m.boundingSphere === null) m.computeBoundingSphere();
+                        kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld);
+                        if (!AnazhRealm._fensterTraegt(F, lage, kugel.center, kugel.radius, z.mass)) continue;
                     }
                     const o = k * 5;
                     // in der Wahl zählt der Compute die Instanzen, die erste ist der Block in der Liste dieser Kamera (`_wahlVor`)
