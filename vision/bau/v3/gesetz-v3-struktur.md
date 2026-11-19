@@ -49,11 +49,12 @@ Dieses Blatt ist STRUKTUR: kein Code, kein Spike, keine gewählte Zahl. Vom Kopf
 | E11 | ABSTECKUNG: „≥ ⅔ als roher Anteil“ fällt. S4 = κ = (Anteil − Zufall) ÷ (1 − Zufall) gegen die Einheit aus dem Feld des Plans, Soll-Band 0,13 … 0,33, der Zufall steht daneben. Lehre: echte Städte sind kaum regelmäßiger als der Zufall; κ nahe 1 ist so falsch wie −0,04. Das Teil-Raster (Viertel schottisch, ganze und halbe perches englisch) ist ein Feld des Plans (Kultur), kein Weltwert | §0 Punkt 2 (Nachrechnung des Bands); §1 Glied 1/2; §4 S4 |
 | E12 | GESCHOSSE: `gen` 0/1/2 → 4/3/2 fällt als Kategorien-Fehler. Eingang ist die ABSOLUTE Straßenbreite (Paris 1784: < 24 · 24–29 · ≥ 30 Fuß). Paris setzt eine DECKE, London schreibt einer Stadt unter höchstem Druck die Zahl vor (Endfall). Gebaut wird min(Decke aus der Straßenbreite, Bedarf aus dem Druck = Zins am Los). Das Glied Druck → Geschosse ist HYPOTHESE; geprüft an einer Zahl (`v3/zaehl-druck.cjs`) | §0 Punkte 3–4; §1 Glied 7; §3 L15, L38; §4 S5 |
 | E13 | BALKENABSTAND bis 1,7 m (FC:181, 420) gegen belegte 40–60 cm fällt im Glied Tragwerk zusammen mit L_max aus dem Holz-Profil — eine Zeile der Soll-Tafel | §1 Glied 9; §2 F21; §4 S1 |
+| E14 | (19.11. 01:50) Das Glied DECKE bleibt (am Text belegt) und steht ehrlich als „heute wirkungslos: alle 2 595 Fronten unter 24 Pariser Fuß, trifft nur die 57 Wohntürme“. Die Straßenbreite ist ein Feld des PLANS und folgt aus dem Verkehr (Gasse = ein Wagen, Straße = zwei Wagen im Begegnen, Marktstraße = zwei Wagen plus Stände) — Hypothese L39 an der Naht zum Verkehr-Gesetz (Zweig `zensus-verkehr`), NICHT Kapitel Bau: dieses Gesetz setzt KEINE Breiten, es nennt nur den Eingang „Breite der Straße in m aus dem Plan“. κ-Band gilt als 0,14 … 0,31 (gemessene Einheiten 6,54 m und 7,62–7,74 m; die Enden 0,13 / 0,33 kamen aus gerundeten). L36 und L38 bleiben offen bis `v3/quellen-strasse-zins.md` (Leser des Koordinators), S8 Befund | §1 Glied 1, 7; §3 L39; §4 S4, S5 |
 
 ---
 
 Kein Code, kein Prototyp, kein Spike, keine gewählte Zahl. Dieses Blatt sagt: was folgt woraus, welche Stellwerte fallen (datei:zeile),
-wo ein Datum mit Quelle stehen muss (benannte Lücke L1 … L38). Kern FC = `fachwerk-core.js` an der Wurzel des Lese-Baums, SHA-256
+wo ein Datum mit Quelle stehen muss (benannte Lücke L1 … L39). Kern FC = `fachwerk-core.js` an der Wurzel des Lese-Baums, SHA-256
 028cc2d0…bea06 (gedruckt in `v3/zaehl-faellt.log` Z. 1). Jede datei:zeile ist an der Quelle selbst nachgelesen; wo eine Zeile nur aus
 einem Blatt übernommen ist, steht „(nach Blatt X, nicht nachgelesen)". Leser-Zahlen: `node v3/zaehl-faellt.cjs` → `v3/zaehl-faellt.log`.
 Quellen-Kürzel (ST15, T08, L07, LON, PAR84, E-F, …) wie in `v3/quellen-los-haus.md`; Status T (Volltext) · S (sekundär) · NG dort.
@@ -68,7 +69,7 @@ Stand und Adresse) → HAUS (Breite aus dem Los; Geschosse = min(Decke aus der a
 Los) — E12, das Druck-Glied ist HYPOTHESE; Tiefe und Tragwerk aus Bedarf und Spannweite, Sockel aus dem Gefälle). Kein Schritt läuft
 rückwärts. Das Tragwerk fügt sich dem Grundriss. Die Zeit teilt erst die Front, dann füllt sie den Hof.
 
-**Zählung der Lücken (§3, 38 Zeilen, dritter Gang): gefüllt 16 · HYPOTHESE 5 · entfallen 3 · offen 14.** Von den 16 gefüllten tragen 7
+**Zählung der Lücken (§3, 39 Zeilen, dritter Gang + E14): gefüllt 16 · HYPOTHESE 6 · entfallen 3 · offen 14.** Von den 16 gefüllten tragen 7
 einen offenen Rest (L2, L4, L6, L12, L20, L26, L27). Gegen den zweiten Gang: L15 entfällt (E12), L38 (Druck → Geschosse) ist neu HYPOTHESE.
 
 ---
@@ -79,7 +80,7 @@ einen offenen Rest (L2, L4, L6, L12, L20, L26, L27). Gegen den zweiten Gang: L15
    (`zaehl-los.cjs` Zusatz E1, sobald das Feld der Block-Einheit da ist) und S7-Ecke. S2, S8, S9 und S10 haben keinen Zähler am Haus; die
    Skripte der Runde 2 lesen den Prototyp. S3 und S5 zählen über einen Nachbau der heutigen Kette (zaehl-los.cjs:307–344,
    zaehl-hoehe.cjs:88–110), der am Gesetz nicht mehr trifft. Keiner dieser sechs ist heute Richter.
-2. **S4 ist κ im Band 0,13 … 0,33 (E11) — das Band ist nachgerechnet.** κ = (A − p0)/(1 − p0), p0 = 2 · 0,5 m ÷ Viertel, A = ⅔
+2. **S4 ist κ im Band 0,14 … 0,31 (E11, E14) — das Band ist nachgerechnet.** κ = (A − p0)/(1 − p0), p0 = 2 · 0,5 m ÷ Viertel, A = ⅔
    (Stell & Tait, ST15 S. 5, n 49):
 
    | Einheit U (Quelle) | Viertel | Zufall p0 | κ bei A = ⅔ | κ bei A = 33/49 |
@@ -299,9 +300,10 @@ macht es zur Geometrie, kein Datum) · **offen**. Thema A–G wie zuvor.
 | L36 | Ursache des eingeschossigen Stadthauses | **offen** | am Text keine; am Kern spiegelt die Lage der 354 Eingeschosser das Index-Schema (§0 Punkt 3, zaehl-druck.log) | heute 13,6 % | E |
 | L37 | Welche Ordnung je Region/Epoche (Teil-Raster perch oder Viertel; London oder Paris; Straßenbreite je Rang) | **offen** | NG; die Quellen sind England, Schottland, Freiburg, Paris; das κ-Band 0,13 … 0,33 ist schottisch | keine | A/E |
 | L38 | Druck → Geschosse: Bedarf aus dem Zins am Los (eigene Zeile, E12) | **HYPOTHESE** | nicht am Text; am Kern nicht prüfbar, weil die heutige Lage der Eingeschosser dem Rang-Würfel folgt (§0 Punkt 3) | Wohl-Stufe FC:4444, KULTUR.st | E |
+| L39 | Verkehr → Straßenbreite: Breite je Klasse aus der Funktion (ein Wagen · zwei Wagen im Begegnen · zwei Wagen plus Stände) (E14) | **HYPOTHESE** | bis zur Quelle nicht am Text; `v3/quellen-strasse-zins.md` angefragt. Naht zum Verkehr-Gesetz (`zensus-verkehr`) — dort gesetzt, hier nur gelesen | heute fünf Breiten 2,6–5,0 m = 8,0–15,4 Pariser Fuß (`zaehl-druck.log`), alle unter 24 Fuß |
 
-**Zählung (dritter Gang): gefüllt 16** (L1, L2, L4, L6, L8, L12, L14, L17, L18, L20, L26, L27, L28, L31, L33, L34) · **HYPOTHESE 5** (L5, L7,
-L10, L35, L38) · **entfallen 3** (L15, L24, L25) · **offen 14** (L3, L9, L11, L13, L16, L19, L21, L22, L23, L29, L30, L32, L36, L37).
+**Zählung (dritter Gang): gefüllt 16** (L1, L2, L4, L6, L8, L12, L14, L17, L18, L20, L26, L27, L28, L31, L33, L34) · **HYPOTHESE 6** (L5, L7,
+L10, L35, L38, L39) · **entfallen 3** (L15, L24, L25) · **offen 14** (L3, L9, L11, L13, L16, L19, L21, L22, L23, L29, L30, L32, L36, L37).
 
 ---
 
