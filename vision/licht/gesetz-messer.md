@@ -112,3 +112,47 @@ Meine Entscheide (alle VOR Spike 3):
 | R4 | Genesis Uhr 0,310–0,320 im Feinschritt 0,002 (neu gemessen): heute und unter Spike 3 | nur Zahl: größter Einzel-Schritt | heute ein Schritt > 0,15 · Spike 3 ≤ 0,05 |
 | R5 | Wiese vor der Sonne (Uhr 0,258–0,264) mit dem Himmel des Bildes | nur Zahl je Schritt | 0,04–0,05 |
 | R6 | Wiese am Inhalt von main (Basis e4e3f363), dieselbe Rechnung | größter Sprung ≤ 0,10 EV | 0,05–0,07 |
+
+## Spike 3 (19.11., Opus, Tafel `spike-messer.txt` ab „SPIKE 3“, voll in `s3-tafel.txt`) — Fläche + Himmel des Bildes tragen den Aufgang
+
+Rück-Probe 0,0007 EV. Kein Soll bewegt: R1 GRÜN Wiese am Wald-Kopf 0,065 EV (heute 0,162; Treffer) · R2 ROT am Schritt 0,01: Genesis
+0,124 EV bei Uhr 0,31 → 0,32 (heute 0,341; Buckel −0,096 im Soll; Treffer) · R3 ROT: Mittag Wiese −0,007, Genesis +0,060 EV — die
+wahre Sicht der Fläche ist dort 0,870, der Messer zählt heute 0,932 (Fehlschuss) · R4 Feinschritt Genesis 0,310–0,320: heute
+0,05 · 0,05 · 0,08 · 0,12 · 0,04 (EIN Schritt über 0,10 — heute bleibt es ROT auch im Feinschritt), unter Spike 3
+0,02 · 0,00 · 0,01 · 0,03 · 0,06 (Steigung, größter Schritt 0,06; beide Vorhersagen Fehlschuss) · R5 vor der Sonne 0,05 · 0,04 · 0,05
+je Schritt (heute 0,08–0,09; Treffer) · R6 GRÜN Wiese am Inhalt von main 0,048 (heute 0,091; Vorhersage 0,05–0,07 knapp daneben).
+Sicht 32 Strahlen gegen Fläche: größte Abweichung 0,017. Gemessen am Wald-Kopf 70539e9e und am Haupt-Klon b7ed8419 (Licht-Kette ohne Diff).
+
+Zensus Himmel: Messer und Bild lesen DENSELBEN Himmel im Niveau (Tafel `_himmelsBestrahlung` gegen Umgebung „oben“: 0,99–1,01) — kein
+Zwilling der Quelle. Der Unterschied ist der EMPFÄNGER: das Bild beleuchtet je Normale (PMREM-Umgebung, `welt-licht.js:849`,
+`stamm/bild-sicht.js:680–718`), der Messer eine waagrechte Fläche. Die Umgebung „senkrecht“ steigt vor der Sonne schneller
+(0,34 / 0,29 / 0,26 / 0,22 je Schritt gegen 0,27 / 0,23 / 0,21 / 0,18 „oben“), das Bild der Wiese liegt dazwischen (≈ 0,29 Anteil
+senkrechter Normalen, die Halme). Rückstrahl, Grat-Band, Nebel durch Abschalten ausgeschlossen (an main).
+
+Urteil und Entscheide (VOR Spike 4):
+- **M2, M3, M6 stehen:** die Sicht des Messers ist das Flächen-Mittel des Bild-Schattens. Das ist der sichere Teil des Baus.
+- **Das Maß der Linse greift wie vor-registriert:** R2 reißt am Schritt 0,01 und steht im Feinschritt als Steigung (≤ 0,06) — die Linse
+  tastet jeden reißenden Schritt im Feinschritt nach. Heute bleibt Genesis dabei ROT (0,12), der Täter ist der Messer, nicht das Maß.
+- **Mein Satz „M2 gilt für den Himmel, der Himmel ist ein Zwilling“ ist berichtigt:** die Quelle ist dieselbe, es ist die FORM des
+  Empfängers. Spike 3 hat den Himmel des Bildes je Ort am Mittag verankert (Setzung U3) — das kann kein Messer bauen. Was er bauen
+  kann, ist EIN Empfänger für jedes Licht.
+- **M7 (Kandidat, vor Spike 4 gesetzt) — der Empfänger ist eine KUPPEL, keine flache Karte:** die Halbkugel nach oben, wie der
+  Belichtungsmesser der Fotografie für räumliche Motive (flache Scheibe für flache Vorlagen, Kuppel für Körper). Antwort auf
+  gerichtetes Licht (1 + sin h) ÷ 2, der Himmel über dieselbe Kuppel integriert; EINE Form für Sonne und Himmel, an jedem Ort und zu
+  jeder Uhr dieselbe, kein gemessener Normalen-Anteil, kein Knick nach Sonnenhöhe. Die flache Karte bleibt das MASS der Linse am
+  Mittag (Luma 110–130); `zielKarte` wird höchstens EINMAL als Zahl neu gesetzt, für alle Orte gleich.
+- **R3 bleibt ROT, benannt:** an Genesis bewegt allein die wahre Sicht den Mittag um +0,06 EV. Mein Band ≤ 0,05 war enger als der
+  Richter; in Spike 4 urteilt am Mittag der Richter der Linse selbst (ANKER: Karte in 110–130), und die Bewegung steht als Zahl.
+
+| Nr | Probe (Spike 4: Sicht = Fläche, Empfänger = Kuppel für Sonne und Himmel, aus den vorhandenen Mess-Dateien) | Soll | meine Vorhersage |
+|---|---|---|---|
+| V1 | Wiese am Wald-Kopf, Uhr 0,258–0,282, Feinschritt | größter Sprung ≤ 0,10 EV, kein Schritt unter −0,10 | 0,05–0,08 |
+| V2 | Genesis am Wald-Kopf, Uhr 0,30–0,36: Schritt 0,01 als Zahl, Feinschritt 0,310–0,320 | Feinschritt ≤ 0,10 EV · Buckel ≤ 0,15 EV | Feinschritt ≤ 0,07 |
+| V3 | Wiese am Inhalt von main | größter Sprung ≤ 0,10 EV | 0,04–0,06 |
+| V4 | Mittag, beide Orte: Karte heute und unter Spike 4, mit EINEM neu gesetzten `zielKarte` (die Zahl nennen) | Karte an beiden Orten in 110–130 · Unterschied der Bewegung zwischen den Orten ≤ 0,08 EV | Bewegung Wiese ≈ 0, Genesis +0,05–0,07 |
+| V5 | Überschießen: dunkelt das Bild, wenn die Sonne die Fläche trifft (negativer Schritt), Uhr 0,264–0,282 und 0,31–0,32 | nur Zahl: kleinster Schritt | ≥ −0,03 |
+| V6 | dieselbe Rechnung mit FLACHEM Empfänger und Flächen-Sicht allein (ohne Himmel des Bildes) | nur Zahl: Wiese Wald · Genesis fein · Wiese main | 0,10–0,11 · ≤ 0,08 · 0,07–0,09 |
+| V7 | Bahn-Stützen: Gold (Sonne 10°: −1 … −0,5 EV) und Mittag-Buckel an der Wiese unter Spike 4 | im Soll der Linse | im Soll |
+
+Reißt V1 oder V2 mit der Kuppel, fällt M7 als Kandidat, und der Bau fährt mit M2/M3/M6 und dem flachen Empfänger — was dann am
+Wald-Kopf rot bleibt, steht als Zahl in V6.
