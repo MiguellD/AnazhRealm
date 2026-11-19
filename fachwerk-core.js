@@ -1119,12 +1119,12 @@
     const s=aus||((horiz?cz:cx)<0?-1:1), bo={art:'fenster',cap:_cap,versatz:s*0.14}, rT=tief+2*RAHMEN_VOR, bT=rT+2*BANK_VOR, dreh=(horiz?-s:s)*(nachInnen?-1:1), hF=h-2*riegelIn[1], wF=w-2*riegelIn[0], fen={samen,dreh,w:wF,h:hF,quer:!horiz,einheit:()=>windowSash(1,1,true,fr,gl)};   // `einheit`: derselbe Flügel als Einheit 1 × 1 — die Welt zeichnet jeden wachen Flügel als Instanz EINES Gitters je Haus, per Skala (w, h)
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,rT,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,bo); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,bT,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,rT,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,rT,fr);              // Pfosten
-      const L=grp(); const inner=windowSash(wF,hF,true,fr,gl); inner.position.x=wF/2; L.add(inner);
+      const L=grp(); const inner=windowSash(1,1,true,fr,gl); inner.scale.set(wF,hF,1); inner.position.x=wF/2; L.add(inner);   // DER EINE FLÜGEL (Spike B): die Einheit 1 × 1 per Skala in JEDER Stufe — Stab 0,06 · w, wie das Blatt, das die Welt zeichnet
       L.position.set(...deform(cx-wF/2,cy,cz)); L.rotation.y=(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:dreh*fensterAnschlag(),open:false,fenster:fen}; g.add(L);
       strahlFluegel(L,wF,0,hF);
     } else { beam(g,cx,cy+h/2+0.05,cz,rT,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr,bo); beam(g,cx,cy-h/2-0.05,cz,bT,0.1,w+0.22,fr);
       beam(g,cx,cy,cz-w/2-0.05,rT,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,rT,h+0.1,0.1,fr);
-      const L=grp(); const inner=windowSash(wF,hF,false,fr,gl); inner.position.z=wF/2; L.add(inner);
+      const L=grp(); const inner=windowSash(1,1,false,fr,gl); inner.scale.set(1,hF,wF); inner.position.z=wF/2; L.add(inner);
       L.position.set(...deform(cx,cy,cz-wF/2)); L.rotation.y=(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:dreh*fensterAnschlag(),open:false,fenster:fen}; g.add(L);
       strahlFluegel(L,0,wF,hF); } }
   // DAS FENSTER AM GELÄNDER (Bahn 1): vor dem OG-Vorderfenster des steilen Steinhauses steht der Französische Balkon 0,20 m vor der
@@ -2717,7 +2717,10 @@
                 B.frag = null;
                 B.fragStufe = undefined;
             }
+            var vorher = g && g === B.frag && B.fragZustand && B.fragLage !== "zu" ? B.fragLage : null; // das Soll misst den zu-stehenden Flügel (Spike B)
+            if (vorher) _fragLage(B, "zu");
             B.sichtTon = sichtTon(g);
+            if (vorher) _fragLage(B, vorher);
         }
         return B.sichtTon;
     }
@@ -2751,9 +2754,9 @@
         });
     }
     // Die Stufe trägt den Ton ihres Solls: jede Ecke der tragenden Stoffe × den Faktor ihrer Klasse (nach ihrer Normale).
-    function tonUebertrag(geoms, soll) {
+    function tonUebertrag(geoms, soll, faktoren) {
         if (!soll || !soll.alle[3]) return geoms;
-        var F = tonFaktoren(soll, sichtTon(geoms));
+        var F = faktoren || tonFaktoren(soll, sichtTon(geoms)); // `faktoren`: gemessen am Fragment mit dem zu-stehenden Flügel (Spike B), auf jeden Zustand derselbe
         for (var rolle in geoms) {
             var G = geoms[rolle];
             if (!G || !G.col || !_tonTraegt(rolle)) continue;
@@ -2866,17 +2869,17 @@
         });
     }
     // DAS FERN-FENSTER: je Öffnung des Gesetzbuchs (`H.windows`, jede Art: Stockwerk, Giebel, Anbau) das Fenster der L0 in
-    // ihren Kosten, dasselbe Gesetz wie nah (Bahn 1 ÖFFNUNGEN): das Glas sitzt IN der Laibung, der Flügel steht zu (die Ferne
-    // trägt keinen Zustand — sie ist gebacken; offen steht ein Flügel nur im Ring des Wirts, `_tickHausFenster`). Die Ebene ist die
+    // ihren Kosten, dasselbe Gesetz wie nah (Bahn 1 ÖFFNUNGEN): das Glas sitzt IN der Laibung, der Flügel steht zu oder offen (die
+    // Ferne trägt BEIDE Zustände gebacken, `fensterFernLage` wählt — Spike B). Die Ebene ist die
     // HAUT der L0 (Achse + tief/2, `o.tief` aus dem Bau — ohne sie wirft die Stufe); der Körper der L2 liegt 1,5 cm hinter ihr
     // (KOERPER_INNEN.wand), ein Loch hat er nicht: die Schichten stehen darum in FERN_SCHICHT vor der Haut — hinten der zu-stehende
-    // FLÜGEL (die volle Öffnung im Rahmen-Stoff, sein Rand SCHEIBE_RAND: windowSash sw 0,06), davor der RAUM (der Raum ×
-    // INNEN_DAEMMER, `w − 2·SCHEIBE_RAND`), davor das GLAS (`glas`, durchsichtig 0,42, glüht nach LICHT_GESETZ.fenster), davor das
-    // KREUZ der L0 (Pfosten und Kämpfer 0,04 m), vorn der RAHMEN als Ring (`w + 0,2` × `h + 0,2`: Pfosten und Sturz der L0 je 0,1)
+    // FLÜGEL (die volle Öffnung im Rahmen-Stoff, sein Rand SCHEIBE_RAND · w bzw. · h: die Einheit windowSash 1 × 1 per Skala), davor
+    // der RAUM (der Raum × INNEN_DAEMMER), davor das GLAS (`glas`, durchsichtig 0,42, glüht nach LICHT_GESETZ.fenster), davor das
+    // KREUZ der L0 (KREUZ · w bzw. · h je Seite), vorn der RAHMEN als Ring (`w + 0,2` × `h + 0,2`: Pfosten und Sturz der L0 je 0,1)
     // mit seiner LAIBUNG (links, rechts, oben — die Unterseite des Sturzes sieht man von der Gasse, die Bank nicht) und seinen Seiten
     // längs der Wand bis 2 cm hinter die Achse (keine Fuge zum Körper, auch wo er an der Achse steht: der Hof-Arm). Ein schlafendes
-    // Fenster trägt statt Raum und Glas EINE Fläche in der Mischung des Schlaf-Glases über dem Raum (`glasschlaf`, dieselbe Durchsicht
-    // 0,42 ohne Glut — der Ton der nahen Stufen, ohne den Glas-Befehl). Steht die Dachhaut der L2 vor der Haut (der Ortgang über dem
+    // Fenster trägt Raum und Schlaf-Glas (`glasschlaf`, dieselbe Durchsicht 0,42 ohne Glut) wie nah — bis Spike B EINE opake
+    // Mischfläche (Glas-Anteil fern 0 gegen 0,10–0,19 nah). Steht die Dachhaut der L2 vor der Haut (der Ortgang über dem
     // Giebel, `_hautKappen`), steht das Fenster vor ihr — vorher lagen die Giebel-Fenster der L2 hinter ihr (holzhuette Glut 0).
     // Bis hier stand die Scheibe 0,11 m VOR der Wand und der Flügel 0,62 rad offen davor (die graue Tafel fern). Die Fern-Stufe
     // kostet Stoff + Glas, zwei Befehle; 30 Dreiecke je wachem Fenster, 28 je schlafendem.
@@ -2884,21 +2887,31 @@
     var SCHEIBE_RAND = 0.06,
         KREUZ = 0.02,
         FERN_SCHICHT = 0.01;
+    // DER ZUSTAND DER FERNE (Spike B, Bahn 1 ÖFFNUNGEN): der ferne Körper trägt je wacher Öffnung BEIDE Zustände des Flügels — zu und
+    // offen bis zum Anschlag —, gebacken neben dem Rumpf (`B.fragZustand`: rumpf · zu · offen); welcher gezeigt wird, ist ein WERT
+    // (`fensterFernLage`), kein Neubau. Ein schlafendes Fenster öffnet nie: es liegt im Rumpf.
+    var FENSTER_FERN_LAGE = "zu";
+    function fensterFernLage(l) {
+        if (l != null) {
+            if (l !== "zu" && l !== "offen") throw new Error("fachwerk fensterFernLage: zu oder offen, nicht " + l);
+            FENSTER_FERN_LAGE = l;
+        }
+        return FENSTER_FERN_LAGE;
+    }
     // prettier-ignore
-    function fensterFern(fen, B, geoms){
+    function fensterFern(fen, B, geoms, zust){
   const liste=fen&&fen.liste; if(!liste||!liste.length) return;
   const kol=B.p.col, pu=_colFor('putz',kol), rr=fen.rahmen||'holz', rStoff=SEH_DER_ROLLE[rr]==='stoff';
   const rahmenM=rStoff?M[rr]:M.putz, rahmenF=rStoff?[1,1,1]:_colFor(rr,kol).map((c,i)=>c/Math.max(1e-4,pu[i]));
-  const innen=_innenFaktor(B,fen.raum), gs=_colFor('glasschlaf',kol), ga=M.glasschlaf.opacity;
-  const schlafF=[0,1,2].map(i=>(ga*gs[i]+(1-ga)*innen[i]*pu[i])/Math.max(1e-4,pu[i]));   // das Schlaf-Glas über dem Raum, als Faktor auf den Putz-Ton
-  const kappen=_hautKappen(B), grp2=new THREE.Group(), eins=[1,1,1];
+  const innen=_innenFaktor(B,fen.raum);
+  const kappen=_hautKappen(B), gR=new THREE.Group(), gZ=new THREE.Group(), gO=new THREE.Group(), eins=[1,1,1];
   // Flächen aus Ecken, ohne Drehung (kein sin/cos im Bau — die Plattform-Ratsche v6 zählt jede Drift); die Wicklung folgt der Normale
-  const teile=(Qs,mat,f)=>{ const pos=[],nrm=[],col=[],idx=[];
+  const teile=(Qs,mat,f,gg)=>{ const pos=[],nrm=[],col=[],idx=[];
     for(const [Q,n] of Qs){ const v0=pos.length/3; for(const q of Q){ pos.push(q[0],q[1],q[2]); nrm.push(n[0],n[1],n[2]); col.push(f[0],f[1],f[2]); }
       const a=Q[0],b=Q[1],c=Q[2], x=(b[1]-a[1])*(c[2]-a[2])-(b[2]-a[2])*(c[1]-a[1]), y=(b[2]-a[2])*(c[0]-a[0])-(b[0]-a[0])*(c[2]-a[2]), z=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
       idx.push(...(x*n[0]+y*n[1]+z*n[2]>0?[v0,v0+1,v0+2,v0,v0+2,v0+3]:[v0,v0+2,v0+1,v0,v0+3,v0+2])); }
     const pg=new THREE.BufferGeometry(); pg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); pg.setAttribute('normal',new THREE.Float32BufferAttribute(nrm,3)); pg.setAttribute('color',new THREE.Float32BufferAttribute(col,3)); pg.setIndex(idx);
-    grp2.add(new THREE.Mesh(pg,mat)); };
+    gg.add(new THREE.Mesh(pg,mat)); };
   for(const o of liste){ const z=o.perp==='z', s=o.s||(z?(o.cz<0?-1:1):(o.cx<0?-1:1)), u=z?o.cx:o.cz, schlaf=o.schlaf!=null?o.schlaf:fensterSchlaeft(B.p.seed,o.perp,s,u,o.cy);
     if(!(o.tief>0)) throw new Error('fachwerk fensterFern: die Stärke der Wand fehlt am Fenster ('+o.kind+')');
     const ax=z?o.cz:o.cx, haut=ax+s*o.tief/2, e0=_fernVorn(kappen,z?Object.assign({},o,{cz:haut}):Object.assign({},o,{cx:haut}),s);   // die Haut der L0 (oder die Dachhaut davor)
@@ -2909,14 +2922,28 @@
     teile([Q(u-rw,u-ow,y0,y1,dV), Q(u+ow,u+rw,y0,y1,dV), Q(u-ow,u+ow,oh1,y1,dV), Q(u-ow,u+ow,y0,oh0,dV),   // der Rahmen-Ring vorn
       [[P(u-rw,y0,dHinten),P(u-rw,y1,dHinten),P(u-rw,y1,dV),P(u-rw,y0,dV)],uL], [[P(u+rw,y0,dHinten),P(u+rw,y1,dHinten),P(u+rw,y1,dV),P(u+rw,y0,dV)],uR],   // seine Seiten längs der Wand
       [[P(u-ow,oh0,0),P(u-ow,oh1,0),P(u-ow,oh1,dV),P(u-ow,oh0,dV)],uR], [[P(u+ow,oh0,0),P(u+ow,oh1,0),P(u+ow,oh1,dV),P(u+ow,oh0,dV)],uL],   // die Laibung links und rechts
-      [[P(u-ow,oh1,0),P(u+ow,oh1,0),P(u+ow,oh1,dV),P(u-ow,oh1,dV)],unten],   // die Laibung oben (die Unterseite des Sturzes)
-      Q(u-ow,u+ow,oh0,oh1,0)], rahmenM, rahmenF);   // hinten der zu-stehende Flügel
-    const pw=Math.max(0.1,ow-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND);
-    if(schlaf) teile([Q(u-pw,u+pw,o.cy-ph,o.cy+ph,S)], M.putz, schlafF);
-    else { teile([Q(u-pw,u+pw,o.cy-ph,o.cy+ph,S)], M.putz, innen); teile([Q(u-pw,u+pw,o.cy-ph,o.cy+ph,2*S)], M.glas, eins); }
-    teile([Q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph,3*S), Q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ,3*S), Q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ,3*S)], rahmenM, rahmenF); }   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
-  const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
-  bakeLOD(grp2, kol, geoms, 0);
+      [[P(u-ow,oh1,0),P(u+ow,oh1,0),P(u+ow,oh1,dV),P(u-ow,oh1,dV)],unten]], rahmenM, rahmenF, gR);   // die Laibung oben (die Unterseite des Sturzes)
+    // DER EINE FLÜGEL (Spike B): dieselbe Einheit wie nah (windowSash 1 × 1 per Skala) — Rand SCHEIBE_RAND · w bzw. · h, das Kreuz
+    // KREUZ · w bzw. · h; vorher 0,06 m fest gegen 0,06 · w der Einheit nah (Glas-Anteil fern 0,14–0,19 gegen 0,17–0,22 nah)
+    const pw=ow-SCHEIBE_RAND*o.w, ph=o.h/2-SCHEIBE_RAND*o.h, kx=KREUZ*o.w, ky=KREUZ*o.h;
+    const zu=schlaf?gR:gZ;   // das schlafende Fenster öffnet nie — es liegt im Rumpf
+    teile([Q(u-ow,u+ow,oh0,oh1,0)], rahmenM, rahmenF, zu);   // hinten der zu-stehende Flügel
+    teile([Q(u-pw,u+pw,o.cy-ph,o.cy+ph,S)], M.putz, innen, zu); teile([Q(u-pw,u+pw,o.cy-ph,o.cy+ph,2*S)], schlaf?M.glasschlaf:M.glas, eins, zu);   // Glas über dem Raum, wach wie schlafend (das Schlaf-Glas glüht nicht) — wie nah
+    teile([Q(u-kx,u+kx,o.cy-ph,o.cy+ph,3*S), Q(u-pw,u-kx,o.cy-ky,o.cy+ky,3*S), Q(u+kx,u+pw,o.cy-ky,o.cy+ky,3*S)], rahmenM, rahmenF, zu);   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
+    if(schlaf) continue;
+    // OFFEN: die Öffnung zeigt den Raum (die volle Öffnung, kein Glas davor); der Flügel steht am Anschlag der Laibung (fensterAnschlag,
+    // der rechte Winkel — ohne Drehung zu bauen) nach außen, das Band an der Kante u − w/2 wie nah (fensterAt: L am Rand −wF/2),
+    // von der Achse der Wand aus um seine Breite vor die Haut; beide Seiten des Blatts (Rahmen-Ring, Glas, Kreuz).
+    teile([Q(u-ow,u+ow,oh0,oh1,0)], M.putz, innen, gO);
+    const uh=u-ow, t=FLUEGEL_STAERKE, d0=s*(ax-e0), d1=d0+o.w, rd=SCHEIBE_RAND*o.w, rv=SCHEIBE_RAND*o.h, dm=(d0+d1)/2, kd=KREUZ*o.w;
+    for(const [uu,n] of [[uh+t,uR],[uh,uL]]){ const F=(da,db,ya,yb)=>[[P(uu,ya,da),P(uu,ya,db),P(uu,yb,db),P(uu,yb,da)],n];
+      teile([F(d0,d0+rd,oh0,oh1), F(d1-rd,d1,oh0,oh1), F(d0+rd,d1-rd,oh1-rv,oh1), F(d0+rd,d1-rd,oh0,oh0+rv),
+        F(dm-kd,dm+kd,oh0+rv,oh1-rv), F(d0+rd,dm-kd,o.cy-ky,o.cy+ky), F(dm+kd,d1-rd,o.cy-ky,o.cy+ky)], rahmenM, rahmenF, gO);
+      teile([F(d0+rd,d1-rd,oh0+rv,oh1-rv)], M.glas, eins, gO); } }
+  const backe=(gg,ziel)=>{ if(!gg.children.length) return; const wrap=bauOrtWrap(B); wrap.add(gg); wrap.updateMatrixWorld(true); bakeLOD(gg, kol, ziel, 0); };
+  backe(gR, geoms);
+  if(zust){ backe(gZ, zust.zu); backe(gO, zust.offen); }
+  else backe(FENSTER_FERN_LAGE==='offen'?gO:gZ, geoms);
 }
     // DIE DACHHAUT DER L2 (`_mitHaut`, lod2Koerper): der Keil um die Ziegel-Lage gehoben, der Ortgang über die Giebel verlängert.
     // prettier-ignore
@@ -3657,17 +3684,28 @@
   const wrap=bauOrtWrap(B); wrap.add(grp); wrap.updateMatrixWorld(true);
   bakeLOD(grp, B.p.col, geoms, 0, true);
   return geoms; }
+    // DIE ZWEI ZUSTÄNDE IM FRAGMENT (Spike B): der Rumpf ist das Präfix jeder Rolle (`laenge`), der gezeigte Zustand hängt dahinter —
+    // ein Wechsel kürzt auf den Rumpf und hängt den anderen an (kein Neubau, kein Kopieren des Rumpfs).
+    // prettier-ignore
+    function _geomsLaenge(g){ const L={}; for(const r in g){ const G=g[r]; if(G&&G.pos) L[r]={pos:G.pos.length,idx:G.idx.length,uv:G.uv?G.uv.length:0,wand:G.wand?G.wand.length:-1,vo:G.vo}; } return L; }
+    // prettier-ignore
+    function _geomsKuerzen(g,L){ for(const r in g){ const G=g[r]; if(!G||!G.pos) continue; const l=L[r]; if(!l){ delete g[r]; continue; }
+  G.pos.length=l.pos; G.nrm.length=l.pos; G.col.length=l.pos; G.idx.length=l.idx; if(G.uv) G.uv.length=l.uv; if(l.wand<0) delete G.wand; else G.wand.length=l.wand; G.vo=l.vo; } }
+    // prettier-ignore
+    function _fragLage(B, lage){ const Z=B.fragZustand; _geomsKuerzen(B.frag, Z.laenge); mischeGeoms(B.frag, Z[lage]); B.fragLage=lage; return B.frag; }
     // prettier-ignore
     function fragFuer(B, stufe){                                                                 // GEBÄUDE-FRAGMENT-GESETZ: jedes Gebäude bakt seine Stufe EINMAL — der Chunk mischt nur noch.
-  if(B.frag&&B.fragStufe===stufe) return B.frag;                                             // Ein Slot je Gebäude: Stufenwechsel verdrängt, Demotion trifft den warmen Cache
+  const lage=FENSTER_FERN_LAGE;
+  if(B.frag&&B.fragStufe===stufe) return B.fragLage===lage||!B.fragZustand?B.frag:_fragLage(B, lage);   // Ein Slot je Gebäude: Stufenwechsel verdrängt, Demotion trifft den warmen Cache; der Zustand der Flügel ist ein Wert
   if(stufe>=2||(stufe===1&&turmBau(B))) sollTon(B);                                           // DER WARM-PFAD (S8): jede Körper-Stufe baut auf ihrem gemessenen Soll (Wand-Ton, Sicht-Ton)
-  const geoms={};
+  const geoms={}, zust={zu:{},offen:{}};
   if(stufe===3){ huelleGeoms(koerperTeile(B), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
-  else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
+  else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); fensterFern(B.fenster||fensterVon(stapelBau(Object.assign({},B.p,{nur:MASSNUR}),LOD1F)), B, geoms, zust); }   // ferner Turm: der Körper der Liste + seine Fenster, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
     const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:L1NUR));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
     const wrap=bauOrtWrap(B); wrap.add(st.g);
     wrap.updateMatrixWorld(true);                                                             // WELTMATRIX-GESETZ: ohne Update bakt der Wrapper bei (0,0)
+    if(stufe===1&&!turm) fensterFluegelLagen(st, B.p.col, zust);                              // DIE ZWEI ZUSTÄNDE (Spike B): die wachen Flügel der Flächen-Stufe zu und offen am Anschlag, gemessen wie nah
     bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
     if(stufe===1&&!turm){                                                                      // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — der Würfel je Fenster lebt im Bau (fensterSchlaeft), jede Stufe gleich
       if(!B.wandTon){ const eY=(B.dims&&B.dims.eaveY)||6;                                     // WANDTON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY) — VOR dem Innenkörper: der Ton der Fassade, nie der des Raums (K38: er maß den Körper mit, hollaendisch 0,295/0,076/0,042 → 0,353/0,159/0,121)
@@ -3680,10 +3718,14 @@
           lg.setAttribute('color', new THREE.Float32BufferAttribute(att,3));
           const li=new THREE.Mesh(lg, M.putz); li.position.set((f2.x0+f2.x1)/2, lh/2+0.05, (f2.z0+f2.z1)/2); innen.add(li); } }
       wrap.add(innen); wrap.updateMatrixWorld(true); bakeLOD(innen, B.p.col, geoms, 0, true); }
-    if(stufe===2||turm){ lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms); }
+    if(stufe===2||turm){ lod2Koerper(B, geoms); fensterFern(fensterVon(st), B, geoms, zust); }
     st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); }
-  if(stufe===2||(stufe===1&&turmBau(B))) tonUebertrag(geoms, B.sichtTon);                     // jede Körper-Stufe (die 2, die Turm-1) trägt den Ton ihres Solls
-  B.frag=geoms; B.fragStufe=stufe; return B.frag; }
+  const laenge=_geomsLaenge(geoms);
+  if(stufe===2||(stufe===1&&turmBau(B))){                                                     // jede Körper-Stufe (die 2, die Turm-1) trägt den Ton ihres Solls — gemessen mit dem zu-stehenden Flügel, derselbe Faktor auf beide Zustände
+    let F=null; if(B.sichtTon&&B.sichtTon.alle[3]){ mischeGeoms(geoms, zust.zu); F=tonFaktoren(B.sichtTon, sichtTon(geoms)); _geomsKuerzen(geoms, laenge); }
+    for(const g of [geoms, zust.zu, zust.offen]) tonUebertrag(g, B.sichtTon, F); }
+  B.frag=geoms; B.fragStufe=stufe; B.fragZustand={stufe, laenge, zu:zust.zu, offen:zust.offen};
+  return _fragLage(B, lage); }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  DIE DORF-QUELLE (W-A5b, N5.7 settlement) — byte-treu aus der Lab-Shell
@@ -6422,6 +6464,57 @@
         var lo = 0, hi = th0;
         for (var it = 0; it < 8; it++) { var mid = (lo + hi) / 2; if (trifft(mid)) hi = mid; else lo = mid; }
         return lo < FREI_MIN ? 0 : lo;
+    }
+    // DIE ZWEI ZUSTÄNDE DER FLÄCHEN-STUFE (Spike B, Bahn 1 ÖFFNUNGEN): je wachem Flügel der L1 dasselbe Gesetz wie nah — die Seite mit
+    // freiem Schwenk und ihr Anschlag (`fensterFreiWinkel` gegen den Rumpf der Stufe, außen vor innen; kein Raum: das feste Licht, nur
+    // das Glas bleibt im Rumpf) — gebacken ZU an Ort und Stelle (`zust.zu`) und OFFEN um sein Band (`zust.offen`). Die Drehung steht auf
+    // dem Raster 2^-20 (die Plattform-Probe des Vertrags kippt cos/sin um 1 ULP; der Anschlag der Laibung, π/2, ist exakt 0 · 1).
+    var DREH_RASTER = 1048576;
+    function fensterFluegelLagen(st, col, zust) {
+        var fl = [], imFluegel = new Set(), hindernisse = [];
+        st.g.updateMatrixWorld(true);
+        st.g.traverse(function (o) {
+            if (o.userData && o.userData.window && o.userData.fenster) {
+                o.traverse(function (d) { imFluegel.add(d); });
+                if (!samenSchlaeft(o.userData.fenster.samen)) fl.push(o);
+            }
+        });
+        if (!fl.length) return;
+        st.g.traverse(function (o) {
+            if (o.isMesh && !imFluegel.has(o) && o.geometry && o.geometry.attributes.position) hindernisse.push({ o: o, bb: new THREE.Box3().setFromObject(o) });
+        });
+        var hZ = new THREE.Group(), hO = new THREE.Group();
+        for (var i = 0; i < fl.length; i++) {
+            var Lf = fl[i], F = Lf.userData.fenster,
+                aussen = fensterFreiWinkel(Lf, hindernisse, F.dreh),
+                innen = aussen > 0 ? 0 : fensterFreiWinkel(Lf, hindernisse, -F.dreh),
+                richt = aussen > 0 ? F.dreh : -F.dreh,
+                anschlag = aussen > 0 ? aussen : innen;
+            if (anschlag === 0) {
+                var weg = [];
+                Lf.traverse(function (o) {
+                    var r = o.isMesh && _roleByMat.get(o.material);
+                    if (o.isMesh && r !== "glas" && r !== "glasschlaf") weg.push(o);
+                });
+                weg.forEach(function (o) { o.parent.remove(o); o.geometry.dispose(); });
+                continue;
+            }
+            var band = fensterBand(Lf, richt), W = Lf.matrixWorld.clone(), a = richt * anschlag,
+                c = Math.round(Math.cos(a) * DREH_RASTER) / DREH_RASTER, s = Math.round(Math.sin(a) * DREH_RASTER) / DREH_RASTER;
+            var R = new THREE.Matrix4().set(c, 0, s, band.x - c * band.x - s * band.z, 0, 1, 0, 0, -s, 0, c, band.z + s * band.x - c * band.z, 0, 0, 0, 1);
+            Lf.parent.remove(Lf);
+            var Lo = Lf.clone(true);
+            Lf.matrixAutoUpdate = false;
+            Lf.matrix.copy(W);
+            hZ.add(Lf);
+            Lo.matrixAutoUpdate = false;
+            Lo.matrix.copy(R.multiply(W));
+            hO.add(Lo);
+        }
+        hZ.updateMatrixWorld(true);
+        bakeLOD(hZ, col, zust.zu, 0, true);
+        hO.updateMatrixWorld(true);
+        bakeLOD(hO, col, zust.offen, 0, true);
     }
     function fensterFluegelTrennen(st, col) {
         var fl = [],
@@ -13054,6 +13147,7 @@
         sichtTon: sichtTon,
         stapelBau: stapelBau,
         fensterFern: fensterFern,
+        fensterFernLage: fensterFernLage,
         fensterSchlaeft: fensterSchlaeft,
         // DER FLÜGEL (Bahn 1 ÖFFNUNGEN): sein Zustand aus Samen, Uhr und Nässe (der Wirt dreht ihn, `_tickHausFenster`), die Trennung
         // seines Blatts aus der Stufe 0 (buildStufe und die Shell des Vertrags rufen dieselbe)
