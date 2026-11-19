@@ -244,9 +244,9 @@ const registerText = (reg) =>
     if (process.argv.includes("--schrumpfen")) {
         let fiel = 0;
         for (const [g, G] of Object.entries(reg.groessen))
-            for (const [f, zahlen] of Object.entries(ist[g])) {
+            for (const f of Object.keys(G.zwillinge)) {
                 const neu = G.zwillinge[f].map(anker).flatMap(([a, n], i) => {
-                    const k = Math.min(n, zahlen[i]);
+                    const k = Math.min(n, (ist[g][f] || [])[i] || 0); // eine Datei außerhalb des Korpus trägt nichts mehr
                     fiel += n - k;
                     return k ? [k > 1 ? `${a} ×${k}` : a] : [];
                 });

@@ -1,5 +1,5 @@
 {
-    "gesetz": "DIE EIN-SCHREIBER-WAND (gate:constitution, Teil 2): je Grundgröße EIN Schreiber. `muster` erkennt, wer eine Größe selbst erzeugt; `kanon` nennt je Datei die Anker des EINEN Schreibers; `zwillinge` nennt die Schuld von heute je Datei und Anker (Textstück der Treffer-Zeile, `×n` = n Treffer). Das Register ist keine Erlaubnis: es schrumpft nur — ein Treffer ohne Anker ist ROT, ein Anker ohne Treffer ist ROT (`--schrumpfen` streicht ihn). `frei` sind die Zeilen, an denen die Wand schweigen muss (Messung, Geburt einer Kennung).",
+    "gesetz": "DIE EIN-SCHREIBER-WAND (gate:constitution, Teil 2): je Grundgröße EIN Schreiber. `muster` erkennt, wer eine Größe selbst erzeugt; `kanon` nennt je Datei die Anker des EINEN Schreibers (Textstück der Treffer-Zeile); die Schuld von heute steht je Größe, Datei und Anker in der Ratsche spec/profiband/ratsche-grundgroessen.json (`×n` = n Treffer). Die Ratsche ist keine Erlaubnis: sie schrumpft nur — ein Treffer ohne Anker ist ROT, ein Anker ohne Treffer ist ROT (`--schrumpfen` streicht ihn). Je Muster: `was` der Befund, `lies` der Kanon, den der Leser stattdessen liest, `mutant` der Täter des Selbsttests, `beobachter` = gilt auch in scripts/ (eine Probe setzt die Größe von außen); die Welle einer Größe (`welle`) fällt ihre Zwillinge. `frei` sind die Zeilen, an denen die Wand schweigen muss (Messung, Geburt einer Kennung).",
     "frei": [
         "const t0 = performance.now(); arbeit(); kosten.ms = performance.now() - t0;",
         "const id = \"w_\" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);",
@@ -190,7 +190,7 @@
         "licht": {
             "name": "Licht",
             "welle": "LICHT",
-            "schreiber": "welt-licht.js `buehne` (`sonnenRichtung` · `tagAchse` · `belichtung` · Tonkurve) · stamm/bild-himmel.js `_dayNightApplyBelichtung`",
+            "schreiber": "welt-licht.js `buehne` (`sonnenRichtung` · `tagAchse` · `belichtung` · Tonkurve) · stamm/bild-himmel.js `_dayNightApplyBelichtung` · stamm/dirigent-ankunft.js (die Sonne der Welt)",
             "leser": "__weltLicht\\b",
             "kanon": {
                 "welt-licht.js": [
