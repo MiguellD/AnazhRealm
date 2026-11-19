@@ -177,19 +177,21 @@ class AnazhRealm_studio_stoff {
             !Array.isArray(Z) ||
             Z.length < 2 ||
             Z[0] !== null ||
-            Z.slice(1).some((z) => !z || !(z.lM > 0) || !(z.hM > 0))
+            Z.slice(1).some(
+                (z) => !z || !(z.lM > 0) || !(z.hM > 0) || !(z.tiefe >= 0) || !(z.licht > 0 && z.licht <= 1)
+            )
         )
             throw this._stoffBruch("das Verband-Gesetz fehlt in fachwerk:verbandZeilen");
-        // die Tafel: [lM, hM, lM / halbe Fuge U, hM / halbe Fuge V] · [Versatz, Ton, Unruhe, Lage der Ecke] · Fugen-Ton U ·
-        // Fugen-Ton V · eins · Kreuz — die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1).
+        // die Tafel: [lM, hM, lM / halbe Fuge U, hM / halbe Fuge V] · [Versatz, Ton, Unruhe, Lage der Ecke] · [Fugen-Ton U, Tiefe] ·
+        // [Fugen-Ton V, Licht der Fuge] · eins · Kreuz — die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1).
         // Die Unruhe als Hub der zwei Wellen (unten: ihre Steigung zusammen höchstens `VERBAND_WELLE.steil` je Reihe)
         const W = 6;
         const VW = AnazhRealm.VERBAND_WELLE;
         const zeile = (z) => [
             new THREE.Vector4(z.lM, z.hM, z.lM / Math.max(z.fugeU, 1e-6), z.hM / Math.max(z.fugeV, 1e-6)),
             new THREE.Vector4(z.versatz, z.ton, Math.min(0.9, z.unruhe || 0) / VW.steil, z.lage ? 1 : 0),
-            new THREE.Vector4(z.tonU[0], z.tonU[1], z.tonU[2], 0),
-            new THREE.Vector4(z.tonV[0], z.tonV[1], z.tonV[2], 0),
+            new THREE.Vector4(z.tonU[0], z.tonU[1], z.tonU[2], z.tiefe || 0),
+            new THREE.Vector4(z.tonV[0], z.tonV[1], z.tonV[2], z.licht == null ? 1 : z.licht),
             new THREE.Vector4(z.eins[0], z.eins[1], z.eins[2], 0),
             new THREE.Vector4(z.kreuz ? z.kreuz[0] : 0, z.kreuz ? z.kreuz[1] : 0, z.kreuz ? z.kreuz[2] : 0, 0),
         ];
@@ -203,6 +205,8 @@ class AnazhRealm_studio_stoff {
             tonU: [1, 1, 1],
             tonV: [1, 1, 1],
             eins: [1, 1, 1],
+            tiefe: 0,
+            licht: 1,
         };
         // EINE Tafel für jeden Graphen (der feste Name, Lehre 23: ohne ihn trüge das WGSL `NodeBuffer_<Knoten-id>`)
         const tafel =
@@ -233,10 +237,32 @@ class AnazhRealm_studio_stoff {
             lage.z.mul(T.sin(v0.mul(VW.welle[0])).add(T.sin(v0.mul(VW.welle[1]).add(VW.phase)).mul(VW.welle[2])))
         );
         const u = u0.add(T.fract(T.floor(v).mul(0.5)).mul(2.0).mul(lage.x));
+        // DIE KANTE (einheit-relief, `tiefe` · `licht` der Zeile): der Stein steht `tiefe` vor seiner Fuge. Schräg gesehen verdeckt
+        // seine Kante sie um tiefe · tan(Blickwinkel) je Achse — die Fuge wird schmaler (k = 1 − tiefe · tan ÷ Breite der Fuge, nah
+        // auf den Pixel, fern als ihr Anteil); ihr Grund sieht als Schlitz nur `licht` des Lichts. Der Blick in der Welt gegen die
+        // Achsen der Fläche (Vorlage → Welt). Ohne Tiefe (jede Zeile außer dem Mauerwerk) ist k = 1 und licht = 1: das Muster
+        // bleibt, was es war. Bis hier webte die L1 den Mörtel offen und voll beleuchtet über 17 % ihrer Fläche — an 12 m zeigt die
+        // L0 dort die Kanten ihrer Steine (an vier Posen: G der Ausfachung L1 ÷ L0 = 2,0 in linearem Licht).
+        const tiefe = tonU.w;
+        const zumAuge = T.normalize(T.cameraPosition.sub(T.positionWorld));
+        const welt = (d) => T.normalize(T.modelWorldMatrix.mul(T.vec4(d, 0.0)).xyz);
+        const nah = T.abs(T.dot(zumAuge, welt(n))).max(0.05);
+        const sicht = (achse, M, Mz) =>
+            T.clamp(
+                T.float(1.0).sub(tiefe.mul(T.abs(T.dot(zumAuge, welt(achse)))).div(nah).mul(Mz).div(M.mul(2.0))),
+                1e-3,
+                1.0
+            );
         const S = this._steinStoff(
             T,
             { fuge: 1, fase: 0, ton: 1, fugeTon: 1, kuppe: 0 },
-            { u, v, mU: mass.z, mV: mass.w, sU: T.fwidth(u0) }
+            {
+                u,
+                v,
+                mU: mass.z.div(sicht(t, mass.x, mass.z)),
+                mV: mass.w.div(sicht(s, mass.y, mass.w)),
+                sU: T.fwidth(u0),
+            }
         );
         const eine = T.vec3(1.0, 1.0, 1.0);
         return T.vec3(S.ton.sub(1.0).mul(lage.y).add(1.0))
@@ -245,7 +271,8 @@ class AnazhRealm_studio_stoff {
                     .mul(T.mix(eine, tonV.xyz, S.achse[1]))
                     .add(kreuz.xyz.mul(S.achse[0].mul(S.achse[1])))
             )
-            .mul(eins.xyz);
+            .mul(eins.xyz)
+            .mul(T.float(1.0).sub(S.fuge.mul(T.float(1.0).sub(tonV.w))));
     }
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über

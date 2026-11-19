@@ -661,7 +661,7 @@
     const [bw,bh,m]=lage(true), bt=dick||0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen; EINE Quelle des Steins: das Verband-Gesetz (der Stoff webt dasselbe Maß; bis E8 0,32 × 0,15 m, Fuge 0,025 — heute das Maß der Bohle, `lage`)
     if(P.flaechig||(!STEIN_ECHT&&UEBER_GROSSFORMAT())){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
       const _s=dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
-    if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick-0.03); else if(horiz)beam(g,ac,yc,fixed,al,yl,0.06,'lehm'); else beam(g,fixed,yc,ac,0.06,yl,al,'lehm');   // zurückgesetzte Hinterfüllung (Holz steht vor; in der glatten Wand der Stein 1,5 cm)
+    const _hinter=bt-2*VERBAND_GESETZ.mauerwerk.tiefeM; if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',_hinter); else if(horiz)beam(g,ac,yc,fixed,al,yl,_hinter,'lehm'); else beam(g,fixed,yc,ac,_hinter,yl,al,'lehm');   // zurückgesetzte Hinterfüllung: der Stein steht `tiefeM` vor ihr (das Relief des Verband-Gesetzes, dieselbe Kante webt die Stufe ohne Steine; bis einheit-relief stand er im Fachwerk 1,25 cm, in der glatten Wand 1,5 cm)
     // DIE LAGEN IM RASTER DES HAUSES (Einheit E8, die Phase der L0): die Lage k steht bei k · bh ab dem Grund des Hauses, am Gefach geklippt — wie
     // die Stoßfugen längs der Wand; der Stoff webt dasselbe Raster in der Vorlage (`_verbandStoff`), Stein und Muster liegen deckungsgleich.
     // Bis hier streckte jedes Gefach seine Lagen auf seine Höhe (rh = yl / nr): das Muster lag gegen die Steine verschoben.
@@ -1863,7 +1863,9 @@
     //   pxJeM            das Raster der Maler (Pixel je Meter; ihre Karte misst 2 m)
     //   steinM · hoeheM  der Stein ohne Fuge (m) · fugeM die Fuge (m) · versatz der Reihen (Anteil des Steins)
     //   ton [t0, dt]     der Ton je Stein: t0 + Zufall · dt (sRGB, mal die Farbe `grund` bzw. `stein`)
-    //   mauerwerk        Läuferverband NF · fuge die Farbe des Mörtels, grund die des Steins (die Farbe der Rolle backstein)
+    //   mauerwerk        Läuferverband NF · fuge die Farbe des Mörtels, grund die des Steins (die Farbe der Rolle backstein) ·
+    //                    tiefeM das RELIEF: so weit steht der Stein vor seiner Fuge (die L0 baut ihre Hinterfüllung um so viel
+    //                    zurück, `infill`; die Stufe ohne Steine webt dieselbe Kante, `verbandZeilen` → `_verbandStoff`)
     //   deckung          Biberschwanz: breiteM × deckM · spaltPx der Spalt zwischen zwei Ziegeln, reihePx die offene Fuge der
     //                    Reihe (beide schwarz) · schattenPx die Schattenfuge der Überdeckung über ihr (Schwärze `schatten`) ·
     //                    grund die Farbe der Rolle ziegel
@@ -1884,7 +1886,7 @@
     var VERBAND_GESETZ = {
         fachwerk: { feldM: 1.7, riegelM: 0.85, staenderM: 0.16, riegelStarkM: 0.13 },
         pxJeM: 128,
-        mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x964e3e },
+        mauerwerk: { steinM: 0.24, hoeheM: 0.071, fugeM: 0.011, tiefeM: 0.0125, versatz: 0.5, ton: [0.84, 0.3], fuge: 0xb7b0a2, grund: 0x964e3e },
         deckung: { breiteM: 0.18, deckM: 0.32, spaltPx: 2, reihePx: 1, schattenPx: 3, schatten: 0.27, versatz: 0.5, ton: [0.82, 0.32], grund: 0x9c4a35 },
         putz: { sprenkel: 5200, ton: [0.86, 0.2], korn: [255, 255, 252], deck: 0.5, kornPx: [1, 2], zug: [9, 7], zugFarbe: [120, 116, 108], zugDeck: 0.1, grund: 0xffffff, zugWelt: 0 },
         naturstein: { steinM: 0.46, hoeheM: 0.28, fugeM: 0.016, versatz: 0.5, ton: [0.88, 0.24], fuge: 0x6f6a60, stein: [0.92, 0.9, 0.86] },
@@ -1923,6 +1925,11 @@
     //   eins             der Kehrwert des Mittels der Fläche je Kanal: Stein und Fugen mal `eins` mitteln auf 1
     //   unruhe           die Reihen stehen ungleich weit: ihr Abstand schwankt um diesen Anteil (der Kellenzug des Putzes)
     //   lage             1: die Lage in der Fläche trägt die Ecke selbst (`_wandLage`, in Feldern) — sonst ist sie die der Welt
+    //   tiefe · licht    DIE KANTE (einheit-relief): der Stein steht `tiefe` Meter vor seiner Fuge. Schräg gesehen verdeckt seine
+    //                    Kante die Fuge um tiefe · tan(Winkel des Blicks) je Achse (der Wirt rechnet es je Pixel); `licht` ist der
+    //                    Anteil des Lichts, den der Grund der Fuge als Schlitz der Breite w und Tiefe t noch sieht (der Sicht-Faktor
+    //                    zweier Wände: √(1 + (t/w)²) − t/w; ohne Tiefe 1). Bis hier webte die Stufe ohne Steine den Mörtel offen und
+    //                    voll beleuchtet über 17 % der Fläche, wo die L0 an 12 m nur die Kanten ihrer Steine zeigt.
     // Die Zeile 0 trägt keinen Verband (null).
     function verbandZeilen() {
         var V = VERBAND_GESETZ, px = 1 / V.pxJeM, kan = function (hx) { return [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]; };
@@ -1932,7 +1939,8 @@
                 kreuz[k] = Math.min(tonU[k], tonV[k]) - tonU[k] * tonV[k];
                 eins[k] = 1 / ((1 - cU + cU * tonU[k]) * (1 - cV + cV * tonV[k]) + cU * cV * kreuz[k]);
             }
-            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, kreuz: kreuz, eins: eins, unruhe: (mehr && mehr.unruhe) || 0, lage: mehr && mehr.lage ? 1 : 0 };
+            var tiefe = (mehr && mehr.tiefe) || 0, w = 2 * Math.min(fU, fV), q = w > 0 ? tiefe / w : 0;
+            return { lM: lM, hM: hM, fugeU: fU, fugeV: fV, versatz: versatz, ton: ton, tonU: tonU, tonV: tonV, kreuz: kreuz, eins: eins, unruhe: (mehr && mehr.unruhe) || 0, lage: mehr && mehr.lage ? 1 : 0, tiefe: tiefe, licht: tiefe > 0 ? Math.sqrt(1 + q * q) - q : 1 };
         };
         var gegen = function (a, b) { return [a[0] / b[0], a[1] / b[1], a[2] / b[2]]; };
         var m = V.mauerwerk, d = V.deckung, p = V.putz, n = V.naturstein, f = V.fachwerk, fB = gegen(_colFor("holz", null), _colFor("gefach", null));
@@ -1954,7 +1962,7 @@
         }
         return [
             null,
-            zeile(m.steinM + m.fugeM, m.hoeheM + m.fugeM, m.fugeM / 2, m.fugeM / 2, m.versatz, mT.spanne, mF, mF),
+            zeile(m.steinM + m.fugeM, m.hoeheM + m.fugeM, m.fugeM / 2, m.fugeM / 2, m.versatz, mT.spanne, mF, mF, { tiefe: m.tiefeM }),
             zeile(d.breiteM, d.deckM, (d.spaltPx * px) / 2, (d.schattenPx * px) / 2, d.versatz, dT.spanne, [0, 0, 0], dV),
             // (der Maler setzt seine Züge alle zug[0] … zug[0] + zug[1] − 1 Pixel: die halbe Spanne gegen ihr Mittel ist die Unruhe)
             zeile(zugM, zugM, 0, px / 2, 0, 0, [1, 1, 1], pZ, { unruhe: ((p.zug[1] - 1) / 2) * px / zugM }),
