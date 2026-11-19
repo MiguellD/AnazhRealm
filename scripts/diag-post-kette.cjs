@@ -45,7 +45,11 @@
 //       (j1) NACHT = TAG je Ton (nightFactor 1 gegen 0, je Kanal ≤ FLAMME_TOL); MUTANTE-J im selben Lauf: derselbe Ton OHNE die
 //       Umkehr reißt bei nightFactor 1 am GLIMMEN (die Nacht entsättigt — sonst ist die Probe blind); KERN und MANTEL stehen in der
 //       Leuchtdichte des Gesetzes photopisch und halten OHNE Umkehr — reißen sie, fiel die Flamme aus ihrer Leuchtdichte.
-//       (j2) der Ton liest sich als Feuer: KERN gelb-orange, MANTEL orange-rot (Farbton und Sättigung HSV in ihren Bändern).
+//       (j2) KONSUM: KERN und MANTEL am Schirm = die EINE Tonkurve (welt-licht `tonKurve`) am Planck-Ton der Quelle × Leuchtdichte ×
+//       k (in Node gerechnet, `flammenSoll`), ± 2/255 je Kanal; dazu „Feuer, nicht weiß" (Farbton 22–40°, Sättigung ≥ 0,42).
+//       MUTANTE-M1 (die Kurve je Kanal) und MUTANTE-M2 (eine fremde Quellen-Temperatur) reißen im Selbsttest.
+//       (A3) STETIG AM KNIE: ein Verlauf 0,5–4 × Weiß (grau und im Planck-Ton) durch den echten Renderer, keine Stufe > 1/255
+//       zwischen Nachbar-Spalten; MUTANTE (eine Kurve mit Sprung am Knie) reißt im Selbsttest.
 //       (j3) EINE QUELLE: die Schwellen `NACHT_AUGE` liest im ganzen Stamm nur `_nachtAuge` (`stammLib.fehlt` außer dem Glied),
 //       seine Uniform ist die der Kette; die Post-Kette ruft es, die Flamme ruft seine Umkehr (`__fehlt` am lebenden Code).
 //       DAS TOR (w28-tor-nacht) — das Zielbild der Tor-Membran ist dieselbe Klasse (ein Ton am BILD, ÷ Belichtung) und steht
@@ -77,7 +81,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, fehlerText, seiteZu, rotListe, jsonKlon } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, fehlerText, seiteZu, rotListe, jsonKlon, fadenScope } = require("./lib/welt-boot.cjs");
 // der Bruch, den die Wand selbst in die Kette wirft (Schritt „Render-Fehler") — der EINE Fehler-Sammler (welt-boot) nennt jeden
 // anderen Bruch der Post-Kette ROT beim Namen, diesen erwartet die Linse und zählt ihn selbst (GENAU einmal, `urteil`)
 const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
@@ -144,12 +148,64 @@ const FLAMME_PROBE = { k: 20000, mantelK: 2350, glimmen: true };
 const FLAMME_TOL = 6;
 // SEIT licht-eine-skala (gerechnet wie oben, k 20 000): KERN und MANTEL Tag = Nacht = ohne Umkehr; GLIMMEN Tag [171,100,10] ↔
 // Nacht [169,97,35] (Sättigung 0,79) — ohne Umkehr [131,84,45] (0,66): dieselbe Lage wie der Mantel vor der Welle (0,794 / 0,638),
-// die Ratsche `nachtSatt` 0,75 bleibt. Die Bänder `ton` / `satt` des Mantels gelten für das Glimmen (derselbe Planck-Ort).
+// die Ratsche `nachtSatt` 0,75 bleibt; das Glimmen trägt sein eigenes Band (es steht unter Bild-Weiß, im Fuß der Kurve).
+// (j2) KERN UND MANTEL AM KONSUM, NICHT AN EINER SCHWELLE (licht-eine-skala): der Pixel am Schirm ist die EINE Kurve am Quellen-Ton
+// — `flammenSoll` rechnet ihn in Node aus dem Datum (fachwerk `lichtFarbe(K)` × (K/kelvin[0])⁴ in 8 Bit wie die Tafel in
+// `_brandFlammenZeichnen`, × `FEUER_LEUCHTDICHTE` ÷ `EINHEIT_LX` ÷ Luma(lichtFarbe(kelvin[0])), × k, der Deckel des Szenen-Ziels am
+// größten Kanal, `tonKurveJs`, sRGB), je Kanal ± FLAMME_KONSUM_TOL (8 Bit). Das Band bleibt nur als „Feuer, nicht weiß": Farbton
+// 22–40°, Sättigung ≥ 0,42 für BEIDE. DIE GEFALLENE SCHWELLE 0,75 des Mantels war ein Artefakt des Fußes der alten Kurve: main
+// MANTEL [200,118,18] trug Sättigung 0,91, weil der Bild-Ton unter Weiß stand und der Fuß 6,25·x² das Blau fraß (linear 0,03 →
+// 0,006); der Planck-Ton 2 350 K trägt über Weiß 0,749 — die Schwelle stand über dem Wahren (GTX 1050: MANTEL [255,159,64],
+// 29,8° / 0,749; KERN [255,183,109], 30,4° / 0,573).
 const FLAMME_BAND = {
-    kern: { ton: [22, 40], satt: 0.42, name: "gelb-orange", blende: true },
-    mantel: { ton: [22, 42], satt: 0.75, name: "orange", blende: true },
+    kern: { ton: [22, 40], satt: 0.42, name: "gelb-orange", blende: true, konsum: true },
+    mantel: { ton: [22, 40], satt: 0.42, name: "orange", blende: true, konsum: true },
     glimmen: { ton: [22, 42], satt: 0.75, name: "orange", nachtSatt: 0.75 },
 };
+const FLAMME_KONSUM_TOL = 2;
+// (A3) STETIG AM KNIE: ein Verlauf von `von` bis `bis` × Weiß (Eingang der Kurve, nach × k) längs der Bild-Breite, logarithmisch,
+// durch den echten Renderer (dieselbe flache Fläche wie (j), Belichtung FLAMME_PROBE.k, nightFactor 0) — grau und im Planck-Ton
+// des Mantels; `n` Stützstellen (eine je Spalte der Leinwand 320, die Zeilen gemittelt). Die Kurve fällt dort von 0,5 × Weiß um
+// höchstens 0,68 / 255 je Spalte (gerechnet, `tonKurveJs`): zwischen Nachbarn steht nie eine Stufe > KNIE_STUFE (8 Bit).
+const KNIE_PROBE = { n: 320, von: 0.5, bis: 4 };
+const KNIE_STUFE = 1;
+// DIE QUELLEN in Node (die EINE Datei je Datum, je Prozess einmal): fachwerk `lichtFarbe` / `FEUER_LEUCHTDICHTE`, welt-licht
+// `EINHEIT_LX` / `BELICHTUNG` — die Linse trägt keine Kopie ihrer Zahlen
+const quelle = () => (quelle.q ||= ((sb) => ({ FW: sb.__fachwerkCore, W: sb.__weltLicht }))(fadenScope(["foundry-core.js", "fachwerk-core.js", "welt-licht.js"])));
+// DIE EINE TONKURVE als Rechen-Form (welt-licht.js `tonKurve`, der Platz `BELICHTUNG.kurve`): Khronos PBR Neutral — Fuß
+// x − 6,25·x² unter 0,08 (sonst − 0,04) am kleinsten Kanal, über der Schulter `schulter` der GRÖSSTE Kanal gestaucht
+// (neu = 1 − (1 − S)² ÷ (Spitze + 1 − 2S), c × neu ÷ Spitze), kein Zug zu Weiß. Die Zahl `schulter` reicht der Rufer aus
+// `BELICHTUNG` der Seite (`fl.kurve`) bzw. aus welt-licht.js. MUTANTEN: `kanalweise` (M1, jeder Kanal für sich gestaucht),
+// `sprung` (A3, die Kurve springt über der Schulter um so viel).
+function tonKurveJs(farbe, schulter, mut = {}) {
+    const [S, d] = [schulter, 1 - schulter];
+    const x = Math.min(...farbe);
+    const c = farbe.map((v) => v - (x < 0.08 ? x - 6.25 * x * x : 0.04));
+    const stauch = (sp) => (sp >= S ? (1 - (d * d) / (sp + d - S) + (mut.sprung || 0)) / sp : 1);
+    if (mut.kanalweise) return c.map((v) => v * stauch(v));
+    return c.map((v) => v * stauch(Math.max(...c)));
+}
+// die sRGB-Kodierung der Ausgabe (IEC 61966-2-1) in 8 Bit
+const srgb8 = (v) => {
+    const l = Math.min(1, Math.max(0, v));
+    return 255 * (l <= 0.0031308 ? 12.92 * l : 1.055 * Math.pow(l, 1 / 2.4) - 0.055);
+};
+// DAS SOLL DER FLAMME am Schirm (j2): Temperatur K, Wurzel K0 (`BRAND.bild.flamme.kelvin[0]` der Seite), Belichtung k, die Kurve
+// der Seite `kz` ({ schulter, deckel })
+function flammenSoll(K, K0, k, kz, mut) {
+    const { FW, W } = quelle();
+    const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const w = Math.pow(K / K0, 4);
+    const t8 = FW.lichtFarbe(K).map((v) => Math.round(255 * v * w) / 255);
+    const f = (FW.FEUER_LEUCHTDICHTE / luma(FW.lichtFarbe(K0)) / W.EINHEIT_LX) * k;
+    const bild = t8.map((v) => v * f);
+    const spitze = Math.max(...bild);
+    const gedeckelt = bild.map((v) => (v * kz.deckel) / Math.max(spitze, kz.deckel));
+    return tonKurveJs(gedeckelt, kz.schulter, mut).map((v) => +srgb8(v).toFixed(2));
+}
+// (A3) die Reihe der Kurve am Verlauf `KNIE_PROBE` für den Ton `ton` (größter Kanal 1), je Stützstelle die Mitte ihrer Spalte
+const knieReihe = (ton, n, schulter, mut) =>
+    Array.from({ length: n }, (_, i) => tonKurveJs(ton.map((v) => v * KNIE_PROBE.von * Math.pow(KNIE_PROBE.bis / KNIE_PROBE.von, (i + 0.5) / n)), schulter, mut).map(srgb8));
 // (j) Das Tor: je Ton der Wert des Zielbilds (lineares Licht der Ziel-Welt, wie der Atlas der Ziele es trägt), bei derselben
 // Belichtung FLAMME_PROBE.k und derselben Toleranz FLAMME_TOL wie die Flamme. Gemessen (swiftshader, d06ad11e, Gestalt drachentor,
 // zwei Läufe Zahl für Zahl gleich): GOLD Tag [235,198,125] ↔ Nacht [235,198,125], Δ 0 — MUTANTE-TOR (die Umkehr reicht den Ton
@@ -167,6 +223,44 @@ const FLAMME_BAND = {
 const TOR_PROBE = { toene: { gold: [0.9, 0.62, 0.25], dunkelrot: [0.12, 0.012, 0.01] } };
 const TOR_BAND = { gold: { ton: [32, 48], satt: 0.4, name: "gold" }, dunkelrot: { ton: [350, 15], satt: 0.9, name: "dunkelrot" } };
 const TOR_ORT = "stamm/siedlung-tor.js `_membranGraph`, das Zielbild (`ziel`)";
+// (A3) DAS MASS AM KNIE je Ton: die größte Stufe zwischen Nachbar-Spalten (8 Bit, je Kanal), wo sie steht (Spalte, Eingang × Weiß),
+// und — zur Auskunft, kein Urteil — die größte Abweichung der Reihe von der Rechen-Form (`knieReihe`, Schulter der Seite)
+function knieMass(tn, n, schulter) {
+    let [stufe, wo] = [0, 0];
+    for (let i = 1; i < tn.reihe.length; i++)
+        for (let c = 0; c < 3; c++) {
+            const s = Math.abs(tn.reihe[i][c] - tn.reihe[i - 1][c]);
+            if (s > stufe) [stufe, wo] = [s, i];
+        }
+    const eingang = +(KNIE_PROBE.von * Math.pow(KNIE_PROBE.bis / KNIE_PROBE.von, (wo + 0.5) / n)).toFixed(3);
+    const js = schulter > 0 ? knieReihe(tn.ton, n, schulter) : null;
+    const abw = js ? +Math.max(...tn.reihe.map((p, i) => Math.max(...[0, 1, 2].map((c) => Math.abs(p[c] - js[i][c]))))).toFixed(2) : null;
+    return { stufe: +stufe.toFixed(2), wo, eingang, abw };
+}
+function knieUrteil(kn) {
+    if (!kn) return ["KNIE: die Probe lief nicht"];
+    if (kn.abbruch) return [`KNIE: ABBRUCH — ${kn.abbruch}`];
+    if (!(kn.n >= 64 && kn.leinwand >= kn.n && kn.k === FLAMME_PROBE.k && kn.nf === 0))
+        return [`KNIE: ${kn.n} Stützstellen auf einer Leinwand von ${kn.leinwand} Spalten, Belichtung ${kn.k}, nightFactor ${kn.nf} (Soll ≥ 64 Stützstellen, je eine Spalte, Belichtung ${FLAMME_PROBE.k}, nightFactor 0) — die Probe ist blind`];
+    const v = [];
+    for (const name of ["grau", "satt"]) {
+        const tn = (kn.toene || {})[name];
+        if (!tn || !Array.isArray(tn.reihe)) {
+            v.push(`KNIE: ${name.toUpperCase()} — nicht gemessen`);
+            continue;
+        }
+        if (!(tn.reihe.length === kn.n && tn.reihe.at(-1)[0] - tn.reihe[0][0] >= 40)) {
+            v.push(`KNIE: ${name.toUpperCase()} — die Reihe trägt ${tn.reihe.length} von ${kn.n} Stützstellen, von ${JSON.stringify(tn.reihe[0])} bis ${JSON.stringify(tn.reihe.at(-1))} (Soll ein Anstieg ≥ 40 im größten Kanal) — der Verlauf steht nicht im Bild, die Probe ist blind`);
+            continue;
+        }
+        const m = knieMass(tn, kn.n, null);
+        if (!(m.stufe <= KNIE_STUFE))
+            v.push(
+                `KNIE: ${name.toUpperCase()} — zwischen Spalte ${m.wo - 1} und ${m.wo} (Eingang ${m.eingang} × Weiß) springt das Bild um ${m.stufe} / 255 (Soll ≤ ${KNIE_STUFE}): ${JSON.stringify(tn.reihe[m.wo - 1])} → ${JSON.stringify(tn.reihe[m.wo])} — die EINE Tonkurve (welt-licht \`tonKurve\`) ist am Knie nicht stetig`
+            );
+    }
+    return v;
+}
 // (j) DAS URTEIL ÜBER DAS TOR: je Zeile der Täter; eine Mutante, die ihr Band nicht reißt, ist „blind".
 function torUrteil(to) {
     if (!to) return ["TOR: die Probe lief nicht"];
@@ -530,6 +624,13 @@ function urteil(z) {
     if (!fl) v.push("FLAMME: die Probe lief nicht");
     else if (fl.abbruch) v.push(`FLAMME: ABBRUCH — ${fl.abbruch}`);
     else {
+        // (j2) die Kurve der Seite: ihre Schulter aus `BELICHTUNG`, ihr Platz am Renderer, der Deckel des Szenen-Ziels, die Wurzel der Flamme
+        const kz = fl.kurve || {};
+        const kurveDa = kz.platz === true && kz.schulter > 0 && kz.deckel > 0 && fl.kelvin0 > 0;
+        if (!kurveDa)
+            v.push(
+                `FLAMME: KONSUM — die Kurve der Seite ist nicht gemessen (${JSON.stringify({ kurve: fl.kurve, kelvin0: fl.kelvin0 })}: Soll der Platz \`BELICHTUNG.kurve\` am Renderer, \`BELICHTUNG.schulter\`, \`_vorBelichtung().deckel\`, \`BRAND.bild.flamme.kelvin[0]\`) — die Probe ist blind`
+            );
         for (const [name, band] of Object.entries(FLAMME_BAND)) {
             const tn = (fl.toene || {})[name];
             const N = name.toUpperCase();
@@ -570,6 +671,14 @@ function urteil(z) {
                 v.push(
                     `FLAMME: ${N} (${tn.kelvin} K) liest sich nicht als Feuer — ${JSON.stringify(tn.tag)}: Farbton ${f.ton}° (Soll ${band.ton[0]}–${band.ton[1]}°, ${band.name}), Sättigung ${f.satt} (Soll ≥ ${band.satt})`
                 );
+            if (band.konsum && kurveDa) {
+                const soll = flammenSoll(tn.kelvin, fl.kelvin0, tn.k, kz);
+                const dK = [0, 1, 2].map((c) => +Math.abs(tn.tag[c] - soll[c]).toFixed(2));
+                if (!(Math.max(...dK) <= FLAMME_KONSUM_TOL))
+                    v.push(
+                        `FLAMME: ${N} (${tn.kelvin} K) KONSUM — am Schirm ${JSON.stringify(tn.tag)}, Soll ${JSON.stringify(soll)} (Δ ${dK.join(" / ")} > ${FLAMME_KONSUM_TOL} je Kanal) = welt-licht \`tonKurve\` (Schulter ${kz.schulter}, am größten Kanal) an lichtFarbe(${tn.kelvin} K) × (K/${fl.kelvin0})⁴ × \`FEUER_LEUCHTDICHTE\` ÷ \`EINHEIT_LX\` ÷ Luma × k ${tn.k} (Deckel ${kz.deckel} am größten Kanal, \`_vorBelichtung().deckeln\`), sRGB — die Ausgabe ist nicht die EINE Kurve am Quellen-Ton, oder die Flamme steht nicht bei ihrem Datum`
+                    );
+            }
         }
         const q = fl.quelle || {};
         if (q.zwilling !== null)
@@ -582,6 +691,8 @@ function urteil(z) {
             v.push("FLAMME: EINE QUELLE — `_ensurePostProcessing` ruft `_nachtAuge(farbe)` nicht (die Post-Kette rechnet das Auge der Nacht selbst)");
         if (q.umkehr !== true)
             v.push("FLAMME: EINE QUELLE — `_brandFlammenZeichnen` ruft die Umkehr `_nachtAuge(…, true)` nicht (die Flamme steht nicht vor dem Auge der Nacht)");
+        // (A3) STETIG AM KNIE
+        for (const x of knieUrteil(fl.knie)) v.push(x);
         // (j) DAS TOR: das Zielbild der Membran vor dem Auge der Nacht
         for (const x of torUrteil(fl.tor)) v.push(x);
     }
@@ -685,13 +796,26 @@ function selbsttest() {
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
         flamme: {
             toene: {
-                // KERN und MANTEL: der Ton des Feuers, wie er vor der Welle im Bild stand (gemessen w28-glut-nacht) — photopisch, Tag =
-                // Nacht = ohne Umkehr; GLIMMEN: gerechnet bei k 20 000 (der Mantel in 0,158 cd/m²)
-                kern: { kelvin: 3000, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [249, 184, 122], nacht: [249, 184, 122], ohne: [249, 184, 122] },
-                mantel: { kelvin: 2350, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [200, 118, 18], nacht: [200, 118, 18], ohne: [200, 118, 18] },
+                // KERN und MANTEL: der Ton des Feuers in der EINEN Kurve (gemessen GTX 1050, licht-eine-skala, k 20 000) — photopisch,
+                // Tag = Nacht = ohne Umkehr; GLIMMEN: gerechnet bei k 20 000 (der Mantel in 0,158 cd/m²)
+                kern: { kelvin: 3000, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [255, 183, 109], nacht: [255, 183, 109], ohne: [255, 183, 109] },
+                mantel: { kelvin: 2350, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [255, 159, 64], nacht: [255, 159, 64], ohne: [255, 159, 64] },
                 glimmen: { kelvin: 2350, cd: 0.1581, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [171, 100, 10], nacht: [169, 97, 35], ohne: [131, 84, 45] },
             },
             quelle: { uniform: true, augeLiest: true, zwilling: null, kette: true, umkehr: true },
+            // (j2) die Kurve der Seite: die Schulter aus welt-licht.js (dieselbe Datei wie die Seite), der Deckel und die Wurzel wie gemessen
+            kurve: { platz: true, schulter: quelle().W.BELICHTUNG.schulter, deckel: 32768 },
+            kelvin0: 3000,
+            // (A3) der Verlauf am Knie, mit der Rechen-Form gerechnet und auf 8 Bit gerundet
+            knie: {
+                n: KNIE_PROBE.n,
+                leinwand: 320,
+                k: 20000,
+                nf: 0,
+                toene: Object.fromEntries(
+                    [["grau", [1, 1, 1]], ["satt", quelle().FW.lichtFarbe(FLAMME_PROBE.mantelK)]].map(([n, ton]) => [n, { ton, reihe: knieReihe(ton, KNIE_PROBE.n, quelle().W.BELICHTUNG.schulter).map((p) => p.map(Math.round)) }])
+                ),
+            },
             // (j) Flamme und Tor: die Zahlen des gemessenen Laufs (GTX 1050, echte Karte, w28-glut-nacht), `ohne` = MUTANTE-TOR im selben Lauf
             tor: {
                 gestalt: "drachentor",
@@ -768,11 +892,29 @@ function selbsttest() {
         ["Nacht-Probe blind", ["dunkel.nachtFaktor=", 0], /DUNKEL: die Nacht stand bei nightFactor 0/],
         // (j) w28-brand-kern: das Auge der Nacht las den Bild-Ton der Flamme als 0,7 cd/m² und nahm ihr 30 % Farbe (cremeweiß)
         ["Kern nicht vor dem Auge der Nacht (der Stand von main: ohne Blende, ohne Umkehr)", (z) => (z.flamme.toene.kern.nacht = [240, 200, 150]), /FLAMME: KERN \(3000 K\) — .*steht nicht vor dem Auge der Nacht/],
-        ["der Täter von main: das Auge wäscht den Kern über Bild-Weiß (ohne Umkehr Δ 29)", (z) => (z.flamme.toene.kern.ohne = [240, 200, 151]), /FLAMME: KERN — OHNE die Umkehr .*Δ 29 > 6.*`NACHT_AUGE\.bildZapfen`.*rosa/],
+        ["der Täter von main: das Auge wäscht den Kern über Bild-Weiß (ohne Umkehr Δ 29)", (z) => Object.assign(z.flamme.toene.kern, { tag: [249, 184, 122], nacht: [249, 184, 122], ohne: [240, 200, 151] }), /FLAMME: KERN — OHNE die Umkehr .*Δ 29 > 6.*`NACHT_AUGE\.bildZapfen`.*rosa/],
         ["Kern ohne Umkehr ungemessen", (z) => delete z.flamme.toene.kern.ohne, /FLAMME: KERN — OHNE die Umkehr .*> 6/],
         // licht-eine-skala: der Mantel steht bei der Leuchtdichte des Gesetzes photopisch — fällt er ins mesopische Band (ein Ton
         // ÷ Belichtung wie vor P8, die Luma zweimal geteilt), nimmt ihm das Auge ohne Umkehr die Farbe (die Zahl vor der Welle)
-        ["der Mantel fällt ins mesopische Band (ohne Umkehr entsättigt)", (z) => (z.flamme.toene.mantel.ohne = [163, 106, 59]), /FLAMME: MANTEL — OHNE die Umkehr .*Δ 41 > 6.*`FEUER_LEUCHTDICHTE`/],
+        ["der Mantel fällt ins mesopische Band (ohne Umkehr entsättigt)", (z) => (z.flamme.toene.mantel.ohne = [163, 106, 59]), /FLAMME: MANTEL — OHNE die Umkehr .*Δ 92 > 6.*`FEUER_LEUCHTDICHTE`/],
+        // (j2) KONSUM — MUTANTE-M1: die Kurve staucht je Kanal statt am größten (der Kern läuft nach Weiß); MUTANTE-M2: das Soll bei
+        // einer fremden Temperatur (der Mantel bei 2 600 K gerechnet, bei 2 350 K gemessen); der Stand von main (der Fuß fraß das Blau)
+        ["MUTANTE-M1: die Kurve je Kanal (der Kern weiß)", (z) => (z.flamme.toene.kern.tag = flammenSoll(3000, 3000, 20000, z.flamme.kurve, { kanalweise: true }).map(Math.round)), /FLAMME: KERN \(3000 K\) KONSUM — am Schirm \[255,255,25\d\], Soll \[255,183\.\d+,109\]/],
+        ["MUTANTE-M1: ein gelb-weißes Bild", (z) => (z.flamme.toene.mantel.tag = [255, 230, 160]), /FLAMME: MANTEL \(2350 K\) KONSUM — am Schirm \[255,230,160\].*Δ 0 \/ 71\.\d+ \/ 95\.\d+ > 2/],
+        ["MUTANTE-M2: der Mantel bei 2 600 K gerechnet", ["flamme.toene.mantel.kelvin=", 2600], /FLAMME: MANTEL \(2600 K\) KONSUM — am Schirm \[255,159,64\], Soll /],
+        ["der Mantel am Stand von main (der Fuß fraß das Blau)", (z) => (z.flamme.toene.mantel.tag = [200, 118, 18]), /FLAMME: MANTEL \(2350 K\) KONSUM — am Schirm \[200,118,18\]/],
+        ["Kurve der Seite ungemessen (blind)", ["flamme.kurve"], /FLAMME: KONSUM — die Kurve der Seite ist nicht gemessen .*blind/],
+        ["die Kurve steht nicht auf ihrem Platz (blind)", ["flamme.kurve.platz=", false], /FLAMME: KONSUM — die Kurve der Seite ist nicht gemessen/],
+        ["Wurzel der Flamme ungemessen (blind)", ["flamme.kelvin0"], /FLAMME: KONSUM — die Kurve der Seite ist nicht gemessen/],
+        // (A3) STETIG AM KNIE — MUTANTE: die Kurve springt über der Schulter um 0,02
+        ["MUTANTE-A3: die Kurve springt am Knie (grau)", (z) => (z.flamme.knie.toene.grau.reihe = knieReihe([1, 1, 1], KNIE_PROBE.n, z.flamme.kurve.schulter, { sprung: 0.02 }).map((p) => p.map(Math.round))), /KNIE: GRAU — zwischen Spalte \d+ und \d+ \(Eingang 0\.8\d* × Weiß\) springt das Bild um [2-9]/],
+        ["MUTANTE-A3: die Kurve springt am Knie (Planck-Ton)", (z) => (z.flamme.knie.toene.satt.reihe = knieReihe(z.flamme.knie.toene.satt.ton, KNIE_PROBE.n, z.flamme.kurve.schulter, { sprung: 0.02 }).map((p) => p.map(Math.round))), /KNIE: SATT — zwischen Spalte \d+ und \d+ .*springt das Bild um [2-9]/],
+        ["der Verlauf steht nicht im Bild (blind)", (z) => (z.flamme.knie.toene.grau.reihe = z.flamme.knie.toene.grau.reihe.map(() => [180, 180, 180])), /KNIE: GRAU — die Reihe trägt 320 von 320 .*blind/],
+        ["zu wenig Stützstellen (blind)", ["flamme.knie.n=", 32], /KNIE: 32 Stützstellen .*blind/],
+        ["Knie bei Nacht gemessen (blind)", ["flamme.knie.nf=", 1], /KNIE: .*nightFactor 1 .*blind/],
+        ["Knie ungemessen", ["flamme.knie.toene.satt"], /KNIE: SATT — nicht gemessen/],
+        ["Knie-Probe bricht ab", ["flamme.knie.abbruch=", "TypeError: x"], /KNIE: ABBRUCH — TypeError/],
+        ["Knie-Probe fehlt", ["flamme.knie"], /KNIE: die Probe lief nicht/],
         ["die Flamme brennt nachts weiß (die Klemme am Bild-Weiß)", (z) => (z.flamme.toene.kern.tag = z.flamme.toene.kern.nacht = z.flamme.toene.kern.ohne = [255, 255, 255]), /FLAMME: KERN \(3000 K\) liest sich nicht als Feuer — \[255,255,255\].*Sättigung 0 /],
         ["Glimmen entsättigt in der Nacht", (z) => (z.flamme.toene.glimmen.nacht = z.flamme.toene.glimmen.ohne), /FLAMME: GLIMMEN \(2350 K\) — .*ohne dass seine Umkehr/],
         ["Flammen-Mutante reißt nicht (blind)", (z) => (z.flamme.toene.glimmen.ohne = z.flamme.toene.glimmen.nacht), /FLAMME: GLIMMEN — MUTANTE-J .*Sättigung 0\.79\d ≥ 0\.75.*die Probe ist blind/],
@@ -961,7 +1103,7 @@ function saumProbe(ort) {
 }
 
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
-function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
+function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
     return (async () => {
         const T = window.THREE;
         const rend = st.renderer;
@@ -1355,6 +1497,41 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                         const [tag, nacht, ohne] = [await mitte(mit, 0), await mitte(mit, 1), await mitte(ohneUmkehr, 1)];
                         const k = [tag, nacht, ohne].every((x) => x.k === flammeProbe.k) ? flammeProbe.k : [tag.k, nacht.k, ohne.k].join("/");
                         FL.toene[name] = { kelvin: K, cd: cd || FW.FEUER_LEUCHTDICHTE, k, nfTag: tag.nf, nfNacht: nacht.nf, nfOhne: ohne.nf, tag: tag.rgb, nacht: nacht.rgb, ohne: ohne.rgb };
+                    }
+                    // (j2) die Kurve, an der Node das Soll rechnet: die Zahl `BELICHTUNG.schulter` der Seite, die Kurve auf ihrem Platz am
+                    // Renderer, der Deckel des Szenen-Ziels, die Wurzel der Flamme
+                    const WB = __weltLicht.BELICHTUNG;
+                    // r184 baut `float(32768)` als int-Konstante unter einem Umwandlungs-Knoten: die Zahl steht am innersten Knoten
+                    let deckel = r._vorBelichtung().deckel;
+                    while (deckel && deckel.value === undefined && deckel.node) deckel = deckel.node;
+                    FL.kurve = { platz: rend.toneMapping === T[WB.kurve], schulter: WB.schulter, deckel: deckel && deckel.value };
+                    FL.kelvin0 = BF.kelvin[0];
+                    // (A3) STETIG AM KNIE: die flache Fläche trägt einen Verlauf längs der Bild-Breite — Eingang der Kurve von × `von` bis
+                    // × `bis` Weiß (logarithmisch, der Ton ÷ k: das Szenen-Ziel hält ihn × k), je Spalte eine Stützstelle, die Zeilen gemittelt
+                    const KN = (FL.knie = { toene: {} });
+                    try {
+                        KN.leinwand = Math.round(rend.getDrawingBufferSize(new T.Vector2()).x);
+                        KN.n = knieProbe.n;
+                        for (const [name, ton] of [["grau", [1, 1, 1]], ["satt", FW.lichtFarbe(flammeProbe.mantelK)]]) {
+                            const m = new T.MeshBasicNodeMaterial();
+                            m.fog = false;
+                            const t = L.float(knieProbe.von).mul(L.pow(L.float(knieProbe.bis / knieProbe.von), L.screenUV.x));
+                            m.colorNode = L.vec4(L.vec3(...ton).mul(t).div(L.toneMappingExposure), 1);
+                            stoffe.push(m);
+                            flach.material = m;
+                            rend.toneMappingExposure = flammeProbe.k;
+                            for (let i = 0; i < nFrames; i++) {
+                                nachtU.value = 0;
+                                setzeKamera();
+                                frame();
+                            }
+                            setzeKamera();
+                            const { u8 } = await window.__ausgabeAufnahme(knieProbe.n, 1, 1, { satz: "messung" });
+                            KN.toene[name] = { ton, reihe: Array.from({ length: knieProbe.n }, (_, i) => [u8[4 * i], u8[4 * i + 1], u8[4 * i + 2]]) };
+                            [KN.k, KN.nf] = [rend.toneMappingExposure, nachtU.value];
+                        }
+                    } catch (e) {
+                        KN.abbruch = fehlerStapel(e).split("\n").slice(0, 4).join(" ← ");
                     }
                     // (j3) EINE QUELLE am lebenden Code (ohne Kommentare, `__fehlt`): die Uniform des Glieds IST die der Kette, das Glied
                     // liest die Stäbchen-Schwelle, die Kette ruft das Glied mit ihrer Farbe, die Flamme ruft seine Umkehr
@@ -1893,7 +2070,7 @@ function rauchProbe(ort, P) {
         await postKetteBereit(page, log, "die Leinwand-Tiefe lebt nur dort, die Wand wäre blind");
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
-        out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT, FLAMME_PROBE, TOR_PROBE);
+        out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT, FLAMME_PROBE, TOR_PROBE, KNIE_PROBE);
         // (j3) der GANZE Stamm (Lehre 12: über scripts/lib/stamm.cjs, ohne Kommentare): außerhalb von `_nachtAuge` liest niemand
         // die Schwellen des Auges (`fehlt.wo` nennt den Zwilling mit Datei und Zeile)
         if (out.flamme && out.flamme.quelle)
@@ -1904,7 +2081,19 @@ function rauchProbe(ort, P) {
                 `Flamme ${name.toUpperCase()} (${tn.kelvin} K, Belichtung ${tn.k}): Tag ${JSON.stringify(tn.tag)} (Farbton ${fT.ton}°, Sättigung ${fT.satt}) ↔ Nacht ${JSON.stringify(tn.nacht)} (Farbton ${fN.ton}°, Sättigung ${fN.satt}) · Δ ${kanalAbstand(tn.tag, tn.nacht)} je Kanal (${FLAMME_BAND[name].nachtSatt ? `Grenze der Umkehr: Soll Sättigung der Nacht ≥ ${FLAMME_BAND[name].nachtSatt}` : `Soll ≤ ${FLAMME_TOL}`}) · ` +
                     `MUTANTE-J ohne Umkehr ${JSON.stringify(tn.ohne)} (Sättigung ${hsv(tn.ohne).satt}) · Δ ${kanalAbstand(tn.tag, tn.ohne)}`
             );
+            const fl = out.flamme;
+            if (FLAMME_BAND[name].konsum && fl.kurve && fl.kurve.schulter > 0 && fl.kelvin0 > 0) {
+                const soll = flammenSoll(tn.kelvin, fl.kelvin0, tn.k, fl.kurve);
+                log(`Flamme ${name.toUpperCase()} KONSUM: am Schirm ${JSON.stringify(tn.tag)} ↔ Soll ${JSON.stringify(soll)} · Δ ${[0, 1, 2].map((c) => (tn.tag[c] - soll[c]).toFixed(2)).join(" / ")} je Kanal (Soll ± ${FLAMME_KONSUM_TOL}) · Kurve ${JSON.stringify(fl.kurve)}, Wurzel ${fl.kelvin0} K`);
+            }
         }
+        const kn = out.flamme && out.flamme.knie;
+        if (kn)
+            for (const [name, tn] of Object.entries(kn.toene || {})) {
+                const m = knieMass(tn, kn.n, out.flamme.kurve && out.flamme.kurve.schulter);
+                log(`Knie ${name.toUpperCase()} (${kn.n} Stützstellen, Leinwand ${kn.leinwand}, ${KNIE_PROBE.von}–${KNIE_PROBE.bis} × Weiß): ${JSON.stringify(tn.reihe[0])} … ${JSON.stringify(tn.reihe.at(-1))} · größte Stufe ${m.stufe} / 255 bei Spalte ${m.wo} (Eingang ${m.eingang} × Weiß; Soll ≤ ${KNIE_STUFE}) · größte Abweichung von der Rechen-Form ${m.abw}`);
+            }
+        if (kn && kn.abbruch) log(`Knie: ABBRUCH ${kn.abbruch}`);
         const torAus = (out.flamme && out.flamme.tor) || {};
         for (const [name, tn] of Object.entries(torAus.toene || {})) {
             const [fT, fN] = [hsv(tn.tag), hsv(tn.nacht)];
