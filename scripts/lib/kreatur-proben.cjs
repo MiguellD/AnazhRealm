@@ -1111,7 +1111,13 @@ async function kreaturProben(r, T, opts) {
     // Stufen (Leib · Satz · Rate). Zur Flucht geht er von ihr auf den Wurf-Ort zu, die Kamera bleibt.
     // DER FAHRPLAN nach 3 s Vorlauf je 8 s: stehen → äsen → ziehen → flucht, über die Wege des Spiels — die Tätigkeit des Leittiers
     // samt ihren Pegeln (`_taetigkeit`, `_ruhe`, `magen`; der Verband liest die des Leittiers, `_kreaturTaetigkeit`; „stehen“ ist
-    // die Tätigkeit ruhen, eine eigene gibt es nicht) und die Annäherung des Spielers (1,4 m/s, die Flucht des Gesetzes). Gemessen
+    // die Tätigkeit stehen, wo das Ethogramm sie trägt — das Ende des Stehens `_stehenBis` —, sonst ruhen) und die Annäherung des
+    // Spielers (1,4 m/s, die Flucht des Gesetzes). Ein Wolf äst nicht (Ethogramm nahrung 0): sein Magen bleibt voll, sonst jagt
+    // das hungrige Rudel die Kamera. Eine laufende Aktion beendet der Fahrplan NIE (das ist Sache des Gesetzes): er nennt sie je
+    // Wechsel (`aktionOffen`). DIE EINSTELLUNGEN DER BÜHNE (benannt, je Lauf in `einstellung`): der Ort mit den wenigsten
+    // Büscheln der Nah-Wiese (`_nahWieseKachelBueschel`, das Gras des Spiels) im Kreis 10 m um den Ort und im Gang 15 × 4 m zur
+    // Kamera, unter den ersten 12 Orten der Suche; DIE KAMERA N, nah: 8 m vor dem Leittier auf der Linie H → Leittier, 1 m über
+    // dem Grund, je Schuss von H ein zweiter von N (das Auge urteilt den Gang, nie die Maske — S1 misst H). Gemessen
     // die Proben S1–S5 des Entscheids H3, je Zahl ihre Einheit; `opts.bilder` schießt an der echten GPU je Zustand drei Bilder im
     // Ausgabe-Pfad (Schirm-Größe, die Tiere bewegt) und fügt den Kontaktbogen. Nicht in PROBEN: die Bühne misst den Stand, ihr
     // Urteil ist das Soll der Bau-Welle (`werkbank lauf --buehne herde`, Selbsttest `diag-kreatur-takt --proben herde-bild`).
@@ -1126,7 +1132,9 @@ async function kreaturProben(r, T, opts) {
             const soll = A._verhaltenGesetz().herde.wurf[gattung][1];
             const KAM_M = taeter === "herde-bild-fern" ? 140 : 40; // Täter: die alte Kamera, 140 m fern
             const ZUST = ["stehen", "aesen", "ziehen", "flucht"];
-            const TAET = { stehen: "ruhen", aesen: "nahrung", ziehen: "ziehen", flucht: "ziehen" };
+            const ZEIGT = A._lebensraumGesetz().E.zeigt;
+            const TAET = { stehen: ZEIGT.stehen ? "stehen" : "ruhen", aesen: "nahrung", ziehen: "ziehen", flucht: "ziehen" };
+            const [NAH_M, NAH_HOEHE, ORTE, GANG_M] = [8, 1, 12, 15];
             const [PHASE, VOR, SCHUSS] = [8 * 60, 3 * 60, [2, 5, 7.5].map((t) => Math.round(t * 60))];
             const dt = 1 / 60;
             const g = -s.gravity;
@@ -1151,22 +1159,45 @@ async function kreaturProben(r, T, opts) {
             // Sichtlinie (die Kronen deckten die Herde), sonst mit
             const LG = A._lebensraumGesetz();
             const lebt = (x, z) => LG.lebensraum(gattung, r._bodenKlasseAt(x, z), LG.L) > 0;
+            const kand = { true: [], false: [] };
             const platz = (sichtFrei) =>
                 spirale(0, 70, 40, 8, (x, z) => {
-                    if (!lebt(x, z) || !r._landAt(x, z) || !r._landAt(x, z - KAM_M) || !imUmkreisLand(x, z, 40)) return null;
-                    if (sichtFrei && [0, 0.5, 1].some((f) => r._bodenKlasseAt(x, z - KAM_M * f) === "wald")) return null;
-                    // und ohne Kuppe: der Grund unter der Sichtlinie (Auge 1,6 m → Rumpf 0,9 m) liegt ≥ 0,9 m unter ihr (das Gras
-                    // deckte die Herde hinter einer Kuppe ganz, Kontaktbogen v5)
-                    const [hA, hT] = [r.getTerrainHeightAt(x, z - KAM_M) + 1.6, r.getTerrainHeightAt(x, z) + 0.9];
-                    if (sichtFrei && [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].some((f) => r.getTerrainHeightAt(x, z - KAM_M * (1 - f)) + 0.9 > hA + (hT - hA) * f)) return null; // prettier-ignore
-                    // der Grund trägt den Wurf (`_kreaturGrundFrei`, die Frage jedes Geworfenen) am Ort und im Ring 8 m
-                    if ([-1, 0, 1, 2, 3, 4, 5, 6, 7].some((k) => !r._kreaturGrundFrei(x + (k < 0 ? 0 : 8 * Math.cos(k * 0.785)), z + (k < 0 ? 0 : 8 * Math.sin(k * 0.785))))) return null; // prettier-ignore
-                    const o = neben(x, z);
-                    return huelleNah(x, z, o.y - 0.5, 40) ? null : o;
-                });
+                    const o = platzOrt(sichtFrei, x, z);
+                    if (!o) return null;
+                    const K = kand[sichtFrei];
+                    return K.push(o) >= ORTE ? K : null;
+                }) || (kand[sichtFrei].length ? kand[sichtFrei] : null);
+            // DIE HALME AM ORT: die Büschel der Nah-Wiese (das Gras des Spiels) im Kreis 10 m und im Gang zur Kamera (−z, ±2 m,
+            // 0–15 m); null, solange eine Kachel ihre Boden-Karte nicht trägt
+            const halme = (hx, hz) => {
+                const k = A.NAH_WIESE.kachel;
+                let n = 0;
+                for (let tx = Math.floor((hx - 10) / k); tx <= Math.floor((hx + 10) / k); tx++)
+                    for (let tz = Math.floor((hz - GANG_M) / k); tz <= Math.floor((hz + 10) / k); tz++) {
+                        const L = r._nahWieseKachelBueschel(tx, tz);
+                        if (!L) return null;
+                        for (const b of L) if (Math.hypot(b.x - hx, b.z - hz) <= 10 || (Math.abs(b.x - hx) <= 2 && b.z <= hz && b.z >= hz - GANG_M)) n++; // prettier-ignore
+                    }
+                return n;
+            };
+            const platzOrt = (sichtFrei, x, z) => {
+                if (!lebt(x, z) || !r._landAt(x, z) || !r._landAt(x, z - KAM_M) || !imUmkreisLand(x, z, 40)) return null;
+                if (sichtFrei && [0, 0.5, 1].some((f) => r._bodenKlasseAt(x, z - KAM_M * f) === "wald")) return null;
+                // und ohne Kuppe: der Grund unter der Sichtlinie (Auge 1,6 m → Rumpf 0,9 m) liegt ≥ 0,9 m unter ihr (das Gras
+                // deckte die Herde hinter einer Kuppe ganz, Kontaktbogen v5)
+                const [hA, hT] = [r.getTerrainHeightAt(x, z - KAM_M) + 1.6, r.getTerrainHeightAt(x, z) + 0.9];
+                if (sichtFrei && [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].some((f) => r.getTerrainHeightAt(x, z - KAM_M * (1 - f)) + 0.9 > hA + (hT - hA) * f)) return null; // prettier-ignore
+                // der Grund trägt den Wurf (`_kreaturGrundFrei`, die Frage jedes Geworfenen) am Ort und im Ring 8 m
+                if ([-1, 0, 1, 2, 3, 4, 5, 6, 7].some((k) => !r._kreaturGrundFrei(x + (k < 0 ? 0 : 8 * Math.cos(k * 0.785)), z + (k < 0 ? 0 : 8 * Math.sin(k * 0.785))))) return null; // prettier-ignore
+                const o = neben(x, z);
+                return huelleNah(x, z, o.y - 0.5, 40) ? null : o;
+            };
             const heimFrei = platz(true);
-            const heim = heimFrei || platz(false);
-            if (!heim) throw new Error(`herde-bild: kein Lebensraum ${gattung} ohne Hülle im Umkreis 40 m`);
+            const orte = heimFrei || platz(false);
+            if (!orte) throw new Error(`herde-bild: kein Lebensraum ${gattung} ohne Hülle im Umkreis 40 m`);
+            for (const o of orte) o.halme = taeter === "herde-bild-fern" ? null : halme(o.x, o.z);
+            const gezaehlt = orte.filter((o) => o.halme !== null);
+            const heim = gezaehlt.length ? gezaehlt.reduce((a, b) => (b.halme < a.halme ? b : a)) : orte[0];
             // DER WURF: die volle Kopfzahl des Kerns — je Versuch eine eigene Saat, der Spieler 140 m fern (der Wurf wirft außer Blick)
             const seq0 = s._creatureNetSeq || 0;
             let [glieder, versuch] = [[], 0];
@@ -1214,17 +1245,19 @@ async function kreaturProben(r, T, opts) {
             // DIE LÜCKE DES VERBANDS: die Tätigkeit des Leittiers beendet keine laufende Aktion (ruhen spielt 16 s, grasen 6 s zu
             // Ende) — der neue Zustand stünde Sekunden unter dem alten. Der Fahrplan beendet sie je Tier an ihrem eigenen Ende (`bis`)
             // und zählt jeden solchen Schnitt (`aktionGeschnitten`)
-            const geschnitten = {};
+            const aktionOffen = {};
+            const aesenKann = A._lebensraumGesetz().E.gattung[gattung].nahrung > 0;
             const setze = (z) => {
                 const u = leit.userData;
                 u._taetigkeit = TAET[z];
-                u._ruhe = z === "stehen" ? 2 : 0; // über schwelle.aktiv 1,5: das Leittier ruht, bis der Pegel leer ist
-                u.magen = z === "aesen" ? 0 : r._kreaturMagenVoll(leit);
-                geschnitten[z] = [];
+                // stehen: das Ende des Stehens nach 8 s (die Tätigkeit des Gesetzes), sonst der Ruhe-Pegel über schwelle.aktiv 1,5
+                u._ruhe = z === "stehen" && !ZEIGT.stehen ? 2 : 0;
+                u._stehenBis = z === "stehen" ? s.creatureAnimationTime + PHASE / 60 : 0;
+                u.magen = z === "aesen" && aesenKann ? 0 : r._kreaturMagenVoll(leit);
+                aktionOffen[z] = [];
                 for (const c of glieder) {
                     const VA = c.userData._verhaltenAktion;
-                    if (VA && s.creatureAnimationTime < VA.bis)
-                        (geschnitten[z].push(`${VA.name} ${rund(VA.bis - s.creatureAnimationTime, 1)} s`), (VA.bis = s.creatureAnimationTime)); // prettier-ignore
+                    if (VA && s.creatureAnimationTime < VA.bis) aktionOffen[z].push(`${VA.name} ${rund(VA.bis - s.creatureAnimationTime, 1)} s`); // prettier-ignore
                 }
             };
             // das Maß „Kopf unten“ an sich: die Kopf-Mitte über dem Grund je Leib-Takt im Zustand äsen, mit und ohne die Aktion grasen
@@ -1274,6 +1307,7 @@ async function kreaturProben(r, T, opts) {
             // zugleich), Rumpf (x); der größte Sprung je Takt, dazu der größte fern jedes Wechsels (stetig: > 30 Takte danach)
             const KAN = {
                 kopf: (tb) => tb.teile.headGroup?.rotation.x,
+                hals: (tb) => tb.teile.neckRoot?.rotation.x,
                 ohr: (tb) => tb.teile.earL?.rotation.z,
                 schwanz: (tb) => tb.tailSegs?.[0]?.rotation.y,
                 rumpf: (tb) => tb.teile.wolf?.rotation.x,
@@ -1287,7 +1321,7 @@ async function kreaturProben(r, T, opts) {
             const winkelAlt = new Map();
             const spur = glieder.map(() => []);
             const phasen = ZUST.map((z) => ({ zustand: z, taetigkeit: TAET[z], takte: 0, getroffen: 0, gezeigt: 0, flucht: 0, leib: 0, satz: 0, fern: 0, wegM: 0 })); // prettier-ignore
-            const aesen = { proben: 0, unten: 0, leibProben: 0, leibUnten: 0, leib: 0, satz: 0, fern: 0 };
+            const aesen = { proben: 0, unten: 0, leibProben: 0, leibUnten: 0, leib: 0, satz: 0, satzUnten: 0, fern: 0 };
             const zug = { takte: 0, art: {}, diag: [], v: [] };
             const schuesse = [];
             const TAU2 = Math.PI * 2;
@@ -1368,7 +1402,9 @@ async function kreaturProben(r, T, opts) {
                     const tb = u._tierBaum;
                     if (st !== "leib" || !tb) {
                         winkelAlt.delete(c);
-                        if (z === "aesen") (aesen.proben++, aesen[st]++);
+                        // im Satz: der gebackene Stand seiner Tätigkeit (`_tierSatzStand`), solange er steht (Gewicht des Gangs < 0,5)
+                        const su = st === "satz" && u._satz && u._satz.kopfUnten && (u._satzW || 0) < 0.5 ? !!u._satz.kopfUnten[u._satzStand || 0] : false; // prettier-ignore
+                        if (z === "aesen") (aesen.proben++, aesen[st]++, (aesen.unten += su), (aesen.satzUnten += su));
                         continue;
                     }
                     const w = Object.fromEntries(Object.entries(KAN).map(([n, f]) => [n, f(tb)]));
@@ -1402,7 +1438,24 @@ async function kreaturProben(r, T, opts) {
                 if (SCHUSS.includes(kp)) {
                     const tiere = glieder.map((c) => ({ stufe: stufe(c), rechteck: rechteck(c, W, Hh), kopf: stufe(c) === "leib" ? kopf(c) : null })); // prettier-ignore
                     const sch = { zustand: z, t: rund(kp / 60, 1), tiere };
-                    if (bilder) sch.G = await bild(W, Hh, tiere);
+                    if (bilder) {
+                        sch.G = await bild(W, Hh, tiere);
+                        // DIE KAMERA N (nah): NAH_M vor dem Leittier auf der Linie H → Leittier, NAH_HOEHE über dem Grund, der Blick
+                        // auf das Leittier; das Bild nur für das Auge (S1 misst H), danach steht H wieder
+                        const lp = leit.position;
+                        const [ex, ez] = [H.x - lp.x, H.z - lp.z];
+                        const el = Math.hypot(ex, ez) || 1;
+                        const N = neben(lp.x + (ex / el) * NAH_M, lp.z + (ez / el) * NAH_M);
+                        cam.position.set(N.x, N.y - 0.5 + NAH_HOEHE, N.z);
+                        cam.lookAt(lp.x, lp.y + 0.6, lp.z);
+                        cam.updateMatrixWorld(true);
+                        (r._lodAugeGesetzt(), r._loopFrustumCulling());
+                        sch.nahR = rechteck(leit, W, Hh);
+                        const z0 = performance.now();
+                        sch.N = new Uint8Array((await window.__ausgabeAufnahme(W, Hh, 1, { satz: "messung" })).u8);
+                        schussMs += performance.now() - z0;
+                        kameraH();
+                    }
                     schuesse.push(sch);
                 }
             }
@@ -1517,15 +1570,28 @@ async function kreaturProben(r, T, opts) {
             })();
             // DER KONTAKTBOGEN: je Zustand eine Zeile, je Zeitpunkt ein Feld (640 px breit), das Rechteck jedes Tiers (grün Leib,
             // gelb Satz, rot fern) und die Zeile der Zahlen
-            const jpg = [];
+            const [jpg, jpgNah] = [[], []];
             let bogen = null;
             if (bilder) {
                 const cw = 640;
                 const ch = Math.round((cw * Hh) / W);
                 const B = document.createElement("canvas");
-                [B.width, B.height] = [3 * cw, 4 * ch];
+                [B.width, B.height] = [3 * cw, 8 * ch];
                 const bx = B.getContext("2d");
                 schuesse.forEach((sc, i) => {
+                    // die Zeile N unter der Zeile H ihres Zustands: der Ausschnitt 1:1 um das Leittier
+                    const cn = leinwand(sc.N, W, Hh);
+                    jpgNah.push({ zustand: sc.zustand, t: sc.t, jpg: cn.toDataURL("image/jpeg", 0.9) });
+                    const Rn = sc.nahR && sc.nahR.imBild ? sc.nahR.R : [W / 2, Hh / 2, W / 2, Hh / 2];
+                    const [nx, ny] = [Math.min(W - cw, Math.max(0, (Rn[0] + Rn[2]) / 2 - cw / 2)), Math.min(Hh - ch, Math.max(0, (Rn[1] + Rn[3]) / 2 - ch / 2))]; // prettier-ignore
+                    const [onx, ony] = [(i % 3) * cw, (2 * Math.floor(i / 3) + 1) * ch];
+                    bx.drawImage(cn, nx, ny, cw, ch, onx, ony, cw, ch);
+                    bx.fillStyle = "rgba(0,0,0,0.6)";
+                    bx.fillRect(onx, ony, cw, 22);
+                    bx.fillStyle = "#fff";
+                    bx.font = "14px monospace";
+                    bx.fillText(`${sc.zustand} ${sc.t}s · nah ${NAH_M} m · Leittier ×1`, onx + 6, ony + 16);
+                    delete sc.N;
                     const cv = leinwand(sc.G, W, Hh);
                     jpg.push({ zustand: sc.zustand, t: sc.t, jpg: cv.toDataURL("image/jpeg", 0.9) });
                     // DER AUSSCHNITT um die Herde (die Hülle der Rechtecke im Bild, 1:1 wo sie in das Feld passt, sonst verkleinert
@@ -1538,7 +1604,7 @@ async function kreaturProben(r, T, opts) {
                     const sh = (sw * Hh) / W;
                     const sx = Math.min(W - sw, Math.max(0, (hx[0] + hx[1]) / 2 - sw / 2));
                     const sy = Math.min(Hh - sh, Math.max(0, (hy[0] + hy[1]) / 2 - sh / 2));
-                    const [ox, oy, f] = [(i % 3) * cw, Math.floor(i / 3) * ch, cw / sw];
+                    const [ox, oy, f] = [(i % 3) * cw, 2 * Math.floor(i / 3) * ch, cw / sw];
                     bx.drawImage(cv, sx, sy, sw, sh, ox, oy, cw, ch);
                     bx.lineWidth = 1;
                     for (const t of sc.tiere) {
@@ -1580,9 +1646,18 @@ async function kreaturProben(r, T, opts) {
                 soll,
                 wurfSaat: versuch - 1,
                 ort: { x: rund(heim.x, 1), z: rund(heim.z, 1), sichtOhneWald: !!heimFrei, kameraM: KAM_M },
+                einstellung: {
+                    ort: `der Ort mit den wenigsten Büscheln der Nah-Wiese (Kreis 10 m + Gang ${GANG_M} × 4 m zur Kamera) unter ${orte.length} Orten der Suche`, // prettier-ignore
+                    halme: heim.halme ?? null,
+                    halmeJeOrt: orte.map((o) => o.halme ?? null),
+                    gezaehlt: gezaehlt.length,
+                    kameraN: { abstandM: NAH_M, hoeheM: NAH_HOEHE, ziel: "das Leittier", nurAuge: true },
+                    stehen: TAET.stehen,
+                    wolfSatt: !aesenKann,
+                },
                 schirm: { W, H: Hh, quelle: bilder ? "Ausgabe-Pfad der GPU" : "Maß 1280 × 720 ohne Bild" },
                 weg: "Tätigkeit + Pegel des Leittiers (der Verband liest sie), Flucht: der Spieler geht mit 1,4 m/s auf den Wurf-Ort zu",
-                aktionGeschnitten: geschnitten,
+                aktionOffen,
                 phasen: phasen.map((P) => {
                     const n = P.takte * glieder.length;
                     return { zustand: P.zustand, taetigkeit: P.taetigkeit, getroffen: rund(P.getroffen / n, 3), gezeigt: rund(P.gezeigt / n, 3), flucht: rund(P.flucht / n, 3), leib: rund(P.leib / P.takte, 2), satz: rund(P.satz / P.takte, 2), fern: rund(P.fern / P.takte, 2), wegM: rund(P.wegM, 1) }; // prettier-ignore
@@ -1599,6 +1674,7 @@ async function kreaturProben(r, T, opts) {
                         tierTakte: aesen.proben,
                         leibTakte: aesen.leibProben,
                         satzTakte: aesen.satz,
+                        satzUnten: aesen.satzUnten,
                         fernTakte: aesen.fern,
                         kopfMitteM: Object.fromEntries(Object.entries(kopfHoehe).map(([k, a]) => [k, a.length ? { takte: a.length, min: rund(Math.min(...a), 3), median: rund(median(a), 3) } : null])), // prettier-ignore
                     },
@@ -1620,6 +1696,7 @@ async function kreaturProben(r, T, opts) {
                 ms: Math.round(msOhneBild),
                 schussMs: Math.round(schussMs),
                 jpg,
+                jpgNah,
                 bogen,
             };
         });

@@ -3985,7 +3985,8 @@ hauptLauf(async () => {
         // DIE ISOLIERTE BÜHNE DER HERDE (`lauf --buehne herde [--art wolf] [--kontakt] [--ordner d] [--eigen]`): die Probe herde-bild der
         // Familie gate:kreatur-takt (scripts/lib/kreatur-proben.cjs — derselbe Wurf, derselbe Takt, die Kamera H 40 m quer, der Fahrplan
         // stehen → äsen → ziehen → flucht) in der laufenden Welt; `--kontakt` schießt je Zustand drei Bilder im Ausgabe-Pfad (Schirm-Größe,
-        // die Tiere frei) und fügt den Kontaktbogen. Abgelegt: kontakt-<art>.jpg, die zwölf Bilder, mess-<art>.json (S1–S5 mit Einheit).
+        // die Tiere frei) von H und je eines von der nahen Kamera N und fügt den Kontaktbogen (je Zustand die Zeile H, darunter N).
+        // Abgelegt: kontakt-<art>.jpg, die zwölf Bilder H, die zwölf N (-nah), mess-<art>.json (S1–S5 mit Einheit).
         // Exit 1 nur, wenn die Bühne selbst nicht misst (Wurf, Bewegung, Bilder); das Soll S1–S5 steht als Zeile, ROT ist der Stand.
         if (opt("--buehne") !== "herde") endeMit(`--buehne kennt „herde“, nicht „${opt("--buehne")}“`);
         const KP = require("./lib/kreatur-proben.cjs");
@@ -4004,9 +4005,10 @@ hauptLauf(async () => {
         fs.mkdirSync(ordner, { recursive: true });
         const jpgAb = (datei, url) => fs.writeFileSync(path.join(ordner, datei), Buffer.from(url.split(",")[1], "base64"));
         for (const b of z.jpg || []) jpgAb(`bild-${art}-${b.zustand}-${b.t}s.jpg`, b.jpg);
+        for (const b of z.jpgNah || []) jpgAb(`bild-${art}-${b.zustand}-${b.t}s-nah.jpg`, b.jpg);
         if (z.bogen) jpgAb(`kontakt-${art}.jpg`, z.bogen);
         const u = KP.urteil("herde-bild", z);
-        const mess = Object.assign({}, z, { jpg: undefined, bogen: undefined, wandMs: Date.now() - t0, urteil: u.ok ? "GRÜN" : "ROT", befunde: u.grund ? u.grund.split(" · ") : [] }); // prettier-ignore
+        const mess = Object.assign({}, z, { jpg: undefined, jpgNah: undefined, bogen: undefined, wandMs: Date.now() - t0, urteil: u.ok ? "GRÜN" : "ROT", befunde: u.grund ? u.grund.split(" · ") : [] }); // prettier-ignore
         jsonAb(path.join(ordner, `mess-${art}.json`), mess);
         const zeile = (s) => mess.befunde.filter((b) => b.startsWith(s + ":") || b.startsWith(s + " "));
         for (const s of ["S1", "S2", "S3", "S4", "S5"]) {
@@ -4018,7 +4020,7 @@ hauptLauf(async () => {
         const kaputt = [
             z.n !== z.soll && `der Wurf trägt ${z.n} von ${z.soll}`,
             !(z.bewegungM > 1) && `die Tiere stehen (Bewegung ${z.bewegungM} m)`,
-            hat("kontakt") && !(z.bogen && z.jpg.length === 12) && `der Bogen trägt ${(z.jpg || []).length} von 12 Bildern`,
+            hat("kontakt") && !(z.bogen && z.jpg.length === 12 && (z.jpgNah || []).length === 12) && `der Bogen trägt ${(z.jpg || []).length} von 12 Bildern H und ${(z.jpgNah || []).length} von 12 N`,
         ].filter(Boolean);
         endeMit(kaputt.length ? `BÜHNE ROT: ${kaputt.join(" · ")}` : "BÜHNE GRÜN — sie misst; das Soll S1–S5 steht oben", !kaputt.length); // prettier-ignore
     } else if (cmd === "lauf") {
