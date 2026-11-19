@@ -555,10 +555,10 @@
   GAs.forEach(A=>FOOTPRINT.push({x0:A.x0,x1:A.x1,z0:A.z0,z1:A.z1,h:A.yHigh+0.06,a:1}));           // JEDE Zelle wird Grundriss-Bürger
   GAs.forEach(A=>WALLS.forEach(w=>{ if(!w.horiz && w.fixed*A.sx>0 && w.win && w.c>A.z0-0.3 && w.c<A.z1+0.3 && w.yLo<A.yHigh-0.05){ w.type='wand'; w.win=null; } }));   // FENSTER-OKKLUSION je Zelle
   // DIE ÖFFNUNG VOR DER QUERWAND DES HOF-ARMS (Bahn 1): die Arme des Innenhofs (hof(): Breite HOF_ARM_W an beiden Giebeln) stoßen mit
-  // ihrer Querwand (xWall bei zF = −Dp/2) in die Ebene der Hausfront — ein Fenster der Front, dessen Rahmen (wd/2 + 0,1, die Pfosten
-  // in fensterAt) in den Lauf eines Arms reicht, läge in dieser Wand: es fällt (die Front trägt ihre Fenster im Takt ihrer Felder,
+  // ihrer Querwand (xWall bei zF = −Dp/2) in die Ebene der Hausfront — ein Fenster der Front, dessen LOCH (wd/2) im Lauf eines Arms
+  // liegt, läge in dieser Wand: es fällt (ein Rahmen, der an die stumpf anstoßende Querwand reicht, ist der Anschluss des Baus) (die Front trägt ihre Fenster im Takt ihrer Felder,
   // ein freies Feld daneben ist Pfeiler des Takts — die Öffnung rückt nicht, sie fällt wie vor dem Anbau).
-  if(HOF_ARM_W>0) WALLS.forEach(w=>{ if(!w.horiz || w.fixed>0 || !w.win) return; const r=w.win.wd/2+0.1, c=(w.lo+w.hi)/2;
+  if(HOF_ARM_W>0) WALLS.forEach(w=>{ if(!w.horiz || w.fixed>0 || !w.win) return; const r=w.win.wd/2, c=(w.lo+w.hi)/2;
     if(c-r < -W/2+HOF_ARM_W || c+r > W/2-HOF_ARM_W){ w.type='pier'; w.win=null; } });
   const OCC=new Set(['S']); wings.forEach(w=>OCC.add(w.oz>0?'N':w.oz<0?'S':w.ox>0?'E':'W')); GAs.forEach(A=>OCC.add(A.sx>0?'E':'W'));   // BELEGUNGS-QUELLE (top-level): speist Balkontür-Wahl UND Turm-Standort
 
@@ -6378,8 +6378,8 @@
         return m.elements.slice();
     }
     // DER FREIE SCHWENK (Bahn 1): wie weit ein Flügel aufgeht, misst der Bau — bis zum Anschlag in der Laibung (`fensterAnschlag`),
-    // davor bis zum ersten Teil des Hauses, das sein Schwenk trifft (Dreieck gegen sechs Strecken des Blatts: drei Waagerechte ab
-    // 0,15 m vom Scharnier — dort stößt er an seinen eigenen Pfosten —, drei Senkrechte; Halbierung in 8 Schritten, ~4 mrad). Trifft
+    // davor bis zum ersten Teil des Hauses, das sein Schwenk trifft (Dreieck gegen zwölf Strecken des Blatts, je Seite drei Waagerechte ab
+    // dem Falz RAHMEN_VOR vom Band — das Band liegt an der Kante, keine Ecke taucht in den eigenen Pfosten —, drei Senkrechte; Halbierung in 8 Schritten, ~4 mrad). Trifft
     // schon der erste Grad (unter FREI_MIN, 0,05 rad ≈ 3°), steht vor dem Fenster eine Wand: es öffnet nie (Winkel 0).
     var FREI_MIN = 0.05;
     function _streckeDreieck(p, q, a, b, c) {
@@ -6397,10 +6397,13 @@
         var A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3();
         var trifft = function (th) {
             var M = new THREE.Matrix4().makeTranslation(band.x, 0, band.z).multiply(new THREE.Matrix4().makeRotationY(richt * th)).multiply(new THREE.Matrix4().makeTranslation(-band.x, 0, -band.z)).multiply(Lf.matrixWorld);
-            var P = function (u, y) { return (F.quer ? new THREE.Vector3(0, y, u) : new THREE.Vector3(u, y, 0)).applyMatrix4(M); };
-            var S = [], sb = new THREE.Box3();
-            [-0.45, 0, 0.45].forEach(function (k) { S.push([P(0.15, k * F.h), P(F.w, k * F.h)]); });
-            [0.3, 0.6, 0.99].forEach(function (k) { S.push([P(k * F.w, -0.45 * F.h), P(k * F.w, 0.45 * F.h)]); });
+            var P = function (u, y, d) { return (F.quer ? new THREE.Vector3(d, y, u) : new THREE.Vector3(u, y, d)).applyMatrix4(M); };
+            // die Kanten des Blatts um den Falz eingezogen: oben, Mitte, unten und drei Senkrechte, auf Vorder- und Rückseite
+            var S = [], sb = new THREE.Box3(), yK = F.h / 2 - RAHMEN_VOR, dK = FLUEGEL_STAERKE / 2 - RAHMEN_VOR, uK = F.w - RAHMEN_VOR;
+            [-dK, dK].forEach(function (d) {
+                [-yK, 0, yK].forEach(function (y) { S.push([P(RAHMEN_VOR, y, d), P(uK, y, d)]); });
+                [RAHMEN_VOR, 0.5 * F.w, uK].forEach(function (u) { S.push([P(u, -yK, d), P(u, yK, d)]); });
+            });
             S.forEach(function (s) { sb.expandByPoint(s[0]); sb.expandByPoint(s[1]); });
             for (var i = 0; i < hindernisse.length; i++) {
                 var H = hindernisse[i];

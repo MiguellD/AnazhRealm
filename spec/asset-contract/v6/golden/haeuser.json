@@ -883,24 +883,24 @@
       "sha256": "7dccf56a30f22614fd8eafec5b9964f28ed7d787c1caf1f6efeefb952ccffad5"
     },
     "marokkanisch-s7-L0": {
-      "objects": 62,
-      "vertices": 106992,
-      "sha256": "78de26648e87e71702f9b1dc327be1531cff8942d60ffeeb9c81b906ff242fcc"
+      "objects": 66,
+      "vertices": 109272,
+      "sha256": "3a858d9f47d5caa6272d95118556070261295d3b62d4535aa6fa740deb60ec96"
     },
     "marokkanisch-s7-L1": {
       "objects": 11,
-      "vertices": 26028,
-      "sha256": "b61764e7c2215fa97a1b621ee1576963945185ac9d97e97d4dfabf41933c3d48"
+      "vertices": 27684,
+      "sha256": "3730444b7776e31df44b8c0c28d8644b072e46470b9adb22f225005a1b1d9eb6"
     },
     "marokkanisch-s7-L2": {
       "objects": 7,
-      "vertices": 2962,
-      "sha256": "63bf51956d3fd2e03e7576ec31c3dfa0a1c354d34c1906d08757fc1b5ede312a"
+      "vertices": 3194,
+      "sha256": "0e3e493df5955c7fa7573b14bd389a5a578a282498e091817f1d24ec2a181a3e"
     },
     "marokkanisch-s7-L3": {
       "objects": 1,
       "vertices": 210,
-      "sha256": "461ca479bccb0e0ee5113f743892434631d81e0079e9e8b5a4e09cd87e11ccc1"
+      "sha256": "92c0e555a860bc04f055afef72a12c608306b32fd00d6502a71009755d02b0a8"
     },
     "marokkanisch-s12345-L0": {
       "objects": 58,
@@ -1283,9 +1283,9 @@
       "sha256": "d4e631aeb194b3edc50a3d24cec798202511c6364e1ee9d41b54994336d66c67"
     },
     "alemannisch-s7-L0-ov_storeys_turm": {
-      "objects": 58,
-      "vertices": 241770,
-      "sha256": "b50e61339d8f6d825902878516e5bdec2f4eaf80053e54cecbdac3c8e5e51ce9"
+      "objects": 56,
+      "vertices": 241626,
+      "sha256": "d5b35eb00ef54d8bbf9006adfdec7ae7a4292fe860a60e0a0c9d007f5597f19c"
     },
     "hochhaus-s7-L2-ov_W": {
       "objects": 5,
