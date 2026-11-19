@@ -1140,7 +1140,18 @@ async function proben(phasen) {
         if (zelle) {
             const vorBau2 = new Set(s.architectures);
             wartet("W7 zweiter Akt 7/18 am Anker des ersten: spawnSettlement");
-            await r.spawnSettlement({ seed: 7, nH: 18, position: { x: zelle[1].x, y: start.y, z: zelle[1].z } });
+            // DER ZWEITE AKT KEHRT ZURÜCK (los-huelle): mit seiner Bilanz — gehoben, und jedes Los, das nicht steht, beim Namen
+            // (`abgelehnt`: der Spieler im Grund; `gefallen`: die Wand, an der es fiel)
+            const r2 = await r.spawnSettlement({ seed: 7, nH: 18, position: { x: zelle[1].x, y: start.y, z: zelle[1].z } });
+            w7.akt2 = r2
+                ? {
+                      placed: r2.placed,
+                      skipped: r2.skipped,
+                      abgelehnt: (r2.abgelehnt || []).length,
+                      gefallen: (r2.gefallen || []).length,
+                      wer: [...(r2.abgelehnt || []), ...(r2.gefallen || []).map((g) => `${g.rolle} #${g.seed}: ${g.wand}`)].slice(0, 3),
+                  }
+                : null;
             await pumpe(8);
             const neu = s.architectures.filter(
                 (e) => !vorBau2.has(e) && /^(haus_|brunnen_|marktstand_)/.test(e.type || "")
@@ -2024,6 +2035,10 @@ function urteil(o) {
             );
         if (!o.w7 || !(o.w7.haeuser >= 6))
             f.push(`W7 Aufbau: ${o.w7 ? o.w7.haeuser : "?"} Dorf-Häuser abgetastet (Soll ≥ 6)`);
+        else if (o.w7.zweitesDorf !== undefined && !(o.w7.akt2 && o.w7.akt2.skipped <= o.w7.akt2.abgelehnt + o.w7.akt2.gefallen))
+            f.push(
+                `W7 zweiter Akt: ${o.w7.akt2 ? `${o.w7.akt2.placed} gehoben, ${o.w7.akt2.skipped} übersprungen, davon beim Namen ${o.w7.akt2.abgelehnt} abgelehnt + ${o.w7.akt2.gefallen} gefallen` : "keine Bilanz (der Akt gab null)"} — jedes Los, das nicht steht, trägt seinen Grund`
+            );
         else if (o.w7.imBau || o.w7.zweitesImBau || !Number.isFinite(o.w7.zweitesDorf))
             f.push(
                 `W7 Bau im Bau: ${o.w7.imBau} Häuser in einem früheren Bau oder mit der Tür an seiner Wand, zweites Dorf am selben Anker ${o.w7.zweitesImBau}/${o.w7.zweitesDorf} im ersten (${o.w7.taeter.join(" · ") || "Akt fehlt"})`
