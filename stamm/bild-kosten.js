@@ -2515,7 +2515,8 @@ class AnazhRealm_bild_kosten {
                 .add(lumAt(screenUV.add(vec2(float(0.0), lcPx.negate()))))
                 .mul(float(0.25));
             const selfLum = luminance(bloomed);
-            const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
+            // die Differenz in L (÷ k): sie mal das belichtete Bild bleibt ein Term in L × k — ohne die Teilung wüchse er mit k²
+            const detail = selfLum.sub(localAvg).div(VB.k); // >0 heller als Umgebung (Kante/Spitze)
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             // DAS AUGE DER NACHT (K66, Augen-Runde 15.10.: nachts leuchtete die Giebelwand gesättigt orange, ihr Abfall lief
             // tiefrot — HSV 0,92 an der Wand, 0,99 im Abfall): unter der Nacht sieht das Auge mesopisch — zwischen den
@@ -2539,7 +2540,14 @@ class AnazhRealm_bild_kosten {
             // < 0), die Tritanopie (e = 0,859 (B − G)) traf genau es (OMEN Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
             const welt = istWelt(szenenTiefe, screenUV).select(float(1), float(0));
             const farbsichtDelta = u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0).mul(welt));
-            u.ausgabe = { aus: graded, farbsicht: gesehen.add(farbsichtDelta).max(vec3(0, 0, 0)) };
+            // beide Ausgaben enden die Vor-Belichtung (÷ k): Δ ist je Seite linear, er trägt dieselbe Skala wie das Bild
+            u.ausgabe = {
+                aus: graded,
+                farbsicht: gesehen
+                    .add(farbsichtDelta)
+                    .max(vec3(0, 0, 0))
+                    .div(VB.k),
+            };
 
             // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
             // Ausgabe-Quad — keine Zwischen-Textur.

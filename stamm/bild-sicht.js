@@ -1158,7 +1158,9 @@ class AnazhRealm_bild_sicht {
                             .and(min(uvI.x, uvI.y).greaterThan(0.0))
                             .and(max(uvI.x, uvI.y).lessThan(1.0));
                         If(imBild.and(tiefe.load(ivec2(uvI.mul(tiefeGr))).r.greaterThan(0.99999)), () => {
-                            aus.assign(vec4(mix(texture(farbe, uvI).level(float(0)).rgb, aus.rgb, aus.a), 1.0));
+                            // der Himmel des Bilds in L: das Szenen-Ziel hält L × k (`_vorBelichtung`)
+                            const himmelBild = texture(farbe, uvI).level(float(0)).rgb.div(this._vorBelichtung().kBild);
+                            aus.assign(vec4(mix(himmelBild, aus.rgb, aus.a), 1.0));
                         });
                     });
                     // DER HIMMEL DES RESTS (A1-n1): wo weder Bild noch Feld den Strahl ganz deckt, die Himmels-Sicht der Kuppel in
