@@ -12825,6 +12825,7 @@
         LAB_SEED: LAB_SEED,
         hausParams: hausParams,
         massBau: massBau,
+        koerperHuelle: koerperHuelle, // DIE EINE Hülle des Baukörpers (los-huelle): Leser massBau und das Labor (worlds/fachwerk buildDorf, buildHausLOD)
         grundVon: grundVon, // das Grund-Datum (S4) — die Linse liest es wie die Welt
         raumVon: raumVon,
 
