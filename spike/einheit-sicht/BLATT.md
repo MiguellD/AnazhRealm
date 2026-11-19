@@ -189,8 +189,40 @@ Konsum-Leser: `_chunkSatzPass` (der Zug des Satzes im Hauptbild) und `_archRegio
 
 ### S1–S5 (Radeon 890M, `spike/einheit-sicht/mess-sicht.cjs`, A = 986eff04e9, B = der Schnitt, je Boot eine frische Welt)
 
-**Zwischenstand 19.11., 20:30 (Budget-Sicherung):** Schritt 0 gemessen — gezeichnet gegen sichtbar (Dreiecke × Instanz mit
-Pixel): Wiese Third 413 687 / 67 190 (16,2 %), Wiese Ego 365 509 / 62 367 (17,1 %), Genesis Third 260 833 / 30 667 (11,8 %),
-Genesis Ego 233 018 / 23 634 (10,1 %), Dorf Third 471 322 / 32 900 (7,0 %), Dorf Ego 534 735 / 37 975 (7,1 %); der Bau-Satz
-allein an Wiese Third 14 875 / 52, an Genesis Third 26 541 / 3 798. Frame-ms gegen den Schnitt (S4) und S1–S3, S5 stehen aus:
-die ABAB-Messung (`mess-sicht.cjs`, 4 Boots je Seite) wartet in der GPU-Schlange hinter dem CI-echt-Lauf.
+Gemessen am 19.11. 20:44–20:57, Radeon 890M, `werkbank start --echt`, Third am Spieler-Platz der Spec, je Boot eine frische
+Welt bis der Bau ruht, dann 60 Einzel-Bilder der Bank (`__bankRunde`, Bühne, Skala offen). Rohdaten `spike/einheit-sicht/mess.json`
+(Treiber `spike/einheit-sicht/mess-sicht.cjs`). A = 986eff04e9, B = dieser Zweig.
+
+| Ort · Third | Seite | Boots | Bau-Satz Dreiecke | Bau-Satz Züge | Hauptbild Dreiecke | Hauptbild Züge | Frame p50 ms | Frame p95 ms (je Boot) | eingeschwungen |
+|---|---|--:|--:|--:|--:|--:|--:|---|---|
+| wiese | A | 4 | 14.875 | 2 | 358.827 | 99 | 58,53 | 71,07 (73,38 · 68,77 · 63,91 · 78,14) | ja 54 s · ja 53 s · ja 54 s · ja 51 s |
+| wiese | B | 4 | 13.887 | 4 | 357.168 | 103 | 60,10 | 72,31 (70,56 · 68,78 · 78,49 · 74,06) | ja 54 s · ja 55 s · ja 57 s · ja 50 s |
+| genesis | A | 1 | 26.541 | 8 | 276.405 | 80 | 48,73 | 55,81 (55,81) | ja 49 s |
+| genesis | B | 1 | 23.001 | 14 | 216.674 | 81 | 42,99 | 50,23 (50,23) | ja 66 s |
+
+| Soll | Messung | Urteil |
+|---|---|---|
+| **S1** gezeichnete Dreiecke im Blick ≤ 50 % (Häuser, Bau-Satz) | Wiese 13 887 / 14 875 = **93,4 %** (Median 4 Boots), Genesis 23 001 / 26 541 = **86,7 %** (1 Boot); im Flug durch den Wald 561 877 / 1 791 871 = 31,4 % | **ROT** |
+| **S2** ≤ 1 % der Masken-Pixel > 8/255 Luma (ruhend) | Genesis Bild 0: **0,000 %** von 138 079 Masken-Pixeln (0 Pixel im ganzen Bild) — `genesis-third-blind0.png` gegen `genesis-third-mit0.png` | **GRÜN** |
+| **S3** Züge ≤ heute | Hauptbild Wiese 99 → **103**, Genesis 80 → **81** (Bau-Satz 2 → 4 und 8 → 14: je Satz ein früher und ein später indirekter Zug) | **ROT** |
+| **S4** Frame p95 ≤ heute (ABAB, ≥ 4 Boots je Seite) | Wiese Median p95 71,07 → **72,31 ms** (+1,7 %; A 63,9–78,1, B 68,8–78,5 — die Streuung je Seite ist über zehnmal der Abstand); Genesis 1 Boot 55,81 → 50,23 ms | **ROT** (in der Streuung, nicht getrennt) |
+| **S5** Bildpaar + Flug ohne sichtbares Poppen | Flug 24 × 1,5 m längs des Blicks an Genesis: Bild 0–17 unter 1 %, Bild 18–23 über 1 %, schlimmstes Bild 23 mit **15,0 %** — `genesis-third-schlimmst.png` (rot: > 8/255, grau: Maske), `genesis-third-schlimmstMit.png` | **ROT** |
+
+**Was die Zahlen sagen.** Die Sicht schneidet an den Häusern, was die Tiefe verdeckt, und nicht mehr: an der Wiese stehen die
+Häuser fern, ihr Bild ist zu 50 % UNTER dem Bildpunkt und nur zu 14,6 % verdeckt (Schritt 0) — gemessen fallen 6,6 %, weil ein
+Haufen nur ganz fällt. 50 % erreicht an den Häusern nur die STUFE aus der EINEN Haufen-Hierarchie (Zweig `einheit-stufe-aus-l0`),
+die Sicht trägt das verdeckte Siebtel dazu. Die Bündel-Verdeckung urteilte an Wiese und Genesis 0 von rund 2 250 Urteilen
+verdeckt (die Region-Kugeln sind größer als jeder Verdecker). Die Abweichungen des Flugs liegen auf Grashalmen und einem
+Schatten-Fleck des Rasens, nicht an den Kanten der Häuser; die Ursache ist nicht getrennt — zu prüfen: der späte Zug zeichnet
+nach den durchsichtigen Körpern (`ordnung` 9997) und deckt ihre Farbe, und die Kaskaden des Bilds, in dem der Satz im Hauptbild
+ruht.
+
+**Ehrlich offen (mit Grund):** S1 braucht die Stufe (nicht dieser Zweig, Dateien des Zweigs `einheit-stufe-aus-l0` unberührt);
+S3 kostet der zweite Zug je Satz — er fällt erst, wenn der späte Zug in den frühen Auftrag schreibt (EIN Zug mit
+`drawIndexedIndirect` am Ende des Bruchs); S4 trennt erst ein Lauf mit mehr Boots, wo die Häuser verdeckt stehen (Dorf, Genesis);
+S5 trägt die offene Ursache oben; Vegetation, Gelände, Wagen und Kreatur laufen noch nicht durch die Sicht (Schritt 1 war der
+Bau-Satz) — die Tafel nennt ihren verdeckten Anteil (Vegetation 11–18 %, Gelände 25–39 %).
+
+Abdruck (`node scripts/werkbank.cjs abdruck --gegen 986eff04e9`, headless): Genesis und Wiese in allen neun Domänen byte-gleich;
+am Dorf 4 Tier-Bestände anders (bär · fuchs · wesen · wolf) — derselbe Kopf gegen sich selbst (`--a-gegen-a`) zeigt am Dorf
+ebenfalls 1 Ding anders (Bewohner-Netz), der Dorf-Takt schwankt (eingeschwungen nach 360 gegen 442 Takten).
