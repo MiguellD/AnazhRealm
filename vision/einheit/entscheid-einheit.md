@@ -44,8 +44,14 @@ am Kopf nachgelesen, bevor er schneidet.
 
 1. Soll vorab: gilt ab sofort an meinem Stempel — keine Vorprüfung ohne Soll-Datei im ersten Commit der Welle.
 2. Puls und `wellen-landung` im Blick, `pushe()` endet ROT: bestellt nach Schritt 0, als EIN Opus-Schnitt am Zug-Dienst.
-3. Äste mit Frist (72 h → `refs/archiv/`): das verschiebt Zweige. Das Wort dazu ist das des Schöpfers; bis dahin nennt
-   `ungelandet.cjs` nur Alter und Besitzer.
+3. Äste mit Frist — gesetzt am 19.11. nach dem Wort des Schöpfers („du der dirigent, du machst die regeln“): ein Zweig ohne
+   Abgabe-Commit, ohne Push seit 72 h, ohne laufenden Besitzer und nicht in der Zug-Schlange wandert nach
+   `refs/archiv/<datum>/<name>` (derselbe SHA, erst pushen und per ls-remote prüfen, dann der Kopf-Zweig weg) und bekommt in
+   LAGE die Zeile „fällt offen“ mit SHA und Grund. Nie vernichten: ein Push holt ihn zurück. Ausgenommen: main, integ-probe,
+   koordination, punkte-maschine, die Dienst-Zweige, jeder Zweig mit Stempel in der Schlange. Die 15 Familien der Bergung
+   (`bericht/1811-bergung.md`) bekommen VOR dem ersten Lauf je einen Besitzer mit Datum oder fallen offen mit Grund — das
+   Archiv begräbt nichts still. Das Werkzeug (`ungelandet.cjs --frist`, erst Trocken-Liste, dann Lauf) baut ein Opus-Arbeiter
+   mit dem Puls aus Punkt 2, sobald ein Arbeiter-Platz frei ist.
 
 ## E5 — ehrlich
 
