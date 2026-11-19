@@ -5567,10 +5567,10 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 9,
+    "heute": 8,
     "kern": 5,
     "kernDazu": 5,
-    "anteilHeute": 1.5,
+    "anteilHeute": 1.3,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -7436,7 +7436,7 @@
        "richter": "20 Zufallsfestplätze: Gedränge an erzwungenen Stellen ≥ 0,9"
       }
      ],
-     "heute": 1,
+     "heute": 0,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Ausweichen ohne Berührung (mensch.K3, headless), Preis unbelegt; kein Fundamentaldiagramm, kein Engpass",
@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 6,
+    "heute": 5,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 2.4,
+    "anteilHeute": 2,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -15028,7 +15028,7 @@
        "richter": "100 Saaten: „lebendig und eigen\" ≥ 80 %, Paare unterscheidbar ≥ 90 %; Ruftonhöhe ↔ Körpergröße Allometrie-Steigung ±20 %"
       }
      ],
-     "heute": 1,
+     "heute": 0,
      "kern": 0,
      "fuss": "kern",
      "beleg": "neun Textur-Gesetze (klang-core.js:668-766), Tier-Ruf f0 ∝ L^−0,9 (:495-497), Wind r 0,81/0,79 (§32.K1, K2 je 2/2); Verkehr K-nah (stamm/klang.js:1092-1110); keine Bewohner-Klänge, kein Stadtteppich; Preis Radeon ROT. — KARTE: Kern 1 — Zensus am Abgriff, Wind gesehen = gehört an beiden Geräten (klang.K1, klang.K2); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget ist kein Preis mehr (R8).",
@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 4,
+    "heute": 5,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 2.3,
+    "anteilHeute": 2.7,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -17423,7 +17423,7 @@
        "richter": "Anteil geschafft ≥ 95 % je Sinn-Profil in Kanal-Läufen"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Untertitel aus dem Klang-Gesetz 39/39, Farbsicht-Modus (Deuteranopie min ΔE 31,8, bild-kosten.js:3928-3931), Komfort-Regler, DE/EN aus EINER Tafel; kein Screenreader-Kanal, keine Beschreibung der Welt in Sprache. — KARTE: 0 — Untertitel 39/39 und Farbsicht ΔE 31,8 sind headless gebucht (spielgang.K4, K5), im echten Fenster nie gefahren (R2).",
@@ -20088,7 +20088,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 35,
+  "heute": 34,
   "davonKopplungen": 33,
   "kern": 9,
   "kernDazu": 9,
@@ -20102,8 +20102,8 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 33,
-  "nachwache": 2
+  "beide": 34,
+  "nachwache": 0
  },
  "zusammengelegt": [
   {
