@@ -2055,12 +2055,11 @@ if (process.argv.includes("--bestand-welt")) {
                 const [x0, z0] = [Math.floor(p.x / S) - N / 2, Math.floor(p.z / S) - N / 2];
                 // die stehende Hydro-Wahrheit über dem ganzen Gau (`_bestandBereit` bestellt die fehlenden Kacheln im Faden)
                 const t0 = performance.now();
-                for (let fehlt = 1; fehlt > 0; ) {
-                    fehlt = 0;
+                await window.__weltDa((r) => {
+                    let fehlt = 0;
                     for (let i = 0; i < N * N; i++) if (!r._bestandBereit(x0 + (i % N) + "," + (z0 + Math.floor(i / N)))) fehlt++;
-                    if (fehlt && performance.now() - t0 > 1500000) throw new Error("B4: " + fehlt + " Regionen ohne Hydro-Wahrheit nach 25 min");
-                    if (fehlt) await new Promise((q) => setTimeout(q, 500));
-                }
+                    return fehlt === 0;
+                });
                 const hydroS = (performance.now() - t0) / 1000;
                 s.lifeField = undefined; // das Substrat: die Äsung ohne das Overlay dieser Sitzung
                 const [C, Sub, LR, klassen, wolfZellen] = [[], [], [], {}, []];
