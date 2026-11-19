@@ -1,0 +1,17 @@
+{
+    "quelle": "koordination vision/einheit/entscheid-einheit.md §E6 Punkt 4 (19.11.), gesetzt VOR der Messung, wörtlich, nicht bewegt",
+    "art": "SPIKE — Messung, Bildpaare je Vorlage, Urteil je Zeile; kein Bau, keine Landung. Trägt B1 nicht: stopp mit Zahl.",
+    "vorlagen": {
+        "haeuser": "3 Häuser verschiedener Stile, darunter japanisch",
+        "wagen": "3 Wagen"
+    },
+    "soll": {
+        "B1": "Umschalt-Bild: am Wechsel-Abstand der Stufe k ändert das Umschalten L0 ↔ Lk an derselben Kamera höchstens 1 % der Pixel der Objekt-Maske um mehr als 8 / 255 (Luma), an 6 Vorlagen",
+        "B2": "Werfer: der Schatten des Hauses bei 12 m weicht ≤ 1 px vom Schatten der L0 ab (heute 9,4 px am Umriss)",
+        "B3": "Handlung: Tür und Sitz stehen innerhalb `haelt` in L0, 100 %",
+        "B4": "Dreiecke im Blick an der Pose stadt-voll: gemessen, nicht gerechnet; die Rechnung −32,6 % ist die Vorhersage",
+        "B5": "Frame p95 im ABAB: Differenz ≤ Rauschen der zwei A-Läufe — misst später das Paar, nicht dieser Spike"
+    },
+    "vorhersage_koordinator": "B1 reißt an den Fachwerk-Stilen bei der Silhouetten-Grenze (das innere Fachwerk fehlt der L1), b aus dem Bild liegt bei ihnen zwischen 6 und 12 m; B2 ist heute ROT; B4 landet zwischen −15 und −30 %",
+    "wechsel_abstaende_schritt0": "koordination vision/einheit/stufe-kurve.json (Node, Samen 1, Silhouette): < 3 m gilt als 3 m"
+}
