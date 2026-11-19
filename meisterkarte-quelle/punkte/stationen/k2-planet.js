@@ -350,6 +350,1409 @@ const KERN = (() => {
 const K = KERN;
 const L = K.kapitel("planet");
 
+// ── DIE PERSPEKTIVE planet.geologie (7 Leitern, 48 Sprossen; belegt: keine) ──────────────────────────────────────────────────────────
+// Die Leser des Spiels: der PLANET-FADEN (`r._planetAuftrag` planet-ort, stamm/gelaende-chunks.js:643 → voxel-worker.js:1175
+// planetOrtAuftrag → planet-core planetScheibe/planetOrt/planetPunkt): je Lage, Samen und Zeit { land, hoeheM, kuesteKm, delta.wildnis }
+// — die Wildnis-Regler, die der Boden liest (`ks` = 3 + 12 · Konvergenz am aktiven Rand, `hoehe` = 0,6 + Orogen-Stärke, `rauhLambda`
+// = das Alter des Orogens), immer als Differenz zum Anker der Saat; die Station liest sie als Rang und gegen das Minimum der Saat
+// (der Meeresgrund ohne Rand trägt Konvergenz 0, Orogen 0), nie als Formel. Der Faden trägt KEINE Platten-ID, keine Rand-Art, keinen
+// Vulkan, kein Beben, keinen Körper (jeder Samen rechnet auf PLANET_ERDE, voxel-worker.js:1159) — was daran hängt, urteilt
+// „Umfang nicht erzeugbar“, festgestellt an der Antwort der Welt (ihre Schlüssel, ein Körper-Argument ohne Wirkung).
+// Am Ort des Spielers: die Höhe (`_terrainMacroSurfaceY`, `_voxelSurfaceY`), das Feld der Dichte (`_fieldDensityAt`: Höhle, Mündung),
+// der Fels-Stoff des Kerns (gelaende-core FELS: das Einfallen der Bänke), die Lava (`_lavaZustand` an einer Tat der Welt-Zeit),
+// die Temperatur unter dem Boden (`_temperaturAt`), die Stoff-Tafel (`state.materials`), die Tiefe der Welt (`_voxelChunkConfig`).
+// Die Saat-Statistik (R2) fragt erde-01 … erde-100 über DENSELBEN Faden, solange der Deckel der Leiter trägt; die Zahl der Saaten
+// ist ein Soll des Richters (die Station urteilt ROT, wenn der Deckel weniger trägt). R = 6 371 km ist der Körper PLANET_ERDE des
+// Fadens (planet-core.js:263) — die Geometrie der Messung, keine Zahl der Welt.
+L.perspektive("geologie", (() => {
+    const PL = "planet.geologie.platten";
+    const VU = "planet.geologie.vulkan";
+    const GE = "planet.geologie.gebirge";
+    const UW = "planet.geologie.unterwelt";
+    const LA = "planet.geologie.lagerstaette";
+    const IN = "planet.geologie.inneres";
+    const EI = "planet.geologie.einschlag";
+    const PFAD_PLANET = ["planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "gelaende-core.js", "scripts/werkbank.cjs"];
+    const PFAD_ORT = ["gelaende-core.js", "stamm/gelaende-*.js", "stamm/feld-leben.js", "stamm/bild-himmel.js", "stamm/bau-buch.js", "planet-core.js", "voxel-worker.js", "scripts/werkbank.cjs"];
+
+    // DER ZEUGE DER WELT: jede genannte Zahl in `roh.zeuge` hält ihr Mindestmaß (Antworten der Welt, Saaten, Streuung) — die Attrappe,
+    // die nur den Wortlaut der werte trägt, fällt hier; `wahr` nennt Felder, die die Welt bejahen muss
+    const zMin = (spec, wahr) => (roh) => {
+        const z = (roh && roh.zeuge) || {};
+        if (z.fehler) return "die Messung warf: " + z.fehler;
+        for (const [k, min] of Object.entries(spec)) if (!(typeof z[k] === "number" && z[k] >= min)) return "die Welt antwortete nicht: " + k + " " + (z[k] === undefined ? "fehlt" : z[k]) + " (Soll ≥ " + min + ")";
+        for (const k of wahr || []) if (z[k] !== true) return "die Welt bejahte " + k + " nicht";
+        return null;
+    };
+    const gut = (werte, zeuge) => ({ werte, zeuge });
+    const leer = (werte) => ({ werte, zeuge: {} });
+    // DER RICHTER OHNE ZAHL (unterwelt S1 „im Band“, lagerstaette S2, S4): K.soll kann ihn nicht fassen — das Soll steht wörtlich,
+    // sein Vergleich „gegen“ die Referenz hält NIE (kein GRÜN ohne Schwelle; das Blatt nennt es `unklar`), die Sprosse trägt ein Auge
+    const ohneZahl = (id, nr, wort, key) => {
+        const r = K.sprosseVon(id, nr).richter;
+        if (!r.includes(wort)) throw new Error("Soll „" + wort + "“ steht nicht wörtlich im Richter " + id + " S" + nr);
+        if (K.zahlenIn(wort).length) throw new Error(id + " S" + nr + ": „" + wort + "“ trägt eine Zahl — das Soll gehört K.soll");
+        return { wort, key, rel: "gegen", a: "die Referenz (der Richter nennt keine Schwelle)", einheit: "" };
+    };
+    // die Erd-Referenzen der Station (das Vorbild, nie eine Formel der Welt)
+    const MOND_R = 1737.4;
+    const senkung = (h) => (Math.acos(MOND_R / (MOND_R + h)) * 180) / Math.PI;
+    const HON_S = Math.pow(1 / 0.0779, 2) * 3600; // Hon et al. 1994: Kruste H = 0,0779 · √t (m, h) — die 1-m-Decke durch-erstarrt
+    const T_ZAHL = "[Erde: Hypsometrie nach Kossinna (1933) in Sverdrup et al. (1942)]";
+
+    // ════════════════════════════════════════ PLATTEN ════════════════════════════════════════
+    const platten = {
+        sek: 60,
+        pfad: PFAD_PLANET,
+        ungefahren: "die Bilder (Schummerung, Orbit, Fach-Panel, Ursachen-Probe aus dem Orbitbild) und die Bilddifferenz benachbarter Zeiten (S5) schießt die Probe nur am Gerät; die Saat-Zahl hängt am Tempo des Planet-Fadens (headless ~2 ms je Lage)",
+        mess: async function (H, U, M) {
+            const R = 6371;
+            const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
+            const med = (a) => {
+                const b = a.filter(Number.isFinite).sort((x, y) => x - y);
+                const n = b.length;
+                return n ? (n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2) : NaN;
+            };
+            const quant = (a, q) => {
+                const b = a.filter(Number.isFinite).sort((x, y) => x - y);
+                return b.length ? b[Math.min(b.length - 1, Math.max(0, Math.ceil(q * b.length) - 1))] : NaN;
+            };
+            const sd = (a) => {
+                if (!a.length) return 0;
+                const m = a.reduce((s, x) => s + x, 0) / a.length;
+                return Math.sqrt(a.reduce((s, x) => s + (x - m) * (x - m), 0) / a.length);
+            };
+            const vek = (p) => {
+                const b = (p[0] * Math.PI) / 180, l = (p[1] * Math.PI) / 180;
+                return [Math.cos(b) * Math.cos(l), Math.sin(b), Math.cos(b) * Math.sin(l)];
+            };
+            const km = (p, q) => {
+                const a = vek(p), b = vek(q);
+                return R * Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])));
+            };
+            const fib = (N) => {
+                const P = [];
+                for (let i = 0; i < N; i++) P.push([(Math.asin(1 - (2 * (i + 0.5)) / N) * 180) / Math.PI, ((i * 137.50776405) % 360) - 180]);
+                return P;
+            };
+            const saat = (i) => "erde-" + String(i + 1).padStart(2, "0");
+            const auge = async (name, pose, bis) =>
+                Promise.race([
+                    M.auge(name, pose),
+                    new Promise((f) => setTimeout(() => f({ bild: null, pose: JSON.stringify(pose), grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (bis - M.uhr()) * 1000))),
+                ]);
+            const frage = (L, zeit) =>
+                H.seite("await r._fadenQuelle(); const L = " + JSON.stringify(L) + "; const a = await Promise.all(L.map((q) => r._planetAuftrag({ type: \"planet-ort\", samen: q[0], breite: Math.max(-89.99, Math.min(89.99, q[1])), laenge: ((q[2] + 540) % 360) - 180, zeitMa: " + zeit + " }))); " +
+                    "return a.map((x) => [Math.round(x.hoeheM), Math.round(x.kuesteKm), x.version]);");
+            const modus = (a) => {
+                const z = new Map();
+                let b = NaN, n = 0;
+                for (const x of a) {
+                    const c = (z.get(x) || 0) + 1;
+                    z.set(x, c);
+                    if (c > n) {
+                        n = c;
+                        b = x;
+                    }
+                }
+                return b;
+            };
+            const aus = {};
+            const A = U[2];
+            // ── A: die Stichprobe je Saat (S2, S4, S9; Grundlage von S1, S5): A.punkte Fibonacci-Lagen zur Zeit 0 — gezogen von der Leiter
+            // gebirge DERSELBEN Probe über denselben Faden (window.__geoStich); was ihr Deckel nicht trug, zieht diese Leiter bis A.bis nach
+            const c0 = await H.seite("const c = window.__geoStich; return c && c.N === " + A.punkte + " ? c.je : null;");
+            const je = c0 || {};
+            const ausCache = Object.keys(je).length;
+            const P0 = fib(A.punkte);
+            for (let i = 0; i < A.saaten && M.uhr() < A.bis; i += A.block) {
+                const S = [];
+                for (let j = i; j < Math.min(A.saaten, i + A.block); j++) if (!je[saat(j)]) S.push(saat(j));
+                if (!S.length) continue;
+                const a = await H.seite(
+                    "await r._fadenQuelle(); const N = " + A.punkte + ", S = " + JSON.stringify(S) + ", aus = {}; " +
+                        "for (const s of S) { const P = []; for (let i = 0; i < N; i++) P.push([Math.asin(1 - (2 * (i + 0.5)) / N) * 180 / Math.PI, ((i * 137.50776405) % 360) - 180]); " +
+                        "const a = await Promise.all(P.map((p) => r._planetAuftrag({ type: \"planet-ort\", samen: s, breite: p[0], laenge: p[1], zeitMa: 0 }))); " +
+                        "aus[s] = { v: a[0].version, h: a.map((x) => Math.round(x.hoeheM)), k: a.map((x) => Math.round(x.kuesteKm)), ks: a.map((x) => Math.round(x.delta.wildnis.ks * 1000) / 1000), " +
+                        "ho: a.map((x) => Math.round(x.delta.wildnis.hoehe * 1000) / 1000), rl: a.map((x) => Math.round(x.delta.wildnis.rauhLambda)), loch: a.filter((x) => !Number.isFinite(x.hoeheM) || !Number.isFinite(x.kuesteKm)).length }; } " +
+                        "const c = window.__geoStich || (window.__geoStich = { N, je: {} }); if (c.N === N) Object.assign(c.je, aus); c.t = Date.now(); return aus;"
+                );
+                for (const s of S) if (a && a[s]) je[s] = a[s];
+            }
+            const reihe = [];
+            let antworten = 0;
+            for (let i = 0; i < A.saaten; i++)
+                if (je[saat(i)]) {
+                    reihe.push(saat(i));
+                    antworten += je[saat(i)].h.length;
+                }
+            const version = reihe.length ? je[reihe[0]].v : null;
+            // die Hypsometrie je Saat: zwei Gipfel (Land −0,5 … 1 km, Ozean −5,5 … −3,5 km, Fächer 0,5 km, Tal < ⅓ des kleineren Gipfels —
+            // die Definition von scripts/diag-planet.cjs hypsBimodal) und der KS-Abstand zur Erd-Hypsometrie an 13 Stufen
+            const bimodal = (hs) => {
+                const lo = -11, n = 30, f = new Array(n).fill(0);
+                for (const h of hs) {
+                    const i = Math.floor((h - lo) / 0.5);
+                    if (i >= 0 && i < n) f[i]++;
+                }
+                const mitte = (i) => lo + 0.5 * i + 0.25;
+                let Lg = -1, Og = -1;
+                for (let i = 0; i < n; i++) {
+                    const m = mitte(i);
+                    if (m >= -0.5 && m <= 1.0 && (Lg < 0 || f[i] > f[Lg])) Lg = i;
+                    if (m >= -5.5 && m <= -3.5 && (Og < 0 || f[i] > f[Og])) Og = i;
+                }
+                const lokal = (i) => (i === 0 || f[i] >= f[i - 1]) && (i === n - 1 || f[i] >= f[i + 1]);
+                let tal = Infinity;
+                for (let i = Og + 1; i < Lg; i++) tal = Math.min(tal, f[i]);
+                const abstand = mitte(Lg) - mitte(Og);
+                return { ok: lokal(Lg) && lokal(Og) && tal < Math.min(f[Lg], f[Og]) / 3 && abstand >= 3 && abstand <= 6, abstand };
+            };
+            const KANTEN = [-7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5];
+            const ERDE = [0.1, 1.3, 17.7, 40.9, 54.8, 59.2, 62.2, 70.7, 91.5, 96.0, 98.2, 99.3, 99.7].map((x) => x / 99.8);
+            const ksVon = (hs) => Math.max(...KANTEN.map((e, i) => Math.abs(hs.filter((h) => h < e).length / hs.length - ERDE[i])));
+            const bi = [], ab = [], ksL = [], loecher = [];
+            let gipfel = 0, gipfelKonv = 0, gipfelOro = 0, alleH = [];
+            for (const s of reihe) {
+                const x = je[s];
+                const hs = x.h.filter(Number.isFinite).map((h) => h / 1000);
+                const b = bimodal(hs);
+                bi.push(b.ok ? 1 : 0);
+                ab.push(b.abstand);
+                ksL.push(ksVon(hs));
+                loecher.push(x.loch);
+                // der Regler fern jedes Rands und Orogens ist der häufigste Wert der Saat (ks: Konvergenz 0; hoehe: Orogen 0) — die
+                // Differenz zum Anker fällt so heraus: Konvergenz = (ks − Modus)/12, Orogen-Stärke = hoehe − Modus
+                const mk = modus(x.ks), mh = modus(x.ho);
+                x.h.forEach((h, i) => {
+                    if (!(h > 2000)) return;
+                    gipfel++;
+                    if ((x.ks[i] - mk) / 12 >= 0.1) gipfelKonv++;
+                    if ((x.ks[i] - mk) / 12 >= 0.1 || x.ho[i] - mh >= 0.3) gipfelOro++;
+                });
+                alleH = alleH.concat(x.h.slice(0, 20));
+            }
+            const nS = reihe.length;
+            const streuungM = sd(alleH.filter(Number.isFinite));
+            aus[2] = {
+                werte: { saaten: nS, bimodalProzent: r3(nS ? (100 * bi.reduce((a, b) => a + b, 0)) / nS : NaN), abstandKm: r3(med(ab)) },
+                zeuge: { saaten: nS, antworten, streuungM: r3(streuungM), version, punkteJeSaat: A.punkte, bis: r3(M.uhr()) },
+            };
+            aus[4] = {
+                werte: { saaten: nS, ksP80: r3(quant(ksL, 0.8)), gipfelKonvProzent: r3(gipfel ? (100 * gipfelOro) / gipfel : NaN) },
+                zeuge: { saaten: nS, antworten, gipfel, streuungM: r3(streuungM), ksMedian: r3(med(ksL)), gipfelAktivProzent: r3(gipfel ? (100 * gipfelKonv) / gipfel : NaN), ausCache, version },
+                nicht: "das Rücken-Netz: der Faden trägt keine Rand-Art je Lage (die Antwort trägt " + (reihe.length ? "h, kueste, delta" : "nichts") + ", nie rand/platte — voxel-worker.js:1175 planetOrtAuftrag)",
+            };
+            // ── B (S1): die Gebirgsfläche > 2 km als Komponenten, verfolgt über den Faden — von jedem Stichpunkt > 2 km (der höchste zuerst)
+            // wächst eine Flut auf einem Gitter der Kante B.kante (gnomonisch um den Startpunkt: Großkreise sind Geraden) durch jede
+            // Zelle > 2 km, bis die Komponente geschlossen ist (kein Fenster, das einen Gürtel abschneidet); ihre Achsen aus den Momenten
+            // (+ Kante²/12), Komponenten < B.minZellen fallen wie in der Linse (diag-planet: < 5·10⁴ km²) aus der Fläche
+            const B = U[1];
+            const rad = Math.PI / 180;
+            const rahmen = (p) => {
+                const b = p[0] * rad, l = p[1] * rad;
+                return { c: [Math.cos(b) * Math.cos(l), Math.sin(b), Math.cos(b) * Math.sin(l)], e: [-Math.sin(l), 0, Math.cos(l)], n: [-Math.sin(b) * Math.cos(l), Math.cos(b), -Math.sin(b) * Math.sin(l)] };
+            };
+            const lage = (F, i, j) => {
+                const x = (i * B.kante) / R, y = (j * B.kante) / R;
+                const v = [F.c[0] + x * F.e[0] + y * F.n[0], F.c[1] + x * F.e[1] + y * F.n[1], F.c[2] + x * F.e[2] + y * F.n[2]];
+                const l = Math.hypot(v[0], v[1], v[2]);
+                return [Math.asin(v[1] / l) / rad, Math.atan2(v[2], v[0]) / rad];
+            };
+            const nachbarn = (K, i, j) => {
+                for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+                    const q = i + di + "," + (j + dj);
+                    if (K.zell.has(q)) continue;
+                    if (Math.abs(i + di) > B.rand || Math.abs(j + dj) > B.rand || K.gefragt + K.offen.length >= B.deckel) {
+                        K.voll = true;
+                        continue;
+                    }
+                    K.zell.set(q, 1);
+                    K.offen.push([i + di, j + dj]);
+                }
+            };
+            const formen = [];
+            let bAntw = 0, klein = 0, gedeckelt = 0, abgebrochen = 0;
+            const zust = reihe.slice(0, B.saaten).map((s) => {
+                const x = je[s];
+                const starts = x.h.map((h, i) => [h, i]).filter((q) => q[0] > 2000).sort((p, q) => q[0] - p[0]).map((q) => P0[q[1]]);
+                return { s, starts, berg: [], gefragt: 0, komp: null };
+            });
+            const naechste = (Z) => {
+                while (Z.starts.length && Z.gefragt < B.jeSaat) {
+                    const p = Z.starts.shift();
+                    if (Z.berg.some((q) => km(p, q) < 0.8 * B.kante)) continue;
+                    const K = { F: rahmen(p), zell: new Map([["0,0", 1]]), offen: [], berg: [[0, 0, p]], gefragt: 0, voll: false };
+                    nachbarn(K, 0, 0);
+                    return K;
+                }
+                return null;
+            };
+            const schliessen = (Z, K) => {
+                for (const b of K.berg) Z.berg.push(b[2]);
+                if (K.berg.length < B.minZellen) {
+                    klein++;
+                    return;
+                }
+                const xs = K.berg.map((q) => q[0] * B.kante), ys = K.berg.map((q) => q[1] * B.kante), n = K.berg.length;
+                const mx = xs.reduce((u, v) => u + v, 0) / n, my = ys.reduce((u, v) => u + v, 0) / n;
+                let sxx = (B.kante * B.kante) / 12, syy = sxx, sxy = 0;
+                for (let q = 0; q < n; q++) {
+                    sxx += ((xs[q] - mx) * (xs[q] - mx)) / n;
+                    syy += ((ys[q] - my) * (ys[q] - my)) / n;
+                    sxy += ((xs[q] - mx) * (ys[q] - my)) / n;
+                }
+                const t = (sxx + syy) / 2, d = Math.sqrt(((sxx - syy) / 2) * ((sxx - syy) / 2) + sxy * sxy);
+                if (K.voll) gedeckelt++;
+                formen.push({ s: Z.s, n, achse: Math.sqrt((t + d) / Math.max(1e-9, t - d)), laengeKm: Math.sqrt(12 * (t + d)) });
+            };
+            for (const Z of zust) Z.komp = naechste(Z);
+            while (M.uhr() < B.bis) {
+                const L = [], wer = [];
+                for (const Z of zust) {
+                    const K = Z.komp;
+                    if (!K) continue;
+                    for (const [i, j] of K.offen.splice(0)) {
+                        const p = lage(K.F, i, j);
+                        L.push([Z.s, p[0], p[1]]);
+                        wer.push([Z, K, i, j, p]);
+                    }
+                }
+                if (!L.length) break;
+                const a = await frage(L, 0);
+                bAntw += a.length;
+                a.forEach((y, q) => {
+                    const [Z, K, i, j, p] = wer[q];
+                    K.gefragt++;
+                    Z.gefragt++;
+                    if (y[0] > 2000) {
+                        K.berg.push([i, j, p]);
+                        nachbarn(K, i, j);
+                    }
+                });
+                for (const Z of zust)
+                    if (Z.komp && !Z.komp.offen.length) {
+                        schliessen(Z, Z.komp);
+                        Z.komp = naechste(Z);
+                    }
+            }
+            for (const Z of zust) if (Z.komp) abgebrochen++;
+            const flaeche = formen.reduce((u, f) => u + f.n, 0);
+            const gewichtet = [];
+            for (const f of formen) for (let q = 0; q < f.n; q++) gewichtet.push(f.achse);
+            gewichtet.sort((x, y) => x - y);
+            const jeSaat = zust.map((Z) => {
+                const F = formen.filter((f) => f.s === Z.s), g = F.reduce((u, f) => u + f.n, 0);
+                return g ? F.filter((f) => f.achse >= 4).reduce((u, f) => u + f.n, 0) / g : NaN;
+            });
+            const bSaaten = zust.filter((Z) => !Z.komp).length;
+            const auge1 = { pose: { px: 0, py: 1800, pz: 2600, lx: 0, ly: 0, lz: -2600 } };
+            aus[1] = {
+                werte: { saaten: bSaaten, guertelProzent: r3(flaeche ? (100 * formen.filter((f) => f.achse >= 4).reduce((u, f) => u + f.n, 0)) / flaeche : NaN), achseP30: r3(quant(gewichtet, 0.3)) },
+                zeuge: {
+                    saaten: bSaaten,
+                    antworten: bAntw,
+                    bergZellen: flaeche,
+                    komponenten: formen.length,
+                    klein,
+                    gedeckelt,
+                    abgebrochen,
+                    kanteKm: B.kante,
+                    jeSaatMedianProzent: r3(100 * med(jeSaat)),
+                    laengsteKm: r3(formen.reduce((u, f) => Math.max(u, f.laengeKm), 0)),
+                    achseMedian: r3(quant(gewichtet, 0.5)),
+                },
+            };
+            // ── C (S5): die Küste zur Zeit −1 Ma an den Küsten-Lagen der Stichprobe: |Δ Küstenabstand| je Ma = der Versatz der Küste (km/Ma = mm/a)
+            const C = U[5];
+            const raten = [];
+            let cAntw = 0, cPunkte = 0;
+            for (let i = 0; i < reihe.length && M.uhr() < C.bis; i += C.block) {
+                const S = reihe.slice(i, i + C.block);
+                const L = [], wer = [];
+                for (const s of S) {
+                    const x = je[s];
+                    const idx = [];
+                    x.k.forEach((k, j) => {
+                        if (Math.abs(k) >= C.vonKm && Math.abs(k) <= C.bisKm) idx.push(j);
+                    });
+                    const nimm = idx.filter((_, j) => j % Math.max(1, Math.floor(idx.length / C.jeSaat)) === 0).slice(0, C.jeSaat);
+                    for (const j of nimm) {
+                        L.push([s, P0[j][0], P0[j][1]]);
+                        wer.push([s, x.k[j]]);
+                    }
+                }
+                if (!L.length) continue;
+                const a = await frage(L, -C.dtMa);
+                cAntw += a.length;
+                for (const s of S) {
+                    const d = [];
+                    a.forEach((y, j) => {
+                        if (wer[j][0] === s && Number.isFinite(y[1])) d.push(Math.abs(y[1] - wer[j][1]) / C.dtMa / 10);
+                    });
+                    cPunkte += d.length;
+                    if (d.length >= 3) raten.push(med(d));
+                }
+            }
+            aus[5] = {
+                werte: { saaten: raten.length, plattenMinCmA: r3(raten.length ? Math.min(...raten) : NaN), plattenMaxCmA: r3(raten.length ? Math.max(...raten) : NaN), plattenMedianCmA: r3(med(raten)) },
+                zeuge: { saaten: raten.length, antworten: cAntw, punkte: cPunkte, streuungCmA: r3(sd(raten)), dtMa: C.dtMa, mass: "Versatz der Küste je Ma am Faden (der Faden trägt keine Plattenrate)" },
+            };
+            // ── D (S6): je Saat die Land-Lagen (Fibonacci, gleiche Fläche) zu D.zeiten im letzten Ga. Zwei benachbarte Land-Lagen hängen
+            // zusammen, wenn ihre Land-Scheiben (Radius = der Küstenabstand, den der Faden nennt) sich decken — sonst geht die Probe den
+            // Großkreis von u nach v: je Schritt fragt sie die Lage D.schrittKm hinter dem schon gedeckten Stück; Meer trennt, Land deckt
+            // bis zu seiner eigenen Scheibe weiter (Auflösung D.schrittKm, höchstens D.schritte Fragen, sonst getrennt). Der größte Teil
+            // gegen das ganze Land; ein Superkontinent ist eine Phase mit ≥ 70 %
+            const D = U[6];
+            const P6 = fib(D.punkte);
+            const abstand6 = Math.sqrt((4 * Math.PI * R * R) / D.punkte);
+            const paare6 = [];
+            for (let u = 0; u < P6.length; u++)
+                for (let v = u + 1; v < P6.length; v++) {
+                    const d = km(P6[u], P6[v]);
+                    if (d < D.nachbar * abstand6) paare6.push([u, v, d]);
+                }
+            const auf = (p, q, d, sKm) => {
+                const a = vek(p), b = vek(q), w = d / R, t = sKm / R, sw = Math.sin(w) || 1e-9;
+                const f = Math.sin(w - t) / sw, g = Math.sin(t) / sw;
+                const v = [f * a[0] + g * b[0], f * a[1] + g * b[1], f * a[2] + g * b[2]];
+                const l = Math.hypot(v[0], v[1], v[2]);
+                return [Math.asin(v[1] / l) / rad, Math.atan2(v[2], v[0]) / rad];
+            };
+            const superS = [], anteile = [], zahlen = [];
+            let dAntw = 0, gegangen = 0, offenGeblieben = 0, zeitenGemessen = 0;
+            for (let i = 0; i < reihe.length && M.uhr() < D.bis; i++) {
+                const s = reihe[i];
+                let maxA = 0, runs = 0, vorher = false, voll = true;
+                for (const t of D.zeiten) {
+                    if (M.uhr() >= D.bis) {
+                        voll = false;
+                        break;
+                    }
+                    const a = await frage(P6.map((p) => [s, p[0], p[1]]), t);
+                    dAntw += a.length;
+                    const rad6 = a.map((y) => (y[0] > 0 ? Math.max(0, y[1]) : -1));
+                    const par = P6.map((_, j) => j);
+                    const wurzel = (j) => (par[j] === j ? j : (par[j] = wurzel(par[j])));
+                    const eins = (u, v) => {
+                        par[wurzel(u)] = wurzel(v);
+                    };
+                    let gang = [];
+                    for (const [u, v, d] of paare6) {
+                        if (rad6[u] < 0 || rad6[v] < 0) continue;
+                        if (d < rad6[u] + rad6[v]) eins(u, v);
+                        else gang.push({ u, v, d, s: rad6[u] });
+                    }
+                    for (let r = 0; r < D.schritte && gang.length; r++) {
+                        gang = gang.filter((w) => wurzel(w.u) !== wurzel(w.v));
+                        if (!gang.length) break;
+                        const q = gang.map((w) => Math.min(w.d, w.s + D.schrittKm));
+                        const b = await frage(gang.map((w, j) => [s, ...auf(P6[w.u], P6[w.v], w.d, q[j])]), t);
+                        dAntw += b.length;
+                        gegangen += b.length;
+                        const weiter = [];
+                        gang.forEach((w, j) => {
+                            const y = b[j];
+                            if (!(y[0] > 0)) return;
+                            const neu = q[j] + Math.max(0, y[1]);
+                            if (neu >= w.d - rad6[w.v]) eins(w.u, w.v);
+                            else weiter.push({ u: w.u, v: w.v, d: w.d, s: neu });
+                        });
+                        gang = weiter;
+                    }
+                    offenGeblieben += gang.filter((w) => wurzel(w.u) !== wurzel(w.v)).length;
+                    const zahl = {};
+                    let landN = 0;
+                    for (let u = 0; u < P6.length; u++)
+                        if (rad6[u] >= 0) {
+                            landN++;
+                            zahl[wurzel(u)] = (zahl[wurzel(u)] || 0) + 1;
+                        }
+                    const anteil = landN ? Math.max(...Object.values(zahl)) / landN : 0;
+                    zeitenGemessen++;
+                    maxA = Math.max(maxA, anteil);
+                    const ist = anteil >= 0.7;
+                    if (ist && !vorher) runs++;
+                    vorher = ist;
+                }
+                if (!voll) break;
+                superS.push(runs >= 1 ? 1 : 0);
+                anteile.push(100 * maxA);
+                zahlen.push(runs);
+            }
+            aus[6] = {
+                werte: { saaten: superS.length, superProzent: r3(superS.length ? (100 * superS.reduce((a, b) => a + b, 0)) / superS.length : NaN), anteilP20: r3(quant(anteile, 0.2)), superJeGaP20: r3(quant(zahlen, 0.2)) },
+                zeuge: { saaten: superS.length, antworten: dAntw, zeiten: D.zeiten.length, zeitenGemessen, punkte: D.punkte, gegangen, offenGeblieben, anteilMedian: r3(med(anteile)), streuungProzent: r3(sd(anteile)) },
+            };
+            // ── E: was der Faden trägt — der Körper (ein Mond-Argument), die älteste Zeit, der Erd-Schlüssel (S3, S7, S8, S9)
+            const e = await H.seite(
+                "await r._fadenQuelle(); const a = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: 0 }); " +
+                    "const b = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: 0, koerper: \"mond\", radiusKm: 1737.4, masseErden: 0.0123 }); " +
+                    "const c = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-01\", breite: 10, laenge: 20, zeitMa: -3990 }); " +
+                    "const G = r._gelaende && r._gelaende(); return { dh: b.hoeheM - a.hoeheM, h: a.hoeheM, hAlt: c.hoeheM, schluessel: !!(G && G.ort && G.ort.teil && G.ort.teil.erdSchluessel), schl: Object.keys(a).sort().join(\",\"), delta: Object.keys(a.delta).sort().join(\",\") };"
+            );
+            const koerper = Math.abs(e.dh) > 0;
+            const bild = await auge("geologie-platten", auge1.pose, U[1].augeBis);
+            aus[1].auge = bild;
+            aus[3] = {
+                werte: {},
+                zeuge: { antworten: 2, dhMond: r3(e.dh), schluessel: e.schl },
+                auge: bild,
+                ...(koerper ? {} : { nicht: "kein Körper von Mondgröße: der Faden liest keinen Körper — ein Mond-Argument (R 1 737,4 km) ändert die Höhe um " + r3(e.dh) + " m (jeder Samen rechnet auf PLANET_ERDE, voxel-worker.js:1159); keine Orbit-Pose" }),
+            };
+            aus[7] = {
+                werte: {},
+                zeuge: { antworten: 1, schluessel: e.schluessel },
+                auge: bild,
+                ...(e.schluessel ? {} : { nicht: "keine Erd-Saat mit Schlüssel (R4): planetPlan liest nur den Samen (planet-core.js:307), die Welt trägt keinen erdSchluessel" }),
+            };
+            aus[8] = {
+                werte: {},
+                zeuge: { antworten: 1, hAltM: r3(e.hAlt) },
+                auge: bild,
+                nicht: "der Faden rechnet die Zeit in [−4 000; +1 000] Ma unter EINEM Regime (planet-core.js:328 K10: Regime ≠ „platten“ bricht) — kein Magma-Ozean bei −4 500 Ma, kein Deckel → Platten; die älteste Antwort (−3 990 Ma) trägt " + r3(e.hAlt) + " m",
+            };
+            aus[9] = {
+                werte: { nahtLochSaaten: loecher.filter((x) => x > 0).length },
+                zeuge: { antworten: antworten + 2, saaten: nS, dhMond: r3(e.dh) },
+                auge: bild,
+                ...(koerper ? {} : { nicht: "keine Saat von 0,01 bis 10 Erdmassen: der Faden liest keinen Körper (ein Mond-Argument ändert die Höhe um " + r3(e.dh) + " m; voxel-worker.js:1159 PLANET_ERDE)" }),
+            };
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { saaten: 30, kante: 80, rand: 50, deckel: 350, jeSaat: 450, minZellen: 8, bis: 24, augeBis: 58 },
+                soll: [
+                    K.soll(PL, 1, "30 Saaten", { key: "saaten", rel: "≥" }),
+                    K.soll(PL, 1, "Gebirgsfläche > 2 km liegt in Gürteln mit Achsen ≥ 4:1", { key: "achseP30" }),
+                    K.soll(PL, 1, "in ≥ 70 %", { key: "guertelProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ antworten: 3000, bergZellen: 30, komponenten: 5 }),
+                auge: { pose: "Überflug 1 800 m über dem Spawn, Blick nach Norden (die Schummerung der Region)", vorbild: "Schummerung einer realen Gebirgsregion 10⁴ km² (Copernicus DEM), Blindpaar R11" },
+                taeter: "planet-core.js planetPunktR (Orogen-Schablone der Ränder) über den Faden voxel-worker.js planetOrtAuftrag",
+                unklar: "„in ≥ 70 %“ gelesen wie die Linse diag-planet (guertel.lang): der Anteil der Gebirgsfläche > 2 km, der in Komponenten mit Achsen ≥ 4:1 liegt (Gitter 80 km, Komponenten ≥ 8 Zellen), über die Saaten gepoolt; eine Hochfläche über 350 Zellen (≈ 2,2 Mio km²) geht mit ihrer verfolgten Teilform ein (Zeuge gedeckelt)",
+                gruen: gut({ saaten: 30, achseP30: 4.6, guertelProzent: 78 }, { antworten: 5070, bergZellen: 900, komponenten: 60 }),
+                attrappen: [
+                    { name: "der Gürtel-Anteil als Zahl ohne Fenster des Fadens", roh: leer({ saaten: 30, achseP30: 4.6, guertelProzent: 78 }) },
+                    { name: "ein einziger Gipfel statt einer Fläche", roh: gut({ saaten: 30, achseP30: 4.6, guertelProzent: 78 }, { antworten: 5070, bergZellen: 1, komponenten: 1 }) },
+                ],
+            },
+            2: {
+                u: { saaten: 100, punkte: 240, block: 4, bis: 8 },
+                soll: [
+                    K.soll(PL, 2, "100 Saaten", { key: "saaten", rel: "≥" }),
+                    K.soll(PL, 2, "zwei Gipfeln im Abstand 3–6 km", { key: "abstandKm", einheit: "km" }),
+                    K.soll(PL, 2, "in ≥ 90 %", { key: "bimodalProzent", einheit: "%" }),
+                ],
+                zeuge: (roh) => {
+                    const z = (roh && roh.zeuge) || {};
+                    const f = zMin({ antworten: 10000, streuungM: 1 })(roh);
+                    if (f) return f;
+                    return z.version ? null : "keine Fassung des Planet-Kerns in der Antwort";
+                },
+                taeter: "planet-core.js planetPunktR (Krusten-Profil, GDH1-Tiefe) über den Faden voxel-worker.js planetOrtAuftrag",
+                gruen: gut({ saaten: 100, abstandKm: 4.5, bimodalProzent: 94 }, { antworten: 24000, streuungM: 2600, version: "planet-h2-4" }),
+                attrappen: [
+                    { name: "94 % aus der Tafel der Linse (diag-planet), kein Faden", roh: leer({ saaten: 100, abstandKm: 4.5, bimodalProzent: 94 }) },
+                    { name: "eine konstante Höhe je Lage", roh: gut({ saaten: 100, abstandKm: 4.5, bimodalProzent: 94 }, { antworten: 24000, streuungM: 0, version: "planet-h2-4" }) },
+                ],
+            },
+            3: {
+                u: {},
+                soll: [
+                    K.soll(PL, 3, "= acos(R/(R+h)) ±0,1° bei 1, 10, 100 km", { key: "senkung1kmGrad", ref: senkung(1), refQuelle: "Mond: R = 1 737,4 km (IAU), acos(R/(R+h)) bei h = 1 km", einheit: "°" }),
+                    K.soll(PL, 3, "= acos(R/(R+h)) ±0,1° bei 1, 10, 100 km", { key: "senkung10kmGrad", ref: senkung(10), refQuelle: "Mond: R = 1 737,4 km (IAU), acos(R/(R+h)) bei h = 10 km", einheit: "°" }),
+                    K.soll(PL, 3, "= acos(R/(R+h)) ±0,1° bei 1, 10, 100 km", { key: "senkung100kmGrad", ref: senkung(100), refQuelle: "Mond: R = 1 737,4 km (IAU), acos(R/(R+h)) bei h = 100 km", einheit: "°" }),
+                ],
+                zeuge: zMin({ antworten: 2 }),
+                auge: { pose: "Orbit 100 km über der Kugel (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn)", vorbild: "Relief-Globus des Monds (LRO LOLA), Blindpaar R11" },
+                taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE für jeden Samen)",
+                nicht: "kein Körper von Mondgröße, keine Orbit-Pose",
+                leser: "voxel-worker.js:1159 PLANET_ERDE — planetPlanVon(samen) rechnet jeden Samen auf PLANET_ERDE, die Nachricht planet-ort trägt keinen Körper; scripts/werkbank.cjs /bild kennt keine Orbit-Pose",
+                gruen: gut({ senkung1kmGrad: 1.94, senkung10kmGrad: 6.13, senkung100kmGrad: 18.99 }, { antworten: 3 }),
+                attrappen: [{ name: "die Senkung aus der Formel, kein Bild", roh: leer({ senkung1kmGrad: 1.94, senkung10kmGrad: 6.13, senkung100kmGrad: 18.99 }) }],
+            },
+            4: {
+                u: {},
+                soll: [
+                    K.soll(PL, 4, "100 erdähnliche Saaten", { key: "saaten", rel: "≥" }),
+                    K.soll(PL, 4, "KS ≤ 0,1 gegen Erd-Hypsometrie", { key: "ksP80" }),
+                    K.soll(PL, 4, "geschlossenes Rücken-Netz in ≥ 80 %", { key: "rueckenProzent", einheit: "%" }),
+                    K.soll(PL, 4, "Gipfel > 2 km an Konvergenz ≥ 90 %", { key: "gipfelKonvProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ antworten: 10000, gipfel: 100, streuungM: 1 }),
+                taeter: "planet-core.js planetPunktR (Rand-Schablone, Orogen) über den Faden voxel-worker.js planetOrtAuftrag",
+                nicht: "kein Rücken-Netz am Faden",
+                leser: "voxel-worker.js:1175 planetOrtAuftrag — gibt rand (Art, Abstand, Rate) und platte von planetOrt nicht weiter: kein Leser des Rücken-Netzes",
+                unklar: "„KS ≤ 0,1 … in ≥ 80 %“ gelesen als p80 der KS-Abstände über die Saaten ≤ 0,1 (gegen die Kossinna-Hypsometrie an 13 Stufen " + T_ZAHL + "); „an Konvergenz“ wie die Linse diag-planet (hoch25Rand): am konvergenten Rand (Regler ks: Konvergenz ≥ 0,1) oder auf einem Orogen, lebend oder Naht (Regler hoehe: Orogen-Stärke ≥ 0,3); nur der lebende Rand steht als gipfelAktivProzent im Zeugen",
+                gruen: gut({ saaten: 100, ksP80: 0.08, rueckenProzent: 85, gipfelKonvProzent: 92 }, { antworten: 24000, gipfel: 600, streuungM: 2600 }),
+                attrappen: [{ name: "die Hypsometrie der Erde abgeschrieben, kein Faden", roh: leer({ saaten: 100, ksP80: 0.08, rueckenProzent: 85, gipfelKonvProzent: 92 }) }],
+            },
+            5: {
+                u: { block: 10, jeSaat: 12, vonKm: 30, bisKm: 800, dtMa: 1, bis: 28 },
+                soll: [
+                    K.soll(PL, 5, "an 100 Saaten", { key: "saaten", rel: "≥" }),
+                    K.soll(PL, 5, "Plattengeschwindigkeit 1–15 cm/a", { key: "plattenMinCmA", einheit: "cm/a" }),
+                    K.soll(PL, 5, "Plattengeschwindigkeit 1–15 cm/a", { key: "plattenMaxCmA", einheit: "cm/a" }),
+                ],
+                zeuge: zMin({ antworten: 300, punkte: 300, streuungCmA: 0.001 }),
+                taeter: "planet-core.js planetScheibe (Euler-Pole, Tempo-Kurve K5) über den Faden voxel-worker.js planetOrtAuftrag",
+                unklar: "der Faden trägt keine Plattenrate (rand.rateCmA fällt in voxel-worker.js:1175): die Station misst sie als Versatz der Küste je Ma (|Δ Küstenabstand| an 12 Küsten-Lagen je Saat, Median) — die Normal-Komponente der Drift; die Bilddifferenz benachbarter Zeiten misst nur das Gerät",
+                gruen: gut({ saaten: 100, plattenMinCmA: 1.2, plattenMaxCmA: 9.5 }, { antworten: 1200, punkte: 1200, streuungCmA: 1.4 }),
+                attrappen: [
+                    { name: "die Drift-Zahl der Linse (diag-planet drift.cm_a), kein Faden", roh: leer({ saaten: 100, plattenMinCmA: 1.2, plattenMaxCmA: 9.5 }) },
+                    { name: "eine stehende Welt (jede Saat dieselbe Rate)", roh: gut({ saaten: 100, plattenMinCmA: 3, plattenMaxCmA: 3 }, { antworten: 1200, punkte: 1200, streuungCmA: 0 }) },
+                ],
+            },
+            6: {
+                u: { punkte: 120, nachbar: 1.6, schrittKm: 100, schritte: 8, zeiten: [0, -167, -333, -500, -667, -833], bis: 54 },
+                soll: [
+                    K.soll(PL, 6, "100 Saaten", { key: "saaten", rel: "≥" }),
+                    K.soll(PL, 6, "≥ 1 Superkontinent", { key: "superJeGaP20" }),
+                    K.soll(PL, 6, "(≥ 70 % des Landes zusammenhängend)", { key: "anteilP20", einheit: "%" }),
+                    K.soll(PL, 6, "je Ga in ≥ 80 %", { key: "superProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ antworten: 600, zeiten: 6, streuungProzent: 0.001 }),
+                taeter: "planet-core.js planetPlan (Schlüsselbilder verstreut · versammelt · gelöst) über den Faden voxel-worker.js planetOrtAuftrag",
+                leser: "voxel-worker.js:367 msg.type — der Faden kennt nur planet-anker und planet-ort: keine Land-Maske einer Zeit (planetKarte, planet-core.js:1819) — die Probe fragt 120 Lagen × 6 Zeiten je Saat und geht die Lücken über den Faden ab (~1,1 ms je Lage): der Deckel von 60 s trägt keine 100 Saaten",
+                gruen: gut({ saaten: 100, superJeGaP20: 1, anteilP20: 74, superProzent: 86 }, { antworten: 120000, zeiten: 6, streuungProzent: 9 }),
+                attrappen: [{ name: "der Zyklus aus dem Plan behauptet (diag-planet superkontinent), kein Faden", roh: leer({ saaten: 100, superJeGaP20: 1, anteilP20: 74, superProzent: 86 }) }],
+            },
+            7: {
+                u: {},
+                soll: [K.soll(PL, 7, "Flächen-Deckung IoU ≥ 0,6", { key: "iou" }), K.soll(PL, 7, "in ≥ 8 von 10", { key: "panelVon10" })],
+                zeuge: zMin({ antworten: 10 }, ["schluessel"]),
+                auge: { pose: "Orbit über der Erd-Saat an 10 Stichzeiten (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn)", vorbild: "PALEOMAP-Paläokarten (Scotese) zu Rodinia, Pannotia, Pangäa und heute, Fach-Panel R11" },
+                taeter: "planet-core.js planetPlan (kein Erd-Schlüssel, R4)",
+                nicht: "keine Erd-Saat mit Schlüssel (R4)",
+                leser: "planet-core.js:307 planetPlan(samen, koerperIn) liest keinen Erd-Schlüssel (R4)",
+                gruen: gut({ iou: 0.66, panelVon10: 9 }, { antworten: 10, schluessel: true }),
+                attrappen: [{ name: "die PALEOMAP-Lage abgeschrieben, kein Schlüssel", roh: leer({ iou: 0.66, panelVon10: 9 }) }],
+            },
+            8: {
+                u: {},
+                soll: [K.soll(PL, 8, "Rang ≥ 0,7", { key: "rang" }), K.soll(PL, 8, "≥ 50 % der Saatenpaare", { key: "paarProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 1000 }),
+                auge: { pose: "Orbitbild je Saat (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn)", vorbild: "Ursachen-Probe R10: ein eingefrorener Leser sagt Wärmefluss und Alter aus dem Orbitbild voraus" },
+                taeter: "planet-core.js planetPlan (EIN Regime „platten“, Zeit ab −4 000 Ma)",
+                nicht: "kein Magma-Ozean, kein Regime-Wechsel",
+                leser: "planet-core.js:328 koerper.regime — K10: Regime ≠ „platten“ bricht, planet-core.js:678 zeitMa vor dem ersten Schlüsselbild (−4 000 Ma) bricht; kein Leser eines Deckel-Regimes oder des Hadaikums",
+                gruen: gut({ rang: 0.74, paarProzent: 58 }, { antworten: 1000 }),
+                attrappen: [{ name: "der Rang ohne 1 000 Saaten", roh: leer({ rang: 0.74, paarProzent: 58 }) }],
+            },
+            9: {
+                u: {},
+                soll: [K.soll(PL, 9, "Rang ≥ 0,7", { key: "rang" }), K.soll(PL, 9, "0 Saaten mit Naht oder Loch", { key: "nahtLochSaaten" })],
+                zeuge: zMin({ antworten: 1000, saaten: 1000 }),
+                auge: { pose: "Orbitbild je Saat (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn)", vorbild: "Ursachen-Probe R10 über Erd-, Deckel-, Venus-, Io- und Eiswelten" },
+                taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE für jeden Samen)",
+                nicht: "kein Körper außer der Erde",
+                leser: "voxel-worker.js:1159 PLANET_ERDE — planetPlanVon(samen) rechnet jeden Samen auf PLANET_ERDE: keine Masse, keine Wärme, kein Wasser je Saat",
+                gruen: gut({ rang: 0.75, nahtLochSaaten: 0 }, { antworten: 100000, saaten: 1000 }),
+                attrappen: [{ name: "0 Löcher behauptet, keine Saat gefragt", roh: leer({ rang: 0.75, nahtLochSaaten: 0 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ VULKAN ════════════════════════════════════════
+    const vulkan = {
+        sek: 10,
+        pfad: PFAD_ORT,
+        ungefahren: "das Glutbild und die Blindpaare (Glut, Clip, Oberfläche, Ursachen-Probe) schießt die Probe nur am Gerät",
+        mess: async function (H, U, M) {
+            const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
+            const v = await H.seite(
+                "const sy = r._voxelSurfaceY(0, 0); const jetzt = r._weltStunde(); const zu = (s, w) => r._lavaZustand({ h: jetzt - s / 3600, y: sy, wasser: w }); " +
+                    "const reihe = []; for (let e = 0; e <= 7; e += 0.5) { const s = Math.pow(10, e); const z = zu(s, 0); reihe.push([s, Math.round(z.temperatur * 10) / 10, Math.round(z.glut * 1000) / 1000, z.erstarrt ? 1 : 0]); } " +
+                    "const such = (w, f) => { let lo = 0, hi = 1e8; for (let i = 0; i < 50; i++) { const m = (lo + hi) / 2; if (f(zu(m, w))) hi = m; else lo = m; } return hi; }; " +
+                    "const tK = such(0, (z) => z.erstarrt), tG = such(0, (z) => !(z.glut > 0)), tKw = such(1, (z) => z.erstarrt); const w0 = zu(1, 1), l0 = zu(1, 0); " +
+                    "await r._fadenQuelle(); const o = await r._planetAuftrag({ type: \"planet-ort\", samen: r._planetSamen(), breite: 10, laenge: 20, zeitMa: 0 }); " +
+                    "const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); " +
+                    "const N = [...namen]; return { tK, tG, tKw, dampf: w0.dampf, tau: l0.tau, t0: l0.temperatur, reihe, antworten: reihe.length + 150 + 2, ortSchl: Object.keys(o).sort().join(\",\"), deltaSchl: Object.keys(o.delta).sort().join(\",\"), " +
+                    "vulkanLeser: N.filter((n) => /vulkan|volcan|magma|ausbruch|eruption|roehre/i.test(n)), lavaLeser: N.filter((n) => /^_lava/.test(n)), fliesst: N.filter((n) => /^_lava(Strom|Fluss|Front|Fliess)/i.test(n)) };"
+            );
+            const temps = v.reihe.map((x) => x[1]);
+            const glut = v.reihe.map((x) => x[2]);
+            const spanne = Math.max(...temps) - Math.min(...temps);
+            const vulkanAmFaden = /vulkan/.test(v.ortSchl + "," + v.deltaSchl);
+            const bild = await Promise.race([
+                M.auge("geologie-vulkan", { px: 0, py: 95, pz: 12, lx: 0, ly: 88, lz: 0 }),
+                new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (U[1].augeBis - M.uhr()) * 1000))),
+            ]);
+            const kein = "der Planet-Faden trägt keinen Vulkan (Antwort: " + v.ortSchl + " · delta " + v.deltaSchl + "), die Welt keinen Leser eines Ausbruchs (" + (v.vulkanLeser.join(", ") || "0 Methoden") + ")";
+            return {
+                sprossen: {
+                    1: {
+                        werte: { tKrusteS: r3(v.tK), tGlutAusS: r3(v.tG) },
+                        zeuge: { antworten: v.antworten, spanneK: r3(spanne), glutAnfang: glut[0], glutEnde: glut[glut.length - 1], tKrusteWasserS: r3(v.tKw), dampf: v.dampf, tauS: r3(v.tau), t0C: r3(v.t0) },
+                        auge: bild,
+                    },
+                    2: { werte: {}, zeuge: { antworten: v.antworten, lavaLeser: v.lavaLeser.length }, auge: bild, nicht: "die Lava fließt nicht: eine Tat deckt EINE Zelle des Felds (stamm/feld-leben.js:2460 _lavaGiessen), kein Strom, keine Front" + (v.fliesst.length ? " (" + v.fliesst.join(", ") + ")" : "") },
+                    3: { werte: {}, zeuge: { antworten: 1 }, ...(vulkanAmFaden ? {} : { nicht: kein + "; keine Zähigkeit je Saat" }) },
+                    4: { werte: {}, zeuge: { antworten: 1 }, auge: bild, nicht: "kein Ausbruch als Ereignis: " + kein },
+                    5: { werte: {}, zeuge: { antworten: 1 }, ...(vulkanAmFaden ? {} : { nicht: kein }) },
+                    6: { werte: {}, zeuge: { antworten: 1 }, ...(vulkanAmFaden ? {} : { nicht: kein + "; keine Ausbruchsstärke (VEI)" }) },
+                    7: { werte: {}, zeuge: { antworten: 1 }, auge: bild, nicht: kein + "; kein Körper außer PLANET_ERDE (voxel-worker.js:1159)" },
+                },
+            };
+        },
+        sprossen: {
+            1: {
+                u: { augeBis: 9 },
+                soll: [
+                    K.soll(VU, 1, "nach der Abkühlkurve gemessener Laven ±30 %", { key: "tKrusteS", ref: HON_S, refQuelle: "Erde: Hon et al. 1994 (Kīlauea-Pāhoehoe), Kruste H = 0,0779·√t (m, h) — die 1-m-Decke durch-erstarrt nach 165 h", einheit: "s" }),
+                    K.soll(VU, 1, "2AFC ≤ 85 %", { key: "afcProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ antworten: 20, spanneK: 100 }),
+                auge: { pose: "Ego am Spawn, Blick auf den Boden (am Gerät: eine Lava-Tat an ihrer Zelle)", vorbild: "Lava-Fotos (Kīlauea, USGS HVO), 2AFC ≤ 85 %, Prüfer-Satz R11" },
+                taeter: "gelaende-core.js lava (LAVA: Newton-Gang τ = ρ·c·d/α, Decke 1 m) über stamm/feld-leben.js _lavaZustand",
+                gruen: gut({ tKrusteS: 580000, tGlutAusS: 900000, afcProzent: 70 }, { antworten: 170, spanneK: 1200 }),
+                attrappen: [{ name: "die Abkühlzeit aus dem Paper, keine Lava der Welt", roh: leer({ tKrusteS: 580000, tGlutAusS: 900000, afcProzent: 70 }) }],
+            },
+            2: {
+                u: {},
+                soll: [K.soll(VU, 2, "0,01–10 km/h", { key: "frontKmh", einheit: "km/h" })],
+                zeuge: zMin({ antworten: 2 }),
+                auge: { pose: "Ego am Hang, ein Strom 1 km (heute nicht erzeugbar)", vorbild: "Ausbruchsfilm eines Lavastroms (USGS HVO), Blindpaar R11" },
+                taeter: "stamm/feld-leben.js _lavaGiessen (die Decke einer Zelle)",
+                nicht: "die Lava fließt nicht",
+                leser: "stamm/feld-leben.js:2460 _lavaGiessen schreibt EINE Zellen-Tat: kein Leser eines Stroms (Front, Hang, Zähigkeit)",
+                gruen: gut({ frontKmh: 0.8 }, { antworten: 40 }),
+                attrappen: [{ name: "die Frontgeschwindigkeit gesetzt", roh: leer({ frontKmh: 0.8 }) }],
+            },
+            3: {
+                u: {},
+                soll: [
+                    K.soll(VU, 3, "30 Saaten", { key: "saaten", rel: "≥" }),
+                    K.soll(VU, 3, "Schild 2–10°", { key: "schildGrad", einheit: "°" }),
+                    K.soll(VU, 3, "Strato 25–35°", { key: "stratoGrad", einheit: "°" }),
+                    K.soll(VU, 3, "in ≥ 90 %", { key: "folgtProzent", einheit: "%" }),
+                    K.soll(VU, 3, "Profil gegen reales Gegenstück ≤ 15 %", { key: "profilAbwProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ antworten: 30 }),
+                taeter: "planet-core.js planetVulkane (Kegel ohne Zähigkeit) — der Faden trägt sie nicht",
+                nicht: "kein Vulkan am Faden, keine Zähigkeit",
+                leser: "voxel-worker.js:1175 planetOrtAuftrag — gibt vulkan (Art, Abstand, Alter, Förderung) nicht weiter; planet-core.js:1676 planetVulkane hat keine Nachricht im Faden",
+                gruen: gut({ saaten: 30, schildGrad: 5, stratoGrad: 30, folgtProzent: 93, profilAbwProzent: 11 }, { antworten: 300 }),
+                attrappen: [{ name: "die Neigungen aus dem Lehrbuch", roh: leer({ saaten: 30, schildGrad: 5, stratoGrad: 30, folgtProzent: 93, profilAbwProzent: 11 }) }],
+            },
+            4: {
+                u: {},
+                soll: [K.soll(VU, 4, "Röhre ≥ 500 m begehbar", { key: "roehreM", einheit: "m" })],
+                zeuge: zMin({ antworten: 2 }),
+                auge: { pose: "Ego auf dem neuen Land nach dem Ausbruch (heute nicht erzeugbar)", vorbild: "Fotos von Pāhoehoe und ʻAʻā (USGS HVO), Blindpaar R11" },
+                taeter: "stamm/feld-leben.js _lavaGiessen (kein Ausbruch, keine Röhre)",
+                nicht: "kein Ausbruch, keine Röhre",
+                leser: "stamm/feld-leben.js:2460 _lavaGiessen deckt eine Zelle; kein Leser, der Land anwachsen lässt oder eine Röhre gräbt",
+                gruen: gut({ roehreM: 640 }, { antworten: 20 }),
+                attrappen: [{ name: "eine gegrabene Röhre ohne Ausbruch", roh: leer({ roehreM: 640 }) }],
+            },
+            5: {
+                u: {},
+                soll: [
+                    K.soll(VU, 5, "30 Saaten", { key: "saaten", rel: "≥" }),
+                    K.soll(VU, 5, "≥ 90 % der Vulkane an Rändern oder Hotspots", { key: "randProzent", einheit: "%" }),
+                    K.soll(VU, 5, "Alter längs der Kette Rang ≥ 0,8", { key: "kettenRang" }),
+                ],
+                zeuge: zMin({ antworten: 30 }),
+                taeter: "planet-core.js planetVulkane — der Faden trägt sie nicht",
+                nicht: "kein Vulkan am Faden",
+                leser: "voxel-worker.js:367 msg.type — der Faden kennt nur planet-anker und planet-ort; planetVulkane (planet-core.js:1676) hat keinen Leser im Spiel",
+                gruen: gut({ saaten: 30, randProzent: 94, kettenRang: 0.86 }, { antworten: 3000 }),
+                attrappen: [{ name: "die Ketten-Statistik der Linse (diag-planet vulkan.kette), kein Faden", roh: leer({ saaten: 30, randProzent: 94, kettenRang: 0.86 }) }],
+            },
+            6: {
+                u: {},
+                soll: [
+                    K.soll(VU, 6, "500–3 000 aktive Vulkane", { key: "aktive" }),
+                    K.soll(VU, 6, "zehnmal seltener ±50 %", { key: "veiFaktor", ref: 10, refQuelle: "Erde: Smithsonian GVP — je VEI-Stufe ~10× seltener (Newhall & Self 1982)" }),
+                ],
+                zeuge: zMin({ antworten: 30 }),
+                taeter: "planet-core.js planetVulkane (keine Ausbruchsstärke) — der Faden trägt sie nicht",
+                nicht: "kein Vulkan am Faden, keine VEI",
+                leser: "voxel-worker.js:367 msg.type — kein Auftrag planetVulkane im Faden; planet-core.js:1676 trägt keine Ausbruchsstärke",
+                gruen: gut({ aktive: 1400, veiFaktor: 9 }, { antworten: 1400 }),
+                attrappen: [{ name: "die Zahl der Linse (diag-planet vulkan.zahl), kein Faden", roh: leer({ aktive: 1400, veiFaktor: 9 }) }],
+            },
+            7: {
+                u: {},
+                soll: [K.soll(VU, 7, "Wärmefluss aus der Vulkanlandschaft Rang ≥ 0,7", { key: "waermeRang" }), K.soll(VU, 7, "höchster Vulkan gegen 1/Schwere Rang ≥ 0,7", { key: "schwereRang" })],
+                zeuge: zMin({ antworten: 1000 }),
+                auge: { pose: "Orbitbild der Vulkanlandschaft je Saat (heute nicht erzeugbar)", vorbild: "Ursachen-Probe R10 (Io, Venus, Mars: Sondenfotos)" },
+                taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE) und planetOrtAuftrag (kein Vulkan)",
+                nicht: "kein Vulkan am Faden, kein Körper außer der Erde",
+                leser: "voxel-worker.js:1159 PLANET_ERDE — planetPlanVon rechnet jeden Samen auf PLANET_ERDE (keine Schwere je Saat)",
+                gruen: gut({ waermeRang: 0.75, schwereRang: 0.8 }, { antworten: 1000 }),
+                attrappen: [{ name: "der Rang ohne Saaten", roh: leer({ waermeRang: 0.75, schwereRang: 0.8 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ GEBIRGE ════════════════════════════════════════
+    const gebirge = {
+        sek: 40,
+        pfad: PFAD_ORT,
+        ungefahren: "die Blindpaare (Felswand, Feldfoto) schießt die Probe nur am Gerät",
+        mess: async function (H, U, M) {
+            const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
+            const med = (a) => {
+                const b = a.filter(Number.isFinite).sort((x, y) => x - y);
+                const n = b.length;
+                return n ? (n % 2 ? b[(n - 1) / 2] : (b[n / 2 - 1] + b[n / 2]) / 2) : NaN;
+            };
+            const rang = (v) => {
+                const idx = v.map((x, i) => [x, i]).sort((p, q) => p[0] - q[0]);
+                const r = new Array(v.length);
+                for (let k = 0; k < idx.length; ) {
+                    let m = k;
+                    while (m + 1 < idx.length && idx[m + 1][0] === idx[k][0]) m++;
+                    for (let q = k; q <= m; q++) r[idx[q][1]] = (k + m) / 2;
+                    k = m + 1;
+                }
+                return r;
+            };
+            const spear = (a, b) => {
+                const ra = rang(a), rb = rang(b), n = a.length;
+                const ma = ra.reduce((s, x) => s + x, 0) / n, mb = rb.reduce((s, x) => s + x, 0) / n;
+                let sab = 0, saa = 0, sbb = 0;
+                for (let i = 0; i < n; i++) {
+                    sab += (ra[i] - ma) * (rb[i] - mb);
+                    saa += (ra[i] - ma) * (ra[i] - ma);
+                    sbb += (rb[i] - mb) * (rb[i] - mb);
+                }
+                return saa > 0 && sbb > 0 ? sab / Math.sqrt(saa * sbb) : NaN;
+            };
+            const modus = (a) => {
+                const z = new Map();
+                let b = NaN, n = 0;
+                for (const x of a) {
+                    const c = (z.get(x) || 0) + 1;
+                    z.set(x, c);
+                    if (c > n) {
+                        n = c;
+                        b = x;
+                    }
+                }
+                return b;
+            };
+            const aus = {};
+            // ── DIE STICHPROBE DER PROBE (S6; dieselbe liest die Leiter platten für S1, S2, S4, S5, S9): je Saat erde-01 … S6.punkte
+            // Fibonacci-Lagen zur Zeit 0 über den Planet-Faden, abgelegt in window.__geoStich (die Probe räumt es am Ende)
+            const S6 = U[6];
+            const st = {};
+            for (let i = 0; i < S6.saaten && M.uhr() < S6.bis; i += S6.block) {
+                const S = [];
+                for (let j = i; j < Math.min(S6.saaten, i + S6.block); j++) S.push("erde-" + String(j + 1).padStart(2, "0"));
+                const a = await H.seite(
+                    "await r._fadenQuelle(); const N = " + S6.punkte + ", S = " + JSON.stringify(S) + ", aus = {}; " +
+                        "for (const s of S) { const P = []; for (let i = 0; i < N; i++) P.push([Math.asin(1 - (2 * (i + 0.5)) / N) * 180 / Math.PI, ((i * 137.50776405) % 360) - 180]); " +
+                        "const a = await Promise.all(P.map((p) => r._planetAuftrag({ type: \"planet-ort\", samen: s, breite: p[0], laenge: p[1], zeitMa: 0 }))); " +
+                        "aus[s] = { v: a[0].version, h: a.map((x) => Math.round(x.hoeheM)), k: a.map((x) => Math.round(x.kuesteKm)), ks: a.map((x) => Math.round(x.delta.wildnis.ks * 1000) / 1000), " +
+                        "ho: a.map((x) => Math.round(x.delta.wildnis.hoehe * 1000) / 1000), rl: a.map((x) => Math.round(x.delta.wildnis.rauhLambda)), loch: a.filter((x) => !Number.isFinite(x.hoeheM) || !Number.isFinite(x.kuesteKm)).length }; } " +
+                        "const c = window.__geoStich || (window.__geoStich = { N, je: {} }); if (c.N === N) Object.assign(c.je, aus); c.t = Date.now(); return Object.keys(aus).length;"
+                );
+                if (a) for (const s of S) st[s] = true;
+            }
+            const stich = await H.seite("const c = window.__geoStich; return c && c.N === " + S6.punkte + " ? c.je : {};");
+            // ── S1: die Felswände am Spawn (Hang ≥ 40° der Welt-Höhe, 1 km²) und das Einfallen ihrer Bänke, wie der Fels-Stoff es liest
+            const w = await H.seite(
+                "const G = globalThis.__gelaendeCore; const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); const wl = r.state.waterLevel; let n = 0, wand = 0; const ein = [];" +
+                    "for (let z = -500; z < 500; z += 5) for (let x = -500; x < 500; x += 5) { const h0 = hoch(x, z); n++; if (h0 < wl + 1) continue; const t = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8; " +
+                    "if (Math.atan(t) * 180 / Math.PI >= 40) { wand++; if (ein.length < 400) ein.push(G.FELS.einfall * 180 / Math.PI); } } " +
+                    "return { n, wand, ein, streichenGrad: G.FELS.streichen * 180 / Math.PI };"
+            );
+            const verformt = w.ein.filter((x) => x >= 10).length;
+            const einMittel = w.ein.length ? w.ein.reduce((s, x) => s + x, 0) / w.ein.length : NaN;
+            const einStreu = w.ein.length ? Math.sqrt(w.ein.reduce((s, x) => s + (x - einMittel) * (x - einMittel), 0) / w.ein.length) : 0;
+            const bild = await Promise.race([
+                M.auge("geologie-gebirge", { px: 0, py: 140, pz: 260, lx: 0, ly: 95, lz: 0 }),
+                new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (U[1].augeBis - M.uhr()) * 1000))),
+            ]);
+            aus[1] = {
+                werte: { verformtProzent: r3(w.ein.length ? (100 * verformt) / w.ein.length : NaN), kratonProzent: r3(w.ein.length ? (100 * verformt) / w.ein.length : NaN) },
+                zeuge: { antworten: w.n, waende: w.wand, einfallGrad: r3(einMittel), einfallStreuGrad: r3(einStreu), streichenGrad: r3(w.streichenGrad) },
+                auge: bild,
+                nicht: "keine Verformung je Ort: an " + w.wand + " Wand-Spalten (Hang ≥ 40°, 1 km² am Spawn) liegen die Bänke mit EINEM Einfallen " + r3(einMittel) + "° (Streuung " + r3(einStreu) + "°) — gelaende-core.js:3350 FELS.einfall ist EINE Konstante für jede Wand der Welt; und der Spieler steht nur in der Heimat, die weder Kollisionszone noch Kraton ist (planet-core.js:2215 planetAnker: Land ≤ 300 km von der Küste, kein konvergenter Rand < 500 km, kein lebendes Orogen)",
+            };
+            // ── S2: das Orogen der Heimat — der höchste Punkt des Planeten der Welt (r._planetSamen) und sein Fenster 13 × 13 zu 40 km
+            const o = await H.seite(
+                "await r._fadenQuelle(); const s = r._planetSamen(); const N = " + U[2].punkte + "; const P = []; for (let i = 0; i < N; i++) P.push([Math.asin(1 - (2 * (i + 0.5)) / N) * 180 / Math.PI, ((i * 137.50776405) % 360) - 180]); " +
+                    "const a = await Promise.all(P.map((p) => r._planetAuftrag({ type: \"planet-ort\", samen: s, breite: p[0], laenge: p[1], zeitMa: 0 }))); let b = 0; a.forEach((x, i) => { if (x.hoeheM > a[b].hoeheM) b = i; }); " +
+                    "const [la, lo] = P[b]; const F = []; for (let j = -6; j <= 6; j++) for (let i = -6; i <= 6; i++) F.push([Math.max(-89.9, Math.min(89.9, la + 40 * j / 111.195)), ((lo + 40 * i / (111.195 * Math.max(0.05, Math.cos(la * Math.PI / 180))) + 540) % 360) - 180]); " +
+                    "const f = await Promise.all(F.map((p) => r._planetAuftrag({ type: \"planet-ort\", samen: s, breite: p[0], laenge: p[1], zeitMa: 0 }))); const hs = f.map((x) => x.hoeheM); " +
+                    "return { samen: s, n: a.length + f.length, mitte: [la, lo], hMax: Math.max(...hs), hMin: Math.min(...hs), ueber1: hs.filter((h) => h > 1000).length };"
+            );
+            const abw = Math.min(Math.abs(o.hMax - 4808) / 4808, Math.abs(o.hMax - 8849) / 8849) * 100;
+            aus[2] = {
+                werte: { profilAbwProzent: r3(abw), kammM: r3(o.hMax) },
+                zeuge: { antworten: o.n, ueber1km: o.ueber1, spanneM: r3(o.hMax - o.hMin), samen: o.samen },
+            };
+            // ── S3, S4, S5: das Beben — was die Welt davon trägt
+            const b = await H.seite(
+                "const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); " +
+                    "return [...namen].filter((n) => /beben|quake|seism|verwerf|erschuetter|erschütter|epizent/i.test(n));"
+            );
+            const kein = "kein Beben in der Welt: " + (b.length ? b.join(", ") : "0 Leser eines Bebens, einer Verwerfung oder eines Versatzes") + " — Stand 0 (keine Verwerfung im Gelände-Kern, kein Herd am Faden)";
+            aus[3] = { werte: {}, zeuge: { antworten: 1, leser: b.length }, nicht: kein };
+            aus[4] = { werte: {}, zeuge: { antworten: 1, leser: b.length }, auge: bild, nicht: kein };
+            aus[5] = { werte: {}, zeuge: { antworten: 1, leser: b.length }, nicht: kein + "; der Faden trägt keinen Plattenrand je Lage" };
+            // ── S6: Alter gegen Höhe über die Orogene der Stichprobe. Fern jedes Orogens trägt rauhLambda seinen Grundwert, hoehe und ks
+            // ihren Wert ohne Orogen und Rand: der häufigste Wert der Saat — die Differenz zum Anker fällt so heraus (Orogen-Stärke = hoehe −
+            // Modus; λ − Modus ist über die Saaten vergleichbar). Orogen = Orogen-Stärke ≥ 0,3, dort liest der Boden das Alter als
+            // rauhLambda; EIN Orogen = EIN Alter-Wert der Saat (die Stichpunkte einer Naht teilen ihr Alter), seine Höhe = sein höchster Punkt
+            const alter = [], hoehe = [], alterNaht = [], hoeheNaht = [];
+            let saaten = 0, antworten = 0, punkte = 0;
+            for (let j = 0; j < S6.saaten; j++) {
+                const x = stich["erde-" + String(j + 1).padStart(2, "0")];
+                if (!x) continue;
+                saaten++;
+                antworten += x.h.length;
+                const mh = modus(x.ho), mr = modus(x.rl), mk = modus(x.ks);
+                const gruppe = new Map();
+                x.h.forEach((h, i) => {
+                    if (!(h > 0) || x.ho[i] - mh < 0.3 || !Number.isFinite(x.rl[i])) return;
+                    punkte++;
+                    const lam = x.rl[i] - mr;
+                    const g = gruppe.get(lam) || { h: -Infinity, aktiv: false };
+                    g.h = Math.max(g.h, h);
+                    g.aktiv = g.aktiv || (x.ks[i] - mk) / 12 >= 0.1;
+                    gruppe.set(lam, g);
+                });
+                for (const [lam, g] of gruppe) {
+                    alter.push(lam);
+                    hoehe.push(g.h);
+                    if (!g.aktiv) {
+                        alterNaht.push(lam);
+                        hoeheNaht.push(g.h);
+                    }
+                }
+            }
+            const rho = alter.length >= 3 ? spear(alter, hoehe) : NaN;
+            const rhoNaht = alterNaht.length >= 3 ? spear(alterNaht, hoeheNaht) : NaN;
+            aus[6] = {
+                werte: { saaten, rangAlterHoehe: r3(-rho) },
+                zeuge: { antworten, orogene: alter.length, punkte, streuungAlter: r3(alter.length ? Math.max(...alter) - Math.min(...alter) : 0), rho: r3(rho), nahtOrogene: alterNaht.length, rangNaht: r3(-rhoNaht), bis: r3(M.uhr()) },
+            };
+            // ── S7: der Körper — ein Mond-Argument am Faden
+            const k = await H.seite(
+                "await r._fadenQuelle(); const a = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-02\", breite: -20, laenge: 60, zeitMa: 0 }); " +
+                    "const b = await r._planetAuftrag({ type: \"planet-ort\", samen: \"erde-02\", breite: -20, laenge: 60, zeitMa: 0, koerper: \"mars\", schwere: 3.71 }); return b.hoeheM - a.hoeheM;"
+            );
+            aus[7] = { werte: {}, zeuge: { antworten: 2, dhKoerper: r3(k) }, ...(Math.abs(k) > 0 ? {} : { nicht: "keine Schwere je Saat: ein Körper-Argument (Mars, 3,71 m/s²) ändert die Höhe um " + r3(k) + " m — jeder Samen rechnet auf PLANET_ERDE (voxel-worker.js:1159)" }) };
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { augeBis: 38 },
+                soll: [K.soll(GE, 1, "in Kollisionszonen ≥ 80 % der Wände verformt", { key: "verformtProzent", einheit: "%" }), K.soll(GE, 1, "im alten Kraton ≤ 20 %", { key: "kratonProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 1000, waende: 20, einfallStreuGrad: 0.5 }),
+                auge: { pose: "Ego 45 m über dem Spawn vor der nächsten Felswand, Blick auf sie", vorbild: "Fotos von Felswänden in Faltengebirgen und Kratonen (Feldfotos je Gestein), Blindpaar R11" },
+                taeter: "gelaende-core.js FELS (einfall/streichen: EIN Einfallen der Bänke)",
+                nicht: "keine Verformung je Ort, keine Kollisionszone an der Heimat",
+                leser: "gelaende-core.js:3350 FELS.einfall/streichen sind Konstanten: kein Leser setzt das Einfallen aus der Geschichte des Orts (Orogen-Stärke, Rand am Faden)",
+                gruen: gut({ verformtProzent: 85, kratonProzent: 12 }, { antworten: 40000, waende: 300, einfallStreuGrad: 18 }),
+                attrappen: [
+                    { name: "die Wände als verformt gezählt, keine Wand gefragt", roh: leer({ verformtProzent: 85, kratonProzent: 12 }) },
+                    { name: "EIN Einfallen für jede Wand", roh: gut({ verformtProzent: 85, kratonProzent: 12 }, { antworten: 40000, waende: 300, einfallStreuGrad: 0 }) },
+                ],
+            },
+            2: {
+                u: { punkte: 300 },
+                soll: [K.soll(GE, 2, "Hypsometrie des Orogens gegen Alpen-/Himalaya-Profil ≤ 20 %", { key: "profilAbwProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 400, ueber1km: 3, spanneM: 500 }),
+                taeter: "planet-core.js planetPunktR (Orogen-Höhe hGeb, Band ≥ 32 km) über den Faden voxel-worker.js planetOrtAuftrag",
+                unklar: "das Alpen-/Himalaya-Profil ist kein eingefrorener Korpus: die Station misst die Kammhöhe des höchsten Orogens der Heimat-Saat (Fenster 520 km) gegen Mont Blanc 4 808 m und Everest 8 849 m (Copernicus DEM) — Vorschlag: das Querprofil beider, gemittelt über 500 km Streichen, als Korpus einfrieren",
+                gruen: gut({ profilAbwProzent: 12, kammM: 5300 }, { antworten: 469, ueber1km: 40, spanneM: 4000 }),
+                attrappen: [{ name: "die Kammhöhe der Alpen eingesetzt", roh: leer({ profilAbwProzent: 12, kammM: 5300 }) }],
+            },
+            3: {
+                u: {},
+                soll: [K.soll(GE, 3, "b-Wert 0,8–1,2", { key: "bWert" }), K.soll(GE, 3, "≥ 90 % der Epizentren an Verwerfungen", { key: "epiProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 100 }),
+                taeter: "gelaende-core.js (keine Verwerfung, kein Beben)",
+                nicht: "kein Beben",
+                leser: "stamm/gelaende-boden.js:756 _gelaende — die Gelände-Lage trägt keine Verwerfung und kein Beben-Ereignis (kein Leser einer Magnitude, Boden und Häuser bewegen sich nie)",
+                gruen: gut({ bWert: 1.0, epiProzent: 93 }, { antworten: 500 }),
+                attrappen: [{ name: "der Katalog der USGS abgeschrieben", roh: leer({ bWert: 1.0, epiProzent: 93 }) }],
+            },
+            4: {
+                u: {},
+                soll: [K.soll(GE, 4, "Geländestufe 1–5 m", { key: "stufeM", einheit: "m" })],
+                zeuge: zMin({ antworten: 2 }),
+                auge: { pose: "Ego an der Bruchstufe nach M7 (heute nicht erzeugbar)", vorbild: "Feldfotos von Bruchstufen (Landers 1992, Kaikōura 2016), Blindpaar R11" },
+                taeter: "gelaende-core.js (kein Versatz, keine Rutschung)",
+                nicht: "kein Bruch, kein Versatz",
+                leser: "stamm/gelaende-boden.js:756 _gelaende — kein Leser schreibt einen Versatz nach einem Beben in die Höhe (der Erdbau kennt nur Taten des Spielers)",
+                gruen: gut({ stufeM: 2.5 }, { antworten: 10 }),
+                attrappen: [{ name: "eine gegrabene Stufe ohne Beben", roh: leer({ stufeM: 2.5 }) }],
+            },
+            5: {
+                u: {},
+                soll: [K.soll(GE, 5, "Epizentren eines Spieljahrs ≥ 85 % an Plattenrändern", { key: "randProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 1000 }),
+                taeter: "voxel-worker.js planetOrtAuftrag (kein Rand, kein Beben am Faden)",
+                nicht: "kein Beben, kein Plattenrand am Faden",
+                leser: "voxel-worker.js:1175 planetOrtAuftrag — gibt rand nicht weiter; kein Leser eines Bebens im Spieljahr",
+                gruen: gut({ randProzent: 90 }, { antworten: 10000 }),
+                attrappen: [{ name: "Epizentren aus dem ISC-Katalog", roh: leer({ randProzent: 90 }) }],
+            },
+            6: {
+                u: { saaten: 100, punkte: 240, block: 4, bis: 31 },
+                soll: [K.soll(GE, 6, "50 Saaten", { key: "saaten", rel: "≥" }), K.soll(GE, 6, "Alter erklärt Höhe, Rang ≥ 0,7", { key: "rangAlterHoehe" })],
+                zeuge: zMin({ antworten: 5000, orogene: 30, streuungAlter: 1 }),
+                taeter: "planet-core.js punktKern (Orogen-Gedächtnis H0·(1 − e^(−a/20))·e^(−a/120), K4) über den Faden voxel-worker.js planetOrtAuftrag",
+                unklar: "„Alter erklärt Höhe, Rang ≥ 0,7“ gelesen als −Spearman(Alter, Höhe) ≥ 0,7 über die Orogene der Saaten (älter ist niedriger; je Orogen sein höchster Stichpunkt); das Alter ist der Regler rauhLambda, den der Boden liest — er trägt planet-core orogenAlterMa, am lebenden Rand die Zeit seit Beginn des Rands (planet-core.js:1291), an der Naht die Zeit seit der Naht; nur die Nähte stehen als rangNaht im Zeugen",
+                gruen: gut({ saaten: 50, rangAlterHoehe: 0.74 }, { antworten: 12000, orogene: 300, streuungAlter: 5000 }),
+                attrappen: [
+                    { name: "der Rang aus dem Gesetz K4 gerechnet, kein Faden", roh: leer({ saaten: 50, rangAlterHoehe: 0.74 }) },
+                    { name: "alle Orogene gleich alt", roh: gut({ saaten: 50, rangAlterHoehe: 0.74 }, { antworten: 12000, orogene: 300, streuungAlter: 0 }) },
+                ],
+            },
+            7: {
+                u: {},
+                soll: [K.soll(GE, 7, "1 000 Saaten", { key: "saaten", rel: "≥" }), K.soll(GE, 7, "höchster Gipfel gegen 1/Schwere Rang ≥ 0,7", { key: "schwereRang" })],
+                zeuge: zMin({ antworten: 1000 }),
+                taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE für jeden Samen)",
+                nicht: "keine Schwere je Saat",
+                leser: "voxel-worker.js:1159 PLANET_ERDE — planetPlanVon(samen) rechnet jeden Samen auf PLANET_ERDE (g 9,81)",
+                gruen: gut({ saaten: 1000, schwereRang: 0.8 }, { antworten: 100000 }),
+                attrappen: [{ name: "der Rang aus Weisskopf 1975 abgeschrieben", roh: leer({ saaten: 1000, schwereRang: 0.8 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ UNTERWELT ════════════════════════════════════════
+    const unterwelt = {
+        sek: 20,
+        pfad: ["gelaende-core.js", "stamm/gelaende-*.js", "stamm/bild-sicht.js", "stamm/bau-buch.js", "scripts/werkbank.cjs"],
+        ungefahren: "der Mund im Bild, das Karstfeld und die Halle (Blindpaare) schießt die Probe nur am Gerät",
+        mess: async function (H, U, M) {
+            const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
+            const u = U[1];
+            const m = await H.seite(
+                "const st = r.state, G0 = r._voxelChunkConfig(0), gy0 = (st.terrainBaseHeight || 0) - G0.floorDrop, wl = st.waterLevel; " +
+                    "const fest = (x, y, z) => r._fieldDensityAt(x, y, z) > 0; const gitter = (v) => Math.round(v / G0.step) * G0.step; " +
+                    "const himmel = (x, y, z) => { for (let h = y + G0.step; h < y + 60; h += G0.step) if (fest(x, h, z)) return false; return true; }; " +
+                    "const mundAn = (X0, Z0) => { const X = gitter(X0), Z = gitter(Z0); const S = r._voxelSurfaceY(X, Z); if (S == null) return null; " +
+                    "for (let j = Math.floor((S - 4 - gy0) / G0.step); gy0 + j * G0.step > S - 40; j--) { const y = gy0 + j * G0.step; if (fest(X, y, Z)) continue; " +
+                    "for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const ax = X + dx * 2 * G0.step, az = Z + dz * 2 * G0.step; if (fest(ax, y, az) || !himmel(ax, y, az)) continue; " +
+                    "let L = 0; while (L < 30 && !fest(X - dx * L, y, Z - dz * L)) L += G0.step; if (L >= 12) return { x: X, y, z: Z, tief: L }; break; } } return null; }; " +
+                    "const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); const t0 = performance.now(); const liste = []; let flaeche = 0, kand = 0, spalten = 0; const HALB = " + u.halb + ", BIS = " + u.ms + "; " +
+                    "for (let z = -HALB; z < HALB && performance.now() - t0 < BIS; z += 3.6) { for (let x = -HALB; x < HALB; x += 3.6) { const h0 = hoch(x, z); spalten++; if (h0 < wl + 1) continue; " +
+                    "const hang = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8; const g = Math.atan(hang) * 180 / Math.PI; if (g < 30) continue; kand++; " +
+                    "const mm = mundAn(x, z); if (mm && !liste.some((q) => Math.hypot(q.x - mm.x, q.z - mm.z) < 25)) liste.push(Object.assign(mm, { hangGrad: Math.round(g * 10) / 10 })); } flaeche += 2 * HALB * 3.6; } " +
+                    "const mats = Object.keys(st.materials || {}); return { km2: flaeche / 1e6, n: liste.length, kand, spalten, fels: liste.filter((q) => q.hangGrad >= 40).length, hang: liste.map((q) => q.hangGrad), ms: Math.round(performance.now() - t0), " +
+                    "seed: r._gelaende().seed, boden: G0.floorDrop, gestein: mats.filter((n) => /^(stein|fels|kalk|karbonat|dolomit|gips|salz|basalt|granit|marmor|eis)$/.test(n)), loeslich: mats.filter((n) => /^(kalk|karbonat|dolomit|gips|salz)/.test(n)) };"
+            );
+            const bild = await Promise.race([
+                M.auge("geologie-unterwelt", { px: 0, py: 120, pz: 160, lx: 0, ly: 95, lz: 0 }),
+                new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (u.augeBis - M.uhr()) * 1000))),
+            ]);
+            const gestein = m.gestein.join(", ") || "keins";
+            const karst = "kein lösliches Gestein: die Stoff-Tafel trägt an Gestein " + gestein + " (" + (m.loeslich.length ? m.loeslich.join(", ") : "kein Karbonat, kein Gips, kein Salz") + "); die Höhle ist EIN Rausch-Feld (Wurm, Kaverne, Halle) im Band Basis − 28 m bis Boden − 16 m";
+            return {
+                sprossen: {
+                    1: {
+                        werte: { saaten: 1, mundFelsProzent: r3(m.n ? (100 * m.fels) / m.n : NaN), muendungenJeKm2: r3(m.km2 > 0 ? m.n / m.km2 : NaN) },
+                        zeuge: { antworten: m.spalten, kandidaten: m.kand, muendungen: m.n, km2: r3(m.km2), ms: m.ms, saat: m.seed, hangGrad: m.hang.slice(0, 20) },
+                        auge: bild,
+                    },
+                    2: { werte: { karbonatProzent: 0 }, zeuge: { antworten: m.spalten, loeslich: m.loeslich.length }, auge: bild, ...(m.loeslich.length ? {} : { nicht: karst }) },
+                    3: { werte: {}, zeuge: { antworten: m.spalten }, nicht: "kein Höhlensystem: " + karst.slice(karst.indexOf("die Höhle")) + " — kein Fluss, kein Siphon, keine Einsturzdoline" },
+                    4: { werte: {}, zeuge: { antworten: m.spalten }, ...(m.loeslich.length ? {} : { nicht: karst + "; keine Lavaröhre, Gletscher-, Brandungs- oder Gipshöhle" }) },
+                    5: { werte: {}, zeuge: { antworten: m.spalten }, auge: bild, nicht: "kein System ≥ 100 km: " + karst.slice(karst.indexOf("die Höhle")) },
+                    6: { werte: {}, zeuge: { antworten: m.spalten }, nicht: karst + "; kein Körper außer PLANET_ERDE (voxel-worker.js:1159)" },
+                },
+            };
+        },
+        sprossen: {
+            1: {
+                u: { halb: 500, ms: 9000, augeBis: 18 },
+                soll: [
+                    K.soll(UW, 1, "an 3 Saaten", { key: "saaten", rel: "≥", zahl: 3 }),
+                    ohneZahl(UW, 1, "Mündungen je km²", "muendungenJeKm2"),
+                    K.soll(UW, 1, "Mund im Bild an ≥ 90 % im Fels", { key: "mundFelsProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ antworten: 10000, muendungen: 1 }),
+                auge: { pose: "Ego vor der nächsten Mündung am Spawn (1 km²), Blick in den Mund", vorbild: "Fotos natürlicher Höhlen-Mündungen im Fels (Feldfotos je Form), Prüfer-Satz R11" },
+                taeter: "gelaende-core.js dichteSpalte/dichteBasis (Höhlen-Feld, HOEHLEN_MUND) über stamm/gelaende-chunks.js _fieldDensityAt",
+                leser: "stamm/gelaende-boden.js:756 _gelaende — die Gelände-Lage liest EINE Saat (worldMeta.seed): die Probe misst die Mündungen nur der Saat dieser Welt",
+                unklar: "„Mündungen je km² … im Band“ nennt kein Band — Vorschlag: 1–20 Mündungen je km² (Mittelgebirge, die Karte K16 setzt ≥ 1); und die drei Saaten als drei Welten der Fahrt, „im Fels“ als Flanke ≥ 40° (K16: die Mündungs-Wand ist Fels)",
+                gruen: gut({ saaten: 3, mundFelsProzent: 95, muendungenJeKm2: 5 }, { antworten: 77000, muendungen: 5 }),
+                attrappen: [{ name: "5 · 1 · 14 je km² aus dem Kopf des Kerns abgeschrieben", roh: leer({ saaten: 3, mundFelsProzent: 95, muendungenJeKm2: 5 }) }],
+            },
+            2: {
+                u: {},
+                soll: [
+                    K.soll(UW, 2, "≥ 90 % der Höhlen in Karbonat", { key: "karbonatProzent", einheit: "%" }),
+                    K.soll(UW, 2, "≥ 80 % entwässern zu einer Quelle", { key: "quelleProzent", einheit: "%" }),
+                    K.soll(UW, 2, "Dolinen- gegen Höhlendichte r ≥ 0,7", { key: "dolinenR" }),
+                ],
+                zeuge: zMin({ antworten: 1000, loeslich: 1 }),
+                auge: { pose: "Überflug über ein Karstfeld (heute nicht erzeugbar; geschossen über dem Spawn)", vorbild: "Karstfeld-Fotos (Dinarischer Karst, Feldfotos je Form), Blindpaar R11" },
+                taeter: "gelaende-core.js dichteBasis (Höhle ohne Gestein) und die Stoff-Tafel (kein Karbonat)",
+                nicht: "kein lösliches Gestein",
+                leser: "gelaende-core.js:7207 dichteBasis schneidet die Höhle aus Rausch, ohne Gestein und Lösung; stamm/bau-buch.js:1554 _stoff kennt kein Karbonat",
+                gruen: gut({ karbonatProzent: 94, quelleProzent: 85, dolinenR: 0.75 }, { antworten: 5000, loeslich: 2 }),
+                attrappen: [{ name: "die Karst-Statistik ohne Karbonat in der Welt", roh: gut({ karbonatProzent: 94, quelleProzent: 85, dolinenR: 0.75 }, { antworten: 5000, loeslich: 0 }) }],
+            },
+            3: {
+                u: {},
+                soll: [K.soll(UW, 3, "10 km am Stück begehbar", { key: "systemKm", rel: "≥", zahl: 10, einheit: "km" })],
+                zeuge: zMin({ antworten: 1000 }),
+                taeter: "gelaende-core.js dichteBasis (Höhle als Rausch-Feld im Band Basis − 28 m)",
+                nicht: "kein Höhlensystem",
+                leser: "gelaende-core.js:7207 dichteBasis kennt kein Netz eines Systems (Gang, Fluss, Siphon); die Höhle endet 28 m unter der Basis",
+                unklar: "„Höhlenplan-Statistik (Verzweigung, Querschnitt) im Band realer Systeme“ nennt kein Band — Vorschlag: Verzweigungsgrad und Querschnitt im 10–90-%-Band der Höhlenkataster (Mammoth, Hölloch)",
+                gruen: gut({ systemKm: 12 }, { antworten: 5000 }),
+                attrappen: [{ name: "die Länge eines Systems behauptet", roh: leer({ systemKm: 12 }) }],
+            },
+            4: {
+                u: {},
+                soll: [K.soll(UW, 4, "1 000 Zufallshöhlen aus 30 Saaten", { key: "hoehlen", rel: "≥", zahl: 1000 }), K.soll(UW, 4, "Typ passt zu Gestein und Lösungsmittel in ≥ 90 %", { key: "typProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 1000, saaten: 30 }),
+                taeter: "gelaende-core.js dichteBasis (ein Höhlen-Typ für jedes Gestein)",
+                nicht: "kein Höhlen-Typ je Gestein",
+                leser: "gelaende-core.js:7207 dichteBasis liest kein Gestein und kein Lösungsmittel",
+                gruen: gut({ hoehlen: 1000, typProzent: 92 }, { antworten: 30000, saaten: 30 }),
+                attrappen: [{ name: "die Typen aus einer Tabelle", roh: leer({ hoehlen: 1000, typProzent: 92 }) }],
+            },
+            5: {
+                u: {},
+                soll: [K.soll(UW, 5, "längstes System ≥ 100 km", { key: "laengsteKm", einheit: "km" }), K.soll(UW, 5, "in ≥ 20 % der Karstsaaten", { key: "karstProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 1000 }),
+                auge: { pose: "Ego in einer Halle 10⁷ m³ (heute nicht erzeugbar; geschossen über dem Spawn)", vorbild: "Fotos von Son Doong und Mammoth Cave, Blindpaar R11" },
+                taeter: "gelaende-core.js dichteBasis (Halle bis 72 m Schnitt im Band Basis − 28 m)",
+                nicht: "kein System ≥ 100 km",
+                leser: "gelaende-core.js:7207 dichteBasis — die Halle ist ein Rausch-Term (hall · 72) unter der Hülle: kein System, keine Halle mit Wald und Wolke",
+                gruen: gut({ laengsteKm: 140, karstProzent: 25 }, { antworten: 5000 }),
+                attrappen: [{ name: "Mammoth Cave als Zahl", roh: leer({ laengsteKm: 140, karstProzent: 25 }) }],
+            },
+            6: {
+                u: {},
+                soll: [K.soll(UW, 6, "Röhrenweite gegen 1/Schwere Rang ≥ 0,7", { key: "roehrenRang" }), K.soll(UW, 6, "Höhlentyp folgt Gestein in ≥ 80 %", { key: "typProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 1000 }),
+                taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE) und gelaende-core.js dichteBasis",
+                nicht: "keine Welt außer der Erde, kein Höhlen-Typ",
+                leser: "voxel-worker.js:1159 PLANET_ERDE — planetPlanVon rechnet jeden Samen auf PLANET_ERDE; gelaende-core.js:7207 dichteBasis liest keine Schwere",
+                gruen: gut({ roehrenRang: 0.8, typProzent: 85 }, { antworten: 10000 }),
+                attrappen: [{ name: "der Rang ohne Welten", roh: leer({ roehrenRang: 0.8, typProzent: 85 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ LAGERSTÄTTE ════════════════════════════════════════
+    const lagerstaette = {
+        sek: 8,
+        pfad: ["gelaende-core.js", "foundry-core.js", "stamm/bau-buch.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs"],
+        ungefahren: "die Jury, die geologische Karte, der Abbau und die Mineral-Stufe (Blindpaare) urteilen nur am Gerät",
+        mess: async function (H, U, M) {
+            const g = await H.seite(
+                "const mats = r.state.materials || {}; const N = Object.keys(mats); const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); " +
+                    "const L = [...namen]; const G = globalThis.__gelaendeCore; const hoch = (x, z) => r._terrainMacroSurfaceY(x, z); let n = 0, fels = 0; " +
+                    "for (let z = -1000; z < 1000; z += 20) for (let x = -1000; x < 1000; x += 20) { const h0 = hoch(x, z); n++; const t = Math.hypot(hoch(x + 1.8, z) - h0, hoch(x, z + 1.8) - h0) / 1.8; if (Math.atan(t) * 180 / Math.PI >= 40) fels++; } " +
+                    "return { stoffe: N.length, gestein: N.filter((k) => /^(stein|fels|kalk|granit|basalt|marmor|schiefer|sandstein|gneis|tuff|obsidian)$/.test(k)), erz: N.filter((k) => /^(erz|kohle|salz|kupfer|gold|zinn|silber|eisen|quarz|mineral|kristall)/.test(k)), " +
+                    "leser: L.filter((k) => /lagerst|prospekt|bohrung|bohrloch|abbau|bergbau|kohle|mineral|kristall|genese/i.test(k) || /^_erz|Erz(?![a-zäöü])/.test(k)), spalten: n, fels, felsFarbe: typeof G.felsFarbe === \"function\" };"
+            );
+            const bild = await Promise.race([
+                M.auge("geologie-lagerstaette", { px: 0, py: 140, pz: 260, lx: 0, ly: 95, lz: 0 }),
+                new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (U[1].augeBis - M.uhr()) * 1000))),
+            ]);
+            const gestein = g.gestein.join(", ") || "keins";
+            const erz = g.erz.join(", ") || "keins";
+            const kein = "die Stoff-Tafel trägt " + g.stoffe + " Stoffe, Gestein: " + gestein + ", Roh-Stoffe: " + erz + " (Bau-Stoffe ohne Fundort); " + (g.leser.length ? "Leser: " + g.leser.slice(0, 6).join(", ") : "0 Leser einer Lagerstätte, einer Bohrung, eines Abbaus oder eines Funds");
+            return {
+                sprossen: {
+                    1: { werte: { genesen: g.gestein.length }, zeuge: { antworten: g.spalten, felsSpalten: g.fels, genesen: g.gestein.length }, auge: bild, nicht: "keine Genese je Ort: " + g.fels + " Fels-Spalten in 4 km² tragen EINEN Fels-Stoff (gelaende-core FELS, foundry-core rockPhenotype nur für Brocken); " + kein },
+                    2: { werte: {}, zeuge: { antworten: g.spalten }, auge: bild, nicht: "keine geologische Karte: EIN Gestein je Ort, kein Leser bindet es an Tektonik und Alter" },
+                    3: { werte: {}, zeuge: { antworten: g.spalten }, nicht: "keine Lagerstätte: " + kein },
+                    4: { werte: {}, zeuge: { antworten: g.spalten }, auge: bild, nicht: "keine Kohle, keine Senkung: " + kein },
+                    5: { werte: {}, zeuge: { antworten: g.spalten }, auge: bild, nicht: "kein Fund mit Kristallsystem: quarz und eisen sind Bau-Stoffe der Tafel (Tags Härte, Dichte, Transparenz), kein Mineral mit System, Habitus und Fundort; " + kein },
+                    6: { werte: {}, zeuge: { antworten: g.spalten }, nicht: "keine fremde Chemie: " + kein + "; kein Körper außer PLANET_ERDE (voxel-worker.js:1159)" },
+                },
+            };
+        },
+        sprossen: {
+            1: {
+                u: { augeBis: 7 },
+                soll: [K.soll(LA, 1, "Jury trennt drei Genesen ≥ 80 %", { key: "juryProzent", einheit: "%" }), K.soll(LA, 1, "Genese passt zur Geschichte des Orts ≥ 85 %", { key: "passtProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 1000, genesen: 3 }),
+                auge: { pose: "Ego 45 m über dem Spawn vor der nächsten Felswand", vorbild: "Feldfotos magmatischer, sedimentärer und metamorpher Wände (Jury, Prüfer-Satz R11)" },
+                taeter: "gelaende-core.js FELS (EIN Fels-Stoff) und foundry-core.js rockPhenotype (Genese nur am Brocken)",
+                nicht: "keine Genese je Ort",
+                leser: "foundry-core.js:5242 rockPhenotype — wählt die Sorte eines Brockens; kein Leser bindet die Genese an Ort oder Alter (gelaende-core.js:3350 FELS)",
+                gruen: gut({ juryProzent: 84, passtProzent: 88, genesen: 3 }, { antworten: 10000, genesen: 3 }),
+                attrappen: [{ name: "drei Genesen benannt, eine Wand", roh: gut({ juryProzent: 84, passtProzent: 88, genesen: 3 }, { antworten: 10000, genesen: 1 }) }],
+            },
+            2: {
+                u: {},
+                soll: [ohneZahl(LA, 2, "Blindpaar geologische Karte gegen reale", "blindpaar")],
+                zeuge: zMin({ antworten: 1000 }),
+                auge: { pose: "Karte der Region 10⁴ km² (heute nicht erzeugbar; geschossen über dem Spawn)", vorbild: "geologische Karte einer realen Region (BGR GÜK 250), Blindpaar R11" },
+                taeter: "gelaende-core.js FELS (EIN Gestein)",
+                nicht: "keine geologische Karte",
+                leser: "gelaende-core.js:3350 einfall — EIN Fels-Stoff je Welt: kein Leser einer geologischen Einheit je Ort",
+                unklar: "der Richter nennt keine Schwelle — Vorschlag: 2AFC ≤ 70 % über 40 Paare (Prüfer-Satz R11)",
+                gruen: gut({ blindpaar: 60 }, { antworten: 5000 }),
+                attrappen: [{ name: "die reale Karte gezeigt", roh: leer({ blindpaar: 60 }) }],
+            },
+            3: {
+                u: {},
+                soll: [K.soll(LA, 3, "Prospektor-Probe an 30 Saaten", { key: "saaten", rel: "≥", zahl: 30 }), K.soll(LA, 3, "Fundquote nach Zeichen ≥ 5× blindes Bohren", { key: "fundFaktor" })],
+                zeuge: zMin({ antworten: 1000, saaten: 30 }),
+                taeter: "die Stoff-Tafel (kein Rohstoff mit Herkunft) — kein Leser einer Lagerstätte",
+                nicht: "keine Lagerstätte",
+                leser: "stamm/bau-buch.js:1554 _stoff liest die Tafel der Bau-Stoffe: keine Lagerstätte, kein Erz am Ort",
+                gruen: gut({ saaten: 30, fundFaktor: 6 }, { antworten: 3000, saaten: 30 }),
+                attrappen: [{ name: "die Fundquote gesetzt", roh: leer({ saaten: 30, fundFaktor: 6 }) }],
+            },
+            4: {
+                u: {},
+                soll: [ohneZahl(LA, 4, "Abbau sichtbar und nach Reload bleibend", "abbau"), ohneZahl(LA, 4, "Senkung über Kohle messbar", "senkung")],
+                zeuge: zMin({ antworten: 1000 }),
+                auge: { pose: "Ego an der Grube nach Abbau und Reload (heute: keine Lagerstätte)", vorbild: "Fotos von Gruben, Halden und Bergsenkungen (Ruhrgebiet), Prüfer-Satz R11" },
+                taeter: "die Stoff-Tafel (keine Kohle) — kein Leser einer Senkung",
+                nicht: "keine Kohle, keine Senkung",
+                leser: "stamm/bau-buch.js:1554 _stoff — keine Kohle in der Stoff-Tafel; kein Leser einer Bergsenkung über einem Abbau",
+                unklar: "der Richter nennt keine Zahl — Vorschlag: „Senkung ≥ 0,5 m über einem Flöz nach Abbau, Grube nach Reload byte-gleich“",
+                gruen: gut({ abbau: 1, senkung: 0.8 }, { antworten: 5000 }),
+                attrappen: [{ name: "eine gegrabene Grube ohne Kohle", roh: leer({ abbau: 1, senkung: 0.8 }) }],
+            },
+            5: {
+                u: {},
+                soll: [K.soll(LA, 5, "100 Zufallsfunde", { key: "funde", rel: "≥" }), K.soll(LA, 5, "Jury nennt das Kristallsystem blind ≥ 80 %", { key: "juryProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 1000, funde: 100 }),
+                auge: { pose: "die Fundstufe in der Hand (heute nicht erzeugbar)", vorbild: "Mineralfotos (mindat.org), Jury blind, Prüfer-Satz R11" },
+                taeter: "die Stoff-Tafel (kein Mineral) — kein Leser von Kristallsystem und Chemie",
+                nicht: "kein Fund mit Kristallsystem",
+                leser: "stamm/bau-buch.js:1554 _stoff — die Stoff-Tafel trägt quarz und eisen als Bau-Stoffe (Tags Härte, Dichte, Transparenz), ohne Kristallsystem, Habitus und Fundort",
+                gruen: gut({ funde: 100, juryProzent: 84 }, { antworten: 1000, funde: 100 }),
+                attrappen: [{ name: "Fotos aus mindat statt Funde der Welt", roh: leer({ funde: 100, juryProzent: 84 }) }],
+            },
+            6: {
+                u: {},
+                soll: [K.soll(LA, 6, "Prospektor-Probe an 1 000 Saaten ≥ 3× blindes Bohren", { key: "fundFaktor" })],
+                zeuge: zMin({ antworten: 1000, saaten: 1000 }),
+                taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE) — keine Chemie je Saat",
+                nicht: "keine fremde Chemie",
+                leser: "voxel-worker.js:1159 PLANET_ERDE — planetPlanVon rechnet jeden Samen auf PLANET_ERDE: keine Element-Verteilung je Saat",
+                gruen: gut({ fundFaktor: 4 }, { antworten: 30000, saaten: 1000 }),
+                attrappen: [{ name: "der Faktor ohne Saaten", roh: leer({ fundFaktor: 4 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ INNERES ════════════════════════════════════════
+    const inneres = {
+        sek: 8,
+        pfad: ["stamm/bild-himmel.js", "gelaende-core.js", "stamm/gelaende-*.js", "planet-core.js", "voxel-worker.js", "scripts/werkbank.cjs"],
+        ungefahren: "die Ursachen-Probe (Bild) urteilt nur am Gerät",
+        mess: async function (H, U, M) {
+            const r3 = (x) => (Number.isFinite(x) ? Math.round(x * 1000) / 1000 : null);
+            const i = await H.seite(
+                "const sy = r._voxelSurfaceY(0, 0); const T = [0, 10, 28, 50, 100].map((d) => [d, r._temperaturAt(sy - d, 0)]); const G0 = r._voxelChunkConfig(0); const boden = (r.state.terrainBaseHeight || 0) - G0.floorDrop; " +
+                    "const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); const L = [...namen]; " +
+                    "await r._fadenQuelle(); const o = await r._planetAuftrag({ type: \"planet-ort\", samen: r._planetSamen(), breite: 10, laenge: 20, zeitMa: 0 }); " +
+                    "return { T, sy, boden, magnet: L.filter((n) => /magnet|kompass|compass|deklin|inklin|dipol/i.test(n)), geysir: L.filter((n) => /geysir|geyser|fumarol|raucher|heissQuelle|thermalQuelle/i.test(n)), " +
+                    "schnitt: L.filter((n) => /planetSchnitt|querschnitt|mantel|erdkern/i.test(n)), ort: Object.keys(o).sort().join(\",\") };"
+            );
+            const g = (i.T[4][1] - i.T[0][1]) / 0.1;
+            const tiefe = i.sy - i.boden;
+            const kein = (was, liste) => was + ": " + (liste.length ? liste.join(", ") : "0 Leser in der Welt") + " — der Faden antwortet mit " + i.ort;
+            const bild = await Promise.race([
+                M.auge("geologie-inneres", { px: 0, py: 1800, pz: 2600, lx: 0, ly: 0, lz: -2600 }),
+                new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (U[6].augeBis - M.uhr()) * 1000))),
+            ]);
+            return {
+                sprossen: {
+                    1: { werte: {}, zeuge: { antworten: 2, magnetLeser: i.magnet.length }, ...(i.magnet.length ? { nicht: "kein Dipol-Feld am Ort (" + i.magnet.join(", ") + ")" } : { nicht: kein("kein Magnetfeld", i.magnet) }) },
+                    2: { werte: {}, zeuge: { antworten: 2 }, nicht: kein("keine Feldgeschichte im Gestein", i.magnet) },
+                    3: { werte: {}, zeuge: { antworten: 2, geysirLeser: i.geysir.length }, nicht: kein("kein Geysir, keine Wärme-Anomalie", i.geysir) },
+                    4: {
+                        werte: { gradientKjeKm: r3(g), stollenKm: r3(tiefe / 1000) },
+                        zeuge: { antworten: i.T.length, tiefeM: r3(tiefe), tOben: r3(i.T[0][1]), t100m: r3(i.T[4][1]) },
+                        nicht: "kein Stollen von 10 km: die Welt endet " + r3(tiefe) + " m unter dem Boden am Spawn (ihr Boden liegt bei y = " + i.boden + " m: Basis − floorDrop); die Temperatur unter dem Boden ist die Höhen-Rampe der Luft (" + r3(g) + " K je km nach unten), kein Wärmefluss",
+                    },
+                    5: { werte: {}, zeuge: { antworten: 2, schnittLeser: i.schnitt.length }, nicht: kein("kein Schnitt durch den Planeten, keine Schalen", i.schnitt) },
+                    6: { werte: {}, zeuge: { antworten: 2 }, auge: bild, nicht: kein("kein Feld, kein Kern", i.magnet) + "; kein Körper außer PLANET_ERDE (voxel-worker.js:1159)" },
+                },
+            };
+        },
+        sprossen: {
+            1: {
+                u: {},
+                soll: [K.soll(IN, 1, "Inklination ≤ 5° gegen Dipol an 20 Orten", { key: "inklinationAbwGrad", einheit: "°" }), K.soll(IN, 1, "an 20 Orten", { key: "orte", rel: "≥", zahl: 20 })],
+                zeuge: zMin({ antworten: 20, magnetLeser: 1 }),
+                taeter: "kein Magnetfeld in Welt und Planet (planet-core.js, stamm)",
+                nicht: "kein Magnetfeld",
+                leser: "planet-core.js:263 PLANET_ERDE trägt kein Feld (Dipol, Pol, Stärke); kein Leser eines Kompasses mit Deklination und Inklination",
+                gruen: gut({ inklinationAbwGrad: 2, orte: 20 }, { antworten: 20, magnetLeser: 1 }),
+                attrappen: [{ name: "die Dipol-Formel statt der Welt", roh: leer({ inklinationAbwGrad: 2, orte: 20 }) }],
+            },
+            2: {
+                u: {},
+                soll: [K.soll(IN, 2, "Streifen spiegelsymmetrisch in ≥ 90 % der Saaten", { key: "symProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 100 }),
+                taeter: "planet-core.js (kein Feld, keine Umpolung)",
+                nicht: "keine Umpolung",
+                leser: "planet-core.js:1218 punktKern trägt das Ozean-Alter, aber keine Feldgeschichte (Polarität) je Alter; der Faden gibt das Alter nicht weiter (voxel-worker.js:1175)",
+                gruen: gut({ symProzent: 93 }, { antworten: 3000 }),
+                attrappen: [{ name: "die Streifen aus dem Alter gemalt", roh: leer({ symProzent: 93 }) }],
+            },
+            3: {
+                u: {},
+                soll: [K.soll(IN, 3, "≥ 95 % der Geysire über Anomalien", { key: "geysirProzent", einheit: "%" })],
+                zeuge: zMin({ antworten: 100, geysirLeser: 1 }),
+                taeter: "kein Wärmefluss in Welt und Planet",
+                nicht: "kein Geysir",
+                leser: "gelaende-core.js:1344 temperaturAus liest Luft, Saison und Wetter, keinen Wärmefluss aus der Tiefe; kein Leser eines Geysirs",
+                gruen: gut({ geysirProzent: 97 }, { antworten: 100, geysirLeser: 1 }),
+                attrappen: [{ name: "Geysire auf Anomalien gesetzt", roh: leer({ geysirProzent: 97 }) }],
+            },
+            4: {
+                u: {},
+                soll: [
+                    K.soll(IN, 4, "Bohrloch-Temperatur folgt dem Gradienten ±20 %", { key: "gradientKjeKm", ref: 27.5, refQuelle: "Erde: geothermischer Gradient 25–30 K/km (die Tiefe der Sprosse; Mitte 27,5 K/km)", einheit: "K/km" }),
+                    K.soll(IN, 4, "Stollen 10 km ohne Naht", { key: "stollenKm", rel: "≥", zahl: 10, einheit: "km" }),
+                ],
+                zeuge: zMin({ antworten: 5, tiefeM: 10000 }),
+                taeter: "stamm/bild-himmel.js _temperaturAt (die Luft-Rampe unter dem Boden) und der Boden der Welt (floorDrop)",
+                nicht: "kein Stollen von 10 km, kein Wärmefluss",
+                leser: "stamm/bild-himmel.js:2874 _temperaturAt rechnet unter dem Boden die Höhen-Rampe der Luft weiter, kein geothermischer Gradient; stamm/gelaende-boden.js:1078 floorDrop: die Welt endet bei Basis − floorDrop",
+                gruen: gut({ gradientKjeKm: 28, stollenKm: 10.5 }, { antworten: 5, tiefeM: 10500 }),
+                attrappen: [{ name: "der Gradient der Erde eingesetzt, keine Tiefe", roh: gut({ gradientKjeKm: 28, stollenKm: 10.5 }, { antworten: 5, tiefeM: 135 }) }],
+            },
+            5: {
+                u: {},
+                soll: [
+                    K.soll(IN, 5, "Kern-Mantel-Grenze bei 0,5–0,6 Radius", { key: "kmgRadius" }),
+                    K.soll(IN, 5, "Flug durch den Schnitt ohne Bild > 100 ms", { key: "bildMsMax", rel: "≤", zahl: 100, einheit: "ms" }),
+                ],
+                zeuge: zMin({ antworten: 100, schnittLeser: 1 }),
+                taeter: "planet-core.js (Kruste und Platten, kein Inneres)",
+                nicht: "kein Schnitt, keine Schalen",
+                leser: "planet-core.js:263 PLANET_ERDE trägt radiusKm, g und Wasser, keine Schalen (Kern, Mantel, Dichte); kein Leser eines Schnitts",
+                gruen: gut({ kmgRadius: 0.55, bildMsMax: 40 }, { antworten: 1000, schnittLeser: 1 }),
+                attrappen: [{ name: "das PREM-Modell als Zahl", roh: leer({ kmgRadius: 0.55, bildMsMax: 40 }) }],
+            },
+            6: {
+                u: { augeBis: 7 },
+                soll: [K.soll(IN, 6, "erstarrter Kern → kein Feld in ≥ 95 %", { key: "keinFeldProzent", einheit: "%" }), K.soll(IN, 6, "Ursachen-Probe an 1 000 Saaten", { key: "saaten", rel: "≥", zahl: 1000 })],
+                zeuge: zMin({ antworten: 1000 }),
+                auge: { pose: "Orbitbild je Saat (heute nicht erzeugbar; geschossen im Überflug 1 800 m über dem Spawn)", vorbild: "Ursachen-Probe R10: Feldstärke aus Kern und Rotation (Sondenmessungen Merkur, Mars, Ganymed)" },
+                taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE, kein Kern)",
+                nicht: "kein Feld, kein Kern, keine fremde Welt",
+                leser: "voxel-worker.js:1159 PLANET_ERDE — planetPlanVon rechnet jeden Samen auf PLANET_ERDE (planet-core.js:263 PLANET_ERDE ohne Kern und Rotation des Felds)",
+                gruen: gut({ keinFeldProzent: 97, saaten: 1000 }, { antworten: 1000 }),
+                attrappen: [{ name: "die Regel ohne Welten", roh: leer({ keinFeldProzent: 97, saaten: 1000 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ EINSCHLAG ════════════════════════════════════════
+    const einschlag = {
+        sek: 6,
+        pfad: ["planet-core.js", "voxel-worker.js", "gelaende-core.js", "stamm/gelaende-*.js", "scripts/werkbank.cjs"],
+        ungefahren: "das Blindpaar gegen das Kraterfoto urteilt nur am Gerät",
+        mess: async function (H, U, M) {
+            const e = await H.seite(
+                "const namen = new Set(); for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n); const L = [...namen]; " +
+                    "await r._fadenQuelle(); const o = await r._planetAuftrag({ type: \"planet-ort\", samen: r._planetSamen(), breite: 10, laenge: 20, zeitMa: 0 }); " +
+                    "const G = globalThis.__gelaendeCore; return { leser: L.filter((n) => /krater|crater|einschlag|impakt|impact|meteor|asteroid|bolid/i.test(n)), kern: Object.keys(G).filter((n) => /krater|crater|einschlag|impakt/i.test(n)), ort: Object.keys(o).sort().join(\",\"), delta: Object.keys(o.delta.wildnis).sort().join(\",\") };"
+            );
+            const bild = await Promise.race([
+                M.auge("geologie-einschlag", { px: 0, py: 1800, pz: 2600, lx: 0, ly: 0, lz: -2600 }),
+                new Promise((f) => setTimeout(() => f({ bild: null, grund: "kein Bild im Deckel der Leiter" }), Math.max(500, (U[2].augeBis - M.uhr()) * 1000))),
+            ]);
+            const kein = "kein Krater: " + (e.leser.length || e.kern.length ? "Leser " + e.leser.concat(e.kern).join(", ") : "0 Leser eines Einschlags in Welt und Gelände-Kern") + "; der Faden antwortet mit " + e.ort + " (wildnis " + e.delta + ") — die „Krater“ im Code sind Grab-Taten des Spielers";
+            const je = {};
+            for (const nr of [1, 2, 3, 4, 5, 6, 7]) je[nr] = { werte: {}, zeuge: { antworten: 2, leser: e.leser.length + e.kern.length }, nicht: kein };
+            je[2].auge = bild;
+            return { sprossen: je };
+        },
+        sprossen: {
+            1: {
+                u: {},
+                soll: [
+                    K.soll(EI, 1, "einfache Krater Tiefe/Durchmesser 1:5 ±20 %", { key: "tiefeDurchmesser", ref: 0.2, refQuelle: "Mond und Erde: einfache Krater d/D ≈ 1:5 (Pike 1977; Melosh 1989)" }),
+                    K.soll(EI, 1, "Profil gegen reale Krater ≤ 15 %", { key: "profilAbwProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ antworten: 10, leser: 1 }),
+                taeter: "planet-core.js punktKern und gelaende-core.js (kein Krater-Term)",
+                nicht: "kein Krater als Form",
+                leser: "planet-core.js:1218 punktKern summiert Boden, Profil, Mantel, Schablone, Trapp, Orogen, Kegel — keinen Krater; gelaende-core.js kennt keine Napf-Form",
+                gruen: gut({ tiefeDurchmesser: 0.19, profilAbwProzent: 9 }, { antworten: 50, leser: 1 }),
+                attrappen: [{ name: "die Napf-Form gegraben, kein Einschlag", roh: leer({ tiefeDurchmesser: 0.19, profilAbwProzent: 9 }) }],
+            },
+            2: {
+                u: { augeBis: 5 },
+                soll: [K.soll(EI, 2, "Krater-Durchmesser gegen Energie nach Pi-Skalierung ±30 %", { key: "durchmesserVerh", ref: 1, refQuelle: "Pi-Skalierung nach Holsapple & Schmidt (1987): gemessener ÷ vorhergesagter Durchmesser = 1" })],
+                zeuge: zMin({ antworten: 10, leser: 1 }),
+                auge: { pose: "Ego am Kraterrand nach dem Einschlag (heute nicht erzeugbar; geschossen im Überflug über dem Spawn)", vorbild: "Kraterfotos (Meteor Crater, Barringer), Blindpaar R11" },
+                taeter: "kein Einschlag als Ereignis in der Welt",
+                nicht: "kein Einschlag als Ereignis",
+                leser: "stamm/feld-leben.js:2626 _tatSchreiben kennt Taten des Spielers (Lava, Brand, Grab), kein Einschlag mit Energie",
+                gruen: gut({ durchmesserVerh: 1.1 }, { antworten: 20, leser: 1 }),
+                attrappen: [{ name: "der Durchmesser aus der Formel", roh: leer({ durchmesserVerh: 1.1 }) }],
+            },
+            3: {
+                u: {},
+                soll: [K.soll(EI, 3, "N(> D) ∝ D^−2 ±0,5", { key: "exponent", ref: -2, refQuelle: "Mond: kumulative Kratergrößen-Verteilung N(>D) ∝ D^−2 (Neukum 1983; Hartmann 2005)" })],
+                zeuge: zMin({ antworten: 100, leser: 1 }),
+                taeter: "planet-core.js punktKern (kein Kraterfeld)",
+                nicht: "kein Kraterfeld",
+                leser: "planet-core.js:1218 punktKern — kein Krater-Term, keine Größen-Häufigkeit",
+                gruen: gut({ exponent: -2.1 }, { antworten: 500, leser: 1 }),
+                attrappen: [{ name: "der Exponent gesetzt", roh: leer({ exponent: -2.1 }) }],
+            },
+            4: {
+                u: {},
+                soll: [K.soll(EI, 4, "Rate je Größe gegen die Einschlags-Statistik der Erde ±Faktor 2", { key: "faktor", rel: "≤", zahl: 2 })],
+                zeuge: zMin({ antworten: 1000, leser: 1 }),
+                taeter: "planet-core.js planetPlan (keine Kleinkörper)",
+                nicht: "keine Einschlagsrate",
+                leser: "planet-core.js:307 planetPlan trägt keine Kleinkörper der Saat und keine Rate je Größe",
+                gruen: gut({ faktor: 1.5 }, { antworten: 1000, leser: 1 }),
+                attrappen: [{ name: "die Rate nach Bland & Artemieva abgeschrieben", roh: leer({ faktor: 1.5 }) }],
+            },
+            5: {
+                u: {},
+                soll: [K.soll(EI, 5, "1 000 Saaten", { key: "saaten", rel: "≥" }), K.soll(EI, 5, "Rang ≥ 0,7", { key: "rang" })],
+                zeuge: zMin({ antworten: 1000, leser: 1 }),
+                taeter: "planet-core.js punktKern (kein Krater, nichts zu löschen)",
+                nicht: "keine Krater, die Erosion und Tektonik löschen",
+                leser: "planet-core.js:1218 punktKern — kein Krater-Term, den Wetter und Tektonik tilgen könnten",
+                gruen: gut({ saaten: 1000, rang: 0.75 }, { antworten: 100000, leser: 1 }),
+                attrappen: [{ name: "der Rang ohne Saaten", roh: leer({ saaten: 1000, rang: 0.75 }) }],
+            },
+            6: {
+                u: {},
+                soll: [K.soll(EI, 6, "Kraterdichte im Bild gegen das wahre Alter der Fläche ±Faktor 2", { key: "faktor", rel: "≤", zahl: 2 }), K.soll(EI, 6, "Rang ≥ 0,8", { key: "rang" })],
+                zeuge: zMin({ antworten: 1000, leser: 1 }),
+                taeter: "planet-core.js punktKern (keine Kraterdichte)",
+                nicht: "keine Kraterchronologie",
+                leser: "planet-core.js:1218 punktKern — die Oberfläche trägt ein Alter (Ozean-Boden, Orogen), aber keine Kraterdichte daraus",
+                gruen: gut({ faktor: 1.6, rang: 0.85 }, { antworten: 1000, leser: 1 }),
+                attrappen: [{ name: "die Dichte aus dem Alter gerechnet", roh: leer({ faktor: 1.6, rang: 0.85 }) }],
+            },
+            7: {
+                u: {},
+                soll: [K.soll(EI, 7, "1 000 Welten", { key: "welten", rel: "≥" }), K.soll(EI, 7, "Rang ≥ 0,8", { key: "rang" })],
+                zeuge: zMin({ antworten: 1000, leser: 1 }),
+                taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE, keine Atmosphäre und Kleinkörper je Saat)",
+                nicht: "keine Welt außer der Erde, kein Krater",
+                leser: "voxel-worker.js:1159 PLANET_ERDE — planetPlanVon rechnet jeden Samen auf PLANET_ERDE",
+                gruen: gut({ welten: 1000, rang: 0.85 }, { antworten: 100000, leser: 1 }),
+                attrappen: [{ name: "der Rang ohne Welten", roh: leer({ welten: 1000, rang: 0.85 }) }],
+            },
+        },
+    };
+
+    // gebirge fährt zuerst: ihre Stichprobe (100 Saaten über den Faden) tragen auch die Sprossen der Leiter platten
+    return { leitern: { [GE]: gebirge, [PL]: platten, [VU]: vulkan, [UW]: unterwelt, [LA]: lagerstaette, [IN]: inneres, [EI]: einschlag } };
+})());
+
 // ── DIE PERSPEKTIVE planet.wasser (6 Leitern, 39 Sprossen; kreislauf S1 und stroemung S1 tragen schon Station und Tafel) ─────────
 // Die Leser des Spiels: das Wasser am Ort (`_koerperWasser` · `_nassAt` · `_hydroRiverAt` · `_waterFlowAt`, stamm/wasser-hydro.js), der
 // Pegel (`_pegelTakt`), das Eis (`_eisLinien` · `_eisAt`), der Schnee (`_schneeTafel` · `_schneeVersatz`, gelaende-core schneeTrittAm),
