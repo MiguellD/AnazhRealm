@@ -111,7 +111,12 @@ function pushe(zweig, dateien, nachricht, berichtZeile) {
 function messDateien(k) {
     const l = [];
     if (fs.existsSync(messDatei(k))) l.push({ von: messDatei(k), pfad: MDIR + "/" + k.slice(0, 8) + "-gtx.json" });
-    if (fs.existsSync(rohDir(k))) for (const f of fs.readdirSync(rohDir(k)).filter((f) => f.endsWith(".out")))
+    // DAS GESETZ DER ROH-BILDER (Koordinator 19.11.): dazu die Bilder, die kandidat.sh vor dem Push NICHT in die Ablage am Gerät zog
+    // (runde.cjs bilder: das Urteil ihrer Station wechselt gegen stand.json — Beweis- oder Täter-Bild), und je gehaltenem Bild seine
+    // Prüfsumme <bild>.sha256; bis hier ging aus roh/ nur *.out. NUR, wenn der Rufer die Bilder geprüft hat (ROH_BILDER_GEPRUEFT=1,
+    // kandidat.sh) — ein anderer Rufer (gtx-dauer selbst) pusht wie bisher nur *.out
+    const bild = process.env.ROH_BILDER_GEPRUEFT === "1";
+    if (fs.existsSync(rohDir(k))) for (const f of fs.readdirSync(rohDir(k)).filter((f) => f.endsWith(".out") || (bild && /\.(png|jpe?g|webp)(\.sha256)?$/i.test(f))))
         l.push({ von: rohDir(k) + "/" + f, pfad: MDIR + "/roh/" + k.slice(0, 8) + "-gtx/" + f });
     // die Richter-Akten der Meisterkarte 2, die die Sitzung an diesem Kopf schrieb (punkte.cjs richterAkten → vision/richter/
     // <leiter>.<sprosse>.<sha8>-gtx.json): sie reisen mit der Mess-Datei nach punkte-maschine und von dort nach koordination

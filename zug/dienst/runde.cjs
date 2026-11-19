@@ -254,10 +254,44 @@ if (was === "lies") {
     const u = ord(ungebucht), b = ord(gebucht);
     process.stderr.write("Reihe " + g + ": ungebucht " + u.length + " (" + u.map((id) => id + (paar[id] ? " Paar " + paar[id].kopf + " ROT" : " ohne Paar")).join(" · ") + ") | gebucht gruen " + b.length + " (" + b.map((id) => id + " " + paar[id].kopf).join(" · ") + ")\n");
     console.log((u.join(",") || "") + "|" + (b.join(",") || ""));
+} else if (was === "teile") {
+    // DIE WURZEL DER FAHRT-ZEIT (Koordinator 19.11. 03:30): Stationen EINER Linse fahren in EINER Sitzung. Bis hier fuhr die OMEN je Station
+    // eine eigene Sitzung (kandidat.sh EINZELN=1): am b7ed8419 42 Stationen in 247 min START→GEPUSHT, im Mittel 5,9 min je Station —
+    // davon ≥ 252 s je Sitzung Boot, Welt, CPU-Ruhe und Push (247 min − Σ Deckel 4 219 s der 36 Läufe, verteilt auf 42 Sitzungen).
+    // Jetzt: die Läufe der Maschine (`punkte.cjs eichtafel --geraet <g>`: je Zeile die Stationen EINES Laufs, Zwillinge mit „+“, und sein
+    // Deckel) werden in der Reihe der Liste (ungebucht zuerst) zu Teilen gepackt, je Teil Σ Deckel ≤ <budget> (Vorgabe FAHRT_MAX_S −
+    // Boot = 1 740 s, die Teil-Größe der Maschine selbst); ein Lauf wird nie geteilt; ein Lauf über dem Budget ist ein eigener Teil.
+    // Eine Station ohne Zeile in der Tafel fährt allein (ihr Fehler trifft nur sie). Aufruf: teile <eichtafel-datei> <liste> [budget]
+    // → "a,b;c;d,e" (";" trennt Teile, Reihe der Liste); stderr: Teile, Läufe, Σ Deckel.
+    const [datei, l, b] = arg;
+    const budget = Number(b || 1740);
+    const lauf = {};
+    for (const z of String(fs.existsSync(datei) ? fs.readFileSync(datei, "utf8") : "").split(/\r?\n/)) {
+        const m = z.match(/^\s+(\S+) · Deckel (\d+) s/);
+        if (m) for (const id of m[1].split("+")) lauf[id] = { ids: m[1].split("+"), d: Number(m[2]) };
+    }
+    const ids = liste(String(l || "").replace("|", ","));
+    const drin = new Set(ids), gesehen = new Set(), teile = [], allein = [];
+    let cur = [], sum = 0, laeufe = 0, summe = 0;
+    for (const id of ids) {
+        const L = lauf[id];
+        if (!L) { allein.push(id); if (cur.length) { teile.push(cur); cur = []; sum = 0; } teile.push([id]); continue; }
+        const k = L.ids.join("+");
+        if (gesehen.has(k)) continue;
+        gesehen.add(k);
+        const glieder = L.ids.filter((x) => drin.has(x));
+        if (cur.length && sum + L.d > budget) { teile.push(cur); cur = []; sum = 0; }
+        cur.push(...glieder);
+        sum += L.d; laeufe++; summe += L.d;
+    }
+    if (cur.length) teile.push(cur);
+    process.stderr.write("Teile: " + ids.length + " Stationen in " + laeufe + " Läufen (Σ Deckel " + summe + " s) → " + teile.length + " Sitzungen je ≤ " + budget + " s" + (allein.length ? " · ohne Lauf in der Tafel, je allein: " + allein.join(" ") : "") + "\n");
+    console.log(teile.map((t) => t.join(",")).join(";"));
 } else if (was === "offen") {
     const [dir, ref, g, kopf, l] = arg;
     let m = {};
-    try { m = JSON.parse(zeigIn(dir)(ref, MDIR + "/" + k8(kopf) + "-" + g + ".json") || "{}"); } catch { m = {}; }
+    // ref „-“: die Mess-Datei im Arbeitsbaum (kandidat.sh nach einer gefallenen Sitzung: was sie fertig maß, steht dort)
+    try { m = JSON.parse((ref === "-" ? (() => { try { return fs.readFileSync(path.join(dir, MDIR, k8(kopf) + "-" + g + ".json"), "utf8"); } catch { return null; } })() : zeigIn(dir)(ref, MDIR + "/" + k8(kopf) + "-" + g + ".json")) || "{}"); } catch { m = {}; }
     const ids = liste(String(l || "").replace("|", ","));
     process.stderr.write("an " + k8(kopf) + " " + g + " schon gemessen: " + (ids.filter((s) => hatEintrag(m, s)).length) + " von " + ids.length + "\n");
     console.log(ids.filter((s) => !hatEintrag(m, s)).join(","));
