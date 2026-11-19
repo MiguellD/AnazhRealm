@@ -2064,7 +2064,7 @@ class AnazhRealm_bild_himmel {
                 quelle: "auge",
                 L: {
                     kelvin: A.kelvin,
-                    staerke: 0,
+                    cd: 0,
                     reichweiteM: A.reichweiteM,
                     abfall: A.abfall,
                     kernM: A.kernM,
@@ -2073,7 +2073,7 @@ class AnazhRealm_bild_himmel {
                 masse: 1,
                 phase: 0,
             });
-        q.L.staerke = I / AnazhRealm.LEGACY_LICHT;
+        q.L.cd = I * __weltLicht.EINHEIT_LX; // eine Bild-Größe an k (`_augenLichtStaerke`, in Welt-Einheiten) — der Pool teilt sie zurück
     }
 
     // DIE STÄRKE DES AUGEN-LICHTS beim Himmel h am Auge und der Belichtung k (die EINE Quelle; gate:hoehlen-sicht (j) liest sie):

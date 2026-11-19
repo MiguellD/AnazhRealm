@@ -358,8 +358,16 @@ class AnazhRealm_studio_stoff {
         const _tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
         // Die Rauheit (`rauh`) wiegt das Mikro-Relief des facettierten Felsens außerhalb des Satzes (`_mikroGestalt`): bis
         // w13-fels-korn stand sie als Zahl im Graphen, und der zweite Stoff einer Signatur zeichnete mit der Rauheit des ersten.
+        // DAS LEUCHTEN IN DER EINEN SKALA (licht-eine-skala P8, die EINE Stelle der Familie `leucht`): die Zahl des Labors
+        // (`mp.leucht`, am Feuer fachwerk `LEUCHT_FEUER`) ist relativ zum Feuer — ihr Stoff leuchtet in seiner Farbe ×
+        // der Leuchtdichte der Flamme (fachwerk `FEUER_LEUCHTDICHTE`, cd/m²) ÷ die Einheit der EINEN Skala. Bis hier stand die
+        // Zahl des Labors selbst im Bild (2,5 Einheiten = 40 000 cd/m², bei Tag und Nacht).
+        const _FW = globalThis.__fachwerkCore;
         mat.userData.stoffWerte = {
-            leucht: mp && typeof mp.leucht === "number" && mp.leucht > 0 ? mp.leucht : 0,
+            leucht:
+                mp && typeof mp.leucht === "number" && mp.leucht > 0
+                    ? ((mp.leucht / _FW.LEUCHT_FEUER) * _FW.FEUER_LEUCHTDICHTE) / __weltLicht.EINHEIT_LX
+                    : 0,
             tonL: _tonA ? Math.max(1e-4, 0.2126 * _tonA[0] + 0.7152 * _tonA[1] + 0.0722 * _tonA[2]) : 1,
             rauh: rough,
             verband: mp && mp.verband > 0 ? mp.verband | 0 : 0, // die Zeile des Verband-Gesetzes (außerhalb des Satzes)

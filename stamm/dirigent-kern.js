@@ -1590,8 +1590,8 @@ class AnazhRealm {
     // Auges, jede Glut und jede Quelle mit Datum im Verzeichnis (die Laternen der Pläne), das wache Tor; neu gewählt je `wahlS`
     // oder nach `wahlM` Weg und nach jedem Sprung der Uhr, `_uhrSetzen`). Ein Platz hält seine Quelle, solange sie gewählt
     // ist; eine abgewählte blendet in `blendeS` aus, erst der freie Platz nimmt die nächste auf, und sie blendet ein — kein Licht springt. Die Stärke je Bild: das Emitter-
-    // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
-    // Bild-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
+    // Datum in Candela ÷ die Einheit der EINEN Skala (`_leuchtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
+    // Bild-Uhr (fachwerk `lichtFlackern`) × Schaltplan (`_lichtSchaltplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
     // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
     // Stärke, Reichweite, Abfall, Kern, lineare Farbe, Himmels-Ersatz, Blende). Die Farbe aus der Farbtemperatur (`_lichtLinear`).
     _leuchtTakt() {
@@ -1602,7 +1602,9 @@ class AnazhRealm {
         const LP = AnazhRealm.LICHT_POOL;
         const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
         for (const k in atmo.lichtGlut)
-            this._lichtLinear(LG[k], atmo.lichtGlut[k].value).multiplyScalar(this._lichtZeitplan(LG[k].zeit));
+            this._lichtLinear(LG[k], atmo.lichtGlut[k].value).multiplyScalar(
+                ((LG[k].cdM2 || 0) / __weltLicht.EINHEIT_LX) * this._lichtSchaltplan(LG[k])
+            );
         const pool =
             this._leuchtPool ||
             (this._leuchtPool = {
@@ -1710,8 +1712,8 @@ class AnazhRealm {
     }
 
     // DAS LICHT EINER FLAMMEN-FLÄCHE (w28-brand-nacht) vom Halbmesser `r` m → { L, masse }. AN der Flamme (d → 0) trägt eine
-    // Fläche die Bestrahlung `BRAND.bild.flamme.schein` — EINE Zahl in Welt-Einheiten, bei Tag und Nacht dieselbe (das Licht einer
-    // Flamme hängt weder an der Stunde noch an der Belichtung der Kamera): Masse·(1 + k²)/k² = schein, mit dem KERN k = ihrem
+    // Fläche die Bestrahlung ihres Scheins — EINE Zahl, bei Tag und Nacht dieselbe (das Licht einer
+    // Flamme hängt weder an der Stunde noch an der Belichtung der Kamera): Masse·(1 + k²)/k² = Schein, mit dem KERN k = ihrem
     // Halbmesser (fachwerk `lichtAbfall`: die Ausdehnung der Quelle, wie die Membran des Tors). Nah bleibt ihr Licht so unter
     // dem Deckel, fern wächst es mit ihrer Fläche (∝ k²/d²), ihre Reichweite mit ihrem Halbmesser (höchstens zwei Zellen).
     // Farbe, Abfall und Flackern sind die des Feuers (`LICHT_GESETZ.feuer`), sein Zeitplan nicht: der hebt das Herdfeuer
@@ -1719,22 +1721,31 @@ class AnazhRealm {
     // nachts stand die Bestrahlung in 1 m bei 565 (am Tag 6,4), das Gras 1–6 m um die Front brannte weiß aus, die Flammen gingen
     // unter, der Rauch stand als helle Scheiben. WIDERLEGT: das Licht am Bild-Ton der Flamme (× ziel ÷ Belichtung) — die Nacht
     // stimmte, am Tag (Belichtung 0,51) trug die Flamme 22 statt 7,5 und färbte Gras und Rauch orange. Je Viertelmeter ein Datum.
-    _flammenLicht(r) {
+    // DIE EINE SKALA (licht-eine-skala, P8): die Fläche trägt ihre LEUCHTDICHTE `cdM2` (ohne Wort die der Flamme, fachwerk
+    // `FEUER_LEUCHTDICHTE` 15 000 cd/m²; die Lava die des schwarzen Körpers ihrer Temperatur, `glutLeuchtdichte`) — ihre
+    // Lichtstärke ist Leuchtdichte × Fläche, π·k²·cdM2 ÷ (1 + k²) cd im Abfall des Datums (AN der Fläche π·cdM2 lx, die
+    // Bestrahlung vor einem Lambert-Strahler). Bis hier trug sie `schein` 7,5 Welt-Einheiten (120 000 lx) ohne Quelle.
+    _flammenLicht(r, cdM2 = globalThis.__fachwerkCore.FEUER_LEUCHTDICHTE) {
         const Lf = globalThis.__fachwerkCore.LICHT_GESETZ.feuer;
         const k = Math.max(Lf.kernM, Math.round(r * 4) / 4);
         const M = this._flammenLichter || (this._flammenLichter = new Map());
         if (!M.has(k)) {
             const reichweiteM = Math.min(2 * AnazhRealm.LIFE_FIELD.cell, (Lf.reichweiteM * k) / Lf.kernM);
-            M.set(k, Object.freeze({ ...Lf, staerke: 1, zeit: null, kernM: k, reichweiteM }));
+            M.set(k, Object.freeze({ ...Lf, cd: 1, zeit: null, schaltet: false, kernM: k, reichweiteM }));
         }
-        return { L: M.get(k), masse: (AnazhRealm.BRAND.bild.flamme.schein * k * k) / (1 + k * k) };
+        return { L: M.get(k), masse: (Math.PI * cdM2 * k * k) / (1 + k * k) };
     }
 
-    // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9): Datum × Flackern × Zeitplan über die EINE Übersetzung Labor → Welt × Masse.
+    // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9; licht-eine-skala P8): ihre Lichtstärke in Candela (`L.cd`, lx in 1 m)
+    // × Flackern × Schaltplan × Masse ÷ die Einheit der EINEN Skala (`EINHEIT_LX`) — die EINE Stelle, an der ein Pool-Licht in
+    // den Maßstab der Welt tritt. Ein Datum ohne `cd` bricht laut. Bis hier lief die Zahl des Labors × π × Zeitplan: das
+    // Herdfeuer trug nachts × 45 (2,3 Mio. lx in 1 m im einen Maßstab).
     _leuchtStaerke(q, t) {
         const L = q.L;
+        if (!(L.cd >= 0))
+            throw new Error(`_leuchtStaerke: die Quelle „${q.quelle || "?"}“ trägt keine Lichtstärke (cd)`);
         const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
-        return this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit);
+        return ((L.cd * (1 + fl)) / __weltLicht.EINHEIT_LX) * q.masse * this._lichtSchaltplan(L);
     }
 
     // DER SICHTKEGEL der Licht-Wahl (K10 × K11): das Frustum der Kamera des Bildes, je Wahl aus ihren Matrizen.
@@ -1809,7 +1820,7 @@ class AnazhRealm {
         // der Weg des Brands: an der Decke die Bestrahlung `schein`, fern wächst ihr Licht mit ihrer Fläche), die Masse folgt ihrer
         // Glut (`_lavaZustand`). Bis hier stand sie als Herdfeuer-Punkt × `BRAND.licht` 1 m über ihrer Mitte: nachts brannte die
         // Kruste dort weiß-rosa aus, die Risse verloren ihr Orange, und der Schein reichte kaum über ihren Rand.
-        const lavaLicht = this._flammenLicht(cs / 2);
+        const lavaLicht = this._flammenLicht(cs / 2, globalThis.__fachwerkCore.glutLeuchtdichte(this._lavaSpanne()[1]));
         for (const a of this._tatIndex().lava) {
             if ((a.x - x) * (a.x - x) + (a.z - z) * (a.z - z) > R * R) continue;
             const g = this._lavaZustand(a).glut;
@@ -1866,11 +1877,13 @@ class AnazhRealm {
         return b;
     }
 
-    // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung — derselbe EINE
-    // Faktor `LEGACY_LICHT`, durch den die Rig-Werte des Studios laufen; den Abfall rechnet der Stoff nach dem Gesetz (fachwerk
-    // `lichtAbfall` in `_lichtPoolTerm`: 1/d^abfall mit Kern und Saum, K11b) — in 1 m trifft er die Stärke des Datums.
-    _laborLichtStaerke(I) {
-        return I > 0 ? AnazhRealm.LEGACY_LICHT * I : 0;
+    // DER SCHALTPLAN EINER LEUCHTQUELLE (licht-eine-skala P8): der Anteil brennender Quellen zur Stunde — ihr Zeitplan
+    // (`_lichtZeitplan`) bezogen auf seinen größten Wert, nur wo das Datum `schaltet` (Laterne, Fenster); sonst 1: ein Feuer
+    // brennt bei Tag und Nacht mit derselben Lichtstärke (sein `zeit` trägt die Belichtung des Labors).
+    _lichtSchaltplan(L) {
+        if (!L.schaltet || !L.zeit) return 1;
+        const m = Math.max(L.zeit.mittag, L.zeit.morgen, L.zeit.abend, L.zeit.nacht);
+        return m > 0 ? this._lichtZeitplan(L.zeit) / m : 0;
     }
 
     // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
