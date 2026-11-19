@@ -65,3 +65,24 @@ Wort des Schöpfers: „ja bauen, bei 98% wip sichern und übergabe“. Datei-Be
 - Lauf: `ORT=wiese START_ARGS="--fenster 1920x1080" timeout 520 bash .git/gtx1050-werkzeug/tmp/werkbank-ort.sh stufe <bef>` (unter
   dem GPU-Schloss; vorher `rm -f .git/gtx1050-werkzeug/gc/werkbank-stufe/start.log`). Kommentare am Zeilenende brechen die
   zusammengefügte Werkbank-Zeile — nur ganze Kommentar-Zeilen in `muster.js`; kein Hochkomma.
+
+## Stand 20:15 (Kopf fa836365c, gepusht)
+
+- (2) Muster-Phase: siehe oben, headless 0,000 / 0,000 an vier Backstein-Häusern; gate:fachwerk-contract GRÜN 24/24, gate:haus-fern GRÜN,
+  **check:statik GRÜN** (nach dem Umzug der Spike-Blätter hierher — die Zitat-Wand verlangt jedes `.md` des Baums in `docs/README.md`).
+- Die Blätter (`BLATT.md`, `MUSTER.md`, diese Übergabe, `zensus-stufe-l0.md`) liegen jetzt NUR hier auf koordination; im Zweig bleiben
+  `soll.json`, `werkzeug/`, `zahlen/`, `bilder/`.
+- Kreuzung (Koordinator, 19:5x): die Vorprüfung `stein-ein-gesetz` 3e76deb8 fiel rot an „Regler wirkt Teil 2/3“ und „Asset-Vertrag v1“;
+  ein Opus-Heiler arbeitet auf `stein-ein-gesetz`. Diese drei Gates und die v1-Goldens NICHT anfassen; `stein-ein-gesetz` erst auf das
+  Wort des Koordinators (er nennt den Kopf) in `einheit-stufe-aus-l0` mergen. gate:asset-contract am Kopf bis dahin erwartbar rot.
+
+## (3) Relief als Ton — Plan (nicht begonnen)
+
+- Was fällt: Flächen, deren kleinste Höhe an der Grenze unter `s` liegt (`muster.js` Schritt 3: Balken-Flanken und -Unterseiten, Traufkanten).
+  Im Bild fehlt dann ihr Beitrag: die dunkle Unterkante (Eigenschatten) — die Differenz-Karte zeigt sie als helle Linien (Stufe heller als L0).
+- Gesetz (Koordinator): ihr Mittel aus Eigenschatten und Kante geht als TON in den Stoff der Zone, wie die Farbe. Vorschlag: je gefallener
+  Fläche ihr Anteil am Bildpunkt (Breite ÷ s) × ihr Ton (Albedo × Neigung zum Licht von oben) als Abdunklung der Ecken der tragenden Fläche,
+  die an der gefallenen Kante liegen — dafür braucht die tragende Fläche eine Ecke an der Kante (eine geteilte Fläche kostet Dreiecke) oder
+  der Stoff einen Kanten-Term (eine Zeile im Verband-Gesetz, die die Lage im Feld schon kennt). Am Bild prüfen: die hellen Linien der
+  Differenz-Karte verschwinden, B1 fällt.
+- VORHER: die Messung über den Bau-Satz der Welt führen (der Spike-Pfad `_foundryBuildGroup` reicht keine Zeile je Ecke und keine Lage).
