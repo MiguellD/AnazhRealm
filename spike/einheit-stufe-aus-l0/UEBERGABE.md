@@ -33,12 +33,12 @@ Wort des Schöpfers: „ja bauen, bei 98% wip sichern und übergabe“. Datei-Be
      im Raster des Baus, nie am Standort (vorher webte jedes Haus je nach Weltlage verschoben). Betrifft jede Verband-Fläche (Mauerwerk,
      Deckung, Putz, Naturstein) in jedem Haus; die Fachwerk-Zeile mit `lage` liest weiter `ecke`.
    - Schnitt (b): `infill` legt die Lagen im Raster des Hauses (Lage k bei k · bh ab dem Grund, am Gefach geklippt) statt je Gefach gestreckt.
-   - Zahl (`werkzeug/phase.cjs`, volle Steine, Abstand Stein-Mitte zu Mitte der gewebten Zelle in Zellen, 0 deckungsgleich, 0,5 Fuge; die
-     Zeile vorher ist die Vorlage, nicht die Welt — an der Welt lag sie zufällig je Standort): alemannisch längs 0,288 → **0,000**, hoch
-     0,255 → 0,183 · hanseatisch längs 0,315 → 0,205, hoch 0,194 → 0,055. **Rest:** die Höhe (und bei hanseatisch die Länge) wandert —
-     Verdacht: `infill` rastert in den Koordinaten seiner Gruppe, die beim Backen verschoben oder verformt wird (Sockel, Geschoss, Anbau,
-     `deform`), und der Giebel (`:743`) und der Verband `:1415` rastern eigen. Nächster Schritt: das Raster im GEBACKENEN Rahmen (der
-     Versatz der Gruppe reist in `infill`) und Giebel und `:1415` auf dasselbe Raster.
+   - Schnitt (c): der Giebel-Backstein (`:743`) und der dritte Bauer (`:1415`, längs zuvor um seine eigene Mitte `uc`) legen Lagen und
+     Stoßfugen im selben Raster des Hauses. Die Verteilung der Stein-Ecken zeigte vorher zwei Gruppen (das Raster und eine halbe Zelle
+     daneben — der Giebel).
+   - Zahl (`werkzeug/phase.cjs`, volle Steine, Abstand Stein-Mitte zu Mitte der gewebten Zelle in Zellen, 0 deckungsgleich, 0,5 auf der
+     Fuge; vorher gemessen in der Vorlage — an der Welt lag es zufällig je Standort): alemannisch längs 0,288 → **0,000**, hoch 0,255 →
+     **0,000**; hanseatisch 0,315 → **0,000** / 0,194 → **0,000**; fraenkisch und tudor **0,000 / 0,000**.
    - Re-Mint haeuser.json, gate:fachwerk-contract GRÜN (Split-Parität 24/24), diag-atlas --check und Format grün. Nicht gelaufen: das
      Bild (B1 im Bau-Satz der Welt), gate:asset-contract, gate:haus-fern, stamm:lint, check:statik.
 3. **Relief als Ton:** Kanten unter `s` fallen (`muster.js` Schritt 3); ihr Mittel aus Eigenschatten und Kante soll als Ton in den Stoff
