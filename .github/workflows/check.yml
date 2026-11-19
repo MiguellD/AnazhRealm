@@ -181,6 +181,14 @@ jobs:
               # (S1 Waende: die Daten rufen beim Laden keine Transzendente, Ratschen-Zeile v7).
               run: npm run gate:daten-contract
 
+            - name: Charakterzüge ändern den Tag (mensch.geist.absicht — 100 Bewohner, blind ihrem Zug zugeordnet ≥ 0,6)
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
+              run: npm run gate:mensch-zuege
+
+            - name: Knicken nach Euler (same.physik.tragen — Versagens-Last am Gesetz ±20 %, E/2 knickt früher)
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
+              run: npm run gate:knick-euler
+
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 2
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks

@@ -149,6 +149,8 @@
         "gate:albedo-tafel": "node scripts/diag-albedo-tafel.cjs --selftest && node scripts/diag-albedo-tafel.cjs",
         "gate:nah-fern": "node scripts/diag-nah-fern.cjs",
         "gate:koerper-kern": "node scripts/diag-koerper-kern.cjs --selftest && node scripts/diag-koerper-kern.cjs",
+        "gate:mensch-zuege": "node scripts/diag-mensch-zuege.cjs --selftest && node scripts/diag-mensch-zuege.cjs",
+        "gate:knick-euler": "node scripts/diag-knick-euler.cjs",
         "gate:apparat": "node scripts/diag-apparat.cjs --selftest && node scripts/diag-apparat.cjs && node scripts/diag-vendor-anker.cjs",
         "gate:vendor-anker": "node scripts/diag-vendor-anker.cjs --selftest && node scripts/diag-vendor-anker.cjs",
         "gate:streu-wahrheit": "node scripts/diag-streu-wahrheit.cjs --selftest && node scripts/diag-streu-wahrheit.cjs",
