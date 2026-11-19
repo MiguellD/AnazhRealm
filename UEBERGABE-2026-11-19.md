@@ -55,3 +55,22 @@ Wer hier weitermacht, liest zuerst den LAGE-Block, dann dieses Blatt, fährt den
 - Pflicht-OFFEN Rest A · B · C · E · F unverändert. Die Stand-Zeile in CLAUDE.md trägt noch V18.546.339.
 - Karte 2 erreicht bei dieser Rate am 17.12. etwa 175 Sprossen; ob die drei Grundgesetze die Rate heben, zeigt erst Welle a.
 - Der zweite Fresser ist noch ohne Namen; `w28-bau-rezept` trägt dazu eine eigene, unbelegte VK-Zeile.
+
+## Nachtrag 16:24 — was sich seit dem Blatt oben geändert hat (dieser Abschnitt gilt vor dem Text darüber)
+- **Der Stempel `w28-laub-kante-2` ist ZURÜCKGEZOGEN.** Kalt-Ankunft gegen den Vor-Kopf 6113b27e: Genesis +9,5 s, Wiese +2,5 s
+  (ABAB, je 3 Boots, Radeon). Sperr-Zeile LANGSAMER für den Zug-Kandidaten 00f9064a in `zug/abab.txt`; der Kopf liegt unter
+  `refs/archiv/2026-11-19/w28-laub-kante-2-zurueck` (80471c53). Der Folge-Schnitt „Lade-Bilder im vollen Takt“ ist gefallen
+  (`licht-ankunft` 51f6e767, zurückgenommen). Neue Welle, Opus, Baum `AnazhRealm-probe`, Zweig `licht-lesung-ev`: die Lesung gilt in
+  EV statt in Grad; Soll A1–A6 in `vision/licht/soll-ankunft-umstellen.md` + Nachtrag. Erst wenn A1 hält, neue Vorprüfung und ein
+  neuer Stempel (Name `w28-laub-kante-3`).
+- **Fresser „Kreatur-Linse“:** kein gemeinsamer Täter (`zug/fresser-kreatur-linse.md`). `w28-bau-rezept` und `w28-kern-sprossen`
+  tragen eine rote Batterie und landen so nicht. Heiler für bau-rezept läuft (Baum `AnazhRealm-probe2`, Zweig `bau-rezept-tuer`);
+  kern-sprossen ist ohne Heiler; der Rest von `los-huelle` ging an den OMEN.
+- **Herde:** `herde-gesetz` 15bdb5f0 am Bogen geurteilt, nicht stempelbar; der Bauer hat die Reste R1–R4 (LAGE d21844fe) und
+  liefert `kontakt-nachher2-*.jpg`.
+- **Bergung:** sechs Äste im Archiv, `w28-reise-raeumt` 6e659b8e hat einen Besitzer zum 20.11. (nächster freier Opus-Platz).
+- **Äste-Frist:** erster Lauf durch, 170 Refs unter `refs/archiv/2026-11-19/` (+1 der zurückgezogene Stempel).
+- **Zug:** z624 (`w28-licht-eine-skala` allein) endete mit EXIT=1 um 15:55 — der Grund ist noch nicht gelesen; das ist der erste
+  Handgriff des nächsten Takts (`rot-text.cjs --sha d8fe7358`).
+- **Regeln neu:** eine Preis-Zahl im Stempel braucht ABAB mit ≥ 3 Läufen je Seite, nie einen Einzellauf. Ein Stempel wird über
+  die Sperr-Zeile in `zug/abab.txt` + Archiv-Verschiebung zurückgezogen, nie über den Zug-Dienst von Hand.
