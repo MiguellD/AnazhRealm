@@ -124,6 +124,9 @@ function aendere(repo, botschaft, f) {
             return { r, geschrieben: true, commit: c };
         } catch (e) {
             fehler = String(e.message).split("\n")[0].slice(0, 200);
+            // JEDER gescheiterte Versuch steht SOFORT im Protokoll (Koordinator 07:07: ein wiederholender Lauf darf von außen nie wie ein
+            // arbeitender aussehen — der Rettungs-Lauf an der Radeon stand 05:59–07:03 ohne eine Zeile)
+            process.stderr.write(new Date().toISOString() + " runde.cjs " + was + " Versuch " + v + "/10 gescheitert: " + fehler + "\n");
             schlaf(1000 + Math.floor(Math.random() * 4000) * Math.min(v, 4));
         }
     }
@@ -501,6 +504,7 @@ if (was === "lies") {
             process.exit(0);
         } catch (e) {
             fehler = String(e.message).split("\n")[0].slice(0, 200);
+            process.stderr.write(new Date().toISOString() + " runde.cjs push-pfade Versuch " + v + "/" + versuche + " gescheitert: " + fehler + "\n");
             schlaf(1000 + Math.floor(Math.random() * 4000) * Math.min(v, 4));
         }
     }

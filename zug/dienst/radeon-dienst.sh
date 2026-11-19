@@ -647,8 +647,9 @@ STUMMEL
     b2=$(gem "$K")
     UNGEPUSHT_FRIST_S=900
     unset RUNDE_PUSH_VERSUCHE
-    if [ "$z1" -ge 1 ] && [ "${b1:-0}" = 0 ] && [ "$b2" = 2 ]; then echo "OK p  Push scheitert: ALARM „RADEON: n Messungen ungepusht seit …“ in zug/erledigt.txt, nichts verworfen; der Ursprung nimmt wieder an → nachgeholt 2 von 2 (ohne Rebase)"
-    else echo "ROT p  Push scheitert: Alarm-Zeilen $z1 (Soll ≥ 1), am Ursprung während der Ablehnung ${b1:-0} (Soll 0), danach $b2 (Soll 2)"; fi
+    zv=$(grep -c "runde.cjs push-pfade Versuch 1/2 gescheitert" "$L") # jeder Versuch steht sofort im Protokoll
+    if [ "$z1" -ge 1 ] && [ "${b1:-0}" = 0 ] && [ "$b2" = 2 ] && [ "$zv" -ge 1 ]; then echo "OK p  Push scheitert (Zeile „Versuch 1/2 gescheitert“ sofort im Protokoll): ALARM „RADEON: n Messungen ungepusht seit …“ in zug/erledigt.txt, nichts verworfen; der Ursprung nimmt wieder an → nachgeholt 2 von 2 (ohne Rebase)"
+    else echo "ROT p  Push scheitert: Versuch-Zeilen ${zv:-0} (Soll ≥ 1), Alarm-Zeilen $z1 (Soll ≥ 1), am Ursprung während der Ablehnung ${b1:-0} (Soll 0), danach $b2 (Soll 2)"; fi
     # q — ABSENZ: kein Pfad, den zwei Schreiber teilen — die Referenz der Radeon heißt referenz-radeon.json, eine Rechner-Referenz reist nie
     z2=$(git -C "$X/pm.git" ls-tree --name-only punkte-maschine meisterkarte-quelle/punkte/messung/ | sed "s|.*/||" | grep "^referenz-" | tr '\n' ' ')
     if [ "$z2" = "referenz-radeon.json " ]; then echo "OK q  Absenz: am Ursprung nur referenz-radeon.json — kein Pfad eines Rechners oder eines anderen Geräts"
