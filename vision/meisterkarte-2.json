@@ -5568,10 +5568,10 @@
     "kriterien": 84,
     "sprossen": 569,
     "heute": 8,
-    "kern": 5,
-    "kernDazu": 5,
+    "kern": 4,
+    "kernDazu": 4,
     "anteilHeute": 1.3,
-    "anteilKern": 0.8
+    "anteilKern": 0.7
    },
    "perspektiven": [
     {
@@ -6275,7 +6275,7 @@
       }
      ],
      "heute": 0,
-     "kern": 1,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "Gehen, Sprint ~6,8 m/s, Sprung ~0,53 m, Klettern, Schwimmen, 6 Geräte-Verben über EINEN Löser (koerper-core.js:497–556, 5089–5130); Fuß 3,4/3,1 cm ROT (leib.K2) — KARTE: Kern 1 — Tempo und Sprung an beiden Geräten gebucht (leib.K2); Bild-Preis in Bewegung an der Radeon ROT (gehend 66 % der Bilder über 33 ms).",
      "alt": [
@@ -20090,8 +20090,8 @@
   "sprossen": 1718,
   "heute": 35,
   "davonKopplungen": 33,
-  "kern": 7,
-  "kernDazu": 7,
+  "kern": 6,
+  "kernDazu": 6,
   "anteilHeute": 2.2,
   "anteilKern": 0.3,
   "kapitel": 7,
