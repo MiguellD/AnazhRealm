@@ -684,7 +684,7 @@ hauptLauf(async () => {
                 lebt: !!recO,
                 fenster: !!recO?.mesh,
                 feuert: entered === 1,
-                licht: !!(r._portalLeuchte && r._portalLeuchte.L.staerke > 0 && Math.abs(r._portalLeuchte.x - e2.position.x) < 0.01),
+                licht: !!(r._portalLeuchte && r._portalLeuchte.L.cd > 0 && Math.abs(r._portalLeuchte.x - e2.position.x) < 0.01),
             };
         }
         r._bruchMelden = bruchAlt;

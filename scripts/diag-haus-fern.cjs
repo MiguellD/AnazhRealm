@@ -376,11 +376,17 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 //    nur Vorderseiten, wie die Welt einen einseitigen Stoff zeichnet, durch den Raum bis zur Gegenwand (14 m) —, von vorn
 //    gemischt (Deckkraft des Stoffs, ein opaker Stoff schließt) — TAG die Stoff-Antwort (lineare Albedo × Vertex-
 //    Farbe, die Mischung der Scheibe über dem Raum), NACHT die Glut (ein Stoff mit `__licht` "fenster" glüht in
-//    LICHT_GESETZ.fenster: Farbe aus `kelvin` × Zeitplan nacht). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
+//    LICHT_GESETZ.fenster: Farbe aus `kelvin` × Leuchtdichte `cdM2` × Schaltplan nacht — wie `_leuchtTakt`, licht-eine-skala;
+//    das ÷ EINHEIT_LX der Welt kürzt sich im Verhältnis L/L0). Je gezeigter Stufe gegen die L0 desselben Hauses: Glut
 //    L/L0 in [2/3, 3/2], Tag L/L0 in [1/4, 4] (die Albedo sieht kein Licht), Farbe (Anteile r/g/b) höchstens 0,15 entfernt
 //    — zwei Samen derselben Kultur liegen schon in der L0 bis 0,074 auseinander (holzhuette), eine Stufe darf zwei solche
 //    Schritte.
-const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
+const GLUT = (() => {
+    const L = FC.LICHT_GESETZ.fenster;
+    const z = L.zeit;
+    const schalt = L.schaltet ? z.nacht / Math.max(z.mittag, z.morgen, z.abend, z.nacht) : 1;
+    return FC.lichtFarbe(L.kelvin).map((c) => c * L.cdM2 * schalt);
+})();
 const { luma709: luma } = require("./lib/abnahme-urteil.cjs"); // die EINE Luma der Linsen
 const GLAS_R = 0.05;
 const stoffFlaechen = (g) => dreiecke(g, false, true);

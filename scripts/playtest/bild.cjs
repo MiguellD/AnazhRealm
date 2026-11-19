@@ -1692,10 +1692,14 @@ async function checkBandLookPhysik({ page, check }) {
 
 // Himmelskörper-Tag — eingefaltet aus gate:himmel-tag: kein Planet aus Math.random am Mittagshimmel; die
 // Wandelsterne sind die hellsten PUNKTE des Sternfelds,
-// die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
-// `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
-// blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
-// Unendlich-Knoten. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
+// die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`, sie schaltet das Feld, `_sterneZeigen`); die
+// Probe liest DIESELBEN Größen wie der Stamm (die Größenklassen `starField.userData.mags` · die Grenzgröße der Achse — licht-eine-skala:
+// der Stern-Knoten trägt keinen Schwellen-Term mehr, jeder Punkt leuchtet in seiner Leuchtdichte der EINEN Skala):
+// 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND die Scheibe in der
+// EINEN Skala (`HIMMEL.mondCd` ÷ `EINHEIT_LX`, additiv über dem Himmel — blass am Tag, deckend nachts trägt der Himmel vor ihr) ·
+// 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN Unendlich-Knoten ·
+// 8 PIXEL der Fußabdruck des Punkts ist `HIMMEL.sternPixel` Pixel des Szenen-Ziels. Selbsttest: Himmelskugel, Mittags-Grenze −3,
+// zwei Durchgänge und eine Sonne ohne Knoten werden rot.
 async function checkBandHimmelTag({ page, check }) {
     const probe = (stoerung) => {
         const T = window.THREE;
@@ -1722,32 +1726,48 @@ async function checkBandHimmelTag({ page, check }) {
             r._applyDayNightToScene();
         };
         const sf = st.starField;
-        const mags = sf ? sf.geometry.getAttribute("aMag") : null;
+        const mags = sf ? sf.userData.mags : null;
         const U = st.starFieldUniforms;
         const sichtbar = () => {
             let n = 0;
             let venus = false;
-            const g = U.grenze.value;
-            for (let i = 0; i < mags.count; i++) {
-                const v = Math.max(0, Math.min(1, g - mags.getX(i) + 0.5));
+            const g = r._tagAchse(r._sonnenRichtung().y).grenze;
+            for (let i = 0; i < mags.length; i++) {
+                const v = Math.max(0, Math.min(1, g - mags[i] + 0.5));
                 if (v > 0.001) n++;
-                if (i === mags.count - AnazhRealm.HIMMEL.wandelsterne.length && v > 0.5) venus = true;
+                if (i === mags.length - AnazhRealm.HIMMEL.wandelsterne.length && v > 0.5) venus = true;
             }
             return { n, venus, grenze: +g.toFixed(2) };
         };
-        const out = { punkte: mags ? mags.count : 0, fremdeKoerper: 0 };
+        // 5 MOND: die Scheibe trägt ihre Leuchtdichte in der EINEN Skala, additiv (der Stand bis licht-eine-skala: eine Deckkraft
+        // je Stunde, `mondGegenHimmel`) — je Kanal relativ ± 1e-3 gegen 0xd0d4e0 × mondCd ÷ EINHEIT_LX
+        const mondStand = () => {
+            const m = st.moonMesh.material;
+            const soll = new window.THREE.Color(0xd0d4e0).multiplyScalar(AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX);
+            const ab = Math.max(...["r", "g", "b"].map((c) => Math.abs(m.color[c] / soll[c] - 1)));
+            return { additiv: m.blending === window.THREE.AdditiveBlending, ab: +ab.toExponential(2) };
+        };
+        // 8 PIXEL: der Fußabdruck je Punkt (`fuss`) = sternPixel · 2 tan(fov/2) ÷ Zeilen des Szenen-Ziels × Radius der Kugel
+        const fussStand = () => {
+            const [cam, ziel] = [st.camera, st.scenePass && st.scenePass.renderTarget];
+            if (!U || !U.fuss || !cam || !ziel || !(ziel.height > 0)) return null;
+            const soll = ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / ziel.height) * U.radius;
+            return { ist: U.fuss.value, soll, ab: Math.abs(U.fuss.value / soll - 1) };
+        };
+        const out = { punkte: mags ? mags.length : 0, fremdeKoerper: 0 };
         st.scene.traverse(
             (o) => o.userData && o.userData.skyOffset && o !== st.sunMesh && o !== st.moonMesh && out.fremdeKoerper++
         );
         const zeitWar = st.timeOfDay;
         zeit(0.5);
         out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
-        out.mondTag = +st.moonMesh.material.opacity.toFixed(3);
+        out.mondTag = mondStand();
         zeit(0.75 + 1 / 360); // Sonnenuntergang: Sonne knapp unter dem Horizont (−1°)
         out.daemmerung = sichtbar();
         zeit(0);
         out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
-        out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
+        out.mondNacht = mondStand();
+        out.fuss = fussStand();
         out.einDurchgang = !!(sf?.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
         const unendlich = AnazhRealm._unendlichKnoten;
@@ -1776,7 +1796,11 @@ async function checkBandHimmelTag({ page, check }) {
         if (!(S.daemmerung.venus && S.daemmerung.n < S.punkte * 0.05))
             rot.push(`3 DÄMMERUNG: Abendstern ${S.daemmerung.venus ? "da" : "fehlt"}, ${S.daemmerung.n} Punkte`);
         if (!(S.nacht.n === S.punkte)) rot.push(`4 NACHT: nur ${S.nacht.n}/${S.punkte} Punkte`);
-        if (!(S.mondTag < 0.5 && S.mondNacht > 0.85)) rot.push(`5 MOND: Tag ${S.mondTag} · Nacht ${S.mondNacht}`);
+        for (const [w, m] of [["Tag", S.mondTag], ["Nacht", S.mondNacht]])
+            if (!(m && m.additiv && m.ab <= 1e-3))
+                rot.push(`5 MOND: ${w} ${m ? `${m.additiv ? "additiv" : "NICHT additiv"}, Leuchtdichte ${m.ab} neben HIMMEL.mondCd ÷ EINHEIT_LX` : "keine Scheibe"}`);
+        if (!(S.fuss && S.fuss.ab <= 1e-3))
+            rot.push(`8 PIXEL: der Fußabdruck des Sterns ${S.fuss ? `${S.fuss.ist} ↔ Soll ${S.fuss.soll} (sternPixel)` : "ungelesen (kein fuss, keine Kamera oder kein Szenen-Ziel)"}`);
         if (S.mittag.n === 0 && S.mittag.zeichnet)
             rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld ohne sichtbaren Punkt");
         if (S.nacht.n > 0 && !S.nacht.zeichnet) rot.push("6 ZEICHNEN: nachts zeichnet das Sternfeld nicht");
@@ -1786,7 +1810,7 @@ async function checkBandHimmelTag({ page, check }) {
     };
     const rot = urteil(await safeEvaluate(page, probe, null));
     check(
-        "Himmel-Tag: mittags kein Punkt, in der Dämmerung der Abendstern, nachts alle Sterne, der Mond blass/deckend, jeder Himmelskörper im Unendlichen",
+        "Himmel-Tag: mittags kein Punkt, in der Dämmerung der Abendstern, nachts alle Sterne, der Mond in der EINEN Skala, der Stern ein Pixel, jeder Himmelskörper im Unendlichen",
         rot.length === 0,
         rot.join(" · ")
     );

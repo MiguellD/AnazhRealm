@@ -39,7 +39,7 @@
 //       Himmels-Maske), die Tritanopie ändert die Kiste (sonst blind).
 //   (j) FLAMME (K66, w28-brand-kern) — der Ton der Brand-Flamme steht VOR dem Auge der Nacht: eine flache Fläche füllt das Bild
 //       (wie (h)), ihr Stoff trägt `_nachtAuge(c, true)` mit c = der Ton der Flamme vor der Tonkurve (fachwerk lichtFarbe(K) ×
-//       (K/kelvin[0])⁴ × BRAND.bild.flamme.ziel ÷ Belichtung, wie die Tafel in `_brandFlammenZeichnen`) für KERN (kelvin[0]) und
+//       (K/kelvin[0])⁴ × fachwerk FEUER_LEUCHTDICHTE ÷ EINHEIT_LX, wie die Tafel in `_brandFlammenZeichnen`) für KERN (kelvin[0]) und
 //       MANTEL (2350 K, die Mitte der Tafel); gemessen die Bild-Mitte nach der ganzen Kette bei fester Belichtung 1,5.
 //       (j1) NACHT = TAG je Ton (nightFactor 1 gegen 0, je Kanal ≤ FLAMME_TOL); MUTANTE-J im selben Lauf: derselbe Ton OHNE die
 //       Umkehr reißt bei nightFactor 1 am MANTEL (die Nacht entsättigt — sonst ist die Probe blind); der KERN steht über Bild-Weiß
@@ -1270,7 +1270,8 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                 const n = await dunkel(1, nachtLicht, true);
                 aus.dunkel = { k1: a.k, luma1: a.luma, k4: b.k, luma4: b.luma, nachtFaktor: n.nacht, lumaNacht: n.luma };
                 // (j) DIE FLAMME VOR DEM AUGE DER NACHT: dieselbe Fläche, ihr Stoff der Ton der Flamme vor der Tonkurve — wie die Tafel
-                // in `_brandFlammenZeichnen` ihn rechnet (lichtFarbe(K) × (K/kelvin[0])⁴ in 8 Bit, × ziel ÷ Belichtung) —, mit der Umkehr
+                // in `_brandFlammenZeichnen` ihn rechnet (lichtFarbe(K) × (K/kelvin[0])⁴ in 8 Bit, × die Leuchtdichte der Flamme
+                // `FEUER_LEUCHTDICHTE` ÷ `EINHEIT_LX`, licht-eine-skala — kein Bild-Ton ÷ Belichtung mehr) —, mit der Umkehr
                 // des Auges (`_nachtAuge(c, true)`) und ohne sie (MUTANTE-J); je Ton die Bild-Mitte bei nightFactor 0 und 1.
                 const FL = (aus.flamme = { toene: {} });
                 const stoffVor = flach.material;
@@ -1280,7 +1281,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                     const [BF, FW, L] = [r.constructor.BRAND.bild.flamme, globalThis.__fachwerkCore, T.TSL];
                     const flammenStoff = (K, umkehr) => {
                         const [c, w] = [FW.lichtFarbe(K), Math.pow(K / BF.kelvin[0], 4)];
-                        const ton = L.vec3(...[0, 1, 2].map((i) => Math.round(255 * c[i] * w) / 255)).mul(L.float(BF.ziel).div(L.toneMappingExposure));
+                        const ton = L.vec3(...[0, 1, 2].map((i) => Math.round(255 * c[i] * w) / 255)).mul(L.float(FW.FEUER_LEUCHTDICHTE / __weltLicht.EINHEIT_LX));
                         const m = new T.MeshBasicNodeMaterial();
                         m.fog = false;
                         m.colorNode = L.vec4(umkehr ? r._nachtAuge(ton, true) : ton, 1);
@@ -1837,7 +1838,7 @@ function rauchProbe(ort, P) {
         // (j3) der GANZE Stamm (Lehre 12: über scripts/lib/stamm.cjs, ohne Kommentare): außerhalb von `_nachtAuge` liest niemand
         // die Schwellen des Auges (`fehlt.wo` nennt den Zwilling mit Datei und Zeile)
         if (out.flamme && out.flamme.quelle)
-            out.flamme.quelle.zwilling = STAMM.fehlt({ ausser: "_nachtAuge" }, /\.(?:staebchenCd|zapfenCd|luxJeEinheit)\b/) ? null : STAMM.fehlt.wo;
+            out.flamme.quelle.zwilling = STAMM.fehlt({ ausser: "_nachtAuge" }, /\.(?:staebchenCd|zapfenCd)\b/) ? null : STAMM.fehlt.wo;
         for (const [name, tn] of Object.entries((out.flamme && out.flamme.toene) || {})) {
             const [fT, fN] = [hsv(tn.tag), hsv(tn.nacht)];
             log(

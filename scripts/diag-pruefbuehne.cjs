@@ -341,7 +341,7 @@ async function s0Probe(page, station, schein) {
                     out.befunde.push(
                         `S0 Nacht (${wie}): die Bestrahlung in 2 m ist ${z.e2}, die Nacht trägt ${z.nacht} — ${(z.e2 / z.nacht).toFixed(1)}× ` +
                             `(Soll ≥ ${e2min}×: Nordstern Fachwerk, warmes Licht 2–5 lx gegen den Mond 0,1–0,3 lx); das Datum des Feuers ` +
-                            "(fachwerk LICHT_GESETZ.feuer, Zeitplan nacht) über `_leuchtStaerke`"
+                            "(fachwerk LICHT_GESETZ.feuer, Lichtstärke `cd` ÷ EINHEIT_LX × Schaltplan) über `_leuchtStaerke`"
                     );
             }
             if (s.symphony) s.symphony.enabled = false;
