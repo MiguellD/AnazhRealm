@@ -427,8 +427,8 @@ function fahrtSumme(stationen, geraet) {
 // 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
 // 18.11. 6 → 8: die Leitern der Karte 2 erleben/same/kosmos (stationen/k2-*.js, je Leiter EINE Probe ≤ 60 s, ihre Sprossen Zwillinge
-// derselben Probe) — bis erleben.schoepfen/sinn 61 neue Läufe (Σ 2 365 s) hoben die Radeon-Fahrt von 10 064 auf 12 429 s über 7 × 1 740 s.
-// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (174 Läufe × 120 s > 8 Teile)
+// derselben Probe) — 77 neue Läufe (Σ 3 035 s) hoben die Radeon-Fahrt von 10 064 auf 13 099 s über 7 × 1 740 s (GTX 12 892 s).
+// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (189 Läufe × 120 s > 8 Teile)
 const FAHRT_TEILE_MAX = 8;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {

@@ -418,6 +418,1363 @@ LEITERN.push(
 );
 
 // @@TEILE-ANFANG@@
+// ═══════════════════════════════════════ Perspektive physik ═══════════════════════════════════════
+{
+    // ─────────── same.physik.koerper — Starrkörper ───────────
+    // An der Stadt-Pose zählt das Programm zuerst die losen Körper der Welt (`_freiImTakt`, der EINE Löser stamm/koerper-frei.js) und
+    // das größte Werk unter dem Gesetz der Statik (`_werkGesetzSetzen`-Wand: keine Natur, kein Studio, keine Foundry) — der Umfang von
+    // S2–S7. S1 lässt das Fass des Spiels (Bauplan `fass`, frei) aus 4 m im Löser fallen (`_freiSchritt`, FIXED_DT) und misst Ruhe,
+    // Zittern und den Spalt seiner Punkte zum GEZEICHNETEN Boden (`_bodenSichtAt`); S2 fährt den GT des Spiels in die 10 nächsten
+    // Körper der Welt, sobald sie da sind (Impuls je Stoß-Schritt, Durchdringen `_freiInnen`, Ruhe).
+    LEITERN.push(
+        leiter({
+            leiter: "same.physik.koerper",
+            sek: 60,
+            mutiert: true,
+            pfad: [
+                "scripts/werkbank.cjs",
+                "stamm/koerper-frei.js",
+                "stamm/siedlung-satz.js",
+                "stamm/werkstatt-bauen.js",
+                "stamm/kreatur-leben.js",
+                "stamm/gelaende-boden.js",
+                "stamm/gelaende-kollision.js",
+                "stamm/koerper-bewegung.js",
+                "stamm/bau-teile.js",
+                "stamm/bau-vorlagen.js",
+                "stamm/koerper-fahrt.js",
+                "stamm/kreatur-verhalten.js",
+                "stamm/wasser-hydro.js",
+            ],
+            welt: [{ wort: "fall_m", ab: 1, was: "Fallhöhe des Körpers in der Welt (m)" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "ruhe_s", richtung: "≤", wert: 2, wortlaut: "Ruhe ≤ 2 s", feld: "richter" },
+                        { wort: "zittern_cm", richtung: "≤", wert: 1, wortlaut: "Zittern ≤ 1 cm", feld: "richter" },
+                        { wort: "spalt_cm", richtung: "≤", wert: 5, wortlaut: "Spalt zum Boden im Bild ≤ 5 cm", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1, einheit: "Körper", wortlaut: "1 Körper", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "durchdringen", richtung: "≤", wert: 0, wortlaut: "0 Durchdringen im Bild", feld: "richter" },
+                        { wort: "dv_abw_pct", richtung: "≤", wert: 10, wortlaut: "Δv ±10 % gegen Impulsbilanz", feld: "richter" },
+                        { wort: "ruhe_s", richtung: "≤", wert: 3, wortlaut: "Ruhe ≤ 3 s", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "lose Körper der Welt binnen 60 m", wortlaut: "Wagen fährt in 10 Kisten", feld: "richter" },
+                    welt: [{ wort: "kontakte", ab: 1, was: "Stoß-Schritte der Hülle des Wagens an Körpern" }],
+                },
+                3: {
+                    soll: [
+                        { wort: "truemmer", richtung: "≥", wert: 100, wortlaut: "100 Trümmer im Bild", feld: "richter" },
+                        { wort: "lage_cm", richtung: "≤", wert: 1, wortlaut: "jede Lage ±1 cm", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Teile des größten Werks unter dem Gesetz", wortlaut: "10²", feld: "umfang" },
+                },
+                4: {
+                    soll: [
+                        { wort: "koerper_fliegen", richtung: "≥", wert: 1000, wortlaut: "1 000 Körper fliegen", feld: "richter" },
+                        { wort: "durchdringen", richtung: "≤", wert: 0, wortlaut: "0 Durchdringen im Bild", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "lose Körper der Welt binnen 60 m", wortlaut: "10³", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "kipp_pct", richtung: "≥", wert: 95, wortlaut: "im Bild kippen, ≥ 95 %", feld: "richter" },
+                        { wort: "fehl_pct", richtung: "≤", wert: 2, wortlaut: "Fehl-Kipper ≤ 2 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e5, einheit: "lose Körper der Welt binnen 60 m", wortlaut: "10⁵", feld: "umfang" },
+                },
+                6: {
+                    soll: [{ wort: "lage_cm", richtung: "≤", wert: 1, wortlaut: "1 000 sichtbare Dinge an der gerechneten Lage ±1 cm", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "lose Körper der geladenen Welt", wortlaut: "10⁶ im Blick", feld: "umfang" },
+                },
+                7: {
+                    soll: [{ wort: "ursache_pct", richtung: "≥", wert: 99, wortlaut: "≥ 99 % der Dinge am Ort oder ihre Bewegung einer benannten Ursache zuordenbar", feld: "richter" }],
+                    umfang: { verlangt: 1e12, einheit: "lose Körper der geladenen Welt", wortlaut: "≥ 10¹² (jedes lose Ding eines Planeten)", feld: "umfang" },
+                },
+            },
+            lauf: async function koerperLauf(H, P, L) {
+                // der offene Grund d0–d1 m um den Spieler: Gesetz und gezeichneter Boden einig (±10 cm), kein Bau binnen `rand`, kein Wasser
+                function offen(r, d0, d1, rand) {
+                    const s = r.state, A = AnazhRealm, m = s.playerMesh, fuss = m.position.y - A.PLAYER_FOOT_OFFSET, kand = [];
+                    for (let k = 0; k < 48; k++) {
+                        const d = d0 + ((d1 - d0) * (k >> 3)) / 5, a = (k * Math.PI) / 4 + (k >> 3) * 0.37;
+                        const x = m.position.x + d * Math.sin(a), z = m.position.z + d * Math.cos(a);
+                        const g = r._koerperBodenUnter(x, fuss + 1, z), b = r._bodenSichtAt(x, z);
+                        if (!Number.isFinite(g) || !Number.isFinite(b) || Math.abs(g - b) > 0.1 || Math.abs(g - fuss) > 2 || r._nassAt(x, z)) continue;
+                        kand.length = 0;
+                        r._blockerNahe(x, z, rand, -Infinity, kand);
+                        if (kand.some((e) => (e.blockerAABBs || []).some((bx) => r._boxAbstand2(bx, x, z) <= rand * rand))) continue;
+                        return { x, z, g, a };
+                    }
+                    return null;
+                }
+                const ev = (f, a, s) => L.ev("const offen = " + offen + ";\nreturn await (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 50);
+                // DIE ZAHLEN DER WELT, bevor die Probe etwas setzt: lose Körper (nah und geladen), Werke unter dem Gesetz der Statik
+                function zaehlen(r, o) {
+                    const s = r.state, bp = s.blueprints || {}, p = s.playerMesh.position;
+                    let frei = 0, freiNah = 0, werke = 0, gesetz = 0, maxTeile = 0, maxTyp = null;
+                    for (const e of s.architectures || []) {
+                        const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+                        if (e._frei) {
+                            frei++;
+                            if (d <= o.nah) freiNah++;
+                            continue;
+                        }
+                        const b = bp[e.type];
+                        if (!b || !Array.isArray(b.parts) || !b.parts.length || d > o.nah) continue;
+                        werke++;
+                        if (r._istNatur(e) || r._foundryPresetForEntry(e) || typeof b.studioGestalt === "string" || r._foundryNeedsBookForType(e.type)) continue;
+                        gesetz++;
+                        if (b.parts.length > maxTeile) [maxTeile, maxTyp] = [b.parts.length, e.type];
+                    }
+                    return { frei, freiNah, werke, gesetz, maxTeile, maxTyp, saat: s.worldMeta && s.worldMeta.seed };
+                }
+                // S1 · DAS FASS VOM DACH: 4 m über offenem Grund, der Löser im festen Schritt, bis es 1 s schläft (höchstens 15 s)
+                async function fassFall(r) {
+                    const s = r.state, A = AnazhRealm, F = A.FREI, dt = A.FIXED_DT;
+                    const bp = s.blueprints && s.blueprints.fass;
+                    if (!s.playerMesh || typeof r._freiSchritt !== "function" || !(bp && bp.frei === true)) return { fehler: "ohne Spieler, Löser (_freiSchritt) oder freien Bauplan fass" };
+                    const ort = offen(r, 3, 8, 2);
+                    if (!ort) return { fehler: "kein offener Grund 3–8 m um den Spieler (Bau binnen 2 m, Wasser oder Boden-Karte fern vom Gesetz)" };
+                    const vor = r._freiImTakt ? r._freiImTakt.size : 0;
+                    const e = r.spawnArchitecture("fass", { x: ort.x, y: ort.g + 4.5, z: ort.z }, { precise: true, silent: true, rotationY: 0.3 });
+                    const K = e && e._frei;
+                    if (!K) {
+                        if (e) r.removeArchitecture(e, { still: true });
+                        return { fehler: "das Fass trägt keinen freien Körper (_freiKoerperSetzen)" };
+                    }
+                    const n = r._freiImTakt.size - vor;
+                    const tief = () => {
+                        let mn = Infinity, j = 1;
+                        for (let i = 1; i < K.pw.length; i += 3) if (K.pw[i] < mn) [mn, j] = [K.pw[i], i];
+                        return [mn, K.pw[j - 1], K.pw[j + 1]];
+                    };
+                    try {
+                        r._freiLage(K);
+                        const y0 = tief()[0];
+                        const bahn = [];
+                        let t = 0, tLand = null, tSchlaf = null;
+                        for (let i = 0; i < 900; i++) {
+                            r._freiSchritt(dt);
+                            t += dt;
+                            bahn.push([t, K.p[0], K.p[1], K.p[2]]);
+                            const [mn, lx, lz] = tief();
+                            if (tLand === null && mn - r._koerperBodenUnter(lx, mn + 0.5, lz) <= F.spalt) tLand = t;
+                            if (K.schlaf && tSchlaf === null) tSchlaf = t;
+                            if (tSchlaf !== null && t - tSchlaf >= 1) break;
+                        }
+                        // das Zittern: der weiteste Abstand der Mitte von ihrer letzten Lage, ab dem Beginn der Ruhe (sonst die letzte Sekunde)
+                        const ende = bahn[bahn.length - 1];
+                        const ab = tSchlaf !== null ? tSchlaf - F.ruheS : t - 1;
+                        let zit = 0;
+                        for (const b of bahn) if (b[0] >= ab) zit = Math.max(zit, Math.hypot(b[1] - ende[1], b[2] - ende[2], b[3] - ende[3]));
+                        // der Spalt im Bild: je Punkt der Gestalt sein Abstand zum gezeichneten Boden, der nächste zählt (schwebt + / steckt −)
+                        let spalt = Infinity, ohne = 0;
+                        for (let i = 0; i < K.pw.length; i += 3) {
+                            const b = r._bodenSichtAt(K.pw[i], K.pw[i + 2]);
+                            if (!Number.isFinite(b)) {
+                                ohne++;
+                                continue;
+                            }
+                            spalt = Math.min(spalt, K.pw[i + 1] - b);
+                        }
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                        return {
+                            n,
+                            ort: [r3(ort.x), r3(ort.z)],
+                            fall_m: r3(y0 - tief()[0]),
+                            tLand: r3(tLand),
+                            tSchlaf: r3(tSchlaf),
+                            ruhe_s: tLand !== null && tSchlaf !== null ? r3(tSchlaf - tLand) : null,
+                            zittern_cm: r3(100 * zit),
+                            spalt_cm: Number.isFinite(spalt) ? r3(100 * Math.abs(spalt)) : null,
+                            spaltRoh_cm: Number.isFinite(spalt) ? r3(100 * spalt) : null,
+                            ohneKarte: ohne,
+                            masse: r3(K.m),
+                            stoff: K.stoff,
+                        };
+                    } finally {
+                        r.removeArchitecture(e, { still: true });
+                    }
+                }
+                // S2 · DER WAGEN IN DIE 10 NÄCHSTEN KÖRPER DER WELT (nur, wenn die Welt sie trägt): der GT rollt mit 20 km/h ohne Gas (`_wagenSchritt`
+                // mit Hülle, das EINE Impuls-Gesetz), je Schritt der Impuls der Körper längs der Fahrt vor und nach dem Wagen-Schritt gegen den
+                // Impuls, den der Wagen verlor; danach Durchdringen (jeder Punkt in einem anderen Körper > 1 cm) und Ruhe nach dem letzten Stoß
+                async function wagenStoss(r, o) {
+                    const s = r.state, A = AnazhRealm, dt = A.FIXED_DT, p = s.playerMesh.position;
+                    const KS = [...(r._freiImTakt || [])]
+                        .map((e) => e._frei)
+                        .filter(Boolean)
+                        .map((K) => [Math.hypot(K.p[0] - p.x, K.p[2] - p.z), K])
+                        .filter((x) => x[0] <= o.nah)
+                        .sort((a, b) => a[0] - b[0])
+                        .slice(0, o.n)
+                        .map((x) => x[1]);
+                    if (KS.length < o.n) return { fehler: "nur " + KS.length + " lose Körper binnen " + o.nah + " m" };
+                    const G0 = A._fahrSchrittGesetz && A._fahrSchrittGesetz(), vc = G0 && G0.vc;
+                    if (!vc || typeof r._wagenSchritt !== "function") return { fehler: "ohne Fahr-Kern oder _wagenSchritt" };
+                    if (r._ensureAssetFoundry) r._ensureAssetFoundry();
+                    for (let i = 0; i < 200 && !(s.blueprints && s.blueprints.fahrzeug_gt); i++) await new Promise((ok) => setTimeout(ok, 100));
+                    if (!(s.blueprints && s.blueprints.fahrzeug_gt)) return { fehler: "der GT ist nicht gebaut (Foundry-Rezept gt binnen 20 s)" };
+                    const cx = KS.reduce((q, K) => q + K.p[0], 0) / KS.length, cz = KS.reduce((q, K) => q + K.p[2], 0) / KS.length;
+                    const kand = [];
+                    let best = null;
+                    for (let k = 0; k < 8; k++) {
+                        const a = (k * Math.PI) / 4;
+                        let hart = 0;
+                        for (let t = 4; t <= 14; t += 2) {
+                            kand.length = 0;
+                            r._blockerNahe(cx - t * Math.sin(a), cz - t * Math.cos(a), 1.5, -Infinity, kand);
+                            hart += kand.filter((e) => !e._frei).length;
+                        }
+                        if (!best || hart < best.hart) best = { a, hart };
+                    }
+                    const a = best.a, x0 = cx - 14 * Math.sin(a), z0 = cz - 14 * Math.cos(a);
+                    const e = r.spawnArchitecture("fahrzeug_gt", { x: x0, y: r.getTerrainHeightAt(x0, z0) + 0.5, z: z0 }, { silent: true, precise: true, rotationY: a - Math.PI / 2 });
+                    if (!e) return { fehler: "spawnArchitecture fahrzeug_gt gab nichts" };
+                    // die Impulsbilanz ohne Wind am Wagen (wie die Bremsweg-Probe g6): der Wind schöbe die Fahrt zwischen zwei Stößen
+                    const wind = Object.prototype.hasOwnProperty.call(r, "_fahrWind") ? r._fahrWind : undefined;
+                    r._fahrWind = () => ({ x: 0, z: 0 });
+                    try {
+                        const G = r._fahrSatz(e, r._vehicleProfile(e));
+                        if (!G) return { fehler: "der GT trägt keinen Fahr-Satz (_fahrSatz)" };
+                        e._rideYaw = a;
+                        const fz = (e._fahr = vc.fahrZustand(x0, z0, a - Math.PI / 2));
+                        vc.fahrStand(fz, G, r._fahrBoden(e), 0);
+                        fz.vlong = 20 / 3.6;
+                        const mW = r._fahrMasse(e, G.m);
+                        const [ux, uz] = [Math.sin(a), Math.cos(a)];
+                        const impuls = () => KS.reduce((q, K) => q + K.m * (K.v[0] * ux + K.v[2] * uz), 0);
+                        let dpW = 0, dpK = 0, kontakte = 0, tLetzt = null, tRuhe = null, t = 0;
+                        for (let i = 0; i < 600; i++) {
+                            const [q0, v0] = [impuls(), fz.vlong];
+                            r._wagenSchritt(e, { throttle: 0, brake: 0, hand: false, steer: 0 }, dt, true, true);
+                            const [q1, v1] = [impuls(), fz.vlong];
+                            if (Math.abs(q1 - q0) > 1e-9) {
+                                kontakte++;
+                                dpK += q1 - q0;
+                                dpW += mW * (v1 - v0);
+                                tLetzt = t;
+                            }
+                            r._freiSchritt(dt);
+                            t += dt;
+                            if (tLetzt !== null && t - tLetzt > 0.2 && KS.every((K) => K.schlaf)) {
+                                tRuhe = t;
+                                break;
+                            }
+                        }
+                        let durch = 0;
+                        const aus = {};
+                        for (const K of KS) r._freiLage(K);
+                        for (const K1 of KS)
+                            for (const K2 of KS) {
+                                if (K1 === K2) continue;
+                                let drin = false;
+                                for (let i = 0; i < K1.pw.length && !drin; i += 3) drin = r._freiInnen(K2, K1.pw[i], K1.pw[i + 1], K1.pw[i + 2], 0, aus) && aus.tiefe > 0.01;
+                                if (drin) durch++;
+                            }
+                        return {
+                            n: KS.length,
+                            kontakte,
+                            dv_abw_pct: dpW < 0 ? +((100 * Math.abs(dpK + dpW)) / Math.abs(dpW)).toFixed(2) : null,
+                            durchdringen: durch,
+                            ruhe_s: tRuhe !== null ? +(tRuhe - tLetzt).toFixed(3) : null,
+                            mWagen: +mW.toFixed(1),
+                            dpWagen: +dpW.toFixed(2),
+                            dpKoerper: +dpK.toFixed(2),
+                        };
+                    } finally {
+                        if (wind === undefined) delete r._fahrWind;
+                        else r._fahrWind = wind;
+                        r.removeArchitecture(e, { still: true });
+                    }
+                }
+                await L.ort("stadt-voll", "third");
+                L.preisPose("stadt-voll", "third");
+                const z = await ev(zaehlen, { nah: 60 });
+                L.zeile("Körper der Welt an der Stadt-Pose: " + JSON.stringify(z));
+                await L.je(1, async () => {
+                    const f = await ev(fassFall, null, Math.max(5, L.rest() - 20));
+                    L.zeile("Fass aus 4 m: " + JSON.stringify(f));
+                    if (f.fehler) throw new Error(f.fehler);
+                    L.gemessen(
+                        1,
+                        { ruhe_s: f.ruhe_s, zittern_cm: f.zittern_cm, spalt_cm: f.spalt_cm },
+                        { erzeugt: f.n, welt: { fall_m: f.fall_m }, taeter: "Fass (" + f.stoff + ", " + f.masse + " kg) bei " + f.ort.join("/") + ": Aufprall " + f.tLand + " s, Schlaf " + f.tSchlaf + " s, Spalt zum gezeichneten Boden " + f.spaltRoh_cm + " cm" }
+                    );
+                });
+                await L.je(2, async () => {
+                    const U = P.sprossen[2].umfang.verlangt;
+                    if (z.freiNah < U)
+                        return L.umfang(2, z.freiNah, "die Welt trägt " + z.freiNah + " lose Körper binnen 60 m der Stadt-Pose (" + z.frei + " in der geladenen Welt) — die Dinge der Stadt sind keine Körper des Lösers");
+                    const w = await ev(wagenStoss, { n: U, nah: 60 }, Math.max(5, L.rest() - 8));
+                    L.zeile("Wagen in " + U + " Körper: " + JSON.stringify(w));
+                    if (w.fehler) throw new Error(w.fehler);
+                    L.gemessen(2, { durchdringen: w.durchdringen, dv_abw_pct: w.dv_abw_pct, ruhe_s: w.ruhe_s }, { erzeugt: w.n, welt: { kontakte: w.kontakte }, taeter: "GT " + w.mWagen + " kg: Δp Wagen " + w.dpWagen + ", Δp Körper " + w.dpKoerper + " kg·m/s" });
+                });
+                await L.je(3, async () => {
+                    const U = P.sprossen[3].umfang.verlangt;
+                    if (z.maxTeile < U)
+                        return L.umfang(3, z.maxTeile, "das größte Werk unter dem Gesetz der Statik binnen 60 m trägt " + z.maxTeile + " Teile (" + (z.maxTyp || "keines") + "; " + z.gesetz + " von " + z.werke + " Werken unter dem Gesetz) — sein Einsturz gäbe höchstens so viele Trümmer");
+                    L.leser(3, "die Lage der Trümmer nach Reload: die Sitzung lädt ohne Welt-Neustart keinen Stand, kein Leser vergleicht den gespeicherten Stand eines Trümmers (`drehung`, `ruht` des Eintrags, stamm/siedlung-satz.js:1442) mit seiner Lage", z.maxTeile);
+                });
+                await L.je(4, async () => {
+                    if (z.freiNah < P.sprossen[4].umfang.verlangt) return L.umfang(4, z.freiNah, "die Gasse der Stadt-Pose trägt " + z.freiNah + " lose Körper binnen 60 m");
+                    L.leser(4, "Explosion: kein Gesetz der Druckwelle — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525)", z.freiNah);
+                });
+                await L.je(5, async () => {
+                    if (z.freiNah < P.sprossen[5].umfang.verlangt) return L.umfang(5, z.freiNah, "das Viertel der Stadt-Pose trägt " + z.freiNah + " lose Körper binnen 60 m");
+                    L.leser(5, "Böe am Körper: der Löser liest kein Wind-Feld, kein Kipp-Moment aus Wind (stamm/koerper-frei.js:421 `_freiSchritt`)", z.freiNah);
+                });
+                await L.je(6, async () => {
+                    if (z.frei < P.sprossen[6].umfang.verlangt) return L.umfang(6, z.frei, "die geladene Welt trägt " + z.frei + " lose Körper");
+                    L.leser(6, "Beben: kein Gesetz bewegt den Grund unter den Körpern (stamm/koerper-frei.js:294 `_freiGrund` liest den Grund als ruhende Ebene)", z.frei);
+                });
+                await L.je(7, async () => L.umfang(7, z.frei, "die geladene Welt trägt " + z.frei + " lose Körper (Saat " + z.saat + ", eine Sitzung, keine Jahrhunderte)"));
+            },
+        })
+    );
+
+    // ─────────── same.physik.tragen — Statik und Bruch ───────────
+    // S1: eine Holzsäule realer Schlankheit (0,1 × 3 × 0,1 m, λ 30) unter einer Steinplatte wachsender Dicke — die Schwelle, an der das
+    // Urteil des Gesetzes (`_failsUnderLoad`, das `_werkGesetzSetzen` je Werk liest) knickt, gegen Euler π²EI/L² mit E der Zeile und mit
+    // E/2 (die Zeile auf der Instanz gespiegelt, danach zurück); je Schwelle zwei Werke in der Welt gesetzt (knickt darüber, steht
+    // darunter). S2 nimmt dem größten Werk unter dem Gesetz einen zufälligen Pfosten (sobald die Welt eines mit ≈ 10 Gliedern trägt).
+    LEITERN.push(
+        leiter({
+            leiter: "same.physik.tragen",
+            sek: 60,
+            mutiert: true,
+            pfad: [
+                "scripts/werkbank.cjs",
+                "stamm/bau-buch.js",
+                "stamm/bau-teile.js",
+                "stamm/werkstatt-vorschau.js",
+                "stamm/siedlung-satz.js",
+                "stamm/werkstatt-bauen.js",
+                "stamm/koerper-frei.js",
+                "stamm/kreatur-leben.js",
+                "stamm/gelaende-boden.js",
+                "stamm/gelaende-kollision.js",
+                "stamm/koerper-bewegung.js",
+                "stamm/wasser-hydro.js",
+                "schmiede-core.js",
+            ],
+            welt: [{ wort: "teile_welt", ab: 1, was: "Teile des Werks in der Welt (Rest und Trümmer)" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "abw_pct", richtung: "≤", wert: 20, wortlaut: "Versagens-Last gegen Euler ±20 %", feld: "richter" },
+                        { wort: "abw_halbe_pct", richtung: "≤", wert: 20, wortlaut: "Versagens-Last gegen Euler ±20 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1, einheit: "Glied", wortlaut: "1 Glied", feld: "umfang" },
+                    welt: [
+                        { wort: "knick", ab: 2, was: "Säulen der Welt, die über der Schwelle knickten (E und E/2)" },
+                        { wort: "steht", ab: 2, was: "Säulen der Welt, die unter der Schwelle standen (E und E/2)" },
+                    ],
+                },
+                2: {
+                    soll: [
+                        { wort: "treffer_pct", richtung: "≥", wert: 100, wortlaut: "gefallene Teile = Teile ohne Lastpfad (100 %)", feld: "richter" },
+                        { wort: "liegen_min", richtung: "≥", wert: 10, wortlaut: "Trümmer liegen 10 min", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "Glieder eines Werks unter dem Gesetz", wortlaut: "ein Werk (≈ 10 Glieder)", feld: "umfang" },
+                },
+                3: {
+                    soll: [{ wort: "biege_abw_pct", richtung: "≤", wert: 20, wortlaut: "Durchbiegung ±20 % gegen Balkenformel", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "m³ des größten Werks unter dem Gesetz", wortlaut: "ein Haus (10³ m³)", feld: "umfang" },
+                },
+                4: {
+                    soll: [
+                        { wort: "stehen_pct", richtung: "≥", wert: 100, wortlaut: "100 % stehen unter Eigenlast", feld: "richter" },
+                        { wort: "fallen_halbe_pct", richtung: "≥", wert: 10, wortlaut: "mit E/2 in der Zeile fallen ≥ 10 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "Saaten", wortlaut: "N = 1 000 Saaten", feld: "richter" },
+                },
+                5: {
+                    soll: [
+                        { wort: "periode_abw_pct", richtung: "≤", wert: 25, wortlaut: "T ≈ H/46 s ±25 %", feld: "richter" },
+                        { wort: "kollaps_abw_pct", richtung: "≤", wert: 30, wortlaut: "Kollaps-Zeit gegen reale Einstürze ±30 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e5, einheit: "m³ des größten Werks unter dem Gesetz", wortlaut: "ein Hochhaus (10⁵–10⁶ m³, 300 m)", feld: "umfang" },
+                },
+                6: {
+                    soll: [{ wort: "ems_pct", richtung: "≥", wert: 70, wortlaut: "±1 Grad bei ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 1e7, einheit: "m³ der Werke unter dem Gesetz", wortlaut: "Stadtteil bis Megastadt (10⁷–10⁹ m³)", feld: "umfang" },
+                },
+                7: {
+                    soll: [
+                        { wort: "hoehe_abw_pct", richtung: "≤", wert: 30, wortlaut: "∝ σ/(ρ·g) ±30 %", feld: "richter" },
+                        { wort: "jury_pct", richtung: "≥", wert: 80, wortlaut: "Silhouetten der richtigen Schwere zu ≥ 80 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Planeten-Saaten", wortlaut: "N = 100 Planeten-Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function tragenLauf(H, P, L) {
+                function offen(r, d0, d1, rand) {
+                    const s = r.state, A = AnazhRealm, m = s.playerMesh, fuss = m.position.y - A.PLAYER_FOOT_OFFSET, kand = [];
+                    for (let k = 0; k < 48; k++) {
+                        const d = d0 + ((d1 - d0) * (k >> 3)) / 5, a = (k * Math.PI) / 4 + (k >> 3) * 0.37;
+                        const x = m.position.x + d * Math.sin(a), z = m.position.z + d * Math.cos(a);
+                        const g = r._koerperBodenUnter(x, fuss + 1, z), b = r._bodenSichtAt(x, z);
+                        if (!Number.isFinite(g) || !Number.isFinite(b) || Math.abs(g - b) > 0.1 || Math.abs(g - fuss) > 2 || r._nassAt(x, z)) continue;
+                        kand.length = 0;
+                        r._blockerNahe(x, z, rand, -Infinity, kand);
+                        if (kand.some((e) => (e.blockerAABBs || []).some((bx) => r._boxAbstand2(bx, x, z) <= rand * rand))) continue;
+                        return { x, z, g, a };
+                    }
+                    return null;
+                }
+                const ev = (f, a, s) => L.ev("const offen = " + offen + ";\nreturn await (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 50);
+                // die Werke unter dem Gesetz der Statik binnen `nah` (die Wand von `_werkGesetzSetzen`): Zahl, größte Teile-Zahl, Raum (Hülle der Teile × Skala³)
+                function zaehlen(r, o) {
+                    const s = r.state, bp = s.blueprints || {}, p = s.playerMesh.position;
+                    let werke = 0, gesetz = 0, maxTeile = 0, maxTyp = null, maxVol = 0, sumVol = 0, haeuser = 0;
+                    for (const e of s.architectures || []) {
+                        if (e._frei) continue;
+                        const b = bp[e.type];
+                        if (!b || !Array.isArray(b.parts) || !b.parts.length || Math.hypot(e.position.x - p.x, e.position.z - p.z) > o.nah) continue;
+                        werke++;
+                        if (/^haus_/.test(e.type)) haeuser++;
+                        if (r._istNatur(e) || r._foundryPresetForEntry(e) || typeof b.studioGestalt === "string" || r._foundryNeedsBookForType(e.type)) continue;
+                        gesetz++;
+                        let [x0, y0, z0, x1, y1, z1] = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+                        for (const t of b.parts) {
+                            const a = r._partWorldAABB(t);
+                            if (!a) continue;
+                            [x0, y0, z0] = [Math.min(x0, a.min.x), Math.min(y0, a.min.y), Math.min(z0, a.min.z)];
+                            [x1, y1, z1] = [Math.max(x1, a.max.x), Math.max(y1, a.max.y), Math.max(z1, a.max.z)];
+                        }
+                        const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+                        const v = x1 > x0 && y1 > y0 && z1 > z0 ? (x1 - x0) * (y1 - y0) * (z1 - z0) * sc * sc * sc : 0;
+                        sumVol += v;
+                        maxVol = Math.max(maxVol, v);
+                        if (b.parts.length > maxTeile) [maxTeile, maxTyp] = [b.parts.length, e.type];
+                    }
+                    return { werke, gesetz, maxTeile, maxTyp, maxVol: Math.round(maxVol * 10) / 10, sumVol: Math.round(sumVol * 10) / 10, haeuser, saat: s.worldMeta && s.worldMeta.seed };
+                }
+                // S1 · DIE SÄULE: die Schwelle des Gesetzes über die Dicke der Platte (Bisektion, log), je E und E/2, je zwei Werke in der Welt
+                async function saeule(r) {
+                    const s = r.state, g = Number.isFinite(s.gravity) ? Math.max(0, -s.gravity) : 9.81;
+                    const b = 0.1, Lh = 3;
+                    const plan = (d) => ({
+                        name: "k2_saeule",
+                        label: "k2_saeule",
+                        builtIn: false,
+                        role: "architecture",
+                        roleManual: true,
+                        connections: [],
+                        parts: [
+                            { shape: "box", material: "holz", size: { x: b, y: Lh, z: b }, position: { x: 0, y: Lh / 2, z: 0 } },
+                            { shape: "box", material: "stein", size: { x: 2, y: d, z: 2 }, position: { x: 0, y: Lh + d / 2, z: 0 } },
+                        ],
+                    });
+                    const last = (bp) => (r._teilMasse(bp.parts[1]) + r._teilMasse(bp.parts[0]) / 2) * g;
+                    const ort = offen(r, 4, 10, 3);
+                    if (!ort) return { fehler: "kein offener Grund 4–10 m um den Spieler" };
+                    const setze = (d) => {
+                        s.blueprints.k2_saeule = plan(d);
+                        const e = r.spawnArchitecture("k2_saeule", { x: ort.x, y: ort.g, z: ort.z }, { precise: true, silent: true });
+                        const knickt = !!(e && e._gesetz && e._gesetz.sturz && e._gesetz.sturz.grund === "knickt");
+                        const steht = !!(e && !e._gesetz);
+                        if (e) r.removeArchitecture(e, { still: true });
+                        return { knickt, steht };
+                    };
+                    const schwelle = () => {
+                        let [lo, hi] = [1e-4, 2.3];
+                        if (!r._failsUnderLoad(plan(hi)).buckles) return { F: null, grund: "knickt nicht unter " + Math.round(last(plan(hi))) + " N" };
+                        if (r._failsUnderLoad(plan(lo)).buckles) return { F: last(plan(lo)), grund: "knickt schon unter der dünnsten Platte" };
+                        for (let i = 0; i < 48; i++) {
+                            const mid = Math.sqrt(lo * hi);
+                            if (r._failsUnderLoad(plan(mid)).buckles) hi = mid;
+                            else lo = mid;
+                        }
+                        const ueber = setze(hi * 1.02), unter = setze(lo / 1.02);
+                        return { F: last(plan(hi)), d: hi, knick: +ueber.knickt, steht: +unter.steht };
+                    };
+                    const holz = r._stoff("holz");
+                    if (!holz || !(holz.E > 0)) return { fehler: "die Zeile holz trägt kein E" };
+                    const euler = (E) => (Math.PI * Math.PI * E * (b ** 4 / 12)) / (Lh * Lh);
+                    const eigen = Object.prototype.hasOwnProperty.call(r, "_stoff") ? r._stoff : null;
+                    const basis = r._stoff;
+                    let voll, halb;
+                    try {
+                        voll = schwelle();
+                        r._stoff = function (n, f) {
+                            const zl = basis.call(this, n, f);
+                            return n === "holz" && zl ? Object.assign({}, zl, { E: zl.E / 2 }) : zl;
+                        };
+                        halb = schwelle();
+                    } finally {
+                        if (eigen) r._stoff = eigen;
+                        else delete r._stoff;
+                        delete s.blueprints.k2_saeule;
+                    }
+                    const abw = (F, Fe) => (Number.isFinite(F) && Fe > 0 ? Math.round((10000 * Math.abs(F - Fe)) / Fe) / 100 : null);
+                    return {
+                        E: holz.E,
+                        lambda: Lh / b,
+                        F_euler: Math.round(euler(holz.E)),
+                        F_voll: voll.F && Math.round(voll.F * 10) / 10,
+                        F_halb: halb.F && Math.round(halb.F * 10) / 10,
+                        abw_pct: abw(voll.F, euler(holz.E)),
+                        abw_halbe_pct: abw(halb.F, euler(holz.E / 2)),
+                        knick: (voll.knick || 0) + (halb.knick || 0),
+                        steht: (voll.steht || 0) + (halb.steht || 0),
+                        frueher: voll.F && halb.F ? halb.F < voll.F : null,
+                        grund: [voll.grund, halb.grund].filter(Boolean).join(" · ") || null,
+                        knickSicherheit: AnazhRealm.PHYSIS && AnazhRealm.PHYSIS.knickSicherheit,
+                    };
+                }
+                // S2 · DER PFOSTEN: ein zufälliger Pfosten des größten Werks unter dem Gesetz fehlt (der Plan ohne ihn, neben dem Spieler gesetzt);
+                // die Erwartung aus dem Bau (Berührung der Hüllen ±2 cm bis zum Grund), nie aus dem Lastpfad des Spiels; dann 10 min Löser
+                async function pfosten(r, o) {
+                    const s = r.state, A = AnazhRealm, dt = A.FIXED_DT, p = s.playerMesh.position;
+                    const e0 = (s.architectures || [])
+                        .filter((e) => e.type === o.typ && !e._frei)
+                        .sort((a, b) => Math.hypot(a.position.x - p.x, a.position.z - p.z) - Math.hypot(b.position.x - p.x, b.position.z - p.z))[0];
+                    const bp = e0 && s.blueprints[o.typ];
+                    if (!bp) return { fehler: "das Werk " + o.typ + " steht nicht mehr" };
+                    const box = bp.parts.map((t) => r._partWorldAABB(t));
+                    const pf = box
+                        .map((a, i) => [a, i])
+                        .filter(([a]) => a && a.min.y <= 0.05 && a.max.y - a.min.y >= 1.2 * Math.min(a.max.x - a.min.x, a.max.z - a.min.z))
+                        .map((x) => x[1]);
+                    if (!pf.length) return { fehler: "das Werk " + o.typ + " trägt keinen Pfosten auf dem Grund" };
+                    const weg = pf[Math.floor(((Date.now() % 9973) / 9973) * pf.length)];
+                    const rest = bp.parts.filter((_, i) => i !== weg).map((t) => JSON.parse(JSON.stringify(t)));
+                    const rb = rest.map((t) => r._partWorldAABB(t));
+                    const nah = (a, b) => a.min.x <= b.max.x + 0.02 && b.min.x <= a.max.x + 0.02 && a.min.y <= b.max.y + 0.02 && b.min.y <= a.max.y + 0.02 && a.min.z <= b.max.z + 0.02 && b.min.z <= a.max.z + 0.02;
+                    const getragen = new Set(rb.map((a, i) => (a && a.min.y <= 0.02 ? i : -1)).filter((i) => i >= 0));
+                    for (let wuchs = true; wuchs; ) {
+                        wuchs = false;
+                        for (let i = 0; i < rb.length; i++)
+                            if (rb[i] && !getragen.has(i))
+                                for (const j of getragen)
+                                    if (nah(rb[i], rb[j])) {
+                                        getragen.add(i);
+                                        wuchs = true;
+                                        break;
+                                    }
+                    }
+                    const maß = (t) => [t.size.x, t.size.y, t.size.z].map((v) => Math.round((v || 0) * 100)).sort((a, b) => a - b).join("x") + ":" + t.material;
+                    const erwartet = rest.filter((_, i) => !getragen.has(i)).map(maß).sort();
+                    const R = Math.max(1, ...box.filter(Boolean).map((a) => Math.max(Math.abs(a.min.x), Math.abs(a.max.x), Math.abs(a.min.z), Math.abs(a.max.z))));
+                    const ort = offen(r, R + 4, R + 20, R + 1);
+                    if (!ort) return { fehler: "kein offener Grund für ein Werk mit Radius " + R.toFixed(1) + " m" };
+                    const plaene = new Set(Object.keys(s.blueprints));
+                    const typ = "k2_ohne_pfosten";
+                    s.blueprints[typ] = { name: typ, label: typ, builtIn: false, connections: [], role: r._displayRole(bp), roleManual: true, parts: rest };
+                    const vor = new Set(s.architectures);
+                    try {
+                        r.spawnArchitecture(typ, { x: ort.x, y: ort.g, z: ort.z }, { precise: true, silent: true, seed: 11, rotationY: e0.rotationY || 0 });
+                        let t = 0, ruhe = null;
+                        for (let i = 0; i < 1200 && ruhe === null; i++) {
+                            r._tickWerkGesetz(dt);
+                            r._freiSchritt(dt);
+                            t += dt;
+                            if (i >= 2 && s.architectures.filter((a) => !vor.has(a) && a._frei).every((a) => a._frei.schlaf)) ruhe = t;
+                        }
+                        const neu = s.architectures.filter((a) => !vor.has(a));
+                        const tr = neu.filter((a) => a._frei);
+                        const gefallen = tr.map((a) => maß(s.blueprints[a.type].parts[0])).sort();
+                        const rw = neu.filter((a) => !a._frei);
+                        const restTeile = rw.reduce((q, a) => q + ((s.blueprints[a.type] && s.blueprints[a.type].parts.length) || 0), 0);
+                        const rest2 = erwartet.slice();
+                        let treffer = 0;
+                        for (const g of gefallen) {
+                            const i = rest2.indexOf(g);
+                            if (i >= 0) {
+                                treffer++;
+                                rest2.splice(i, 1);
+                            }
+                        }
+                        const nenner = Math.max(erwartet.length, gefallen.length);
+                        // ZEHN MINUTEN (36 000 Schritte): je 10 s der weiteste Weg eines Trümmers von seiner Ruhe-Lage; die Wanduhr der Probe
+                        // deckelt (`o.budgetMs`) — was sie nicht rechnete, zählt nicht als gelegen
+                        const lage0 = tr.map((a) => Array.from(a._frei.p));
+                        const t0 = performance.now();
+                        let liegen = null;
+                        for (let i = 1; i <= 36000 && liegen === null; i++) {
+                            r._tickWerkGesetz(dt);
+                            r._freiSchritt(dt);
+                            if (i % 600 !== 0) continue;
+                            if (tr.some((a, k) => !a._frei || Math.hypot(a._frei.p[0] - lage0[k][0], a._frei.p[1] - lage0[k][1], a._frei.p[2] - lage0[k][2]) > 0.01)) liegen = (i - 600) / 3600;
+                            else if (i === 36000) liegen = 10;
+                            else if (performance.now() - t0 > o.budgetMs) liegen = i / 3600;
+                        }
+                        return {
+                            weg,
+                            pfosten: pf.length,
+                            erwartet: erwartet.length,
+                            gefallen: gefallen.length,
+                            treffer_pct: nenner ? Math.round((10000 * treffer) / nenner) / 100 : 100,
+                            liegen_min: Math.round(liegen * 100) / 100,
+                            ruhe_s: ruhe && Math.round(ruhe * 1000) / 1000,
+                            teile_welt: restTeile + tr.length,
+                            glieder: bp.parts.length,
+                        };
+                    } finally {
+                        for (const a of s.architectures.filter((x) => !vor.has(x))) r.removeArchitecture(a, { still: true });
+                        for (const k of Object.keys(s.blueprints)) if (!plaene.has(k)) delete s.blueprints[k];
+                    }
+                }
+                await L.ort("stadt-voll", "third");
+                L.preisPose("stadt-voll", "third");
+                const z = await ev(zaehlen, { nah: 120 });
+                L.zeile("Werke unter dem Gesetz an der Stadt-Pose (120 m): " + JSON.stringify(z));
+                const ohneStatik = z.haeuser + " Häuser binnen 120 m sind Studio-Gestalten ohne Statik (stamm/bau-teile.js:2493)";
+                await L.je(1, async () => {
+                    const f = await ev(saeule, null, Math.max(5, L.rest() - 25));
+                    L.zeile("Säule λ 30 gegen Euler: " + JSON.stringify(f));
+                    if (f.fehler) throw new Error(f.fehler);
+                    L.gemessen(
+                        1,
+                        { abw_pct: f.abw_pct, abw_halbe_pct: f.abw_halbe_pct },
+                        { erzeugt: 1, welt: { knick: f.knick, steht: f.steht }, taeter: "Holzsäule 0,1 × 3 m: versagt bei " + f.F_voll + " N (E/2: " + f.F_halb + " N), Euler " + f.F_euler + " N — knickSicherheit " + f.knickSicherheit + " (stamm/bau-buch.js:2592)" + (f.grund ? " · " + f.grund : "") }
+                    );
+                });
+                await L.je(2, async () => {
+                    if (z.maxTeile < P.sprossen[2].umfang.verlangt)
+                        return L.umfang(2, z.maxTeile, "das größte Werk unter dem Gesetz binnen 120 m trägt " + z.maxTeile + " Glieder (" + (z.maxTyp || "keines") + ") — " + ohneStatik);
+                    const w = await ev(pfosten, { typ: z.maxTyp, budgetMs: Math.max(1000, (L.rest() - 12) * 1000) }, Math.max(5, L.rest() - 5));
+                    L.zeile("Pfosten entfernt: " + JSON.stringify(w));
+                    if (w.fehler) throw new Error(w.fehler);
+                    L.gemessen(2, { treffer_pct: w.treffer_pct, liegen_min: w.liegen_min }, { erzeugt: w.glieder, welt: { teile_welt: w.teile_welt }, taeter: z.maxTyp + " ohne Pfosten " + w.weg + ": erwartet " + w.erwartet + " fallende Teile, gefallen " + w.gefallen });
+                });
+                await L.je(3, async () => {
+                    if (z.maxVol < P.sprossen[3].umfang.verlangt) return L.umfang(3, z.maxVol, "das größte Werk unter dem Gesetz binnen 120 m misst " + z.maxVol + " m³ — " + ohneStatik);
+                    L.leser(3, "Durchbiegung: das Gesetz urteilt nur steht · kippt · knickt · schwebt, kein Leser nennt die Biegelinie eines Balkens unter Last (stamm/bau-teile.js:2488 `_werkGesetzSetzen`)", z.maxVol);
+                });
+                await L.je(4, async () => L.umfang(4, 1, "die Sitzung hält eine Saat (" + z.saat + "); " + z.gesetz + " von " + z.werke + " Werken binnen 120 m stehen unter dem Gesetz — " + ohneStatik));
+                await L.je(5, async () => {
+                    if (z.maxVol < P.sprossen[5].umfang.verlangt) return L.umfang(5, z.maxVol, "das größte Werk unter dem Gesetz binnen 120 m misst " + z.maxVol + " m³");
+                    L.leser(5, "Schwingung der Turmspitze: kein Gesetz schwingt ein Werk im Wind (stamm/bau-teile.js:2563 `_tickWerkGesetz`)", z.maxVol);
+                });
+                await L.je(6, async () => {
+                    if (z.sumVol < P.sprossen[6].umfang.verlangt) return L.umfang(6, z.sumVol, "die Werke unter dem Gesetz binnen 120 m messen zusammen " + z.sumVol + " m³");
+                    L.leser(6, "Beben: kein Gesetz bewegt den Grund unter den Werken (stamm/bau-teile.js:2563 `_tickWerkGesetz`)", z.sumVol);
+                });
+                await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält eine Planeten-Saat (" + z.saat + ")"));
+            },
+        })
+    );
+
+    // ─────────── same.physik.fluid — Wasser und Gas ───────────
+    // S1: an der Mess-Wiese das nächste gezeichnete Wasser (`_wasserBildAt`), 5 m landeinwärts vom Ufer eine Grube mit dem Spaten des Spiels
+    // (DSL `voxel_carve` r 3,5, source human — derselbe Op wie der Grabe-Hieb, stamm/kampf.js:2403) bis 1,5 m unter den Pegel, der Loop
+    // läuft 6 s (das Zellen-Wasser, `_tickWaterCA`), das Bild der Grube liegt ab (Auge: der Richter nennt keine Zahl). S2–S8: das gezeichnete
+    // Wasser binnen 128 m in m³ — der Umfang; wo er steht, fehlt der Leser des Impulses, des Gases, des Orbits.
+    LEITERN.push(
+        leiter({
+            leiter: "same.physik.fluid",
+            sek: 60,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "stamm/wasser-zellen.js", "stamm/wasser-hydro.js", "stamm/gelaende-chunks.js", "stamm/feld-dsl.js", "stamm/kampf.js", "stamm/feld-brand.js", "foundry-core.js"],
+            welt: [{ wort: "fluid_m3", ab: 1, was: "Fluid der Welt, das die Messung bewegt (m³)" }],
+            sprossen: {
+                1: { auge: { pose: "wiese ego · die Grube 5 m landeinwärts vom nächsten Ufer, 1,5 m unter dem Pegel, nach 6 s Loop · Kamera 6 m landeinwärts, 4 m hoch, Blick auf den Grubengrund", vorbild: "Foto einer am Ufer gegrabenen Grube, die sich mit Grundwasser füllt (Blindpaar)" } },
+                2: {
+                    soll: [{ wort: "front_abw_pct", richtung: "≤", wert: 15, wortlaut: "Front gegen Ritter 2·√(g·h) ±15 %", feld: "richter" }],
+                    umfang: { verlangt: 1, einheit: "m³ gezeichnetes Wasser binnen 128 m", wortlaut: "1 m³ (Eimer, Brunnen)", feld: "umfang" },
+                },
+                3: {
+                    soll: [{ wort: "front_abw_pct", richtung: "≤", wert: 15, wortlaut: "Front ±15 %", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "m³ gezeichnetes Wasser binnen 128 m", wortlaut: "10³ m³ (Becken, Bach-Stau)", feld: "umfang" },
+                },
+                4: { soll: [{ wort: "steig_abw_pct", richtung: "≤", wert: 30, wortlaut: "Steighöhe der Fahne gegen Briggs ±30 %", feld: "richter" }] },
+                5: {
+                    soll: [{ wort: "ankunft_abw_pct", richtung: "≤", wert: 20, wortlaut: "Ankunftszeit in 1 km ±20 % gegen Flachwasser-Rechnung", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "m³ gezeichnetes Wasser binnen 128 m", wortlaut: "10⁶ m³ (Stausee)", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "lava_ms_min", richtung: "≥", wert: 0.1, wortlaut: "im gemessenen Band 0,1–10 m/s", feld: "richter" },
+                        { wort: "lava_ms_max", richtung: "≤", wert: 10, wortlaut: "im gemessenen Band 0,1–10 m/s", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e9, einheit: "m³ gezeichnetes Fluid binnen 128 m", wortlaut: "10⁹ m³ (Lavastrom, Tsunami, km)", feld: "umfang" },
+                },
+                7: { soll: [{ wort: "frame_p95_ms", richtung: "≤", wert: 33, wortlaut: "p95 ≤ 33 ms über den ganzen Flug", feld: "richter" }] },
+                8: {
+                    soll: [{ wort: "dispersion_abw_pct", richtung: "≤", wert: 15, wortlaut: "Dispersion ω² = g·k im Bild ±15 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Planeten", wortlaut: "N = 100 Planeten", feld: "richter" },
+                },
+            },
+            lauf: async function fluidLauf(H, P, L) {
+                const ev = (f, a, s) => L.ev("return await (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 50);
+                // das gezeichnete Wasser binnen R (Raster d): Σ (Spiegel − Grund) · d²
+                function wasser(r, o) {
+                    const p = r.state.playerMesh.position;
+                    let vol = 0, punkte = 0, tief = 0;
+                    for (let x = -o.R; x <= o.R; x += o.d)
+                        for (let z = -o.R; z <= o.R; z += o.d) {
+                            const w = r._wasserBildAt(p.x + x, p.z + z);
+                            if (!Number.isFinite(w)) continue;
+                            const g = r._voxelSurfaceY(p.x + x, p.z + z);
+                            if (!Number.isFinite(g) || !(w > g)) continue;
+                            vol += (w - g) * o.d * o.d;
+                            punkte++;
+                            tief = Math.max(tief, w - g);
+                        }
+                    return { vol: Math.round(vol), punkte, tief: Math.round(tief * 100) / 100, saat: r.state.worldMeta && r.state.worldMeta.seed };
+                }
+                async function grube(r) {
+                    const p = r.state.playerMesh.position;
+                    let W = null;
+                    for (let d = 4; d <= 120 && !W; d += 4)
+                        for (let k = 0; k < 16 && !W; k++) {
+                            const a = (k * Math.PI) / 8, x = p.x + d * Math.sin(a), z = p.z + d * Math.cos(a);
+                            const w = r._wasserBildAt(x, z), g = r._voxelSurfaceY(x, z);
+                            if (Number.isFinite(w) && Number.isFinite(g) && w > g + 0.3) W = { x, z, w, a, d };
+                        }
+                    if (!W) return { fehler: "kein gezeichnetes Wasser binnen 120 m um den Spieler" };
+                    let U = null;
+                    for (let t = 0; t <= W.d && !U; t += 0.5) {
+                        const x = W.x - t * Math.sin(W.a), z = W.z - t * Math.cos(W.a);
+                        const w = r._wasserBildAt(x, z), g = r._voxelSurfaceY(x, z);
+                        if (!(Number.isFinite(w) && w > g)) U = { x, z, g };
+                    }
+                    if (!U) return { fehler: "kein Ufer zwischen Spieler und Wasser" };
+                    const G = { x: U.x - 5 * Math.sin(W.a), z: U.z - 5 * Math.cos(W.a) };
+                    const g0 = r._voxelSurfaceY(G.x, G.z);
+                    if (!(g0 > W.w)) return { fehler: "der Grund am Ort der Grube (" + g0 + ") liegt nicht über dem Pegel (" + W.w + ")" };
+                    r.dslRun(["voxel_carve", G.x, Math.min(g0, W.w + 2), G.z, 3.5], { source: "human" });
+                    const boden = r._voxelSurfaceY(G.x, G.z);
+                    return { x: G.x, z: G.z, a: W.a, grund0: g0, boden, pegel: W.w, unter: Math.round((W.w - boden) * 100) / 100, ufer: [U.x, U.z] };
+                }
+                function fuellung(r, o) {
+                    const w = r._wasserBildAt(o.x, o.z);
+                    return { w: Number.isFinite(w) ? w : null, anteil: Number.isFinite(w) && o.pegel > o.boden ? Math.max(0, Math.min(1, (w - o.boden) / (o.pegel - o.boden))) : 0 };
+                }
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                const v = await ev(wasser, { R: 128, d: 2 });
+                L.zeile("gezeichnetes Wasser binnen 128 m: " + JSON.stringify(v));
+                await L.je(1, async () => {
+                    const g = await ev(grube);
+                    L.zeile("Grube: " + JSON.stringify(g));
+                    if (g.fehler) throw new Error(g.fehler);
+                    if (!(g.unter > 0)) throw new Error("die Grube reicht nicht unter den Pegel (Boden " + g.boden + ", Pegel " + g.pegel + ")");
+                    await L.wb("/lauf", { sek: 6, ein: 1 }, 90);
+                    const f = await ev(fuellung, g);
+                    L.zeile("Füllung nach 6 s: " + JSON.stringify(f));
+                    const [sx, sz] = [Math.sin(g.a), Math.cos(g.a)];
+                    await L.auge(1, { b: { px: g.x - 6 * sx, py: g.grund0 + 4, pz: g.z - 6 * sz, lx: g.x, ly: g.boden, lz: g.z }, werte: { fuellung_pct: Math.round(f.anteil * 1000) / 10 } });
+                });
+                await L.je(2, async () => {
+                    if (v.vol < P.sprossen[2].umfang.verlangt) return L.umfang(2, v.vol, "binnen 128 m liegt " + v.vol + " m³ gezeichnetes Wasser");
+                    L.leser(2, "Front eines Schwalls: das Zellen-Wasser trägt keinen Impuls, kein Leser nennt Front oder Tempo eines Schwalls (stamm/wasser-zellen.js:1641 `_tickWaterCA`)", v.vol);
+                });
+                await L.je(3, async () => {
+                    if (v.vol < P.sprossen[3].umfang.verlangt) return L.umfang(3, v.vol, "binnen 128 m liegt " + v.vol + " m³ gezeichnetes Wasser");
+                    L.leser(3, "Dammbruch: das Zellen-Wasser trägt keinen Impuls, kein Körper treibt mit einer Strömung (stamm/wasser-zellen.js:1641 `_tickWaterCA`)", v.vol);
+                });
+                await L.je(4, async () => L.leser(4, "Gas: kein Feld trägt Gas — der Rauch ist ein Bild ohne Masse, Auftrieb oder Verdünnung (stamm/feld-brand.js:720 `_brandRauch`)"));
+                await L.je(5, async () => {
+                    if (v.vol < P.sprossen[5].umfang.verlangt) return L.umfang(5, v.vol, "binnen 128 m liegt " + v.vol + " m³ gezeichnetes Wasser (tiefste Stelle " + v.tief + " m)");
+                    L.leser(5, "Flutwelle: das Zellen-Wasser trägt keinen Impuls, keine Flachwasser-Welle (stamm/wasser-zellen.js:1641 `_tickWaterCA`)", v.vol);
+                });
+                await L.je(6, async () => L.umfang(6, v.vol, "binnen 128 m liegt " + v.vol + " m³ gezeichnetes Fluid, Wasser allein — keine Lava"));
+                await L.je(7, async () => L.leser(7, "Flug in den Orbit: der Grund ist eine Ebene, nur der Himmel rechnet eine Kugel (foundry-core.js:284) — kein Leser der Fluid-Stufen vom Strand bis in den Orbit"));
+                await L.je(8, async () => L.umfang(8, 1, "die Sitzung hält einen Planeten (Saat " + v.saat + ")"));
+            },
+        })
+    );
+
+    // ─────────── same.physik.feuer — Brand und Phase ───────────
+    // S1 an der Mess-Wiese: eine trockene Gras-Zelle des Brand-Felds (16 m, `_brandStoff`) fängt im EINEN Fangen (`_brandFangen`, das der Akt
+    // der Fackel wirkt: `_fackelZuenden` → `_brandEntfachen` → `_feldAktWirkt`) und wird sofort gelöscht; unter Regen (`__wetterSetzen` rainy, `_naesseTakt`) eine zweite
+    // — sie darf nicht fangen; im Winter (`setSeason`) das nächste tragende Eis (`_eisAt`), der Spieler steht im Sim-Schritt darauf. Danach
+    // Wetter, Nässe, Saison und Spieler wie vorher. S2–S8: die brennbaren Zellen, Häuser und Flächen der Welt.
+    LEITERN.push(
+        leiter({
+            leiter: "same.physik.feuer",
+            sek: 60,
+            mutiert: true,
+            pfad: [
+                "scripts/werkbank.cjs",
+                "scripts/lib/ausgabe-aufnahme.cjs",
+                "stamm/feld-brand.js",
+                "stamm/feld-leben.js",
+                "stamm/kampf.js",
+                "stamm/bild-himmel.js",
+                "stamm/wasser-hydro.js",
+                "stamm/kreatur-leben.js",
+                "stamm/dirigent-takt.js",
+                "stamm/bau-vorlagen.js",
+                "stamm/gelaende-boden.js",
+            ],
+            welt: [{ wort: "feld_neu", ab: 1, was: "Zellen, die das Brand-Feld beim Entfachen trug" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "zuendet_trocken", richtung: "≥", wert: 1, wortlaut: "1 Zelle", feld: "umfang" },
+                        { wort: "haelt_nass", richtung: "≥", wert: 1, wortlaut: "1 Zelle", feld: "umfang" },
+                        { wort: "eis_y_cm", richtung: "≤", wert: 5, wortlaut: "y am Spiegel ±5 cm", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1, einheit: "Zelle", wortlaut: "1 Zelle", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "halt_pct", richtung: "≥", wert: 100, wortlaut: "Halt in 100 % der Proben", feld: "richter" },
+                        { wort: "frame_p95_ms", richtung: "≤", wert: 33, wortlaut: "Bild-p95 ≤ 33 ms während 2 000 Zellen brennen", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 2000, einheit: "brennbare Zellen der Wiese (10⁴ m²)", wortlaut: "eine Wiese (10⁴ m², 2 000 Zellen)", feld: "umfang" },
+                },
+                3: {
+                    soll: [{ wort: "temp_abw_pct", richtung: "≤", wert: 20, wortlaut: "Raum-Temperatur gegen ISO 834 ±20 %", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "m³ des größten Hauses der geladenen Welt", wortlaut: "ein Haus innen (10³ m³)", feld: "umfang" },
+                },
+                4: {
+                    soll: [{ wort: "sprung_m", richtung: "≥", wert: 20, wortlaut: "die einen 20-m-Fluss überspringen", feld: "richter" }],
+                    umfang: { verlangt: 1, einheit: "km² Laub-Bett im km² um den Spieler", wortlaut: "1 km² Wald", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "verhaeltnis", richtung: "≥", wert: 5, wortlaut: "verbrannter Anteil ≥ 5:1", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "Häuser der geladenen Welt", wortlaut: "ein Viertel (10³ Gebäude, 10⁵ m²)", feld: "umfang" },
+                },
+                6: {
+                    soll: [{ wort: "wind_faktor", richtung: "≥", wert: 2, wortlaut: "Wind am Brandrand ≥ 2× Umgebung", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "Häuser der geladenen Welt", wortlaut: "eine Stadt (10⁶ Gebäude, 10⁷ m²)", feld: "umfang" },
+                },
+                7: {
+                    soll: [{ wort: "flaeche_abw_pct", richtung: "≤", wert: 30, wortlaut: "Brandfläche gegen FARSITE derselben Lage ±30 %", feld: "richter" }],
+                    umfang: { verlangt: 1e9, einheit: "m² Gelände in den Chunks der Sitzung", wortlaut: "Landschaft bis Kontinent (10⁹–10¹² m²)", feld: "umfang" },
+                },
+                8: {
+                    soll: [{ wort: "phase_pct", richtung: "≥", wert: 95, wortlaut: "stimmt mit Phasendiagramm ≥ 95 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Planeten-Saaten", wortlaut: "N = 100 Planeten-Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function feuerLauf(H, P, L) {
+                const ev = (f, a, s) => L.ev("return await (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 50);
+                // S1 · FACKEL AN TROCKENES / NASSES GRAS, EIS TRÄGT
+                async function brandEis(r) {
+                    const s = r.state, A = AnazhRealm, cs = A.LIFE_FIELD.cell, m = s.playerMesh, p = m.position;
+                    if (typeof window.__wetterSetzen !== "function") return { fehler: "window.__wetterSetzen fehlt in der Seite (scripts/lib/ausgabe-aufnahme.cjs:1880)" };
+                    const wort0 = s.weather, naesse0 = s.naesse;
+                    const saison0 = { season: s.season, phase: s.seasonPhase, anker: r._saisonAnker, auto: s.autoSeason };
+                    const bf = s.brandFeld || (s.brandFeld = new Map());
+                    // das Feld vor der Probe (die Ankunft einer Nachbarin eines alten Brands schreibt `_brandZuenden` um): danach wie vorher
+                    const schnapp = () => new Map([...bf].map(([k, v]) => [k, Object.assign({}, v)]));
+                    const loesche = (vorher) => {
+                        for (const k of [...bf.keys()]) if (!vorher.has(k)) bf.delete(k);
+                        for (const [k, v] of vorher) Object.assign(bf.get(k), v);
+                        if (!bf.size) [r._brandBett, r._brandRest] = [null, null];
+                    };
+                    // der Akt der Fackel (`_brandEntfachen` → `_feldAkt` → `_feldAktWirkt`) wirkt das EINE Fangen `_brandFangen`; die Probe
+                    // ruft es selbst — ein Akt in der Reihe des Felds (`_feldFolgeSteht` falsch) brennte die Wiese nach der Probe ab
+                    const fange = (c, k) => r._brandFangen((c + 0.5) * cs, (k + 0.5) * cs, null);
+                    const wetter = (w) => {
+                        if (window.__wetterSetzen(w) !== w) throw new Error("das Wetter gilt nicht: " + w);
+                        r._naesseTakt(1e6);
+                    };
+                    const aus = {};
+                    const vor = m.position.clone();
+                    try {
+                        wetter("sunny");
+                        // die Gras-Zellen um den Spieler (zwei Ringe), die trocken ein Tempo tragen
+                        const gras = [];
+                        const [c0, k0] = [Math.floor(p.x / cs), Math.floor(p.z / cs)];
+                        for (let dx = -2; dx <= 2; dx++)
+                            for (let dz = -2; dz <= 2; dz++) {
+                                const f = r._brandStoff(c0 + dx, k0 + dz);
+                                if (f && f.zeile && f.zeile.name === "gras" && !bf.has(c0 + dx + "," + (k0 + dz))) gras.push([c0 + dx, k0 + dz, Math.abs(dx) + Math.abs(dz)]);
+                            }
+                        gras.sort((a, b) => a[2] - b[2]);
+                        aus.grasZellen = gras.length;
+                        if (gras.length < 2) return Object.assign(aus, { fehler: "nur " + gras.length + " Gras-Zellen des Brand-Felds binnen 2 Ringen" });
+                        const vorher = schnapp();
+                        const z1 = fange(gras[0][0], gras[0][1]);
+                        aus.feld_neu = bf.size - vorher.size;
+                        aus.zuendet_trocken = z1 && z1.t0 !== null && z1.R > 0 ? 1 : 0;
+                        aus.trockenR = z1 ? Math.round(z1.R * 1000) / 1000 : null;
+                        loesche(vorher);
+                        wetter("rainy");
+                        aus.naesse = s.naesse;
+                        const vorher2 = schnapp();
+                        const z2 = fange(gras[1][0], gras[1][1]);
+                        aus.haelt_nass = z2 ? 0 : 1;
+                        loesche(vorher2);
+                        wetter(wort0 || "sunny");
+                        // das Eis im Winter: der nächste tragende Spiegel binnen 150 m, der Spieler im Sim-Schritt darauf (höchstens 3 s)
+                        if (!r.setSeason("winter")) return Object.assign(aus, { fehler: "setSeason winter gilt nicht" });
+                        let E = null;
+                        for (let d = 0; d <= 150 && !E; d += 6)
+                            for (let k = 0; k < Math.max(1, Math.round(d / 3)) && !E; k++) {
+                                const a = (2 * Math.PI * k) / Math.max(1, Math.round(d / 3)), x = p.x + d * Math.sin(a), z = p.z + d * Math.cos(a);
+                                const y = r._eisAt(x, z, NaN, Infinity);
+                                if (y !== null && Number.isFinite(y)) E = { x, z, y };
+                            }
+                        if (!E) return Object.assign(aus, { eis_y_cm: null, eisGrund: "kein tragendes Eis binnen 150 m im Winter" });
+                        const fuss = A.PLAYER_FOOT_OFFSET, dt = A.FIXED_DT;
+                        // der Leib 1 m über dem Eis, der Sim-Schritt trägt ihn (das Muster der Gang-Probe g5: Lage, Fall, Interpolation)
+                        m.position.set(E.x, E.y + 1 + fuss, E.z);
+                        s.playerVel.setValue(0, 0, 0);
+                        s._fieldVy = 0;
+                        if (s._fixedSimPos) s._fixedSimPos.copy(m.position);
+                        let t = Number.isFinite(s._fixedSimTime) ? s._fixedSimTime : 0, still = 0, y0 = m.position.y;
+                        for (let i = 0; i < 180 && still < 20; i++) {
+                            r._stepFixedSim((t += dt), dt);
+                            still = Math.abs(m.position.y - y0) < 1e-4 ? still + 1 : 0;
+                            y0 = m.position.y;
+                        }
+                        aus.eis = [Math.round(E.x * 10) / 10, Math.round(E.z * 10) / 10, Math.round(E.y * 1000) / 1000];
+                        aus.fuss = Math.round((m.position.y - fuss) * 1000) / 1000;
+                        aus.eis_y_cm = Math.round(100 * Math.abs(m.position.y - fuss - E.y) * 100) / 100;
+                        return aus;
+                    } finally {
+                        m.position.copy(vor);
+                        if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                        s._fieldVy = 0;
+                        if (s._fixedSimPos) s._fixedSimPos.copy(vor);
+                        [s.season, s.seasonPhase, r._saisonAnker, s.autoSeason] = [saison0.season, saison0.phase, saison0.anker, saison0.auto];
+                        if (s.weather !== wort0 && wort0) window.__wetterSetzen(wort0);
+                        s.naesse = naesse0;
+                    }
+                }
+                // die Zahlen der Welt für S2–S8
+                function zaehlen(r) {
+                    const s = r.state, A = AnazhRealm, cs = A.LIFE_FIELD.cell, p = s.playerMesh.position, bp = s.blueprints || {};
+                    // die Wiese 10⁴ m² (100 × 100 m um den Spieler): ihre brennbaren Zellen
+                    const [c0, k0] = [Math.floor((p.x - 50) / cs), Math.floor((p.z - 50) / cs)], [c1, k1] = [Math.floor((p.x + 50) / cs), Math.floor((p.z + 50) / cs)];
+                    let wiese = 0;
+                    for (let c = c0; c <= c1; c++) for (let k = k0; k <= k1; k++) if (r._brandStoff(c, k)) wiese++;
+                    // der km² um den Spieler: Anteil der Zellen mit Laub-Bett (jede 4. Zelle, 64 m)
+                    let laub = 0, n = 0;
+                    for (let x = -500; x < 500; x += 64)
+                        for (let z = -500; z < 500; z += 64) {
+                            const f = r._brandStoff(Math.floor((p.x + x) / cs), Math.floor((p.z + z) / cs));
+                            n++;
+                            if (f && f.zeile && f.zeile.name === "laub") laub++;
+                        }
+                    let haeuser = 0, maxHaus = 0;
+                    for (const e of s.architectures || []) {
+                        if (!/^haus_/.test(e.type)) continue;
+                        haeuser++;
+                        const b = bp[e.type];
+                        if (!b || !Array.isArray(b.parts)) continue;
+                        let [x0, y0, z0, x1, y1, z1] = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+                        for (const t of b.parts) {
+                            const a = r._partWorldAABB(t);
+                            if (!a) continue;
+                            [x0, y0, z0] = [Math.min(x0, a.min.x), Math.min(y0, a.min.y), Math.min(z0, a.min.z)];
+                            [x1, y1, z1] = [Math.max(x1, a.max.x), Math.max(y1, a.max.y), Math.max(z1, a.max.z)];
+                        }
+                        const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+                        if (x1 > x0) maxHaus = Math.max(maxHaus, (x1 - x0) * (y1 - y0) * (z1 - z0) * sc * sc * sc);
+                    }
+                    const span = r._voxelChunkConfig(0).span;
+                    const chunks = s.voxelChunks ? s.voxelChunks.size : 0;
+                    return { zelle: cs, wiese, laubKm2: n ? Math.round((1000 * laub) / n) / 1000 : 0, haeuser, maxHaus: Math.round(maxHaus), flaeche: Math.round(chunks * span * span), chunks, saat: s.worldMeta && s.worldMeta.seed };
+                }
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                await L.je(1, async () => {
+                    const f = await ev(brandEis, null, Math.max(5, L.rest() - 15));
+                    L.zeile("Fackel trocken / nass, Eis: " + JSON.stringify(f));
+                    if (f.fehler) throw new Error(f.fehler);
+                    L.gemessen(
+                        1,
+                        { zuendet_trocken: f.zuendet_trocken, haelt_nass: f.haelt_nass, eis_y_cm: f.eis_y_cm },
+                        { erzeugt: f.zuendet_trocken, welt: { feld_neu: f.feld_neu }, taeter: (f.eisGrund ? f.eisGrund : "Fuß " + f.fuss + " m auf dem Eis " + JSON.stringify(f.eis)) + " · trocken R " + f.trockenR + " m/s · Nässe im Regen " + f.naesse }
+                    );
+                });
+                const z = await ev(zaehlen, null, 50);
+                L.zeile("Brand-Feld und Häuser der Welt: " + JSON.stringify(z));
+                const nurVegetation = "das Brand-Feld brennt nur Betten der Zeilen gras und laub (stamm/feld-brand.js:214 `_brandStoff`)";
+                await L.je(2, async () => {
+                    if (z.wiese < P.sprossen[2].umfang.verlangt) return L.umfang(2, z.wiese, "die Wiese 100 × 100 m trägt " + z.wiese + " brennbare Zellen zu " + z.zelle + " m (AnazhRealm.LIFE_FIELD.cell, stamm/feld-leben.js:3078)");
+                    L.leser(2, "Halt und Front je Probe: kein Leser nennt die Front-Proben eines Brands (stamm/feld-brand.js:374 `_brandZuenden`)", z.wiese);
+                });
+                await L.je(3, async () => {
+                    if (z.maxHaus < P.sprossen[3].umfang.verlangt) return L.umfang(3, z.maxHaus, "das größte Haus der geladenen Welt misst " + z.maxHaus + " m³ (" + z.haeuser + " Häuser)");
+                    L.leser(3, "Raumbrand: kein Gesetz brennt einen Raum, keine Raum-Temperatur — " + nurVegetation, z.maxHaus);
+                });
+                await L.je(4, async () => {
+                    if (z.laubKm2 < P.sprossen[4].umfang.verlangt) return L.umfang(4, z.laubKm2, "der km² um den Spieler trägt " + z.laubKm2 + " km² Laub-Bett (Stichprobe je 64 m)");
+                    L.leser(4, "Funkenflug: die Front geht nur an die Nachbar-Zellen (stamm/feld-brand.js:374 `_brandZuenden`, BRAND.nachbarn), kein Funke springt einen Fluss", z.laubKm2);
+                });
+                await L.je(5, async () => {
+                    if (z.haeuser < P.sprossen[5].umfang.verlangt) return L.umfang(5, z.haeuser, "die geladene Welt trägt " + z.haeuser + " Häuser");
+                    L.leser(5, "Holz- gegen Steinstadt: kein Haus brennt — " + nurVegetation, z.haeuser);
+                });
+                await L.je(6, async () => L.umfang(6, z.haeuser, "die geladene Welt trägt " + z.haeuser + " Häuser"));
+                await L.je(7, async () => L.umfang(7, z.flaeche, "die Sitzung hält " + z.chunks + " Chunks Gelände (" + z.flaeche + " m²)"));
+                await L.je(8, async () => L.umfang(8, 1, "die Sitzung hält eine Planeten-Saat (" + z.saat + ")"));
+            },
+        })
+    );
+
+    // ─────────── same.physik.verformung — Seil, Tuch, Knautschen, Spur ───────────
+    // S1 trägt die Station g5/g6 (bestehend). S2–S7: die Welt zählt, was sich verformen könnte (Fahnen, Brücken, Wagen, Schüttgut als
+    // freier Körper); jeder Leser, der die verlangte Zahl nennen müsste, fehlt beim Namen — plastische Verformung kennt die Welt nicht.
+    LEITERN.push(
+        leiter({
+            leiter: "same.physik.verformung",
+            sek: 30,
+            pfad: ["scripts/werkbank.cjs", "stamm/koerper-fahrt.js", "stamm/koerper-frei.js", "stamm/siedlung-wege.js", "stamm/bau-buch.js", "stamm/wasser-hydro.js"],
+            bestehend: [1],
+            welt: [{ wort: "verformt", ab: 1, was: "Dinge der Welt, deren Form die Messung bleibend ändert" }],
+            sprossen: {
+                2: {
+                    soll: [
+                        { wort: "korrelation", richtung: "≥", wert: 0.6, wortlaut: "Phasen-Korrelation r ≥ 0,6", feld: "richter" },
+                        { wort: "durchhang_abw_pct", richtung: "≤", wert: 20, wortlaut: "Durchhang unter 90 kg ±20 %", feld: "richter" },
+                    ],
+                },
+                3: { soll: [{ wort: "knautsch_abw_pct", richtung: "≤", wert: 25, wortlaut: "Knautschtiefe gegen Crashtest ±25 %", feld: "richter" }] },
+                4: {
+                    soll: [
+                        { wort: "spur_abw_pct", richtung: "≤", wert: 30, wortlaut: "Reifenspur-Tiefe in nassem Lehm ±30 % gegen Bodenmechanik", feld: "richter" },
+                        { wort: "sichtbar_min", richtung: "≥", wert: 10, wortlaut: "sichtbar nach 10 min", feld: "richter" },
+                    ],
+                },
+                5: {
+                    soll: [
+                        { wort: "winkel_min", richtung: "≥", wert: 30, wortlaut: "Schüttwinkel trockener Sand 30–35° im Bild", feld: "richter" },
+                        { wort: "winkel_max", richtung: "≤", wert: 35, wortlaut: "Schüttwinkel trockener Sand 30–35° im Bild", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "m³ Schüttgut als freier Körper", wortlaut: "10³ m³ Schüttgut in Bewegung", feld: "umfang" },
+                },
+                6: { soll: [{ wort: "stoffe", richtung: "≥", wert: 7, wortlaut: "bei 7 von 7 Stoffen", feld: "richter" }] },
+                7: {
+                    soll: [
+                        { wort: "tempo_min", richtung: "≥", wert: 10, wortlaut: "Gletscher-Tempo im Band 10–1 000 m/Jahr", feld: "richter" },
+                        { wort: "tempo_max", richtung: "≤", wert: 1000, wortlaut: "Gletscher-Tempo im Band 10–1 000 m/Jahr", feld: "richter" },
+                    ],
+                },
+            },
+            lauf: async function verformungLauf(H, P, L) {
+                function zaehlen(r) {
+                    const s = r.state, bp = s.blueprints || {};
+                    const plaene = Object.keys(bp);
+                    let wagen = 0, schuett = 0;
+                    for (const e of s.architectures || []) {
+                        if (/^fahrzeug_/.test(e.type)) wagen++;
+                        const K = e._frei;
+                        if (K && /^(erde|sand|kies|schnee)$/.test(K.stoff || "")) schuett += K.m / Math.max(1, r._stoffRho(K.stoff));
+                    }
+                    return {
+                        fahnen: plaene.filter((n) => /fahne|flagge|banner|tuch/i.test(n)).length,
+                        bruecken: (s.architectures || []).filter((e) => /bruecke|brücke/i.test(e.type)).length,
+                        wagen,
+                        schuett: Math.round(schuett * 1000) / 1000,
+                        tuchLoeser: typeof r._tuchTakt === "function",
+                    };
+                }
+                const z = await L.ev("return (" + zaehlen + ")(r);", 30);
+                L.zeile("was sich in der Welt verformen könnte: " + JSON.stringify(z));
+                L.preisPose("wiese", "ego");
+                await L.je(2, async () => L.leser(2, "Fahne im EINEN Wind und Durchhang: der Tuch-Löser trägt nur das Tuch am Leib (stamm/koerper-fahrt.js:160 `_tuchTakt`), die Welt hält " + z.fahnen + " Pläne mit Tuch und " + z.bruecken + " Brücken, kein Leser einer Phase oder eines Durchhangs"));
+                await L.je(3, async () => L.leser(3, "Knautschen: der Stoß ändert nur das Tempo des Wagens, keine bleibende Form (stamm/koerper-fahrt.js:1575 `_wagenSchritt`) — " + z.wagen + " Wagen in der Welt"));
+                await L.je(4, async () => L.leser(4, "Spur im Boden: der Tritt der Leiber mindert nur Büschel, kein Rad und kein Fuß drückt den Boden ein (stamm/siedlung-wege.js:1638 `_trittDerLeiber`)"));
+                await L.je(5, async () => L.umfang(5, z.schuett, "die Welt trägt " + z.schuett + " m³ Schüttgut (Erde, Sand, Kies, Schnee) als freien Körper — das Feld ist starr"));
+                await L.je(6, async () => L.leser(6, "bleibende Verformung: die Streckgrenze der Zeile urteilt nur Knick und Druck (stamm/bau-buch.js:1869 `_failsUnderLoad`), keine bleibende Form im Bild"));
+                await L.je(7, async () => L.leser(7, "Gletscher: das Eis ist eine Phase des Spiegels ohne Fluss (stamm/wasser-hydro.js:703 `_eisAt`)"));
+            },
+        })
+    );
+
+    // ─────────── same.physik.reaktion — Chemie ───────────
+    // Die Welt zählt ihre Reaktionen: die Zeilen der Stoff-Tafel mit Brenn-Spalte (die einzige Reaktion, Rothermel); jede verlangte
+    // Masse, Druckwelle, Korrosion je Ort, Schmelze fehlt beim Namen; N Saaten und Planeten zählt die Sitzung.
+    LEITERN.push(
+        leiter({
+            leiter: "same.physik.reaktion",
+            sek: 30,
+            pfad: ["scripts/werkbank.cjs", "stamm/feld-brand.js", "stamm/bau-buch.js", "stamm/bau-vorlagen.js", "stamm/bild-himmel.js", "stamm/kreatur-verhalten.js", "stamm/siedlung-satz.js"],
+            welt: [{ wort: "umgesetzt_kg", ab: 0.1, was: "Masse, die die Reaktion in der Welt umsetzt (kg)" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "masse_abw_pct", richtung: "≤", wert: 10, wortlaut: "Asche + Rauch-Masse = Holz ±10 %", feld: "richter" }],
+                    umfang: { verlangt: 1, einheit: "Reaktion (Stoff-Zeile mit Brenn-Spalte)", wortlaut: "1 Reaktion", feld: "umfang" },
+                },
+                2: { soll: [{ wort: "radius_abw_pct", richtung: "≤", wert: 25, wortlaut: "Schadensradius ∝ W^(1/3) ±25 % bei drei Ladungen", feld: "richter" }] },
+                3: { soll: [{ wort: "rost_abw_pct", richtung: "≤", wert: 30, wortlaut: "Rost-Verhältnis ±30 % gegen Korrosions-Raten", feld: "richter" }] },
+                4: { soll: [{ wort: "schwelle_c", richtung: "≥", wert: 1085, wortlaut: "Ofen unter 1 085 °C gibt kein Kupfer", feld: "richter" }] },
+                5: {
+                    soll: [{ wort: "konsistenz_pct", richtung: "≥", wert: 95, wortlaut: "konsistent mit Lagerstätten und Ofentemperatur ≥ 95 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Saaten", wortlaut: "N = 100 Saaten", feld: "richter" },
+                },
+                6: {
+                    soll: [{ wort: "verstoesse", richtung: "≤", wert: 0, wortlaut: "0 Verstöße", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Planeten", wortlaut: "N = 100 Planeten", feld: "richter" },
+                },
+            },
+            lauf: async function reaktionLauf(H, P, L) {
+                function zaehlen(r) {
+                    const s = r.state, SG = globalThis.__schmiedeCore && globalThis.__schmiedeCore.STOFF_GESETZ;
+                    const zeilen = SG && SG.ZEILEN ? Object.keys(SG.ZEILEN) : [];
+                    // nur Zeilen, die die Welt trägt (ein fehlender Name meldete in `_stoff` einen Bruch)
+                    const M = s.materials || {};
+                    const brenn = zeilen.filter((n) => {
+                        const z = M[n] && r._stoff(n);
+                        return !!(z && z.brenn);
+                    });
+                    const erz = zeilen.filter((n) => /erz|kupfer|zinn/i.test(n));
+                    return { zeilen: zeilen.length, brenn, erz, wetter: s.weather, nassTage: s.worldMeta && s.worldMeta.nassTage, saat: s.worldMeta && s.worldMeta.seed };
+                }
+                const z = await L.ev("return (" + zaehlen + ")(r);", 30);
+                L.zeile("Reaktionen der Stoff-Tafel: " + JSON.stringify(z));
+                L.preisPose("wiese", "ego");
+                await L.je(1, async () => {
+                    if (z.brenn.length < P.sprossen[1].umfang.verlangt) return L.umfang(1, z.brenn.length, "keine Zeile der Stoff-Tafel trägt eine Brenn-Spalte");
+                    L.leser(1, "Masse von Asche und Rauch: die Asche ist eine Decke ohne Masse (stamm/feld-brand.js:5 `_ascheAt`), der Rauch ein Bild-Budget (stamm/feld-brand.js:720 `_brandRauch`) — " + z.brenn.join(", ") + " brennen", z.brenn.length);
+                });
+                await L.je(2, async () => L.leser(2, "Explosion: kein Gesetz der Druckwelle, keine Ladung — das Wort steht nur als Klemme des Gedränges (stamm/kreatur-verhalten.js:525)"));
+                await L.je(3, async () => L.leser(3, "Rost je Ort: die Nässe-Dosis des Alters ist EIN Zähler der Welt (stamm/bild-himmel.js:3060 `_naesseTakt`, worldMeta.nassTage " + z.nassTage + ") — kein Leser der Nässe am See gegen die Wüste"));
+                await L.je(4, async () => L.leser(4, "Verhüttung: kein Ofen-Gesetz liest eine erreichte Temperatur, die Stoff-Tafel trägt " + z.erz.length + " Erz-Zeilen von " + z.zeilen + " (stamm/bau-vorlagen.js:1619)"));
+                await L.je(5, async () => L.umfang(5, 1, "die Sitzung hält eine Saat (" + z.saat + ")"));
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält einen Planeten (" + z.saat + ")"));
+            },
+        })
+    );
+
+    // ─────────── same.physik.flug — Ballistik ───────────
+    // S1 an der Mess-Wiese: ein Steinwürfel 0,1 m und eine Feder (Federn-Platte 0,25 × 0,003 × 0,05 m) als freie Körper des Lösers, je aus
+    // 1,5 m mit 10 m/s unter 45° geworfen (`_freiSchritt`, FIXED_DT) — die Weite bis zum Grund gegen die Rechnung mit Luftwiderstand
+    // (ρ Luft 1,2 kg/m³, c_w Würfel 1,05, Platte quer 1,17, Masse aus dem Löser). Der Löser kennt keine Luft: die Feder fliegt wie der Stein.
+    LEITERN.push(
+        leiter({
+            leiter: "same.physik.flug",
+            sek: 40,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "stamm/koerper-frei.js", "stamm/siedlung-satz.js", "stamm/werkstatt-bauen.js", "stamm/kreatur-leben.js", "stamm/gelaende-boden.js", "stamm/gelaende-kollision.js", "stamm/koerper-bewegung.js", "stamm/wasser-hydro.js", "stamm/stoff-material.js"],
+            welt: [{ wort: "weg_m", ab: 1, was: "Flugweite des Steins in der Welt (m)" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "stein_abw_pct", richtung: "≤", wert: 10, wortlaut: "Wurfweiten gegen Rechnung ±10 %", feld: "richter" },
+                        { wort: "feder_abw_pct", richtung: "≤", wert: 10, wortlaut: "Wurfweiten gegen Rechnung ±10 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1, einheit: "Wurf", wortlaut: "1 Wurf", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "ablenkung_abw_pct", richtung: "≤", wert: 25, wortlaut: "Ablenkung im Band realer Messungen ±25 %", feld: "richter" },
+                        { wort: "abprall_abw_pct", richtung: "≤", wert: 10, wortlaut: "Abprall Rasen/Beton nach Stoßzahl ±10 %", feld: "richter" },
+                    ],
+                },
+                3: { soll: [{ wort: "tauch_abw_pct", richtung: "≤", wert: 5, wortlaut: "Tauchtiefe = Dichteverhältnis ±5 %", feld: "richter" }] },
+                4: { soll: [{ wort: "fahrt_abw_pct", richtung: "≤", wert: 15, wortlaut: "Mindestfahrt gegen √(2mg/(ρ·S·C_L)) ±15 %", feld: "richter" }] },
+                5: { auge: { pose: "stadt-voll third · Straßenschlucht im Lee, ein Blatt Papier im Wind", vorbild: "Video eines Blatts Papier, das im Lee einer Straßenschlucht umdreht (Blindpaar)" } },
+                6: {
+                    soll: [{ wort: "weite_abw_pct", richtung: "≤", wert: 10, wortlaut: "Wurfweite ∝ 1/g ±10 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Planeten", wortlaut: "N = 100 Planeten", feld: "richter" },
+                },
+            },
+            lauf: async function flugLauf(H, P, L) {
+                const ev = (f, a, s) => L.ev("return await (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 50);
+                async function wurf(r) {
+                    const s = r.state, A = AnazhRealm, F = A.FREI, dt = A.FIXED_DT, m = s.playerMesh, g = Number.isFinite(s.gravity) ? -s.gravity : 9.81;
+                    const fuss = m.position.y - A.PLAYER_FOOT_OFFSET, kand = [];
+                    // die Bahn: 2–18 m vom Spieler in der ebensten freien von acht Richtungen (±0,4 m, kein Bau binnen 1,5 m, kein Wasser)
+                    let bahn = null;
+                    for (let k = 0; k < 8 && !bahn; k++) {
+                        const a = (k * Math.PI) / 4, [ux, uz] = [Math.sin(a), Math.cos(a)];
+                        const x0 = m.position.x + 2 * ux, z0 = m.position.z + 2 * uz, g0 = r._koerperBodenUnter(x0, fuss + 1, z0);
+                        if (!Number.isFinite(g0)) continue;
+                        let gut = true;
+                        for (let t = 0; t <= 16 && gut; t += 1) {
+                            const x = x0 + t * ux, z = z0 + t * uz, gt = r._koerperBodenUnter(x, g0 + 1, z);
+                            kand.length = 0;
+                            r._blockerNahe(x, z, 1.5, -Infinity, kand);
+                            gut = Number.isFinite(gt) && Math.abs(gt - g0) <= 0.4 && !r._nassAt(x, z) && !kand.some((e) => (e.blockerAABBs || []).some((b) => r._boxAbstand2(b, x, z) <= 2.25));
+                        }
+                        if (gut) bahn = { x0, z0, g0, ux, uz };
+                    }
+                    if (!bahn) return { fehler: "keine ebene freie Bahn von 16 m um den Spieler" };
+                    if (!(s.materials && s.materials.stein && s.materials.federn)) return { fehler: "die Welt trägt die Zeile stein oder federn nicht (state.materials)" };
+                    const plaene = {
+                        k2_wurf_stein: { name: "k2_wurf_stein", label: "k2_wurf_stein", frei: true, builtIn: false, parts: [{ shape: "box", material: "stein", size: { x: 0.1, y: 0.1, z: 0.1 }, position: { x: 0, y: 0.05, z: 0 } }] },
+                        k2_wurf_feder: { name: "k2_wurf_feder", label: "k2_wurf_feder", frei: true, builtIn: false, parts: [{ shape: "box", material: "federn", size: { x: 0.25, y: 0.003, z: 0.05 }, position: { x: 0, y: 0.0015, z: 0 } }] },
+                    };
+                    const RHO = 1.2, v0 = 10, h0 = 1.5, c45 = Math.SQRT1_2;
+                    // die Rechnung: m dv/dt = −m g ŷ − ½ ρ c_w A |v| v, bis die Unterkante den Grund erreicht (RK-frei, dt 1 ms)
+                    const rechnung = (mk, cw, fl, hy) => {
+                        let [x, y, vx, vy] = [0, h0 + bahn.g0, v0 * c45, v0 * c45];
+                        for (let i = 0; i < 20000; i++) {
+                            const v = Math.hypot(vx, vy), k = (0.5 * RHO * cw * fl * v) / mk;
+                            [vx, vy] = [vx - k * vx * 0.001, vy - (g + k * vy) * 0.001];
+                            [x, y] = [x + vx * 0.001, y + vy * 0.001];
+                            const gr = r._koerperBodenUnter(bahn.x0 + x * bahn.ux, y, bahn.z0 + x * bahn.uz);
+                            if (vy < 0 && y - hy <= (Number.isFinite(gr) ? gr : bahn.g0)) return x;
+                        }
+                        return null;
+                    };
+                    const werfe = (typ) => {
+                        s.blueprints[typ] = plaene[typ];
+                        const e = r.spawnArchitecture(typ, { x: bahn.x0, y: bahn.g0 + 3, z: bahn.z0 }, { precise: true, silent: true });
+                        const K = e && e._frei;
+                        if (!K) {
+                            if (e) r.removeArchitecture(e, { still: true });
+                            return { fehler: typ + " trägt keinen freien Körper" };
+                        }
+                        try {
+                            K.p[0] = bahn.x0;
+                            K.p[1] = bahn.g0 + h0;
+                            K.p[2] = bahn.z0;
+                            K.v[0] = v0 * c45 * bahn.ux;
+                            K.v[1] = v0 * c45;
+                            K.v[2] = v0 * c45 * bahn.uz;
+                            K.w[0] = K.w[1] = K.w[2] = 0;
+                            r._freiWecken(K);
+                            K.grund = null;
+                            r._freiLage(K);
+                            let t = 0, weite = null;
+                            for (let i = 0; i < 480 && weite === null; i++) {
+                                r._freiSchritt(dt);
+                                t += dt;
+                                let mn = Infinity, mx = 0, mz = 0;
+                                for (let j = 1; j < K.pw.length; j += 3) if (K.pw[j] < mn) [mn, mx, mz] = [K.pw[j], K.pw[j - 1], K.pw[j + 1]];
+                                if (t > 0.1 && K.v[1] <= 0 && mn - r._koerperBodenUnter(mx, mn + 0.5, mz) <= F.spalt) weite = (K.p[0] - bahn.x0) * bahn.ux + (K.p[2] - bahn.z0) * bahn.uz;
+                            }
+                            return { weite, t: Math.round(t * 1000) / 1000, m: K.m, hy: K.hy };
+                        } finally {
+                            r.removeArchitecture(e, { still: true });
+                            delete s.blueprints[typ];
+                        }
+                    };
+                    const st = werfe("k2_wurf_stein"), fe = werfe("k2_wurf_feder");
+                    if (st.fehler || fe.fehler) return { fehler: st.fehler || fe.fehler };
+                    const rs = rechnung(st.m, 1.05, 0.01, st.hy), rf = rechnung(fe.m, 1.17, 0.0125, fe.hy);
+                    const abw = (a, b) => (Number.isFinite(a) && b > 0 ? Math.round((10000 * Math.abs(a - b)) / b) / 100 : null);
+                    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+                    return {
+                        stein: { weite: r3(st.weite), rechnung: r3(rs), t: st.t, m: r3(st.m) },
+                        feder: { weite: r3(fe.weite), rechnung: r3(rf), t: fe.t, m: r3(fe.m) },
+                        stein_abw_pct: abw(st.weite, rs),
+                        feder_abw_pct: abw(fe.weite, rf),
+                        wuerfe: (Number.isFinite(st.weite) ? 1 : 0) + (Number.isFinite(fe.weite) ? 1 : 0),
+                    };
+                }
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                await L.je(1, async () => {
+                    const w = await ev(wurf, null, Math.max(5, L.rest() - 6));
+                    L.zeile("Stein und Feder, 10 m/s unter 45°: " + JSON.stringify(w));
+                    if (w.fehler) throw new Error(w.fehler);
+                    L.gemessen(1, { stein_abw_pct: w.stein_abw_pct, feder_abw_pct: w.feder_abw_pct }, { erzeugt: w.wuerfe, welt: { weg_m: w.stein.weite }, taeter: "Feder " + w.feder.weite + " m gegen Rechnung " + w.feder.rechnung + " m, Stein " + w.stein.weite + " m gegen " + w.stein.rechnung + " m — der Löser kennt keine Luft (stamm/koerper-frei.js:421 `_freiSchritt`)" });
+                });
+                const ohneLuft = "der Löser trägt nur Schwere, Kontakt und Reibung (stamm/koerper-frei.js:421 `_freiSchritt`)";
+                await L.je(2, async () => L.leser(2, "Drall: keine Magnus-Kraft am Körper — " + ohneLuft));
+                await L.je(3, async () => L.leser(3, "Auftrieb am freien Körper: der Löser liest kein Wasser — " + ohneLuft));
+                await L.je(4, async () => L.leser(4, "Auftrieb am Flügel: kein Gesetz des Auftriebs — " + ohneLuft));
+                await L.je(5, async () => L.leser(5, "Wind am Körper: der Löser liest das EINE Wind-Feld nicht (stamm/stoff-material.js:233 `_windAt`) — " + ohneLuft));
+                const saat = await L.ev("return r.state.worldMeta && r.state.worldMeta.seed;", 20);
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält einen Planeten (Saat " + saat + ")"));
+            },
+        })
+    );
+
+    // ─────────── same.physik.stoffe — die Stoff-Tafel ───────────
+    // S1 (Auge): zehn graue Würfel 0,2 m aus zehn Zeilen der Tafel fallen an der Mess-Wiese aus 2 m (freie Körper des Lösers), das Bild liegt
+    // ab, wenn sie liegen; die Jury urteilt am Gerät. S2–S6: die Zeilen der Tafel (`STOFF_GESETZ.ZEILEN`) und die Stoffe der Welt
+    // (`state.materials`) gezählt gegen 10² … 10⁶.
+    LEITERN.push(
+        leiter({
+            leiter: "same.physik.stoffe",
+            sek: 40,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "schmiede-core.js", "stamm/bau-buch.js", "stamm/bau-vorlagen.js", "stamm/koerper-frei.js", "stamm/siedlung-satz.js", "stamm/werkstatt-bauen.js", "stamm/gelaende-boden.js"],
+            welt: [{ wort: "stoffe_welt", ab: 1, was: "Stoffe, die die Messung in der Welt liest" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "jury_pct", richtung: "≥", wert: 70, wortlaut: "benennt den Stoff ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 10, einheit: "Stoffe", wortlaut: "10 Stoffe", feld: "umfang" },
+                    auge: { pose: "wiese ego · zehn graue Würfel 0,2 m (stein holz eisen bronze stahl quarz leder knochen blech eis) aus 2 m gefallen, 5 m vor dem Spieler", vorbild: "Film und Ton realer grauer Gegenstände derselben Stoffe beim Fallen, Brechen, Brennen (Blind-Jury)" },
+                },
+                2: {
+                    soll: [{ wort: "abw_pct", richtung: "≤", wert: 10, wortlaut: "Stichprobe 50 Zeilen ±10 % gegen Ingenieurs-Tafeln", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Zeilen der Stoff-Tafel", wortlaut: "10²", feld: "umfang" },
+                },
+                3: {
+                    soll: [{ wort: "abw_pct", richtung: "≤", wert: 15, wortlaut: "Verhalten gegen Handbuch ±15 %", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "Stoffe der Welt", wortlaut: "10³ Werkstoffe einer Zivilisation, je Epoche", feld: "umfang" },
+                },
+                4: {
+                    soll: [{ wort: "reihe_pct", richtung: "≥", wert: 90, wortlaut: "Reihenfolge von Dichte und Schmelzpunkt stimmt ≥ 90 %", feld: "richter" }],
+                    umfang: { verlangt: 1e4, einheit: "Stoffe der Welt", wortlaut: "10⁴ Stoffe einer Welt", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "reihe_pct", richtung: "≥", wert: 90, wortlaut: "Reihenfolge ≥ 90 %", feld: "richter" }],
+                    umfang: { verlangt: 1e5, einheit: "Stoffe der Welt", wortlaut: "10⁵ über Welten", feld: "umfang" },
+                },
+                6: {
+                    soll: [{ wort: "denkbar_pct", richtung: "≥", wert: 70, wortlaut: "für physikalisch denkbar ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "Stoffe der Welt", wortlaut: "10⁶+ fremde Stoffe", feld: "umfang" },
+                },
+            },
+            lauf: async function stoffeLauf(H, P, L) {
+                function zaehlen(r) {
+                    const SG = globalThis.__schmiedeCore && globalThis.__schmiedeCore.STOFF_GESETZ;
+                    return { zeilen: SG && SG.ZEILEN ? Object.keys(SG.ZEILEN).length : 0, stoffe: Object.keys(r.state.materials || {}).length };
+                }
+                // zehn graue Würfel, je eine Zeile, in einer Reihe quer zum Blick 5 m vor dem Spieler aus 2 m fallen gelassen (2 s Löser)
+                async function wuerfel(r, o) {
+                    const s = r.state, A = AnazhRealm, dt = A.FIXED_DT, m = s.playerMesh, cam = s.camera;
+                    const d = cam.getWorldDirection(new T.Vector3());
+                    const [ux, uz] = [d.x / (Math.hypot(d.x, d.z) || 1), d.z / (Math.hypot(d.x, d.z) || 1)];
+                    const fuss = m.position.y - A.PLAYER_FOOT_OFFSET;
+                    const plaene = new Set(Object.keys(s.blueprints));
+                    const gesetzt = [];
+                    // die zehn Stoffe: die gewünschten, die die Welt als Zeile trägt (`state.materials`), aufgefüllt aus der Tafel
+                    const M = s.materials || {}, SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+                    const stoffe = o.stoffe.filter((n) => M[n]);
+                    for (const n of Object.keys(SG.ZEILEN)) if (stoffe.length < o.stoffe.length && M[n] && !stoffe.includes(n)) stoffe.push(n);
+                    for (let i = 0; i < stoffe.length; i++) {
+                        const typ = "k2_grau_" + stoffe[i];
+                        s.blueprints[typ] = { name: typ, label: typ, frei: true, builtIn: false, parts: [{ shape: "box", material: stoffe[i], color: 0x808080, size: { x: 0.2, y: 0.2, z: 0.2 }, position: { x: 0, y: 0.1, z: 0 } }] };
+                        const q = (i - (stoffe.length - 1) / 2) * 0.5;
+                        const x = m.position.x + 5 * ux - q * uz, z = m.position.z + 5 * uz + q * ux;
+                        const g = r._koerperBodenUnter(x, fuss + 1, z);
+                        const e = r.spawnArchitecture(typ, { x, y: (Number.isFinite(g) ? g : fuss) + 2.5, z }, { precise: true, silent: true });
+                        if (e && e._frei) gesetzt.push(e);
+                        else if (e) r.removeArchitecture(e, { still: true });
+                    }
+                    for (let i = 0; i < 120; i++) r._freiSchritt(dt);
+                    const liegen = gesetzt.filter((e) => e._frei.schlaf).length;
+                    // die Würfel bleiben für das Bild; danach räumt `weg` sie nach ihrer Kennung
+                    const mitte = [m.position.x + 5 * ux, fuss + 0.1, m.position.z + 5 * uz];
+                    const neu = Object.keys(s.blueprints).filter((k) => !plaene.has(k));
+                    return { n: gesetzt.length, stoffe: gesetzt.map((e) => e._frei.stoff), liegen, mitte, kamera: [m.position.x - 1 * ux, fuss + 1.7, m.position.z - 1 * uz], ids: gesetzt.map((e) => e.id), plaene: neu };
+                }
+                function weg(r, o) {
+                    const s = r.state, ids = new Set(o.ids);
+                    const E = (s.architectures || []).filter((e) => ids.has(e.id));
+                    for (const e of E) r.removeArchitecture(e, { still: true });
+                    for (const k of o.plaene) if (/^k2_grau_/.test(k)) delete s.blueprints[k];
+                    return E.length;
+                }
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                const z = await L.ev("return (" + zaehlen + ")(r);", 30);
+                L.zeile("Stoff-Tafel und Stoffe der Welt: " + JSON.stringify(z));
+                await L.je(1, async () => {
+                    if (z.zeilen < P.sprossen[1].umfang.verlangt) return L.umfang(1, z.zeilen, "die Stoff-Tafel trägt " + z.zeilen + " Zeilen");
+                    const stoffe = ["stein", "holz", "eisen", "bronze", "stahl", "quarz", "leder", "knochen", "blech", "eis"];
+                    const w = await L.ev("return await (" + wuerfel + ")(r, " + JSON.stringify({ stoffe }) + ");", 40);
+                    L.zeile("zehn graue Würfel: " + JSON.stringify(w));
+                    try {
+                        await L.auge(1, { b: { px: w.kamera[0], py: w.kamera[1], pz: w.kamera[2], lx: w.mitte[0], ly: w.mitte[1], lz: w.mitte[2] }, erzeugt: w.n });
+                    } finally {
+                        await L.ev("return (" + weg + ")(r, " + JSON.stringify({ ids: w.ids, plaene: w.plaene }) + ");", 30);
+                    }
+                });
+                await L.je(2, async () => L.umfang(2, z.zeilen, "die Stoff-Tafel trägt " + z.zeilen + " Zeilen (schmiede-core STOFF_GESETZ.ZEILEN)"));
+                await L.je(3, async () => L.umfang(3, z.stoffe, "die Welt kennt " + z.stoffe + " Stoffe (state.materials), keiner entsteht aus einer Reaktion"));
+                await L.je(4, async () => L.umfang(4, z.stoffe, "die Welt kennt " + z.stoffe + " Stoffe (state.materials)"));
+                await L.je(5, async () => L.umfang(5, z.stoffe, "die Welt kennt " + z.stoffe + " Stoffe (state.materials), ein Planet"));
+                await L.je(6, async () => L.umfang(6, z.stoffe, "die Welt kennt " + z.stoffe + " Stoffe (state.materials), ein Planet"));
+            },
+        })
+    );
+}
+
 // ═══════════════════════════════════════ Perspektive entfaltung ═══════════════════════════════════════
 {
     // ─────────── same.entfaltung.gleichheit — Gleichheit über Geräte und Peers ───────────
@@ -1100,6 +2457,888 @@ LEITERN.push(
                         beleg: { bilder: [P.leiter + "-S1-vor.png", P.leiter + "-S1-vor2.png", P.leiter + "-S1-nach.png"], standBytes: standB },
                     });
                 });
+            },
+        })
+    );
+}
+
+// ═══════════════════════════════════════ Perspektive massstab ═══════════════════════════════════════
+{
+    // ─────────── same.massstab.spanne — Spanne der Größenordnungen ───────────
+    // Die Sitzung hält EINE Saat; S1–S4 verlangen 20 Saaten (gezählt: die Saat der Welt). S5–S9 verlangen eine Sicht bis 10¹³ … 10²⁶ m:
+    // gezählt wird die Reichweite der Welt-Kamera (`state.camera.far`, gesetzt in stamm/dirigent-ankunft.js:468) — was hinter ihr liegt,
+    // zeichnet die Welt nicht.
+    LEITERN.push(
+        leiter({
+            leiter: "same.massstab.spanne",
+            sek: 30,
+            pfad: ["scripts/werkbank.cjs", "stamm/dirigent-ankunft.js", "foundry-core.js"],
+            welt: [{ wort: "auge_m", ab: 1, was: "Höhe, die das Auge in der Welt flog (m)" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "steig_s", richtung: "≤", wert: 30, wortlaut: "700 m Auge in 30 s", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter" },
+                },
+                2: {
+                    soll: [{ wort: "nah_cm", richtung: "≤", wert: 1, wortlaut: "Spanne 1 cm → 1 km", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter", aus: 1 },
+                },
+                3: {
+                    soll: [{ wort: "horizont_abw_pct", richtung: "≤", wert: 10, wortlaut: "Horizont-Absenkung aus 10 km gegen √(2h/R) ±10 %", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter", aus: 1 },
+                },
+                4: {
+                    soll: [{ wort: "saaten", richtung: "≥", wert: 20, wortlaut: "Flug Boden → Orbit → Boden auf der anderen Seite, N = 20 Saaten", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter" },
+                },
+                5: {
+                    soll: [{ wort: "bahn_abw_pct", richtung: "≤", wert: 1, wortlaut: "Bahnabstand ±1 %", feld: "richter" }],
+                    umfang: { verlangt: 1e13, einheit: "m Sicht der Welt-Kamera", wortlaut: "13: bis Sonnensystem (10¹³ m)", feld: "umfang" },
+                },
+                6: {
+                    soll: [{ wort: "sterne", richtung: "≥", wert: 10, wortlaut: "Flug zu 10 zufälligen Nachbarsternen", feld: "richter" }],
+                    umfang: { verlangt: 1e17, einheit: "m Sicht der Welt-Kamera", wortlaut: "17: bis Nachbarsterne (10¹⁷ m)", feld: "umfang" },
+                },
+                7: {
+                    soll: [{ wort: "fluss_abw_pct", richtung: "≤", wert: 5, wortlaut: "Gesamtfluss ±5 %", feld: "richter" }],
+                    umfang: { verlangt: 1e21, einheit: "m Sicht der Welt-Kamera", wortlaut: "21: bis Galaxie (10²¹ m)", feld: "umfang" },
+                },
+                8: {
+                    soll: [
+                        { wort: "pop_pct", richtung: "≤", wert: 0.1, wortlaut: "Pop ≤ 0,1 %", feld: "richter" },
+                        { wort: "flug_s", richtung: "≤", wert: 120, wortlaut: "in ≤ 120 s", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e21, einheit: "m Sicht der Welt-Kamera", wortlaut: "26: 10 µm bis 10²¹ m", feld: "umfang" },
+                },
+                9: {
+                    soll: [{ wort: "galaxien", richtung: "≥", wert: 10, wortlaut: "Flug zu 10 Zufallsgalaxien", feld: "richter" }],
+                    umfang: { verlangt: 1e26, einheit: "m Sicht der Welt-Kamera", wortlaut: "31: 10 µm bis 10²⁶ m", feld: "umfang" },
+                },
+            },
+            lauf: async function spanneLauf(H, P, L) {
+                await L.ort("wiese", "ego");
+                const z = await L.ev(
+                    "const c = r.state.camera; return { far: c.far, near: c.near, fov: c.fov, saat: r.state.worldMeta && r.state.worldMeta.seed, saaten: r.state.worldMeta && r.state.worldMeta.seed != null ? 1 : 0 };",
+                    20
+                );
+                L.zeile("Kamera und Saat der Sitzung: " + JSON.stringify(z));
+                L.preisPose("wiese", "ego");
+                const saaten = "die Sitzung hält " + z.saaten + " Saat (" + z.saat + "), ein Start je Saat braucht eine neue Welt";
+                for (const nr of [1, 2, 3, 4]) await L.je(nr, async () => L.umfang(nr, z.saaten, saaten));
+                const sicht = "die Welt-Kamera reicht " + z.far + " m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht";
+                for (const nr of [5, 6, 7, 8, 9]) await L.je(nr, async () => L.umfang(nr, z.far, sicht));
+            },
+        })
+    );
+
+    // ─────────── same.massstab.nahe — der Blick nah an den Boden ───────────
+    // An der Mess-Wiese schießt das Auge den Boden vor den Füßen mit der Bildbreite der Sprosse (2 m, 50 cm, 10 cm, 1 cm, 10 µm): die
+    // Kamera steht im Abstand d = Breite / (2·tan(hfov/2)) unter 60° auf dem Grund. Liegt d unter der nahen Ebene der Welt-Kamera
+    // (`state.camera.near`), schneidet die Welt ab — dann fehlt der Leser beim Namen. S5/S6 zählen Korn und Planeten-Saaten.
+    LEITERN.push(
+        leiter({
+            leiter: "same.massstab.nahe",
+            sek: 50,
+            pfad: ["scripts/werkbank.cjs", "stamm/dirigent-ankunft.js", "stamm/bau-vorlagen.js", "stamm/gelaende-boden.js", "stamm/kreatur-leben.js"],
+            welt: [{ wort: "orte", ab: 1, was: "Orte, an denen die Probe den Boden im Bild las" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "energie_pct", richtung: "≥", wert: 50, wortlaut: "≥ 50 % der Referenz", feld: "richter" },
+                        { wort: "orte_pct", richtung: "≥", wert: 80, wortlaut: "in ≥ 80 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Orte", wortlaut: "N = 100 Orte", feld: "umfang" },
+                    auge: { pose: "wiese ego · Bildbreite 2 m auf dem Grund 1,5 m vor dem Spieler, Kamera unter 60° von der Seite", vorbild: "Foto der Bodenklasse Wiese aus 2 m (Spektrum, Energie über 1/20 der Bildbreite)" },
+                },
+                2: {
+                    soll: [
+                        { wort: "energie_pct", richtung: "≥", wert: 50, wortlaut: "≥ 50 % der Referenz", feld: "richter", aus: 1 },
+                        { wort: "orte_pct", richtung: "≥", wert: 80, wortlaut: "in ≥ 80 %", feld: "richter", aus: 1 },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Orte", wortlaut: "N = 100 Orte", feld: "umfang", aus: 1 },
+                    auge: { pose: "wiese ego · Bildbreite 50 cm auf dem Grund 1,5 m vor dem Spieler, Kamera unter 60°", vorbild: "Foto der Bodenklasse Wiese aus 50 cm (Gram-Statistik)" },
+                },
+                3: {
+                    soll: [
+                        { wort: "energie_pct", richtung: "≥", wert: 50, wortlaut: "≥ 50 % der Referenz", feld: "richter", aus: 1 },
+                        { wort: "orte_pct", richtung: "≥", wert: 80, wortlaut: "in ≥ 80 %", feld: "richter", aus: 1 },
+                    ],
+                    auge: { pose: "wiese ego · Bildbreite 10 cm auf dem Grund 1,5 m vor dem Spieler, Kamera unter 60°", vorbild: "Makrofoto 10 cm der Bodenklasse Wiese" },
+                },
+                4: {
+                    soll: [{ wort: "fluss_fehler_pct", richtung: "≤", wert: 20, wortlaut: "Fehler ≤ 20 %", feld: "richter" }],
+                    auge: { pose: "wiese ego · Bildbreite 1 cm auf dem Grund, zwei Bilder mit 1 cm Kamera-Versatz", vorbild: "Makro-Stereopaar derselben Bodenklasse (Tiefe aus optischem Fluss)" },
+                },
+                5: { soll: [{ wort: "wentworth_pct", richtung: "≥", wert: 90, wortlaut: "Wentworth-Klasse richtig an ≥ 90 % von 100 Uferorten", feld: "richter" }] },
+                6: {
+                    soll: [{ wort: "plausibel_pct", richtung: "≥", wert: 90, wortlaut: "plausibel ≥ 90 %", feld: "richter" }],
+                    umfang: { verlangt: 10, einheit: "Planeten-Saaten", wortlaut: "10 Planeten-Saaten", feld: "richter" },
+                },
+                7: {
+                    soll: [{ wort: "plausibel_pct", richtung: "≥", wert: 80, wortlaut: "plausibel ≥ 80 %", feld: "richter" }],
+                    auge: { pose: "wiese ego · Bildbreite 10 µm auf dem Grund", vorbild: "Lichtmikroskopie derselben Bodenklasse (Zelle, Pollenwand, Milbe)" },
+                },
+            },
+            lauf: async function naheLauf(H, P, L) {
+                // die Kamera und der Grund 1,5 m vor dem Spieler (Blick waagrecht), die Seite rechts davon
+                function grund(r) {
+                    const s = r.state, A = AnazhRealm, m = s.playerMesh, c = s.camera;
+                    const d = c.getWorldDirection(new T.Vector3());
+                    const l = Math.hypot(d.x, d.z) || 1, [ux, uz] = [d.x / l, d.z / l];
+                    const fuss = m.position.y - A.PLAYER_FOOT_OFFSET;
+                    const gx = m.position.x + 1.5 * ux, gz = m.position.z + 1.5 * uz;
+                    const g = r._koerperBodenUnter(gx, fuss + 1, gz);
+                    return { near: c.near, fov: c.fov, gx, gz, gy: Number.isFinite(g) ? g : fuss, ux, uz, saat: s.worldMeta && s.worldMeta.seed };
+                }
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                const g = await L.ev("return (" + grund + ")(r);", 30);
+                L.zeile("Grund vor dem Spieler und nahe Ebene: " + JSON.stringify(g));
+                // der Bildwinkel des Schusses (1280 × 720) aus dem senkrechten der Welt-Kamera
+                const hfov = 2 * Math.atan(Math.tan((g.fov * Math.PI) / 360) * (1280 / 720));
+                const abstand = (breite) => breite / (2 * Math.tan(hfov / 2));
+                const nahe = (nr, breite, name) => {
+                    const d = abstand(breite);
+                    if (d >= g.near) return false;
+                    L.leser(nr, "die Welt-Kamera schneidet unter " + g.near + " m ab (state.camera.near, stamm/dirigent-ankunft.js:468): " + name + " Bildbreite verlangt " + d.toExponential(2) + " m Abstand");
+                    return true;
+                };
+                const schuss = async (nr, breite, mit) => {
+                    const d = abstand(breite);
+                    const [rx, rz] = [g.uz, -g.ux];
+                    const b = { px: g.gx + rx * d * 0.5, py: g.gy + d * 0.866, pz: g.gz + rz * d * 0.5, lx: g.gx, ly: g.gy, lz: g.gz };
+                    await L.auge(nr, Object.assign({ b, werte: { abstand_m: +d.toFixed(4) } }, mit || {}));
+                };
+                await L.je(1, async () => nahe(1, 2, "2 m") || (await schuss(1, 2, { erzeugt: 1 })));
+                await L.je(2, async () => nahe(2, 0.5, "50 cm") || (await schuss(2, 0.5, { erzeugt: 1 })));
+                await L.je(3, async () => nahe(3, 0.1, "10 cm") || (await schuss(3, 0.1)));
+                await L.je(4, async () => nahe(4, 0.01, "1 cm") || (await schuss(4, 0.01)));
+                await L.je(5, async () => L.leser(5, "Korngröße am Ufer: die Körnung ist EINE Zahl je Stoff (die Krume 2 mm, Tafel SI stamm/bau-vorlagen.js:1619), kein Leser sortiert Korn nach dem Fluss"));
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält eine Planeten-Saat (" + g.saat + ")"));
+                await L.je(7, async () => nahe(7, 1e-5, "10 µm") || (await schuss(7, 1e-5)));
+            },
+        })
+    );
+
+    // ─────────── same.massstab.sprung — Teleport bis „ganz“ ───────────
+    // S1/S2: EIN Sprung 1 km in die erste trockene von acht Richtungen (die Lage wie die Werkbank sie setzt: `_voxelSurfaceY` + 1,8 m),
+    // dann der Loop des Spiels in Scheiben (`/lauf`) im Strom der Zelle, bis die Welt steht (`_weltSteht() && !_bepflanzungWartet()`, das
+    // Wort von `__weltStehtNach`); t(ganz) ist die Wanduhr der Seite vom Sprung bis zum ersten Stehen (die Pausen zwischen den Scheiben
+    // zählen mit — nie weicher als die Karte). Bleibt Zeit, ein Sprung 10–30 km für S3/S8; danach zurück an den Start.
+    LEITERN.push(
+        leiter({
+            leiter: "same.massstab.sprung",
+            sek: 60,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "stamm/dirigent-takt.js", "stamm/vegetation-baum.js", "stamm/gelaende-chunks.js", "stamm/wasser-hydro.js", "foundry-core.js"],
+            welt: [
+                { wort: "bilder", ab: 30, was: "Bilder des Loops im Strom der Zelle nach dem Sprung" },
+                { wort: "weg_m", ab: 900, was: "Weg des Spielers beim Sprung (m)" },
+            ],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "ganz_s", richtung: "≤", wert: 30, wortlaut: "ganz ≤ 30 s", feld: "preis" },
+                        { wort: "frame_p95_ms", richtung: "≤", wert: 33, wortlaut: "p95 ≤ 33 ms an beiden Geräten", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 1, einheit: "km Teleport", wortlaut: "Teleport 1 km", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "ganz_s", richtung: "≤", wert: 5, wortlaut: "ganz ≤ 5 s", feld: "preis" },
+                        { wort: "frame_p95_ms", richtung: "≤", wert: 33, wortlaut: "p95 ≤ 33 ms an beiden Geräten", feld: "preis", aus: 1 },
+                    ],
+                    umfang: { verlangt: 1, einheit: "km Teleport", wortlaut: "Teleport 1 km", feld: "umfang" },
+                },
+                3: {
+                    soll: [
+                        { wort: "ganz_p95_s", richtung: "≤", wert: 2, wortlaut: "ganz ≤ 2 s", feld: "preis" },
+                        { wort: "frame_p95_ms", richtung: "≤", wert: 33, wortlaut: "p95 ≤ 33 ms an beiden Geräten", feld: "preis", aus: 1 },
+                    ],
+                    umfang: { verlangt: 20, einheit: "Sprünge 10–100 km", wortlaut: "N = 20 Sprünge", feld: "richter" },
+                    welt: [
+                        { wort: "bilder", ab: 30, was: "Bilder des Loops im Strom der Zelle nach dem Sprung" },
+                        { wort: "weg_km", ab: 9, was: "Weg des Spielers beim fernen Sprung (km)" },
+                    ],
+                },
+                4: {
+                    soll: [{ wort: "ganz_p95_s", richtung: "≤", wert: 2, wortlaut: "ganz ≤ 2 s", feld: "preis" }],
+                    umfang: { verlangt: 1e8, einheit: "Orte à 100 m eines Planeten", wortlaut: "(10⁸ Orte à 100 m)", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "ganz_s", richtung: "≤", wert: 3, wortlaut: "ganz ≤ 3 s", feld: "preis" }],
+                    umfang: { verlangt: 10, einheit: "Epochen", wortlaut: "10 Epochen × 10 Orte", feld: "richter" },
+                },
+                6: {
+                    soll: [{ wort: "ganz_s", richtung: "≤", wert: 2, wortlaut: "ganz ≤ 2 s", feld: "preis" }],
+                    umfang: { verlangt: 20, einheit: "Planeten", wortlaut: "20 zufällige Planeten", feld: "richter" },
+                },
+                7: {
+                    soll: [{ wort: "ganz_s", richtung: "≤", wert: 2, wortlaut: "ganz ≤ 2 s", feld: "preis" }],
+                    umfang: { verlangt: 20, einheit: "Sterne", wortlaut: "N = 20 zufällige Sterne", feld: "richter" },
+                },
+                8: {
+                    soll: [
+                        { wort: "ganz_p95_s", richtung: "≤", wert: 1, wortlaut: "p95 ≤ 1 s bis ganz", feld: "richter" },
+                        { wort: "frame_p95_ms", richtung: "≤", wert: 33, wortlaut: "danach Frame p95 ≤ 33 ms", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Zufalls-Sprünge", wortlaut: "N = 100 Zufalls-Sprünge", feld: "richter" },
+                },
+            },
+            lauf: async function sprungLauf(H, P, L) {
+                // die Lage, die erste trockene Richtung im Abstand `km` (das Wasser-Gesetz `_nassAt` trägt auch ungeladene Ferne)
+                function ziel(r, o) {
+                    const p = r.state.playerMesh.position;
+                    for (let k = 0; k < 8; k++) {
+                        const a = o.a0 + (k * Math.PI) / 4, x = p.x + o.km * 1000 * Math.sin(a), z = p.z + o.km * 1000 * Math.cos(a);
+                        if (!r._nassAt(x, z)) return { x, z, a, von: [p.x, p.z], km: Math.round(Math.hypot(x - p.x, z - p.z)) / 1000 };
+                    }
+                    return null;
+                }
+                // DER SPRUNG: die Lage wie die Werkbank sie setzt (`_voxelSurfaceY` + 1,8), ohne Fahrt; die Wache der Seite (`setInterval`,
+                // 50 ms) nennt das erste Stehen der Welt in der Wanduhr der Seite
+                function springe(r, o) {
+                    const s = r.state, m = s.playerMesh;
+                    const v = r._voxelSurfaceY(o.x, o.z), y = Number.isFinite(v) ? v : r.getTerrainHeightAt(o.x, o.z);
+                    // die Wache hängt am Spiel-Objekt, nie am Stand (`state` reist im Speichern)
+                    if (r.__k2Sprung) clearInterval(r.__k2Sprung.id);
+                    const W = (r.__k2Sprung = { t0: performance.now(), ganz: null, von: [m.position.x, m.position.z] });
+                    m.position.set(o.x, y + 1.8, o.z);
+                    if (s.playerVel && s.playerVel.setValue) s.playerVel.setValue(0, 0, 0);
+                    s._fieldVy = 0;
+                    if (s._fixedSimPos) s._fixedSimPos.copy(m.position);
+                    W.id = setInterval(() => {
+                        if (W.ganz === null && r._weltSteht() && !r._bepflanzungWartet()) W.ganz = performance.now() - W.t0;
+                    }, 50);
+                    return { y };
+                }
+                function wache(r, o) {
+                    const s = r.state, W = r.__k2Sprung, m = s.playerMesh;
+                    if (!W) return null;
+                    const aus = { ganz_s: W.ganz === null ? null : Math.round(W.ganz) / 1000, wand_s: Math.round(performance.now() - W.t0) / 1000, weg_m: Math.round(Math.hypot(m.position.x - W.von[0], m.position.z - W.von[1])) };
+                    if (o && o.ende) {
+                        clearInterval(W.id);
+                        delete r.__k2Sprung;
+                    }
+                    if (aus.ganz_s === null) aus.offen = JSON.stringify(r._weltOffen()).slice(0, 200);
+                    return aus;
+                }
+                const ev = (f, a, s) => L.ev("return (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 20);
+                // ein Sprung im Strom der Zelle: Scheiben von `scheibe` s Loop, bis die Welt steht (+ 2 s danach) oder `bis` s Loop
+                const sprung = async (zelle, zz, scheibe, bis, reserve) => {
+                    await L.zelle(zelle);
+                    await ev(springe, zz);
+                    let lauf = 0, w = null;
+                    try {
+                        while (lauf < bis && L.rest() > reserve + scheibe + 3) {
+                            await L.wb("/lauf", { sek: scheibe, ein: 0 }, scheibe + 60);
+                            lauf += scheibe;
+                            w = await ev(wache);
+                            if (w && w.ganz_s !== null) {
+                                if (w.wand_s - w.ganz_s < 2) {
+                                    await L.wb("/lauf", { sek: 2, ein: 0 }, 62);
+                                    lauf += 2;
+                                }
+                                break;
+                            }
+                        }
+                    } finally {
+                        w = Object.assign(w || {}, await ev(wache, { ende: true }));
+                        await L.zelle(null);
+                    }
+                    const b = L.bilder(zelle);
+                    return Object.assign(w, { lauf, bilder: b.length, p95: L.p95(b.map((x) => x.dt)) });
+                };
+                const RESERVE = 22; // der Rückweg an den Start und die Preis-Pose (die Frist der Probe riss sonst: UNGEMESSEN)
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                const meta = await L.ev("return { saat: r.state.worldMeta && r.state.worldMeta.seed, tag: r.state.worldMeta && r.state.worldMeta.tag };", 20);
+                const z1 = await ev(ziel, { km: 1, a0: 0 });
+                L.zeile("Sprung 1 km: " + JSON.stringify(z1));
+                const spruenge = [];
+                let s1 = null;
+                if (z1) {
+                    s1 = await sprung("sprung-1km", z1, 6, 30, RESERVE);
+                    L.zeile("Ankunft 1 km: " + JSON.stringify(s1));
+                    spruenge.push(s1);
+                }
+                const tat1 = s1 ? "1 km: ganz " + s1.ganz_s + " s (Wanduhr " + s1.wand_s + " s, Loop " + s1.lauf + " s), " + s1.bilder + " Bilder" + (s1.offen ? " · offen " + s1.offen : "") : "kein trockenes Ziel 1 km um den Spieler";
+                await L.je(1, async () => {
+                    if (!s1) throw new Error(tat1);
+                    L.gemessen(1, { ganz_s: s1.ganz_s, frame_p95_ms: s1.p95 }, { erzeugt: z1.km, welt: { bilder: s1.bilder, weg_m: s1.weg_m }, taeter: tat1 });
+                });
+                await L.je(2, async () => {
+                    if (!s1) throw new Error(tat1);
+                    L.gemessen(2, { ganz_s: s1.ganz_s, frame_p95_ms: s1.p95 }, { erzeugt: z1.km, welt: { bilder: s1.bilder, weg_m: s1.weg_m }, taeter: tat1 });
+                });
+                // S3: ein Sprung 10–30 km, wenn die Frist ihn und den Rückweg trägt
+                let s3 = null;
+                if (L.rest() > RESERVE + 16) {
+                    const km = 10 + Math.round((Date.now() % 997) / 50);
+                    const z3 = await ev(ziel, { km, a0: 1.1 });
+                    if (z3) {
+                        s3 = await sprung("sprung-fern", z3, 4, 8, RESERVE);
+                        s3.km = km;
+                        L.zeile("Ankunft " + km + " km: " + JSON.stringify(s3));
+                        spruenge.push(s3);
+                    }
+                }
+                // zurück an den Start (die Preis-Pose stellt danach den Messort)
+                if (z1) {
+                    const heim = await sprung("sprung-heim", { x: z1.von[0], z: z1.von[1] }, 4, 12, 7);
+                    L.zeile("zurück am Start: " + JSON.stringify(heim));
+                }
+                await L.je(3, async () => {
+                    if (!s3) return L.umfang(3, 0, "die Leiter trug nach dem 1-km-Sprung keinen Sprung 10–100 km in ihrer Frist (" + Math.round(L.rest()) + " s Rest)");
+                    L.gemessen(3, { ganz_p95_s: s3.ganz_s, frame_p95_ms: s3.p95 }, { erzeugt: 1, welt: { bilder: s3.bilder, weg_m: s3.weg_m, weg_km: s3.weg_m / 1000 }, taeter: s3.km + " km: ganz " + s3.ganz_s + " s (Wanduhr " + s3.wand_s + " s)" + (s3.offen ? " · offen " + s3.offen : "") });
+                });
+                await L.je(4, async () => L.umfang(4, spruenge.length, "die Probe sprang " + spruenge.length + "-mal binnen 30 km; der Grund ist eine Ebene ohne Planeten-Koordinate (foundry-core.js:284 rechnet die Kugel nur für den Himmel)"));
+                await L.je(5, async () => L.umfang(5, 1, "die Sitzung hält eine Epoche (Tag " + meta.tag + " der Welt " + meta.saat + "), kein Sprung in eine andere Zeit"));
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält einen Planeten (" + meta.saat + ")"));
+                await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält einen Stern (" + meta.saat + ")"));
+                await L.je(8, async () => L.umfang(8, spruenge.length, "die Probe sprang " + spruenge.length + "-mal in ihrer Frist (sek 60)"));
+            },
+        })
+    );
+
+    // ─────────── same.massstab.physik — Physik über den Maßstab ───────────
+    // S1 trägt die Station g6 (bestehend). Gezählt: die Spanne der Größen der Werke an der Mess-Wiese (die Hülle der Teile × Skala, die
+    // größte Kante) in Größenordnungen — der Umfang von S2 und S6; Tropfen, Bahn und Gezeiten fehlen dem Löser beim Namen.
+    LEITERN.push(
+        leiter({
+            leiter: "same.massstab.physik",
+            sek: 30,
+            pfad: ["scripts/werkbank.cjs", "stamm/bau-buch.js", "stamm/koerper-frei.js", "stamm/wasser-zellen.js", "stamm/wasser-hydro.js"],
+            bestehend: [1],
+            welt: [{ wort: "koerper", ab: 1, was: "Körper der Welt, die die Messung bewegt" }],
+            sprossen: {
+                2: {
+                    soll: [{ wort: "endtempo_abw_pct", richtung: "≤", wert: 20, wortlaut: "Endgeschwindigkeit eines 5-mm-Körpers ±20 % gegen ~6 m/s", feld: "richter" }],
+                    umfang: { verlangt: 3, einheit: "Größenordnungen der Werke an der Pose", wortlaut: "3 (Ameise bis Haus)", feld: "umfang" },
+                },
+                3: { soll: [{ wort: "bond_abw_pct", richtung: "≤", wert: 15, wortlaut: "Tropfenform gegen Bond-Zahl ±15 %", feld: "richter" }] },
+                4: { soll: [{ wort: "kepler_abw_pct", richtung: "≤", wert: 1, wortlaut: "Umlaufzeit gegen Kepler ±1 %", feld: "richter" }] },
+                5: {
+                    soll: [
+                        { wort: "tide_abw_pct", richtung: "≤", wert: 5, wortlaut: "Tidenhub-Periode ±5 %", feld: "richter" },
+                        { wort: "abplattung_abw_pct", richtung: "≤", wert: 10, wortlaut: "Abplattung ±10 %", feld: "richter" },
+                    ],
+                },
+                6: {
+                    soll: [{ wort: "band_pct", richtung: "≥", wert: 90, wortlaut: "im Band der dimensionslosen Gesetze ≥ 90 %", feld: "richter" }],
+                    umfang: { verlangt: 12, einheit: "Größenordnungen der Werke an der Pose", wortlaut: "über 12 Größenordnungen", feld: "richter" },
+                },
+            },
+            lauf: async function massPhysikLauf(H, P, L) {
+                // die Größen der Werke binnen 120 m: die größte Kante der Hülle ihrer Teile × Skala
+                function groessen(r) {
+                    const s = r.state, bp = s.blueprints || {}, p = s.playerMesh.position;
+                    let mn = Infinity, mx = 0, n = 0, mnTyp = null, mxTyp = null;
+                    for (const e of s.architectures || []) {
+                        const b = bp[e.type];
+                        if (!b || !Array.isArray(b.parts) || !b.parts.length || Math.hypot(e.position.x - p.x, e.position.z - p.z) > 120) continue;
+                        let [x0, y0, z0, x1, y1, z1] = [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity];
+                        for (const t of b.parts) {
+                            const a = r._partWorldAABB(t);
+                            if (!a) continue;
+                            [x0, y0, z0] = [Math.min(x0, a.min.x), Math.min(y0, a.min.y), Math.min(z0, a.min.z)];
+                            [x1, y1, z1] = [Math.max(x1, a.max.x), Math.max(y1, a.max.y), Math.max(z1, a.max.z)];
+                        }
+                        const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+                        const g = Math.max(x1 - x0, y1 - y0, z1 - z0) * sc;
+                        if (!(g > 0)) continue;
+                        n++;
+                        if (g < mn) [mn, mnTyp] = [g, e.type];
+                        if (g > mx) [mx, mxTyp] = [g, e.type];
+                    }
+                    return { n, min_m: n ? +mn.toPrecision(3) : null, max_m: n ? +mx.toPrecision(3) : null, mnTyp, mxTyp, ordnungen: n ? Math.round(100 * Math.log10(mx / mn)) / 100 : 0 };
+                }
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                const g = await L.ev("return (" + groessen + ")(r);", 30);
+                L.zeile("Größen der Werke binnen 120 m: " + JSON.stringify(g));
+                const spanne = g.n + " Werke binnen 120 m spannen " + g.ordnungen + " Größenordnungen (" + g.min_m + " m " + g.mnTyp + " bis " + g.max_m + " m " + g.mxTyp + ")";
+                await L.je(2, async () => {
+                    if (g.ordnungen < P.sprossen[2].umfang.verlangt) return L.umfang(2, g.ordnungen, spanne);
+                    L.leser(2, "Endgeschwindigkeit: der Löser kennt keinen Luftwiderstand, ein 5-mm-Körper fällt ohne Grenze (stamm/koerper-frei.js:421 `_freiSchritt`) — " + spanne, g.ordnungen);
+                });
+                await L.je(3, async () => L.leser(3, "Tropfenform: das Zellen-Wasser trägt keine Oberflächenspannung, kein Leser nennt die Form eines Tropfens (stamm/wasser-zellen.js:1641 `_tickWaterCA`)"));
+                await L.je(4, async () => L.leser(4, "Umlauf: der Löser kennt nur die Schwere der Ebene, keine Zentralkraft eines Körpers (stamm/koerper-frei.js:421 `_freiSchritt`)"));
+                await L.je(5, async () => L.leser(5, "Gezeiten und Abplattung: der Spiegel ist eine Funktion des Orts ohne Zeit (stamm/wasser-hydro.js:57 `_waterLevelAt`), der Planet trägt keine Drehung"));
+                await L.je(6, async () => L.umfang(6, g.ordnungen, spanne));
+            },
+        })
+    );
+}
+
+// ═══════════════════════════════════════ Perspektive gedaechtnis ═══════════════════════════════════════
+{
+    // ─────────── same.gedaechtnis.alter — Alter des Gebauten ───────────
+    // S1/S2 an der vollen Stadt: die Albedo der gebauten Werke binnen 60 m (Lehre 19: Ecken-Farbe × Stoff-Farbe × Instanz-Farbe des
+    // Bau-Satzes, der Host-Baupläne `g:` und der Bau-Teile mit `userData.stoff`) je LAGE der Fläche — oben, nord (−z), Wetterseite (gegen den Zug der Fronten,
+    // `_alterWind`, dieselbe Richtung, die der Kern `_alterLage` liest) —, zweimal vorher (das Rauschen), dann springt die Welt-Uhr der
+    // Prozesse um 30 Tage über den Weg, den das Spiel für eine spätere Uhr hat (`_weltUhrNimm`: Stand und Mitspieler; das Alter liest
+    // `_weltTag`, nie die Uhr des Spielers — `setTimeOfDay` altert seit w28-lava-nachlauf nichts), der Loop des Spiels legt die gealterten
+    // Ecken (`_tickWerkAlter`), und die Albedo wird neu gelesen. S2: weiter bis 1 Jahr, das Bild an der Pose. S3–S8 zählen die Welt.
+    LEITERN.push(
+        leiter({
+            leiter: "same.gedaechtnis.alter",
+            sek: 60,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "stamm/siedlung-satz.js", "stamm/siedlung-bauten.js", "stamm/bau-teile.js", "stamm/dirigent-takt.js", "stamm/dirigent-regler.js", "stamm/feld-leben.js", "stamm/bau-buch.js", "stamm/siedlung-ort.js"],
+            welt: [
+                { wort: "tage", ab: 30, was: "Tage, die die Welt-Uhr der Prozesse im Lauf sprang" },
+                { wort: "werke", ab: 1, was: "Werke binnen 60 m mit alterndem Stoff" },
+            ],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "albedo_delta", richtung: "≥", wert: 0.02, wortlaut: "Δ Albedo ≥ 0,02", feld: "richter" },
+                        { wort: "seiten_delta", richtung: "≥", wert: 0.02, wortlaut: "Δ Albedo ≥ 0,02, Nord- und Wetterseite verschieden", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 3, einheit: "alternde Stoffe in einem Werk", wortlaut: "1 Werk, 3 Stoffe", feld: "umfang" },
+                },
+                2: {
+                    auge: {
+                        pose: "stadt-voll third · die Werke am Markt nach einem Sprung der Welt-Uhr der Prozesse um 1 Jahr (365 d)",
+                        vorbild: "Fotos derselben Stoffe nach einem Jahr: Holz vergraut, Eisen rostet nur im Regen, Moos nord, Flechte oben, Algen im Regenlauf (Soll-Farbe je Schicht)",
+                    },
+                },
+                3: {
+                    soll: [{ wort: "gleich_alt_pct", richtung: "≥", wert: 60, wortlaut: "≥ 60 % schätzen gleich alt", feld: "richter" }],
+                    umfang: { verlangt: 1e4, einheit: "Werke der Welt", wortlaut: "(10⁴ Werke)", feld: "umfang" },
+                },
+                4: {
+                    soll: [{ wort: "faktor", richtung: "≤", wert: 2, wortlaut: "Fehler ≤ Faktor 2", feld: "richter" }],
+                    umfang: { verlangt: 1e5, einheit: "Werke der Welt", wortlaut: "(10⁵ Werke)", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "stehend_pct", richtung: "≥", wert: 80, wortlaut: "im Ingenieurs-Band ≥ 80 %", feld: "richter" }],
+                    umfang: { verlangt: 50, einheit: "Stoff-Saaten", wortlaut: "N = 50 Stoff-Saaten", feld: "richter" },
+                },
+                6: {
+                    soll: [
+                        { wort: "verwechslung_pct", richtung: "≥", wert: 50, wortlaut: "≥ 50 % Verwechslung", feld: "richter" },
+                        { wort: "klima_pct", richtung: "≥", wert: 70, wortlaut: "Panel ordnet Klimazone ≥ 70 %", feld: "richter" },
+                        { wort: "laden_s", richtung: "≤", wert: 5, wortlaut: "Ruinenstadt lädt ≤ 5 s", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "Werke der Welt", wortlaut: "(10⁶–10⁷ Werke)", feld: "umfang" },
+                },
+                7: { soll: [{ wort: "gefunden_pct", richtung: "≥", wert: 60, wortlaut: "Panel findet ≥ 60 % der verschwundenen Siedlungen", feld: "richter" }] },
+                8: {
+                    soll: [{ wort: "typ_pct", richtung: "≥", wert: 70, wortlaut: "Panel liest den Planeten-Typ aus der Ruine ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 50, einheit: "Planeten", wortlaut: "N = 50 Planeten", feld: "richter" },
+                },
+            },
+            lauf: async function alterLauf(H, P, L) {
+                const ev = (f, a, s) => L.ev("return await (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 30);
+                // die Werke binnen R: je Werk die alternden Stoffe seiner Teile (die Zeile der Stoff-Tafel mit Schichten `alter`)
+                function werkStoffe(r, o) {
+                    const s = r.state, P = s.playerMesh.position, M = s.materials || {}, bp = s.blueprints || {}, wm = s.worldMeta || {};
+                    const memo = new Map();
+                    const altert = (n) => {
+                        if (!memo.has(n)) {
+                            const z = M[n] ? r._stoff(n) : null;
+                            memo.set(n, !!(z && Array.isArray(z.alter) && z.alter.length));
+                        }
+                        return memo.get(n);
+                    };
+                    let werke = 0, max = 0, typ = null;
+                    for (const e of s.architectures || []) {
+                        if (!e || !e.position || Math.hypot(e.position.x - P.x, e.position.z - P.z) > o.R) continue;
+                        const b = bp[e.type];
+                        if (!b || !Array.isArray(b.parts)) continue;
+                        const set = new Set();
+                        for (const t of b.parts) if (t && typeof t.material === "string" && altert(t.material)) set.add(t.material);
+                        if (set.size) werke++;
+                        if (set.size > max) [max, typ] = [set.size, e.type + " (" + [...set].join(", ") + ")"];
+                    }
+                    // die Studio-Werke im Bau-Satz: je Rezept die Stoffe seiner alternden Gruppen (`_satzAlter`, WERK_ALTER.seh)
+                    const jeRezept = new Map();
+                    for (const g of (s.archInstanceGroups || new Map()).values()) {
+                        if (!g || !g.satz || !(g.liveCount > 0) || !g.mesh || !g.mesh.instanceMatrix) continue;
+                        const im = g.mesh.instanceMatrix.array;
+                        if (Math.hypot(im[12] - P.x, im[14] - P.z) > o.R || !r._satzAlter(g)) continue;
+                        const pre = /^f:([^|]+)\|/.exec(String(g.key)), u = g.mesh.material && g.mesh.material.userData;
+                        const name = u && u.foundryMp ? AnazhRealm.WERK_ALTER.seh[u.foundryMp.seh] : null;
+                        if (!pre || !name) continue;
+                        if (!jeRezept.has(pre[1])) jeRezept.set(pre[1], new Set());
+                        jeRezept.get(pre[1]).add(name);
+                    }
+                    for (const [k, set] of jeRezept) if (set.size > max) [max, typ] = [set.size, k + " (" + [...set].join(", ") + ")"];
+                    werke += jeRezept.size;
+                    const teil = r._gelaende().ort.teil;
+                    return {
+                        werke, max, typ, alle: (s.architectures || []).length, siedlungen: Object.keys(wm.settlementCells || {}).length,
+                        saat: wm.seed, planet: r._planetSamen(), zeitMa: teil && Number.isFinite(teil.zeitMa) ? teil.zeitMa : 0,
+                        tag: r._weltTag(), wind: r._alterWind(),
+                    };
+                }
+                // die Albedo der gebauten Werke binnen R je Klasse und Lage (die Vertex-Farbe × Stoff-Farbe × Instanz-Farbe, Lehre 19)
+                function lies(r, o) {
+                    const s = r.state, P = s.playerMesh.position;
+                    const w0 = r._alterWind(), wl = Math.hypot(w0.x, w0.z) || 1, gx = w0.x / wl, gz = w0.z / wl;
+                    const aus = {};
+                    const c = new T.Color(), n = new T.Vector3(), p = new T.Vector3(), nm = new T.Matrix3(), im = new T.Matrix4(), wm = new T.Matrix4();
+                    const sammle = (kl, lage, rgb) => {
+                        const e = aus[kl] || (aus[kl] = {});
+                        const q = e[lage] || (e[lage] = [0, 0, 0, 0]);
+                        q[0] += rgb[0];
+                        q[1] += rgb[1];
+                        q[2] += rgb[2];
+                        q[3]++;
+                    };
+                    s.scene.traverse((m) => {
+                        if (!m.isMesh || !m.visible || !m.geometry || !m.geometry.attributes.normal) return;
+                        // nur Gebautes: der Bau-Satz (Häuser, Ausstattung, Tore in Welt-Lage, `userData.bauSatz`), die Host-Baupläne `g:` und
+                        // die Bau-Teile mit Stoff — nie Boden, Streu oder Baum (deren Bild ändert der Sprung über Saison und Nachwuchs)
+                        const u = m.userData || {};
+                        const kl = u.bauSatz ? "satz:" + (m.name || u.bauSatz) : u.stoff ? "stoff:" + u.stoff : r._taeterKlasse(m);
+                        if (!(u.bauSatz || u.stoff || /^g:/.test(kl))) return;
+                        const g = m.geometry, pos = g.attributes.position, nor = g.attributes.normal, col = g.attributes.color;
+                        const mc = m.material && !Array.isArray(m.material) && m.material.color ? m.material.color : c.setRGB(1, 1, 1);
+                        const inst = m.isInstancedMesh ? Math.min(m.count, 64) : 1;
+                        for (let i = 0; i < inst; i++) {
+                            if (m.isInstancedMesh) m.getMatrixAt(i, im), wm.multiplyMatrices(m.matrixWorld, im);
+                            else wm.copy(m.matrixWorld);
+                            if (m.isInstancedMesh && Math.hypot(wm.elements[12] - P.x, wm.elements[14] - P.z) > o.R) continue;
+                            nm.getNormalMatrix(wm);
+                            const ic = m.isInstancedMesh && m.instanceColor ? [m.instanceColor.getX(i), m.instanceColor.getY(i), m.instanceColor.getZ(i)] : [1, 1, 1];
+                            const schritt = m.isInstancedMesh ? Math.max(1, Math.floor(pos.count / 400)) : Math.max(1, Math.floor(pos.count / 200000));
+                            for (let v = 0; v < pos.count; v += schritt) {
+                                if (!m.isInstancedMesh && (p.fromBufferAttribute(pos, v).applyMatrix4(wm), Math.hypot(p.x - P.x, p.z - P.z) > o.R)) continue;
+                                n.fromBufferAttribute(nor, v).applyMatrix3(nm).normalize();
+                                const lagen = [];
+                                if (n.y > 0.7) lagen.push("oben");
+                                else if (Math.abs(n.y) < 0.3) {
+                                    if (n.z < -0.5) lagen.push("nord");
+                                    if (-(n.x * gx + n.z * gz) > 0.5) lagen.push("wetter");
+                                }
+                                if (!lagen.length) continue;
+                                const vc = col ? [col.getX(v), col.getY(v), col.getZ(v)] : [1, 1, 1];
+                                const rgb = [vc[0] * mc.r * ic[0], vc[1] * mc.g * ic[1], vc[2] * mc.b * ic[2]];
+                                for (const l of lagen) sammle(kl, l, rgb);
+                            }
+                        }
+                    });
+                    for (const e of Object.values(aus)) for (const [l, q] of Object.entries(e)) e[l] = q[3] ? [q[0] / q[3], q[1] / q[3], q[2] / q[3], q[3]] : null;
+                    return { je: aus, tag: r._weltTag() };
+                }
+                // DER SPRUNG der Welt-Uhr der Prozesse um `tage` (+ 1 s: nie weicher als die Karte) über den Weg des Spiels für eine spätere Uhr
+                function sprung(r, o) {
+                    const s = r.state, t0 = r._weltTag();
+                    r._weltUhrNimm(s.spielZeit + o.tage * AnazhRealm.PEGEL_TAG_S + 1);
+                    return { vor: t0, nach: r._weltTag() };
+                }
+                function offen(r) {
+                    return {
+                        gelaufen: r._werkAlterTag === Math.floor(r._weltTag()),
+                        werke: r._werkAltertOffen ? r._werkAltertOffen.size : 0,
+                        satz: r._satzAltertOffen ? r._satzAltertOffen.length : 0,
+                    };
+                }
+                // der Loop des Spiels legt die gealterten Ecken: Scheiben von 1 s, bis der Tag gelaufen ist und nichts mehr wartet
+                const altern = async (bis) => {
+                    let o = null, n = 0;
+                    while (n < bis) {
+                        await L.wb("/lauf", { sek: 1, ein: 0 }, 61);
+                        n++;
+                        o = await ev(offen);
+                        if (o.gelaufen && !o.werke && !o.satz) break;
+                    }
+                    return Object.assign(o || {}, { lauf_s: n });
+                };
+                const d = (a, b) => (a && b ? Math.max(Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1]), Math.abs(b[2] - a[2])) : null);
+                const r4 = (v) => (Number.isFinite(v) ? Math.round(v * 1e4) / 1e4 : null);
+                // je Klasse: Δ je Lage (≥ 20 Ecken) über dem Rauschen der Klasse; die Seiten: |Δ nord − Δ wetter|
+                const vergleich = (vor, zwei, nach) => {
+                    let albedo = null, seiten = null, wo = null, wos = null;
+                    for (const kl of Object.keys(vor.je)) {
+                        const a = vor.je[kl], b = nach.je[kl], z = zwei.je[kl] || {};
+                        if (!b) continue;
+                        const rausch = Math.max(0, ...Object.keys(a).map((l) => d(a[l], z[l]) || 0));
+                        const D = {};
+                        for (const l of ["oben", "nord", "wetter"]) if (a[l] && b[l] && a[l][3] >= 20) D[l] = d(a[l], b[l]);
+                        for (const l of Object.keys(D)) if (albedo === null || D[l] - rausch > albedo) [albedo, wo] = [D[l] - rausch, kl + " " + l + " Δ " + r4(D[l]) + " (Rauschen " + r4(rausch) + ")"];
+                        if ("nord" in D && "wetter" in D) {
+                            const sd = Math.abs(D.nord - D.wetter);
+                            if (seiten === null || sd > seiten) [seiten, wos] = [sd, kl + " nord Δ " + r4(D.nord) + " · wetter Δ " + r4(D.wetter)];
+                        }
+                    }
+                    return { albedo: r4(albedo), seiten: r4(seiten), wo, wos, klassen: Object.keys(vor.je).length };
+                };
+                await L.ort("stadt-voll", "third");
+                L.preisPose("stadt-voll", "third");
+                const w = await ev(werkStoffe, { R: 60 });
+                L.zeile("Werke und Welt der Sitzung: " + JSON.stringify(w));
+                // S3–S8: die Welt zählt
+                const formOhne = "das Alter färbt nur Ecken (stamm/siedlung-satz.js:913 `_werkAlterFaerbe`), kein Gesetz ändert die Gestalt eines Werks";
+                await L.je(3, async () => {
+                    if (w.alle < P.sprossen[3].umfang.verlangt) return L.umfang(3, w.alle, "die Welt trägt " + w.alle + " Werke");
+                    L.leser(3, "Gebrauch und wachsender Schaden: kein Leser der Nutzung (Schwelle, Ruß, Rostfahne), die Stufe des Alters sättigt (1 − e^−t, stamm/siedlung-satz.js:825 `_werkAlterStufe`)", w.alle);
+                });
+                await L.je(4, async () => {
+                    if (w.alle < P.sprossen[4].umfang.verlangt) return L.umfang(4, w.alle, "die Welt trägt " + w.alle + " Werke");
+                    L.leser(4, "Dach, Fenster, Schutt: " + formOhne, w.alle);
+                });
+                await L.je(5, async () => L.umfang(5, 1, "die Sitzung hält eine Saat (" + w.saat + ") und damit eine Stoff-Tafel; dahinter fehlt der Bruch am Alter (stamm/siedlung-satz.js:800 `_werkAlterOv` treibt nur den Regler `verwitterung`)"));
+                await L.je(6, async () => {
+                    if (w.alle < P.sprossen[6].umfang.verlangt) return L.umfang(6, w.alle, "die Welt trägt " + w.alle + " Werke");
+                    L.leser(6, "Ruinenfeld: " + formOhne, w.alle);
+                });
+                await L.je(7, async () => L.leser(7, "verschwundene Siedlung: eine Siedlung wird einmal in ihre Zelle geschrieben und vergeht nie (stamm/siedlung-ort.js:2020 `settlementCells`) — die Welt trägt " + w.siedlungen + " Siedlungen"));
+                await L.je(8, async () => L.umfang(8, 1, "die Sitzung hält einen Planeten (Samen " + w.planet + "), keine fremde Umwelt"));
+                // S1: vorher zweimal, 30 Tage, nachher
+                let nach30 = null, s30 = null, a30 = null, vor = null;
+                await L.je(1, async () => {
+                    if (L.rest() < 26) throw new Error("die Frist trägt die 30 Tage nicht mehr: " + Math.round(L.rest()) + " s Rest nach dem Ort");
+                    vor = await ev(lies, { R: 60 });
+                    const zwei = await ev(lies, { R: 60 });
+                    s30 = await ev(sprung, { tage: 30 });
+                    a30 = await altern(6);
+                    nach30 = await ev(lies, { R: 60 });
+                    const v = vergleich(vor, zwei, nach30);
+                    L.zeile("Alter 30 d: Sprung " + JSON.stringify(s30) + " · Loop " + JSON.stringify(a30) + " · " + JSON.stringify(v));
+                    const tage = r4(s30.nach - s30.vor);
+                    L.gemessen(1, { albedo_delta: v.albedo, seiten_delta: v.seiten }, {
+                        erzeugt: w.max,
+                        welt: { tage, werke: w.werke },
+                        taeter: "größtes Δ " + (v.wo || "keines") + " · Seiten " + (v.wos || "keine Klasse mit Nord- und Wetterseite") + " · " + v.klassen + " Klassen · reichstes Werk " + (w.typ || "keines") + (a30.gelaufen && !a30.werke && !a30.satz ? "" : " · nach " + a30.lauf_s + " s Loop warteten " + a30.werke + " Werke, " + a30.satz + " Sätze"),
+                    });
+                });
+                // S2: weiter bis 1 Jahr, das Bild an der Pose (die Zahlen daneben)
+                await L.je(2, async () => {
+                    if (!s30) throw new Error("der 30-Tage-Sprung (S1) lief nicht");
+                    if (L.rest() < 24) throw new Error("die Frist trägt das Jahr nicht mehr: " + Math.round(L.rest()) + " s Rest");
+                    const s365 = await ev(sprung, { tage: 335 });
+                    const a365 = await altern(4);
+                    const nach365 = await ev(lies, { R: 60 });
+                    const v = vergleich(vor, vor, nach365);
+                    L.zeile("Alter 1 a: Sprung " + JSON.stringify(s365) + " · Loop " + JSON.stringify(a365) + " · " + JSON.stringify(v));
+                    await L.auge(2, { werte: { albedo_delta_1a: v.albedo, seiten_delta_1a: v.seiten, tage: r4(s365.nach - s30.vor) } });
+                });
+            },
+        })
+    );
+
+    // ─────────── same.gedaechtnis.pfad — Spur des Gangs ───────────
+    // S1 trägt die Station g1 (bestehend). S2 an der vollen Stadt: die Zellen des Trampelpfads (`worldMeta.tritt`, die Stufe der Zelle heute
+    // > 0: `_trittStufe`, der Pfad, den der Boden zeigt und Wiese und Streu lesen) binnen 400 m der Siedlung, und je Zelle, ob sie auf einer
+    // Kürzesten-Weg-Linie zwischen den Zielen eines Bewohners liegt (die Gerade zwischen Tür, Werk, Mahl, Abend, Platz — `b.orte`), binnen
+    // der Halbbreite der Spur + Zelle + `BEWOHNER.spurM`. Die Spieltage sind die Welt-Uhr der Prozesse seit dem Anfang der Welt.
+    LEITERN.push(
+        leiter({
+            leiter: "same.gedaechtnis.pfad",
+            sek: 30,
+            pfad: ["scripts/werkbank.cjs", "stamm/siedlung-wege.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "stamm/feld-leben.js"],
+            bestehend: [1],
+            welt: [{ wort: "pfad_zellen", ab: 1, was: "Zellen, die die Leiber der Welt zum Pfad traten" }],
+            sprossen: {
+                2: {
+                    soll: [
+                        { wort: "pfad_pct", richtung: "≥", wert: 70, wortlaut: "Pfad-Pixel auf Kürzesten-Weg-Linien zwischen Zielen ≥ 70 %", feld: "richter" },
+                        { wort: "leiber", richtung: "≥", wert: 100, wortlaut: "~10² Leiber eines Dorfs", feld: "umfang" },
+                    ],
+                    umfang: { verlangt: 30, einheit: "Spieltage Gang der Leiber", wortlaut: "nach 30 Spieltagen", feld: "richter" },
+                },
+                3: {
+                    auge: { pose: "stadt-voll · Luftbild über dem Platz", vorbild: "Luftbilder echter Parks: Netzform, Knotengrad, Abkürzungs-Anteil" },
+                    umfang: { verlangt: 1e4, einheit: "Leiber und Fahrzeuge der Stadt", wortlaut: "10⁴ Leiber und Fahrzeuge", feld: "umfang" },
+                },
+                4: {
+                    soll: [
+                        { wort: "hohlweg_min_m", richtung: "≥", wert: 0.5, wortlaut: "Hohlweg-Tiefe nach 100 a im Band 0,5–3 m", feld: "richter" },
+                        { wort: "hohlweg_max_m", richtung: "≤", wert: 3, wortlaut: "Hohlweg-Tiefe nach 100 a im Band 0,5–3 m", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "Leiber der Welt", wortlaut: "10⁶ Leiber", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "ueberdeckung_pct", richtung: "≥", wert: 60, wortlaut: "Überdeckung ≥ 60 %", feld: "richter" }],
+                    umfang: { verlangt: 30, einheit: "Saaten", wortlaut: "N = 30 Saaten", feld: "richter" },
+                },
+                6: {
+                    soll: [{ wort: "erkannt_pct", richtung: "≥", wert: 70, wortlaut: "Panel erkennt Fernrouten in ≥ 70 % der Saaten", feld: "richter" }],
+                    umfang: { verlangt: 1e9, einheit: "Leiber der Welt", wortlaut: "10⁹–10¹⁰ Leiber", feld: "umfang" },
+                },
+            },
+            lauf: async function pfadLauf(H, P, L) {
+                function pfade(r, o) {
+                    const s = r.state, A = AnazhRealm, TR = A.TRITT, p = s.playerMesh.position, wm = s.worldMeta || {};
+                    let S = null, dS = Infinity, leiberAlle = 0;
+                    const zahl = (X) => (X.liste ? X.liste.length : X.plan && X.plan.slots ? X.plan.slots.length : 0);
+                    for (const X of (r._bewohnerSiedlungen || new Map()).values()) {
+                        leiberAlle += zahl(X);
+                        const dd = Math.hypot(X.ox - p.x, X.oz - p.z);
+                        if (dd < dS) [S, dS] = [X, dd];
+                    }
+                    // die Kürzesten-Weg-Linien: je Bewohner die Geraden zwischen seinen Zielen
+                    const seg = new Map();
+                    for (const b of (S && S.liste) || []) {
+                        const q = b && b.orte;
+                        if (!q) continue;
+                        const pts = ["tuer", "werk", "mahl", "abend", "platz"].map((k) => q[k]).filter((t) => t && Number.isFinite(t.x) && Number.isFinite(t.z));
+                        for (let i = 0; i < pts.length; i++)
+                            for (let j = i + 1; j < pts.length; j++) {
+                                const [a, e] = [pts[i], pts[j]];
+                                if (a.x === e.x && a.z === e.z) continue;
+                                seg.set([a.x, a.z, e.x, e.z].map((v) => v.toFixed(1)).join(","), [a.x, a.z, e.x, e.z]);
+                            }
+                    }
+                    const linien = [...seg.values()];
+                    const nah = TR.halbM + TR.zelleM + A.BEWOHNER.spurM;
+                    const ab = (x, z, l) => {
+                        const [ax, az, bx, bz] = l, vx = bx - ax, vz = bz - az, L2 = vx * vx + vz * vz;
+                        const t = L2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * vx + (z - az) * vz) / L2)) : 0;
+                        return Math.hypot(x - ax - t * vx, z - az - t * vz);
+                    };
+                    const [cx, cz] = S ? [S.ox, S.oz] : [p.x, p.z];
+                    const jetzt = r._trittJetzt(), F = wm.tritt || {};
+                    let zellen = 0, auf = 0;
+                    for (const key in F) {
+                        const [n, t] = F[key];
+                        if (!(A._trittStufe(n * Math.exp(-(jetzt - t) / TR.erholTage)) > 0)) continue;
+                        const [i, j] = key.split(",").map(Number);
+                        const x = (i + 0.5) * TR.zelleM, z = (j + 0.5) * TR.zelleM;
+                        if (Math.hypot(x - cx, z - cz) > o.R) continue;
+                        zellen++;
+                        for (const l of linien)
+                            if (ab(x, z, l) <= nah) {
+                                auf++;
+                                break;
+                            }
+                    }
+                    const wagen = (s.architectures || []).filter((e) => e && /^fahrzeug_/.test(e.type)).length;
+                    return {
+                        siedlung: S && S.key, abstand: Math.round(dS), leiber: S ? zahl(S) : 0, leiberAlle, wagen, linien: linien.length, nah,
+                        zellen, auf, pct: zellen ? Math.round((1000 * auf) / zellen) / 10 : null, tage: Math.round((100 * (s.spielZeit || 0)) / A.PEGEL_TAG_S) / 100, saat: wm.seed,
+                    };
+                }
+                await L.ort("stadt-voll", "third");
+                L.preisPose("stadt-voll", "third");
+                const z = await L.ev("return (" + pfade + ")(r, { R: 400 });", 30);
+                L.zeile("Trampelpfad der Stadt: " + JSON.stringify(z));
+                await L.je(2, async () =>
+                    L.gemessen(2, { pfad_pct: z.pct, leiber: z.leiber }, {
+                        erzeugt: z.tage,
+                        welt: { pfad_zellen: z.zellen },
+                        taeter: z.auf + " von " + z.zellen + " Pfad-Zellen binnen 400 m der Siedlung " + z.siedlung + " auf " + z.linien + " Geraden zwischen den Zielen ihrer " + z.leiber + " Bewohner (± " + z.nah + " m) · Welt-Uhr " + z.tage + " Spieltage",
+                    })
+                );
+                const alle = z.leiberAlle + z.wagen;
+                await L.je(3, async () => {
+                    if (alle < P.sprossen[3].umfang.verlangt) return L.umfang(3, alle, "die Welt trägt " + z.leiberAlle + " Bewohner und " + z.wagen + " Wagen");
+                    L.leser(3, "Spurrillen und Wildwechsel: der Tritt zählt Leiber, kein Rad (stamm/siedlung-wege.js:1638 `_trittDerLeiber`)", alle);
+                });
+                await L.je(4, async () => {
+                    if (z.leiberAlle < P.sprossen[4].umfang.verlangt) return L.umfang(4, z.leiberAlle, "die Welt trägt " + z.leiberAlle + " Bewohner");
+                    L.leser(4, "Hohlweg und Belag: der Tritt malt Erde in die Wege-Karte, er senkt keinen Grund und legt keinen Kies (stamm/siedlung-wege.js:1655 `_tritt`)", z.leiberAlle);
+                });
+                await L.je(5, async () => L.umfang(5, 1, "die Sitzung hält eine Saat (" + z.saat + "); dahinter liest das Wegenetz keinen Tritt (stamm/siedlung-ort.js:3231 `_wegeNetzGrund`)"));
+                await L.je(6, async () => L.umfang(6, z.leiberAlle, "die Welt trägt " + z.leiberAlle + " Bewohner auf einem Planeten (Saat " + z.saat + ")"));
+            },
+        })
+    );
+
+    // ─────────── same.gedaechtnis.schicht — Kulturschichten ───────────
+    // S1 an der Mess-Wiese: der Spieler gräbt eine Grube 4 m vor sich (die DSL-Op des Spiels `voxel_carve`, r 1,5 m, Mitte 1 m unter dem
+    // Grund), die Wand neben ihr wird von oben bis zur Sohle in 10-cm-Schritten nach ihrem Stoff gefragt (`_terrainMaterialAt` mit Tiefe —
+    // „die Farbe, die der Spieler sieht, bleibt das Material, das er bekommt“), dann füllt er sie wieder (`voxel_fill`). S2–S6 zählen.
+    LEITERN.push(
+        leiter({
+            leiter: "same.gedaechtnis.schicht",
+            sek: 30,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "stamm/feld-dsl.js", "stamm/vegetation-wiese.js", "stamm/gelaende-boden.js", "stamm/siedlung-ort.js", "stamm/feld-leben.js"],
+            welt: [{ wort: "tiefe_m", ab: 1, was: "Tiefe der gegrabenen Grube (m)" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "schichten", richtung: "≥", wert: 3, wortlaut: "≥ 3 unterscheidbare Schichten im Bild", feld: "richter" }],
+                    umfang: { verlangt: 1, einheit: "Grube", wortlaut: "1 Grube an einem Ort", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "rate_min", richtung: "≥", wert: 0.5, wortlaut: "Schichtdicke / Siedlungsdauer im Band 0,5–2 cm/a", feld: "richter" },
+                        { wort: "rate_max", richtung: "≤", wert: 2, wortlaut: "Schichtdicke / Siedlungsdauer im Band 0,5–2 cm/a", feld: "richter" },
+                    ],
+                },
+                3: {
+                    soll: [
+                        { wort: "tell_min_m", richtung: "≥", wert: 10, wortlaut: "Tells wachsen 10–20 m", feld: "tiefe" },
+                        { wort: "tell_max_m", richtung: "≤", wert: 20, wortlaut: "Tells wachsen 10–20 m", feld: "tiefe" },
+                    ],
+                    umfang: { verlangt: 20, einheit: "Siedlungen der Welt", wortlaut: "N = 20", feld: "richter" },
+                },
+                4: {
+                    soll: [
+                        { wort: "mauer_pct", richtung: "≥", wert: 90, wortlaut: "Mauer-Linien ≥ 90 %", feld: "richter" },
+                        { wort: "reihenfolge_pct", richtung: "≥", wert: 95, wortlaut: "Reihenfolge an ≥ 95 % von 100 Orten", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "Epochen übereinander", wortlaut: "10+ Epochen", feld: "umfang" },
+                },
+                5: { soll: [{ wort: "plausibel_pct", richtung: "≥", wert: 90, wortlaut: "plausible Abfolgen ≥ 90 %", feld: "richter" }] },
+                6: {
+                    soll: [{ wort: "horizont_pct", richtung: "≥", wert: 70, wortlaut: "Panel erkennt den Horizont ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Planeten", wortlaut: "auf N = 20 Planeten", feld: "richter" },
+                },
+            },
+            lauf: async function schichtLauf(H, P, L) {
+                const ev = (f, a, s) => L.ev("return await (" + f + ")(r, " + JSON.stringify(a === undefined ? null : a) + ");", s || 30);
+                function grube(r) {
+                    const s = r.state, p = s.playerMesh.position, dv = s.camera.getWorldDirection(new T.Vector3());
+                    const l = Math.hypot(dv.x, dv.z) || 1, [ux, uz] = [dv.x / l, dv.z / l];
+                    const x = p.x + 4 * ux, z = p.z + 4 * uz, g0 = r._voxelSurfaceY(x, z);
+                    if (!Number.isFinite(g0)) return { fehler: "kein Grund 4 m vor dem Spieler" };
+                    const R = 1.5, cy = g0 - 1;
+                    r.dslRun(["voxel_carve", x, cy, z, R], { source: "human" });
+                    const boden = r._voxelSurfaceY(x, z);
+                    // die Wand: die Säule 1,6 m neben der Mitte, quer zum Blick, von ihrem Grund bis zur Tiefe der Sohle
+                    const wx = x - 1.6 * uz, wz = z + 1.6 * ux, gw = r._voxelSurfaceY(wx, wz);
+                    const tief = Math.max(0.2, g0 - boden);
+                    const folge = [];
+                    for (let t = 0.05; t <= tief; t += 0.1) {
+                        const m = r._terrainMaterialAt(wx, wz, gw - t);
+                        if (!folge.length || folge[folge.length - 1][0] !== m) folge.push([m, Math.round(t * 100) / 100]);
+                    }
+                    return { x, z, cy, R, g0, boden, tiefe: Math.round((g0 - boden) * 100) / 100, wand: [wx, wz], folge };
+                }
+                function zaehle(r) {
+                    const teil = r._gelaende().ort.teil, wm = r.state.worldMeta || {};
+                    return {
+                        siedlungen: Object.keys(wm.settlementCells || {}).length, zeitMa: teil && Number.isFinite(teil.zeitMa) ? teil.zeitMa : 0, planet: r._planetSamen(),
+                        steinAb: AnazhRealm.STRATA_STEIN_DEPTH,
+                    };
+                }
+                function zu(r, o) {
+                    r.dslRun(["voxel_fill", o.x, o.cy, o.z, o.R], { source: "human" });
+                    return { boden: r._voxelSurfaceY(o.x, o.z) };
+                }
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                const w = await ev(zaehle);
+                L.zeile("Welt der Sitzung: " + JSON.stringify(w));
+                const g = await ev(grube);
+                L.zeile("Grube: " + JSON.stringify(g));
+                await L.je(1, async () => {
+                    if (g.fehler) throw new Error(g.fehler);
+                    L.gemessen(1, { schichten: g.folge.length }, {
+                        erzeugt: g.tiefe >= 1 ? 1 : 0,
+                        welt: { tiefe_m: g.tiefe },
+                        taeter: "die Wand der Grube (" + g.tiefe + " m) trägt " + g.folge.map((f) => f[0] + " ab " + f[1] + " m").join(" · ") + " — das Material wechselt erst " + w.steinAb + " m unter dem Grund zu Stein (stamm/vegetation-wiese.js:2362 `_terrainMaterialAt`)",
+                    });
+                });
+                if (!g.fehler) {
+                    await L.wb("/lauf", { sek: 1, ein: 0 }, 61);
+                    L.zeile("Grube gefüllt: " + JSON.stringify(await ev(zu, g)));
+                }
+                const saeule = "das Material der Säule ist EINE Achse des Felds bis " + w.steinAb + " m Tiefe (stamm/vegetation-wiese.js:2362 `_terrainMaterialAt`)";
+                await L.je(2, async () => L.leser(2, "Siedlungshügel: kein Gesetz legt Boden nach Siedlungsdauer ab — " + saeule));
+                await L.je(3, async () => {
+                    if (w.siedlungen < P.sprossen[3].umfang.verlangt) return L.umfang(3, w.siedlungen, "die Welt trägt " + w.siedlungen + " Siedlungen");
+                    L.leser(3, "Tell: eine Siedlung wird einmal in ihre Zelle geschrieben, kein Hügel wächst unter ihr (stamm/siedlung-ort.js:2020)", w.siedlungen);
+                });
+                await L.je(4, async () => L.umfang(4, 1, "die Welt der Sitzung steht in einer Epoche (zeitMa " + w.zeitMa + "): die Epoche wechselt nur der Satz reise als eigene Welt (stamm/feld-leben.js:1277)"));
+                await L.je(5, async () => L.leser(5, "Gräber, Horte, Wracks, Tunnel: kein Fund liegt im Boden — " + saeule));
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält einen Planeten (Samen " + w.planet + ")"));
             },
         })
     );
