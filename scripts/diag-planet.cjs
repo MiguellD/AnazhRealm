@@ -1373,7 +1373,7 @@ function gegner2Selbsttest(zeile) {
   zeile('eis.kante Täter', spanne(breitenkreis) === 0 && spanne(welle) > 8, 'Breitenkreis ' + spanne(breitenkreis).toFixed(2) + '° ↔ Welle ' + spanne(welle).toFixed(2) + '°');
 }
 
-// ── Richter welle1 (der Lauf ohne Argument): die Bau-Welle 1 im Kern (Zweig zensus-planet, vision/planet/bahnen.md · welle-1.md) ─────
+// ── Richter welle1 (der Lauf ohne Argument): die Bau-Welle 1 im Kern (Zweig zensus-planet, vision/planet: bahnen, welle-1) ─────
 // Je Bahn die Linse am Kern selbst, sie nennt den Täter beim Namen (die Spike-Proben a–f bleiben der Richter der Bahn). Der Selbsttest
 // lädt den Kern vor der Welle (main WELLE1_BASIS) aus git: an ihm ist jede Zeile ROT.
 //  naht.stetig   B1  Querungen Platte · Scholle · Kruste auf 1 cm (Paare 20 km, Halbierung; erde-01, t = 0, fuss 16): |Δh| > 1 cm
@@ -1495,7 +1495,7 @@ function kostenWasser(Q) { // B3 an der Adresse und am Gitter: Wasser je Adresse
 }
 function welle1Selbsttest(zeile) { // der Kern vor der Welle macht jede Welle-1-Zeile ROT
   let B; try { B = basisKern(); } catch (e) { zeile('welle1.basis', false, 'Kern ' + WELLE1_BASIS + ' nicht lesbar aus git: ' + e.message.split('\n')[0]); return; }
-  // dazu der Schätzer von kosten.platten/radius (G3, 19.11.): main trug +82 % und 1,382 (bahnen.md), an ihm muss er ROT stehen
+  // dazu der Schätzer von kosten.platten/radius (G3, 19.11.): main trug +82 % und 1,382 (Zweig zensus-planet, vision/planet: bahnen), an ihm muss er ROT stehen
   for (const u of [...welle1(B.Q, B.text), ...kostenWasser(B.Q), ...kostenSkala(B.Q)]) zeile(u.name + ' feuert', u.urteil === 'ROT', 'Kern ' + WELLE1_BASIS + ' (' + B.Q.VERSION + '): ' + u.wert);
 }
 

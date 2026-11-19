@@ -1124,7 +1124,9 @@ der Punkt `planetPunkt`/`planetPunktR` (Kruste `KRUSTE` → Platte → Rand `RAN
 Richtung `planetRichtung`/`planetBreiteLaenge`, die Hülle `planetHuelle`, das Meer der Zeit `planetMeer`, die Vulkane
 `planetVulkane`, die Karte `planetKarte`/`planetKarteAusschnitt` mit ihren Schichten `SCHICHT` und Bild-Arten `BILD_ART`; das
 Klima `KLIMA` (`planetKlimaGlobal`, `planetKlima`, `planetKlimaR`) mit den Klassen `KOEPPEN` und dem Biom `planetBiom` nach
-`WHITTAKER`. DIE BRÜCKE ZUM ORT: der Anker `planetAnker` (der Ort, an dem das Ort-Gesetz der Heimat wahr ist, gelaende-core
+`WHITTAKER`; die EINE Verdunstung `planetPet` (Wuchs und Wasser lesen sie); das Wasser auf EINEM Gitter je Scheibe
+`planetWasserGitter` (`PLANET_WASSER_N` Zellen, fest, nie die Weltgröße: Einzugsgebiet, Seen, Überlauf gegen die PET) und an der
+Adresse `planetWasserR` (Abfluss und See-Tiefe, stetig). DIE BRÜCKE ZUM ORT: der Anker `planetAnker` (der Ort, an dem das Ort-Gesetz der Heimat wahr ist, gelaende-core
 `ortGesetz`), die Würfel-Karte um ihn `planetFlaeche`/`planetKarteVon`, der Ort als Differenz zum Anker `planetOrt` (am Anker
 jedes Feld +0, Spende und Wuchs als Verhältnis 1) und derselbe Boden zu einer anderen Zeit `planetOrtDerZeit`; der Nachklang über Schlüsselbilder `NACHKLANG_MA`.
 Die Bytes sind Gesetz: die eigene Mathe `planetMathe`, der Hash `planetHash` und der zählerbasierte Zufall `planetZufall` —
