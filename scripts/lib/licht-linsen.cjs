@@ -323,8 +323,9 @@ function albedoSicht(opts) {
             sc.traverse((o) => {
                 if (o.isLight) lichtAlt.push([o, o.intensity, o.color.clone()]);
             });
-            // das EINE Umgebungslicht der Welt (dirigent-ankunft: `state.ambientLight`, je Boot) — ohne es bricht die Linse laut
-            const A = st.ambientLight;
+            // die LAMPE DER ALBEDO-SICHT: ein Umgebungslicht, das nur die Linse hält (die Welt hat seit licht-eine-skala keins) —
+            // E = π trägt jede Fläche auf ihre Albedo; gesetzt vor dem `try`, fort im `finally`
+            const A = new T.AmbientLight(0xffffff, 0);
             const envAlt = sc.environment;
             const kamAlt = {
                 p: st.camera.position.clone(),
@@ -493,6 +494,7 @@ function albedoSicht(opts) {
                 }
             };
             const metallAlt = new Map();
+            sc.add(A);
             try {
                 for (const ex of exemplare) {
                     ausschnitteFort(); // der Ausschnitt der vorigen Zeile zeichnet nie in dieser
@@ -657,6 +659,7 @@ function albedoSicht(opts) {
                 }
                 luftZurueck();
                 sc.environment = envAlt;
+                sc.remove(A);
                 sc.remove(karte);
                 cam.position.copy(kamAlt.p);
                 cam.quaternion.copy(kamAlt.q);
@@ -1002,6 +1005,26 @@ function tafelGanz(o) {
         const ist = { tafeln: await tafeln(), frisch: A.tafelnFrisch };
         const out = { ist, probe: await probe(o.verzoegert || 3) };
         out.wolke = await wolke();
+        // (5) DAS DUNKLE ENDE DER SKALA (licht-eine-skala): zur Mitternacht der Bühne die Bestrahlung des waagrechten Bodens am
+        // Kern-Leser (welt-licht `bestrahlung`, die Tafel und die Uniforms der Welt) unter den STERNEN ALLEIN — der Beitrag des
+        // Mondes 0 als Eingabe der Probe, nie im Zustand der Welt (der Mond steht der Sonne gegenüber: eine mondlose Nacht gibt
+        // es im Spiel nicht) — in lx; das Soll trägt die Skala (`STERNENLICHT`: 0,0005 lx). DIE MUTANTE: dieselbe Lesung MIT
+        // dem Mond — sie muss über dem Band liegen, sonst wöge die Zeile den Mond nicht.
+        const uhrVor = st.timeOfDay;
+        await window.__buehne({ uhr: 0 });
+        try {
+            const WL = window.__weltLicht,
+                Yv = (v) => 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2];
+            const ohneMond = { ...A.U, mondE: { value: { x: 0, y: 0, z: 0 } } };
+            out.dunkel = {
+                mondY: +A.U.mond.value.y.toFixed(3),
+                sterneLx: Yv(WL.bestrahlung(A.tafel, ohneMond, [0, 0, 0])) * WL.EINHEIT_LX,
+                mitMondLx: Yv(WL.bestrahlung(A.tafel, A.U, [0, 0, 0])) * WL.EINHEIT_LX,
+                sollLx: WL.STERNENLICHT.leuchtdichte * Math.PI * WL.EINHEIT_LX,
+            };
+        } finally {
+            await window.__buehne({ uhr: uhrVor });
+        }
         // DIE MUTANTE: das alte `_einmalRender` (außerhalb des Vorbaus fn(); return true) — die Linse muss sie ROT nennen
         const echt = r._einmalRender;
         r._einmalRender = function (schluessel, fn) {
@@ -1021,6 +1044,7 @@ function tafelGanz(o) {
 // DAS URTEIL DER TAFELN (rein): ROT „TAFEL <name> gilt als ganz, wurde nie gezeichnet", wenn `tafelnFrisch` über einer Tafel mit dem
 // größten Kanal 0 steht — im Ist und in der Probe der verzögerten Pipeline; ROT „MUTANTE", wenn das alte `_einmalRender` in der Probe
 // NICHT als leer-frisch erkannt wird (die Linse sähe den Täter nicht). → { urteil, befunde }
+const DUNKEL_BAND = [0.7, 1.2]; // gemessen GTX 1050, Wiese, licht-eine-skala: 0,000441 lx = 0,88 × Soll; mit Mond 0,0458 lx
 function tafelGanzUrteil(m) {
     const befunde = [];
     const leer = (z, wo) => {
@@ -1037,6 +1061,19 @@ function tafelGanzUrteil(m) {
         if (wo.rand != null && wo.kern > wo.rand) befunde.push(`WOLKE von unten: der Kern ${wo.kern}× Karte über dem Rand ${wo.rand}× — Licht der Oberseite (Lambert)`);
         if (wo.kernSchulter > 0) befunde.push(`WOLKE von unten: ${Math.round(wo.kernSchulter * 100)} % des Kerns in der Schulter der Tonkurve — flacher weißer Kern`);
     }
+    // DAS DUNKLE ENDE (licht-eine-skala): der Boden unter den Sternen allein steht im Band um das Soll der Skala; die Lesung mit
+    // dem Mond liegt darüber (die Mutante). Boden-Leuchtdichte = E × ρ ÷ π (die 18-%-Karte: 2,9e-5 cd/m² bei 0,0005 lx).
+    const du = m && m.dunkel;
+    if (!du || !(du.sollLx > 0)) befunde.push("DUNKLES ENDE: keine Messung (Boden unter Sternen allein)");
+    else {
+        const v = du.sterneLx / du.sollLx;
+        const lx = (x) => Number(x).toPrecision(3);
+        if (!(du.mondY > 0)) befunde.push(`DUNKLES ENDE: der Mond steht zur Mitternacht nicht am Himmel (y ${du.mondY}) — die Probe mäße keine Nacht`);
+        if (!(v >= DUNKEL_BAND[0] && v <= DUNKEL_BAND[1]))
+            befunde.push(`DUNKLES ENDE: der Boden unter Sternen allein trägt ${lx(du.sterneLx)} lx = ${v.toFixed(2)} × Soll ${lx(du.sollLx)} lx (Band ${DUNKEL_BAND.join("–")}) — welt-licht STERNENLICHT / nachtHimmel`);
+        if (!(du.mitMondLx / du.sollLx > DUNKEL_BAND[1]))
+            befunde.push(`DUNKLES ENDE, MUTANTE: die Lesung mit dem Mond (${lx(du.mitMondLx)} lx) liegt im Band der Sterne — die Zeile wöge den Mond nicht`);
+    }
     if (m && m.probe && !m.probe.frisch) befunde.push(`die Kette wurde nach der verzögerten Pipeline in ${m.probe.takte} Takten nie frisch`);
     const mu = m && m.mutante;
     if (!mu || mu.frischLeer == null) befunde.push("MUTANTE: das alte _einmalRender (fn(); return true) gilt nicht als leer-frisch — die Linse sähe den Täter nicht");
@@ -1044,7 +1081,8 @@ function tafelGanzUrteil(m) {
 }
 function tafelGanzSelbsttest() {
     const voll = { "atmo-durchlass": 1, "atmo-mehrfach": 0.06, "atmo-himmel": 0.24, "himmel-umgebung": 0.24, "atmo-bestrahlung": 1 };
-    const gut = { ist: { tafeln: voll, frisch: true }, probe: { tafeln: voll, frisch: true, takte: 4, frischLeer: null }, mutante: { tafeln: { ...voll, "atmo-mehrfach": 0 }, frisch: true, takte: 1, frischLeer: 0 } };
+    const dunkel = { mondY: 0.962, sterneLx: 0.000441, mitMondLx: 0.0458, sollLx: 0.0005 };
+    const gut = { ist: { tafeln: voll, frisch: true }, probe: { tafeln: voll, frisch: true, takte: 4, frischLeer: null }, mutante: { tafeln: { ...voll, "atmo-mehrfach": 0 }, frisch: true, takte: 1, frischLeer: 0 }, dunkel };
     const fehl = [];
     const fall = (name, m, soll, muster) => {
         const u = tafelGanzUrteil(m);
@@ -1058,6 +1096,11 @@ function tafelGanzSelbsttest() {
     // das alte Lambert-Licht der Oberseite (Radeon, Genesis Mittag, 691c8d68): Kern 5,795 · Rand 5,761 · Kern ganz in der Schulter
     fall("die Wolke im Licht ihrer Oberseite", { ...gut, wolke: { kernN: 88, kern: 5.795, rand: 5.761, kernSchulter: 1 } }, "ROT", /WOLKE von unten: der Kern 5.795/);
     fall("die Probe der Kuppel leer", { ...gut, wolke: { kernN: 88, kern: -0.6, rand: -0.4, kernSchulter: 0 } }, "ROT", /blieb leer/);
+    // main vor licht-eine-skala: das Sternen-Licht als Füllung des Mondes (E 0,30 neben dem Mond 0,43 — das 510-Fache)
+    fall("das Sternen-Licht als Füllung", { ...gut, dunkel: { ...dunkel, sterneLx: 0.255 } }, "ROT", /DUNKLES ENDE: der Boden unter Sternen allein trägt 0.255 lx/);
+    fall("der Mond in der Probe", { ...gut, dunkel: { ...dunkel, sterneLx: 0.0458 } }, "ROT", /DUNKLES ENDE: der Boden/);
+    fall("die Mutante im Band", { ...gut, dunkel: { ...dunkel, mitMondLx: 0.00045 } }, "ROT", /DUNKLES ENDE, MUTANTE/);
+    fall("das dunkle Ende ohne Messung", { ...gut, dunkel: undefined }, "ROT", /DUNKLES ENDE: keine Messung/);
     fall("die Wolke von unten", { ...gut, wolke: { kernN: 88, kern: 1.334, rand: 2.627, kernSchulter: 0 } }, "GRUEN");
     return fehl;
 }
@@ -2187,13 +2230,11 @@ function laubGegenlicht(opts) {
                 sc.traverse((o) => {
                     if (o.isLight) lichter.push([o, o.intensity]);
                 });
-                // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselt die Licht-Signatur
-                // jedes Programms), die übrigen Lichter und der Himmel still
+                // die Albedo wie `__albedoSicht`: die Lampe der Linse (ein weißes Umgebungslicht, das nur sie hält — die Welt hat
+                // seit licht-eine-skala keins), die übrigen Lichter und der Himmel still
                 const envA = sc.environment;
-                let amb = st.ambientLight || lichter.map((e) => e[0]).find((l) => l.isAmbientLight);
-                const ambEigen = amb ? null : new T.AmbientLight(0xffffff, 0);
-                if (ambEigen) sc.add((amb = ambEigen));
-                const ambFarbe = amb.color.clone();
+                const amb = new T.AmbientLight(0xffffff, 0);
+                sc.add(amb);
                 let hell, dunkel;
                 try {
                     for (const [l] of lichter) l.intensity = 0;
@@ -2205,8 +2246,7 @@ function laubGegenlicht(opts) {
                     amb.intensity = 0;
                     dunkel = await lies("die Albedo der Krone");
                 } finally {
-                    if (ambEigen) sc.remove(ambEigen);
-                    amb.color.copy(ambFarbe);
+                    sc.remove(amb);
                     for (const [l, i] of lichter) l.intensity = i;
                     sc.environment = envA;
                 }
@@ -2578,7 +2618,7 @@ function luftTiefe(o) {
         const W = 480;
         const H = 270;
         const fov0 = cam.fov;
-        if (st.renderer.toneMapping !== T.NeutralToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Neutral-Kurve");
+        if (st.renderer.toneMapping !== T.CustomToneMapping) throw new Error("__luftTiefe: die Rückrechnung kennt nur die Tonkurve der Welt (welt-licht tonKurve)");
         st.renderer.setAnimationLoop(null);
         window.__buehne(o.wetter && { wetter: o.wetter });
         const PU = st.postProcessingUniforms;
@@ -2598,8 +2638,8 @@ function luftTiefe(o) {
         const med = (a) => (a.length ? +rang(a.slice().sort(aufsteigend)).toPrecision(4) : null);
         // β des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
-        const anwenden = r._dayNightApplyHemiUndLuft;
-        r._dayNightApplyHemiUndLuft = function (...a) {
+        const anwenden = r._dayNightApplyLuft;
+        r._dayNightApplyLuft = function (...a) {
             anwenden.apply(this, a);
             if (dichte != null) U.beta.value = dichte;
         };
@@ -2762,7 +2802,7 @@ function luftTiefe(o) {
                 tafel.material.dispose();
             }
         } finally {
-            delete r._dayNightApplyHemiUndLuft;
+            delete r._dayNightApplyLuft;
             r._belichtungHand(null);
             PU.bloomStrength.value = bloom0;
             cam.fov = fov0;
@@ -2973,6 +3013,9 @@ const TONKURVE_GRAU = {
         return c < 0.76 ? c : 1 - (0.24 * 0.24) / (c + 0.24 - 0.76);
     },
 };
+// die Tonkurve der Welt (welt-licht `tonKurve`, der Platz CustomToneMapping): am Grau Khronos Neutral — ihre Grenze der
+// Entsättigung wirkt nur an der Farbe
+TONKURVE_GRAU.CustomToneMapping = TONKURVE_GRAU.NeutralToneMapping;
 function kartenEichung(kurve, ev = 1) {
     const f = TONKURVE_GRAU[kurve];
     if (!f) return null;

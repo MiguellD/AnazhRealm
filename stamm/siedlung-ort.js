@@ -43,7 +43,7 @@ class AnazhRealm_siedlung_ort {
     // Orte); sein Erdbau liegt, bevor das erste Haus steht. Ein Plan, der schon v2 ist, bleibt. Leser: der Akt
     // (`spawnSettlement` über `_ortWahl`), der Export (`_spawnSettlementFromExport`) und das Auto-Dorf
     // (`_tickAutoSettlement`); die Slot-Quelle liest `slot.y`.
-    // DIE ORT-WAHL (K10, Pflicht-OFFEN C: „Häuser im Fluss-Bett heilen am Plan"): der Anker ist der Wunsch; der Plan steht am
+    // DIE ORT-WAHL (K10, Leiter mensch.netz.verkehr: „Häuser im Fluss-Bett heilen am Plan"): der Anker ist der Wunsch; der Plan steht am
     // nächsten Ort der Ringe um ihn (`ORT_WAHL`: je `schrittM` ein Ring bis zur halben Siedlungs-Zelle, auf jedem Ring Orte im
     // Abstand ≤ `schrittM`), an dem er JEDES Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`: jede Platte samt Saum und Vorplatz liegt auf dem
     // Boden des Plans, `WERK_LAND_M` über dem Wasser des Gesetzes — das Urteil der Wasser-Wand jedes Werks, `_fundamentLand` —,
@@ -745,6 +745,7 @@ class AnazhRealm_siedlung_ort {
         let mx = 0;
         let mz = 0;
         const haeuser = [];
+        const abgelehnt = [];
         for (;;) {
             // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10), mit seinen
             // Wandlaternen (K66-2: `plan` + `si`)
@@ -760,6 +761,25 @@ class AnazhRealm_siedlung_ort {
                 this._dorfRateMessen(q);
                 break;
             }
+            // DER AKT ENDET (los-huelle): steht der Spieler im Grund JEDES offenen Slots, hebt der Akt sie nicht und wartet nicht —
+            // bis hier wartete sein Zug, bis der Spieler ginge, und ein Spieler, der stand, hielt das Versprechen des Akts ewig offen
+            // (gate:haus-welt W7, der zweite Akt am Anker des ersten: 900 s, an main dabd69bb wie am Kopf, sobald der Spieler in einem
+            // Los des zweiten Plans stand). Die Slots fallen BEIM NAMEN in die Rückgabe (`abgelehnt`), der Rufer liest sie; der
+            // Takt-Zug einer Zelle (`_tickAutoSettlement`) wartet weiter, bis der Spieler geht — er ist kein Versprechen.
+            if (q.spielerSperrt) {
+                for (; q.idx < plan.slots.length; q.idx++) {
+                    const sl = plan.slots[q.reihe[q.idx]];
+                    abgelehnt.push(
+                        `${sl.kultur || "?"}@${Math.round(origin.x + sl.x)}/${Math.round(origin.z + sl.z)}: der Spieler steht im Grund`
+                    );
+                    skipped++;
+                }
+                this.log(
+                    `SIEDLUNG: ${abgelehnt.length} Lose am Anker ${Math.round(origin.x)}/${Math.round(origin.z)} abgelehnt — der Spieler steht in ihrem Grund (${abgelehnt.slice(0, 3).join(" · ")})`,
+                    "WARN"
+                );
+                break;
+            }
             await new Promise((weiter) => requestAnimationFrame(weiter)); // der nächste Schritt nach dem Bild, das ihn zeigt
             if (this.state !== welt) break;
         }
@@ -773,6 +793,7 @@ class AnazhRealm_siedlung_ort {
             groesse: plan.groesse || null,
             mitte,
             haeuser,
+            abgelehnt,
         };
     }
 
@@ -845,7 +866,7 @@ class AnazhRealm_siedlung_ort {
             .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }))
             .map((b) => Object.assign(b, { d: Math.hypot(b.x - M.x, b.z - M.z) }))
             .sort((a, b) => a.d - b.d);
-        // DIE REGEL „trasse" (w28-verkehr-bild, PFLICHT-OFFEN C: der Verkehr im Bild): je Wagen in Fahrt der Punkt seiner Route
+        // DIE REGEL „trasse" (w28-verkehr-bild, Leiter mensch.netz.verkehr: der Verkehr im Bild): je Wagen in Fahrt der Punkt seiner Route
         // `trasseM` voraus; der dem Auge (dem Spieler, sonst dem Stand) nächste trägt den Stand — der erste Punkt quer zur Route
         // außer jeder Spur, `trasseRandM` vor jedem Grundriss (näher füllte die Fassade den Vordergrund: 24–36 % näher als 8 m) und 1,5 m neben jedem Baum, Stand, Brunnen und jeder Laterne des
         // Plans —, der Blick zurück auf den Wagen, `trasseNick` gehoben (das Ziel liegt über den Dächern, die ihm entgegenfahren:
@@ -2349,8 +2370,10 @@ class AnazhRealm_siedlung_ort {
         q.gangDran = !!q.gang;
         const pm = this.state.playerMesh;
         const M = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        q.spielerSperrt = false;
+        let warten = 0;
         for (
-            let warten = 0;
+            ;
             q.idx < q.plan.slots.length &&
             warten < q.plan.slots.length - q.idx &&
             (performance.now() < this._bauFrist("dorf") || neu.length === 0);
@@ -2377,6 +2400,9 @@ class AnazhRealm_siedlung_ort {
             const so = Object.assign({ plan: q.plan, si, gefallen: q.plan.gefallen }, q.so);
             neu.push(this._spawnSettlementSlot(sl, q.origin, f, so));
         }
+        // JEDER offene Slot wartet auf den Spieler (er steht in ihrem Grund): der Schritt hob nichts — der Akt liest es
+        // (`_spawnSettlementFromExport`), der Takt-Zug wartet weiter, bis er geht
+        q.spielerSperrt = neu.length === 0 && q.idx < q.plan.slots.length && warten >= q.plan.slots.length - q.idx;
         return neu;
     }
     // DIE GEMESSENE RATE DES ZUGS (w28-stadt-netz): Häuser je Sekunde der Wanduhr vom ersten Schritt eines Zugs bis zu seinem

@@ -428,7 +428,7 @@ class AnazhRealm_stoff_karte {
     // (`_foundryEnsureImpostorRecord`; bis w4-laub-karte las er die deklarierte Stufe, der Bake die servierte) und die Probe
     // der Karten-Wand. Die L0 als Quelle senkte den Kanten-Versatz (lod.K5, 16 Peilungen, 1920 × 1080: Eiche 4,67 → 3,54 px,
     // Birke 5,08 → 3,74, Weide 12,06 → 9,97, Fichte 3,23 → 2,82), stellte aber je Zelle einen L0-Bau auf den Pfad der
-    // Ankunft (gate:arch-feld headless: der erste Bake Takt 74 → 206, die nahe Eiche 156 → über 200, ROT).
+    // Ankunft (die frühere Feld-Linse der Bauten headless: der erste Bake Takt 74 → 206, die nahe Eiche 156 → über 200, ROT).
     _karteStufe(preset) {
         return this._foundryServierStufe(preset, 1);
     }

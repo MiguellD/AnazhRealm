@@ -170,7 +170,7 @@ function runVergleich(morphFn, labPropFn, labLandmarksFn) {
     return { diffs, values, points };
 }
 
-// DIE WACHE (PFLICHT-OFFEN A, der Prüfplatz: mensch-kopf und haar zu jeder Uhr). Das EINE Rollen-Gesetz des Tags
+// DIE WACHE (Soll-Tafel am Prüfplatz: mensch-kopf und haar zu jeder Uhr). Das EINE Rollen-Gesetz des Tags
 // (TAGES_GESETZ.rollen, tagesPlan) trägt die Tag-Wache `waechter` und die Nacht-Wache `nachtwaechter` (um versatzH versetzt):
 // über 1 000 Samen-Paare (die Streu ±streuH) steht zu JEDER Stunde (je 0,05 h) eine an ihrem Wache-Punkt — Werk und Platz
 // sind der Punkt, wie der Wirt sie setzt; `wacheLeer` zählt die Proben ohne sie (der Byte-Beweis w4-bewohner-wache: zu 12 h,
