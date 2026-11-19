@@ -853,7 +853,8 @@ class AnazhRealm_dirigent_takt {
     // Weltbilds schließt erst im Bild (`_weltbildLuecken`: Boden, Horizont, Buch, Bauten, Pflanzung, Streu und Karten stehen im
     // Takt und in den Fäden, das Panorama rechnet seine eigene GPU-Arbeit). Ein Lade-Takt schickt sein Bild darum nur, wenn es
     // fällig ist: alle LADE_BILD_MS — die Erst-Zeichnung baut die Knoten der neuen Stoffe und stößt ihre Pipelines an, lange
-    // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
+    // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt außer dem Licht, das nur ein Bild schließt
+    // (`_ladeBildVoll`, licht-ankunft: jeder Takt zeichnet, bis die Lesung steht): der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
     // DIE SCHULD DER ERST-ZEICHNUNG (w19-ankunft-takt): wartete im letzten Bild ein Knoten-Bau auf die Frist (`ladeSchuld`), ist das
@@ -869,7 +870,7 @@ class AnazhRealm_dirigent_takt {
         if (
             schuld ||
             jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
-            this._weltbildLuecken().length === 0
+            this._ladeBildVoll()
         ) {
             if (E) [E.ladeGuthaben, E.ladeSchuld] = [L.gehaltenMs || 0, false];
             L.gehaltenMs = 0;

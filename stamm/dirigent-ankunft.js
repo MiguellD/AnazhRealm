@@ -1131,6 +1131,15 @@ class AnazhRealm_dirigent_ankunft {
         return this._weltbildLuecken(rundum).map((l) => l.satz);
     }
 
+    // DAS LADE-BILD IM VOLLEN TAKT (licht-ankunft): fehlt dem ersten Weltbild nichts mehr außer dem Term „licht“, schließt ihn nur
+    // ein BILD — der Messer liest die Sicht am gezeichneten Bild (`_bildSichtSteht`), seine Lesung kommt ein bis zwei Bilder danach.
+    // Dann ist jedes Lade-Bild fällig (`_ladeBildFaellig`), nie erst nach LADE_BILD_MS: im Abstand von 500 ms wartete die Lesung auf
+    // drei Lade-Bilder, und zwischen zweien sprang der Himmel um mehr als `lichtRad` — die Lesung verfiel im Flug (Radeon, Umstellen
+    // an die Mess-Wiese +3,0 s, Genesis +1,1 s gegen 6113b27e). Kein Frist-Ablauf: der Term schließt nur mit der Lesung.
+    _ladeBildVoll() {
+        return this._weltbildLuecken().every((l) => l.term === "licht");
+    }
+
     // DIE TERME DES ERSTEN WELTBILDS (K60): je Leser des ersten Frames EIN Term mit Namen aus der Liste `WELTBILD_TERME` und
     // seinem Satz. Die Ankunfts-Linse (gate:ankunft L2a) liest die Liste und stellt je Term einen Fall her — ein Term ohne
     // Fall ist ROT beim Namen (die Pflanz-Schlange kam in K60 ohne Fall dazu: ihr Streichen wäre grün geblieben).
