@@ -1270,8 +1270,7 @@ class AnazhRealm {
 
     setGameMode(mode) {
         const canonical = AnazhRealm.GAME_MODES.includes(mode) ? mode : "frieden";
-        if (!this.state.worldMeta) this.state.worldMeta = {};
-        this.state.worldMeta.gameMode = canonical;
+        this._weltMetaDa().gameMode = canonical;
         this.state.gameMode = canonical;
         // HP bei frieden→pfad-Wechsel NICHT zurücksetzen: der Spieler
         // bringt seinen Zustand mit (Vision: Welt-Beziehung ändert sich,

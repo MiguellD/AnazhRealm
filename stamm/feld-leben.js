@@ -2620,11 +2620,27 @@ class AnazhRealm_feld_leben {
 
     // DER NULL-PUNKT EINES STANDS VON VOR DEM SCHNITT: seine Stempel (Taten `h`, Lava `h`, Werke `geburt`, Tritte) tragen den
     // Tag der Sicht — der Null-Punkt legt den Tag der Prozesse EINMAL auf ihn, nach Welt-Uhr und Stunde des Stands
-    // (`_applyLoadedState`); von da an läuft er nur noch an der Welt-Uhr. Eine neue Welt beginnt bei 0.
+    // (`_loadStateRestoreSoulAndAtmosphere`); von da an läuft er nur noch an der Welt-Uhr. Eine neue Welt trägt ihn ab der
+    // Geburt (`_weltGeburt`).
     _weltTagEichen() {
         const [st, wm] = [this.state, this.state.worldMeta];
         if (!wm || Number.isFinite(wm.tagNull)) return;
         wm.tagNull = (wm.tag || 0) + (st.timeOfDay || 0) - (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+    }
+
+    // DIE GEBURT EINER WELT (welt-tag-null): der EINE Ort, an dem ein worldMeta zur Welt wird — ihr Tag der Prozesse beginnt bei
+    // 0 (`tagNull`), nie hält ein Laden sie für einen Stand von vor dem Schnitt. Bis hier trug die frische Welt keinen Null-Punkt,
+    // das erste Laden eichte ihn auf den Tag der Sicht: der Tag der Prozesse (Lava, Heilung, Nachwuchs) sprang um +0,4999, und die
+    // Grundstellung der Maschine brach an `worldMeta.tagNull` (GTX f68dbf09: 26 Abbrüche). Rufer: der Boot einer frischen Welt
+    // (`ensureWorldMeta`), `_generateFreshWorldMeta` (neue Welt, Welt-Tor, Reise), die Fusion und `_weltMetaDa`.
+    static _weltGeburt(m) {
+        m.tagNull = 0;
+        return m;
+    }
+
+    // DAS worldMeta DER SEITE für jeden Schreiber: das der Welt, sonst eine Welt aus der Geburt — nie ein loses `{}`.
+    _weltMetaDa() {
+        return this.state.worldMeta || (this.state.worldMeta = AnazhRealm._weltGeburt(AnazhRealm._weltMetaVorlage()));
     }
 
     // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt, am Tag der Prozesse (`_weltTag`).

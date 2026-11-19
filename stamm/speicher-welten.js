@@ -159,11 +159,11 @@ class AnazhRealm_speicher_welten {
             m.slug = `${a}-${n}`;
         }
         if (!m.bornAt) m.bornAt = Date.now();
-        // fresh (kein worldId aus einem Save) → heutige Genese-Version: alle neuen Spieler teilen Seed UND
-        // genVersion; eine GELADENE Welt ohne Feld bleibt Legacy (fehlend → 1, _genVersion).
-        // Stufen: 1 Legacy · 2 Feuchte · 3 Makro-Geographie · 4 prozedurale Baum-Baupläne · 5 Skeleton-
-        // Wuchs aus dem Gesetz (_phytoArt → treeParams) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
-        // 8 Palette/Tag-Vektoren/Understory · 9 baum_karst + Busch-Baupläne.
+        // fresh (kein worldId aus einem Save) → die Geburt (`_weltGeburt`, der Null-Punkt ihres Tags) und die heutige Genese-
+        // Version (alle neuen Spieler teilen Seed UND genVersion); eine GELADENE Welt ohne Feld bleibt Legacy (fehlend → 1).
+        // Stufen: 1 Legacy · 2 Feuchte · 3 Makro-Geographie · 4 Baum-Baupläne · 5 Skeleton-Wuchs (_phytoArt → treeParams) ·
+        // 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind · 8 Palette/Tag-Vektoren/Understory · 9 baum_karst + Busch.
+        if (fresh) AnazhRealm._weltGeburt(m);
         if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = AnazhRealm.GEN_VERSION;
         // Seed und Voxel-Boden heilt das EINE Heil jeder Welt (`_weltMetaHeil`, auch jede geladene); Journal-Eintrag nur
         // bei `!fresh` (geladene Welt verdichtet sich), die frische Welt schreibt nur „Ich erwache als <slug>".
@@ -439,8 +439,8 @@ class AnazhRealm_speicher_welten {
         // Jede NEUE Welt wird mit der heutigen Genese-Version geboren; bestehende Welten (Feld fehlt → 1)
         // behalten ihr Gesicht (Genese ist Welt-Identität). Der Varianten-Pool (variantSeed[]) ist
         // Genese-Konstante: je Art eine Zeile, gepinnt beim ersten Wuchs der Art (_variantSeedsFor).
-        const variantSeed = {};
-        return { worldId, slug: finalSlug, bornAt: Date.now(), seed, genVersion: AnazhRealm.GEN_VERSION, variantSeed };
+        const [genVersion, bornAt] = [AnazhRealm.GEN_VERSION, Date.now()];
+        return AnazhRealm._weltGeburt({ worldId, slug: finalSlug, bornAt, seed, genVersion, variantSeed: {} });
     }
 
     // Snapshot einer leeren Welt mit gegebenem worldMeta (optional mit Player-Snapshot für „Person
