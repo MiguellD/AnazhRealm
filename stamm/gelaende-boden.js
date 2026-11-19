@@ -446,7 +446,7 @@ class AnazhRealm_gelaende_boden {
     _genesisPlanAn(r, welt) {
         if (welt !== (this._hydroWelt | 0) || !r) return null;
         if (!r.plan && r.ankunft && !this._gelaende().ort.siedlung.platz) {
-            const wm = this.state.worldMeta || (this.state.worldMeta = {});
+            const wm = this._weltMetaDa();
             const key = `ankunft:${Math.round(r.ankunft.x)},${Math.round(r.ankunft.z)}`;
             if (wm.genesisOrt && wm.genesisOrt.key !== key && typeof wm.genesisOrt.key === "string")
                 this._erdbauOrtFaellt(wm.genesisOrt.key);
@@ -475,7 +475,7 @@ class AnazhRealm_gelaende_boden {
             });
         }
         const key = `genesis:${v2.seed}:${Math.round(v2.ort.x)},${Math.round(v2.ort.z)}:${FC.ortHash(v2.erdbau)}`;
-        const wm = this.state.worldMeta || (this.state.worldMeta = {});
+        const wm = this._weltMetaDa();
         const alt = wm.genesisOrt && typeof wm.genesisOrt === "object" ? wm.genesisOrt : null;
         const altSplats =
             alt && alt.key !== key && wm.erdbau && Array.isArray(wm.erdbau[alt.key]) ? wm.erdbau[alt.key] : [];
@@ -859,7 +859,7 @@ class AnazhRealm_gelaende_boden {
     // eines Orts (sein Vorlauf, sein Erwachen; wie der Bau `ausGesetz`) — seine Splats stehen in `_erdbauAusGesetz`, der Stand
     // trägt ihn nie (die Stand-Zeile worldMeta, speicher.K3), der nächste Vorlauf legt ihn neu.
     _erdbauSetzen(key, splats, nass, ausGesetz) {
-        const wm = this.state.worldMeta || (this.state.worldMeta = {});
+        const wm = this._weltMetaDa();
         if (!wm.erdbau || typeof wm.erdbau !== "object") wm.erdbau = {};
         if (wm.erdbau[key] || !Array.isArray(splats) || !splats.length) return false;
         const G = globalThis.__gelaendeCore;
