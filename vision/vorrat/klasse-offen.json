@@ -6,56 +6,16 @@
   "Stadt: der Umfang nennt „1 Stadt“/„EINE Stadt“ (Vorbild mensch.stadt.form) oder eine Region 10–10² km² bis 20 km Sicht mit Siedlungen (Vorbild mensch.stadt.siedlungsnetz, 32 × 32 km).",
   "Megastadt und Kontinent: ≥ 10⁶ Bauten, ≥ 10⁷ Menschen, Sicht bis zum Horizont — an keiner ersten Sprosse eindeutig.",
   "Planet und Welten: Orbit bis Boden, jede Welt, jede Zeit — an keiner ersten Sprosse eindeutig.",
-  "Offen: eine Spanne zwischen 1 und 20 km ohne das Wort Stadt (die Treppe sagt Sicht bis 1 km für Ort, das Vorbild planet.wetter.lagen „wenige km“ trägt Ort), Regionen ohne Größe oder über 10² km², ein Welt-Wechsel, der Erd-Schlüssel (Spalte Bytes), zwei Zeilen zugleich genannt.",
-  "Klassen-Gesetz (19.11., vision/buche-2.cjs, Entscheid des Koordinators): die Treppe ist eine Treppe — die Klasse ist die KLEINSTE Zeile, deren Obergrenze den Umfang fasst, die Lücke zwischen zwei Zeilen (10²–10³ Bauten, 10³–10⁴ Menschen, 1–20 km) gehört zur höheren; damit sind die Spanne 1–20 km und Regionen mit genannter Fläche entschieden. Offen bleiben an ersten Sprossen: Region ohne Größe, Welt-Wechsel (auch EIN fremdes Ziel), Erd-Schlüssel, zwei Zeilen zugleich, ein Umfang ohne Größe unter einer Preis-Pose „Stadt“. Jede höhere Sprosse rechnet das Gesetz (klasseGrund), was es nicht sicher liest, steht in vision/richter/klassen-unsicher.md."
+  "Offen (bis 19.11., seither entscheidet das Klassen-Gesetz unten): eine Spanne zwischen 1 und 20 km ohne das Wort Stadt, Regionen ohne Größe oder über 10² km², ein Welt-Wechsel, der Erd-Schlüssel (Spalte Bytes), zwei Zeilen zugleich genannt.",
+  "Klassen-Gesetz (19.11., vision/buche-2.cjs, Entscheid des Koordinators): die Treppe ist eine Treppe — die Klasse ist die KLEINSTE Zeile, deren Obergrenze den Umfang fasst, die Lücke zwischen zwei Zeilen (10²–10³ Bauten, 10³–10⁴ Menschen, 1–20 km) gehört zur höheren; damit sind die Spanne 1–20 km und Regionen mit genannter Fläche entschieden. Im Zweifel die höhere Zeile (Regel 6, Entscheid des Koordinators 19.11.; bis dahin nahm die unsichere Sprosse die niedrigste sichere Lesart): Welt-Wechsel (auch EIN fremdes Ziel, auch ohne Welt-Wort) → Planet und Welten · Träger unklar zählt Leiber (über 10³ Stadt, ab 10⁷ Megastadt und Kontinent) · Region ohne Größe → Stadt · zwei Zeilen zugleich → die höhere · Horizont → Megastadt und Kontinent · Planet-Maß → Planet und Welten; Himmel und Feld vom Boden aus und der Erd-Schlüssel (Spalte Bytes) heben nicht. Eine so gehobene Sprosse trägt klasseGrund „zweifel:<Grund>“. Offen bleiben an ersten Sprossen nur, was keine Regel fasst: ein Umfang ohne Größe (auch unter einer Preis-Pose „Stadt“) und zwei Regeln gegeneinander; sie stehen mit Grund hier und in vision/richter/klassen-unsicher.md."
  ],
  "stand": {
   "karte": "vision/meisterkarte-2.json",
   "ersteSprossen": 253,
-  "gesetzt": 235,
-  "offen": 18
+  "gesetzt": 245,
+  "offen": 8
  },
  "offen": [
-  {
-   "leiter": "planet.wasser.eis",
-   "sprosse": 1,
-   "umfang": "Schnee einer Region",
-   "preis": "P im Schneefall",
-   "richter": "Schneegrenze gegen Nullgrad-Höhe ±150 m an 10 Posen × 4 Jahreszeiten; Fuß sinkt ≥ 5 cm",
-   "grund": "„Schnee einer Region“ ohne Größe; die Klasse hängt an der Fläche, die der Text nicht nennt"
-  },
-  {
-   "leiter": "planet.erde.gestalt",
-   "sprosse": 1,
-   "umfang": "EINE Region der Erde, 10⁴ km² (ein Golf mit Vulkan)",
-   "preis": "P · Schlüssel ≤ 10 kB",
-   "richter": "Küstenlinie gegen das Höhenmodell: mittlerer Lagefehler ≤ 5 km; Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %",
-   "grund": "Region 10⁴ km² (wie platten) UND der Erd-Schlüssel ≤ 10 kB: die Spalte Bytes der Zeile Ort verlangt 0 über das Skript, erst Planet und Welten zählt den Erd-Schlüssel mit"
-  },
-  {
-   "leiter": "planet.kosmos.eigengesetz",
-   "sprosse": 1,
-   "umfang": "EINE Welt, EINE Konstante anders (Schwere-Exponent, Stoff-Dichte, Zähigkeit)",
-   "preis": "P",
-   "richter": "20 Versuche des Spielers (Fall, Wurf, Pendel): Messwerte aus dem Bild folgen dem Gesetz der Welt ±5 % und weichen vom Erd-Gesetz ab",
-   "grund": "EINE fremde Welt mit anderer Konstante: ein Welt-Wechsel; Ort oder Planet und Welten ist am Text nicht ablesbar"
-  },
-  {
-   "leiter": "planet.kosmos.galaxien",
-   "sprosse": 1,
-   "umfang": "EINE Nachbargalaxie als Ziel",
-   "preis": "P · Sprung ≤ 5 s",
-   "richter": "am Ziel steht die Heimatgalaxie am Himmel in der richtigen Richtung und Größe ±5 %; Bildpaar Anflug gegen Teleskop-Aufnahme (2AFC ≤ 80 %)",
-   "grund": "Sprung zur Nachbargalaxie: der Umfang ist kosmisch (Planet und Welten), die Pose am Ziel ein Ort — zwei Lesarten"
-  },
-  {
-   "leiter": "leben.evolution.fremde-physik",
-   "sprosse": 1,
-   "umfang": "g 0,3–3",
-   "preis": "P",
-   "richter": "Regression aus 50 Saaten je g aus Bildern: Steigung im Band der Statik",
-   "grund": "50 Saaten je Schwere g 0,3–3: fremde Welten in Folge; ob die Zeile Ort je Saat oder Planet und Welten gilt, sagt der Text nicht"
-  },
   {
    "leiter": "mensch.stadt.vertikal",
    "sprosse": 1,
@@ -63,22 +23,6 @@
    "preis": "P · Stadt",
    "richter": "höchstes Gebäude im Bild, begehbare Ebenen = 1",
    "grund": "Umfang „1 Ebene, Häuser bis 7 Geschosse“ ohne Bauten-Zahl, Preis-Pose „Stadt“: Ort oder Stadt"
-  },
-  {
-   "leiter": "mensch.stadt.breite",
-   "sprosse": 1,
-   "umfang": "1 Familie, 6 Regionen",
-   "preis": "P · Stadt",
-   "richter": "Region einer Stadt aus 6 erkannt ≥ 50 %",
-   "grund": "„1 Familie, 6 Regionen“, Richter erkennt die Region EINER Stadt, Preis-Pose „Stadt“: Ort oder Stadt"
-  },
-  {
-   "leiter": "mensch.netz.gestalt",
-   "sprosse": 1,
-   "umfang": "1 Ort, ~10 km, 4 Klassen",
-   "preis": "P · Fahrt",
-   "richter": "Gefälle p95 ≤ 9,5 % über 8 Saaten UND jede Klasse ohne Wand oder Klemmen befahren",
-   "grund": "„1 Ort, ~10 km“: das Wort sagt Ort, die Spanne Stadt (über 1 km Sicht)"
   },
   {
    "leiter": "mensch.wirtschaft.handel",
@@ -113,14 +57,6 @@
    "grund": "„Technikstand je Ort“ über Orte jeder Größe (Bevölkerung × Vernetzung): die Klasse wechselt mit der Stichprobe"
   },
   {
-   "leiter": "mensch.zeit.erde",
-   "sprosse": 1,
-   "umfang": "EIN Ort, EINE Zeit (eine römische Stadt um 100)",
-   "preis": "P · Schlüssel ≤ 10 kB",
-   "richter": "Straßenachsen gegen den archäologischen Plan: Deckung ≥ 70 %; Fach-Panel 2AFC Spielbild gegen wissenschaftliche Rekonstruktion ≤ 80 %",
-   "grund": "„EIN Ort … eine römische Stadt um 100“: das Wort Ort gegen das Wort Stadt, dazu der Erd-Schlüssel ≤ 10 kB (Spalte Bytes)"
-  },
-  {
    "leiter": "erleben.spieler.nichtleib",
    "sprosse": 1,
    "umfang": "EIN Ding der Welt: der Spieler ist ein Fluss",
@@ -143,22 +79,6 @@
    "preis": "P im Regen",
    "richter": "Niederschlag Luv/Lee ≥ 2:1 an 30 Saaten; im Bild grün/braun an der Kammlinie getrennt",
    "grund": "„1 Gebirge“, Luv/Lee an der Kammlinie: ein Gebirgszug misst über die Sicht von 1 km hinaus, Größe ungenannt"
-  },
-  {
-   "leiter": "same.kopplung.erdsaat",
-   "sprosse": 1,
-   "umfang": "1 Ort, 1 Ereignis-Typ",
-   "preis": "P",
-   "richter": "Bildvergleich gegen Relief-Modell; der Vulkan bricht von selbst aus",
-   "grund": "„1 Ort“ der Erd-Saat (Vesuv am Golf): der Erd-Schlüssel zählt erst in der Zeile Planet und Welten (Spalte Bytes), die Zeile Ort verlangt 0"
-  },
-  {
-   "leiter": "same.kopplung.terraform",
-   "sprosse": 1,
-   "umfang": "EIN Eingriff, EINE Region: Wetter lenken über einer Stadt",
-   "preis": "P",
-   "richter": "Bildpaar mit und ohne Eingriff an derselben Saat: Regenmenge im Zielgebiet höher, im Lee tiefer; Bilanz ±10 %",
-   "grund": "„EINE Region: Wetter lenken über einer Stadt“, Zielgebiet und Lee: Stadt oder größer"
   }
  ],
  "aufgeloest": [
@@ -207,12 +127,36 @@
    "offen": "Region 10⁴ km² im Überflug: größer als die Stadt-Spanne (10–10² km², Sicht 20 km), ohne die Bauten der Megastadt — die Treppe nennt keine Zeile für eine leere Region dieser Fläche"
   },
   {
+   "leiter": "planet.wasser.eis",
+   "sprosse": 1,
+   "klasse": "Stadt",
+   "quelle": "gesetz",
+   "grund": "Stadt — zweifel:Region ohne Größe „Region“: im Zweifel die höhere Zeile für den Umfang „Schnee einer Region“ (Klassen-Gesetz Regel 6)",
+   "offen": "„Schnee einer Region“ ohne Größe; die Klasse hängt an der Fläche, die der Text nicht nennt"
+  },
+  {
    "leiter": "planet.wetter.wolken",
    "sprosse": 1,
    "klasse": "Stadt",
    "quelle": "gesetz",
    "grund": "Stadt — zahl:8 km: die kleinste Zeile der Treppe, die den Umfang „EINE Wolkenschicht 800 m, Karte ≈ 8 km“ fasst (Klassen-Gesetz Regel 1)",
    "offen": "„Karte ≈ 8 km“: über der Sicht der Zeile Ort (1 km), unter Stadt (20 km); Vorbild planet.wetter.lagen („wenige km“) trägt Ort — Widerspruch"
+  },
+  {
+   "leiter": "planet.erde.gestalt",
+   "sprosse": 1,
+   "klasse": "Megastadt und Kontinent",
+   "quelle": "gesetz",
+   "grund": "Megastadt und Kontinent — zahl:10⁴ km²: die kleinste Zeile der Treppe, die den Umfang „EINE Region der Erde, 10⁴ km² (ein Golf mit Vulkan)“ fasst (Klassen-Gesetz Regel 1)",
+   "offen": "Region 10⁴ km² (wie platten) UND der Erd-Schlüssel ≤ 10 kB: die Spalte Bytes der Zeile Ort verlangt 0 über das Skript, erst Planet und Welten zählt den Erd-Schlüssel mit"
+  },
+  {
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 1,
+   "klasse": "Planet und Welten",
+   "quelle": "gesetz",
+   "grund": "Planet und Welten — zweifel:Welt-Wechsel „Konstante anders“: im Zweifel die höhere Zeile für den Umfang „EINE Welt, EINE Konstante anders (Schwere-Exponent, Stoff-Dichte, Zähigkeit)“ (Klassen-Gesetz Regel 6)",
+   "offen": "EINE fremde Welt mit anderer Konstante: ein Welt-Wechsel; Ort oder Planet und Welten ist am Text nicht ablesbar"
   },
   {
    "leiter": "planet.kosmos.kunstwelten",
@@ -223,12 +167,68 @@
    "offen": "„EIN Drehzylinder, 10 km“: die Spanne 1–20 km, dazu der steigende Horizont; Ort und Stadt sind beide lesbar"
   },
   {
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 1,
+   "klasse": "Planet und Welten",
+   "quelle": "gesetz",
+   "grund": "Planet und Welten — zweifel:Welt-Wechsel „Nachbargalaxie“: im Zweifel die höhere Zeile für den Umfang „EINE Nachbargalaxie als Ziel“ (Klassen-Gesetz Regel 6)",
+   "offen": "Sprung zur Nachbargalaxie: der Umfang ist kosmisch (Planet und Welten), die Pose am Ziel ein Ort — zwei Lesarten"
+  },
+  {
+   "leiter": "leben.evolution.fremde-physik",
+   "sprosse": 1,
+   "klasse": "Planet und Welten",
+   "quelle": "gesetz",
+   "grund": "Planet und Welten — zweifel:Welt-Wechsel „g 0,3–3“: im Zweifel die höhere Zeile für den Umfang „g 0,3–3“ (Klassen-Gesetz Regel 6)",
+   "offen": "50 Saaten je Schwere g 0,3–3: fremde Welten in Folge; ob die Zeile Ort je Saat oder Planet und Welten gilt, sagt der Text nicht"
+  },
+  {
+   "leiter": "mensch.stadt.breite",
+   "sprosse": 1,
+   "klasse": "Stadt",
+   "quelle": "gesetz",
+   "grund": "Stadt — zweifel:Region ohne Größe „Regionen“: im Zweifel die höhere Zeile für den Umfang „1 Familie, 6 Regionen“ (Klassen-Gesetz Regel 6)",
+   "offen": "„1 Familie, 6 Regionen“, Richter erkennt die Region EINER Stadt, Preis-Pose „Stadt“: Ort oder Stadt"
+  },
+  {
+   "leiter": "mensch.netz.gestalt",
+   "sprosse": 1,
+   "klasse": "Stadt",
+   "quelle": "gesetz",
+   "grund": "Stadt — zweifel:zwei Zeilen „1 Ort“ gegen „10 km“: im Zweifel die höhere Zeile für den Umfang „1 Ort, ~10 km, 4 Klassen“ (Klassen-Gesetz Regel 6)",
+   "offen": "„1 Ort, ~10 km“: das Wort sagt Ort, die Spanne Stadt (über 1 km Sicht)"
+  },
+  {
+   "leiter": "mensch.zeit.erde",
+   "sprosse": 1,
+   "klasse": "Stadt",
+   "quelle": "gesetz",
+   "grund": "Stadt — wort:Stadt: die kleinste Zeile der Treppe, die den Umfang „EIN Ort, EINE Zeit (eine römische Stadt um 100)“ fasst (Klassen-Gesetz Regel 1)",
+   "offen": "„EIN Ort … eine römische Stadt um 100“: das Wort Ort gegen das Wort Stadt, dazu der Erd-Schlüssel ≤ 10 kB (Spalte Bytes)"
+  },
+  {
    "leiter": "erleben.spieler.wegfindung",
    "sprosse": 1,
    "klasse": "Stadt",
    "quelle": "gesetz",
    "grund": "Stadt — zahl:3 km: die kleinste Zeile der Treppe, die den Umfang „Landmarke aus 1–3 km sichtbar“ fasst (Klassen-Gesetz Regel 1)",
    "offen": "„Landmarke aus 1–3 km sichtbar“: über der Sicht der Zeile Ort (1 km); Vorbild planet.wetter.lagen („wenige km“) trägt Ort — Widerspruch"
+  },
+  {
+   "leiter": "same.kopplung.erdsaat",
+   "sprosse": 1,
+   "klasse": "Ort",
+   "quelle": "gesetz",
+   "grund": "Ort — wort:1 Ort: der Erd-Schlüssel betrifft die Spalte Bytes, die Klasse folgt dem übrigen Umfang „1 Ort, 1 Ereignis-Typ“ (Klassen-Gesetz Regel 6)",
+   "offen": "„1 Ort“ der Erd-Saat (Vesuv am Golf): der Erd-Schlüssel zählt erst in der Zeile Planet und Welten (Spalte Bytes), die Zeile Ort verlangt 0"
+  },
+  {
+   "leiter": "same.kopplung.terraform",
+   "sprosse": 1,
+   "klasse": "Stadt",
+   "quelle": "gesetz",
+   "grund": "Stadt — wort:Stadt: die kleinste Zeile der Treppe, die den Umfang „EIN Eingriff, EINE Region: Wetter lenken über einer Stadt“ fasst (Klassen-Gesetz Regel 1)",
+   "offen": "„EINE Region: Wetter lenken über einer Stadt“, Zielgebiet und Lee: Stadt oder größer"
   }
  ]
 }
