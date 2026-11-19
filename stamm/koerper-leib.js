@@ -2496,11 +2496,16 @@ class AnazhRealm_koerper_leib {
         const K = B && Z && this._kreaturPoseKanaele(U._tierBaum);
         if (!K) return;
         const S = AnazhRealm.KREATUR_POSE_SPRUNG;
+        let rest = 0;
         for (let k = 0; k < K.length; k++) {
             const d = (Z[k] - B[k]) / animDiv;
             B[k] += d > S ? S : d < -S ? -S : d;
             K[k][0][K[k][1]] = B[k];
+            rest += Math.abs(Z[k] - B[k]);
         }
+        // auf der vollen Stufe (ein Biss, das nahe Tier) gleitet das Bild aus, bis es die Auswertung trifft — erst dann zeichnet
+        // die Auswertung allein (v18: ein Hirsch, der aus der Stufe 1/8 zum Schnappen ansetzt, sprang 0,081 rad am Hals)
+        if (animDiv === 1 && rest < 1e-4) U._poseBild = null;
     }
 
     _tetrapodaSoulParts(soulKey, ovOpt) {

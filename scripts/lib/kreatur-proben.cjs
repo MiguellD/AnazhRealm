@@ -1623,26 +1623,33 @@ async function kreaturProben(r, T, opts) {
                             return !r._fieldRaycast(P.x, ey, P.z, ziel[0], ziel[1], ziel[2], { radius: 0.15 }).hit;
                         };
                         const w0 = Math.atan2(ez / el, ex / el);
-                        let N = null;
-                        sch.nahDreh = null;
+                        // DER BLICK, DER DIE HERDE ZEIGT (S1): unter den freien Blicken (in der Reihe der Drehung) gilt der erste, der
+                        // jedes Tier ≥ 200 px zeigt, sonst der mit den meisten — ein verdecktes Glied verwirft den Blick, nie das Soll
+                        const blicke = [];
                         for (const dg of [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180]) {
                             const w = w0 + (dg * Math.PI) / 180;
                             const P = neben(lp.x + Math.cos(w) * NAH_M, lp.z + Math.sin(w) * NAH_M);
-                            if (frei(P)) ((N = P), (sch.nahDreh = dg));
-                            if (N) break;
+                            if (frei(P)) blicke.push([dg, P]);
                         }
-                        N ||= neben(lp.x + (ex / el) * NAH_M, lp.z + (ez / el) * NAH_M);
-                        cam.position.set(N.x, N.y - 0.5 + NAH_HOEHE, N.z);
-                        cam.lookAt(lp.x, lp.y + 0.6, lp.z);
-                        cam.updateMatrixWorld(true);
-                        (r._lodAugeGesetzt(), r._loopFrustumCulling(), stufenAm());
-                        sch.nahR = rechteck(leit, W, Hh);
+                        if (!blicke.length) blicke.push([null, neben(lp.x + (ex / el) * NAH_M, lp.z + (ez / el) * NAH_M)]);
                         const stufeN = (c) => (c.userData._satz ? "satz" : r._kzBesitztFeld(c) ? "fern" : "leib");
-                        sch.nah = glieder.map((c) => ({ stufe: stufeN(c), rechteck: rechteck(c, W, Hh), kopf: stufeN(c) === "leib" ? kopf(c) : null })); // prettier-ignore
-                        sch.leitLeib = stufeN(leit) === "leib" ? leibMass(leit) : null;
-                        // das Bild nach dem Wechsel: der schwindende Satz (Kapseln, `WELT_SCHWUND_MS` an der Wanduhr) ist aus, ehe N schießt
-                        await sleep(A.WELT_SCHWUND_MS + 50);
-                        sch.N = await bild(W, Hh, sch.nah);
+                        let best = null;
+                        for (const [dg, N] of blicke.slice(0, 4)) {
+                            cam.position.set(N.x, N.y - 0.5 + NAH_HOEHE, N.z);
+                            cam.lookAt(lp.x, lp.y + 0.6, lp.z);
+                            cam.updateMatrixWorld(true);
+                            (r._lodAugeGesetzt(), r._loopFrustumCulling(), stufenAm());
+                            const v = { nahDreh: dg, nahR: rechteck(leit, W, Hh) };
+                            v.nah = glieder.map((c) => ({ stufe: stufeN(c), rechteck: rechteck(c, W, Hh), kopf: stufeN(c) === "leib" ? kopf(c) : null })); // prettier-ignore
+                            v.leitLeib = stufeN(leit) === "leib" ? leibMass(leit) : null;
+                            // das Bild nach dem Wechsel: der schwindende Satz (Kapseln, `WELT_SCHWUND_MS` an der Wanduhr) ist aus, ehe N schießt
+                            await sleep(A.WELT_SCHWUND_MS + 50);
+                            v.N = await bild(W, Hh, v.nah);
+                            v.zahl = v.nah.filter((t) => t.maskeMass >= 200).length;
+                            if (!best || v.zahl > best.zahl) best = v;
+                            if (v.zahl === glieder.length) break;
+                        }
+                        Object.assign(sch, { nahDreh: best.nahDreh, nahR: best.nahR, nah: best.nah, leitLeib: best.leitLeib, N: best.N, nahBlicke: blicke.length }); // prettier-ignore
                         kameraH();
                         stufenAm();
                     }
