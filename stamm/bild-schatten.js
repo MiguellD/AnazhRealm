@@ -117,6 +117,7 @@ class AnazhRealm_bild_schatten {
         const U = this._uniformHeimatTeilen({
             invVP: uniform(new THREE.Matrix4()),
             auge: uniform(new THREE.Vector3()),
+            weissBoden: uniform(0),
         });
         // der Boden der Atmosphäre: dieselbe PMREM-Stufe und dasselbe Licht wie der Himmel jedes Stoffs (`_spiegelUmgebung`)
         const atmoBoden = __weltLicht.himmelDerStoffe(
@@ -182,8 +183,15 @@ class AnazhRealm_bild_schatten {
                                 .and(this._offenerHimmel(T, p.xyz).greaterThan(0.5)),
                             () => {
                                 // das Szenen-Ziel hält L × k (`_vorBelichtung`): der Rückstrahl liest L
-                                summe.addAssign(farbe.load(px).rgb.div(this._vorBelichtung().kBild));
-                                n.addAssign(1);
+                                const L = farbe.load(px).rgb.div(this._vorBelichtung().kBild);
+                                // DER RÜCKSTRAHL LIEST NIE EINEN SELBSTLEUCHTER (licht-eine-skala, P7): kein Boden strahlt das Licht
+                                // von Sonne, Mond und Himmel heller zurück als der weiße Boden unter ihnen (`weissBoden`) — was
+                                // darüber liegt, leuchtet selbst (Flamme, Glut, Lava) oder steht im Licht einer Quelle am Ort (der
+                                // Kreis des Herds): beides ist nicht der Boden, den der Halbraum jeder Fläche der Welt zurückgibt
+                                If(T.luminance(L).lessThanEqual(U.weissBoden), () => {
+                                    summe.addAssign(L);
+                                    n.addAssign(1);
+                                });
                             }
                         );
                     });
@@ -222,6 +230,7 @@ class AnazhRealm_bild_schatten {
             P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
             P.U.invVP.value.copy(P.vp).invert();
             P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
+            P.U.weissBoden.value = this._rueckstrahlWeiss();
             const rend = st.renderer;
             if (typeof rend.readRenderTargetPixelsAsync !== "function")
                 throw new Error("der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)");
@@ -275,6 +284,19 @@ class AnazhRealm_bild_schatten {
                 err
             );
         }
+    }
+
+    // DER WEISSE BODEN DER STUNDE (P7, die Grenze des Rückstrahls): die Strahldichte einer weißen Fläche, die dem Richtlicht
+    // zugewandt unter dem ganzen Himmel liegt — (E des Richtlichts senkrecht zu ihm + E des Himmels auf der Waagrechten) ÷ π,
+    // aus der Lesung des Lichtmessers (`_waagrechtIrradianz`: `_belichtungE` − `_belichtungSonne` ist der Himmel). Ohne Lesung 0:
+    // dann zählt der Pass keinen Boden und die Lesung hält (kein Boden im Bild).
+    _rueckstrahlWeiss() {
+        const dl = this.state.directionalLight;
+        const [w, so] = [this._belichtungE, this._belichtungSonne];
+        if (!dl || !w || !so || !this._belichtungGelesen) return 0;
+        const lu = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        const richt = lu([dl.color.r, dl.color.g, dl.color.b]) * dl.intensity;
+        return (richt + Math.max(0, lu(w) - lu(so))) / Math.PI;
     }
 
     // DER RÜCKSTRAHL DIESER SZENE (Werkzeuge vor einer Aufnahme, wie `_schattenAlleNeu`): die Lesung folgt dem Bild — EIN Bild
