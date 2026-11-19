@@ -12079,10 +12079,10 @@
    "summe": {
     "kriterien": 40,
     "sprossen": 274,
-    "heute": 6,
+    "heute": 7,
     "kern": 2,
     "kernDazu": 2,
-    "anteilHeute": 2.4,
+    "anteilHeute": 2.7,
     "anteilKern": 0.8
    },
    "perspektiven": [
@@ -13482,7 +13482,7 @@
        "richter": "Blind-Spieler beschreiben ihren Tod als „Teil der Geschichte\" ≥ 70 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "_playerDeathRespawn (stamm/koerper-seele.js:322-352): Trauer +0,3, Ehrfurcht +0,2, Wunde ~10 min, Lebensspur, Rückkehr am Genesis-Anker — im Code gelesen. — KARTE: 0 — halten.K5 misst Zustand und Anker-Abstand an beiden Geräten (Mechanik); die Bildfolge am Todesort und die Rückkehr-Zeit sind ungefahren; kein Erbe, keine Erzählung, kein Ruf.",
@@ -20088,7 +20088,7 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 34,
+  "heute": 35,
   "davonKopplungen": 33,
   "kern": 9,
   "kernDazu": 9,
@@ -20103,7 +20103,7 @@
   },
   "gliederLeitern": 9,
   "beide": 33,
-  "nachwache": 1
+  "nachwache": 2
  },
  "zusammengelegt": [
   {
