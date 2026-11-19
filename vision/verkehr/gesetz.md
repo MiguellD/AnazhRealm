@@ -14,8 +14,13 @@ der Vision): die Kosten hängen am Schirm und an der Änderung, nie an der Zahl 
 2. **Eine Fahrt ist (Person, Uhrzeit) → Ziel → Route → Lage(t):** das Ziel ist eine Werk-Kachel d nach dem Gravitations-Gesetz
    (w_od = J_d / (1 + (|od|/ℓ)²) über die Kacheln im Radius R_max, J_d = H_d · `erbe.hoch` — Arbeit folgt der Geschossfläche;
    die Zuteilung n_od nach größten Resten, kein Würfel), die r-te Person des Paares beginnt um
-   W = werk₀ − streu + 2·streu·(r + φ_od)/n_od, die Route ist Tür → Gasse → Knoten 0 → Hauptstraße der Heim-Reihe → Hauptstraße
-   der Werk-Spalte → Knoten 0 → Gasse → Tür (abends dieselben Straßen zurück), und die Lage ist der Weg s(t) auf dieser Route.
+   W = werk₀ − streu + 2·streu·(r + φ_od)/n_od, die Route ist Tür → Gasse → Tor der Heim-Kachel in Fahrtrichtung →
+   Hauptstraße der Heim-Reihe → Ecke an Knoten 0 der Eck-Kachel → Hauptstraße der Werk-Spalte → Tor der Werk-Kachel → Gasse →
+   Tür (abends dieselbe Linie zurück), und die Lage ist der Weg s(t) auf dieser Route. Die Hauptstraße einer Route ist EINE
+   Linie von Tor zu Tor samt Ecke, die Tore sind feste Punkte, jeder Knick ≥ 2° ist ein Bogen, dessen innere Spur R = 6 m fährt;
+   ihr freies Tempo-Profil gilt für jeden Wagen des Paares. Anfang und Ende gehören der Gasse des Haushalts: der Anlauf bis
+   dorthin, wo ein Wagen aus dem Stand am Tor das freie Profil eingeholt hat, der Auslauf ab dort, von wo er bis zum Stand am
+   Tor bremsen kann — an diesen Stößen stimmen Ort, Richtung und Tempo überein (gezählt, nie geglättet).
 3. **Der Zustand der Stadt wird nie gehalten — der Schirm fragt die Funktion:** „welche Wagen sind JETZT auf DIESER Kante“ ist die
    Umkehrung von Satz 2 — eine Gasse trägt nur Fahrten ihrer Kachel, die Hauptstraße einer Reihe nur die der Heime dieser
    Reihe, die einer Spalte nur die der Werke dieser Spalte; je Paar (o, d) gibt die Umkehrung von W die Ränge r in O(1), und
@@ -40,7 +45,8 @@ der Vision): die Kosten hängen am Schirm und an der Änderung, nie an der Zahl 
 | Reichweite ℓ / Radius R_max | 1 000 m / 8 Kacheln (2 048 m) | gesetzt | — |
 | Werk-Beginn, Dauer | `TAGES_GESETZ.werk` [8, 17], `streuH` 0,5 | folgt | kc:5126–5219 |
 | Phase φ_od | Hash(o, d) ∈ [0, 1) | folgt | `netzHash` |
-| Route | Gasse → Hauptstraße der Reihe → der Spalte → Gasse | folgt aus dem Netz | fwc `kachelNetz` (Knoten 0, gen 0) |
+| Route | Gasse → Tor → Hauptstraße der Reihe → Ecke → der Spalte → Tor → Gasse | folgt aus dem Netz | fwc `kachelNetz` (Tore, Knoten 0, gen 0) |
+| Bogen, Kurve | innere Spur R = 6 m; a_quer 2,5 m/s² → 3,87 m/s; an/ab 1,5 / 2,0 m/s² | gesetzt | — |
 | v_f | 13,9 m/s (gen 0), 8,3 m/s (gen 1) | gesetzt | — |
 | ρ_jam | 1 / (Länge der Hülle + 2,5 m) ≈ 1 / 7 m | folgt aus der Hülle | vc `huelle` :3467 |
 | q_max | 0,5 Fz/s je Spur (Zeitlücke 2 s) | gesetzt | — |
@@ -77,3 +83,8 @@ Nie: eine Liste aller Wagen, ein Takt über alle Wagen, eine Suche von Wagen nac
 
 Ob das trägt, sagt der Spike (`spike.md`): er versucht es an den Kosten (a), der Erhaltung (b), dem Wechsel nah ↔ fern (c),
 dem Stau (d) und dem Determinismus (e) zu widerlegen. Fällt (a) oder (b), endet die Sitzung mit dem Befund.
+
+**Stand nach dem Spike (19.11.):** (b) widerlegt Satz 2 an der Gasse — die Route „Tür → Gasse → Tor“ fährt auf Straßen unter
+`VERKEHR_GESETZ.breiteM`, die der Kern ohne Wagen führt (`wegArt`, fwc:10109), und die Fahrstraße der Kachel-Stadt hat keinen
+Stellplatz. Spur, Bogen und Platz dieser Fassung (eckR 6, Gassen-Spur w/4, parkM 2,15) sind eigene Zahlen statt
+`VERKEHR_GESETZ` (spurM, kurveR, parkB). Befund und der kleinste Schnitt im Kern: `spike.md`.

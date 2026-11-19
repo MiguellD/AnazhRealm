@@ -1,0 +1,76 @@
+--- a/fachwerk-core.js
++++ b/fachwerk-core.js
+@@ -4083,15 +4083,27 @@
+             const l = rd.pts[rd.pts.length - 1]; if ((rd.pts.length - 1) % S.strasseJe) p.push(e3(l.x), e3(l.z));
+             return { p, w: rd.w, belag: gassenBelag(dorf, rd), saum: (gassenBreite(dorf, rd) - rd.w) / 2, art: wegArt(dorf, rd) }; });
+         const z0 = netz.nodes[0], kand = [];
++        // die Bauflucht folgt der Trasse der Straße an der Kante (halbe `gassenBreite` − 0,1 m; `einzugM` ist ihr Wert an der
++        // gepflasterten Fahrstraße ohne Parkstreifen und bleibt das Mindestmaß; eine Kante ohne Straße behält es)
++        const einAn = (x, z) => { let d = Infinity, r = 0;
++            for (const st of strassen) for (let j = 0; j + 3 < st.p.length; j += 2) { const ax = st.p[j], az = st.p[j + 1], bx = st.p[j + 2] - ax, bz = st.p[j + 3] - az, l2 = bx * bx + bz * bz,
++                f = l2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * bx + (z - az) * bz) / l2)) : 0, e = Math.hypot(ax + bx * f - x, az + bz * f - z); if (e < d) { d = e; r = st.w / 2 + st.saum; } }
++            return d < r ? Math.max(S.einzugM, r - 0.1) : S.einzugM; };
++        // ebenso der Einzug an Anfang und Ende der Kante: die Trasse der QUEREN Straße durch die Ecke (die Richtung der Straße
++        // steht schräger als 45° zur Kante)
++        const kreuzAn = (x, z, ux, uz) => { let r = 0;
++            for (const st of strassen) for (let j = 0; j + 3 < st.p.length; j += 2) { const ax = st.p[j], az = st.p[j + 1], bx = st.p[j + 2] - ax, bz = st.p[j + 3] - az, l2 = bx * bx + bz * bz,
++                f = l2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * bx + (z - az) * bz) / l2)) : 0; if (l2 > 0 && Math.hypot(ax + bx * f - x, az + bz * f - z) < 1 && Math.abs(ux * bz - uz * bx) > Math.SQRT1_2 * Math.sqrt(l2)) r = Math.max(r, st.w / 2 + st.saum); }
++            return Math.max(S.einzugM, r - 0.1); };
+         netz.bloecke.forEach((B, bi) => {
+             let A2 = 0; for (let e = 0; e < 4; e++) { const p = B[e], q = B[(e + 1) % 4]; A2 += p[0] * q[1] - q[0] * p[1]; }
+             const s = A2 > 0 ? 1 : -1, mi = e => [(B[e][0] + B[(e + 1) % 4][0]) / 2, (B[e][1] + B[(e + 1) % 4][1]) / 2];
+             const tief = [0, 1].map(e => Math.hypot(mi(e)[0] - mi(e + 2)[0], mi(e)[1] - mi(e + 2)[1]) / 2);   // die halbe Tiefe des Blocks hinter der Kante
+             for (let e = 0; e < 4; e++) { const p = B[e], q = B[(e + 1) % 4], dx = q[0] - p[0], dz = q[1] - p[1], L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L;
+                 // die Ecke am Anfang der Kante gehört dem letzten Haus der Kante davor (`eckeM`), das Ende reicht bis an den Einzug
+-                const frei = L - 2 * S.einzugM - S.eckeM - 1, n = Math.floor(frei / S.platzM);
+-                for (let j = 0; j < n; j++) { const t = S.einzugM + S.eckeM + ((j + 0.5) * frei) / n;
+-                    kand.push({ w: bi * 4 + e, j, x: p[0] + ux * t, z: p[1] + uz * t, ux, uz, nx: -s * uz, nz: s * ux, breit: frei / n, tief: tief[e & 1], h: netzHash(samen, 43, i, k, bi * 4 + e, j) }); } }
++                const e0 = kreuzAn(p[0], p[1], ux, uz), e1 = kreuzAn(q[0], q[1], ux, uz), frei = L - (e0 + e1) - S.eckeM - 1, n = Math.floor(frei / S.platzM);
++                for (let j = 0; j < n; j++) { const t = e0 + S.eckeM + ((j + 0.5) * frei) / n;
++                    kand.push({ w: bi * 4 + e, j, x: p[0] + ux * t, z: p[1] + uz * t, ein: einAn(p[0] + ux * t, p[1] + uz * t), ux, uz, nx: -s * uz, nz: s * ux, breit: frei / n, tief: tief[e & 1], h: netzHash(samen, 43, i, k, bi * 4 + e, j) }); } }
+         });
+         const n = Math.min(H.length, kand.length), reihe = (a, b) => a.w - b.w || a.j - b.j, d2 = q => (q.x - z0.x) * (q.x - z0.x) + (q.z - z0.z) * (q.z - z0.z);
+         // EIN HOHES HAUS STEHT AUF EINEM TIEFEN PLATZ: das Los des Samens wählt n Plätze, die Liste nimmt je Haus den nächsten zur
+@@ -4099,7 +4111,7 @@
+         // übrigen; erst wenn kein Platz der Kachel es trägt, steht es auf dem nächsten freien (dann schmaler, als es ist)
+         const nah = (a, b) => d2(a) - d2(b) || reihe(a, b), los = kand.slice().sort((a, b) => a.h - b.h || reihe(a, b));
+         const frei = los.slice(0, n).sort(nah), uebrig = los.slice(n).sort(nah), wahl = [];
+-        for (let r = 0; r < n; r++) { const soll = Math.min(H[r].D, (Math.max(1, H[r].storeys || 1) * S.geschossM + S.sockelM) / STADT_FORM.stab), passt = q => q.tief - S.einzugM - 1 >= soll;
++        for (let r = 0; r < n; r++) { const soll = Math.min(H[r].D, (Math.max(1, H[r].storeys || 1) * S.geschossM + S.sockelM) / STADT_FORM.stab), passt = q => q.tief - q.ein - 1 >= soll;
+             let L = frei, j = L.findIndex(passt);
+             if (j < 0) { L = uebrig; j = L.findIndex(passt); }
+             if (j < 0) { L = frei.length ? frei : uebrig; j = 0; }
+@@ -4107,7 +4119,7 @@
+         const lage = new Float32Array(n * 7), ton = new Float32Array(n * 6), tonAm = stadtTonAn(samen, i, k, netz.m);
+         for (let r = 0; r < n; r++) { const q = wahl[r], p = H[r];
+             // die Reihe schließt sich, wo das Haus seinen Platz füllt (Brandwand an Brandwand); das schmalere steht frei in seinem Platz
+-            const W = Math.max(3, p.W >= q.breit ? q.breit : Math.min(p.W, q.breit - 0.8)), D = Math.max(3, Math.min(p.D, q.tief - S.einzugM - 1)), ab = S.einzugM + 0.6 + D / 2;
++            const W = Math.max(3, p.W >= q.breit ? q.breit : Math.min(p.W, q.breit - 0.8)), D = Math.max(3, Math.min(p.D, q.tief - q.ein - 1)), ab = q.ein + 0.6 + D / 2;
+             const x = e3(q.x + q.nx * ab), z = e3(q.z + q.nz * ab);
+             lage.set([x, z, e3(Math.atan2(-q.uz, q.ux))].concat(hausMasse(p, W, D)), r * 7);
+             ton.set(hausMasseTon(p, tonAm(p.col, x, z)), r * 6); }
+@@ -10074,8 +10086,15 @@
+     function gehwegVon(plan, rd) {
+         return plan.staedtisch && rd.w >= VERKEHR_GESETZ.breiteM ? STADT_DICHTE.gehwegFahrM : (plan.norm || DORF_NORM).gehweg;
+     }
++    // DER PARKSTREIFEN DER FAHRSTRASSE (PFLICHT-OFFEN C; Befund vision/verkehr/spike.md im Zweig zensus-verkehr): der Wagen eines
++    // Haushalts steht an der Fahrstraße seiner Kachel — die Gasse unter `breiteM` trägt keinen Wagen (`wegArt`), die Fahrbahn
++    // zwei Spuren (`spurM`), der Gehweg zwei Leiber: je Seite ein Streifen `parkB` zwischen Fahrbahn und Gehweg.
++    // Leser: `gassenBreite` (Trasse und Bauflucht), `wegQuerschnitt` (der Maler).
++    function parkVon(plan, rd) {
++        return plan.staedtisch && rd.w >= VERKEHR_GESETZ.breiteM ? VERKEHR_GESETZ.parkB : 0;
++    }
+     function gassenBreite(plan, rd) {
+-        return gassenBelag(plan, rd) === "pflaster" ? rd.w + 2 * gehwegVon(plan, rd) : rd.w;
++        return rd.w + 2 * parkVon(plan, rd) + (gassenBelag(plan, rd) === "pflaster" ? 2 * gehwegVon(plan, rd) : 0);
+     }
+     // DER KÖRPER DES WEGS (w28-weg-koerper, 18.11.2026; Auge am Messort „dorf 7 4750“: jede Gasse der Stadt lag als flacher
+     // Anstrich im Boden — kein Bord, keine Rinne, die Fahrbahn vom Gehweg nicht zu scheiden). EIN Gesetz für jeden Rang, nah und
+@@ -10120,6 +10139,7 @@
+             art: art,
+             belag: A.belag,
+             fahrM: rd.w,
++            parkM: parkVon(plan, rd),
+             gehM: A.belag === "pflaster" ? gehwegVon(plan, rd) : 0,
+             bordM: A.bord ? WEG_GESETZ.bord.hochM : 0,
+             kant: A.kant,
