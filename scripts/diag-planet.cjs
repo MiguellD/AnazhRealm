@@ -7,12 +7,14 @@
 //   --bildsaaten <breitePx> <ordner>                          die fünf aus dem Hash der Saat-Liste gezogenen Saaten, drei Schichten
 //   --richter bau1 [--saaten N]                               Erd-Statistik über erde-01 … erde-30, Urteil je Messname
 //   --richter gesicht [--saaten N]                            Gestalt des Landes (ENTSCHEID-2 G1), Gitter 720×360, t = 0
+//   (ohne Argument)                                           Richter welle1: je Bahn der Bau-Welle 1 die Linse am Kern (B1 … B5, FÄLLT)
 //   --richter ort [--saaten N]                                die Brücke gezielt: ort.delta.null am Anker jeder Saat (samt Jahres-Phase), ort.leser
 //   --bildpaar <alt-kern.js> <samen> <zeitMa> <schicht> <px> <aus.png>   oben der alte Kern, unten der Kern im Baum
 //   Umgebung PLANET_KERN=<kern.js>: der Richter liest diesen Kern statt des Baums (vorher ↔ nachher unter gleicher Last)
-//   --kosten                                                  Kosten-Schwellen (Punkt, Platten-Zahl, Radius, Plan, Scheibe, Meer, Karte)
+//   --kosten                                                  Kosten-Schwellen (Punkt, Platten-Zahl, Radius, Plan, Scheibe, Meer, Karte, Wasser)
 //   --bytes                                                   Determinismus (Absenz, Mathe-Genauigkeit, SHA über Prozesse/jitless/Reihenfolge)
-//   --selbsttest                                              gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden
+//   --selftest (= --selbsttest, die Schreibung der Familie)   gepflanzte Fehler (Transzendente, gerade Küste, Facette) müssen ROT werden;
+//                                                             der Kern vor der Welle 1 (b7ed8419, aus git) macht jede Zeile welle1 ROT
 //
 // Eingefroren vor dem ersten Lauf (14.11.): Saat-Liste erde-01 … erde-30 mit PLANET_ERDE; 16 384 Fibonacci-Proben je Saat, fuss 40 km;
 // die Schwellen unten stehen wörtlich wie im Entscheid §5 bau1. Erd-Werte (Literatur, an der Quelle zu prüfen): Land 29,2 %
@@ -526,8 +528,8 @@ function saatZeit(samen) {
   const o0 = P.planetOrt(S0, A.breite, A.laenge, og);
   out.deltaNull = deltaNull(o0.delta);
   out.reise = zeitReise(plan, samen);
-  out.anker = { breite: A.breite, laenge: A.laenge, sommer: o0.klima.sommer, winter: o0.klima.winter, kueste: A.kuesteKm, randNah, wl: Object.is(o0.meer.waterLevelM, -3), land: P.planetPunkt(S0, A.breite, A.laenge, 40) > 0 };
-  const ids = ['land', 'hoehe', 'kontinentLambda', 'rauhLambda', 'trog', 'ks', 'tafel', 'schichtDicke', 'hartAnteil'];
+  out.anker = { breite: A.breite, laenge: A.laenge, sommer: o0.klima.sommer, winter: o0.klima.winter, kueste: A.kuesteKm, randNah, wl: Object.is(o0.meer.waterLevelM, -3), land: P.planetPunkt(S0, A.breite, A.laenge, 16) > 0 };   // B5 Land im Band des Orts (fuss 16)
+  const ids = ['land', 'hoehe', 'rauhLambda', 'trog', 'ks', 'tafel'];   // FÄLLT e217/e222/e223: die drei Δ ≡ 0 reisen nicht mehr
   let orte = 0, inBereich = 0; const ko = P.planetHash('orte|' + samen), oO = {};
   for (let i = 0; orte < 256 && i < 20000; i++) { const y = 2 * P.planetZufall(ko, 1, i, 0) - 1, lam = 2 * Math.PI * P.planetZufall(ko, 2, i, 0) - Math.PI, phi = Math.asin(y);
     if (!(P.planetPunkt(S0, phi, lam, 40) > 0)) continue; orte++; P.planetOrt(S0, phi, lam, og, oO);
@@ -815,6 +817,26 @@ function punktKosten(S, n, saat) {
   return { median: quantil(t, 0.5) / 1000, p95: quantil(t, 0.95) / 1000 };
 }
 function bestVon5(f) { let b = Infinity, w; for (let i = 0; i < 5; i++) { const a = ns(); const r = f(i); const d = (ns() - a) / 1e6; if (d < b) { b = d; w = r; } } return { ms: b, wert: w }; }
+function kostenSkala(Q) { // die Kosten des Punkts wachsen nicht mit der Platten-Zahl und nicht mit dem Radius (Q: der gemessene Kern)
+  const out = [], zeile = (name, ok, wert, schwelle) => out.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
+  const Sk = Q.planetScheibe(Q.planetPlan('erde-01', Object.assign({}, Q.PLANET_ERDE, { schollenZahl: 10, ozeanPlatten: 4 })), 0), Sg = Q.planetScheibe(Q.planetPlan('erde-01', Object.assign({}, Q.PLANET_ERDE, { schollenZahl: 40, ozeanPlatten: 8 })), 0);
+  // Verhältnis-Richter nach dem Schätzer von G3 (Gegner 2, Zahl §1): je Durchgang die Aufbauten dicht hintereinander, die Reihenfolge
+  // wechselt; das Urteil ist der Median der Verhältnisse je Durchgang — eine Last-Phase der Maschine trifft alle Seiten EINES Durchgangs.
+  // Vorher das Minimum je Aufbau über 7 Durchgänge à 12 000: am selben Kern flackerte kosten.radius über Prozesse 1,29 ↔ 1,39 und
+  // platten +37 ↔ +43 %, sechs frische Mond-Scheiben in einem Prozess liefen gleich schnell, die Maschine sprang in Phasen 4,7 ↔ 6,2 µs (19.11.)
+  const Sr = [1737, 6371, 12742].map(R => Q.planetScheibe(Q.planetPlan('erde-01', Object.assign({}, Q.PLANET_ERDE, { radiusKm: R, g: 9.81 * R / 6371 })), 0));
+  const tk = [], tg = [], rad = [[], [], []];
+  for (let durchgang = 0; durchgang < 21; durchgang++) {
+    const vor = durchgang % 2 === 0, s = 'p' + durchgang, r = 'r' + durchgang;
+    if (vor) { tk.push(punktKostenMit(Q, Sk, 4000, s)); tg.push(punktKostenMit(Q, Sg, 4000, s)); } else { tg.push(punktKostenMit(Q, Sg, 4000, s)); tk.push(punktKostenMit(Q, Sk, 4000, s)); }
+    for (const i of (vor ? [0, 1, 2] : [2, 1, 0])) rad[i].push(punktKostenMit(Q, Sr[i], 4000, r));
+  }
+  const vPl = median(tg.map((g, i) => g / tk[i])), vR = [0, 2].map(i => median(rad[i].map((t, d) => t / rad[1][d]))), vRad = Math.max(1, ...vR) / Math.min(1, ...vR);
+  zeile('kosten.platten', vPl <= 1.4, 'nP ' + Sk.nP + ': ' + median(tk).toFixed(2) + ' µs ↔ nP ' + Sg.nP + ': ' + median(tg).toFixed(2) + ' µs (+' + (100 * (vPl - 1)).toFixed(0) + ' %, Median der Paar-Verhältnisse, 21 Durchgänge × 4 000)', '≤ +40 % (nP 9 ↔ 17)');
+  // Radius bei gleichem Samen: je Durchgang Mond und Doppel-Erde gegen die Erde
+  zeile('kosten.radius', vRad <= 1.35, rad.map(a => median(a).toFixed(2)).join(' · ') + ' µs (R 1 737 · 6 371 · 12 742), ÷ Erde je Durchgang ' + vR[0].toFixed(3) + ' · ' + vR[1].toFixed(3) + ', max/min ' + vRad.toFixed(3), '≤ 1,35');
+  return out;
+}
 function kosten() {
   const out = [];
   const zeile = (name, ok, wert, schwelle) => { out.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle }); };
@@ -822,19 +844,7 @@ function kosten() {
   const pk = []; for (let i = 0; i < 5; i++) pk.push(punktKosten(S, 40000, 'kosten-' + i));
   const best = pk.reduce((a, b) => (a.median <= b.median ? a : b));
   zeile('kosten.punkt', best.median <= 8 && best.p95 <= 20, 'Median ' + best.median.toFixed(2) + ' µs, p95 ' + best.p95.toFixed(2) + ' µs (5 × 40 000, bestes)', '≤ 8 µs, p95 ≤ 20 µs');
-  // Platten-Zahl
-  const klein = planVon('erde-01', { schollenZahl: 10, ozeanPlatten: 4 }), gross = planVon('erde-01', { schollenZahl: 40, ozeanPlatten: 8 });
-  const Sk = P.planetScheibe(klein, 0), Sg = P.planetScheibe(gross, 0);
-  // Verhältnis-Richter verschränkt (ABAB über 7 Durchgänge, Minimum je Aufbau): fremde Last trifft beide Seiten gleich
-  const Sr = [1737, 6371, 12742].map(R => P.planetScheibe(planVon('erde-01', { radiusKm: R, g: 9.81 * R / 6371 }), 0));
-  let mk = Infinity, mg = Infinity; const rad = [Infinity, Infinity, Infinity];
-  for (let durchgang = 0; durchgang < 7; durchgang++) {
-    mk = Math.min(mk, punktKosten(Sk, 12000, 'p' + durchgang).median); mg = Math.min(mg, punktKosten(Sg, 12000, 'p' + durchgang).median);
-    for (let i = 0; i < 3; i++) rad[i] = Math.min(rad[i], punktKosten(Sr[i], 12000, 'r' + durchgang).median);
-  }
-  zeile('kosten.platten', mg / mk <= 1.4, 'nP ' + Sk.nP + ': ' + mk.toFixed(2) + ' µs ↔ nP ' + Sg.nP + ': ' + mg.toFixed(2) + ' µs (+' + (100 * (mg / mk - 1)).toFixed(0) + ' %, verschränkt, 7 Durchgänge)', '≤ +40 % (nP 9 ↔ 17)');
-  // Radius bei gleichem Samen
-  zeile('kosten.radius', Math.max(...rad) / Math.min(...rad) <= 1.35, rad.map(v => v.toFixed(2)).join(' · ') + ' µs (R 1 737 · 6 371 · 12 742), max/min ' + (Math.max(...rad) / Math.min(...rad)).toFixed(3), '≤ 1,35');
+  out.push(...kostenSkala(P));   // Platten-Zahl und Radius
   // Plan
   const pp = bestVon5(i => P.planetPlan('erde-plan-' + i, P.PLANET_ERDE));
   const pb = P._intern.planBytes(pp.wert);
@@ -843,11 +853,15 @@ function kosten() {
   zeile('kosten.abschnitt', pa.wert <= 25, pa.wert.toFixed(1) + ' ms (letzter Abschnitt kalt, mit Rand-Gedächtnis über alle Vorgänger)', '≤ 25 ms');
   // Scheibe warm: Abschnitt und Meer-Fächer warm, neue Zeit im selben Fach
   const ws = bestVon5(i => { const a = ns(); const s = P.planetScheibe(plan, 0.137 * (i + 1)); return { ms: (ns() - a) / 1e6, bytes: P._intern.scheibeBytes(s) }; });
-  zeile('kosten.scheibe', ws.wert.ms <= 5 && ws.wert.bytes <= 64 * 1024, ws.wert.ms.toFixed(2) + ' ms, ' + (ws.wert.bytes / 1024).toFixed(1) + ' KB', 'warm ≤ 5 ms, ≤ 64 KB');
+  // B0 die Zell-Listen (Kruste, Platten, Ketten) wachsen mit den gelesenen Zellen, nie mit der Welt: S trägt nach den 210 000 Adressen
+  // von kosten.punkt jede der 6·16² Zellen — die Zahl steht neben der warmen
+  const vollKB = P._intern.scheibeBytes(S) / 1024;
+  zeile('kosten.scheibe', ws.wert.ms <= 5 && ws.wert.bytes <= 64 * 1024 && vollKB <= 512, ws.wert.ms.toFixed(2) + ' ms, ' + (ws.wert.bytes / 1024).toFixed(1) + ' KB warm, ' + vollKB.toFixed(1) + ' KB mit allen Zellen', 'warm ≤ 5 ms, ≤ 64 KB; alle Zellen ≤ 512 KB');
   const mf = bestVon5(i => { const a = ns(); P.planetMeer(plan, -300 - 10 * i, 0.001 * (i + 1)); return (ns() - a) / 1e6; });
   zeile('kosten.meer', mf.wert <= 40, mf.wert.toFixed(1) + ' ms je Fach (Zusatz-Wasser erzwingt neue Lösung, Proben warm)', '≤ 40 ms');
   const kk = bestVon5(() => P.planetKarte(S, 1024, 'relief'));
   zeile('kosten.karte', kk.ms <= 5000, (kk.ms / 1000).toFixed(2) + ' s', '≤ 5 s (1024×512 relief, ein Faden)');
+  out.push(...kostenWasser(P));
   return out;
 }
 
@@ -881,7 +895,14 @@ function hoehenSha(S, W, ordnung) {
 const VERSION_SHA = { 'planet-g3-2': '553f0a6918332df9d1589834559598eb22d65df5c66cabed6e4a0278141d3dfb', 'planet-h2-1': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
   'planet-h2-2': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
   'planet-h2-3': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
-  'planet-h2-4': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f' };   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
+  'planet-h2-4': 'cc2f82842589df547d13caf171a738fdb57fac5e2af6763fcd852a63739a2c6f',
+  'planet-h2-5': '6fb0213d5cf02126c8c0eb9556822f1d1256d3183eda9252943598161ceb9a89',
+  'planet-h2-6': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
+  'planet-h2-7': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
+  'planet-h2-8': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
+  'planet-h2-9': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
+  'planet-h2-10': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee',
+  'planet-h2-11': '5c937970b7de4796d8b916f8cee2811c83dd80a6aa15de14777be9af0f2c26ee' };   // h2-11 (Bau-Welle 1, Jahreszeiten-Vertrag): das Δ des Jahres-Gangs zur selben Zeit des Jahres, „Sommer“ die wärmere Jahreszeit mit ihrer Phase — das Relief steht   // h2-10 (Bau-Welle 1, FÄLLT): die drei Δ ≡ 0 der Wildnis (kontinentLambda, schichtDicke, hartAnteil) reisen nicht mehr — das Relief steht   // h2-9 (Bau-Welle 1, B5): der Anker im Band des Orts (fuss 16), er trägt Spende, Wuchs und kein E — das Relief steht   // h2-8 (Bau-Welle 1, B3): S5 Wasser im Kern (planetWasserGitter · planetWasserR, DIE PET) — Relief und Klima stehen   // h2-7 (Bau-Welle 1, B2): das Klima ohne Land-Schalter (EIN Land-Gewicht, EINE PET, die Feuchte-Knoten auf den Hüllen-Schritten) — das Relief steht   // h2-6 (Bau-Welle 1, B4): der Anden-Bogen eine Schürze + 150 km hinter dem Graben, EINE Lage je Platte — das Relief bewegt sich   // h2-5 (Bau-Welle 1, B1): die Naht gehört dem Paar — ω_p über ξ(p, j), stetig über Platte, Scholle und Kruste; das Relief bewegt sich   // h2-4 (Reise, Welle 3): der Wuchs als Verhältnis-Feld des Orts, EINE Rechnung mit der Farbe des Atlas — Relief und Biom-Karte bewegen sich nicht   // h2-3 (Reise, Gegner F4): EIN Jahr — PLANET_ERDE trägt 365, die Normierung liest es; das Relief bewegt sich nicht   // h2-2 (Reise K): die Jahres-Phase als Δ-Feld des Orts — das Relief bewegt sich nicht
 function versionUrteil(version, s, tafel) { const soll = tafel[version];
   if (!soll) return { ok: false, wert: 'VERSION ' + version + ' fehlt in der Tafel (SHA ' + s.slice(0, 16) + ')' };
   return { ok: soll === s, wert: 'VERSION ' + version + ' → ' + s.slice(0, 16) + (soll === s ? ' = Tafel' : ' ≠ Tafel ' + soll.slice(0, 16)) }; }
@@ -1258,10 +1279,11 @@ function selbsttest() {
     // Reise, Welle 3: der Wuchs ist ein Verhältnis-Feld — gepflanzt: am Anker trägt der Wald 0,999 statt 1 → ROT
     dl.leit.huelleM[40] = 0; const vorW = deltaNull(dl); dl.wuchs.wald = 0.999; zeile('ort.delta.wuchs feuert', vorW && !deltaNull(dl), 'gepflanzt: das Wald-Verhältnis am Anker 0,999 → ROT'); }
   // Reise K: die Jahres-Phase ist ein Δ-Feld. erde-01 trägt seinen Anker auf der Süd-Halbkugel — dort ist das Δ am Anker +0 (die Heimat
-  // behält ihre Phase), jenseits des Äquators −0,5; gepflanzt: die Phase als Ort − Tafel (absolut gelesen) gäbe am Süd-Anker 0,5 → ROT
+  // behält ihre Phase), jenseits des Äquators 0,5 (Jahreszeiten-Vertrag: 0 oder 0,5, die Phase der wärmeren Jahreszeit); gepflanzt: die
+  // Phase als Ort − Tafel (absolut gelesen) gäbe am Süd-Anker 0,5 → ROT
   { const og = ortGesetz(), pl = planVon('erde-01'), S = P.planetScheibe(pl, 0), A = P.planetAnker(pl, 0, og), oA = P.planetOrt(S, A.breite, A.laenge, og), dA = oA.delta.klima.sommerPhase, absA = oA.klima.sommerPhase;
     const dN = P.planetOrt(S, -A.breite, A.laenge, og).delta.klima.sommerPhase, grad = (A.breite * 180 / Math.PI).toFixed(2);
-    zeile('ort.delta.phase', A.breite < 0 && Object.is(dA, 0) && dN === -0.5 && absA === (og.klimaHeute.sommerPhase + 0.5) % 1, 'Süd-Anker erde-01 (' + grad + '°): Phase-Δ am Anker ' + (Object.is(dA, 0) ? '+0' : dA) + ', auf der Nord-Halbkugel ' + dN + ' (absolut am Anker ' + absA + ', Tafel ' + og.klimaHeute.sommerPhase + ')');
+    zeile('ort.delta.phase', A.breite < 0 && Object.is(dA, 0) && dN === 0.5 && absA === (og.klimaHeute.sommerPhase + 0.5) % 1, 'Süd-Anker erde-01 (' + grad + '°): Phase-Δ am Anker ' + (Object.is(dA, 0) ? '+0' : dA) + ', auf der Nord-Halbkugel ' + dN + ' (absolut am Anker ' + absA + ', Tafel ' + og.klimaHeute.sommerPhase + ')');
     const am = P.planetOrt(S, A.breite, A.laenge, og).delta, mut = Object.assign({}, am, { klima: Object.assign({}, am.klima, { sommerPhase: absA - og.klimaHeute.sommerPhase }) });
     zeile('ort.delta.phase feuert', deltaNull(am) && !deltaNull(mut), 'gepflanzt: Phase als Ort − Tafel statt Ort − Anker (' + mut.klima.sommerPhase + ' am Süd-Anker) → ROT'); }
   { const Q = Object.assign({}, P, { planetOrtDerZeit: (pl, b, l, t0, t1, o) => { P.planetOrtDerZeit(pl, b, l, t0, t1, o); if (t1 === 0) o.laenge += 1e-6; return o; } });
@@ -1271,6 +1293,7 @@ function selbsttest() {
   const bv = versionUrteil('planet-x', 'abc', { 'planet-x': 'abd' }); zeile('bytes.version feuert', !bv.ok, 'gepflanzt: SHA abc bei VERSION planet-x, Tafel abd → ' + bv.wert);
   gesichtSelbsttest(zeile);
   gegner2Selbsttest(zeile);
+  welle1Selbsttest(zeile);
   return out;
 }
 
@@ -1352,6 +1375,179 @@ function gegner2Selbsttest(zeile) {
   zeile('eis.kante Täter', spanne(breitenkreis) === 0 && spanne(welle) > 8, 'Breitenkreis ' + spanne(breitenkreis).toFixed(2) + '° ↔ Welle ' + spanne(welle).toFixed(2) + '°');
 }
 
+// ── Richter welle1 (der Lauf ohne Argument): die Bau-Welle 1 im Kern (Zweig zensus-planet, vision/planet: bahnen, welle-1) ─────
+// Je Bahn die Linse am Kern selbst, sie nennt den Täter beim Namen (die Spike-Proben a–f bleiben der Richter der Bahn). Der Selbsttest
+// lädt den Kern vor der Welle (main WELLE1_BASIS) aus git: an ihm ist jede Zeile ROT.
+//  naht.stetig   B1  Querungen Platte · Scholle · Kruste auf 1 cm (Paare 20 km, Halbierung; erde-01, t = 0, fuss 16): |Δh| > 1 cm
+//  kueste.stetig B2  Querungen Land ↔ Meer: |ΔT| > 10⁻³ K oder |ΔP| > 0,1 mm/a auf 1 cm
+//  pet.eine      B2  DIE PET: der Kern trägt planetPet, ihre Formel steht EINMAL im Kern
+//  wasser.*      B3  das Gitter des Kerns (planetWasserGitter) je Saat erde-01 … erde-10: Kreise 0 · Endsee-Land Median [10, 30] % ·
+//                    P/PET Endsee ÷ Meer-Zufluss ≤ 0,8 · Abfluss ins Meer Median [18 600, 74 600] km³/a (Erde ~37 000) · Querungen der
+//                    nächsten Zelle (planetWasserR) |ΔQ|/Q ≤ 10⁻³ auf 1 cm
+//  anden.bogen   B4  c3 je Saat erde-01 … erde-10 (40 000 Adressen, fuss 16): Anteil Land > 2 km nah konvergentem Rand (≤ 500 km) ÷
+//                    Anteil Land nah Rand ≥ 2 in 10/10
+//  anker.traegt  B5  erde-01 … erde-30: der Anker bei fuss 16 Land, Wald > 0, Decke > 0, Spende > 0, kein Köppen E
+//  ort.faellt    FÄLLT planetOrt trägt kontinentLambda, schichtDicke, hartAnteil nicht mehr (Zensus e217/e222/e223)
+//  ort.jahreszeit    der Jahreszeiten-Vertrag Planet ↔ Ort-Gesetz, gelesen durch den Leser des Spiels (gelaende-core `ortGesetz(teil)`,
+//                    `schneePegel`): Raster 4° × 10° (±80°) der Samen JZ_SAMEN, Land-Ziele bei fuss 16 — Sommer < Winter 0 · Schnee zur
+//                    Sommer-Mitte auf der Höhe des Orts (Pegel ≥ `SCHMELZE.deckt`) bei Sommer > 10 °C dort 0. ROT nennt Samen, Lage und
+//                    beide Temperaturen. Der Kern vor der Welle hält sie (0 von 1 751: seine vier Anker tragen eine Rest-Spanne ≤ 0) —
+//                    der Selbsttest pflanzt die Täter: die Spanne gedreht, und das Δ am Namen (Sommer − Sommer, die Regel bis h2-10)
+const WELLE1_BASIS = 'b7ed8419', W1_SAATEN = SAATEN.slice(0, 10), W1_ZIEL = 400, PET_FORMEL = /\b400\s*\+\s*45\s*\*/g;
+function basisKern() { // der Kern vor der Welle: git show WELLE1_BASIS:planet-core.js → tmp; fehlt das Objekt, bricht der Selbsttest beim Namen
+  const aus = path.join(os.tmpdir(), 'planet-core-' + WELLE1_BASIS + '-' + process.pid + '.js');
+  const text = execFileSync('git', ['show', WELLE1_BASIS + ':planet-core.js'], { cwd: path.join(__dirname, '..'), maxBuffer: 1 << 26, encoding: 'utf8' });
+  fs.writeFileSync(aus, text); delete globalThis.__planetCore; const Q = require(aus); delete globalThis.__planetCore; fs.unlinkSync(aus);
+  return { Q, text };
+}
+function planQ(Q, samen) { return Q.planetPlan(samen, Object.assign({}, Q.PLANET_ERDE)); }
+function naechsteZelle(W, x, y, z) { // die nächste Zelle des Wasser-Gitters über seinen Raum-Index (27 Würfel)
+  const I = W.idx, K = I.K, ze = I.ze, F = W.F, a = Math.floor((x + 1) / ze) + 1, b = Math.floor((y + 1) / ze) + 1, c = Math.floor((z + 1) / ze) + 1; let best = -1, bd = -2;
+  for (let dz = -1; dz <= 1; dz++) for (let dy = -1; dy <= 1; dy++) { const k0 = a + K * ((b + dy) + K * (c + dz)); for (let e = I.kopf[k0 - 1], e1 = I.kopf[k0 + 2]; e < e1; e++) { const i = I.liste[e], cc = x * F[3 * i] + y * F[3 * i + 1] + z * F[3 * i + 2]; if (cc > bd) { bd = cc; best = i; } } }
+  return best;
+}
+function querungen(Q, ziel) { // erde-01, t = 0: Paare 20 km, je Art die ersten `ziel` Querungen, halbiert auf 1 cm; Werte beidseits
+  const S = Q.planetScheibe(planQ(Q, 'erde-01'), 0), R = S.R, W = typeof Q.planetWasserGitter === 'function' ? Q.planetWasserGitter(S) : null;
+  const ARTEN = W ? ['platte', 'scholle', 'kruste', 'kueste', 'zelle'] : ['platte', 'scholle', 'kruste', 'kueste'], funde = Object.fromEntries(ARTEN.map(a => [a, []]));
+  const o = {}, pA = {}, pB = {}, kA = {}, kB = {}, wA = {}, wB = {}, k = P.planetHash('welle1|querung'), d0 = 20 / R, cm = 1e-5 / R;
+  const klasse = (x, y, z) => { const h = Q.planetPunktR(S, x, y, z, 16, o); return { platte: o.platte, scholle: o.scholle, kruste: o.kruste, kueste: h > 0, zelle: W ? naechsteZelle(W, x, y, z) : -1 }; };
+  const u = [0, 0, 0], t = [0, 0, 0], am = (s, out) => { const c = Math.cos(s), si = Math.sin(s); for (let j = 0; j < 3; j++) out[j] = c * u[j] + si * t[j]; return out; }, m = [0, 0, 0], lo = [0, 0, 0], hi = [0, 0, 0];
+  let paare = 0;
+  while (ARTEN.some(a => funde[a].length < ziel) && paare < 400000) {
+    const yy = 2 * P.planetZufall(k, 1, paare, 1) - 1, ph = 2 * Math.PI * P.planetZufall(k, 1, paare, 2), q = Math.sqrt(1 - yy * yy); u[0] = q * Math.cos(ph); u[1] = yy; u[2] = q * Math.sin(ph);
+    const r0 = [P.planetZufall(k, 2, paare, 1) - 0.5, P.planetZufall(k, 2, paare, 2) - 0.5, P.planetZufall(k, 2, paare, 3) - 0.5], dp = r0[0] * u[0] + r0[1] * u[1] + r0[2] * u[2];
+    for (let j = 0; j < 3; j++) t[j] = r0[j] - dp * u[j]; const tn = Math.hypot(t[0], t[1], t[2]); for (let j = 0; j < 3; j++) t[j] /= tn;
+    paare++;
+    const ku = klasse(u[0], u[1], u[2]); am(d0, m); const kv = klasse(m[0], m[1], m[2]);
+    for (const art of ARTEN) {
+      if (funde[art].length >= ziel || ku[art] === kv[art]) continue;
+      let a = 0, b = d0; const ka = ku[art];
+      while (b - a > cm) { const c = 0.5 * (a + b); am(c, m); if (klasse(m[0], m[1], m[2])[art] === ka) a = c; else b = c; }
+      am(a, lo); am(a + cm, hi);
+      const f = { dh: Math.abs(Q.planetPunktR(S, hi[0], hi[1], hi[2], 16, pB) - Q.planetPunktR(S, lo[0], lo[1], lo[2], 16, pA)) };
+      // das Klima der Adresse mit ihrem Punkt (fuss 16): der Lese-Pfad des Orts
+      if (art === 'kueste') { Q.planetKlimaR(S, lo[0], lo[1], lo[2], -1, kA, pA); Q.planetKlimaR(S, hi[0], hi[1], hi[2], -1, kB, pB); f.dT = Math.abs(kB.tJahrC - kA.tJahrC); f.dP = Math.abs(kB.niederschlagMm - kA.niederschlagMm); }
+      if (art === 'zelle') { Q.planetWasserR(W, lo[0], lo[1], lo[2], wA); Q.planetWasserR(W, hi[0], hi[1], hi[2], wB); f.dQ = Math.abs(wB.qM3s - wA.qM3s) / (wA.qM3s + 1e-3); }
+      funde[art].push(f);
+    }
+  }
+  return { funde, paare, W: !!W };
+}
+function anker30(Q, og) { // B5: was der Ort am Anker trägt, gelesen bei fuss 16
+  const F = { meer: [], wald: [], decke: [], spende: [], e: [] };
+  for (const s of SAATEN) {
+    const plan = planQ(Q, s), S = Q.planetScheibe(plan, 0), A = Q.planetAnker(plan, 0, og), p = {}; Q.planetPunkt(S, A.breite, A.laenge, 16, p); const o = Q.planetOrt(S, A.breite, A.laenge, og);
+    if (!(p.hoeheM > 0)) F.meer.push(s); if (!(o.wuchs.wald > 0)) F.wald.push(s); if (!(o.wuchs.decke > 0)) F.decke.push(s); if (!(o.klima.spendeMm > 0)) F.spende.push(s); if (/^E/.test(Q.KOEPPEN[o.biom.koeppen])) F.e.push(s);
+  }
+  return F;
+}
+function saatWelle1(Q, samen) { // c3 über 40 000 Adressen, c6 über das Gitter des Kerns
+  const S = Q.planetScheibe(planQ(Q, samen), 0), N = 40000, Fb = Q._intern.fib(N), o = {}; let land = 0, hoch = 0, hochRand = 0, landRand = 0;
+  for (let i = 0; i < N; i++) {
+    if (!(Q.planetPunktR(S, Fb[3 * i], Fb[3 * i + 1], Fb[3 * i + 2], 16, o) > 0)) continue; land++;
+    const nah = o.randArt === Q.RAND_ART.konvergent && o.randAbstandKm <= 500; if (nah) landRand++; if (o.hoeheM > 2000) { hoch++; if (nah) hochRand++; }
+  }
+  const r = { samen, c3: hoch && landRand ? (hochRand / hoch) / (landRand / land) : NaN };
+  if (typeof Q.planetWasserGitter !== 'function') return r;
+  const W = Q.planetWasserGitter(S), NW = W.N; let wLand = 0, wEnd = 0, tEnd = 0, tExo = 0, qMeer = 0, kreise = 0;
+  for (let i = 0; i < NW; i++) {
+    if (W.h[i] <= 0) continue; wLand++; const ar = W.pM[i] / Q.planetPet(W.tJ[i]);
+    if (W.zielMeer[i] < 0) { wEnd++; tEnd += ar; } else tExo += ar;
+    if (W.h[W.emp[i]] <= 0 && W.zielMeer[i] >= 0) qMeer += W.acc[i];
+    let c = i, n = 0; while (c >= 0 && W.h[c] > 0 && W.endseeVon[c] < 0 && n <= NW) { c = W.emp[c]; n++; } if (n > NW || c < 0) kreise++;
+  }
+  return Object.assign(r, { N: NW, endsee: wEnd / wLand, trocken: (tEnd / wEnd) / (tExo / (wLand - wEnd)), abflussKm3a: qMeer / 1e9, kreise });
+}
+const JZ_SAMEN = ['anazh-realm-seed', 'erde-01', '7', '42'], JZ_PLAENE = new Map();
+function jahreszeit(Q, og, ortVon) { // ortVon (Selbsttest): der gepflanzte Täter an der Stelle von planetOrt
+  require(path.join(__dirname, '..', 'gelaende-core.js')); const G = globalThis.__gelaendeCore, RAD = Math.PI / 180, a = ns(), p = {};
+  const F = { land: 0, inv: [], schnee: [], bruch: [], spanneMin: Infinity };
+  for (const s of JZ_SAMEN) {
+    const key = Q.VERSION + '|' + s; if (!JZ_PLAENE.has(key)) JZ_PLAENE.set(key, Q.planetPlan(s, Q.PLANET_ERDE));   // der Plan des Spiels (voxel-worker `planetPlanVon`)
+    const S = Q.planetScheibe(JZ_PLAENE.get(key), 0);
+    for (let b = -80; b <= 80; b += 4) for (let l = -180; l < 180; l += 10) {
+      Q.planetPunkt(S, b * RAD, l * RAD, 16, p); if (!(p.hoeheM > 0)) continue;
+      F.land++;
+      const o = (ortVon || Q.planetOrt)(S, b * RAD, l * RAD, og), d = o.delta, wo = s + ' ' + b + '°/' + l + '°';
+      // der Teil `ort`, wie ihn der Faden des Spiels reicht (voxel-worker `planetOrtAuftrag`)
+      const teil = { samen: s, version: Q.VERSION, breite: b, laenge: l, zeitMa: 0, delta: { klima: { sommer: d.klima.sommer, winter: d.klima.winter, tagAmp: d.klima.tagAmp, sommerPhase: d.klima.sommerPhase, spendeVerh: d.klima.spendeVerh },
+        meer: { waterLevelM: d.meer.waterLevelM }, wetter: { regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }, wuchs: { decke: d.wuchs.decke, wald: d.wuchs.wald }, wildnis: Object.assign({}, d.wildnis) } };
+      let O; try { O = G.ortGesetz(teil); } catch (e) { F.bruch.push(wo + ' ' + e.message.split('\n')[0]); continue; }
+      const K = O.klimaHeute, y = o.stauchung * p.hoeheM, tOrt = K.sommer - O.kuehlungKJeM * y, T = wo + ' Sommer ' + K.sommer.toFixed(1) + ' / Winter ' + K.winter.toFixed(1) + ' °C';
+      if (K.sommer - K.winter < F.spanneMin) F.spanneMin = K.sommer - K.winter;
+      if (K.sommer < K.winter) F.inv.push(T);
+      if (tOrt > 10 && G.schneePegel({ waterLevel: 0, ort: O }, y, K.sommerPhase) >= G.SCHMELZE.deckt) F.schnee.push(T + ' (am Ort ' + tOrt.toFixed(1) + ' °C auf ' + y.toFixed(0) + ' m)');
+    }
+  }
+  F.s = (ns() - a) / 1e9; return F;
+}
+function jahreszeitZeile(zeile, F) {
+  const nenn = (l) => l.length + (l.length ? ' (' + l.slice(0, 3).join(' · ') + (l.length > 3 ? ' · …' : '') + ')' : '');
+  zeile('ort.jahreszeit', F.inv.length + F.schnee.length + F.bruch.length === 0, 'von ' + F.land + ' Land-Zielen (' + JZ_SAMEN.join(', ') + '; 4° × 10°): Sommer < Winter ' + nenn(F.inv) + ' · Schnee zur Sommer-Mitte bei > 10 °C am Ort ' + nenn(F.schnee) +
+    (F.bruch.length ? ' · vom Ort-Gesetz abgelehnt ' + nenn(F.bruch) : '') + ' · kleinste Spanne ' + F.spanneMin.toFixed(3) + ' K · ' + F.s.toFixed(1) + ' s', '0 · 0 (Jahreszeiten-Vertrag)');
+}
+function welle1(Q, text) {
+  const U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle }), pc = (v) => (100 * v).toFixed(1) + ' %';
+  const Qr = querungen(Q, W1_ZIEL), fu = Qr.funde, sp = (a) => fu[a].filter(f => f.dh > 0.01).length, mx = (a, key) => Math.max(...fu[a].map(f => f[key]));
+  zeile('naht.stetig', sp('platte') + sp('scholle') + sp('kruste') === 0, 'Sprünge |Δh| > 1 cm über 1 cm: Platte ' + sp('platte') + '/' + fu.platte.length + ' · Scholle ' + sp('scholle') + '/' + fu.scholle.length + ' · Kruste ' + sp('kruste') + '/' + fu.kruste.length + ' (max ' + ['platte', 'scholle', 'kruste'].map(a => mx(a, 'dh').toExponential(1)).join(' · ') + ' m; ' + Qr.paare + ' Paare)', '0 (B1)');
+  const ks = fu.kueste.filter(f => f.dT > 1e-3 || f.dP > 0.1).length;
+  zeile('kueste.stetig', ks === 0, 'Klima-Sprünge an ' + ks + '/' + fu.kueste.length + ' Querungen Land ↔ Meer (|ΔT| max ' + mx('kueste', 'dT').toExponential(1) + ' K · |ΔP| max ' + mx('kueste', 'dP').toExponential(1) + ' mm/a)', '|ΔT| ≤ 10⁻³ K, |ΔP| ≤ 0,1 mm/a auf 1 cm (B2)');
+  const nPet = (text.match(PET_FORMEL) || []).length;
+  zeile('pet.eine', nPet === 1 && typeof Q.planetPet === 'function', 'PET-Formel im Kern ' + nPet + '× · planetPet ' + (typeof Q.planetPet === 'function' ? 'gelesen (Wuchs, Wasser, Richter)' : 'FEHLT'), '1×, planetPet (B2)');
+  const R = W1_SAATEN.map(s => saatWelle1(Q, s)), c3ok = R.filter(r => r.c3 >= 2).length;
+  zeile('anden.bogen', c3ok === R.length, 'c3 ≥ ×2 in ' + c3ok + '/' + R.length + ' Saaten (min ×' + Math.min(...R.map(r => r.c3)).toFixed(2) + '; je Saat ' + R.map(r => r.c3.toFixed(2)).join(' · ') + ')', '10/10 (B4)');
+  if (!Qr.W) for (const n of ['wasser.kreise', 'wasser.endsee', 'wasser.trocken', 'wasser.abfluss', 'wasser.stetig']) zeile(n, false, 'der Kern trägt kein Wasser-Gitter (planetWasserGitter fehlt; S5 lebte im Spike)', 'S5 im Kern (B3)');
+  else {
+    const med = (k) => median(R.map(r => r[k]));
+    zeile('wasser.kreise', R.every(r => r.N === 40000) && R.reduce((s, r) => s + r.kreise, 0) === 0, R.reduce((s, r) => s + r.kreise, 0) + ' Läufe ohne Meer und Endsee über ' + R.length + ' Saaten · N_W ' + [...new Set(R.map(r => r.N))].join('/'), '0 · N_W = 40 000 (B3)');
+    zeile('wasser.endsee', med('endsee') >= 0.10 && med('endsee') <= 0.30, 'Endsee-Land Median ' + pc(med('endsee')) + ' (' + pc(Math.min(...R.map(r => r.endsee))) + ' … ' + pc(Math.max(...R.map(r => r.endsee))) + ')', '[10, 30] % (B3)');
+    zeile('wasser.trocken', med('trocken') <= 0.8, 'P/PET Endsee ÷ Meer-Zufluss Median ' + med('trocken').toFixed(2) + ' (PET: planetPet)', '≤ 0,8 (B3)');
+    zeile('wasser.abfluss', med('abflussKm3a') >= 18600 && med('abflussKm3a') <= 74600, 'Abfluss ins Meer Median ' + med('abflussKm3a').toFixed(0) + ' km³/a', '[18 600, 74 600] km³/a (B3)');
+    const dq = mx('zelle', 'dQ');
+    zeile('wasser.stetig', dq <= 1e-3, '|ΔQ|/Q max ' + dq.toExponential(1) + ' an ' + fu.zelle.length + ' Querungen der nächsten Zelle auf 1 cm', '≤ 10⁻³ (B3)');
+  }
+  const og = ortGesetz(), F = anker30(Q, og), nA = (k) => F[k].length + (F[k].length ? ' (' + F[k].join(', ') + ')' : '');
+  zeile('anker.traegt', Object.values(F).every(l => l.length === 0), 'von ' + SAATEN.length + ' Ankern bei fuss 16 im Meer ' + nA('meer') + ' · Wald 0 ' + nA('wald') + ' · Decke 0 ' + nA('decke') + ' · Spende 0 ' + nA('spende') + ' · Köppen E ' + nA('e'), '0 je Fall (B5)');
+  const plan = planQ(Q, 'erde-01'), S0 = Q.planetScheibe(plan, 0), A = Q.planetAnker(plan, 0, og), wl = Q.planetOrt(S0, A.breite, A.laenge, og), FAELLT = ['kontinentLambda', 'schichtDicke', 'hartAnteil'];
+  const traegt = FAELLT.filter(k => k in wl.wildnis || k in wl.delta.wildnis);
+  zeile('ort.faellt', traegt.length === 0, 'planetOrt trägt ' + (traegt.length ? traegt.join(', ') : 'keinen der drei Δ ≡ 0') + ' · wildnis ' + Object.keys(wl.wildnis).join(', '), 'keiner (Zensus e217/e222/e223)');
+  jahreszeitZeile(zeile, jahreszeit(Q, og));
+  return U;
+}
+function kostenWasser(Q) { // B3 an der Adresse und am Gitter: Wasser je Adresse ≤ 8 µs · Gitter 4R ÷ R ≤ 1,35 (N_W fest, nie die Weltgröße)
+  const U = [], zeile = (name, ok, wert, schwelle) => U.push({ name, urteil: ok ? 'GRÜN' : 'ROT', wert, schwelle });
+  if (typeof Q.planetWasserGitter !== 'function' || typeof Q.planetWasserR !== 'function') { for (const n of ['kosten.wasser.adresse', 'kosten.wasser.radius']) zeile(n, false, 'der Kern trägt kein Wasser (planetWasserGitter/planetWasserR fehlen)', 'S5 im Kern (B3)'); return U; }
+  const S = Q.planetScheibe(planQ(Q, 'erde-01'), 0), W = Q.planetWasserGitter(S), k = P.planetHash('kosten-wasser'), o = {}, med = [];
+  for (let durchgang = 0; durchgang < 5; durchgang++) {
+    const n = 20000, tt = new Float64Array(n);
+    for (let i = 0; i < n; i++) { const y = 2 * P.planetZufall(k, durchgang, i, 1) - 1, ph = 2 * Math.PI * P.planetZufall(k, durchgang, i, 2), q = Math.sqrt(1 - y * y), x = q * Math.cos(ph), z = q * Math.sin(ph); const a = ns(); Q.planetWasserR(W, x, y, z, o); tt[i] = ns() - a; }
+    med.push(quantil(tt, 0.5) / 1000);
+  }
+  zeile('kosten.wasser.adresse', Math.min(...med) <= 8, 'Median ' + Math.min(...med).toFixed(2) + ' µs (5 × 20 000, bestes; ' + med.map(v => v.toFixed(2)).join(' · ') + ')', '≤ 8 µs (B3)');
+  const Sr = [6371, 4 * 6371].map(R => Q.planetScheibe(Q.planetPlan('erde-01', Object.assign({}, Q.PLANET_ERDE, { radiusKm: R, g: 9.81 * R / 6371 })), 0)), t = [Infinity, Infinity];
+  for (let durchgang = 0; durchgang < 3; durchgang++) for (let j = 0; j < 2; j++) { const a = ns(); Q.planetWasserGitter(Sr[j]); t[j] = Math.min(t[j], (ns() - a) / 1e6); }
+  zeile('kosten.wasser.radius', t[1] / t[0] <= 1.35, 'Gitter R ' + t[0].toFixed(0) + ' ms ↔ 4R ' + t[1].toFixed(0) + ' ms (×' + (t[1] / t[0]).toFixed(2) + ', verschränkt, Minimum von 3; N_W ' + Q.PLANET_WASSER_N + ')', '4R ÷ R ≤ 1,35 (B3)');
+  return U;
+}
+function welle1Selbsttest(zeile) { // der Kern vor der Welle macht jede Welle-1-Zeile ROT
+  let B; try { B = basisKern(); } catch (e) { zeile('welle1.basis', false, 'Kern ' + WELLE1_BASIS + ' nicht lesbar aus git: ' + e.message.split('\n')[0]); return; }
+  // dazu der Schätzer von kosten.platten/radius (G3, 19.11.): main trug +82 % und 1,382 (Zweig zensus-planet, vision/planet: bahnen), an ihm muss er ROT stehen
+  for (const u of [...welle1(B.Q, B.text), ...kostenWasser(B.Q), ...kostenSkala(B.Q)]) if (u.name !== 'ort.jahreszeit') zeile(u.name + ' feuert', u.urteil === 'ROT', 'Kern ' + WELLE1_BASIS + ' (' + B.Q.VERSION + '): ' + u.wert);
+  // ort.jahreszeit: der Kern vor der Welle hält den Vertrag an diesen vier Samen (Rest-Spanne seiner Anker ≤ 0) — gepflanzt werden die
+  // Täter selbst. (1) die Spanne gedreht: Heimat + Δ trägt Sommer und Winter getauscht bei gleicher Phase. (2) das Δ am Namen, die
+  // Regel bis h2-10: Sommer − Sommer, Winter − Winter, die Phase nach der Halbkugel — die Rest-Spanne des Ankers zieht in den Tropen
+  // den Sommer unter den Winter.
+  const og = ortGesetz(), kh = og.klimaHeute, rot = (F) => { const U = []; jahreszeitZeile((name, ok, wert) => U.push({ ok, wert }), F); return U[0]; };
+  const gedreht = (S, b, l, g) => { const o = P.planetOrt(S, b, l, g), k = o.delta.klima, so = kh.sommer + k.sommer, wi = kh.winter + k.winter; k.sommer = wi - kh.sommer; k.winter = so - kh.winter; return o; };
+  const ankerKlima = new Map(), amAnker = (S, A, g) => { if (!ankerKlima.has(S)) ankerKlima.set(S, Object.assign({}, P.planetOrt(S, A.breite, A.laenge, g).klima)); return ankerKlima.get(S); };
+  const amNamen = (S, b, l, g) => { const A = P.planetAnker(S.plan, 0, g), a = amAnker(S, A, g), o = P.planetOrt(S, b, l, g), k = o.delta.klima, sued = b < 0, warmHoch = (o.klima.sommerPhase === kh.sommerPhase) !== sued;
+    const hoch = warmHoch ? o.klima.sommer : o.klima.winter, tief = warmHoch ? o.klima.winter : o.klima.sommer;
+    k.sommer = hoch - a.sommer; k.winter = tief - a.winter; k.sommerPhase = (sued ? 0.5 : 0) - (A.breite < 0 ? 0.5 : 0); return o; };
+  const u1 = rot(jahreszeit(P, og, gedreht)), u2 = rot(jahreszeit(P, og, amNamen));
+  zeile('ort.jahreszeit feuert', !u1.ok, 'gepflanzt: die Spanne des Jahres-Gangs gedreht → ' + u1.wert);
+  zeile('ort.jahreszeit nennt', !u2.ok && /Sommer < Winter [1-9]/.test(u2.wert), 'gepflanzt: das Δ am Namen (Sommer − Sommer, die Regel bis h2-10) → ' + u2.wert);
+}
+
 function drucken(titel, U) { console.log('── ' + titel); for (const u of U) console.log((u.urteil + '     ').slice(0, 6) + ' ' + u.name.padEnd(22) + ' ' + u.wert + (u.schwelle ? '   [Schwelle ' + u.schwelle + ']' : '')); }
 
 // ── Haupt ──────────────────────────────────────────────────────────────────────────────────────────────
@@ -1406,7 +1602,8 @@ if (require.main !== module && isMainThread) { /* als Modul geladen: nur Exporte
   else if (argv[0] === '--kontaktbogen') kontaktbogen(argv[1], argv[2]);
   else if (argv[0] === '--orte') orteDrucken(argv[1]);
   else if (argv[0] === '--bytes') drucken('Bytes', bytes());
-  else if (argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
-  else console.log('diag-planet: --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2 | --kosten [bau2 <alt-kern.js>] | --bytes | --selbsttest');
+  else if (argv[0] === '--selftest' || argv[0] === '--selbsttest') { const U = selbsttest(); drucken('Selbsttest', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
+  else if (argv.length === 0) { const a = ns(), U = welle1(P, fs.readFileSync(KERN, 'utf8')); drucken('Richter welle1 · Kern ' + P.VERSION + ' · ' + ((ns() - a) / 1e9).toFixed(0) + ' s', U); if (U.some(u => u.urteil !== 'GRÜN')) process.exit(1); }
+  else { console.log('diag-planet: (ohne Argument: Richter welle1) | --karte | --karten | --bildsaaten [--schichten a,b] | --richter bau1|bau2|bau3|gesicht|gegner2|ort | --kosten [bau2 <alt-kern.js>] | --bytes | --selftest (= --selbsttest)'); process.exit(2); }
 }
 module.exports = { materialPunkte, materialTerme, stetigTaeter, taeterVon, png, crc32, sha, planVon, saatStatistik, urteilBau1, saatKlima, urteilBau2, saatGesicht, urteilGesicht, messerStufe, gesichtGitter, innenMasse, kuestenAbstand, klimaGitter, klimaKanteFlach, gestaltMasse, P };
