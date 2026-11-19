@@ -2104,6 +2104,8 @@ class AnazhRealm_kreatur_leben {
             ud._ruhe = ((this._verhaltenHash(id, 4099) % 1000) / 1000) * LG.E.schwelle.ruhig;
         }
         ud._ruhe = LG.ruhePegel(ud._ruhe, gez === "ruhen", dt, G);
+        // DAS STEHEN NACH DER FLUCHT (H1, ETHOGRAMM_GESETZ.stehenS): die Herde steht und sichert, bevor sie ruht, äst oder zieht
+        if (ud._motionZustand === "flucht") ud._stehenBis = now + LG.E.stehenS;
         const leit = this._kreaturLeittier(creature);
         if (leit !== creature && leit.userData._taetigkeit) return (ud._taetigkeit = leit.userData._taetigkeit);
         if (this._lichtUhr !== this.state.timeOfDay) {
@@ -2119,7 +2121,8 @@ class AnazhRealm_kreatur_leben {
             weidet,
             G,
             LG.E,
-            VG.aas.hungerAnteil
+            VG.aas.hungerAnteil,
+            now < (ud._stehenBis || 0)
         ));
     }
     // DAS LEITTIER eines Verbands: das Glied, dessen netId der Verband trägt (der Erstgeborene des Wurfs), fiel es, das erste
@@ -2138,8 +2141,18 @@ class AnazhRealm_kreatur_leben {
         const VA = ud._verhaltenAktion;
         if (VA && this.state.creatureAnimationTime < VA.bis) return 1;
         const zeigt = ud._gezeigt && AnazhRealm._lebensraumGesetz().E.zeigt[ud._gezeigt];
+        if (zeigt && Number.isFinite(zeigt.tempo)) return Math.max(0, zeigt.tempo);
         const def = zeigt && zeigt.aktion && AnazhRealm._verhaltenGesetz().aktionen[zeigt.aktion];
         return def && Number.isFinite(def.tempo) ? Math.max(0, def.tempo) : 1;
+    }
+    // DER ZUG DER TÄTIGKEIT (H1, S5): wer zieht, im Tempo des Gesetzes (tetrapoda `zugTempo`; vorher der Wolf 1,0 m/s im Schritt)
+    _kreaturTaetigkeitZug(creature, direction, hueftL) {
+        const { _verhaltenAktion: VA, _gezeigt: gz } = creature.userData;
+        const zeigt = gz && AnazhRealm._lebensraumGesetz().E.zeigt[gz];
+        const l = direction.length();
+        if (zeigt && zeigt.zug && !(VA && this.state.creatureAnimationTime < VA.bis) && l > 1e-6)
+            return direction.multiplyScalar(AnazhRealm._steuerGesetz().zugTempo(hueftL) / l);
+        return direction.multiplyScalar(this._kreaturTaetigkeitTempo(creature));
     }
 
     // DIE NAHRUNG EINES ORTS für den Bestand (Ökologie K2): die Äsung = das Leben des Felds (`auraAt`.lebendig — das Substrat
@@ -3048,7 +3061,8 @@ class AnazhRealm_kreatur_leben {
             const u = cr.userData;
             if (platz.tier[i] === cr && platz.ver[i] === u._satzVer) return;
             m4.compose(cr.position, cr.quaternion, cr.scale);
-            for (const m of platz.senken) AnazhRealm._gangSatzInstanz(m, i, m4, u._satzBand, u._satzPh, u._satzW);
+            for (const m of platz.senken)
+                AnazhRealm._gangSatzInstanz(m, i, m4, u._satzBand, u._satzPh, u._satzW, null, u._satzStand || 0);
             platz.tier[i] = cr;
             platz.ver[i] = u._satzVer;
             neu = true;
@@ -3065,13 +3079,13 @@ class AnazhRealm_kreatur_leben {
     // `KREATUR_SATZ.gewichtSaum` ist es kein Rühren.
     _tierSatzStempel(cr) {
         const u = cr.userData;
-        const s = u._satzS || (u._satzS = new Float64Array(10).fill(NaN));
+        const s = u._satzS || (u._satzS = new Float64Array(11).fill(NaN));
         const p = cr.position;
         const q = cr.quaternion;
         const g = u._satzBand + u._satzPh - Math.floor(u._satzPh);
-        const v = [p.x, p.y, p.z, q.x, q.y, q.z, q.w, cr.scale.x, g, u._satzW];
+        const v = [p.x, p.y, p.z, q.x, q.y, q.z, q.w, cr.scale.x, g, u._satzW, u._satzStand || 0];
         let regt = false;
-        for (let i = 0; i < 10; i++)
+        for (let i = 0; i < 11; i++)
             if (i === 9 ? !(Math.abs(s[i] - v[i]) < AnazhRealm.KREATUR_SATZ.gewichtSaum) : s[i] !== v[i]) {
                 s[i] = v[i];
                 regt = true;
@@ -3133,27 +3147,27 @@ class AnazhRealm_kreatur_leben {
         }
         const tb = leib.userData._tierBaum;
         const g = this._gangZeile(false).g;
+        // DIE STÄNDE DES SATZES (H1, KREATUR_SATZ.staende: 0 stehen und ziehen, äsen, ruhen) aus dem Posen-Gesetz des Leibs
+        const kopfUnten = K.staende.map(() => false);
         const satz = this._gangSatz(
             {
                 name: "tier-satz",
                 inventar: "tier",
                 n: K.phasen,
                 baender: K.baender.length,
+                staende: K.staende.length,
                 quellen,
                 cap: K.cap,
                 senken: ["fell", "glimm", "rest", "wurf"]
                     .filter((k) => teilVon[k].length)
                     .map((k) => ({ teil: k, quellen: teilVon[k], stoff: stoffVon[k], wurf: k === "wurf" })),
             },
-            (S) => {
-                this._tierBaumNeutralStance(leib);
-                leib.updateMatrixWorld(true);
-                this._gangSatzPose(S, S.baender * S.n, tb.teile, leib.matrixWorld);
-            }
+            (S) => K.staende.forEach((h, k) => (kopfUnten[k] = this._tierSatzStand(S, leib, k, h)))
         );
         const Z = {
             satz,
             leib,
+            kopfUnten,
             fertig: false,
             glieder: [],
             dabei: 0,
@@ -3240,6 +3254,7 @@ class AnazhRealm_kreatur_leben {
         const band = Math.max(0, K.baender.indexOf(G && G.art));
         u._satz = Z;
         u._satzBand = band;
+        u._satzStand = Math.max(0, K.staende.indexOf(u._gezeigt || null));
         u._satzWahl = { v: G ? G.v || 0 : 0, art: G ? G.art : undefined };
         u._satzPh = G ? (G.ph[0] - Z.ph0[band]) / (2 * Math.PI) : 0;
         u._satzW = G && G.schritt > 0 ? Math.min(1, G.schritt) : 0;
@@ -3286,6 +3301,7 @@ class AnazhRealm_kreatur_leben {
             this._gangZeile(false)
         );
         if (gs.art !== "stand") u._satzBand = Math.max(0, K.baender.indexOf(gs.art));
+        u._satzStand = Math.max(0, K.staende.indexOf(u._gezeigt || null));
         u._satzW = this._gaitBlendStep(u._satzW, v, dt);
         u._satzPh += weg / (Z.schritt[u._satzBand] * (cr.scale.x || 1));
     }
@@ -3890,6 +3906,7 @@ AnazhRealm.BESTAND_REGION = Object.freeze({
 AnazhRealm.KREATUR_SATZ = Object.freeze({
     nahLeiber: 4,
     phasen: 32,
+    staende: Object.freeze([null, "nahrung", "ruhen"]),
     baender: Object.freeze(["schritt", "trab", "galopp"]),
     froude: Object.freeze([0.25, 1.5, 4]),
     einschwingen: 150,

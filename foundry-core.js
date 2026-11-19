@@ -8518,6 +8518,7 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         "hrT",
         "hrC",
         "hrP",
+        "neckRoot",
         "headGroup",
         "jawGroup",
         "earL",

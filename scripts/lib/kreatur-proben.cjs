@@ -3174,6 +3174,9 @@ async function kreaturProben(r, T, opts) {
                 leiber = 0,
                 satz = 0,
                 satzW = 0;
+            // je Gestalt (Seele) die Befehle ihres Leibs: welche Gattung als Leib nah steht, wählt die Lage der Herde, nie die
+            // Kopfzahl (seit H1 zieht jedes Glied zum Ziel seines Leittiers — die nächsten vier sind 3 Wölfe + 1 Fuchs statt 2 + 2)
+            const jeSeele = {};
             for (const c of s.creatures) {
                 let n = 0;
                 // die Strähnen und Schalen des Fells schaltet das Fell-Gesetz am Schirm (`_fellBildschirmGesetz`) je Tier, nie die
@@ -3184,14 +3187,14 @@ async function kreaturProben(r, T, opts) {
                     if (o.layers.mask & 1) (haupt++, n++);
                     if (o.castShadow) wurf++;
                 });
-                if (n > 0) leiber++;
+                if (n > 0) (leiber++, (jeSeele[c.userData.soul] = Math.max(jeSeele[c.userData.soul] || 0, n)));
             }
             for (const o of saetze())
                 if (o.count > 0 && o.visible) {
                     if (o.layers.mask & 1) (haupt++, satz++);
                     if (o.castShadow) (wurf++, satzW++);
                 }
-            return { haupt, wurf, leiber, satz, satzW };
+            return { haupt, wurf, leiber, satz, satzW, jeSeele };
         };
         // Täter (Selbsttest): die Menge als Leib (keine Satz-Wahl)
         if (taeter === "tiersatz-kopf") decke("_tierSatzWahl", () => () => null);
@@ -3379,7 +3382,8 @@ function urteil(name, z) {
     };
     if (name === "tiersatz") {
         soll(
-            z.b50.haupt - z.b50.satz === z.b10.haupt - z.b10.satz &&
+            z.b50.leiber === z.b10.leiber &&
+                Object.keys(z.b10.jeSeele || {}).every((k) => !(k in z.b50.jeSeele) || z.b50.jeSeele[k] === z.b10.jeSeele[k]) &&
                 z.b50.wurf - z.b50.satzW === z.b10.wurf - z.b10.satzW &&
                 z.b50.satz + z.b50.satzW <= z.senken,
             `Befehle der Tiere hängen an der Kopfzahl: 10 Tiere ${z.b10.haupt} Bild + ${z.b10.wurf} Wurf (Satz ${z.b10.satz} + ${z.b10.satzW}), 50 Tiere ${z.b50.haupt} + ${z.b50.wurf} (${z.b50.satz} + ${z.b50.satzW}) (Soll: die Leiber gleich, je Senke höchstens ein Befehl — ${z.senken} Senken)`

@@ -1622,6 +1622,11 @@
     function tempoEinheit(L) {
         return STEUER_GESETZ.tempo * Math.sqrt(GANG_GESETZ.g * Math.max(0.05, L));
     }
+    // Das Tempo des Zugs in m/s für die Hüft-Höhe L (m) — die Herde zieht in der geometrischen Mitte des Trabs (Posen-Gesetz H1,
+    // S5: Fr = √(froudeTrab · froudeGalopp)).
+    function zugTempo(L) {
+        return Math.sqrt(Math.sqrt(GANG_FOLGE.froudeTrab * GANG_FOLGE.froudeGalopp) * GANG_GESETZ.g * Math.max(0.05, L));
+    }
     // Der Sprint (Galopp) in m/s für die Hüft-Höhe L (m) — Hetze und Flucht (Welle LF).
     function sprintTempo(L) {
         return STEUER_GESETZ.sprint * Math.sqrt(GANG_GESETZ.g * Math.max(0.05, L));
@@ -1636,7 +1641,9 @@
         if (w > 1e-4) {
             var d = Math.atan2(wx, wz) - z.gier;
             d -= TAU * Math.round(d / TAU);
-            var maxD = S.wende * Math.sqrt(g / Math.max(0.05, L)) * dt;
+            // DIE WENDE TRÄGT DER BODEN (Posen-Gesetz H1, H4): die Querbeschleunigung v·ω bleibt unter HALTUNG_GESETZ.wendeG × g
+            // (das Pferd wendet mit 0,56–0,8 g) — im Sprint wendet der Leib in einem Bogen, nie auf der Stelle (vorher 30 m/s²)
+            var maxD = Math.min(S.wende * Math.sqrt(g / Math.max(0.05, L)), (HALTUNG_GESETZ.wendeG * g) / Math.max(1e-3, z.v)) * dt; // prettier-ignore
             var dd = d > maxD ? maxD : d < -maxD ? -maxD : d;
             z.gier += dd;
             z.gier -= TAU * Math.round(z.gier / TAU);
@@ -2121,8 +2128,15 @@
         zeigt: Object.freeze({
             ruhen: Object.freeze({ stimmung: "nacht", aktion: "ruhen" }),
             nahrung: Object.freeze({ stimmung: "tag", aktion: "grasen" }),
-            ziehen: Object.freeze({ stimmung: "idle", aktion: null }),
+            // DER ZUG IM TEMPO DES GESETZES (Posen-Gesetz H1, S5): die Herde zieht in v̂ = √(froudeTrab · froudeGalopp) — die
+            // geometrische Mitte des Trabs (Fr 1,12; Wolf L 0,63 m ≈ 2,6 m/s, Mech 1994: 2,42–2,78 m/s); `tempo` zählt in der
+            // Tempo der Tätigkeit: `zugTempo` (der Wirt stellt den Wunsch des Wanderns auf es, `_kreaturTaetigkeitZug`).
+            ziehen: Object.freeze({ stimmung: "idle", aktion: null, zug: true }),
+            // DAS STEHEN (Posen-Gesetz H1): nach der Flucht steht die Herde `stehenS` und sichert (die Stimmung alert: scan) —
+            // eine eigene Tätigkeit, im Tempo 0
+            stehen: Object.freeze({ stimmung: "alert", aktion: null, tempo: 0 }),
         }),
+        stehenS: 8,
         gattung: Object.freeze({
             deer: Object.freeze({ ruhen: 0.4, nahrung: 0.5, ruheTaktS: 360, aktiv: Object.freeze(["daemmerung"]) }),
             bear: Object.freeze({ ruhen: 0.45, nahrung: 0.4, ruheTaktS: 360, aktiv: Object.freeze(["tag", "daemmerung"]) }),
@@ -2145,7 +2159,10 @@
     }
     // vorher = die Taetigkeit des Vor-Takts, magenAnteil = der Magen durch den vollen, weidet = diet bis weideDiet,
     // hungerAnteil = VERHALTEN.aas.hungerAnteil. Liefert "ruhen" · "nahrung" · "ziehen".
-    function taetigkeit(vorher, ruhe, magenAnteil, phase, weidet, G, E, hungerAnteil) {
+    // steht = die Herde steht nach einer Flucht (die Kreatur-Uhr vor ihrem Ende, `stehenS`): sie sichert, bevor sie ruht,
+    // äst oder zieht.
+    function taetigkeit(vorher, ruhe, magenAnteil, phase, weidet, G, E, hungerAnteil, steht) {
+        if (steht) return "stehen";
         var aest = weidet && G.nahrung > 0;
         if (vorher === "ruhen" && ruhe > 0) return "ruhen";
         if (vorher === "nahrung" && aest && magenAnteil < 1) return "nahrung";
@@ -3134,8 +3151,14 @@
     // ihr Sprung (hop) ist Sache des Leibs (der Wirt).
     function verhaltenWahl(V, mood, ud, i, nowS, fort) {
         var A = ud._verhaltenAktion;
-        if (A && nowS < A.bis) return null; // die laufende Aktion spielt zu Ende
         var row = V.stimmung[mood] || V.stimmung.idle;
+        // die laufende Aktion spielt zu Ende — außer die Stimmung wechselt und ihre Liste trägt sie nicht (Posen-Gesetz H1: die
+        // Tätigkeit der Herde beendet, was der alte Zustand begann; vorher ruhte ein Tier 16 s in den Zug hinein). Die Haltung
+        // folgt stetig (`tierPose`, die Kanäle der Haltung), ein Biss fällt nie hier.
+        if (A && nowS < A.bis) {
+            if (A.biss || ud._verhaltenMood === mood || !row || (row.aktionen || []).indexOf(A.name) >= 0) return null;
+            ud._verhaltenAktion = null;
+        }
         if (!row || !Array.isArray(row.aktionen) || !row.aktionen.length) return null;
         var alle = Array.isArray(row.alle) && row.alle.length === 2 ? row.alle : [6, 12];
         if (ud._verhaltenMood !== mood || !Number.isFinite(ud._verhaltenNext)) {
@@ -3161,6 +3184,44 @@
     // MOTION-Profil P (der Wirt wählt es: Zustand vor Stimmung) treiben die vier Bein-KETTEN des bauTier-Baums tb
     // ({teile, bein, beinL, f, tailSegs}) mit Pfoten-IK auf dem Boden des Wirts. Deterministisch (Stand-Unruhe aus t-Sinus);
     // der CPG-Zustand wohnt an tb._gang, walkPhase ist nur der Phasen-Seed. zust = der Körper-Zustand (schwimmen paddelt).
+    // DAS POSEN-GESETZ (Posen-Gesetz H1, 19.11., additiv — HALTUNG_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt):
+    // jedes Glied jedes Teils bewegt sich als Funktion der PHASE seines Vorderfußes (tb._gang.ph[0], der Takt des Leibs
+    // g.leib im doppelten Takt) — keine Wanduhr im Kopf, im Schwanz, in der Stand-Unruhe. Der RHYTHMUS gehört der Gangart
+    // (`gang`: Federn bob und Wiegen sway des Rumpfs in rad, der Schwanz in rad, das Nicken als Anteil von `nick`): Federn
+    // und Wiegen tragen die Zahlen der gefallenen Profile joy (Schritt) und flee (Galopp), der Trab dazwischen — ihre Herkunft
+    // ist ungemessen. DAS NICKEN: die Kopf-Mitte hebt und senkt sich zweimal je Schritt-Zyklus um nick × L (Loscher et al.
+    // 2016: das Pferd im Schritt 9,1 cm Spitze-Spitze bei L ≈ 1,6 m — 0,0285 L Amplitude), getragen vom HALS (neckRoot) in der
+    // Phase des Federns. DIE HALTUNG (Rumpf, Hals, Kopf, Ohr) folgt ihrem Ziel kritisch gedämpft mit ω = folge · √(g/L) —
+    // ein Zustandswechsel springt nie (vorher 0,99 rad Kopf-Sprung je Takt beim Grasen). DER HALS ZUM BODEN: eine Aktion in
+    // `boden` (grasen, fressen) senkt den Hals, bis die Kopf-Mitte kopfBoden × L über dem Grund steht (Laundré 2001: der
+    // Kopf unten 0,52–0,89 der Äsungszeit) — vorher nickte der Kopf am Hals und das Maul blieb in der Luft. Der Stand trägt
+    // seine Phase im Takt standFreq (rad/s) und die Unruhe als Obertöne von ihr (unruhe: rad, Faktor 10 und 5,2). wendeG: die
+    // Querbeschleunigung des Steuer-Schritts (× g, H4: das Pferd wendet mit 0,56–0,8 g).
+    var HALTUNG_GESETZ = Object.freeze({
+        wendeG: 0.8,
+        folge: 1,
+        nick: 0.0285,
+        gang: Object.freeze({
+            stand: Object.freeze({ bob: 0, sway: 0, schwanz: 0, nick: 0 }),
+            schritt: Object.freeze({ bob: 0.012, sway: 0.025, schwanz: 0.12, nick: 1 }),
+            trab: Object.freeze({ bob: 0.02, sway: 0.012, schwanz: 0.16, nick: 0.3 }),
+            galopp: Object.freeze({ bob: 0.03, sway: 0.01, schwanz: 0.08, nick: 0.6 }),
+        }),
+        standFreq: 0.25,
+        unruhe: Object.freeze([0.004, 0.003]),
+        boden: Object.freeze(["grasen", "fressen"]),
+        kopfBoden: 0.3,
+    });
+    // EIN KANAL DER HALTUNG (kritisch gedämpft, H1): k = {x, v}, das Ziel z, ω, dt — exakt für einen Schritt bei festem Ziel.
+    function haltungFolge(k, z, w, dt) {
+        if (!(dt > 0)) return k.x;
+        var e = k.x - z,
+            a = Math.exp(-w * dt),
+            c = k.v + w * e;
+        k.x = z + (e + c * dt) * a;
+        k.v = (c - w * (e + c * dt)) * a;
+        return k.x;
+    }
     function tierPose(W, group, tb, t, walkPhase, moving, P, zust) {
         var core = root.__tetrapodaCore;
         var M3 = W.M3;
@@ -3227,7 +3288,10 @@
         // was ein Fenster vom Gang zeigt (das Labor, die Matrix-Tafel): der Fußweg dieses Takts und der Tastgrad
         g.S = st;
         g.tast = gs.tast;
-        var freq = st > 0 ? gs.omega : Number(P.freq) || 0.25;
+        // der Stand trägt seine Phase im Takt des Gesetzes (H1: keine Wanduhr — die Unruhe des Stands ist ein Oberton von ihr)
+        var freq = st > 0 ? gs.omega : HALTUNG_GESETZ.standFreq;
+        var HG = HALTUNG_GESETZ;
+        var rh = HG.gang[gs.art] || HG.gang.stand;
         var phAlt = g.ph.slice();
         if (dtTakt > 0) {
             // der Schritt des Netzes trägt seinen Zug (GANG_FOLGE.kopplung × Takt, vier Beine): höchstens 1/(4·kopplung·Takt)
@@ -3259,37 +3323,70 @@
                 vor0 + (dL - 2 * Math.PI * Math.round(dL / (2 * Math.PI))) * (1 - Math.exp((-freq * dtTakt) / Math.PI));
         }
         var takt2 = g.leib;
-        var roll = Math.sin(takt2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
-        // bodyZ reist im MOTION-Preset (Roll additiv neben sway·sin); ohne Feld 0
-        roll += (Number(P.bodyZ) || 0) * fadeMul;
+        var roll = Math.sin(takt2) * rh.sway * fadeMul * g.schritt;
         // die Sonder-Kanäle der Aktion: Schüttel-Rolle, Ganzkörper-Drehung (linear über die Dauer — endet bei dreh=2π
         // nahtlos), Kopf-Pendel (Scan). Ohne Aktion alles 0.
         var drehY = 0;
         var sweepY = 0;
         if (VA && VA.def) {
             var d = VA.def;
-            if (Number.isFinite(d.rollAmp)) roll += Math.sin(nowS * (d.rollRate || 10)) * d.rollAmp * fadeMul;
-            if (Number.isFinite(d.dreh)) {
-                var frac = Math.max(0, Math.min(1, (nowS - VA.start) / Math.max(0.001, VA.bis - VA.start)));
-                drehY = d.dreh * frac;
-            }
-            if (Number.isFinite(d.kopfSweep)) sweepY = Math.sin(nowS * 1.3) * d.kopfSweep * fadeMul;
+            // der Fortschritt der Aktion trägt ihre Sonder-Kanäle (H1: keine Wanduhr) — Schütteln und Pendel beginnen bei 0
+            var frac = Math.max(0, Math.min(1, (nowS - VA.start) / Math.max(0.001, VA.bis - VA.start)));
+            if (Number.isFinite(d.rollAmp))
+                roll += Math.sin((nowS - VA.start) * (d.rollRate || 10)) * Math.sin(Math.PI * frac) * d.rollAmp * fadeMul;
+            if (Number.isFinite(d.dreh)) drehY = d.dreh * frac;
+            if (Number.isFinite(d.kopfSweep)) sweepY = Math.sin(2 * Math.PI * frac) * d.kopfSweep;
         }
         // DIE HALTUNG DES BISSES (Welle LF kampf, Posten 5): im Ansprung neigen sich Rumpf und Kopf auf den Leib des Ziels
         // (VA.rumpfZiel · VA.kopfZiel, _kreaturBissKopf) — mit der Folge-Rate der Glieder (ihr Boden 18/s, legA); endet der
         // Ansprung, löst sich die Haltung ebenso.
+        // DER STAND DER HALTUNG wohnt am Baum (tb._halt, H1), nie am Gang: ein neu angesetzter Gang (Satz, Sprung der Lage)
+        // springt die Haltung nicht; nur die Ruhe der Gestalt (stamm _tierBaumNeutralStance) setzt sie mit der Pose auf 0
+        var H = tb._halt;
+        if (!H) {
+            H = tb._halt = {};
+            var hks = ["rumpf", "hals", "kopf", "kopfY", "ohr", "bissRumpf", "bissKopf"];
+            for (var hk = 0; hk < hks.length; hk++) H[hks[hk]] = { x: 0, v: 0 };
+        }
         {
             var BZ = VA && VA.bissAkt ? VA : null;
             var haltA = dt > 0 ? 1 - Math.exp(-18 * dt) : 1;
-            g.bissRumpf = (g.bissRumpf || 0) + (((BZ && BZ.rumpfZiel) || 0) - (g.bissRumpf || 0)) * haltA;
-            g.bissKopf = (g.bissKopf || 0) + (((BZ && BZ.kopfZiel) || 0) - (g.bissKopf || 0)) * haltA;
+            H.bissRumpf.x += (((BZ && BZ.rumpfZiel) || 0) - H.bissRumpf.x) * haltA;
+            H.bissKopf.x += (((BZ && BZ.kopfZiel) || 0) - H.bissKopf.x) * haltA;
+            g.bissRumpf = H.bissRumpf.x;
+            g.bissKopf = H.bissKopf.x;
         }
+        // DIE KANÄLE DER HALTUNG (H1): Rumpf, Hals, Kopf (Nicken und Wenden), Ohr folgen ihrem Ziel kritisch gedämpft
+        var Lm = Math.max(0.05, (tb.beinL || 0.5) * skala);
+        var wH = HG.folge * Math.sqrt(core.GANG_GESETZ.g / Lm);
+        var boden = !!(VA && HG.boden.indexOf(VA.name) >= 0 && T.neckRoot && T.headGroup);
+        var halsZiel = 0;
+        if (boden) {
+            // der Hals senkt die Kopf-Mitte auf kopfBoden × L über den Grund: der Winkel aus der Ruhe des Kopfs im Hals (seine
+            // Lage im Raum der Wurzel) und der Höhe der Wurzel über dem Boden des Wirts
+            T.neckRoot.updateWorldMatrix(true, false);
+            var nE = T.neckRoot.matrixWorld.elements;
+            var sW = Math.hypot(nE[0], nE[1], nE[2]);
+            var kp0 = T.headGroup.position;
+            var dK = Math.hypot(kp0.y, kp0.z) * sW;
+            var hW = nE[13] - W.boden(group, nE[12], nE[14]);
+            var sinZ = (HG.kopfBoden * Lm - hW) / Math.max(1e-6, dK);
+            halsZiel = Math.atan2(kp0.y, kp0.z) - Math.asin(sinZ > 1 ? 1 : sinZ < -1 ? -1 : sinZ);
+        }
+        var rumpfX = haltungFolge(H.rumpf, Number(P.bodyX) || 0, wH, dt);
+        var halsX = haltungFolge(H.hals, halsZiel, wH, dt);
+        // der Kopf trägt die Neigung der Stimmung gegen den Hals (im Grasen die Nase ins Gras: headX ist die Neigung im Raum)
+        var kopfX = haltungFolge(H.kopf, (Number(P.headX) || 0) - halsZiel, wH, dt);
+        var kopfY = haltungFolge(H.kopfY, (Number(P.headY) || 0) + sweepY, wH, dt);
+        var ohrZ = haltungFolge(H.ohr, Number(P.ear) || 0, wH, dt);
+        // der Ausklinge-Saum (fadeMul) nimmt nur den Rhythmus (Federn, Wiegen, Nicken, Schwanz); die Haltung bleibt — der
+        // Stufen-Schalter trifft eine stehende Gestalt in ihrer Haltung, die Ruhe dahinter hält sie (stamm
+        // _tierBaumNeutralStance mit haltHalten): ein äsender Hirsch an der Grenze senkt den Kopf wie der nahe
         if (T.wolf) {
             T.wolf.rotation.z = roll;
-            // bodyX-Konsum: die Rumpf-Neigung der Profile (hunt duckt, playbow verbeugt); der Hang-Pitch lebt getrennt am
-            // Kreatur-ROOT (creature.rotation.x). bob (Galopp-Federn) wird auf wolf.rotation.x verdichtet.
-            var bob = (Number(P.bob) || 0) * fadeMul;
-            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(takt2) * bob * g.schritt + g.bissRumpf;
+            // die Rumpf-Neigung der Haltung (hunt duckt, playbow verbeugt) und das Federn der Gangart; der Hang-Pitch lebt
+            // getrennt am Kreatur-ROOT (creature.rotation.x)
+            T.wolf.rotation.x = rumpfX + Math.sin(takt2) * rh.bob * fadeMul * g.schritt + g.bissRumpf;
             T.wolf.rotation.y = drehY;
         }
         // die Kanäle aus dem MOTION-Preset: tension → Stand-Unruhe + Rumpf-Plant-Pitch; kpMul → einpolige Bein-Näherung.
@@ -3310,7 +3407,7 @@
         }
         if (T.wolf) T.wolf.rotation.x += g.plantX * fadeMul;
         // die Ohren: earL.z = +ear, earR.z = −ear (MOTION.ear)
-        var ear = (Number(P.ear) || 0) * fadeMul;
+        var ear = ohrZ;
         if (T.earL) T.earL.rotation.z = ear;
         if (T.earR) T.earR.rotation.z = -ear;
         var ketten = [
@@ -3627,8 +3724,8 @@
                 var h2 = hub3 * hub3;
                 z3 = -(thH + thK) + h2 * h2 * GG.falte;
                 if (stand) {
-                    // die Gewichts-Unruhe des Stands (t-Sinus; tension skaliert sie) auf der IK
-                    var wn = (Math.sin(t * 2.5 + i3 * 1.7) * 0.004 + Math.sin(t * 1.3 + i3 * 2.3) * 0.003) * tension;
+                    // die Gewichts-Unruhe des Stands (Obertöne der Phase des Beins, H1; tension skaliert sie) auf der IK
+                    var wn = (Math.sin(10 * g.ph[i3] + i3 * 1.7) * HG.unruhe[0] + Math.sin(5.2 * g.ph[i3] + i3 * 2.3) * HG.unruhe[1]) * tension; // prettier-ignore
                     var wShift = roll * seiten[i3] * 0.025;
                     z0 += wn + wShift;
                     z1 += wn * 0.5 + wShift * 0.3;
@@ -3671,16 +3768,25 @@
             } else if (K3[3]) K3[3].rotation.x = cur[3];
         }
         g.legInit = true;
-        if (T.headGroup) {
-            // im Ansprung eines Bisses zielt der Kopf auf den Leib des Ziels (die Haltung des Bisses, g.bissKopf)
-            T.headGroup.rotation.x = ((Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7)) * fadeMul + g.bissKopf;
-            // das Scan-Pendel (kopfSweep) + headY aus dem MOTION-Preset additiv
-            T.headGroup.rotation.y = sweepY + (Number(P.headY) || 0) * fadeMul;
+        // DAS NICKEN am Hals (H1): zweimal je Zyklus in der Phase des Federns, die Kopf-Mitte um nick × L
+        var nickX = 0;
+        if (T.neckRoot && T.headGroup && rh.nick > 0) {
+            var kp1 = T.headGroup.position;
+            var nE1 = T.neckRoot.matrixWorld.elements;
+            var dK1 = Math.hypot(kp1.y, kp1.z) * Math.hypot(nE1[0], nE1[1], nE1[2]);
+            nickX = (Math.sin(takt2) * rh.nick * g.schritt * HG.nick * Lm) / Math.max(1e-6, dK1);
         }
-        var amp = (Number(P.tailAmp) || 0.1) * fadeMul;
-        var tRate = Math.max(0.4, Number(P.tailRate) || 0.5);
+        if (T.neckRoot) T.neckRoot.rotation.x = halsX + nickX * fadeMul;
+        if (T.headGroup) {
+            // im Ansprung eines Bisses zielt der Kopf auf den Leib des Ziels (die Haltung des Bisses, g.bissKopf); ohne Hals
+            // (ein Baum vor dem Posen-Gesetz) trägt der Kopf das Nicken
+            T.headGroup.rotation.x = kopfX + (T.neckRoot ? 0 : nickX) * fadeMul + g.bissKopf;
+            T.headGroup.rotation.y = kopfY;
+        }
+        // der Schwanz schwingt in der Phase des Vorderfußes, seine Weite trägt die Gangart (im Stand ruht er)
+        var amp = rh.schwanz * g.schritt * fadeMul;
         var ts = tb.tailSegs || [];
-        for (var iS = 0; iS < ts.length; iS++) ts[iS].rotation.y = Math.sin(t * tRate - iS * 0.5) * amp;
+        for (var iS = 0; iS < ts.length; iS++) ts[iS].rotation.y = Math.sin(g.ph[0] - iS * 0.5) * amp;
     }
 
     // KONVERGENZ III — die Tier-Materialfarben (verbatim aus buildAnimal Z.137):
@@ -4754,6 +4860,7 @@
         // Die Hals-Stationen liegen ENTLANG des Halses (je ein Glied, in Hals-Richtung gestreckt) und so dicht, dass
         // ein langer Hals (Hirsch) nicht zur Perlen-Kette zerfällt: Abstand ≤ 0,75 × Wurzel-Radius.
         var nN = Math.max(4, Math.ceil(nLen / (0.75 * nR[0])));
+        var halsAb = wolf.children.length; // die Teile des Halses (Stationen bis zum Übergang in den Kopf) hängen ab hier
         for (var i = 0; i < nN; i++) {
             var nt = i / (nN - 1);
             var nP = neckStart.clone().add(neckDir.clone().multiplyScalar(nt));
@@ -4822,6 +4929,7 @@
         neckHeadBlend.position.copy(neckEnd);
         neckHeadBlend.position.y -= 0.008 * H;
         wolf.add(neckHeadBlend);
+        var halsBis = wolf.children.length;
         // DIE RUTE (ART_GESTALT.schwanz): am Sitzbein-Ansatz über dem Becken, hängend im Winkel der Art (Wolf ~30°,
         // Hirsch fast senkrecht), ihr Leib buschig zur Mitte (Fuchs ~0,15 W dick) — Segment-Zahl und -Länge je Art
         // (vorher: 4 + 7·(1−Statur) Segmente, der Hirsch trug eine Wolfsrute aus elf Gliedern).
@@ -5078,9 +5186,17 @@
         headGroup.add(earL);
         headGroup.add(earR);
         wolf.add(headGroup);
-        return {
+        // DER HALS IST EIN GELENK (Posen-Gesetz H1): die Wurzel des Halses (neckRoot, am Bug: neckStart) trägt seine Teile und den
+        // Kopf — der Hals senkt den Kopf zum Boden und trägt das Nicken; die Haut des Halses bindet an ihn (foundry: das
+        // Gelenk des nächsten benannten Ahns). Vorher hingen sie am Rumpf: der Kopf nickte am Hals, und senkte sich nie.
+        // Die Lagen im Rumpf bleiben (der Fell-Ort unten liest sie, bevor sie in den Hals ziehen).
+        var neckRoot = F.gruppe();
+        neckRoot.position.copy(neckStart);
+        var halsTeile = wolf.children.slice(halsAb, halsBis).concat([headGroup]);
+        var tierAus = {
             teile: {
                 wolf: wolf,
+                neckRoot: neckRoot,
                 headGroup: headGroup,
                 jawGroup: jawGroup,
                 earL: earL,
@@ -5183,6 +5299,12 @@
             },
             P: P,
         };
+        wolf.add(neckRoot);
+        for (var hT = 0; hT < halsTeile.length; hT++) {
+            halsTeile[hT].position.sub(neckStart);
+            neckRoot.add(halsTeile[hT]);
+        }
+        return tierAus;
     }
 
     // W8 — die Gestalten je Rezept (B2c): JEDE Gattung trägt GESTALTEN_JE_REZEPT Individuen (eine neue zählt mit).
@@ -5195,6 +5317,7 @@
     // eine Extremität wie die Pfote. Unbenannte Glieder gehören zum Rumpf.
     var TREFFER_ZONE = Object.freeze({
         headGroup: "kopf",
+        neckRoot: "rumpf",
         jawGroup: "kopf",
         cranium: "kopf",
         earL: "kopf",
@@ -5254,6 +5377,9 @@
         gangWahl: gangWahl,
         tierBeinMass: tierBeinMass,
         tierPose: tierPose,
+        HALTUNG_GESETZ: HALTUNG_GESETZ,
+        haltungFolge: haltungFolge,
+        zugTempo: zugTempo,
         verhaltenHash: verhaltenHash,
         verhaltenWahl: verhaltenWahl,
         STEUER_GESETZ: STEUER_GESETZ,

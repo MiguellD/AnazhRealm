@@ -1399,10 +1399,15 @@ class AnazhRealm_kreatur_verhalten {
     // headless an der Probe tagesbudget (Lebensraum, 24 Spielstunden) lagen beim Wolf 0,56–0,86, beim Hirsch 0,27–0,96 seiner
     // Lagen in ihm, der Bär im Rand-Gleichgewicht seiner Leine (Median 17–27 m bei 28 m, 0,20–0,25 × π·Leine²); 3 von 12 Tieren
     // im Soll, mit dem Revier 8 von 12.
+    // DAS ZIEL GEHÖRT DEM VERBAND (Posen-Gesetz H1): ein Glied zieht zum Ziel seines Leittiers (`_kreaturLeittier`) — Anker,
+    // Leine, Takt der Ziele und Kurs aus dessen Identität und Gemüt; der Verband (`verbandZug`) hält die Form. Vorher würfelte
+    // jedes Glied sein eigenes Ziel und der Verband zog sie wieder zusammen: die Herde zerfaserte in sieben Richtungen.
     _creatureCharacterWander(creature, direction, speed, zeigt = true) {
         const K = AnazhRealm._verhaltenGesetz().wandern;
         const ud = creature.userData || {};
-        const em = ud.emotions;
+        const leit = this._kreaturLeittier(creature);
+        const LU = leit !== creature ? leit.userData : null;
+        const em = (LU || ud).emotions;
         let amp = 1 + (em ? (em.chaos || 0) * K.chaosGain - (em.sorrow || 0) * K.sorrowDamp : 0);
         if (amp < K.ampFloor) amp = K.ampFloor;
         const stride = K.strideSec / Math.max(0.5, amp);
@@ -1410,8 +1415,9 @@ class AnazhRealm_kreatur_verhalten {
         const slot = Math.floor(t / stride);
         const mag = speed * K.wanderSpeedMul * amp;
         // die LEINE: furchtsam bleibt nah am Anker, mutig streift weiter.
+        const leash = this._gehegeLeine(leit, this._creatureMoveCharacter(leit).leashM);
+        if (LU && LU.wanderAnchor && LU.wanderAnchor.revier) ud.wanderAnchor = LU.wanderAnchor;
         if (!ud.wanderAnchor) ud.wanderAnchor = { x: creature.position.x, z: creature.position.z };
-        const leash = this._gehegeLeine(creature, this._creatureMoveCharacter(creature).leashM);
         if (!ud.wanderAnchor.revier) ud.wanderAnchor = this._kreaturRevier(creature, ud.wanderAnchor, leash);
         const dx = ud.wanderAnchor.x - creature.position.x;
         const dz = ud.wanderAnchor.z - creature.position.z;
@@ -1420,16 +1426,20 @@ class AnazhRealm_kreatur_verhalten {
         // es ruht und äst nur in seinem Revier (vorher graste das scheue Kitz 45 m vor dem Anker im Tempo des Grasens weiter) und
         // nur, wo sein Lebensraum es trägt (_kreaturRevierTraegt, je Slot): außerhalb zieht es (vorher äste der erste Bär eine
         // Spielminute lang durch die Lücke zwischen den Teilen seines Reviers, 1,8 % seines Tags draußen)
-        const neu = ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading);
+        const zielL = LU ? LU._wanderZielPunkt || null : null;
+        const neu =
+            ud._wanderSlot !== slot || !Number.isFinite(ud._wanderHeading) || (LU && ud._wanderZielVon !== zielL);
         const p = creature.position;
         if (neu) ud._draussen = !this._kreaturRevierTraegt(creature, p.x, p.z, true);
         ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash || ud._draussen ? "ziehen" : ud._taetigkeit) : null;
         if (neu) {
             ud._wanderSlot = slot;
-            const idNum = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
+            const idNum = parseInt(String((LU || ud).netId || "c0").slice(1), 10) || 0;
             // der Weg dieses Slots im Tempo der Tätigkeit, die das Tier zeigt (äsen schleicht), wenigstens sein Raum
             const blick = Math.max(this._kreaturRaum(creature), mag * stride * this._kreaturTaetigkeitTempo(creature));
-            const Z = this._kreaturWanderZiel(creature, idNum, slot, blick, leash);
+            const Z = LU ? zielL : this._kreaturWanderZiel(creature, idNum, slot, blick, leash);
+            if (LU) ud._wanderZielVon = zielL;
+            else ud._wanderZielPunkt = Z;
             const h = Math.sin((idNum * 131 + slot) * 12.9898) * 43758.5453;
             const kurs = Z ? Math.atan2(Z.z - p.z, Z.x - p.x) : (h - Math.floor(h)) * Math.PI * 2;
             ud._wanderHeading = this._kreaturWanderKurs(creature, kurs, blick, leash, Z);
@@ -2627,42 +2637,6 @@ class AnazhRealm_kreatur_verhalten {
         if (dist >= fernDist) return 0;
         return 1 - (dist - saum) / (fernDist - saum);
     }
-    // NEUTRALE STAND-POSE (die Ruhe des Tiers jenseits der Grenze, auch `_gelenkRuhe`): friert den bauTier-Baum in der
-    // Kern-STAND_POSE ein (Ketten = Stand-Winkel, Schwanz/Kopf/Roll = 0) statt mitten im Schritt. tb._gang fällt → beim
-    // Aufwachen seedet der CPG frisch aus walkPhase. Ketten-Ordnung = _animateTierBaum.
-    _tierBaumNeutralStance(group) {
-        const tb = group && group.userData && group.userData._tierBaum;
-        if (!tb || !tb.teile) return;
-        const core = typeof window !== "undefined" && window.__tetrapodaCore;
-        const SP = core.STAND_POSE;
-        const T = tb.teile;
-        if (T.wolf) {
-            T.wolf.rotation.z = 0;
-            T.wolf.rotation.x = 0;
-            if (tb._rumpfRuhe) T.wolf.position.copy(tb._rumpfRuhe); // die Senke des Schritts (Welle LF) fällt mit
-        }
-        if (T.headGroup) {
-            T.headGroup.rotation.x = 0;
-            T.headGroup.rotation.y = 0;
-        }
-        // V18.491.80 — ear-Kanäle mit einfrieren (sonst Mid-ear-Pop beim Aufwachen).
-        if (T.earL) T.earL.rotation.z = 0;
-        if (T.earR) T.earR.rotation.z = 0;
-        const ketten = [
-            [T.legFL, T.flU, T.flL, T.flP],
-            [T.legFR, T.frU, T.frL, T.frP],
-            [T.legHL, T.hlT, T.hlC, T.hlP],
-            [T.legHR, T.hrT, T.hrC, T.hrP],
-        ];
-        for (let i = 0; i < 4; i++) {
-            const K = ketten[i];
-            // das Abspreizen der Pfoten-IK (Welle LF) und die Sohle am Hang (K8 huf) fallen mit
-            for (let k = 0; k < 4; k++) if (K[k]) K[k].rotation.set(SP[i][k], 0, 0);
-        }
-        const ts = tb.tailSegs || [];
-        for (let i = 0; i < ts.length; i++) ts[i].rotation.y = 0;
-        tb._gang = null;
-    }
 
     // DIE KÖRPERLÄNGE (m) einer Kreatur: die z-Ausdehnung ihrer Seelen-Teile (`_soulParts`, die Körper-Achse) ×
     // Uniform-Skala, einmal je Kreatur — EINE Quelle für den Hang (Halblänge) und die Stimme (der Tier-Ruf).
@@ -3391,7 +3365,7 @@ class AnazhRealm_kreatur_verhalten {
                     // ihrem Ring (rudelPlatz). Vorher zog die Herden-Form allein im Neugier-Zweig, und nur Nachbarn im Fenster.
                     if (!jagt && !frisst) this._kreaturVerbandZug(creature, direction, speed, hueftL);
                     // DIE TÄTIGKEIT TRÄGT DEN ZUG (Tiere K4): wer wandernd ruht, steht, auch im Verband; wer äst, grast
-                    if (creature.userData._gezeigt) direction.multiplyScalar(this._kreaturTaetigkeitTempo(creature));
+                    if (creature.userData._gezeigt) this._kreaturTaetigkeitZug(creature, direction, hueftL);
                 }
                 // V17.115 U3 — die KI-Richtung cachen; ferne Kreaturen verwenden sie
                 // aiDiv Frames lang wieder → glatte Bewegung, seltene Neuberechnung.
@@ -3648,7 +3622,7 @@ class AnazhRealm_kreatur_verhalten {
                     if (animDiv === 0) {
                         if (!creature.userData._animEingefroren) {
                             creature.userData._animEingefroren = true;
-                            this._tierBaumNeutralStance(creature);
+                            this._tierBaumNeutralStance(creature, true);
                         }
                     } else if (animDiv === 1 || (aiFrame + i) % animDiv === 0) {
                         creature.userData._animEingefroren = false;
@@ -3801,7 +3775,8 @@ AnazhRealm._steuerGesetz = function () {
         Number.isFinite(k.VERBAND_GESETZ.leitGewicht) &&
         typeof k.temperamentDerGattung === "function" &&
         Number.isFinite(S.sprint) &&
-        typeof k.sprintTempo === "function"
+        typeof k.sprintTempo === "function" &&
+        typeof k.zugTempo === "function"
     ) {
         AnazhRealm._steuerGesetzMemo = k;
         return k;
