@@ -406,7 +406,10 @@ function pruefeStationen(liste, karte) {
         else ok.push(st);
     }
     // die Regel der alten Karte (eine 2 ohne 1 zählt nie); die Karte 2 bucht je Sprosse aus den Akten (vision/buche-2.cjs) — ihre
-    // unterste Sprosse kann eine Station der alten Karte urteilen (Tafel „gleich“), die Fabrik misst dann ab der zweiten
+    // unterste Sprosse kann eine Station der alten Karte urteilen (Tafel „gleich“), die Fabrik misst dann ab der zweiten. Die Ordnung
+    // der Leiter („eine Sprosse zählt nie ohne die darunter“) trägt EINE Stelle, die bucht: buche-2.cjs rechne (HEUTE = lückenlos PUNKT
+    // ab Sprosse 1, Selbsttest „Mutant Lücke“). Richter-Falte 19.11.: die zweite Regel `eins(k)` (richter-planet-leben-zusammenspiel,
+    // die Tafel-1 hier nachgelesen) fiel samt Selbsttest
     const kr = new Set(ok.filter((s) => !istKarte2(s)).map((s) => s.kriterium));
     for (const k of kr)
         if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
@@ -428,8 +431,11 @@ function fahrtSumme(stationen, geraet) {
 // oeko 90, teilen 75, ereignis 60, wetter-welt 45, physik 45) hoben die Fahrt von 6 619 auf 7 204 s (Radeon) über 4 × 1 740 s.
 // 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
-// Richter-Falte 19.11., Zwischenstand nach mensch + erleben/same/kosmos: Radeon 258 Läufe Σ Deckel 16 279 s, GTX 257 Läufe Σ 16 072 s →
-// ⌈16 279 ÷ 1 740⌉ = 10 Teile (die Rechnung der ganzen Falte steht nach dem dritten Zweig)
+// 19.11. 6 → 10, die Richter-Falte (EINE Zahl statt 9 · 8 · 7 der drei Fabrik-Zweige mensch · erleben/same/kosmos · planet/leben/
+// zusammenspiel): die Grenze bleibt eine Konstante — sie ist die Wand gegen das Wachstum der Fahrt (FAHRT-ROT (c) und an der echten
+// Liste), eine aus der Liste gerechnete Zahl risse nie. Gerechnet an der gefalteten Liste (`eichtafel`, Σ Deckel heute): vorher Radeon
+// 112 Läufe Σ 10 064 s, GTX 111 Läufe Σ 9 857 s (6 Teile); nachher Radeon 263 Läufe Σ 16 793 s → ⌈16 793 ÷ 1 740⌉ = 10, GTX 262 Läufe
+// Σ 16 586 s → ⌈16 586 ÷ 1 740⌉ = 10. Kein Teil auf Vorrat für ungeeichte Deckel: hebt `eichtafel --schreibe` sie, reißt die Wand beim Namen
 const FAHRT_TEILE_MAX = 10;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
