@@ -4,6 +4,8 @@
 # Push — lehnt er ab, von vorn; nie ein Merge). Von Hand nichts aendern. Je Runde und je Geraet EINE Zeile:
 # runde <n> kopf <sha40> start <iso> vorher <sha40|->
 # <geraet> <offen|laeuft|halt|weicht|durch> <erledigt>/<gesamt> station <id|-> fortschritt <iso> alarm <iso|-> liste <ungebucht,..>|<gebucht gruen,..>
+# notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)
 runde 1 kopf f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41 start 2026-11-19T04:52:10Z vorher -
-gtx durch 0/0 station - fortschritt 2026-11-19T04:54:13Z alarm - liste |
+gtx offen 0/0 station - fortschritt 2026-11-19T05:52:59Z alarm - liste -
 radeon offen 0/0 station - fortschritt 2026-11-19T04:52:10Z alarm - liste -
+notiz 2026-11-19T05:52:59Z gtx gtx durch 0/0 war Listen-Bruch 05:53, zurück auf offen (vorher durch 0/0 liste |)
