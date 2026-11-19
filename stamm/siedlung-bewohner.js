@@ -1312,14 +1312,23 @@ class AnazhRealm_siedlung_bewohner {
     // Vorlage gelegt, dazu der Schritt seiner Lage und das Maß seiner Skala. Die Gelenke der Person liegen dabei auf denen der
     // Vorlage: gemessen weichen sie über die Achsen des Raums höchstens 21 mm quer ab (die Schulter, Geschlecht) — der Gang dreht
     // die Glieder um die Querachse, die Querlage trägt er nicht.
+    // DIE POSE θ IST DIE DES GESETZES (koerper `leibRigPose`: jede Haltung ADDIERT ihre Winkel auf die Ruhe des Knochens): ruht ein
+    // Knochen des Leibs anders als der der Vorlage — die Arme seines Baus (`leibBauArme`) —, legt sie dieselben Winkel auf die Ruhe
+    // der Vorlage; die Drehung gegen die Ruhe (sr⁻¹ · s) hinge an der Ruhe selbst. Bis hier stand der Pfarrer #16036 (Gestalt 1, Zug
+    // fleißig, Arme 1,2° anders als die Vorlage) in der Haltung sad 1,3° anders als sein Stand im Satz (gate:kreatur-takt bewohner)
     _bewohnerRaumStellen(S, g) {
         const P = this._bewohnerRaumPose(S);
         const tb = g.userData._tierBaum;
         const q = this._bewohnerRaumQ || (this._bewohnerRaumQ = new THREE.Quaternion());
+        const [eR, eS] = this._bewohnerRaumE || (this._bewohnerRaumE = [new THREE.Euler(), new THREE.Euler()]);
         for (const nm in P.teile) {
             const [d, r, s, sr] = [P.teile[nm], P.ruhe[nm], tb.teile[nm], tb.ruhe[nm]];
             if (!s || !sr) continue;
-            d.quaternion.copy(r.quaternion).multiply(q.copy(sr.quaternion).invert().multiply(s.quaternion));
+            if (Math.abs(r.quaternion.dot(sr.quaternion)) < 1 - 1e-9) {
+                eR.setFromQuaternion(r.quaternion, s.rotation.order);
+                eS.setFromQuaternion(sr.quaternion, s.rotation.order);
+                d.rotation.set(eR.x + s.rotation.x - eS.x, eR.y + s.rotation.y - eS.y, eR.z + s.rotation.z - eS.z, s.rotation.order); // prettier-ignore
+            } else d.quaternion.copy(r.quaternion).multiply(q.copy(sr.quaternion).invert().multiply(s.quaternion));
             d.position.copy(r.position).add(s.position).sub(sr.position);
             d.scale.copy(r.scale).multiply(s.scale).divide(sr.scale);
         }
