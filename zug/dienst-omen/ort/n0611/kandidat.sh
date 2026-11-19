@@ -50,7 +50,7 @@ G=${EINZELN:+1}; G=${G:-${TEIL_N:-9}}; Q=(); i=0
 while [ $i -lt ${#OK[@]} ]; do Q+=("$((i/G+1))|1|$(IFS=,; echo "${OK[*]:$i:$G}")"); i=$((i+G)); done   # je Teil: Nummer|Versuch|Stationen
 GANZ=${#Q[@]}; DA=0; OFFEN=
 while [ ${#Q[@]} -gt 0 ]; do
-  [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date '+%T') $NAME SPRUNG: die Flagge des Dienstes liegt (main weiter, WEICHT oder HALT - der Grund steht in stufe/landung.log) - die Liste endet nach $DA von $GANZ Teilen (${#Q[@]} nicht gefahren)" >> $L; break; }
+  [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date '+%T') $NAME SPRUNG: die Grenz-Flagge des Dienstes liegt (WEICHT oder HALT - der Grund steht in stufe/landung.log; seit dem Gesetz der Runde 19.11. nie eine Landung) - die Liste endet nach $DA von $GANZ Teilen (${#Q[@]} nicht gefahren)" >> $L; break; }
   IFS='|' read -r nr v T <<< "${Q[0]}"; Q=("${Q[@]:1}")
   if teil $NAME-$nr "$T" $v; then DA=$((DA+1)); continue; fi
   if [ $v -lt $VERSUCHE ]; then

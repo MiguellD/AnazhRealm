@@ -54,6 +54,8 @@ blick() {
         elif lebt $n; then echo "  $n LEBT (PID $(cat "$S/$n.pid")) · Puls vor $a: ${p:20:200}"; else echo "  $n STEHT · letzter Puls vor $a: ${p:20:200}"; fi
     done
     echo "  C: $(df -k /c | awk 'NR==2 { printf "%.1f", $4 / 1048576 }') GB frei · GPU-Schloss: $(head -1 /c/Users/micha/AppData/Local/Temp/claude/gpu-schloss/besitzer.txt 2>/dev/null || echo frei)"
+    # DIE RUNDE (19.11.): zug/runde.txt, wie die Schleife sie zuletzt las (refs/runde/koord im Klon — der Blick holt nichts)
+    git -C $G show refs/runde/koord:zug/runde.txt 2>/dev/null | grep -v '^#' | sed 's/ liste .*//; s/^/  RUNDE /'
 }
 # der MSYS-Baum ab PID $1, Kinder zuerst (der Windows-Elter eines MSYS-Kinds ist nicht immer sein Elter)
 baum() {
@@ -164,13 +166,13 @@ if [ -n "$hand" ]; then
 fi
 [ "$1" = "--neu" ] && stopp
 tmp=$S/manifest.neu
-echo "$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst-omen (+ zug/dienst: gemein, richter, puls)" >"$tmp"
+echo "$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst-omen (+ zug/dienst: gemein, richter, puls, runde)" >"$tmp"
 {
     git -C $G ls-tree -r "$K" zug/dienst-omen/
-    git -C $G ls-tree "$K" zug/dienst/gemein.sh zug/dienst/richter.sh zug/dienst/richter-werk.cjs zug/dienst/puls-dienst.sh zug/dienst/schloss-puls.cjs
+    git -C $G ls-tree "$K" zug/dienst/gemein.sh zug/dienst/richter.sh zug/dienst/richter-werk.cjs zug/dienst/puls-dienst.sh zug/dienst/schloss-puls.cjs zug/dienst/runde.cjs
 } | while read -r mode typ blob pfad; do
     case "$pfad" in
-        zug/dienst/*) ort=p3/dienst-omen/${pfad#zug/dienst/} ;; # gemein.sh, richter.sh, richter-werk.cjs, puls-dienst.sh, schloss-puls.cjs: EINE Quelle beim Laptop
+        zug/dienst/*) ort=p3/dienst-omen/${pfad#zug/dienst/} ;; # gemein.sh, richter.sh, richter-werk.cjs, puls-dienst.sh, schloss-puls.cjs, runde.cjs: EINE Quelle beim Laptop
         zug/dienst-omen/ort/*) ort=p3/${pfad#zug/dienst-omen/ort/} ;;
         *) ort=p3/dienst-omen/${pfad#zug/dienst-omen/} ;;
     esac

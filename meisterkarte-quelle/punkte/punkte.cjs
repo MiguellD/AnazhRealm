@@ -28,6 +28,8 @@
 //   node punkte.cjs beruehrt --basis <sha> --kopf <sha> [--json]   welche Stationen berührt der Diff eines Zweigs: je Gerät die Hälften,
 //        deren Messung an der Basis frisch gilt und am Kopf nicht mehr (dasselbe Frische-Urteil wie die Buchung, R6 nach Konsum) —
 //        `nur=…` für den Zug-Dienst und den Richter nach der Landung; daneben die Hälften, die schon an der Basis offen sind
+//   node punkte.cjs tafel [--schreibe]   je Station der Karte 2 ohne Zeile in vision/richter-tafel.json die Zeile, die ihr Register
+//        trägt (`tafel` an der Station, k2TafelZeile); KOLLISION mit einer bestehenden Zeile und VON HAND (ohne `tafel`) beim Namen, Exit 1
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN):
@@ -303,8 +305,8 @@ const wetterFeinde = (argv, probe) => {
     return WETTER_FEINDE.filter(([re, gilt]) => re.test(t) && gilt(t, probe)).map(([, , n]) => n);
 };
 
-// prüft die Stationen gegen die Karte; Rückgabe { stationen, fehler }
-function pruefeStationen(liste, karte) {
+// prüft die Stationen gegen die Karte und die Tafel der Karte 2 (tafelWache); Rückgabe { stationen, fehler }
+function pruefeStationen(liste, karte, tafel = ladeTafel()) {
     const fehler = [];
     const gesehen = new Set();
     const ok = [];
@@ -319,8 +321,8 @@ function pruefeStationen(liste, karte) {
             f.push("ein Pflicht-Richter trägt pflicht: true UND kriterium pflicht.<Eintrag>");
         if (st && (st.karte2 !== undefined || /^karte2\./.test(st.kriterium || "")) && !istKarte2(st))
             f.push("ein Richter der Karte 2 trägt karte2: true UND kriterium karte2.<Leiter>");
-        // die Staffel eines Richters der Karte 2 ist seine Sprosse (1 … 9; ob sie in der Karte steht, prüft die quelle unten)
-        if (istKarte2(st) ? !(Number.isInteger(st.staffel) && st.staffel >= 1) : ![1, 2].includes(st.staffel)) f.push(istKarte2(st) ? "staffel ist keine Sprosse ≥ 1" : "staffel nicht 1|2");
+        // die Staffel eines Richters der Karte 2 ist die Sprosse (1…n; ob sie in der Karte steht, prüft die quelle unten)
+        if (istKarte2(st) ? !(Number.isInteger(st.staffel) && st.staffel >= 1) : ![1, 2].includes(st.staffel)) f.push(istKarte2(st) ? "staffel ist keine Sprosse (1…n)" : "staffel nicht 1|2");
         if (st && st.befehl === null) {
             fehler.push(wer + ": befehl null gehört in module.exports.fehlt (mit grund), nie in die fahrbare Liste");
             continue;
@@ -405,18 +407,68 @@ function pruefeStationen(liste, karte) {
         if (f.length) fehler.push(wer + ": " + f.join(" · "));
         else ok.push(st);
     }
-    const kr = new Set(ok.map((s) => s.kriterium));
-    // KARTE 2 (18.11., richter-planet-leben-zusammenspiel): staffel = die Sprosse — trägt eine Zeile „gleich“ der Tafel die Sprosse 1 einer
-    // Leiter (eine Station der alten Karte urteilt sie, der Leiter-Richter baut dort keinen Zwilling), steht ihre 1 ohne eigene Station
-    let tafelEins = null;
-    const eins = (k) => {
-        if (!tafelEins) tafelEins = new Set(JSON.parse(fs.readFileSync(path.join(KOORD, "vision", "richter-tafel.json"), "utf8")).zeilen.filter((z) => z.richter === "gleich" && z.sprosse === 1).map((z) => "karte2." + z.leiter));
-        return tafelEins.has(k);
-    };
+    // die Regel der alten Karte (eine 2 ohne 1 zählt nie); die Karte 2 bucht je Sprosse aus den Akten (vision/buche-2.cjs) — ihre
+    // unterste Sprosse kann eine Station der alten Karte urteilen (Tafel „gleich“), die Fabrik misst dann ab der zweiten. Die Ordnung
+    // der Leiter („eine Sprosse zählt nie ohne die darunter“) trägt EINE Stelle, die bucht: buche-2.cjs rechne (HEUTE = lückenlos PUNKT
+    // ab Sprosse 1, Selbsttest „Mutant Lücke“). Richter-Falte 19.11.: die zweite Regel `eins(k)` (richter-planet-leben-zusammenspiel,
+    // die Tafel-1 hier nachgelesen) fiel samt Selbsttest
+    const kr = new Set(ok.filter((s) => !istKarte2(s)).map((s) => s.kriterium));
     for (const k of kr)
-        if (!ok.some((s) => s.kriterium === k && s.staffel === 1) && !(ok.some((s) => s.kriterium === k && istKarte2(s)) && eins(k))) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
+        if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
+    fehler.push(...tafelWache(ok, tafel));
     fehler.push(...fahrtUrteil(ok));
     return { stationen: ok, fehler };
+}
+// DIE TAFEL DER KARTE 2 (vision/richter-tafel.json): Station → Sprosse; nur über eine Zeile schreibt die Sitzung eine Akte
+// (vision/richter-akte.cjs), nur eine Akte bucht (vision/buche-2.cjs)
+const TAFEL_DATEI = path.join(KOORD, "vision", "richter-tafel.json");
+const ladeTafel = () => JSON.parse(fs.readFileSync(TAFEL_DATEI, "utf8").replace(/^﻿/, ""));
+// DIE WACHE DER TAFEL (Richter-Falte 19.11.): eine Station der Karte 2 ohne Zeile der Tafel misst Fahrt-Zeit und schreibt nie eine
+// Akte — bis 19.11. still an 123 Stationen (117 aus richter-planet-leben-zusammenspiel, 6 aus g3–g6). Jede steht ROT beim Namen
+function tafelWache(stationen, tafel) {
+    const da = new Set(tafel.zeilen.map((z) => z.station));
+    const ohne = [...new Set(stationen.filter((st) => istKarte2(st) && !da.has(schluessel(st))).map(schluessel))];
+    return ohne.map((id) => id + ": keine Zeile in vision/richter-tafel.json — die Station misst ohne Akte (`punkte.cjs tafel --schreibe` faltet die Zeilen der k2-Register ein)");
+}
+// DIE ZEILE EINER STATION (der Vertrag aller k2-Register: die Station trägt `tafel` = { richter: "gleich" } | { richter: "fehlt", grund })
+function k2TafelZeile(st) {
+    const t = st.tafel;
+    if (!t || !["gleich", "fehlt"].includes(t.richter) || (t.richter === "fehlt" && !(typeof t.grund === "string" && t.grund.length >= 12))) return null;
+    return { station: schluessel(st), leiter: st.kriterium.slice("karte2.".length), sprosse: st.staffel, richter: t.richter, ...(t.richter === "fehlt" ? { grund: t.grund } : {}) };
+}
+// `tafel [--schreibe]`: je Station der Karte 2 ohne Zeile ihre Zeile aus dem Register; belegt eine andere Zeile dieselbe Sprosse, gewinnt
+// die bestehende (KOLLISION beim Namen: die Station gehört in `bestehend` ihres Registers); eine Station ohne `tafel` (g1–g6) von Hand
+function tafelCli(o) {
+    const tafel = ladeTafel();
+    const { stationen } = pruefeStationen(ladeStationen(), kriterienDerKarte(), tafel);
+    const da = new Set(tafel.zeilen.map((z) => z.station));
+    const belegt = new Map(tafel.zeilen.map((z) => [z.leiter + "#" + z.sprosse, z]));
+    const neu = [], kollision = [], vonHand = [], abweichung = [];
+    for (const st of stationen.filter(istKarte2)) {
+        const z = k2TafelZeile(st), id = schluessel(st);
+        const alt = tafel.zeilen.find((x) => x.station === id);
+        if (alt) {
+            if (z && (alt.richter !== z.richter || alt.leiter !== z.leiter || alt.sprosse !== z.sprosse)) abweichung.push(id + ": Tafel " + alt.richter + " ↔ Register " + z.richter);
+            continue;
+        }
+        if (da.has(id)) continue;
+        if (!z) { vonHand.push(id); continue; }
+        const b = belegt.get(z.leiter + "#" + z.sprosse);
+        if (b) { kollision.push(id + " ↔ bestehend " + b.station + " " + b.richter); continue; }
+        belegt.set(z.leiter + "#" + z.sprosse, z);
+        neu.push(z);
+    }
+    for (const z of neu) console.log("  NEU " + z.station + " " + z.richter);
+    for (const k of kollision) console.log("  KOLLISION " + k);
+    for (const k of vonHand) console.log("  VON HAND " + k + " (die Station trägt keine `tafel`)");
+    for (const k of abweichung) console.log("  ABWEICHUNG " + k);
+    if (o.schreibe && neu.length) {
+        tafel.zeilen.push(...neu);
+        const zeile = (z) => "  { " + Object.entries(z).map(([a, b]) => JSON.stringify(a) + ": " + JSON.stringify(b)).join(", ") + " }";
+        fs.writeFileSync(TAFEL_DATEI, "{\n \"lesart\": " + JSON.stringify(tafel.lesart) + ",\n \"zeilen\": [\n" + tafel.zeilen.map(zeile).join(",\n") + "\n ]\n}\n");
+    }
+    console.log("TAFEL " + tafel.zeilen.length + " Zeilen" + (o.schreibe ? " (geschrieben)" : "") + " · neu " + neu.length + " · Kollision " + kollision.length + " · von Hand " + vonHand.length + " · Abweichung " + abweichung.length);
+    process.exitCode = kollision.length || vonHand.length ? 1 : 0;
 }
 // DIE FAHRT einer Karte (c): die Läufe ihrer Sitzung (Zwillinge einmal, gruppiere) mit ihrem Deckel, die größten zuerst, und die
 // Summe samt Boot (SITZUNG_BOOT_S) — die Wanduhr, die die Sitzung nie überschreiten kann, außer an der Grundstellung
@@ -433,12 +485,15 @@ function fahrtSumme(stationen, geraet) {
 // oeko 90, teilen 75, ereignis 60, wetter-welt 45, physik 45) hoben die Fahrt von 6 619 auf 7 204 s (Radeon) über 4 × 1 740 s.
 // 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
-// 19.11. 6 → 7: die Leiter-Richter der Karte 2 (richter-planet-leben-zusammenspiel: je Perspektive EINE Probe, ihr Deckel 10 s + Σ der
-// Leiter-Deckel; erde 30, wasser 225, same 55, pflanzen 129, leben-wasser 75 s) hoben die Radeon-Fahrt auf 10 578 s über 6 × 1 740 s.
-// 19.11. 7 → 8: das Kapitel zusammenspiel ganz (planet 305, erleben 333, mensch 238, leben 160, same 395 s, jede samt dem Dorf der
-// Probe 60 s) hob die Radeon-Fahrt auf 13 132 s über 7 × 1 740 s.
-// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (128 Läufe × 120 s > 8 Teile)
-const FAHRT_TEILE_MAX = 8;
+// 19.11. 6 → 10, die Richter-Falte (EINE Zahl statt 9 · 8 · 7 der drei Fabrik-Zweige mensch · erleben/same/kosmos · planet/leben/
+// zusammenspiel): die Grenze bleibt eine Konstante — sie ist die Wand gegen das Wachstum der Fahrt (FAHRT-ROT (c) und an der echten
+// Liste), eine aus der Liste gerechnete Zahl risse nie. Gerechnet an der gefalteten Liste (`eichtafel`, Σ Deckel heute): vorher Radeon
+// 112 Läufe Σ 10 064 s, GTX 111 Läufe Σ 9 857 s (6 Teile); nachher Radeon 263 Läufe Σ 16 793 s → ⌈16 793 ÷ 1 740⌉ = 10, GTX 262 Läufe
+// Σ 16 586 s → ⌈16 586 ÷ 1 740⌉ = 10. Kein Teil auf Vorrat für ungeeichte Deckel: hebt `eichtafel --schreibe` sie, reißt die Wand beim Namen
+// 19.11. 10 → 12: die Fabrik planet/leben/zusammenspiel nach der Falte (11 neue Läufe je Perspektive: planet geologie 162, relief 155,
+// wetter 160, zeit 90; leben tiere 225, oeko 151, evolution 235; zusammenspiel planet 305, erleben 333, mensch 238, leben 160 — und
+// zusammenspiel.same 55 → 395 s; Σ +2 554 s): Radeon 274 Läufe Σ 19 347 s → ⌈19 347 ÷ 1 740⌉ = 12, GTX 273 Läufe Σ 19 140 s → 11
+const FAHRT_TEILE_MAX = 12;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
@@ -566,13 +621,16 @@ function sitzStartGrenze(st, geraet, fahrtMaxS) {
     const g = grundDeckel(st, geraet), bedarfS = g * teileVon(st);
     return bedarfS <= fahrtMaxS / 2 ? { bedarfS, restMin: bedarfS + ZWISCHEN_S, sekMin: g } : { bedarfS, restMin: 0, sekMin: 1 };
 }
-// DIE LEITER-RICHTER DER KARTE 2 (18.11., Zweig richter-planet-leben-zusammenspiel): je Kapitel eine Datei stationen/k2-<kapitel>.js,
-// geladen NACH g1 … g6 (ihr Kern liest deren Stationen der Karte 2, kein Zwilling) und nie in GRUPPEN (die liest auch src/gN.js)
-const K2_DATEI = /^k2-[a-z]+\.js$/;
+// DIE RICHTER-FABRIK DER KARTE 2 (vision/PLAN-1712.md §1, 18.11.): je Kapitel ein Register `stationen/k2-<kapitel>.js` neben g1…g6 —
+// dieselbe Liste, dasselbe Format, je Leiter EINE Probe (Zwillinge je Sprosse); die Teile eines Kapitels (`k2-<kapitel>-<teil>.js`)
+// lädt sein Register, nie diese Schleife. GRUPPEN bleibt die Gruppe der alten Karte (src/gN.js trägt ihre Kriterien), ein Register
+// hat kein src; geladen NACH g1 … g6 (ein Kern liest deren Stationen der Karte 2, kein Zwilling). EIN Lader (Richter-Falte 19.11.):
+// der Lader `[a-z0-9-]+` (richter-erleben-same-kosmos) fiel — er lud jeden Teil `k2-mensch-<teil>.js` zum zweiten Mal neben seinem Register
+const K2_REGISTER = /^k2-[a-z]+\.js$/;
+const k2Register = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => K2_REGISTER.test(n)).sort().map((n) => n.slice(0, -3)) : []);
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
     const alle = [];
-    const k2 = fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => K2_DATEI.test(n)).sort().map((n) => n.slice(0, -3)) : [];
-    for (const g of [...GRUPPEN, ...k2]) {
+    for (const g of [...GRUPPEN, ...k2Register(dir)]) {
         const f = path.join(dir, g + ".js");
         if (!fs.existsSync(f)) continue;
         const m = require(f);
@@ -4699,7 +4757,9 @@ function stufen(sts, urteil) {
         return { ok, r };
     };
     const s1 = stufe(1, false), s2 = stufe(2, true);
-    return { s1, s2, punkte: s1.ok && s2.ok ? 2 : s1.ok ? 1 : 0 };
+    // die Sprossen über 2 (nur Richter der Karte 2, ohne Punkte der alten Karte): je Sprosse ihre Stationen im Beleg, nie in den Punkten
+    const mehr = [...new Set(sts.map((s) => s.staffel).filter((n) => n > 2))].sort((a, b) => a - b).map((n) => [n, stufe(n, true)]);
+    return { s1, s2, mehr, punkte: s1.ok && s2.ok ? 2 : s1.ok ? 1 : 0 };
 }
 
 function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = [], opt = {}) {
@@ -4723,11 +4783,11 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
     const kriterien = [...new Set(stationen.map((s) => s.kriterium))].sort();
     for (const k of kriterien) {
         const pflicht = stationen.some((s) => s.kriterium === k && ohnePunkte(s));
-        const { s1, s2, punkte } = stufen(stationen.filter((s) => s.kriterium === k), stand);
+        const { s1, s2, mehr, punkte } = stufen(stationen.filter((s) => s.kriterium === k), stand);
         const teile = [];
         const offen = [];
         // eine erfüllte Stufe nennt ihre Grünen, eine offene jedes fehlende Gerät beim Grund
-        for (const [n, s] of [[1, s1], [2, s2]])
+        for (const [n, s] of [[1, s1], [2, s2], ...mehr])
             for (const x of s.r)
                 for (const y of x.je) {
                     if (y.e.gruen) teile.push((y.e.gehalten ? "gehalten: " : "") + y.e.zahl + " an " + y.e.sha.slice(0, 8) + " " + y.g);
@@ -4739,7 +4799,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
             punkte: pflicht ? 0 : punkte,
             beleg: "Maschine: " + (teile.length ? teile.join(" · ") : "0") + (offen.length ? " — offen: " + offen.join(" · ") : ""),
             // ungemessen/tot: das Frische-Urteil selbst — keine frische Messung am Kopf (tot: die Wand PFAD, eine Messung heilt sie nie)
-            stationen: [s1, s2].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
+            stationen: [s1, s2, ...mehr.map(([, s]) => s)].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
                 ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}), ...(y.e.gehalten ? { gehalten: true } : {}), ...(y.e.r6 ? { r6: y.e.r6 } : {}),
                 ...(x.s.beide ? { beide: true } : {}) })))),
         };
@@ -5950,7 +6010,7 @@ async function selbsttest(o = {}) {
             m("m.platz", ["bash", "-c", "echo {AUS}\necho {AUSGABE}"]), m("m.node", ["node", "-e", "const a = 1;\nconst = 2;"])]);
         const mutOk = ["m.zitat#1 · Zeile 2", "m.platz#1 · Zeile 2", "m.node#1 · Zeile 2"].every((p) => mut.rot.some((z) => z.startsWith(p))) && mut.rot.length === 3;
         const s = ((Date.now() - t0) / 1000).toFixed(1);
-        const taeter = ["karte2.mensch.kopplung.antwort#1", "karte2.mensch.zeit.kausal#1", "karte2.mensch.zeit.palimpsest#1", "breite.siedlung#1", "karte2.mensch.stadt.vertikal#1", "karte2.same.preis.ankunft#1", "karte2.same.preis.bytes#1"];
+        const taeter = ["karte2.mensch.kopplung.antwort#1", "karte2.mensch.zeit.kausal#1", "breite.siedlung#1", "karte2.mensch.stadt.vertikal#1", "karte2.same.preis.ankunft#1", "karte2.same.preis.bytes#1"];
         const verfehlt = taeter.filter((id) => !vorher.rot.some((z) => z.startsWith(id + " · ")));
         for (const z of jetzt.rot) console.log("    ROT " + z);
         pruef("BEFEHL TRÄGT: " + jetzt.stationen + " Stationen (" + jetzt.bash + " bash-Skripte) so gestartet, wie der Läufer sie startet — kein Platzhalter, kein SEK ≤ " + SEK_RAND_S + ", bash -n und node -e tragen; der Läufer vor der Heilung ROT an " + taeter.length + " Tätern (" + s + " s)",
@@ -6192,16 +6252,26 @@ async function selbsttest(o = {}) {
         const r = pruefeStationen([{ ...st0, staffel: 2, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 },
             quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }], karte);
         pruef("FORMAT-ROT Staffel 2 ohne Staffel 1", r.fehler.some((f) => /keine Staffel-1-Station/.test(f)), r.fehler.join(" | "));
-        // KARTE 2: die Sprosse 1 von leben.pflanzen.jahreslauf trägt die Tafel (vegetation.K5#2 „gleich“) — eine Station ihrer Sprosse 2 steht;
-        // planet.erde.gestalt trägt die Tafel nicht — ihre Sprosse 2 ohne Sprosse 1 fällt wie zuvor
-        const k2 = (leiter) => ({ ...st0, karte2: true, kriterium: "karte2." + leiter, staffel: 2, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined,
-            probe: { befehl: ["node", "-e", "0"], sek: 30 }, quelle: "KARTE2 " + leiter + " S2 = " + karte2Richter(leiter, 2) });
-        const t2 = pruefeStationen([k2("leben.pflanzen.jahreslauf")], karte), e2 = pruefeStationen([k2("planet.erde.gestalt")], karte);
-        pruef("KARTE2 Sprosse 2 steht, wenn die Tafel die Sprosse 1 trägt; ohne sie ROT „keine Staffel-1-Station“",
-            !t2.fehler.some((f) => /keine Staffel-1-Station/.test(f)) && e2.fehler.some((f) => /karte2\.planet\.erde\.gestalt: keine Staffel-1-Station/.test(f)),
-            t2.fehler.concat(e2.fehler).join(" | "));
         const d = pruefeStationen([st0, st0], karte);
         pruef("FORMAT-ROT doppelte Station", d.fehler.some((f) => /doppelt/.test(f)), d.fehler.join(" | "));
+        // die Staffel einer Karte-2-Station IST die Sprosse (k2-<Kapitel>.js, 18.11.): S5 ohne S1 fährt, eine Sprosse jenseits der Leiter
+        // und eine Staffel 0 sind ROT beim Namen. Vorher ROT: „staffel nicht 1|2“ an jeder Sprosse ≥ 3, „keine Staffel-1-Station“ an S2 allein
+        const k2 = (n, mehr) => ({ ...st0, kriterium: "karte2.mensch.leib.verschieden", karte2: true, staffel: n, geraet: ["radeon", "gtx"], gpu: true,
+            befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 }, quelle: "KARTE2 mensch.leib.verschieden S" + n + " = " + karte2Richter("mensch.leib.verschieden", n), ...mehr });
+        const k5 = pruefeStationen([k2(2), k2(5)], karte), k9 = pruefeStationen([k2(99)], karte), k0 = pruefeStationen([k2(0)], karte);
+        pruef("FORMAT Karte-2-Staffel = Sprosse: S2 und S5 ohne S1 fahren, S99 steht nicht in der Karte, S0 ist keine Sprosse",
+            !k5.fehler.length && k5.stationen.length === 2 && k9.fehler.some((f) => /steht nicht in vision\/meisterkarte-2\.json/.test(f)) && k0.fehler.some((f) => /staffel ist keine Sprosse/.test(f)),
+            k5.fehler.concat(k9.fehler, k0.fehler).join(" | "));
+        // DIE WACHE DER TAFEL (19.11.): eine Station der Karte 2 ohne Zeile der Tafel ist ROT beim Namen (bis 19.11. maßen 123 still
+        // ohne Akte); mit ihrer Zeile still; die Zeile der Station folgt dem Vertrag `tafel`, ein „fehlt“ ohne Grund trägt keine Zeile
+        const tz = (zeilen) => ({ lesart: "x", zeilen });
+        const ohneZ = pruefeStationen([k2(2)], karte, tz([])), mitZ = pruefeStationen([k2(2)], karte, tz([{ station: "karte2.mensch.leib.verschieden#2", leiter: "mensch.leib.verschieden", sprosse: 2, richter: "gleich" }]));
+        const mitT = (t) => Object.defineProperty(k2(3), "tafel", { enumerable: false, value: t });
+        const zg = k2TafelZeile(mitT({ richter: "gleich" })), zf = k2TafelZeile(mitT({ richter: "fehlt" })), zo = k2TafelZeile(k2(3));
+        pruef("TAFEL-WACHE: Karte-2-Station ohne Tafel-Zeile ROT beim Namen, mit ihr still; die Zeile aus `tafel` (gleich trägt, fehlt ohne Grund und ohne `tafel` nie)",
+            ohneZ.fehler.some((f) => /^karte2\.mensch\.leib\.verschieden#2: keine Zeile in vision\/richter-tafel\.json/.test(f)) && !mitZ.fehler.some((f) => /keine Zeile in vision\/richter-tafel/.test(f)) &&
+                zg && zg.station === "karte2.mensch.leib.verschieden#3" && zg.leiter === "mensch.leib.verschieden" && zg.sprosse === 3 && zf === null && zo === null,
+            ohneZ.fehler.concat(mitZ.fehler).join(" | ") + " · " + JSON.stringify([zg, zf, zo]));
         // eine Staffel mit headless-Hälfte und Karten-Hälfte ist EINE Staffel auf drei Geräten, nie doppelt — ihre zweite headless-Hälfte schon
         const halb = { ...st0, staffel: 2, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" };
         const karteHalb = { ...halb, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 } };
@@ -8717,6 +8787,7 @@ if (require.main === module) {
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
         else if (verb === "beruehrt") beruehrtCli(o);
         else if (verb === "eichtafel") eichtafelCli(o);
+        else if (verb === "tafel") tafelCli(o);
         else if (verb === "behalte") behalteCli(o);
         else if (verb === "plan") planCli(o);
         else if (verb === "gruppen") for (const g of zwillingsGruppen(ladeGeprueft().stationen, o.geraet, o.nur)) console.log(g.join(","));

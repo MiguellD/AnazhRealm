@@ -1,6 +1,6 @@
 # Fabrik der Leiter-Richter — planet · leben · zusammenspiel
 
-Zweig `richter-planet-leben-zusammenspiel`, gebaut auf `koordination` 2e45a6a, gemessen headless am Spiel-Kopf main b7ed841 (Software-Rendering: der Zeuge `[linse-gpu] google/swiftshader`, der GPU-Prozess des Browsers ANGLE auf llvmpipe, Mesa 25.2.8; eine echte Welt der Werkbank in der Cloud — kein Gerät). Stand 2026-11-19. ZWISCHENSTAND.
+Zweig `richter-planet-leben-zusammenspiel`, gebaut auf `koordination` e602e61c, gemessen headless am Spiel-Kopf main b7ed841 (Software-Rendering: der Zeuge `[linse-gpu] google/swiftshader`, der GPU-Prozess des Browsers ANGLE auf llvmpipe, Mesa 25.2.8; eine echte Welt der Werkbank in der Cloud — kein Gerät). Stand 2026-11-19. ZWISCHENSTAND.
 
 ## Zahlen je Kapitel
 
@@ -718,12 +718,13 @@ Jede Station: das Urteil (Radeon 890M + GTX 1060, Staffel 1 `beide`) und der Pre
 
 ## Am Zweig sonst geschnitten
 
-- **Der Läufer bleibt einer** (`meisterkarte-quelle/punkte/punkte.cjs`):
-  - Das Muster lädt `stationen/k2-*.js` neben g1…g6 (`K2_DATEI`). Die k2-Datei einer Schwester-Sitzung lädt derselbe Lader ohne Änderung.
-  - Eine Station der Karte 2 trägt als Staffel die Sprosse (ganze Zahl ≥ 1).
-  - Eine Leiter, deren Sprosse 1 die Tafel als „gleich“ trägt, steht ohne eigene Staffel-1-Station. Der Selbsttest „KARTE2 Sprosse 2 steht, wenn die Tafel die Sprosse 1 trägt; ohne sie ROT“ prüft das: GRÜN an leben.pflanzen.jahreslauf S2, ROT an planet.erde.gestalt S2.
-  - FAHRT_TEILE_MAX ist gehoben, mit Datum und Zahlen im Kommentar.
+- **Der Zweig trägt `koordination` e602e61c** (gemergt, ein Konflikt in `punkte.cjs`): Der Koordinator hatte den Stand 93530a95 dieses Zweigs schon gefaltet (2eb41f8b: EIN Lader für alle `stationen/k2-*.js`, Staffel = Sprosse) und am Kern weitergebaut (63353a09: jede Station trägt ihre Tafel-Zeile im Feld `tafel`, die Wache nennt die fehlende beim Namen). Der Konflikt war die Wand der Fahrt; seine Seite gilt, gehoben nach seiner eigenen Rechnung:
+  - `FAHRT_TEILE_MAX` 10 → 12. Unser Zuwachs seit der Falte sind 11 neue Läufe und zusammenspiel.same 55 → 395 s, zusammen Σ +2 554 s. Das ist genau die Differenz Radeon 16 793 → 19 347 s, gerechnet je Probe (`bau/werk/fahrt-anteil.cjs` in der Sitzung). Radeon 274 Läufe → ⌈19 347 ÷ 1 740⌉ = 12, GTX 273 Läufe Σ 19 140 s → 11.
+  - Eine Sprosse, die die Tafel an einer anderen Station als „gleich“ trägt, baut der Kern nicht (kein Zwilling, `belegt`). Die Regel dieses Zweigs „Sprosse 2 nur mit Sprosse 1“ fiel in der Falte; es gilt der Fall „FORMAT Karte-2-Staffel = Sprosse“ des Koordinators.
   - Kein neues Register, keine zweite Sitzung.
+- **Die Falte der Tafel** (`punkte.cjs tafel`, trocken, am gemergten Stand): TAFEL 1 140 Zeilen · neu 475 · Kollision 1 · von Hand 0 · Abweichung 0. Der Koordinator faltete schon 112 Zeilen dieser Kapitel.
+  - Die Zeilen-Datei ist der Abdruck desselben Felds `tafel` (`bau/blatt.cjs` rechnet Richter und Grund nicht selbst), also 588 = 112 gefaltet + 475 neu + 1 Kollision, davon 394 „gleich“ und 194 „fehlt“ (Auge).
+  - Bis `punkte.cjs tafel --schreibe` läuft, nennt die Wache die 476 Stationen ohne Zeile beim Namen: `punkte.cjs liste` 1 874 Stationen · 408 Kriterien · fehlt 15 · Fehler 478 (476 „keine Zeile in vision/richter-tafel.json“ und gelaende.K2#1/#2, die schon die Basis trägt). Die Tafel schreibt dieser Zweig nie.
 - **EIN Kern** steht in `stationen/k2-planet.js` (`module.exports.kern`); `k2-leben.js` und `k2-zusammenspiel.js` holen ihn per require. Er trägt:
   - das Soll wörtlich aus dem Richter (`soll`): die Zahl der Karte in jeder Schreibweise, 10ⁿ, −10ⁿ, a·10ⁿ, 2 000 und 0,05. Eine Zahl aus einem anderen Feld der Sprosse kommt über `quelleFeld`, eine benannte Erd-Referenz über `refQuelle`. Damit fallen die fünf eigenen `sollFrei`-Zwillinge der Teile.
   - das Urteil (GRÜN/ROT mit Zahl gegen Soll, der Täter beim Namen),
@@ -744,16 +745,14 @@ Jede Station: das Urteil (Radeon 890M + GTX 1060, Staffel 1 `beide`) und der Pre
 - **Die Deckel der Leitern** sind an der frisch gestarteten Welt gemessen, nicht geschätzt:
   - erleben klang 45 → 60 s (die Takte des Ohrs bauen an der frischen Welt noch Chunks).
   - mensch leben (20 s) und antwort (25 s) rissen zuerst ihren Deckel. Gehoben auf 60 s maßen sie mit ruhendem Bild 0,3 s und 10,2 s. Gerissen waren sie an den Frames nach der Gründung des Dorfs, nicht an kalten Foundry-Plänen. Deshalb stehen sie wieder auf 20 s und 25 s.
-- **Der Bruch `vision/buche-2.cjs`** (`aktenLesen`): Das Buch liest jede `.json` in `vision/richter/` als Akte und bricht an der Zeilen-Datei mit „BUCHE-2 BRUCH: Akte „zeilen-planet-leben-zusammenspiel“: Name muss <leiter-id>.<sprosse>[.<sha8>-<gerät>] sein“ (Trockenlauf `--trocken`). Entscheidung: Die Datei liegt, wo der Auftrag sie verlangt. Der Koordinator faltet ihre Zeilen in `vision/richter-tafel.json` und nimmt sie im selben Commit aus `vision/richter/`.
-- **Eine Zeile ersetzt eine Zeile der Tafel:** planet.kopplung.wetter-welt S3 trägt die Tafel als „fehlt“ an `wetter.K2#2`, weil der Gegenlauf (R7: Regen gekappt → trocken) fehlte. `karte2.planet.kopplung.wetter-welt#3` fährt ihn: die Nässe nach 30 min Regen gegen trocken über `_naesseKurve`, `_naesseGesetz` und `_pfuetzeGesetz`. Headless maß sie lumaVerh 0,217 gegen Soll 0,5–0,8 und rPfuetze 0,236 gegen Soll ≥ 0,5, also ROT mit dem Täter `stamm/stoff-material.js`. Die Zeile der Fabrik ist „gleich“, und der Koordinator ersetzt die alte, statt eine zweite daneben zu legen; die Lesart der Zeilen-Datei nennt das. Eine Zeile „gleich“ der Tafel ersetzt das Blatt nie: es bricht dann als Zwilling.
+- **Der Bruch `vision/buche-2.cjs`** (`aktenLesen`): Das Buch liest jede `.json` in `vision/richter/` als Akte und bricht an der Zeilen-Datei mit „BUCHE-2 BRUCH: Akte „zeilen-planet-leben-zusammenspiel“: Name muss <leiter-id>.<sprosse>[.<sha8>-<gerät>] sein“ (Trockenlauf `--trocken`). Am gemergten Stand bricht er unverändert (exit 2). Entscheidung: Die Datei liegt, wo der Auftrag sie verlangt. Seit der Falte ist sie der Abdruck dessen, was `punkte.cjs tafel --schreibe` einfaltet; der Koordinator nimmt sie im Commit seiner Falte aus `vision/richter/`.
+- **Eine Zeile ersetzt eine Zeile der Tafel:** planet.kopplung.wetter-welt S3 trägt die Tafel als „fehlt“ an `wetter.K2#2`, weil der Gegenlauf (R7: Regen gekappt → trocken) fehlte. `karte2.planet.kopplung.wetter-welt#3` fährt ihn: die Nässe nach 30 min Regen gegen trocken über `_naesseKurve`, `_naesseGesetz` und `_pfuetzeGesetz`. Headless maß sie lumaVerh 0,217 gegen Soll 0,5–0,8 und rPfuetze 0,236 gegen Soll ≥ 0,5, also ROT mit dem Täter `stamm/stoff-material.js`. Die Zeile der Station ist „gleich“. Der Falter meldet sie als die eine Kollision („eine bestehende Zeile gewinnt“): Bleibt die alte, nennt die Wache `karte2.planet.kopplung.wetter-welt#3` ohne Zeile. Der Besitzer der Tafel ersetzt die alte Zeile, eine zweite daneben gibt es nie; die Lesart der Zeilen-Datei nennt das. Eine Zeile „gleich“ der Tafel ersetzt das Blatt nie: es bricht dann als Zwilling.
 - **Der Preis R8** fließt aus dem Strom derselben Fahrt über `vision/richter-akte.cjs`. `brauchtPreisLauf` gibt den Preis nur einem Lauf, dessen Station eine Tafel-Zeile „gleich“ trägt. Er fließt also, sobald die Zeilen in der Tafel stehen; vorher misst die Fahrt das Urteil ohne Preis.
-- **Der Selbsttest der Maschine** (`node meisterkarte-quelle/punkte/punkte.cjs selbsttest`): dieselben 8 ROT wie die Basis `koordination` 2e45a6a, ohne diesen Zweig gemessen:
-  - BEFEHL TRÄGT
-  - WACHE
-  - KONSUM ×5
-  - LEBENSZEICHEN
+- **Der Selbsttest der Maschine** (`node meisterkarte-quelle/punkte/punkte.cjs selbsttest`, am gemergten Stand): 252 von 261 GRÜN. Die 9 ROT:
+  - FORMAT echte Stationen: genau die 476 Stationen ohne Tafel-Zeile oben, sie fallen mit `tafel --schreibe`,
+  - dieselben 8 ROT wie die Basis `koordination` 2e45a6a, ohne diesen Zweig gemessen: BEFEHL TRÄGT, WACHE, KONSUM ×5, LEBENSZEICHEN.
 
-  Der neue Fall KARTE2 ist GRÜN, also keine Regression.
+  GRÜN sind „FORMAT Karte-2-Staffel = Sprosse“, „TAFEL-WACHE“ und „FAHRT-ROT an der echten Liste“: Jeder Deckel auf 120 s gebläht reißt die 12 Teile, Radeon 34 140 s in 20 Teilen.
 
 ## Die Methode headless (die Zahl „davon headless gefahren“)
 

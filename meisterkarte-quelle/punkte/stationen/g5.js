@@ -4615,13 +4615,14 @@ const stationen = [
         quelle: "2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
     },
 
-    // ───────── KARTE 2 auf dem Lauf von siedlung.K4#2 (vorrat2-stationen-g5): drei Zwillinge, keine GPU-Minute mehr ─────────
+    // ───────── KARTE 2 auf dem Lauf von siedlung.K4#2 (vorrat2-stationen-g5): zwei Zwillinge, keine GPU-Minute mehr ─────────
     // Dieselbe Probe trägt seit diesem Zweig zwei Gegen-Orte derselben Saat von 1320 im selben Uhr-Lauf (K4_ORT, K4_UHR, K4_STAND):
     // B ohne Haus (die Stelle des Hauses in derselben Lage zum Ort), C mit drei Schlägen vor Zeugen. Am Fenster ungemessen.
     //   antwort S1  der Ring um das Spielerhaus (der Ort wird Kern, neue Häuser näher am Haus als an der Mitte) UND an B kein Ring:
     //               B wuchs, seine neuen Häuser liegen nicht näher an der Stelle als an der Mitte, binnen 30 m der Stelle weniger als am Haus
     //   kausal S1   C trägt ≥ 3 Akten gewalt und wuchs weniger als B (neue Häuser, sonst das Jahr) über dieselbe Uhr
-    //   palimpsest S1  die Häuserzahl steigt über die 1500 s, die alten stehen zu ≥ 0,9 (die Zahl von siedlung.K4#2, eigenes Urteil)
+    //   palimpsest S1 trägt siedlung.K4#2 selbst (Tafel „gleich“, gebuchte Akten) — der Zwilling karte2.mensch.zeit.palimpsest#1 fiel
+    //               (Richter-Falte 19.11.: dieselbe Zahl, ein zweites Urteil, nie eine Akte)
     {
         kriterium: "karte2.mensch.kopplung.antwort",
         karte2: true,
@@ -4690,33 +4691,6 @@ const stationen = [
         ],
         pfad: K4_PFAD,
         quelle: "KARTE2 mensch.zeit.kausal S1 = Ort nach Gewalt wächst messbar langsamer",
-    },
-    {
-        kriterium: "karte2.mensch.zeit.palimpsest",
-        karte2: true,
-        staffel: 1,
-        geraet: ["radeon", "gtx"],
-        beide: true,
-        probe: K4_PROBE,
-        gpu: true,
-        zeit: false,
-        minuten: 12,
-        urteil: (j, lauf) => {
-            const { ad, soft, s, uhrS } = k4Lauf(lauf);
-            if (!Array.isArray(s.haeuser)) return { gruen: false, zahl: "kein Stand nach der Uhr" + (s.fehler ? " — " + s.fehler : "") + " · " + ad };
-            return {
-                gruen: !soft && s.haeuser[1] > s.haeuser[0] && s.bleiben >= 0.9 && uhrS >= 1500,
-                zahl: "über " + uhrS + " s Welt-Uhr: " + (s.jahr || []).join(" → ") + ", Häuser " + s.haeuser.join(" → ") + ", die alten erhalten " + s.bleiben + " (Soll ≥ 0,9) · " + ad,
-            };
-        },
-        proben: [
-            { name: "der Ort wächst, die alten stehen", stdout: K4_GEGEN_ROH({}), gruen: true },
-            { name: "die Häuserzahl steigt nicht", stdout: K4_GEGEN_ROH({ stand: { haeuser: [12, 12], jahr: [1412, 1412] } }), gruen: false },
-            { name: "die alten fallen (0,75)", stdout: K4_GEGEN_ROH({ stand: { bleiben: 0.75 } }), gruen: false },
-            { name: "swiftshader", stdout: K4_GEGEN_ROH({}).replace("nvidia/pascal", "google/swiftshader"), gruen: false },
-        ],
-        pfad: K4_PFAD,
-        quelle: "KARTE2 mensch.zeit.palimpsest S1 = Häuserzahl über 1 500 s steigt, alte ≥ 0,9 erhalten",
     },
 
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
