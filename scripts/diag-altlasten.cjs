@@ -1692,6 +1692,92 @@ function scanErscheinungsWand(t, mitglieder = ERSCHEINUNG_MITGLIEDER, teiler = B
     return errs;
 }
 
+// DIE KLASSE SCHEIN-EMISSIV (licht-eine-skala, 35f5a1013): ein Look-Term, der kein Datum einer Quelle trägt, ist RÜCKWURF des
+// Lichts am Ort, nie Emission — als Emission stand er in der EINEN Skala nachts × k (die Figur glühte ohne Quelle, der Regen
+// leuchtete weiß). (L) Die Look-Addition des Studio-Stoffs (`_foundryTreeMaterial`: `add` aus Haut-Saum, Fell-Rim, Sheen,
+// Strähnen-Glanz, samt jedem Namen für sie) geht nie an `emissiveNode`, und ein Lichtmodell liest sie (`setupLightingModel` →
+// `_saumLichtModell`). (R) Die Regen-Schliere (`_ensureRainSystem`) streut das Licht des Orts: ihr `colorNode` liest `uLicht`, und
+// der Takt (`_tickRain`) schreibt es aus der Lesung des Lichtmessers (`_belichtungE`). Gelesen am AST (Kommentare tragen keinen
+// Knoten); ein Name zählt nur als Leser, nie als Eigenschaft (`.add(` ist ein Ruf, nicht die Look-Addition).
+const SCHEIN_WAND = Object.freeze({ look: ["_foundryTreeMaterial", "add"], regen: ["_ensureRainSystem", "uLicht", "_tickRain", "_belichtungE"] });
+function scanScheinWand(t, W = SCHEIN_WAND) {
+    const root = path.join(__dirname, "..");
+    const gl = stammLib.glieder(t);
+    stammLib.ast(t);
+    const wo = (n) => stammLib.ort(root, stammLib.zeileVon(t, n.start));
+    const errs = [];
+    const glied = (name) => {
+        const g = gl.filter((x) => x.name === name);
+        if (g.length !== 1) errs.push(`Schein-Emissiv: das Glied \`${name}\` steht ${g.length}× im Stamm — die Wand zieht mit um`);
+        return g.length === 1 ? g[0] : null;
+    };
+    // liest der Knoten einen der Namen (als Wert, nie als Eigenschaft oder Schlüssel)?
+    const liest = (n, namen) => {
+        let r = false;
+        const geh = (m) => {
+            if (r || !m || typeof m.type !== "string") return;
+            if (m.type === "Identifier") return void (r = namen.has(m.name));
+            if (m.type === "MemberExpression" && !m.computed) return geh(m.object);
+            if (m.type === "Property" && !m.computed) return geh(m.value);
+            stammLib.kinder(m, geh);
+        };
+        geh(n);
+        return r;
+    };
+    const ziel = (n, eig) => n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && !n.left.computed && n.left.property.name === eig;
+    // (L) die Look-Addition
+    const gL = glied(W.look[0]);
+    if (gL) {
+        const namen = new Set([W.look[1]]);
+        for (let neu = true; neu; ) {
+            neu = false;
+            stammLib.wandere(gL.knoten, (n) => {
+                // ein Name FÜR sie (nie die Funktion, die sie schreibt: `term`)
+                if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && n.init && !/Function/.test(n.init.type) && !namen.has(n.id.name) && liest(n.init, namen)) {
+                    namen.add(n.id.name);
+                    neu = true;
+                }
+                return true;
+            });
+        }
+        let gelesen = false;
+        stammLib.wandere(gL.knoten, (n) => {
+            if (ziel(n, "emissiveNode") && liest(n.right, namen))
+                errs.push(`Schein-Emissiv: ${wo(n)} \`${W.look[0]}\` setzt die Look-Addition (${[...namen].join(" · ")}) wieder als \`emissiveNode\` — der Saum ist Rückwurf des Lichts am Ort (\`_saumLichtModell\`), nie Emission: in der EINEN Skala glüht die Figur nachts × k`); // prettier-ignore
+            if (ziel(n, "setupLightingModel") && liest(n.right, namen)) gelesen = true;
+            return true;
+        });
+        if (!gelesen)
+            errs.push(`Schein-Emissiv: \`${W.look[0]}\` (${wo(gL.knoten)}) reicht die Look-Addition (${[...namen].join(" · ")}) keinem Lichtmodell — kein \`setupLightingModel\` liest sie (\`_saumLichtModell\`): Haut-Saum, Fell-Rim und Strähnen-Glanz fallen still`); // prettier-ignore
+    }
+    // (R) die Regen-Schliere
+    const [bau, u, takt, messer] = W.regen;
+    const gR = glied(bau);
+    if (gR) {
+        let farbe = false;
+        stammLib.wandere(gR.knoten, (n) => {
+            if (ziel(n, "colorNode") && liest(n.right, new Set([u]))) farbe = true;
+            return true;
+        });
+        if (!farbe)
+            errs.push(`Schein-Emissiv: \`${bau}\` (${wo(gR.knoten)}) — die Regen-Schliere ohne Licht-Leser: ihr \`colorNode\` liest \`${u}\` nicht, sie zeichnet ihren Ton als Konstante (nachts × k ein weißer Regen)`); // prettier-ignore
+    }
+    const gT = glied(takt);
+    if (gT) {
+        let schreibt = false;
+        let misst = false;
+        const quelle = t.slice(gT.start, gT.ende);
+        stammLib.wandere(gT.knoten, (n) => {
+            if (n.type === "CallExpression" && t.slice(n.callee.start, n.callee.end).replace(/\s+/g, "").endsWith(`.${u}.value.set`)) schreibt = true; // prettier-ignore
+            if (n.type === "MemberExpression" && !n.computed && n.property.name === messer) misst = true;
+            return true;
+        });
+        if (!(schreibt && misst && quelle.includes(u)))
+            errs.push(`Schein-Emissiv: \`${takt}\` (${wo(gT.knoten)}) — die Regen-Schliere ohne Licht-Leser: der Takt schreibt \`${u}\` nicht aus der Lesung des Lichtmessers (\`${messer}\`)`); // prettier-ignore
+    }
+    return errs;
+}
+
 // DIE NORMAL-WAND: ein normalNode ist VIEW-space (r184 NodeMaterial.setupNormal → normalView). Welt/Lokal →
 // Sicht ist MATRIX.transformDirection(n) (= M·n, three's transformNormalToView); n.transformDirection(MATRIX) rechnet
 // Mᵀ·n (three's normalWorld: Sicht → Welt) — das Licht der Krone dreht sonst mit dem Blick.
@@ -3850,6 +3936,31 @@ function main() {
                 : `❌ SELBST-TEST: die Wand der Klasse Erscheinung feuert nicht — ${JSON.stringify(erscheinung).slice(0, 900)}`
         );
         if (!erscheinungFeuert) process.exit(1);
+        // Die Wand der Klasse Schein-Emissiv muss feuern — je Mutante beim NAMEN des Glieds: die Look-Addition wieder als
+        // `emissiveNode` (über ihren Namen `saum`) · kein Lichtmodell liest sie · die Schliere ohne `uLicht` im colorNode · der Takt
+        // ohne die Lesung des Lichtmessers; derselbe Satz im Kommentar bleibt still.
+        const lichtModell = "mat.setupLightingModel = () => new K(saum);";
+        const schein = {
+            heute: scanScheinWand(stamm),
+            emissiv: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, lichtModell + "\n mat.emissiveNode = saum;")),
+            ohneModell: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, "mat.setupLightingModel = () => new K(null);")),
+            schliere: scanScheinWand(stammLib.ersetze(stamm, "_ensureRainSystem", "T.materialColor.mul(uLicht).mul(1 / Math.PI)", "T.materialColor")),
+            takt: scanScheinWand(stammLib.ersetze(stamm, "_tickRain", "if (E) sys.uLicht.value.set(E[0], E[1], E[2]);", "")),
+            kommentar: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, lichtModell + "\n // mat.emissiveNode = saum;")),
+        };
+        const scheinFeuert =
+            schein.heute.length === 0 &&
+            einer(schein.emissiv, /^Schein-Emissiv: stamm\/studio-stoff\.js:\d+ `_foundryTreeMaterial` setzt die Look-Addition \(add · saum\) wieder als `emissiveNode`/) &&
+            einer(schein.ohneModell, /^Schein-Emissiv: `_foundryTreeMaterial` \(stamm\/studio-stoff\.js:\d+\) reicht die Look-Addition .* keinem Lichtmodell/) &&
+            einer(schein.schliere, /^Schein-Emissiv: `_ensureRainSystem` \(stamm\/bild-himmel\.js:\d+\) — die Regen-Schliere ohne Licht-Leser: ihr `colorNode` liest `uLicht` nicht/) &&
+            einer(schein.takt, /^Schein-Emissiv: `_tickRain` \(stamm\/bild-himmel\.js:\d+\) — die Regen-Schliere ohne Licht-Leser: der Takt schreibt `uLicht` nicht/) &&
+            schein.kommentar.length === 0;
+        console.log(
+            scheinFeuert
+                ? `✅ SELBST-TEST: die Wand der Klasse Schein-Emissiv feuert (Look-Addition als Emission · ohne Lichtmodell · Schliere ohne uLicht · Takt ohne Lichtmesser, je beim Glied; der Kommentar still; heute 0) — ${schein.emissiv[0]} · ${schein.schliere[0]}`
+                : `❌ SELBST-TEST: die Wand der Klasse Schein-Emissiv feuert nicht — ${JSON.stringify(schein).slice(0, 900)}`
+        );
+        if (!scheinFeuert) process.exit(1);
         // Die Stamm-Leser-Wand muss feuern: ein kanonischer Leser am Namen vorbei, ein Server-Patcher am Pfad und ein
         // Stapel-Leser ohne die Zonen-Dateien in einer Kopie — je beim Namen samt Zeile; Kommentar und Meldung bleiben still.
         const leserDatei = "scripts/diag-stamm-leser-probe.cjs";
@@ -3890,6 +4001,7 @@ function main() {
         .concat(scanKartenWand(stammLib.text(root)))
         .concat(scanAbsenzErbe(stammLib.text(root)))
         .concat(scanErscheinungsWand(stammLib.text(root)))
+        .concat(scanScheinWand(stammLib.text(root)))
         .concat(scanNormalWand(stammLib.text(root)))
         .concat(scanStoffWand(stammLib.text(root)))
         .concat(toteMarker(markerDateien(root)))
