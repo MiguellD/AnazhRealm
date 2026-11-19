@@ -47,5 +47,11 @@
 | `spec/pack/v0/CONTRACT.md`             | Der Pack-Vertrag — der IDB-Asset-Cache (v0) und die Pack-Hülle (v1); `gate:pack-contract`.                 |
 | `vendor/README.md`                     | Die eingebundenen Fremd-Bibliotheken — Quelle, Rolle, Erneuern (`gate:vendor-anker`).                      |
 
+## Bericht des Zweigs
+
+| Dokument                  | Zweck                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `cloud-post/leben-erbe.md` | Der Zwischenstand des Zweigs `leben-erbe` (Leben-Kern Stufe 3 EPOCHE · Stufe 4 STAND) — ein Bericht, nie Norm; vor einem Merge nach main zieht er in den Zweig `koordination`. |
+
 **Chronik:** `git log` (Commits sind klein, thematisch, deutsch — die Message IST der Eintrag). **Messplatz-Aufträge und
 -Berichte** (OMEN = GTX 1060, Radeon 890M): der Zweig `koordination` (`auftrag/`, `bericht/`), nie in main.
