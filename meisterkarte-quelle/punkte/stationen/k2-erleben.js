@@ -983,6 +983,1769 @@ const LEITERN = [];
     );
 }
 
+// ═══════════════════════════════════════ Perspektive schoepfen ═══════════════════════════════════════
+{
+    // ─────────── erleben.schoepfen.hebel — Der Hebel: Geste, Plan, Gott — Folge im Ego ───────────
+    // S1 baut EIN Werk über den echten Weg des Spielers (Linse diag-werkstatt-weg: Hotbar · schöpfer · Haus · Ego, Eingaben am
+    // Ereignis-Strom, Wille → Bild aus `zeiten`, Bau-Hash = L0) und fährt den Konstruktions-Prüfsatz (spec/pruefsatz/bauen-k3.json) über
+    // `confirmBuild` + `tickAffordances` in der Welt der Sitzung; der Bildvergleich Studio ↔ Welt hat keinen Leser (dann `leser`, sonst ROT
+    // beim Täter). S3/S4 sprechen die Geste im echten Chat (`processChatCommand`) und zählen die Werke je Geste; S5–S9 lesen Op-Tafel und Bewohner.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.schoepfen.hebel",
+            sek: 60,
+            mutiert: true,
+            pfad: [
+                "scripts/diag-werkstatt-weg.cjs",
+                "spec/pruefsatz/bauen-k3.json",
+                "stamm/werkstatt-bauen.js",
+                "stamm/feld-leben.js",
+                "stamm/feld-sprache.js",
+                "stamm/feld-dsl.js",
+                "stamm/feld-nexus.js",
+                "stamm/siedlung-ort.js",
+                "stamm/siedlung-satz.js",
+                "stamm/siedlung-bewohner.js",
+                "stamm/gelaende-chunks.js",
+            ],
+            welt: [{ wort: "werke_neu", ab: 1, was: "Werke, die die Geste neu in die Welt setzte (state.architectures)" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "wille_bild_s", richtung: "≤", wert: 1, wortlaut: "Wille → Bild ≤ 1 s", feld: "preis" },
+                        { wort: "eingaben", richtung: "≤", wert: 3, wortlaut: "1 Werk über ≤ 3 Eingaben", feld: "umfang" },
+                    ],
+                    welt: [
+                        { wort: "werk_steht", ab: 1, was: "das Werk des Wegs steht in der Welt (wegLauf steht)" },
+                        { wort: "eingaben_echt_pct", ab: 100, was: "echte Eingaben am Ereignis-Strom (isTrusted) in %" },
+                        { wort: "bau_gleich_l0", ab: 1, was: "Bau-Hash des Werks = L0-Bau des Studio-Plans" },
+                        { wort: "pruefsatz_richtig_pct", ab: 100, was: "Konstruktionen des Prüfsatzes richtig geurteilt in % (stabil steht, instabil stürzt sichtbar mit Zeile)" },
+                    ],
+                },
+                2: {
+                    soll: [{ wort: "blind_unterscheidet_pct", richtung: "≤", wert: 60, wortlaut: "Blindurteil unterscheidet ≤ 60 %", feld: "richter" }],
+                    auge: { pose: "dorf third Mittag — der Hof eines Spieler-Werks neben einem Hof des Plans derselben Region", vorbild: "Gesetz-Hof derselben Region (Hof des fachwerk-Plans der Siedlung)" },
+                },
+                3: {
+                    soll: [{ wort: "bewohner_wege_neu", richtung: "≥", wert: 1, wortlaut: "nach 1 Spieltag: Anteil Bewohner-Wege über den neuen Weg > 0", feld: "richter" }],
+                    umfang: { verlangt: 10, einheit: "Werke einer Weg-Geste", wortlaut: "10¹: einen Weg setzen", feld: "umfang" },
+                },
+                4: {
+                    soll: [
+                        { wort: "belegung_abw_pct", richtung: "≤", wert: 10, wortlaut: "Belegung ± 10 % gegen ein Gesetz-Viertel", feld: "richter" },
+                        { wort: "blind_pinsel_pct", richtung: "≤", wert: 60, wortlaut: "Blindurteil Pinsel ↔ Gesetz ≤ 60 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Werke je Geste", wortlaut: "10² Werke je Geste: Viertel-Pinsel", feld: "umfang" },
+                    auge: { pose: "dorf third Mittag — das gemalte Viertel neben einem Gesetz-Viertel", vorbild: "Gesetz-Viertel derselben Region (fachwerk-Plan)" },
+                },
+                5: {
+                    soll: [
+                        { wort: "edit_fernring_s", richtung: "≤", wert: 1, wortlaut: "Edit im Fern-Ring ≤ 1 s", feld: "preis" },
+                        { wort: "blind_plausibel_pct", richtung: "≥", wert: 70, wortlaut: "verlegte Siedlung im Bildpaar plausibel (Blindurteil ≥ 70 %)", feld: "richter" },
+                    ],
+                    auge: { pose: "gipfel-blick third — derselbe Talgrund vor dem Eingriff und nach 1 Spieljahr", vorbild: "reale Landschaft nach einer Flussverlegung (Luftbild-Paar vorher/nachher)" },
+                },
+                6: {
+                    soll: [{ wort: "stadtplan_band_pct", richtung: "≥", wert: 80, wortlaut: "Stadtplan-Statistik im Band realer Städte gleicher Epoche ≥ 80 % in 100 Saaten", feld: "richter" }],
+                    umfang: { verlangt: 100000, einheit: "Bewohner unter einem Gesetz", wortlaut: "ein Gesetz für 10⁵–10⁷ Bewohner", feld: "umfang" },
+                },
+                7: {
+                    soll: [{ wort: "domaenen", richtung: "≥", wert: 3, wortlaut: "Kopplungskette: Eingriff → ≥ 3 Domänen messbar", feld: "richter" }],
+                    umfang: { verlangt: 1e8, einheit: "Bewohner eines Reichs", wortlaut: "ein Reich von 10⁸", feld: "umfang" },
+                },
+                8: { soll: [{ wort: "erdmuster_pct", richtung: "≥", wert: 80, wortlaut: "gehorcht dem Erd-Muster (Gebirge an Nähten, Wüsten an Wendekreisen) ≥ 80 %", feld: "richter" }] },
+                9: { soll: [{ wort: "folge_anteil", richtung: "≥", wert: 0.8, wortlaut: "Folge sichtbar (Kleidung, Ernte, Stimmung), Anteil ≥ 0,8", feld: "richter" }] },
+            },
+            lauf: async function hebelLauf(H, P, L) {
+                // ── S1 · EIN Werk über den Weg des Spielers + der Prüfsatz der Konstruktionen ──
+                await L.je(1, async () => {
+                    const W = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "WERKE", "TEILE"]);
+                    const { page } = await H.verbinde();
+                    await page.setViewport({ width: 1280, height: 720 });
+                    // die Schleife des Spiels läuft wie im Spiel (die Werkbank hält sie zwischen ihren Befehlen an)
+                    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t)));
+                    H.beimAbbau(() => page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null)));
+                    await H.ereignisStrom(page);
+                    const { frei } = await page.evaluate(W.probe, { nurOrt: true });
+                    if (!frei) throw new Error("kein freier, trockener Ort um den Spieler (Linse diag-werkstatt-weg probe nurOrt)");
+                    await H.binnen(page.evaluate(() => window.__weltStehtNach()), 15000);
+                    if (await page.evaluate(() => window.anazhRealm._ladeschirmSteht())) throw new Error("der Ladeschirm steht — keine Taste der Welt");
+                    await page.evaluate(W.wegHelfer, { frei, teile: { eigen_huette: W.TEILE.eigen_huette }, bild: true });
+                    let offen = true;
+                    H.beimAbbau(() => offen && W.bauWeg(page, "ende"));
+                    await W.bauWeg(page, "konsum");
+                    const e = await H.binnen(W.wegLauf(page, { lage: "schöpfer", weg: "hotbar", name: W.WERKE.Haus, sicht: "Ego" }), Math.max(5, H.rest() - 30) * 1000, { fehler: "Frist der Leiter" });
+                    offen = false;
+                    await W.bauWeg(page, "ende");
+                    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
+                    // der Prüfsatz in der Welt: gesetzt über den Bau-Weg (Hotbar, Phantom, confirmBuild), 150 Takte zu 1/30 s
+                    const pruefFn = function (r, T, arg) {
+                        const st = r.state;
+                        const bm = st.buildMode;
+                        const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
+                        const setze = (name, plan, x, z) => {
+                            const key = "__pruef_" + name;
+                            const vor = new Set(st.architectures);
+                            const modus = r.getGameMode();
+                            const slot = st.hotbar[6];
+                            const teil = (p) => ({ shape: p[7] || "box", material: p[6] || "stein", position: { x: p[0], y: p[1], z: p[2] }, size: { x: p[3], y: p[4], z: p[5] }, rotation: { x: 0, y: 0, z: p[8] || 0 } });
+                            st.blueprints[key] = { name: key, label: name, parts: plan.map(teil) };
+                            r.setGameMode("schöpfer");
+                            r._clearBuildMode();
+                            bm.slotIndex = -1;
+                            r.setHotbarSlot(6, key);
+                            r.selectHotbarSlot(6);
+                            bm.phantomMesh.position.set(x, r._voxelSurfaceY(x, z), z);
+                            bm.phantomMesh.rotation.y = 0;
+                            bm.phantomOnGround = true;
+                            try {
+                                r.confirmBuild();
+                            } finally {
+                                r._clearBuildMode();
+                                r.setHotbarSlot(6, slot);
+                                r.setGameMode(modus);
+                            }
+                            return st.architectures.find((x2) => !vor.has(x2) && x2.type === key) || null;
+                        };
+                        const bild = (e) => {
+                            const m = new T.Matrix4();
+                            if (e.mesh) m.compose(e.mesh.position, e.mesh.quaternion, e.mesh.scale);
+                            else if (e.instSlots && e.instSlots.length) st.archInstanceGroups.get(e.instSlots[0].key).mesh.getMatrixAt(e.instSlots[0].slot, m);
+                            else return null;
+                            const p = new T.Vector3();
+                            const q = new T.Quaternion();
+                            m.decompose(p, q, new T.Vector3());
+                            return { p, q };
+                        };
+                        const grad = (a, b) => (360 / Math.PI) * Math.acos(Math.min(1, Math.abs(a.q.dot(b.q))));
+                        const f = arg.frei;
+                        const pos0 = st.playerMesh.position.clone();
+                        st.playerMesh.position.set(f.x, f.y + 1.2, f.z);
+                        const aus = {};
+                        try {
+                            for (const art of ["stabil", "instabil"])
+                                for (const name of Object.keys(arg.satz[art])) {
+                                    const n0 = zeilen().length;
+                                    const e = setze(name, arg.satz[art][name], f.x + 12, f.z);
+                                    const b0 = e && bild(e);
+                                    const o = { art, neigung: 0, fall: 0 };
+                                    for (let t = 0; t < 150 && b0 && st.architectures.includes(e); t++) {
+                                        r.tickAffordances(1 / 30);
+                                        const b = st.architectures.includes(e) && bild(e);
+                                        if (b) {
+                                            o.neigung = Math.max(o.neigung, grad(b0, b));
+                                            o.fall = Math.max(o.fall, b0.p.y - b.p.y);
+                                        }
+                                    }
+                                    const da = !!e && st.architectures.includes(e);
+                                    o.gesetzt = !!b0;
+                                    o.steht = da && o.neigung < 0.5 && o.fall < 0.01;
+                                    o.zeile = (zeilen().slice(n0).find((l) => l.includes(name)) || "").slice(0, 120);
+                                    o.richtig = o.gesetzt && (art === "stabil" ? o.steht : (o.neigung >= 30 || o.fall >= 0.3) && !!o.zeile);
+                                    o.neigung = +o.neigung.toFixed(2);
+                                    o.fall = +o.fall.toFixed(3);
+                                    if (da) r.removeArchitecture(e);
+                                    aus[name] = o;
+                                }
+                        } finally {
+                            for (const k of Object.keys(st.blueprints)) if (k.startsWith("__pruef_")) delete st.blueprints[k];
+                            st.playerMesh.position.copy(pos0);
+                        }
+                        return aus;
+                    };
+                    const satz = require(require("path").resolve("spec/pruefsatz/bauen-k3.json"));
+                    const ps = await L.ev("return (" + pruefFn + ")(r, T, " + JSON.stringify({ frei, satz: { stabil: satz.stabil, instabil: satz.instabil } }) + ");", 45);
+                    const faelle = Object.entries(ps || {});
+                    const falsch = faelle.filter(([, o]) => !o.richtig);
+                    const z = (e && e.zeiten) || [];
+                    const werte = { wille_bild_s: Number.isFinite(z[4]) ? z[4] / 1000 : null, eingaben: Number.isFinite(e && e.eingaben) ? e.eingaben : null };
+                    const welt = {
+                        werk_steht: e && e.steht === 1 ? 1 : 0,
+                        eingaben_echt_pct: e && e.eingaben > 0 ? (100 * (e.eingaben - (e.unecht || 0))) / e.eingaben : 0,
+                        bau_gleich_l0: e && e.bau && e.bau === e.soll ? 1 : 0,
+                        pruefsatz_richtig_pct: faelle.length ? (100 * (faelle.length - falsch.length)) / faelle.length : 0,
+                    };
+                    const taeter = [
+                        e && e.fehler ? "Weg: " + e.fehler : null,
+                        e && e.unecht ? e.unecht + " unechte Eingaben" : null,
+                        e && e.bau !== e.soll ? "Bau-Hash ≠ L0 (" + e.bau + " / " + e.soll + ")" : null,
+                        ...falsch.map(([k, o]) => "Prüfsatz " + k + " (" + o.art + ": steht " + o.steht + ", Neigung " + o.neigung + "°, Fall " + o.fall + " m, Zeile „" + o.zeile + "“)"),
+                    ].filter(Boolean);
+                    L.zeile("hebel S1 Weg " + JSON.stringify({ steht: e && e.steht, eingaben: e && e.eingaben, zeiten: z, kalt: e && e.kalt }) + " · Prüfsatz " + (faelle.length - falsch.length) + "/" + faelle.length);
+                    const sollOk = werte.wille_bild_s !== null && werte.wille_bild_s <= 1 && werte.eingaben !== null && werte.eingaben <= 3;
+                    const weltOk = welt.werk_steht >= 1 && welt.eingaben_echt_pct >= 100 && welt.bau_gleich_l0 >= 1 && welt.pruefsatz_richtig_pct >= 100;
+                    if (sollOk && weltOk)
+                        return L.leser(
+                            1,
+                            "Bildvergleich Studio ↔ Welt im Band: kein Leser vergleicht das Bild des Werks im Studio mit dem in der Welt — der Haken säße am Bild-Weg der Linse (scripts/diag-werkstatt-weg.cjs:935 wegHelfer bild); gemessen: Wille → Bild " +
+                                werte.wille_bild_s + " s, " + werte.eingaben + " Eingaben, Prüfsatz " + faelle.length + "/" + faelle.length + " richtig"
+                        );
+                    L.gemessen(1, werte, { erzeugt: welt.werk_steht, welt, taeter: taeter.join(" · ") || "Wille → Bild " + werte.wille_bild_s + " s, " + werte.eingaben + " Eingaben" });
+                });
+                // ── die Geste im echten Chat (der Halt der Messung fällt für sie, danach steht er wieder): Werke je Geste ──
+                const gesteFn = function (r, saetze) {
+                    const st = r.state;
+                    const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
+                    const uhr = st.weatherEffectTime;
+                    const aus = [];
+                    st.weatherEffectTime = 0;
+                    try {
+                        for (const satz of saetze) {
+                            const vor = new Set(st.architectures);
+                            const n0 = zeilen().length;
+                            const t0 = performance.now();
+                            r.processChatCommand(satz);
+                            const ms = performance.now() - t0;
+                            const neu = st.architectures.filter((a) => !vor.has(a));
+                            aus.push({ satz, neu: neu.length, werke: neu.filter((a) => a.werk).length, ms: Math.round(ms), zeile: zeilen().slice(n0 + 1).join(" | ").slice(0, 200) });
+                            for (const a of neu) r.removeArchitecture(a);
+                        }
+                    } finally {
+                        st.weatherEffectTime = uhr;
+                    }
+                    return aus;
+                };
+                const worte = await L.ev("return { haeuser: !!r._studioBlueprintForWord('häuser'), weg: r._studioBlueprintForWord('weg') || null, werke: (r.state.architectures || []).filter((a) => a.werk).length };");
+                const saetze = ["bau mir einen weg", "bau mir 100 " + (worte.haeuser ? "häuser" : "haus")];
+                const g = await L.ev("return (" + gesteFn + ")(r, " + JSON.stringify(saetze) + ");", 40).then(
+                    (x) => x,
+                    (e) => ({ fehler: String((e && e.message) || e).split("\n")[0] })
+                );
+                L.zeile("hebel Geste " + JSON.stringify(g).slice(0, 400));
+                // ── S2 · ein Werk wird Teil des Orts ──
+                await L.je(2, async () =>
+                    L.leser(
+                        2,
+                        "ein Spieler-Werk als Slot eines Orts: kein Leser führt es — der Plan der Siedlung kennt nur die Slots seines Gesetzes (stamm/siedlung-ort.js:738), das Werk trägt nur die Marke `werk` (stamm/siedlung-satz.js:1358); die Welt trägt " +
+                            worte.werke + " Spieler-Werke"
+                    )
+                );
+                // ── S3 · einen Weg setzen ──
+                await L.je(3, async () => {
+                    if (g.fehler) throw new Error("die Geste warf: " + g.fehler);
+                    const w = g[0];
+                    if (w.werke < P.sprossen[3].umfang.verlangt)
+                        return L.umfang(3, w.werke, "„" + w.satz + "“ setzt " + w.werke + " Werke (Wort „weg“ im Katalog: " + (worte.weg || "keines") + ", Antwort „" + w.zeile + "“) — das Wegenetz ist eine Funktion des Plans (`_wegeNetzGrund`, stamm/siedlung-ort.js:3231), keine Geste legt einen Weg hinein");
+                    L.leser(3, "Bewohner-Wege über den neuen Weg: kein Leser — das Wegenetz der Bewohner liest nur den Plan (stamm/siedlung-ort.js:3231 `_wegeNetzGrund`)", w.werke);
+                });
+                // ── S4 · der Viertel-Pinsel: 100 Werke je Geste ──
+                await L.je(4, async () => {
+                    if (g.fehler) throw new Error("die Geste warf: " + g.fehler);
+                    const w = g[1];
+                    if (w.werke < P.sprossen[4].umfang.verlangt)
+                        return L.umfang(4, w.werke, "„" + w.satz + "“ setzt " + w.werke + " Werke in " + w.ms + " ms — spawn_studio klemmt die Anzahl auf 1–24 (stamm/feld-dsl.js:2019), kein Viertel-Pinsel");
+                    L.leser(4, "Belegung gegen ein Gesetz-Viertel: kein Leser der Belegung eines gemalten Viertels (stamm/siedlung-ort.js:738)", w.werke);
+                });
+                // ── S5–S9 · die Op-Tafel (die EINE Quelle der Taten, `dslEffects`) und die Bewohner der Sitzung ──
+                const t = await L.ev(
+                    "const ops = Object.keys(r.dslEffects || {}); const st = r.state; const FC = globalThis.__fachwerkCore; let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === 'function' ? S.plan.slots.reduce((a, sl) => a + Math.max(0, FC.leuteVon(sl.ov) | 0), 0) : 0); } const p = st.playerMesh ? st.playerMesh.position : null; return { ops: ops.length, fluss: ops.filter((o) => /fluss|river|wasserlauf|berg|erosion|abtrag/i.test(o)), planet: ops.filter((o) => /platte|plate|tekton|vulkan|volcano|klima|climate|zeitalter|epoch/i.test(o)), system: ops.filter((o) => /sonne|sun|planet|orbit|stern|star/i.test(o)), bew, sied, pos: p ? [Math.round(p.x), Math.round(p.z)] : null };"
+                );
+                L.zeile("hebel Op-Tafel " + JSON.stringify(t));
+                await L.je(5, async () =>
+                    L.leser(
+                        5,
+                        "Fluss umleiten, Berg abtragen: kein Verb der Geste in der Op-Tafel (" + t.ops + " Ops, Treffer [" + t.fluss.join(", ") + "], stamm/feld-dsl.js:926 dslEffects) und kein Raffer über 1 Spieljahr — der Haken säße im Wortschatz der DSL (stamm/feld-nexus.js:1068 `_dslVokabular`)"
+                    )
+                );
+                // der Umfang als Argument: erreicht die Welt ihn, fehlt der Leser des Urteils (nie ein Umfang, der sich widerspricht)
+                const urteile = (nr, erzeugt, was, fehlt) => (erzeugt >= P.sprossen[nr].umfang.verlangt ? L.leser(nr, fehlt, erzeugt) : L.umfang(nr, erzeugt, was));
+                await L.je(6, async () =>
+                    urteile(6, t.bew, "die Welt trägt an der Pose " + JSON.stringify(t.pos) + " " + t.bew + " Bewohner in " + t.sied + " Siedlungen — keine Stadt von 10⁵ unter einem Gesetz", "Stadtplan-Statistik nach 50 Spieljahren: kein Leser, kein Raffer (stamm/siedlung-ort.js:738)")
+                );
+                await L.je(7, async () => urteile(7, t.bew, "die Welt trägt " + t.bew + " Bewohner in " + t.sied + " Siedlungen — kein Reich von 10⁸, keine Megastruktur ≥ 10 km", "Kopplungskette über 3 Domänen: kein Leser (stamm/feld-dsl.js:926)"));
+                await L.je(8, async () =>
+                    L.leser(8, "Platte schieben, Vulkan, Klima, Zeitalter je Geste: kein Verb in der Op-Tafel (Treffer [" + t.planet.join(", ") + "], stamm/feld-dsl.js:926), kein Raffer über 10⁷ Spieljahre — der Haken säße im Wortschatz der DSL (stamm/feld-nexus.js:1068 `_dslVokabular`)")
+                );
+                await L.je(9, async () =>
+                    L.leser(9, "ein Sonnensystem je Geste: kein Verb (Treffer [" + t.system.join(", ") + "], stamm/feld-dsl.js:926) — der Planet ist der Same der Welt (`_planetSamen`, stamm/gelaende-chunks.js:672), kein Leser der Folge am Gesicht eines Bewohners")
+                );
+            },
+        })
+    );
+
+    // ─────────── erleben.schoepfen.satz — Ein Satz wird Welt ───────────
+    // Der Stand der KI (state.llm, llmProviderDefs, die Fehler von `llmCall` stamm/dienst.js:93–96) urteilt die KI-Sprossen beim Namen:
+    // ohne Schlüssel erreicht kein Satz des eingefrorenen Korpus (spec/abnahme/ki-korpus.json) das Modell. S3 spricht Ensembles über
+    // den Studio-Satz ohne KI im echten Chat (feld-sprache.js, spawn_studio) und zählt sie; S4/S5 zählen Häuser und Bauten der Sitzung,
+    // S6–S9 lesen die Op-Tafel (kein Weg Satz → Landschaft/Planet/Epoche).
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.schoepfen.satz",
+            sek: 30,
+            mutiert: true,
+            pfad: ["spec/abnahme/ki-korpus.json", "stamm/dienst.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/siedlung-bewohner.js", "stamm/gelaende-chunks.js"],
+            welt: [{ wort: "werke_neu", ab: 1, was: "Werke, die der Satz neu in die Welt setzte (state.architectures)" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "gueltig_pct", richtung: "≥", wert: 95, wortlaut: "gültig ≥ 95 %", feld: "richter" },
+                        { wort: "absicht_pct", richtung: "≥", wert: 85, wortlaut: "Absicht ≥ 85 % am Ausgabebild", feld: "richter" },
+                        { wort: "brueche", richtung: "≤", wert: 0, wortlaut: "0 Brüche", feld: "richter" },
+                        { wort: "haenger", richtung: "≤", wert: 0, wortlaut: "0 Hänger > 100 ms", feld: "richter" },
+                        { wort: "satz_bild_s", richtung: "≤", wert: 6, wortlaut: "Satz → Bild ≤ 6 s lokal", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 40, einheit: "Sätze des eingefrorenen Korpus im echten Fenster", wortlaut: "eingefrorener Korpus ≥ 40 Sätze", feld: "richter" },
+                },
+                2: {
+                    soll: [{ wort: "passt_pct", richtung: "≥", wert: 70, wortlaut: "Blindurteil „passt\" ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Regler-Sätze", wortlaut: "100 Regler-Sätze", feld: "richter" },
+                    auge: { pose: "wiese ego Mittag — das Satz-Werk „knorrige alte Eiche“ vor dem Spieler", vorbild: "Referenzfoto der genannten Eigenschaft (eine knorrige alte Eiche)" },
+                },
+                3: {
+                    soll: [{ wort: "plausibel_pct", richtung: "≥", wert: 80, wortlaut: "Anteil plausibler Ensembles im Blindurteil ≥ 80 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Zufallssätze × Zufallsorte", wortlaut: "100 Zufallssätze × Zufallsorte", feld: "richter" },
+                    auge: { pose: "wiese third Mittag — das Ensemble eines Satzes (Hain, Weiler) an seinem Ort", vorbild: "reale Ensembles derselben Art (Hof, Weiler, Hain) an Hang, Wasser, Weg" },
+                },
+                4: {
+                    soll: [{ wort: "epoche_pct", richtung: "≥", wert: 70, wortlaut: "Blindurteil trifft die Epoche ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "Werke eines Dorfs aus einem Satz", wortlaut: "10³ Werke: ein Dorf oder Viertel mit Bewohnern", feld: "umfang" },
+                    auge: { pose: "dorf third Mittag — das Dorf eines Satzes", vorbild: "Referenzfoto der genannten Epoche/Region" },
+                },
+                5: {
+                    soll: [
+                        { wort: "stadtplan_pct", richtung: "≥", wert: 80, wortlaut: "im Band realer Großstädte ≥ 80 %", feld: "richter" },
+                        { wort: "echt_pct", richtung: "≥", wert: 50, wortlaut: "Turmblick gegen Luftbild einer Megastadt ≥ 50 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "Bauten der Megastadt aus einem Satz", wortlaut: "10⁶ Bauten, 10⁷ Bewohner: Megastadt", feld: "umfang" },
+                    auge: { pose: "hochhaus-dach third — Turmblick über die Stadt", vorbild: "Luftbild einer Megastadt" },
+                },
+                6: {
+                    soll: [{ wort: "hafen_pct", richtung: "≥", wert: 80, wortlaut: "Stadt am geschützten Hafen ≥ 80 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "km² Landschaft aus einem Satz", wortlaut: "10²–10⁴ km²: eine Landschaft (Vulkaninseln, Delta)", feld: "umfang" },
+                    auge: { pose: "gipfel-blick third — Küste der Insel mit der Hafenstadt", vorbild: "reale Vulkaninsel mit Hafenstadt (Höhenprofil, Küstenform)" },
+                },
+                7: {
+                    soll: [
+                        { wort: "text_pct", richtung: "≥", wert: 80, wortlaut: "Orbit- und Bodenbild entsprechen dem Text im Blindurteil ≥ 80 %", feld: "richter" },
+                        { wort: "erstes_bild_s", richtung: "≤", wert: 5, wortlaut: "erstes Bild ≤ 5 s", feld: "preis" },
+                    ],
+                    auge: { pose: "Orbit über dem Planeten und Boden-Ego am Ort des Absatzes", vorbild: "der Text des Absatzes (Blindurteil Text ↔ Bild)" },
+                },
+                8: {
+                    soll: [{ wort: "glaubwuerdig_pct", richtung: "≥", wert: 70, wortlaut: "Fach-Blindurteil „glaubwürdig\" ≥ 70 %", feld: "richter" }],
+                    auge: { pose: "die Epoche am Ort, Ego Mittag", vorbild: "historische/paläontologische Rekonstruktion (Rom 50 n. Chr., Kreide)" },
+                },
+                9: { soll: [{ wort: "kausal_pct", richtung: "≥", wert: 80, wortlaut: "Anteil, der Text UND Vorzeit gehorcht (Blindurteil + Kausal-Probe: Gebirge, wo Platten es fordern) ≥ 80 %", feld: "richter" }] },
+            },
+            lauf: async function satzLauf(H, P, L) {
+                const kiFn = "const llm = r.state.llm || {}; const defs = r.llmProviderDefs ? r.llmProviderDefs() : {}; const def = defs[llm.provider]; const cfg = (llm.providerConfig || {})[llm.provider] || {}; let grund = null; if (!def) grund = 'llm.fehler.provider'; else if (!llm.enabled) grund = 'llm.fehler.aus'; else if (def.requiresKey && !cfg.apiKey) grund = 'llm.fehler.schluessel'; return { an: !!llm.enabled, anbieter: llm.provider || null, schluessel: !!cfg.apiKey, braucht: !!(def && def.requiresKey), grund };";
+                const ki = await L.ev(kiFn);
+                const korpus = require(require("path").resolve("spec/abnahme/ki-korpus.json"));
+                const nSaetze = Object.keys(korpus.saetze || {}).length;
+                const nRegler = Object.keys((korpus.regler && korpus.regler.saetze) || {}).length;
+                const kiText = ki.grund ? "der LLM-Lauf fehlt: " + ki.grund + " (Anbieter " + ki.anbieter + ", an " + ki.an + ", Schlüssel " + ki.schluessel + "; stamm/dienst.js:93–96)" : "das Modell ist erreichbar (Anbieter " + ki.anbieter + ")";
+                L.zeile("satz KI " + JSON.stringify(ki) + " · Korpus " + nSaetze + " Sätze, Regler " + nRegler);
+                // ── S1 · der eingefrorene Korpus im echten Fenster ──
+                await L.je(1, async () => {
+                    if (ki.grund) return L.umfang(1, 0, kiText + " — 0 von " + nSaetze + " Sätzen des Korpus (spec/abnahme/ki-korpus.json) erreichen das Modell");
+                    // mit Schlüssel: die Sätze an das Modell, solange die Leiter Zeit hat (je Satz ein Ruf von `llmCall`, ohne Tat)
+                    let n = 0;
+                    for (const s of Object.keys(korpus.saetze)) {
+                        if (H.rest() < 18) break;
+                        const a = await L.ev("const a = await r.llmCall(" + JSON.stringify(s) + "); return { fehler: a && a.error ? String(a.error[0]) : null, programm: !!(a && a.program) };", 15).then(
+                            (x) => x,
+                            () => ({ fehler: "warf" })
+                        );
+                        if (!a.fehler) n++;
+                    }
+                    if (n >= P.sprossen[1].umfang.verlangt)
+                        return L.leser(1, "gültig und Absicht am Ausgabebild: kein Leser in der Sitzung — das Urteil je Satz lebt in der Linse (scripts/diag-v1-pfad.cjs:1009 korpusSatzUrteil)", n);
+                    L.umfang(1, n, "im Fenster der Leiter (" + H.sek() + " s) antwortete das Modell auf " + n + " von " + nSaetze + " Sätzen — gültig und Absicht am Ausgabebild verlangen ≥ 40 im echten Fenster");
+                });
+                // ── S2 · 100 Regler-Sätze ──
+                await L.je(2, async () => {
+                    const n = ki.grund ? 0 : nRegler;
+                    if (n >= P.sprossen[2].umfang.verlangt) return L.leser(2, "das Bildpaar Satz-Werk ↔ Referenzfoto: kein Leser schießt es je Regler-Satz (scripts/diag-v1-pfad.cjs:1009)", n);
+                    L.umfang(2, n, "der Regler-Korpus trägt " + nRegler + " Sätze (spec/abnahme/ki-korpus.json regler), verlangt 100; " + kiText);
+                });
+                // ── S3 · Ensembles aus dem Studio-Satz (ohne KI, der echte Chat) ──
+                await L.je(3, async () => {
+                    const gesteFn = function (r, saetze) {
+                        const st = r.state;
+                        const uhr = st.weatherEffectTime;
+                        const aus = [];
+                        st.weatherEffectTime = 0;
+                        try {
+                            for (const satz of saetze) {
+                                const vor = new Set(st.architectures);
+                                const t0 = performance.now();
+                                r.processChatCommand(satz);
+                                const ms = performance.now() - t0;
+                                const neu = st.architectures.filter((a) => !vor.has(a));
+                                aus.push({ satz, werke: neu.filter((a) => a.werk).length, ms: Math.round(ms) });
+                                for (const a of neu) r.removeArchitecture(a);
+                            }
+                        } finally {
+                            st.weatherEffectTime = uhr;
+                        }
+                        return aus;
+                    };
+                    const hw = await L.ev("return !!r._studioBlueprintForWord('häuser');");
+                    const saetze = ["pflanz mir einen eichenhain", "bau mir drei " + (hw ? "häuser" : "haus")];
+                    const g = await L.ev("return (" + gesteFn + ")(r, " + JSON.stringify(saetze) + ");", 30);
+                    const ens = g.filter((x) => x.werke >= 2).length;
+                    L.zeile("satz S3 " + JSON.stringify(g));
+                    L.umfang(3, ens, "der Lauf sprach " + g.length + " Sätze, " + ens + " Ensembles standen (" + g.map((x) => "„" + x.satz + "“ " + x.werke + " Werke in " + x.ms + " ms").join(", ") + ") — 100 Zufallssätze × Zufallsorte passen nicht in die Leiter");
+                });
+                // ── S4–S9 · die Häuser, die Bauten und die Op-Tafel der Sitzung ──
+                const t = await L.ev(
+                    "const st = r.state; let maxHaus = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; const h = S.plan && S.plan.slots ? S.plan.slots.length : 0; if (h > maxHaus) maxHaus = h; } const ops = Object.keys(r.dslEffects || {}); return { maxHaus, sied, bauten: (st.architectures || []).length, ops: ops.length, land: ops.filter((o) => /insel|island|delta|vulkan|volcano|landschaft|landscape/i.test(o)) };"
+                );
+                L.zeile("satz Welt " + JSON.stringify(t));
+                await L.je(4, async () => L.umfang(4, t.maxHaus, "ein Satz baut ein Dorf des Siedlungs-Gesetzes (spawn_village, stamm/feld-dsl.js:1093); die größte Siedlung der Sitzung trägt " + t.maxHaus + " Häuser (" + t.sied + " Siedlungen)"));
+                await L.je(5, async () => L.umfang(5, t.bauten, "die Welt trägt an der Pose der Sitzung " + t.bauten + " Bauten — keine Megastadt aus einem Satz"));
+                await L.je(6, async () =>
+                    L.leser(6, "ein Satz formt eine Landschaft (Vulkaninsel, Delta): kein Verb in der Op-Tafel (" + t.ops + " Ops, Treffer [" + t.land.join(", ") + "], stamm/feld-dsl.js:926 dslEffects) — der Haken säße im Wortschatz der DSL (stamm/feld-nexus.js:1068 `_dslVokabular`)")
+                );
+                await L.je(7, async () => L.leser(7, "Absatz → Planet: kein Weg — der Planet ist der Same der Welt (`_planetSamen`, stamm/gelaende-chunks.js:672); " + kiText));
+                await L.je(8, async () =>
+                    L.leser(8, "Satz → Epoche: die Zeit des Planeten wählt nur die Reise („reise <Breite> <Länge> <Ma>“, stamm/feld-leben.js:1265) in ganzen Millionen Jahren und mit Neuladen der Welt; kein Satz setzt eine Epoche, Rom 50 n. Chr. liegt unter ihrer Auflösung")
+                );
+                await L.je(9, async () => L.leser(9, "Absatz → Sonnensystem mit Zeitachse: kein Weg — EIN Planet je Same (`_planetSamen`, stamm/gelaende-chunks.js:672), keine Kausal-Probe Gebirge ↔ Platten; " + kiText));
+            },
+        })
+    );
+
+    // ─────────── erleben.schoepfen.gesetz — Gesetz erfinden ───────────
+    // S1 schreibt die Regel im echten Chat („wann immer es regnet, dann setze wetter sunny“, GESETZ_VORLAGEN[0] → `_chatTryRuleCommand`
+    // → state.worldRules), stellt Regen (`__wetterSetzen`), hebt den Halt der Messung und tickt `_tickWorldRules` an der Welt-Uhr: wirkt
+    // die Regel (Wetter kippt), fehlt nur B (kein Mitspieler, kein Leser der Wirkung bei B) — sonst ROT beim Täter. S2–S6 zählen Saat,
+    // den Deckel der Regeln (WORLD_RULES.cap), die Op-Tafel und die Welt-Uhr.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.schoepfen.gesetz",
+            sek: 25,
+            mutiert: true,
+            pfad: ["stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/netz-p2p.js", "stamm/dienst.js", "scripts/lib/ausgabe-aufnahme.cjs", "spec/abnahme/*"],
+            welt: [
+                { wort: "regel_feuer", ab: 1, was: "Feuern der Spieler-Regel in der Welt (worldRules fires)" },
+                { wort: "wetter_wechsel", ab: 1, was: "das Wetter der Welt kippte durch die Regel (rainy → sunny)" },
+            ],
+            sprossen: {
+                1: { soll: [{ wort: "regeln_wirkend", richtung: "≥", wert: 1, wortlaut: "1 Spieler-Regel wirkt in der Welt", feld: "umfang" }] },
+                2: {
+                    soll: [
+                        { wort: "plausibel_pct", richtung: "≥", wert: 80, wortlaut: "≥ 80 % plausible Werke", feld: "richter" },
+                        { wort: "treffer_pct", richtung: "≤", wert: 60, wortlaut: "Blindvergleich gegen Studio-Werke derselben Gattung ≤ 60 % Trefferquote", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Saaten", wortlaut: "100 Saaten: ≥ 80 % plausible Werke", feld: "richter" },
+                    auge: { pose: "wiese third Mittag — Werke des Spieler-Gesetzbuchs neben Studio-Werken derselben Gattung", vorbild: "Studio-Werke derselben Gattung" },
+                },
+                3: {
+                    soll: [
+                        { wort: "plausibel_verschieden_pct", richtung: "≥", wert: 70, wortlaut: "Anteil plausibler UND vom Bestand verschiedener Werke ≥ 70 %", feld: "richter" },
+                        { wort: "erstes_werk_s", richtung: "≤", wert: 10, wortlaut: "Satz → erstes Werk ≤ 10 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Erfindungssätze", wortlaut: "100 Erfindungssätze × 100 Saaten", feld: "richter" },
+                    auge: { pose: "wiese third Mittag — das erfundene Werk an seinem Ort und Klima", vorbild: "Bestand der Studios derselben Gattung (vom Bestand verschieden) und reale Salzwüsten-Flora" },
+                },
+                4: {
+                    soll: [
+                        { wort: "delta_pct", richtung: "≤", wert: 5, wortlaut: "Frame p95 und Ankunft bei 10³ gegen 10 Gesetze ± 5 %", feld: "richter" },
+                        { wort: "ueberleben_pct", richtung: "≥", wert: 90, wortlaut: "keine Art stirbt in 90 % der Saaten sofort aus", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "erfundene Gesetze nebeneinander", wortlaut: "10³ erfundene Gesetze nebeneinander", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "folgerichtig_pct", richtung: "≥", wert: 70, wortlaut: "Fach-Blindurteil „folgerichtig\" ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Saaten je Physik", wortlaut: "100 Saaten je Physik", feld: "richter" },
+                    auge: { pose: "wiese third Mittag — Leben und Bauten unter der erfundenen Physik", vorbild: "dieselbe Szene unter Erd-Physik (Fach-Blindurteil)" },
+                },
+                6: {
+                    soll: [{ wort: "vielfalt_pct", richtung: "≥", wert: 70, wortlaut: "Artenvielfalt und Körperbau-Verteilung im Band der Erd-Fossilgeschichte ≥ 70 %", feld: "richter" }],
+                    umfang: { verlangt: 1e8, einheit: "Spieljahre", wortlaut: "nach 10⁸ Spieljahren in 100 Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function gesetzLauf(H, P, L) {
+                // ── S1 · die Spieler-Regel im echten Chat, ihre Wirkung an der Welt-Uhr ──
+                await L.je(1, async () => {
+                    const regelFn = function (r) {
+                        const st = r.state;
+                        const A = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                        const satz = A.GESETZ_VORLAGEN[0];
+                        const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
+                        const vorRegeln = new Set(st.worldRules || []);
+                        const wetterAlt = st.weather;
+                        const uhr = st.weatherEffectTime;
+                        const n0 = zeilen().length;
+                        const o = { satz, peers: st.p2p && st.p2p.peers ? st.p2p.peers.size : 0 };
+                        let regel = null;
+                        try {
+                            st.weatherEffectTime = 0;
+                            r.processChatCommand(satz);
+                            o.zeile = zeilen().slice(n0 + 1).join(" | ").slice(0, 160);
+                            regel = (st.worldRules || []).find((x) => !vorRegeln.has(x) && x.source === "human") || null;
+                            o.regel = !!regel;
+                            if (!regel) return o;
+                            o.vor = window.__wetterSetzen("rainy");
+                            st.weatherEffectTime = 0; // der Halt fällt: die Wirkung der Regel schreibt das Wetter wie im Spiel
+                            const t0 = performance.now();
+                            let t = st.spielZeit;
+                            for (let i = 0; i < 40 && st.weather !== "sunny"; i++) {
+                                t += 0.5;
+                                r._tickWorldRules(t);
+                            }
+                            o.ms = Math.round(performance.now() - t0);
+                            o.spielS = +(t - st.spielZeit).toFixed(1);
+                            o.nach = st.weather;
+                            o.feuer = regel.fires || 0;
+                        } finally {
+                            if (regel) st.worldRules = (st.worldRules || []).filter((x) => x !== regel);
+                            if (st.weather !== wetterAlt) window.__wetterSetzen(wetterAlt);
+                            st.weatherEffectTime = uhr;
+                        }
+                        return o;
+                    };
+                    const o = await L.ev("return (" + regelFn + ")(r);", 30);
+                    L.zeile("gesetz S1 " + JSON.stringify(o));
+                    const werte = { regeln_wirkend: o.regel && o.nach === "sunny" ? 1 : 0 };
+                    const welt = { regel_feuer: o.feuer || 0, wetter_wechsel: o.vor === "rainy" && o.nach === "sunny" ? 1 : 0 };
+                    if (werte.regeln_wirkend >= 1 && welt.regel_feuer >= 1 && welt.wetter_wechsel >= 1)
+                        return L.leser(
+                            1,
+                            "die Wirkung bei Mitspieler B: die Sitzung trägt " + o.peers + " Mitspieler, kein Leser an A nennt die Wirkung der Regel bei B — der Haken säße am Empfang des Akts (stamm/netz-p2p.js:1895 remote-dsl); an A gemessen: „" + o.satz + "“ feuerte " + o.feuer + "×, Wetter " + o.vor + " → " + o.nach + " nach " + o.spielS + " Spiel-s"
+                        );
+                    L.gemessen(1, werte, { welt, taeter: !o.regel ? "der Satz stellte keine Regel auf („" + o.zeile + "“)" : "die Regel feuerte " + (o.feuer || 0) + "×, Wetter " + o.vor + " → " + o.nach });
+                });
+                // ── S2–S6 · Saat, Regel-Deckel, Op-Tafel, Welt-Uhr, KI ──
+                const t = await L.ev(
+                    "const st = r.state; const A = typeof AnazhRealm !== 'undefined' ? AnazhRealm : r.constructor; const ops = Object.keys(r.dslEffects || {}); const llm = st.llm || {}; const defs = r.llmProviderDefs ? r.llmProviderDefs() : {}; const def = defs[llm.provider]; const cfg = (llm.providerConfig || {})[llm.provider] || {}; let ki = null; if (!def) ki = 'llm.fehler.provider'; else if (!llm.enabled) ki = 'llm.fehler.aus'; else if (def.requiresKey && !cfg.apiKey) ki = 'llm.fehler.schluessel'; return { saat: st.worldMeta ? st.worldMeta.seed : null, regeln: (st.worldRules || []).length, cap: A.WORLD_RULES && A.WORLD_RULES.cap, ops: ops.length, physik: ops.filter((o) => /grav|schwer|physik|chemie|loesung|lösung|solvent/i.test(o)), tag: r._weltTag ? +r._weltTag().toFixed(2) : null, ki, anbieter: llm.provider || null };"
+                );
+                L.zeile("gesetz Welt " + JSON.stringify(t));
+                const fs = require("fs");
+                const erfindung = fs.readdirSync("spec/abnahme").filter((f) => /erfind/i.test(f)).length;
+                await L.je(2, async () => L.umfang(2, t.saat != null ? 1 : 0, "die Sitzung hält eine Saat (" + t.saat + ") — ein Spieler-Gesetzbuch dockt im Faden an (stamm/studio-bruecke.js:165), 100 Saaten verlangt"));
+                await L.je(3, async () =>
+                    L.umfang(3, 0, "kein Korpus von Erfindungssätzen im Spiel-Baum (spec/abnahme: " + erfindung + " Dateien)" + (t.ki ? "; der LLM-Lauf fehlt: " + t.ki + " (stamm/dienst.js:93–96)" : "") + " — 0 Erfindungssätze × Saaten liefen")
+                );
+                await L.je(4, async () => {
+                    if (t.cap >= P.sprossen[4].umfang.verlangt) return L.leser(4, "Frame p95 und Ankunft bei 10³ gegen 10 Gesetze: kein Leser vergleicht beide Lasten (stamm/feld-dsl.js:679 `_tickWorldRules`)", t.cap);
+                    L.umfang(4, t.cap, "die Welt hält höchstens " + t.cap + " Regeln nebeneinander (WORLD_RULES.cap, `_registerWorldRule` verdrängt und verweigert am Deckel, stamm/feld-dsl.js:609); jetzt stehen " + t.regeln);
+                });
+                await L.je(5, async () => {
+                    if (!t.physik.length)
+                        return L.leser(5, "eine erfundene Physik (Schwerkraft, Lösungsmittel): kein Verb in der Op-Tafel (" + t.ops + " Ops, stamm/feld-dsl.js:926 dslEffects) — der Haken säße im Wortschatz der DSL (stamm/feld-nexus.js:1068 `_dslVokabular`)");
+                    L.umfang(5, 1, "die Sitzung hält eine Saat (" + t.saat + "), Physik-Verben [" + t.physik.join(", ") + "] — 100 Saaten je Physik verlangt");
+                });
+                await L.je(6, async () => L.umfang(6, t.tag != null ? +(t.tag / 365).toFixed(4) : 0, "die Welt lief " + t.tag + " Welt-Tage (`_weltTag`, stamm/feld-leben.js:2604) — kein Raffer über Zeitalter, keine Evolution über 10⁸ Spieljahre"));
+            },
+        })
+    );
+
+    // ─────────── erleben.schoepfen.gespraech — Im Gespräch erschaffen ───────────
+    // Die Sprossen verlangen Menschen (Neulinge, Gruppen, Schöpfer-Urteile) und das Modell: das Programm zählt die Spieler der Sitzung
+    // (1 + state.p2p.peers), liest den Stand der KI (state.llm, stamm/dienst.js:93–96) und sucht den Korrektur-Korpus im Spiel-Baum;
+    // jede Sprosse urteilt den Umfang, den die Sitzung trägt.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.schoepfen.gespraech",
+            sek: 15,
+            pfad: ["stamm/netz-p2p.js", "stamm/dienst.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "spec/abnahme/*"],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Spieler, Stand der KI)" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "anteil_pct", richtung: "≥", wert: 80, wortlaut: "Anteil, der in 5 min ein eigenes Werk erschafft und teilt ≥ 80 %", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Neulinge ab 10 Jahren", wortlaut: "20 Neulinge ab 10 Jahren", feld: "richter" },
+                },
+                2: {
+                    soll: [{ wort: "naeher_pct", richtung: "≥", wert: 80, wortlaut: "Endfassung im Blindurteil näher am Wunsch als jede Zwischenfassung ≥ 80 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Dialoge des Korrektur-Korpus", wortlaut: "Korrektur-Korpus 100 Dialoge", feld: "richter" },
+                    auge: { pose: "wiese ego Mittag — Zwischenfassungen und Endfassung desselben Werks an fester Pose", vorbild: "der Wunsch des Spielers (die Korrektursätze) gegen jede Zwischenfassung" },
+                },
+                3: {
+                    soll: [
+                        { wort: "vergessen", richtung: "≤", wert: 1, wortlaut: "≤ 1 vergessene Absicht", feld: "richter" },
+                        { wort: "urteil_von5", richtung: "≥", wert: 4, wortlaut: "„das wollte ich\" ≥ 4/5", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 60, einheit: "min Gespräch an einem Ort", wortlaut: "nach 60 min", feld: "richter" },
+                },
+                4: {
+                    soll: [
+                        { wort: "verloren", richtung: "≤", wert: 0, wortlaut: "0 still verlorene Absichten im Protokoll", feld: "richter" },
+                        { wort: "urteil_von5", richtung: "≥", wert: 4, wortlaut: "Urteil des Schöpfers ≥ 4/5", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "Sitzungen", wortlaut: "ein Werk über 10 Sitzungen und Wochen", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "wiederfinden_pct", richtung: "≥", wert: 100, wortlaut: "jeder findet ≥ 1 eigene Absicht sichtbar wieder (100 %)", feld: "richter" },
+                        { wort: "ueberschrieben", richtung: "≤", wert: 0, wortlaut: "0 still überschriebene Werke", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "Spieler mit der KI an einer Stadt", wortlaut: "eine Gruppe (10) mit der KI an einer Stadt", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "angenommen_pct", richtung: "≥", wert: 50, wortlaut: "Anteil angenommener Welt-Vorschläge in 100 Sitzungen ≥ 50 %", feld: "richter" },
+                        { wort: "blind_pct", richtung: "≤", wert: 60, wortlaut: "Blindurteil Vorschlag ↔ Spieler-Werk ≤ 60 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Sitzungen", wortlaut: "Anteil angenommener Welt-Vorschläge in 100 Sitzungen ≥ 50 %", feld: "richter" },
+                    auge: { pose: "wiese third Mittag — ein Welt-Vorschlag neben einem Spieler-Werk", vorbild: "Spieler-Werk derselben Art (Blindurteil Vorschlag ↔ Werk)" },
+                },
+            },
+            lauf: async function gespraechLauf(H, P, L) {
+                const t = await L.ev(
+                    "const st = r.state; const llm = st.llm || {}; const defs = r.llmProviderDefs ? r.llmProviderDefs() : {}; const def = defs[llm.provider]; const cfg = (llm.providerConfig || {})[llm.provider] || {}; let ki = null; if (!def) ki = 'llm.fehler.provider'; else if (!llm.enabled) ki = 'llm.fehler.aus'; else if (def.requiresKey && !cfg.apiKey) ki = 'llm.fehler.schluessel'; return { spieler: 1 + (st.p2p && st.p2p.peers ? st.p2p.peers.size : 0), ki, anbieter: llm.provider || null, chats: st.player && st.player.recentActivity ? st.player.recentActivity.chats : null };"
+                );
+                L.zeile("gespraech Welt " + JSON.stringify(t));
+                const kiText = t.ki ? "; der LLM-Lauf fehlt: " + t.ki + " (Anbieter " + t.anbieter + ", stamm/dienst.js:93–96)" : "";
+                const korrektur = require("fs").readdirSync("spec/abnahme").filter((f) => /korrektur|dialog/i.test(f)).length;
+                const urteile = (nr, erzeugt, was, fehlt) => (erzeugt >= P.sprossen[nr].umfang.verlangt ? L.leser(nr, fehlt, erzeugt) : L.umfang(nr, erzeugt, was));
+                await L.je(1, async () =>
+                    urteile(1, t.spieler, "die Sitzung trägt " + t.spieler + " Spieler (die Werkbank, kein Neuling am Gerät) — 20 Neulinge ab 10 Jahren verlangt (R11)", "erste Schöpfung eines Neulings in 5 min: kein Leser der Zeit bis zum geteilten Werk je Spieler (stamm/netz-p2p.js:406)")
+                );
+                await L.je(2, async () => L.umfang(2, 0, "kein Korrektur-Korpus im Spiel-Baum (spec/abnahme: " + korrektur + " Dateien), 0 Dialoge liefen" + kiText));
+                await L.je(3, async () => L.umfang(3, +(H.sek() / 60).toFixed(2), "die Leiter fährt " + H.sek() + " s, kein Gespräch einer Stunde" + kiText));
+                await L.je(4, async () => L.umfang(4, 1, "der Lauf der Leiter ist eine Sitzung — 10 Sitzungen über Wochen verlangt"));
+                await L.je(5, async () =>
+                    urteile(5, t.spieler, "die Sitzung trägt " + t.spieler + " Spieler — eine Gruppe von 10 mit der KI verlangt" + kiText, "Absichten mehrerer Spieler: kein Leser der Absicht je Spieler (stamm/feld-nexus.js:1349 llmBuildContext)")
+                );
+                await L.je(6, async () => L.umfang(6, 1, "der Lauf der Leiter ist eine Sitzung — 100 Sitzungen mit Welt-Vorschlägen (`proactiveSuggestions`, stamm/feld-leben.js:1731) verlangt"));
+            },
+        })
+    );
+
+    // ─────────── erleben.schoepfen.teilen — Teilen und offene Bibliothek ───────────
+    // S1 trägt g4 (PAAR_PROBE). Das Programm zählt fremde Geräte (state.p2p.peers), die Einträge der Bibliothek (`_bibliothek`,
+    // stamm/netz-identitaet.js:789) und die Welten des Speichers (`worldsIndexLoad`, stamm/speicher-welten.js:231); die Bibliothek
+    // findet und forkt (netz-identitaet.js:879/909), doch kein Weg des Spiels ruft sie — S3 urteilt `leser`.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.schoepfen.teilen",
+            sek: 15,
+            bestehend: [1],
+            pfad: ["stamm/netz-p2p.js", "stamm/netz-identitaet.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/werkstatt-vorschau.js", "spec/abnahme/*"],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Peers, Bibliothek, Welten)" }],
+            sprossen: {
+                2: {
+                    soll: [{ wort: "geste_bild_b_s", richtung: "≤", wert: 5, wortlaut: "Geste → Bild bei B ≤ 5 s über Mobilfunk", feld: "preis" }],
+                    umfang: { verlangt: 1, einheit: "Bauplan auf einem fremden Gerät (Peer, frisches Profil)", wortlaut: "1 Bauplan / 1 Welt auf ein fremdes Gerät, frisches Profil", feld: "umfang" },
+                },
+                3: { soll: [{ wort: "zufall_bild_s", richtung: "≤", wert: 5, wortlaut: "Zufallseintrag im Bild ≤ 5 s", feld: "richter" }] },
+                4: {
+                    soll: [{ wort: "treffer_pct", richtung: "≥", wert: 80, wortlaut: "Treffer unter den ersten 5 ≥ 80 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Sätze im Such-Korpus", wortlaut: "Such-Korpus 100 Sätze", feld: "richter" },
+                },
+                5: {
+                    soll: [
+                        { wort: "spielbar_pct", richtung: "≥", wert: 90, wortlaut: "spielbar ≥ 90 %", feld: "richter" },
+                        { wort: "verschieden_pct", richtung: "≥", wert: 70, wortlaut: "im Blindurteil von beiden Eltern verschieden ≥ 70 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "Zufallsfusionen", wortlaut: "1 000 Zufallsfusionen", feld: "richter" },
+                    auge: { pose: "die fusionierte Welt an der Ankunft, Ego Mittag", vorbild: "beide Eltern-Welten an derselben Pose" },
+                },
+                6: {
+                    soll: [{ wort: "gleich_pct", richtung: "≥", wert: 100, wortlaut: "Welt-Bild an gleicher Pose gleich in 100 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Welten (Stichprobe fremder Nachbau)", wortlaut: "Stichprobe 100 Welten", feld: "richter" },
+                },
+            },
+            lauf: async function teilenLauf(H, P, L) {
+                const t = await L.ev(
+                    "const st = r.state; const b = r._bibliothek ? r._bibliothek() : {}; const welten = r.worldsIndexLoad ? r.worldsIndexLoad() : []; return { peers: st.p2p && st.p2p.peers ? st.p2p.peers.size : 0, bibliothek: Object.keys(b || {}).length, welten: welten.length, suche: !!document.getElementById('workshop-search') };"
+                );
+                L.zeile("teilen Welt " + JSON.stringify(t));
+                const such = require("fs").readdirSync("spec/abnahme").filter((f) => /such/i.test(f)).length;
+                await L.je(2, async () => {
+                    if (t.peers < 1) return L.umfang(2, t.peers, "kein fremdes Gerät in der Sitzung (state.p2p.peers " + t.peers + ") — B mit leerem Speicher fehlt");
+                    L.leser(2, "Bildpaar A ↔ B: kein Leser des Bilds bei B an A — der Haken säße am Empfang des Werks (stamm/netz-p2p.js:1895)", t.peers);
+                });
+                await L.je(3, async () =>
+                    L.leser(3, "Zufallseintrag → Bild und Herkunft des Forks im Spiel: kein Weg des Spiels ruft `bibliothekFinde`/`bibliothekForke` (stamm/netz-identitaet.js:879, :909) — die Bibliothek der Sitzung trägt " + t.bibliothek + " Einträge, keiner kommt ins Bild")
+                );
+                await L.je(4, async () => L.umfang(4, 0, "kein Such-Korpus im Spiel-Baum (spec/abnahme: " + such + " Dateien) — die Suche der Werkstatt (#workshop-search " + t.suche + ", stamm/werkstatt-vorschau.js:244) misst gegen keinen Satz"));
+                await L.je(5, async () => {
+                    const paare = (t.welten * (t.welten - 1)) / 2;
+                    L.umfang(5, 0, "0 Fusionen in der Sitzung: jede lädt die Seite neu (`_confirmWorldFusion` → fuseWorlds reload, stamm/speicher-laden.js:1794); der Speicher hielte " + t.welten + " Welten = " + paare + " Paare");
+                });
+                await L.je(6, async () => {
+                    if (t.welten >= P.sprossen[6].umfang.verlangt) return L.leser(6, "fremder Nachbau aus Quelle + Same: kein Leser des Welt-Bilds eines fremden Nachbaus an A (stamm/netz-p2p.js:1895)", t.welten);
+                    L.umfang(6, t.welten, "der Speicher der Sitzung hält " + t.welten + " Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231) — 100 fremd nachgebaute verlangt, kein fremdes Gerät (peers " + t.peers + ")");
+                });
+            },
+        })
+    );
+
+    // ─────────── erleben.schoepfen.schutz — Schutz, Vertrauen und Moderation ───────────
+    // S1 trägt g4 (PAAR_PROBE, feindliche Welt). Das Programm zählt den feindlichen Korpus des Spiel-Baums (spec/abnahme/ki-feind-korpus.json,
+    // je Träger eine Injektion) und die Spieler der Sitzung (1 + state.p2p.peers): Störer, rote Spieler und manipulierte Klienten
+    // verlangen Menschen und Geräte, die die Sitzung nicht trägt.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.schoepfen.schutz",
+            sek: 15,
+            bestehend: [1],
+            pfad: ["spec/abnahme/ki-feind-korpus.json", "stamm/netz-p2p.js", "stamm/feld-dsl.js"],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Korpus, Peers)" }],
+            sprossen: {
+                2: {
+                    soll: [{ wort: "ausgefuehrt", richtung: "≤", wert: 0, wortlaut: "0 ausgeführte fremde Anweisungen", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Injektionen im feindlichen Korpus", wortlaut: "Injektions-Korpus ≥ 100", feld: "richter" },
+                },
+                3: {
+                    soll: [
+                        { wort: "schaeden", richtung: "≤", wert: 0, wortlaut: "0 bleibende Schäden am fremden Werk", feld: "richter" },
+                        { wort: "erlaubt_pct", richtung: "≥", wert: 100, wortlaut: "100 % erlaubte Änderungen gelingen", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Versuche eines roten Spielers am zweiten Gerät", wortlaut: "30 min, 100 Versuche", feld: "richter" },
+                },
+                4: {
+                    soll: [{ wort: "stoer_sichtbar_pct", richtung: "≤", wert: 1, wortlaut: "Anteil Störaktionen, die ein anderer länger als 60 s sieht ≤ 1 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Spieler", wortlaut: "10² Spieler, 10 % Störer", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "erkannt_pct", richtung: "≥", wert: 99, wortlaut: "erkannt ≥ 99 %", feld: "richter" },
+                        { wort: "fehlalarm_pct", richtung: "≤", wert: 1, wortlaut: "Fehlalarm ≤ 1 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10000, einheit: "Spieler", wortlaut: "10⁴ Spieler, Text- und Bauwerk-Inhalte", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "benannt_pct", richtung: "≥", wert: 100, wortlaut: "100 % benannt", feld: "richter" },
+                        { wort: "fremd", richtung: "≤", wert: 0, wortlaut: "0 Fremd-Zustand verändert", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "Spieler", wortlaut: "10⁶ Spieler, manipulierter Klient", feld: "umfang" },
+                },
+            },
+            lauf: async function schutzLauf(H, P, L) {
+                const t = await L.ev("const st = r.state; return { spieler: 1 + (st.p2p && st.p2p.peers ? st.p2p.peers.size : 0), peers: st.p2p && st.p2p.peers ? st.p2p.peers.size : 0 };");
+                const feind = require(require("path").resolve("spec/abnahme/ki-feind-korpus.json"));
+                const nFeind = Object.keys(feind.injektionen || {}).length;
+                L.zeile("schutz Welt " + JSON.stringify(t) + " · feindlicher Korpus " + nFeind);
+                const urteile = (nr, erzeugt, was, fehlt) => (erzeugt >= P.sprossen[nr].umfang.verlangt ? L.leser(nr, fehlt, erzeugt) : L.umfang(nr, erzeugt, was));
+                await L.je(2, async () =>
+                    urteile(
+                        2,
+                        nFeind,
+                        "der feindliche Korpus trägt " + nFeind + " Injektionen (spec/abnahme/ki-feind-korpus.json, je Träger eine: " + Object.keys(feind.injektionen || {}).join(", ") + ") — ≥ 100 verlangt",
+                        "ausgeführte fremde Anweisungen: der Korpus läuft nur über das gehorsame Modell der Linse (scripts/diag-v1-pfad.cjs:2217), kein Leser in der Sitzung"
+                    )
+                );
+                await L.je(3, async () => L.umfang(3, 0, "kein zweites Gerät in der Sitzung (state.p2p.peers " + t.peers + "), kein roter Spieler — 0 Versuche am fremden Werk"));
+                await L.je(4, async () => urteile(4, t.spieler, "die Sitzung trägt " + t.spieler + " Spieler, keine Störer", "Störaktionen, die ein anderer > 60 s sieht: kein Leser (stamm/netz-p2p.js:1895)"));
+                await L.je(5, async () => urteile(5, t.spieler, "die Sitzung trägt " + t.spieler + " Spieler — kein feindlicher Werk-Korpus von 1 000 unter 10⁴ Spielern", "anstößige Werke erkannt/Fehlalarm: kein Leser (stamm/netz-p2p.js:1895)"));
+                await L.je(6, async () => urteile(6, t.spieler, "die Sitzung trägt " + t.spieler + " Spieler, keinen manipulierten Klienten", "manipulierter Klient benannt: kein Leser (stamm/netz-p2p.js:1895)"));
+            },
+        })
+    );
+}
+
+// ═══════════════════════════════════════ Perspektive sinn ═══════════════════════════════════════
+{
+    // ─────────── erleben.sinn.ziele — Ziele aus dem Zustand der Welt ───────────
+    // S1 spricht dieselbe Tat 10× im echten Chat („pflege das land“ → deposit_life, je 30 s Spielzeit) an einem Ort, dessen Erwartung
+    // an die Tat vergessen ist, und liest die Antwort im Ausgabe-Pfad: der Zensus des Umwelt-Graphs gegen dieselbe Lage ohne Antwort
+    // (`_tatAntwortAm` → `_umweltLage().antwort`, der Port der Zehn Taten aus g2 wertGang) und 32 m daneben. Die Antwort im Licht hat
+    // keinen Leser (dann `leser`, sonst ROT beim Täter). S2–S7 zählen Saat, Bewohner (Liste oder `leuteVon` des Plans) und Welten.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinn.ziele",
+            sek: 45,
+            mutiert: true,
+            pfad: [
+                "stamm/feld-sprache.js",
+                "stamm/feld-leben.js",
+                "stamm/klang.js",
+                "klang-core.js",
+                "stamm/dirigent-takt.js",
+                "stamm/bild-himmel.js",
+                "stamm/siedlung-bewohner.js",
+                "stamm/speicher-welten.js",
+                "fachwerk-core.js",
+                "scripts/lib/ausgabe-aufnahme.cjs",
+            ],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Bewohner, Saat, Welten)" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "quote_pct", richtung: "≤", wert: 30, wortlaut: "fällt von Tat 1 auf Tat 10 auf ≤ 30 %", feld: "richter" },
+                        { wort: "nachbar_db", richtung: "≤", wert: 0, wortlaut: "Nachbarzelle 0", feld: "richter" },
+                        { wort: "antwort_s", richtung: "≤", wert: 2, wortlaut: "Antwort ≤ 2 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "gleiche Taten am Ort", wortlaut: "dieselbe Tat 10×", feld: "richter" },
+                    welt: [
+                        { wort: "taten_neu", ab: 10, was: "Taten, die das Buch der Wertung neu trägt (state.taten, je Satz ein Eintrag)" },
+                        { wort: "antwort_tat1_db", ab: 0.01, was: "Antwort der ersten Tat am Ohr in dB (Zensus des Umwelt-Graphs gegen dieselbe Lage ohne Antwort)" },
+                    ],
+                },
+                2: {
+                    soll: [
+                        { wort: "ziele_genannt", richtung: "≥", wert: 1, wortlaut: "nennt nach 60 min ≥ 1 Ziel", feld: "richter" },
+                        { wort: "wahr_pct", richtung: "≥", wert: 100, wortlaut: "100 % wahr gegen den Zustand", feld: "tiefe" },
+                    ],
+                },
+                3: {
+                    soll: [
+                        { wort: "ziel_arten", richtung: "≥", wert: 10, wortlaut: "≥ 10 unterscheidbare Ziel-Arten", feld: "richter" },
+                        { wort: "rho", richtung: "≥", wert: 0.6, wortlaut: "ρ ≥ 0,6", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "Saaten", wortlaut: "10 Saaten", feld: "richter" },
+                },
+                4: {
+                    soll: [
+                        { wort: "kausal_pct", richtung: "≥", wert: 30, wortlaut: "≥ 30 % der Ziele mit kausalem Vorgänger", feld: "richter" },
+                        { wort: "folge_spieltage", richtung: "≤", wert: 1, wortlaut: "binnen 1 Spieltag im Blick", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10000, einheit: "Bewohner einer Stadt", wortlaut: "10² offene Ziele in einer Stadt mit 10⁴ Bewohnern", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "praeferenz_pct", richtung: "≥", wert: 50, wortlaut: "Präferenz ≥ 50 %", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "Bewohner einer Metropole", wortlaut: "10⁵ ungeschriebene Ziele, Metropole mit 10⁶", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "wechsel_pct", richtung: "≥", wert: 90, wortlaut: "Zustand getauscht → das Ziel wechselt ≥ 90 %", feld: "richter" },
+                        { wort: "panel_pct", richtung: "≤", wert: 70, wortlaut: "Panel-2AFC gegen von Menschen geschriebene Ziele derselben Lage ≤ 70 %", feld: "richter" },
+                        { wort: "sprung_s", richtung: "≤", wert: 5, wortlaut: "Zeitsprung ≤ 5 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 1e9, einheit: "Bewohner eines Planeten", wortlaut: "10⁸ Ziele auf einem Planeten mit 10⁹ Bewohnern", feld: "umfang" },
+                },
+                7: {
+                    soll: [{ wort: "rate_pct", richtung: "≥", wert: 50, wortlaut: "nach 1 000 h ≥ 50 % der Rate in Stunde 10", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "Planeten", wortlaut: "jeder Bewohner auf 10³ Planeten über 10⁵ Jahre", feld: "umfang" },
+                },
+            },
+            lauf: async function zieleLauf(H, P, L) {
+                // ── S1 · dieselbe Tat 10× am Ort, die Antwort am Ohr (der Halt der Messung fällt für die Taten, danach steht alles wieder) ──
+                await L.je(1, async () => {
+                    const zehnFn = function (r) {
+                        const st = r.state;
+                        const K = globalThis.__klangCore;
+                        const pm = st.playerMesh.position;
+                        const y = (x, z) => r._voxelSurfaceY(x, z);
+                        const aus = { zehn: [] };
+                        const vor = {
+                            halt: st.weatherEffectTime,
+                            wetter: st.weather,
+                            regeln: st.worldRules,
+                            regler: st.perfRegulator,
+                            nexusEigen: Object.prototype.hasOwnProperty.call(r, "_loopNexusUpdate"),
+                            nexus: r._loopNexusUpdate,
+                            klang: !!(st.symphony && st.symphony.enabled),
+                            uhr: st.timeOfDay,
+                            modus: r.getGameMode(),
+                            pos: pm.clone(),
+                        };
+                        const gestellt = { wetter: false, uhr: false, modus: false };
+                        let uhr = performance.now();
+                        const takt = (n) => {
+                            for (let i = 0; i < n; i++) r._gameLoopTick((uhr += 1000 / 60));
+                        };
+                        try {
+                            // die ganze Probe läuft in EINEM synchronen Aufruf: kein Bild der Seite fällt zwischen die Takte
+                            if (!vor.klang && !r.initSymphony()) return Object.assign(aus, { fehler: "die Klang-Welt startet nicht (initSymphony, stamm/klang.js:8)" });
+                            const um = st.symphony.umwelt;
+                            if (!um || !um.graph) return Object.assign(aus, { fehler: "keine Klang-Welt am Ohr (state.symphony.umwelt)" });
+                            // der Nexus ruht und keine Regel feuert: die einzige Tat am Ort ist die des Spielers
+                            r._loopNexusUpdate = () => {};
+                            st.worldRules = [];
+                            st.perfRegulator = false;
+                            if (st.weather !== "sunny") (window.__wetterSetzen("sunny"), (gestellt.wetter = true));
+                            st.weatherEffectTime = 0; // „pflege das land“ ist ein Welt-Akt (deposit_life): unter dem Halt der Messung verweigert
+                            if (vor.modus !== "frieden") (r.setGameMode("frieden"), (gestellt.modus = true));
+                            // der Chor der Antwort ist der Vogel-Chor des Tags (klang:UMWELT.stimmen.vogel.antwort)
+                            if (!(r._sonnenRichtung().y > 0.1)) (r.setTimeOfDay(0.5, "regler"), (gestellt.uhr = true));
+                            // ein frischer Ort: die Erwartung der Zelle an die Tat (`_tatWerten`, tatTau) ist vergessen — sonst je 48 m weiter
+                            const erw = st.tatErwartung || new Map();
+                            const frisch = (x, z) => {
+                                const e = erw.get(r._wohlCellKey(x, z) + ":deposit_life");
+                                return !e || Math.abs(e.e) * Math.exp(-Math.max(0, st.spielZeit - e.t) / AnazhRealm.WERTUNG.tatTau) < 1e-3;
+                            };
+                            // der Stand am Baum (die Vögel singen aus der Deckung ihres Reviers, `_vogelTakt` stamm/kreatur-fauna.js:12), wie
+                            // die Zehn Taten in g2 wertGang: der nächste Baum ≤ 300 m mit frischer Zelle, sonst der Ort des Spielers je 48 m weiter
+                            const ab = (a) => Math.hypot(a.position.x - pm.x, a.position.z - pm.z);
+                            const baeume = (st.architectures || [])
+                                .filter((a) => a && a.position && /baum/.test(a._lodSpecies || a.type) && r._istNatur(a) && ab(a) <= 300)
+                                .sort((a, b) => ab(a) - ab(b))
+                                .slice(0, 12);
+                            let stand = null;
+                            for (const B of baeume) if (!stand && frisch(B.position.x + 2.2, B.position.z)) stand = { x: B.position.x + 2.2, z: B.position.z, baum: 1 };
+                            if (!stand) {
+                                stand = { x: pm.x, z: pm.z, baum: 0 };
+                                for (let i = 0; i < 6 && !frisch(stand.x, stand.z); i++) stand.x += 48;
+                            }
+                            aus.stand = [Math.round(stand.x), Math.round(stand.z)];
+                            aus.amBaum = stand.baum;
+                            aus.frisch = frisch(stand.x, stand.z);
+                            const halte = (n) => {
+                                for (let i = 0; i < n; i++) (pm.set(stand.x, y(stand.x, stand.z) + 1.8, stand.z), takt(1));
+                            };
+                            halte(30);
+                            aus.voegel = (st.voegel || []).length;
+                            const stimme = () => (Number.isFinite(K.umweltMischung(r._umweltLage()).vogel.db) ? "vogel" : "grille");
+                            const singt = () => {
+                                for (let w = 0; w < 24 && !Number.isFinite(K.umweltMischung(r._umweltLage())[stimme()].db); w++) (st.spielZeit += 5), halte(4);
+                            };
+                            // die Antwort: der Graph trägt die Mischung der Lage nach der Tat (Lage → Mischung → Graph), gegen dieselbe Lage
+                            // ohne Antwort; höchstens 120 Takte (2 s zu 60 Hz); dann dieselbe Rechnung 32 m daneben
+                            const antwort = () => {
+                                const alt = um.lage;
+                                um.letzteMischung = -Infinity;
+                                let takte = 0;
+                                let a = null;
+                                let vorMix = null;
+                                for (; takte < 120 && !a; takte++) {
+                                    halte(1);
+                                    if (um.lage !== alt && !vorMix) vorMix = um.mix;
+                                    const v = stimme();
+                                    const z = um.graph.zensus().find((x) => x.name === v);
+                                    if (vorMix && um.mix !== vorMix && um.folge !== 2 && z && Number.isFinite(z.db) && Math.abs(z.db - um.mix[v].db) < 0.3)
+                                        a = { stimme: v, db: +(z.db - K.umweltMischung({ ...um.lage, antwort: null })[v].db).toFixed(2) };
+                                }
+                                pm.x += 32;
+                                const l = r._umweltLage();
+                                pm.x -= 32;
+                                const v = stimme();
+                                const nachbar = +(K.umweltMischung(l)[v].db - K.umweltMischung({ ...l, antwort: null })[v].db).toFixed(2) || 0;
+                                return { ...(a || { stimme: v, db: null }), s: +(takte / 60).toFixed(3), nachbar };
+                            };
+                            for (let n = 0, t0 = st.spielZeit; n < 10; n++) {
+                                st.spielZeit = Math.max(st.spielZeit, t0 + 30 * n);
+                                halte(4);
+                                singt();
+                                const letzte = st.taten && st.taten[st.taten.length - 1];
+                                r.processChatCommand("pflege das land");
+                                const e = st.taten && st.taten[st.taten.length - 1];
+                                aus.zehn.push({ neu: e && e !== letzte ? 1 : 0, op: e ? e.op : null, delta: e && Number.isFinite(e.delta) ? +e.delta.toFixed(4) : null, ...antwort() });
+                            }
+                            aus.sonne = +r._sonnenRichtung().y.toFixed(2);
+                        } finally {
+                            pm.copy(vor.pos);
+                            if (st.playerVel && st.playerVel.setValue) st.playerVel.setValue(0, 0, 0);
+                            if (gestellt.modus) r.setGameMode(vor.modus);
+                            if (gestellt.uhr) r.setTimeOfDay(vor.uhr, "regler");
+                            if (gestellt.wetter) window.__wetterSetzen(vor.wetter);
+                            st.weatherEffectTime = vor.halt;
+                            st.worldRules = vor.regeln;
+                            st.perfRegulator = vor.regler;
+                            if (vor.nexusEigen) r._loopNexusUpdate = vor.nexus;
+                            else delete r._loopNexusUpdate;
+                            if (!vor.klang && st.symphony && st.symphony.enabled) r.disposeSymphony();
+                        }
+                        return aus;
+                    };
+                    const o = await L.ev("return (" + zehnFn + ")(r);", 40);
+                    if (o.fehler) throw new Error(o.fehler);
+                    const Z = o.zehn || [];
+                    const a1 = Z.length ? Z[0].db : null;
+                    const a10 = Z.length >= 10 ? Z[9].db : null;
+                    const erzeugt = Z.filter((x) => x.neu === 1).length;
+                    const werte = {
+                        quote_pct: Number.isFinite(a1) && a1 > 0 && Number.isFinite(a10) ? +((100 * Math.abs(a10)) / a1).toFixed(1) : null,
+                        nachbar_db: Z.length && Z.every((x) => Number.isFinite(x.nachbar)) ? Math.max(...Z.map((x) => Math.abs(x.nachbar))) : null,
+                        antwort_s: Number.isFinite(a1) ? Z[0].s : null,
+                    };
+                    const welt = { taten_neu: erzeugt, antwort_tat1_db: Number.isFinite(a1) && a1 > 0 ? a1 : 0 };
+                    L.zeile("ziele S1 " + JSON.stringify({ stand: o.stand, amBaum: o.amBaum, voegel: o.voegel, frisch: o.frisch, sonne: o.sonne, db: Z.map((x) => x.db), nachbar: Z.map((x) => x.nachbar), s: Z.map((x) => x.s), delta: Z.map((x) => x.delta) }));
+                    const ok =
+                        werte.quote_pct !== null && werte.quote_pct <= 30 && werte.nachbar_db !== null && werte.nachbar_db <= 0 && werte.antwort_s !== null && werte.antwort_s <= 2 && erzeugt >= 10 && welt.antwort_tat1_db >= 0.01;
+                    if (ok)
+                        return L.leser(
+                            1,
+                            "die Antwort im Licht: kein Leser — `_tatAntwortAm` (stamm/feld-sprache.js:1252) liest nur der Klang (stamm/klang.js:498), das Licht des Orts antwortet keiner Tat; gemessen am Ohr: Tat 1 " +
+                                a1 + " dB → Tat 10 " + a10 + " dB (" + werte.quote_pct + " %), Nachbar " + werte.nachbar_db + " dB, Antwort nach " + werte.antwort_s + " s (die Umkehr unter Schaden, die Tiefe, misst die Station nicht)",
+                            erzeugt
+                        );
+                    const fehlt = Z.findIndex((x) => x.neu !== 1 || !Number.isFinite(x.db) || !Number.isFinite(x.nachbar));
+                    const taeter = [
+                        Z.length !== 10 ? "Taten " + Z.length + "/10" : null,
+                        fehlt >= 0 ? "Tat " + (fehlt + 1) + " ohne Eintrag im Buch oder ohne Antwort am Ohr (" + JSON.stringify(Z[fehlt]) + ")" : null,
+                        o.frisch === false ? "kein Ort mit vergessener Erwartung (12 Bäume ≤ 300 m, dann 6 × 48 m)" : null,
+                        !o.voegel ? "kein singender Vogel am Stand " + JSON.stringify(o.stand) + (o.amBaum ? " (am Baum)" : " (kein Baum ≤ 300 m)") + " — die Antwort trägt der Vogel-Chor (klang-core.js:929)" : null,
+                        "Antwort Tat 1 " + a1 + " dB → Tat 10 " + a10 + " dB, Nachbar max " + werte.nachbar_db + " dB, Antwort nach " + werte.antwort_s + " s",
+                    ].filter(Boolean);
+                    L.gemessen(1, werte, { erzeugt, welt, taeter: taeter.join(" · ") });
+                });
+                // ── S2–S7 · Saat, Bewohner und Welten der Sitzung ──
+                const zaehlFn = function (r) {
+                    const st = r.state;
+                    const FC = globalThis.__fachwerkCore;
+                    let bew = 0;
+                    let sied = 0;
+                    let maxBew = 0;
+                    let nachPlan = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        sied++;
+                        let n = 0;
+                        if (S.liste) n = S.liste.length;
+                        else if (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === "function") {
+                            n = S.plan.slots.reduce((a, sl) => a + Math.max(0, FC.leuteVon(sl.ov) | 0), 0);
+                            nachPlan++;
+                        }
+                        bew += n;
+                        if (n > maxBew) maxBew = n;
+                    }
+                    const welten = new Set((r.worldsIndexLoad ? r.worldsIndexLoad() : []).map((w) => w.worldId));
+                    if (st.worldMeta && st.worldMeta.worldId) welten.add(st.worldMeta.worldId);
+                    const p = st.playerMesh ? st.playerMesh.position : null;
+                    const peers = st.p2p && st.p2p.peers ? st.p2p.peers.size : 0;
+                    return { bew, sied, maxBew, nachPlan, welten: welten.size, saat: st.worldMeta ? st.worldMeta.seed : null, peers, pos: p ? [Math.round(p.x), Math.round(p.z)] : null };
+                };
+                const t = await L.ev("return (" + zaehlFn + ")(r);");
+                L.zeile("ziele Welt " + JSON.stringify(t));
+                const urteile = (nr, erzeugt, was, fehlt) => (erzeugt >= P.sprossen[nr].umfang.verlangt ? L.leser(nr, fehlt, erzeugt) : L.umfang(nr, erzeugt, was));
+                const bewText = t.bew + " Bewohner in " + t.sied + " Siedlungen (" + t.nachPlan + " gezählt nach `leuteVon` ihres Plans), die größte " + t.maxBew;
+                const keinZiel = "kein Leser offener Ziele: die Welt führt kein Ziel des Spielers — die Bewohner tragen ihre Bedürfnisse nur als Orte ihres Tags (`_bewohnerListe`, stamm/siedlung-bewohner.js:458)";
+                await L.je(2, async () =>
+                    L.leser(
+                        2,
+                        "eine Not, die ein Bewohner im Blick äußert: kein Bewohner spricht — die Bedürfnisse sind die Bindung seiner Orte (koerper-core `tagesBindung` in `_bewohnerListe`, stamm/siedlung-bewohner.js:458), keine Äußerung; der Haken säße im Bewohner-Takt (stamm/siedlung-bewohner.js:1554 `_tickBewohner`)"
+                    )
+                );
+                await L.je(3, async () => urteile(3, t.saat != null ? 1 : 0, "die Sitzung hält eine Saat (" + t.saat + ") — 10 Saaten verlangt", keinZiel));
+                await L.je(4, async () => urteile(4, t.maxBew, "die größte Siedlung der Sitzung trägt " + t.maxBew + " Bewohner (" + bewText + ") — keine Stadt mit 10⁴", keinZiel));
+                await L.je(5, async () => urteile(5, t.maxBew, "die größte Siedlung trägt " + t.maxBew + " Bewohner — keine Metropole mit 10⁶", keinZiel));
+                await L.je(6, async () => urteile(6, t.bew, "die Welt trägt " + bewText + " — kein Planet mit 10⁹ Bewohnern; ein Zeitsprung lädt die Welt neu (stamm/feld-leben.js:1265)", keinZiel));
+                await L.je(7, async () => urteile(7, t.welten, "der Speicher der Sitzung kennt " + t.welten + " Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231), je Welt ein Planet (`_planetSamen`, stamm/gelaende-chunks.js:672) — 10³ verlangt", keinZiel));
+            },
+        })
+    );
+
+    // ─────────── erleben.sinn.legenden — Legenden aus Bewohnern und Ereignissen ───────────
+    // Das Tagebuch der Welt (`state.worldJournal`, `journalAppend` stamm/dienst.js:385, Deckel 200) ist der Leser von S1: das Programm
+    // zählt seine Zeilen und die, die einen Ort tragen. Bewohner erzählen nicht und geben nichts weiter (kein Gedächtnis gesehener
+    // Taten) — S2 urteilt `leser`; S3–S7 zählen Bewohner (Liste oder `leuteVon` des Plans) und Welten der Sitzung.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinn.legenden",
+            sek: 15,
+            pfad: ["stamm/dienst.js", "stamm/dirigent-kern.js", "stamm/siedlung-bewohner.js", "stamm/feld-nexus.js", "stamm/speicher-welten.js", "fachwerk-core.js"],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Tagebuch, Bewohner, Welten)" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "spur_pct", richtung: "≥", wert: 95, wortlaut: "findet die Spur der Tat im Bild (Bildpaar gegen dieselbe Saat ohne die Tat) ≥ 95 %", feld: "richter" }],
+                    umfang: { verlangt: 200, einheit: "Zeilen des Tagebuchs der Welt", wortlaut: "1 Tagebuch der Welt, 200 Zeilen", feld: "umfang" },
+                    auge: { pose: "der Ort einer Zufallszeile des Tagebuchs, Ego Mittag", vorbild: "dieselbe Saat ohne die Tat an derselben Pose (Bildpaar)" },
+                },
+                2: {
+                    soll: [
+                        { wort: "faktentreue_pct", richtung: "≥", wert: 95, wortlaut: "Faktentreue ≥ 95 %", feld: "richter" },
+                        { wort: "antwort_p95_s", richtung: "≤", wert: 2, wortlaut: "Antwort p95 ≤ 2 s am Gerät allein", feld: "preis" },
+                    ],
+                },
+                3: {
+                    soll: [{ wort: "kern_pct", richtung: "≥", wert: 90, wortlaut: "Kern-Treue (Wer, Was, Wo) ≥ 90 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Bewohner eines Dorfs", wortlaut: "durch ein Dorf (10²)", feld: "umfang" },
+                },
+                4: {
+                    soll: [{ wort: "ursprung_pct", richtung: "≥", wert: 80, wortlaut: "findet ein Agent das Ursprungsereignis in ≥ 80 %", feld: "richter" }],
+                    umfang: { verlangt: 10000, einheit: "Bewohner einer Stadt", wortlaut: "10³ Geschichten in einer Stadt mit 10⁴", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "gefuehrt", richtung: "≥", wert: 7, wortlaut: "≥ 7 führen zu einem Ort, dessen Bild das Erzählte trägt", feld: "richter" },
+                        { wort: "reise_s", richtung: "≤", wert: 5, wortlaut: "Reise an den Ort ≤ 5 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "Bewohner einer Region", wortlaut: "Legenden über 10³ Jahre einer Region mit 10⁶", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "kern_wahr", richtung: "≥", wert: 8, wortlaut: "Kern in ≥ 8 im Bild wahr", feld: "richter" },
+                        { wort: "sprung_s", richtung: "≤", wert: 5, wortlaut: "Sprung zum Ursprung ≤ 5 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 1e9, einheit: "Bewohner", wortlaut: "10⁹ Bewohner, 10⁴ Jahre: Mythen mit wahrem Kern", feld: "umfang" },
+                },
+                7: {
+                    soll: [
+                        { wort: "saaten_pct", richtung: "≥", wert: 90, wortlaut: "in ≥ 90 % wählt das Panel", feld: "richter" },
+                        { wort: "paare_pct", richtung: "≥", wert: 50, wortlaut: "die Legende vor der Lore der Vergleichstitel in ≥ 50 % der Paare", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "Planeten", wortlaut: "10³ Planeten, 10⁶ Jahre", feld: "umfang" },
+                },
+            },
+            lauf: async function legendenLauf(H, P, L) {
+                const zaehlFn = function (r) {
+                    const st = r.state;
+                    const FC = globalThis.__fachwerkCore;
+                    let bew = 0;
+                    let sied = 0;
+                    let maxBew = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        sied++;
+                        let n = 0;
+                        if (S.liste) n = S.liste.length;
+                        else if (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === "function") n = S.plan.slots.reduce((a, sl) => a + Math.max(0, FC.leuteVon(sl.ov) | 0), 0);
+                        bew += n;
+                        if (n > maxBew) maxBew = n;
+                    }
+                    const welten = new Set((r.worldsIndexLoad ? r.worldsIndexLoad() : []).map((w) => w.worldId));
+                    if (st.worldMeta && st.worldMeta.worldId) welten.add(st.worldMeta.worldId);
+                    const J = (st.worldJournal && st.worldJournal.entries) || [];
+                    const ort = (e) => !!(e && e.ctx && Number.isFinite(e.ctx.x) && Number.isFinite(e.ctx.z));
+                    const arten = {};
+                    for (const e of J) arten[e.type] = (arten[e.type] || 0) + 1;
+                    return { zeilen: J.length, deckel: (st.worldJournal && st.worldJournal.entryCap) || 200, mitOrt: J.filter(ort).length, arten, bew, sied, maxBew, welten: welten.size };
+                };
+                const t = await L.ev("return (" + zaehlFn + ")(r);");
+                L.zeile("legenden Welt " + JSON.stringify(t));
+                const urteile = (nr, erzeugt, was, fehlt) => (erzeugt >= P.sprossen[nr].umfang.verlangt ? L.leser(nr, fehlt, erzeugt) : L.umfang(nr, erzeugt, was));
+                const keinGedaechtnis = "kein Bewohner trägt ein Gedächtnis gesehener Taten und gibt keines weiter — der Haken säße im Bewohner-Takt (stamm/siedlung-bewohner.js:1554 `_tickBewohner`)";
+                // ── S1 · das Tagebuch der Welt ──
+                await L.je(1, async () =>
+                    urteile(
+                        1,
+                        t.zeilen,
+                        "das Tagebuch der Sitzung trägt " + t.zeilen + " Zeilen (Deckel " + t.deckel + ", " + JSON.stringify(t.arten) + "), " + t.mitOrt + " davon mit Ort — 200 Zeilen verlangt",
+                        "die Zeile trägt keinen Ort (" + t.mitOrt + " von " + t.zeilen + " mit Ort, `journalAppend` stamm/dienst.js:385) und kein Gegenbild derselben Saat ohne die Tat — der Spieler kann der Zeile nicht folgen"
+                    )
+                );
+                // ── S2 · ein Bewohner erzählt, was er sah ──
+                await L.je(2, async () =>
+                    L.leser(2, "ein Bewohner erzählt auf Frage eine Tat, die er sah: " + keinGedaechtnis + "; das einzige Gespräch ist die KI des Chats (`maybeAnswerWithLlm`, stamm/feld-nexus.js:1463), sie liest das Tagebuch, nie einen Bewohner")
+                );
+                await L.je(3, async () => urteile(3, t.maxBew, "die größte Siedlung der Sitzung trägt " + t.maxBew + " Bewohner (" + t.sied + " Siedlungen) — ein Dorf von 10² verlangt", "Weitergabe über 2 Hände: " + keinGedaechtnis));
+                await L.je(4, async () => urteile(4, t.maxBew, "die größte Siedlung trägt " + t.maxBew + " Bewohner — keine Stadt mit 10⁴", "Gerücht neben Wahrheit (Stemma-Probe): " + keinGedaechtnis));
+                await L.je(5, async () => urteile(5, t.bew, "die Welt trägt " + t.bew + " Bewohner in " + t.sied + " Siedlungen — keine Region mit 10⁶, keine Zeit von 10³ Jahren", "die Legende führt zu einem Ort: " + keinGedaechtnis));
+                await L.je(6, async () => urteile(6, t.bew, "die Welt trägt " + t.bew + " Bewohner — 10⁹ verlangt; ein Sprung zum Ursprung lädt die Welt neu (stamm/feld-leben.js:1265)", "Mythos mit wahrem Kern: " + keinGedaechtnis));
+                await L.je(7, async () => urteile(7, t.welten, "der Speicher kennt " + t.welten + " Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231) — 10³ Planeten verlangt", "Überlieferung je Art: " + keinGedaechtnis));
+            },
+        })
+    );
+
+    // ─────────── erleben.sinn.tod — Leben und Tod des Spielers ───────────
+    // S1 stirbt im echten Spiel: ein fahrbares Werk ≤ 40 m (sonst „bau mir einen wagen“ im Chat), aufsitzen (`mountArchitecture`), Pfad,
+    // tödlicher Schaden (`damagePlayer` → `_playerDeathRespawn`); gemessen: derselbe Leib, am Anker (`_genesisAnkunft`), das Gefährt bleibt
+    // stehen, das Tagebuch trägt den Tod, die Rückkehr bis die Welt am Ankunftsort steht. S2 rafft die Wunde über die Uhr der Vitals
+    // (`tickPlayerVitals`) und legt das Bildpaar am Todesort; danach steht der Leib der Sitzung wieder, wo er war. S3–S7: kein Gesetz.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinn.tod",
+            sek: 60,
+            mutiert: true,
+            pfad: [
+                "stamm/koerper-seele.js",
+                "stamm/koerper-fahrt.js",
+                "stamm/gelaende-boden.js",
+                "stamm/siedlung-ort.js",
+                "stamm/siedlung-bauten.js",
+                "stamm/dienst.js",
+                "stamm/dirigent-kern.js",
+                "stamm/feld-leben.js",
+                "stamm/koerper-leib.js",
+                "scripts/lib/welt-boot.cjs",
+                "fachwerk-core.js",
+            ],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Leib, Tagebuch, Bewohner)" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "rueckkehr_s", richtung: "≤", wert: 5, wortlaut: "Rückkehr ≤ 5 s", feld: "preis" }],
+                    welt: [
+                        { wort: "tod_journal", ab: 1, was: "der Tod steht im Tagebuch der Welt (journalAppend „loss“)" },
+                        { wort: "leib_gleich", ab: 1, was: "derselbe Leib (dasselbe playerMesh) nach der Rückkehr" },
+                        { wort: "am_anker", ab: 1, was: "der Leib steht ≤ 2 m an der Mitte des Genesis-Orts (`_genesisAnkunft`)" },
+                        { wort: "gefaehrt_bleibt", ab: 1, was: "das Gefährt steht ≤ 0,5 m, wo er fiel, nicht mehr geritten, im Bild" },
+                    ],
+                },
+                2: {
+                    soll: [{ wort: "wunde_min", richtung: "≥", wert: 10, wortlaut: "die Wunde mindert die Werte des Spielers messbar über ~10 min", feld: "richter" }],
+                    auge: { pose: "der Todesort der Sitzung, Ego — das Bild vor dem Tod (-S2-vor.png) und nach der Rückkehr (-S2.png)", vorbild: "dasselbe Bild vor dem Tod (Bildpaar vor/nach am Todesort: Lebensspur)" },
+                },
+                3: { soll: [{ wort: "nennen_pct", richtung: "≥", wert: 80, wortlaut: "≥ 80 % nennen Ort und Täter", feld: "richter" }] },
+                4: {
+                    umfang: { verlangt: 40, einheit: "Jahre eines Spieler-Lebens im Zeitraffer", wortlaut: "Zeitraffer 40 Jahre", feld: "richter" },
+                    auge: { pose: "der Leib des Spielers vor seinem Haus, Ego/Third — mit 20 und mit 60 Jahren", vorbild: "derselbe Mensch mit 20 und 60 Jahren (Altersfotos), Haus und Beziehungen geändert" },
+                },
+                5: { soll: [{ wort: "bestaende_erbe", richtung: "≥", wert: 3, wortlaut: "nach dem Tod gehen ≥ 3 Bestände sichtbar an den Erben", feld: "richter" }] },
+                6: {
+                    soll: [{ wort: "unterschied_pp", richtung: "≥", wert: 20, wortlaut: "Unterschied ≥ 20 Prozentpunkte", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "Bewohner, die den Spieler nie sahen", wortlaut: "der Ruf reist: 10⁶ Bewohner, die den Spieler nie sahen", feld: "umfang" },
+                },
+                7: { soll: [{ wort: "teil_pct", richtung: "≥", wert: 70, wortlaut: "ihren Tod als „Teil der Geschichte\" ≥ 70 %", feld: "richter" }] },
+            },
+            lauf: async function todLauf(H, P, L) {
+                const path = require("path");
+                // ── das Bild vor dem Tod an der Pose der Sitzung (dieselbe Kamera und dasselbe /bild wie L.auge) ──
+                try {
+                    const kam = await L.ev(
+                        "r._loopCamera(performance.now()); const c = r.state.camera; return [...c.position.toArray(), ...c.getWorldDirection(new T.Vector3()).multiplyScalar(20).add(c.position).toArray()];"
+                    );
+                    const b = await L.wb("/bild", { px: kam[0], py: kam[1], pz: kam[2], lx: kam[3], ly: kam[4], lz: kam[5], w: 1280, h: 720, datei: path.join(L.D, P.leiter + "-S2-vor.png") }, 60);
+                    L.zeile("tod Bild vor dem Tod " + ((b && b.datei) || "?"));
+                } catch (e) {
+                    if (e && e.messort) throw e;
+                    L.zeile("tod Bild vor dem Tod warf: " + String((e && e.message) || e).split("\n")[0].slice(0, 160));
+                }
+                const frist = Math.max(10, H.rest() - 12);
+                const capRueck = Math.min(22, Math.max(5, frist / 2));
+                const capZurueck = Math.min(22, Math.max(5, frist - capRueck));
+                // ── der Tod in der Welt der Sitzung (in der Seite; danach steht der Leib wieder, wo er war) ──
+                const todFn = async function (r, T, arg) {
+                    const st = r.state;
+                    const S = st.player;
+                    const pmesh = st.playerMesh;
+                    const pm = pmesh.position;
+                    const o = {};
+                    const zahlen = (x) => Object.fromEntries(Object.entries(x || {}).filter(([, v]) => typeof v === "number" && Number.isFinite(v)));
+                    const steht = () => r._weltSteht() && !r._bepflanzungWartet();
+                    // das Warten der Werkbank (`__weltStehtNach`, scripts/lib/welt-boot.cjs:306) mit Frist: Takt um Takt der Seite, bis die Welt steht
+                    const warte = async (capMs) => {
+                        const t0 = performance.now();
+                        const regler = st.perfRegulator;
+                        st.perfRegulator = false;
+                        let n = 0;
+                        try {
+                            while (performance.now() - t0 < capMs) {
+                                await window.__seitenTakt(n);
+                                n++;
+                                if (steht()) return { s: +((performance.now() - t0) / 1000).toFixed(2), takte: n, steht: true };
+                            }
+                        } finally {
+                            st.perfRegulator = regler;
+                        }
+                        return { s: +((performance.now() - t0) / 1000).toFixed(2), takte: n, steht: false };
+                    };
+                    const J = () => (st.worldJournal && st.worldJournal.entries) || [];
+                    const vor = {
+                        pos: pm.clone(),
+                        modus: r.getGameMode(),
+                        hp: S.hp,
+                        wunde: S.deathWoundIntensity || 0,
+                        gnade: S.respawnGraceUntil,
+                        letzt: S.deathLastTick,
+                        emo: S.emotions ? { sorrow: S.emotions.sorrow, awe: S.emotions.awe } : null,
+                        halt: st.weatherEffectTime,
+                        ausdauer: S.stamina,
+                        mana: S.mana,
+                        stats: zahlen(S.stats),
+                        letzte: J()[J().length - 1] || null,
+                    };
+                    const neu = [];
+                    let wagen = null;
+                    try {
+                        try {
+                            // das Gefährt: das nächste fahrbare Werk ≤ 40 m, sonst ein Wagen aus dem Satz des Spielers (spawn_studio)
+                            const ab = (a) => Math.hypot(a.position.x - vor.pos.x, a.position.z - vor.pos.z);
+                            wagen = st.architectures.filter((a) => a && a.position && a.affordances && a.affordances.moveable && ab(a) <= 40).sort((a, b) => ab(a) - ab(b))[0] || null;
+                            o.wagenHer = wagen ? "Welt (" + wagen.type + ")" : null;
+                            if (!wagen) {
+                                const alt = new Set(st.architectures);
+                                st.weatherEffectTime = 0;
+                                try {
+                                    r.processChatCommand("bau mir einen wagen");
+                                } finally {
+                                    st.weatherEffectTime = vor.halt;
+                                }
+                                for (const a of st.architectures) if (!alt.has(a)) neu.push(a);
+                                wagen = neu.find((a) => a.affordances && a.affordances.moveable) || null;
+                                o.wagenHer = wagen ? "Satz „bau mir einen wagen“ (" + wagen.type + ")" : "keines (" + neu.length + " neue Werke aus „bau mir einen wagen“)";
+                            }
+                            if (wagen) {
+                                const m = r.mountArchitecture(wagen);
+                                o.aufgesessen = S.mountedArch === wagen.id ? 1 : 0;
+                                if (!o.aufgesessen) o.aufsitzen = (m && m.reason) || "?";
+                            }
+                            const wp = wagen ? { x: wagen.position.x, z: wagen.position.z } : null;
+                            // der Tod im Pfad (frieden und schöpfer verwerfen jeden Schaden, `damagePlayer`), ohne Gnade einer früheren Rückkehr
+                            if (vor.modus !== "pfad") r.setGameMode("pfad");
+                            S.respawnGraceUntil = -Infinity;
+                            const t0 = performance.now();
+                            for (let i = 0; i < 6 && !((S.respawnGraceUntil || -Infinity) > st.spielZeit); i++) r.damagePlayer(1000, "probe");
+                            o.tot = (S.respawnGraceUntil || -Infinity) > st.spielZeit ? 1 : 0;
+                            o.todZeit = S.respawnGraceUntil - AnazhRealm.RESPAWN_GRACE_SEC;
+                            o.todMs = +(performance.now() - t0).toFixed(1);
+                            const e = J()[J().length - 1];
+                            o.journal = e && e !== vor.letzte && e.type === "loss" ? 1 : 0;
+                            o.leib = st.playerMesh === pmesh ? 1 : 0;
+                            o.ritt = S.mountedArch === null || S.mountedArch === undefined ? false : S.mountedArch;
+                            o.wunde = S.deathWoundIntensity;
+                            const statsTod = zahlen(S.stats);
+                            o.gemindert = Object.keys(vor.stats)
+                                .filter((k) => Number.isFinite(statsTod[k]) && statsTod[k] < vor.stats[k] - 1e-9)
+                                .map((k) => k + " " + +vor.stats[k].toFixed(3) + "→" + +statsTod[k].toFixed(3));
+                            if (o.tot) {
+                                // die Rückkehr: bis die Welt am Ankunftsort steht (das Bild trägt den Leib dort)
+                                o.rueckkehr = await warte(arg.capRueck);
+                                const M = r._genesisMitte();
+                                o.anker = M ? +Math.hypot(pm.x - M.x, pm.z - M.z).toFixed(2) : null;
+                                o.wegM = +Math.hypot(pm.x - vor.pos.x, pm.z - vor.pos.z).toFixed(1);
+                                if (wagen) o.wagen = { da: st.architectures.includes(wagen) ? 1 : 0, d: +Math.hypot(wagen.position.x - wp.x, wagen.position.z - wp.z).toFixed(2), ritt: o.ritt };
+                                // die Wunde über die Uhr der Vitals (`tickPlayerVitals`, die Spiel-Uhr) im Raffer zu 10 s, bis sie verheilt ist
+                                // (die Lebenszeit der Wunde ab dem Tod in Spiel-Sekunden: die Rückkehr trug schon Takte der Vitals)
+                                let t = Math.max(Number.isFinite(S.deathLastTick) ? S.deathLastTick : -Infinity, st.spielZeit);
+                                let sek = 0;
+                                for (; sek < 1800 && (S.deathWoundIntensity || 0) > 0; sek += 10) r.tickPlayerVitals((t += 10));
+                                o.wundeSek = +(t - o.todZeit).toFixed(1);
+                                o.wunde_min = o.gemindert.length && !((S.deathWoundIntensity || 0) > 0) ? +(o.wundeSek / 60).toFixed(2) : o.gemindert.length ? 30 : 0;
+                            }
+                        } finally {
+                            // der Leib der Sitzung zurück: Ort, Modus, Lebenswerte, Wunde, Gnade, Gefühl — das Tagebuch behält den Tod
+                            if (wagen && S.mountedArch === wagen.id) r.dismountArchitecture();
+                            pm.copy(vor.pos);
+                            if (st.playerVel && st.playerVel.setValue) st.playerVel.setValue(0, 0, 0);
+                            st._fieldVy = 0;
+                            if (r.getGameMode() !== vor.modus) r.setGameMode(vor.modus);
+                            S.deathWoundIntensity = vor.wunde;
+                            S.respawnGraceUntil = vor.gnade;
+                            S.deathLastTick = vor.letzt;
+                            if (vor.emo && S.emotions) Object.assign(S.emotions, vor.emo);
+                            S.stamina = vor.ausdauer;
+                            S.mana = vor.mana;
+                            r.recomputePlayerStats();
+                            S.hp = vor.hp;
+                            st.weatherEffectTime = vor.halt;
+                        }
+                        // zurück an der Pose der Sitzung: die Welt dort steht wieder, das Gefährt steht im Bild, wo er fiel
+                        o.zurueck = await warte(arg.capZurueck);
+                        if (wagen && o.wagen) o.wagen.bild = st.architectures.includes(wagen) && r._archIsRendered(wagen) ? 1 : 0;
+                    } finally {
+                        for (const a of neu) if (st.architectures.includes(a)) r.removeArchitecture(a, { still: true });
+                    }
+                    return o;
+                };
+                const o = await L.ev("return (" + todFn + ")(r, T, " + JSON.stringify({ capRueck: capRueck * 1000, capZurueck: capZurueck * 1000 }) + ");", capRueck + capZurueck + 15).then(
+                    (x) => x,
+                    (e) => ({ fehler: String((e && e.message) || e).split("\n")[0].slice(0, 240) })
+                );
+                L.zeile("tod " + JSON.stringify(o).slice(0, 700));
+                // ── S1 · Tod setzt zurück an den Ankunftsort ──
+                await L.je(1, async () => {
+                    if (o.fehler) throw new Error("der Tod warf: " + o.fehler);
+                    const w = o.wagen || {};
+                    const R = o.rueckkehr || {};
+                    const werte = { rueckkehr_s: R.steht ? R.s : null };
+                    const welt = {
+                        tod_journal: o.journal || 0,
+                        leib_gleich: o.leib || 0,
+                        am_anker: Number.isFinite(o.anker) && o.anker <= 2 ? 1 : 0,
+                        gefaehrt_bleibt: w.da === 1 && w.d <= 0.5 && w.ritt === false && w.bild === 1 ? 1 : 0,
+                    };
+                    const taeter = [
+                        !o.tot ? "der Leib starb nicht (" + o.todMs + " ms Schaden im Pfad)" : null,
+                        o.tot && !R.steht ? "die Welt am Ankunftsort stand nach " + R.s + " s noch nicht (" + R.takte + " Takte)" : null,
+                        !o.wagen ? "kein Gefährt: " + o.wagenHer + (o.aufsitzen ? ", Aufsitzen " + o.aufsitzen : "") : null,
+                        o.wagen && !welt.gefaehrt_bleibt ? "das Gefährt (" + o.wagenHer + "): " + JSON.stringify(w) : null,
+                        !welt.am_anker ? "der Leib steht " + o.anker + " m von der Mitte des Genesis-Orts" : null,
+                        "Rückkehr " + R.s + " s über " + o.wegM + " m",
+                    ].filter(Boolean);
+                    L.gemessen(1, werte, { welt, taeter: taeter.join(" · ") });
+                });
+                // ── S2 · die Spur am Todesort und die Wunde ──
+                await L.je(2, async () => {
+                    if (o.fehler) throw new Error("der Tod warf: " + o.fehler);
+                    if (!o.tot) throw new Error("kein Tod in der Sitzung — kein Bildpaar am Todesort");
+                    L.zeile("tod S2 Wunde " + JSON.stringify({ gemindert: o.gemindert, sek: o.wundeSek, zurueck: o.zurueck }));
+                    await L.auge(2, { werte: { wunde_min: o.wunde_min } });
+                });
+                const zaehlFn = function (r) {
+                    const st = r.state;
+                    const FC = globalThis.__fachwerkCore;
+                    let bew = 0;
+                    let sied = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        sied++;
+                        if (S.liste) bew += S.liste.length;
+                        else if (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === "function") bew += S.plan.slots.reduce((a, sl) => a + Math.max(0, FC.leuteVon(sl.ov) | 0), 0);
+                    }
+                    const inv = st.player && Array.isArray(st.player.inventory) ? st.player.inventory.filter(Boolean).length : 0;
+                    return { bew, sied, inv };
+                };
+                const t = await L.ev("return (" + zaehlFn + ")(r);");
+                L.zeile("tod Welt " + JSON.stringify(t));
+                await L.je(3, async () =>
+                    L.leser(3, "Zeugen erzählen den Tod, der Täter steigt im Ruf: kein Bewohner trägt ein Gedächtnis gesehener Taten, kein Ruf eines Täters — der Tod steht nur im Tagebuch (stamm/koerper-seele.js:379 journalAppend „loss“)")
+                );
+                await L.je(4, async () =>
+                    L.leser(4, "der Leib altert nicht: das Alter des Spielers ist ein Wert seiner Gestalt (stamm/koerper-leib.js:55 `alter`), keine Uhr altert ihn, kein Zeitraffer über 40 Jahre (die Welt-Uhr `_weltTag`, stamm/feld-leben.js:2604)")
+                );
+                await L.je(5, async () =>
+                    L.leser(5, "kein Erbe: der Tod kehrt denselben Leib zurück (stamm/koerper-seele.js:355 `_playerDeathRespawn`), kein Kind, kein Gesetz des Erbes — " + t.inv + " Bestände im Inventar bleiben beim selben Leib")
+                );
+                await L.je(6, async () =>
+                    t.bew >= P.sprossen[6].umfang.verlangt
+                        ? L.leser(6, "der Ruf reist: kein Ruf des Spielers in der Welt (stamm/koerper-seele.js:355)", t.bew)
+                        : L.umfang(6, t.bew, "die Welt trägt " + t.bew + " Bewohner in " + t.sied + " Siedlungen — keine ferne Stadt, keine 10⁶ Bewohner, die den Spieler nie sahen")
+                );
+                await L.je(7, async () =>
+                    L.leser(7, "Tod als Wendepunkt in jeder Epoche, auf jedem Planeten, als jede Art: die Rückkehr kennt nur die Mitte des Genesis-Orts derselben Welt und Zeit (stamm/koerper-seele.js:355, `_genesisAnkunft` stamm/gelaende-boden.js:561); kein Leser der Beschreibung blinder Spieler")
+                );
+            },
+        })
+    );
+
+    // ─────────── erleben.sinn.entdeckung — Entdeckung ───────────
+    // Das Programm liest die Saat: das Welt-Affinitäts-Feld (`worldFieldAt`, stamm/feld-leben.js:1793, die vier Achsen, aus denen Wald,
+    // Fels, Kristall und Glut wachsen) und die Höhe der Saat (`_terrainSaatY`) an 8 Orten 400 m um den Spieler gegen seinen Ort, und
+    // zählt die Funde im Umkreis 50 m (Wesen, Seltenheiten des Felds, Ruinen). Wo die Welt den Umfang trägt, legt die Probe das Bild für
+    // den Blind-Agenten (auge); Ursache, Schicht, fremder Planet haben keinen Leser.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinn.entdeckung",
+            sek: 30,
+            pfad: ["stamm/feld-leben.js", "stamm/gelaende-boden.js", "stamm/vegetation-baum.js", "stamm/siedlung-ort.js", "stamm/speicher-welten.js", "stamm/gelaende-chunks.js"],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Feld, Funde, Welten)" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "orte_anders", richtung: "≥", wert: 1, wortlaut: "Blind-Agent nennt in 10 min ≥ 1 Ort", feld: "richter" }],
+                    umfang: { verlangt: 1, einheit: "Orte, die sich aus der Saat vom Nachbarn unterscheiden", wortlaut: "1 Ort, der sich aus der Saat vom Nachbarn unterscheidet", feld: "umfang" },
+                    auge: { pose: "der Ort der Sitzung, Ego — neben dem Nachbar-Ort 400 m weiter mit anderem Feld der Saat", vorbild: "der Nachbar-Ort derselben Saat (Blind-Agent: „anders als der vorige“, begründet am Bild)" },
+                },
+                2: {
+                    soll: [{ wort: "funde_besonders", richtung: "≥", wert: 5, wortlaut: "Funde, die ein Blind-Agent „besonders\" nennt ≥ 5", feld: "richter" }],
+                    umfang: { verlangt: 1, einheit: "Funde je 100 m Weg (Umkreis 50 m der Pose)", wortlaut: "1 Fund je 100 m Weg", feld: "umfang" },
+                    auge: { pose: "der Ort der Sitzung, Ego — die Funde im Umkreis 50 m", vorbild: "Blind-Agent-Urteil „besonders“ über den Spielgang von 10 min" },
+                },
+                3: { soll: [{ wort: "ursache_pct", richtung: "≥", wert: 80, wortlaut: "Anteil Funde mit Ursache im Ereignis-Graph ≥ 80 %", feld: "richter" }] },
+                4: {
+                    soll: [{ wort: "neues_pct", richtung: "≥", wert: 90, wortlaut: "Anteil Regionen, in denen Blind-Agenten nach 30 min noch Neues finden ≥ 90 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Saaten", wortlaut: "N = 100 Saaten", feld: "richter" },
+                },
+                5: {
+                    soll: [{ wort: "plausibel_pct", richtung: "≥", wert: 80, wortlaut: "Grabung: Schichtbild gegen Referenz der Epoche, Plausibilität ≥ 80 %", feld: "richter" }],
+                    auge: { pose: "die Grabung unter der Stadt, Ego — das Schichtbild", vorbild: "archäologisches Schichtprofil der Epoche (Referenz)" },
+                },
+                6: {
+                    soll: [
+                        { wort: "richtig_pct", richtung: "≥", wert: 70, wortlaut: "beantwortet der Spieler Fragen zu einem fremden Planeten ≥ 70 % richtig", feld: "richter" },
+                        { wort: "sprung_s", richtung: "≤", wert: 5, wortlaut: "Planetensprung ≤ 5 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "h Spiel", wortlaut: "nach 10 h", feld: "richter" },
+                },
+                7: {
+                    soll: [{ wort: "rueckgang_pct", richtung: "≤", wert: 50, wortlaut: "Rate neuer Funde je Stunde fällt nach 1 000 h um ≤ 50 %", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "Planeten", wortlaut: "Ultiversum aus 10³ Planeten", feld: "umfang" },
+                },
+            },
+            lauf: async function entdeckungLauf(H, P, L) {
+                const feldFn = function (r) {
+                    const st = r.state;
+                    const p = st.playerMesh.position;
+                    const art = (x, z) => {
+                        const f = r.worldFieldAt(x, z);
+                        let k = "lebendig";
+                        for (const q of Object.keys(f)) if (f[q] > f[k]) k = q;
+                        return k + "/" + Math.round(r._terrainSaatY(x, z) / 40);
+                    };
+                    const mitte = art(p.x, p.z);
+                    const ring = [];
+                    for (let i = 0; i < 8; i++) ring.push(art(p.x + 400 * Math.cos((i * Math.PI) / 4), p.z + 400 * Math.sin((i * Math.PI) / 4)));
+                    const d = (q) => Math.hypot(q.x - p.x, q.z - p.z);
+                    const nah = (st.architectures || []).filter((a) => a && a.position && d(a.position) <= 50);
+                    const wesen = (st.creatures || []).filter((c) => c && c.position && d(c.position) <= 50).length;
+                    const selten = nah.filter((a) => r._istNatur(a) && !/baum|gras|busch|strauch|kraut|blume/i.test(a._lodSpecies || a.type));
+                    const ruinen = nah.filter((a) => /ruin/i.test(a.type)).length;
+                    const welten = new Set((r.worldsIndexLoad ? r.worldsIndexLoad() : []).map((w) => w.worldId));
+                    if (st.worldMeta && st.worldMeta.worldId) welten.add(st.worldMeta.worldId);
+                    return {
+                        mitte,
+                        ring,
+                        anders: ring.filter((x) => x !== mitte).length,
+                        wesen,
+                        selten: selten.length,
+                        seltenArten: [...new Set(selten.map((a) => a._lodSpecies || a.type))].slice(0, 6),
+                        ruinen,
+                        saat: st.worldMeta ? st.worldMeta.seed : null,
+                        welten: welten.size,
+                        pos: [Math.round(p.x), Math.round(p.z)],
+                    };
+                };
+                const f = await L.ev("return (" + feldFn + ")(r);");
+                L.zeile("entdeckung Welt " + JSON.stringify(f));
+                const funde = f.wesen + f.selten + f.ruinen;
+                // ── S1 · ein Ort, der sich aus der Saat vom Nachbarn unterscheidet ──
+                await L.je(1, async () => {
+                    if (f.anders < P.sprossen[1].umfang.verlangt)
+                        return L.umfang(1, f.anders, "an der Pose " + JSON.stringify(f.pos) + " trägt kein Ort 400 m weiter ein anderes Feld der Saat (" + f.mitte + " gegen " + f.ring.join(", ") + ")");
+                    await L.auge(1, { erzeugt: f.anders });
+                });
+                // ── S2 · ein Fund je 100 m Weg ──
+                await L.je(2, async () => {
+                    if (funde < P.sprossen[2].umfang.verlangt) return L.umfang(2, funde, "im Umkreis 50 m der Pose " + JSON.stringify(f.pos) + " steht kein Fund (Wesen " + f.wesen + ", Seltenheiten " + f.selten + ", Ruinen " + f.ruinen + ")");
+                    await L.auge(2, { erzeugt: funde });
+                });
+                await L.je(3, async () =>
+                    L.leser(3, "Funde mit Ursache: kein Ereignis-Graph — die Seltenheit eines Funds emergiert aus dem Rauschen des Welt-Felds (`worldFieldAt`, stamm/feld-leben.js:1793), kein Fund trägt eine Geschichte; im Umkreis 50 m " + funde + " Funde")
+                );
+                await L.je(4, async () => L.umfang(4, f.saat != null ? 1 : 0, "die Sitzung hält eine Saat (" + f.saat + ") — 100 Saaten verlangt"));
+                await L.je(5, async () =>
+                    L.leser(5, "unter der Stadt liegt keine ältere: der Ort wächst über die Jahre EINES Plans (plan.jahr + spanne, stamm/siedlung-ort.js:2858), kein Gesetz legt eine ältere Schicht darunter, keine Grabung zeigt sie")
+                );
+                await L.je(6, async () =>
+                    L.umfang(6, +(H.sek() / 3600).toFixed(4), "die Leiter spielt " + H.sek() + " s, kein fremder Planet: ein Planetensprung lädt die Welt neu (Reise, stamm/feld-leben.js:1265; `_reiseBetreten`, stamm/netz-portal.js:660)")
+                );
+                await L.je(7, async () => L.umfang(7, f.welten, "der Speicher kennt " + f.welten + " Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231), je Welt ein Planet (`_planetSamen`, stamm/gelaende-chunks.js:672)"));
+            },
+        })
+    );
+
+    // ─────────── erleben.sinn.takt — Takt: Dramaturgie ohne Regisseur ───────────
+    // S1 trägt g4 (TAKT_PROBE, 10 min an der Ankunft). Die Sprossen 2–7 verlangen Stunden, Abende, Spieler verschiedener Stärke, eine
+    // Metropole und Zeitsprünge: das Programm zählt die Zeit der Leiter, die Bewohner (Liste oder `leuteVon` des Plans) und die Spieler
+    // der Sitzung; ein Zeitsprung lädt die Welt neu, die Erfahrung eines Spielers hat keinen Leser.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinn.takt",
+            sek: 15,
+            bestehend: [1],
+            pfad: ["stamm/siedlung-bewohner.js", "stamm/dirigent-kern.js", "stamm/feld-leben.js", "stamm/netz-p2p.js", "fachwerk-core.js"],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Bewohner, Spieler)" }],
+            sprossen: {
+                2: {
+                    soll: [
+                        { wort: "tote_pct", richtung: "≤", wert: 20, wortlaut: "tote Minuten ≤ 20 %", feld: "richter" },
+                        { wort: "anspruch_pct", richtung: "≤", wert: 10, wortlaut: "Minuten mit > 3 gleichzeitigen Ansprüchen ≤ 10 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1, einheit: "h Spielgang", wortlaut: "1 h Spielgang", feld: "umfang" },
+                },
+                3: {
+                    soll: [
+                        { wort: "hoehepunkte", richtung: "≥", wert: 1, wortlaut: "≥ 1 Höhepunkt je 30–60 min", feld: "richter" },
+                        { wort: "ruhe_min", richtung: "≥", wert: 5, wortlaut: "danach ≥ 5 min Ruhe", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 3, einheit: "h eines Abends", wortlaut: "1 Abend (3 h)", feld: "umfang" },
+                },
+                4: { soll: [{ wort: "rate_abw_pct", richtung: "≤", wert: 30, wortlaut: "Höhepunkt-Rate innerhalb ± 30 %", feld: "richter" }] },
+                5: {
+                    soll: [
+                        { wort: "tote_pct", richtung: "≤", wert: 10, wortlaut: "tote Minuten ≤ 10 %", feld: "richter" },
+                        { wort: "ueberlast_pct", richtung: "≤", wert: 10, wortlaut: "Überlast-Minuten ≤ 10 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "Bewohner einer Metropole", wortlaut: "Metropole mit 10⁶ Bewohnern", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "ziel_pct", richtung: "≥", wert: 80, wortlaut: "≥ 80 % binnen 2 min bei einem Ziel oder Ereignis im Blick", feld: "richter" },
+                        { wort: "sprung_s", richtung: "≤", wert: 5, wortlaut: "Sprung ≤ 5 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Zeitsprünge", wortlaut: "N = 100 Sprünge", feld: "richter" },
+                },
+                7: {
+                    soll: [{ wort: "gleichwertig_pct", richtung: "≥", wert: 50, wortlaut: "Bogen gegen AAA-Kampagne ≥ gleichwertig in ≥ 50 %", feld: "richter" }],
+                    umfang: { verlangt: 10, einheit: "h Blind-Spiel", wortlaut: "Blind-Spieler über 10 h", feld: "richter" },
+                },
+            },
+            lauf: async function taktLauf(H, P, L) {
+                const zaehlFn = function (r) {
+                    const st = r.state;
+                    const FC = globalThis.__fachwerkCore;
+                    let maxBew = 0;
+                    let sied = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        sied++;
+                        let n = 0;
+                        if (S.liste) n = S.liste.length;
+                        else if (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === "function") n = S.plan.slots.reduce((a, sl) => a + Math.max(0, FC.leuteVon(sl.ov) | 0), 0);
+                        if (n > maxBew) maxBew = n;
+                    }
+                    const peers = st.p2p && st.p2p.peers ? st.p2p.peers.size : 0;
+                    return { maxBew, sied, peers, spielZeit: Math.round(st.spielZeit || 0) };
+                };
+                const t = await L.ev("return (" + zaehlFn + ")(r);");
+                L.zeile("takt Welt " + JSON.stringify(t));
+                const stunden = () => +(H.sek() / 3600).toFixed(4);
+                const urteile = (nr, erzeugt, was, fehlt) => (erzeugt >= P.sprossen[nr].umfang.verlangt ? L.leser(nr, fehlt, erzeugt) : L.umfang(nr, erzeugt, was));
+                const keinAnspruch = "kein Leser der Ansprüche im Blick je Minute (stamm/dirigent-kern.js:687 state.player)";
+                await L.je(2, async () => urteile(2, stunden(), "die Leiter spielt " + H.sek() + " s — 1 h Spielgang verlangt (die Welt-Uhr der Sitzung " + t.spielZeit + " s)", keinAnspruch));
+                await L.je(3, async () => urteile(3, stunden(), "die Leiter spielt " + H.sek() + " s — ein Abend von 3 h verlangt", "Höhepunkt (δ im Blick ≥ 3× Median): " + keinAnspruch));
+                await L.je(4, async () =>
+                    L.leser(4, "die Stärke eines Spielers: kein Leser — der Spieler trägt keine Spielzeit und keine Erfahrung (stamm/dirigent-kern.js:687 state.player), die Sitzung trägt " + (1 + t.peers) + " Spieler")
+                );
+                await L.je(5, async () => urteile(5, t.maxBew, "die größte Siedlung der Sitzung trägt " + t.maxBew + " Bewohner (" + t.sied + " Siedlungen) — keine Metropole mit 10⁶", keinAnspruch));
+                await L.je(6, async () => L.umfang(6, 0, "0 Zeitsprünge in der Sitzung: ein Sprung („reise <Breite> <Länge> <Ma>“, stamm/feld-leben.js:1265) lädt die Welt neu, in ganzen Millionen Jahren"));
+                await L.je(7, async () => urteile(7, stunden(), "die Leiter spielt " + H.sek() + " s, " + t.peers + " fremde Spieler in der Sitzung — 10 h Blind-Spiel verlangt", keinAnspruch));
+            },
+        })
+    );
+
+    // ─────────── erleben.sinn.sog — Der Sog — bleiben und wiederkommen ───────────
+    // Die Sprossen zählen Menschen: blinde Neulinge, ihre freiwillige Zeit, ihre Wiederkehr über Tage bis Jahre. Das Programm zählt die
+    // Spieler der Sitzung (1 + state.p2p.peers) und die Welten des Speichers (`worldsIndexLoad`: je Welt nur `lastPlayed`); eine
+    // Spielzeit je Spieler und eine Folge von Besuchen trägt das Spiel nicht — dort `leser`.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinn.sog",
+            sek: 15,
+            pfad: ["stamm/netz-p2p.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js"],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Spieler, Welten)" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "weiter_pct", richtung: "≥", wert: 70, wortlaut: "Anteil, der nach 10 min freiwillig weiterspielt ≥ 70 %", feld: "richter" },
+                        { wort: "erste_tat_min", richtung: "≤", wert: 2, wortlaut: "Zeit bis zur ersten eigenen Tat ≤ 2 min", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 12, einheit: "blinde Neulinge", wortlaut: "die ersten 10 Minuten, 12 blinde Neulinge", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "median_min", richtung: "≥", wert: 45, wortlaut: "Median ≥ 45 von 60 min", feld: "richter" },
+                        { wort: "will_pct", richtung: "≥", wert: 60, wortlaut: "„will weiter“ ≥ 60 %", feld: "richter" },
+                    ],
+                },
+                3: {
+                    soll: [
+                        { wort: "folgetag_pct", richtung: "≥", wert: 40, wortlaut: "Wiederkehr am Folgetag ≥ 40 %", feld: "richter" },
+                        { wort: "tag7_pct", richtung: "≥", wert: 20, wortlaut: "nach 7 Tagen ≥ 20 %", feld: "richter" },
+                    ],
+                },
+                4: {
+                    soll: [{ wort: "stunden_getragen", richtung: "≥", wert: 10, wortlaut: "fällt bis Stunde 10 nicht unter die Hälfte von Stunde 1", feld: "richter" }],
+                    umfang: { verlangt: 10, einheit: "h Spiel", wortlaut: "10 Stunden: die Welt trägt", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "hier_pct", richtung: "≥", wert: 50, wortlaut: "Anteil, der die freie Stunde hier verbringt ≥ 50 %", feld: "richter" },
+                        { wort: "blind_pct", richtung: "≥", wert: 50, wortlaut: "Blindpräferenz derselben Szene ≥ 50 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 2, einheit: "h hier gespielt", wortlaut: "2 h hier", feld: "umfang" },
+                    auge: { pose: "eine Szene der Sitzung, Ego Mittag", vorbild: "dieselbe Szene im Vergleichstitel (Blindpräferenz)" },
+                },
+                6: {
+                    soll: [
+                        { wort: "tag30_pct", richtung: "≥", wert: 20, wortlaut: "Wiederkehr nach 30 Tagen ≥ 20 %", feld: "richter" },
+                        { wort: "tag90_pct", richtung: "≥", wert: 10, wortlaut: "nach 90 Tagen ≥ 10 %", feld: "richter" },
+                        { wort: "median_h", richtung: "≥", wert: 20, wortlaut: "Median der Gesamtzeit ≥ 20 h", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "Spieler", wortlaut: "100 Stunden, 10³ Spieler", feld: "umfang" },
+                },
+                7: {
+                    soll: [
+                        { wort: "jahr_pct", richtung: "≥", wert: 10, wortlaut: "Wiederkehr nach 1 Jahr ≥ 10 %", feld: "richter" },
+                        { wort: "geworben", richtung: "≥", wert: 1, wortlaut: "je Spieler ≥ 1 weiterer, der durch ihn kam", feld: "richter" },
+                    ],
+                },
+            },
+            lauf: async function sogLauf(H, P, L) {
+                const t = await L.ev(
+                    "const st = r.state; const peers = st.p2p && st.p2p.peers ? st.p2p.peers.size : 0; const w = r.worldsIndexLoad ? r.worldsIndexLoad() : []; return { peers, spieler: 1 + peers, welten: w.length, mitLastPlayed: w.filter((e) => Number.isFinite(e.lastPlayed)).length };"
+                );
+                L.zeile("sog Welt " + JSON.stringify(t));
+                const urteile = (nr, erzeugt, was, fehlt) => (erzeugt >= P.sprossen[nr].umfang.verlangt ? L.leser(nr, fehlt, erzeugt) : L.umfang(nr, erzeugt, was));
+                const keineZeit = "kein Leser der Spielzeit je Spieler: der Spieler trägt keine Uhr seines Spiels (stamm/dirigent-kern.js:687 state.player)";
+                const keineKehr =
+                    "kein Leser der Wiederkehr: der Speicher hält je Welt nur `lastPlayed` (stamm/speicher-welten.js:254 worldsIndexUpsert, " + t.mitLastPlayed + " von " + t.welten + " Welten), keine Folge der Besuche je Spieler";
+                await L.je(1, async () => urteile(1, t.peers, "die Sitzung trägt " + t.peers + " fremde Spieler (state.p2p.peers) neben der Werkbank — 12 blinde Neulinge verlangt", keineZeit));
+                await L.je(2, async () => L.leser(2, "freiwillige Spielzeit ohne Auftrag: " + keineZeit + "; die Sitzung trägt " + t.spieler + " Spieler"));
+                await L.je(3, async () => L.leser(3, "Wiederkehr am Folgetag und nach 7 Tagen: " + keineKehr));
+                await L.je(4, async () => L.umfang(4, +(H.sek() / 3600).toFixed(4), "die Leiter spielt " + H.sek() + " s — 10 Stunden verlangt; " + keineZeit));
+                await L.je(5, async () => L.umfang(5, +(H.sek() / 3600).toFixed(4), "die Leiter spielt " + H.sek() + " s — 2 h hier, 2 h im Vergleichstitel und eine freie Stunde verlangt"));
+                await L.je(6, async () => urteile(6, t.spieler, "die Sitzung trägt " + t.spieler + " Spieler — 10³ verlangt", keineKehr));
+                await L.je(7, async () =>
+                    L.leser(7, "Wiederkehr nach 1 Jahr und Spieler, die durch einen kamen: " + keineKehr + "; keine Einladung zählt, wer durch sie kam (der Beitritt über die Adresse der Einladung, `_weltBeitritt` stamm/netz-p2p.js:61)")
+                );
+            },
+        })
+    );
+
+    // ─────────── erleben.sinn.staunen — Die erlebte Größe — Staunen und Merken ───────────
+    // Die Sprossen urteilen blinde Spieler und Panels. Das Programm zählt, was die Welt an der Pose der Sitzung trägt (Arten der Natur,
+    // Bau-Arten, Gesichter der Bewohner, Wesen, Sterne des Himmels `state.starField`) und wie weit die Sitzung von der Ankunft ging;
+    // S2 legt das Bild für die Schätzfrage. Augenblicke aus Gesetzen und der Anflug auf einen Punkt haben keinen Leser.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinn.staunen",
+            sek: 30,
+            pfad: ["stamm/vegetation-baum.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "stamm/bild-himmel.js", "stamm/kreatur-leben.js", "stamm/feld-leben.js", "stamm/netz-p2p.js"],
+            welt: [{ wort: "gelesen", ab: 1, was: "Leser der Welt, die die Probe las (Bauten, Bewohner, Wesen, Himmel)" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "dinge", richtung: "≥", wert: 10, wortlaut: "blinde Spieler nennen nach 30 min ≥ 10 verschiedene Dinge beim Namen oder im Bild", feld: "richter" },
+                        { wort: "wiedergefunden", richtung: "≥", wert: 5, wortlaut: "5 davon finden sie wieder", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 30, einheit: "min an EINEM Ort", wortlaut: "EIN Ort, 30 min", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "faktor", richtung: "≤", wert: 3, wortlaut: "Median im Faktor 3 der gezählten Zahl", feld: "richter" },
+                        { wort: "wiederholt_pct", richtung: "≤", wert: 20, wortlaut: "„wiederholt sich“ ≤ 20 %", feld: "richter" },
+                    ],
+                    auge: { pose: "der Ort der Sitzung, Ego — Wald, Siedlung oder Markt im Blick", vorbild: "die gezählte Zahl der Arten, Gesichter und Häuser am Ort (Schätzfrage blinder Spieler gegen die Zählung der Probe)" },
+                },
+                3: {
+                    soll: [
+                        { wort: "verweil_faktor", richtung: "≥", wert: 2, wortlaut: "Verweildauer und freiwillige Standbilder an den Augenblicken ≥ 2× Umgebung", feld: "richter" },
+                        { wort: "panel_median", richtung: "≥", wert: 5, wortlaut: "Staunen-Panel (Skala 1–7) Median ≥ 5", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "Augenblicke aus Gesetzen", wortlaut: "10 Augenblicke aus Gesetzen", feld: "umfang" },
+                    auge: { pose: "ein Augenblick aus Gesetzen (Sonnenaufgang über dem Meer, Herde am Horizont, Stadt bei Nacht), Ego", vorbild: "die Umgebung desselben Orts ohne den Augenblick (Verweildauer ≥ 2×) und das Staunen-Panel" },
+                },
+                4: {
+                    soll: [
+                        { wort: "landmarken", richtung: "≥", wert: 5, wortlaut: "≥ 5 Landmarken in richtiger Folge", feld: "richter" },
+                        { wort: "eintoenig_pct", richtung: "≤", wert: 20, wortlaut: "„wurde es eintönig?“ ≤ 20 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "km Reise", wortlaut: "eine Reise über 100 km", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "erkannt_pct", richtung: "≥", wert: 70, wortlaut: "erkennen ≥ 70 % denselben Ort an Bergform oder Flusslauf", feld: "richter" },
+                        { wort: "panel_median", richtung: "≥", wert: 5, wortlaut: "Staunen-Panel Median ≥ 5", feld: "richter" },
+                        { wort: "sprung_s", richtung: "≤", wert: 5, wortlaut: "Sprung ≤ 5 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 10000, einheit: "Jahre Zeitsprung", wortlaut: "ein Sprung über 10⁴ Jahre", feld: "umfang" },
+                    auge: { pose: "derselbe Ort vor und nach dem Sprung, Orbit und Boden", vorbild: "derselbe Ort in der Gegenwart (Bergform, Flusslauf)" },
+                },
+                6: {
+                    soll: [
+                        { wort: "faktor", richtung: "≤", wert: 10, wortlaut: "Schätzfrage zur Menge im Faktor 10 der wahren", feld: "richter" },
+                        { wort: "einzeln_pct", richtung: "≥", wert: 80, wortlaut: "„jeder Punkt war ein Einzelner“ ≥ 80 %", feld: "richter" },
+                    ],
+                },
+                7: {
+                    soll: [{ wort: "wahl_pct", richtung: "≥", wert: 60, wortlaut: "Staunen-Wahl ≥ 60 % für diese Welt", feld: "richter" }],
+                    auge: { pose: "ein Augenblick aus Gesetzen, Ego — dieselbe Art Augenblick wie im Vergleichstitel", vorbild: "dieselbe Art Augenblick in den Vergleichstiteln (Paarvergleich)" },
+                },
+            },
+            lauf: async function staunenLauf(H, P, L) {
+                const vielFn = function (r) {
+                    const st = r.state;
+                    const p = st.playerMesh.position;
+                    const d = (q) => Math.hypot(q.x - p.x, q.z - p.z);
+                    const A = (st.architectures || []).filter((a) => a && a.position && d(a.position) <= 150);
+                    const natur = A.filter((a) => r._istNatur(a));
+                    const arten = new Set(natur.map((a) => a._lodSpecies || a.type)).size;
+                    const bauArten = new Set(A.filter((a) => !r._istNatur(a)).map((a) => a.type)).size;
+                    let gesichter = 0;
+                    let maxBew = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        const n = S.liste ? S.liste.length : 0;
+                        if (Math.hypot(S.ox - p.x, S.oz - p.z) <= 300) gesichter += n;
+                        if (n > maxBew) maxBew = n;
+                    }
+                    const wesen = (st.creatures || []).filter((c) => c && c.position && d(c.position) <= 150);
+                    const wesenArten = new Set(wesen.map((c) => (c.userData && (c.userData.soul || c.userData.kind)) || "wesen")).size;
+                    const M = r._genesisMitte();
+                    const peers = st.p2p && st.p2p.peers ? st.p2p.peers.size : 0;
+                    return {
+                        arten,
+                        bauArten,
+                        gesichter,
+                        wesen: wesen.length,
+                        wesenArten,
+                        werke: A.length,
+                        sterne: st.starField ? st.starField.count : 0,
+                        maxBew,
+                        weg_km: M ? +(Math.hypot(p.x - M.x, p.z - M.z) / 1000).toFixed(3) : null,
+                        peers,
+                        pos: [Math.round(p.x), Math.round(p.z)],
+                    };
+                };
+                const t = await L.ev("return (" + vielFn + ")(r);");
+                L.zeile("staunen Welt " + JSON.stringify(t));
+                const dinge = t.arten + t.bauArten + t.wesenArten;
+                const keinAugenblick =
+                    "kein Leser eines Augenblicks: kein Gesetz nennt einen Augenblick (Sonnenaufgang über dem Meer, Herde am Horizont, Stadt bei Nacht), keine Verweildauer des Blicks und kein freiwilliges Standbild je Spieler — der Haken säße am Blick (`_kreaturImBlick`, stamm/kreatur-leben.js:1798)";
+                await L.je(1, async () =>
+                    L.umfang(1, +(H.sek() / 60).toFixed(2), "die Leiter steht " + H.sek() + " s an einem Ort, " + t.peers + " fremde Spieler, kein blinder; im Umkreis 150 m trägt die Welt " + dinge + " verschiedene Dinge (" + t.arten + " Arten der Natur, " + t.bauArten + " Bau-Arten, " + t.wesenArten + " Arten der Wesen)")
+                );
+                // ── S2 · die Vielfalt am Ort: das Bild für die Schätzfrage, die Zählung daneben in der Zeile ──
+                await L.je(2, async () => {
+                    L.zeile("staunen S2 gezählt " + JSON.stringify({ arten: t.arten, bauArten: t.bauArten, gesichter: t.gesichter, wesen: t.wesen, werke: t.werke }));
+                    await L.auge(2, {});
+                });
+                await L.je(3, async () => L.leser(3, keinAugenblick));
+                await L.je(4, async () => L.umfang(4, t.weg_km != null ? t.weg_km : 0, "die Sitzung steht " + t.weg_km + " km von der Mitte des Genesis-Orts (`_genesisMitte`, stamm/siedlung-ort.js:1675) — eine Reise über 100 km verlangt"));
+                await L.je(5, async () => L.umfang(5, 0, "0 Jahre Zeitsprung in der Sitzung: ein Sprung („reise <Breite> <Länge> <Ma>“, stamm/feld-leben.js:1265) lädt die Welt neu, in ganzen Millionen Jahren"));
+                await L.je(6, async () =>
+                    L.leser(
+                        6,
+                        "jeder Punkt ein Einzelner: kein Anflug auf einen Punkt — der Sternhimmel sind " + t.sterne + " Billboards um die Kamera (`_buildStarField`, stamm/bild-himmel.js:315, Radius 480 m), die größte Siedlung trägt " + t.maxBew + " Bewohner; keine Menge von Millionen im Blick"
+                    )
+                );
+                await L.je(7, async () => L.leser(7, "Paarvergleich derselben Art Augenblick: " + keinAugenblick));
+            },
+        })
+    );
+}
+
 // ═══════════════════════════════════════ Perspektive sinne ═══════════════════════════════════════
 {
     // ─────────── erleben.sinne.sicht — Fremde Sicht: das Auge als Leser des Lichts ───────────

@@ -426,10 +426,10 @@ function fahrtSumme(stationen, geraet) {
 // oeko 90, teilen 75, ereignis 60, wetter-welt 45, physik 45) hoben die Fahrt von 6 619 auf 7 204 s (Radeon) über 4 × 1 740 s.
 // 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
-// 18.11. 6 → 7: die Leitern der Karte 2 erleben/same/kosmos (stationen/k2-*.js, je Leiter EINE Probe ≤ 60 s) — same.preis.takt 60 s und
-// die acht Leitern erleben.spieler (Σ 345 s) hoben die Radeon-Fahrt von 10 064 auf 10 469 s über 6 × 1 740 s.
-// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (121 Läufe × 120 s > 7 Teile)
-const FAHRT_TEILE_MAX = 7;
+// 18.11. 6 → 8: die Leitern der Karte 2 erleben/same/kosmos (stationen/k2-*.js, je Leiter EINE Probe ≤ 60 s, ihre Sprossen Zwillinge
+// derselben Probe) — bis erleben.schoepfen/sinn 61 neue Läufe (Σ 2 365 s) hoben die Radeon-Fahrt von 10 064 auf 12 429 s über 7 × 1 740 s.
+// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (174 Läufe × 120 s > 8 Teile)
+const FAHRT_TEILE_MAX = 8;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {

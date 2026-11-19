@@ -330,6 +330,561 @@
    "richter": "gleich"
   },
   {
+   "station": "karte2.erleben.schoepfen.hebel#1",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#2",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf third Mittag — der Hof eines Spieler-Werks neben einem Hof des Plans derselben Region (Vorbild Gesetz-Hof derselben Region (Hof des fachwerk-Plans der Siedlung)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#3",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#4",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf third Mittag — das gemalte Viertel neben einem Gesetz-Viertel (Vorbild Gesetz-Viertel derselben Region (fachwerk-Plan)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#5",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose gipfel-blick third — derselbe Talgrund vor dem Eingriff und nach 1 Spieljahr (Vorbild reale Landschaft nach einer Flussverlegung (Luftbild-Paar vorher/nachher)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#6",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#7",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#8",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#9",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 9,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#1",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#2",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego Mittag — das Satz-Werk „knorrige alte Eiche“ vor dem Spieler (Vorbild Referenzfoto der genannten Eigenschaft (eine knorrige alte Eiche)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#3",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — das Ensemble eines Satzes (Hain, Weiler) an seinem Ort (Vorbild reale Ensembles derselben Art (Hof, Weiler, Hain) an Hang, Wasser, Weg) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#4",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf third Mittag — das Dorf eines Satzes (Vorbild Referenzfoto der genannten Epoche/Region) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#5",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose hochhaus-dach third — Turmblick über die Stadt (Vorbild Luftbild einer Megastadt) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#6",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose gipfel-blick third — Küste der Insel mit der Hafenstadt (Vorbild reale Vulkaninsel mit Hafenstadt (Höhenprofil, Küstenform)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#7",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Orbit über dem Planeten und Boden-Ego am Ort des Absatzes (Vorbild der Text des Absatzes (Blindurteil Text ↔ Bild)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#8",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 8,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose die Epoche am Ort, Ego Mittag (Vorbild historische/paläontologische Rekonstruktion (Rom 50 n. Chr., Kreide)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#9",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 9,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#1",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#2",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — Werke des Spieler-Gesetzbuchs neben Studio-Werken derselben Gattung (Vorbild Studio-Werke derselben Gattung) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#3",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — das erfundene Werk an seinem Ort und Klima (Vorbild Bestand der Studios derselben Gattung (vom Bestand verschieden) und reale Salzwüsten-Flora) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#4",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#5",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — Leben und Bauten unter der erfundenen Physik (Vorbild dieselbe Szene unter Erd-Physik (Fach-Blindurteil)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#6",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#1",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#2",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego Mittag — Zwischenfassungen und Endfassung desselben Werks an fester Pose (Vorbild der Wunsch des Spielers (die Korrektursätze) gegen jede Zwischenfassung) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#3",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#4",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#5",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#6",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — ein Welt-Vorschlag neben einem Spieler-Werk (Vorbild Spieler-Werk derselben Art (Blindurteil Vorschlag ↔ Werk)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#2",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#3",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#4",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#5",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose die fusionierte Welt an der Ankunft, Ego Mittag (Vorbild beide Eltern-Welten an derselben Pose) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#6",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#2",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#3",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#4",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#5",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#6",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#1",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#2",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#3",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#4",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#5",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#6",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#7",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#1",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Ort einer Zufallszeile des Tagebuchs, Ego Mittag (Vorbild dieselbe Saat ohne die Tat an derselben Pose (Bildpaar)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#2",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#3",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#4",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#5",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#6",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#7",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#1",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#2",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Todesort der Sitzung, Ego — das Bild vor dem Tod (-S2-vor.png) und nach der Rückkehr (-S2.png) (Vorbild dasselbe Bild vor dem Tod (Bildpaar vor/nach am Todesort: Lebensspur)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#3",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#4",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Leib des Spielers vor seinem Haus, Ego/Third — mit 20 und mit 60 Jahren (Vorbild derselbe Mensch mit 20 und 60 Jahren (Altersfotos), Haus und Beziehungen geändert) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#5",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#6",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#7",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#1",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Ort der Sitzung, Ego — neben dem Nachbar-Ort 400 m weiter mit anderem Feld der Saat (Vorbild der Nachbar-Ort derselben Saat (Blind-Agent: „anders als der vorige“, begründet am Bild)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#2",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Ort der Sitzung, Ego — die Funde im Umkreis 50 m (Vorbild Blind-Agent-Urteil „besonders“ über den Spielgang von 10 min) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#3",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#4",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#5",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose die Grabung unter der Stadt, Ego — das Schichtbild (Vorbild archäologisches Schichtprofil der Epoche (Referenz)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#6",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#7",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#2",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#3",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#4",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#5",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#6",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#7",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#1",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#2",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#3",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#4",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#5",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose eine Szene der Sitzung, Ego Mittag (Vorbild dieselbe Szene im Vergleichstitel (Blindpräferenz)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#6",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#7",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#1",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#2",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Ort der Sitzung, Ego — Wald, Siedlung oder Markt im Blick (Vorbild die gezählte Zahl der Arten, Gesichter und Häuser am Ort (Schätzfrage blinder Spieler gegen die Zählung der Probe)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#3",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose ein Augenblick aus Gesetzen (Sonnenaufgang über dem Meer, Herde am Horizont, Stadt bei Nacht), Ego (Vorbild die Umgebung desselben Orts ohne den Augenblick (Verweildauer ≥ 2×) und das Staunen-Panel) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#4",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#5",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose derselbe Ort vor und nach dem Sprung, Orbit und Boden (Vorbild derselbe Ort in der Gegenwart (Bergform, Flusslauf)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#6",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#7",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose ein Augenblick aus Gesetzen, Ego — dieselbe Art Augenblick wie im Vergleichstitel (Vorbild dieselbe Art Augenblick in den Vergleichstiteln (Paarvergleich)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
    "station": "karte2.erleben.sinne.sicht#1",
    "leiter": "erleben.sinne.sicht",
    "sprosse": 1,
