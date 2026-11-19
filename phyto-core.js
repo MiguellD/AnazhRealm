@@ -3382,16 +3382,21 @@
     // stand 21 m hinter dem Rand im Bestand mit Unterstand (Bildzeit im CPU-Raster 7 964 ms gegen main 3 965).
     // DER HANGWALD (w28-laub-kante): ein Dorf rodet, was es bebauen oder beackern kann — `hang` ist die Steilheit des Bodens
     // (|∇h|, derselbe Leser wie die Hang-Regel der Geburt); jenseits der beackerbaren Neigung (`bestand.rodung`) rodet der Ort
-    // nicht, der Bestand steht als Hang- und Bannwald bis an seine Häuser (die Erdbauten hält `ortFrei`). Der Übergang ist stetig:
-    // die Rodung (1 − Saum) fällt glatt mit der Neigung. Unter der Pflug-Grenze ist jeder Wurf, wie er war.
+    // seinen Saum nicht, der Bestand steht als Hang- und Bannwald bis an seinen Rand. Die Rodung (1 − Saum) fällt glatt mit der
+    // Neigung; unter der Pflug-Grenze ist jeder Wurf, wie er war.
+    // DER GRUND DES ORTS (laub-kante, Bildpaar paar4): drinnen (`d` < 0, die Reichweite des Ort-Gesetzes, fachwerk
+    // `siedlungsReich`) liegt sein Land — Platz, Gassen, Lose, Höfe; dort wächst kein Baum, wie steil es auch ist. Bis hier hob
+    // die Neigung die Rodung auch drinnen auf: am Dorf standen Fichte, Tanne, Eiche binnen 5–24 m der Dorf-Pose auf Platz und
+    // Gasse (18 L0-Bäume, 130 k Dreiecke; Vordergrund der Probe bild:dorf 0,254 > 0,25), main trug dort 0.
     function forestOrt(d, hang) {
         if (typeof d !== "number" || Number.isNaN(d))
             throw new Error("phyto-core forestOrt: der Abstand zum Siedlungsrand fehlt (KERN-PFLICHT)");
         if (!Number.isFinite(hang))
             throw new Error("phyto-core forestOrt: die Steilheit des Bodens fehlt (KERN-PFLICHT)");
+        if (d < 0) return 0;
         const B = FOREST_PACK.bestand;
         let t = d / B.saum;
-        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        t = t > 1 ? 1 : t;
         const saum = t * t * (3 - 2 * t);
         let h = (hang - B.rodung[0]) / (B.rodung[1] - B.rodung[0]);
         h = h < 0 ? 0 : h > 1 ? 1 : h;
