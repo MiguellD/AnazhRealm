@@ -150,3 +150,43 @@ Jahre einzelne Saaten ins Aus — fällt S1 daran, steht es als Befund, nicht al
 - Widerspruch Skandinavien: 3 × höhere Riss-Rate bei gleichem Verhältnis, kein Plateau bis 499 Elche je Wolf (Sand 2012). Das
   Plateau des Gesetzes kommt aus dem Stoffwechsel, V½ von EINEM Ort; ob a vom Elch auf den Hirsch trägt, ist nicht gelesen —
   die Brücke ist allein der WÄ-Faktor 6.
+
+## Lauf 3 (19.11. 05:38–05:46, der erste vollständige Lauf) — S1 GRÜN 8 von 8, S13 ROT: der Wolf steht am RAUM, nicht am Futter
+
+9 GRÜN, 6 ROT (Tafel und Spur: `kern3/lauf-zeit-3.txt`). Wolf am Ende 34 · 40 · 44 · 36 · 36 · 39 · 35 · 46 (0 von 8 → 3 von 8 → 8 von 8).
+ROT: S2 1,97 (Soll 2–8) · S4 0,904 (0,5–0,9) · S11 0,540 ms (≤ 0,25; ohne Wolf 0,509) · S13 Fall 12,9 %, in 1 von 8 Saaten ≥ 25 %
+(Beute 98,4 %, Wolf lebt 8 von 8) · S14 −0,14 · +0,50 · −0,77 · S15 507 WÄ je Wolf (180–390).
+Vorhersagen: S1 Treffer · S9 Treffer · Verzug Treffer (Median Jahr 3) · S2, S3 (0,061 statt 0,10–0,16), S4 Fehlschuss.
+
+Die Sätze 3 und 4 HALTEN an ihren eigenen Proben: Riss ÷ Soll 1,0001; Wachstum in der Klasse D 0,9–1,2 ohne Wander-Tode −0,0015.
+Was bricht, nennt das Gesetz nicht — es sind die Raum-Regeln des Kerns (`zeit-kern-3.cjs` Z. 679–716), meine benannte offene
+Stelle: fünf Rudel dehnen sich bis zum Deckel 744 über ALLES Land (36,9 Wölfe in 4,8 Rudeln), „voll über 6“ (die Verbands-Größe
+`herde.wurf`, die Satz 2 als Wurf schon verworfen hat) schickt Reifende hinaus, und ohne freies Land stirbt der Wanderer SOFORT:
+45 % der Tode ab einem Jahr sind Wander-Tode (3 493 von 7 733). Der Bestand hält doppelt so viel Land, wie er braucht (V 507 —
+Skandinaviens Zahl im Wieder-Besiedeln, 499), und der Eingriff S13 senkt D nur 1,26 → 1,11, über dem Gleichgewichts-Anker.
+S11 bleibt ROT (Gerät lief langsamer: dieselbe Rechnung ohne Wolf 173 s gegen 132 s; das Soll bewege ich nicht).
+
+## Satz 7 — der Raum (19.11. 05:50, gesetzt VOR Lauf 4, aus gelesenen Stütz-Punkten)
+
+7. **Der Raum antwortet auf die Beute, nie auf einen Deckel und nie auf eine Rudel-Größe.**
+   (a) Ein Rudel VERTEIDIGT nur seinen Bedarf: die Reviere, deren Beute seinen Köpfen V_halt = **258 WÄ je Wolf** trägt (das
+       Null-Wachstum von Isle Royale, 43 Elche je Wolf × 6). Was es darüber hinaus begeht, ist offenes Land. Die Tages-Strecke
+       (Deckel 744) bleibt allein als Grenze dessen, was ein Rudel begehen KANN.
+   (b) Wer wandert, entscheidet das ALTER, nie „voll“ und nie „hungert“: jeder Nachkomme verlässt das Rudel im Alter 2–4 Jahre
+       (Mittel 2,9; 77 % in diesem Fenster — Hayes & Harestad 2000). Die Rudel-Größe ist damit Folge (Paar + Welpen + Jährlinge),
+       keine Eingabe. `herde.wurf` liest der Wolf nur noch für den Anfangs-Bestand.
+   (c) Der Wanderer gründet, wo offenes Land — freies oder das Land eines Halters ÜBER dessen Bedarf — einem Paar V_halt trägt
+       (der Halter gibt es ab: Reviere schrumpfen mit der Zahl der Nachbar-Rudel, Rich et al. 2012, Volltext; das Revier antwortet,
+       nicht die Rudel-Größe, Kittle 2015), oder er füllt die leere Stelle eines Rudels ohne Zucht-Tier seines Geschlechts.
+       Findet er nichts, bleibt er als Kopf im Geburts-Rudel (zählt dort in V und D, isst mit) und sucht im nächsten Takt wieder.
+       Einen Tod „auf der Wanderung“ gibt es nicht: das Überleben ist dichte-unabhängig 0,81 / 0,89 gelesen (Hayes 2000), kein
+       gelesener Wert trägt einen Wander-Tod. Es stirbt nur, wen die Tafel des Satzes 4 an seiner Deckung trifft.
+
+Damit sättigt der Bestand am FUTTER: ist alles Land verteilt, wachsen die Köpfe im Rudel, V fällt auf den Anker, D auf 1,05.
+
+### Vorhersagen für Lauf 4 (vor der Rechnung; S1–S15 stehen unverändert)
+
+S1 8 von 8 · S15 250–310 WÄ je Wolf · S2 3,2–4,0 · S3 0,085–0,11 · S4 0,80–0,88 · S13 GRÜN mit Fall 30–50 %, Tief im Jahr 2–3 ·
+S14 bleibt ROT am reichen Ende (≈ +0,5 gegen Soll ≤ +0,45: meine Anker-Tafel ist dort reicher als die Gerade von Isle Royale —
+die Tafel bewege ich nicht nach dem Ergebnis) · S11 bleibt ROT. Benanntes Risiko: ≈ 75 Wölfe in 10–12 Rudeln schwingen nach dem
+Eingriff über, und der Zufall der kleinen Zahl trägt einzelne Saaten ins Aus.
