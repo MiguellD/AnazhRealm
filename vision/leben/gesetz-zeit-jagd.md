@@ -42,5 +42,19 @@ Wert, steht er als benannte Hypothese mit Spanne im Kern und in dieser Tafel.
 | S11 | Kosten je Takt je 256 Reviere | ≤ 0,25 ms | erster Gang 0,224 |
 | S12 | Größen der Erbe-Linie p99 ÷ Start | ≤ 1,4 | erster Gang 1,17–1,19 |
 
+## Werte (19.11. 04:40, vor der Rechnung, aus `quellen/zensus-raten-quellen.md`)
+
+- Beute: Kitze je reifer Kuh je Jahr 1,36 (karg) ↔ 1,80 (gut), Jährling 0,62 ↔ 1,63 (Verme 1969, Abstract); Überleben je Jahr ohne
+  Wolf Kitz 0,59 · Kuh 0,76, mit Wolf im Feld 0,31 · 0,79 (Probe, nie Eingabe); Abwanderung Jährlings-Böcke 80 %, -Kühe 13 %.
+- Wolf: Erhaltung 0,1925 kg je Tag je kg^¾ (2,77 kg am 35-kg-Wolf, Głowaciński & Profus 1997, Volltext); Sattheit 0,396
+  (5,7 kg, Yellowstone Frühwinter, Stahler 2006 über Zusammenfassung); Wurf-Schwelle HYPOTHESE 1,2 × Erhaltung (1,1–1,5; Peterson &
+  Ciucci 2003 nicht gelesen); EIN Wurf je Rudel je Jahr, 6 Welpen; Nutz-Anteil des Risses HYPOTHESE 0,7 (0,6–0,8).
+- S3-Anker: Wölfe nehmen in Ost-Polen 6,3–9,0 % der Huftier-Biomasse je Jahr (Volltext); nachhaltig tragbar am George Reserve
+  33 % des Herbst-Bestands (McCullough 2001, Abstract).
+- S2, vor der Rechnung benannt: Fuller 2003 linear W = 3,5 + 3,3·U gibt 3,5–6,8 Wölfe je 1 000 Köpfe; Cariappa sättigend gäbe bei
+  der Beute-Dichte des Spiels (100–200 je km², Feld 1–15) unter 1. S2 urteilt am Band 2–8, beide Lesarten stehen neben der Zahl.
+- NICHT gelesen: das Futter-Minimum für Reproduktion, Fuller im Original, r_max nach McCullough 1979, Rothirsch-Kälber je Kuh,
+  Streifgebiet der Kuh in ha, der Riss-Anteil je Jahr für Isle Royale · Yellowstone · Białowieża · Minnesota.
+
 Fällt das Gesetz an S1 oder an drei der Proben S2–S8, geht es zurück an den Zensus; ein Soll, das nach einem Ergebnis geändert
 wird, steht hier offen mit Datum und Grund.
