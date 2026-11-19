@@ -116,7 +116,11 @@ function messDateien(k) {
     // Prüfsumme <bild>.sha256; bis hier ging aus roh/ nur *.out. NUR, wenn der Rufer die Bilder geprüft hat (ROH_BILDER_GEPRUEFT=1,
     // kandidat.sh) — ein anderer Rufer (gtx-dauer selbst) pusht wie bisher nur *.out
     const bild = process.env.ROH_BILDER_GEPRUEFT === "1";
-    if (fs.existsSync(rohDir(k))) for (const f of fs.readdirSync(rohDir(k)).filter((f) => f.endsWith(".out") || (bild && /\.(png|jpe?g|webp)(\.sha256)?$/i.test(f))))
+    // DIE BUCHUNG AN DER STATIONS-GRENZE (kandidat.sh, 19.11.): PUSH_ROH_NUR=<id,…> — mitten in der Sitzung reisen nur die Roh-Ausgaben
+    // der eben geurteilten Stationen (<id mit _>.out · -bild…), der Schluss-Push der Sitzung trägt wieder alle
+    const nur = process.env.PUSH_ROH_NUR ? process.env.PUSH_ROH_NUR.split(",").filter(Boolean).map((s) => s.replace("#", "_")) : null;
+    const ihre = (f) => !nur || nur.some((p) => f.startsWith(p + ".") || f.startsWith(p + "-"));
+    if (fs.existsSync(rohDir(k))) for (const f of fs.readdirSync(rohDir(k)).filter((f) => (f.endsWith(".out") || (bild && /\.(png|jpe?g|webp)(\.sha256)?$/i.test(f))) && ihre(f)))
         l.push({ von: rohDir(k) + "/" + f, pfad: MDIR + "/roh/" + k.slice(0, 8) + "-gtx/" + f });
     // die Richter-Akten der Meisterkarte 2, die die Sitzung an diesem Kopf schrieb (punkte.cjs richterAkten → vision/richter/
     // <leiter>.<sprosse>.<sha8>-gtx.json): sie reisen mit der Mess-Datei nach punkte-maschine und von dort nach koordination

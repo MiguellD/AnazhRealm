@@ -50,47 +50,107 @@ node $N/pm-stand.cjs $PM >> $L 2>&1   # der Stand von punkte-maschine; eine jün
 export GPU_LAUF_WEICH_S=${GPU_LAUF_WEICH_S:-600}
 export PUNKTE_REFERENZ_NAME=gtx # die Referenz-Ablage je GERÄT (messung/referenz-gtx.json), nie je Rechner — kein Pfad, den zwei Schreiber teilen
 VERSUCHE=${VERSUCHE:-4}
-# teil <name> <stationen> <versuch> — EINE Sitzung: 0 ganz gepusht · 1 gefallen (gepusht ist, was sie fertig maß; REST_TEIL = der Rest)
-teil() { local name=$1 R=$2 v=$3 rest n
-  until frei; do sleep 10; done; local d0=$(verdr)
-  echo "$(date '+%T') ${K:0:8} $name Versuch $v START ($R)" >> $L
-  TEIL=$name-v$v NUR=$R node punkte-offen.cjs lauf $K >> $L 2>&1
-  # der Roh-Ordner DIESER Sitzung (14.11.: jede Sitzung schreibt in ihren eigenen `sitzung-<kennung>`, der jüngste Name ist der letzte)
-  SO=$(ls -d $ROH/${K:0:8}-gtx/sitzung-* 2>/dev/null | tail -n 1); rm -rf "${N:?}/punkte-sitzung-${name:?}-v$v"; [ -n "$SO" ] && cp -r "$SO" "$N/punkte-sitzung-$name-v$v" 2>/dev/null
-  REST_TEIL=
-  if [ $(verdr) -gt $d0 ]; then
-    rest=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$R" 2>>$L)
-    REST_TEIL=$rest
-    [ "$(zahl "$rest")" = "$(zahl "$R")" ] && return 1   # nichts fertig gemessen
-  fi
-  # CPU-RUHE (10.11., Koordinator 07:30: nie neben einem echt-/Probe-Job): Push und Zeile warten, solange ein CI-Job das Schloss hält oder wartet
+# GRENZE UND BUCHUNG JE STATION IN DER SITZUNG (Koordinator 19.11.; Befund 10:30: die Runde 1 am f68dbf09 stand 2 h 20 min bei 0/1428 —
+# EINE Sitzung `punkte-offen.cjs lauf` mit 252 Stationen, darin punkte.cjs mit 16 Fortsetzungen je eigenem Griff ans Schloss; 163 Urteile
+# + 89 UNGEMESSEN lagen nur im Baum, gepusht wurde erst nach dem Ende der GANZEN Sitzung, die Grenz-Flagge las diese Kette nur zwischen
+# zwei Sitzungen). Jetzt wacht teil() WÄHREND der Sitzung (Takt KANDIDAT_TAKT s) über die Mess-Datei des Baums — punkte.cjs schreibt sie
+# je Lauf (melde) —, und jede neu geurteilte Station ist eine STATIONS-GRENZE (KANDIDAT_TAKT: ganze Sekunden, Vorgabe 5):
+#   BUCHUNG  sie wird sofort nach punkte-maschine gepusht (nur Mess-Datei, Akten und IHRE Roh-Ausgaben, PUSH_ROH_NUR) und steht als
+#            „GEPUSHT (Versuch v) <n> Station(en)“ in der Kette — der Zähler der Runde steigt je Station, nie erst am Ende der Sitzung.
+#   GRENZE   liegt dort die Grenz-Flagge des Dienstes (SPRUNG: WEICHT/HALT) oder wartet ein CI-Job im Start-Hook, endet die Sitzung an
+#            DIESER Grenze: der Baum des Laufs fällt über die EIGENE Start-PID (taskkill -T, wie gpu-lauf.sh bei der Verdrängung), die
+#            gerade begonnene Station ist das Einzige, was verloren geht; was geurteilt ist, ist gepusht. Ein Lauf, den gpu-lauf.sh
+#            VERDRÄNGT (er fing die Sitzung nach dem Job von vorn an), fällt ebenso sofort — der Rest stellt sich hinten an.
+# Ein Teil, der Stationen buchte, verbraucht keinen Versuch (die VERSUCHE zählen nur Sitzungen ohne eine einzige Station).
+TAKT=${KANDIDAT_TAKT:-5}
+# ohne <liste> <a> <b> — die Stationen der Liste, die weder in a noch in b stehen (alles mit Komma)
+ohne() { echo "$1" | tr ',' '\n' | grep . | grep -vxF -f <(echo "$2,$3" | tr ',' '\n' | grep .) | paste -sd, -; }
+# grenze_grund — warum die Sitzung an dieser Stations-Grenze endet (leer: sie misst weiter)
+grenze_grund() {
+  [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "die Grenz-Flagge des Dienstes liegt"; return; }
+  ( . $SCHLOSS; type ci_wartet >/dev/null 2>&1 && ci_wartet ) && echo "ein CI-Job wartet im Start-Hook"; return 0; }
+# halte_an — der Lauf fällt samt seinem Baum (Chrome, gpu-lauf.sh) über die eigene Start-PID; ein Schloss, dessen Halter so fiel, löst
+# schloss_verwaist sofort (pid lebt nicht) — nie ein fremdes
+halte_an() {
+  [ -n "$WK" ] && taskkill -F -T -PID "$WK" > /dev/null 2>&1
+  kill -9 $LP 2>/dev/null; wait $LP 2>/dev/null
+  ( . $SCHLOSS; type schloss_verwaist >/dev/null 2>&1 && schloss_verwaist ) 2>> $L; return 0; }
+# buche <name> <versuch> <stationen> [ganz] — Push der geurteilten Stationen nach punkte-maschine; ohne „ganz“ nur ihre Roh-Ausgaben
+buche() { local name=$1 v=$2 B=$3
+  # CPU-RUHE (10.11., Koordinator 07:30: nie neben einem echt-/Probe-Job): der Push wartet, solange ein CI-Job das Schloss hält oder wartet
   . $SCHLOSS; cpu_ruhe 2>> $L
-  n=$(( $(zahl "$R") - $(zahl "$REST_TEIL") ))
   # DAS GESETZ DER ROH-BILDER (19.11.): ein Bild, dessen Station ihr Urteil gegen stand.json hält, zieht in die Ablage am Gerät (nur seine
   # Prüfsumme reist); ein Beweis- oder Täter-Bild (Urteil wechselt) reist mit (gtx-dauer.cjs messDateien mit ROH_BILDER_GEPRUEFT=1)
   node "$RUNDE_CJS" bilder "$PM" gtx "$K" "$BILD_ABLAGE" >> $L 2>&1
-  ROH_BILDER_GEPRUEFT=1 TEIL=$name-v$v NUR=$R node punkte-offen.cjs push $K >> $L 2>&1; echo "$(date '+%T') $name GEPUSHT (Versuch $v) $n Station(en)${REST_TEIL:+ — BEHALTEN je Station, der Rest folgt: $REST_TEIL}" >> $L; node $N/zeile-erledigt.cjs $K $name "$R" >> $L 2>&1
-  [ -n "$REST_TEIL" ] && return 1; return 0; }
-# SPRUNG=<datei> (die Grenz-Flagge des Dienstes): liegt die Datei, endet die Liste VOR der nächsten Sitzung (Halt, Weichen); die laufende
-# fährt zu Ende.
+  if [ "$4" = ganz ]; then ROH_BILDER_GEPRUEFT=1 TEIL=$name-v$v NUR=$B node punkte-offen.cjs push $K >> $L 2>&1
+  else ROH_BILDER_GEPRUEFT=1 PUSH_ROH_NUR=$B TEIL=$name-v$v NUR=$B node punkte-offen.cjs push $K >> $L 2>&1; fi; }
+# teil <name> <stationen> <versuch> — EINE Sitzung: 0 ganz gepusht · 1 gefallen (VERDRÄNGT oder ein CI-Job an einer Grenze; gepusht ist,
+# was sie fertig maß; REST_TEIL = der Rest) · 2 an der Grenz-Flagge des Dienstes beendet (REST_TEIL = der Rest); TEIL_GEBUCHT = Zahl
+teil() { local name=$1 R=$2 v=$3 rest n neu g grund= B=
+  until frei; do sleep 10; done; local d0=$(verdr)
+  echo "$(date '+%T') ${K:0:8} $name Versuch $v START ($R)" >> $L
+  TEIL=$name-v$v NUR=$R node punkte-offen.cjs lauf $K >> $L 2>&1 & LP=$!
+  WK=$(cat /proc/$LP/winpid 2>/dev/null)
+  local s=0
+  while kill -0 $LP 2>/dev/null; do
+    sleep 1
+    s=$((s + 1))
+    kill -0 $LP 2>/dev/null || break
+    [ $((s % TAKT)) = 0 ] || continue
+    [ $(verdr) -gt $d0 ] && { grund="VERDRÄNGT von einem CI-Job"; halte_an; break; }
+    rest=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$R" 2>/dev/null) || continue
+    neu=$(ohne "$R" "$rest" "$B")
+    [ -n "$neu" ] || continue
+    # EINE STATIONS-GRENZE: eine Station ist geurteilt, die nächste hat eben begonnen
+    g=$(grenze_grund)
+    [ -n "$g" ] && { grund=$g; halte_an; echo "$(date '+%T') $name GRENZE: $g — die Sitzung endet an der Station nach $(zahl "${B:+$B,}$neu") von $(zahl "$R")" >> $L; break; }
+    buche $name $v "$neu"
+    B=${B:+$B,}$neu
+    echo "$(date '+%T') $name GEPUSHT (Versuch $v) $(zahl "$neu") Station(en) — gebucht an der Stations-Grenze: $neu" >> $L
+  done
+  wait $LP 2>/dev/null
+  # der Roh-Ordner DIESER Sitzung (14.11.: jede Sitzung schreibt in ihren eigenen `sitzung-<kennung>`, der jüngste Name ist der letzte)
+  SO=$(ls -d $ROH/${K:0:8}-gtx/sitzung-* 2>/dev/null | tail -n 1); rm -rf "${N:?}/punkte-sitzung-${name:?}-v$v"; [ -n "$SO" ] && cp -r "$SO" "$N/punkte-sitzung-$name-v$v" 2>/dev/null
+  REST_TEIL=
+  if [ -n "$grund" ] || [ $(verdr) -gt $d0 ]; then
+    rest=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$R" 2>>$L)
+    REST_TEIL=$rest
+  fi
+  neu=$(ohne "$R" "$REST_TEIL" "$B")
+  TEIL_GEBUCHT=$(zahl "${B:+$B,}$neu")
+  [ "$TEIL_GEBUCHT" = 0 ] && return 1   # nichts fertig gemessen
+  n=$(zahl "$neu")
+  # der Schluss-Push trägt alle Roh-Ausgaben (auch die einer jüngeren Messung, die pm-stand.cjs im Baum behielt)
+  buche $name $v "${neu:-$B}" ganz
+  echo "$(date '+%T') $name GEPUSHT (Versuch $v) $n Station(en)${REST_TEIL:+ — BEHALTEN je Station, der Rest folgt: $REST_TEIL}" >> $L; node $N/zeile-erledigt.cjs $K $name "$(ohne "$R" "$REST_TEIL")" >> $L 2>&1
+  [ -n "$REST_TEIL" ] || return 0
+  [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && [ "${grund#die Grenz-Flagge}" != "$grund" ] && return 2
+  return 1; }
+# SPRUNG=<datei> (die Grenz-Flagge des Dienstes): liegt die Datei, endet die laufende Sitzung an ihrer nächsten Stations-Grenze (teil,
+# Exit 2) und die Liste vor der nächsten Sitzung (Halt, Weichen); der Rest folgt im nächsten Takt des Dienstes an derselben Station.
 Q=()
 if [[ "$LISTE" == *";"* ]]; then
-  i=0; IFS=';' read -ra TT <<< "$LISTE"; for T in "${TT[@]}"; do [ -n "$T" ] && { i=$((i+1)); Q+=("$i|1|$T"); }; done   # je Teil: Nummer|Versuch|Stationen
+  i=0; IFS=';' read -ra TT <<< "$LISTE"; for T in "${TT[@]}"; do [ -n "$T" ] && { i=$((i+1)); Q+=("$i|1|$T|0"); }; done   # je Teil: Nummer|Versuch|Stationen|Sitzungen ohne Station
 else
   OK=(); for s in ${LISTE//,/ }; do
     if (cd $PM && node meisterkarte-quelle/punkte/punkte.cjs run --sha $K --geraet gtx --nur "$s" --trocken 2>&1 | grep -q "keine Station"); then echo "$(date '+%T') $NAME $s: keine Station auf gtx - weg" >> $L; else OK+=("$s"); fi
   done
   G=${EINZELN:+1}; G=${G:-${TEIL_N:-9}}; i=0
-  while [ $i -lt ${#OK[@]} ]; do Q+=("$((i/G+1))|1|$(IFS=,; echo "${OK[*]:$i:$G}")"); i=$((i+G)); done
+  while [ $i -lt ${#OK[@]} ]; do Q+=("$((i/G+1))|1|$(IFS=,; echo "${OK[*]:$i:$G}")|0"); i=$((i+G)); done
 fi
 GANZ=${#Q[@]}; DA=0; OFFEN=
 while [ ${#Q[@]} -gt 0 ]; do
   [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date '+%T') $NAME SPRUNG: die Grenz-Flagge des Dienstes liegt (WEICHT oder HALT - der Grund steht in stufe/landung.log; seit dem Gesetz der Runde 19.11. nie eine Landung) - die Liste endet nach $DA von $GANZ Teilen (${#Q[@]} nicht gefahren)" >> $L; break; }
-  IFS='|' read -r nr v T <<< "${Q[0]}"; Q=("${Q[@]:1}")
-  if teil $NAME-$nr "$T" $v; then DA=$((DA+1)); continue; fi
+  IFS='|' read -r nr v T f <<< "${Q[0]}"; Q=("${Q[@]:1}")
+  TEIL_GEBUCHT=0
+  teil $NAME-$nr "$T" $v; rc=$?
+  [ $rc = 0 ] && { DA=$((DA+1)); continue; }
   T=${REST_TEIL:-$T}
-  if [ $v -lt $VERSUCHE ]; then
-    echo "$(date '+%T') $NAME-$nr Versuch $v VERDRÄNGT - der Rest ($(zahl "$T") Station(en)) stellt sich ans Ende der Liste (${#Q[@]} davor)" >> $L; Q+=("$nr|$((v+1))|$T")
+  [ "$TEIL_GEBUCHT" -gt 0 ] && f=0 || f=$((f+1))
+  # an der Grenz-Flagge beendet: der Rest bleibt vorn, die Liste endet oben (SPRUNG) — kein Versuch, kein Warten auf einen CI-Job
+  [ $rc = 2 ] && { Q=("$nr|$((v+1))|$T|$f" "${Q[@]}"); continue; }
+  if [ $f -lt $VERSUCHE ]; then
+    echo "$(date '+%T') $NAME-$nr Versuch $v VERDRÄNGT - der Rest ($(zahl "$T") Station(en)) stellt sich ans Ende der Liste (${#Q[@]} davor)" >> $L; Q+=("$nr|$((v+1))|$T|$f")
   else
     echo "$(date '+%T') $NAME-$nr Versuch $v VERDRÄNGT - OFFEN nach $VERSUCHE Versuchen ($T): der Lauf überdauert $GPU_LAUF_WEICH_S s neben einem wartenden CI-Job" >> $L; OFFEN="$OFFEN $T"
   fi

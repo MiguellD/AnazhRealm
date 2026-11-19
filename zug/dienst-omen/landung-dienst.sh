@@ -25,7 +25,10 @@
 # HALT: Datei zustand/landung.halt — eine laufende Liste endet an der nächsten Stations-Grenze, die Schleife endet, die Flagge BLEIBT
 #   liegen, bis der Koordinator sie wegnimmt (rm, dann start.sh); start.sh startet die Landung nicht, solange sie liegt.
 # DER MACHER HAT VORRANG (14.11.): wartet ein Lauf am GPU-Schloss oder an der Baum-Sperre (warter_echt), WEICHT die Liste an der nächsten
-#   Stations-Grenze (die Grenz-Flagge, kandidat.sh SPRUNG), keine Liste beginnt, solange jemand wartet; danach geht sie weiter (4).
+#   Stations-Grenze (die Grenz-Flagge, kandidat.sh SPRUNG — seit 19.11. an JEDER Station IN der Sitzung, nie erst nach ihr), keine Liste
+#   beginnt, solange jemand wartet; ist er fort, fällt die Flagge und die Sitzung misst weiter (grenze_pruefen); danach weiter (4).
+# BUCHUNG JE STATION (19.11.): kandidat.sh pusht jede geurteilte Station an ihrer Grenze („GEPUSHT … 1 Station(en)“) — der Zähler der
+#   Runde steigt in der Sitzung, ein Weichen oder eine Verdrängung verliert höchstens die eben begonnene Station.
 # Beweis: `bash landung-dienst.sh --selbsttest` (Sandkasten mit eigenem origin: main · koordination · punkte-maschine).
 D=$(cd "$(dirname "$0")" && pwd)
 if [ -f "$D/gemein.sh" ]; then . "$D/gemein.sh"; else . "$D/../dienst/gemein.sh"; fi
@@ -118,6 +121,31 @@ liste_rot() {
     touch "$m"
     runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" --geraet "$GERAET" --grund "LISTE ROT: $1" >>"$L"
 }
+# grenze_pruefen — je Takt der Fahrt: die Grenz-Flagge (kandidat.sh SPRUNG, gelesen an JEDER Stations-Grenze der Sitzung) folgt dem
+# Grund, solange er besteht. HALT bleibt bis zum Ende der Fahrt. WEICHT nur, solange jemand wartet (DER BEFUND 19.11.: um 08:35:22
+# wartete omen-los-main, um 08:45 war er fort — die Flagge lag bis 10:33 noch, der Puls nannte ihn weiter, weil hier nach dem ersten
+# `touch` nie wieder geprüft wurde); ist keiner mehr da, fällt die Flagge, WEICHT_VOR wird leer, die Sitzung misst weiter.
+grenze_pruefen() {
+    local w
+    [ "$grund" = halt ] && return 0
+    if [ -f "$S/landung.halt" ]; then
+        grund=halt WEICHT_VOR=
+        touch "$GRENZE"
+        log "HALT: landung.halt liegt — die Liste endet an der nächsten Stations-Grenze und setzt dort wieder an"
+        return 0
+    fi
+    w=$(warter)
+    if [ -n "$w" ]; then
+        [ "$grund" = weicht ] && [ "$w" = "$WEICHT_VOR" ] || log "WEICHT: am Schloss wartet $w — die Karte geht an der nächsten Stations-Grenze frei"
+        grund=weicht WEICHT_VOR=$w
+        touch "$GRENZE"
+    elif [ "$grund" = weicht ]; then
+        rm -f "$GRENZE"
+        log "WEITER: $WEICHT_VOR wartet nicht mehr — die Grenz-Flagge fällt, die Sitzung misst weiter"
+        grund= WEICHT_VOR=
+    fi
+    return 0
+}
 # liste_fahren <K> <NAME> <REST> <r> <BASIS> <GESAMT> — EINE Fahrt über kandidat.sh, je Station eine Sitzung, je gepushte Station der
 # Stand in zug/runde.txt; 0 durch · 2 GEWICHEN (ein Lauf wartete am Schloss; BEHALTEN = gepushte Stationen) · 3 GEHALTEN (landung.halt).
 # Eine Landung ändert hier nichts: die Liste fährt am Kopf der Runde zu Ende (DAS GESETZ DER RUNDE).
@@ -148,25 +176,14 @@ liste_fahren() {
             PROG_PID=$!
         fi
         if [ $((t % 4)) = 0 ] && ! kill -0 "${ALARM_PID:-999999}" 2>/dev/null; then runde_bg alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" & ALARM_PID=$!; fi
-        [ -f "$GRENZE" ] && continue
-        if [ -f "$S/landung.halt" ]; then
-            grund=halt
-            touch "$GRENZE"
-            log "HALT: landung.halt liegt — die Liste endet nach der laufenden Station und setzt dort wieder an"
-            continue
-        fi
-        WEICHT_VOR=$(warter)
-        if [ -n "$WEICHT_VOR" ]; then
-            grund=weicht
-            touch "$GRENZE"
-            log "WEICHT: am Schloss wartet $WEICHT_VOR — die Karte geht an der nächsten Stations-Grenze frei"
-            continue
-        fi
+        grenze_pruefen
     done
     wait $kp
     wait ${PROG_PID:-} ${ALARM_PID:-} 2>/dev/null # die Schreiber im Hintergrund zuerst: der Stand danach ist der letzte
     rm -f "$GRENZE"
     BEHALTEN=$(gepusht "$l0" "$NAME")
+    # endete die Liste an der Flagge, deren Wartender inzwischen fort ist, ist sie nicht durch: dieselbe Station im nächsten Takt
+    [ -z "$grund" ] && tail -n +$((l0 + 1)) "$KETTE_LOG" 2>/dev/null | grep -q " $NAME SPRUNG" && grund=weicht WEICHT_VOR=${WEICHT_VOR:-ein Wartender, der inzwischen fort ist}
     case "$grund" in
         weicht) log "ABGEBROCHEN Runde $RN ${K:0:8}: $WEICHT_VOR wartete am Schloss — BEHALTEN $BEHALTEN Station(en), der Rest folgt an derselben Station"; return 2 ;;
         halt) return 3 ;;
@@ -322,6 +339,9 @@ runde_takt() {
 # n  die ECHTE Tafel des koordination-Kopfs durch die ganze Kette (kein argv über 30 000 Zeichen, Liste ≥ Quelle − gebucht) ·
 #    o  bricht die Listen-Kette, ist es EIN Alarm „LISTE ROT“, die Zeile bleibt · p  „laeuft 0/0 … liste |“ baut sich im ersten Takt neu,
 #    mit Notiz in zug/runde.txt. Mutanten dazu: liste-als-argument · leere-liste-laeuft
+# r  Grenze und Buchung je STATION in der Sitzung (das echte kandidat.sh): gepusht, während die Sitzung misst; die Flagge beendet sie an
+#    der nächsten Stations-Grenze, nie erst nach der Sitzung · s  der Wartende kommt und geht → die Flagge fällt, der Zähler steigt, der
+#    Puls nennt ihn nicht mehr. Mutanten dazu: bucht-am-ende · flagge-bleibt
 # j  die Platte unter PLATTE_UNTEN: EIN Alarm mit GB, Station und Kopf (Koordinator 19.11. 02:35), nicht doppelt
 # Mutanten (je eine Regel alt): sprung (der Kopf ist der jüngste main, wie bis 19.11.) · von-vorn (Fortsetzung blind: die ganze Liste) ·
 #    volle-liste (der Richter nimmt jede Station der Liste) · tafel-reihe (die Reihe der Tafel) · still (kein Alarm) · blind (kein Warter) ·
@@ -349,26 +369,28 @@ st_lauf() { # $1 = Mutante (leer = echt)
     echo "$k2" >"$X/kopf2"
     cat >"$KANDIDAT" <<'STUMMEL'
 #!/bin/bash
-# kandidat.sh-Stummel: $1 Name, $3 die Teile („;“), KOPF; die Grenz-Flagge vor jeder SITZUNG (wie kandidat.sh), je Station 0,4 s; was eine
-# Sitzung fertig misst, steht sofort im „Baum“ (gepusht, je Station), der Push-Zeile je Sitzung mit der Zahl ihrer Stationen
+# kandidat.sh-Stummel: $1 Name, $3 die Teile („;“), KOPF; die Grenz-Flagge vor jeder STATION (wie kandidat.sh seit 19.11.: Grenze je
+# Station in der Sitzung), je Station 0,4 s; jede geurteilte Station ist sofort gebucht (im „Baum“ gepusht, eine GEPUSHT-Zeile je Station).
+# warter_kommt=<i>: in Station i kommt ein Wartender und geht wieder (je 3 s), bevor die Station endet
 X=$(dirname "$0"); i=0; t=0
 LL=$3; [ "${LL#@}" != "$LL" ] && LL=$(<"${LL#@}") # die Liste reist als Datei, wie an kandidat.sh
 IFS=';' read -ra TT <<<"$LL"
 for T in "${TT[@]}"; do
-    [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date +%T) $1 SPRUNG nach $t Teilen" >>"$X/kette.log"; break; }
-    t=$((t + 1)); n=0
+    t=$((t + 1))
     echo "$(date +%T) ${KOPF:0:8} $1-$t Versuch 1 START ($T)" >>"$X/kette.log"
     [ -f "$X/nur_erste" ] && { touch "$X/s/landung.halt"; echo "$(date +%T) $1-$t GEPUSHT (Versuch 1) 0 Station(en)" >>"$X/kette.log"; break; } # der große Fall: bis zur ersten Sitzung
     for s in ${T//,/ }; do
+        [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date +%T) $1 SPRUNG an der Stations-Grenze vor $s (Teil $t)" >>"$X/kette.log"; exit 0; }
         i=$((i + 1))
         [ -f "$X/tod_in" ] && [ "$(cat "$X/tod_in")" = "$i" ] && { rm -f "$X/tod_in"; sleep 2; kill -9 $PPID; exit 9; }
+        [ -f "$X/warter_kommt" ] && [ "$(cat "$X/warter_kommt")" = "$i" ] && { echo macher-kommt-und-geht >"$X/warter"; sleep 3; rm -f "$X/warter"; sleep 3; }
         sleep 0.4
-        echo "$KOPF:$s" >>"$X/gepusht"; n=$((n + 1))
+        echo "$KOPF:$s" >>"$X/gepusht"
+        echo "$(date +%T) $1-$t GEPUSHT (Versuch 1) 1 Station(en)" >>"$X/kette.log"
         [ -f "$X/warter_nach" ] && [ "$(cat "$X/warter_nach")" = "$i" ] && echo macher-hand >"$X/warter"
         [ -f "$X/halt_nach" ] && [ "$(cat "$X/halt_nach")" = "$i" ] && touch "$X/s/landung.halt"
         [ -f "$X/landung_nach" ] && [ "$(cat "$X/landung_nach")" = "$i" ] && cp "$X/kopf2" "$X/main"
     done
-    echo "$(date +%T) $1-$t GEPUSHT (Versuch 1) $n Station(en)" >>"$X/kette.log"
 done
 STUMMEL
     # die Lauf-Tafel: je Station ein Lauf mit Deckel 100 s, s7+s8 ein Zwilling (100 s); das Budget 250 s → Sitzungen zu zwei Läufen
@@ -408,6 +430,8 @@ STUMMEL
         liste-als-argument) liste_datei() { echo "$2"; } ;; # die alte Regel: die Liste reist als EIN Argument
         leere-liste-laeuft) liste_rot() { :; } ;; # die alte Regel: eine leere Liste ist still
         je-station) teile_von() { echo "$1" | tr ',' ';'; } ;; # die alte Regel: je Station eine eigene Sitzung
+        bucht-am-ende) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^  while kill -0 \$LP 2>/dev/null; do$|  while false; do|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: die Sitzung bucht erst an ihrem Ende, die Flagge wirkt nur zwischen Sitzungen
+        flagge-bleibt) grenze_pruefen() { [ -f "$GRENZE" ] && return 0; if [ -f "$S/landung.halt" ]; then grund=halt; touch "$GRENZE"; return 0; fi; WEICHT_VOR=$(warter); [ -n "$WEICHT_VOR" ] && { grund=weicht; touch "$GRENZE"; }; return 0; } ;; # die alte Regel: die Flagge bleibt liegen
         volle-liste) richte_runde() { local s; for s in $(echo "$3" | tr ',|' '  '); do bash "$RICHTER" "$GERAET" --fall "$s" "$2" "$1" >>"$L" 2>&1; done; } ;;
         tafel-reihe) runde() { if [ "$1" = reihe ]; then echo "$4|"; else node "$RUNDE_CJS" "$@" 2>>"$L"; fi; } ;;
         still) runde_alarm() { :; }; platte_alarm() { :; } ;; # kein Alarm, weder Fortschritt noch Platte
@@ -544,6 +568,10 @@ if (was === "lauf") {
     const m = lies(), vn = path.join(X, "verdr_nach");
     let i = 0;
     for (const s of process.env.NUR.split(",")) {
+        // der Fall r: je Station 4 s (eine Sitzung, an deren Grenzen kandidat.sh wacht); grenze_nach=<n> legt die Flagge vor der n-ten
+        if (fs.existsSync(path.join(X, "langsam"))) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 4000);
+        const gn = path.join(X, "grenze_nach");
+        if (fs.existsSync(gn) && Number(fs.readFileSync(gn, "utf8")) === i + 1) fs.writeFileSync(path.join(X, "grenze"), "");
         if (fs.existsSync(vn) && Number(fs.readFileSync(vn, "utf8")) === i) {
             fs.rmSync(vn);
             fs.appendFileSync(path.join(X, "dienst.log"), "x gpu-lauf omen-punkte-gtx-sitzung VERDRÄNGT 1/3\n");
@@ -561,7 +589,7 @@ ATTRAPPE
     # das Gesetz der Roh-Bilder (6b): a gebucht GRÜN, misst GRÜN (Urteil hält) → Bild in die Ablage; b gebucht ROT, misst GRÜN (Beweis-Bild) → bleibt
     echo '{"je":{"x":{"stationen":[{"id":"a","geraet":"gtx","gruen":true,"sha":"x"},{"id":"b","geraet":"gtx","gruen":false,"sha":"x"}]}}}' >"$KT/kpm/meisterkarte-quelle/punkte/stand.json"
     KANDIDAT_ABLAGE=$KT/ablage KT_X=$KT KOPF=$k0 KANDIDAT_N=$KT/n KANDIDAT_PM=$KT/kpm KANDIDAT_M=$KT/km KANDIDAT_H=$KT/hook.log KANDIDAT_D=$KT/dienst.log \
-        KANDIDAT_SCHLOSS=$KT/schloss.sh KANDIDAT_SCHLAF=0 RUNDE_CJS=$RUNDE_CJS bash "$ke" kt x "a,b,c,d;e" >/dev/null 2>&1
+        KANDIDAT_SCHLOSS=$KT/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 RUNDE_CJS=$RUNDE_CJS bash "$ke" kt x "a,b,c,d;e" >/dev/null 2>&1
     f1=$(paste -sd' ' "$KT/laeufe.log" 2>/dev/null)
     f2=$(head -n 1 "$KT/push.log" 2>/dev/null)
     f3=$(grep -c "kt-1 GEPUSHT (Versuch 1) 2 Station(en) — BEHALTEN je Station, der Rest folgt: c,d" "$KT/n/kette-0711.log" 2>/dev/null)
@@ -572,6 +600,22 @@ ATTRAPPE
     if [ -f "$KT/ablage/${k0:0:8}-gtx/a-bild.png" ] && [ ! -f "$rd/a-bild.png" ] && [ -f "$rd/a-bild.png.sha256" ] && [ -f "$rd/b-bild.png" ]; then
         echo "OK m  Roh-Bilder der OMEN: a hält GRÜN — Bild in der Ablage am Gerät, nur a-bild.png.sha256 reist; b wechselt ROT → GRÜN — das Beweis-Bild reist"
     else echo "ROT m  Roh-Bilder: Ablage a $([ -f "$KT/ablage/${k0:0:8}-gtx/a-bild.png" ] && echo ja || echo nein) (Soll ja), im Baum a $([ -f "$rd/a-bild.png" ] && echo ja || echo nein) (Soll nein), Prüfsumme a $([ -f "$rd/a-bild.png.sha256" ] && echo ja || echo nein), b $([ -f "$rd/b-bild.png" ] && echo ja || echo nein) (Soll ja)"; fi
+    # r — GRENZE UND BUCHUNG JE STATION IN DER SITZUNG (Koordinator 19.11.; Befund: 252 Stationen in EINER Sitzung, 2 h 20 min nichts
+    # gebucht): das ECHTE kandidat.sh, EINE Sitzung „a,b,c,d,e“, je Station 4 s. a ist gepusht, während die Sitzung noch misst; vor b
+    # legt der Dienst die Grenz-Flagge — die Sitzung endet an DIESER Grenze (c nie gemessen), b ist gepusht, die Liste endet (SPRUNG)
+    local K2=$X/kt2 r1 r2 r3 r4
+    mkdir -p "$K2/n" "$K2/kpm/meisterkarte-quelle/punkte/messung" "$K2/km"
+    : >"$K2/hook.log"; : >"$K2/dienst.log"; : >"$K2/n/pm-stand.cjs"; : >"$K2/n/zeile-erledigt.cjs"; touch "$K2/langsam"; echo 2 >"$K2/grenze_nach"
+    cp "$KT/schloss.sh" "$K2/schloss.sh"; cp "$KT/n/punkte-offen.cjs" "$K2/n/punkte-offen.cjs"
+    KANDIDAT_ABLAGE=$K2/ablage KT_X=$K2 KOPF=$k0 KANDIDAT_N=$K2/n KANDIDAT_PM=$K2/kpm KANDIDAT_M=$K2/km KANDIDAT_H=$K2/hook.log KANDIDAT_D=$K2/dienst.log \
+        KANDIDAT_SCHLOSS=$K2/schloss.sh KANDIDAT_SCHLAF=0 KANDIDAT_TAKT=1 SPRUNG=$K2/grenze RUNDE_CJS=$RUNDE_CJS bash "$ke" kt2 x "a,b,c,d,e" >/dev/null 2>&1
+    r1=$(paste -sd' ' "$K2/push.log" 2>/dev/null)
+    r2=$(node -e 'console.log(Object.keys(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).je).sort().join(","))' "$(cygpath -m "$K2/kpm/meisterkarte-quelle/punkte/messung/${k0:0:8}-gtx.json")" 2>/dev/null)
+    r3=$(grep -c "kt2-1 GEPUSHT (Versuch 1) 1 Station(en)" "$K2/n/kette-0711.log" 2>/dev/null)
+    r4=$(grep -c "kt2-1 GRENZE: die Grenz-Flagge des Dienstes liegt\|kt2 SPRUNG" "$K2/n/kette-0711.log" 2>/dev/null)
+    if [ "$r1" = "a a,b" ] && [ "$r2" = "a,b" ] && [ "$r3" = 2 ] && [ "$r4" = 2 ] && [ "$(wc -l <"$K2/laeufe.log")" = 1 ]; then
+        echo "OK r  Grenze und Buchung je Station in der Sitzung: a gepusht, während die Sitzung maß; die Flagge vor b beendete sie an der Grenze nach b (c nie gemessen), Pushes „$r1“, die Liste endete"
+    else echo "ROT r  je Station: Pushes „$r1“ (Soll „a a,b“), gemessen „$r2“ (Soll a,b), GEPUSHT-Zeilen je Station $r3 (Soll 2), GRENZE+SPRUNG $r4 (Soll 2), Sitzungen $(wc -l <"$K2/laeufe.log" 2>/dev/null) (Soll 1)"; fi
     # g — die Baum-Sperre (14.11.)
     BAUM_WARTET=$X/wartet
     mkdir -p "$BAUM_WARTET"
@@ -683,9 +727,32 @@ ATTRAPPE
     if [ "$rq" = 5 ] && [ "$f6" = 1 ] && [ "$(echo "$e1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)" = 8 ]; then
         echo "OK q  „durch 0/0 … liste |“: runde.cjs durch ohne Station verweigert (Exit 5); der erste Takt setzte die Zeile zurück auf offen (Notiz) und baute die Liste neu (8)"
     else echo "ROT q  durch 0/0: runde durch ohne Station Exit $rq (Soll 5), Notiz $f6 (Soll 1), Zeile „$(echo "$e1" | cut -c1-40) … $(echo "$e1" | sed 's/.* liste //' | cut -c1-60)“ (Soll Liste mit 8)"; fi
+    # s — DER WARTENDE KOMMT UND GEHT → DER ZÄHLER STEIGT (Koordinator 19.11.; Befund 08:35–10:33: omen-los-main wartete 10 min, die
+    # Flagge lag 2 h, der Puls nannte ihn noch): Runde 7 an einem neuen Kopf, in Station 3 kommt ein Macher ans Schloss und geht wieder,
+    # bevor die Station endet — die Flagge fällt, die Sitzung misst weiter: in DIESEM Takt 8 von 8, „laeuft k/8“ steigt in zug/runde.txt,
+    # kein Puls nach dem Gehen nennt ihn. Mutante flagge-bleibt (die Flagge bleibt liegen) → ROT
+    local k3 s0 s1 s2 s3
+    git -C "$X/klon" $A0 commit -q --allow-empty -m "main 6" && git -C "$X/klon" push -q origin main
+    k3=$(git -C "$X/klon" rev-parse HEAD)
+    geraet_durch gtx "$k2" "$k3"
+    geraet_durch radeon "$k2" "$k3" >/dev/null # Runde 7 am k3
+    echo "$k3" >"$X/main"
+    lauf_zahl() { git -C "$X/klon" fetch -q origin +refs/heads/koordination:refs/t/k && git -C "$X/klon" log -p --format= refs/t/k -- zug/runde.txt | grep -c "^+gtx laeuft [1-7]/8 "; }
+    s0=$(lauf_zahl)
+    echo 3 >"$X/warter_kommt"
+    j=$(wc -l <"$L")
+    runde_takt
+    rm -f "$X/warter_kommt" "$X/warter"
+    e1=$(feld gtx)
+    s1=$(lauf_zahl)
+    s2=$(tail -n +$((j + 1)) "$L" | grep -c "WEICHT: am Schloss wartet macher-kommt-und-geht\|WEITER: macher-kommt-und-geht wartet nicht mehr")
+    s3=$(tail -n +$((j + 1)) "$L" | sed -n '/WEITER: macher-kommt-und-geht/,$p' | grep "^PULS" | grep -c "WEICHT vor")
+    if echo "$e1" | grep -q "^gtx durch 8/8 " && [ "$(am "$k3")" = 8 ] && [ "$(eindeutig "$k3")" = 8 ] && [ "$s1" -gt "$s0" ] && [ "$s2" = 2 ] && [ "$s3" = 0 ]; then
+        echo "OK s  Wartender kommt und geht in Station 3: WEICHT, dann WEITER (die Flagge fiel), dieselbe Sitzung maß 8 von 8 in einem Takt, der Zähler stieg ($((s1 - s0))× laeuft k/8), kein Puls nannte ihn nach dem Gehen"
+    else echo "ROT s  kommt und geht: Zeile „$(echo "$e1" | cut -c1-24)“ (Soll durch 8/8), am Kopf $(am "$k3") (Soll 8), Zähler-Stände $s0 → $s1 (Soll mehr), WEICHT+WEITER $s2 (Soll 2), Puls nach dem Gehen mit „WEICHT vor“ $s3 (Soll 0)"; fi
     command rm -rf "$X"
 }
-MUTANTEN=${ST_MUTANTEN-"liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
+MUTANTEN=${ST_MUTANTEN-"bucht-am-ende flagge-bleibt liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
 selbsttest() {
     local O m r rot=0 mr=0 mz=0
     O=$(mktemp -d)
@@ -693,14 +760,14 @@ selbsttest() {
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 18 ] || rot=1
+    [ "$(grep -c "^OK" "$O/echt")" = 20 ] || rot=1
     for m in $MUTANTEN; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 18 Fälle grün (a–q), $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 20 Fälle grün (a–s), $mr/$mz Mutanten ROT"; return 0; fi
     echo "landung-dienst SELBSTTEST ROT: $(grep -c "^OK" "$O/echt" 2>/dev/null) Fälle OK, $mr/$mz Mutanten ROT"
     return 1
 }
