@@ -1021,13 +1021,13 @@
     if(P.flaechig){ const a=w/2, b=h/2, c=t/2, R=[];   // FLÄCHEN-STUFE: der Flügel in den Schichten der Stufe 0 — der Rahmen als Ring (vorn, hinten, die Außenkante), das Kreuz und die Scheibe als Flächen auf ihren Tiefen (die Scheibe liegt auf der einen Seite vor dem Kreuz, auf der anderen dahinter; durch sie sieht man hindurch wie nah) — 84 → 36 Dreiecke, keine Laibung und keine Stirn unter 3 cm
       for(const s of [1,-1]){ R.push(_fl(-a,-a+sw,-b,b,s*c,s),_fl(a-sw,a,-b,b,s*c,s),_fl(-a+sw,a-sw,b-sw,b,s*c,s),_fl(-a+sw,a-sw,-b,-b+sw,s*c,s), _fl(-0.02,0.02,-b+sw,b-sw,s*0.0225,s),_fl(-a+sw,a-sw,-0.02,0.02,s*0.0225,s));
         R.push([[[s*a,-b,-c],[s*a,-b,c],[s*a,b,c],[s*a,b,-c]],[s,0,0]], [[[-a,s*b,-c],[a,s*b,-c],[a,s*b,c],[-a,s*b,c]],[0,s,0]]); }
-      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0005,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0245,-1)],!horiz,0,0,-0.012); return sg; }
+      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0125,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0125,-1)],!horiz,0,0,0); return sg; }   // DIE SCHEIBE STEHT MITTIG IN DER TIEFE DES KREUZES (licht-eine-skala): ±0,0125 in ±0,0225 — das Kreuz deckt sie von BEIDEN Seiten; bis hier lag sie um −0,012 (bis −0,0245), auf einer Seite 2 mm VOR dem Kreuz: das wache Glas zeichnete dort über die Sprosse (Dorf Nacht: eine flache Scheibe ohne Kreuz)
     if(horiz){ beam(sg,-w/2+sw/2,0,0,sw,h,t,role); beam(sg,w/2-sw/2,0,0,sw,h,t,role);
       beam(sg,0,h/2-sw/2,0,w,sw,t,role); beam(sg,0,-h/2+sw/2,0,w,sw,t,role);
-      beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,-0.012,w-2*sw,h-2*sw,0.025,gl);
+      beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,0,w-2*sw,h-2*sw,0.025,gl);
     } else { beam(sg,0,0,-w/2+sw/2,t,h,sw,role); beam(sg,0,0,w/2-sw/2,t,h,sw,role);
       beam(sg,0,h/2-sw/2,0,t,sw,w,role); beam(sg,0,-h/2+sw/2,0,t,sw,w,role);
-      beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,-0.012,0,0,0.025,h-2*sw,w-2*sw,gl); }
+      beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,0,0,0,0.025,h-2*sw,w-2*sw,gl); }
     return sg; }
   // ════ DAS BOGEN-GESETZ (K66): Keilsteine im VERBAND — jede Stoßfuge radial zur Mitte ihrer Kurve, jeder Stein ein Keil zwischen zwei Fugen
   //    (gleiche Bogenlänge, N ungerade: der Schlussstein im Scheitel, 2 cm vorstehend), die Kämpfersteine mit ihrem Lager auf dem Kämpfer
