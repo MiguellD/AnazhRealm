@@ -266,10 +266,12 @@ class AnazhRealm_studio_stoff {
         if (
             ecken != null &&
             (typeof ecken !== "object" ||
-                Object.entries(ecken).some(([k, v]) => (k !== "ton" && k !== "jahr") || typeof v !== "boolean"))
+                Object.entries(ecken).some(
+                    ([k, v]) => (k !== "ton" && k !== "jahr" && k !== "verband" && k !== "lage") || typeof v !== "boolean"
+                ))
         )
             throw this._stoffBruch(
-                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr } aus Wahrheitswerten, nie ` +
+                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr, verband, lage } aus Wahrheitswerten, nie ` +
                     (typeof ecken === "object"
                         ? "{ " +
                           Object.entries(ecken)
@@ -281,6 +283,11 @@ class AnazhRealm_studio_stoff {
         const ton = !!ecken && ecken.ton === true;
         const jahr = !!ecken && ecken.jahr === true;
         const satz = !!(mp && mp.satzRegler === true);
+        // `ecken.verband` (einheit-relief): die gefaltete Stufe nennt die Zeile des Verband-Gesetzes je Ecke (`aVerband`) und
+        // `ecken.lage` ihre Lage in der Wand (`aLage`) — außerhalb des Satzes liest der Stoff sie dort, wie der Satz in seinem
+        // `aRegler` (unten am Verband); im Satz zählt seine Stelle, nie diese
+        const eckVerband = satz !== true && !!ecken && ecken.verband === true;
+        const eckLage = eckVerband && ecken.lage === true;
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -324,7 +331,8 @@ class AnazhRealm_studio_stoff {
             (satz === true ? "|satz" : "") +
             (_krone ? "|krone" : "") +
             (ton ? "|ton" : "") +
-            (jahr ? "|jahr" : "");
+            (jahr ? "|jahr" : "") +
+            (eckVerband ? (eckLage ? "|eckVb+lage" : "|eckVb") : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -416,8 +424,8 @@ class AnazhRealm_studio_stoff {
         };
         // DAS MIKRO-RELIEF DER FACETTE (unten, `_mikroGestalt`): der facettierte Studio-Stein, eine Weiche des Baus
         const mikro = flat && kind === "unknown";
-        // DER VERBAND (unten, `_verbandStoff`): der matte Bau-Stoff — im Satz jeder (die Ecke nennt ihre Zeile, 0 = keine), sonst
-        // der Stoff, dessen Gesetzbuch ihm eine Zeile gab; nie die Facette, der Stein-Rahmen, das Gewebe, das Unbeleuchtete
+        // DER VERBAND (unten, `_verbandStoff`): der matte Bau-Stoff — im Satz und wo die Ecke ihre Zeile trägt jeder (0 = keine),
+        // sonst der Stoff, dessen Gesetzbuch ihm eine Zeile gab; nie die Facette, der Stein-Rahmen, das Gewebe, das Unbeleuchtete
         const verband =
             kind === "unknown" &&
             !mikro &&
@@ -426,7 +434,7 @@ class AnazhRealm_studio_stoff {
             !!mp &&
             !mp.webe &&
             typeof mp.stein !== "string" &&
-            (satz === true ? mp.seh === "stoff" : mp.verband > 0);
+            (satz === true || eckVerband ? mp.seh === "stoff" : mp.verband > 0);
         // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
         // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
         // `_foundryBuildGroup` garantiert das color-Attribut.
@@ -791,20 +799,26 @@ class AnazhRealm_studio_stoff {
         }
         // DER VERBAND (w28-haus-stoff, fachwerk VERBAND_GESETZ): Stein, Fuge und Ton der Fläche als Funktion ihrer Lage in der Welt
         // (`_verbandStoff`) — im Satz die Nummer der Zeile je Ecke (die vierte Stelle von `aRegler`: Dach, Sockel und Wand EINES
-        // Stoffs tragen je ihren), sonst die des Stoffs als Stoff-Wert. Der EINE Satz-Stoff der Klasse webt ihn für jedes Haus.
+        // Stoffs tragen je ihren), außerhalb des Satzes die der Ecke (`aVerband` der gefalteten Stufe, `ecken.verband`) oder die
+        // des Stoffs als Stoff-Wert. Der EINE Satz-Stoff der Klasse webt ihn für jedes Haus.
         if (verband) {
             const nr =
                 satz === true
                     ? TSL.attribute("aRegler", "vec4").w.mul(127.0)
-                    : this._stoffWert(TSL, "userData.stoffWerte.verband");
-            // die Lage der Ecke in ihrer Wand (im Satz: die vierten Stellen von Farbe und Glut, `BAU_SATZ_ATTR`) — EIN Varying
+                    : eckVerband
+                      ? TSL.attribute("aVerband", "float")
+                      : this._stoffWert(TSL, "userData.stoffWerte.verband");
+            // die Lage der Ecke in ihrer Wand (im Satz: die vierten Stellen von Farbe und Glut, `BAU_SATZ_ATTR`; sonst `aLage`)
+            // — EIN Varying
             const ecke =
                 satz === true
                     ? TSL.varying(
                           TSL.vec2(TSL.attribute("color", "vec4").w, TSL.attribute("aGlut", "vec4").w),
                           "vWandLage"
                       )
-                    : null;
+                    : eckLage
+                      ? TSL.varying(TSL.attribute("aLage", "vec2"), "vWandLage")
+                      : null;
             mat.colorNode = TSL.vec4(mat.colorNode.rgb.mul(this._verbandStoff(TSL, nr, ecke)), mat.colorNode.a);
         }
         // DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ): Querschnitt, Adern und Narbe je Pixel des Schirms, fern die Wiese als
@@ -926,7 +940,7 @@ class AnazhRealm_studio_stoff {
             // Fels zuerst, trug die Wand seines (headless, Start an der Genesis). Die Folge der Bauten verschob w13-kreatur-blick.
             mikro ? "mikro" : "",
             // der Verband webt in colorNode (`_verbandStoff`): sein Zweig steht in der Signatur
-            verband ? "verband" : "",
+            verband ? (eckVerband ? (eckLage ? "verband:ecke+lage" : "verband:ecke") : "verband") : "",
             // DIE KRONE (K68-N1, `_laubStoffNormale`) schreibt Normale und Empfangs-Ort: ein Klingen-Laub mit Krone (Baum, Strauch)
             // und eines ohne (Farn, Blüte, Schilf) bauen eigene Graphen
             _krone ? "krone" : "",
