@@ -180,7 +180,7 @@ function selbsttest() {
             brand: {
                 start: true,
                 ...{ zellen: [1, 1, 2, 3, 2, 1], einheiten: [9, 9, 30, 41, 20, 12], brennt: 0, asche: 4, mit: 0.9, gegen: 0.03, ohneWind: 0.04 },
-                ...{ lebVor: 0.62, lebNach: 0.32, glut: 1, licht: true, nachher: simPh(0, 60) },
+                ...{ lebVor: 0.62, lebNach: 0.32, ovVor: 0, ovNach: 0, glut: 1, licht: true, nachher: simPh(0, 60) },
             },
             // BÜHNE: Befund des Selbsttests, kein gesetzter Ort
             wasser: { ort: [-396, -878], chunks: 9, takte: [1, 1], gehalten: [0, 0], bewegt: [0, 0] },
@@ -545,6 +545,9 @@ function selbsttest() {
         ["die Front läuft gegen den Wind", ["simWecken.brand.gegen=", 0.3], /FRONT-GEGEN: .* 0.3 m\/s/],
         ["ohne Wind läuft die Front", ["simWecken.brand.ohneWind=", 0.9], /BRAND-BLIND: .* 0.9 m\/s/],
         ["der Brand hinterlässt keine Asche", ["simWecken.brand.lebNach=", 0.62], /BRAND-ASCHE: 4 Aschen, lebendig am Herd 0.62 → 0.62/],
+        ["das Overlay fällt, die Asche nicht (der Fraß am Herd ist keine Asche)", ["simWecken.brand", { ovNach: -0.3 }], /BRAND-ASCHE: .*Leben-Overlay 0 → -0.3, die Asche senkt 0,/],
+        // die Gegen-Probe (Vorprüfung 00520c2e, CI): das Overlay stieg um 0,275, die Asche senkte 0,3 — grün
+        ["das Overlay steigt, während die Asche senkt (CI 00520c2e)", ["simWecken.brand", { lebVor: 0.75, lebNach: 0.725, ovVor: -0.089, ovNach: 0.186 }], null],
         ["der Brand leuchtet nicht", ["simWecken.brand.licht=", false], /BRAND-LESER: glut am Herd \+1, Leuchtquelle fehlt/],
         ["der Brand schläft nicht", ["simWecken.brand.nachher=", simPh(2, 60, "brand")], /BRAND-RUHE: .* 120 Einheiten/],
         [
@@ -2936,14 +2939,16 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         const [glut, licht] = [+(am().glut - glut0).toFixed(3), r._leuchtQuellen(MESS.x, pm.y, MESS.z, 64).some((q) => q.quelle === "brand")];
                         r._brandRest = st.brandFeld.clear(); // von Hand gelöscht: auch sein Rest (der Herd ohne Wind schreibt keine Asche in den nächsten)
                         st.worldMeta.taten.length = n0;
-                        const lebVor = +am().lebendig.toFixed(3);
-                        const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, lebVor, glut, licht }));
+                        // lebendig am Herd und das Leben-Overlay, das auraAt dort mitträgt (der Bestand frisst und stirbt im Fenster)
+                        const ovAm = () => +r._lifeOverlayAt(MESS.x, MESS.z).toFixed(3);
+                        const [lebVor, ovVor] = [+am().lebendig.toFixed(3), ovAm()];
+                        const Z = (W.brand = Object.assign(await lauf(300), { ohneWind, lebVor, ovVor, glut, licht }));
                         delete r._feldFolgeSteht;
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
                         wort("rainy");
                         for (Z.regenS = 0; Z.regenS < 600 && r._brandLebt(); Z.regenS++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
-                        Object.assign(Z, { brennt: st.brandFeld.size, lebNach: +am().lebendig.toFixed(3), asche: st.worldMeta.taten.length - n0 });
+                        Object.assign(Z, { brennt: st.brandFeld.size, lebNach: +am().lebendig.toFixed(3), ovNach: ovAm(), asche: st.worldMeta.taten.length - n0 });
                         wort("sunny");
                         r._naesseTakt(1e6);
                         Z.nachher = await simPhase(60);
