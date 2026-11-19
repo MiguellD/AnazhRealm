@@ -879,6 +879,8 @@ jobs:
               # den GT auf dem Dorfweg und DAS DORF-LICHT DER GASSE: nachts >= 4 brennende Quellen mit Leib (_leuchtQuellen)
               # im Sichtkegel der Gasse, kein Grundriss dazwischen (gassenLicht), der Licht-Pool der Gasse traegt sie; der
               # Schein mit dunklem Zeitplan muss 0 zaehlen (Selbst-Test 16 und O: Selbst-Schein).
+              # Teil A (los-huelle): DIE HUELLE LIEST KEINE OEFFNUNG — Fluegel zu, Rahmen vierfach, Laeden an aendern weder
+              # Huelle noch Los je Same (Golden siedlung-lose.json); der Selbsttest nennt die Huelle vor dem Schnitt beim Namen.
               run: npm run gate:settlement
 
             - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)

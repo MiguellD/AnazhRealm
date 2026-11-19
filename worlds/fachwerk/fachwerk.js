@@ -223,14 +223,13 @@ function buildDorf(dp){
   let prims=0, nVoll=0, nProxy=0;
   for(const hp of plan.houses){
     { const st=stapelBau(Object.assign({},hp,{nur:MASSNUR}), LOD1F);                          // MASS-BUILD: Systemmaß in ~½ Zeit, Δext=0 bewiesen
-      const bx=new THREE.Box3().setFromObject(st.g);
+      const bx=FC.koerperHuelle(st.g);                                                           // DIE EINE Hülle (los-huelle): der Körper ohne die Teile der Öffnungen — dieselbe Box wie massBau, das Los der Welt
       const eB={x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y};
       st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); });
       let c=0; st.g.traverse(o=>{if(o.isMesh)c++;}); prims+=Math.max(60,(c*0.3)|0); nProxy++;
       dorfB.push({p:hp, lod:'chunk', dyn:false, kern:false, ext:eB, dims:st.H.dims, wandX:FC.wandXVon(st.H.solids), fp:fpVon(st.H), masse:masseVon(st),
         spawnL:{x:st.H.spawn.x, z:st.H.spawn.z}, hofGap:plan.norm.gap, meshes:[]}); } }       // HOF-GESETZ: Tür-Punkt + Parzellen-Spielraum wandern mit — das Haus-Wissen formt gleich den Hof
-  const ext=dorfB.map(B=>{ if(B.lod!=='voll') return B.ext;
-    const bx=new THREE.Box3().setFromObject(B.g); return {x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y}; });
+  const ext=dorfB.map(B=>B.ext);                                                              // das Los liest die EINE Hülle des Mass-Baus (oben) — bis los-huelle maß ein voll gebautes Haus seine eigene Box über den ganzen Bau (hier nie erreicht: dorfB trägt bis hierher nur Mass-Bauten)
   const hoehe=trasseAufWelt(dp), lay=dorfLayout(plan, ext, plan.seed, FC.hoeheAusRaster(hoehe));
   let ymax=0;
   { const N=plan.norm;                                                                        // REIHEN-SNAP-GESETZ wohnt im Kern (U6c, __fachwerkCore.reihenSnap) — buildDorf UND exportSettlement rufen DIESELBE Funktion; läuft VOR der Platzierung, damit Solids/OBB konsistent fließen
@@ -753,7 +752,7 @@ const LODNAME=['Editor · voll (live)','Ring A · Promotion (gebakt)','Chunk Stu
 function buildHausLOD(params, stufe){
   haus=null; solids=[]; doorList.length=0;
   const mass=stapelBau(Object.assign({},params,{nur:MASSNUR}), LOD1F);                       // MASS-BUILD liefert ext/dims — identisch zu buildDorf
-  const bx=new THREE.Box3().setFromObject(mass.g);
+  const bx=FC.koerperHuelle(mass.g);                                                          // DIE EINE Hülle (los-huelle), wie massBau
   const B={p:params, q:{phi:0,x:0,y:0,z:0,obb:{cx:0,cz:0}}, lod:'chunk', dyn:false,
            ext:{x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y}, dims:mass.H.dims, fp:fpVon(mass.H), masse:masseVon(mass),
            spawnL:{x:mass.H.spawn.x, z:mass.H.spawn.z}, hofGap:2.5, meshes:[]};              // Sonde zeigt den LÄNDLICHEN Hof (gap 2.5) — Stadt-gap 0.06 wäre korrekt hofleer

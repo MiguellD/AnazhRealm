@@ -745,6 +745,7 @@ class AnazhRealm_siedlung_ort {
         let mx = 0;
         let mz = 0;
         const haeuser = [];
+        const abgelehnt = [];
         for (;;) {
             // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot, auf dem Boden des Plans (K10), mit seinen
             // Wandlaternen (K66-2: `plan` + `si`)
@@ -760,6 +761,25 @@ class AnazhRealm_siedlung_ort {
                 this._dorfRateMessen(q);
                 break;
             }
+            // DER AKT ENDET (los-huelle): steht der Spieler im Grund JEDES offenen Slots, hebt der Akt sie nicht und wartet nicht —
+            // bis hier wartete sein Zug, bis der Spieler ginge, und ein Spieler, der stand, hielt das Versprechen des Akts ewig offen
+            // (gate:haus-welt W7, der zweite Akt am Anker des ersten: 900 s, an main dabd69bb wie am Kopf, sobald der Spieler in einem
+            // Los des zweiten Plans stand). Die Slots fallen BEIM NAMEN in die Rückgabe (`abgelehnt`), der Rufer liest sie; der
+            // Takt-Zug einer Zelle (`_tickAutoSettlement`) wartet weiter, bis der Spieler geht — er ist kein Versprechen.
+            if (q.spielerSperrt) {
+                for (; q.idx < plan.slots.length; q.idx++) {
+                    const sl = plan.slots[q.reihe[q.idx]];
+                    abgelehnt.push(
+                        `${sl.kultur || "?"}@${Math.round(origin.x + sl.x)}/${Math.round(origin.z + sl.z)}: der Spieler steht im Grund`
+                    );
+                    skipped++;
+                }
+                this.log(
+                    `SIEDLUNG: ${abgelehnt.length} Lose am Anker ${Math.round(origin.x)}/${Math.round(origin.z)} abgelehnt — der Spieler steht in ihrem Grund (${abgelehnt.slice(0, 3).join(" · ")})`,
+                    "WARN"
+                );
+                break;
+            }
             await new Promise((weiter) => requestAnimationFrame(weiter)); // der nächste Schritt nach dem Bild, das ihn zeigt
             if (this.state !== welt) break;
         }
@@ -773,6 +793,7 @@ class AnazhRealm_siedlung_ort {
             groesse: plan.groesse || null,
             mitte,
             haeuser,
+            abgelehnt,
         };
     }
 
@@ -2349,8 +2370,10 @@ class AnazhRealm_siedlung_ort {
         q.gangDran = !!q.gang;
         const pm = this.state.playerMesh;
         const M = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        q.spielerSperrt = false;
+        let warten = 0;
         for (
-            let warten = 0;
+            ;
             q.idx < q.plan.slots.length &&
             warten < q.plan.slots.length - q.idx &&
             (performance.now() < this._bauFrist("dorf") || neu.length === 0);
@@ -2377,6 +2400,9 @@ class AnazhRealm_siedlung_ort {
             const so = Object.assign({ plan: q.plan, si, gefallen: q.plan.gefallen }, q.so);
             neu.push(this._spawnSettlementSlot(sl, q.origin, f, so));
         }
+        // JEDER offene Slot wartet auf den Spieler (er steht in ihrem Grund): der Schritt hob nichts — der Akt liest es
+        // (`_spawnSettlementFromExport`), der Takt-Zug wartet weiter, bis er geht
+        q.spielerSperrt = neu.length === 0 && q.idx < q.plan.slots.length && warten >= q.plan.slots.length - q.idx;
         return neu;
     }
     // DIE GEMESSENE RATE DES ZUGS (w28-stadt-netz): Häuser je Sekunde der Wanduhr vom ersten Schritt eines Zugs bis zu seinem
