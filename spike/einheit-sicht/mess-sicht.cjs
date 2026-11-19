@@ -250,6 +250,15 @@ function flug(o) {
             }
         });
         const sz2 = r._sichtTiefeZahl();
+        // A GEGEN A: derselbe Flug noch einmal blind — der Boden des Rauschens (Wind, Schatten-Takt, zeitliche Auflösung) je Bild
+        // auf derselben Maske, gegen den ersten blinden Flug
+        await fahrt("blind", (i, u8) => {
+            const L = luma(u8),
+                { M, n } = maske[i];
+            let d = 0;
+            for (let p = 0; p < N; p++) if (M[p] && Math.abs(L[p] - blind[i][p]) > 8) d++;
+            aus.je[i].rauschen = n ? +(d / n).toFixed(5) : 0;
+        });
         const d = (a, b) => Object.fromEntries(Object.keys(b).map((k) => [k, b[k] - (a[k] || 0)]));
         aus.sicht = { blind: d(sz0, sz1), mit: d(sz1, sz2) };
         aus.schlimmst = schlimmst;
@@ -298,7 +307,7 @@ async function main() {
                 }
         // S1 am Dorf (beide Seiten, ein Boot) und S2 · S5 (der Flug in B)
         if (FLUG) {
-            for (const seite of ["A", "B"]) {
+            for (const seite of argv.includes("--nur-b") ? ["B"] : ["A", "B"]) {
                 await starte(seite, FLUG);
                 const a = await aufstellen(FLUG, "third");
                 const m = await evalRuf(`return (${messen.toString()})({ n: 60 });`, "mess-messen");
@@ -319,9 +328,12 @@ async function main() {
                 }
                 ergebnis.flug = { ort: FLUG, kamera: kam, ...f };
                 const ueber = f.je.filter((x) => x.anteil > 0.01).length;
+                // über dem Rauschen: ein Bild, in dem die Sicht mehr als 1 % der Maske über den Boden von A gegen A hinaus ändert
+                const ueberR = f.je.filter((x) => x.anteil - (x.rauschen || 0) > 0.01).length;
                 console.log(
                     `FLUG ${FLUG}/third: S2 Bild 0 ${(100 * f.je[0].anteil).toFixed(3)} % der ${f.je[0].maske} Masken-Pixel > 8/255 · S5 schlimmstes Bild ${f.schlimmst.i} ` +
-                        `${(100 * f.schlimmst.anteil).toFixed(3)} % · Bilder über 1 %: ${ueber} von ${f.je.length} · Sicht mit ${JSON.stringify(f.sicht.mit)}`
+                        `${(100 * f.schlimmst.anteil).toFixed(3)} % · Bilder über 1 %: ${ueber} von ${f.je.length} · über dem Rauschen: ${ueberR} · ` +
+                        `je Bild mit/Rauschen ${f.je.map((x) => `${x.i}:${(100 * x.anteil).toFixed(2)}/${(100 * (x.rauschen || 0)).toFixed(2)}`).join(" ")}`
                 );
                 schreib();
             }

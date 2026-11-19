@@ -226,3 +226,22 @@ Bau-Satz) — die Tafel nennt ihren verdeckten Anteil (Vegetation 11–18 %, Gel
 Abdruck (`node scripts/werkbank.cjs abdruck --gegen 986eff04e9`, headless): Genesis und Wiese in allen neun Domänen byte-gleich;
 am Dorf 4 Tier-Bestände anders (bär · fuchs · wesen · wolf) — derselbe Kopf gegen sich selbst (`--a-gegen-a`) zeigt am Dorf
 ebenfalls 1 Ding anders (Bewohner-Netz), der Dorf-Takt schwankt (eingeschwungen nach 360 gegen 442 Takten).
+
+### Die drei Prüfungen an S5 (Entscheid des Koordinators, 19.11. abends)
+
+1. **A gegen A** (derselbe Kopf, derselbe Flug, ein zweiter blinder Flug gegen den ersten auf derselben Maske — der Boden des
+   Rauschens je Bild, `rauschen` in `mess-sicht.cjs`): läuft — der Flug steht in der GPU-Schlange hinter dem CI-echt-Lauf (WIP 19.11. abends).
+2. **Schatten — die Kaskaden urteilen nie mit der Pyramide.** Die indirekten Züge werfen keinen Schatten
+   (`stamm/bild-tiefe.js:202` `castShadow = false`) und ruhen in jedem Haken außer dem Hauptbild (`stamm/bild-wahl.js:43`
+   `_sichtTiefeRuht`); `verdeckt` rechnet nur im Hauptbild (`stamm/bild-wahl.js:48` `_sichtTiefeRechnen`, der Bruch
+   `stamm/bild-sicht.js:161`); der Satz geht nur im Hauptbild in die Sicht (`stamm/siedlung-bauten.js:2947`, `haupt`). Den im
+   Hauptbild ruhenden Satz stellt JEDER Haken zuerst zurück (`stamm/bild-wahl.js:16` → `:133`, das geteilte `S.ab` aus
+   `_kaskadenSchmier`, `stamm/bild-schatten.js:642`) — die Kaskade zeichnet den vollen Satz mit ihrem eigenen Abschnitt. Die
+   Bündel: das Haupt-Urteil liest nur der Hauptpass (`stamm/siedlung-instanz.js:144` `_sichtHaupt`), jeder Schatten-Pass wählt
+   seine Werfer selbst. Ein Haufen, den das Auge nicht sieht, wirft also weiter.
+3. **Der späte Zug liegt vor allem Durchsichtigen.** Er trägt den Stoff seines Satzes (opak; ein durchsichtiger Satz geht nie in
+   die Sicht, `stamm/bild-tiefe.js:172`), steht damit in der OPAKEN Liste, und r184 zeichnet die opake Liste ganz vor
+   `_renderTransparents` (`vendor/three.webgpu.min.js`: `!0===this.opaque&&…this._renderObjects(…),!0===this.transparent&&…
+   this._renderTransparents(…)`). `ordnung` 9997 ordnet ihn nur INNERHALB der opaken Liste: nach allen opaken Körpern und dem
+   Auslöser (9996,5), vor Feld-March (9998) und Panorama (9999). Direkt hinter den frühen Zug kann er nicht: seine Argumente
+   schreibt erst der Bruch, und der kommt nach den opaken Verdeckern, deren Tiefe die späte Prüfung braucht.
