@@ -40,3 +40,17 @@ Epoche und Stand im Kern laufen daneben in der Cloud, weil die Leben-Welle ohne 
 
 Die Natur-Bänder mit dem Etikett „ungeprüft“ im Blatt `befund-natur.md` sind Gedächtnis, nicht nachgeschlagen; ein Soll, das an
 einem solchen Band hängt (S1 Anteil, S5 Tempo), wird VOR der Bau-Welle an einer Quelle geprüft — nicht danach.
+
+## H4 — Quellen-Prüfung vor der Bau-Welle (19.11., Blatt `befund-natur-quellen.md`; kein Soll bewegt sich)
+
+- S1 trägt: äsende Hirschkühe haben den Kopf zu 0,52–0,89 der Zeit unten (Laundré et al. 2001, Zahl aus einem Auszug der Suche). Das
+  Sichern reicht in der Natur bis 47,5 % statt der 5–20 % des Blatts — die Zeitpunkte des Sicherns bleiben je Tier zufällig (H1).
+- S5 trägt im offenen Land: Wolf im Mittel 2,42 m/s, heimwärts 2,78 m/s (Mech 1994); im Wald 1,05 m/s (Musiani et al. 1998). Die Bühne
+  ist offenes Land. Die Gangart Trab steht an keiner Primärquelle: ungeprüft, so benannt.
+- S2, das Maß: „Amplitude“ ist die einseitige Amplitude der Kopfhöhe am Gipfel der DFT (`kreatur-proben.cjs:1511`), also die halbe
+  Spanne Spitze–Spitze. Die Quelle nennt beim Pferd 9,1 cm Hub ohne Maß; als Spanne gelesen sind das 4,6 cm Amplitude, im Band.
+- S4: die Quelle ist strenger (Pferd 0,56–0,8 g in der Wende); für den Hirsch unbelegt. Das Soll ≤ 9,8 m/s² bleibt die Wand; meine
+  Setzung für den Bau: das Gesetz trägt 0,8 g als Grenze, die Wand liegt darüber.
+- Schritt → Trab: belegt ist Fr 0,35 am Pferd; die 0,5 des Kerns (`tetrapoda-core.js:1369–1389`) fand der Leser an keiner Quelle —
+  Fund-Zeile, kein Schnitt in dieser Welle ohne Gegen-Probe an S5.
+- Ungeprüft bleiben: Dauer und Abstand des Sicherns · Diagonal-Versatz des Wolfs · Abstand Kalb–Mutter · Fluchtdistanz und Fluchtform.
