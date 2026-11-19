@@ -340,10 +340,12 @@ class AnazhRealm_dirigent_ankunft {
         const moonGeo = new THREE.SphereGeometry(9, 16, 16);
         const moonMat = AnazhRealm._himmelImUnendlichen(
             new THREE.MeshBasicNodeMaterial({
-                color: 0xd0d4e0,
+                // die Scheibe des Vollmonds: ihre Leuchtdichte in der EINEN Skala (`HIMMEL.mondCd`), ADDIERT zum Himmel vor ihr
+                color: new THREE.Color(0xd0d4e0).multiplyScalar(AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX),
                 fog: false,
                 transparent: true,
-                opacity: 0.9,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
             })
         );
         const moonMesh = new THREE.Mesh(moonGeo, moonMat);
@@ -353,8 +355,6 @@ class AnazhRealm_dirigent_ankunft {
         this.state.moonMesh = moonMesh;
         this.log("Himmelskörper hinzugefügt (Sonne + Mond)", "INFO");
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
         directionalLight.position.set(1, 1, 1);
         directionalLight.castShadow = true;
@@ -447,14 +447,7 @@ class AnazhRealm_dirigent_ankunft {
         // ohne Rig 145 vs 219 — das Verhältnis der Realität (0,16–0,21).
         // Welle 6.G3 — Refs cachen für tickDayNight. Eine Quelle der Wahrheit
         // (Lights+Skybox werden aus state.timeOfDay abgeleitet pro Frame).
-        this.state.ambientLight = ambientLight;
         this.state.directionalLight = directionalLight;
-        // HemisphereLight: skyColor oben, groundColor unten, gemischt über normal.y → Tiefe ohne dynamische
-        // Schatten. Die Werte sind nur Saat; _applyDayNightToScene überschreibt (Farbe der Nachthimmel des
-        // Gesetzes, Ground aus worldFieldAt).
-        const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
-        scene.add(hemiLight);
-        this.state.hemiLight = hemiLight;
         // DIE LUFT (`scene.fogNode`): die EINE Luftperspektive für jedes Material; Farbe, Extinktion und Sonne
         // synct _applyDayNightToScene. Ungebautes deckt der Fern-Ring (Loch-Deckel), nie ein Nebel-Kokon.
         this._luftEnsure();

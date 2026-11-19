@@ -181,7 +181,8 @@ class AnazhRealm_bild_schatten {
                                 .and(eben(ay, by))
                                 .and(this._offenerHimmel(T, p.xyz).greaterThan(0.5)),
                             () => {
-                                summe.addAssign(farbe.load(px).rgb);
+                                // das Szenen-Ziel hält L × k (`_vorBelichtung`): der Rückstrahl liest L
+                                summe.addAssign(farbe.load(px).rgb.div(this._vorBelichtung().kBild));
                                 n.addAssign(1);
                             }
                         );

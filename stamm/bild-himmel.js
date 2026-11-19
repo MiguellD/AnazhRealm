@@ -451,7 +451,15 @@ class AnazhRealm_bild_himmel {
             tmpScale.set(worldSize, worldSize, 1);
             tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
             starField.setMatrixAt(i, tmpMatrix);
-            tmpCol.setRGB(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
+            // DER STERN IST EINE PUNKT-QUELLE (licht-eine-skala): die Größenklasse m trägt die Beleuchtungsstärke
+            // `HIMMEL.sternLx0` · 10^(−0,4·m) am Auge, verteilt auf den Raumwinkel seines Quads (Fläche × Abfall ÷ Radius²) —
+            // seine Leuchtdichte in der EINEN Skala (m 0 auf 3 Einheiten Quad: 0,23 cd/m²). Bis hierher trug jeder Punkt ≤ 0,9
+            // Welt-Einheiten, 14 500 cd/m² im Maßstab der Sonne.
+            const lum =
+                (AnazhRealm.HIMMEL.sternLx0 * 10 ** (-0.4 * mags[i])) /
+                ((worldSize * worldSize * AnazhRealm.HIMMEL.sternAbfall) / (RADIUS * RADIUS)) /
+                __weltLicht.EINHEIT_LX;
+            tmpCol.setRGB(colors[i * 3] * lum, colors[i * 3 + 1] * lum, colors[i * 3 + 2] * lum);
             starField.setColorAt(i, tmpCol);
         }
         starField.instanceMatrix.needsUpdate = true;
@@ -1619,13 +1627,11 @@ class AnazhRealm_bild_himmel {
         U.sonne.value.copy(sunDir).normalize();
         U.mond.value.copy(moonDir).normalize();
         const E0 = this._atmoE0(tint);
-        U.licht.value = E0;
         const Mo = AnazhRealm.MOONLIGHT;
-        const mi = (Mo.intensity * (tint ? tint.lightMul : 1)) / Math.max(E0, 1e-6);
-        U.mondE.value.set(Mo.r * mi, Mo.g * mi, Mo.b * mi);
-        // das Sternen-Licht hängt allein an der Höhe der Sonne (die Dämmerung) — der Schlüssel der Himmels-Sicht trägt es mit
-        const N = this._atmoSternenLicht(sunDir.y);
-        U.nachtE.value.set(N[0], N[1], N[2]).divideScalar(Math.max(E0, 1e-6));
+        const mi = Mo.intensity * (tint ? tint.lightMul : 1);
+        // das Sternen-Licht hängt allein an der Höhe der Sonne (die Dämmerung) — der Schlüssel der Himmels-Sicht trägt es mit;
+        // Sonne, Mond und Sterne in der Einheit der Tafeln (`__weltLicht.tafelLicht`: das Licht der Stunde)
+        __weltLicht.tafelLicht(U, E0, [Mo.r * mi, Mo.g * mi, Mo.b * mi], this._atmoSternenLicht(sunDir.y));
         const s = st._sonne;
         const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}`;
         const rend = st.renderer;
@@ -2587,10 +2593,10 @@ class AnazhRealm_bild_himmel {
             if (!sun.userData.skyOffset) sun.userData.skyOffset = new THREE.Vector3();
             sun.userData.skyOffset.copy(dir).multiplyScalar(sunDist);
             sun.visible = sun.userData.skyOffset.y > -10; // unter Horizont ausblenden
-            // Sonne dimmt mit Wetter (rainy = trüber Schein); die Scheibe leuchtet HDR (`HIMMEL.sonneLeucht`) über ihrem
-            // Hof — die Ausgabe-Kette tont sie zum hellsten Punkt des Himmels.
+            // Sonne dimmt mit Wetter (rainy = trüber Schein); die Scheibe trägt ihre Leuchtdichte (`HIMMEL.sonneCd` in der
+            // EINEN Skala) — sie endet am Deckel des Szenen-Ziels (`_vorBelichtung`), nie an ihrer Quelle.
             if (sun.material && sun.material.color) {
-                const L = AnazhRealm.HIMMEL.sonneLeucht * lightMul;
+                const L = (AnazhRealm.HIMMEL.sonneCd / __weltLicht.EINHEIT_LX) * lightMul;
                 sun.material.color.setRGB(1.0 * L, 0.92 * L, 0.7 * L);
             }
         }
@@ -2599,12 +2605,6 @@ class AnazhRealm_bild_himmel {
             if (!moon.userData.skyOffset) moon.userData.skyOffset = new THREE.Vector3();
             moon.userData.skyOffset.copy(dir).multiplyScalar(-sunDist);
             moon.visible = moon.userData.skyOffset.y > -10;
-            // Der Mond am Taghimmel ist BLASS: seine Leuchtdichte gegen die des Himmels (`HIMMEL.mondGegenHimmel`)
-            // — nachts fast deckend, am Tag ein heller Schleier.
-            if (moon.material) {
-                const hell = (achse || this._tagAchse(dir.y)).hell;
-                moon.material.opacity = 0.98 / (1 + hell / AnazhRealm.HIMMEL.mondGegenHimmel);
-            }
         }
     }
 
@@ -3323,25 +3323,39 @@ AnazhRealm._schirmDreieck = __weltLicht.schirmDreieck; // der Baustein der Engin
 // Venus, bei Sonnenuntergang der Abendstern (−3), am Ende der bürgerlichen Dämmerung (−6°) die hellsten Sterne
 // (+1,5), der nautischen (−12°) +4, in astronomischer Nacht (−18°) +6. `sternMagSchwach` = die schwächsten
 // Sterne des Feldes (+6). `wandelsterne` = die hellen Planeten als PUNKTE des Feldes (Venus −4,2 weißgelb,
-// Jupiter −2,3 cremeweiß, Mars −1,0 rötlich; Pixel knapp über dem hellsten Stern). `mondGegenHimmel` =
-// Leuchtdichte des Vollmonds gegen den blauen Tageshimmel (≈ 2500 : 5000 cd/m²) — am Tag ein blasser Schleier.
+// Jupiter −2,3 cremeweiß, Mars −1,0 rötlich; Pixel knapp über dem hellsten Stern).
 AnazhRealm.HIMMEL = Object.freeze({
     grenzgroesse: __weltLicht.GRENZGROESSE, // die Anker der EINEN Tag-Achse (welt-licht.js `tagAchse`)
     sternMagSchwach: 6,
     sternZaehlung: 0.47, // d log10 N(< m) / dm: die Zahl der Sterne heller als m (Sternzählung des bloßen Auges)
+    // die Beleuchtungsstärke eines Sterns der Größenklasse 0 am Auge in lx (die photometrische Skala der visuellen
+    // Größenklasse: m = −2,5 · log10(E) − 13,98, also 2,54 µlx bei m 0), und der Anteil des Stern-Quads, den sein weicher
+    // Abfall füllt (das Integral von 1 − smoothstep(0,08; 0,5; d) über die Scheibe, `_buildStarField`)
+    sternLx0: 2.54e-6,
+    sternAbfall: (() => {
+        let f = 0;
+        for (let i = 0; i < 500; i++) {
+            const d = (i + 0.5) / 1000;
+            const t = Math.min(1, Math.max(0, (d - 0.08) / 0.42));
+            f += 2 * Math.PI * d * (1 - t * t * (3 - 2 * t)) * 0.001;
+        }
+        return f;
+    })(),
     sternKontrast: 0.6, // die Sättigung der Punkt-Helligkeit über dem Fluss an der Schwelle (1 − e^(−k · (Fluss/Schwelle − 1)))
     wandelsterne: Object.freeze([
         Object.freeze({ mag: -4.2, farbe: Object.freeze([1.0, 0.97, 0.88]), groesse: 7.5 }),
         Object.freeze({ mag: -2.3, farbe: Object.freeze([1.0, 0.94, 0.82]), groesse: 7.0 }),
         Object.freeze({ mag: -1.0, farbe: Object.freeze([1.0, 0.66, 0.46]), groesse: 6.8 }),
     ]),
-    mondGegenHimmel: 0.5,
+    // die Leuchtdichte der Vollmond-Scheibe in cd/m² (≈ 2 500; ihr Licht ADDIERT sich zum Himmel vor ihr — am Tag steht sie
+    // als blasser Schleier im Blau, 2 500 gegen ≈ 5 000–8 000 cd/m², nachts als die hellste Fläche des Bilds)
+    mondCd: 2500,
     // DIE SONNE (Integration 05.10.): der Körper steht `koerperAbstandM` vor der Kamera (Sonne und Mond, vor der Skybox
-    // bei 500 m); die Scheibe trägt den echten Winkel `sonneWinkelGrad` (0,53°) und die Leuchtdichte `sonneLeucht` ×
+    // bei 500 m); die Scheibe trägt den echten Winkel `sonneWinkelGrad` (0,53°) und die Leuchtdichte `sonneCd` ×
     // ihre Farbe — über dem HDR-Hof der Skybox (Scheibe + Halo ≈ 2,6 linear), sonst deckte das Mesh die Mitte grau.
     koerperAbstandM: 380,
     sonneWinkelGrad: 0.53,
-    sonneLeucht: 4,
+    sonneCd: 1.6e9,
 });
 // DIE GRÖSSENKLASSE EINES STERNS (`_buildStarField`): sein Rang-Anteil a ∈ (0, 1] im Feld von n Sternen → die Klasse, bis zu der
 // der Himmel diesen Anteil trägt (N(< m) ∝ 10^(sternZaehlung · m)), nie heller als −1.

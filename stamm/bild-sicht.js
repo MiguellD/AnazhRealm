@@ -996,7 +996,12 @@ class AnazhRealm_bild_sicht {
                             // bilineare Abgriffe um den Treffer — ein einzelner Abgriff tastete das Bild unter (A1-n1: Salz-Rauschen und
                             // Mosaik im Spiegel von Laub und Schilf)
                             const fu = U.texel.mul(0.25);
-                            const tap = (dx, dy) => texture(farbe, uvT.add(fu.mul(vec2(dx, dy)))).level(float(0)).rgb;
+                            // das Szenen-Ziel hält L × k (`_vorBelichtung`): der Spiegel liest L
+                            const kBild = this._vorBelichtung().kBild;
+                            const tap = (dx, dy) =>
+                                texture(farbe, uvT.add(fu.mul(vec2(dx, dy))))
+                                    .level(float(0))
+                                    .rgb.div(kBild);
                             bild.assign(tap(-1, -1).add(tap(1, -1)).add(tap(-1, 1)).add(tap(1, 1)).mul(0.25));
                             // am Schirm-Rand blendet der Treffer in den Rest des Strahls (das Feld, der Himmel): keine Naht
                             bildW.assign(
