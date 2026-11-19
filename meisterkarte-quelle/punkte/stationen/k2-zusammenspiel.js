@@ -3842,6 +3842,1877 @@ L.perspektive("mensch", (() => {
     };
 })());
 
+// ── DIE PERSPEKTIVE zusammenspiel.erleben (7 Leitern, 44 Sprossen, 2 belegt: wahrnehmung S1 — g2.js witterungJagd, bild S1 — g3.js
+// KOPPLUNG_PROBE): das Erleben der Kopplungen, jede mit ihrem Gegenlauf (R7). Gemessen wird in der warmen Welt der Sitzung um den
+// Spieler über die Wege des Spiels: die Kaskade über den Bestand (`tickFaunaLifecycle`, `_kreaturBestand`, die Wölfe genommen wie
+// diag-kreatur-leben „kaskade“), der Klang über die EINE Lage am Ohr (`_umweltLage` → klang-core `umweltMischung`, der Graph
+// `um.graph.zensus()` als Abgriff), das Bild über `_archImBild` und die Kamera, die Uhr über `setTimeOfDay(…, "regler")`, das Jahr über
+// `seasonPhase`/`_saisonAnker`, das Wetter NUR über `window.__wetterSetzen`, der Planet über den Planet-Faden (`r._planetAuftrag`,
+// planet-anker und planet-ort an den Saaten „same-saat-0…99“, die der Faden je Samen behält). Was die Welt nicht trägt (kein Netz-
+// Spieler, kein Donner, keine Epoche am Ohr, kein Arten-Inventar je Zeitalter), stellt die Probe an der Welt fest und urteilt ROT
+// „Umfang nicht erzeugbar“ mit dem fehlenden Leser. Jede Änderung wird am Ende zurückgenommen (Bestand, Uhr, Jahr, Wetter, Feuer,
+// Ohr, Lage des Spielers).
+L.perspektive("erleben", (() => {
+    const E = "erleben.kopplung.emergenz";
+    const W = "erleben.kopplung.wahrnehmung";
+    const B = "erleben.kopplung.bild";
+    const KL = "erleben.kopplung.klang";
+    const GS = "erleben.kopplung.geteilter-sinn";
+    const EE = "erleben.kopplung.ein-ereignis";
+    const EP = "erleben.kopplung.epoche-ganz";
+    // DAS SOLL OHNE ZAHL IM WORT („höher als“, „unterscheidbar“, „in allen drei Sichten“): K.soll verlangt eine Zahl im Wort — dieses Wort
+    // trägt keine, seine Bedingung ist ein Vergleich; das Wort steht wörtlich im Richter (sonst wirft es wie K.soll), die Zahl ist die des
+    // Vergleichs (0 als Differenz, 1 als Ja), nie weicher als der Wortlaut
+    const sollWort = (id, nr, wort, o) => {
+        const r = K.sprosseVon(id, nr).richter;
+        if (!r.includes(wort)) throw new Error("Soll „" + wort + "“ steht nicht wörtlich im Richter " + id + " S" + nr);
+        if (K.zahlenIn(wort).length) throw new Error("das Wort „" + wort + "“ trägt eine Zahl — K.soll, nie sollWort");
+        if (!["≥", "≤", ">", "<", "="].includes(o.rel) || !Number.isFinite(o.zahl)) throw new Error("sollWort " + id + " S" + nr + ": rel und zahl fehlen");
+        return { wort, key: o.key, rel: o.rel, a: o.zahl, b: undefined, ref: undefined, refQuelle: undefined, einheit: o.einheit || "" };
+    };
+    const A = (name, werte, zeuge) => ({ name, roh: { werte, zeuge } });
+    // der Zeuge der Welt als Liste von Bedingungen [feld, min, Grund]: jedes Feld der Antwort muss ≥ min sein
+    const zeugeMin = (liste) => (roh) => {
+        const z = roh.zeuge || {};
+        for (const [feld, min, grund] of liste) if (!(typeof z[feld] === "number" && z[feld] >= min)) return grund + " (" + feld + " " + (z[feld] === undefined ? "fehlt" : z[feld]) + ", Soll ≥ " + min + ")";
+        return null;
+    };
+
+    // ════════ erleben.kopplung.emergenz — die Kaskade im Blick ════════
+    const ZE = { paare: 8, woelfeMit: 2.4, woelfeOhne: 0, hirscheMehr: 8, jungStreuung: 0.9, imKegel: 1 };
+    const zeugeKaskade = zeugeMin([
+        ["paare", 1, "kein Paar mit ↔ ohne Wölfe gefahren"],
+        ["woelfeMit", 0.5, "im Gegenlauf (mit Wölfen) lebt kein Wolf im Tal — die Ursache fehlt"],
+        ["ohneGekappt", 1, "die Wölfe sind im Lauf ohne Wölfe nicht gekappt"],
+        ["hirscheMehr", 1, "ohne Wölfe nirgends mehr Hirsche — das mittlere Glied fehlt"],
+        ["jungStreuung", 1e-9, "der Jungwuchs trägt keine Streuung (eine Konstante, nicht der Bestand)"],
+    ]);
+    const ZK = { paare: 8, woelfeMit: 2.4, ohneGekappt: 1, hirscheMehr: 8, jungStreuung: 0.9, imKegel: 1 };
+
+    // ════════ erleben.kopplung.ein-ereignis — das Feuer in Bild und Ohr ════════
+    const ZF = { feuer: 20, imBild: 20, gestillt: 20, panStreuung: 0.4, ohr: 20 };
+
+    return {
+        leitern: {
+            // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // EMERGENZ: die trophische Kaskade über den Bestand der nahen Regionen (der Weg der Linse diag-kreatur-leben „kaskade“): das Tal
+            // abseits des Genesis-Orts, je Saat 6 Spielstunden (2 160 Takte × 10 s) mit Wölfen und ihr Gegenlauf ohne Wölfe; der Jungwuchs ist
+            // die Äsung des Tals (`_kreaturBestand(…).deer.K`). Dazu der Planet-Faden über 10⁴ Jahre an 100 Saaten, der Bestand der Siedlung,
+            // die Leser der Welt für Markt und Stadt-Ereignis. Bilder schießt nur das Gerät (M.auge).
+            [E]: {
+                sek: 60,
+                dorf: true,
+                mutiert: true,
+                pfad: ["stamm/kreatur-leben.js", "stamm/kreatur-fauna.js", "tetrapoda-core.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "stamm/feld-brand.js", "planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "scripts/werkbank.cjs"],
+                ungefahren: "die Bildpaare (S1 Tal mit ↔ ohne Wölfe, S4 Siedlung vor ↔ nach, S5/S6 Prüfer und Gutachter) schießt nur das Gerät; headless schafft der Deckel weniger als 8 Saaten",
+                mess: async function (H, U, M) {
+                    const DECKEL = 60;
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const kurz = (e) => String((e && e.message) || e).slice(0, 220);
+                    const roh = {};
+                    for (const nr of Object.keys(U)) roh[nr] = { werte: {}, zeuge: {} };
+                    const welt = async (r, T, a) => {
+                        const s = r.state;
+                        const namen = new Set();
+                        for (let p = Object.getPrototypeOf(r); p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const k of Object.getOwnPropertyNames(p)) namen.add(k);
+                        const such = (q) => [...namen].filter((k) => q.test(k));
+                        const sied = r._bewohnerSiedlungen ? [...r._bewohnerSiedlungen.values()] : [];
+                        const bew = sied.flatMap((x) => x.liste || []);
+                        const S0 = sied[0];
+                        return {
+                            markt: such(/preis|auszug|^_?markt/i),
+                            stadtEreignis: such(/seuche|revolte|epidemie|aufruhr/i),
+                            bewohner: bew.length,
+                            rollen: [...new Set(bew.map((b) => b.rolle))].length,
+                            siedlungen: sied.length,
+                            dorf: S0 ? { x: S0.ox, z: S0.oz, y: r.getTerrainHeightAt(S0.ox, S0.oz) } : null,
+                            fernM: s.camera ? s.camera.far : 0,
+                        };
+                    };
+                    const planet = async (r, T, a) => {
+                        await r._fadenQuelle();
+                        return Promise.all(a.saaten.map(async (samen) => {
+                            const an = await r._planetAuftrag({ type: "planet-anker", samen });
+                            const B = (an.breite * 180) / Math.PI;
+                            const L = (an.laenge * 180) / Math.PI;
+                            const o = await Promise.all([0, a.zeitMa].map((zeitMa) => r._planetAuftrag({ type: "planet-ort", samen, breite: B, laenge: L, zeitMa })));
+                            return { samen, k0: o[0].kuesteKm, k1: o[1].kuesteKm, h0: o[0].hoeheM, felder: Object.keys(o[1]).concat(Object.keys(o[1].delta || {})) };
+                        }));
+                    };
+                    const kaskade = async (r, T, a) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
+                        if (a.stufe === "start") {
+                            window.__erlebenKaskade = { pos: pm.clone(), spielZeit: s.spielZeit, fb: s.faunaBestand, lf: s.lifeField, fl: s.faunaLifecycle, seq: s._creatureNetSeq, stroeme: r._faunaStroeme, kreaturen: new Set(s.creatures), leichname: new Set(s.leichname || []), max: s.maxCreatures };
+                            const park = () => r._bestandNah().flatMap((k) => r._bestandFeld(k).zellen).filter((c) => r._genesisFlaeche(c.x, c.z)).length;
+                            let x = pm.x;
+                            let schritte = 0;
+                            while (park() && schritte < 8) {
+                                x -= r._bestandSeite();
+                                pm.set(x, boden(x, pm.z), pm.z);
+                                schritte++;
+                            }
+                            s.maxCreatures = 20;
+                            return { x: pm.x, z: pm.z, schritte, park: park() };
+                        }
+                        if (a.stufe === "ende") {
+                            const alt = window.__erlebenKaskade;
+                            if (!alt) return { ende: "nichts zu räumen" };
+                            for (const c of s.creatures.slice()) if (!alt.kreaturen.has(c)) r.removeCreature(c);
+                            for (const c of (s.leichname || []).slice()) if (!alt.leichname.has(c)) r.removeCreature(c);
+                            Object.assign(s, { spielZeit: alt.spielZeit, faunaBestand: alt.fb, lifeField: alt.lf, faunaLifecycle: alt.fl, _creatureNetSeq: alt.seq, maxCreatures: alt.max });
+                            r._faunaStroeme = alt.stroeme;
+                            pm.copy(alt.pos);
+                            delete window.__erlebenKaskade;
+                            return { kreaturen: s.creatures.length };
+                        }
+                        const t0 = performance.now();
+                        const rng = new Proxy(Object.create(null), { get: (o, k) => o[k] || (o[k] = r._streamRng("bestand-" + a.saat + "-" + String(k))) });
+                        r._faunaStroeme = { seed: s.worldMeta.seed, rng };
+                        [s._creatureNetSeq, s.spielZeit, s.faunaLifecycle] = [1e4 * a.saat, 0, { lastTick: 0 }];
+                        [s.lifeField, s.faunaBestand] = [];
+                        const nah = r._bestandNah();
+                        for (const k of nah) r._bestandRegion(k, false).t = 0;
+                        const K = (k) => r._kreaturBestand(null, k).deer.K;
+                        const tal = nah.reduce((x, y) => (K(y) > K(x) ? y : x));
+                        const zahl = (g) => {
+                            const R = s.faunaBestand.regionen[tal];
+                            return R ? R.tiere.filter((t) => t.g === g).length : 0;
+                        };
+                        const nimm = () => {
+                            for (const R of r._bestandNah().map((key) => s.faunaBestand.regionen[key]).filter(Boolean))
+                                for (const t of R.tiere.filter((t) => t.g === "wolf")) {
+                                    const c = t.leib;
+                                    if (c) (r._bestandAus(c), r.removeCreature(c));
+                                    else R.tiere.splice(R.tiere.indexOf(t), 1);
+                                }
+                        };
+                        const ARTEN = ["deer", "wolf", "fox", "bear"];
+                        const spur = [];
+                        let stunde1 = null;
+                        let wechsel = 0;
+                        let vor = null;
+                        const ende = { jung: 0, hirsche: 0, woelfe: 0, n: 0 };
+                        for (let k = 0; k < a.takte; k++) {
+                            s.spielZeit += 10;
+                            r.tickFaunaLifecycle();
+                            if (a.ohne) nimm();
+                            for (const c of (s.leichname || []).slice()) r.removeCreature(c);
+                            r._todLageTick();
+                            if (k % 60 === 59) {
+                                const z = ARTEN.map(zahl);
+                                if (vor) wechsel += z.filter((v, i) => v !== vor[i]).length;
+                                vor = z;
+                                if (k < 360) spur.push(z);
+                            }
+                            if (k === 359) stunde1 = { jung: K(tal), hirsche: zahl("deer"), woelfe: zahl("wolf") };
+                            if (k >= a.takte - 60) {
+                                ende.jung += K(tal);
+                                ende.hirsche += zahl("deer");
+                                ende.woelfe += zahl("wolf");
+                                ende.n++;
+                            }
+                        }
+                        const zellen = r._bestandFeld(tal).zellen;
+                        const c = { x: zellen.reduce((q, z) => q + z.x, 0) / zellen.length, z: zellen.reduce((q, z) => q + z.z, 0) / zellen.length };
+                        const y = r.getTerrainHeightAt(c.x, c.z);
+                        const n = Math.max(1, ende.n);
+                        // der Sichtkegel der Pose (150 m westlich der Mitte, Blick auf die Mitte): der Anteil der Äsungs-Zellen des Tals in
+                        // seinem waagrechten Öffnungswinkel (fov und Seitenverhältnis der Kamera der Welt)
+                        const px = c.x - 150;
+                        const halb = Math.atan(Math.tan(((s.camera.fov || 75) * Math.PI) / 360) * (s.camera.aspect || 16 / 9));
+                        const imKegel = zellen.filter((q) => Math.abs(Math.atan2(q.z - c.z, q.x - px)) <= halb).length / zellen.length;
+                        return {
+                            saat: a.saat, ohne: !!a.ohne, tal, ms: Math.round(performance.now() - t0), stunde1, spur, wechsel, imKegel,
+                            ende: { jung: ende.jung / n, hirsche: ende.hirsche / n, woelfe: ende.woelfe / n },
+                            pose: { px, py: r.getTerrainHeightAt(px, c.z) + 25, pz: c.z, lx: c.x, ly: y, lz: c.z },
+                        };
+                    };
+                    let w = {};
+                    try {
+                        w = await S(welt, {});
+                    } catch (e) {
+                        w = { fehler: kurz(e) };
+                    }
+                    // S6 im Faden NEBEN der Kaskade (der Planet-Faden rechnet, während die Seite die Takte zählt): 100 Saaten, Küste heute ↔
+                    // vor 10⁴ Jahren; abgeholt nach der Kaskade
+                    const saaten = [];
+                    for (let i = 0; i < 100; i++) saaten.push("same-saat-" + i);
+                    let P = [];
+                    let pf = null;
+                    const planetLos = async (r, T, a) => {
+                        window.__erlebenPlanet = (async () => {
+                            try {
+                                return { liste: await (0, eval)("(" + a.fn + ")")(r, T, a) };
+                            } catch (e) {
+                                return { fehler: String((e && e.message) || e).slice(0, 200) };
+                            }
+                        })();
+                        return true;
+                    };
+                    const planetHol = async (r, T, a) => {
+                        const p = window.__erlebenPlanet;
+                        delete window.__erlebenPlanet;
+                        return p ? await p : { fehler: "kein Auftrag" };
+                    };
+                    const uhr = { start: M.uhr() };
+                    try {
+                        await S(planetLos, { fn: String(planet), saaten, zeitMa: -0.01 });
+                    } catch (e) {
+                        pf = kurz(e);
+                    }
+                    // die Kaskade: je Saat mit Wölfen und ohne (der Gegenlauf), solange der Deckel reicht; dann Saat 1 noch einmal (1 h) für S7
+                    const laeufe = [];
+                    let tal = null;
+                    let wieder = null;
+                    let kf = null;
+                    try {
+                        tal = await S(kaskade, { stufe: "start" });
+                        uhr.kaskade = M.uhr();
+                        let dauer = 0;
+                        for (let saat = 1; saat <= 8; saat++) {
+                            if (saat > 1 && M.uhr() + dauer * 1.15 > DECKEL - 5) break;
+                            const t = M.uhr();
+                            const mit = await S(kaskade, { saat, takte: 2160 });
+                            const ohne = await S(kaskade, { saat, takte: 2160, ohne: true });
+                            laeufe.push({ saat, mit, ohne });
+                            dauer = M.uhr() - t;
+                        }
+                        if (laeufe.length && M.uhr() + dauer / 8 + 2 < DECKEL - 3) wieder = await S(kaskade, { saat: 1, takte: 360 });
+                    } catch (e) {
+                        kf = kurz(e);
+                    } finally {
+                        await S(kaskade, { stufe: "ende" }).catch(() => null);
+                    }
+                    uhr.ende = M.uhr();
+                    try {
+                        const h = await S(planetHol, {});
+                        P = h.liste || [];
+                        pf = pf || h.fehler || null;
+                    } catch (e) {
+                        pf = pf || kurz(e);
+                    }
+                    uhr.planet = M.uhr();
+                    const ok = laeufe.filter((l) => l.mit && l.ohne && l.mit.ende && l.ohne.ende && l.mit.stunde1 && l.ohne.stunde1);
+                    const sd = (xs) => {
+                        const m = xs.reduce((q, x) => q + x, 0) / (xs.length || 1);
+                        return Math.sqrt(xs.reduce((q, x) => q + (x - m) * (x - m), 0) / (xs.length || 1));
+                    };
+                    const jungAlle = ok.flatMap((l) => [l.mit.ende.jung, l.ohne.ende.jung]);
+                    const zk = {
+                        paare: ok.length,
+                        woelfeMit: ok.length ? Math.min(...ok.map((l) => l.mit.ende.woelfe)) : 0,
+                        ohneGekappt: ok.length && ok.every((l) => l.ohne.ende.woelfe === 0) ? 1 : 0,
+                        hirscheMehr: ok.filter((l) => l.ohne.ende.hirsche > l.mit.ende.hirsche).length,
+                        jungStreuung: +sd(jungAlle).toFixed(4),
+                        laufMs: ok.map((l) => [l.mit.ms, l.ohne.ms]),
+                        jung: ok.map((l) => [+l.mit.ende.jung.toFixed(3), +l.ohne.ende.jung.toFixed(3)]),
+                        hirsche: ok.map((l) => [+l.mit.ende.hirsche.toFixed(2), +l.ohne.ende.hirsche.toFixed(2)]),
+                        tal: tal && { x: Math.round(tal.x), z: Math.round(tal.z), park: tal.park },
+                        uhrS: Object.fromEntries(Object.entries(uhr).map(([k, v]) => [k, +v.toFixed(1)])),
+                        fehler: kf,
+                    };
+                    const pose = ok.length ? ok[0].mit.pose : null;
+                    // S1: Jungwuchs nach 6 Spielstunden ohne Wölfe dünner, gezählt über die Saaten
+                    if (U[1]) {
+                        roh[1] = { werte: ok.length ? { saaten: ok.filter((l) => l.ohne.ende.jung < l.mit.ende.jung).length, spielStunden: (2160 * 10) / 3600 } : {}, zeuge: zk };
+                        roh[1].auge = await M.auge("erleben-emergenz-s1", pose || { ort: "wiese" });
+                    }
+                    // S2: die Kette nach EINER Spielstunde (Wolf weg → Hirsche mehr → Jungwuchs dünner) im Sichtkegel der Pose am Tal
+                    if (U[2]) {
+                        const kette = (l) => l.ohne.stunde1.woelfe === 0 && l.mit.stunde1.woelfe > 0 && l.ohne.stunde1.hirsche > l.mit.stunde1.hirsche && l.ohne.stunde1.jung < l.mit.stunde1.jung;
+                        roh[2] = {
+                            werte: ok.length ? { ketten: ok.filter(kette).length, spielMin: (360 * 10) / 60 } : {},
+                            zeuge: Object.assign({}, zk, { imKegel: ok.length ? +ok[0].mit.imKegel.toFixed(3) : 0, stunde1: ok.map((l) => [l.mit.stunde1, l.ohne.stunde1]) }),
+                        };
+                    }
+                    // S3: die Ketten der Welt tragen Glieder aus 2 Domänen (Tier, Pflanze); ein Glied Wirtschaft (Preis, Auszug) fragt die Welt
+                    if (U[3]) {
+                        roh[3] = { werte: ok.length ? { kettenJeStunde: 0 } : {}, zeuge: Object.assign({}, zk, { domaenen: ok.length ? 2 : 0, markt: (w.markt || []).length }) };
+                        if (!(w.markt || []).length) roh[3].nicht = "kein Glied aus Wirtschaft und Siedlung: die Welt trägt keinen Preis, keinen Markt, keinen Auszug — ihre Ketten haben 2 Domänen (Tier, Pflanze), gemessen an " + ok.length + " Saaten";
+                    }
+                    // S4: die Bewohner der nahen Siedlung (Ort und Rolle je Haus); ein Gesetz, das sie über Tage versetzt, fragt die Welt
+                    if (U[4]) {
+                        const d = w.dorf;
+                        roh[4] = { werte: { bewohner: w.bewohner || 0, rollen: w.rollen || 0 }, zeuge: { bewohner: w.bewohner || 0, siedlungen: w.siedlungen || 0 } };
+                        roh[4].nicht = "kein Gesetz versetzt Bewohner über Tage an einen anderen Ort oder in eine andere Rolle (Rolle = Haus, Ort = Bindung) — im Umkreis " + (w.bewohner || 0) + " Bewohner, " + (w.rollen || 0) + " Rollen, " + (w.siedlungen || 0) + " Siedlungen";
+                        roh[4].auge = await M.auge("erleben-emergenz-s4", d ? { px: d.x + 30, py: d.y + 12, pz: d.z + 30, lx: d.x, ly: d.y, lz: d.z } : { ort: "dorf" });
+                    }
+                    // S5: was die Welt ohne Tat geschehen lässt — gezählt die Wechsel im Bestand des Tals über 6 h (ohne Eingriff)
+                    if (U[5]) {
+                        roh[5] = { werte: ok.length ? { wechselOhneTat: ok.reduce((q, l) => q + l.mit.wechsel, 0) } : {}, zeuge: { paare: ok.length, stadtEreignis: (w.stadtEreignis || []).length } };
+                        if (!(w.stadtEreignis || []).length) roh[5].nicht = "keine Seuche, keine Revolte; der Brand zündet nur an einer Tat (_brandEntfachen aus Kampf und Fahrt) — eine Stadt formt sich nie ohne Spieler um";
+                        roh[5].auge = await M.auge("erleben-emergenz-s5", { ort: "stadt" });
+                    }
+                    // S6: der Planet über 10⁴ Jahre an 100 Saaten — Küste heute ↔ vor 10⁴ Jahren, und welche Glieder der Faden trägt
+                    if (U[6]) {
+                        const felder = [...new Set(P.flatMap((p) => p.felder))];
+                        const glieder = felder.filter((f) => /vulkan|stadt|krieg|siedlung/i.test(f));
+                        roh[6] = { werte: { saaten: P.length, kuesteGeaendert: P.filter((p) => Math.abs(p.k1 - p.k0) > 1e-6).length }, zeuge: { saaten: P.length, streuungM: +sd(P.map((p) => p.h0)).toFixed(1), felder, fehler: pf } };
+                        if (!glieder.length) roh[6].nicht = "der Planet-Faden trägt über 10⁴ Jahre nur " + felder.filter((f) => /klima|meer|wetter|wuchs|wildnis/.test(f)).join(", ") + " — keinen Vulkan, keine Stadt, keinen Krieg (gefragt " + P.length + " Saaten)";
+                        roh[6].auge = await M.auge("erleben-emergenz-s6", pose || { ort: "wiese" });
+                    }
+                    // S7: der Ereignis-Graph der ersten Stunde (je 10 min Bestand je Art) zweier Saaten; Gegenlauf: dieselbe Saat zweimal
+                    if (U[7]) {
+                        const graph = (spur) => new Set((spur || []).flatMap((z, b) => z.map((v, i) => b + ":" + i + ":" + v)));
+                        const jac = (x, y) => {
+                            const u = new Set([...x, ...y]);
+                            if (!u.size) return 1;
+                            let n = 0;
+                            for (const q of x) if (y.has(q)) n++;
+                            return n / u.size;
+                        };
+                        const ga = ok[0] ? graph(ok[0].mit.spur) : null;
+                        const gb = ok[1] ? graph(ok[1].mit.spur) : null;
+                        const gw = wieder ? graph(wieder.spur) : null;
+                        roh[7] = {
+                            werte: ga && gb ? { aehnlichkeit: +jac(ga, gb).toFixed(4) } : {},
+                            zeuge: { saaten: ok.length, gegen: ga && gw ? +jac(ga, gw).toFixed(4) : -1, ereignisse: ga ? ga.size : 0 },
+                        };
+                    }
+                    return { sprossen: roh };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [
+                            K.soll(E, 1, "nach 6 Spielstunden", { key: "spielStunden", rel: "≥", zahl: 6, einheit: "h" }),
+                            K.soll(E, 1, "Jungwuchs sichtbar dünner über ≥ 8 Saaten", { key: "saaten", einheit: "Saaten" }),
+                        ],
+                        auge: { pose: "150 m westlich der Mitte des Tals der Kaskade, 25 m über dem Boden (das Tal mit der größten Äsung des Rotwilds abseits des Genesis-Orts), Blick auf seine Mitte", vorbild: "Bildpaar desselben Orts mit ↔ ohne Wölfe nach 6 Spielstunden (Prüfer-Satz R11)" },
+                        taeter: "stamm/kreatur-leben.js tickFaunaLifecycle (die Kaskade des Bestands)",
+                        gruen: { werte: { saaten: 8, spielStunden: 6 }, zeuge: ZK },
+                        attrappen: [A("acht Saaten aus einer Tabelle, kein Lauf", { saaten: 8, spielStunden: 6 }, { paare: 0 })],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(E, 2, "Ketten mit ≥ 3 Gliedern im Sichtkegel ≥ 1", { key: "ketten", rel: "≥", zahl: 1 }), K.soll(E, 2, "Spielgang 60 min", { key: "spielMin", rel: "≥", zahl: 60, einheit: "min" })],
+                        zeuge: (roh) => zeugeKaskade(roh) || (roh.zeuge && roh.zeuge.imKegel >= 0.5 ? null : "weniger als die Hälfte des Tals der Kette liegt im Sichtkegel der Pose (" + (roh.zeuge && roh.zeuge.imKegel) + ")"),
+                        taeter: "stamm/kreatur-leben.js tickFaunaLifecycle (die Kaskade des Bestands)",
+                        gruen: { werte: { ketten: 2, spielMin: 60 }, zeuge: ZK },
+                        attrappen: [A("eine Kette als Zahl ohne Gegenlauf (keine Wölfe im Lauf mit Wölfen)", { ketten: 2, spielMin: 60 }, Object.assign({}, ZK, { woelfeMit: 0 })), A("die Kette ohne Tal im Blick", { ketten: 2, spielMin: 60 }, Object.assign({}, ZK, { imKegel: 0 }))],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(E, 3, "Ketten mit Gliedern aus ≥ 3 Domänen je Stunde im Blick ≥ 10", { key: "kettenJeStunde", rel: "≥", zahl: 10 })],
+                        zeuge: (roh) => zeugeKaskade(roh) || zeugeMin([["domaenen", 3, "die Ketten tragen Glieder aus weniger als 3 Domänen"]])(roh),
+                        taeter: "stamm/siedlung-bewohner.js _bewohnerSoll (kein Glied Wirtschaft)",
+                        nicht: "kein Preis, kein Markt, kein Auszug in der Welt",
+                        leser: "stamm/siedlung-bewohner.js:2219 _bewohnerSoll — liest keinen Preis, keinen Vorrat, keinen Markt (Dürre → Ernte → Preis → Auszug hat kein Glied Siedlung)",
+                        gruen: { werte: { kettenJeStunde: 12 }, zeuge: Object.assign({}, ZK, { domaenen: 4 }) },
+                        attrappen: [A("zwölf Ketten aus 2 Domänen als drei gezählt", { kettenJeStunde: 12 }, Object.assign({}, ZK, { domaenen: 2 }))],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(E, 4, "≥ 10² Bewohner an anderem Ort oder in anderer Rolle", { key: "bewohnerGeaendert", einheit: "Bewohner" })],
+                        auge: { pose: "aus 30 m Höhe schräg über der Mitte der nahen Siedlung, Blick auf ihren Platz (vor ↔ nach)", vorbild: "Bildpaar vor ↔ nach über Tage: leere Häuser, neue Stände (Prüfer-Satz R11)" },
+                        taeter: "stamm/siedlung-bewohner.js _bewohnerListe (Rolle und Bindung fest)",
+                        nicht: "kein Gesetz versetzt Bewohner über Tage",
+                        leser: "stamm/siedlung-bewohner.js:458 _bewohnerListe — setzt Rolle und Bindung je Haus einmal; kein Gesetz versetzt sie über Tage (Auszug, Rollenwechsel)",
+                        gruen: { werte: { bewohnerGeaendert: 140 }, zeuge: { bewohner: 1100, siedlungen: 3 } },
+                        attrappen: [A("140 Umzüge als Zahl", { bewohnerGeaendert: 140 }, { bewohner: 0 })],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(E, 5, "≥ 3 Ereignisse", { key: "ereignisse", einheit: "Ereignisse" })],
+                        auge: { pose: "Ego am Messort stadt nach 10 Spielstunden ohne Eingriff", vorbild: "Blind-Spieler nennt ungefragt ≥ 3 Ereignisse, die er nicht verursachte (Prüfer-Satz R11)" },
+                        taeter: "stamm/feld-brand.js _brandEntfachen (nur an einer Tat)",
+                        nicht: "keine Seuche, keine Revolte, kein Brand ohne Tat",
+                        leser: "stamm/feld-brand.js:344 _brandEntfachen — rufen nur Taten (stamm/kampf.js:2446 _brandEntfachen, stamm/koerper-fahrt.js:2355 _brandEntfachen); kein Leser für Seuche oder Revolte",
+                        gruen: { werte: { ereignisse: 4 }, zeuge: { paare: 1, stadtEreignis: 3 } },
+                        attrappen: [A("vier Ereignisse vom Blatt", { ereignisse: 4 }, { paare: 0 })],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(E, 6, "N = 100 Saaten", { key: "saaten", rel: "≥", zahl: 100 }), K.soll(E, 6, "plausible Geschichten ≥ 90 %", { key: "plausibelProzent", einheit: "%" })],
+                        auge: { pose: "Ego am Tal der Kaskade (je Saat am Ort der Geschichte; heute nur die Saat der Sitzung)", vorbild: "Gutachter werten 100 Geschichten Vulkan → Küste → Stadt → Krieg (Prüfer-Satz R11)" },
+                        taeter: "planet-core.js planetOrt (kein Vulkan, keine Stadt, kein Krieg im Faden)",
+                        nicht: "der Planet-Faden trägt keine Stadt und keinen Krieg",
+                        leser: "planet-core.js:2293 planetOrt — delta trägt Klima, Meer, Wetter, Wuchs, Wildnis; kein Vulkan, keine Stadt, kein Krieg",
+                        gruen: { werte: { saaten: 100, plausibelProzent: 93 }, zeuge: { saaten: 100, streuungM: 2400 } },
+                        attrappen: [A("100 Geschichten ohne Faden", { saaten: 100, plausibelProzent: 93 }, { saaten: 0 })],
+                    },
+                    7: {
+                        u: {},
+                        soll: [sollWort(E, 7, "Ähnlichkeit erlebter Ereignis-Graphen zweier Saaten < Ähnlichkeit zweier Durchläufe eines geskripteten AAA-Titels", { key: "aehnlichkeit", rel: "<", zahl: 1 })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.saaten >= 2)) return "nur " + (z.saaten || 0) + " Saaten gefahren (Soll 2)";
+                            if (z.gegen !== 1) return "dieselbe Saat zweimal ergibt nicht denselben Graphen (Gegenlauf " + z.gegen + ") — der Unterschied ist Rauschen, nicht die Saat";
+                            if (!(z.ereignisse > 0)) return "der Graph trägt keine Ereignisse";
+                            const w = (roh.werte || {}).aehnlichkeit;
+                            if (!(typeof z.aaa === "number" && z.aaa > 0 && z.aaa <= 1)) return "die Vergleichszahl fehlt: die Ähnlichkeit zweier Durchläufe eines geskripteten AAA-Titels ist nicht gemessen (Richter unklar) — gemessen nur die Welt, " + w;
+                            if (!(w < z.aaa)) return "Ähnlichkeit " + w + " nicht unter der des AAA-Titels " + z.aaa;
+                            return null;
+                        },
+                        taeter: "stamm/kreatur-leben.js tickFaunaLifecycle (der Bestand je Saat)",
+                        unklar: "Die Ähnlichkeit zweier Durchläufe eines geskripteten AAA-Titels als Zahl einfrieren (gemessen an einem Titel, sonst gilt 1 = gleicher Graph).",
+                        gruen: { werte: { aehnlichkeit: 0.3 }, zeuge: { saaten: 2, gegen: 1, ereignisse: 24, aaa: 0.85 } },
+                        attrappen: [
+                            A("Ähnlichkeit 0,3 aus Rauschen (dieselbe Saat zweimal verschieden)", { aehnlichkeit: 0.3 }, { saaten: 2, gegen: 0.4, ereignisse: 24, aaa: 0.85 }),
+                            A("eine Saat", { aehnlichkeit: 0.3 }, { saaten: 1, gegen: 1, ereignisse: 24, aaa: 0.85 }),
+                            A("ohne Vergleich mit dem AAA-Titel", { aehnlichkeit: 0.3 }, { saaten: 2, gegen: 1, ereignisse: 24 }),
+                            A("ähnlicher als der AAA-Titel", { aehnlichkeit: 0.9 }, { saaten: 2, gegen: 1, ereignisse: 24, aaa: 0.85 }),
+                        ],
+                    },
+                },
+            },
+
+            // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // WAHRNEHMUNG (S2–S6; S1 trägt g2.js witterungJagd): das Kitz allein auf der Wiese, dreimal 5 s Kreatur-Takt — zweimal unter dem
+            // Wind der Welt (das Rauschen), einmal mit gedrehtem Wind (der Gegenlauf; `_windAt` gezählt: liest die Beute ihn?); die Bestäuber
+            // über ihren Takt (`_bestaeuberTakt`, Blüten der Nah-Streu); die Gattungen des Bestands; Laternen und Gäste; die Vogelstimme des
+            // Gesetzes mit ↔ ohne Lärm in der Lage; der Stern an 20 Saaten des Planet-Fadens.
+            [W]: {
+                sek: 25,
+                mutiert: true,
+                pfad: ["stamm/kreatur-verhalten.js", "stamm/kreatur-fauna.js", "stamm/kreatur-leben.js", "tetrapoda-core.js", "klang-core.js", "stamm/klang.js", "stamm/siedlung-ort.js", "planet-core.js", "voxel-worker.js"],
+                ungefahren: "das Bildpaar zweier Sterne (S6) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const kurz = (e) => String((e && e.message) || e).slice(0, 220);
+                    const sinne = async (r, T, a) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const aus = {};
+                        const arr = s.creatures;
+                        const andere = arr.splice(0, arr.length);
+                        const leichAlt = new Set(s.leichname || []);
+                        const eigen = Object.prototype.hasOwnProperty.call(r, "_windAt");
+                        const windAlt = r._windAt;
+                        const ort = { x: pm.x + 40, z: pm.z + 25 };
+                        ort.y = r._voxelSurfaceY(ort.x, ort.z);
+                        const dt = 1 / 60;
+                        let rufe = 0;
+                        const lauf = (dreh) => {
+                            r._windAt = function () {
+                                rufe++;
+                                const w = windAlt.apply(this, arguments);
+                                return dreh ? Object.assign({}, w, { x: -w.x, z: -w.z }) : w;
+                            };
+                            s.creatureAnimationTime = 100;
+                            r._creatureAiFrame = 0;
+                            const k = r.spawnCreatureAt(ort.x, ort.y, ort.z, "happy", "wesen", { precise: true, bodySize: 0.6 });
+                            if (!k) return null;
+                            k.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                            for (let i = 0; i < a.schritte; i++) {
+                                r._kreaturStossSchritt(dt);
+                                r._leibKontakte();
+                                r.updateCreatures(dt);
+                            }
+                            const p = { x: k.position.x, z: k.position.z };
+                            r.removeCreature(k);
+                            return p;
+                        };
+                        try {
+                            const p1 = lauf(false);
+                            const n1 = rufe;
+                            const p2 = lauf(false);
+                            const p3 = lauf(true);
+                            const d = (p, q) => (p && q ? Math.hypot(p.x - q.x, p.z - q.z) : null);
+                            aus.kitz = { rausch: d(p1, p2), wind: d(p1, p3), weg: d(p1, ort), windRufe: n1, laeufe: [p1, p2, p3].filter(Boolean).length };
+                        } catch (e) {
+                            aus.kitz = { fehler: String((e && e.message) || e).slice(0, 160) };
+                        } finally {
+                            if (eigen) r._windAt = windAlt;
+                            else delete r._windAt;
+                            for (const c of arr.slice()) r.removeCreature(c);
+                            arr.splice(0, arr.length, ...andere);
+                            for (const c of (s.leichname || []).slice()) if (!leichAlt.has(c)) r.removeCreature(c);
+                        }
+                        try {
+                            r._bestaeuberTakt(dt);
+                            r._bestaeuberTakt(dt);
+                            const bl = r._bestaeuberBlueten();
+                            aus.bestaeuber = { besuche: (r._bestaeuberListe || []).length, blueten: bl.reduce((n, e) => n + (e.n || 0), 0), aktiv: r._bestaeuberAktiv };
+                        } catch (e) {
+                            aus.bestaeuber = { fehler: String((e && e.message) || e).slice(0, 160) };
+                        }
+                        const g = new Set();
+                        for (const R of Object.values((s.faunaBestand || {}).regionen || {})) for (const t of R.tiere || []) g.add(t.g);
+                        aus.arten = { gattungen: [...g], voegel: (s.voegel || []).length, bestaeuber: (r._bestaeuberListe || []).length };
+                        const lat = (s.architectures || []).filter((e) => e && /laterne/i.test(String(e.type || e.name || ""))).map((e) => e.position).filter(Boolean);
+                        const gast = r._bestaeuberListe || [];
+                        const nahe = (p) => gast.filter((v) => Math.hypot(v.x - p.x, v.z - p.z) < 6).length;
+                        const G = AnazhRealm._umweltGesetz();
+                        const park = { windFeld: 0.2, boe: 0.7, deckung: 0.5, regen: 0, sonne: 0.8, temperatur: 18, voegel: [{ d: 12, pan: 0 }] };
+                        const laut = Object.assign({}, park, { deckung: 0, verkehr: 1, laerm: 1, laermDb: -10 });
+                        const mp = G.kern.umweltMischung(park);
+                        const ml = G.kern.umweltMischung(laut);
+                        aus.stadt = { laternen: lat.length, insektenLaterne: lat.reduce((n, p) => n + nahe(p), 0), insektenDunkel: lat.reduce((n, p) => n + nahe({ x: p.x + 25, z: p.z + 25 }), 0), hzPark: mp.vogel.hz, hzLaut: ml.vogel.hz, dbPark: mp.vogel.db, dbLaut: ml.vogel.db };
+                        await r._fadenQuelle();
+                        const an = await Promise.all(a.saaten.map((samen) => r._planetAuftrag({ type: "planet-anker", samen })));
+                        aus.stern = { planeten: an.length, felder: [...new Set(an.flatMap((x) => Object.keys(x)))], mitStern: an.filter((x) => Object.keys(x).some((k) => /stern|spektr|teff|leucht/i.test(k))).length, kuesteStreuung: an.length ? Math.max(...an.map((x) => x.kuesteKm)) - Math.min(...an.map((x) => x.kuesteKm)) : 0 };
+                        return aus;
+                    };
+                    const saaten = [];
+                    for (let i = 0; i < 20; i++) saaten.push("same-saat-" + i);
+                    let w;
+                    try {
+                        w = await S(sinne, { schritte: 300, saaten });
+                    } catch (e) {
+                        w = { fehler: kurz(e) };
+                    }
+                    const roh = {};
+                    const k = w.kitz || {};
+                    if (U[2]) {
+                        roh[2] = { werte: {}, zeuge: { laeufe: k.laeufe || 0, windRufe: k.windRufe, lageWindM: k.wind, lageRauschM: k.rausch, wegM: k.weg, fehler: k.fehler || w.fehler } };
+                        if (k.laeufe === 3 && Number.isFinite(k.wind) && Number.isFinite(k.rausch)) {
+                            roh[2].werte.lageWindM = +k.wind.toFixed(3);
+                            if (!(k.windRufe > 0 && k.wind > k.rausch + 0.05)) roh[2].nicht = "die Beute wählt keine Lage gegen den Wind: der Kreatur-Takt rief _windAt in 3 × 300 Schritten " + k.windRufe + "×; mit gedrehtem Wind steht das Kitz nach 5 s " + k.wind.toFixed(2) + " m anders, im Rauschen zweier gleicher Läufe " + k.rausch.toFixed(2) + " m";
+                        }
+                    }
+                    const b = w.bestaeuber || {};
+                    if (U[3]) {
+                        roh[3] = { werte: Number.isFinite(b.besuche) ? { besuche: b.besuche } : {}, zeuge: { blueten: b.blueten || 0, besuche: b.besuche || 0, fehler: b.fehler } };
+                        roh[3].nicht = "die Blüte trägt kein Saftmal: der Besuch des Bestäubers liest Wurf, Zeit, Aktivität, Feuchte und Leben, keine Farbe — Saftmal aus ist kein Gegenlauf der Welt (" + (b.besuche || 0) + " Besuche an " + (b.blueten || 0) + " Blüten)";
+                    }
+                    const ar = w.arten || {};
+                    if (U[4]) {
+                        const fm = (ar.gattungen || []).filter((x) => /bat|fledermaus|moth|motte/i.test(x));
+                        roh[4] = { werte: { gattungen: (ar.gattungen || []).length }, zeuge: { gattungen: (ar.gattungen || []).length, liste: ar.gattungen } };
+                        if (!fm.length) roh[4].nicht = "keine Fledermaus, keine Motte im Bestand (Gattungen: " + (ar.gattungen || []).join(", ") + "; dazu Vögel und Bestäuber)";
+                    }
+                    const st = w.stadt || {};
+                    if (U[5]) {
+                        roh[5] = { werte: {}, zeuge: { laternen: st.laternen || 0, hzPark: st.hzPark, hzLaut: st.hzLaut, dbPark: st.dbPark } };
+                        if (Number.isFinite(st.hzPark) && Number.isFinite(st.hzLaut)) roh[5].werte.gesangHzDiff = st.hzLaut - st.hzPark;
+                        if (st.insektenDunkel > 0) roh[5].werte.insektenFaktor = st.insektenLaterne / st.insektenDunkel;
+                        roh[5].nicht = "Licht lockt keine Insekten (der Flug der Bestäuber liest kein Licht; " + (st.laternen || 0) + " Laternen im Umkreis) und Lärm verschiebt keinen Gesang (Vogelstimme laut " + st.hzLaut + " Hz = Park " + st.hzPark + " Hz)";
+                    }
+                    const sn = w.stern || {};
+                    if (U[6]) {
+                        roh[6] = { werte: { paare: Math.floor((sn.planeten || 0) / 2) }, zeuge: { planeten: sn.planeten || 0, mitStern: sn.mitStern || 0, felder: sn.felder } };
+                        if (!(sn.mitStern > 0)) roh[6].nicht = "der Planet trägt keinen Stern-Typ (planet-anker an " + (sn.planeten || 0) + " Saaten: " + (sn.felder || []).join(", ") + ") — Augen und Blütenfarben lesen keinen";
+                        roh[6].auge = await M.auge("erleben-wahrnehmung-s6", { ort: "wiese" });
+                    }
+                    return { sprossen: roh };
+                },
+                sprossen: {
+                    2: {
+                        u: {},
+                        soll: [K.soll(W, 2, "Beute mit Wind-Wahl überlebt ≥ 1,5×", { key: "ueberlebenFaktor", einheit: "×" })],
+                        zeuge: zeugeMin([["laeufe", 3, "nicht drei Läufe des Kitzes (Wind, Rauschen, gedrehter Wind)"], ["windRufe", 1, "der Kreatur-Takt liest den Wind nie"], ["lageWindM", 0.05, "gedrehter Wind ändert die Lage der Beute nicht"]]),
+                        taeter: "stamm/kreatur-furcht.js _creatureWarinessSpieler (die Witterung der Beute ohne Wind)",
+                        nicht: "die Beute wählt keine Lage gegen den Wind",
+                        leser: "stamm/kreatur-furcht.js:119 witterung — die Witterung der Beute ist ein Kreis (NAT.noticeRadius × Furcht), kein Wind; den Wind liest nur der Jäger (stamm/kreatur-verhalten.js:190 _creatureScentHuntDir)",
+                        gruen: { werte: { ueberlebenFaktor: 1.7 }, zeuge: { laeufe: 3, windRufe: 300, lageWindM: 4.2, lageRauschM: 0.1 } },
+                        attrappen: [A("Überleben 1,7× ohne Lauf", { ueberlebenFaktor: 1.7 }, { laeufe: 0 }), A("Überleben 1,7×, aber der Wind ändert nichts", { ueberlebenFaktor: 1.7 }, { laeufe: 3, windRufe: 0, lageWindM: 0 })],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(W, 3, "Saftmal aus → Bestäubung −≥ 30 %", { key: "bestaeubungMinusProzent", rel: "≥", zahl: 30, einheit: "%" }), K.soll(W, 3, "N = 50 Saaten: bienenbestäubte Blüten mit Saftmal im Bienenspektrum ≥ 0,6", { key: "saftmalAnteil", rel: "≥", zahl: 0.6 })],
+                        zeuge: zeugeMin([["blueten", 1, "keine gezeichnete Blüte im Ring"], ["besuche", 1, "kein Besuch eines Bestäubers"], ["saaten", 50, "weniger als 50 Saaten"]]),
+                        taeter: "tetrapoda-core.js bestaeuberBesuch (kein Saftmal)",
+                        nicht: "die Blüte trägt kein Saftmal",
+                        leser: "tetrapoda-core.js:2946 bestaeuberBesuch — (h, t, aktiv, feuchte, B, out, leben) liest keine Blütenfarbe und kein UV-Saftmal",
+                        gruen: { werte: { bestaeubungMinusProzent: 41, saftmalAnteil: 0.7 }, zeuge: { blueten: 120, besuche: 30, saaten: 50 } },
+                        attrappen: [A("41 % ohne Blüte und Gast", { bestaeubungMinusProzent: 41, saftmalAnteil: 0.7 }, { blueten: 0, besuche: 0, saaten: 50 })],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(W, 4, "Motten mit Gehör: Fangquote −≥ 30 %", { key: "fangMinusProzent", rel: "≥", zahl: 30, einheit: "%" })],
+                        zeuge: zeugeMin([["fledermaeuse", 1, "keine Fledermaus im Bestand"], ["motten", 1, "keine Motte im Bestand"]]),
+                        taeter: "tetrapoda-core.js (keine Fledermaus, keine Motte)",
+                        nicht: "keine Fledermaus, keine Motte",
+                        leser: "tetrapoda-core.js:62 GATTUNGEN — die Gattungen des Bestands sind Wolf, Fuchs, Bär, Hirsch; keine Fledermaus mit Echo, keine hörende Motte",
+                        gruen: { werte: { fangMinusProzent: 35 }, zeuge: { fledermaeuse: 12, motten: 400 } },
+                        attrappen: [A("Fangquote −35 % ohne Tiere", { fangMinusProzent: 35 }, { fledermaeuse: 0, motten: 0 })],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(W, 5, "Insektendichte an Laternen ≥ 3× gegen dunkle Straße", { key: "insektenFaktor", einheit: "×" }), sollWort(W, 5, "Gesangsfrequenz in lauter Straße höher als im Park", { key: "gesangHzDiff", rel: ">", zahl: 0, einheit: "Hz" })],
+                        zeuge: zeugeMin([["laternen", 1, "keine Laterne im Umkreis"], ["insektenDunkel", 1, "keine Insekten an der dunklen Straße (kein Bezug)"]]),
+                        taeter: "tetrapoda-core.js bestaeuberBahn (kein Licht) · klang-core.js umweltMischung (fester Vogel-Ton)",
+                        nicht: "Licht lockt keine Insekten, Lärm verschiebt keinen Gesang",
+                        leser: "tetrapoda-core.js:2958 bestaeuberBahn — liest kein Licht; klang-core.js:929 Sv.hz — die Vogelstimme singt mit fester Frequenz, die Lage am Ohr trägt keinen Lärm",
+                        gruen: { werte: { insektenFaktor: 4.1, gesangHzDiff: 380 }, zeuge: { laternen: 12, insektenDunkel: 9 } },
+                        attrappen: [A("Faktor 4,1 ohne Laterne", { insektenFaktor: 4.1, gesangHzDiff: 380 }, { laternen: 0, insektenDunkel: 0 })],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(W, 6, "N = 20 Paare ≥ 0,8", { key: "anteil", rel: "≥", zahl: 0.8 }), K.soll(W, 6, "N = 20 Paare", { key: "paare", rel: "≥", zahl: 20 })],
+                        auge: { pose: "Ego am Messort wiese je Planet (roter ↔ heller Stern; heute nur der Stern der Sitzung)", vorbild: "Bildpaar zweier Planeten: Vegetationsfarbe und Augenspektren gesetzmäßig verschieden (Prüfer-Satz R11)" },
+                        taeter: "planet-core.js planetPlan (kein Stern-Typ)",
+                        nicht: "der Planet trägt keinen Stern-Typ",
+                        leser: "planet-core.js:2293 planetOrt — Ort und Anker des Planeten tragen keinen Stern-Typ; Vegetationsfarbe und Augen lesen keinen",
+                        gruen: { werte: { anteil: 0.85, paare: 20 }, zeuge: { planeten: 40, mitStern: 40 } },
+                        attrappen: [A("0,85 ohne Stern", { anteil: 0.85, paare: 20 }, { planeten: 0, mitStern: 0 })],
+                    },
+                },
+            },
+
+            // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // BILD (S2–S6; S1 trägt g3.js KOPPLUNG_PROBE): je Sprosse das Bild an der festen Pose für das Panel (2AFC, R11) — und was die Welt
+            // davon in EIN Bild stellen kann, gefragt an ihren Lesern am Ort der Pose (Wald `_forestStandDensity`, Wasser `_nassAt`, Siedlung
+            // `settlementCells`, Abendlicht und Nacht über die EINE Uhr, Küste über den Planet-Faden am Anker, Lichter, Front, Lava).
+            [B]: {
+                sek: 15,
+                mutiert: true,
+                pfad: ["stamm/bild-himmel.js", "stamm/bild-sicht.js", "stamm/vegetation-*.js", "stamm/wasser-*.js", "stamm/siedlung-*.js", "stamm/gelaende-chunks.js", "planet-core.js", "scripts/werkbank.cjs"],
+                ungefahren: "alle Bilder (Panel-2AFC) schießt nur das Gerät; headless nur die Leser der Welt am Ort der Pose",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const kurz = (e) => String((e && e.message) || e).slice(0, 220);
+                    const phaen = async (r, T, a) => {
+                        const s = r.state;
+                        const namen = new Set();
+                        for (let p = Object.getPrototypeOf(r); p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const k of Object.getOwnPropertyNames(p)) namen.add(k);
+                        const such = (q) => [...namen].filter((k) => q.test(k));
+                        const alt = s.timeOfDay;
+                        let abend = null;
+                        let nacht = null;
+                        try {
+                            r.setTimeOfDay(0.78, "regler");
+                            abend = r._sonnenRichtung().y;
+                            r.setTimeOfDay(0.02, "regler");
+                            nacht = r._sonnenRichtung().y;
+                        } finally {
+                            r.setTimeOfDay(alt, "regler");
+                        }
+                        await r._fadenQuelle();
+                        const an = await r._planetAnker();
+                        const zellen = Object.keys((s.worldMeta || {}).settlementCells || {});
+                        const lage = (k) => {
+                            const m = /@(-?[0-9.]+),(-?[0-9.]+)/.exec(k);
+                            return m ? { x: +m[1], z: +m[2] } : null;
+                        };
+                        const arch = (s.architectures || []).filter((e) => e && e.position);
+                        const orte = {};
+                        for (const [name, p] of Object.entries(a.orte)) {
+                            let wald = 0;
+                            let nass = 0;
+                            let lava = 0;
+                            let n = 0;
+                            for (let i = 0; i < 36; i++) {
+                                const w = i * 2.39996;
+                                const d = 400 * Math.sqrt((i + 0.5) / 36);
+                                const x = p.x + d * Math.cos(w);
+                                const z = p.z + d * Math.sin(w);
+                                try {
+                                    wald = Math.max(wald, r._forestStandDensity(x, z));
+                                    if (r._nassAt(x, z)) nass++;
+                                    lava = Math.max(lava, r._lavaDeckeAt(x, z) || 0);
+                                    n++;
+                                } catch (e) {
+                                    /* ein Ort ohne Leser zählt nicht */
+                                }
+                            }
+                            const dorfM = zellen.map(lage).filter(Boolean).reduce((m, q) => Math.min(m, Math.hypot(q.x - p.x, q.z - p.z)), Infinity);
+                            const nah = arch.filter((e) => Math.hypot(e.position.x - p.x, e.position.z - p.z) < 400);
+                            const typ = (e) => String(e.type || e.name || "");
+                            orte[name] = {
+                                wald: +wald.toFixed(3), nass, lava: +lava.toFixed(3), proben: n, dorfM: Number.isFinite(dorfM) ? Math.round(dorfM) : null,
+                                lichter: nah.filter((e) => /laterne|lampe/i.test(typ(e))).length, glut: nah.filter((e) => /glut|feuer/i.test(typ(e))).length,
+                            };
+                        }
+                        return {
+                            orte, abend, nacht, kuesteKm: an.kuesteKm, siedlungen: zellen.length,
+                            front: such(/front/i).filter((k) => !/brand/i.test(k)),
+                            gewitter: such(/blitz|donner|gewitter/i).length,
+                            fahne: such(/fahne|rauchsaeule|aschewolke/i).length,
+                        };
+                    };
+                    let w;
+                    try {
+                        w = await S(phaen, { orte: { dorf: { x: -841, z: -861 }, stadt: { x: 400, z: 400 }, gipfel: { x: -433.6, z: -3146.4 }, wiese: { x: -280.4, z: -1045.6 } } });
+                    } catch (e) {
+                        w = { fehler: kurz(e), orte: {} };
+                    }
+                    const o = w.orte || {};
+                    const j = (b) => (b ? 1 : 0);
+                    const roh = {};
+                    const liste = (nr, ph) => {
+                        const da = Object.keys(ph).filter((k) => ph[k]);
+                        const fehlt = Object.keys(ph).filter((k) => !ph[k]);
+                        roh[nr].werte.phaenomene = da.length;
+                        roh[nr].zeuge = { phaenomene: da.length, da, fehlt, fehler: w.fehler };
+                        return fehlt;
+                    };
+                    if (U[2]) {
+                        roh[2] = { werte: {} };
+                        const d = o.dorf || {};
+                        const f = liste(2, { dorf: d.dorfM !== null && d.dorfM < 300, wald: d.wald > 0.3, wasser: d.nass > 0, himmel: Number.isFinite(w.abend) });
+                        if (f.length) roh[2].nicht = "am Messort dorf fehlt " + f.join(", ") + " in EINEM Bild (Wald " + d.wald + ", nass " + d.nass + "/" + d.proben + ", Siedlung " + d.dorfM + " m)";
+                        roh[2].auge = await M.auge("erleben-bild-s2", { ort: "dorf" });
+                    }
+                    const st = o.stadt || {};
+                    const p8 = (q) => ({ stadt: q.dorfM !== null && q.dorfM < 300, kueste: w.kuesteKm < 5, meer: w.kuesteKm < 5, wetterfront: (w.front || []).length > 0, abendlicht: w.abend > -0.05 && w.abend < 0.3, wald: q.wald > 0.3, wasser: q.nass > 0, himmel: Number.isFinite(w.abend) });
+                    if (U[3]) {
+                        roh[3] = { werte: {} };
+                        const f = liste(3, p8(st));
+                        if (f.length) roh[3].nicht = "am Messort stadt fehlt " + f.join(", ") + " (die Küste des Ankers liegt " + Math.round(w.kuesteKm) + " km fern; das Wetter ist ein Wort für die ganze Welt, keine Front)";
+                        roh[3].auge = await M.auge("erleben-bild-s3", { ort: "stadt" }, { uhr: 0.78 });
+                    }
+                    if (U[4]) {
+                        roh[4] = { werte: {} };
+                        const g = o.gipfel || {};
+                        const q8 = p8(g);
+                        const p16 = Object.assign({}, q8, { vulkan: g.lava > 0, glut: g.lava > 0 || g.glut > 0, fahne: w.fahne > 0, kuestenstadt: q8.kueste && q8.stadt, lichter: g.lichter > 0, spiegelung: g.nass > 0, gewitter: w.gewitter > 0, nacht: w.nacht < -0.2 });
+                        const f = liste(4, p16);
+                        if (f.length) roh[4].nicht = "am Messort gipfel-blick fehlen von 16 Phänomenen " + f.join(", ") + " (Lava " + g.lava + ", Lichter " + g.lichter + ", Siedlung " + g.dorfM + " m) — kein Vulkan mit Fahne an einer Küstenstadt, kein Gewitter";
+                        roh[4].auge = await M.auge("erleben-bild-s4", { ort: "gipfel-blick" }, { uhr: 0.02 });
+                    }
+                    if (U[5]) {
+                        roh[5] = { werte: { saaten: 1 }, zeuge: { saaten: 1, posen: 1 } };
+                        roh[5].nicht = "nur die Saat der Sitzung: eine andere Saat ist eine andere Welt (die Reise tauscht die Welt), 100 Zufallssaaten stehen nie in einer Fahrt";
+                        roh[5].auge = await M.auge("erleben-bild-s5", { ort: "wiese" });
+                    }
+                    if (U[6]) {
+                        roh[6] = { werte: {}, zeuge: { fremdeWelten: 0 } };
+                        roh[6].nicht = "keine fremde Welt in der Sitzung (Mars, Titan): das Welt-Tor gebiert eine neue Welt, die Probe bleibt in der Welt der Sitzung";
+                        roh[6].auge = await M.auge("erleben-bild-s6", { ort: "gipfel-blick" });
+                    }
+                    return { sprossen: roh };
+                },
+                sprossen: {
+                    2: {
+                        u: {},
+                        soll: [K.soll(B, 2, "Panel-2AFC Spiel gegen Foto ähnlicher Landschaft ≤ 75 %", { key: "afcProzent", einheit: "%" })],
+                        auge: { pose: "Ego am Messort dorf (spec/profiband/haushalt.json), Mittag", vorbild: "Fotos ähnlicher Landschaft mit Dorf, Wald, Wasser, Himmel (Panel-2AFC, R11)" },
+                        taeter: "stamm/bild-himmel.js · stamm/vegetation-*.js · stamm/siedlung-*.js (das eine Bild)",
+                        gruen: { werte: { afcProzent: 70, phaenomene: 4 }, zeuge: { phaenomene: 4 } },
+                        attrappen: [A("70 % ohne Bild", { afcProzent: 70 }, { phaenomene: 0 })],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(B, 3, "2AFC ≤ 65 %", { key: "afcProzent", einheit: "%" })],
+                        auge: { pose: "Ego am Messort stadt, Uhr 0,78 (Abendlicht)", vorbild: "Fotos von Küstenstädten im Abendlicht mit Wetterfront (Panel-2AFC, R11)" },
+                        taeter: "stamm/klang.js:410 _weatherFieldFor (keine Front) · planet-core.js (keine Küste am Ort)",
+                        nicht: "keine Küste am Anker, keine Wetterfront",
+                        leser: "stamm/klang.js:410 _weatherFieldFor — (this.state.weather) liest EIN Wort für die ganze Welt; keine Front, die über den Ort zieht",
+                        gruen: { werte: { afcProzent: 60, phaenomene: 8 }, zeuge: { phaenomene: 8 } },
+                        attrappen: [A("60 % ohne Bild", { afcProzent: 60 }, { phaenomene: 0 })],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(B, 4, "2AFC ≤ 55 % gegen Fotos realer Vulkanküsten bei Nacht", { key: "afcProzent", einheit: "%" })],
+                        auge: { pose: "Ego am Messort gipfel-blick, Uhr 0,02 (Nacht)", vorbild: "Fotos realer Vulkanküsten bei Nacht (Panel-2AFC, R11)" },
+                        taeter: "stamm/siedlung-wege.js (Lava ohne Fahne) · kein Gewitter",
+                        nicht: "kein Vulkan mit Fahne an einer Küstenstadt, kein Gewitter",
+                        leser: "stamm/klang.js:474 _umweltLageZwei — die Welt trägt kein Gewitter (kein Blitz, kein Donner); die Lava (stamm/siedlung-wege.js:522 _lavaDeckeAt) hat keine Fahne",
+                        gruen: { werte: { afcProzent: 52, phaenomene: 16 }, zeuge: { phaenomene: 16 } },
+                        attrappen: [A("52 % ohne Bild", { afcProzent: 52 }, { phaenomene: 0 })],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(B, 5, "Anteil, den ein Panel als Foto hält ≥ 0,4", { key: "fotoAnteil" })],
+                        auge: { pose: "Ego am Messort wiese der Saat der Sitzung (je Saat × Pose × Uhr × Wetter × Epoche am Gerät)", vorbild: "Panel hält ≥ 0,4 der Bilder für Fotos (Zufall 0,5; R11)" },
+                        taeter: "stamm/netz-portal.js _reiseBetreten (eine Saat je Welt)",
+                        nicht: "nur die Saat der Sitzung",
+                        leser: "stamm/netz-portal.js:660 _reiseBetreten — eine andere Saat ist eine andere Welt (die Reise tauscht die Welt); keine Pose über 100 Saaten in einer Sitzung",
+                        gruen: { werte: { fotoAnteil: 0.45 }, zeuge: { saaten: 100 } },
+                        attrappen: [A("0,45 ohne Bild", { fotoAnteil: 0.45 }, { saaten: 0 })],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(B, 6, "2AFC gegen Sondenfotos (Mars, Titan) ≤ 55 %", { key: "afcProzent", einheit: "%" })],
+                        auge: { pose: "Ego am Messort gipfel-blick (eine fremde Welt ist in der Sitzung nicht erzeugbar)", vorbild: "Sondenfotos von Mars und Titan (Panel-2AFC, R11)" },
+                        taeter: "stamm/netz-portal.js _weltTorBetreten (fremde Welt nur als neue Welt)",
+                        nicht: "keine fremde Welt in der Sitzung",
+                        leser: "stamm/netz-portal.js:610 _weltTorBetreten — gebiert eine fremde Welt nur als neue Welt; kein Gesetz Mars/Titan im Ultiversum",
+                        gruen: { werte: { afcProzent: 50 }, zeuge: { fremdeWelten: 1 } },
+                        attrappen: [A("50 % ohne Bild", { afcProzent: 50 }, { fremdeWelten: 0 })],
+                    },
+                },
+            },
+
+            // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // KLANG: der Abgriff ist der Graph des Ohrs (`um.graph.zensus()`), seine Eingabe die EINE Lage (`_umweltLage`). S1 die fünf Wetter
+            // (Bild: die Deckkraft des Regens, Ohr: die Stimme regen; der Dachstoff als Eingabe der Mischung); S2 der Sturm als Ereignis
+            // (Simulation: die Vögel `state.voegel`, Abgriff: der Chor, über die Zeit des Ohrs); S3 zehn Orte um den Spieler: jede hörbare
+            // Stimme gegen ihre Quelle aus einem eigenen Leser (Waisen) und der Gegenlauf mit gekappten Quellen; S4 die Epochen der
+            // Siedlungen (`_siedlungEpoche`) gegen die Stimmen des Gesetzes; S5/S6 die Zeitalter am Planet-Faden.
+            [KL]: {
+                // 60 s, die Grenze der Karte je Leiter (19.11.: 45 s riss an der frisch gestarteten Welt 1 — die Takte des Ohrs bauen dort
+                // noch Chunks; an der warmen Welt 2 maß dieselbe Leiter alle sechs Sprossen)
+                sek: 60,
+                mutiert: true,
+                pfad: ["stamm/klang.js", "klang-core.js", "stamm/kreatur-fauna.js", "stamm/bild-himmel.js", "stamm/siedlung-ort.js", "fachwerk-core.js", "planet-core.js", "voxel-worker.js"],
+                ungefahren: "das Hören am Gerät (die Stimmen klingen headless in einem Audio-Kontext ohne Ausgabe); die Ticks laufen headless langsamer, die Zeit des Ohrs ist echt",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const kurz = (e) => String((e && e.message) || e).slice(0, 220);
+                    const ohr = async (r, T, a) => {
+                        const s = r.state;
+                        if (a.an) {
+                            const war = !!s.symphony.enabled;
+                            window.__erlebenOhr = { war };
+                            r._loopCamera(performance.now());
+                            s.camera.updateMatrixWorld(true);
+                            if (!war) r.initSymphony();
+                            const ctx = s.symphony.ctx;
+                            if (ctx && ctx.state !== "running") await ctx.resume();
+                            return { war, ctx: ctx && ctx.state };
+                        }
+                        const w = window.__erlebenOhr;
+                        if (w && !w.war) r.disposeSymphony();
+                        delete window.__erlebenOhr;
+                        return { sym: !!s.symphony.enabled };
+                    };
+                    const wetter = async (r, T, a) => {
+                        const s = r.state;
+                        const sym = s.symphony;
+                        const um = sym.umwelt;
+                        const G = AnazhRealm._umweltGesetz();
+                        const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+                        const stimme = (n) => {
+                            const g = um.graph.zensus().find((v) => v.name === n);
+                            return g && g.an && Number.isFinite(g.db) ? g.db : -Infinity;
+                        };
+                        const takt = async (n) => {
+                            for (let k = 0; k < n; k++) {
+                                r._gameLoopTick(performance.now());
+                                await warte(16);
+                            }
+                        };
+                        const alt = s.weather;
+                        const uhrAlt = s.timeOfDay;
+                        const aus = { reihe: [], sturm: [] };
+                        try {
+                            // Mittag: der Chor singt (die Vögel des Hör-Kreises ruhen nachts) — die Uhr kehrt am Ende zurück
+                            r.setTimeOfDay(0.5, "regler");
+                            for (const w of a.wetter) {
+                                window.__wetterSetzen(w);
+                                await takt(a.takte);
+                                const m = r._rainSystem && r._rainSystem.mesh;
+                                aus.reihe.push({ w, rain: r._weatherFieldFor().rain, bild: m && m.visible ? m.material.opacity : 0, regen: stimme("regen") });
+                            }
+                            const L0 = r._umweltLage();
+                            const dach = [0, 0.5, 1].map((bau) => {
+                                const m = G.kern.umweltMischung(Object.assign({}, L0, { regen: 1, raum: Object.assign({}, L0.raum || {}, { bau, bauAnteil: bau }), dach: bau, dachStoff: ["holz", "ziegel", "blech"][Math.round(bau * 2)] }));
+                                return m.regen.db.toFixed(2) + "/" + Math.round(m.regen.hz);
+                            });
+                            aus.dach = { klaenge: new Set(dach).size, dach };
+                            window.__wetterSetzen("sunny");
+                            await takt(a.takte);
+                            // der Gegenlauf: dieselbe Spanne ohne Ereignis (sonnig bleibt sonnig), dann das Ereignis (der Sturm) — je Takt die
+                            // Zeit des Ohrs, die Vögel der Simulation, Chor und Regen am Abgriff
+                            const reihe = async (wort, liste) => {
+                                window.__wetterSetzen(wort);
+                                const t0 = sym.ctx.currentTime;
+                                for (let k = 0; k < a.sturmTakte; k++) {
+                                    r._gameLoopTick(performance.now());
+                                    await warte(16);
+                                    liste.push([+(sym.ctx.currentTime - t0).toFixed(3), (s.voegel || []).length, stimme("vogel"), stimme("regen")]);
+                                }
+                            };
+                            aus.ruhe = [];
+                            await reihe("sunny", aus.ruhe);
+                            await reihe("stormy", aus.sturm);
+                        } finally {
+                            window.__wetterSetzen(alt);
+                            r.setTimeOfDay(uhrAlt, "regler");
+                            await takt(3);
+                        }
+                        return aus;
+                    };
+                    const orte = async (r, T, a) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const um = s.symphony.umwelt;
+                        const G = AnazhRealm._umweltGesetz();
+                        const UM = G.UMWELT;
+                        const alt = pm.clone();
+                        const aus = [];
+                        try {
+                            for (const [dx, dz] of a.orte) {
+                                const x = alt.x + dx;
+                                const z = alt.z + dz;
+                                pm.set(x, r.getTerrainHeightAt(x, z) + AnazhRealm.PLAYER_FOOT_OFFSET, z);
+                                r._umweltRingProbe(um, x, z, um.ring.punkte.length);
+                                r._vogelTakt();
+                                const L = r._umweltLage();
+                                const mix = G.kern.umweltMischung(L);
+                                const hoer = Object.keys(mix).filter((k) => mix[k].db >= UM.hoerschwelleDb);
+                                const ring = [];
+                                for (let i = 0; i < 16; i++) ring.push([x + 30 * Math.cos(i * 0.3927), z + 30 * Math.sin(i * 0.3927)]);
+                                const fl = (r._hydroFor(x, z).rivers || []).flatMap((v) => v.points || []).reduce((m, p) => Math.min(m, Math.hypot(p.x - x, p.z - z)), Infinity);
+                                const fa = (r._hydroFor(x, z).waterfalls || []).reduce((m, p) => Math.min(m, Math.hypot(p.x - x, p.z - z)), Infinity);
+                                const glut = [...r._blockerMit("glut")].some((e) => e.position && Math.hypot(e.position.x - x, e.position.z - z) < UM.stimmen.glut.hoerweiteM);
+                                const quelle = {
+                                    wind: r._windAt(x, z, r._bildZeit).staerke > 0,
+                                    laub: r._forestStandDensity(x, z) > 0 || r._kronenStreuAt(x, z) > 0,
+                                    ufer: ring.some(([qx, qz]) => r._nassAt(qx, qz)) || r._nassAt(x, z),
+                                    fluss: fl < UM.stimmen.fluss.hoerweiteM + 10,
+                                    fall: fa < UM.stimmen.fall.hoerweiteM + 10,
+                                    regen: r._weatherFieldFor().rain > 0,
+                                    glut,
+                                    vogel: (s.voegel || []).some((v) => Math.hypot(v.x - x, v.z - z) < 200),
+                                    grille: L.temperatur > UM.stimmen.grille.tStumm && L.sonne < UM.stimmen.grille.nachtAb,
+                                };
+                                const gekappt = Object.assign({}, L, { voegel: [], deckung: 0, regen: 0, ufer: { d: Infinity, anteil: 0, pan: 0 }, fluss: { d: Infinity, tempo: 0, pan: 0 }, fall: { d: Infinity, hoehe: 0, pan: 0 }, glut: { d: Infinity, flaeche: 0, pan: 0 }, temperatur: -Infinity });
+                                const m2 = G.kern.umweltMischung(gekappt);
+                                const rest = Object.keys(m2).filter((k) => k !== "wind" && m2[k].db >= UM.hoerschwelleDb);
+                                aus.push({ x: Math.round(x), z: Math.round(z), hoer, waisen: hoer.filter((k) => !quelle[k]), rest });
+                            }
+                        } finally {
+                            pm.copy(alt);
+                            r._umweltRingProbe(um, alt.x, alt.z, um.ring.punkte.length);
+                            r._vogelTakt();
+                        }
+                        return aus;
+                    };
+                    const epochen = async (r, T, a) => {
+                        const G = AnazhRealm._umweltGesetz();
+                        const ep = [];
+                        for (let i = 1; i <= a.n; i++) ep.push(r._siedlungEpoche(i));
+                        const stimmen = Object.keys(G.UMWELT.stimmen);
+                        return { epochen: [...new Set(ep.filter(Boolean))], stimmen, epochStimmen: stimmen.filter((k) => /huf|dampf|motor|verbrenn|elektro|epoch|kutsche|glocke/i.test(k)) };
+                    };
+                    const zeitalter = async (r, T, a) => {
+                        await r._fadenQuelle();
+                        const aus = [];
+                        await Promise.all(a.saaten.map(async (samen) => {
+                            const an = await r._planetAuftrag({ type: "planet-anker", samen });
+                            const B = (an.breite * 180) / Math.PI;
+                            const L = (an.laenge * 180) / Math.PI;
+                            for (const zeitMa of a.zeiten) {
+                                const o = await r._planetAuftrag({ type: "planet-ort", samen, breite: B, laenge: L, zeitMa });
+                                aus.push({ samen, zeitMa, h: o.hoeheM, felder: Object.keys(o).concat(Object.keys(o.delta || {})), wuchs: o.delta && o.delta.wuchs ? o.delta.wuchs.wald : null });
+                            }
+                        }));
+                        return aus;
+                    };
+                    const roh = {};
+                    let an = null;
+                    let wt = null;
+                    let or = null;
+                    let fe = null;
+                    try {
+                        an = await S(ohr, { an: true });
+                        if (U[1] || U[2]) wt = await S(wetter, { wetter: ["sunny", "cloudy", "foggy", "rainy", "stormy"], takte: 25, sturmTakte: 150 });
+                        if (U[3]) or = await S(orte, { orte: [[0, 0], [40, 0], [-40, 0], [0, 40], [0, -40], [80, 60], [-80, -60], [120, -30], [-30, 120], [150, 150]] });
+                    } catch (e) {
+                        fe = kurz(e);
+                    } finally {
+                        await S(ohr, { an: false }).catch(() => null);
+                    }
+                    const pearson = (xs, ys) => {
+                        const n = xs.length;
+                        if (n < 3) return null;
+                        const mx = xs.reduce((q, x) => q + x, 0) / n;
+                        const my = ys.reduce((q, y) => q + y, 0) / n;
+                        let sxy = 0;
+                        let sxx = 0;
+                        let syy = 0;
+                        for (let i = 0; i < n; i++) {
+                            sxy += (xs[i] - mx) * (ys[i] - my);
+                            sxx += (xs[i] - mx) * (xs[i] - mx);
+                            syy += (ys[i] - my) * (ys[i] - my);
+                        }
+                        return sxx > 0 && syy > 0 ? sxy / Math.sqrt(sxx * syy) : null;
+                    };
+                    const amp = (db) => (Number.isFinite(db) ? Math.pow(10, db / 20) : 0);
+                    if (U[1]) {
+                        const R = (wt && wt.reihe) || [];
+                        const r = pearson(R.map((x) => x.bild), R.map((x) => amp(x.regen)));
+                        roh[1] = {
+                            werte: {},
+                            zeuge: { wetter: R.length, trocken: R.filter((x) => x.rain === 0 && amp(x.regen) === 0).length, nass: R.filter((x) => x.rain > 0 && amp(x.regen) > 0).length, reihe: R.map((x) => [x.w, +(+x.rain).toFixed(3), +(+x.bild).toFixed(3), Number.isFinite(x.regen) ? +x.regen.toFixed(1) : null]), dach: wt && wt.dach, fehler: fe },
+                        };
+                        if (r !== null) roh[1].werte.r = +r.toFixed(4);
+                        if (wt && wt.dach) roh[1].werte.dachKlaenge = wt.dach.klaenge;
+                        if (wt && wt.dach && wt.dach.klaenge <= 1) roh[1].nicht = "der Regen klingt auf jedem Dach gleich: die Regenstimme liest Regen und Kronen-Deckung, keinen Dachstoff (" + wt.dach.dach.join(" · ") + ")";
+                    }
+                    if (U[2]) {
+                        // -∞ dB (stumm) reist als null durch JSON: zurück zu -∞
+                        const dbz = (x) => (typeof x === "number" ? x : -Infinity);
+                        const norm = (L) => (L || []).map((x) => [x[0], x[1], dbz(x[2]), dbz(x[3])]);
+                        const Z = norm(wt && wt.sturm);
+                        const R0 = norm(wt && wt.ruhe);
+                        // eine Änderung der Klanglandschaft: Chor oder Regen ≥ 3 dB gegen den ersten Takt (auch: verstummt, setzt ein)
+                        const anders = (x, b) => [2, 3].some((i) => (Number.isFinite(x[i]) || Number.isFinite(b[i])) && !(Number.isFinite(x[i]) && Number.isFinite(b[i]) && Math.abs(x[i] - b[i]) < 3));
+                        const iOhr = Z.length ? Z.findIndex((x) => anders(x, Z[0])) : -1;
+                        const ruhig = R0.length && !R0.some((x) => anders(x, R0[0])) ? 1 : 0;
+                        // das Fenster um das Ereignis: die letzten 30 Takte davor (sonnig) und der Sturm — die Simulation reagiert im ersten Takt
+                        // (die Vögel fliehen den Regen), der Abgriff folgt ihr; „vor“ ist der letzte Takt ohne Ereignis
+                        const fenster = R0.slice(-30).concat(Z);
+                        const r = pearson(fenster.map((x) => x[1]), fenster.map((x) => amp(x[2])));
+                        const vor = R0.length ? R0[R0.length - 1] : null;
+                        const v0 = vor ? vor[1] : 0;
+                        const db0 = vor ? vor[2] : -Infinity;
+                        const zeig = (L) => L.filter((x, i) => i % 10 === 0).map((x) => [x[0], x[1], Number.isFinite(x[2]) ? +x[2].toFixed(1) : null, Number.isFinite(x[3]) ? +x[3].toFixed(1) : null]);
+                        roh[2] = { werte: {}, zeuge: { proben: Z.length, voegelVor: v0, voegelNach: Z.length ? Z[Z.length - 1][1] : 0, chorVor: Number.isFinite(db0) ? +db0.toFixed(1) : -999, ruhig, ruheProben: R0.length, sturm: zeig(Z), ruhe: zeig(R0) } };
+                        if (r !== null) roh[2].werte.r = +r.toFixed(4);
+                        if (iOhr >= 0) roh[2].werte.verzugS = Z[iOhr][0];
+                        roh[2].nicht = "kein Ausbruch, kein Beben, kein Unfall mit Klang-Folge (die Lage am Ohr trägt keine Menge: kein Schrei, keine Hupe) — gemessen am Sturm, dem Ereignis der Welt";
+                    }
+                    if (U[3]) {
+                        const O = or || [];
+                        roh[3] = { werte: { waisen: O.reduce((q, x) => q + x.waisen.length, 0), orte: O.length }, zeuge: { orte: O.length, stimmen: O.reduce((q, x) => q + x.hoer.length, 0), gegenRest: O.reduce((q, x) => q + x.rest.length, 0), je: O.map((x) => [x.x, x.z, x.hoer.join("+"), x.waisen.join("+")]), fehler: fe } };
+                        if (!O.length) roh[3].werte = {};
+                        roh[3].nicht = "kein Raffer von 100 Jahren am Ort: die Zeit eines Orts springt nur über die Reise in eine neue Welt; keine Asche, keine wachsende Küste — die Waisen gemessen heute an " + O.length + " Orten";
+                    }
+                    if (U[4]) {
+                        let ep = null;
+                        try {
+                            ep = await S(epochen, { n: 40 });
+                        } catch (e) {
+                            ep = { fehler: kurz(e), epochen: [], stimmen: [], epochStimmen: [] };
+                        }
+                        roh[4] = { werte: {}, zeuge: { epochen: ep.epochen.length, liste: ep.epochen, stimmen: ep.stimmen, epochStimmen: ep.epochStimmen.length, fehler: ep.fehler } };
+                        if (!ep.epochStimmen.length) roh[4].nicht = "die Lage am Ohr liest keine Epoche: " + ep.epochen.length + " Epochen der Siedlungen (" + ep.epochen.join(", ") + "), aber die Stimmen sind " + ep.stimmen.join(", ") + " — keine Hufe, kein Dampf, kein Verbrenner";
+                    }
+                    if (U[5] || U[6]) {
+                        let Z5 = [];
+                        let Z6 = [];
+                        let zf = null;
+                        try {
+                            const s5 = [];
+                            for (let i = 0; i < 10; i++) s5.push("same-saat-" + i);
+                            const s6 = [];
+                            for (let i = 10; i < 20; i++) s6.push("same-saat-" + i);
+                            if (U[5]) Z5 = await S(zeitalter, { saaten: s5, zeiten: [-541, -359, -252, -66, -0.02, 0] });
+                            if (U[6]) Z6 = await S(zeitalter, { saaten: s6, zeiten: [-500, -66, 0] });
+                        } catch (e) {
+                            zf = kurz(e);
+                        }
+                        const art = (Z) => [...new Set(Z.flatMap((x) => x.felder))].filter((f) => /art|fauna|leben|tier|medium|atmo|druck/i.test(f));
+                        const sd = (xs) => {
+                            const m = xs.reduce((q, x) => q + x, 0) / (xs.length || 1);
+                            return Math.sqrt(xs.reduce((q, x) => q + (x - m) * (x - m), 0) / (xs.length || 1));
+                        };
+                        if (U[5]) {
+                            roh[5] = { werte: { zeitalter: new Set(Z5.map((x) => x.zeitMa)).size, saaten: new Set(Z5.map((x) => x.samen)).size }, zeuge: { antworten: Z5.length, streuungM: +sd(Z5.map((x) => x.h)).toFixed(1), artenFelder: art(Z5).length, wuchs: [...new Set(Z5.map((x) => x.wuchs))], fehler: zf } };
+                            if (!art(Z5).length) roh[5].nicht = "der Planet-Faden trägt kein Arten-Inventar je Zeitalter (" + Z5.length + " Antworten, 6 Zeitalter: Wuchs " + [...new Set(Z5.map((x) => x.wuchs))].join("/") + ") — der Vogel singt im Kambrium wie heute";
+                        }
+                        if (U[6]) {
+                            roh[6] = { werte: { planeten: new Set(Z6.map((x) => x.samen)).size, zeitalter: new Set(Z6.map((x) => x.zeitMa)).size }, zeuge: { antworten: Z6.length, streuungM: +sd(Z6.map((x) => x.h)).toFixed(1), artenFelder: art(Z6).length, fehler: zf } };
+                            if (!art(Z6).length) roh[6].nicht = "der Planet-Faden trägt weder Arten noch Medium (Luft, Vakuum) je Planet und Zeitalter (" + Z6.length + " Antworten) — der Klang kann ihnen nicht folgen";
+                        }
+                    }
+                    return { sprossen: roh };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [K.soll(KL, 1, "Regenstärke im Bild ↔ Pegel r ≥ 0,9", { key: "r" }), sollWort(KL, 1, "Regenklang je Dachstoff unterscheidbar", { key: "dachKlaenge", rel: ">", zahl: 1, einheit: "Klänge" })],
+                        zeuge: zeugeMin([["wetter", 5, "nicht alle fünf Wetter gefahren"], ["trocken", 1, "kein Gegenlauf: kein trockenes Wetter ohne Regenstimme"], ["nass", 2, "der Regen trägt im Ohr keine Stimme"]]),
+                        taeter: "klang-core.js umweltMischung (die Regenstimme ohne Dachstoff)",
+                        nicht: "der Regen klingt auf jedem Dach gleich",
+                        leser: "klang-core.js:912 regen — die Regenstimme liest regen und deckung, keinen Dachstoff (stamm/stoff-dach.js reicht keinen ans Ohr)",
+                        gruen: { werte: { r: 0.97, dachKlaenge: 3 }, zeuge: { wetter: 5, trocken: 2, nass: 3 } },
+                        attrappen: [A("r 0,97 ohne Gegenlauf", { r: 0.97, dachKlaenge: 3 }, { wetter: 5, trocken: 0, nass: 3 }), A("r 0,97 ohne Wetter", { r: 0.97, dachKlaenge: 3 }, { wetter: 0 })],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(KL, 2, "ändern sich ≤ 2 s", { key: "verzugS", einheit: "s" }), K.soll(KL, 2, "folgen der Reaktion der Simulation r ≥ 0,8", { key: "r" })],
+                        zeuge: zeugeMin([
+                            ["proben", 10, "zu wenige Proben über den Sturm"],
+                            ["voegelVor", 1, "vor dem Ereignis singt kein Vogel (keine Ursache)"],
+                            ["chorVor", -64, "vor dem Ereignis klingt kein Chor"],
+                            ["ruheProben", 10, "der Gegenlauf ohne Ereignis fehlt"],
+                            ["ruhig", 1, "ohne Ereignis (Gegenlauf, sonnig) ändert sich die Klanglandschaft ebenso — die Änderung ist nicht die Folge des Ereignisses"],
+                        ]),
+                        taeter: "stamm/klang.js _umweltLageZwei (kein Ausbruch, kein Beben, keine Menge)",
+                        nicht: "kein Ausbruch, kein Beben, kein Unfall am Ohr",
+                        leser: "stamm/klang.js:474 _umweltLageZwei — trägt kein Beben, keinen Ausbruch, keine Menge (Schrei, Flucht, Hupe)",
+                        gruen: { werte: { verzugS: 0.4, r: 0.92 }, zeuge: { proben: 30, voegelVor: 14, chorVor: -41, ruheProben: 30, ruhig: 1 } },
+                        attrappen: [
+                            A("Verzug 0,4 s ohne Vögel", { verzugS: 0.4, r: 0.92 }, { proben: 30, voegelVor: 0, chorVor: -41, ruheProben: 30, ruhig: 1 }),
+                            A("die Klanglandschaft wechselt auch ohne Ereignis", { verzugS: 0.4, r: 0.92 }, { proben: 30, voegelVor: 14, chorVor: -41, ruheProben: 30, ruhig: 0 }),
+                        ],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(KL, 3, "Raffer 100 Jahre an 10 Orten", { key: "orte", rel: "≥", zahl: 10 }), K.soll(KL, 3, "0 Waisen", { key: "waisen", rel: "=", zahl: 0 })],
+                        zeuge: zeugeMin([["orte", 10, "weniger als 10 Orte"], ["stimmen", 10, "zu wenige hörbare Stimmen an den Orten"]]),
+                        taeter: "stamm/netz-portal.js _reiseBetreten (kein Raffer am Ort)",
+                        nicht: "kein Raffer von 100 Jahren am Ort",
+                        leser: "stamm/netz-portal.js:660 _reiseBetreten — die Zeit eines Orts springt nur über die Reise in eine neue Welt; der Ort selbst altert nicht um 100 Jahre",
+                        gruen: { werte: { orte: 10, waisen: 0 }, zeuge: { orte: 10, stimmen: 31, gegenRest: 0 } },
+                        attrappen: [A("0 Waisen ohne Orte", { orte: 10, waisen: 0 }, { orte: 0, stimmen: 0 })],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(KL, 4, "Epochenfahrt: 0 anachronistische Quellen", { key: "anachronismen", rel: "=", zahl: 0 }), K.soll(KL, 4, "Epoche nur am Abgriff erkannt ≥ 80 %", { key: "erkanntProzent", einheit: "%" })],
+                        zeuge: zeugeMin([["epochen", 3, "weniger als drei Epochen in der Welt"], ["epochStimmen", 1, "keine Stimme liest die Epoche"]]),
+                        taeter: "stamm/klang.js _umweltLageZwei (liest keine Epoche)",
+                        nicht: "die Lage am Ohr liest keine Epoche",
+                        leser: "stamm/klang.js:474 _umweltLageZwei — die Lage am Ohr liest keine Epoche der Siedlung (fachwerk-core.js:3718 siedlungsEpoche reicht nur ins Bild); UMWELT.stimmen ohne Hufe, Dampf, Verbrenner",
+                        gruen: { werte: { anachronismen: 0, erkanntProzent: 84 }, zeuge: { epochen: 5, epochStimmen: 6 } },
+                        attrappen: [A("84 % ohne Epochen-Stimme", { anachronismen: 0, erkanntProzent: 84 }, { epochen: 5, epochStimmen: 0 })],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(KL, 5, "6 Zeitalter", { key: "zeitalter", rel: "≥", zahl: 6 }), K.soll(KL, 5, "10 Saaten", { key: "saaten", rel: "≥", zahl: 10 }), K.soll(KL, 5, "0 Anachronismen", { key: "anachronismen", rel: "=", zahl: 0 })],
+                        zeuge: zeugeMin([["antworten", 60, "weniger als 60 Antworten des Planet-Fadens"], ["streuungM", 1e-6, "die Antworten tragen keine Streuung"], ["artenFelder", 1, "der Faden trägt kein Arten-Inventar"]]),
+                        taeter: "planet-core.js planetOrt (kein Arten-Inventar je Zeitalter)",
+                        nicht: "kein Arten-Inventar je Zeitalter",
+                        leser: "planet-core.js:2293 planetOrt — delta trägt Klima, Meer, Wetter, Wuchs, Wildnis; kein Arten-Inventar je Zeitalter, das der Klang lesen könnte",
+                        gruen: { werte: { zeitalter: 6, saaten: 10, anachronismen: 0 }, zeuge: { antworten: 60, streuungM: 2100, artenFelder: 3 } },
+                        attrappen: [A("0 Anachronismen ohne Faden", { zeitalter: 6, saaten: 10, anachronismen: 0 }, { antworten: 0 })],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(KL, 6, "10 Zufallsplaneten × 3 Zeitalter", { key: "planeten", rel: "≥", zahl: 10 }), K.soll(KL, 6, "10 Zufallsplaneten × 3 Zeitalter", { key: "zeitalter", rel: "≥", zahl: 3 }), K.soll(KL, 6, "0 Waisen", { key: "waisen", rel: "=", zahl: 0 })],
+                        zeuge: zeugeMin([["antworten", 30, "weniger als 30 Antworten des Planet-Fadens"], ["streuungM", 1e-6, "die Antworten tragen keine Streuung"], ["artenFelder", 1, "der Faden trägt weder Arten noch Medium"]]),
+                        taeter: "planet-core.js planetOrt (weder Arten noch Medium)",
+                        nicht: "weder Arten noch Medium je Planet",
+                        leser: "planet-core.js:2293 planetOrt — der Planet-Faden trägt weder Arten noch Medium (Luft, Vakuum) je Planet und Zeitalter",
+                        gruen: { werte: { planeten: 10, zeitalter: 3, waisen: 0 }, zeuge: { antworten: 30, streuungM: 2100, artenFelder: 2 } },
+                        attrappen: [A("0 Waisen ohne Faden", { planeten: 10, zeitalter: 3, waisen: 0 }, { antworten: 0 })],
+                    },
+                },
+            },
+
+            // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // GETEILTER SINN: die Sitzung fragt ihr Netz (`state.p2p`: Gegenstellen), die Wege einer Tat ins Netz (NON_BROADCASTABLE_OPS),
+            // die Zeugen der Siedlung (das Gedächtnis „gewalt“, die Akten der Zelle) und ob die Welt eine Legende kennt. Ohne zweiten
+            // Spieler ist jede Sprosse „Umfang nicht erzeugbar“ — gemessen wird, was die Welt dafür trägt.
+            [GS]: {
+                sek: 8,
+                dorf: true,
+                pfad: ["stamm/netz-p2p.js", "stamm/netz-identitaet.js", "stamm/feld-dsl.js", "stamm/siedlung-bewohner.js"],
+                ungefahren: "zwei Geräte an einer Saat (die Fahrt hat eines)",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const kurz = (e) => String((e && e.message) || e).slice(0, 220);
+                    const netz = async (r, T, a) => {
+                        const s = r.state;
+                        const p = s.p2p || {};
+                        const zahl = (x) => (x instanceof Map || x instanceof Set ? x.size : Array.isArray(x) ? x.length : x && typeof x === "object" ? Object.keys(x).length : 0);
+                        const namen = new Set();
+                        for (let q = Object.getPrototypeOf(r); q && q !== Object.prototype; q = Object.getPrototypeOf(q)) for (const k of Object.getOwnPropertyNames(q)) namen.add(k);
+                        const such = (q) => [...namen].filter((k) => q.test(k));
+                        const NB = r.constructor.NON_BROADCASTABLE_OPS;
+                        const sied = r._bewohnerSiedlungen ? [...r._bewohnerSiedlungen.values()] : [];
+                        const bew = sied.flatMap((x) => x.liste || []);
+                        const cells = (s.worldMeta || {}).settlementCells || {};
+                        const akten = Object.values(cells).flatMap((c) => (c && c.akten) || []);
+                        const peers = Math.max(zahl(p.peers), zahl(p.rtcPeers), zahl(p.channels), zahl(p.verbunden));
+                        return {
+                            peers, p2pFelder: Object.keys(p).slice(0, 24), spieler: 1 + peers,
+                            legenden: such(/legende|legend/i).length,
+                            zeugen: bew.filter((b) => b.leib && ((b.leib.userData && b.leib.userData.memory) || []).some((m) => m && m.type === "gewalt")).length,
+                            bewohner: bew.length, akten: akten.length, aktenMitWer: akten.filter((k) => k && (k.wer || k.von) && Number.isFinite(k.x)).length,
+                            tatReist: NB ? !(NB.has ? NB.has("spawn_studio") : NB.includes("spawn_studio")) : null,
+                        };
+                    };
+                    let w;
+                    try {
+                        w = await S(netz, {});
+                    } catch (e) {
+                        w = { fehler: kurz(e), spieler: 0 };
+                    }
+                    const roh = {};
+                    const z = { spieler: w.spieler || 0, peers: w.peers || 0, legenden: w.legenden || 0, zeugen: w.zeugen || 0, bewohner: w.bewohner || 0, akten: w.akten || 0, aktenMitWer: w.aktenMitWer || 0, tatReist: w.tatReist ? 1 : 0, p2pFelder: w.p2pFelder, fehler: w.fehler };
+                    const allein = "kein zweiter Spieler in der Sitzung (" + (w.peers || 0) + " Gegenstellen im Netz der Welt)";
+                    for (const nr of Object.keys(U)) roh[nr] = { werte: { spieler: z.spieler, legenden: z.legenden }, zeuge: z };
+                    if (U[1]) {
+                        roh[1].nicht = allein + "; die Tat spawn_studio " + (w.tatReist ? "reist" : "reist nicht") + " ins Netz";
+                        roh[1].auge = await M.auge("erleben-geteilt-s1", { ort: "wiese" });
+                    }
+                    if (U[2]) roh[2].nicht = allein + "; kein Bewohner erzählt eine Tat (" + z.zeugen + " Zeugen mit Gedächtnis „gewalt“, " + z.akten + " Akten, davon " + z.aktenMitWer + " mit Wer und Wo)";
+                    for (const nr of [3, 4]) if (U[nr]) roh[nr].nicht = allein + " — " + (nr === 3 ? "10² Spieler" : "10⁴ Spieler") + " in einer Stadt sind nicht erzeugbar";
+                    for (const nr of [5, 6, 7]) if (U[nr]) roh[nr].nicht = allein + "; die Welt kennt keine Legende (" + z.legenden + " Leser)";
+                    return { sprossen: roh };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [sollWort(GS, 1, "Bildpaar am Ort bei B zeigt dieselbe Spur", { key: "spurGleich", rel: "=", zahl: 1 })],
+                        auge: { pose: "Ego am Ort der Tat von A, bei A und bei B (dieselbe Saat; heute ein Gerät)", vorbild: "Bildpaar A ↔ B am Ort der Tat zeigt dieselbe Spur (Prüfer-Satz R11)" },
+                        taeter: "stamm/netz-p2p.js (keine Gegenstelle in der Sitzung)",
+                        nicht: "kein zweiter Spieler in der Sitzung",
+                        leser: "stamm/netz-p2p.js:1706 _p2pMsgPeerJoin — die Sitzung der Fahrt hat keine Gegenstelle (ein Gerät, kein Broker)",
+                        gruen: { werte: { spurGleich: 1 }, zeuge: { spieler: 2 } },
+                        attrappen: [A("dieselbe Spur ohne B", { spurGleich: 1 }, { spieler: 1 })],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(GS, 2, "10 Taten von A", { key: "taten", rel: "≥", zahl: 10 }), sollWort(GS, 2, "Zeugen bei B nennen Wer, Was, Wo richtig", { key: "richtigAnteil", rel: "≥", zahl: 1 })],
+                        zeuge: zeugeMin([["spieler", 2, "kein Spieler B"], ["zeugen", 1, "kein Zeuge bei B"], ["aktenMitWer", 1, "keine Akte mit Wer und Wo"]]),
+                        taeter: "stamm/siedlung-bewohner.js _bewohnerZeuge (die Akte ohne Wer, Was, Wo)",
+                        nicht: "kein Spieler B, kein erzählender Zeuge",
+                        leser: "stamm/siedlung-bewohner.js:2169 akten — _bewohnerZeuge legt die Akte als { t, type } ab: ohne Wer und Wo, kein Bewohner erzählt sie",
+                        gruen: { werte: { taten: 10, richtigAnteil: 1 }, zeuge: { spieler: 2, zeugen: 14, aktenMitWer: 10 } },
+                        attrappen: [A("10 Taten ohne B", { taten: 10, richtigAnteil: 1 }, { spieler: 1, zeugen: 0, aktenMitWer: 0 })],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(GS, 3, "Anteil Ziele, die ≥ 2 Spieler zugleich verfolgen ≥ 20 %", { key: "zieleGeteiltProzent", rel: "≥", zahl: 20, einheit: "%" })],
+                        zeuge: zeugeMin([["spieler", 100, "weniger als 10² Spieler"]]),
+                        taeter: "stamm/netz-p2p.js (kein Netz-Spiel mit 10² Spielern)",
+                        nicht: "kein zweiter Spieler, keine 10²",
+                        leser: "stamm/netz-p2p.js:376 p2pSend — trägt Gegenstellen eines Raums; die Sitzung hat keine, kein Ziel-Leser über Spieler",
+                        gruen: { werte: { zieleGeteiltProzent: 24 }, zeuge: { spieler: 120 } },
+                        attrappen: [A("24 % ohne Spieler", { zieleGeteiltProzent: 24 }, { spieler: 1 })],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(GS, 4, "Ruf von A ändert die Begegnungen von B messbar (≥ 20 Prozentpunkte)", { key: "rufPunkte", einheit: "pp" })],
+                        zeuge: zeugeMin([["spieler", 2, "kein Spieler B"], ["zeugen", 1, "kein Bewohner trägt einen Ruf"]]),
+                        taeter: "stamm/siedlung-bewohner.js (kein Ruf eines Spielers)",
+                        nicht: "kein zweiter Spieler, kein Ruf",
+                        leser: "stamm/siedlung-bewohner.js:2163 _creatureRemember — das Gedächtnis „gewalt“ trägt { von: \"spieler\" }, keinen Namen: Ruf von A ist für B nicht lesbar",
+                        gruen: { werte: { rufPunkte: 26 }, zeuge: { spieler: 2, zeugen: 30 } },
+                        attrappen: [A("26 Punkte ohne B", { rufPunkte: 26 }, { spieler: 1, zeugen: 0 })],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(GS, 5, "in ≥ 50 % binnen 1 h eine Legende eines Früheren", { key: "legendeProzent", rel: "≥", zahl: 50, einheit: "%" }), sollWort(GS, 5, "Zeitreise bestätigt den Kern", { key: "kernBestaetigt", rel: "=", zahl: 1 })],
+                        zeuge: zeugeMin([["spieler", 2, "keine früheren Spieler"], ["legenden", 1, "die Welt kennt keine Legende"]]),
+                        taeter: "die Welt kennt keine Legende (kein Leser)",
+                        nicht: "keine Legende in der Welt",
+                        leser: "stamm/siedlung-bewohner.js:2170 aktenMax — die Akte einer Tat altert aus (WACHSTUM.aktenMax) und wird nie Legende; kein Legenden-Speicher in speicher-welten.js",
+                        gruen: { werte: { legendeProzent: 55, kernBestaetigt: 1 }, zeuge: { spieler: 1000, legenden: 40 } },
+                        attrappen: [A("55 % ohne Legende", { legendeProzent: 55, kernBestaetigt: 1 }, { spieler: 1, legenden: 0 })],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(GS, 6, "Anteil Legenden mit Spieler-Ursprung zwischen 10 % und 50 %", { key: "spielerUrsprungProzent", rel: "band", zahl: 10, bis: 50, einheit: "%" })],
+                        zeuge: zeugeMin([["spieler", 2, "keine Spieler-Zivilisation"], ["legenden", 1, "die Welt kennt keine Legende"]]),
+                        taeter: "die Welt kennt keine Legende (kein Leser)",
+                        nicht: "keine Legende in der Welt",
+                        leser: "stamm/siedlung-bewohner.js:2170 aktenMax — die Akte altert aus, kein Legenden-Speicher: die Welt erzählt keine Tat, weder eines Spielers noch ihre eigene",
+                        gruen: { werte: { spielerUrsprungProzent: 30 }, zeuge: { spieler: 1000, legenden: 60 } },
+                        attrappen: [A("30 % ohne Legende", { spielerUrsprungProzent: 30 }, { spieler: 1, legenden: 0 })],
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(GS, 7, "≥ 50 % der Spieler haben nach 100 h eine Legende eines anderen Spielers gefunden und verfolgt", { key: "gefundenProzent", rel: "≥", zahl: 50, einheit: "%" })],
+                        zeuge: zeugeMin([["spieler", 2, "keine anderen Spieler"], ["legenden", 1, "die Welt kennt keine Legende"]]),
+                        taeter: "die Welt kennt keine Legende (kein Leser)",
+                        nicht: "keine Legende, kein zweiter Spieler",
+                        leser: "stamm/siedlung-bewohner.js:2170 aktenMax — keine Legende überdauert ihren Spieler (kein Legenden-Speicher)",
+                        gruen: { werte: { gefundenProzent: 58 }, zeuge: { spieler: 1000, legenden: 300 } },
+                        attrappen: [A("58 % ohne Legende", { gefundenProzent: 58 }, { spieler: 1, legenden: 0 })],
+                    },
+                },
+            },
+
+            // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // EIN EREIGNIS: S1 zwanzig Feuer (glutbrunnen) im Sichtkegel, je eines: der Bild-Takt, der es zeichnet (`_archImBild` und im
+            // Frustum der Kamera), dann das Ohr im Takt eines Bilds (symphonyTick je 16 ms) bis die Stimme glut aus seinem Abstand klingt —
+            // der Versatz auf der Uhr des Ohrs (ctx.currentTime), die Richtung aus dem Panorama gegen den Ort im Bild; der Gegenlauf: das
+            // Feuer fort → die Stimme schweigt. S2 Gewitter (Leser der Welt, die Bewohner unter Dach mit ↔ ohne Sturm), S3 die Kanäle eines
+            // Ausbruchs, S4 die Sichten (first/third/orbit) am selben Feuer, S5 Zeugen und Akten, S6 die Feuer als Zufallsereignisse.
+            [EE]: {
+                sek: 50,
+                dorf: true,
+                mutiert: true,
+                pfad: ["stamm/klang.js", "klang-core.js", "stamm/siedlung-bauten.js", "stamm/bau-vorlagen.js", "stamm/dirigent-*.js", "stamm/siedlung-bewohner.js", "koerper-core.js", "stamm/feld-brand.js"],
+                ungefahren: "das Hören am Gerät und das Bildpaar Orbit ↔ Ego (S4); headless läuft der Bild-Takt langsamer, die Uhr des Ohrs ist echt",
+                mess: async function (H, U, M) {
+                    const DECKEL = 50;
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const kurz = (e) => String((e && e.message) || e).slice(0, 220);
+                    const ohr = async (r, T, a) => {
+                        const s = r.state;
+                        if (a.an) {
+                            const war = !!s.symphony.enabled;
+                            window.__erlebenOhr = { war, modus: s.cameraMode };
+                            r._loopCamera(performance.now());
+                            s.camera.updateMatrixWorld(true);
+                            if (!war) r.initSymphony();
+                            const ctx = s.symphony.ctx;
+                            if (ctx && ctx.state !== "running") await ctx.resume();
+                            return { war, ctx: ctx && ctx.state };
+                        }
+                        const w = window.__erlebenOhr;
+                        if (w && w.modus && s.cameraMode !== w.modus) r.setCameraMode(w.modus);
+                        for (const e of (s.architectures || []).slice()) if (e && /^erleben-feuer-/.test(String(e.id || ""))) r.removeArchitecture(e, { still: true });
+                        if (w && !w.war) r.disposeSymphony();
+                        delete window.__erlebenOhr;
+                        return { sym: !!s.symphony.enabled };
+                    };
+                    const feuer = async (r, T, a) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const sym = s.symphony;
+                        const um = sym.umwelt;
+                        const ctx = sym.ctx;
+                        const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+                        const cam = s.camera;
+                        cam.updateMatrixWorld(true);
+                        const fr = new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+                        const v = new T.Vector3();
+                        cam.getWorldDirection(v);
+                        const l = Math.hypot(v.x, v.z) || 1;
+                        const f = [v.x / l, v.z / l];
+                        const rechts = [-v.z / l, v.x / l];
+                        const glutDa = (d) => {
+                            const L = um.lage && um.lage.glut;
+                            const g = um.graph.zensus().find((q) => q.name === "glut");
+                            return L && Math.abs(L.d - d) < 1.5 && g && g.an && Number.isFinite(g.db) ? g : null;
+                        };
+                        const aus = [];
+                        for (const i of a.feuer) {
+                            const az = (a.az[i] * Math.PI) / 180;
+                            const d = a.d[i];
+                            const x = pm.x + d * (f[0] * Math.cos(az) + rechts[0] * Math.sin(az));
+                            const z = pm.z + d * (f[1] * Math.cos(az) + rechts[1] * Math.sin(az));
+                            const y = r.getTerrainHeightAt(x, z);
+                            const e = r.spawnArchitecture("glutbrunnen", { x, y, z }, { precise: true, id: "erleben-feuer-" + i });
+                            if (!e) {
+                                aus.push({ i, fehler: "kein Feuer gebaut" });
+                                continue;
+                            }
+                            let tBild = null;
+                            for (let k = 0; k < 6 && tBild === null; k++) {
+                                r._gameLoopTick(performance.now());
+                                if (r._archImBild(e) && fr.containsPoint(new T.Vector3(x, y + 0.5, z))) tBild = ctx.currentTime;
+                            }
+                            let tOhr = null;
+                            let pan = null;
+                            let n = 0;
+                            for (; n < 90 && tOhr === null; n++) {
+                                const g = glutDa(Math.hypot(x - pm.x, z - pm.z));
+                                if (g) {
+                                    tOhr = ctx.currentTime;
+                                    pan = g.pan;
+                                    break;
+                                }
+                                r.symphonyTick();
+                                await warte(16);
+                            }
+                            r.removeArchitecture(e, { still: true });
+                            let still = null;
+                            const t1 = ctx.currentTime;
+                            for (let k = 0; k < 90 && still === null; k++) {
+                                r.symphonyTick();
+                                await warte(16);
+                                const L = um.lage && um.lage.glut;
+                                if (!(L && Math.abs(L.d - d) < 1.5)) still = ctx.currentTime - t1;
+                            }
+                            const winkel = pan === null ? null : (Math.asin(Math.max(-1, Math.min(1, pan))) * 180) / Math.PI;
+                            aus.push({ i, az: a.az[i], d, imBild: tBild !== null, versatzMs: tBild !== null && tOhr !== null ? Math.round((tOhr - tBild) * 1000) : null, winkel, fehlerGrad: winkel === null ? null : Math.abs(winkel - a.az[i]), stillMs: still === null ? null : Math.round(still * 1000), takte: n });
+                        }
+                        return aus;
+                    };
+                    const welt = async (r, T, a) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const namen = new Set();
+                        for (let q = Object.getPrototypeOf(r); q && q !== Object.prototype; q = Object.getPrototypeOf(q)) for (const k of Object.getOwnPropertyNames(q)) namen.add(k);
+                        const such = (q) => [...namen].filter((k) => q.test(k));
+                        const UM = AnazhRealm._umweltGesetz().UMWELT;
+                        const stimmen = Object.keys(UM.stimmen);
+                        const sied = r._bewohnerSiedlungen ? [...r._bewohnerSiedlungen.values()] : [];
+                        const bew = sied.flatMap((x) => x.liste || []);
+                        const aus = { stimmen, bewohner: bew.length };
+                        aus.blitz = such(/blitz|donner|gewitter|lightning|thunder/i);
+                        aus.front = such(/front/i).filter((k) => !/brand/i.test(k));
+                        const stunde = ((((s.timeOfDay || 0.5) % 1) + 1) % 1) * 24;
+                        const drinnen = () => bew.filter((b) => r._bewohnerSoll(b, stunde).drinnen).length;
+                        const alt = s.weather;
+                        try {
+                            window.__wetterSetzen("sunny");
+                            r._gameLoopTick(performance.now());
+                            aus.sonnig = drinnen();
+                            window.__wetterSetzen("stormy");
+                            for (let k = 0; k < 3; k++) r._gameLoopTick(performance.now());
+                            aus.sturm = drinnen();
+                            aus.regenSturm = r._weatherFieldFor().rain;
+                        } finally {
+                            window.__wetterSetzen(alt);
+                            r._gameLoopTick(performance.now());
+                        }
+                        aus.kanal = {
+                            glut: stimmen.includes("glut"),
+                            grollen: stimmen.some((k) => /groll|infra|donner/i.test(k)),
+                            beben: such(/beben|bodenwelle/i).length > 0,
+                            asche: such(/asche/i).length > 0,
+                            schwefel: such(/schwefel|geruch/i).length > 0,
+                            flucht: such(/flucht/i).length > 0,
+                        };
+                        const cells = (s.worldMeta || {}).settlementCells || {};
+                        const akten = Object.values(cells).flatMap((c) => (c && c.akten) || []);
+                        aus.zeugen = bew.filter((b) => b.leib && ((b.leib.userData && b.leib.userData.memory) || []).some((m) => m && m.type === "gewalt")).length;
+                        aus.akten = akten.length;
+                        aus.aktenMitOrt = akten.filter((k) => k && Number.isFinite(k.x) && Number.isFinite(k.z)).length;
+                        const modus = s.cameraMode;
+                        const sichten = {};
+                        const x = pm.x + 6;
+                        const z = pm.z;
+                        const e = r.spawnArchitecture("glutbrunnen", { x, y: r.getTerrainHeightAt(x, z), z }, { precise: true, id: "erleben-feuer-sicht" });
+                        try {
+                            for (const m of ["first", "third", "orbit"]) {
+                                r.setCameraMode(m);
+                                r._loopCamera(performance.now());
+                                s.camera.updateMatrixWorld(true);
+                                const g = r._glutAmOhr(pm.x, pm.z, r._umweltPanorama());
+                                sichten[m] = { modus: s.cameraMode, d: g.d, pan: g.pan, kamera: [s.camera.position.x, s.camera.position.y, s.camera.position.z].map((q) => +q.toFixed(2)) };
+                            }
+                        } finally {
+                            if (e) r.removeArchitecture(e, { still: true });
+                            r.setCameraMode(modus);
+                            r._loopCamera(performance.now());
+                        }
+                        aus.sichten = sichten;
+                        return aus;
+                    };
+                    const roh = {};
+                    const N = 20;
+                    const az = [];
+                    const dd = [];
+                    for (let i = 0; i < N; i++) {
+                        az.push(Math.round((-30 + 60 * ((i * 0.618034) % 1)) * 10) / 10);
+                        dd.push(Math.round((5 + 15 * ((i * 0.381966 + 0.25) % 1)) * 10) / 10);
+                    }
+                    let F = [];
+                    let w = null;
+                    let fe = null;
+                    try {
+                        await S(ohr, { an: true });
+                        if (U[1] || U[6]) {
+                            for (let i = 0; i < N; i += 5) {
+                                if (M.uhr() > DECKEL - 14) break;
+                                F = F.concat(await S(feuer, { feuer: [i, i + 1, i + 2, i + 3, i + 4].filter((k) => k < N), az, d: dd }));
+                            }
+                        }
+                        w = await S(welt, {});
+                    } catch (e) {
+                        fe = kurz(e);
+                    } finally {
+                        await S(ohr, { an: false }).catch(() => null);
+                    }
+                    w = w || { fehler: fe };
+                    const gut = F.filter((x) => x.imBild && x.versatzMs !== null && x.fehlerGrad !== null);
+                    const haelt = (x) => x.imBild && x.versatzMs !== null && x.versatzMs <= 50 && x.fehlerGrad !== null && x.fehlerGrad <= 10 && x.stillMs !== null;
+                    const sd = (xs) => {
+                        const m = xs.reduce((q, x) => q + x, 0) / (xs.length || 1);
+                        return Math.sqrt(xs.reduce((q, x) => q + (x - m) * (x - m), 0) / (xs.length || 1));
+                    };
+                    const zf = { feuer: F.length, imBild: F.filter((x) => x.imBild).length, ohr: gut.length, gestillt: F.filter((x) => x.stillMs !== null).length, panStreuung: +sd(gut.map((x) => Math.sin((x.winkel * Math.PI) / 180))).toFixed(3), je: F.map((x) => [x.az, x.d, x.versatzMs, x.fehlerGrad === null ? null : +x.fehlerGrad.toFixed(2), x.stillMs, x.takte]), fehler: fe };
+                    if (U[1]) {
+                        roh[1] = { werte: {}, zeuge: zf };
+                        if (gut.length) {
+                            roh[1].werte.versatzMsMax = Math.max(...gut.map((x) => x.versatzMs));
+                            roh[1].werte.winkelFehlerMax = +Math.max(...gut.map((x) => x.fehlerGrad)).toFixed(3);
+                        }
+                        if (F.length) {
+                            roh[1].werte.feuer = F.length;
+                            roh[1].werte.anteilProzent = +((100 * F.filter(haelt).length) / F.length).toFixed(1);
+                        }
+                    }
+                    if (U[2]) {
+                        roh[2] = { werte: {}, zeuge: { blitz: (w.blitz || []).length, front: (w.front || []).length, bewohner: w.bewohner || 0, sonnig: w.sonnig, sturm: w.sturm, regenSturm: w.regenSturm, fehler: w.fehler } };
+                        if (w.bewohner > 0) roh[2].werte.unterDach = w.sturm / w.bewohner;
+                        if (!(w.blitz || []).length) roh[2].nicht = "kein Blitz, kein Donner, keine Front: das Wetter ist ein Wort für die ganze Welt (Stimmen am Ohr: " + (w.stimmen || []).join(", ") + ")" + (w.bewohner > 0 ? "" : "; kein lebender Bewohner im Umkreis");
+                    }
+                    if (U[3]) {
+                        const K6 = w.kanal || {};
+                        const ohne = Object.keys(K6).filter((k) => !K6[k]);
+                        roh[3] = { werte: w.kanal ? { kanaeleOhneSpur: ohne.length } : {}, zeuge: { kanaele: Object.keys(K6).length, ohne, ausbruch: 0 } };
+                        roh[3].nicht = "kein Ausbruch in 20 km: von 6 Kanälen tragen " + ohne.join(", ") + " keinen Leser in der Welt (Glut und Flucht ja, aber kein Ereignis, das sie in Zeitfolge setzt)";
+                    }
+                    if (U[4]) {
+                        const sv = w.sichten || {};
+                        const modi = [...new Set(Object.values(sv).map((x) => x.modus))];
+                        roh[4] = { werte: { sichten: modi.length }, zeuge: { sichten: modi.length, je: sv } };
+                        if (sv.first && sv.third && sv.first.d > 0) roh[4].werte.abstandDiffProzent = +((100 * Math.abs(sv.first.d - sv.third.d)) / sv.first.d).toFixed(3);
+                        if (modi.length < 3) roh[4].nicht = "nur " + modi.length + " Sichten (" + modi.join(", ") + "): kein Orbit, keine Sicht eines Bewohners oder Tiers mit fremdem Sinn";
+                        roh[4].auge = await M.auge("erleben-ereignis-s4", { ort: "wiese" });
+                    }
+                    if (U[5]) {
+                        roh[5] = { werte: { zeugen: w.zeugen || 0 }, zeuge: { zeugen: w.zeugen || 0, akten: w.akten || 0, aktenMitOrt: w.aktenMitOrt || 0, bewohner: w.bewohner || 0 } };
+                        roh[5].nicht = "kein Zeuge erzählt Ort und Zeit (" + (w.akten || 0) + " Akten, davon " + (w.aktenMitOrt || 0) + " mit Ort; " + (w.zeugen || 0) + " Zeugen), kein Sprung zurück in der Welt der Sitzung";
+                    }
+                    if (U[6]) {
+                        roh[6] = { werte: {}, zeuge: { ereignisse: F.length, saaten: 1, ohr: gut.length } };
+                        if (F.length) Object.assign(roh[6].werte, { ereignisse: F.length, saaten: 1, anteil: +(F.filter(haelt).length / F.length).toFixed(3) });
+                        roh[6].nicht = "nur die Saat der Sitzung: 10 Saaten sind 10 Welten (die Reise tauscht die Welt) — gemessen " + F.length + " Feuer dieser Saat";
+                    }
+                    return { sprossen: roh };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [
+                            K.soll(EE, 1, "20 Feuer", { key: "feuer", rel: "≥", zahl: 20 }),
+                            K.soll(EE, 1, "Versatz Bild ↔ Abgriff ≤ 50 ms", { key: "versatzMsMax", einheit: "ms" }),
+                            K.soll(EE, 1, "Quellort am Abgriff ±10° zur Glut", { key: "winkelFehlerMax", ref: 0, refQuelle: "der Ort der Glut im Bild (Richtung der Kamera, Abweichung 0°)", einheit: "°" }),
+                            K.soll(EE, 1, "100 %", { key: "anteilProzent", rel: "≥", zahl: 100, einheit: "%" }),
+                        ],
+                        zeuge: zeugeMin([["feuer", 20, "weniger als 20 Feuer gebaut"], ["imBild", 20, "nicht jedes Feuer im Bild (Frustum und Zeichnung)"], ["ohr", 20, "nicht jedes Feuer am Ohr"], ["gestillt", 20, "der Gegenlauf fehlt: ein Feuer fort, die Stimme klingt weiter"], ["panStreuung", 0.05, "die Feuer stehen nicht in verschiedenen Richtungen"]]),
+                        taeter: "stamm/klang.js _umweltKlangTick (die Mischung im Takt mischSek hinter dem Bild)",
+                        gruen: { werte: { feuer: 20, versatzMsMax: 34, winkelFehlerMax: 1.2, anteilProzent: 100 }, zeuge: ZF },
+                        attrappen: [A("Versatz 34 ms ohne Feuer", { feuer: 20, versatzMsMax: 34, winkelFehlerMax: 1.2, anteilProzent: 100 }, { feuer: 0 }), A("die Stimme schweigt nie (kein Gegenlauf)", { feuer: 20, versatzMsMax: 34, winkelFehlerMax: 1.2, anteilProzent: 100 }, Object.assign({}, ZF, { gestillt: 0 }))],
+                    },
+                    2: {
+                        u: {},
+                        soll: [
+                            K.soll(EE, 2, "Donner-Verzug = Abstand/c ±2 %", { key: "donnerVerhaeltnis", ref: 1, refQuelle: "Schallgeschwindigkeit c = 343 m/s bei 20 °C (Verzug / (Abstand/c) = 1)" }),
+                            sollWort(EE, 2, "Regen am Ort ≤ Zugzeit der Front", { key: "regenJeZugzeit", rel: "≤", zahl: 1 }),
+                            K.soll(EE, 2, "Bewohner unter Dach ≥ 0,8", { key: "unterDach" }),
+                        ],
+                        zeuge: zeugeMin([["blitz", 1, "die Welt trägt keinen Blitz"], ["front", 1, "das Wetter hat keine Front"], ["bewohner", 1, "kein lebender Bewohner im Umkreis"]]),
+                        taeter: "stamm/klang.js _umweltLageEins (das Wetter als ein Wort, kein Donner)",
+                        nicht: "kein Blitz, kein Donner, keine Front",
+                        leser: "stamm/klang.js:410 _weatherFieldFor — (this.state.weather) liest ein Wort für die Welt (keine Front); UMWELT.stimmen tragen keinen Donner",
+                        gruen: { werte: { donnerVerhaeltnis: 1.01, regenJeZugzeit: 0.9, unterDach: 0.85 }, zeuge: { blitz: 2, front: 1, bewohner: 40 } },
+                        attrappen: [A("Donner aus der Formel ohne Blitz", { donnerVerhaeltnis: 1.01, regenJeZugzeit: 0.9, unterDach: 0.85 }, { blitz: 0, front: 0, bewohner: 0 })],
+                    },
+                    3: {
+                        u: {},
+                        soll: [
+                            K.soll(EE, 3, "nach Abstand und Geschwindigkeit ±10 %", { key: "zeitfolgeVerhaeltnis", ref: 1, refQuelle: "Bodenwelle 6 km/s (P-Welle), Schall 343 m/s, Asche mit dem Wind: Ankunft = Abstand / Geschwindigkeit" }),
+                            K.soll(EE, 3, "0 Kanäle ohne Spur", { key: "kanaeleOhneSpur", rel: "=", zahl: 0 }),
+                        ],
+                        zeuge: zeugeMin([["ausbruch", 1, "kein Ausbruch in der Welt"], ["kanaele", 6, "nicht alle sechs Kanäle gefragt"]]),
+                        taeter: "stamm/klang.js _umweltLageZwei (kein Grollen, Beben, Asche, Schwefel)",
+                        nicht: "kein Ausbruch in 20 km",
+                        leser: "stamm/klang.js:474 _umweltLageZwei — die Lage am Ohr trägt kein Grollen, kein Beben, keinen Schwefel; die Lava (stamm/siedlung-wege.js:522 _lavaDeckeAt) ist kein Ausbruch mit Spuren in Zeitfolge",
+                        gruen: { werte: { zeitfolgeVerhaeltnis: 1.04, kanaeleOhneSpur: 0 }, zeuge: { ausbruch: 1, kanaele: 6 } },
+                        attrappen: [A("0 Kanäle ohne Ausbruch", { zeitfolgeVerhaeltnis: 1.04, kanaeleOhneSpur: 0 }, { ausbruch: 0, kanaele: 6 })],
+                    },
+                    4: {
+                        u: {},
+                        soll: [
+                            K.soll(EE, 4, "±1 s", { key: "zeitDiffS", rel: "≤", zahl: 1, einheit: "s" }),
+                            K.soll(EE, 4, "±1 % Abstand", { key: "abstandDiffProzent", rel: "≤", zahl: 1, einheit: "%" }),
+                            sollWort(EE, 4, "in allen drei Sichten", { key: "sichten", rel: "≥", zahl: 3 }),
+                        ],
+                        auge: { pose: "Orbit über dem Feuer ↔ Ego am Messort wiese (Orbit ist nicht erzeugbar: geschossen nur Ego)", vorbild: "Bildpaar Orbit ↔ Ego zeigt dieselbe Fahne (Prüfer-Satz R11)" },
+                        taeter: "stamm/dirigent-kern.js setCameraMode (nur first/third)",
+                        nicht: "kein Orbit, keine Sicht eines Bewohners",
+                        leser: "stamm/dirigent-kern.js:1237 setCameraMode — kennt nur first und third; keine Orbit-Sicht, keine Rolle eines Bewohners oder Tiers",
+                        gruen: { werte: { zeitDiffS: 0.2, abstandDiffProzent: 0.4, sichten: 3 }, zeuge: { sichten: 3 } },
+                        attrappen: [A("drei Sichten ohne Kamera", { zeitDiffS: 0.2, abstandDiffProzent: 0.4, sichten: 3 }, { sichten: 0 })],
+                    },
+                    5: {
+                        u: {},
+                        soll: [
+                            K.soll(EE, 5, "20 Zeugen nennen Ort und Zeit richtig ≥ 80 %", { key: "richtigProzent", rel: "≥", zahl: 80, einheit: "%" }),
+                            K.soll(EE, 5, "Spur am Ort nach 10 Jahren sichtbar", { key: "spurJahre", rel: "≥", zahl: 10, einheit: "a" }),
+                            sollWort(EE, 5, "Sprung zurück zeigt das Erzählte", { key: "sprungGleich", rel: "=", zahl: 1 }),
+                        ],
+                        zeuge: zeugeMin([["zeugen", 20, "weniger als 20 Zeugen"], ["aktenMitOrt", 1, "keine Akte trägt den Ort"]]),
+                        taeter: "stamm/siedlung-bewohner.js _bewohnerZeuge (die Akte ohne Ort, kein Erzählen)",
+                        nicht: "kein Zeuge erzählt, kein Sprung zurück",
+                        leser: "stamm/siedlung-bewohner.js:2169 akten — _bewohnerZeuge legt die Akte ohne Ort ab, kein Bewohner erzählt sie; ein Sprung zurück (stamm/netz-portal.js:660 _reiseBetreten) gebiert eine neue Welt",
+                        gruen: { werte: { richtigProzent: 85, spurJahre: 10, sprungGleich: 1 }, zeuge: { zeugen: 20, aktenMitOrt: 20 } },
+                        attrappen: [A("85 % ohne Zeugen", { richtigProzent: 85, spurJahre: 10, sprungGleich: 1 }, { zeugen: 0, aktenMitOrt: 0 })],
+                    },
+                    6: {
+                        u: {},
+                        soll: [
+                            K.soll(EE, 6, "N = 100 Zufallsereignisse aus 10 Saaten", { key: "ereignisse", rel: "≥", zahl: 100 }),
+                            K.soll(EE, 6, "N = 100 Zufallsereignisse aus 10 Saaten", { key: "saaten", rel: "≥", zahl: 10 }),
+                            K.soll(EE, 6, "Anteil ohne Widerspruch zwischen allen Kanälen und Perspektiven ≥ 0,95", { key: "anteil" }),
+                        ],
+                        zeuge: zeugeMin([["ereignisse", 100, "weniger als 100 Ereignisse"], ["saaten", 10, "weniger als 10 Saaten"]]),
+                        taeter: "stamm/netz-portal.js _reiseBetreten (eine Saat je Welt)",
+                        nicht: "nur die Saat der Sitzung",
+                        leser: "stamm/netz-portal.js:660 _reiseBetreten — eine andere Saat ist eine andere Welt; 10 Saaten stehen nie in einer Sitzung",
+                        gruen: { werte: { ereignisse: 100, saaten: 10, anteil: 0.97 }, zeuge: { ereignisse: 100, saaten: 10 } },
+                        attrappen: [A("0,97 aus 20 Feuern einer Saat", { ereignisse: 100, saaten: 10, anteil: 0.97 }, { ereignisse: 20, saaten: 1 })],
+                    },
+                },
+            },
+
+            // ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+            // DIE EPOCHE IST GANZ: S1 24 Zufallsuhren über die EINE Uhr (`setTimeOfDay(…, "regler")`): Sonnenstand, Chor und Grillen am Ohr
+            // (die Lage `_umweltLage` → `umweltMischung`, die Vögel `_vogelTakt`), der Bewohnertag (`_bewohnerSoll` der lebenden Bewohner);
+            // der Gegenlauf koppelt das Licht ab (die Sonne der Gegenuhr in der Lage) — die Widersprüche müssen erscheinen. S2 12 Monate am
+            // dichtesten Kronendach nahe dem Spieler: Laub im Bild (`uLaubPraesenz`) gegen Laub und Grillen am Ohr. S3/S4 die Leser von
+            // Zeit und Epoche (Planet-Faden, `_siedlungEpoche`), S5/S6 die Zeitalter am Planet-Faden.
+            [EP]: {
+                sek: 45,
+                dorf: true,
+                mutiert: true,
+                pfad: ["stamm/bild-himmel.js", "stamm/klang.js", "klang-core.js", "stamm/kreatur-fauna.js", "stamm/siedlung-bewohner.js", "koerper-core.js", "stamm/siedlung-ort.js", "fachwerk-core.js", "planet-core.js", "voxel-worker.js"],
+                ungefahren: "das Bild jeder Uhr und jedes Monats (Licht, Laub) urteilt am Gerät nur als Zahl der Uniformen; die Kleidung der Bewohner zeigt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const kurz = (e) => String((e && e.message) || e).slice(0, 220);
+                    const ohr = async (r, T, a) => {
+                        const s = r.state;
+                        if (a.an) {
+                            const war = !!s.symphony.enabled;
+                            window.__erlebenOhr = { war };
+                            if (!war) r.initSymphony();
+                            const ctx = s.symphony.ctx;
+                            if (ctx && ctx.state !== "running") await ctx.resume();
+                            return { war };
+                        }
+                        const w = window.__erlebenOhr;
+                        if (w && !w.war) r.disposeSymphony();
+                        delete window.__erlebenOhr;
+                        return { sym: !!s.symphony.enabled };
+                    };
+                    const uhren = async (r, T, a) => {
+                        const s = r.state;
+                        const G = AnazhRealm._umweltGesetz();
+                        const alt = s.timeOfDay;
+                        const sied = r._bewohnerSiedlungen ? [...r._bewohnerSiedlungen.values()] : [];
+                        const bew = sied.flatMap((x) => x.liste || []).slice(0, 60);
+                        const aus = [];
+                        try {
+                            for (const t of a.uhren) {
+                                r.setTimeOfDay(t, "regler");
+                                r._vogelTakt();
+                                const L = r._umweltLage();
+                                const m = G.kern.umweltMischung(L);
+                                const m2 = G.kern.umweltMischung(Object.assign({}, L, { sonne: -L.sonne }));
+                                aus.push({
+                                    t, uhr: s.timeOfDay, sonne: L.sonne, temperatur: L.temperatur, vogel: m.vogel.db, grille: m.grille.db, vogel2: m2.vogel.db, grille2: m2.grille.db, voegel: (s.voegel || []).length,
+                                    akt: bew.map((b) => r._bewohnerSoll(b, s.timeOfDay * 24).akt),
+                                    verkehr: sied.reduce((q, S) => q + (S.verkehr && S.verkehr.wagen ? S.verkehr.wagen.length : 0), 0), faehrt: r._fahrtVerkehr(s.playerMesh).length,
+                                });
+                            }
+                        } finally {
+                            r.setTimeOfDay(alt, "regler");
+                            r._vogelTakt();
+                        }
+                        return { aus, bewohner: bew.length, schwelle: G.UMWELT.hoerschwelleDb, temperatur: aus.length ? null : null };
+                    };
+                    const monate = async (r, T, a) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const um = s.symphony.umwelt;
+                        const G = AnazhRealm._umweltGesetz();
+                        const alt = { phase: s.seasonPhase, anker: r._saisonAnker, pos: pm.clone() };
+                        let best = null;
+                        for (let i = 0; i < 40; i++) {
+                            const w = i * 2.39996;
+                            const d = 150 * Math.sqrt((i + 0.5) / 40);
+                            const x = alt.pos.x + d * Math.cos(w);
+                            const z = alt.pos.z + d * Math.sin(w);
+                            const k = r._kronenStreuAt(x, z);
+                            if (!best || k > best.k) best = { x, z, k };
+                        }
+                        const aus = [];
+                        try {
+                            pm.set(best.x, r.getTerrainHeightAt(best.x, best.z) + AnazhRealm.PLAYER_FOOT_OFFSET, best.z);
+                            r._umweltRingProbe(um, best.x, best.z, um.ring.punkte.length);
+                            for (const p of a.phasen) {
+                                s.seasonPhase = p;
+                                r._saisonAnker = { anker: p, t: s.spielZeit, jahr: s.seasonYearSeconds > 0 ? s.seasonYearSeconds : 2400, phase: p };
+                                r._tickSeason();
+                                r._vogelTakt();
+                                const su = s.seasonUniforms;
+                                const lp = su && su.uLaubPraesenz && su.uLaubPraesenz.value;
+                                const L = r._umweltLage();
+                                const m = G.kern.umweltMischung(L);
+                                aus.push({ p, phase: s.seasonPhase, name: s.season, laub: lp ? lp.x : null, deckung: L.deckung, temp: L.temperatur, laubDb: m.laub.db, grilleDb: m.grille.db, vogelDb: m.vogel.db });
+                            }
+                        } finally {
+                            s.seasonPhase = alt.phase;
+                            r._saisonAnker = alt.anker;
+                            r._tickSeason();
+                            pm.copy(alt.pos);
+                            r._umweltRingProbe(um, alt.pos.x, alt.pos.z, um.ring.punkte.length);
+                            r._vogelTakt();
+                        }
+                        const namen = new Set();
+                        for (let q = Object.getPrototypeOf(r); q && q !== Object.prototype; q = Object.getPrototypeOf(q)) for (const k of Object.getOwnPropertyNames(q)) namen.add(k);
+                        return { aus, kronen: best.k, schwelle: G.UMWELT.hoerschwelleDb, kleidung: [...namen].filter((k) => /kleid|tracht|gewand/i.test(k)).length, phaseNach: s.seasonPhase };
+                    };
+                    const zeit = async (r, T, a) => {
+                        await r._fadenQuelle();
+                        const an = await r._planetAnker();
+                        const samen = r._planetSamen();
+                        const B0 = (an.breite * 180) / Math.PI;
+                        const L0 = (an.laenge * 180) / Math.PI;
+                        const orte = [];
+                        for (let i = 0; i < 10; i++) orte.push([B0 + 0.05 * Math.cos(i * 0.628), L0 + 0.05 * Math.sin(i * 0.628)]);
+                        const je = await Promise.all(orte.map(async ([b, l]) => {
+                            const o = await Promise.all([0, a.sprungMa].map((zeitMa) => r._planetAuftrag({ type: "planet-ort", samen, breite: b, laenge: l, zeitMa })));
+                            return { dKlima: Math.abs(o[1].delta.klima.sommer - o[0].delta.klima.sommer), dMeer: Math.abs(o[1].delta.meer.waterLevelM - o[0].delta.meer.waterLevelM) };
+                        }));
+                        const ep = [];
+                        for (let i = 1; i <= 40; i++) ep.push(r._siedlungEpoche(i));
+                        const zuvor = [];
+                        for (let i = 1; i <= 40; i++) zuvor.push(r._siedlungEpoche(i));
+                        return { orte: je.length, dKlima: je.reduce((q, x) => q + x.dKlima, 0) / je.length, dMeer: je.reduce((q, x) => q + x.dMeer, 0) / je.length, epochen: [...new Set(ep.filter(Boolean))], gleich: ep.every((x, i) => x === zuvor[i]) ? 1 : 0, stimmen: Object.keys(AnazhRealm._umweltGesetz().UMWELT.stimmen) };
+                    };
+                    const zeitalter = async (r, T, a) => {
+                        await r._fadenQuelle();
+                        const aus = [];
+                        await Promise.all(a.saaten.map(async (samen) => {
+                            const an = await r._planetAuftrag({ type: "planet-anker", samen });
+                            const B = (an.breite * 180) / Math.PI;
+                            const L = (an.laenge * 180) / Math.PI;
+                            for (const zeitMa of a.zeiten) {
+                                const o = await r._planetAuftrag({ type: "planet-ort", samen, breite: B, laenge: L, zeitMa });
+                                aus.push({ samen, zeitMa, h: o.hoeheM, felder: Object.keys(o).concat(Object.keys(o.delta || {})) });
+                            }
+                        }));
+                        return aus;
+                    };
+                    const roh = {};
+                    let U1 = null;
+                    let U2 = null;
+                    let fe = null;
+                    const uhrenListe = [];
+                    for (let i = 0; i < 24; i++) uhrenListe.push(+((i * 0.618034 + 0.137) % 1).toFixed(4));
+                    const phasen = [];
+                    for (let i = 0; i < 12; i++) phasen.push(+((i + 0.5) / 12).toFixed(4));
+                    try {
+                        await S(ohr, { an: true });
+                        if (U[1]) U1 = await S(uhren, { uhren: uhrenListe });
+                        if (U[2]) U2 = await S(monate, { phasen });
+                    } catch (e) {
+                        fe = kurz(e);
+                    } finally {
+                        await S(ohr, { an: false }).catch(() => null);
+                    }
+                    const sd = (xs) => {
+                        const m = xs.reduce((q, x) => q + x, 0) / (xs.length || 1);
+                        return Math.sqrt(xs.reduce((q, x) => q + (x - m) * (x - m), 0) / (xs.length || 1));
+                    };
+                    if (U[1]) {
+                        const X = (U1 && U1.aus) || [];
+                        const sw = U1 ? U1.schwelle : -64;
+                        // hörbar: über der Hörschwelle des Gesetzes (-∞ dB reist als null durch JSON — null ist stumm, nie 0 dB)
+                        const hoer = (db) => typeof db === "number" && db >= sw;
+                        // ein Widerspruch: der Chor in der Nacht, Grillen am Tag, Schlaf in heller Sonne, Morgen oder Mittag in tiefer Nacht
+                        // (die Arbeit am Abend ist der Tag des Gasthauses, kein Widerspruch)
+                        const wid = (x, sonne, vogel, grille) => (hoer(vogel) && sonne < -0.1 ? 1 : 0) + (hoer(grille) && sonne > 0.1 ? 1 : 0) + x.akt.filter((akt) => (akt === "schlaf" && sonne > 0.3) || ((akt === "morgen" || akt === "mittag") && sonne < -0.3)).length;
+                        const w1 = X.reduce((q, x) => q + wid(x, x.sonne, x.vogel, x.grille), 0);
+                        const w2 = X.reduce((q, x) => q + wid(x, -x.sonne, x.vogel2, x.grille2), 0);
+                        roh[1] = {
+                            werte: X.length ? { widersprueche: w1, uhren: X.length } : {},
+                            zeuge: {
+                                uhren: X.length, sonneStreuung: +sd(X.map((x) => x.sonne)).toFixed(3), gegenWidersprueche: w2, chor: X.filter((x) => hoer(x.vogel)).length, grillen: X.filter((x) => hoer(x.grille)).length,
+                                verkehr: X.reduce((q, x) => Math.max(q, x.verkehr || 0), 0), faehrt: X.reduce((q, x) => Math.max(q, x.faehrt || 0), 0), bewohner: U1 ? U1.bewohner : 0,
+                                temperatur: X.length ? [Math.min(...X.map((x) => x.temperatur)), Math.max(...X.map((x) => x.temperatur))].map((v) => +(+v).toFixed(1)) : null,
+                                je: X.map((x) => [x.t, +x.sonne.toFixed(2), Number.isFinite(x.vogel) ? +x.vogel.toFixed(1) : null, Number.isFinite(x.grille) ? +x.grille.toFixed(1) : null, x.voegel, x.akt.slice(0, 2).join("/")]),
+                                fehler: fe,
+                            },
+                        };
+                    }
+                    if (U[2]) {
+                        const X = (U2 && U2.aus) || [];
+                        const sw = U2 ? U2.schwelle : -64;
+                        const hoer = (db) => typeof db === "number" && db >= sw;
+                        // ein Widerspruch: kahles Laub im Bild (Präsenz < 0,3), am Ohr rauscht Laub; Grillen im Winter
+                        let w1 = 0;
+                        for (const x of X) w1 += (typeof x.laub === "number" && x.laub < 0.3 && hoer(x.laubDb) ? 1 : 0) + (x.name === "winter" && hoer(x.grilleDb) ? 1 : 0);
+                        let anders = 0;
+                        for (let i = 0; i < X.length; i++) {
+                            const y = X[(i + 6) % X.length];
+                            const dif = (p, q) => (Number.isFinite(p) || Number.isFinite(q) ? !(Number.isFinite(p) && Number.isFinite(q) && Math.abs(p - q) < 1) : false);
+                            if (dif(X[i].laubDb, y.laubDb) || dif(X[i].grilleDb, y.grilleDb) || dif(X[i].vogelDb, y.vogelDb)) anders++;
+                        }
+                        roh[2] = { werte: X.length ? { widersprueche: w1, monate: X.length } : {}, zeuge: { monate: X.length, laubStreuung: +sd(X.map((x) => x.laub || 0)).toFixed(3), klangFolgt: anders, kronen: U2 ? +U2.kronen.toFixed(3) : 0, trachtLeser: U2 ? U2.kleidung : 0, je: X.map((x) => [x.name, x.laub === null ? null : +x.laub.toFixed(2), +(+x.deckung).toFixed(2), +(+x.temp).toFixed(1), Number.isFinite(x.laubDb) ? +x.laubDb.toFixed(1) : null, Number.isFinite(x.grilleDb) ? +x.grilleDb.toFixed(1) : null]), fehler: fe } };
+                        roh[2].nicht = "Kleidung und Ernteziele lesen keine Jahreszeit (die Tracht liest die Epoche, der Bewohnertag Uhr und Regen, nie den Monat)" + (anders ? "" : "; der Klang folgt dem Jahr nicht: Laub " + X.map((x) => (typeof x.laub === "number" ? x.laub.toFixed(2) : "?")).join("/") + " im Bild, am Ohr je Monat dieselbe Laubstimme");
+                    }
+                    if (U[3] || U[4]) {
+                        let Z = null;
+                        try {
+                            Z = await S(zeit, { sprungMa: -0.0001 });
+                        } catch (e) {
+                            Z = { fehler: kurz(e), epochen: [], stimmen: [] };
+                        }
+                        if (U[3]) {
+                            roh[3] = { werte: { orte: Z.orte || 0 }, zeuge: { orte: Z.orte || 0, dKlima: Z.dKlima, dMeer: Z.dMeer, epocheZeitlos: Z.gleich, fehler: Z.fehler } };
+                            roh[3].nicht = "kein Sprung um 100 Jahre am Ort: der Planet ändert sich in 100 Jahren um " + (Number.isFinite(Z.dKlima) ? Z.dKlima.toExponential(2) : "?") + " K, Bauweise, Lampen und Sprache lesen die Zeit nicht (_siedlungEpoche liest nur den Samen)";
+                        }
+                        if (U[4]) {
+                            const es = (Z.stimmen || []).filter((k) => /huf|dampf|motor|verbrenn|elektro|epoch/i.test(k));
+                            roh[4] = { werte: {}, zeuge: { epochen: (Z.epochen || []).length, liste: Z.epochen, epochKanaele: es.length, fehler: Z.fehler } };
+                            roh[4].nicht = "nur das Bild der Siedlung liest die Epoche (" + (Z.epochen || []).join(", ") + "); Abgriff, Verb-Tafel und Ziele lesen sie nicht — eine Epochenfahrt hat keinen zweiten Kanal";
+                        }
+                    }
+                    if (U[5] || U[6]) {
+                        let Z5 = [];
+                        let Z6 = [];
+                        let zf = null;
+                        try {
+                            const s5 = [];
+                            for (let i = 0; i < 10; i++) s5.push("same-saat-" + i);
+                            if (U[5]) Z5 = await S(zeitalter, { saaten: s5, zeiten: [-541, -359, -252, -66, -0.02, 0] });
+                            const s6 = [];
+                            for (let i = 0; i < 50; i++) s6.push("same-saat-" + i);
+                            if (U[6]) Z6 = await S(zeitalter, { saaten: s6, zeiten: [-300, 0] });
+                        } catch (e) {
+                            zf = kurz(e);
+                        }
+                        const art = (Z) => [...new Set(Z.flatMap((x) => x.felder))].filter((f) => /art|fauna|leben|tier|himmel|stern/i.test(f));
+                        if (U[5]) {
+                            roh[5] = { werte: { zeitalter: new Set(Z5.map((x) => x.zeitMa)).size, saaten: new Set(Z5.map((x) => x.samen)).size }, zeuge: { antworten: Z5.length, streuungM: +sd(Z5.map((x) => x.h)).toFixed(1), inventar: art(Z5).length, fehler: zf } };
+                            if (!art(Z5).length) roh[5].nicht = "kein Inventar der Epoche: der Planet-Faden trägt je Zeitalter weder Arten noch Himmel (" + Z5.length + " Antworten) — Arten am Abgriff und im Bild sind die von heute";
+                        }
+                        if (U[6]) {
+                            roh[6] = { werte: { paare: Z6.length }, zeuge: { antworten: Z6.length, streuungM: +sd(Z6.map((x) => x.h)).toFixed(1), inventar: art(Z6).length, fehler: zf } };
+                            if (!art(Z6).length) roh[6].nicht = "kein Inventar der Epoche je (Planet, Datum): " + Z6.length + " Antworten des Planet-Fadens ohne Arten, Himmel, Technik — kein Kanal kann einem Datum folgen";
+                        }
+                    }
+                    return { sprossen: roh };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [K.soll(EP, 1, "24 Zufallsuhren", { key: "uhren", rel: "≥", zahl: 24 }), K.soll(EP, 1, "0 Widersprüche zwischen Sonnenstand, Klangbild (Chor, Grillen, Verkehr) und Bewohnertag", { key: "widersprueche", rel: "=", zahl: 0 })],
+                        zeuge: zeugeMin([
+                            ["uhren", 24, "weniger als 24 Uhren"],
+                            ["sonneStreuung", 0.1, "der Sonnenstand folgt der Uhr nicht"],
+                            ["gegenWidersprueche", 1, "der Gegenlauf (Licht der Gegenuhr) erzeugt keinen Widerspruch — Klang und Bewohnertag hängen nicht an der Uhr"],
+                            ["chor", 1, "nie ein Chor am Ohr — der Kanal Chor ist ungeprüft"],
+                            ["grillen", 1, "die Grillen schweigen an diesem Ort zu jeder Uhr (zu kalt) — der Kanal Grillen ist ungeprüft"],
+                            ["verkehr", 1, "kein Wagen im Umkreis — der Kanal Verkehr ist ungeprüft"],
+                            ["bewohner", 1, "kein lebender Bewohner: der Bewohnertag ist ungeprüft"],
+                        ]),
+                        taeter: "stamm/klang.js _umweltLageZwei · stamm/siedlung-bewohner.js _bewohnerSoll (die eine Uhr)",
+                        gruen: { werte: { uhren: 24, widersprueche: 0 }, zeuge: { uhren: 24, sonneStreuung: 0.6, gegenWidersprueche: 9, chor: 12, grillen: 8, verkehr: 4, bewohner: 30 } },
+                        attrappen: [
+                            A("0 Widersprüche ohne Gegenlauf", { uhren: 24, widersprueche: 0 }, { uhren: 24, sonneStreuung: 0.6, gegenWidersprueche: 0, chor: 12, grillen: 8, verkehr: 4, bewohner: 30 }),
+                            A("0 Widersprüche ohne Bewohner", { uhren: 24, widersprueche: 0 }, { uhren: 24, sonneStreuung: 0.6, gegenWidersprueche: 9, chor: 12, grillen: 8, verkehr: 4, bewohner: 0 }),
+                            A("0 Widersprüche, Grillen und Verkehr nie gehört", { uhren: 24, widersprueche: 0 }, { uhren: 24, sonneStreuung: 0.6, gegenWidersprueche: 9, chor: 12, grillen: 0, verkehr: 0, bewohner: 30 }),
+                        ],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(EP, 2, "12 Zufallsmonate", { key: "monate", rel: "≥", zahl: 12 }), K.soll(EP, 2, "0 Widersprüche zwischen Bild, Klang, Kleidung und Zielen", { key: "widersprueche", rel: "=", zahl: 0 })],
+                        zeuge: zeugeMin([["monate", 12, "weniger als 12 Monate"], ["laubStreuung", 0.05, "das Laub im Bild folgt dem Jahr nicht"], ["klangFolgt", 1, "der Klang des Gegenmonats ist derselbe — der Klang folgt dem Jahr nicht"], ["kleidungJahr", 1, "keine Kleidung folgt dem Monat"]]),
+                        taeter: "klang-core.js umweltMischung (die Laubstimme liest die Deckung, nie das Jahr) · stamm/siedlung-bewohner.js _bewohnerTracht (die Tracht der Epoche, nie des Monats)",
+                        nicht: "Kleidung und Ernteziele lesen keine Jahreszeit",
+                        leser: "stamm/siedlung-bewohner.js:363 _bewohnerTracht — die Tracht liest die Epoche (fachwerk kleidung), nie den Monat; stamm/siedlung-bewohner.js:2219 _bewohnerSoll — liefert { ziel, drinnen, akt } aus Uhr und Regen, kein Ernteziel je Monat; klang-core.js:898 laub — die Laubstimme liest die Kronen-Deckung, nie das Laub der Jahreszeit",
+                        gruen: { werte: { monate: 12, widersprueche: 0 }, zeuge: { monate: 12, laubStreuung: 0.25, klangFolgt: 8, kleidungJahr: 2 } },
+                        attrappen: [A("0 Widersprüche, der Klang taub für das Jahr", { monate: 12, widersprueche: 0 }, { monate: 12, laubStreuung: 0.25, klangFolgt: 0, kleidungJahr: 2 })],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(EP, 3, "Sprung um 100 Jahre an 10 Orten", { key: "orte", rel: "≥", zahl: 10 }), sollWort(EP, 3, "Änderung in Bild, Klang und Sprache gleichgerichtet", { key: "gleichgerichtet", rel: "=", zahl: 1 }), K.soll(EP, 3, "0 Waisen", { key: "waisen", rel: "=", zahl: 0 })],
+                        zeuge: zeugeMin([["orte", 10, "weniger als 10 Orte"], ["epocheZeitlos", 0, "die Epoche fehlt"], ["sprung", 1, "kein Sprung um 100 Jahre in der Welt"]]),
+                        taeter: "stamm/siedlung-ort.js _siedlungEpoche (liest nur den Samen)",
+                        nicht: "kein Sprung um 100 Jahre am Ort",
+                        leser: "stamm/siedlung-ort.js:1989 _siedlungEpoche — (seed) liest nur den Samen, nie die Zeit; der Sprung (stamm/netz-portal.js:660 _reiseBetreten) gebiert eine neue Welt",
+                        gruen: { werte: { orte: 10, gleichgerichtet: 1, waisen: 0 }, zeuge: { orte: 10, epocheZeitlos: 0, sprung: 10 } },
+                        attrappen: [A("gleichgerichtet ohne Sprung", { orte: 10, gleichgerichtet: 1, waisen: 0 }, { orte: 10, epocheZeitlos: 1, sprung: 0 })],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(EP, 4, "Epochenfahrt: 0 anachronistische Quellen über Bild, Abgriff, Verb-Tafel und Ziele", { key: "anachronismen", rel: "=", zahl: 0 }), K.soll(EP, 4, "Epoche blind erkannt ≥ 80 %", { key: "erkanntProzent", einheit: "%" })],
+                        zeuge: zeugeMin([["epochen", 3, "weniger als drei Epochen"], ["epochKanaele", 3, "weniger als drei Kanäle lesen die Epoche"]]),
+                        taeter: "stamm/klang.js _umweltLageZwei (keine Epoche am Ohr) · fachwerk-core.js siedlungsEpoche (nur das Bild)",
+                        nicht: "nur das Bild liest die Epoche",
+                        leser: "stamm/klang.js:474 _umweltLageZwei — Abgriff, Verb-Tafel und Ziele lesen keine Epoche; nur das Bild der Siedlung (fachwerk-core.js:3718 siedlungsEpoche)",
+                        gruen: { werte: { anachronismen: 0, erkanntProzent: 85 }, zeuge: { epochen: 4, epochKanaele: 4 } },
+                        attrappen: [A("85 % ohne Kanäle", { anachronismen: 0, erkanntProzent: 85 }, { epochen: 4, epochKanaele: 0 })],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(EP, 5, "6 Zeitalter × 10 Saaten", { key: "zeitalter", rel: "≥", zahl: 6 }), K.soll(EP, 5, "6 Zeitalter × 10 Saaten", { key: "saaten", rel: "≥", zahl: 10 }), K.soll(EP, 5, "0 Anachronismen", { key: "anachronismen", rel: "=", zahl: 0 })],
+                        zeuge: zeugeMin([["antworten", 60, "weniger als 60 Antworten"], ["streuungM", 1e-6, "keine Streuung"], ["inventar", 1, "kein Inventar der Epoche"]]),
+                        taeter: "planet-core.js planetOrt (kein Inventar der Epoche)",
+                        nicht: "kein Inventar der Epoche",
+                        leser: "planet-core.js:2293 planetOrt — delta trägt kein Inventar der Epoche (Arten, Himmel, Luft)",
+                        gruen: { werte: { zeitalter: 6, saaten: 10, anachronismen: 0 }, zeuge: { antworten: 60, streuungM: 2000, inventar: 3 } },
+                        attrappen: [A("0 Anachronismen ohne Faden", { zeitalter: 6, saaten: 10, anachronismen: 0 }, { antworten: 0 })],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(EP, 6, "N = 100 (Planet, Datum)", { key: "paare", rel: "≥", zahl: 100 }), K.soll(EP, 6, "Anteil ohne Anachronismus über alle Kanäle ≥ 0,95", { key: "anteil" })],
+                        zeuge: zeugeMin([["antworten", 100, "weniger als 100 Antworten"], ["streuungM", 1e-6, "keine Streuung"], ["inventar", 1, "kein Inventar der Epoche"]]),
+                        taeter: "planet-core.js planetOrt (kein Inventar der Epoche)",
+                        nicht: "kein Inventar der Epoche je (Planet, Datum)",
+                        leser: "planet-core.js:2293 planetOrt — delta trägt kein Inventar der Epoche je (Planet, Datum)",
+                        gruen: { werte: { paare: 100, anteil: 0.96 }, zeuge: { antworten: 100, streuungM: 2000, inventar: 3 } },
+                        attrappen: [A("0,96 ohne Faden", { paare: 100, anteil: 0.96 }, { antworten: 0 })],
+                    },
+                },
+            },
+        },
+    };
+})());
+
 // ── DIE PERSPEKTIVE zusammenspiel.same (9 Leitern, 61 Sprossen, 3 belegt: stoerung S1, kaskade S1, ereignis S1 — g1.js BRAND_SITZUNG
 // und LAVA_SITZUNG): die Kopplungen über alle Kapitel, jede mit ihrem Gegenlauf (R7). Gemessen wird in der warmen Welt der Sitzung um
 // den Spieler (dort stehen die Chunks): die Tat über die Wege des Spiels (der Satz `spawn_studio`, `lava`, `_brandEntfachen`, die Ernte
