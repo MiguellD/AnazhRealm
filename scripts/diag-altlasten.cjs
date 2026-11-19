@@ -3939,11 +3939,11 @@ function main() {
         // Die Wand der Klasse Schein-Emissiv muss feuern — je Mutante beim NAMEN des Glieds: die Look-Addition wieder als
         // `emissiveNode` (über ihren Namen `saum`) · kein Lichtmodell liest sie · die Schliere ohne `uLicht` im colorNode · der Takt
         // ohne die Lesung des Lichtmessers; derselbe Satz im Kommentar bleibt still.
-        const lichtModell = "mat.setupLightingModel = () => new K(saum);";
+        const lichtModell = "return AnazhRealm._saumLichtModell(eigen.call(this, builder), saum);";
         const schein = {
             heute: scanScheinWand(stamm),
-            emissiv: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, lichtModell + "\n mat.emissiveNode = saum;")),
-            ohneModell: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, "mat.setupLightingModel = () => new K(null);")),
+            emissiv: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, "mat.emissiveNode = saum;\n " + lichtModell)),
+            ohneModell: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, "return AnazhRealm._saumLichtModell(eigen.call(this, builder), null);")),
             schliere: scanScheinWand(stammLib.ersetze(stamm, "_ensureRainSystem", "T.materialColor.mul(uLicht).mul(1 / Math.PI)", "T.materialColor")),
             takt: scanScheinWand(stammLib.ersetze(stamm, "_tickRain", "if (E) sys.uLicht.value.set(E[0], E[1], E[2]);", "")),
             kommentar: scanScheinWand(stammLib.ersetze(stamm, "_foundryTreeMaterial", lichtModell, lichtModell + "\n // mat.emissiveNode = saum;")),
