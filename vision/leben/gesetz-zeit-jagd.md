@@ -226,3 +226,26 @@ Das Gesetz der Zeit und der Jagd steht in sieben Sätzen (1, 2, 3 und 4 in zweit
 entscheidenden Proben: der Wolf lebt 8 von 8, das Verhältnis ist Probe (3,99 je 1 000, Feld 3,8–4,0), die Rückstell-Kraft wirkt mit
 dem Verzug des Felds. Damit öffnet der BAU: Welle 1 und die Jäger-Ebene als EINE Welle auf `leben-erbe`, der Bestand als reine
 Funktion im Kern, der Stamm als Leser. Erster Beweis des Baus: der Kern im Spiel rechnet `lauf-zeit-4` zahlengleich nach.
+
+## Auswertung nach Lauf 4 (19.11. 07:08, Opus-Leser; `kern3/auswertung-4b.txt`, Kern unverändert, Prüfsumme gleich)
+
+- **S14b ROT an der Steigung, GRÜN am Null-Durchgang.** 2 224 Jahr-Paare (Haupt-Lauf 1 272, S13-Zweige 952): Wachstum =
+  1,085 · D − 1,128 — Steigung 1,085 gegen 0,25–0,60, Null bei D 1,040 (Soll 0,95–1,15). Je D-Klasse: 0,9–1,0 −0,074 (455 Jahre) ·
+  1,0–1,1 +0,010 (1 478) · 1,1–1,2 +0,094 (256). Gegenprobe, kein Urteil: D von Jahresmitte zu Jahresmitte gemessen gibt 0,356.
+  Das Soll bewege ich nicht; warum die Mess-Spanne von D die Steigung um den Faktor 3 verschiebt, ist UNGEMESSEN. Meine Lesart, als
+  Hypothese: die Anker-Tafel des Satzes 4 (die Zuordnung der Feld-Phasen zu D ist MEINE) antwortet steiler als die Gerade von Isle
+  Royale. Erster Punkt der nächsten Runde.
+- **S6 — Hypothese bestätigt.** S6 = 8 · 0,4056 (Anteil Reifer) · 0,4572 (Tod je Reif-Jahr) = 1,483, gemessen 1,484: die Probe misst
+  den WECHSEL der Reifen, nicht die Fortpflanzung. Bilanz 13,164 werden je Jahr reif, 13,150 Reife sterben; jedes reife Leben
+  hinterlässt als Mutter 1,005 reif gewordene Kinder. Von den Geborenen werden 0,321 Jährling, 0,249 reif; Reife werden 3,84 Jahre
+  alt. S6 bleibt ROT (1,484 gegen 1,5–3), das Band stammt aus bejagten Beständen.
+- **R9 trägt das Ergebnis — der Gegenlauf „Gründung zuerst“ ist jetzt VOLL gerechnet** (`kern3/lauf-zeit-4g.txt`, nur der
+  Beitritts-Block verschoben, ohne S13-Block): Wolf lebt 8 von 8, aber 35 16 44 27 18 35 16 23 statt 68 80 61 66 74 56 63 69 ·
+  S2 1,72 (ROT) · S15 685 (ROT) · 11,0 Rudel × 2,84 Köpfe · 80 % der Rudel sind EIN Wolf · 0,19 Würfe je Rudel-Jahr · D 1,35 ·
+  Gründungen 2,48, Beitritte 0,09 je Jahr. Mit „Gründung zuerst“ bremst die Paar-Bildung den Bestand, nicht das Futter. Der Makel
+  „nie voll gerechnet“ ist damit geheilt; Satz 7 (d) steht — und er ist ein Stellvertreter: was er wirklich sagt, ist „das PAAR
+  kommt vor dem Land“. Ein Gesetz, das die Gründung an das Paar bindet statt an eine Reihenfolge, ist der zweite Punkt der
+  nächsten Runde (Zensus: wie finden sich Wanderer, Feld-Zahl der Paar-Bildung).
+
+Der Bau bleibt offen wie entschieden: sein erster Beweis ist `lauf-zeit-4` zahlengleich; S6, S14, S14b ROT und die zwei Punkte der
+nächsten Runde stehen beim Namen.
