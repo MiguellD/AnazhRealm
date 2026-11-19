@@ -429,7 +429,9 @@ function fahrtSumme(stationen, geraet) {
 // 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
 // Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (108 Läufe × 120 s > 6 Teile)
-const FAHRT_TEILE_MAX = 6;
+// 18.11. 6 → 9: die Richter-Fabrik mensch (stationen/k2-mensch*.js, je Leiter EINE Probe ≤ 60 s) — Radeon vorher 10 124 s in 112 Läufen
+// (6 × 1 740 = 10 440 s); 84 Leitern × 45–60 s heben sie auf 13 904–15 164 s, bis über 8 × 1 740 = 13 920 s
+const FAHRT_TEILE_MAX = 9;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {

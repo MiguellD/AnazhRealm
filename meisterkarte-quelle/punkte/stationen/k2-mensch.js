@@ -20,10 +20,13 @@
 //             `K.welt("return await (" + H.seite.NAME + ")(r, T, " + JSON.stringify(arg) + ");")`); messe sieht nichts aus dem Modul
 //   sprossen  { <n>: Sprosse } — jede Sprosse der Leiter steht GENAU EINMAL in sprossen, bestehend oder unklar:
 //       { umfang: { soll, wort } | null, masse: [Maß, …], erwartet?: "zahl" | "nicht" | "leser", fehlt?, wo? }
-//         Maß: { key, wort, soll, richtung: "≤" | "≥" } · { key, wort, von, bis } (Band) · { key, wort, soll, tol } (±)
+//         Maß: { key, wort, soll, richtung: "≤" | "≥" | "<" | ">" } · { key, wort, von, bis } (Band) · { key, wort, soll, tol } (±);
+//         das Soll steht als Zahl im Wortlaut (die Linse SOLL AUS DER KARTE) oder trägt `herkunft` (ein Satz: wie es aus dem Wortlaut folgt)
 //         erwartet/fehlt/wo: was die Probe an der Welt von heute findet (das Blatt zählt es; das Urteil fällt am Lauf)
 //       { auge: { pose, vorbild } } — der Blindpaar-Richter: die Probe schießt das Bild an fester Pose, GRÜN nie ohne Geräte-Urteil
-//   bestehend { <n>: "<Station>" } — die Sprosse urteilt schon eine Station (Tafel „gleich“ oder karte2.…#n): keine zweite
+//   bestehend { <n>: "<Station>" } — die Sprosse urteilt schon eine Station (Tafel „gleich“ oder karte2.…#n): keine zweite;
+//             { <n>: { station, fehlt } } — sie misst den Richter nicht ganz in der Sitzung (z. B. nur headless): Tafel-Zeile „fehlt“ mit Grund.
+//             Führt die Tafel die Zuordnung noch nicht, trägt `--zeilen` sie als neue Zeile
 //   unklar    { <n>: "<Vorschlag in einem Satz>" } — der Richter ist unmessbar oder widersprüchlich: keine Station, das Blatt nennt ihn
 //   proben    { <n>: [{ name, j, gruen, zahl? }] } — die Mutanten der Leiter (dazu erzeugt die Fabrik je Sprosse ihre eigenen)
 //
@@ -134,12 +137,17 @@ function adapterVon(j, lauf) {
 const zahlText = (w) => (typeof w === "number" && Number.isFinite(w) ? String(+w.toPrecision(5)) : "—");
 const istBand = (m) => m.von != null;
 const istTol = (m) => m.tol != null;
+// die Richtung eines Maßes: ≤ · ≥ · und STRIKT < · > (19.11.: der Wortlaut „> 0“, „kleiner als“, „p > 0,05“ — bis hier bauten die
+// Perspektiven ihn mit erfundenem Abstand nach: 1,01 · 1,0001 · 0,0501 · 0,001)
+const VERGLEICH = { "≤": (w, s) => w <= s, "≥": (w, s) => w >= s, "<": (w, s) => w < s, ">": (w, s) => w > s };
 const haelt = (m, w) =>
-    typeof w === "number" && Number.isFinite(w) && (istBand(m) ? w >= m.von && w <= m.bis : istTol(m) ? Math.abs(w - m.soll) <= m.tol : m.richtung === "≥" ? w >= m.soll : w <= m.soll);
+    typeof w === "number" && Number.isFinite(w) && (istBand(m) ? w >= m.von && w <= m.bis : istTol(m) ? Math.abs(w - m.soll) <= m.tol : VERGLEICH[m.richtung](w, m.soll));
 const sollText = (m) => (istBand(m) ? m.von + "–" + m.bis : istTol(m) ? m.soll + " ±" + m.tol : m.richtung + " " + m.soll);
 const schritt = (x) => (Number.isInteger(x) ? 1 : Math.max(Math.abs(x) * 0.1, 1e-3));
-const drinnen = (m) => (istBand(m) ? (m.von + m.bis) / 2 : m.soll);
-const jenseits = (m) => (istBand(m) ? m.bis + schritt(m.bis) : istTol(m) ? m.soll + 2 * m.tol + schritt(m.soll) : m.richtung === "≥" ? m.soll - schritt(m.soll) : m.soll + schritt(m.soll));
+// ein Wert im Soll (der GRÜN-Fall der Mutanten) und einer knapp jenseits (das strikte Soll selbst fällt)
+const drinnen = (m) => (istBand(m) ? (m.von + m.bis) / 2 : m.richtung === ">" ? m.soll + schritt(m.soll) : m.richtung === "<" ? m.soll - schritt(m.soll) : m.soll);
+const jenseits = (m) => (istBand(m) ? m.bis + schritt(m.bis) : istTol(m) ? m.soll + 2 * m.tol + schritt(m.soll) : m.richtung === ">" || m.richtung === "<" ? m.soll
+    : m.richtung === "≥" ? m.soll - schritt(m.soll) : m.soll + schritt(m.soll));
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function urteilZahl(n, sp, s, a) {
@@ -208,7 +216,7 @@ function probenDer(id, n, sp, eigene) {
 }
 
 // ───────────────────────── DIE FABRIK ─────────────────────────
-const RICHTUNG = ["≤", "≥"];
+const RICHTUNG = Object.keys(VERGLEICH);
 function pruefeSprosse(wo, sp) {
     if (sp.auge) {
         if (!sp.auge.pose || !sp.auge.vorbild) throw new Error(wo + ": auge trägt pose und vorbild");
@@ -227,11 +235,72 @@ function pruefeSprosse(wo, sp) {
         const ok = istBand(m) ? Number.isFinite(m.von) && Number.isFinite(m.bis) && m.von <= m.bis
             : istTol(m) ? Number.isFinite(m.soll) && Number.isFinite(m.tol) && m.tol >= 0
             : Number.isFinite(m.soll) && RICHTUNG.includes(m.richtung);
-        if (!ok) throw new Error(wo + ": das Maß " + m.key + " ist kein { soll, richtung ≤|≥ } · { von, bis } · { soll, tol }");
+        if (!ok) throw new Error(wo + ": das Maß " + m.key + " ist kein { soll, richtung ≤|≥|<|> } · { von, bis } · { soll, tol }");
     }
     if (sp.erwartet != null && !["zahl", "nicht", "leser"].includes(sp.erwartet)) throw new Error(wo + ": erwartet ist zahl | nicht | leser");
     if (sp.erwartet === "nicht" && !(typeof sp.fehlt === "string" && sp.fehlt.length >= 4)) throw new Error(wo + ": erwartet nicht nennt, was fehlt");
     if (sp.erwartet === "leser" && !(typeof sp.wo === "string" && /^[\w./-]+:\d+$/.test(sp.wo) && typeof sp.fehlt === "string")) throw new Error(wo + ": erwartet leser nennt fehlt und wo (datei:zeile)");
+}
+// DIE LINSE „SOLL AUS DER KARTE“ (19.11., Fund kultur: erzaehlkunst S4 trug r ≥ 0,5 und ≥ 0,8 an einem Richter ohne Zahl): jedes Soll
+// eines Maßes (soll · von · bis · tol) und das Soll des Umfangs steht als Zahl im Wortlaut der Sprosse (richter + umfang) — wörtlich
+// oder in der Einheit umgerechnet (% → /100, min → s, h → s, Tag → s, km → m, 10ⁿ), 0 und 1 als die Lesart eines Satzes (kein/jeder,
+// ja/nein). Ein Soll, das nur aus dem Satz folgt, trägt seine Herleitung am Maß (`herkunft`, ein Satz) — das Blatt nennt jede.
+// Vorher ROT: erzaehlkunst S4 (0,5 und 0,8 nirgends im Wortlaut)
+const HOCH = { "⁰": 0, "¹": 1, "²": 2, "³": 3, "⁴": 4, "⁵": 5, "⁶": 6, "⁷": 7, "⁸": 8, "⁹": 9 };
+function zahlenDes(text) {
+    const t = String(text).replace(/[  ]/g, " ");
+    const z = new Set([0, 1]);
+    const re = /([-−]?)(\d{1,3}(?: \d{3})+|\d+)(?:,(\d+))?(?:\^(\d+)|([⁰¹²³⁴⁵⁶⁷⁸⁹]+))?(?:\s*(%|‰|min\b|h\b|Std|Tag|Tage|km|ms\b|s\b|m\b))?/g;
+    let m;
+    while ((m = re.exec(t))) {
+        let v = +(m[2].replace(/ /g, "") + (m[3] ? "." + m[3] : ""));
+        const hoch = m[4] != null ? +m[4] : m[5] ? +[...m[5]].map((c) => HOCH[c]).join("") : null;
+        if (hoch != null) v = Math.pow(v, hoch);
+        if (m[1]) v = -v;
+        z.add(v);
+        const e = m[6];
+        if (e === "%") z.add(v / 100);
+        else if (e === "‰") z.add(v / 1000);
+        else if (e === "min") z.add(v * 60);
+        else if (e === "h" || e === "Std") z.add(v * 3600);
+        else if (e === "Tag" || e === "Tage") z.add(v * 86400);
+        else if (e === "km") z.add(v * 1000);
+        else if (e === "ms") z.add(v / 1000);
+    }
+    // Brüche a/b und Verhältnisse a:b
+    for (const b of t.matchAll(/(\d+)\s*[/:]\s*(\d+)/g)) if (+b[2]) z.add(+b[1] / +b[2]);
+    // die Spanne trägt EINE Einheit für beide Enden („40–60 %“, „1–3 s“, „15–20 km/h“, „−30…−70 %“)
+    const zahl = (s) => +String(s).replace(/ /g, "").replace(",", ".").replace("−", "-");
+    for (const b of t.matchAll(/([-−]?\d+(?:,\d+)?)\s*(?:[–-]|…|\.\.\.)\s*[-−]?\d+(?:,\d+)?\s*(%|‰|min\b|h\b|km\b|ms\b)/g)) {
+        const v = zahl(b[1]), e = b[2];
+        z.add(e === "%" ? v / 100 : e === "‰" ? v / 1000 : e === "min" ? v * 60 : e === "h" ? v * 3600 : e === "km" ? v * 1000 : v / 1000);
+    }
+    // a·10ⁿ und a × 10ⁿ
+    for (const b of t.matchAll(/(\d+(?:,\d+)?)\s*[·×*]\s*10(?:\^(\d+)|([⁰¹²³⁴⁵⁶⁷⁸⁹]+))/g))
+        z.add(zahl(b[1]) * Math.pow(10, b[2] != null ? +b[2] : +[...b[3]].map((c) => HOCH[c]).join("")));
+    // die Zahlwörter des Wortlauts („zwei Spitzen“, „die Hälfte“)
+    const WORT = { zwei: 2, drei: 3, vier: 4, fünf: 5, sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10, elf: 11, zwölf: 12, zwanzig: 20, hundert: 100,
+        tausend: 1000, million: 1e6, millionen: 1e6, milliarde: 1e9, milliarden: 1e9, doppelt: 2, doppelte: 2, dreifach: 3, hälfte: 0.5, halb: 0.5, drittel: 1 / 3, viertel: 0.25, dutzend: 12 };
+    for (const w of t.toLowerCase().matchAll(/[a-zäöüß]+/g)) if (WORT[w[0]] != null) z.add(WORT[w[0]]);
+    // das Vorzeichen folgt dem Satz („sinkt um 10 %“, „−≥ 20 %“): jede Zahl auch negativ
+    for (const v of [...z]) z.add(-v);
+    return [...z];
+}
+const gleichZahl = (a, b) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+function sollLinse(s, sp) {
+    if (!sp || sp.auge) return [];
+    const da = zahlenDes(s.richter + " · " + s.umfang);
+    const im = (v) => da.some((w) => gleichZahl(v, w));
+    const aus = [];
+    if (sp.umfang && !im(sp.umfang.soll) && !(typeof sp.umfang.herkunft === "string" && sp.umfang.herkunft.length >= 12))
+        aus.push("Umfang-Soll " + sp.umfang.soll + " (" + sp.umfang.wort + ") steht nicht im Wortlaut „" + s.umfang + "“");
+    for (const m of sp.masse || []) {
+        if (typeof m.herkunft === "string" && m.herkunft.length >= 12) continue;
+        const zs = istBand(m) ? [m.von, m.bis] : [m.soll];
+        for (const v of zs) if (!im(v)) aus.push(m.wort + " " + sollText(m) + ": " + v + " steht nicht im Richter „" + s.richter + "“");
+        if (istTol(m) && !im(m.tol) && !(m.soll && im(m.tol / Math.abs(m.soll)))) aus.push(m.wort + " ±" + m.tol + ": die Toleranz steht nicht im Richter „" + s.richter + "“");
+    }
+    return aus;
 }
 const leitern = []; // je Leiter { id, perspektive, def } — die Abdeckung und das Blatt lesen sie
 function leiter(id, def) {
@@ -267,7 +336,9 @@ function leiter(id, def) {
         if (da !== 1) throw new Error(wo + ": steht " + da + "× in sprossen | bestehend | unklar (Soll genau 1)");
         if (sprossen[s.nr]) pruefeSprosse(wo, sprossen[s.nr]);
         if (unklar[s.nr] != null && !(typeof unklar[s.nr] === "string" && unklar[s.nr].length >= 12)) throw new Error(wo + ": unklar trägt den Vorschlag in einem Satz");
-        if (bestehend[s.nr] != null && !(typeof bestehend[s.nr] === "string" && /#\d+$/.test(bestehend[s.nr]))) throw new Error(wo + ": bestehend nennt die Station (<kriterium>#<staffel>)");
+        const b = bestehend[s.nr];
+        if (b != null && !(typeof b === "string" ? /#\d+$/.test(b) : b && /#\d+$/.test(String(b.station)) && typeof b.fehlt === "string" && b.fehlt.length >= 12))
+            throw new Error(wo + ": bestehend nennt die Station (<kriterium>#<staffel>) oder { station, fehlt: <Grund der Tafel-Zeile „fehlt“> }");
     }
     for (const k of [...Object.keys(sprossen), ...Object.keys(bestehend), ...Object.keys(unklar)])
         if (!L.sprossen.some((s) => String(s.nr) === k)) throw new Error(id + ": die Sprosse " + k + " steht nicht in der Karte");
@@ -341,15 +412,28 @@ function abdeckung() {
     }
     return je;
 }
-function zeilen() {
+// nur: die eingefalteten Perspektiven (Komma-Liste) — die Datei vision/richter/zeilen-mensch.json trägt nur, was im Zweig liegt
+function zeilen(nur) {
     const aus = [];
+    const je = nur ? new Set(String(nur).split(",")) : null;
     for (const x of leitern)
-        for (const n of x.nrn) {
+        for (const n of je && !je.has(x.perspektive) ? [] : x.nrn) {
             const sp = sprosseVon(x, n);
-            aus.push(sp.auge
+            // ein Augen-Richter, dessen Umfang die Welt nicht trägt, urteilt ROT „Umfang nicht erzeugbar“ — ein ganzes Urteil, die Zeile „gleich“
+            aus.push(sp.auge && sp.erwartet !== "nicht"
                 ? { station: "karte2." + x.id + "#" + n, leiter: x.id, sprosse: n, richter: "fehlt", grund: "auge: die Station schießt das Bild an der Pose „" + sp.auge.pose + "“ gegen das Vorbild „" + sp.auge.vorbild + "“ — es zählt erst mit dem Urteil am Gerät (Blindpaar)" }
                 : { station: "karte2." + x.id + "#" + n, leiter: x.id, sprosse: n, richter: "gleich" });
         }
+    // die Zuordnungen auf bestehende Stationen, die die Tafel noch nicht führt
+    const TAFEL = JSON.parse(fs.readFileSync(path.join(KOORD, "vision", "richter-tafel.json"), "utf8")).zeilen;
+    for (const x of leitern) {
+        if (je && !je.has(x.perspektive)) continue;
+        for (const [k, b] of Object.entries(x.def.bestehend || {})) {
+            const station = typeof b === "string" ? b : b.station, n = +k;
+            if (TAFEL.some((z) => z.station === station && z.leiter === x.id && z.sprosse === n)) continue;
+            aus.push(typeof b === "string" ? { station, leiter: x.id, sprosse: n, richter: "gleich" } : { station, leiter: x.id, sprosse: n, richter: "fehlt", grund: b.fehlt });
+        }
+    }
     return aus;
 }
 function selbsttest(nur) {
@@ -382,13 +466,36 @@ function selbsttest(nur) {
             falsch.push(id + " der argv der Probe parst nicht: " + e.message);
         }
     }
+    // DIE LINSE „SOLL AUS DER KARTE“ je Zahl-Sprosse, und ihr Selbsttest: ROT am Fund erzaehlkunst S4, still am wörtlichen Soll (lenker S1)
+    for (const x of leitern) {
+        if (nur && x.perspektive !== nur) continue;
+        for (const s of LEITER.get(x.id).sprossen) for (const t of sollLinse(s, (x.def.sprossen || {})[s.nr])) falsch.push("SOLL AUS DER KARTE " + x.id + " S" + s.nr + ": " + t);
+    }
+    const fund = sollLinse({ richter: "Besucherzahl folgt Güte und Mode; Gegenlauf Haus geschlossen → die Besucher verteilen sich auf andere", umfang: "Theater, Kino, Verlag als Betrieb, 10⁴ Besucher am Tag" },
+        { umfang: { soll: 10000, wort: "Besucher am Tag" }, masse: [{ key: "r", wort: "Besucher ↔ Güte r", soll: 0.5, richtung: "≥" }, { key: "g", wort: "Gegenlauf", soll: 0.8, richtung: "≥" }] });
+    const recht = sollLinse({ richter: "1 h: 0 Kollisionen bei Durchsatz und Reisetempo im Band realer Straßen (Zeitlücke 1–3 s, Reisetempo ≥ 80 % des erlaubten)", umfang: "10 Fahrer auf Wegen" },
+        { umfang: { soll: 10, wort: "Fahrer" }, masse: [{ key: "d", wort: "Dauer s", soll: 3600, richtung: "≥" }, { key: "k", wort: "Kollisionen", soll: 0, richtung: "≤" }, { key: "z", wort: "Zeitlücke s", von: 1, bis: 3 }, { key: "t", wort: "Reisetempo", soll: 0.8, richtung: "≥" }] });
+    const hergeleitet = sollLinse({ richter: "Stil-Abstand Lehrer ↔ Schüler kleiner als zu Fremden", umfang: "10⁶ Bewohner" }, { umfang: { soll: 1e6, wort: "Bewohner" }, masse: [{ key: "s", wort: "Fremde ÷ Lehrer", soll: 1.01, richtung: "≥", herkunft: "„kleiner als“: der Quotient über 1" }] });
+    if (fund.length !== 2 || recht.length || hergeleitet.length) falsch.push("die Linse SOLL AUS DER KARTE: der Fund erzaehlkunst S4 " + fund.length + "/2 · am wörtlichen Soll " + recht.concat(hergeleitet).join(" | "));
     return { proben: n, falsch };
 }
 if (require.main === module) {
     const a = process.argv.slice(2);
     const nur = a.includes("--perspektive") ? a[a.indexOf("--perspektive") + 1] : null;
     if (a.includes("--zeilen")) {
-        console.log(JSON.stringify(zeilen(), null, 1));
+        const lesart = "Neue Zeilen der Richter-Tafel (Format vision/richter-tafel.json) aus der Richter-Fabrik des Kapitels mensch (meisterkarte-quelle/punkte/stationen/k2-mensch*.js, erzeugt mit `node k2-mensch.js --zeilen`): je Station einer Leiter EINE Zeile ihrer Sprosse. „gleich“: die Probe misst den ganzen Richter der Sprosse (GRÜN/ROT mit Zahl, „Umfang nicht erzeugbar“, „fehlender Leser“ — jedes ein Urteil); „fehlt“: die Sprosse trägt einen Prüfer/Blindpaar-Richter (R5/R11), die Station schießt das Bild, es zählt erst mit dem Urteil am Gerät. Der Koordinator faltet sie in die Tafel ein.";
+        const zs = zeilen(nur);
+        const sp = zs.map((z) => "  " + JSON.stringify(z).replace(/^\{/, "{ ").replace(/\}$/, " }").replace(/","/g, "\", \"").replace(/":/g, "\": ").replace(/,"/g, ", \""));
+        console.log("{\n \"lesart\": " + JSON.stringify(lesart) + ",\n \"zeilen\": [\n" + sp.join(",\n") + "\n ]\n}");
+    } else if (a.includes("--herkunft")) {
+        // jedes Soll, das nicht wörtlich im Wortlaut steht, mit seiner Herleitung (das Blatt nennt jede)
+        for (const x of leitern) {
+            if (nur && x.perspektive !== nur) continue;
+            for (const [n, sp] of Object.entries(x.def.sprossen || {})) {
+                if (sp.umfang && sp.umfang.herkunft) console.log(x.id + " S" + n + " · Umfang " + sp.umfang.soll + " " + sp.umfang.wort + " · " + sp.umfang.herkunft);
+                for (const m of sp.masse || []) if (m.herkunft) console.log(x.id + " S" + n + " · " + m.wort + " " + sollText(m) + " · " + m.herkunft);
+            }
+        }
     } else if (a.includes("--selbsttest")) {
         const r = selbsttest(nur);
         for (const f of r.falsch) console.log("  ROT " + f);
