@@ -5733,15 +5733,6 @@ L.perspektive("erleben", (() => {
 // (die Taten-Liste auf ihre Länge, `_tatGen`, die Decken neu gemalt, der Wald der Narbe neu gepflanzt — wie brandSeite der Linse).
 L.perspektive("same", (() => {
     const A = "same.kopplung.aufwaerts";
-    // DER RICHTER OHNE ZAHL (ereignis S3/S7, erdsaat S1, zeitreise S2/S3): K.soll verlangt eine Zahl im Wort, diese Richter tragen keine —
-    // ihre Bedingung steht als 0/1 (oder Gleichheit) im Wort selbst; das Wort steht wörtlich im Richter, und NUR ein Richter ohne jede Zahl
-    // darf diesen Weg gehen (sonst wirft er wie K.soll)
-    const sollOhneZahl = (id, nr, wort, o) => {
-        const r = K.sprosseVon(id, nr).richter;
-        if (!r.includes(wort)) throw new Error("Soll „" + wort + "“ steht nicht wörtlich im Richter " + id + " S" + nr);
-        if (K.zahlenIn(r).length) throw new Error("der Richter " + id + " S" + nr + " trägt Zahlen — K.soll, nie sollOhneZahl");
-        return { wort, key: o.key, rel: o.rel, a: o.zahl, b: undefined, ref: undefined, refQuelle: undefined, einheit: o.einheit || "" };
-    };
 
     // ════════ same.kopplung.aufwaerts — die Tat schreibt das Große (Haus, Lava) ════════
     // Die Tat: ein Haus über den Satz `spawn_studio haus` (der EINE Stempel `_studioStampFor`) 30–120 m um den Spieler; zehn Orte im
@@ -6096,6 +6087,2566 @@ L.perspektive("same", (() => {
                         leser: "voxel-worker.js:1175 planetOrtAuftrag — kein Eingang einer Zivilisation",
                         gruen: { werte: { anteilProzent: 86 }, zeuge: PLANET_Z },
                         attrappen: [{ name: "86 % ohne Paar mit ↔ ohne Zivilisation", roh: { werte: { anteilProzent: 86 }, zeuge: Object.assign({}, PLANET_Z, { mitOhne: 0 }) } }],
+                    },
+                },
+            },
+        },
+    };
+})());
+
+// ── DAS STÜCK zusammenspiel.same: ereignis (S2–S7; S1 trägt g1.js LAVA_SITZUNG) und erdsaat (S1–S6) ─────────────────────────────────
+// EREIGNIS — die Tat über die Wege des Spiels: der Brand (`_brandEntfachen`, der Akt der Welt) auf der trockenen Zelle mit Bett nächst
+// dem Spieler, sein Lauf auf SEINER Uhr (`_tickBrand` je `BRAND.schrittS`, wie g1 brandSitzungProbe `brennen`) bis 1 ha (Asche +
+// brennende Zellen × Zelle²), dann die Bilder der Welt (`__seitenTakt`) mit der Frame-Zeit, die der Flugschreiber liest
+// (`_flightRecorderTick(frameMs)`), und die Lage jedes Bewohners ≤ 300 m (`_bewohnerSiedlungen`) gegen die brennenden Zellen. DER
+// GEGENLAUF (R7): dieselben Bilder VOR dem Entfachen — Frame-Zeit ohne Brand und die Zellen, die jeder Bewohner ohne Front betrat;
+// „meiden“ zählt nur, wer ohne Brand die Zellen der Front betrat und mit ihr nicht. Danach brennt die Front weiter bis 1 km² (Deckel
+// der Wanduhr), das Bild des Brands schießt das Gerät an fester Pose über dem Herd, dann fällt alles (Brand-Feld, Taten, Asche, Narbe,
+// Uhr, Wetter, Regler). Die Lava (`lava`, der einzige Ausbruch) auf einer Zelle ohne Bett: die Asche (`_ascheAt`) in 0–1 000 m mit ↔
+// ohne Guss. Tsunami, Beben, Einschlag: die Welt wird gefragt, welchen Leser sie trägt (die Namen der Welt), wie viele Bewohner und
+// Bauten sie hält, und der Planet-Faden antwortet an der Antipode des Ankers.
+// ERDSAAT — der Planet-Faden (`r._planetAuftrag` planet-ort, stamm/gelaende-chunks.js → voxel-worker.js planetOrtAuftrag) am Samen
+// „erde“: der Vesuv über ein Jahrhundert gegen einen Gegenort ohne Vulkan (R7), zehn Orte der Gefahr in drei Epochen, Pompeji 79 ·
+// Lissabon 1755 · London 1666 an ihrem Jahr, Tambora → 1816 (der Sommer Mitteleuropas 1815 → 1816 gegen 1814 → 1815), der
+// Meeresspiegel des Quartärs gegen die Rekonstruktion (Spratt & Lisiecki 2016), die fünf großen Aussterben gegen die Decke des
+// Lebens am Faden (Fibonacci-Punkte gleicher Fläche, t − 5 · t · t + 5 Ma). Der Schlüssel der Erd-Saat (R4) ist die Frage an die
+// Welt wie in planet.erde; ohne ihn ist jeder Umfang nicht erzeugbar.
+L.perspektive("same", (() => {
+    const E = "same.kopplung.ereignis";
+    const D = "same.kopplung.erdsaat";
+
+    // ════════ same.kopplung.ereignis — der Zeuge der Front (S2) ════════
+    const zeugeFront = (roh) => {
+        const z = roh.zeuge || {};
+        if (z.fehler) return "kein Brand in der Welt: " + z.fehler;
+        if (!(z.flaecheM2 >= 10000)) return "der Brand erreichte nur " + (z.flaecheM2 || 0) + " m² (Soll 1 ha)";
+        if (!(z.brennend > 0)) return "während der Bilder brannte keine Zelle (keine Front, nur Asche)";
+        if (!(z.frames >= 30 && z.framesGegen >= 30)) return "nur " + (z.frames || 0) + " ↔ " + (z.framesGegen || 0) + " Bilder mit ↔ ohne Brand (Soll je 30)";
+        if (!(z.p95 <= 34)) return "Frame p95 " + z.p95 + " ms während des Brands über dem Preis P (REGELN R8, Klasse Ort: p95 ≤ 34 ms)";
+        if (!(z.bewohner >= 10)) return "nur " + (z.bewohner || 0) + " Bewohner ≤ 300 m um den Herd (Soll 10)";
+        if (!(z.imGegen >= 1)) return "die Front lag auf keinem Weg eines Bewohners — der Gegenlauf ohne Brand zeigt dasselbe (R7)";
+        return null;
+    };
+    const FRONT_Z = { flaecheM2: 13056, brennend: 24, frames: 39, framesGegen: 39, p95: 18.2, p95Gegen: 16.9, bewohner: 12, imGegen: 5, imMit: 0 };
+
+    // ════════ same.kopplung.erdsaat — der Zeuge der Erd-Saat ════════
+    const zeugeErde = (min, extra) => (roh) => {
+        const z = roh.zeuge || {};
+        if (z.schluessel !== true) return "keine Erd-Saat mit Schlüssel (R4): der Planet liest nur den Samen (planet-core planetPlan)";
+        if (!(z.antworten >= min)) return "nur " + (z.antworten || 0) + " Antworten des Planet-Fadens (Soll ≥ " + min + ")";
+        if (!(z.streuungM > 0)) return "die Antworten tragen keine Streuung der Höhe (eine Konstante, nicht der Faden)";
+        return extra ? extra(z, roh) : null;
+    };
+    const ERDE_Z = { schluessel: true, antworten: 190, streuungM: 1840, samen: "erde" };
+
+    return {
+        leitern: {
+            [E]: {
+                sek: 50,
+                dorf: true,
+                mutiert: true,
+                pfad: ["stamm/feld-brand.js", "stamm/feld-leben.js", "stamm/feld-dsl.js", "stamm/siedlung-*.js", "stamm/dirigent-regler.js", "stamm/dirigent-takt.js", "stamm/vegetation-baum.js", "stamm/bild-himmel.js", "stamm/gelaende-chunks.js", "voxel-worker.js", "planet-core.js", "gelaende-core.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs"],
+                ungefahren: "Frame p95 mit ↔ ohne Brand urteilt nur das Gerät (headless ist die Zahl Mechanik auf swiftshader); die Bilder des Brands über dem Herd (S3, S4), des Himmels über der Lava (S6) und der Wiese (S7) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const auge = (name, pose) => Promise.race([M.auge(name, pose), new Promise((ok) => setTimeout(() => ok({ bild: null, pose: JSON.stringify(pose), grund: "kein Bild in 10 s" }), 10000))]);
+                    const brand = async (r, a) => {
+                        const st = r.state;
+                        const C = AnazhRealm;
+                        const B = C.BRAND;
+                        const cs = C.LIFE_FIELD.cell;
+                        const pm = st.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const L0 = (st.worldMeta.taten ||= []);
+                        const A = (window.__ereignisAlt = { n0: L0.length, bf0: [...(st.brandFeld || new Map()).keys()], rest0: !!r._brandRest, wetter: st.weather, tod: st.timeOfDay, spiel: st.spielZeit, uhr: st._uhrSpielZeit, halt: st.weatherEffectTime, regler: st.perfRegulator });
+                        st.perfRegulator = false;
+                        const aus = {};
+                        const leute = [];
+                        for (const Sd of (r._bewohnerSiedlungen || new Map()).values()) for (const b of Sd.liste || []) leute.push(b);
+                        aus.bewohnerWelt = leute.length;
+                        if (st.weather !== "sunny" && window.__wetterSetzen("sunny") !== "sunny") return Object.assign(aus, { fehler: "das Wetter der Probe gilt nicht: sunny (es gilt " + st.weather + ")" });
+                        const lage = (b) => (b.leib && b.leib.position && Number.isFinite(b.leib.position.x) ? b.leib.position : null);
+                        const dort = leute.map(lage).filter((p) => p && Math.hypot(p.x - pm.x, p.z - pm.z) <= a.leuteSuchM);
+                        const mitte = dort.length ? dort.reduce((s, p) => [s[0] + p.x / dort.length, s[1] + p.z / dort.length], [0, 0]) : [pm.x, pm.z];
+                        aus.herdAn = dort.length ? "Mitte von " + dort.length + " Bewohnern" : "Spieler";
+                        const [px, pz] = [Math.floor(mitte[0] / cs), Math.floor(mitte[1] / cs)];
+                        const [sx, sz] = [Math.floor(pm.x / cs), Math.floor(pm.z / cs)];
+                        let herd = null;
+                        for (let d = dort.length ? 0 : a.herdVon; d <= a.herdBis && !herd; d++)
+                            for (let i = -d; i <= d && !herd; i++)
+                                for (const [cx, cz] of [[px + i, pz - d], [px + i, pz + d], [px - d, pz + i], [px + d, pz + i]]) {
+                                    if (Math.max(Math.abs(cx - sx), Math.abs(cz - sz)) < a.herdVon) continue;
+                                    const f = r._brandStoff(cx, cz);
+                                    if (f && r._brandFeuchte(f.boden) < f.zeile.brenn.mx && !r._nassAt((cx + 0.5) * cs, (cz + 0.5) * cs)) {
+                                        herd = [cx, cz, f.zeile.name];
+                                        break;
+                                    }
+                                }
+                        if (!herd) return Object.assign(aus, { fehler: "keine trockene Zelle mit Bett " + a.herdVon + "–" + a.herdBis + " Zellen um " + aus.herdAn });
+                        const [hx, hz] = [(herd[0] + 0.5) * cs, (herd[1] + 0.5) * cs];
+                        const hy = r._voxelSurfaceY(hx, hz);
+                        Object.assign(aus, { herd: [hx, hz].map(Math.round), stoff: herd[2] });
+                        const nahe = leute.filter((b) => lage(b) && Math.hypot(lage(b).x - hx, lage(b).z - hz) <= a.leuteM);
+                        const zelleVon = (b) => Math.floor(lage(b).x / cs) + "," + Math.floor(lage(b).z / cs);
+                        const brennt = () => {
+                            const s = new Set();
+                            for (const [k, z] of st.brandFeld || new Map()) if (z.t0 !== null) s.add(k);
+                            return s;
+                        };
+                        const flaeche = () => (brennt().size + L0.slice(A.n0).filter((q) => q.tat === "brand").length) * cs * cs;
+                        const bilder = async (n, je) => {
+                            const ms = [];
+                            const echt = r._flightRecorderTick;
+                            const zur = window.leihe(r, { _flightRecorderTick: function (f, ...x) { ms.push(f); return echt.call(this, f, ...x); } });
+                            try {
+                                for (let i = 0; i < n; i++) {
+                                    await window.__seitenTakt();
+                                    if (je) je(i);
+                                }
+                            } finally {
+                                zur();
+                            }
+                            const b = ms.slice(1).sort((x, y) => x - y);
+                            return { n: b.length, p95: b.length ? r3(b[Math.min(b.length - 1, Math.ceil(0.95 * b.length) - 1)]) : null, max: b.length ? r3(b[b.length - 1]) : null };
+                        };
+                        const gegenOrte = nahe.map(() => []);
+                        aus.ohne = await bilder(a.bilder, () => nahe.forEach((b, k) => lage(b) && gegenOrte[k].push(zelleVon(b))));
+                        st.weatherEffectTime = 0;
+                        aus.entfacht = !!r._brandEntfachen(hx, hz);
+                        st.weatherEffectTime = A.halt;
+                        if (!aus.entfacht) return Object.assign(aus, { fehler: "der Herd " + aus.herd.join(",") + " (" + herd[2] + ") fing nicht" });
+                        const brennen = (ziel, wandMs) => {
+                            const t0 = performance.now();
+                            const u0 = r._brandUhr;
+                            while (flaeche() < ziel && r._brandLebt() && performance.now() - t0 < wandMs) {
+                                st.spielZeit = r._brandUhr + B.schrittS;
+                                r._tickBrand();
+                            }
+                            st._uhrSpielZeit = st.spielZeit;
+                            return Math.round(r._brandUhr - u0);
+                        };
+                        aus.bisHaS = brennen(a.haM2, a.wandMs);
+                        aus.flaecheM2 = flaeche();
+                        aus.brennendVor = brennt().size;
+                        const imFeuer = nahe.map(() => false);
+                        const front = new Set();
+                        aus.mit = await bilder(a.bilder, () => {
+                            const F = brennt();
+                            F.forEach((k) => front.add(k));
+                            nahe.forEach((b, k) => {
+                                if (lage(b) && F.has(zelleVon(b))) imFeuer[k] = true;
+                            });
+                        });
+                        aus.brennend = brennt().size;
+                        aus.front = front.size;
+                        aus.bewohner = nahe.length;
+                        aus.imGegen = gegenOrte.filter((Lz) => Lz.some((k) => front.has(k))).length;
+                        aus.imMit = imFeuer.filter(Boolean).length;
+                        aus.meiden = gegenOrte.filter((Lz, k) => Lz.some((q) => front.has(q)) && !imFeuer[k]).length;
+                        aus.weiterS = brennen(a.kmM2, a.wandMs3);
+                        aus.flaecheMaxM2 = flaeche();
+                        aus.brennendMax = brennt().size;
+                        aus.lebt = r._brandLebt();
+                        aus.pose = { px: hx + a.augeM, py: hy + 0.75 * a.augeM, pz: hz + a.augeM, lx: hx, ly: hy, lz: hz };
+                        return aus;
+                    };
+                    const putz = async (r) => {
+                        const st = r.state;
+                        const cs = AnazhRealm.LIFE_FIELD.cell;
+                        const A = window.__ereignisAlt;
+                        if (!A) return { putz: "kein Stand der Probe" };
+                        const L0 = (st.worldMeta.taten ||= []);
+                        const bf0 = new Set(A.bf0);
+                        const asche = L0.slice(A.n0).filter((q) => q.tat === "brand");
+                        for (const k of [...(st.brandFeld || new Map()).keys()]) if (!bf0.has(k)) st.brandFeld.delete(k);
+                        if (!A.rest0) r._brandRest = null;
+                        if (!bf0.size) r._brandBett = null;
+                        L0.length = A.n0;
+                        r._tatGen = (r._tatGen | 0) + 1;
+                        r._lavaTaktT = -Infinity;
+                        for (const s of st.wegeKarte ? st.wegeKarte.stufen : []) if (s.zentriert) r._ascheStufeMalen(s);
+                        for (const q of asche) r._waldNachwuchs(q.x - cs, q.z - cs, q.x + cs, q.z + cs);
+                        r._brandMalen();
+                        st.spielZeit = A.spiel;
+                        st._uhrSpielZeit = A.uhr;
+                        r.setTimeOfDay(A.tod, "regler");
+                        st.weatherEffectTime = A.halt;
+                        st.perfRegulator = A.regler;
+                        if (st.weather !== A.wetter) window.__wetterSetzen(A.wetter);
+                        delete window.__ereignisAlt;
+                        return { aschen: asche.length, brandFeld: st.brandFeld ? st.brandFeld.size : 0, taten: L0.length, lebt: r._brandLebt(), uhr: st.spielZeit === A.spiel, wetter: st.weather };
+                    };
+                    const lava = async (r, a) => {
+                        const st = r.state;
+                        const cs = AnazhRealm.LIFE_FIELD.cell;
+                        const pm = st.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        let Q = null;
+                        for (let d = a.vonM; d <= a.bisM && !Q; d += 16)
+                            for (let k = 0; k < 12 && !Q; k++) {
+                                const x = pm.x + d * Math.cos((k * Math.PI) / 6);
+                                const z = pm.z + d * Math.sin((k * Math.PI) / 6);
+                                const [cx, cz] = [Math.floor(x / cs), Math.floor(z / cs)];
+                                let bett = false;
+                                for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) bett = bett || !!r._brandStoff(cx + i, cz + j);
+                                if (!bett && r._landAt(x, z, 0.2) && !r._nassAt(x, z)) Q = { x, z, y: r._voxelSurfaceY(x, z) };
+                            }
+                        if (!Q) return { fehler: "keine Zelle ohne Bett " + a.vonM + "–" + a.bisM + " m um den Spieler" };
+                        const asche = () => a.distanzM.map((d) => r3(r._ascheAt(Q.x + d, Q.z)));
+                        const L0 = (st.worldMeta.taten ||= []);
+                        const n0 = L0.length;
+                        const bf0 = new Set((st.brandFeld || new Map()).keys());
+                        const halt = st.weatherEffectTime;
+                        const aus = { ort: [Q.x, Q.z].map(Math.round), y: r3(Q.y), ohne: asche() };
+                        aus.ohne2 = asche();
+                        st.weatherEffectTime = 0;
+                        try {
+                            r.dslRun(["lava", Q.x, Q.y, Q.z], { source: "human" });
+                            st.weatherEffectTime = halt;
+                            aus.taten = L0.length - n0;
+                            aus.glut = r3((r._lavaAt(Q.x, Q.z) || { glut: null }).glut);
+                            aus.mit = asche();
+                        } finally {
+                            st.weatherEffectTime = halt;
+                            L0.length = n0;
+                            for (const k of [...(st.brandFeld || new Map()).keys()]) if (!bf0.has(k)) st.brandFeld.delete(k);
+                            if (!bf0.size) [r._brandRest, r._brandBett] = [null, null];
+                            r._tatGen = (r._tatGen | 0) + 1;
+                            r._lavaTaktT = -Infinity;
+                            for (const s of st.wegeKarte ? st.wegeKarte.stufen : []) if (s.zentriert) r._lavaStufeMalen(s);
+                        }
+                        aus.nachher = { lava: !!r._lavaAt(Q.x, Q.z), taten: L0.length - n0 };
+                        return aus;
+                    };
+                    const welt = async (r) => {
+                        const st = r.state;
+                        const namen = new Set();
+                        for (let p = r; p && p !== Object.prototype; p = Object.getPrototypeOf(p)) for (const n of Object.getOwnPropertyNames(p)) namen.add(n);
+                        const N = [...namen];
+                        const bewohner = [...(r._bewohnerSiedlungen || new Map()).values()].reduce((s, q) => s + (q.liste ? q.liste.length : 0), 0);
+                        await r._fadenQuelle();
+                        const an = await r._planetAnker();
+                        const [B, L] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
+                        const samen = r._planetSamen();
+                        const anti = await r._planetAuftrag({ type: "planet-ort", samen, breite: -B, laenge: L > 0 ? L - 180 : L + 180, zeitMa: 0 });
+                        const heim = await r._planetAuftrag({ type: "planet-ort", samen, breite: B, laenge: L, zeitMa: 0 });
+                        return {
+                            tsunami: N.filter((n) => /tsunami|beben|quake|seism/i.test(n)),
+                            einschlag: N.filter((n) => /einschlag|impakt|impact|krater|meteor|asteroid/i.test(n)),
+                            bewohner,
+                            siedlungen: (r._bewohnerSiedlungen || new Map()).size,
+                            bauten: (st.architectures || []).length,
+                            anker: [B, L].map((v) => Math.round(v * 100) / 100),
+                            antipode: { land: anti.land, hoeheM: Math.round(anti.hoeheM), kuesteKm: Math.round(anti.kuesteKm) },
+                            heim: { land: heim.land, hoeheM: Math.round(heim.hoeheM) },
+                        };
+                    };
+                    let x = {};
+                    let a3 = null;
+                    let geputzt = null;
+                    try {
+                        x = await S(brand, Object.assign({}, U[2], U[3]));
+                        if (!x.fehler && x.pose) a3 = await auge("same-ereignis-s3-brand", x.pose);
+                    } catch (e) {
+                        x = Object.assign({}, x, { fehler: String((e && e.message) || e).slice(0, 200) });
+                    } finally {
+                        geputzt = await S(putz, {}).catch((e) => ({ fehler: String((e && e.message) || e).slice(0, 200) }));
+                    }
+                    const lv = await S(lava, U[6]).catch((e) => ({ fehler: String((e && e.message) || e).slice(0, 200) }));
+                    const a6 = await auge("same-ereignis-s6-himmel", lv.ort ? { px: lv.ort[0], py: lv.y + 2, pz: lv.ort[1], lx: lv.ort[0] + 10, ly: lv.y + 60, lz: lv.ort[1] } : { ort: "wiese" });
+                    const a7 = await auge("same-ereignis-s7-wiese", { ort: "wiese" });
+                    const w = await S(welt, {});
+                    const xo = x.ohne || {};
+                    const xm = x.mit || {};
+                    const zf = { fehler: x.fehler, flaecheM2: x.flaecheM2, brennend: x.brennend, frames: xm.n, framesGegen: xo.n, p95: xm.p95, p95Gegen: xo.p95, bewohner: x.bewohner, imGegen: x.imGegen, imMit: x.imMit, front: x.front, herd: x.herd, stoff: x.stoff, bisHaS: x.bisHaS, putz: geputzt };
+                    const fl = x.flaecheMaxM2 || 0;
+                    const kein = (a) => !(a && a.some((v) => v > 0));
+                    return {
+                        sprossen: {
+                            2: {
+                                werte: { brennendHa: x.flaecheM2 != null ? x.flaecheM2 / 1e4 : null, meidenProzent: x.imGegen > 0 ? (100 * x.meiden) / x.imGegen : null, frameP95Ms: xm.p95, frameP95OhneMs: xo.p95, frameMaxMs: xm.max },
+                                zeuge: zf,
+                                ...(x.fehler ? {} : x.bewohner >= 10 ? {} : { nicht: "keine 10 Menschen an der Front: die Welt der Sitzung trägt " + x.bewohner + " Bewohner ≤ 300 m um den Herd " + (x.herd || []).join(",") + " (" + x.bewohnerWelt + " in der Welt) — und kein Bewohner liest das Brand-Feld (stamm/siedlung-bewohner.js _bewohnerSoll)" }),
+                            },
+                            3: {
+                                werte: { fluchtGelaendeProzent: null, flaecheMaxM2: fl, brandUhrS: (x.bisHaS || 0) + (x.weiterS || 0) },
+                                zeuge: Object.assign({ flaecheMaxM2: fl, bewohnerWelt: x.bewohnerWelt, lebt: x.lebt }, zf),
+                                auge: a3 || { bild: null, pose: "über dem Herd", grund: x.fehler || "kein Brand" },
+                                nicht: "kein Dorf flieht: der Brand erreichte " + Math.round(fl) + " m² (Soll 10⁶) in " + ((x.bisHaS || 0) + (x.weiterS || 0)) + " s Brand-Uhr, " + x.bewohnerWelt + " Bewohner in der Welt (Soll 10³); die Flucht folgt nur gesehener Gewalt (stamm/siedlung-bewohner.js _bewohnerWeichen), kein Fluchtweg vor einer Front" + (x.fehler ? " · " + x.fehler : ""),
+                            },
+                            4: {
+                                werte: { glaubhaftProzent: undefined, raeumungFaktor: null, bauten: w.bauten, bewohnerWelt: w.bewohner },
+                                zeuge: { bauten: w.bauten, bewohner: w.bewohner, siedlungen: w.siedlungen },
+                                auge: a3 || { bild: null, pose: "über dem Herd", grund: x.fehler || "kein Brand" },
+                                ...(w.bauten >= 1e4 && w.bewohner >= 1e5 ? {} : { nicht: "kein Stadtbrand über 10⁴ Gebäude, kein pyroklastischer Strom, keine 10⁵ Menschen: die Welt trägt " + w.bauten + " Bauten und " + w.bewohner + " Bewohner in " + w.siedlungen + " Siedlungen; das Bett des Brands ist " + (x.stoff || "?") + ", kein Bau (stamm/feld-brand.js _brandStoff); keine Räumung" }),
+                            },
+                            5: {
+                                werte: { wellenAnkunftVerh: null, personenHandeln: null, bewohnerWelt: w.bewohner },
+                                zeuge: { leser: (w.tsunami || []).length, kuestenorte: 0, personen: w.bewohner },
+                                ...((w.tsunami || []).length ? {} : { nicht: "kein Tsunami, kein Beben M8: die Welt trägt 0 Leser einer Welle oder eines Bebens (Namen der Welt), der Planet-Faden kein Ereignis; " + w.bewohner + " Bewohner in der Welt (Soll 10⁷), keiner handelt in einem Ereignis" }),
+                            },
+                            6: {
+                                werte: { ascheFaktor: null, glut: lv.glut, ascheMit: lv.mit, ascheOhne: lv.ohne },
+                                zeuge: { glut: lv.glut, taten: lv.taten, mit: lv.mit, ohne: lv.ohne, ohne2: lv.ohne2, nachher: lv.nachher, fehler: lv.fehler },
+                                auge: a6,
+                                ...(lv.fehler || kein(lv.mit) || !kein(lv.ohne) ? { nicht: "kein Ausbruch fördert Asche: die Lava (glut " + lv.glut + ") legt in " + JSON.stringify(U[6].distanzM) + " m Asche " + JSON.stringify(lv.mit) + " (ohne Guss " + JSON.stringify(lv.ohne) + ") — EINE 16-m-Zelle, kein VEI 8, keine Wanderung, kein Himmel über 3 Jahren" + (lv.fehler ? " · " + lv.fehler : "") } : {}),
+                            },
+                            7: {
+                                werte: { ladebilder: null },
+                                zeuge: { einschlag: (w.einschlag || []).length, antipode: w.antipode, heim: w.heim },
+                                auge: a7,
+                                ...((w.einschlag || []).length ? {} : { nicht: "kein Einschlag: 0 Leser eines Einschlags, Kraters oder Impakt-Winters in der Welt; die Antipode des Ankers " + JSON.stringify(w.anker) + " antwortet im Faden (" + JSON.stringify(w.antipode) + "), erreichbar nur über die Reise (stamm/feld-leben.js _planetAuftrag), kein Flug" }),
+                            },
+                        },
+                    };
+                },
+                sprossen: {
+                    2: {
+                        u: { haM2: 10000, bilder: 40, leuteM: 300, leuteSuchM: 400, herdVon: 3, herdBis: 14, wandMs: 8000 },
+                        soll: [
+                            K.soll(E, 2, "während 1 ha brennt", { key: "brennendHa", rel: "≥", zahl: 1, einheit: "ha" }),
+                            K.soll(E, 2, "Bewohner meiden die Front = 100 %", { key: "meidenProzent", einheit: "%" }),
+                        ],
+                        zeuge: zeugeFront,
+                        zeugeText: "1 ha brennt, Frame p95 im Preis P, die Front lag auf ihren Wegen und sie mieden sie",
+                        taeter: "stamm/siedlung-bewohner.js `_bewohnerSoll` (liest kein Brand-Feld) · stamm/feld-brand.js `_tickBrand` (die Kosten der Front)",
+                        leser: "stamm/siedlung-bewohner.js:2219 _bewohnerSoll — das Soll der Stunde liest Plan, Regen und die Furcht vor Gewalt, kein Brand-Feld: niemand weicht der Front",
+                        unklar: "„Frame p95 während 1 ha brennt“ nennt keine Schwelle — Vorschlag: „Frame p95 ≤ 34 ms während 1 ha brennt“ (REGELN R8, Klasse Ort) wörtlich in den Richter; bis dahin hält der Zeuge die 34 ms der Preis-Treppe.",
+                        gruen: { werte: { brennendHa: 1.3, meidenProzent: 100 }, zeuge: FRONT_Z },
+                        attrappen: [
+                            { name: "100 % gemieden, weil die Front auf keinem Weg lag (der Gegenlauf zeigt dasselbe)", roh: { werte: { brennendHa: 1.3, meidenProzent: 100 }, zeuge: Object.assign({}, FRONT_Z, { imGegen: 0 }) } },
+                            { name: "1 ha aus der Asche, während der Bilder brennt nichts", roh: { werte: { brennendHa: 1.3, meidenProzent: 100 }, zeuge: Object.assign({}, FRONT_Z, { brennend: 0 }) } },
+                            { name: "Frame p95 über dem Preis P (R8 Ort 34 ms)", roh: { werte: { brennendHa: 1.3, meidenProzent: 100 }, zeuge: Object.assign({}, FRONT_Z, { p95: 51.4 }) } },
+                            { name: "100 % aus drei Bewohnern", roh: { werte: { brennendHa: 1.3, meidenProzent: 100 }, zeuge: Object.assign({}, FRONT_Z, { bewohner: 3 }) } },
+                            { name: "kein Brand in der Welt", roh: { werte: { brennendHa: 1.3, meidenProzent: 100 }, zeuge: Object.assign({}, FRONT_Z, { fehler: "der Herd fing nicht" }) } },
+                        ],
+                    },
+                    3: {
+                        u: { kmM2: 1e6, menschen: 1e3, wandMs3: 5000, augeM: 60 },
+                        soll: [K.soll(E, 3, "Fluchtwege folgen dem Gelände", { key: "fluchtGelaendeProzent", rel: "≥", zahl: 100, einheit: "%", refQuelle: "der Wortlaut „folgen dem Gelände“: jeder Fluchtweg (100 %) bleibt auf begehbarem Gelände" })],
+                        auge: { pose: "60 m schräg über dem Herd des Brands der Probe, nach dem Lauf bis 1 km² (die Front brennt im Schuss)", vorbild: "Foto einer Brandfront im Grasland und eines Pahoehoe-Felds (Kīlauea, USGS HVO) — Blindpaar R11" },
+                        zeuge: (roh) => ((roh.zeuge || {}).flaecheMaxM2 >= 1e6 && (roh.zeuge || {}).bewohnerWelt >= 1e3 ? null : "kein Feuer von 1 km² mit 10³ Menschen"),
+                        taeter: "stamm/siedlung-bewohner.js `_bewohnerWeichen` (keine Flucht vor einem Brand)",
+                        nicht: "kein Feuer von 1 km² mit 10³ Menschen, kein Dorf flieht",
+                        leser: "stamm/siedlung-bewohner.js:2179 _bewohnerWeichen — die Flucht folgt nur gesehener Gewalt (Furcht-Gesetz), kein Fluchtweg vor einer Front; stamm/feld-brand.js:344 _brandEntfachen zündet EINE Zelle, ihr Lauf trägt keine Menschen",
+                        unklar: "„Fluchtwege folgen dem Gelände“ trägt keine Zahl — Vorschlag: ≥ 90 % der Fluchtweg-Schritte bergab oder quer zum Hang, keiner über Wasser oder Hang > 35°.",
+                        gruen: { werte: { fluchtGelaendeProzent: 100 }, zeuge: Object.assign({ flaecheMaxM2: 1.1e6, bewohnerWelt: 1200 }, FRONT_Z) },
+                        attrappen: [{ name: "100 % ohne Flucht und ohne Bild", roh: { werte: { fluchtGelaendeProzent: 100 }, zeuge: { flaecheMaxM2: 3000, bewohnerWelt: 0 } } }],
+                    },
+                    4: {
+                        u: { flaecheKm2: 100, menschen: 1e5, gebaeude: 1e4 },
+                        soll: [K.soll(E, 4, "bei 70 %", { key: "glaubhaftProzent", rel: "≥", einheit: "%" }), K.soll(E, 4, "Räumungszeit Faktor 2", { key: "raeumungFaktor", rel: "≤" })],
+                        auge: { pose: "der Brand der Probe über dem Herd (heute kein Stadtbrand: derselbe Schuss wie S3)", vorbild: "historische Bilder (London 1666, Chicago 1871, Saint-Pierre 1902) — Blind-Urteil ≥ „glaubhaft“ bei 70 %" },
+                        zeuge: (roh) => ((roh.zeuge || {}).bauten >= 1e4 && (roh.zeuge || {}).bewohner >= 1e5 ? null : "kein Stadtbrand über 10⁴ Gebäude mit 10⁵ Menschen"),
+                        taeter: "stamm/feld-brand.js `_brandStoff` (das Bett ist Gras und Laub, kein Bau) · stamm/siedlung-ort.js `spawnSettlement` (keine Stadt von 10⁵)",
+                        nicht: "kein Stadtbrand, kein pyroklastischer Strom, keine 10⁵ Menschen",
+                        leser: "stamm/feld-brand.js:214 _brandStoff — das Bett des Brands ist Vegetation, kein Gebäude brennt; stamm/siedlung-ort.js:1136 spawnSettlement — keine Räumung, keine Helfer, kein Stau",
+                        gruen: { werte: { glaubhaftProzent: 74, raeumungFaktor: 1.4 }, zeuge: { bauten: 12000, bewohner: 120000 } },
+                        attrappen: [{ name: "74 % glaubhaft ohne Stadt", roh: { werte: { glaubhaftProzent: 74, raeumungFaktor: 1.4 }, zeuge: { bauten: 30, bewohner: 0 } } }],
+                    },
+                    5: {
+                        u: { flaecheKm2: 1e4, menschen: 1e7, kuesteKm: 1000, orte: 10, stichprobe: 100 },
+                        soll: [
+                            K.soll(E, 5, "Wellen-Ankunft an 10 Küstenorten ±10 % gegen √(g·h)", { key: "wellenAnkunftVerh", ref: 1, refQuelle: "Flachwasser-Welle c = √(g·h) (Lagrange 1781; NOAA-Laufzeitkarten): Ankunft der Welt ÷ Weg/√(g·h) = 1" }),
+                            K.soll(E, 5, "100 Stichproben-Personen handeln", { key: "personenHandeln", rel: "≥", zahl: 100 }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.leser >= 1)) return "die Welt trägt keinen Leser einer Welle oder eines Bebens";
+                            if (!(z.kuestenorte >= 10)) return "nur " + (z.kuestenorte || 0) + " Küstenorte mit Ankunft gemessen (Soll 10)";
+                            if (!(z.personen >= 100)) return "nur " + (z.personen || 0) + " Personen in der Welt (Soll 100 Stichproben)";
+                            return null;
+                        },
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Beben, keine Welle) · stamm/siedlung-bewohner.js `_bewohnerSoll` (kein Ereignis im Tag)",
+                        nicht: "kein Tsunami, kein Beben M8, keine Megastadt",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — der Faden trägt kein Beben und keine Welle; kein Leser eines Tsunami in der Welt",
+                        gruen: { werte: { wellenAnkunftVerh: 1.04, personenHandeln: 120 }, zeuge: { leser: 2, kuestenorte: 10, personen: 120 } },
+                        attrappen: [{ name: "1,04 aus der Formel ohne Welle in der Welt", roh: { werte: { wellenAnkunftVerh: 1.04, personenHandeln: 120 }, zeuge: { leser: 0, kuestenorte: 0, personen: 0 } } }],
+                    },
+                    6: {
+                        u: { vei: 8, vonM: 40, bisM: 200, distanzM: [0, 50, 200, 1000] },
+                        soll: [K.soll(E, 6, "Aschedicke gegen Distanz Faktor 2", { key: "ascheFaktor", rel: "≤" })],
+                        auge: { pose: "an der Zelle der Lava 2 m über Grund, Blick 80° hinauf (der Himmel über dem Ausbruch)", vorbild: "Himmel nach Pinatubo 1991 / Tambora 1815 über 3 Jahre (Aerosol-Rekonstruktion, Gemälde-Farben Zerefos 2007)" },
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.fehler) return "kein Guss: " + z.fehler;
+                            if (!(z.glut > 0)) return "die Lava glüht nicht (kein Ausbruch in der Welt)";
+                            if (!(z.mit && z.mit.some((v) => v > 0))) return "keine Asche in der Distanz nach dem Ausbruch";
+                            if (z.ohne && z.ohne.some((v) => v > 0)) return "Asche auch ohne Guss (der Gegenlauf zeigt dasselbe, R7)";
+                            return null;
+                        },
+                        taeter: "stamm/feld-leben.js `_lavaGiessen` (EINE Zelle, keine Asche) · stamm/feld-brand.js `_ascheAt` (liest nur die Asche des Brands)",
+                        nicht: "kein Ausbruch fördert Asche, kein VEI 8",
+                        leser: "stamm/feld-leben.js:2460 _lavaGiessen — die Lava deckt EINE Zelle, keine Asche über die Distanz; stamm/feld-brand.js:5 _ascheAt liest nur die Asche des Brands",
+                        gruen: { werte: { ascheFaktor: 1.6 }, zeuge: { glut: 1, taten: 1, mit: [1, 0.6, 0.2, 0.02], ohne: [0, 0, 0, 0] } },
+                        attrappen: [{ name: "Faktor 1,6 aus der Toba-Tafel, die Lava legt keine Asche", roh: { werte: { ascheFaktor: 1.6 }, zeuge: { glut: 1, taten: 1, mit: [0, 0, 0, 0], ohne: [0, 0, 0, 0] } } }],
+                    },
+                    7: {
+                        u: { einschlagKm: 10, menschen: 1e10, flug: "Krater → Antipode" },
+                        soll: [K.soll(E, 7, "ohne Ladebild", { key: "ladebilder", rel: "=", zahl: 0, refQuelle: "der Wortlaut „ohne Ladebild“: 0 Ladebilder auf dem Flug vom Krater zur Antipode" })],
+                        auge: { pose: "die Mess-Wiese der Sitzung (heute kein Krater: geschossen an der Wiese)", vorbild: "Chicxulub-Modellierung (Collins et al. 2020, Morgan et al. 2016) — Blindpaar R11" },
+                        zeuge: (roh) => ((roh.zeuge || {}).einschlag >= 1 ? null : "kein Einschlag in der Welt"),
+                        taeter: "planet-core.js planetPlan (kein Einschlag) · stamm/feld-leben.js `_planetAuftrag` (die Reise, kein Flug)",
+                        nicht: "kein Einschlag, kein Flug zur Antipode",
+                        leser: "stamm/feld-leben.js:1286 _planetAuftrag — die Reise fragt den Faden nach Ort und Zeit, kein Flug ohne Ladebild; planet-core.js:307 planetPlan kennt keinen Einschlag, keinen Krater, keinen Impakt-Winter",
+                        gruen: { werte: { ladebilder: 0 }, zeuge: { einschlag: 1 } },
+                        attrappen: [{ name: "0 Ladebilder ohne Flug und ohne Einschlag", roh: { werte: { ladebilder: 0 }, zeuge: { einschlag: 0 } } }],
+                    },
+                },
+            },
+
+            [D]: {
+                sek: 20,
+                pfad: ["planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "stamm/feld-leben.js", "gelaende-core.js", "scripts/werkbank.cjs"],
+                ungefahren: "die Bilder (Relief am Vesuv S1, Blindpaar S3) schießt nur das Gerät; headless steht nur der Faden",
+                mess: async function (H, U, M) {
+                    const seite = async (r, a) => {
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        await r._fadenQuelle();
+                        const G = r._gelaende && r._gelaende();
+                        const schluessel = !!(G && G.ort && G.ort.teil && G.ort.teil.erdSchluessel);
+                        let antworten = 0;
+                        const hoehen = [];
+                        const ort = async (b, l, t) => {
+                            const o = await r._planetAuftrag({ type: "planet-ort", samen: a.samen, breite: b, laenge: l, zeitMa: t });
+                            antworten++;
+                            hoehen.push(o.hoeheM);
+                            return o;
+                        };
+                        const ereignis = (o) => {
+                            const k = Object.keys(o).concat(Object.keys(o.delta || {}));
+                            for (const v of Object.values(o.delta || {})) if (v && typeof v === "object") k.push(...Object.keys(v));
+                            return k.filter((n) => /vulkan|ausbruch|eruption|beben|quake|tsunami|brand|feuer|asche|ereignis/i.test(n)).length;
+                        };
+                        const s1 = await Promise.all(a.s1Jahre.map(async (j) => { const t = -j / 1e6; const [v, g] = await Promise.all([ort(a.vesuv[0], a.vesuv[1], t), ort(a.gegen[0], a.gegen[1], t)]); return [ereignis(v), ereignis(g), r3(v.hoeheM), v.land]; }));
+                        const s2 = await Promise.all(a.orte.map((p) => Promise.all(a.epochen.map(async (t) => { const o = await ort(p[0], p[1], t); return [ereignis(o), r3(o.hoeheM)]; }))));
+                        const s3 = await Promise.all(a.drei.map(async (e) => { const t = -(a.heute - e.jahr) / 1e6; const [o, v] = await Promise.all([ort(e.b, e.l, t), ort(e.b, e.l, t - 1e-5)]); return { name: e.name, land: o.land, hoeheM: r3(o.hoeheM), kuesteKm: r3(o.kuesteKm), ereignis: ereignis(o), dSommerK: r3(o.delta.klima.sommer - v.delta.klima.sommer) }; }));
+                        const sommer = await Promise.all(a.tambora.map(async (j) => (await ort(a.europa[0], a.europa[1], -(a.heute - j) / 1e6)).delta.klima.sommer));
+                        const s5 = await Promise.all(a.meer.map(async ([ka, ref]) => [ka, ref, r3((await ort(a.vesuv[0], a.vesuv[1], -ka / 1000)).delta.meer.waterLevelM)]));
+                        const alpen = await Promise.all([0, -0.021].map(async (t) => (await ort(a.alpen[0], a.alpen[1], t)).delta.klima.sommer));
+                        const fib = Array.from({ length: a.fib }, (_, i) => [(Math.asin(1 - (2 * (i + 0.5)) / a.fib) * 180) / Math.PI, ((i * 137.508) % 360) - 180]);
+                        const decke = async (t) => { const v = await Promise.all(fib.map((p) => ort(p[0], p[1], t))); return v.reduce((s, o) => s + o.delta.wuchs.decke, 0) / v.length; };
+                        const s6 = await Promise.all(a.aussterben.map(async ([t, verlust]) => { const [vor, an, nach] = await Promise.all([decke(t - 5), decke(t), decke(t + 5)]); return [t, verlust, r3(vor), r3(an), r3(nach)]; }));
+                        const hm = hoehen.reduce((s, v) => s + v, 0) / Math.max(1, hoehen.length);
+                        const streuungM = r3(Math.sqrt(hoehen.reduce((s, v) => s + (v - hm) * (v - hm), 0) / Math.max(1, hoehen.length)));
+                        return { schluessel, antworten, streuungM, s1, s2, s3, sommer: sommer.map(r3), s5, alpen: alpen.map(r3), s6 };
+                    };
+                    const a = Object.assign({ samen: "erde", heute: 2025 }, U[1], U[2], U[3], U[4], U[5], U[6]);
+                    const x = await H.seite("return await (" + String(seite) + ")(r, " + JSON.stringify(a) + ");");
+                    const bild = await Promise.race([M.auge("same-erdsaat-ort", { ort: "wiese" }), new Promise((ok) => setTimeout(() => ok({ bild: null, pose: "{\"ort\":\"wiese\"}", grund: "kein Bild in 10 s" }), 10000))]);
+                    const basis = { schluessel: x.schluessel, antworten: x.antworten, streuungM: x.streuungM, samen: "erde" };
+                    const ohne = x.schluessel ? "" : "keine Erd-Saat mit Schlüssel (R4) — der Planet liest nur den Samen „erde“ (planet-core planetPlan); ";
+                    const ausV = x.s1.reduce((s, q) => s + q[0], 0);
+                    const ausG = x.s1.reduce((s, q) => s + q[1], 0);
+                    const ereig2 = x.s2.reduce((s, L) => s + L.reduce((u, q) => u + q[0], 0), 0);
+                    const ereig3 = x.s3.reduce((s, q) => s + q.ereignis, 0);
+                    const [j14, j15, j16] = x.sommer;
+                    const tambK = j16 != null && j15 != null ? Math.round((j16 - j15) * 1000) / 1000 : null;
+                    const gegenK = j15 != null && j14 != null ? Math.round((j15 - j14) * 1000) / 1000 : null;
+                    const fak = x.s5.filter((q) => Math.abs(q[1]) >= 20).map(([, ref, sim]) => { const [p, q] = [Math.abs(ref) + 1, Math.abs(sim) + 1]; return Math.sign(ref) === Math.sign(sim) || Math.abs(sim) < 1e-9 ? Math.max(p, q) / Math.min(p, q) : Math.abs(ref) + Math.abs(sim) + 1; });
+                    const meerFaktor = fak.length ? Math.round(Math.max(...fak) * 1000) / 1000 : null;
+                    const meerSpanne = x.s5.length ? Math.max(...x.s5.map((q) => q[2])) - Math.min(...x.s5.map((q) => q[2])) : 0;
+                    const einbr = x.s6.filter((q) => q[3] < 0.9 * Math.min(q[2], q[4])).length;
+                    return {
+                        sprossen: {
+                            1: { werte: { ausbrueche: ausV, ausbruecheGegen: ausG, vesuvHoeheM: x.s1[0] && x.s1[0][2] }, zeuge: Object.assign({ ausbruchVesuv: ausV, ausbruchGegen: ausG, vesuvLand: x.s1[0] && x.s1[0][3] }, basis), auge: bild, nicht: ohne + "am Vesuv antwortet der Faden über " + U[1].s1Jahre.length + " Zeiten eines Jahrhunderts mit " + ausV + " Ausbrüchen (Gegenort " + ausG + "), Höhe " + (x.s1[0] && x.s1[0][2]) + " m, Land " + (x.s1[0] && x.s1[0][3]) + " — kein Vulkan bricht von selbst aus" },
+                            2: { werte: { wiederkehrFaktor: null, ereignisse: ereig2 }, zeuge: Object.assign({ ereignisse: ereig2, orte: x.s2.length }, basis), nicht: ohne + U[2].orte.length + " Orte der Gefahr in " + U[2].epochen.length + " Epochen tragen " + ereig2 + " Ereignisse am Faden — keine Rate eines Ausbruchs, Bebens oder Brands" },
+                            3: { werte: { phasenFaktor: null, ereignisse: ereig3 }, zeuge: Object.assign({ ereignisse: ereig3, drei: x.s3 }, basis), auge: bild, nicht: ohne + "Pompeji 79, Lissabon 1755, London 1666 an ihrem Jahr: " + x.s3.map((q) => q.name + " Land " + q.land + " " + q.hoeheM + " m, " + q.ereignis + " Ereignisse").join(" · ") + " — kein Ablauf aus Gesetzen, keine Phase" },
+                            4: { werte: { fernfolgeProzent: null, tamboraSommerK: tambK, gegenSommerK: gegenK }, zeuge: Object.assign({ tamboraK: tambK, gegenK, ereignisse: 0 }, basis), nicht: ohne + "keine 100 Ereignisse über 5 000 Jahre: Tambora → 1816 ändert den Sommer Mitteleuropas um " + tambK + " K (Gegenlauf 1814 → 1815: " + gegenK + " K; Erde: −1 bis −3 K) — keine Fernfolge ohne Ereignis" },
+                            5: { werte: { meeresspiegelFaktor: meerFaktor, gletscherMaxVerh: null, alpenSommerLgmK: x.alpen[1] != null && x.alpen[0] != null ? Math.round((x.alpen[1] - x.alpen[0]) * 1000) / 1000 : null }, zeuge: Object.assign({ meer: x.s5, meerSpanneM: Math.round(meerSpanne * 1000) / 1000, alpen: x.alpen }, basis), nicht: ohne + "kein Quartär am Faden: der Meeresspiegel " + x.s5.map((q) => q[0] + " ka " + q[2] + " m (Rekonstruktion " + q[1] + ")").join(" · ") + "; der Sommer der Alpen −21 ka gegen heute " + JSON.stringify(x.alpen) + " °C — keine Eiszeit, kein Gletscher" },
+                            6: { werte: { aussterbenZeitFaktor: null, artenVerlustFaktor: null, einbrueche: einbr }, zeuge: Object.assign({ einbrueche: einbr, aussterben: x.s6 }, basis), nicht: ohne + "keine Arten am Faden (delta: klima, meer, wetter, wuchs, wildnis): die Decke des Lebens an " + U[6].fib + " Punkten bricht an " + einbr + " von 5 Aussterben ein (" + x.s6.map((q) => q[0] + " Ma " + q[2] + "→" + q[3] + "→" + q[4]).join(" · ") + ")" },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: {
+                        u: { vesuv: [40.821, 14.426], gegen: [52.52, 13.4], s1Jahre: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90] },
+                        soll: [K.soll(D, 1, "der Vulkan bricht von selbst aus", { key: "ausbrueche", rel: "≥", zahl: 1, refQuelle: "der Wortlaut „bricht von selbst aus“: ≥ 1 Ausbruch ohne Tat am Ort der Erd-Saat im gemessenen Jahrhundert" })],
+                        auge: { pose: "die Mess-Wiese der Sitzung (heute keine Erd-Saat: der Golf von Neapel steht nicht)", vorbild: "Relief-Modell des Golfs von Neapel mit dem Vesuv (SRTM 30 m / TINITALY) — Blindpaar R11" },
+                        zeuge: zeugeErde(20, (z) => (z.ausbruchVesuv > z.ausbruchGegen ? null : "am Vesuv bricht nicht mehr aus als am Gegenort ohne Vulkan (R7: " + z.ausbruchVesuv + " ↔ " + z.ausbruchGegen + ")")),
+                        taeter: "planet-core.js planetPlan (kein Erd-Schlüssel) · planetVulkane (kein Leser im Faden)",
+                        nicht: "keine Erd-Saat, kein Ausbruch von selbst",
+                        leser: "planet-core.js:307 planetPlan — liest keinen Erd-Schlüssel (R4); planet-core.js:1676 planetVulkane hat keinen Leser im Faden (voxel-worker.js:1175 planetOrtAuftrag)",
+                        gruen: { werte: { ausbrueche: 2 }, zeuge: Object.assign({ ausbruchVesuv: 2, ausbruchGegen: 0 }, ERDE_Z) },
+                        attrappen: [
+                            { name: "zwei Ausbrüche ohne Erd-Saat", roh: { werte: { ausbrueche: 2 }, zeuge: Object.assign({ ausbruchVesuv: 2, ausbruchGegen: 0 }, ERDE_Z, { schluessel: false }) } },
+                            { name: "derselbe Ausbruch am Gegenort ohne Vulkan (R7)", roh: { werte: { ausbrueche: 2 }, zeuge: Object.assign({ ausbruchVesuv: 2, ausbruchGegen: 2 }, ERDE_Z) } },
+                        ],
+                    },
+                    2: {
+                        u: {
+                            orte: [[40.821, 14.426], [37.751, 14.994], [35.361, 138.727], [-6.102, 105.423], [46.191, -122.194], [15.13, 120.35], [-8.25, 118.0], [63.983, -19.666], [-7.541, 110.446], [38.722, -9.139]],
+                            epochen: [0, -0.001, -0.005],
+                        },
+                        soll: [K.soll(D, 2, "simulierte Wiederkehr Faktor 3 der historischen", { key: "wiederkehrFaktor", rel: "≤" })],
+                        zeuge: zeugeErde(30, (z) => (z.ereignisse > 0 ? null : "die zehn Orte tragen kein Ereignis am Faden (keine Wiederkehr)")),
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Ereignis, keine Rate)",
+                        nicht: "keine Erd-Saat, kein Ereignis mit Rate",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — gibt kein Ereignis (Ausbruch, Beben, Brand) und keine Rate je Epoche weiter",
+                        gruen: { werte: { wiederkehrFaktor: 1.8 }, zeuge: Object.assign({ ereignisse: 14 }, ERDE_Z) },
+                        attrappen: [{ name: "Faktor 1,8 aus dem Katalog (Smithsonian GVP), kein Ereignis am Faden", roh: { werte: { wiederkehrFaktor: 1.8 }, zeuge: Object.assign({ ereignisse: 0 }, ERDE_Z) } }],
+                    },
+                    3: {
+                        u: { drei: [{ name: "Pompeji 79", b: 40.751, l: 14.487, jahr: 79 }, { name: "Lissabon 1755", b: 38.722, l: -9.139, jahr: 1755 }, { name: "London 1666", b: 51.507, l: -0.128, jahr: 1666 }], menschen: 1e4 },
+                        soll: [K.soll(D, 3, "Faktor 2 je Phase", { key: "phasenFaktor", rel: "≤" })],
+                        auge: { pose: "die Mess-Wiese der Sitzung (heute kein Pompeji, Lissabon, London: derselbe Schuss wie S1)", vorbild: "Plinius d. J. (Briefe 6.16/6.20), Augenzeugen 1755, Pepys 1666 — Blind-Bildvergleich R11" },
+                        zeuge: zeugeErde(6, (z) => (z.ereignisse > 0 ? null : "die drei Orte tragen an ihrem Jahr kein Ereignis")),
+                        taeter: "planet-core.js planetPlan (keine Erd-Saat) · stamm/feld-leben.js `_lavaGiessen` (der einzige Ausbruch, EINE Zelle)",
+                        nicht: "keine Erd-Saat, kein Ablauf aus Gesetzen",
+                        leser: "planet-core.js:307 planetPlan — keine Erd-Saat; kein Ablauf Säulen-Phase → Strom, Beben → Brand → Tsunami (stamm/feld-leben.js:2460 _lavaGiessen ist der einzige Ausbruch)",
+                        gruen: { werte: { phasenFaktor: 1.5 }, zeuge: Object.assign({ ereignisse: 3 }, ERDE_Z) },
+                        attrappen: [{ name: "Faktor 1,5 aus den Quellen, die Orte tragen nichts", roh: { werte: { phasenFaktor: 1.5 }, zeuge: Object.assign({ ereignisse: 0 }, ERDE_Z) } }],
+                    },
+                    4: {
+                        u: { ereignisse: 100, jahre: 5000, europa: [48.0, 10.0], tambora: [1814, 1815, 1816] },
+                        soll: [K.soll(D, 4, "Anteil, deren dokumentierte Fernfolge messbar eintritt ≥ 50 %", { key: "fernfolgeProzent", einheit: "%" })],
+                        zeuge: zeugeErde(3, (z) => {
+                            if (!(z.ereignisse >= 100)) return "nur " + (z.ereignisse || 0) + " Ereignisse in der Erd-Saat (Soll 100)";
+                            if (!(Math.abs(z.tamboraK || 0) > Math.abs(z.gegenK || 0))) return "Tambora → 1816 ändert den Sommer nicht mehr als der Gegenlauf 1814 → 1815 (" + z.tamboraK + " ↔ " + z.gegenK + " K)";
+                            return null;
+                        }),
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Ereignis, keine Fernfolge)",
+                        nicht: "keine Erd-Saat, keine 100 Ereignisse",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — das Klima am Ort folgt dem Plan der Zeit, kein Ereignis wirkt fort (kein Tambora → 1816, keine Pest → Löhne)",
+                        gruen: { werte: { fernfolgeProzent: 58 }, zeuge: Object.assign({ ereignisse: 100, tamboraK: -1.4, gegenK: 0.1 }, ERDE_Z) },
+                        attrappen: [
+                            { name: "58 % ohne Ereignisse", roh: { werte: { fernfolgeProzent: 58 }, zeuge: Object.assign({ ereignisse: 0, tamboraK: -1.4, gegenK: 0.1 }, ERDE_Z) } },
+                            { name: "1816 so kühl wie der Gegenlauf (R7)", roh: { werte: { fernfolgeProzent: 58 }, zeuge: Object.assign({ ereignisse: 100, tamboraK: -0.2, gegenK: -0.2 }, ERDE_Z) } },
+                        ],
+                    },
+                    5: {
+                        u: { jahre: 1e6, meer: [[21, -125], [65, -85], [140, -120], [250, -105], [435, -125], [125, 6]], alpen: [47.0, 10.0] },
+                        soll: [
+                            K.soll(D, 5, "Meeresspiegel-Kurve gegen Rekonstruktion Faktor 1,5", { key: "meeresspiegelFaktor", rel: "≤" }),
+                            K.soll(D, 5, "Gletscher-Maximum am Ort ±20 %", { key: "gletscherMaxVerh", ref: 1, refQuelle: "Erde: LGM-Schneegrenz-Senkung der Alpen ~1 200 m (Ivy-Ochs 2015) — Welt ÷ Erde = 1" }),
+                        ],
+                        zeuge: zeugeErde(8, (z) => (z.meerSpanneM > 20 ? null : "der Meeresspiegel des Fadens bewegt sich über das Quartär nur " + z.meerSpanneM + " m (keine Eiszeit)")),
+                        taeter: "planet-core.js planetMeer (lineare 10-Ma-Fächer, keine Bahn-Zyklen)",
+                        nicht: "keine Erd-Saat, kein Quartär",
+                        leser: "planet-core.js:1618 planetMeer — lineare 10-Ma-Fächer, keine Bahn-Zyklen: kein Meeresspiegel des Quartärs, kein Gletscher",
+                        unklar: "„Gletscher-Maximum am Ort“ nennt weder Ort noch Größe — Vorschlag: die LGM-Schneegrenz-Senkung der Alpen 1 200 m ±20 % (Ivy-Ochs 2015) am Ort der Erd-Saat 47° N 10° O.",
+                        gruen: { werte: { meeresspiegelFaktor: 1.2, gletscherMaxVerh: 1.1 }, zeuge: Object.assign({ meerSpanneM: 128 }, ERDE_Z) },
+                        attrappen: [{ name: "die Rekonstruktion eingesetzt, der Faden bleibt flach", roh: { werte: { meeresspiegelFaktor: 1.2, gletscherMaxVerh: 1.1 }, zeuge: Object.assign({ meerSpanneM: 0.03 }, ERDE_Z) } }],
+                    },
+                    6: {
+                        u: { jahre: 4.5e9, fib: 8, aussterben: [[-445, 85], [-372, 75], [-252, 96], [-201, 80], [-66, 76]] },
+                        soll: [K.soll(D, 6, "Zeitpunkt Faktor 2", { key: "aussterbenZeitFaktor", rel: "≤" }), K.soll(D, 6, "Arten-Verlust Faktor 1,5", { key: "artenVerlustFaktor", rel: "≤" })],
+                        zeuge: zeugeErde(100, (z) => (z.einbrueche >= 5 ? null : "die Decke des Lebens bricht an " + (z.einbrueche || 0) + " von 5 Aussterben ein")),
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Arten im Faden) · planet-core.js planetPlan (keine Erd-Saat)",
+                        nicht: "keine Erd-Saat, keine Arten am Faden",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — delta trägt klima, meer, wetter, wuchs, wildnis: keine Arten, kein Aussterben",
+                        gruen: { werte: { aussterbenZeitFaktor: 1.3, artenVerlustFaktor: 1.2 }, zeuge: Object.assign({ einbrueche: 5 }, ERDE_Z) },
+                        attrappen: [{ name: "Faktoren aus Raup & Sepkoski, die Decke bricht nie ein", roh: { werte: { aussterbenZeitFaktor: 1.3, artenVerlustFaktor: 1.2 }, zeuge: Object.assign({ einbrueche: 0 }, ERDE_Z) } }],
+                    },
+                },
+            },
+        },
+    };
+})());
+
+// ── DIE LEITERN same.kopplung.gewalt (S1–S6) und same.kopplung.stoerung (S2–S7; S1 trägt g1.js BRAND_SITZUNG) der Perspektive
+// zusammenspiel.same — EIN Stück, je Leiter EINE Messung in der warmen Welt der Sitzung, jede mit ihrem Gegenlauf (R7).
+// GEWALT: die Gefahr, die die Welt von SELBST trägt. Das Wetter der Front über 100 Spieljahre am Ort (`_wetterAmOrt`, je Zug der
+// Welt-Uhr), dann der Takt der Welt (`_gameLoopTick`) im Gewitter und — der Gegenlauf, die Ursache gekappt — in der Sonne, je mit
+// gezählten Zündungen (jeder Ruf von `_brandEntfachen`, neue Zellen im Brandfeld, neue Taten „brand“); der Pegel der Flüsse
+// (`_atlasWaterLevelAt` an den nächsten Flusspunkten nach `_pegelTakt`) nach 30 min Sturm, 30 min Sonne und 3 Tagen Sonne; der
+// Planet-Faden (`r._planetAuftrag` planet-ort) an 8 Saaten × 10⁴ a, im 1°-Gitter der Erd-Saat um den Anker und an 100 Saaten mit und
+// ohne fremden Körper — gezählt wird, welche Gefahr seine Antwort trägt. Am Ende Wetter, Regen-Stempel, Pegel und Brand zurück.
+// STÖRUNG: der Brand als Tat über ihren EINEN Schreiber (`_tatSchreiben` in einer Kopie der Taten, wie die Sukzession der Ökologie):
+// an Orten im Ring um den Spieler das Tempo der Heilung (die Dauer der Narbe, `_tatIndex().dauer`) gegen Feuchte × Licht des Orts
+// (`_feuchteAt`, `_bodenLichtFeld`), die Folge nach 1 Spieljahr (`_sukzession`), die Äsung der Tiere (`_kreaturNahrung`) auf einer
+// Brandfläche vor ↔ nach ↔ über 15 Jahre, der Pegel der Flüsse vor ↔ nach; der Gegenlauf dieselben Orte ohne Tat. Der Planet: die
+// Wurzel (der Samen) gekippt am Anker gegen denselben Samen zweimal, 100 Saaten auf Gefahr. Taten, Index, Uhr zurück.
+L.perspektive("same", (() => {
+    const G = "same.kopplung.gewalt";
+    const ST = "same.kopplung.stoerung";
+    const PFAD_G = ["stamm/feld-brand.js", "stamm/bild-himmel.js", "stamm/dirigent-takt.js", "stamm/wasser-hydro.js", "gelaende-core.js", "phyto-core.js", "voxel-worker.js", "planet-core.js", "stamm/gelaende-chunks.js", "scripts/werkbank.cjs"];
+    const PFAD_S = ["stamm/feld-leben.js", "stamm/vegetation-wiese.js", "stamm/gelaende-boden.js", "stamm/kreatur-leben.js", "stamm/wasser-hydro.js", "stamm/siedlung-*.js", "voxel-worker.js", "planet-core.js", "stamm/gelaende-chunks.js", "scripts/werkbank.cjs"];
+
+    // ════════ DIE ZEUGEN ════════
+    // die Gefahr von selbst: der Zeitraffer lief (Züge der 100 a, Takte), das Gewitter zündete, die Sonne (Gegenlauf) zündete weniger
+    const zeugeZuendung = (roh) => {
+        const z = roh.zeuge || {};
+        if (z.fehler) return "die Messung warf: " + z.fehler;
+        if (!(z.zuege >= 2000)) return "nur " + (z.zuege || 0) + " Wetter-Züge gelesen (100 Spieljahre = 2 000)";
+        if (!(z.takte >= 60)) return "nur " + (z.takte || 0) + " Takte der Welt im Gewitter";
+        if (!(z.zuendSturm > 0)) return "kein Brand von selbst: 0 Zündungen im Gewitter";
+        if (!(z.zuendOhne < z.zuendSturm)) return "der Gegenlauf ohne Gewitter zündet ebenso (" + z.zuendOhne + ") — keine Kopplung";
+        return null;
+    };
+    const ZUEND_Z = { zuege: 2000, takte: 240, sturm: 180, zuendSturm: 3, zuendOhne: 0 };
+    // der Planet: N Antworten des Fadens, Streuung der Höhe > 0, die Gefahr steht in seiner Antwort
+    const zeugeFaden = (min, gefMin) => (roh) => {
+        const z = roh.zeuge || {};
+        if (z.fehler) return "die Messung warf: " + z.fehler;
+        if (!(z.antworten >= min)) return "nur " + (z.antworten || 0) + " Antworten des Planet-Fadens (Soll ≥ " + min + ")";
+        if (!(z.streuungM > 0)) return "die Antworten tragen keine Streuung der Höhe (eine Konstante, nicht der Faden)";
+        if (!(z.gefahr >= gefMin)) return "die Antwort des Fadens trägt " + (z.gefahr || 0) + " Gefahr-Schlüssel (Soll ≥ " + gefMin + ")";
+        return null;
+    };
+    // die Störung: N Orte, Streuung > 0, der Brand schrieb (Nährstoff nach > vor), der Gegenlauf ohne Tat ändert nichts
+    const zeugeBrand = (roh) => {
+        const z = roh.zeuge || {};
+        if (z.fehler) return "die Messung warf: " + z.fehler;
+        if (!(z.orte >= 8)) return "nur " + (z.orte || 0) + " Orte gemessen (Soll ≥ 8)";
+        if (!(z.streuung > 0)) return "Feuchte × Licht ohne Streuung über die Orte (eine Konstante)";
+        if (!(z.naehrNach > z.naehrVor)) return "der Brand schrieb nichts (Nährstoff " + z.naehrVor + " → " + z.naehrNach + ")";
+        if (z.gegen !== 0) return "der Gegenlauf ohne Tat ändert " + z.gegen + " Orte (Rauschen, keine Kopplung)";
+        return null;
+    };
+    const BRAND_Z = { orte: 24, streuung: 0.31, naehrVor: 1, naehrNach: 1.4, gegen: 0, nachwuchs: 24 };
+    const mit = (z, o) => Object.assign({}, z, o);
+
+    return {
+        leitern: {
+            // ════════════════════════════════ same.kopplung.gewalt ════════════════════════════════
+            [G]: {
+                sek: 40,
+                mutiert: true,
+                pfad: PFAD_G,
+                ungefahren: "das Bild der Fremdwelt-Probe (S6) schießt nur das Gerät; die Takte im Gewitter laufen headless ohne Karte (Tempo am Gerät höher)",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r, T, a) => {
+                        const st = r.state;
+                        const C = AnazhRealm;
+                        const pm = st.playerMesh.position;
+                        const P = { x: pm.x, z: pm.z };
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const aus = {};
+                        const Z = C.WETTER_ZUG_SEK;
+                        const nZ = Math.round((a.jahre * st.seasonYearSeconds) / Z);
+                        const tA = st.spielZeit;
+                        let [sturm, sonne, sturmNachTrocken, lauf] = [0, 0, 0, 0];
+                        for (let k = 0; k < nZ; k++) {
+                            const w = r._wetterAmOrt(P.x, P.z, tA + k * Z);
+                            if (w === "stormy") {
+                                sturm++;
+                                if (lauf >= a.trockenZuege) sturmNachTrocken++;
+                                lauf = 0;
+                            } else if (w === "sunny") (sonne++, lauf++);
+                            else lauf = 0;
+                        }
+                        aus.wetter = { zuege: nZ, sturm, sonne, sturmNachTrocken, jahre: a.jahre, zugS: Z };
+                        const eigen = Object.prototype.hasOwnProperty.call(r, "_brandEntfachen");
+                        const orig = r._brandEntfachen;
+                        let zuend = 0;
+                        const w0 = st.weather;
+                        const ww0 = st.wetterWort;
+                        const rs0 = Array.isArray(st.regenStempel) ? st.regenStempel.slice() : st.regenStempel;
+                        const pz0 = st.pegelZustand;
+                        const L0 = (st.worldMeta.taten ||= []);
+                        const n0 = L0.length;
+                        const bf0 = new Set((st.brandFeld || new Map()).keys());
+                        const sz0 = st.spielZeit;
+                        const stempelZurueck = () => {
+                            st.regenStempel = Array.isArray(rs0) ? rs0.slice() : rs0;
+                            st.pegelZustand = pz0;
+                            r._regenGen = (r._regenGen | 0) + 1;
+                        };
+                        let t = performance.now();
+                        const takt = () => r._gameLoopTick((t += 1000 / 60));
+                        const flussP = (r._hydroFor(P.x, P.z).rivers || []).flatMap((v) => v.points || []).sort((p, q) => Math.hypot(p.x - P.x, p.z - P.z) - Math.hypot(q.x - P.x, q.z - P.z)).slice(0, 8);
+                        const tiefe = () => r3(flussP.reduce((s, p) => { const b = r._voxelSurfaceY(p.x, p.z); return s + Math.max(0, r._atlasWaterLevelAt(p.x, p.z, b) - b); }, 0) / Math.max(1, flussP.length));
+                        try {
+                            r._brandEntfachen = function (x, z) {
+                                zuend++;
+                                return orig.call(this, x, z);
+                            };
+                            const zeitraffer = (wort) => {
+                                if (window.__wetterSetzen(wort) !== wort) throw new Error("das Wetter der Probe gilt nicht: " + wort + " (es gilt " + st.weather + ")");
+                                const [z0, b0, a0] = [zuend, (st.brandFeld || new Map()).size, st.worldMeta.taten.length];
+                                for (let i = 0; i < a.takte; i++) takt();
+                                return { zuend: zuend - z0, zellen: (st.brandFeld || new Map()).size - b0, taten: st.worldMeta.taten.slice(a0).filter((x) => x && x.tat === "brand").length, wetter: st.weather };
+                            };
+                            aus.sturm = zeitraffer("stormy");
+                            aus.ohne = zeitraffer("sunny");
+                            const pegel = (wort, s) => {
+                                stempelZurueck();
+                                if (window.__wetterSetzen(wort) !== wort) throw new Error("das Wetter der Probe gilt nicht: " + wort);
+                                const s0 = st.spielZeit;
+                                try {
+                                    st.spielZeit = s0 + s;
+                                    if (typeof r._pegelTakt === "function") r._pegelTakt();
+                                    return tiefe();
+                                } finally {
+                                    st.spielZeit = s0;
+                                }
+                            };
+                            const basis = tiefe();
+                            aus.fluss = { punkte: flussP.length, basis, sturm30: pegel("stormy", 1800), sonne30: pegel("sunny", 1800), duerre3t: pegel("sunny", 3 * C.PEGEL_TAG_S) };
+                        } finally {
+                            if (eigen) r._brandEntfachen = orig;
+                            else delete r._brandEntfachen;
+                            if (window.__wetterSetzen(w0) !== w0) aus.zurueck = "das Wetter " + w0 + " gilt nicht nach der Probe";
+                            if (!ww0) st.wetterWort = ww0;
+                            stempelZurueck();
+                            if (st.spielZeit < sz0) st.spielZeit = sz0;
+                            if (typeof r._pegelTakt === "function") r._pegelTakt();
+                            const L = st.worldMeta.taten;
+                            if (L === L0 && L.length > n0) L.length = n0;
+                            let weg = 0;
+                            for (const k of [...(st.brandFeld || new Map()).keys()]) if (!bf0.has(k)) (st.brandFeld.delete(k), weg++);
+                            if (weg) r._tatGen = (r._tatGen | 0) + 1;
+                            aus.brandZurueck = weg;
+                        }
+                        // DER PLANET: welche Gefahr trägt die Antwort des Fadens (Schlüssel bis zur dritten Tiefe)
+                        const GEF = ["beben", "quake", "vulkan", "volcan", "ausbruch", "eruption", "vei", "tsunami", "rutsch", "slide", "krater", "crater", "gefahr", "hazard", "blitz", "lightning", "brand", "fire", "flut", "flood", "duerre", "drought"];
+                        const gef = (o) => {
+                            const ks = [];
+                            const geh = (x, d) => {
+                                if (!x || typeof x !== "object" || d > 3) return;
+                                for (const k of Object.keys(x)) (ks.push(k), geh(x[k], d + 1));
+                            };
+                            geh(o, 0);
+                            return [...new Set(ks.filter((k) => GEF.some((g) => k.toLowerCase().includes(g))))];
+                        };
+                        await r._fadenQuelle();
+                        const an = await r._planetAnker();
+                        const [B, Lg] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
+                        const ort = (samen, breite, laenge, zeitMa, mehr) => r._planetAuftrag(Object.assign({ type: "planet-ort", samen, breite: Math.max(-89.9, Math.min(89.9, breite)), laenge: ((laenge + 540) % 360) - 180, zeitMa }, mehr || {}));
+                        const sd = (v) => {
+                            const m = v.reduce((s, x) => s + x, 0) / Math.max(1, v.length);
+                            return r3(Math.sqrt(v.reduce((s, x) => s + (x - m) * (x - m), 0) / Math.max(1, v.length)));
+                        };
+                        const s8 = await Promise.all(Array.from({ length: a.saaten8 }, async (_, i) => [await ort("same-saat-" + i, B, Lg, 0), await ort("same-saat-" + i, B, Lg, 0.01)]));
+                        const g8 = new Set(s8.flatMap(([x, y]) => gef(x).concat(gef(y))));
+                        aus.saat8 = { antworten: s8.length * 2, streuungM: sd(s8.map((q) => q[0].hoeheM)), zeitAendert: s8.filter(([x, y]) => x.hoeheM !== y.hoeheM).length, gefahr: [...g8], schluessel: Object.keys(s8[0][0]).concat(Object.keys(s8[0][0].delta || {})) };
+                        const gitter = [];
+                        for (let i = 0; i < a.gitter; i++) for (let j = 0; j < a.gitter; j++) gitter.push([B - a.gitter / 2 + i + 0.5, Lg - a.gitter / 2 + j + 0.5]);
+                        const eg = await Promise.all(gitter.map(([b, l]) => ort(r._planetSamen(), b, l, 0)));
+                        aus.erde = { zellen: eg.length, streuungM: sd(eg.map((o) => o.hoeheM)), land: eg.filter((o) => o.land).length, gefahr: [...new Set(eg.flatMap(gef))] };
+                        const fr = await Promise.all(Array.from({ length: a.fremd }, async (_, i) => [await ort("same-saat-" + i, B, Lg, 0), await ort("same-saat-" + i, B, Lg, 0, { koerper: "mars", radiusKm: 3389.5, masseErden: 0.107, schwere: 3.71 })]));
+                        aus.fremd = { antworten: fr.length * 2, streuungM: sd(fr.map((q) => q[0].hoeheM)), koerperWirkt: fr.filter(([x, y]) => x.hoeheM !== y.hoeheM || x.kuesteKm !== y.kuesteKm || JSON.stringify(x.delta) !== JSON.stringify(y.delta)).length, gefahr: [...new Set(fr.flatMap(([x, y]) => gef(x).concat(gef(y))))] };
+                        return aus;
+                    };
+                    const u1 = U[1] || {};
+                    const x = await S(seite, { jahre: u1.jahre || 100, takte: u1.takte || 240, trockenZuege: 10, saaten8: (U[3] || {}).saaten || 8, gitter: (U[5] || {}).gitter || 6, fremd: (U[6] || {}).planeten || 100 });
+                    const w = x.wetter || {};
+                    const zs = (x.sturm || {}).zuend || 0;
+                    const zo = (x.ohne || {}).zuend || 0;
+                    const sturmS = (a) => (w.sturm || 0) * (w.zugS || 120) / Math.max(1, w.jahre || 100);
+                    const rate = (u1.takte || 240) > 0 ? (zs / ((u1.takte || 240) / 60)) * sturmS() / (u1.flaecheKm2 || 1) : null;
+                    const real = u1.realRateKm2a || 0.001;
+                    const faktor = rate > 0 ? Math.max(rate / real, real / rate) : null;
+                    const zz = { zuege: w.zuege, takte: u1.takte || 240, sturm: w.sturm, sturmNachTrocken: w.sturmNachTrocken, zuendSturm: zs, zuendOhne: zo, zellen: [(x.sturm || {}).zellen, (x.ohne || {}).zellen], brandZurueck: x.brandZurueck, zurueck: x.zurueck };
+                    const fl = x.fluss || {};
+                    const klassen = (zs > 0 ? 1 : 0) + (fl.sturm30 > fl.sonne30 ? 1 : 0) + (fl.duerre3t < fl.sonne30 ? 1 : 0);
+                    const s8 = x.saat8 || {};
+                    const er = x.erde || {};
+                    const fr = x.fremd || {};
+                    const gefN = (g) => (Array.isArray(g) ? g.length : 0);
+                    const auge6 = await M.auge("same-gewalt-s6", { ort: "wiese" });
+                    return {
+                        sprossen: {
+                            1: {
+                                werte: { brandRateKm2a: rate, faktorZurRealRate: faktor },
+                                zeuge: zz,
+                                nicht: "kein Brand von selbst: " + (u1.takte || 240) + " Takte der Welt im Gewitter zünden " + zs + ", in der Sonne " + zo + " (jeder Ruf von `_brandEntfachen` gezählt); die Front trägt " + w.sturm + " Sturm-Züge in " + w.jahre + " Spieljahren, " + w.sturmNachTrocken + " nach ≥ 10 trockenen Zügen — kein Blitz schlägt ein",
+                            },
+                            2: {
+                                werte: { klassenVonSelbst: klassen, steigungFaktor: null },
+                                zeuge: Object.assign({ fluss: [fl.basis, fl.sturm30, fl.sonne30, fl.duerre3t], punkte: fl.punkte }, zz),
+                                nicht: "nur " + klassen + " von 3 Klassen von selbst: Brand " + zs + " Zündungen; Flusstiefe an " + fl.punkte + " Punkten " + fl.basis + " m → 30 min Sturm " + fl.sturm30 + " · 30 min Sonne " + fl.sonne30 + " · 3 Tage Sonne " + fl.duerre3t + " m — keine Häufigkeits-Kurve über 10³ a, ohne die Brand-Klasse keine Steigung gegen GWIS",
+                            },
+                            3: {
+                                werte: { saaten: s8.antworten ? s8.antworten / 2 : null, bWert: null },
+                                zeuge: { antworten: s8.antworten, streuungM: s8.streuungM, gefahr: gefN(s8.gefahr), zeitAendert: s8.zeitAendert },
+                                nicht: "kein Beben, kein Ausbruch, kein Hangrutsch: " + (s8.antworten / 2) + " Saaten × 10⁴ a im Planet-Faden, die Antwort trägt " + gefN(s8.gefahr) + " Gefahr-Schlüssel (" + (s8.schluessel || []).join(", ") + ")",
+                            },
+                            4: {
+                                werte: { tsunamiAusloeserProzent: null, tsunamiRateFaktor: null },
+                                zeuge: { tsunamis: 0, mitAusloeser: 0, gefahr: gefN(s8.gefahr) + gefN(er.gefahr), zuendNachDuerre: zs, sturmNachTrocken: w.sturmNachTrocken },
+                                nicht: "keine Auslöser-Kette: kein Tsunami (0 Gefahr-Schlüssel an " + ((s8.antworten || 0) + (er.zellen || 0)) + " Antworten des Fadens), Dürre → Brand: " + w.sturmNachTrocken + " Gewitter nach ≥ 10 trockenen Zügen, " + zs + " Zündungen",
+                            },
+                            5: {
+                                werte: { rBebenGem: null, rVulkanGvp: null, kraterExponent: null },
+                                zeuge: { antworten: er.zellen, streuungM: er.streuungM, gefahr: gefN(er.gefahr), land: er.land },
+                                nicht: "keine Gefahr-Karte: " + er.zellen + " 1°-Zellen der Erd-Saat um den Anker (" + er.land + " Land, Höhe σ " + er.streuungM + " m) — die Antwort trägt " + gefN(er.gefahr) + " Gefahr-Schlüssel, kein Beben, keinen Vulkan, keinen Krater",
+                            },
+                            6: {
+                                werte: { rang: null, namenloseJe10: 0 },
+                                zeuge: { antworten: fr.antworten, streuungM: fr.streuungM, gefahr: gefN(fr.gefahr), koerperWirkt: fr.koerperWirkt },
+                                auge: auge6,
+                                nicht: "keine Fremd-Gefahr: " + (fr.antworten / 2) + " Saaten mit ↔ ohne Körper Mars — der Körper ändert " + fr.koerperWirkt + " Antworten, die Antwort trägt " + gefN(fr.gefahr) + " Gefahr-Schlüssel",
+                            },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: {
+                        u: { jahre: 100, flaecheKm2: 1, takte: 240, realRateKm2a: 0.001 },
+                        soll: [K.soll(G, 1, "im Faktor 3 der Real-Rate", { key: "faktorZurRealRate", rel: "≤", einheit: "×", refQuelle: "Erde: Blitzbrände ~1·10⁻³ je km² und Jahr (Kanada, Stocks et al. 2002: ~3 000 Blitzbrände/a auf ~4·10⁶ km² Wald)" })],
+                        zeuge: zeugeZuendung,
+                        taeter: "stamm/feld-brand.js `_brandEntfachen` (gerufen nur von der Tat: Brennglas, Unfall, Lava — kein Blitz im Gewitter)",
+                        nicht: "kein Brand von selbst (kein Blitz)",
+                        leser: "stamm/feld-brand.js:344 `_brandEntfachen` — kein Rufer aus dem Wetter; stamm/bild-himmel.js:2843 `_wetterAmOrt` trägt das Gewitter ohne Blitz",
+                        gruen: { werte: { brandRateKm2a: 0.0016, faktorZurRealRate: 1.6 }, zeuge: ZUEND_Z },
+                        attrappen: [
+                            { name: "Faktor 1,6 aus einer Tafel, 0 Zündungen in der Welt", roh: { werte: { brandRateKm2a: 0.0016, faktorZurRealRate: 1.6 }, zeuge: mit(ZUEND_Z, { zuendSturm: 0 }) } },
+                            { name: "die Sonne zündet wie das Gewitter (die Zündung hängt nicht am Wetter)", roh: { werte: { brandRateKm2a: 0.0016, faktorZurRealRate: 1.6 }, zeuge: mit(ZUEND_Z, { zuendOhne: 3 }) } },
+                            { name: "kein Zeitraffer (10 Wetter-Züge statt 100 Spieljahren)", roh: { werte: { brandRateKm2a: 0.0016, faktorZurRealRate: 1.6 }, zeuge: mit(ZUEND_Z, { zuege: 10 }) } },
+                        ],
+                    },
+                    2: {
+                        u: { klassen: ["brand", "hochwasser", "duerre"], jahre: 1000, sturmS: 1800, duerreTage: 3 },
+                        soll: [K.soll(G, 2, "Steigung im Faktor 1,5", { key: "steigungFaktor", rel: "≤", einheit: "×" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.punkte >= 4)) return "nur " + (z.punkte || 0) + " Flusspunkte gemessen";
+                            if (!(z.fluss && z.fluss[1] > z.fluss[2])) return "der Sturm hebt den Fluss nicht über die Sonne (kein Hochwasser aus dem Regen)";
+                            return zeugeZuendung(roh);
+                        },
+                        taeter: "stamm/feld-brand.js `_brandEntfachen` (keine Brand-Klasse von selbst) · gelaende-core.js pegelLauf (kein Jahres-Maximum, keine Kurve)",
+                        nicht: "keine Brand-Klasse von selbst, keine Häufigkeits-Kurve",
+                        leser: "stamm/feld-brand.js:344 `_brandEntfachen` — kein Rufer aus dem Klima; stamm/wasser-hydro.js:231 `_pegelZustand` — kein Gedächtnis der Jahres-Spitzen",
+                        gruen: { werte: { klassenVonSelbst: 3, steigungFaktor: 1.2 }, zeuge: mit(ZUEND_Z, { fluss: [0.4, 0.9, 0.4, 0.3], punkte: 8 }) },
+                        attrappen: [
+                            { name: "Steigung 1,2 bei gleichem Fluss in Sturm und Sonne", roh: { werte: { klassenVonSelbst: 3, steigungFaktor: 1.2 }, zeuge: mit(ZUEND_Z, { fluss: [0.4, 0.4, 0.4, 0.4], punkte: 8 }) } },
+                            { name: "Steigung 1,2 ohne Brand von selbst", roh: { werte: { klassenVonSelbst: 3, steigungFaktor: 1.2 }, zeuge: mit(ZUEND_Z, { fluss: [0.4, 0.9, 0.4, 0.3], punkte: 8, zuendSturm: 0 }) } },
+                        ],
+                    },
+                    3: {
+                        u: { saaten: 8, jahre: 10000, klassen: 6 },
+                        soll: [
+                            K.soll(G, 3, "8 Saaten", { key: "saaten", rel: "≥" }),
+                            K.soll(G, 3, "b-Wert und VEI-Raten im Real-Band", { key: "bWert", rel: "band", zahl: 0.8, bis: 1.2, quelleFeld: "tiefe", quelleWort: "b 0,8–1,2", refQuelle: "Erde: Gutenberg-Richter b ≈ 1 (0,8–1,2)" }),
+                        ],
+                        zeuge: zeugeFaden(16, 3),
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Beben, kein Ausbruch, kein Rutsch in der Antwort)",
+                        nicht: "kein Beben, kein Ausbruch, kein Hangrutsch",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — die Antwort trägt land, hoeheM, kuesteKm, delta; planet-core.js:1676 planetVulkane hat keinen Leser",
+                        unklar: "„VEI-Raten im Real-Band“ trägt keine Zahl — Vorschlag: Ausbrüche VEI ≥ 4 je 10 a im Faktor 3 der GVP-Rate (~1 je 10 a) als zweites Soll.",
+                        gruen: { werte: { saaten: 8, bWert: 1.02 }, zeuge: { antworten: 16, streuungM: 2400, gefahr: 3 } },
+                        attrappen: [{ name: "b 1,02 ohne Beben in der Antwort des Fadens", roh: { werte: { saaten: 8, bWert: 1.02 }, zeuge: { antworten: 16, streuungM: 2400, gefahr: 0 } } }],
+                    },
+                    4: {
+                        u: { ketten: ["beben>tsunami", "duerre>brand", "ausbruch>gletscherlauf"] },
+                        soll: [
+                            K.soll(G, 4, "Tsunamis mit Auslöser in der Welt = 100 %", { key: "tsunamiAusloeserProzent", rel: "=", zahl: 100, einheit: "%" }),
+                            K.soll(G, 4, "Rate je Küstenkilometer Faktor 3", { key: "tsunamiRateFaktor", rel: "≤", einheit: "×" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.tsunamis >= 1)) return "kein Tsunami in der Welt";
+                            if (z.mitAusloeser !== z.tsunamis) return z.tsunamis - z.mitAusloeser + " Tsunamis ohne Auslöser in der Welt";
+                            if (!(z.zuendNachDuerre >= 1)) return "die Dürre zündet keinen Brand (die Kette Dürre → Brand fehlt)";
+                            return null;
+                        },
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Beben, kein Tsunami) · stamm/feld-brand.js `_brandEntfachen` (Dürre zündet nicht)",
+                        nicht: "keine Auslöser-Kette",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — kein Beben, kein Tsunami; stamm/feld-brand.js:344 `_brandEntfachen` — kein Rufer aus der Dürre",
+                        gruen: { werte: { tsunamiAusloeserProzent: 100, tsunamiRateFaktor: 1.8 }, zeuge: { tsunamis: 12, mitAusloeser: 12, zuendNachDuerre: 4 } },
+                        attrappen: [
+                            { name: "100 % bei 0 Tsunamis in der Welt", roh: { werte: { tsunamiAusloeserProzent: 100, tsunamiRateFaktor: 1.8 }, zeuge: { tsunamis: 0, mitAusloeser: 0, zuendNachDuerre: 4 } } },
+                            { name: "Tsunamis ohne Beben (gesetzt, nicht ausgelöst)", roh: { werte: { tsunamiAusloeserProzent: 100, tsunamiRateFaktor: 1.8 }, zeuge: { tsunamis: 12, mitAusloeser: 7, zuendNachDuerre: 4 } } },
+                        ],
+                    },
+                    5: {
+                        u: { saat: "erde", gitterGrad: 1, gitter: 6, jahre: 1e6 },
+                        soll: [
+                            K.soll(G, 5, "GEM r ≥ 0,7", { key: "rBebenGem" }),
+                            K.soll(G, 5, "GVP r ≥ 0,7", { key: "rVulkanGvp" }),
+                            K.soll(G, 5, "Krater N(>D) ∝ D^−2,7", { key: "kraterExponent", rel: "=", zahl: -2.7 }),
+                        ],
+                        zeuge: zeugeFaden(36, 2),
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Beben-, Vulkan-, Krater-Karte) · planet-core.js planetVulkane (ohne Leser)",
+                        nicht: "keine Gefahr-Karte des Planeten",
+                        leser: "planet-core.js:1676 planetVulkane — ohne Leser im Spiel; voxel-worker.js:1175 planetOrtAuftrag — kein Beben, kein Krater in der Antwort",
+                        unklar: "„N(>D) ∝ D^−2,7“ nennt keine Toleranz — Vorschlag: Exponent −2,7 ± 0,3 über ≥ 100 Krater.",
+                        gruen: { werte: { rBebenGem: 0.74, rVulkanGvp: 0.72, kraterExponent: -2.7 }, zeuge: { antworten: 36, streuungM: 1800, gefahr: 3 } },
+                        attrappen: [{ name: "r 0,74 aus einer Tafel, der Faden trägt keine Gefahr", roh: { werte: { rBebenGem: 0.74, rVulkanGvp: 0.72, kraterExponent: -2.7 }, zeuge: { antworten: 36, streuungM: 1800, gefahr: 0 } } }],
+                    },
+                    6: {
+                        u: { planeten: 100, koerper: "mars", jahre: 1e9 },
+                        soll: [K.soll(G, 6, "Rang ≥ 0,7", { key: "rang" }), K.soll(G, 6, "≥ 1 namenlose Gefahr je 10 Planeten", { key: "namenloseJe10" })],
+                        auge: { pose: "Orbit über dem Fremd-Planeten (heute keine Orbit-Pose: geschossen an der Wiese)", vorbild: "Fremdwelt-Probe R10: Ursachen-Probe aus dem Bild Rang ≥ 0,7, Gegenlauf, Neuheit" },
+                        zeuge: zeugeFaden(200, 1),
+                        taeter: "voxel-worker.js planetOrtAuftrag (der Körper ändert nichts, keine Gefahr in der Antwort)",
+                        nicht: "keine Fremd-Gefahr",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — nimmt samen, breite, laenge, zeitMa; kein Körper, kein Wärmefluss, keine Gefahr",
+                        gruen: { werte: { rang: 0.78, namenloseJe10: 2 }, zeuge: { antworten: 200, streuungM: 2400, gefahr: 3 } },
+                        attrappen: [{ name: "Rang 0,78 ohne Gefahr in der Antwort", roh: { werte: { rang: 0.78, namenloseJe10: 2 }, zeuge: { antworten: 200, streuungM: 2400, gefahr: 0 } } }],
+                    },
+                },
+            },
+            // ════════════════════════════════ same.kopplung.stoerung (S2–S7) ════════════════════════════════
+            [ST]: {
+                sek: 30,
+                mutiert: true,
+                pfad: PFAD_S,
+                ungefahren: "die Bildpaare (S4 Wiederaufbau, S6 angepasste Bauten, S7 Weltkarte) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r, T, a) => {
+                        const st = r.state;
+                        const C = AnazhRealm;
+                        const wm = st.worldMeta;
+                        const pm = st.playerMesh.position;
+                        const cs = C.LIFE_FIELD.cell;
+                        const jahrH = st.seasonYearSeconds / (C.PEGEL_TAG_S / 24);
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const mitte = (v) => (Math.floor(v / cs) + 0.5) * cs;
+                        const alt = { L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx, sz: st.spielZeit };
+                        const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                        const bei = (j, f) => {
+                            st.spielZeit = alt.sz + j * st.seasonYearSeconds;
+                            try {
+                                return f();
+                            } finally {
+                                st.spielZeit = alt.sz;
+                            }
+                        };
+                        const orte = Array.from({ length: a.orte }, (_, i) => {
+                            const d = a.radien[i % a.radien.length];
+                            return [mitte(pm.x + d * Math.cos(i * 2.39996)), mitte(pm.z + d * Math.sin(i * 2.39996))];
+                        });
+                        // Feuchte × Licht ist DAS Wuchs-Gesetz des Spiels (`_wuchsAt`, stamm/vegetation-wiese.js: das Wasser des Bodens mal
+                        // das Licht unter den Kronen, × Nährstoff und Krautschicht) — die Probe liest es, nie eine Abschrift seines Wasser-Terms
+                        const lies = (x, z) => {
+                            const f = r._feuchteAt(x, z);
+                            const l = r._bodenLichtFeld(x, z, x, z)(x, z);
+                            return { f: r3(f), l: r3(l), fl: r3(r._wuchsAt(x, z)), naehr: r3(r._naehrstoffAt(x, z)), nahr: r3(r._kreaturNahrung(x, z)) };
+                        };
+                        const vor = orte.map(([x, z]) => lies(x, z));
+                        const gegen = orte.filter(([x, z], i) => JSON.stringify(lies(x, z)) !== JSON.stringify(vor[i])).length;
+                        const block = [];
+                        const [bx, bz] = [mitte(pm.x + a.blockAbstand), mitte(pm.z)];
+                        for (let i = -a.blockR; i <= a.blockR; i++) for (let j = -a.blockR; j <= a.blockR; j++) block.push([bx + i * cs, bz + j * cs]);
+                        const aesung = () => r3(block.reduce((s, [x, z]) => s + r._kreaturNahrung(x, z), 0) / block.length);
+                        const flussP = (r._hydroFor(bx, bz).rivers || []).flatMap((v) => v.points || []).sort((p, q) => Math.hypot(p.x - bx, p.z - bz) - Math.hypot(q.x - bx, q.z - bz)).slice(0, 8);
+                        const fluss = () => r3(flussP.reduce((s, p) => { const b = r._voxelSurfaceY(p.x, p.z); return s + Math.max(0, r._atlasWaterLevelAt(p.x, p.z, b) - b); }, 0) / Math.max(1, flussP.length));
+                        const tiere = () => {
+                            let n = 0;
+                            for (const R of Object.values((st.faunaBestand || {}).regionen || {})) for (const t of R.tiere || []) if (Math.hypot(t.x - bx, t.z - bz) <= a.tierR) n++;
+                            return n;
+                        };
+                        const aus = { orte: orte.length, gegen };
+                        const blockVor = { aesung: aesung(), fluss: fluss(), tiere: tiere(), punkte: flussP.length };
+                        try {
+                            for (const [m] of stubs) r[m] = () => {};
+                            r._sukzessionNeu = [];
+                            wm.taten = Array.isArray(alt.L0) ? alt.L0.slice() : [];
+                            const h0 = r._weltStunde();
+                            const B = orte.map(([x, z]) => r._tatSchreiben("brand", x, z));
+                            const I = r._tatIndex();
+                            aus.reihe = B.map((b, i) => {
+                                const d = I.dauer.get(b);
+                                const s1 = r._sukzession(b, h0 + a.sprungJahre * jahrH);
+                                return { fl: vor[i].fl, tempo: d > 0 ? r3(jahrH / d) : null, w: b.w, asche1: s1.asche, busch1: s1.busch, nachwuchs: s1.asche < 1 || s1.busch > 0 ? 1 : 0, naehr: r3(r._naehrstoffAt(orte[i][0], orte[i][1])) };
+                            });
+                            aus.sprungJahre = a.sprungJahre;
+                            wm.taten = Array.isArray(alt.L0) ? alt.L0.slice() : [];
+                            for (const [x, z] of block) r._tatSchreiben("brand", x, z);
+                            aus.block = { vor: blockVor, nach: { aesung: aesung(), fluss: fluss(), tiere: tiere() }, jahre: a.jahre.map((j) => [j, bei(j, aesung)]), zellen: block.length, ort: [bx, bz].map(Math.round) };
+                        } finally {
+                            wm.taten = alt.L0;
+                            r._nachwuchsFaellig = alt.nf;
+                            r._sukzessionNeu = alt.sn;
+                            r._tatIdx = alt.idx;
+                            st.spielZeit = alt.sz;
+                            for (const [m, e, f] of stubs) {
+                                if (e) r[m] = f;
+                                else delete r[m];
+                            }
+                        }
+                        aus.zurueck = { taten: wm.taten === alt.L0, aesung: aesung() === blockVor.aesung };
+                        aus.welt = { staedte: r._staedte().length, siedlungen: ((st.wegeKarte || {}).siedlungen || []).length, haefen: (st.architectures || []).filter((e) => e && /hafen|harbor|harbour|port/i.test(String(e.type))).length, bauten: (st.architectures || []).length, wegStufen: ((st.wegeKarte || {}).stufen || []).length };
+                        const GEF = ["beben", "quake", "vulkan", "volcan", "ausbruch", "eruption", "tsunami", "rutsch", "krater", "crater", "gefahr", "hazard", "einschlag", "impact", "aussterb", "arten"];
+                        const gef = (o) => {
+                            const ks = [];
+                            const geh = (x, d) => {
+                                if (!x || typeof x !== "object" || d > 3) return;
+                                for (const k of Object.keys(x)) (ks.push(k), geh(x[k], d + 1));
+                            };
+                            geh(o, 0);
+                            return [...new Set(ks.filter((k) => GEF.some((g) => k.toLowerCase().includes(g))))];
+                        };
+                        await r._fadenQuelle();
+                        const an = await r._planetAnker();
+                        const [Bb, Lg] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
+                        const ort = (samen, zeitMa) => r._planetAuftrag({ type: "planet-ort", samen, breite: Bb, laenge: Lg, zeitMa });
+                        const samen = r._planetSamen();
+                        const glieder = (o) => [o.land, o.hoeheM, o.kuesteKm, o.delta.klima.sommer, o.delta.meer.waterLevelM, o.delta.wetter.regenQuote, o.delta.wuchs.wald, o.delta.wildnis.ks, o.delta.staedte, o.delta.sprachen];
+                        const diff = (x, y) => glieder(x).filter((v, i) => v !== undefined && glieder(y)[i] !== undefined && v !== glieder(y)[i]).length;
+                        const o0 = await ort(samen, 0);
+                        const o0b = await ort(samen, 0);
+                        const oK = await ort(samen + "-gekippt", 0);
+                        const oZ = await ort(samen, a.zeitMa);
+                        aus.wurzel = { geaendert: diff(o0, oK), gegen: diff(o0, o0b), zeit: diff(o0, oZ), glieder: glieder(o0).length, getragen: glieder(o0).filter((v) => v !== undefined).length, gefahr: gef(o0).concat(gef(oK)).length, kueste: [o0.kuesteKm, oK.kuesteKm].map(r3) };
+                        const s100 = await Promise.all(Array.from({ length: a.saaten }, (_, i) => ort("same-saat-" + i, 0)));
+                        const hs = s100.map((o) => o.hoeheM);
+                        const hm = hs.reduce((s, v) => s + v, 0) / Math.max(1, hs.length);
+                        aus.saaten = { n: s100.length, streuungM: r3(Math.sqrt(hs.reduce((s, v) => s + (v - hm) * (v - hm), 0) / Math.max(1, hs.length))), gefahr: [...new Set(s100.flatMap(gef))].length, mitGefahr: s100.filter((o) => gef(o).length > 0).length };
+                        return aus;
+                    };
+                    const x = await S(seite, { orte: (U[2] || {}).orte || 24, radien: [30, 60, 90, 120, 150, 180, 210, 240], sprungJahre: (U[2] || {}).jahre || 1, blockAbstand: 60, blockR: 3, tierR: 150, jahre: [0, 0.5, 1, 2, 3, 5, 7, 10, 15], zeitMa: 1, saaten: (U[6] || {}).saaten || 100 });
+                    const R = x.reihe || [];
+                    const pear = (P) => {
+                        const n = P.length;
+                        if (n < 3) return null;
+                        const [mx, my] = [P.reduce((s, p) => s + p[0], 0) / n, P.reduce((s, p) => s + p[1], 0) / n];
+                        let [sxy, sxx, syy] = [0, 0, 0];
+                        for (const [u, v] of P) (sxy += (u - mx) * (v - my)), (sxx += (u - mx) * (u - mx)), (syy += (v - my) * (v - my));
+                        return sxx > 0 && syy > 0 ? Math.round((sxy / Math.sqrt(sxx * syy)) * 1000) / 1000 : null;
+                    };
+                    const paare = R.filter((q) => Number.isFinite(q.tempo) && Number.isFinite(q.fl)).map((q) => [q.tempo, q.fl]);
+                    const fls = R.map((q) => q.fl).filter(Number.isFinite);
+                    const naehrNach = R.length ? Math.min(...R.map((q) => q.naehr)) : null;
+                    const zb = { orte: R.length, streuung: fls.length ? Math.round((Math.max(...fls) - Math.min(...fls)) * 1000) / 1000 : 0, naehrVor: 1, naehrNach, gegen: x.gegen, nachwuchs: R.reduce((s, q) => s + q.nachwuchs, 0), tempo: [Math.min(...paare.map((p) => p[0])), Math.max(...paare.map((p) => p[0]))] };
+                    const bl = x.block || { vor: {}, nach: {}, jahre: [] };
+                    const dichte = bl.vor.aesung > 0 ? Math.round(((bl.nach.aesung - bl.vor.aesung) / bl.vor.aesung) * 1000) / 10 : null;
+                    const rueck = bl.vor.aesung > 0 ? (bl.jahre.find(([j, v]) => j > 0 && v >= 0.9 * bl.vor.aesung) || [null])[0] : null;
+                    const pegelF = bl.vor.fluss > 0 ? Math.round((bl.nach.fluss / bl.vor.fluss) * 1000) / 1000 : null;
+                    const wl = x.welt || {};
+                    const wu = x.wurzel || {};
+                    const sa = x.saaten || {};
+                    const auge4 = await M.auge("same-stoerung-s4", { ort: "wiese" });
+                    const auge6 = await M.auge("same-stoerung-s6", { ort: "wiese" });
+                    const auge7 = await M.auge("same-stoerung-s7", { ort: "wiese" });
+                    const zs = { antworten: sa.n, streuungM: sa.streuungM, gefahr: sa.gefahr, mitGefahr: sa.mitGefahr };
+                    return {
+                        sprossen: {
+                            2: { werte: { sprungJahre: x.sprungJahre, rTempoFeuchteLicht: pear(paare), nachwuchsOrte: zb.nachwuchs }, zeuge: Object.assign({ zurueck: x.zurueck }, zb) },
+                            3: {
+                                werte: { tierdichteSofortProzent: dichte, rueckkehrJahre: rueck, pegelSpitzeFaktor: pegelF },
+                                zeuge: Object.assign({}, zb, { aesung: [bl.vor.aesung, bl.nach.aesung], tiere: [bl.vor.tiere, bl.nach.tiere], fluss: [bl.vor.fluss, bl.nach.fluss], punkte: bl.vor.punkte, kurve: bl.jahre }),
+                                taeter: "stamm/wasser-hydro.js `_pegelZustand` (Pegel ×" + pegelF + ": der Abfluss liest keine Brandfläche) · stamm/kreatur-leben.js `_kreaturNahrung` (die Äsung fällt " + dichte + " %, das Tier flieht nicht: " + bl.vor.tiere + " → " + bl.nach.tiere + " Tiere im Umkreis)",
+                            },
+                            4: { werte: { vei: null, bevoelkerungProzent: null, kornpreisFaktor: null, bildpaarJahre: null }, zeuge: wl, auge: auge4, nicht: "keine Stadt am Ausbruch: r._staedte() trägt " + wl.staedte + " Städte, " + wl.siedlungen + " Siedlungen; der einzige Ausbruch ist die Lava einer 16-m-Zelle, kein Kornpreis in der Welt" },
+                            5: { werte: { haefenVerlegtProzent: null }, zeuge: Object.assign({ tsunamis: 0 }, wl, zs), nicht: "kein Tsunami, kein neu entstehender Hafen: " + wl.haefen + " Häfen unter " + wl.bauten + " Bauten, " + sa.gefahr + " Gefahr-Schlüssel an " + sa.n + " Saaten des Fadens" },
+                            6: { werte: { saaten: sa.n, rGefahrBauten: null }, zeuge: zs, auge: auge6, nicht: "keine Gefahr-Rate je Saat: " + sa.mitGefahr + " von " + sa.n + " Saaten tragen eine Gefahr im Planet-Faden, keine angepasste Bauweise" },
+                            7: {
+                                werte: { gliederGeaendert: wu.geaendert, artenVerlustProzent: null, erholungMioA: null },
+                                zeuge: wu,
+                                auge: auge7,
+                                nicht: "die Wurzel ändert " + wu.geaendert + " von " + wu.glieder + " Gliedern (der Faden trägt " + wu.getragen + ": keine Städte, keine Sprachen; derselbe Samen zweimal " + wu.gegen + "), kein Einschlag, kein Aussterben im Faden",
+                            },
+                        },
+                    };
+                },
+                sprossen: {
+                    2: {
+                        u: { orte: 24, jahre: 1, domaenen: ["boden", "pflanze", "licht"] },
+                        soll: [K.soll(ST, 2, "Zeitsprung 1 Spieljahr", { key: "sprungJahre", rel: "≥", einheit: "a" }), K.soll(ST, 2, "r(Tempo, Feuchte × Licht) ≥ 0,5", { key: "rTempoFeuchteLicht" })],
+                        zeuge: (roh) => zeugeBrand(roh) || (!((roh.zeuge || {}).nachwuchs >= 1) ? "kein Nachwuchs auf der Asche nach dem Sprung" : null),
+                        zeugeText: "der Brand düngt (Nährstoff steigt), Nachwuchs auf der Asche, der Gegenlauf ohne Tat ändert nichts",
+                        taeter: "stamm/vegetation-wiese.js `_tatDauer` / `_wuchsAt` (das Tempo der Heilung)",
+                        gruen: { werte: { sprungJahre: 1, rTempoFeuchteLicht: 0.83, nachwuchsOrte: 24 }, zeuge: BRAND_Z },
+                        attrappen: [
+                            { name: "r 0,83 an EINEM Ort (keine Streuung)", roh: { werte: { sprungJahre: 1, rTempoFeuchteLicht: 0.83 }, zeuge: mit(BRAND_Z, { streuung: 0 }) } },
+                            { name: "der Brand schrieb nichts (Nährstoff 1 → 1)", roh: { werte: { sprungJahre: 1, rTempoFeuchteLicht: 0.83 }, zeuge: mit(BRAND_Z, { naehrNach: 1 }) } },
+                            { name: "die Orte ändern sich auch ohne Tat", roh: { werte: { sprungJahre: 1, rTempoFeuchteLicht: 0.83 }, zeuge: mit(BRAND_Z, { gegen: 5 }) } },
+                            { name: "kein Nachwuchs auf der Asche", roh: { werte: { sprungJahre: 1, rTempoFeuchteLicht: 0.83 }, zeuge: mit(BRAND_Z, { nachwuchs: 0 }) } },
+                        ],
+                    },
+                    3: {
+                        u: { block: "7×7 Zellen", jahre: 10, tierR: 150 },
+                        soll: [
+                            K.soll(ST, 3, "Tierdichte −50 % sofort", { key: "tierdichteSofortProzent", rel: "≤", einheit: "%" }),
+                            K.soll(ST, 3, "Rückkehr in 3–10 a", { key: "rueckkehrJahre", einheit: "a" }),
+                            K.soll(ST, 3, "Pegel-Spitze ≥ 1,3×", { key: "pegelSpitzeFaktor", einheit: "×" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.aesung && z.aesung[0] > z.aesung[1])) return "die Äsung der Tiere fällt nicht mit dem Brand";
+                            if (!(z.fluss && z.fluss[0] > 0)) return "kein Wasser an den Flusspunkten gemessen";
+                            if (!(z.fluss[1] > z.fluss[0])) return "der Pegel steigt nicht nach dem Brand (" + z.fluss.join(" → ") + " m)";
+                            return zeugeBrand(roh);
+                        },
+                        taeter: "stamm/wasser-hydro.js `_pegelZustand` (der Abfluss liest keine Brandfläche) · stamm/kreatur-leben.js `_kreaturNahrung` (die Äsung sinkt, kein Tier flieht)",
+                        leser: "stamm/wasser-hydro.js:231 `_pegelZustand` — liest Regen-Stempel und Regen-Mittel, keine verbrannte Fläche; stamm/kreatur-leben.js:2101 `_kreaturNahrung` — die Äsung trägt den Brand, das Tier flieht nicht",
+                        gruen: { werte: { tierdichteSofortProzent: -62, rueckkehrJahre: 5, pegelSpitzeFaktor: 1.45 }, zeuge: mit(BRAND_Z, { aesung: [0.6, 0.23], fluss: [0.4, 0.58] }) },
+                        attrappen: [
+                            { name: "−62 % bei gleicher Äsung", roh: { werte: { tierdichteSofortProzent: -62, rueckkehrJahre: 5, pegelSpitzeFaktor: 1.45 }, zeuge: mit(BRAND_Z, { aesung: [0.6, 0.6], fluss: [0.4, 0.58] }) } },
+                            { name: "Pegel 1,45× bei gleichem Wasser", roh: { werte: { tierdichteSofortProzent: -62, rueckkehrJahre: 5, pegelSpitzeFaktor: 1.45 }, zeuge: mit(BRAND_Z, { aesung: [0.6, 0.23], fluss: [0.4, 0.4] }) } },
+                        ],
+                    },
+                    4: {
+                        u: { vei: 5, bewohner: 1e5, jahre: 100 },
+                        soll: [
+                            K.soll(ST, 4, "VEI 5 nahe Stadt", { key: "vei", rel: "≥" }),
+                            K.soll(ST, 4, "Bevölkerung −20 % binnen 5 a", { key: "bevoelkerungProzent", rel: "≤", zahl: -20, einheit: "%" }),
+                            K.soll(ST, 4, "Kornpreis ×2", { key: "kornpreisFaktor", rel: "≥", einheit: "×" }),
+                            K.soll(ST, 4, "Wiederaufbau im Bildpaar nach 50 a", { key: "bildpaarJahre", rel: "≥", einheit: "a" }),
+                        ],
+                        auge: { pose: "die Stadt am Ausbruch vor ↔ 50 a danach (heute keine Stadt: geschossen an der Wiese)", vorbild: "Prüfer-Satz R11: Wiederaufbau nach VEI 5 (Pinatubo 1991 / Angeles City)" },
+                        taeter: "stamm/siedlung-ort.js `_staedte` (keine Stadt) · stamm/feld-leben.js `_lavaGiessen` (der Ausbruch ist eine Zelle)",
+                        nicht: "keine Stadt, kein VEI 5, kein Kornpreis",
+                        leser: "stamm/siedlung-ort.js:1455 `_staedte` — leer in der Welt, kein Markt; stamm/feld-leben.js:2460 `_lavaGiessen` — die Lava schreibt EINE Zelle",
+                        gruen: { werte: { vei: 5, bevoelkerungProzent: -24, kornpreisFaktor: 2.3, bildpaarJahre: 50 }, zeuge: { staedte: 3 } },
+                        attrappen: [{ name: "−24 % ohne Stadt", roh: { werte: { vei: 5, bevoelkerungProzent: -24, kornpreisFaktor: 2.3, bildpaarJahre: 50 }, zeuge: { staedte: 0 } } }],
+                    },
+                    5: {
+                        u: { saat: "tsunami", bewohner: 1e7, jahre: 1000 },
+                        soll: [K.soll(ST, 5, "verlegt neu entstehende Häfen ≥ 50 %", { key: "haefenVerlegtProzent", einheit: "%" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.tsunamis >= 1)) return "kein Tsunami in der Welt";
+                            if (!(z.haefen >= 2)) return "nur " + (z.haefen || 0) + " Häfen (ein verlegter Hafen braucht ≥ 2)";
+                            return null;
+                        },
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Tsunami) · stamm/siedlung-ort.js `_staedte` (kein Hafen entsteht)",
+                        nicht: "kein Tsunami, kein Hafen, der neu entsteht",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — kein Tsunami in der Antwort; stamm/siedlung-ort.js:1455 `_staedte` — keine Stadt, die einen Hafen gründet",
+                        unklar: "„Straßennetz-Diff“ trägt keine Zahl — Vorschlag: ≥ 20 % der Wegkanten nach der Tsunami-Saat verlegt (gegen die Kontroll-Saat ≥ 2σ).",
+                        gruen: { werte: { haefenVerlegtProzent: 62 }, zeuge: { tsunamis: 4, haefen: 9 } },
+                        attrappen: [{ name: "62 % ohne Tsunami in der Welt", roh: { werte: { haefenVerlegtProzent: 62 }, zeuge: { tsunamis: 0, haefen: 9 } } }],
+                    },
+                    6: {
+                        u: { saaten: 100, jahre: 10000 },
+                        soll: [K.soll(ST, 6, "100 Saaten", { key: "saaten", rel: "≥" }), K.soll(ST, 6, "r ≥ 0,6", { key: "rGefahrBauten" })],
+                        auge: { pose: "Siedlung an der Gefahr je Saat (heute keine Gefahr-Saat: geschossen an der Wiese)", vorbild: "Prüfer-Satz R11: Anteil angepasster Bauten im Bild (Pfahlbau, Erdbebenbau)" },
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Gefahr je Saat) · stamm/siedlung-ort.js `_staedte` (keine angepasste Bauweise)",
+                        nicht: "keine Gefahr-Rate, keine angepasste Bauweise",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — keine Gefahr in der Antwort je Saat",
+                        gruen: { werte: { saaten: 100, rGefahrBauten: 0.66 }, zeuge: { antworten: 100, gefahr: 2 } },
+                        attrappen: [{ name: "r 0,66 ohne Gefahr an den Saaten", roh: { werte: { saaten: 100, rGefahrBauten: 0.66 }, zeuge: { antworten: 100, gefahr: 0 } } }],
+                    },
+                    7: {
+                        u: { wurzel: "samen gekippt", zeitMa: 1, glieder: 10 },
+                        soll: [
+                            K.soll(ST, 7, "10/10 Glieder am selben Ort geändert", { key: "gliederGeaendert", rel: "≥", zahl: 10 }),
+                            K.soll(ST, 7, "Arten-Verlust 50–80 %", { key: "artenVerlustProzent", einheit: "%" }),
+                            K.soll(ST, 7, "Erholung in 5–10 Mio. a", { key: "erholungMioA", einheit: "Mio. a" }),
+                        ],
+                        auge: { pose: "Weltkarte vor ↔ nach der Mutation (heute keine Weltkarten-Pose: geschossen an der Wiese)", vorbild: "Prüfer-Satz R11: Bildpaar Weltkarte, 10 Glieder am selben Ort" },
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Städte, keine Sprachen, kein Einschlag in der Antwort)",
+                        nicht: "keine Städte und Sprachen im Faden, kein Einschlag",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — nimmt samen, breite, laenge, zeitMa; keine Zivilisation, kein Einschlag, kein Bestand der Arten",
+                        gruen: { werte: { gliederGeaendert: 10, artenVerlustProzent: 64, erholungMioA: 7 }, zeuge: { geaendert: 10, gegen: 0 } },
+                        attrappen: [{ name: "10/10 bei demselben Samen (kein Gegenlauf)", roh: { werte: { gliederGeaendert: 10, artenVerlustProzent: 64, erholungMioA: 7 }, zeuge: { geaendert: 10, gegen: 10 } } }],
+                    },
+                },
+            },
+        },
+    };
+})());
+
+// ── DAS STÜCK zusammenspiel.same · kaskade (S2–S7; S1 trägt g1.js BRAND_SITZUNG) + kohaerenz (S1–S7). Gemessen in der warmen Welt
+// der Sitzung um den Spieler. KASKADE: die Kette Regen → Nässe → Stoff → Brand → Licht am Herd über die Wege des Spiels
+// (`__wetterSetzen`, `_naesseTakt`, `_brandFeuchte`, `_tickBrand`, `_leuchtQuellen`), je Glied die Festhalte-Probe (der Vorgänger
+// gehalten als eigene Methode der Instanz, danach gelöscht) und der Gegenlauf ohne Regen; der Ausbruch über `lava` auf einer Zelle
+// ohne Bett (Glut, Asche-Fall, Bauten, Pegel der Flusspunkte, lebendig im Ring — je zweimal ohne Guss gelesen); die Fremd-Planeten
+// über den Planet-Faden an den Saaten „same-saat-i“ (dieselben wie aufwaerts). KOHÄRENZ: die Flüsse der Hydrosphäre
+// (`_hydroFor`) gegen das Relief (`_voxelSurfaceY`), der Gegenlauf derselbe Lauf rückwärts; die Pflanzen-Dichte (`auraAt`) quer
+// zum Fluss gegen dieselben Schnitte an Orten fern jedes Flusses; die Orte der Welt (`_autoSettlementCellInfo`) am Fluss gegen
+// Zufallsorte derselben Fläche, ihre Größen als Zipf-Gerade; die Planeten-Saaten über den Faden. Jede Tat wird zurückgenommen.
+L.perspektive("same", (() => {
+    const KA = "same.kopplung.kaskade";
+    const KO = "same.kopplung.kohaerenz";
+
+    // der Zeuge der Kette: ein Herd fing, alle sechs Phasen gelesen, der Gegenlauf ohne Regen löscht nichts
+    const zeugeKette = (roh) => {
+        const z = roh.zeuge || {};
+        if (z.fehler) return "keine Kette: " + z.fehler;
+        if (z.entfacht !== true) return "der Herd fing nicht (kein Brand in der Welt)";
+        if (!(z.phasen >= 6)) return "nur " + (z.phasen || 0) + " von 6 Phasen gelesen (Festhalte-Probe je Glied fehlt)";
+        if (!(z.brandA >= 1 && z.lichtA >= 1)) return "vor dem Regen brennt keine Zelle mit Licht (" + z.brandA + " Zellen, " + z.lichtA + " Lichter)";
+        if (!(z.gegenBrand >= 1 && z.gegenLicht >= 1 && z.gegenNaesse === 0)) return "der Gegenlauf ohne Regen löscht oder nässt auch (Brand " + z.gegenBrand + ", Licht " + z.gegenLicht + ", Nässe " + z.gegenNaesse + ")";
+        if (z.bild !== true) return "kein Bildpaar der Kette (" + (z.bildGrund || "nicht geschossen") + ")";
+        if (!(z.bildKette > z.bildGegen)) return "das Bild ändert sich im Gegenlauf so stark wie in der Kette (" + z.bildGegen + " ≥ " + z.bildKette + ")";
+        return null;
+    };
+    const KETTE_Z = { entfacht: true, phasen: 6, brandA: 4, lichtA: 4, gegenBrand: 5, gegenLicht: 5, gegenNaesse: 0, bild: true, bildKette: 0.31, bildGegen: 0.02 };
+    // der Zeuge des Ausbruchs: Glut in der Welt, die Ringe zweimal ohne Guss gleich gelesen
+    const zeugeAusbruch = (roh) => {
+        const z = roh.zeuge || {};
+        if (z.fehler) return "kein Guss: " + z.fehler;
+        if (!(z.glut > 0 && z.taten >= 1)) return "die Lava glüht nicht (kein Ausbruch in der Welt)";
+        if (z.gegen !== 0) return "der Gegenlauf ohne Guss ändert " + z.gegen + " Glieder (Rauschen, keine Kette)";
+        return null;
+    };
+    const AUS_Z = { glut: 1, taten: 1, gegen: 0 };
+    // der Zeuge des Planet-Fadens: N Saaten mit Streuung
+    const zeugeFaden = (min) => (roh) => {
+        const z = roh.zeuge || {};
+        if (!(z.saaten >= min)) return "nur " + (z.saaten || 0) + " Saaten des Planet-Fadens (Soll ≥ " + min + ")";
+        if (!(z.streuungM > 0)) return "die Saaten tragen keine Streuung der Höhe (eine Konstante, nicht der Faden)";
+        return null;
+    };
+    const FADEN_Z = { saaten: 100, streuungM: 2400 };
+    // der Zeuge der Orte: genug Orte der Welt, ihr Anteil am Wasser über dem der Zufallsorte (R7)
+    const zeugeOrte = (roh) => {
+        const z = roh.zeuge || {};
+        if (!(z.orte >= 10)) return "nur " + (z.orte || 0) + " Orte der Welt gemessen (Soll 10)";
+        if (!(z.zufall >= 10)) return "kein Gegenlauf an Zufallsorten";
+        if (!(z.anteilOrte > z.anteilZufall)) return "die Orte stehen nicht öfter am Wasser als Zufallsorte (" + z.anteilOrte + " ≤ " + z.anteilZufall + " %) — keine Ursache";
+        return null;
+    };
+    const ORTE_Z = { orte: 40, zufall: 40, anteilOrte: 78, anteilZufall: 31 };
+
+    return {
+        leitern: {
+            // ════════ same.kopplung.kaskade — die Kette der Stoff-Physik im Ereignis-Fenster ════════
+            [KA]: {
+                sek: 55,
+                mutiert: true,
+                pfad: ["stamm/feld-brand.js", "stamm/feld-leben.js", "stamm/bild-himmel.js", "stamm/dirigent-kern.js", "stamm/wasser-hydro.js", "stamm/vegetation-baum.js", "stamm/siedlung-wege.js", "voxel-worker.js", "planet-core.js", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/werkbank.cjs"],
+                ungefahren: "das Bildpaar der Kette (S2) schießt nur das Gerät (`__ausgabeAufnahme` am Herd); headless zählt die Kette ihre Glieder an den Lesern der Welt",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    // DIE KETTE am Herd: sechs Phasen je n Schritte der Welt-Uhr (BRAND.schrittS) — A trocken brennend · B Regen gehalten
+                    // (Gegenlauf) · C Nässe gehalten im Regen · D Stoff gehalten · E Brand gehalten · F frei bis erloschen
+                    const kette = async (r, a) => {
+                        const st = r.state;
+                        const C = AnazhRealm;
+                        const B = C.BRAND;
+                        const cs = C.LIFE_FIELD.cell;
+                        const pm = st.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const xz = (cx, cz) => [(cx + 0.5) * cs, (cz + 0.5) * cs];
+                        const HALT = ["_naesseTakt", "_brandFeuchte", "_tickBrand", "_feldFolgeSteht"];
+                        const eigen = HALT.filter((k) => Object.prototype.hasOwnProperty.call(r, k));
+                        if (eigen.length) return { fehler: "die Welt trägt schon eigene " + eigen.join(", ") };
+                        if ((st.brandFeld && st.brandFeld.size) || r._brandRest) return { fehler: "es brennt schon in der Welt" };
+                        const [mx, mz] = [Math.floor(pm.x / cs), Math.floor(pm.z / cs)];
+                        let herd = null;
+                        let f0 = null;
+                        for (let d = 2; d <= 8 && !herd; d++)
+                            for (let i = -d; i <= d && !herd; i++)
+                                for (const [cx, cz] of [[mx + i, mz - d], [mx + i, mz + d], [mx - d, mz + i], [mx + d, mz + i]]) {
+                                    const f = r._brandStoff(cx, cz);
+                                    if (f && f.zeile.name === "gras" && (f.anteil == null || f.anteil >= 0.99) && r._brandFeuchte(f.boden) < f.zeile.brenn.mx && !r._nassAt(...xz(cx, cz))) {
+                                        herd = [cx, cz];
+                                        f0 = f;
+                                        break;
+                                    }
+                                }
+                        if (!herd) return { fehler: "keine trockene Gras-Zelle mit vollem Bett 2–8 Zellen um den Spieler" };
+                        const [hx, hz] = xz(...herd);
+                        const hy = r._voxelSurfaceY(hx, hz);
+                        const Ua = r._ensureAtmoUniforms();
+                        let t = performance.now();
+                        const takt = () => r._gameLoopTick((t += 1000 / 60));
+                        const schritt = (n) => {
+                            for (let k = 0; k < n; k++) {
+                                st.spielZeit = (Number(st.spielZeit) || 0) + B.schrittS;
+                                takt();
+                            }
+                        };
+                        const brennt = () => [...(st.brandFeld || new Map()).values()].filter((z) => z.t0 !== null).length;
+                        const licht = () => r._leuchtQuellen(hx, hy + 1.5, hz, 80).filter((q) => q.quelle === "brand").length;
+                        const lies = () => ({ regen: r3((C.WEATHER_FIELD[st.weather] || {}).rain), naesse: r3(st.naesse), stoff: r3(r._brandFeuchte(f0.boden)), brand: brennt(), licht: licht() });
+                        const W = 960;
+                        const Hh = 540;
+                        const cam = st.camera;
+                        const kam = [hx + 18, hy + 12, hz + 10];
+                        const bild = async () => {
+                            if (!a.bild) return null;
+                            cam.position.set(kam[0], kam[1], kam[2]);
+                            cam.lookAt(hx, hy, hz);
+                            cam.updateMatrixWorld(true);
+                            return (await window.__ausgabeAufnahme(W, Hh)).u8;
+                        };
+                        const diff = (p, q) => {
+                            if (!p || !q) return null;
+                            let n = 0;
+                            for (let i = 0; i < W * Hh; i++) if (Math.abs(p[4 * i] - q[4 * i]) + Math.abs(p[4 * i + 1] - q[4 * i + 1]) + Math.abs(p[4 * i + 2] - q[4 * i + 2]) > 24) n++;
+                            return r3(n / (W * Hh));
+                        };
+                        const L0 = (st.worldMeta.taten ||= []);
+                        const n0 = L0.length;
+                        const wm = st.worldMeta;
+                        const klon = (v) => {
+                            try {
+                                return v === undefined ? undefined : structuredClone(v);
+                            } catch (_e) {
+                                return v;
+                            }
+                        };
+                        const vor = { wetter: st.weather, wet: st.weatherEffectTime, wort: klon(st.wetterWort), naesse: st.naesse, naesseUhr: r._naesseUhr, spiel: st.spielZeit, tod: st.timeOfDay, regler: st.perfRegulator, uN: Ua.naesse.value, uR: Ua.regen.value, nassTage: wm.nassTage, stempel: klon(st.regenStempel), pegel: klon(st.pegelZustand), pegelRegen: klon(st.pegelRegen), wt: klon(st.weatherTransition) };
+                        const aus = { herd: [hx, hz].map(Math.round), zelle: cs, ph: {}, bilder: {} };
+                        const P = aus.ph;
+                        try {
+                            st.perfRegulator = false;
+                            if (window.__wetterSetzen("sunny") !== "sunny") throw new Error("das Wetter der Probe gilt nicht: sunny (es gilt " + st.weather + ")");
+                            r._naesseTakt(1e6);
+                            r._naesseUhr = st.spielZeit;
+                            r._feldFolgeSteht = () => true;
+                            aus.entfacht = !!r._brandEntfachen(hx, hz);
+                            delete r._feldFolgeSteht;
+                            schritt(a.start);
+                            P.A = lies();
+                            const bA = await bild();
+                            schritt(a.schritte);
+                            P.B = lies();
+                            const bB = await bild();
+                            const nH = st.naesse;
+                            r._naesseTakt = () => (st.naesse = nH);
+                            if (window.__wetterSetzen("rainy") !== "rainy") throw new Error("das Wetter der Probe gilt nicht: rainy (es gilt " + st.weather + ")");
+                            schritt(a.schritte);
+                            P.C = lies();
+                            delete r._naesseTakt;
+                            r._naesseUhr = st.spielZeit;
+                            const sH = r._brandFeuchte(f0.boden);
+                            r._brandFeuchte = () => sH;
+                            schritt(a.schritte);
+                            P.D = lies();
+                            delete r._brandFeuchte;
+                            r._tickBrand = () => {};
+                            schritt(a.schritte);
+                            P.E = lies();
+                            delete r._tickBrand;
+                            let n = 0;
+                            for (; n < a.loeschMax && brennt() > 0; n++) schritt(1);
+                            schritt(3);
+                            P.F = lies();
+                            aus.loeschS = n * B.schrittS;
+                            const bF = await bild();
+                            aus.bildKette = diff(bA, bF);
+                            aus.bildGegen = diff(bA, bB);
+                        } finally {
+                            for (const k of HALT) if (Object.prototype.hasOwnProperty.call(r, k)) delete r[k];
+                            if (r._brandRest) r._brandArbeit(Infinity);
+                            const asche = L0.slice(n0).filter((x) => x.tat === "brand");
+                            aus.aschen = asche.length;
+                            if (st.brandFeld) st.brandFeld.clear();
+                            L0.length = n0;
+                            r._tatGen = (r._tatGen | 0) + 1;
+                            r._brandBett = null;
+                            for (const s of st.wegeKarte ? st.wegeKarte.stufen : []) if (s.zentriert) r._ascheStufeMalen(s);
+                            for (const x of asche) if (Number.isFinite(x.x) && Number.isFinite(x.z)) r._waldNachwuchs(x.x - cs, x.z - cs, x.x + cs, x.z + cs);
+                            window.__wetterSetzen(vor.wetter);
+                            st.weatherEffectTime = vor.wet;
+                            if (vor.wort === undefined) delete st.wetterWort;
+                            else st.wetterWort = vor.wort;
+                            st.spielZeit = vor.spiel;
+                            st.naesse = vor.naesse;
+                            r._naesseUhr = vor.naesseUhr;
+                            Ua.naesse.value = vor.uN;
+                            Ua.regen.value = vor.uR;
+                            if (vor.nassTage === undefined) delete wm.nassTage;
+                            else wm.nassTage = vor.nassTage;
+                            for (const [k, v] of [["regenStempel", vor.stempel], ["pegelZustand", vor.pegel], ["pegelRegen", vor.pegelRegen], ["weatherTransition", vor.wt]]) {
+                                if (v === undefined) delete st[k];
+                                else st[k] = v;
+                            }
+                            r.setTimeOfDay(vor.tod, "regler");
+                            st.perfRegulator = vor.regler;
+                        }
+                        return aus;
+                    };
+                    // DER AUSBRUCH: `lava` auf einer Zelle ohne Bett im 3×3 (sie zündet nichts) 20–120 m um den Spieler; die sechs Glieder
+                    // an ihren Lesern vor (zweimal, der Gegenlauf) ↔ nach dem Guss
+                    const ausbruch = async (r, a) => {
+                        const st = r.state;
+                        const C = AnazhRealm;
+                        const cs = C.LIFE_FIELD.cell;
+                        const pm = st.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const frei = (x, z, R) => r._landAt(x, z, 0.2) && !r._nassAt(x, z) && !r._blockerUmPlatz(x, z, R, []).length;
+                        let Q = null;
+                        for (let d = 20; d <= 120 && !Q; d += 10)
+                            for (let k = 0; k < 12 && !Q; k++) {
+                                const x = pm.x + d * Math.cos((k * Math.PI) / 6);
+                                const z = pm.z + d * Math.sin((k * Math.PI) / 6);
+                                const [cx, cz] = [Math.floor(x / cs), Math.floor(z / cs)];
+                                let bett = false;
+                                for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) bett = bett || !!r._brandStoff(cx + i, cz + j);
+                                if (!bett && frei(x, z, 4)) Q = { x, z, y: r._voxelSurfaceY(x, z) };
+                            }
+                        if (!Q) return { fehler: "keine Zelle ohne Bett 20–120 m um den Spieler" };
+                        const ring = a.radienM.map((m, k) => [Q.x + m * Math.cos(k * 2.39996), Q.z + m * Math.sin(k * 2.39996)]);
+                        const flussP = (r._hydroFor(Q.x, Q.z).rivers || []).flatMap((v) => v.points).sort((p, q) => Math.hypot(p.x - Q.x, p.z - Q.z) - Math.hypot(q.x - Q.x, q.z - Q.z)).slice(0, 8);
+                        const lies = () => ({
+                            ausbruch: r3((r._lavaAt(Q.x, Q.z) || { glut: 0 }).glut || 0),
+                            asche: r3(Math.max(0, ...ring.map(([x, z]) => r._ascheAt(x, z) || 0))),
+                            dach: null,
+                            einsturz: st.architectures.filter((e) => e.position && Math.hypot(e.position.x - Q.x, e.position.z - Q.z) <= 400).length,
+                            lahar: r3(flussP.reduce((s, p) => { const b = r._voxelSurfaceY(p.x, p.z); return s + Math.max(0, (r._atlasWaterLevelAt(p.x, p.z, b) || b) - b); }, 0)),
+                            ernte: r3(ring.reduce((s, [x, z]) => s + r.auraAt(x, z).lebendig, 0) / ring.length),
+                        });
+                        const glieder = ["ausbruch", "asche", "dach", "einsturz", "lahar", "ernte"];
+                        const anders = (p, q) => glieder.filter((g) => p[g] !== null && p[g] !== q[g]);
+                        const L0 = (st.worldMeta.taten ||= []);
+                        const n0 = L0.length;
+                        const bf0 = new Set((st.brandFeld || new Map()).keys());
+                        const halt = st.weatherEffectTime;
+                        const v0 = lies();
+                        const v1 = lies();
+                        const aus = { ort: [Q.x, Q.z].map(Math.round), vor: v0, gegen: anders(v0, v1).length, flussP: flussP.length };
+                        st.weatherEffectTime = 0;
+                        try {
+                            r.dslRun(["lava", Q.x, Q.y, Q.z], { source: "human" });
+                            st.weatherEffectTime = halt;
+                            aus.taten = L0.length - n0;
+                            aus.nach = lies();
+                            aus.glieder = anders(v0, aus.nach);
+                        } finally {
+                            st.weatherEffectTime = halt;
+                            L0.length = n0;
+                            for (const k of [...(st.brandFeld || new Map()).keys()]) if (!bf0.has(k)) st.brandFeld.delete(k);
+                            r._tatGen = (r._tatGen | 0) + 1;
+                            r._lavaTaktT = -Infinity;
+                            for (const s of st.wegeKarte ? st.wegeKarte.stufen : []) if (s.zentriert) r._lavaStufeMalen(s);
+                        }
+                        return aus;
+                    };
+                    // DIE FREMD-PLANETEN: der Planet-Faden an den Saaten „same-saat-i“ (die Breite des Ankers der Welt), unter einem Deckel
+                    // in ms — trägt seine Antwort ein Ereignis, eine Kette?
+                    const fremd = async (r, a) => {
+                        await r._fadenQuelle();
+                        const an = await r._planetAnker();
+                        const [Bg, Lg] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
+                        const t0 = performance.now();
+                        const H0 = [];
+                        let kette = 0;
+                        let felder = [];
+                        for (let i = 0; i < a.saaten && performance.now() - t0 < a.deckelMs; i += 10) {
+                            const o = await Promise.all(Array.from({ length: Math.min(10, a.saaten - i) }, (_, k) => r._planetAuftrag({ type: "planet-ort", samen: "same-saat-" + (i + k), breite: Bg, laenge: Lg, zeitMa: 0 })));
+                            for (const x of o) {
+                                const f = Object.keys(x).concat(Object.keys(x.delta || {}));
+                                felder = f;
+                                H0.push(x.hoeheM);
+                                if (f.some((k) => /kette|ereignis|ausbruch|beben|flut|lahar|brand|einsturz/i.test(k))) kette++;
+                            }
+                        }
+                        const m = H0.reduce((s, v) => s + v, 0) / Math.max(1, H0.length);
+                        return { n: H0.length, kette, felder, streuungM: Math.round(Math.sqrt(H0.reduce((s, v) => s + (v - m) * (v - m), 0) / Math.max(1, H0.length))), ms: Math.round(performance.now() - t0) };
+                    };
+                    const k = await S(kette, { start: 20, schritte: 10, loeschMax: 90, bild: !M.swift });
+                    const v = await S(ausbruch, { radienM: [32, 48, 64, 96, 128, 160, 200, 240, 280, 320, 360, 400] });
+                    const f = await S(fremd, { saaten: U[7].planeten, deckelMs: Math.max(2000, (48 - M.uhr()) * 1000) });
+                    const P = k.ph || {};
+                    const geht = (x, y, g) => !!(x && y) && x[g] !== y[g];
+                    const steht = (x, y, g) => !!(x && y) && x[g] === y[g];
+                    const lebt = (x, g) => !!x && x[g] >= 1;
+                    const je = {
+                        naesse: geht(P.A, P.F, "naesse") && steht(P.A, P.B, "naesse"),
+                        stoff: geht(P.A, P.F, "stoff") && steht(P.A, P.C, "stoff"),
+                        brand: lebt(P.A, "brand") && P.F && P.F.brand === 0 && lebt(P.D, "brand"),
+                        licht: lebt(P.A, "licht") && P.F && P.F.licht === 0 && lebt(P.E, "licht"),
+                    };
+                    const glieder = k.fehler ? undefined : Object.values(je).filter(Boolean).length;
+                    const zk = { fehler: k.fehler, entfacht: k.entfacht, phasen: ["A", "B", "C", "D", "E", "F"].filter((n) => P[n]).length, brandA: P.A && P.A.brand, lichtA: P.A && P.A.licht, gegenBrand: P.B && P.B.brand, gegenLicht: P.B && P.B.licht, gegenNaesse: P.A && P.B ? (P.B.naesse !== P.A.naesse ? 1 : 0) : null, bild: k.bildKette != null, bildGrund: M.swift ? "swiftshader: kein Bild ohne Gerät (ungefahren am Gerät)" : null, bildKette: k.bildKette, bildGegen: k.bildGegen, je, ph: P, loeschS: k.loeschS, aschen: k.aschen, herd: k.herd };
+                    const vg = v.glieder || [];
+                    const za = { fehler: v.fehler, glut: v.nach && v.nach.ausbruch, taten: v.taten, gegen: v.gegen, glieder: vg, vor: v.vor, nach: v.nach };
+                    const bruch = "die Welt kennt kein Beben und keinen Bruch: die Feld-Akte tragen leben · brand · aus · annahme, die Lava ist EIN Guss auf EINE Zelle";
+                    return {
+                        sprossen: {
+                            2: { werte: { glieder }, zeuge: zk },
+                            3: { werte: { anteilProzent: undefined, gliederAusbruch: vg.length }, zeuge: za, nicht: "kein Damm, kein Bruch, keine Trümmer im Fluid: " + bruch + "; das Wasser bricht nur aus einem Graben (`_flutSaat`), 20 Saaten trägt die Welt nicht (EINE Saat)" },
+                            4: { werte: { kettenProzent: undefined, gliederBrand: glieder }, zeuge: zk, nicht: "kein Beben, kein Einsturz nach Lastpfad: " + bruch + "; von Beben → Bruch → Brand läuft nur der Brand (" + (glieder == null ? "?" : glieder) + " Glieder der Regen-Kette)" },
+                            5: { werte: { kettenProzent: undefined, wellenVerh: undefined }, zeuge: za, nicht: "keine Küstenstadt, kein Beben, keine Welle: " + bruch + "; r._staedte() trägt keine Stadt" },
+                            6: { werte: { gliederImBild: vg.length }, zeuge: za, nicht: "ein Ausbruch, 20 Vulkan-Saaten nicht: die Welt trägt EINE Saat, die Lava schreibt nur ihre Zelle — Glieder vor ↔ nach dem Guss: " + (vg.join(", ") || "keins") + " (Asche-Fall, Dachlast, Einsturz, Lahar ohne Leser)" },
+                            7: { werte: { anteilProzent: f.n ? (100 * f.kette) / f.n : undefined }, zeuge: { saaten: f.n, streuungM: f.streuungM, ms: f.ms }, nicht: "keine Kette auf Fremd-Planeten: " + f.kette + " von " + f.n + " Saaten tragen ein Ereignis — planet-ort antwortet " + (f.felder || []).join(", ") + (f.n < U[7].planeten ? " (nur " + f.n + " von " + U[7].planeten + " Saaten im Deckel)" : "") },
+                        },
+                    };
+                },
+                sprossen: {
+                    2: {
+                        u: { glieder: ["regen", "naesse", "stoff", "brand", "licht"], schritteJePhase: 10, start: 20 },
+                        soll: [K.soll(KA, 2, "Glieder, deren Bild sich ändert und beim Festhalten des Vorgängers stehen bleibt, ≥ 4", { key: "glieder" })],
+                        zeuge: zeugeKette,
+                        taeter: "stamm/feld-brand.js `_brandFeuchte` / `_tickBrand` · stamm/bild-himmel.js `_naesseTakt` (ein Glied liest seinen Vorgänger nicht)",
+                        unklar: "„deren Bild sich ändert“ nennt kein Bildmaß je Glied — Vorschlag: je Glied der Ausschnitt seines Lesers im Bild (Regen-Schleier, Boden-Luma der Nässe, Flammen-Emission, Licht-Luma um den Herd) mit ≥ 5 % geänderter Pixel, im Festhalten < 1 %.",
+                        gruen: { werte: { glieder: 4 }, zeuge: KETTE_Z },
+                        attrappen: [
+                            { name: "vier Glieder ohne Herd (kein Brand in der Welt)", roh: { werte: { glieder: 4 }, zeuge: Object.assign({}, KETTE_Z, { entfacht: false }) } },
+                            { name: "der Brand erlischt auch ohne Regen (der Gegenlauf zeigt dasselbe)", roh: { werte: { glieder: 4 }, zeuge: Object.assign({}, KETTE_Z, { gegenBrand: 0, gegenLicht: 0 }) } },
+                            { name: "vier Glieder ohne Festhalte-Probe (nur zwei Phasen gelesen)", roh: { werte: { glieder: 4 }, zeuge: Object.assign({}, KETTE_Z, { phasen: 2 }) } },
+                            { name: "vier Glieder ohne Bildpaar", roh: { werte: { glieder: 4 }, zeuge: Object.assign({}, KETTE_Z, { bild: false }) } },
+                        ],
+                    },
+                    3: {
+                        u: { glieder: ["bruch", "koerper", "fluid"], volumenM3: 1000, saaten: 20 },
+                        soll: [K.soll(KA, 3, "Anteil, in dem jedes Glied im Bild eintritt ≥ 90 %", { key: "anteilProzent", einheit: "%" })],
+                        zeuge: zeugeAusbruch,
+                        taeter: "stamm/feld-leben.js `_feldAkt` (kein Bruch-Akt) · stamm/wasser-zellen.js `_flutSaat` (kein Damm, keine Trümmer)",
+                        nicht: "kein Damm, kein Bruch, keine Trümmer",
+                        leser: "stamm/wasser-zellen.js:102 `_flutSaat` — das Wasser flutet nur einen Graben, kein Damm bricht, kein Körper schwimmt; stamm/feld-leben.js:2317 `akt.art` kennt keinen Bruch",
+                        gruen: { werte: { anteilProzent: 95 }, zeuge: AUS_Z },
+                        attrappen: [{ name: "95 % ohne Ereignis in der Welt", roh: { werte: { anteilProzent: 95 }, zeuge: Object.assign({}, AUS_Z, { glut: 0, taten: 0 }) } }],
+                    },
+                    4: {
+                        u: { glieder: ["beben", "bruch", "brand"], flaeche: "viertel", saaten: 20 },
+                        soll: [K.soll(KA, 4, "vollständige Ketten ≥ 80 %", { key: "kettenProzent", einheit: "%" })],
+                        zeuge: zeugeKette,
+                        taeter: "stamm/feld-leben.js `_feldAkt` (kein Beben, kein Einsturz nach Lastpfad)",
+                        nicht: "kein Beben, kein Einsturz",
+                        leser: "stamm/feld-leben.js:2317 `akt.art` — die Feld-Akte kennen leben · brand · aus · annahme, kein Beben, keinen Bruch",
+                        gruen: { werte: { kettenProzent: 85 }, zeuge: KETTE_Z },
+                        attrappen: [{ name: "85 % ohne Festhalte-Probe je Glied", roh: { werte: { kettenProzent: 85 }, zeuge: Object.assign({}, KETTE_Z, { phasen: 1 }) } }],
+                    },
+                    5: {
+                        u: { glieder: ["beben", "bruch", "brand", "flut"], ort: "kuestenstadt", saaten: 20 },
+                        soll: [
+                            K.soll(KA, 5, "vollständige Ketten ≥ 70 %", { key: "kettenProzent", einheit: "%" }),
+                            K.soll(KA, 5, "Wellen-Ankunft ±10 % gegen √(g·h)", { key: "wellenVerh", ref: 1, refQuelle: "Flachwasser-Welle c = √(g·h) (Lagrange 1781; Laufzeiten der Tsunami-Warnzentren NOAA): gemessene ÷ berechnete Ankunft = 1" }),
+                        ],
+                        zeuge: zeugeAusbruch,
+                        taeter: "stamm/feld-leben.js `_feldAkt` (kein Beben) · stamm/siedlung-ort.js `_staedte` (keine Küstenstadt)",
+                        nicht: "keine Küstenstadt, kein Beben, keine Welle",
+                        leser: "stamm/siedlung-ort.js:1455 `_staedte` — leer in der Welt; stamm/feld-leben.js:2317 `akt.art` ohne Beben und Welle",
+                        gruen: { werte: { kettenProzent: 75, wellenVerh: 1.04 }, zeuge: AUS_Z },
+                        attrappen: [{ name: "75 % und 1,04 ohne Ereignis", roh: { werte: { kettenProzent: 75, wellenVerh: 1.04 }, zeuge: Object.assign({}, AUS_Z, { gegen: 3 }) } }],
+                    },
+                    6: {
+                        u: { glieder: ["ausbruch", "asche", "dachlast", "einsturz", "lahar", "ernte"], ringM: [32, 400], saaten: 20 },
+                        soll: [K.soll(KA, 6, "≥ 5 von 6 Gliedern im Bild", { key: "gliederImBild" })],
+                        zeuge: zeugeAusbruch,
+                        taeter: "stamm/feld-leben.js `_lavaGiessen` (die Lava schreibt nur ihre Zelle) · stamm/feld-brand.js `_ascheAt` (Asche nur aus dem Brand)",
+                        nicht: "ein Ausbruch, keine Region, keine 20 Vulkan-Saaten",
+                        leser: "stamm/feld-leben.js:2460 `_lavaGiessen` — EIN Guss auf EINE Zelle; stamm/feld-brand.js:5 `_ascheAt` liest nur die Asche des Brands, keinen Asche-Fall, keine Dachlast",
+                        gruen: { werte: { gliederImBild: 5 }, zeuge: AUS_Z },
+                        attrappen: [
+                            { name: "fünf Glieder ohne Guss", roh: { werte: { gliederImBild: 5 }, zeuge: Object.assign({}, AUS_Z, { glut: 0, taten: 0 }) } },
+                            { name: "fünf Glieder, die sich auch ohne Guss ändern", roh: { werte: { gliederImBild: 5 }, zeuge: Object.assign({}, AUS_Z, { gegen: 2 }) } },
+                        ],
+                    },
+                    7: {
+                        u: { planeten: 100, gliederMin: 3 },
+                        soll: [K.soll(KA, 7, "zugeordnet, ≥ 80 %", { key: "anteilProzent", einheit: "%" })],
+                        zeuge: zeugeFaden(100),
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Ereignis-Kette im Faden)",
+                        nicht: "keine Kette auf Fremd-Planeten",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — antwortet land, hoeheM, kuesteKm, klima, meer, wetter, wuchs, wildnis; kein Ereignis, keine Kette",
+                        gruen: { werte: { anteilProzent: 84 }, zeuge: FADEN_Z },
+                        attrappen: [{ name: "84 % ohne Planet-Faden", roh: { werte: { anteilProzent: 84 }, zeuge: { saaten: 0 } } }],
+                    },
+                },
+            },
+
+            // ════════ same.kopplung.kohaerenz — die gewachsene Kohärenz einer ungestörten Saat ════════
+            [KO]: {
+                sek: 40,
+                pfad: ["stamm/gelaende-boden.js", "stamm/wasser-hydro.js", "stamm/feld-leben.js", "stamm/siedlung-ort.js", "stamm/siedlung-wege.js", "gelaende-core.js", "fachwerk-core.js", "voxel-worker.js", "planet-core.js", "scripts/werkbank.cjs"],
+                ungefahren: "die Auge-Bilder (S5 ein Ort der Welt aus 80 m, S6 an der Wiese) schießt nur das Gerät; headless steht die Welt nie (/bild wartet auf Ruhe)",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const welt = async (r, a) => {
+                        const st = r.state;
+                        const C = AnazhRealm;
+                        const pm = st.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const hyd = r._hydroFor(pm.x, pm.z);
+                        const rv = (hyd.rivers || []).filter((v) => v.points && v.points.length >= 3);
+                        const alle = rv.flatMap((v) => v.points);
+                        const y = (x, z) => r._voxelSurfaceY(x, z);
+                        const aus = { fluesse: rv.length, punkte: alle.length };
+                        const ende = (v) => {
+                            const p = v.points[v.points.length - 1];
+                            const b = y(p.x, p.z);
+                            const w = r._atlasWaterLevelAt(p.x, p.z, b);
+                            return !!(v.mouth || p.inLake || r._nassAt(p.x, p.z) || (Number.isFinite(w) && w > b));
+                        };
+                        const paare = [];
+                        for (const v of rv) for (let i = 0; i + 1 < v.points.length; i++) paare.push([v.points[i], v.points[i + 1], ende(v)]);
+                        const schritt = Math.max(1, Math.floor(paare.length / a.punkte));
+                        const wahl = paare.filter((_, i) => i % schritt === 0).slice(0, a.punkte);
+                        const ab = (p, q) => y(q.x, q.z) <= y(p.x, p.z) + a.tolM;
+                        aus.s1 = { n: wahl.length, vor: wahl.filter(([p, q, e]) => ab(p, q) && e).length, rueck: wahl.filter(([p, q]) => y(p.x, p.z) < y(q.x, q.z) - a.tolM).length, bergab: wahl.filter(([p, q]) => ab(p, q)).length, ende: rv.filter(ende).length };
+                        aus.s1.rueckAb = wahl.filter(([p, q]) => ab(q, p)).length;
+                        const lebt = (x, z) => r.auraAt(x, z).lebendig;
+                        const schnitt = (x, z, nx, nz) => {
+                            const w = [];
+                            for (const d of a.abstaende) {
+                                const [qx, qz] = [x + nx * d, z + nz * d];
+                                if (r._nassAt(qx, qz)) return null;
+                                w.push(lebt(qx, qz));
+                            }
+                            return w;
+                        };
+                        const monoton = (w) => w.every((v, i) => i === 0 || v <= w[i - 1] + a.tolDichte);
+                        const fP = alle.filter((_, i) => i % Math.max(1, Math.floor(alle.length / a.schnitte)) === 0).slice(0, a.schnitte);
+                        const fl = fP.map((p) => schnitt(p.x, p.z, -(p.flowZ || 0), p.flowX || 1)).filter(Boolean);
+                        const fern = (x, z) => alle.every((p) => Math.hypot(p.x - x, p.z - z) >= a.fernM);
+                        const zufall = [];
+                        let sd = 12345;
+                        const rnd = () => ((sd = (sd * 16807) % 2147483647) / 2147483647);
+                        for (let k = 0; k < 400 && zufall.length < a.schnitte; k++) {
+                            const [x, z] = [pm.x + (rnd() * 2 - 1) * a.halbM, pm.z + (rnd() * 2 - 1) * a.halbM];
+                            const g = rnd() * Math.PI * 2;
+                            if (!fern(x, z) || !r._landAt(x, z, 0.2)) continue;
+                            const w = schnitt(x, z, Math.cos(g), Math.sin(g));
+                            if (w) zufall.push(w);
+                        }
+                        aus.s2 = { fluss: fl.length, flussMonoton: fl.filter(monoton).length, zufall: zufall.length, zufallMonoton: zufall.filter(monoton).length, streu: r3(Math.max(...fl.flat()) - Math.min(...fl.flat())), beispiel: fl[0] && fl[0].map(r3), flaecheKm2: r3((hyd.size || 2048) * (hyd.size || 2048) / 1e6) };
+                        const SG = C._siedlungGesetz();
+                        const cm = SG.cellM;
+                        const [mx, mz] = [Math.floor(pm.x / cm), Math.floor(pm.z / cm)];
+                        const orte = [];
+                        for (let i = -a.zellen; i <= a.zellen; i++)
+                            for (let j = -a.zellen; j <= a.zellen; j++) {
+                                const o = r._autoSettlementCellInfo(mx + i, mz + j);
+                                if (o && Math.abs(o.x - pm.x) <= a.halbM && Math.abs(o.z - pm.z) <= a.halbM) orte.push({ x: o.x, z: o.z, nH: o.nH });
+                            }
+                        const amWasser = (x, z) => alle.some((p) => Math.hypot(p.x - x, p.z - z) <= a.anM) || r._nassAt(x, z);
+                        const zo = [];
+                        for (let k = 0; k < 2000 && zo.length < Math.max(40, orte.length); k++) {
+                            const [x, z] = [pm.x + (rnd() * 2 - 1) * a.halbM, pm.z + (rnd() * 2 - 1) * a.halbM];
+                            if (r._landAt(x, z, 0.2)) zo.push([x, z]);
+                        }
+                        const nH = orte.map((o) => o.nH).filter((v) => v > 0).sort((p, q) => q - p);
+                        let zipf = null;
+                        if (nH.length >= 3) {
+                            const X = nH.map((_, i) => Math.log(i + 1));
+                            const Y = nH.map((v) => Math.log(v));
+                            const xm = X.reduce((s, v) => s + v, 0) / X.length;
+                            const ym = Y.reduce((s, v) => s + v, 0) / Y.length;
+                            const sxy = X.reduce((s, v, i) => s + (v - xm) * (Y[i] - ym), 0);
+                            const sxx = X.reduce((s, v) => s + (v - xm) * (v - xm), 0);
+                            zipf = sxx > 0 ? r3(-sxy / sxx) : null;
+                        }
+                        aus.orte = { n: orte.length, amWasser: orte.filter((o) => amWasser(o.x, o.z)).length, zufall: zo.length, zufallAmWasser: zo.filter(([x, z]) => amWasser(x, z)).length, zipf, groesster: nH[0] || 0, kleinster: nH[nH.length - 1] || 0, staedte: r._staedte().length };
+                        const nah = orte.slice().sort((p, q) => Math.hypot(p.x - pm.x, p.z - pm.z) - Math.hypot(q.x - pm.x, q.z - pm.z))[0];
+                        aus.pose = nah ? { px: Math.round(nah.x + 80), py: Math.round(y(nah.x, nah.z) + 60), pz: Math.round(nah.z + 40), lx: Math.round(nah.x), ly: Math.round(y(nah.x, nah.z)), lz: Math.round(nah.z) } : null;
+                        return aus;
+                    };
+                    const faden = async (r, a) => {
+                        await r._fadenQuelle();
+                        const an = await r._planetAnker();
+                        const [Bg, Lg] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
+                        const t0 = performance.now();
+                        const H0 = [];
+                        let land = 0;
+                        for (let i = 0; i < a.saaten && performance.now() - t0 < a.deckelMs; i += 10) {
+                            const o = await Promise.all(Array.from({ length: Math.min(10, a.saaten - i) }, (_, k) => r._planetAuftrag({ type: "planet-ort", samen: "same-saat-" + (i + k), breite: Bg, laenge: Lg, zeitMa: 0 })));
+                            for (const x of o) (H0.push(x.hoeheM), (land += x.land ? 1 : 0));
+                        }
+                        const m = H0.reduce((s, v) => s + v, 0) / Math.max(1, H0.length);
+                        return { n: H0.length, land, streuungM: Math.round(Math.sqrt(H0.reduce((s, v) => s + (v - m) * (v - m), 0) / Math.max(1, H0.length))), ms: Math.round(performance.now() - t0) };
+                    };
+                    const w = await S(welt, { punkte: U[1].punkte, tolM: 0.05, abstaende: U[2].abstaendeM, tolDichte: 0.02, schnitte: 20, fernM: 400, halbM: U[3].halbM, zellen: 8, anM: U[3].anM });
+                    const f = await S(faden, { saaten: U[6].saaten, deckelMs: Math.max(2000, (30 - M.uhr()) * 1000) });
+                    const auge5 = await M.auge("same-kohaerenz-s5", w.pose || { ort: "wiese" });
+                    const auge6 = await M.auge("same-kohaerenz-s6", { ort: "wiese" });
+                    const s1 = w.s1 || {};
+                    const s2 = w.s2 || {};
+                    const o = w.orte || {};
+                    const pz = (a, b) => (b > 0 ? Math.round((1000 * a) / b) / 10 : undefined);
+                    const zo = { orte: o.n, zufall: o.zufall, anteilOrte: pz(o.amWasser, o.n), anteilZufall: pz(o.zufallAmWasser, o.zufall) };
+                    const eine = "die Welt trägt EINE Saat (100 Saaten erzeugt sie nicht; der Planet-Faden kennt keine Flüsse, keine Pflanzen-Dichte am Wasser, keine Orte)";
+                    return {
+                        sprossen: {
+                            1: { werte: { anteilProzent: pz(s1.vor, s1.n) }, zeuge: { punkte: s1.n, vor: s1.vor, rueck: s1.rueck, rueckAb: s1.rueckAb, bergab: s1.bergab, fluesse: w.fluesse, ende: s1.ende }, nicht: eine + " — an dieser: " + s1.vor + " von " + s1.n + " Punkten bergab in Senke oder Meer, rückwärts steigen " + s1.rueck },
+                            2: { werte: { monotonProzent: pz(s2.flussMonoton, s2.fluss) }, zeuge: { schnitte: s2.fluss, zufall: s2.zufall, anteilFluss: pz(s2.flussMonoton, s2.fluss), anteilZufall: pz(s2.zufallMonoton, s2.zufall), streu: s2.streu }, nicht: eine + " — an dieser: " + s2.flussMonoton + " von " + s2.fluss + " Schnitten quer zum Fluss monoton fallend (fern jedes Flusses " + s2.zufallMonoton + " von " + s2.zufall + "), " + s2.flaecheKm2 + " km² Hydrosphäre" },
+                            3: { werte: { anteilProzent: zo.anteilOrte, luvLeeVerh: undefined }, zeuge: zo, nicht: "10³ km² nicht und kein Niederschlag je Ort: " + o.n + " Orte (Dörfer, " + o.staedte + " Städte) auf " + Math.round(((2 * U[3].halbM) / 1000) ** 2) + " km², " + o.amWasser + " am Fluss (Zufallsorte " + o.zufallAmWasser + " von " + o.zufall + "); der Planet-Faden trägt Regen nur als Δ zum Anker, Luv/Lee unmessbar" },
+                            4: { werte: { umwegFaktor: undefined, zipfSteigung: o.zipf, groessterOrt: o.groesster }, zeuge: Object.assign({ zipf: o.zipf }, zo), nicht: "10⁵ km² und 10³ Städte nicht, kein Straßennetz zwischen den Orten: " + o.n + " Orte, der größte trägt " + o.groesster + " Häuser (Soll bis 10⁷), Zipf-Steigung " + o.zipf },
+                            5: { werte: { zuordnungProzent: undefined, orte: o.n }, zeuge: zo, auge: auge5, nicht: "20 Stadtbilder aus ihrem Biom nicht: " + o.n + " Orte in EINER Region, " + o.staedte + " Städte" },
+                            6: { werte: { verwechslungProzent: undefined, saaten: f.n }, zeuge: { saaten: f.n, streuungM: f.streuungM, land: f.land }, auge: auge6, nicht: "keine Orbit-Pose ohne Ladebild, keine 10⁹ Bewohner: der Planet-Faden antwortet an " + f.n + " Saaten (Höhe streut " + f.streuungM + " m, " + f.land + " Land am Anker)" },
+                            7: { werte: { anteilProzent: zo.anteilOrte }, zeuge: zo, nicht: "1 000 Fremd-Saaten nicht: die Welt trägt EINE Saat der Erd-Physik — " + o.amWasser + " von " + o.n + " Orten am Wasser (Zufallsorte " + zo.anteilZufall + " %)" },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: {
+                        u: { saaten: 100, punkte: 50 },
+                        soll: [K.soll(KO, 1, "Wasserläufe bergab in Senke oder Meer ≥ 95 %", { key: "anteilProzent", einheit: "%" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.punkte >= 50)) return "nur " + (z.punkte || 0) + " Punkte an Flüssen gemessen (Soll 50)";
+                            if (!(z.rueck < z.bergab)) return "der Lauf rückwärts fällt so oft wie vorwärts (" + z.rueck + " ≥ " + z.bergab + ") — die Flüsse folgen dem Relief nicht";
+                            if (!(z.ende >= 1)) return "kein Fluss endet in Senke oder Meer";
+                            return null;
+                        },
+                        taeter: "gelaende-core.js hydroRegion (die Flüsse) · stamm/gelaende-boden.js `_hydroFor`",
+                        nicht: "eine Saat, nicht 100",
+                        leser: "stamm/gelaende-boden.js:598 `_hydroFor` — die Hydrosphäre nur der Saat der Welt; voxel-worker.js:1175 planetOrtAuftrag ohne Flusslauf",
+                        gruen: { werte: { anteilProzent: 97 }, zeuge: { punkte: 50, vor: 49, rueck: 2, rueckAb: 10, bergab: 49, fluesse: 21, ende: 18 } },
+                        attrappen: [
+                            { name: "97 % an flachen Linien (rückwärts fällt es genauso)", roh: { werte: { anteilProzent: 97 }, zeuge: { punkte: 50, vor: 49, rueck: 49, bergab: 49, fluesse: 21, ende: 18 } } },
+                            { name: "97 % aus fünf Punkten", roh: { werte: { anteilProzent: 97 }, zeuge: { punkte: 5, vor: 5, rueck: 0, bergab: 5, fluesse: 1, ende: 1 } } },
+                        ],
+                    },
+                    2: {
+                        u: { saaten: 100, abstaendeM: [10, 30, 60, 120, 240], flaecheKm2: 10 },
+                        soll: [K.soll(KO, 2, "Pflanzen-Dichte gegen Abstand zum Wasser monoton fallend in ≥ 80 %", { key: "monotonProzent", einheit: "%" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.schnitte >= 10)) return "nur " + (z.schnitte || 0) + " Schnitte quer zum Fluss (Soll 10)";
+                            if (!(z.zufall >= 10)) return "kein Gegenlauf fern jedes Flusses";
+                            if (!(z.streu > 0)) return "die Pflanzen-Dichte streut nicht (eine Konstante)";
+                            if (!(z.anteilFluss > z.anteilZufall)) return "fern jedes Flusses fällt die Dichte so oft wie am Fluss (" + z.anteilZufall + " ≥ " + z.anteilFluss + " %) — das Wasser ist keine Ursache";
+                            return null;
+                        },
+                        taeter: "stamm/feld-leben.js `auraAt` (lebendig liest den Abstand zum Wasser nicht) · stamm/gelaende-boden.js `_feuchteAt`",
+                        nicht: "eine Saat, nicht 100",
+                        leser: "stamm/gelaende-boden.js:598 `_hydroFor` — Flüsse und Pflanzen nur der Saat der Welt",
+                        unklar: "„monoton fallend“ trägt keine Toleranz — Vorschlag: je Schnitt 10–240 m kein Schritt steigt um mehr als 0,02 lebendig.",
+                        gruen: { werte: { monotonProzent: 85 }, zeuge: { schnitte: 20, zufall: 20, anteilFluss: 85, anteilZufall: 30, streu: 0.5 } },
+                        attrappen: [{ name: "85 % auch fern jedes Flusses (das Gelände fällt, nicht das Wasser wirkt)", roh: { werte: { monotonProzent: 85 }, zeuge: { schnitte: 20, zufall: 20, anteilFluss: 85, anteilZufall: 85, streu: 0.5 } } }],
+                    },
+                    3: {
+                        u: { flaecheKm2: 1000, halbM: 2000, anM: 300 },
+                        soll: [K.soll(KO, 3, "Städte an Fluss/Küste/Pass ≥ 70 %", { key: "anteilProzent", einheit: "%" }), K.soll(KO, 3, "Niederschlag Luv/Lee ≥ 2:1", { key: "luvLeeVerh" })],
+                        zeuge: zeugeOrte,
+                        taeter: "fachwerk-core.js (der Ort liest Wasser nur als Verbot und Kosten) · voxel-worker.js planetOrtAuftrag (Regen nur als Δ)",
+                        nicht: "10³ km² nicht, kein Niederschlag je Ort",
+                        leser: "voxel-worker.js:1202 `regenQuote` — der Faden reicht den Regen nur als Δ zum Anker, keinen Niederschlag, keinen Wind; stamm/siedlung-ort.js:1410 `_autoSettlementCellInfo` wählt den Ort ohne Fluss, Furt, Pass",
+                        unklar: "„an Fluss/Küste/Pass“ trägt keinen Abstand und „Städte“ keine Größe — Vorschlag: jeder Ort der Welt (Dorf oder Stadt), sein Kern ≤ 300 m vom Fluss, der Küste oder dem Sattel.",
+                        gruen: { werte: { anteilProzent: 78, luvLeeVerh: 2.4 }, zeuge: ORTE_Z },
+                        attrappen: [{ name: "78 % — Zufallsorte stehen ebenso oft am Wasser", roh: { werte: { anteilProzent: 78, luvLeeVerh: 2.4 }, zeuge: Object.assign({}, ORTE_Z, { anteilZufall: 80 }) } }],
+                    },
+                    4: {
+                        u: { flaecheKm2: 1e5, staedte: 1000, bisEinwohner: 1e7 },
+                        soll: [
+                            K.soll(KO, 4, "Straßennetz-Umweg ≤ 1,2 × günstigster Gelände-Pfad", { key: "umwegFaktor" }),
+                            K.soll(KO, 4, "Zipf-Steigung 0,8–1,2", { key: "zipfSteigung" }),
+                            K.soll(KO, 4, "bis 10⁷", { key: "groessterOrt", rel: "≥", zahl: 1e7 }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!Number.isFinite(z.zipf)) return "keine Zipf-Gerade aus den Orten der Welt";
+                            return zeugeOrte(roh);
+                        },
+                        taeter: "stamm/siedlung-ort.js `_autoSettlementCellInfo` (Dörfer ohne Wachstum zur Stadt) · stamm/siedlung-wege.js `_wegeKarteEnsure` (Wege nur im Ort)",
+                        nicht: "10⁵ km², 10³ Städte, kein Straßennetz",
+                        leser: "stamm/siedlung-wege.js:16 `_wegeKarteEnsure` — die Wege liegen nur in den Siedlungen, kein Netz zwischen den Orten; stamm/siedlung-ort.js:1455 `_staedte` leer",
+                        gruen: { werte: { umwegFaktor: 1.1, zipfSteigung: 1.02, groessterOrt: 2e7 }, zeuge: Object.assign({ zipf: 1.02 }, ORTE_Z) },
+                        attrappen: [{ name: "Zipf 1,02 ohne Orte der Welt", roh: { werte: { umwegFaktor: 1.1, zipfSteigung: 1.02, groessterOrt: 2e7 }, zeuge: { zipf: 1.02, orte: 0, zufall: 0 } } }],
+                    },
+                    5: {
+                        u: { glieder: 10, stadtbilder: 20, flaeche: "kontinent" },
+                        soll: [K.soll(KO, 5, "Blindtest: 20 Stadtbilder ihrem Biom zugeordnet ≥ 70 %", { key: "zuordnungProzent", einheit: "%" })],
+                        auge: { pose: "der nächste Ort der Welt aus 80 m Abstand, 60 m Höhe (ohne Ort: die Wiese)", vorbild: "Prüfer-Satz R11: 20 Stadtbilder blind ihrem Biom zugeordnet, ≥ 70 %" },
+                        taeter: "stamm/siedlung-ort.js `_autoSettlementCellInfo` (der Ort wählt Lehm, Holz, Stein nicht aus dem Biom)",
+                        nicht: "20 Stadtbilder aus 20 Biomen nicht",
+                        leser: "stamm/siedlung-ort.js:1455 `_staedte` — keine Stadt in der Welt, die Dörfer einer Region",
+                        gruen: { werte: { zuordnungProzent: 75 }, zeuge: ORTE_Z },
+                        attrappen: [{ name: "75 % ohne Bild", roh: { werte: { zuordnungProzent: 75 }, zeuge: { orte: 0 } } }],
+                    },
+                    6: {
+                        u: { saaten: 100, bewohner: 1e9 },
+                        soll: [K.soll(KO, 6, "Geograf trennt sie blind nicht von Erdkarten-Ausschnitten ≥ 50 %", { key: "verwechslungProzent", einheit: "%" })],
+                        auge: { pose: "Orbit über dem Planeten (heute keine Orbit-Pose: geschossen an der Wiese)", vorbild: "Prüfer-Satz R11: 100 Planeten-Karten blind gegen Erdkarten-Ausschnitte, Verwechslung ≥ 50 %" },
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Kulturräume, keine Bewohner)",
+                        nicht: "keine Orbit-Pose, keine 10⁹ Bewohner",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — kein Bewohner, keine Siedlung, kein Kulturraum in der Antwort",
+                        gruen: { werte: { verwechslungProzent: 55 }, zeuge: FADEN_Z },
+                        attrappen: [{ name: "55 % ohne Faden", roh: { werte: { verwechslungProzent: 55 }, zeuge: { saaten: 0 } } }],
+                    },
+                    7: {
+                        u: { saaten: 1000, physik: "fremd", anM: 300 },
+                        soll: [K.soll(KO, 7, "Siedlungen mit sichtbarer Ursache (Wasser, Pass, Stoff, Schutz) ≥ 90 %", { key: "anteilProzent", einheit: "%" })],
+                        zeuge: zeugeOrte,
+                        taeter: "stamm/siedlung-ort.js `_autoSettlementCellInfo` (der Ort hat keine Ursache am Ort) · planet-core.js (keine fremde Physik)",
+                        nicht: "1 000 Fremd-Saaten nicht",
+                        leser: "stamm/siedlung-ort.js:1410 `_autoSettlementCellInfo` — der Rang aus dem Samen der Zelle, kein Wasser, kein Pass, kein Stoff als Ursache",
+                        gruen: { werte: { anteilProzent: 93 }, zeuge: ORTE_Z },
+                        attrappen: [{ name: "93 % — Zufallsorte stehen ebenso oft am Wasser", roh: { werte: { anteilProzent: 93 }, zeuge: Object.assign({}, ORTE_Z, { anteilZufall: 95 }) } }],
+                    },
+                },
+            },
+        },
+    };
+})());
+
+// ── DAS STÜCK zusammenspiel.same · zeitreise + terraform (2 Leitern, 13 Sprossen, belegt: keine) — Teil der EINEN Probe der Perspektive.
+// ZEITREISE (die Tat zu jeder Zeit): in der warmen Welt um den Spieler fallen zehn Bäume des Walds über die Ernte des Spiels
+// (`harvestArchitecture`, die Tat `faellen`), die Hand pflückt Pflanzen der Nah-Streu (`_streuNehmen`, die Tat `ernten`), ein Haus
+// entsteht über den Satz `spawn_studio` (der EINE Stempel), ein Trampelpfad über den Schritt der Leiber (`_tritt`, im Sandkasten des
+// Felds `worldMeta.tritt`). Eine Spielstunde läuft im Takt des Spiels (`_weltUhrNimm` in Schritten unter dem Uhr-Sprung); die Sprünge
+// (+1 a, 10 a, 100 a, 10³ a, rückwärts, 100 Zufallspaare bis 10⁹ a) setzen die Welt-Uhr `spielZeit` und lesen die Leser der Welt:
+// den Nachwuchs (`_tickScatterRegrow` — er heilt und pflanzt), die Sukzession (`_sukzession`), das Baum-Alter (`_baumAlter`), das
+// Werk-Alter (`_werkAlter`, `_werkAlterSchluessel`), die Erholung des Pfads (`_trittErholen`), die Narbe (`_narbeAt`). Der Reload geht
+// über den Speicher-Weg: der Stand (`buildStateSnapshot`, als JSON geschrieben und gelesen), das Haus steht aus ihm wieder auf
+// (`_bauAusStand`). Ein Jahr ist 365 Tage der Prozesse (`PEGEL_TAG_S`) — dasselbe Spieljahr wie stoffe.K5 (8 760 Welt-Stunden). Am
+// Ende fällt alles zurück: Uhr, Taten-Liste und Index (`_tatGen`), die Stümpfe (`_nahStreuTat`), der Wald (`_waldNachwuchs`), die
+// geernteten Kacheln, das Haus, der Pfad, Nässe, Lage des Spielers und der Sicherungs-Ruf.
+// TERRAFORM (Technik formt den Planeten): die Welt trägt keinen Eingriff — gemessen wird, was sie trägt: der Regen des Worts
+// (`_weatherFieldFor`, ohne Ort), der Planet-Faden (`planet-ort`) an Wüste, Anker und 100 Saaten über die Zeit (der Gegenlauf ohne
+// Eingriff), die Bücher der Foundry (kein Aufzug), Städte und Wachstum der Orte. Das Bild (Orbit, Folge, Fremdwelt R10) schießt nur das Gerät.
+L.perspektive("same", (() => {
+    const ZR = "same.kopplung.zeitreise";
+    const TF = "same.kopplung.terraform";
+
+    const LICHTUNG_Z = { gefaellt: 10, taten: 10, vor: 12, nach: 2, gVor: 11, gNach: 11 };
+    const zeugeLichtung = (roh) => {
+        const z = roh.zeuge || {};
+        if (!(z.gefaellt >= 10)) return "nur " + (z.gefaellt || 0) + " Bäume gefällt (Soll 10 Fällungen)";
+        if (!(z.taten >= z.gefaellt)) return "die Fällungen schrieben " + (z.taten || 0) + " Taten für " + z.gefaellt + " Bäume";
+        if (!(z.vor >= 10)) return "die Lichtung trug vorher nur " + (z.vor || 0) + " Bäume";
+        if (!(z.gVor >= 5)) return "kein Gegenlauf: die Gruppe ohne Fällung fehlt";
+        if (!(z.gNach / z.gVor > 0.3)) return "der Gegenlauf ohne Fällung lichtet ebenso (" + z.gNach + " von " + z.gVor + "): die Stunde, nicht die Tat";
+        return null;
+    };
+
+    return {
+        leitern: {
+            // ════════ same.kopplung.zeitreise — die Tat zu jeder Zeit ════════
+            [ZR]: {
+                sek: 25,
+                mutiert: true,
+                pfad: ["stamm/feld-leben.js", "stamm/vegetation-wiese.js", "stamm/vegetation-baum.js", "stamm/werkstatt-bauen.js", "stamm/siedlung-satz.js", "stamm/siedlung-wege.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "stamm/speicher-*.js", "stamm/dirigent-takt.js", "stamm/feld-dsl.js", "stamm/bild-himmel.js", "voxel-worker.js", "planet-core.js", "phyto-core.js", "fachwerk-core.js", "foundry-core.js"],
+                ungefahren: "das Bildpaar t₀−1 ↔ t₀+1 der Werk-Pixel (S4) schießt nur das Gerät (`__ausgabeAufnahme` wartet headless auf Ruhe); headless zeichnet die Nah-Streu keine Senke — die Stümpfe (S1) und die Pflanzen der Ernte (S2) zählt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r, T, a) => {
+                        const s = r.state;
+                        const C = AnazhRealm;
+                        const wm = s.worldMeta;
+                        const pm = s.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const TAG = C.PEGEL_TAG_S;
+                        const JAHR = 365 * TAG;
+                        let tk = performance.now();
+                        const takt = (n) => {
+                            for (let i = 0; i < n; i++) r._gameLoopTick((tk += 1000 / 60));
+                        };
+                        const baum = (e) => /baum/.test(e._lodSpecies || e.type) && r._istNatur(e);
+                        const ab = (e, p) => Math.hypot(e.position.x - p.x, e.position.z - p.z);
+                        const zaehl = (m, R) => s.architectures.filter((e) => baum(e) && ab(e, m) <= R).length;
+                        const mittel = (L) => ({ x: L.reduce((q, e) => q + e.position.x, 0) / L.length, z: L.reduce((q, e) => q + e.position.z, 0) / L.length });
+                        const stuempfe = () => {
+                            const ns = s.nahStreu;
+                            const Z = new Set();
+                            if (ns) for (const q of ns.senken.values()) if (q.preset === "stumpf") for (const [k, b] of q.bloecke) for (const id of b.ids) if (String(id).startsWith("tat|")) Z.add(k + "#" + id);
+                            return Z.size;
+                        };
+                        const gezeichnet = (q) => {
+                            const ns = s.nahStreu;
+                            const sk = ns && ns.senken.get(q.senke);
+                            const b = sk && sk.bloecke.get(q.key);
+                            return !!b && b.ids.includes(q.id);
+                        };
+                        if (!Array.isArray(wm.taten)) wm.taten = [];
+                        const L0 = wm.taten;
+                        const vorTaten = L0.slice();
+                        const own = (m) => Object.prototype.hasOwnProperty.call(r, m);
+                        const alt = { sz: s.spielZeit, tod: s.timeOfDay, wetter: s.weather, pos: [pm.x, pm.y, pm.z], nf: r._nachwuchsFaellig, sn: Array.isArray(r._sukzessionNeu) ? r._sukzessionNeu.slice() : r._sukzessionNeu, nass: wm.nassTage, nu: r._naesseUhr, naesse: s.naesse, hatTritt: Object.prototype.hasOwnProperty.call(wm, "tritt"), tritt: wm.tritt, wk: s.wegeKarte, schw: r._trittSchwach, schrieb: r._trittSchrieb, sprung: r._weltUhrSprung, perf: s.perfRegulator, sav: [own("_scheduleEditSave"), r._scheduleEditSave], arch: s.architectures.length };
+                        const aus = { s1: {}, s2: {}, s3: {}, s4: {}, s5: {}, s6: {}, s7: {} };
+                        const gebaut = [];
+                        const gefaellt = [];
+                        const geerntet = [];
+                        let mitte = null;
+                        let R = 0;
+                        let e2 = null;
+                        let pfadF = null;
+                        const pfadBei = (t) => {
+                            if (!pfadF) return null;
+                            const [t0, w0, s0, c0] = [wm.tritt, s.wegeKarte, r._trittSchwach, r._trittSchrieb];
+                            const zeit = s.spielZeit;
+                            try {
+                                wm.tritt = JSON.parse(JSON.stringify(pfadF));
+                                s.wegeKarte = { trittGemalt: new Map(), trittOffen: new Set(), stufen: [{}] };
+                                r._trittSchwach = new Map();
+                                s.spielZeit = t;
+                                r._trittErholen();
+                                return Object.keys(wm.tritt).length;
+                            } finally {
+                                [wm.tritt, s.wegeKarte, r._trittSchwach, r._trittSchrieb] = [t0, w0, s0, c0];
+                                s.spielZeit = zeit;
+                            }
+                        };
+                        s.perfRegulator = false;
+                        r._scheduleEditSave = () => {};
+                        try {
+                            await r._fadenQuelle();
+                            const an = await r._planetAnker();
+                            const [PB, PL] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
+                            const planetB = async () => {
+                                const o = await r._planetAuftrag({ type: "planet-ort", samen: a.samenB, breite: PB, laenge: PL, zeitMa: 0 });
+                                return JSON.stringify([o.land, o.hoeheM, o.kuesteKm, o.delta]);
+                            };
+                            const pB0 = await planetB();
+                            const pB00 = await planetB();
+                            // S1: zehn Fällungen am nächsten Wald des Spielers, der Gegenlauf an einer Gruppe ≥ 3 R fern ohne Fällung
+                            const B0 = s.architectures.filter(baum);
+                            if (B0.length < 2 * a.faellungen) return { fehler: "nur " + B0.length + " Bäume des Walds in der Welt (zwei Gruppen zu " + a.faellungen + " verlangt)" };
+                            const kern = B0.slice().sort((x, y) => ab(x, pm) - ab(y, pm))[0].position;
+                            const ziel = B0.slice().sort((x, y) => ab(x, kern) - ab(y, kern)).slice(0, a.faellungen);
+                            mitte = mittel(ziel);
+                            R = Math.max(...ziel.map((e) => ab(e, mitte))) + 1;
+                            const fern = B0.filter((e) => ab(e, mitte) >= 3 * R + 10).sort((x, y) => ab(x, mitte) - ab(y, mitte))[0];
+                            const gZiel = fern ? B0.slice().sort((x, y) => ab(x, fern.position) - ab(y, fern.position)).slice(0, a.faellungen) : [];
+                            const gMitte = gZiel.length ? mittel(gZiel) : null;
+                            const gR = gZiel.length ? Math.max(...gZiel.map((e) => ab(e, gMitte))) + 1 : 0;
+                            Object.assign(aus.s1, { mitte: [Math.round(mitte.x), Math.round(mitte.z)], R: r3(R), vor: zaehl(mitte, R), gVor: gMitte ? zaehl(gMitte, gR) : null, stuempfeVor: stuempfe() });
+                            const n0 = L0.length;
+                            const tFaell = s.spielZeit;
+                            for (const e of ziel) {
+                                const p = { x: e.position.x, z: e.position.z };
+                                r.harvestArchitecture(e, "welt");
+                                if (!s.architectures.includes(e)) gefaellt.push(p);
+                            }
+                            const fa = L0.slice(n0).filter((q) => q && q.tat === "faellen");
+                            aus.s1.gefaellt = gefaellt.length;
+                            aus.s1.taten = fa.length;
+                            pm.set(mitte.x, r._voxelSurfaceY(mitte.x, mitte.z) + 1.8, mitte.z);
+                            // S2: die Ernte der Hand (die Tat `ernten`) an den Pflanzen der Nah-Streu nächst der Lichtung
+                            const ns = s.nahStreu;
+                            const kand = [];
+                            if (ns)
+                                for (const [senke, q] of ns.senken)
+                                    if (q.ernte && q.preset !== "stumpf")
+                                        for (const [key, b] of q.bloecke) {
+                                            const k = ns.kacheln.get(key);
+                                            if (k) for (const it of k.items) if (b.ids.includes(it.id) && Math.hypot(it.x - mitte.x, it.z - mitte.z) < 30) kand.push({ q: { senke, key, id: it.id }, d: Math.hypot(it.x - mitte.x, it.z - mitte.z) });
+                                        }
+                            kand.sort((p, q) => p.d - q.d);
+                            for (const c of kand) {
+                                if (geerntet.length >= a.pflanzen) break;
+                                if (geerntet.some((g) => g.key === c.q.key && g.id === c.q.id)) continue;
+                                if (r._streuNehmen(c.q.key, c.q.id)) geerntet.push(c.q);
+                            }
+                            // das Werk: ein Haus über den Satz (der EINE Stempel) 30–120 m von der Lichtung
+                            const frei = (x, z, Rr) => r._landAt(x, z, 0.2) && !r._nassAt(x, z) && !r._blockerUmPlatz(x, z, Rr, []).length;
+                            let HP = null;
+                            for (let d = 30; d <= 120 && !HP; d += 15)
+                                for (let k = 0; k < 12 && !HP; k++) {
+                                    const x = mitte.x + d * Math.cos((k * Math.PI) / 6);
+                                    const z = mitte.z + d * Math.sin((k * Math.PI) / 6);
+                                    if (frei(x, z, 8)) HP = { x, z };
+                                }
+                            let haus = null;
+                            const tHaus = s.spielZeit;
+                            const tagHaus = r._weltTag();
+                            if (HP) {
+                                HP.y = r._voxelSurfaceY(HP.x, HP.z);
+                                const a0 = s.architectures.length;
+                                const halt = s.weatherEffectTime;
+                                s.weatherEffectTime = 0;
+                                try {
+                                    r.dslRun(["spawn_studio", "haus", ["at", HP.x, HP.y, HP.z], 1, 7], { source: "human" });
+                                } finally {
+                                    s.weatherEffectTime = halt;
+                                }
+                                for (const e of s.architectures.slice(a0)) gebaut.push(e);
+                                haus = gebaut.find((e) => /haus/.test(e.type)) || null;
+                            }
+                            // DIE STUNDE im Takt des Spiels: drei Schritte zu 50 s Welt-Uhr (unter WELT_UHR_SPRUNG_S), je zehn Takte
+                            for (let k = 0; k < 3; k++) {
+                                r._weltUhrNimm(s.spielZeit + TAG / 72);
+                                takt(a.takte);
+                            }
+                            const base = s.spielZeit;
+                            const stumpfKachel = () => {
+                                let arten = null;
+                                try {
+                                    arten = r._nahStreuArten();
+                                } catch (_e) {
+                                    arten = null;
+                                }
+                                if (!Array.isArray(arten)) return null;
+                                const K = C.NAH_STREU.kachel;
+                                let n = 0;
+                                for (const k of new Set(gefaellt.map((p) => Math.floor(p.x / K) + "," + Math.floor(p.z / K)))) {
+                                    const [tx, tz] = k.split(",").map(Number);
+                                    n += (r._tatStuempfe(tx, tz, arten) || []).length;
+                                }
+                                return n;
+                            };
+                            Object.assign(aus.s1, { nach: zaehl(mitte, R), gNach: gMitte ? zaehl(gMitte, gR) : null, stuempfe: stuempfe(), stuempfeKachel: stumpfKachel(), senken: s.nahStreu ? s.nahStreu.senken.size : 0, stunde: r3((base - tFaell) / (TAG / 24)) });
+                            // der Pfad: der Schritt eines Leibs 60 Gänge über 10 Zellen der Lichtung (im Sandkasten des Felds, nie gemalt)
+                            {
+                                const [t0, w0, s0, c0] = [wm.tritt, s.wegeKarte, r._trittSchwach, r._trittSchrieb];
+                                try {
+                                    wm.tritt = {};
+                                    s.wegeKarte = null;
+                                    r._trittSchwach = new Map();
+                                    const leib = {};
+                                    const Z = C.TRITT.zelleM;
+                                    for (let g = 0; g < a.pfadGaenge; g++)
+                                        for (let c = 0; c < a.pfadZellen; c++) {
+                                            const i = g % 2 ? a.pfadZellen - 1 - c : c;
+                                            r._tritt(leib, mitte.x + (i + 0.5) * Z, mitte.z + 0.25 * Z, true, false);
+                                        }
+                                    pfadF = JSON.parse(JSON.stringify(wm.tritt));
+                                } finally {
+                                    [wm.tritt, s.wegeKarte, r._trittSchwach, r._trittSchrieb] = [t0, w0, s0, c0];
+                                }
+                            }
+                            const stoffe = (haus && haus._alterStoffe) || [];
+                            const schluessel = (e) => (e && stoffe.length ? r._werkAlterSchluessel(e, stoffe) : null);
+                            const regler = (e) => {
+                                const o = e ? r._werkAlterOv(e, e.studioOv || null) : null;
+                                return o && Number.isFinite(o.verwitterung) ? o.verwitterung : null;
+                            };
+                            const key0 = schluessel(haus);
+                            const ov0 = regler(haus);
+                            const alter0 = haus ? r._werkAlter(haus).zeit : null;
+                            const waldBei = () => (gefaellt.length ? gefaellt.filter((p) => r._baumAlter(p.x, p.z) === 1).length / gefaellt.length : 0);
+                            // der Gegenlauf ohne Sprung (S2/S3): die Pflanzen fehlen, die Stümpfe stehen, das Werk ist jung
+                            const zurueckOhne = geerntet.filter((q) => !r._geerntetIn(q.key).has(q.id)).length;
+                            const waldNull = waldBei();
+                            const pfadNull = pfadBei(base);
+                            aus.s3.spurenOhne = 100 * ((0 + (pfadNull > 0 ? 1 : 0) + (waldNull === 1 ? 1 : 0) + 0) / 4);
+                            // DIE SUKZESSIONS-REIHE des ersten Stumpfs: die Stufen zu Stunden nach der Tat (der Leser `_sukzession`)
+                            const I = r._tatIndex();
+                            const faK = fa.map((q) => ({ x: q.x, z: q.z, h: q.h, dauerH: I.dauer.get(q) }));
+                            const reihe = fa.length ? a.reiheStunden.map((dh) => r._sukzession(fa[0], fa[0].h + dh)) : [];
+                            const stufenR = new Set(reihe.map((z) => z.stufe));
+                            const steigt = reihe.every((z, i) => !i || z.stubben >= reihe[i - 1].stubben);
+                            // +1 SPIELJAHR: der Nachwuchs heilt und pflanzt (der Takt des Spiels liest dieselbe Funktion)
+                            s.spielZeit = base + a.jahr * JAHR;
+                            r._tickScatterRegrow(r._weltStunde());
+                            const zurueck = geerntet.filter((q) => !r._geerntetIn(q.key).has(q.id)).length;
+                            const alterJahr = haus ? r._werkAlter(haus).zeit : null;
+                            const keyJahr = schluessel(haus);
+                            // DER RELOAD über den Speicher-Weg: der Stand geschrieben (JSON) und gelesen, das Haus steht aus ihm auf
+                            let reload = false;
+                            let alterR = null;
+                            let keyR = null;
+                            if (haus) {
+                                const stand = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
+                                const hs = (stand.architectures || []).find((q) => q && q.id === haus.id);
+                                if (hs) {
+                                    r.removeArchitecture(haus);
+                                    e2 = r._bauAusStand(hs, stand, null);
+                                    reload = !!e2 && e2 !== haus;
+                                    if (e2) {
+                                        alterR = r._werkAlter(e2).zeit;
+                                        keyR = schluessel(e2);
+                                    }
+                                }
+                            }
+                            s.spielZeit = base;
+                            takt(a.takte);
+                            Object.assign(aus.s2, {
+                                gepflueckt: geerntet.length,
+                                zurueck,
+                                zurueckOhne,
+                                gezeichnet: geerntet.filter(gezeichnet).length,
+                                stufen: stufenR.size,
+                                steigt,
+                                reihe: reihe.map((z) => z.stubben),
+                                reload,
+                                alterNull: alter0,
+                                alterJahr,
+                                alterReload: alterR,
+                                keyJahr,
+                                keyReload: keyR,
+                                baeumeNachJahr: zaehl(mitte, R),
+                                tatenNachJahr: L0.filter((q) => fa.includes(q)).length,
+                            });
+                            // S3: Sprung 10 und 100 Jahre — Bau gealtert, Pfad verfestigt, Lichtung Wald, Name am Ort
+                            const spurenJe = a.jahre.map((N) => {
+                                s.spielZeit = base + N * JAHR;
+                                const ovN = regler(e2);
+                                const bau = e2 && ((key0 != null && schluessel(e2) !== key0) || (ovN != null && ovN !== ov0)) ? 1 : 0;
+                                const alterN = e2 ? r._werkAlter(e2).zeit : null;
+                                const wald = waldBei() === 1 ? 1 : 0;
+                                s.spielZeit = base;
+                                const pf = pfadBei(base + N * JAHR);
+                                const pfad = pf > 0 && pf >= pfadNull ? 1 : 0;
+                                return { N, bau, alterN, regler: ovN, pfad, pfadZellen: pf, wald, name: 0, prozent: 100 * ((bau + pfad + wald) / 4) };
+                            });
+                            s.spielZeit = base;
+                            Object.assign(aus.s3, { je: spurenJe, pfadNull, stoffe: stoffe.length, key0, regler0: ov0, typ: haus ? haus.type : null, koerper: !!(e2 && e2.mesh) });
+                            // S4: rückwärts vor die Tat (ein Tag vor dem Akt des Hauses) und zurück
+                            {
+                                const tVor = tHaus - a.rueckTage * TAG;
+                                s.spielZeit = tVor;
+                                const s4 = { aktTag: r3(tagHaus), rueckTag: r3(r._weltTag()), werk: !!e2, werkDaVor: e2 && s.architectures.includes(e2) ? 1 : 0, alterVor: e2 ? r._werkAlter(e2).zeit : null, keyVor: schluessel(e2) };
+                                s.spielZeit = base;
+                                s4.pfadVorGang = pfadBei(tFaell - a.rueckTage * TAG);
+                                s.spielZeit = base + a.rueckTage * TAG;
+                                s4.werkDaNach = e2 && s.architectures.includes(e2) ? 1 : 0;
+                                s.spielZeit = base;
+                                if (a.bild && e2 && e2.mesh) {
+                                    try {
+                                        const cam = s.camera;
+                                        const hp = e2.position;
+                                        const schuss = async () => {
+                                            cam.position.set(hp.x + 24, hp.y + 10, hp.z + 24);
+                                            cam.lookAt(hp.x, hp.y + 3, hp.z);
+                                            cam.updateMatrixWorld(true);
+                                            return (await window.__ausgabeAufnahme(480, 270)).u8;
+                                        };
+                                        const diff = (p, q, i) => Math.abs(p[i] - q[i]) + Math.abs(p[i + 1] - q[i + 1]) + Math.abs(p[i + 2] - q[i + 2]);
+                                        await window.__weltStehtNach(() => takt(1), 600);
+                                        const mit = await schuss();
+                                        e2.mesh.visible = false;
+                                        const ohne = await schuss();
+                                        e2.mesh.visible = true;
+                                        const maske = [];
+                                        for (let i = 0; i < mit.length; i += 4) if (diff(mit, ohne, i) > 24) maske.push(i);
+                                        s.spielZeit = tVor;
+                                        const vor = await schuss();
+                                        s.spielZeit = base + a.rueckTage * TAG;
+                                        const nach = await schuss();
+                                        s.spielZeit = base;
+                                        const anteil = (img) => (maske.length ? (100 * maske.filter((i) => diff(img, ohne, i) > 24).length) / maske.length : null);
+                                        Object.assign(s4, { maske: maske.length, pixelVor: r3(anteil(vor)), pixelNach: r3(anteil(nach)) });
+                                    } catch (e) {
+                                        s4.bildFehler = String((e && e.message) || e).slice(0, 200);
+                                    } finally {
+                                        if (e2 && e2.mesh) e2.mesh.visible = true;
+                                        s.spielZeit = base;
+                                    }
+                                }
+                                aus.s4 = s4;
+                            }
+                            // S5: Sprung 10³ Jahre — die Grabung an der Tat, die Narbe, die Akten der Orte
+                            {
+                                s.spielZeit = base + a.jahrtausend * JAHR;
+                                const narbe = gefaellt.length ? Math.max(...gefaellt.map((p) => r._narbeAt(p.x, p.z))) : null;
+                                const akten = Object.values(wm.settlementCells || {}).reduce((q, c) => q + ((c && c.akten) || []).filter((k) => k && k.t >= tFaell && /faell|bau|werk|haus|ernt/.test(String(k.type))).length, 0);
+                                aus.s5 = { jahre: a.jahrtausend, werkSteht: e2 && s.architectures.includes(e2) ? 1 : 0, alter: e2 ? r._werkAlter(e2).zeit : null, narbe: r3(narbe), tatenUebrig: L0.filter((q) => fa.includes(q)).length, akten, staedte: r._staedte().length, bewohnerOrte: (r._bewohnerSiedlungen || new Map()).size, schicht: null, schichtOhne: null, tat: gefaellt.length > 0 || !!e2 };
+                                s.spielZeit = base;
+                            }
+                            // S6: 100 Zufallspaare (Tat, Zeit) bis 10⁹ a vor und nach dem Akt
+                            {
+                                let sd = 20261119;
+                                const rnd = () => (sd = (sd * 1103515245 + 12345) % 2147483648) / 2147483648;
+                                const taten = [{ werk: true }].concat(faK);
+                                const paare = [];
+                                for (let i = 0; i < a.paare; i++) {
+                                    const t = taten[Math.min(taten.length - 1, Math.floor(rnd() * taten.length))];
+                                    const dJ = (rnd() < 0.5 ? -1 : 1) * Math.pow(10, -3 + 12 * rnd());
+                                    let ok = false;
+                                    let st = null;
+                                    if (t.werk) {
+                                        s.spielZeit = tHaus + dJ * JAHR;
+                                        const da = !!e2 && s.architectures.includes(e2);
+                                        st = e2 ? r._werkAlter(e2).zeit : null;
+                                        ok = da === dJ >= 0;
+                                    } else {
+                                        s.spielZeit = tFaell + dJ * JAHR;
+                                        const b = r._baumAlter(t.x, t.z);
+                                        const stumpfSoll = dJ >= 0 && dJ * 8760 < t.dauerH;
+                                        ok = stumpfSoll ? b < 1 : b === 1;
+                                        st = b;
+                                    }
+                                    paare.push({ w: !!t.werk, dJ, ok, st });
+                                }
+                                s.spielZeit = base;
+                                const w = paare.filter((p) => p.w && p.dJ >= 0).sort((p, q) => p.dJ - q.dJ);
+                                const stufeFalsch = w.filter((p, i) => i && p.st < w[i - 1].st).length;
+                                const richtig = paare.filter((p) => p.ok).length - stufeFalsch;
+                                aus.s6 = { paare: paare.length, richtig, widersprueche: paare.length - richtig, stufeFalsch, vorAkt: paare.filter((p) => p.dJ < 0).length, zeitenVerschieden: new Set(paare.map((p) => p.dJ)).size, taten: taten.length, werkVorFalsch: paare.filter((p) => p.w && p.dJ < 0 && !p.ok).length, stumpfFalsch: paare.filter((p) => !p.w && !p.ok).length };
+                            }
+                            // S7: Planet B (eine andere Saat des Fadens) vor ↔ nach den Taten dieser Welt
+                            {
+                                const pB1 = await planetB();
+                                aus.s7 = { planetB: [pB0, pB1].filter(Boolean).length, taten: gefaellt.length + geerntet.length + (gebaut.length ? 1 : 0), bAnders: pB1 !== pB0 ? 1 : 0, bOhneAnders: pB00 !== pB0 ? 1 : 0, samenB: a.samenB };
+                            }
+                            return aus;
+                        } finally {
+                            s.spielZeit = alt.sz;
+                            const weg = gebaut.concat(e2 ? [e2] : []);
+                            for (const e of weg) if (s.architectures.includes(e)) r.removeArchitecture(e);
+                            L0.length = 0;
+                            for (const q of vorTaten) L0.push(q);
+                            wm.taten = L0;
+                            r._tatGen = (r._tatGen | 0) + 1;
+                            r._nachwuchsFaellig = alt.nf;
+                            r._sukzessionNeu = alt.sn;
+                            for (const p of gefaellt) {
+                                r._nahStreuTat({ tat: "faellen", x: p.x, z: p.z });
+                                r._waldNachwuchs(p.x - 1, p.z - 1, p.x + 1, p.z + 1);
+                            }
+                            for (const q of geerntet) r._nahStreuTat({ tat: "ernten", kachel: q.key, x: 0, z: 0 });
+                            if (alt.hatTritt) wm.tritt = alt.tritt;
+                            else delete wm.tritt;
+                            s.wegeKarte = alt.wk;
+                            r._trittSchwach = alt.schw;
+                            r._trittSchrieb = alt.schrieb;
+                            wm.nassTage = alt.nass;
+                            r._naesseUhr = alt.nu;
+                            s.naesse = alt.naesse;
+                            r._weltUhrSprung = alt.sprung;
+                            s.timeOfDay = alt.tod;
+                            pm.set(alt.pos[0], alt.pos[1], alt.pos[2]);
+                            if (s.weather !== alt.wetter && window.__wetterSetzen) window.__wetterSetzen(alt.wetter);
+                            if (alt.sav[0]) r._scheduleEditSave = alt.sav[1];
+                            else delete r._scheduleEditSave;
+                            try {
+                                takt(a.ruhe);
+                            } catch (_e) {
+                                aus.ruheFehler = String((_e && _e.message) || _e).slice(0, 120);
+                            }
+                            s.spielZeit = alt.sz;
+                            s.timeOfDay = alt.tod;
+                            s.perfRegulator = alt.perf;
+                            aus.wieder = { baeume: mitte ? zaehl(mitte, R) : null, baeumeVor: aus.s1.vor, taten: wm.taten.length === vorTaten.length, arch: s.architectures.length - alt.arch, uhr: s.spielZeit === alt.sz, wetter: s.weather === alt.wetter };
+                        }
+                    };
+                    const x = await S(seite, { faellungen: U[1].faellungen, takte: 10, pflanzen: U[2].pflanzen, jahr: U[2].jahre, reiheStunden: [0, 2, 6, 12, 24, 48, 72, 96, 144, 240, 8760], jahre: U[3].jahre, pfadGaenge: 60, pfadZellen: 10, rueckTage: U[4].rueckTage, jahrtausend: U[5].jahre, paare: U[6].paare, samenB: U[7].samenB, bild: !M.swift, ruhe: 20 });
+                    if (x.fehler) throw new Error(x.fehler);
+                    const [s1, s2, s3, s4, s5, s6, s7] = [x.s1, x.s2, x.s3, x.s4, x.s5, x.s6, x.s7];
+                    const je = s3.je || [];
+                    const spuren = je.length ? Math.min(...je.map((q) => q.prozent)) : null;
+                    const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                    return {
+                        sprossen: {
+                            1: { werte: { baumAnteilProzent: s1.vor > 0 ? r3((100 * s1.nach) / s1.vor) : null, stuempfe: s1.stuempfe }, zeuge: { gefaellt: s1.gefaellt, taten: s1.taten, vor: s1.vor, nach: s1.nach, gVor: s1.gVor, gNach: s1.gNach, stunde: s1.stunde, mitte: s1.mitte, stuempfeKachel: s1.stuempfeKachel, senken: s1.senken, wieder: x.wieder } },
+                            2: {
+                                werte: { pflanzenZurueckProzent: s2.gepflueckt ? r3((100 * s2.zurueck) / s2.gepflueckt) : null, sukzessionsStufen: s2.steigt ? s2.stufen : 0, alterDiffTage: s2.alterReload != null && s2.alterJahr != null ? r3(Math.abs(s2.alterReload - s2.alterJahr)) : null },
+                                zeuge: { gepflueckt: s2.gepflueckt, zurueck: s2.zurueck, zurueckOhne: s2.zurueckOhne, gezeichnet: s2.gezeichnet, reload: s2.reload, alterNull: s2.alterNull, alterJahr: s2.alterJahr, reihe: s2.reihe, keyJahr: s2.keyJahr, keyReload: s2.keyReload, baeumeNachJahr: s2.baeumeNachJahr },
+                            },
+                            3: { werte: { spurenProzent: spuren }, zeuge: { jahre: je.map((q) => q.N), spurenOhne: s3.spurenOhne, pfadNull: s3.pfadNull, je, stoffe: s3.stoffe, regler0: s3.regler0, typ: s3.typ, koerper: s3.koerper } },
+                            4: {
+                                werte: { werkPixelVorProzent: s4.pixelVor != null ? s4.pixelVor : undefined, werkPixelNachProzent: s4.pixelNach != null ? s4.pixelNach : undefined, werkDaVor: s4.werkDaVor, werkDaNach: s4.werkDaNach },
+                                zeuge: { werk: s4.werk, rueckTag: s4.rueckTag, aktTag: s4.aktTag, maske: s4.maske || 0, bildFehler: s4.bildFehler, pfadVorGang: s4.pfadVorGang },
+                                nicht: "kein Sprung rückwärts: die Welt-Uhr geht nie zurück (`_weltUhrNimm` nimmt die spätere); an der zurückgestellten Uhr (Tag " + s4.rueckTag + " vor dem Akt am Tag " + s4.aktTag + ") steht das Werk " + (s4.werkDaVor ? "da" : "nicht da") + " mit Alter " + s4.alterVor + " d (ungealtert statt abwesend), der Pfad vor seinem Gang trägt " + s4.pfadVorGang + " Zellen",
+                            },
+                            5: {
+                                werte: { sprungJahre: s5.jahre, schichtAbweichungM: undefined, bewohnerNennen: s5.akten, narbe: s5.narbe, werkSteht: s5.werkSteht },
+                                zeuge: { jahre: s5.jahre, tat: s5.tat, schicht: s5.schicht, schichtOhne: s5.schichtOhne, tatenUebrig: s5.tatenUebrig, staedte: s5.staedte },
+                                nicht: "keine Schicht, keine Megastadt: nach 10³ a trägt die Taten-Liste " + s5.tatenUebrig + " der Fällungen (geheilt fällt die Tat aus der Liste), die Narbe " + s5.narbe + ", das Haus steht (" + s5.werkSteht + ") mit Alter " + s5.alter + " d als Werk, nie als Ruine; " + s5.staedte + " Städte, " + s5.akten + " Akten der Orte nennen eine Tat",
+                            },
+                            6: {
+                                werte: { paare: s6.paare, richtigProzent: s6.paare ? r3((100 * s6.richtig) / s6.paare) : null, widersprueche: s6.widersprueche },
+                                zeuge: { paare: s6.paare, zeitenVerschieden: s6.zeitenVerschieden, taten: s6.taten, vorAkt: s6.vorAkt, werkVorFalsch: s6.werkVorFalsch, stumpfFalsch: s6.stumpfFalsch, stufeFalsch: s6.stufeFalsch },
+                                nicht: "Milliarden Taten auf jedem Planeten: die Taten leben nur in der EINEN Welt (" + s6.taten + " in der Fahrt), kein Planet des Fadens trägt eine Tat; von " + s6.paare + " Paaren " + s6.werkVorFalsch + " mit dem Werk vor seinem Akt, " + s6.stumpfFalsch + " mit einem Baum ohne seinen Stumpf",
+                            },
+                            7: {
+                                werte: { taten: s7.taten, sichtbarRichtigProzent: s7.taten ? (100 * (s7.bAnders ? 1 : 0)) : null },
+                                zeuge: { planetB: s7.planetB, taten: s7.taten, bOhneAnders: s7.bOhneAnders, bAnders: s7.bAnders },
+                                nicht: "keine Tat reist zwischen Welten: Planet B (Saat " + s7.samenB + ") antwortet nach " + s7.taten + " Taten dieser Welt " + (s7.bAnders ? "anders" : "byte-gleich") + " — planet-ort nimmt samen, breite, laenge, zeitMa, keine Tat, kein Licht, kein Signal",
+                            },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: {
+                        u: { faellungen: 10, stunden: 1 },
+                        soll: [K.soll(ZR, 1, "Baum-Anteil ≤ 30 %", { key: "baumAnteilProzent", einheit: "%" }), K.soll(ZR, 1, "Stümpfe sichtbar", { key: "stuempfe", rel: "≥", zahl: 10, quelleFeld: "umfang", quelleWort: "10 Fällungen" })],
+                        zeuge: zeugeLichtung,
+                        zeugeText: "zehn Fällungen über die Ernte, Taten im Feld, der Gegenlauf ohne Fällung bleibt Wald",
+                        taeter: "stamm/werkstatt-bauen.js harvestArchitecture · stamm/vegetation-wiese.js `_tatStuempfe` (der Stumpf der Tat)",
+                        gruen: { werte: { baumAnteilProzent: 16.7, stuempfe: 10 }, zeuge: LICHTUNG_Z },
+                        attrappen: [
+                            { name: "Anteil 16,7 % ohne gefällten Baum (nur gezählt)", roh: { werte: { baumAnteilProzent: 16.7, stuempfe: 10 }, zeuge: Object.assign({}, LICHTUNG_Z, { gefaellt: 0, taten: 0 }) } },
+                            { name: "der Gegenlauf ohne Fällung lichtet ebenso (die Stunde, nicht die Tat)", roh: { werte: { baumAnteilProzent: 16.7, stuempfe: 10 }, zeuge: Object.assign({}, LICHTUNG_Z, { gNach: 2 }) } },
+                        ],
+                    },
+                    2: {
+                        u: { jahre: 1, pflanzen: 10, reload: "Stand geschrieben und gelesen" },
+                        soll: [
+                            K.soll(ZR, 2, "Pflanzen zurück", { key: "pflanzenZurueckProzent", rel: "≥", zahl: 100, einheit: "%", refQuelle: "alle gepflückten Pflanzen nach dem Spieljahr (Beleg der Karte: 138/138, feld.K4 · stoffe.K5)" }),
+                            K.soll(ZR, 2, "Sukzessions-Reihe", { key: "sukzessionsStufen", rel: "≥", zahl: 3, refQuelle: "eine Reihe: Stumpf, Jungwuchs, Baum — mindestens drei steigende Stufen der Sukzession (vegetation-wiese `_sukzession`, SUKZESSION.jugend)" }),
+                            K.soll(ZR, 2, "Alter nach Reload gleich", { key: "alterDiffTage", rel: "=", zahl: 0, einheit: "d", refQuelle: "gleich: das Alter des Werks vor dem Reload minus nach dem Lesen des Stands = 0 Tage" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.gepflueckt >= 5)) return "nur " + (z.gepflueckt || 0) + " Pflanzen gepflückt";
+                            if (!(z.zurueckOhne < z.zurueck)) return "die Pflanzen sind auch ohne das Jahr zurück (" + z.zurueckOhne + " von " + z.gepflueckt + "): keine Ernte in der Welt";
+                            if (z.reload !== true) return "kein Reload: das Werk stand nicht aus dem Stand wieder auf";
+                            if (!(z.alterJahr > z.alterNull)) return "das Werk altert im Jahr nicht (" + z.alterNull + " → " + z.alterJahr + " d)";
+                            return null;
+                        },
+                        zeugeText: "gepflückt, ein Jahr geheilt, das Werk aus dem Stand wieder aufgestanden",
+                        taeter: "stamm/vegetation-wiese.js `_tickScatterRegrow` · stamm/siedlung-satz.js `_werkAlter` · stamm/speicher-laden.js `_bauAusStand`",
+                        gruen: { werte: { pflanzenZurueckProzent: 100, sukzessionsStufen: 5, alterDiffTage: 0 }, zeuge: { gepflueckt: 10, zurueck: 10, zurueckOhne: 0, reload: true, alterNull: 0, alterJahr: 365 } },
+                        attrappen: [
+                            { name: "Alter gleich ohne Reload (dasselbe Werk zweimal gelesen)", roh: { werte: { pflanzenZurueckProzent: 100, sukzessionsStufen: 5, alterDiffTage: 0 }, zeuge: { gepflueckt: 10, zurueck: 10, zurueckOhne: 0, reload: false, alterNull: 0, alterJahr: 365 } } },
+                            { name: "Pflanzen zurück ohne Sprung (nie gepflückt)", roh: { werte: { pflanzenZurueckProzent: 100, sukzessionsStufen: 5, alterDiffTage: 0 }, zeuge: { gepflueckt: 10, zurueck: 10, zurueckOhne: 10, reload: true, alterNull: 0, alterJahr: 365 } } },
+                            { name: "das Werk altert nicht (0 = 0 nach dem Reload)", roh: { werte: { pflanzenZurueckProzent: 100, sukzessionsStufen: 5, alterDiffTage: 0 }, zeuge: { gepflueckt: 10, zurueck: 10, zurueckOhne: 0, reload: true, alterNull: 0, alterJahr: 0 } } },
+                        ],
+                    },
+                    3: {
+                        u: { jahre: [10, 100] },
+                        soll: [K.soll(ZR, 3, "alle Spuren gleichzeitig", { key: "spurenProzent", rel: "≥", zahl: 100, einheit: "%", refQuelle: "alle = die vier Spuren der Tiefe (Bau gealtert, Pfad verfestigt, Lichtung Wald, Name am Ort) zugleich, bei 10 und bei 100 Jahren" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(Array.isArray(z.jahre) && z.jahre.includes(10) && z.jahre.includes(100))) return "der Sprung spannte nicht 10 und 100 Jahre (" + JSON.stringify(z.jahre) + ")";
+                            if (!(z.pfadNull > 0)) return "kein Pfad getreten (0 Zellen vor dem Sprung)";
+                            if (!(z.spurenOhne < ((roh.werte || {}).spurenProzent || 0))) return "der Gegenlauf ohne Sprung zeigt dieselben Spuren (" + z.spurenOhne + " %)";
+                            return null;
+                        },
+                        zeugeText: "Haus, Pfad und Lichtung vor dem Sprung jung, nach 10 und 100 Jahren gealtert",
+                        taeter: "stamm/siedlung-wege.js `_trittErholen` (der Pfad erholt sich, nie fest) · kein Leser eines Namens am Ort",
+                        leser: "stamm/siedlung-wege.js:1764 `_trittErholen` — der Pfad erholt sich in `TRITT.erholTage`, kein Gang verfestigt ihn; stamm/siedlung-satz.js:795 `_werkAlter` — das Alter des Werks; kein Leser nennt einen Ort beim Namen",
+                        unklar: "„im Soll ihrer Leiter“ nennt keine Leiter je Spur — Vorschlag: je Spur ihr Soll als Zahl (Werk-Stufe > 0, Pfad-Stufe ≥ der des Gangs, Baum-Alter 1 am Stumpf, ein Name am Ort) bei 10 und 100 Jahren.",
+                        gruen: { werte: { spurenProzent: 100 }, zeuge: { jahre: [10, 100], spurenOhne: 25, pfadNull: 10 } },
+                        attrappen: [
+                            { name: "alle Spuren schon ohne Sprung", roh: { werte: { spurenProzent: 100 }, zeuge: { jahre: [10, 100], spurenOhne: 100, pfadNull: 10 } } },
+                            { name: "kein Pfad getreten", roh: { werte: { spurenProzent: 100 }, zeuge: { jahre: [10, 100], spurenOhne: 25, pfadNull: 0 } } },
+                            { name: "nur 10 Jahre gesprungen", roh: { werte: { spurenProzent: 100 }, zeuge: { jahre: [10], spurenOhne: 25, pfadNull: 10 } } },
+                        ],
+                    },
+                    4: {
+                        u: { rueckTage: 1 },
+                        soll: [K.soll(ZR, 4, "Werk-Pixel 0 %", { key: "werkPixelVorProzent", rel: "=", zahl: 0, einheit: "%" }), K.soll(ZR, 4, "≥ 95 %", { key: "werkPixelNachProzent", einheit: "%" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (z.werk !== true) return "kein Werk gebaut";
+                            if (!(z.rueckTag < z.aktTag)) return "die Uhr ging nicht vor den Akt (Tag " + z.rueckTag + " ↔ Akt " + z.aktTag + ")";
+                            if (!(z.maske > 0)) return "keine Werk-Pixel im Bild (die Maske mit ↔ ohne Werk ist leer)";
+                            return null;
+                        },
+                        zeugeText: "die Uhr vor dem Akt, die Werk-Maske aus dem Bild mit ↔ ohne Werk",
+                        taeter: "stamm/siedlung-satz.js `_werkAlter` (die Zeit klemmt auf 0) · stamm/dirigent-takt.js `_weltUhrNimm` (kein Sprung zurück)",
+                        nicht: "kein Sprung rückwärts; ein Werk vor seinem Akt steht ungealtert da",
+                        leser: "stamm/siedlung-satz.js:795 `_werkAlter` — die Zeit klemmt auf 0 (Math.max), kein Werk fehlt vor seiner Geburt; stamm/dirigent-takt.js:1758 `_weltUhrNimm` — die Uhr geht nie zurück",
+                        gruen: { werte: { werkPixelVorProzent: 0, werkPixelNachProzent: 98 }, zeuge: { werk: true, rueckTag: -1, aktTag: 0, maske: 900 } },
+                        attrappen: [
+                            { name: "0 % ↔ 98 % ohne Werk-Maske (kein Bild)", roh: { werte: { werkPixelVorProzent: 0, werkPixelNachProzent: 98 }, zeuge: { werk: true, rueckTag: -1, aktTag: 0, maske: 0 } } },
+                            { name: "die Uhr ging nicht zurück", roh: { werte: { werkPixelVorProzent: 0, werkPixelNachProzent: 98 }, zeuge: { werk: true, rueckTag: 0, aktTag: 0, maske: 900 } } },
+                        ],
+                    },
+                    5: {
+                        u: { jahre: 1000, megastadt: true },
+                        soll: [
+                            K.soll(ZR, 5, "Grabung bei t+1000", { key: "sprungJahre", rel: "≥", zahl: 1000, einheit: "a" }),
+                            K.soll(ZR, 5, "Schicht ±1 m", { key: "schichtAbweichungM", einheit: "m", ref: 0, refQuelle: "die Tiefe, in der die Tat liegt (Abweichung 0 m in derselben Fahrt)" }),
+                            K.soll(ZR, 5, "Bewohner nennen sie", { key: "bewohnerNennen", rel: "≥", zahl: 1, refQuelle: "mindestens ein Bewohner nennt die Tat (der Richter verlangt die Nennung)" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.jahre >= 1000)) return "der Sprung spannte " + (z.jahre || 0) + " Jahre";
+                            if (z.tat !== true) return "keine Tat in der Welt (die Grabung trifft nichts Getanes)";
+                            if (z.schichtOhne != null) return "die Grabung ohne Tat trifft dieselbe Schicht (" + z.schichtOhne + " m)";
+                            return null;
+                        },
+                        zeugeText: "die Tat geschah, 10³ a gesprungen, die Grabung ohne Tat leer",
+                        taeter: "stamm/vegetation-wiese.js `_tickScatterRegrow` (die geheilte Tat fällt) · stamm/siedlung-bewohner.js `_bewohnerZeuge` (die Akte altert aus)",
+                        nicht: "keine Schicht, keine Megastadt",
+                        leser: "stamm/vegetation-wiese.js:2269 `_tickScatterRegrow` — die geheilte Tat fällt aus der Liste, keine Schicht bleibt; stamm/siedlung-bewohner.js:2170 aktenMax — die Akte altert aus, kein Bewohner nennt eine Tat",
+                        gruen: { werte: { sprungJahre: 1000, schichtAbweichungM: 0.4, bewohnerNennen: 3 }, zeuge: { jahre: 1000, tat: true, schichtOhne: null } },
+                        attrappen: [
+                            { name: "Schicht ±0,4 m ohne Tat", roh: { werte: { sprungJahre: 1000, schichtAbweichungM: 0.4, bewohnerNennen: 3 }, zeuge: { jahre: 1000, tat: false, schichtOhne: null } } },
+                            { name: "die Grabung ohne Tat trifft dieselbe Schicht", roh: { werte: { sprungJahre: 1000, schichtAbweichungM: 0.4, bewohnerNennen: 3 }, zeuge: { jahre: 1000, tat: true, schichtOhne: 0.4 } } },
+                        ],
+                    },
+                    6: {
+                        u: { paare: 100, jahreBis: 1e9 },
+                        soll: [
+                            K.soll(ZR, 6, "N = 100 Zufallspaare", { key: "paare", rel: "≥", zahl: 100 }),
+                            K.soll(ZR, 6, "richtige Sichtbarkeit und Alters-Stufe = 100 %", { key: "richtigProzent", rel: "=", zahl: 100, einheit: "%" }),
+                            K.soll(ZR, 6, "Widersprüche = 0", { key: "widersprueche", rel: "=", zahl: 0 }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.paare >= 100)) return "nur " + (z.paare || 0) + " Paare gefragt";
+                            if (!(z.zeitenVerschieden >= 50)) return "die Paare tragen " + (z.zeitenVerschieden || 0) + " Zeiten (kein Zufall über die Geschichte)";
+                            if (!(z.taten >= 2)) return "nur " + (z.taten || 0) + " Taten in den Paaren";
+                            if (!(z.vorAkt >= 10)) return "nur " + (z.vorAkt || 0) + " Paare vor dem Akt (rückwärts nie gefragt)";
+                            return null;
+                        },
+                        zeugeText: "100 Paare über 10⁻³…10⁹ a vor und nach dem Akt, Werk und Stümpfe",
+                        taeter: "stamm/vegetation-wiese.js `_baumAlter` · stamm/siedlung-satz.js `_werkAlter` (kein Werk fehlt vor seinem Akt)",
+                        nicht: "Milliarden Taten auf jedem Planeten",
+                        leser: "stamm/vegetation-wiese.js:2269 `_tickScatterRegrow` — die geheilte Tat fällt aus der Liste (ein Sprung zurück findet keinen Stumpf); stamm/siedlung-satz.js:795 `_werkAlter` — kein Werk fehlt vor seinem Akt; voxel-worker.js:1175 planetOrtAuftrag — kein Planet trägt eine Tat",
+                        gruen: { werte: { paare: 100, richtigProzent: 100, widersprueche: 0 }, zeuge: { paare: 100, zeitenVerschieden: 100, taten: 11, vorAkt: 48 } },
+                        attrappen: [
+                            { name: "100 % aus einer Zeit (kein Sprung)", roh: { werte: { paare: 100, richtigProzent: 100, widersprueche: 0 }, zeuge: { paare: 100, zeitenVerschieden: 1, taten: 11, vorAkt: 48 } } },
+                            { name: "nur Paare nach der Tat (rückwärts nie gefragt)", roh: { werte: { paare: 100, richtigProzent: 100, widersprueche: 0 }, zeuge: { paare: 100, zeitenVerschieden: 100, taten: 11, vorAkt: 0 } } },
+                        ],
+                    },
+                    7: {
+                        u: { samenB: "same-saat-0", taten: 100 },
+                        soll: [
+                            K.soll(ZR, 7, "100 Taten", { key: "taten", rel: "≥", zahl: 100 }),
+                            K.soll(ZR, 7, "Sichtbarkeit auf B zur richtigen Zeit", { key: "sichtbarRichtigProzent", rel: "≥", zahl: 100, einheit: "%", refQuelle: "jede der 100 Taten auf B nach ihrer Laufzeit sichtbar, nie davor (der Richter nennt keine Quote: alle)" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.planetB >= 2)) return "Planet B antwortete nicht vor und nach den Taten";
+                            if (!(z.taten >= 1)) return "keine Tat auf A";
+                            if (z.bOhneAnders) return "Planet B ändert sich auch ohne Tat (Rauschen, keine Kopplung)";
+                            return null;
+                        },
+                        zeugeText: "Planet B vor ↔ nach den Taten, ohne Tat ruhig",
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Tat einer anderen Welt im Eingang)",
+                        nicht: "keine Tat reist zwischen Welten",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — nimmt samen, breite, laenge, zeitMa, keine Tat einer anderen Welt, kein Licht, kein Signal",
+                        gruen: { werte: { taten: 100, sichtbarRichtigProzent: 100 }, zeuge: { planetB: 2, taten: 100, bOhneAnders: 0 } },
+                        attrappen: [
+                            { name: "100 % ohne Planet B", roh: { werte: { taten: 100, sichtbarRichtigProzent: 100 }, zeuge: { planetB: 0, taten: 100, bOhneAnders: 0 } } },
+                            { name: "B ändert sich auch ohne Tat", roh: { werte: { taten: 100, sichtbarRichtigProzent: 100 }, zeuge: { planetB: 2, taten: 100, bOhneAnders: 1 } } },
+                        ],
+                    },
+                },
+            },
+
+            // ════════ same.kopplung.terraform — Technik formt den Planeten ════════
+            [TF]: {
+                sek: 20,
+                pfad: ["stamm/bild-himmel.js", "stamm/wasser-hydro.js", "stamm/gelaende-chunks.js", "stamm/siedlung-ort.js", "voxel-worker.js", "planet-core.js", "gelaende-core.js", "fachwerk-core.js", "foundry-core.js"],
+                ungefahren: "die Bilder (S1 Bildpaar über der Stadt, S3 die ungewollte Folge, S5 die Folge der Halte, S6 das Orbitbild der Fremdwelt-Probe R10) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r, T, a) => {
+                        const s = r.state;
+                        const wm = s.worldMeta || {};
+                        const pm = s.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        await r._fadenQuelle();
+                        const an = await r._planetAnker();
+                        const [B, L] = [(an.breite * 180) / Math.PI, (an.laenge * 180) / Math.PI];
+                        const samen = r._planetSamen();
+                        const ort = (sa, b, l, z) => r._planetAuftrag({ type: "planet-ort", samen: sa, breite: b, laenge: l, zeitMa: z });
+                        const aus = {};
+                        // S1: der Regen — das Feld des Worts (der EINE Leser `_weatherFieldFor`, ohne Ort) an Ziel und Lee, das Wort des
+                        // Regens als einziges Werkzeug; der Planet trägt den Regen je Lage (planet-ort regenQuote), zweimal gefragt
+                        const wort = s.weather;
+                        const feld = (w) => r._weatherFieldFor(w, true).rain;
+                        const zO = await ort(samen, B, L, 0);
+                        const lO = await ort(samen, B, L + a.leeGrad, 0);
+                        const zO2 = await ort(samen, B, L, 0);
+                        aus.s1 = { wort, eingriff: a.eingriff, zielMit: feld(a.eingriff), zielOhne: feld(wort), leeMit: feld(a.eingriff), leeOhne: feld(wort), planetZiel: r3(zO.delta.wetter.regenQuote), planetLee: r3(lO.delta.wetter.regenQuote), gegen: r3(zO2.delta.wetter.regenQuote - zO.delta.wetter.regenQuote), leeGrad: a.leeGrad };
+                        // S2: die Wüste — der trockenste Land-Ort im Kreis 4° um den Anker, Sprung +100 a im Faden (der Gegenlauf ohne Eingriff)
+                        const pts = [[B, L]];
+                        for (let i = 0; i < a.wuestePunkte; i++) pts.push([B + 4 * Math.sin((i * 2 * Math.PI) / a.wuestePunkte), L + 4 * Math.cos((i * 2 * Math.PI) / a.wuestePunkte)]);
+                        const O0 = await Promise.all(pts.map(([b, l]) => ort(samen, b, l, 0)));
+                        let w = -1;
+                        O0.forEach((o, i) => {
+                            if (o.land && (w < 0 || o.delta.wetter.regenQuote < O0[w].delta.wetter.regenQuote)) w = i;
+                        });
+                        if (w >= 0) {
+                            const o0 = O0[w];
+                            const o1 = await ort(samen, pts[w][0], pts[w][1], a.jahre * 1e-6);
+                            const decke = [r3(o0.delta.wuchs.decke), r3(o1.delta.wuchs.decke)];
+                            aus.s2 = { punkte: O0.length, wueste: pts[w].map(r3), regen: r3(o0.delta.wetter.regenQuote), decke, wald: [r3(o0.delta.wuchs.wald), r3(o1.delta.wuchs.wald)], kueste: [r3(o0.kuesteKm), r3(o1.kuesteKm)], land: [o0.land, o1.land], sprung: a.jahre, neuesUfer: o1.kuesteKm < o0.kuesteKm - 1 && o1.delta.wuchs.decke > o0.delta.wuchs.decke ? 1 : 0, bleibt: Math.abs(o1.delta.wuchs.decke - o0.delta.wuchs.decke) <= 0.01 ? 1 : 0, mitOhne: 0 };
+                        } else aus.s2 = { punkte: O0.length, fehler: "kein Land-Ort im Kreis 4° um den Anker" };
+                        // S3: das Klima — die Antwort des Fadens über 100 a ohne Eingriff am Anker, die Temperatur am Spieler
+                        const k0 = await ort(samen, B, L, 0);
+                        const k1 = await ort(samen, B, L, a.jahre * 1e-6);
+                        const glieder = (o) => Object.keys(o).concat(Object.keys(o.delta || {}), Object.keys((o.delta && o.delta.klima) || {})).filter((k) => /co2|aerosol|spiegel|albedo|kohlen|eingriff|techn|ziv/i.test(k)).length;
+                        aus.s3 = { dSommerK: r3(k1.delta.klima.sommer - k0.delta.klima.sommer), dWinterK: r3(k1.delta.klima.winter - k0.delta.klima.winter), tempHier: r3(r._temperaturAt(r._voxelSurfaceY(pm.x, pm.z), 0)), eingriffe: glieder(k0) + glieder(k1), jahre: a.jahre };
+                        // S4: Industrie im All — die Bücher der Foundry, die Städte, das Wachstum der Orte
+                        const rec = Object.keys((r._foundry && r._foundry.recipes) || {});
+                        const cells = Object.values(wm.settlementCells || {});
+                        aus.s4 = { buecher: rec.length, aufzuege: rec.filter((k) => /aufzug|elevator|asteroid|orbit|rakete|raumschiff|weltraum/i.test(k)).length, staedte: r._staedte().length, orte: cells.length, wachsend: cells.filter((c) => c && c.wachs).length, bauten: s.architectures.length };
+                        // S5: zehn Halte über 10⁴ a am Anker — Meeresspiegel, Bewuchs, Höhe, Luftdruck (wenn der Faden ihn trägt)
+                        const halte = await Promise.all(Array.from({ length: a.halte }, (_, k) => ort(samen, B, L, ((k * a.jahre5) / (a.halte - 1)) * 1e-6)));
+                        const reihe = halte.map((o) => [r3(o.delta.meer.waterLevelM), r3(o.delta.wuchs.decke), r3(o.hoeheM), o.delta.luft || o.delta.druck || null]);
+                        aus.s5 = { halte: halte.length, reihe, druck: reihe.filter((q) => q[3] != null).length, meerWechsel: new Set(reihe.map((q) => q[0])).size, deckeWechsel: new Set(reihe.map((q) => q[1])).size, jahre: a.jahre5 };
+                        // S6: 100 Saaten am Anker, je Saat das Paar Zeit 0 ↔ 300 a (der Gegenlauf je Saat ohne Eingriff)
+                        const S6 = await Promise.all(
+                            Array.from({ length: a.saaten }, async (_, i) => {
+                                const sa = "same-saat-" + i;
+                                const o0 = await ort(sa, B, L, 0);
+                                const o1 = await ort(sa, B, L, 0.0003);
+                                return [o0.hoeheM, glieder(o0) + glieder(o1), o1.hoeheM !== o0.hoeheM ? 1 : 0];
+                            })
+                        );
+                        const hm = S6.reduce((q, x) => q + x[0], 0) / S6.length;
+                        aus.s6 = { n: S6.length, streuungM: r3(Math.sqrt(S6.reduce((q, x) => q + (x[0] - hm) * (x[0] - hm), 0) / S6.length)), eingriffe: S6.filter((x) => x[1] > 0).length, zeitAendert: S6.reduce((q, x) => q + x[2], 0) };
+                        return aus;
+                    };
+                    const x = await S(seite, { eingriff: U[1].eingriff, leeGrad: U[1].leeGrad, wuestePunkte: 24, jahre: U[2].jahre, halte: U[5].halte, jahre5: U[5].jahre, saaten: U[6].saaten });
+                    const bild = await M.auge("same-terraform", { ort: "wiese" });
+                    const [s1, s2, s3, s4, s5, s6] = [x.s1 || {}, x.s2 || {}, x.s3 || {}, x.s4 || {}, x.s5 || {}, x.s6 || {}];
+                    const d = (p, q) => (Number.isFinite(p) && Number.isFinite(q) ? Math.round((p - q) * 1e3) / 1e3 : null);
+                    const ohne = (s1.zielOhne || 0) + (s1.leeOhne || 0);
+                    return {
+                        sprossen: {
+                            1: {
+                                werte: { zielMehr: d(s1.zielMit, s1.zielOhne), leeWeniger: d(s1.leeMit, s1.leeOhne), bilanzVerh: ohne > 0 ? Math.round((((s1.zielMit || 0) + (s1.leeMit || 0)) / ohne) * 1e3) / 1e3 : null },
+                                zeuge: s1,
+                                auge: bild,
+                                nicht: "kein Eingriff lenkt den Regen einer Region: das Wetter ist EIN Wort der ganzen Welt (Feld „" + s1.wort + "“ Regen " + s1.zielOhne + ", mit dem Wort „" + s1.eingriff + "“ " + s1.zielMit + " — an Ziel und Lee derselbe Leser ohne Ort); der Planet trägt Regen je Lage (Ziel " + s1.planetZiel + ", Lee " + s1.planetLee + "), ohne Eingang für einen Eingriff",
+                            },
+                            2: {
+                                werte: { sprungJahre: s2.sprung, neuesUfer: s2.neuesUfer, wuesteBleibt: s2.bleibt },
+                                zeuge: { sprung: s2.sprung, gegen: s2.bleibt, mitOhne: s2.mitOhne, punkte: s2.punkte, decke: s2.decke, kueste: s2.kueste, wueste: s2.wueste },
+                                nicht: "kein Eingriff legt ein Meer an oder begrünt eine Wüste: am trockensten Land-Ort " + JSON.stringify(s2.wueste) + "° (Regen-Quote " + s2.regen + ") ändert der Sprung +100 a den Bewuchs " + JSON.stringify(s2.decke) + " und die Küste " + JSON.stringify(s2.kueste) + " km nur im Gang des Planeten — planet-ort trägt keinen Eingriff",
+                            },
+                            3: {
+                                werte: { kJeVerdopplung: undefined, folgen: 0, gegenlaufSommerK: s3.dSommerK },
+                                zeuge: s3,
+                                auge: bild,
+                                nicht: "keine Geo-Technik: der Faden trägt " + s3.eingriffe + " Glieder für CO₂, Aerosol oder Spiegel; ohne Eingriff ändern 100 a den Sommer am Anker um " + s3.dSommerK + " K; die Temperatur der Welt liest nur die Höhe (" + s3.tempHier + " °C am Spieler)",
+                            },
+                            4: {
+                                werte: { bauAbfallProzent: undefined, stoffBilanzVerh: undefined, aufzuege: s4.aufzuege, staedte: s4.staedte },
+                                zeuge: { aufzuege: s4.aufzuege, gekappt: false, bauMit: s4.wachsend, bauOhne: s4.wachsend, buecher: s4.buecher, orte: s4.orte },
+                                nicht: "keine Industrie im All: " + s4.aufzuege + " von " + s4.buecher + " Büchern der Foundry tragen Aufzug, Asteroid oder Orbit; " + s4.staedte + " Städte, " + s4.wachsend + " von " + s4.orte + " Orten wachsen — kein Stoff fließt vom All",
+                            },
+                            5: {
+                                werte: { halte: s5.halte, folgeRichtig: undefined, faelltZurueck: undefined, meerWechsel: s5.meerWechsel },
+                                zeuge: s5,
+                                auge: bild,
+                                nicht: "keine tote Welt, kein Terraforming: " + s5.halte + " Halte über " + s5.jahre + " a am Anker tragen " + s5.druck + " Werte des Luftdrucks, " + s5.meerWechsel + " Stände des Meers, " + s5.deckeWechsel + " des Bewuchses — der Planet geht seinen Gang, kein Eingriff, den man abbrechen könnte",
+                            },
+                            6: {
+                                werte: { rang: undefined, saaten: s6.n, eingriffe: s6.eingriffe },
+                                zeuge: s6,
+                                auge: bild,
+                                nicht: "keine Zivilisation formt ihren Planeten: " + s6.eingriffe + " von " + s6.n + " Saaten tragen ein Glied eines Eingriffs (Streuung der Höhe " + s6.streuungM + " m, 300 a ändern " + s6.zeitAendert + ")",
+                            },
+                        },
+                    };
+                },
+                sprossen: {
+                    1: {
+                        u: { eingriff: "rainy", leeGrad: 0.05, region: "Stadt" },
+                        soll: [
+                            K.soll(TF, 1, "Regenmenge im Zielgebiet höher", { key: "zielMehr", rel: ">", zahl: 0, refQuelle: "höher: Regen im Ziel mit Eingriff minus ohne > 0 (dieselbe Saat, derselbe Ort)" }),
+                            K.soll(TF, 1, "im Lee tiefer", { key: "leeWeniger", rel: "<", zahl: 0, refQuelle: "tiefer: Regen im Lee mit Eingriff minus ohne < 0 (dieselbe Saat, derselbe Ort)" }),
+                            K.soll(TF, 1, "Bilanz ±10 %", { key: "bilanzVerh", ref: 1, refQuelle: "Erde: Wolkenimpfung verlagert Niederschlag, Ziel + Lee mit ÷ ohne = 1 (WMO 2017, Weather Modification)" }),
+                        ],
+                        auge: { pose: "2 km über der Stadt, Ziel und Lee im Bild, mit ↔ ohne Eingriff an derselben Saat (heute kein Eingriff: geschossen an der Wiese)", vorbild: "Radar-Bilder geimpfter Wolken (Wolkenimpfung, WMO 2017), Prüfer-Satz R11" },
+                        taeter: "stamm/bild-himmel.js `_weatherFieldFor` (der Regen ist ein Wort ohne Ort)",
+                        nicht: "kein Eingriff lenkt den Regen einer Region",
+                        leser: "stamm/bild-himmel.js:2820 `_weatherFieldFor` — der Regen ist EIN Wort der ganzen Welt, ohne Ort; voxel-worker.js:1175 planetOrtAuftrag — kein Eingang für einen Eingriff",
+                        gruen: { werte: { zielMehr: 0.3, leeWeniger: -0.25, bilanzVerh: 1.04 }, zeuge: { wort: "cloudy", eingriff: "rainy" } },
+                        attrappen: [{ name: "Ziel nass, Lee trocken aus einer Tafel ohne Welt", roh: { werte: { zielMehr: 0.3, leeWeniger: -0.25, bilanzVerh: 1.04 }, zeuge: {} } }],
+                    },
+                    2: {
+                        u: { flaecheKm2: 1e5, jahre: 100 },
+                        soll: [
+                            K.soll(TF, 2, "Sprung +100 a", { key: "sprungJahre", rel: "≥", zahl: 100, einheit: "a" }),
+                            K.soll(TF, 2, "neues Ufer mit Bewuchs und Siedlung", { key: "neuesUfer", rel: "≥", zahl: 1, refQuelle: "ein neues Ufer: die Küste rückt an das Zielgebiet, dort Bewuchs und eine Siedlung (der Richter nennt keine Zahl: mindestens eins)" }),
+                            K.soll(TF, 2, "die Wüste bleibt", { key: "wuesteBleibt", rel: "=", zahl: 1, refQuelle: "Gegenlauf ohne Eingriff: der Bewuchs der Wüste nach 100 a gleich (1 = bleibt)" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.sprung >= 100)) return "der Sprung spannte " + (z.sprung || 0) + " Jahre";
+                            if (!(z.punkte >= 10)) return "nur " + (z.punkte || 0) + " Orte des Fadens gefragt (keine Wüste gesucht)";
+                            if (z.gegen == null) return "kein Gegenlauf ohne Eingriff gemessen";
+                            if (!(z.mitOhne > 0)) return "der Gegenlauf ohne Eingriff zeigt dasselbe wie mit (kein Eingriff in der Welt)";
+                            return null;
+                        },
+                        zeugeText: "die Wüste des Fadens, +100 a mit ↔ ohne Eingriff",
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Eingriff im Eingang)",
+                        nicht: "kein Eingriff legt ein Meer an",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — nimmt samen, breite, laenge, zeitMa: kein Meer, keine Bewässerung, keine Siedlung im Eingang",
+                        gruen: { werte: { sprungJahre: 100, neuesUfer: 1, wuesteBleibt: 1 }, zeuge: { sprung: 100, gegen: 1, mitOhne: 1, punkte: 25 } },
+                        attrappen: [{ name: "neues Ufer, doch mit = ohne Eingriff", roh: { werte: { sprungJahre: 100, neuesUfer: 1, wuesteBleibt: 1 }, zeuge: { sprung: 100, gegen: 1, mitOhne: 0, punkte: 25 } } }],
+                    },
+                    3: {
+                        u: { eingriffe: ["spiegel", "aerosol", "kohlenstoff"], jahre: 100 },
+                        soll: [K.soll(TF, 3, "2–5 K je Verdopplung", { key: "kJeVerdopplung", einheit: "K" }), K.soll(TF, 3, "≥ 1 ungewollte Folge im Bild", { key: "folgen" })],
+                        auge: { pose: "Orbit über dem Kontinent des Ankers vor ↔ nach dem Eingriff (heute keine Orbit-Pose: geschossen an der Wiese)", vorbild: "Klima-Rechnung 2–5 K je CO₂-Verdopplung (IPCC AR6) und Bilder der Folge (Monsun-Karten), Prüfer-Satz R11" },
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein CO₂, kein Spiegel, kein Aerosol) · stamm/bild-himmel.js `_temperaturAt`",
+                        nicht: "keine Geo-Technik",
+                        leser: "stamm/bild-himmel.js:2874 `_temperaturAt` — liest nur Höhe und Trägheit; voxel-worker.js:1175 planetOrtAuftrag — kein CO₂, kein Spiegel, kein Aerosol im Eingang",
+                        gruen: { werte: { kJeVerdopplung: 3, folgen: 1 }, zeuge: { eingriffe: 1 } },
+                        attrappen: [{ name: "3 K aus einer Tafel ohne Faden", roh: { werte: { kJeVerdopplung: 3, folgen: 1 }, zeuge: {} } }],
+                    },
+                    4: {
+                        u: { aufzug: 1, jahre: 10 },
+                        soll: [
+                            K.soll(TF, 4, "die Bautätigkeit der Stadt fällt binnen Jahren", { key: "bauAbfallProzent", rel: ">", zahl: 0, einheit: "%", refQuelle: "fällt: die Bautätigkeit nach dem Kappen unter der davor (Abfall > 0 % binnen der Jahre des Sprungs)" }),
+                            K.soll(TF, 4, "Stoff-Bilanz ±20 %", { key: "stoffBilanzVerh", ref: 1, refQuelle: "Erhaltung der Masse: Stoff vom All = Stoff in der Stadt (Bilanz 1)" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.aufzuege >= 1)) return "kein Aufzug in der Welt (" + (z.aufzuege || 0) + " Bücher)";
+                            if (z.gekappt !== true) return "der Aufzug wurde nie gekappt (kein Gegenlauf)";
+                            if (!(z.bauMit > z.bauOhne)) return "die Stadt baut gekappt so viel wie mit (" + z.bauOhne + " ↔ " + z.bauMit + ")";
+                            return null;
+                        },
+                        zeugeText: "der Aufzug steht, gekappt fällt die Bautätigkeit",
+                        taeter: "stamm/siedlung-ort.js wachstum (liest keinen Stoff aus dem All)",
+                        nicht: "keine Industrie im All",
+                        leser: "stamm/siedlung-ort.js:2898 wachstum — das Wachstum der Orte liest Chronik, Akten und Furcht, keinen Stoff aus dem All; kein Buch der Foundry trägt Aufzug oder Asteroid",
+                        gruen: { werte: { bauAbfallProzent: 40, stoffBilanzVerh: 1.05 }, zeuge: { aufzuege: 1, gekappt: true, bauMit: 12, bauOhne: 7 } },
+                        attrappen: [
+                            { name: "Abfall 40 % ohne Aufzug", roh: { werte: { bauAbfallProzent: 40, stoffBilanzVerh: 1.05 }, zeuge: { aufzuege: 0, gekappt: true, bauMit: 12, bauOhne: 7 } } },
+                            { name: "gekappt baut die Stadt so viel wie mit", roh: { werte: { bauAbfallProzent: 40, stoffBilanzVerh: 1.05 }, zeuge: { aufzuege: 1, gekappt: true, bauMit: 12, bauOhne: 12 } } },
+                        ],
+                    },
+                    5: {
+                        u: { jahre: 10000, halte: 10, tot: true },
+                        soll: [
+                            K.soll(TF, 5, "10 Halte", { key: "halte", rel: "≥", zahl: 10 }),
+                            K.soll(TF, 5, "in richtiger Folge", { key: "folgeRichtig", rel: "=", zahl: 1, refQuelle: "die Folge, die die Physik verlangt: erst Druck, dann Wasser, dann Bewuchs (1 = jede Folge richtig)" }),
+                            K.soll(TF, 5, "die Welt fällt zurück", { key: "faelltZurueck", rel: "=", zahl: 1, refQuelle: "Gegenlauf Eingriff abgebrochen: die Welt kehrt zum Zustand vor dem Eingriff (1 = fällt zurück)" }),
+                        ],
+                        auge: { pose: "Orbit über der toten Welt an jedem der 10 Halte (heute keine tote Welt, keine Orbit-Pose: geschossen an der Wiese)", vorbild: "Terraforming-Folgen der Planetologie (Mars: Druck → Wasser → Leben, McKay 1991), Prüfer-Satz R11" },
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Luftdruck, kein Eingriff)",
+                        nicht: "keine tote Welt, kein Terraforming",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — trägt keinen Luftdruck und keinen Eingriff (delta: klima, meer, wetter, wuchs, wildnis)",
+                        gruen: { werte: { halte: 10, folgeRichtig: 1, faelltZurueck: 1 }, zeuge: { halte: 10 } },
+                        attrappen: [{ name: "zehn Halte aus einer Tafel", roh: { werte: { halte: 10, folgeRichtig: 1, faelltZurueck: 1 }, zeuge: {} } }],
+                    },
+                    6: {
+                        u: { saaten: 100 },
+                        soll: [K.soll(TF, 6, "Rang ≥ 0,7", { key: "rang" })],
+                        auge: { pose: "Orbitbild je Saat vor ↔ nach dem Eingriff (heute keine Orbit-Pose: geschossen an der Wiese)", vorbild: "Fremdwelt-Probe R10: Prüfer lesen den Eingriff aus dem Orbitbild, Rang ≥ 0,7 (Prüfer-Satz R11)" },
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Eingang einer Zivilisation, die formt)",
+                        nicht: "keine Zivilisation formt ihren Planeten",
+                        leser: "voxel-worker.js:1175 planetOrtAuftrag — kein Eingang einer Zivilisation, die formt",
+                        gruen: { werte: { rang: 0.8 }, zeuge: { n: 100 } },
+                        attrappen: [{ name: "Rang 0,8 ohne Orbitbild", roh: { werte: { rang: 0.8 }, zeuge: {} } }],
                     },
                 },
             },
