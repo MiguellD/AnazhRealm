@@ -111,17 +111,13 @@ class AnazhRealm_bild_schatten {
         return T.max(himmel.add(unten.mul(T.float(1).sub(n.y).mul(0.5))), T.vec3(0));
     }
 
-    // DIE KASKADEN, DEREN SCHATTEN DAS BILD ZEICHNET — für den zweiten Block des Passes (die Sicht des Bildes): `null`, wo der
-    // Renderer keinen Schatten zeichnet (Holz kienspan: r184 baut keine Kaskade, kein Stoff trägt einen Sonnen-Schatten — die Sicht
-    // ist 1, der Block entsteht nie); `false`, solange die Kaskaden nicht geboren sind (`_kaskadenGeburt`: der erste beleuchtete
-    // Stoff legt Lichter, Schatten-Knoten und Karten an — der Pass entsteht mit ihnen); sonst der Knoten der Kaskaden. Schatten
-    // ohne Kaskaden-Knoten (das Vendor-Symbol fehlt) oder ohne ihren weichen Übergang brechen laut: der Block stellt GENAU die Wahl
-    // der Kaskade nach, die `CSMShadowNode._setupFade` trifft.
+    // DIE KASKADEN, DEREN SCHATTEN DAS BILD ZEICHNET — für den zweiten Block des Passes (die Sicht des Bildes), gefragt nur, wo
+    // der Renderer Schatten zeichnet (`_rueckstrahlPass`): `false`, solange die Kaskaden nicht geboren sind (`_kaskadenGeburt`:
+    // der erste beleuchtete Stoff legt Lichter, Schatten-Knoten und Karten an — der Pass entsteht mit ihnen); sonst der Knoten
+    // der Kaskaden. Schatten ohne Kaskaden-Knoten (das Vendor-Symbol fehlt) oder ohne ihren weichen Übergang brechen laut: der
+    // Block stellt GENAU die Wahl der Kaskade nach, die `CSMShadowNode._setupFade` trifft.
     _bildSichtKaskaden() {
-        const st = this.state;
-        const rend = st.renderer;
-        if (!(rend && rend.shadowMap && rend.shadowMap.enabled === true)) return null;
-        const csm = st.csmNode;
+        const csm = this.state.csmNode;
         if (!csm || csm.fade !== true || !Array.isArray(csm.lights) || !Array.isArray(csm._shadowNodes))
             throw new Error(
                 "die Sicht des Bildes: die Kaskaden des Richtlichts fehlen (CSMShadowNode mit `fade`, Vendor-Drift)"
@@ -138,8 +134,11 @@ class AnazhRealm_bild_schatten {
     _rueckstrahlPass() {
         const st = this.state;
         if (st.rueckstrahlPass) return st.rueckstrahlPass;
-        const csm = this._bildSichtKaskaden();
-        if (csm === false) return null;
+        // ZEICHNET DER RENDERER SCHATTEN? Wo nicht (Holz kienspan: r184 baut keine Kaskade, kein Stoff trägt einen Sonnen-Schatten),
+        // entsteht der zweite Block nie und die Sicht ist 1 (`_bildSichtMisst`); wo ja, entsteht der Pass erst mit den Kaskaden
+        const wirft = !!(st.renderer && st.renderer.shadowMap && st.renderer.shadowMap.enabled === true);
+        const csm = wirft && this._bildSichtKaskaden();
+        if (wirft && !csm) return null;
         const T = THREE.TSL;
         const { Fn, Loop, If, float, vec2, vec3, vec4, ivec2, uniform, select, abs, normalize, cross, dot } = T;
         const R = AnazhRealm.RUECKSTRAHL;
