@@ -335,7 +335,6 @@ class AnazhRealm_bild_himmel {
         };
         const positions = new Float32Array(STAR_COUNT * 3);
         const colors = new Float32Array(STAR_COUNT * 3);
-        const sizes = new Float32Array(STAR_COUNT);
         const mags = new Float32Array(STAR_COUNT);
         const warm = new THREE.Color(1.0, 0.92, 0.75); // K/M-Sterne (gelblich)
         const cool = new THREE.Color(0.78, 0.86, 1.0); // O/B-Sterne (bläulich)
@@ -353,22 +352,19 @@ class AnazhRealm_bild_himmel {
             // Hue: mix warm/cool. Helligkeit korreliert leicht mit Groesse.
             const hue = rng();
             tmpCol.copy(cool).lerp(warm, hue);
-            // Mindestgröße 3 px: kleinere Punkte flackern beim langsamen Drehen (Sub-Pixel an/aus).
-            // Kleine Sterne werden DIMMER statt kleiner — die Helligkeit trägt die Variation.
+            // der Rang des Sterns im Feld (derselbe Wurf, der bis licht-eine-skala auch eine Quad-Größe 3–6,5 trug: ein Stern
+            // ist ein PUNKT, sein Fußabdruck ist der des Pixels, `sternPixel` — die Helligkeit trägt die Größenklasse allein)
             const sizeRoll = rng();
-            const size = 3.0 + Math.pow(sizeRoll, 2) * 3.5; // 3..6.5 px, AA-sicher
-            sizes[i] = size;
             // DIE STERNZÄHLUNG (w28-sternhimmel): die Größenklasse aus demselben Wurf nach dem Gesetz des Himmels — die Zahl der
             // Sterne heller als m wächst wie 10^(sternZaehlung · m), geankert an den FIX_COUNT Sternen bis sternMagSchwach. Der
             // alte Wurf (6 − 7·roll³) trug 141 Sterne heller als 0 (der Himmel 4): in der Dämmerung stand ein Nachthimmel.
-            // Die Farbe trägt nur den Ton; die Helligkeit folgt im Stoff aus Größenklasse gegen Grenzgröße (`sichtbar`).
+            // Die Farbe trägt nur den Ton; die Helligkeit folgt aus der Größenklasse (ihr Licht am Auge in der EINEN Skala).
             colors[i * 3] = tmpCol.r;
             colors[i * 3 + 1] = tmpCol.g;
             colors[i * 3 + 2] = tmpCol.b;
             mags[i] = AnazhRealm._sternMag(1 - sizeRoll, FIX_COUNT);
             if (w) {
-                // Ein Wandelstern: dieselbe Kugel-Verteilung, eigene Farbe, eigene Helligkeit, ein Hauch größer.
-                sizes[i] = w.groesse;
+                // Ein Wandelstern: dieselbe Kugel-Verteilung, eigene Farbe, eigene Helligkeit.
                 colors[i * 3] = w.farbe[0];
                 colors[i * 3 + 1] = w.farbe[1];
                 colors[i * 3 + 2] = w.farbe[2];
@@ -384,31 +380,31 @@ class AnazhRealm_bild_himmel {
         const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
 
         const uOpacity = uniform(0.5);
-        // Die Grenzgröße des Himmels (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`): ein Punkt leuchtet, wenn sein Licht über
-        // der Schwelle des Auges steht (½ Klasse unter der Grenzgröße) — und so hell, wie sein Fluss sie übersteigt
-        // (10^(−0,4·Δm), gesättigt über `sternKontrast`): an der Schwelle 0, eine Klasse darüber schon deutlich.
-        const uGrenze = uniform(-10);
+        // DER FUSSABDRUCK EINES PUNKTS (licht-eine-skala, S13): die Kante seines Quads in Welt-Einheiten auf der Stern-Kugel —
+        // `HIMMEL.sternPixel` Pixel des Szenen-Ziels (`_dayNightApplyStarField` schreibt sie aus Blickfeld und Höhe des Ziels).
+        // Die Breite, die das Auge sieht, kommt aus dem Streulicht der Kette, nie aus der Geometrie. Die Sichtbarkeit ist der
+        // Kontrast gegen den Himmel daneben: bis hier dämpfte ein eigener Schwellen-Term (`sternKontrast` über der Grenzgröße)
+        // jeden Punkt, und das Quad von 3–6,5 Einheiten verdünnte sein Licht auf ein Zehntel — bei Mond stand kein Stern.
+        const uFuss = uniform(1);
 
         const planeGeo = new THREE.PlaneGeometry(1, 1);
 
         const starMat = new THREE.MeshBasicNodeMaterial();
+        // die Vorlage des Quads wächst VOR der Instanz-Matrix (Lehre 22): die Instanz trägt Ort und Blick, der Stoff die Kante
+        starMat.positionNode = TSL.positionLocal.mul(uFuss);
         // Soft-Falloff vom Quad-Center: smoothstep(0.5, 0.08, dist) ist die
         // ursprüngliche V8.29-Formel — Quad-uv 0..1 mit Center bei (0.5, 0.5).
         const uv = attribute("uv", "vec2");
         const d = length(uv.sub(vec2(float(0.5), float(0.5))));
         const falloff = smoothstep(float(0.5), float(0.08), d);
-        // Per-Instance Color via Three.js' automatisches `instanceColor`-
-        // Attribute (gesetzt via mesh.setColorAt(i, color), gebunden im
-        // Shader via attribute("instanceColor", "vec3")).
-        const instColor = attribute("instanceColor", "vec3");
-        const ueber = TSL.exp2(
-            uGrenze
-                .sub(attribute("aMag", "float"))
-                .add(0.5)
-                .mul(0.4 * Math.log2(10))
-        ).sub(1.0); // Fluss über der Schwelle
-        const sichtbar = float(1.0).sub(TSL.exp(ueber.max(0.0).mul(-AnazhRealm.HIMMEL.sternKontrast)));
-        starMat.colorNode = vec4(instColor, falloff.mul(uOpacity).mul(sichtbar));
+        // DAS LICHT JE PUNKT trägt die Instanz-Farbe (`setColorAt`): r184 multipliziert sie selbst in die Farbe des Stoffs
+        // (NodeMaterial.setupDiffuseColor, `vInstanceColor`) — EINMAL. Bis licht-eine-skala las der Knoten sie zusätzlich als
+        // Attribut: die Farbe stand im Quadrat (bei Tönen um 1 unsichtbar; mit dem Licht in der EINEN Skala, 10⁻¹⁰ je Punkt,
+        // trug das Quadrat 10⁻²⁰ — kein Stern im Bild, auch mit tausendfachem Licht und einem roten Stoff nicht).
+        // DIE LEUCHTDICHTE DES PUNKTS: sein Licht am Auge (die Instanz-Farbe, lx in der EINEN Skala) ÷ der Raumwinkel seines
+        // Fußabdrucks (Kante² × der Anteil des weichen Abfalls ÷ Radius²) — m 0 in 2 Pixeln Kante bei 810 Zeilen: 0,7 cd/m²
+        const raumwinkel = uFuss.mul(uFuss).mul(AnazhRealm.HIMMEL.sternAbfall / (RADIUS * RADIUS));
+        starMat.colorNode = vec4(TSL.vec3(1).div(raumwinkel), falloff.mul(uOpacity));
 
         // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
         starMat.transparent = true;
@@ -416,6 +412,9 @@ class AnazhRealm_bild_himmel {
         starMat.depthTest = true;
         starMat.blending = THREE.AdditiveBlending;
         starMat.alphaTest = 0.01;
+        // DER STERN STEHT HINTER DER LUFT, NIE IN IHR (licht-eine-skala, S13): wie Sonne und Mond trägt er die Luft der Stoffe
+        // nicht (`scene.fogNode` mischt auf 480 m die Farbe der Luft ins Quad und addierte sie mit ihm auf den Himmel)
+        starMat.fog = false;
         // DoubleSide: Quad-Normale zeigt zum Sphere-Center; falls die Mesh-
         // Rotation in _loopRender (V8.28 sidereal) sie kippt, bleibt das
         // Quad sichtbar.
@@ -430,7 +429,8 @@ class AnazhRealm_bild_himmel {
         // Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
         this.state.starFieldUniforms = {
             opacity: uOpacity,
-            grenze: uGrenze,
+            fuss: uFuss,
+            radius: RADIUS,
         };
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
@@ -447,30 +447,19 @@ class AnazhRealm_bild_himmel {
             tmpPos.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
             toVec.copy(tmpPos).negate().normalize();
             tmpQuat.setFromUnitVectors(fromVec, toVec);
-            const worldSize = sizes[i] * 1.0; // siehe Berechnung im Kommentar oben
-            tmpScale.set(worldSize, worldSize, 1);
+            tmpScale.set(1, 1, 1);
             tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
             starField.setMatrixAt(i, tmpMatrix);
             // DER STERN IST EINE PUNKT-QUELLE (licht-eine-skala): die Größenklasse m trägt die Beleuchtungsstärke
-            // `HIMMEL.sternLx0` · 10^(−0,4·m) am Auge, verteilt auf den Raumwinkel seines Quads (Fläche × Abfall ÷ Radius²) —
-            // seine Leuchtdichte in der EINEN Skala (m 0 auf 3 Einheiten Quad: 0,23 cd/m²). Bis hierher trug jeder Punkt ≤ 0,9
-            // Welt-Einheiten, 14 500 cd/m² im Maßstab der Sonne.
-            const lum =
-                (AnazhRealm.HIMMEL.sternLx0 * 10 ** (-0.4 * mags[i])) /
-                ((worldSize * worldSize * AnazhRealm.HIMMEL.sternAbfall) / (RADIUS * RADIUS)) /
-                __weltLicht.EINHEIT_LX;
+            // `HIMMEL.sternLx0` · 10^(−0,4·m) am Auge in der EINEN Skala; der Stoff teilt sie durch den Raumwinkel seines
+            // Fußabdrucks (`uFuss`). Bis hierher trug jeder Punkt ≤ 0,9 Welt-Einheiten, 14 500 cd/m² im Maßstab der Sonne.
+            const lum = (AnazhRealm.HIMMEL.sternLx0 * 10 ** (-0.4 * mags[i])) / __weltLicht.EINHEIT_LX;
             tmpCol.setRGB(colors[i * 3] * lum, colors[i * 3 + 1] * lum, colors[i * 3 + 2] * lum);
             starField.setColorAt(i, tmpCol);
         }
         starField.instanceMatrix.needsUpdate = true;
         if (starField.instanceColor) starField.instanceColor.needsUpdate = true;
-        // instanceColor auch auf die Geometry binden: setColorAt setzt nur `mesh.instanceColor`, aber TSL
-        // `attribute("instanceColor", "vec3")` sucht in `geometry.attributes` — ohne diese Brücke emittiert
-        // es vec3(0) → schwarze Sterne.
-        if (starField.instanceColor) {
-            planeGeo.setAttribute("instanceColor", starField.instanceColor);
-        }
-        planeGeo.setAttribute("aMag", new THREE.InstancedBufferAttribute(mags, 1));
+        starField.userData.mags = mags; // die Größenklasse je Punkt (Linsen zählen an ihr, was im Bild steht)
         starField.frustumCulled = false;
         // Sterne werfen und empfangen keine Schatten (unendlich ferne Billboards).
         starField.castShadow = false;
@@ -1791,9 +1780,14 @@ class AnazhRealm_bild_himmel {
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
         u.opacity.value = skyMul;
-        if (u.grenze) u.grenze.value = achse.grenze;
+        // der Fußabdruck: `sternPixel` Pixel des Szenen-Ziels auf der Stern-Kugel (Blickfeld ÷ Zeilen × Radius)
+        const cam = this.state.camera;
+        const ziel = this.state.scenePass && this.state.scenePass.renderTarget;
+        if (cam && ziel && ziel.height > 0)
+            u.fuss.value =
+                ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / ziel.height) * u.radius;
         const sf = this.state.starField;
-        if (sf && u.grenze) sf.visible = zeigt;
+        if (sf) sf.visible = zeigt;
     }
 
     // DER DURCHLASS ZUM MOND (S7): derselbe Durchlass der EINEN Atmosphäre wie zur Sonne (`ATMO_RECHNUNG.durchlass`, das Medium
@@ -3285,11 +3279,11 @@ AnazhRealm.HIMMEL = Object.freeze({
         }
         return f;
     })(),
-    sternKontrast: 0.6, // die Sättigung der Punkt-Helligkeit über dem Fluss an der Schwelle (1 − e^(−k · (Fluss/Schwelle − 1)))
+    sternPixel: 2, // die Kante des Punkt-Quads in Pixeln des Szenen-Ziels (sein weicher Abfall füllt 0,29 davon: ≈ 1 Pixel)
     wandelsterne: Object.freeze([
-        Object.freeze({ mag: -4.2, farbe: Object.freeze([1.0, 0.97, 0.88]), groesse: 7.5 }),
-        Object.freeze({ mag: -2.3, farbe: Object.freeze([1.0, 0.94, 0.82]), groesse: 7.0 }),
-        Object.freeze({ mag: -1.0, farbe: Object.freeze([1.0, 0.66, 0.46]), groesse: 6.8 }),
+        Object.freeze({ mag: -4.2, farbe: Object.freeze([1.0, 0.97, 0.88]) }),
+        Object.freeze({ mag: -2.3, farbe: Object.freeze([1.0, 0.94, 0.82]) }),
+        Object.freeze({ mag: -1.0, farbe: Object.freeze([1.0, 0.66, 0.46]) }),
     ]),
     // die Leuchtdichte der Vollmond-Scheibe in cd/m² (≈ 2 500; ihr Licht ADDIERT sich zum Himmel vor ihr — am Tag steht sie
     // als blasser Schleier im Blau, 2 500 gegen ≈ 5 000–8 000 cd/m², nachts als die hellste Fläche des Bilds)
