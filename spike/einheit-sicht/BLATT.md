@@ -240,8 +240,8 @@ ebenfalls 1 Ding anders (Bewohner-Netz), der Dorf-Takt schwankt (eingeschwungen 
    Bündel: das Haupt-Urteil liest nur der Hauptpass (`stamm/siedlung-instanz.js:144` `_sichtHaupt`), jeder Schatten-Pass wählt
    seine Werfer selbst. Ein Haufen, den das Auge nicht sieht, wirft also weiter.
 3. **Der späte Zug liegt vor allem Durchsichtigen.** Er trägt den Stoff seines Satzes (opak; ein durchsichtiger Satz geht nie in
-   die Sicht, `stamm/bild-tiefe.js:172`), steht damit in der OPAKEN Liste, und r184 zeichnet die opake Liste ganz vor
-   `_renderTransparents` (`vendor/three.webgpu.min.js`: `!0===this.opaque&&…this._renderObjects(…),!0===this.transparent&&…
-   this._renderTransparents(…)`). `ordnung` 9997 ordnet ihn nur INNERHALB der opaken Liste: nach allen opaken Körpern und dem
+   die Sicht, `stamm/bild-tiefe.js:172`), steht damit in der OPAKEN Liste, und r184 zeichnet die opake Liste ganz, bevor die
+   durchsichtige beginnt (`vendor/three.webgpu.min.js`: erst `this.opaque` über renderObjects, dann `this.transparent` über
+   renderTransparents). `ordnung` 9997 ordnet ihn nur INNERHALB der opaken Liste: nach allen opaken Körpern und dem
    Auslöser (9996,5), vor Feld-March (9998) und Panorama (9999). Direkt hinter den frühen Zug kann er nicht: seine Argumente
    schreibt erst der Bruch, und der kommt nach den opaken Verdeckern, deren Tiefe die späte Prüfung braucht.
