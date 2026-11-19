@@ -1,13 +1,13 @@
 {
   "stand": "2026-11-19",
-  "kopf": "13b7ec0f",
-  "version": "V18.546.340",
+  "kopf": "fe5b937d",
+  "version": "V18.546.341",
   "skala": "2.0",
   "summe": 219,
   "max": 330,
   "maschine": {
-    "kopf": "13b7ec0f",
-    "zeit": "2026-11-19T00:50:57.345Z",
+    "kopf": "fe5b937d",
+    "zeit": "2026-11-19T01:22:11.516Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -2273,7 +2273,7 @@
           "punkte": 0,
           "staffel": "1 = Kontaktband (0–20 cm) 30–60 % des freien Bodens an Fuß und Sockel an einem Gerät · 2 = auch Stammfuß und Tor-Fuß, klar UND bedeckt, ≤ 0,5 ms an der GTX, beide Geräte",
           "messung": "werkbank bild mit Armlängen-Schüssen auf Fuß des Spielers, Haus-Sockel, Stammfuß und Tor-Fuß, Uhr 0,5, klar und bedeckt.",
-          "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, phyto-core.js +27)",
+          "beleg": "Maschine: 0 — offen: schatten.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +28)",
           "schlupfloch": "Ein in jeden Stoff gemalter dunkler Ring bricht am Hang und am Wasser: vier Familien und bedeckter Himmel, wo nur die Verdeckung trägt.",
           "maschine": true
         },
@@ -4812,7 +4812,7 @@
     },
     {
       "stand": "2026-11-19",
-      "kopf": "13b7ec0f",
+      "kopf": "fe5b937d",
       "summe": 219,
       "max": 330,
       "skala": "2.0",
@@ -4820,7 +4820,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 19.11.2026, Kopf main 13b7ec0f (V18.546.340)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 19.11.2026, Kopf main fe5b937d (V18.546.341)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
