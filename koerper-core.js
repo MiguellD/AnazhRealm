@@ -5223,7 +5223,9 @@
         // Abend am Treff (das eigene Haus bietet den Abend nur mit daheimTreff) und länger (ruheNachH, die Ruhe bleibt vor
         // Mitternacht) — mit daheimTreff allein änderte sich der Tag von 6 der 24 Geselligen im Dorf der Linse, weil die
         // Bindung die meisten schon an den Treff band (main ↔ Kopf, je 15 min); haeuslich: der Abend daheim (jeder Treff
-        // außer Haus × treffMal), kein Besuch (besuch: false), der Morgengang × morgenMal. Wer einen Posten hat (die Rolle
+        // außer Haus × treffMal), der Morgengang × morgenMal — den Besuch behält er: er ist der Weg des Tags (≥ 100 m, mensch.K3
+        // Staffel 2), kein Zug nimmt ihn (bis hier `besuch: false`: der häusliche Wirt, dessen Werk sein Haus ist, ging 3 Wege und
+        // 25 m am Tag — gate:kreatur-takt bewohner, gasthaus #419347). Wer einen Posten hat (die Rolle
         // `regenfest`: der Händler, der Fahrer, die Wache), hält seine Schicht — der Zug verschiebt sein Werk nicht. Bis hier
         // verschob der Same jede Wende nur symmetrisch um ±streuH und die Bindung wählte jeden nach derselben Güte: ein
         // blinder Zuordner traf an 100 Bewohnern eines Dorfs 0,19 (Zufall 0,25), mit dem Zug 0,72 (gate:mensch-zuege).
@@ -5231,7 +5233,7 @@
             anteil: Object.freeze({ gesellig: 0.25, fleissig: 0.25, haeuslich: 0.25, ausgeglichen: 0.25 }),
             gesellig: Object.freeze({ daheimTreff: 0.5, ruheNachH: 1 }),
             fleissig: Object.freeze({ werkVorH: 1, werkNachH: 1.5, mittagAmWerk: true }),
-            haeuslich: Object.freeze({ treffMal: 0.1, besuch: false, morgenMal: 0.5 }),
+            haeuslich: Object.freeze({ treffMal: 0.1, morgenMal: 0.5 }),
             ausgeglichen: Object.freeze({}),
         }),
     });
@@ -5351,7 +5353,7 @@
             platz: platz,
             mahl: wahl("mahl", orte[werk], "mahl", G.daheim, null, G.amWerk),
             abend: wahl("treff", H, "abend", daheimAbend, null, null, treffMal),
-            besuch: Z.besuch === false ? -1 : wahl("besuch", H, "besuch", null, [H, orte[platz]]),
+            besuch: wahl("besuch", H, "besuch", null, [H, orte[platz]]),
         };
     }
     // DER PLAN DER STUNDE: orte = {heim, werk, platz, mahl, abend, besuch} sind die Orte des Menschen, wie der Wirt sie nach
@@ -5381,6 +5383,10 @@
         var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
         // der gesellige Abend dauert länger (ruheNachH); die Ruhe bleibt vor Mitternacht seiner Stunde
         if (Z.ruheNachH) ruhe = Math.max(ruhe, Math.min(ruhe + Z.ruheNachH, 23.75));
+        // der Zug verschiebt Wenden, er nimmt dem Tag keinen Weg (der Morgengang: 4–10 Wege je Tag): das längere Werk des Fleißigen
+        // endet besuchH vor der Ruhe — der Abend bleibt. Bis hier lief das Werk des fleißigen Wirts (10–23 Uhr + werkNachH) über
+        // seine Ruhe 23,6 hinaus: am Tag aus `tagesPlan` (je 0,02 h, 4 000 Samen) trug er ohne Besuch 3 Wege
+        if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
         var heim = orte.heim,
             besuch = orte.besuch;
         var W = G.regen,
