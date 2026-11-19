@@ -12,35 +12,35 @@
    "fische": 27,
    "meiden": {
     "stand": [
-     -300.973,
-     -817.576
+     -300.969,
+     -817.58
     ],
     "vorher": 12,
     "spielerAmStand": 0,
-    "naechsterM": 4.812,
+    "naechsterM": 4.764,
     "heim": 12
    },
    "bilder": [
     {
      "wo": "unter dem Spiegel",
-     "saeule": 0.597,
+     "saeule": 0.598,
      "abstand": 0.8,
-     "bett": 0.019,
+     "bett": 0.016,
      "posen": 2,
      "kamera": [
-      -300.604,
+      -300.617,
       25.711,
-      -816.864,
-      -301.343,
+      -816.85,
+      -301.356,
       25.505,
-      -817.171
+      -817.156
      ],
      "klasse": "^tier:fisch",
      "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f68dbf09-radeon\\luftwasser.K3_2-bach-1.png",
      "fehler": null,
      "klassen": {
       "tier:fisch": {
-       "pixel": 3717,
+       "pixel": 3508,
        "objekte": 1
       }
      }
@@ -48,12 +48,12 @@
     {
      "wo": "vom Ufer",
      "kamera": [
-      -305.389,
+      -305.399,
       28.831,
-      -812.806,
-      -302.019,
+      -812.788,
+      -302.029,
       25.478,
-      -816.5
+      -816.482
      ],
      "klasse": "^tier:fisch",
      "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\f68dbf09-radeon\\luftwasser.K3_2-bach-2.png",
@@ -61,7 +61,7 @@
      "klassen": {}
     }
    ],
-   "sek": 39.2
+   "sek": 39.4
   }
  },
  "fehler": []

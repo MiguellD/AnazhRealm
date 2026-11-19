@@ -24,7 +24,7 @@ console.log("BOE-ZEIT " + JSON.stringify(erg));
 fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 })() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-radeon\vegetation.K2_1.json 7804
 [linse-gpu] amd/rdna-3
-BOE-ZEIT {"abnahme":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.1 m · Luma 85.5 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.342 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3","mutante":null,"dt":0.25,"nahAnteil":0.5349609375,"tempo":10.416666666666668,"kamm":{"t":25.55,"boe":1.1499993836170879,"v":405.97441619809865,"boden":0.00010364794353170203},"tal":{"t":48.8,"boe":0.2500001854256985,"v":68.34222808581251,"boden":0.00009894878649953275},"nah":21.3984375,"ueber":405.97441619809865,"lauf":5.940322867848855,"rot":[]}
+BOE-ZEIT {"abnahme":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.1 m · Luma 85.5 σ 39.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.342 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3","mutante":null,"dt":0.25,"nahAnteil":0.5349565972222222,"tempo":10.416666666666668,"kamm":{"t":25.55,"boe":1.1499993836170879,"v":405.97661917267146,"boden":0.00010364878446135568},"tal":{"t":48.8,"boe":0.2500001854256985,"v":68.34235187181773,"boden":0.00009894958930338901},"nah":21.398263888888888,"ueber":405.97661917267146,"lauf":5.940344342845661,"rot":[]}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
