@@ -1,7 +1,7 @@
 {
  "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
  "geraet": "gtx",
- "zeit": "2026-11-19T13:26:51.244Z",
+ "zeit": "2026-11-19T13:51:09.279Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.erleben.spieler.wegfindung#1": {
@@ -20461,6 +20461,2759 @@
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.sport.koerper#1",
    "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#2": {
+   "gruen": true,
+   "zahl": "S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "gpu": "nvidia/pascal",
+   "konsum": "k0b359c5c29fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 67.3,
+   "fremd": {
+    "s": 69.2,
+    "takte": 31,
+    "fremdS": 26.09,
+    "kerne": 0.377,
+    "fensterKerne": 0.489,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.72
+     ]
+    ],
+    "dienerS": 25.66,
+    "diener": [
+     [
+      "dwm.exe",
+      11.73
+     ],
+     [
+      "System",
+      7.41
+     ]
+    ],
+    "geraetS": 51.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.8
+     ],
+     [
+      "svchost.exe",
+      14.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 149.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:28:52.333Z",
+   "abdruck": "45e5dc273c73",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#3": {
+   "gruen": false,
+   "zahl": "S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner in 20 Saaten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner in 20 Saaten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0b359c5c29fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 67.3,
+   "fremd": {
+    "s": 69.2,
+    "takte": 31,
+    "fremdS": 26.09,
+    "kerne": 0.377,
+    "fensterKerne": 0.489,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.72
+     ]
+    ],
+    "dienerS": 25.66,
+    "diener": [
+     [
+      "dwm.exe",
+      11.73
+     ],
+     [
+      "System",
+      7.41
+     ]
+    ],
+    "geraetS": 51.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.8
+     ],
+     [
+      "svchost.exe",
+      14.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 149.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:28:52.333Z",
+   "abdruck": "7b71fb1a6963",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0b359c5c29fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 67.3,
+   "fremd": {
+    "s": 69.2,
+    "takte": 31,
+    "fremdS": 26.09,
+    "kerne": 0.377,
+    "fensterKerne": 0.489,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.72
+     ]
+    ],
+    "dienerS": 25.66,
+    "diener": [
+     [
+      "dwm.exe",
+      11.73
+     ],
+     [
+      "System",
+      7.41
+     ]
+    ],
+    "geraetS": 51.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.8
+     ],
+     [
+      "svchost.exe",
+      14.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 149.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:28:52.333Z",
+   "abdruck": "1519598d47ad",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0b359c5c29fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 67.3,
+   "fremd": {
+    "s": 69.2,
+    "takte": 31,
+    "fremdS": 26.09,
+    "kerne": 0.377,
+    "fensterKerne": 0.489,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.72
+     ]
+    ],
+    "dienerS": 25.66,
+    "diener": [
+     [
+      "dwm.exe",
+      11.73
+     ],
+     [
+      "System",
+      7.41
+     ]
+    ],
+    "geraetS": 51.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.8
+     ],
+     [
+      "svchost.exe",
+      14.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 149.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:28:52.333Z",
+   "abdruck": "59a633cc470b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0b359c5c29fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 67.3,
+   "fremd": {
+    "s": 69.2,
+    "takte": 31,
+    "fremdS": 26.09,
+    "kerne": 0.377,
+    "fensterKerne": 0.489,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.72
+     ]
+    ],
+    "dienerS": 25.66,
+    "diener": [
+     [
+      "dwm.exe",
+      11.73
+     ],
+     [
+      "System",
+      7.41
+     ]
+    ],
+    "geraetS": 51.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.8
+     ],
+     [
+      "svchost.exe",
+      14.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 149.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:28:52.333Z",
+   "abdruck": "356bdb8ec1bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#7": {
+   "gruen": false,
+   "zahl": "S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0b359c5c29fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 67.3,
+   "fremd": {
+    "s": 69.2,
+    "takte": 31,
+    "fremdS": 26.09,
+    "kerne": 0.377,
+    "fensterKerne": 0.489,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.72
+     ]
+    ],
+    "dienerS": 25.66,
+    "diener": [
+     [
+      "dwm.exe",
+      11.73
+     ],
+     [
+      "System",
+      7.41
+     ]
+    ],
+    "geraetS": 51.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.8
+     ],
+     [
+      "svchost.exe",
+      14.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 149.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:28:52.333Z",
+   "abdruck": "d99761f44ad5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#8": {
+   "gruen": false,
+   "zahl": "S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0b359c5c29fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 67.3,
+   "fremd": {
+    "s": 69.2,
+    "takte": 31,
+    "fremdS": 26.09,
+    "kerne": 0.377,
+    "fensterKerne": 0.489,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.72
+     ]
+    ],
+    "dienerS": 25.66,
+    "diener": [
+     [
+      "dwm.exe",
+      11.73
+     ],
+     [
+      "System",
+      7.41
+     ]
+    ],
+    "geraetS": 51.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.8
+     ],
+     [
+      "svchost.exe",
+      14.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 149.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:28:52.333Z",
+   "abdruck": "b40aad42b442",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#9": {
+   "gruen": false,
+   "zahl": "S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k0b359c5c29fa",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 67.3,
+   "fremd": {
+    "s": 69.2,
+    "takte": 31,
+    "fremdS": 26.09,
+    "kerne": 0.377,
+    "fensterKerne": 0.489,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.72
+     ]
+    ],
+    "dienerS": 25.66,
+    "diener": [
+     [
+      "dwm.exe",
+      11.73
+     ],
+     [
+      "System",
+      7.41
+     ]
+    ],
+    "geraetS": 51.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      36.8
+     ],
+     [
+      "svchost.exe",
+      14.08
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 149.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:28:52.333Z",
+   "abdruck": "6c9dfc3a42e5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: über 365 Tage der Welt (worldMeta.tag) steht die Mittagssonne auf 1 Höhe(n) (74.21°): die Sonnenbahn liest nur die Uhr (welt-licht.js:711 sonnenRichtung, stamm/bild-himmel.js:1383), weder Tag noch Breite (verlangt 365 Tage mit eigener Mittagshöhe, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: über 365 Tage der Welt (worldMeta.tag) steht die Mittagssonne auf 1 Höhe(n) (74.21°): die Sonnenbahn liest nur die Uhr (welt-licht.js:711 sonnenRichtung, stamm/bild-himmel.js:1383), weder Tag noch Breite (verlangt 365 Tage mit eigener Mittagshöhe, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 13.8,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 6.84,
+    "kerne": 0.42,
+    "fensterKerne": 0.487,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.7
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "dwm.exe",
+      3.94
+     ],
+     [
+      "System",
+      2.8
+     ]
+    ],
+    "geraetS": 13.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.98
+     ],
+     [
+      "svchost.exe",
+      3.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 75.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:39:14.159Z",
+   "abdruck": "c75978cf618d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: über 30 Tage wechselt die Phase an 0 Tagen: der Mond steht stets 180° von der Sonne (Vollmond, stamm/bild-himmel.js:2600, welt-licht.js:720) (verlangt 29,53 Tage Mondumlauf (Tage mit wechselnder Phase), die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: über 30 Tage wechselt die Phase an 0 Tagen: der Mond steht stets 180° von der Sonne (Vollmond, stamm/bild-himmel.js:2600, welt-licht.js:720) (verlangt 29,53 Tage Mondumlauf (Tage mit wechselnder Phase), die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 13.8,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 6.84,
+    "kerne": 0.42,
+    "fensterKerne": 0.487,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.7
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "dwm.exe",
+      3.94
+     ],
+     [
+      "System",
+      2.8
+     ]
+    ],
+    "geraetS": 13.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.98
+     ],
+     [
+      "svchost.exe",
+      3.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 75.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:39:14.159Z",
+   "abdruck": "4774f9fa23b1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: 0 Finsternis-Lagen (Sonne–Mond < 1,5°) in 30 Tagen: der Mond verlässt die Gegenstellung nie, also keine Finsternis in keinem Jahr (verlangt 100 Jahre mit Finsternis-Geometrie, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: 0 Finsternis-Lagen (Sonne–Mond < 1,5°) in 30 Tagen: der Mond verlässt die Gegenstellung nie, also keine Finsternis in keinem Jahr (verlangt 100 Jahre mit Finsternis-Geometrie, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 13.8,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 6.84,
+    "kerne": 0.42,
+    "fensterKerne": 0.487,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.7
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "dwm.exe",
+      3.94
+     ],
+     [
+      "System",
+      2.8
+     ]
+    ],
+    "geraetS": 13.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.98
+     ],
+     [
+      "svchost.exe",
+      3.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 75.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:39:14.159Z",
+   "abdruck": "2f139066aadd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Leser fehlt: der Sternhimmel dreht nur mit der Uhr (stamm/dirigent-takt.js:2422 starField.rotation aus timeOfDay), keine Präzession; die Reise in die Zeit (stamm/feld-leben.js:1277 zeitMa) erreicht −12 000 a, der Himmel liest sie nicht",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S5 · ROT Leser fehlt: der Sternhimmel dreht nur mit der Uhr (stamm/dirigent-takt.js:2422 starField.rotation aus timeOfDay), keine Präzession; die Reise in die Zeit (stamm/feld-leben.js:1277 zeitMa) erreicht −12 000 a, der Himmel liest sie nicht",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 13.8,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 6.84,
+    "kerne": 0.42,
+    "fensterKerne": 0.487,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.7
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "dwm.exe",
+      3.94
+     ],
+     [
+      "System",
+      2.8
+     ]
+    ],
+    "geraetS": 13.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.98
+     ],
+     [
+      "svchost.exe",
+      3.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 75.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:39:14.159Z",
+   "abdruck": "a36b06e3e2f4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Leser fehlt: Neigung und Perihel: die Sonnenbahn kennt weder Achsneigung noch Bahn (welt-licht.js:711 sonnenRichtung, Mittagshöhe 74.21° an jedem Tag), kein Leser einer Epoche nach Laskar",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S6 · ROT Leser fehlt: Neigung und Perihel: die Sonnenbahn kennt weder Achsneigung noch Bahn (welt-licht.js:711 sonnenRichtung, Mittagshöhe 74.21° an jedem Tag), kein Leser einer Epoche nach Laskar",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 13.8,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 6.84,
+    "kerne": 0.42,
+    "fensterKerne": 0.487,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.7
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "dwm.exe",
+      3.94
+     ],
+     [
+      "System",
+      2.8
+     ]
+    ],
+    "geraetS": 13.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.98
+     ],
+     [
+      "svchost.exe",
+      3.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 75.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:39:14.159Z",
+   "abdruck": "4e823ac973ab",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Leser fehlt: die Tageslänge hängt an keiner Epoche (stamm/bild-himmel.js:2712 _uhrSetzen), die Mondscheibe ist fest (Radius 9 m bei 380 m, stamm/dirigent-ankunft.js:340, stamm/bild-himmel.js:3328) — die Reise in die Zeit (stamm/feld-leben.js:1277) ändert keins von beiden",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S7 · ROT Leser fehlt: die Tageslänge hängt an keiner Epoche (stamm/bild-himmel.js:2712 _uhrSetzen), die Mondscheibe ist fest (Radius 9 m bei 380 m, stamm/dirigent-ankunft.js:340, stamm/bild-himmel.js:3328) — die Reise in die Zeit (stamm/feld-leben.js:1277) ändert keins von beiden",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 13.8,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 6.84,
+    "kerne": 0.42,
+    "fensterKerne": 0.487,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.7
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "dwm.exe",
+      3.94
+     ],
+     [
+      "System",
+      2.8
+     ]
+    ],
+    "geraetS": 13.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.98
+     ],
+     [
+      "svchost.exe",
+      3.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 75.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:39:14.159Z",
+   "abdruck": "675d573261b5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#8": {
+   "gruen": false,
+   "zahl": "S8 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed), mit EINER Sonne und EINEM Mond (verlangt 1000 Saaten, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.23,
+   "grund": "ROT: S8 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed), mit EINER Sonne und EINEM Mond (verlangt 1000 Saaten, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 13.8,
+   "fremd": {
+    "s": 16.3,
+    "takte": 7,
+    "fremdS": 6.84,
+    "kerne": 0.42,
+    "fensterKerne": 0.487,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.2
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.7
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "dwm.exe",
+      3.94
+     ],
+     [
+      "System",
+      2.8
+     ]
+    ],
+    "geraetS": 13.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.98
+     ],
+     [
+      "svchost.exe",
+      3.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 75.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:39:14.159Z",
+   "abdruck": "37aef2e3fd1c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: 2803 Sterne bis mag 6 im Feld (aMag, stamm/bild-himmel.js:465); 0 von 2803 Punkten wandern über 100 Tage gegen das Feld — die 3 Wandelsterne sind feste Punkte (stamm/bild-himmel.js:312) (verlangt 9000 Sterne bis mag 6, die Welt erzeugte 2803)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: 2803 Sterne bis mag 6 im Feld (aMag, stamm/bild-himmel.js:465); 0 von 2803 Punkten wandern über 100 Tage gegen das Feld — die 3 Wandelsterne sind feste Punkte (stamm/bild-himmel.js:312) (verlangt 9000 Sterne bis mag 6, die Welt erzeugte 2803)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.1,
+   "fremd": {
+    "s": 18.8,
+    "takte": 8,
+    "fremdS": 9.94,
+    "kerne": 0.529,
+    "fensterKerne": 0.64,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.09
+     ],
+     [
+      "sh.exe",
+      1.02
+     ]
+    ],
+    "dienerS": 10.86,
+    "diener": [
+     [
+      "dwm.exe",
+      4.61
+     ],
+     [
+      "System",
+      3.84
+     ]
+    ],
+    "geraetS": 19.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.52
+     ],
+     [
+      "svchost.exe",
+      5.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 82.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:41:30.265Z",
+   "abdruck": "f2358d491536",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: kein Milchstraßen-Band: höchstens 0.191 der Sterne in ±10° um einen Großkreis (gleichverteilt ≈ 0,17, ein Band ab 0,3), 0 Galaxien-Körper in der Szene; die „Galaxy-Skybox“ zeichnet nur die Atmosphäre (stamm/bild-himmel.js:234) (verlangt 1 Galaxie von innen (Band oder Galaxien-Körper), die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: kein Milchstraßen-Band: höchstens 0.191 der Sterne in ±10° um einen Großkreis (gleichverteilt ≈ 0,17, ein Band ab 0,3), 0 Galaxien-Körper in der Szene; die „Galaxy-Skybox“ zeichnet nur die Atmosphäre (stamm/bild-himmel.js:234) (verlangt 1 Galaxie von innen (Band oder Galaxien-Körper), die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.1,
+   "fremd": {
+    "s": 18.8,
+    "takte": 8,
+    "fremdS": 9.94,
+    "kerne": 0.529,
+    "fensterKerne": 0.64,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.09
+     ],
+     [
+      "sh.exe",
+      1.02
+     ]
+    ],
+    "dienerS": 10.86,
+    "diener": [
+     [
+      "dwm.exe",
+      4.61
+     ],
+     [
+      "System",
+      3.84
+     ]
+    ],
+    "geraetS": 19.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.52
+     ],
+     [
+      "svchost.exe",
+      5.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 82.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:41:30.265Z",
+   "abdruck": "d848aee998e0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist reisbar (verlangt 1000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist reisbar (verlangt 1000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.1,
+   "fremd": {
+    "s": 18.8,
+    "takte": 8,
+    "fremdS": 9.94,
+    "kerne": 0.529,
+    "fensterKerne": 0.64,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.09
+     ],
+     [
+      "sh.exe",
+      1.02
+     ]
+    ],
+    "dienerS": 10.86,
+    "diener": [
+     [
+      "dwm.exe",
+      4.61
+     ],
+     [
+      "System",
+      3.84
+     ]
+    ],
+    "geraetS": 19.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.52
+     ],
+     [
+      "svchost.exe",
+      5.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 82.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:41:30.265Z",
+   "abdruck": "7a5f7b294bd0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist ansteuerbar (verlangt 1000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist ansteuerbar (verlangt 1000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.1,
+   "fremd": {
+    "s": 18.8,
+    "takte": 8,
+    "fremdS": 9.94,
+    "kerne": 0.529,
+    "fensterKerne": 0.64,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.09
+     ],
+     [
+      "sh.exe",
+      1.02
+     ]
+    ],
+    "dienerS": 10.86,
+    "diener": [
+     [
+      "dwm.exe",
+      4.61
+     ],
+     [
+      "System",
+      3.84
+     ]
+    ],
+    "geraetS": 19.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.52
+     ],
+     [
+      "svchost.exe",
+      5.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 82.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:41:30.265Z",
+   "abdruck": "714ab1d40927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum; keine Galaxie von außen, keine Andromeda (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum; keine Galaxie von außen, keine Andromeda (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.1,
+   "fremd": {
+    "s": 18.8,
+    "takte": 8,
+    "fremdS": 9.94,
+    "kerne": 0.529,
+    "fensterKerne": 0.64,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.09
+     ],
+     [
+      "sh.exe",
+      1.02
+     ]
+    ],
+    "dienerS": 10.86,
+    "diener": [
+     [
+      "dwm.exe",
+      4.61
+     ],
+     [
+      "System",
+      3.84
+     ]
+    ],
+    "geraetS": 19.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.52
+     ],
+     [
+      "svchost.exe",
+      5.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 82.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:41:30.265Z",
+   "abdruck": "a41b31880e5b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Welt zeigt 0 Galaxien (Band-Anteil 0.191, 0 Galaxien-Körper) (verlangt 100000000000 Galaxien, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.25,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Welt zeigt 0 Galaxien (Band-Anteil 0.191, 0 Galaxien-Körper) (verlangt 100000000000 Galaxien, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.1,
+   "fremd": {
+    "s": 18.8,
+    "takte": 8,
+    "fremdS": 9.94,
+    "kerne": 0.529,
+    "fensterKerne": 0.64,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.09
+     ],
+     [
+      "sh.exe",
+      1.02
+     ]
+    ],
+    "dienerS": 10.86,
+    "diener": [
+     [
+      "dwm.exe",
+      4.61
+     ],
+     [
+      "System",
+      3.84
+     ]
+    ],
+    "geraetS": 19.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.52
+     ],
+     [
+      "svchost.exe",
+      5.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 82.23,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:41:30.265Z",
+   "abdruck": "5f1e7212e2e1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: die Sonne trägt kein Alter: e0(staerke) (welt-licht.js:691) ohne Epoche; die Reise in die Zeit (stamm/feld-leben.js:1278) reicht bis +1 Ga, nicht +5 Ga, und erbt den Himmel der Heimat (stamm/netz-portal.js:701)",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S1 · ROT Leser fehlt: die Sonne trägt kein Alter: e0(staerke) (welt-licht.js:691) ohne Epoche; die Reise in die Zeit (stamm/feld-leben.js:1278) reicht bis +1 Ga, nicht +5 Ga, und erbt den Himmel der Heimat (stamm/netz-portal.js:701)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 14.4,
+   "fremd": {
+    "s": 16.4,
+    "takte": 7,
+    "fremdS": 7.06,
+    "kerne": 0.432,
+    "fensterKerne": 0.516,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ],
+     [
+      "Explorer.EXE",
+      0.7
+     ]
+    ],
+    "dienerS": 10.59,
+    "diener": [
+     [
+      "System",
+      4.42
+     ],
+     [
+      "dwm.exe",
+      4.08
+     ]
+    ],
+    "geraetS": 15.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.89
+     ],
+     [
+      "svchost.exe",
+      4.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 78.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:43:47.287Z",
+   "abdruck": "ba924cbe595a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Leser fehlt: die Sonnenscheibe ist fest (HIMMEL.sonneWinkelGrad 0.53°, stamm/bild-himmel.js:3328) und der Himmel kippt nie mit der Sonne (welt-licht.js:989 himmelSicht) — kein Leser eines Riesen-Stadiums",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S2 · ROT Leser fehlt: die Sonnenscheibe ist fest (HIMMEL.sonneWinkelGrad 0.53°, stamm/bild-himmel.js:3328) und der Himmel kippt nie mit der Sonne (welt-licht.js:989 himmelSicht) — kein Leser eines Riesen-Stadiums",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 14.4,
+   "fremd": {
+    "s": 16.4,
+    "takte": 7,
+    "fremdS": 7.06,
+    "kerne": 0.432,
+    "fensterKerne": 0.516,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ],
+     [
+      "Explorer.EXE",
+      0.7
+     ]
+    ],
+    "dienerS": 10.59,
+    "diener": [
+     [
+      "System",
+      4.42
+     ],
+     [
+      "dwm.exe",
+      4.08
+     ]
+    ],
+    "geraetS": 15.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.89
+     ],
+     [
+      "svchost.exe",
+      4.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 78.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:43:47.287Z",
+   "abdruck": "3eb22036f081",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Nebel, kein Haufen (verlangt 1000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Nebel, kein Haufen (verlangt 1000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 14.4,
+   "fremd": {
+    "s": 16.4,
+    "takte": 7,
+    "fremdS": 7.06,
+    "kerne": 0.432,
+    "fensterKerne": 0.516,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ],
+     [
+      "Explorer.EXE",
+      0.7
+     ]
+    ],
+    "dienerS": 10.59,
+    "diener": [
+     [
+      "System",
+      4.42
+     ],
+     [
+      "dwm.exe",
+      4.08
+     ]
+    ],
+    "geraetS": 15.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.89
+     ],
+     [
+      "svchost.exe",
+      4.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 78.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:43:47.287Z",
+   "abdruck": "9b52206cc5c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: in 30 Halten à 10 Tage (300 Tage der Welt) ändert sich die Helligkeit an 0 Halten (aMag wird einmal gesetzt, stamm/bild-himmel.js:368) — kein Stern stirbt (verlangt 300 Tage mit Lichtwechsel, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: in 30 Halten à 10 Tage (300 Tage der Welt) ändert sich die Helligkeit an 0 Halten (aMag wird einmal gesetzt, stamm/bild-himmel.js:368) — kein Stern stirbt (verlangt 300 Tage mit Lichtwechsel, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 14.4,
+   "fremd": {
+    "s": 16.4,
+    "takte": 7,
+    "fremdS": 7.06,
+    "kerne": 0.432,
+    "fensterKerne": 0.516,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ],
+     [
+      "Explorer.EXE",
+      0.7
+     ]
+    ],
+    "dienerS": 10.59,
+    "diener": [
+     [
+      "System",
+      4.42
+     ],
+     [
+      "dwm.exe",
+      4.08
+     ]
+    ],
+    "geraetS": 15.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.89
+     ],
+     [
+      "svchost.exe",
+      4.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 78.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:43:47.287Z",
+   "abdruck": "d009de855f19",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „kompakte Überreste“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Körper mit eigener Raumkrümmung, keine Linsung im Bild (welt-licht.js:989)",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S5 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „kompakte Überreste“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Körper mit eigener Raumkrümmung, keine Linsung im Bild (welt-licht.js:989)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 14.4,
+   "fremd": {
+    "s": 16.4,
+    "takte": 7,
+    "fremdS": 7.06,
+    "kerne": 0.432,
+    "fensterKerne": 0.516,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ],
+     [
+      "Explorer.EXE",
+      0.7
+     ]
+    ],
+    "dienerS": 10.59,
+    "diener": [
+     [
+      "System",
+      4.42
+     ],
+     [
+      "dwm.exe",
+      4.08
+     ]
+    ],
+    "geraetS": 15.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.89
+     ],
+     [
+      "svchost.exe",
+      4.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 78.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:43:47.287Z",
+   "abdruck": "05f8a9342d03",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — keine Metallizität, kein Alter je Stern (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — keine Metallizität, kein Alter je Stern (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 14.4,
+   "fremd": {
+    "s": 16.4,
+    "takte": 7,
+    "fremdS": 7.06,
+    "kerne": 0.432,
+    "fensterKerne": 0.516,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ],
+     [
+      "Explorer.EXE",
+      0.7
+     ]
+    ],
+    "dienerS": 10.59,
+    "diener": [
+     [
+      "System",
+      4.42
+     ],
+     [
+      "dwm.exe",
+      4.08
+     ]
+    ],
+    "geraetS": 15.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.89
+     ],
+     [
+      "svchost.exe",
+      4.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 78.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:43:47.287Z",
+   "abdruck": "8e5dd1d45a9c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.sterne#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „Sterne als Generationen“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453); kein Planet mit Gestein außer der Welt selbst (stamm/daten.js:84 ULTIVERSUM)",
+   "exit": 0,
+   "minuten": 0.24,
+   "grund": "ROT: S7 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „Sterne als Generationen“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453); kein Planet mit Gestein außer der Welt selbst (stamm/daten.js:84 ULTIVERSUM)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 14.4,
+   "fremd": {
+    "s": 16.4,
+    "takte": 7,
+    "fremdS": 7.06,
+    "kerne": 0.432,
+    "fensterKerne": 0.516,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ],
+     [
+      "Explorer.EXE",
+      0.7
+     ]
+    ],
+    "dienerS": 10.59,
+    "diener": [
+     [
+      "System",
+      4.42
+     ],
+     [
+      "dwm.exe",
+      4.08
+     ]
+    ],
+    "geraetS": 15.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.89
+     ],
+     [
+      "svchost.exe",
+      4.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 78.17,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:43:47.287Z",
+   "abdruck": "715485d351d5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.sterne#1",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.welten#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT ✅ fall_leib_abw_pct 0,99 (Soll ≤ 2) · ❌ fall_fahrzeug_abw_pct — (Soll ≤ 2) · ❌ fall_wurf_abw_pct — (Soll ≤ 2) · ❌ sprung_abw_pct 100 (Soll ≤ 5) · ✅ Umfang verlangt 3 g (größte gefahrene Schwere-Stufe), die Welt erzeugte 3 — Täter: g 3×: Sprunghöhe -0.000 m gegen 0.132 m aus 1/g; Fahrzeug und Wurf ungemessen: der Lauf fährt keinen Fall eines Gefährts (stamm/koerper-fahrt.js) und keinen Freikörper (stamm/koerper-frei.js:534 liest state.gravity) · fall_fahrzeug_abw_pct — statt ≤ 2 · fall_wurf_abw_pct — statt ≤ 2 · sprung_abw_pct 100 statt ≤ 5",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S2 · ROT ✅ fall_leib_abw_pct 0,99 (Soll ≤ 2) · ❌ fall_fahrzeug_abw_pct — (Soll ≤ 2) · ❌ fall_wurf_abw_pct — (Soll ≤ 2) · ❌ sprung_abw_pct 100 (Soll ≤ 5) · ✅ Umfang verlangt 3 g (größte gefahrene Schwere-Stufe), die Welt erzeugte 3 — Täter: g 3×: Sprunghöhe -0.000 m gegen 0.132 m aus 1/g; Fahrzeug und Wurf ungemessen: der Lauf fährt keinen Fall eines Gefährts (stamm/koerper-fahrt.js) und keinen Freikörper (stamm/koerper-frei.js:534 liest state.gravity) · fall_fahrzeug_abw_pct — statt ≤ 2 · fall_wurf_abw_pct — statt ≤ 2 · sprung_abw_pct 100 statt ≤ 5",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.4,
+   "fremd": {
+    "s": 18.7,
+    "takte": 8,
+    "fremdS": 13.83,
+    "kerne": 0.738,
+    "fensterKerne": 0.847,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.55
+     ],
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.17
+     ]
+    ],
+    "dienerS": 10.83,
+    "diener": [
+     [
+      "dwm.exe",
+      4.41
+     ],
+     [
+      "System",
+      4.38
+     ]
+    ],
+    "geraetS": 17.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.52
+     ],
+     [
+      "svchost.exe",
+      5.73
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 81.2,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:46:03.944Z",
+   "abdruck": "65b9977368ee",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.welten#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Leser fehlt: die Tageslänge ist die EINE Uhr der Welt (stamm/bild-himmel.js:2712 _uhrSetzen), das Gesetz der Welt trägt keine Rotation (stamm/speicher-welten.js:88: schwere, himmel, wetter, gelaende, ort) — keine gebundene Welt, keine Welt mit 4-h-Tag",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S3 · ROT Leser fehlt: die Tageslänge ist die EINE Uhr der Welt (stamm/bild-himmel.js:2712 _uhrSetzen), das Gesetz der Welt trägt keine Rotation (stamm/speicher-welten.js:88: schwere, himmel, wetter, gelaende, ort) — keine gebundene Welt, keine Welt mit 4-h-Tag",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.4,
+   "fremd": {
+    "s": 18.7,
+    "takte": 8,
+    "fremdS": 13.83,
+    "kerne": 0.738,
+    "fensterKerne": 0.847,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.55
+     ],
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.17
+     ]
+    ],
+    "dienerS": 10.83,
+    "diener": [
+     [
+      "dwm.exe",
+      4.41
+     ],
+     [
+      "System",
+      4.38
+     ]
+    ],
+    "geraetS": 17.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.52
+     ],
+     [
+      "svchost.exe",
+      5.73
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 81.2,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:46:03.944Z",
+   "abdruck": "a8ec0e994d2c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.welten#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.welten#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: das Ultiversum trägt 2 Welten (erde, ferne, stamm/daten.js:84), keine Bauart aus der Lage (verlangt 1000 Welten, die Welt erzeugte 2)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: das Ultiversum trägt 2 Welten (erde, ferne, stamm/daten.js:84), keine Bauart aus der Lage (verlangt 1000 Welten, die Welt erzeugte 2)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.4,
+   "fremd": {
+    "s": 18.7,
+    "takte": 8,
+    "fremdS": 13.83,
+    "kerne": 0.738,
+    "fensterKerne": 0.847,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.55
+     ],
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.17
+     ]
+    ],
+    "dienerS": 10.83,
+    "diener": [
+     [
+      "dwm.exe",
+      4.41
+     ],
+     [
+      "System",
+      4.38
+     ]
+    ],
+    "geraetS": 17.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.52
+     ],
+     [
+      "svchost.exe",
+      5.73
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 81.2,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:46:03.944Z",
+   "abdruck": "20115a6fb615",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.welten#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.welten#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die Welt wirft 1 Sonnen-Schatten (Richtlicht mit Schatten), EINE Sonne (welt-licht.js:711) (verlangt 2 Sonnen mit Schatten, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die Welt wirft 1 Sonnen-Schatten (Richtlicht mit Schatten), EINE Sonne (welt-licht.js:711) (verlangt 2 Sonnen mit Schatten, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.4,
+   "fremd": {
+    "s": 18.7,
+    "takte": 8,
+    "fremdS": 13.83,
+    "kerne": 0.738,
+    "fensterKerne": 0.847,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.55
+     ],
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.17
+     ]
+    ],
+    "dienerS": 10.83,
+    "diener": [
+     [
+      "dwm.exe",
+      4.41
+     ],
+     [
+      "System",
+      4.38
+     ]
+    ],
+    "geraetS": 17.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.52
+     ],
+     [
+      "svchost.exe",
+      5.73
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 81.2,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:46:03.944Z",
+   "abdruck": "68dd036fa244",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.welten#2",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.welten#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: 0 von 2 Welten tragen einen Radius im Gesetz (stamm/speicher-welten.js:88) — das Gelände ist eben (verlangt 1000000 Welten mit Radius, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.26,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: 0 von 2 Welten tragen einen Radius im Gesetz (stamm/speicher-welten.js:88) — das Gelände ist eben (verlangt 1000000 Welten mit Radius, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 15.4,
+   "fremd": {
+    "s": 18.7,
+    "takte": 8,
+    "fremdS": 13.83,
+    "kerne": 0.738,
+    "fensterKerne": 0.847,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.55
+     ],
+     [
+      "OneDrive.Sync.Service.exe silentConfig",
+      1.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.17
+     ]
+    ],
+    "dienerS": 10.83,
+    "diener": [
+     [
+      "dwm.exe",
+      4.41
+     ],
+     [
+      "System",
+      4.38
+     ]
+    ],
+    "geraetS": 17.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.52
+     ],
+     [
+      "svchost.exe",
+      5.73
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 81.2,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:46:03.944Z",
+   "abdruck": "d6fd6f9440a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.kosmos.welten#2",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#1": {
+   "gruen": true,
+   "zahl": "S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100)",
+   "exit": 0,
+   "minuten": 0.5,
+   "mass": [
+    {
+     "wort": "eingabe_pixel_p95_ms",
+     "wert": 50,
+     "soll": 100
+    },
+    {
+     "wort": "verben_pct",
+     "wert": 100,
+     "soll": 100,
+     "richtung": "≥"
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kcc7fc295d13c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 29.9,
+   "fremd": {
+    "s": 34.4,
+    "takte": 15,
+    "fremdS": 23.94,
+    "kerne": 0.696,
+    "fensterKerne": 0.787,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.97
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      2.03
+     ]
+    ],
+    "dienerS": 21.67,
+    "diener": [
+     [
+      "System",
+      9.16
+     ],
+     [
+      "dwm.exe",
+      8.91
+     ]
+    ],
+    "geraetS": 30.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.3
+     ],
+     [
+      "svchost.exe",
+      7.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 126.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.808,
+     "nach": 1.219,
+     "station": 1.411
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.8,
+     "alle": 345.5,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 105.8,
+     "alle": 321.4,
+     "cpuEin": 108
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 228.3,
+     "n": 714,
+     "von": "2026-11-18"
+    },
+    "f": 1.513,
+    "fEin": 1.398,
+    "fAlle": 1.513,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "grund": "GRÜN trotz Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,0 CPU-s · bash.exe dienst-omen/landung-dienst.sh --selbsttest 2,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,3 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 0,7 CPU-s",
+   "zeit": "2026-11-19T13:51:09.279Z",
+   "abdruck": "1d53b86f91ed",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Leser fehlt: Stimme: kein Hörer der Sprache im Spiel — die Stimme spricht nur aus (speechSynthesis, stamm/netz-p2p.js:2558), der Satz geht getippt über den Chat (stamm/dirigent-ankunft.js:642)",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "ROT: S4 · ROT Leser fehlt: Stimme: kein Hörer der Sprache im Spiel — die Stimme spricht nur aus (speechSynthesis, stamm/netz-p2p.js:2558), der Satz geht getippt über den Chat (stamm/dirigent-ankunft.js:642)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcc7fc295d13c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 29.9,
+   "fremd": {
+    "s": 34.4,
+    "takte": 15,
+    "fremdS": 23.94,
+    "kerne": 0.696,
+    "fensterKerne": 0.787,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.97
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      2.03
+     ]
+    ],
+    "dienerS": 21.67,
+    "diener": [
+     [
+      "System",
+      9.16
+     ],
+     [
+      "dwm.exe",
+      8.91
+     ]
+    ],
+    "geraetS": 30.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.3
+     ],
+     [
+      "svchost.exe",
+      7.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 126.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.808,
+     "nach": 1.219,
+     "station": 1.411
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.8,
+     "alle": 345.5,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 105.8,
+     "alle": 321.4,
+     "cpuEin": 108
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 228.3,
+     "n": 714,
+     "von": "2026-11-18"
+    },
+    "f": 1.513,
+    "fEin": 1.398,
+    "fAlle": 1.513,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-19T13:51:09.279Z",
+   "abdruck": "5d827d2a2673",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcc7fc295d13c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 29.9,
+   "fremd": {
+    "s": 34.4,
+    "takte": 15,
+    "fremdS": 23.94,
+    "kerne": 0.696,
+    "fensterKerne": 0.787,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.97
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      2.03
+     ]
+    ],
+    "dienerS": 21.67,
+    "diener": [
+     [
+      "System",
+      9.16
+     ],
+     [
+      "dwm.exe",
+      8.91
+     ]
+    ],
+    "geraetS": 30.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.3
+     ],
+     [
+      "svchost.exe",
+      7.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 126.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.808,
+     "nach": 1.219,
+     "station": 1.411
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.8,
+     "alle": 345.5,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 105.8,
+     "alle": 321.4,
+     "cpuEin": 108
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 228.3,
+     "n": 714,
+     "von": "2026-11-18"
+    },
+    "f": 1.513,
+    "fEin": 1.398,
+    "fAlle": 1.513,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-19T13:51:09.279Z",
+   "abdruck": "86c307d65f6d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.eingabe#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} — ein per Satz erschaffenes Verb erreicht höchstens sie (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} — ein per Satz erschaffenes Verb erreicht höchstens sie (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcc7fc295d13c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 29.9,
+   "fremd": {
+    "s": 34.4,
+    "takte": 15,
+    "fremdS": 23.94,
+    "kerne": 0.696,
+    "fensterKerne": 0.787,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.97
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      2.03
+     ]
+    ],
+    "dienerS": 21.67,
+    "diener": [
+     [
+      "System",
+      9.16
+     ],
+     [
+      "dwm.exe",
+      8.91
+     ]
+    ],
+    "geraetS": 30.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.3
+     ],
+     [
+      "svchost.exe",
+      7.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 126.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.808,
+     "nach": 1.219,
+     "station": 1.411
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.8,
+     "alle": 345.5,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 105.8,
+     "alle": 321.4,
+     "cpuEin": 108
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 228.3,
+     "n": 714,
+     "von": "2026-11-18"
+    },
+    "f": 1.513,
+    "fEin": 1.398,
+    "fAlle": 1.513,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-19T13:51:09.279Z",
+   "abdruck": "6b45fba5cf35",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -31217,125 +33970,64 @@
    "zwilling": "karte2.mensch.geist.innenleben#2",
    "modus": "session"
   },
-  "karte2.mensch.menge.bevoelkerung#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:50.986Z",
-   "abdruck": "45e5dc273c73",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.mensch.menge.bevoelkerung#3": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:50.986Z",
-   "abdruck": "7b71fb1a6963",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
-   "modus": "session"
-  },
-  "karte2.mensch.menge.bevoelkerung#4": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:50.986Z",
-   "abdruck": "1519598d47ad",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
-   "modus": "session"
-  },
-  "karte2.mensch.menge.bevoelkerung#5": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:50.986Z",
-   "abdruck": "59a633cc470b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
-   "modus": "session"
-  },
-  "karte2.mensch.menge.bevoelkerung#6": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:50.986Z",
-   "abdruck": "356bdb8ec1bf",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
-   "modus": "session"
-  },
-  "karte2.mensch.menge.bevoelkerung#7": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:50.986Z",
-   "abdruck": "d99761f44ad5",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
-   "modus": "session"
-  },
-  "karte2.mensch.menge.bevoelkerung#8": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:50.986Z",
-   "abdruck": "b40aad42b442",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
-   "modus": "session"
-  },
-  "karte2.mensch.menge.bevoelkerung#9": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:50.986Z",
-   "abdruck": "6c9dfc3a42e5",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
-   "modus": "session"
-  },
   "karte2.mensch.menge.bild#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.013Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "s": 89.8,
+   "fremd": {
+    "s": 92.2,
+    "takte": 41,
+    "fremdS": 41.59,
+    "kerne": 0.451,
+    "fensterKerne": 0.784,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.77
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.23
+     ]
+    ],
+    "dienerS": 36.95,
+    "diener": [
+     [
+      "dwm.exe",
+      16.2
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 74.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      51.73
+     ],
+     [
+      "svchost.exe",
+      21.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 202.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:33:27.781Z",
    "abdruck": "d55a2d060149",
    "port": 7804,
    "bahn": "sitzung",
@@ -31343,12 +34035,62 @@
   },
   "karte2.mensch.menge.bild#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.013Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "s": 89.8,
+   "fremd": {
+    "s": 92.2,
+    "takte": 41,
+    "fremdS": 41.59,
+    "kerne": 0.451,
+    "fensterKerne": 0.784,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.77
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.23
+     ]
+    ],
+    "dienerS": 36.95,
+    "diener": [
+     [
+      "dwm.exe",
+      16.2
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 74.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      51.73
+     ],
+     [
+      "svchost.exe",
+      21.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 202.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:33:27.781Z",
    "abdruck": "31bbe87a9ccb",
    "port": 7804,
    "bahn": "sitzung",
@@ -31357,12 +34099,62 @@
   },
   "karte2.mensch.menge.bild#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.013Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "s": 89.8,
+   "fremd": {
+    "s": 92.2,
+    "takte": 41,
+    "fremdS": 41.59,
+    "kerne": 0.451,
+    "fensterKerne": 0.784,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.77
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.23
+     ]
+    ],
+    "dienerS": 36.95,
+    "diener": [
+     [
+      "dwm.exe",
+      16.2
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 74.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      51.73
+     ],
+     [
+      "svchost.exe",
+      21.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 202.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:33:27.781Z",
    "abdruck": "b5d6f4d32e76",
    "port": 7804,
    "bahn": "sitzung",
@@ -31371,12 +34163,62 @@
   },
   "karte2.mensch.menge.bild#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.013Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "s": 89.8,
+   "fremd": {
+    "s": 92.2,
+    "takte": 41,
+    "fremdS": 41.59,
+    "kerne": 0.451,
+    "fensterKerne": 0.784,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.77
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.23
+     ]
+    ],
+    "dienerS": 36.95,
+    "diener": [
+     [
+      "dwm.exe",
+      16.2
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 74.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      51.73
+     ],
+     [
+      "svchost.exe",
+      21.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 202.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:33:27.781Z",
    "abdruck": "4dc1b6635b60",
    "port": 7804,
    "bahn": "sitzung",
@@ -31385,12 +34227,62 @@
   },
   "karte2.mensch.menge.bild#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.013Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (third, tod 0.3356))",
+   "s": 89.8,
+   "fremd": {
+    "s": 92.2,
+    "takte": 41,
+    "fremdS": 41.59,
+    "kerne": 0.451,
+    "fensterKerne": 0.784,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.77
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.23
+     ]
+    ],
+    "dienerS": 36.95,
+    "diener": [
+     [
+      "dwm.exe",
+      16.2
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 74.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      51.73
+     ],
+     [
+      "svchost.exe",
+      21.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 202.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:33:27.781Z",
    "abdruck": "971e3a20f3ea",
    "port": 7804,
    "bahn": "sitzung",
@@ -31399,12 +34291,62 @@
   },
   "karte2.mensch.menge.dichte#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.036Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "s": 77.2,
+   "fremd": {
+    "s": 79.1,
+    "takte": 35,
+    "fremdS": 33.2,
+    "kerne": 0.42,
+    "fensterKerne": 0.515,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.02
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.61
+     ]
+    ],
+    "dienerS": 32.64,
+    "diener": [
+     [
+      "dwm.exe",
+      14.38
+     ],
+     [
+      "System",
+      10.13
+     ]
+    ],
+    "geraetS": 63.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.11
+     ],
+     [
+      "svchost.exe",
+      16.97
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.42
+     ]
+    ],
+    "eigenS": 170.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:37:09.283Z",
    "abdruck": "752fd35f68d1",
    "port": 7804,
    "bahn": "sitzung",
@@ -31412,12 +34354,62 @@
   },
   "karte2.mensch.menge.dichte#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.036Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "s": 77.2,
+   "fremd": {
+    "s": 79.1,
+    "takte": 35,
+    "fremdS": 33.2,
+    "kerne": 0.42,
+    "fensterKerne": 0.515,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.02
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.61
+     ]
+    ],
+    "dienerS": 32.64,
+    "diener": [
+     [
+      "dwm.exe",
+      14.38
+     ],
+     [
+      "System",
+      10.13
+     ]
+    ],
+    "geraetS": 63.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.11
+     ],
+     [
+      "svchost.exe",
+      16.97
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.42
+     ]
+    ],
+    "eigenS": 170.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:37:09.283Z",
    "abdruck": "c441b796f32e",
    "port": 7804,
    "bahn": "sitzung",
@@ -31426,12 +34418,62 @@
   },
   "karte2.mensch.menge.dichte#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.036Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "s": 77.2,
+   "fremd": {
+    "s": 79.1,
+    "takte": 35,
+    "fremdS": 33.2,
+    "kerne": 0.42,
+    "fensterKerne": 0.515,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.02
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.61
+     ]
+    ],
+    "dienerS": 32.64,
+    "diener": [
+     [
+      "dwm.exe",
+      14.38
+     ],
+     [
+      "System",
+      10.13
+     ]
+    ],
+    "geraetS": 63.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.11
+     ],
+     [
+      "svchost.exe",
+      16.97
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.42
+     ]
+    ],
+    "eigenS": 170.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:37:09.283Z",
    "abdruck": "b107ec7c9b47",
    "port": 7804,
    "bahn": "sitzung",
@@ -31440,12 +34482,62 @@
   },
   "karte2.mensch.menge.dichte#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.036Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "s": 77.2,
+   "fremd": {
+    "s": 79.1,
+    "takte": 35,
+    "fremdS": 33.2,
+    "kerne": 0.42,
+    "fensterKerne": 0.515,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.02
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.61
+     ]
+    ],
+    "dienerS": 32.64,
+    "diener": [
+     [
+      "dwm.exe",
+      14.38
+     ],
+     [
+      "System",
+      10.13
+     ]
+    ],
+    "geraetS": 63.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.11
+     ],
+     [
+      "svchost.exe",
+      16.97
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.42
+     ]
+    ],
+    "eigenS": 170.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:37:09.283Z",
    "abdruck": "52425a785dab",
    "port": 7804,
    "bahn": "sitzung",
@@ -31454,12 +34546,62 @@
   },
   "karte2.mensch.menge.dichte#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.036Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "s": 77.2,
+   "fremd": {
+    "s": 79.1,
+    "takte": 35,
+    "fremdS": 33.2,
+    "kerne": 0.42,
+    "fensterKerne": 0.515,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.02
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.61
+     ]
+    ],
+    "dienerS": 32.64,
+    "diener": [
+     [
+      "dwm.exe",
+      14.38
+     ],
+     [
+      "System",
+      10.13
+     ]
+    ],
+    "geraetS": 63.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.11
+     ],
+     [
+      "svchost.exe",
+      16.97
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.42
+     ]
+    ],
+    "eigenS": 170.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:37:09.283Z",
    "abdruck": "711fc3801258",
    "port": 7804,
    "bahn": "sitzung",
@@ -31468,372 +34610,126 @@
   },
   "karte2.mensch.menge.dichte#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.036Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache: den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)",
+   "s": 77.2,
+   "fremd": {
+    "s": 79.1,
+    "takte": 35,
+    "fremdS": 33.2,
+    "kerne": 0.42,
+    "fensterKerne": 0.515,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.55
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      5.02
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.61
+     ]
+    ],
+    "dienerS": 32.64,
+    "diener": [
+     [
+      "dwm.exe",
+      14.38
+     ],
+     [
+      "System",
+      10.13
+     ]
+    ],
+    "geraetS": 63.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.11
+     ],
+     [
+      "svchost.exe",
+      16.97
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.42
+     ]
+    ],
+    "eigenS": 170.42,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:37:09.283Z",
    "abdruck": "db132523fd83",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.menge.dichte#2",
    "modus": "session"
   },
-  "karte2.planet.kosmos.himmelsmechanik#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.063Z",
-   "abdruck": "c75978cf618d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.himmelsmechanik#3": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.063Z",
-   "abdruck": "4774f9fa23b1",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.himmelsmechanik#4": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.063Z",
-   "abdruck": "2f139066aadd",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.himmelsmechanik#5": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.063Z",
-   "abdruck": "a36b06e3e2f4",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.himmelsmechanik#6": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.063Z",
-   "abdruck": "4e823ac973ab",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.himmelsmechanik#7": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.063Z",
-   "abdruck": "675d573261b5",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.himmelsmechanik#8": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.063Z",
-   "abdruck": "37aef2e3fd1c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.himmelsmechanik#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sternhimmel#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.088Z",
-   "abdruck": "f2358d491536",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sternhimmel#3": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.088Z",
-   "abdruck": "d848aee998e0",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sternhimmel#4": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.088Z",
-   "abdruck": "7a5f7b294bd0",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sternhimmel#5": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.088Z",
-   "abdruck": "714ab1d40927",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sternhimmel#6": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.088Z",
-   "abdruck": "a41b31880e5b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sternhimmel#7": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.088Z",
-   "abdruck": "5f1e7212e2e1",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sternhimmel#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sterne#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.123Z",
-   "abdruck": "ba924cbe595a",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sterne#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.123Z",
-   "abdruck": "3eb22036f081",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sterne#1",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sterne#3": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.123Z",
-   "abdruck": "9b52206cc5c3",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sterne#1",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sterne#4": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.123Z",
-   "abdruck": "d009de855f19",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sterne#1",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sterne#5": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.123Z",
-   "abdruck": "05f8a9342d03",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sterne#1",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sterne#6": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.123Z",
-   "abdruck": "8e5dd1d45a9c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sterne#1",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.sterne#7": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.123Z",
-   "abdruck": "715485d351d5",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.sterne#1",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.welten#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.177Z",
-   "abdruck": "65b9977368ee",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.welten#3": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.177Z",
-   "abdruck": "a8ec0e994d2c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.welten#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.welten#4": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.177Z",
-   "abdruck": "20115a6fb615",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.welten#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.welten#5": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.177Z",
-   "abdruck": "68dd036fa244",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.welten#2",
-   "modus": "session"
-  },
-  "karte2.planet.kosmos.welten#6": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.177Z",
-   "abdruck": "d6fd6f9440a0",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.kosmos.welten#2",
-   "modus": "session"
-  },
   "karte2.same.entfaltung.abwesenheit#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.213Z",
+   "zahl": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "s": 93.1,
+   "fremd": {
+    "s": 97.3,
+    "takte": 42,
+    "fremdS": 57.84,
+    "kerne": 0.594,
+    "fensterKerne": 0.771,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.27
+     ]
+    ],
+    "dienerS": 48.95,
+    "diener": [
+     [
+      "dwm.exe",
+      21.19
+     ],
+     [
+      "System",
+      17.31
+     ]
+    ],
+    "geraetS": 82.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.23
+     ],
+     [
+      "svchost.exe",
+      22.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 411.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:48:21.937Z",
    "abdruck": "683493027ceb",
    "port": 7804,
    "bahn": "sitzung",
@@ -31841,12 +34737,62 @@
   },
   "karte2.same.entfaltung.abwesenheit#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.213Z",
+   "zahl": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "s": 93.1,
+   "fremd": {
+    "s": 97.3,
+    "takte": 42,
+    "fremdS": 57.84,
+    "kerne": 0.594,
+    "fensterKerne": 0.771,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.27
+     ]
+    ],
+    "dienerS": 48.95,
+    "diener": [
+     [
+      "dwm.exe",
+      21.19
+     ],
+     [
+      "System",
+      17.31
+     ]
+    ],
+    "geraetS": 82.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.23
+     ],
+     [
+      "svchost.exe",
+      22.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 411.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:48:21.937Z",
    "abdruck": "a33889ecfde1",
    "port": 7804,
    "bahn": "sitzung",
@@ -31855,12 +34801,62 @@
   },
   "karte2.same.entfaltung.abwesenheit#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.213Z",
+   "zahl": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "s": 93.1,
+   "fremd": {
+    "s": 97.3,
+    "takte": 42,
+    "fremdS": 57.84,
+    "kerne": 0.594,
+    "fensterKerne": 0.771,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.27
+     ]
+    ],
+    "dienerS": 48.95,
+    "diener": [
+     [
+      "dwm.exe",
+      21.19
+     ],
+     [
+      "System",
+      17.31
+     ]
+    ],
+    "geraetS": 82.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.23
+     ],
+     [
+      "svchost.exe",
+      22.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 411.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:48:21.937Z",
    "abdruck": "e280f3a68110",
    "port": 7804,
    "bahn": "sitzung",
@@ -31869,12 +34865,62 @@
   },
   "karte2.same.entfaltung.abwesenheit#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.213Z",
+   "zahl": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "s": 93.1,
+   "fremd": {
+    "s": 97.3,
+    "takte": 42,
+    "fremdS": 57.84,
+    "kerne": 0.594,
+    "fensterKerne": 0.771,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.27
+     ]
+    ],
+    "dienerS": 48.95,
+    "diener": [
+     [
+      "dwm.exe",
+      21.19
+     ],
+     [
+      "System",
+      17.31
+     ]
+    ],
+    "geraetS": 82.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.23
+     ],
+     [
+      "svchost.exe",
+      22.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 411.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:48:21.937Z",
    "abdruck": "f313e75617af",
    "port": 7804,
    "bahn": "sitzung",
@@ -31883,12 +34929,62 @@
   },
   "karte2.same.entfaltung.abwesenheit#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.213Z",
+   "zahl": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "s": 93.1,
+   "fremd": {
+    "s": 97.3,
+    "takte": 42,
+    "fremdS": 57.84,
+    "kerne": 0.594,
+    "fensterKerne": 0.771,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.27
+     ]
+    ],
+    "dienerS": 48.95,
+    "diener": [
+     [
+      "dwm.exe",
+      21.19
+     ],
+     [
+      "System",
+      17.31
+     ]
+    ],
+    "geraetS": 82.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.23
+     ],
+     [
+      "svchost.exe",
+      22.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 411.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:48:21.937Z",
    "abdruck": "84da88f318f6",
    "port": 7804,
    "bahn": "sitzung",
@@ -31897,12 +34993,62 @@
   },
   "karte2.same.entfaltung.abwesenheit#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.213Z",
+   "zahl": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "s": 93.1,
+   "fremd": {
+    "s": 97.3,
+    "takte": 42,
+    "fremdS": 57.84,
+    "kerne": 0.594,
+    "fensterKerne": 0.771,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.27
+     ]
+    ],
+    "dienerS": 48.95,
+    "diener": [
+     [
+      "dwm.exe",
+      21.19
+     ],
+     [
+      "System",
+      17.31
+     ]
+    ],
+    "geraetS": 82.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.23
+     ],
+     [
+      "svchost.exe",
+      22.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 411.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:48:21.937Z",
    "abdruck": "a1564a0e9212",
    "port": 7804,
    "bahn": "sitzung",
@@ -31911,39 +35057,165 @@
   },
   "karte2.same.entfaltung.abwesenheit#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.213Z",
+   "zahl": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "exit": 1,
+   "minuten": 1.55,
+   "grund": "Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\":\"umfang\",\"erzeugt\":1,\"was\":\"die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen We) · Wirt-Wache: den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)",
+   "s": 93.1,
+   "fremd": {
+    "s": 97.3,
+    "takte": 42,
+    "fremdS": 57.84,
+    "kerne": 0.594,
+    "fensterKerne": 0.771,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.64
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.27
+     ]
+    ],
+    "dienerS": 48.95,
+    "diener": [
+     [
+      "dwm.exe",
+      21.19
+     ],
+     [
+      "System",
+      17.31
+     ]
+    ],
+    "geraetS": 82.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      57.23
+     ],
+     [
+      "svchost.exe",
+      22.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 411.31,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:48:21.937Z",
    "abdruck": "134f9b583faa",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.entfaltung.abwesenheit#1",
    "modus": "session"
   },
-  "karte2.same.preis.eingabe#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.244Z",
-   "abdruck": "1d53b86f91ed",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "karte2.same.preis.eingabe#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "zahl": "Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,0 CPU-s · bash.exe dienst-omen/landung-dienst.sh --selbsttest 2,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,3 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 0,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Leser fehlt: INP über das Gamepad: die Latenz-Linse hört nur keydown · keyup · mousedown (scripts/lib/haenger-linse.cjs:1225), die Knopf-Kante des Pads in `_eingabeTakt` (stamm/koerper-bewegung.js:2386) trägt keine Uhr der Eingabe;)",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,0 CPU-s · bash.exe dienst-omen/landung-dienst.sh --selbsttest 2,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,3 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 0,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Leser fehlt: INP über das Gamepad: die Latenz-Linse hört nur keydown · keyup · mousedown (scripts/lib/haenger-linse.cjs:1225), die Knopf-Kante des Pads in `_eingabeTakt` (stamm/koerper-bewegung.js:2386) trägt keine Uhr der Eingabe;)",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "konsum": "kcc7fc295d13c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 29.9,
+   "fremd": {
+    "s": 34.4,
+    "takte": 15,
+    "fremdS": 23.94,
+    "kerne": 0.696,
+    "fensterKerne": 0.787,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.97
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      2.03
+     ]
+    ],
+    "dienerS": 21.67,
+    "diener": [
+     [
+      "System",
+      9.16
+     ],
+     [
+      "dwm.exe",
+      8.91
+     ]
+    ],
+    "geraetS": 30.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.3
+     ],
+     [
+      "svchost.exe",
+      7.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 126.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.808,
+     "nach": 1.219,
+     "station": 1.411
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.8,
+     "alle": 345.5,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 105.8,
+     "alle": 321.4,
+     "cpuEin": 108
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 228.3,
+     "n": 714,
+     "von": "2026-11-18"
+    },
+    "f": 1.513,
+    "fEin": 1.398,
+    "fAlle": 1.513,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.244Z",
+   "zeit": "2026-11-19T13:51:09.279Z",
    "abdruck": "d58482038d0e",
    "port": 7804,
    "bahn": "sitzung",
@@ -31952,27 +35224,102 @@
   },
   "karte2.same.preis.eingabe#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "zahl": "Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,0 CPU-s · bash.exe dienst-omen/landung-dienst.sh --selbsttest 2,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,3 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 0,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S3 · ROT Leser fehlt: Finger: 0 touch-Hörer an Fenster, Dokument und Leinwand — kein Verb hört den Finger (pointerdown stempelt nur die Zeit, stamm/dirigent-ankunft.js:500; die Verben hören keydown und mousedown, stamm/dirigent-ankunft.js:5)",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,0 CPU-s · bash.exe dienst-omen/landung-dienst.sh --selbsttest 2,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,3 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 0,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S3 · ROT Leser fehlt: Finger: 0 touch-Hörer an Fenster, Dokument und Leinwand — kein Verb hört den Finger (pointerdown stempelt nur die Zeit, stamm/dirigent-ankunft.js:500; die Verben hören keydown und mousedown, stamm/dirigent-ankunft.js:5)",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "konsum": "kcc7fc295d13c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 29.9,
+   "fremd": {
+    "s": 34.4,
+    "takte": 15,
+    "fremdS": 23.94,
+    "kerne": 0.696,
+    "fensterKerne": 0.787,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.97
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      2.03
+     ]
+    ],
+    "dienerS": 21.67,
+    "diener": [
+     [
+      "System",
+      9.16
+     ],
+     [
+      "dwm.exe",
+      8.91
+     ]
+    ],
+    "geraetS": 30.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.3
+     ],
+     [
+      "svchost.exe",
+      7.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 126.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.808,
+     "nach": 1.219,
+     "station": 1.411
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.8,
+     "alle": 345.5,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 105.8,
+     "alle": 321.4,
+     "cpuEin": 108
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 228.3,
+     "n": 714,
+     "von": "2026-11-18"
+    },
+    "f": 1.513,
+    "fEin": 1.398,
+    "fAlle": 1.513,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.244Z",
+   "zeit": "2026-11-19T13:51:09.279Z",
    "abdruck": "7cded9cd3e84",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.preis.eingabe#1",
-   "modus": "session"
-  },
-  "karte2.same.preis.eingabe#4": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.244Z",
-   "abdruck": "5d827d2a2673",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.preis.eingabe#1",
@@ -31980,41 +35327,102 @@
   },
   "karte2.same.preis.eingabe#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "zahl": "Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,0 CPU-s · bash.exe dienst-omen/landung-dienst.sh --selbsttest 2,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,3 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 0,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S5 · ROT Leser fehlt: Hände im Raum: der Renderer trägt xr.enabled false (navigator.xr da) — keine immersive Sitzung, kein Greifen der Hände (der Renderer ohne XR stamm/dirigent-ankunft.js:296))",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,0 CPU-s · bash.exe dienst-omen/landung-dienst.sh --selbsttest 2,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,3 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 0,7 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S5 · ROT Leser fehlt: Hände im Raum: der Renderer trägt xr.enabled false (navigator.xr da) — keine immersive Sitzung, kein Greifen der Hände (der Renderer ohne XR stamm/dirigent-ankunft.js:296))",
+   "mass": [],
+   "gpu": "nvidia/pascal",
+   "konsum": "kcc7fc295d13c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 29.9,
+   "fremd": {
+    "s": 34.4,
+    "takte": 15,
+    "fremdS": 23.94,
+    "kerne": 0.696,
+    "fensterKerne": 0.787,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.7
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      3.97
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      2.03
+     ]
+    ],
+    "dienerS": 21.67,
+    "diener": [
+     [
+      "System",
+      9.16
+     ],
+     [
+      "dwm.exe",
+      8.91
+     ]
+    ],
+    "geraetS": 30.02,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.3
+     ],
+     [
+      "svchost.exe",
+      7.72
+     ],
+     [
+      "SearchIndexer.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 126.47,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.808,
+     "nach": 1.219,
+     "station": 1.411
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 125.8,
+     "alle": 345.5,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 105.8,
+     "alle": 321.4,
+     "cpuEin": 108
+    },
+    "ruhe": {
+     "ein": 90,
+     "alle": 228.3,
+     "n": 714,
+     "von": "2026-11-18"
+    },
+    "f": 1.513,
+    "fEin": 1.398,
+    "fAlle": 1.513,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
    "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.244Z",
+   "zeit": "2026-11-19T13:51:09.279Z",
    "abdruck": "fa671969dc39",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.preis.eingabe#1",
-   "modus": "session"
-  },
-  "karte2.same.preis.eingabe#6": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.244Z",
-   "abdruck": "86c307d65f6d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.same.preis.eingabe#1",
-   "modus": "session"
-  },
-  "karte2.same.preis.eingabe#7": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T13:26:51.244Z",
-   "abdruck": "6b45fba5cf35",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.preis.eingabe#1",
@@ -32414,7 +35822,8 @@
   "kf0a9a577dc39": "dVTBjpswEP2XHLtlHQJewNIenGWljdSq9NTz2IyBhEBkQ9xN1X+vIJAssJ2j9d7Mmzcz/rM6gTxAho97U1crtvqy+roycEbHoD6jftybFVutpQ80ZPwn7yLhnL90MKmLU2NIWQgCooL8iE6rGyzKR9nTXBkiICP2lduEkIQEZGufn+fUUmBaOw0oHIlRpLwQ2BzYmgwEOtCqvtgApr7re5SRPsKYJ3syxtZyTuzrvKKAKp0qVR5Q5bLdO+evfKEwLQAbpywqM9aUKRXeht0KLbtKNVjnApiXqAcSuAG4YhTaW2mTiMyIqmyNmRQLvZRuQkbIApuhKWTeOCddC6wGuIg2gQvsE6ezU+uoiSIhIBRzn3PAKkM91RD4VPqM/A7nSQ9wRA1OBfk4vLUXbMTdG0LI21JL2QvvS4zCVbqRKpgQCXnYJrZzKvb7gd7ew6Q3kMd82MouslkRI/NCH6f2KEVTWLNvS0kmhxS1c6hNc0OHPgCGbKhF+lqJH8+Z92YG3kY8rWn4oZeQ8LeFd6ZWjQWNTnZqByL6SAPKON8twA0cj2MTcoMhnQ/ONN1if5RBfXSfekuz/8zhegbOBYtyJAVSuh7Ok581HB0QmS6UGictqFTRZ4tpsWwcUdfNiPRS8CQjHqlujkT9CWxvw+OxreWv98zyWWRzzX32Wje3LsXTWvlMnbtLlAt0oRvHgsxvs1ECoZO9mMcFdYkZTixMfeFByohVV9mXkPMkGM5ePUyW9bLMWGBnbmVaM25UFKSRYp98Gxb1QUB1GGVS4VG3X73tD/529WK/jklMkolHLzy1nO9e4uuf8p1v+S4m8ZD8hJKcdK2K7tcjObQmh7K5f/d//wE=",
   "k51bce17ba959": "dVTBjpswEP2XHLv1OgS8gKU9OMtKG6lV6annsRkDCYHIhribqv9ehYRkge0crfdm3ryZ8Z/FAdQOcnzc2qZe8MWXxdeFhSMSi+aI5nFrF3yxVAGwiItLUCHEyxmmTHloLa1KSUHWUOyRdKbFsnpUPc1TEQJy6l6FSylNaUjX7vl5Sq0kZg1pQeNAjGPtR8CnwM7mIJFAp/tiVzALvMBnnPYRJSLd0iHWTgjqXqcVJdTZWKn2gWmPb96FeBUzhVkJ2JKqrO1QU2VM+it+KzTvKjPgyAmwqNBcSeCF4MlBaG+lS2M6Ieqqs3ZULPIztoo4pTNsjrZURUsOppFYX+EyXoUe8E+czg8d0SNFUkIkpz4XgHWOZqwhDJgKOP0dTZPuYI8GSA3FMLylH67k3RtK6dtcS9UL70sMwnW2UjocESl9WKfu7FQS9AO9vUfpZRkTIX6KIfJJEauK0uzH9mjNMljyb3NJtoAMDdk1tr2howAAh81PaF8rDZIp897MlbeST0sWfeglouJt5p1tdOvAIMkP3ZWIAbKQcSE2M3AL+/3QhFphxKaDs+15sT/KYAF6T72l+X/mcDkDcsKyGkihUp6P0+RHA3sCMjel1sOkJVM6/mwxHVYtkU3TDkg/A19x6tP65kjcn8D6NjyRuEb9es+dmEQ+1dxnb0x761I+LXXA9fF8iWqGLk1LHKjiNhstEc6yZ/M4oakwx5GFWSB9yDh1+iL7FAmRhtez1w+jZT3NM5Z4Nre2nR02Kg6zWPNPvg2HZieh3g0ymfSZ16/e+od4u3ixXSY0oenIoxeROSE2L8nlT/ku1mKT0OSa/ICKHkyjy/OvRwvobAFVe//u//4D",
   "k2d48db892793": "dVTBcpswEP0XH5sqMgYF0EwOcshMMtNO6SnnlVgBNgaPBFbrTv+9YzBOgHSPmvd2377d1Z/VEdQecrzf2aZe8dWX1deVhRMSi+aE5n5nV3y1VgGwiIshqBDi6QJTpjy2llalpCBrKA5IOtNiWd2rnuapCAE5dc/CpZSmNKRb9/g4p1YSs4a0oHEkxrH2I+BzYGdzkEig032xK5gFXuAzTvuIEpHu6BhbJwR1z/OKEupsqlT7wLTXN/gsFgqzErAlVVnbsabKmPQ3/FZo2VVmwJEzYFGhuZLAC8GTo9DeSpfGdEbUVWftpFjkZ2wTcUoX2BxtqYqWHE0jsb7CZbwJPeCfOJ0fO6IniqSESM59LgDrHM1UQxgwFXD6K5on3cMBDZAainF4az/cyHdvKKUvSy1VL7wvMQrX2UbpcEKk9G6buotTSdAP9PYepcMyJkL8FGPksyJWFaU5TO3RmmWw5t+WkmwBGRqyb2x7Q0cBAI6bn9C+Vhokc+Z7M1feRj6sWfShl4iKl4V3ttGtA4MkP3ZXIgbIQsaFeF2AWzgcxibUBiM2H5xtL4v9UQYL0HvoLc3/M4fhDMgZy2okhUp5Ps6TnwwcCMjclFqPk5ZM6fizxXRYtUQ2TTsi/Qx8xemZ1jdH4v4EtrfhicQ16u13vtTYZ2tMe+tKPqx1wPXpcnlqgS5NSxyo4jYLLREuMhf+n9FUmOPEsiyQPmScOj3I3EVCpOH1zPXdZDnPy4wlXsysbWfHDYrDLNb8k2/CodlLqPejTCZ9NvxB2x/iZfBk55K7hA4nMMaTyJwQr0/J8Id8F1vxmtDkmvyIih5No8vLL0cL6GwBVfv+vf/9Bw==",
-  "k6c2c37a05f66": "dVTBjpswEP2XHNt6HQJejKU9OMtKu1Kr0lPPYzMGEgKRDUubqv9eQSC7wHaO1rx5b96M58/mDPoIGd4dXF1txObT5svGwSsSh/YV7d3BbcRmqwNgXMgfso9ESvnYp2lbnBtHy0JRUBXkJyStbbAo7/QA8zRHQEG7J9kllCY0pPvu4WEJLRWmNWnA4ASMIuNzEMvE1mWgkEBrBrIxmQVe4DNBh+CxTA50in0nJe2elowKqnSu1PjAjCf67p7kSmFaADakLCo3ceqUKX8nbkTrrlILHbkA5iXaEQReCJ6ahA5WdklEF0BTts7NyLifsh0XlK5yM3SFzhtytrXCakxX0S70QHzgdHZuiZkpUgq4WvqcA1YZ2rmGMGA6EPQXXxY9wgktkAryaXhbP9ypN28opc9rLeUgfKCYhJt0p004A1L6eZ90vVNxMAz09s6TwUAZy3Er+8gWJE7nhT3N7TGGpbAVX9eSXA4pWnKsXXPL5gEAcjFy0YErCeIl8q2ZEbdT91vG3/XCqXxeeedq03RgkWTndgRigCxkQsqXVXIDp9PUhN4hZ8vBuaZf7PcyWIDe/WBp9p85XL8BuWBRTqBQa8/HZfFXCycCKrOFMdOkFdMm+mgxOywbouq6mTL9FHwt6IVWN0ei4Qvsb8OTcVfrn7+ztcahWm2bW1fqfmsCYV77n6dX2YVtSAc6v83CKIRIUH/l/wVtiRnOLEsD5UMqaGeuMi9cyiQcv7n5PFvOy7pigb2ZlWvdtEFRmEZGfHAmOrRHBdVxksmUz643aP9dPl89OWzjTi7iUab922N8vSHf5F6+xDQei59R07OtTdFfOZpD63Iom7fz/vcf"
+  "k6c2c37a05f66": "dVTBjpswEP2XHNt6HQJejKU9OMtKu1Kr0lPPYzMGEgKRDUubqv9eQSC7wHaO1rx5b96M58/mDPoIGd4dXF1txObT5svGwSsSh/YV7d3BbcRmqwNgXMgfso9ESvnYp2lbnBtHy0JRUBXkJyStbbAo7/QA8zRHQEG7J9kllCY0pPvu4WEJLRWmNWnA4ASMIuNzEMvE1mWgkEBrBrIxmQVe4DNBh+CxTA50in0nJe2elowKqnSu1PjAjCf67p7kSmFaADakLCo3ceqUKX8nbkTrrlILHbkA5iXaEQReCJ6ahA5WdklEF0BTts7NyLifsh0XlK5yM3SFzhtytrXCakxX0S70QHzgdHZuiZkpUgq4WvqcA1YZ2rmGMGA6EPQXXxY9wgktkAryaXhbP9ypN28opc9rLeUgfKCYhJt0p004A1L6eZ90vVNxMAz09s6TwUAZy3Er+8gWJE7nhT3N7TGGpbAVX9eSXA4pWnKsXXPL5gEAcjFy0YErCeIl8q2ZEbdT91vG3/XCqXxeeedq03RgkWTndgRigCxkQsqXVXIDp9PUhN4hZ8vBuaZf7PcyWIDe/WBp9p85XL8BuWBRTqBQa8/HZfFXCycCKrOFMdOkFdMm+mgxOywbouq6mTL9FHwt6IVWN0ei4Qvsb8OTcVfrn7+ztcahWm2bW1fqfmsCYV77n6dX2YVtSAc6v83CKIRIUH/l/wVtiRnOLEsD5UMqaGeuMi9cyiQcv7n5PFvOy7pigb2ZlWvdtEFRmEZGfHAmOrRHBdVxksmUz643aP9dPl89OWzjTi7iUab922N8vSHf5F6+xDQei59R07OtTdFfOZpD63Iom7fz/vcf",
+  "kcc7fc295d13c": "dVTRjpswEPyXPPbKOQR8GEv34IRId1Klpp+wNmvgQiCyIbSp+u8VJE4OyO1Tgma8s7Nj/10cQe0hw+cPW1cLvvi2+L6wcELPojmhef6wC75YqhAo4+JSRAix6WHKFMfGkrKQBGQF+QG91jRYlM9qoPmKISAn3VZ0O0J2JCLr7vV1Si0lprXXgEZHjGMdMOBTYGszkOhBq4dmVzAN/TCgnAzFErH7IK7ELyFIt512lFClY6U6AKp9/v5HiK2YKUwLwMYri8q6niqlMljxW6P5VKmBzjsD5iWaKwn8CHzphA5WdruYTIi6bK0dNWNBSleMEzLDZmgLlTfe0dQSqytcxqvIB/7A6ezYenqkSEpgcupzDlhlaMYaopCqkJPfTHxV5PTQiD0c0IBXQe6Wuwyilbx7Rwh5m9PKYbBBghtMpyuloxGRkKf1ruu7J2H/b337znYXVYnoQ3CtbNLEqrwwh7F9WtMUlvzHXJLNIUXj7Wvb3NAsBEB3M5IhcGIXJlPmfZgrbyVflpR9moUR8cZmHWvddGDQy47tlYgh0ohyId5n4AYOBzeEWiGj08Xapg/+Zxk0RP9lsDT7Yg+Xa+KdsSgdKVLKD3B6+MnAwQOZmUJrt2lJlY4fBbfDsvFkXTcOGaQQKE4CUt0ciYeore8BS7pabTfZLzGpbKp5OL02zW1K+bLUIddDQNUMXZjG60Dlt91oiRDzB9AzmhIzHFmYhjKAtEd/Uhq6H0+jsJ5nGz4X2Jtb2da6RMVRGmv+4Fnp0OwlVHsnk8qA+kP01j/Fm+ifLpEsE5KQy5VwtRHpWWbvmzXrDzuiIkdT66J/BUkOrc2hbO7P/7//"
  },
  "fortsetzung": [
   {
@@ -36343,6 +39752,1015 @@
    },
    "fahrtS": 199.8,
    "minuten": 40.21
+  },
+  {
+   "start": "2026-11-19T13:26:54.121Z",
+   "ordner": "sitzung-20261119-142654",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 7.5,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.mensch.menge.bild#2",
+    "karte2.mensch.menge.bild#4",
+    "karte2.mensch.menge.bild#5",
+    "karte2.mensch.menge.bild#6",
+    "karte2.mensch.menge.bild#7",
+    "karte2.mensch.menge.dichte#2",
+    "karte2.mensch.menge.dichte#3",
+    "karte2.mensch.menge.dichte#4",
+    "karte2.mensch.menge.dichte#5",
+    "karte2.mensch.menge.dichte#6",
+    "karte2.mensch.menge.dichte#7",
+    "karte2.planet.kosmos.himmelsmechanik#2",
+    "karte2.planet.kosmos.himmelsmechanik#3",
+    "karte2.planet.kosmos.himmelsmechanik#4",
+    "karte2.planet.kosmos.himmelsmechanik#5",
+    "karte2.planet.kosmos.himmelsmechanik#6",
+    "karte2.planet.kosmos.himmelsmechanik#7",
+    "karte2.planet.kosmos.himmelsmechanik#8",
+    "karte2.planet.kosmos.sternhimmel#2",
+    "karte2.planet.kosmos.sternhimmel#3",
+    "karte2.planet.kosmos.sternhimmel#4",
+    "karte2.planet.kosmos.sternhimmel#5",
+    "karte2.planet.kosmos.sternhimmel#6",
+    "karte2.planet.kosmos.sternhimmel#7",
+    "karte2.planet.kosmos.sterne#1",
+    "karte2.planet.kosmos.sterne#2",
+    "karte2.planet.kosmos.sterne#3",
+    "karte2.planet.kosmos.sterne#4",
+    "karte2.planet.kosmos.sterne#5",
+    "karte2.planet.kosmos.sterne#6",
+    "karte2.planet.kosmos.sterne#7",
+    "karte2.planet.kosmos.welten#2",
+    "karte2.planet.kosmos.welten#3",
+    "karte2.planet.kosmos.welten#4",
+    "karte2.planet.kosmos.welten#5",
+    "karte2.planet.kosmos.welten#6",
+    "karte2.same.entfaltung.abwesenheit#1",
+    "karte2.same.entfaltung.abwesenheit#2",
+    "karte2.same.entfaltung.abwesenheit#3",
+    "karte2.same.entfaltung.abwesenheit#4",
+    "karte2.same.entfaltung.abwesenheit#5",
+    "karte2.same.entfaltung.abwesenheit#6",
+    "karte2.same.entfaltung.abwesenheit#7",
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": "stadt-voll",
+     "vor": "karte2.mensch.menge.bevoelkerung#2",
+     "s": 107.5,
+     "takte": 2438,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.mensch.menge.bevoelkerung#2",
+     "anders": [
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      436.9,
+      508.5
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.mensch.menge.bevoelkerung#2",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.mensch.menge.bild#2: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"} — offen: karte2.mensch.menge.bild#2, karte2.mensch.menge.bild#4, karte2.mensch.menge.bild#5, karte2.mensch.menge.bild#6, karte2.mensch.menge.bild#7, karte2.mensch.menge.dichte#2, karte2.mensch.menge.dichte#3, karte2.mensch.menge.dichte#4, karte2.mensch.menge.dichte#5, karte2.mensch.menge.dichte#6, karte2.mensch.menge.dichte#7, karte2.planet.kosmos.himmelsmechanik#2, karte2.planet.kosmos.himmelsmechanik#3, karte2.planet.kosmos.himmelsmechanik#4, karte2.planet.kosmos.himmelsmechanik#5, karte2.planet.kosmos.himmelsmechanik#6, karte2.planet.kosmos.himmelsmechanik#7, karte2.planet.kosmos.himmelsmechanik#8, karte2.planet.kosmos.sternhimmel#2, karte2.planet.kosmos.sternhimmel#3, karte2.planet.kosmos.sternhimmel#4, karte2.planet.kosmos.sternhimmel#5, karte2.planet.kosmos.sternhimmel#6, karte2.planet.kosmos.sternhimmel#7, karte2.planet.kosmos.sterne#1, karte2.planet.kosmos.sterne#2, karte2.planet.kosmos.sterne#3, karte2.planet.kosmos.sterne#4, karte2.planet.kosmos.sterne#5, karte2.planet.kosmos.sterne#6, karte2.planet.kosmos.sterne#7, karte2.planet.kosmos.welten#2, karte2.planet.kosmos.welten#3, karte2.planet.kosmos.welten#4, karte2.planet.kosmos.welten#5, karte2.planet.kosmos.welten#6, karte2.same.entfaltung.abwesenheit#1, karte2.same.entfaltung.abwesenheit#2, karte2.same.entfaltung.abwesenheit#3, karte2.same.entfaltung.abwesenheit#4, karte2.same.entfaltung.abwesenheit#5, karte2.same.entfaltung.abwesenheit#6, karte2.same.entfaltung.abwesenheit#7, karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2964,
+    "frameP95": 25.14,
+    "taktP95": 27.09,
+    "vramMax": 186.3,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.mensch.menge.bevoelkerung#2",
+      "m": 446,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 203,
+    "luecken": 2,
+    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   },
+   "fahrtS": 270.3,
+   "minuten": 4.58
+  },
+  {
+   "start": "2026-11-19T13:31:29.025Z",
+   "ordner": "sitzung-20261119-143129",
+   "port": 7804,
+   "warten": 0.04,
+   "bootS": 6.3,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.mensch.menge.dichte#2",
+    "karte2.mensch.menge.dichte#3",
+    "karte2.mensch.menge.dichte#4",
+    "karte2.mensch.menge.dichte#5",
+    "karte2.mensch.menge.dichte#6",
+    "karte2.mensch.menge.dichte#7",
+    "karte2.planet.kosmos.himmelsmechanik#2",
+    "karte2.planet.kosmos.himmelsmechanik#3",
+    "karte2.planet.kosmos.himmelsmechanik#4",
+    "karte2.planet.kosmos.himmelsmechanik#5",
+    "karte2.planet.kosmos.himmelsmechanik#6",
+    "karte2.planet.kosmos.himmelsmechanik#7",
+    "karte2.planet.kosmos.himmelsmechanik#8",
+    "karte2.planet.kosmos.sternhimmel#2",
+    "karte2.planet.kosmos.sternhimmel#3",
+    "karte2.planet.kosmos.sternhimmel#4",
+    "karte2.planet.kosmos.sternhimmel#5",
+    "karte2.planet.kosmos.sternhimmel#6",
+    "karte2.planet.kosmos.sternhimmel#7",
+    "karte2.planet.kosmos.sterne#1",
+    "karte2.planet.kosmos.sterne#2",
+    "karte2.planet.kosmos.sterne#3",
+    "karte2.planet.kosmos.sterne#4",
+    "karte2.planet.kosmos.sterne#5",
+    "karte2.planet.kosmos.sterne#6",
+    "karte2.planet.kosmos.sterne#7",
+    "karte2.planet.kosmos.welten#2",
+    "karte2.planet.kosmos.welten#3",
+    "karte2.planet.kosmos.welten#4",
+    "karte2.planet.kosmos.welten#5",
+    "karte2.planet.kosmos.welten#6",
+    "karte2.same.entfaltung.abwesenheit#1",
+    "karte2.same.entfaltung.abwesenheit#2",
+    "karte2.same.entfaltung.abwesenheit#3",
+    "karte2.same.entfaltung.abwesenheit#4",
+    "karte2.same.entfaltung.abwesenheit#5",
+    "karte2.same.entfaltung.abwesenheit#6",
+    "karte2.same.entfaltung.abwesenheit#7",
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": "stadt-voll",
+     "vor": "karte2.mensch.menge.bild#2",
+     "s": 107.7,
+     "takte": 2531,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.mensch.menge.bild#2",
+     "anders": [
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      433.8,
+      513.8
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.mensch.menge.bild#2",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.mensch.menge.dichte#2: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4998875999999978\"} — offen: karte2.mensch.menge.dichte#2, karte2.mensch.menge.dichte#3, karte2.mensch.menge.dichte#4, karte2.mensch.menge.dichte#5, karte2.mensch.menge.dichte#6, karte2.mensch.menge.dichte#7, karte2.planet.kosmos.himmelsmechanik#2, karte2.planet.kosmos.himmelsmechanik#3, karte2.planet.kosmos.himmelsmechanik#4, karte2.planet.kosmos.himmelsmechanik#5, karte2.planet.kosmos.himmelsmechanik#6, karte2.planet.kosmos.himmelsmechanik#7, karte2.planet.kosmos.himmelsmechanik#8, karte2.planet.kosmos.sternhimmel#2, karte2.planet.kosmos.sternhimmel#3, karte2.planet.kosmos.sternhimmel#4, karte2.planet.kosmos.sternhimmel#5, karte2.planet.kosmos.sternhimmel#6, karte2.planet.kosmos.sternhimmel#7, karte2.planet.kosmos.sterne#1, karte2.planet.kosmos.sterne#2, karte2.planet.kosmos.sterne#3, karte2.planet.kosmos.sterne#4, karte2.planet.kosmos.sterne#5, karte2.planet.kosmos.sterne#6, karte2.planet.kosmos.sterne#7, karte2.planet.kosmos.welten#2, karte2.planet.kosmos.welten#3, karte2.planet.kosmos.welten#4, karte2.planet.kosmos.welten#5, karte2.planet.kosmos.welten#6, karte2.same.entfaltung.abwesenheit#1, karte2.same.entfaltung.abwesenheit#2, karte2.same.entfaltung.abwesenheit#3, karte2.same.entfaltung.abwesenheit#4, karte2.same.entfaltung.abwesenheit#5, karte2.same.entfaltung.abwesenheit#6, karte2.same.entfaltung.abwesenheit#7, karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 0,
+    "frameP95": null,
+    "taktP95": null,
+    "vramMax": null,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.mensch.menge.bild#2",
+      "m": 446,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 149,
+    "luecken": 3,
+    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   },
+   "fahrtS": 214.9,
+   "minuten": 3.67
+  },
+  {
+   "start": "2026-11-19T13:35:09.364Z",
+   "ordner": "sitzung-20261119-143509",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 7.4,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.planet.kosmos.himmelsmechanik#2",
+    "karte2.planet.kosmos.himmelsmechanik#3",
+    "karte2.planet.kosmos.himmelsmechanik#4",
+    "karte2.planet.kosmos.himmelsmechanik#5",
+    "karte2.planet.kosmos.himmelsmechanik#6",
+    "karte2.planet.kosmos.himmelsmechanik#7",
+    "karte2.planet.kosmos.himmelsmechanik#8",
+    "karte2.planet.kosmos.sternhimmel#2",
+    "karte2.planet.kosmos.sternhimmel#3",
+    "karte2.planet.kosmos.sternhimmel#4",
+    "karte2.planet.kosmos.sternhimmel#5",
+    "karte2.planet.kosmos.sternhimmel#6",
+    "karte2.planet.kosmos.sternhimmel#7",
+    "karte2.planet.kosmos.sterne#1",
+    "karte2.planet.kosmos.sterne#2",
+    "karte2.planet.kosmos.sterne#3",
+    "karte2.planet.kosmos.sterne#4",
+    "karte2.planet.kosmos.sterne#5",
+    "karte2.planet.kosmos.sterne#6",
+    "karte2.planet.kosmos.sterne#7",
+    "karte2.planet.kosmos.welten#2",
+    "karte2.planet.kosmos.welten#3",
+    "karte2.planet.kosmos.welten#4",
+    "karte2.planet.kosmos.welten#5",
+    "karte2.planet.kosmos.welten#6",
+    "karte2.same.entfaltung.abwesenheit#1",
+    "karte2.same.entfaltung.abwesenheit#2",
+    "karte2.same.entfaltung.abwesenheit#3",
+    "karte2.same.entfaltung.abwesenheit#4",
+    "karte2.same.entfaltung.abwesenheit#5",
+    "karte2.same.entfaltung.abwesenheit#6",
+    "karte2.same.entfaltung.abwesenheit#7",
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": "stadt-voll",
+     "vor": "karte2.mensch.menge.dichte#2",
+     "s": 108.9,
+     "takte": 2578,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.mensch.menge.dichte#2",
+     "anders": [
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [
+      "const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...("
+     ],
+     "heap": [
+      435.8,
+      513.2
+     ],
+     "ungemessen": "den Kontext der Probe hält noch: const HILF = ((r, T) => { const s = r.state, A = r.constructor, pm = s.playerMesh.position; const listen = [...( — Heap nach der Rücknahme 435.8 → 513.2 MB (+77.4 > 64)"
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.planet.kosmos.himmelsmechanik#2: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"} — offen: karte2.planet.kosmos.himmelsmechanik#2, karte2.planet.kosmos.himmelsmechanik#3, karte2.planet.kosmos.himmelsmechanik#4, karte2.planet.kosmos.himmelsmechanik#5, karte2.planet.kosmos.himmelsmechanik#6, karte2.planet.kosmos.himmelsmechanik#7, karte2.planet.kosmos.himmelsmechanik#8, karte2.planet.kosmos.sternhimmel#2, karte2.planet.kosmos.sternhimmel#3, karte2.planet.kosmos.sternhimmel#4, karte2.planet.kosmos.sternhimmel#5, karte2.planet.kosmos.sternhimmel#6, karte2.planet.kosmos.sternhimmel#7, karte2.planet.kosmos.sterne#1, karte2.planet.kosmos.sterne#2, karte2.planet.kosmos.sterne#3, karte2.planet.kosmos.sterne#4, karte2.planet.kosmos.sterne#5, karte2.planet.kosmos.sterne#6, karte2.planet.kosmos.sterne#7, karte2.planet.kosmos.welten#2, karte2.planet.kosmos.welten#3, karte2.planet.kosmos.welten#4, karte2.planet.kosmos.welten#5, karte2.planet.kosmos.welten#6, karte2.same.entfaltung.abwesenheit#1, karte2.same.entfaltung.abwesenheit#2, karte2.same.entfaltung.abwesenheit#3, karte2.same.entfaltung.abwesenheit#4, karte2.same.entfaltung.abwesenheit#5, karte2.same.entfaltung.abwesenheit#6, karte2.same.entfaltung.abwesenheit#7, karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 0,
+    "frameP95": null,
+    "taktP95": null,
+    "vramMax": null,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.mensch.menge.dichte#2",
+      "m": 446,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 134,
+    "luecken": 3,
+    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   },
+   "fahrtS": 203.6,
+   "minuten": 3.51
+  },
+  {
+   "start": "2026-11-19T13:38:39.725Z",
+   "ordner": "sitzung-20261119-143839",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 7,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.planet.kosmos.sternhimmel#2",
+    "karte2.planet.kosmos.sternhimmel#3",
+    "karte2.planet.kosmos.sternhimmel#4",
+    "karte2.planet.kosmos.sternhimmel#5",
+    "karte2.planet.kosmos.sternhimmel#6",
+    "karte2.planet.kosmos.sternhimmel#7",
+    "karte2.planet.kosmos.sterne#1",
+    "karte2.planet.kosmos.sterne#2",
+    "karte2.planet.kosmos.sterne#3",
+    "karte2.planet.kosmos.sterne#4",
+    "karte2.planet.kosmos.sterne#5",
+    "karte2.planet.kosmos.sterne#6",
+    "karte2.planet.kosmos.sterne#7",
+    "karte2.planet.kosmos.welten#2",
+    "karte2.planet.kosmos.welten#3",
+    "karte2.planet.kosmos.welten#4",
+    "karte2.planet.kosmos.welten#5",
+    "karte2.planet.kosmos.welten#6",
+    "karte2.same.entfaltung.abwesenheit#1",
+    "karte2.same.entfaltung.abwesenheit#2",
+    "karte2.same.entfaltung.abwesenheit#3",
+    "karte2.same.entfaltung.abwesenheit#4",
+    "karte2.same.entfaltung.abwesenheit#5",
+    "karte2.same.entfaltung.abwesenheit#6",
+    "karte2.same.entfaltung.abwesenheit#7",
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.planet.kosmos.himmelsmechanik#2",
+     "s": 24.2,
+     "takte": 780,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.planet.kosmos.himmelsmechanik#2",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      183.7,
+      210.4
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.planet.kosmos.himmelsmechanik#2",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.planet.kosmos.himmelsmechanik#2",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.planet.kosmos.sternhimmel#2: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"} — offen: karte2.planet.kosmos.sternhimmel#2, karte2.planet.kosmos.sternhimmel#3, karte2.planet.kosmos.sternhimmel#4, karte2.planet.kosmos.sternhimmel#5, karte2.planet.kosmos.sternhimmel#6, karte2.planet.kosmos.sternhimmel#7, karte2.planet.kosmos.sterne#1, karte2.planet.kosmos.sterne#2, karte2.planet.kosmos.sterne#3, karte2.planet.kosmos.sterne#4, karte2.planet.kosmos.sterne#5, karte2.planet.kosmos.sterne#6, karte2.planet.kosmos.sterne#7, karte2.planet.kosmos.welten#2, karte2.planet.kosmos.welten#3, karte2.planet.kosmos.welten#4, karte2.planet.kosmos.welten#5, karte2.planet.kosmos.welten#6, karte2.same.entfaltung.abwesenheit#1, karte2.same.entfaltung.abwesenheit#2, karte2.same.entfaltung.abwesenheit#3, karte2.same.entfaltung.abwesenheit#4, karte2.same.entfaltung.abwesenheit#5, karte2.same.entfaltung.abwesenheit#6, karte2.same.entfaltung.abwesenheit#7, karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2072,
+    "frameP95": 33.39,
+    "taktP95": 21.66,
+    "vramMax": 133.8,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.planet.kosmos.himmelsmechanik#2",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 115,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 129.5,
+   "minuten": 2.25
+  },
+  {
+   "start": "2026-11-19T13:40:54.477Z",
+   "ordner": "sitzung-20261119-144054",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 7.2,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.planet.kosmos.sterne#1",
+    "karte2.planet.kosmos.sterne#2",
+    "karte2.planet.kosmos.sterne#3",
+    "karte2.planet.kosmos.sterne#4",
+    "karte2.planet.kosmos.sterne#5",
+    "karte2.planet.kosmos.sterne#6",
+    "karte2.planet.kosmos.sterne#7",
+    "karte2.planet.kosmos.welten#2",
+    "karte2.planet.kosmos.welten#3",
+    "karte2.planet.kosmos.welten#4",
+    "karte2.planet.kosmos.welten#5",
+    "karte2.planet.kosmos.welten#6",
+    "karte2.same.entfaltung.abwesenheit#1",
+    "karte2.same.entfaltung.abwesenheit#2",
+    "karte2.same.entfaltung.abwesenheit#3",
+    "karte2.same.entfaltung.abwesenheit#4",
+    "karte2.same.entfaltung.abwesenheit#5",
+    "karte2.same.entfaltung.abwesenheit#6",
+    "karte2.same.entfaltung.abwesenheit#7",
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.planet.kosmos.sternhimmel#2",
+     "s": 25.1,
+     "takte": 881,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.planet.kosmos.sternhimmel#2",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      185.7,
+      214.4
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.planet.kosmos.sternhimmel#2",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.planet.kosmos.sternhimmel#2",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.planet.kosmos.sterne#1: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999413805555545\"} — offen: karte2.planet.kosmos.sterne#1, karte2.planet.kosmos.sterne#2, karte2.planet.kosmos.sterne#3, karte2.planet.kosmos.sterne#4, karte2.planet.kosmos.sterne#5, karte2.planet.kosmos.sterne#6, karte2.planet.kosmos.sterne#7, karte2.planet.kosmos.welten#2, karte2.planet.kosmos.welten#3, karte2.planet.kosmos.welten#4, karte2.planet.kosmos.welten#5, karte2.planet.kosmos.welten#6, karte2.same.entfaltung.abwesenheit#1, karte2.same.entfaltung.abwesenheit#2, karte2.same.entfaltung.abwesenheit#3, karte2.same.entfaltung.abwesenheit#4, karte2.same.entfaltung.abwesenheit#5, karte2.same.entfaltung.abwesenheit#6, karte2.same.entfaltung.abwesenheit#7, karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2069,
+    "frameP95": 33.38,
+    "taktP95": 21.84,
+    "vramMax": 134,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.planet.kosmos.sternhimmel#2",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 122,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 132.6,
+   "minuten": 2.29
+  },
+  {
+   "start": "2026-11-19T13:43:11.771Z",
+   "ordner": "sitzung-20261119-144311",
+   "port": 7804,
+   "warten": 0.03,
+   "bootS": 7.1,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.planet.kosmos.welten#2",
+    "karte2.planet.kosmos.welten#3",
+    "karte2.planet.kosmos.welten#4",
+    "karte2.planet.kosmos.welten#5",
+    "karte2.planet.kosmos.welten#6",
+    "karte2.same.entfaltung.abwesenheit#1",
+    "karte2.same.entfaltung.abwesenheit#2",
+    "karte2.same.entfaltung.abwesenheit#3",
+    "karte2.same.entfaltung.abwesenheit#4",
+    "karte2.same.entfaltung.abwesenheit#5",
+    "karte2.same.entfaltung.abwesenheit#6",
+    "karte2.same.entfaltung.abwesenheit#7",
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.planet.kosmos.sterne#1",
+     "s": 24.3,
+     "takte": 729,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.planet.kosmos.sterne#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      185.3,
+      211.3
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.planet.kosmos.sterne#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.planet.kosmos.sterne#1",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.planet.kosmos.welten#2: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"} — offen: karte2.planet.kosmos.welten#2, karte2.planet.kosmos.welten#3, karte2.planet.kosmos.welten#4, karte2.planet.kosmos.welten#5, karte2.planet.kosmos.welten#6, karte2.same.entfaltung.abwesenheit#1, karte2.same.entfaltung.abwesenheit#2, karte2.same.entfaltung.abwesenheit#3, karte2.same.entfaltung.abwesenheit#4, karte2.same.entfaltung.abwesenheit#5, karte2.same.entfaltung.abwesenheit#6, karte2.same.entfaltung.abwesenheit#7, karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2056,
+    "frameP95": 33.4,
+    "taktP95": 22.09,
+    "vramMax": 133.6,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.planet.kosmos.sterne#1",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 117,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 130,
+   "minuten": 2.28
+  },
+  {
+   "start": "2026-11-19T13:45:28.412Z",
+   "ordner": "sitzung-20261119-144528",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 7.1,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.same.entfaltung.abwesenheit#1",
+    "karte2.same.entfaltung.abwesenheit#2",
+    "karte2.same.entfaltung.abwesenheit#3",
+    "karte2.same.entfaltung.abwesenheit#4",
+    "karte2.same.entfaltung.abwesenheit#5",
+    "karte2.same.entfaltung.abwesenheit#6",
+    "karte2.same.entfaltung.abwesenheit#7",
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.planet.kosmos.welten#2",
+     "s": 25.4,
+     "takte": 780,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.planet.kosmos.welten#2",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      185.7,
+      212.8
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.planet.kosmos.welten#2",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.planet.kosmos.welten#2",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.same.entfaltung.abwesenheit#1: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49988861111111105\"} — offen: karte2.same.entfaltung.abwesenheit#1, karte2.same.entfaltung.abwesenheit#2, karte2.same.entfaltung.abwesenheit#3, karte2.same.entfaltung.abwesenheit#4, karte2.same.entfaltung.abwesenheit#5, karte2.same.entfaltung.abwesenheit#6, karte2.same.entfaltung.abwesenheit#7, karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2016,
+    "frameP95": 41.65,
+    "taktP95": 26.06,
+    "vramMax": 133.7,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.planet.kosmos.welten#2",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 120,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 133.9,
+   "minuten": 2.32
+  },
+  {
+   "start": "2026-11-19T13:47:47.485Z",
+   "ordner": "sitzung-20261119-144747",
+   "port": 7804,
+   "warten": 0.03,
+   "bootS": 6.9,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.same.entfaltung.abwesenheit#1",
+     "s": 23.8,
+     "takte": 831,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.same.entfaltung.abwesenheit#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [
+      "return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s."
+     ],
+     "heap": [
+      187.2,
+      393.6
+     ],
+     "ungemessen": "den Kontext der Probe hält noch: return await (async function abwesenheitTag(r, T, o) { const s = r.state, A = r.constructor, pm = s. — Heap nach der Rücknahme 187.2 → 393.6 MB (+206.4 > 64)"
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.same.entfaltung.abwesenheit#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.same.entfaltung.abwesenheit#1",
+     "gehalten": [],
+     "offen": [
+      "bewohner"
+     ]
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.same.preis.eingabe#1: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"} — offen: karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 0,
+    "frameP95": null,
+    "taktP95": null,
+    "vramMax": null,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.same.entfaltung.abwesenheit#1",
+      "m": 846,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 102,
+    "luecken": 1,
+    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   },
+   "fahrtS": 158.9,
+   "minuten": 2.74
+  },
+  {
+   "start": "2026-11-19T13:50:31.811Z",
+   "ordner": "sitzung-20261119-145031",
+   "port": 7804,
+   "warten": 0.04,
+   "bootS": 7.7,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.same.preis.eingabe#1",
+     "s": 24.5,
+     "takte": 831,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.same.preis.eingabe#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      184.8,
+      235.1
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.same.preis.eingabe#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.same.preis.eingabe#1",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "ciBlicke": 2,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2592,
+    "frameP95": 33.4,
+    "taktP95": 22.8,
+    "vramMax": 134.9,
+    "seiten": 1,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.same.preis.eingabe#1",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 134,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 142.8,
+   "minuten": 2.51
   }
  ]
 }
