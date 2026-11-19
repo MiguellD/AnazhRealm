@@ -1113,7 +1113,7 @@ async function kreaturProben(r, T, opts) {
     // samt ihren Pegeln (`_taetigkeit`, `_ruhe`, `magen`; der Verband liest die des Leittiers, `_kreaturTaetigkeit`; „stehen“ ist
     // die Tätigkeit stehen, wo das Ethogramm sie trägt — das Ende des Stehens `_stehenBis` —, sonst ruhen) und die Annäherung des
     // Spielers (1,4 m/s, die Flucht des Gesetzes). Ein Wolf äst nicht (Ethogramm nahrung 0): sein Magen bleibt voll, sonst jagt
-    // das hungrige Rudel die Kamera. Eine laufende Aktion beendet der Fahrplan NIE (das ist Sache des Gesetzes): er nennt sie je
+    // das hungrige Rudel die Kamera (je Glied, nicht nur das Leittier). Eine laufende Aktion beendet der Fahrplan NIE (das ist Sache des Gesetzes): er nennt sie je
     // Wechsel (`aktionOffen`). DIE EINSTELLUNGEN DER BÜHNE (benannt, je Lauf in `einstellung`): der Ort mit den wenigsten
     // Büscheln der Nah-Wiese (`_nahWieseKachelBueschel`, das Gras des Spiels) im Kreis 10 m um den Ort und im Gang 15 × 4 m zur
     // Kamera, unter den ersten 12 Orten der Suche; DIE KAMERA N, nah: 8 m vor dem Leittier auf der Linie H → Leittier, 1 m über
@@ -1254,6 +1254,8 @@ async function kreaturProben(r, T, opts) {
                 u._ruhe = z === "stehen" && !ZEIGT.stehen ? 2 : 0;
                 u._stehenBis = z === "stehen" ? s.creatureAnimationTime + PHASE / 60 : 0;
                 u.magen = z === "aesen" && aesenKann ? 0 : r._kreaturMagenVoll(leit);
+                // wer nicht äst (der Wolf), bleibt satt — jedes Glied: ein hungriges jagt den Spieler an der Kamera (`_kreaturJagdBereit`)
+                if (!aesenKann) for (const c of glieder) c.userData.magen = r._kreaturMagenVoll(c);
                 aktionOffen[z] = [];
                 for (const c of glieder) {
                     const VA = c.userData._verhaltenAktion;
