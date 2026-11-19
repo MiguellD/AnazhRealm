@@ -1863,3 +1863,4 @@ omen-gtx-gtx-f68dbf09-w153817-5-f68dbf09 UNGEMESSEN 1 GRÜN / 0 ROT / 1 UNGEMESS
 omen-gtx-gtx-f68dbf09-w153817-6-f68dbf09 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN vegetation.K5#2 ‖ vegetation.K5#2: Krone sommer 104173 px · winter 2252 px · fruehling 76362 px → Winter 0.022 × Sommer, Wiese LAI 2–10 m sommer 2.40 · winter 0.00 · fruehling 1.71 → Winter 0.000 × Sommer (punkte-maschine a59a974a messung/f68dbf09-gtx.json)
 2026-11-19 23:27 landung Runde 1 am f68dbf09: WEICHT — ein Wartender, der inzwischen fort ist wartete am GPU-Schloss, BEHALTEN 629, die Liste geht an derselben Station weiter
 2026-11-19 23:28 RUNDE 1 ALARM gtx: OMEN: 432 Messungen ungepusht seit 05:53 — weicht 1388/1428, Station vegetation.K5#2, Kopf f68dbf09; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
+2026-11-19 23:28 landung Runde 1 am f68dbf09: misst 40 von 1428 Stationen (1388 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
