@@ -323,9 +323,10 @@ class AnazhRealm_studio_stoff {
                 ? globalThis.__koerperCore.HAUT_LOOK
                 : null;
         // DER KLARLACK (W5 Gegenstände): die Haut des Körperstudios (HAUT_LOOK) ODER der Stoff selbst (Fahrzeug-Lack,
-        // Klingen-Stahl — `budgetRegler` cc/ccr aus dem Gesetzbuch); ohne Klarlack der Standard. Gemessen (Integration W5,
-        // echte GPU, Ausgabe-Pfad, Gesicht auf 0,75 m): die Haut hebt sich im Median 41,3 -> 42,9 (+4 %, zwei gleiche
-        // Schüsse 0,2 auseinander); er trägt nur die Menschen-Haut (skin/haut — kein Tier-Stoff), keinen Befehl mehr.
+        // Klingen-Stahl — `budgetRegler` cc/ccr aus dem Gesetzbuch); ohne Klarlack der Standard. Gemessen (licht-eine-skala,
+        // GTX 1050, Ausgabe-Pfad, Mess-Wiese am Mittag, Gesicht auf etwa 2,5 m, EIN eingefrorenes Bild): der Lack allein
+        // (Physical ↔ Standard, beide ohne Saum) hebt das Gesicht im Mittel um 0,43/255, am Glanzpunkt bis 10/255, zwei gleiche
+        // Schüsse 0,00 auseinander; er trägt nur die Menschen-Haut (skin/haut — kein Tier-Stoff), keinen Befehl mehr.
         const ccSoll =
             _hautL && Number.isFinite(_hautL.clearcoat)
                 ? {
