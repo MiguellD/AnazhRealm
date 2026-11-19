@@ -76,3 +76,19 @@ Scratch-Wurzel: `C:\Users\micha\AppData\Local\Temp\claude\b95c25d6c0e867eb\f6f6f
 5. **EINHEIT, Bild-Spike STUFE:** an die GTX 1050 nach ihrem Licht-Rest (B1–B4; B5 misst das Paar) — die Radeon misst nachts.
 6. **Herde:** `herde-gesetz` cc24899c, zweites Urteil am Bogen: groß im Bild, Äsen und Flucht geheilt; Reste T1 schwarzer Keil am
    Tier, T2 S4 zurückgefallen (7,97 → 26,37 m/s²), T3 „stehen“ läuft an der GPU (1,17 m/s). Bogen `kontakt-nachher2-hirsch.jpg`.
+
+## 8 Die Hebel-Tafel 17:05 (ersetzt 7.2 — mein Entscheid „Radeon misst die volle Liste“ war falsch)
+Gelesen an der Mess-Datei der GTX am Runden-Kopf f68dbf09: von 498 Urteilen 3 grün. Das Paar ist nicht die Bremse. Blatt:
+`vision/hebel-tafel.md`, Werkzeug `zug/werkzeug-w3/hebel-tafel.cjs`.
+1. Das zweite Gerät misst nur, was das erste GRÜN urteilte. Die Radeon-Zeile der Runde 1 trägt seit 17:03 die drei grünen
+   Stationen der GTX (sinn.tod#1, menge.bevoelkerung#2, preis.eingabe#1) — sie misst sie in der nächsten freien Lücke, die
+   Buchung folgt von selbst. Die Radeon-GPU bleibt sonst bei den Machern. Runde 2 darf NICHT wieder 1 428 rote Stationen an
+   zwei Geräten fahren: vorher die Reihe (`runde.cjs reihe`) auf „rot bleibt liegen, bis eine Landung die Leiter berührt“
+   stellen — Auftrag liegt beim Arbeiter `richter-ohne-urteil` (Teil 2), sonst der erste Handgriff.
+2. In Fahrt (Opus, lokal, ohne GPU): `richter-ohne-urteil` (167 Stationen ohne Urteil: Frist gerissen, Urteils-Zeile fehlt) und
+   `saat-im-lauf` (35 Stationen / 26 Leitern: die Sitzung hält EINE Saat). Abgabe je als Zweig auf origin + Blatt im Scratch
+   `hebel\richter-ohne-urteil\abgabe.md` und `hebel\saat-im-lauf\abgabe.md`.
+3. Nächste Hebel in dieser Reihenfolge, je EIN Arbeiter: Kosmos (44 Stationen) · Menge (35) · Spieler (28) · „Leser fehlt“ nach
+   Leiter (104).
+4. Licht Welle 1: Macher-Kopf 9d821539, Vorprüfung 0c1af929 mit `[gpu-probe: gate:post-kette, gate:wasser-leben:bild]`; bei
+   18/18 und grüner GPU-Probe Stempel `w28-licht-eine-skala-2`.
