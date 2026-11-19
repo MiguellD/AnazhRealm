@@ -330,6 +330,12 @@ if (was === "lies") {
     // es zieht nach <ablage>/<kopf8>-<geraet>/… um (aus dem Baum, damit `git clean` es nie löscht), nach git geht nur <bild>.sha256
     // (Prüfsumme, Größe, Station, Urteil). Gelöscht wird nichts. Aufruf: bilder <pm-baum> <geraet> <kopf> <ablage>
     const [pm, g, kopf, ablage] = arg;
+    // die Wurzeln müssen absolut sein und der Baum muss den Mess-Ordner tragen: ein leerer <pm> löste sonst RELATIV zum Arbeitsordner
+    // des Rufers auf, und das Umziehen träfe Bilder eines fremden Baums (Lösch-Liste 19.11.)
+    if (!pm || !path.isAbsolute(pm) || !fs.existsSync(path.join(pm, MDIR)) || !ablage || !path.isAbsolute(ablage) || !/^(gtx|radeon)$/.test(String(g))) {
+        console.error("bilder: <pm-baum> und <ablage> absolut, der Baum mit " + MDIR + ", <geraet> gtx|radeon — nichts angefasst (" + [pm, g, ablage].join(" · ") + ")");
+        process.exit(2);
+    }
     const P = path.join(pm, MDIR), rd = path.join(P, "roh", k8(kopf) + "-" + g);
     const json = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return null; } };
     const m = json(path.join(P, k8(kopf) + "-" + g + ".json")) || {}, stand = json(path.join(pm, "meisterkarte-quelle/punkte/stand.json")) || {};

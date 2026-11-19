@@ -123,8 +123,8 @@ behalten() {
         pushe
         return 0
     fi
-    git checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
-    git clean -fdq meisterkarte-quelle/punkte/messung 2>/dev/null
+    git -C "${PM:?}" checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
+    git -C "${PM:?}" clean -fdq -- meisterkarte-quelle/punkte/messung 2>/dev/null
     return 1
 }
 # DER REST EINES BEENDETEN LAUFS (12.11.: der Lauf an b1531071 starb 01:50 mit dem Dienst, seine Datei lag ungepusht im Baum): trägt
@@ -153,8 +153,8 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     cd "$PM" || return 1
     rest_behalten
     # was sonst im Baum liegt, stammt von einem Lauf ohne Zeugen: eine halbe Messung ist keine — verwerfen
-    git checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
-    git clean -fdq meisterkarte-quelle/punkte/messung 2>/dev/null
+    git -C "${PM:?}" checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
+    git -C "${PM:?}" clean -fdq -- meisterkarte-quelle/punkte/messung 2>/dev/null
     git fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine"
     git rebase -q origin/punkte-maschine >/dev/null 2>&1 || git rebase --abort >/dev/null 2>&1
     log "$name am ${K:0:8}"

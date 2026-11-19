@@ -52,7 +52,7 @@ teil() { local name=$1 R=$2 v=$3 rest n
   echo "$(date '+%T') ${K:0:8} $name Versuch $v START ($R)" >> $L
   TEIL=$name-v$v NUR=$R node punkte-offen.cjs lauf $K >> $L 2>&1
   # der Roh-Ordner DIESER Sitzung (14.11.: jede Sitzung schreibt in ihren eigenen `sitzung-<kennung>`, der jüngste Name ist der letzte)
-  SO=$(ls -d $ROH/${K:0:8}-gtx/sitzung-* 2>/dev/null | tail -n 1); rm -rf $N/punkte-sitzung-$name-v$v; [ -n "$SO" ] && cp -r "$SO" $N/punkte-sitzung-$name-v$v 2>/dev/null
+  SO=$(ls -d $ROH/${K:0:8}-gtx/sitzung-* 2>/dev/null | tail -n 1); rm -rf "${N:?}/punkte-sitzung-${name:?}-v$v"; [ -n "$SO" ] && cp -r "$SO" "$N/punkte-sitzung-$name-v$v" 2>/dev/null
   REST_TEIL=
   if [ $(verdr) -gt $d0 ]; then
     rest=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$R" 2>>$L)

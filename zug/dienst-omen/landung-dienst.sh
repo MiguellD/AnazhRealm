@@ -92,7 +92,7 @@ teile_von() { runde teile "$EICHTAFEL" "$1" "$TEIL_BUDGET_S"; }
 # Eine Landung ändert hier nichts: die Liste fährt am Kopf der Runde zu Ende (DAS GESETZ DER RUNDE).
 liste_fahren() {
     local K=$1 NAME=$2 REST=$3 r=$4 BASIS=$5 GESAMT=$6 kp t l0 b fb=0 grund= sj sv= TEILE
-    GRENZE=$S/landung.grenze
+    GRENZE=${S:?}/landung.grenze
     rm -f "$GRENZE"
     WEICHT_VOR= BEHALTEN=0 PROG_PID= ALARM_PID=
     l0=$(wc -l <"$KETTE_LOG" 2>/dev/null || echo 0)
