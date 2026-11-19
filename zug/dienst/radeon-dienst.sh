@@ -102,25 +102,56 @@ iso() { date -u -d "$1" +%Y-%m-%dT%H:%M:%S.%3NZ; }
 stationen() { local c; c=$(grep -cE "^  (GRÜN|ROT|OFFEN)" "$W/radeon-nie-leer-lauf.out" 2>/dev/null); echo "${c:-0}"; }
 # das Urteil der Punkte-Maschine selbst (run, `meine` leer nach --offen) — die EINE Quelle für „nichts offen“, nie die Zahl der Zeilen
 nichts_offen() { grep -q "ist jede Station auf radeon frisch gemessen" "$W/radeon-nie-leer-lauf.out" 2>/dev/null; }
-pushe() {
-    local j
-    for j in 1 2 3 4 5; do
-        git fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine"
-        git rebase -q origin/punkte-maschine && git push -q origin HEAD:punkte-maschine && return 0
-        git rebase --abort >/dev/null 2>&1
-        sleep 20
-    done
-    return 1
+# DER PUSH SCHEITERT NIE MEHR STILL (Koordinator 19.11. 04:16; Fund: der Mess-Baum stand 58 Commits vor und 2 402 hinter
+# origin/punkte-maschine, der erste ungepushte „Messung 105c9bd3 radeon“ 16.11. 07:46 — pushe() rebaste, der Konflikt in der GETEILTEN
+# referenz-MiguellD.json hielt ihn an, danach „cannot rebase: You have unstaged changes“ 260-mal still in radeon.out, und der Blick
+# sagte „RADEON ok“). Jetzt (1) kein Rebase: runde.cjs push-pfade setzt NUR die eigenen Geräte-Pfade aus dem Arbeitsbaum in den frisch
+# geholten Ursprungs-Kopf (commit-tree, Push, bei Ablehnung von vorn); (2) die Referenz heißt referenz-radeon.json (PUNKTE_REFERENZ_NAME
+# — kein Pfad, den zwei Schreiber teilen); (3) die Linse ungepusht_pruefen: Messungen des Geräts, die der Ursprung nicht trägt, > 15 min
+# = ALARM in zug/runde.txt + „RADEON: n Messungen ungepusht seit <Uhr>“ im Puls.
+export PUNKTE_REFERENZ_NAME=radeon
+UNGEPUSHT_SEIT=$S/radeon.ungepusht
+UNGEPUSHT_FRIST_S=${UNGEPUSHT_FRIST_S:-900}
+pushe() { node "$RUNDE_CJS" push-pfade "$PM" punkte-maschine radeon "$1" "$2" >>"$L" 2>&1; } # <kopf|-> <botschaft>
+# baum_frisch — der Mess-Baum an den Ursprungs-Kopf, nie per Rebase: eigene Commits vor dem Ursprung (aus der Zeit des Rebase-Pushs)
+# bleiben als Zweig radeon-ungepusht-<zeit> liegen, ihre Mess-Dateien gehen nach origin, soweit er sie nicht trägt (push-pfade -);
+# scheitert das, bleibt der Baum stehen (nichts verworfen) und die Linse meldet es
+baum_frisch() {
+    local n
+    git -C "${PM:?}" fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" || return 1
+    n=$(git -C "$PM" rev-list --count origin/punkte-maschine..HEAD 2>/dev/null)
+    if [ "${n:-0}" -gt 0 ]; then
+        git -C "$PM" branch -f "radeon-ungepusht-$(date +%m%d%H%M)" HEAD
+        log "RETTUNG: $n eigene Commits vor origin/punkte-maschine (Rebase-Push) — als Zweig radeon-ungepusht-$(date +%m%d%H%M) gesichert"
+        pushe - "Radeon: Rettung der Mess-Dateien aus $n ungepushten Commits (Rebase-Push, Gesetz der Runde 19.11.)" || return 1
+    elif [ "$(ungepusht_zahl)" != 0 ]; then # ein früherer Push scheiterte: die eigenen Pfade aller Köpfe noch einmal
+        pushe "*" "Radeon: Messungen eines gescheiterten Pushs (runde.cjs push-pfade)" && [ "$(ungepusht_zahl)" = 0 ] || { log "der Mess-Baum trägt ungepushte Messungen — nichts verworfen, kein Neuaufsetzen"; return 1; }
+    fi
+    git -C "$PM" checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
+    git -C "$PM" clean -fdq -- meisterkarte-quelle/punkte/messung 2>/dev/null
+    git -C "$PM" reset -q --hard origin/punkte-maschine
+}
+ungepusht_zahl() { UNGEPUSHT=$(node "$RUNDE_CJS" ungepusht "$PM" punkte-maschine radeon "$UNGEPUSHT_SEIT" 2>>"$L"); echo "${UNGEPUSHT%% *}"; }
+# ungepusht_pruefen — die Linse: n > 0 seit > UNGEPUSHT_FRIST_S ist EIN Alarm je Stunde (zug/runde.txt Feld alarm + zug/erledigt.txt)
+ungepusht_pruefen() {
+    local n seit m=$S/radeon.ungepusht.alarm
+    n=$(ungepusht_zahl)
+    UNGEPUSHT_TEXT=
+    [ "${n:-0}" -gt 0 ] || return 0
+    seit=${UNGEPUSHT#* }
+    UNGEPUSHT_TEXT="RADEON: $n Messungen ungepusht seit $(date -d "$seit" +%H:%M)"
+    [ $(($(date +%s) - $(date -d "$seit" +%s))) -gt "$UNGEPUSHT_FRIST_S" ] || return 0
+    [ -f "$m" ] && [ $(($(date +%s) - $(mzeit "$m"))) -lt 3600 ] && return 0
+    touch "$m"
+    runde alarm "$R" "radeon (radeon-dienst)" --geraet radeon --grund "$UNGEPUSHT_TEXT" >>"$L"
 }
 # behalten <kopf> <bis ISO> <was> — punkte.cjs behalte kappt jeden Eintrag, dessen Lauf nach <bis> endete, hält den Rest und pusht ihn;
 # ohne Behaltenes steht die Datei wie im Archiv (Exit 1). Im Baum $PM.
 behalten() {
     (cd "$PM/meisterkarte-quelle/punkte" && node punkte.cjs behalte --sha "$1" --geraet radeon --bis "$2" >"$W/radeon-behalte.out" 2>&1)
     if [ $? = 0 ]; then
-        [ -d vision/richter ] && git add -A vision/richter # die Richter-Akten der Meisterkarte 2 (punkte.cjs richterAkten) reisen mit der Messung
         bilder_halten "$1"
-        git add -A meisterkarte-quelle/punkte/messung && git $A commit -qm "Messung ${1:0:8} radeon: $3 ($(head -1 "$W/radeon-behalte.out" | cut -c1-80), radeon-dienst)" >/dev/null 2>&1
-        pushe
+        pushe "$1" "Messung ${1:0:8} radeon: $3 ($(head -1 "$W/radeon-behalte.out" | cut -c1-80), radeon-dienst)" # die Akten der Meisterkarte 2 reisen mit (eigene Pfade)
         return 0
     fi
     git -C "${PM:?}" checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
@@ -152,13 +183,11 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     MK=$K
     cd "$PM" || return 1
     rest_behalten
-    # was sonst im Baum liegt, stammt von einem Lauf ohne Zeugen: eine halbe Messung ist keine — verwerfen
-    git -C "${PM:?}" checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
-    git -C "${PM:?}" clean -fdq -- meisterkarte-quelle/punkte/messung 2>/dev/null
-    git fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine"
-    git rebase -q origin/punkte-maschine >/dev/null 2>&1 || git rebase --abort >/dev/null 2>&1
+    # was sonst im Baum liegt, stammt von einem Lauf ohne Zeugen: eine halbe Messung ist keine — verwerfen; der Baum an den Ursprung
+    # (baum_frisch, nie Rebase) — trägt er ungepushte Messungen, fährt keine Messung (die Linse meldet es)
+    baum_frisch || { log "$name am ${K:0:8}: der Mess-Baum ist nicht frisch (ungepusht oder fetch) — keine Fahrt"; return 1; }
     log "$name am ${K:0:8}"
-    puls radeon "misst $name am ${K:0:8} · $(node "$RUNDE_CJS" ablage "$BILD_ABLAGE" 2>/dev/null)"
+    puls radeon "${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }misst $name am ${K:0:8} · $(node "$RUNDE_CJS" ablage "$BILD_ABLAGE" 2>/dev/null)"
     PROG=0
     cd "$PM/meisterkarte-quelle/punkte" && { timeout 9000 node punkte.cjs run --sha "$K" --geraet radeon "$@" >"$W/radeon-nie-leer-lauf.out" 2>&1 & }
     p=$!
@@ -220,10 +249,8 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     g=$(grep -cE "^  GRÜN" "$W/radeon-nie-leer-lauf.out")
     plan=$(grep -m1 -oE "^Punkte-Maschine: [0-9]+ Station" "$W/radeon-nie-leer-lauf.out" | grep -oE "[0-9]+")
     log "$name gemessen ${K:0:8}: $n Stationen (offen ${plan:-?}), $g GRÜN · $(grep -E "^  (GRÜN|ROT)" "$W/radeon-nie-leer-lauf.out" | cut -c1-60 | tr '\n' ' ' | cut -c1-300)"
-    [ -d vision/richter ] && git add -A vision/richter # die Richter-Akten der Meisterkarte 2 (punkte.cjs richterAkten) reisen mit der Messung
     bilder_halten "$K"
-    git add -A meisterkarte-quelle/punkte/messung && git $A commit -qm "Messung ${K:0:8} radeon: $name (radeon-dienst, $g GRÜN von $n, ohne CI daneben)" >/dev/null 2>&1
-    pushe && log "Messung gepusht"
+    pushe "$K" "Messung ${K:0:8} radeon: $name (radeon-dienst, $g GRÜN von $n, ohne CI daneben)" && log "Messung gepusht"
     [ "$n" != 0 ] && return 0
     nichts_offen && return 3
     log "$name ${K:0:8} OHNE URTEIL: 0 Stationen, die Punkte-Maschine sagte nie ‚frisch gemessen‘ ($(grep -v '^\s*$' "$W/radeon-nie-leer-lauf.out" | tail -1 | cut -c1-160)) — offen bleibt offen, die Fortsetzung misst in der nächsten Lücke"
@@ -257,8 +284,9 @@ takt() {
     fi
     read -r RN RK RV RZ RLISTE <<<"$RL"
     runde_alarm
+    ungepusht_pruefen
     if [ "$RZ" = durch ]; then
-        puls radeon "Runde $RN am ${RK:0:8}: die Radeon ist durch — $(runde weiter "$R" "$(main_jetzt)") · $(node "$RUNDE_CJS" ablage "$BILD_ABLAGE" 2>/dev/null)"
+        puls radeon "${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }Runde $RN am ${RK:0:8}: die Radeon ist durch — $(runde weiter "$R" "$(main_jetzt)") · $(node "$RUNDE_CJS" ablage "$BILD_ABLAGE" 2>/dev/null)"
         return 0
     fi
     if [ "$RLISTE" != - ]; then
@@ -401,6 +429,8 @@ const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
     const m = lies(), offen = nur ? alle.filter((id) => nur.includes(id)) : alle.filter((id) => !m.je[id]);
     if (!offen.length) return console.log("Punkte-Maschine: am " + k8 + " ist jede Station auf radeon frisch gemessen");
     fs.writeFileSync(path.join(S, "pid"), String(process.pid));
+    // die Referenz-Ablage wie punkte.cjs referenzAblageVon: je PUNKTE_REFERENZ_NAME, sonst je Rechner
+    fs.writeFileSync(path.join(__dirname, "messung", "referenz-" + String(process.env.PUNKTE_REFERENZ_NAME || require("os").hostname()).replace(/[^A-Za-z0-9_-]/g, "_") + ".json"), JSON.stringify({ rechner: "x", fahrten: [] }) + "\n");
     console.log("Punkte-Maschine: " + offen.length + " Station(en) in " + offen.length + " Läufen auf radeon am " + k8 + " (Stummel)");
     let n = 0, ms = Number(marke("ms") || 100);
     for (const id of offen) {
@@ -432,6 +462,8 @@ STUMMEL
     warter) warter() { :; } ;;
     ziel) kopf() { main_jetzt; } ;; # die alte Regel: der Takt misst am jüngsten main
     bild) bilder_halten() { :; } ;; # die alte Regel: git add -A nimmt jedes Roh-Bild mit
+    still-push) ungepusht_pruefen() { UNGEPUSHT_TEXT=; } ;; # die alte Regel: ein Push scheitert, niemand sagt es
+    referenz-rechner) unset PUNKTE_REFERENZ_NAME ;; # die alte Regel: die Referenz heißt nach dem Rechner (geteilt)
     reihe) vor_mir_da() { return 1; } ;; # die alte Regel: nach HAND_ZEIT_S tritt die Fahrt wieder ein, gleich wer schon wartet
     esac
     # neu <botschaft> — eine Landung auf main und (gespielt) beide Geräte durch: die nächste Runde am neuen Kopf
@@ -573,25 +605,47 @@ STUMMEL
     if echo "$z1" | grep -q "r.K2_1-bild.png " && ! echo "$z1" | grep -q "r.K1_1-bild.png " && echo "$z1" | grep -q "r.K1_1-bild.png.sha256" && [ -f "$X/ablage/${K:0:8}-radeon/r.K1_1-bild.png" ]; then
         echo "OK r  Roh-Bilder: gehaltenes Urteil (r.K1#1 ROT → ROT) — Bild am Gerät, nur die Prüfsumme in git; Wechsel (r.K2#1 GRÜN → ROT) — das Täter-Bild in git"
     else echo "ROT r  Roh-Bilder: in git „$z1“ (Soll r.K2_1-bild.png und r.K1_1-bild.png.sha256, NICHT r.K1_1-bild.png), am Gerät $([ -f "$X/ablage/${K:0:8}-radeon/r.K1_1-bild.png" ] && echo ja || echo nein)"; fi
+    # p — DER PUSH SCHEITERT STILL: der Ursprung lehnt jeden Push ab (pre-receive). Die Messung bleibt im Baum, die Linse meldet
+    # „RADEON: n Messungen ungepusht seit <Uhr>“ als ALARM; nimmt der Ursprung wieder an, holt der nächste Takt den Push nach (ohne Rebase)
+    neu acht
+    printf 'p.K1#1\np.K2#1\n' >"$STUB/alle.txt"
+    printf '#!/bin/sh\nexit 1\n' >"$X/pm.git/hooks/pre-receive"
+    UNGEPUSHT_FRIST_S=-1
+    export RUNDE_PUSH_VERSUCHE=2
+    for mp in 1 2 3; do takt; done
+    takt
+    z1=$(git -C "$R" fetch -q origin +refs/heads/koordination:refs/t/k && git -C "$R" show refs/t/k:zug/erledigt.txt | grep -c "ALARM radeon: RADEON: [0-9]* Messungen ungepusht seit")
+    b1=$(gem "$K")
+    rm -f "$X/pm.git/hooks/pre-receive"
+    for mp in 1 2 3 4; do takt; [ "$(gem "$K")" = 2 ] && break; done
+    b2=$(gem "$K")
+    UNGEPUSHT_FRIST_S=900
+    unset RUNDE_PUSH_VERSUCHE
+    if [ "$z1" -ge 1 ] && [ "${b1:-0}" = 0 ] && [ "$b2" = 2 ]; then echo "OK p  Push scheitert: ALARM „RADEON: n Messungen ungepusht seit …“ in zug/erledigt.txt, nichts verworfen; der Ursprung nimmt wieder an → nachgeholt 2 von 2 (ohne Rebase)"
+    else echo "ROT p  Push scheitert: Alarm-Zeilen $z1 (Soll ≥ 1), am Ursprung während der Ablehnung ${b1:-0} (Soll 0), danach $b2 (Soll 2)"; fi
+    # q — ABSENZ: kein Pfad, den zwei Schreiber teilen — die Referenz der Radeon heißt referenz-radeon.json, eine Rechner-Referenz reist nie
+    z2=$(git -C "$X/pm.git" ls-tree --name-only punkte-maschine meisterkarte-quelle/punkte/messung/ | sed "s|.*/||" | grep "^referenz-" | tr '\n' ' ')
+    if [ "$z2" = "referenz-radeon.json " ]; then echo "OK q  Absenz: am Ursprung nur referenz-radeon.json — kein Pfad eines Rechners oder eines anderen Geräts"
+    else echo "ROT q  Absenz: Referenzen am Ursprung „$z2“ (Soll referenz-radeon.json)"; fi
     command rm -rf "$X"
 }
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
-    for m in echt von-vorn rest warter pid reihe ziel bild; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt von-vorn rest warter pid reihe ziel bild still-push referenz-rechner; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 9 ] || rot=1
-    for m in von-vorn rest warter pid reihe ziel bild; do
+    [ "$(echo "$echt" | grep -c "^OK")" = 11 ] || rot=1
+    for m in von-vorn rest warter pid reihe ziel bild still-push referenz-rechner; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 9 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 11 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }

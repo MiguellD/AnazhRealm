@@ -60,6 +60,21 @@ zahl() { echo "$1" | tr ',|' '\n\n' | grep -c .; }
 # runde <verb> … — zug/dienst/runde.cjs gegen den Klon $RUNDE_REPO (stdout = die Antwort, stderr ins Log)
 runde() { node "$RUNDE_CJS" "$@" 2>>"$L"; }
 runde_alarm() { runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" >>"$L"; }
+# DIE LINSE „DER PUSH SCHEITERT STILL“ (Koordinator 19.11. 04:16; Fund an der Radeon, 58 Commits ungepusht seit 16.11.): Messungen der
+# OMEN im Mess-Baum, die der Ursprung nicht trägt (runde.cjs ungepusht), > UNGEPUSHT_FRIST_S = EIN Alarm je Stunde mit Zahl und Uhr
+UNGEPUSHT_FRIST_S=${UNGEPUSHT_FRIST_S:-900}
+ungepusht_pruefen() {
+    local r n seit m=$S/omen.ungepusht.alarm
+    r=$(node "$RUNDE_CJS" ungepusht "$PM" punkte-maschine "$GERAET" "$S/omen.ungepusht" 2>>"$L")
+    n=${r%% *} UNGEPUSHT_TEXT=
+    [ "${n:-0}" -gt 0 ] 2>/dev/null || return 0
+    seit=${r#* }
+    UNGEPUSHT_TEXT="OMEN: $n Messungen ungepusht seit $(date -d "$seit" +%H:%M)"
+    [ $(($(date +%s) - $(date -d "$seit" +%s))) -gt "$UNGEPUSHT_FRIST_S" ] || return 0
+    [ -f "$m" ] && [ $(($(date +%s) - $(mzeit "$m"))) -lt 3600 ] && return 0
+    touch "$m"
+    runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" --geraet "$GERAET" --grund "$UNGEPUSHT_TEXT" >>"$L"
+}
 # runde_bg — für die Schreiber im HINTERGRUND: eine EIGENE Datei. node (ein Windows-Prozess) schreibt nicht mit O_APPEND wie MSYS —
 # zwei Schreiber in derselben Log-Datei überschrieben im Selbsttest Zeilen des Dienstes (die Radeon verlor so ihre WEICHT-Zeilen)
 runde_bg() { node "$RUNDE_CJS" "$@" >>"$L.runde" 2>&1; }
@@ -205,8 +220,9 @@ runde_takt() {
     fi
     read -r RN RK RV RZ RLISTE <<<"$RL"
     runde_alarm
+    ungepusht_pruefen
     if [ "$RZ" = durch ]; then
-        puls landung "Runde $RN am ${RK:0:8}: die OMEN ist durch — $(runde weiter "$RUNDE_REPO" "$(main_kopf)")"
+        puls landung "${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }Runde $RN am ${RK:0:8}: die OMEN ist durch — $(runde weiter "$RUNDE_REPO" "$(main_kopf)")"
         return
     fi
     if ! darf_beginnen; then
@@ -321,6 +337,7 @@ STUMMEL
     main_kopf() { cat "$X/main"; }
     abstand() { echo 0; }
     pm_stand() { :; }
+    ungepusht_pruefen() { :; } # die Linse: radeon-dienst.sh --selbsttest Fall p (dieselbe runde.cjs ungepusht)
     frei_gb() { echo 50; }
     kleiner() { awk -v a="$1" -v b="$2" 'BEGIN { exit !(a < b) }'; } # wie orte.sh
     summe() { :; }

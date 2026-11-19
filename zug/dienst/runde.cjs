@@ -24,6 +24,8 @@
 //   offen <git-dir> <ref> <geraet> <kopf> <liste>   → die Stationen der Liste ohne Eintrag in messung/<kopf8>-<geraet>.json am ref
 //   faelle <repo> <geraet> <vorher> <kopf> <liste>  → je Zeile eine Station: GRUEN am vorher, ROT am kopf (dieses Geraet)
 //   paare <repo> [anzahl]                   Paare am selben Kopf aus den Mess-Dateien von punkte-maschine (je Kopf + Summe)
+//   push-pfade <baum> <zweig> <geraet> <kopf|-> <botschaft>   die eigenen Geräte-Pfade nach <zweig>, OHNE Rebase (commit-tree, Retry)
+//   ungepusht <baum> <zweig> <geraet> <seit-datei>            → "<n> <seit>": Messungen des Geräts, die der Ursprung nicht trägt
 //   bestand <repo> <geraet>                 → der juengste Kopf der main-Linie, an dem das Geraet eine Mess-Datei traegt
 "use strict";
 const fs = require("fs"), cp = require("child_process"), os = require("os"), path = require("path");
@@ -372,6 +374,85 @@ if (was === "lies") {
         for (const [s, fs_] of Object.entries(st)) { je[s] = (je[s] || 0) + 1; if (je[s] > 3) { ordner++; for (const f of fs_) bytes += fs.statSync(f).isDirectory() ? groesse(f) : fs.statSync(f).size; } }
     }
     console.log("Roh-Bilder am Gerät jenseits der 3 Köpfe: " + ordner + " Station×Kopf, " + (bytes / 1e9).toFixed(2) + " GB (nicht gelöscht)");
+} else if (was === "push-pfade" || was === "ungepusht") {
+    // DER PUSH OHNE REBASE (Koordinator 19.11. 04:16; Fund an der Radeon: ihr Mess-Baum stand 58 Commits vor und 2 402 hinter
+    // origin/punkte-maschine, `pushe()` rebaste, der erste Konflikt in der GETEILTEN Datei messung/referenz-MiguellD.json, seither
+    // „cannot rebase: You have unstaged changes“ 260-mal still in radeon.out, und der Blick sagte „RADEON ok“). Jetzt wie die Runde:
+    // den Ursprungs-Kopf frisch holen, NUR die eigenen Geräte-Pfade aus dem Arbeitsbaum in dessen Baum setzen, commit-tree, Push, bei
+    // Ablehnung von vorn — Arbeitsbaum-Zustand und fremde Dateien spielen keine Rolle.
+    // Die eigenen Pfade eines Geräts (EINE Quelle, eigenePfade): messung/<kopf8>-<g>.json, messung/roh/<kopf8>-<g>/** (ohne Sitzungs-
+    // Ordner sitzung-*), messung/referenz-<g>.json (je GERÄT, nie je Rechner), vision/richter/*.<kopf8>-<g>.json. Kein Pfad trägt ein
+    // anderes Gerät — zwei Geräte schreiben nie dieselbe Datei.
+    //   push-pfade <baum> <zweig> <geraet> <kopf|*|-> <botschaft>   („*“: alle Köpfe des Geräts — ein früherer Push scheiterte; „-“: alle
+    //       Köpfe, aber nur Pfade, die der Ursprung NICHT trägt — die Rettung eines Baums aus der Zeit des Rebase-Pushs)
+    //   ungepusht <baum> <zweig> <geraet> <seit-datei>            → "<n> <seit-iso|->": Mess-Dateien und Akten des Geräts, die vom Ursprung
+    //       abweichen, + eigene Commits vor dem Ursprung; die seit-Datei merkt, seit wann n > 0 (fällt bei 0)
+    const [baum, zweig, g] = arg;
+    // die Wurzel muss ein absoluter Git-Baum sein: ein leeres <baum> liefe sonst im Arbeitsordner des Rufers (Lösch-Liste 19.11.)
+    if (!baum || !path.isAbsolute(baum) || !fs.existsSync(path.join(baum, ".git")) || !/^(gtx|radeon)$/.test(String(g))) { console.error(was + ": <baum> absolut mit .git, <geraet> gtx|radeon — nichts getan (" + baum + " · " + g + ")"); process.exit(2); }
+    const git = gitIn(baum);
+    git(["fetch", "-q", "origin", "+refs/heads/" + zweig + ":refs/runde/push-" + zweig]);
+    const ref = "refs/runde/push-" + zweig;
+    const eigen = (rel, kopf) => {
+        const k = kopf && kopf !== "-" && kopf !== "*" ? k8(kopf) : "[0-9a-f]{8}";
+        const r = new RegExp("^(" + MDIR.replace(/\//g, "\\/") + "\\/(" + k + "-" + g + "\\.json|referenz-" + g + "\\.json|roh\\/" + k + "-" + g + "\\/(?!sitzung-)[^/]+)|vision\\/richter\\/[^/]+\\." + k + "-" + g + "\\.json)$");
+        return r.test(rel);
+    };
+    const liste = [];
+    const lauf = (d) => { let e = []; try { e = fs.readdirSync(path.join(baum, d), { withFileTypes: true }); } catch { return; } for (const x of e) { const rel = d + "/" + x.name; if (x.isDirectory()) lauf(rel); else liste.push(rel); } };
+    lauf(MDIR);
+    lauf("vision/richter");
+    const blobAm = (rel) => { try { return git(["rev-parse", "-q", "--verify", ref + ":" + rel]); } catch { return ""; } };
+    if (was === "ungepusht") {
+        const nur = (rel) => eigen(rel, "-") && !/\/roh\//.test(rel) && !/referenz-/.test(rel); // die Messungen selbst: Mess-Dateien und Akten
+        // nur Messungen der letzten 48 h: eine Datei, die seit Tagen ungepusht liegt (n0611-pm trägt messung/0ab95ff4-gtx.json vom 10.11.,
+        // am WIP-Kopf eines Zweigs, 0 Urteile), ist kein stiller Push von heute — sie steht beim Namen auf stderr, zählt aber nicht
+        const alt = Date.now() - 48 * 3600e3, ab0 = liste.filter((rel) => nur(rel) && git(["hash-object", "--no-filters", path.join(baum, rel)]) !== blobAm(rel));
+        const ab = ab0.filter((rel) => fs.statSync(path.join(baum, rel)).mtimeMs > alt).length;
+        if (ab0.length > ab) process.stderr.write("ungepusht, älter als 48 h (zählt nicht): " + ab0.filter((rel) => fs.statSync(path.join(baum, rel)).mtimeMs <= alt).join(" ") + "\n");
+        let vor = 0;
+        try { vor = Number(git(["rev-list", "--count", ref + "..HEAD"])) || 0; } catch { vor = 0; }
+        const n = ab + vor, sd = arg[3];
+        let seit = "-";
+        if (n > 0) { try { seit = fs.readFileSync(sd, "utf8").trim(); } catch { seit = iso(jetzt()); fs.writeFileSync(sd, seit + "\n"); } }
+        else fs.rmSync(sd, { force: true });
+        console.log(n + " " + seit);
+        process.exit(0);
+    }
+    const [, , , kopf, botschaft] = arg;
+    // kopf „-“ (die Rettung): nur Pfade, die der Ursprung NICHT trägt — eine dort schon liegende Datei wird nie überschrieben
+    const mein = liste.filter((rel) => eigen(rel, kopf) && (kopf !== "-" || !blobAm(rel)));
+    const IDX = path.join(os.tmpdir(), "runde-push-" + process.pid + ".tmp"), env = { ...process.env, ...WER, GIT_INDEX_FILE: IDX };
+    let fehler = "";
+    const versuche = Number(process.env.RUNDE_PUSH_VERSUCHE || 10);
+    for (let v = 1; v <= versuche; v++) {
+        try {
+            if (v > 1) git(["fetch", "-q", "origin", "+refs/heads/" + zweig + ":" + ref]);
+            const basis = git(["rev-parse", ref]);
+            fs.rmSync(IDX, { force: true });
+            git(["read-tree", basis], { env });
+            let n = 0;
+            for (const rel of mein) {
+                const b = git(["hash-object", "-w", "--no-filters", path.join(baum, rel)]);
+                if (b === blobAm(rel)) continue;
+                git(["update-index", "--add", "--cacheinfo", "100644," + b + "," + rel], { env });
+                n++;
+            }
+            if (!n) { fs.rmSync(IDX, { force: true }); console.log("unverändert (" + mein.length + " eigene Pfade wie am Ursprung)"); process.exit(0); }
+            const c = git(["commit-tree", git(["write-tree"], { env }), "-p", basis, "-F", "-"], { env, input: String(botschaft || "Messung " + g).slice(0, 200) + "\n\n" + n + " Datei(en) des Geräts " + g + " (runde.cjs push-pfade, ohne Rebase)\n\nCo-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>\n" });
+            git(["push", "-q", "origin", c + ":refs/heads/" + zweig]);
+            fs.rmSync(IDX, { force: true });
+            git(["update-ref", ref, c]);
+            console.log("punkte-maschine " + c.slice(0, 9) + " · " + n + " Datei(en) von " + g);
+            process.exit(0);
+        } catch (e) {
+            fehler = String(e.message).split("\n")[0].slice(0, 200);
+            schlaf(1000 + Math.floor(Math.random() * 4000) * Math.min(v, 4));
+        }
+    }
+    fs.rmSync(IDX, { force: true });
+    console.log("PUSH SCHEITERT " + versuche + "x: " + fehler);
+    process.exit(1);
 } else if (was === "bestand") {
     const [repo, g] = arg;
     const git = gitIn(repo);

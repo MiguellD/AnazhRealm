@@ -130,7 +130,8 @@ function messDateien(k) {
 // Lauf aus einem frischen Checkout neu auf und die 14-Tage-Sicht fehlt; nur nach punkte-maschine (EINE Quelle, wie die Mess-Datei).
 // Der Name wie in punkte.cjs (`referenzAblageVon`): os.hostname(), jedes Zeichen außer [A-Za-z0-9_-] als „_".
 function referenzDateien() {
-    const name = "referenz-" + String(require("os").hostname()).replace(/[^A-Za-z0-9_-]/g, "_") + ".json";
+    // je GERÄT (PUNKTE_REFERENZ_NAME, kandidat.sh: gtx), sonst wie bisher je Rechner — punkte.cjs referenzAblageVon liest dieselbe Variable
+    const name = "referenz-" + String(process.env.PUNKTE_REFERENZ_NAME || require("os").hostname()).replace(/[^A-Za-z0-9_-]/g, "_") + ".json";
     const von = PUNKTE + "/messung/" + name;
     return fs.existsSync(von) ? [{ von, pfad: MDIR + "/" + name }] : [];
 }

@@ -45,6 +45,7 @@ node $N/pm-stand.cjs $PM >> $L 2>&1   # der Stand von punkte-maschine; eine jün
 #   ANS ENDE  vom gefallenen Teil stellt sich der REST hinten an (oben: BEHALTEN JE STATION) — die Liste fährt mit dem nächsten weiter,
 #           sobald die Karte frei ist; je Teil höchstens VERSUCHE (4), danach steht er beim Namen OFFEN im Log.
 export GPU_LAUF_WEICH_S=${GPU_LAUF_WEICH_S:-600}
+export PUNKTE_REFERENZ_NAME=gtx # die Referenz-Ablage je GERÄT (messung/referenz-gtx.json), nie je Rechner — kein Pfad, den zwei Schreiber teilen
 VERSUCHE=${VERSUCHE:-4}
 # teil <name> <stationen> <versuch> — EINE Sitzung: 0 ganz gepusht · 1 gefallen (gepusht ist, was sie fertig maß; REST_TEIL = der Rest)
 teil() { local name=$1 R=$2 v=$3 rest n
