@@ -1,0 +1,405 @@
+{
+    "gesetz": "DIE EIN-SCHREIBER-WAND (gate:constitution, Teil 2): je Grundgröße EIN Schreiber. `muster` erkennt, wer eine Größe selbst erzeugt; `kanon` nennt je Datei die Anker des EINEN Schreibers; `zwillinge` nennt die Schuld von heute je Datei und Anker (Textstück der Treffer-Zeile, `×n` = n Treffer). Das Register ist keine Erlaubnis: es schrumpft nur — ein Treffer ohne Anker ist ROT, ein Anker ohne Treffer ist ROT (`--schrumpfen` streicht ihn). `frei` sind die Zeilen, an denen die Wand schweigen muss (Messung, Geburt einer Kennung).",
+    "frei": [
+        "const t0 = performance.now(); arbeit(); kosten.ms = performance.now() - t0;",
+        "const id = \"w_\" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);",
+        "const jetzt = performance.now() / 1000; if (jetzt - llm.zuletzt < llm.pauseS) return;",
+        "const kamera = { blende: 8, belichtung: 1 / 60, iso: 100 };",
+        "const k = st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;",
+        "if (this.state.gravity === 0 && this.state.timeOfDay >= 0.5) return this.state.spielZeit;",
+        "const hoch = 9.812345 * 2, kante = 19.81, lenden = [17.2, 9.8, 10.6], STUFEN_GANG = 256, mu = z && z.mu > 0 ? z.mu : 0;"
+    ],
+    "muster": {
+        "uhr-feld": {
+            "groesse": "zeit",
+            "rx": "\\.(?:timeOfDay|spielZeit|tagNull)\\s*[-+*/]?=(?!=)",
+            "was": "schreibt Welt-Uhr, Tageszeit oder Null-Tag",
+            "lies": "den Takt (`spielZeit += delta`), `_uhrSetzen`, `_weltGeburt`; eine Probe stellt die Uhr über `__buehne({ uhr })`",
+            "beobachter": true,
+            "mutant": "this.state.timeOfDay = 0.3;"
+        },
+        "laenge-fest": {
+            "groesse": "zeit",
+            "rx": "\\bPEGEL_TAG_S\\s*\\(\\)\\s*\\{|\\bseasonYearSeconds\\b[^\\n]*\\b2400\\b",
+            "was": "eigene Tag- oder Jahr-Länge neben dem Tag-Regler",
+            "lies": "`state.dayLengthMinutes` und `state.seasonYearSeconds` (EIN Kalender, Welle ZEIT)",
+            "mutant": "const jahr = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;"
+        },
+        "dt-kopie": {
+            "groesse": "zeit",
+            "rx": "(?<!belichtung:\\s*)(?<![\\w.])1\\s*/\\s*60(?![\\w.])",
+            "was": "eigener fester Zeitschritt",
+            "lies": "`AnazhRealm.FIXED_DT` oder das delta des Takts",
+            "mutant": "const dt = 1 / 60;"
+        },
+        "eigene-uhr": {
+            "groesse": "zeit",
+            "rx": "new\\s+(?:THREE|T)\\.Clock\\b",
+            "was": "eigene Uhr eines Labors",
+            "lies": "die Uhr der Bühne (`AnazhHuelle.buehne`, `uhr`) oder `state.spielZeit`",
+            "mutant": "const clock = new THREE.Clock();"
+        },
+        "wanduhr-phase": {
+            "groesse": "zeit",
+            "rx": "Math\\.(?:sin|cos)\\([^;\\n]*\\b(?:performance|Date)\\.now\\(\\)|(?:performance|Date)\\.now\\(\\)\\s*\\*\\s*(?:0?\\.\\d+|\\d+e-\\d)|\\b(?:const|let|var)\\s+t\\s*=\\s*(?:performance|Date)\\.now\\(\\)\\s*(?:/\\s*1(?:000|e3)|\\*)|\\.value\\s*=\\s*(?:performance|Date)\\.now\\(\\)",
+            "was": "Wanduhr als Phase im Sim-Pfad (keine Kosten-Messung)",
+            "lies": "`state.spielZeit` (die Bild-Uhr `_bildZeit`)",
+            "mutant": "const t = performance.now() / 1000;"
+        },
+        "generator": {
+            "groesse": "samen",
+            "rx": "0x6d2b79f5|\\b1664525\\b|\\b1103515245\\b",
+            "i": true,
+            "was": "eigener Zufalls-Generator (mulberry32 oder LCG)",
+            "lies": "den EINEN Strom `_samenStrom(_bauSame(name))`; ein Kern nimmt den gereichten Strom (Welle SAMEN: `samen(pfad)`)",
+            "mutant": "a = (a + 0x6D2B79F5) | 0;"
+        },
+        "zufall": {
+            "groesse": "samen",
+            "rx": "Math\\.random\\b(?!\\(\\)\\.toString\\(36\\))",
+            "was": "Math.random außerhalb der Geburt einer Kennung",
+            "lies": "den EINEN Strom `_samenStrom(_bauSame(name))`",
+            "mutant": "const wurf = Math.random() * 6;"
+        },
+        "belichtung": {
+            "groesse": "licht",
+            "rx": "\\.toneMapping(?:Exposure)?\\s*=(?!=)",
+            "was": "setzt Belichtung oder Tonkurve selbst",
+            "lies": "welt-licht.js `belichtung` und die Tonkurve der Bühne (`AnazhHuelle.buehne`); die Welt `_dayNightApplyBelichtung`",
+            "beobachter": true,
+            "mutant": "renderer.toneMappingExposure = 1.25;"
+        },
+        "eigenes-licht": {
+            "groesse": "licht",
+            "rx": "new\\s+(?:THREE|T)\\.(?:DirectionalLight|HemisphereLight|AmbientLight)\\b",
+            "was": "eigene Sonne oder eigenes Füll-Licht",
+            "lies": "die EINE Bühne (welt-licht.js `buehne`: Sonne, Umgebung, Belichtung)",
+            "mutant": "const sonne = new THREE.DirectionalLight(0xffffff, 3);"
+        },
+        "schwere-literal": {
+            "groesse": "kraft",
+            "rx": "(?<![\\w.])9\\.81(?![\\w\\d])|\\b[gG]\\s*[:=]\\s*-?9\\.8\\b",
+            "was": "Schwere als Literal",
+            "lies": "`state.gravity` (aus `WELT_GESETZ_ERDE.schwere`, je Welt ihr Gesetz)",
+            "mutant": "const g = 9.81;"
+        },
+        "schwere-feld": {
+            "groesse": "kraft",
+            "rx": "\\.gravity\\s*[-+*/]?=(?!=)",
+            "was": "schreibt die Schwere der Welt",
+            "lies": "das Welt-Gesetz (`_weltGesetz` → `state.gravity`) oder das DSL-Wort `gravity`",
+            "beobachter": true,
+            "mutant": "this.state.gravity = -3;"
+        },
+        "fall": {
+            "groesse": "kraft",
+            "rx": "\\bvy\\s*[-+]=\\s*[^;\\n]{1,40}\\*\\s*(?:dt|h|delta)\\b",
+            "was": "eigener Fall-Integrator",
+            "lies": "den Leib-Löser (koerper-core.js `leibFall`) mit `state.gravity`",
+            "mutant": "p.vy -= 12 * dt;"
+        },
+        "bahn": {
+            "groesse": "kraft",
+            "rx": "\\b(?:\\w+\\.)*(?:x|y|z|pos\\w*|position)\\s*\\+=\\s*[^;\\n]{0,24}\\bv\\w*(?:\\.\\w+)?\\s*\\*\\s*(?:dt|h|delta)\\b",
+            "was": "eigener Bahn-Integrator (Ort += Tempo · dt)",
+            "lies": "den Leib-Löser (koerper-core.js `leibFall`, im Stamm `_leibTakt`)",
+            "mutant": "p.x += p.vx * dt;"
+        },
+        "reibung": {
+            "groesse": "stoff",
+            "rx": "(?<![\\w.])(?:mu|reibung|maxGrip|gripK)\\s*:\\s*\\d+(?:\\.\\d+)?\\b",
+            "was": "eigene Reib- oder Haft-Zahl",
+            "lies": "die Stoff-Zeile (`_stoff(name)`: mu, muRad, muRadNass)",
+            "mutant": "const eis = { mu: 0.05 };"
+        },
+        "haftung-aus-sicht": {
+            "groesse": "stoff",
+            "rx": "\\bmu\\w*\\([^\\n]*\\bgruen\\b|\\bgruen\\b[^\\n]*\\bmu\\w*\\(",
+            "was": "Haftung aus der Sicht-Deckung des Bodens statt aus dem Stoff",
+            "lies": "den Stoff des Bodens (`_terrainMaterialAt` → `_stoff`)",
+            "mutant": "m += (mu(\"gras\", k) - m) * gruen;"
+        },
+        "augenhoehe": {
+            "groesse": "mass",
+            "rx": "\\b(?:eyeY|augeM|EGO_AUGE_M|kopfM|eyeHeight|mengeKoerperM)\\b\\s*[:=]\\s*1\\.\\d+",
+            "was": "Augen- oder Körperhöhe als Literal",
+            "lies": "`AnazhRealm.EGO_AUGE_M` (Welle SICHT: das Auge des Körpers, koerper-core)",
+            "mutant": "const cfg = { eyeY: 1.62 };"
+        },
+        "frustum": {
+            "groesse": "sicht",
+            "rx": "new\\s+(?:THREE|T)\\.Frustum\\b",
+            "was": "eigenes Frustum",
+            "lies": "das Frustum des Takts (`_frustumCache`, stamm/dirigent-takt.js)",
+            "beobachter": true,
+            "mutant": "const fr = new THREE.Frustum();"
+        },
+        "stufen-tafel": {
+            "groesse": "sicht",
+            "rx": "\\b[A-Z_]*(?:STUFEN|LOD_DISTANCES|LOD_SCHIRM|STUFEN_BILD_PX)[A-Z_]*\\b\\s*=\\s*(?:Object\\.freeze\\(\\s*)?(?:[\\[{]|\\(\\(\\)\\s*=>)",
+            "was": "eigene Stufen-Tafel",
+            "lies": "`_lodAuge` und das Schirm-Gesetz `LOD_SCHIRM`",
+            "mutant": "const WOLKEN_STUFEN = [0, 64, 256];"
+        },
+        "eigenes-ziel": {
+            "groesse": "beobachter",
+            "rx": "new\\s+\\w+\\.(?:WebGL)?RenderTarget\\b",
+            "was": "eigenes Render-Ziel einer Probe (linear, ungetont)",
+            "lies": "den Ausgabe-Pfad der Welt (scripts/lib/ausgabe-aufnahme.cjs)",
+            "beobachter": true,
+            "mutant": "const rt = new T.RenderTarget(64, 64);"
+        }
+    },
+    "groessen": {
+        "zeit": {
+            "name": "Zeit",
+            "welle": "ZEIT",
+            "schreiber": "stamm/dirigent-takt.js `spielZeit += delta` · stamm/bild-himmel.js `_uhrSetzen` · stamm/feld-leben.js `_weltGeburt` · `AnazhRealm.FIXED_DT`",
+            "leser": "\\bspielZeit\\b|\\btimeOfDay\\b|\\bFIXED_DT\\b",
+            "kanon": {
+                "stamm/dirigent-takt.js": [".spielZeit += delta", ".spielZeit = t;"],
+                "stamm/bild-himmel.js": [".timeOfDay = v;"],
+                "stamm/feld-leben.js": ["m.tagNull = 0;"],
+                "stamm/koerper-bewegung.js": ["FIXED_DT = 1 / 60"],
+                "stamm/dirigent-kern.js": ["seasonYearSeconds: 2400"]
+            },
+            "zwillinge": {
+                "stamm/daten.js": [
+                    "PEGEL_TAG_S() {"
+                ],
+                "stamm/bild-himmel.js": ["seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400", "seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400"],
+                "stamm/kreatur-leben.js": [".spielZeit = ×2", "1 / 60 ×2"],
+                "stamm/kreatur-verhalten.js": ["1 / 60"],
+                "stamm/feld-leben.js": [".spielZeit = ×2", ".tagNull ="],
+                "stamm/speicher-laden.js": ["seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400"],
+                "stamm/werkstatt-vorschau.js": ["const t = performance.now() / 1000"],
+                "vehicle-core.js": ["1 / 60"],
+                "koerper-core.js": ["1 / 60"],
+                "tetrapoda-core.js": ["1 / 60"],
+                "worlds/begegnung/index.html": ["var t = Date.now() / 1000"],
+                "worlds/fluid/fluid.js": ["1 / 60"],
+                "worlds/garage/garage.js": ["1/60"],
+                "worlds/koerperstudio/koerperstudio.js": ["new THREE.Clock", "1 / 60", "1/60"],
+                "worlds/schmiede/schmiede.js": ["new THREE.Clock"],
+                "worlds/terrain/phytogenesis.js": ["new THREE.Clock"],
+                "worlds/tetrapoda/tetrapoda.js": ["new THREE.Clock", "1/60"]
+            }
+        },
+        "samen": {
+            "name": "Samen",
+            "welle": "SAMEN",
+            "schreiber": "stamm/siedlung-ort.js `_bauSame` (Welt-Same → benannter Teil-Same) → `_samenStrom`",
+            "leser": "_samenStrom\\(|_bauSame\\(",
+            "kanon": {
+                "stamm/siedlung-ort.js": ["s * 1664525 + 1013904223"]
+            },
+            "zwillinge": {
+                "stamm/bau-teile.js": ["1664525"],
+                "stamm/vegetation-wiese.js": ["0x6d2b79f5 ×2"],
+                "stamm/vegetation-baum.js": ["0x6d2b79f5"],
+                "stamm/bild-sicht.js": ["1664525"],
+                "stamm/bild-himmel.js": ["0x6d2b79f5"],
+                "stamm/klang.js": ["Math.random ×2", "0x6d2b79f5", "1664525 ×2"],
+                "stamm/feld-leben.js": ["Math.random"],
+                "stamm/speicher-welten.js": ["Math.random ×4"],
+                "phyto-core.js": ["Math.random", "0x6d2b79f5 ×3", "1664525 ×7"],
+                "foundry-core.js": ["0x6d2b79f5", "1103515245", "1664525"],
+                "porta-core.js": ["0x6D2B79F5"],
+                "schmiede-core.js": ["0x6d2b79f5 ×2"],
+                "fachwerk-core.js": ["0x6d2b79f5 ×2", "1664525 ×9"],
+                "klang-core.js": ["Math.random ×3", "0x6d2b79f5"],
+                "koerper-core.js": ["1664525"],
+                "worlds/begegnung/index.html": ["Math.random ×4"],
+                "worlds/fachwerk/fachwerk.js": ["Math.random ×10", "1103515245"],
+                "worlds/fluid/fluid.js": ["Math.random ×3"],
+                "worlds/garage/garage.js": ["Math.random ×4"],
+                "worlds/huelle/huelle.js": ["Math.random", "0x6d2b79f5"],
+                "worlds/klang/klang.js": ["Math.random ×27", "0x6D2B79F5"],
+                "worlds/koerperstudio/koerperstudio.js": ["Math.random ×25"],
+                "worlds/schwarm/index.html": ["Math.random ×5"],
+                "worlds/terrain/phytogenesis.js": ["Math.random ×5"],
+                "worlds/translated/translated.js": ["Math.random ×6"]
+            }
+        },
+        "licht": {
+            "name": "Licht",
+            "welle": "LICHT",
+            "schreiber": "welt-licht.js `buehne` (`sonnenRichtung` · `tagAchse` · `belichtung` · Tonkurve) · stamm/bild-himmel.js `_dayNightApplyBelichtung`",
+            "leser": "__weltLicht\\b",
+            "kanon": {
+                "welt-licht.js": [
+                    "R.toneMapping = THREE[BELICHTUNG.kurve]",
+                    "R.toneMappingExposure = belichtung(",
+                    "new THREE.DirectionalLight"
+                ],
+                "stamm/bild-himmel.js": [".toneMappingExposure = k;"]
+            },
+            "zwillinge": {
+                "stamm/bild-schatten.js": ["new THREE.DirectionalLight"],
+                "stamm/werkstatt-vorschau.js": ["new THREE.DirectionalLight ×2", "new THREE.AmbientLight", ".toneMapping = ×2"],
+                "stamm/werkstatt-hof.js": ["new THREE.DirectionalLight ×4", "new THREE.AmbientLight ×2"],
+                "stamm/werkstatt-sozial.js": ["new THREE.DirectionalLight ×2", "new THREE.AmbientLight"],
+                "stamm/dirigent-ankunft.js": ["new THREE.DirectionalLight", ".toneMappingExposure ="],
+                "worlds/fachwerk/fachwerk.js": ["new THREE.DirectionalLight", "new THREE.HemisphereLight ×2", ".toneMappingExposure= ×2"],
+                "worlds/huelle/huelle.js": ["new T.DirectionalLight", ".toneMapping = ×2"],
+                "worlds/koerperstudio/koerperstudio.js": ["new THREE.DirectionalLight ×2", "new THREE.HemisphereLight", ".toneMappingExposure= ×2"],
+                "worlds/terrain/phytogenesis.js": ["new THREE.DirectionalLight ×4", "new THREE.HemisphereLight ×2", ".toneMappingExposure =", ".toneMapping ="],
+                "worlds/tetrapoda/tetrapoda.js": ["new THREE.DirectionalLight ×5", ".toneMappingExposure= ×2"],
+                "worlds/translated/translated.js": ["new THREE.DirectionalLight", "new THREE.HemisphereLight"]
+            }
+        },
+        "kraft": {
+            "name": "Kraft/Bewegung",
+            "welle": "KRAFT",
+            "schreiber": "stamm/daten.js `WELT_GESETZ_ERDE.schwere` → `state.gravity` · koerper-core.js `leibFall`",
+            "leser": "\\bstate\\.gravity\\b|\\bleibFall\\(|_leibTakt\\(",
+            "kanon": {
+                "stamm/daten.js": ["schwere: -9.81"],
+                "stamm/feld-leben.js": [".gravity = AnazhRealm.WELT_GESETZ_ERDE.schwere"],
+                "stamm/feld-dsl.js": [".gravity = Number(value)"],
+                "koerper-core.js": ["vy += schwere * dt"]
+            },
+            "zwillinge": {
+                "stamm/bau-buch.js": ["9.81"],
+                "stamm/bau-teile.js": ["9.81"],
+                "stamm/koerper-bewegung.js": ["9.81"],
+                "stamm/koerper-frei.js": ["9.81"],
+                "stamm/kreatur-verhalten.js": ["c.position.x += v.x * h", "c.position.z += v.z * h"],
+                "stamm/feld-leben.js": ["9.81"],
+                "stamm/feld-brand.js": ["9.81 ×2"],
+                "stamm/feld-dsl.js": ["9.81"],
+                "stamm/feld-sprache.js": ["9.81"],
+                "vehicle-core.js": ["vy -= g * dt ×2", "x += v * dt", "G: 9.8", "9.81"],
+                "schmiede-core.js": ["9.81 ×2"],
+                "koerper-core.js": ["9.81"],
+                "tetrapoda-core.js": ["9.81"],
+                "planet-core.js": ["9.81 ×4"],
+                "worlds/fachwerk/fachwerk.js": ["p.y+=player.vy*dt ×2"],
+                "worlds/garage/garage.js": ["p.sp.position.x+=p.vx*dt ×3", "c.x+=c.vx*dt ×4"],
+                "worlds/klang/klang.js": ["p3.x += p3.vx * dt ×3", "vy += p3.grav * dt"],
+                "worlds/koerperstudio/koerperstudio.js": ["bodyPhys.y+=bodyPhys.vy*dt ×3"],
+                "worlds/tetrapoda/tetrapoda.js": ["leib.position.z+=v*dt"]
+            }
+        },
+        "stoff": {
+            "name": "Stoff/Kontakt",
+            "welle": "KRAFT",
+            "schreiber": "stamm/bau-vorlagen.js `_defaultMaterials` (mu · muRad · muRadNass), EIN Leser `_stoff`",
+            "leser": "\\._stoff\\(",
+            "kanon": {},
+            "zwillinge": {
+                "stamm/koerper-fahrt.js": ["gruen > 0) m += (mu("],
+                "vehicle-core.js": ["reibung: 0.009", "reibung: 0.013", "reibung: 0.035", "reibung: 0.02", "reibung: 0.06", "maxGrip: 1.0", "reibung: 0.2", "gripK: 6"],
+                "schmiede-core.js": ["mu: 0.22", "mu: 0.35 ×2", "mu: 0.3 ×3", "mu: 0.4", "mu: 0.5"],
+                "koerper-core.js": ["reibung: 0.35"]
+            }
+        },
+        "mass": {
+            "name": "Maß",
+            "welle": "SICHT",
+            "schreiber": "stamm/dirigent-kern.js `EGO_AUGE_M` · tetrapoda-core.js `MASSSTAB`",
+            "leser": "\\bEGO_AUGE_M\\b|\\bMASSSTAB\\b",
+            "kanon": {
+                "stamm/dirigent-kern.js": ["EGO_AUGE_M = 1.6"]
+            },
+            "zwillinge": {
+                "stamm/siedlung-bewohner.js": ["kopfM: 1.8"],
+                "stamm/vegetation-streu.js": ["mengeKoerperM: 1.8"],
+                "fachwerk-core.js": ["augeM: 1.6", "eyeY: 1.62"],
+                "klang-core.js": ["augeM: 1.7"],
+                "worlds/fachwerk/fachwerk.js": ["eyeY:1.62"],
+                "worlds/schmiede/schmiede.js": ["eyeY:1.62"],
+                "worlds/terrain/phytogenesis.js": ["eyeY = 1.7"]
+            }
+        },
+        "sicht": {
+            "name": "Sicht/Stufe",
+            "welle": "SICHT",
+            "schreiber": "stamm/stoff-material.js `_lodAuge` · stamm/vegetation-streu.js `LOD_SCHIRM` · stamm/dirigent-takt.js `_frustumCache`",
+            "leser": "_lodAuge\\(|\\bLOD_SCHIRM\\b|\\bLOD_DISTANCES\\b",
+            "kanon": {
+                "stamm/vegetation-streu.js": ["LOD_SCHIRM = Object.freeze", "LOD_DISTANCES = ("],
+                "stamm/dirigent-takt.js": ["_frustumCache = new THREE.Frustum"]
+            },
+            "zwillinge": {
+                "stamm/dirigent-kern.js": ["new THREE.Frustum"],
+                "stamm/gelaende-boden.js": [
+                    "BODEN_STUFEN = Object.freeze({"
+                ],
+                "stamm/stoff-instanz.js": ["new T.Frustum"],
+                "stamm/siedlung-verkehr.js": ["new THREE.Frustum"],
+                "stamm/bild-schatten.js": ["new THREE.Frustum"],
+                "stamm/koerper-fahrt.js": ["new THREE.Frustum"],
+                "stamm/kreatur-verhalten.js": ["new THREE.Frustum"],
+                "stamm/feld-leben.js": ["new THREE.Frustum"],
+                "phyto-core.js": [
+                    "STUFEN_BILD_PX = ["
+                ],
+                "foundry-core.js": [
+                    "HALM_STUFEN = Object.freeze({"
+                ],
+                "schmiede-core.js": [
+                    "ARENA_STUFEN = ["
+                ],
+                "worlds/gelaende/makro-worker.js": [
+                    "STUFEN = ["
+                ],
+                "worlds/gelaende/studio.js": ["new THREE.Frustum"]
+            }
+        },
+        "beobachter": {
+            "name": "Beobachter",
+            "welle": "je Feld (ZEIT · LICHT · KRAFT · SICHT)",
+            "schreiber": "scripts/lib/welt-boot.cjs `__buehne` (Uhr · Sonne · Sommer) · scripts/lib/ausgabe-aufnahme.cjs (der Ausgabe-Pfad der Welt)",
+            "leser": "__buehne\\b|ausgabe-aufnahme",
+            "kanon": {
+                "scripts/lib/ausgabe-aufnahme.cjs": ["st.timeOfDay = st.world ?", "st.world.timeOfDay = uhr;", "st.timeOfDay = uhr;", "new T.RenderTarget"]
+            },
+            "zwillinge": {
+                "scripts/diag-albedo-tafel.cjs": [".toneMappingExposure =", ".toneMapping ="],
+                "scripts/diag-analog-nah.cjs": [".timeOfDay ="],
+                "scripts/diag-blick.cjs": ["new THREE.RenderTarget", "new T.RenderTarget"],
+                "scripts/diag-brennglas-takt.cjs": [".timeOfDay = ×2"],
+                "scripts/diag-ego-schatten.cjs": ["new T.RenderTarget"],
+                "scripts/diag-fern-ring.cjs": ["new THREE.RenderTarget"],
+                "scripts/diag-foundry-impostor.cjs": ["new T.RenderTarget ×4"],
+                "scripts/diag-garage-labor.cjs": ["new THREE.RenderTarget"],
+                "scripts/diag-idle-gpu-churn.cjs": [".spielZeit +=", ".timeOfDay = ×3"],
+                "scripts/diag-kamera-laub.cjs": ["new THREE.RenderTarget"],
+                "scripts/diag-kamera-treue.cjs": ["new T.RenderTarget"],
+                "scripts/diag-klang-zensus.cjs": ["new THREE.Frustum"],
+                "scripts/diag-kreatur-leben.cjs": [".spielZeit += ×4", ".spielZeit ="],
+                "scripts/diag-mp-sync.cjs": [".spielZeit = ×2"],
+                "scripts/diag-post-kette.cjs": [".toneMappingExposure = ×4", ".spielZeit = ×2", ".timeOfDay = ×2"],
+                "scripts/diag-schatten-bias.cjs": [".timeOfDay = ×3"],
+                "scripts/diag-schatten-terminator.cjs": ["new T.RenderTarget"],
+                "scripts/diag-schatten-werfer.cjs": ["new T.RenderTarget", "new T.Frustum ×2", ".timeOfDay = ×2"],
+                "scripts/diag-schirm-monotonie.cjs": [".timeOfDay = ×2"],
+                "scripts/diag-settlement.cjs": [".spielZeit +="],
+                "scripts/diag-sicht-arbeit.cjs": [".timeOfDay +=", "new T.Frustum", ".timeOfDay = ×3"],
+                "scripts/diag-stand-takt.cjs": [".spielZeit += ×2", ".spielZeit = ×5"],
+                "scripts/diag-tier-gang.cjs": [".gravity = ×3"],
+                "scripts/diag-v1-pfad.cjs": [".spielZeit +="],
+                "scripts/diag-weltakt-wache.cjs": ["new THREE.Frustum", ".spielZeit += ×2", ".spielZeit = ×2"],
+                "scripts/diag-weltbild-frost.cjs": ["new T.Frustum", ".timeOfDay = ×2"],
+                "scripts/diag-weltgrenze.cjs": [".timeOfDay ="],
+                "scripts/diag-werkstatt-weg.cjs": [".timeOfDay = ×6"],
+                "scripts/diag-wetter-wache.cjs": [".spielZeit +="],
+                "scripts/diag-ziel-zensus.cjs": ["new T.RenderTarget"],
+                "scripts/lib/abdruck.cjs": [".timeOfDay = ×4"],
+                "scripts/lib/albedo-tafel.cjs": ["new T.WebGLRenderTarget", ".toneMapping = ×7"],
+                "scripts/lib/fahr-proben.cjs": [".spielZeit += ×2", ".gravity ="],
+                "scripts/lib/hoehlen-strahl.cjs": ["new T.Frustum"],
+                "scripts/lib/kampf-proben.cjs": [".spielZeit +="],
+                "scripts/lib/kreatur-proben.cjs": [".spielZeit += ×3", "new T.Frustum"],
+                "scripts/lib/licht-linsen.cjs": [".toneMappingExposure = ×3", "new T.RenderTarget ×2", ".timeOfDay = ×2"],
+                "scripts/lib/wasser-linse.cjs": ["new T.RenderTarget ×2", ".spielZeit += ×3", ".timeOfDay = ×7"],
+                "scripts/lib/zerlege-linse.cjs": ["new T.RenderTarget", "new T.Frustum"],
+                "scripts/lib/ziel-zensus.cjs": ["new T.RenderTarget"],
+                "scripts/playtest/bild.cjs": [".spielZeit +=", ".timeOfDay = ×2"],
+                "scripts/playtest/werkstatt.cjs": [".spielZeit += ×2"],
+                "scripts/werkbank.cjs": ["new T.Frustum"]
+            }
+        }
+    }
+}
