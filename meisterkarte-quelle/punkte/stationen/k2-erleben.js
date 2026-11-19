@@ -1642,6 +1642,649 @@ const LEITERN = [];
     );
 }
 
+// ═══════════════════════════════════════ Perspektive bild ═══════════════════════════════════════
+{
+    // ─────────── erleben.bild.ferne — Fernsicht und Treue über die Stufen: die Ferne ist dieselbe Welt ───────────
+    // Zählt die Sichtweite (Feld-Pass bis FELD_PASS.rMaxM, stamm/bild-sicht.js:3907, sichtbar erst gemalt, :2239; sonst camera.far des
+    // Fern-Rings, stamm/gelaende-fern.js:2360), die Saat und die Sterne mit Ort im Raum (stamm/bild-himmel.js:453/471). „Ferne = Nähe“
+    // (SSIM/ΔE nach Abzug der Luft) liest kein Leser: S1–S6 urteilen an der Sicht in km (darunter Umfang, sonst leser), S7/S8 leser (ihr
+    // Umfang trägt keine Zahl), S9 Umfang mit den Sternen im Raum.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.bild.ferne",
+            sek: 45,
+            pfad: ["stamm/bild-sicht.js", "stamm/gelaende-fern.js", "stamm/bild-himmel.js", "stamm/netz-portal.js", "welt-licht.js", "scripts/lib/licht-linsen.cjs", "scripts/werkbank.cjs", "spec/profiband/haushalt.json"],
+            welt: [{ wort: "sicht_m", ab: 200, was: "Sichtweite der Welt in m (Feld-Pass oder camera.far), gezählt" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "t_t_soll_min", richtung: "≥", wert: 0.8, wortlaut: "Restkontrast je Kanal gegen Koschmieder T/T_soll 0,8–1,2" },
+                        { wort: "t_t_soll_max", richtung: "≤", wert: 1.2, wortlaut: "Restkontrast je Kanal gegen Koschmieder T/T_soll 0,8–1,2" },
+                        { wort: "ferne_naehe", richtung: "≥", wert: 0.8, wortlaut: "Ferne = Nähe ≥ 0,8 an 12 Posen" },
+                    ],
+                    umfang: { verlangt: 0.2, einheit: "km Sicht", wortlaut: "0,2 km", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "bildsprung_pct", richtung: "≤", wert: 5, wortlaut: "kein Bildsprung > 5 % Leuchtdichte im Zielfenster" },
+                        { wort: "ferne_naehe", richtung: "≥", wert: 0.8, wortlaut: "Ferne = Nähe ≥ 0,8" },
+                    ],
+                    umfang: { verlangt: 2, einheit: "km Sicht", wortlaut: "2 km", feld: "umfang" },
+                },
+                3: {
+                    soll: [
+                        { wort: "t_t_soll_min", richtung: "≥", wert: 0.86, wortlaut: "T/T_soll 0,86–1,08, Restkontrast ≤ 1,3 % am Rand" },
+                        { wort: "t_t_soll_max", richtung: "≤", wert: 1.08, wortlaut: "T/T_soll 0,86–1,08, Restkontrast ≤ 1,3 % am Rand" },
+                        { wort: "restkontrast_rand_pct", richtung: "≤", wert: 1.3, wortlaut: "T/T_soll 0,86–1,08, Restkontrast ≤ 1,3 % am Rand" },
+                        { wort: "ferne_naehe", richtung: "≥", wert: 0.8, wortlaut: "Ferne = Nähe für Relief ≥ 0,8" },
+                    ],
+                    umfang: { verlangt: 8, einheit: "km Sicht", wortlaut: "8 km", feld: "umfang" },
+                },
+                4: {
+                    soll: [{ wort: "ferne_naehe_anteil", richtung: "≥", wert: 0.9, wortlaut: "Ferne = Nähe ≥ 0,8 für Wald- und Stadtziele aus 25 km in 100 Saaten (Anteil ≥ 0,9)" }],
+                    umfang: { verlangt: 25, einheit: "km Sicht", wortlaut: "25 km", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "wetter_anteil", richtung: "≥", wert: 0.9, wortlaut: "Anteil von 100 Saaten, in denen das ferne Wetter bei Ankunft dort herrscht ≥ 0,9" },
+                        { wort: "afc_pct", richtung: "≤", wert: 60, wortlaut: "2AFC Fernbild gegen Foto ≤ 60 %" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "km Sicht", wortlaut: "100 km", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "horizont_abw_grad", richtung: "≤", wert: 0.05, wortlaut: "Horizontabsenkung ±0,05° gegen Kugel + Standard-Refraktion" },
+                        { wort: "ferne_naehe", richtung: "≥", wert: 0.8, wortlaut: "Ferne = Nähe ≥ 0,8 für einen 500-km-Gipfel" },
+                    ],
+                    umfang: { verlangt: 500, einheit: "km Sicht", wortlaut: "500 km", feld: "umfang" },
+                },
+                7: {
+                    soll: [
+                        { wort: "ferne_naehe", richtung: "≥", wert: 0.8, wortlaut: "Ferne = Nähe vom Orbit auf 20 Zufalls-Landepunkte ≥ 0,8" },
+                        { wort: "ks", richtung: "≤", wert: 0.1, wortlaut: "Blue-/Black-Marble-Statistik KS ≤ 0,1" },
+                    ],
+                },
+                8: {
+                    soll: [
+                        { wort: "ferne_naehe", richtung: "≥", wert: 0.8, wortlaut: "Ferne = Nähe Fernrohr-Bild ↔ Ankunft ≥ 0,8" },
+                        { wort: "phase_abw_min", richtung: "≤", wert: 1, wortlaut: "Phase und Finsternis ±1 min gegen Himmelsmechanik der Saat" },
+                    ],
+                },
+                9: {
+                    soll: [{ wort: "sternlage_abw_grad", richtung: "≤", wert: 0.1, wortlaut: "Lage der 500 hellsten Sterne ±0,1°" }],
+                    umfang: { verlangt: 500, einheit: "Sterne mit Ort in der Galaxie (nicht auf der Kuppel)", wortlaut: "Lage der 500 hellsten Sterne ±0,1°", feld: "richter" },
+                },
+            },
+            lauf: async function ferneLauf(H, P, L) {
+                // DIE ZÄHLUNG (billig, ein Ruf): Sichtweite, Saat, Sterne auf der Kuppel ↔ im Raum
+                const z = await L.ev(
+                    `const st = r.state, A = r.constructor, fp = st.feldPass;
+                    const feld = !!(fp && fp.mesh && fp.mesh.visible);
+                    const far = st.camera ? st.camera.far : 0;
+                    const sichtM = Math.max(far, feld ? A.FELD_PASS.rMaxM : 0);
+                    const sf = st.starField;
+                    let n = 0, raum = 0;
+                    if (sf) {
+                        const a = sf.instanceMatrix.array;
+                        n = sf.count;
+                        const R = [];
+                        for (let i = 0; i < n; i++) R.push(Math.hypot(a[i * 16 + 12], a[i * 16 + 13], a[i * 16 + 14]));
+                        const m = R.slice().sort((x, y) => x - y)[n >> 1];
+                        raum = R.filter((x) => Math.abs(x - m) > 1).length;
+                    }
+                    return { sichtM, feld, far, saat: st.worldMeta && st.worldMeta.seed, sterne: n, sterneRaum: raum, sternfeld: !!sf };`,
+                    30
+                );
+                L.zeile("Ferne der Sitzung: " + JSON.stringify(z));
+                const km = z.sichtM / 1000;
+                const sichtWas = "die Welt zeichnet bis " + km.toFixed(1) + " km (" + (z.feld ? "Feld-Pass FELD_PASS.rMaxM, stamm/bild-sicht.js:3907" : "camera.far " + z.far + " m, der Feld-Pass ungemalt") + ")";
+                const FN =
+                    "Ferne = Nähe (Fernbild gegen verkleinerte Nahaufnahme nach Abzug der Luft, SSIM ≥ 0,8, ΔE ≤ 5): kein Leser — nahFernSicht (scripts/lib/licht-linsen.cjs:1281) vergleicht die Albedo nah/fern orthogonal von oben, kein SSIM des Blicks";
+                const stufe = (nr, fehlt) =>
+                    L.je(nr, async () => {
+                        if (km < P.sprossen[nr].umfang.verlangt) return L.umfang(nr, km, sichtWas);
+                        L.leser(nr, fehlt, km);
+                    });
+                await stufe(1, FN + "; T/T_soll je Kanal gegen Koschmieder liest luftTiefe (scripts/lib/licht-linsen.cjs:2364) am Hügel, nie an 12 Posen in den 60 s der Leiter");
+                await stufe(2, FN + "; der Gang auf ein Ziel aus 2 km mit der Leuchtdichte im Zielfenster: kein Leser (/bild, scripts/werkbank.cjs:2110, schießt stehend)");
+                await stufe(3, FN + "; T/T_soll und Restkontrast am Rand von 8 km: luftTiefe (scripts/lib/licht-linsen.cjs:2364) misst den Blick vom Hügel, nicht den Rand");
+                await stufe(4, FN + "; 100 Saaten verlangt, die Sitzung hält EINE (" + z.saat + ") — kein Leser wechselt die Saat in der Welt der Sitzung");
+                await stufe(5, "das Wetter der Ferne bei Ankunft und 2AFC gegen Foto: kein Leser (kein Flug, kein Fotosatz im Baum)");
+                await stufe(6, "Horizontabsenkung gegen Kugel + Refraktion: kein Leser — das Gelände ist eben (stamm/gelaende-fern.js:2360 FERN_RING)");
+                await L.je(7, async () =>
+                    L.leser(
+                        7,
+                        "Umfang nicht erzeugbar (der Umfang „Planet: Boden → Orbit ohne Ladebild“ trägt keine Zahl): " + sichtWas + ", das Gelände ist eben (FERN_RING, stamm/gelaende-fern.js:2360) — kein Orbit, kein Landepunkt von oben, kein Leser Ferne = Nähe"
+                    )
+                );
+                await L.je(8, async () =>
+                    L.leser(
+                        8,
+                        "Umfang nicht erzeugbar (der Umfang „Sonnensystem“ trägt keine Zahl): kein Himmelskörper ist eine bereisbare Welt — die Wandelsterne sind Punkte des Sternfelds (stamm/bild-himmel.js:368), Reisen gehen durch Tore (stamm/netz-portal.js:562); Phase: der Mond steht stets der Sonne gegenüber (welt-licht.js:720)"
+                    )
+                );
+                await L.je(9, async () => {
+                    if (!z.sternfeld) throw new Error("das Sternfeld ist nicht gebaut (state.starField null, stamm/bild-himmel.js:471)");
+                    if (z.sterneRaum >= 500) return L.leser(9, "Lage der 500 hellsten Sterne gegen die Galaxie-Ansicht: kein Leser", z.sterneRaum);
+                    L.umfang(9, z.sterneRaum, "die " + z.sterne + " Sterne liegen alle auf der Himmelskuppel (Instanz-Matrizen, stamm/bild-himmel.js:453), keiner hat einen Ort in einer Galaxie");
+                });
+                L.preisPose("gipfel-blick", "ego");
+            },
+        })
+    );
+
+    // ─────────── erleben.bild.nacht — Nacht: Lichter, die werfen ───────────
+    // An der dichtesten Pose (stadt-voll, Third) zählt das Programm die Leuchtquellen, die die Welt selbst setzt: das Verzeichnis „licht“
+    // (`_blockerMit`, stamm/gelaende-kollision.js:1193) mit Emitter-Datum (`_lichtDatum`, stamm/dirigent-kern.js:1834), dazu die
+    // glühende Lava (`_tatIndex().lava`, stamm/feld-leben.js:2648) — je Sprosse gegen 1 · 10² · 10³ … 10⁹. Unter dem Umfang urteilt
+    // Umfang; trägt die Welt ihn, fehlt der Leser des Bilds (Schatten am Pfosten, Bodenfleck, Fenster je Uhr, Fotosätze).
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.bild.nacht",
+            sek: 45,
+            pfad: ["stamm/dirigent-kern.js", "stamm/gelaende-kollision.js", "stamm/stoff-material.js", "stamm/feld-leben.js", "welt-licht.js", "scripts/lib/licht-linsen.cjs", "spec/profiband/haushalt.json"],
+            welt: [{ wort: "quellen", ab: 1, was: "Leuchtquellen der Welt, gezählt im Verzeichnis „licht“" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "schatten_kontrast", richtung: "≥", wert: 3, wortlaut: "Schatten-Kontrast ≥ 3:1 an einem Pfosten 2 m vom Feuer" },
+                        { wort: "kelvin_abw", richtung: "≤", wert: 200, wortlaut: "Gasse in der Kelvin-Farbe ±200 K" },
+                    ],
+                    umfang: { verlangt: 1, einheit: "Leuchtquellen", wortlaut: "1 Quelle", feld: "umfang" },
+                },
+                2: {
+                    soll: [
+                        { wort: "bodenfleck_anteil", richtung: "≥", wert: 0.9, wortlaut: "Anteil sichtbarer Quellen in 50 m mit Bodenfleck ≥ 1 EV über Umgebung ≥ 0,9" },
+                        { wort: "gasse_dev_median", richtung: "≤", wert: 0.5, wortlaut: "Gassen-Histogramm gegen Fotosatz ΔEV-Median ≤ 0,5" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Leuchtquellen der Welt", wortlaut: "10²: Dorf bei Nacht", feld: "umfang" },
+                },
+                3: {
+                    soll: [
+                        { wort: "fenster_abw", richtung: "≤", wert: 0.1, wortlaut: "Anteil beleuchteter Fenster 20 → 4 Uhr gegen gemessene Nachtgang-Kurven ±0,1" },
+                        { wort: "strasse_lx_min", richtung: "≥", wert: 5, wortlaut: "Straße 5–30 lx" },
+                        { wort: "strasse_lx_max", richtung: "≤", wert: 30, wortlaut: "Straße 5–30 lx" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "Leuchtquellen der Welt", wortlaut: "10³: Kleinstadt", feld: "umfang" },
+                },
+                4: {
+                    soll: [
+                        { wort: "histogramm_dev", richtung: "≤", wert: 0.5, wortlaut: "Leuchtdichte-Histogramm und Spiegelstreifen gegen Fotosatz nasser Nachtstraßen ΔEV ≤ 0,5" },
+                        { wort: "afc_pct", richtung: "≤", wert: 65, wortlaut: "2AFC ≤ 65 %" },
+                    ],
+                    umfang: { verlangt: 10000, einheit: "Leuchtquellen der Welt", wortlaut: "10⁴: Viertel mit Verkehr", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "walker_abw_pct", richtung: "≤", wert: 30, wortlaut: "Himmelshelligkeit am Stadtrand gegen Walker's Law ±30 %, Bortle ±1" },
+                        { wort: "bortle_abw", richtung: "≤", wert: 1, wortlaut: "Himmelshelligkeit am Stadtrand gegen Walker's Law ±30 %, Bortle ±1" },
+                    ],
+                    umfang: { verlangt: 1e5, einheit: "Leuchtquellen der Welt", wortlaut: "10⁵: Großstadt aus 300 m", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "ks", richtung: "≤", wert: 0.1, wortlaut: "Radianz je km² gegen VIIRS-Ausschnitte gleicher Dichte KS ≤ 0,1" },
+                        { wort: "ferne_naehe", richtung: "≥", wert: 0.8, wortlaut: "Ferne = Nähe beim Sinkflug ≥ 0,8" },
+                    ],
+                    umfang: { verlangt: 1e7, einheit: "Leuchtquellen der Welt", wortlaut: "10⁷: Tokio-Maß aus dem Flugzeug", feld: "umfang" },
+                },
+                7: {
+                    soll: [{ wort: "anteil", richtung: "≥", wert: 0.8, wortlaut: "100 Saaten mit Stadt und Vulkan: Nachtbild-Statistik passt zur Black-Marble-Statistik extrapolierter Dichte ≥ 0,8" }],
+                    umfang: { verlangt: 1e8, einheit: "Leuchtquellen der Welt", wortlaut: "10⁸: Megaregion + Vulkanglut in einem Bild vom Gipfel", feld: "umfang" },
+                },
+                8: {
+                    soll: [
+                        { wort: "ks", richtung: "≤", wert: 0.1, wortlaut: "Nachtlicht-Statistik je Epoche gegen DMSP/VIIRS-Archiv 1992 → heute KS ≤ 0,1" },
+                        { wort: "bortle_abw", richtung: "≤", wert: 1, wortlaut: "Bortle eines Orts folgt seiner Epoche ±1" },
+                    ],
+                    umfang: { verlangt: 1e9, einheit: "Leuchtquellen der Welt", wortlaut: "10⁹–10¹⁰: Nachtseite eines Planeten über Epochen", feld: "umfang" },
+                },
+            },
+            lauf: async function nachtLauf(H, P, L) {
+                const ort = await L.ort("stadt-voll", "third").then(
+                    () => null,
+                    (e) => String((e && e.message) || e).split("\n")[0]
+                );
+                L.preisPose("stadt-voll", "third");
+                if (ort) {
+                    // ohne die dichteste Pose wäre die Zählung zu klein und „Umfang nicht erzeugbar“ gelogen: jede Sprosse wirft beim Ort
+                    L.zeile("Nacht: stadt-voll nicht gestellt — " + ort);
+                    for (const nr of [1, 2, 3, 4, 5, 6, 7, 8])
+                        await L.je(nr, async () => {
+                            throw new Error("stadt-voll third nicht gestellt: " + ort);
+                        });
+                    return;
+                }
+                const z = await L.ev(
+                    `const st = r.state, A = r.constructor, p = st.playerMesh.position;
+                    let welt = 0, nah = 0;
+                    const arten = {};
+                    for (const e of r._blockerMit("licht")) {
+                        if (!r._lichtDatum(e)) continue;
+                        welt++;
+                        arten[e.type] = (arten[e.type] || 0) + 1;
+                        const q = e.position;
+                        if (q && Math.hypot(q.x - p.x, q.z - p.z) <= 50) nah++;
+                    }
+                    const lava = r._tatIndex().lava.length;
+                    return { welt, nah, lava, plaetze: A.LICHT_POOL.plaetze, arten: Object.entries(arten).sort((a, b) => b[1] - a[1]).slice(0, 4), ort: [Math.round(p.x), Math.round(p.z)] };`,
+                    30
+                );
+                L.zeile("Nacht der Sitzung (stadt-voll third): " + JSON.stringify(z));
+                const n = z.welt + z.lava;
+                const zaehlWas = "die Welt setzt " + n + " Leuchtquellen (" + z.welt + " im Verzeichnis „licht“, stamm/gelaende-kollision.js:1193, dazu " + z.lava + " glühende Lava; die Fenster glühen über EIN Uniform je Licht-Art, atmoUniforms.lichtGlut stamm/dirigent-kern.js:1606, und zählen nicht als Quelle)";
+                const FEHLT = {
+                    1: "Schatten-Kontrast am Pfosten 2 m vom Feuer und Kelvin der Gasse: kein Leser — der Licht-Pool (stamm/stoff-material.js:3776) trägt Stärke und Farbe, kein Leser misst den Schatten eines Pfostens im Bild (scripts/lib/licht-linsen.cjs:743 lichtBilanz misst die Bilanz des Lichts)",
+                    2: "Bodenfleck ≥ 1 EV je sichtbarer Quelle in 50 m: kein Leser — der Licht-Pool leuchtet höchstens " + z.plaetze + " Quellen zugleich (stamm/stoff-material.js:3776), in 50 m stehen " + z.nah + "; kein Gassen-Fotosatz im Baum",
+                    3: "Anteil beleuchteter Fenster je Uhr: kein Leser — die Fenster glühen nach EINEM Zeitplan je Licht-Art (stamm/dirigent-kern.js:1882 _lichtZeitplan), nicht nach ihren Bewohnern; Straße in lx: kein geeichtes k",
+                    4: "Leuchtdichte-Histogramm nasser Nachtstraßen gegen Fotosatz: kein Leser, kein Fotosatz im Baum (scripts/lib/licht-linsen.cjs:743)",
+                    5: "Himmelshelligkeit am Stadtrand gegen Walker's Law: kein Leser — die Himmels-Sicht (welt-licht.js:989 himmelSicht) trägt keine Lichtglocke der Stadt",
+                    6: "Radianz je km² gegen VIIRS: kein Leser, kein VIIRS-Ausschnitt im Baum",
+                    7: "Nachtbild-Statistik gegen Black Marble: kein Leser; 100 Saaten verlangt, die Sitzung hält eine",
+                    8: "Nachtlicht je Epoche gegen DMSP/VIIRS: kein Leser; die Lichter tragen keine Epoche (stamm/dirigent-kern.js:1882)",
+                };
+                for (const nr of [1, 2, 3, 4, 5, 6, 7, 8])
+                    await L.je(nr, async () => {
+                        if (n < P.sprossen[nr].umfang.verlangt) return L.umfang(nr, n, zaehlWas);
+                        L.leser(nr, FEHLT[nr], n);
+                    });
+            },
+        })
+    );
+
+    // ─────────── erleben.bild.flaeche — Fläche im wahren Licht ───────────
+    // S1 trägt bestehend g3.js (karte2.erleben.bild.flaeche#1). S2 ist ein Bildpaar: das Dorf im Regen an fester Pose (Third, Uhr 0,35) gegen
+    // ein Foto, sobald die gezählte Dorffläche 10⁴ m² trägt. Gezählt in der Welt: die Fläche der größten Siedlung (Hüllrechteck der Slots
+    // ihres Plans, `_bewohnerSiedlungen`, stamm/siedlung-bewohner.js:277), die Zeilen des Stoff-Gesetzes (schmiede STOFF_GESETZ.ZEILEN, schmiede-core.js:2860),
+    // die glühende Lava (stamm/feld-leben.js:2648). Tageslichtquotient, Glutfarbe gegen Planck und Fotosätze haben keinen Leser.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.bild.flaeche",
+            sek: 50,
+            mutiert: true,
+            pfad: ["stamm/siedlung-bewohner.js", "stamm/bild-himmel.js", "stamm/feld-leben.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/daten.js", "schmiede-core.js", "welt-licht.js", "scripts/werkbank.cjs", "scripts/lib/licht-linsen.cjs", "spec/profiband/haushalt.json"],
+            welt: [{ wort: "gezaehlt", ab: 1, was: "in der Welt gezählte Größe (Fläche, Stoffe, Glut)" }],
+            bestehend: [1],
+            sprossen: {
+                2: {
+                    soll: [
+                        { wort: "flimmer_pct", richtung: "≤", wert: 1, wortlaut: "Flimmer-Anteil der Schattenkante ≤ 1 % im Gang" },
+                        { wort: "wand_abw_pct", richtung: "≤", wert: 20, wortlaut: "Wand unten/Sonnenseite ±20 % gegen Messung" },
+                    ],
+                    auge: { pose: "dorf third · Uhr 0,35 · Wetter rainy (Nässe der Bühne)", vorbild: "Foto eines Dorfplatzes bei Regen im Vormittags-Streiflicht: Glanz auf nassem Pflaster und Holz" },
+                    umfang: { verlangt: 1e4, einheit: "m² Dorffläche", wortlaut: "Dorf, 10⁴ m²", feld: "umfang" },
+                },
+                3: { soll: [{ wort: "tlq_abw_pct", richtung: "≤", wert: 30, wortlaut: "Tageslichtquotient im Bild gegen gemessene Werte gleicher Fenstergröße (1–5 %) ±30 %" }] },
+                4: {
+                    soll: [
+                        { wort: "fassade_abw_pct", richtung: "≤", wert: 20, wortlaut: "Schatten-/Sonnenfassade ±20 % gegen Messwerte" },
+                        { wort: "spiegel_px", richtung: "≤", wert: 2, wortlaut: "Spiegelbild der Gegenfassade ±2 px" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "m² Stadtfläche", wortlaut: "Stadtschlucht, 10⁶ m²", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "anteil", richtung: "≥", wert: 0.9, wortlaut: "100 Zufallsstoffe unter Normlicht: Albedo und Glanz im Band gemessener Datensätze, ΔE ≤ 5, Anteil ≥ 0,9" },
+                        { wort: "de", richtung: "≤", wert: 5, wortlaut: "100 Zufallsstoffe unter Normlicht: Albedo und Glanz im Band gemessener Datensätze, ΔE ≤ 5, Anteil ≥ 0,9" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Stoffe des Gesetzes", wortlaut: "100 Zufallsstoffe unter Normlicht", feld: "richter" },
+                },
+                6: {
+                    soll: [
+                        { wort: "glut_de", richtung: "≤", wert: 5, wortlaut: "Glutfarbe gegen Schwarzkörper der Temperatur des Geologie-Gesetzes ΔE ≤ 5" },
+                        { wort: "wolke_de", richtung: "≤", wert: 10, wortlaut: "Wolkenunterseite gegen Fotos ΔE ≤ 10" },
+                    ],
+                },
+                7: { soll: [{ wort: "anteil", richtung: "≥", wert: 0.9, wortlaut: "288 Zufallsposen (12 Orte × 24 h): Bildstatistik im Band des Fotosatzes gleicher Szene ≥ 0,9" }] },
+                8: { soll: [{ wort: "anteil", richtung: "≥", wert: 0.95, wortlaut: "Zufalls-Planetenstoffe mit Albedo und Glanz im physikalisch möglichen Band ≥ 0,95" }] },
+            },
+            lauf: async function flaecheLauf(H, P, L) {
+                const z = await L.ev(
+                    `const st = r.state;
+                    let best = null, siedlungen = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        const sl = (S.plan && S.plan.slots) || [];
+                        siedlungen++;
+                        let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+                        for (const s of sl) {
+                            if (!Number.isFinite(s.x) || !Number.isFinite(s.z)) continue;
+                            x0 = Math.min(x0, s.x); x1 = Math.max(x1, s.x); z0 = Math.min(z0, s.z); z1 = Math.max(z1, s.z);
+                        }
+                        const f = sl.length > 1 && x1 > x0 && z1 > z0 ? (x1 - x0) * (z1 - z0) : 0;
+                        if (!best || f > best.f) best = { n: sl.length, f: Math.round(f), key: S.key };
+                    }
+                    const flaeche = best ? best.f : 0, bauten = best ? best.n : 0;
+                    const SG = globalThis.__schmiedeCore && globalThis.__schmiedeCore.STOFF_GESETZ;
+                    const stoffe = SG && SG.ZEILEN ? Object.keys(SG.ZEILEN).length : null;
+                    const gesetz = Object.keys(r.constructor._weltGesetz(st.worldMeta));
+                    return { siedlung: best, siedlungen, flaeche, bauten, stoffe, lava: r._tatIndex().lava.length, welten: Object.keys(r.constructor.ULTIVERSUM).length, gesetz };`,
+                    30
+                );
+                L.zeile("Fläche der Sitzung: " + JSON.stringify(z));
+                await L.je(3, async () =>
+                    L.leser(3, "Tageslichtquotient (E innen ÷ E außen hinter einem Fenster bekannter Größe) im Bild: kein Leser — der Raum am Auge steuert nur die Blende (stamm/bild-himmel.js:1968 _raumBlendeTakt), keine Messung der Beleuchtungsstärke im Raum")
+                );
+                await L.je(4, async () => {
+                    if (!z.siedlung) throw new Error("keine Siedlung in der Welt der Sitzung (_bewohnerSiedlungen leer)");
+                    const was = "die größte von " + z.siedlungen + " Siedlungen deckt mit " + z.bauten + " Plätzen " + z.flaeche + " m² (Hüllrechteck der Slots ihres Plans, stamm/siedlung-bewohner.js:277)";
+                    if (z.flaeche < P.sprossen[4].umfang.verlangt) return L.umfang(4, z.flaeche, was);
+                    L.leser(4, "Schatten-/Sonnenfassade gegen Messwerte und Spiegelbild der Gegenfassade: kein Leser (/bild, scripts/werkbank.cjs:2110, urteilt die Abnahme, keinen Fassaden-Kontrast)", z.flaeche);
+                });
+                await L.je(5, async () => {
+                    if (!(z.stoffe >= 0)) throw new Error("schmiede STOFF_GESETZ.ZEILEN nicht geladen");
+                    if (z.stoffe < 100) return L.umfang(5, z.stoffe, "das Stoff-Gesetz trägt " + z.stoffe + " Zeilen (schmiede STOFF_GESETZ.ZEILEN, schmiede-core.js:2860)");
+                    L.leser(5, "Albedo und Glanz je Stoff unter Normlicht gegen gemessene Datensätze: kein Leser", z.stoffe);
+                });
+                await L.je(6, async () =>
+                    L.leser(
+                        6,
+                        "Glutfarbe gegen den Schwarzkörper ihrer Temperatur: kein Leser — die Lava glüht über _lavaZustand (stamm/feld-leben.js:2482) und leuchtet im Pool (stamm/dirigent-kern.js:1816), kein Leser misst ihre Farbe im Bild gegen Planck (in der Sitzung " + z.lava + " Lava-Taten); Wolkenunterseite gegen Fotos: kein Fotosatz"
+                    )
+                );
+                await L.je(7, async () =>
+                    L.leser(7, "Bildstatistik je Pose gegen den Fotosatz gleicher Szene: kein Leser, kein Fotosatz im Baum — tagKurve (scripts/lib/licht-linsen.cjs:1078) schießt je Uhr und urteilt gegen spec/farbe/tag-ref.json, nie gegen Fotos")
+                );
+                await L.je(8, async () =>
+                    L.leser(
+                        8,
+                        "Umfang nicht erzeugbar (der Umfang „jeder Planet“ trägt keine Zahl): " + z.welten + " Welten im Ultiversum (stamm/daten.js:84), ihr Gesetz trägt nur " + z.gesetz.join(", ") + " (stamm/speicher-welten.js:88) — keine eigenen Stoffe; EINE Sonne (welt-licht.js:711), kein Doppelschatten"
+                    )
+                );
+                // S2 · das Bildpaar an fester Pose: Dorf, Third, Vormittag, Regen der Bühne
+                await L.je(2, async () => {
+                    if (!z.siedlung) throw new Error("keine Siedlung in der Welt der Sitzung (_bewohnerSiedlungen leer)");
+                    if (z.flaeche < P.sprossen[2].umfang.verlangt)
+                        return L.umfang(2, z.flaeche, "die größte von " + z.siedlungen + " Siedlungen deckt " + z.flaeche + " m² (Hüllrechteck der " + z.bauten + " Slots ihres Plans)");
+                    await L.auge(2, { ort: "dorf", sicht: "third", b: { uhr: 0.35, wetter: "rainy" }, erzeugt: z.flaeche });
+                });
+                L.preisPose("dorf", "third");
+            },
+        })
+    );
+
+    // ─────────── erleben.bild.himmel — Luft, Tag und Himmel ───────────
+    // S2 GEMESSEN: die Tag-Achse des Spiels im Ausgabe-Bild (`__tagKurve`, scripts/lib/licht-linsen.cjs:1078) an der Mess-Wiese, Ego, über
+    // 24 Uhren (stündlich), REF wie tagKurveUrteil (scripts/lib/licht-linsen.cjs:1177): die Stufen der Szene gegen die Referenzkurve
+    // spec/farbe/tag-ref.json (USNO-Beleuchtungsstärke durch die Kamera BELICHTUNG), max |Abweichung| ≤ 0,3 EV; Zeugen: 24 Uhren, die
+    // Spanne der Sonnenhöhe. Die übrigen Achsen (Klarhimmel in cd/m², Wetter-Sicht je Wort, Breite × Tag, Aerosol, Zeitalter, Planet) leser.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.bild.himmel",
+            sek: 60,
+            mutiert: true,
+            pfad: ["scripts/lib/licht-linsen.cjs", "spec/farbe/tag-ref.json", "spec/farbe/luft-referenz.json", "scripts/werkbank.cjs", "welt-licht.js", "stamm/bild-himmel.js", "stamm/feld-leben.js", "stamm/netz-portal.js", "stamm/daten.js", "schmiede-core.js", "spec/profiband/haushalt.json"],
+            welt: [
+                { wort: "uhren", ab: 24, was: "Uhren der Kurve im Ausgabe-Bild" },
+                { wort: "sonne_spanne_grad", ab: 90, was: "Spanne der Sonnenhöhe über die Kurve (°)" },
+            ],
+            sprossen: {
+                1: { soll: [{ wort: "himmel_ev_abw", richtung: "≤", wert: 0.3, wortlaut: "Himmels-Leuchtdichte gegen gemessenen Klarhimmel ±0,3 EV" }] },
+                2: { soll: [{ wort: "ref_max_ev", richtung: "≤", wert: 0.3, wortlaut: "Belichtungskurve über 24 h gegen Referenzkurve, max. Abweichung ≤ 0,3 EV" }] },
+                3: { soll: [{ wort: "sicht_abw_pct", richtung: "≤", wert: 15, wortlaut: "Sichtweite im Bild ±15 % zur gesetzten" }] },
+                4: {
+                    soll: [
+                        { wort: "allsky_ev_abw", richtung: "≤", wert: 0.3, wortlaut: "Zufalls-(Breite, Tag, Uhr): All-Sky-Bild ±0,3 EV gegen Himmelsfoto-Datensätze, Anteil ≥ 0,9" },
+                        { wort: "anteil", richtung: "≥", wert: 0.9, wortlaut: "Zufalls-(Breite, Tag, Uhr): All-Sky-Bild ±0,3 EV gegen Himmelsfoto-Datensätze, Anteil ≥ 0,9" },
+                    ],
+                },
+                5: {
+                    soll: [
+                        { wort: "bogen_abw_grad", richtung: "≤", wert: 1, wortlaut: "Regenbogen 42° ±1°, Halo 22° ±1°" },
+                        { wort: "abendrot_de", richtung: "≤", wert: 10, wortlaut: "Abendrot nach Ausbruch ΔE ≤ 10 gegen Beobachtung" },
+                    ],
+                },
+                6: {
+                    soll: [
+                        { wort: "farbe_ev_abw", richtung: "≤", wert: 0.3, wortlaut: "Himmelsfarbe ±0,3 EV gegen Strahlungstransport-Referenz, Anteil von 100 Zeitpunkten ≥ 0,9" },
+                        { wort: "anteil", richtung: "≥", wert: 0.9, wortlaut: "Himmelsfarbe ±0,3 EV gegen Strahlungstransport-Referenz, Anteil von 100 Zeitpunkten ≥ 0,9" },
+                    ],
+                },
+                7: {
+                    soll: [
+                        { wort: "kanal_ev_abw", richtung: "≤", wert: 0.3, wortlaut: "Mars-Abend gegen Rover-Fotos ±0,3 EV je Kanal" },
+                        { wort: "planeten_anteil", richtung: "≥", wert: 0.9, wortlaut: "Zufalls-Planeten gegen Referenz ±0,3 EV ≥ 0,9" },
+                    ],
+                },
+            },
+            lauf: async function himmelLauf(H, P, L) {
+                const z = await L.ev(
+                    `const A = r.constructor, SG = globalThis.__schmiedeCore && globalThis.__schmiedeCore.STOFF_GESETZ;
+                    let bogen = null;
+                    try { bogen = SG.bogenGrad(SG.zeile("wasser").n); } catch (e) { bogen = null; }
+                    return { worte: Object.keys(A.WETTER_ZEILE || {}), bogen, welten: Object.keys(A.ULTIVERSUM) };`,
+                    30
+                );
+                L.zeile("Himmel der Sitzung: " + JSON.stringify(z));
+                await L.je(1, async () =>
+                    L.leser(1, "Himmels-Leuchtdichte in cd/m² gegen den gemessenen Klarhimmel: kein Leser — die Bild-Maße tragen kein geeichtes k; die Tag-Achse (scripts/lib/licht-linsen.cjs:1078 tagKurve) liest die untere Bildhälfte, nicht den Himmel")
+                );
+                await L.je(3, async () =>
+                    L.leser(
+                        3,
+                        "Sicht im Bild je Wetter-Wort (" + z.worte.join(", ") + ") gegen die gesetzte (stamm/bild-himmel.js:2280 _luftSichtM): der Leser luftTiefe/wetterLuftUrteil (scripts/lib/licht-linsen.cjs:2364/2690) kennt nur das Sturm-Soll (spec/farbe/luft-referenz.json sichtSturmM), Hügel-Lauf und Wetter-Zug (scripts/lib/licht-linsen.cjs:2660) tragen die 60 s der Leiter nicht"
+                    )
+                );
+                await L.je(4, async () =>
+                    L.leser(4, "Himmel je (Breite, Tag, Uhr): kein Leser — die Welt kennt die Breite (die Reise, stamm/feld-leben.js:1277), die Sonnenbahn liest sie nicht: welt-licht.js:711 sonnenRichtung(winkel) aus der Uhr allein, der Tag der Welt (stamm/bild-himmel.js:2738 worldMeta.tag) geht nicht ein; kein Himmelsfoto-Datensatz im Baum")
+                );
+                await L.je(5, async () =>
+                    L.leser(
+                        5,
+                        "Regenbogen: das Gesetz des Bogens steht im Kern (schmiede-core.js:2945 STOFF_GESETZ.bogenGrad, Wasser " + (Number.isFinite(z.bogen) ? z.bogen.toFixed(1) + "°" : "—") + "), kein Leser des Himmels zeichnet ihn (welt-licht.js:989 himmelSicht: Rayleigh, Mie, Wolken); Halo 22°: keine Eiskristall-Optik; Abendrot nach Ausbruch: kein Leser gegen Beobachtung"
+                    )
+                );
+                await L.je(6, async () =>
+                    L.leser(6, "Himmelsfarbe je Zeitalter: kein Leser — die Reise in die Zeit (stamm/feld-leben.js:1277 zeitMa) erbt den Himmel der Heimat (stamm/netz-portal.js:701 himmel.rayleighTiefe), keine Strahlungstransport-Referenz im Baum")
+                );
+                await L.je(7, async () =>
+                    L.leser(7, "Mars-Abend gegen Rover-Fotos je Kanal: kein Leser, kein Rover-Korpus im Baum — der Himmel der Fremdwelt steht im Gesetz (stamm/daten.js:84 ULTIVERSUM.ferne rayleighTiefe; Welten " + z.welten.join(", ") + ")")
+                );
+                // S2 · die Tag-Achse über 24 Uhren an der Mess-Wiese, Ego (die Kamera des Spiels, die Bühne der Werkbank)
+                await L.je(2, async () => {
+                    await L.ort("wiese", "ego");
+                    if (L.rest() < 22) throw new Error("die Frist trägt die 24 Uhren nicht mehr (Rest " + Math.round(L.rest()) + " s)");
+                    const uhren = Array.from({ length: 24 }, (_, i) => i / 24);
+                    let m;
+                    try {
+                        m = await L.ev("return await __tagKurve(" + JSON.stringify({ uhren, png: false }) + ");", Math.max(10, Math.floor(L.rest()) - 4));
+                    } finally {
+                        await L.ev("r.setTimeOfDay(0.5, 'human'); return true;", 20).catch(() => null);
+                    }
+                    const R = require(require("path").resolve("spec/farbe/tag-ref.json")).zeilen;
+                    const stufen = (h) => {
+                        const i = R.findIndex((x) => x[0] <= h);
+                        return i < 1 ? R[Math.max(i, 0)][2] : R[i][2] + ((R[i - 1][2] - R[i][2]) * (h - R[i][0])) / (R[i - 1][0] - R[i][0]);
+                    };
+                    const zeilen = (m && m.zeilen) || [];
+                    const mittag = zeilen.find((x) => x.uhr === 0.5);
+                    if (!mittag) throw new Error("die Kurve trägt keinen Mittag (" + zeilen.length + " Uhren)");
+                    const ev = (a, b) => Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9));
+                    let max = 0, wo = zeilen[0];
+                    for (const x of zeilen) {
+                        const d = ev(x.X, mittag.X) - stufen(x.sonne) + stufen(mittag.sonne);
+                        if (Math.abs(d) >= Math.abs(max)) (max = d), (wo = x);
+                    }
+                    const sonnen = zeilen.map((x) => x.sonne);
+                    L.gemessen(
+                        2,
+                        { ref_max_ev: +Math.abs(max).toFixed(3) },
+                        {
+                            welt: { uhren: zeilen.length, sonne_spanne_grad: +(Math.max(...sonnen) - Math.min(...sonnen)).toFixed(2) },
+                            taeter: "Uhr " + (+wo.uhr.toFixed(4)) + " (Sonne " + wo.sonne + "°) " + max.toFixed(2) + " EV neben der Referenz (spec/farbe/tag-ref.json)",
+                            beleg: zeilen.map((x) => [+x.uhr.toFixed(4), x.sonne, x.X, x.frisch]),
+                        }
+                    );
+                });
+                L.preisPose("wiese", "ego");
+            },
+        })
+    );
+
+    // ─────────── erleben.bild.auge — Das Auge: Belichtung, Dynamik, Ruhe ───────────
+    // S1 trägt bestehend g3.js (karte2.erleben.bild.auge#1). S4 Blendung ist ein Bildpaar: Mess-Wiese, Ego, Uhr 0,30, der Blick waagrecht
+    // in die Sonne (Gier aus `_sonnenRichtung`, stamm/bild-himmel.js:1383; Höhe ≈ 18° im Bildfeld) gegen ein Gegenlicht-Foto. S6 zählt die
+    // Größenordnungen, die EIN Bild des Auges trägt (Fern- durch Nahgrenze der Kamera, Feld-Pass stamm/bild-sicht.js:3907). Höhle → Sonne,
+    // HDR-Korpus und die zeitabgetastete Referenz haben keinen Leser.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.bild.auge",
+            sek: 50,
+            mutiert: true,
+            pfad: ["stamm/bild-himmel.js", "stamm/bild-sicht.js", "stamm/dirigent-kern.js", "stamm/koerper-bewegung.js", "scripts/werkbank.cjs", "scripts/lib/licht-linsen.cjs", "spec/profiband/haushalt.json"],
+            welt: [{ wort: "gezaehlt", ab: 1, was: "in der Welt gezählte Größe der Kamera" }],
+            bestehend: [1],
+            sprossen: {
+                2: { soll: [{ wort: "ausbrand_pct", richtung: "≤", wert: 2, wortlaut: "Höhle → Mittagssonne: ausgebrannte Fläche ≤ 2 % nach 1 s" }] },
+                3: { soll: [{ wort: "geklippt_pct", richtung: "≤", wert: 2, wortlaut: "20 Szenen: geklippte Fläche ≤ 2 %, Tonwertumfang im Band kalibrierter HDR-Fotos" }] },
+                4: {
+                    soll: [{ wort: "afc_pct", richtung: "≤", wert: 65, wortlaut: "Panel-2AFC gegen Fotos gleicher Blendsituation ≤ 65 %" }],
+                    auge: { pose: "wiese ego · Uhr 0,30 · Blick waagrecht in die Sonne (Höhe ≈ 18°)", vorbild: "Foto Gegenlicht über einer Wiese mit der Sonne ≈ 18° hoch im Bildfeld (Blendung, Streulicht, Hof)" },
+                },
+                5: { soll: [{ wort: "geister_pct", richtung: "≤", wert: 1, wortlaut: "Geister-Fläche gegen 16-fach zeitabgetastete Referenz ≤ 1 %" }] },
+                6: {
+                    soll: [{ wort: "ohne_bruch_anteil", richtung: "≥", wert: 0.9, wortlaut: "200 Zufalls-Kameraposen: Anteil ohne Bruch ≥ 0,9" }],
+                    umfang: { verlangt: 10, einheit: "Größenordnungen, die EIN Bild des Auges trägt (Fern- durch Nahgrenze)", wortlaut: "dasselbe Auge über 10 Größenordnungen Höhe", feld: "tiefe" },
+                },
+            },
+            lauf: async function augeLauf(H, P, L) {
+                const z = await L.ev(
+                    `const st = r.state, c = st.camera, A = r.constructor, fp = st.feldPass;
+                    const feld = !!(fp && fp.mesh && fp.mesh.visible);
+                    return { near: c.near, far: c.far, fern: Math.max(c.far, feld ? A.FELD_PASS.rMaxM : 0), feld, modus: st.cameraMode, fov: c.fov };`,
+                    30
+                );
+                L.zeile("Auge der Sitzung: " + JSON.stringify(z));
+                await L.je(2, async () =>
+                    L.leser(2, "Höhle → Mittagssonne, ausgebrannte Fläche nach 1 s: kein Leser — der Himmel belichtet sofort (stamm/bild-himmel.js:1943 _belichtungAusLicht), nur die Blende des Raums gleitet (stamm/bild-himmel.js:1968 _raumBlendeTakt); kein Gang aus dem Dunkel ins Licht mit Schuss nach 1 s")
+                );
+                await L.je(3, async () =>
+                    L.leser(3, "20 Szenen über 8 Dekaden: geklippte Fläche und Tonwertumfang gegen kalibrierte HDR-Fotos: kein Leser, kein HDR-Korpus im Baum; die Bild-Maße tragen kein geeichtes k in cd/m² (scripts/lib/licht-linsen.cjs:743)")
+                );
+                await L.je(5, async () =>
+                    L.leser(5, "Geister-Fläche gegen die 16-fach zeitabgetastete Referenz: kein Leser — /bild (scripts/werkbank.cjs:2110) schießt EIN Bild ohne Zeitabtastung, keine Referenz mit 16 Teilbildern je Bild")
+                );
+                await L.je(6, async () => {
+                    const dek = Math.log10(z.fern / z.near);
+                    L.umfang(
+                        6,
+                        +dek.toFixed(2),
+                        "das Auge zeichnet von " + z.near + " m bis " + (z.fern / 1000).toFixed(1) + " km (" + (z.feld ? "Feld-Pass" : "camera.far") + ") — die Sichten des Spielers sind Ego und Third (stamm/dirigent-kern.js:1237 setCameraMode); Makro-Flug und Orbit fährt nur die Kamera-Führung des Gelände-Studios (kameraFuehren, stamm/dirigent-kern.js:1232, Leser stamm/koerper-bewegung.js:1767)"
+                    );
+                });
+                // S4 · Blendung: Wiese, Ego, Uhr 0,30, die Gier zur Sonne, der Blick waagrecht
+                await L.je(4, async () => {
+                    await L.ort("wiese", "ego");
+                    const s = await L.ev(
+                        "if (r.setTimeOfDay(0.3, 'human') !== true) throw new Error('die Uhr nimmt den Spieler nicht'); const d = r._sonnenRichtung(); r.state.yaw = Math.atan2(d.x, d.z); r.state.pitch = 0; return [d.x, d.y, d.z, Math.asin(d.y) * 180 / Math.PI];",
+                        20
+                    );
+                    L.zeile("Sonne der Blendung: " + JSON.stringify(s));
+                    try {
+                        await L.auge(4, { b: { uhr: 0.3 } });
+                    } finally {
+                        await L.ev("r.setTimeOfDay(0.5, 'human'); return true;", 20).catch(() => null);
+                    }
+                });
+                L.preisPose("wiese", "ego");
+            },
+        })
+    );
+
+    // ─────────── erleben.bild.kamera — Jede Kamera: Foto, Kino, Wiederholung, Zuschauen ───────────
+    // Die Probe fragt die Welt nach jeder Blickweise jenseits von Ego und Third (`setCameraMode` je Wort frei · foto · kino · karte ·
+    // zuschauen · wiederholung, stamm/dirigent-kern.js:1237; der Modus kehrt zurück), zählt die Wesen, denen eine Kamera folgen könnte
+    // (Bewohner `_bewohnerSiedlungen`, Tiere `state.creatures`), die Sekunden der Aufnahme (`state._replayRec`, stamm/dirigent-takt.js:1293)
+    // und die Saaten. Nimmt die Welt keinen Modus, ist der Umfang nicht erzeugbar; Foto und Übertragung tragen keine Zahl (leser).
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.bild.kamera",
+            sek: 40,
+            mutiert: true,
+            pfad: ["stamm/dirigent-kern.js", "stamm/dirigent-takt.js", "stamm/koerper-bewegung.js", "stamm/siedlung-bewohner.js", "scripts/werkbank.cjs", "spec/profiband/haushalt.json"],
+            welt: [{ wort: "gezaehlt", ab: 1, was: "in der Welt gezählte Größe der Kamera" }],
+            sprossen: {
+                1: {
+                    soll: [{ wort: "luecke_pct", richtung: "≤", wert: 2, wortlaut: "20 Standbilder aus freier Lage: Bild ganz (Lücke ≤ 2 %)" }],
+                    umfang: { verlangt: 20, einheit: "Standbilder aus freier Lage", wortlaut: "20 Standbilder aus freier Lage", feld: "richter" },
+                },
+                2: {
+                    soll: [
+                        { wort: "unschaerfe_abw_pct", richtung: "≤", wert: 10, wortlaut: "Unschärfe-Kreis gegen die Linsenformel ±10 %" },
+                        { wort: "blindpaar_pct", richtung: "≤", wert: 80, wortlaut: "Blindpaar gegen ein Foto gleicher Brennweite und Blende ≤ 80 %" },
+                    ],
+                },
+                3: {
+                    soll: [{ wort: "diff_pct", richtung: "≤", wert: 1, wortlaut: "Wiederholung aus der Spieler-Lage gegen die Aufnahme: Diff ≤ 1 %" }],
+                    umfang: { verlangt: 60, einheit: "s Wiederholung der Welt", wortlaut: "Wiederholung: die letzten 60 s aus jeder Lage", feld: "umfang" },
+                },
+                4: {
+                    soll: [{ wort: "plan_abw_pct", richtung: "≤", wert: 5, wortlaut: "20 gefolgte Wesen über 1 Spieltag: Tagesplan gleich dem ohne Zuschauer (Abweichung ≤ 5 %)" }],
+                    umfang: { verlangt: 20, einheit: "Wesen", wortlaut: "20 gefolgte Wesen über 1 Spieltag", feld: "richter" },
+                },
+                5: {
+                    soll: [
+                        { wort: "verstanden_pct", richtung: "≥", wert: 80, wortlaut: "blinde Zuschauer verstehen Stand und Entscheidung nach 5 min ≥ 80 %" },
+                        { wort: "blindpaar_pct", richtung: "≤", wert: 75, wortlaut: "Blindpaar gegen eine Fernseh-Übertragung ≤ 75 %" },
+                    ],
+                },
+                6: {
+                    soll: [
+                        { wort: "luma_sprung_pct", richtung: "≤", wert: 5, wortlaut: "Zoom Karte → Straße ohne Sprung (Luma ≤ 5 %, Lage ≤ 1 %)" },
+                        { wort: "lage_sprung_pct", richtung: "≤", wert: 1, wortlaut: "Zoom Karte → Straße ohne Sprung (Luma ≤ 5 %, Lage ≤ 1 %)" },
+                    ],
+                    umfang: { verlangt: 20, einheit: "Befehle aus dem Kartenblick", wortlaut: "20 Befehle aus der Karte kommen am Boden an", feld: "richter" },
+                },
+                7: {
+                    soll: [{ wort: "afc_pct", richtung: "≤", wert: 65, wortlaut: "Panel-2AFC 60 s Fahrt gegen eine Filmaufnahme gleicher Szene ≤ 65 %" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Zufalls-Fahrten über Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function kameraLauf(H, P, L) {
+                const z = await L.ev(
+                    `const st = r.state, vor = st.cameraMode, genommen = [];
+                    try {
+                        for (const m of ["frei", "foto", "kino", "karte", "zuschauen", "wiederholung"]) {
+                            r.setCameraMode(m);
+                            if (st.cameraMode === m) genommen.push(m);
+                        }
+                    } finally {
+                        r.setCameraMode(vor);
+                    }
+                    let bew = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) bew += S.liste ? S.liste.length : 0;
+                    const rec = st._replayRec;
+                    const aufnahmeS = rec && Array.isArray(rec.frames) ? rec.frames.reduce((a, f) => a + (f.dt || 0), 0) : 0;
+                    return { vor, nach: st.cameraMode, genommen, bew, tiere: (st.creatures || []).length, aufnahmeS, saat: st.worldMeta && st.worldMeta.seed };`,
+                    30
+                );
+                L.zeile("Kamera der Sitzung: " + JSON.stringify(z));
+                const modi = "die Welt nimmt keine Sicht außer Ego und Third (gefragt: frei, foto, kino, karte, zuschauen, wiederholung — genommen: " + (z.genommen.join(", ") || "keine") + "; stamm/dirigent-kern.js:1237 setCameraMode)";
+                await L.je(1, async () => {
+                    if (!z.genommen.includes("frei"))
+                        return L.umfang(1, z.genommen.filter((m) => m === "frei").length, "keine freie Kamera des Spielers: " + modi + "; die Kamera-Führung (kameraFuehren, stamm/dirigent-kern.js:1232) setzt nur ein Studio, kein Standbild der Welt");
+                    L.leser(1, "Lücke im Standbild aus freier Lage: kein Leser (scripts/werkbank.cjs:2110 /bild zählt keine Lücke)");
+                });
+                await L.je(2, async () => L.leser(2, "Umfang nicht erzeugbar (der Umfang „Foto“ trägt keine Zahl): kein Foto mit Brennweite, Blende, Belichtungszeit — " + modi + "; keine Schärfentiefe im Bild"));
+                await L.je(3, async () =>
+                    L.umfang(3, 0, "keine Wiederholung der Welt: die Aufnahme hält nur auf Ruf die Eingaben des Spielers (stamm/dirigent-takt.js:1293 startReplayRecording, jetzt " + z.aufnahmeS.toFixed(1) + " s Eingaben), kein Bild aus anderer Lage")
+                );
+                await L.je(4, async () => {
+                    const n = z.bew + z.tiere;
+                    if (n < 20) return L.umfang(4, n, "die Welt trägt " + z.bew + " Bewohner und " + z.tiere + " Tiere");
+                    L.leser(4, "keine Folge-Kamera: " + modi + ", die Führung kameraFuehren (stamm/dirigent-kern.js:1232) setzt nur ein Studio; kein Leser des Tagesplans mit ↔ ohne Zuschauer", n);
+                });
+                await L.je(5, async () => L.leser(5, "Umfang nicht erzeugbar (der Umfang „ein Wettkampf mit Regie“ trägt keine Zahl): keine Regie-Kamera, keine Übertragung — " + modi));
+                await L.je(6, async () => {
+                    if (!z.genommen.includes("karte")) return L.umfang(6, 0, "kein Kartenblick: " + modi);
+                    L.leser(6, "Befehle aus der Karte am Boden: kein Leser");
+                });
+                await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält EINE Saat (" + z.saat + ") und keine Kinofahrt"));
+                L.preisPose("wiese", "ego");
+            },
+        })
+    );
+}
+
 // ═══════════════════════════════════════ Perspektive klang ═══════════════════════════════════════
 {
     // ─────────── erleben.klang.raum — Raumklang: Richtung, Entfernung, Nachhall aus der Welt ───────────

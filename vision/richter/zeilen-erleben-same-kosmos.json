@@ -583,6 +583,266 @@
    "richter": "gleich"
   },
   {
+   "station": "karte2.erleben.bild.ferne#1",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#2",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#3",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#4",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#5",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#6",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#7",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#8",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#9",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 9,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#1",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#2",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#3",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#4",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#5",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#6",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#7",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#8",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#2",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf third · Uhr 0,35 · Wetter rainy (Nässe der Bühne) (Vorbild Foto eines Dorfplatzes bei Regen im Vormittags-Streiflicht: Glanz auf nassem Pflaster und Holz) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#3",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#4",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#5",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#6",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#7",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#8",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#1",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#2",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#3",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#4",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#5",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#6",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#7",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#2",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#3",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#4",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego · Uhr 0,30 · Blick waagrecht in die Sonne (Höhe ≈ 18°) (Vorbild Foto Gegenlicht über einer Wiese mit der Sonne ≈ 18° hoch im Bildfeld (Blendung, Streulicht, Hof)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#5",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#6",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#1",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#2",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#3",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#4",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#5",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#6",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#7",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
    "station": "karte2.erleben.klang.raum#1",
    "leiter": "erleben.klang.raum",
    "sprosse": 1,
@@ -1350,6 +1610,356 @@
    "leiter": "same.preis.speicher",
    "sprosse": 6,
    "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#2",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#3",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#4",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#5",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#6",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#7",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#8",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#2",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#3",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#4",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#5",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#6",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#7",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#1",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#2",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#3",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#4",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#5",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#6",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#7",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#1",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#2",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#3",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#4",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#5",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#6",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#7",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#2",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#3",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#4",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#5",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#6",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#1",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#2",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#3",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#4",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#5",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#6",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#1",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#2",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#3",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#4",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#5",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#6",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#7",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#1",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#2",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Boden der Hohlwelt, Blick in den Zenit (Vorbild Rechen-Referenz des Lands gegenüber unter Dreh-Schwere (Flussläufe, Wolkenzug)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#3",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#4",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#5",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#6",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#1",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#2",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#3",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#4",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#5",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#6",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#7",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Halt +5 Ga, Blick zur Nachbargalaxie (Vorbild Rechen-Referenz der Verschmelzung Milchstraße–Andromeda) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
   }
  ]
 }
