@@ -4789,6 +4789,1813 @@ L.perspektive("wasser", (() => {
     };
 })());
 
+// ── DIE PERSPEKTIVE leben.oeko (7 Leitern, 49 Sprossen; belegt: netz S1 und dynamik S1 — Station g2.js KASKADE_SITZUNG —,
+// vielfalt S1 — Tafel tiere.K5#1 —, partner S1 — Tafel luftwasser.K4#1): das Netz, die Vielfalt, die Dynamik, der Zerfall, die
+// Sukzession, die Stoffe und die Partner. Die Leser des Spiels: der BESTAND je Region (stamm/kreatur-leben.js `_bestandRegion` ·
+// `_bestandSchritt` · `_kreaturBestand` · `_bestandStirbt` · `_kreaturFrass`, tetrapoda-core BESTAND_GESETZ und LEBENSRAUM_GESETZ),
+// die Saaten über die Ströme des Bestands (`r._faunaStroeme`, derselbe Weg wie gate:kreatur-takt kaskade), das GEDÄCHTNIS DER TATEN
+// (stamm/feld-leben.js `_tatSchreiben` · `_tatIndex`, TAT_NARBE) mit Nährstoff, Wuchs und Sukzession (stamm/vegetation-wiese.js
+// `_naehrstoffAt` · `_wuchsAt` · `_sukzession` · `_baumAlter`), die Nah-Streu und der Wald (`_nahStreuKachel`, `_forestCellDarts`),
+// der Kadaver (`_kreaturFaellt` · `_kreaturAasZug`), die Bestäuber (`_bestaeuberGesetz().aktiv`), die Fische (`_fischZelle`) und der
+// Planet-Faden (`r._planetAuftrag` planet-ort). Jede Probe, die die Welt ändert, tut es in einem SANDKASTEN: der Bestand als Kopie
+// ohne Leib, das Leben- und das Gefühl-Feld getauscht, die Taten als Kopie — am Ende steht jede Referenz der Welt wieder.
+// Ein Richter ohne Zahl bekommt sein Soll aus Tiefe oder Umfang der Karte oder aus einer benannten Referenz (K.soll mit quelleFeld oder refQuelle) und trägt
+// `unklar`; was die Welt nicht trägt (10¹…10⁷ Arten, Lachszug, Pilze, C/N/O, Seuche, Riff …), urteilt „Umfang nicht erzeugbar“.
+L.perspektive("oeko", (() => {
+    const NE = "leben.oeko.netz";
+    const VI = "leben.oeko.vielfalt";
+    const DY = "leben.oeko.dynamik";
+    const ZE = "leben.oeko.zerfall";
+    const SU = "leben.oeko.sukzession";
+    const ST = "leben.oeko.stoffe";
+    const PA = "leben.oeko.partner";
+    const PFAD_TIER = ["stamm/kreatur-leben.js", "stamm/kreatur-verhalten.js", "stamm/kreatur-fauna.js", "stamm/kreatur-gehege.js", "tetrapoda-core.js", "stamm/feld-leben.js", "scripts/werkbank.cjs"];
+    const PFAD_FELD = ["stamm/feld-leben.js", "stamm/feld-brand.js", "stamm/vegetation-wiese.js", "stamm/vegetation-baum.js", "stamm/vegetation-streu.js", "stamm/kreatur-leben.js", "tetrapoda-core.js", "phyto-core.js", "foundry-core.js", "scripts/werkbank.cjs"];
+    const PFAD_PLANET = ["planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "stamm/feld-leben.js", "stamm/vegetation-wiese.js", "gelaende-core.js", "scripts/werkbank.cjs"];
+    // DAS SOLL EINES RICHTERS OHNE ZAHL geht den EINEN Weg des Kerns: K.soll mit quelleFeld + quelleWort (die Zahl steht in Tiefe oder
+    // Umfang der Sprosse) oder mit refQuelle allein, wenn das Wort keine Zahl trägt — nie eine Schwelle ohne Namen
+    // DER ZEUGE DER WELT: N Antworten der Welt (Saaten, Orte, Tode, Zellen) mit Streuung, und wo verlangt die Änderung vor → nach
+    const zeugeWelt = (min, mitAenderung) => (roh) => {
+        const z = roh.zeuge || {};
+        if (!(z.antworten >= min)) return "nur " + (z.antworten || 0) + " Antworten der Welt (Soll ≥ " + min + ")";
+        if (!(z.streuung > 0)) return "die Antworten tragen keine Streuung (eine Konstante, nicht die Welt)";
+        if (mitAenderung && !(z.vor !== undefined && z.nach !== undefined && z.vor !== z.nach)) return "die Welt änderte sich nicht (vor " + z.vor + " = nach " + z.nach + ")";
+        return null;
+    };
+    const gut = (werte, n) => ({ werte, zeuge: { antworten: n, streuung: 1.3, vor: 1, nach: 0.7 } });
+    const flach = (werte) => ({ werte, zeuge: { antworten: 0, streuung: 0 } });
+    const starr = (werte, n) => ({ werte, zeuge: { antworten: n, streuung: 0, vor: 1, nach: 1 } });
+    const still = (werte, n) => ({ werte, zeuge: { antworten: n, streuung: 1.3, vor: 1, nach: 1 } });
+    const AUGE = { ort: "wiese" };
+    return {
+        leitern: {
+            // ═══ DAS NETZ: Arten aus Saaten, Fraß-Paare, Ebenen, Massenverhältnis, Trennbarkeit, Kopplung Meer–Land ═══
+            [NE]: {
+                sek: 35,
+                mutiert: true,
+                pfad: PFAD_TIER.concat(["stamm/wasser-hydro.js", "stamm/vegetation-wiese.js"]),
+                ungefahren: "das Bild der Fremdwelt-Probe (S7) — swiftshader schießt nicht",
+                mess: async function (H, U, M) {
+                    const seite = (fn, a) => H.seite("return await (" + fn.toString() + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    // DER RAFFER: je Saat das Tal der Wildnis (ganze Regionen westlich der Ankunft, keine Zelle auf dem Genesis-Ort), der
+                    // Bestand frisch aus den Strömen der Saat, Takt um Takt `_bestandSchritt` — im Sandkasten (Bestand, Leben, Gefühl, Uhr
+                    // getauscht); je Tod die Ursache und das Fraß-Paar (`_bestandStirbt`), je Takt die äsenden Gattungen (`_kreaturFrass`)
+                    const raffer = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const B = A._bestandGesetz().B;
+                        const S = r._bestandSeite();
+                        const pm = s.playerMesh.position;
+                        let ix = Math.floor(pm.x / S);
+                        const iz = Math.floor(pm.z / S);
+                        const park = (k) => r._bestandFeld(k).zellen.filter((c) => r._genesisFlaeche(c.x, c.z)).length;
+                        let k0 = ix + "," + iz;
+                        for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
+                        for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
+                        if (!r._bestandBereit(k0)) throw new Error("das Tal " + k0 + " steht nicht bereit");
+                        const jahrT = Math.round(s.seasonYearSeconds / B.taktS);
+                        const G = Object.keys(A._lebensraumGesetz().L.gattung);
+                        const diet = r._bestandDiet();
+                        const kg = {};
+                        for (const g of G) kg[g] = Math.round(r._gattungLeib(g).v * r._leibRho(false) * 10) / 10;
+                        const leihe = (m, f) => {
+                            const e = Object.prototype.hasOwnProperty.call(r, m);
+                            const alt = r[m];
+                            r[m] = f(alt);
+                            return () => {
+                                if (e) r[m] = alt;
+                                else delete r[m];
+                            };
+                        };
+                        const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
+                        const paare = {};
+                        const ursache = {};
+                        const frass = {};
+                        const zurueck = [];
+                        const laeufe = [];
+                        const t0 = performance.now();
+                        try {
+                            zurueck.push(leihe("_bestandStirbt", (f) => function (R, t, u, tode, jaeger) {
+                                ursache[u] = (ursache[u] || 0) + 1;
+                                if (u === "jagd" && jaeger) for (const h of jaeger) paare[h.g + ">" + t.g] = (paare[h.g + ">" + t.g] || 0) + 1;
+                                return f.call(this, R, t, u, tode, jaeger);
+                            }));
+                            zurueck.push(leihe("_kreaturFrass", (f) => function (bestand, zellen) {
+                                for (const g in bestand) if (bestand[g].n * bestand[g].frass > 0) frass[g] = (frass[g] || 0) + 1;
+                                return f.call(this, bestand, zellen);
+                            }));
+                            for (const saat of a.saaten) {
+                                if (performance.now() - t0 > a.budgetMs) break;
+                                r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
+                                s.faunaBestand = undefined;
+                                s.lifeField = undefined;
+                                s.emotionField = new Map();
+                                s.spielZeit = 0;
+                                const R = r._bestandRegion(k0, false);
+                                const reihe = {};
+                                for (const g of G) reihe[g] = [];
+                                const t1 = performance.now();
+                                const tode = [];
+                                let K0 = 0;
+                                for (let k = 0; k < a.jahre * jahrT; k++) {
+                                    r._bestandSchritt(k0, R, true, tode);
+                                    if (a.ohne) for (let i = R.tiere.length - 1; i >= 0; i--) if (R.tiere[i].g === a.ohne) R.tiere.splice(i, 1);
+                                    if (k === jahrT) K0 = Object.values(r._kreaturBestand(null, k0)).reduce((q, b) => q + b.K, 0);
+                                    if (k % a.probeT === a.probeT - 1) {
+                                        const je = {};
+                                        for (const t of R.tiere) je[t.g] = (je[t.g] || 0) + 1;
+                                        for (const g of G) reihe[g].push(je[g] || 0);
+                                    }
+                                }
+                                laeufe.push({ saat, reihe, K0: Math.round(K0 * 100) / 100, ms: Math.round(performance.now() - t1) });
+                            }
+                        } finally {
+                            for (const f of zurueck.reverse()) f();
+                            s.faunaBestand = alt.fb;
+                            s.lifeField = alt.lf;
+                            s.emotionField = alt.ef;
+                            r._faunaStroeme = alt.fs;
+                            s.spielZeit = alt.sz;
+                            r._lebenGen = alt.gen;
+                            s._creatureNetSeq = alt.seq;
+                        }
+                        return { k0, jahrT, G, diet, kg, laeufe, paare, ursache, frass, wieder: Object.prototype.hasOwnProperty.call(r, "_bestandStirbt") || Object.prototype.hasOwnProperty.call(r, "_kreaturFrass") };
+                    };
+                    // DER ZUFALLSORT (S4): eine bereite Region im Ring der Ankunft, ihr Bestand als Kopie ohne Leib nachgeholt, dann 10
+                    // Spielminuten Takt — gezählt jede Gattung, die frisst (äst oder reißt) oder gefressen wird
+                    const zufall = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const B = A._bestandGesetz().B;
+                        const S = r._bestandSeite();
+                        const pm = s.playerMesh.position;
+                        const ix = Math.floor(pm.x / S);
+                        const iz = Math.floor(pm.z / S);
+                        const kand = [];
+                        for (let dx = -5; dx <= 5; dx++) for (let dz = -5; dz <= 5; dz++) if (Math.abs(dx) + Math.abs(dz) >= 2 && r._bestandBereit(ix + dx + "," + (iz + dz))) kand.push(ix + dx + "," + (iz + dz));
+                        if (!kand.length) throw new Error("keine bereite Region im Ring");
+                        const key = kand[Math.floor(a.wurf * kand.length) % kand.length];
+                        const leihe = (m, f) => {
+                            const e = Object.prototype.hasOwnProperty.call(r, m);
+                            const alt = r[m];
+                            r[m] = f(alt);
+                            return () => {
+                                if (e) r[m] = alt;
+                                else delete r[m];
+                            };
+                        };
+                        const F = s.faunaBestand;
+                        const alt = { fb: F, lf: s.lifeField, ef: s.emotionField, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
+                        const aktiv = new Set();
+                        const zurueck = [];
+                        let tiere = 0;
+                        let tiere0 = 0;
+                        try {
+                            s.faunaBestand = F && F.regionen ? { seed: F.seed, regionen: Object.fromEntries(Object.entries(F.regionen).map(([k, R]) => [k, Object.assign({}, R, { tiere: R.tiere.map((t) => Object.assign({}, t, { leib: null })) })])) } : undefined;
+                            s.lifeField = s.lifeField instanceof Map ? new Map([...s.lifeField].map(([k, v]) => [k, v && typeof v === "object" ? Object.assign({}, v) : v])) : undefined;
+                            s.emotionField = new Map();
+                            const R = r._bestandRegion(key, true, 0, Infinity, []);
+                            zurueck.push(leihe("_bestandStirbt", (f) => function (R2, t, u, tode, jaeger) {
+                                if (u === "jagd" && jaeger) {
+                                    aktiv.add(t.g);
+                                    for (const h of jaeger) aktiv.add(h.g);
+                                }
+                                return f.call(this, R2, t, u, tode, jaeger);
+                            }));
+                            zurueck.push(leihe("_kreaturFrass", (f) => function (bestand, zellen) {
+                                for (const g in bestand) if (bestand[g].n * bestand[g].frass > 0) aktiv.add(g);
+                                return f.call(this, bestand, zellen);
+                            }));
+                            const takte = Math.round((a.minuten * 60) / B.taktS);
+                            tiere0 = R.tiere.map((t) => t.id).join(",");
+                            for (let k = 0; k < takte; k++) r._bestandSchritt(key, R, true, []);
+                            tiere = R.tiere.length;
+                            tiere0 = tiere0 === R.tiere.map((t) => t.id).join(",") ? 0 : 1;
+                        } finally {
+                            for (const f of zurueck.reverse()) f();
+                            s.faunaBestand = alt.fb;
+                            s.lifeField = alt.lf;
+                            s.emotionField = alt.ef;
+                            s.spielZeit = alt.sz;
+                            r._lebenGen = alt.gen;
+                            s._creatureNetSeq = alt.seq;
+                        }
+                        return { key, kandidaten: kand.length, arten: [...aktiv], tiere, anders: tiere0, gattungen: Object.keys(A._lebensraumGesetz().L.gattung).length };
+                    };
+                    // DER LACHS-GEGENLAUF (S5): Ufer-Punkte an den Flüssen der Hydrosphäre nahe der Ankunft, der Wuchs (`_wuchsAt`) mit dem
+                    // Fisch-Gesetz und ohne (der Fisch gekappt: `_fischZelle` ohne Stand, keine Fisch-Karte) — die Folge am Ufer
+                    const ufer = async (r, T, a) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const pkt = [];
+                        const regionen = [s.hydrosphere].concat(s.hydroTiles ? [...s.hydroTiles.values()] : []).filter((h) => h && h.ready);
+                        for (const h of regionen)
+                            for (const rv of h.rivers || [])
+                                for (let k = 0; k + 1 < (rv.points || []).length; k += 7) {
+                                    const p = rv.points[k];
+                                    const q = rv.points[k + 1];
+                                    if (p.inLake || Math.hypot(p.x - pm.x, p.z - pm.z) > a.radiusM) continue;
+                                    const dx = q.x - p.x;
+                                    const dz = q.z - p.z;
+                                    const l = Math.hypot(dx, dz) || 1;
+                                    const w = (p.width || 1) / 2 + a.uferM;
+                                    const x = p.x - (dz / l) * w;
+                                    const z = p.z + (dx / l) * w;
+                                    if (!r._nassAt(x, z)) pkt.push([x, z]);
+                                }
+                        const wahl = [];
+                        for (let i = 0; i < a.n && pkt.length; i++) wahl.push(pkt[Math.floor((i * pkt.length) / a.n)]);
+                        const mit = wahl.map(([x, z]) => r._wuchsAt(x, z));
+                        const e = Object.prototype.hasOwnProperty.call(r, "_fischZelle");
+                        const fz = r._fischZelle;
+                        const fk = r._fischKarte;
+                        let ohne;
+                        try {
+                            r._fischZelle = () => ({ stand: null });
+                            r._fischKarte = null;
+                            ohne = wahl.map(([x, z]) => r._wuchsAt(x, z));
+                        } finally {
+                            if (e) r._fischZelle = fz;
+                            else delete r._fischZelle;
+                            r._fischKarte = fk;
+                        }
+                        return { punkte: pkt.length, mit, ohne };
+                    };
+                    const R = await seite(raffer, { saaten: Array.from({ length: 32 }, (_, i) => i + 1), jahre: 100, probeT: 24, budgetMs: 26000, praefix: "netz-", ohne: null });
+                    const Z = await seite(zufall, { minuten: 10, wurf: Math.random() });
+                    const UF = await seite(ufer, { radiusM: 900, uferM: 4, n: 12 });
+                    const G = R.G;
+                    const n = R.laeufe.length;
+                    const jahrS = 10;
+                    // je Gattung: in wie vielen Saaten am Ende (letztes Spieljahr) wieder angetroffen
+                    const wieder = {};
+                    for (const g of G) wieder[g] = n ? Math.round((100 * R.laeufe.filter((l) => l.reihe[g].slice(-jahrS).some((x) => x > 0)).length) / n) : 0;
+                    const wiederMin = Math.min(...G.map((g) => wieder[g]));
+                    // die Fraß-Paare: beobachtete Risse (Jäger > Beute) und die Äsung (Jungwuchs > Gattung) — die Arten sind die Gattungen + der Jungwuchs
+                    const links = Object.keys(R.paare).filter((p) => R.paare[p] > 0);
+                    for (const g of G) if (R.frass[g] > 0) links.push(g + ">jungwuchs");
+                    const arten = G.concat(["jungwuchs"]);
+                    const paareJeArt = Math.round((100 * links.length) / arten.length) / 100;
+                    // die Ebenen (kürzester Weg vom Jungwuchs) und die Omnivorie (Kost aus ≥ 2 Ebenen); jedes Paar heißt Fresser > Futter
+                    const beute = {};
+                    for (const a of arten) beute[a] = new Set();
+                    for (const p of links) {
+                        const [j, b] = p.split(">");
+                        if (j !== b && beute[j]) beute[j].add(b);
+                    }
+                    const ebene = { jungwuchs: 1 };
+                    for (let it = 0; it < arten.length; it++)
+                        for (const g of G) {
+                            const e = [...beute[g]].map((b) => ebene[b]).filter((x) => x !== undefined);
+                            if (e.length) ebene[g] = 1 + Math.min(...e);
+                        }
+                    const ebenen = Math.max(...Object.values(ebene));
+                    const omni = G.filter((g) => new Set([...beute[g]].map((b) => ebene[b]).filter((x) => x !== undefined)).size >= 2).length;
+                    const omnivorie = Math.round((100 * omni) / G.length) / 100;
+                    // das Räuber-Beute-Massenverhältnis: Median über die Risse (Masse Jäger ÷ Masse Beute)
+                    const verh = [];
+                    for (const p of Object.keys(R.paare)) {
+                        const [j, b] = p.split(">");
+                        if (j !== b) for (let i = 0; i < R.paare[p]; i++) verh.push(R.kg[j] / R.kg[b]);
+                    }
+                    verh.sort((x, y) => x - y);
+                    const massen = verh.length ? Math.round(verh[Math.floor(verh.length / 2)] * 1000) / 1000 : null;
+                    // die Paarprobe: je Paar der Gattungen Gestalt (Masse um ≥ 25 % verschieden) UND Rolle (Kost oder Beute verschieden)
+                    const rolle = (g) => [...beute[g]].sort().join(",") + "|" + R.diet[g];
+                    const paarL = [];
+                    for (let i = 0; i < G.length; i++)
+                        for (let j = i + 1; j < G.length; j++) {
+                            const q = R.kg[G[i]] / R.kg[G[j]];
+                            paarL.push((q >= 1.25 || q <= 0.8) && rolle(G[i]) !== rolle(G[j]));
+                        }
+                    let rng = 7;
+                    const zufallsPaare = Array.from({ length: 50 }, () => ((rng = (rng * 16807) % 2147483647), paarL[rng % paarL.length]));
+                    const trenn = Math.round((100 * zufallsPaare.filter(Boolean).length) / 50);
+                    // der Kollaps: eine Gattung fehlt im ganzen letzten Spieljahr
+                    const kollaps = n ? Math.round((100 * R.laeufe.filter((l) => G.some((g) => !l.reihe[g].slice(-jahrS).some((x) => x > 0))).length) / n) : 100;
+                    const alle = R.laeufe.flatMap((l) => G.map((g) => l.reihe[g].reduce((q, x) => q + x, 0)));
+                    const mittel = alle.reduce((q, x) => q + x, 0) / Math.max(1, alle.length);
+                    const sd = Math.sqrt(alle.reduce((q, x) => q + (x - mittel) * (x - mittel), 0) / Math.max(1, alle.length));
+                    const zeuge = { antworten: n, streuung: Math.round(sd * 100) / 100, vor: Object.values(R.ursache).reduce((q, x) => q + x, 0), nach: 0, tal: R.k0, saaten: n, jahre: 100, ms: R.laeufe.map((l) => l.ms), risse: R.paare, ursache: R.ursache, aesung: R.frass, kg: R.kg, wieder: R.wieder };
+                    const nArten = G.length;
+                    const aus = {};
+                    aus[2] = { werte: { saaten: n, jahre: 100, wiederProzent: wiederMin, paareJeArt }, zeuge: Object.assign({ jeArt: wieder, links }, zeuge) };
+                    if (nArten < 10 || ebenen < 4) aus[2].nicht = "10¹ Arten in 4 Ebenen — der Bestand trägt " + nArten + " Gattungen (" + G.join(", ") + ") in " + ebenen + " Ebenen; im Deckel " + n + " von 32 Saaten × 100 Spieljahre";
+                    aus[3] = { werte: { ebenen, omnivorie, massenVerhaeltnis: massen, paarTrennProzent: trenn }, zeuge: Object.assign({ ebene, paare: paarL.length }, zeuge) };
+                    if (nArten < 100) aus[3].nicht = "10² Arten je Biom — der Bestand trägt " + nArten + " Gattungen; ein Netz realer Breite fehlt (LEBENSRAUM_GESETZ.gattung, tetrapoda-core.js:2072)";
+                    aus[4] = { werte: { artenFressen: Z.arten.length }, zeuge: { antworten: Z.kandidaten, streuung: Z.tiere, vor: 0, nach: Z.anders, tiere: Z.tiere, ort: Z.key, arten: Z.arten } };
+                    if (Z.gattungen < 30) aus[4].nicht = "10³ Arten — am Zufallsort " + Z.key + " fressen oder werden gefressen " + Z.arten.length + " Gattungen; der Bestand kennt " + Z.gattungen;
+                    const d = UF.mit.map((w, i) => UF.ohne[i] - w);
+                    const mw = UF.mit.reduce((q, x) => q + x, 0) / Math.max(1, UF.mit.length);
+                    const sdw = Math.sqrt(UF.mit.reduce((q, x) => q + (x - mw) * (x - mw), 0) / Math.max(1, UF.mit.length));
+                    aus[5] = { werte: d.length ? { kiOben: Math.round((1e4 * Math.max(...d)) / Math.max(1e-9, mw)) / 1e4, effekt: Math.round((1e4 * d.reduce((q, x) => q + x, 0)) / d.length / Math.max(1e-9, mw)) / 1e4 } : {}, zeuge: { antworten: d.length, streuung: Math.round(sdw * 1e4) / 1e4, vor: Math.round(mw * 1e4) / 1e4, nach: Math.round((1e4 * UF.ohne.reduce((q, x) => q + x, 0)) / Math.max(1, UF.ohne.length)) / 1e4, uferPunkte: UF.punkte } };
+                    if (!d.length || d.every((x) => x === 0)) aus[5].nicht = "kein Lachszug: ohne das Fisch-Gesetz bleibt der Wuchs an " + d.length + " Ufer-Punkten gleich — das Fisch-Gesetz trägt Stände ohne Wanderung, der Nährstoff am Ufer liest nur Taten (vegetation-wiese.js:2097)";
+                    aus[6] = { werte: { kollapsProzent: kollaps, paarProzent: trenn, saaten: n, jahre: 100 }, zeuge: Object.assign({}, zeuge) };
+                    aus[6].nicht = "10⁶ Arten über 1 000 Spieljahre an 64 Saaten — der Bestand trägt " + nArten + " Gattungen, der Deckel trägt " + n + " Saaten × 100 Spieljahre";
+                    aus[7] = { werte: { saaten: 0, planetentypen: 1 }, zeuge: { antworten: 1, streuung: 0 }, auge: await M.auge("oeko-netz-s7", { ort: "wiese" }), nicht: "fremde Biosphären auf 3 Planetentypen — der Bestand liest EINE Tafel der Gattungen für jeden Samen (LEBENSRAUM_GESETZ, tetrapoda-core.js:2072)" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    2: {
+                        u: { saaten: 32, jahre: 100 },
+                        soll: [
+                            K.soll(NE, 2, "32 Saaten × 100 Spieljahre", { key: "saaten", rel: "≥", zahl: 32 }),
+                            K.soll(NE, 2, "32 Saaten × 100 Spieljahre", { key: "jahre", rel: "≥", zahl: 100, einheit: "Spieljahre" }),
+                            K.soll(NE, 2, "in ≥ 80 % der Saaten", { key: "wiederProzent", einheit: "%" }),
+                            K.soll(NE, 2, "beobachtete Fraß-Paare je Art im Band realer Wald-Netze", { key: "paareJeArt", rel: "band", zahl: 2, bis: 10, refQuelle: "Dunne, Williams & Martinez 2002 (PNAS 99): Fraß-Paare je Art L/S realer Netze ≈ 2–10" }),
+                        ],
+                        zeuge: zeugeWelt(32, true),
+                        taeter: "tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen) · stamm/kreatur-leben.js _bestandSchritt",
+                        nicht: "10¹ Arten in 4 Ebenen (der Bestand trägt 4 Gattungen)",
+                        leser: "tetrapoda-core.js:2072 LEBENSRAUM_GESETZ — die Gattungen deer, fox, wolf, bear; kein Vogel, Insekt, Fisch im Netz des Bestands",
+                        unklar: "„im Band realer Wald-Netze“ ohne Zahl — gesetzt L/S 2–10 (Dunne 2002); Vorschlag: das Band als Zahl in die Karte",
+                        gruen: gut({ saaten: 32, jahre: 100, wiederProzent: 91, paareJeArt: 3.4 }, 32),
+                        attrappen: [
+                            { name: "91 % aus einer Tafel ohne Lauf", roh: flach({ saaten: 32, jahre: 100, wiederProzent: 91, paareJeArt: 3.4 }) },
+                            { name: "32 Saaten behauptet, 8 gelaufen", roh: gut({ saaten: 32, jahre: 100, wiederProzent: 91, paareJeArt: 3.4 }, 8) },
+                            { name: "kein Tod im Raffer (der Takt lief nicht)", roh: still({ saaten: 32, jahre: 100, wiederProzent: 91, paareJeArt: 3.4 }, 32) },
+                        ],
+                    },
+                    3: {
+                        u: { paare: 50 },
+                        soll: [
+                            K.soll(NE, 3, "Kennzahlen des Netzes (Ebenen, Omnivorie, Massenverhältnis)", { key: "ebenen", rel: "band", zahl: 3, bis: 5, refQuelle: "Pimm 1982 / Post 2002 (TREE 17): Ketten realer Netze 3–5 Ebenen" }),
+                            K.soll(NE, 3, "Kennzahlen des Netzes (Ebenen, Omnivorie, Massenverhältnis)", { key: "omnivorie", rel: "band", zahl: 0.2, bis: 0.6, refQuelle: "Thompson et al. 2007 (TREE 22): Anteil der Omnivoren realer Netze ≈ 0,2–0,6" }),
+                            K.soll(NE, 3, "Kennzahlen des Netzes (Ebenen, Omnivorie, Massenverhältnis)", { key: "massenVerhaeltnis", rel: "band", zahl: 0.1, bis: 1000, refQuelle: "Brose et al. 2006 (Ecology 87): Masse Räuber ÷ Beute realer Netze ≈ 10⁻¹…10³" }),
+                            K.soll(NE, 3, "trennbar ≥ 90 %", { key: "paarTrennProzent", einheit: "%" }),
+                        ],
+                        zeuge: zeugeWelt(32, true),
+                        taeter: "tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen, keine 10² je Biom)",
+                        nicht: "10² Arten je Biom",
+                        leser: "tetrapoda-core.js:2072 LEBENSRAUM_GESETZ — ein Netz aus 4 Gattungen, keine Arten aus der Saat",
+                        unklar: "das 90-%-Band der ≥ 20 realen Netze trägt keine Zahl — gesetzt Ebenen 3–5, Omnivorie 0,2–0,6, Masse 10⁻¹…10³; Vorschlag: die Bänder aus dem Korpus in die Karte",
+                        gruen: gut({ ebenen: 4, omnivorie: 0.35, massenVerhaeltnis: 2.4, paarTrennProzent: 94 }, 32),
+                        attrappen: [
+                            { name: "Kennzahlen einer Literatur-Tafel", roh: flach({ ebenen: 4, omnivorie: 0.35, massenVerhaeltnis: 2.4, paarTrennProzent: 94 }) },
+                            { name: "Netz ohne einen Tod (kein Fraß beobachtet)", roh: still({ ebenen: 4, omnivorie: 0.35, massenVerhaeltnis: 2.4, paarTrennProzent: 94 }, 32) },
+                        ],
+                    },
+                    4: {
+                        u: { minuten: 10 },
+                        soll: [K.soll(NE, 4, "≥ 30 sichtbar verschiedene Arten", { key: "artenFressen" })],
+                        zeuge: zeugeWelt(1, true),
+                        taeter: "tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen)",
+                        nicht: "10³ Arten (der Bestand trägt 4 Gattungen)",
+                        leser: "tetrapoda-core.js:2072 LEBENSRAUM_GESETZ — 4 Gattungen; Vögel, Fische und Bestäuber fressen und werden nicht gefressen (kein Netz)",
+                        gruen: gut({ artenFressen: 34 }, 40),
+                        attrappen: [
+                            { name: "34 Arten aus einem Katalog ohne Ort", roh: flach({ artenFressen: 34 }) },
+                            { name: "der Ort ohne Tier (nichts frisst)", roh: starr({ artenFressen: 34 }, 40) },
+                        ],
+                    },
+                    5: {
+                        u: { uferPunkte: 12 },
+                        soll: [K.soll(NE, 5, "Intervall ohne 0", { key: "kiOben", rel: "<", zahl: 0 })],
+                        zeuge: zeugeWelt(8, true),
+                        taeter: "tetrapoda-core.js FISCH_GESETZ (keine Wanderung) · stamm/vegetation-wiese.js _naehrstoffAt (liest nur Taten)",
+                        nicht: "kein Lachszug",
+                        leser: "stamm/vegetation-wiese.js:2097 _naehrstoffAt — liest nur die Taten, kein Stoff aus dem Meer; tetrapoda-core.js:2818 FISCH_GESETZ — Stände ohne Zug",
+                        gruen: gut({ kiOben: -0.04, effekt: -0.11 }, 12),
+                        attrappen: [
+                            { name: "das Intervall einer Studie ohne Gegenlauf", roh: flach({ kiOben: -0.04, effekt: -0.11 }) },
+                            { name: "Gegenlauf ohne Wirkung am Ufer (vor = nach)", roh: still({ kiOben: -0.04, effekt: -0.11 }, 12) },
+                        ],
+                    },
+                    6: {
+                        u: { saaten: 64, jahre: 1000 },
+                        soll: [
+                            K.soll(NE, 6, "64 Saaten", { key: "saaten", rel: "≥", zahl: 64 }),
+                            K.soll(NE, 6, "kein Kollaps", { key: "kollapsProzent", rel: "=", zahl: 0, refQuelle: "der Richter: kein Kollaps — in keiner Saat fehlt am Ende eine Art (0 %)" }),
+                            K.soll(NE, 6, "Paarprobe ≥ 95 %", { key: "paarProzent", einheit: "%" }),
+                            K.soll(NE, 6, "64 Saaten: kein Kollaps", { key: "jahre", rel: "≥", zahl: 1000, quelleFeld: "tiefe", quelleWort: "1 000 Spieljahre" }),
+                        ],
+                        zeuge: zeugeWelt(64, true),
+                        taeter: "tetrapoda-core.js LEBENSRAUM_GESETZ.gattung (4 Gattungen eines Tals, kein Planet)",
+                        nicht: "10⁶ Arten über 1 000 Spieljahre",
+                        leser: "tetrapoda-core.js:2072 LEBENSRAUM_GESETZ — 4 Gattungen, kein Netz vom Tiefseegraben bis zur Wüste",
+                        gruen: gut({ kollapsProzent: 0, paarProzent: 97, saaten: 64, jahre: 1000 }, 64),
+                        attrappen: [
+                            { name: "kein Kollaps, behauptet ohne Lauf", roh: flach({ kollapsProzent: 0, paarProzent: 97, saaten: 64, jahre: 1000 }) },
+                            { name: "16 Saaten", roh: gut({ kollapsProzent: 0, paarProzent: 97, saaten: 64, jahre: 1000 }, 16) },
+                        ],
+                    },
+                    7: {
+                        u: { saaten: 64, planetentypen: 3, auge: { ort: "wiese" } },
+                        soll: [K.soll(NE, 7, "64 Saaten × 3 Planetentypen", { key: "saaten", rel: "≥", zahl: 64 }), K.soll(NE, 7, "64 Saaten × 3 Planetentypen", { key: "planetentypen", rel: "≥", zahl: 3 })],
+                        auge: { pose: "Ego an der Wiese (die Ankunft eines fremden Planeten ist nicht erzeugbar)", vorbild: "Fremdwelt-Probe R10 am beobachteten Netz: Ursachen-Probe ≥ 0,7, Gegenlauf ≥ 80 %, Neuheit ≥ 30 %; Kennzahl-Tafeln gegen reale (Fachleute-2AFC)" },
+                        taeter: "tetrapoda-core.js LEBENSRAUM_GESETZ (eine Tafel für jeden Samen)",
+                        nicht: "keine fremde Biosphäre",
+                        leser: "tetrapoda-core.js:2072 LEBENSRAUM_GESETZ — liest keinen Planetentyp und keine fremde Biochemie",
+                        gruen: gut({ saaten: 64, planetentypen: 3 }, 192),
+                        attrappen: [{ name: "Tafeln ohne Netz", roh: flach({ saaten: 64, planetentypen: 3 }) }],
+                    },
+                },
+            },
+            // ═══ DIE VIELFALT: Arten je Hektar, Tag/Nacht und Sommer/Winter, Arten-Areal, Breite, Beta, Rückkehr nach einem Spieljahr ═══
+            [VI]: {
+                sek: 30,
+                mutiert: true,
+                pfad: PFAD_TIER.concat(["stamm/vegetation-wiese.js", "stamm/vegetation-streu.js", "stamm/bild-himmel.js", "planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js"]),
+                ungefahren: "Ego und Third im Bild (Preis) — die Zählung liest die Gesetze am Ort",
+                mess: async function (H, U, M) {
+                    const seite = (fn, a) => H.seite("return await (" + fn.toString() + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    // DAS INVENTAR AM ORT: der Hektar um die Ankunft (Nah-Streu je 4-m-Kachel, Wald je Zelle, der Bestand der Regionen
+                    // im 500-m-Ring als Kopie ohne Leib nachgeholt, Vögel, Bestäuber, Fische), dazu Tag/Nacht und Sommer/Winter (die Uhr
+                    // und die Saison nur für die Lesung gesetzt), die verschachtelten Flächen 1/4/9 ha über Saaten des Walds, die
+                    // Beta-Vielfalt der Regionen und die Rückkehr nach einem Spieljahr an 100 Regionen
+                    const inventar = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const B = A._bestandGesetz().B;
+                        const S = r._bestandSeite();
+                        const pm = s.playerMesh.position;
+                        const X = pm.x;
+                        const Z = pm.z;
+                        const KA = A.NAH_STREU.kachel;
+                        const C = A.FOREST ? A.FOREST.cell : 12;
+                        // die Nah-Streu antwortet null, solange der Boden ihrer Chunks nicht steht (vegetation-wiese.js:1312): warten,
+                        // VOR jedem Tausch der Welt, bis die Mitte und die vier Ecken des Hektars stehen (≤ 5 s)
+                        let warte = 0;
+                        for (; warte < 100; warte++) {
+                            const ar = r._nahStreuArten();
+                            if (ar && [[0, 0], [-1, -1], [1, 1], [-1, 1], [1, -1]].every(([u, v]) => r._nahStreuKachel(Math.floor((X + u * 46) / KA), Math.floor((Z + v * 46) / KA), ar))) break;
+                            await new Promise((f) => setTimeout(f, 50));
+                        }
+                        const arten = r._nahStreuArten();
+                        const pflanze = new Set(arten.filter((x) => ["flower", "fern", "brush", "reed"].includes(x.kind)).map((x) => x.id));
+                        const totholz = new Set(arten.filter((x) => x.kind === "deadwood").map((x) => x.id));
+                        const streuIn = (halb) => {
+                            const je = {};
+                            let leer = 0;
+                            for (let x = X - halb; x < X + halb; x += KA)
+                                for (let z = Z - halb; z < Z + halb; z += KA) {
+                                    const k = r._nahStreuKachel(Math.floor(x / KA), Math.floor(z / KA), arten);
+                                    if (!k) {
+                                        leer++;
+                                        continue;
+                                    }
+                                    for (const it of k.items) {
+                                        const id = arten[it.art] ? arten[it.art].id : "?";
+                                        je[id] = (je[id] || 0) + 1;
+                                    }
+                                }
+                            return { je, leer };
+                        };
+                        const waldIn = (halb, seed) => {
+                            const je = {};
+                            for (let cx = Math.floor((X - halb) / C); cx <= Math.floor((X + halb) / C); cx++)
+                                for (let cz = Math.floor((Z - halb) / C); cz <= Math.floor((Z + halb) / C); cz++)
+                                    for (const d of r._forestCellDarts(cx, cz, seed) || []) if (Math.abs(d.x - X) <= halb && Math.abs(d.z - Z) <= halb) je[d.sp] = (je[d.sp] || 0) + 1;
+                            return je;
+                        };
+                        const seed0 = r._forestSeedInt();
+                        const F = s.faunaBestand;
+                        const alt = { fb: F, lf: s.lifeField, ef: s.emotionField, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq, season: s.season, tod: s.timeOfDay };
+                        const kopie = () => (F && F.regionen ? { seed: F.seed, regionen: Object.fromEntries(Object.entries(F.regionen).map(([k, R]) => [k, Object.assign({}, R, { tiere: R.tiere.map((t) => Object.assign({}, t, { leib: null })) })])) } : undefined);
+                        const lfKopie = () => (alt.lf instanceof Map ? new Map([...alt.lf].map(([k, v]) => [k, v && typeof v === "object" ? Object.assign({}, v) : v])) : undefined);
+                        const aus = { t0: performance.now() };
+                        const ix = Math.floor(X / S);
+                        const iz = Math.floor(Z / S);
+                        let jagd = 0;
+                        const eSt = Object.prototype.hasOwnProperty.call(r, "_bestandStirbt");
+                        const fSt = r._bestandStirbt;
+                        try {
+                            r._bestandStirbt = function (R, t, u, tode, jaeger) {
+                                if (u === "jagd") jagd++;
+                                return fSt.call(this, R, t, u, tode, jaeger);
+                            };
+                            s.faunaBestand = kopie();
+                            s.lifeField = lfKopie();
+                            s.emotionField = new Map();
+                            const ring = [];
+                            const rr = Math.ceil(a.ringM / S) + 1;
+                            for (let dx = -rr; dx <= rr; dx++) for (let dz = -rr; dz <= rr; dz++) ring.push(ix + dx + "," + (iz + dz));
+                            let tiereRing = 0;
+                            const haArten = new Set();
+                            let kgRing = 0;
+                            let flaecheHa = 0;
+                            for (const k of ring) {
+                                if (!r._bestandBereit(k)) continue;
+                                const R = r._bestandRegion(k, true, 0, Infinity, []);
+                                flaecheHa += (S * S) / 1e4;
+                                for (const t of R.tiere) {
+                                    kgRing += r._bestandKg(t);
+                                    if (Math.hypot(t.x - X, t.z - Z) <= a.ringM) tiereRing++;
+                                    if (Math.abs(t.x - X) <= 50 && Math.abs(t.z - Z) <= 50) haArten.add(t.g);
+                                }
+                            }
+                            aus.tiereRing = tiereRing;
+                            aus.tierKgJeHa = flaecheHa ? Math.round((kgRing / flaecheHa) * 100) / 100 : null;
+                            aus.ringRegionen = ring.length;
+                            const st = streuIn(50);
+                            const wa = waldIn(50, seed0);
+                            const sets = {};
+                            const satz = () => {
+                                const o = new Set();
+                                for (const id of Object.keys(st.je)) if (pflanze.has(id)) o.add("streu:" + id);
+                                for (const id of Object.keys(wa)) o.add("baum:" + id);
+                                for (const g of haArten) o.add("tier:" + g);
+                                if ((s.voegel || []).some((v) => Math.abs(v.x - X) <= 50 && Math.abs(v.z - Z) <= 50)) o.add("vogel");
+                                const BG = A._bestaeuberGesetz();
+                                const blueten = Object.keys(st.je).some((id) => arten.find((x) => x.id === id && x.kind === "flower"));
+                                if (blueten && BG.aktiv(r._sonnenRichtung().y, r._weatherFieldFor(s.weather).rain, 0, BG.B) > 0) o.add("bestaeuber");
+                                return o;
+                            };
+                            sets.jetzt = [...satz()];
+                            s.timeOfDay = 0.5;
+                            sets.tag = [...satz()];
+                            s.timeOfDay = 0.0;
+                            sets.nacht = [...satz()];
+                            s.timeOfDay = alt.tod;
+                            s.season = "summer";
+                            sets.sommer = [...satz()];
+                            s.season = "winter";
+                            sets.winter = [...satz()];
+                            s.season = alt.season;
+                            aus.sets = sets;
+                            aus.streu = st;
+                            aus.wald = wa;
+                            aus.totholz = Object.keys(st.je).filter((id) => totholz.has(id)).reduce((q, id) => q + st.je[id], 0);
+                            aus.baeume = Object.values(wa).reduce((q, x) => q + x, 0);
+                            const flaechen = [];
+                            for (const halb of a.halbe) {
+                                const je = [];
+                                const stH = halb <= 50 ? st.je : streuIn(Math.min(halb, a.streuHalbMax)).je;
+                                for (let sd = 0; sd < a.saaten; sd++) {
+                                    const w = waldIn(halb, seed0 + sd * 7919);
+                                    je.push(Object.keys(w).length + Object.keys(stH).filter((id) => pflanze.has(id)).length);
+                                }
+                                flaechen.push({ ha: Math.round((4 * halb * halb) / 1e4), arten: je });
+                            }
+                            aus.flaechen = flaechen;
+                            const satzK = (k) => Object.entries(r._kreaturBestand(null, k)).filter(([, b]) => b.K > 0).map(([g]) => g);
+                            const jac = (x, y) => {
+                                const u = new Set(x.concat(y));
+                                return u.size ? x.filter((q) => y.includes(q)).length / u.size : 1;
+                            };
+                            const verb = [];
+                            const getr = [];
+                            const vorkommen = {};
+                            for (let i = 0; i < a.betaPaare; i++) {
+                                const ax = ix + ((i * 5) % 11) - 5;
+                                const az = iz + ((i * 3) % 11) - 5;
+                                const p = satzK(ax + "," + az);
+                                const q = satzK(ax + 1 + "," + az);
+                                const w = satzK(ax + 9 + "," + (az + 9));
+                                verb.push(1 - jac(p, q));
+                                getr.push(1 - jac(p, w));
+                                for (const g of p.concat(q, w)) vorkommen[g] = (vorkommen[g] || 0) + 1;
+                            }
+                            aus.beta = { verbunden: verb, getrennt: getr, vorkommen };
+                            s.faunaBestand = kopie();
+                            s.lifeField = lfKopie();
+                            const orte = [];
+                            for (let dx = -6; dx <= 6 && orte.length < a.orte; dx++) for (let dz = -6; dz <= 6 && orte.length < a.orte; dz++) if (r._bestandBereit(ix + dx + "," + (iz + dz))) orte.push(ix + dx + "," + (iz + dz));
+                            const sig = (R) => R.tiere.map((t) => t.id + t.g).join(",");
+                            const vor = orte.map((k) => {
+                                const R = r._bestandRegion(k, true, 0, Infinity, []);
+                                return { sig: sig(R), seq: R.seq, n: R.tiere.length };
+                            });
+                            const jagd0 = jagd;
+                            s.spielZeit = alt.sz + s.seasonYearSeconds;
+                            const nach = orte.map((k) => {
+                                const R = r._bestandRegion(k, true, 0, Infinity, []);
+                                return { sig: sig(R), seq: R.seq, n: R.tiere.length };
+                            });
+                            const jagdJahr = jagd - jagd0;
+                            s.season = alt.season === "winter" ? "summer" : "winter";
+                            s.spielZeit = alt.sz;
+                            s.faunaBestand = kopie();
+                            s.lifeField = lfKopie();
+                            for (const k of orte.slice(0, a.saisonOrte)) r._bestandRegion(k, true, 0, Infinity, []);
+                            s.spielZeit = alt.sz + s.seasonYearSeconds;
+                            const saison = orte.slice(0, a.saisonOrte).map((k, i) => sig(r._bestandRegion(k, true, 0, Infinity, [])) !== nach[i].sig);
+                            aus.rueckkehr = { orte: orte.length, veraendert: vor.filter((v, i) => v.sig !== nach[i].sig).length, zurueck: vor.filter((v, i) => nach[i].seq < v.seq).length, saisonAnders: saison.filter(Boolean).length, saisonOrte: saison.length, jagdJahr, n: vor.map((v) => v.n), nNach: nach.map((v) => v.n) };
+                        } finally {
+                            if (eSt) r._bestandStirbt = fSt;
+                            else delete r._bestandStirbt;
+                            s.faunaBestand = alt.fb;
+                            s.lifeField = alt.lf;
+                            s.emotionField = alt.ef;
+                            s.spielZeit = alt.sz;
+                            r._lebenGen = alt.gen;
+                            s._creatureNetSeq = alt.seq;
+                            s.season = alt.season;
+                            s.timeOfDay = alt.tod;
+                        }
+                        aus.ms = Math.round(performance.now() - aus.t0);
+                        aus.streuBereit = warte < 100 ? 1 : 0;
+                        aus.streuWarteMs = warte * 50;
+                        aus.streuLeer = aus.streu.leer;
+                        return aus;
+                    };
+                    const meridian = async (r, T, a) => {
+                        await r._fadenQuelle();
+                        const samen = r.state.worldMeta.seed;
+                        const L = await Promise.all(a.breiten.map((b) => r._planetAuftrag({ type: "planet-ort", samen, breite: b, laenge: a.laenge, zeitMa: 0 })));
+                        const schluessel = new Set();
+                        const walk = (o, p) => {
+                            if (o && typeof o === "object") for (const k of Object.keys(o)) (schluessel.add(p + k), walk(o[k], p + k + "."));
+                        };
+                        L.forEach((x) => walk(x, ""));
+                        return { je: L.map((x, i) => ({ b: a.breiten[i], land: x.land, decke: x.delta && x.delta.wuchs ? x.delta.wuchs.decke : null, wald: x.delta && x.delta.wuchs ? x.delta.wuchs.wald : null })), arten: [...schluessel].filter((k) => /art|spezies|species|biomass|vielfalt/i.test(k)) };
+                    };
+                    const I = await seite(inventar, { ringM: 500, halbe: [50, 100, 150], streuHalbMax: 100, saaten: 4, betaPaare: 20, orte: 100, saisonOrte: 20 });
+                    const ME = await seite(meridian, { breiten: [0, 10, 20, 30, 40, 50, 60, 70, 80], laenge: 10 });
+                    const aus = {};
+                    const haArten = I.sets.jetzt.length;
+                    const faktor = (w, ref) => (w > 0 ? Math.round(Math.max(w / ref, ref / w) * 100) / 100 : 1e6);
+                    const pfl = Object.keys(I.streu.je).length + Object.keys(I.wald).length;
+                    const zg = { antworten: pfl + I.ringRegionen, streuung: new Set([I.tiereRing, I.baeume, Object.values(I.streu.je).reduce((q, x) => q + x, 0)]).size - 1, ms: I.ms };
+                    aus[2] = { werte: { faktor: faktor(haArten, U[2].refArten), artenHa: haArten, tiereRing: I.tiereRing }, zeuge: Object.assign({ arten: I.sets.jetzt }, zg) };
+                    if (I.tiereRing < 150 || haArten < 10) aus[2].nicht = "10¹ Arten je ha mit Vögeln, Insekten, Pflanzen und 150 Tiere im 500-m-Ring — die Welt trägt " + haArten + " Arten im Hektar und " + I.tiereRing + " Tiere im Ring";
+                    const jac = (x, y) => {
+                        const u = new Set(x.concat(y));
+                        return u.size ? Math.round((1000 * x.filter((q) => y.includes(q)).length) / u.size) / 1000 : 1;
+                    };
+                    const jTN = jac(I.sets.tag, I.sets.nacht);
+                    const jSW = jac(I.sets.sommer, I.sets.winter);
+                    aus[3] = { werte: { jaccardTagNacht: jTN, jaccardSommerWinter: jSW, artenHa: haArten }, zeuge: Object.assign({ tag: I.sets.tag, nacht: I.sets.nacht, sommer: I.sets.sommer, winter: I.sets.winter }, zg, { vor: jTN, nach: jSW }) };
+                    if (haArten < 100) aus[3].nicht = "10² Arten je Hektar und ≥ 50 Pflanzenarten im Bild — die Welt trägt " + haArten + " Arten im Hektar (" + pfl + " Pflanzen-Arten); die Akkumulationskurve sättigt";
+                    aus[4] = { werte: { faktor: faktor(haArten, U[4].refArten), artenHa: haArten }, zeuge: Object.assign({}, zg), nicht: "kein Regenwald-Hektar — die Welt trägt am Ort den Wald der Heimat (" + Object.keys(I.wald).join(", ") + "), keine Gliederfüßer, kein Kronendach als eigener Lebensraum" };
+                    const lnA = I.flaechen.map((f) => Math.log(f.ha));
+                    const zJe = [];
+                    for (let sd = 0; sd < I.flaechen[0].arten.length; sd++) {
+                        const lnS = I.flaechen.map((f) => Math.log(Math.max(1, f.arten[sd])));
+                        const mx = lnA.reduce((q, x) => q + x, 0) / lnA.length;
+                        const my = lnS.reduce((q, x) => q + x, 0) / lnS.length;
+                        const b = lnA.reduce((q, x, i) => q + (x - mx) * (lnS[i] - my), 0) / Math.max(1e-9, lnA.reduce((q, x) => q + (x - mx) * (x - mx), 0));
+                        zJe.push(Math.round(b * 1000) / 1000);
+                    }
+                    const zs = zJe.slice().sort((x, y) => x - y);
+                    const zImBand = Math.round((100 * zJe.filter((z) => z >= 0.15 && z <= 0.35).length) / Math.max(1, zJe.length));
+                    const artenFl = I.flaechen.flatMap((f) => f.arten);
+                    aus[5] = { werte: { zImBandProzent: zImBand, zMedian: zs[Math.floor(zs.length / 2)] }, zeuge: { antworten: artenFl.length, streuung: Math.max(...artenFl) - Math.min(...artenFl), vor: artenFl[0], nach: artenFl[artenFl.length - 1], flaechen: I.flaechen, z: zJe }, nicht: "Flächen 1 ha … 10⁴ km² — die Zählung reicht bis " + I.flaechen[I.flaechen.length - 1].ha + " ha (die Nah-Streu nur im Ring der Ankunft), die Artenzahl sättigt bei " + Math.max(...artenFl) };
+                    const tr = ME.je.find((x) => x.b === 0);
+                    const tu = ME.je.find((x) => x.b === 70);
+                    aus[6] = { werte: { deckeTropen: tr ? tr.decke : null, deckeTundra: tu ? tu.decke : null, tierKgJeHa: I.tierKgJeHa }, zeuge: { antworten: ME.je.length, streuung: new Set(ME.je.map((x) => x.decke)).size - 1, meridian: ME.je, artSchluessel: ME.arten }, nicht: "Arten und Biomasse über die Breite — der Planet-Faden antwortet je Breite mit Land, Höhe, Klima und Wuchs (" + (ME.arten.length ? ME.arten.join(", ") : "kein Schlüssel einer Art oder Biomasse") + "); keine Pflanzen-Biomasse im Spiel" };
+                    const m = (v) => v.reduce((q, x) => q + x, 0) / Math.max(1, v.length);
+                    const bG = Math.round(m(I.beta.getrennt) * 1000) / 1000;
+                    const bV = Math.round(m(I.beta.verbunden) * 1000) / 1000;
+                    const endem = Object.values(I.beta.vorkommen).filter((n) => n === 1).length;
+                    aus[7] = { werte: { saaten: 1, betaDiff: Math.round((bG - bV) * 1000) / 1000, endemitenDiff: 0, endemiten: endem }, zeuge: { antworten: I.beta.getrennt.length * 3, streuung: new Set(I.beta.getrennt.concat(I.beta.verbunden)).size - 1, vor: bV, nach: bG, vorkommen: I.beta.vorkommen } };
+                    aus[7].nicht = "Endemiten-Zentren an 200 Saaten — jede Gattung lebt, wo ihr Lebensraum ist (LEBENSRAUM_GESETZ), " + endem + " Endemiten; die Welt läuft an EINER Saat (kein Wechsel ohne Neustart)";
+                    const rk = I.rueckkehr;
+                    aus[8] = { werte: { orte: rk.orte, veraendertProzent: Math.round((100 * rk.veraendert) / Math.max(1, rk.orte)), zurueckProzent: Math.round((100 * rk.zurueck) / Math.max(1, rk.orte)), saisonProzent: Math.round((100 * rk.saisonAnders) / Math.max(1, rk.saisonOrte)), jagdJahr: rk.jagdJahr }, zeuge: { antworten: rk.orte, streuung: Math.max(...rk.n) - Math.min(...rk.n), vor: rk.n.reduce((q, x) => q + x, 0), nach: rk.nNach.reduce((q, x) => q + x, 0), saisonOrte: rk.saisonOrte } };
+                    if (rk.saisonAnders === 0) aus[8].nicht = "der Bestand folgt der Saison nicht: an " + rk.saisonOrte + " Regionen gleich nach Sommer und Winter (`_kreaturBestand` liest keine Saison, kreatur-leben.js:2114); jeder Ort jedes Planeten: nur die Regionen um die Ankunft";
+                    // stand die Nah-Streu nach 5 s nicht (der Boden ihrer Chunks fehlte), zählt der Hektar ohne seine Pflanzen —
+                    // dann trägt keine Sprosse der Artenzahl eine Zahl und kein Urteil (ungemessen, der Grund im Zeugen)
+                    if (!I.streuBereit)
+                        for (const nr of [2, 3, 4, 5]) aus[nr] = { werte: {}, zeuge: { antworten: 0, streuung: 0, streuBereit: 0, streuWarteMs: I.streuWarteMs, streuLeer: I.streuLeer } };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    2: {
+                        u: { refArten: 10 },
+                        soll: [K.soll(VI, 2, "±Faktor 2", { key: "faktor", rel: "≤", zahl: 2 })],
+                        zeuge: zeugeWelt(20, false),
+                        taeter: "stamm/vegetation-wiese.js _nahStreuArten (7 Arten der Streu) · tetrapoda-core.js LEBENSRAUM_GESETZ (4 Gattungen)",
+                        unklar: "die Feldkartierung trägt keine Zahl und die 10 min keinen Gang — gezählt der Hektar der Ankunft im Stand (Streu, Wald, Bestand, Vogel, Bestäuber) gegen 10 Arten aus dem Umfang (10¹); Vorschlag: die Kartierung eines Hektars als Zahl in die Karte",
+                        gruen: gut({ faktor: 1.4, artenHa: 14, tiereRing: 160 }, 40),
+                        attrappen: [
+                            { name: "14 Arten aus einer Artenliste ohne Ort", roh: flach({ faktor: 1.4, artenHa: 14, tiereRing: 160 }) },
+                            { name: "der Hektar leer gelesen (keine Antwort trägt Streuung)", roh: starr({ faktor: 1.4, artenHa: 14, tiereRing: 160 }, 40) },
+                        ],
+                    },
+                    3: {
+                        u: {},
+                        soll: [
+                            K.soll(VI, 3, "Jaccard Tag/Nacht und Sommer/Winter ±0,15", { key: "jaccardTagNacht", ref: 0.5, refQuelle: "Feldkurve ohne Zahl auf der Karte — gesetzt J 0,5 (Tag- und Nacht-Fauna gemäßigter Wälder zur Hälfte geteilt)" }),
+                            K.soll(VI, 3, "Jaccard Tag/Nacht und Sommer/Winter ±0,15", { key: "jaccardSommerWinter", ref: 0.6, refQuelle: "Feldkurve ohne Zahl auf der Karte — gesetzt J 0,6 (Sommer- und Winter-Arten gemäßigter Breiten)" }),
+                        ],
+                        zeuge: zeugeWelt(20, false),
+                        taeter: "stamm/vegetation-wiese.js _nahStreuKachel · stamm/kreatur-leben.js _kreaturBestand (Uhr und Saison ohne Wirkung)",
+                        nicht: "10² Arten je Hektar",
+                        leser: "stamm/kreatur-leben.js:2114 _kreaturBestand — liest weder Uhr noch Saison; stamm/vegetation-wiese.js:1249 _nahStreuArten — wechselt keine Arten mit der Saison",
+                        unklar: "„Feldkurve“ und das Jaccard-Soll tragen keinen Referenzwert — gesetzt J 0,5 (Tag/Nacht) und 0,6 (Sommer/Winter); Vorschlag: die Feldkurve mit Quelle in die Karte",
+                        gruen: gut({ jaccardTagNacht: 0.45, jaccardSommerWinter: 0.62, artenHa: 120 }, 40),
+                        attrappen: [
+                            { name: "Jaccard einer Studie, ohne Lesung", roh: flach({ jaccardTagNacht: 0.45, jaccardSommerWinter: 0.62, artenHa: 120 }) },
+                            { name: "Lesung ohne Streuung", roh: starr({ jaccardTagNacht: 0.45, jaccardSommerWinter: 0.62, artenHa: 120 }, 40) },
+                        ],
+                    },
+                    4: {
+                        u: { refArten: 1000 },
+                        soll: [K.soll(VI, 4, "Zählung je Hektar gegen Regenwald-Inventur ±Faktor 2", { key: "faktor", rel: "≤", zahl: 2 })],
+                        zeuge: zeugeWelt(20, false),
+                        taeter: "stamm/vegetation-wiese.js _forestCellDarts (5 Baumarten der Heimat)",
+                        nicht: "kein Regenwald-Hektar",
+                        leser: "stamm/vegetation-wiese.js:2717 _forestCellDarts — setzt die Baumarten der Heimat; kein Regenwald, keine Gliederfüßer",
+                        unklar: "die Regenwald-Inventur trägt keine Zahl — gesetzt 1 000 Arten je ha aus dem Umfang (10³)",
+                        gruen: gut({ faktor: 1.3, artenHa: 780 }, 40),
+                        attrappen: [{ name: "780 Arten aus der Inventur abgeschrieben", roh: flach({ faktor: 1.3, artenHa: 780 }) }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [
+                            K.soll(VI, 5, "im Band bei ≥ 80 % der Saaten", { key: "zImBandProzent", einheit: "%" }),
+                            K.soll(VI, 5, "z aus Zählungen im Spiel", { key: "zMedian", rel: "band", zahl: 0.15, bis: 0.35, quelleFeld: "tiefe", quelleWort: "Land z 0,15–0,35" }),
+                        ],
+                        zeuge: zeugeWelt(9, true),
+                        taeter: "stamm/vegetation-wiese.js _forestCellDarts · _nahStreuArten (die Artenzahl sättigt in einem Hektar)",
+                        nicht: "Flächen bis 10⁴ km²",
+                        leser: "stamm/vegetation-wiese.js:2717 _forestCellDarts — der Wald kennt 5 Baumarten; stamm/vegetation-wiese.js:1249 _nahStreuArten — lebt nur im Ring der Ankunft; keine Zählung über 1 ha … 10⁴ km²",
+                        gruen: gut({ zImBandProzent: 85, zMedian: 0.24 }, 12),
+                        attrappen: [
+                            { name: "z = 0,25 aus der Literatur", roh: flach({ zImBandProzent: 85, zMedian: 0.24 }) },
+                            { name: "dieselbe Zahl auf jeder Fläche", roh: starr({ zImBandProzent: 85, zMedian: 0.24 }, 12) },
+                        ],
+                    },
+                    6: {
+                        u: {},
+                        soll: [
+                            K.soll(VI, 6, "Arten je Fläche über die Breite", { key: "gradient", rel: "≥", zahl: 10, quelleFeld: "tiefe", quelleWort: "Breitengradient Tropen ÷ Tundra ≥ 10" }),
+                            K.soll(VI, 6, "Biomasse-Anteile gegen Bar-On 2018", { key: "pflanzenProzent", rel: "=", zahl: 80, einheit: "%", quelleFeld: "tiefe", quelleWort: "Pflanzen ~80 %", refQuelle: "Bar-On, Phillips & Milo 2018 (PNAS 115): Pflanzen ≈ 82 % der Biomasse" }),
+                            K.soll(VI, 6, "Biomasse-Anteile gegen Bar-On 2018", { key: "tierProzent", rel: "<", zahl: 1, quelleFeld: "tiefe", quelleWort: "Tiere < 1 %" }),
+                        ],
+                        zeuge: zeugeWelt(9, false),
+                        taeter: "planet-core.js planetOrt (keine Art, keine Biomasse je Breite)",
+                        nicht: "keine Arten und keine Biomasse über die Breite",
+                        leser: "planet-core.js:2290 planetOrt — trägt den Wuchs (ORT_WUCHS decke, wald), keine Artenzahl und keine Biomasse je Breite",
+                        unklar: "„~80 %“ ohne Toleranz — die Station urteilt nach der Zahl der Tiefe (= 80 %); Vorschlag: das Band um Bar-On 82 % als Zahl in die Karte",
+                        gruen: gut({ gradient: 14, pflanzenProzent: 80, tierProzent: 0.4 }, 9),
+                        attrappen: [{ name: "Bar-On abgeschrieben ohne Meridian", roh: flach({ gradient: 14, pflanzenProzent: 80, tierProzent: 0.4 }) }],
+                    },
+                    7: {
+                        u: {},
+                        soll: [
+                            K.soll(VI, 7, "200 Saaten", { key: "saaten", rel: "≥", zahl: 200 }),
+                            K.soll(VI, 7, "Beta-Diversität getrennt > verbunden", { key: "betaDiff", rel: ">", zahl: 0, refQuelle: "der Richter: Beta getrennt − Beta verbunden > 0" }),
+                            K.soll(VI, 7, "Endemiten-Anteil Insel > Festland", { key: "endemitenDiff", rel: ">", zahl: 0, refQuelle: "der Richter: Endemiten-Anteil Insel − Festland > 0" }),
+                        ],
+                        zeuge: zeugeWelt(60, true),
+                        taeter: "tetrapoda-core.js LEBENSRAUM_GESETZ (jede Gattung überall in ihrem Lebensraum, kein Endemit)",
+                        nicht: "keine Endemiten-Zentren, EINE Saat je Welt",
+                        leser: "tetrapoda-core.js:2072 LEBENSRAUM_GESETZ — die Gattung folgt nur der Boden-Klasse, keine Trennung durch Insel, Tal oder Becken",
+                        gruen: gut({ saaten: 200, betaDiff: 0.31, endemitenDiff: 0.22, endemiten: 6 }, 600),
+                        attrappen: [{ name: "Beta aus der Literatur", roh: flach({ saaten: 200, betaDiff: 0.31, endemitenDiff: 0.22, endemiten: 6 }) }],
+                    },
+                    8: {
+                        u: { orte: 100 },
+                        soll: [
+                            K.soll(VI, 8, "Rückkehr nach 1 Spieljahr an 100 Orte", { key: "orte", rel: "≥", zahl: 100 }),
+                            K.soll(VI, 8, "Bestand verändert nach Saison und Jagd", { key: "veraendertProzent", rel: "≥", zahl: 80, refQuelle: "der Richter: Bestand verändert — gesetzt an ≥ 80 % der Orte" }),
+                            K.soll(VI, 8, "Bestand verändert nach Saison und Jagd", { key: "saisonProzent", rel: ">", zahl: 0, refQuelle: "der Richter: nach Saison — die Saison ändert den Bestand an mindestens einem Ort" }),
+                            K.soll(VI, 8, "nie zurückgesetzt", { key: "zurueckProzent", rel: "=", zahl: 0, refQuelle: "der Richter: nie zurückgesetzt (0 von 100 Orten)" }),
+                        ],
+                        zeuge: zeugeWelt(100, true),
+                        taeter: "stamm/kreatur-leben.js _kreaturBestand (liest keine Saison)",
+                        nicht: "der Bestand folgt der Saison nicht",
+                        leser: "stamm/kreatur-leben.js:2114 _kreaturBestand — liest keine Saison (Kapazität nur aus Boden-Klasse × Äsung)",
+                        unklar: "„verändert“ ohne Anteil — gesetzt ≥ 80 % der Orte",
+                        gruen: gut({ orte: 100, veraendertProzent: 96, zurueckProzent: 0, saisonProzent: 60, jagdJahr: 140 }, 100),
+                        attrappen: [
+                            { name: "100 Orte gezählt ohne Rückkehr", roh: flach({ orte: 100, veraendertProzent: 96, zurueckProzent: 0, saisonProzent: 60, jagdJahr: 140 }) },
+                            { name: "der Bestand stand still (vor = nach)", roh: still({ orte: 100, veraendertProzent: 96, zurueckProzent: 0, saisonProzent: 60, jagdJahr: 140 }, 100) },
+                        ],
+                    },
+                },
+            },
+            // ═══ DIE DYNAMIK: Kaskade im Bild, Schwingung, Ausbruch, Kelp, Front, Zyklus nur mit Paar ═══
+            [DY]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD_TIER,
+                ungefahren: "die Bilder (S2 Bildpaar, S4 Luftbild-Reihe) — swiftshader schießt nicht",
+                mess: async function (H, U, M) {
+                    const seite = (fn, a) => H.seite("return await (" + fn.toString() + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const raffer = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const B = A._bestandGesetz().B;
+                        const S = r._bestandSeite();
+                        const pm = s.playerMesh.position;
+                        let ix = Math.floor(pm.x / S);
+                        const iz = Math.floor(pm.z / S);
+                        const park = (k) => r._bestandFeld(k).zellen.filter((c) => r._genesisFlaeche(c.x, c.z)).length;
+                        let k0 = ix + "," + iz;
+                        for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
+                        for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
+                        if (!r._bestandBereit(k0)) throw new Error("das Tal " + k0 + " steht nicht bereit");
+                        const jahrT = Math.round(s.seasonYearSeconds / B.taktS);
+                        const G = Object.keys(A._lebensraumGesetz().L.gattung);
+                        const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq };
+                        const laeufe = [];
+                        const t0 = performance.now();
+                        const fern = [];
+                        try {
+                            for (const ohne of a.varianten)
+                                for (const saat of a.saaten) {
+                                    if (performance.now() - t0 > a.budgetMs * (ohne ? 1 : 0.5) && laeufe.filter((l) => l.ohne === ohne).length >= 2) break;
+                                    r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng(a.praefix + saat + "-" + String(k)) : (o[k] = r._streamRng(a.praefix + saat + "-" + String(k)))) }) };
+                                    s.faunaBestand = undefined;
+                                    s.lifeField = undefined;
+                                    s.emotionField = new Map();
+                                    s.spielZeit = 0;
+                                    const R = r._bestandRegion(k0, false);
+                                    const reihe = {};
+                                    for (const g of G) reihe[g] = [];
+                                    let K0 = 0;
+                                    let jung = null;
+                                    let kappe = 0;
+                                    const t1 = performance.now();
+                                    for (let k = 0; k < a.jahre * jahrT; k++) {
+                                        r._bestandSchritt(k0, R, true, []);
+                                        if (ohne) for (let i = R.tiere.length - 1; i >= 0; i--) if (R.tiere[i].g === ohne) R.tiere.splice(i, 1);
+                                        if (k === jahrT) K0 = Object.values(r._kreaturBestand(null, k0)).reduce((q, b) => q + b.K, 0);
+                                        if (k === a.jungJahre * jahrT - 1) jung = r._kreaturBestand(null, k0).deer.K;
+                                        if (k % a.probeT === a.probeT - 1) {
+                                            const je = {};
+                                            for (const t of R.tiere) je[t.g] = (je[t.g] || 0) + 1;
+                                            for (const g of G) reihe[g].push(je[g] || 0);
+                                            if (K0 > 0 && R.tiere.length > 3 * K0 + 10) kappe++;
+                                        }
+                                    }
+                                    laeufe.push({ saat, ohne, reihe, K0: Math.round(K0 * 100) / 100, jung, kappe, ms: Math.round(performance.now() - t1) });
+                                }
+                            // DIE FRONT (S6): eine Zeile aus 5 Regionen östlich des Tals, frisch und leer; je Region der Takt, an dem der erste
+                            // Fuchs steht — gleich überall heißt: keine Front, die Gattung entsteht in jeder Region aus ihrer Kapazität
+                            r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng("front-" + String(k)) : (o[k] = r._streamRng("front-" + String(k)))) }) };
+                            s.faunaBestand = undefined;
+                            s.lifeField = undefined;
+                            s.spielZeit = 0;
+                            const [x0, z0] = k0.split(",").map(Number);
+                            const zeile = [0, 1, 2, 3, 4].map((d) => x0 + d + "," + z0);
+                            const Rz = zeile.map((k) => r._bestandRegion(k, false));
+                            const erst = zeile.map(() => null);
+                            for (let k = 0; k < 2 * jahrT; k++)
+                                zeile.forEach((key, i) => {
+                                    if (!r._bestandBereit(key)) return;
+                                    r._bestandSchritt(key, Rz[i], true, []);
+                                    if (erst[i] === null && Rz[i].tiere.some((t) => t.g === a.front)) erst[i] = k;
+                                });
+                            fern.push(...erst);
+                        } finally {
+                            s.faunaBestand = alt.fb;
+                            s.lifeField = alt.lf;
+                            s.emotionField = alt.ef;
+                            r._faunaStroeme = alt.fs;
+                            s.spielZeit = alt.sz;
+                            r._lebenGen = alt.gen;
+                            s._creatureNetSeq = alt.seq;
+                        }
+                        return { k0, jahrT, G, laeufe, front: fern, seiteM: S, marin: Object.values(A._lebensraumGesetz().L.gattung).filter((h) => Object.keys(h).some((k) => /meer|kueste|riff|see/i.test(k))).length };
+                    };
+                    const R = await seite(raffer, { varianten: [null, "wolf"], saaten: [1, 2, 3, 4, 5, 6, 7, 8], jahre: 50, jungJahre: 10, probeT: 12, budgetMs: 20000, praefix: "dyn-", front: "fox" });
+                    const proJahr = R.jahrT / 12;
+                    // DIE SCHWINGUNG: die Autokorrelation der Hirsch-Reihe (ohne Mittel) — ihr erstes Maximum nach dem ersten Nulldurchgang
+                    // ist die Periode, das Maximum der Kreuzkorrelation Wolf gegen Hirsch der Verzug des Räubers
+                    const ak = (v, lag) => {
+                        const m = v.reduce((q, x) => q + x, 0) / v.length;
+                        let z = 0;
+                        let n = 0;
+                        for (let i = 0; i + lag < v.length; i++) z += (v[i] - m) * (v[i + lag] - m);
+                        for (let i = 0; i < v.length; i++) n += (v[i] - m) * (v[i] - m);
+                        return n > 0 ? z / n : 0;
+                    };
+                    const kk = (x, y, lag) => {
+                        const mx = x.reduce((q, v) => q + v, 0) / x.length;
+                        const my = y.reduce((q, v) => q + v, 0) / y.length;
+                        let z = 0;
+                        let nx = 0;
+                        let ny = 0;
+                        for (let i = 0; i + lag < x.length; i++) z += (x[i] - mx) * (y[i + lag] - my);
+                        for (let i = 0; i < x.length; i++) (nx += (x[i] - mx) ** 2), (ny += (y[i] - my) ** 2);
+                        return nx > 0 && ny > 0 ? z / Math.sqrt(nx * ny) : 0;
+                    };
+                    const zyklus = (v) => {
+                        const L = Math.floor(v.length / 3);
+                        let null0 = 0;
+                        for (let l = 1; l < L; l++)
+                            if (ak(v, l) <= 0) {
+                                null0 = l;
+                                break;
+                            }
+                        if (!null0) return { periode: null, staerke: 0 };
+                        let best = null0;
+                        for (let l = null0; l < L; l++) if (ak(v, l) > ak(v, best)) best = l;
+                        return { periode: best / proJahr, staerke: ak(v, best) };
+                    };
+                    const mit = R.laeufe.filter((l) => !l.ohne);
+                    const ohne = R.laeufe.filter((l) => l.ohne);
+                    const zm = mit.map((l) => zyklus(l.reihe.deer));
+                    const zo = ohne.map((l) => zyklus(l.reihe.deer));
+                    const per = zm.map((z) => z.periode).filter((x) => x !== null).sort((x, y) => x - y);
+                    const verz = mit.map((l) => {
+                        let best = 0;
+                        for (let lag = 0; lag < 3 * proJahr; lag++) if (kk(l.reihe.deer, l.reihe.wolf, lag) > kk(l.reihe.deer, l.reihe.wolf, best)) best = lag;
+                        return best / proJahr;
+                    }).sort((x, y) => x - y);
+                    const med = (v) => (v.length ? Math.round(v[Math.floor(v.length / 2)] * 1000) / 1000 : null);
+                    const alle = R.laeufe.flatMap((l) => l.reihe.deer);
+                    const mw = alle.reduce((q, x) => q + x, 0) / Math.max(1, alle.length);
+                    const sd = Math.round(Math.sqrt(alle.reduce((q, x) => q + (x - mw) ** 2, 0) / Math.max(1, alle.length)) * 100) / 100;
+                    const jm = mit.filter((l) => l.jung !== null).map((l) => l.jung);
+                    const jo = ohne.filter((l) => l.jung !== null).map((l) => l.jung);
+                    const mj = (v) => v.reduce((q, x) => q + x, 0) / Math.max(1, v.length);
+                    const jungMinus = jm.length && jo.length ? Math.round((1e4 * (mj(jm) - mj(jo))) / Math.max(1e-9, mj(jm))) / 100 : null;
+                    const zg = { antworten: R.laeufe.length, streuung: sd, vor: mit.length ? mit[0].reihe.deer.reduce((q, x) => q + x, 0) : 0, nach: ohne.length ? ohne[0].reihe.deer.reduce((q, x) => q + x, 0) : 0, tal: R.k0, mit: mit.length, ohne: ohne.length, ms: R.laeufe.map((l) => l.ms) };
+                    const aus = {};
+                    aus[2] = { werte: jungMinus === null ? {} : { jungwuchsMinusProzent: jungMinus }, zeuge: Object.assign({ jungMit: jm, jungOhne: jo }, zg), auge: await M.auge("oeko-dynamik-s2", { ort: "wiese" }) };
+                    aus[3] = { werte: { periodeJahre: med(per), verzugJahre: med(verz) }, zeuge: Object.assign({ perioden: per, verzug: verz }, zg, { antworten: mit.length }) };
+                    const aSaaten = mit.filter((l) => l.kappe > 0).length;
+                    aus[4] = { werte: { ausbruchSaaten: aSaaten, saaten: mit.length }, zeuge: Object.assign({ kappe: mit.map((l) => l.kappe) }, zg, { antworten: mit.length }), auge: await M.auge("oeko-dynamik-s4", { ort: "wiese" }), nicht: "keine Massenvermehrung eines Waldschädlings — kein Insekt im Bestand (" + R.G.join(", ") + "), keine braune Waldfläche" };
+                    aus[5] = { werte: { meerArten: R.marin }, zeuge: { antworten: R.G.length, streuung: 0 }, nicht: "kein Otter, kein Seeigel, kein Kelp — " + R.marin + " Gattungen des Bestands leben im Meer (LEBENSRAUM_GESETZ)" };
+                    // eine FRONT heißt: der erste Fuchs steht in jeder ferneren Region später (monoton im Abstand) — sonst entsteht er
+                    // überall aus seiner Kapazität, und ein Tempo aus erster und letzter Region wäre eine erfundene Zahl
+                    const fr = R.front;
+                    const monoton = fr.every((x, i) => x !== null && (i === 0 || x > fr[i - 1]));
+                    const frontKm = monoton ? Math.round((((4 * R.seiteM) / 1000) / ((fr[4] - fr[0]) / R.jahrT)) * 100) / 100 : null;
+                    const umkehr = fr.filter((x, i) => i > 0 && (x === null || fr[i - 1] === null || x <= fr[i - 1])).length;
+                    aus[6] = { werte: frontKm === null ? { frontUmkehrungen: umkehr } : { frontKmJahr: frontKm }, zeuge: { antworten: fr.filter((x) => x !== null).length, streuung: new Set(fr).size - 1, front: fr, monoton }, nicht: "keine eingeschleppte Art: jede Gattung entsteht in jeder Region aus ihrer Kapazität (`_creatureNaturalBirth`, kreatur-leben.js:1949), der erste Fuchs steht an den Takten " + fr.join(", ") + " — keine Front" };
+                    const zmP = Math.round((100 * zm.filter((z) => z.staerke > 0.3).length) / Math.max(1, zm.length));
+                    const zoP = Math.round((100 * zo.filter((z) => z.staerke > 0.3).length) / Math.max(1, zo.length));
+                    aus[7] = { werte: { saaten: mit.length, zyklusMitProzent: zmP, zyklusOhneProzent: zoP }, zeuge: Object.assign({ staerkeMit: zm.map((z) => Math.round(z.staerke * 100) / 100), staerkeOhne: zo.map((z) => Math.round(z.staerke * 100) / 100) }, zg), nicht: "jeder Planet, 10⁴ Jahre — der Bestand lebt in den Regionen eines Tals; der Deckel trägt " + mit.length + " + " + ohne.length + " Saaten × 50 Spieljahre" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    2: {
+                        u: { jahre: 10, auge: { ort: "wiese" } },
+                        soll: [K.soll(DY, 2, "Jungwuchs-Deckung −≥ 20 % gegen Gegenlauf", { key: "jungwuchsMinusProzent", einheit: "%" })],
+                        auge: { pose: "Ego an der Wiese, dieselbe Kamera vor und nach 10 Spieljahren ohne Wölfe", vorbild: "Bildpaar gegen den Gegenlauf mit Wölfen: Jungwuchs-Deckung im Bild (Prüfer-Satz R11)" },
+                        taeter: "stamm/kreatur-leben.js _kreaturFrass (die Äsung der Herde am Jungwuchs)",
+                        gruen: gut({ jungwuchsMinusProzent: 26 }, 16),
+                        attrappen: [{ name: "−26 % aus dem Kaskaden-Lauf ohne Bild", roh: flach({ jungwuchsMinusProzent: 26 }) }],
+                    },
+                    3: {
+                        u: { jahre: 50 },
+                        soll: [K.soll(DY, 3, "Periode 8–11 Jahre", { key: "periodeJahre", einheit: "Jahre" }), K.soll(DY, 3, "Räuber hinkt 1–2 Jahre nach", { key: "verzugJahre", einheit: "Jahre" })],
+                        zeuge: zeugeWelt(2, true),
+                        taeter: "tetrapoda-core.js BESTAND_GESETZ (bilanz/riss) · stamm/kreatur-leben.js _bestandTakt",
+                        gruen: gut({ periodeJahre: 9.6, verzugJahre: 1.4 }, 8),
+                        attrappen: [
+                            { name: "eine Sinus-Reihe ohne Bestand", roh: flach({ periodeJahre: 9.6, verzugJahre: 1.4 }) },
+                            { name: "Reihen ohne Streuung", roh: starr({ periodeJahre: 9.6, verzugJahre: 1.4 }, 8) },
+                        ],
+                    },
+                    4: {
+                        u: { saaten: 8, jahre: 50, auge: { ort: "wiese" } },
+                        soll: [K.soll(DY, 4, "Ausbruch in ≥ 1 von 8 Saaten je 50 Spieljahre", { key: "ausbruchSaaten" }), K.soll(DY, 4, "Ausbruch in ≥ 1 von 8 Saaten je 50 Spieljahre", { key: "saaten", rel: "≥", zahl: 8 })],
+                        auge: { pose: "Luftbild über dem Tal (heute: Ego an der Wiese)", vorbild: "braune Waldfläche gegen die Luftbild-Reihe eines Borkenkäfer-Ausbruchs (Prüfer-Satz R11)" },
+                        taeter: "tetrapoda-core.js LEBENSRAUM_GESETZ (kein Waldschädling)",
+                        nicht: "kein Waldschädling",
+                        leser: "tetrapoda-core.js:2072 LEBENSRAUM_GESETZ — trägt kein Insekt; kein Leser färbt Wald braun",
+                        gruen: gut({ ausbruchSaaten: 2, saaten: 8 }, 8),
+                        attrappen: [{ name: "Ausbruch behauptet ohne Raffer", roh: flach({ ausbruchSaaten: 2, saaten: 8 }) }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(DY, 5, "Räuber entfernt: Kelpfläche fällt nach dem Muster der Feldstudien", { key: "kelpEffekt", rel: "<", zahl: 0, refQuelle: "Estes & Palmisano 1974 (Science 185): ohne Otter fällt die Kelpfläche" })],
+                        zeuge: zeugeWelt(3, true),
+                        taeter: "tetrapoda-core.js LEBENSRAUM_GESETZ (kein Meer im Bestand)",
+                        nicht: "kein Netz an der Küste",
+                        leser: "tetrapoda-core.js:2072 LEBENSRAUM_GESETZ — kennt keinen Lebensraum im Meer; tetrapoda-core.js:2818 FISCH_GESETZ — ohne Fraß",
+                        gruen: gut({ kelpEffekt: -0.6 }, 8),
+                        attrappen: [{ name: "Estes 1974 abgeschrieben", roh: flach({ kelpEffekt: -0.6 }) }],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(DY, 6, "Front-Tempo im Band realer Invasionen (10–60 km/Jahr)", { key: "frontKmJahr", einheit: "km/Jahr" })],
+                        zeuge: zeugeWelt(5, false),
+                        taeter: "stamm/kreatur-leben.js _creatureNaturalBirth (jede Gattung entsteht in jeder Region, keine Ausbreitung)",
+                        nicht: "keine eingeschleppte Art, keine Front",
+                        leser: "stamm/kreatur-leben.js:1949 _creatureNaturalBirth — wirft jede Gattung in ihrer Region aus der Kapazität; kein Zuzug aus Nachbar-Regionen",
+                        gruen: gut({ frontKmJahr: 24 }, 5),
+                        attrappen: [{ name: "Front-Tempo aus einer Studie", roh: flach({ frontKmJahr: 24 }) }],
+                    },
+                    7: {
+                        u: { saaten: 64 },
+                        soll: [
+                            K.soll(DY, 7, "64 Saaten", { key: "saaten", rel: "≥", zahl: 64 }),
+                            K.soll(DY, 7, "Bestandsreihen schwingen nur, wo Räuber-Beute-Paare es tragen", { key: "zyklusMitProzent", rel: ">", zahl: 0, refQuelle: "der Richter: mit dem Paar schwingt die Reihe (Anteil > 0)" }),
+                            K.soll(DY, 7, "Gegenprobe Paar entfernt → Zyklus weg", { key: "zyklusOhneProzent", rel: "=", zahl: 0, refQuelle: "der Richter: Zyklus weg — keine Saat ohne Paar schwingt (0 %)" }),
+                        ],
+                        zeuge: zeugeWelt(64, true),
+                        taeter: "stamm/kreatur-leben.js _bestandTakt (EIN Tal statt eines Planeten)",
+                        nicht: "jeder Planet, 10⁴ Jahre",
+                        leser: "stamm/kreatur-leben.js:2284 _bestandRegion — lebt in Regionen um den Spieler; kein Planet im Zeitsprung",
+                        gruen: gut({ saaten: 64, zyklusMitProzent: 70, zyklusOhneProzent: 0 }, 128),
+                        attrappen: [{ name: "Zyklus behauptet ohne Gegenprobe", roh: flach({ saaten: 64, zyklusMitProzent: 70, zyklusOhneProzent: 0 }) }],
+                    },
+                },
+            },
+            // ═══ DER ZERFALL: Kadaver und Nährstoff nach jedem Tod, Verwesung, Totholz, Pilze, Streu, Bilanz ═══
+            [ZE]: {
+                sek: 10,
+                mutiert: true,
+                pfad: PFAD_TIER.concat(["stamm/vegetation-wiese.js", "foundry-core.js"]),
+                ungefahren: "die Bildreihen (S2 Verwesung, S3 Totholz, S6 Walfall) — swiftshader schießt nicht",
+                mess: async function (H, U, M) {
+                    const seite = (fn, a) => H.seite("return await (" + fn.toString() + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    // DER TOD IM SANDKASTEN: die Region des Tals frisch aus ihren Strömen gefüllt (eine Stunde Takt), dann je Ursache ein
+                    // Tier durch `_bestandStirbt` (Riss, Alter, Hunger) und die Tat des Spieler-Tods (`_tatSchreiben("riss")`, der Weg von
+                    // kreatur-leben.js:919) — je Tod der Nährstoff am Ort vorher und nachher; dazu ein Spieljahr Bilanz am Feld
+                    const tod = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const B = A._bestandGesetz().B;
+                        const S = r._bestandSeite();
+                        const pm = s.playerMesh.position;
+                        const wm = s.worldMeta;
+                        let ix = Math.floor(pm.x / S);
+                        const iz = Math.floor(pm.z / S);
+                        const park = (k) => r._bestandFeld(k).zellen.filter((c) => r._genesisFlaeche(c.x, c.z)).length;
+                        let k0 = ix + "," + iz;
+                        for (let n = 0; park(k0) && n < 20; n++) k0 = --ix + "," + iz;
+                        for (let i = 0; i < 100 && !r._bestandBereit(k0); i++) await new Promise((f) => setTimeout(f, 50));
+                        const jahrT = Math.round(s.seasonYearSeconds / B.taktS);
+                        const alt = { fb: s.faunaBestand, lf: s.lifeField, ef: s.emotionField, fs: r._faunaStroeme, sz: s.spielZeit, gen: r._lebenGen, seq: s._creatureNetSeq, L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx };
+                        const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                        const eDL = Object.prototype.hasOwnProperty.call(r, "_depositLife");
+                        const fDL = r._depositLife;
+                        const aus = { tode: [] };
+                        let gabe = 0;
+                        let nahme = 0;
+                        try {
+                            for (const [m] of stubs) r[m] = () => {};
+                            wm.taten = Array.isArray(alt.L0) ? alt.L0.slice() : [];
+                            r._sukzessionNeu = [];
+                            r._faunaStroeme = { seed: s.worldMeta.seed, rng: new Proxy(Object.create(null), { get: (o, k) => o[k] || (String(k).includes("@") ? r._streamRng("tod-" + String(k)) : (o[k] = r._streamRng("tod-" + String(k)))) }) };
+                            s.faunaBestand = undefined;
+                            s.lifeField = undefined;
+                            s.emotionField = new Map();
+                            s.spielZeit = 0;
+                            const R = r._bestandRegion(k0, false);
+                            for (let k = 0; k < a.fuellT; k++) r._bestandSchritt(k0, R, true, []);
+                            for (const u of ["jagd", "alter", "hunger"]) {
+                                const t = R.tiere.find((x) => !aus.tode.some((d) => d.id === x.id));
+                                if (!t) continue;
+                                const vor = r._naehrstoffAt(t.x, t.z);
+                                const aeVor = r._kreaturNahrung(t.x, t.z);
+                                const jaeger = R.tiere.filter((x) => x !== t && x.g === "wolf").slice(0, 1);
+                                r._bestandStirbt(R, t, u, [], jaeger);
+                                aus.tode.push({ u, id: t.id, g: t.g, vor, nach: r._naehrstoffAt(t.x, t.z), aeVor, aeNach: r._kreaturNahrung(t.x, t.z) });
+                            }
+                            const x = pm.x + a.dx;
+                            const z = pm.z + a.dz;
+                            const vor = r._naehrstoffAt(x, z);
+                            r._tatSchreiben("riss", x, z);
+                            aus.tode.push({ u: "spieler", vor, nach: r._naehrstoffAt(x, z) });
+                            r._depositLife = function (x2, z2, m) {
+                                if (m > 0) gabe += m;
+                                else nahme -= m;
+                                return fDL.call(this, x2, z2, m);
+                            };
+                            for (let k = 0; k < jahrT; k++) r._bestandSchritt(k0, R, true, []);
+                            aus.bilanz = { gabe: Math.round(gabe * 1000) / 1000, nahme: Math.round(nahme * 1000) / 1000 };
+                        } finally {
+                            if (eDL) r._depositLife = fDL;
+                            else delete r._depositLife;
+                            wm.taten = alt.L0;
+                            r._nachwuchsFaellig = alt.nf;
+                            r._sukzessionNeu = alt.sn;
+                            r._tatIdx = alt.idx;
+                            for (const [m, e, f] of stubs) {
+                                if (e) r[m] = f;
+                                else delete r[m];
+                            }
+                            s.faunaBestand = alt.fb;
+                            s.lifeField = alt.lf;
+                            s.emotionField = alt.ef;
+                            r._faunaStroeme = alt.fs;
+                            s.spielZeit = alt.sz;
+                            r._lebenGen = alt.gen;
+                            s._creatureNetSeq = alt.seq;
+                        }
+                        aus.tal = k0;
+                        aus.wieder = (wm.taten === alt.L0) + 0;
+                        return aus;
+                    };
+                    // DER KADAVER: ein Hirsch fällt (`_kreaturFaellt`, sein Fleisch nach dem Gesetz), daneben ein oder drei hungrige Wölfe;
+                    // je Kreatur-Sekunde `_kreaturAasZug` — das Fleisch je Sekunde mit 1 und mit 3 Fressern; danach fällt jeder Leib
+                    const kadaver = async (r, T, a) => {
+                        const s = r.state;
+                        const pm = s.playerMesh.position;
+                        const altUhr = s.creatureAnimationTime;
+                        const neu = [];
+                        const aus = { rate: {} };
+                        const ort = () => {
+                            for (let k = 0; k < 40; k++) {
+                                const x = pm.x + a.dx + (k % 8) * 3;
+                                const z = pm.z + a.dz + Math.floor(k / 8) * 3;
+                                if (r._landAt(x, z)) return { x, z };
+                            }
+                            return { x: pm.x + a.dx, z: pm.z + a.dz };
+                        };
+                        try {
+                            for (const n of a.fresser) {
+                                const p = ort();
+                                const k = r.spawnCreatureAt(p.x, pm.y, p.z, "happy", "wesen", { precise: true, bodySize: 1 });
+                                if (!k) throw new Error("Spawn Hirsch");
+                                neu.push(k);
+                                r._kreaturFaellt(k);
+                                const K = k.userData.kadaver;
+                                if (!K) throw new Error("der Gefallene trägt keinen Kadaver");
+                                aus.nachklangS = k.userData.dying ? k.userData.dying.nachklang : null;
+                                aus.sinkenS = k.userData.dying ? k.userData.dying.sinken : null;
+                                const wl = [];
+                                for (let i = 0; i < n; i++) {
+                                    const w = r.spawnCreatureAt(k.position.x + Math.cos(i * 2.1) * 0.6, k.position.y, k.position.z + Math.sin(i * 2.1) * 0.6, "happy", "wolf", { precise: true, bodySize: 1 });
+                                    if (!w) throw new Error("Spawn Wolf");
+                                    neu.push(w);
+                                    w.userData.magen = 0;
+                                    w.position.set(k.position.x + Math.cos(i * 2.1) * 0.6, k.position.y, k.position.z + Math.sin(i * 2.1) * 0.6);
+                                    wl.push(w);
+                                }
+                                const f0 = K.fleisch;
+                                const dir = new T.Vector3();
+                                // je Versuch liegt nur SEIN Kadaver in der Liste der Gefallenen (kein fremder im Geruch der Fresser)
+                                const L0 = s.leichname;
+                                try {
+                                    s.leichname = [k];
+                                    for (let t = 0; t < a.sekunden; t++) {
+                                        s.creatureAnimationTime += 1;
+                                        for (const w of wl) r._kreaturAasZug(w, dir, 1, w.userData._tierBaum ? w.userData._tierBaum.beinL : 0.8);
+                                    }
+                                } finally {
+                                    s.leichname = L0;
+                                }
+                                aus.rate[n] = Math.round(((f0 - K.fleisch) / a.sekunden) * 1000) / 1000;
+                                aus.fleisch0 = Math.round(f0 * 10) / 10;
+                                aus.rest = Object.assign(aus.rest || {}, { [n]: Math.round(K.fleisch * 1000) / 1000 });
+                                aus.fresserIm = Object.assign(aus.fresserIm || {}, { [n]: wl.filter((w) => w.userData._motionZustand === "fressen").length });
+                                for (const c of neu.splice(0)) r.removeCreature(c);
+                            }
+                        } finally {
+                            for (const c of neu) {
+                                try {
+                                    r.removeCreature(c);
+                                } catch (_e) {
+                                    /* fort */
+                                }
+                            }
+                            s.creatureAnimationTime = altUhr;
+                        }
+                        aus.tagS = r.constructor.PEGEL_TAG_S;
+                        return aus;
+                    };
+                    const holz = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const KA = A.NAH_STREU.kachel;
+                        const C = A.FOREST ? A.FOREST.cell : 12;
+                        let warte = 0;
+                        for (; warte < 100; warte++) {
+                            const ar = r._nahStreuArten();
+                            if (ar && [[0, 0], [-1, -1], [1, 1], [-1, 1], [1, -1]].every(([u, v]) => r._nahStreuKachel(Math.floor((pm.x + u * (a.halb - 4)) / KA), Math.floor((pm.z + v * (a.halb - 4)) / KA), ar))) break;
+                            await new Promise((f) => setTimeout(f, 50));
+                        }
+                        const arten = r._nahStreuArten();
+                        const je = {};
+                        let leer = 0;
+                        for (let x = pm.x - a.halb; x < pm.x + a.halb; x += KA)
+                            for (let z = pm.z - a.halb; z < pm.z + a.halb; z += KA) {
+                                const k = r._nahStreuKachel(Math.floor(x / KA), Math.floor(z / KA), arten);
+                                if (!k) {
+                                    leer++;
+                                    continue;
+                                }
+                                for (const it of k.items) {
+                                    const t = arten[it.art] ? arten[it.art].kind + ":" + arten[it.art].id : "?";
+                                    je[t] = (je[t] || 0) + 1;
+                                }
+                            }
+                        let baeume = 0;
+                        for (let cx = Math.floor((pm.x - a.halb) / C); cx <= Math.floor((pm.x + a.halb) / C); cx++)
+                            for (let cz = Math.floor((pm.z - a.halb) / C); cz <= Math.floor((pm.z + a.halb) / C); cz++)
+                                for (const d of r._forestCellDarts(cx, cz, r._forestSeedInt()) || []) if (Math.abs(d.x - pm.x) <= a.halb && Math.abs(d.z - pm.z) <= a.halb) baeume++;
+                        const W = A.TAT_NARBE;
+                        return { streuBereit: warte < 100 ? 1 : 0, streuWarteMs: warte * 50, je, leer, baeume, pilzArten: arten.filter((x) => /pilz|fung|mush/i.test(x.id + x.kind)).length, rissStunden: W.riss.stunden, wuchsHier: r._wuchsAt(pm.x, pm.z), jahrH: s.seasonYearSeconds / (A.PEGEL_TAG_S / 24), aasGattungen: Object.entries(r._bestandDiet()).filter(([, d]) => d > A._verhaltenGesetz().temperament.gattung.pflanzDiet).map(([g]) => g) };
+                    };
+                    const TD = await seite(tod, { fuellT: 360, dx: 35, dz: -25 });
+                    let KD;
+                    try {
+                        KD = await seite(kadaver, { fresser: [1, 3], sekunden: 10, dx: 14, dz: 14 });
+                    } catch (e) {
+                        KD = { fehler: String((e && e.message) || e).slice(0, 200), rate: {} };
+                    }
+                    const HO = await seite(holz, { halb: 50 });
+                    const aus = {};
+                    const plus = TD.tode.map((d) => Math.round((d.nach - d.vor) * 1000) / 1000);
+                    const verh = KD.rate[1] > 0 ? Math.round((KD.rate[3] / KD.rate[1]) * 100) / 100 : null;
+                    aus[1] = { werte: Object.assign({ naehrMinPlus: plus.length >= 4 ? Math.min(...plus) : null }, verh !== null ? { fresserVerhaeltnis: verh } : {}), zeuge: { antworten: TD.tode.length + Object.keys(KD.rate).length, streuung: new Set(plus).size > 1 || (KD.rate[1] || 0) !== (KD.rate[3] || 0) ? 1 : 0, vor: KD.fleisch0 || 0, nach: KD.rest ? KD.rest[1] : KD.fleisch0 || 0, tode: TD.tode, kadaver: KD, tal: TD.tal } };
+                    const ohne = TD.tode.filter((d) => !(d.nach > d.vor)).map((d) => d.u);
+                    if (ohne.length) aus[1].taeter = "stamm/kreatur-leben.js _bestandStirbt — kein Nährstoff nach " + ohne.join(", ") + " (nur die Tat riss des Spielers düngt)";
+                    const tage = KD.nachklangS ? Math.round(((KD.nachklangS + (KD.sinkenS || 0)) / KD.tagS) * 1000) / 1000 : null;
+                    aus[2] = { werte: tage === null ? {} : { kadaverTage: tage, aasGilden: 1 }, zeuge: { antworten: 1, streuung: 0, aasGattungen: HO.aasGattungen }, auge: await M.auge("oeko-zerfall-s2", { ort: "wiese" }), nicht: "keine Verwesungsstufen und keine Gilde-Folge — der Kadaver trägt Fleisch und sinkt nach " + (tage === null ? "?" : tage) + " Spieltagen; Aasfresser nur die Säuger (" + HO.aasGattungen.join(", ") + ")" };
+                    const tot = Object.entries(HO.je).filter(([k]) => /^deadwood:/.test(k)).reduce((q, [, n]) => q + n, 0);
+                    const tp = HO.streuBereit && HO.baeume + tot > 0 ? Math.round((1000 * tot) / (HO.baeume + tot)) / 10 : null;
+                    aus[3] = { werte: tp === null ? {} : { totholzProzent: tp }, zeuge: { antworten: HO.streuBereit ? HO.baeume + tot : 0, streuung: tot > 0 ? 1 : 0, je: HO.je, baeume: HO.baeume, streuBereit: HO.streuBereit, streuWarteMs: HO.streuWarteMs }, auge: await M.auge("oeko-zerfall-s3", { ort: "wiese" }), nicht: "Totholz ohne Zeit — Stumpf und Totstamm der Nah-Streu ohne Zerfallsklasse, Moos und Ammenstamm; der Anteil zählt Stücke, keine Biomasse" };
+                    aus[4] = { werte: { pilzArten: HO.pilzArten }, zeuge: { antworten: Object.keys(HO.je).length, streuung: 0 }, nicht: "keine Pilze: die Nah-Streu trägt " + HO.pilzArten + " Pilz-Arten (vegetation-wiese.js:1249)" };
+                    const hw = Math.round(((HO.rissStunden / Math.max(0.1, HO.wuchsHier)) / 2 / HO.jahrH) * 1000) / 1000;
+                    aus[5] = { werte: { hwHierJahre: hw }, zeuge: { antworten: 1, streuung: 0 }, nicht: "keine Streu und kein Humus je Zelle — der Nährstoff eines Leichnams klingt mit der Narbe ab (Halbzeit hier " + hw + " Spieljahre, nach dem Wuchs des Orts, nie nach Klima-Zone)" };
+                    const b = TD.bilanz || { gabe: 0, nahme: 0 };
+                    const fb = Math.max(b.gabe, b.nahme) > 0 ? Math.round((1e4 * Math.abs(b.gabe - b.nahme)) / Math.max(b.gabe, b.nahme)) / 100 : null;
+                    aus[6] = { werte: fb === null ? {} : { fehlbetragProzent: fb }, zeuge: { antworten: 240, streuung: b.gabe + b.nahme > 0 ? 1 : 0, bilanz: b }, auge: await M.auge("oeko-zerfall-s6", { ort: "wiese" }), nicht: "keine geschlossene Stoffbilanz und kein Walfall — das Leben-Feld verblasst (LIFE_FIELD.decayPerSec), Gabe der Tode gegen Fraß ein Spieljahr: " + b.gabe + " gegen " + b.nahme };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [
+                            K.soll(ZE, 1, "Kadaver-Masse sinkt mit Fresser-Zahl", { key: "fresserVerhaeltnis", rel: ">", zahl: 1, refQuelle: "der Richter: Masse sinkt mit Fresser-Zahl — 3 Fresser schneller als 1 (Verhältnis > 1)" }),
+                            K.soll(ZE, 1, "Nährstoff steigt nach jedem Tod (Wolf, Alter, Spieler)", { key: "naehrMinPlus", rel: ">", zahl: 0, refQuelle: "der Richter: steigt nach jedem Tod — die kleinste Zunahme über Riss, Alter, Hunger und Spieler > 0" }),
+                        ],
+                        zeuge: zeugeWelt(5, true),
+                        taeter: "stamm/kreatur-leben.js _bestandStirbt (der Tod am Riss und am Alter gibt dem Boden keinen Nährstoff)",
+                        leser: "stamm/kreatur-leben.js:2433 _bestandStirbt — gibt dem Leben-Feld, nie dem Nährstoff der Zelle; stamm/kreatur-leben.js:919 _tatSchreiben — riss nur von Spieler-Hand",
+                        gruen: gut({ naehrMinPlus: 0.12, fresserVerhaeltnis: 2.8 }, 6),
+                        attrappen: [
+                            { name: "Verhältnis und Zunahme ohne Tod", roh: flach({ naehrMinPlus: 0.12, fresserVerhaeltnis: 2.8 }) },
+                            { name: "der Kadaver blieb unberührt (vor = nach)", roh: still({ naehrMinPlus: 0.12, fresserVerhaeltnis: 2.8 }, 6) },
+                        ],
+                    },
+                    2: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(ZE, 2, "Bildreihe 0/3/10/30 Tage", { key: "kadaverTage", rel: "≥", zahl: 30, einheit: "Tage" })],
+                        auge: { pose: "Ego vor 10 Kadavern jeder Größe (heute: die Wiese)", vorbild: "Bildreihe 0/3/10/30 Tage gegen eine forensische Referenz; Gilde-Folge gegen Kamerafallen-Studien (Prüfer-Satz R11)" },
+                        taeter: "stamm/kreatur-leben.js _tickLeichname (keine Verwesungsstufe)",
+                        nicht: "keine Verwesungsstufen, keine Gilde-Folge",
+                        leser: "stamm/kreatur-leben.js:3179 _tickLeichname — kennt Fleisch und Sinken, keine Verwesungsstufe; kein Vogel, kein Insekt am Aas",
+                        gruen: gut({ kadaverTage: 32, aasGilden: 4 }, 10),
+                        attrappen: [{ name: "30 Tage behauptet ohne Kadaver", roh: flach({ kadaverTage: 32, aasGilden: 4 }) }],
+                    },
+                    3: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(ZE, 3, "Totholz 10–30 % der Biomasse", { key: "totholzProzent", einheit: "%" })],
+                        auge: { pose: "Ego im Altwald am selben Stamm (heute: die Wiese)", vorbild: "Bildreihe 0/10/40 Spieljahre am selben Stamm (Prüfer-Satz R11)" },
+                        taeter: "foundry-core.js Totholz (zeitlose Gestalt)",
+                        nicht: "Totholz ohne Zeit",
+                        leser: "foundry-core.js:2045 __totholzSchnitt — Totholz als zeitlose Gestalt (Krone gebrochen, Reisig ab), keine Zerfallsklasse, die mit den Jahren fortschreitet",
+                        gruen: gut({ totholzProzent: 18 }, 120),
+                        attrappen: [{ name: "18 % aus der Forst-Inventur", roh: flach({ totholzProzent: 18 }) }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(ZE, 4, "Pilzdichte 3–10 Tage nach Regen ≥ 5× Trockenzeit", { key: "pilzVerhaeltnis" })],
+                        zeuge: zeugeWelt(10, true),
+                        taeter: "stamm/vegetation-wiese.js _nahStreuArten (keine Pilz-Art)",
+                        nicht: "keine Pilze",
+                        leser: "stamm/vegetation-wiese.js:1249 _nahStreuArten — trägt keinen Pilz; kein Fruchtkörper nach Regen × Temperatur",
+                        gruen: gut({ pilzVerhaeltnis: 6.5, pilzArten: 3 }, 40),
+                        attrappen: [{ name: "Pilzdichte aus der Literatur", roh: flach({ pilzVerhaeltnis: 6.5, pilzArten: 3 }) }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(ZE, 5, "Streu-Halbwertzeit Tropen < 1 Jahr", { key: "hwTropenJahre", einheit: "Jahre" }), K.soll(ZE, 5, "Boreal > 5 Jahre", { key: "hwBorealJahre", einheit: "Jahre" })],
+                        zeuge: zeugeWelt(2, true),
+                        taeter: "stamm/vegetation-wiese.js _naehrstoffAt (EIN Skalar ohne Streu und Klima-Zone)",
+                        nicht: "kein Boden-Profil je Zelle",
+                        leser: "stamm/vegetation-wiese.js:2097 _naehrstoffAt — ein Nährstoff aus den Taten, keine Streu, kein Humus, kein Tempo nach Klima",
+                        gruen: gut({ hwTropenJahre: 0.7, hwBorealJahre: 8, hwHierJahre: 2 }, 2),
+                        attrappen: [{ name: "Halbwertzeiten aus der Literatur", roh: flach({ hwTropenJahre: 0.7, hwBorealJahre: 8, hwHierJahre: 2 }) }],
+                    },
+                    6: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(ZE, 6, "Fehlbetrag ≤ 1 %", { key: "fehlbetragProzent", einheit: "%" })],
+                        auge: { pose: "Tiefsee am Walfall (heute: die Wiese)", vorbild: "Walfall-Gemeinschaft über 50 Spieljahre in der Bildreihe (Prüfer-Satz R11)" },
+                        taeter: "stamm/feld-leben.js _depositLife (das Leben-Feld verblasst, keine Bilanz)",
+                        nicht: "keine Stoffbilanz, kein Walfall",
+                        leser: "stamm/feld-leben.js:2047 _depositLife — schreibt Leben, das verblasst; kein Stoff wird gezählt, kein Meer-Kadaver",
+                        gruen: gut({ fehlbetragProzent: 0.6 }, 240),
+                        attrappen: [{ name: "Fehlbetrag behauptet", roh: flach({ fehlbetragProzent: 0.6 }) }],
+                    },
+                },
+            },
+            // ═══ DIE SUKZESSION: Brand, Rodung, Lava, Stadt, Front, viele Pfade — im Sandkasten der Taten ═══
+            [SU]: {
+                sek: 8,
+                mutiert: true,
+                pfad: PFAD_FELD,
+                ungefahren: "die Bildpaare (S2 Yellowstone, S5 Stadt) — swiftshader schießt nicht",
+                mess: async function (H, U, M) {
+                    const seite = (fn, a) => H.seite("return await (" + fn.toString() + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    // DIE FOLGE: an Orten im Ring der Ankunft je ein Brand, eine Fällung und ein Lavastrom (`_tatSchreiben` in einer Kopie
+                    // der Taten), je Spieljahr die Stufe (`_sukzession`), der Jungwuchs (`_baumAlter`), der Nährstoff und die Narbe —
+                    // die Uhr nur für die Lesung gesetzt; am Ende die Taten, der Index und die Uhr der Welt zurück
+                    const folge = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const wm = s.worldMeta;
+                        const pm = s.playerMesh.position;
+                        const cs = A.LIFE_FIELD.cell;
+                        const jahrH = s.seasonYearSeconds / (A.PEGEL_TAG_S / 24);
+                        const alt = { L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx, sz: s.spielZeit };
+                        const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                        const orte = [];
+                        try {
+                            for (const [m] of stubs) r[m] = () => {};
+                            wm.taten = Array.isArray(alt.L0) ? alt.L0.slice() : [];
+                            r._sukzessionNeu = [];
+                            const h0 = r._weltStunde();
+                            const bei = (j, f) => {
+                                s.spielZeit = alt.sz + j * s.seasonYearSeconds;
+                                try {
+                                    return f();
+                                } finally {
+                                    s.spielZeit = alt.sz;
+                                }
+                            };
+                            for (let i = 0; i < a.orte; i++) {
+                                const w = (i / a.orte) * Math.PI * 2;
+                                const d = a.abstand[i % a.abstand.length];
+                                const x = Math.floor((pm.x + Math.cos(w) * d) / cs) * cs + cs / 2;
+                                const z = Math.floor((pm.z + Math.sin(w) * d) / cs) * cs + cs / 2;
+                                const naehrVor = r._naehrstoffAt(x, z);
+                                const b = r._tatSchreiben("brand", x, z);
+                                const f = r._tatSchreiben("faellen", x + 3 * cs, z);
+                                const l = r._tatSchreiben("lava", x + 6 * cs, z);
+                                const I = r._tatIndex();
+                                const kurve = a.jahre.map((j) => {
+                                    const sb = r._sukzession(b, h0 + j * jahrH);
+                                    const sf = r._sukzession(f, h0 + j * jahrH);
+                                    return {
+                                        j,
+                                        asche: sb.asche,
+                                        busch: sb.busch,
+                                        wald: sb.wald,
+                                        stubben: sf.stubben,
+                                        naehr: Math.round(bei(j, () => r._naehrstoffAt(x, z)) * 1000) / 1000,
+                                        baum: bei(j, () => r._baumAlter(f.x, f.z)),
+                                        lavaNarbe: Math.round(bei(j, () => r._narbeAt(l.x, l.z)) * 1000) / 1000,
+                                    };
+                                });
+                                orte.push({ x: Math.round(x), z: Math.round(z), w: b.w, dauerBrandJ: Math.round((I.dauer.get(b) / jahrH) * 1000) / 1000, dauerFaellenJ: Math.round((I.dauer.get(f) / jahrH) * 1000) / 1000, naehrVor, kurve });
+                            }
+                        } finally {
+                            wm.taten = alt.L0;
+                            r._nachwuchsFaellig = alt.nf;
+                            r._sukzessionNeu = alt.sn;
+                            r._tatIdx = alt.idx;
+                            s.spielZeit = alt.sz;
+                            for (const [m, e, f] of stubs) {
+                                if (e) r[m] = f;
+                                else delete r[m];
+                            }
+                        }
+                        const N = A.TAT_NARBE;
+                        return { orte, klassen: Object.keys(N).filter((k) => N[k] && typeof N[k] === "object"), lavaTiefe: N.lava.tiefe, gebaeude: (s.architecture || []).length, wieder: wm.taten === alt.L0 };
+                    };
+                    const F = await seite(folge, { orte: 16, abstand: [40, 70, 100, 130], jahre: [0, 0.5, 1, 2, 3, 5, 10, 25, 100, 1000] });
+                    const O = F.orte;
+                    const at = (o, j) => o.kurve.find((k) => k.j === j);
+                    const aus = {};
+                    // S1: die Folge in ihrer Ordnung (Asche liegt → Gras kehrt → Busch → Wald) und die Asche düngt
+                    const ordnung = (o) => {
+                        const t = (f) => {
+                            const k = o.kurve.find(f);
+                            return k ? k.j : Infinity;
+                        };
+                        const tA = t((k) => k.asche < 1);
+                        const tG = t((k) => k.asche === 0);
+                        const tB = t((k) => k.busch >= 1);
+                        const tW = t((k) => k.wald >= 1);
+                        return (tA <= tG) + (tG <= tB) + (tB <= tW) + (tW < Infinity);
+                    };
+                    const uebergaenge = Math.min(...O.map(ordnung));
+                    const aschePlus = Math.round(Math.min(...O.map((o) => at(o, 0).naehr - o.naehrVor)) * 1000) / 1000;
+                    const ws = O.map((o) => o.w);
+                    const zg = { antworten: O.length, streuung: Math.round((Math.max(...ws) - Math.min(...ws)) * 1000) / 1000, vor: O[0].naehrVor, nach: at(O[0], 0).naehr, orte: O.map((o) => ({ w: o.w, brandJ: o.dauerBrandJ, faellenJ: o.dauerFaellenJ })) };
+                    aus[1] = { werte: { uebergaengeInFolge: uebergaenge, aschePlus }, zeuge: Object.assign({ kurve0: O[0].kurve }, zg) };
+                    const w25 = Math.round(Math.min(...O.map((o) => at(o, 25).wald)) * 1000) / 1000;
+                    aus[2] = { werte: { jahre: 25, waldNach1: at(O[0], 1).wald, waldNach5: at(O[0], 5).wald, waldNach25: w25 }, zeuge: zg, auge: await M.auge("oeko-sukzession-s2", { ort: "wiese" }), nicht: "1 km² Waldbrand mit Überlebenden-Inseln — die Folge lebt je 16-m-Zelle (" + F.klassen.join(", ") + "); der Wald steht nach " + Math.min(...O.map((o) => o.dauerBrandJ)) + "–" + Math.max(...O.map((o) => o.dauerBrandJ)) + " Spieljahren wieder" };
+                    const imBand = (o) => {
+                        const k = o.kurve.find((q) => q.wald >= 0.5);
+                        return k && k.j >= U[3].waldJahre[0] && k.j <= U[3].waldJahre[1];
+                    };
+                    const stoer = F.klassen.filter((k) => ["brand", "faellen"].includes(k)).length;
+                    aus[3] = { werte: { stoerungsArten: stoer, saaten: O.length, imBandProzent: Math.round((100 * O.filter(imBand).length) / O.length) }, zeuge: zg, nicht: "5 Störungsarten — das Gedächtnis der Taten trägt eine Folge nach Brand und Fällung (TAT_NARBE: " + F.klassen.join(", ") + "); Flut, Lawine und Verlassen fehlen" };
+                    const deck = (o, j) => Math.round((1 - at(o, j).lavaNarbe / F.lavaTiefe) * 1000) / 10;
+                    aus[4] = { werte: { deckung10Prozent: deck(O[0], 10), deckung100Prozent: deck(O[0], 100), deckung1000Prozent: deck(O[0], 1000) }, zeuge: Object.assign({}, zg, { vor: at(O[0], 0).lavaNarbe, nach: at(O[0], 1000).lavaNarbe }), nicht: "keine Primärsukzession: die Narbe der Lava liegt nach 1 000 Spieljahren bei " + at(O[0], 1000).lavaNarbe + " (TAT_NARBE.lava ohne Ende)" };
+                    aus[5] = { werte: { gebaeude: F.gebaeude, kronenAnstieg: 0 }, zeuge: { antworten: 1, streuung: 0 }, auge: await M.auge("oeko-sukzession-s5", { ort: "wiese" }), nicht: "keine verlassene Metropole — kein Verfall der Bauten, die Folge kennt nur Brand und Fällung (" + F.gebaeude + " Bauten im Verzeichnis)" };
+                    const tNah = at(O[0], 0) ? O[0].dauerBrandJ : null;
+                    aus[6] = { werte: { waldNahJahre: tNah, waldFernJahre: O[O.length - 1].dauerBrandJ }, zeuge: zg, nicht: "keine Wald-Front und keine Insel-Biogeographie — der Wald kehrt in jeder Narbe aus ihrer eigenen Dauer zurück, ohne Nachbarn (vegetation-wiese.js:2120)" };
+                    const sig = (o) => o.kurve.map((k) => k.asche + "/" + k.busch + "/" + k.wald).join(" ");
+                    let paare = 0;
+                    let versch = 0;
+                    for (let i = 0; i < O.length; i++)
+                        for (let j = i + 1; j < O.length; j++) {
+                            paare++;
+                            if (sig(O[i]) !== sig(O[j])) versch++;
+                        }
+                    aus[7] = { werte: { stoerungen: stoer, imBandProzent: Math.round((100 * O.filter(imBand).length) / O.length), paareVerschiedenProzent: Math.round((100 * versch) / Math.max(1, paare)) }, zeuge: zg, nicht: "4 Störungen auf jedem Planeten — " + stoer + " mit Folge; die Kurven sind EINE Rampe, gestreckt nach dem Wuchs des Orts" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [
+                            K.soll(SU, 1, "Halm-, Asche- und Sämling-Zahlen über die Zeit im Fenster", { key: "uebergaengeInFolge", rel: "≥", zahl: 4, refQuelle: "die Tiefe der Karte: Brand → Asche → Gras → Busch → Wald — 4 Übergänge in dieser Ordnung" }),
+                            K.soll(SU, 1, "Halm-, Asche- und Sämling-Zahlen über die Zeit im Fenster", { key: "aschePlus", rel: ">", zahl: 0, refQuelle: "die Tiefe der Karte: Asche düngt — der Nährstoff jedes Orts steigt mit dem Brand über seinen Grund (Zunahme > 0)" }),
+                        ],
+                        zeuge: zeugeWelt(8, true),
+                        taeter: "stamm/vegetation-wiese.js _sukzession · stamm/feld-leben.js _tatSchreiben",
+                        unklar: "der Richter nennt keine Zahl — gemessen wird die Ordnung der Folge und die Düngung der Asche; Vorschlag: Halme nach der Heilung ≥ 80 % des Vorbrands, Sämling ≥ 1",
+                        gruen: gut({ uebergaengeInFolge: 4, aschePlus: 0.4 }, 16),
+                        attrappen: [
+                            { name: "die Folge aus dem Kommentar", roh: flach({ uebergaengeInFolge: 4, aschePlus: 0.4 }) },
+                            { name: "der Brand schrieb nichts (vor = nach)", roh: still({ uebergaengeInFolge: 4, aschePlus: 0.4 }, 16) },
+                        ],
+                    },
+                    2: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(SU, 2, "Bildpaar nach 1/5/25 Spieljahren", { key: "jahre", rel: "≥", zahl: 25, einheit: "Spieljahre" })],
+                        auge: { pose: "Überflug über der Brandfläche (heute: Ego an der Wiese)", vorbild: "Yellowstone-1988-Fotoreihe nach 1/5/25 Jahren (Prüfer-Satz R11)" },
+                        taeter: "stamm/feld-brand.js _brandEntfachen (kein Flächenbrand mit Inseln in der Folge)",
+                        nicht: "kein 1-km²-Brand mit Überlebenden-Inseln",
+                        leser: "stamm/vegetation-wiese.js:2120 _sukzession — EINE Rampe je Zelle, kein Feuer-Regime je Biom, keine Überlebenden",
+                        gruen: gut({ jahre: 25, waldNach1: 0, waldNach5: 0.25, waldNach25: 0.75 }, 16),
+                        attrappen: [{ name: "Yellowstone-Reihe ohne Lauf", roh: flach({ jahre: 25, waldNach1: 0, waldNach5: 0.25, waldNach25: 0.75 }) }],
+                    },
+                    3: {
+                        u: { waldJahre: [10, 100] },
+                        soll: [
+                            K.soll(SU, 3, "5 Arten × 8 Saaten", { key: "stoerungsArten", rel: "≥", zahl: 5 }),
+                            K.soll(SU, 3, "5 Arten × 8 Saaten", { key: "saaten", rel: "≥", zahl: 8 }),
+                            K.soll(SU, 3, "Deckungs-Kurven im Band realer Chronosequenzen ≥ 80 %", { key: "imBandProzent", einheit: "%" }),
+                        ],
+                        zeuge: zeugeWelt(8, true),
+                        taeter: "stamm/feld-leben.js TAT_NARBE (Folge nur nach Brand und Fällung)",
+                        nicht: "nur 2 von 5 Störungsarten",
+                        leser: "stamm/feld-leben.js:3098 TAT_NARBE — kennt keine Flut, Lawine und kein Verlassen; stamm/vegetation-wiese.js:2120 _sukzession — hängt an keiner Samenbank",
+                        unklar: "„Band realer Chronosequenzen“ ohne Zahl — gesetzt Wald-Deckung ≥ 50 % nach 10–100 Jahren; Vorschlag: die Chronosequenzen als Tafel in die Karte",
+                        gruen: gut({ stoerungsArten: 5, saaten: 8, imBandProzent: 85 }, 40),
+                        attrappen: [{ name: "Kurven aus Chronosequenzen abgeschrieben", roh: flach({ stoerungsArten: 5, saaten: 8, imBandProzent: 85 }) }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(SU, 4, "im Band der Hawaii-Chronosequenz", { key: "deckung1000Prozent", rel: "≥", zahl: 50, refQuelle: "Hawaii-Chronosequenz (Vitousek 2004, Nutrient Cycling and Limitation: Hawai'i as a Model System): geschlossener Wald auf Lava nach ≤ 1 000 Jahren" })],
+                        zeuge: zeugeWelt(8, true),
+                        taeter: "stamm/feld-leben.js TAT_NARBE.lava (stunden ∞: die Lava bleibt Stein)",
+                        nicht: "keine Primärsukzession",
+                        leser: "stamm/feld-leben.js:3103 TAT_NARBE.lava — heilt nie; keine Flechte, kein Moos, kein Farn auf Fels",
+                        unklar: "das Band der Hawaii-Chronosequenz ohne Zahl — gesetzt Deckung ≥ 50 % nach 1 000 Jahren",
+                        gruen: gut({ deckung10Prozent: 5, deckung100Prozent: 40, deckung1000Prozent: 85 }, 16),
+                        attrappen: [{ name: "Hawaii-Zahlen ohne Lava", roh: flach({ deckung10Prozent: 5, deckung100Prozent: 40, deckung1000Prozent: 85 }) }],
+                    },
+                    5: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(SU, 5, "Kronendeckung steigt", { key: "kronenAnstieg", rel: ">", zahl: 0, refQuelle: "der Richter: Kronendeckung steigt über 0/30/100 Jahre (Zunahme > 0)" })],
+                        auge: { pose: "die Stadt im Bild (heute: Ego an der Wiese)", vorbild: "Bildpaar 0/30/100 Jahre gegen Fotoreihen verlassener Städte (Prüfer-Satz R11)" },
+                        taeter: "stamm/siedlung-*.js (kein Verfall der Bauten)",
+                        nicht: "keine verlassene Metropole",
+                        leser: "stamm/vegetation-wiese.js:2120 _sukzession — kennt keine Stadt; kein Leser lässt Dächer fallen oder Asphalt sprengen",
+                        gruen: gut({ gebaeude: 12000, kronenAnstieg: 0.4 }, 10),
+                        attrappen: [{ name: "Fotoreihe ohne Stadt", roh: flach({ gebaeude: 12000, kronenAnstieg: 0.4 }) }],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(SU, 6, "Wald-Front 100–1 000 m/Jahr", { key: "waldFrontMJahr", einheit: "m/Jahr" })],
+                        zeuge: zeugeWelt(8, true),
+                        taeter: "stamm/vegetation-wiese.js _sukzession (keine Ausbreitung von Nachbarn)",
+                        nicht: "keine Wald-Front, keine Insel",
+                        leser: "stamm/vegetation-wiese.js:2120 _sukzession — liest keine Nachbar-Zelle; kein Zuzug, kein Aussterben nach Größe und Abstand",
+                        gruen: gut({ waldFrontMJahr: 320 }, 16),
+                        attrappen: [{ name: "Pollen-Profil abgeschrieben", roh: flach({ waldFrontMJahr: 320 }) }],
+                    },
+                    7: {
+                        u: {},
+                        soll: [
+                            K.soll(SU, 7, "16 Saaten × 4 Störungen", { key: "stoerungen", rel: "≥", zahl: 4 }),
+                            K.soll(SU, 7, "≥ 90 % im Band realer Chronosequenzen", { key: "imBandProzent", einheit: "%" }),
+                            K.soll(SU, 7, "paarweise verschieden", { key: "paareVerschiedenProzent", rel: "≥", zahl: 100, refQuelle: "der Richter: paarweise verschieden — jedes Paar der Kurven (100 %)" }),
+                        ],
+                        zeuge: zeugeWelt(16, true),
+                        taeter: "stamm/vegetation-wiese.js _sukzession (EINE Rampe, nur gestreckt)",
+                        nicht: "4 Störungen auf jedem Planeten",
+                        leser: "stamm/feld-leben.js:3098 TAT_NARBE — Folge nur nach Brand und Fällung; kein Rückschlag, kein Pfad aus der Ausgangslage",
+                        gruen: gut({ stoerungen: 4, imBandProzent: 92, paareVerschiedenProzent: 100 }, 64),
+                        attrappen: [{ name: "verschiedene Kurven behauptet", roh: flach({ stoerungen: 4, imBandProzent: 92, paareVerschiedenProzent: 100 }) }],
+                    },
+                },
+            },
+            // ═══ DIE STOFFE: Nährstoff je Zelle, N und P, Kohlenstoff, CO₂-Säge, Regen aus Wald, Sauerstoff, Biosignatur ═══
+            [ST]: {
+                sek: 25,
+                mutiert: true,
+                pfad: PFAD_FELD.concat(PFAD_PLANET),
+                ungefahren: "die Bildpaare (S1 Acker, S2 Wiesen, S6 Bändereisen) — swiftshader schießt nicht",
+                mess: async function (H, U, M) {
+                    const seite = (fn, a) => H.seite("return await (" + fn.toString() + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    const ernte = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const wm = s.worldMeta;
+                        const pm = s.playerMesh.position;
+                        const cs = A.LIFE_FIELD.cell;
+                        const alt = { L0: wm.taten, nf: r._nachwuchsFaellig, sn: r._sukzessionNeu, idx: r._tatIdx };
+                        const stubs = ["_scheduleEditSave", "_nahStreuTat", "_weltRegt"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                        const orte = [];
+                        try {
+                            for (const [m] of stubs) r[m] = () => {};
+                            wm.taten = Array.isArray(alt.L0) ? alt.L0.slice() : [];
+                            r._sukzessionNeu = [];
+                            for (let i = 0; i < a.orte; i++) {
+                                const w = (i / a.orte) * Math.PI * 2;
+                                const x = Math.floor((pm.x + Math.cos(w) * a.abstand) / cs) * cs + cs / 2;
+                                const z = Math.floor((pm.z + Math.sin(w) * a.abstand) / cs) * cs + cs / 2;
+                                const vor = r._naehrstoffAt(x, z);
+                                const wv = r._wuchsAt(x, z);
+                                for (let k = 0; k < a.ernten; k++) r._tatSchreiben("ernten", x, z);
+                                orte.push({ vor, nach: r._naehrstoffAt(x, z), wv, wn: r._wuchsAt(x, z) });
+                            }
+                        } finally {
+                            wm.taten = alt.L0;
+                            r._nachwuchsFaellig = alt.nf;
+                            r._sukzessionNeu = alt.sn;
+                            r._tatIdx = alt.idx;
+                            for (const [m, e, f] of stubs) {
+                                if (e) r[m] = f;
+                                else delete r[m];
+                            }
+                        }
+                        return { orte, kanal: typeof r._naehrstoffAt(pm.x, pm.z), wieder: wm.taten === alt.L0 };
+                    };
+                    const faden = async (r, T, a) => {
+                        await r._fadenQuelle();
+                        const samen = r.state.worldMeta.seed;
+                        const frag = (o) => r._planetAuftrag(Object.assign({ type: "planet-ort", samen, laenge: 10, zeitMa: 0 }, o));
+                        const heute = await Promise.all(a.breiten.map((b) => frag({ breite: b })));
+                        // die Äonen und die fremden Samen kosten je einen Plan des Planeten (ein fremder Same ~13 s beim ersten Mal):
+                        // nacheinander, solange das Budget reicht — gezählt wird, was die Welt beantwortete
+                        const t0 = performance.now();
+                        const fehler = [];
+                        const versuch = async (o) => {
+                            try {
+                                return await frag(o);
+                            } catch (e) {
+                                fehler.push(String((e && e.message) || e).slice(0, 160));
+                                return null;
+                            }
+                        };
+                        const frueh = [];
+                        for (const t of a.zeiten) if (performance.now() - t0 < a.budgetMs) frueh.push(await versuch({ breite: 20, zeitMa: t }));
+                        const fremd = [];
+                        for (let i = 0; i < a.fremd && performance.now() - t0 < a.budgetMs; i++) fremd.push(await versuch({ samen: "oeko-fremd-" + (i + 1), breite: 20 }));
+                        frueh.splice(0, frueh.length, ...frueh.filter(Boolean));
+                        fremd.splice(0, fremd.length, ...fremd.filter(Boolean));
+                        const schl = new Set();
+                        const walk = (o, p) => {
+                            if (o && typeof o === "object") for (const k of Object.keys(o)) (schl.add(p + k), walk(o[k], p + k + "."));
+                        };
+                        heute.concat(frueh, fremd).forEach((x) => walk(x, ""));
+                        const gas = [...schl].filter((k) => /co2|kohlen|carbon|sauer|o2\b|oxy|methan|stick|nitro|phosph|atmo|gas|bio/i.test(k));
+                        return { gas, fehler, schluessel: schl.size, fremdN: fremd.length, fruehN: frueh.length, ms: Math.round(performance.now() - t0), hoehen: heute.concat(fremd).map((x) => x.hoeheM), regen: heute.map((x) => (x.delta && x.delta.wetter ? x.delta.wetter.regenQuote : null)), wald: heute.map((x) => (x.delta && x.delta.wuchs ? x.delta.wuchs.wald : null)), fruehLand: frueh.map((x) => x.land), n: heute.length + frueh.length + fremd.length };
+                    };
+                    const E = await seite(ernte, { orte: 8, abstand: 45, ernten: 15 });
+                    const P = await seite(faden, { breiten: [-60, -45, -20, 0, 20, 45, 60], zeiten: [-2500, -2000], fremd: 32, budgetMs: 14000 });
+                    const O = E.orte;
+                    const vor = Math.min(...O.map((o) => o.vor));
+                    const nach = Math.max(...O.map((o) => o.nach));
+                    const wMinus = Math.min(...O.map((o) => (o.wv - o.wn) / Math.max(1e-9, o.wv)));
+                    const aus = {};
+                    const ws = O.map((o) => o.wv);
+                    aus[1] = { werte: { naehrVor: Math.round(vor * 1000) / 1000, naehrNach: Math.round(nach * 1000) / 1000, wuchsMinus: Math.round(wMinus * 1e4) / 1e4 }, zeuge: { antworten: O.length, streuung: Math.round((Math.max(...ws) - Math.min(...ws)) * 1e4) / 1e4, vor: Math.round(vor * 1000) / 1000, nach: Math.round(nach * 1000) / 1000, orte: O }, auge: await M.auge("oeko-stoffe-s1", { ort: "wiese" }) };
+                    aus[2] = { werte: { naehrKanaele: E.kanal === "number" ? 1 : 0, jahre: 0 }, zeuge: { antworten: O.length, streuung: 0 }, auge: await M.auge("oeko-stoffe-s2", { ort: "wiese" }), nicht: "N und P getrennt — der Boden trägt EINEN Nährstoff (vegetation-wiese.js:2097), keine Leguminose, keine Erle bindet N" };
+                    const zg = { antworten: P.n, streuung: Math.round((Math.max(...P.hoehen) - Math.min(...P.hoehen)) * 10) / 10, gas: P.gas, schluessel: P.schluessel };
+                    aus[3] = { werte: { cKanaele: P.gas.length }, zeuge: zg, nicht: "kein Kohlenstoff: weder die Zelle noch der Planet-Faden trägt Biomasse oder Boden-C (" + P.schluessel + " Schlüssel der Antwort, davon Stoff: " + (P.gas.join(", ") || "keiner") + ")" };
+                    aus[4] = { werte: { gasKanaele: P.gas.length }, zeuge: zg, nicht: "keine CO₂-Säge: keine Atmosphäre aus Stoffen im Planet-Faden (" + P.gas.length + " Stoff-Schlüssel)" };
+                    aus[5] = { werte: { rodungEingang: 0 }, zeuge: Object.assign({ regen: P.regen, wald: P.wald }, zg), nicht: "keine Rodung im Planet-Faden: der Wald ist dort Ausgabe (delta.wuchs.wald), der Regen liest ihn nicht — kein Gegenlauf möglich" };
+                    aus[6] = { werte: { o2Kanaele: P.gas.length, saatenProzent: 0 }, zeuge: Object.assign({ frueh: P.fruehLand, fehler: P.fehler }, zg), auge: await M.auge("oeko-stoffe-s6", { ort: "wiese" }), nicht: "kein Sauerstoff über die Äonen — der Planet-Faden antwortet bei −2 500 und −2 000 Ma (" + P.fruehN + " Antworten) mit Land und Höhe, ohne Atmosphäre und ohne Bändereisen" };
+                    aus[7] = { werte: { saaten: P.fremdN, biosignaturen: P.gas.length }, zeuge: Object.assign({ ms: P.ms, fehler: P.fehler }, zg), nicht: "keine fremde Biochemie: " + P.fremdN + " fremde Samen (im Budget von 14 s, ein Plan je Same) antworten mit Gelände, keine Atmosphäre im Ungleichgewicht, keine Bilanz" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: { ernten: 15, auge: { ort: "wiese" } },
+                        soll: [
+                            K.soll(ST, 1, "Ernte 15× → Nährstoff 1 → 0,7", { key: "naehrVor", rel: "=", zahl: 1 }),
+                            K.soll(ST, 1, "Ernte 15× → Nährstoff 1 → 0,7", { key: "naehrNach", rel: "≤", zahl: 0.7 }),
+                            K.soll(ST, 1, "Wuchs sinkt sichtbar im Bildpaar", { key: "wuchsMinus", rel: ">", zahl: 0, refQuelle: "der Richter: Wuchs sinkt — die Abnahme des Wuchses nach 15 Ernten > 0" }),
+                        ],
+                        auge: { pose: "Ego am Acker der Wiese vor und nach 15 Ernten", vorbild: "Bildpaar gleicher Kamera: Wuchs sinkt sichtbar (Prüfer-Satz R11)" },
+                        taeter: "stamm/vegetation-wiese.js _naehrstoffAt · _wuchsAt",
+                        gruen: gut({ naehrVor: 1, naehrNach: 0.7, wuchsMinus: 0.05 }, 8),
+                        attrappen: [{ name: "0,7 aus dem Beleg ohne Ernte", roh: flach({ naehrVor: 1, naehrNach: 0.7, wuchsMinus: 0.05 }) }],
+                    },
+                    2: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(ST, 2, "nach 5 Spieljahren", { key: "jahre", rel: "≥", zahl: 5 }), K.soll(ST, 2, "Wuchs-Unterschied", { key: "wuchsUnterschied", rel: ">", zahl: 0, refQuelle: "der Richter: Wuchs-Unterschied Klee gegen ohne > 0" })],
+                        auge: { pose: "Ego zwischen zwei Wiesen (mit und ohne Klee)", vorbild: "Bildpaar nach 5 Spieljahren: Wuchs-Unterschied (Prüfer-Satz R11)" },
+                        taeter: "stamm/vegetation-wiese.js _naehrstoffAt (EIN Skalar, kein N und P)",
+                        nicht: "N und P nicht getrennt",
+                        leser: "stamm/vegetation-wiese.js:2097 _naehrstoffAt — ein Nährstoff; keine Bindung von N durch Leguminosen, kein P aus Gestein",
+                        gruen: gut({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }, 8),
+                        attrappen: [{ name: "Klee-Effekt behauptet", roh: flach({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }) }],
+                    },
+                    3: {
+                        u: {},
+                        soll: [
+                            K.soll(ST, 3, "Tropenwald ~200 t C", { key: "cTropenwald", einheit: "t C/ha" }),
+                            K.soll(ST, 3, "Steppe ~10 t", { key: "cSteppe", einheit: "t C/ha" }),
+                        ],
+                        zeuge: zeugeWelt(10, true),
+                        taeter: "stamm/vegetation-wiese.js _naehrstoffAt · planet-core.js planetOrt (kein Kohlenstoff)",
+                        nicht: "kein Kohlenstoff",
+                        leser: "planet-core.js:2290 planetOrt — trägt keinen Kohlenstoff; stamm/vegetation-wiese.js:2097 _naehrstoffAt — keine Biomasse je Zelle",
+                        unklar: "„~“ ohne Toleranz — die Station urteilt nach der Zahl des Worts (= 200 und = 10 t C/ha); Vorschlag: die Breite des Bands (z. B. ±25 %) in die Karte",
+                        gruen: gut({ cTropenwald: 200, cSteppe: 10 }, 12),
+                        attrappen: [{ name: "IPCC-Tafel abgeschrieben", roh: flach({ cTropenwald: 200, cSteppe: 10 }) }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(ST, 4, "Amplitude nördlich > südlich", { key: "ampNordMinusSued", rel: ">", zahl: 0, refQuelle: "die Mauna-Loa-Kurve: Amplitude nördlich − südlich > 0" })],
+                        zeuge: zeugeWelt(10, true),
+                        taeter: "planet-core.js planetOrt (keine Atmosphäre aus Stoffen)",
+                        nicht: "keine CO₂-Säge",
+                        leser: "planet-core.js:2290 planetOrt — kennt kein CO₂ und kein Laub-Jahr des Kontinents",
+                        gruen: gut({ ampNordMinusSued: 6 }, 12),
+                        attrappen: [{ name: "Mauna Loa abgeschrieben", roh: flach({ ampNordMinusSued: 6 }) }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(ST, 5, "Intervall ohne 0", { key: "kiOben", rel: "<", zahl: 0 })],
+                        zeuge: zeugeWelt(8, true),
+                        taeter: "planet-core.js planetOrt (der Regen liest den Wald nicht)",
+                        nicht: "keine Rodung, kein Wald-Regen",
+                        leser: "planet-core.js:2143 pflanzenDeckung — der Wuchs folgt dem Niederschlag (N / PET), der Niederschlag nie dem Wald",
+                        gruen: gut({ kiOben: -0.03 }, 8),
+                        attrappen: [{ name: "Intervall einer Studie", roh: flach({ kiOben: -0.03 }) }],
+                    },
+                    6: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(ST, 6, "in ≥ 70 % erdähnlicher Saaten", { key: "saatenProzent", einheit: "%" }), K.soll(ST, 6, "Sauerstoff-Sprung im Fenster 2,5–2,0 Mrd. Jahre", { key: "sprungGa", rel: "band", zahl: 2, bis: 2.5, einheit: "Ga" })],
+                        auge: { pose: "Gestein der Wiese (Aufschluss)", vorbild: "Bändereisen im Gestein sichtbar (Prüfer-Satz R11)" },
+                        taeter: "planet-core.js planetOrt (keine Atmosphäre über die Äonen)",
+                        nicht: "kein Sauerstoff-Sprung",
+                        leser: "planet-core.js:2290 planetOrt — liest die Zeit für das Gelände, keine Photosynthese, kein Eisen, kein Methan",
+                        gruen: gut({ saatenProzent: 75, sprungGa: 2.3 }, 32),
+                        attrappen: [{ name: "GOE aus dem Lehrbuch", roh: flach({ saatenProzent: 75, sprungGa: 2.3 }) }],
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(ST, 7, "32 fremde Saaten", { key: "saaten", rel: "≥", zahl: 32 }), K.soll(ST, 7, "Bilanzfehler ≤ 1 %", { key: "bilanzFehlerProzent", einheit: "%" })],
+                        zeuge: zeugeWelt(32, true),
+                        taeter: "planet-core.js planetOrt (keine Biochemie)",
+                        nicht: "keine fremde Biochemie",
+                        leser: "planet-core.js:2290 planetOrt — trägt keine Atmosphäre und keine Stoffbilanz je Samen",
+                        gruen: gut({ saaten: 32, bilanzFehlerProzent: 0.7, biosignaturen: 3 }, 32),
+                        attrappen: [{ name: "Biosignatur behauptet", roh: flach({ saaten: 32, bilanzFehlerProzent: 0.7, biosignaturen: 3 }) }],
+                    },
+                },
+            },
+            // ═══ DIE PARTNER: Bestäubung beidseits, Pilz-Partner, Seuche, Ko-Evolution, Riff, Mutualisten ═══
+            [PA]: {
+                sek: 8,
+                mutiert: true,
+                pfad: PFAD_TIER.concat(["stamm/vegetation-wiese.js", "stamm/bild-himmel.js"]),
+                ungefahren: "die Bildpaare (S2 Blüten, S6 Riff) — swiftshader schießt nicht",
+                mess: async function (H, U, M) {
+                    const seite = (fn, a) => H.seite("return await (" + fn.toString() + ")(r, T, " + JSON.stringify(a || {}) + ");");
+                    // DIE BLÜTEN IM GEGENLAUF: die Blumen der Nah-Streu im Hektar der Ankunft heute und ein Spieljahr später, einmal mit
+                    // dem Gesetz der Bestäuber und einmal ohne (ihr Besuch auf 0, keine Gäste) — die Uhr nur für die Lesung gesetzt;
+                    // dazu der Wuchs im Schatten der Kronen und die Fische
+                    const partner = async (r, T, a) => {
+                        const s = r.state;
+                        const A = r.constructor;
+                        const pm = s.playerMesh.position;
+                        const KA = A.NAH_STREU.kachel;
+                        // der Boden der Kacheln muss stehen, bevor gezählt wird (vegetation-wiese.js:1312) — gewartet VOR jedem Tausch
+                        let warte = 0;
+                        for (; warte < 100; warte++) {
+                            const ar = r._nahStreuArten();
+                            if (ar && [[0, 0], [-1, -1], [1, 1], [-1, 1], [1, -1]].every(([u, v]) => r._nahStreuKachel(Math.floor((pm.x + u * (a.halb - 4)) / KA), Math.floor((pm.z + v * (a.halb - 4)) / KA), ar))) break;
+                            await new Promise((f) => setTimeout(f, 50));
+                        }
+                        const arten = r._nahStreuArten();
+                        const blume = new Set(arten.map((x, i) => (x.kind === "flower" ? i : -1)).filter((i) => i >= 0));
+                        const zaehle = () => {
+                            let n = 0;
+                            let k = 0;
+                            for (let x = pm.x - a.halb; x < pm.x + a.halb; x += KA)
+                                for (let z = pm.z - a.halb; z < pm.z + a.halb; z += KA) {
+                                    const t = r._nahStreuKachel(Math.floor(x / KA), Math.floor(z / KA), arten);
+                                    if (!t) continue;
+                                    k++;
+                                    for (const it of t.items) if (blume.has(it.art)) n++;
+                                }
+                            return { n, k };
+                        };
+                        const altSz = s.spielZeit;
+                        const altBG = A._bestaeuberGesetz;
+                        const altL = r._bestaeuberListe;
+                        const aus = { streuBereit: warte < 100 ? 1 : 0, streuWarteMs: warte * 50 };
+                        try {
+                            aus.heute = zaehle();
+                            s.spielZeit = altSz + s.seasonYearSeconds;
+                            aus.folgeMit = zaehle();
+                            A._bestaeuberGesetz = () => Object.assign({}, altBG.call(A), { besuch: () => 0, aktiv: () => 0 });
+                            r._bestaeuberListe = [];
+                            aus.folgeOhne = zaehle();
+                        } finally {
+                            A._bestaeuberGesetz = altBG;
+                            r._bestaeuberListe = altL;
+                            s.spielZeit = altSz;
+                        }
+                        const schatten = [];
+                        for (let i = 0; i < a.punkte; i++) {
+                            const w = i * 2.399963;
+                            const d = 8 + (i % 20) * 7;
+                            const x = pm.x + Math.cos(w) * d;
+                            const z = pm.z + Math.sin(w) * d;
+                            const licht = r._bodenLichtFeld(x, z, x, z)(x, z);
+                            if (licht < a.schattenLicht) schatten.push({ licht: Math.round(licht * 1000) / 1000, wuchs: Math.round(r._wuchsAt(x, z) * 1e4) / 1e4 });
+                        }
+                        aus.schatten = schatten;
+                        const fk = r._fischKarte;
+                        aus.fische = fk ? { zellen: fk.zellen ? fk.zellen.size : 0, liste: (fk.liste || []).length } : null;
+                        const BG = A._bestaeuberGesetz();
+                        aus.bestaeuberLeib = Object.keys(BG.B.leib || {});
+                        aus.gattungen = Object.keys(A._lebensraumGesetz().L.gattung);
+                        aus.bestandSchluessel = Object.keys(A._bestandGesetz().B);
+                        aus.streuArten = arten.map((x) => x.id + ":" + x.kind);
+                        return aus;
+                    };
+                    const P = await seite(partner, { halb: 50, punkte: 200, schattenLicht: 0.35 });
+                    const aus = {};
+                    const minus = P.streuBereit && P.folgeMit.n > 0 ? Math.round((1000 * (P.folgeMit.n - P.folgeOhne.n)) / P.folgeMit.n) / 10 : null;
+                    aus[2] = { werte: minus === null ? {} : { blutenMinusProzent: minus, blueten: P.heute.n }, zeuge: { antworten: P.streuBereit ? P.heute.k : 0, streuung: P.heute.n > 0 ? 1 : 0, vor: P.folgeMit.n, nach: P.folgeOhne.n, streuBereit: P.streuBereit, streuWarteMs: P.streuWarteMs }, auge: await M.auge("oeko-partner-s2", { ort: "wiese" }) };
+                    if (minus === 0) aus[2].nicht = "Einbahn: ohne Bestäuber stehen im Folgejahr " + P.folgeOhne.n + " von " + P.folgeMit.n + " Blüten — die Nah-Streu (vegetation-wiese.js:1249) liest keinen Besuch";
+                    const wz = P.schatten.map((x) => x.wuchs);
+                    aus[3] = { werte: { wuchsMinusProzent: 0, wuchsSchatten: wz.length ? Math.round((1e4 * wz.reduce((q, x) => q + x, 0)) / wz.length) / 1e4 : -1 }, zeuge: { antworten: P.schatten.length, streuung: wz.length ? Math.max(...wz) - Math.min(...wz) : 0, vor: 1, nach: 1, schatten: P.schatten.slice(0, 12) }, nicht: "kein Pilz-Partner: der Wuchs im Schatten (" + P.schatten.length + " Punkte) liest Feuchte, Licht und Nährstoff, keinen Pilz — kein Gegenlauf zu kappen" };
+                    aus[4] = { werte: { erreger: P.bestandSchluessel.filter((k) => /seuch|erreger|krank|infekt|para/i.test(k)).length }, zeuge: { antworten: P.gattungen.length, streuung: 0 }, nicht: "kein Erreger: das Bestand-Gesetz trägt " + P.bestandSchluessel.join(", ") + " — keine Ansteckung über einer Dichte" };
+                    aus[5] = { werte: { merkmaleRuessel: P.bestaeuberLeib.filter((k) => /ruessel|zunge|rohr/i.test(k)).length }, zeuge: { antworten: P.bestaeuberLeib.length, streuung: 0, leib: P.bestaeuberLeib }, nicht: "keine Ko-Evolution: der Bestäuber trägt " + P.bestaeuberLeib.join(", ") + ", keine Rüssellänge; die Blüte keine Kronröhre" };
+                    aus[6] = { werte: { fischArten: P.fische ? 1 : 0 }, zeuge: { antworten: P.fische ? P.fische.zellen : 0, streuung: 0, fische: P.fische }, auge: await M.auge("oeko-partner-s6", { ort: "wiese" }), nicht: "kein Riff, keine Flechte als Lebensraum — das Fisch-Gesetz kennt EINE Gestalt ohne Wärme-Kipp-Punkt" };
+                    const nArten = P.gattungen.length + P.streuArten.length + 2;
+                    aus[7] = { werte: { mutualistProzent: 0, arten: nArten }, zeuge: { antworten: nArten, streuung: 1, vor: P.folgeMit.n, nach: P.folgeOhne.n }, nicht: "10⁶+ Arten mit Partnern — " + nArten + " Arten in der Welt, keine mit einem Mutualisten (die Blüte merkt den Besuch nicht)" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    2: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(PA, 2, "Blüten-Dichte im Folgejahr −≥ 30 %", { key: "blutenMinusProzent", einheit: "%" })],
+                        auge: { pose: "Ego an der Mess-Wiese, dieselbe Kamera im Folgejahr mit und ohne Bestäuber", vorbild: "Bildpaar: Blüten-Dichte im Folgejahr −≥ 30 % ohne Bestäuber (Prüfer-Satz R11)" },
+                        taeter: "stamm/vegetation-wiese.js _nahStreuKachel (die Blüte liest keinen Besuch)",
+                        leser: "stamm/kreatur-fauna.js:656 _bestaeuberBlueten — liest die Blüten, nie umgekehrt; kein Samenansatz aus dem Besuch",
+                        gruen: gut({ blutenMinusProzent: 41, blueten: 180 }, 600),
+                        attrappen: [{ name: "−41 % aus einer Studie", roh: flach({ blutenMinusProzent: 41, blueten: 180 }) }],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(PA, 3, "Sämlinge im Schatten −≥ 30 % Wuchs", { key: "wuchsMinusProzent", einheit: "%" })],
+                        zeuge: zeugeWelt(5, true),
+                        taeter: "stamm/vegetation-wiese.js _wuchsAt (kein Pilz-Partner)",
+                        nicht: "kein Pilz-Partner",
+                        leser: "stamm/vegetation-wiese.js:2078 _wuchsAt — liest Feuchte × Licht × Nährstoff, kein Netz der Pilze",
+                        gruen: gut({ wuchsMinusProzent: 38, wuchsSchatten: 0.21 }, 20),
+                        attrappen: [
+                            { name: "−38 % behauptet ohne Gegenlauf", roh: flach({ wuchsMinusProzent: 38, wuchsSchatten: 0.21 }) },
+                            { name: "Gegenlauf ohne Wirkung (vor = nach)", roh: still({ wuchsMinusProzent: 38, wuchsSchatten: 0.21 }, 20) },
+                        ],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(PA, 4, "8 Saaten beidseits der Schwelle", { key: "saaten", rel: "≥", zahl: 8 }), K.soll(PA, 4, "Ausbruchskurve mit R₀ im Band", { key: "r0", rel: "band", zahl: 1, bis: 20, refQuelle: "Anderson & May 1991 (Infectious Diseases of Humans): R₀ realer Erreger ≈ 1–20" })],
+                        zeuge: zeugeWelt(8, true),
+                        taeter: "tetrapoda-core.js BESTAND_GESETZ (kein Erreger)",
+                        nicht: "kein Erreger",
+                        leser: "tetrapoda-core.js:2197 BESTAND_GESETZ — trägt Geburt, Tod, Fraß und Riss, keine Ansteckung",
+                        unklar: "„R₀ im Band“ ohne Zahl — gesetzt 1–20 (Anderson & May 1991)",
+                        gruen: gut({ saaten: 8, r0: 2.4 }, 16),
+                        attrappen: [{ name: "R₀ aus der Literatur", roh: flach({ saaten: 8, r0: 2.4 }) }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(PA, 5, "Rüssellänge ↔ Kronröhre r ≥ 0,7", { key: "rRuessel" }), K.soll(PA, 5, "Laufgeschwindigkeit beider steigt korreliert", { key: "rLauf", rel: ">", zahl: 0, refQuelle: "der Richter: Laufgeschwindigkeit beider steigt korreliert (r > 0)" })],
+                        zeuge: zeugeWelt(10, true),
+                        taeter: "tetrapoda-core.js BESTAEUBER_GESETZ (keine Rüssellänge)",
+                        nicht: "keine Ko-Evolution",
+                        leser: "tetrapoda-core.js:2908 BESTAEUBER_GESETZ — der Leib trägt Größe und Farbe; keine Kronröhre der Blüte, kein Wettrüsten der Läufer",
+                        gruen: gut({ rRuessel: 0.78, rLauf: 0.5 }, 30),
+                        attrappen: [{ name: "r = 0,78 aus der Literatur", roh: flach({ rRuessel: 0.78, rLauf: 0.5 }) }],
+                    },
+                    6: {
+                        u: { auge: { ort: "wiese" } },
+                        soll: [K.soll(PA, 6, "Fischarten −≥ 50 %", { key: "fischMinusProzent", einheit: "%" })],
+                        auge: { pose: "das Riff im Bild (heute: Ego an der Wiese)", vorbild: "Bildpaar im Wärme-Gegenlauf: Korallenfarbe kippt (Prüfer-Satz R11)" },
+                        taeter: "tetrapoda-core.js FISCH_GESETZ (kein Riff, keine Wärme)",
+                        nicht: "kein Riff",
+                        leser: "tetrapoda-core.js:2818 FISCH_GESETZ — eine Gestalt ohne Art und ohne Wärme; keine Koralle",
+                        gruen: gut({ fischMinusProzent: 55, fischArten: 40 }, 40),
+                        attrappen: [{ name: "Riff-Studie abgeschrieben", roh: flach({ fischMinusProzent: 55, fischArten: 40 }) }],
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(PA, 7, "≥ 50 % der Arten mit ≥ 1 Mutualist", { key: "mutualistProzent", einheit: "%" })],
+                        zeuge: zeugeWelt(64, true),
+                        taeter: "stamm/kreatur-fauna.js _bestaeuberTakt (Einbahn: kein Mutualismus)",
+                        nicht: "10⁶+ Arten mit Partnern",
+                        leser: "stamm/kreatur-fauna.js:613 _bestaeuberTakt — der Besuch der Bestäuber wirkt auf keine Blüte; kein Ko-Aussterben ohne Partner",
+                        gruen: gut({ mutualistProzent: 62, arten: 120 }, 64),
+                        attrappen: [{ name: "Mutualisten aus der Literatur", roh: flach({ mutualistProzent: 62, arten: 120 }) }],
+                    },
+                },
+            },
+        },
+    };
+})());
+
 // ── DIE PERSPEKTIVE leben.evolution (9 Leitern, 59 Sprossen; belegt: keine): Arten, Erbe, Muster, Zeitreise, Baupläne, fremde Physik,
 // Zivilisation, Mikroben, Fossilien ─────────────────────────────────────────────────────────────────────────────────────────────────
 // Die Leser des Spiels: der BESTAND je Region (stamm/kreatur-leben.js `_bestandRegion` — das Verzeichnis der Tiere mit Gattung, Größe
