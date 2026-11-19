@@ -68,16 +68,18 @@ console.log("\n✅ GRÜN — die Pipeline-Verfassung steht: kein Schnitt kehrt z
 // TEIL 2 — DIE EIN-SCHREIBER-WAND (Wort des Schöpfers 19.11.: „wir werden exponentiell schneller, wenn wir dinge im
 // untersten kern perfektionieren, in synergie“). Jeder rote Bruch des 19.11. war ein Zwilling einer GRUNDGRÖSSE (die
 // Belichtung von außen gesetzt, tagNull an sieben Geburtsorten, ein eigener Licht-Pfad, die Rad-Haftung aus der
-// Bodenfarbe). Das Register spec/stamm/grundgroessen.json nennt je Größe den EINEN Schreiber, die Muster, an denen ein
-// Schreiber erkannt wird (`muster`: wer die Größe selbst ERZEUGT — ein Feld-Schreiber, ein eigener Generator, ein
-// Literal), und die Schuld von heute beim Namen (`zwillinge`: Datei → Anker, `×n` = n Treffer). Der Korpus: der Stamm,
+// Bodenfarbe). Das Register spec/stamm/grundgroessen.json nennt je Größe den EINEN Schreiber (`schreiber`, seine Anker
+// je Datei in `kanon`) und die Muster, an denen ein Schreiber erkannt wird (`muster`: wer die Größe selbst ERZEUGT — ein
+// Feld-Schreiber, ein eigener Generator, ein Literal); die Schuld von heute steht beim Namen in der Ratsche
+// spec/profiband/ratsche-grundgroessen.json (`zwillinge`: Größe → Datei → Anker, `×n` = n Treffer; das Werkzeug
+// schreibt sie, sie sinkt nur — eine Ratsche wie ratsche-quelltext.json). Der Korpus: der Stamm,
 // die Kerne (cores.manifest.json), worlds/ (ohne die Vendor-Kopien in lib/, die Seiten mit ihrem Inline-Skript), die
 // Wurzel-JS — und scripts/ für den BEOBACHTER: eine Probe, die eine Grundgröße von außen setzt (Muster mit
 // `beobachter`), misst nicht die Welt. Kommentare fallen über den EINEN Stripper, Literale bleiben (der Seiten-Code
 // einer Probe steht im Literal). Das Urteil:
 //   TÄTER               ein Treffer ohne Anker in `kanon` oder `zwillinge` (oder über der Zahl seines Ankers) — Datei:Zeile,
 //                       Größe, „lies stattdessen <Kanon>“.
-//   REGISTER-ZEILE …    ein Anker, den der Code nicht mehr (so oft) trägt: das Register ist keine Erlaubnis-Liste, es
+//   REGISTER-ZEILE …    ein Anker, den der Code nicht mehr (so oft) trägt: die Ratsche ist keine Erlaubnis-Liste, sie
 //                       schrumpft nur — `--schrumpfen` streicht die Zeile, im selben Commit wie der Schnitt.
 //   KANON-ANKER TOT     der Schreiber zog um, das Register folgt.
 // Die Tafel je Größe (Z = Dateien mit Zwilling, L = Dateien, die den Kanon lesen, Z × L) ist der Zähler der Wellen.
@@ -85,10 +87,10 @@ console.log("\n✅ GRÜN — die Pipeline-Verfassung steht: kein Schnitt kehrt z
 // registrierten Zwilling verschwinden und liest die `frei`-Zeilen (Messung, Geburt einer Kennung: die Wand schweigt).
 //   node scripts/diag-pipeline-constitution.cjs [--roh | --schrumpfen]
 //   --roh         die Täter am Bestand OHNE das Register der Zwillinge (die Zahl vor der Registrierung), Exit 0
-//   --schrumpfen  streicht tote Anker und senkt Zahlen im Register (nie hinauf, nie neu)
+//   --schrumpfen  streicht tote Anker und senkt Zahlen in der Ratsche (nie hinauf, nie neu)
 // ============================================================================
 const stammLib = require("./lib/stamm.cjs");
-const REGISTER = "spec/stamm/grundgroessen.json";
+const [REGISTER, RATSCHE] = ["spec/stamm/grundgroessen.json", "spec/profiband/ratsche-grundgroessen.json"];
 const lies = (f) => fs.readFileSync(path.join(ROOT, f), "utf8");
 const baum = (d, aus = []) => {
     for (const e of fs.readdirSync(path.join(ROOT, d), { withFileTypes: true })) {
@@ -233,11 +235,12 @@ const registerText = (reg) =>
     ) + "\n";
 
 {
-    const reg = JSON.parse(lies(REGISTER));
+    const ratsche = JSON.parse(lies(RATSCHE));
+    const reg = mitZwillingen(JSON.parse(lies(REGISTER)), (g) => ratsche.zwillinge[g] || {}, true);
     const mutanten = selbsttest(reg);
     const [roh, t0, dateien] = [process.argv.includes("--roh"), Date.now(), korpus()];
     const { rot: taeter, stand, ist } = urteil(roh ? mitZwillingen(reg, () => ({}), true) : reg, dateien, lies, true);
-    console.log(`\n=== TEIL 2 — DIE EIN-SCHREIBER-WAND (${REGISTER}; Selbsttest: ${mutanten} Mutanten feuern beim Namen) ===`);
+    console.log(`\n=== TEIL 2 — DIE EIN-SCHREIBER-WAND (${REGISTER} + ${RATSCHE}; Selbsttest: ${mutanten} Mutanten feuern beim Namen) ===`);
     if (process.argv.includes("--schrumpfen")) {
         let fiel = 0;
         for (const [g, G] of Object.entries(reg.groessen))
@@ -250,8 +253,8 @@ const registerText = (reg) =>
                 if (neu.length) G.zwillinge[f] = neu;
                 else delete G.zwillinge[f];
             }
-        fs.writeFileSync(path.join(ROOT, REGISTER), registerText(reg));
-        console.log(`  --schrumpfen: ${fiel} Zwillings-Stellen aus dem Register gestrichen (${REGISTER} geschrieben, fahre die Wand neu)`);
+        fs.writeFileSync(path.join(ROOT, RATSCHE), registerText(ratsche));
+        console.log(`  --schrumpfen: ${fiel} Zwillings-Stellen aus der Ratsche gestrichen (${RATSCHE} geschrieben, fahre die Wand neu)`);
         process.exit(0);
     }
     if (roh) {
