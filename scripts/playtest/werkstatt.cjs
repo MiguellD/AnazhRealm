@@ -2228,6 +2228,7 @@ async function checkBandWCIchWahrheit({ page, check }) {
 // (kalte Auswahl → pending, leere Bühne, „Studio-Asset lädt…").
 async function checkBandRezeptKatalog({ page, check }) {
     // die porta-PARAMS-Länge als unabhängige Node-Referenz (derselbe Lade-Pfad wie im Worker, nur ohne Browser)
+    require(path.join(SKRIPTE, "..", "samen-core.js")); // der Samen-Baum vor jedem Kern (Welle SAMEN)
     require(path.join(SKRIPTE, "..", "porta-core.js"));
     const pp =
         globalThis.__portaCore && globalThis.__portaCore.PARAMS_BY_KIND && globalThis.__portaCore.PARAMS_BY_KIND.gate;

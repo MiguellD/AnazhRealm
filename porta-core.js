@@ -208,8 +208,13 @@
     function lerp(a,b,t){return a+(b-a)*t;}
     // prettier-ignore
     function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
-    // prettier-ignore
-    function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+    // DER STROM (Welle SAMEN): mulberry32 lebt EINMAL — im Samen-Kern (samen-core.js `__samenCore`), gelesen je Ruf am globalen
+    // Namen (die Lese-Spur der Platte sieht ihn); der Name bleibt (`__portaCore.mulberry32`, die Membran-Linse zieht aus ihm).
+    function mulberry32(a) {
+        var S = root.__samenCore;
+        if (!S) throw new Error("porta-core: der Samen-Kern fehlt (samen-core.js lädt vor jedem Kern)");
+        return S.mulberry32(a);
+    }
 
     // ═══ die Lehre: Bogen-Profil + Stich→Schub→Dicke (byte-treu, Z.27–43) ═══
     // prettier-ignore

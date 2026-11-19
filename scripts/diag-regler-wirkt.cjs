@@ -295,12 +295,7 @@ function leserMessen(page, opts) {
             const ws = r._ensureWorkshopState();
             const KP = AnazhRealm.KIND_POLICY;
             const vc = AnazhRealm._fahrSchrittGesetz().vc;
-            const strom = (s) => () => {
-                s = (s + 0x6d2b79f5) >>> 0;
-                let t = Math.imul(s ^ (s >>> 15), s | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
+            const strom = (s) => __samenCore.mulberry32(s); // der EINE Generator der Welt (Welle SAMEN)
             const TRIG = [Math.cos, Math.sin].map((fn) => Float64Array.from({ length: 65536 }, (_, k) => fn((2 * Math.PI * (2 + 8 * (k >> 10)) * (k & 1023)) / 1024)));
             const tor = (p, ov) => r._membranMaterialFor(r._torGesetzFor({ type: KP.gate.prefix + p, studioOv: ov }), 0, 0).mat.userData.tor;
             // was der Graph liest: Pfad.Komponente je Referenz auf `material.userData.tor.*`

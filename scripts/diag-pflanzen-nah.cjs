@@ -58,6 +58,7 @@
 "use strict";
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
 const { hauptLauf, wandEnde, stammLib, ROOT } = require("./lib/welt-boot.cjs");
+require("../samen-core.js"); // der Samen-Baum vor jedem Kern (Welle SAMEN)
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
 // die Oktave der Blatt-Farbe, wie die Welt sie trägt (die Klasse geladen, nie ihr Text; D3c)

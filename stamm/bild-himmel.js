@@ -325,14 +325,8 @@ class AnazhRealm_bild_himmel {
         for (let i = 0; i < seedStr.length; i++) {
             seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
         }
-        const rng = () => {
-            // Mulberry32 — deterministisch, schnell, gute Verteilung
-            seedNum = (seedNum + 0x6d2b79f5) >>> 0;
-            let t = seedNum;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        // der EINE Generator (Welle SAMEN: samen-core `mulberry32`) aus der ×31-Saat des Welt-Samens
+        const rng = globalThis.__samenCore.mulberry32(seedNum);
         const positions = new Float32Array(STAR_COUNT * 3);
         const colors = new Float32Array(STAR_COUNT * 3);
         const mags = new Float32Array(STAR_COUNT);

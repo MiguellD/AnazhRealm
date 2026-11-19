@@ -832,7 +832,10 @@ const FORBIDDEN = [
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
 // baum_mammut — nie mehr die Buche (die Buche ist eine eigene Studio-Art).
 function checkAliasArten(core) {
-    if (!core) require("../phyto-core.js");
+    if (!core) {
+        require("../samen-core.js"); // der Samen-Baum vor jedem Kern (Welle SAMEN)
+        require("../phyto-core.js");
+    }
     const pc = core || globalThis.__phytoCore;
     if (!pc || typeof pc.forestLabToHost !== "function") return ["phyto-core forestLabToHost fehlt"];
     const e = [];
@@ -1137,7 +1140,33 @@ const ZWILLINGE = [
         verboten: STAMM,
         fiel: "eine Sicht kopiert, sie erbt nie",
     },
+    // WELLE SAMEN — DER EINE GENERATOR als MUSTER (Lehre 7): die zweite Mischung von mulberry32 (`imul(t ^ (t >>> 7), …)`, in jeder
+    // Schreibweise) lebt EINMAL — im Samen-Kern (`einmal`: der erste Fund im Gesetzbuch ist das Gesetz). Bis zur Welle stand der
+    // Leib fünfzehnmal (foundry · phyto ×3 · porta · klang · fachwerk · schmiede · Himmel · Lofi · Busch · Wiese ×2 · Hülle ·
+    // Klang-Labor) und in einer Linse — bit-gleich, aber jede Kopie ein Ort, an dem der Strom auseinanderlaufen konnte.
+    {
+        muster: /Math\.imul\(\s*(\w+)\s*\^\s*\(?\s*\1\s*>>>\s*7\b/,
+        gesetzbuch: "samen-core.js",
+        einmal: true,
+        verboten: samenLeser(),
+        fiel: "Welle SAMEN — jede Kopie ruft den EINEN Generator (samen-core `mulberry32` · `mulberrySchritt` · `salzStrom`)",
+    },
 ];
+
+// Die Leser des Samen-Baums (Welle SAMEN): jede Wurzel-Datei samt dem Gesetzbuch (`einmal`), jedes Skript, jede Linse, jedes
+// Band und jede Labor-Shell unter worlds/ (ohne ihre Bibliotheken `lib/`).
+function samenLeser() {
+    const root = path.join(__dirname, "..");
+    const shells = fs.readdirSync(path.join(root, "worlds")).flatMap((w) =>
+        fs.statSync(path.join(root, "worlds", w)).isDirectory()
+            ? fs
+                  .readdirSync(path.join(root, "worlds", w))
+                  .filter((f) => /\.(?:c|m)?js$/.test(f))
+                  .map((f) => `worlds/${w}/${f}`)
+            : []
+    );
+    return [...new Set(gelaendeLeser().concat(["gelaende-core.js"], shells, baender()))];
+}
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
 // Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie) und das Gelände-Studio
@@ -3897,7 +3926,15 @@ function main() {
             feuert("scripts/playtest/netz.cjs", "if (!r) return;", "Wächter") &&
             feuert(STAMM[0], LAMBERT_ZEILE, "weltLicht") &&
             feuert(STAMM[0], "Object.create(ro);", "erbt nie") &&
-            still(STAMM[0], LAMBERT_ZEILE);
+            still(STAMM[0], LAMBERT_ZEILE) &&
+            // Welle SAMEN: der Leib des Generators in jeder Schreibweise — im Stamm, in einer Labor-Shell, minifiziert in einem
+            // Kern, in einer Linse und zum zweiten Mal im Samen-Kern selbst; der Kommentar bleibt still
+            feuert(STAMM[0], "t ^= t + Math.imul(t ^ (t >>> 7), t | 61);", "EINEN Generator") &&
+            feuert("worlds/huelle/huelle.js", "t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;", "EINEN Generator") &&
+            feuert("porta-core.js", "var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;", "EINEN Generator") &&
+            feuert("scripts/diag-regler-wirkt.cjs", "t ^= t + Math.imul(t ^ (t >>> 7), t | 61);", "EINEN Generator") &&
+            feuert("samen-core.js", "t = Math.imul(t ^ (t >>> 7), 61 | t); ".repeat(2), "neben 2 .*EINEN Generator") &&
+            still(STAMM[0], "t ^= t + Math.imul(t ^ (t >>> 7), t | 61);");
         console.log(
             zwillingFeuert
                 ? "✅ SELBST-TEST: die Zwillings-Wand feuert — jeder Abdruck mit Zeile, der Kommentar nicht"

@@ -69,6 +69,15 @@
     var VERSION = "1.0.0";
     var STUDIO_VERTRAG = 1; // G4.3 — EINE Versions-Semantik (v1.1 ist Adressierungs-Norm, kein Block-Bruch)
 
+    // DER SAMEN-KERN beim Namen (Welle SAMEN): jeder mulberry32-Strom dieses Kerns (die Ausstattung `ausZufall`, der Würfel
+    // je Los `dorfLayout`) zieht aus dem EINEN Generator (samen-core.js `__samenCore`), gelesen je Ruf am globalen Namen — die
+    // Lese-Spur der Platte (`_foundrySchale`) sieht ihn. Fehlt er, bricht der Ruf beim Namen.
+    function samenKern() {
+        var S = root.__samenCore;
+        if (!S) throw new Error("fachwerk-core: der Samen-Kern fehlt (samen-core.js lädt vor jedem Kern)");
+        return S;
+    }
+
     // ── B2-Daten: die Stufen-Wahrheit der Domäne (kindStages-Vertrag, Herleitung im Kopf) ──
     // ── B2c-Daten (W8, rein additiv): DAS BUDGET je Stufe — was eine gelieferte Haus-Stufe kosten darf
     //    (docs/studio-vertrag.md B2c). tris = die gebaute Hülle über alle 32 Stile × 16 Gestalten (gate:asset-
@@ -6724,18 +6733,11 @@
         return P;
     }
 
-    // Ein Zufalls-Strom je (Same, Teilsystem) — mulberry32, nur Ganzzahl-Arithmetik (plattformgleich). Eigene Ströme
-    // je Teilsystem halten die Gestalt über die Stufen deckungsgleich (L1 zieht dieselben Zahlen, baut nur gröber).
+    // Ein Zufalls-Strom je (Same, Teilsystem) — nur Ganzzahl-Arithmetik (plattformgleich). Eigene Ströme je Teilsystem
+    // halten die Gestalt über die Stufen deckungsgleich (L1 zieht dieselben Zahlen, baut nur gröber). Vor-Mischung und
+    // Generator leben EINMAL (Welle SAMEN): samen-core `salzStrom`, gelesen je Ruf am globalen Namen (`samenKern`).
     function ausZufall(seed, salz) {
-        var h = (Math.imul((seed >>> 0) ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(salz | 0, 0xc2b2ae35)) >>> 0;
-        h = (h ^ (h >>> 16)) >>> 0 || 0x6d2b79f5;
-        return function () {
-            h = (h + 0x6d2b79f5) >>> 0;
-            var t = h;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        return samenKern().salzStrom(seed, salz);
     }
 
     function ausGeo(pos, nrm, idx) {

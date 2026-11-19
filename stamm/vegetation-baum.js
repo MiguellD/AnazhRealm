@@ -1319,16 +1319,13 @@ class AnazhRealm_vegetation_baum {
             const g1x = Math.ceil((ox + span) / bushStep) - 1;
             const g0z = Math.ceil(oz / bushStep);
             const g1z = Math.ceil((oz + span) / bushStep) - 1;
+            // der EINE Generator (Welle SAMEN: samen-core `mulberrySchritt`) auf dem Zustand des Raster-Punkts — der Same des
+            // Strauchs liest ihn nach dem dritten Wurf (`seed` unten)
+            const SK = globalThis.__samenCore;
             for (let bgz = g0z; bgz <= g1z; bgz++) {
                 for (let bgx = g0x; bgx <= g1x; bgx++) {
-                    let hs = ((bgx * 73856093) ^ (bgz * 19349663) ^ seedInt ^ 0x5bd1e995) >>> 0 || 1;
-                    const hrnd = () => {
-                        hs = (hs + 0x6d2b79f5) >>> 0;
-                        let t = hs;
-                        t = Math.imul(t ^ (t >>> 15), t | 1);
-                        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-                    };
+                    const zu = { hs: ((bgx * 73856093) ^ (bgz * 19349663) ^ seedInt ^ 0x5bd1e995) >>> 0 || 1 };
+                    const hrnd = () => SK.mulberrySchritt(zu, "hs");
                     const bxp = bgx * bushStep + (hrnd() - 0.5) * 4.0; // Studio-Jitter ±2 m
                     const bzp = bgz * bushStep + (hrnd() - 0.5) * 4.0;
                     if (bxp < ox || bxp >= ox + span || bzp < oz || bzp >= oz + span) continue;
@@ -1375,7 +1372,7 @@ class AnazhRealm_vegetation_baum {
                         bushKey,
                         { x: bxp, y: bsy + 0.5, z: bzp },
                         {
-                            seed: (hs ^ 0x2f6e2b1) >>> 0,
+                            seed: (zu.hs ^ 0x2f6e2b1) >>> 0,
                             silent: true,
                             // Studio: SCALE.strauch × (0.8 + RNG()·0.5) — die Tabellen-Skala
                             // (0.332) trägt der Render-Pfad (V18.418), hier nur die Streuung.

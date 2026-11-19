@@ -12,17 +12,17 @@
 // basalStems (Strauch), Blatt-Terminierung (Nadel/Peitsche/Laub), Blatt-Budget (Card-Cap).
 // Die Bake-/Farb-/Atlas-Rezepte reiten in späteren Wellen oben auf DIESER einen Quelle.
 (function (root) {
-    // Der Vorlagen-RNG (phytogenesis mulberry32) — die geteilte Quelle für die
-    // deterministischen Zufalls-Muster der Rezepte (Fels-Speckle, künftig mehr), damit
-    // AnazhRealm das EXAKTE Vorlagen-Korn erbt, nicht ein zweites LCG-Muster.
+    // Der Vorlagen-RNG (mulberry32) — die geteilte Quelle für die deterministischen Zufalls-Muster der Rezepte (Fels-Speckle,
+    // Wuchs, Atlas, Wald), damit AnazhRealm das EXAKTE Vorlagen-Korn erbt, nicht ein zweites LCG-Muster. DER GENERATOR LEBT
+    // EINMAL (Welle SAMEN): im Samen-Kern (samen-core.js `__samenCore`), gelesen je Ruf am globalen Namen — die Lese-Spur der
+    // Platte (`_foundrySchale`) sieht ihn, sein Gesetz steht im Schlüssel jeder Lieferung, die zieht.
+    function samenKern() {
+        const S = root.__samenCore;
+        if (!S) throw new Error("phyto-core: der Samen-Kern fehlt (samen-core.js lädt vor jedem Kern)");
+        return S;
+    }
     function mulberry32(a) {
-        return function () {
-            a |= 0;
-            a = (a + 0x6d2b79f5) | 0;
-            let t = Math.imul(a ^ (a >>> 15), 1 | a);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        return samenKern().mulberry32(a);
     }
     function growSkeleton(P, seq) {
         // Der Quirl-Abstand der Konifere ist ein Wert des Gesetzes (treePhenotype → treeParams), nie ein stiller
@@ -555,15 +555,6 @@
     function _vcross(a, b) {
         return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
     }
-    function _atlasRnd(a) {
-        return function () {
-            a |= 0;
-            a = (a + 0x6d2b79f5) | 0;
-            let t = Math.imul(a ^ (a >>> 15), 1 | a);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-    }
 
     // DER ATLAS-STECKBRIEF (04.10., echte GPU): was der Maler in eine Zelle setzt, als ZAHL — damit die
     // Karte nur rastert, was der Atlas trägt. EIN Atlas, vier Zellen: 0 der Baum-Zweig (Laub-Karten der Bäume routen
@@ -748,7 +739,7 @@
         // ist zur Rippe geknickt, die eine Seite fängt weniger Licht) und dem Verlauf Stiel → Spitze. Alles bleibt im
         // Kern (Steckbrief).
         let ZB = ZWEIG_BLATT; // je Zelle ihr Zweig (Baum ZWEIG_BLATT, Weide ZWEIG_WEIDE, Grossblatt ZWEIG_GROSS)
-        let rb = _atlasRnd(ZB.strom);
+        let rb = mulberry32(ZB.strom);
         const rand = BLATT_ATLAS_BREIT.kern * (Z / 2) - ZB.saum; // halbe Kante des Kerns in px, abzüglich Saum
         const blatt = (bx, by, rot, L, W, v) => {
             // Ein Blatt mit Stiel: Basis (bx, by), Achse in Richtung rot (Bogenmaß, 0 = nach oben), Länge L ohne Stiel.
@@ -827,7 +818,7 @@
         zweige.push([BLATT_ATLAS_WEIDE.zelle, ZWEIG_WEIDE]);
         zweige.push([BLATT_ATLAS_GROSS.zelle, ZWEIG_GROSS]);
         for (const [c, zb] of zweige) {
-            if (zb !== ZB) rb = _atlasRnd(zb.strom); // jeder Zweig-Typ sein eigener Strom
+            if (zb !== ZB) rb = mulberry32(zb.strom); // jeder Zweig-Typ sein eigener Strom
             ZB = zb;
             const ox = c * Z + Z / 2,
                 oy = Z / 2;
@@ -923,7 +914,7 @@
         // Zweiglein, deren Länge zur Spitze fällt — jede Nadel ein kurzer Strich schräg nach vorn, je Achse EIN Pfad.
         {
             const WZ = WEDEL_ZWEIG;
-            const rg = _atlasRnd(WZ.strom); // eigener Strom (verbraucht kein Welt-RNG)
+            const rg = mulberry32(WZ.strom); // eigener Strom (verbraucht kein Welt-RNG)
             const z0 = BLATT_ATLAS_WEDEL.zelle * Z;
             const ox = z0 + Z / 2,
                 halbe = (Z / 2) * WZ.rand,
@@ -1826,10 +1817,13 @@
     // seine SimplexNoise, das Portal seine simplex3 — die Form ist gesetz-gleich, nicht byte-
     // gleich, was für Fels genügt [kein Lockstep]). Nur die GESTALT: den Stoff legt das Fels-Gesetz
     // auf (gelaende-core `felsNetz`, K17; die Vertex-Farben hier sind gefallen). `seq` (0..1) treibt
-    // die Facetten-Ebenen deterministisch. Rückgabe: eine THREE.BufferGeometry (Radius ~size).
+    // die Facetten-Ebenen deterministisch — er ist Pflicht (G2.3, Welle SAMEN: bis hier zog ein Ruf ohne ihn still aus
+    // Math.random). Rückgabe: eine THREE.BufferGeometry (Radius ~size).
     function buildBoulderGeometry(THREE, noise3, P, seq) {
         if (!THREE || !THREE.IcosahedronGeometry) return null;
-        const rnd = typeof seq === "function" ? seq : Math.random;
+        if (typeof seq !== "function")
+            throw new Error("phyto-core buildBoulderGeometry: ohne Strom `seq` (der Stein zieht nur aus seinem Samen)");
+        const rnd = seq;
         const rrange = (a, b) => a + (b - a) * rnd();
         const vadd = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
         const vscl = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
@@ -2712,15 +2706,10 @@
     // sie pflanzt. AnazhRealm ist nur noch der Boden: seine Welt-Reads (Oberfläche · Wasser ·
     // Slope · Feuchte · fbm) reisen als ctx-Funktionen herein. Γ5-treu: aller Zufall aus dem
     // seed-gebundenen Zell-Hash (forestCellRng), kein Math.random, keine Zeit.
-    // Der Zell-Hash-RNG: reine Funktion von (cx,cz,seed) — alle Peers sehen denselben Wald.
+    // Der Zell-Hash-RNG: reine Funktion von (cx,cz,seed) — alle Peers sehen denselben Wald. Die Saat der Zelle ist dieser Hash,
+    // der Strom der EINE Generator (samen-core `mulberry32`).
     function forestCellRng(cx, cz, seedInt) {
-        let a = (Math.imul(cx | 0, 73856093) ^ Math.imul(cz | 0, 19349663) ^ seedInt) >>> 0;
-        return function () {
-            a = (a + 0x6d2b79f5) | 0;
-            let t = Math.imul(a ^ (a >>> 15), 1 | a);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        return mulberry32((Math.imul(cx | 0, 73856093) ^ Math.imul(cz | 0, 19349663) ^ seedInt) >>> 0);
     }
     // Vorlagen-`standDensity`: glatter Wald-↔-Lichtung-Gradient [0,1].
     // Shared fbm-Mix; Kontrast/Mittel per Mode (Host-Default byte-same bei 3-Arg-Aufruf).
