@@ -1,8 +1,8 @@
 'use strict';
 // Zensus PLANET, Feld e (planet-kern): Messung des Kerns planet-core.js — nur lesen, nichts schreiben.
 // Lauf: node /home/user/zensus-planet/vision/planet/zensus/e-mess.cjs [--schnell]
-// Lädt den Kern und das Ort-Gesetz über den absoluten Pfad (Baum /home/user/AnazhRealm).
-const KERN = '/home/user/AnazhRealm/planet-core.js';
+// Lädt den Kern aus PLANET_KERN (wie spike/lib.cjs), sonst aus dem Baum /home/user/AnazhRealm; das Ort-Gesetz aus dem Baum.
+const KERN = process.env.PLANET_KERN ? require('path').resolve(process.env.PLANET_KERN) : '/home/user/AnazhRealm/planet-core.js';
 const GELAENDE = '/home/user/AnazhRealm/gelaende-core.js';
 const P = require(KERN);
 require(GELAENDE);
@@ -167,7 +167,7 @@ for (let i = 1; i <= (SCHNELL ? 6 : 30); i++) {
 zeile(ANK.map(a => a.fehler ? a.s + ' BRICHT ' + a.fehler : a.s + ' ' + f(a.breite, 1) + '° ' + a.koeppen + ' decke ' + f(a.decke, 3) + ' wald ' + f(a.wald, 3) + ' spende ' + f(a.spende, 0) + ' mm regenQ ' + f(a.regen, 3) + ' hoehe ' + f(a.hoehe, 3) + ' ks ' + f(a.ks, 2) + ' land ' + f(a.land, 3) + ' tafel ' + f(a.tafel, 3)).join('\n'));
 const ok = ANK.filter(a => !a.fehler);
 zeile('Anker mit wald = 0 (Verhältnis tot, jeder Ort trägt den Wald der Heimat): ' + ok.filter(a => a.wald === 0).length + '/' + ok.length + ' · mit decke = 0: ' + ok.filter(a => a.decke === 0).length + ' · mit Spende 0 (Verhältnis ∞): ' + ok.filter(a => a.spende === 0).length + ' · Anker bricht: ' + ANK.filter(a => a.fehler).length);
-zeile('## H Anker-Band: gesucht bei fuss 40 (planetAnker), gelesen bei fuss 16 (ortRoh, voxel-worker) — und die Heim-Saat des Spiels');
+zeile('## H Anker-Band: gesucht bei fuss 16 (planetAnker, seit B5; vorher 40), gelesen bei fuss 16 (ortRoh, voxel-worker) — und die Heim-Saat des Spiels');
 {
   const H = { see16: 0, tundra: 0, n: 0, liste: [] };
   for (const s of ['anazh-realm-seed', ...Array.from({ length: SCHNELL ? 6 : 30 }, (_, i) => 'erde-' + String(i + 1).padStart(2, '0'))]) {
