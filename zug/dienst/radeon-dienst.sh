@@ -245,9 +245,14 @@ takt() {
         rm -rf "$GS"
     fi
     RL=$(runde lies "$R" radeon)
-    if [ -z "$RL" ] || [ "$RL" = - ]; then
+    if [ -z "$RL" ]; then
         RK=
-        puls radeon "keine Runde in zug/runde.txt${RL:+ — die OMEN legt die erste aus ihrem Bestand an}${RL:- (nicht lesbar)}"
+        puls radeon "zug/runde.txt nicht lesbar (fetch koordination?) — nächster Takt"
+        return 0
+    fi
+    if [ "$RL" = - ]; then # (Koordinator 03:30, 6a) liegt keine Runde, legt die Radeon sie an: am main-Kopf des Moments (wer zuerst schreibt, gilt)
+        runde anlegen "$R" "$(main_jetzt)" >>"$L"
+        log "keine Runde in zug/runde.txt — angelegt am main $(main_jetzt | cut -c1-8) (oder eine Runde lag schon: sie gilt)"
         return 0
     fi
     read -r RN RK RV RZ RLISTE <<<"$RL"
@@ -442,6 +447,11 @@ STUMMEL
     gem() { git -C "$X/pm.git" show "punkte-maschine:meisterkarte-quelle/punkte/messung/${1:0:8}-radeon.json" 2>/dev/null | grep -c '"ende"'; }
     starts() { grep -c "Runde-Liste am ${1:0:8}" "$L"; }
     f=0
+    # e — keine Runde liegt (Koordinator 03:30, 6a): der Takt der Radeon legt sie am main-Kopf des Moments an
+    git -C "$R" $A commit -q --allow-empty -m null && git -C "$R" push -q origin main
+    takt
+    if feld runde | grep -q "^runde 1 kopf $(main_jetzt) "; then echo "OK e  keine Runde: der Takt der Radeon legte Runde 1 am main $(main_jetzt | cut -c1-8) an"
+    else echo "ROT e  keine Runde: zug/runde.txt trägt „$(feld runde | cut -c1-60)“ (Soll runde 1 am main $(main_jetzt | cut -c1-8))"; fi
     # d — die Reihe der Ankunft (14.11. 04:04–05:02): nach dem Weichen tritt die Fahrt trotz abgelaufener Hand-Zeit nicht wieder ein,
     # solange die Hand von vorhin steht; eine Hand, die erst danach kam, hält sie nicht auf
     neu fuenf
@@ -574,14 +584,14 @@ selbsttest() {
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 8 ] || rot=1
+    [ "$(echo "$echt" | grep -c "^OK")" = 9 ] || rot=1
     for m in von-vorn rest warter pid reihe ziel bild; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 8 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 9 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }
