@@ -2521,9 +2521,9 @@
   return kill.length;
 }
     // prettier-ignore
-    function wandTonAus(geoms, y0, y1){                                                          // WANDTON-GESETZ: flächengewichtete Farbe der Vertikalflächen im AO-freien Fenster — GEMESSEN am eigenen Stufe-1-Fragment, keine Stil-Vermutung
+    function wandTonAus(geoms, y0, y1, innen){                                                   // WANDTON-GESETZ: flächengewichtete Farbe der Vertikalflächen im AO-freien Fenster — GEMESSEN am eigenen Stufe-1-Fragment, keine Stil-Vermutung; `innen` (Rolle → Farbe oder null): dieselben Flächen von innen (`wandVonInnen`)
   let s0=0,s1=0,s2=0,w=0;
-  for(const role in geoms){ const G=geoms[role]; if(!G.vo)continue; const P2=G.pos,C2=G.col,I2=G.idx;
+  for(const role in geoms){ const G=geoms[role]; if(!G.vo)continue; const P2=G.pos,C2=G.col,I2=G.idx, f=innen&&innen(role);
     for(let i=0;i<I2.length;i+=3){ const a=I2[i]*3,b=I2[i+1]*3,c=I2[i+2]*3;
       const e1x=P2[b]-P2[a],e1y=P2[b+1]-P2[a+1],e1z=P2[b+2]-P2[a+2], e2x=P2[c]-P2[a],e2y=P2[c+1]-P2[a+1],e2z=P2[c+2]-P2[a+2];
       const nx=e1y*e2z-e1z*e2y, ny=e1z*e2x-e1x*e2z, nz=e1x*e2y-e1y*e2x;
@@ -2531,9 +2531,14 @@
       if(Math.abs(ny/l)>0.25) continue;                                                       // nur Wände
       const ym=(P2[a+1]+P2[b+1]+P2[c+1])/3; if(ym<y0||ym>y1) continue;
       const ar=l/2;
+      if(f){ s0+=f[0]*ar; s1+=f[1]*ar; s2+=f[2]*ar; w+=ar; continue; }
       s0+=(C2[a]+C2[b]+C2[c])/3*ar; s1+=(C2[a+1]+C2[b+1]+C2[c+1])/3*ar; s2+=(C2[a+2]+C2[b+2]+C2[c+2])/3*ar; w+=ar; } }
   return w>1.5? [s0/w,s1/w,s2/w] : null;
 }
+    // DIE WAND VON INNEN (der Raum hinter dem Glas, `_innenFaktor`): dieselben Flächen wie der Wand-Ton, nur der Backstein der
+    // AUSFACHUNG zeigt innen den Wand-Stoff des Raums (`H.raum`, der Stoff, den die L0 hinter dem Glas zeigt) — `infill` legt den
+    // Stein vor die Hinterfüllung, sein Ton ist ein Ton der Fassade. Ein Haus aus Backstein (`H.raum` backstein) ist innen, was es außen ist.
+    function wandVonInnen(raum, kol){ if(!raum||raum==='backstein') return null; const rc=innenTon(raum,kol)||_colFor(raum,kol); return role=>role==='backstein'?rc:null; }
     // ═══════════════════════════════════════════════════════════════════════
     //  DER STUFEN-TON (S8, material.K3): jede ferne Stufe zeigt die Albedo der nahen — gemessen, nie aus Rollen-Tönen
     //  vermutet. `sichtTon` ist die EINE Rechnung: was ein Auge von außen sieht (Z-Puffer, orthografisch, 9 Blicke —
@@ -2803,15 +2808,18 @@
     }
     // DER INNENKÖRPER hinter dem Glas (INNENDÄMMER-GESETZ der L1, kalibriert auf die gemessene Voll-Interieur-Leuchtdichte
     // 176 vs 60 bei 0,34): der Raum × 0,92 — die L1 (der Körper hinter den Laibungen) und die Fern-Stufe (die Fläche hinter
-    // der Scheibe) lesen dieselbe Zahl. DER RAUM ist die Wand von innen: der GEMESSENE Wand-Ton der L1 (`B.wandTon`, Gefach
-    // und Balken, Backstein, Blockholz — gegen den Raum, den der Strahl der L0 durchs Fenster trifft: hollaendisch
-    // 0,295/0,076/0,042 zu 0,294/0,072/0,039, italienisch 0,703/0,565/0,351 zu 0,626/0,511/0,322); der Turm ohne Flächen-Stufe
-    // trägt den Wand-Stoff seines Stils (`H.raum`), wie sein Körper (`_wandFaktor`). Vorher stand dort Putz für jeden Stil
-    // (Farbe gegen die L0 bis 0,34, gate:haus-fern G). Der Körper bakt im Stoff des Putzes: sein Ton ist der Faktor auf den Putz.
+    // der Scheibe) lesen dieselbe Zahl. DER RAUM ist die Wand von innen: der GEMESSENE Wand-Ton der L1 von INNEN (`B.innenTon`,
+    // `wandVonInnen`: Gefach und Balken, Blockholz wie außen, der Backstein der Ausfachung im Wand-Stoff des Raums — gegen den Raum,
+    // den der Strahl der L0 durchs Fenster trifft: hollaendisch 0,295/0,076/0,042 zu 0,294/0,072/0,039, italienisch
+    // 0,703/0,565/0,351 zu 0,626/0,511/0,322); der Turm ohne Flächen-Stufe trägt den Wand-Stoff seines Stils (`H.raum`), wie sein
+    // Körper (`_wandFaktor`). Vorher stand dort Putz für jeden Stil (Farbe gegen die L0 bis 0,34, gate:haus-fern G), danach der
+    // Wand-Ton von AUSSEN: der Stein der Ausfachung färbte den Raum, und das wahre Steinmaß (Einheit E8, mehr Stein in der Fuge der
+    // L1) trieb alemannisch/s7 auf 0,153 gegen die L0 (64 Fälle: max 0,153 → 0,104, Median 0,025 → 0,023, 54 unverändert).
+    // Der Körper bakt im Stoff des Putzes: sein Ton ist der Faktor auf den Putz.
     var INNEN_DAEMMER = 0.92;
     function _innenFaktor(B, raum) {
         var pu = _colFor("putz", B.p.col),
-            ra = innenTon(raum, B.p.col) || B.wandTon || _colFor(raum || "putz", B.p.col);
+            ra = innenTon(raum, B.p.col) || B.innenTon || _colFor(raum || "putz", B.p.col);
         return [0, 1, 2].map(function (i) {
             return (ra[i] * INNEN_DAEMMER) / Math.max(1e-4, pu[i]);
         });
@@ -3618,7 +3626,8 @@
     bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
     if(stufe===1&&!turm){                                                                      // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — der Würfel je Fenster lebt im Bau (fensterSchlaeft), jede Stufe gleich
       if(!B.wandTon){ const eY=(B.dims&&B.dims.eaveY)||6;                                     // WANDTON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY) — VOR dem Innenkörper: der Ton der Fassade, nie der des Raums (K38: er maß den Körper mit, hollaendisch 0,295/0,076/0,042 → 0,353/0,159/0,121)
-        B.wandTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY)); }
+        B.wandTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY));
+        B.innenTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY), wandVonInnen(st.H&&st.H.raum, B.p.col)); }   // dieselben Flächen von INNEN: der Raum hinter dem Glas (`_innenFaktor`)
       const rf=_innenFaktor(B, st.H&&st.H.raum), innen=new THREE.Group();                     // INNENDÄMMER-GESETZ: der Innenkörper ist GEDIMMTER RAUM, nicht Void-Schwarz — durch Laibungen und Geschoss-Schlitze las sich Schwarz, promoviert wurde es weiß (Michis Sprung); jetzt verschatteter Raum, der Promotions-Wechsel flüstert
       const fpx=(B.fp&&B.fp.length)?B.fp:[{x0:-((B.dims&&B.dims.W)||8)/2,x1:((B.dims&&B.dims.W)||8)/2,z0:-((B.dims&&B.dims.D)||8)/2,z1:((B.dims&&B.dims.D)||8)/2,eY:(B.dims&&B.dims.eaveY)||6}];
       for(const f2 of fpx){ const lw=f2.x1-f2.x0-0.55, ld=f2.z1-f2.z0-0.55, lh=Math.max(2,(f2.eY||6)-0.25);
