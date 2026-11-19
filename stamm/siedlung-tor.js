@@ -902,7 +902,8 @@ class AnazhRealm_siedlung_tor {
         }
     }
 
-    // DER FENSTER-FLÜGEL EINES HAUSES: Ziel je Blatt = Seite (die Drehrichtung nach außen) × `fensterZustand(samen, stunde, nass)`,
+    // DER FENSTER-FLÜGEL EINES HAUSES: Ziel je Blatt = offen (`fensterZustand`) ? Seite (die Drehrichtung nach außen) × sein Anschlag
+    // (`tuer.fenster.anschlag`, am Bau gemessen) : 0,
     // um sein Scharnier auf den gebackenen Geschlossen-Vertices (dieselbe Matrix wie `_tickTorFluegel`: Eintrag · Welt-Skala ·
     // T(h)·R_y·T(−h) · Basis der Flügel-Instanz). Neue Slots (das Haus tritt in den Ring, ein Neubau) stellen jeden Flügel SOFORT in
     // sein Ziel — er war nie sichtbar anders; ein Wechsel von Stunde oder Nässe schwingt ihn weich (der Schritt des Tür-Takts, 0,12).
@@ -921,7 +922,7 @@ class AnazhRealm_siedlung_tor {
             for (const f of entry._fluegel) {
                 const t = f.tuer;
                 if (!t.fenster) continue;
-                const ziel = t.seite * FC.fensterZustand(t.fenster.samen, stunde, nass, tag);
+                const ziel = FC.fensterZustand(t.fenster.samen, stunde, nass, tag) ? t.seite * t.fenster.anschlag : 0; // offen bis zum Anschlag
                 const alt = neu ? ziel : Number.isFinite(f._fensterWinkel) ? f._fensterWinkel : 0;
                 ziele.push({ f, ziel, winkel: alt, gesetzt: !neu });
             }
