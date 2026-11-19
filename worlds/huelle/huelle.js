@@ -2302,7 +2302,7 @@
             B.steht = wechsel.catch(() => B);
             return wechsel;
         };
-        // DIE STUNDEN DER BÜHNE: der Tag der Welt (die Tag-Achse ohne Ersatz-Lichter der Nacht) und in ihm das Streiflicht — die
+        // DIE STUNDEN DER BÜHNE: der Tag der Welt (die Tag-Achse ohne ihren Kanal der Nacht) und in ihm das Streiflicht — die
         // erste und die letzte Stunde, in der die Sonne `hoehe` Grad über dem Horizont steht
         B.stunden = (hoehe) => {
             const L = wurzel.__weltLicht;

@@ -437,13 +437,13 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
 }
 
 async function checkBandWelle6G4Atmosphere({ page, check }) {
-    // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
-    // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
+    // ### 6.G4.a — Welt unter wandernder Sonne (Himmels-Umgebung + Licht-Material + Luft) ###
+    // Tiefe statt homogenem Licht: die Himmels-Umgebung (kein Ersatz-Licht) + licht-reaktives
     // Material + atmosphärischer Fog.
     const v827Results = await safeEvaluate(page, async () => {
         const out = {};
 
-        // 1. HemisphereLight im Scene + state-cached
+        // 1. die Luft streut den Himmel der EINEN Atmosphäre
         // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre: nach dem ersten _applyDayNightToScene trägt
         // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
         r._applyDayNightToScene();
@@ -451,55 +451,31 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         const mE = atmoU.mondE.value;
         out.fogColorSet = atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
 
-        // EIN Himmel: am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
-        // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht (licht.K1): mittags und nachts
-        // steht das Gesetz der Kamera aus dem Licht des Orts (`_belichtungAusLicht`, die Stufen der Sonnenhöhe gegen den Anker).
-        // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
+        // EIN Himmel: die Himmels-Umgebung IST das Licht des Himmels zu jeder Stunde — Ambient und Hemisphäre der Nacht fielen
+        // in licht-eine-skala; die Szene trägt mittags und um Mitternacht keins. Dazu die Belichtung aus dem Licht (licht.K1):
+        // mittags und nachts steht das Gesetz der Kamera aus dem Licht des Orts (`_belichtungAusLicht`, die Stufen der
+        // Sonnenhöhe gegen den Anker). Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
         const gesetz = () => [st.renderer.toneMappingExposure, r._belichtungAusLicht(r._sonnenRichtung().y)];
+        const ersatz = () => {
+            let n = 0;
+            st.scene.traverse((o) => {
+                if (o.isAmbientLight || o.isHemisphereLight) n++;
+            });
+            return n;
+        };
         r.setTimeOfDay(0.5, "human");
-        const intensityNoon = st.hemiLight.intensity;
+        const ersatzMittag = ersatz();
         const mittag = gesetz();
         r.setTimeOfDay(0, "human");
-        const intensityNight = st.hemiLight.intensity;
+        const ersatzNacht = ersatz();
         const nacht = gesetz();
-        out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
+        out.ersatzLichter = `${ersatzMittag} / ${ersatzNacht}`;
+        out.keinErsatzLicht = ersatzMittag === 0 && ersatzNacht === 0;
         out.belichtungAusLicht = [mittag, nacht].every(([k, soll]) => Math.abs(k / soll - 1) < 1e-6);
         out.belichtungZahlen = [...mittag, ...nacht].map((v) => +(+v).toFixed(3)).join(" / ");
 
-        // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
-        // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
-        // testet MIT Opt-in und mockt den echten Leser (auraAt).
+        // 3. (gefallen in licht-eine-skala: die Bodenfarbe der Hemisphäre aus der Welt-Affinität — die Hemisphäre fiel mit)
         r.setTimeOfDay(0.5, "human");
-        const origWFA = r.worldFieldAt;
-        const origAuraAt = r.auraAt;
-        const savedAuraStrength = st.atmosphere ? st.atmosphere.auraTintStrength : undefined;
-        if (st.atmosphere) st.atmosphere.auraTintStrength = 1;
-        r.worldFieldAt = function () {
-            return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
-        };
-        r.auraAt = function (x, z) {
-            return r.worldFieldAt(x, z);
-        };
-        r._applyDayNightToScene();
-        // Mit `ColorManagement.enabled=true` speichert THREE.Color LINEAR (setHex/setRGB konvertieren
-        // sRGB→linear) → verglichen wird die sRGB-Display-Form via `convertLinearToSRGB()`; die Schwelle
-        // meint die wahrgenommene Helligkeit.
-        const tmpColor = new window.THREE.Color();
-        tmpColor.copy(st.hemiLight.groundColor).convertLinearToSRGB();
-        const groundLebendigG = tmpColor.g;
-        r.worldFieldAt = function () {
-            return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
-        };
-        r._applyDayNightToScene();
-        tmpColor.copy(st.hemiLight.groundColor).convertLinearToSRGB();
-        const groundGlutR = tmpColor.r;
-        // lebendig erhöht Grün, glut erhöht Rot
-        out.groundColorFollowsLebendig = groundLebendigG > 0.3;
-        out.groundColorFollowsGlut = groundGlutR > 0.5;
-        r.worldFieldAt = origWFA;
-        r.auraAt = origAuraAt;
-        if (st.atmosphere) st.atmosphere.auraTintStrength = savedAuraStrength;
-        r._applyDayNightToScene();
 
         // 4. Architektur-Material ist licht-reaktiv (Toon/PBR) — geprüft am KLASSISCHEN Bau-Pfad
         // (_buildFromBlueprint): stein_block ist Studio-bekannt und stünde foundry-ON als f:-Instanz ohne
@@ -536,13 +512,14 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
         );
-        check("EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
+        check(
+            `EIN Himmel — kein Ersatz-Licht der Nacht (Ambient/Hemisphäre in der Szene, Mittag / Mitternacht: ${v827Results.ersatzLichter})`,
+            v827Results.keinErsatzLicht
+        );
         check(
             `Belichtung aus dem Licht — mittags und nachts das Gesetz der Kamera (Mittag / Gesetz / Nacht / Gesetz ${v827Results.belichtungZahlen})`,
             v827Results.belichtungAusLicht
         );
-        check("HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
-        check("HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
         check(
             "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
             v827Results.architectureUsesLambert
@@ -1466,7 +1443,7 @@ async function checkBandV18164WarumLicht({ page, check }) {
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
-        out.ladeNebelKonsum = __fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
+        out.ladeNebelKonsum = __fehlt(r._dayNightApplyLuft, /_builtRingRadius|foliageRadius/);
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
         out.fogDeckel = !st.scene.fog;

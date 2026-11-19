@@ -312,15 +312,12 @@ class AnazhRealm {
             dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
             _uhrSpielZeit: -Infinity, // der Anker des Gangs der Uhr (`tickDayNight`): der erste Takt setzt ihn
             directionalLight: null, // Reference, in initThreeJS gesetzt
-            ambientLight: null,
             // Welle 6.G3 V2 (V8.25) — Himmelskörper als sichtbare Meshes.
             // Position folgt _applyDayNightToScene/_updateCelestialBodies.
             sunMesh: null,
             moonMesh: null,
-            // V8.27 6.G4.a — HemisphereLight, moduliert von _applyDayNightToScene aus Sky-Color + Welt-Affinität.
-            hemiLight: null,
             // DIE LUFT (V18.530): {U, faktor, farbe} — die EINE Luftperspektive (`_luftEnsure`, `scene.fogNode`),
-            // gespeist von _dayNightApplyHemiUndLuft (Tag-Nacht × Wetter × Sonne).
+            // gespeist von _dayNightApplyLuft (Tag-Nacht × Wetter × Sonne).
             luft: null,
             // Substanz-Uniforms (TSL: Mikro-Tiefe, Kavitäts-AO, Geologie, Licht-Pool …). Lazy beim ersten
             // Terrain-Material-Build (_ensureAtmoUniforms).

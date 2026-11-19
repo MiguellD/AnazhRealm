@@ -112,10 +112,10 @@ schreibt, wer liest, welche Zahl) sind am Stamm vom 16.10. nachgelesen, nicht nu
   magieleitung), aus 4 seed-deterministischen SimplexNoise-Instanzen, worldgen-cachebar.
 - **`auraAt(x,z,t)`** — die EINE Lese-API. Gibt den frozen Kern zurück, geblendet mit den
   Overlays: `lebendig = min(1, frozen + _lifeOverlayAt)`, `emotion = global ⊕ _emotionOverlayAt`,
-  die drei geologischen Achsen direkt frozen. **17 Lese-Stellen** teilen sie: die Fauna
+  die drei geologischen Achsen direkt frozen. **16 Lese-Stellen** teilen sie: die Fauna
   (Seele · Ziel · Max · Lebenslauf), die Nexus-Komposition (`dslComposeAtomic`, `dslComposeRule`), die DSL
   (`_dslFieldAxisAt`, Positionen), die Wertung (`_measureRuleReward`, `_observeFieldWohl`), die Appraisal
-  (`updatePlayerEmotions`, `_umweltLage`), der Welt-Tint (`_dayNightComputeTint`, `_dayNightApplyHemiUndLuft`),
+  (`updatePlayerEmotions`, `_umweltLage`), der Welt-Tint (`_dayNightComputeTint`),
   der Klang (`_lofiWorldField`), die Erkundung (`_exploreMagnitude`) und die Selbst-Analyse des Loops. Wer eine neue „lebendige Welt"-Wirkung baut, liest HIER — kein neues `_tickX`.
 - **Trennung frozen ↔ Overlay** (V12.0-perf.b): der teure frozen Teil ist cachebar; das
   billige mutable Overlay liegt sparse darüber (eine `Map` von 16-m-Zellen, lazy-decay

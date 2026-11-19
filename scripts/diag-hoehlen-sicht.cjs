@@ -416,9 +416,7 @@ function selbsttest() {
         },
         szenenLicht: {
             frei: [
-                { name: "", typ: "AmbientLight", I: 0, schwarz: false, direkt: false },
                 { name: "", typ: "DirectionalLight", I: 1, schwarz: false, direkt: true },
-                { name: "", typ: "HemisphereLight", I: 0, schwarz: false, direkt: false },
             ],
         },
         himmel: {
@@ -556,11 +554,11 @@ function selbsttest() {
                     schwarz: false,
                     direkt: true,
                 }),
-            /SZENEN-LICHT: 1 von 2 direkten .*`augenLicht` \(PointLight\/AugenLicht, Stärke 0\) — jeder beleuchtete Stoff trägt 4/,
+            /SZENEN-LICHT: 1 von 2 direkten .*`augenLicht` \(PointLight\/AugenLicht, Stärke 0\) — jeder beleuchtete Stoff trägt 2/,
         ],
         [
             "schwarzes Szenen-Licht",
-            ["szenenLicht.frei.1.schwarz=", true],
+            ["szenenLicht.frei.0.schwarz=", true],
             /SZENEN-LICHT: 1 von 1 direkten .*DirectionalLight, Stärke 1, schwarz/,
         ],
         ["Szenen-Licht ungezählt", ["szenenLicht=", null], /LEER: \(l\) Szenen-Licht/],

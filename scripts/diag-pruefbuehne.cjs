@@ -1025,7 +1025,7 @@ async function himmelProbe(page, taub) {
                         `S0 Himmel: nach dem Sprung auf ${t === 0 ? "Mitternacht" : "Mittag"} trägt die Umgebung die Bestrahlung ` +
                             `${sprung.toFixed(3)}${gemalt ? "" : " (ungemalt)"}, der Himmel des Orts ${ort.toFixed(3)} — die ` +
                             "Himmels-Umgebung (`_ensureSkyEnvironment`) folgt dem Sprung der Uhr nicht: gemalt vor der Luft-Farbe " +
-                            "(`_dayNightApplyHemiUndLuft`) oder vom Sprung in der Raten-Drossel (SKY_ENV_REGEN_MIN_MS) gehalten"
+                            "(`_dayNightApplyLuft`) oder vom Sprung in der Raten-Drossel (SKY_ENV_REGEN_MIN_MS) gehalten"
                     );
             }
             return out;

@@ -1438,7 +1438,7 @@ class AnazhRealm_bild_sicht {
         // Bei Wasser-Mesh (nur Translation, keine Skalierung) identisch zu
         // mat3(modelMatrix) — die V8.44-Lehre.
         const vNormalWorld = normalize(modelNormalMatrix.mul(nrmFlipped));
-        // DAS LICHT DES ORTS: E/π einer waagrechten Fläche aus dem EINEN Baustein (`_weltLicht`: Sonne, Himmel, Hemi, Ambient —
+        // DAS LICHT DES ORTS: E/π einer waagrechten Fläche aus dem EINEN Baustein (`_weltLicht`: Sonne und Himmel —
         // dieselben Quellen wie jedes Mesh), die direkte Sonne mal der SONNEN-SICHT am Ort des Wassers (`_sonnenSicht`: der
         // Horizont des Gelände-Gesetzes × der Wurf der Wolke — dieselbe Sicht, die die Kaskaden jedem Empfänger der Welt geben).
         // Das Wasser ist MeshBasic, kein Empfänger der Kaskaden: bis w28-wasser-sicht trug es die Sonne auch hinter dem Grat und
@@ -2649,13 +2649,14 @@ class AnazhRealm_bild_sicht {
     }
 
     // DAS LICHT DER WELT (Licht K3, EIN Lichtweg; Lehre 21): die diffuse Bestrahlung E(n)/π einer Fläche mit der Normale n, wie
-    // jedes MeshStandard sie nimmt — Sonne/Mond (Richtung = position − target), Ambient, Hemi (Himmel/Boden) und die Umgebung der
-    // EINEN Atmosphäre in DERSELBEN Lesung wie die Stoffe: die PMREM-Stufe der Rauheit 1 (r184 `createIrradianceContext`), je
-    // Normale abgetastet in die Himmels-Sonde (`_weltLichtHimmel`, 32 × 16 Richtungen, equirect). EIN TSL-Baustein `at(n)`:
-    // Spiegel-Pass und Wasser rufen ihn, Feld-March und Panorama reichen Albedo und Normale an ihn. Bis Licht K3 rechnete jeder
-    // Weg sein Licht selbst (der Spiegel 0,3 + 0,7·N·L/max(sun.y, 0,2) × die Bestrahlung des Wassers, das Panorama eine Lambert-
-    // Kopie, das Wasser `uIrr`); die erste Runde las den Himmel aus der CPU-Lesung in drei Höhen ohne Azimut — eine senkrechte
-    // Fläche bei Uhr 0,27 nahm zur Sonne 0,79, abgewandt 1,65 des Himmels-Lichts.
+    // jedes MeshStandard sie nimmt — Sonne/Mond (Richtung = position − target) und die Umgebung der EINEN Atmosphäre in
+    // DERSELBEN Lesung wie die Stoffe (Ambient und Hemisphäre der Nacht fielen in licht-eine-skala): die PMREM-Stufe der
+    // Rauheit 1 (r184 `createIrradianceContext`), je Normale abgetastet in die Himmels-Sonde (`_weltLichtHimmel`, 32 × 16
+    // Richtungen, equirect). EIN TSL-Baustein `at(n)`: Spiegel-Pass und Wasser rufen ihn, Feld-March und Panorama reichen
+    // Albedo und Normale an ihn. Bis Licht K3 rechnete jeder Weg sein Licht selbst (der Spiegel 0,3 + 0,7·N·L/max(sun.y, 0,2)
+    // × die Bestrahlung des Wassers, das Panorama eine Lambert-Kopie, das Wasser `uIrr`); die erste Runde las den Himmel aus der
+    // CPU-Lesung in drei Höhen ohne Azimut — eine senkrechte Fläche bei Uhr 0,27 nahm zur Sonne 0,79, abgewandt 1,65 des
+    // Himmels-Lichts.
     _weltLicht() {
         const st = this.state;
         if (st.weltLicht) return st.weltLicht;
@@ -2664,9 +2665,6 @@ class AnazhRealm_bild_sicht {
         const U = {
             l0d: TSL.uniform(new THREE.Vector3(0, 1, 0)),
             l0c: v(),
-            ambientFarbe: v(),
-            hemiOben: v(),
-            hemiUnten: v(),
             ei: TSL.uniform(1),
         };
         // DIE HEIMAT DES TAKTS (E1): jeder Wert gilt jedem Leser gleich — als geteilte renderGroup lädt ihn EIN Render
@@ -2687,17 +2685,12 @@ class AnazhRealm_bild_sicht {
         // dem direkten Licht — wie jeder Empfänger der Kaskaden; Feld und Panorama reichen ihren Treffer (`at(n, p)`).
         const baue = (sicht) => {
             const direkt = U.l0c.mul(TSL.max(TSL.dot(sicht.n, U.l0d), 0.0));
-            const hemi = TSL.mix(U.hemiUnten, U.hemiOben, sicht.n.y.mul(0.5).add(0.5));
             // der Boden um das Auge in der unteren Hemisphäre — dasselbe Gesetz wie die Umgebung der Stoffe (schatten.K4)
             const umgebung = this._rueckstrahlHalbraum(
                 licht(sonde.sample(TSL.equirectUV(sicht.n)).level(0).rgb),
                 sicht.n
             ).mul(U.ei);
-            return (sicht.s ? direkt.mul(sicht.s) : direkt)
-                .add(U.ambientFarbe)
-                .add(hemi)
-                .mul(1 / Math.PI)
-                .add(umgebung);
+            return (sicht.s ? direkt.mul(sicht.s) : direkt).mul(1 / Math.PI).add(umgebung);
         };
         const fn = TSL.Fn(([n]) => baue({ n }));
         const fnOrt = TSL.Fn(([n, s]) => baue({ n, s }));
@@ -2748,17 +2741,6 @@ class AnazhRealm_bild_sicht {
                 .normalize();
             U.l0c.value.set(l.color.r * l.intensity, l.color.g * l.intensity, l.color.b * l.intensity);
         }
-        const amb = st.ambientLight;
-        const ai = amb && amb.visible !== false ? Math.max(0, amb.intensity || 0) : 0;
-        U.ambientFarbe.value.set(amb ? amb.color.r * ai : 0, amb ? amb.color.g * ai : 0, amb ? amb.color.b * ai : 0);
-        const hemi = st.hemiLight;
-        const hi = hemi && hemi.visible !== false ? Math.max(0, hemi.intensity || 0) : 0;
-        U.hemiOben.value.set(hemi ? hemi.color.r * hi : 0, hemi ? hemi.color.g * hi : 0, hemi ? hemi.color.b * hi : 0);
-        U.hemiUnten.value.set(
-            hemi ? hemi.groundColor.r * hi : 0,
-            hemi ? hemi.groundColor.g * hi : 0,
-            hemi ? hemi.groundColor.b * hi : 0
-        );
         const sc = st.scene;
         U.ei.value = sc && Number.isFinite(sc.environmentIntensity) ? sc.environmentIntensity : 1;
         // die Horizont-Karte und die Karte des Wolken-Wurfs an das Licht und die Uhr DIESES Bilds (die Sonnen-Sicht jedes

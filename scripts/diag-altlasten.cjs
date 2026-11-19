@@ -343,7 +343,7 @@ const FORBIDDEN = [
     ["LUFT_GESETZ", "D3 — die Luftmassen-Sonne fiel, die Nacht trägt ATMO_GESETZ.nacht", ["phyto-core.js", "worlds/terrain/phytogenesis.js"]],
     ["_AIR_SOFT", "D3 — keine Luftmassen-Glättung, der Durchlass ist Hillaire", ["worlds/terrain/phytogenesis.js"]],
     ["_moonCol", "D3 — der Mond-Hue ist ATMO_GESETZ.nacht.mond", ["worlds/terrain/phytogenesis.js"]],
-    ["_dayNightApplyHemiAndFog", "V18.530 — _dayNightApplyHemiUndLuft"],
+    ["_dayNightApplyHemiAndFog", "V18.530 — _dayNightApplyLuft"],
     ["_smoothFogEdge", "V18.530 — kein Lade-Nebel, der Fern-Ring deckt Ungebautes"],
     ["_fogEdgeSmooth", "V18.530"],
     ["_builtGrassRingRadius", "V18.530 — die Gras-Front trieb nur den Lade-Nebel"],
@@ -820,6 +820,9 @@ const FORBIDDEN = [
     // seinen Zahlen in `TERRAIN_BUMP` — im Schlagschatten sprang es je Kiesel 1 : 5,8 (gate:schatten-terminator (K) misst das Bild)
     // … und das Korn ist eine Spalte des Stoffs (die Stoff-Tafel, Zeilen erde und stein), nie wieder EINE Zahl in `TERRAIN_BUMP`
     ...["krume", "kavitaet:", "BUMP.korn"].map((t) => [t, "w28-himmel-korn — das Korn der Albedo ist das EINE Bild der Höhe (_mikroStoff)"]),
+    // licht-eine-skala — DIE ERSATZ-LICHTER DER NACHT FIELEN: Ambient (0,04 × nacht + Gefühl) und Hemisphäre (0,1 × nacht) waren
+    // Zahlen ohne Quelle; die Nacht nimmt ihr Licht aus der Himmels-Umgebung wie jede Stunde (Def, Maschine, Spiegel, Uniforms)
+    ...["ambientLight", "hemiLight", "_dayNightApplyAmbient", "_dayNightApplyHemiUndLuft", "ambientFarbe", "hemiOben", "hemiUnten"].map((t) => [t, "licht-eine-skala — die Nacht trägt die Himmels-Umgebung, kein Ersatz-Licht", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1515,7 +1518,7 @@ const METHODEN_OHNE = [
     ["_buildPbrNodeMaterial", ["__structAerialError"]], // die Luft aus EINER Quelle
     ["_ensureHydroSurfaceMaterial", ["gerstnerWave", "uSkyCol", "d.x).mul(cos(phase))"]], // die Dünung, der EINE Himmel
     ["_wasserBlick", ["uSkyCol"]],
-    ["_dayNightApplyHemiUndLuft", ["playerEyesUnderwater"]],
+    ["_dayNightApplyLuft", ["playerEyesUnderwater"]],
     ["_workshopInstallShapeDragDrop", ["cards.forEach"]], // EIN delegierter Zieh-Hörer
     ["_p2pMsgCreaturePos", ["_cpRate"]], // die Kappe lebt im Takt, nie im Empfänger
     ["updateCreatures", ["_runRaycast(", "_fieldRaycast("]], // das Tier stößt mit dem Leib, nie mit dem Strahl
@@ -3634,7 +3637,7 @@ function main() {
         const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
         // K16b: das Schicht-Verfahren im Makro-Worker des Studios, das Raster im Panel und in der Linse
         const schicht = "maske[k] = G.grossform(L, x, z).stil >= 0.8 ? 1 : 0;";
-        const LAMBERT_ZEILE = '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"';
+        const LAMBERT_ZEILE = '"return vec4<f32>(pT.rgb * (l0c * max(l0d.y, 0.0) * (1.0 / PI)), pT.a);"';
         const zwillingFeuert =
             feuert("worlds/gelaende/makro-worker.js", schicht, "Schicht-Ort der Messung") &&
             feuert("worlds/gelaende/studio.js", "const k = cv.width / (268 * 30);", "Mess-Raster der Statistik") &&

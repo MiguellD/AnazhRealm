@@ -66,7 +66,7 @@ var __weltLicht = (function () {
     // Dorf: E 0,54, k 1,59), unter dem Knoten (tiefer Mond, Wald, Wolke) fällt das Bild. Mit dem halben Knoten (0,231) öffnete die
     // Kamera am tiefen Mond bis k 3,7–4,8: die Wand unter der Laterne stand um 20 Uhr heller als am Mittag (Y 0,395, Radeon). Bis w28-nacht-bilanz stand er auf dem
     // gemessenen Licht von main (0,68: Mond + das Sternen-Licht als Füllung E 0,30, `STERNENLICHT`); unter dem Knoten steht die
-    // Kamera — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
+    // Kamera — fällt das Licht (der Mond tiefer am
     // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Horizont bis zum Ende der bürgerlichen
     // Dämmerung (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) logarithmisch ein — dort trägt das Dämmerlicht
     // (`nachtHimmel`) so viel wie der Vollmond. Bis w28-nacht-bilanz wuchs er erst von −6° bis −20° ein: am tiefen Mond (05 Uhr,
@@ -110,7 +110,7 @@ var __weltLicht = (function () {
     );
     // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle — `r/g/b` der Purkinje-Hue aus dem Gesetz
     // (`ATMO_GESETZ.nacht.mond`), `intensity` die Helligkeit; das Wetter dimmt ihn. DER MOND TRÄGT DIE NACHT (w28-nacht-licht):
-    // 0,22 → 0,65, das Ambient der Nacht fiel 0,23 → 0,04 (`_dayNightApplyAmbient`) — Schlüssel und Füllung der Mondnacht: der
+    // 0,22 → 0,65, das Ambient der Nacht fiel 0,23 → 0,04 (in licht-eine-skala ganz) — Schlüssel und Füllung der Mondnacht: der
     // Boden und jede Wand zum Mond stehen im Licht mit Schatten, die Wand ohne Mond und Laterne fällt zurück. Der Wert ist das
     // gemessene Maß des lesbaren Bodens (S0 Nacht ohne das Feuer, Radeon, Luma ≥ 22: main 24,1 · Ambient 0,04 mit Mond 0,22
     // 14,4 · 0,5 20,4 · 0,65 23,7); das Ambient allein ließ kein Fenster (Boden ≥ 22 verlangte ≥ 0,18, die Wand 3 : 1 ≤ 0,22).
@@ -145,7 +145,7 @@ var __weltLicht = (function () {
     // DER HIMMEL DER NACHTSEITE OHNE MOND je Sonnenhöhe (Zenit-Leuchtdichte, Welt-Einheiten; `achse` die EINE Tag-Achse): das
     // Sternen-Licht, wie die Sterne erscheinen (1 − Dämmerung), und DAS DÄMMERLICHT — die blaue Stunde: die Kuppel nach
     // Sonnenuntergang, die in der Welt der gestauchten Nacht (der Mond 1/13 der Sonne statt 1/400 000) kein Strahl der Tafeln
-    // trägt. Es blendet mit den Ersatz-Lichtern der Nacht ein (`nacht`: 0 über dem Horizont, 1 bei −6°), trägt am Ende der
+    // trägt. Es blendet mit dem Kanal der Nacht ein (`nacht`: 0 über dem Horizont, 1 bei −6°), trägt am Ende der
     // bürgerlichen Dämmerung so viel wie der Vollmond im Zenit (`daemmer`; die REF: 3 lx bei −6°, gleich dem Vollmond bei −8°)
     // und fällt mit der Dämmerung der Tag-Achse bis −18° auf 0, während der Mond steigt. Die tiefe Nacht trägt es nie.
     const DAEMMER_ENDE = tagAchse(Math.sin((-6 * Math.PI) / 180)).daemmerung;
@@ -762,8 +762,8 @@ var __weltLicht = (function () {
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
     // grenze (die Grenzgröße der Sterne), daemmerung (1 im hellen Tag … 0 in astronomischer Nacht), tag (das Nacht-Auge der
-    // Post-Kette), nacht (die Ersatz-Lichter der Nacht: 0 über dem Horizont, 1 am Ende der bürgerlichen Dämmerung) und hell (die Leuchtdichte des Tageshimmels
-    // relativ zum Mittag). Die Geschichte der Kanäle steht am Leser der Welt (`_tagAchse`).
+    // Post-Kette), nacht (die Nacht der Zeitpläne: 0 über dem Horizont, 1 am Ende der bürgerlichen Dämmerung) und hell (die
+    // Leuchtdichte des Tageshimmels relativ zum Mittag). Die Geschichte der Kanäle steht am Leser der Welt (`_tagAchse`).
     function tagAchse(e) {
         const A = GRENZGROESSE;
         const s = Math.max(-1, Math.min(1, e));
@@ -780,11 +780,9 @@ var __weltLicht = (function () {
         const mTag = A[0][1],
             mNacht = A[A.length - 1][1];
         const q = Math.max(0, Math.min(1, (s + 0.18) / 0.6));
-        // DIE ERSATZ-LICHTER DER NACHT leben in der Dämmerung (bürgerlich: die Sonne 0° … −6°, wie das physikalische Himmelsmodell
-        // ohne Ersatz-Licht sie liefert): über dem Horizont tragen Sonne und Himmel allein. Bis ferne.K4 begannen sie bei 14,5°
-        // (sin 0,25) — bei Sonne +5° lag ein Ambient 0,149 auf jedem Schatten, ein Viertel des Himmels (Dorf, 18-%-Karte zur Sonne).
-        // Die Belichtung folgt dem Licht ohne Kante: über 0,25–0,30 und 0,70–0,75 je 0,002 der Uhr steigt sie glatt um 0,14–0,20 EV
-        // (vorher 0,11–0,16 EV: das Ersatz-Licht füllte die sinkende Sonne auf).
+        // DER KANAL `nacht` lebt in der Dämmerung (bürgerlich: die Sonne 0° … −6°): über dem Horizont tragen Sonne und Himmel
+        // allein. Bis ferne.K4 begann er bei 14,5° (sin 0,25) — bei Sonne +5° lag ein Ambient 0,149 auf jedem Schatten; die
+        // Ersatz-Lichter, die er blendete (Ambient, Hemisphäre), fielen in licht-eine-skala.
         const nachtE = Math.sin((-6 * Math.PI) / 180);
         const hN = 0;
         const nG = BELICHTUNG.nachtGrad;
@@ -1139,10 +1137,11 @@ var __weltLicht = (function () {
     // `himmelDerStoffe` — die Knoten, die `_spiegelUmgebung` der Welt jedem Stoff reicht; den Spiegel des Schirms trägt die Bühne
     // nicht, sie hat kein Feld), derselbe Himmel als Grund (die Equirekt-Tafel), dieselbe Belichtung (Anker und Stufen
     // der Kamera aus der Bestrahlungs-Tafel, `belichtung`) und dieselbe Tonkurve (`BELICHTUNG.kurve`). Die Bühne steht im TAG der
-    // Welt (`o.uhr`, Vorgabe Mittag — das Wort jeder Sonde: Mittag · Sonne · Sommer): wo die Tag-Achse Ersatz-Lichter der Nacht
-    // (Hemi, Ambient, Sterne) trüge, bricht sie laut, sie trägt die Nacht nicht. Das Auge steht am Bezug der Luft (1 m, die Höhe
-    // des Ankers). Gezeichnet werden die Tafeln einmal beim Ruf (der Renderer steht: nach `init()`); die Belichtung liegt, sobald
-    // die Bestrahlungs-Tafel zurückkam (`steht`, ein Versprechen) — bis dahin zeichnet die Bühne kein Bild (`belichtung` null).
+    // Welt (`o.uhr`, Vorgabe Mittag — das Wort jeder Sonde: Mittag · Sonne · Sommer): wo die Tag-Achse die Nacht trüge (der
+    // Mond als Richtlicht, die Zeitpläne der Leuchtquellen), bricht sie laut, sie trägt die Nacht nicht. Das Auge steht am
+    // Bezug der Luft (1 m, die Höhe des Ankers). Gezeichnet werden die Tafeln einmal beim Ruf (der Renderer steht: nach
+    // `init()`); die Belichtung liegt, sobald die Bestrahlungs-Tafel zurückkam (`steht`, ein Versprechen) — bis dahin zeichnet
+    // die Bühne kein Bild (`belichtung` null).
     // → { sonne (DirectionalLight, Richtung `richtung`), staerke, tafeln, umgebung (das PMREM-Ziel), knoten, achse, steht, belichtung }.
     function buehne(o) {
         const THREE = globalThis.THREE;
@@ -1163,7 +1162,7 @@ var __weltLicht = (function () {
         const achse = tagAchse(s[1]);
         if (!(achse.nacht === 0 && achse.daemmerung === 1))
             throw new Error(
-                `DIE BÜHNE DER WELT steht im Tag: die Uhr ${uhr} trägt die Ersatz-Lichter der Nacht (nacht ${achse.nacht.toFixed(3)}, ` +
+                `DIE BÜHNE DER WELT steht im Tag: die Uhr ${uhr} trägt die Nacht (nacht ${achse.nacht.toFixed(3)}, ` +
                     `Dämmerung ${achse.daemmerung.toFixed(3)}) — die Nacht zeichnet nur die Welt`
             );
         const hKm = 0.001;

@@ -1128,7 +1128,7 @@ class AnazhRealm_bild_himmel {
     //   daemmerung  1 im hellen Tag … 0 in astronomischer Nacht (im Maß der Grenzgröße): das Sternen-Licht leuchtet in ihrem Rest;
     //   tag         das Nacht-Auge der Post-Kette (mesopisch): 1 über dem Horizont (wo `nacht` beginnt), linear über die Höhe
     //               der Sonne bis `BELICHTUNG.nachtGrad` auf 0 — es gleitet, wo die Nacht beginnt;
-    //   nacht       die Ersatz-Lichter der Nacht (Ambient- und Hemi-Boden, die Zeitpläne der Leuchtquellen): 0 über dem Horizont,
+    //   nacht       die Nacht der Zeitpläne (Leuchtquellen, Horizont der Körper, Klang): 0 über dem Horizont,
     //               1 ab −6° (die bürgerliche Dämmerung) — über dem Horizont tragen Sonne und Himmel allein (ferne.K4);
     //   hell        die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1), die Blässe des Mondes liest sie.
     // Bis S7 rechnete jeder Anwender seine eigene Achse (die Tafel nach der Uhr, der Horizont-Fade der Körper, der Nacht-Anteil
@@ -1171,9 +1171,8 @@ class AnazhRealm_bild_himmel {
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(achse, tint.skyMul);
         this._dayNightApplyDirectionalLight(sunDir, tint, moonDir, atm, achse);
-        this._dayNightApplyAmbient(achse);
         this._updateCelestialBodies(angle, tint.lightMul * tint.direkt, achse);
-        this._dayNightApplyHemiUndLuft(achse, tint);
+        this._dayNightApplyLuft();
         // DIE HIMMELS-UMGEBUNG malt sich aus BEIDEN Quellen, die jetzt gelten — dem Zenit (die Skybox-Tönung, oben) und dem
         // Horizont (die Luft-Farbe, eben): erst danach, und vor jedem Leser ihrer Bestrahlung (Wasser, Belichtung). Bis K10
         // malte `_dayNightApplySkybox` sie vor der Luft — die Nacht nach einem Sprung trug den Horizont des Tags (intern
@@ -1186,7 +1185,7 @@ class AnazhRealm_bild_himmel {
 
     // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor/lightColor/
     // lightIntensity der vorigen): 1) Wetter (WEATHER_TINTS/Transition) 2) Welt-Feld 3) Emotion.
-    // Liefert Tint + skyR/G/B (HemiFog braucht sie); geteilte Variablen → EINE Methode.
+    // Liefert Tint + skyR/G/B; geteilte Variablen → EINE Methode.
     _dayNightComputeTint() {
         // Schicht 1 — Wetter-Tint
         const wt = this.state.weatherTransition;
@@ -1884,7 +1883,7 @@ class AnazhRealm_bild_himmel {
         // kein eigener Horizont-Fade (S7: bis dahin dimmte ein smoothstep bis 8° die Physik ein zweites Mal).
         // Farbe: `atm.col` (der Durchlass der EINEN Atmosphäre) × `tint.lightColor` (weiß + Aura/Emotion).
         // Intensität = KEY_BASE·atm.lum·tint.lightIntensity: die Physik trägt die Tageskurve allein, der Tint
-        // (Wetter-lightMul + Emotion) moduliert; Ziel dir/(amb+hemi) ≥ 3:1 am Tag (nachts 0,67: `_dayNightApplyAmbient`).
+        // (Wetter-lightMul + Emotion) moduliert; die Füllung neben ihm ist allein die Himmels-Umgebung.
         const a = atm || this._atmoSonne(sunDir.y);
         if (sunUp) {
             dl.color.setRGB(a.col.r * tint.lightColor.r, a.col.g * tint.lightColor.g, a.col.b * tint.lightColor.b);
@@ -1928,12 +1927,12 @@ class AnazhRealm_bild_himmel {
 
     // DIE BELICHTUNG AUS DEM LICHT (licht.K1, H1): die Kamera ist ein Gesetz in Blenden-Stufen. Sie misst die Beleuchtungsstärke
     // einer waagrechten Fläche des Orts (`_waagrechtIrradianz`: die Sonne mit dem Sinus ihrer Höhe, der Himmel der Bestrahlungs-
-    // Tafel der EINEN Atmosphäre, Hemi, Ambient — der Lichtmesser mit der Kalotte nach oben, dieselbe Größe, die die REF-Kurve aus
+    // Tafel der EINEN Atmosphäre — der Lichtmesser mit der Kalotte nach oben, dieselbe Größe, die die REF-Kurve aus
     // gemessener Beleuchtungsstärke trägt, spec/farbe/tag-ref.json) und legt die 18-%-Karte unter der Zenit-Sonne der klaren Luft
     // auf Mittelgrau (`zielKarte`, der absolute Anker des Mittags). Die Stufen gegen den Anker (`_belichtungStufen`) sind
     // die EINE Kurve der Kamera über die Sonnenhöhe (`_tagAchse`): am Tag folgt sie dem Licht mit der Kompensations-Steigung
     // (Frostbite: Kompensation statt voller Adaption), in der Dämmerung tragen die Stufen der Tag-Achse — dort hält die Welt ihr
-    // Licht (die Ersatz-Lichter, `_dayNightApplyAmbient`), das Bild fällt gleichmäßig in der Sonnenhöhe zur lesbaren Nacht.
+    // Licht (die Himmels-Umgebung und der Mond), das Bild fällt gleichmäßig in der Sonnenhöhe zur lesbaren Nacht.
     // Bis H1 stand die sonnenzugewandte Karte auf Mittelgrau + 1 EV, das Auge folgte ihrem Licht mit 0,34 und glitt ab ~14,5°
     // zum Deckel der Nacht: die Sonne in 7° stand an der Wiese einmal 0,16, einmal 1,29 EV unter dem Mittag (Radeon).
     _dayNightApplyBelichtung(achse) {
@@ -2161,7 +2160,7 @@ class AnazhRealm_bild_himmel {
     }
 
     // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + der Himmel über dem Ort
-    // (`_himmelsBestrahlung`, synchron aus der Bestrahlungs-Tafel der EINEN Atmosphäre) + Hemi + Ambient — dieselben Lichter,
+    // (`_himmelsBestrahlung`, synchron aus der Bestrahlungs-Tafel der EINEN Atmosphäre) — dieselben Lichter,
     // die jedes Material liest. Die Rechnung der Belichtung (die 18-%-Karte); null, solange der Himmel des Orts noch nicht steht.
     // DIE TAFEL IM FLUG (licht.K5): jede Stufe des Mediums zeichnet die Tafel neu, ihre Lesung kommt Takte später. Bis dahin trägt
     // der Himmel der letzten Lesung je Einheit des Lichts (E0 · Tönung, jetzt) die Belichtung — nur solange das Auge in der Höhen-
@@ -2211,35 +2210,11 @@ class AnazhRealm_bild_himmel {
         out[0] += himmel[0];
         out[1] += himmel[1];
         out[2] += himmel[2];
-        if (st.hemiLight) add(st.hemiLight.color, st.hemiLight.intensity);
-        if (st.ambientLight) add(st.ambientLight.color, st.ambientLight.intensity);
         return out;
     }
 
-    // Ambient-Light = NUR der Nachthimmel-Boden (EIN Himmel, V18.507): am Tag IST die Himmels-Umgebung
-    // der Himmel (aus dem sichtbaren Himmel gemalt) — ein Tag-Ambient zählte ihn doppelt (Licht-Bilanz
-    // 01.10.: Umgebung 1,89 + Hemi 0,53 + Ambient 0,16 = 0,36 der Sonne, klarer Himmel real 0,12–0,16).
-    // Nachts ist der sichtbare Himmel fast schwarz; dort trägt der Boden mit Hemi (0,10) das Licht neben dem Mond. Er blendet
-    // mit dem Kanal `nacht` der EINEN Tag-Achse (`_tagAchse`). joy/awe/sorrow modulieren wie bisher.
-    // DER NACHT-BODEN DES BANDS IST LICHT (F6): das gefallene Band trug den Host-Stoffen (Boden, Karte, Fern-Ring, Werk,
-    // Gras) einen Boden albedo · 0,06 hinter der Licht-Kette auf, der Studio-Gestalt nie — die Nacht der Nähe stand auf ihm.
-    // Er zieht als Ambient (albedo/π · 0,06 π) in die EINE Kette, die jeder Stoff liest; die Fresnel-Säume des Bands, die die
-    // Ferne bleichten, fallen. DIE NACHT-KALIBRIERUNG war damit bis w28-nacht-licht Mond/(amb+hemi) = 0,22 / (0,2285 + 0,10) = 0,67 (Mitternacht,
-    // Radeon, Messort dorf; vorher 0,22 / 0,14 = 1,57): das Himmels-Licht trägt die Nacht, der Mond zeichnet ihr die Richtung —
-    // jede Gestalt hebt es gleich (Fichte nachts Y 0,0093 → 0,0154), die Karte gegen ihre Gestalt bleibt im Band ±10 %
-    // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
-    // DAS AMBIENT FÄLLT (w28-nacht-licht): 0,23 → 0,04 — es trug jede Wand ohne Quelle beinahe auf das Licht der Laterne
-    // (Stadt 00 Uhr, Radeon: die Fassade ohne Mond und Laterne 2,95 : 1 unter der angestrahlten). Die Kamera steht unter dem
-    // Nacht-Knoten (`BELICHTUNG.nachtKnotenE`), das Bild fällt mit diesem Licht; den Boden trägt der Mond (`MOONLIGHT` 0,65,
-    // welt-licht.js) mit seinem Schatten — das Ambient trug Boden und Wand gleich, ohne Richtung.
-    _dayNightApplyAmbient(achse) {
-        const al = this.state.ambientLight;
-        if (!al) return;
-        const baseAmb = 0.04 * achse.nacht;
-        al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
-        // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
-        // Materials konsumieren al.intensity direkt (Three.js-Lighting).
-    }
+    // Das Ambient der Nacht (`_dayNightApplyAmbient`, 0,04 × nacht samt Gefühls-Zuschlag) fiel in licht-eine-skala: eine Zahl
+    // ohne Quelle, die jede Wand ohne Richtung trug — die Nacht nimmt ihr Licht aus der Himmels-Umgebung wie jede Stunde.
 
     // ═══ DIE LUFT (V18.530): die EINE Luftperspektive — Physik statt Kulisse ═══
     // Befund 04.10. (Blick-Tour, echte GPU, Mess-Wiese): der Nebel war eine lineare WAND an der Wald-Kante
@@ -2442,42 +2417,11 @@ class AnazhRealm_bild_himmel {
         return st.luft;
     }
 
-    // HemisphereLight (der Nachthimmel-Boden) und die Luft synchron aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler × Wetter.
-    // Die In-Streu-Farbe der Luft über Wasser ist der Himmel der EINEN Atmosphäre (`_luftEnsure`); unter Wasser (die KAMERA
-    // unter dem Spiegel) trägt dieselbe Extinktion die Wasser-Trübung im Licht des Orts.
-    _dayNightApplyHemiUndLuft(achse, tint) {
-        const hl = this.state.hemiLight;
-        const pm = this.state.playerMesh;
-        if (hl) {
-            // die Farbe des Nachthimmel-Bodens ist der Nachthimmel des Gesetzes (`ATMO_GESETZ.nacht.himmel`), getönt wie der Himmel
-            // (Wetter, Feld, Gefühl relativ zum Nenner der Tönung) — bis S7 die Tafel der Uhr (`DAY_NIGHT_STOPS`) × 1,1
-            const N = this._atmoGesetz().nacht.himmel;
-            const b = tint.basis;
-            const q = (x, y) => (y > 1e-4 ? x / y : 1);
-            hl.color.setRGB(N[0] * q(tint.skyR, b.r), N[1] * q(tint.skyG, b.g), N[2] * q(tint.skyB, b.b));
-            const earth = new THREE.Color(0x463c2e); // Vorlagen-Hemi-Boden (phytogenesis Z.1291, warmes Braun statt 0x3a2818)
-            // `tint.auraK` gated den Feld-Term des Hemi-BODENS: bei Default auraK=0 ist der Boden rein Tag-Nacht+Wetter;
-            // Feld-Tönung nur über `atmosphere.auraTintStrength`.
-            const _aKGround = tint && Number.isFinite(tint.auraK) ? tint.auraK : 0;
-            if (_aKGround > 0 && pm && typeof this.auraAt === "function") {
-                const field = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living)
-                if (field) {
-                    const lebendig = Math.max(0, Math.min(1, field.lebendig || 0)) * _aKGround;
-                    const glut = Math.max(0, Math.min(1, field.glut || 0)) * _aKGround;
-                    const mag = Math.max(0, Math.min(1, field.magieleitung || 0)) * _aKGround;
-                    earth.r = Math.min(1, earth.r + lebendig * 0.15);
-                    earth.g = Math.min(1, earth.g + lebendig * 0.25);
-                    earth.r = Math.min(1, earth.r + glut * 0.35);
-                    earth.g = Math.max(0, earth.g + glut * 0.1);
-                    earth.r = Math.min(1, earth.r + mag * 0.15);
-                    earth.b = Math.min(1, earth.b + mag * 0.3);
-                }
-            }
-            hl.groundColor.copy(earth);
-            // Hemi = NUR der Nachthimmel-Boden 0.1 (EIN Himmel, V18.507): der Tag-Term (Vorlagen-Hemi 0.55·π)
-            // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
-            hl.intensity = 0.1 * achse.nacht * tint.lightMul;
-        }
+    // Die Luft aus dem Medium der Kamera: die In-Streu-Farbe über Wasser ist der Himmel der EINEN Atmosphäre (`_luftEnsure`);
+    // unter Wasser (die KAMERA unter dem Spiegel) trägt dieselbe Extinktion die Wasser-Trübung im Licht des Orts. Die
+    // Hemisphäre der Nacht (0,1 × nacht, ihr Boden aus der Aura) fiel in licht-eine-skala: eine Zahl ohne Quelle — die Nacht
+    // nimmt ihr Licht aus der Himmels-Umgebung wie jede Stunde.
+    _dayNightApplyLuft() {
         // DAS MEDIUM DER KAMERA (W-L-d): unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera, nie das
         // des Körpers (bis V18.531: eine Kamera 20 m über dem Ufer zeigte Voll-Bild-Unterwasser, solange die Augen des
         // Körpers in der Ufer-Flut lagen; die Verfolger-Kamera am Seegrund sah klare Luft). Die Kamera-Höhe ist ihr
@@ -3391,7 +3335,7 @@ AnazhRealm.KEY_BASE = __weltLicht.KEY_BASE; // welt-licht.js — 2,6
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine
 // 1/π-BRDF-Normierung — physikalische Lichter sind bei gleicher Zahl ~π-fach dunkler. Die aus dem
 // r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
-// die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
+// die Nacht bleibt unberührt (Mond-Pfad eigen). Kein Tuning-Knopf.
 AnazhRealm.LEGACY_LICHT = __weltLicht.LEGACY_LICHT; // welt-licht.js — π
 // DIE BELICHTUNG (licht.K1, `_dayNightApplyBelichtung`) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des
 // Renderers (25a liest sie, three r184: Khronos PBR Neutral), `zielKarte` das k·L der 18-%-Karte, das DIESE Kurve auf Mittelgrau

@@ -328,8 +328,9 @@ function albedoSicht(opts) {
             sc.traverse((o) => {
                 if (o.isLight) lichtAlt.push([o, o.intensity, o.color.clone()]);
             });
-            // das EINE Umgebungslicht der Welt (dirigent-ankunft: `state.ambientLight`, je Boot) — ohne es bricht die Linse laut
-            const A = st.ambientLight;
+            // die LAMPE DER ALBEDO-SICHT: ein Umgebungslicht, das nur die Linse hält (die Welt hat seit licht-eine-skala keins) —
+            // E = π trägt jede Fläche auf ihre Albedo; gesetzt vor dem `try`, fort im `finally`
+            const A = new T.AmbientLight(0xffffff, 0);
             const envAlt = sc.environment;
             const kamAlt = {
                 p: st.camera.position.clone(),
@@ -498,6 +499,7 @@ function albedoSicht(opts) {
                 }
             };
             const metallAlt = new Map();
+            sc.add(A);
             try {
                 for (const ex of exemplare) {
                     ausschnitteFort(); // der Ausschnitt der vorigen Zeile zeichnet nie in dieser
@@ -662,6 +664,7 @@ function albedoSicht(opts) {
                 }
                 luftZurueck();
                 sc.environment = envAlt;
+                sc.remove(A);
                 sc.remove(karte);
                 cam.position.copy(kamAlt.p);
                 cam.quaternion.copy(kamAlt.q);
@@ -1979,13 +1982,11 @@ function laubGegenlicht(opts) {
                 sc.traverse((o) => {
                     if (o.isLight) lichter.push([o, o.intensity]);
                 });
-                // die Albedo wie `__albedoSicht`: das Umgebungslicht der Szene weiß (ein neues Licht wechselt die Licht-Signatur
-                // jedes Programms), die übrigen Lichter und der Himmel still
+                // die Albedo wie `__albedoSicht`: die Lampe der Linse (ein weißes Umgebungslicht, das nur sie hält — die Welt hat
+                // seit licht-eine-skala keins), die übrigen Lichter und der Himmel still
                 const envA = sc.environment;
-                let amb = st.ambientLight || lichter.map((e) => e[0]).find((l) => l.isAmbientLight);
-                const ambEigen = amb ? null : new T.AmbientLight(0xffffff, 0);
-                if (ambEigen) sc.add((amb = ambEigen));
-                const ambFarbe = amb.color.clone();
+                const amb = new T.AmbientLight(0xffffff, 0);
+                sc.add(amb);
                 let hell, dunkel;
                 try {
                     for (const [l] of lichter) l.intensity = 0;
@@ -1997,8 +1998,7 @@ function laubGegenlicht(opts) {
                     amb.intensity = 0;
                     dunkel = await lies("die Albedo der Krone");
                 } finally {
-                    if (ambEigen) sc.remove(ambEigen);
-                    amb.color.copy(ambFarbe);
+                    sc.remove(amb);
                     for (const [l, i] of lichter) l.intensity = i;
                     sc.environment = envA;
                 }
@@ -2391,9 +2391,9 @@ function luftTiefe(o) {
         // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
         let blende = 1;
-        const anwenden = r._dayNightApplyHemiUndLuft;
+        const anwenden = r._dayNightApplyLuft;
         const belichten = r._dayNightApplyBelichtung;
-        r._dayNightApplyHemiUndLuft = function (...a) {
+        r._dayNightApplyLuft = function (...a) {
             anwenden.apply(this, a);
             if (dichte != null) U.beta.value = dichte;
         };
@@ -2558,7 +2558,7 @@ function luftTiefe(o) {
                 tafel.material.dispose();
             }
         } finally {
-            delete r._dayNightApplyHemiUndLuft;
+            delete r._dayNightApplyLuft;
             delete r._dayNightApplyBelichtung;
             PU.bloomStrength.value = bloom0;
             cam.fov = fov0;

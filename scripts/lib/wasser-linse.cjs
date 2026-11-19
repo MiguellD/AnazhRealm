@@ -1295,11 +1295,21 @@ async function wasserBild(o = {}) {
     const gefuehlAlt = U.emotion ? U.emotion.value : null;
     if (U.emotion) U.emotion.value = 0;
     const WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
+    // DIE LAMPE DER LINSE (das Licht der Welt trägt seit licht-eine-skala kein Ambient): allein das Richtlicht aus dem Zenit mit
+    // π, die Sonnen-Sicht frei (Horizont- und Wolken-Karte aus) — eine waagrechte Fläche nimmt E/π = 1
+    const [HKl, WKl] = [r._horizontKarte().U, r._wolkenKarte().U];
+    const sichtAlt = [HKl.aktiv.value, WKl.aktiv.value];
+    const lampe = () => {
+        WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
+        const L = r._weltLicht().U;
+        L.l0d.value.set(0, 1, 0);
+        L.l0c.value.setScalar(Math.PI);
+        [HKl.aktiv.value, WKl.aktiv.value] = [0, 0];
+    };
     const lichtAlt = U.light.value;
     const mess = async (zeit) => {
         U.time.value = zeit;
-        WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
-        r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI); // das Licht der Welt E/π = 1 (allein Ambient π)
+        lampe(); // das Licht der Welt E/π = 1 (allein die Lampe der Linse)
         U.light.value = 0;
         // DAS BILD OHNE SCHAUM: derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
         // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des
@@ -1381,8 +1391,7 @@ async function wasserBild(o = {}) {
     const kammMess = async (wind) => {
         U.wind.value = wind;
         U.time.value = o.t0 || 61.3;
-        WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
-        r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI);
+        lampe();
         U.light.value = 0;
         U.emotion.value = -1;
         const px0 = await lese(meerSzene, meerCam);
@@ -1415,8 +1424,7 @@ async function wasserBild(o = {}) {
         try {
             U.wind.value = 0.06;
             U.time.value = o.t0 || 61.3;
-            WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
-            r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI);
+            lampe();
             U.emotion.value = 0;
             U.light.value = 1;
             U.sunDir.value.set(0, 1, 0);
@@ -1460,6 +1468,7 @@ async function wasserBild(o = {}) {
         if (U.wind) U.wind.value = windAlt;
         U.time.value = zeitAlt;
         WL.forEach((u, i) => (u.value = u.value.copy ? u.value.copy(wlAlt[i]) : wlAlt[i]));
+        [HKl.aktiv.value, WKl.aktiv.value] = sichtAlt;
         U.light.value = lichtAlt;
         himmelMittag(tagAlt, weltTagAlt);
         if (U.emotion) U.emotion.value = gefuehlAlt;

@@ -3161,10 +3161,8 @@ async function starte() {
                         E_umgebung_zurSonne: o.umgebung?.zurSonne?.E,
                         E_umgebung_vonSonne: o.umgebung?.vonSonne?.E,
                         // je Licht-Art die waagrechte Karte mit der Umgebung (die Variante trägt sie, `scene.environmentNode`): der Täter
-                        // der Nacht beim Namen — Mond, Ersatz-Ambient, Hemi
+                        // der Nacht beim Namen — der Mond (Ambient und Hemi fielen in licht-eine-skala)
                         E_richt: o.DirectionalLight?.oben?.E,
-                        E_ambient: o.AmbientLight?.oben?.E,
-                        E_hemi: o.HemisphereLight?.oben?.E,
                         // die Farbe an der waagrechten Karte (linear): das Richtlicht mit der Umgebung und die Umgebung allein (`mondTon`)
                         L_richt: o.DirectionalLight?.oben?.L,
                         L_umgebung: o.umgebung?.oben?.L,
