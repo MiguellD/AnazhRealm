@@ -14,8 +14,13 @@ Wort des Schöpfers: „ja bauen, bei 98% wip sichern und übergabe“. Datei-Be
   der Re-Mint ist gelaufen (`haeuser.json` im WIP, 258 Fälle), ABER der Vertrag ist ROT: **Split-Parität 22/24 Rezept×Stufe**
   (`scripts/diag-fachwerk-contract.cjs:744`, Referenz „Shell-Komposition der Kern-Primitive“ ab `:93`) — mit nur `infill` 23/24, mit allen
   drei Stellen 22/24. Ungelesen, warum: Verdacht (a) die Zahl der Steine verschiebt den Zufalls-Strom (`rnd()` je Stein/Teil) für die
-  folgenden Teile anders als in der Referenz-Komposition, (b) die Referenz baut eine Wand mit eigenem Maß. ERSTER Schritt der nächsten
-  Sitzung: die zwei roten Rezept×Stufe beim Namen lesen (die Linse nennt sie mit `--zeilen`? sonst den Paritäts-Block lesen), dann heilen.
+  folgenden Teile anders als in der Referenz-Komposition, (b) die Referenz baut eine Wand mit eigenem Maß. BENANNT (18:56, Kopie der Prüfung):
+  rot sind genau **alemannisch L0** und **hanseatisch L0** (die Backstein-Häuser, nur Stufe 0). Mit dem kleineren Stein überschreitet ihre
+  L0 die Budget-Zeile; `buildInstance` streckt dann ins GROSSFORMAT (`P.__sehne > 1`, `fachwerk-core.js:242`: Stein × √sehne bis 1,6),
+  der Labor-Pfad der Referenz (`shellPfad`, `FC.HAUS(…).build`) kennt die Streckung nicht. Folge über die Linse hinaus: über der Zeile
+  trägt die L0 wieder ein ANDERES Steinmaß als der Stoff — der Zwilling kehrt als Faktor zurück. ENTSCHEID nötig (Koordinator): der
+  Stoff liest denselben Faktor (`__sehne` reist zur Zone), ODER die Zeile der L0 hebt sich für den Stein, ODER der Stein bleibt im Großformat
+  ein Muster des Stoffs (keine Geometrie über der Zeile).
   Kein Merge, solange der Vertrag rot ist.
   Benannter Preis: L0 alemannisch 77 526 → 96 630 Dreiecke (+25 %, nur `infill` gemessen); an der Profi-Band-Pose NICHT gemessen.
 - Punkt (5) **Rauschen des gt-Richters** — gelesen, nicht beim Namen: die Lieferungen des Fadens sind über Läufe bitgleich (L0 und L1:
