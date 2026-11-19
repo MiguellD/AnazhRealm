@@ -716,9 +716,9 @@ class AnazhRealm_siedlung_bewohner {
             }
             return null;
         };
-        // der Stand im Ring vor der Tür (`wort` trennt den Heim-Stand von der Station des Werks) — am Rand der Gasse; wo der Ring
-        // das nicht trägt, in der Gasse und in weiteren Ringen; `gilt` (x, z): was der Stand darüber hinaus tragen muss
-        const ringStand = function* (g, wort, tx, tz, ux, uz, gilt = null, nurRand = false) {
+        // der Stand im Ring vor der Tür (`wort` trennt den Heim-Stand von der Station des Werks) am Rand der Gasse, sonst in ihr
+        // und weiteren Ringen; `gilt` (x, z): was er darüber trägt; `anker`: die Tür, der er gehört (beim Hof-Haus: Ring vor dem Tor)
+        const ringStand = function* (g, wort, tx, tz, ux, uz, gilt = null, nurRand = false, anker = { x: tx, z: tz }) {
             // (die Maße des Rings: BEWOHNER.ring — dieselbe Tafel liest gate:kreatur-takt zielplan als Schranke eines Stands)
             const RG = BW.ring;
             for (const amRand of nurRand ? [true] : [true, false])
@@ -735,7 +735,7 @@ class AnazhRealm_siedlung_bewohner {
                                 x,
                                 z,
                                 blick: Math.atan2(ux, uz) + (g.axis(wort + "dreh") - 0.5) * 1.6,
-                                anker: { x: tx, z: tz }, // er sieht von seiner Tür fort
+                                anker, // er sieht von seiner Tür fort
                             },
                             amRand
                         );
@@ -757,24 +757,23 @@ class AnazhRealm_siedlung_bewohner {
             }
             return null;
         };
-        // DIE TÜREN der stehenden Häuser (die Tür, die Richtung aus dem Haus, die Rolle) — die Tür des Heims und die des Besuchs
+        // DIE TÜREN der stehenden Häuser (die Tür, die Richtung aus dem Haus, die Rolle) — die Tür des Heims und die des Besuchs; und
+        // DER EINGANG (fachwerk `eingangVon`, die EINE Regel von Plan, Vorplatz und Wirt): beim HOF-Haus das Tor vor dem Hof — dort hängt der
+        // Gang am Netz und stehen die Stände, über den Hof geht er auf der Achse der Front (`orte.ein`); bis w28-bau-rezept lag sein Punkt im Hof
         const tueren = [];
         for (const [si, sl] of plan.slots.entries()) {
             const wx = S.ox + sl.x;
             const wz = S.oz + sl.z;
             const haus = steht.get(`${sl.seed >>> 0}@${Math.round(wx)},${Math.round(wz)}`);
             if (!haus) continue; // kein Haus, keine Leute
-            const c = Math.cos(sl.phi || 0);
-            const s = Math.sin(sl.phi || 0);
-            const tu = sl.tuer || { x: 0, z: 0 };
-            const tx = wx + tu.x * c + tu.z * s;
-            const tz = wz - tu.x * s + tu.z * c;
-            const mx = sl.obb ? S.ox + sl.obb.cx : wx;
-            const mz = sl.obb ? S.oz + sl.obb.cz : wz;
-            const ul = Math.hypot(tx - mx, tz - mz) || 1;
-            tueren.push({ si, sl, haus, tx, tz, ux: (tx - mx) / ul, uz: (tz - mz) / ul });
+            const [c, s, tu] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0), sl.tuer || { x: 0, z: 0 }];
+            const [tx, tz] = [wx + tu.x * c + tu.z * s, wz - tu.x * s + tu.z * c];
+            const e = sl.tuer && FC.eingangVon(sl), [ex, ez] = e && e.hof ? [wx + tu.x * c + e.z * s, wz - tu.x * s + e.z * c] : [tx, tz]; // prettier-ignore
+            const [mx, mz] = sl.obb ? [S.ox + sl.obb.cx, S.oz + sl.obb.cz] : [wx, wz];
+            const ul = Math.hypot(tx - mx, tz - mz) || 1, [ux, uz] = e && e.hof ? [-s, -c] : [(tx - mx) / ul, (tz - mz) / ul]; // prettier-ignore
+            tueren.push({ si, sl, haus, tx, tz, ux, uz, ex, ez });
         }
-        for (const T of tueren) legen(T.tx + T.ux * BW.vorM, T.tz + T.uz * BW.vorM);
+        for (const T of tueren) legen(T.ex + T.ux * BW.vorM, T.ez + T.uz * BW.vorM);
         // DER REST DES WERKS (`_weltOffen` leute): je Person ihr Stand und ihr Besuch — er fällt mit jedem gestellten
         S.listeRest = 2 * tueren.reduce((a, T) => a + Math.max(0, FC.leuteVon(T.sl.ov) | 0), 0);
         // DIE ORTE DES PLANS (koerper-core `tagesOrte`: je stehendem Haus sein Slot mit seiner Rolle, der Platz, die Äcker —
@@ -811,7 +810,7 @@ class AnazhRealm_siedlung_bewohner {
             if (o.art === "platz") return (yield* marktStand(g)) || platz;
             if (o.art === "feld") return yield* feldStand(g, plan.felder[o.feld]);
             const T = tuerVon.get(o.slot);
-            return yield* ringStand(g, i === heimI ? "w" : "o" + i, T.tx, T.tz, T.ux, T.uz, null, i !== heimI);
+            return yield* ringStand(g, i === heimI ? "w" : "o" + i, T.ex, T.ez, T.ux, T.uz, null, i !== heimI, { x: T.tx, z: T.tz }); // prettier-ignore
         };
         // DIE BINDUNG (der Kern wählt, `tagesBindung`): je Bedürfnis `namen` der Ort des Menschen P; der Wirt stellt den Stand
         // (je Ort einen, `am`) — trägt ein Ort keinen freien mehr oder hängt sein Stand an einem anderen Teil des Netzes (`voll`),
@@ -835,19 +834,19 @@ class AnazhRealm_siedlung_bewohner {
         const liste = [];
         const besuche = [];
         for (const T of tueren) {
-            const { si, sl, haus, tx, tz, ux, uz } = T;
+            const { si, sl, haus, tx, tz, ux, uz, ex, ez } = T;
             const n = FC.leuteVon(sl.ov);
             if (!(n > 0)) continue;
             const rolle = typeof sl.rolle === "string" ? sl.rolle : "wohnhaus";
-            const tuer = { x: tx, z: tz, blick: Math.atan2(-ux, -uz), haus };
-            const vor = { x: tx + ux * BW.vorM, z: tz + uz * BW.vorM };
+            const [tuer, vor] = [{ x: tx, z: tz, blick: Math.atan2(-ux, -uz), haus }, { x: tx + ux * BW.vorM, z: tz + uz * BW.vorM }]; // prettier-ignore
+            const ein = ex !== tx || ez !== tz ? { x: ex + ux * BW.vorM, z: ez + uz * BW.vorM } : null; // vor dem Hof-Tor
             const heimI = ortVon.get(si);
             for (let k = 0; k < n; k++) {
                 yield;
                 S.listeRest--;
                 const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
                 const same = Math.floor(g.axis("tag") * 4294967296) >>> 0;
-                const heim = yield* ringStand(g, "", tx, tz, ux, uz);
+                const heim = yield* ringStand(g, "", ex, ez, ux, uz, null, false, { x: tx, z: tz });
                 if (!heim) {
                     this._bruchMelden(
                         `BEWOHNER: ${rolle} #${sl.seed >>> 0} in „${plan.name || "?"}" — kein freier Stand vor der Tür`
@@ -886,7 +885,7 @@ class AnazhRealm_siedlung_bewohner {
                 // prettier-ignore
                 liste.push({
                     heim: sl.seed >>> 0, rolle, beruf, same,
-                    orte: { tuer, vor, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
+                    orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
                     genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, beinL: u, tempo: u, satzOrt: u,
                     nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
@@ -2424,9 +2423,9 @@ class AnazhRealm_siedlung_bewohner {
     }
 
     // DER WEG (mensch.K2, „nie durch Hauswände"): vom Stand des Leibs zum Ziel — die Tür liegt in der Wand: wer aus ihr tritt
-    // oder in sie geht, geht über den Punkt vor ihr (`orte.vor`, `BEWOHNER.vorM`); dazwischen die Strecke
-    // (`_bewohnerStrecke`). Jeder geht
-    // in seiner Spur (`spurM` quer zum Weg, aus dem Samen — die Menge geht nebeneinander, nicht durcheinander).
+    // oder in sie geht, geht über den Punkt vor ihr (`orte.vor`, `BEWOHNER.vorM`); dazwischen die Strecke (`_bewohnerStrecke`).
+    // DER HOF (`orte.ein`): beim Hof-Haus geht er von dort auf der Achse vor das Tor, wo die Strecke beginnt und endet; wer im
+    // Hof steht (auf der Achse ± 1,5 m), geht von dort. Jeder geht in seiner Spur (`spurM` quer zum Weg, aus dem Samen).
     _bewohnerWeg(S, b) {
         const g = b.leib;
         const o = b.orte;
@@ -2438,8 +2437,9 @@ class AnazhRealm_siedlung_bewohner {
         const von = b.stand || (nahTuer ? o.tuer : { x: lage.x, z: lage.z });
         b.tagVon = null;
         const ziel = b.ziel;
-        const a = von === o.tuer ? o.vor : von;
-        const e = ziel === o.tuer ? o.vor : ziel;
+        const [lx, lz, px, pz] = o.ein ? [o.ein.x - o.tuer.x, o.ein.z - o.tuer.z, von.x - o.tuer.x, von.z - o.tuer.z] : [0, 0, 0, 0]; // prettier-ignore
+        const L2 = lx * lx + lz * lz, t = L2 > 0 && von !== o.tuer ? (px * lx + pz * lz) / L2 : -1, hof = t > -0.05 && t < 1 && (px * lz - pz * lx) ** 2 < 2.25 * L2; // prettier-ignore
+        const vorweg = von === o.tuer ? (o.ein ? [o.vor, o.ein] : [o.vor]) : hof && ziel !== o.tuer ? [o.ein] : [], nachweg = ziel === o.tuer ? (o.ein && !hof ? [o.ein, o.vor] : [o.vor]) : [], a = vorweg.length ? vorweg[vorweg.length - 1] : von, e = nachweg.length ? nachweg[0] : ziel; // prettier-ignore
         const spur = (((b.same >>> 8) & 255) / 255 - 0.5) * 2 * AnazhRealm.BEWOHNER.spurM;
         const strecke = a === e ? [] : this._bewohnerStrecke(S, a, e, spur);
         // kein Weg (laut, `_bewohnerStrecke`): er bleibt, wo er steht — nie geradeaus durch die Wand
@@ -2448,9 +2448,9 @@ class AnazhRealm_siedlung_bewohner {
             b.wegRest = 0;
             return;
         }
-        const pts = (a !== von ? [a] : []).concat(strecke);
+        const pts = vorweg.concat(strecke);
         if (von === b.stand && Math.hypot(g.position.x - von.x, g.position.z - von.z) > 1e-3) pts.unshift(von); // vom Stand
-        if (e !== ziel) pts.push(ziel);
+        if (e !== ziel) pts.push(...nachweg.slice(1), ziel);
         if (!pts.length) pts.push(ziel);
         // je Punkt der Rest-Weg bis zum Ziel (die Linse liest, dass er schrumpft)
         const rest = new Float64Array(pts.length);
@@ -3666,7 +3666,7 @@ class AnazhRealm_siedlung_bewohner {
                 // des Auswegs nur die Stände: an der Stadt rückten fünf Stände näher als `raumM` an den Punkt vor einer Tür (am
                 // Start-Dorf einer), der Stand 721,8/408,6 eines Gasts 0,5 m neben den vor wohnhaus #91693 — wer dort um 22 Uhr
                 // heimkam, blieb 1,4 m vor seiner Tür stehen (3 Steckenbleiber, gate:kreatur-takt bewohner „Stände gestapelt“).
-                for (const v of new Set(S.liste.map((b) => b.orte.vor))) legen(v.x, v.z, v);
+                for (const v of new Set(S.liste.flatMap((b) => [b.orte.vor, b.orte.ein]))) if (v) legen(v.x, v.z, v);
             }
             const raum = raumVon(o);
             // das Gesetz seiner Art gilt auch dem gerückten (`gilt`, `_bewohnerListe`: der Stand am Platz bleibt am Platz);

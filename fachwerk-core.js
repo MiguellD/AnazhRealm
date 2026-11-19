@@ -1577,7 +1577,11 @@
     bar(W/2-armW,W/2,zC+gateW,zF,true);              // rechter Arm
     bar(-W/2,W/2,zC,zC+gateW,false,{x:doorX, w:doorW+0.9, h:P.doorH+0.3});           // Torriegel vorne (First entlang x)
     beam(g,0,baseY+0.03,(zF+zC+gateW)/2,W-2*armW+0.3,0.06,courtD-gateW,'weg'); addSolid(0,baseY+0.03,(zF+zC+gateW)/2,W-2*armW+0.3,0.06,courtD-gateW);   // Hofpflaster
-    const wz=(zF+zC+gateW)/2; beam(g,0,baseY+0.45,wz,1.1,0.9,1.1,'stein'); beam(g,0,baseY+0.92,wz,1.3,0.1,1.3,'stein'); addSolid(0,baseY+0.45,wz,1.1,0.9,1.1); addSolid(0,baseY+0.92,wz,1.3,0.1,1.3);   // Brunnen in der Mitte
+    // DER BRUNNEN DES HOFS steht NEBEN dem Eingangs-Korridor (die Sperrfläche der Haustür, so breit wie das Tor): an der Wand eines Arms, wo der Hof ihn
+    // neben dem Korridor trägt — sonst trägt der Hof keinen. Bis w28-bau-rezept stand er in der Mitte, auf der Achse der Tür: der Gang vom Tor zur
+    // Haustür lief gegen ihn (die werkstatt des Start-Dorfs, W 8: 0,75 m je Seite neben ihm, der Bewohner fand keinen Weg — gate:kreatur-takt bewohner)
+    const hw=W/2-armW-0.11, gw2=(doorW+0.9)/2;
+    if(hw-1.4>=gw2){ const wx=((P.seed>>>0)&1?1:-1)*(hw-0.75), wz=(zF+zC+gateW)/2; beam(g,wx,baseY+0.45,wz,1.1,0.9,1.1,'stein'); beam(g,wx,baseY+0.92,wz,1.3,0.1,1.3,'stein'); addSolid(wx,baseY+0.45,wz,1.1,0.9,1.1); addSolid(wx,baseY+0.92,wz,1.3,0.1,1.3); }
     return g; }
   // LOCHWAND-GESETZ — EINE Wand-mit-Öffnungen-Quelle: Vollsegmente zwischen den Löchern, Brüstungs- und Sturzband je Loch. Türen UND Fenster sind dieselbe Öffnungs-Art. sol (Welle L, additiv): jedes Segment trägt sein Solid (die Hofmauer); ohne sol bleibt die Wand ohne (die Aufrufer mit eigener Solid-Quelle).
   function lochWand(g,horiz,fix,a0,a1,y0,y1,holes,role,tk,sol){ tk=tk||0.24; const B=(c,cy,len,hh)=>{ if(len<0.03||hh<0.03)return; horiz?beam(g,c,cy,fix,len,hh,tk,role):beam(g,fix,cy,c,tk,hh,len,role); if(sol){ if(horiz)addSolid(c,cy,fix,len,hh,tk); else addSolid(fix,cy,c,tk,hh,len); } };
