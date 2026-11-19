@@ -2237,11 +2237,14 @@ class AnazhRealm_bild_kosten {
     }
 
     // DIE KLASSE ERSCHEINUNG (licht-eine-skala P8; EIN Mechanismus, DIESE Stelle): was kein Datum einer Quelle trägt, sondern
-    // einen BILDWERT — das Zielbild der Tor-Membran (`_membranGraph`), die Stoffe der Tore ohne Licht-Antwort (Filigran,
-    // Saum, Scheibe) und ihr Emissiv (Rahmen-Glut, Beschläge; ebenso das Tierauge: `_foundryTreeMaterial`, im Bau-Satz je
-    // Ecke), die Marker (Aura der Kreatur, Platzhalter eines Mitspielers) — steht im Maß des Auges: sein Wert ÷ die
-    // Belichtung des Bilds, vor dem Auge der Nacht (seine Umkehr, `_nachtAuge`). Die EINE Skala gilt für alles außer dieser
-    // Klasse; jeder weitere Stoff, der die Belichtung herausteilt, ist ein Bruch (die Linse zählt die Rufer beim Namen).
+    // einen BILDWERT, steht im Maß des Auges — sein Wert ÷ die Belichtung des Bilds, vor dem Auge der Nacht (seine Umkehr,
+    // `_nachtAuge`). Sie hat genau ACHT Mitglieder: das Zielbild der Tor-Membran (`_membranGraph`) · Filigran · Saum ·
+    // Scheibe (die Stoffe der Tore ohne Licht-Antwort) · Rahmen-Glut · Tor-Beschläge (ihr Emissiv, `_foundryTreeMaterial`,
+    // im Bau-Satz je Ecke) · die Aura der Kreatur · der Platzhalter eines Mitspielers. Der REST OHNE GESETZ ist genau einer:
+    // das Tierauge (tetrapoda, Emissiv ohne Quellen-Datum) geht durch dieselbe Stelle, ist aber kein Mitglied — offen, bis
+    // sein Kern ein Datum trägt. Die EINE Skala gilt für alles außer dieser Klasse; jeder weitere Stoff, der die Belichtung
+    // herausteilt, ist ein Bruch (gate:altlasten zählt Namen und Rest je Ruf-Stelle, gate:asset-contract das Leuchten je
+    // Lieferung).
     _erscheinung(bildwert) {
         return this._nachtAuge(THREE.TSL.vec3(bildwert).div(this._vorBelichtung().k), true);
     }
