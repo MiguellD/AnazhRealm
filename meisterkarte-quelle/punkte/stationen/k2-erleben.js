@@ -3164,9 +3164,11 @@ const LEITERN = [];
                     }
                 }
                 const z = await L.ev(
-                    "let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); } const TC = globalThis.__tetrapodaCore || {}; return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, sied, signal: Object.keys(TC).filter((k) => /signal|tanz|marke|gesang|dialekt|mimikry/i.test(k)) };",
+                    "let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); } const TC = globalThis.__tetrapodaCore || {}; return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, sied, signal: Object.keys(TC).filter((k) => k.split('_').flatMap((t) => (t === t.toUpperCase() ? [t] : t.split(/(?=[A-Z])/))).some((w) => /^(signal|tanz|marke|gesang|dialekt|mimikry)/i.test(w))) };",
                     30
                 );
+                // der Wächter liest WORTE der Schlüssel (camelCase, SNAKE), nie Teilworte: GTX f68dbf09 nannte `fluchtDistanz` („Dis-tanz“)
+                // einen erschienenen Leser, S2 · S4 · S5 · S6 warfen und standen ohne Urteil (richter-ohne-urteil)
                 L.zeile("Zensus Signale: " + JSON.stringify(z));
                 const neu = (nr) => {
                     if (z.signal.length) throw new Error("Leser erschienen (" + z.signal.join(", ") + ") — S" + nr + " misst ihn noch nicht");

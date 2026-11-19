@@ -706,15 +706,39 @@ function massDerStation(st, j, lauf, u) {
 //       MESSORT_MARKE (stationen/g3.js folge, stationen/proben-welt.cjs Tor, stationen/sitzung-seite.js Werkzeug, `grundstellung`
 //       dieser Maschine): UNGEMESSEN „Messort: …“ beim Namen, auch über ein GRÜN (wie die Frist). ROT ist nur, was die Linse als
 //       Zahl gegen ihr Soll urteilt.
+//   (e) DIE SPROSSE IST DIE EINHEIT DES ERGEBNISSES (richter-ohne-urteil, 19.11.; GTX f68dbf09: 19 Sprossen der Karte 2 sahen ihr
+//       Urteil — „S2 · ROT Umfang nicht erzeugbar …“, „S1 · ROT Leser fehlt …“ — und standen UNGEMESSEN, weil die Frist der Probe
+//       danach an einer ANDEREN Sprosse riss; 40 weitere fielen am Deckel der Leine, ohne dass der Läufer die Ausgabe las). Eine Station
+//       der Karte 2 (`karte2`: die Leiter-Gerüste k2-same, k2-mensch, k2-planet) urteilt eine Sprosse aus EINEM ganzen Eintrag der
+//       Ausgabe, den die Probe nach jeder Sprosse schreibt: steht ihr Ergebnis, trägt sie ihr Urteil über jeden Abbruch der Probe
+//       (Frist, Deckel, Messort) — der Abbruch steht daneben (`abbruch`, er zensiert die Sekunden und ruft die Grundstellung); UNGEMESSEN
+//       bleibt nur die Sprosse ohne Ergebnis. Jede andere Station urteilt nie über den Stand eines abgebrochenen Laufs.
 const FRIST_MARKE = /^@@PUNKTE@@ FRIST (\d+(?:\.\d+)?) s der Probe gerissen\b/m;
 const MESSORT_MARKE = /^@@PUNKTE@@ MESSORT (.+)$/m;
-function keinUrteil(u, leer, stdout) {
+// der Abbruch eines Laufs beim Namen (deckel: der Riss der Leine, den der Läufer selbst sah) oder null
+function abbruchVon(stdout, deckel) {
+    if (deckel) return deckel;
     const f = FRIST_MARKE.exec(String(stdout || ""));
     if (f) return "Frist der Probe " + f[1] + " s gerissen";
     const mo = MESSORT_MARKE.exec(String(stdout || ""));
-    if (mo) return "Messort: " + mo[1].trim().slice(0, 300);
+    return mo ? "Messort: " + mo[1].trim().slice(0, 300) : null;
+}
+// das Urteil liest ein Ergebnis: es ist gültig und nicht das Urteil über den LEEREN Lauf
+const liestErgebnis = (u, leer) => !u.fehler && !leer.fehler && !(leer.gruen === false && leer.zahl === u.zahl);
+const sprosseTraegt = (st, u, leer) => !!st && st.karte2 === true && liestErgebnis(u, leer);
+function keinUrteil(u, leer, stdout, st, deckel) {
+    const ab = abbruchVon(stdout, deckel);
+    if (ab) return sprosseTraegt(st, u, leer) ? null : ab;
     if (u.gruen || u.fehler || leer.fehler) return null;
     return leer.gruen === false && leer.zahl === u.zahl ? "die Urteils-Zeile fehlt" : null;
+}
+// der Täter einer Sprosse ohne Ergebnis: ihre eigene Zeile „S<n> warf: …“ / „S<n> an der Frist ausgelassen“ (k2-same L.je, k2-mensch
+// K.schritt) — nie die letzte Zeile einer fremden Sprosse (GTX f68dbf09: erleben.sinne.signale S2–S6 nannten den Lauf von S1)
+function sprosseTaeter(st, out) {
+    if (!st || st.karte2 !== true || !Number.isInteger(st.staffel)) return null;
+    const re = new RegExp("^.*\\bS" + st.staffel + " (?:warf: |an der Frist ausgelassen).*$", "m");
+    const z = re.exec(String(out || ""));
+    return z ? z[0].trim() : null;
 }
 // DER LEERE LAUF (Selbsttest 1c, die Voraussetzung von keinUrteil): über einen Lauf ohne JSON und ohne Zeile — im stdout nur der Zeuge der
 // Karte, Exit 0 · 1 · 2 oder ein Signal — urteilt jede Station ROT; ein GRÜN dort buchte eine Probe ohne Ausgabe, ein Wurf machte „kein
@@ -1760,7 +1784,7 @@ function fremdUrteil(st, e, b, r) {
         : "Last: Referenz f " + fzW(f) + " (Faden " + fzW(r.fEin) + " · alle Kerne " + fzW(r.fAlle) + (stoss && stoss > r.f ? " · Stoß in der Station " + fz2(sp.station) + " Kerne fremd → " + fzW(stoss) : "") +
             "; vor " + fzW(r.vor.ein) + "/" + fzW(r.vor.alle) + " ms, nach " + fzW(r.nach.ein) + "/" + fzW(r.nach.alle) + " ms, Ruhe " + fzW(r.ruhe.ein) + "/" + fzW(r.ruhe.alle) +
             " ms seit " + r.ruhe.von + ")" + namen + geraet;
-    const ab = brachAb([e]);
+    const ab = ABBRUCH_GRUND.test(e.grund || ""); // eine Sprosse, die ihr Urteil über den Abbruch trug (keinUrteil (e)), urteilt die Last wie jede
     if (e.gruen === true && !ab) return { ...mit, grund: (e.grund ? e.grund + " · " : "") + "GRÜN trotz " + was };
     const ms = f != null && !ab ? massVon(e.mass) : [];
     // je Maß sein Teiler: f, an einer GPU-Station ohne `cpu` mindestens REFERENZ_KARTE_FAKTOR; `fest` teilt nie
@@ -2093,11 +2117,15 @@ function fahreGruppeEinmal(sts, ctx) {
             const imTeil = teileN > 1 ? " in Teil " + teil + "/" + teileN : "";
             // DIE SEITE WARF: ROT mit dem geworfenen Text, sofort — nie UNGEMESSEN am Deckel (gelaende.K2#1 hing 13-mal, zuletzt 1256 s)
             if (tot && wurf && wurf.fiel) return rot("die Seite warf: " + wurfVoran(wurf.zeile) +" — die Probe lief " + wurfGnadeS + " s danach noch" + imTeil + ", beendet", code);
-            if (tot && sitz) return offen((riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)"
+            // DER DECKEL DER LEINE: UNGEMESSEN beim Namen — außer der Sprosse der Karte 2, deren Ergebnis schon in der Ausgabe steht
+            // (keinUrteil (e)): die Ausgabe wird unten gelesen, jede Station ohne Ergebnis trägt diesen Grund wörtlich
+            const deckelRiss = tot && sitz ? (riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)"
                 : fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe"
-                    : "Deckel " + deckelS + " s gerissen" + (deckelS > grundS ? " (der Anteil der Fahrt, mit Lebenszeichen)" : "")) + imTeil + " — beendet, UNGEMESSEN" + wobei, code);
+                    : "Deckel " + deckelS + " s gerissen" + (deckelS > grundS ? " (der Anteil der Fahrt, mit Lebenszeichen)" : "")) + imTeil : null;
+            const deckelGrund = deckelRiss && deckelRiss + " — beendet, UNGEMESSEN" + wobei;
+            if (deckelRiss && !(fs.existsSync(ctx.aus) && sts.some((s) => s.karte2 === true))) return offen(deckelGrund, code);
             if (ohneEnde) return offen("die Teile reichten nicht: Teil " + teil + "/" + teileN + " sagte WEITER — der Lauf ohne Ende, UNGEMESSEN" + wobei, code);
-            if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + wobei, code);
+            if (tot && !deckelRiss) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + wobei, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
             if (schloss && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
             if (schloss && code === 124) return rot("GPU-Deckel " + deckelS + " s (gpu-lauf.sh Exit 124)", code);
@@ -2114,24 +2142,29 @@ function fahreGruppeEinmal(sts, ctx) {
             // dieselbe Diagnose, kein JSON und keine Zeile. Ein Absturz (Signal) urteilt über das, was er schrieb — nie GRÜN
             const lauf = { exit: code, stdout: out + (zeugeText ? "\n" + zeugeText : ""), stderr: err };
             const leer = { exit: code, stdout: zeugeText, stderr: err };
-            const absturz = sig ? "Absturz: Signal " + sig : null;
+            const absturz = sig && !deckelRiss ? "Absturz: Signal " + sig : null; // das Signal der Leine ist ihr Deckel, kein Absturz
             // DER TÄTER eines Laufs ohne Urteil beim Namen: die Fehler-Zeile seines Läufers (seite.cjs, sitzung-seite.js, proben-welt.cjs),
             // sonst die letzte Zeile auf stderr, sonst die letzte der Ausgabe
             const letzte = (t) => String(t).split(/\r?\n/).map((l) => l.trim()).filter(Boolean).pop();
             const taeter = (/^(?:@@PUNKTE@@ FEHLER|@@ PROBE-FEHLER|PROBE-FEHLER) .*$/m.exec(out) || [])[0] || letzte(err) || zuletzt;
+            const ab = abbruchVon(lauf.stdout, deckelRiss);
             ganz(sts.map((s) => {
                 const r = (grund) => ({ gruen: false, zahl: grund, exit: code, minuten: m, grund, ...gz });
                 const u = urteilVon(s, j, lauf);
-                const ohne = keinUrteil(u, urteilVon(s, null, leer), lauf.stdout);
+                const ohne = keinUrteil(u, urteilVon(s, null, leer), lauf.stdout, s, deckelRiss);
+                if (ohne && deckelRiss) return { gruen: false, ungemessen: true, zahl: deckelGrund, exit: code, minuten: m, grund: deckelGrund };
                 if (ohne) {
+                    const t = sprosseTaeter(s, out) || taeter;
                     const grund = (absturz ? absturz + " — " : "") + ohne + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(u.fehler || u.zahl).slice(0, 240) + ")" +
-                        (taeter ? " · Täter: " + taeter.slice(0, 300) : "");
+                        (t ? " · Täter: " + t.slice(0, 300) : "");
                     return { ...r(grund), ungemessen: true };
                 }
+                // die Sprosse trägt ihr Urteil über den Abbruch (keinUrteil (e)): der Abbruch steht beim Namen daneben
+                const trug = ab ? { abbruch: ab } : {};
                 if (u.fehler) return r(u.fehler);
-                if (absturz) return r(absturz + " · " + u.zahl);
-                if (wand) return { gruen: false, zahl: "Wand GPU: " + wand + " · " + u.zahl, exit: code, minuten: m, grund: "Wand GPU: " + wand, ...gz };
-                return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...(u.mass ? { mass: u.mass } : {}), ...(u.massFehler ? { massFehler: u.massFehler } : {}), ...gz };
+                if (absturz) return { ...r(absturz + " · " + u.zahl), ...trug };
+                if (wand) return { gruen: false, zahl: "Wand GPU: " + wand + " · " + u.zahl, exit: code, minuten: m, grund: "Wand GPU: " + wand, ...gz, ...trug };
+                return { gruen: u.gruen, zahl: u.zahl + (ab ? " · gemessen vor dem Abbruch: " + ab : ""), exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...(u.mass ? { mass: u.mass } : {}), ...(u.massFehler ? { massFehler: u.massFehler } : {}), ...gz, ...trug };
             }).map((e) => (e.ungemessen ? e : { ...e, ...kz })));
         };
         starte();
@@ -3525,7 +3558,12 @@ function fahrtWellen(gruppen, geraet, ms, hebt) {
     return { wellen: wellen.map((xs) => xs.map((x) => x.g)), namen, haengt: new Set(je.filter((x) => x.haengt).map((x) => x.ids[0])), je: wellen.flat() };
 }
 // eine Probe, die abbrach (Deckel, die eigene Frist, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
-const brachAb = (es) => es.some((e) => /^(Deckel |Frist der Probe |Absturz|Start:|die Seite warf: )/.test(e.grund || ""));
+const ABBRUCH_GRUND = /^(Deckel |Frist der Probe |Absturz|Start:|die Seite warf: )/;
+const brachAb = (es) => es.some((e) => !!e.abbruch || ABBRUCH_GRUND.test(e.grund || ""));
+// DER RISS EINES LAUFS (Leine oder eigene Frist): am Grund des Ungemessenen oder am Abbruch, über den eine Sprosse ihr Urteil trug
+// (keinUrteil (e)) — die Sekunden sind zensiert, nie ein gemessener Bedarf
+const RISS_GRUND = /^(Deckel|Frist der Probe) \d+(\.\d+)? s gerissen/;
+const rissVon = (e) => (e.ungemessen && RISS_GRUND.exec(e.grund || "")) || RISS_GRUND.exec(e.abbruch || "");
 // DIE WELT STEHT, wo der Spieler steht (DER WARME START, fahreSitzung): das EINE Einschwingen von welt-boot (`__weltStehtNach`, jede Seite
 // der Werkbank trägt es, WARTEN_SEITE) — kein Messort, kein Umstellen: der Spieler bleibt, wo Boot, Grundstellung oder Tür ihn ließen
 const WELT_STEHT = "await __weltDa(); const takte = await __weltStehtNach(); return { takte, chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0, ring: r._builtRingRadius() };";
@@ -3536,7 +3574,7 @@ const WELT_STEHT = "await __weltDa(); const takte = await __weltStehtNach(); ret
 // Der Deckel ändert nie ein Urteil (bis 10.11. hieß ein GRÜN über 45 s „das Urteil zählt nie“ — eine Wanduhr urteilte). Was keine Zahl der
 // Probe ist (die Welt endete, die Fahrt riss, kein Schloss), bleibt, wie es fiel
 function eichEintrag(st, e, geraet) {
-    const am = !!e.ungemessen && RISS_GRUND.test(e.grund || "");
+    const am = !!rissVon(e);
     if (e.ungemessen && !am) return e;
     return { ...e, eich: { s: e.s, sek: probeSek(st, geraet), ...(am ? { gerissen: true } : {}) } };
 }
@@ -3558,7 +3596,6 @@ const eichOffen = (meine, m, sha, ab) =>
 // FRIST_VORLAUF_S: die Probe hat Deckel − 6 s (FRIST_S in stationen/sitzung-seite.js, frist in stationen/seite.cjs) — der Deckel trägt ihre
 // Zahl erst mit diesem Vorlauf (Radeon 25ac4c0c mit ⌈1,45 × s⌉: siedlung.K5 13,3 s an der Frist 14 s, halten.K1#2 15 s an 16 s gerissen)
 const EICH_FAKTOR = 2, EICH_FAKTOR_MIN = 1.1, FRIST_VORLAUF_S = 6, DECKEL_REIHE_N = 10, DECKEL_P = 0.9, DECKEL_GRUEN_MIN = 3;
-const RISS_GRUND = /^(Deckel|Frist der Probe) \d+(\.\d+)? s gerissen/;
 // jeder Lauf der Probe `id` auf der Karte aus allen Mess-Dateien ms, der jüngste zuerst: { s, gruen, gemessen, zensiert, zeit, sha } —
 // gemessen: ein Urteil fiel (GRÜN oder ROT im Maß), zensiert: an der Leine oder der eigenen Frist gefallen (ein Zwilling erbt den Lauf der
 // ersten Station, er zählt nie zweimal; „die Welt endete“, „die Fahrt riss“, kein Schloss, Fremd-Last sind keine Zahl der Probe)
@@ -3576,10 +3613,12 @@ function laufSekunden(ms, geraet, id) {
                 else if (!e.ungemessen) mit(e.eich.s, true, e.gruen === true);
                 else if (e.eich.urteil) mit(e.eich.s, true, e.eich.urteil === "GRÜN");
             } else if (e.modus !== "session" || !(e.s > 0)) continue;
-            else if (!e.ungemessen) mit(e.s, true, e.gruen === true);
             // an der Leine oder an der eigenen Frist N: die Untergrenze ist das größere von s und N (bauen.K5#2 Radeon: „Frist der Probe
-            // 33 s gerissen“ nach 29,2 s Prozess — die Probe zählt ihre Frist selbst)
-            else if (RISS_GRUND.test(e.grund || "")) mit(Math.max(e.s, Number(RISS_GRUND.exec(e.grund)[0].match(/\d+(\.\d+)?/)[0])), false);
+            // 33 s gerissen“ nach 29,2 s Prozess — die Probe zählt ihre Frist selbst); ebenso der Lauf, über den eine Sprosse ihr Urteil
+            // trug (keinUrteil (e)): sein Bedarf bleibt unbekannt, der Riss verdoppelt den Deckel weiter
+            else if (rissVon(e)) mit(Math.max(e.s, Number(rissVon(e)[0].match(/\d+(\.\d+)?/)[0])), false);
+            else if (e.abbruch) continue;
+            else if (!e.ungemessen) mit(e.s, true, e.gruen === true);
         }
     }
     return es.sort((a, b) => b.zeit.localeCompare(a.zeit));
@@ -3648,7 +3687,7 @@ function eichTafel(stationen, ms, geraet) {
 // unbekannt — sie zählt als gerissen (unbekannt), nie still als gemessen; die Leine misst sie, wo die Fahrt Rest trägt
 function gerissenVorNach(t, m) {
     const je = new Map(t.zeilen.flatMap((z) => z.ids.map((id) => [id, z])));
-    const vorher = Object.entries((m && m.ungemessen) || {}).filter(([id, e]) => je.has(id) && RISS_GRUND.test(e.grund || "")).map(([id]) => id);
+    const vorher = [m && m.ungemessen, m && m.je].flatMap((x) => Object.entries(x || {})).filter(([id, e]) => je.has(id) && rissVon(e)).map(([id]) => id);
     const sicher = (z, sek) => z.s != null && z.s + FRIST_VORLAUF_S > sek;
     const amNeu = (id) => sicher(je.get(id), je.get(id).neu != null ? je.get(id).neu : je.get(id).sek);
     const unbekannt = vorher.filter((id) => !amNeu(id) && je.get(id).s == null);
@@ -6998,6 +7037,23 @@ async function selbsttest(o = {}) {
             frist.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN \(die Probe sah: Maß 9/.test(frist.grund) && brachAb([frist]) &&
             rotM.gruen === false && !rotM.ungemessen && rotM.grund === "ROT: Maß 9 (Soll ≤ 3)" && gruenM.gruen === true && !gruenM.ungemessen,
             JSON.stringify([ohne, sturz, frist, rotM, gruenM].map((x) => [x.gruen, !!x.ungemessen, x.grund || x.zahl])));
+        // (e) DIE SPROSSE IST DIE EINHEIT DES ERGEBNISSES (richter-ohne-urteil; GTX f68dbf09 erleben.spieler.praesenz#2 „Frist der Probe 64 s
+        // gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · ROT Umfang nicht erzeugbar …)“): S1 der Karte 2, deren Ergebnis vor der
+        // Frist in der Ausgabe stand, trägt ihr ROT, der Abbruch daneben (Grundstellung, zensierte Sekunden); S2 ohne Ergebnis bleibt
+        // UNGEMESSEN und nennt IHRE warf-Zeile (nie die letzte Zeile des Laufs); ohne `karte2` urteilt nie eine Station über den Stand.
+        // DIE MUTANTE (vorher ROT am Täter): keinUrteil ohne die Station — der Läufer vor dem Schnitt — nennt S1 UNGEMESSEN
+        {
+            const sprosse = (nr) => (j) => (j && j.sprossen && j.sprossen[nr] ? { gruen: false, zahl: "S" + nr + " · ROT Umfang nicht erzeugbar: " + j.sprossen[nr].was } : { gruen: false, zahl: "S" + nr + " · kein Ergebnis der Sprosse" });
+            const stand = ["node", "-e", "require('fs').writeFileSync(process.argv[1], JSON.stringify({ sprossen: { 1: { was: 'eine Saat' } } })); for (const z of ['@@ 1 s · probe S2 warf: Leser erschienen', '@@ 2 s · probe S3 gemessen', '@@PUNKTE@@ FRIST 27 s der Probe gerissen — Abbau']) console.log(z); process.exitCode = 3", "{AUS}"];
+            const k2 = (nr, mehr = {}) => ({ ...at, kriterium: "karte2.probe.leiter", staffel: nr, karte2: true, urteil: sprosse(nr), befehl: stand, ...mehr });
+            const s1 = await fahreStation(k2(1), ctx("k2-s1")), s2 = await fahreStation(k2(2), ctx("k2-s2")), alt1 = await fahreStation(k2(1, { karte2: undefined }), ctx("k2-alt"));
+            const mut = keinUrteil(sprosse(1)({ sprossen: { 1: { was: "eine Saat" } } }), sprosse(1)(null), "@@PUNKTE@@ FRIST 27 s der Probe gerissen — Abbau");
+            pruef("KEIN URTEIL (e) DIE SPROSSE TRÄGT IHR URTEIL über die Frist: S1 der Karte 2 mit Ergebnis ROT beim Grund, der Abbruch daneben (brachAb, zensiert); S2 ohne Ergebnis UNGEMESSEN mit ihrer warf-Zeile; ohne karte2 UNGEMESSEN; die Mutante (keinUrteil ohne Station) nennt S1 UNGEMESSEN",
+                s1.gruen === false && !s1.ungemessen && s1.grund === "ROT: S1 · ROT Umfang nicht erzeugbar: eine Saat" && s1.abbruch === "Frist der Probe 27 s gerissen" && brachAb([s1]) && !!rissVon(s1) &&
+                    s2.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN \(die Probe sah: S2 · kein Ergebnis der Sprosse\) · Täter: @@ 1 s · probe S2 warf: Leser erschienen$/.test(s2.grund) &&
+                    alt1.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN/.test(alt1.grund) && mut === "Frist der Probe 27 s gerissen",
+                JSON.stringify([s1, s2.grund, alt1.grund, mut]));
+        }
         const id = schluessel(at);
         const lauf = (sha, e) => {
             const m = { sha, geraet: "headless", je: {} };
@@ -7969,6 +8025,22 @@ async function selbsttest(o = {}) {
             !!xl["l.K1#1"] && xl["l.K1#1"].gruen === true && !xl["l.K1#1"].ungemessen && xl["l.K1#1"].s >= 4 && sekEnv.length === 2 && sekEnv[0] > 2 && sekEnv[0] === sekEnv[1] &&
             !!xl["r.K1#1"] && xl["r.K1#1"].gruen === false && !xl["r.K1#1"].ungemessen && /^n 7/.test(xl["r.K1#1"].zahl) && xl["r.K1#1"].s >= 3 && !!xl["n.K1#1"] && xl["n.K1#1"].gruen === true,
             JSON.stringify(Object.entries(xl).map(([id, e]) => [id, e.gruen, e.ungemessen, e.s, e.grund || e.zahl])));
+        // DIE LEINE TÖTET DIE PROBE, NIE DIE GEMESSENE SPROSSE (keinUrteil (e); GTX f68dbf09 same.entfaltung.abwesenheit: S7 stand nach
+        // 0 s „umfang“ in der Probe, die Leine tötete sie nach 93 s Stille, alle 7 Sprossen UNGEMESSEN): die Probe schreibt S1 in die
+        // Ausgabe und schweigt; nach dem Deckel trägt k.K1#1 (karte2) ihr ROT mit dem Riss der Leine daneben, k.K1#2 ohne Ergebnis
+        // steht UNGEMESSEN am Deckel wörtlich; DIE MUTANTE: dieselbe Probe ohne `karte2` (der Läufer vor dem Schnitt las die Ausgabe nie)
+        {
+            const sprosse = (nr) => (j) => (j && j.sprossen && j.sprossen[nr] ? { gruen: false, zahl: "S" + nr + " · ROT " + j.sprossen[nr].was } : { gruen: false, zahl: "S" + nr + " · kein Ergebnis der Sprosse" });
+            const schreibtUndSchweigt = { befehl: ["node", "-e", "require('fs').writeFileSync(process.argv[1], JSON.stringify({ sprossen: { 1: { was: 'Leser fehlt' } } })); setTimeout(() => {}, 60000)", "{AUS}"], sek: 2 };
+            const rk = await lauf([[{ ...S("k.K1", 1, schreibtUndSchweigt, sprosse(1)), karte2: true }, { ...S("k.K1", 2, schreibtUndSchweigt, sprosse(2)), karte2: true }],
+                [S("m.K1", 1, schreibtUndSchweigt, sprosse(1))]], "gut");
+            const [k1, k2, m1] = ["k.K1#1", "k.K1#2", "m.K1#1"].map((id) => rk.es[id] || {});
+            const stilleGrund = /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN$/;
+            pruef("LEINE die Sprosse der Karte 2 mit Ergebnis trägt ihr ROT über den Deckel der Stille (der Riss daneben, zensiert), die ohne Ergebnis steht UNGEMESSEN am Deckel; die Mutante ohne karte2 UNGEMESSEN",
+                k1.gruen === false && !k1.ungemessen && k1.grund === "ROT: S1 · ROT Leser fehlt" && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s /.test(k1.abbruch || "") && !!rissVon(k1) &&
+                    k2.ungemessen === true && stilleGrund.test(k2.grund || "") && m1.ungemessen === true && stilleGrund.test(m1.grund || ""),
+                JSON.stringify([k1, k2.grund, m1.grund]));
+        }
         // DIE MUTANTE der festen Uhr: trägt die Fahrt keinen Rest (60 s, nach l ein Bedarf von 1 000 s), ist ihr Anteil null und der Deckel der
         // Grund — die lebende fällt nach 2 s beim Namen, wie jede bis 10.11.; die Fahrt läuft weiter
         const rm = await lauf([[S("l.K1", 1, { befehl: lebt, sek: 2 }, nN)], [S("n.K1", 1, { befehl: [...ruf, "return 1"], sek: 1000 }, warm)]], "gut", null, 60);
