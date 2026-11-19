@@ -3661,7 +3661,8 @@ class AnazhRealm_kreatur_verhalten {
                             creature.userData.emotions
                         );
                         if (animDiv > 1 || U._poseBild) this._kreaturPoseZiel(creature);
-                    }
+                    } else if (tBA) globalThis.__tetrapodaCore.tierFussHalten(creature, tBA);
+                    // (zwischen zwei Auswertungen hält jedes stehende Bein seinen Fuß, wo er steht: tetrapoda `tierFussHalten`)
                     // DAS BILD ZWISCHEN DEN AUSWERTUNGEN (S3): auf einer gröberen Stufe der Leiter gleitet die Gestalt je Bild
                     // zum Stand der letzten Auswertung, statt nach 2–8 stillen Bildern zu springen
                     if (animDiv > 1 || U._poseBild) this._kreaturPoseGleit(creature, Math.max(1, animDiv));

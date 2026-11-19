@@ -180,7 +180,7 @@ hauptLauf(async () => {
     for (const p of gewaehlt) {
         const [T, ein] = [SELBSTTEST ? taeterVon(p) : [[null]], SELBSTTEST && EIN_LAUF.includes(p)];
         if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t), ort: ORT });
-        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT }) - 1, t, re }); // prettier-ignore
+        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT, art: opt("--art", undefined) }) - 1, t, re }); // prettier-ignore
     }
     const t0 = Date.now();
     const { aus, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);

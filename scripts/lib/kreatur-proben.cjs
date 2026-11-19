@@ -1155,6 +1155,25 @@ async function kreaturProben(r, T, opts) {
                             for (const [p, x, z] of v) ((p.x = x), (p.z = z));
                         }
                 );
+            // Täter: der stehende Fuß gleitet zwischen den Auswertungen mit dem Leib (der Halt der Raten-Leiter aus) — N1 nennt ihn
+            if (taeter === "herde-bild-gleiten") {
+                const KG = window.__tetrapodaCore;
+                const alt = KG.tierFussHalten;
+                KG.tierFussHalten = () => 0;
+                restore.push(() => (KG.tierFussHalten = alt));
+            }
+            // Täter: der Rumpf an der Decke der Senke (h/3, wie der Schwung-Fuß ihn zog) — N5 nennt ihn
+            if (taeter === "herde-bild-senke")
+                decke(
+                    "_animateTierBaum",
+                    (alt) =>
+                        function (c) {
+                            const o = alt.apply(this, arguments);
+                            const tb = c && c.userData && c.userData._tierBaum;
+                            if (tb && tb._gang && tb._gang.S > 0 && tb.bein) tb._gang.senke = (tb.bein[0].h * (c.scale.x || 1)) / 3;
+                            return o;
+                        }
+                );
             // DER ORT: Lebensraum der Gattung, Wildnis ohne Hülle im Umkreis 40 m, Land am Ort der Kamera; zuerst ohne Wald auf der
             // Sichtlinie (die Kronen deckten die Herde), sonst mit
             const LG = A._lebensraumGesetz();
@@ -1436,6 +1455,79 @@ async function kreaturProben(r, T, opts) {
             const zug = { takte: 0, art: {}, diag: [], v: [] };
             const schuesse = [];
             const TAU2 = Math.PI * 2;
+            // DIE NATUR-ZAHLEN DES GANGS (N1–N4, je Zahl ihre Quelle im Gesetz) an jedem gehenden Leib, an dem, was gezeichnet ist:
+            // N1 der Schlupf des stehenden Fußes — das Pfoten-Gelenk (gezeichneter Knoten) vom Aufsetzen bis zum Abheben, waagrecht
+            // (Soll ≤ 0,03 m, die Zeile der Hufe); N2 die Schrittlänge λ aus zwei Aufsetz-Punkten desselben Fußes (`_gang.fuss`,
+            // der Punkt, an dem das Gesetz ihn hält) gegen die Hüft-Höhe L und die Froude-Zahl Fr = v²/(g·L) — Alexander & Jayes
+            // 1983: λ/L = 2,3 · Fr^0,3 (GANG_GESETZ.schrittBasis/schrittFroude), dazu λ je Schulterhöhe; N2b die Froude-Zahl je
+            // Gangart im Band des Gesetzes (GANG_FOLGE: Trab ab froudeTrab, Galopp ab froudeGalopp, je mit der Hysterese);
+            // N3 die Kopf-Ruhe im Trab: die Kopf-Mitte gegen den Rumpf, halbe Spanne p5–p95 je Leib, Soll ≤ HALTUNG_GESETZ.nick ×
+            // L (das Nicken des Schritts, Loscher 2016 — der Trab trägt den Kopf ruhiger); dazu der Bein-Winkel aus dem Lot
+            // (Hüfte → Pfote, längs) und die Senke des Rumpfs je Hüft-Höhe — die gedrückte, gespreizte Gestalt beim Namen
+            const natur = { ort: {}, slip: [], schritt: [], fr: {}, kopf: new Map(), winkel: {}, senke: {}, nn: [], phi: [], zu: new Map() };
+            const vN = new T.Vector3();
+            const naturTakt = (c, tb) => {
+                const G = tb._gang;
+                const Tt = tb.teile;
+                const F = G.fuss;
+                const art = G.art;
+                if (!F || !art || art === "stand") return;
+                // ausgewertet in DIESEM Takt (die Raten-Leiter wertet ferne Leiber jedes 2.–8. Bild aus): das Gesetz gilt nur dort,
+                // dazwischen zeigt das Bild die Pose der letzten Auswertung am weiter gezogenen Leib (der Schlupf des Bilds)
+                const aus = G.lastT === s.creatureAnimationTime;
+                const L = (tb.beinL || 0.5) * (c.scale.x || 1);
+                const fr = ((G.v || 0) * (G.v || 0)) / (9.81 * L);
+                (natur.fr[art] ||= []).push(fr);
+                if (aus) (natur.senke[art] ||= []).push((G.senke || 0) / L);
+                const Z = natur.zu.get(c) || natur.zu.set(c, { an: [false, false, false, false], td: [null, null, null, null], st: [null, null, null, null], sg: [null, null, null, null] }).get(c); // prettier-ignore
+                const pf = [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP];
+                const hf = [Tt.legFL, Tt.legFR, Tt.legHL, Tt.legHR];
+                const vor = [Math.sin(c.rotation.y), Math.cos(c.rotation.y)];
+                for (let j = 0; j < 4; j++) {
+                    if (!pf[j] || !hf[j]) continue;
+                    const an = !!F[j] && F[j].an && !(F[j].tritt >= 0);
+                    // die SOHLE (das Ende des Pfoten-Glieds c, wie der Kern sie trägt: `pfoteHier`), nie das Gelenk darüber — es
+                    // dreht im Stand um sie
+                    pf[j].updateWorldMatrix(true, false);
+                    v3.set(0, tb.bein[j].c[0] / (tb.f || 1), tb.bein[j].c[1] / (tb.f || 1)).applyMatrix4(pf[j].matrixWorld);
+                    hf[j].updateWorldMatrix(true, false);
+                    vN.setFromMatrixPosition(hf[j].matrixWorld);
+                    const w = Math.atan2((v3.x - vN.x) * vor[0] + (v3.z - vN.z) * vor[1], vN.y - v3.y);
+                    if (aus) (natur.winkel[art] ||= []).push(Math.abs(w));
+                    // der gehaltene Fuß gegen seine Ruhe-Lage im Gesetz (die Hüfte in der Ruhe des Rumpfs + zr), je Hüft-Höhe: beim
+                    // Aufsetzen und beim Abheben (Soll ±S/2 des Gesetzes)
+                    if (aus && an && tb._huefteLeib && F[j]) {
+                        c.updateMatrixWorld(true);
+                        vN.copy(tb._huefteLeib[j]).applyMatrix4(c.matrixWorld);
+                        const o = ((F[j].x - vN.x) * vor[0] + (F[j].z - vN.z) * vor[1] - tb.bein[j].zr * (c.scale.x || 1)) / L;
+                        if (!Z.an[j]) (natur.ort[art] ||= { td: [], lo: [], S: [] }).td.push(o);
+                        Z.lo = Z.lo || [0, 0, 0, 0];
+                        Z.lo[j] = o;
+                    }
+                    if (!an && Z.an[j] && Z.lo) ((natur.ort[art] ||= { td: [], lo: [], S: [] }).lo.push(Z.lo[j]), natur.ort[art].S.push((G.S || 0) / L));
+                    if (an && !Z.an[j]) {
+                        if (Z.td[j]) natur.schritt.push({ art, fr, lamL: Math.hypot(F[j].x - Z.td[j][0], F[j].z - Z.td[j][1]) / L, L, schulterM: tb.bein && tb.bein[0] ? tb.bein[0].h * (c.scale.x || 1) : null }); // prettier-ignore
+                        Z.td[j] = [F[j].x, F[j].z];
+                        Z.st[j] = { x: v3.x, z: v3.z, max: 0 };
+                        Z.sg[j] = aus ? { x: v3.x, z: v3.z, max: 0 } : null;
+                    } else if (an && Z.st[j]) {
+                        Z.st[j].max = Math.max(Z.st[j].max, Math.hypot(v3.x - Z.st[j].x, v3.z - Z.st[j].z));
+                        if (aus) Z.sg[j] ? (Z.sg[j].max = Math.max(Z.sg[j].max, Math.hypot(v3.x - Z.sg[j].x, v3.z - Z.sg[j].z))) : (Z.sg[j] = { x: v3.x, z: v3.z, max: 0 }); // prettier-ignore
+                    } else if (!an && Z.an[j] && Z.st[j]) (natur.slip.push({ m: Z.st[j].max, g: Z.sg[j] ? Z.sg[j].max : null, art }), (Z.st[j] = Z.sg[j] = null)); // prettier-ignore
+                    Z.an[j] = an;
+                }
+                if (art === "trab" && Tt.headGroup && Tt.wolf) {
+                    const kf = kopf(c);
+                    // die Kopf-Mitte in der Welt je Takt (k = der Takt der Bühne: ein Sprung der Folge beginnt ein neues Stück)
+                    const K = natur.kopf.get(c) || natur.kopf.set(c, { L, stuecke: [] }).get(c);
+                    if (kf) {
+                        const y = kf.kopfMitteM + r.getTerrainHeightAt(c.position.x, c.position.z);
+                        const st0 = K.stuecke[K.stuecke.length - 1];
+                        if (!st0 || st0.k !== natur.k - 1) K.stuecke.push({ h: [y], k: natur.k });
+                        else (st0.h.push(y), (st0.k = natur.k));
+                    }
+                }
+            };
             // DER SCHUSS (an der echten GPU): G mit den Tieren, O ohne (`toggleCreatures`, das Wort des Spiels: Leib, Feld und
             // Satz) — ein Pixel ist Tier, wo G von O um mehr als 18 (Σ|ΔRGB|) abweicht, und gehört dem Tier, in dessen Rechteck
             // (+30 %) es liegt, bei mehreren dem mit der nächsten Mitte; die Fläche im Maß 1280 × 720
@@ -1572,6 +1664,22 @@ async function kreaturProben(r, T, opts) {
                         zug.art[G2.art] = (zug.art[G2.art] || 0) + 1;
                         if (G2.art === "trab" && G2.ph) zug.diag.push(Math.abs(wrap(G2.ph[0] - G2.ph[3])) / TAU2);
                     }
+                    if (tb._gang) ((natur.k = k), naturTakt(c, tb));
+                }
+                // N4 DIE HERDE AUF DER FLUCHT (ab 1 s): je Glied der nächste Nachbar in seinen Paar-Räumen (`_kreaturRaum`, der Raum
+                // des Verbands-Zugs) und die Ausrichtung Φ = |Σ v̂| / N aus dem Weg je Takt
+                if (z === "flucht" && kp >= 60) {
+                    let [sx, sz, nv] = [0, 0, 0];
+                    for (const [i, c] of glieder.entries()) {
+                        let nn = Infinity;
+                        for (const d of glieder) if (d !== c) nn = Math.min(nn, Math.hypot(d.position.x - c.position.x, d.position.z - c.position.z)); // prettier-ignore
+                        if (Number.isFinite(nn)) natur.nn.push(nn / Math.max(1e-3, r._kreaturRaum(c)));
+                        const sp = spur[i];
+                        const [vx, vz] = [sp[sp.length - 1][0] - sp[sp.length - 2][0], sp[sp.length - 1][1] - sp[sp.length - 2][1]]; // prettier-ignore
+                        const vv = Math.hypot(vx, vz);
+                        if (vv > 1e-4) ((sx += vx / vv), (sz += vz / vv), nv++);
+                    }
+                    if (nv >= 2) natur.phi.push(Math.hypot(sx, sz) / nv);
                 }
                 // S1 je Bild: drei Zeitpunkte je Zustand — Stufe, Rechteck, Kopf; an der GPU Bild und Maske
                 if (SCHUSS.includes(kp)) {
@@ -1915,6 +2023,54 @@ async function kreaturProben(r, T, opts) {
                     diagMedianZyklen: zug.diag.length ? rund(median(zug.diag), 3) : null,
                     leibTakte: zug.takte,
                 },
+                natur: (() => {
+                    const q = (a, p) => (a.length ? rund(quantil(a, p), 3) : null);
+                    const KG = window.__tetrapodaCore;
+                    const [fT, fG, hy] = [KG.GANG_FOLGE.froudeTrab, KG.GANG_FOLGE.froudeGalopp, KG.GANG_FOLGE.hysterese];
+                    const band = { schritt: [0, fT * (1 + hy)], trab: [fT * (1 - hy), fG * (1 + hy)], galopp: [fG * (1 - hy), Infinity] }; // prettier-ignore
+                    const jeArt = {};
+                    for (const art of Object.keys(natur.fr)) {
+                        const fr = natur.fr[art];
+                        const S = natur.schritt.filter((s) => s.art === art && s.lamL > 0.2);
+                        const aj = S.map((s) => s.lamL / (2.3 * Math.pow(Math.max(1e-3, s.fr), 0.3)));
+                        jeArt[art] = {
+                            takte: fr.length,
+                            froudeQ: [q(fr, 0.1), q(fr, 0.5), q(fr, 0.9)],
+                            imBand: band[art] ? rund(fr.filter((f) => f >= band[art][0] && f <= band[art][1]).length / fr.length, 3) : null, // prettier-ignore
+                            band: band[art] ? band[art].map((b) => (Number.isFinite(b) ? rund(b, 2) : null)) : null,
+                            schritte: S.length,
+                            lamLMedian: q(S.map((s) => s.lamL), 0.5),
+                            lamSchulterMedian: q(S.filter((s) => s.schulterM).map((s) => (s.lamL * s.L) / s.schulterM), 0.5),
+                            ajQ: [q(aj, 0.1), q(aj, 0.5), q(aj, 0.9)],
+                            winkelGradQ: natur.winkel[art] ? [q(natur.winkel[art], 0.5), q(natur.winkel[art], 0.99)].map((w) => rund((w * 180) / Math.PI, 1)) : null, // prettier-ignore
+                            fussOrtL: natur.ort[art] ? { aufsetzenQ: [q(natur.ort[art].td, 0.1), q(natur.ort[art].td, 0.5), q(natur.ort[art].td, 0.9)], abhebenQ: [q(natur.ort[art].lo, 0.1), q(natur.ort[art].lo, 0.5), q(natur.ort[art].lo, 0.9)], halbS: q(natur.ort[art].S, 0.5) / 2 } : null, // prettier-ignore
+                            senkeLQ: natur.senke[art] ? [q(natur.senke[art], 0.5), q(natur.senke[art], 0.95)] : null,
+                            slipQ: (() => { const a = natur.slip.filter((s) => s.art === art).map((s) => s.m); return a.length ? [q(a, 0.5), q(a, 0.95), rund(Math.max(...a), 3)] : null; })(), // prettier-ignore
+                            slipGesetzQ: (() => { const a = natur.slip.filter((s) => s.art === art && s.g !== null).map((s) => s.g); return a.length ? [q(a, 0.5), q(a, 0.95), rund(Math.max(...a), 3)] : null; })(), // prettier-ignore
+                        };
+                    }
+                    // die Kopf-Ruhe: je Stück ≥ 1 s die Höhe gegen ihr gleitendes Mittel über 0,5 s (der Hang und die Wende fallen heraus,
+                    // das Wippen im Takt des Trabs bleibt), die halbe Spanne p5–p95 je Leib
+                    const kopfA = [...natur.kopf.values()].map((K) => {
+                        const res = [];
+                        for (const st of K.stuecke) {
+                            if (st.h.length < 60) continue;
+                            for (let i = 15; i + 15 < st.h.length; i++) {
+                                let m = 0;
+                                for (let j = i - 15; j <= i + 15; j++) m += st.h[j];
+                                res.push(st.h[i] - m / 31);
+                            }
+                        }
+                        return res.length ? { amp: (quantil(res, 0.95) - quantil(res, 0.05)) / 2, soll: KG.HALTUNG_GESETZ.nick * K.L } : null;
+                    }).filter(Boolean);
+                    const slipAlle = natur.slip.map((s) => s.m);
+                    return {
+                        jeArt,
+                        slipM: slipAlle.length ? { n: slipAlle.length, p95: q(slipAlle, 0.95), max: rund(Math.max(...slipAlle), 3) } : null,
+                        kopfTrab: kopfA.length ? { leiber: kopfA.length, ampMaxCm: rund(100 * Math.max(...kopfA.map((k) => k.amp)), 2), sollCm: rund(100 * Math.min(...kopfA.map((k) => k.soll)), 2), ueber: kopfA.filter((k) => k.amp > k.soll).length } : null, // prettier-ignore
+                        flucht: natur.nn.length ? { nnRaumQ: [q(natur.nn, 0.05), q(natur.nn, 0.5), q(natur.nn, 0.95)], fensterRaum: A._verhaltenGesetz().herde.fensterRaum, phiMittel: natur.phi.length ? rund(natur.phi.reduce((a, b) => a + b, 0) / natur.phi.length, 3) : null } : null, // prettier-ignore
+                    };
+                })(),
                 ms: Math.round(msOhneBild),
                 schussMs: Math.round(schussMs),
                 jpg,
@@ -4011,6 +4167,23 @@ function urteil(name, z) {
         soll(S3[1].max <= 0.05, `S3: größter Sprung je Takt ${S3[1].max} rad am ${S3[0]} (${S3[1].zustand}, t ${S3[1].t} s; Soll ≤ 0,05 rad)`); // prettier-ignore
         const S4 = Math.max(z.s4.gesetz.querMS2, z.s4.welt.querSprintMS2);
         soll(S4 <= 9.8, `S4: Querbeschleunigung im Sprint ${S4} m/s² (Gesetz ${z.s4.gesetz.querMS2}, Welt ${z.s4.welt.querSprintMS2}; Soll ≤ 9,8)`); // prettier-ignore
+        // DIE NATUR-ZAHLEN DES GANGS (N1–N5, die Quelle je Zeile im Kopf von `naturTakt`): je Gangart mit mindestens 10 Schritten
+        const N = z.natur;
+        if (N)
+            for (const [art, a] of Object.entries(N.jeArt)) {
+                if (!(a.schritte >= 10)) continue;
+                if (a.slipQ) soll(a.slipQ[0] <= 0.03, `N1 ${art}: Schlupf des Bilds ${a.slipQ[0]} m im Median je Stand (Gesetz ${a.slipGesetzQ ? a.slipGesetzQ[0] : "—"}; Soll ≤ 0,03 wie die Hufe)`); // prettier-ignore
+                soll(a.ajQ[1] >= 0.75 && a.ajQ[1] <= 1.33, `N2 ${art}: Schritt ${a.lamLMedian} L = ${a.ajQ[1]} × Alexander & Jayes 2,3·Fr^0,3 (λ je Schulterhöhe ${a.lamSchulterMedian}; Soll 0,75–1,33)`); // prettier-ignore
+                if (a.imBand !== null) soll(a.imBand >= 0.9, `N2 ${art}: Froude-Zahl im Band ${a.band} nur ${a.imBand} der Takte (Median ${a.froudeQ[1]}; Soll ≥ 0,9)`); // prettier-ignore
+                const tief = art === "schritt" ? 0.15 : 0.25;
+                if (a.senkeLQ) soll(a.senkeLQ[1] <= tief, `N5 ${art}: Senke des Rumpfs p95 ${a.senkeLQ[1]} L (Soll ≤ ${tief}: Gard 2004, Lee & Farley 1998 — der Rumpf an der Decke h/3 ist die gedrückte Gestalt)`); // prettier-ignore
+            }
+        if (N && N.kopfTrab) soll(N.kopfTrab.ueber === 0, `N3: Kopf im Trab wippt bis ${N.kopfTrab.ampMaxCm} cm (Soll ≤ ${N.kopfTrab.sollCm} cm = HALTUNG_GESETZ.nick × L), ${N.kopfTrab.ueber} von ${N.kopfTrab.leiber} Leibern darüber`); // prettier-ignore
+        if (N && N.flucht) {
+            const F = N.flucht;
+            soll(F.nnRaumQ[1] >= 1 && F.nnRaumQ[1] <= F.fensterRaum, `N4: nächster Nachbar auf der Flucht ${F.nnRaumQ[1]} Paar-Räume im Median (Soll 1–${F.fensterRaum}: getrennt, im Fenster des Verbands)`); // prettier-ignore
+            soll(F.phiMittel >= 0.8, `N4: Ausrichtung der Flucht Φ ${F.phiMittel} (Soll ≥ 0,8)`);
+        }
         if (z.art === "wolf") {
             const S5 = z.s5;
             soll(
@@ -4126,10 +4299,12 @@ const TAETER = {
         ["tiersatz-kopie", /Sicht-Kopien zeichnen als Leib/],
     ],
     // die Bühne der Herde: die Tiere gehalten (der Halter der Werkbank) — sie steht; die Kamera am alten Ort 140 m fern — S1 sieht
-    // kein Tier
+    // kein Tier; der Halt der Raten-Leiter aus — der stehende Fuß gleitet mit dem Leib (N1); der Rumpf an der Decke der Senke (N5)
     "herde-bild": [
         ["herde-bild-gehalten", /die Bühne steht: Bewegung 0 m/],
         ["herde-bild-fern", /S1: 0 von \d+ Tieren ≥ 200 px/],
+        ["herde-bild-gleiten", /N1 (trab|galopp): Schlupf des Bilds 0\.[1-9]/],
+        ["herde-bild-senke", /N5 (trab|galopp): Senke des Rumpfs p95 0\.(2[6-9]|3)/],
     ],
 };
 
