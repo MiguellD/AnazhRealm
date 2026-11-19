@@ -2789,36 +2789,15 @@ L.perspektive("mensch", (() => {
             // dieselbe Epoche zweimal); S6 die Schwerkraft 2 g über den Welt-Akt `gravity`: Genom und Plan unter 1 g ↔ 2 g.
             [LEIB]: {
                 sek: 60,
+                dorf: true,
                 mutiert: true,
                 pfad: PFAD_DORF,
                 ungefahren: "das Bildpaar der Tracht Sonne ↔ Regen (S1), die Bilder von Hafen ↔ Bergdorf (S4) und das Dorf unter 2 g (S6) schießt nur das Gerät",
                 mess: async function (H, U, M) {
                     const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
-                    const dorf = async (r, a) => {
-                        const st = r.state, pm = st.playerMesh.position;
-                        const nah = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((q) => q && q.plan && Math.hypot(q.ox - pm.x, q.oz - pm.z) < 230).sort((p, q) => Math.hypot(p.ox - pm.x, p.oz - pm.z) - Math.hypot(q.ox - pm.x, q.oz - pm.z));
-                        const lebt = () => nah().find((q) => q.liste && q.lebt && q.liste.length >= 8);
-                        const t0 = performance.now();
-                        let D = lebt(), gebaut = false;
-                        if (!D && !nah().length) {
-                            let ort = null;
-                            for (const R of [100, 130, 160]) for (let k = 0; k < 16 && !ort; k++) { const w = (k / 16) * 2 * Math.PI, x = pm.x + Math.cos(w) * R, z = pm.z + Math.sin(w) * R; if (r._landAt(x, z, 0.2) && !(r._nassAt && r._nassAt(x, z))) ort = { x, z }; }
-                            if (!ort) return { fehler: "kein Land 100–160 m um den Spieler für das Dorf der Probe" };
-                            await r.spawnSettlement({ seed: a.same, nH: a.nH, position: { x: ort.x, y: 0, z: ort.z } });
-                            gebaut = true;
-                        }
-                        if (!D) {
-                            try { await window.__gebautNach("das Dorf der Probe mensch", { fertig: () => !!lebt(), max: 400 }); } catch (e) { return { fehler: "das Dorf lebt nicht: " + String((e && e.message) || e).slice(0, 160) }; }
-                            D = lebt();
-                        }
-                        if (!D) return { fehler: "kein lebendes Dorf ≤ 230 m um den Spieler" };
-                        window.__kmDorf = D.key;
-                        const y = r.getTerrainHeightAt(D.ox, D.oz);
-                        return { key: D.key, n: D.liste.length, ms: Math.round(performance.now() - t0), gebaut, region: D.plan.region, jahr: D.plan.jahr, seed: D.plan.seed, pose: { px: D.ox, py: y + 9, pz: D.oz + 32, lx: D.ox, ly: y + 1.5, lz: D.oz } };
-                    };
                     const leib = async (r, a) => {
                         const st = r.state, A = AnazhRealm, kc = window.__koerperCore;
-                        const D = r._bewohnerSiedlungen.get(window.__kmDorf);
+                        const D = r._bewohnerSiedlungen.get(window.__dorfDerProbe);
                         if (!D || !D.liste) return { fehler: "das Dorf der Probe fehlt" };
                         const Lb = D.liste, n = Lb.length;
                         const alt = { w: st.weather, tod: st.timeOfDay, g: st.gravity, halt: st.weatherEffectTime };
@@ -2891,8 +2870,7 @@ L.perspektive("mensch", (() => {
                         aus.gZurueck = st.gravity === alt.g;
                         return aus;
                     };
-                    const d = await S(dorf, { same: 7, nH: 8 });
-                    if (!d || d.fehler) throw new Error("das Dorf der Probe: " + (d && d.fehler));
+                    const d = M.dorfDa();
                     const m = await S(leib, { lagen: ["pullover", "poncho", "jacket", "jacke", "coat", "mantel", "hoodie"], same: d.seed, nH: 8, jahre: [1320, 1560, 1700, 1860] });
                     if (!m || m.fehler) throw new Error("der Leib: " + (m && m.fehler));
                     const aus = {};
@@ -3029,34 +3007,15 @@ L.perspektive("mensch", (() => {
             // gegen den Boden der Zelle (`_bodenKlasseAt`). Was der Tag nicht kennt (Spiel, Partie, Eis, Liga), urteilt „nicht erzeugbar“.
             [SPORT]: {
                 sek: 35,
+                dorf: true,
                 mutiert: true,
                 pfad: PFAD_DORF,
                 ungefahren: "das Bild der Sportkultur zweier Saaten (S5, S6) schießt nur das Gerät",
                 mess: async function (H, U, M) {
                     const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
-                    const dorf = async (r, a) => {
-                        const st = r.state, pm = st.playerMesh.position;
-                        const nah = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((q) => q && q.plan && Math.hypot(q.ox - pm.x, q.oz - pm.z) < 230).sort((p, q) => Math.hypot(p.ox - pm.x, p.oz - pm.z) - Math.hypot(q.ox - pm.x, q.oz - pm.z));
-                        const lebt = () => nah().find((q) => q.liste && q.lebt && q.liste.length >= 8);
-                        let D = lebt();
-                        if (!D && !nah().length) {
-                            let ort = null;
-                            for (const R of [100, 130, 160]) for (let k = 0; k < 16 && !ort; k++) { const w = (k / 16) * 2 * Math.PI, x = pm.x + Math.cos(w) * R, z = pm.z + Math.sin(w) * R; if (r._landAt(x, z, 0.2) && !(r._nassAt && r._nassAt(x, z))) ort = { x, z }; }
-                            if (!ort) return { fehler: "kein Land 100–160 m um den Spieler für das Dorf der Probe" };
-                            await r.spawnSettlement({ seed: a.same, nH: a.nH, position: { x: ort.x, y: 0, z: ort.z } });
-                        }
-                        if (!D) {
-                            try { await window.__gebautNach("das Dorf der Probe mensch", { fertig: () => !!lebt(), max: 400 }); } catch (e) { return { fehler: "das Dorf lebt nicht: " + String((e && e.message) || e).slice(0, 160) }; }
-                            D = lebt();
-                        }
-                        if (!D) return { fehler: "kein lebendes Dorf ≤ 230 m um den Spieler" };
-                        window.__kmDorf = D.key;
-                        const y = r.getTerrainHeightAt(D.ox, D.oz);
-                        return { key: D.key, n: D.liste.length, seed: D.plan.seed, pose: { px: D.ox, py: y + 9, pz: D.oz + 32, lx: D.ox, ly: y + 1.5, lz: D.oz } };
-                    };
                     const sport = async (r, a) => {
                         const st = r.state;
-                        const D = r._bewohnerSiedlungen.get(window.__kmDorf);
+                        const D = r._bewohnerSiedlungen.get(window.__dorfDerProbe);
                         if (!D || !D.liste) return { fehler: "das Dorf der Probe fehlt" };
                         const Lb = D.liste, n = Lb.length, alt = { w: st.weather };
                         const SPIEL = /spiel|sport|partie|eis|ball|ringen|lauf|rudern|klettern/i;
@@ -3086,8 +3045,7 @@ L.perspektive("mensch", (() => {
                         aus.zellen = { plaene, staetten, biome: Object.keys(biome).length, rollen: [...rollen].join("+") };
                         return aus;
                     };
-                    const d = await S(dorf, { same: 7, nH: 8 });
-                    if (!d || d.fehler) throw new Error("das Dorf der Probe: " + (d && d.fehler));
+                    const d = M.dorfDa();
                     const m = await S(sport, { abend: [18.5, 19, 19.5, 20, 20.5], mittag: [10, 11, 14, 15, 16] });
                     if (!m || m.fehler) throw new Error("der Sport: " + (m && m.fehler));
                     const akte = Object.keys(m.abend.akte).join("+");
@@ -3197,32 +3155,14 @@ L.perspektive("mensch", (() => {
             // Plan 20 Jahre später; S2/S4–S6 fragen die Welt, ob sie Not, Gedächtnis und Wendepunkte trägt.
             [LEBEN]: {
                 sek: 20,
+                dorf: true,
                 mutiert: true,
                 pfad: PFAD_DORF,
                 mess: async function (H, U, M) {
                     const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
-                    const dorf = async (r, a) => {
-                        const st = r.state, pm = st.playerMesh.position;
-                        const nah = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((q) => q && q.plan && Math.hypot(q.ox - pm.x, q.oz - pm.z) < 230).sort((p, q) => Math.hypot(p.ox - pm.x, p.oz - pm.z) - Math.hypot(q.ox - pm.x, q.oz - pm.z));
-                        const lebt = () => nah().find((q) => q.liste && q.lebt && q.liste.length >= 8);
-                        let D = lebt();
-                        if (!D && !nah().length) {
-                            let ort = null;
-                            for (const R of [100, 130, 160]) for (let k = 0; k < 16 && !ort; k++) { const w = (k / 16) * 2 * Math.PI, x = pm.x + Math.cos(w) * R, z = pm.z + Math.sin(w) * R; if (r._landAt(x, z, 0.2) && !(r._nassAt && r._nassAt(x, z))) ort = { x, z }; }
-                            if (!ort) return { fehler: "kein Land 100–160 m um den Spieler für das Dorf der Probe" };
-                            await r.spawnSettlement({ seed: a.same, nH: a.nH, position: { x: ort.x, y: 0, z: ort.z } });
-                        }
-                        if (!D) {
-                            try { await window.__gebautNach("das Dorf der Probe mensch", { fertig: () => !!lebt(), max: 400 }); } catch (e) { return { fehler: "das Dorf lebt nicht: " + String((e && e.message) || e).slice(0, 160) }; }
-                            D = lebt();
-                        }
-                        if (!D) return { fehler: "kein lebendes Dorf ≤ 230 m um den Spieler" };
-                        window.__kmDorf = D.key;
-                        return { key: D.key, n: D.liste.length, seed: D.plan.seed };
-                    };
                     const leben = async (r, a) => {
                         const st = r.state, A = AnazhRealm;
-                        const D = r._bewohnerSiedlungen.get(window.__kmDorf);
+                        const D = r._bewohnerSiedlungen.get(window.__dorfDerProbe);
                         if (!D || !D.liste) return { fehler: "das Dorf der Probe fehlt" };
                         const Lb = D.liste, n = Lb.length, alt = { w: st.weather, tod: st.timeOfDay };
                         const takt = async (k) => { for (let i = 0; i < k; i++) await window.__seitenTakt(); };
@@ -3243,7 +3183,7 @@ L.perspektive("mensch", (() => {
                         const xs = [], ys = [];
                         D.plan.slots.forEach((s, h) => { if (String(s.rolle || "wohnhaus") === "wohnhaus" || fam[h]) { xs.push(fam[h] || 0); ys.push(vol(s)); } });
                         const E = A.Gesetz("fachwerk:epocheImJahr");
-                        const nH = ((st.worldMeta.settlementCells || {})[window.__kmDorf] || {}).nH || D.plan.slots.length;
+                        const nH = ((st.worldMeta.settlementCells || {})[window.__dorfDerProbe] || {}).nH || D.plan.slots.length;
                         const P0 = await r._foundryRequestSettlement({ seed: D.plan.seed, nH });
                         const P0b = await r._foundryRequestSettlement({ seed: D.plan.seed, nH });
                         const ph = (P) => (P ? JSON.stringify(P.slots.map((x) => [x.seed, x.ov && x.ov.W, x.ov && x.ov.D, x.ov && x.ov.storeys])) : null);
@@ -3261,8 +3201,7 @@ L.perspektive("mensch", (() => {
                         aus.kohorten = bins.size;
                         return aus;
                     };
-                    const d = await S(dorf, { same: 7, nH: 8 });
-                    if (!d || d.fehler) throw new Error("das Dorf der Probe: " + (d && d.fehler));
+                    const d = M.dorfDa();
                     const m = await S(leben, { takte: 3 });
                     if (!m || m.fehler) throw new Error("das Leben: " + (m && m.fehler));
                     const aus = {};
@@ -3398,6 +3337,7 @@ L.perspektive("mensch", (() => {
             // der Tag der Bewohner über 24 Stunden (ein Fest?), die Rollen der Pläne (heiliger Ort). 1 000 Orte zählt die Probe an den Zellen.
             [KULTUR]: {
                 sek: 20,
+                dorf: true,
                 mutiert: true,
                 pfad: PFAD_DORF.concat(["planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "stamm/gelaende-boden.js", "stamm/vegetation-wiese.js", "stamm/kreatur-leben.js"]),
                 ungefahren: "die Hausbilder der 32 Zellen (S1), die 1 000 Ortsbilder (S6) und die 20 Stadtbilder unter 2 g (S7) schießt nur das Gerät",
@@ -3452,7 +3392,7 @@ L.perspektive("mensch", (() => {
                         aus.s2 = { orte: dach.length, dachStreuung: Math.max(...dach) - Math.min(...dach), niederschlag: nied, niederschlagStreuung: 0, rDach: null, nRegen: nR, regenAnders, gleich2 };
                         aus.s7 = { stadtplaene: 20, gAnders, g2: aus.g2 };
                         aus.s4 = { heilig: heilig.reduce((s, v) => s + v, 0), orte: heilig.length };
-                        const D = window.__kmDorf && r._bewohnerSiedlungen.get(window.__kmDorf);
+                        const D = window.__dorfDerProbe && r._bewohnerSiedlungen.get(window.__dorfDerProbe);
                         let feste = 0, akte = new Set();
                         if (D && D.liste) for (let h = 0; h < 24; h += 0.5) for (const b of D.liste) { const z = r._bewohnerSoll(b, h); akte.add(String(z.akt)); if (/fest|feier|markttag|kirchweih|ernte/i.test(String(z.akt))) feste++; }
                         aus.s3 = { feste, akte: [...akte].join("+"), dorf: !!(D && D.liste) };
@@ -3577,11 +3517,12 @@ L.perspektive("mensch", (() => {
             // Felder (Fläche), Brunnen, Stände, Laternen; die größte Stadt, die das Gesetz trägt (fachwerk STADT_FUNKTION).
             [KREIS]: {
                 sek: 8,
+                dorf: true,
                 pfad: PFAD_DORF,
                 mess: async function (H, U, M) {
                     const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
                     const kreis = async (r, a) => {
-                        const D = window.__kmDorf && r._bewohnerSiedlungen.get(window.__kmDorf);
+                        const D = window.__dorfDerProbe && r._bewohnerSiedlungen.get(window.__dorfDerProbe);
                         const pm = r.state.playerMesh.position;
                         const Dn = D && D.liste ? D : [...(r._bewohnerSiedlungen || new Map()).values()].filter((q) => q && q.liste && q.lebt && Math.hypot(q.ox - pm.x, q.oz - pm.z) < 230)[0];
                         if (!Dn) return { fehler: "kein lebendes Dorf ≤ 230 m (die Leiter leib gründet es)" };
@@ -3693,6 +3634,7 @@ L.perspektive("mensch", (() => {
             // Bau (Plan), Markt (Stände), Tag (Soll draußen) mit dem Gegenlauf ohne Tat (S6).
             [ANTWORT]: {
                 sek: 25,
+                dorf: true,
                 mutiert: true,
                 pfad: PFAD_DORF,
                 mess: async function (H, U, M) {
@@ -3710,8 +3652,8 @@ L.perspektive("mensch", (() => {
                         const inG = zellen.filter((c) => Math.abs(c.z - pm.z) <= 200).length, ausG = zellen.length - inG;
                         const flG = 2 * ring * 400, flA = 4 * ring * ring - flG;
                         const aus = { zellen: zellen.length, s2: { dichteFaktor: ausG ? inG / flG / (ausG / flA) : null, inG, ausG } };
-                        const D = window.__kmDorf && r._bewohnerSiedlungen.get(window.__kmDorf);
-                        const nHD = D ? ((st.worldMeta.settlementCells || {})[window.__kmDorf] || {}).nH || D.plan.slots.length : 0;
+                        const D = window.__dorfDerProbe && r._bewohnerSiedlungen.get(window.__dorfDerProbe);
+                        const nHD = D ? ((st.worldMeta.settlementCells || {})[window.__dorfDerProbe] || {}).nH || D.plan.slots.length : 0;
                         const netz = (P) => (P ? { wege: (P.roads || []).length, knoten: P.graph && P.graph.nodes ? P.graph.nodes.length : null, kanten: P.graph && P.graph.edges ? P.graph.edges.length : null, felder: (P.felder || []).length } : null);
                         if (D) { const p1 = await r._foundryRequestSettlement({ seed: D.plan.seed, nH: nHD }); const p2 = await r._foundryRequestSettlement({ seed: D.plan.seed, nH: nHD }); aus.s3 = { a: netz(p1), b: netz(p2), gleich: hash(p1) === hash(p2) }; }
                         const Z = zellen.slice().sort((p, q) => Math.hypot(p.x - pm.x, p.z - pm.z) - Math.hypot(q.x - pm.x, q.z - pm.z)).slice(0, 64);

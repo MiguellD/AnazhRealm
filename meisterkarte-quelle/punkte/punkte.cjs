@@ -435,8 +435,8 @@ function fahrtSumme(stationen, geraet) {
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
 // 19.11. 6 → 7: die Leiter-Richter der Karte 2 (richter-planet-leben-zusammenspiel: je Perspektive EINE Probe, ihr Deckel 10 s + Σ der
 // Leiter-Deckel; erde 30, wasser 225, same 55, pflanzen 129, leben-wasser 75 s) hoben die Radeon-Fahrt auf 10 578 s über 6 × 1 740 s.
-// 19.11. 7 → 8: das Kapitel zusammenspiel ganz (planet 305, erleben 333, mensch 313, leben 160, same 395 s, jede samt dem Dorf der
-// Probe 60 s) hob die Radeon-Fahrt auf 13 207 s über 7 × 1 740 s.
+// 19.11. 7 → 8: das Kapitel zusammenspiel ganz (planet 305, erleben 333, mensch 238, leben 160, same 395 s, jede samt dem Dorf der
+// Probe 60 s) hob die Radeon-Fahrt auf 13 132 s über 7 × 1 740 s.
 // Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (128 Läufe × 120 s > 8 Teile)
 const FAHRT_TEILE_MAX = 8;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
