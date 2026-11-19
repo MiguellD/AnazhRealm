@@ -18,7 +18,8 @@
 //   stand <repo> <geraet> <kopf40> <zustand> [--erledigt n] [--gesamt n] [--station id] [--liste L]   die eigene Zeile
 //   durch <repo> <geraet> <kopf40> <main40> [--erledigt n]  die eigene Liste ist durch; sind alle durch und main weiter: die naechste Runde
 //   weiter <repo> <main40>                  sind alle durch und main weiter als der Kopf: die naechste Runde
-//   alarm <repo> <melder>                   jedes Geraet > RUNDE_ALARM_MIN ohne Fortschritt: Feld alarm + EINE Zeile zug/erledigt.txt
+//   alarm <repo> <melder> [--geraet g --grund text]   jedes Geraet > RUNDE_ALARM_MIN ohne Fortschritt (oder: der genannte Grund,
+//                                           sofort, z. B. die Platte): Feld alarm + EINE Zeile zug/erledigt.txt
 //   reihe <messung-dir> <geraet> <liste>    → "<ungebucht,..>|<gebucht gruen,..>" (stderr: die Reihe mit Grund)
 //   offen <git-dir> <ref> <geraet> <kopf> <liste>   → die Stationen der Liste ohne Eintrag in messung/<kopf8>-<geraet>.json am ref
 //   faelle <repo> <geraet> <vorher> <kopf> <liste>  → je Zeile eine Station: GRUEN am vorher, ROT am kopf (dieses Geraet)
@@ -195,6 +196,15 @@ if (was === "lies") {
         zeilen.length = 0;
         if (!r.runde) return false;
         const t = jetzt().getTime();
+        // DER GRUND-ALARM (Koordinator 19.11. 02:35): ein Halt mit Grund (Platte unter PLATTE_UNTEN) ist derselbe Alarm wie „ohne
+        // Fortschritt“, sofort und mit Zahl — nie ein stilles Stehen; gegen Wiederholung sperrt der Rufer je Grund (platte_alarm)
+        if (opt("grund") !== null) {
+            const g = opt("geraet"), e = r.g[g] || leer(r.runde.start);
+            e.alarm = iso(jetzt());
+            r.g[g] = e;
+            zeilen.push("RUNDE " + r.runde.n + " ALARM " + g + ": " + opt("grund") + " — " + e.zustand + " " + e.erledigt + "/" + e.gesamt + ", Station " + e.station + ", Kopf " + k8(r.runde.kopf) + "; die Runde setzt an derselben Station fort — gesehen von " + (melder || "?"));
+            return { zeile: zeilen.join(" · ") };
+        }
         for (const g of GERAETE) {
             const e = r.g[g] || leer(r.runde.start);
             if (e.zustand === "durch") continue;
@@ -279,6 +289,49 @@ if (was === "lies") {
     zeilen.sort((x, y) => y.zeit.localeCompare(x.zeit));
     for (const z of zeilen.slice(0, Number(n || 30))) console.log(z.kopf + " " + z.zeit.slice(0, 16) + "  Paare " + z.p + " (beide GRUEN " + z.g + ") · gtx " + z.ga + " · radeon " + z.ra);
     console.log("SUMME: " + kg.size + " Koepfe mit gtx-Datei, " + kr.size + " mit radeon-Datei, " + beide.length + " mit beiden · Stations-Paare am selben Kopf " + sp + ", davon beide GRUEN " + sg);
+} else if (was === "bilder") {
+    // DAS GESETZ DER ROH-BILDER (Koordinator 19.11. 02:50; Befund 17,4 GB Roh-Bilder in messung/roh, ~0,6 GB je Tag): ein Roh-BILD geht nur
+    // nach git, wenn das Urteil der Station gegen den gebuchten Stand (stand.json im Baum) WECHSELT (neues GRÜN = Beweis-Bild, frisches
+    // ROT = Täter-Bild) oder der Auftrag es bestellt (ROH_BILD=1). Hält das Urteil (oder trägt die Station keins), bleibt das Bild am Gerät:
+    // es zieht nach <ablage>/<kopf8>-<geraet>/… um (aus dem Baum, damit `git clean` es nie löscht), nach git geht nur <bild>.sha256
+    // (Prüfsumme, Größe, Station, Urteil). Gelöscht wird nichts. Aufruf: bilder <pm-baum> <geraet> <kopf> <ablage>
+    const [pm, g, kopf, ablage] = arg;
+    const P = path.join(pm, MDIR), rd = path.join(P, "roh", k8(kopf) + "-" + g);
+    const json = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return null; } };
+    const m = json(path.join(P, k8(kopf) + "-" + g + ".json")) || {}, stand = json(path.join(pm, "meisterkarte-quelle/punkte/stand.json")) || {};
+    const gebucht = (id) => { const z = [...Object.values(stand.je || {}), ...Object.values(stand.pflichtJe || {})].flatMap((e) => e.stationen || []).find((x) => x.id === id && x.geraet === g && !x.ungemessen); return z ? (z.gruen ? "GRUEN" : "ROT") : null; };
+    const ids = [...new Set([...Object.keys(m.je || {}), ...Object.keys(m.ungemessen || {})])].sort((a, b) => b.length - a.length);
+    const bilder = [];
+    const lauf = (d) => { let e = []; try { e = fs.readdirSync(d, { withFileTypes: true }); } catch { return; } for (const x of e) { const f = path.join(d, x.name); if (x.isDirectory()) lauf(f); else if (/\.(png|jpe?g|webp)$/i.test(x.name)) bilder.push(f); } };
+    lauf(rd);
+    let ein = 0, halt = 0, bytes = 0;
+    for (const f of bilder) {
+        const rel = path.relative(rd, f), base = path.basename(f);
+        const sid = ids.find((id) => { const p = id.replace(/#/g, "_"); return base.startsWith(p + "-") || base.startsWith(p + "."); }) || null;
+        const jetztU = sid ? urteil(m, sid) : null, vorU = sid ? gebucht(sid) : null;
+        if (process.env.ROH_BILD === "1" || (jetztU && jetztU !== vorU)) { ein++; console.log("EIN " + rel + " (" + (sid || "?") + ": " + (vorU || "nie gebucht") + " → " + jetztU + ")"); continue; }
+        const b = fs.readFileSync(f), sum = require("crypto").createHash("sha256").update(b).digest("hex");
+        fs.writeFileSync(f + ".sha256", sum + " " + b.length + " " + (sid || "-") + " " + (jetztU || "ohne-Urteil") + " gebucht " + (vorU || "-") + "\n");
+        const ziel = path.join(ablage, k8(kopf) + "-" + g, rel);
+        fs.mkdirSync(path.dirname(ziel), { recursive: true });
+        try { fs.renameSync(f, ziel); } catch { fs.copyFileSync(f, ziel); fs.rmSync(f); }
+        halt++; bytes += b.length;
+    }
+    process.stderr.write("Roh-Bilder " + k8(kopf) + " " + g + ": " + ein + " nach git (Urteil wechselt), " + halt + " am Gerät (" + (bytes / 1e6).toFixed(1) + " MB, nur Prüfsumme nach git)\n");
+} else if (was === "ablage") {
+    // die Ablage am Gerät zählen (nie löschen, bis der Schöpfer das Halte-Wort gibt): je Station die jüngsten 3 Köpfe, was jenseits liegt
+    const [ablage] = arg;
+    const je = {};
+    let koepfe = [];
+    try { koepfe = fs.readdirSync(ablage).map((k) => ({ k, t: fs.statSync(path.join(ablage, k)).mtimeMs })).sort((a, b) => b.t - a.t); } catch { /* keine Ablage */ }
+    let ordner = 0, bytes = 0;
+    const groesse = (d) => { let s = 0; for (const x of fs.readdirSync(d, { withFileTypes: true })) { const f = path.join(d, x.name); s += x.isDirectory() ? groesse(f) : fs.statSync(f).size; } return s; };
+    for (const { k } of koepfe) {
+        const st = {};
+        for (const x of fs.readdirSync(path.join(ablage, k), { withFileTypes: true })) { const s = x.name.replace(/-.*$/, ""); (st[s] = st[s] || []).push(path.join(ablage, k, x.name)); }
+        for (const [s, fs_] of Object.entries(st)) { je[s] = (je[s] || 0) + 1; if (je[s] > 3) { ordner++; for (const f of fs_) bytes += fs.statSync(f).isDirectory() ? groesse(f) : fs.statSync(f).size; } }
+    }
+    console.log("Roh-Bilder am Gerät jenseits der 3 Köpfe: " + ordner + " Station×Kopf, " + (bytes / 1e9).toFixed(2) + " GB (nicht gelöscht)");
 } else if (was === "bestand") {
     const [repo, g] = arg;
     const git = gitIn(repo);

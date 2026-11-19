@@ -3,7 +3,7 @@
 # 10.11. 21:20: die OMEN-Platte stand bei 0,4 GB, Pushes und z368 lagen still, ohne dass es jemand sah).
 # Alle 2 min C: frei. Unter $PLATTE_UNTEN GB: EINE Zeile „PLATTE <n> GB — angehalten“ nach zug/erledigt.txt, die Landungs-Schleife
 # wird samt Baum beendet (start.sh --stopp landung löst auch das Schloss, das ihr Baum hielt), danach alle 14 min eine Wartezeile.
-# Ab $PLATTE_OBEN GB: „PLATTE <n> GB — weiter“ und start.sh startet die Landung neu (sie nimmt ihre Liste auf).
+# Der Halt ist ein ALARM der Runde (runde.cjs alarm --grund, mit GB, Station, Kopf). Ab $PLATTE_OBEN GB: „PLATTE <n> GB — weiter“ und start.sh startet die Landung neu (sie nimmt ihre Liste auf).
 # Löschen entscheidet nur der Schöpfer. Ende: start.sh --stopp platte.
 D=$(cd "$(dirname "$0")" && pwd)
 . "$D/gemein.sh"
@@ -19,6 +19,11 @@ while :; do
     f=$(frei_gb)
     if [ $halt = 0 ] && kleiner "$f" "$PLATTE_UNTEN"; then
         log "unter $PLATTE_UNTEN GB: $f"
+        # DAS GESETZ DER RUNDE (Koordinator 19.11. 02:35): der Platten-Halt ist ein ALARM mit Zahl (GB frei, Station, Kopf aus
+        # zug/runde.txt), derselbe Weg wie „> 15 min ohne Fortschritt“ — nie ein stilles Stehen; die Runde setzt danach an DERSELBEN
+        # Station fort (die laufende ist nicht gepusht und steht vorn im Rest der eingefrorenen Liste)
+        RC=$D/runde.cjs; [ -f "$RC" ] || RC=$D/../dienst/runde.cjs
+        node "$RC" alarm "$M" "platte-dienst" --geraet gtx --grund "PLATTE $f GB frei (< $PLATTE_UNTEN GB) — die Landung wird angehalten, weiter ab $PLATTE_OBEN GB, Löschen entscheidet der Schöpfer" >>"$L" 2>&1
         bash "$D/start.sh" --stopp landung >>"$L" 2>&1
         sag "PLATTE $f GB — angehalten (C: frei < $PLATTE_UNTEN GB; die Landungs-Schleife steht, weiter erst ab $PLATTE_OBEN GB; Löschen entscheidet der Schöpfer)"
         halt=1

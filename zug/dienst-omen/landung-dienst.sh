@@ -20,7 +20,8 @@
 # zug/erledigt.txt (ZAHL=1). CI vor Messung und das Schloss entscheidet kandidat.sh über p3/gpu-schloss.sh (gpu_frei, cpu_ruhe,
 # Verdrängung durch gpu-lauf.sh); WEICH AN DER GRENZE (12.11.): GPU_LAUF_WEICH_S 600 s, eine gefallene Station stellt sich ans Ende.
 # DIE LISTE: die Tafel der Karte 2 (vision/richter-tafel.json, Zeilen „gleich“, karte2_nur), ohne Tafel gtx-nutzen; profiband.* ruhen.
-# PLATTE: unter $PLATTE_UNTEN GB frei beginnt keine Liste (platte-dienst.sh hält eine laufende an).
+# PLATTE: unter $PLATTE_UNTEN GB frei beginnt keine Station (platte-dienst.sh hält eine laufende an) — beides ist ein ALARM der Runde
+#   mit Zahl (runde.cjs alarm --grund: GB frei, Station, Kopf), danach setzt die Runde an derselben Station fort.
 # HALT: Datei zustand/landung.halt — eine laufende Liste endet an der nächsten Stations-Grenze, die Schleife endet, die Flagge BLEIBT
 #   liegen, bis der Koordinator sie wegnimmt (rm, dann start.sh); start.sh startet die Landung nicht, solange sie liegt.
 # DER MACHER HAT VORRANG (14.11.): wartet ein Lauf am GPU-Schloss oder an der Baum-Sperre (warter_echt), WEICHT die Liste an der nächsten
@@ -57,6 +58,9 @@ zahl() { echo "$1" | tr ',|' '\n\n' | grep -c .; }
 # runde <verb> … — zug/dienst/runde.cjs gegen den Klon $RUNDE_REPO (stdout = die Antwort, stderr ins Log)
 runde() { node "$RUNDE_CJS" "$@" 2>>"$L"; }
 runde_alarm() { runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" >>"$L"; }
+# runde_bg — für die Schreiber im HINTERGRUND: eine EIGENE Datei. node (ein Windows-Prozess) schreibt nicht mit O_APPEND wie MSYS —
+# zwei Schreiber in derselben Log-Datei überschrieben im Selbsttest Zeilen des Dienstes (die Radeon verlor so ihre WEICHT-Zeilen)
+runde_bg() { node "$RUNDE_CJS" "$@" >>"$L.runde" 2>&1; }
 # DIE KARTE 2 (15.11.): die Stationen der Tafel Station → Sprosse (vision/richter-tafel.json im Baum von punkte-maschine) mit einer
 # Zeile „gleich“ — nur sie schreiben eine Akte —, je einmal, mit Komma; leer, wenn der Baum keine Tafel trägt (dann gtx-nutzen).
 karte2_nur() {
@@ -77,7 +81,7 @@ offen_am() { runde offen "$PM" refs/omen/dauer-pm "$GERAET" "$1" "$2"; } # <kopf
 # Stand in zug/runde.txt; 0 durch · 2 GEWICHEN (ein Lauf wartete am Schloss; BEHALTEN = gepushte Stationen) · 3 GEHALTEN (landung.halt).
 # Eine Landung ändert hier nichts: die Liste fährt am Kopf der Runde zu Ende (DAS GESETZ DER RUNDE).
 liste_fahren() {
-    local K=$1 NAME=$2 REST=$3 r=$4 BASIS=$5 GESAMT=$6 kp t l0 b fb=0 grund=
+    local K=$1 NAME=$2 REST=$3 r=$4 BASIS=$5 GESAMT=$6 kp t l0 b fb=0 grund= sj sv=
     GRENZE=$S/landung.grenze
     rm -f "$GRENZE"
     WEICHT_VOR= BEHALTEN=0 PROG_PID= ALARM_PID=
@@ -86,18 +90,20 @@ liste_fahren() {
     kp=$!
     t=0
     while kill -0 $kp 2>/dev/null; do
-        puls landung "Runde $RN misst ${K:0:8} ($((BASIS + fb))/$GESAMT, Abstand zu main $(abstand "$K"))${WEICHT_VOR:+ — WEICHT vor $WEICHT_VOR}: $(tail -n 1 "$KETTE_LOG" 2>/dev/null | cut -c1-150)"
+        puls landung "Runde $RN misst ${K:0:8} ($((BASIS + fb))/$GESAMT, C: $(frei_gb) GB frei, Abstand zu main $(abstand "$K"))${WEICHT_VOR:+ — WEICHT vor $WEICHT_VOR}: $(tail -n 1 "$KETTE_LOG" 2>/dev/null | cut -c1-150)"
         sleep $TAKT_S
         t=$((t + 1))
         b=$(gepusht "$l0" "$NAME")
         # der Stand je Station und der Alarm im Hintergrund, je EIN Schreiber zugleich: ein Push braucht Sekunden, die Wache an der
         # Grenze (Halt, Macher) darf nie auf ihn warten
+        sj=$(station_jetzt "$l0")
+        if [ -n "$sj" ] && [ "$sj" != "$sv" ]; then sv=$sj; vor_station "$sj"; fi
         if [ "$b" -gt "$fb" ] && ! kill -0 "${PROG_PID:-999999}" 2>/dev/null; then
             fb=$b
-            runde stand "$RUNDE_REPO" "$GERAET" "$K" laeuft --erledigt $((BASIS + b)) --gesamt "$GESAMT" --station "$(station_jetzt "$l0")" >>"$L" 2>&1 &
+            runde_bg stand "$RUNDE_REPO" "$GERAET" "$K" laeuft --erledigt $((BASIS + b)) --gesamt "$GESAMT" --station "$(station_jetzt "$l0")" &
             PROG_PID=$!
         fi
-        if [ $((t % 4)) = 0 ] && ! kill -0 "${ALARM_PID:-999999}" 2>/dev/null; then runde_alarm & ALARM_PID=$!; fi
+        if [ $((t % 4)) = 0 ] && ! kill -0 "${ALARM_PID:-999999}" 2>/dev/null; then runde_bg alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" & ALARM_PID=$!; fi
         [ -f "$GRENZE" ] && continue
         if [ -f "$S/landung.halt" ]; then
             grund=halt
@@ -143,6 +149,32 @@ richte_runde() {
         sleep "$TAKT_S"
     done
     wait $rp
+}
+# platte_zu — unter $PLATTE_UNTEN GB frei beginnt keine Station; das ist ein ALARM der Runde mit Zahl (runde.cjs alarm --grund), nie still
+platte_zu() {
+    local f
+    f=$(frei_gb)
+    kleiner "$f" "$PLATTE_UNTEN" || return 1
+    puls landung "wartet: C: $f GB frei < $PLATTE_UNTEN GB — keine Messung, Löschen entscheidet der Schöpfer"
+    platte_alarm "$f" "$PLATTE_UNTEN" "keine Station beginnt, Löschen entscheidet der Schöpfer"
+    return 0
+}
+# platte_alarm <gb> <schwelle> <text> — EIN Alarm der Runde je Schwelle und Stunde (zustand/platte-<schwelle>.alarm)
+PLATTE_WARN=${PLATTE_WARN:-15}
+platte_alarm() {
+    local m=$S/platte-$2.alarm
+    [ -f "$m" ] && [ $(($(date +%s) - $(mzeit "$m"))) -lt 3600 ] && return 0
+    touch "$m"
+    runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" --geraet "$GERAET" --grund "PLATTE $1 GB frei (< $2 GB) — $3" >>"$L"
+}
+# vor_station — 4 (Koordinator 02:42): VOR jeder Station der freie Platz als Zahl in der Fahrt-Zeile; unter PLATTE_WARN (15) GB ein
+# ALARM an den Koordinator, BEVOR die Platten-Wache bei PLATTE_UNTEN (10) hält
+vor_station() {
+    local f
+    f=$(frei_gb)
+    log "Station $1 beginnt · C: $f GB frei"
+    kleiner "$f" "$PLATTE_WARN" && platte_alarm "$f" "$PLATTE_WARN" "Warnung: die Platten-Wache hält bei $PLATTE_UNTEN GB, Station $1"
+    return 0
 }
 # runde_takt — EIN Blick der Schleife: die Runde lesen (beim ersten Mal aus dem Bestand anlegen), die eigene Liste am Kopf der Runde
 # fahren oder fortsetzen, nach ihr der Richter und „durch“; ist die OMEN durch, auf das andere Gerät warten (Alarm, nie still)
@@ -217,11 +249,12 @@ runde_takt() {
 # e  die Reihe: ungebucht (nie gemessen, Paar ROT) vor gebucht grün
 # f  ein Gerät ohne Fortschritt > 15 min: EINE Alarm-Zeile mit Namen, nicht doppelt; unter 15 min keine
 # g  die Baum-Sperre (14.11.) · h  die Karte 2 (karte2_nur) · i  halt() lässt die Flagge liegen
+# j  die Platte unter PLATTE_UNTEN: EIN Alarm mit GB, Station und Kopf (Koordinator 19.11. 02:35), nicht doppelt
 # Mutanten (je eine Regel alt): sprung (der Kopf ist der jüngste main, wie bis 19.11.) · von-vorn (Fortsetzung blind: die ganze Liste) ·
 #    volle-liste (der Richter nimmt jede Station der Liste) · tafel-reihe (die Reihe der Tafel) · still (kein Alarm) · blind (kein Warter) ·
 #    halt-rm (halt() löscht die Flagge) · nur-schloss · tafel-blind · tafel-alle — alle ROT.
 st_lauf() { # $1 = Mutante (leer = echt)
-    local X n o k0 k1 k2 k2b j e1 e2 f1 f2 f3 z w v t0
+    local X n o k0 k1 k2 k2b j e1 e2 f1 f2 f3 z w v t0 w1 w2
     X=$(mktemp -d)
     S=$X/s L=$X/landung.log KETTE_LOG=$X/kette.log KANDIDAT=$X/kandidat.sh TAKT_S=0.05 MESSUNG_DIR=$X/messung
     RUNDE_REPO=$X/klon RICHTER_REPO=$X/klon RICHTER_ZUSTAND=$X/richter RICHTER_PM=$X/klon
@@ -263,6 +296,8 @@ STUMMEL
     main_kopf() { cat "$X/main"; }
     abstand() { echo 0; }
     pm_stand() { :; }
+    frei_gb() { echo 50; }
+    kleiner() { awk -v a="$1" -v b="$2" 'BEGIN { exit !(a < b) }'; } # wie orte.sh
     summe() { :; }
     liste_quelle() { QUELLE=Stummel; echo s1,s2,s3,s4,s5,s6,s7,s8; }
     ohne_band() { echo "$1"; }
@@ -279,7 +314,7 @@ STUMMEL
         von-vorn) offen_am() { echo "$2" | tr '|' ',' | sed 's/,$//'; } ;;
         volle-liste) richte_runde() { local s; for s in $(echo "$3" | tr ',|' '  '); do bash "$RICHTER" "$GERAET" --fall "$s" "$2" "$1" >>"$L" 2>&1; done; } ;;
         tafel-reihe) runde() { if [ "$1" = reihe ]; then echo "$4|"; else node "$RUNDE_CJS" "$@" 2>>"$L"; fi; } ;;
-        still) runde_alarm() { :; } ;;
+        still) runde_alarm() { :; }; platte_alarm() { :; } ;; # kein Alarm, weder Fortschritt noch Platte
         blind) warter() { :; } ;;
         halt-rm) halt() { [ -f "$S/landung.halt" ] && { rm -f "$S/landung.halt"; exit 3; }; } ;;
         nur-schloss) baum_wartende() { :; } ;;
@@ -375,6 +410,23 @@ STUMMEL
     f3=$(koord zug/erledigt.txt | grep -c "ALARM")
     if [ "$f1" = 0 ] && [ "$f2" = 1 ] && [ "$f3" = 1 ]; then echo "OK f  Alarm: nach 10 min keiner, nach 20 min EINE Zeile „RUNDE 4 ALARM radeon: ohne Fortschritt seit 20 min“, nach 25 min nicht doppelt"
     else echo "ROT f  Alarm: nach 10 min $f1 (Soll 0), nach 20 min $f2 (Soll 1), zusammen $f3 (Soll 1)"; fi
+    # j — die Platte (Koordinator 02:35, 02:42): vor der Station die Zahl; unter 15 GB eine Warnung, unter 10 GB der Halt — je EIN
+    # ALARM mit Zahl, Station und Kopf, nicht doppelt
+    PLATTE_UNTEN=10 PLATTE_WARN=15
+    frei_gb() { echo 12.5; }
+    vor_station s3
+    vor_station s4
+    w1=$(koord zug/erledigt.txt | grep -c "ALARM gtx: PLATTE 12.5 GB frei (< 15 GB) — Warnung: die Platten-Wache hält bei 10 GB, Station s3")
+    w2=$(grep -c "Station s4 beginnt · C: 12.5 GB frei" "$L")
+    frei_gb() { echo 9.4; }
+    platte_zu
+    j=$?
+    platte_zu
+    f2=$(koord zug/erledigt.txt | grep -c "ALARM gtx: PLATTE 9.4 GB frei (< 10 GB)")
+    f3=$(koord zug/erledigt.txt | grep "ALARM gtx: PLATTE 9.4" | grep -c "Kopf ${k2b:0:8}")
+    frei_gb() { echo 50; }
+    if [ $j = 0 ] && [ "$f2" = 1 ] && [ "$f3" = 1 ] && [ "$w1" = 1 ] && [ "$w2" = 1 ] && ! platte_zu; then echo "OK j  Platte: vor der Station die Zahl („C: 12.5 GB frei“), bei 12,5 GB EINE Warnung (< 15), bei 9,4 GB EIN Halt-Alarm (< 10) mit Station und Kopf ${k2b:0:8}, nicht doppelt; bei 50 GB nichts"
+    else echo "ROT j  Platte: Warnung ${w1} (Soll 1), Zahl vor der Station ${w2} (Soll 1), platte_zu $j (Soll 0), Halt-Zeilen ${f2} (Soll 1), mit Kopf ${f3} (Soll 1)"; fi
     # g — die Baum-Sperre (14.11.)
     BAUM_WARTET=$X/wartet
     mkdir -p "$BAUM_WARTET"
@@ -413,14 +465,14 @@ selbsttest() {
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 10 ] || rot=1
+    [ "$(grep -c "^OK" "$O/echt")" = 11 ] || rot=1
     for m in $MUTANTEN; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 10 Fälle grün (a–i), $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 11 Fälle grün (a–j), $mr/$mz Mutanten ROT"; return 0; fi
     echo "landung-dienst SELBSTTEST ROT: $(grep -c "^OK" "$O/echt" 2>/dev/null) Fälle OK, $mr/$mz Mutanten ROT"
     return 1
 }
@@ -436,9 +488,7 @@ L=$ST/landung.log
 log "START landung-dienst (PID $(cat "$S/landung.pid"), MSYS $$) — das Gesetz der Runde, zug/runde.txt"
 while :; do
     halt
-    f=$(frei_gb)
-    if kleiner "$f" "$PLATTE_UNTEN"; then
-        puls landung "wartet: C: $f GB frei < $PLATTE_UNTEN GB — keine Messung, Löschen entscheidet der Schöpfer"
+    if platte_zu; then
         sleep 120
         continue
     fi

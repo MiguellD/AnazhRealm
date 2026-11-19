@@ -32,16 +32,25 @@ HOOK_LOG=/c/actions-runner/hooks/hook.log
 HAND_ZEIT_S=300       # so lange gehört die Karte nach einer Fahrt höchstens den Händen, bevor die nächste Fahrt sich ans Schloss stellt
 HAND_NACH_S=600       # so lange misst eine Fahrt allein, bevor sie einer wartenden HAND (gpu-lauf eines Machers) an der Grenze weicht —
                       # 12.11. 11:08 · 11:22 · 11:45 nahm „nacht" die Karte nach jeder einzelnen Station; ein CI-Job wartet nie so lange
-# DAS ZIEL (15.11.): ein Punkt der Karte 2 braucht BEIDE Geräte am SELBEN Kopf — sprang die Schleife bei jeder Landung zum neuen main,
-# blieb der alte halb gemessen und die Geräte trafen sich nie (a996d0ae: Radeon 5 Akten, dann main → 3e4f99cd). Darum: wo eine Fahrt
-# begann, misst die Schleife weiter, bis dort nichts mehr offen ist (höchstens ZIEL_MAX_S); die Datei setzt auch eine Hand (ein SHA).
-ZIEL=$S/radeon.ziel
-ZIEL_MAX_S=3600
-kopf() {
-    if [ -s "$ZIEL" ] && [ $(($(date +%s) - $(mzeit "$ZIEL"))) -lt $ZIEL_MAX_S ]; then head -1 "$ZIEL"; return; fi
-    rm -f "$ZIEL"
-    git -C $R ls-remote origin refs/heads/main | cut -f1
-}
+# DAS GESETZ DER RUNDE (Koordinator 19.11.; vorher DAS ZIEL vom 15.11.: radeon.ziel hielt den begonnenen Kopf höchstens 3600 s, dann
+# sprang die Schleife zum jüngsten main — die Geräte trafen sich selten, seit dem 18.11. 03:00 kein Paar am selben Kopf): der Kopf ist
+# der Mess-Kopf der Runde in koordination zug/runde.txt (zug/dienst/runde.cjs, dieselbe Datei wie die OMEN; die OMEN legt die erste
+# Runde aus ihrem Bestand an). Die Radeon fährt ihre ganze Liste an DIESEM Kopf zu Ende (eingefroren beim Eintritt, ungebucht vor
+# gebucht grün, `runde.cjs reihe`), ein Abbruch (CI, Warter, Tod) setzt an derselben Station fort (was gemessen ist, trägt einen Eintrag
+# in messung/<kopf8>-radeon.json), danach der Richter der Runde und „durch“; die nächste Runde nimmt den main des Moments, in dem beide
+# Geräte durch sind. Ein Gerät ohne Fortschritt > 15 min ist ALARM beim Namen (runde.cjs alarm, je Takt).
+RUNDE_CJS=$D/runde.cjs
+runde() { node "$RUNDE_CJS" "$@" 2>>"$L"; }
+runde_alarm() { runde alarm "$R" "radeon (radeon-dienst)" >>"$L"; }
+runde_bg() { node "$RUNDE_CJS" "$@" >>"$L.runde" 2>&1; } # Hintergrund-Schreiber: eigene Datei (node schreibt nicht mit O_APPEND wie MSYS)
+# DAS GESETZ DER ROH-BILDER (Koordinator 19.11. 02:50): HIER ist der eine Ort, an dem Roh-Bilder nach punkte-maschine gingen (die OMEN
+# pusht aus roh/ nur *.out, gtx-dauer.cjs messDateien) — am 21f279f5 waren 18 Bilder 44,2 von 44,6 MB des Roh-Ordners. Vor jedem
+# git add: runde.cjs bilder — ein Bild geht nur nach git, wenn das Urteil seiner Station gegen stand.json WECHSELT (oder ROH_BILD=1);
+# sonst zieht es in die Ablage am Gerät (nie gelöscht), nach git geht seine Prüfsumme <bild>.sha256.
+BILD_ABLAGE=${BILD_ABLAGE:-$T/w3/roh-bilder}
+bilder_halten() { node "$RUNDE_CJS" bilder "$PM" radeon "$1" "$BILD_ABLAGE" >>"$L" 2>&1; }
+main_jetzt() { git -C $R ls-remote origin refs/heads/main | cut -f1; }
+kopf() { [ -n "$RK" ] && echo "$RK"; } # der Kopf der Runde (takt liest ihn je Takt aus zug/runde.txt)
 ci() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
 # ci_wartet — der CI-Job steht noch im Start-Hook AM SCHLOSS (letzte Zeile des Hook-Logs „wartet auf Schloss“): er hat die Karte nicht,
 # die laufende Station misst allein. Lehre 12.11. (08:50–11:23: neun Fahrten, sieben vom ersten Runner.Worker abgebrochen, 17 Stationen
@@ -79,7 +88,15 @@ vor_mir_da() {
     VOR_MIR=${VOR_MIR# }
     [ -n "$VOR_MIR" ]
 }
-richter() { RICHTER_MAX=2 sh "$D/richter.sh" radeon --kopf "$1" >>"$S/richter.out" 2>&1; }
+# richter <kopf> <vorher|-> <liste> — DER RICHTER DER RUNDE: nur die Stationen GRÜN am vorigen, ROT am jetzigen Mess-Kopf werden über die
+# Köpfe dazwischen halbiert (richter.sh --fall); ohne vorigen Mess-Kopf (erste Runde) gegen die letzte Buchung wie bis 19.11.
+richter() {
+    local s f
+    if [ "$2" = - ] || [ -z "$2" ]; then RICHTER_MAX=2 sh "$D/richter.sh" radeon --kopf "$1" >>"$S/richter.out" 2>&1; return; fi
+    f=$(runde faelle "$R" radeon "$2" "$1" "$3" | tr '\n' ' ')
+    echo "Richter der Runde ${2:0:8} -> ${1:0:8}: frisches ROT ${f:-keins}" >>"$S/richter.out"
+    for s in $f; do sh "$D/richter.sh" radeon --fall "$s" "$2" "$1" >>"$S/richter.out" 2>&1; done
+}
 log() { echo "$(date +%H:%M) $*" >>"$L"; }
 iso() { date -u -d "$1" +%Y-%m-%dT%H:%M:%S.%3NZ; }
 stationen() { local c; c=$(grep -cE "^  (GRÜN|ROT|OFFEN)" "$W/radeon-nie-leer-lauf.out" 2>/dev/null); echo "${c:-0}"; }
@@ -101,6 +118,7 @@ behalten() {
     (cd "$PM/meisterkarte-quelle/punkte" && node punkte.cjs behalte --sha "$1" --geraet radeon --bis "$2" >"$W/radeon-behalte.out" 2>&1)
     if [ $? = 0 ]; then
         [ -d vision/richter ] && git add -A vision/richter # die Richter-Akten der Meisterkarte 2 (punkte.cjs richterAkten) reisen mit der Messung
+        bilder_halten "$1"
         git add -A meisterkarte-quelle/punkte/messung && git $A commit -qm "Messung ${1:0:8} radeon: $3 ($(head -1 "$W/radeon-behalte.out" | cut -c1-80), radeon-dienst)" >/dev/null 2>&1
         pushe
         return 0
@@ -140,7 +158,8 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     git fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine"
     git rebase -q origin/punkte-maschine >/dev/null 2>&1 || git rebase --abort >/dev/null 2>&1
     log "$name am ${K:0:8}"
-    puls radeon "misst $name am ${K:0:8}"
+    puls radeon "misst $name am ${K:0:8} · $(node "$RUNDE_CJS" ablage "$BILD_ABLAGE" 2>/dev/null)"
+    PROG=0
     cd "$PM/meisterkarte-quelle/punkte" && { timeout 9000 node punkte.cjs run --sha "$K" --geraet radeon "$@" >"$W/radeon-nie-leer-lauf.out" 2>&1 & }
     p=$!
     ab=
@@ -171,6 +190,10 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
             break
         fi
         echo "$K" >"$WACHE" # die Wache bezeugt: bis hierher lief der Lauf allein
+        # der Stand je Station in zug/runde.txt (Fortschritt für den Alarm der Runde) — im Hintergrund, EIN Schreiber zugleich: ein
+        # Push braucht Sekunden, die Wache darf nie auf ihn warten (sonst käme der CI-Abbruch Stationen zu spät)
+        c=$(stationen)
+        if [ "$c" -gt "${PROG:-0}" ] && ! kill -0 "${PROG_PID:-999999}" 2>/dev/null; then PROG=$c; runde_bg stand "$R" radeon "$K" laeuft --erledigt $((${BASIS:-0} + c)) & PROG_PID=$!; fi
         if [ $weich = 0 ]; then sleep $TAKT_S; else sleep 2; fi
     done
     if [ -n "$ab" ]; then
@@ -198,6 +221,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     plan=$(grep -m1 -oE "^Punkte-Maschine: [0-9]+ Station" "$W/radeon-nie-leer-lauf.out" | grep -oE "[0-9]+")
     log "$name gemessen ${K:0:8}: $n Stationen (offen ${plan:-?}), $g GRÜN · $(grep -E "^  (GRÜN|ROT)" "$W/radeon-nie-leer-lauf.out" | cut -c1-60 | tr '\n' ' ' | cut -c1-300)"
     [ -d vision/richter ] && git add -A vision/richter # die Richter-Akten der Meisterkarte 2 (punkte.cjs richterAkten) reisen mit der Messung
+    bilder_halten "$K"
     git add -A meisterkarte-quelle/punkte/messung && git $A commit -qm "Messung ${K:0:8} radeon: $name (radeon-dienst, $g GRÜN von $n, ohne CI daneben)" >/dev/null 2>&1
     pushe && log "Messung gepusht"
     [ "$n" != 0 ] && return 0
@@ -205,20 +229,50 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     log "$name ${K:0:8} OHNE URTEIL: 0 Stationen, die Punkte-Maschine sagte nie ‚frisch gemessen‘ ($(grep -v '^\s*$' "$W/radeon-nie-leer-lauf.out" | tail -1 | cut -c1-160)) — offen bleibt offen, die Fortsetzung misst in der nächsten Lücke"
     return 4
 }
-# takt — EIN Blick der Schleife (je 60 s): verwaiste Schlösser lösen, auf einen neuen Kopf nur warten, wenn am alten nichts offen ist
+zahl() { echo "$1" | tr ',|' '\n\n' | grep -c .; }
+# offen_am <liste> — die Stationen der Liste ohne Eintrag in messung/<RK8>-radeon.json am gepushten Stand (nach dem Rest des Vorläufers)
+offen_am() {
+    (cd "$PM" && rest_behalten >/dev/null 2>&1)
+    git -C "$PM" fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
+    runde offen "$PM" origin/punkte-maschine radeon "$RK" "$1"
+}
+# takt — EIN Blick der Schleife (je 60 s): verwaiste Schlösser lösen, die Runde lesen, die eigene Liste am Kopf der Runde fahren oder
+# fortsetzen; ist sie durch: der Richter der Runde, „durch“, dann auf das andere Gerät warten (Alarm, nie still)
 takt() {
-    local rc
+    local rc RL U B RU RB G n grp
     if verwaist; then
         log "verwaistes GPU-Schloss gelöst ($(head -1 "$GS/besitzer.txt" 2>/dev/null | tr -d "") · pid=$(schloss_pid "$GS/besitzer.txt"), Halter tot)"
         rm -rf "$GS"
     fi
-    if [ -n "$NEU_AB" ]; then
-        [ "$(kopf)" = "$NEU_AB" ] && { puls radeon "nichts offen am ${NEU_AB:0:8} — wartet auf einen neuen main-Kopf"; return 0; }
-        NEU_AB=
+    RL=$(runde lies "$R" radeon)
+    if [ -z "$RL" ] || [ "$RL" = - ]; then
+        RK=
+        puls radeon "keine Runde in zug/runde.txt${RL:+ — die OMEN legt die erste aus ihrem Bestand an}${RL:- (nicht lesbar)}"
+        return 0
+    fi
+    read -r RN RK RV RZ RLISTE <<<"$RL"
+    runde_alarm
+    if [ "$RZ" = durch ]; then
+        puls radeon "Runde $RN am ${RK:0:8}: die Radeon ist durch — $(runde weiter "$R" "$(main_jetzt)") · $(node "$RUNDE_CJS" ablage "$BILD_ABLAGE" 2>/dev/null)"
+        return 0
+    fi
+    if [ "$RLISTE" != - ]; then
+        U=${RLISTE%%|*} B=${RLISTE#*|}
+        RU=$(offen_am "$U") RB=$(offen_am "$B")
+        G=$(zahl "$RLISTE")
+        n=$(($(zahl "$RU") + $(zahl "$RB")))
+        BASIS=$((G - n))
+        if [ $n = 0 ]; then # die ganze Liste trägt am Kopf der Runde einen Eintrag: der Richter der Runde, dann durch
+            puls radeon "Richter Runde $RN am ${RK:0:8}"
+            richter "$RK" "$RV" "$RLISTE"
+            log "Richter Runde $RN ${RK:0:8}: $(grep -E "TÄTER|KEIN FALL|UNSCHARF|Fälle|FALL|frisches ROT" "$S/richter.out" | tail -1 | cut -c1-220)"
+            log "Runde $RN am ${RK:0:8}: die Radeon ist durch ($G Stationen) — $(runde durch "$R" radeon "$RK" "$(main_jetzt)" --erledigt "$G")"
+            return 0
+        fi
     fi
     if frei; then f=$((f + 1)); else
         f=0
-        puls radeon "wartet: Karte belegt ($(head -1 "$GS/besitzer.txt" 2>/dev/null || echo CI/Messung/Warter))"
+        puls radeon "wartet: Karte belegt ($(head -1 "$GS/besitzer.txt" 2>/dev/null || echo CI/Messung/Warter)) — Runde $RN am ${RK:0:8}"
     fi
     # DIE HAND VERHUNGERT DIE MESSUNG NICHT (12.11. 11:54–12:11: zwei Macher wechselten sich am Schloss ab, die Karte war nie zwei
     # Takte frei, keine Fahrt begann): hält oder erwartet nur eine HAND die Karte (kein CI-Job, kein eigener Lauf) und liegt die
@@ -233,45 +287,54 @@ takt() {
         f=2
     fi
     if [ $f -ge 2 ]; then
-        # DIE KARTE 2 IST DER ZÄHLER (15.11.): die Fahrt misst nach jeder Landung nur die Stationen, die eine Sprosse der Karte 2 tragen
-        # (vision/richter-tafel.json im Baum der Punkte-Maschine — EINE Quelle, eine neue Zeile dort wird ab der nächsten Landung
-        # gemessen). Bis 15.11. 17:18 maß sie alle offenen Stationen der eingefrorenen 330er-Karte und nahm Zug und Arbeitern die
-        # Karte mit Vorrang; von 17:18 bis zu diesem Schnitt stand sie, und die Karte 2 bekam von der Radeon keine Akte.
-        # Fehlt die Tafel im Baum (der Sandkasten des Selbsttests trägt keine), misst die Fahrt alle offenen, unter ihrem alten Namen.
-        nur=$(karte2_nur)
-        if [ -n "$nur" ]; then miss "Stationen der Karte 2" --offen --nur "$nur"; else miss "offene Stationen" --offen; fi
-        rc=$?
-        T_FAHRT_ENDE=$(date +%s)
-        # DER RICHTER NACH DER LANDUNG (richter.sh der OMEN, B2 Stufe 1): jede Station GRÜN → ROT gegen den gebuchten Stand wird
-        # halbiert und nennt ihren Täter in koordination zug/richter.txt — ohne LLM, mit CI-Vorfahrt wie die Messung
-        if [ $rc = 0 ]; then
-            puls radeon "Richter am ${MK:0:8}"
-            richter "$MK"
-            log "Richter ${MK:0:8}: $(grep -E "TÄTER|KEIN FALL|UNSCHARF|Fälle|FALL" "$S/richter.out" | tail -1 | cut -c1-220)"
+        # DIE KARTE 2 IST DER ZÄHLER (15.11.): die Liste sind die Stationen der Tafel (vision/richter-tafel.json im Baum der Punkte-
+        # Maschine, Zeilen „gleich“) — beim Eintritt in die Runde gebaut und EINGEFROREN (Feld liste), ungebucht vor gebucht grün
+        if [ "$RLISTE" = - ]; then
+            nur=$(karte2_nur | tr -d '\r')
+            if [ -z "$nur" ]; then puls radeon "Runde $RN: der Baum der Punkte-Maschine trägt keine Tafel der Karte 2 — keine Liste"; f=0; return 0; fi
+            RLISTE=$(runde reihe "$PM/meisterkarte-quelle/punkte/messung" radeon "$nur")
+            [ -n "$RLISTE" ] || RLISTE="$nur|"
+            log "Runde $RN am ${RK:0:8}: die Liste (ungebucht | gebucht grün) $RLISTE"
+            runde stand "$R" radeon "$RK" laeuft --liste "$RLISTE" --gesamt "$(zahl "$RLISTE")" --erledigt 0 >>"$L"
+            U=${RLISTE%%|*} B=${RLISTE#*|}
+            RU=$(offen_am "$U") RB=$(offen_am "$B")
+            G=$(zahl "$RLISTE")
+            BASIS=$((G - $(zahl "$RU") - $(zahl "$RB")))
         fi
-        if [ $rc = 3 ]; then
-            rm -f "$ZIEL" # am Ziel ist nichts mehr offen: der nächste Takt nimmt den Kopf von main
-            NEU_AB=$MK
-        elif [ ! -s "$ZIEL" ] && [ -n "$MK" ]; then echo "$MK" >"$ZIEL"; fi # die Fahrt begann hier — hier misst sie zu Ende
+        # 2 DIE REIHE ÜBER DIE AUSWAHL: punkte.cjs fährt eine --nur-Auswahl in der Reihe seiner Stationen — darum zwei Fahrten, erst die
+        # ungebuchten, dann die gebucht grünen
+        grp=$RU
+        [ -n "$grp" ] || grp=$RB
+        if [ -n "$grp" ]; then
+            runde stand "$R" radeon "$RK" laeuft --erledigt "$BASIS" --gesamt "$G" >>"$L"
+            miss "Runde-Liste" --nur "$grp"
+            rc=$?
+            T_FAHRT_ENDE=$(date +%s)
+            [ $rc = 2 ] && runde stand "$R" radeon "$RK" weicht --erledigt $((BASIS + PROG)) >>"$L"
+        fi
         f=0
     elif [ $f -gt 0 ]; then puls radeon "Karte frei seit $f min — misst ab 2"; fi
 }
 
-# ── DER SELBSTTEST (ohne Karte): ein Sandkasten mit eigenem Spiel-origin (main) und punkte-maschine-origin, ein Stummel-punkte.cjs
-# (run --offen misst je 0,1 s eine Station aus alle.txt, behalte kappt nach Endzeit), CI und Warter als Marken-Dateien. Die Fälle:
-# a  der Fall 23:28: 61 offen, CI-Job nach 9 → behalten 9, die Fortsetzung am selben Kopf misst 52, erst dann wartet er auf einen Kopf
-# a2 ein Lauf stirbt ohne Zeile → nicht „nichts offen“, die nächste Lücke misst
+# ── DER SELBSTTEST (ohne Karte): ein Sandkasten mit eigenem Spiel-origin (main + koordination mit zug/runde.txt) und punkte-maschine-
+# origin, ein Stummel-punkte.cjs (run --nur misst je 0,1 s die genannten Stationen, behalte kappt nach Endzeit), CI und Warter als
+# Marken-Dateien, runde.cjs echt. Jeder Fall beginnt eine eigene Runde (neu). Die Fälle:
+# a  der Fall 23:28 in der Runde: 61 Stationen, CI-Job nach 9 → behalten 9, die Fortsetzung am Kopf der Runde misst 52, dann „durch“
+# a2 ein Lauf stirbt ohne Zeile → nicht „durch“, die nächste Lücke misst
 # a3 der Dienst stirbt mitten im Lauf → der Rest bis zur Wache bleibt, die Fortsetzung misst nur, was fehlt
 # b  ein Warter erscheint nach 5 Stationen → der Dienst gibt an der nächsten Grenze frei, beginnt nichts, solange er wartet, setzt fort
 # c  ein lebender gpu-lauf-Halter (pid in Zeile 1) seit 300 s bleibt, ein toter Halter (pid in Zeile 2) fällt
-# Mutanten: fortsetzung (das alte „0 Zeilen = nichts offen“) · rest (kein Rest-Behalten) · warter (blind für Warter) · pid (die alte
-# pid-Quelle „^pid=“: der lebende Halter gilt nach 2 min als tot) · reihe (nach HAND_ZEIT_S tritt die Fahrt vor die Hand von
-# vorhin) — jede ROT. d: nach dem Weichen kein Eintritt, solange die Hand von vorhin steht; eine spätere hält ihn nicht auf.
+# d  nach dem Weichen kein Eintritt, solange die Hand von vorhin steht; eine spätere hält ihn nicht auf
+# z  DAS GESETZ DER RUNDE: main springt → am Kopf der Runde zu Ende, ungebucht vor gebucht grün, die nächste Runde erst, wenn beide durch
+# Mutanten: von-vorn (die Fortsetzung misst die ganze Gruppe) · rest (kein Rest-Behalten) · warter (blind für Warter) · pid (die alte
+# r  DAS GESETZ DER ROH-BILDER: ein Bild bei gehaltenem Urteil bleibt am Gerät (Prüfsumme in git), bei Wechsel geht es nach git
+# Mutanten (Forts.): pid-Quelle „^pid=“ · reihe (nach HAND_ZEIT_S vor die Hand von vorhin) · ziel (der Kopf ist der jüngste main, die
+# Regel bis 19.11.) · bild (git add -A nimmt jedes Roh-Bild mit, die Regel bis 19.11.) — jede ROT.
 st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ oder „ROT <fall> …“
     local X K j a1 a2 c3 b1 b2 vor mp alt z1 z2
     X=$(mktemp -d)
     R=$X/spiel PM=$X/pm W=$X/w S=$X/s GS=$X/schloss STUB=$X/stub
-    L=$W/log WACHE=$S/radeon.wache ZIEL=$S/radeon.ziel TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
+    L=$W/log WACHE=$S/radeon.wache BILD_ABLAGE=$X/ablage TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
     export STUB
     mkdir -p "$W" "$S" "$STUB" "$PM/meisterkarte-quelle/punkte/messung"
     # c — der lebende Halter (14.11. 00:47: baum-ganz verlor das Schloss 2 min nach dem Nehmen): ein gpu-lauf-Schloss (pid in
@@ -299,6 +362,9 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
     git init -q --bare "$X/spiel.git" && git init -q -b main "$R" && git -C "$R" remote add origin "$X/spiel.git"
     git init -q --bare "$X/pm.git" && git init -q -b punkte-maschine "$PM" && git -C "$PM" remote add origin "$X/pm.git"
     git -C "$R" config core.autocrlf false && git -C "$PM" config core.autocrlf false
+    # koordination im Spiel-origin: dort lebt zug/runde.txt (runde.cjs schreibt sie wie im Feld über commit-tree + Push)
+    git init -q -b koordination "$X/k" && mkdir -p "$X/k/zug" && echo "# erledigt" >"$X/k/zug/erledigt.txt" &&
+        git -C "$X/k" add zug && git -C "$X/k" $A commit -qm koord && git -C "$X/k" push -q "$X/spiel.git" koordination
     cat >"$PM/meisterkarte-quelle/punkte/punkte.cjs" <<'STUMMEL'
 const fs = require("fs"), path = require("path"), cp = require("child_process");
 const S = process.env.STUB, a = process.argv.slice(2), arg = (n) => a[a.indexOf(n) + 1];
@@ -324,7 +390,10 @@ const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
     }
     if (marke("absturz") !== null) { fs.rmSync(path.join(S, "absturz")); process.exitCode = 1; return; }
     const alle = fs.readFileSync(path.join(S, "alle.txt"), "utf8").split("\n").map((x) => x.trim()).filter(Boolean);
-    const m = lies(), offen = alle.filter((id) => !m.je[id]);
+    // --nur (die Runde): genau diese Stationen, wie punkte.cjs — gemessen oder nicht; ohne --nur die alte Fortsetzung
+    const nur = a.includes("--nur") ? arg("--nur").split(",").filter(Boolean) : null;
+    if (nur) fs.appendFileSync(path.join(S, "nur.log"), nur.join(",") + "\n");
+    const m = lies(), offen = nur ? alle.filter((id) => nur.includes(id)) : alle.filter((id) => !m.je[id]);
     if (!offen.length) return console.log("Punkte-Maschine: am " + k8 + " ist jede Station auf radeon frisch gemessen");
     fs.writeFileSync(path.join(S, "pid"), String(process.pid));
     console.log("Punkte-Maschine: " + offen.length + " Station(en) in " + offen.length + " Läufen auf radeon am " + k8 + " (Stummel)");
@@ -334,6 +403,8 @@ const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
         m.je[id] = { ende: Date.now() };
         schreib(m);
         console.log("  GRÜN " + id + " · Stummel · Exit 0 · 0 min");
+        // ein Roh-Bild der Station (Gesetz der Roh-Bilder): bild.txt nennt, wer eins schreibt
+        if (marke("bild.txt") !== null && marke("bild.txt").split(/\s+/).includes(id)) { const rd = path.join(__dirname, "messung", "roh", k8 + "-radeon"); fs.mkdirSync(rd, { recursive: true }); fs.writeFileSync(path.join(rd, id.replace(/#/g, "_") + "-bild.png"), "PNG " + id); }
         n++;
         if (marke("ci_nach") === String(n)) { fs.rmSync(path.join(S, "ci_nach")); fs.writeFileSync(path.join(S, "ci"), "x"); await schlaf(4000); }
         // nach dem Warter je Station 1,5 s: die Wache des Dienstes braucht unter Last bis ~1 s je Blick, die Grenze bleibt eindeutig
@@ -349,17 +420,28 @@ STUMMEL
     lauf_da() { [ -f "$STUB/pid" ] && tasklist //FI "PID eq $(cat "$STUB/pid")" //NH 2>/dev/null | grep -qi node; } # nur der Stummel DIESES Sandkastens
     richter() { echo "Richter $1: KEIN FALL (Stummel)" >>"$S/richter.out"; }
     sleep() { command sleep 0.1; }
+    karte2_nur() { paste -sd, "$STUB/alle.txt"; } # die Tafel des Sandkastens: alle Stationen des Falls
     case "$1" in
-    fortsetzung) nichts_offen() { [ "$(stationen)" = 0 ]; } ;;
+    von-vorn) offen_am() { echo "$1"; } ;; # die Fortsetzung blind: jede Fahrt die ganze Gruppe
     rest) rest_behalten() { rm -f "$WACHE"; } ;;
     warter) warter() { :; } ;;
-    ziel) kopf() { git -C $R ls-remote origin refs/heads/main | cut -f1; } ;; # die alte Regel: jeder Takt springt zum Kopf von main
+    ziel) kopf() { main_jetzt; } ;; # die alte Regel: der Takt misst am jüngsten main
+    bild) bilder_halten() { :; } ;; # die alte Regel: git add -A nimmt jedes Roh-Bild mit
     reihe) vor_mir_da() { return 1; } ;; # die alte Regel: nach HAND_ZEIT_S tritt die Fahrt wieder ein, gleich wer schon wartet
     esac
-    neu() { rm -f "$ZIEL"; git -C "$R" $A commit -q --allow-empty -m "$1" && git -C "$R" push -q origin main && K=$(kopf); }
+    # neu <botschaft> — eine Landung auf main und (gespielt) beide Geräte durch: die nächste Runde am neuen Kopf
+    neu() {
+        local rl ok
+        git -C "$R" $A commit -q --allow-empty -m "$1" && git -C "$R" push -q origin main
+        K=$(main_jetzt)
+        rl=$(runde lies "$R" radeon)
+        if [ "$rl" = - ]; then runde anlegen "$R" "$K" >/dev/null
+        else ok=$(echo "$rl" | cut -d' ' -f2); runde durch "$R" gtx "$ok" "$K" >/dev/null; runde durch "$R" radeon "$ok" "$K" >/dev/null; fi
+    }
+    feld() { git -C "$R" fetch -q origin +refs/heads/koordination:refs/t/k && git -C "$R" show refs/t/k:zug/runde.txt | grep "^$1 "; }
     gem() { git -C "$X/pm.git" show "punkte-maschine:meisterkarte-quelle/punkte/messung/${1:0:8}-radeon.json" 2>/dev/null | grep -c '"ende"'; }
-    starts() { grep -c "offene Stationen am ${1:0:8}" "$L"; }
-    f=0 NEU_AB=
+    starts() { grep -c "Runde-Liste am ${1:0:8}" "$L"; }
+    f=0
     # d — die Reihe der Ankunft (14.11. 04:04–05:02): nach dem Weichen tritt die Fahrt trotz abgelaufener Hand-Zeit nicht wieder ein,
     # solange die Hand von vorhin steht; eine Hand, die erst danach kam, hält sie nicht auf
     neu fuenf
@@ -380,8 +462,8 @@ STUMMEL
         echo "OK d  Reihe der Ankunft: nach dem Weichen kein Eintritt vor der Hand von vorhin, die spätere Hand hält die Fahrt nicht auf"
     else echo "ROT d  Reihe der Ankunft: Fahrten bis zum Weichen $vor (Soll 1), solange die Hand von vorhin steht $a1 (Soll 1), mit der späteren Hand $a2 (Soll 2)"; fi
     [ "$1" = reihe ] && { command rm -rf "$X"; return; } # die Mutante prüft nur d
-    f=0 NEU_AB= T_FAHRT_ENDE= WEICH_VOR=
-    # a — der Fall 23:28
+    f=0 T_FAHRT_ENDE= WEICH_VOR=
+    # a — der Fall 23:28 in der Runde: CI-Job nach 9 von 61, die Fortsetzung am Kopf der Runde misst die 52, dann „durch“
     neu eins
     seq 1 61 | sed 's/^/probe.K/;s/$/#1/' >"$STUB/alle.txt"
     echo 9 >"$STUB/ci_nach"
@@ -393,27 +475,29 @@ STUMMEL
     takt
     a2=$(gem "$K")
     takt
-    takt
-    if [ "$a1" = 9 ] && [ "$a2" = 61 ] && [ "$NEU_AB" = "$K" ] && grep -q "ABGEBROCHEN: CI-Job" "$L"; then
-        echo "OK a  CI-Job nach $a1 von 61 · die Fortsetzung am selben Kopf holte $((a2 - a1)) nach · danach wartet er auf einen neuen Kopf"
-    else echo "ROT a  behalten $a1 (Soll 9), nach der Fortsetzung $a2 (Soll 61), wartet auf ${NEU_AB:0:8} (Soll ${K:0:8})"; fi
-    # a2 — ein Lauf ohne Zeile ist nicht „nichts offen“
+    z1=$(feld radeon)
+    if [ "$a1" = 9 ] && [ "$a2" = 61 ] && grep -q "gemessen ${K:0:8}: 52 Stationen" "$L" && echo "$z1" | grep -q "^radeon durch " && grep -q "ABGEBROCHEN: CI-Job" "$L"; then
+        echo "OK a  CI-Job nach $a1 von 61 · die Fortsetzung am Kopf der Runde holte die übrigen $((a2 - a1)) nach · danach „durch“ in zug/runde.txt"
+    else echo "ROT a  behalten $a1 (Soll 9), nach der Fortsetzung $a2 (Soll 61, Lauf mit 52: $(grep -c "gemessen ${K:0:8}: 52 Stationen" "$L")), Zeile „$(echo "$z1" | cut -c1-24)“ (Soll durch)"; fi
+    # a2 — ein Lauf ohne Zeile ist nicht „durch“
     neu zwei
     printf 'x.K1#1\nx.K2#1\nx.K3#1\nx.K4#1\n' >"$STUB/alle.txt"
     touch "$STUB/absturz"
     takt
     takt
-    vor=$NEU_AB
+    vor=$(feld radeon | cut -d' ' -f2)
+    takt
     takt
     takt
     a2=$(gem "$K")
-    if [ -z "$vor" ] && [ "$a2" = 4 ] && grep -q "OHNE URTEIL" "$L"; then echo "OK a2 Absturz ohne Zeile: kein Warten auf einen Kopf, die nächste Lücke maß $a2 von 4"
-    else echo "ROT a2 nach dem Absturz wartet er auf ${vor:0:8} (Soll: keinen Kopf), gemessen $a2 von 4"; fi
+    if [ "$vor" != durch ] && [ "$a2" = 4 ] && grep -q "OHNE URTEIL" "$L" && feld radeon | grep -q "^radeon durch "; then echo "OK a2 Absturz ohne Zeile: nicht durch ($vor), die nächste Lücke maß $a2 von 4, dann durch"
+    else echo "ROT a2 nach dem Absturz „$vor“ (Soll nicht durch), gemessen $a2 von 4"; fi
     # a3 — der Dienst stirbt mitten im Lauf
     neu drei
     seq 1 12 | sed 's/^/tod.K/;s/$/#1/' >"$STUB/alle.txt"
     echo 500 >"$STUB/ms"
-    (miss "offene Stationen" --offen >/dev/null 2>&1) &
+    RK=$K
+    (miss "Runde-Liste" --nur "$(paste -sd, "$STUB/alle.txt")" >/dev/null 2>&1) &
     mp=$!
     for j in $(seq 1 100); do [ "$(grep -c '"ende"' "$PM/meisterkarte-quelle/punkte/messung/${K:0:8}-radeon.json" 2>/dev/null)" -ge 6 ] 2>/dev/null && break; command sleep 0.1; done
     # der Tod des Dienstes: die Schleife und ihr Mess-Lauf zugleich (start.sh --stopp beendet den Baum)
@@ -421,6 +505,7 @@ STUMMEL
     taskkill //F //PID "$(cat "$STUB/pid")" >/dev/null 2>&1
     wait $mp 2>/dev/null
     for j in $(seq 1 50); do tasklist //FI "PID eq $(cat "$STUB/pid")" //NH 2>/dev/null | grep -q node || break; command sleep 0.1; done
+    rm -f "$STUB/ms"
     f=0
     takt
     takt
@@ -448,36 +533,55 @@ STUMMEL
     if [ -n "$b1" ] && [ "$b1" -ge 5 ] && [ "$b1" -lt 12 ] && [ "$a1" = "$vor" ] && [ "$b2" = 12 ] && grep -q "WEICHT: am Schloss wartet macher-hand" "$L"; then
         echo "OK b  Warter nach 5: frei an der Grenze nach $b1 von 12, keine Fahrt solange er wartet, die Fortsetzung holte $((b2 - b1)) nach"
     else echo "ROT b  Warter: behalten $b1 (Soll 5–11), Fahrten während er wartet $((a1 - vor)) (Soll 0), danach $b2 von 12"; fi
-    # z — das Ziel (15.11.): sprang main, während am begonnenen Kopf noch gemessen wird, bleibt der Takt DORT (beide Geräte treffen
-    # sich am selben Kopf); ist dort nichts mehr offen, fällt das Ziel und der nächste Takt nimmt main
+    # z — DAS GESETZ DER RUNDE: main springt mitten in der Runde → die Radeon misst am Kopf der Runde zu Ende, ungebucht vor gebucht grün
+    # (z.K1#1 trägt ein grünes Paar), „durch“; erst wenn auch die OMEN durch ist, nimmt die nächste Runde den main des Moments
+    neu sechs
+    printf 'z.K1#1\nz.K2#1\nz.K3#1\n' >"$STUB/alle.txt"
+    echo '{"zeit":"2026-11-18T01:00:00Z","je":{"z.K1#1":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"}}}' >"$PM/meisterkarte-quelle/punkte/messung/bbbbbbbb-gtx.json"
+    echo '{"zeit":"2026-11-18T01:00:00Z","je":{"z.K1#1":{"gruen":true,"zeit":"2026-11-18T01:00:00Z"}}}' >"$PM/meisterkarte-quelle/punkte/messung/bbbbbbbb-radeon.json"
     alt=$K
-    echo "$alt" >"$ZIEL"
-    git -C "$R" $A commit -q --allow-empty -m ziel && git -C "$R" push -q origin main
-    z1=$(kopf)
-    takt
+    git -C "$R" $A commit -q --allow-empty -m landung && git -C "$R" push -q origin main
+    j=$(wc -l <"$STUB/nur.log")
+    for mp in 1 2 3 4 5 6 7 8; do takt; feld radeon | grep -q "^radeon durch " && break; done
+    z1=$(tail -n +$((j + 1)) "$STUB/nur.log" | paste -sd' ' -)
+    b1=$(gem "$alt") b2=$(gem "$(main_jetzt)")
+    vor=$(feld runde)
+    runde durch "$R" gtx "$alt" "$(main_jetzt)" >/dev/null # die OMEN ist auch durch
     takt
     z2=$(kopf)
-    if [ "$z1" = "$alt" ] && [ ! -s "$ZIEL" ] && [ -n "$z2" ] && [ "$z2" != "$alt" ]; then echo "OK z  Ziel: main sprang, der Takt blieb am ${alt:0:8}; nichts offen → das Ziel fiel, der Kopf ist main"
-    else echo "ROT z  Ziel: kopf vor dem Takt ${z1:0:8} (Soll ${alt:0:8}), danach ${z2:0:8} (Soll main), Ziel-Datei $([ -s "$ZIEL" ] && echo steht || echo fiel) (Soll fiel)"; fi
+    if [ "$b1" = 3 ] && [ "$b2" = 0 ] && [ "$z1" = "z.K2#1,z.K3#1 z.K1#1" ] && echo "$vor" | grep -q "kopf $alt " && [ "$z2" = "$(main_jetzt)" ]; then
+        echo "OK z  Runde: main sprang, die Radeon maß 3 von 3 am Kopf der Runde ${alt:0:8} (ungebucht zuerst: $z1), 0 am neuen main; beide durch → Runde am main ${z2:0:8}"
+    else echo "ROT z  Runde: am Kopf der Runde $b1 von 3, am neuen main $b2 (Soll 0), Fahrten „$z1“ (Soll „z.K2#1,z.K3#1 z.K1#1“), Runde „$(echo "$vor" | cut -c1-30)“, danach Kopf ${z2:0:8} (Soll main)"; fi
+    # r — DAS GESETZ DER ROH-BILDER: r.K1#1 gebucht ROT, misst ROT (Urteil hält) → sein Bild bleibt am Gerät, nach git nur die
+    # Prüfsumme; r.K2#1 gebucht GRÜN, misst ROT (Täter-Bild) → das Bild geht nach git
+    neu sieben
+    printf 'r.K1#1\nr.K2#1\n' >"$STUB/alle.txt"
+    printf 'r.K1#1 r.K2#1\n' >"$STUB/bild.txt"
+    echo '{"je":{"r":{"stationen":[{"id":"r.K1#1","geraet":"radeon","gruen":false,"sha":"x"},{"id":"r.K2#1","geraet":"radeon","gruen":true,"sha":"x"}]}}}' >"$PM/meisterkarte-quelle/punkte/stand.json"
+    for mp in 1 2 3 4 5 6; do takt; feld radeon | grep -q "^radeon durch " && break; done
+    z1=$(git -C "$X/pm.git" ls-tree -r --name-only punkte-maschine "meisterkarte-quelle/punkte/messung/roh/${K:0:8}-radeon/" | sed "s|.*/||" | tr '\n' ' ')
+    if echo "$z1" | grep -q "r.K2_1-bild.png " && ! echo "$z1" | grep -q "r.K1_1-bild.png " && echo "$z1" | grep -q "r.K1_1-bild.png.sha256" && [ -f "$X/ablage/${K:0:8}-radeon/r.K1_1-bild.png" ]; then
+        echo "OK r  Roh-Bilder: gehaltenes Urteil (r.K1#1 ROT → ROT) — Bild am Gerät, nur die Prüfsumme in git; Wechsel (r.K2#1 GRÜN → ROT) — das Täter-Bild in git"
+    else echo "ROT r  Roh-Bilder: in git „$z1“ (Soll r.K2_1-bild.png und r.K1_1-bild.png.sha256, NICHT r.K1_1-bild.png), am Gerät $([ -f "$X/ablage/${K:0:8}-radeon/r.K1_1-bild.png" ] && echo ja || echo nein)"; fi
     command rm -rf "$X"
 }
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
-    for m in echt fortsetzung rest warter pid reihe ziel; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt von-vorn rest warter pid reihe ziel bild; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 7 ] || rot=1
-    for m in fortsetzung rest warter pid reihe ziel; do
+    [ "$(echo "$echt" | grep -c "^OK")" = 8 ] || rot=1
+    for m in von-vorn rest warter pid reihe ziel bild; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 7 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 8 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }
@@ -486,7 +590,6 @@ selbsttest() {
 schloss radeon || exit 0
 log "START radeon-dienst (CI und Warter vor Messung, Fortsetzung bis nichts offen, PID $(cat "$S/radeon.pid"))"
 f=0
-NEU_AB=
 while true; do
     takt
     sleep 60
