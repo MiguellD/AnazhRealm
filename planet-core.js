@@ -54,7 +54,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-4';
+  const VERSION = 'planet-h2-5';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -270,13 +270,17 @@
 
   const T_START = -4000, T_ENDE = 1000, TAU_W = 20, TAU_A = 120;
   const RAMPE0 = 0.04, RAMPE1 = 0.25;   // innen-Rampe im Krustenfeld (Schelf → Inneres)
-  const BEZUG_MA = 100;                   // Erosionsbasis: Bezugs-Spiegel = Mittel des Selbst-Spiegels über 100 Ma (K7)
+  const BEZUG_MA = 100, BEZUG_TAKT = 20;  // Erosionsbasis: Bezugs-Spiegel = Mittel des Selbst-Spiegels über 100 Ma in Stützen je 20 Ma (K7)
   const EIS_DICKE_KM = 2.0, EIS_RHO = 0.917;   // Eisschild: mittlere Dicke gesetzt (Antarktis ~2,1 km, Literatur, ungeprüft); Dichte Eis/Wasser
   const MAX_P = 64;
   // G1.1 Rangordnung (ENTSCHEID-2): Deckel des Schollen-Gewichts, Wahrscheinlichkeit einer neuen Gruppe, größte Gruppe als Anteil der Schollen
   const SCHOLLE_DECKEL = 6, GRUPPE_NEU = 0.25, GRUPPE_DOM = 0.4;
   // G1.2 Amplituden der zwei Bänder der Kruste (grob: Gestalt; fein: Küste wie zuvor, 0,6 × Anteil der Oktaven unter 0,45·λ0)
   const LAPPEN_GROB = 1.5, LAPPEN_FEIN = 0.45;
+  // B1 das Fenster einer Scholle (Winkel r·FENSTER·a um ihre Mitte): an seinem Rand ist das rohe Feld ≤ 1 − FENSTER = −1,3, dort trägt
+  // es kein Rauschen (Gewicht glatt(−1,3; −0,5; f)) — ein Leser des Felds sieht eine Scholle stetig eintreten. Vorher 1,75: am Rand
+  // −0,75 plus Lappen (±1,5·0,79·fbm), die Schwellen der Leser (gF > −0,74) schalteten am Rand des Fensters.
+  const FENSTER = 2.3;
   // G1.4 Becken und Schwellen der Kruste: Amplitude als Vielfaches des Freibords, Gewinn je Oktave, Tiefe des Becken-Asts.
   // Schwellen linear, Becken quadratisch (−BECKEN_TIEF·n²): ein Becken unter dem Meer ist selten und kompakt (Hudson, Ostsee),
   // die Schwelle häufig. Gemessen (12 Saaten, Richter gesicht): symmetrisch c 5 leerte das Innere (land.fern1000 5,0 %),
@@ -788,7 +792,7 @@
     const N = 4096, F = fib(N), werte = [];
     const E = ellipseJeScholle(plan);
     for (let s = 0; s < plan.nS; s++) {
-      const mx = plan.schollen[8 * s], my = plan.schollen[8 * s + 1], mz = plan.schollen[8 * s + 2], aus = kcos(Math.min(PI, plan.schollen[8 * s + 3] * 1.75 * E[3 * s + 2]));
+      const mx = plan.schollen[8 * s], my = plan.schollen[8 * s + 1], mz = plan.schollen[8 * s + 2], aus = kcos(Math.min(PI, plan.schollen[8 * s + 3] * FENSTER * E[3 * s + 2]));
       for (let i = 0; i < N; i++) {
         const x = F[3 * i], y = F[3 * i + 1], z = F[3 * i + 2], d = x * mx + y * my + z * mz;
         if (d < aus) continue;
@@ -823,7 +827,7 @@
       sw[3 * s + 1] = sm[9 * s + 3] * mx + sm[9 * s + 4] * my + sm[9 * s + 5] * mz;
       sw[3 * s + 2] = sm[9 * s + 6] * mx + sm[9 * s + 7] * my + sm[9 * s + 8] * mz;
       sr[s] = plan.schollen[8 * s + 3];
-      sAus[s] = kcos(Math.min(PI, sr[s] * 1.75 * ellipseJeScholle(plan)[3 * s + 2]));
+      sAus[s] = kcos(Math.min(PI, sr[s] * FENSTER * ellipseJeScholle(plan)[3 * s + 2]));
     }
     // Platten: Anker (Schwerpunkt bzw. Stätte), ω
     const pz = new Float64Array(nP * 3), pom = new Float64Array(nP * 3), rho = new Float64Array(nP);
@@ -852,13 +856,12 @@
       paarC: null, sigmaKm: 0, eisKm: 0, landAnteil: 0, ozeanAlterMittel: 0, meerFertig: false,
       kettenAmp: null, kettenBreite: null, kettenG0: 0, kettenIdx: null, kettenCos: 0,
       dynC: undefined, dynS: undefined, nk: undefined, nahtAmp: undefined, randTafel: undefined,
-      zKopf: null, zListe: null, zLB: null, zF: null, zN: 0, kKopf: null, kAnz: null, kListe: null, kN: 0, sKopf: null, sListe: null, sN: 0, paarTafel: null, paarZeilen: null,
+      sEll: null, zKopf: null, zListe: null, zLB: null, zF: null, zN: 0, kKopf: null, kAnz: null, kListe: null, kN: 0, sKopf: null, sListe: null, sN: 0, paarTafel: null, paarZeilen: null,
     };
     if (ohneQ) return S;
     // Nachbar-Liste aus 4 096 Fibonacci-Proben
     // und die Paar-Rate: Mittel der Normal-Geschwindigkeit längs des gemeinsamen Rands (Proben näher als 250 km)
     const N = 4096, F = fib(N), adj = new Uint8Array(nP * nP), cSum = new Float64Array(nP * nP), cN = new Float64Array(nP * nP);
-    for (let g = 0; g < nG; g++) KF.gF[g] = -9; // Nachbarschaft aus der Krusten-Ellipse (ohne Rauschen): die Schürze trägt es
     const NACHBAR_KM = nachbarKm(R);
     for (let i = 0; i < N; i++) {
       plattenWertung(S, F[3 * i], F[3 * i + 1], F[3 * i + 2], true);
@@ -1000,7 +1003,10 @@
         }
         const fLo = Math.sqrt(1 / (a * a) + (a * a - 1 / (a * a)) * s2lo) * (1 - 1e-9), fHi = Math.sqrt(1 / (a * a) + (a * a - 1 / (a * a)) * s2hi) * (1 + 1e-9);
         _zTh[3 * k] = (th > r ? th - r : 0) * fLo - sr[s] * (1 - Q); _zTh[3 * k + 2] = fLo;
-        const ub = Math.min(PI + Z_RAND, th + r) * fHi - sr[s] * (1 - Q); _zTh[3 * k + 1] = ub; if (ub < ubMin) ubMin = ub;
+        // B1 die obere Schranke gilt nur, wo die Scholle in der GANZEN Zelle außerhalb ihres Fensters liegt: darin liest die Wertung
+        // das Feld mit Lappen ((Q − f)·r), das die Geometrie nicht schrankt
+        const ub = Math.min(PI + Z_RAND, th + r) * fHi - sr[s] * (1 - Q); _zTh[3 * k + 1] = ub;
+        if (ub < ubMin && th - r > Math.min(PI, sr[s] * FENSTER * a) + 1e-5) ubMin = ub;
       }
       L[o + g] = n - o;
       const n0 = n;
@@ -1032,7 +1038,7 @@
     S.kKopf[zi] = o; S.kAnz[zi] = n - o; S.kN = n;
     return zi;
   }
-  // B0 dasselbe Gitter für das Krustenfeld: je Zelle die Schollen, deren Fenster (d ≥ sAus, Winkel sr·1,75·a) die Zelle erreichen
+  // B0 dasselbe Gitter für das Krustenfeld: je Zelle die Schollen, deren Fenster (d ≥ sAus, Winkel sr·FENSTER·a) die Zelle erreichen
   // kann, aufsteigend wie der Gang. Vorher prüfte jeder Punkt jede Scholle (nS Skalarprodukte, bei nS 40 der Löwenanteil von
   // krusteFeld). Die Prüfung je Punkt bleibt; die Zelle streicht nur, was dort sicher außerhalb liegt: dieselben Bytes.
   function krustenKandidaten(S, x, y, z) {
@@ -1044,7 +1050,7 @@
     const o = S.sN; S.sKopf[zi] = o;
     const L = S.sListe = zuwachs(S.sListe, o + 1 + S.nS, Uint8Array); let n = o + 1;
     for (let s = 0; s < S.nS; s++) {
-      const al = Math.min(PI, sr[s] * 1.75 * E[3 * s + 2]) + 1e-5;   // der Winkel von sAus, kcos ±10⁻¹⁶ in 10⁻⁵ rad gedeckt
+      const al = Math.min(PI, sr[s] * FENSTER * E[3 * s + 2]) + 1e-5;   // der Winkel von sAus, kcos ±10⁻¹⁶ in 10⁻⁵ rad gedeckt
       if (al < PI && acosF(cx * sw[3 * s] + cy * sw[3 * s + 1] + cz * sw[3 * s + 2]) - r > al) continue;
       L[n++] = s;
     }
@@ -1053,6 +1059,18 @@
   }
   // ── Platten-Wertung (gerichtete Potenz-Wertung, K1/K3) ─────────────────────────────────────────────────
   const W_ = { sc: new Float64Array(MAX_P), sx: new Float64Array(MAX_P), dC: new Float64Array(MAX_P), best: -1, zweit: -1, qx: 0, qy: 0, qz: 0, fGrp: -1 };
+  const _dIn = new Float64Array(MAX_P), _anIn = new Int32Array(MAX_P);
+  // B1 der elliptische Abstand fern des Fensters liest EINE 2×3-Matrix je Scholle und Scheibe (Drehung · Tangente · Ellipse vorab
+  // gefaltet): 6 statt 19 Produkte je Kandidat, ±10⁻¹⁰ km (nur Rundung). Der Gang über die fernen Gruppen trägt die Kosten der
+  // Platten-Zahl (kosten.platten nP 7 ↔ 19: +41 → +35 %)
+  function ellMatrix(S) {
+    const nS = S.plan.nS, sm = S.sm, TG = tangentenJeScholle(S.plan), E = ellipseJeScholle(S.plan), M = new Float64Array(6 * nS);
+    for (let s = 0; s < nS; s++) for (let c = 0; c < 3; c++) {
+      const o = 9 * s + 3 * c, pu = sm[o] * TG[6 * s] + sm[o + 1] * TG[6 * s + 1] + sm[o + 2] * TG[6 * s + 2], pv = sm[o] * TG[6 * s + 3] + sm[o + 1] * TG[6 * s + 4] + sm[o + 2] * TG[6 * s + 5];
+      M[6 * s + c] = E[3 * s] * pu + E[3 * s + 1] * pv; M[6 * s + 3 + c] = -E[3 * s + 1] * pu + E[3 * s] * pv;
+    }
+    return (S.sEll = M);
+  }
   function plattenWertung(S, x, y, z, grob) {
     const R = S.R, plan = S.plan;
     const sw0 = plan.saatW;
@@ -1071,33 +1089,39 @@
     const ql = Math.sqrt(qx * qx + qy * qy + qz * qz); qx /= ql; qy /= ql; qz /= ql;
     W_.qx = qx; W_.qy = qy; W_.qz = qz;
     const A = S.abschnitt, sw = S.sw, sr = S.sr, sc = W_.sc, Q = S.Q;
-    let best = -1, bv = -1e9, zw = -1, zv = -1e9, zo = -1;
+    let best = -1, bv = -1e9, zw = -1, zv = -1e9, zo = -1, dIn = null;
     for (let g = 0; g < S.nG; g++) {
       // Abstand zur Krusten-Kante der Gruppe aus DEMSELBEN Krustenfeld (mit Rauschen), das die Küste zieht (K1);
       // fern der Schollen (Feld ohne Rauschen) dieselbe Formel geometrisch — stetig am Übergang.
       let dmin = 1e9, an = -1;
-      if (KF.gF[g] > -0.74) { an = KF.gS[g]; dmin = (Q - KF.gF[g]) * sr[an]; }
-      else if (grob) { // grobe Lesart (untere Schranke): Obermenge der Nachbarn
+      if (grob) { // grobe Lesart (untere Schranke): Obermenge der Nachbarn
         for (let i = A.mStart[g]; i < A.mStart[g + 1]; i++) {
           const s = A.mList[i];
           const lb = acosF(x * sw[3 * s] + y * sw[3 * s + 1] + z * sw[3 * s + 2]) / ellipseJeScholle(plan)[3 * s + 2] - sr[s] * (1 - Q);
           if (lb < dmin) { dmin = lb; an = s; }
         }
       } else {
+        // B1 der Abstand der Gruppe ist das Minimum je Scholle: im Fenster aus ihrem GROBEN Feld (Q − f_s)·r_s — es zieht die Küste —,
+        // außerhalb geometrisch; am Rand des Fensters trägt das Feld kein Rauschen (FENSTER), beide sind dort dieselbe Zahl: dmin ist
+        // stetig. Vorher schaltete gF > −0,74 zwischen beiden (am Rand des Fensters mit Lappen) und r las die beste Scholle (r_a → r_b).
+        if (dIn === null) {
+          dIn = _dIn; for (let h = 0; h < S.nG; h++) { _dIn[h] = 1e9; _anIn[h] = -1; }
+          for (let q = 0; q < KF.nIn; q++) { const s = KF.inL[q], h = S.sgrp[s], d = (Q - KF.sFg[s]) * sr[s]; if (d < _dIn[h]) { _dIn[h] = d; _anIn[h] = s; } }
+        }
+        dmin = _dIn[g]; an = _anIn[g];
         // B0 nur die Kandidaten der Zelle (zellenKandidaten): dasselbe Minimum ohne den Gang über jede Scholle der Gruppe
         if (zo < 0) zo = zellenKandidaten(S, x, y, z);
-        const ZL = S.zListe, ZB = S.zLB, ZF = S.zF, sm = S.sm, TG = tangentenJeScholle(plan), E = ellipseJeScholle(plan);
+        const ZL = S.zListe, ZB = S.zLB, ZF = S.zF, EM = S.sEll || ellMatrix(S), E = ellipseJeScholle(plan);
         for (let i = zo + ZL[zo + g], i1 = zo + ZL[zo + g + 1]; i < i1; i++) {
           // die Schranke der Zelle steigt im Gang: liegt sie über dem Kleinsten, liegen alle weiteren dort (dmin ist ein Minimum —
           // die Folge ändert es nicht; an liest nur an ≥ 0)
           if (ZB[i] * (1 / 1024) >= dmin) break;
-          const s = ZL[i], ac = acosF(x * sw[3 * s] + y * sw[3 * s + 1] + z * sw[3 * s + 2]), sq = sr[s] * (1 - Q);
+          const s = ZL[i]; if (KF.sIn[s]) continue;   // im Fenster: oben aus dem Feld
+          const ac = acosF(x * sw[3 * s] + y * sw[3 * s + 1] + z * sw[3 * s + 2]), sq = sr[s] * (1 - Q);
           // untere Schranke am Punkt mit dem kleinsten Faktor der Zelle (zF ≤ fak): genau, nur schneller
           if (ac * (ZF[i] * 0.00625) - sq >= dmin) continue;
           // elliptischer Winkel-Abstand zur Mitte der Scholle s (dieselbe Ellipse wie ihr Krustenfeld), der Winkel EINMAL je Kandidat
-          const o = 9 * s, lx = sm[o] * x + sm[o + 3] * y + sm[o + 6] * z, ly = sm[o + 1] * x + sm[o + 4] * y + sm[o + 7] * z, lz = sm[o + 2] * x + sm[o + 5] * y + sm[o + 8] * z;
-          const pu = lx * TG[6 * s] + ly * TG[6 * s + 1] + lz * TG[6 * s + 2], pv = lx * TG[6 * s + 3] + ly * TG[6 * s + 4] + lz * TG[6 * s + 5];
-          const ru = E[3 * s] * pu + E[3 * s + 1] * pv, rv = -E[3 * s + 1] * pu + E[3 * s] * pv, a = E[3 * s + 2], q2 = ru * ru + rv * rv;
+          const o = 6 * s, ru = EM[o] * x + EM[o + 1] * y + EM[o + 2] * z, rv = EM[o + 3] * x + EM[o + 4] * y + EM[o + 5] * z, a = E[3 * s + 2], q2 = ru * ru + rv * rv;
           const fak = q2 > 1e-18 ? Math.sqrt((ru * ru / (a * a) + rv * rv * a * a) / q2) : 1;
           const d = ac * fak - sq;
           if (d < dmin) { dmin = d; an = s; }
@@ -1144,7 +1168,7 @@
     const ru = E[3 * s] * pu + E[3 * s + 1] * pv, rv = -E[3 * s + 1] * pu + E[3 * s] * pv, a = E[3 * s + 2], q2 = ru * ru + rv * rv;
     const fak = q2 > 1e-18 ? Math.sqrt((ru * ru / (a * a) + rv * rv * a * a) / q2) : 1;
     // G1.2 Lappen in zwei Bändern: das GROBE Band (λ min(6 000 km, 2·rs) … 0,45·λ0) liegt auf dem ganzen Feld ab f > −1,3 mit
-    // Amplitude LAPPEN_GROB — es trägt Halbinseln, Buchten und die Gestalt; die Tektonik liest nur dieses Band (KF.gF, KF.sFg).
+    // Amplitude LAPPEN_GROB — es trägt Halbinseln, Buchten und die Gestalt; die Tektonik liest nur dieses Band (KF.sFg).
     // Das FEINE Band (0,45·λ0 … lamCut) liegt wie zuvor nur im Küsten-Gürtel, sein Fenster liest das GROBE f; das Profil liest voll.
     let f = 1 - acosF(d) * fak / rs;
     SF.grob = f;
@@ -1171,11 +1195,11 @@
 
   // ── Krustenfeld: Vereinigung aller Schollen-Felder, jedes im eigenen Rahmen (K1) ──────────────────────
   const SF = { grob: 0 };   // das GROBE Feld der zuletzt gerechneten Scholle (G1.3: die Tektonik liest es)
-  const KF = { gF: new Float64Array(MAX_P), gS: new Int32Array(MAX_P), gV: new Float64Array(MAX_P), sBest: -1, fBest: -9, sF: new Float64Array(64), sFg: new Float64Array(64), sLx: new Float64Array(64 * 3), sIn: new Uint8Array(64), inL: new Uint8Array(64), nIn: 0 };
+  const KF = { gV: new Float64Array(MAX_P), sBest: -1, fBest: -9, sF: new Float64Array(64), sFg: new Float64Array(64), sLx: new Float64Array(64 * 3), sIn: new Uint8Array(64), inL: new Uint8Array(64), nIn: 0 };
   function krusteFeld(S, x, y, z, fussKm, nurGrob) {
     const plan = S.plan, R = S.R, sw = S.sw, sm = S.sm, sr = S.sr, Q = S.Q;
     const lamCut = Math.max(32, 2 * fussKm);
-    const gF = KF.gF, gV = KF.gV; for (let g = 0; g < S.nG; g++) { gF[g] = -9; gV[g] = -9; }
+    const gV = KF.gV; for (let g = 0; g < S.nG; g++) gV[g] = -9;
     let fBest = -9, sBest = -1, nIn = 0;
     // sIn trägt genau die Schollen im Fenster (Leser: die Kante der besten Scholle); sF, sFg, sLx lesen alle nur über inL
     for (let q = 0; q < KF.nIn; q++) KF.sIn[KF.inL[q]] = 0;
@@ -1189,10 +1213,8 @@
       KF.sLx[3 * s] = lx; KF.sLx[3 * s + 1] = ly; KF.sLx[3 * s + 2] = lz; KF.sIn[s] = 1; KF.inL[nIn++] = s;
       const f = schollenFeld(plan, s, lx, ly, lz, d, lamCut, nurGrob);
       const fg = SF.grob; KF.sF[s] = f; KF.sFg[s] = fg;
-      const g = S.sgrp[s], a = gF[g], av = gV[g];
-      // weiches Maximum in der Gruppe: gF grob (Tektonik, G1.3), gV voll (Profil, K1-Vorrang, Q)
-      if (fg > a) KF.gS[g] = s;
-      const hh = Math.max(0.1 - Math.abs(a - fg), 0) / 0.1; gF[g] = Math.max(a, fg) + hh * hh * 0.025;
+      const g = S.sgrp[s], av = gV[g];
+      // weiches Maximum in der Gruppe: gV voll (Profil, K1-Vorrang, Q); die Tektonik liest das grobe Feld je Scholle (sFg, G1.3)
       const hv = Math.max(0.1 - Math.abs(av - f), 0) / 0.1; gV[g] = Math.max(av, f) + hv * hv * 0.025;
       if (f > fBest) { fBest = f; sBest = s; }
     }
@@ -1203,21 +1225,22 @@
 
   // ── Paar-Relativbewegung am Punkt ─────────────────────────────────────────────────────────────────────
   const PR = { c: 0, scher: 0, rate: 0, nl: 1 };
-  function ankerTangente(S, i, qx, qy, qz, out) {
-    let ax, ay, az;
-    ax = S.pz[3 * i]; ay = S.pz[3 * i + 1]; az = S.pz[3 * i + 2]; // stetiger Anker: Schwerpunkt bzw. Stätte
+  // B0/B1 die Tangente jeder Platte am Punkt einmal je Punkt (Stempel je Scheibe und Punkt): jedes Paar am Ort liest sie
+  const TAN = new Float64Array(3 * MAX_P), _tanNr = new Int32Array(MAX_P), TA = { S: null, qx: 0, qy: 0, qz: 0, nr: 1 };
+  function ankerTangente(S, i, qx, qy, qz) {
+    if (S !== TA.S || qx !== TA.qx || qy !== TA.qy || qz !== TA.qz) { TA.S = S; TA.qx = qx; TA.qy = qy; TA.qz = qz; TA.nr++; }
+    if (_tanNr[i] === TA.nr) return;
+    const ax = S.pz[3 * i], ay = S.pz[3 * i + 1], az = S.pz[3 * i + 2]; // stetiger Anker: Schwerpunkt bzw. Stätte
     const d = ax * qx + ay * qy + az * qz; let tx = ax - d * qx, ty = ay - d * qy, tz = az - d * qz; const l = Math.sqrt(tx * tx + ty * ty + tz * tz) || 1;
-    out[0] = tx / l; out[1] = ty / l; out[2] = tz / l;
+    TAN[3 * i] = tx / l; TAN[3 * i + 1] = ty / l; TAN[3 * i + 2] = tz / l; _tanNr[i] = TA.nr;
   }
-  const _ta = new Float64Array(3), _tb = new Float64Array(3);
-  const TA = { S: null, i: -1, qx: 0, qy: 0, qz: 0 };   // B0 die Tangente der eigenen Platte gilt für jeden Nachbarn am Punkt
   function paarRelativ(S, i, j, qx, qy, qz) {
-    if (S !== TA.S || i !== TA.i || qx !== TA.qx || qy !== TA.qy || qz !== TA.qz) { ankerTangente(S, i, qx, qy, qz, _ta); TA.S = S; TA.i = i; TA.qx = qx; TA.qy = qy; TA.qz = qz; }
-    ankerTangente(S, j, qx, qy, qz, _tb);
+    ankerTangente(S, i, qx, qy, qz); ankerTangente(S, j, qx, qy, qz);
     // Normale von i nach j: grad s_j − grad s_i (beide zeigen zu ihrem Anker)
-    let nx = _tb[0] - _ta[0], ny = _tb[1] - _ta[1], nz = _tb[2] - _ta[2]; let nl = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    const a = 3 * i, b = 3 * j;
+    let nx = TAN[b] - TAN[a], ny = TAN[b + 1] - TAN[a + 1], nz = TAN[b + 2] - TAN[a + 2]; let nl = Math.sqrt(nx * nx + ny * ny + nz * nz);
     PR.nl = nl;
-    if (nl < 1e-9) { nx = -_ta[0]; ny = -_ta[1]; nz = -_ta[2]; nl = 1; }
+    if (nl < 1e-9) { nx = -TAN[a]; ny = -TAN[a + 1]; nz = -TAN[a + 2]; nl = 1; }
     nx /= nl; ny /= nl; nz /= nl;
     const wx = S.pom[3 * i] - S.pom[3 * j], wy = S.pom[3 * i + 1] - S.pom[3 * j + 1], wz = S.pom[3 * i + 2] - S.pom[3 * j + 2];
     const vx = (wy * qz - wz * qy) * S.R, vy = (wz * qx - wx * qz) * S.R, vz = (wx * qy - wy * qx) * S.R;
@@ -1381,14 +1404,60 @@
     PK.hB += nk.w * (bAlt - bNeu);
     return PK.hA;
   }
-  // G2.5 Die Ränder einer Platte am Punkt: Alter-Summe, Schablonen, Kegel, nächster Rand — EINE Funktion für die eigene Seite
-  // (Abstand zum Haupt-Partner mHaupt ≥ 0) und für die Partner-Seite der Naht (dieselbe Funktion mit ξ = −x, nurHoehe: nur Alter und
-  // Schablonen). Die Graben-Paare lesen das Vorzeichen (EIN Profil in ξ), alle anderen Schablonen den Abstand |x|.
-  const RX = { j: -1, x: 0 };   // G2.5: Abstand zur Krusten-Kante einer Nachbar-Gruppe, die nicht Haupt-Partner ist (gesetzt in punktRoh)
+  // B1 Die Naht gehört dem PAAR (Gesetz §4): der Abstand einer Platte p zum Rand gegen ihren Nachbarn j ist EINE Funktion des Paars,
+  // vorzeichenbehaftet und gegenläufig, ξ(j, p) = −ξ(p, j) — die Wertung (s = (sx_p − sx_j)·R/2) plus die Versatz-Treppe des Paars,
+  // geklemmt an die Krusten-Kanten beider Seiten (K1: die eigene Kruste liegt diesseits, ξ ≥ c_p; die fremde jenseits, ξ ≤ −c_j;
+  // c = (gV − Q + 0,05)·r·R, im Inneren der Kruste positiv). Vorher vier Zweige: der K1-Schalter aufKruste (Kruste ↔ Wertung), der
+  // Partner jenseits der Kruste (RX), die Treppe, die auf der Kruste klemmte und daneben tauschte, und der Entscheid mit Vorrang ×12
+  // gegen den Abstand ohne ihn — an jedem sprang die Höhe (b-stetig erde-01: Platte 102, Scholle 223, Kruste 74 von je 400).
+  const NAHT_KM = 100;
+  const KC = new Float64Array(MAX_P), XI = { nah: -1, iiNah: -1, nK: 0 }, _kand = new Int32Array(MAX_P), _besucht = new Uint8Array(MAX_P);
+  function med3(a, b, c) { return a < b ? (b < c ? b : (a < c ? c : a)) : (a < c ? a : (b < c ? c : b)); }
+  // die Versatz-Treppe des Rückens (K5: das Material gleitet längs des Rands durch die Treppe): ein Versatz des Paar-Rands um ±dlt,
+  // je Abschnitt (260–560 km längs) gezogen, über die letzten 6 % geglättet, ≤ 80 km, mit der Öffnung des Paars; gegenläufig im Paar
+  // (lo trägt +dlt) und stetig gegen 0 über |s| 300 … 400 km (vorher brach er bei mHaupt = 400 ab). Liest PR des Paars am Punkt.
+  function treppe(S, p, j, s, x, y, z) {
+    if (!(PR.c < 0)) return 0;
+    laengs(S, p, j, x, y, z); if (!LG.ok) return 0;
+    const div = Math.min(1, -PR.c / Math.max(PR.rate, 1e-6) * 1.6), k = S.plan.k;
+    const lo = p < j ? p : j, hi = p < j ? j : p, pk = (S.b * 4096 + lo * 64 + hi) | 0;
+    const L = 260 + 300 * planetZufall(k, 200, pk, 0), uL = LG.laengs / L, idx = Math.floor(uL);
+    const z0 = planetZufall(k, 201, pk, idx), z1 = planetZufall(k, 201, pk, idx + 1);
+    const dlt = (z0 + (z1 - z0) * glatt(0.94, 1, uL - idx) - 0.5) * 2 * Math.min(80, 1.25 * Math.max(-S.paarC[p * S.nP + j], 0)) * div * (1 - glatt(300, 400, s < 0 ? -s : s));
+    return p === lo ? dlt : -dlt;
+  }
+  // ξ(p, j) für jeden Nachbarn j der Platte p nach _xKm, und ihr Gewicht ω_p = Π_j glatt(−NAHT, NAHT, ξ(p, j)): die Höhe ist
+  // Σ ω_p·H_p / Σ ω_p über die Platten am Ort (Zerlegung der Eins). Am Rand eines Paars gilt von beiden Seiten dasselbe Mittel, an
+  // jeder Tripel-Ecke dasselbe Gewicht — die Wahl der Platte ist nur ein Name (Treppe |dlt| ≤ 80 < NAHT: kein Kreis der Gewichte).
+  // Die Relativbewegung, die die Treppe rechnet, liest raender derselben Platte aus _pr (je Nachbar einmal je Punkt).
+  function paarXi(S, p, x, y, z) {
+    const sx = W_.sx, h = 0.5 * S.R, nb0 = S.nbStart[p], nb1 = S.nbStart[p + 1], nP = S.nP;
+    let om = 1, nah = -1, nahXi = 1e9, iiNah = -1, xNah = 1e9;
+    for (let ii = nb0; ii < nb1; ii++) {
+      const j = S.nbList[ii], o = 3 * (ii - nb0);
+      let sv = (sx[p] - sx[j]) * h;
+      _pr[o] = NaN;
+      if (sv < 400 && sv > -400 && S.paarC[p * nP + j] < 0) {   // die Treppe trägt nur ein öffnendes Paar (dlt ∝ max(−paarC, 0))
+        paarRelativC(S, p, j, W_.qx, W_.qy, W_.qz); _pr[o] = PR.c; _pr[o + 1] = PR.scher; _pr[o + 2] = PR.rate;
+        sv += treppe(S, p, j, sv, x, y, z);
+      }
+      const xi = med3(sv, KC[p], -KC[j]);
+      _xKm[ii - nb0] = xi; om *= glatt(-NAHT_KM, NAHT_KM, xi);
+      if (xi < nahXi) { nahXi = xi; nah = j; }
+      if (xi < NAHT_KM && _besucht[j] === 0) { _besucht[j] = 1; _kand[XI.nK++] = j; }   // die Suche: nur er kann Gewicht tragen
+      const xa = xi < 0 ? -xi : xi; if (xa < 5000 && xa < xNah) { xNah = xa; iiNah = ii; }
+    }
+    XI.nah = nah; XI.iiNah = iiNah;
+    return om;
+  }
+  // G2.5 Die Ränder einer Platte am Punkt: Alter-Summe, Schablonen, Kegel, nächster Rand — EINE Funktion für jede Platte am Ort, ohne
+  // Modus (vorher las die Partner-Seite ohne RX und ohne Kegel: dieselbe Platte gab je Rolle eine andere Höhe). Die Graben-Paare lesen
+  // das Vorzeichen von ξ (EIN Profil), alle anderen Schablonen den Abstand |ξ|. Liest _xKm aus paarXi derselben Platte.
   const RS = { invA: 0, hTpl: 0, hOro: 0, oroAlter: 0, randMin: 1e9, randArt: 0, randRate: 0, vAbst: 1e9, vArt: 0, vAlter: 0, vId: -1, vAktiv: 0, hKegel: 0 };
-  const _xKm = new Float64Array(MAX_P + 1);
-  function raender(S, own, sec, mHaupt, x, y, z, huelle, nurHoehe) {
-    const plan = S.plan, R = S.R, A = S.abschnitt, gS = plan.gS, k = plan.k, t = S.zeitMa, sc = W_.sx, qx = W_.qx, qy = W_.qy, qz = W_.qz;
+  const _xKm = new Float64Array(MAX_P), _pr = new Float64Array(3 * MAX_P);
+  const GR = { k: NaN, r: NaN };   // das Kamm- und das Rücken-Rauschen hängen nur am Punkt: einmal je Punkt, jede Platte und jedes Paar liest es
+  function raender(S, own, x, y, z, huelle) {
+    const plan = S.plan, R = S.R, A = S.abschnitt, gS = plan.gS, k = plan.k, t = S.zeitMa, qx = W_.qx, qy = W_.qy, qz = W_.qz;
     let invA = 0, hTpl = 0, hOro = 0, oroAlter = 0, randMin = 1e9, randArt = RAND_ART.innen, randRate = 0;
     let vAbst = 1e9, vArt = VULKAN_ART.keiner, vAlter = 0, vId = -1, vAktiv = 0, hKegel = 0;
     const ownKont = own < S.nG;
@@ -1399,27 +1468,20 @@
     // B0 Jenseits der Schablonen (> 1 300 km) liest ein Rand nur das Alter (invA) und — als nächster — den Namen: die Relativbewegung
     // braucht dort nur der EINE nächste Rand (der erste im Gang mit kleinstem Abstand). Vorher rechnete jeder Rand, der im Gang den
     // laufenden Kleinsten unterbot, sie neu (auf dem Mond 7,3 Paar-Rechnungen je Punkt, davon 1,25 jenseits der Schablonen).
-    let iiNah = -1, xNah = 1e9;
-    for (let ii = nb0 - 1; ii < nb1; ii++) {
-      const j = ii < nb0 ? sec : S.nbList[ii];
-      if (j < 0 || j === own || (ii >= nb0 && j === sec)) { _xKm[ii - nb0 + 1] = 1e9; continue; }
-      const xKm = j === sec ? mHaupt : (!nurHoehe && j === RX.j ? RX.x : Math.max(0, (sc[own] - sc[j]) * 0.5 * R));
-      _xKm[ii - nb0 + 1] = xKm;
-      const xa = xKm < 0 ? -xKm : xKm;
-      if (xKm <= 5000 && xa < xNah) { xNah = xa; iiNah = ii; }
-    }
-    for (let ii = nb0 - 1; ii < nb1; ii++) {
-      const xKm = _xKm[ii - nb0 + 1];
-      if (xKm > 5000) continue;
-      const j = ii < nb0 ? sec : S.nbList[ii];
-      const xa = xKm < 0 ? -xKm : xKm;   // Abstand; die Schablonen des Graben-Paars lesen das Vorzeichen (ξ)
-      const a = randAlter(S, A, own, j, xa, dCo), a2_ = a * a; invA += 1 / (a2_ * a2_);
-      if (xa > 1300 && (nurHoehe || ii !== iiNah)) continue;
+    const iiNah = XI.iiNah;   // aus paarXi derselben Platte
+    for (let ii = nb0; ii < nb1; ii++) {
+      const xKm = _xKm[ii - nb0], xa = xKm < 0 ? -xKm : xKm;   // Abstand; die Schablonen des Graben-Paars lesen das Vorzeichen (ξ)
+      if (xa >= 5000) continue;
+      const j = S.nbList[ii];
+      // B1 das Alter eines fernen Rands klingt über 4 000 … 5 000 km aus (vorher brach es bei 5 000 ab)
+      const a = randAlter(S, A, own, j, xa, dCo), a2_ = a * a; invA += (xa > 4000 ? 1 - glatt(4000, 5000, xa) : 1) / (a2_ * a2_);
+      if (xa > 1300 && ii !== iiNah) continue;
       // Relativbewegung am Punkt: nur wo eine Schablone wirkt oder der nächste Rand benannt wird
-      paarRelativC(S, own, j, qx, qy, qz);
+      const o = 3 * (ii - nb0);
+      if (_pr[o] === _pr[o]) { PR.c = _pr[o]; PR.scher = _pr[o + 1]; PR.rate = _pr[o + 2]; } else paarRelativC(S, own, j, qx, qy, qz);
       const c = PR.c, rate = PR.rate;
       const offen = c < 0 ? -c : 0, konv = c > 0 ? c : 0;
-      if (!nurHoehe && xa < randMin) {
+      if (xa < randMin) {
         randMin = xa; randRate = rate;
         randArt = konv > 0.35 * rate && konv > 2 ? RAND_ART.konvergent : (offen > 0.35 * rate && offen > 2 ? RAND_ART.divergent : (rate > 2 ? RAND_ART.transform : RAND_ART.innen));
       }
@@ -1427,13 +1489,15 @@
       const jKont = j < S.nG;
       const dCj = jKont ? W_.dC[j] * R - xKm : 1e9;
       const wkJ = jKont ? 1 - glatt(500, 900, dCj) : 0;
-      if (konv > 0.5) {
+      // B1 die Tore der Schablonen sind stetig: jede Schablone geht mit ihrer Stärke (s ∝ konv, dv ∝ offen, tr) und mit ihrem Abstand
+      // gegen 0, bevor ein Tor schließt (vorher sprangen sie bei konv bzw. offen = 0,5 um bis 100 m, bei 700 · 250 · 200 km um Meter)
+      if (konv > 0) {
         const s = Math.min(1.6, konv / 25) * reife * gS;
         const wa = wkI * wkJ, wb = wkI * (1 - wkJ), wc = (1 - wkI) * wkJ, wd = (1 - wkI) * (1 - wkJ);
         let sub = 0; // Ozean/Ozean: welche Seite taucht ab (Paar-Hash)
         if (wd > 0) { const lo = own < j ? own : j; sub = planetZufall(k, 210, S.b * 4096 + lo * 64 + (own < j ? j : own), 0) < 0.5 ? lo : (own < j ? j : own); }
         // Grat-Rauschen der Kämme: stetig ein- und ausgeblendet (vorher sprang der Faktor 0,62…1 an x = 700 km und an Gewicht 0,05 auf 1)
-        const wG = wa + wb + wd, grat = (wG > 0.03 && xa < 700) ? 1 + 0.38 * (gratKm(k ^ 0x3c6ef372, x, y, z, R, 210) - 1) * glatt(0.03, 0.08, wG) * (1 - glatt(600, 700, xa)) : 1;
+        const wG = wa + wb + wd, grat = (wG > 0.03 && xa < 700) ? 1 + 0.38 * ((GR.k === GR.k ? GR.k : (GR.k = gratKm(k ^ 0x3c6ef372, x, y, z, R, 210))) - 1) * glatt(0.03, 0.08, wG) * (1 - glatt(600, 700, xa)) : 1;
         let oro = 0;
         // Anden-Bogen: knapp landein der Küste — die Küste liegt eine Schürze (K3) hinter dem Graben
         const xAnden = ownKont ? A.schuerze[own] * R + 300 : 195;
@@ -1450,7 +1514,7 @@
         // Bogen-Kegel im Takt ~70 km, 150–300 km hinter dem Graben
         const wInsel = sub !== own ? wd : 0, wBogen = wb + wInsel;
         const xBogen = wBogen > 0 ? (wb * xAnden + wInsel * 190) / wBogen : 190;
-        if (!nurHoehe && !huelle && wBogen > 0.3 && Math.abs(xKm - xBogen) < 90 && s > 0.08 && konv > 0.35 * rate) { // Kegel nur, wo der Rand vor allem schließt
+        if (!huelle && wBogen > 0.3 && Math.abs(xKm - xBogen) < 90 && s > 0.08 && konv > 0.35 * rate) { // Kegel nur, wo der Rand vor allem schließt
           laengs(S, own, j, x, y, z);
           if (LG.ok) {
             const lo = own < j ? own : j, hi = own < j ? j : own, pk = (S.b * 4096 + lo * 64 + hi) | 0;
@@ -1467,13 +1531,13 @@
           }
         }
       }
-      if (offen > 0.5) {
+      if (offen > 0) {
         const dv = Math.min(1, offen / 20);
-        if (wkI * wkJ > 0 && xa < 700) hTpl += wkI * wkJ * (-1.2 * dv * kexpS(-xa / 130));
-        if (!huelle && (1 - wkI) > 0 && xa < 250) hTpl += (1 - wkI) * dv * (-0.35 * kexpS(-xa / 14) + 0.35 * kexpS(-xa / 60) * (gratKm(k ^ 0x1b873593, x, y, z, R, 90) - 0.45));
+        if (wkI * wkJ > 0 && xa < 700) hTpl += wkI * wkJ * (-1.2 * dv * kexpS(-xa / 130)) * (1 - glatt(600, 700, xa));
+        if (!huelle && (1 - wkI) > 0 && xa < 250) hTpl += (1 - wkI) * dv * (-0.35 * kexpS(-xa / 14) + 0.35 * kexpS(-xa / 60) * ((GR.r === GR.r ? GR.r : (GR.r = gratKm(k ^ 0x1b873593, x, y, z, R, 90))) - 0.45)) * (1 - glatt(200, 250, xa));
         // Rift-Vulkane (Spalten): auf zerreißender Kruste, längs der Achse im Takt ~70 km
         const wRift = wkI * wkJ;
-        if (!nurHoehe && !huelle && wRift > 0.3 && xKm < 90 && offen > 0.35 * rate) {
+        if (!huelle && wRift > 0.3 && xKm < 90 && offen > 0.35 * rate) {
           laengs(S, own, j, x, y, z);
           if (LG.ok) {
             const lo = own < j ? own : j, hi = own < j ? j : own, pk = (S.b * 4096 + lo * 64 + hi) | 0;
@@ -1489,14 +1553,20 @@
         }
       }
       const tr = Math.min(1, PR.scher / 30) * (1 - Math.min(1, Math.abs(c) / Math.max(PR.scher, 1e-3)));
-      if (tr > 0.05 && xa < 200) hTpl += (1 - wkI) * (-0.6 * tr * kexpS(-xa / 45));
+      if (tr > 0 && xa < 200) hTpl += (1 - wkI) * (-0.6 * tr * kexpS(-xa / 45)) * (1 - glatt(150, 200, xa));
     }
     RS.invA = invA; RS.hTpl = hTpl; RS.hOro = hOro; RS.oroAlter = oroAlter; RS.randMin = randMin; RS.randArt = randArt; RS.randRate = randRate;
     RS.vAbst = vAbst; RS.vArt = vArt; RS.vAlter = vAlter; RS.vId = vId; RS.vAktiv = vAktiv; RS.hKegel = hKegel;
   }
   // das grobe Becken-Feld (4 000 … 1 000 km) einer Scholle an einem Welt-Punkt — vorher eine Closure je Scholle und Punkt (G3.7: Müll)
   function beckenGrob(seedB, sm, o, R, px, py, pz) { const n = fbmKm(seedB, sm[o] * px + sm[o + 3] * py + sm[o + 6] * pz, sm[o + 1] * px + sm[o + 4] * py + sm[o + 7] * pz, sm[o + 2] * px + sm[o + 5] * py + sm[o + 8] * pz, R, 4000, 1000, BECKEN_GEWINN); return n >= 0 ? n : -BECKEN_TIEF * n * n; }
-  const NAHT_KM = 100;
+  // Radius gemischt über die Schollen am Ort (Gewicht wie B): rechnet Feld-Abstände in km, stetig über jede Naht (G1.4, kont). B1: eine
+  // Scholle zählt erst über f −1,3 … −1,0 (sie tritt am Rand ihres Fensters bei f ≤ −1,3 ein; vorher sprang r dort von 0,2 auf r_s)
+  function radiusAmOrt(S) {
+    let srW = 0, srN = 0;
+    for (let q = 0; q < KF.nIn; q++) { const s = KF.inL[q], f = KF.sF[s]; const wb = (1 - (KF.fBest - f) / 0.15) * glatt(-1.3, -1.0, f); if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
+    return srN > 0 ? srW / srN : 0.2;
+  }
   function punktRoh(S, x, y, z, fussKm, huelle) {
     if (!(fussKm > 0)) throw new Error('planet: fussKm fehlt (K10)');
     if (!huelle && S.ketten === null) kettenBauen(S);   // G3.6 am ersten Leser, vor jedem Feld des Punkts (kettenBauen schreibt KF und W_)
@@ -1506,64 +1576,32 @@
     const gK = W_.fGrp, sB = KF.sBest;
     // 2 Platten-Wertung (verzogen)
     plattenWertung(S, x, y, z);
-    const qx = W_.qx, qy = W_.qy, qz = W_.qz, sc = W_.sx; // Schablonen-Abstand: wahre Distanz, ohne den Krusten-Vorrang ×12 der Entscheidung (K5)
-    const aufKruste = fK > Q - 0.05 && gK >= 0;
-    let own = aufKruste ? gK : W_.best;
-    // Radius gemischt über die Schollen am Punkt (Gewicht wie B): rechnet Feld-Abstände in km, stetig über jede Naht (G1.4, kont)
-    let srW = 0, srN = 0;
-    for (let q = 0; q < KF.nIn; q++) { const s = KF.inL[q]; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
-    const srM = srN > 0 ? srW / srN : 0.2;
-    let sec = own === W_.best ? W_.zweit : W_.best;
-    let mHaupt = sec >= 0 ? Math.max(0, (sc[own] - sc[sec]) * 0.5 * R) : 1e9;
-    // G2.5 Wo der Krusten-Vorrang (K1) die Platte gegen die Wertung setzt, ist die Grenze die Krusten-Kante (f = Q − 0,05), nicht die
-    // Linie der Wertung: der Abstand zum Partner ist dort der Feld-Abstand in km — auf der Kruste bis zur Kante, jenseits von ihr bis zu
-    // ihr. Vorher maß die Kruste 0 km (die Schablonen standen über der ganzen Zone auf dem Rand), die andere Seite bis 120 km.
-    const kq = Q - 0.05; RX.j = -1;
-    // auf Kruste liegt die Grenze nie diesseits der eigenen Krusten-Kante: eine Linie der Wertung, die durch die Kruste läuft, trennt
-    // keine Platten (jenseits setzt der Vorrang dieselbe Platte) — vorher stand dort ein Graben quer durch den Kontinent
-    // G3.2 (Täter Orogen in zeit.stetig): gelesen wird die Kruste der NÄCHSTEN fremden Gruppe (Maximum des vollen Felds über g ≠ own),
-    // nicht die der besten Gruppe — der Wechsel der besten Gruppe schaltete den Abstand zur fremden Krusten-Kante an und aus (gemessen
-    // an erde-04 bei 87,9 Ma: Rand 252 → 685 km in 0,04 Ma, ein 5-km-Gebirge verschwand).
-    let g2 = -1, f2 = -9; for (let g = 0; g < S.nG; g++) if (g !== own && KF.gV[g] > f2) { f2 = KF.gV[g]; g2 = g; }
-    if (aufKruste) { const dK = (fK - kq) * srM * R; mHaupt = own !== W_.best ? dK : Math.max(mHaupt, dK); }
-    else if (g2 >= 0 && f2 > -9) {
-      const dO = Math.min((kq - f2) * srM * R, Math.max(0, (sc[own] - sc[g2]) * 0.5 * R));
-      if (dO < mHaupt) { sec = g2; mHaupt = dO; } else { RX.j = g2; RX.x = dO; }
-    }
-    // Versatz-Treppe des Rückens am Haupt-Paar
-    if (sec >= 0 && mHaupt < 400) {
-      paarRelativC(S, own, sec, qx, qy, qz);
-      const div = PR.c < 0 ? Math.min(1, -PR.c / Math.max(PR.rate, 1e-6) * 1.6) : 0;
-      if (div > 0) {
-        laengs(S, own, sec, x, y, z);
-        if (LG.ok) {
-          const lo = own < sec ? own : sec, hi = own < sec ? sec : own;
-          const pk = (S.b * 4096 + lo * 64 + hi) | 0;
-          const L = 260 + 300 * planetZufall(k, 200, pk, 0);
-          const uL = LG.laengs / L, idx = Math.floor(uL);
-          // Stufe über die letzten 6 % des Abschnitts geglättet (K5: das Material gleitet längs des Rands durch die Treppe)
-          const z0 = planetZufall(k, 201, pk, idx), z1 = planetZufall(k, 201, pk, idx + 1);
-          const dlt = (z0 + (z1 - z0) * glatt(0.94, 1, uL - idx) - 0.5) * 2 * Math.min(80, 1.25 * Math.max(-S.paarC[own * S.nP + sec], 0)) * div; // Versatz ≤ 2,5 Ma Alter-Sprung je Seite
-          const m2 = mHaupt + (own === lo ? dlt : -dlt);
-          if (m2 < 0 && !aufKruste) { const t2 = own; own = sec; sec = t2; mHaupt = -m2; } else mHaupt = Math.max(0, m2);
-        }
+    const srM = radiusAmOrt(S);
+    // 3 Ränder: Alter, Schablonen — B1 über jede Platte p am Ort mit Gewicht ω_p (paarXi): Σ ω_p·H_p / Σ ω_p. Die Kruste c_g (km) jeder
+    // Gruppe klemmt ξ (K1); fern ihrer Kruste (f −1,0 … −1,2, dort tritt eine Scholle in das Fenster) geht c stetig nach −∞: keine Klemme.
+    const kq = Q - 0.05, kap = plan.koerper.bodenAlterMaxMa;
+    for (let g = 0; g < S.nG; g++) { const f = KF.gV[g]; KC[g] = f > -1.2 ? (f - kq) * srM * R / glatt(-1.2, -1.0, f) : -Infinity; }
+    for (let i = S.nG; i < S.nP; i++) KC[i] = -Infinity;
+    let own = -1, omOwn = 0, nachbar = -1, sumW = 0, hTpl = 0, hOro = 0, alter = 0, hKegel = 0;
+    let oroAlter = 0, randMin = 1e9, randArt = RAND_ART.innen, randRate = 0, vAbst = 1e9, vArt = VULKAN_ART.keiner, vAlter = 0, vId = -1, vAktiv = 0;
+    // die Suche beginnt bei der Platte der Kruste (K1), sonst der Wertung; sie geht über jeden Nachbarn mit ξ < NAHT (nur er kann
+    // Gewicht tragen: ξ(j, p) > −NAHT) — das Ergebnis hängt nicht vom Anfang ab
+    _kand[0] = fK > kq && gK >= 0 ? gK : W_.best; _besucht[_kand[0]] = 1; XI.nK = 1; GR.k = NaN; GR.r = NaN;
+    for (let q = 0; q < XI.nK; q++) {
+      const p = _kand[q], om = paarXi(S, p, x, y, z);
+      if (!(om > 0)) continue;
+      const nah = XI.nah;
+      raender(S, p, x, y, z, huelle);
+      sumW += om; hTpl += om * RS.hTpl; hOro += om * RS.hOro; hKegel += om * RS.hKegel; alter += om * alterAusSumme(RS.invA, kap);
+      if (om > omOwn) {   // der Name: die Platte mit dem größten Gewicht, ihr nächster Rand
+        omOwn = om; own = p; nachbar = nah; oroAlter = RS.oroAlter; randMin = RS.randMin; randArt = RS.randArt; randRate = RS.randRate;
+        vAbst = RS.vAbst; vArt = RS.vArt; vAlter = RS.vAlter; vId = RS.vId; vAktiv = RS.vAktiv;
       }
     }
-    PK.platte = own; PK.nachbar = sec;
-    // 3 Ränder: Alter, Schablonen
-    raender(S, own, sec, mHaupt, x, y, z, huelle, false);
-    let hTpl = RS.hTpl, hOro = RS.hOro, hKegel = RS.hKegel, vAbst = RS.vAbst, vArt = RS.vArt, vAlter = RS.vAlter, vId = RS.vId, vAktiv = RS.vAktiv;
-    const oroAlter = RS.oroAlter, randMin = RS.randMin, randArt = RS.randArt, randRate = RS.randRate, kap = plan.koerper.bodenAlterMaxMa;
-    let alter = alterAusSumme(RS.invA, kap);
-    // G2.5 Die Naht gehört dem PAAR: jede Seite rechnete Alter (Sockel) und Schablonen aus den Rändern der eigenen Platte — an der
-    // Grenze sprang die Höhe (Befund Punkt 5: konvergent 98,7 %, divergent 20,4 % der Ozean-Grenz-Paare; 62–80 % mit Alters-Sprung).
-    // In ±NAHT_KM um den Haupt-Rand geht die Höhe stetig auf das Mittel beider Platten: die Partner-Platte rechnet am selben Ort
-    // dieselbe Funktion (ξ = −x). Am Rand gilt von beiden Seiten dasselbe Mittel; die Graben-Profile sind beidseitig und bleiben scharf.
-    if (sec >= 0 && mHaupt < NAHT_KM) {
-      const w = 0.5 * (1 - glatt(0, NAHT_KM, mHaupt));
-      raender(S, sec, own, -mHaupt, x, y, z, huelle, true);
-      hTpl += w * (RS.hTpl - hTpl); hOro += w * (RS.hOro - hOro); alter += w * (alterAusSumme(RS.invA, kap) - alter);
-    }
+    for (let q = 0; q < XI.nK; q++) _besucht[_kand[q]] = 0;
+    if (!(sumW > 0)) throw new Error('planet: keine Platte trägt den Punkt (B1, Gewichte 0)');
+    hTpl /= sumW; hOro /= sumW; hKegel /= sumW; alter /= sumW;
+    PK.platte = own; PK.nachbar = nachbar;
     // 4 Ozean-Boden
     let oz = -gdh1(alter);
     if (!huelle) oz += 0.08 * fbmKm(k ^ 0x68e31da4, x, y, z, R, 130, Math.max(32, 2 * fussKm), 0.5) * glatt(0, 12, alter);
@@ -1605,6 +1643,7 @@
       for (let q = 0; q < KF.nIn; q++) {
         const s = KF.inL[q];
         const f = KF.sFg[s]; if (f < Q - 0.3) continue;   // G1.3: das Gedächtnis liest das GROBE Feld
+        const wf = glatt(Q - 0.3, Q - 0.2, f);            // B1 es klingt an der Schwelle aus (vorher setzte es dort mit voller Höhe ein)
         const lx = KF.sLx[3 * s], ly = KF.sLx[3 * s + 1], lz = KF.sLx[3 * s + 2];
         const mx = plan.schollen[8 * s], my = plan.schollen[8 * s + 1], mz = plan.schollen[8 * s + 2], rs = S.sr[s];
         const az = atan2F(lx * TG[6 * s + 3] + ly * TG[6 * s + 4] + lz * TG[6 * s + 5], lx * TG[6 * s] + ly * TG[6 * s + 1] + lz * TG[6 * s + 2]);
@@ -1615,10 +1654,10 @@
           const halb = nae[n + 3]; const wz = 1 - glatt(halb * 0.6, halb, Math.abs(dz)); if (wz <= 0) continue;
           // Höhe der Naht ist je Scheibe fest (a = t − t_Naht): Tafel, dieselbe Formel, dieselben Bytes
           const NA = S.nahtAmp || nahtTafel(S), H = NA[NJ.liste[ii]];
-          if (H * wz <= hMem) continue;                                   // gauss ≤ 1: kann hMem nicht überbieten
+          if (H * wz * wf <= hMem) continue;                              // gauss ≤ 1: kann hMem nicht überbieten
           const breite = nae[n + 6] * (1 + (a < 300 ? a : 300) / 300);   // Gegner 2 (F1 Rest-Strahlen): Breite ≤ 2 × Anfang, wie die erloschenen Ränder
           const quer = (ang - nae[n + 7] * rs) * R;
-          const h = H * wz * gauss(quer, breite);
+          const h = H * wz * wf * gauss(quer, breite);
           if (h > hMem) { hMem = h; memAlter = a; }
         }
         // erloschene aktive Ränder: 32 Fächer, zwischen den Fächern gemischt. Gegner 2 (F1 Stern, F4 Rahmen/Ring/Wurm, F9 Chrom):
@@ -1641,22 +1680,31 @@
           const lage = lage0 < lageMax ? lage0 : lageMax;          // die äußere Hälfte: dort ist der Bogen eines Fachs breiter als der Gürtel
           const innenKm = (f - Q) * rs * R;                     // landein ab der Krusten-Kante (folgt der rauen Küste)
           const bogenKm = ang * R * (TAU / 32);                 // Bogen eines Fachs im Abstand ang von der Mitte
-          const hR = hF * gauss(innenKm - lage, br) * glatt(0.3, 0.8, bogenKm / br);
+          const hR = hF * wf * gauss(innenKm - lage, br) * glatt(0.3, 0.8, bogenKm / br);
           if (hR > hMem) { hMem = hR; memAlter = aR; }
         }
       }
-      if (sB >= 0 && KF.sIn[sB]) {
-        const E = plan.ereignisse;
-        for (let e = 0; e < plan.nE; e++) {
-          if (E[6 * e] !== sB) continue; const a = t - E[6 * e + 4]; if (a < 0 || a > 400) continue;
-          const pk = E[6 * e + 5], rad = Math.floor(pk / 1000), st = pk - rad * 1000;
-          const d = acosF(KF.sLx[3 * sB] * E[6 * e + 1] + KF.sLx[3 * sB + 1] * E[6 * e + 2] + KF.sLx[3 * sB + 2] * E[6 * e + 3]) * R;
-          const wv = 1 - glatt(rad * 0.35, rad, d); if (wv <= 0) continue;
-          hTpl += S1 * wv * st * kexpS(-a / 150) * gS * glatt(0, 1, a);   // K5: der Trapp baut sich über 1 Ma auf (gesetzt)
-          if (a < 2 && d < vAbst) { vAbst = d; vArt = VULKAN_ART.trapp; vAlter = a; vId = 900000000 + e; vAktiv = 1; }
+      // B1 die Trapps je Scholle, gemischt über die Schollen am Ort (Gewicht wie B): vorher las nur die beste Scholle sB ihre Trapps —
+      // an ihrem Wechsel sprang die Höhe. Den Namen (Vulkan) trägt die beste Scholle.
+      if (beckenW > 0) {
+        const E = plan.ereignisse; let trapp = 0;
+        for (let q = 0; q < KF.nIn; q++) {
+          const s = KF.inL[q], wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
+          for (let e = 0; e < plan.nE; e++) {
+            if (E[6 * e] !== s) continue; const a = t - E[6 * e + 4]; if (a < 0 || a > 400) continue;
+            const pk = E[6 * e + 5], rad = Math.floor(pk / 1000), st = pk - rad * 1000;
+            const d = acosF(KF.sLx[3 * s] * E[6 * e + 1] + KF.sLx[3 * s + 1] * E[6 * e + 2] + KF.sLx[3 * s + 2] * E[6 * e + 3]) * R;
+            const wv = 1 - glatt(rad * 0.35, rad, d); if (wv <= 0) continue;
+            trapp += wb * wv * st * kexpS(-a / 150) * gS * glatt(0, 1, a);   // K5: der Trapp baut sich über 1 Ma auf (gesetzt)
+            if (s === sB && a < 2 && d < vAbst) { vAbst = d; vArt = VULKAN_ART.trapp; vAlter = a; vId = 900000000 + e; vAktiv = 1; }
+          }
         }
+        hTpl += S1 * trapp / beckenW;
       }
     }
+    // B1 das Gedächtnis ist Kruste: es klingt mit dem Profil S1 an der Krusten-Kante aus (vorher schaltete S1 > 0 es an — die Höhe
+    // sprang an der Kante ozean|hang um bis 3,2 km, 206 von 223 Schollen- und 73 von 74 Krusten-Sprüngen, b-stetig)
+    hMem *= S1;
     const hGeb = Math.max(hOro, hMem);
     // 7 Hotspot-Ketten (Kegel, über Kontinent Dom) — die Hülle trägt keine Kegel und liest keinen Vulkan: dort entfällt die Schleife
     if (S.kettenIdx && !huelle) {
@@ -1748,9 +1796,9 @@
   // Bezugs-Spiegel (Erosionsbasis): Mittel des Selbst-Spiegels über die letzten 100 Ma, 20-Ma-Stützen, linear dazwischen; jede Stütze
   // liest PROBEN_BEZUG Hüll-Proben (G3.4: ein Mittel über fünf Stützen braucht nicht die Auflösung des Spiegels der Zeit)
   function sigmaRef(plan, t) {
-    const f0 = Math.floor(t / 20) * 20, u = (t - f0) / 20;
-    const r = (f) => { let s = 0; for (let i = 0; i < 5; i++) s += sigmaSelbst(plan, klemmZeit(plan, f - 20 * i)); return s / 5; };
-    const r0 = r(f0); return u > 0 ? r0 + u * (r(f0 + 20) - r0) : r0;
+    const T = BEZUG_TAKT, n = BEZUG_MA / BEZUG_TAKT, f0 = Math.floor(t / T) * T, u = (t - f0) / T;
+    const r = (f) => { let s = 0; for (let i = 0; i < n; i++) s += sigmaSelbst(plan, klemmZeit(plan, f - T * i)); return s / n; };
+    const r0 = r(f0); return u > 0 ? r0 + u * (r(f0 + T) - r0) : r0;
   }
   function meerFach(plan, tf, zusatz) {
     const M = memoVon(plan), key = tf + '|' + zusatz;
@@ -2098,9 +2146,7 @@
   // Schollen am Ort (stetig über jede Naht). Positiv landein, negativ seewärts.
   function kontGrob(S, x, y, z) {
     const f = krusteFeld(S, x, y, z, 400, true);
-    let srW = 0, srN = 0;
-    for (let q = 0; q < KF.nIn; q++) { const s = KF.inL[q]; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
-    return (f - S.kuesteF) * (srN > 0 ? srW / srN : 0.2) * S.R;
+    return (f - S.kuesteF) * radiusAmOrt(S) * S.R;
   }
   function planetKlimaR(S, x, y, z, saison, aus, punkt) {
     pruefScheibe(S);
