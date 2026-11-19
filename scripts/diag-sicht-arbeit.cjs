@@ -673,7 +673,7 @@ const server = statikServer();
             const lageBlick = () => (S.frustum.setFromProjectionMatrix(S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse), cam.coordinateSystem), r._passWahlLage(S, cam, -1)); // prettier-ignore
             const genHaupt = () => (r._passLagen?.get("haupt") ? r._passLagen.get("haupt").gen : -1);
             // die Lage des Hauptbilds ohne jeden Rand vom Auge der Kamera (die Wahrheit der Treue-Proben D, F)
-            const lageHaupt = () => Object.assign({}, lageBlick(), { fr: new T.Frustum().copy(S.frustum), halt: 0, haltBlende: 0, rand: 0, dreh: 0, licht: 0, fit: null, ax: cam.position.x, ay: cam.position.y, az: cam.position.z }); // prettier-ignore
+            const lageHaupt = () => Object.assign({}, lageBlick(), { fr: r._frustumVon(null).copy(S.frustum), halt: 0, haltBlende: 0, rand: 0, dreh: 0, licht: 0, fit: null, ax: cam.position.x, ay: cam.position.y, az: cam.position.z }); // prettier-ignore
             // je Zelle eines Satzes, die das Gesetz in der Lage Lw trifft: `je(art, ob die gehaltene Wahl des Hauptbilds sie zeichnet)`
             // — ohne Höhlen-Zellen (ihre Wahrheit prüft gate:hoehlen-sicht) und ohne den Wurf-Satz (`bauWurf`, S3 haus: nurWurf — er
             // zeichnet nur in den Kaskaden, das Hauptbild hat für ihn kein Gesetz: gate:chunk-satz (l), gate:schatten-werfer W7)
@@ -848,8 +848,7 @@ const server = statikServer();
             const dl = st.directionalLight;
             if (dl?.target) {
                 const tagLang = 60 * 60 * (st.dayLengthMinutes || r.constructor.DAY_LENGTH_DEFAULT_MINUTES);
-                st.timeOfDay = 0.42;
-                if (st.world) st.world.timeOfDay = 0.42;
+                r._uhrSetzen(0.42, "regler");
                 const mitte = kaskaden.map((c) => new T.Vector3(cam.position.x, boden, cam.position.z - c.right * 0.5));
                 const lichtStellen = () => {
                     r._applyDayNightToScene();
@@ -864,8 +863,7 @@ const server = statikServer();
                 reif();
                 aus.sonne = window.__sichtPhase(
                     phase(120, () => {
-                        st.timeOfDay += 1 / tagLang;
-                        if (st.world) st.world.timeOfDay = st.timeOfDay;
+                        r._uhrSetzen(st.timeOfDay + 1 / tagLang, "regler");
                         lichtStellen();
                     }),
                     1

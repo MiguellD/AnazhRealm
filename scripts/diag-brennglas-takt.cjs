@@ -584,8 +584,7 @@ async function probe() {
     aus.glaeser = glaeser.length;
     // Brennbares genau in die Brennpunkte (der Körper trägt den Punkt): die Mitte seiner Hülle auf dem Punkt
     const setzeTimeOfDay = (t) => {
-        st.timeOfDay = t;
-        if (st.world) st.world.timeOfDay = t;
+        r._uhrSetzen(t, "regler");
     };
     const indiePunkte = (zeit, je) => {
         setzeTimeOfDay(zeit);

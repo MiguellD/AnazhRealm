@@ -276,8 +276,7 @@ async function probe(cfg) {
     let zeitFest = null;
     const uhrHalten = () => {
         if (zeitFest === null) return;
-        st.timeOfDay = zeitFest;
-        if (st.world) st.world.timeOfDay = zeitFest;
+        r._uhrSetzen(zeitFest, "regler");
         r._applyDayNightToScene();
     };
     const halten = async (n) => {
@@ -294,7 +293,6 @@ async function probe(cfg) {
     const sonne = async (zeit) => {
         window.__buehne();
         zeitFest = zeit;
-        if (st.world) st.world.timeOfDay = zeit;
         r.setTimeOfDay(zeit, "human");
         await halten(10);
     };

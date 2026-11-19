@@ -370,7 +370,8 @@ async function wasserKoerper(o = {}) {
         // Wechsel; am Tag des ersten und des tragenden Eises ändern 24 Uhr-Lagen nichts (das Eis integriert den Tag).
         const uhr = st.timeOfDay;
         const tag = (t, h = uhr) => {
-            Object.assign(st, { seasonPhase: 0.7 + t / 365, timeOfDay: h });
+            st.seasonPhase = 0.7 + t / 365;
+            r._uhrSetzen(h, "regler");
             return [spiegel >= r._eisLinieBei(r._eisLinien().null, tiefeMitte), r._eisAt(mx, mz, spiegel + 0.5, 1) !== null] + "";
         };
         const tage = Array.from({ length: 120 }, (_, t) => tag(t));
@@ -381,7 +382,7 @@ async function wasserKoerper(o = {}) {
             wechsel: tage.filter((l, t) => t && l !== tage[t - 1]).length,
             tagesgang: [erster, traegt].map((t) => new Set(Array.from({ length: 24 }, (_, h) => tag(t, h / 24))).size - 1),
         };
-        st.timeOfDay = uhr;
+        r._uhrSetzen(uhr, "regler");
         // (11) DAS MEER friert im gemäßigten Winter nicht (Salz und Masse seines Körpers, `wasserKoerper`): vor der Küste
         // (`__wasserOrte`) je Woche des Jahres sein Wasser gegen seinen Gefrierpunkt und das Eis an seinem Spiegel
         // (`_eisAt`); das Feld −15 °C friert es (die Probe sieht Eis).
@@ -449,7 +450,7 @@ function wasserSchmelze(r, x, z, P) {
         try {
             for (let k = 1; k <= 52; k++) {
                 const vor = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
-                st.spielZeit += 0.2;
+                r._weltUhrNimm(st.spielZeit + 0.2);
                 r._tickSeason();
                 neuBau += (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) - vor;
                 r._bodenFarbeAt(x, y, z, c);
@@ -498,7 +499,7 @@ function wasserSchmelze(r, x, z, P) {
             const wort = (w, s) => (r._setWeather(w, "human"), window.__uebergangFaellt(r), r._naesseTakt(s));
             const [vor, p0] = [(wort("sunny", 1e6), r._waterLevelAt(...P.fluss)), pg.post];
             wort("stormy", 0);
-            for (let k = 0; k < 240; k++) (st.spielZeit += 5), r._tickRain();
+            for (let k = 0; k < 240; k++) r._weltUhrNimm(st.spielZeit + 5), r._tickRain();
             const aus = { hub: R(r._waterLevelAt(...P.fluss) - vor), post: pg.post - p0, koerper: koerper(0.375)[0] };
             return wort("sunny", 1e6), (st.regenStempel = []), aus;
         };
@@ -544,7 +545,7 @@ function wasserErstarrung(r, orte) {
     try {
         for (const o of aus) r.dslRun(["lava", o.x, o.y, o.z], { source: "human" });
         for (let k = 0; k <= 15; k++) {
-            if (k) st.spielZeit += AnazhRealm.PEGEL_TAG_S / 60; // je Schritt 0,4 h am Tag der Prozesse (`_weltTag`)
+            if (k) r._weltUhrNimm(st.spielZeit + AnazhRealm.PEGEL_TAG_S / 60); // je Schritt 0,4 h am Tag der Prozesse (`_weltTag`)
             aus.forEach((o, i) => {
                 const d = r._lavaAt(o.x, o.z);
                 const licht = r._leuchtQuellen(o.x, o.y, o.z, 30).some((q) => q.id === wm.taten[n + i]);
@@ -661,8 +662,7 @@ async function wasserLicht(o = {}) {
         const luft = async (zeit, camY) => {
             // Kamera UND Augen im selben Medium.
             st.playerEyesUnderwater = camY < spiegel;
-            st.timeOfDay = zeit;
-            if (st.world) st.world.timeOfDay = zeit;
+            r._uhrSetzen(zeit, "regler");
             camL.position.set(mx, camY, mz);
             camL.updateMatrixWorld(true);
             r._applyDayNightToScene();
@@ -706,8 +706,7 @@ async function wasserLicht(o = {}) {
             };
         } finally {
             st.playerEyesUnderwater = augenAltL;
-            st.timeOfDay = zeitAlt;
-            if (st.world && weltZeitAlt !== undefined) st.world.timeOfDay = weltZeitAlt;
+            r._uhrSetzen(zeitAlt, "regler");
             camL.position.copy(camAltL);
             camL.updateMatrixWorld(true);
             r._applyDayNightToScene();
@@ -1237,7 +1236,7 @@ async function wasserBild(o = {}) {
     cam.position.set(OX + RAD + 26, OY + 20, OZ);
     cam.lookAt(OX + RAD - 6, OY, OZ);
     cam.updateMatrixWorld(true);
-    const rt = new T.RenderTarget(W, H);
+    const rt = __messZiel(W, H);
     // DIE SZENEN-TIEFE DES BILDS (Integration K host-vram × Welle L wasser): das Wasser liest den Grund hinter sich aus
     // dem Tiefen-Abbild des Hauptbilds (`_szeneTiefe`; `_tiefenAbbild` zieht es nur für die Szene und die Kamera des
     // Spiels). Für den Render der Probe zieht der Zug das Abbild aus IHRER Tiefe — wie im Spiel aus dem Hauptbild;
@@ -1288,8 +1287,7 @@ async function wasserBild(o = {}) {
     const tagAlt = st.timeOfDay;
     const weltTagAlt = st.world ? st.world.timeOfDay : undefined;
     const himmelMittag = (zeit, welt) => {
-        st.timeOfDay = zeit;
-        if (st.world && welt !== undefined) st.world.timeOfDay = welt;
+        r._uhrSetzen(zeit, "regler");
         r._applyDayNightToScene();
         r._ensureSkyEnvironment(true);
     };
@@ -1532,7 +1530,7 @@ async function wasserRegen(o = {}) {
     cam.lookAt(cam.position.x - wd.z, cam.position.y, cam.position.z + wd.x);
     cam.updateMatrixWorld(true);
     cam.updateProjectionMatrix();
-    const rt = new T.RenderTarget(W, H);
+    const rt = __messZiel(W, H);
     let px = null,
         mesh = null,
         eltern = null,

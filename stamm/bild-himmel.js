@@ -1944,11 +1944,27 @@ class AnazhRealm_bild_himmel {
     // Bis H1 stand die sonnenzugewandte Karte auf Mittelgrau + 1 EV, das Auge folgte ihrem Licht mit 0,34 und glitt ab ~14,5°
     // zum Deckel der Nacht: die Sonne in 7° stand an der Wiese einmal 0,16, einmal 1,29 EV unter dem Mittag (Radeon).
     _dayNightApplyBelichtung(achse) {
-        const k = this._belichtungAusLicht(achse.e);
-        this._raumBlendeTakt();
-        if (k == null) return;
-        this.state.renderer.toneMappingExposure = k;
-        this.state._belichtungSteht = true;
+        if (achse) {
+            const k = this._belichtungAusLicht(achse.e);
+            this._raumBlendeTakt();
+            if (k == null) return;
+            this._belichtungGesetz = k;
+            this.state._belichtungSteht = true;
+        }
+        // die Blende eines Beobachters (`_blendeBestellen`) über dem Gesetz: fest `k` oder das Gesetz mal `mal`
+        const b = this._messBlende,
+            g = this._belichtungGesetz;
+        const k = b && b.k != null ? b.k : g > 0 ? g * (b ? b.mal : 1) : null;
+        if (k != null) this.state.renderer.toneMappingExposure = k;
+    }
+
+    // DIE BLENDE DES BEOBACHTERS: eine Messung STELLT die Belichtung nie selbst, sie bestellt sie bei der Welt — `{ k }` hält sie
+    // fest (die Tonkurve an einer bekannten Blende), `{ mal }` legt einen Faktor über das Gesetz der Kamera, `null` gibt sie dem
+    // Gesetz zurück; geschrieben wird sofort und an jedem Anwenden des Tags über den EINEN Schreiber (`_dayNightApplyBelichtung`).
+    // Bis beobachter-ein-weg schrieben drei Licht-Linsen den Renderer selbst (eine hüllte dazu den Schreiber der Welt).
+    _blendeBestellen(o) {
+        this._messBlende = o ? { k: o.k != null ? Number(o.k) : null, mal: o.mal != null ? Number(o.mal) : 1 } : null;
+        this._dayNightApplyBelichtung(null);
     }
 
     // DIE BELICHTUNG DES ORTS bei der Sonnenhöhe e (sin): das Gesetz der Kamera aus dem Licht, das jetzt gilt — null, solange

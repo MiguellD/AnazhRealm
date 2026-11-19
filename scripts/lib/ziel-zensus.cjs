@@ -465,7 +465,7 @@ function zielSchmuggel(an) {
         H = Math.max(1, Math.round(db.y));
     const weg = [];
     const ziel = (name, w, h, o) => {
-        const z = new T.RenderTarget(w, h, Object.assign({ depthBuffer: false }, o || {}));
+        const z = __messZiel(w, h, Object.assign({ depthBuffer: false }, o || {}));
         z.texture.name = name;
         weg.push(z);
         return z;

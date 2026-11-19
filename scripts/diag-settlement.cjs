@@ -241,7 +241,7 @@ async function weltWachstum() {
     const [E0, erd0, p] = [alt.haeuser(), st.worldMeta.erdbau[alt.c.ort].length, { x: alt.c.x, z: alt.c.z }];
     const wachse = async (m) => {
         window.__marke(m);
-        st.spielZeit += res.uhr;
+        r._weltUhrNimm(st.spielZeit + res.uhr);
         const takt = r._ortWachstumTakt(p);
         await r._ortWachsFlug;
         window.__anazhAutoSettlement = true;

@@ -449,11 +449,11 @@ async function probeLeben(expected) {
         const lage = async (name, wort, halt) => {
             wetter("sunny", 1e6);
             const [n0, herd] = [(st.worldMeta.taten ||= []).length, r._brandEntfachen(start.x, start.z)];
-            st.spielZeit += A.BRAND.aufS;
+            r._weltUhrNimm(st.spielZeit + A.BRAND.aufS);
             r._tickBrand();
             const los = halt && halt();
             wetter(wort, K.sprungS);
-            st.spielZeit += A.BRAND.schrittS;
+            r._weltUhrNimm(st.spielZeit + A.BRAND.schrittS);
             r._tickBrand();
             const q = r._leuchtQuellen(start.x, 0, start.z, 1e3).find((l) => l.id === herd);
             const m = {
@@ -2392,9 +2392,10 @@ async function probeLeben(expected) {
             S.frei = { kisten: stapel(false) };
             A.FREI = Object.freeze({ ...FREI, ruheS: Infinity });
             S.frei.wachZittern = stapel(true).zittern;
-            [A.FREI, st.gravity] = [FREI, 0];
+            A.FREI = FREI;
+            r.dslEffects.gravity([0]); // die Schwere über das Wort der Welt (DSL `gravity`), nie in den Zustand
             S.frei.schwerelos = stapel(false);
-            st.gravity = schwere;
+            r.dslEffects.gravity([schwere]);
             const fass = async () => {
                 let kipp = 0;
                 const m = await stossProbe({

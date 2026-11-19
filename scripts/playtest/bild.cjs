@@ -73,7 +73,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         r.setTimeOfDay(0.4, "human");
         const beforeT = st.timeOfDay;
         st._uhrSpielZeit = st.spielZeit;
-        st.spielZeit += 0.5; // die Welt-Uhr: 0.5 s, dayLength=60min=3600s → +0.00014
+        r._weltUhrNimm(st.spielZeit + 0.5); // die Welt-Uhr: 0.5 s, dayLength=60min=3600s → +0.00014
         r.tickDayNight(0.5);
         out.tickAdvances = st.timeOfDay > beforeT;
         // DER TAG AN DER WELT-UHR (w28-nacht-licht): die Wanduhr allein bewegt ihn nie (unter 250-ms-Takten lief er 2,5-mal so schnell
@@ -1724,8 +1724,7 @@ async function checkBandHimmelTag({ page, check }) {
         const sonneVN = st.sunMesh.material.vertexNode;
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
         const zeit = (t) => {
-            st.timeOfDay = t;
-            if (st.world) st.world.timeOfDay = t;
+            r._uhrSetzen(t, "regler");
             r._setWeather("sunny", "human");
             window.__uebergangFaellt(r);
             r._applyDayNightToScene();
