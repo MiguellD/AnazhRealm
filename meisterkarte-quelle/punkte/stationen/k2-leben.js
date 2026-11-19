@@ -1499,7 +1499,7 @@ L.perspektive("pflanzen", (() => {
 // `_applyDayNightToScene` → `_luftSichtM`, WASSER_GESETZ.koerper je Art), die Nah-Streu am Ufer (stamm/vegetation-wiese.js
 // `_nahStreuKachel`, das Ufer-Band des Schilfs), der Bestand der Tiere (stamm/kreatur-leben.js `faunaBestand`) und der Planet-Faden
 // (`r._planetAuftrag` planet-ort: derselbe Weg wie die Reise). Ein Richter ohne Zahl (lebensraeume S5, bild S1, netz S1) bekommt sein
-// Soll aus der Tiefe der Karte oder aus einer benannten Erd-Referenz (`sollFrei`, geprüft am Wortlaut) und trägt `unklar`.
+// Soll aus der Tiefe der Karte oder aus einer benannten Erd-Referenz (K.soll mit quelleFeld oder refQuelle, geprüft am Wortlaut) und trägt `unklar`.
 L.perspektive("wasser", (() => {
     const LR = "leben.wasser.lebensraeume";
     const BI = "leben.wasser.bild";
@@ -1523,18 +1523,6 @@ L.perspektive("wasser", (() => {
     ];
     // DAS SOLL EINES RICHTERS OHNE ZAHL: das Wort steht wörtlich im Richter; die Zahl steht wörtlich in Tiefe, Umfang oder Preis der
     // Sprosse (quelleFeld + quelleWort) oder trägt eine benannte Erd-Referenz (refQuelle) — nie eine erfundene Schwelle ohne Namen
-    const sollFrei = (ID, nr, wort, o) => {
-        const sp = K.sprosseVon(ID, nr);
-        if (!sp.richter.includes(wort)) throw new Error("sollFrei: „" + wort + "“ steht nicht im Richter " + ID + " S" + nr);
-        if (o.quelleFeld) {
-            const t = String(sp[o.quelleFeld] || "");
-            if (!t.includes(o.quelleWort)) throw new Error("sollFrei: „" + o.quelleWort + "“ steht nicht in " + o.quelleFeld + " " + ID + " S" + nr);
-            const z = K.zahlenIn(o.quelleWort);
-            for (const v of [o.zahl, o.bis]) if (v !== undefined && !z.some((x) => Math.abs(x - v) < 1e-9)) throw new Error("sollFrei: " + v + " steht nicht in „" + o.quelleWort + "“");
-        } else if (!(typeof o.refQuelle === "string" && o.refQuelle.length >= 8)) throw new Error("sollFrei " + ID + " S" + nr + ": ohne Zahl der Karte verlangt das Soll refQuelle");
-        if (!Number.isFinite(o.zahl) || !["≥", "≤", ">", "<", "=", "band", "±"].includes(o.rel)) throw new Error("sollFrei " + ID + " S" + nr + ": rel/zahl");
-        return { wort, key: o.key, rel: o.rel, a: o.zahl, b: o.bis, ref: o.ref, refQuelle: o.refQuelle || o.quelleFeld + ": " + o.quelleWort, einheit: o.einheit || "" };
-    };
     // DER ZEUGE DER WELT: N Antworten der Welt (Orte, Fische, Saaten …) mit Streuung, und wo verlangt die Änderung vor → nach
     const zeugeWelt = (min, mitAenderung) => (roh) => {
         const z = roh.zeuge || {};
@@ -1791,7 +1779,7 @@ L.perspektive("wasser", (() => {
                     5: {
                         u: { mass: "zonen" },
                         soll: [
-                            sollFrei(LR, 5, "Faunenwechsel je Zone gegen das Referenz-Profil (Epi- bis Bathypelagial)", {
+                            K.soll(LR, 5, "Faunenwechsel je Zone gegen das Referenz-Profil (Epi- bis Bathypelagial)", {
                                 key: "zonenMitFaunenwechsel",
                                 rel: "≥",
                                 zahl: 3,
@@ -2007,9 +1995,9 @@ L.perspektive("wasser", (() => {
                     1: {
                         u: { mass: "sicht" },
                         soll: [
-                            sollFrei(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtBachM", rel: "band", zahl: 5, bis: 20, einheit: "m", refQuelle: "klare Bäche: schwarze Scheibe 5–20 m (Davies-Colley & Smith 2001; dieselbe Quelle wie diag-wasser-leben K5)" }),
-                            sollFrei(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtSeeM", rel: "band", zahl: 2, bis: 16, einheit: "m", refQuelle: "oligo- bis mesotrophe Seen: Sichttiefe 2–16 m (Carlson 1977, Trophie-Index 20–50)" }),
-                            sollFrei(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtFlussM", rel: "band", zahl: 1, bis: 1.5, einheit: "m", refQuelle: "Tieflandfluss: schwarze Scheibe 1–1,5 m (Davies-Colley & Smith 2001)" }),
+                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtBachM", rel: "band", zahl: 5, bis: 20, einheit: "m", refQuelle: "klare Bäche: schwarze Scheibe 5–20 m (Davies-Colley & Smith 2001; dieselbe Quelle wie diag-wasser-leben K5)" }),
+                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtSeeM", rel: "band", zahl: 2, bis: 16, einheit: "m", refQuelle: "oligo- bis mesotrophe Seen: Sichttiefe 2–16 m (Carlson 1977, Trophie-Index 20–50)" }),
+                            K.soll(BI, 1, "Sichtweite in m an fester Pose gegen das Band des Gewässertyps", { key: "sichtFlussM", rel: "band", zahl: 1, bis: 1.5, einheit: "m", refQuelle: "Tieflandfluss: schwarze Scheibe 1–1,5 m (Davies-Colley & Smith 2001)" }),
                         ],
                         zeuge: (roh) => {
                             const z = roh.zeuge || {};
@@ -2276,8 +2264,8 @@ L.perspektive("wasser", (() => {
                     1: {
                         u: { mass: "flucht" },
                         soll: [
-                            sollFrei(NE, 1, "Hub und Flucht aus dem Bild", { key: "fischHubJePegelHub", rel: "≥", zahl: 0.8, einheit: "× Pegel-Hub", quelleFeld: "tiefe", quelleWort: "Fisch-Hub ≥ 0,8 × Pegel-Hub" }),
-                            sollFrei(NE, 1, "Hub und Flucht aus dem Bild", { key: "fluchtAbstandM", rel: "≥", zahl: 3, einheit: "m", quelleFeld: "tiefe", quelleWort: "Fluchtabstand ≥ 3 m" }),
+                            K.soll(NE, 1, "Hub und Flucht aus dem Bild", { key: "fischHubJePegelHub", rel: "≥", zahl: 0.8, einheit: "× Pegel-Hub", quelleFeld: "tiefe", quelleWort: "Fisch-Hub ≥ 0,8 × Pegel-Hub" }),
+                            K.soll(NE, 1, "Hub und Flucht aus dem Bild", { key: "fluchtAbstandM", rel: "≥", zahl: 3, einheit: "m", quelleFeld: "tiefe", quelleWort: "Fluchtabstand ≥ 3 m" }),
                         ],
                         zeuge: (roh) => {
                             const z = roh.zeuge || {};

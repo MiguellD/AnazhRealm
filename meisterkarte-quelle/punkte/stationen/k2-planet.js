@@ -68,11 +68,13 @@ const KERN = (() => {
 
     // DIE ZAHL DER KARTE: „80“ · „0,05“ · „2 000“ · „10⁵“ · „3,9·10⁵“ · „−4“ → Number
     const HOCH = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁻": "-" };
-    const ZAHL_RE = /[−-]?(?:\d{1,3}(?:[  ]\d{3})+|\d+)(?:,\d+)?(?:\s?·\s?10[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+)?|10[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+/g;
+    // die reine Zehnerpotenz ZUERST (19.11., Fund zusammenspiel-leben: „10⁶“ las die Alternative `\d+` als 10 — sie steht links und
+    // greift an derselben Stelle zuerst)
+    const ZAHL_RE = /[−-]?10[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+|[−-]?(?:\d{1,3}(?:[  ]\d{3})+|\d+)(?:,\d+)?(?:\s?·\s?10[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+)?/g;
     const zahlVon = (t) => {
         const s = String(t).trim();
-        const nur = /^10([⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+)$/.exec(s);
-        if (nur) return Math.pow(10, Number(nur[1].replace(/./g, (c) => HOCH[c])));
+        const nur = /^([−-]?)10([⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+)$/.exec(s);
+        if (nur) return (nur[1] ? -1 : 1) * Math.pow(10, Number(nur[2].replace(/./g, (c) => HOCH[c])));
         const m = /^([−-]?)((?:\d{1,3}(?:[  ]\d{3})+|\d+)(?:,\d+)?)(?:\s?·\s?10([⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+))?$/.exec(s);
         if (!m) return NaN;
         const v = Number(m[2].replace(/[  ]/g, "").replace(",", "."));
@@ -85,9 +87,26 @@ const KERN = (() => {
     // DAS SOLL EINER SPROSSE, wörtlich aus der Karte: `wort` muss im Richter stehen; rel ≥ ≤ > < = band ± ±% — die Zahl(en) aus dem Wort
     // (o.zahl/o.bis müssen unter den Zahlen des Worts stehen); ± misst gegen o.ref (die Erd-Referenz mit o.refQuelle beim Namen)
     function soll(leiter, nr, wort, o = {}) {
-        const r = sprosseVon(leiter, nr).richter;
+        const sp = sprosseVon(leiter, nr), r = sp.richter;
         if (typeof wort !== "string" || !wort || !r.includes(wort)) throw new Error("Soll „" + wort + "“ steht nicht wörtlich im Richter " + leiter + " S" + nr + ": „" + r + "“");
         const z = zahlenIn(wort);
+        // DIE ZAHL AUS EINEM ANDEREN FELD DER SPROSSE ODER EINER BENANNTEN QUELLE (19.11.: fünf Teile bauten je ein eigenes `sollFrei` —
+        // EIN Weg im Kern): o.quelleFeld + o.quelleWort — die Zahl steht wörtlich im Feld (umfang, tiefe …) der Sprosse; o.refQuelle allein
+        // nur, wenn das Wort KEINE Zahl trägt (sonst gilt die Zahl des Worts) — nie eine Zahl ohne Herkunft
+        if (o.quelleFeld || (o.refQuelle && !z.length && !o.rel?.startsWith("±"))) {
+            const wer = "Soll „" + wort + "“ " + leiter + " S" + nr;
+            let quelle = o.refQuelle;
+            if (o.quelleFeld) {
+                const t = String(sp[o.quelleFeld] == null ? "" : sp[o.quelleFeld]);
+                if (!o.quelleWort || !t.includes(o.quelleWort)) throw new Error(wer + ": „" + o.quelleWort + "“ steht nicht in " + o.quelleFeld + " der Sprosse („" + t + "“)");
+                const zq = zahlenIn(o.quelleWort);
+                for (const v of [o.zahl, o.bis]) if (v !== undefined && !zq.some((x) => Math.abs(x - v) <= 1e-9 * Math.max(1, Math.abs(v)))) throw new Error(wer + ": " + v + " steht nicht in „" + o.quelleWort + "“ (" + zq.join(", ") + ")");
+                quelle = o.quelleFeld + " der Sprosse: „" + o.quelleWort + "“" + (o.refQuelle ? " · " + o.refQuelle : "");
+            } else if (!(typeof o.refQuelle === "string" && o.refQuelle.length >= 12)) throw new Error(wer + ": ohne Zahl im Wort verlangt das Soll refQuelle (≥ 12 Zeichen) oder quelleFeld + quelleWort");
+            if (!Number.isFinite(o.zahl) || !["≥", "≤", ">", "<", "=", "band", "±"].includes(o.rel) || (o.rel === "band" && !Number.isFinite(o.bis)) || (o.rel === "±" && !Number.isFinite(o.ref)))
+                throw new Error(wer + ": rel (≥ ≤ > < = band ±) und zahl (band: bis, ±: ref) verlangt");
+            return { wort, key: o.key || wort, rel: o.rel, a: o.zahl, b: o.bis, ref: o.ref, refQuelle: quelle, einheit: o.einheit || "", faktor: o.faktor };
+        }
         let rel = o.rel;
         if (!rel) {
             if (/±/.test(wort)) rel = /%/.test(wort) ? "±%" : "±";
@@ -101,7 +120,7 @@ const KERN = (() => {
         // die Zahl des Solls steht HINTER seinem Zeichen („p90 ≤ 20 km“: 20, nicht 90; „Panel-2AFC ≤ 70 %“: 70), das Band ist das Paar um „–“
         const zeichen = { "≥": /≥|mindestens|ab /, "≤": /≤|höchstens|bis /, ">": />/, "<": /</, "±": /±/, "±%": /±/ }[rel];
         const hinter = zeichen && wort.search(zeichen) >= 0 ? zahlenIn(wort.slice(wort.search(zeichen)))[0] : undefined;
-        const paar = rel === "band" ? /((?:\d[\d  ]*)(?:,\d+)?)\s?[–-]\s?((?:\d[\d  ]*)(?:,\d+)?)/.exec(wort) : null;
+        const paar = rel === "band" ? /((?:\d[\d  ]*)(?:,\d+)?(?:\s?·\s?10)?[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]*)\s?[–-]\s?((?:\d[\d  ]*)(?:,\d+)?(?:\s?·\s?10)?[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]*)/.exec(wort) : null;
         const a = o.zahl != null ? o.zahl : paar ? zahlVon(paar[1].trim()) : hinter !== undefined ? hinter : z[0];
         const b = rel === "band" ? (o.bis != null ? o.bis : paar ? zahlVon(paar[2].trim()) : z[1]) : undefined;
         for (const [n, v] of [["zahl", a], ["bis", b]])
