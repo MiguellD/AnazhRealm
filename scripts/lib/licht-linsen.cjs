@@ -1280,8 +1280,9 @@ function tagKurve(o) {
                 }
             }
         } finally {
+            // der Spion fällt, die Belichtung schreibt wieder der EINE Schreiber (die Kamera frei, an der Uhr der Seite)
             delete rend.toneMappingExposure;
-            rend.toneMappingExposure = k;
+            r._belichtungHand(null);
         }
         return { zeilen, schreiber, karte, mutant, bahn: o.uhren.length === 100 };
     })();
@@ -2595,33 +2596,29 @@ function luftTiefe(o) {
             return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
         };
         const med = (a) => (a.length ? +rang(a.slice().sort(aufsteigend)).toPrecision(4) : null);
-        // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
+        // β des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
-        let blende = 1;
         const anwenden = r._dayNightApplyHemiUndLuft;
-        const belichten = r._dayNightApplyBelichtung;
         r._dayNightApplyHemiUndLuft = function (...a) {
             anwenden.apply(this, a);
             if (dichte != null) U.beta.value = dichte;
         };
-        r._dayNightApplyBelichtung = function (...a) {
-            belichten.apply(this, a);
-            st.renderer.toneMappingExposure *= blende;
-        };
+        // DIE BLENDE k ÜBER DER MESSUNG (laub-kante-3): die Kamera des Spiels liest das Licht dieses Blicks (die Hand frei), dann
+        // steht sie auf Hand bei k × ihrer Lesung (`_belichtungHand`, der EINE Kanal durch den EINEN Schreiber) — die drei Schüsse
+        // L, L0, S einer Sicht tragen dieselbe Belichtung, auch durch die Lesung der Aufnahme. Bis hier umhüllte die Linse den
+        // Schreiber (`toneMappingExposure *= blende`) und setzte die Belichtung neben ihm.
         const schuss = async (b, k) => {
             const alt = U.beta.value;
-            const e = st.renderer.toneMappingExposure;
-            blende = k;
-            st.renderer.toneMappingExposure = e * k;
+            r._belichtungHand(null);
+            r._belichtungHand(st.renderer.toneMappingExposure * k);
             if (b != null) U.beta.value = dichte = b;
             if (st.fernRing) r._tickFeldPass(st.fernRing);
             try {
                 return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             } finally {
                 dichte = null;
-                blende = 1;
                 U.beta.value = alt;
-                st.renderer.toneMappingExposure = e;
+                r._belichtungHand(null);
             }
         };
         const blick = (az) => {
@@ -2766,7 +2763,7 @@ function luftTiefe(o) {
             }
         } finally {
             delete r._dayNightApplyHemiUndLuft;
-            delete r._dayNightApplyBelichtung;
+            r._belichtungHand(null);
             PU.bloomStrength.value = bloom0;
             cam.fov = fov0;
             cam.updateProjectionMatrix();

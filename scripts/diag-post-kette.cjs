@@ -1245,7 +1245,6 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
             flach.position.set(x0, y0, z0 - 2);
             st.scene.add(flach);
             const maskeVor = cam.layers.mask;
-            const kVor = rend.toneMappingExposure;
             const nachtU = st.postProcessingUniforms && st.postProcessingUniforms.nightFactor;
             const nachtVor = nachtU ? nachtU.value : null;
             const dunkel = async (k, c, nacht) => {
@@ -1396,9 +1395,8 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
             } finally {
                 cam.layers.mask = maskeVor;
                 if (nachtU) nachtU.value = nachtVor;
-                // die Kamera zurück an den Lichtmesser, dann die Belichtung von vor der Probe (der nächste Takt misst sie neu)
+                // die Kamera zurück an den Lichtmesser: der EINE Schreiber belichtet sofort neu
                 r._belichtungHand(null);
-                rend.toneMappingExposure = kVor;
                 st.scene.remove(flach);
                 flach.geometry.dispose();
                 flach.material.dispose();
