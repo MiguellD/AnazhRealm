@@ -20,6 +20,10 @@
 //   geburt              „Neue Welt" (`createNewWorld`) — erlaubt ist nur die Positiv-Liste (visibility, creator)
 //   reload              B liegt im Speicher, die Seite betritt sie durch die Tür (`switchToWorld`, Boot: Vorlade + Restore;
 //                       die Formen ohne worldId, ohne worldMeta, korrupt, nur IndexedDB fährt gate:boot-rettung)
+//   saat                DIE SAAT IM LAUF (saat-im-lauf): der Satz des Spielers „neue welt saat <Saat>“ in EINER Sitzung, Saat A → B → B
+//                       → A am Ort. Jede Welt trägt die genannte Saat in jedem Leser (worldMeta, Voxel-Faden, Planet, Anker, der
+//                       Rausch-Strom `this._voxelNoise` gegen den frisch aus der Saat gebauten), und dieselbe Saat ergibt dieselben
+//                       Kennzahlen (Höhen, Rausch, Genesis-Ort, Plan des Start-Dorfs) — ein Halter der alten Saat fällt beim Namen
 // Dazu je Tür: A trägt nach dem letzten Autosave noch MARKER-A-SPAET (Fortschritt) — die Tür sichert A vor der Sperre.
 // Und statisch (Absenz): eine ganze Welt schreibt in den Speicher nur saveState (die lebende) und `_weltAblegen` (die EINE
 // Ablage), `location.reload` steht nur im lauten Rückfall des Wechsels `_weltWechsel` — jeder andere Schreiber fällt beim Namen.
@@ -37,9 +41,11 @@
 //
 //   node scripts/diag-weltgrenze.cjs [--json datei] [--wurzel dir] [--wege laden,ersetzen,...]
 //                                      (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
-//   node scripts/diag-weltgrenze.cjs --selftest   zusätzlich zwei Scheine: der alte Spread am Lade-Engpass (der Weg
-//                                      „laden" MUSS rot werden) und saveState ohne die Sperre des Welt-Wechsels (der Weg
-//                                      „ersetzen" MUSS rot werden: die Seite erwacht in A) — beide beim Namen
+//   node scripts/diag-weltgrenze.cjs --selftest   zusätzlich die Scheine: der alte Spread am Lade-Engpass (der Weg
+//                                      „laden" MUSS rot werden), saveState ohne die Sperre des Welt-Wechsels (der Weg
+//                                      „ersetzen" MUSS rot werden: die Seite erwacht in A), die Geburt, die die Saat des
+//                                      Spielers verwirft (der Weg „saat" MUSS die gewürfelte Saat nennen), und der Rausch-Strom
+//                                      der alten Welt, der den Abschied überlebt (der Weg „saat" MUSS `this._voxelNoise` nennen)
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
 const { frageJa, statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben, jsonKlon, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
@@ -60,6 +66,7 @@ const ALLE_WEGE = [
     "einladung",
     "geburt",
     "reload",
+    "saat",
 ];
 const WEGE = opt("--wege", ALLE_WEGE.join(","))
     .split(",")
@@ -595,6 +602,115 @@ async function fahreWeg(browser, weg, schein) {
     return rep;
 }
 
+// DIE KENNZAHLEN EINER WELT AUS IHRER SAAT (Seite, der Weg „saat"): was jeder Leser der Saat trägt und was aus ihr wächst. `leser` die
+// Saat je Leser (Rausch: der Strom der Seite gegen den frisch aus der Saat gebauten, an drei Punkten), `wuchs` das Gewachsene.
+async function saatKennzahlen() {
+    await __weltDa((w) => w.state?.worldMeta && w._genesisPlan);
+    const wm = st.worldMeta;
+    const L = r._gelaende();
+    const frisch = globalThis.__gelaendeCore.lageRausch(wm.seed, SimplexNoise);
+    const pkt = [[0.37, 0.11], [-12.5, 40.25], [903.1, -77.7]];
+    const rauschFremd = pkt.some(([x, z]) => L.noise.noise2D(x, z) !== frisch.noise2D(x, z));
+    const anker = await r._planetAnker();
+    const hoehen = [];
+    for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) hoehen.push(Math.round(r.getTerrainHeightAt(i * 400, j * 400) * 100) / 100);
+    const dorf = r._autoSettlementStartInfo();
+    return {
+        leser: {
+            "worldMeta.seed": wm.seed,
+            "Voxel-Faden (Spiegel).seed": r._voxelWorkerSnapshotState().seed,
+            "_planetSamen()": r._planetSamen(),
+            "_planetAnker().samen": anker.samen,
+            "this._voxelNoise (der Rausch-Strom)": rauschFremd ? "ein Strom einer anderen Saat" : wm.seed,
+        },
+        wuchs: {
+            hoehen,
+            rausch: pkt.map(([x, z]) => L.noise.noise2D(x, z)),
+            anker: [anker.breite, anker.laenge],
+            genesis: [r._genesisPlan.ort.x, r._genesisPlan.ort.z],
+            startDorf: dorf ? [dorf.seed, dorf.nH, dorf.x, dorf.z] : null,
+        },
+    };
+}
+
+// DER WEG „saat" (saat-im-lauf): EINE Sitzung, der Satz des Spielers „neue welt saat <Saat>“ (die Konsole, `processChatCommand`), am Ort
+// A → B → B → A. Befund: eine Welt, die nicht die genannte Saat trägt, ein Leser mit einer anderen Saat (beim Namen), dieselbe Saat mit
+// anderen Kennzahlen (je Feld), B gleich A (die Saat wirkt nicht). `schein`: "zufall" (die Geburt verwirft die Saat des Spielers, wie vor
+// saat-im-lauf) · "rausch" (der Rausch-Strom der alten Welt überlebt den Abschied).
+async function fahreSaat(browser, schein) {
+    const ctx = await browser.createBrowserContext();
+    const page = await ctx.newPage();
+    const rep = { weg: "saat", schein, befunde: [], erlaubt: [], boot: [], navigiert: false, saaten: [] };
+    const t0 = Date.now();
+    const A = "anazh-realm-seed";
+    const B = "grenze-saat-b";
+    try {
+        await page.evaluateOnNewDocument(frageJa);
+        await nullRenderer(page);
+        await server.zeige(page, 60000);
+        const a = await bereit(page, null);
+        rep.boot.push(a.ms);
+        if (!a.ok) throw new Error("Welt A nicht bereit");
+        let navigationen = 0;
+        page.on("framenavigated", (f) => f === page.mainFrame() && navigationen++);
+        if (schein === "zufall")
+            await page.evaluate(() => {
+                const roh = r._generateFreshWorldMeta.bind(r);
+                r._generateFreshWorldMeta = (slug) => roh(slug);
+            });
+        if (schein === "rausch")
+            await page.evaluate(() => {
+                const roh = r._weltAbschied.bind(r);
+                r._weltAbschied = () => {
+                    const n = r._voxelNoise;
+                    roh();
+                    r._voxelNoise = n;
+                };
+            });
+        const k0 = await page.evaluate(saatKennzahlen);
+        rep.saaten.push([A, k0.leser["worldMeta.seed"]]);
+        const je = new Map([[A, k0]]);
+        const pruefe = (saat, k, wann) => {
+            for (const [leser, s] of Object.entries(k.leser))
+                if (s !== saat) rep.befunde.push(`${wann}: ${leser} trägt ${s} statt der Saat ${saat}`);
+            const ref = je.get(saat);
+            if (!ref) return je.set(saat, k);
+            for (const f of Object.keys(ref.wuchs))
+                if (JSON.stringify(ref.wuchs[f]) !== JSON.stringify(k.wuchs[f]))
+                    rep.befunde.push(`${wann}: dieselbe Saat ${saat}, anderes ${f} (${JSON.stringify(k.wuchs[f]).slice(0, 80)} statt ${JSON.stringify(ref.wuchs[f]).slice(0, 80)})`);
+        };
+        pruefe(A, k0, "der Boot");
+        for (const [i, saat] of [B, B, A].entries()) {
+            const wann = `Wechsel ${i + 1} (Saat ${saat})`;
+            const w = await page.evaluate(async (saat) => {
+                const vor = st.worldMeta.worldId;
+                r.processChatCommand(`neue welt saat ${saat}`);
+                const ziel = r.activeWorldGet();
+                if (ziel === vor) return { ok: false };
+                return { ok: await r.erwacht, ziel };
+            }, saat);
+            if (!w.ok) {
+                rep.befunde.push(`${wann}: der Satz „neue welt saat ${saat}" erschuf keine Welt am Ort`);
+                break;
+            }
+            const k = await page.evaluate(saatKennzahlen);
+            rep.saaten.push([saat, k.leser["worldMeta.seed"]]);
+            pruefe(saat, k, wann);
+        }
+        if (je.has(B) && JSON.stringify(je.get(B).wuchs.hoehen) === JSON.stringify(k0.wuchs.hoehen))
+            rep.befunde.push(`die Saat ${B} wächst dieselben Höhen wie ${A} — die Saat wirkt nicht`);
+        rep.navigiert = navigationen > 0;
+        if (rep.navigiert) rep.befunde.push("der Satz lud die Seite neu — der Wechsel am Ort brach");
+    } catch (e) {
+        rep.befunde.push(`ABBRUCH: ${e?.message || e}`);
+    } finally {
+        rep.ms = Date.now() - t0;
+        rep.befunde = Array.from(new Set(rep.befunde));
+        await ctx.close();
+    }
+    return rep;
+}
+
 hauptLauf(async () => {
     const tStart = Date.now();
     await server.lausche(PORT);
@@ -610,13 +726,15 @@ hauptLauf(async () => {
     );
     for (const f of abs) console.log(`      ⛔ ${f}`);
     for (const weg of WEGE) {
-        const rep = await fahreWeg(browser, weg, null);
+        const rep = weg === "saat" ? await fahreSaat(browser, null) : await fahreWeg(browser, weg, null);
         berichte.push(rep);
         const gruen = rep.befunde.length === 0;
         if (!gruen) rot = true;
         const art = rep.navigiert
             ? "die Tür lud neu"
-            : weg === "laden"
+            : weg === "saat"
+              ? `am Ort, Saaten ${rep.saaten.map((s) => s[1]).join(" → ")}`
+              : weg === "laden"
               ? "blieb in der Seite"
               : weg === "ersetzen-quota"
                 ? "kein Wechsel"
@@ -636,7 +754,19 @@ hauptLauf(async () => {
         const namen = spread.befunde.filter((f) => f.startsWith("in der Seite: worldMeta."));
         const fenster = sperre.befunde.filter((f) => /zeigt der Aktiv-Zeiger|erwachte in/.test(f));
         const proto = stand.befunde.filter((f) => /_dslPositionsCache/.test(f));
-        selbst = { spread: namen, sperre: fenster, stand: proto, befunde: { spread: spread.befunde, sperre: sperre.befunde } };
+        // die Scheine der Saat: die Geburt verwirft die Saat (die Welt trägt eine gewürfelte) · der Rausch-Strom der alten Welt bleibt
+        const zufallRep = await fahreSaat(browser, "zufall");
+        const rauschRep = await fahreSaat(browser, "rausch");
+        const zufall = zufallRep.befunde.filter((f) => /worldMeta\.seed trägt w-[0-9a-f]{12}-\w+ statt der Saat grenze-saat-b/.test(f));
+        const rausch = rauschRep.befunde.filter((f) => /this\._voxelNoise .*trägt ein Strom einer anderen Saat/.test(f));
+        selbst = {
+            spread: namen,
+            sperre: fenster,
+            stand: proto,
+            zufall,
+            rausch,
+            befunde: { spread: spread.befunde, sperre: sperre.befunde, zufall: zufallRep.befunde, rausch: rauschRep.befunde },
+        };
         console.log(
             `\n  SELBSTTEST 1 (der alte Spread am Lade-Engpass zum Schein): ${namen.length} Felder von A beim Namen — ${namen
                 .map((f) => f.replace("in der Seite: ", ""))
@@ -647,13 +777,22 @@ hauptLauf(async () => {
             `  SELBSTTEST 2 (saveState ohne die Sperre des Welt-Wechsels zum Schein): ${fenster.length} Befunde — ${fenster.join(" · ")}`
         );
         console.log(`  SELBSTTEST 3 (der Prototyp trägt Stand zum Schein): ${proto[0] || "BLIND"}`);
+        console.log(`  SELBSTTEST 4 (die Geburt verwirft die Saat des Spielers zum Schein): ${zufall[0] || "BLIND"}`);
+        console.log(`  SELBSTTEST 5 (der Rausch-Strom der alten Welt überlebt den Abschied zum Schein): ${rausch[0] || "BLIND"}`);
     }
     if (JSON_AUS) jsonSchreiben(JSON_AUS, { root, absenz: abs, berichte, selbst });
     let pass;
     if (SELBSTTEST) {
-        pass = !rot && selbst && selbst.spread.length > 0 && selbst.sperre.length > 0 && selbst.stand.length > 0;
+        pass =
+            !rot &&
+            selbst &&
+            selbst.spread.length > 0 &&
+            selbst.sperre.length > 0 &&
+            selbst.stand.length > 0 &&
+            selbst.zufall.length > 0 &&
+            selbst.rausch.length > 0;
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren — und alle drei Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser — und alle fünf Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
         );
     } else {
         pass = !rot;

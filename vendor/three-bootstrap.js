@@ -78,6 +78,9 @@ const MeshToonNodeMaterial = requireWebGPU("MeshToonNodeMaterial");
 // damit Materials mit roughness + metalness aus den Material-Tags hergeleitet.
 // Schöpfer-Wort 14.06.: „pbr ist die regel, physik, der richtige weg".
 const MeshStandardNodeMaterial = requireWebGPU("MeshStandardNodeMaterial");
+// licht-eine-skala — der Sprite im Stoff der Knoten (die Klasse Erscheinung: Kreatur-Aura, Namensschild). Bis hier reichte die
+// Tür ihn nicht durch: `new THREE.SpriteNodeMaterial` warf, sobald ein Tier eine Aufgabe trug (`_refreshCreatureTaskAura`).
+const SpriteNodeMaterial = requireWebGPU("SpriteNodeMaterial");
 // V12.0-vendor.1 — r184 hat den `WebGPU`-Capability-Wrapper entfernt
 // (war r160's `WebGPU.isAvailable()`). Direkt-Lookup via `navigator.gpu`
 // in der Renderer-Auswahl-Logik (Stamm `_holzWahl`).
@@ -92,6 +95,7 @@ THREE_GLOBAL.PointsNodeMaterial = PointsNodeMaterial;
 THREE_GLOBAL.MeshLambertNodeMaterial = MeshLambertNodeMaterial;
 THREE_GLOBAL.MeshToonNodeMaterial = MeshToonNodeMaterial;
 THREE_GLOBAL.MeshStandardNodeMaterial = MeshStandardNodeMaterial;
+THREE_GLOBAL.SpriteNodeMaterial = SpriteNodeMaterial;
 // V18.98 — Post-Processing-Heilung: `PostProcessing`/`RenderPipeline` lebt im
 // three/webgpu-Bundle und wurde hier NIE kopiert → der ganze V17-Post-FX-Bogen
 // (Bloom · Grading · Kanten-Schärfe · Entgrauen) war still aus. SOFT-Lookup

@@ -66,17 +66,27 @@ var __weltLicht = (function () {
     // Dorf: E 0,54, k 1,59), unter dem Knoten (tiefer Mond, Wald, Wolke) fällt das Bild. Mit dem halben Knoten (0,231) öffnete die
     // Kamera am tiefen Mond bis k 3,7–4,8: die Wand unter der Laterne stand um 20 Uhr heller als am Mittag (Y 0,395, Radeon). Bis w28-nacht-bilanz stand er auf dem
     // gemessenen Licht von main (0,68: Mond + das Sternen-Licht als Füllung E 0,30, `STERNENLICHT`); unter dem Knoten steht die
-    // Kamera — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
+    // Kamera — fällt das Licht (der Mond tiefer am
     // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Horizont bis zum Ende der bürgerlichen
     // Dämmerung (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) logarithmisch ein — dort trägt das Dämmerlicht
     // (`nachtHimmel`) so viel wie der Vollmond. Bis w28-nacht-bilanz wuchs er erst von −6° bis −20° ein: am tiefen Mond (05 Uhr,
     // Sonne −15°) öffnete die Kamera auf k 3,9–4,8, und die Laterne überstrahlte ihre Wand.
-    const MOND_STAERKE = 0.65;
+    // DIE EINE SKALA (licht-eine-skala): 1 Welt-Einheit Licht = `EINHEIT_LX` lx Beleuchtungsstärke bzw. cd/m² Leuchtdichte —
+    // der Maßstab, in dem die Sonne geeicht steht (spec/farbe/tag-ref.json: 117 970 lx bei 75° Sonnenhöhe; die Welt trägt dort
+    // waagrecht 7,33 Einheiten — Sonne 6,01 + Himmel 1,41 bei 74,2° gerechnet 7,42). JEDE Quelle trägt ihren physikalischen
+    // Wert ÷ `EINHEIT_LX`; bis hierher stand die Nacht in einem zweiten Maßstab (1 Einheit = 1,16 lx, das 13 862-Fache). Den
+    // Unterschied trägt die Belichtung (die Vor-Belichtung des Szenen-Ziels, `_vorBelichtung` im Stamm: der Puffer hält L × k).
+    const EINHEIT_LX = 16090;
+    // DER VOLLMOND IM ZENIT: 0,26 lx (Kyba u. a. 2017, „How bright is moonlight?“: typisch 0,05–0,2 lx, höchstens 0,3 lx)
+    const MOND_LX = 0.26;
     const lumaVon = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    // die Stärke des Mond-Richtlichts: E im Zenit = Stärke × die Luma seines Tons = `MOND_LX` ÷ `EINHEIT_LX`
+    const MOND_STAERKE = MOND_LX / EINHEIT_LX / lumaVon(KERN.ATMO_GESETZ.nacht.mond);
     // E DES VOLLMONDS IM ZENIT (Welt-Einheiten, wie `_waagrechtIrradianz`): seine Stärke × die Luma seines Tons
     const MOND_E = MOND_STAERKE * lumaVon(KERN.ATMO_GESETZ.nacht.mond);
     const BELICHTUNG = Object.freeze({
-        kurve: "NeutralToneMapping",
+        kurve: "CustomToneMapping",
+        schulter: 0.76,
         zielKarte: 0.22,
         min: 0.05,
         steigung: 0.75,
@@ -86,6 +96,39 @@ var __weltLicht = (function () {
         nachtKnotenGrad: -6,
         nachtGrad: -32,
     });
+    // DIE TONKURVE DER AUSGABE (licht-eine-skala) — die EINE Funktion, die jedes Bild der Welt und der Bühne an den Schirm legt
+    // (`tonKurveSetzen`: der Platz `BELICHTUNG.kurve` in der Tafel des Renderers). Ihre Form ist Khronos PBR Neutral: Fuß
+    // 6,25·x² unter 0,08, bis zur Schulter (`schulter`) geht die Farbe unverändert ins Bild, darüber wird der GRÖSSTE Kanal
+    // gestaucht — das Verhältnis der Kanäle bleibt, über Bild-Weiß behält jede Quelle Farbton und Sättigung. Neutral selbst
+    // zieht darüber zu Weiß: 1 − 1 ÷ (0,15·(Spitze − gestaucht) + 1) steht bei 10 × Weiß auf 0,57, bei den 47 000 × Weiß einer
+    // Flamme unter der Blende der Nacht auf 1 — die Flamme, das Glutbett, das wache Fenster und die Rauch-Unterseite brannten
+    // weiß (gate:post-kette (j2), GTX 1050). Dieser Zug FIEL ganz (am Bild entschieden: eine Grenze 0,012 statt 0 änderte
+    // Herd, Dorf-Nacht und Sonnen-Scheibe nicht sichtbar). Ein grauer Eingang bleibt grau: die Eichung der Karte und jede
+    // Rückrechnung am Grau gelten weiter; der Tag steht zahlengleich (Wiese Mittag Luma 89,88 = 89,88).
+    function tonKurve(THREE, B = BELICHTUNG) {
+        const T = THREE.TSL;
+        const S = B.schulter;
+        const d = 1 - S;
+        return T.Fn(([farbe, k]) => {
+            const c = farbe.mul(k).toVar();
+            const x = T.min(c.r, T.min(c.g, c.b));
+            c.subAssign(T.select(x.lessThan(0.08), x.sub(x.mul(x).mul(6.25)), 0.04));
+            const spitze = T.max(c.r, T.max(c.g, c.b));
+            const ueber = spitze.greaterThanEqual(S);
+            const p = spitze.max(S);
+            const neu = T.float(1).sub(T.float(d * d).div(p.add(d - S)));
+            return c.mul(T.select(ueber, neu.div(p), 1));
+        });
+    }
+    // DER EINE SETZER: die Kurve in die Tafel des Renderers (einmal je Renderer) und auf seinen Platz
+    const _tonKurveAn = new WeakSet();
+    function tonKurveSetzen(R, THREE) {
+        if (R.library && !_tonKurveAn.has(R)) {
+            R.library.addToneMapping(tonKurve(THREE), THREE[BELICHTUNG.kurve]);
+            _tonKurveAn.add(R);
+        }
+        R.toneMapping = THREE[BELICHTUNG.kurve];
+    }
     // DIE GRENZGRÖSSE DER STERNE je Sonnenhöhe [Grad, Größe] (V18.530, `HIMMEL.grenzgroesse` der Welt): im hellen Tag (≥ 10°) ist
     // nichts zu sehen, am Ende der bürgerlichen Dämmerung (−6°) +1,5, der nautischen (−12°) +4, astronomische Nacht (−18°) +6 —
     // die Anker der EINEN Tag-Achse (`tagAchse`).
@@ -101,7 +144,7 @@ var __weltLicht = (function () {
     );
     // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle — `r/g/b` der Purkinje-Hue aus dem Gesetz
     // (`ATMO_GESETZ.nacht.mond`), `intensity` die Helligkeit; das Wetter dimmt ihn. DER MOND TRÄGT DIE NACHT (w28-nacht-licht):
-    // 0,22 → 0,65, das Ambient der Nacht fiel 0,23 → 0,04 (`_dayNightApplyAmbient`) — Schlüssel und Füllung der Mondnacht: der
+    // 0,22 → 0,65, das Ambient der Nacht fiel 0,23 → 0,04 (in licht-eine-skala ganz) — Schlüssel und Füllung der Mondnacht: der
     // Boden und jede Wand zum Mond stehen im Licht mit Schatten, die Wand ohne Mond und Laterne fällt zurück. Der Wert ist das
     // gemessene Maß des lesbaren Bodens (S0 Nacht ohne das Feuer, Radeon, Luma ≥ 22: main 24,1 · Ambient 0,04 mit Mond 0,22
     // 14,4 · 0,5 20,4 · 0,65 23,7); das Ambient allein ließ kein Fenster (Boden ≥ 22 verlangte ≥ 0,18, die Wand 3 : 1 ≤ 0,22).
@@ -114,7 +157,8 @@ var __weltLicht = (function () {
     // DAS STERNEN-LICHT (w28-nacht-bilanz) — der Nachthimmel ohne Mond (Luftleuchten und Sterne) im Maß der REF der Kamera
     // (spec/farbe/tag-ref.json, USNO Circular 171: der Nachthimmel 0,0005 lx neben dem Vollmond, zusammen 0,397 lx): `r/g/b` der
     // Ton des Gesetzes (`ATMO_GESETZ.nacht.himmel`, auf Luma 1), `leuchtdichte` seine Zenit-Leuchtdichte in Welt-Einheiten —
-    // E des Vollmonds im Zenit (`MOND_E`) × 0,0005 / 0,3965, durch π (die Halbkugel). Bis hier trug der Himmel die Zahl des
+    // 0,0005 lx ÷ `EINHEIT_LX`, durch π (die Halbkugel); `daemmer` das Dämmerlicht am Ende der bürgerlichen Dämmerung (die REF:
+    // 3 lx bei −6°). Bis licht-eine-skala standen beide als Anteile des Mondes im Maßstab der Nacht. Bis hier trug der Himmel die Zahl des
     // Gesetzes als Leuchtdichte (Luma 0,095, E 0,30 neben dem Mond 0,43 — das 510-Fache dieses Maßes): GEMESSEN (Radeon, Dorf,
     // 00 Uhr, main 3552f058, Ausgabe-Y) trug es die Wand ohne Quelle zu 72 % (0,0279 → 0,0078 ohne es; ohne die ganze Umgebung
     // 0,0011, ohne Ambient 0,0161, ohne Himmel-Boden 0,0222, ohne Mond 0,0199) und den Himmel zu 90 % (0,0860 → 0,0082: grau
@@ -127,15 +171,15 @@ var __weltLicht = (function () {
                 r: n[0] / y,
                 g: n[1] / y,
                 b: n[2] / y,
-                leuchtdichte: (MOND_E * 0.0005) / 0.3965 / Math.PI,
-                daemmer: MOND_E / Math.PI,
+                leuchtdichte: 0.0005 / EINHEIT_LX / Math.PI,
+                daemmer: 3 / EINHEIT_LX / Math.PI,
             };
         })(KERN.ATMO_GESETZ.nacht.himmel)
     );
     // DER HIMMEL DER NACHTSEITE OHNE MOND je Sonnenhöhe (Zenit-Leuchtdichte, Welt-Einheiten; `achse` die EINE Tag-Achse): das
     // Sternen-Licht, wie die Sterne erscheinen (1 − Dämmerung), und DAS DÄMMERLICHT — die blaue Stunde: die Kuppel nach
     // Sonnenuntergang, die in der Welt der gestauchten Nacht (der Mond 1/13 der Sonne statt 1/400 000) kein Strahl der Tafeln
-    // trägt. Es blendet mit den Ersatz-Lichtern der Nacht ein (`nacht`: 0 über dem Horizont, 1 bei −6°), trägt am Ende der
+    // trägt. Es blendet mit dem Kanal der Nacht ein (`nacht`: 0 über dem Horizont, 1 bei −6°), trägt am Ende der
     // bürgerlichen Dämmerung so viel wie der Vollmond im Zenit (`daemmer`; die REF: 3 lx bei −6°, gleich dem Vollmond bei −8°)
     // und fällt mit der Dämmerung der Tag-Achse bis −18° auf 0, während der Mond steigt. Die tiefe Nacht trägt es nie.
     const DAEMMER_ENDE = tagAchse(Math.sin((-6 * Math.PI) / 180)).daemmerung;
@@ -217,12 +261,16 @@ var __weltLicht = (function () {
             hKm: T.uniform(0.002),
             sonne: T.uniform(new THREE.Vector3(0, 1, 0)),
             mond: T.uniform(new THREE.Vector3(0, -1, 0)),
-            // DAS LICHT JETZT (E0, `_atmoE0`): die Tafeln tragen den Himmel je Einheit der Sonne über der Atmosphäre, der Leser
-            // (`himmelFarbe`, die Wolke) multipliziert E0 — die Tages-Intensität ist linear und zeichnet keine Tafel neu
+            // DAS LICHT JETZT — DIE EINHEIT DER TAFELN (`tafelEinheit`): die Tafeln tragen den Himmel je Einheit des Lichts der
+            // Stunde, der Leser (`himmelFarbe`, die Wolke) multipliziert sie. Am Tag ist sie E0 (`_atmoE0`: die Tages-Intensität
+            // ist linear und zeichnet keine Tafel neu), unter dem Horizont fällt sie mit der Dämmerung bis auf das Licht der
+            // Nacht: die Tafeln sind Halb-Float (kleinste volle Zahl 6·10⁻⁵) — der Mond in der EINEN Skala je Einheit E0 stand bei
+            // 10⁻⁷, der Himmel um ihn in Stufen-Ringen (licht-eine-skala, GTX 1050)
             licht: T.uniform(1),
-            // der Mond in Einheiten von E0 (Purkinje-Hue × MOONLIGHT × Wetter / E0)
+            // die Sonne, der Mond (Purkinje-Hue × MOONLIGHT × Wetter) und das Sternen-Licht (die Zenit-Leuchtdichte des Gesetzes ×
+            // der Anteil der Nacht, `_atmoSternenLicht`) in Einheiten von `licht`
+            sonneE: T.uniform(1),
             mondE: T.uniform(new THREE.Vector3(0, 0, 0)),
-            // das Sternen-Licht in Einheiten von E0 (die Zenit-Leuchtdichte des Gesetzes × der Anteil der Nacht / E0, `_atmoSternenLicht`)
             nachtE: T.uniform(new THREE.Vector3(0, 0, 0)),
             toenung: T.uniform(new THREE.Vector3(1, 1, 1)),
             // das Ergrauen des Himmels unter der Decke des Wetters (0 klar … 1 grau, `himmelGrau`; die Bühne trägt 0)
@@ -497,7 +545,7 @@ var __weltLicht = (function () {
                         const ein = durchlass(ri, muQ)
                             .mul(sR.mul(ph[i].x).add(sM.mul(ph[i].y)))
                             .toVar();
-                        if (i === 0) erste = ein;
+                        if (i === 0) erste = q.gewicht ? q.gewicht.mul(ein) : ein;
                         const s = ein.add(mehrfach(hi, muQ).mul(sca));
                         return q.gewicht ? q.gewicht.mul(s) : s;
                     })
@@ -552,7 +600,15 @@ var __weltLicht = (function () {
             const v = vec3(ce.mul(phi.cos()), el.sin(), ce.mul(phi.sin())).toVar();
             // Alpha: der Anteil der einfachen Streuung der Sonne an der Leuchtdichte (der Luftschatten, `himmelEinfach`)
             const einfach = vec3(0).toVar();
-            const L = marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE, einfach).toVar();
+            const L = marsch(
+                v,
+                [
+                    { dir: U.sonne, gewicht: U.sonneE },
+                    { dir: U.mond, gewicht: U.mondE },
+                ],
+                U.nachtE,
+                einfach
+            ).toVar();
             const Y = vec3(0.2126, 0.7152, 0.0722);
             return vec4(L, clamp(dot(einfach, Y).div(max(dot(L, Y), 1e-12)), 0, 1));
         });
@@ -674,7 +730,7 @@ var __weltLicht = (function () {
     function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
         const s = Math.max(0, Math.min(1, h / B.nachtKnotenGrad));
-        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE * s * s * (3 - 2 * s), 1e-6);
+        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE * s * s * (3 - 2 * s), 1e-12);
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
     }
 
@@ -692,6 +748,23 @@ var __weltLicht = (function () {
     // Tages-Intensität `staerke` (der Tint der Welt: Wetter, Aura). Das Richtlicht trägt E0 · Durchlass, die Tafeln den Himmel in E0.
     function e0(staerke) {
         return Math.max(0, KEY_BASE * LEGACY_LICHT * staerke);
+    }
+    // DIE EINHEIT DER TAFELN bei der Sonne über der Atmosphäre E0, ihrer Höhe e (sin) und der des Mondes: über dem Horizont E0;
+    // darunter fällt sie mit der Dämmerung (0,4 Dekaden je Grad — das Himmelslicht fällt von 0° bis −12° um rund sieben), nie
+    // unter das Licht der Nacht (der Vollmond, steht er am Himmel, sonst das Sternen-Licht). Nur ein Maßstab der Ablage: jeder
+    // Leser multipliziert sie zurück (`U.licht`), `anwenden` schreibt Sonne, Mond und Sterne in ihr.
+    function tafelEinheit(E0, e, mondY) {
+        const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
+        const nacht = Math.max(mondY > 0 ? MOND_E : 0, STERNENLICHT.leuchtdichte * Math.PI);
+        return Math.max(E0 * 10 ** (0.4 * Math.min(0, h)), nacht);
+    }
+    // die Quellen der Tafeln in ihrer Einheit: `U.licht`, `U.sonneE`, `U.mondE` (mond = rgb in Welt-Einheiten), `U.nachtE`
+    function tafelLicht(U, E0, mond, nacht) {
+        const u = tafelEinheit(E0, U.sonne.value.y, U.mond.value.y);
+        U.licht.value = u;
+        U.sonneE.value = E0 / u;
+        U.mondE.value.set(mond[0] / u, mond[1] / u, mond[2] / u);
+        U.nachtE.value.set(nacht[0] / u, nacht[1] / u, nacht[2] / u);
     }
 
     // DER WINKEL DER SONNE zur Tageszeit t (0 Mitternacht · 0,5 Mittag) — ohne die Stufen der Schatten-Karten (`_sonnenWinkel`
@@ -723,8 +796,8 @@ var __weltLicht = (function () {
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
     // grenze (die Grenzgröße der Sterne), daemmerung (1 im hellen Tag … 0 in astronomischer Nacht), tag (das Nacht-Auge der
-    // Post-Kette), nacht (die Ersatz-Lichter der Nacht: 0 über dem Horizont, 1 am Ende der bürgerlichen Dämmerung) und hell (die Leuchtdichte des Tageshimmels
-    // relativ zum Mittag). Die Geschichte der Kanäle steht am Leser der Welt (`_tagAchse`).
+    // Post-Kette), nacht (die Nacht der Zeitpläne: 0 über dem Horizont, 1 am Ende der bürgerlichen Dämmerung) und hell (die
+    // Leuchtdichte des Tageshimmels relativ zum Mittag). Die Geschichte der Kanäle steht am Leser der Welt (`_tagAchse`).
     function tagAchse(e) {
         const A = GRENZGROESSE;
         const s = Math.max(-1, Math.min(1, e));
@@ -741,11 +814,9 @@ var __weltLicht = (function () {
         const mTag = A[0][1],
             mNacht = A[A.length - 1][1];
         const q = Math.max(0, Math.min(1, (s + 0.18) / 0.6));
-        // DIE ERSATZ-LICHTER DER NACHT leben in der Dämmerung (bürgerlich: die Sonne 0° … −6°, wie das physikalische Himmelsmodell
-        // ohne Ersatz-Licht sie liefert): über dem Horizont tragen Sonne und Himmel allein. Bis ferne.K4 begannen sie bei 14,5°
-        // (sin 0,25) — bei Sonne +5° lag ein Ambient 0,149 auf jedem Schatten, ein Viertel des Himmels (Dorf, 18-%-Karte zur Sonne).
-        // Die Belichtung folgt dem Licht ohne Kante: über 0,25–0,30 und 0,70–0,75 je 0,002 der Uhr steigt sie glatt um 0,14–0,20 EV
-        // (vorher 0,11–0,16 EV: das Ersatz-Licht füllte die sinkende Sonne auf).
+        // DER KANAL `nacht` lebt in der Dämmerung (bürgerlich: die Sonne 0° … −6°): über dem Horizont tragen Sonne und Himmel
+        // allein. Bis ferne.K4 begann er bei 14,5° (sin 0,25) — bei Sonne +5° lag ein Ambient 0,149 auf jedem Schatten; die
+        // Ersatz-Lichter, die er blendete (Ambient, Hemisphäre), fielen in licht-eine-skala.
         const nachtE = Math.sin((-6 * Math.PI) / 180);
         const hN = 0;
         const nG = BELICHTUNG.nachtGrad;
@@ -815,7 +886,10 @@ var __weltLicht = (function () {
             t = U.toenung.value;
         for (let c = 0; c < 3; c++) {
             const k = c === 0 ? "x" : c === 1 ? "y" : "z";
-            out[c] = U.licht.value * t[k] * (lies(ms, c) + m[k] * lies(mm, c) + n[k] * w[(W - 1) * 3 + c]);
+            out[c] =
+                U.licht.value *
+                t[k] *
+                (U.sonneE.value * lies(ms, c) + m[k] * lies(mm, c) + n[k] * w[(W - 1) * 3 + c]);
         }
         return himmelGrau(out, U.grau.value);
     }
@@ -1014,6 +1088,7 @@ var __weltLicht = (function () {
                 const tSonne = A.durchlass(rW, U.sonne.y).toVar();
                 const lichtWolke = tSonne
                     .mul(max(U.sonne.y, 0))
+                    .mul(U.sonneE)
                     .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
                     .mul(U.licht.div(Math.PI))
                     .add(A.himmelFarbe(vec3(0, 1, 0)));
@@ -1037,7 +1112,7 @@ var __weltLicht = (function () {
                 const hg = float((1 - g * g) / (4 * Math.PI)).div(
                     max(float(1 + g * g).sub(nu.mul(2 * g)), 1e-4).pow(1.5)
                 );
-                const saum = tSonne.mul(U.licht).mul(hg).mul(tau.mul(tau.negate().exp())).mul(max(U.sonne.y, 0).sign());
+                const saum = tSonne.mul(U.licht).mul(U.sonneE).mul(hg).mul(tau.mul(tau.negate().exp())).mul(max(U.sonne.y, 0).sign());
                 const ton = cloudColor.div(max(dot(cloudColor, Yw), 1e-4));
                 sicht.assign(mix(sicht, diffus.add(saum).mul(ton), cloudAmt));
             });
@@ -1096,10 +1171,11 @@ var __weltLicht = (function () {
     // `himmelDerStoffe` — die Knoten, die `_spiegelUmgebung` der Welt jedem Stoff reicht; den Spiegel des Schirms trägt die Bühne
     // nicht, sie hat kein Feld), derselbe Himmel als Grund (die Equirekt-Tafel), dieselbe Belichtung (Anker und Stufen
     // der Kamera aus der Bestrahlungs-Tafel, `belichtung`) und dieselbe Tonkurve (`BELICHTUNG.kurve`). Die Bühne steht im TAG der
-    // Welt (`o.uhr`, Vorgabe Mittag — das Wort jeder Sonde: Mittag · Sonne · Sommer): wo die Tag-Achse Ersatz-Lichter der Nacht
-    // (Hemi, Ambient, Sterne) trüge, bricht sie laut, sie trägt die Nacht nicht. Das Auge steht am Bezug der Luft (1 m, die Höhe
-    // des Ankers). Gezeichnet werden die Tafeln einmal beim Ruf (der Renderer steht: nach `init()`); die Belichtung liegt, sobald
-    // die Bestrahlungs-Tafel zurückkam (`steht`, ein Versprechen) — bis dahin zeichnet die Bühne kein Bild (`belichtung` null).
+    // Welt (`o.uhr`, Vorgabe Mittag — das Wort jeder Sonde: Mittag · Sonne · Sommer): wo die Tag-Achse die Nacht trüge (der
+    // Mond als Richtlicht, die Zeitpläne der Leuchtquellen), bricht sie laut, sie trägt die Nacht nicht. Das Auge steht am
+    // Bezug der Luft (1 m, die Höhe des Ankers). Gezeichnet werden die Tafeln einmal beim Ruf (der Renderer steht: nach
+    // `init()`); die Belichtung liegt, sobald die Bestrahlungs-Tafel zurückkam (`steht`, ein Versprechen) — bis dahin zeichnet
+    // die Bühne kein Bild (`belichtung` null).
     // → { sonne (DirectionalLight, Richtung `richtung`), staerke, tafeln, umgebung (das PMREM-Ziel), knoten, achse, steht, belichtung }.
     function buehne(o) {
         const THREE = globalThis.THREE;
@@ -1120,7 +1196,7 @@ var __weltLicht = (function () {
         const achse = tagAchse(s[1]);
         if (!(achse.nacht === 0 && achse.daemmerung === 1))
             throw new Error(
-                `DIE BÜHNE DER WELT steht im Tag: die Uhr ${uhr} trägt die Ersatz-Lichter der Nacht (nacht ${achse.nacht.toFixed(3)}, ` +
+                `DIE BÜHNE DER WELT steht im Tag: die Uhr ${uhr} trägt die Nacht (nacht ${achse.nacht.toFixed(3)}, ` +
                     `Dämmerung ${achse.daemmerung.toFixed(3)}) — die Nacht zeichnet nur die Welt`
             );
         const hKm = 0.001;
@@ -1130,13 +1206,14 @@ var __weltLicht = (function () {
         U.sonne.value.set(s[0], s[1], s[2]);
         U.mond.value.set(m[0], m[1], m[2]);
         const E0 = e0(1);
-        U.licht.value = E0;
-        const mi = MOONLIGHT.intensity / Math.max(E0, 1e-6);
-        U.mondE.value.set(MOONLIGHT.r * mi, MOONLIGHT.g * mi, MOONLIGHT.b * mi);
+        const mi = MOONLIGHT.intensity;
         const sw = nachtHimmel(achse);
-        U.nachtE.value
-            .set(STERNENLICHT.r * sw, STERNENLICHT.g * sw, STERNENLICHT.b * sw)
-            .divideScalar(Math.max(E0, 1e-6));
+        tafelLicht(
+            U,
+            E0,
+            [MOONLIGHT.r * mi, MOONLIGHT.g * mi, MOONLIGHT.b * mi],
+            [STERNENLICHT.r * sw, STERNENLICHT.g * sw, STERNENLICHT.b * sw]
+        );
         // die Tafeln in ihre Ziele: Durchlass und Ψ_ms (das Medium), die Himmels-Sicht (die Sonne), die Umgebung, die Bestrahlung
         const vor = R.getRenderTarget();
         for (const [q, rt] of [
@@ -1204,7 +1281,7 @@ var __weltLicht = (function () {
         const sonne = o.sonne || new THREE.DirectionalLight();
         sonne.color.setRGB(a.col.r, a.col.g, a.col.b);
         sonne.intensity = E0 * a.lum;
-        R.toneMapping = THREE[BELICHTUNG.kurve];
+        tonKurveSetzen(R, THREE);
         R.outputColorSpace = THREE.SRGBColorSpace;
         // `knoten` (die Umgebung jedes Stoffs) und `staerke` (die Sonne des Gesetzes) liest die Treue der Bühne (`buehneZeichnet`):
         // die Bühne zeichnet unter diesem Licht allein — Identität, nie ein Nachbau
@@ -1330,8 +1407,12 @@ var __weltLicht = (function () {
         KEY_BASE,
         LEGACY_LICHT,
         BELICHTUNG,
+        tonKurve,
+        tonKurveSetzen,
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,
+        EINHEIT_LX,
+        MOND_LX,
         MOONLIGHT,
         STERNENLICHT,
         nachtHimmel,
@@ -1345,6 +1426,7 @@ var __weltLicht = (function () {
         sonnenWinkel,
         sonnenRichtung,
         mondRichtung,
+        tafelLicht,
         tagAchse,
         halbZuFloat,
         zeilenSchritt,

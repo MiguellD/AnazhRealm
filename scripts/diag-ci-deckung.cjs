@@ -189,21 +189,11 @@ const AUSNAHMEN = {
         // die Wand des Zugs bleibt gate:tag-achse:echt (die Mechanik der Kamera, `TAG_WAND`), die Bahn fährt je Zweig als GPU-Probe
         grund: "auf der Karte ROT am Soll der Szene (GTX 4e2df19b: SPRUNG und BUCKEL im Wurf der Bäume, GOLD, WARM, NACHT und REF am Genesis-Ort) — die Heilung ist licht.K1 selbst",
     },
-    "gate:arch-feld": {
-        klasse: KLASSEN.FRIST,
-        grund:
-            "trägt den Deckel des Läufers nicht (Lauf 38005574907: Gruppe 1 nach 45,3 min abgebrochen, die Wand allein " +
-            "25 min): der Bäcker backt dort auf swiftshader 1 Karte in 4 000 Takten (lokal 6 in 1 887) — A' wartet auf " +
-            "die Karte der fernen Eiche —, und die Erst-Zeichnung des D-Blicks reißt zweimal die 600-s-Wand (lokal 369 s); " +
-            "B nannte dort 1 ausgebrannten von 342 Foundry-Bauten (offen benannt). Lokal GRÜN in 549 s, D seit 3ec8844b " +
-            "an der Wurzel geheilt (Feld gegen Mesh 0,99 aus der EINEN Aufnahme)",
-    },
     "gate:studio-huelle": {
-        klasse: KLASSEN.ROT,
-        // der Gang (--engine) urteilt die Zeit nur auf der Karte (Lehre 17); die swiftshader-Fassung der vollen Batterie war ein
-        // falsches Grün und fiel mit w27-swift-raus. Selbsttest und Baum (H1–H5) fahren in npm run check, der Gang je Zweig als
-        // GPU-Probe; GPU-Proben 10.11. an main 2d5f4146: gtx1050-desktop 398 s, radeon-890m 152–173 s, omen-gtx1060 208–444 s
-        grund: "auf jeder Karte ROT an H7 (koerperstudio p95 Neubau 1,2–6,9 s > 1 s, tetrapoda 1,5 s) und H8 (GPU-ms der Leiste gegen die Bank: koerperstudio, tetrapoda, terrain) — die Heilung ist Studio-Arbeit",
+        klasse: KLASSEN.FRIST,
+        // Selbsttest und Baum (H1–H5) fahren in npm run check; der Gang (--engine: H3/H4/H6/H10 im echten Browser) braucht die
+        // Karte (die swiftshader-Fassung war ein falsches Grün und fiel mit w27-swift-raus) und fährt je Zweig als GPU-Probe
+        grund: "der Gang je Seite der Hülle im Browser auf der Karte: GPU-Proben 10.11. an main 2d5f4146 gtx1050-desktop 398 s, radeon-890m 152–173 s, omen-gtx1060 208–444 s",
     },
 };
 

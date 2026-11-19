@@ -416,9 +416,7 @@ function selbsttest() {
         },
         szenenLicht: {
             frei: [
-                { name: "", typ: "AmbientLight", I: 0, schwarz: false, direkt: false },
                 { name: "", typ: "DirectionalLight", I: 1, schwarz: false, direkt: true },
-                { name: "", typ: "HemisphereLight", I: 0, schwarz: false, direkt: false },
             ],
         },
         himmel: {
@@ -556,11 +554,11 @@ function selbsttest() {
                     schwarz: false,
                     direkt: true,
                 }),
-            /SZENEN-LICHT: 1 von 2 direkten .*`augenLicht` \(PointLight\/AugenLicht, Stärke 0\) — jeder beleuchtete Stoff trägt 4/,
+            /SZENEN-LICHT: 1 von 2 direkten .*`augenLicht` \(PointLight\/AugenLicht, Stärke 0\) — jeder beleuchtete Stoff trägt 2/,
         ],
         [
             "schwarzes Szenen-Licht",
-            ["szenenLicht.frei.1.schwarz=", true],
+            ["szenenLicht.frei.0.schwarz=", true],
             /SZENEN-LICHT: 1 von 1 direkten .*DirectionalLight, Stärke 1, schwarz/,
         ],
         ["Szenen-Licht ungezählt", ["szenenLicht=", null], /LEER: \(l\) Szenen-Licht/],
@@ -1293,7 +1291,7 @@ const server = statikServer();
             }
             // ── (j) DAS LICHT DES AUGES: das Auge in der Höhlen-Luft (der Hinaus-Blick, 16 m unter der Wiese) und unter freiem
             // Himmel (2 m über der Säulen-Oberkante desselben Orts) — je Ort der Takt der Lichter (`_applyDayNightToScene`),
-            // dann der Himmel am Auge und die Stärke seines Platzes im Licht-Pool (`_augenLeuchte`, in der Zahl des Labors × LEGACY_LICHT) gegen
+            // dann der Himmel am Auge und die Stärke seines Platzes im Licht-Pool (`_augenLeuchte`, sein `L.cd` ÷ EINHEIT_LX — licht-eine-skala) gegen
             // sein Gesetz (AUGEN_LICHT, die Belichtung des Takts); (l) unter freiem Himmel jedes Licht der Szene, wie r184 es
             // sammelt (sichtbar, in den Ebenen der Kamera)
             {
@@ -1305,7 +1303,7 @@ const server = statikServer();
                     const au = r._augenLeuchte;
                     // ein Platz des Licht-Pools: brennt das Auge, nennt `_leuchtQuellen` es am Auge beim Namen
                     const imPool =
-                        !(au?.L && au.L.staerke > 0) ||
+                        !(au?.L && au.L.cd > 0) ||
                         r._leuchtQuellen(p[0], p[1], p[2], 1).some((q) => q.id === au);
                     const h = st.himmelAmAuge;
                     const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
@@ -1333,7 +1331,7 @@ const server = statikServer();
                     return {
                         auge: p.map((v) => +v.toFixed(1)),
                         h: Number.isFinite(h) ? +h.toFixed(3) : null,
-                        I: !imPool ? null : au ? +(au.L.staerke * AnazhRealm.LEGACY_LICHT).toFixed(3) : 0,
+                        I: !imPool ? null : au ? +(au.L.cd / __weltLicht.EINHEIT_LX).toFixed(3) : 0,
                         soll: soll === null ? null : +(soll > 1e-4 ? soll : 0).toFixed(3),
                         abfall: A ? A.abfall : null,
                         kern: A ? A.kernM : null,

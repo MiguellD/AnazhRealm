@@ -6,11 +6,9 @@
 //                    Ein Vermerk heißt nie ROT/❌.
 //   wache()          (welt-boot und jede Linse ohne welt-boot) am Prozess-Ende: eine gedruckte ROTE Zeile bei Exit 0 wird Exit 1,
 //                    beim Namen — der Exit trägt, was die Zeile sagt (sonst stünde die Zeile als Vermerk ohne ROT/❌).
-//   probeUrteil(...) (der Kopf der GPU-Probe, gpu-probe.yml) Log UND Exit: GRÜN nur ohne ROTE Zeile und mit Exit 0; eine ROTE Zeile
-//                    einer Station, die am gebuchten Stand der Punkte-Maschine (punkte-maschine stand.json) nicht GRÜN ist, steht
-//                    als BEKANNT „ROT wie an main (bekannt): <station> <zahl>“ und reißt den Zweig nicht; jede andere reißt, und der
-//                    Kopf nennt den ersten Grund.
-// CLI (gpu-probe.yml): node scripts/lib/urteil-zeile.cjs --log <datei> --rc <exit> [--stand <stand.json>] [--geraet <läufer>]
+//   probeUrteil(...) (der Kopf der GPU-Probe, gpu-probe.yml) Log UND Exit: GRÜN nur ohne ROTE Zeile und mit Exit 0; jede ROTE
+//                    Zeile reißt, und der Kopf nennt die erste; BEKANNT heißt nur die Ratsche des Messorts (ORT_BEKANNT unten).
+// CLI (gpu-probe.yml): node scripts/lib/urteil-zeile.cjs --log <datei> --rc <exit>
 //   → EINE Zeile `<U>\t<grund>`, U ∈ GRÜN · BEKANNT · ROT. Gate: gate:apparat Klinge 9 (Selbsttest mit Mutanten).
 "use strict";
 
@@ -19,9 +17,6 @@ const ROT_RE = /❌|⛔|(?<![A-Za-zÄÖÜäöüß])ROT(?![A-Za-zÄÖÜäöüß])
 // die Sätze der Selbsttests: die Mutante IST ROT, die Linse urteilt GRÜN)
 const ZAEHLUNG_RE =
     /(?<![\d.,])0\s*(?:❌|ROT(?![A-Za-zÄÖÜäöüß]))|(?:→|=>|\b(?:ist|wird|werden|sind|als|bleibt|macht|heißt|nennt|wäre|fällt|das))\s+ROT(?![A-Za-zÄÖÜäöüß])/g;
-// die Station beim Namen: `lod.K1#1`, `haar.K2` (ohne # gilt jede Station des Kriteriums)
-const STATION_RE = /(?<![A-Za-z0-9.])([a-z][a-z0-9-]*\.K\d+(?:#\d+)?)(?![A-Za-z0-9])/;
-
 // DIE RATSCHE DES MESSORTS (w28-linse-wahr): `werkbank bild --ort` urteilt jedes ROT gegen `bekannt` seines Orts
 // (spec/profiband/haushalt.json) und schreibt „ABNAHME BEKANNT · ROT wie an main (bekannt): <ort>.<schlüssel> <grund> · …“, wenn JEDES
 // ROT dort steht — die Schlüssel sind die ersten Wörter der Glieder (`stadt.leib`, `wiese.band.nahWiese`); ein neues ROT schreibt
@@ -61,28 +56,7 @@ function rotZeilen(text) {
     return aus;
 }
 
-// DER GEBUCHTE STAND einer Station (punkte-maschine meisterkarte-quelle/punkte/stand.json `je.<kriterium>.stationen`): am Gerät
-// des Läufers, wenn er dort gemessen ist, sonst an jedem — `null`, wenn die Station dort nicht steht
-function mainStation(stand, id, geraet) {
-    if (!stand?.je) return null;
-    const alle = [];
-    for (const k of Object.values(stand.je))
-        for (const s of k.stationen || [])
-            if (s.id === id || (!id.includes("#") && s.id.startsWith(id + "#"))) alle.push(s);
-    if (!alle.length) return null;
-    const hier = alle.filter((s) => s.geraet === geraet);
-    const l = hier.length ? hier : alle;
-    const rot = l.find((s) => !s.gruen);
-    return rot
-        ? { gruen: false, geraet: rot.geraet, zahl: rot.zahl }
-        : { gruen: true, geraet: l[0].geraet, zahl: l[0].zahl };
-}
-
-const GERAET = (laeufer) =>
-    /omen|1060/i.test(laeufer || "") ? "gtx" : /radeon/i.test(laeufer || "") ? "radeon" : null;
-const ABSTURZ = /\b(?:TypeError|ReferenceError|SyntaxError|RangeError|ABSTURZ|DECKEL)\b/;
-
-function probeUrteil({ text, rc, stand, geraet }) {
+function probeUrteil({ text, rc }) {
     const rot = rotZeilen(text);
     const zeilen = String(text)
         .split(/\r?\n/)
@@ -96,25 +70,8 @@ function probeUrteil({ text, rc, stand, geraet }) {
     }
     const ende = () => ({ u: "BEKANNT", grund: `ROT wie an main (bekannt): ${[...bekannt.values()].join(" · ")}` });
     if (!rot.length) return Number(rc) !== 0 ? { u: "ROT", grund: `Exit ${rc} ohne ROTE Zeile: ${(zeilen.at(-1) || "kein Log").slice(0, 200)}` } : bekannt.size ? ende() : { u: "GRÜN", grund: "" }; // prettier-ignore
-    for (const z of rot) {
-        const id = (STATION_RE.exec(z) || [])[1];
-        const m = id && mainStation(stand, id, geraet);
-        if (!m || m.gruen) {
-            const warum = !stand
-                ? "der Stand der Punkte-Maschine ist nicht lesbar"
-                : !id
-                  ? "keine Station beim Namen"
-                  : !m
-                    ? `${id} steht nicht im gebuchten Stand`
-                    : `${id} ist an main GRÜN (${m.geraet})`;
-            return { u: "ROT", grund: `${z.slice(0, 220)} — ${warum}` };
-        }
-        if (!bekannt.has(id))
-            bekannt.set(id, `${id} ${m.zahl == null ? `(main ${m.geraet}: ungemessen)` : String(m.zahl).slice(0, 60)}`);
-    }
-    const sturz = Number(rc) !== 0 && zeilen.find((z) => ABSTURZ.test(z));
-    if (sturz) return { u: "ROT", grund: `Exit ${rc}: ${sturz.slice(0, 220)}` };
-    return ende();
+    // jede ROTE Zeile reißt (der gebuchte Stand der alten Karte fiel am 19.11. als Quelle des BEKANNT): der Kopf nennt die erste
+    return { u: "ROT", grund: rot[0].slice(0, 220) };
 }
 
 // DIE URTEILS-WACHE am Prozess-Ende (einmal je Prozess): jede gedruckte Zeile (console.log/error/warn/info) läuft durch
@@ -170,22 +127,18 @@ function mass(art, ok, befund) {
     return true;
 }
 
-module.exports = { istRotZeile, rotZeilen, probeUrteil, mainStation, GERAET, wache, mass, alsSelbsttest };
+module.exports = { istRotZeile, rotZeilen, probeUrteil, wache, mass, alsSelbsttest };
 
 if (require.main === module) {
     const fs = require("fs");
     const a = process.argv.slice(2);
     const opt = (k) => (a.indexOf(k) >= 0 ? a[a.indexOf(k) + 1] : undefined);
-    let text = "",
-        stand = null;
+    let text = "";
     try {
         text = fs.readFileSync(opt("--log"), "utf8");
     } catch (e) {
         text = `❌ das Log der Probe ist nicht lesbar: ${e.message}`;
     }
-    try {
-        stand = JSON.parse(fs.readFileSync(opt("--stand"), "utf8"));
-    } catch {}
-    const r = probeUrteil({ text, rc: opt("--rc") ?? 1, stand, geraet: GERAET(opt("--geraet")) });
+    const r = probeUrteil({ text, rc: opt("--rc") ?? 1 });
     console.log(`${r.u}\t${r.grund.replace(/[\t\r\n]+/g, " ")}`);
 }

@@ -1,5 +1,5 @@
 "use strict";
-// scripts/lib/verkehrsnetz-proben.cjs — DER VERKEHR IM PLAN DER STADT (siedlung, PFLICHT-OFFEN C; w28-stadt-grammatik): die Proben
+// scripts/lib/verkehrsnetz-proben.cjs — DER VERKEHR IM PLAN DER STADT (siedlung, Leiter mensch.netz.verkehr; w28-stadt-grammatik): die Proben
 // der Settlement-Linse (`node scripts/diag-settlement.cjs`, Teil A am Tisch) am Verkehr des Fachwerk-Kerns — `verkehrVon` (welches
 // Los einen Wagen trägt) und `verkehrsNetz` (die Wende jedes Endes: ihre Bahn, ihr Kranz der Plätze, der Stand des Fahrers) —
 // samt den Selbst-Tests 15d bis 15g, je am Stand bis w28-stadt-grammatik ROT beim Namen. Der Konsum-Leser am Gerät ist

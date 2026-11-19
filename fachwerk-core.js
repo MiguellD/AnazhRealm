@@ -1023,14 +1023,18 @@
   function windowSash(w,h,horiz,role,glasRolle){ const sg=grp(); const sw=0.06,t=0.05, gl=glasRolle||'glas';   // gl: das Glas des Fensters — wach oder schlafend (fensterSchlaeft, EIN Würfel für jede Stufe)
     if(P.flaechig){ const a=w/2, b=h/2, c=t/2, R=[];   // FLÄCHEN-STUFE: der Flügel in den Schichten der Stufe 0 — der Rahmen als Ring (vorn, hinten, die Außenkante), das Kreuz und die Scheibe als Flächen auf ihren Tiefen (die Scheibe liegt auf der einen Seite vor dem Kreuz, auf der anderen dahinter; durch sie sieht man hindurch wie nah) — 84 → 36 Dreiecke, keine Laibung und keine Stirn unter 3 cm
       for(const s of [1,-1]){ R.push(_fl(-a,-a+sw,-b,b,s*c,s),_fl(a-sw,a,-b,b,s*c,s),_fl(-a+sw,a-sw,b-sw,b,s*c,s),_fl(-a+sw,a-sw,-b,-b+sw,s*c,s), _fl(-0.02,0.02,-b+sw,b-sw,s*0.0225,s),_fl(-a+sw,a-sw,-0.02,0.02,s*0.0225,s));
-        R.push([[[s*a,-b,-c],[s*a,-b,c],[s*a,b,c],[s*a,b,-c]],[s,0,0]], [[[-a,s*b,-c],[a,s*b,-c],[a,s*b,c],[-a,s*b,c]],[0,s,0]]); }
-      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0005,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0245,-1)],!horiz,0,0,-0.012); return sg; }
+        R.push([[[s*a,-b,-c],[s*a,-b,c],[s*a,b,c],[s*a,b,-c]],[s,0,0]], [[[-a,s*b,-c],[a,s*b,-c],[a,s*b,c],[-a,s*b,c]],[0,s,0]]);
+        // DIE KANTEN DES KREUZES UND DIE LAIBUNG DES RAHMENS (licht-eine-skala): Sprosse (45 mm tief) und Rahmen (50 mm) tragen ihre Flanken — bis hier standen
+        // Vorder- und Rückfläche offen, am offenen Flügel leuchtete die Scheibe im schrägen Blick durch den Spalt (die Quer-Sprosse als zwei Linien). 36 → 52 Dreiecke
+        R.push([[[s*0.02,-b+sw,-0.0225],[s*0.02,-b+sw,0.0225],[s*0.02,b-sw,0.0225],[s*0.02,b-sw,-0.0225]],[s,0,0]], [[[-a+sw,s*0.02,-0.0225],[a-sw,s*0.02,-0.0225],[a-sw,s*0.02,0.0225],[-a+sw,s*0.02,0.0225]],[0,s,0]]);
+        R.push([[[s*(a-sw),-b+sw,-c],[s*(a-sw),-b+sw,c],[s*(a-sw),b-sw,c],[s*(a-sw),b-sw,-c]],[-s,0,0]], [[[-a+sw,s*(b-sw),-c],[a-sw,s*(b-sw),-c],[a-sw,s*(b-sw),c],[-a+sw,s*(b-sw),c]],[0,-s,0]]); }
+      flaechen(sg,role,R,!horiz,-a+sw/2,0,0); flaechen(sg,gl,[_fl(-a+sw,a-sw,-b+sw,b-sw,0.0125,1),_fl(-a+sw,a-sw,-b+sw,b-sw,-0.0125,-1)],!horiz,0,0,0); return sg; }   // DIE SCHEIBE STEHT MITTIG IN DER TIEFE DES KREUZES (licht-eine-skala): ±0,0125 in ±0,0225 — das Kreuz deckt sie von BEIDEN Seiten; bis hier lag sie um −0,012 (bis −0,0245), auf einer Seite 2 mm VOR dem Kreuz: das wache Glas zeichnete dort über die Sprosse (Dorf Nacht: eine flache Scheibe ohne Kreuz)
     if(horiz){ beam(sg,-w/2+sw/2,0,0,sw,h,t,role); beam(sg,w/2-sw/2,0,0,sw,h,t,role);
       beam(sg,0,h/2-sw/2,0,w,sw,t,role); beam(sg,0,-h/2+sw/2,0,w,sw,t,role);
-      beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,-0.012,w-2*sw,h-2*sw,0.025,gl);
+      beam(sg,0,0,0,0.04,h,0.045,role); beam(sg,0,0,0,w,0.04,0.045,role); beam(sg,0,0,0,w-2*sw,h-2*sw,0.025,gl);
     } else { beam(sg,0,0,-w/2+sw/2,t,h,sw,role); beam(sg,0,0,w/2-sw/2,t,h,sw,role);
       beam(sg,0,h/2-sw/2,0,t,sw,w,role); beam(sg,0,-h/2+sw/2,0,t,sw,w,role);
-      beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,-0.012,0,0,0.025,h-2*sw,w-2*sw,gl); }
+      beam(sg,0,0,0,0.045,h,0.04,role); beam(sg,0,0,0,0.045,0.04,w,role); beam(sg,0,0,0,0.025,h-2*sw,w-2*sw,gl); }
     return sg; }
   // ════ DAS BOGEN-GESETZ (K66): Keilsteine im VERBAND — jede Stoßfuge radial zur Mitte ihrer Kurve, jeder Stein ein Keil zwischen zwei Fugen
   //    (gleiche Bogenlänge, N ungerade: der Schlussstein im Scheitel, 2 cm vorstehend), die Kämpfersteine mit ihrem Lager auf dem Kämpfer
@@ -2827,7 +2831,7 @@
       [[P(u-rw,y0,d0),P(u-rw,y1,d0),P(u-rw,y1,d1),P(u-rw,y0,d1)],uR.map(c=>-c)], [[P(u+rw,y0,d0),P(u+rw,y1,d0),P(u+rw,y1,d1),P(u+rw,y0,d1)],uR]], rahmenM, rahmenF);
     const pw=Math.max(0.1,o.w/2-SCHEIBE_RAND), ph=Math.max(0.1,o.h/2-SCHEIBE_RAND), scheibe=(d)=>[[P(u-pw,o.cy-ph,d),P(u+pw,o.cy-ph,d),P(u+pw,o.cy+ph,d),P(u-pw,o.cy+ph,d)],aus];
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
-    else { teile([scheibe(d1+0.01)], M.putz, innen); teile([scheibe(d1+0.02)], M.glas, eins); }
+    else { teile([scheibe(d1+0.01)], M.putz, innen); if(Math.sign(z?o.cz:o.cx)!==s) teile([scheibe(d1+0.02)], M.glas, eins); }   // DAS GLAS STEHT IM FLÜGEL, NICHT IN DER ÖFFNUNG (licht-eine-skala): schwenkt der Flügel aus (unten, wie an der L0: fensterAt dreht jeden um 0,62 rad), ist die Öffnung leer — man sieht den Raum; bis hier glühte dort eine zweite Scheibe (gate:haus-fern G: Glut L2/L0 1,274)
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
     teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF);
     if(Math.sign(z?o.cz:o.cx)!==s) continue;   // der Flügel der L0 dreht nach dem Vorzeichen seiner Lage: zeigt die Wand dagegen, schlägt er in den Körper
@@ -4941,7 +4945,7 @@
         if(!naht) break;
         kante(naht[1],naht[2]); naehte.push([naht[1],naht[2]]); }
       return {knoten:kn, kanten:kan, naehte}; }
-    // ═══ DER VERKEHR (PFLICHT-OFFEN C, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
+    // ═══ DER VERKEHR (Leiter mensch.netz.verkehr, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
     // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über die Lose im Ring (ohne die
     // Vorstadt; ein Plan ohne sie: über jedes Los); ein Dorf fährt nicht.
@@ -5287,7 +5291,7 @@
         K.wenden.sort((p,q)=>(q.tor?1:0)-(p.tor?1:0)||p.L-q.L); });
       let laenge=0; for(const s of strecken) if(s.frei) laenge+=s.laenge;
       return {kreuzungen, strecken, laenge}; }
-    // DIE WENDE IST BODEN DER STADT (PFLICHT-OFFEN C, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende
+    // DIE WENDE IST BODEN DER STADT (Leiter mensch.netz.verkehr, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende
     // (die kürzeste Bahn zuerst), deren Kreis und Plätze Land tragen (ctx.wasserAt), deren Grund (ctx.hoeheAt) nicht steiler als
     // `hangMax` liegt und deren Band jede Fläche der Stadt trägt (DIE HÖHE DER WENDE, unten; `wende`, sonst null); ihr Ring (der
     // Wagen samt `ringRandM`), die Bahn hinein und heraus und ihre Plätze liegen als Erdbau — EINE Fläche mit dem Weg. Bis dahin
@@ -5356,7 +5360,7 @@
         lege(w.hEin,2*V.halbM); lege(w.hAus,2*V.halbM); delete w.hEin; delete w.hAus;
         for(const p of w.plaetze){ const fx=Math.sin(p.fahrt)*V.parkL*0.5, fz=Math.cos(p.fahrt)*V.parkL*0.5;
           trasse({x:p.x-fx,z:p.z-fz},{x:p.x+fx,z:p.z+fz},w.y,V.parkB); } }
-      // DER ABBIEGER IST BODEN DER STADT (PFLICHT-OFFEN C): die Bahn jedes Wegs durch eine Kreuzung (`wege`: vom Ende der Spur hinein
+      // DER ABBIEGER IST BODEN DER STADT (Leiter mensch.netz.verkehr): die Bahn jedes Wegs durch eine Kreuzung (`wege`: vom Ende der Spur hinein
       // gerade oder im Bogen bis an die Spur hinaus) liegt als Erdbau, breit wie die Bahn der Wende — je Meter auf der Höhe der
       // Fläche, die sie kreuzt (Kern, Saum, Platz), über die Ecke dazwischen gleichmäßig von Fläche zu Fläche. Bis hier lagen nur
       // die Wege: der Bogen schnitt die Ecke über den Hang — am Markt von stadt-voll stieg er dort 0,27 m je halben Meter, und der
@@ -5546,14 +5550,14 @@
   if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=stadt?Math.max(SD.marktTief[0],Math.min(SD.marktTief[1],PW*SD.marktJeBreite)):Math.max(6,PW*0.55);   /*der Markt der Stadt ist ein Platz, kein Streifen (stadt-voll: 34 × 9,4 m → 34 × 22 m)*/
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
     if(platz.typ==='weg'){ const MS=AUSSTATTUNG.marktstand.tritt, rS=Math.hypot(MS.ex,MS.ez), zt=plan.schnitt||plan;
-      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (PFLICHT-OFFEN C): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
+      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (Leiter mensch.netz.verkehr): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
       const reihen=stadt&&SG.viertel.markt.dinge.find(q=>q.art==='marktstand');                 /*DER MARKT DER STADT traegt die Staende seiner Zeile: Reihen im Raster ueber dem Platz, ausser der Trasse (bis hier zwei bis drei Staende an festen Bruchteilen des Platzes)*/
       if(reihen){ const [gx,gz]=reihen.rasterM; let zi=0;                                       /*je Reihe die Front (`th`) nach Norden oder Sueden: zwei Reihen stehen einander ueber ihrer Gasse gegenueber*/
         for(let z=platz.cz-platz.ez+SD.standRandM; z<=platz.cz+platz.ez-SD.standRandM+1e-6; z+=gz, zi++) for(let x=-PW+SD.standRandM; x<=PW-SD.standRandM+1e-6; x+=gx){ const s={x,z,th:zi%2?0:Math.PI}; if(staende.length<reihen.max&&Math.abs(z-platz.cz)>=SD.marktGangM&&standFrei(s)) staende.push(s); } }   /*die Gasse des Markts laengs seiner langen Achse bleibt frei (`marktGangM` beidseits der Mitte): wer auf dem Platz steht, sieht die Fassaden an seinen Enden — am Messort stadt fand die Pose des Orts sonst keinen Bau mit freier Sichtlinie (127 Bauten, 68 Hindernisse)*/
       else for(const s of [{x:-PW*0.45,z:sW/2+PD*0.45},{x:PW*0.45,z:sW/2+PD*0.55}].concat(nG>18?[{x:0,z:sW/2+PD*0.82}]:[])) if(standFrei(s)) staende.push(s); } }
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
   const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
-  const wegRand=(rd)=>rd.w/2+(staedt&&rd.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rd):0);   /*DER RAND DES WEGS FUER DIE AUSSTATTUNG (w28-stadt-grammatik, PFLICHT-OFFEN C): die Fahrbahn — an der Fahrstrasse der Stadt samt ihrem Gehweg. Der Gehweg der Trasse traegt zwei Leiber (STADT_DICHTE.gehwegFahrM) und ist der Raum, in den der Wagen ausschert, der einen Stehenden umfaehrt (der Wirt, `_verkehrUmfahren`): dort steht kein Mast und kein Brunnen. Bis hier trat der Mast bis an den Bordstein (`laterneQuer`), der Brunnen stand 0,6 m hinter ihm: an stadt-voll stiess jeder Wagen, der den Spieler in der Kreuzung am Markt umfuhr, an den Mast 828/443 (9,4 m von ihrer Mitte, 3,0 m von der Achse) — 531 Stoesse in 120 s. Leser: der Setzer der Laterne (`laterneWege`, `laterneQuer`), der Brunnen des Zugs, `mastWeicht` (ueber `laterneNeben`) und `brunnenWeicht` (das Layout traegt ihn)*/
+  const wegRand=(rd)=>rd.w/2+(staedt&&rd.w>=VERKEHR_GESETZ.breiteM?gehwegVon(plan,rd):0);   /*DER RAND DES WEGS FUER DIE AUSSTATTUNG (w28-stadt-grammatik, Leiter mensch.netz.verkehr): die Fahrbahn — an der Fahrstrasse der Stadt samt ihrem Gehweg. Der Gehweg der Trasse traegt zwei Leiber (STADT_DICHTE.gehwegFahrM) und ist der Raum, in den der Wagen ausschert, der einen Stehenden umfaehrt (der Wirt, `_verkehrUmfahren`): dort steht kein Mast und kein Brunnen. Bis hier trat der Mast bis an den Bordstein (`laterneQuer`), der Brunnen stand 0,6 m hinter ihm: an stadt-voll stiess jeder Wagen, der den Spieler in der Kreuzung am Markt umfuhr, an den Mast 828/443 (9,4 m von ihrer Mitte, 3,0 m von der Achse) — 531 Stoesse in 120 s. Leser: der Setzer der Laterne (`laterneWege`, `laterneQuer`), der Brunnen des Zugs, `mastWeicht` (ueber `laterneNeben`) und `brunnenWeicht` (das Layout traegt ihn)*/
   const tore=[], imTor=(x,z,d)=>tore.some(f=>distPunktOBB(x,z,f)<d);                           /*DER TORPLATZ (STADT_DICHTE.torplatz): am Ende jeder Trasse der Wagen (das Blatt des Strassengraphen an einer Strasse ab VERKEHR_GESETZ.breiteM — das Tor) haelt die Stadt ein Geviert frei, neben der Strasse, auf der Seite des flacheren Grunds, nie im Wasser: kein Los, keine Gasse, keine Laterne — dort wendet und steht der Wagen (`verkehrsNetz`: der Kreis `abM` vom Ende im Winkel `winkel`, einer seiner Kandidaten). Bis hier fand die Wende ihren Kreis in der Wiese neben der Strasse; die dichte Stadt schloss beide Fronten: an stadt-voll trugen 2 von 4 Enden eine Wende, 15 von 21 Wagen einen Platz (gate:fahr-leben VK, main 4 von 4 und 20 von 20)*/
   if(stadt){ const T=SD.torplatz, gradT=new Array(G.nodes.length).fill(0); for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradT[rd.a]++; gradT[rd.b]++; }
     for(const rd of roads){ if(!(rd.a>=0&&rd.b>=0)||(rd.w||0)<VERKEHR_GESETZ.breiteM) continue; const P=rd.pts;
@@ -5773,7 +5777,7 @@
   const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:wegRand(rd)})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
   const laterneImWeg=(x,z)=>laterneWege.some(wl=>{ const P=wl.pts, h=wl.h+LATERNE_FUSS; if(fernKasten(x,z,wl.K,h)) return false; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((x-A.x)*dx+(z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(x-A.x-dx*t, z-A.z-dz*t)<h) return true; } return false; });
   let kreuzT=null; const laterneInKreuzung=(x,z)=>{ const VG=VERKEHR_GESETZ; if(!kreuzT){ const zt=plan.schnitt||plan; kreuzT=zt.staedtisch?verkehrsNetz({roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w})), feldwege},0,0,true).kreuzungen.filter(K=>!K.ende&&K.r>0):[]; }
-    return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (PFLICHT-OFFEN C): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
+    return kreuzT.some(K=>Math.hypot(x-K.x,z-K.z)<K.r+VG.halbM+VG.abbiegRandM+LATERNE_FUSS); };   /*DIE KREUZUNG DER TRASSEN TRAEGT KEINE LATERNE (Leiter mensch.netz.verkehr): in der Stadt (sie traegt Verkehr) ist jede Kreuzung des Netzes der Wagen (`verkehrsNetz` ueber den Wegen, wie der Export sie traegt, ohne Sperren) Fahrbahn bis zu ihrem Radius samt halbem Wagen und Abbiege-Rand — dort ziehen die Bogen der Abbieger, der Fuss bleibt draussen. Bis hier standen am Markt jeder Metropole Laternen 4,5–8,3 m von der Mitte der Kreuzung: an stadt-voll verbot das Gesetz 7 von 12 Abbiegern, in die Strecke einer Wende fuehrte keiner, 10 von 20 Wagen erreichten in 10 min kein Ziel*/
   const laterneNeben=(x,z)=>!laterneImWeg(x,z)&&!laterneInKreuzung(x,z)&&!(stadt&&nassAm(x,z,1))&&!imTor(x,z,LATERNE_FUSS);   /*DER STAND OHNE DIE WAND (w28-stadt-grammatik): neben jedem Weg (`wegRand`: an der Trasse hinter ihrem Gehweg), ausser der Kreuzung der Trassen, trocken, ausser dem Torplatz (der Raum der Wende) — das Layout traegt ihn als `laterneNeben`, der Mast, der nach dem Snap der Wand weicht (`mastWeicht`), fragt DENSELBEN Stand statt eines Zwillings. Bis hier fragte er nur die Fahrbahn jedes Wegs*/
   const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&laterneNeben(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg UND ausser der Kreuzung der Trassen — Stadt, Platz, Knoten und Gasse fragen hier*/
   const laterneQuer=(rd,q,fl)=>{ const lo=wegRand(rd)+LATERNE_FUSS; for(let o=Math.max(lo,rd.w/2+gehwegVon(plan,rd)+0.35); ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
@@ -6561,14 +6565,23 @@
     // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
     // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
     // Szene (physicallyCorrectLights).
+    // DIE EINE SKALA (licht-eine-skala, rein additiv): jede Zeile trägt neben der Zahl des Labors ihr Licht in SI — `cd` die
+    // Lichtstärke der Quelle in Candela (≙ lx in 1 m nach dem Abfall der Zeile, cd · (1 + kern²)/(d² + kern²)): das Herdfeuer 10,2
+    // (3,5 lx in 2 m, das Band 2–5 lx des Nordstern-Solls; Hypothese mit Band, kein Messwert eines Holzfeuers), die Laterne 25,7
+    // (2 lx am Boden unter 3,6 m, das Band 2–5 lx der Gasse; ein Gas-Brenner trägt 10–30 cd); `cdM2` die Leuchtdichte des
+    // erleuchteten Fensters (8 cd/m²: Hypothese „Raum im Licht einer Flamme hinter Glas", 50 lx auf heller Wand ÷ π) und des
+    // Laternen-Kopfs (640 cd/m²: seine 25,7 cd über die Ansicht des Glas-Kopfs von ≈ 0,04 m² — das Glas streut die Flamme); `schaltet`:
+    // der Zeitplan `zeit` ist ein SCHALTPLAN (der Anteil brennender Quellen je Tageszeit, auf seinen größten Wert bezogen) — ohne
+    // `schaltet` trägt `zeit` nur die Belichtung des Labors (das Herdfeuer brennt bei Tag und Nacht mit derselben Lichtstärke).
+    // Leser der SI-Spalten: die Welt (`_leuchtStaerke`, `_leuchtTakt`: Wert ÷ die Einheit der EINEN Skala).
     // DAS BOGEN-GESETZ (K66): die Kurven der Bögen — hufeisen: der Mittelpunkt um R·tan(hufeisenAlpha) über dem Kämpfer, der Bogen
     // läuft um hufeisenAlpha unter die Mitte; spitz: zwei Mittelpunkte im Abstand spitzE·R von der Achse auf der Kämpferlinie
     // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
     var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
     var LICHT_GESETZ = {
-        feuer: { kelvin: 2000, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
-        fenster: { kelvin: 2800, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, staerke: 19, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        feuer: { kelvin: 2000, staerke: 1, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        fenster: { kelvin: 2800, cdM2: 8, schaltet: true, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
+        laterne: { kelvin: 1900, staerke: 19, cd: 25.7, cdM2: 640, schaltet: true, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
     // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:
@@ -6586,6 +6599,9 @@
         return {
             kelvin: L.kelvin,
             staerke: r3(boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
+            cd: r3((L.cd / L.staerke) * boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
+            cdM2: L.cdM2,
+            schaltet: L.schaltet,
             reichweiteM: L.reichweiteM,
             abfall: L.abfall,
             kernM: r3(Math.sqrt(k2)),
@@ -6598,6 +6614,24 @@
     // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
     // hellsten Kanal 1 normiert. Linear — das FARB-GESETZ (das Hex ist eine sRGB-Absicht) gilt so ohne Hex: 1 900 K ist
     // (1, 0,232, 0), sRGB #ff8400. Leser: der Licht-Takt der Welt (`_leuchtTakt`) und das Labor (Herdfeuer, Fenster).
+    // DIE LEUCHTDICHTE DER GLUT (licht-eine-skala, rein additiv): ein schwarzer Körper der Temperatur T (K) in cd/m² — das
+    // Planck-Gesetz über 380–780 nm, gewogen mit der Hellempfindlichkeit V(λ) (Gauß-Näherung 1,019 · e^(−285,4 · (λ/µm − 0,559)²))
+    // × 683 lm/W: 900 K 0,19 · 1 100 K 22 · 1 400 K 2 370 · 1 650 K 33 300 · 2 000 K 457 000. EINE Funktion für Glut, Lava und
+    // glühenden Stahl; die Flamme ist optisch dünn (`FEUER_LEUCHTDICHTE`). Leser: die Welt (Lava, Licht der Lava).
+    function glutLeuchtdichte(T) {
+        if (!(T > 0)) return 0;
+        var s = 0, h = 6.62607e-34, c = 2.99792e8, k = 1.380649e-23;
+        for (var nm = 380; nm <= 780; nm += 5) {
+            var l = nm * 1e-9;
+            s += ((683 * 1.019 * Math.exp(-285.4 * Math.pow(nm / 1000 - 0.559, 2)) * 2 * h * c * c) / Math.pow(l, 5) / (Math.exp((h * c) / (l * k * T)) - 1)) * 5e-9;
+        }
+        return s;
+    }
+    // DIE LEUCHTDICHTE DER FLAMME: der leuchtende Leib eines Holz- oder Kerzenfeuers in cd/m² (13 800–16 000, Hollan: Messung
+    // an Kerzen- und Holzflammen; ein schwarzer Körper bei 2 000 K trüge das Dreißigfache — der Ruß der Flamme ist dünn).
+    // Der Stoff `feuer` (Glut, Flamme, Herdfeuer) leuchtet in seiner Vertex-Farbe × dieser Leuchtdichte, wo die Zahl des Labors
+    // `LEUCHT_FEUER` steht. Leser: die Welt (`_stoffAusStudio`, das Licht des Brands).
+    var FEUER_LEUCHTDICHTE = 15000;
     function lichtFarbe(kelvin) {
         var T = Math.min(25000, Math.max(1667, +kelvin)), T2 = T * T, T3 = T2 * T;
         var x = T <= 4000 ? -0.2661239e9 / T3 - 0.2343589e6 / T2 + 0.8776956e3 / T + 0.17991 : -3.0258469e9 / T3 + 2.1070379e6 / T2 + 0.2226347e3 / T + 0.24039;
@@ -10760,7 +10794,7 @@
         if (pz && isFinite(pz.cx) && isFinite(pz.cz) && isFinite(pz.ex) && isFinite(pz.ez))
             platzY = r6(median(rechteck(pz.cx, pz.cz, pz.phi || 0, pz.ex, pz.ez)));
         // AM PLATZ liegt ein Weg-Punkt, dessen Weg (die halbe Breite `hw`) die Platte des Platzes samt Saum berührt — er trägt
-        // die Höhe des Platzes (PFLICHT-OFFEN C: die Hauptstraße am Markt der Metropole lief 2,5 m neben ihm auf ihrer eigenen
+        // die Höhe des Platzes (Leiter mensch.netz.verkehr: die Hauptstraße am Markt der Metropole lief 2,5 m neben ihm auf ihrer eigenen
         // Höhe, die Platte überdeckte ihren Kern um 0,6 m — eine Stufe von 0,74 m quer durch die Fahrbahn, an der jeder Wagen
         // stand); mindestens 1 m um den Platz (der Weg, der ihn quert)
         var imPlatz = function (x, z, hw) {
@@ -10772,7 +10806,7 @@
             var rand = Math.max(1, hw + O.saumM);
             return Math.abs(dx * c - dz * s) <= pz.ex + rand && Math.abs(dx * s + dz * c) <= pz.ez + rand;
         };
-        // 1a) DER TORPLATZ IST BODEN DER STADT (STADT_DICHTE.torplatz, die Zone `torplatz` des Plans; PFLICHT-OFFEN C): eine Platte
+        // 1a) DER TORPLATZ IST BODEN DER STADT (STADT_DICHTE.torplatz, die Zone `torplatz` des Plans; Leiter mensch.netz.verkehr): eine Platte
         // auf der Höhe, mit der seine Trasse ihn erreicht — die Trasse (ab VERKEHR_GESETZ.breiteM, sie endet an ihm) liegt längs
         // seiner Front eben auf dieser Höhe, jeder spätere Weg, der ihn berührt, trägt sie wie am Platz (`torAn`), und die Wende
         // liegt auf EINER Fläche mit Ring, Bahn und Trasse (`verkehrsBoden`: der Torplatz ist Kern). Bis hier war er nur Belag:
@@ -10935,7 +10969,7 @@
             var b = (isFinite(r.w) ? r.w : 3) / 2;
             return { hw: b, lage: gelegt(r, b) };
         });
-        // DIE KREUZUNG (PFLICHT-OFFEN C): wo das Ende eines Wegs auf einem anderen liegt (an dessen Lauf oder Ende binnen seiner
+        // DIE KREUZUNG (Leiter mensch.netz.verkehr): wo das Ende eines Wegs auf einem anderen liegt (an dessen Lauf oder Ende binnen seiner
         // halben Breite samt Saum: Kreuzung, Einmündung, Knick), liegt EINE Fläche — jeder Weg-Punkt in ihrer Scheibe und der
         // erste dahinter tragen ihre Höhe. Bis dahin trug jeder Weg dort sein eigenes Profil, und der Erdbau (die letzte Trasse
         // gewinnt, ihr Ende ist rund) legte Stufen von 0,2–0,7 m quer durch die Fahrbahn, an denen jeder Wagen stand. Die Scheibe
@@ -12735,6 +12769,8 @@
         verbandZeilen: verbandZeilen,
         // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
         LEUCHT_FEUER: LEUCHT_FEUER,
+        FEUER_LEUCHTDICHTE: FEUER_LEUCHTDICHTE,
+        glutLeuchtdichte: glutLeuchtdichte,
         BOGEN_GESETZ: BOGEN_GESETZ,
         vorplatzFlaeche: vorplatzFlaeche,
         vorplatzBoden: vorplatzBoden,
@@ -12812,9 +12848,9 @@
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
         wegZwischen: wegZwischen, // fahrzeug.K2 — der Feldweg zwischen zwei Orten des Wegenetzes, dem Grund folgend (`trasseLenk`)
         wegeNetz: wegeNetz, // fahrzeug.K2 — das Wege-Netz eines Plans samt den Nähten, die es zu EINEM Netz schließen
-        VERKEHR_GESETZ: VERKEHR_GESETZ, // PFLICHT-OFFEN C — der Verkehr der Stadt (Wagen je Häuser, halbe Breite, der Platz)
-        verkehrVon: verkehrVon, // PFLICHT-OFFEN C — wie viele Wagen eine Siedlung fährt und aus welchen Häusern ihre Fahrer kommen
-        verkehrsNetz: verkehrsNetz, // PFLICHT-OFFEN C — das Netz der Wagen: die zweispurigen Trassen, ihre Kreuzungen, Spuren, Wenden und Plätze
+        VERKEHR_GESETZ: VERKEHR_GESETZ, // Leiter mensch.netz.verkehr — der Verkehr der Stadt (Wagen je Häuser, halbe Breite, der Platz)
+        verkehrVon: verkehrVon, // Leiter mensch.netz.verkehr — wie viele Wagen eine Siedlung fährt und aus welchen Häusern ihre Fahrer kommen
+        verkehrsNetz: verkehrsNetz, // Leiter mensch.netz.verkehr — das Netz der Wagen: die zweispurigen Trassen, ihre Kreuzungen, Spuren, Wenden und Plätze
         planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse und Tritte, um die halbe Wagen-Breite)
         BRUECKE_GESETZ: BRUECKE_GESETZ, // fahrzeug.K2 — die Jochbrücke des Wegs (Feld, lichte Breite, Geländer, Pfahl, Einbindung)
         GRABEN_GESETZ: GRABEN_GESETZ, // w28-graben-koerper — der Trockengraben des Geheges (Weite, Tiefe, Mauer, Krone, Sohle)
