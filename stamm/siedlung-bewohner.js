@@ -2171,11 +2171,11 @@ class AnazhRealm_siedlung_bewohner {
         }
     }
     // DER ZEUGE WEICHT (kollektiv#1, w28-zeugen-weichen): wer die Tat am Ort o sah und sie fürchtet (`_kreaturFurchtErinnert` > 0),
-    // verlässt den Kreis, in dem er sie sah — die Flucht aus zweiter Hand des EINEN Furcht-Gesetzes (tetrapoda `fluchtRadius`, B = die
-    // Tat und `zeugeM`). Sein Soll (`_bewohnerSoll`) nennt bis zur nächsten Wende seines Tags den nächsten Stand jenseits des Kreises,
-    // den keiner zum Ziel hat (`belegt`) und dessen Weg (`_bewohnerStrecke`) ihn nie näher an die Tat führt, als er steht (headless
-    // führte der Weg zum nächsten Stand über das Netz 2 m vor ihr vorbei); dann holt ihn sein Tag zurück (`_bewohnerZiel`). Wer hinein
-    // oder jenseits geht, geht weiter; am Steuer bleibt er im Wagen. Bis hier weitete die Furcht nur den Raum des Vorbeigangs (0,5 m).
+    // verlässt ihren Kreis — die Flucht aus zweiter Hand des EINEN Furcht-Gesetzes (tetrapoda `fluchtRadius`, B = die Tat und `zeugeM`).
+    // Sein Soll (`_bewohnerSoll`) nennt bis zur Wende seines Tags den nächsten freien Stand jenseits des Kreises (`belegt`), dessen Weg
+    // (`_bewohnerStrecke`) ihn nie näher an die Tat führt, als er steht — die Seite urteilt allein der Weg; führt jeder an ihr vorbei,
+    // flieht er wie das Tier gerade fort über freies Land an den Kreis (±0,5, ±1 rad). Bis hier filterte die gerade Linie vorab, und
+    // feld #617311 am Dorfrand (sein Anschluss 4,2 m neben der Tat) blieb stehen (gate:kreatur-takt begegnung, fort 0). Am Steuer bleibt er.
     _bewohnerWeichen(S, b, o, stunde, belegt) {
         if (b.amSteuer || b.ankunft || !b.ziel || !(this._kreaturFurchtErinnert(b.leib) > 0)) return false;
         const B = { x: o.x, z: o.z, r: AnazhRealm.BEWOHNER.zeugeM };
@@ -2186,42 +2186,15 @@ class AnazhRealm_siedlung_bewohner {
         const p = { x: b.leib.position.x, z: b.leib.position.z };
         const [T, d2] = [{ minX: o.x, maxX: o.x, minZ: o.z, maxZ: o.z }, (p.x - o.x) ** 2 + (p.z - o.z) ** 2 - 1e-6];
         const fern = (w) => !!w && [p, ...w].every((e, i, v) => !i || this._streckeBoxAbstand2(T, v[i - 1].x, v[i - 1].z, e.x, e.z) >= d2); // prettier-ignore
-        // die Kandidaten: jeder Stand jenseits des Kreises, frei, je einmal — das Urteil über die Seite spricht allein der Weg
-        // (`fern`). Bis hier nahm ein Filter vorab nur Stände diesseits der Senkrechten durch ihn (die gerade Linie hin entfernte
-        // sich von der Tat): der Weg über das Netz biegt, und wer am Rand des Dorfs stand, die Tat zur Mitte hin, hatte keinen —
-        // feld #617311 (fleißig, 5 m neben der Tat) fand 0 von 290 freien Ständen und blieb stehen (gate:kreatur-takt begegnung, fort 0)
-        const fort = [];
-        const gesehen = new Set();
+        const [fort, gesehen] = [[], new Set()];
         for (const x of S.liste)
-            for (const k of AnazhRealm.BEWOHNER.staende) {
-                const q = x.orte[k];
-                if (!q || gesehen.has(q) || belegt.has(q) || Math.hypot(q.x - o.x, q.z - o.z) < R) continue;
-                gesehen.add(q);
-                fort.push([Math.hypot(q.x - p.x, q.z - p.z), q]);
-            }
-        fort.sort((a, c) => a[0] - c[0]);
-        let [, ort] = fort.find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0))) || [];
-        // DIE FLUCHT ÜBER FREIES LAND (das EINE Furcht-Gesetz, wie das Tier flieht): führt jeder Weg über das Netz an der Tat
-        // vorbei (sein Anschluss liegt hinter ihr), geht er in gerader Linie fort von ihr bis an den Kreis R — der erste Punkt
-        // auf Land, außer jedem Grundriss, frei erreichbar und nie näher an der Tat, gedreht um ±0,5 und ±1 rad; den Blick zur Tat
-        if (!ort) {
-            const d = Math.max(1e-6, Math.sqrt(d2 + 1e-6));
-            const [ux, uz] = [(p.x - o.x) / d, (p.z - o.z) / d];
-            for (const w of [0, 0.5, -0.5, 1, -1]) {
-                const [vx, vz] = [ux * Math.cos(w) - uz * Math.sin(w), ux * Math.sin(w) + uz * Math.cos(w)];
-                const q = { x: o.x + vx * R, z: o.z + vz * R, blick: Math.atan2(vx, vz) };
-                const grund = this._imGrundriss(q.x, q.z, 0.5);
-                if (
-                    this._landAt(q.x, q.z) &&
-                    grund !== "haus" &&
-                    grund !== "bau" &&
-                    !this._bewohnerWand(p, q) &&
-                    fern([q])
-                ) {
-                    ort = q;
-                    break;
-                }
-            }
+            for (const q of AnazhRealm.BEWOHNER.staende.map((k) => x.orte[k]))
+                if (q && !gesehen.has(q) && !belegt.has(q) && Math.hypot(q.x - o.x, q.z - o.z) >= R) { gesehen.add(q); fort.push([Math.hypot(q.x - p.x, q.z - p.z), q]); } // prettier-ignore
+        let [, ort] = fort.sort((a, c) => a[0] - c[0]).find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0))) || []; // prettier-ignore
+        for (const w of ort ? [] : [0, 0.5, -0.5, 1, -1]) {
+            const [c, n, d] = [Math.cos(w), Math.sin(w), Math.sqrt(d2 + 1e-6) || 1], [vx, vz] = [((p.x - o.x) * c - (p.z - o.z) * n) / d, ((p.x - o.x) * n + (p.z - o.z) * c) / d]; // prettier-ignore
+            const q = { x: o.x + vx * R, z: o.z + vz * R, blick: Math.atan2(vx, vz) };
+            if (!ort && this._landAt(q.x, q.z) && !["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) && !this._bewohnerWand(p, q) && fern([q])) ort = q; // prettier-ignore
         }
         if (!ort) return false;
         const bis = this._bewohnerWende(b, stunde, stunde + 24);
@@ -3612,14 +3585,9 @@ class AnazhRealm_siedlung_bewohner {
         const RM = BW.raumM;
         const zelle = (kx, kz) => kx * 4194304 + kz;
         let gitter = null;
-        // DER VORRANG DER REIHE (mensch.K2: der Tag ist f(Same, t) — auch der Ort jedes Stands): der Rang eines Stands ist seine
-        // Stelle in der Reihe der Liste (`staende`, Bewohner × Bindung). Jeder Ursprung sperrt jeden; der gerückte Ort sperrt nur
-        // die Späteren — so ist der Ort jedes Stands eine Funktion der Früheren, nie der Folge, in der die Gänge ihn trafen.
-        // Bis hier sperrte jeder gerückte Ort jeden, und wer zuerst rückte, behielt den Platz: dieselbe Saat stellte an der
-        // Metropole um 10 Uhr kaufhaus #1295281832 und kontor #3084829274 je nach Vorgeschichte der Seite an andere Orte
-        // (gate:fahr-leben VK-V, Bild 0 getrennt)
-        const rang = new Map();
-        for (const p of staende) rang.set(p, rang.size);
+        // DER VORRANG DER REIHE (mensch.K2): jeder Ursprung sperrt jeden, der gerückte Ort nur Spätere der Reihe — der Ort ist Funktion der
+        // Früheren, nie der Folge der Gänge (bis hier stellte dieselbe Saat kaufhaus #1295281832 je nach Vorgeschichte anders, VK-V)
+        const rang = new Map([...staende].map((p, i) => [p, i]));
         const legen = (x, z, p, urs) => {
             const k = zelle(Math.floor(x / RM), Math.floor(z / RM));
             const L = gitter.get(k);
@@ -3634,13 +3602,12 @@ class AnazhRealm_siedlung_bewohner {
         const raumVon = (o) => (q) => {
             const kx = Math.floor(q.x / RM);
             const kz = Math.floor(q.z / RM);
-            const ro = rang.get(o);
             for (let a = kx - 1; a <= kx + 1; a++)
                 for (let c = kz - 1; c <= kz + 1; c++) {
                     const L = gitter.get(zelle(a, c));
                     if (L)
                         for (let i = 0; i < L.length; i += 4)
-                            if (L[i + 2] !== o && (L[i + 3] || rang.get(L[i + 2]) < ro) && (L[i] - q.x) ** 2 + (L[i + 1] - q.z) ** 2 < RM * RM) return true; // prettier-ignore
+                            if (L[i + 2] !== o && (L[i + 3] || rang.get(L[i + 2]) < rang.get(o)) && (L[i] - q.x) ** 2 + (L[i + 1] - q.z) ** 2 < RM * RM) return true; // prettier-ignore
                 }
             return false;
         };
@@ -3782,7 +3749,6 @@ class AnazhRealm_siedlung_bewohner {
                 if (alt) heben(alt[0], alt[1], o);
                 const hin = q.x !== ur.x || q.z !== ur.z;
                 if (hin) legen(q.x, q.z, o, false);
-                // nur die Späteren (der Vorrang der Reihe): ein Früherer sieht den gerückten Ort nicht
                 for (const p of staende)
                     if (rang.get(p) > rang.get(o) && weg(p) && p._standSchmutz === false)
                         if (
