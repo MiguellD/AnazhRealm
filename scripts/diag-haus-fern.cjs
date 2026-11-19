@@ -837,30 +837,33 @@ function fluegelStufe() {
     console.log(`  Selbsttest F (alemannisch/s1, jedes Blatt zu 5 cm in der Wand): erkannt ${mut.zu.length} von ${mut.n} — ${mut.zu[0] || "keins"}`);
     let n = 0, zu = 0, offen = 0; // prettier-ignore
     const fest = [];
-    for (const id of KULTUREN)
-        for (const s of [1, 7, 42]) {
-            const g = FC.buildInstance(id, s, 0);
-            const p = fluegelProbe(g, id, s);
-            entsorge(g);
-            n += p.n;
-            zu += p.zu.length;
-            offen += p.offen.length;
-            for (const x of p.zu.concat(p.offen)) rot.push("F FLÜGEL SCHNEIDET " + x);
-            const pp = FC.hausParams(FC.PRESETS[id], null);
-            pp.seed = s;
-            if ((pp.storeys || 1) > 11) continue;
-            const H = FC.HAUS(T, FC.mat, Object.assign({}, pp, { nur: (pp.storeys || 1) >= 6 ? { moebel: false } : {} }));
-            const st = { g: H.build({ gelaende: false }) };
-            FC.fensterFluegelTrennen(st, pp.col);
-            st.g.traverse((o) => {
-                const F = o.userData && o.userData.fenster;
-                if (F && F.fest) {
-                    const q = new T.Vector3().setFromMatrixPosition(o.matrixWorld);
-                    fest.push(`${id}/s${s} ${F.quer ? "x" : "z"} ${f3(q.x)},${f3(q.y)},${f3(q.z)}`);
-                }
-            });
-            entsorge(st.g);
-        }
+    // je Kultur × Samen 1/7/42, dazu die L0-Variante der Goldens mit ov (diag-fachwerk-contract CASES: der Turm, alemannisch s7
+    // storeys 3 · turm 1 — sein Westfenster lag bis 70cfb9552 in der Wand des Hauskörpers, und die Stufe F fuhr ihn nicht)
+    const faelle = KULTUREN.flatMap((id) => [1, 7, 42].map((s) => [id, s, null]));
+    if (!NUR || NUR.test("alemannisch")) faelle.push(["alemannisch", 7, { storeys: 3, turm: 1 }]);
+    for (const [id, s, ov] of faelle) {
+        const g = FC.buildInstance(id, s, 0, ov || undefined);
+        const p = fluegelProbe(g, ov ? id + "+turm" : id, s);
+        entsorge(g);
+        n += p.n;
+        zu += p.zu.length;
+        offen += p.offen.length;
+        for (const x of p.zu.concat(p.offen)) rot.push("F FLÜGEL SCHNEIDET " + x);
+        const pp = FC.hausParams(FC.PRESETS[id], ov);
+        pp.seed = s;
+        if ((pp.storeys || 1) > 11) continue;
+        const H = FC.HAUS(T, FC.mat, Object.assign({}, pp, { nur: (pp.storeys || 1) >= 6 ? { moebel: false } : {} }));
+        const st = { g: H.build({ gelaende: false }) };
+        FC.fensterFluegelTrennen(st, pp.col);
+        st.g.traverse((o) => {
+            const F = o.userData && o.userData.fenster;
+            if (F && F.fest) {
+                const q = new T.Vector3().setFromMatrixPosition(o.matrixWorld);
+                fest.push(`${id}${ov ? "+turm" : ""}/s${s} ${F.quer ? "x" : "z"} ${f3(q.x)},${f3(q.y)},${f3(q.z)}`);
+            }
+        });
+        entsorge(st.g);
+    }
     console.log(`  Flügel im Haus (F, Falz ${FALZ} m = fachwerk RAHMEN_VOR, Soll 0): ${n} wache Blätter · zu schneiden ${zu} · offen bis zum Anschlag ${offen}`);
     console.log(`  Feste Lichter (kein Schwenk-Raum außen und innen): ${fest.length}${fest.length ? " — " + fest.join(" · ") : ""}`);
     console.log(`  ${((Date.now() - t0) / 1000).toFixed(1)} s`);
