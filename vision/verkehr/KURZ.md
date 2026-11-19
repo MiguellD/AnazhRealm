@@ -1,10 +1,8 @@
 # KURZ — Pflicht C, Verkehr · ZWISCHENSTAND 19.11. (Zweig `zensus-verkehr`, gegen main b7ed84194)
 
 **Zensus** (`zensus.md`):
-- Die Stadt ist eine Funktion von Kacheln zu 256 m. Bei Same 7: nH 1 641 → 25 Kacheln, 10⁵ → 1 597, 10⁶ → 15 965.
-- Je Kachel 60 Kanten: Hauptstraße gen 0 mit 5 m (eine je Reihe und Spalte), Gassen gen 1 mit 3,9 m.
-- Die Wagen von heute: `ceil(slots/15)`, Ziel gewürfelt, gehaltene Liste (`_tickVerkehr` 0,866 ms je Schritt, O(n)).
-- `TAGES_GESETZ` ist schon eine Funktion: 19 200 von 19 200 Rufen bit-gleich.
+- Die Stadt ist eine Funktion von Kacheln zu 256 m (Same 7: nH 1 641 → 25 Kacheln, 10⁵ → 1 597, 10⁶ → 15 965); je Kachel 60 Kanten, Hauptstraße gen 0 mit 5 m (eine je Reihe und Spalte), Gassen gen 1 mit 3,9 m.
+- Die Wagen von heute: `ceil(slots/15)`, Ziel gewürfelt, gehaltene Liste (`_tickVerkehr` 0,866 ms je Schritt, O(n)); `TAGES_GESETZ` ist schon eine Funktion (19 200 von 19 200 Rufen bit-gleich).
 
 **Gesetz** (`gesetz.md`) in fünf Sätzen:
 1. Der Haushalt ist eine Adresse der Kachel-Funktion; sein Wagen gehört ihm, Person 0 sitzt am Steuer, ihr Tag folgt `TAGES_GESETZ`.
@@ -31,14 +29,11 @@
 **Bahn:**
 - Nicht gebaut. `verkehr-gesetz` ist nicht angelegt, die Zeile C in `docs/PFLICHT-OFFEN.md` ist unberührt.
 - Der kleinste Kern-Schnitt liegt als Diff vor, nicht angewandt: `spike/kern-schnitt.diff` (Parkstreifen im Querschnitt, die Bauflucht der Kachel-Stadt folgt ihm). Die Probe dazu ist `spike/kern-probe.cjs`.
-- Gemessen: mit `parkB` 0 ist `kachelMassen` byte-gleich zu main. Mit 2,3 m stehen 18 Häuser in der Trasse, gegen 19 schon heute in main.
-- Nicht gemessen: die Plan-Stadt, die Maler und das Bild.
+- Gemessen: mit `parkB` 0 ist `kachelMassen` byte-gleich zu main; mit 2,3 m stehen 18 Häuser in der Trasse, gegen 19 schon heute in main. Nicht gemessen: die Plan-Stadt, die Maler und das Bild.
 
 **Am Gerät ansehen** (main, ohne den Diff): `dorf 7 4750`, Kachel (0, 0), Knoten 0 (die Kreuzung der Hauptstraßen) bei lokal (2,6 | 47,8) von der Kachel-Mitte, 12:00 Uhr, Ego.
 1. Auf dem Gehweg an der inneren Ecke stehen, Blick längs der Hauptstraße: hinter dem Gehweg 0,5 m bis zur Fassade, kein Platz für einen stehenden Wagen.
 2. Blick diagonal über die Kreuzung: die Ecke ist scharf, ohne Bogen für `kurveR` 5,5.
 3. Blick in eine Gasse: 3,9 m Pflaster ohne Bord. Auf dieser Straße fuhr das Gesetz, obwohl der Kern dort keinen Wagen führt.
 
-**Pflicht-OFFEN Rest:**
-- C bleibt offen: die Bahn, die Station und der Beweis am Gerät.
-- A, B, E und F sind unberührt.
+**Pflicht-OFFEN Rest:** C bleibt offen (die Bahn, die Station, der Beweis am Gerät); A, B, E und F sind unberührt.
