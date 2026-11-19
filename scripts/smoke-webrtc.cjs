@@ -7,7 +7,7 @@
 //   2. eine Positions-Nachricht WIRKLICH peer-to-peer fliesst (die andere
 //      Seite sieht die bewegte Position des Peers).
 //
-// Anders als smoke-multiuser.cjs (das nur den Server-Relay prüft) ist dies
+// Anders als der Server-Relay allein (smoke-multiuser fiel 19.11. ohne Leser) ist dies
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).

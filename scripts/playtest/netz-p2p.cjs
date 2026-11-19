@@ -2649,7 +2649,7 @@ async function checkBandG8R1DampedChannel({ page, check }) {
 
 // M8 Makro-Fenster: Broker-stats über den BESTEHENDEN WS-Kanal (kein neuer HTTP-Pfad/CSP) · die
 // Identitäts-Seite als gefilterter Feed (data-author) · der Vibe-Pass-Backup-Pfad sichtbar. Den
-// echten Server-Beweis trägt smoke:multiuser (1 Raum · 2 Peers · nur der Anfrager).
+// echten Server-Beweis trug smoke:multiuser, gefallen 19.11. ohne Leser; der echte Weg ist der Richter von erleben.spieler.gemeinsam S 1.
 async function checkBandM8MakroFenster({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
