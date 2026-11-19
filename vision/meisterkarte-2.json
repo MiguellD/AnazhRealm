@@ -1258,8 +1258,8 @@
        "umfang": "fremde Monde",
        "tiefe": "Doppelmonde, Gezeitenheizung von Eismonden",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Monde“",
        "richter": "Bild der Gezeit eines Doppelmond-Planeten; Wärmefluss eines Eismonds gegen Exzentrizität Rang ≥ 0,7"
       }
      ],
@@ -1335,8 +1335,8 @@
        "umfang": "fremde Ozeane",
        "tiefe": "andere Rotation, andere Kontinente, Ozean unter Eis",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Ozeane“",
        "richter": "Wirbelzahl je Halbkugel folgt der Rotationsrate ±1 über 5 Welten"
       }
      ],
@@ -1360,6 +1360,8 @@
        "umfang": "Schnee einer Region",
        "tiefe": "Decke kommt und geht mit Saison und Höhe, trägt und gibt nach",
        "preis": "P im Schneefall",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Region ohne Größe „Region“",
        "richter": "Schneegrenze gegen Nullgrad-Höhe ±150 m an 10 Posen × 4 Jahreszeiten; Fuß sinkt ≥ 5 cm"
       },
       {
@@ -1367,7 +1369,7 @@
        "umfang": "Seen frieren zu",
        "tiefe": "Eis wächst mit Frost, Salz senkt den Gefrierpunkt, trägt erst ab tragender Dicke",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S1",
        "richter": "Spieler geht bei Frost auf dem See, bricht bei Tauwetter ein; Einsetzen gegen Frostgrad-Summe ±20 %"
       },
@@ -1544,8 +1546,8 @@
        "umfang": "jeder Meeresboden ~3,6·10⁸ km²",
        "tiefe": "stetig vom Satelliten bis zum Kiesel",
        "preis": "P überall",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "zahl:3,6·10⁸ km²",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Planet-Maß „3,6·10⁸ km²“",
        "richter": "500 Bodenposen aus 50 Saaten: Blindtest gegen Tiefsee-Fotos ≥ 60 %; 0 Löcher"
       },
       {
@@ -1553,7 +1555,7 @@
        "umfang": "fremde Ozeane",
        "tiefe": "unter 20 km Eis, Methan-See, Hochdruck-Ozean",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S5",
        "richter": "Licht, Druck und Phasen gegen deren Stoff ±20 %"
       }
@@ -1666,8 +1668,8 @@
        "umfang": "Himmel bis zum Horizont, drei Stockwerke",
        "tiefe": "Silberrand, dunkle Basis, Gegenlicht",
        "preis": "P",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S1",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Horizont",
        "richter": "Blindtest 20 Himmelsbilder gegen Foto ≤ 70 %; Gattung vom Bildmodell erkannt ≥ 80 %"
       },
       {
@@ -1675,7 +1677,7 @@
        "umfang": "jede Wolke entsteht und vergeht",
        "tiefe": "Gattung folgt aus Feuchte, Hebung, Stabilität",
        "preis": "P",
-       "klasse": "Stadt",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S2",
        "richter": "200 Momente × 20 Saaten: sichtbare Gattung = verlangte ≥ 80 %; Cumulus-Gipfel 14–17 Uhr in ≥ 80 %"
       },
@@ -1684,8 +1686,8 @@
        "umfang": "Niederschlag sichtbar aus 2–20 km",
        "tiefe": "Phase folgt dem Temperaturprofil",
        "preis": "P",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:20 km",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "geerbt:S3",
        "richter": "Phase am Boden passt zum Profil ≥ 90 %; Regenvorhang auf 5 km Kontrast ≥ 0,1"
       },
       {
@@ -1824,8 +1826,8 @@
        "umfang": "Hitze- und Kältewelle, eine Region",
        "tiefe": "Welle aus Blockierlage",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S1",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Region ohne Größe „Region“",
        "richter": "Dauer und Amplitude gegen Erd-Statistik gleichen Klimas ±50 %"
       },
       {
@@ -1833,7 +1835,7 @@
        "umfang": "Wiederkehr über 10² Jahre",
        "tiefe": "Jahrhundertflut, Jahrhundert-Hitze",
        "preis": "P, Zeitsprung 100 a ≤ 5 s",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S2",
        "richter": "GEV-Anpassung der Jahresmaxima: 100-a-Wert innerhalb Faktor 2 der Erd-Erwartung"
       },
@@ -2209,6 +2211,8 @@
        "umfang": "EINE Region der Erde, 10⁴ km² (ein Golf mit Vulkan)",
        "tiefe": "Küste, Hauptgipfel, Hauptfluss liegen, wo sie liegen",
        "preis": "P · Schlüssel ≤ 10 kB",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zahl:10⁴ km²",
        "richter": "Küstenlinie gegen das Höhenmodell: mittlerer Lagefehler ≤ 5 km; Ortskundige wählen die Region aus 10 Kandidaten an 3 Ego-Bildern ≥ 70 %"
       },
       {
@@ -2475,8 +2479,8 @@
        "umfang": "alle Sterne eines Systems über 10¹⁰ a",
        "tiefe": "Roter Riese verschluckt innere Bahnen, Weißer Zwerg",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S1",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „eines Systems“",
        "richter": "Sonne als Riese füllt ≥ 20° des Himmels bei 1 AE, Himmelsfarbe kippt"
       },
       {
@@ -2484,7 +2488,7 @@
        "umfang": "Geburt im Nebel, Haufen 10³ Sterne",
        "tiefe": "Kollaps, Protostern, Jets, Emissionsnebel",
        "preis": "P, auch im Nebel",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S2",
        "richter": "Bildvergleich Emissionsnebel gegen Teleskop-Foto; Haufen-Massen folgen der IMF (KS p > 0,05)"
       },
@@ -2493,7 +2497,7 @@
        "umfang": "Tod als Ereignis",
        "tiefe": "Nova, Supernova, Planetarischer Nebel",
        "preis": "P, auch im Ereignis",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S3",
        "richter": "Lichtkurve über 300 Tage ±0,3 mag; Überrest dehnt sich ±20 %"
       },
@@ -2502,7 +2506,7 @@
        "umfang": "kompakte Überreste",
        "tiefe": "Neutronenstern, Schwarzes Loch, Akkretion",
        "preis": "P in der Nähe",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S4",
        "richter": "Bildpaar gegen Ray-Tracing-Referenz: Einsteinring, Photonensphäre ±5 %"
       },
@@ -2511,7 +2515,7 @@
        "umfang": "10¹¹ Sterne über 10¹⁰ a",
        "tiefe": "Sternentstehung, chemische Anreicherung",
        "preis": "P, Zeitsprung ≤ 5 s",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S5",
        "richter": "Metallizität von 1 000 Zufallssternen folgt Alter und Ort ±0,2 dex"
       },
@@ -2520,7 +2524,7 @@
        "umfang": "Sterne als Generationen",
        "tiefe": "das eigene System aus dem Staub früherer Sterne",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S6",
        "richter": "Zeitreise zur Geburt des eigenen Sterns zeigt den Geburtsnebel am selben Ort; Gesteinsplaneten-Anteil steigt mit der Metallizität ±20 %"
       }
@@ -2761,6 +2765,8 @@
        "umfang": "EINE Welt, EINE Konstante anders (Schwere-Exponent, Stoff-Dichte, Zähigkeit)",
        "tiefe": "Fall, Wurf, Bahn und Flüssigkeit folgen dem geänderten Gesetz, nicht dem der Erde",
        "preis": "P",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „Konstante anders“",
        "richter": "20 Versuche des Spielers (Fall, Wurf, Pendel): Messwerte aus dem Bild folgen dem Gesetz der Welt ±5 % und weichen vom Erd-Gesetz ab"
       },
       {
@@ -2904,6 +2910,8 @@
        "umfang": "EINE Nachbargalaxie als Ziel",
        "tiefe": "aus der Ferne ein Nebelfleck, im Anflug Sterne, am Ziel ein Himmel mit der Heimatgalaxie darin",
        "preis": "P · Sprung ≤ 5 s",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „Nachbargalaxie“",
        "richter": "am Ziel steht die Heimatgalaxie am Himmel in der richtigen Richtung und Größe ±5 %; Bildpaar Anflug gegen Teleskop-Aufnahme (2AFC ≤ 80 %)"
       },
       {
@@ -3277,8 +3285,8 @@
        "umfang": "Region: Höhe und Breite verschieben den Kalender",
        "tiefe": "Grünwelle 3–4 Tage je 100 m Höhe",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Region ohne Größe „Region“",
        "richter": "Austriebsdatum über Höhe und Breite gegen Satelliten-NDVI"
       },
       {
@@ -3347,8 +3355,8 @@
        "umfang": "Horizont 10 km, Wald als Wald bis zum Kamm",
        "tiefe": "Textur und Farbe am Hang wie im Landschaftsfoto",
        "preis": "P · Flug",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10 km",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Horizont",
        "richter": "Blindtest Landschaftsfoto ↔ Spiel: Trefferquote ≤ 70 %"
       },
       {
@@ -3618,8 +3626,8 @@
        "umfang": "fremde Schwere 0,1–5 g, dünne bis dichte Atmosphären, Flüssigkeiten jenseits Wasser",
        "tiefe": "Gang ∝ √(g·L); Flug nur, wo Dichte und g ihn tragen",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S7",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Schwere“",
        "richter": "gleiche Art auf 3 Planeten: Gangwechsel-Tempo ±10 %; Gegenprobe: in dünner Luft bleibt sie am Boden"
       }
      ],
@@ -3831,8 +3839,8 @@
        "umfang": "10⁴",
        "tiefe": "Korrelationslänge wächst mit der Schwarmgröße; Fluchtwelle mit realem Tempo",
        "preis": "P · während der Welle",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴“",
        "richter": "Korrelationslänge/Größe konstant ±20 % über 10²–10⁴ (Cavagna); Wellentempo ±30 %"
       },
       {
@@ -3840,8 +3848,8 @@
        "umfang": "10⁵: Gnu-Strom bis zum Horizont, Vogelfelsen, Krillwolke im Sichtkegel",
        "tiefe": "keine Kante zwischen nahen Leibern und ferner Wolke; die Masse frisst sichtbar",
        "preis": "P · Fahrt durch die Wolke",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Horizont",
        "richter": "Bild-Flicker an der Sichtgrenze < 1 % der Pixel; Grashöhe nach Durchzug sinkt messbar"
       },
       {
@@ -3849,8 +3857,8 @@
        "umfang": "10⁶: Murmuration über dem Ried, Sardinenzug über 10 km",
        "tiefe": "Dichtewellen 20–40 m/s, der Falke reißt ein Loch, das sich schließt",
        "preis": "P · die ganze Wolke im Bild",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10 km",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "geerbt:S5",
        "richter": "Zoom-Probe an 10 Stellen: Einzeltier mit eigenem Schlag; Draufsicht gegen Luftbild des Sardinenzugs"
       },
       {
@@ -3858,7 +3866,7 @@
        "umfang": "10⁹: Heuschreckenschwarm",
        "tiefe": "die Front frisst messbar",
        "preis": "P · die Front im Bild",
-       "klasse": "Stadt",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S6",
        "richter": "Kahlfraß je Stunde im Band der FAO-Werte; Horizont-Bild Panel ≥ 0,7"
       },
@@ -4107,8 +4115,8 @@
        "umfang": "fremde Ozeane: Methan-Seen, Ozeane unter Eis, Superdruck-Meere",
        "tiefe": "eigene Lebensräume aus fremder Chemie durch dieselben Gesetze",
        "preis": "P je Saat",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Ozeane“",
        "richter": "≥ 50 % der fremden Saaten mit bewohntem Lebensraum ohne Erd-Gegenstück; 0 % bewohnte Zonen ohne Energiequelle"
       }
      ],
@@ -5006,8 +5014,8 @@
        "umfang": "10⁴ Individuen im Schirm",
        "tiefe": "Merkmals-Streuung wie in der Natur",
        "preis": "P mit 10⁴ im Bild",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴ Individuen“",
        "richter": "Variationskoeffizient der Körpermaße aus dem Bild im Band"
       },
       {
@@ -5015,7 +5023,7 @@
        "umfang": "10⁶ in einer Region, beständig",
        "tiefe": "dasselbe Tier morgen am selben Ort, mit Spuren seines Lebens",
        "preis": "P · Bildzeit bei 10⁶ vs. 10³ ≤ 10 %",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S4",
        "richter": "100 markierte Tiere nach Abreise und Rückkehr wiedergefunden ≥ 99 %, Verbleib (Tod, Zug, Nachwuchs) im Band der Sterbe- und Zugraten der Art ≥ 90 %"
       },
@@ -5092,8 +5100,8 @@
        "umfang": "30/30 auf 10 fremden Physiken",
        "tiefe": "dieselben Gesetze, andere Erscheinung",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremden Physiken“",
        "richter": "K30 auf 10 Planeten-Saaten mit g, Licht, Lösungsmittel außerhalb der Erde"
       }
      ],
@@ -5237,8 +5245,8 @@
        "umfang": "fremd: ≥ 30 % der Stichprobe außerhalb der irdischen Hülle",
        "tiefe": "davon ≥ 90 % physikalisch tragend (Statik, Gang, Atmung)",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremd“",
        "richter": "Hüllen-Abstand + Physik-Proben im Spiel"
       },
       {
@@ -5246,7 +5254,7 @@
        "umfang": "Millionen Körperformen, keine zwei gleich, mehr Disparität als die Erde",
        "tiefe": "jedes Wesen liest als gewachsen, auch das nie Gesehene",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S5",
        "richter": "1 000 Wesen aus 10 Planeten: Morphoraum-Volumen > Erde; Fremdwelt-Probe (R10): Lebensweise aus dem Körper gelesen Rang ≥ 0,7"
       }
@@ -5271,6 +5279,8 @@
        "umfang": "g 0,3–3",
        "tiefe": "Bein-Querschnitt folgt Masse·g",
        "preis": "P",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „g 0,3–3“",
        "richter": "Regression aus 50 Saaten je g aus Bildern: Steigung im Band der Statik"
       },
       {
@@ -5278,7 +5288,7 @@
        "umfang": "Luftdichte 0,1–10 bar",
        "tiefe": "Flieger-Anteil steigt mit Dichte/g",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S1",
        "richter": "Anteil fliegender Arten über 20 Saaten, Kurve monoton"
       },
@@ -5791,8 +5801,8 @@
        "umfang": "10⁴ Gesichter in jedem Licht (Mittag, Kerze, Neon, Regen)",
        "tiefe": "Haut streut, Haar glänzt, nass wirkt nass",
        "preis": "P · Megastadt bei Nacht",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴ Gesichter“",
        "richter": "Bildpaar je Licht gegen Foto: Prüfer-Verwechslung ≥ 30 %"
       },
       {
@@ -5800,7 +5810,7 @@
        "umfang": "jeder Mensch und jedes denkende Wesen, Ego 0,5 m",
        "tiefe": "vom Foto nicht zu unterscheiden",
        "preis": "P · beliebige Begegnung",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S5",
        "richter": "Blindtest Render ↔ Foto 50 ± 5 %; fremde Arten: Fremdwelt-Probe (R10) an der Anatomie"
       }
@@ -5881,8 +5891,8 @@
        "umfang": "Zukünfte, ungesehene Kulturen, fremde Völker",
        "tiefe": "kohärent, nicht kostümiert, ohne Erd-Vorbild",
        "preis": "P · fremder Planet",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Völker“",
        "richter": "100 Welten ohne Erd-Kultur: kohärent ≥ 0,8, ≥ 20 Stile; Person → Volk ≥ 0,8"
       }
      ],
@@ -5952,8 +5962,8 @@
        "umfang": "10⁵ im Stadion",
        "tiefe": "vom Film nicht unterscheidbar",
        "preis": "P · Stadion",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁵“",
        "richter": "Blindtest Video ↔ Render 50 ± 5 %"
       }
      ],
@@ -6024,8 +6034,8 @@
        "umfang": "fremde Leiber und Kulturen",
        "tiefe": "Ausdruck folgt Bau und Kultur der Art",
        "preis": "P · fremder Planet",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Leiber“",
        "richter": "N = 100 Arten: Gemüt gelesen ≥ 60 %, Gestik kohärent ≥ 0,8"
       }
      ],
@@ -6555,8 +6565,8 @@
        "umfang": "neue Künste fremder Kulturen und Körper",
        "tiefe": "kohärent und unterscheidbar",
        "preis": "P · fremder Planet",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremder Kulturen“",
        "richter": "N = 100 Saaten: ≥ 70 % kohärent, paarweise unterscheidbar"
       }
      ],
@@ -6909,8 +6919,8 @@
        "umfang": "10⁴",
        "tiefe": "Ruf: Taten ändern die Behandlung",
        "preis": "P · Stadt",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴“",
        "richter": "nach Tat meiden Bekannte des Opfers den Täter ≥ 0,3 öfter als Fremde"
       },
       {
@@ -6918,7 +6928,7 @@
        "umfang": "10⁶",
        "tiefe": "Netz-Statistik einer echten Gesellschaft",
        "preis": "P · fern 0 ms",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S3",
        "richter": "1 000 Paare befragt: Pfadlänge ~4–7, Antwort bei Wiederholung gleich"
       },
@@ -6986,8 +6996,8 @@
        "umfang": "10⁴: Zeitsprung 10 J",
        "tiefe": "dieselbe Person gealtert, verheiratet oder tot",
        "preis": "P · Sprung ≤ 5 s",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴“",
        "richter": "dieselbe Person erkannt ≥ 0,9, Fremde ≤ 0,1"
       },
       {
@@ -6995,7 +7005,7 @@
        "umfang": "10⁵: Erbe",
        "tiefe": "Haus, Werkstatt, Beruf, Name gehen an Kinder",
        "preis": "P · Sprung ≤ 5 s",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S4",
        "richter": "Sprung 50 J: Häuser mit Nachfahren im Band; Beruf Vater → Kind ≥ Erwartung"
       },
@@ -7004,8 +7014,8 @@
        "umfang": "10⁶–10⁷ über 1 000 J",
        "tiefe": "demografischer Übergang, Migration, 30 Generationen",
        "preis": "P · Zeitreise ≤ 5 s",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Träger unklar „10⁷“",
        "richter": "Pyramiden 1300/1800/2000 gegen Referenz; Ahnenreihe bei Wiederholung gleich"
       },
       {
@@ -7013,7 +7023,7 @@
        "umfang": "10⁹ über die Menschenzeit",
        "tiefe": "10⁶ (Jungsteinzeit) bis 10¹⁰",
        "preis": "P · Zeitreise ≤ 5 s",
-       "klasse": "Ort",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S6",
        "richter": "Weltbevölkerung je Jahrtausend log-Fehler ≤ 0,3; Enkelin des getroffenen Kindes auffindbar und ähnlich ≥ 0,7"
       },
@@ -7022,8 +7032,8 @@
        "umfang": "fremde Evolutionen",
        "tiefe": "Lebensspanne, Brut, Kaste, Teilung",
        "preis": "P · fremder Planet",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S7",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Evolutionen“",
        "richter": "N = 20 Saaten: stabile Populationen ≥ 0,8; Pyramide folgt der Lebensspanne"
       }
      ],
@@ -7063,8 +7073,8 @@
        "umfang": "10⁴",
        "tiefe": "Ziele über Jahre ändern die Welt (Haus, Werkstatt, Umzug)",
        "preis": "P · Sprung ≤ 5 s",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴“",
        "richter": "Sprung 10 J: erklärte Ziele in der Welt ≥ 0,3, je auf eine Person rückführbar"
       },
       {
@@ -7072,7 +7082,7 @@
        "umfang": "10⁶",
        "tiefe": "Ziele kreuzen sich (Rivalen, Allianz, Verrat)",
        "preis": "P · Großstadt",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S3",
        "richter": "100 Saaten: Geschichten „erzählenswert und folgerichtig“ ≥ 0,5"
       },
@@ -7081,8 +7091,8 @@
        "umfang": "10⁹, Epochen",
        "tiefe": "Lebensentwürfe je Epoche und Kultur",
        "preis": "P · Zeitreise",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Träger unklar „10⁹“",
        "richter": "anachronistische Ziele ≤ 0,01; Verteilung im historischen Band"
       },
       {
@@ -7090,8 +7100,8 @@
        "umfang": "fremde Gesellschaften",
        "tiefe": "Ziele folgen Biologie und Kultur der Art",
        "preis": "P · fremder Planet",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Gesellschaften“",
        "richter": "N = 100 Welten: Fremdwelt-Probe (R10) — Lebensentwurf aus Leib, Welt und Gesellschaft der Art vorhergesagt Rang ≥ 0,7"
       }
      ],
@@ -7314,8 +7324,8 @@
        "umfang": "10⁴ (Platz, Demonstration)",
        "tiefe": "fern Dichte, nah Leiber, kein Sprung",
        "preis": "P · Kamerafahrt Rand → Mitte",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴“",
        "richter": "0 Ploppen am Übergang; Zählung ≥ 10⁴"
       },
       {
@@ -7323,7 +7333,7 @@
        "umfang": "10⁵ (Stadion)",
        "tiefe": "Phänomene ohne Skript (La-Ola)",
        "preis": "P · Stadion",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S4",
        "richter": "Welle 10–15 m/s, Breite 6–12 m; ≥ 5 Startorte in 10 Läufen"
       },
@@ -7332,7 +7342,7 @@
        "umfang": "10⁶ (Pilgerfest)",
        "tiefe": "aus der Höhe Struktur, im Herabfliegen Gesichter",
        "preis": "P · Flug",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S5",
        "richter": "Orbit → Gesicht ≤ 10 s ohne Bruch; Zählung im Kegel ≥ 10⁶"
       },
@@ -7923,6 +7933,8 @@
        "umfang": "1 Familie, 6 Regionen",
        "tiefe": "Region aus dem Stadtbild",
        "preis": "P · Stadt",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Region ohne Größe „Regionen“",
        "richter": "Region einer Stadt aus 6 erkannt ≥ 50 %"
       },
       {
@@ -7930,7 +7942,7 @@
        "umfang": "10 Netzformen aus Ursache (organisch, Raster, radial, Wasser, Terrasse, Burg)",
        "tiefe": "Netz und Haus zusammen stimmig",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S1",
        "richter": "50 Saaten: Kenner nennen die Ursache ≥ 70 %"
       },
@@ -7966,8 +7978,8 @@
        "umfang": "fremde Städte",
        "tiefe": "Form folgt dem Bauenden",
        "preis": "P · fremder Planet",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Städte“",
        "richter": "100 Saaten: Fremdwelt-Probe (R10) — Körperbau der Bauenden aus dem Stadtbild geschätzt Rang ≥ 0,7"
       },
       {
@@ -7975,7 +7987,7 @@
        "umfang": "≥ 10⁴ unterscheidbare Stadtformen",
        "tiefe": "jede mit Ursache",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S6",
        "richter": "10 000 Saaten: ≥ 1 000 Cluster im Wahrnehmungsraum; die Erd-nahen im 2AFC gegen Stadtfotos ≤ 75 %, die übrigen mit Fremdwelt-Probe (R10)"
       }
@@ -8086,8 +8098,8 @@
        "umfang": "Kolonie auf Mond oder Mars, 10³",
        "tiefe": "Schwere, Staub, Strahlung prägen Bau und Tag; Versorgung von außen im Takt",
        "preis": "P · Außeneinsatz",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „auf Mond“",
        "richter": "Gang der Bewohner bei einem Sechstel und einem Drittel der Schwere gegen Film realer Mondgänge (2AFC ≤ 75 %); Gegenlauf Nachschub aus → der Vorrat fällt, der Tagesplan rationiert"
       },
       {
@@ -8095,8 +8107,8 @@
        "umfang": "Asteroiden-Bergwerk und Station im freien Raum, 10⁴",
        "tiefe": "Schwere aus Drehung oder keine; Andocken, Außenarbeit",
        "preis": "P",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10⁴ (Reihe Bewohner ab S1)",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "geerbt:S3",
        "richter": "Bewegung in Schwerelosigkeit gegen Stations-Film (2AFC ≤ 75 %); Coriolis im Drehring messbar"
       },
       {
@@ -8104,8 +8116,8 @@
        "umfang": "Zylinder-Habitat, 10⁶, mit Land und Wetter",
        "tiefe": "Stadt an der Innenwand, der Blick nach oben zeigt Dächer",
        "preis": "P",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10⁶ (Reihe Bewohner ab S1)",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "geerbt:S4",
        "richter": "Stadtplan-Statistik im Band der Stadtklasse; Bildpaar gegen Rechen-Referenz"
       },
       {
@@ -8113,7 +8125,7 @@
        "umfang": "Netz von 10³ Habitaten und Kolonien eines Systems",
        "tiefe": "Handel, Reise, Abhängigkeit zwischen ihnen",
        "preis": "P · Sprung ≤ 5 s",
-       "klasse": "Stadt",
+       "klasse": "Planet und Welten",
        "klasseGrund": "geerbt:S5",
        "richter": "Fracht folgt Bedarf; Gegenlauf Habitat gekappt → Mangel bei den Abnehmern nach der Flugzeit"
       },
@@ -8222,6 +8234,8 @@
        "umfang": "1 Ort, ~10 km, 4 Klassen",
        "tiefe": "Trasse folgt Hang, Brücke über Wasser",
        "preis": "P · Fahrt",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:zwei Zeilen „1 Ort“ gegen „10 km“",
        "richter": "Gefälle p95 ≤ 9,5 % über 8 Saaten UND jede Klasse ohne Wand oder Klemmen befahren"
       },
       {
@@ -8229,8 +8243,8 @@
        "umfang": "10³ Häuser, ~50 km",
        "tiefe": "Kreuzungsgrad, Sackgassen, Block, Entropie",
        "preis": "P · dichtester Platz",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10³ Häuser",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:zwei Zeilen „10³ Häuser“ gegen „50 km“",
        "richter": "3 von 4 Kennzahlen im OSM-Band ± 20 % in ≥ 80 % von 32 Saaten"
       },
       {
@@ -8238,8 +8252,8 @@
        "umfang": "10⁴ Häuser, ~500 km, Achsen und Ring",
        "tiefe": "breite Straßen tragen den Verkehr",
        "preis": "P · Fernblick",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10⁴ Häuser",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "geerbt:S2",
        "richter": "Breite ↔ Fahrten r ≥ 0,7; Luftbild-Echtheits-Probe"
       },
       {
@@ -8247,8 +8261,8 @@
        "umfang": "10⁵ Häuser, ~5 000 km, Kreuze auf 2 Ebenen",
        "tiefe": "Kultur prägt Form",
        "preis": "P · 130 km/h quer",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10⁵ Häuser",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "geerbt:S3",
        "richter": "Unterscheider ordnet 64 Netzbilder der Kultur ≥ 80 %"
       },
       {
@@ -8740,8 +8754,8 @@
        "umfang": "fremde Bauten fremder Leiber",
        "tiefe": "Raum folgt dem Leib",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Bauten“",
        "richter": "Körpergröße und Gang aus 100 Räumen ≥ 70 %"
       }
      ],
@@ -9031,8 +9045,8 @@
        "umfang": "fremde Evolutionen",
        "tiefe": "Fahrzeuge anderer Leiber",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Evolutionen“",
        "richter": "„nicht von der Erde“ ≥ 80 %; passen zum Leib ≥ 90 %"
       },
       {
@@ -9108,8 +9122,8 @@
        "umfang": "fremde Lenker, fremde Medien",
        "tiefe": "Steuerkunst folgt Leib und Medium",
        "preis": "P · fremder Planet",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Lenker“",
        "richter": "N = 100: ≤ 110 % des Optimums"
       }
      ],
@@ -9400,8 +9414,8 @@
        "umfang": "Milliarden Nutztiere, fremde Haustiere",
        "tiefe": "dasselbe Gesetz",
        "preis": "P · Orbit → Herde",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Haustiere“",
        "richter": "64 Welten: Zähmungs-Drift ≥ 70 %"
       }
      ],
@@ -9531,8 +9545,8 @@
        "umfang": "10⁴: Hunger und Überfluss",
        "tiefe": "Geburten, Wanderung, Aufruhr",
        "preis": "P · 10⁴ im Umkreis",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴“",
        "richter": "Dürre: Bevölkerung −≥ 10 %, Wanderstrom sichtbar"
       },
       {
@@ -10065,8 +10079,8 @@
        "umfang": "fremde Chemie, ≥ 10 Pfade jenseits unserer",
        "tiefe": "Biotechnik statt Metall",
        "preis": "P · fremder Planet",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Chemie“",
        "richter": "„folgt aus Stoffen“ ≥ 80 % UND „nicht unsere Geschichte“ ≥ 80 %"
       }
      ],
@@ -10375,8 +10389,8 @@
        "umfang": "fremde Ränge",
        "tiefe": "Ordnung folgt Biologie",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Ränge“",
        "richter": "Rangordnung aus dem Bild ≥ 60 %"
       }
      ],
@@ -10443,8 +10457,8 @@
        "umfang": "Verwaltung über 10⁸",
        "tiefe": "Bürokratie wächst mit Fläche",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Träger unklar „10⁸“",
        "richter": "Beamte je Kopf im Seshat-Band ≥ 80 %"
       },
       {
@@ -10600,8 +10614,8 @@
        "umfang": "10⁴ im Protest",
        "tiefe": "Masse mit Ursache",
        "preis": "P · 10⁴ im Bild",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴ im Protest“",
        "richter": "Protest nach Schock ≥ 0,7; zentrale Plätze"
       },
       {
@@ -10627,8 +10641,8 @@
        "umfang": "fremde Megastädte",
        "tiefe": "Ordnungen jenseits der Erde",
        "preis": "P · Planetenwechsel",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "wort:Megastädte",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Megastädte“",
        "richter": "Richter 1–6 in 64 fremden Saaten ≥ 0,7"
       }
      ],
@@ -10842,8 +10856,8 @@
        "umfang": "fremdes Heiliges",
        "tiefe": "Mythos erklärt die gebaute Welt",
        "preis": "P",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremdes Heiliges“",
        "richter": "Hauptgötter ↔ reales Phänomen der Saat ≥ 80 %"
       }
      ],
@@ -10970,8 +10984,8 @@
        "umfang": "10² Herkünfte in 10⁷",
        "tiefe": "Hybrid-Kultur wird Quelle",
        "preis": "P · Stadt",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Träger unklar „10⁷“",
        "richter": "≥ 1 neues Hybrid-Merkmal in 100 J, trennbar, wandert ins Umland"
       },
       {
@@ -10979,7 +10993,7 @@
        "umfang": "Völkerwanderung über Jahrtausende",
        "tiefe": "Sprachkarte trägt die Spur",
        "preis": "P · Jahreswechsel",
-       "klasse": "Stadt",
+       "klasse": "Megastadt und Kontinent",
        "klasseGrund": "geerbt:S4",
        "richter": "Wanderrichtung rekonstruiert ± 30°"
       },
@@ -11054,8 +11068,8 @@
        "umfang": "Wissenschaft fremder Arten",
        "tiefe": "ihre Physik stimmt mit ihrer Welt",
        "preis": "P",
-       "klasse": "Stadt",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremder Arten“",
        "richter": "gelesene Naturgesetze widerspruchsfrei ≥ 90 %"
       }
      ],
@@ -11681,6 +11695,8 @@
        "umfang": "EIN Ort, EINE Zeit (eine römische Stadt um 100)",
        "tiefe": "Stadtplan, Hauptbauten, Tracht nach dem Befund",
        "preis": "P · Schlüssel ≤ 10 kB",
+       "klasse": "Stadt",
+       "klasseGrund": "wort:Stadt",
        "richter": "Straßenachsen gegen den archäologischen Plan: Deckung ≥ 70 %; Fach-Panel 2AFC Spielbild gegen wissenschaftliche Rekonstruktion ≤ 80 %"
       },
       {
@@ -11878,8 +11894,8 @@
        "umfang": "jede Kultur ihre eigenen Medien, auch für fremde Sinne (Duft-Schrift, Infraschall-Funk)",
        "tiefe": "das Medium folgt Sinn und Technik der Art",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "geerbt:S6",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Sinne“",
        "richter": "Fremdwelt-Probe (R10): Medium aus den Sinnen der Art vorhergesagt Rang ≥ 0,7; Verständigungs-Probe mit Gegenlauf"
       }
      ],
@@ -12161,8 +12177,8 @@
        "umfang": "jeder Leib jeder Art jeder Saat, auch fremde Gliedmaßen",
        "tiefe": "Präsenz auf Wettkampf-Niveau",
        "preis": "P · Taste→Bild p95 ≤ 35 ms",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Gliedmaßen“",
        "richter": "N = 1 000 (Saat, Art, Lage): Latenz ≤ 35 ms, Kontakt ohne Durchdringen im Bild, Kamera frei — Anteil ≥ 0,95"
       }
      ],
@@ -12316,8 +12332,8 @@
        "umfang": "alles, was ein Lebewesen der Welt tun kann — fremde Glieder, fremde Stoffe",
        "tiefe": "Stoff, Kraft, Geschick aus dem Gesetz der Art",
        "preis": "P · 50 ms",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Glieder“",
        "richter": "N = 1 000 (Saat, Art, Glied, Stoff, Tätigkeit): Anteil plausibler Wirkung ≥ 0,8"
       }
      ],
@@ -15056,8 +15072,8 @@
        "umfang": "10⁴ Sprachen, 10⁸⁺ Sprecher, fremde Sprechorgane (Pfeif-, Klick-, Infraschall)",
        "tiefe": "fremde Sprache als Sprache erkennbar, nicht als Lärm",
        "preis": "P",
-       "klasse": "Megastadt und Kontinent",
-       "klasseGrund": "zahl:10⁸⁺ Sprecher",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Sprechorgane“",
        "richter": "100 Saaten: geeichtes Ohr „Sprache\" ≥ 90 %; Wortgrenzen und Wiederholungsstruktur messbar"
       }
      ],
@@ -15321,8 +15337,8 @@
        "umfang": "10⁵",
        "tiefe": "ein Viertel im Sturm oder Beben, Kippen nach Schwerpunkt und Reibung",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S4",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁵“",
        "richter": "Böe 30 m/s: Anteil der Dinge, die laut Kipp-Kriterium kippen müssen und im Bild kippen, ≥ 95 %, Fehl-Kipper ≤ 2 %"
       },
       {
@@ -15747,8 +15763,8 @@
        "umfang": "fremde Chemie",
        "tiefe": "ohne Oxidator kein Brand, in Wasserstoff-Welten andere Flammen",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „fremde Chemie“",
        "richter": "N = 100 Planeten: 0 Verstöße (Brennstoff + Oxidator + Zündtemperatur) in 1 000 Bränden"
       }
      ],
@@ -16032,8 +16048,8 @@
        "umfang": "Skyline mit 10⁵ Gebäuden bis 30 km",
        "tiefe": "Fensterlicht je Wohnung, Dunst; Silhouette und Nachtlicht-Statistik gegen Hongkong, Manhattan, Shanghai",
        "preis": "P; ≤ 1,1 × leere Ebene derselben Pose",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10⁵ Gebäuden",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:zwei Zeilen „10⁵ Gebäuden“ gegen „30 km“",
        "richter": "p95 Skyline ÷ p95 leere Ebene ≤ 1,10; Blindtest ≥ 40 % „Foto\""
       },
       {
@@ -16095,8 +16111,8 @@
        "umfang": "Fahrt 30 km/h, 10 km durchs Dorf",
        "tiefe": "≥ 90 % der Bilder ganz",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S1",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:zwei Zeilen „Dorf“ gegen „10 km“",
        "richter": "Fahrt-Bahn, Bild-Diff je Bild gegen Ruhe-Referenz"
       },
       {
@@ -16185,8 +16201,8 @@
        "umfang": "10⁴ Wesen (Menschen, Tiere, Wuchs), 1 Tag",
        "tiefe": "Widersprüche = 0 (niemand an zwei Orten, gefällt bleibt gefällt)",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S1",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴ Wesen“",
        "richter": "Klassen-Statistik Rückkehr ↔ Zuschauer-Lauf ≤ 5 %; Widerspruchs-Zähler = 0"
       },
       {
@@ -16885,8 +16901,8 @@
        "umfang": "10⁶ Leiber, Region 10⁴ km², 100 Jahre",
        "tiefe": "Erde → Kies → Pflaster, Hohlwege",
        "preis": "P, Kosten an Schirm, nie an Leibern",
-       "klasse": "Stadt",
-       "klasseGrund": "zahl:10⁶ Leiber",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:zwei Zeilen „10⁶ Leiber“ gegen „10⁴ km²“",
        "richter": "Hohlweg-Tiefe nach 100 a im Band 0,5–3 m; Blindvergleich gegen Foto"
       },
       {
@@ -16946,8 +16962,8 @@
        "umfang": "jede Siedlung einer Region, 5 000 Jahre",
        "tiefe": "Tells wachsen 10–20 m, Funde passen zur Epoche",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Region ohne Größe „Region“",
        "richter": "Hügelhöhe gegen Besiedlungsdauer an N = 20 im Band"
       },
       {
@@ -17631,8 +17647,8 @@
        "umfang": "Siedlungen einer Region",
        "tiefe": "an Furt, Terrasse, Hochwasserlinie, Küste und Fluss",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Region ohne Größe „Region“",
        "richter": "Siedlungen an Furt, Terrasse, Küste ≥ 80 %; Gegenlauf: dieselbe Saat mit eingeebnetem Relief oder gekapptem Fluss → Anteil fällt auf das Zufallsniveau (≤ 30 %); Städte > 10⁵ ≤ 10 km von Küste oder Strom ≥ 70 %"
       },
       {
@@ -17640,7 +17656,7 @@
        "umfang": "Verkehr eines Landes",
        "tiefe": "Trassen folgen Tälern und Pässen, Brücken an Engstellen",
        "preis": "P",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S3",
        "richter": "Trassen-Steigung ≤ Grenze in ≥ 95 %; Gegenlauf: Pass gesperrt (Bergsturz) → die Trasse verlegt sich auf den nächsten Pass in ≥ 80 %"
       },
@@ -18225,8 +18241,8 @@
        "umfang": "eine Landschaft",
        "tiefe": "Wölfe → weniger Verbiss → stabile Ufer",
        "preis": "P · Zeitraffer",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Region ohne Größe „Landschaft“",
        "richter": "Ufer-Erosion mit Wölfen gegen ohne, Intervall ohne 0"
       },
       {
@@ -18234,7 +18250,7 @@
        "umfang": "eine Küste über 10³ Jahre",
        "tiefe": "Korallen und Mangroven bauen Land: Saum → Barriere → Atoll",
        "preis": "P · Sprung ≤ 5 s",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S4",
        "richter": "Riffdicke gegen Akkretionsraten; Rifftyp in Draufsicht ≥ 75 % richtig"
       },
@@ -18595,8 +18611,8 @@
        "umfang": "10⁵: Leben formen die Welt",
        "tiefe": "Familien bauen an, Wege werden Straßen",
        "preis": "P · Sprung 20 J",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁵“",
        "richter": "Bauten ↔ Familiengröße r ≥ 0,5; verlassene Häuser verfallen"
       },
       {
@@ -18604,8 +18620,8 @@
        "umfang": "10⁷: Vulkan, Seuche, Krieg",
        "tiefe": "Generationen und Gedächtnis verschoben",
        "preis": "P · Sprung ≤ 5 s",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S3",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Träger unklar „10⁷“",
        "richter": "Flucht, Gedenken nach 50 J, Kohorten-Delle — alle drei messbar"
       },
       {
@@ -18814,8 +18830,8 @@
        "umfang": "10⁴",
        "tiefe": "+ Leitung, Abwasser, Müll",
        "preis": "P · Stadt",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S2",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:Träger unklar „10⁴“",
        "richter": "Bilanz je Stoff ± 5 %"
       },
       {
@@ -18823,7 +18839,7 @@
        "umfang": "10⁶",
        "tiefe": "+ Strom, Hinterland, Handel",
        "preis": "P · Orbit",
-       "klasse": "Ort",
+       "klasse": "Stadt",
        "klasseGrund": "geerbt:S3",
        "richter": "Hinterland ≥ Stadtfläche × Bedarf ± 30 %"
       },
@@ -18832,8 +18848,8 @@
        "umfang": "10⁸ in EINER Stadt",
        "tiefe": "jede Person versorgt",
        "preis": "P · Megastadt",
-       "klasse": "Stadt",
-       "klasseGrund": "wort:Stadt",
+       "klasse": "Megastadt und Kontinent",
+       "klasseGrund": "zweifel:Träger unklar „10⁸“",
        "richter": "1 000 Personen ≥ 0,99; 100 Bissen bis Feld ≥ 90 %"
       },
       {
@@ -19063,8 +19079,8 @@
        "umfang": "jenseits der Erde",
        "tiefe": "Bilder fremder Welten",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S5",
+       "klasse": "Planet und Welten",
+       "klasseGrund": "zweifel:Welt-Wechsel „jenseits der Erde“",
        "richter": "2AFC gegen Sondenfotos (Mars, Titan) ≤ 55 %"
       }
      ],
@@ -19387,8 +19403,8 @@
        "umfang": "ein Dorf rodet 10 km²",
        "tiefe": "Wald weicht Feld, Wild zieht ab; sichtbar aus 10 km",
        "preis": "P",
-       "klasse": "Ort",
-       "klasseGrund": "geerbt:S1",
+       "klasse": "Stadt",
+       "klasseGrund": "zweifel:zwei Zeilen „Dorf“ gegen „10 km²“",
        "richter": "Waldanteil im Umkreis 5 km fällt mit der Bevölkerung (r ≥ 0,6); Bildpaar aus 10 km ΔE ≥ 5 an der Tat, sonst ≤ 1"
       },
       {
@@ -19846,6 +19862,8 @@
        "umfang": "1 Ort, 1 Ereignis-Typ",
        "tiefe": "der Ort der Erd-Saat trägt die echte Gefahr (Vesuv am Golf)",
        "preis": "P",
+       "klasse": "Ort",
+       "klasseGrund": "wort:1 Ort",
        "richter": "Bildvergleich gegen Relief-Modell; der Vulkan bricht von selbst aus"
       },
       {
@@ -19992,6 +20010,8 @@
        "umfang": "EIN Eingriff, EINE Region: Wetter lenken über einer Stadt",
        "tiefe": "Regen fällt, wo er gesät wird; nebenan fehlt er",
        "preis": "P",
+       "klasse": "Stadt",
+       "klasseGrund": "wort:Stadt",
        "richter": "Bildpaar mit und ohne Eingriff an derselben Saat: Regenmenge im Zielgebiet höher, im Lee tiefer; Bilanz ±10 %"
       },
       {
