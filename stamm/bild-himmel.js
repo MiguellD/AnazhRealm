@@ -1791,12 +1791,15 @@ class AnazhRealm_bild_himmel {
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
         u.opacity.value = skyMul;
-        // der Fußabdruck: `sternPixel` Pixel des Szenen-Ziels auf der Stern-Kugel (Blickfeld ÷ Zeilen × Radius)
+        // der Fußabdruck: `sternPixel` Pixel des Ziels, in das die Szene zeichnet, auf der Stern-Kugel (Blickfeld ÷ Zeilen × Radius)
+        // — das Szenen-Ziel der Post-Kette, ohne sie der Zeichenpuffer (`_schirm`); bis hier blieb der Fußabdruck ohne Szenen-Ziel
+        // ungeschrieben (der Wert des Baus)
         const cam = this.state.camera;
         const ziel = this.state.scenePass && this.state.scenePass.renderTarget;
-        if (cam && ziel && ziel.height > 0)
+        const zeilen = ziel && ziel.height > 0 ? ziel.height : this._schirm().hoehe;
+        if (cam && zeilen > 0)
             u.fuss.value =
-                ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / ziel.height) * u.radius;
+                ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / zeilen) * u.radius;
         const sf = this.state.starField;
         if (sf) sf.visible = zeigt;
     }

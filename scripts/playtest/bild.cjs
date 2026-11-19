@@ -96,6 +96,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const hE = (grad) => Math.PI * lum(r._atmoSternenLicht(Math.sin((grad * Math.PI) / 180)));
         out.nachtBilanz = [-40, -6, 5].map((g) => +(hE(g) / (Mo.intensity * lum([Mo.r, Mo.g, Mo.b]))).toFixed(4));
+        out.mondLx = __weltLicht.MOND_LX;
         // setDayLength clamped
         r.setDayLength(5);
         out.setDayLength5 = st.dayLengthMinutes === 5;
@@ -182,11 +183,15 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         const NK = wave6g3Results.nachtKnoten || [];
         check("der Nacht-Knoten steht (Täter: `__weltLicht.belichtung`)", NK[0] > 0 && NK[1] === NK[2], NK.join(" "));
         const NB = wave6g3Results.nachtBilanz || [];
+        // die blaue Stunde in der EINEN Skala (licht-eine-skala): die REF (USNO Circular 171) trägt bei −6° 3,01 lx, der Vollmond
+        // `MOND_LX` — der Himmel ohne Mond trägt dort REF ÷ Mond (bis hier: so viel wie der Mond, das Gesetz der gestauchten Nacht)
+        const REF6 = require("../../spec/farbe/tag-ref.json").zeilen.find((z) => z[0] === -6)[1];
+        const blau = REF6 / (wave6g3Results.mondLx || NaN);
         check(
             "w28-nacht-bilanz: der Mond trägt die Nacht — der Himmel ohne Mond trägt in tiefer Nacht unter 1 % des Vollmonds, die blaue " +
-                "Stunde (−6°) so viel wie er, der Tag nichts (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als Füllung trug 65 %)",
-            NB[0] >= 0 && NB[0] < 0.01 && Math.abs(NB[1] - 1) < 0.05 && NB[2] === 0,
-            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} · Tag ${NB[2]}`
+                "Stunde (−6°) die REF ÷ Vollmond ± 5 %, der Tag unter 0,1 % (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als Füllung trug 65 %)",
+            NB[0] >= 0 && NB[0] < 0.01 && Math.abs(NB[1] / blau - 1) < 0.05 && NB[2] >= 0 && NB[2] < 0.001,
+            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} (Soll ${blau.toFixed(2)}) · Tag ${NB[2]}`
         );
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
@@ -1753,9 +1758,11 @@ async function checkBandHimmelTag({ page, check }) {
         };
         // 8 PIXEL: der Fußabdruck je Punkt (`fuss`) = sternPixel · 2 tan(fov/2) ÷ Zeilen des Szenen-Ziels × Radius der Kugel
         const fussStand = () => {
+            // das Ziel, in das die Szene zeichnet: das Szenen-Ziel, ohne Post-Kette der Zeichenpuffer (`_schirm`)
             const [cam, ziel] = [st.camera, st.scenePass && st.scenePass.renderTarget];
-            if (!U || !U.fuss || !cam || !ziel || !(ziel.height > 0)) return null;
-            const soll = ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / ziel.height) * U.radius;
+            const zeilen = ziel && ziel.height > 0 ? ziel.height : r._schirm().hoehe;
+            if (!U || !U.fuss || !cam || !(zeilen > 0)) return null;
+            const soll = ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / zeilen) * U.radius;
             return { ist: U.fuss.value, soll, ab: Math.abs(U.fuss.value / soll - 1) };
         };
         const out = { punkte: mags ? mags.length : 0, fremdeKoerper: 0 };
