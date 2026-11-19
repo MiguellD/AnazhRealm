@@ -770,8 +770,6 @@ const vz = (d) => (d == null ? grau(" —") : d > 0 ? gruen(` +${d}`) : d < 0 ? 
 function tafelZeilen(T, K, S) {
     const E = T.ertrag, B = T.budget, F = T.fluss, n = F.gruen + F.rot, st = E && new Date(E.t);
     return [
-        `${spalte("PFLICHT", 8)} ${T.pflicht.length ? T.pflicht.map((e) => `${fett(e.id)} ${e.gruen}/${e.gesamt}${vz(e.d)}`).join(" · ") : grau("stand.json nicht gelesen")}${E ? grau(`   stand.json ${E.kopf} · ${tag(st)}. ${hhmm(st)}`) : ""}`,
-        `${spalte("ERTRAG", 8)} ${E ? `gebucht ${E.gebucht}/${S.mk ? S.mk.max : "?"} · ehrlich ${fett(E.ehrlich)}${E.rueckfall.length ? rot(` (−${E.rueckfall.length} Rückfall ${E.rueckfall.slice(0, 3).join(" ")})`) : ""} · Δ ehrlich 24 h${vz(E.d24)} · seit Kontostart${vz(E.dKonto)}` : grau("—")}`,
         `${spalte("BUDGET", 8)} Konto ${B.konto == null ? "—" : `${B.konto} % ${grau(`(${hhmm(B.t)})`)}`} · ehrlich je % Konto ${zk(B.jeKonto, 2)} · 24 h ${B.unsicher24 ? grau(`${zk(B.je24, 2)} (unsicher: Basis ${tag(B.unsicher24)}. ${hhmm(B.unsicher24)})`) : zk(B.je24, 2)} · ${B.jeLandung == null ? "—" : zk(B.jeLandung) + " %"} je Landung (${B.landungen}) · Brenn ${zk(K.brenn && K.brenn.rate)} %/h · 98 % ≈ ${K.ziel98 || "—"}`,
         `${spalte("FLUSS", 8)} Züge 24 h ${gruen(F.gruen + " grün")}/${rot(F.rot + " rot")}${n ? ` (Rot ${Math.round((100 * F.rot) / n)} %)` : ""} · Wand p50 ${minText(F.wand)} · Abgabe→Landung p50 ${minText(F.al)} (${F.nAL}) · wartend ${F.wartend.length} · CI je Zug ${minText(F.ci)} (${F.nCi}/${F.fertig.length})`,
     ];
@@ -1081,7 +1079,7 @@ function ampelZeilen(S) {
         S.actions && S.actions !== "operational" ? `${rot("●")} CI ${rot("Actions " + S.actions)}` :
         `${ciRot ? rot("●") : S.runs.length ? gelb("●") : gruen("●")} CI ${lauf.length} läuft${warte.length ? ` · ${warte.length} wartet` : ""}${ciRot ? rot(` · ✗ ${ciRot} rot`) : ""}`,
         !g ? `${grau("●")} ZUG keine Logs` : g.tot ? `${rot("●")} ZUG ${g.name} ohne Prozess` : g.still ? `${grau("●")} ZUG ${g.name} still` : g.exit == null ? `${gelb("●")} ZUG ${g.name} läuft` : g.exit === 2 ? `${grau("●")} ZUG ${g.name} abgebrochen` : `${g.exit ? rot("●") : gruen("●")} ZUG ${g.name} EXIT=${g.exit}`,
-        (S.mk2 ? fett(gelb("★")) + ` Karte 2 ${S.mk2.heute}/${S.mk2.sprossen} · Kern ${S.mk2.kern}` : rot("★ Karte 2 ohne Stand")) + (S.mk ? grau(` · alt ${S.mk.summe}/${S.mk.max}`) : ""),
+        (S.mk2 ? fett(gelb("★")) + ` Karte 2 ${S.mk2.heute}/${S.mk2.sprossen} · Kern ${S.mk2.kern}` : rot("★ Karte 2 ohne Stand")),
     ];
     const text = a.join("  "); // in EINER Zeile, über der Breite in zwei
     return sicht(text).length <= BREITE ? [text] : [a.slice(0, 3).join("  "), a.slice(3).join("  ")];
@@ -1441,7 +1439,7 @@ async function pulsVon(jetzt) {
 function kurzText(S) {
     const K = kurs(S);
     const o = [];
-    o.push(`Blick ${S.jetzt.toTimeString().slice(0, 5)} · main ${s8(S.main)} V${S.version || "?"} · koordination ${s8(S.koord)} · Karte 2 ${S.mk2 ? `${S.mk2.heute}/${S.mk2.sprossen} (Kern ${S.mk2.kern})` : "ohne Stand"} · alt ${S.mk ? `${S.mk.summe}/${S.mk.max}` : "?"}`);
+    o.push(`Blick ${S.jetzt.toTimeString().slice(0, 5)} · main ${s8(S.main)} V${S.version || "?"} · koordination ${s8(S.koord)} · Karte 2 ${S.mk2 ? `${S.mk2.heute}/${S.mk2.sprossen} (Kern ${S.mk2.kern})` : "ohne Stand"}`);
     o.push(ampelZeilen(S).join("  ").replace(/●|★/g, "").replace(/\s{2,}/g, " | ").trim());
     o.push(UHR.kurz(S.uhr, L.uhr)); // die Uhr oben: die 25-Zeilen-Grenze schneidet unten
     // DER PULS (oben, vor der 25-Zeilen-Grenze): steht ein Gerät, scheiterte der Push der Radeon oder brennen > 10 M Tokens ohne Landung,
