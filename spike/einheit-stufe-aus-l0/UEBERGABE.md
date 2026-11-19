@@ -25,15 +25,22 @@ Wort des Schöpfers: „ja bauen, bei 98% wip sichern und übergabe“. Datei-Be
 
 ## Offen in Welle a (nicht begonnen)
 
-2. **Muster in der Phase der L0** (gelesen, nicht gebaut): der Weber `_verbandStoff` (`stamm/studio-stoff.js:141`) liest u, v an der WELT
-   (`dot(positionWorld, t) ÷ lM`), außer die Zeile trägt das Flag `lage` UND der Aufrufer reicht `ecke` (heute nur die Fachwerk-Zeile, im
-   Bau-Satz: `stamm/siedlung-satz.js` legt `aLage` in die vierten Stellen von Farbe und Glut). Die L0 legt ihre Steine im HAUS-Raster
-   (`infill`: `Math.floor((a0 - ox) / bw) · bw + ox` längs der Wand, Lagen je Gefach gestreckt `rh = yl / nr`) — ein Haus an anderer
-   Weltlage webt sein Muster also verschoben gegen seine Steine; die L0 selbst trägt Geometrie-Steine UND das gewebte Muster darüber.
-   Plan: `_steinLage` nach dem Vorbild `_wandLage` (`fachwerk-core.js:1939`) schreibt für die Rolle `backstein` je Ecke die Lage in Steinen
-   aus demselben Anker wie `infill` (u = a ÷ bw im Haus, v = Lage im Gefach), die Zeile `mauerwerk` bekommt `lage`, die Zonen in
-   `muster.js` erben die Lage ihrer Steine. VORHER prüfen: misst der Spike (`_foundryBuildGroup`) und zeichnet die Welt (Bau-Satz) dieselbe
-   Kette — reichen beide `ecke` an den Weber?
+2. **Muster in der Phase der L0 — gebaut, headless gemessen, NICHT am Bild** (WIP nach 19:3x):
+   - Befund: der Bau-Satz der Welt reicht Zeile je Ecke (`aRegler.w`) und Lage (`ecke` aus `color.w`/`aGlut.w`) an den Weber
+     (`stamm/studio-stoff.js:727–740`); der Spike-Pfad (`_foundryBuildGroup`) reicht die Zeile nur als Wert des Stoffs und keine Lage —
+     **der Spike hat das Muster auf einem anderen Weg gezeichnet als die Welt** (seine B1-Zahlen gelten für seinen Pfad).
+   - Schnitt (a): `_verbandStoff` liest die Lage in der VORLAGE (`positionGeometry`, `normalGeometry`) statt an der Welt — das Muster liegt
+     im Raster des Baus, nie am Standort (vorher webte jedes Haus je nach Weltlage verschoben). Betrifft jede Verband-Fläche (Mauerwerk,
+     Deckung, Putz, Naturstein) in jedem Haus; die Fachwerk-Zeile mit `lage` liest weiter `ecke`.
+   - Schnitt (b): `infill` legt die Lagen im Raster des Hauses (Lage k bei k · bh ab dem Grund, am Gefach geklippt) statt je Gefach gestreckt.
+   - Zahl (`werkzeug/phase.cjs`, volle Steine, Abstand Stein-Mitte zu Mitte der gewebten Zelle in Zellen, 0 deckungsgleich, 0,5 Fuge; die
+     Zeile vorher ist die Vorlage, nicht die Welt — an der Welt lag sie zufällig je Standort): alemannisch längs 0,288 → **0,000**, hoch
+     0,255 → 0,183 · hanseatisch längs 0,315 → 0,205, hoch 0,194 → 0,055. **Rest:** die Höhe (und bei hanseatisch die Länge) wandert —
+     Verdacht: `infill` rastert in den Koordinaten seiner Gruppe, die beim Backen verschoben oder verformt wird (Sockel, Geschoss, Anbau,
+     `deform`), und der Giebel (`:743`) und der Verband `:1415` rastern eigen. Nächster Schritt: das Raster im GEBACKENEN Rahmen (der
+     Versatz der Gruppe reist in `infill`) und Giebel und `:1415` auf dasselbe Raster.
+   - Re-Mint haeuser.json, gate:fachwerk-contract GRÜN (Split-Parität 24/24), diag-atlas --check und Format grün. Nicht gelaufen: das
+     Bild (B1 im Bau-Satz der Welt), gate:asset-contract, gate:haus-fern, stamm:lint, check:statik.
 3. **Relief als Ton:** Kanten unter `s` fallen (`muster.js` Schritt 3); ihr Mittel aus Eigenschatten und Kante soll als Ton in den Stoff
    der Zone (dasselbe Gesetz wie die Farbe). Differenz-Karte: Linien an Balken-Unterkanten und Traufe.
 4. **Draws falten in Opak und Glas** (Soll je Haus ≤ heute: 4) — gelesen, wahrscheinlich schon getragen: der Bau-Satz der Welt

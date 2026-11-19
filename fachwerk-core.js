@@ -653,9 +653,12 @@
     if(P.flaechig){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
       const _s=dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
     if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick-0.03); else if(horiz)beam(g,ac,yc,fixed,al,yl,0.06,'lehm'); else beam(g,fixed,yc,ac,0.06,yl,al,'lehm');   // zurückgesetzte Hinterfüllung (Holz steht vor; in der glatten Wand der Stein 1,5 cm)
-    for(let r=0;r<nr;r++){ const by=y0+(r+0.5)*rh, ox=(r%2)*bw*0.5;
+    // DIE LAGEN IM RASTER DES HAUSES (Einheit E8, die Phase der L0): die Lage k steht bei k · bh ab dem Grund des Hauses, am Gefach geklippt — wie
+    // die Stoßfugen längs der Wand; der Stoff webt dasselbe Raster in der Vorlage (`_verbandStoff`), Stein und Muster liegen deckungsgleich.
+    // Bis hier streckte jedes Gefach seine Lagen auf seine Höhe (rh = yl / nr): das Muster lag gegen die Steine verschoben.
+    for(let k=Math.floor(y0/bh); k*bh<y1-0.02; k++){ const ya=Math.max(y0,k*bh), yb=Math.min(y1,(k+1)*bh), hh=yb-ya-m; if(hh<0.03)continue; const by=(ya+yb)/2, ox=(((k%2)+2)%2)*bw*0.5;
       for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const cl=Math.max(a0,bx0), cr=Math.min(a1,bx0+bw), w=cr-cl-m; if(w<0.05)continue; const cc=(cl+cr)/2;   // FIX: Backstein auf GLOBALES Raster (Ursprung 0) statt Feldkante a0 → Wandfelder UND Giebel teilen EIN Raster, Stossfugen fluchten durchgehend
-        if(horiz)beam(g,cc,by,fixed,w,rh-m,bt,'backstein'); else beam(g,fixed,by,cc,bt,rh-m,w,'backstein'); } } }
+        if(horiz)beam(g,cc,by,fixed,w,hh,bt,'backstein'); else beam(g,fixed,by,cc,bt,hh,w,'backstein'); } } }
 
   function riegel(){const g=grp(); if(ROUND)return g; if(GLATT) return g;                                                  // GLATT (der Stil malt das Gerüst in die Wand): keine Riegel → glatte Wand
     const _flucht=!!(P.nur&&P.nur.fern&&P.__sehne>1), _fl=new Map();   // FLUCHT (die ferne Stufe über der Zeile trägt keine Ständer, DESTNUR): die fluchtenden Riegel einer Wand sind EIN Balken über die Ständer-Lücken

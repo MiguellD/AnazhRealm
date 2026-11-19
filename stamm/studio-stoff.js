@@ -184,9 +184,11 @@ class AnazhRealm_studio_stoff {
                 .clamp(0.0, Z.length - 1)
         ).mul(W);
         const [mass, lage, tonU, tonV, eins, kreuz] = [0, 1, 2, 3, 4, 5].map((k) => tafel.element(i0.add(k)));
-        // der Rahmen der Fläche: t waagrecht in ihr, s ihre Falllinie (eine liegende Fläche nimmt die Achsen der Welt)
-        const wp = T.positionWorld;
-        const n = T.normalize(T.normalWorldGeometry);
+        // der Rahmen der Fläche: t waagrecht in ihr, s ihre Falllinie (eine liegende Fläche nimmt die Achsen der Vorlage) — in der VORLAGE
+        // (Einheit E8): das Muster liegt im Raster des Baus, in dem seine Steine liegen (fachwerk `infill`), nie am Ort der Welt; bis hier
+        // webte jedes Haus sein Muster je nach Standort verschoben gegen seine Steine
+        const wp = T.positionGeometry;
+        const n = T.normalize(T.normalGeometry);
         const h = T.vec3(n.z, 0.0, n.x.negate());
         const t = T.normalize(T.select(h.length().greaterThan(0.02), h, T.vec3(1.0, 0.0, 0.0)));
         const s = T.cross(n, t);
