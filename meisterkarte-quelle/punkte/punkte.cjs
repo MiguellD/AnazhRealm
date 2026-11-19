@@ -428,11 +428,9 @@ function fahrtSumme(stationen, geraet) {
 // oeko 90, teilen 75, ereignis 60, wetter-welt 45, physik 45) hoben die Fahrt von 6 619 auf 7 204 s (Radeon) über 4 × 1 740 s.
 // 16.11. 5 → 6: die Welle vorrat3-stationen (g1 +780 s: pfad 300, laeufe 180, schnee-jahr 150, kreislauf 90, seil 60; g4 +775 s:
 // takt 640, rolle 90, Paar +45; g2/g5/g6 Sitzungs-Proben, g3 +200 s) hob die Radeon-Fahrt auf 9 314 s (vor g3) über 5 × 1 740 s.
-// Der Fall FAHRT-ROT an der echten Liste bläht jeden Deckel auf 120 s (108 Läufe × 120 s > 6 Teile)
-// 18.11. 6 → 9: die Richter-Fabrik mensch (stationen/k2-mensch*.js, je Leiter EINE Probe ≤ 60 s) — Radeon vorher 10 124 s in 112 Läufen
-// (6 × 1 740 = 10 440 s); gemessen mit allen 84 Proben: Radeon 196 Läufe Σ 13 974 s (Deckel 13 914 s, 8 Teile, 6 s unter 8 × 1 740),
-// GTX 195 Läufe Σ 13 767 s (8 Teile); der neunte Teil trägt die 84 Deckel, die noch kein Gerät geeicht hat (eichTafel)
-const FAHRT_TEILE_MAX = 9;
+// Richter-Falte 19.11., Zwischenstand nach mensch + erleben/same/kosmos: Radeon 258 Läufe Σ Deckel 16 279 s, GTX 257 Läufe Σ 16 072 s →
+// ⌈16 279 ÷ 1 740⌉ = 10 Teile (die Rechnung der ganzen Falte steht nach dem dritten Zweig)
+const FAHRT_TEILE_MAX = 10;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
@@ -562,7 +560,9 @@ function sitzStartGrenze(st, geraet, fahrtMaxS) {
 }
 // DIE RICHTER-FABRIK DER KARTE 2 (vision/PLAN-1712.md §1, 18.11.): je Kapitel ein Register `stationen/k2-<kapitel>.js` neben g1…g6 —
 // dieselbe Liste, dasselbe Format, je Leiter EINE Probe (Zwillinge je Sprosse); die Teile eines Kapitels (`k2-<kapitel>-<teil>.js`)
-// lädt sein Register, nie diese Schleife
+// lädt sein Register, nie diese Schleife. GRUPPEN bleibt die Gruppe der alten Karte (src/gN.js trägt ihre Kriterien), ein Register
+// hat kein src; geladen NACH g1 … g6 (ein Kern liest deren Stationen der Karte 2, kein Zwilling). EIN Lader (Richter-Falte 19.11.):
+// der Lader `[a-z0-9-]+` (richter-erleben-same-kosmos) fiel — er lud jeden Teil `k2-mensch-<teil>.js` zum zweiten Mal neben seinem Register
 const K2_REGISTER = /^k2-[a-z]+\.js$/;
 const k2Register = (dir) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((n) => K2_REGISTER.test(n)).sort().map((n) => n.slice(0, -3)) : []);
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {

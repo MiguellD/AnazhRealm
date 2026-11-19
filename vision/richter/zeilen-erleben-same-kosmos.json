@@ -1,0 +1,2520 @@
+{
+ "lesart": "Zeilen für vision/richter-tafel.json (der Koordinator faltet sie ein): Station der Punkte-Maschine → Sprosse der Meisterkarte 2, je neue Station der Leitern erleben.* · same.* · planet.kosmos.* (meisterkarte-quelle/punkte/stationen/k2-erleben.js · k2-same.js · k2-kosmos.js) EINE Zeile. „gleich“: die Station urteilt die Sprosse ganz. „fehlt“: die Sprosse urteilt ein Auge am Gerät.",
+ "zeilen": [
+  {
+   "station": "karte2.erleben.spieler.praesenz#2",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.praesenz#3",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.praesenz#4",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.praesenz#5",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.praesenz#6",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#2",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#3",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#4",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose stadt-voll third, Mittag, Sommer, Sonne — der Markt im Gedränge, Bewohner bei ihren Verben (Vorbild Quellen der Epoche: Berufs- und Werkstattbilder (Schmied 1200, Mechaniker 1950) im Blindpaar) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#5",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#6",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#7",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#1",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#2",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego, Blick 60° zum Boden auf das Ziel des Hiebs, nach einem Hieb der Hand (`tryMouseBreak`), Mittag, Sommer, Sonne, wahl 0 (Vorbild Real-Foto desselben Stoffs nach derselben Tat (Grube im Wiesenboden, gesplittertes Holz, zerpflücktes Laub)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#3",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#4",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose das Werkstück des Spielers auf der Werkbank, ego, Mittag (Vorbild Museumsfoto des Werkstücks der Epoche (Töpferware, Gewebe, Schmiedestück)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#5",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#6",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#1",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#2",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#3",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#4",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#5",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#6",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#7",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#1",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#2",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#3",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#4",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#5",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#6",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#7",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#8",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#9",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 9,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#1",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#2",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#3",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#4",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#5",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#6",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#7",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#1",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#2",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#3",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#4",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#5",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Orbit-Bild des Planeten über der Lage des Ankers nach gesetzter Hebung, im Raffer (Vorbild Gegenlauf derselben Saat ohne Hebung; Erd-Muster Gebirge → Regenschatten → Wüste (Anden/Atacama)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#6",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#7",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#1",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#2",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#3",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#4",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#5",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#6",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#7",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#1",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#2",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf third Mittag — der Hof eines Spieler-Werks neben einem Hof des Plans derselben Region (Vorbild Gesetz-Hof derselben Region (Hof des fachwerk-Plans der Siedlung)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#3",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#4",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf third Mittag — das gemalte Viertel neben einem Gesetz-Viertel (Vorbild Gesetz-Viertel derselben Region (fachwerk-Plan)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#5",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose gipfel-blick third — derselbe Talgrund vor dem Eingriff und nach 1 Spieljahr (Vorbild reale Landschaft nach einer Flussverlegung (Luftbild-Paar vorher/nachher)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#6",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#7",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#8",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.hebel#9",
+   "leiter": "erleben.schoepfen.hebel",
+   "sprosse": 9,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#1",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#2",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego Mittag — das Satz-Werk „knorrige alte Eiche“ vor dem Spieler (Vorbild Referenzfoto der genannten Eigenschaft (eine knorrige alte Eiche)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#3",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — das Ensemble eines Satzes (Hain, Weiler) an seinem Ort (Vorbild reale Ensembles derselben Art (Hof, Weiler, Hain) an Hang, Wasser, Weg) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#4",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf third Mittag — das Dorf eines Satzes (Vorbild Referenzfoto der genannten Epoche/Region) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#5",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose hochhaus-dach third — Turmblick über die Stadt (Vorbild Luftbild einer Megastadt) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#6",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose gipfel-blick third — Küste der Insel mit der Hafenstadt (Vorbild reale Vulkaninsel mit Hafenstadt (Höhenprofil, Küstenform)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#7",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Orbit über dem Planeten und Boden-Ego am Ort des Absatzes (Vorbild der Text des Absatzes (Blindurteil Text ↔ Bild)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#8",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 8,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose die Epoche am Ort, Ego Mittag (Vorbild historische/paläontologische Rekonstruktion (Rom 50 n. Chr., Kreide)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.satz#9",
+   "leiter": "erleben.schoepfen.satz",
+   "sprosse": 9,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#1",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#2",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — Werke des Spieler-Gesetzbuchs neben Studio-Werken derselben Gattung (Vorbild Studio-Werke derselben Gattung) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#3",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — das erfundene Werk an seinem Ort und Klima (Vorbild Bestand der Studios derselben Gattung (vom Bestand verschieden) und reale Salzwüsten-Flora) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#4",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#5",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — Leben und Bauten unter der erfundenen Physik (Vorbild dieselbe Szene unter Erd-Physik (Fach-Blindurteil)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gesetz#6",
+   "leiter": "erleben.schoepfen.gesetz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#1",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#2",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego Mittag — Zwischenfassungen und Endfassung desselben Werks an fester Pose (Vorbild der Wunsch des Spielers (die Korrektursätze) gegen jede Zwischenfassung) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#3",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#4",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#5",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.gespraech#6",
+   "leiter": "erleben.schoepfen.gespraech",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese third Mittag — ein Welt-Vorschlag neben einem Spieler-Werk (Vorbild Spieler-Werk derselben Art (Blindurteil Vorschlag ↔ Werk)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#2",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#3",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#4",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#5",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose die fusionierte Welt an der Ankunft, Ego Mittag (Vorbild beide Eltern-Welten an derselben Pose) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.teilen#6",
+   "leiter": "erleben.schoepfen.teilen",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#2",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#3",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#4",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#5",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.schoepfen.schutz#6",
+   "leiter": "erleben.schoepfen.schutz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#1",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#2",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#3",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#4",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#5",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#6",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.ziele#7",
+   "leiter": "erleben.sinn.ziele",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#1",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Ort einer Zufallszeile des Tagebuchs, Ego Mittag (Vorbild dieselbe Saat ohne die Tat an derselben Pose (Bildpaar)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#2",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#3",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#4",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#5",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#6",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.legenden#7",
+   "leiter": "erleben.sinn.legenden",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#1",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#2",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Todesort der Sitzung, Ego — das Bild vor dem Tod (-S2-vor.png) und nach der Rückkehr (-S2.png) (Vorbild dasselbe Bild vor dem Tod (Bildpaar vor/nach am Todesort: Lebensspur)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#3",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#4",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Leib des Spielers vor seinem Haus, Ego/Third — mit 20 und mit 60 Jahren (Vorbild derselbe Mensch mit 20 und 60 Jahren (Altersfotos), Haus und Beziehungen geändert) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#5",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#6",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.tod#7",
+   "leiter": "erleben.sinn.tod",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#1",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Ort der Sitzung, Ego — neben dem Nachbar-Ort 400 m weiter mit anderem Feld der Saat (Vorbild der Nachbar-Ort derselben Saat (Blind-Agent: „anders als der vorige“, begründet am Bild)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#2",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Ort der Sitzung, Ego — die Funde im Umkreis 50 m (Vorbild Blind-Agent-Urteil „besonders“ über den Spielgang von 10 min) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#3",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#4",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#5",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose die Grabung unter der Stadt, Ego — das Schichtbild (Vorbild archäologisches Schichtprofil der Epoche (Referenz)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#6",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.entdeckung#7",
+   "leiter": "erleben.sinn.entdeckung",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#2",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#3",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#4",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#5",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#6",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.takt#7",
+   "leiter": "erleben.sinn.takt",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#1",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#2",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#3",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#4",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#5",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose eine Szene der Sitzung, Ego Mittag (Vorbild dieselbe Szene im Vergleichstitel (Blindpräferenz)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#6",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.sog#7",
+   "leiter": "erleben.sinn.sog",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#1",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#2",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose der Ort der Sitzung, Ego — Wald, Siedlung oder Markt im Blick (Vorbild die gezählte Zahl der Arten, Gesichter und Häuser am Ort (Schätzfrage blinder Spieler gegen die Zählung der Probe)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#3",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose ein Augenblick aus Gesetzen (Sonnenaufgang über dem Meer, Herde am Horizont, Stadt bei Nacht), Ego (Vorbild die Umgebung desselben Orts ohne den Augenblick (Verweildauer ≥ 2×) und das Staunen-Panel) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#4",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#5",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose derselbe Ort vor und nach dem Sprung, Orbit und Boden (Vorbild derselbe Ort in der Gegenwart (Bergform, Flusslauf)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#6",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinn.staunen#7",
+   "leiter": "erleben.sinn.staunen",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose ein Augenblick aus Gesetzen, Ego — dieselbe Art Augenblick wie im Vergleichstitel (Vorbild dieselbe Art Augenblick in den Vergleichstiteln (Paarvergleich)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#1",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#2",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#3",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#4",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#5",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#6",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#1",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#2",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#3",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#4",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#5",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#6",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#1",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#2",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#3",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#4",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#5",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#6",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#1",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#2",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#3",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#4",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Ozeanboden über einem mittelozeanischen Rücken, Draufsicht der Magnetisierung (kein Messort der Sitzung) (Vorbild Vine & Matthews 1963, Magnetstreifen am Carlsberg-/Reykjanes-Rücken) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#5",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#6",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#1",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#2",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#3",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#4",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#5",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#6",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#1",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#2",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#3",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#4",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#5",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#6",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#1",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#2",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#3",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#4",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#5",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#6",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#1",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#2",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#3",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#4",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#5",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#6",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#7",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#8",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.ferne#9",
+   "leiter": "erleben.bild.ferne",
+   "sprosse": 9,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#1",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#2",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#3",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#4",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#5",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#6",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#7",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.nacht#8",
+   "leiter": "erleben.bild.nacht",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#2",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf third · Uhr 0,35 · Wetter rainy (Nässe der Bühne) (Vorbild Foto eines Dorfplatzes bei Regen im Vormittags-Streiflicht: Glanz auf nassem Pflaster und Holz) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#3",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#4",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#5",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#6",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#7",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.flaeche#8",
+   "leiter": "erleben.bild.flaeche",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#1",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#2",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#3",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#4",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#5",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#6",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.himmel#7",
+   "leiter": "erleben.bild.himmel",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#2",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#3",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#4",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego · Uhr 0,30 · Blick waagrecht in die Sonne (Höhe ≈ 18°) (Vorbild Foto Gegenlicht über einer Wiese mit der Sonne ≈ 18° hoch im Bildfeld (Blendung, Streulicht, Hof)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#5",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.auge#6",
+   "leiter": "erleben.bild.auge",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#1",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#2",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#3",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#4",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#5",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#6",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.bild.kamera#7",
+   "leiter": "erleben.bild.kamera",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#1",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#2",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#3",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#4",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#5",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#6",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#7",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#1",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#2",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#3",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#4",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#5",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#6",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#7",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#2",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#3",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#4",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#5",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#6",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#7",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#8",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#1",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#2",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#3",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#4",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#5",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#1",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego (Mittag, Sonne, Sommer — die Bühne der Sitzung) (Vorbild Hörer-Blindtest (R11): Stimmung der Szene aus der Musik erkannt, Szene ↔ Musik blind gepaart) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#2",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#3",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#4",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#5",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#6",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#7",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#1",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#2",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#3",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#4",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#5",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#6",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.takt#1",
+   "leiter": "same.preis.takt",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.takt#2",
+   "leiter": "same.preis.takt",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.takt#3",
+   "leiter": "same.preis.takt",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.takt#4",
+   "leiter": "same.preis.takt",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.takt#5",
+   "leiter": "same.preis.takt",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.takt#6",
+   "leiter": "same.preis.takt",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.takt#7",
+   "leiter": "same.preis.takt",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#1",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#2",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#3",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#4",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#5",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#6",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#7",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.gleichheit#8",
+   "leiter": "same.entfaltung.gleichheit",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#2",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose stadt-voll Third, Mittag · Sonne · Sommer (Bühne der Werkbank) (Vorbild Fotos echter Altstädte im Blindtest (≥ 50 % der Häuser plausibel)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#3",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose stadt-voll Third, Mittag (Bühne der Werkbank) (Vorbild Foto einer Großstadt-Kreuzung (Dichte-Histogramm)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#4",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose stadt-voll Third, Nacht und Mittag (Bühne der Werkbank) (Vorbild Skyline-Fotos Hongkong, Manhattan, Shanghai (Blindtest ≥ 40 % Foto)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#5",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Luftbild aus 1 km über der Stadt und auf der Straße (Vorbild Luftbild Tokio (Blindtest ≥ 40 % Foto)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#6",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose aus Fenster, Ebene und 5 km Höhe der Hyperstadt (Vorbild Fotos realer Megastädte im Blindtest (≥ 40 %)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.schirm#7",
+   "leiter": "same.entfaltung.schirm",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#1",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#2",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#3",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#4",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#5",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#6",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#7",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.reise#8",
+   "leiter": "same.entfaltung.reise",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#1",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#2",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#3",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#4",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#5",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#6",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.abwesenheit#7",
+   "leiter": "same.entfaltung.abwesenheit",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#1",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf Ego, Mittag · Sonne · Sommer (Bühne der Werkbank) — einer der 10 Orte (Vorbild Panel: der richtige von 10 Orten aus einem Zufallsbild (≥ 80 %), Gegenlauf Ursache getauscht) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#2",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose dorf Third, Mittag (Bühne der Werkbank) — ein Stadtteil von 10² (Vorbild Panel: der richtige von 10 Zufalls-Orten aus 10² (≥ 80 %), Unterschied in ≥ 3 Domänen benannt) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#3",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 3,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese Ego, Mittag (Bühne der Werkbank) — eine Region von 10 (Vorbild Panel: die Region aus einem Bild (≥ 80 %), Übergangs-Bilder zwischen die Nachbarn) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#4",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose je Welt ein Bodenbild am Spawn (Vorbild Panel: die richtige von 10 Saaten aus einem Zufallsbild (≥ 90 %)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#5",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose je Welt ein Bodenbild am Spawn (Vorbild Panel: die richtige von 10 Zufalls-Welten aus 10² (≥ 90 %)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#6",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 6,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose je Welt ein Bodenbild, die Erd-nahen neben Fotos (Vorbild 2AFC gegen Fotos der Erde und ihrer Epochen (≤ 70 %)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.vielfalt#7",
+   "leiter": "same.entfaltung.vielfalt",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose je Welt ein Bodenbild am Spawn (Vorbild Panel: die richtige von 10 Zufalls-Saaten aus 10⁴ (≥ 95 %), Fremdwelt-Probe) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#1",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#2",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#3",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#4",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#5",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#6",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#7",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.entfaltung.akte#8",
+   "leiter": "same.entfaltung.akte",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#3",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#4",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#5",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#6",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#7",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ankunft#8",
+   "leiter": "same.preis.ankunft",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#2",
+   "leiter": "same.preis.bytes",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#3",
+   "leiter": "same.preis.bytes",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#4",
+   "leiter": "same.preis.bytes",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#5",
+   "leiter": "same.preis.bytes",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#6",
+   "leiter": "same.preis.bytes",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.bytes#7",
+   "leiter": "same.preis.bytes",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#1",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#2",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#3",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#4",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#5",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#6",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.eingabe#7",
+   "leiter": "same.preis.eingabe",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#2",
+   "leiter": "same.preis.zugang",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#3",
+   "leiter": "same.preis.zugang",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#4",
+   "leiter": "same.preis.zugang",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#5",
+   "leiter": "same.preis.zugang",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#6",
+   "leiter": "same.preis.zugang",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.zugang#7",
+   "leiter": "same.preis.zugang",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#2",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#3",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#4",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#5",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.ausdauer#6",
+   "leiter": "same.preis.ausdauer",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#1",
+   "leiter": "same.preis.speicher",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#2",
+   "leiter": "same.preis.speicher",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#3",
+   "leiter": "same.preis.speicher",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#4",
+   "leiter": "same.preis.speicher",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#5",
+   "leiter": "same.preis.speicher",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.same.preis.speicher#6",
+   "leiter": "same.preis.speicher",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#2",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#3",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#4",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#5",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#6",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#7",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.himmelsmechanik#8",
+   "leiter": "planet.kosmos.himmelsmechanik",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#2",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#3",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#4",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#5",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#6",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sternhimmel#7",
+   "leiter": "planet.kosmos.sternhimmel",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#1",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#2",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#3",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#4",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#5",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#6",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.sterne#7",
+   "leiter": "planet.kosmos.sterne",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#1",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#2",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#3",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#4",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#5",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#6",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.systeme#7",
+   "leiter": "planet.kosmos.systeme",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#2",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#3",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#4",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#5",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.welten#6",
+   "leiter": "planet.kosmos.welten",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#1",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#2",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#3",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#4",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#5",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.ereignisse#6",
+   "leiter": "planet.kosmos.ereignisse",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#1",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#2",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#3",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#4",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#5",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#6",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.eigengesetz#7",
+   "leiter": "planet.kosmos.eigengesetz",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#1",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#2",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Boden der Hohlwelt, Blick in den Zenit (Vorbild Rechen-Referenz des Lands gegenüber unter Dreh-Schwere (Flussläufe, Wolkenzug)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#3",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#4",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#5",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.kunstwelten#6",
+   "leiter": "planet.kosmos.kunstwelten",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#1",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#2",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#3",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#4",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#5",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#6",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.planet.kosmos.galaxien#7",
+   "leiter": "planet.kosmos.galaxien",
+   "sprosse": 7,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Halt +5 Ga, Blick zur Nachbargalaxie (Vorbild Rechen-Referenz der Verschmelzung Milchstraße–Andromeda) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  }
+ ]
+}
