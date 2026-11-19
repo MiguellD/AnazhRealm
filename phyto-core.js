@@ -332,7 +332,8 @@
                         len:
                             P.conifer && depth === 0
                                 ? kegelAst(clamp(tip[1] / P.height, 0, 1), bend)
-                                : length * (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical) * seitenast),
+                                : length *
+                                  (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical) * seitenast),
                         lead: false,
                     });
                 }
@@ -406,11 +407,25 @@
             ? 0
             : frei
               ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz, 0, P.alter > 0)
-              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand || P.conifer ? BESTAND.krone : 0, P.alter > 0);
+              : schaftHub(
+                    segs,
+                    leaves,
+                    runMeta,
+                    P.hoeheM / P.weltSkala,
+                    0,
+                    bestand || P.conifer ? BESTAND.krone : 0,
+                    P.alter > 0
+                );
         // (die Konifere im Bestand trägt ihre Krone über BESTAND.krone der Höhe wie der Laubbaum — der Kronen-Ansatz folgt dem
         // Stand: frei bei FREISTAND.ansatz, im Bestand höher; laub-kante)
         if (P.conifer)
-            koniferenKegel(segs, leaves, runMeta, P.kroneAnteil * (frei ? KONIFERE_KEGEL.frei : 1), P.whorlSpacing * P.height);
+            koniferenKegel(
+                segs,
+                leaves,
+                runMeta,
+                P.kroneAnteil * (frei ? KONIFERE_KEGEL.frei : 1),
+                P.whorlSpacing * P.height
+            );
         // DER STAMM AUS DER KRONE: der Radius des Stamms aus dem Schirm, den die Krone nach Wuchs und Hub spannt (vor dem
         // Blatt-Budget: jede Stufe misst dieselben Anker), jeder Strang reist mit seinem Anteil.
         // (die Anker über der Kappe wuchsen ohne den Hub: lotrecht ändert er den Schirm nicht, die Jugend wächst um den Fuß —
@@ -479,7 +494,8 @@
     // (UNGEPRÜFT, die Tafel kennt nur den Bestand).
     const KONIFERE_KEGEL = Object.freeze({ frei: 1.4, streck: 2.5 });
     function koniferenKegel(segs, leaves, runMeta, anteil, trieb) {
-        if (!(anteil > 0)) throw new Error("[phyto] der Kegel der Konifere: die Krone ihrer Art fehlt (kroneAnteil, KERN-PFLICHT)");
+        if (!(anteil > 0))
+            throw new Error("[phyto] der Kegel der Konifere: die Krone ihrer Art fehlt (kroneAnteil, KERN-PFLICHT)");
         let H = 0;
         for (const l of leaves) H = Math.max(H, l.pos[1]);
         if (!(H > 0)) return;
@@ -544,7 +560,7 @@
                 hi = 1;
             if (haelt(1)) {
                 if (haelt(KONIFERE_KEGEL.streck)) lo = hi = KONIFERE_KEGEL.streck;
-                else (lo = 1), (hi = KONIFERE_KEGEL.streck);
+                else ((lo = 1), (hi = KONIFERE_KEGEL.streck));
             }
             for (let i = 0; i < 12; i++) {
                 const m = (lo + hi) / 2;
@@ -2562,7 +2578,9 @@
     function konifereKroneAnteil(ph) {
         const r = ph.krone && FOREST_PACK.crown[ph.krone];
         if (!(r > 0) || !(ph.hoeheM > 0))
-            throw new Error(`[phyto] die Konifere trägt keine Zeile der Kronen-Tafel (ph.krone ${ph.krone}, hoeheM ${ph.hoeheM})`);
+            throw new Error(
+                `[phyto] die Konifere trägt keine Zeile der Kronen-Tafel (ph.krone ${ph.krone}, hoeheM ${ph.hoeheM})`
+            );
         return r / ph.hoeheM;
     }
     function treeParams(dials, seedInt, stufe, art, weltSkala, alter, gestalten) {
@@ -3339,7 +3357,14 @@
         // bis zur Weide rodet — darunter voll gerodet, darüber Wald. 0,36 die Pflug-Grenze (die Hang-Stufe 35 % der Schweizer
         // Direktzahlungsverordnung DZV Art. 43, ab der Ackerbau mit dem Gespann endet; GEWÄHLT innerhalb 0,27–0,36), 0,58 die
         // Weide-Grenze (~30°, GEWÄHLT; die Steillagen-Stufe 50 % der DZV mäht noch, über 30° beweidet nur noch Kleinvieh).
-        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.1, saum: 40, rodung: [0.36, 0.58] },
+        bestand: {
+            lichtung: [-0.1, 0.15],
+            schluss: [0.15, 0.6],
+            min: 0.6,
+            waldgrenze: 0.1,
+            saum: 40,
+            rodung: [0.36, 0.58],
+        },
     };
     function forestLichtung(st) {
         const B = FOREST_PACK.bestand;
@@ -3582,7 +3607,9 @@
         f = { x0, z0, x1, z1, tMax: 0, sMax: 0, fach };
         for (const e of fach) {
             // das Fach in der Reihe des Vorrangs (der Beste zuerst), gepackt: je Dart x, z, T, Schluss, Vorrang und sein Platz
-            const o = e.i.map((_, k) => k).sort((p, q) => (forestPrioWins(e.d[p], e.d[q]) ? -1 : forestPrioWins(e.d[q], e.d[p]) ? 1 : 0));
+            const o = e.i
+                .map((_, k) => k)
+                .sort((p, q) => (forestPrioWins(e.d[p], e.d[q]) ? -1 : forestPrioWins(e.d[q], e.d[p]) ? 1 : 0));
             e.d = o.map((k) => e.d[k]);
             e.i = Int32Array.from(o, (k) => e.i[k]);
             e.w = new Float64Array(o.length * 5);
@@ -3705,7 +3732,10 @@
                     const ex = dx - o.x;
                     const ez = dz - o.z;
                     schirm =
-                        o !== d && ex * ex + ez * ez < o.T * o.T && !o.gelichtet && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
+                        o !== d &&
+                        ex * ex + ez * ez < o.T * o.T &&
+                        !o.gelichtet &&
+                        forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
                 }
             }
         }
