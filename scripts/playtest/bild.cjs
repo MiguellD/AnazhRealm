@@ -1713,15 +1713,21 @@ async function checkBandLookPhysik({ page, check }) {
     );
 }
 
-// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag: kein Planet aus Math.random am Mittagshimmel; die
-// Wandelsterne sind die hellsten PUNKTE des Sternfelds,
-// die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
-// `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
-// blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
-// Unendlich-Knoten. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
+// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag: kein Planet aus Math.random am Mittagshimmel; die Planeten sind PUNKTE des
+// Sternfelds, die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen
+// wie der Stern-Knoten (`aMag` · `grenze`) und urteilt gegen die Kosmos-Funktion der Saat des Planeten (welt-licht.js `kosmos`,
+// selbst gerechnet, nie aus dem Stand des Stamms) und die Grenze des Gesetzes (welt-licht.js `tagAchse`): 1 KÖRPER nur Sonne und
+// Mond · 2 MITTAG die Grenze des Gesetzes, kein Fixstern, sichtbar genau die Punkte, die die Funktion heller zeigt · 3 DÄMMERUNG
+// genau die Punkte der Funktion, unter 5 % · 4 NACHT genau die Punkte der Funktion, mindestens 90 % (ein Veränderlicher im
+// Minimum fällt unter die Grenze) · 5 MOND Tag blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH
+// Kuppel, Sterne, Sonne, Mond tragen den EINEN Unendlich-Knoten · 8 KOSMOS jeder Punkt IST ein Stern der Funktion (Richtung vom
+// Heim-Stern, Größe am Tag des Felds) oder ein Planet des Heim-Systems auf seiner Bahn, die Zahl ist die der Funktion, die Saat
+// die des Planeten (`_planetSamen`). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, eine Sonne ohne Knoten und
+// der alte Würfel-Himmel (2 800 gleichverteilte Punkte bis kosmos-umfang) werden rot — der Würfel beim Punkt und seinem Stern.
 async function checkBandHimmelTag({ page, check }) {
     const probe = (stoerung) => {
         const T = window.THREE;
+        const W = window.__weltLicht;
         let kugel = null;
         if (stoerung === "kugel") {
             kugel = new T.Mesh(new T.SphereGeometry(20, 8, 8), new T.MeshBasicMaterial({ color: 0xff66cc }));
@@ -1735,6 +1741,25 @@ async function checkBandHimmelTag({ page, check }) {
             };
         }
         if (stoerung === "doppel" && st.starField) st.starField.material.forceSinglePass = false;
+        if (stoerung === "wuerfel" && st.starField) {
+            // der Himmel bis kosmos-umfang: Mulberry32 aus worldMeta.seed, gleichverteilt auf der Kuppel von 480 m
+            let s = 0;
+            for (const c of String(st.worldMeta && st.worldMeta.seed)) s = (s * 31 + c.charCodeAt(0)) >>> 0;
+            const rng = () => {
+                s = (s + 0x6d2b79f5) >>> 0;
+                let t = s;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+            const M = new T.Matrix4();
+            for (let i = 0; i < st.starField.count; i++) {
+                const th = 2 * Math.PI * rng(),
+                    ph = Math.acos(2 * rng() - 1);
+                M.makeTranslation(480 * Math.sin(ph) * Math.cos(th), 480 * Math.cos(ph), 480 * Math.sin(ph) * Math.sin(th));
+                st.starField.setMatrixAt(i, M);
+            }
+        }
         const sonneVN = st.sunMesh.material.vertexNode;
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
         const zeit = (t) => {
@@ -1747,16 +1772,68 @@ async function checkBandHimmelTag({ page, check }) {
         const sf = st.starField;
         const mags = sf ? sf.geometry.getAttribute("aMag") : null;
         const U = st.starFieldUniforms;
+        // DIE FUNKTION, selbst gerechnet: die Saat des Planeten, das Jahr seines Ort-Gesetzes, der Tag der Welt in der Stufe des Felds
+        // → je Punkt (Sterne nach Index, dann die Planeten) Richtung und Größe
+        const soll = () => {
+            const wm = st.worldMeta;
+            const K = W.kosmos(r._planetSamen(), { jahrTage: r._gelaende().ort.klimaHeute.jahrTage });
+            const H = W.kosmosHimmel(K);
+            const sch = AnazhRealm.HIMMEL.kosmosSchrittTage;
+            const Z = W.kosmosZeit(K, Math.floor(((wm ? wm.tag || 0 : 0) + st.timeOfDay) / sch) * sch);
+            const m = Array.from(H.mag);
+            H.wechsel.forEach(([n], q) => (m[n] = Z.wechselMag[q]));
+            for (const p of Z.planeten) m.push(p.mag);
+            return { K, H, Z, m };
+        };
+        const sicht = (g, m) => Math.max(0, Math.min(1, g - m + 0.5)) > 0.001;
         const sichtbar = () => {
-            let n = 0;
-            let venus = false;
+            const S = soll();
             const g = U.grenze.value;
-            for (let i = 0; i < mags.count; i++) {
-                const v = Math.max(0, Math.min(1, g - mags.getX(i) + 0.5));
-                if (v > 0.001) n++;
-                if (i === mags.count - AnazhRealm.HIMMEL.wandelsterne.length && v > 0.5) venus = true;
+            const gesetz = W.tagAchse(r._dayNightSunDirection(r._sonnenWinkel(st.timeOfDay)).y).grenze;
+            let n = 0,
+                fix = 0,
+                sollN = 0;
+            for (let i = 0; i < mags.count; i++)
+                if (sicht(g, mags.getX(i))) {
+                    n++;
+                    if (i < S.H.n) fix++;
+                }
+            for (const m of S.m) if (sicht(gesetz, Math.fround(m))) sollN++;
+            return { n, fix, soll: sollN, grenze: +g.toFixed(2), gesetz: +gesetz.toFixed(2) };
+        };
+        // 8 KOSMOS: jeder Punkt des Felds gegen den Punkt der Funktion (Richtung im Rahmen des Felds, Größe am Tag des Felds)
+        const kosmos = () => {
+            const S = soll();
+            const fehl = [];
+            const saat = r._planetSamen();
+            const k = sf.userData.kosmos;
+            if (!k || k.saat !== saat) fehl.push(`das Feld zeigt die Saat ${k ? k.saat : "—"}, der Planet trägt ${saat}`);
+            const N = S.H.n + S.Z.planeten.length;
+            if (mags.count !== N) fehl.push(`${mags.count} Punkte, die Funktion trägt ${N}`);
+            const M = new T.Matrix4(),
+                p = new T.Vector3();
+            let arg = null,
+                falsch = 0;
+            for (let i = 0; i < Math.min(N, mags.count); i++) {
+                sf.getMatrixAt(i, M);
+                p.setFromMatrixPosition(M).normalize();
+                const d = i < S.H.n ? [S.H.richtung[3 * i], S.H.richtung[3 * i + 1], S.H.richtung[3 * i + 2]] : S.Z.planeten[i - S.H.n].richtung;
+                // der Winkel aus Kreuz und Punkt (atan2): acos nahe 1 trägt den Rundungsfehler der Float32-Richtung als 0,02°
+                const cx = p.y * d[2] - p.z * d[1],
+                    cy = p.z * d[0] - p.x * d[2],
+                    cz = p.x * d[1] - p.y * d[0];
+                const w = (Math.atan2(Math.hypot(cx, cy, cz), p.x * d[0] + p.y * d[1] + p.z * d[2]) * 180) / Math.PI;
+                const dm = Math.abs(mags.getX(i) - Math.fround(S.m[i]));
+                if (w > 0.01 || dm > 1e-4) {
+                    falsch++;
+                    if (!arg || w > arg.w) arg = { i, w, dm };
+                }
             }
-            return { n, venus, grenze: +g.toFixed(2) };
+            if (arg)
+                fehl.push(
+                    `${falsch} Punkte neben der Funktion, am weitesten Punkt ${arg.i} (${arg.i < S.H.n ? "Stern " + S.H.index[arg.i] : "Planet " + (arg.i - S.H.n)}) ${arg.w.toFixed(2)}° neben seinem Ort, Größe ±${arg.dm.toFixed(3)}`
+                );
+            return fehl;
         };
         const out = { punkte: mags ? mags.count : 0, fremdeKoerper: 0 };
         st.scene.traverse(
@@ -1770,6 +1847,7 @@ async function checkBandHimmelTag({ page, check }) {
         out.daemmerung = sichtbar();
         zeit(0);
         out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
+        out.kosmos = sf ? kosmos() : ["kein Feld"];
         out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
         out.einDurchgang = !!(sf?.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
@@ -1787,6 +1865,7 @@ async function checkBandHimmelTag({ page, check }) {
         if (kugel) st.scene.remove(kugel);
         if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
         if (stoerung === "grenze") delete r._tagAchse;
+        if (stoerung === "wuerfel") r._buildStarField(); // geheilt: das Feld der Funktion neu
         zeit(zeitWar);
         return out;
     };
@@ -1795,36 +1874,43 @@ async function checkBandHimmelTag({ page, check }) {
         if (!S) return ["keine Antwort der Seite"];
         if (S.fremdeKoerper > 0) rot.push(`1 KÖRPER: ${S.fremdeKoerper} Kugel(n) ohne Gesetz`);
         if (!(S.punkte > 1000)) rot.push(`Sternfeld fehlt (${S.punkte} Punkte)`);
-        if (S.mittag.n !== 0) rot.push(`2 MITTAG: ${S.mittag.n} Punkte sichtbar (Grenze ${S.mittag.grenze})`);
-        if (!(S.daemmerung.venus && S.daemmerung.n < S.punkte * 0.05))
-            rot.push(`3 DÄMMERUNG: Abendstern ${S.daemmerung.venus ? "da" : "fehlt"}, ${S.daemmerung.n} Punkte`);
-        if (!(S.nacht.n === S.punkte)) rot.push(`4 NACHT: nur ${S.nacht.n}/${S.punkte} Punkte`);
+        if (S.mittag.n !== S.mittag.soll || S.mittag.fix !== 0 || S.mittag.grenze !== S.mittag.gesetz)
+            rot.push(
+                `2 MITTAG: ${S.mittag.n} Punkte sichtbar (${S.mittag.fix} Fixsterne), die Funktion zeigt ${S.mittag.soll} (Grenze ${S.mittag.grenze}, Gesetz ${S.mittag.gesetz})`
+            );
+        if (!(S.daemmerung.n === S.daemmerung.soll && S.daemmerung.n < S.punkte * 0.05))
+            rot.push(`3 DÄMMERUNG: ${S.daemmerung.n} Punkte, die Funktion zeigt ${S.daemmerung.soll} (Grenze ${S.daemmerung.grenze})`);
+        if (!(S.nacht.n === S.nacht.soll && S.nacht.n >= S.punkte * 0.9))
+            rot.push(`4 NACHT: ${S.nacht.n}/${S.punkte} Punkte, die Funktion zeigt ${S.nacht.soll}`);
         if (!(S.mondTag < 0.5 && S.mondNacht > 0.85)) rot.push(`5 MOND: Tag ${S.mondTag} · Nacht ${S.mondNacht}`);
         if (S.mittag.n === 0 && S.mittag.zeichnet)
             rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld ohne sichtbaren Punkt");
+        if (S.mittag.n > 0 && !S.mittag.zeichnet) rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld seine sichtbaren Punkte nicht");
         if (S.nacht.n > 0 && !S.nacht.zeichnet) rot.push("6 ZEICHNEN: nachts zeichnet das Sternfeld nicht");
         if (!S.einDurchgang) rot.push("6 ZEICHNEN: das Sternfeld zeichnet in zwei Durchgängen");
         if (S.vorn.length) rot.push(`7 UNENDLICH: ${S.vorn.join(" · ")} ohne den Unendlich-Knoten`);
+        if (S.kosmos.length) rot.push(`8 KOSMOS: ${S.kosmos.join(" · ")}`);
         return rot;
     };
     const rot = urteil(await safeEvaluate(page, probe, null));
     check(
-        "Himmel-Tag: mittags kein Punkt, in der Dämmerung der Abendstern, nachts alle Sterne, der Mond blass/deckend, jeder Himmelskörper im Unendlichen",
+        "Himmel-Tag: sichtbar genau, was die Kosmos-Funktion der Saat heller als die Grenze des Gesetzes zeigt (mittags kein Fixstern, in der Dämmerung die hellen Planeten, nachts das Feld), jeder Punkt ein Stern oder Planet der Funktion, der Mond blass/deckend, jeder Himmelskörper im Unendlichen",
         rot.length === 0,
         rot.join(" · ")
     );
     const s = {};
-    for (const k of ["kugel", "grenze", "doppel", "vorne", null]) s[k] = urteil(await safeEvaluate(page, probe, k));
+    for (const k of ["kugel", "grenze", "doppel", "vorne", "wuerfel", null]) s[k] = urteil(await safeEvaluate(page, probe, k));
     const selbst = [
         s.kugel.some((e) => e.startsWith("1 KÖRPER")) || "Himmelskugel blieb grün",
         s.grenze.some((e) => e.startsWith("2 MITTAG")) || "Mittags-Grenze −3 blieb grün",
         s.doppel.some((e) => e.startsWith("6 ZEICHNEN")) || "zwei Durchgänge blieben grün",
         s.vorne.some((e) => e.startsWith("7 UNENDLICH") && e.includes("himmel-sonne")) ||
             "Sonne vor der Welt blieb grün",
+        s.wuerfel.some((e) => e.startsWith("8 KOSMOS") && e.includes("Stern ")) || "der Würfel-Himmel blieb grün",
         s.null.length === 0 || "nach der Heilung nicht grün",
     ].filter((x) => x !== true);
     check(
-        "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten werden rot",
+        "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten und der Würfel-Himmel werden rot",
         selbst.length === 0,
         selbst.join(" · ")
     );

@@ -302,79 +302,93 @@ class AnazhRealm_bild_himmel {
         }
     }
 
+    // DER HIMMEL IST DIE SICHT DER EINEN KOSMOS-FUNKTION (kosmos-umfang, welt-licht.js `kosmos`): die Saat des Planeten
+    // (`_planetSamen`, dieselbe, die sein Gelände trägt) und das Jahr seines Ort-Gesetzes → die Heim-Galaxie, der Heim-Stern, sein
+    // System. Jeder Punkt des Felds IST ein Stern der Funktion — Richtung vom Heim-Stern in der Ekliptik, Größe aus absoluter
+    // Größe, Entfernung und Staub, Ton aus seiner Temperatur —, und die Wandelsterne SIND die Planeten des Heim-Systems auf ihren
+    // Bahnen am Tag der Welt (`worldMeta.tag` + Uhr, in Stufen von `HIMMEL.kosmosSchrittTage`), samt dem Lichtwechsel der
+    // veränderlichen Sterne. Der Stand lebt EINMAL je Saat (`_kosmosStand`): Feld und Sichtbarkeit lesen ihn; ein neuer Samen (ein
+    // Welt-Wechsel) baut das Feld des neuen Himmels. Bis kosmos-umfang würfelte das Feld 2 800 Punkte gleichverteilt auf die
+    // Kuppel (Mulberry32 aus worldMeta.seed, Größen aus `sternZaehlung`) und drei feste Wandelsterne (−4,2 · −2,3 · −1,0) — kein
+    // Punkt hatte einen Stern, kein Wandelstern eine Bahn, keine Galaxie eine Ebene; nach einem Welt-Wechsel blieb der alte Himmel.
+    _kosmosJetzt() {
+        const st = this.state,
+            wm = st.worldMeta;
+        let k = this._kosmosStand;
+        if (!k || k.wm !== wm || (wm && (k.seed !== wm.seed || k.gesetz !== wm.gesetz))) {
+            const saat = this._planetSamen();
+            const jahrTage = this._gelaende().ort.klimaHeute.jahrTage;
+            if (!k || k.saat !== saat || k.jahrTage !== jahrTage) {
+                const K = __weltLicht.kosmos(saat, { jahrTage });
+                k = this._kosmosStand = { saat, jahrTage, K, H: __weltLicht.kosmosHimmel(K), t: NaN, zeit: null };
+            }
+            k.wm = wm;
+            k.seed = wm ? wm.seed : undefined;
+            k.gesetz = wm ? wm.gesetz : undefined;
+        }
+        const t = (wm ? wm.tag || 0 : 0) + (typeof st.timeOfDay === "number" ? st.timeOfDay : 0.5);
+        const schritt = AnazhRealm.HIMMEL.kosmosSchrittTage;
+        const ts = Math.floor(t / schritt) * schritt;
+        if (ts !== k.t) {
+            k.t = ts;
+            k.zeit = __weltLicht.kosmosZeit(k.K, ts);
+        }
+        return k;
+    }
+
     // Sterne als diskrete Billboards statt Shader-Noise: Noise hat keinen Pixel-Footprint und aliast bei
-    // Kamera-Rotation (Blinken); diskrete Quads rastert die GPU mit echtem Anti-Aliasing.
-    // ~2800 Sterne deterministisch aus worldMeta.seed; Größe + Hue je Stern (O/B bläulich ↔ K/M gelblich);
-    // Sidereal-Rotation mit timeOfDay um eine geneigte Achse, Position folgt der Kamera; AdditiveBlending.
+    // Kamera-Rotation (Blinken); diskrete Quads rastert die GPU mit echtem Anti-Aliasing. Die Punkte und ihre Folge: die Sterne
+    // des Himmels (`kosmosHimmel`, nach Index), danach die Planeten des Heim-Systems. Sidereal-Rotation mit timeOfDay um eine
+    // geneigte Achse, Position folgt der Kamera; AdditiveBlending.
     // DIE SICHTBARKEIT IST PHYSIK (V18.530): jeder Punkt trägt seine scheinbare Helligkeit als Größenklasse
-    // (`aMag`), die Dämmerung setzt die Grenzgröße (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`) — mittags ist NICHTS sichtbar,
-    // in der Dämmerung erscheint zuerst der Abendstern, dann die hellen Sterne, in tiefer Nacht alle.
-    // DIE WANDELSTERNE (`HIMMEL.wandelsterne`) sind die hellsten Punkte desselben Feldes — keine Kugeln.
+    // (`aMag`), die Dämmerung setzt die Grenzgröße (der Kanal `grenze` der EINEN Tag-Achse, `_tagAchse`) — am Tag sieht man nur,
+    // was heller als die Grenze des Tages steht, in der Dämmerung erscheinen die hellen Planeten, dann die hellen Sterne, in
+    // tiefer Nacht alle. Die Planeten sind PUNKTE des Felds — keine Kugeln.
     // Befund 04.10. (Blick-Tour 7-birke): drei Math.random-Kugeln (10–30 m auf 400 m = 3–8° — 6–16 Monde
     // breit, Zufallsfarbe, unbeleuchtet) standen am Mittagshimmel; die pinke war die sichtbare.
     _buildStarField() {
         if (!this.state.scene || typeof THREE === "undefined") return;
-        const WANDEL = AnazhRealm.HIMMEL.wandelsterne;
-        const FIX_COUNT = 2800;
-        const STAR_COUNT = FIX_COUNT + WANDEL.length;
-        const RADIUS = 480; // knapp innerhalb der Skybox-Sphere (500)
-        // Deterministischer RNG aus dem Welt-Seed — alle Mitspieler sehen
-        // denselben Himmel (Vision: eine Welt, ein Sternbild).
-        const seedStr = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        let seedNum = 0;
-        for (let i = 0; i < seedStr.length; i++) {
-            seedNum = (seedNum * 31 + seedStr.charCodeAt(i)) >>> 0;
+        // ein Neubau (ein neuer Himmel nach dem Welt-Wechsel) ERSETZT das Feld: das alte verlässt Szene und GPU
+        const alt = this.state.starField;
+        if (alt) {
+            if (alt.parent) alt.parent.remove(alt);
+            this._instanzAbschied(alt);
+            alt.geometry.dispose();
+            alt.material.dispose();
+            this.state.starField = null;
+            this.state.starFieldUniforms = null;
         }
-        const rng = () => {
-            // Mulberry32 — deterministisch, schnell, gute Verteilung
-            seedNum = (seedNum + 0x6d2b79f5) >>> 0;
-            let t = seedNum;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        const k = this._kosmosJetzt();
+        const H = k.H,
+            Z = k.zeit;
+        const NP = Z.planeten.length;
+        const STAR_COUNT = H.n + NP;
+        const RADIUS = 480; // knapp innerhalb der Skybox-Sphere (500)
         const positions = new Float32Array(STAR_COUNT * 3);
         const colors = new Float32Array(STAR_COUNT * 3);
         const sizes = new Float32Array(STAR_COUNT);
         const mags = new Float32Array(STAR_COUNT);
-        const warm = new THREE.Color(1.0, 0.92, 0.75); // K/M-Sterne (gelblich)
-        const cool = new THREE.Color(0.78, 0.86, 1.0); // O/B-Sterne (bläulich)
         const tmpCol = new THREE.Color();
-        for (let i = 0; i < STAR_COUNT; i++) {
-            const w = i >= FIX_COUNT ? WANDEL[i - FIX_COUNT] : null;
-            // Gleichmaessige Verteilung auf der Kugel (kein Pol-Cluster)
-            const u = rng();
-            const v = rng();
-            const theta = 2 * Math.PI * u;
-            const phi = Math.acos(2 * v - 1);
-            positions[i * 3] = RADIUS * Math.sin(phi) * Math.cos(theta);
-            positions[i * 3 + 1] = RADIUS * Math.cos(phi);
-            positions[i * 3 + 2] = RADIUS * Math.sin(phi) * Math.sin(theta);
-            // Hue: mix warm/cool. Helligkeit korreliert leicht mit Groesse.
-            const hue = rng();
-            tmpCol.copy(cool).lerp(warm, hue);
-            // Mindestgröße 3 px: kleinere Punkte flackern beim langsamen Drehen (Sub-Pixel an/aus).
-            // Kleine Sterne werden DIMMER statt kleiner — die Helligkeit trägt die Variation.
-            const sizeRoll = rng();
-            const size = 3.0 + Math.pow(sizeRoll, 2) * 3.5; // 3..6.5 px, AA-sicher
-            sizes[i] = size;
-            // DIE STERNZÄHLUNG (w28-sternhimmel): die Größenklasse aus demselben Wurf nach dem Gesetz des Himmels — die Zahl der
-            // Sterne heller als m wächst wie 10^(sternZaehlung · m), geankert an den FIX_COUNT Sternen bis sternMagSchwach. Der
-            // alte Wurf (6 − 7·roll³) trug 141 Sterne heller als 0 (der Himmel 4): in der Dämmerung stand ein Nachthimmel.
-            // Die Farbe trägt nur den Ton; die Helligkeit folgt im Stoff aus Größenklasse gegen Grenzgröße (`sichtbar`).
-            colors[i * 3] = tmpCol.r;
-            colors[i * 3 + 1] = tmpCol.g;
-            colors[i * 3 + 2] = tmpCol.b;
-            mags[i] = AnazhRealm._sternMag(1 - sizeRoll, FIX_COUNT);
-            if (w) {
-                // Ein Wandelstern: dieselbe Kugel-Verteilung, eigene Farbe, eigene Helligkeit, ein Hauch größer.
-                sizes[i] = w.groesse;
-                colors[i * 3] = w.farbe[0];
-                colors[i * 3 + 1] = w.farbe[1];
-                colors[i * 3 + 2] = w.farbe[2];
-                mags[i] = w.mag;
+        for (let i = 0; i < H.n; i++) {
+            for (let c = 0; c < 3; c++) {
+                positions[i * 3 + c] = RADIUS * H.richtung[i * 3 + c];
+                colors[i * 3 + c] = H.ton[i * 3 + c];
             }
+            mags[i] = H.mag[i];
         }
+        // die Veränderlichen am Tag des Felds, die Planeten auf ihren Bahnen
+        H.wechsel.forEach(([n], q) => (mags[n] = Z.wechselMag[q]));
+        Z.planeten.forEach((p, q) => {
+            const i = H.n + q;
+            for (let c = 0; c < 3; c++) {
+                positions[i * 3 + c] = RADIUS * p.richtung[c];
+                colors[i * 3 + c] = p.ton[c];
+            }
+            mags[i] = p.mag;
+        });
+        // Mindestgröße 3 px: kleinere Punkte flackern beim langsamen Drehen (Sub-Pixel an/aus) — die Größe folgt der Größenklasse
+        // (`_sternPixel`), die Helligkeit trägt der Stoff aus Größenklasse gegen Grenzgröße (`sichtbar`)
+        for (let i = 0; i < STAR_COUNT; i++) sizes[i] = AnazhRealm._sternPixel(i < H.n ? H.mag[i] : mags[i]);
         // Jeder Stern ist ein 4-Vertex-Quad in einer InstancedMesh: die Quad-uv ist per TSL
         // `attribute("uv", "vec2")` WGSL-konform lesbar → Soft-Falloff smoothstep(0.5..0.08).
         // Quad-Normal zeigt zum Sphären-Zentrum (die Kamera — starField.position folgt ihr).
@@ -426,8 +440,8 @@ class AnazhRealm_bild_himmel {
         starMat.forceSinglePass = true;
         AnazhRealm._himmelImUnendlichen(starMat);
 
-        // Der hellste Punkt des Himmels ist Gesetz (`STERN_HELLSTE`): liegt die Grenzgröße mehr als ½ Klasse darüber, ist kein
-        // Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
+        // Der hellste Punkt des Himmels am Tag des Felds (`kosmosZeit(…).hellste`): liegt die Grenzgröße mehr als ½ Klasse darüber,
+        // ist kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
         this.state.starFieldUniforms = {
             opacity: uOpacity,
             grenze: uGrenze,
@@ -435,25 +449,25 @@ class AnazhRealm_bild_himmel {
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
         starField.name = "himmel-sterne";
-        // Per-Instance-Matrix: Translation auf die Sphäre + Rotation (Normal zum Zentrum) + Scale
-        // (worldSize). Einmal beim Build; die siderale Rotation läuft über starField.rotation.
-        const tmpPos = new THREE.Vector3();
-        const tmpQuat = new THREE.Quaternion();
-        const tmpScale = new THREE.Vector3();
-        const tmpMatrix = new THREE.Matrix4();
-        const fromVec = new THREE.Vector3(0, 0, 1);
-        const toVec = new THREE.Vector3();
+        // Per-Instance-Matrix (`_sternMatrix`): Translation auf die Sphäre + Rotation (Normal zum Zentrum) + Scale (worldSize ≈
+        // Pixel, siehe oben). Die Sterne einmal beim Build, die Planeten je Stufe des Tags; die siderale Rotation läuft über
+        // starField.rotation.
         for (let i = 0; i < STAR_COUNT; i++) {
-            tmpPos.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
-            toVec.copy(tmpPos).negate().normalize();
-            tmpQuat.setFromUnitVectors(fromVec, toVec);
-            const worldSize = sizes[i] * 1.0; // siehe Berechnung im Kommentar oben
-            tmpScale.set(worldSize, worldSize, 1);
-            tmpMatrix.compose(tmpPos, tmpQuat, tmpScale);
-            starField.setMatrixAt(i, tmpMatrix);
+            AnazhRealm._sternMatrix(
+                starField,
+                i,
+                positions[i * 3],
+                positions[i * 3 + 1],
+                positions[i * 3 + 2],
+                sizes[i]
+            );
             tmpCol.setRGB(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
             starField.setColorAt(i, tmpCol);
         }
+        // der Stand, den das Feld zeigt: die Saat seines Himmels und die Stufe des Tags (`_kosmosFeldZeit` folgt ihr)
+        starField.userData.kosmos = k;
+        starField.userData.t = k.t;
+        starField.userData.radius = RADIUS;
         starField.instanceMatrix.needsUpdate = true;
         if (starField.instanceColor) starField.instanceColor.needsUpdate = true;
         // instanceColor auch auf die Geometry binden: setColorAt setzt nur `mesh.instanceColor`, aber TSL
@@ -470,8 +484,38 @@ class AnazhRealm_bild_himmel {
         this.state.scene.add(starField);
         this.state.starField = starField;
         this.log(
-            `Stern-Feld erstellt — ${STAR_COUNT} InstancedMesh-Billboards (V10.0-i.a, WGSL-konformer Soft-Falloff)`
+            `Stern-Feld erstellt — ${H.n} Sterne der Kosmos-Funktion (Saat ${k.saat}) + ${NP} Planeten, InstancedMesh-Billboards`
         );
+    }
+
+    // DER TAG DES FELDS: die Stufe des Tags hat sich bewegt (`_kosmosJetzt`) — die Veränderlichen tragen ihre Größe am neuen Tag,
+    // die Planeten ihren Ort und ihre Größe auf der Bahn. Die Sterne stehen (nur ihr Licht wechselt); hochgeladen wird die Größe
+    // aller Punkte (`aMag`, 4 Byte je Punkt) und die Matrizen der Planeten allein.
+    _kosmosFeldZeit(sf, k) {
+        const H = k.H,
+            Z = k.zeit,
+            R = sf.userData.radius;
+        const aMag = sf.geometry.getAttribute("aMag");
+        H.wechsel.forEach(([n], q) => (aMag.array[n] = Z.wechselMag[q]));
+        Z.planeten.forEach((p, q) => {
+            const i = H.n + q;
+            aMag.array[i] = p.mag;
+            AnazhRealm._sternMatrix(
+                sf,
+                i,
+                R * p.richtung[0],
+                R * p.richtung[1],
+                R * p.richtung[2],
+                AnazhRealm._sternPixel(p.mag)
+            );
+        });
+        aMag.needsUpdate = true;
+        if (Z.planeten.length) {
+            sf.instanceMatrix.clearUpdateRanges();
+            sf.instanceMatrix.addUpdateRange(H.n * 16, Z.planeten.length * 16);
+            sf.instanceMatrix.needsUpdate = true;
+        }
+        sf.userData.t = k.t;
     }
 
     // Setzt nur den Meeresspiegel state.waterLevel — DER EINE Schreiber: beim Bau der Szene und nach dem Laden JEDER Welt
@@ -1779,10 +1823,17 @@ class AnazhRealm_bild_himmel {
     // Stern-Feld: die Dämmerung setzt die Grenzgröße (Physik der Sichtbarkeit, nie ein Nacht-Faktor; der Kanal `grenze` der
     // EINEN Tag-Achse), das Wetter dämpft (Wolken); die Uniforms leben in state.starFieldUniforms.
     _dayNightApplyStarField(achse, skyMul) {
-        // Kein Punkt sichtbar (mittags liegt die Grenzgröße über jedem Stern, unter Wolken ist die Deckkraft 0): das Feld
-        // zeichnet nicht — es zog am Tag zwei Befehle für ein schwarzes Bild (Band-Linse, Mess-Wiese, Welle 6) — und sein Bau
-        // wartet, solange das erste Bild keinen zeigt (`_tickBootFernDeko`): die EINE Frage für beide
-        const zeigt = (this._sterneZeigen = skyMul > 0 && achse.grenze - AnazhRealm.STERN_HELLSTE + 0.5 > 0);
+        // Kein Punkt sichtbar (die Grenzgröße liegt über dem hellsten Punkt des Tags — Stern, Veränderlicher oder Planet der
+        // Kosmos-Funktion —, unter Wolken ist die Deckkraft 0): das Feld zeichnet nicht — es zog am Tag zwei Befehle für ein
+        // schwarzes Bild (Band-Linse, Mess-Wiese, Welle 6) — und sein Bau wartet, solange das erste Bild keinen zeigt
+        // (`_tickBootFernDeko`): die EINE Frage für beide
+        const k = this._kosmosJetzt();
+        const zeigt = (this._sterneZeigen = skyMul > 0 && achse.grenze - k.zeit.hellste + 0.5 > 0);
+        // ein neuer Samen (Welt-Wechsel): das Feld zeigt den Himmel der neuen Saat; eine neue Stufe des Tags: Planeten und
+        // Veränderliche ziehen nach
+        if (this.state.starField && this.state.starField.userData.kosmos !== k) this._buildStarField();
+        const sf0 = this.state.starField;
+        if (sf0 && sf0.userData.t !== k.t) this._kosmosFeldZeit(sf0, k);
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
         u.opacity.value = skyMul;
@@ -3321,20 +3372,17 @@ AnazhRealm._schirmDreieck = __weltLicht.schirmDreieck; // der Baustein der Engin
 // DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe
 // in Grad, Grenzgröße des bloßen Auges]: im hellen Tag (≥ 10°) ist nichts zu sehen, nahe dem Horizont gerade die
 // Venus, bei Sonnenuntergang der Abendstern (−3), am Ende der bürgerlichen Dämmerung (−6°) die hellsten Sterne
-// (+1,5), der nautischen (−12°) +4, in astronomischer Nacht (−18°) +6. `sternMagSchwach` = die schwächsten
-// Sterne des Feldes (+6). `wandelsterne` = die hellen Planeten als PUNKTE des Feldes (Venus −4,2 weißgelb,
-// Jupiter −2,3 cremeweiß, Mars −1,0 rötlich; Pixel knapp über dem hellsten Stern). `mondGegenHimmel` =
-// Leuchtdichte des Vollmonds gegen den blauen Tageshimmel (≈ 2500 : 5000 cd/m²) — am Tag ein blasser Schleier.
+// (+1,5), der nautischen (−12°) +4, in astronomischer Nacht (−18°) +6. Die Punkte selbst — Sterne, Veränderliche und die
+// Planeten als PUNKTE des Feldes — sind die Sicht der Kosmos-Funktion (welt-licht.js `kosmos`, `_kosmosJetzt`); ihre Zahl,
+// ihre Größen und ihre Folge trägt keine Tafel hier. `kosmosSchrittTage` = die Stufe des Tags, in der Planeten und
+// Veränderliche nachziehen (eine Viertelstunde: der schnellste Planet wandert darin ≤ 0,02°). `pixel` = die Größe eines Punkts
+// [Pixel an der Feldgrenze, Pixel ab `hellMag` und heller] (`_sternPixel`; unter 3 px flackern Punkte beim Drehen).
+// `mondGegenHimmel` = Leuchtdichte des Vollmonds gegen den blauen Tageshimmel (≈ 2500 : 5000 cd/m²) — am Tag ein blasser Schleier.
 AnazhRealm.HIMMEL = Object.freeze({
     grenzgroesse: __weltLicht.GRENZGROESSE, // die Anker der EINEN Tag-Achse (welt-licht.js `tagAchse`)
-    sternMagSchwach: 6,
-    sternZaehlung: 0.47, // d log10 N(< m) / dm: die Zahl der Sterne heller als m (Sternzählung des bloßen Auges)
     sternKontrast: 0.6, // die Sättigung der Punkt-Helligkeit über dem Fluss an der Schwelle (1 − e^(−k · (Fluss/Schwelle − 1)))
-    wandelsterne: Object.freeze([
-        Object.freeze({ mag: -4.2, farbe: Object.freeze([1.0, 0.97, 0.88]), groesse: 7.5 }),
-        Object.freeze({ mag: -2.3, farbe: Object.freeze([1.0, 0.94, 0.82]), groesse: 7.0 }),
-        Object.freeze({ mag: -1.0, farbe: Object.freeze([1.0, 0.66, 0.46]), groesse: 6.8 }),
-    ]),
+    kosmosSchrittTage: 1 / 96,
+    pixel: Object.freeze({ grenze: 3, hell: 7.5, hellMag: -4.5 }),
     mondGegenHimmel: 0.5,
     // DIE SONNE (Integration 05.10.): der Körper steht `koerperAbstandM` vor der Kamera (Sonne und Mond, vor der Skybox
     // bei 500 m); die Scheibe trägt den echten Winkel `sonneWinkelGrad` (0,53°) und die Leuchtdichte `sonneLeucht` ×
@@ -3343,15 +3391,35 @@ AnazhRealm.HIMMEL = Object.freeze({
     sonneWinkelGrad: 0.53,
     sonneLeucht: 4,
 });
-// DIE GRÖSSENKLASSE EINES STERNS (`_buildStarField`): sein Rang-Anteil a ∈ (0, 1] im Feld von n Sternen → die Klasse, bis zu der
-// der Himmel diesen Anteil trägt (N(< m) ∝ 10^(sternZaehlung · m)), nie heller als −1.
-AnazhRealm._sternMag = (anteil, n) => {
-    const H = AnazhRealm.HIMMEL;
-    return Math.max(-1, H.sternMagSchwach + Math.log10(Math.max(anteil, 0.5 / n)) / H.sternZaehlung);
+// DIE GRÖSSE EINES PUNKTS (`_buildStarField`, `_kosmosFeldZeit`): Pixel aus der Größenklasse m — `pixel.grenze` an der Feldgrenze
+// der Kosmos-Funktion (`KOSMOS.feldGrenze`), quadratisch wachsend bis `pixel.hell` ab `pixel.hellMag`; ein Stern trägt die Größe
+// seines Maximums, ein Planet die seines Tags.
+AnazhRealm._sternPixel = (m) => {
+    const P = AnazhRealm.HIMMEL.pixel,
+        G = __weltLicht.KOSMOS.feldGrenze;
+    const q = Math.max(0, Math.min(1, (G - m) / (G - P.hellMag)));
+    return P.grenze + (P.hell - P.grenze) * q * q;
 };
-// DER HELLSTE PUNKT DES FELDS: die Größenklasse eines Sterns liegt in [−1, sternMagSchwach] (`_sternMag`), ein Wandelstern trägt
-// seine eigene — der kleinste Wert des Gesetzes, nie gezählt am gebauten Feld (der Bau des Felds fragt ihn, bevor es steht).
-AnazhRealm.STERN_HELLSTE = Math.min(-1, ...AnazhRealm.HIMMEL.wandelsterne.map((w) => w.mag));
+// DIE MATRIX EINES PUNKTS: der Punkt (x, y, z) auf der Kuppel des Felds, das Quad zur Mitte gewandt (die Kamera — starField
+// folgt ihr), Kante `pixel` Welt-Einheiten
+AnazhRealm._sternMatrix = (sf, i, x, y, z, pixel) => {
+    const T =
+        AnazhRealm._sternMatrixTmp ||
+        (AnazhRealm._sternMatrixTmp = {
+            pos: new THREE.Vector3(),
+            quat: new THREE.Quaternion(),
+            scale: new THREE.Vector3(),
+            m: new THREE.Matrix4(),
+            von: new THREE.Vector3(0, 0, 1),
+            zu: new THREE.Vector3(),
+        });
+    T.pos.set(x, y, z);
+    T.zu.copy(T.pos).negate().normalize();
+    T.quat.setFromUnitVectors(T.von, T.zu);
+    T.scale.set(pixel, pixel, 1);
+    T.m.compose(T.pos, T.quat, T.scale);
+    sf.setMatrixAt(i, T.m);
+};
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
 // `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc aus dem Gesetz `ATMO_GESETZ.nacht.mond` — `_atmoSonne(e)` und das Labor lerpen

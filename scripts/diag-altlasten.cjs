@@ -1303,6 +1303,7 @@ const ENTSORGUNG_BESITZER = {
     _p2pRefreshPeerNameLabel: { arten: ["material"], grund: "das Namensschild des Peers (Sprite-Stoff je Schild)" },
     _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
     createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
+    _buildStarField: { arten: ["geometry", "material"], grund: "das Sternfeld der Kosmos-Funktion beim Neubau (ein neuer Samen; je Bau frisch)" },
     _gangSatzAbschied: { arten: ["geometry", "material"], grund: "die Gang-Sätze (`_gangSatz`, je Satz frisch)" },
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
     _leibZeichenFrei: {
