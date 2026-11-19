@@ -417,7 +417,7 @@ class AnazhRealm_kreatur_erbe {
     // DER TAKT DES LESERS (je Bild des Spiels, vor der Folge des Felds): je Gau am Schirm EINE Bestellung im Flug — bis zum Takt
     // des Horizonts (`_feldHorizont` ÷ taktS), gelesen werden die nahen Reviere (`_bestandNah`) und das Revier jedes Tiers, das ein
     // Leib zeichnet oder sucht. Bestellt wird nur, wenn Takt, Reviere oder Akte sich änderten; ein Gau ohne Revier am Schirm geht
-    // (`_gauGeht`). `_gauMs` trägt die längste Arbeit des Haupt-Fadens je Ruf und je Antwort (das Maß des Bands).
+    // (`_gauGeht`).
     _gauTakt() {
         const [T, S] = [AnazhRealm._bestandGesetz().B.taktS, this._bestandSeite()];
         const takt = Math.max(0, Math.floor(this._feldHorizont() / T));
@@ -440,22 +440,18 @@ class AnazhRealm_kreatur_erbe {
             else if (ud._gauWartet && ud.wanderAnchor) ort(ud.wanderAnchor.x, ud.wanderAnchor.z);
         }
         const H = this._gauHalt();
-        const ms = this._gauMs || (this._gauMs = { ruf: 0, antwort: 0, rufe: 0 });
         for (const e of je.values()) {
             const b = this._gauBild(e.gx, e.gz);
             const lesen = [...e.lesen].sort((p, q) => p - q);
             const sig = lesen.join();
             const aktN = (H.get(e.gx + "," + e.gz) || []).length;
             if (b.flug || b.sperre === takt || (b.takt === takt && b.sig === sig && b.aktN === aktN)) continue;
-            const t0 = performance.now();
             b.flug = true;
             b.bestellt = Math.max(b.bestellt, takt);
             this._gauBis(e.gx, e.gz, takt, { lesen }).then(
                 (a) => this._gauAntwort(b, a, sig, aktN),
                 () => ((b.flug = false), (b.sperre = takt)) // der Wurf steht beim Namen (`_gauFrage`); der nächste Takt fragt wieder
             );
-            ms.rufe++;
-            ms.ruf = Math.max(ms.ruf, performance.now() - t0);
         }
         for (const [k, b] of this._gauBilder())
             if (!je.has(k) && !b.flug) {
@@ -474,7 +470,6 @@ class AnazhRealm_kreatur_erbe {
     _gauAntwort(b, a, sig, aktN) {
         b.flug = false;
         if (!this._gauBildStand || this._gauBilder().get(b.gx + "," + b.gz) !== b) return; // das Bild fiel (Sprung, andere Welt)
-        const t0 = performance.now();
         Object.assign(b, { takt: a.takt, sig, aktN, zeit: a.zeit });
         b.zahl = { beute: a.beute, jaeger: a.jaeger, rudel: a.rudel };
         const [G, n, S, zn] = [
@@ -556,8 +551,6 @@ class AnazhRealm_kreatur_erbe {
             if (t && !t.leib) [t.leib, ud._bestand] = [c, t];
             else ud._ohneTier = true;
         }
-        const ms = this._gauMs || (this._gauMs = { ruf: 0, antwort: 0, rufe: 0 });
-        ms.antwort = Math.max(ms.antwort, performance.now() - t0);
     }
     // DIE SEELE EINER GATTUNG DES GESETZES (die eine Seele ihres Gusses, wie `_gattungLeib`).
     _gauSeele(g) {
