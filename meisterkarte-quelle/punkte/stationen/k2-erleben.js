@@ -983,4 +983,1682 @@ const LEITERN = [];
     );
 }
 
+// ═══════════════════════════════════════ Perspektive sinne ═══════════════════════════════════════
+{
+    // ─────────── erleben.sinne.sicht — Fremde Sicht: das Auge als Leser des Lichts ───────────
+    // Die Welt zeichnet EIN Auge (das Menschenbild, Atlas Bild/sicht): kein Leser für Rezeptor-Kurven, Wärme, Polarisation oder
+    // Sehschärfe — S1–S4 urteilen „Leser fehlt“ mit Ort; S5 zählt die Bewohner der Sitzung gegen die Megastadt, S6 die Planeten
+    // (EINE Saat). Der Zensus liest das Gesetzbuch der Tiere (`__tetrapodaCore`): erscheint dort ein Sinnes-Gesetz, wirft die Sprosse
+    // beim Namen, statt alt zu urteilen.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinne.sicht",
+            sek: 20,
+            pfad: ["scripts/werkbank.cjs", "stamm/bild-sicht.js", "stamm/bild-kosten.js", "stamm/siedlung-bewohner.js", "tetrapoda-core.js", "planet-core.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "muster_nur_biene", richtung: "≥", wert: 1, wortlaut: "≥ 1 Muster nur im Bienenbild", feld: "richter" },
+                        { wort: "kontrast", richtung: "≥", wert: 0.2, wortlaut: "Kontrast ≥ 0,2", feld: "richter" },
+                    ],
+                },
+                2: { soll: [{ wort: "spearman", richtung: "≥", wert: 0.7, wortlaut: "Kontrast-Rangordnung über 10 Pflanzenklassen Spearman ≥ 0,7", feld: "richter" }] },
+                3: { soll: [{ wort: "pol_winkel_fehler_grad", richtung: "≤", wert: 10, wortlaut: "Polarisationswinkel ±10° zur Rayleigh-Erwartung", feld: "richter" }] },
+                4: { soll: [{ wort: "schaerfe_abweichung_pct", richtung: "≤", wert: 30, wortlaut: "im Verhältnis der biologischen Sehschärfe ±30 %", feld: "richter" }] },
+                5: {
+                    soll: [{ wort: "anteil_ohne_bruch", richtung: "≥", wert: 1, wortlaut: "Anteil ohne Bruch (kein Stoff ohne Spektrum, kein RGB-Zwilling) = 1,0", feld: "richter" }],
+                    umfang: { verlangt: 1e7, einheit: "Bewohner der Megastadt", wortlaut: "Megastadt ≥ 10⁷", feld: "umfang" },
+                },
+                6: {
+                    soll: [{ wort: "r_rezeptor_boden", richtung: "≥", wert: 0.6, wortlaut: "korrelieren mit dem Bodenspektrum r ≥ 0,6", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Planeten", wortlaut: "N = 20 Planeten", feld: "richter" },
+                },
+            },
+            lauf: async function sichtLauf(H, P, L) {
+                const z = await L.ev(
+                    "const TC = globalThis.__tetrapodaCore || {}; let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); } return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, sied, sinnGesetz: Object.keys(TC).filter((k) => /sinn|rezeptor|spektr|polari|waerme|schaerfe/i.test(k)) };",
+                    30
+                );
+                L.zeile("Zensus Sicht: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.sinnGesetz.length) throw new Error("Leser erschienen (" + z.sinnGesetz.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                await L.je(1, async () => (neu(1), L.leser(1, "kein Bienen-Auge: die Welt zeichnet nur das Menschenbild (RGB), kein Leser für UV/B/G-Rezeptoren und kein UV-Spektrum im Stoff der Blüte (stamm/bild-sicht.js:2, Atlas Bild/sicht)")));
+                await L.je(2, async () => (neu(2), L.leser(2, "kein Leser für beliebige Rezeptor-Kurven (2–16): kein Auge außer dem Menschenbild (stamm/bild-sicht.js:2); bild-kosten simuliert den Dichromaten nur als Prüfung des Bildschirms (stamm/bild-kosten.js:3031)")));
+                await L.je(3, async () => (neu(3), L.leser(3, "kein Wärmebild und keine Himmels-Polarisation: kein Leser der Leib-Temperatur im Bild, kein Polarisationswinkel im Himmel (stamm/bild-sicht.js:2)")));
+                await L.je(4, async () => (neu(4), L.leser(4, "keine Raum-/Zeitauflösung je Auge (Facette, Habicht, Flimmerfusion): das Gesetzbuch der Tiere trägt nur die Farbe des Auges (tetrapoda-core.js:4117 tierAuge)")));
+                await L.je(5, async () => {
+                    if (z.bew < 1e7) return L.umfang(5, z.bew, "die Sitzung trägt " + z.bew + " Bewohner in " + z.sied + " Siedlungen, keine Megastadt ≥ 10⁷ — und kein Auge außer dem Menschenbild");
+                    L.leser(5, "kein Zufallsauge: die Welt zeichnet nur das Menschenbild (stamm/bild-sicht.js:2)", z.bew);
+                });
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält EINEN Planeten (Saat " + z.saat + ") und keinen fremden Stern — planetPlan(samen) trägt keinen Stern-Typ (planet-core.js:9)"));
+            },
+        })
+    );
+
+    // ─────────── erleben.sinne.hoeren — Hören jenseits des Menschen ───────────
+    // Der Klang der Welt ist das Ohr des Spielers (Atlas Klang): kein Echo, kein Fledermaus-Leib, kein Infraschall, kein Ohr je Art —
+    // S1–S5 urteilen „Leser fehlt“ mit Ort, gezählt werden die Gattungen des Gesetzbuchs (wolf · fox · bear · deer); S6 zählt die
+    // Saaten der Sitzung (EINE).
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinne.hoeren",
+            sek: 20,
+            pfad: ["scripts/werkbank.cjs", "stamm/klang.js", "klang-core.js", "tetrapoda-core.js", "stamm/kreatur-furcht.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: { soll: [{ wort: "zeit_faktor_blind", richtung: "≤", wert: 2, wortlaut: "Ausgang in ≤ 2× der sehenden Zeit", feld: "richter" }] },
+                2: {
+                    soll: [
+                        { wort: "kollisionen_je_100m", richtung: "≤", wert: 1, wortlaut: "≤ 1 Kollision je 100 m", feld: "richter" },
+                        { wort: "trinkt_von_5", richtung: "≥", wert: 4, wortlaut: "trinkt im Flug ≥ 4 von 5", feld: "richter" },
+                    ],
+                },
+                3: { soll: [{ wort: "fangquote_verhaeltnis", richtung: "≥", wert: 0.7, wortlaut: "Fangquote im Echobild ≥ 0,7 der Fangquote im Sichtbild", feld: "richter" }] },
+                4: { soll: [{ wort: "richtung_fehler_grad", richtung: "≤", wert: 15, wortlaut: "Richtung zu Gewitter in 10 km ±15°", feld: "richter" }] },
+                5: { soll: [{ wort: "spektrum_abweichung_pct", richtung: "≤", wert: 20, wortlaut: "Abgriff-Spektrum folgt dem Hörbereich der Art ±20 %", feld: "richter" }] },
+                6: {
+                    soll: [{ wort: "anteil_fang_ohne_licht", richtung: "≥", wert: 0.9, wortlaut: "Anteil echo-ortender Arten, deren Fang ohne Licht gelingt ≥ 0,9", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Saaten", wortlaut: "100 Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function hoerenLauf(H, P, L) {
+                const z = await L.ev(
+                    "const TC = globalThis.__tetrapodaCore || {}; const gatt = new Set(Object.keys(TC.GATTUNGEN || {})); for (const c of r.state.creatures || []) { const g = r._kreaturGattung(c); if (g) gatt.add(g); } return { saat: r.state.worldMeta && r.state.worldMeta.seed, gattungen: [...gatt], sinnGesetz: Object.keys(TC).filter((k) => /hoer|echo|ohr|schall|sinn/i.test(k)), klang: !!(r.state.symphony && r.state.symphony.enabled) };",
+                    30
+                );
+                L.zeile("Zensus Hören: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.sinnGesetz.length) throw new Error("Leser erschienen (" + z.sinnGesetz.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                const g = z.gattungen.join(" · ");
+                await L.je(1, async () => (neu(1), L.leser(1, "kein Echo-Sinn: der Klang rechnet keine Laufzeit gegen die Geometrie, kein Blind-Lauf (stamm/klang.js:2, Atlas Klang — nur das Ohr des Spielers)")));
+                await L.je(2, async () => (neu(2), L.leser(2, "kein Fledermaus-Leib und kein Echo-Leser: die Gattungen der Welt sind " + g + " (tetrapoda-core.js:62 GATTUNGEN)")));
+                await L.je(3, async () => (neu(3), L.leser(3, "keine Beute im Flug und kein Doppler eines Echos: kein fliegender Jäger in " + g + " (tetrapoda-core.js:62), die Jagd liest nur die Witterung (stamm/kreatur-verhalten.js:190)")));
+                await L.je(4, async () => (neu(4), L.leser(4, "kein Infraschall-Ohr und kein Fernschall 10–100 km: das Umwelt-Ohr hält die lautesten 7 Stimmen am Spieler (klang-core.js:413 UMWELT), kein Elefanten- oder Wal-Leib")));
+                await L.je(5, async () => (neu(5), L.leser(5, "kein Ohr je Art: Hörbereich, Richtung und Schwelle stehen nicht im Leib — die Furcht hört nicht, sie liest Abstand und Witterung (stamm/kreatur-furcht.js:44 _creatureWarinessEigen)")));
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 100 Saaten verlangt, und keine echo-ortende Art"));
+            },
+        })
+    );
+
+    // ─────────── erleben.sinne.geruch — Das Geruchs-Feld: Chemie im Wind ───────────
+    // S1 misst im Fenster der Sitzung den Gegenlauf der Karte am ECHTEN Kreatur-Takt (die Folge von `_gameLoopTick`: Stoß-Schritt,
+    // Leib-Kontakte, updateCreatures; Bühne wie kreatur-proben): ein Wolf 40 m windab eines Rehs (Größe 0,6), die Suchzeit bis 8 m
+    // (der Ring der Hetze + 2 m) — dann dasselbe mit Witterung aus (`_scentAt` → 0) und mit gedrehtem Wind (`_windAt` −x, −z); die
+    // Gegenläufe enden am Deckel 3,2 × die Suchzeit (darüber gilt ≥ 3,2). S2–S4 urteilen „Leser fehlt“, S5/S6 zählen Bewohner und Saaten.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinne.geruch",
+            sek: 60,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "stamm/koerper-seele.js", "stamm/kreatur-verhalten.js", "stamm/kreatur-leben.js", "stamm/stoff-material.js", "stamm/siedlung-bewohner.js", "tetrapoda-core.js"],
+            welt: [
+                { wort: "weg_wolf_m", ab: 5, was: "Weg des Wolfs im Lauf mit Witterung (m)" },
+                { wort: "takte", ab: 60, was: "Takte des Kreatur-Takts über die drei Läufe" },
+            ],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "suchzeit_faktor_aus", richtung: "≥", wert: 3, wortlaut: "Witterung aus oder Wind gedreht → Suchzeit ≥ 3×", feld: "richter" },
+                        { wort: "suchzeit_faktor_wind", richtung: "≥", wert: 3, wortlaut: "Witterung aus oder Wind gedreht → Suchzeit ≥ 3×", feld: "richter" },
+                    ],
+                },
+                2: {
+                    soll: [
+                        { wort: "zeit_s", richtung: "≤", wert: 90, wortlaut: "Aas 100 m gegen den Wind in ≤ 90 s", feld: "richter" },
+                        { wort: "faktor_nase_aus", richtung: "≥", wert: 3, wortlaut: "Nase aus ≥ 3× die Zeit", feld: "richter" },
+                    ],
+                },
+                3: { soll: [{ wort: "intermittenz_abweichung_pct", richtung: "≤", wert: 30, wortlaut: "Intermittenz-Faktor ±30 % gegen Rauch-/Tracer-Aufnahme", feld: "richter" }] },
+                4: { soll: [{ wort: "abweichung_m", richtung: "≤", wert: 5, wortlaut: "1 h alte Fährte 500 m durch eine Stadt, Abweichung ≤ 5 m", feld: "richter" }] },
+                5: {
+                    soll: [{ wort: "treffer", richtung: "≥", wert: 0.8, wortlaut: "Treffer ≥ 0,8 über 20 Proben", feld: "richter" }],
+                    umfang: { verlangt: 1e7, einheit: "Personen der Megastadt", wortlaut: "Megastadt ≥ 10⁷ Personen", feld: "umfang" },
+                },
+                6: {
+                    soll: [{ wort: "trefferquote", richtung: "≥", wert: 0.9, wortlaut: "N = 20 Saaten ≥ 0,9", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function geruchLauf(H, P, L) {
+                // DIE SEITE DER JAGD (im Fenster der Sitzung, r = die Welt): Bühne wie kreatur-proben `buehne` (eigene Tier-Liste, die
+                // Welt-Tiere ruhen, Spieler · Modus · Gefühl zurück), drei Läufe an demselben Ort und Wind
+                async function jagdSeite(o) {
+                    const s = r.state;
+                    const A = r.constructor;
+                    const pm = s.playerMesh.position;
+                    const P0 = pm.clone();
+                    const t0 = performance.now();
+                    const altModus = r.getGameMode();
+                    const altGefuehl = Object.assign({}, s.player.emotions || {});
+                    const altSpieler = Object.assign({}, s.player);
+                    const altVel = s.playerVel ? [s.playerVel.x(), s.playerVel.y(), s.playerVel.z()] : null;
+                    const tote0 = new Set(s.leichname || []);
+                    const zurueck = [
+                        leihe(s, { creatures: [], creatureEmotions: [], maxCreatures: 64, creatureAnimationTime: 100, _herdContagionAcc: 0, _creatureNetSeq: 1e6, dayLengthMinutes: A.DAY_LENGTH_DEFAULT_MINUTES, lifeField: undefined, emotionField: undefined, faunaBestand: undefined, feldAkte: [], spielZeit: s.spielZeit, faunaLifecycle: s.faunaLifecycle }),
+                        leihe(r, { _creatureAiFrame: 0, _faunaStroeme: null, _spielerLageAlt: null }),
+                    ];
+                    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                    const neben = (x, z) => {
+                        const h = r.getTerrainHeightAt(x, z);
+                        return { x, y: (Number.isFinite(h) ? h : pm.y) + 0.5, z };
+                    };
+                    const imUmkreisLand = (x, z, R) => {
+                        if (r._imGrundriss(x, z)) return false;
+                        for (const f of [0.5, 1])
+                            for (let q = 0; q < 8; q++) {
+                                const a = (q / 8) * 2 * Math.PI;
+                                const px = x + Math.cos(a) * R * f, pz = z + Math.sin(a) * R * f;
+                                if (!r._landAt(px, pz) || r._imGrundriss(px, pz)) return false;
+                            }
+                        return true;
+                    };
+                    const kand = [];
+                    const huelleNah = (x, z, h, R) => {
+                        kand.length = 0;
+                        r._blockerUmPlatz(x, z, R + 8, kand);
+                        for (const e of kand)
+                            for (const b of e.blockerAABBs || []) {
+                                if (b.topY <= h + A.PLAYER_STEP_UP || b.botY >= h + 2) continue;
+                                if (r._boxAbstand2(b, x, z) < R * R) return true;
+                            }
+                        return false;
+                    };
+                    const frei = (dx, dz, R) => {
+                        for (let ring = 0; ring < 40; ring++) {
+                            const n = Math.max(1, ring * 6);
+                            for (let q = 0; q < n; q++) {
+                                const a = (q / n) * 2 * Math.PI;
+                                const x = P0.x + dx + Math.cos(a) * ring * 8, z = P0.z + dz + Math.sin(a) * ring * 8;
+                                const p = r._landAt(x, z) && imUmkreisLand(x, z, R) && neben(x, z);
+                                if (p && !huelleNah(x, z, p.y - 0.5, R)) return p;
+                            }
+                        }
+                        return null;
+                    };
+                    const ruhig = (c) => (c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
+                    const takt = (dt) => {
+                        r._kreaturStossSchritt(dt);
+                        r._leibKontakte();
+                        r.updateCreatures(dt);
+                    };
+                    const weg = () => [...s.creatures].forEach((c) => r.removeCreature(c));
+                    try {
+                        r.setGameMode("pfad");
+                        const M = frei(0, 70, 30);
+                        if (!M) return { fehler: "kein freies Feld (30 m ohne Hülle und Wasser) um den Spieler" };
+                        const d = r._windDirAt(s._simZeit);
+                        const reh0 = neben(M.x - d.x * o.abstandM * 0.5, M.z - d.z * o.abstandM * 0.5);
+                        const wolf0 = neben(M.x + d.x * o.abstandM * 0.5, M.z + d.z * o.abstandM * 0.5);
+                        const sp = neben(M.x - d.z * 70, M.z + d.x * 70); // der Spieler quer zum Wind, jenseits der Witterung des Wolfs
+                        const dt = 1 / 60;
+                        let takteSumme = 0;
+                        const lauf = (art, deckelS) => {
+                            weg();
+                            Object.assign(s, { _creatureNetSeq: 1e6, creatureAnimationTime: 100 });
+                            Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
+                            const ab2 = [];
+                            if (art === "aus") ab2.push(leihe(r, { _scentAt: () => 0 }));
+                            if (art === "wind") {
+                                const alt = r._windAt;
+                                ab2.push(leihe(r, { _windAt: function (x, z, t, aus) { const w = alt.call(this, x, z, t, aus); w.x = -w.x; w.z = -w.z; return w; } }));
+                            }
+                            try {
+                                pm.set(sp.x, sp.y, sp.z);
+                                if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                                const wolf = r.spawnCreatureAt(wolf0.x, wolf0.y, wolf0.z, "happy", "wolf", { precise: true, bodySize: 1 });
+                                const reh = r.spawnCreatureAt(reh0.x, reh0.y, reh0.z, "happy", "wesen", { precise: true, bodySize: 0.6 });
+                                if (!wolf || !reh) return { fehler: "Spawn " + (!wolf ? "wolf" : "wesen") };
+                                ruhig(wolf);
+                                ruhig(reh);
+                                const deckel = Math.ceil(deckelS / dt);
+                                const alt = wolf.position.clone();
+                                let k = 0, fund = null, witter = null, wegM = 0, minD = ab(wolf.position, reh.position), wand = false;
+                                for (; k < deckel; k++) {
+                                    if (s.player.emotions) Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
+                                    takt(dt);
+                                    wegM += ab(wolf.position, alt);
+                                    alt.copy(wolf.position);
+                                    if (witter == null && wolf.userData._beute === reh) witter = (k + 1) * dt;
+                                    const dd = s.creatures.includes(reh) ? ab(wolf.position, reh.position) : 0;
+                                    minD = Math.min(minD, dd);
+                                    if (dd <= o.fundM) {
+                                        fund = (k + 1) * dt;
+                                        k++;
+                                        break;
+                                    }
+                                    if (performance.now() - t0 > o.wandMs) {
+                                        wand = true;
+                                        break;
+                                    }
+                                }
+                                takteSumme += k;
+                                return { art, fundS: fund, bisS: +(k * dt).toFixed(2), deckelS: +deckelS.toFixed(2), witterS: witter, wegM: +wegM.toFixed(1), minD: +minD.toFixed(1), wand };
+                            } finally {
+                                ab2.reverse().forEach((f) => f());
+                            }
+                        };
+                        const an = lauf("an", o.deckelS);
+                        if (an.fehler || an.fundS == null) return { an, takte: takteSumme, wind: d };
+                        const aus = lauf("aus", o.faktor * an.fundS);
+                        const wind = lauf("wind", o.faktor * an.fundS);
+                        return { an, aus, gedreht: wind, takte: takteSumme, wind: { x: +d.x.toFixed(3), z: +d.z.toFixed(3) }, ms: Math.round(performance.now() - t0) };
+                    } finally {
+                        weg();
+                        for (const c of s.leichname || []) if (!tote0.has(c)) r.removeCreature(c);
+                        for (const f of zurueck.reverse()) f();
+                        pm.copy(P0);
+                        const span = r._voxelChunkConfig().span, pc = s.lastPlayerVoxelChunk;
+                        if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span))) await __weltStehtNach();
+                        r.setGameMode(altModus);
+                        if (s.player.emotions) Object.assign(s.player.emotions, altGefuehl);
+                        for (const k of Object.keys(s.player)) if (!(k in altSpieler)) delete s.player[k];
+                        Object.assign(s.player, altSpieler);
+                        if (altVel && s.playerVel) s.playerVel.setValue(altVel[0], altVel[1], altVel[2]);
+                    }
+                }
+                const z = await L.ev(
+                    "let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); } const TC = globalThis.__tetrapodaCore || {}; return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, sied, nase: Object.keys(TC).filter((k) => /geruch|duft|faehrte|pheromon|nase/i.test(k)) };",
+                    30
+                );
+                L.zeile("Zensus Geruch: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.nase.length) throw new Error("Leser erschienen (" + z.nase.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                // die billigen Sprossen zuerst (reißt die Frist im Gegenlauf, stehen sie schon in der Ausgabe)
+                await L.je(2, async () => (neu(2), L.leser(2, "der Spieler hat keine Nase: das Geruch-Feld `_scentAt` (stamm/koerper-seele.js:1614) lesen nur die Jagd und das Aas der Tiere (stamm/kreatur-verhalten.js:223, :282), kein Leser des Spielers")));
+                await L.je(3, async () => (neu(3), L.leser(3, "keine Fahne mit Turbulenz und Alter: `_scentAt` ist ein Augenblicks-Feld exp(−d/rangeM) × Wind ohne Filamente, Intermittenz und Spur-Gedächtnis (stamm/koerper-seele.js:1614)")));
+                await L.je(4, async () => (neu(4), L.leser(4, "keine Duftklassen und keine Fährte: Quellen des Felds sind nur Leiber und Fleisch (stamm/kreatur-verhalten.js:221, :282) — keine Blüte, kein Rauch, kein Mensch, kein Pheromon, keine Spur über eine Stunde")));
+                await L.je(5, async () => {
+                    if (z.bew < 1e7) return L.umfang(5, z.bew, "die Sitzung trägt " + z.bew + " Bewohner in " + z.sied + " Siedlungen, keine Megastadt mit 10⁷ Personen, und keine Person emittiert Geruch");
+                    L.leser(5, "keine Person emittiert Geruch (stamm/kreatur-verhalten.js:221)", z.bew);
+                });
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 20 Saaten verlangt; kein Fluss trägt Duft (kein Lachs, kein Pheromon-Netz)"));
+                await L.je(1, async () => {
+                    await L.ort("wiese", "ego");
+                    L.preisPose("wiese", "ego");
+                    const wandMs = Math.max(5000, (L.rest() - 12) * 1000);
+                    const J = await L.ev("return await (" + jagdSeite + ")(" + JSON.stringify({ abstandM: 40, fundM: 8, deckelS: 90, faktor: 3.2, wandMs }) + ");", Math.max(10, L.rest() - 4));
+                    L.zeile("Jagd-Gegenlauf: " + JSON.stringify(J));
+                    if (J.fehler) throw new Error(J.fehler);
+                    if (J.an.fehler) throw new Error(J.an.fehler);
+                    const welt = { weg_wolf_m: J.an.wegM, takte: J.takte };
+                    if (J.an.fundS == null)
+                        return L.gemessen(1, { suchzeit_faktor_aus: null, suchzeit_faktor_wind: null }, { welt, taeter: "der Wolf fand das Reh MIT Witterung nicht in " + J.an.bisS + " s (nächster Abstand " + J.an.minD + " m" + (J.an.wand ? ", Wand-Deckel" : "") + ") — _creatureScentHuntDir (stamm/kreatur-verhalten.js:190)" });
+                    for (const g of [J.aus, J.gedreht]) if (!g || g.fehler) throw new Error("Gegenlauf: " + ((g && g.fehler) || "fehlt"));
+                    // die Suchzeit eines Gegenlaufs: gefunden → seine Zeit; am Deckel ohne Fund → mindestens der Deckel (bzw. so weit er lief)
+                    const f = (g) => +((g.fundS != null ? g.fundS : g.bisS) / J.an.fundS).toFixed(2);
+                    const fa = f(J.aus), fw = f(J.gedreht);
+                    const schlecht = fa <= fw ? ["Witterung aus", J.aus, fa] : ["Wind gedreht", J.gedreht, fw];
+                    L.gemessen(1, { suchzeit_faktor_aus: fa, suchzeit_faktor_wind: fw }, {
+                        welt,
+                        taeter: schlecht[0] + ": Suchzeit " + (schlecht[1].fundS != null ? schlecht[1].fundS.toFixed(1) + " s" : "> " + schlecht[1].bisS + " s") + " gegen " + J.an.fundS.toFixed(1) + " s mit Witterung (Faktor " + schlecht[2] + ")" +
+                            (schlecht[0] === "Wind gedreht" ? " — gegen den Wind wittert der Wolf mit windMod ≥ minDirectional weiter (stamm/koerper-seele.js:1636), _creatureScentHuntDir wählt jede Witterung > 0 (stamm/kreatur-verhalten.js:224)" : "") +
+                            (schlecht[1].wand ? " · Wand-Deckel der Probe" : ""),
+                    });
+                });
+            },
+        })
+    );
+
+    // ─────────── erleben.sinne.feld — Feld-Sinne: Magnetismus, Elektrizität, Schwingung ───────────
+    // Der Planet trägt kein Magnetfeld (planetPlan: Körper, Schollen, Schlüsselbilder …) und kein Wesen einen Feld-Sinn: S1–S3 und S5
+    // urteilen „Leser fehlt“ mit Ort, S4 ist ein Bildvergleich (auge) — die Kruste trägt keine Magnetisierung, also urteilt der Leser;
+    // S6 zählt die Planeten der Sitzung (EINEN).
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinne.feld",
+            sek: 20,
+            pfad: ["scripts/werkbank.cjs", "planet-core.js", "tetrapoda-core.js", "stamm/kreatur-furcht.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "polarlicht_breite_min_grad", richtung: "≥", wert: 60, wortlaut: "60–75° geomagnetisch", feld: "richter" },
+                        { wort: "polarlicht_breite_max_grad", richtung: "≤", wert: 75, wortlaut: "60–75° geomagnetisch", feld: "richter" },
+                    ],
+                },
+                2: {
+                    soll: [
+                        { wort: "fehler_km", richtung: "≤", wert: 50, wortlaut: "Fehler ≤ 50 km", feld: "richter" },
+                        { wort: "faktor_feld_aus", richtung: "≥", wert: 5, wortlaut: "Feld aus → Fehler ≥ 5×", feld: "richter" },
+                    ],
+                },
+                3: { soll: [{ wort: "fundquote", richtung: "≥", wert: 0.8, wortlaut: "Hai findet eingegrabenen Rochen ohne Licht ≥ 0,8", feld: "richter" }] },
+                4: { auge: { pose: "Ozeanboden über einem mittelozeanischen Rücken, Draufsicht der Magnetisierung (kein Messort der Sitzung)", vorbild: "Vine & Matthews 1963, Magnetstreifen am Carlsberg-/Reykjanes-Rücken" } },
+                5: {
+                    soll: [
+                        { wort: "anteil_vorlauf", richtung: "≥", wert: 0.7, wortlaut: "Herde flieht ≥ 10 s vor dem Spieler-Erleben des Bebens in ≥ 0,7 der Fälle", feld: "richter" },
+                        { wort: "vorlauf_s", richtung: "≥", wert: 10, wortlaut: "Herde flieht ≥ 10 s vor dem Spieler-Erleben des Bebens in ≥ 0,7 der Fälle", feld: "richter" },
+                    ],
+                },
+                6: {
+                    soll: [{ wort: "fehlpaarungen", richtung: "≤", wert: 0.1, wortlaut: "Fehlpaarungen ≤ 0,1", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Planeten", wortlaut: "N = 20 Planeten", feld: "richter" },
+                },
+            },
+            lauf: async function feldLauf(H, P, L) {
+                const z = await L.ev(
+                    "const PC = globalThis.__planetCore || {}; const TC = globalThis.__tetrapodaCore || {}; return { saat: r.state.worldMeta && r.state.worldMeta.seed, planetFeld: Object.keys(PC).filter((k) => /magnet|dipol|dynamo|polarlicht|aurora/i.test(k)), sinn: Object.keys(TC).filter((k) => /magnet|elektro|seitenlinie|vibration|schwingung/i.test(k)) };",
+                    30
+                );
+                L.zeile("Zensus Feld: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    const n = z.planetFeld.concat(z.sinn);
+                    if (n.length) throw new Error("Leser erschienen (" + n.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                await L.je(1, async () => (neu(1), L.leser(1, "kein Dipolfeld: der Planet als Funktion trägt Körper, Schollen, Relief, Vulkanismus, Meer — kein Magnetfeld, keinen Kompass, kein Polarlicht am magnetischen Pol (planet-core.js:9 planetPlan)")));
+                await L.je(2, async () => (neu(2), L.leser(2, "kein Magnetsinn und kein Zugvogel: kein Feld (planet-core.js:9), die Gattungen tragen keinen Feld-Sinn (tetrapoda-core.js:62)")));
+                await L.je(3, async () => (neu(3), L.leser(3, "kein Elektrosinn, keine Seitenlinie im Verhalten: kein Hai, kein Rochen (tetrapoda-core.js:62 GATTUNGEN); die Seitenlinie im Leib-Kern ist nur Gestalt")));
+                await L.je(4, async () => (neu(4), L.leser(4, "keine Magnetisierung der Kruste: die Ozean-Platten wachsen an Nähten ohne Feld und ohne Umpolung (planet-core.js:9 planetPlan) — kein Bild der Streifen zu schießen")));
+                await L.je(5, async () => (neu(5), L.leser(5, "keine Boden-Schwingung: die Furcht liest Spieler, Jäger und Glut, kein Beben (stamm/kreatur-furcht.js:44 _creatureWarinessEigen) — und die Welt kennt kein Beben")));
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält EINEN Planeten (Saat " + z.saat + ") — 20 Planeten verlangt, keiner trägt einen Dynamo"));
+            },
+        })
+    );
+
+    // ─────────── erleben.sinne.genom — Sinnes-Genom: Breite und Evolution der Umwelten ───────────
+    // Gezählt wird das Gesetzbuch der Tiere in der Sitzung: die Gattungen (GATTUNGEN ∪ die Gattungen der lebenden Tiere) und die
+    // Sinnes-Radien des Verhaltens (`_verhaltenGesetz`: jagd.scentRangeM, furcht.noticeRadius) — EIN Wert für alle Gattungen, kein
+    // Genom. S1/S2 urteilen „Leser fehlt“ (kein Radius je Gattung, kein Sinnes-Genom), S3–S6 „Umfang nicht erzeugbar“ an der Artenzahl
+    // und den Saaten.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinne.genom",
+            sek: 20,
+            pfad: ["scripts/werkbank.cjs", "tetrapoda-core.js", "stamm/kreatur-furcht.js", "stamm/kreatur-verhalten.js", "stamm/studio-glieder.js", "stamm/koerper-leib.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: { soll: [{ wort: "anteil_im_band", richtung: "≥", wert: 0.9, wortlaut: "Anteil Sinneswerte im Band der Biologie ≥ 0,9", feld: "richter", aus: 2 }] },
+                2: { soll: [{ wort: "anteil_im_band", richtung: "≥", wert: 0.9, wortlaut: "Anteil Sinneswerte im Band der Biologie ≥ 0,9", feld: "richter" }] },
+                3: {
+                    soll: [
+                        { wort: "anteil_hoehle_auge_klein", richtung: "≥", wert: 0.7, wortlaut: "Höhlenarten mit reduziertem Auge ≥ 0,7", feld: "richter" },
+                        { wort: "anteil_nacht_auge_gross", richtung: "≥", wert: 0.7, wortlaut: "Nachtarten mit größerem Auge ≥ 0,7", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "Arten je Saat", wortlaut: "10³ Arten je Saat", feld: "umfang" },
+                },
+                4: {
+                    soll: [{ wort: "generationen", richtung: "≥", wert: 1e5, wortlaut: "Evolution über 10⁵ Generationen", feld: "umfang" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter" },
+                },
+                5: {
+                    soll: [{ wort: "anteil_feld_ueberlappt", richtung: "≥", wert: 0.9, wortlaut: "Sinnesband überlappt ein im Lebensraum vorhandenes Feld (Licht, Schall, Duft, Feld) ≥ 0,9", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "Arten", wortlaut: "10⁶ Arten auf einem Planeten", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "anteil_ohne_bruch", richtung: "≥", wert: 1, wortlaut: "Anteil ohne Bruch und ≤ 5 s = 1,0", feld: "richter" },
+                        { wort: "ankunft_s", richtung: "≤", wert: 5, wortlaut: "Ankunft in der Umwelt einer Zufallsart ≤ 5 s", feld: "preis" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "Arten", wortlaut: "10⁶ Arten × beliebig viele Planeten", feld: "umfang" },
+                },
+            },
+            lauf: async function genomLauf(H, P, L) {
+                const z = await L.ev(
+                    "const TC = globalThis.__tetrapodaCore || {}; const VG = r.constructor._verhaltenGesetz(); const gatt = new Set(Object.keys(TC.GATTUNGEN || {})); for (const c of r.state.creatures || []) { const g = r._kreaturGattung(c); if (g) gatt.add(g); } return { saat: r.state.worldMeta && r.state.worldMeta.seed, gattungen: [...gatt], witterM: VG.jagd.scentRangeM, sichtM: VG.furcht.noticeRadius, pirschM: VG.jagd.pirschSichtM, genom: Object.keys(TC).filter((k) => /sinn|genom|rezeptor/i.test(k)) };",
+                    30
+                );
+                L.zeile("Zensus Genom: " + JSON.stringify(z));
+                const n = z.gattungen.length;
+                const eins = typeof z.witterM === "number" && typeof z.sichtM === "number";
+                await L.je(1, async () => {
+                    if (!eins) throw new Error("Leser erschienen: Witter-/Sicht-Radius ist kein einzelner Wert mehr (" + JSON.stringify([z.witterM, z.sichtM]) + ") — S1 misst ihn noch nicht");
+                    L.leser(1, "kein Radius je Gattung: EIN Witter-Radius " + z.witterM + " m und EIN Sicht-Radius " + z.sichtM + " m (Pirsch " + z.pirschM + " m) für alle " + n + " Gattungen (" + z.gattungen.join(" · ") + ") — tetrapoda-core.js:151 scentRangeM, :183 noticeRadius; nur die Flucht-Distanz trägt die Gattung (tetrapoda-core.js:1998)", n);
+                });
+                await L.je(2, async () => {
+                    if (z.genom.length) throw new Error("Leser erschienen (" + z.genom.join(", ") + ") — S2 misst ihn noch nicht");
+                    L.leser(2, "kein Sinnes-Genom: die Gattungen tragen size · neck · leg · diet · build (tetrapoda-core.js:62), die Sinne sind Konstanten des Verhaltens (tetrapoda-core.js:151, :183) — keine Kurve, kein Band, keine Reichweite je Art", n);
+                });
+                await L.je(3, async () => L.umfang(3, n, "die Saat " + z.saat + " trägt " + n + " Gattungen (" + z.gattungen.join(" · ") + "), keine Höhlen- oder Nachtart mit eigenem Auge"));
+                await L.je(4, async () => L.umfang(4, 1, "die Sitzung hält EINE Saat (" + z.saat + ") und keine Evolution der Sinne — die Gattungen sind gesetzt (tetrapoda-core.js:62), keine Generation verändert ein Auge"));
+                await L.je(5, async () => L.umfang(5, n, "der Planet der Sitzung trägt " + n + " Gattungen, 10⁶ Arten verlangt"));
+                await L.je(6, async () => L.umfang(6, n, "die Welt trägt " + n + " Gattungen auf EINEM Planeten (Saat " + z.saat + ") — keine Umwelt einer Zufallsart zu betreten"));
+            },
+        })
+    );
+
+    // ─────────── erleben.sinne.signale — Signale: ein Wesen schreibt, ein anderes liest ───────────
+    // S1 misst im Fenster der Sitzung die Herde des ECHTEN Wurfs (`_kreaturWurf`, Hirsche) wie die Linse herde: der Spieler geht ab 30 m mit
+    // 1,4 m/s durch sie, je Flüchter der erste Takt in Flucht und Lauf und ob er selbst witterte (`_alarmEigen`) — der Anteil aus zweiter
+    // Hand; Gegenlauf: der Alarm des Verbands aus (`_kreaturVerbandAlarm` nur das eigene Wittern) — der Zeuge ist der Abfall in
+    // Prozentpunkten. S2/S4–S6 urteilen „Leser fehlt“, S3 zählt die Saaten.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinne.signale",
+            sek: 60,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "stamm/kreatur-furcht.js", "stamm/kreatur-leben.js", "stamm/kreatur-verhalten.js", "stamm/siedlung-bewohner.js", "stamm/klang.js"],
+            welt: [
+                { wort: "fluechter", ab: 1, was: "Glieder der Herde, die im Lauf flohen" },
+                { wort: "gegenlauf_pp", ab: 1, was: "Prozentpunkte, um die der Anteil aus zweiter Hand fällt, wenn der Alarm des Verbands aus ist" },
+            ],
+            sprossen: {
+                1: { soll: [{ wort: "anteil_zweite_hand", richtung: "≥", wert: 0.7, wortlaut: "Fluchtbeginn vor eigener Wahrnehmung ≥ 0,7", feld: "richter" }] },
+                2: { soll: [{ wort: "richtungsfehler_grad", richtung: "≤", wert: 15, wortlaut: "Richtungsfehler ≤ 15°", feld: "richter" }] },
+                3: {
+                    soll: [{ wort: "r_aehnlichkeit_distanz", richtung: "≥", wert: 0.4, wortlaut: "Gesangs-Ähnlichkeit fällt mit Distanz r ≥ 0,4", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter" },
+                },
+                4: { soll: [{ wort: "generationen", richtung: "≥", wert: 1000, wortlaut: "Annahmequote gefälschter Signale fällt über 10³ Generationen", feld: "richter" }] },
+                5: { soll: [{ wort: "anteil_vor_ereignis", richtung: "≥", wert: 0.6, wortlaut: "Bewohner mit Beruf handeln vor dem Ereignis nach dem Signal (Herde eingetrieben vor dem Wolf) ≥ 0,6", feld: "richter" }] },
+                6: { soll: [{ wort: "empfaenger_reagieren", richtung: "≥", wert: 0.8, wortlaut: "Empfänger reagieren ≥ 0,8", feld: "richter" }] },
+            },
+            lauf: async function signaleLauf(H, P, L) {
+                // DIE SEITE DER HERDE (im Fenster der Sitzung): Bühne wie kreatur-proben `buehne`, zwei Läufe (Alarm an · aus) am selben Ort
+                async function herdeSeite(o) {
+                    const s = r.state;
+                    const A = r.constructor;
+                    const pm = s.playerMesh.position;
+                    const P0 = pm.clone();
+                    const t0 = performance.now();
+                    const altModus = r.getGameMode();
+                    const altGefuehl = Object.assign({}, s.player.emotions || {});
+                    const altSpieler = Object.assign({}, s.player);
+                    const altVel = s.playerVel ? [s.playerVel.x(), s.playerVel.y(), s.playerVel.z()] : null;
+                    const tote0 = new Set(s.leichname || []);
+                    const zurueck = [
+                        leihe(s, { creatures: [], creatureEmotions: [], maxCreatures: 64, creatureAnimationTime: 100, _herdContagionAcc: 0, _creatureNetSeq: 1e6, dayLengthMinutes: A.DAY_LENGTH_DEFAULT_MINUTES, lifeField: undefined, emotionField: undefined, faunaBestand: undefined, feldAkte: [], spielZeit: s.spielZeit, faunaLifecycle: s.faunaLifecycle }),
+                        leihe(r, { _creatureAiFrame: 0, _faunaStroeme: null, _spielerLageAlt: null }),
+                    ];
+                    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+                    const neben = (x, z) => {
+                        const h = r.getTerrainHeightAt(x, z);
+                        return { x, y: (Number.isFinite(h) ? h : pm.y) + 0.5, z };
+                    };
+                    const imUmkreisLand = (x, z, R) => {
+                        if (r._imGrundriss(x, z)) return false;
+                        for (const f of [0.5, 1])
+                            for (let q = 0; q < 8; q++) {
+                                const a = (q / 8) * 2 * Math.PI;
+                                const px = x + Math.cos(a) * R * f, pz = z + Math.sin(a) * R * f;
+                                if (!r._landAt(px, pz) || r._imGrundriss(px, pz)) return false;
+                            }
+                        return true;
+                    };
+                    const kand = [];
+                    const huelleNah = (x, z, h, R) => {
+                        kand.length = 0;
+                        r._blockerUmPlatz(x, z, R + 8, kand);
+                        for (const e of kand)
+                            for (const b of e.blockerAABBs || []) {
+                                if (b.topY <= h + A.PLAYER_STEP_UP || b.botY >= h + 2) continue;
+                                if (r._boxAbstand2(b, x, z) < R * R) return true;
+                            }
+                        return false;
+                    };
+                    const frei = (dx, dz, R) => {
+                        for (let ring = 0; ring < 40; ring++) {
+                            const n = Math.max(1, ring * 6);
+                            for (let q = 0; q < n; q++) {
+                                const a = (q / n) * 2 * Math.PI;
+                                const x = P0.x + dx + Math.cos(a) * ring * 8, z = P0.z + dz + Math.sin(a) * ring * 8;
+                                const p = r._landAt(x, z) && imUmkreisLand(x, z, R) && neben(x, z);
+                                if (p && !huelleNah(x, z, p.y - 0.5, R)) return p;
+                            }
+                        }
+                        return null;
+                    };
+                    const takt = (dt) => {
+                        r._kreaturStossSchritt(dt);
+                        r._leibKontakte();
+                        r.updateCreatures(dt);
+                    };
+                    const weg = () => [...s.creatures].forEach((c) => r.removeCreature(c));
+                    try {
+                        r.setGameMode("frieden");
+                        const heim = frei(0, 70, 40);
+                        if (!heim) return { fehler: "kein freies Land für die Herde (40 m ohne Hülle und Wasser)" };
+                        const lauf = (alarm) => {
+                            weg();
+                            Object.assign(s, { _creatureNetSeq: 1e6, creatureAnimationTime: 100 });
+                            Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
+                            const ab2 = alarm ? [] : [leihe(r, { _kreaturVerbandAlarm: (c, NAT, von, w) => ((c.userData._alarmEigen = w >= NAT.fleeThreshold), w) })];
+                            try {
+                                const p0 = neben(heim.x - 30, heim.z);
+                                pm.set(p0.x, p0.y, p0.z);
+                                if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+                                const glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("verband"), 7) || [];
+                                if (!glieder.length) return { fehler: "der Wurf trug kein Glied" };
+                                const alt = glieder.map((c) => c.position.clone());
+                                const beginn = [];
+                                let k = 0, wegM = 0, wand = false;
+                                for (; k < o.takte; k++) {
+                                    const q = neben(heim.x - 30 + (1.4 * k) / 60, heim.z);
+                                    pm.set(q.x, q.y, q.z);
+                                    takt(1 / 60);
+                                    glieder.forEach((c, i) => {
+                                        const d = ab(c.position, alt[i]);
+                                        wegM += d;
+                                        alt[i].copy(c.position);
+                                        if (!beginn[i] && c.userData._motionZustand === "flucht" && d > 1 / 60) beginn[i] = [k, c.userData._alarmEigen === true];
+                                    });
+                                    if (performance.now() - t0 > o.wandMs) {
+                                        wand = true;
+                                        break;
+                                    }
+                                }
+                                const B = beginn.filter(Boolean);
+                                return { n: glieder.length, laufen: B.length, zweiteHand: B.filter((x) => !x[1]).length, wegM: +wegM.toFixed(1), takte: k, ersterS: B.length ? +(Math.min(...B.map((x) => x[0])) / 60).toFixed(2) : null, letzterS: B.length ? +(Math.max(...B.map((x) => x[0])) / 60).toFixed(2) : null, wand };
+                            } finally {
+                                ab2.forEach((f) => f());
+                            }
+                        };
+                        const an = lauf(true);
+                        if (an.fehler) return { an };
+                        const aus = lauf(false);
+                        return { an, aus, heim: { x: Math.round(heim.x), z: Math.round(heim.z) }, ms: Math.round(performance.now() - t0) };
+                    } finally {
+                        weg();
+                        for (const c of s.leichname || []) if (!tote0.has(c)) r.removeCreature(c);
+                        for (const f of zurueck.reverse()) f();
+                        pm.copy(P0);
+                        const span = r._voxelChunkConfig().span, pc = s.lastPlayerVoxelChunk;
+                        if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span))) await __weltStehtNach();
+                        r.setGameMode(altModus);
+                        if (s.player.emotions) Object.assign(s.player.emotions, altGefuehl);
+                        for (const k of Object.keys(s.player)) if (!(k in altSpieler)) delete s.player[k];
+                        Object.assign(s.player, altSpieler);
+                        if (altVel && s.playerVel) s.playerVel.setValue(altVel[0], altVel[1], altVel[2]);
+                    }
+                }
+                const z = await L.ev(
+                    "let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); } const TC = globalThis.__tetrapodaCore || {}; return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, sied, signal: Object.keys(TC).filter((k) => /signal|tanz|marke|gesang|dialekt|mimikry/i.test(k)) };",
+                    30
+                );
+                L.zeile("Zensus Signale: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.signal.length) throw new Error("Leser erschienen (" + z.signal.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                // die billigen Sprossen zuerst (reißt die Frist in der Herde, stehen sie schon in der Ausgabe)
+                await L.je(2, async () => (neu(2), L.leser(2, "kein Bienentanz und keine Reviermarke: kein Wesen schreibt Richtung und Entfernung, kein Revier liest eine Marke (tetrapoda-core.js:62 GATTUNGEN, stamm/kreatur-verhalten.js:190 — die Nase liest nur Leiber)")));
+                await L.je(3, async () => L.umfang(3, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 20 Saaten verlangt; kein Gesang je Population"));
+                await L.je(4, async () => (neu(4), L.leser(4, "kein Lauscher, kein Fälscher: der Räuber wittert nur Leiber (stamm/kreatur-verhalten.js:190), der Tier-Ruf klingt nur im Ohr des Spielers (stamm/klang.js:506 _tierRuf)")));
+                await L.je(5, async () => (neu(5), L.leser(5, "kein Bewohner liest ein Signal der Welt vor dem Ereignis: die Flucht der Bewohner folgt dem gesehenen Jäger aus zweiter Hand (stamm/siedlung-bewohner.js:2174), kein Hirte treibt vor dem Wolf ein", z.bew)));
+                await L.je(6, async () => (neu(6), L.leser(6, "keine Signale in fremden Kanälen (UV, Entladung, Biolumineszenz): kein Sinnes-Genom von Sender und Empfänger, nur das Menschenbild (stamm/bild-sicht.js:2)")));
+                await L.je(1, async () => {
+                    await L.ort("wiese", "ego");
+                    L.preisPose("wiese", "ego");
+                    const wandMs = Math.max(5000, (L.rest() - 12) * 1000);
+                    const J = await L.ev("return await (" + herdeSeite + ")(" + JSON.stringify({ takte: 3600, wandMs }) + ");", Math.max(10, L.rest() - 4));
+                    L.zeile("Herde Alarm an/aus: " + JSON.stringify(J));
+                    if (J.fehler) throw new Error(J.fehler);
+                    if (J.an.fehler) throw new Error(J.an.fehler);
+                    if (!J.aus || J.aus.fehler) throw new Error("Gegenlauf Alarm aus: " + ((J.aus && J.aus.fehler) || "fehlt"));
+                    if (J.an.wand || J.aus.wand) throw new Error("Wand-Deckel der Probe: Lauf " + J.an.takte + " / Gegenlauf " + J.aus.takte + " von 3600 Takten — der Gegenlauf ist unvollständig");
+                    const anteil = (t) => (t && t.laufen ? t.zweiteHand / t.laufen : 0);
+                    const a = +anteil(J.an).toFixed(3), b = +anteil(J.aus).toFixed(3);
+                    L.gemessen(1, { anteil_zweite_hand: J.an.laufen ? a : null }, {
+                        welt: { fluechter: J.an.laufen, gegenlauf_pp: Math.round((a - b) * 100) },
+                        taeter: "zweite Hand " + J.an.zweiteHand + " von " + J.an.laufen + " Flüchtern (Herde " + J.an.n + ", Flucht ab " + J.an.ersterS + " s bis " + J.an.letzterS + " s; Alarm aus: " + J.aus.zweiteHand + " von " + J.aus.laufen + ") — der Alarm des Verbands (stamm/kreatur-furcht.js:7 _kreaturVerbandAlarm)",
+                    });
+                });
+            },
+        })
+    );
+
+    // ─────────── erleben.sinne.gesehen — Gesehen werden: Tarnung, Mimikry, Warnfarbe ───────────
+    // Die Entdeckung des Spielers liest Abstand, Aura und Erinnerung, nie Farbe (`_kreaturMenschFlucht`, `_creatureWarinessSpieler`):
+    // S1–S3 und S5 urteilen „Leser fehlt“ mit Ort, S4/S6 zählen Saaten und Planeten der Sitzung.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.sinne.gesehen",
+            sek: 20,
+            pfad: ["scripts/werkbank.cjs", "stamm/kreatur-furcht.js", "stamm/siedlung-bewohner.js", "tetrapoda-core.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: { soll: [{ wort: "abweichung_orange_gruen_pct", richtung: "≤", wert: 15, wortlaut: "Entdeckungsdistanz bei Spieler in Orange ≈ Grün (±15 %)", feld: "richter" }] },
+                2: { soll: [{ wort: "distanz_minus_pct", richtung: "≥", wert: 30, wortlaut: "getarnte Beute: Entdeckungsdistanz −≥ 30 %", feld: "richter" }] },
+                3: { soll: [{ wort: "unterschied_pct", richtung: "≥", wert: 30, wortlaut: "Entdeckungsdistanzen verschieden ≥ 30 %", feld: "richter" }] },
+                4: {
+                    soll: [{ wort: "abstand_fall_pct", richtung: "≥", wert: 50, wortlaut: "Abstand Beute ↔ Boden im Jäger-Farbraum fällt ≥ 50 %", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Saaten", wortlaut: "N = 20 Saaten", feld: "richter" },
+                },
+                5: { soll: [{ wort: "anteil_kulturen", richtung: "≥", wert: 0.8, wortlaut: "Jäger-Kleidung im Rezeptorraum des Wilds näher am Boden als Festkleidung ≥ 0,8 der Kulturen", feld: "richter" }] },
+                6: {
+                    soll: [{ wort: "anteil_unter_zufall", richtung: "≥", wert: 0.8, wortlaut: "Beute-Boden-Abstand im Jäger-Farbraum unter Zufall in ≥ 0,8", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Planeten", wortlaut: "N = 20 Planeten", feld: "richter" },
+                },
+            },
+            lauf: async function gesehenLauf(H, P, L) {
+                const z = await L.ev(
+                    "let bew = 0, sied = 0; for (const S of (r._bewohnerSiedlungen || new Map()).values()) { sied++; bew += S.liste ? S.liste.length : (S.plan && S.plan.slots ? S.plan.slots.length : 0); } const TC = globalThis.__tetrapodaCore || {}; const NAT = r.constructor._verhaltenGesetz().furcht; return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, sied, sichtM: NAT.noticeRadius, farbe: Object.keys(TC).filter((k) => /tarn|mimikry|warnfarb|rezeptor|farbraum/i.test(k)) };",
+                    30
+                );
+                L.zeile("Zensus Gesehen: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.farbe.length) throw new Error("Leser erschienen (" + z.farbe.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                await L.je(1, async () => (neu(1), L.leser(1, "die Entdeckung des Spielers liest keine Farbe: Abstand (noticeRadius " + z.sichtM + " m), Aura und Erinnerung (stamm/kreatur-furcht.js:107 _creatureWarinessSpieler, :164 _kreaturMenschFlucht) — kein dichromates Auge des Rotwilds")));
+                await L.je(2, async () => (neu(2), L.leser(2, "keine Tarnung im Jäger-Auge: die Jagd findet die Beute über die Witterung, nie über Muster gegen Boden (stamm/kreatur-verhalten.js:190); der Pirsch-Blick ist ein Radius (stamm/kreatur-furcht.js:64)")));
+                await L.je(3, async () => (neu(3), L.leser(3, "keine sinn-abhängige Tarnung: kein zweites Jäger-Auge (Vogel, UV), kein Rezeptorraum (stamm/kreatur-furcht.js:64, stamm/bild-sicht.js:2)")));
+                await L.je(4, async () => L.umfang(4, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 20 Saaten verlangt; keine Färbung entsteht durch Selektion"));
+                await L.je(5, async () => (neu(5), L.leser(5, "Bewohner tarnen sich nicht: Kleidung liest kein Auge des Wilds, die Flucht des Wilds vor dem Menschen liest keine Farbe (stamm/kreatur-furcht.js:164)", z.bew)));
+                await L.je(6, async () => L.umfang(6, 1, "die Sitzung hält EINEN Planeten (Saat " + z.saat + ") — 20 Planeten verlangt, kein fremder Stern"));
+            },
+        })
+    );
+}
+
+// ═══════════════════════════════════════ Perspektive klang ═══════════════════════════════════════
+{
+    // ─────────── erleben.klang.raum — Raumklang: Richtung, Entfernung, Nachhall aus der Welt ───────────
+    // S1 misst im Fenster der Sitzung den Ruf EINES Leibs der Welt (`_tierRuf` → das Gesetzbuch `tierRuf`, dieselben zwei Schritte
+    // wie die Klang-Werkstatt) an einem Stereo-OfflineAudioContext: 8 Winkel × 3 Abstände = 24 Quellenlagen, die Kamera dreht das Ohr;
+    // je Lage Pegelunterschied (ILD = R − L, |ILD| ≥ 1 dB) und Laufzeitunterschied (Gipfel der Kreuzkorrelation L/R über ±40 Samples)
+    // gegen die Seite aus der Spalte 0 der Kamera-Matrix. S2 liest den Nachhall des Graphen am Ort (EIN Raum binnen der Leiter);
+    // S3–S5 zählen Bauten und die Hörweite des Gesetzes, S6 „Leser fehlt“, S7 zählt die Saaten.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.klang.raum",
+            sek: 45,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "stamm/klang.js", "klang-core.js", "stamm/kreatur-leben.js", "stamm/dirigent-takt.js", "tetrapoda-core.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "pegel_pct", richtung: "≥", wert: 100, wortlaut: "Pegel- und Laufzeitunterschied am Abgriff an 24 Quellenlagen mit richtigem Vorzeichen (100 %)", feld: "richter" },
+                        { wort: "laufzeit_pct", richtung: "≥", wert: 100, wortlaut: "Pegel- und Laufzeitunterschied am Abgriff an 24 Quellenlagen mit richtigem Vorzeichen (100 %)", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 24, einheit: "Quellenlagen", wortlaut: "an 24 Quellenlagen", feld: "richter" },
+                    welt: [
+                        { wort: "lagen", ab: 1, was: "Quellenlagen, an denen der Leib der Welt im verlangten Abstand rief" },
+                        { wort: "pegel_spanne_db", ab: 1, was: "Pegel am Abgriff 3 m gegen 20 m (dB, Mittel über die Winkel)" },
+                    ],
+                },
+                2: {
+                    soll: [
+                        { wort: "nachhall_faktor_min", richtung: "≥", wert: 1.3, wortlaut: "Nachhall paarweise ≥ 1,3× verschieden", feld: "tiefe" },
+                        { wort: "verdeckung_db", richtung: "≥", wert: 6, wortlaut: "hinter Haus/Hang ≥ 6 dB leiser und dumpfer", feld: "tiefe" },
+                    ],
+                    umfang: { verlangt: 4, einheit: "Raumklassen", wortlaut: "4 Raumklassen (Feld, Wald, Gasse, Höhle)", feld: "umfang" },
+                },
+                3: {
+                    soll: [
+                        { wort: "lokalisierung_pct", richtung: "≥", wert: 85, wortlaut: "Blind-Lokalisierung (geeicht) ≥ 85 %", feld: "richter" },
+                        { wort: "rt60_abweichung_pct", richtung: "≤", wert: 25, wortlaut: "RT60 an 50 Zufallsorten ±25 % der Sabine-Zahl", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "begehbare Orte", wortlaut: "10³ begehbare Orte einer Siedlung", feld: "umfang" },
+                },
+                4: {
+                    soll: [
+                        { wort: "oktav_rt60_abweichung_pct", richtung: "≤", wert: 20, wortlaut: "Oktav-RT60 ±20 %", feld: "richter" },
+                        { wort: "daemmung_abweichung_db", richtung: "≤", wert: 5, wortlaut: "Wanddämmung ±5 dB gegen Bauakustik-Tafel", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e5, einheit: "Innenräume", wortlaut: "10⁵ Innenräume einer Stadt", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "laufzeit_abweichung_pct", richtung: "≤", wert: 2, wortlaut: "Laufzeit ±2 %", feld: "richter" },
+                        { wort: "hoehendaempfung_abweichung_db", richtung: "≤", wert: 3, wortlaut: "Höhendämpfung nach ISO 9613 ±3 dB", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "km Fernschall", wortlaut: "Fernschall bis 10 km", feld: "umfang" },
+                },
+                6: {
+                    soll: [
+                        { wort: "schwerpunkt_abweichung_pct", richtung: "≤", wert: 20, wortlaut: "Spektralschwerpunkt kippt wie Hydrophon-Referenz ±20 %", feld: "richter" },
+                        { wort: "schall_faktor_wasser", richtung: "≥", wert: 4.3, wortlaut: "4,3× schnellerer Schall", feld: "tiefe" },
+                    ],
+                },
+                7: {
+                    soll: [
+                        { wort: "atmosphaere_pct", richtung: "≥", wert: 95, wortlaut: "folgen der Atmosphären-Zeile in ≥ 95 %", feld: "richter" },
+                        { wort: "luftschall_vakuum", richtung: "≤", wert: 0, wortlaut: "Vakuum: Luftschall 0", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Saaten", wortlaut: "100 Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function raumLauf(H, P, L) {
+                // DER ZENSUS (in der Seite): Bauten ohne den Wuchs der Natur (`_klangWuchs`), die Hörweiten des Gesetzes, neue Leser
+                function raumZensus() {
+                    const K = window.__klangCore || {};
+                    const A = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    let bauten = 0;
+                    for (const e of r.state.architectures || []) if (e && !A._klangWuchs(e) && !e._verkehrWagen) bauten++;
+                    const U = K.UMWELT || {};
+                    const weit = [["fahrt", (K.FAHRT_OHR || {}).hoerweiteM], ["tier", (U.tier || {}).hoerweiteM]]
+                        .concat(Object.entries(U.stimmen || {}).map(([n, v]) => [n, v && v.hoerweiteM]))
+                        .filter((x) => Number.isFinite(x[1]));
+                    let rufM = 0;
+                    if (typeof K.tierRufPegel === "function") for (let d = 1; d < 2e4; d *= 1.02) if (K.tierRufPegel(d) >= U.hoerschwelleDb) rufM = d;
+                    const top = weit.reduce((a, b) => (b[1] > a[1] ? b : a), ["—", 0]);
+                    const k = Object.keys(K);
+                    return {
+                        saat: r.state.worldMeta && r.state.worldMeta.seed,
+                        bauten,
+                        weitM: Math.max(top[1], rufM),
+                        weitWer: top[1] >= rufM ? top[0] : "tier-ruf",
+                        rufM: +rufM.toFixed(1),
+                        c: (K.FAHRT_OHR || {}).c,
+                        hrtf: k.filter((n) => /hrtf|binaural|itd|laufzeit/i.test(n)),
+                        medium: k.filter((n) => /medium|hydrophon|koerperschall|unterwasser/i.test(n)),
+                    };
+                }
+                // DIE SEITE DES RAUMS: (S2) der Loop mischt raumMs lang, dann der Nachhall des Graphen am Ort; (S1) EIN Leib ruft an 24 Lagen
+                async function raumSeite(o) {
+                    const s = r.state, K = window.__klangCore, cam = s.camera, rend = s.renderer, pm = s.playerMesh.position;
+                    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+                    const war = !!(s.symphony && s.symphony.enabled);
+                    const c0 = cam.position.clone(), q0 = cam.quaternion.clone();
+                    let eigen = null, tier = null, tp = null, raum = null;
+                    const lagen = [];
+                    try {
+                        if (!war) r.initSymphony();
+                        const sy = s.symphony;
+                        if (sy.ctx && sy.ctx.state !== "running") await sy.ctx.resume();
+                        if (!sy.enabled || !sy.umwelt || !sy.umwelt.werkstatt) return { fehler: "der Klang steht nicht (enabled " + !!sy.enabled + ", Werkstatt " + !!(sy.umwelt && sy.umwelt.werkstatt) + ")" };
+                        rend.setAnimationLoop((t) => r._gameLoopTick(t));
+                        await warte(o.raumMs);
+                        rend.setAnimationLoop(null);
+                        const um = sy.umwelt, lr = (um.lage && um.lage.raum) || {};
+                        raum = { rt60: um.raum && Number.isFinite(um.raum.rt60) ? +um.raum.rt60.toFixed(3) : null, deckung: lr.deckung, bau: lr.bau, fels: lr.fels, hoehle: lr.hoehle };
+                        tier = (s.creatures || []).find((c) => c && c.position && !(c.userData && c.userData.dying)) || null;
+                        if (!tier) tier = eigen = r.spawnCreatureAt(pm.x + 3, pm.y, pm.z, "happy", "wolf", { precise: true, bodySize: 1 });
+                        if (!tier) return { fehler: "kein Leib für den Ruf (spawnCreatureAt wolf gab null)", raum };
+                        tp = tier.position.clone();
+                        for (const d of o.abstaende)
+                            for (const w of o.winkel) {
+                                // der Blick steht so, dass die Quelle (+x vom Ohr) w° rechts von ihm klingt
+                                const a = (-w * Math.PI) / 180;
+                                tier.position.set(pm.x + d, pm.y, pm.z);
+                                cam.position.set(pm.x, pm.y, pm.z);
+                                cam.lookAt(pm.x + Math.cos(a), pm.y, pm.z + Math.sin(a));
+                                cam.updateMatrixWorld(true);
+                                const seite = Math.sign(cam.matrixWorld.elements[0]);
+                                const ruf = r._tierRuf(tier, "ruhe");
+                                if (!ruf) {
+                                    lagen.push({ d, w, seite, ruf: false });
+                                    continue;
+                                }
+                                const ctx = new OfflineAudioContext(2, Math.round(48000 * o.sek), 48000);
+                                K.tierRuf(ctx, ctx.destination, ruf);
+                                const buf = await ctx.startRendering();
+                                const A = buf.getChannelData(0), B = buf.getChannelData(1);
+                                let pa = 0, pb = 0;
+                                for (let i = 0; i < A.length; i++) (pa += A[i] * A[i]), (pb += B[i] * B[i]);
+                                // die Laufzeit: der Gipfel von Σ L[i]·R[i−t] — R später (Quelle links) gibt t < 0, L später t > 0
+                                let lag = 0, best = 0;
+                                for (let t = -o.maxLag; t <= o.maxLag; t++) {
+                                    let v = 0;
+                                    for (let i = Math.max(0, t), n = Math.min(A.length, A.length + t); i < n; i++) v += A[i] * B[i - t];
+                                    if (v > best * (1 + 1e-9) + 1e-15) (lag = t), (best = v);
+                                }
+                                lagen.push({ d, w, seite, ruf: true, dWelt: +ruf.d.toFixed(2), pan: +ruf.pan.toFixed(3), ild: +(10 * Math.log10((pb + 1e-12) / (pa + 1e-12))).toFixed(2), db: +(10 * Math.log10((pa + pb) / A.length + 1e-15)).toFixed(2), lag });
+                            }
+                        return { raum, lagen, eigen: !!eigen };
+                    } finally {
+                        rend.setAnimationLoop(null);
+                        if (tier && tp && !eigen) tier.position.copy(tp);
+                        if (eigen) r.removeCreature(eigen);
+                        cam.position.copy(c0);
+                        cam.quaternion.copy(q0);
+                        cam.updateMatrixWorld(true);
+                        if (!war && s.symphony.enabled) r.disposeSymphony();
+                    }
+                }
+                const z = await L.ev("return (" + raumZensus + ")();", 30);
+                L.zeile("Zensus Raum: " + JSON.stringify(z));
+                const neu = (nr, k) => {
+                    if (z[k].length) throw new Error("Leser erschienen (" + z[k].join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                // die billigen Sprossen zuerst (reißt die Frist am Ohr, stehen sie schon in der Ausgabe)
+                await L.je(3, async () => {
+                    neu(3, "hrtf");
+                    if (z.bauten < P.sprossen[3].umfang.verlangt)
+                        return L.umfang(3, z.bauten, "die Sitzung trägt " + z.bauten + " Bauten (begehbare Hüllen) — keine Siedlung mit 10³ begehbaren Orten; und das Ohr kennt kein vorn/hinten/oben (EIN StereoPanner je Quelle, klang-core.js:1277)");
+                    L.leser(3, "kein vorn/hinten/oben am Ohr: jede Quelle geht durch EINEN StereoPanner, kein HRTF (klang-core.js:1277); der Nachhall ist die Formel basis + krone + bau + fels + hoehle (klang-core.js:1182), keine Sabine-Zahl aus Volumen und Absorption", z.bauten);
+                });
+                await L.je(4, async () => {
+                    if (z.bauten < P.sprossen[4].umfang.verlangt)
+                        return L.umfang(4, z.bauten, "die Sitzung trägt " + z.bauten + " Bauten — keine Stadt mit 10⁵ Innenräumen; kein Raum-in-Raum: der Raum am Ohr liest 16 waagerechte Strahlen (UMWELT.raum, klang-core.js:440)");
+                    L.leser(4, "keine Impulsantwort je Raum und keine Wanddämmung nach Stoff: der Raum am Ohr sind vier Kammfilter mit EINER RT60 (klang-core.js:1188 umweltRaum), die Verdeckung pauschal −10 dB (klang-core.js:442 verdecktDb)", z.bauten);
+                });
+                await L.je(5, async () => {
+                    const km = +(z.weitM / 1000).toFixed(3);
+                    if (km < P.sprossen[5].umfang.verlangt)
+                        return L.umfang(5, km, "das weiteste Ohr des Gesetzes reicht " + z.weitM + " m (" + z.weitWer + "; FAHRT_OHR.hoerweiteM klang-core.js:1757, Tier-Ruf " + z.rufM + " m) — kein Fernschall bis 10 km, keine Laufzeit (fahrtAmOhr ohne Verzögerung, klang-core.js:1759), keine Luftdämpfung nach ISO 9613");
+                    L.leser(5, "keine Laufzeit und keine Höhendämpfung: fahrtAmOhr rechnet nur Doppler und −20·log10(d) (klang-core.js:1759)", km);
+                });
+                await L.je(6, async () => (neu(6, "medium"), L.leser(6, "kein Medienwechsel: unter Wasser schweigt nur der Schritt (stamm/klang.js:911), c = " + z.c + " m/s fest (klang-core.js:1757 FAHRT_OHR), kein Körperschall und keine Bodenwelle")));
+                await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 100 Saaten verlangt; c und Dämpfung stehen fest im Gesetz (klang-core.js:1757), keine Atmosphären-Zeile, kein Vakuum"));
+                // DAS OHR AN DER WIESE (S2, S1): EIN Seiten-Lauf
+                let R = null, fehlR = null;
+                try {
+                    await L.ort("wiese", "ego");
+                    L.preisPose("wiese", "ego");
+                    R = await L.ev("return await (" + raumSeite + ")(" + JSON.stringify({ raumMs: 2000, abstaende: [3, 8, 20], winkel: [-90, -60, -30, -15, 15, 30, 60, 90], sek: 0.6, maxLag: 40 }) + ");", Math.max(10, L.rest() - 3));
+                    L.zeile("Raum am Ohr: " + JSON.stringify(R).slice(0, 2400));
+                } catch (e) {
+                    if (e && e.messort) throw e;
+                    fehlR = String((e && e.message) || e).split("\n")[0].slice(0, 200);
+                }
+                await L.je(2, async () => {
+                    const rt = R && R.raum ? R.raum.rt60 : null;
+                    L.umfang(2, Number.isFinite(rt) ? 1 : 0, "binnen einer Leiter (60 s) liest das Ohr EINEN Raum: das Feld der Wiese (RT60 " + (Number.isFinite(rt) ? rt + " s" : "ungelesen" + (fehlR ? ": " + fehlR : "")) + ") — Wald, Gasse und Höhle verlangen drei Ortswechsel mit kaltem Ring (11–28 s je Ort); klang.K3#2 misst sie headless in 10 min");
+                });
+                await L.je(1, async () => {
+                    if (fehlR) throw new Error(fehlR);
+                    if (!R || R.fehler) throw new Error((R && R.fehler) || "der Seiten-Lauf gab nichts");
+                    const n = P.sprossen[1].umfang.verlangt;
+                    const echt = R.lagen.filter((x) => x.ruf && Math.abs(x.dWelt - x.d) < 0.1);
+                    const pegel = echt.filter((x) => x.seite !== 0 && Math.sign(x.ild) === x.seite && Math.abs(x.ild) >= 1);
+                    const zeit = echt.filter((x) => x.seite !== 0 && Math.sign(x.lag) === x.seite);
+                    const db = (d, w) => (echt.find((x) => x.d === d && x.w === w) || {}).db;
+                    const sp = [...new Set(echt.map((x) => x.w))].map((w) => db(3, w) - db(20, w)).filter(Number.isFinite);
+                    const spanne = sp.length ? +(sp.reduce((a, b) => a + b, 0) / sp.length).toFixed(2) : 0;
+                    const stumm = R.lagen.filter((x) => !x.ruf || Math.abs(x.dWelt - x.d) >= 0.1);
+                    const lag0 = echt.filter((x) => x.lag === 0).length;
+                    const taeter =
+                        zeit.length < n
+                            ? "kein Laufzeitunterschied: tierRufSpielen führt den Ruf durch EINEN StereoPannerNode ohne Verzögerung je Ohr (klang-core.js:1277) — Lag 0 Samples an " + lag0 + " von " + echt.length + " Lagen"
+                            : pegel.length < n
+                              ? "Pegel mit falschem Vorzeichen oder < 1 dB an " + echt.filter((x) => !pegel.includes(x)).map((x) => x.w + "° " + x.d + " m (" + x.ild + " dB)").slice(0, 4).join(", ") + " — _umweltPanorama (stamm/klang.js:350)"
+                              : null;
+                    L.gemessen(1, { pegel_pct: +((100 * pegel.length) / n).toFixed(1), laufzeit_pct: +((100 * zeit.length) / n).toFixed(1) }, {
+                        erzeugt: echt.length,
+                        welt: { lagen: echt.length, pegel_spanne_db: spanne },
+                        taeter: (taeter || "") + (stumm.length ? (taeter ? " · " : "") + stumm.length + " Lagen ohne Ruf im verlangten Abstand" : "") || null,
+                        beleg: "Leib " + (R.eigen ? "gesetzt (Wolf)" : "der Welt") + " · ILD " + echt.map((x) => x.w + "°/" + x.d + "m " + x.ild).slice(0, 8).join(" · "),
+                    });
+                });
+            },
+        })
+    );
+
+    // ─────────── erleben.klang.ereignis — Ereignis-Klang: Stoß, Bruch, Kaskade ───────────
+    // S1 misst im Fenster der Sitzung den Schritt je Stoff wie klang.K4#1 (`schrittSeite`): Orte, deren Gang-Strecke samt Rand
+    // `_schrittMaterialAt` ganz als EINEN trockenen Stoff nennt, je Stoff 3,5 s Gehen mit W, ein Analyser an jedem Schritt-Gain, je
+    // Schritt-Ereignis der Pegel-gewichtete Spektral-Schwerpunkt. S2 fährt den Körper-Teil der Klang-Linse (werkzeug + koerperSeite
+    // aus scripts/diag-klang-zensus.cjs, OfflineAudioContext): Motor [Upm, Hz], Landung [Aufprall, dB], Doppler [soll, ist] → r.
+    // S3–S6 urteilen „Leser fehlt“ bzw. zählen Bauten, S7 die Saaten.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.klang.ereignis",
+            sek: 60,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "scripts/diag-klang-zensus.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json", "klang-core.js", "vehicle-core.js", "koerper-core.js", "stamm/klang.js", "stamm/koerper-seele.js", "stamm/koerper-fahrt.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "schwerpunkt_abstand_min_hz", richtung: "≥", wert: 300, wortlaut: "Spektralschwerpunkt je Stoff ≥ 300 Hz getrennt", feld: "richter" },
+                        { wort: "schritte_min", richtung: "≥", wert: 5, wortlaut: "≥ 5 Schritte je Stoff", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 3, einheit: "Stoffe", wortlaut: "Schritt auf 3 Stoffen", feld: "umfang" },
+                    welt: [
+                        { wort: "gang_m_min", ab: 1, was: "kürzester Gang je Stoff (m)" },
+                        { wort: "schritt_ereignisse", ab: 15, was: "Schritt-Ereignisse des Spiels (`_playSchrittOneShot`) über alle Stoffe" },
+                    ],
+                },
+                2: {
+                    soll: [
+                        { wort: "motor_r", richtung: "≥", wert: 1, wortlaut: "Motor r = 1,0", feld: "richter" },
+                        { wort: "landung_r", richtung: "≥", wert: 0.99, wortlaut: "Landung r ≥ 0,99", feld: "richter" },
+                        { wort: "doppler_r", richtung: "≥", wert: 0.99, wortlaut: "Doppler r ≥ 0,99 am Abgriff", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 10, einheit: "Ereignisklassen", wortlaut: "~10 Ereignisklassen", feld: "umfang" },
+                    welt: [
+                        { wort: "motor_abgriffe", ab: 10, was: "Abgriffe des Motors mit Drehzahl und Grundton" },
+                        { wort: "landungen", ab: 5, was: "Stürze, die genau einmal hörbar landeten" },
+                        { wort: "doppler_punkte", ab: 6, was: "Punkte der Vorbeifahrt mit hörbarem Abrollen" },
+                    ],
+                },
+                3: { soll: [{ wort: "stoff_erkannt_pct", richtung: "≥", wert: 70, wortlaut: "Stoff aus 10 nur am Klang ≥ 70 %", feld: "richter" }] },
+                4: {
+                    soll: [
+                        { wort: "eigenfrequenz_abweichung_pct", richtung: "≤", wert: 10, wortlaut: "tiefste Eigenfrequenz ±10 % gegen Platten-/Balkenformel", feld: "richter" },
+                        { wort: "truemmer_r", richtung: "≥", wert: 0.8, wortlaut: "Trümmer im Bild ↔ Einschläge am Abgriff r ≥ 0,8", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Zufallsbauten", wortlaut: "100 Zufallsbauten", feld: "umfang" },
+                },
+                5: {
+                    soll: [
+                        { wort: "donner_abweichung_pct", richtung: "≤", wert: 25, wortlaut: "Donner-Spektrum und -Dauer ±25 %", feld: "richter" },
+                        { wort: "brandung_r", richtung: "≥", wert: 0.9, wortlaut: "Brandungspegel ∝ Wellenhöhe im Bild r ≥ 0,9", feld: "richter" },
+                    ],
+                },
+                6: { soll: [{ wort: "pegel_abweichung_db", richtung: "≤", wert: 6, wortlaut: "Eruptionsstärke → Pegel in 1/5/20 km gegen Vulkan-Akustik-Messungen ±6 dB", feld: "richter" }] },
+                7: {
+                    soll: [{ wort: "plausibel_pct", richtung: "≥", wert: 90, wortlaut: "geeichtes Ohr „plausibel für Stoff und Medium\" ≥ 90 %", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "Saaten", wortlaut: "10⁶ Saaten", feld: "umfang" },
+                },
+            },
+            lauf: async function ereignisLauf(H, P, L) {
+                function ereignisZensus() {
+                    const K = window.__klangCore || {};
+                    const A = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+                    let bauten = 0;
+                    for (const e of r.state.architectures || []) if (e && !A._klangWuchs(e) && !e._verkehrWagen) bauten++;
+                    const k = Object.keys(K), sti = Object.keys((K.UMWELT || {}).stimmen || {});
+                    return {
+                        saat: r.state.worldMeta && r.state.worldMeta.seed,
+                        bauten,
+                        stimmen: sti,
+                        gesetze: ["SCHRITT", "TREFFER_PAAR", "FAHRT", "SUBSTANZ"].filter((n) => K[n]).concat(sti.filter((n) => n === "glut")),
+                        kontakt: k.filter((n) => /kratz|gleit|bruch|truemmer|reib/i.test(n)),
+                        modal: k.filter((n) => /eigenfreq|modal|platte|balken/i.test(n)),
+                        elementar: sti.concat(k).filter((n) => /donner|brandung|lawine|hagel/i.test(n)),
+                        geologie: sti.concat(k).filter((n) => /vulkan|eruption|beben|geysir|kalben|infraschall/i.test(n)),
+                    };
+                }
+                // DIE SEITE DES SCHRITTS (klang.K4#1, `schrittSeite` der Station g6 mit Wand-Deckel und ≤ fahrtenMax fernen Kandidaten)
+                async function schrittSeite(o) {
+                    const st = r.state, rend = st.renderer, A = window.BaseAudioContext.prototype, gn = A.createGain;
+                    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+                    const taste = (typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: "w", code: "KeyW", bubbles: true }));
+                    const t0 = performance.now(), war = !!(st.symphony && st.symphony.enabled), sicht = st.cameraMode, yaw0 = st.yaw;
+                    let abgriff = null, takt = null;
+                    const schritte = [], spiel = r._playSchrittOneShot, eigen = Object.prototype.hasOwnProperty.call(r, "_playSchrittOneShot");
+                    r._playSchrittOneShot = function (param) {
+                        if (abgriff && param) schritte.push({ t: performance.now(), mat: param.material });
+                        return spiel.apply(this, arguments);
+                    };
+                    A.createGain = function () {
+                        const g = gn.apply(this, arguments);
+                        if (abgriff && String(new Error().stack).includes("_playSchrittOneShot"))
+                            try {
+                                g.connect(abgriff);
+                            } catch (_e) {}
+                        return g;
+                    };
+                    try {
+                        if (st.symphony.enabled) r.disposeSymphony();
+                        r.initSymphony();
+                        const s = st.symphony;
+                        if (s.ctx.state !== "running") await s.ctx.resume();
+                        if (st.cameraMode !== "first") r.setCameraMode("first");
+                        rend.setAnimationLoop((t) => r._gameLoopTick(t));
+                        const mat = (x, z, karte) => (karte && r._bodenSichtAt(x, z) === null ? null : r._schrittMaterialAt(x, z, r._voxelSurfaceY(x, z)));
+                        const LANG = o.gangM + o.randM;
+                        const strecke = (x, z, karte, schritt) => {
+                            const m = mat(x, z, karte);
+                            if (!m || m === "wasser") return null;
+                            for (let d = -o.randM; d <= LANG + 1e-9; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m) return null;
+                            return m;
+                        };
+                        const suche = (x0, z0, rad, schon) => {
+                            const fund = {};
+                            for (let rr = 0; rr <= rad && schon.length + Object.keys(fund).length < 3; rr += 3)
+                                for (let i = 0, n = Math.max(1, Math.round(rr * 1.2)); i < n; i++) {
+                                    const x = x0 + Math.cos((i / n) * 6.283) * rr, z = z0 + Math.sin((i / n) * 6.283) * rr;
+                                    const m = strecke(x, z, true, 0.5);
+                                    if (m && !fund[m] && !schon.includes(m) && schon.length + Object.keys(fund).length < 3) fund[m] = [Math.round(x * 10) / 10, Math.round(z * 10) / 10];
+                                }
+                            return fund;
+                        };
+                        const kandidaten = (x0, z0, schon) => {
+                            const je = {}, aus = [];
+                            for (let rr = 40; rr <= 2500; rr += 25)
+                                for (let i = 0; i < 64; i++) {
+                                    const x = x0 + Math.cos((i / 64) * 6.283) * rr, z = z0 + Math.sin((i / 64) * 6.283) * rr;
+                                    const m = strecke(x, z, false, 1);
+                                    if (!m || schon.includes(m) || (je[m] = je[m] || []).length >= 3 || je[m].some((p) => Math.hypot(p[0] - x, p[1] - z) < 150)) continue;
+                                    je[m].push([x, z]);
+                                    aus.push({ m, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10 });
+                                }
+                            return aus;
+                        };
+                        const hin = (x, z) => {
+                            st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+                            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                        };
+                        const karteDa = async (x, z) => {
+                            for (let i = 0; i < 200; i++) {
+                                if (r._bodenSichtAt(x + o.randM, z) !== null && r._bodenSichtAt(x - LANG, z) !== null) return true;
+                                await warte(50);
+                            }
+                            return false;
+                        };
+                        hin(o.x, o.z);
+                        await karteDa(o.x, o.z);
+                        const orte = suche(o.x, o.z, 120, []), fahrten = [];
+                        if (Object.keys(orte).length < 3)
+                            for (const k of kandidaten(o.x, o.z, Object.keys(orte))) {
+                                if (Object.keys(orte).length >= 3 || fahrten.length >= o.fahrtenMax || performance.now() - t0 > o.wandMs / 2) break;
+                                if (orte[k.m]) continue;
+                                hin(k.x, k.z);
+                                const karte = await karteDa(k.x, k.z);
+                                const neu = karte ? suche(k.x, k.z, 30, Object.keys(orte)) : {};
+                                fahrten.push({ hinweis: k.m, ort: [k.x, k.z], karte, neu: Object.keys(neu) });
+                                Object.assign(orte, neu);
+                            }
+                        const an = s.ctx.createAnalyser();
+                        an.fftSize = 1024;
+                        an.smoothingTimeConstant = 0;
+                        abgriff = an;
+                        const fd = new Float32Array(an.frequencyBinCount), td = new Float32Array(an.fftSize), proben = [];
+                        takt = setInterval(() => {
+                            an.getFloatTimeDomainData(td);
+                            let q = 0;
+                            for (let i = 0; i < td.length; i++) q += td[i] * td[i];
+                            const rms = Math.sqrt(q / td.length);
+                            if (rms < 1e-4) return;
+                            an.getFloatFrequencyData(fd);
+                            const hz = s.ctx.sampleRate / an.fftSize;
+                            let num = 0, den = 0;
+                            for (let k = 1; k < fd.length; k++) {
+                                const p = Math.pow(10, fd[k] / 10);
+                                (num += p * k * hz), (den += p);
+                            }
+                            proben.push({ t: performance.now(), rms, schwer: num / den });
+                        }, 8);
+                        const stoffe = {};
+                        let wand = false;
+                        for (const [m, [x, z]] of Object.entries(orte)) {
+                            if (performance.now() - t0 + o.gehMs + o.ruhMs + 1500 > o.wandMs) {
+                                wand = true;
+                                break;
+                            }
+                            st.yaw = -Math.PI / 2;
+                            hin(x, z);
+                            await karteDa(x, z);
+                            await warte(o.ruhMs);
+                            const p0 = [st.playerMesh.position.x, st.playerMesh.position.z];
+                            proben.length = 0;
+                            schritte.length = 0;
+                            taste("keydown");
+                            await warte(o.gehMs);
+                            taste("keyup");
+                            await warte(500);
+                            const ev = schritte.slice(), pr = proben.slice();
+                            const alle = ev
+                                .map((e, i) => {
+                                    const t1 = Math.min(i + 1 < ev.length ? ev[i + 1].t : Infinity, e.t + 300);
+                                    let w = 0, sw = 0;
+                                    for (const p of pr) if (p.t >= e.t && p.t < t1) (w += p.rms * p.rms), (sw += p.rms * p.rms * p.schwer);
+                                    return { schwerHz: w > 0 ? Math.round(sw / w) : null, mat: e.mat };
+                                })
+                                .filter((b) => b.schwerHz !== null);
+                            const sw = alle.map((b) => b.schwerHz).sort((a, b) => a - b);
+                            const p1 = st.playerMesh.position;
+                            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), fremd: ev.filter((e) => e.mat !== m).map((e) => e.mat), schritte: ev.length, bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null };
+                        }
+                        return { klang: { an: s.enabled, ctx: s.ctx.state }, orte, fahrten, stoffe, wand, ms: Math.round(performance.now() - t0) };
+                    } finally {
+                        clearInterval(takt);
+                        taste("keyup");
+                        rend.setAnimationLoop(null);
+                        abgriff = null;
+                        A.createGain = gn;
+                        if (eigen) r._playSchrittOneShot = spiel;
+                        else delete r._playSchrittOneShot;
+                        if (st.symphony.enabled) r.disposeSymphony();
+                        if (war) r.initSymphony();
+                        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
+                        st.yaw = yaw0;
+                    }
+                }
+                const z = await L.ev("return (" + ereignisZensus + ")();", 30);
+                L.zeile("Zensus Ereignis: " + JSON.stringify(z));
+                const neu = (nr, k) => {
+                    if (z[k].length) throw new Error("Leser erschienen (" + z[k].join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                await L.je(3, async () => (neu(3, "kontakt"), L.leser(3, "keine Kontaktart außer dem Stoß: der Kontakt klingt als Treffer (TREFFER_PAAR klang-core.js:1408) und Schritt (SCHRITT klang-core.js:1483), gerollt wird nur das Abrollen des Wagens (FAHRT.abrollen klang-core.js:1615) — kein Kratzen, Gleiten, Bruch; kein Foley-Korpus")));
+                await L.je(4, async () => {
+                    neu(4, "modal");
+                    if (z.bauten < P.sprossen[4].umfang.verlangt)
+                        return L.umfang(4, z.bauten, "die Sitzung trägt " + z.bauten + " Bauten — 100 Zufallsbauten verlangt; und kein Ding klingt nach Größe oder Hohlraum (SUBSTANZ klang-core.js:1310 klingt nach Tags)");
+                    L.leser(4, "keine Eigenfrequenz aus Größe und Hohlraum, kein Trümmer-Klang: ein Ding klingt nach den Tags seiner Substanz (SUBSTANZ klang-core.js:1310), nie nach Platten-/Balkenformel", z.bauten);
+                });
+                await L.je(5, async () => (neu(5, "elementar"), L.leser(5, "kein Donner, keine Lawine, kein Hagel: UMWELT trägt die Stimmen " + z.stimmen.join(" · ") + " (klang-core.js:443); das Ufer schlägt aus dem Wind (ufer.wellenDb klang-core.js:451), nie aus der Wellenhöhe im Bild")));
+                await L.je(6, async () => (neu(6, "geologie"), L.leser(6, "kein Vulkan-, Beben- oder Geysir-Klang und kein Infraschall: keine Stimme der Geologie in UMWELT (klang-core.js:443), das weiteste Ohr hört 160 m (klang-core.js:1757)")));
+                await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 10⁶ Saaten verlangt; kein fremder Stoff, kein fremdes Medium"));
+                // AM MESSORT: erst der Körper (Offline, kurz), dann der Gang je Stoff (mit Wand-Deckel)
+                await L.ort("wiese", "ego");
+                L.preisPose("wiese", "ego");
+                const M = require(require("path").resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+                const pear = (a, b) => {
+                    const n = a.length;
+                    if (n < 3) return NaN;
+                    const ma = a.reduce((x, y) => x + y, 0) / n, mb = b.reduce((x, y) => x + y, 0) / n;
+                    let sab = 0, saa = 0, sbb = 0;
+                    for (let i = 0; i < n; i++) (sab += (a[i] - ma) * (b[i] - mb)), (saa += (a[i] - ma) ** 2), (sbb += (b[i] - mb) ** 2);
+                    return sab / Math.sqrt(saa * sbb);
+                };
+                const ab4 = (x) => (Number.isFinite(x) ? Math.floor(x * 1e4) / 1e4 : null);
+                await L.je(2, async () => {
+                    // die Linse des Spiels am Kopf: werkzeug und koerperSeite aus scripts/diag-klang-zensus.cjs (wie klang.K4#2)
+                    const text = require("fs").readFileSync("scripts/diag-klang-zensus.cjs", "utf8").split("\r\n").join("\n");
+                    const holen = (n) => {
+                        let i = text.indexOf("\nasync function " + n + "(");
+                        if (i < 0) i = text.indexOf("\nfunction " + n + "(");
+                        const e = i < 0 ? -1 : text.indexOf("\n}\n", i + 1);
+                        if (e < 0) throw new Error("scripts/diag-klang-zensus.cjs trägt " + n + " nicht mehr — die Linse änderte sich");
+                        return text.slice(i + 1, e + 2);
+                    };
+                    const F = await L.ev("window.__klangW = (" + holen("werkzeug") + ")(); try { return await (" + holen("koerperSeite") + ")(" + JSON.stringify({ x: M.x, z: M.z }) + ", null); } finally { delete window.__klangW; }", Math.max(10, L.rest() - 3));
+                    L.zeile("Körper am Abgriff: " + JSON.stringify(F).slice(0, 1600));
+                    if (!F || !Array.isArray(F.motor) || !Array.isArray(F.landung) || !Array.isArray(F.doppler)) throw new Error("koerperSeite gab keinen Körper-Teil: " + JSON.stringify(F).slice(0, 160));
+                    const Mo = F.motor.filter((x) => x[0] > 0 && x[1] > 0);
+                    const fall = F.landung.slice(1);
+                    const laut = fall.filter((x) => x[2] === 1 && x[4] > -90);
+                    const Dp = F.doppler.filter((x) => x[2] > 0);
+                    const rM = pear(Mo.map((x) => x[0]), Mo.map((x) => x[1]));
+                    const rL = pear(fall.map((x) => x[1]), fall.map((x) => x[4]));
+                    const rD = pear(Dp.map((x) => 343 * (1 - 1 / x[1])), Dp.map((x) => 343 * (1 - 1 / x[2])));
+                    // die Karte nennt „Motor r = 1,0“: r auf ihre Stelle gerundet; Landung und Doppler abgeschnitten auf vier Stellen (nie weicher)
+                    const werte = { motor_r: Number.isFinite(rM) ? Math.round(rM * 10) / 10 : null, landung_r: ab4(rL), doppler_r: ab4(rD) };
+                    const klassen = (laut.length ? 1 : 0) + (Mo.length || Dp.length ? 1 : 0);
+                    const fehlt = [["Motor", werte.motor_r, 1], ["Landung", werte.landung_r, 0.99], ["Doppler", werte.doppler_r, 0.99]].filter((x) => !(x[1] >= x[2]));
+                    L.gemessen(2, werte, {
+                        erzeugt: klassen,
+                        welt: { motor_abgriffe: Mo.length, landungen: laut.length, doppler_punkte: Dp.length },
+                        taeter: fehlt.length
+                            ? fehlt.map((x) => x[0] + " r " + x[1]).join(" · ") + " (koerperSeite, scripts/diag-klang-zensus.cjs:1191)"
+                            : "gemessen " + klassen + " von ~10 Ereignisklassen (Landung, Motor+Doppler) — Treffer, Glut, Substanz tragen keine Proportion am Abgriff, Bruch keinen Klang",
+                        beleg: "r roh: Motor " + ab4(rM) + " (" + Mo.length + ") · Landung " + ab4(rL) + " (" + fall.map((x) => x[0] + " m " + x[4]).join(", ") + ") · Doppler " + ab4(rD) + " (" + Dp.length + ") · Gesetze der Welt: " + z.gesetze.join(", "),
+                    });
+                });
+                await L.je(1, async () => {
+                    if (L.rest() < 16) throw new Error("Frist: der Gang je Stoff braucht ≥ 16 s, die Probe hält noch " + Math.round(L.rest()) + " s");
+                    const S = await L.ev("return await (" + schrittSeite + ")(" + JSON.stringify({ x: M.x, z: M.z, gehMs: 3500, gangM: 5, randM: 1, ruhMs: 600, fahrtenMax: 2, wandMs: Math.max(8000, (L.rest() - 6) * 1000) }) + ");", Math.max(10, L.rest() - 2));
+                    const S2 = Object.entries(S.stoffe || {});
+                    L.zeile("Schritt je Stoff: " + JSON.stringify({ orte: S.orte, fahrten: S.fahrten, wand: S.wand, ms: S.ms, stoffe: Object.fromEntries(S2.map(([m, v]) => [m, { n: v.bursts, hz: v.medianHz, weg: v.wegM, fremd: v.fremd.length }])) }));
+                    const verlangt = P.sprossen[1].umfang.verlangt;
+                    const orte = Object.keys(S.orte || {});
+                    if (orte.length < verlangt) throw new Error("nur " + orte.length + " Stoffe (" + orte.join(", ") + ") tragen eine ganze Gang-Strecke von 7 m um die Wiese (Fahrten " + (S.fahrten || []).length + ") — kein Ort, kein Urteil");
+                    if (S2.length < orte.length) throw new Error("Wand-Deckel: " + S2.length + " von " + orte.length + " Stoffen gegangen in " + S.ms + " ms");
+                    const weg = S2.filter(([, v]) => v.fremd.length || v.wegM > 5);
+                    if (weg.length) throw new Error("der Gang verließ den Stoff: " + weg.map(([m, v]) => m + " Weg " + v.wegM + " m, fremd " + (v.fremd.join(",") || "—")).join(" · "));
+                    let min = Infinity, paar = "";
+                    for (let a = 0; a < S2.length; a++)
+                        for (let b = a + 1; b < S2.length; b++) {
+                            const d = Math.abs(S2[a][1].medianHz - S2[b][1].medianHz);
+                            if (d < min) (min = d), (paar = S2[a][0] + " " + S2[a][1].medianHz + " Hz ↔ " + S2[b][0] + " " + S2[b][1].medianHz + " Hz");
+                        }
+                    const nMin = Math.min(...S2.map(([, v]) => v.bursts));
+                    L.gemessen(1, { schwerpunkt_abstand_min_hz: Number.isFinite(min) ? Math.round(min) : null, schritte_min: nMin }, {
+                        erzeugt: S2.length,
+                        welt: { gang_m_min: Math.min(...S2.map(([, v]) => v.wegM)), schritt_ereignisse: S2.reduce((a, [, v]) => a + v.schritte, 0) },
+                        taeter: "das nächste Paar " + paar + " · wenigste Schritte " + nMin + " (SCHRITT klang-core.js:1483, `_playSchrittOneShot` stamm/klang.js:978)",
+                    });
+                });
+            },
+        })
+    );
+
+    // ─────────── erleben.klang.landschaft — Klang-Landschaft: was wirklich lebt, fährt, arbeitet ───────────
+    // S1 trägt die Station g6 (karte2.erleben.klang.landschaft#1: Wind Bild ↔ Ohr, Klang-Zensus je Ort). Der Zensus der Sitzung zählt
+    // Bewohner (je Siedlung die Liste oder Σ leuteVon des Plans), Wagen des Verkehrs (`_verkehrWagen`) und Saaten: unter dem Umfang
+    // urteilt `L.umfang`, darüber „Leser fehlt“ — die Bewohner klingen nicht (der Schritt-Klang gehört dem Spieler allein).
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.klang.landschaft",
+            sek: 20,
+            pfad: ["scripts/werkbank.cjs", "stamm/klang.js", "klang-core.js", "stamm/koerper-seele.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-verkehr.js", "fachwerk-core.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            bestehend: [1],
+            sprossen: {
+                2: {
+                    soll: [{ wort: "kreuzkorrelation", richtung: "≥", wert: 0.6, wortlaut: "Kreuzkorrelation Bild ↔ Ohr ≥ 0,6 je Biom", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Wagen", wortlaut: "20 Wagen", feld: "umfang" },
+                },
+                3: {
+                    soll: [
+                        { wort: "mittag_nacht_db", richtung: "≥", wert: 15, wortlaut: "Dorfplatz Mittag gegen Nacht ≥ 15 dB", feld: "richter" },
+                        { wort: "quellen_r", richtung: "≥", wert: 0.8, wortlaut: "Quellen am Abgriff ↔ Bewohner im Bild r ≥ 0,8", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "lebende Quellen", wortlaut: "10² lebende Quellen eines Dorfs", feld: "umfang" },
+                },
+                4: {
+                    soll: [{ wort: "indizes_abweichung_pct", richtung: "≤", wert: 25, wortlaut: "Bioakustik-Indizes (ACI, NDSI) ±25 % gegen Feldaufnahmen", feld: "richter" }],
+                    umfang: { verlangt: 20, einheit: "Zufallsorte", wortlaut: "jedes Biom der Erde (20 Zufallsorte)", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "pegel_abweichung_db", richtung: "≤", wert: 5, wortlaut: "Tagpegel und Oktavspektrum an 10 Zufallsorten ±5 dB gegen Lärmkarten", feld: "richter" }],
+                    umfang: { verlangt: 1e4, einheit: "Quellen", wortlaut: "10⁴ Quellen einer Großstadt", feld: "umfang" },
+                },
+                6: {
+                    soll: [{ wort: "aktivitaet_r", richtung: "≥", wert: 0.9, wortlaut: "Pegelkurve folgt der Aktivität r ≥ 0,9", feld: "richter" }],
+                    umfang: { verlangt: 1e6, einheit: "Bewohner", wortlaut: "10⁶ Bewohner einer Metropole", feld: "umfang" },
+                },
+                7: {
+                    soll: [
+                        { wort: "bezirk_uhrzeit_pct", richtung: "≥", wert: 70, wortlaut: "Bezirkstyp und Uhrzeit nur am Abgriff ≥ 70 %", feld: "richter" },
+                        { wort: "verursacher_pct", richtung: "≥", wert: 99, wortlaut: "hörbare Quellen mit Verursacher im Bild ≥ 99 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e8, einheit: "Bewohner einer Stadt", wortlaut: "10⁸ in einer Stadt", feld: "umfang" },
+                },
+                8: {
+                    soll: [
+                        { wort: "lebendig_pct", richtung: "≥", wert: 80, wortlaut: "„lebendig und eigen\" ≥ 80 %", feld: "richter" },
+                        { wort: "paare_pct", richtung: "≥", wert: 90, wortlaut: "Paare unterscheidbar ≥ 90 %", feld: "richter" },
+                        { wort: "allometrie_abweichung_pct", richtung: "≤", wert: 20, wortlaut: "Allometrie-Steigung ±20 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Saaten", wortlaut: "100 Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function landschaftLauf(H, P, L) {
+                function landZensus() {
+                    const FC = globalThis.__fachwerkCore;
+                    let bew = 0, maxS = 0, sied = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        sied++;
+                        let n = 0;
+                        if (S.liste) n = S.liste.length;
+                        else if (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === "function")
+                            for (const sl of S.plan.slots)
+                                try {
+                                    n += Math.max(0, FC.leuteVon(sl.ov) | 0);
+                                } catch (_e) {}
+                        bew += n;
+                        if (n > maxS) maxS = n;
+                    }
+                    let wagen = 0;
+                    for (const e of r.state.architectures || []) if (e && e._verkehrWagen) wagen++;
+                    const namen = [];
+                    for (let o = Object.getPrototypeOf(r); o && o !== Object.prototype; o = Object.getPrototypeOf(o)) namen.push(...Object.getOwnPropertyNames(o));
+                    return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, maxS, sied, wagen, bewohnerKlang: namen.filter((n) => /klang/i.test(n) && /bewohner|leute|murmel|werkzeug|tuer/i.test(n)) };
+                }
+                const z = await L.ev("return (" + landZensus + ")();", 30);
+                L.zeile("Zensus Landschaft: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.bewohnerKlang.length) throw new Error("Leser erschienen (" + z.bewohnerKlang.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                const stumm = "die Bewohner klingen nicht: der Schritt-Klang gehört dem Spieler allein (`_schrittKlangTick` stamm/klang.js:888, gerufen nur aus animatePlayerSoul stamm/koerper-seele.js:1771) — kein Werkzeug, keine Tür, kein Murmeln";
+                await L.je(2, async () => {
+                    if (z.wagen < P.sprossen[2].umfang.verlangt)
+                        return L.umfang(2, z.wagen, "die Sitzung trägt " + z.wagen + " Wagen des Verkehrs (`_verkehrWagen`, stamm/siedlung-verkehr.js:634) — 20 verlangt; 5 Biome × Tag/Nacht × Regen liegen jenseits einer Leiter von 60 s");
+                    throw new Error("20 Wagen stehen (" + z.wagen + "), doch 5 Biome × Tag/Nacht × Regen verlangen 20 Ortswechsel mit kaltem Ring — jenseits der 60 s einer Leiter");
+                });
+                await L.je(3, async () => {
+                    neu(3);
+                    if (z.maxS < P.sprossen[3].umfang.verlangt) return L.umfang(3, z.maxS, "die größte Siedlung der Sitzung trägt " + z.maxS + " Bewohner (" + z.sied + " Siedlungen) — 10² lebende Quellen verlangt; und " + stumm);
+                    L.leser(3, stumm, z.maxS);
+                });
+                await L.je(4, async () => L.leser(4, "die Arten teilen das Spektrum nicht: der Chor sind zwei Texturen (vogelA, vogelB) hinter EINEM Tiefpass 9 kHz (klang-core.js:479), Grillen EIN Band (klang-core.js:491); kein Feldaufnahmen-Korpus für ACI/NDSI"));
+                await L.je(5, async () => {
+                    neu(5);
+                    const q = z.bew + z.wagen;
+                    if (q < P.sprossen[5].umfang.verlangt) return L.umfang(5, q, "die Sitzung trägt " + z.bew + " Bewohner und " + z.wagen + " Wagen als mögliche Quellen — 10⁴ verlangt; und " + stumm);
+                    L.leser(5, stumm, q);
+                });
+                await L.je(6, async () => {
+                    neu(6);
+                    if (z.bew < P.sprossen[6].umfang.verlangt) return L.umfang(6, z.bew, "die Sitzung trägt " + z.bew + " Bewohner in " + z.sied + " Siedlungen — keine Metropole mit 10⁶");
+                    L.leser(6, stumm, z.bew);
+                });
+                await L.je(7, async () => {
+                    neu(7);
+                    if (z.maxS < P.sprossen[7].umfang.verlangt) return L.umfang(7, z.maxS, "die größte Siedlung trägt " + z.maxS + " Bewohner — 10⁸ in einer Stadt verlangt");
+                    L.leser(7, stumm, z.maxS);
+                });
+                await L.je(8, async () => L.umfang(8, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 100 Saaten verlangt; der Ruf folgt dem Leib nur über f0 ∝ L^−0,9 der vier Gattungen (klang-core.js:497)"));
+            },
+        })
+    );
+
+    // ─────────── erleben.klang.stimme — Stimme: Personen sprechen aus dem Leib ───────────
+    // Kein Bewohner spricht; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:73) — eine Gerätestimme
+    // außerhalb des Klang-Graphen (R4). S1/S2 urteilen „Leser fehlt“, S3/S4 zählen Bewohner je Siedlung und gesamt, S5 die Saaten.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.klang.stimme",
+            sek: 20,
+            pfad: ["scripts/werkbank.cjs", "stamm/werkstatt-hud.js", "stamm/klang.js", "klang-core.js", "stamm/siedlung-bewohner.js", "fachwerk-core.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: { soll: [{ wort: "formant_abweichung_pct", richtung: "≤", wert: 15, wortlaut: "F0 und Formanten am Abgriff gegen Peterson-Barney-Tafel ±15 % nach Leibmaßen", feld: "richter" }] },
+                2: {
+                    soll: [
+                        { wort: "wer_pct", richtung: "≤", wert: 10, wortlaut: "Wortfehlerrate eines Spracherkenners am Abgriff ≤ 10 %", feld: "richter" },
+                        { wort: "affekt_pct", richtung: "≥", wert: 60, wortlaut: "Affekt blind ≥ 60 %", feld: "richter" },
+                    ],
+                },
+                3: {
+                    soll: [{ wort: "verwechslung_pct", richtung: "≤", wert: 5, wortlaut: "Sprecher-Verwechslung zweier Zufallsbewohner ≤ 5 %", feld: "richter" }],
+                    umfang: { verlangt: 1000, einheit: "Bewohner einer Siedlung", wortlaut: "jeder Bewohner einer Siedlung (10³)", feld: "umfang" },
+                },
+                4: {
+                    soll: [
+                        { wort: "latenz_s", richtung: "≤", wert: 1, wortlaut: "Latenz ≤ 1 s", feld: "richter" },
+                        { wort: "wer_pct", richtung: "≤", wert: 10, wortlaut: "Spielersprache ≤ 10 % WER", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e6, einheit: "Personen", wortlaut: "jede Person einer Metropole (10⁶) spricht und antwortet", feld: "umfang" },
+                },
+                5: {
+                    soll: [{ wort: "sprache_pct", richtung: "≥", wert: 90, wortlaut: "geeichtes Ohr „Sprache\" ≥ 90 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Saaten", wortlaut: "100 Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function stimmeLauf(H, P, L) {
+                function stimmeZensus() {
+                    const FC = globalThis.__fachwerkCore, K = window.__klangCore || {};
+                    let bew = 0, maxS = 0, sied = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        sied++;
+                        let n = 0;
+                        if (S.liste) n = S.liste.length;
+                        else if (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === "function")
+                            for (const sl of S.plan.slots)
+                                try {
+                                    n += Math.max(0, FC.leuteVon(sl.ov) | 0);
+                                } catch (_e) {}
+                        bew += n;
+                        if (n > maxS) maxS = n;
+                    }
+                    const namen = [];
+                    for (let o = Object.getPrototypeOf(r); o && o !== Object.prototype; o = Object.getPrototypeOf(o)) namen.push(...Object.getOwnPropertyNames(o));
+                    const leib = namen.concat(Object.keys(K)).filter((n) => /sprech|formant|murmel|vokal/i.test(n) || (/stimme/i.test(n) && /bewohner|leib|mensch/i.test(n)));
+                    return { saat: r.state.worldMeta && r.state.worldMeta.seed, bew, maxS, sied, leib, tts: typeof window.speechSynthesis === "object" };
+                }
+                const z = await L.ev("return (" + stimmeZensus + ")();", 30);
+                L.zeile("Zensus Stimme: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.leib.length) throw new Error("Leser erschienen (" + z.leib.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                const stumm = "kein Bewohner spricht; der Begleiter spricht über speechSynthesis des Browsers (stamm/werkstatt-hud.js:73) — Gerätestimme außerhalb des Klang-Graphen, nicht aus Gesetz (R4)";
+                await L.je(1, async () => (neu(1), L.leser(1, "keine Stimme aus dem Leib: kein Formant-Gesetz für Menschen (der Klang-Kern formt nur den Tier-Ruf, f1/f2 ∝ 1/L klang-core.js:497); " + stumm)));
+                await L.je(2, async () => (neu(2), L.leser(2, "keine Sprache am Abgriff: " + stumm + "; keine Prosodie aus Affekt im Graphen")));
+                await L.je(3, async () => {
+                    neu(3);
+                    if (z.maxS < P.sprossen[3].umfang.verlangt) return L.umfang(3, z.maxS, "die größte Siedlung der Sitzung trägt " + z.maxS + " Bewohner (" + z.sied + " Siedlungen) — 10³ verlangt; und " + stumm);
+                    L.leser(3, stumm, z.maxS);
+                });
+                await L.je(4, async () => {
+                    neu(4);
+                    if (z.bew < P.sprossen[4].umfang.verlangt) return L.umfang(4, z.bew, "die Sitzung trägt " + z.bew + " Bewohner — keine Metropole mit 10⁶ Personen; und " + stumm);
+                    L.leser(4, stumm, z.bew);
+                });
+                await L.je(5, async () => L.umfang(5, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 100 Saaten verlangt; kein fremdes Sprechorgan"));
+            },
+        })
+    );
+
+    // ─────────── erleben.klang.musik — Musik aus Gesetz: Stoff → Spektrum → Tonsystem → Tradition ───────────
+    // Die Musik der Welt spielt am Master aus den Genre-Tafeln (klang-core.js:95 PRESETS) in 12-TET-Skalen (klang-core.js:39): S1 ist ein
+    // Hörer-Blindtest — das Bild der Szene an fester Pose (Wiese, Ego) liegt ab, das Urteil fällt am Gerät; S2/S4/S6 „Leser fehlt“,
+    // S3/S5 zählen die Tonsysteme (in der Seite aus SCALES: ganzzahlige Halbtöne = 12-TET), S7 die Saaten.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.klang.musik",
+            sek: 40,
+            pfad: ["scripts/werkbank.cjs", "klang-core.js", "stamm/klang.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "stimmung_pct", richtung: "≥", wert: 70, wortlaut: "Stimmung der Szene aus der Musik erkannt ≥ 70 %", feld: "richter" },
+                        { wort: "wiederholung_frei_min", richtung: "≥", wert: 10, wortlaut: "am Abgriff keine Wiederholung in 10 min", feld: "richter" },
+                    ],
+                    auge: { pose: "wiese ego (Mittag, Sonne, Sommer — die Bühne der Sitzung)", vorbild: "Hörer-Blindtest (R11): Stimmung der Szene aus der Musik erkannt, Szene ↔ Musik blind gepaart" },
+                },
+                2: { soll: [{ wort: "tonhoehe_abweichung_pct", richtung: "≤", wert: 3, wortlaut: "Tonhöhe am Abgriff folgt Saiten-/Röhrenlänge ±3 %", feld: "richter" }] },
+                3: {
+                    soll: [
+                        { wort: "nachbar_cent", richtung: "≤", wert: 15, wortlaut: "jede hat einen Nachbarn ≤ 15 cent", feld: "richter" },
+                        { wort: "paare_pct", richtung: "≥", wert: 90, wortlaut: "Paare unterscheidbar ≥ 90 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Kulturen", wortlaut: "100 Zufallskulturen", feld: "umfang" },
+                },
+                4: { soll: [{ wort: "familie_pct", richtung: "≥", wert: 80, wortlaut: "Klassifikator ordnet den Abgriff der richtigen Hornbostel-Sachs-Familie ≥ 80 %", feld: "richter" }] },
+                5: {
+                    soll: [
+                        { wort: "afc_pct", richtung: "≤", wert: 75, wortlaut: "2AFC gegen Feldaufnahmen des Musik-Korpus ≤ 75 %", feld: "richter" },
+                        { wort: "anlass_pct", richtung: "≥", wert: 70, wortlaut: "Anlass blind erkannt ≥ 70 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 100, einheit: "Kulturen", wortlaut: "100 Kulturen", feld: "richter" },
+                },
+                6: { soll: [{ wort: "baumabstand_pct", richtung: "≤", wert: 25, wortlaut: "Baumabstand ≤ 25 %", feld: "richter" }] },
+                7: {
+                    soll: [
+                        { wort: "traditionen", richtung: "≥", wert: 1e5, wortlaut: "effektive Zahl der angetroffenen Traditionen (Chao1 über Hör-Cluster) ≥ 10⁵", feld: "richter" },
+                        { wort: "struktur_pct", richtung: "≥", wert: 95, wortlaut: "Struktur messbar (Wiederholung, Hierarchie, Tonzentrum oder Puls) ≥ 95 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1000, einheit: "Saaten", wortlaut: "Zufallsreise über 1 000 Saaten", feld: "richter" },
+                },
+            },
+            lauf: async function musikLauf(H, P, L) {
+                function musikZensus() {
+                    const K = window.__klangCore || {};
+                    const sys = new Set(Object.values(K.SCALES || {}).map((a) => (Array.isArray(a) && a.every(Number.isInteger) ? "12-TET" : "andere " + JSON.stringify(a))));
+                    return {
+                        saat: r.state.worldMeta && r.state.worldMeta.seed,
+                        systeme: [...sys],
+                        skalen: Object.keys(K.SCALES || {}).length,
+                        genres: Object.keys(K.GENRES || {}).length,
+                        instrumente: Object.keys(K.INSTRUMENTS || {}).length,
+                        neu: Object.keys(K).filter((n) => /tonsystem|tradition|kultur|hornbostel|stilbaum/i.test(n)),
+                    };
+                }
+                const z = await L.ev("return (" + musikZensus + ")();", 30);
+                L.zeile("Zensus Musik: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.neu.length) throw new Error("Leser erschienen (" + z.neu.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                await L.je(2, async () => (neu(2), L.leser(2, "kein Instrument in der Welt: die Musik spielt am Master aus " + z.genres + " Genre-Tafeln (klang-core.js:95 PRESETS) mit " + z.instrumente + " Instrument-Stimmen (klang-core.js:74 INSTRUMENTS) — keine Quelle mit Saite oder Röhre im Raum")));
+                await L.je(3, async () => (neu(3), L.umfang(3, z.systeme.length, "die Welt hält " + z.systeme.length + " Tonsystem (" + z.systeme.join(", ") + ", " + z.skalen + " Skalen klang-core.js:39) — keine Kultur mit eigenem Tonsystem aus dem Spektrum ihrer Instrumente")));
+                await L.je(4, async () => (neu(4), L.leser(4, "die Klangfarbe folgt nicht Stoff und Bauform: INSTRUMENTS ist eine feste Tafel (klang-core.js:74), keine Kultur baut ein Instrument aus ihren Stoffen")));
+                await L.je(5, async () => (neu(5), L.umfang(5, z.systeme.length, "EIN Musik-System für jede Siedlung (" + z.systeme.join(", ") + ") — 100 Kulturen verlangt; kein Gesang, kein Anlass (Fest, Arbeit, Trauer) im Klang")));
+                await L.je(6, async () => (neu(6), L.leser(6, "kein Stil-Wandel: die Genre-Tafeln sind ein fester Katalog (klang-core.js:95 PRESETS), kein Stammbaum aus Kontakt und Technik")));
+                await L.je(7, async () => L.umfang(7, 1, "die Sitzung hält EINE Saat (" + z.saat + ") — 1 000 Saaten verlangt; keine Musik fremder Arten"));
+                await L.je(1, async () => {
+                    await L.auge(1, { ort: "wiese", sicht: "ego" });
+                    L.preisPose("wiese", "ego");
+                });
+            },
+        })
+    );
+
+    // ─────────── erleben.klang.getuemmel — Getümmel: das Wichtige hören ───────────
+    // S1 misst im Fenster der Sitzung am Ausgang der Spitzen-Wand (`s.spitze.ausgang`, stamm/klang.js:29): an der Wiese im Regen läuft
+    // der Loop ~14 s, je 40 ms die Spitze (dBFS) und die Stimmen des Graphen (`umwelt.graph.zensus`); steht die Musik frei, senkt der
+    // Weg des Begleiters (`_musikDuck("gespraech")`, stamm/werkstatt-hud.js:90) den Duck-Bus — gelesen am Gain des Busses. 10 min
+    // trägt keine Leiter (Zeuge `dauer_min`). S2/S3/S5 zählen Bewohner, S4/S6 „Leser fehlt“.
+    LEITERN.push(
+        leiter({
+            leiter: "erleben.klang.getuemmel",
+            sek: 45,
+            mutiert: true,
+            pfad: ["scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "stamm/klang.js", "klang-core.js", "stamm/werkstatt-hud.js", "stamm/siedlung-bewohner.js", "fachwerk-core.js"],
+            welt: [{ wort: "proben", ab: 1, was: "Proben der Welt im Lauf" }],
+            sprossen: {
+                1: {
+                    soll: [
+                        { wort: "spitze_dbfs", richtung: "≤", wert: 0, wortlaut: "Spitzen ≤ 0 dBFS über 10 min", feld: "richter" },
+                        { wort: "dauer_min", richtung: "≥", wert: 10, wortlaut: "Spitzen ≤ 0 dBFS über 10 min", feld: "richter" },
+                        { wort: "duck_db", richtung: "≥", wert: 8, wortlaut: "Duck 8–12 dB bei Stimme", feld: "richter" },
+                        { wort: "duck_db_bis", richtung: "≤", wert: 12, wortlaut: "Duck 8–12 dB bei Stimme", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 7, einheit: "Stimmen zugleich", wortlaut: "7 Stimmen zugleich", feld: "umfang" },
+                    welt: [
+                        { wort: "proben", ab: 50, was: "Spitzen-Proben am Ausgang der Wand" },
+                        { wort: "duck_wechsel_db", ab: 1, was: "Senkung des Duck-Busses gegen vorher (dB)" },
+                    ],
+                },
+                2: {
+                    soll: [{ wort: "wer_pct", richtung: "≤", wert: 15, wortlaut: "WER des zugewandten Sprechers bei 65 dB(A) ≤ 15 %", feld: "richter" }],
+                    umfang: { verlangt: 100, einheit: "Quellen", wortlaut: "Dorfplatz mit 10² Quellen", feld: "umfang" },
+                },
+                3: {
+                    soll: [
+                        { wort: "wer_pct", richtung: "≤", wert: 15, wortlaut: "WER ≤ 15 %", feld: "richter" },
+                        { wort: "menge_senkung_db", richtung: "≤", wert: 3, wortlaut: "Menge dabei ≤ 3 dB gesenkt", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e4, einheit: "Quellen", wortlaut: "Großstadtstraße 75 dB(A), 10⁴ Quellen", feld: "umfang" },
+                },
+                4: { soll: [{ wort: "schwelle_abweichung_pct", richtung: "≤", wert: 30, wortlaut: "Hörschwelle steigt und erholt sich nach der Audiologie ±30 %", feld: "richter" }] },
+                5: {
+                    soll: [
+                        { wort: "wer_pct", richtung: "≤", wert: 20, wortlaut: "WER des zugewandten Sprechers bei 90 dB(A) ≤ 20 %", feld: "richter" },
+                        { wort: "warn_pct", richtung: "≥", wert: 95, wortlaut: "Warnsignal hörbar erkannt ≥ 95 %", feld: "richter" },
+                    ],
+                    umfang: { verlangt: 1e5, einheit: "Stimmen", wortlaut: "Stadion 10⁵ Stimmen", feld: "umfang" },
+                },
+                6: { soll: [{ wort: "hoerbar_pct", richtung: "≥", wert: 95, wortlaut: "zugewandter Sprecher, Warnung und eigener Schritt hörbar in ≥ 95 %", feld: "richter" }] },
+            },
+            lauf: async function getuemmelLauf(H, P, L) {
+                function getuemmelZensus() {
+                    const FC = globalThis.__fachwerkCore, K = window.__klangCore || {};
+                    let bew = 0, maxS = 0, sied = 0;
+                    for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                        sied++;
+                        let n = 0;
+                        if (S.liste) n = S.liste.length;
+                        else if (S.plan && Array.isArray(S.plan.slots) && FC && typeof FC.leuteVon === "function")
+                            for (const sl of S.plan.slots)
+                                try {
+                                    n += Math.max(0, FC.leuteVon(sl.ov) | 0);
+                                } catch (_e) {}
+                        bew += n;
+                        if (n > maxS) maxS = n;
+                    }
+                    let wagen = 0;
+                    for (const e of r.state.architectures || []) if (e && e._verkehrWagen) wagen++;
+                    const U = K.UMWELT || {};
+                    return { bew, maxS, sied, wagen, schwelle: U.hoerschwelleDb, deckel: U.stimmenMax, stimmen: Object.keys(U.stimmen || {}), neu: Object.keys(K).filter((n) => /vertaeub|tinnitus|maskier|zuwend|warnung/i.test(n)) };
+                }
+                // DIE SEITE DES GETÜMMELS: Spitzen am Ausgang der Wand, Stimmen des Graphen, der Duck bei Stimme
+                async function getuemmelSeite(o) {
+                    const s = r.state, rend = s.renderer;
+                    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+                    const war = !!(s.symphony && s.symphony.enabled), wetter0 = s.weather;
+                    const ton0 = (k, sr, n) => (k * sr) / n;
+                    let takt = null, an = null, sy = null, ton = null, tonG = null;
+                    try {
+                        if (!war) r.initSymphony();
+                        sy = s.symphony;
+                        if (sy.ctx && sy.ctx.state !== "running") await sy.ctx.resume();
+                        if (!sy.enabled || !sy.spitze || !sy.lofi || !sy.lofi.duck || !sy.umwelt || !sy.umwelt.graph)
+                            return { fehler: "der Klang steht nicht (enabled " + !!sy.enabled + ", Wand " + !!sy.spitze + ", Duck " + !!(sy.lofi && sy.lofi.duck) + ")" };
+                        if (o.wetter && s.weather !== o.wetter && window.__wetterSetzen(o.wetter) !== o.wetter) return { fehler: "das Wetter-Wort " + o.wetter + " gilt nicht" };
+                        rend.setAnimationLoop((t) => r._gameLoopTick(t));
+                        an = sy.ctx.createAnalyser();
+                        an.fftSize = 4096;
+                        sy.spitze.ausgang.connect(an);
+                        const td = new Float32Array(an.fftSize);
+                        const U = sy.umwelt.kern.UMWELT;
+                        let spitze = 0, proben = 0, stimmenMax = 0, verletzt = 0;
+                        const namen = {};
+                        const t0 = performance.now();
+                        takt = setInterval(() => {
+                            an.getFloatTimeDomainData(td);
+                            let p = 0;
+                            for (let i = 0; i < td.length; i++) {
+                                const a = Math.abs(td[i]);
+                                if (a > p) p = a;
+                            }
+                            if (p > spitze) spitze = p;
+                            proben++;
+                            const zz = sy.umwelt.graph.zensus();
+                            const ein = zz.filter((v) => v.an);
+                            if (ein.length > stimmenMax) stimmenMax = ein.length;
+                            for (const v of ein) namen[v.name] = (namen[v.name] || 0) + 1;
+                            if (ein.length >= U.stimmenMax) {
+                                const leiseste = Math.min(...ein.map((v) => v.db));
+                                if (zz.some((v) => !v.an && v.db > leiseste + U.hystereseDb)) verletzt++;
+                            }
+                        }, 40);
+                        await warte(o.vorMs);
+                        // DER DUCK AM ABGRIFF: ein Mess-Ton (−60 dBFS, auf einer Linie der FFT) läuft durch den Duck-Bus der Musik, ein
+                        // Analyser an seinem Ausgang liest die Linie vor und nach der Stimme — der Ton hält den Bus zugleich im Takt des
+                        // Audio-Fadens (ein Bus ohne Eingang rechnet seine Rampe nicht)
+                        const Lf = sy.lofi, ctx = sy.ctx;
+                        const an2 = ctx.createAnalyser();
+                        an2.fftSize = 4096;
+                        an2.smoothingTimeConstant = 0;
+                        const k = Math.round(o.tonHz / (ctx.sampleRate / an2.fftSize));
+                        ton = ctx.createOscillator();
+                        tonG = ctx.createGain();
+                        ton.frequency.value = (k * ctx.sampleRate) / an2.fftSize;
+                        tonG.gain.value = 1e-3;
+                        ton.connect(tonG);
+                        tonG.connect(Lf.duck);
+                        Lf.duck.connect(an2);
+                        ton.start();
+                        const fd = new Float32Array(an2.frequencyBinCount);
+                        const linie = async () => {
+                            let q = 0;
+                            for (let i = 0; i < 3; i++) {
+                                await warte(60);
+                                an2.getFloatFrequencyData(fd);
+                                q += Math.pow(10, fd[k] / 10);
+                            }
+                            return 10 * Math.log10(q / 3);
+                        };
+                        await warte(200);
+                        for (let i = 0; i < 60 && Lf.duckBis > ctx.currentTime; i++) await warte(50);
+                        const [l0, g0] = [await linie(), Lf.duck.gain.value];
+                        const ok = r._musikDuck("gespraech", o.zeichen);
+                        await warte(o.duckMs);
+                        const [l1, g1] = [await linie(), Lf.duck.gain.value];
+                        ton.stop();
+                        tonG.disconnect();
+                        Lf.duck.disconnect(an2);
+                        [ton, tonG] = [null, null];
+                        while (performance.now() - t0 < o.sek * 1000) await warte(100);
+                        clearInterval(takt);
+                        takt = null;
+                        return { ms: Math.round(performance.now() - t0), proben, spitzeDbfs: spitze > 0 ? +(20 * Math.log10(spitze)).toFixed(2) : -999, stimmenMax, namen, verletzt, deckel: U.stimmenMax, duck: { ok: !!ok, tonHz: +ton0(k, ctx.sampleRate, an2.fftSize).toFixed(1), l0: +l0.toFixed(2), l1: +l1.toFixed(2), g0: +g0.toFixed(4), g1: +g1.toFixed(4) }, wetter: s.weather };
+                    } finally {
+                        if (takt) clearInterval(takt);
+                        if (ton)
+                            try {
+                                ton.stop();
+                                tonG.disconnect();
+                            } catch (_e) {}
+                        rend.setAnimationLoop(null);
+                        if (an && sy && sy.spitze)
+                            try {
+                                sy.spitze.ausgang.disconnect(an);
+                            } catch (_e) {}
+                        if (wetter0 && s.weather !== wetter0) window.__wetterSetzen(wetter0);
+                        if (!war && s.symphony.enabled) r.disposeSymphony();
+                    }
+                }
+                const z = await L.ev("return (" + getuemmelZensus + ")();", 30);
+                L.zeile("Zensus Getümmel: " + JSON.stringify(z));
+                const neu = (nr) => {
+                    if (z.neu.length) throw new Error("Leser erschienen (" + z.neu.join(", ") + ") — S" + nr + " misst ihn noch nicht");
+                };
+                const kein = "kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73)";
+                await L.je(2, async () => {
+                    neu(2);
+                    if (z.maxS < P.sprossen[2].umfang.verlangt) return L.umfang(2, z.maxS, "die größte Siedlung trägt " + z.maxS + " Bewohner — kein Dorfplatz mit 10² Quellen; und " + kein);
+                    L.leser(2, kein, z.maxS);
+                });
+                await L.je(3, async () => {
+                    neu(3);
+                    const q = z.bew + z.wagen;
+                    if (q < P.sprossen[3].umfang.verlangt) return L.umfang(3, q, "die Sitzung trägt " + z.bew + " Bewohner und " + z.wagen + " Wagen — keine Großstadtstraße mit 10⁴ Quellen; und " + kein);
+                    L.leser(3, kein + "; keine Zuwendung im Graphen (der Deckel wählt die lautesten " + z.deckel + " Stimmen, klang-core.js:417)", q);
+                });
+                await L.je(4, async () => (neu(4), L.leser(4, "keine Vertäubung: die Hörschwelle steht fest bei " + z.schwelle + " dB (klang-core.js:415 UMWELT.hoerschwelleDb), kein Klingeln, kein 130-dB-Ereignis")));
+                await L.je(5, async () => {
+                    neu(5);
+                    if (z.maxS < P.sprossen[5].umfang.verlangt) return L.umfang(5, z.maxS, "die größte Siedlung trägt " + z.maxS + " Bewohner — kein Stadion mit 10⁵ Stimmen; und " + kein);
+                    L.leser(5, kein + "; keine Warn-Stimme in UMWELT (klang-core.js:443)", z.maxS);
+                });
+                await L.je(6, async () => (neu(6), L.leser(6, kein + "; keine Warn-Stimme in UMWELT (" + z.stimmen.join(" · ") + ", klang-core.js:443) — hörbar bleibt nur der eigene Schritt (stamm/klang.js:888)")));
+                await L.je(1, async () => {
+                    await L.ort("wiese", "ego");
+                    L.preisPose("wiese", "ego");
+                    const sek = Math.max(6, Math.min(14, L.rest() - 10));
+                    const G = await L.ev("return await (" + getuemmelSeite + ")(" + JSON.stringify({ wetter: "rainy", sek, vorMs: Math.round(sek * 300), duckMs: 300, zeichen: 30, tonHz: 15000 }) + ");", Math.max(10, L.rest() - 2));
+                    L.zeile("Getümmel am Ohr: " + JSON.stringify(G));
+                    if (G.fehler) throw new Error(G.fehler);
+                    // der Duck am Abgriff: die Linie des Mess-Tons am Ausgang des Duck-Busses vor gegen nach der Stimme (dB)
+                    const duck = Number.isFinite(G.duck.l0) && Number.isFinite(G.duck.l1) ? +(G.duck.l0 - G.duck.l1).toFixed(2) : null;
+                    const wechsel = duck == null ? 0 : duck;
+                    const dauer = +(G.ms / 60000).toFixed(3);
+                    const t = [];
+                    if (G.spitzeDbfs > 0) t.push("Spitze " + G.spitzeDbfs + " dBFS hinter der Wand (umweltSpitze klang-core.js:1168, UMWELT.spitze :424)");
+                    if (!(duck >= 8 && duck <= 12)) t.push("Duck " + duck + " dB bei Stimme (MUSIK.duck.gespraech klang-core.js:382, `_musikDuck` " + (G.duck.ok ? "lief" : "verweigert") + ")");
+                    if (G.stimmenMax < P.sprossen[1].umfang.verlangt) t.push("nur " + G.stimmenMax + " Stimmen zugleich an der Wiese im Regen (" + Object.keys(G.namen).join(", ") + ")");
+                    if (dauer < 10) t.push("die Leiter hört " + dauer + " min — 10 min übersteigen den Deckel einer Leiter (60 s)");
+                    L.gemessen(1, { spitze_dbfs: G.spitzeDbfs, dauer_min: dauer, duck_db: duck, duck_db_bis: duck }, {
+                        erzeugt: G.stimmenMax,
+                        welt: { proben: G.proben, duck_wechsel_db: wechsel },
+                        taeter: t.join(" · ") || null,
+                        beleg: "Wetter " + G.wetter + " · Stimmen je Probe " + JSON.stringify(G.namen) + " · Deckel " + G.deckel + ", lautere stumm " + G.verletzt + "× · Mess-Ton " + G.duck.tonHz + " Hz " + G.duck.l0 + " → " + G.duck.l1 + " dB · Gain des Busses " + G.duck.g0 + " → " + G.duck.g1,
+                    });
+                });
+            },
+        })
+    );
+}
+
 module.exports = LEITERN.flat();

@@ -330,6 +330,494 @@
    "richter": "gleich"
   },
   {
+   "station": "karte2.erleben.sinne.sicht#1",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#2",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#3",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#4",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#5",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.sicht#6",
+   "leiter": "erleben.sinne.sicht",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#1",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#2",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#3",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#4",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#5",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.hoeren#6",
+   "leiter": "erleben.sinne.hoeren",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#1",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#2",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#3",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#4",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#5",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.geruch#6",
+   "leiter": "erleben.sinne.geruch",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#1",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#2",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#3",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#4",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Ozeanboden über einem mittelozeanischen Rücken, Draufsicht der Magnetisierung (kein Messort der Sitzung) (Vorbild Vine & Matthews 1963, Magnetstreifen am Carlsberg-/Reykjanes-Rücken) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#5",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.feld#6",
+   "leiter": "erleben.sinne.feld",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#1",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#2",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#3",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#4",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#5",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.genom#6",
+   "leiter": "erleben.sinne.genom",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#1",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#2",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#3",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#4",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#5",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.signale#6",
+   "leiter": "erleben.sinne.signale",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#1",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#2",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#3",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#4",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#5",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.sinne.gesehen#6",
+   "leiter": "erleben.sinne.gesehen",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#1",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#2",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#3",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#4",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#5",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#6",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.raum#7",
+   "leiter": "erleben.klang.raum",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#1",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#2",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#3",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#4",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#5",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#6",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.ereignis#7",
+   "leiter": "erleben.klang.ereignis",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#2",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#3",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#4",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#5",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#6",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#7",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.landschaft#8",
+   "leiter": "erleben.klang.landschaft",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#1",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#2",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#3",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#4",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.stimme#5",
+   "leiter": "erleben.klang.stimme",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#1",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 1,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego (Mittag, Sonne, Sommer — die Bühne der Sitzung) (Vorbild Hörer-Blindtest (R11): Stimmung der Szene aus der Musik erkannt, Szene ↔ Musik blind gepaart) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#2",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#3",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#4",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#5",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#6",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.musik#7",
+   "leiter": "erleben.klang.musik",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#1",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#2",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#3",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#4",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#5",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.klang.getuemmel#6",
+   "leiter": "erleben.klang.getuemmel",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
    "station": "karte2.same.preis.takt#1",
    "leiter": "same.preis.takt",
    "sprosse": 1,
