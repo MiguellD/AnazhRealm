@@ -3635,6 +3635,7 @@ class AnazhRealm_kreatur_verhalten {
                         if (!creature.userData._animEingefroren) {
                             creature.userData._animEingefroren = true;
                             this._tierBaumNeutralStance(creature, true);
+                            this._kreaturPoseStand(creature);
                         }
                     } else if (animDiv === 1 || (aiFrame + i) % animDiv === 0) {
                         creature.userData._animEingefroren = false;

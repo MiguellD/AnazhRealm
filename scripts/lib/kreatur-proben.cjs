@@ -1430,6 +1430,7 @@ async function kreaturProben(r, T, opts) {
             const spur = glieder.map(() => []);
             const phasen = ZUST.map((z) => ({ zustand: z, taetigkeit: TAET[z], takte: 0, getroffen: 0, gezeigt: 0, flucht: 0, leib: 0, satz: 0, fern: 0, wegM: 0, zustaende: {}, sprungM: 0, sprungBei: null, laeufer: { n: 0, erstK: null, leit: 0, task: {}, zumLeitM: [] } })); // prettier-ignore
             const hufe = [];
+            const hufeTritt = []; // die Pfote im Tritt (K8 huf: ein stehendes Tier setzt sie um) trägt nicht — sie hebt
             const grasenLeib = { takte: 0, ohneHals: 0, eingefroren: 0, unten: 0, hals: [], fade: [], abstand: [], kopf: [], schulter: [], hang: [] };
             const aesen = { proben: 0, unten: 0, leibProben: 0, leibUnten: 0, leib: 0, satz: 0, satzUnten: 0, fern: 0 };
             const zug = { takte: 0, art: {}, diag: [], v: [] };
@@ -1538,16 +1539,16 @@ async function kreaturProben(r, T, opts) {
                             const d = Math.abs(w[n] - a.w[n]);
                             const S = sprung[n];
                             if (d > S.max)
-                                Object.assign(S, { max: d, t: rund(k / 60, 2), phase: z, tier: i, von: rund(a.w[n], 3), nach: rund(w[n], 3), zustand: a.z === zs ? zs : `${a.z} → ${zs}`, taktNachWechsel: k - wechsel, still: k - (a.g[n] ?? k), augeM: rund(Math.hypot(c.position.x - cam.position.x, c.position.z - cam.position.z), 1) }); // prettier-ignore
+                                Object.assign(S, { max: d, t: rund(k / 60, 2), phase: z, tier: i, von: rund(a.w[n], 3), nach: rund(w[n], 3), zustand: a.z === zs ? zs : `${a.z} → ${zs}`, taktNachWechsel: k - wechsel, still: k - (a.g[n] ?? k), frei: [a.frei, !!u._animEingefroren], vor: a.vor, augeM: rund(Math.hypot(c.position.x - cam.position.x, c.position.z - cam.position.z), 1) }); // prettier-ignore
                             if (k - wechsel > 30 && d > S.stetig)
                                 Object.assign(S, { stetig: d, stetigBei: `t ${rund(k / 60, 2)} s, Tier ${i}, ${zs}, ${rund(a.w[n], 3)} → ${rund(w[n], 3)}` }); // prettier-ignore
                         }
                     // je Kanal der letzte Takt, in dem er sich bewegte (`still`: Takte ohne Änderung vor dem Sprung — die Raten-Leiter)
                     const g = Object.fromEntries(Object.keys(KAN).map((n) => [n, a && w[n] === a.w[n] ? (a.g[n] ?? k) : k]));
-                    winkelAlt.set(c, { w, z: zs, wechsel, g });
+                    winkelAlt.set(c, { w, z: zs, wechsel, g, frei: !!u._animEingefroren, vor: [...(a?.vor || []).slice(-3), [rund(w.hals, 3), rund(w.kopf, 3), !!u._animEingefroren, !!u._tierBaum?._gang]] });
                     // DIE HUFE AM BODEN: je stehendem Leib in stehen und äsen alle 0,5 s die Sohle jedes Hufs über dem Grund unter ihr
                     if ((z === "stehen" || z === "aesen") && zs.endsWith("/steht") && kp % 30 === 0)
-                        { const LM = leibMass(c); (LM?.sohleUeberGrundM || []).forEach((h, j) => { if (h !== null) hufe.push({ h, z, i, j, t: rund(k / 60, 2), frei: !!u._animEingefroren, a: zs }); }); } // prettier-ignore
+                        { const LM = leibMass(c); const F = tb._gang?.fuss; (LM?.sohleUeberGrundM || []).forEach((h, j) => { const tritt = !!F && !(F[j]?.an && !(F[j].tritt >= 0)); if (h !== null) (tritt ? hufeTritt.push(h) : hufe.push({ h, z, i, j, t: rund(k / 60, 2), frei: !!u._animEingefroren, a: zs })); }); } // prettier-ignore
                     if (z === "aesen") {
                         const kf = kopf(c);
                         aesen.proben++;
@@ -1598,7 +1599,8 @@ async function kreaturProben(r, T, opts) {
                         const el = Math.hypot(ex, ez) || 1;
                         // DIE SICHTLINIE (Flucht v14: bei 7,5 s stand N im Fels, bei 2 s füllte ein Stamm das Bild): N dreht in 30°-Schritten
                         // um das Leittier, bis vom Auge zur Leib-Mitte kein Gelände (je 0,5 m unter der Linie) und kein Bau, Fels oder
-                        // Stamm (`_fieldRaycast`, Radius 0,15 m) liegt; `nahDreh` nennt die Drehung (null: keine freie Linie)
+                        // Stamm (`_fieldRaycast`, Radius 0,15 m) und kein anderer Leib der Herde (Flucht v15 bei 5 s: ein Läufer füllte das
+                        // Bild, 1 m vor dem Auge) liegt; `nahDreh` nennt die Drehung (null: keine freie Linie)
                         const ziel = [lp.x, lp.y + 0.6, lp.z];
                         const frei = (P) => {
                             const ey = P.y - 0.5 + NAH_HOEHE;
@@ -1607,6 +1609,14 @@ async function kreaturProben(r, T, opts) {
                             for (let f = 0.06; f < 0.95; f += 0.5 / NAH_M) {
                                 const [x, y, z] = [P.x + (ziel[0] - P.x) * f, ey + (ziel[1] - ey) * f, P.z + (ziel[2] - P.z) * f];
                                 if (r.getTerrainHeightAt(x, z) > y - 0.05) return false;
+                            }
+                            const [dx, dy, dz] = [ziel[0] - P.x, ziel[1] - ey, ziel[2] - P.z];
+                            const dd = dx * dx + dy * dy + dz * dz;
+                            for (const c of glieder) {
+                                if (c === leit) continue;
+                                const [qx, qy, qz] = [c.position.x - P.x, c.position.y + 0.6 - ey, c.position.z - P.z];
+                                const f = Math.max(0, Math.min(1, (qx * dx + qy * dy + qz * dz) / dd));
+                                if (f < 1 && Math.hypot(qx - dx * f, qy - dy * f, qz - dz * f) < 0.9) return false;
                             }
                             return !r._fieldRaycast(P.x, ey, P.z, ziel[0], ziel[1], ziel[2], { radius: 0.15 }).hit;
                         };
@@ -1882,7 +1892,7 @@ async function kreaturProben(r, T, opts) {
                     bilder: proS,
                     leibN: Object.fromEntries(ZUST.map((zz) => [zz, proS.filter((p) => p.zustand === zz && p.nah).map((p) => p.nah.leib)])), // prettier-ignore
                 },
-                hufe: hufe.length ? (() => { const a = hufe.map((x) => x.h); const m = hufe.reduce((p, x) => (Math.abs(x.h) > Math.abs(p.h) ? x : p)); return { roh: hufe.filter((x) => Math.abs(x.h) > 0.03), proben: a.length, maxAbsM: rund(Math.abs(m.h), 3), bei: m, median: rund(median(a), 3), p10: rund(quantil(a, 0.1), 3), p90: rund(quantil(a, 0.9), 3) }; })() : null, // prettier-ignore
+                hufe: hufe.length ? (() => { const a = hufe.map((x) => x.h); const m = hufe.reduce((p, x) => (Math.abs(x.h) > Math.abs(p.h) ? x : p)); return { roh: hufe.filter((x) => Math.abs(x.h) > 0.03), proben: a.length, imTritt: hufeTritt.length, maxAbsM: rund(Math.abs(m.h), 3), bei: m, median: rund(median(a), 3), p10: rund(quantil(a, 0.1), 3), p90: rund(quantil(a, 0.9), 3) }; })() : null, // prettier-ignore
                 s2,
                 s3: Object.fromEntries(Object.entries(sprung).map(([n, S]) => [n, { ...S, max: rund(S.max, 4), stetig: rund(S.stetig, 4) }])), // prettier-ignore
                 s4: {

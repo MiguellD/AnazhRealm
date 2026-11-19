@@ -2428,7 +2428,9 @@ class AnazhRealm_koerper_leib {
     // Bild, trägt die Pfoten um ≤ 4 cm je Meter Bein mit, nur auf den groben Stufen jenseits der halben Gestalt-Grenze), halten nach jeder
     // Auswertung ihren Stand als Ziel (`_kreaturPoseZiel`) und das Bild gleitet je Bild ein `animDiv`-tel zu ihm
     // (`_kreaturPoseGleit`, höchstens KREATUR_POSE_SPRUNG) — die Pose des Kerns (seine Haltung, sein Gang) bleibt unberührt,
-    // nur die gezeichneten Knoten gleiten. Kosten: eine Handvoll Winkel je Leib und Bild auf den groben Stufen.
+    // nur die gezeichneten Knoten gleiten. Kosten: eine Handvoll Winkel je Leib und Bild auf den groben Stufen. Friert die
+    // Leiter den Leib (`_kreaturPoseStand`), ist das Bild die Ruhe-Pose: der erwachende Leib gleitet aus ihr, nie aus dem
+    // Stand vor dem Einfrieren (ein Baum-Wechsel beginnt das Bild neu).
     _kreaturPoseKanaele(tb) {
         const T = tb && tb.teile;
         if (!T) return null;
@@ -2445,7 +2447,9 @@ class AnazhRealm_koerper_leib {
         const U = creature.userData;
         const K = this._kreaturPoseKanaele(U._tierBaum);
         if (!K) return;
-        const Z = U._poseZiel || (U._poseZiel = new Array(K.length).fill(0));
+        if (U._poseBild && U._poseBaum !== U._tierBaum) U._poseBild = null;
+        const Z =
+            U._poseZiel && U._poseZiel.length === K.length ? U._poseZiel : (U._poseZiel = new Array(K.length).fill(0));
         const B = U._poseBild;
         for (let k = 0; k < K.length; k++) {
             Z[k] = K[k][0][K[k][1]];
@@ -2453,6 +2457,14 @@ class AnazhRealm_koerper_leib {
             if (B) K[k][0][K[k][1]] = B[k];
         }
         if (!B) U._poseBild = Z.slice();
+        U._poseBaum = U._tierBaum;
+    }
+    _kreaturPoseStand(creature) {
+        const U = creature.userData;
+        const K = this._kreaturPoseKanaele(U._tierBaum);
+        U._poseBild = K ? K.map((k) => k[0][k[1]]) : null;
+        U._poseZiel = U._poseBild && U._poseBild.slice();
+        U._poseBaum = U._tierBaum;
     }
     _kreaturPoseGleit(creature, animDiv) {
         const U = creature.userData;
@@ -3285,7 +3297,12 @@ class AnazhRealm_koerper_leib {
             [T.legHL, T.hlT, T.hlC, T.hlP],
             [T.legHR, T.hrT, T.hrC, T.hrP],
         ];
-        for (let i = 0; i < 4; i++) {
+        // DIE PFOTEN DER RUHE (H1, die Hufe am Boden): ein Leib, der hinter der Leiter STEHEND einfriert (alle vier Pfoten
+        // tragen, keine im Tritt), behält die Lösung seiner Pfoten-IK — jede Sohle auf dem Grund unter ihr; die STAND_POSE stand
+        // auf der Ebene des Leibs, am Hang 4 cm über oder im Grund. Ein Gehender fällt in die STAND_POSE (nie im Schritt erstarrt).
+        const F = Hh && tb._gang && tb._gang.fuss;
+        const steht = !!F && F.every((L) => L.an && !(L.tritt >= 0));
+        for (let i = 0; i < 4 && !steht; i++) {
             const K = ketten[i];
             // das Abspreizen der Pfoten-IK (Welle LF) und die Sohle am Hang (K8 huf) fallen mit
             for (let k = 0; k < 4; k++) if (K[k]) K[k].rotation.set(SP[i][k], 0, 0);
