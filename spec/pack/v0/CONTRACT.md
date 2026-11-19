@@ -226,7 +226,6 @@ an den Licht-ANWENDUNGEN mit der EINEN Konstante multipliziert:
 | --------------------------------------- | ---------------------------------------------------------------- |
 | `AnazhRealm.LEGACY_LICHT` (§26-Statics) | die EINE Konstante (Math.PI), kein Tuning-Knopf                  |
 | `_dayNightApplyDirectionalLight`        | Sonne/KEY · FILL · RIM · BACK (je `base × LEGACY_LICHT × a.lum`) |
-| `_dayNightApplyAmbient`                 | der Hemi-Tag-Term (`0.45 × LEGACY_LICHT × sunHeight`)            |
 | (S2 die Karte backt in der Welt)         | der Impostor-Atlas backt im Welt-Renderer (`_karteWeltBacken`) aus denselben Stoffen, die die Welt zeichnet — die Welt-Lichtkette gilt nativ, kein Bake-Rig |
 
 **Ü2 — FARBE (raw-als-linear):** r128 las Hex-Farben ALS LINEAR — treue Studio-Werte reisen

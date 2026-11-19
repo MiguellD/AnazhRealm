@@ -3437,8 +3437,6 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "sunMesh",
         "moonMesh",
         "directionalLight",
-        "ambientLight",
-        "hemiLight",
         "csmNode",
         "luft",
         "atmoUniforms",

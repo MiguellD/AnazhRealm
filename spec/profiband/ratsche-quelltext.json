@@ -3,7 +3,7 @@
     "liste": {
         "scripts/diag-altlasten.cjs": {
             "zweck": "Struktur: die EINE Rückkehr-Wand der Gefallenen (Token über Stamm und Kerne, D3b/S2b-Besitz)",
-            "stamm": 8,
+            "stamm": 10,
             "datei": 2
         },
         "scripts/diag-ankunft.cjs": {

@@ -57,8 +57,11 @@ const ANKER = jsonLesen("spec/vendor-anker.json").flatMap((g) => g.anker);
 // für jedes Render-Objekt (der Stand vor K71), "getragenImmer" hält jede Version für getragen (ein Attribut, das nur
 // ein Pass liest, lüde nie hoch). Ruft die Diät einen Versorger nicht, bleibt die Manipulation wirkungslos und der
 // Selbsttest wird ROT (Konsum statt Zitat).
+// der Stamm EINMAL je Lauf (die Diät und die Tür lesen denselben Text)
+let _stammText = null;
+const stammText = () => _stammText || (_stammText = stammLib.text(root));
 function diaetLaden(manipuliert) {
-    const stamm = stammLib.text(root);
+    const stamm = stammText();
     const b = (stammLib.treffer(stamm, null, "AnazhRealm._diaetRefresh = function") || { index: -1 }).index;
     if (b < 0) return null;
     let a = b;
@@ -435,6 +438,22 @@ function diaetProbe(selftest) {
     return { fehler, selbstFeuert, getragen };
 }
 
+// DIE TÜR TRÄGT JEDE KNOTEN-KLASSE, DIE DER STAMM RUFT (licht-eine-skala): r184 führt die NodeMaterial-Klassen nur in
+// 'three/webgpu'; der Stamm sieht eine nur, wenn die Brücke (vendor/three-bootstrap.js) sie auf THREE legt. Ein Ruf auf eine
+// Klasse ohne Tür wirft erst, wenn sein Pfad läuft — die Kreatur-Aura warf `THREE.SpriteNodeMaterial is not a constructor`,
+// sobald ein Tier eine Aufgabe trug (die Vorprüfung 65895fa4 fiel daran in 9 Gruppen). ROT beim Namen der Klasse und ihres Rufers.
+function tuerFehlt(stamm, bruecke) {
+    const getragen = new Set([...bruecke.matchAll(/THREE_GLOBAL\.([A-Za-z]+NodeMaterial)\s*=/g)].map((m) => m[1]));
+    const fehlt = new Map();
+    for (const m of stamm.matchAll(/THREE\.([A-Za-z]+NodeMaterial)\b/g))
+        if (!getragen.has(m[1]) && !fehlt.has(m[1]))
+            fehlt.set(m[1], stammLib.ort(root, stamm.slice(0, m.index).split("\n").length));
+    return [...fehlt].map(
+        ([k, wo]) =>
+            `DIE TÜR FEHLT: der Stamm ruft THREE.${k} (${wo}), vendor/three-bootstrap.js legt es nicht auf THREE — 'three/webgpu' führt die Klasse, die Brücke reicht sie nicht durch (requireWebGPU + THREE_GLOBAL)`
+    );
+}
+
 function main() {
     const selftest = SELBSTTEST;
     const errs = [];
@@ -474,7 +493,21 @@ function main() {
     // Schatten-Stoff beweist gate:kamera-treue am echten Renderer (Aufnahme verfolgt, kein Bundle unter dem Override).
     const diaet = diaetProbe(selftest);
     for (const e of diaet.fehler) errs.push("DIÄT: " + e);
+    // (4) die Tür der Knoten-Klassen
+    const bruecke = les("vendor/three-bootstrap.js").toString("utf8");
+    const tuer = tuerFehlt(stammText(), bruecke);
+    if (!selftest) errs.push(...tuer);
     if (selftest) {
+        // der Mutant: die Brücke ohne die Zeile des Sprites — die Linse nennt die Klasse und ihren Rufer
+        const ohne = tuerFehlt(stammText(), bruecke.replace(/THREE_GLOBAL\.SpriteNodeMaterial\s*=\s*SpriteNodeMaterial;/, ""));
+        const tuerFeuert =
+            tuer.length === 0 && ohne.length === 1 && /THREE\.SpriteNodeMaterial \(stamm\/[a-z-]+\.js:\d+\)/.test(ohne[0]);
+        console.log(
+            tuerFeuert
+                ? `✅ SELBST-TEST: die Tür-Linse feuert (heute 0 fehlende Knoten-Klassen; ohne die Sprite-Zeile der Brücke: ${ohne[0]})`
+                : `❌ SELBST-TEST: die Tür-Linse ist vakuös — heute ${JSON.stringify(tuer)}, Mutant ${JSON.stringify(ohne)}`
+        );
+        if (!tuerFeuert) process.exit(1);
         const feuert = errs.some((e) => e.includes("hasNode"));
         const diaetFeuert = diaet.selbstFeuert;
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");

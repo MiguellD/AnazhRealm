@@ -872,7 +872,10 @@ class AnazhRealm_stoff_material {
             // Per-Variante-Glanz: ein Genom reicht `emissiveBoost` durch; er SKALIERT nur das tag-getragene
             // Glimmen (das SEIN bleibt der magieleitung/wärmeleitung-Tag) — tag-neutral, Affinität unberührt.
             const _boost = Number.isFinite(opts.emissiveBoost) ? Math.max(0, opts.emissiveBoost) : 1;
-            emissiveIntensity = Math.min(1.5, _glimmen * 0.6 * _boost);
+            // DAS GLIMMEN IN DER EINEN SKALA (licht-eine-skala P8, die EINE Stelle): das volle Glimmen (Achse 1,0) trägt
+            // `GLIMMEN_CD_M2` — HYPOTHESE des Koordinators 0,1–1 cd/m² (Biolumineszenz, Leuchtfarbe): bei Tag unsichtbar,
+            // nachts ein Schein. Bis hier min(1,5; glimmen · 0,6) Welt-Einheiten: bis 24 000 cd/m², heller als die Flamme.
+            emissiveIntensity = ((_glimmen / 0.5) * AnazhRealm.GLIMMEN_CD_M2 * _boost) / __weltLicht.EINHEIT_LX;
             mat.emissiveIntensity = emissiveIntensity;
         }
         if (!opts.transparent && typeof this._applySubstanceResponse === "function") {
@@ -2105,7 +2108,9 @@ class AnazhRealm_stoff_material {
             if (licht) {
                 const glut = atmo.lichtGlut[licht];
                 if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
-                em = em.add(glut);
+                // die Leuchtdichte des Datums steht im Bild: ein durchsichtiges Glas mischt sein Fragment mit seiner Deckkraft
+                // (0,42) — ohne die Teilung trüge das Fenster 42 % seiner cd/m²
+                em = em.add(glut.div(Te.materialOpacity));
             }
             knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
         }
@@ -2254,8 +2259,8 @@ class AnazhRealm_stoff_material {
 
     // DER LICHT-POOL ALS TERM (K11) — DAS EINE PUNKTLICHT-GESETZ des Stamms (jede Leuchtquelle und das Licht des Auges): je
     // Platz ein Zweig mit dem Abfall des Gesetzes (fachwerk `lichtAbfall`, K11b: (1 − (d/R)⁴)² · (d² + k²)^(−abfall/2); den
-    // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`), die Stärke schon durch LEGACY_LICHT
-    // (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der Kern k (`lichtKern` = k²) beschränkt den Abfall nah an
+    // Bezug in 1 m, (1 + k²)^(abfall/2), trägt die Stärke des Platzes, `_leuchtTakt`), die Stärke in der EINEN Skala
+    // (`_leuchtStaerke`: Candela ÷ `EINHEIT_LX`) — und r184s BRDF (`_punktLichtBrdf`). Der Kern k (`lichtKern` = k²) beschränkt den Abfall nah an
     // der Quelle (eine Flamme ist keine Punkt-Singularität: r184s nacktes 1/d² legte die Steine am Bett auf das Zehnfache ihrer
     // Glut, und das Licht des Auges lag mit 1/d an der Wand weiß), weit draußen fällt das Feuer mit 1/d² (bis K11b mit dem
     // Legacy-Abfall des r128-Labors (1 − d/R)^abfall: in 4 m noch 31 % — der Boden glühte über mehrere Meter), und an der
@@ -3863,3 +3868,6 @@ AnazhRealm.GRAS_BEND_CREATURE_DIST_SQ = 324;
 // Charakter des Grases). Die Weite selbst ist der EINE Wind am Ort (`_windAt`); bis w20-boee-bild lief die Phase mit `raum` 0,35
 // je Meter als zweite Welle über die Wiese.
 AnazhRealm.WIND_WIEGEN = Object.freeze({ takt: 1.7, quer: 0.7, laengs: 1.5 });
+// DAS GLIMMEN (licht-eine-skala P8): die Leuchtdichte eines Stoffs der vollen Glimm-Achse in cd/m² (`_materialFor`) — HYPOTHESE
+// 0,1–1 cd/m² (der Koordinator; Biolumineszenz und nachleuchtende Farbe liegen bei 0,001–1), hier der obere Rand des Bands.
+AnazhRealm.GLIMMEN_CD_M2 = 1;
