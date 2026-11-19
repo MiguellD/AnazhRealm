@@ -189,4 +189,8 @@ Konsum-Leser: `_chunkSatzPass` (der Zug des Satzes im Hauptbild) und `_archRegio
 
 ### S1–S5 (Radeon 890M, `spike/einheit-sicht/mess-sicht.cjs`, A = 986eff04e9, B = der Schnitt, je Boot eine frische Welt)
 
-(S folgt)
+**Zwischenstand 19.11., 20:30 (Budget-Sicherung):** Schritt 0 gemessen — gezeichnet gegen sichtbar (Dreiecke × Instanz mit
+Pixel): Wiese Third 413 687 / 67 190 (16,2 %), Wiese Ego 365 509 / 62 367 (17,1 %), Genesis Third 260 833 / 30 667 (11,8 %),
+Genesis Ego 233 018 / 23 634 (10,1 %), Dorf Third 471 322 / 32 900 (7,0 %), Dorf Ego 534 735 / 37 975 (7,1 %); der Bau-Satz
+allein an Wiese Third 14 875 / 52, an Genesis Third 26 541 / 3 798. Frame-ms gegen den Schnitt (S4) und S1–S3, S5 stehen aus:
+die ABAB-Messung (`mess-sicht.cjs`, 4 Boots je Seite) wartet in der GPU-Schlange hinter dem CI-echt-Lauf.
