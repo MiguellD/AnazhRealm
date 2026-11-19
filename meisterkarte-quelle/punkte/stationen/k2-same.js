@@ -115,10 +115,22 @@ async function leiterRahmen(H, P, lauf) {
     console.log(hw || "[linse-gpu] ungenannt (kein Log der Sitzung)");
     const j = (H.teil = { leiter: P.leiter, hw, sprossen: {}, fehler: {}, zeilen: [], preisPose: null });
     const D = String(H.AUS).replace(/\.json$/, "") + "-bilder";
+    // DER STAND NACH JEDER SPROSSE (punkte.cjs keinUrteil (e)): die Ausgabe trägt jede geurteilte Sprosse ganz, ehe die nächste misst —
+    // reißt danach die Frist oder tötet die Leine die Probe, urteilt die Sprosse aus ihr (geschrieben neben der Ausgabe, dann umbenannt:
+    // nie ein halbes JSON)
+    const stand = () => {
+        try {
+            fs.writeFileSync(H.AUS + ".stand", JSON.stringify(j));
+            fs.renameSync(H.AUS + ".stand", H.AUS);
+        } catch (e) {
+            H.zeile("Stand: " + String((e && e.message) || e).split("\n")[0]);
+        }
+    };
     const setze = (nr, e) => {
         if (!P.sprossen[nr]) throw new Error("S" + nr + " ist keine Sprosse dieser Station");
         if (j.sprossen[nr]) throw new Error("S" + nr + " zweimal geurteilt");
         j.sprossen[nr] = Object.assign(e, { t: H.sek() });
+        stand();
         H.zeile(P.leiter + " S" + nr + " " + e.art + " " + JSON.stringify(e).slice(0, 220));
     };
     const L = {
