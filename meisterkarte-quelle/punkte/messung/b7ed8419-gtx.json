@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-19T00:21:55.817Z",
+ "zeit": "2026-11-19T00:41:17.806Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -2322,119 +2322,89 @@
   "kf0211fb09727": "jVTBjpswEP2XHNt6HQJejKU9OEvUbKVVs6eqx7EZAxsCkQ1Lm6r/XoUEssAeOqcEzZt58+Z5/iyOoPeQ4t2rq8qFWHxafFk4eEPi0L6hvXt1C7FY6gAYF/ISVEr59ZymbX6sHS1yRUGVkB2QNLbGvLjTHczTHAEFbTey3VG6oyFdt3KItXx4mJYpFCYVqcFgX0Qlq9AHMU1sXAoKCTSma3xNZoEX+EzQLngsd6+0D/kiJW03044KymTM2vjAjCeeWik3c4ZJDliTIi9d31MnTPkrMTRq5xgLLTkBZgXaKwi8EDzVE+3kaHcRnQBN0Tg3asb9hK24oHSWm6LLdVaTo60Ulr140Sr0QKznnNJjQ8yIkVLA1VTnDLBM0Y45hAHTgaC/+LToHg5ogZSQXVOjpR+u1E0bSul2zqXoiHcteuI8UVFoRkBKabrt7BPz7s/wmW8vhorTm7nky6SJ01luD2N5jGEJLKczuwwStGRfufrGJwDA/gXEnZnkLoinyNsgV9xK3S8ZfzcHp3I7081Vpm7BIkmPzRWIAbKQCZk+z5JrOBz6AfQKOZsNUJ9N/Z4GC9C7D0Wv2gc7uDwBcsK86EGh1p6P4vFZTud8s3AgoFKbG9NvWjFtoo+M2WJRE1VVdZ/pJ+BrQX1aDqpEXMqfcj0s7zE+VfzH7/2v9xuVUn6rpry76pWth0nV/dIEwnQvUc+yc1uTFnQ27McohGgq4AltgSmOJEwC5UMiaKtvdOKg//F55NPTbMOnHM/ilq5xvaOiMImuDr8exafxuWnR7hWU+54qUz7zRGfz73Irn+VaPm6juJX/F5vL7Tuipkdbmfx8+WgGjcugqG/n/+8/"
  },
  "sitzung": {
-  "start": "2026-11-19T00:20:34.195Z",
-  "ordner": "sitzung-20261119-012034",
+  "start": "2026-11-19T00:40:40.515Z",
+  "ordner": "sitzung-20261119-014040",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8,
+  "bootS": 7.4,
   "grundstellungS": [],
-  "proben": 2,
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "karte2.same.preis.ausdauer#1",
-    "s": 9.7,
-    "takte": 184,
-    "chunks": 99,
+    "ort": "genesis",
+    "vor": "karte2.planet.kosmos.himmelsmechanik#1",
+    "s": 26.9,
+    "takte": 573,
+    "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "profiband.K4#1",
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
     "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r._knotenRate",
-     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
-     "r.state.weather": "neu: () => wert",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
-     "return window.__k4 || null",
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend."
-    ],
-    "heap": [
-     null,
-     null
-    ],
-    "ungemessen": "den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap ungemessen"
-   },
-   {
-    "probe": "karte2.same.preis.ausdauer#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     306.7,
-     315.6
+     222.6,
+     266.7
     ],
     "ungemessen": null
    }
   ],
+  "wanderung": [
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "ort": "genesis",
+    "m": 1082.54,
+    "dreh": 0.401
+   }
+  ],
   "messHalt": [
    {
-    "probe": "profiband.K4#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.preis.ausdauer#1",
-    "halt": -1000000000,
-    "zurueck": 0
+    "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+    "gehalten": [
+     "skala",
+     "spiegel"
+    ],
+    "offen": []
    }
   ],
-  "haenger": [
-   {
-    "probe": "profiband.K4#1",
-    "zurueck": 9
-   }
-  ],
-  "ciBlicke": 3,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 477,
-   "frameP95": 50.09,
-   "taktP95": 41.52,
-   "vramMax": 151.9,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
-   "marken": 2,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 99,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.planet.kosmos.himmelsmechanik#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 337,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 106.9,
-  "minuten": 1.89
+  "fahrtS": 349.1,
+  "minuten": 5.93
  },
  "ungemessen": {
   "mensch.K5#1": {
@@ -3456,6 +3426,107 @@
    },
    "zeit": "2026-11-19T00:21:55.817Z",
    "abdruck": "d73938ad5063",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.kosmos.himmelsmechanik#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,603 (Faden 1,479 · alle Kerne 1,603; vor 132,5/362,5 ms, nach 123,9/342,3 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 258,3 CPU-s · node.exe scripts/diag-fachwerk-contract.cjs 166,6 CPU-s · node.exe v3/zaehl-los.cjs 96,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 90,5 CPU-s · svchost.exe 37,0 CPU-s · SearchIndexer.exe 4,8 CPU-s — ohne Maß: der größte Sprung in EV je Uhrschritt und die Punkt-Quellen des Himmels je Uhr — Bild-Maße ohne geeichtes k — kein Urteil, UNGEMESSEN (die Probe sah: genesis: ❌ Sprung 0.352 EV (Uhr 0.31→0.32, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 77 · halbe Nacht bei Sonne -16.0° | -15.1° · γ 0.99 (n 53) · wiese: ❌ Sprung 0.454 EV (Uhr 0.64→0.65, 188 Uhren) · ✅ St)",
+   "exit": 1,
+   "minuten": 5.16,
+   "grund": "Last: Referenz f 1,603 (Faden 1,479 · alle Kerne 1,603; vor 132,5/362,5 ms, nach 123,9/342,3 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 258,3 CPU-s · node.exe scripts/diag-fachwerk-contract.cjs 166,6 CPU-s · node.exe v3/zaehl-los.cjs 96,6 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 90,5 CPU-s · svchost.exe 37,0 CPU-s · SearchIndexer.exe 4,8 CPU-s — ohne Maß: der größte Sprung in EV je Uhrschritt und die Punkt-Quellen des Himmels je Uhr — Bild-Maße ohne geeichtes k — kein Urteil, UNGEMESSEN (die Probe sah: genesis: ❌ Sprung 0.352 EV (Uhr 0.31→0.32, 188 Uhren) · ✅ Sterne Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 77 · halbe Nacht bei Sonne -16.0° | -15.1° · γ 0.99 (n 53) · wiese: ❌ Sprung 0.454 EV (Uhr 0.64→0.65, 188 Uhren) · ✅ St)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k509e943c399e",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "kf0211fb09727",
+   "s": 308.6,
+   "fremd": {
+    "s": 315.7,
+    "takte": 142,
+    "fremdS": 759.2,
+    "kerne": 2.405,
+    "fensterKerne": 4.264,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      258.34
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      166.55
+     ],
+     [
+      "node.exe v3/zaehl-los.cjs",
+      96.64
+     ]
+    ],
+    "dienerS": 156.58,
+    "diener": [
+     [
+      "System",
+      83.45
+     ],
+     [
+      "dwm.exe",
+      50.73
+     ]
+    ],
+    "geraetS": 136.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      90.5
+     ],
+     [
+      "svchost.exe",
+      36.98
+     ],
+     [
+      "SearchIndexer.exe",
+      4.84
+     ]
+    ],
+    "eigenS": 578.23,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 2.458,
+     "nach": 1.923,
+     "station": 4.499
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 132.5,
+     "alle": 362.5,
+     "cpuEin": 124
+    },
+    "nach": {
+     "ein": 123.9,
+     "alle": 342.3,
+     "cpuEin": 125
+    },
+    "ruhe": {
+     "ein": 89.6,
+     "alle": 226.2,
+     "n": 590,
+     "von": "2026-11-18"
+    },
+    "f": 1.603,
+    "fEin": 1.479,
+    "fAlle": 1.603,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-19T00:41:17.806Z",
+   "abdruck": "324c5444699e",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
