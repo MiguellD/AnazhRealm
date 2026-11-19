@@ -64,6 +64,10 @@ return H.seite("window.__probeFrist = false; const f = performance.now() + " + H
 const log = process.env.PUNKTE_SITZUNG_LOG && fs.existsSync(process.env.PUNKTE_SITZUNG_LOG) ? fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8") : "";
 for (const z of log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
 let code = 0;
+await H.seite("window.__seiteFelderVor = Object.getOwnPropertyNames(window); return 1;").catch(() => {});
+H.ende.push(() => H.seite("const vor = new Set(window.__seiteFelderVor || []); delete window.__seiteFelderVor; let n = 0; " +
+"for (const k of Object.getOwnPropertyNames(window)) { if (vor.has(k) || /^__(gehalten|offen|gangUhr|punkte|wirt|probeFrist)/.test(k)) continue; " +
+"const d = Object.getOwnPropertyDescriptor(window, k); if (!d || !d.configurable || typeof d.value === \"function\" || d.get) continue; delete window[k]; n++; } return n;"));
 try {
 if (!(H.sek > 6)) throw new Error("der Deckel des Laufs fehlt (argv „" + sek + "“: der Läufer ersetzt den Platzhalter SEK)");
 code = (await eval("(" + artText + ")")(H)) || 0;
@@ -81,15 +85,20 @@ code = code || 3;
 }
 console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
 process.exit(code);
-})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-radeon\vegetation.K4_1.json 7804 1773 async function vegetationK4Seite(H) {
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\f68dbf09-radeon\vegetation.K4_1.json 7804 537 async function vegetationK4Seite(H) {
 const D = H.quelle("scripts/diag-haus-welt.cjs", ["proben"]);
+const MASKE_ALT = /const Wm = await maske\(s\.hydroSurfaceMaterial, \(\) => TSL\.vec3\(0, 0, 1\), \[\]\);\s*s\.scene\.traverse\(\(m\) => m\.isMesh && m\.material === s\.hydroSurfaceMaterial && wasser\.push\(m\)\);/;
+const MASKE_NEU =
+"s.scene.traverseVisible((m) => m.isMesh && (m.userData.isHydrosphere || m.material === s.hydroSurfaceMaterial || /^(wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(m))) && wasser.push(m)); const [Wg, Wo] = [await schuss([], []), await schuss(wasser, [])]; const Wm = new Uint8Array(Wg.length); for (let k = 0; k < Wg.length; k += 4) if (anders(Wg, Wo, k)) Wm[k + 2] = 255;";
+if (!MASKE_ALT.test(String(D.proben))) throw new Error("diag-haus-welt proben: die Wasser-Maske steht nicht mehr, wie die Station sie heilt (MASKE_ALT)");
+const proben = String(D.proben).replace(MASKE_ALT, MASKE_NEU);
 const WA = require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
 await H.ruf("/fenster", { w: 640, h: 360 });
 await H.frist();
 await H.ruf("/umstellen", { ort: "genesis", sicht: "ego" });
 await H.seite("await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch (e) {} });\n" + WA + "\nreturn 1;");
 H.schritt("welt");
-const o = await H.seite("return await (" + D.proben + ")([\"grund\", \"bild\", \"start\"]);");
+const o = await H.seite("return await (" + proben + ")([\"grund\", \"bild\", \"start\"]);");
 H.schritt("grund");
 const bild = (x, name) => {
 for (const [v, png] of [].concat(x.png || []).entries()) H.WB.pngDatei(H.aus + "-" + name + "-" + v + ".png", png);
@@ -106,10 +115,10 @@ console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " 
 return 0;
 }
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ ZEIT welt 1.5 s
-@@PUNKTE@@ ZEIT grund 222.6 s
+@@PUNKTE@@ ZEIT welt 1.4 s
+@@PUNKTE@@ ZEIT grund 162.3 s
 W9 45 Häuser · Bild true · Wasser 2 · vom Spieler gesetzt 1
-@@PUNKTE@@ PROBE 223.5 s · Exit 0
+@@PUNKTE@@ PROBE 163.0 s · Exit 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
