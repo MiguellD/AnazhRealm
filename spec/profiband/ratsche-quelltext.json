@@ -86,6 +86,10 @@
             "zweck": "Struktur: die Orte der Meshes der Hülle (je `new THREE.Mesh(` seine Funktion) — die Arena der Schmiede baut kein Gerät in der Hülle (w4-arena-welt A4)",
             "datei": 1
         },
+        "scripts/diag-settlement.cjs": {
+            "zweck": "Messung: führt fachwerk-core mit drei Öffnungs-Mutanten aus (Teil A, los-huelle: Flügel zu · Rahmen vierfach · Läden an) und im Selbsttest mit der Hülle vor dem Schnitt — die Hülle liest keine Öffnung, das Los je Same wie am Golden",
+            "datei": 1
+        },
         "scripts/diag-sprache.cjs": {
             "zweck": "Struktur: die Sprach-Wand (gate:sprache, spielgang.K5) liest index.html — Schlüssel statt Text; die Tafel lädt über den Stamm",
             "datei": 1

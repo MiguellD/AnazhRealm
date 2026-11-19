@@ -976,6 +976,7 @@
     beam(lf,0,h*0.27,e*0.030,piw*0.82,upH*0.84,0.028,role); beam(lf,0,-h*0.30,e*0.030,piw*0.82,loH*0.84,0.028,role);        // erhabene Kassetten (Schauseite)
     return lf; }
   function tueren(){const g=grp(); if(ROUND)return g; const z=-Dp/2+0.07, lw=doorW/2-0.03, lh=doorH-0.08, cy=baseY+doorH/2, openA=1.15, openB=1.05;
+    oeffnung(g,()=>{   // die Haustür als Öffnung (Marke `oeffnung`): Stock, Sturz, Bogen, Oberlicht, Blätter, Schwelle — die Treppe davor ist Masse (addMasse)
     beam(g,-doorW/2-0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); beam(g,doorW/2+0.06,cy,-Dp/2,0.14,doorH+0.12,0.26,'holz'); // Türstock
     beam(g,0,baseY+doorH+0.05,-Dp/2,doorW+0.36,0.16,0.26,'holz'); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,0,baseY+doorH+0.13,-Dp/2,doorW*0.62,true,P.bogenTyp,'holz',{art:'tuer',cap:roofUnderY(0,-Dp/2)});                                                          // Sturz
     const olY0=baseY+doorH+0.13, olY1=Math.min(baseY+P.egH-P.raehm-0.02,olY0+0.42), olH=olY1-olY0;                            // Oberlicht
@@ -990,16 +991,16 @@
       beam(L,hex,-lh*0.02,0.05,0.04,0.30,0.045,'metall'); beam(L,hex+0.02,-lh*0.10,0.062,0.11,0.045,0.045,'metall');     // INNEN: Drücker-Stange + Griff, bündig (+z)
       L.position.set(...deform(hx,cy,z)); L.rotation.y=(P.doorClosed?0:-sgn*openA)+(DEF_bk>0?hx*DEF_bk:0);                                                  // GESETZ: Haustür schwingt nach AUSSEN (über die Eingangstreppe) → Innenflur zur Treppe bleibt frei
       L.userData={door:true,preOpen:(!P.doorClosed),openA:-sgn*openA,block:sgn<0?[-doorW/2,baseY,-Dp/2-0.1,0,baseY+doorH,-Dp/2+0.1]:[0,baseY,-Dp/2-0.1,doorW/2,baseY+doorH,-Dp/2+0.1],side:sgn,offen:(P.doorClosed?0:-sgn*openA)}; g.add(L); });   // DORF-ERLEBNIS: side+offen = die Flügel-DATEN für den Welt-Pfad (buildStufe separiert, __extractAssetMesh reicht sie als out.tuer — exakt das porta-Muster)
-    beam(g,0,baseY-0.02,-Dp/2+0.04,doorW+0.2,0.06,0.32,'stein');                                                            // Schwelle
+    beam(g,0,baseY-0.02,-Dp/2+0.04,doorW+0.2,0.06,0.32,'stein'); });                                                         // Schwelle
     if(!P.veranda&&!P.portikus)aussentreppe(g,0,-Dp/2,0,-1,doorW);                                                                                     // Haustür-Treppe (vorne) — geteiltes Gesetz
     if(backDoor){ const bw2=Math.min(1.0,backDoor.hi-backDoor.lo-0.2), bcx=backDoor.cx, blh=doorH-0.12, bcy=baseY+blh/2, bz=Dp/2-0.07;  // Hintertür
-      beam(g,bcx-bw2/2-0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz'); beam(g,bcx+bw2/2+0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz');     // Stock
+      oeffnung(g,()=>{ beam(g,bcx-bw2/2-0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz'); beam(g,bcx+bw2/2+0.06,bcy,Dp/2,0.13,doorH+0.06,0.24,'holz');     // Stock (die Hintertür als Öffnung)
       beam(g,bcx,baseY+doorH+0.0,Dp/2,bw2+0.32,0.14,0.24,'holz');                                                                  // Sturz
       const L=grp(); const inner=leafFrame(bw2-0.04,blh,'holz',+1); inner.position.x=(bw2-0.04)/2; L.add(inner);   // Schauseite +z = aussen (Rückseite Haus)
       beam(L,bw2-0.18,0,0.07,0.05,0.05,0.06,'metall'); beam(L,bw2-0.18,blh*0.10,-0.05,0.04,0.26,0.045,'metall');   // aussen Knauf bündig am Blatt (+z) · innen Drücker (−z) — kein schwebender Würfel mehr
       L.position.set(...deform(bcx-(bw2-0.04)/2,bcy,bz)); L.rotation.y=(P.doorClosed?0:-openB)+(DEF_bk>0?(bcx-(bw2-0.04)/2)*DEF_bk:0);
       L.userData={door:true,preOpen:(!P.doorClosed),openA:-openB,block:[bcx-bw2/2,baseY,Dp/2-0.1,bcx+bw2/2,baseY+doorH,Dp/2+0.1],side:1,offen:(P.doorClosed?0:-openB)}; g.add(L);   // DORF-ERLEBNIS: Hintertür-Flügel-DATEN (ein Blatt, Hinge an der Bandseite)
-      beam(g,bcx,baseY-0.02,Dp/2-0.04,bw2+0.2,0.06,0.3,'stein');                                                                   // Schwelle
+      beam(g,bcx,baseY-0.02,Dp/2-0.04,bw2+0.2,0.06,0.3,'stein'); });                                                               // Schwelle
       aussentreppe(g,bcx,Dp/2,0,1,bw2); }                                                                                          // Hintertür-Treppe — GLEICHES Gesetz wie vorne
     addCircR(-doorW/2-0.1,-Dp/2+0.05,doorW/2+0.1,-Dp/2+1.05,0,'haustür');                                                          // Haustür-Schwung (Flur)
     if(backDoor) addCircR(backDoor.cx-0.55,Dp/2-1.05,backDoor.cx+0.55,Dp/2-0.05,0,'hintertür');                                     // Hintertür-Schwung
@@ -1087,7 +1088,7 @@
         zw.push(st); vor=st; } }
     if(zw.length) prisma(g,zw,eb(dp-0.06),role,{zwickel:{bogen:B}});
     return B; }
-  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1); const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
+  function fensterTeile(g,cx,cy,cz,w,h,horiz,capY){ lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1); const fr='holz', gl=fensterSchlaeft(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy)?'glasdunkel':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
@@ -1098,12 +1099,17 @@
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
       L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
       strahlFluegel(L,w*Math.sin(L.rotation.y),w*Math.cos(L.rotation.y),h); } }
+  // DIE ÖFFNUNG IST KEIN KÖRPER (los-huelle): was eine Öffnung baut — Flügel, Rahmen, Bank, Bogen, Gitter, Türblatt und -stock —, trägt
+  // die Marke `oeffnung`; die Hülle des Mass-Baus (`massBau`, die EINE Box, die das Los liest) überspringt sie. Bis hier maß die Box den
+  // 0,62 rad offenen Flügel mit: ein zugestellter Flügel versetzte die Stadt 7/4750 um Median 90,9 m (p3/n1911/los/vergleich.log).
+  function oeffnung(g,f){ const n=g.children.length, r=f(); for(let i=n;i<g.children.length;i++) g.children[i].userData.oeffnung=true; return r; }
+  function fensterAt(g,cx,cy,cz,w,h,horiz,capY){ return oeffnung(g,()=>fensterTeile(g,cx,cy,cz,w,h,horiz,capY)); }
   function fenster(){const g=grp(); if(ROUND)return g; WALLS.forEach(w=>{ if(!w.win||INNEN(w))return; const wd=winW(w),c=(w.lo+w.hi)/2; fensterAt(g,w.horiz?c:w.fixed,w.win.cy,w.horiz?w.fixed:c,wd,w.win.ch,w.horiz); });
-    if(P.stil==='stein' && P.pitchDeg>=45){ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
+    if(P.stil==='stein' && P.pitchDeg>=45) oeffnung(g,()=>{ WALLS.forEach(w=>{ if(!w.win||!w.horiz||w.fixed>0)return; if(w.win.cy < levels[0].top+0.3)return;   // ════ FRANZÖSISCHER BALKON (Juliette): schmiedeeiserne Brüstung vor OG-Vorderfenstern (Putz/Stein FR/IT) ════
       const c=(w.lo+w.hi)/2, wd=winW(w), zf=w.fixed, y0=w.win.cy-w.win.ch/2-0.05, rH=1.0, zr=zf-0.20, rW=wd+0.5;
       beam(g,c,y0+rH,zr,rW,0.06,0.05,'metall'); beam(g,c,y0+0.10,zr,rW,0.05,0.05,'metall');   // Handlauf + Fussschiene
       const nb=Math.max(3,Math.round(rW/0.16)); for(let i=0;i<=nb;i++)beam(g,c-rW/2+i*rW/nb,y0+rH/2,zr,0.025,rH,0.025,'metall');
-      [-1,1].forEach(s=>beam(g,c+s*rW/2,y0+rH/2,zf-0.10,0.05,rH,0.20,'metall')); }); }   // seitliche Konsolen an die Wand
+      [-1,1].forEach(s=>beam(g,c+s*rW/2,y0+rH/2,zf-0.10,0.05,rH,0.20,'metall')); }); });   // seitliche Konsolen an die Wand — das Gitter der Öffnung (Marke `oeffnung`)
     return g; }   // Giebel-Spitzfenster wird bündig in giebel() gebaut (mit echter Backstein-Aussparung)
 
   function moebel(){const g=grp(); if(ROUND)return g;
@@ -1302,7 +1308,7 @@
       addSolid(xout,wy0+(yLow-wy0)/2,zc,0.12,yLow-wy0,gd); fensterAt(g,xout,wy,zc,0.8,wH,false, yLow-0.06); }   // BOGEN-DECKEL lokal: Pult-Traufe schlägt Hauptdach
     const pdw=0.85, pd0=xin+sx*0.35, plo=Math.min(pd0,pd0+sx*pdw), phi=Math.max(pd0,pd0+sx*pdw), pdH=2.0, pdY=wy0+pdH;   // Personentür an der HOHEN Seite
     stripTrap(x0,plo,z1,wy0); stripTrap(phi,x1,z1,wy0); stripTrap(plo,phi,z1,pdY);
-    beam(g,(plo+phi)/2,pdY+0.07,z1,pdw+0.24,0.13,0.16,'holz'); [plo,phi].forEach(d=>beam(g,d,(wy0+pdY)/2,z1,0.12,pdH,0.14,'holz'));
+    oeffnung(g,()=>{ beam(g,(plo+phi)/2,pdY+0.07,z1,pdw+0.24,0.13,0.16,'holz'); [plo,phi].forEach(d=>beam(g,d,(wy0+pdY)/2,z1,0.12,pdH,0.14,'holz')); });   // Sturz + Stock der Personentür (Öffnung)
     { const L=grp(); const inner=grp(); const w=pdw-0.04,h=pdH-0.04; beam(inner,0,0,0.014,w,h,0.04,'holz');
       const nb=Math.max(2,Math.round(w/0.2)); for(let i=0;i<nb;i++)beam(inner,-w/2+(i+0.5)*w/nb,0,-0.014,w/nb,h,0.03,'holz');
       beam(inner,0,h/2-0.07,-0.03,w,0.09,0.04,'holz'); strut(inner,-w/2+0.06,-h/2+0.08,-0.04,w/2-0.06,h/2-0.08,-0.04,0.06,'holz');
@@ -1311,8 +1317,8 @@
       L.userData={door:true,preOpen:(!P.doorClosed),openA:sx*1.0, block:[plo,wy0,z1-0.12,phi,pdY,z1+0.12]}; g.add(L); }
     const tw=Math.min(2.45, gw-0.55), t0=xin+sx*0.30, tlo=Math.min(t0,t0+sx*tw), thi=Math.max(t0,t0+sx*tw), toH=2.0, toY=wy0+toH;   // TOR am hohen Ende, Einfahrt −z
     stripTrap(x0,tlo,z0,wy0); stripTrap(thi,x1,z0,wy0); stripTrap(tlo,thi,z0,toY);
-    beam(g,(tlo+thi)/2,toY+0.08,z0,tw+0.3,0.16,0.18,'holz'); [tlo,thi].forEach(d=>beam(g,d,(wy0+toY)/2,z0,0.14,toH,0.14,'holz'));
-    beam(g,(tlo+thi)/2,wy0-0.02,z0+0.03,tw+0.2,0.06,0.34,'stein');
+    oeffnung(g,()=>{ beam(g,(tlo+thi)/2,toY+0.08,z0,tw+0.3,0.16,0.18,'holz'); [tlo,thi].forEach(d=>beam(g,d,(wy0+toY)/2,z0,0.14,toH,0.14,'holz'));
+    beam(g,(tlo+thi)/2,wy0-0.02,z0+0.03,tw+0.2,0.06,0.34,'stein'); });   // Sturz, Stock und Schwelle des Tors (Öffnung)
     const tlw=tw/2;
     const torLeaf=(L,w,h,sec)=>{ beam(L,0,0,0.014,w,h,0.04,sec?'metall':'holz'); const nb=Math.max(3,Math.round(w/0.24));
       if(sec){ const nl=Math.max(3,Math.round(h/0.42)); for(let j=0;j<nl;j++)beam(L,0,-h/2+(j+0.5)*h/nl,-0.022,w*0.98,h/nl*0.86,0.05,'metall'); for(let j=1;j<nl;j++)beam(L,0,-h/2+j*h/nl,-0.04,w,0.025,0.06,'dunkel'); }
@@ -1390,7 +1396,7 @@
         const L=grp(); const inner=leafFrame(lw,lh,'holz',+1); inner.position.x=lw/2; L.add(inner); beam(L,lw-0.13,0,0.05,0.07,0.07,0.06,'metall');
         L.position.set(...deform(hx,dcy,hz)); L.rotation.y=base+(P.doorClosed?0:oA*sgn)+(DEF_bk>0?hx*DEF_bk:0);
         L.userData={door:true,preOpen:(!P.doorClosed),openA:base+oA*sgn,block:[dx-0.45,baseY,dz-0.45,dx+0.45,baseY+dh,dz+0.45]}; g.add(L);
-        beam(g,dx,baseY-0.02,dz, outIsX?0.30:dwid+0.2, 0.06, outIsX?dwid+0.2:0.30, 'stein');
+        oeffnung(g,()=>beam(g,dx,baseY-0.02,dz, outIsX?0.30:dwid+0.2, 0.06, outIsX?dwid+0.2:0.30, 'stein'));   // Schwelle der Schwingtür (Öffnung)
         aussentreppe(g,dx,dz,ox,oz,dwid); }
       if(w.door){ const ii=loc(uc,v0), ix=ii[0], iz=ii[1], dh=baseY+P.doorH, c=w.door.c;                  // Innendurchgang: bei merge BREITE Öffnung (Raum fließt), sonst Türbreite
         const owid = merge ? Math.min(breadth-1.0,(outIsX?sZ:sX)-1.0) : (w.door.hi-w.door.lo);
@@ -1462,7 +1468,7 @@
         const _co=(isX?base[0]:base[1]); eindeckenFlaeche(g,{rY:ry+0.05,eaveDropY:ry-0.35,eZ:bd+0.1,zMid:(isX?base[1]:base[0]),sign:outv[isX?1:0],xRangeAt:function(){return [_co+aB-bw-0.25,_co+aB+bw+0.25];},trim:true,lift:0.05,axis:(isX?'z':'x')});   // GESETZ: Balkon-Pultdach durch DASSELBE Deckungs-Gesetz geschnitten (Lattung+Ziegel, WINKEL ABGELEITET) — kein hand-gesetztes Sheet im falschen Winkel mehr
         for(let a=aB-bw;a<=aB+bw+0.01;a+=bw){ const s0=loc(a,0,ry+0.05),s1=loc(a,bd+0.05,ry-0.32); strut(g,s0[0],ry+0.05,s0[2],s1[0],ry-0.32,s1[2],0.07,'holz'); } }
       const dw=0.85,dh=2.0,dcy=yF+dh/2, lw=dw/2-0.02,lh=dh-0.06;                                        // Balkontür (Doppelflügel) je Etage
-      bm(aB-dw/2-0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB+dw/2+0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB,0,yF+dh+0.06,dw+0.3,0.16,0.12,'holz');
+      oeffnung(g,()=>{ bm(aB-dw/2-0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB+dw/2+0.05,0,dcy,0.1,0.16,dh+0.1,'holz'); bm(aB,0,yF+dh+0.06,dw+0.3,0.16,0.12,'holz'); });   // Stock + Sturz der Balkontür (Öffnung)
       const faceY = isX?0:(Math.PI/2);
       [[-1,aB-dw/2+0.02],[1,aB+dw/2-0.02]].forEach(([sgn,ha])=>{ const LL=grp(); const inner=leafFrame(lw,lh,'holz'); inner.position.x=-sgn*lw/2; LL.add(inner);
         const hp=loc(ha,-0.04,dcy); LL.position.set(...deform(hp[0],dcy,hp[2])); LL.rotation.y=faceY+sgn*1.1+(DEF_bk>0?hp[0]*DEF_bk:0);
@@ -5925,13 +5931,36 @@
         return P;
     }
 
+    // DIE HÜLLE IST DER KÖRPER (los-huelle): die Box `ext`, die das Los liest (`hausSlot` → `dorfLayout`, `exportSettlement`), umfasst
+    // nur, was der Baukörper ist — Wand, Dach samt Überstand, Sockel, Anbau —, nie ein Teil, dessen Gestalt von einer Öffnung oder
+    // ihrem Zustand abhängt (die Marke `oeffnung` des Baus, das Flügel- und Türblatt `window`/`door`): eine Fassade bewegt kein Los.
+    // Dieselbe Rechnung wie Box3.setFromObject (je Geometrie ihre Box unter der Welt-Matrix), ohne die Teilbäume der Öffnungen.
+    // Befund (p3/n1911/los): der zugestellte Flügel änderte `ext` an 476 von 519 Plan-Häusern (≤ 0,360 m), die Stadt 7/4750 rückte
+    // um Median 90,9 m. Linse: gate:settlement Teil A, `huelleProben` (scripts/lib/los-proben.cjs).
+    function koerperHuelle(g) {
+        var bx = new THREE.Box3(),
+            b = new THREE.Box3();
+        g.updateMatrixWorld(true);
+        (function lies(o) {
+            var u = o.userData;
+            if (u && (u.oeffnung || u.window || u.door)) return;
+            if (o.geometry) {
+                var q = o.boundingBox !== undefined ? o : o.geometry; // die Instanz-Senke trägt ihre eigene Box (wie expandByObject)
+                if (q.boundingBox === null) q.computeBoundingBox();
+                b.copy(q.boundingBox).applyMatrix4(o.matrixWorld);
+                bx.union(b);
+            }
+            for (var i = 0; i < o.children.length; i++) lies(o.children[i]);
+        })(g);
+        return bx;
+    }
     // ── Der MASS-BAU → B-Struct — byte-Anker: buildHausLOD (Lab, LOD-Sonde)
     //    Z.„MASS-BUILD liefert ext/dims — identisch zu buildDorf": stapelBau
     //    (MASSNUR, LOD1F) einmal bauen, Hülle vermessen, sofort entsorgen.
     //    B trägt die Sonden-Identität (q am Ursprung, hofGap 2.5). ──
     function massBau(p) {
         var mass = stapelBau(Object.assign({}, p, { nur: MASSNUR, __nurMass: true }), LOD1F);
-        var bx = new THREE.Box3().setFromObject(mass.g);
+        var bx = koerperHuelle(mass.g);
         var B = {
             p: p,
             q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, // das Einzel-Haus des Ofens steht im eigenen Rahmen (y = 0; der Wirt setzt es auf seinen Slot)
