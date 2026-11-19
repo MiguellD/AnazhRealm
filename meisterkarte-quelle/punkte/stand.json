@@ -33260,9 +33260,161 @@
     }
    ]
   },
+  "karte2.same.gedaechtnis.alter": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.gedaechtnis.alter#1 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#1 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#2 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#2 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#4 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#4 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#5 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#5 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#6 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#6 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#7 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#7 gtx: ungemessen (R10) · karte2.same.gedaechtnis.alter#8 radeon: ungemessen (R10) · karte2.same.gedaechtnis.alter#8 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.gedaechtnis.alter#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#8",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.alter#8",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
   "karte2.same.gedaechtnis.pfad": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243289 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal an b7ed8419 gtx",
+   "beleg": "Maschine: gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243143 → 62449 px, daneben 342242 → 342242 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: nach 100 Gängen (Soll 100): Gras im Trittstreifen ±0,5 m Weg 243289 → 62461 px, daneben 342262 → 342262 px · Büschel Weg 13 → 3, daneben 17 → 17 (Soll Weg ≤ 40 %, daneben 0,85–1,15 ×, im Bild und in der Liste) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.same.gedaechtnis.pfad#2 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#2 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#4 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#4 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#5 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#5 gtx: ungemessen (R10) · karte2.same.gedaechtnis.pfad#6 radeon: ungemessen (R10) · karte2.same.gedaechtnis.pfad#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.gedaechtnis.pfad#1",
@@ -33285,6 +33437,212 @@
      "gehalten": true,
      "r6": "konsum",
      "beide": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.pfad#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.gedaechtnis.schicht": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.gedaechtnis.schicht#1 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#1 gtx: ungemessen (R10) · karte2.same.gedaechtnis.schicht#2 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#2 gtx: ungemessen (R10) · karte2.same.gedaechtnis.schicht#3 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#3 gtx: ungemessen (R10) · karte2.same.gedaechtnis.schicht#4 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#4 gtx: ungemessen (R10) · karte2.same.gedaechtnis.schicht#5 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#5 gtx: ungemessen (R10) · karte2.same.gedaechtnis.schicht#6 radeon: ungemessen (R10) · karte2.same.gedaechtnis.schicht#6 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.gedaechtnis.schicht#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.gedaechtnis.schicht#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
     }
    ]
   },
@@ -34463,9 +34821,143 @@
     }
    ]
   },
+  "karte2.same.massstab.nahe": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.nahe#1 radeon: ungemessen (R10) · karte2.same.massstab.nahe#1 gtx: ungemessen (R10) · karte2.same.massstab.nahe#2 radeon: ungemessen (R10) · karte2.same.massstab.nahe#2 gtx: ungemessen (R10) · karte2.same.massstab.nahe#3 radeon: ungemessen (R10) · karte2.same.massstab.nahe#3 gtx: ungemessen (R10) · karte2.same.massstab.nahe#4 radeon: ungemessen (R10) · karte2.same.massstab.nahe#4 gtx: ungemessen (R10) · karte2.same.massstab.nahe#5 radeon: ungemessen (R10) · karte2.same.massstab.nahe#5 gtx: ungemessen (R10) · karte2.same.massstab.nahe#6 radeon: ungemessen (R10) · karte2.same.massstab.nahe#6 gtx: ungemessen (R10) · karte2.same.massstab.nahe#7 radeon: ungemessen (R10) · karte2.same.massstab.nahe#7 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.massstab.nahe#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.nahe#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
   "karte2.same.massstab.physik": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 17.01 m gegen v²/(2μg) 17.51 m (-2.9 %, Soll ±10 %), μ 0.5612 (Reibkreis 1 × Boden 0.7), 50 → 1.1 km/h, Δh 0 m, 141 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] nvidia/pascal an 7de938ab gtx",
+   "beleg": "Maschine: gehalten: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 17.01 m gegen v²/(2μg) 17.51 m (-2.9 %, Soll ±10 %), μ 0.5612 (Reibkreis 1 × Boden 0.7), 50 → 1.1 km/h, Δh 0 m, 141 Schritte, rollDecel 1 m/s² · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: Fall aus 10 m 1.433 s gegen √(2h/g) 1.428 s (+0.4 %, Soll ±5 %), 86 Sim-Schritte zu 16.7 ms, Schwere des Spiels 9.81 m/s² (Welt-Gesetz 9.81) · Bremsweg 15.94 m gegen v²/(2μg) 16.38 m (-2.7 %, Soll ±10 %), μ 0.6 (Reibkreis 1 × Boden 0.6), 50 → 1.1 km/h, Δh 0 m, 136 Schritte, rollDecel 1 m/s² · [linse-gpu] nvidia/pascal an 7de938ab gtx — offen: karte2.same.massstab.physik#2 radeon: ungemessen (R10) · karte2.same.massstab.physik#2 gtx: ungemessen (R10) · karte2.same.massstab.physik#3 radeon: ungemessen (R10) · karte2.same.massstab.physik#3 gtx: ungemessen (R10) · karte2.same.massstab.physik#4 radeon: ungemessen (R10) · karte2.same.massstab.physik#4 gtx: ungemessen (R10) · karte2.same.massstab.physik#5 radeon: ungemessen (R10) · karte2.same.massstab.physik#5 gtx: ungemessen (R10) · karte2.same.massstab.physik#6 radeon: ungemessen (R10) · karte2.same.massstab.physik#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.massstab.physik#1",
@@ -34488,12 +34980,1324 @@
      "gehalten": true,
      "r6": "konsum",
      "beide": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.physik#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.massstab.spanne": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.spanne#1 radeon: ungemessen (R10) · karte2.same.massstab.spanne#1 gtx: ungemessen (R10) · karte2.same.massstab.spanne#2 radeon: ungemessen (R10) · karte2.same.massstab.spanne#2 gtx: ungemessen (R10) · karte2.same.massstab.spanne#3 radeon: ungemessen (R10) · karte2.same.massstab.spanne#3 gtx: ungemessen (R10) · karte2.same.massstab.spanne#4 radeon: ungemessen (R10) · karte2.same.massstab.spanne#4 gtx: ungemessen (R10) · karte2.same.massstab.spanne#5 radeon: ungemessen (R10) · karte2.same.massstab.spanne#5 gtx: ungemessen (R10) · karte2.same.massstab.spanne#6 radeon: ungemessen (R10) · karte2.same.massstab.spanne#6 gtx: ungemessen (R10) · karte2.same.massstab.spanne#7 radeon: ungemessen (R10) · karte2.same.massstab.spanne#7 gtx: ungemessen (R10) · karte2.same.massstab.spanne#8 radeon: ungemessen (R10) · karte2.same.massstab.spanne#8 gtx: ungemessen (R10) · karte2.same.massstab.spanne#9 radeon: ungemessen (R10) · karte2.same.massstab.spanne#9 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.massstab.spanne#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#8",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#8",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#9",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.spanne#9",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.massstab.sprung": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.massstab.sprung#1 radeon: ungemessen (R10) · karte2.same.massstab.sprung#1 gtx: ungemessen (R10) · karte2.same.massstab.sprung#2 radeon: ungemessen (R10) · karte2.same.massstab.sprung#2 gtx: ungemessen (R10) · karte2.same.massstab.sprung#3 radeon: ungemessen (R10) · karte2.same.massstab.sprung#3 gtx: ungemessen (R10) · karte2.same.massstab.sprung#4 radeon: ungemessen (R10) · karte2.same.massstab.sprung#4 gtx: ungemessen (R10) · karte2.same.massstab.sprung#5 radeon: ungemessen (R10) · karte2.same.massstab.sprung#5 gtx: ungemessen (R10) · karte2.same.massstab.sprung#6 radeon: ungemessen (R10) · karte2.same.massstab.sprung#6 gtx: ungemessen (R10) · karte2.same.massstab.sprung#7 radeon: ungemessen (R10) · karte2.same.massstab.sprung#7 gtx: ungemessen (R10) · karte2.same.massstab.sprung#8 radeon: ungemessen (R10) · karte2.same.massstab.sprung#8 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.massstab.sprung#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#8",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.massstab.sprung#8",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.physik.feuer": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.feuer#1 radeon: ungemessen (R10) · karte2.same.physik.feuer#1 gtx: ungemessen (R10) · karte2.same.physik.feuer#2 radeon: ungemessen (R10) · karte2.same.physik.feuer#2 gtx: ungemessen (R10) · karte2.same.physik.feuer#3 radeon: ungemessen (R10) · karte2.same.physik.feuer#3 gtx: ungemessen (R10) · karte2.same.physik.feuer#4 radeon: ungemessen (R10) · karte2.same.physik.feuer#4 gtx: ungemessen (R10) · karte2.same.physik.feuer#5 radeon: ungemessen (R10) · karte2.same.physik.feuer#5 gtx: ungemessen (R10) · karte2.same.physik.feuer#6 radeon: ungemessen (R10) · karte2.same.physik.feuer#6 gtx: ungemessen (R10) · karte2.same.physik.feuer#7 radeon: ungemessen (R10) · karte2.same.physik.feuer#7 gtx: ungemessen (R10) · karte2.same.physik.feuer#8 radeon: ungemessen (R10) · karte2.same.physik.feuer#8 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.physik.feuer#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#8",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.feuer#8",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.physik.flug": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.flug#1 radeon: ungemessen (R10) · karte2.same.physik.flug#1 gtx: ungemessen (R10) · karte2.same.physik.flug#2 radeon: ungemessen (R10) · karte2.same.physik.flug#2 gtx: ungemessen (R10) · karte2.same.physik.flug#3 radeon: ungemessen (R10) · karte2.same.physik.flug#3 gtx: ungemessen (R10) · karte2.same.physik.flug#4 radeon: ungemessen (R10) · karte2.same.physik.flug#4 gtx: ungemessen (R10) · karte2.same.physik.flug#5 radeon: ungemessen (R10) · karte2.same.physik.flug#5 gtx: ungemessen (R10) · karte2.same.physik.flug#6 radeon: ungemessen (R10) · karte2.same.physik.flug#6 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.physik.flug#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.flug#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.flug#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.flug#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.physik.fluid": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.fluid#2 radeon: ungemessen (R10) · karte2.same.physik.fluid#2 gtx: ungemessen (R10) · karte2.same.physik.fluid#3 radeon: ungemessen (R10) · karte2.same.physik.fluid#3 gtx: ungemessen (R10) · karte2.same.physik.fluid#4 radeon: ungemessen (R10) · karte2.same.physik.fluid#4 gtx: ungemessen (R10) · karte2.same.physik.fluid#5 radeon: ungemessen (R10) · karte2.same.physik.fluid#5 gtx: ungemessen (R10) · karte2.same.physik.fluid#6 radeon: ungemessen (R10) · karte2.same.physik.fluid#6 gtx: ungemessen (R10) · karte2.same.physik.fluid#7 radeon: ungemessen (R10) · karte2.same.physik.fluid#7 gtx: ungemessen (R10) · karte2.same.physik.fluid#8 radeon: ungemessen (R10) · karte2.same.physik.fluid#8 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.physik.fluid#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#8",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.fluid#8",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.physik.koerper": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.koerper#1 radeon: ungemessen (R10) · karte2.same.physik.koerper#1 gtx: ungemessen (R10) · karte2.same.physik.koerper#2 radeon: ungemessen (R10) · karte2.same.physik.koerper#2 gtx: ungemessen (R10) · karte2.same.physik.koerper#3 radeon: ungemessen (R10) · karte2.same.physik.koerper#3 gtx: ungemessen (R10) · karte2.same.physik.koerper#4 radeon: ungemessen (R10) · karte2.same.physik.koerper#4 gtx: ungemessen (R10) · karte2.same.physik.koerper#5 radeon: ungemessen (R10) · karte2.same.physik.koerper#5 gtx: ungemessen (R10) · karte2.same.physik.koerper#6 radeon: ungemessen (R10) · karte2.same.physik.koerper#6 gtx: ungemessen (R10) · karte2.same.physik.koerper#7 radeon: ungemessen (R10) · karte2.same.physik.koerper#7 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.physik.koerper#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.koerper#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.physik.reaktion": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.reaktion#1 radeon: ungemessen (R10) · karte2.same.physik.reaktion#1 gtx: ungemessen (R10) · karte2.same.physik.reaktion#2 radeon: ungemessen (R10) · karte2.same.physik.reaktion#2 gtx: ungemessen (R10) · karte2.same.physik.reaktion#3 radeon: ungemessen (R10) · karte2.same.physik.reaktion#3 gtx: ungemessen (R10) · karte2.same.physik.reaktion#4 radeon: ungemessen (R10) · karte2.same.physik.reaktion#4 gtx: ungemessen (R10) · karte2.same.physik.reaktion#5 radeon: ungemessen (R10) · karte2.same.physik.reaktion#5 gtx: ungemessen (R10) · karte2.same.physik.reaktion#6 radeon: ungemessen (R10) · karte2.same.physik.reaktion#6 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.physik.reaktion#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.reaktion#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.physik.stoffe": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.stoffe#1 radeon: ungemessen (R10) · karte2.same.physik.stoffe#1 gtx: ungemessen (R10) · karte2.same.physik.stoffe#2 radeon: ungemessen (R10) · karte2.same.physik.stoffe#2 gtx: ungemessen (R10) · karte2.same.physik.stoffe#3 radeon: ungemessen (R10) · karte2.same.physik.stoffe#3 gtx: ungemessen (R10) · karte2.same.physik.stoffe#4 radeon: ungemessen (R10) · karte2.same.physik.stoffe#4 gtx: ungemessen (R10) · karte2.same.physik.stoffe#5 radeon: ungemessen (R10) · karte2.same.physik.stoffe#5 gtx: ungemessen (R10) · karte2.same.physik.stoffe#6 radeon: ungemessen (R10) · karte2.same.physik.stoffe#6 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.physik.stoffe#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.stoffe#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
+  "karte2.same.physik.tragen": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.tragen#1 radeon: ungemessen (R10) · karte2.same.physik.tragen#1 gtx: ungemessen (R10) · karte2.same.physik.tragen#2 radeon: ungemessen (R10) · karte2.same.physik.tragen#2 gtx: ungemessen (R10) · karte2.same.physik.tragen#3 radeon: ungemessen (R10) · karte2.same.physik.tragen#3 gtx: ungemessen (R10) · karte2.same.physik.tragen#4 radeon: ungemessen (R10) · karte2.same.physik.tragen#4 gtx: ungemessen (R10) · karte2.same.physik.tragen#5 radeon: ungemessen (R10) · karte2.same.physik.tragen#5 gtx: ungemessen (R10) · karte2.same.physik.tragen#6 radeon: ungemessen (R10) · karte2.same.physik.tragen#6 gtx: ungemessen (R10) · karte2.same.physik.tragen#7 radeon: ungemessen (R10) · karte2.same.physik.tragen#7 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "karte2.same.physik.tragen#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true,
+     "beide": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.tragen#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
     }
    ]
   },
   "karte2.same.physik.verformung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: klinge_flegel Schwung 0.392 m, Länge (längs) 0.328–0.328 m, v² 2.834 → 0.178 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/532 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 283 px, Gestalt 648 px über dem Rauschen 0 (ohne Gestalt 0, Welt gehalten), Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal an 1857c808 gtx — offen: karte2.same.physik.verformung#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13)",
+   "beleg": "Maschine: gehalten: klinge_flegel Schwung 0.392 m, Länge (längs) 0.328–0.328 m, v² 2.834 → 0.178 (Soll: das Gesetz im Buch, Schwung ≥ 0,05 m, Länge längs des Seils vom Anker ±2 %, v² letzte ≤ ½ erste Sekunde) · im Bild klinge_flegel 1 (Soll ≥ 0,9 der Takte, die Länge längs) · erster Griff klinge_flegel Gestalt nach 1 Takten/532 ms (leer 0, Part-Bau 0) (Soll: leer 0) · Schuss klinge_flegel Figur 283 px, Gestalt 648 px über dem Rauschen 0 (ohne Gestalt 0, Welt gehalten), Seil-Teile zu sehen 8/8 (Soll: Figur ≥ 180 px, Gestalt ≥ 200 px, jedes Seil-Teil zu sehen) · [linse-gpu] nvidia/pascal an 1857c808 gtx — offen: karte2.same.physik.verformung#1 radeon: Konsum seit der Messung geändert (R6: foundry-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) · karte2.same.physik.verformung#2 radeon: ungemessen (R10) · karte2.same.physik.verformung#2 gtx: ungemessen (R10) · karte2.same.physik.verformung#3 radeon: ungemessen (R10) · karte2.same.physik.verformung#3 gtx: ungemessen (R10) · karte2.same.physik.verformung#4 radeon: ungemessen (R10) · karte2.same.physik.verformung#4 gtx: ungemessen (R10) · karte2.same.physik.verformung#5 radeon: ungemessen (R10) · karte2.same.physik.verformung#5 gtx: ungemessen (R10) · karte2.same.physik.verformung#6 radeon: ungemessen (R10) · karte2.same.physik.verformung#6 gtx: ungemessen (R10) · karte2.same.physik.verformung#7 radeon: ungemessen (R10) · karte2.same.physik.verformung#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.physik.verformung#1",
@@ -34516,6 +36320,114 @@
      "gehalten": true,
      "r6": "konsum",
      "beide": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#3",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#3",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#4",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#4",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#5",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#5",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#6",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#6",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#7",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "karte2.same.physik.verformung#7",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
     }
    ]
   },
@@ -35508,7 +37420,7 @@
  },
  "rueckfall": [],
  "r6": {
-  "haelften": 3583,
+  "haelften": 3785,
   "konsum": 198,
   "naehe": [
    "affekt.K1#1 headless",
@@ -35671,11 +37583,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3226
+  "ohne": 3428
  },
  "kopfVoll": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
- "zeit": "2026-11-19T04:16:49.884Z",
- "vorher": "fe5b937d",
+ "zeit": "2026-11-19T06:09:22.950Z",
+ "vorher": "f68dbf09",
  "bilanz": {
   "gewinn": [],
   "fall": [],
