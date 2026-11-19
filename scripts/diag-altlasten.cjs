@@ -1544,6 +1544,8 @@ const METHODEN_OHNE = [
     ["_vegetationSampleSpawn", ["Math.random"]], // Γ5: Substanz aus Seed-Streams
     ["_nahStreuKachel", ["Math.random"]],
     ["_updateDorfRauch", ["Math.random"]], // der Rauch würfelt aus Saat, Kamin und Welt-Uhr (w28-funktion-welt)
+    ["_lofiRandom", ["Math.random"]], // Welle SAMEN: die Harmonie zieht nur aus ihrem Zustand (kein Rückfall ohne Lofi)
+    ["dslCtx", ["Math.random", "_samenStrom("]], // Welle SAMEN: je Op ihr Strom aus dem Samen-Baum des Programms (`dsl:op:<n>`)
     ["_hydroRiverAt", ["_terrainMacroSurfaceY"]], // der Fluss liest das Gesetz, nie die Makro-Fläche
     ["_applySubstanceResponse", ["_T.max(_rgb"]], // das Füll-Licht ohne Helligkeits-Klemme
     ["handleJump", ["playerBody"]], // der Sprung schreibt die Geschwindigkeit, kein Physik-Körper

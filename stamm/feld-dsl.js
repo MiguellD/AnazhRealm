@@ -43,13 +43,28 @@ class AnazhRealm_feld_dsl {
     }
 
     dslCtx(opts = {}) {
-        // Der Strom eines Programms: sein Seed, sonst der nächste Same des Welt-Stroms (`_bauSame`, Γ5) — nie
+        // Der Same eines Programms: sein Seed, sonst der nächste Same des Welt-Stroms (`_bauSame`, Γ5) — nie
         // Math.random (Befund D10: der Hain zog 24 Würfe aus Math.random, ein KI-Programm ohne Seed 13).
+        // JE OP IHR STROM (Welle SAMEN): der Same ist die Wurzel eines Samen-Baums (samen-core `samenBaum`), jede Op zieht aus
+        // ihrem Pfad `dsl:op:<n>` — n die n-te Op des Laufs in der Folge der Auswertung (`dslEval` reicht sie, `opStrom`), 0 der
+        // Rahmen vor der ersten Op (ein Ruf ohne Op, ein Gesetz ohne Effekt). Was eine Op an Orten und Bedingungen auswertet,
+        // zieht aus ihrem Strom. Bis hier zogen alle Ops eines Programms aus EINEM Strom: eine Ziehung mehr in einer Op
+        // verschob die Orte jeder folgenden.
+        const same = typeof opts.seed === "number" ? opts.seed : this._bauSame("dsl");
+        const baum = globalThis.__samenCore.samenBaum(same);
+        let opNr = 0;
+        const opStrom = () => {
+            const n = opNr++;
+            let strom = null;
+            return () => (strom || (strom = baum("dsl:op:" + n)))();
+        };
         return {
             state: this.state,
             realm: this,
             startTime: this.state.spielZeit,
-            rng: this._samenStrom(typeof opts.seed === "number" ? opts.seed : this._bauSame("dsl")),
+            same,
+            opStrom,
+            rng: opStrom(),
             budget: opts.budget || this.dslDefaultBudget(),
             log: opts.log || [],
             source: opts.source || "unknown",
@@ -337,6 +352,10 @@ class AnazhRealm_feld_dsl {
         const tat = weltakt || op === "weather" ? this._tatBeginnt(String(op), args, ctx) : null;
         const logVor = ctx.log.length;
         let gelungen = true;
+        // der Strom DIESER Op (Welle SAMEN, `dsl:op:<n>` im Samen-Baum des Programms, `dslCtx`); danach zieht der Rufer weiter
+        // aus seinem eigenen
+        const rngVor = ctx.rng;
+        ctx.rng = ctx.opStrom();
         try {
             fn.call(this, args, ctx);
         } catch (err) {
@@ -346,6 +365,7 @@ class AnazhRealm_feld_dsl {
             if (err && err.dslKeinOrt && err.dslKeinOrt.eintrag) err.dslKeinOrt.eintrag.effekt = String(op);
             else ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
         }
+        ctx.rng = rngVor;
         if (tat) this._tatWerten(tat, ctx, gelungen, ctx.log.slice(logVor));
         ctx.budget.depthLeft++;
     }

@@ -5477,6 +5477,7 @@
     function dorfLayout(plan, ext, seed, H){
   const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, n=ext.length, nG=plan.nGestalt||n;   /*nG: die Lose der GESTALT (der Chronik) — Mauer, Platz und Staende stehen fuer jeden Schnitt gleich*/
   let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  const losBaum=samenKern().samenBaum(seed), losWuerfe=[], losWurf=(i)=>losWuerfe[i]||(losWuerfe[i]=losBaum('los:'+i));   /*DER WUERFEL JE LOS (Welle SAMEN, los-wurf): jedes Los zieht Zeiger-Wahl, Versatz, Fuge und Scheunen-Stand aus seinem EIGENEN Strom — der Samen-Baum des Orts (`seed`) am Pfad `los:<i>` —, nie aus dem EINEN Strom `rnd` der Gestalt (Graph, Mauer, Baeume ziehen weiter aus ihm). Bis hier kippte ein Los an einer Probe, und jedes Los danach wuerfelte neu: an main 986eff04 stand Same 431794 85 m weiter, weil das Rathaus an seiner Weg-Probe 21 Versuche mehr brauchte (p3/n1911/los-huelle/ursache), die wachen 3 x 3 Kacheln trugen +11 Haeuser*/
   const staedt=plan.staedtisch;
   const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
   const DS=3;
@@ -5605,13 +5606,14 @@
     curs.push({rd:r, side: 1, cur:st0}); curs.push({rd:r, side:-1, cur:st0}); }
   const parentCu={}, wegK=stadt?roads.map(rd=>wegKasten(rd.pts)):null;                       /*DIE VORAUSWAHL DER NAEHE in der Stadt (wie `fernOBB`): der Kasten jedes Wegs und der Umkreis jedes Grundrisses — was sicher fern liegt, rechnet keine Probe; das Urteil bleibt bit-gleich (stadt-voll: der Export 21 s → 3 s an der schwersten Saat)*/
   const tryPlace=(i, cu, skipPair)=>{                                                       // SAT + STRASSEN-FREIHALTUNG + MAUER
+    const wurf=losWurf(i);                                                                   /*der Wuerfel des Loses (Versatz je Versuch, Fuge danach)*/
     const rd=roads[cu.rd], gw=gehwegVon(plan,rd), e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
     const QD=(globalThis.__qd=globalThis.__qd||{t:0,mauer:0,obb:0,laen:0,ok:0}); if(rd.quer)QD.t++;
     /*DIE FRONT DER STADT BLEIBT (STADT_DICHTE): der Zeiger sucht bis ans Ende seines Wegs und steht, wo er stand, wenn das Los nicht passt — `eng` merkt die schmalste Breite, die scheiterte (was davor steht, wird nie weniger: so breit passt hier nichts mehr). Ausser der Stadt 26 Versuche zu 1,1 m, und jeder gescheiterte verbrauchte sie: an stadt-voll trug eine Strasse im Ring ein Haus je 46 m Front (die Vorstadt eines je 20 m)*/
     const cur0=cu.cur; if(stadt&&cu.eng<=2*exH) return null;
     for(let tr=0;tr<(stadt?1e4:26);tr++){
       const sc=cu.cur+exH; if(sc>rd.pts.length*DS-(rd.quer?2.8:6)){ if(rd.quer)QD.laen++; if(stadt){ cu.cur=cur0; cu.eng=2*exH; } return null; }   /*quer nutzt die volle Laenge*/
-      const q=at(rd,sc), jit=(rnd()-0.5)*2*jitAmp;
+      const q=at(rd,sc), jit=(wurf()-0.5)*2*jitAmp;
       const phi=Math.atan2(cu.side*q.nx, cu.side*q.nz);
       const c=Math.cos(phi), s2=Math.sin(phi);
       const ccx=q.x+cu.side*q.nx*(rd.w/2+gw+jit+ezH), ccz=q.z+cu.side*q.nz*(rd.w/2+gw+jit+ezH);
@@ -5647,7 +5649,7 @@
         if(rd.quer){QD.ok++; (QD.pos=QD.pos||[]).push([Math.round(o.cx),Math.round(o.cz)]);}
         cu.lastEnd=sc+exH;
         const dN9=(staedt&&plan.jahr>1700)? Math.min(1, Math.hypot(q.x,q.z)/(Rw*0.82)) : 1;   /*SETZER-VERDICHTUNG: die Fuge waechst mit dem Radius — der KERN rueckt in die Snap-Zone und fusioniert zur geschlossenen STRASSENWAND, der Saum atmet*/
-        cu.cur=sc+exH+gap*(0.22+0.78*dN9)+(staedt?rnd()*0.15*dN9:rnd()*1.2);
+        cu.cur=sc+exH+gap*(0.22+0.78*dN9)+(staedt?wurf()*0.15*dN9:wurf()*1.2);
         return pl[i]; }
       cu.cur+=1.1; }
     return null; };
@@ -5680,15 +5682,15 @@
   const folge=[...Array(n).keys()];
   if(stadt) folge.sort((a,b)=>((plan.houses[a].viertel==='burg'&&plan.houses[a].rolle!=='scheune')?0:1)-((plan.houses[b].viertel==='burg'&&plan.houses[b].rolle!=='scheune')?0:1)||a-b);   /*der Herr baut zuerst: seine Lose nehmen den Berg, bevor die Stadt an ihn waechst*/
   for(const i of folge){
-    const g=plan.houses[i];
+    const g=plan.houses[i], wurf=losWurf(i);                                                 /*der Wuerfel des Loses (Scheunen-Stand, Zeiger-Wahl)*/
     if(g.rolle==='scheune'){
       const j=g.parent, P0=pl[j]; if(!P0||Math.abs(P0.obb.cz)>5000){ pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}}; continue; }
       const e=ext[i]; let exS=(e.x1-e.x0)/2, ezS=(e.z1-e.z0)/2, phi=P0.phi;
-      if(rnd()<0.55&&exS<=P0.obb.ez-0.05&&ezS<=P0.obb.ex+3){ phi=P0.phi+Math.PI/2; const t2=exS; exS=ezS; ezS=t2; }
+      if(wurf()<0.55&&exS<=P0.obb.ez-0.05&&ezS<=P0.obb.ex+3){ phi=P0.phi+Math.PI/2; const t2=exS; exS=ezS; ezS=t2; }
       const c=Math.cos(P0.phi), s2=Math.sin(P0.phi), ox=s2, oz=c;
       let done=false;
       for(let k2=0;k2<5&&!done;k2++){
-        const sh=(k2===0)?Math.max(-1,Math.min(1,(rnd()-0.5)*2))*Math.max(0,P0.obb.ex-exS-0.15):0;
+        const sh=(k2===0)?Math.max(-1,Math.min(1,(wurf()-0.5)*2))*Math.max(0,P0.obb.ex-exS-0.15):0;
         const ux=c, uz=-s2;
         const ccx=P0.obb.cx+ox*(P0.obb.ez+1.4+k2*0.8+ezS)+ux*sh, ccz=P0.obb.cz+oz*(P0.obb.ez+1.4+k2*0.8+ezS)+uz*sh;
         const o={cx:ccx,cz:ccz,phi,ex:(e.x1-e.x0)/2,ez:(e.z1-e.z0)/2};                              /*die obb im Rahmen der Scheune (phi): exS/ezS stehen im Rahmen des Hauses P0 — gedreht trug sie quer zur Scheune deren Masse vertauscht (siedlung-k3-heil: 23 von 27 Scheunen, das Fundament der Welt 0,1-0,5 m zu schmal)*/
@@ -5717,7 +5719,7 @@
         for(const k in zug){ const F=zug[k]; if(F&&offen[k]>0&&Math.hypot(q.x-F.x,q.z-F.z)<F.r) m+=SD.zugFremd; } }
       return m; };
     let best=null,bs=1e9;
-    for(const cu of curs){ const m=curMetric(cu)+rnd()*2-(roads[cu.rd].quer&&!roads[cu.rd].gasse?12:0); if(m<bs){bs=m;best=cu;} }   /*die Gasse der Dichte traegt keinen Bonus: erst schliesst die Strasse ihre Reihe, dann fuellt sich der Block (die Kleinstadt von 20 Haeusern stand sonst verstreut an ihren Gassen, keine Wand an der anderen)*/   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
+    for(const cu of curs){ const m=curMetric(cu)+wurf()*2-(roads[cu.rd].quer&&!roads[cu.rd].gasse?12:0); if(m<bs){bs=m;best=cu;} }   /*die Gasse der Dichte traegt keinen Bonus: erst schliesst die Strasse ihre Reihe, dann fuellt sich der Block (die Kleinstadt von 20 Haeusern stand sonst verstreut an ihren Gassen, keine Wand an der anderen)*/   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
     if(g.viertel) offen[g.viertel]--;
     let placedP=tryPlace(i,best,-1);
     if(!placedP){ const so=curs.slice().sort((a,b2)=>curMetric(a)-curMetric(b2));
