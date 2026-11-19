@@ -278,7 +278,7 @@ class AnazhRealm_siedlung_tor {
         // DIE BELICHTUNG DER HEIMAT TEILT DAS ZIELBILD (licht-eine-skala P8): die EINE Belichtung des Bilds selbst
         // (`_vorBelichtung`), nie ihre Kopie je Takt — die Kopie hinkte einem Bild nach, dessen Uhr zwischen zwei Takten sprang
         // (Mittag 0,527 → Mondnacht 47 000: die Öffnung stand weiß, das 89 000-Fache)
-        const ziel = this._nachtAuge(zielTex.rgb.div(this._vorBelichtung().k), true);
+        const ziel = this._erscheinung(zielTex.rgb);
         // ── DER SEIFENFILM: Dicke aus Bogen-Radius (die Ellipse rimAx × rimAy) und Welle, Gangunterschied je Blickwinkel ──
         const rr = TSL.length(xy.sub(centerXY).div(TSL.vec2(ga.y, ga.z)));
         const cosI = TSL.max(TSL.dot(N, Vd), F(0.0));

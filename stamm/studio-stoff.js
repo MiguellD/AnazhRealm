@@ -352,8 +352,7 @@ class AnazhRealm_studio_stoff {
             // Emissiv (der Rahmen und die Beschläge der Tore, das Tierauge) trägt einen BILDWERT des Labors, kein Datum
             // einer Quelle: er steht im Maß des Auges, sein Wert ÷ Belichtung vor dem Auge der Nacht — wie die Membran. In
             // der Skala selbst stand das Tor nachts als weißer Fleck (0,02–0,46 Einheiten = 300–7 400 cd/m² × 47 000).
-            if (!(mp && mp.seh === "glut"))
-                mat.emissiveNode = this._nachtAuge(TSL.materialEmissive.div(this._vorBelichtung().k), true);
+            if (!(mp && mp.seh === "glut")) mat.emissiveNode = this._erscheinung(TSL.materialEmissive);
         }
         // Tint-Kontinuität L0/L1↔L2: das Studio tintet NUR das Laub, multiplikativ, aus dem Positions-Hash
         // (foundry-core.js) — gleich über alle Stufen, sonst springt die Kronenfarbe beim Stufen-Wechsel. Das
@@ -411,8 +410,7 @@ class AnazhRealm_studio_stoff {
             const hell = vcol.mul(this._stoffWert(TSL, "userData.stoffWerte.leucht"));
             // DAS UNBELEUCHTETE STEHT IM MASS DES AUGES (licht-eine-skala P8): „zeigt seine Farbe, wie das Licht auch fällt“ ist
             // ein Bildwert — in der EINEN Skala stand das Tor nachts als weißer Fleck (0,6–1,1 Einheiten × Belichtung 47 000)
-            mat.emissiveNode =
-                mp.unbeleuchtet === true ? this._nachtAuge(hell.div(this._vorBelichtung().k), true) : hell;
+            mat.emissiveNode = mp.unbeleuchtet === true ? this._erscheinung(hell) : hell;
         }
         // DIE FARBE DES JAHRS (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
         // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
@@ -739,10 +737,7 @@ class AnazhRealm_studio_stoff {
             if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0))
                 // (vier Stellen wie die Farbe, die vierte: die Lage hoch; ein Bildwert des Labors ÷ Belichtung wie oben — eine
                 // Lichtquelle im Satz bricht laut, `_satzRegler`)
-                mat.emissiveNode = this._nachtAuge(
-                    TSL.attribute("aGlut", "vec4").xyz.div(this._vorBelichtung().k),
-                    true
-                );
+                mat.emissiveNode = this._erscheinung(TSL.attribute("aGlut", "vec4").xyz);
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }

@@ -2236,6 +2236,23 @@ class AnazhRealm_bild_kosten {
         return T.vec3(skot, skot, skot).sub(farbe).mul(s);
     }
 
+    // DIE KLASSE ERSCHEINUNG (licht-eine-skala P8; EIN Mechanismus, DIESE Stelle): was kein Datum einer Quelle trägt, sondern
+    // einen BILDWERT — das Zielbild der Tor-Membran (`_membranGraph`), die Stoffe der Tore ohne Licht-Antwort (Filigran,
+    // Saum, Scheibe) und ihr Emissiv (Rahmen-Glut, Beschläge; ebenso das Tierauge: `_foundryTreeMaterial`, im Bau-Satz je
+    // Ecke), die Marker (Aura der Kreatur, Platzhalter eines Mitspielers) — steht im Maß des Auges: sein Wert ÷ die
+    // Belichtung des Bilds, vor dem Auge der Nacht (seine Umkehr, `_nachtAuge`). Die EINE Skala gilt für alles außer dieser
+    // Klasse; jeder weitere Stoff, der die Belichtung herausteilt, ist ein Bruch (die Linse zählt die Rufer beim Namen).
+    _erscheinung(bildwert) {
+        return this._nachtAuge(THREE.TSL.vec3(bildwert).div(this._vorBelichtung().k), true);
+    }
+
+    // Ein Marker der Welt (unbeleuchtet, mit oder ohne Karte) als Erscheinung: seine Farbe × Karte durch die EINE Stelle.
+    _erscheinungStoff(mat) {
+        const f = THREE.TSL.vec4(THREE.TSL.materialColor);
+        mat.colorNode = THREE.TSL.vec4(this._erscheinung(f.rgb), f.a);
+        return mat;
+    }
+
     // DIE VOR-BELICHTUNG (licht-eine-skala): das Szenen-Ziel hält L × k — die Leuchtdichte der Welt in der EINEN Skala
     // (`__weltLicht.EINHEIT_LX`) mal die Belichtung DIESES Bilds. rg11b10 trägt 6 Bit Mantisse ab 2⁻¹⁴: die Mond-Wiese bei
     // 0,26 lx stand unbelichtet auf 2–3 verschiedenen Puffer-Werten je Kanal, belichtet auf 132 / 153 (GTX 1050, Spike 6).

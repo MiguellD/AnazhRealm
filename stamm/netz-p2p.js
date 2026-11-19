@@ -2170,9 +2170,15 @@ class AnazhRealm_netz_p2p {
         for (let i = 0; i < peerId.length; i++) hash = (hash * 31 + peerId.charCodeAt(i)) >>> 0;
         const color = new THREE.Color().setHSL((hash % 360) / 360, 0.7, 0.55);
         const group = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.4, 8), new THREE.MeshBasicMaterial({ color }));
+        const body = new THREE.Mesh(
+            new THREE.ConeGeometry(0.4, 1.4, 8),
+            this._erscheinungStoff(new THREE.MeshBasicNodeMaterial({ color }))
+        );
         body.position.y = 0.7;
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 8), new THREE.MeshBasicMaterial({ color }));
+        const head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.3, 12, 8),
+            this._erscheinungStoff(new THREE.MeshBasicNodeMaterial({ color }))
+        );
         head.position.y = 1.55;
         group.add(body, head);
         return group;
