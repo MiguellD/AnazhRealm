@@ -43,6 +43,11 @@
 //   strom(saat, takt, art, i)              → () => u ∈ [0, 1)  der am Samen verankerte Strom des Bestands
 //   bestand(wirt, gesetz = ZEIT_JAGD)      → { ZEIT, RAUM, FENSTER, anfang(opt, welt), schritt(z, saat, takt, welt), klon(z),
 //                                              verwundbar(t), bedarfVon(R) }   der Bestand als reine Funktion über ein Raster
+//     additiv (C2a, der Gau — der Bestand über EINEM Feld mit Fraß-Schicht und Akten; braucht `wirt.feld`, §2 „DER GAU“):
+//       gauFeld({ W, H, S, LR }) → feld · gauAnfang(feld, saat, opt?) → g · gauSchritt(g) · gauBis(g, takt, akte) → g
+//       akt(g, { takt, art: "aus" | "ein", id, … }) → wirkte · feldTakt(feld, O, Kap) · feldAesen(feld, O, frass)
+//       koepfe(z, i) → { beute, jaeger, rudel } · tiereIn(z, i) → [{ id, g, v, m, w, alterS, kg, M, r, a, e }] · frassAm(g, i, c)
+//       gauPack(g) → Uint8Array · gauEntpack(bytes, feld) → g      der Gau als reines Datum (Stand, Mitspieler)
 //   selbsttest()                           → { steigung, steigungAus, masseMonoton, reifeTreffer, lebenWolf }
 //       steigung     Regression Kind auf Eltern-Mittel (Phänotyp lnM) über 10⁵ Paare, Soll h2 0,46 ± 0,02
 //       steigungAus  dieselbe Regression mit `gruender` statt `kind` (die Mutante), Soll 0 ± 0,02
@@ -1102,7 +1107,268 @@
         }
 
         const klon = (z) => structuredClone(z);
-        return Object.freeze({ ZEIT, RAUM, FENSTER, anfang, schritt, klon, verwundbar, bedarfVon });
+
+        // ── DER GAU (C2a) — der Bestand über EINEM Feld der Welt, mit Fraß-Schicht und Akten: STAND, nie Cache ──────────────────────
+        // Ein Gau g = { feld, saat, z, O, Kap, aktN, leser } ist eine Funktion von (Samen, Feld, Takt, Akte): `feld` ist das Feld
+        // der Welt, EINMAL je Gau gebaut (gauFeld: je Revier `wirt.feld.zellen` Zellen, S = Substrat der Äsung 0..1, LR = Lebensraum
+        // der Beute, 0 = keine Zelle der Beute); `O` ist die Fraß-Schicht je Zelle (Feld-Einheiten, ≤ 0 abgeäst; sie zerfällt je Takt
+        // zum Substrat zurück); `aktN` zählt die Akte, die schon wirkten. Der Wirt reicht das Feld-Gesetz als `wirt.feld`:
+        //   { zellen, zerfallJeS, epsilon, kahl, max, kopfJeHa, kZelle(aesung, lr) → Köpfe-Maß der Zelle } (K = kopfJeHa × Σ kZelle)
+        // Die Äsung einer Zelle = klemme(S + O, 0, 1). Ein Takt des Gaus (gauSchritt): Zerfall und K (feldTakt) → schritt → Fraß
+        // (feldAesen). Ein AKT trägt den Takt, an dem er wirkt (akt): „aus“ — ein Kopf fällt; „ein“ — ein Kopf tritt ein.
+        const FELD = wirt.feld || null;
+        if (FELD) {
+            if (!(Number.isInteger(FELD.zellen) && FELD.zellen > 0) || typeof FELD.kZelle !== "function") throw new Error("leben-core bestand: wirt.feld nennt zellen und kZelle(aesung, lr)");
+            for (const f of ["zerfallJeS", "epsilon", "kahl", "max", "kopfJeHa"]) zahl(FELD[f], "wirt.feld." + f);
+        }
+        const feldGesetz = () => {
+            if (!FELD) throw new Error("leben-core bestand: ein Gau braucht das Feld-Gesetz des Wirts (wirt.feld)");
+            return FELD;
+        };
+        const ZERFALL = FELD ? Math.exp(-FELD.zerfallJeS * TAKT_S) : NaN;
+        const aesVon = (s, o) => Math.min(1, Math.max(0, s + o));
+        const JE = new Float64Array(FELD ? FELD.zellen : 0);
+        // das Feld eines Gaus aus den Zellen der Welt: { W, H, S, LR } (Float64Array, W·H·zellen) → eingefroren, mit C = Zellen der Beute je Revier
+        function gauFeld(d) {
+            const Z = feldGesetz().zellen;
+            const { W, H, S, LR } = d || {};
+            if (!(Number.isInteger(W) && W > 0 && Number.isInteger(H) && H > 0)) throw new Error("leben-core bestand: gauFeld ohne Raster W × H");
+            const n = W * H;
+            if (!(S instanceof Float64Array) || !(LR instanceof Float64Array) || S.length !== n * Z || LR.length !== n * Z) throw new Error("leben-core bestand: gauFeld braucht S und LR als Float64Array der Länge W·H·" + Z);
+            const C = new Uint8Array(n);
+            for (let j = 0; j < n * Z; j++) if (LR[j] > 0) C[(j / Z) | 0]++;
+            return Object.freeze({ W, H, Z, S, LR, C });
+        }
+        // der Zerfall der Fraß-Schicht um einen Takt und K je Revier (Köpfe der Beute) an der Äsung des Augenblicks
+        function feldTakt(F, O, Kap) {
+            const { Z, S, LR, C } = F;
+            const n = F.W * F.H;
+            for (let i = 0; i < n; i++) {
+                const b = i * Z;
+                let summe = 0;
+                if (C[i])
+                    for (let c = 0; c < Z; c++) {
+                        const lr = LR[b + c];
+                        if (!(lr > 0)) continue;
+                        let o = O[b + c] * ZERFALL;
+                        if (Math.abs(o) < FELD.epsilon) o = 0;
+                        O[b + c] = o;
+                        summe += FELD.kZelle(aesVon(S[b + c], o), lr);
+                    }
+                Kap[i] = FELD.kopfJeHa * summe;
+            }
+        }
+        // der Fraß des Takts (z.frass je Revier, Feld-Einheiten) in die Schicht: je Zelle nach ihrem Anteil Lebensraum × Äsung
+        function feldAesen(F, O, frass) {
+            const { Z, S, LR, C } = F;
+            const n = F.W * F.H;
+            for (let i = 0; i < n; i++) {
+                const fr = frass[i];
+                if (!(fr > 0) || !C[i]) continue;
+                const b = i * Z;
+                let jeSumme = 0;
+                for (let c = 0; c < Z; c++) jeSumme += JE[c] = LR[b + c] > 0 ? LR[b + c] * aesVon(S[b + c], O[b + c]) : 0;
+                if (jeSumme > 0)
+                    for (let c = 0; c < Z; c++)
+                        if (JE[c] > 0) O[b + c] = Math.max(FELD.kahl, Math.min(FELD.max, O[b + c] - (fr * JE[c]) / jeSumme));
+            }
+        }
+        function gauLeer(F, saat) {
+            const n = F.W * F.H;
+            const g = { feld: F, saat, z: null, O: new Float64Array(n * F.Z), Kap: new Float64Array(n), aktN: 0, leser: null };
+            g.leser = { land: (i) => F.C[i] > 0, futter: (i) => g.Kap[i] };
+            return g;
+        }
+        // der Gau am Takt 0: der volle Gründer-Bestand (anfang), die Fraß-Schicht leer
+        function gauAnfang(F, saat, opt) {
+            const g = gauLeer(F, saat);
+            g.z = anfang({ W: F.W, H: F.H, saat, jaeger: opt ? opt.jaeger : undefined, nutz: opt ? opt.nutz : undefined }, g.leser);
+            return g;
+        }
+        function gauSchritt(g) {
+            feldTakt(g.feld, g.O, g.Kap);
+            g.z = schritt(g.z, g.saat, g.z.takt, g.leser);
+            feldAesen(g.feld, g.O, g.z.frass);
+            return g;
+        }
+        // DER AKT (E2) — die EINE Eingabe der Seite in den Gau, mit Takt-Stempel: er wirkt am Zustand SEINES Takts (sonst Wurf).
+        //   { takt, art: "aus", id }                                         ein Kopf fällt (außerhalb des Gesetzes: Kampf, Spieler)
+        //   { takt, art: "ein", g: "beute" | "jaeger", revier, id, a, e, alterS, m?, w? }   ein Kopf tritt ein (Annahme eines Leibs)
+        // → true, wenn er wirkte; false, wenn der Kopf nicht (mehr) steht bzw. die Kennung schon steht (das Gesetz kam zuvor).
+        // Ein Jäger tritt in das Rudel, dem das Revier gehört; ist es frei, gründet er dort (wie Satz 7c: EIN Kopf gründet). Was der
+        // Akt nicht nennt, zieht er aus dem Strom des Akts (Art 6, an Saat, Takt und Kennung verankert): Geschlecht, Abwander-Alter.
+        function kennZahl(s) {
+            let h = 2166136261;
+            for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
+            return h | 0;
+        }
+        function kopfOrt(z, id) {
+            for (let i = 0; i < z.beute.length; i++) {
+                const list = z.beute[i];
+                for (let k = 0; k < list.length; k++) if (list[k].id === id) return { list, k };
+            }
+            for (const R of z.rudel) for (let k = 0; k < R.tiere.length; k++) if (R.tiere[k].id === id) return { list: R.tiere, k };
+            return null;
+        }
+        function akt(g, a) {
+            const z = g.z;
+            if (!a || a.takt !== z.takt) throw new Error("leben-core bestand: der Akt trägt den Takt " + (a && a.takt) + ", der Gau steht am Takt " + z.takt);
+            if (typeof a.id !== "string" || !a.id) throw new Error("leben-core bestand: ein Akt ohne Kennung");
+            const ort = kopfOrt(z, a.id);
+            if (a.art === "aus") {
+                if (!ort) return false;
+                ort.list.splice(ort.k, 1); // ein Rudel ohne Köpfe gibt sein Revier am Ende des nächsten Takts frei (schritt, 7)
+                return true;
+            }
+            if (a.art !== "ein") throw new Error("leben-core bestand: der Akt kennt die Art „" + a.art + "“ nicht");
+            if (ort) return false;
+            if (a.g !== "beute" && a.g !== "jaeger") throw new Error("leben-core bestand: „ein“ nennt beute oder jaeger");
+            if (!(Number.isInteger(a.revier) && a.revier >= 0 && a.revier < z.W * z.H)) throw new Error("leben-core bestand: „ein“ ohne Revier des Gaus (" + a.revier + ")");
+            if (!(zahl(a.alterS, "akt.alterS") >= 0)) throw new Error("leben-core bestand: „ein“ mit negativem Alter");
+            const rng = strom(g.saat, z.takt, 6, kennZahl(a.id));
+            const u = rng();
+            const t = tier(a.g, a.id, vektor(a.a, "akt.a").slice(), vektor(a.e, "akt.e").slice(), a.m == null ? null : String(a.m), a.alterS, typeof a.w === "boolean" ? a.w : u < BEUTE.weiblich);
+            if (a.g === "beute") return z.beute[a.revier].push(t), true;
+            t.ab = abwanderAlter(rng);
+            let R = z.besitz[a.revier] >= 0 ? z.rudel.find((r) => r.id === z.besitz[a.revier]) : null;
+            if (!R) (R = rudelNeu(z, [a.revier], a.revier, z.takt + TJ)), z.frei--;
+            R.tiere.push(t);
+            return true;
+        }
+        // der Gau bis zum Takt `takt`, mit den Akten `akte` (nach Takt geordnet, nur angehängt — dieselbe Liste bei jedem Ruf): jeder
+        // Akt wirkt GENAU EINMAL am Zustand seines Takts. Ein Akt vor dem Stand des Gaus wirft: der Wirt rechnet ab einem Stand davor.
+        function gauBis(g, takt, akte) {
+            const A = akte || [];
+            if (!(Number.isInteger(takt) && takt >= g.z.takt)) throw new Error("leben-core bestand: gauBis(" + takt + ") am Gau des Takts " + g.z.takt);
+            for (let k = 1; k < A.length; k++) if (A[k].takt < A[k - 1].takt) throw new Error("leben-core bestand: die Akte sind nicht nach Takt geordnet");
+            if (g.aktN > A.length) throw new Error("leben-core bestand: der Gau kennt " + g.aktN + " Akte, gereicht sind " + A.length);
+            const wirke = () => {
+                for (; g.aktN < A.length && A[g.aktN].takt <= g.z.takt; g.aktN++) akt(g, A[g.aktN]);
+            };
+            wirke();
+            while (g.z.takt < takt) gauSchritt(g), wirke();
+            return g;
+        }
+        // ── DIE LESER (die Naht des Stamms) ─────────────────────────────────────────────────────────────────────────────────────────
+        // Köpfe im Revier i: die Beute des Reviers; die Jäger der Rudel, deren `ort` (der Ort des letzten Risses, Satz 3) das Revier
+        // ist; `rudel` = die Kennung des Rudels, dem das Revier gehört (−1 = frei)
+        function koepfe(z, i) {
+            let jaeger = 0;
+            for (const R of z.rudel) if (R.ort === i) jaeger += R.tiere.length;
+            return { beute: z.beute[i].length, jaeger, rudel: z.besitz[i] };
+        }
+        // die Tiere im Revier i als reine Daten: der Verband `v` der Beute ist ihr Revier ("b" + i), der des Jägers sein Rudel
+        // ("r" + Kennung); `m` die Mutter (null = Gründer oder angenommen), `kg` der Leib am Takt, `M` die Masse erwachsen
+        function tiereIn(z, i) {
+            const zeile = (t, v) => ({ id: t.id, g: t.g, v, m: t.m, w: t.w, alterS: t.alterS, kg: t.kg, M: t.M, r: t.r, a: t.a, e: t.e });
+            const aus = z.beute[i].map((t) => zeile(t, "b" + i));
+            for (const R of z.rudel) if (R.ort === i) for (const t of R.tiere) aus.push(zeile(t, "r" + R.id));
+            return aus;
+        }
+        // der Fraß der Zelle c des Reviers i am Takt des Gaus (Feld-Einheiten, wie das Leben-Overlay des Wirts: ≤ 0 abgeäst)
+        const frassAm = (g, i, c) => g.O[i * g.feld.Z + c];
+        // ── DER STAND: der Gau als reines Datum (Uint8Array: Kopf-Zeile JSON · Float64 · Int32) ─────────────────────────────────────
+        // Je Kopf reisen Kennung, Mutter, Alter, Erbe a, Umwelt e, Geschlecht, Reife, Jahr (und das Abwander-Alter des Jägers); der
+        // Leib und alle Raten sind Funktion davon (tier). Die Fraß-Schicht reist nur an den Zellen der Beute. K, Last und Fraß des
+        // letzten Takts reisen nicht: der nächste Schritt schreibt sie, bevor er sie liest.
+        const ID_FORM = /^(r?)(\d+):(\d+):(\d+)$/;
+        function gauPack(g) {
+            const z = g.z;
+            const n = z.W * z.H;
+            const [namen, nameVon, I, D] = [[], new Map(), [], []];
+            const kennung = (id, bits) => {
+                if (id == null) return void I.push(0, -2, bits);
+                const m = ID_FORM.exec(id);
+                if (m) {
+                    const [key, tk, j] = [Number(m[2]), Number(m[3]) / TAKT_S, Number(m[4])];
+                    if (Number.isInteger(tk) && tk < 2147483648 && key < 2147483647 && j < 134217728 && indId(m[1] + key, tk * TAKT_S, j) === id)
+                        return void I.push(m[1] ? -(key + 1) : key, tk, j * 8 + bits);
+                }
+                if (!nameVon.has(id)) nameVon.set(id, namen.push(id) - 1);
+                I.push(nameVon.get(id), -1, bits);
+            };
+            const kopf = (t) => {
+                kennung(t.id, (t.w ? 1 : 0) | (t.r ? 2 : 0) | (t.jl ? 4 : 0));
+                kennung(t.m, 0);
+                D.push(t.alterS);
+                for (let k = 0; k < ACHSEN; k++) D.push(t.a[k]);
+                for (let k = 0; k < ACHSEN; k++) D.push(t.e[k]);
+                if (t.g === "jaeger") D.push(t.ab);
+            };
+            for (let i = 0; i < n; i++) I.push(z.besitz[i]);
+            for (let i = 0; i < n; i++) {
+                I.push(z.beute[i].length);
+                for (const t of z.beute[i]) kopf(t);
+            }
+            const rudel = z.rudel.map((R) => {
+                const { reviere, tiere, fRiss, fErh, ...zahlen } = R;
+                for (const x of reviere) I.push(x);
+                for (const t of tiere) kopf(t);
+                for (const x of fRiss) D.push(x);
+                for (const x of fErh) D.push(x);
+                return Object.assign(zahlen, { nR: reviere.length, nT: tiere.length, nF: fRiss.length });
+            });
+            const LR = g.feld.LR;
+            for (let j = 0; j < LR.length; j++) if (LR[j] > 0) D.push(g.O[j]);
+            const zeile = new TextEncoder().encode(
+                JSON.stringify({ v: 1, W: z.W, H: z.H, takt: z.takt, saat: g.saat, aktN: g.aktN, param: z.param, frei: z.frei, rudelZahl: z.rudelZahl, namen, rudel, nD: D.length, nI: I.length })
+            );
+            const ab = (8 + zeile.length + 7) & ~7;
+            const aus = new Uint8Array(ab + D.length * 8 + I.length * 4);
+            new DataView(aus.buffer).setUint32(0, zeile.length, true);
+            aus.set(zeile, 8);
+            new Float64Array(aus.buffer, ab, D.length).set(D);
+            new Int32Array(aus.buffer, ab + D.length * 8, I.length).set(I);
+            return aus;
+        }
+        function gauEntpack(bytes, F) {
+            if (!(bytes instanceof Uint8Array) || bytes.length < 8) throw new Error("leben-core bestand: gauEntpack braucht den Stand als Uint8Array");
+            const lang = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0, true);
+            const ab = (8 + lang + 7) & ~7;
+            if (ab > bytes.length) throw new Error("leben-core bestand: der Stand des Gaus ist abgeschnitten");
+            const K0 = JSON.parse(new TextDecoder().decode(bytes.subarray(8, 8 + lang)));
+            if (K0.v !== 1 || K0.W !== F.W || K0.H !== F.H) throw new Error("leben-core bestand: der Stand (v " + K0.v + ", " + K0.W + " × " + K0.H + ") gehört nicht zu diesem Feld");
+            if (bytes.length !== ab + K0.nD * 8 + K0.nI * 4) throw new Error("leben-core bestand: der Stand des Gaus trägt " + bytes.length + " Bytes, sein Kopf nennt " + (ab + K0.nD * 8 + K0.nI * 4));
+            const roh = bytes.buffer.slice(bytes.byteOffset + ab, bytes.byteOffset + bytes.length);
+            const [D, I] = [new Float64Array(roh, 0, K0.nD), new Int32Array(roh, K0.nD * 8, K0.nI)];
+            let [d, i] = [0, 0];
+            const kennung = () => {
+                const [k, t, j] = [I[i++], I[i++], I[i++]];
+                return { id: t === -2 ? null : t === -1 ? K0.namen[k] : indId(k < 0 ? "r" + (-k - 1) : String(k), t * TAKT_S, j >> 3), bits: j & 7 };
+            };
+            const kopf = (art) => {
+                const [ich, mutter, alterS] = [kennung(), kennung().id, D[d++]];
+                const a = Array.from(D.subarray(d, (d += ACHSEN)));
+                const e = Array.from(D.subarray(d, (d += ACHSEN)));
+                const t = tier(art, ich.id, a, e, mutter, alterS, !!(ich.bits & 1));
+                [t.r, t.jl] = [!!(ich.bits & 2), !!(ich.bits & 4)];
+                if (art === "jaeger") t.ab = D[d++];
+                return t;
+            };
+            const n = F.W * F.H;
+            const g = gauLeer(F, K0.saat);
+            g.aktN = K0.aktN;
+            const z = (g.z = { W: F.W, H: F.H, takt: K0.takt, param: K0.param, K: new Float64Array(n), last: new Float64Array(n), frass: new Float64Array(n), beute: [], besitz: new Int32Array(n), frei: K0.frei, rudel: [], rudelZahl: K0.rudelZahl, ereignis: null });
+            for (let x = 0; x < n; x++) z.besitz[x] = I[i++];
+            for (let x = 0; x < n; x++) {
+                const list = [];
+                for (let c = I[i++]; c > 0; c--) list.push(kopf("beute"));
+                z.beute.push(list);
+            }
+            for (const r of K0.rudel) {
+                const { nR, nT, nF, ...zahlen } = r;
+                const R = Object.assign(zahlen, { reviere: [], tiere: [], fRiss: [], fErh: [] });
+                for (let c = 0; c < nR; c++) R.reviere.push(I[i++]);
+                for (let c = 0; c < nT; c++) R.tiere.push(kopf("jaeger"));
+                for (let c = 0; c < nF; c++) R.fRiss.push(D[d++]);
+                for (let c = 0; c < nF; c++) R.fErh.push(D[d++]);
+                z.rudel.push(R);
+            }
+            for (let j = 0; j < F.LR.length; j++) if (F.LR[j] > 0) g.O[j] = D[d++];
+            if (d !== K0.nD || i !== K0.nI) throw new Error("leben-core bestand: der Stand des Gaus geht nicht auf (" + d + " von " + K0.nD + " Zahlen, " + i + " von " + K0.nI + " Ganzzahlen)");
+            return g;
+        }
+        return Object.freeze({ ZEIT, RAUM, FENSTER, anfang, schritt, klon, verwundbar, bedarfVon, gauFeld, feldTakt, feldAesen, gauAnfang, gauSchritt, gauBis, akt, koepfe, tiereIn, frassAm, gauPack, gauEntpack });
     }
 
     // ── SELBSTTEST — der Prüf-Strom (mulberry32, feste Saat) lebt NUR hier, nie in einer Gesetz-Funktion ──────────────────────

@@ -1919,10 +1919,13 @@ function bestandTreiber(T, L, gesetz) {
     const TJ = L.gesetz().refS / B.taktS / L.zeitJagd().jahreRef;
     const SEITE = B.revierM * Math.sqrt(Math.PI);
     const M_ART = { deer: 94.24042032034154, wolf: 64.01114942302421 }; // die Masse des Gusses, wie Lauf 4 sie trug
+    const HA = (SEITE / 4) ** 2 / 1e4;
     const K = L.bestand(
         {
         taktS: B.taktS,
         revierSeiteM: SEITE,
+        // das Feld des Gaus (C2a): 16 Zellen je Revier, die Zahlen von LIFE_FIELD (Zerfall, Klemme), K je Zelle = die Formel des Stamms
+        feld: { zellen: 16, zerfallJeS: 0.008, epsilon: 0.004, kahl: -1, max: 0.7, kopfJeHa: B.kopfJeHa, kZelle: (aes, lr) => lr * HA * T.bestandNahrung(DIET.deer, aes, 0) },
         beute: { M: M_ART.deer, verband: T.VERHALTEN.herde.wurf.deer, frassJeJahr: T.bestandFrass(DIET.deer, B) * TJ },
         jaeger: { M: M_ART.wolf, verband: T.VERHALTEN.herde.wurf.wolf, beuteMasse: T.VERHALTEN.jagd.beuteMasse, jagdKg: TG.jagdKg },
         },
@@ -1933,60 +1936,36 @@ function bestandTreiber(T, L, gesetz) {
     // Schritt äst die Herde den Fraß des Kerns hinein (aesen). Dieselbe Welt für jede Saat.
     // `quelle` (B4, `--bestand-welt`): das Feld einer ECHTEN Welt statt des Spike-Felds — je Revier die Zellen mit Lebensraum (C),
     // ihr Substrat (S) und ihr Lebensraum je Zelle (LR); ohne `quelle` rechnet jede Zeile wie zuvor (Lauf 4 zahlengleich).
+    // DIE RECHNUNG DES FELDS LEBT IM KERN (C2a: leben-core `gauFeld` · `feldTakt` · `feldAesen` — Zerfall, K je Revier, Fraß); der
+    // Treiber reicht nur die Zellen: S (Substrat) und LR (Lebensraum, 0 = keine Zelle der Beute), dicht ab der ersten Stelle.
     function welt(W, H, von, quelle) {
-        const [n, Z, HA] = [W * H, 16, (SEITE / 4) ** 2 / 1e4];
-        const FELD = { decayPerSec: 0.008, kahl: -1, max: 0.7, epsilon: 0.004 };
-        const LR = T.lebensraum("deer", "wiese", T.LEBENSRAUM_GESETZ);
-        const aesVon = (s, o) => Math.min(1, Math.max(0, s + o));
-        const LRz = von ? von.LRz : quelle ? quelle.LR : null;
-        const lrVon = LRz ? (j) => LRz[j] : () => LR;
-        const kZelle = (aes, lr) => lr * HA * T.bestandNahrung(DIET.deer, aes, 0);
-        const [C, S] = von ? [von.C, von.S] : quelle ? [quelle.C, quelle.S] : [new Uint8Array(n), new Float64Array(n * Z)];
-        const O = von ? von.O.slice() : new Float64Array(n * Z);
-        const [Kap, je] = [new Float64Array(n), new Float64Array(Z)];
-        if (!von && !quelle) {
-            const fr = L.strom(1, 0, 9, W * 1000 + H);
-            for (let i = 0; i < n; i++) {
-                let c = 0;
-                for (let k = 0; k < Z; k++) {
-                    const [u, s] = [fr(), fr()];
-                    if (u < 9 / 16) S[i * Z + c++] = 0.2 + s * (0.42 - 0.2);
-                }
-                C[i] = c;
-            }
-        }
-        const zerfall = Math.exp(-FELD.decayPerSec * B.taktS);
-        return {
-            C,
-            S,
-            O,
-            LRz,
-            land: (i) => C[i] > 0,
-            futter: (i) => Kap[i],
-            takt() {
+        const [n, Z] = [W * H, 16];
+        let F = von ? von.F : null;
+        if (!F) {
+            const [S, LR] = [new Float64Array(n * Z), new Float64Array(n * Z)];
+            if (quelle) (S.set(quelle.S), LR.set(quelle.LR));
+            else {
+                const LR0 = T.lebensraum("deer", "wiese", T.LEBENSRAUM_GESETZ);
+                const fr = L.strom(1, 0, 9, W * 1000 + H);
                 for (let i = 0; i < n; i++) {
-                    const b = i * Z;
-                    let summe = 0;
-                    for (let c = 0; c < C[i]; c++) {
-                        let o = O[b + c] * zerfall;
-                        if (Math.abs(o) < FELD.epsilon) o = 0;
-                        O[b + c] = o;
-                        summe += kZelle(aesVon(S[b + c], o), lrVon(b + c));
+                    let c = 0;
+                    for (let k = 0; k < Z; k++) {
+                        const [u, s] = [fr(), fr()];
+                        if (u < 9 / 16) (S[i * Z + c] = 0.2 + s * (0.42 - 0.2)), (LR[i * Z + c++] = LR0);
                     }
-                    Kap[i] = B.kopfJeHa * summe;
                 }
-            },
-            aesen(frass) {
-                for (let i = 0; i < n; i++) {
-                    const [F, b] = [frass[i], i * Z];
-                    if (!(F > 0)) continue;
-                    let jeSumme = 0;
-                    for (let c = 0; c < C[i]; c++) jeSumme += je[c] = lrVon(b + c) * aesVon(S[b + c], O[b + c]);
-                    if (jeSumme > 0)
-                        for (let c = 0; c < C[i]; c++)
-                            if (je[c] > 0) O[b + c] = Math.max(FELD.kahl, Math.min(FELD.max, O[b + c] - (F * je[c]) / jeSumme));
-                }
-            },
+            }
+            F = K.gauFeld({ W, H, S, LR });
+        }
+        const O = von ? von.O.slice() : new Float64Array(n * Z);
+        const Kap = new Float64Array(n);
+        return {
+            F,
+            O,
+            land: (i) => F.C[i] > 0,
+            futter: (i) => Kap[i],
+            takt: () => K.feldTakt(F, O, Kap),
+            aesen: (frass) => K.feldAesen(F, O, frass),
             klon() {
                 return welt(W, H, this);
             },
@@ -2420,6 +2399,85 @@ if (process.argv.includes("--bestand")) {
         const mutant = bestandUrteil(LK, verstellt);
         check("Bestand = Gesetz, Selbsttest: der Mutant V½ 246 → 300 fällt ROT", mutant !== "", mutant !== "" ? "" : "die Spur blieb gleich");
     }
+}
+// ── DER GAU (C2a, leben-core `gau*` · `akt`): der Bestand über EINEM Feld mit Fraß-Schicht und Akten ist STAND — eine Funktion von
+// (Samen, Feld, Takt, Akte). Drei Zeilen am kleinen Raster (32 × 32, Spike-Feld, 160 Takte), je mit ihrem Mutanten:
+//   E2  der Akt: „aus“ nimmt den Kopf, „ein“ setzt ihn, ein fremder Takt-Stempel wirft — Mutant: der Akt wirkt an einer Kopie
+//   G3  Determinismus: zwei Läufe byte-gleich, EIN „aus“ am Takt 100 weicht ab, derselbe Akt wieder byte-gleich — Mutant: der Wirt
+//       verliert den Akt
+//   G4  Stand-Rundreise: packen → entpacken → weiterrechnen = durchrechnen, byte-gleich — Mutant: der Stand vergisst die Fraß-Schicht
+// (G1, der B4-Lauf im Faden des gebooteten Stamms, und G2 · G5 urteilen in `--gau`.)
+function gauUrteil(L, mutant) {
+    const { K, welt } = bestandTreiber(core, L);
+    const [W, T1, T2, SAAT] = [32, 100, 160, 1];
+    const F = welt(W, W).F;
+    const gleich = (a, b) => Buffer.compare(Buffer.from(K.gauPack(a)), Buffer.from(K.gauPack(b))) === 0;
+    const bis = (t, akte, g = K.gauAnfang(F, SAAT)) => K.gauBis(g, t, akte);
+    // der Kopf, der fällt: der erste Beute-Kopf des ersten besetzten Reviers am Takt T1
+    const g1 = bis(T1, []);
+    let i0 = 0;
+    while (i0 < W * W && !K.koepfe(g1.z, i0).beute) i0++;
+    const kopf = K.tiereIn(g1.z, i0)[0];
+    const aus = { takt: T1, art: "aus", id: kopf.id };
+    const fehl = { akt: [], g3: [], g4: [] };
+    {
+        const g = bis(T1, []);
+        const ziel = mutant === "akt" ? K.gauEntpack(K.gauPack(g), F) : g;
+        const vor = K.koepfe(g.z, i0).beute;
+        if (K.akt(ziel, aus) !== true) fehl.akt.push("„aus“ meldet den Kopf nicht");
+        if (K.koepfe(g.z, i0).beute !== vor - 1 || K.tiereIn(g.z, i0).some((t) => t.id === kopf.id))
+            fehl.akt.push("nach „aus“ steht der Kopf noch im Revier (" + K.koepfe(g.z, i0).beute + " Köpfe, davor " + vor + ")");
+        if (K.akt(ziel, aus) !== false) fehl.akt.push("ein zweites „aus“ desselben Kopfs wirkt");
+        K.akt(ziel, { takt: T1, art: "ein", g: "beute", revier: i0, id: "seite.1", a: kopf.a, e: kopf.e, alterS: kopf.alterS, m: null });
+        const neu = K.tiereIn(g.z, i0).find((t) => t.id === "seite.1");
+        if (!neu || Math.abs(neu.kg - kopf.kg) > 1e-9 || K.koepfe(g.z, i0).beute !== vor) fehl.akt.push("nach „ein“ steht der Kopf nicht mit seinem Leib im Revier");
+        let wurf = false;
+        try {
+            K.akt(g, { takt: T1 + 1, art: "aus", id: "seite.1" });
+        } catch (e) {
+            wurf = true;
+        }
+        if (!wurf) fehl.akt.push("ein Akt mit fremdem Takt-Stempel wirft nicht");
+    }
+    {
+        const akte = mutant === "g3" ? [] : [aus];
+        const [A, A2, B, B2] = [bis(T2, []), bis(T2, []), bis(T2, akte), bis(T2, akte)];
+        if (!gleich(A, A2)) fehl.g3.push("zwei Läufe ohne Akt weichen ab");
+        if (gleich(A, B)) fehl.g3.push("der Akt „aus“ am Takt " + T1 + " ändert den Zustand am Takt " + T2 + " nicht");
+        if (!gleich(B, B2)) fehl.g3.push("derselbe Akt gibt zwei Zustände");
+    }
+    let bytes = 0;
+    {
+        const durch = bis(T2, [aus]);
+        const halb = bis(T1 + 20, [aus]);
+        if (mutant === "g4") halb.O.fill(0);
+        const stand = K.gauPack(halb);
+        bytes = stand.length;
+        if (!gleich(durch, bis(T2, [aus], K.gauEntpack(stand, F)))) fehl.g4.push("speichern → laden → weiterrechnen ≠ durchrechnen");
+        if (mutant !== "g4" && !gleich(halb, K.gauEntpack(stand, F))) fehl.g4.push("entpacken ∘ packen ist nicht die Identität");
+    }
+    return { akt: fehl.akt.join(" · "), g3: fehl.g3.join(" · "), g4: fehl.g4.join(" · "), bytes };
+}
+{
+    const GLIEDER = ["gauFeld", "gauAnfang", "gauBis", "gauPack", "gauEntpack", "akt", "koepfe", "tiereIn", "frassAm"];
+    const bauer = LK && typeof LK.bestand === "function" ? LK.bestand : null;
+    let fehlt = GLIEDER;
+    let u = null;
+    try {
+        fehlt = GLIEDER.filter((f) => typeof bestandTreiber(core, LK).K[f] !== "function");
+        if (bauer && !fehlt.length) u = gauUrteil(LK);
+    } catch (e) {
+        u = { akt: String(e.message || e), g3: String(e.message || e), g4: String(e.message || e), bytes: 0 };
+    }
+    const grund = (f) => (u ? u[f] : "leben-core bestand trägt kein " + fehlt.join(" · "));
+    check("Gau, der Akt (E2): „aus“ nimmt den Kopf, „ein“ setzt ihn mit seinem Leib, ein fremder Takt-Stempel wirft", grund("akt") === "", grund("akt"));
+    check("Gau, Determinismus (G3): zwei Läufe byte-gleich · EIN „aus“ am Takt 100 weicht ab · derselbe Akt wieder byte-gleich", grund("g3") === "", grund("g3"));
+    check("Gau, Stand-Rundreise (G4): packen → entpacken → weiterrechnen = durchrechnen, byte-gleich" + (u && u.bytes ? " (" + u.bytes + " Bytes am 32er-Raster)" : ""), grund("g4") === "", grund("g4"));
+    if (u && !u.akt && !u.g3 && !u.g4)
+        for (const [m, name] of [["akt", "der Akt wirkt an einer Kopie"], ["g3", "der Wirt verliert den Akt"], ["g4", "der Stand vergisst die Fraß-Schicht"]]) {
+            const r = gauUrteil(LK, m)[m];
+            check("Gau, Selbsttest: der Mutant „" + name + "“ fällt ROT", r !== "", r !== "" ? "" : "die Zeile blieb grün");
+        }
 }
 
 urteilEnde(
