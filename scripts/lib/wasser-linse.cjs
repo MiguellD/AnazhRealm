@@ -503,6 +503,18 @@ function wasserSchmelze(r, x, z, P) {
             return wort("sunny", 1e6), (st.regenStempel = []), aus;
         };
         pg.regen = sturm();
+        // P5 DIE KNOTEN DES REGENS (w28-halter-register): der Weg „sonnig gehalten → regnerisch“ (`_regenWeg` in eigene Knoten) trägt
+        // die Knoten des Wegs von main — die Rampe beginnt an ihrem Knoten — und mit einem Zug dazwischen, der das geltende Wort
+        // zieht (kein Knoten mehr), faltet der Lauf des Pegels (`pegelLauf`) byte-gleich zum Weg von main mit seinem Knoten
+        {
+            const regen = (w) => r.constructor.prototype._weatherFieldFor.call(r, w, true).rain;
+            const [s, n, T] = [regen("sunny"), regen("rainy"), r.constructor.PEGEL_TAG_S];
+            const weg = (...zuege) => zuege.reduce((S, [von, nach, t, ms]) => (r._regenWeg(von, nach, t, ms, -Infinity, S), S), []);
+            const lauf = (S) => JSON.stringify(window.__gelaendeCore.pegelLauf(r._gelaende(), S, 400, T, r._regenMittel(), null));
+            const [S1, S2] = [weg(["sunny", "sunny", 0, 0], ["sunny", "rainy", 200, 45000]), weg(["sunny", "sunny", 0, 0], ["sunny", "sunny", 100, 0], ["sunny", "rainy", 200, 45000])]; // prettier-ignore
+            const [main1, main2] = [[0, s, 200, s, 245, n], [0, s, 100, s, 200, s, 245, n]];
+            pg.knoten = { weg: S1.join(), main: main1.join(), lauf: lauf(S1) === lauf(main1), zug: S2.length, zugLauf: lauf(S2) === lauf(main2) };
+        }
         r._weatherFieldFor = () => r.constructor.prototype._weatherFieldFor.call(r, "sunny");
         pg.regen.fest = sturm().hub;
         r._temperaturFeld = (yy, tr) => {

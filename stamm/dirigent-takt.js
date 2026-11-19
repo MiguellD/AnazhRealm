@@ -22,7 +22,13 @@ class AnazhRealm_dirigent_takt {
             // Spiel-Zeit (`spielZeit`, unten) — nie den rAF-Stempel; die Liste der Wanduhr-Leser mit Grund ist die Tafel
             // spec/uhr/geraetezeit.json, ihre Wand gate:wetter-wache (W).
             const wandDelta = Math.max(0.001, (t - lastTime) / 1000);
-            const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
+            // DER ZEITLOSE TAKT (w28-funktion-welt-2): ein Takt am Stempel des letzten — es verging keine Zeit — baut die Welt
+            // (Strom, Foundry, Stufen, Fege-Takte) und lebt nicht: Spiel-Takt 0, und er ruht wie ein Lade-Takt (`ruht`, unten).
+            // Bis hier trug ihn der Boden der Wanduhr (`wandDelta` ≥ 1 ms) als 1 ms Leben: N Rufe am selben Stempel bewegten Tiere,
+            // Bewohner, Licht und Schwarm um N ms — die Welt hing daran, WIE OFT einer fragte, nicht an ihrer Uhr (A gegen A,
+            // zwei Abdrücke zugleich an 88b3f266: 515 gegen 206 Takte des Einschwingens, 44 Dinge anders). rAF stempelt nie zweimal.
+            const zeitlos = t === lastTime;
+            const delta = zeitlos ? 0 : Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
             const wandZeit = t / 1000;
             // DER WELT-WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht, die neue kommt an — bis sie steht, taktet keine
@@ -80,7 +86,7 @@ class AnazhRealm_dirigent_takt {
                 // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
                 // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
                 if (bild) this._erstZeichnungStand().bildWartet.clear();
-                const ruht = !bild && this._ladeTakt();
+                const ruht = zeitlos || (!bild && this._ladeTakt());
                 // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
                 this._ladeBildTakt = bild && this._ladeTakt();
                 // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
@@ -1752,8 +1758,14 @@ class AnazhRealm_dirigent_takt {
     // DIE EINE REGEL DER WELT-UHR (feld.K2#2): eine Uhr von außen — der Stand beim Laden, der Mitspieler in jedem Ort (`pos.w`) —
     // gilt, wenn sie später ist; die Uhr geht nie zurück. So tragen alle Seiten eines Raums die Uhr der ältesten, ohne dass
     // ein Zustand reist: Wetter, Leben, Brand und Nässe folgen ihr als Funktion.
+    // Ein Sprung der Welt-Uhr (die Uhr eines Mitspielers, ein geladener Stand) ist ein Sprung der Uhr wie der der Stunde: wer
+    // seinen Tag aus der Uhr liest, stellt sich neu (`_weltUhrSprung`, die Bewohner in `_bewohnerTakt` — der Tag danach ist
+    // f(Same, t), nie die Folge der Takte davor)
     _weltUhrNimm(t) {
-        if (Number.isFinite(t) && t > this.state.spielZeit) this.state.spielZeit = t;
+        if (!(Number.isFinite(t) && t > this.state.spielZeit)) return;
+        if (t - this.state.spielZeit >= AnazhRealm.WELT_UHR_SPRUNG_S)
+            this._weltUhrSprung = (this._weltUhrSprung | 0) + 1;
+        this.state.spielZeit = t;
     }
 
     // Reiner Prioritäts-Dispatcher (Job-System, single-thread). jobs: [{name, prio, run(ms)}] — in der Reihe ihres Rangs, jeder am
@@ -2691,6 +2703,8 @@ AnazhRealm.LADE_TAKT_MS = 100;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
 AnazhRealm.TAKT_DECKEL_S = 0.1;
+// Ab wie vielen Sekunden eine Uhr von außen ein SPRUNG ist (`_weltUhrNimm`): darunter gleicht sie nur das Laufen zweier Seiten an.
+AnazhRealm.WELT_UHR_SPRUNG_S = 60;
 AnazhRealm.FIXED_MAX_STEPS = 8;
 AnazhRealm.ZEIT_SCHAERFE = 1;
 // DIE GPU-LEINE (_gpuLeineFrei): die EINE Zahl der Frames im Flug steht im Baustein des Lichts, Welt und Bühne lesen sie

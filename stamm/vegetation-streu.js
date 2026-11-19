@@ -789,7 +789,13 @@ class AnazhRealm_vegetation_streu {
             const z1 = this._bodenSichtAt(f.x, f.z, null, 1);
             f.ziel = Number.isFinite(z1) ? z1 : f.lage;
         }
-        return f.lage + (f.ziel - f.lage) * w;
+        // DIE STUFEN DES FUSSES (w28-funktion-welt): das Gewicht in Stufen von höchstens STREU_FUSS_STUFE_M Höhe — der Fuß ist
+        // eine Funktion des Auges JETZT, und er rückt nur, wenn seine Stufe wechselt. Bis hier blieb er stehen, solange er
+        // weniger als 3 mm rückte (ein Totband), und hing an der Folge der Augen davor: zwei Läufe zum selben Auge trugen
+        // dieselben Sträucher 2,5 mm verschieden hoch
+        const d = f.ziel - f.lage;
+        const n = Math.ceil(Math.abs(d) / AnazhRealm.STREU_FUSS_STUFE_M);
+        return n ? f.lage + (d * Math.round(w * n)) / n : f.lage;
     }
     // DER FUSS RÜCKT NACH: jede Instanz der Zellen, die `gilt`, setzt ihren Fuß neu — `karte` (die Karte ihres Chunks steht neu:
     // Lage, Stufe, Ziel frisch) oder am Auge (dieselben Enden, das Gewicht neu) — um den Versatz in jeder Scheibe, je berührter
@@ -804,10 +810,7 @@ class AnazhRealm_vegetation_streu {
                 if (karte) c.fuss = this._streuFuss(c.x, c.z);
                 else c.fuss.y = this._streuFussJetzt(c.fuss);
                 const d = c.fuss.y - alt;
-                if (!(Math.abs(d) > 0.003)) {
-                    c.fuss.y = alt;
-                    continue;
-                }
+                if (!(d !== 0)) continue; // dieselbe Stufe (`_streuFussJetzt`): kein Upload
                 for (const ref of c.slots) {
                     const g = this.state.archInstanceGroups.get(ref.key);
                     if (!g || !(ref.slot >= 0)) continue;
@@ -2336,7 +2339,7 @@ class AnazhRealm_vegetation_streu {
         const h = this._rollGenome(plan.sKey, "tree-genome").zustand("phyto-growth");
         this._nebenAuftrag("wald", { type: "wuchs", P: plan.P, h, rang: 0 }).then(
             (m) => {
-                flug.delete(k);
+                if (!flug.delete(k)) return; // der Leser wuchs schon ohne ihn (`_wuchsVerbraucht`): kein Vorrat für niemanden
                 V.set(k, new Float64Array(m.zahlen));
                 this._weltRegt();
             },
@@ -2346,6 +2349,18 @@ class AnazhRealm_vegetation_streu {
             }
         );
         return false;
+    }
+
+    // DER WUCHS IST VERBRAUCHT (w28-funktion-welt-2): eine Baum-Art des Wurfs wuchs an ihrem ersten Leser (`_defaultBlueprints`,
+    // einmal je Sitzung) — ihr Wuchs im Vorrat und eine Bestellung im Flug haben keinen Leser mehr und fallen. Bis hier blieb
+    // im Vorrat, was die Saat bestellt hatte, bevor der Leser kam, und fehlte, wo der Leser zuerst kam: A gegen A an 2a1a6e1c
+    // `_wuchsVorrat` 5 von 14 anders (Birke, Buche, Erle der Wiese). Jede Stufe und jedes Welt-Maß des Plans (`sKey|…`).
+    _wuchsVerbraucht(speciesKey, seed) {
+        const plan = this._wuchsPlan(speciesKey, seed, null);
+        if (!plan) return;
+        const vor = plan.sKey + "|";
+        for (const M of [this._wuchsVorrat, this._wuchsFlug])
+            if (M) for (const k of [...M.keys()]) if (k.startsWith(vor)) M.delete(k);
     }
 
     // FEHLT DER WUCHS DER SAAT? (w4-b-pflanzen): die Saat des Chunks (cx, cz) wächst Büsche (`SAAT_BUSCH`, je Region EINE Variante:
@@ -3017,6 +3032,9 @@ AnazhRealm.STREU_NADEL = Object.freeze(["baum_kiefer", "baum_tanne", "baum_zypre
 // buildBarkTubeArrays). Die Amplitude ist das Gesetz der Art (P.flare); die Rippen sind ein Maß der Röhre, kein Gesetz (der
 // Stamm des Studios ist glatt). Die Hand-Tafeln SPECIES_PALETTE_DEFAULT (Rinde/Laub) und DEFAULT_TREE_FLARE fielen K24-N1.
 AnazhRealm.STAMM_RIPPEN = 5;
+// Die höchste Stufe des Streu-Fußes im Übergangs-Band seiner Boden-Stufe (m, `_streuFussJetzt`): so weit liegt er höchstens neben
+// dem morphenden Boden — wie das Totband von 3 mm davor, jetzt als Funktion des Auges.
+AnazhRealm.STREU_FUSS_STUFE_M = 0.003;
 
 // Kanonische Spezies-Tag-Signatur, einmal aus den alten Kugel-Baum-Bauplänen gemessen
 // (computeCompoundTags, diag-tree-tags) und eingefroren. Die Grammatik-Drift-Wand

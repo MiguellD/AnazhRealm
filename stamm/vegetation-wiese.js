@@ -760,11 +760,13 @@ class AnazhRealm_vegetation_wiese {
     // jede Karte aus `dazu` samt der Lage und dem Stand, in dem sie gelesen wurde (so fällt die Kachel auch, wenn ein Chunk
     // seine Karte an Ort und Stelle neu rastert, `_bodenKarteNaht`).
     static _wieseKarten(ziel, dazu) {
-        if (Array.isArray(ziel)) return Object.assign(new Map(), { rechteck: ziel, lage: new Map(), stand: new Map() });
+        if (Array.isArray(ziel))
+            return Object.assign(new Map(), { rechteck: ziel, lage: new Map(), stand: new Map(), gruen: new Map() });
         for (const [ck, m] of dazu) {
             ziel.set(ck, m);
             if (dazu.lage) ziel.lage.set(ck, dazu.lage.get(ck));
             if (dazu.stand) ziel.stand.set(ck, dazu.stand.get(ck));
+            if (dazu.gruen) ziel.gruen.set(ck, dazu.gruen.get(ck));
         }
         return ziel;
     }

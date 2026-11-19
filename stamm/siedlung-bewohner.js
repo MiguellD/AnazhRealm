@@ -90,18 +90,22 @@ class AnazhRealm_siedlung_bewohner {
         je.clear();
         for (const t of dr.teilchen) je.set(t.q, (je.get(t.q) || 0) + 1);
         const p = 1 - Math.pow(1 - G.spawnChance, f);
-        for (const [, qq] of nah)
-            if ((je.get(qq.id) || 0) < G.maxTeilchen && Math.random() < p)
+        // DER WURF DES RAUCHS (w28-funktion-welt): EIN Strom je Kamin und Takt, das Wechselnde vorn (hinten: Gleichschritt ×1,45)
+        const uhr = `${Math.round((st.spielZeit || 0) * 1000)}:${(st.worldMeta && st.worldMeta.seed) || "anazh-realm-seed"}-rauch`;
+        for (const [, qq] of nah) {
+            const w = this._streamRng(`${Math.round(qq.x * 10)},${Math.round(qq.z * 10)}:${uhr}`);
+            if ((je.get(qq.id) || 0) < G.maxTeilchen && w() < p)
                 dr.teilchen.push({
                     x: qq.x,
                     y: qq.y,
                     z: qq.z,
                     s: 1,
-                    vy: G.vyBase + Math.random() * G.vyRange,
-                    dx: (Math.random() - 0.5) * G.dxSpread,
+                    vy: G.vyBase + w() * G.vyRange,
+                    dx: (w() - 0.5) * G.dxSpread,
                     a: G.a0,
                     q: qq.id,
                 });
+        }
         // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
         // seiner Geschwindigkeit in m/s × dt windab — in EIN Objekt je Bild gefragt (`_windAt` mit `aus`, w27-takt-gc). Es liest
         // die ANTWORT, nie das Objekt: im Spiel ist sie dasselbe, ein Leser, der den Wind umhüllt (gate:kopplung F3 „×0"), gibt
@@ -1610,7 +1614,8 @@ class AnazhRealm_siedlung_bewohner {
             // Gang), und der Tag danach hing an der Geschichte der Seite: #724672 steckte um 12,62 Uhr in einem von 8 Läufen.
             const dU = Math.abs(stunde - S.uhrStunde);
             S.uhrStunde = stunde;
-            const sprung = Math.min(dU, 24 - dU) >= BW.sprungH;
+            const wu = this._weltUhrSprung | 0; // der Sprung der Welt-Uhr (`_weltUhrNimm`) ist derselbe Sprung (w28-funktion-welt)
+            const sprung = (S.weltUhrSprung ?? wu) !== (S.weltUhrSprung = wu) || Math.min(dU, 24 - dU) >= BW.sprungH;
             if (sprung || S.aktivListe !== S.liste) {
                 [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.taktUhr] = [S.liste, S.liste.slice(), [], new Map(), 0];
                 [S.planI, S.ruhSoll] = [0, 0];
@@ -1630,11 +1635,11 @@ class AnazhRealm_siedlung_bewohner {
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
             bewegt.length = 0;
             // DER SPRUNG DER UHR (oben eingerichtet): jeder Leib stellt sich dorthin, wo sein Tag ihn jetzt sieht
-            // (`_bewohnerAnkunft`), ohne den Gang davor — Tempo, Lauf, Rückstand, Schritt-Takt der Raten-Leiter, Platz und Tür
+            // (`_bewohnerAnkunft`), ohne den Gang davor — Tempo, Lauf, Rückstand, Schritt, Phase, Nähe, Platz und Tür
             if (sprung) {
                 for (const b of S.liste) {
                     Object.assign(b, { gegangen: 0, gehTakt: 0, tempoJetzt: 0, tempoTag: undefined, rueck: 0 });
-                    Object.assign(b, { vx: 0, vz: 0, platz: false, hinaus: false, ankunft: !!b.leib });
+                    Object.assign(b, { vx: 0, vz: 0, platz: false, hinaus: false, ankunft: !!b.leib, walkPhase: 0, _gaitW: 0, _gait: undefined, nah: false, begegnet: false }); // prettier-ignore
                     this._bewohnerRasterLage(S, b);
                 }
                 if (S.verkehr) this._verkehrSprung(S); // auch der Wagen: f(Same, t)
@@ -2325,7 +2330,7 @@ class AnazhRealm_siedlung_bewohner {
         b.drehen = null;
         b.drinnenSoll = soll.drinnen;
         b.da = false;
-        b.weg = null;
+        b.weg = b.wegRestAb = b.wi = null;
         b.wegRest = null;
         b.hinaus = tuer && b.drinnen && !soll.drinnen;
         b.platz = false;
@@ -2353,7 +2358,7 @@ class AnazhRealm_siedlung_bewohner {
         this._bewohnerStellen(b, g, s0.ziel.x, s0.ziel.z);
         if (Number.isFinite(s0.ziel.blick)) g.rotation.y = s0.ziel.blick;
         Object.assign(b, { ziel: s0.ziel, akt: s0.akt, drinnenSoll: s0.drinnen, drinnen: s0.drinnen, da: true });
-        Object.assign(b, { weg: null, wegRest: 0, stand: null, drehen: null, gehDt: 0 });
+        Object.assign(b, { weg: null, wegRestAb: null, wi: null, wegRest: 0, stand: null, drehen: null, gehDt: 0 });
         for (let n = 0; n < BW.ankunftWenden && h < stunde; n++) {
             const w = this._bewohnerWende(b, h, stunde);
             if (b.weg) this._bewohnerSchritt(b, ((w === null ? stunde : w) - h) * sek);
@@ -2730,7 +2735,7 @@ class AnazhRealm_siedlung_bewohner {
             g.rotation.y += Math.max(-om, Math.min(om, dw));
         }
         if (b.wi >= pts.length) {
-            b.weg = null;
+            b.weg = b.wegRestAb = b.wi = null;
             b.da = true;
             b.wegRest = 0;
             if (!b.drinnenSoll && Number.isFinite(b.ziel.blick)) b.drehen = b.ziel.blick; // am Ziel der Blick des Plans
@@ -3443,7 +3448,7 @@ class AnazhRealm_siedlung_bewohner {
                 const q = b.weg[i];
                 const tuerBein = q === o.tuer || (q === o.vor && (p === o.tuer || (i === b.wi && b.stand === o.tuer)));
                 if (tuerBein || (trifft && !trifft(p, q)) || !this._bewohnerWand(p, q)) continue;
-                b.weg = null;
+                b.weg = b.wegRestAb = b.wi = null;
                 b.stand = null;
                 break;
             }
@@ -3767,7 +3772,7 @@ class AnazhRealm_siedlung_bewohner {
                 });
                 for (const b of S.liste)
                     if (b.leib && !b.drinnen && (b.ziel === o || b.stand === o)) {
-                        Object.assign(b, { weg: null, stand: null, wegRest: null });
+                        Object.assign(b, { weg: null, wegRestAb: null, wi: null, stand: null, wegRest: null });
                         if (b.ziel === o) b.da = false;
                     }
             }
@@ -3792,7 +3797,7 @@ class AnazhRealm_siedlung_bewohner {
             for (const k of K) if (b.orte[k] === o) b.orte[k] = null;
             if (b.leib && !b.drinnen && (b.ziel === o || b.stand === o)) {
                 if (b.ziel === o) b.da = false;
-                Object.assign(b, { weg: null, stand: null, wegRest: null });
+                Object.assign(b, { weg: null, wegRestAb: null, wi: null, stand: null, wegRest: null });
             }
         }
         return true;

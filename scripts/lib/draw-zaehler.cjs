@@ -553,6 +553,52 @@ function heapHalter(r, tiefe) {
     }
     return [...je];
 }
+// DER BESTELLER DES JS-HEAPS (aus w28-heap-zensus in die Runde gehoben): `heapHalter` nennt nur die Bytes der Typed Arrays, der
+// Behälter-Zensus nur Einträge — was im JS-Heap wächst (Objekte, Closures, die Knoten-Caches des Renderers), blieb ohne Namen
+// (Runde reise 18.11.: Heap Runde 2 − Runde 1 +8,3 / +9,3 MB, kein Halter rot). Der Sampling-Heap-Profiler von V8
+// (`heapStichprobe`, ab der Start-Lesung der Runde) trägt die NOCH LEBENDEN Bytes je Allokations-Stelle; gebucht zweimal: `stelle`
+// die Funktion der Allokation (oft vendor/three), `besteller` der nächste Rahmen des SPIELS darüber (nicht vendor/, nicht nativ) —
+// je Funktion · Datei:Zeile ihres Anfangs (der Profiler nennt nur ihn). → { besteller, stelle } je [[Name, MB]] absteigend
+const STICH = { intervall: 32768, abMB: 0.05 };
+function heapBesteller(profile) {
+    const fremd = (u) => !u || /\/vendor\/|\/node_modules\/|^(chrome|devtools|extensions)::?/.test(u);
+    const ort = (cf) => {
+        let p = cf.url || "";
+        try {
+            p = new URL(p).pathname.replace(/^\//, "");
+        } catch {}
+        return `${cf.functionName || "(anonym)"} · ${p ? p + ":" + (cf.lineNumber + 1) : "(nativ)"}`;
+    };
+    const [stelle, besteller] = [new Map(), new Map()];
+    const buche = (m, k, n) => m.set(k, (m.get(k) || 0) + n);
+    // iterativ (die Stapel des Spiels sind tief): je Knoten der nächste Spiel-Rahmen von oben her
+    const stapel = [[profile.head, null]];
+    while (stapel.length) {
+        const [k, sp] = stapel.pop();
+        const eigen = fremd(k.callFrame.url) ? sp : k.callFrame;
+        if (k.selfSize > 0) {
+            buche(stelle, ort(k.callFrame), k.selfSize);
+            buche(besteller, ort(eigen || k.callFrame), k.selfSize);
+        }
+        for (const c of k.children || []) stapel.push([c, eigen]);
+    }
+    const reihe = (m) =>
+        [...m]
+            .map(([k, b]) => [k, +(b / 1048576).toFixed(2)])
+            .filter(([, x]) => x >= STICH.abMB)
+            .sort((p, q) => q[1] - p[1]);
+    return { besteller: reihe(besteller), stelle: reihe(stelle) };
+}
+// die Stichprobe an EINER offenen CDP-Sitzung: "an" (nach den GC der Start-Lesung) setzt das Sampling neu auf — ein laufendes
+// endet zuerst (`stopSampling` wirft, wenn keines läuft); "lies" nennt die seither lebenden Bytes beim Besteller
+async function heapStichprobe(cdp, modus) {
+    if (modus === "lies") return heapBesteller((await cdp.send("HeapProfiler.getSamplingProfile")).profile);
+    if (modus !== "an") throw new Error(`heapStichprobe: Modus ${modus} (an | lies)`);
+    await cdp.send("HeapProfiler.enable");
+    await cdp.send("HeapProfiler.stopSampling").catch(() => null);
+    await cdp.send("HeapProfiler.startSampling", { samplingInterval: STICH.intervall });
+    return { besteller: [], stelle: [] };
+}
 // DAS GANG-URTEIL (`werkbank puffer --gang`): Heap (JS + Typed-Arrays nach GC) und VRAM am Start vor und nach dem Gang; was
 // wuchs, nennt der Diff der Halter-Pfade (`heapHalter`) und der VRAM-Erzeuger (`__vramBericht`).
 const GANG = { heapMBjeMin: 5, vramMB: 2 };
@@ -889,6 +935,12 @@ function geburtZensus() {
 // ein Behälter wächst von Runde 1 zu Runde 2 (beim Namen und der Zeile seiner Anlage, `anlage(pfad)`) · ein Bild der Runde über
 // 101 ms. Die Tafel trägt jeden Wachser mit Start → Runde 1 → Runde 2.
 const RUNDE = { heapMB: 5, bildMs: 101, wachsMin: 16, wachsAnteil: 0.05, halterMB: 1 };
+// WAS MIT DEM WEG WÄCHST, WÄCHST IN JEDER RUNDE (w28-halter-register): ein Behälter oder Halter ist rot, wenn er in BEIDEN Runden um
+// die Schwelle wächst (`schwelle(vorher)`, Start → Runde 1 und Runde 1 → Runde 2) — jede Runde fährt neue Orte, der Sack wächst
+// je Ort. Ein Halter, der über die Runde sinkt oder schwankt, ist nie rot: zwei Läufe am selben Stamm (Radeon 18.11., d7f31d1a und
+// 99421fca, Stamm byte-gleich) nannten `_foundry.cache` 16,4 → 3,2 → 4,4 MB, `renderer.info.memoryMap` 22,5 → 20,8 → 23,4 MB und
+// `_teilVolumenMemo` 1 600 → 1 680 → 1 918 einmal rot, einmal nicht — bis hier urteilte allein Runde 1 → Runde 2.
+const RUNDE_WACHS = { wachsend: ([s, a, b], schwelle) => a - s >= schwelle(s) && b - a >= schwelle(a) };
 function rundenUrteil({ name, stand }, anlage) {
     const [s, a, b] = stand;
     const f = [];
@@ -896,7 +948,7 @@ function rundenUrteil({ name, stand }, anlage) {
     if (dh > RUNDE.heapMB) f.push(`${name}: Heap Runde 2 − Runde 1 = +${dh.toFixed(1)} MB > ${RUNDE.heapMB}`);
     const tafel = Object.entries(b.zensus)
         .map(([k, n2]) => ({ name: k, start: s.zensus[k] || 0, r1: a.zensus[k] || 0, r2: n2 }))
-        .filter((t) => t.r2 - t.r1 >= Math.max(RUNDE.wachsMin, t.r1 * RUNDE.wachsAnteil))
+        .filter((t) => RUNDE_WACHS.wachsend([t.start, t.r1, t.r2], (v) => Math.max(RUNDE.wachsMin, v * RUNDE.wachsAnteil)))
         .sort((p, q) => q.r2 - q.r1 - (p.r2 - p.r1));
     const un = (b.zell && b.zell.unangemeldet) || {};
     for (const t of tafel) {
@@ -912,7 +964,7 @@ function rundenUrteil({ name, stand }, anlage) {
         f.push(`${name}: ${b.ro.fremd + b.ro.alt} Render-Objekte halten getauschte Puffer (fremde Geometrie ${b.ro.fremd}, alte Attribute ${b.ro.alt}, ${b.ro.mb} MB; Soll 0, \`_renderObjekteFolgen\`)`); // prettier-ignore
     const mb = (x, k) => new Map(x.halter || []).get(k) || 0;
     for (const [k, x] of b.halter || [])
-        if (x - mb(a, k) >= RUNDE.halterMB)
+        if (RUNDE_WACHS.wachsend([mb(s, k), mb(a, k), x], () => RUNDE.halterMB))
             f.push(`${name}: Halter ${k} (${anlage(k)}) ${mb(s, k).toFixed(1)} → ${mb(a, k).toFixed(1)} → ${x.toFixed(1)} MB`);
     if (b.geometries > a.geometries) {
         const g = Object.entries(b.geburt)
@@ -926,7 +978,72 @@ function rundenUrteil({ name, stand }, anlage) {
     [a, b].forEach((x, i) => {
         if (x.bildMax > RUNDE.bildMs) f.push(`${name}: größtes Bild der Runde ${i + 1} ${x.bildMax.toFixed(1)} ms > ${RUNDE.bildMs}`);
     });
+    f.push(...jsHeapUrteil(name, stand, dh));
     return { f, tafel };
+}
+// DER JS-HEAP BEIM NAMEN (`heapBesteller`, je Stand `besteller` und `stelle`): wer in Runde 1 UND Runde 2 je ≥ 1 MB lebende Bytes
+// zulegt, ist rot — der Besteller im Spiel, dazu die Stelle der Allokation, wo sie nicht derselbe Rahmen ist. Wächst der Heap über
+// die Schranke, ohne dass einer die Schwelle reißt, nennt EINE Zeile die fünf größten Zuwächse (verstreut).
+function jsHeapUrteil(name, [s, a, b], dh) {
+    const f = [];
+    if (!b.besteller) return f;
+    const mb = (x, sicht, k) => new Map(x[sicht] || []).get(k) || 0;
+    const benannt = new Set();
+    for (const sicht of ["besteller", "stelle"])
+        for (const [k, x] of b[sicht] || []) {
+            // in BEIDEN Runden um die Schwelle — dasselbe EINE Wachs-Urteil wie Behälter und Halter (`RUNDE_WACHS`), kein Zwilling
+            if (benannt.has(k) || !RUNDE_WACHS.wachsend([mb(s, sicht, k), mb(a, sicht, k), x], () => RUNDE.halterMB)) continue; // prettier-ignore
+            benannt.add(k);
+            f.push(`${name}: JS-Heap ${sicht === "besteller" ? "beim Besteller" : "an der Stelle"} ${k} ${mb(s, sicht, k).toFixed(1)} → ${mb(a, sicht, k).toFixed(1)} → ${x.toFixed(1)} MB`); // prettier-ignore
+        }
+    if (dh > RUNDE.heapMB && !benannt.size) {
+        const d = b.besteller
+            .map(([k, x]) => [k, x - mb(a, "besteller", k)])
+            .filter(([, x]) => x > 0)
+            .sort((p, q) => q[1] - p[1])
+            .slice(0, 5);
+        f.push(`${name}: der Zuwachs verstreut — Besteller ${d.map(([k, x]) => `${k} +${x.toFixed(2)}`).join(" · ") || "keiner gesampelt"} MB`); // prettier-ignore
+    }
+    return f;
+}
+// Selbsttest: ein Leib, der je Runde 1,5 MB lebende Bytes bestellt (über `clone` in vendor/three), ist rot beim Besteller samt
+// Datei:Zeile und bei der Stelle; derselbe Leib ohne Zuwachs und ein Cache, der in Runde 1 voll lief, sind grün; ein Heap, der +6 MB in Splittern
+// unter der Schwelle wächst, nennt die Splitter beim Besteller.
+function jsHeapSelbsttest() {
+    const cf = (functionName, url, lineNumber) => ({ functionName, url, lineNumber });
+    const M = 1048576;
+    const profil = (leib, cache, splitter) => ({
+        head: {
+            callFrame: cf("(root)", "", 0),
+            selfSize: 0,
+            children: [
+                {
+                    callFrame: cf("_bewohnerLeib", "http://h/stamm/koerper-leib.js?v=1", 147),
+                    selfSize: 0.5 * M,
+                    children: [{ callFrame: cf("clone", "http://h/vendor/three.module.js", 9), selfSize: leib * M, children: [] }],
+                },
+                { callFrame: cf("_bauBuch", "http://h/stamm/stoff-material.js", 40), selfSize: cache * M, children: [] },
+                ...Array.from({ length: 12 }, (_, i) => ({ callFrame: cf("splitter" + i, "http://h/stamm/x.js", i), selfSize: splitter * M, children: [] })), // prettier-ignore
+            ],
+        },
+    });
+    // die Start-Lesung trägt nichts (das Sampling beginnt dort, `heapStichprobe` "an"); der Cache füllt sich in Runde 1 und legt in
+    // Runde 2 unter der Schwelle zu, der Leib bleibt im Gleichstand bei 0,5 MB oder wächst je Runde um `leib`
+    const fahrt = (leib, splitter) => {
+        const stand = [{ besteller: [], stelle: [] }, ...[1, 2].map((r) => heapBesteller(profil(leib * r, [0, 3, 3.4][r], splitter * r)))]; // prettier-ignore
+        return jsHeapUrteil("a", stand, splitter ? 6 : 0).join(" | ");
+    };
+    const f = [];
+    if (fahrt(0, 0)) f.push("die ruhende Runde ist rot: " + fahrt(0, 0));
+    const rot = fahrt(1.5, 0);
+    if (!/JS-Heap beim Besteller _bewohnerLeib · stamm\/koerper-leib\.js:148 0\.0 → 2\.0 → 3\.5 MB/.test(rot))
+        f.push("der wachsende Leib ist nicht rot beim Besteller: " + (rot || "GRÜN"));
+    if (!/JS-Heap an der Stelle clone · vendor\/three\.module\.js:10 0\.0 → 1\.5 → 3\.0 MB/.test(rot))
+        f.push("die Stelle des wachsenden Leibs ist nicht rot: " + (rot || "GRÜN"));
+    if (/_bauBuch/.test(rot)) f.push("der sinkende Cache ist rot: " + rot);
+    if (!/der Zuwachs verstreut — Besteller splitter\d+ · stamm\/x\.js:\d+ \+0\.50/.test(fahrt(0, 0.5)))
+        f.push("der verstreute Zuwachs nennt keinen Besteller: " + (fahrt(0, 0.5) || "GRÜN"));
+    return f;
 }
 // Selbsttest: eine Welt mit Ring (folgt dem Blick), einem Zell-Gedächtnis, das jede Runde neue Schlüssel legt (die Zeit im
 // Schlüssel, Klasse F2/F3), und einer Geometrie, die je Runde neu gebaut und nie entsorgt wird (F7) — ROT beim Namen des
@@ -960,6 +1077,10 @@ function rundenSelbsttest() {
             // die Kachel der Fernreise (1 MB je Eintrag, zwei je Runde): geräumt bleibt die am Start
             for (const k of [runde * 2, runde * 2 + 1]) r.state.kacheln.set(k, new Float32Array(262144));
             if (!mutant) for (const k of r.state.kacheln.keys()) if (k > 0) r.state.kacheln.delete(k);
+            // ein Halter und ein Behälter, die über die Runde sinken und in Runde 2 wieder steigen (der Cache des Buchs, die Karte
+            // des Renderers): nie rot, in keiner Fahrt
+            r.state.sinkt = new Map(Array.from({ length: [100, 20, 60][runde] }, (_, i) => [i, 1]));
+            r.state.sinktPuffer = new Float32Array([4, 1, 2.5][runde] * 262144);
             if (mutant && runde) geburt["stamm/gelaende-fern.js:741"] = { gezaehlt: 8 * runde, lebend: 8 * runde, verwaist: 0 };
             geom = 10 + (mutant ? 8 * runde : 0);
             const halter = heapHalter(r, 3).map(([k, x]) => [k, x / 1048576]);
@@ -981,6 +1102,18 @@ function rundenSelbsttest() {
         f.push("der Mutant des Halters der Zeichnung ist nicht rot beim Namen: " + (rot || "GRÜN"));
     if (!/1 Render-Objekte halten getauschte Puffer \(fremde Geometrie 1/.test(rot))
         f.push("der Mutant der Render-Objekte ist nicht rot: " + (rot || "GRÜN"));
+    if (/sinkt/.test(rot)) f.push("ein sinkender Halter ist rot: " + rot);
+    const alt = RUNDE_WACHS.wachsend;
+    RUNDE_WACHS.wachsend = ([, a, b], schwelle) => b - a >= schwelle(a); // der Mutant: das Urteil allein über Runde 1 → Runde 2
+    const einSchritt = fahrt(false);
+    // der JS-Heap urteilt am selben Wachs-Urteil: ein Besteller, der erst in Runde 2 zulegt, ist nur im Mutanten rot
+    const spaet = () => jsHeapUrteil("j", [{ besteller: [] }, { besteller: [] }, { besteller: [["spaet · stamm/y.js:1", 1.5]] }], 0).join(" | "); // prettier-ignore
+    const heapEin = spaet();
+    RUNDE_WACHS.wachsend = alt;
+    if (!/Halter r\.state\.sinktPuffer/.test(einSchritt) || !/r\.state\.sinkt /.test(einSchritt))
+        f.push("der Mutant des Ein-Schritt-Urteils nennt die sinkenden Halter nicht: " + (einSchritt || "GRÜN"));
+    if (!/JS-Heap beim Besteller spaet/.test(heapEin) || spaet())
+        f.push("der JS-Heap urteilt nicht am EINEN Wachs-Urteil: Mutant " + (heapEin || "GRÜN") + " · richtig " + (spaet() || "GRÜN"));
     return f;
 }
 
@@ -1115,6 +1248,9 @@ module.exports = {
     wegSelbsttest,
     rundenUrteil,
     rundenSelbsttest,
+    heapBesteller,
+    heapStichprobe,
+    jsHeapSelbsttest,
     satzInhalt,
     texturErzeuger,
     vramFalte,
