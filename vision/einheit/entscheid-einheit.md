@@ -158,3 +158,16 @@ an allen 6 Vorlagen (3 Häuser, darunter japanisch; 3 Wagen), mit 1–5.
 Soll: B1 ≤ 1 % an allen 6, Dreiecke ≤ Soll der Tafel, Draws ≤ heute. Linse: Mutant „Stufe aus eigenem Rezept“ ROT.
 Datei-Besitz: die GTX 1050 hält `fachwerk-core.js`, `vehicle-core.js` und `foundry-bruecke.js`; der Spike SICHT (Laptop,
 `einheit-sicht`) hält `siedlung-instanz.js` und sein neues Sicht-Modul.
+
+## E9 (19.11. 21:01, nach dem Spike SICHT, Zweig einheit-sicht 1edb8d4f)
+
+**Gemessen** (Radeon, Wiese Third): 83,8 % der gezeichneten Dreiecke tragen keinen Bildpunkt. An den Häusern liegen 50 % UNTER dem Bildpunkt, nur 14,6 % sind verdeckt.
+- Die Sicht (Hi-Z, ein WGSL-Gesetz `verdeckt`, früher und später indirekter Zug über ~128er-Haufen) ersetzt drei alte Verdeckungen: Berg, Wald-vor-Wald und die Occlusion-Query-Hüllen. Absenz-Grep 0.
+- S2 0,000 % (ruhend kein Pixel anders) · S1 93,4 % (ROT) · S3 99 → 103 Züge · S4 in der Streuung · S5 ROT, schlimmstes Flugbild 15 %, auf Gras und einem Schatten-Fleck.
+
+**Entscheid:**
+1. Die STUFE (Pixel-Fehler über der EINEN Haufen-Hierarchie) ist der größere Hebel: sie trägt die Hälfte, die Sicht ein Siebtel. Die Stufe geht vor dem Ausbau der Sicht.
+2. Die Sicht landet trotzdem als EINHEIT, sobald S5 GRÜN ist, auch ohne ms-Anspruch: drei Systeme fallen in ein Gesetz.
+   - Zu S5 geprüft wird: A gegen A (Wind), die Kaskaden urteilen nie mit der Pyramide der Hauptkamera, der späte Zug steht vor allem Durchsichtigen.
+3. S3 fällt mit EINEM Zug: der späte schreibt in den Auftrag des frühen.
+4. Vegetation, Gelände, Wagen und Kreatur gehen nach der Landung durch dieselbe Sicht.
