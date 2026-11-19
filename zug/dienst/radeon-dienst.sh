@@ -93,7 +93,7 @@ vor_mir_da() {
 richter() {
     local s f
     if [ "$2" = - ] || [ -z "$2" ]; then RICHTER_MAX=2 sh "$D/richter.sh" radeon --kopf "$1" >>"$S/richter.out" 2>&1; return; fi
-    f=$(runde faelle "$R" radeon "$2" "$1" "$3" | tr '\n' ' ')
+    f=$(runde faelle "$R" radeon "$2" "$1" "$(liste_datei faelle "$3")" | tr '\n' ' ')
     echo "Richter der Runde ${2:0:8} -> ${1:0:8}: frisches ROT ${f:-keins}" >>"$S/richter.out"
     for s in $f; do sh "$D/richter.sh" radeon --fall "$s" "$2" "$1" >>"$S/richter.out" 2>&1; done
 }
@@ -257,11 +257,26 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs · MK = der gemess
     return 4
 }
 zahl() { echo "$1" | tr ',|' '\n\n' | grep -c .; }
+# DIE LISTE REIST ALS DATEI (Koordinator 19.11. 05:54; die OMEN fiel beim Live-Gang an „node: Argument list too long“ — 1 428 Stationen
+# ≈ 50 000 Zeichen als EIN Argument über der Windows-Grenze 32 767): liste_datei <name> <liste> schreibt sie nach $S/listen/<name>.txt
+# (printf ist eingebaut) und nennt „@<datei>“ — so heißt jedes Listen-Argument an runde.cjs. An punkte.cjs (--nur) reist nur ein Teil,
+# gekappt auf ≤ 8 000 Zeichen (runde.cjs kappe); der Rest fährt in den nächsten Fahrten derselben Runde.
+liste_datei() { mkdir -p "${S:?}/listen" && printf '%s\n' "$2" >"$S/listen/$1.txt" && echo "@$S/listen/$1.txt"; }
+# liste_rot <grund> — STILLES SCHEITERN IST ROT: Quelle > 0 und Liste 0 oder ein node der Listen-Kette mit Exit ≠ 0 — die Zeile der Runde
+# bleibt (nie `laeuft 0/0`, nie „durch“), EIN Alarm je Stunde in zug/runde.txt + zug/erledigt.txt, der Puls nennt es
+liste_rot() {
+    local m=$S/liste-rot.alarm
+    log "LISTE ROT: $1"
+    puls radeon "LISTE ROT: $1 — keine Fahrt"
+    [ -f "$m" ] && [ $(($(date +%s) - $(mzeit "$m"))) -lt 3600 ] && return 0
+    touch "$m"
+    runde alarm "$R" "radeon (radeon-dienst)" --geraet radeon --grund "LISTE ROT: $1" >>"$L"
+}
 # offen_am <liste> — die Stationen der Liste ohne Eintrag in messung/<RK8>-radeon.json am gepushten Stand (nach dem Rest des Vorläufers)
 offen_am() {
     (cd "$PM" && rest_behalten >/dev/null 2>&1)
     git -C "$PM" fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
-    runde offen "$PM" origin/punkte-maschine radeon "$RK" "$1"
+    runde offen "$PM" origin/punkte-maschine radeon "$RK" "$(liste_datei offen "$1")"
 }
 # takt — EIN Blick der Schleife (je 60 s): verwaiste Schlösser lösen, die Runde lesen, die eigene Liste am Kopf der Runde fahren oder
 # fortsetzen; ist sie durch: der Richter der Runde, „durch“, dann auf das andere Gerät warten (Alarm, nie still)
@@ -289,9 +304,9 @@ takt() {
         puls radeon "${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }Runde $RN am ${RK:0:8}: die Radeon ist durch — $(runde weiter "$R" "$(main_jetzt)") · $(node "$RUNDE_CJS" ablage "$BILD_ABLAGE" 2>/dev/null)"
         return 0
     fi
-    if [ "$RLISTE" != - ]; then
+    if [ "$RLISTE" != - ] && [ "$(zahl "$RLISTE")" != 0 ]; then
         U=${RLISTE%%|*} B=${RLISTE#*|}
-        RU=$(offen_am "$U") RB=$(offen_am "$B")
+        RU=$(offen_am "$U") && RB=$(offen_am "$B") || { liste_rot "runde.cjs offen am ${RK:0:8} scheiterte (Exit $?)"; return 0; }
         G=$(zahl "$RLISTE")
         n=$(($(zahl "$RU") + $(zahl "$RB")))
         BASIS=$((G - n))
@@ -322,15 +337,18 @@ takt() {
     if [ $f -ge 2 ]; then
         # DIE KARTE 2 IST DER ZÄHLER (15.11.): die Liste sind die Stationen der Tafel (vision/richter-tafel.json im Baum der Punkte-
         # Maschine, Zeilen „gleich“) — beim Eintritt in die Runde gebaut und EINGEFROREN (Feld liste), ungebucht vor gebucht grün
-        if [ "$RLISTE" = - ]; then
+        # auch eine Zeile mit Liste OHNE Station (`liste |`) baut sie neu — die Runde muss dafür nicht neu angelegt werden
+        if [ "$RLISTE" = - ] || [ "$(zahl "$RLISTE")" = 0 ]; then
             nur=$(karte2_nur | tr -d '\r')
             if [ -z "$nur" ]; then puls radeon "Runde $RN: der Baum der Punkte-Maschine trägt keine Tafel der Karte 2 — keine Liste"; f=0; return 0; fi
-            RLISTE=$(runde reihe "$PM/meisterkarte-quelle/punkte/messung" radeon "$nur")
-            [ -n "$RLISTE" ] || RLISTE="$nur|"
-            log "Runde $RN am ${RK:0:8}: die Liste (ungebucht | gebucht grün) $RLISTE"
-            runde stand "$R" radeon "$RK" laeuft --liste "$RLISTE" --gesamt "$(zahl "$RLISTE")" --erledigt 0 >>"$L"
+            RLISTE=$(runde reihe "$PM/meisterkarte-quelle/punkte/messung" radeon "$(liste_datei reihe "$nur")")
+            rc=$?
+            if [ $rc != 0 ] || [ "$(zahl "$RLISTE")" = 0 ]; then liste_rot "Runde $RN am ${RK:0:8}: Tafel $(zahl "$nur"), Reihe $(zahl "$RLISTE") (Exit $rc)"; f=0; return 0; fi
+            log "Runde $RN am ${RK:0:8}: die Liste (ungebucht | gebucht grün) $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen ($S/listen/runde.txt)"
+            runde stand "$R" radeon "$RK" laeuft --liste "$(liste_datei runde "$RLISTE")" --gesamt "$(zahl "$RLISTE")" --erledigt 0 >>"$L" ||
+                { liste_rot "runde.cjs stand schrieb die Liste nicht (Exit $?)"; f=0; return 0; }
             U=${RLISTE%%|*} B=${RLISTE#*|}
-            RU=$(offen_am "$U") RB=$(offen_am "$B")
+            RU=$(offen_am "$U") && RB=$(offen_am "$B") || { liste_rot "runde.cjs offen am ${RK:0:8} scheiterte (Exit $?)"; f=0; return 0; }
             G=$(zahl "$RLISTE")
             BASIS=$((G - $(zahl "$RU") - $(zahl "$RB")))
         fi
@@ -338,6 +356,8 @@ takt() {
         # ungebuchten, dann die gebucht grünen
         grp=$RU
         [ -n "$grp" ] || grp=$RB
+        # an punkte.cjs reist nur ein Teil ≤ 8 000 Zeichen (die Reihe bleibt: der Anfang der Gruppe zuerst, der Rest in der nächsten Fahrt)
+        [ -n "$grp" ] && { grp=$(runde kappe "$(liste_datei grp "$grp")" 8000) && [ -n "$grp" ] || { liste_rot "runde.cjs kappe gab keinen Teil"; f=0; return 0; }; }
         if [ -n "$grp" ]; then
             runde stand "$R" radeon "$RK" laeuft --erledigt "$BASIS" --gesamt "$G" >>"$L"
             miss "Runde-Liste" --nur "$grp"
@@ -462,6 +482,7 @@ STUMMEL
     warter) warter() { :; } ;;
     ziel) kopf() { main_jetzt; } ;; # die alte Regel: der Takt misst am jüngsten main
     bild) bilder_halten() { :; } ;; # die alte Regel: git add -A nimmt jedes Roh-Bild mit
+    liste-als-argument) liste_datei() { echo "$2"; } ;; # die alte Regel: die Liste reist als EIN Argument
     still-push) ungepusht_pruefen() { UNGEPUSHT_TEXT=; } ;; # die alte Regel: ein Push scheitert, niemand sagt es
     referenz-rechner) unset PUNKTE_REFERENZ_NAME ;; # die alte Regel: die Referenz heißt nach dem Rechner (geteilt)
     reihe) vor_mir_da() { return 1; } ;; # die alte Regel: nach HAND_ZEIT_S tritt die Fahrt wieder ein, gleich wer schon wartet
@@ -627,25 +648,44 @@ STUMMEL
     z2=$(git -C "$X/pm.git" ls-tree --name-only punkte-maschine meisterkarte-quelle/punkte/messung/ | sed "s|.*/||" | grep "^referenz-" | tr '\n' ' ')
     if [ "$z2" = "referenz-radeon.json " ]; then echo "OK q  Absenz: am Ursprung nur referenz-radeon.json — kein Pfad eines Rechners oder eines anderen Geräts"
     else echo "ROT q  Absenz: Referenzen am Ursprung „$z2“ (Soll referenz-radeon.json)"; fi
+    # t — DIE ECHTE TAFEL an der Radeon (Koordinator 05:58: derselbe Windows-Laptop, dieselbe Grenze 32 767): die Stationen der Tafel des
+    # koordination-Kopfs (vision/richter-tafel.json, sie wächst) laufen durch Reihe → runde.txt → offen → kappe bis zur ersten Fahrt;
+    # kein node-Aufruf trägt mehr als 30 000 Zeichen in argv, die Liste ≥ Quelle − gebucht, an punkte.cjs reist ein Teil ≤ 8 000 Zeichen
+    local quelle lz n1
+    neu neun
+    git -C "$D/../.." show HEAD:vision/richter-tafel.json 2>/dev/null | node -e 'let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{const t=JSON.parse(s);console.log([...new Set(t.zeilen.filter((e)=>e.richter==="gleich").map((e)=>e.station))].join("\n"))})' >"$STUB/alle.txt"
+    quelle=$(grep -c . "$STUB/alle.txt")
+    echo 1 >"$STUB/ms"
+    rm -f "$STUB/nur.log"
+    node() { local a n=0; for a; do n=$((n + ${#a})); done; [ $n -gt 30000 ] && echo "$n ${2:-$1}" >>"$X/argv-lang"; command node "$@"; }
+    takt
+    takt
+    unset -f node
+    rm -f "$STUB/ms"
+    lz=$(feld radeon | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)
+    n1=$(head -n 1 "$STUB/nur.log" 2>/dev/null)
+    if [ "$quelle" -ge 1000 ] && [ "$lz" -ge "$quelle" ] && [ -n "$n1" ] && [ "${#n1}" -le 8000 ] && [ ! -s "$X/argv-lang" ]; then
+        echo "OK t  die echte Tafel an der Radeon: Quelle $quelle → Liste $lz in zug/runde.txt, die erste Fahrt --nur mit ${#n1} Zeichen (≤ 8 000); kein node-Aufruf über 30 000 Zeichen"
+    else echo "ROT t  die echte Tafel: Quelle $quelle (Soll ≥ 1 000), Liste $lz (Soll ≥ Quelle), erste Fahrt ${#n1} Zeichen (Soll 1–8 000), argv über 30 000: $(head -c 120 "$X/argv-lang" 2>/dev/null | tr '\n' ' ')"; fi
     command rm -rf "$X"
 }
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
-    for m in echt von-vorn rest warter pid reihe ziel bild still-push referenz-rechner; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
+    for m in echt von-vorn rest warter pid reihe ziel bild still-push referenz-rechner liste-als-argument; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 11 ] || rot=1
-    for m in von-vorn rest warter pid reihe ziel bild still-push referenz-rechner; do
+    [ "$(echo "$echt" | grep -c "^OK")" = 12 ] || rot=1
+    for m in von-vorn rest warter pid reihe ziel bild still-push referenz-rechner liste-als-argument; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 11 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 12 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }

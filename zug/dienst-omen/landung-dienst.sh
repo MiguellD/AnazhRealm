@@ -91,17 +91,33 @@ liste_quelle() { # <kopf> → die Stationen der Runde (vor /band und Reihe); set
     QUELLE=gtx-nutzen
     (cd "$PM/meisterkarte-quelle/punkte" && timeout 900 node punkte.cjs gtx-nutzen --kopf "$1" 2>>"$L" | sed -n 's/^nur=//p' | tr -d '\r')
 }
-ohne_band() { node "$ST/ohne-band.cjs" "$1" 2>>"$L" | tr -d '\r'; }
+# DIE LISTE REIST ALS DATEI (Koordinator 19.11. 05:54; Fund beim Live-Gang: „landung-dienst.sh: line 94: node: Argument list too long“ —
+# 1 428 Stationen ≈ 50 000 Zeichen als EIN Argument über der Windows-Grenze 32 767; die Kette lief leer weiter bis `laeuft 0/0 … liste |`).
+# liste_datei <name> <liste> schreibt die Liste in zustand/listen/<name>.txt (printf ist eingebaut: kein exec) und nennt „@<datei>“ —
+# so heißt jedes Listen-Argument an node (ohne-band.cjs, runde.cjs offen · reihe · teile · stand --liste · faelle) und an kandidat.sh.
+# Unbegrenzt lang reist eine Liste nie in argv oder Umgebung; ein Teil (runde.cjs teile: ≤ 1 740 s Deckel und ≤ 8 000 Zeichen) darf es.
+liste_datei() { mkdir -p "${S:?}/listen" && printf '%s\n' "$2" >"$S/listen/$1.txt" && echo "@$S/listen/$1.txt"; }
+ohne_band() { node "$ST/ohne-band.cjs" "$(liste_datei band "$1")" 2>>"$L"; }
 pm_stand() { node "$N/pm-stand.cjs" "$PM" >>"$L" 2>&1; } # der Stand von punkte-maschine; eine jüngere Messung im Baum überlebt
 # offen_am <kopf> <liste> → was an diesem Kopf noch keinen Eintrag trägt, in der Mess-Datei des BAUMS (pm-stand.cjs: eine jüngere Messung
 # im Baum überlebt) — so zählt nach einem Tod mitten in einer Sitzung, was sie schon fertig maß; es reist mit dem nächsten Push
-offen_am() { runde offen "$PM" - "$GERAET" "$1" "$2"; }
+offen_am() { runde offen "$PM" - "$GERAET" "$1" "$(liste_datei offen "$2")"; }
 # DIE TEILE DER RUNDE (Koordinator 19.11. 03:30): Stationen EINER Linse in EINER Sitzung. eichtafel_lesen schreibt die Lauf-Tafel der
 # Maschine (punkte.cjs eichtafel: je Lauf seine Stationen und sein Deckel), teile_von packt den Rest der Liste in ihrer Reihe zu Sitzungen
 # je Σ Deckel ≤ TEIL_BUDGET_S (FAHRT_MAX_S 1 800 − Boot 60 = 1 740 s, die Teil-Größe der Maschine selbst; runde.cjs teile)
 TEIL_BUDGET_S=${TEIL_BUDGET_S:-1740}
 eichtafel_lesen() { (cd "$PM/meisterkarte-quelle/punkte" && timeout 900 node punkte.cjs eichtafel --geraet "$GERAET" >"$EICHTAFEL" 2>>"$L"); }
-teile_von() { runde teile "$EICHTAFEL" "$1" "$TEIL_BUDGET_S"; }
+teile_von() { runde teile "$EICHTAFEL" "$(liste_datei teile "$1")" "$TEIL_BUDGET_S"; }
+# liste_rot <grund> — STILLES SCHEITERN IST ROT (19.11.): Quelle > 0 und Liste 0, oder ein node der Listen-Kette mit Exit ≠ 0 — die Zeile
+# der Runde bleibt unberührt (nie `laeuft 0/0`, nie „durch“), EIN Alarm je Stunde in zug/runde.txt + zug/erledigt.txt, der Puls nennt es
+liste_rot() {
+    local m=$S/liste-rot.alarm
+    log "LISTE ROT: $1"
+    puls landung "LISTE ROT: $1 — keine Fahrt"
+    [ -f "$m" ] && [ $(($(date +%s) - $(mzeit "$m"))) -lt 3600 ] && return 0
+    touch "$m"
+    runde alarm "$RUNDE_REPO" "$GERAET (landung-dienst)" --geraet "$GERAET" --grund "LISTE ROT: $1" >>"$L"
+}
 # liste_fahren <K> <NAME> <REST> <r> <BASIS> <GESAMT> — EINE Fahrt über kandidat.sh, je Station eine Sitzung, je gepushte Station der
 # Stand in zug/runde.txt; 0 durch · 2 GEWICHEN (ein Lauf wartete am Schloss; BEHALTEN = gepushte Stationen) · 3 GEHALTEN (landung.halt).
 # Eine Landung ändert hier nichts: die Liste fährt am Kopf der Runde zu Ende (DAS GESETZ DER RUNDE).
@@ -112,8 +128,9 @@ liste_fahren() {
     WEICHT_VOR= BEHALTEN=0 PROG_PID= ALARM_PID=
     l0=$(wc -l <"$KETTE_LOG" 2>/dev/null || echo 0)
     TEILE=$(teile_von "$REST")
+    [ -n "$TEILE" ] || { liste_rot "runde.cjs teile gab für $r Stationen keine Sitzung (Exit $?)"; return 4; }
     log "Runde $RN ${K:0:8}: $r Stationen in $(echo "$TEILE" | tr ';' '\n' | grep -c .) Sitzungen (je Linse EINE, Σ Deckel ≤ $TEIL_BUDGET_S s)"
-    KOPF=$K SPRUNG=$GRENZE RUNDE_CJS=$RUNDE_CJS bash "$KANDIDAT" "$NAME" x "$TEILE" >>"$L" 2>&1 &
+    KOPF=$K SPRUNG=$GRENZE RUNDE_CJS=$RUNDE_CJS bash "$KANDIDAT" "$NAME" x "$(liste_datei "kandidat-$NAME" "$TEILE")" >>"$L" 2>&1 &
     kp=$!
     t=0
     while kill -0 $kp 2>/dev/null; do
@@ -165,7 +182,7 @@ richte_runde() {
         log "RICHTER Runde $RN: kein voriger Mess-Kopf — richter.sh --kopf ${K:0:8} gegen die letzte Buchung"
         bash "$RICHTER" "$GERAET" --kopf "$K" >>"$L" 2>&1 &
     else
-        f=$(runde faelle "$RUNDE_REPO" "$GERAET" "$V" "$K" "$3" | tr '\n' ' ')
+        f=$(runde faelle "$RUNDE_REPO" "$GERAET" "$V" "$K" "$(liste_datei faelle "$3")" | tr '\n' ' ')
         log "RICHTER Runde $RN: frisches ROT ${V:0:8} -> ${K:0:8}: ${f:-keins}"
         [ -n "$f" ] || return 0
         (for s in $f; do bash "$RICHTER" "$GERAET" --fall "$s" "$V" "$K"; done) >>"$L" 2>&1 &
@@ -230,16 +247,28 @@ runde_takt() {
         return
     fi
     pm_stand
-    if [ "$RLISTE" = - ]; then # der Eintritt in die Runde: die Liste wird gebaut und EINGEFROREN
-        a=$(liste_quelle "$RK")
+    # der Eintritt in die Runde: die Liste wird gebaut und EINGEFROREN — auch, wenn die Zeile eine Liste OHNE Station trägt (`liste |`,
+    # der Live-Gang 19.11. 05:52): der erste Takt nach dem Schnitt baut sie selbst neu, die Runde muss nicht neu angelegt werden
+    if [ "$RLISTE" = - ] || [ "$(zahl "$RLISTE")" = 0 ]; then
+        local ra rb rr
+        mkdir -p "${S:?}/listen"
+        liste_quelle "$RK" >"$S/listen/quelle.txt" # ohne Unter-Shell: QUELLE bleibt gesetzt
+        ra=$?
+        a=$(<"$S/listen/quelle.txt")
         B=$(ohne_band "$a")
-        RLISTE=$(runde reihe "$MESSUNG_DIR" "$GERAET" "$B")
-        [ -n "$RLISTE" ] || RLISTE="$B|"
-        log "Runde $RN am ${RK:0:8} (Abstand zu main $(abstand "$RK")): $QUELLE $(zahl "$a"), ohne /band $(zahl "$B") — die Liste (ungebucht | gebucht grün): $RLISTE"
-        runde stand "$RUNDE_REPO" "$GERAET" "$RK" laeuft --liste "$RLISTE" --gesamt "$(zahl "$RLISTE")" --erledigt 0 >>"$L"
+        rb=$?
+        RLISTE=$(runde reihe "$MESSUNG_DIR" "$GERAET" "$(liste_datei reihe "$B")")
+        rr=$?
+        if [ $ra != 0 ] || [ $rb != 0 ] || [ $rr != 0 ] || [ "$(zahl "$RLISTE")" = 0 ]; then
+            liste_rot "Runde $RN am ${RK:0:8}: Quelle ${QUELLE:-?} $(zahl "$a") (Exit $ra), ohne /band $(zahl "$B") (Exit $rb), Reihe $(zahl "$RLISTE") (Exit $rr)"
+            return
+        fi
+        log "Runde $RN am ${RK:0:8} (Abstand zu main $(abstand "$RK")): $QUELLE $(zahl "$a"), ohne /band $(zahl "$B") — die Liste (ungebucht | gebucht grün): $(zahl "${RLISTE%%|*}") | $(zahl "${RLISTE#*|}") Stationen (zustand/listen/runde.txt)"
+        runde stand "$RUNDE_REPO" "$GERAET" "$RK" laeuft --liste "$(liste_datei runde "$RLISTE")" --gesamt "$(zahl "$RLISTE")" --erledigt 0 >>"$L" ||
+            { liste_rot "runde.cjs stand schrieb die Liste nicht (Exit $?)"; return; }
     fi
     GESAMT=$(zahl "$RLISTE")
-    REST=$(offen_am "$RK" "$RLISTE")
+    REST=$(offen_am "$RK" "$RLISTE") || { liste_rot "runde.cjs offen am ${RK:0:8} scheiterte (Exit $?)"; return; }
     r=$(zahl "$REST")
     if [ -n "$REST" ]; then
         NAME=gtx-${RK:0:8}
@@ -254,10 +283,11 @@ runde_takt() {
                return ;;
             3) runde stand "$RUNDE_REPO" "$GERAET" "$RK" halt --erledigt $((GESAMT - r + BEHALTEN)) >>"$L"
                return ;;
+            4) return ;; # LISTE ROT (liste_rot hat es beim Namen gemeldet)
         esac
         pm_stand
-        REST=$(offen_am "$RK" "$RLISTE")
-        [ -n "$REST" ] && log "Runde $RN am ${RK:0:8}: die Liste ist gefahren, ohne Eintrag blieben $(zahl "$REST"): $REST (kandidat.sh OFFEN nach 4 Versuchen)"
+        REST=$(offen_am "$RK" "$RLISTE") || { liste_rot "runde.cjs offen nach der Fahrt am ${RK:0:8} scheiterte (Exit $?)"; return; }
+        [ -n "$REST" ] && log "Runde $RN am ${RK:0:8}: die Liste ist gefahren, ohne Eintrag blieben $(zahl "$REST"): ${REST:0:400} (kandidat.sh OFFEN nach 4 Versuchen)"
     fi
     summe "$RK" "gtx-${RK:0:8}" "${RLISTE/|/,}"
     richte_runde "$RK" "$RV" "$RLISTE"
@@ -280,6 +310,9 @@ runde_takt() {
 # g  die Baum-Sperre (14.11.) · h  die Karte 2 (karte2_nur) · i  halt() lässt die Flagge liegen
 # k  je Linse EINE Sitzung (runde.cjs teile), nie je Station eine · l  BEHALTEN je Station: das echte kandidat.sh, eine Sitzung fällt nach
 #    2 von 4 — die 2 sind gepusht, nur der Rest fährt neu
+# n  die ECHTE Tafel des koordination-Kopfs durch die ganze Kette (kein argv über 30 000 Zeichen, Liste ≥ Quelle − gebucht) ·
+#    o  bricht die Listen-Kette, ist es EIN Alarm „LISTE ROT“, die Zeile bleibt · p  „laeuft 0/0 … liste |“ baut sich im ersten Takt neu,
+#    mit Notiz in zug/runde.txt. Mutanten dazu: liste-als-argument · leere-liste-laeuft
 # j  die Platte unter PLATTE_UNTEN: EIN Alarm mit GB, Station und Kopf (Koordinator 19.11. 02:35), nicht doppelt
 # Mutanten (je eine Regel alt): sprung (der Kopf ist der jüngste main, wie bis 19.11.) · von-vorn (Fortsetzung blind: die ganze Liste) ·
 #    volle-liste (der Richter nimmt jede Station der Liste) · tafel-reihe (die Reihe der Tafel) · still (kein Alarm) · blind (kein Warter) ·
@@ -310,11 +343,13 @@ st_lauf() { # $1 = Mutante (leer = echt)
 # kandidat.sh-Stummel: $1 Name, $3 die Teile („;“), KOPF; die Grenz-Flagge vor jeder SITZUNG (wie kandidat.sh), je Station 0,4 s; was eine
 # Sitzung fertig misst, steht sofort im „Baum“ (gepusht, je Station), der Push-Zeile je Sitzung mit der Zahl ihrer Stationen
 X=$(dirname "$0"); i=0; t=0
-IFS=';' read -ra TT <<<"$3"
+LL=$3; [ "${LL#@}" != "$LL" ] && LL=$(<"${LL#@}") # die Liste reist als Datei, wie an kandidat.sh
+IFS=';' read -ra TT <<<"$LL"
 for T in "${TT[@]}"; do
     [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date +%T) $1 SPRUNG nach $t Teilen" >>"$X/kette.log"; break; }
     t=$((t + 1)); n=0
     echo "$(date +%T) ${KOPF:0:8} $1-$t Versuch 1 START ($T)" >>"$X/kette.log"
+    [ -f "$X/nur_erste" ] && { touch "$X/s/landung.halt"; echo "$(date +%T) $1-$t GEPUSHT (Versuch 1) 0 Station(en)" >>"$X/kette.log"; break; } # der große Fall: bis zur ersten Sitzung
     for s in ${T//,/ }; do
         i=$((i + 1))
         [ -f "$X/tod_in" ] && [ "$(cat "$X/tod_in")" = "$i" ] && { rm -f "$X/tod_in"; sleep 2; kill -9 $PPID; exit 9; }
@@ -331,6 +366,10 @@ STUMMEL
     EICHTAFEL=$X/eich.txt TEIL_BUDGET_S=250
     printf '  s1 · Deckel 100 s\n  s2 · Deckel 100 s\n  s3 · Deckel 100 s\n  s4 · Deckel 100 s\n  s5 · Deckel 100 s\n  s6 · Deckel 100 s\n  s7+s8 · Deckel 100 s\n' >"$EICHTAFEL"
     eichtafel_lesen() { :; }
+    # die echten Glieder der Listen-Kette bleiben für den großen Fall (n) erreichbar, bevor die Stummel sie überdecken
+    eval "$(declare -f liste_quelle | sed '1s/liste_quelle/liste_quelle_echt/')"
+    eval "$(declare -f ohne_band | sed '1s/ohne_band/ohne_band_echt/')"
+    eval "$(declare -f offen_am | sed '1s/offen_am/offen_am_echt/')"
     puls() { echo "PULS $*" >>"$L"; }
     sag() { echo "SAG $*" >>"$L"; }
     warter() { cat "$X/warter" 2>/dev/null; }
@@ -356,6 +395,8 @@ STUMMEL
         von-vorn) offen_am() { echo "$2" | tr '|' ',' | sed 's/,$//'; } ;;
         bild-omen) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^  node "$RUNDE_CJS" bilder .*$|  :|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: kein Bild wird geprüft
         behalt-gruppe) KANDIDAT_ECHT=$X/kandidat-alt.sh; sed 's|^    rest=$(node "$RUNDE_CJS" offen "$PM" - gtx "$K" "$R" 2>>$L)$|    rest=$R|' "$D/ort/n0611/kandidat.sh" >"$KANDIDAT_ECHT" ;; # die alte Regel: eine gefallene Sitzung verliert alles
+        liste-als-argument) liste_datei() { echo "$2"; } ;; # die alte Regel: die Liste reist als EIN Argument
+        leere-liste-laeuft) liste_rot() { :; } ;; # die alte Regel: eine leere Liste ist still
         je-station) teile_von() { echo "$1" | tr ',' ';'; } ;; # die alte Regel: je Station eine eigene Sitzung
         volle-liste) richte_runde() { local s; for s in $(echo "$3" | tr ',|' '  '); do bash "$RICHTER" "$GERAET" --fall "$s" "$2" "$1" >>"$L" 2>&1; done; } ;;
         tafel-reihe) runde() { if [ "$1" = reihe ]; then echo "$4|"; else node "$RUNDE_CJS" "$@" 2>>"$L"; fi; } ;;
@@ -549,9 +590,68 @@ ATTRAPPE
     j=$?
     if [ $j = 3 ] && [ -f "$S/landung.halt" ]; then echo "OK i  halt(): Exit 3, landung.halt liegt weiter"
     else echo "ROT i  halt(): Exit $j (Soll 3), Flagge $([ -f "$S/landung.halt" ] && echo liegt || echo FORT)"; fi
+    # n — DIE ECHTE TAFEL (Koordinator 19.11. 05:54/05:58): die Tafel des koordination-Kopfs (vision/richter-tafel.json — sie wächst, der
+    # Fall wächst mit) läuft durch die ganze Kette bis zur ersten Sitzung: Quelle → ohne /band → Reihe → runde.txt → offen → Teile →
+    # kandidat. Kein node-Aufruf trägt mehr als 30 000 Zeichen in argv (die Windows-Grenze 32 767); die Liste ≥ Quelle − gebucht.
+    local tf=$X/pmn/vision/richter-tafel.json quelle lz nz f4 f5
+    mkdir -p "$X/pmn/vision" "$X/pmn/meisterkarte-quelle/punkte/messung" "$X/messung-n"
+    git -C "$D/../.." show HEAD:vision/richter-tafel.json >"$tf" 2>/dev/null
+    PM=$X/pmn MESSUNG_DIR=$X/messung-n ST=$D/ort/n0611/stufe
+    quelle=$(karte2_nur | tr ',' '\n' | grep -c .)
+    karte2_nur | tr ',' '\n' | grep . | sed 's/^/  /; s/$/ · Deckel 1 s/' >"$EICHTAFEL" # jede Station ein Lauf von 1 s: die Zeichen-Grenze schneidet
+    node() { local a n=0; for a; do n=$((n + ${#a})); done; [ $n -gt 30000 ] && echo "$n ${2:-$1}" >>"$X/argv-lang"; command node "$@"; }
+    liste_quelle() { liste_quelle_echt "$@"; }
+    ohne_band() { ohne_band_echt "$@"; }
+    offen_am() { offen_am_echt "$@"; }
+    rm -f "$S/landung.halt" "$S/liste-rot.alarm"
+    touch "$X/nur_erste"
+    runde durch "$RUNDE_REPO" radeon "$k2b" "$k1" >/dev/null # die Runde 5 am k1: die gtx-Zeile beginnt leer
+    echo "$k1" >"$X/main"
+    j=$(wc -l <"$KETTE_LOG")
+    runde_takt
+    e1=$(feld gtx)
+    lz=$(echo "$e1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)
+    nz=$(tail -n +$((j + 1)) "$KETTE_LOG" | grep -c " Versuch 1 START (.*,.*)")
+    rm -f "$X/nur_erste" "$S/landung.halt"
+    unset -f node
+    if [ "$quelle" -ge 1000 ] && [ "$lz" -ge "$quelle" ] && [ "$nz" -ge 1 ] && [ ! -s "$X/argv-lang" ] && echo "$e1" | grep -q "^gtx halt "; then
+        echo "OK n  die echte Tafel: Quelle $quelle Stationen (gebucht 0) → Liste $lz in zug/runde.txt, die erste Sitzung fuhr; kein node-Aufruf über 30 000 Zeichen"
+    else echo "ROT n  die echte Tafel: Quelle $quelle (Soll ≥ 1 000), Liste $lz (Soll ≥ Quelle), erste Sitzung $nz (Soll ≥ 1), argv über 30 000: $(head -c 120 "$X/argv-lang" 2>/dev/null | tr '\n' ' '), Zeile „$(echo "$e1" | cut -c1-30)“"; fi
+    # o — STILLES SCHEITERN IST ROT: die Kette bricht (ohne /band Exit 1, nichts) → EIN Alarm „LISTE ROT“, die Zeile bleibt (nie laeuft 0/0)
+    runde durch "$RUNDE_REPO" gtx "$k1" "$k2" >/dev/null 2>&1
+    runde durch "$RUNDE_REPO" radeon "$k1" "$k2" >/dev/null # Runde 6 am k2
+    echo "$k2" >"$X/main"
+    ohne_band() { return 1; }
+    runde_takt
+    f4=$(koord zug/erledigt.txt | grep -c "ALARM gtx: LISTE ROT")
+    e1=$(feld gtx)
+    if [ "$f4" -ge 1 ] && echo "$e1" | grep -q "^gtx offen 0/0 .* liste -$"; then echo "OK o  Listen-Kette bricht: EIN Alarm „LISTE ROT …“ beim Namen, die Zeile bleibt offen (kein laeuft 0/0, kein durch)"
+    else echo "ROT o  Listen-Kette bricht: Alarm-Zeilen $f4 (Soll ≥ 1), Zeile „$(echo "$e1" | cut -c1-60)“ (Soll offen 0/0 … liste -)"; fi
+    # p — DER LISTEN-BRUCH VON 05:53: die gtx-Zeile steht „laeuft 0/0 … liste |“ — der erste Takt baut die Liste selbst neu, die Runde
+    # bleibt, und zug/runde.txt trägt eine Notiz, die es sagt (die leere Fahrt gilt nicht als gemessen)
+    liste_quelle() { QUELLE=Stummel; echo s1,s2,s3,s4,s5,s6,s7,s8; }
+    ohne_band() { echo "$1"; }
+    offen_am() { echo "$2" | tr ',|' '\n\n' | grep . | while read -r s; do grep -qxF "$1:$s" "$X/gepusht" 2>/dev/null || echo "$s"; done | paste -sd, -; }
+    git -C "$X/klon" fetch -q origin +refs/heads/koordination:refs/t/k
+    koord zug/runde.txt | sed "s/^gtx .*/gtx laeuft 0\/0 station - fortschritt 2026-11-19T04:53:00Z alarm - liste |/" >"$X/rt.txt"
+    local bb bl tt cc
+    bb=$(git -C "$X/klon" rev-parse refs/t/k) bl=$(git -C "$X/klon" hash-object -w --no-filters "$X/rt.txt")
+    rm -f "$X/idx"
+    GIT_INDEX_FILE=$X/idx git -C "$X/klon" read-tree "$bb"
+    GIT_INDEX_FILE=$X/idx git -C "$X/klon" update-index --cacheinfo "100644,$bl,zug/runde.txt"
+    tt=$(GIT_INDEX_FILE=$X/idx git -C "$X/klon" write-tree)
+    cc=$(git -C "$X/klon" $A0 commit-tree "$tt" -p "$bb" -m bruch) && git -C "$X/klon" push -q origin "$cc:refs/heads/koordination"
+    touch "$X/nur_erste"
+    runde_takt
+    rm -f "$X/nur_erste" "$S/landung.halt"
+    e1=$(feld gtx)
+    f5=$(koord zug/runde.txt | grep -c "^notiz .* gtx neu gebaut nach Listen-Bruch: vorher laeuft 0/0 liste |")
+    if [ "$(echo "$e1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)" = 8 ] && [ "$f5" = 1 ] && koord zug/runde.txt | grep -q "^runde 6 "; then
+        echo "OK p  Listen-Bruch „laeuft 0/0 … liste |“: der erste Takt baute die Liste neu (8 Stationen), dieselbe Runde 6, die Notiz steht in zug/runde.txt"
+    else echo "ROT p  Listen-Bruch: Zeile „$(echo "$e1" | cut -c1-40)“ (Soll Liste mit 8), Notiz $f5 (Soll 1), Runde $(koord zug/runde.txt | grep -c '^runde 6 ') (Soll 6)"; fi
     command rm -rf "$X"
 }
-MUTANTEN=${ST_MUTANTEN-"je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
+MUTANTEN=${ST_MUTANTEN-"liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
 selbsttest() {
     local O m r rot=0 mr=0 mz=0
     O=$(mktemp -d)
@@ -559,14 +659,14 @@ selbsttest() {
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 14 ] || rot=1
+    [ "$(grep -c "^OK" "$O/echt")" = 17 ] || rot=1
     for m in $MUTANTEN; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 14 Fälle grün (a–m), $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 17 Fälle grün (a–p), $mr/$mz Mutanten ROT"; return 0; fi
     echo "landung-dienst SELBSTTEST ROT: $(grep -c "^OK" "$O/echt" 2>/dev/null) Fälle OK, $mr/$mz Mutanten ROT"
     return 1
 }

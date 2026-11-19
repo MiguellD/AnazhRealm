@@ -45,7 +45,11 @@ const k8 = (s) => String(s || "-").slice(0, 8);
 const schlaf = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const gitIn = (repo) => (a, o = {}) => cp.execFileSync("git", a, { cwd: repo, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], maxBuffer: 256e6, ...o }).trim();
 const zeigIn = (repo) => (ref, pfad) => { try { return cp.execFileSync("git", ["show", ref + ":" + pfad], { cwd: repo, stdio: ["ignore", "pipe", "ignore"], maxBuffer: 256e6 }).toString("utf8"); } catch { return null; } };
-const liste = (s) => String(s || "").split(",").map((x) => x.trim()).filter((x) => x && x !== "-");
+// DIE LISTE REIST ALS DATEI (Koordinator 19.11. 05:54; Fund beim Live-Gang: die gefaltete Tafel trägt 1 428 Stationen, als EIN Argument
+// ≈ 50 000 Zeichen über der Windows-Grenze 32 767 — „node: Argument list too long“, die Runde stand `laeuft 0/0 … liste |`). Jedes
+// Listen-Argument darf „@<datei>“ sein (Komma, „|“ oder eine Station je Zeile); der Dienst reicht seine Listen nur noch so.
+const listenText = (s) => (String(s || "").startsWith("@") ? fs.readFileSync(String(s).slice(1), "utf8") : String(s || ""));
+const liste = (s) => listenText(s).split(/[,|\s]+/).map((x) => x.trim()).filter((x) => x && x !== "-");
 
 // ── DIE DATEI ──
 const KOPF = [
@@ -55,13 +59,15 @@ const KOPF = [
     "# Push — lehnt er ab, von vorn; nie ein Merge). Von Hand nichts aendern. Je Runde und je Geraet EINE Zeile:",
     "# runde <n> kopf <sha40> start <iso> vorher <sha40|->",
     "# <geraet> <offen|laeuft|halt|weicht|durch> <erledigt>/<gesamt> station <id|-> fortschritt <iso> alarm <iso|-> liste <ungebucht,..>|<gebucht gruen,..>",
+    "# notiz <iso> <text> — was die Runde wissen muss, z. B. eine Zeile, die nach einem Listen-Bruch neu gebaut wurde (fällt mit der Runde)",
 ];
 function lies(text) {
-    const r = { runde: null, g: {} };
+    const r = { runde: null, g: {}, notizen: [] };
     for (const l of String(text || "").split(/\r?\n/)) {
         if (!l.trim() || l.startsWith("#")) continue;
         const w = l.trim().split(/\s+/);
-        if (w[0] === "runde") r.runde = { n: Number(w[1]), kopf: w[3], start: w[5], vorher: w[7] || "-" };
+        if (w[0] === "notiz") r.notizen.push(l.trim());
+        else if (w[0] === "runde") r.runde = { n: Number(w[1]), kopf: w[3], start: w[5], vorher: w[7] || "-" };
         else if (GERAETE.includes(w[0])) {
             const [e, s] = String(w[2] || "0/0").split("/");
             r.g[w[0]] = { zustand: w[1], erledigt: Number(e) || 0, gesamt: Number(s) || 0, station: w[4] || "-", fortschritt: w[6] || "-", alarm: w[8] || "-", liste: w[10] || "-" };
@@ -78,6 +84,7 @@ function text(r) {
             const e = r.g[g] || leer(r.runde.start);
             z.push([g, e.zustand, e.erledigt + "/" + e.gesamt, "station", e.station || "-", "fortschritt", e.fortschritt || "-", "alarm", e.alarm || "-", "liste", e.liste || "-"].join(" "));
         }
+        z.push(...(r.notizen || []));
     }
     return z.join("\n") + "\n";
 }
@@ -128,6 +135,7 @@ function oeffne(r, main) { // die naechste Runde am main-Kopf des Moments
     const z = iso(jetzt());
     r.runde = { n: (r.runde ? r.runde.n : 0) + 1, kopf: main, start: z, vorher: r.runde ? r.runde.kopf : "-" };
     for (const g of GERAETE) r.g[g] = leer(z);
+    r.notizen = [];
 }
 
 // ── DIE MESS-DATEIEN ── ein Urteil je Station: GRUEN, ROT oder keins (ungemessen; ein juengeres UNGEMESSEN schlaegt den aelteren Lauf)
@@ -156,6 +164,8 @@ if (was === "lies") {
 } else if (was === "stand") {
     const [repo, g, kopf, zustand] = arg;
     let anders = false;
+    // STILLES SCHEITERN (19.11. 05:54, `laeuft 0/0 … liste |`): eine Liste ohne Station wird nie geschrieben — ROT beim Namen, Exit 5
+    if (opt("liste") !== null && !liste(opt("liste")).length) { console.log("LEERE LISTE — die Zeile " + g + " bleibt, wie sie ist"); process.exit(5); }
     const { r } = aendere(repo, "Runde " + g + ": " + zustand + (opt("erledigt") ? " " + opt("erledigt") + "/" + (opt("gesamt") || "?") : "") + " am " + k8(kopf), (r) => {
         if (!r.runde || r.runde.kopf !== kopf) { anders = true; return false; }
         const e = r.g[g] || leer(r.runde.start), z = iso(jetzt());
@@ -165,7 +175,13 @@ if (was === "lies") {
         if (opt("erledigt") !== null) e.erledigt = Number(opt("erledigt"));
         if (opt("gesamt") !== null) e.gesamt = Number(opt("gesamt"));
         if (opt("station") !== null) e.station = opt("station") || "-";
-        if (opt("liste") !== null) e.liste = opt("liste") || "-";
+        if (opt("liste") !== null) {
+            // DER LISTEN-BRUCH (19.11. 05:53, `laeuft 0/0 … liste |`): trug die Zeile eine Liste OHNE Station, während sie schon lief, ist
+            // die leere Fahrt keine Messung — die Runde sagt es selbst in einer Notiz, sobald die Zeile ihre Liste neu bekommt
+            if (vorZ !== "offen" && e.liste !== "-" && !liste(e.liste).length)
+                (r.notizen = r.notizen || []).push("notiz " + z + " " + g + " neu gebaut nach Listen-Bruch: vorher " + vorZ + " " + vor + "/" + e.gesamt + " liste " + e.liste + " seit " + e.fortschritt + " — die leere Fahrt gilt nicht als gemessen");
+            e.liste = listenText(opt("liste")).replace(/\s+/g, "") || "-";
+        }
         // FORTSCHRITT: eine Station mehr, der Beginn der Liste, das Ende — nie das blosse Halten oder Weichen
         if (e.erledigt > vor || (zustand === "laeuft" && vorZ === "offen") || zustand === "durch") { e.fortschritt = z; e.alarm = "-"; }
         r.g[g] = e;
@@ -256,6 +272,14 @@ if (was === "lies") {
     const u = ord(ungebucht), b = ord(gebucht);
     process.stderr.write("Reihe " + g + ": ungebucht " + u.length + " (" + u.map((id) => id + (paar[id] ? " Paar " + paar[id].kopf + " ROT" : " ohne Paar")).join(" · ") + ") | gebucht gruen " + b.length + " (" + b.map((id) => id + " " + paar[id].kopf).join(" · ") + ")\n");
     console.log((u.join(",") || "") + "|" + (b.join(",") || ""));
+} else if (was === "kappe") {
+    // kappe <liste|@datei> <zeichen> → der Anfang der Liste, Komma-getrennt höchstens <zeichen> Zeichen (mindestens eine Station): der Teil,
+    // der als `--nur` an punkte.cjs reisen darf (radeon-dienst.sh); der Rest fährt in der nächsten Fahrt derselben Runde
+    const [l, zm] = arg;
+    const ids = liste(l), max = Number(zm || 8000), aus = [];
+    let n = 0;
+    for (const id of ids) { if (aus.length && n + id.length + 1 > max) break; aus.push(id); n += id.length + 1; }
+    console.log(aus.join(","));
 } else if (was === "teile") {
     // DIE WURZEL DER FAHRT-ZEIT (Koordinator 19.11. 03:30): Stationen EINER Linse fahren in EINER Sitzung. Bis hier fuhr die OMEN je Station
     // eine eigene Sitzung (kandidat.sh EINZELN=1): am b7ed8419 42 Stationen in 247 min START→GEPUSHT, im Mittel 5,9 min je Station —
@@ -265,8 +289,11 @@ if (was === "lies") {
     // Boot = 1 740 s, die Teil-Größe der Maschine selbst); ein Lauf wird nie geteilt; ein Lauf über dem Budget ist ein eigener Teil.
     // Eine Station ohne Zeile in der Tafel fährt allein (ihr Fehler trifft nur sie). Aufruf: teile <eichtafel-datei> <liste> [budget]
     // → "a,b;c;d,e" (";" trennt Teile, Reihe der Liste); stderr: Teile, Läufe, Σ Deckel.
-    const [datei, l, b] = arg;
+    const [datei, l, b, zm] = arg;
     const budget = Number(b || 1740);
+    // je Teil höchstens <zeichen> (Vorgabe 8 000) Zeichen Stationsnamen: der Teil reist als `--nur a,b,c` (punkte.cjs) und NUR (Umgebung)
+    // — er bleibt so immer weit unter der Windows-Grenze, gleich wie viele kurze Läufe in das Deckel-Budget passen
+    const zeichen = Number(zm || 8000);
     const lauf = {};
     for (const z of String(fs.existsSync(datei) ? fs.readFileSync(datei, "utf8") : "").split(/\r?\n/)) {
         const m = z.match(/^\s+(\S+) · Deckel (\d+) s/);
@@ -282,7 +309,7 @@ if (was === "lies") {
         if (gesehen.has(k)) continue;
         gesehen.add(k);
         const glieder = L.ids.filter((x) => drin.has(x));
-        if (cur.length && sum + L.d > budget) { teile.push(cur); cur = []; sum = 0; }
+        if (cur.length && (sum + L.d > budget || cur.concat(glieder).join(",").length > zeichen)) { teile.push(cur); cur = []; sum = 0; }
         cur.push(...glieder);
         sum += L.d; laeufe++; summe += L.d;
     }
@@ -402,17 +429,22 @@ if (was === "lies") {
     const lauf = (d) => { let e = []; try { e = fs.readdirSync(path.join(baum, d), { withFileTypes: true }); } catch { return; } for (const x of e) { const rel = d + "/" + x.name; if (x.isDirectory()) lauf(rel); else liste.push(rel); } };
     lauf(MDIR);
     lauf("vision/richter");
-    const blobAm = (rel) => { try { return git(["rev-parse", "-q", "--verify", ref + ":" + rel]); } catch { return ""; } };
+    // DIE KOSTEN (Koordinator 05:58: an der Radeon brauchte `ungepusht` 72 s — je Datei ein git-Prozess): EIN `ls-tree` des Ursprungs und
+    // EIN `hash-object --stdin-paths` für alle eigenen Pfade; die Historie (Commits vor dem Ursprung) zählt nicht mehr — der Vergleich
+    // der Geräte-Pfade (Datei im Baum ↔ Ursprung) trägt dieselbe Aussage, ein alter Commit ist eine Datei, die vom Ursprung abweicht
+    const amUrsprung = new Map();
+    for (const z of git(["ls-tree", "-r", ref, "--", MDIR, "vision/richter"]).split("\n")) { const m = z.match(/^\d+ blob ([0-9a-f]{40})\t(.+)$/); if (m) amUrsprung.set(m[2], m[1]); }
+    const blobAm = (rel) => amUrsprung.get(rel) || "";
+    const hashe = (rels, schreiben) => (rels.length ? git(["hash-object", "--no-filters", ...(schreiben ? ["-w"] : []), "--stdin-paths"], { input: rels.map((rel) => path.join(baum, rel)).join("\n") + "\n" }).split(/\r?\n/) : []);
     if (was === "ungepusht") {
         const nur = (rel) => eigen(rel, "-") && !/\/roh\//.test(rel) && !/referenz-/.test(rel); // die Messungen selbst: Mess-Dateien und Akten
         // nur Messungen der letzten 48 h: eine Datei, die seit Tagen ungepusht liegt (n0611-pm trägt messung/0ab95ff4-gtx.json vom 10.11.,
-        // am WIP-Kopf eines Zweigs, 0 Urteile), ist kein stiller Push von heute — sie steht beim Namen auf stderr, zählt aber nicht
-        const alt = Date.now() - 48 * 3600e3, ab0 = liste.filter((rel) => nur(rel) && git(["hash-object", "--no-filters", path.join(baum, rel)]) !== blobAm(rel));
-        const ab = ab0.filter((rel) => fs.statSync(path.join(baum, rel)).mtimeMs > alt).length;
-        if (ab0.length > ab) process.stderr.write("ungepusht, älter als 48 h (zählt nicht): " + ab0.filter((rel) => fs.statSync(path.join(baum, rel)).mtimeMs <= alt).join(" ") + "\n");
-        let vor = 0;
-        try { vor = Number(git(["rev-list", "--count", ref + "..HEAD"])) || 0; } catch { vor = 0; }
-        const n = ab + vor, sd = arg[3];
+        // am WIP-Kopf eines Zweigs, 0 Urteile), ist kein stiller Push von heute — sie zählt nicht und wird nicht einmal gehasht
+        const alt = Date.now() - 48 * 3600e3, kand = liste.filter((rel) => nur(rel)), jung = kand.filter((rel) => fs.statSync(path.join(baum, rel)).mtimeMs > alt);
+        const b = hashe(jung, false), ab = jung.filter((rel, i) => b[i] !== blobAm(rel));
+        if (kand.length > jung.length) process.stderr.write("eigene Mess-Dateien älter als 48 h (nicht geprüft): " + (kand.length - jung.length) + "\n");
+        if (ab.length) process.stderr.write("ungepusht: " + ab.slice(0, 20).join(" ") + (ab.length > 20 ? " …" : "") + "\n");
+        const n = ab.length, sd = arg[3];
         let seit = "-";
         if (n > 0) { try { seit = fs.readFileSync(sd, "utf8").trim(); } catch { seit = iso(jetzt()); fs.writeFileSync(sd, seit + "\n"); } }
         else fs.rmSync(sd, { force: true });
@@ -425,19 +457,20 @@ if (was === "lies") {
     const IDX = path.join(os.tmpdir(), "runde-push-" + process.pid + ".tmp"), env = { ...process.env, ...WER, GIT_INDEX_FILE: IDX };
     let fehler = "";
     const versuche = Number(process.env.RUNDE_PUSH_VERSUCHE || 10);
+    const blobs = hashe(mein, true);
     for (let v = 1; v <= versuche; v++) {
         try {
-            if (v > 1) git(["fetch", "-q", "origin", "+refs/heads/" + zweig + ":" + ref]);
+            if (v > 1) {
+                git(["fetch", "-q", "origin", "+refs/heads/" + zweig + ":" + ref]);
+                amUrsprung.clear();
+                for (const z of git(["ls-tree", "-r", ref, "--", MDIR, "vision/richter"]).split("\n")) { const m = z.match(/^\d+ blob ([0-9a-f]{40})\t(.+)$/); if (m) amUrsprung.set(m[2], m[1]); }
+            }
             const basis = git(["rev-parse", ref]);
             fs.rmSync(IDX, { force: true });
             git(["read-tree", basis], { env });
-            let n = 0;
-            for (const rel of mein) {
-                const b = git(["hash-object", "-w", "--no-filters", path.join(baum, rel)]);
-                if (b === blobAm(rel)) continue;
-                git(["update-index", "--add", "--cacheinfo", "100644," + b + "," + rel], { env });
-                n++;
-            }
+            const neu = mein.map((rel, i) => [rel, blobs[i]]).filter(([rel, b]) => b && b !== blobAm(rel));
+            const n = neu.length;
+            if (n) git(["update-index", "--index-info"], { env, input: neu.map(([rel, b]) => "100644 blob " + b + "\t" + rel).join("\n") + "\n" });
             if (!n) { fs.rmSync(IDX, { force: true }); console.log("unverändert (" + mein.length + " eigene Pfade wie am Ursprung)"); process.exit(0); }
             const c = git(["commit-tree", git(["write-tree"], { env }), "-p", basis, "-F", "-"], { env, input: String(botschaft || "Messung " + g).slice(0, 200) + "\n\n" + n + " Datei(en) des Geräts " + g + " (runde.cjs push-pfade, ohne Rebase)\n\nCo-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>\n" });
             git(["push", "-q", "origin", c + ":refs/heads/" + zweig]);

@@ -15,6 +15,9 @@
 # _SCHLOSS (gpu-schloss.sh) · _SCHLAF (s) · RUNDE_CJS.
 O=/c/Users/micha/Desktop/AnazhRealm-OMEN
 N=${KANDIDAT_N:-$O/p3/n0611}; cd $N; L=$N/kette-0711.log; NAME=$1; ALT=$2; LISTE=$3
+# 19.11.: die Liste reist als DATEI („@<datei>“, landung-dienst.sh liste_datei) — 1 428 Stationen als Argument rissen die Windows-Grenze;
+# in argv und Umgebung (NUR, --nur) reist danach nur EIN Teil (runde.cjs teile: ≤ 1 740 s Deckel, ≤ 8 000 Zeichen)
+[ "${LISTE#@}" != "$LISTE" ] && LISTE=$(<"${LISTE#@}")
 M=${KANDIDAT_M:-$O/AnazhRealm-mess}; PM=${KANDIDAT_PM:-$O/n0611-pm}
 H=${KANDIDAT_H:-/c/actions-runner/hooks/hook.log}; D=${KANDIDAT_D:-$O/p3/messplatz/dienst.log}
 SCHLOSS=${KANDIDAT_SCHLOSS:-$O/p3/gpu-schloss.sh}; SCHLAF=${KANDIDAT_SCHLAF:-20}
