@@ -490,7 +490,10 @@ function fahrtSumme(stationen, geraet) {
 // Liste), eine aus der Liste gerechnete Zahl risse nie. Gerechnet an der gefalteten Liste (`eichtafel`, Σ Deckel heute): vorher Radeon
 // 112 Läufe Σ 10 064 s, GTX 111 Läufe Σ 9 857 s (6 Teile); nachher Radeon 263 Läufe Σ 16 793 s → ⌈16 793 ÷ 1 740⌉ = 10, GTX 262 Läufe
 // Σ 16 586 s → ⌈16 586 ÷ 1 740⌉ = 10. Kein Teil auf Vorrat für ungeeichte Deckel: hebt `eichtafel --schreibe` sie, reißt die Wand beim Namen
-const FAHRT_TEILE_MAX = 10;
+// 19.11. 10 → 12: die Fabrik planet/leben/zusammenspiel nach der Falte (11 neue Läufe je Perspektive: planet geologie 162, relief 155,
+// wetter 160, zeit 90; leben tiere 225, oeko 151, evolution 235; zusammenspiel planet 305, erleben 333, mensch 238, leben 160 — und
+// zusammenspiel.same 55 → 395 s; Σ +2 554 s): Radeon 274 Läufe Σ 19 347 s → ⌈19 347 ÷ 1 740⌉ = 12, GTX 273 Läufe Σ 19 140 s → 11
+const FAHRT_TEILE_MAX = 12;
 const fahrtTeile = (f) => Math.max(1, Math.ceil(f.deckel / (FAHRT_MAX_S - f.boot)));
 function fahrtUrteil(stationen) {
     return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
