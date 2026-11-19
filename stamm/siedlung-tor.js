@@ -49,29 +49,9 @@ class AnazhRealm_siedlung_tor {
     _membranMaterialFor(tor, ziel, dreh) {
         const T = THREE;
         const MG = tor.gesetz;
-        const MU = tor.mu;
-        const u = {
-            time: { value: 0 },
-            act: { value: 0 },
-            pulse: { value: 1 },
-            waveDepth: { value: MU.waveDepth },
-        };
-        const P = MU.pal;
         const mat = new T.MeshBasicNodeMaterial({ side: T.DoubleSide });
-        mat.userData.tor = {
-            u,
-            a: new T.Vector4(MU.centerY, MU.rimAx, MU.rimAy, MU.swirl),
-            b: new T.Vector4(MU.wave, MU.left, MU.spanW, MU.baseY),
-            c: new T.Vector4(MU.height, MU.tiefe, MU.fraktal, MU.drall),
-            spiegel: MU.spiegel,
-            zeile: this._torProfilZeile(MG.profilW, MU.profil),
-            ziel,
-            dreh: Number.isFinite(dreh) ? dreh : 0,
-            pa: new T.Vector3(P.PA[0], P.PA[1], P.PA[2]),
-            pb: new T.Vector3(P.PB[0], P.PB[1], P.PB[2]),
-            pc: new T.Vector3(P.PC[0], P.PC[1], P.PC[2]),
-            pd: new T.Vector3(P.PD[0], P.PD[1], P.PD[2]),
-        };
+        mat.userData.tor = this._membranWerte(tor, ziel, dreh, null);
+        const u = mat.userData.tor.u;
         const G = this._membranGraph(MG);
         mat.positionNode = G.positionNode;
         mat.colorNode = G.colorNode;
@@ -80,6 +60,38 @@ class AnazhRealm_siedlung_tor {
         mat.transparent = false;
         mat.userData.portalMembran = true; // Linsen-Marker
         return { mat, u };
+    }
+
+    // DIE STOFF-WERTE EINER MEMBRAN (EINE Quelle für Bau und Gesetz-Wert): jeder Wert ist ein Verweis je Objekt (`_stoffWert`),
+    // gelesen in jedem Refresh — ein Gesetz-Wert schreibt sie IN den stehenden Stoff (`alt` = sein `userData.tor`), derselbe
+    // Graph, kein neuer Stoff, keine neue Pipeline. Der Atem `u` bleibt dasselbe Objekt (der Membran-Tick hält es).
+    _membranWerte(tor, ziel, dreh, alt) {
+        const T = THREE;
+        const MU = tor.mu;
+        const P = MU.pal;
+        const w = alt || {
+            u: { time: { value: 0 }, act: { value: 0 }, pulse: { value: 1 }, waveDepth: { value: 0 } },
+            a: new T.Vector4(),
+            b: new T.Vector4(),
+            c: new T.Vector4(),
+            pa: new T.Vector3(),
+            pb: new T.Vector3(),
+            pc: new T.Vector3(),
+            pd: new T.Vector3(),
+        };
+        w.u.waveDepth.value = MU.waveDepth;
+        w.a.set(MU.centerY, MU.rimAx, MU.rimAy, MU.swirl);
+        w.b.set(MU.wave, MU.left, MU.spanW, MU.baseY);
+        w.c.set(MU.height, MU.tiefe, MU.fraktal, MU.drall);
+        w.spiegel = MU.spiegel;
+        w.zeile = this._torProfilZeile(tor.gesetz.profilW, MU.profil);
+        w.ziel = ziel;
+        w.dreh = Number.isFinite(dreh) ? dreh : 0;
+        w.pa.set(P.PA[0], P.PA[1], P.PA[2]);
+        w.pb.set(P.PB[0], P.PB[1], P.PB[2]);
+        w.pc.set(P.PC[0], P.PC[1], P.PC[2]);
+        w.pd.set(P.PD[0], P.PD[1], P.PD[2]);
+        return w;
     }
 
     // DER BOGEN-ATLAS DER TORE (1310-18): jede Bogen-Oberkante (die 64er-Gesetz-Tabelle `mu.profil` der Gestalt, dieselbe wie die
@@ -835,17 +847,7 @@ class AnazhRealm_siedlung_tor {
         for (const f of rec._fluegel) {
             const t = f.tuer;
             if (t.fenster) continue; // der Fenster-Flügel folgt nicht der Nähe, sondern seinem Zustand (`_tickHausFenster`, Bahn 1)
-            // Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er RELATIV dazu:
-            // fern um −offen zu, nah auf die Offen-Pose. porta-Tore (gebacken zu, kein offen) drehen absolut.
-            const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
-            const gz = AnazhRealm._tuerOffenRad() || 1;
-            const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
-            // T(h)·R_y(winkel)·T(−h) — kompakt über drei Matrizen:
-            mA.makeRotationY(winkel);
-            mB.makeTranslation(t.hx || 0, 0, t.zf || 0);
-            mB.multiply(mA); // T(h)·R
-            mA.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
-            mB.multiply(mA); // T(h)·R·T(−h)
+            AnazhRealm._fluegelSchwenk(t, neu, mB, mA);
             // EntryWorld enthält bereits die Welt-Skala/Rotation des Eintrags;
             // die Flügel-Leaves tragen localMatrix = WorldScale — die steckt in
             // den Instanz-Matrizen des Erst-Baus. Wir komponieren neu:
@@ -859,6 +861,21 @@ class AnazhRealm_siedlung_tor {
             f.g.mesh.boundingSphere = null;
         }
         this._fluegelLeib(entry, true); // der Leib folgt dem Schwenk (der Kamera-Wurf `_fieldRaycast` liest ihn)
+    }
+    // DER SCHWENK EINES FLÜGELS im Template-Raum: `out` = T(h)·R_y(winkel)·T(−h) um sein Scharnier (`t.hx`, `t.zf`) beim Öffnungs-
+    // Winkel `neu` (0 … `_tuerOffenRad`). Trägt der Flügel eine gebackene Offen-Pose (t.offen, fachwerk-Haustüren), dreht er
+    // RELATIV dazu: fern um −offen zu, nah auf die Offen-Pose. porta-Tore (gebacken zu, kein offen) drehen absolut. EINE Quelle
+    // für die Welt (`_tickTorFluegel`) und die Bühne der Studios (worlds/huelle/huelle.js `werk`, w28-studio-seiten).
+    static _fluegelSchwenk(t, neu, out, tmp) {
+        const sign = (t.seite || 1) * (t.zf >= 0 ? 1 : -1);
+        const gz = AnazhRealm._tuerOffenRad() || 1;
+        const winkel = Number.isFinite(t.offen) && t.offen !== 0 ? (neu / gz - 1) * t.offen : sign * neu;
+        // T(h)·R_y(winkel)·T(−h) — kompakt über drei Matrizen:
+        tmp.makeRotationY(winkel);
+        out.makeTranslation(t.hx || 0, 0, t.zf || 0);
+        out.multiply(tmp); // T(h)·R
+        tmp.makeTranslation(-(t.hx || 0), 0, -(t.zf || 0));
+        return out.multiply(tmp); // T(h)·R·T(−h)
     }
 
     // DIE FENSTER IM RING (Bahn 1 ÖFFNUNGEN): die Häuser, deren Türen der Tür-Takt im 40-m-Ring führt (`_hausTuerNah`, derselbe Scan,
