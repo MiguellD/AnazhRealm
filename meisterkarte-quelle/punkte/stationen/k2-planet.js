@@ -5323,6 +5323,500 @@ return { breiten, prof, meerOrte: a.filter((o) => !o.land).length, wid, version:
     };
 })());
 
+// ── DIE PERSPEKTIVE planet.zeit (2 Leitern, 17 Sprossen) ──────────────────────────────────────────────────────────────────────────
+// Der Leser des Spiels ist der Planet-Faden (`r._planetAuftrag` planet-ort, stamm/gelaende-chunks.js:643 → voxel-worker.js
+// planetOrtAuftrag:1175 → planet-core planetScheibe/planetOrt): je Lage und Zeit { land, hoeheM, kuesteKm, Δ klima/meer/wildnis } —
+// derselbe Weg wie die Reise (stamm/feld-leben.js:1286, `zeitMa` ist die Zeit); das Klima am Ort ist die Tafel `ortGesetz` (wie die
+// Reise es dem Spieler sagt: Sommer, Winter, Schneegrenze, Meer). DAS GLOBALE MASS: das Mittel über Fibonacci-Punkte gleicher Fläche
+// (die Welt antwortet je Punkt — der Faden gibt das globale Klima `planetKlimaGlobal` nicht heraus). Eis = Anteil der Punkte, deren
+// Sommer unter 0 °C bleibt. DAS ARCHIV: das Schicht-Gesetz (gelaende-core `schichtOrt` · `schichtMessung` · `felsLage`) und der Stoff
+// nach Tiefe (`_terrainMaterialAt`) — die Station misst, was die Wand der Welt trägt.
+L.perspektive("zeit", (() => {
+    const KG = "planet.zeit.klimageschichte";
+    const AR = "planet.zeit.archiv";
+    const PFAD = ["planet-core.js", "voxel-worker.js", "gelaende-core.js", "stamm/gelaende-*.js", "stamm/feld-leben.js", "stamm/netz-portal.js", "stamm/vegetation-wiese.js", "welt-licht.js", "scripts/werkbank.cjs"];
+    const zMin = (spec) => (roh) => {
+        const z = (roh && roh.zeuge) || {};
+        for (const [k, min] of Object.entries(spec)) if (!(typeof z[k] === "number" && z[k] >= min)) return "die Welt antwortete nicht: " + k + " " + (z[k] === undefined ? "fehlt" : z[k]) + " (Soll ≥ " + min + ")";
+        return null;
+    };
+    const gut = (werte, zeuge) => ({ werte, zeuge });
+    const leer = (werte) => ({ werte, zeuge: {} });
+    // DER RICHTER OHNE ZAHL (archiv S2): K.soll fasst ihn nicht — das Wort steht wörtlich, der Vergleich „gegen“ hält nie
+    const ohneZahl = (id, nr, wort, key) => {
+        const r = K.sprosseVon(id, nr).richter;
+        if (!r.includes(wort)) throw new Error("Soll „" + wort + "“ steht nicht wörtlich im Richter " + id + " S" + nr);
+        if (K.zahlenIn(r).length) throw new Error(id + " S" + nr + ": der Richter trägt eine Zahl — das Soll gehört K.soll");
+        return { wort, key, rel: "gegen", a: "die Referenz (der Richter nennt keine Schwelle)", einheit: "" };
+    };
+
+    // ════════════════════════════════════════ KLIMAGESCHICHTE (S1–S9) ════════════════════════════════════════
+    const klima = {
+        sek: 55,
+        pfad: PFAD,
+        ungefahren: "die Bilder (Halte +250 Ma / +1 Ga / +5 Ga, Schneeball, Eisrand) schießt die Probe nur am Gerät; der Sprung ≤ 5 s des Preises misst die Maschine",
+        mess: async function (H, U, M) {
+            const KOPF = `
+const K = globalThis.__gelaendeCore;
+const samen = r._planetSamen();
+await r._fadenQuelle();
+const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const fib = (n) => Array.from({ length: n }, (_, i) => [Math.round((Math.asin(1 - (2 * (i + 0.5)) / n) * 18000) / Math.PI) / 100, Math.round((((i * 137.508) % 360) - 180) * 100) / 100]);
+const lagePunkt = (k) => [Math.round((Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI * 100) / 100, Math.round((((k * 137.508) % 360) - 180) * 100) / 100];
+const ortVon = (o) => ({ samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta });
+const ort = (p, z, sam) => r._planetAuftrag({ type: "planet-ort", samen: sam || samen, breite: p[0], laenge: p[1], zeitMa: z });
+const glob = async (z, P, sam) => { const a = await Promise.all(P.map((p) => ort(p, z, sam))); let t = 0, eis = 0, land = 0, sb = 0, nl = 0; for (const o of a) { const O = K.ortGesetz(ortVon(o)); t += (O.klimaHeute.sommer + O.klimaHeute.winter) / 2; if (O.klimaHeute.sommer < 0) eis++; if (o.land) { land++; sb += K.SCHNEE.start + O.schneeBandM; nl++; } } return { z, t: t / a.length, eis: eis / a.length, land: land / a.length, meer: a[0].delta.meer.waterLevelM, schnee: nl ? sb / nl : null, a }; };
+const kurz = (g) => [g.z, R3(g.t), R3(g.eis), R3(g.land), R3(g.meer), R3(g.schnee)];
+`;
+            const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const ziel = Object.keys(U);
+            // A: HEUTE gegen +100 a und −21 ka (48 Punkte), die Küste an 20 Küstenpunkten zu beiden Zeiten; 3 Ma in 10-ka-Schritten an 6 Punkten
+            // hoher Breite (Eis-Stellvertreter, Meer); 540 Ma in 10-Ma-Schritten (24 Punkte); die Kreide (−90 Ma) und Pangäa (−250 Ma) an 200 Punkten
+            const a = await H.seite(KOPF + `
+const t0 = performance.now();
+const F48 = fib(48), F24 = fib(24), F200 = fib(200);
+const aus = {};
+const g0 = await glob(0, F48), g1 = await glob(0.0001, F48), g21 = await glob(-0.021, F48);
+aus.heute = kurz(g0); aus.plus100 = kurz(g1); aus.lgm = kurz(g21);
+const kp = []; for (let k = 0; kp.length < 20 && k < 800; k++) { const p = lagePunkt(k); const o = await ort(p, 0); if (Math.abs(o.kuesteKm) < 30 && Math.abs(o.kuesteKm) > 0.5) kp.push([p, o]); }
+const k1 = await Promise.all(kp.map(([p]) => ort(p, 0.0001)));
+aus.kueste = kp.map(([p, o], i) => [R3(o.kuesteKm), R3(k1[i].kuesteKm), R3(o.hoeheM), R3(o.delta.meer.waterLevelM), R3(k1[i].delta.meer.waterLevelM)]);
+const P6 = [[60, 0], [-60, 90], [70, 180], [-70, -90], [50, 45], [-50, -135]];
+aus.s3 = [];
+for (let i = 0; i <= 300; i++) aus.s3.push(kurz(await glob(-i * 0.01, P6)));
+aus.s3Ms = Math.round(performance.now() - t0);
+aus.s5 = [];
+for (let i = 0; i <= 54; i++) aus.s5.push(kurz(await glob(-i * 10, F24)));
+const flut = async (z) => { const a = await Promise.all(F200.map((p) => ort(p, z))); let kont = 0, nass = 0, innen = 0, arid = 0; for (const o of a) { if (o.kuesteKm > 0) { kont++; if (!o.land) nass++; } if (o.land && o.kuesteKm > 1000) { innen++; if (K.ortGesetz(ortVon(o)).klimaHeute.spendeMm < 250) arid++; } } return [z, kont, nass, innen, arid]; };
+aus.flut = [await flut(0), await flut(-90), await flut(-250)];
+aus.ms = Math.round(performance.now() - t0);
+return aus;
+`);
+            // B: 4 Ga bis +1,06 Ga in 50-Ma-Schritten (12 Punkte), vier weitere Saaten über 4 Ga (100 Ma, 8 Punkte); der Superkontinent: das Land
+            // im Raster 12 × 24 zu +150 … +350 Ma (größte zusammenhängende Fläche)
+            const b = await H.seite(KOPF + `
+const t0 = performance.now();
+const F12 = fib(12), F8 = fib(8);
+const aus = { welt: [] };
+let ende = null;
+for (let z = -4000; z <= 1100; z += 50) { try { aus.welt.push(kurz(await glob(z, F12))); } catch (e) { ende = String(e && e.message || e).slice(0, 160); break; } }
+aus.ende = ende;
+aus.saaten = [];
+for (const s of ["k2-zeit-1", "k2-zeit-2", "k2-zeit-3", "k2-zeit-4"]) { if (performance.now() - t0 > 30000) break; const reihe = []; for (let z = -4000; z <= 0; z += 100) reihe.push(kurz(await glob(z, F8, s))); aus.saaten.push([s, reihe]); }
+aus.super = [];
+for (const z of [150, 200, 250, 300, 350]) {
+const nb = 12, nl = 24, P = [];
+for (let j = 0; j < nb; j++) for (let i = 0; i < nl; i++) P.push([-82.5 + j * 15, -172.5 + i * 15]);
+const a = await Promise.all(P.map((p) => ort(p, z)));
+const G = a.map((o) => (o.land ? 1 : 0)), vis = new Uint8Array(G.length);
+let gross = 0;
+for (let c = 0; c < G.length; c++) { if (!G[c] || vis[c]) continue; let n = 0; const st = [c]; vis[c] = 1; while (st.length) { const q = st.pop(); n++; const i = q % nl, j = (q / nl) | 0; for (let b2 = -1; b2 <= 1; b2++) for (let a2 = -1; a2 <= 1; a2++) { const jj = j + b2; if (jj < 0 || jj >= nb) continue; const qq = ((i + a2 + nl) % nl) + nl * jj; if (G[qq] && !vis[qq]) { vis[qq] = 1; st.push(qq); } } } if (n > gross) gross = n; }
+const land = G.reduce((s, v) => s + v, 0);
+aus.super.push([z, land, gross, land ? R3(gross / land) : null]);
+}
+aus.ms = Math.round(performance.now() - t0);
+return aus;
+`);
+            const aus = {};
+            const mittel = (x) => (x.length ? x.reduce((s, v) => s + v, 0) / x.length : NaN);
+            // S1: +100 a — die Wärme, die Schneegrenze, die Küste (Bruun: Rückzug = Δh / Neigung)
+            const [z0, t0, , , m0, sn0] = a.heute, [, t1, , , m1, sn1] = a.plus100;
+            const ku = (a.kueste || []).map(([k0, k1, h, w0, w1]) => ({ ist: Math.abs(k1 - k0) * 1000, dh: Math.abs(w1 - w0), neig: Math.abs(h) / Math.max(1, Math.abs(k0) * 1000) }));
+            const bruun = ku.filter((x) => x.dh > 0 && x.neig > 0).map((x) => x.ist / (x.dh / x.neig));
+            aus[1] = {
+                werte: Object.assign({ dT100aGrad: R3(t1 - t0), schneegrenzeDeltaM: R3(sn1 - sn0), meerDeltaM: R3(m1 - m0), kuestenPunkte: ku.length }, bruun.length ? { kuesteJeSoll: R3(mittel(bruun)) } : {}),
+                zeuge: { punkte: 48, kuestenPunkte: ku.length, schneeAenderung: Math.abs(sn1 - sn0), kuesteAenderung: R3(mittel(ku.map((x) => x.ist))) },
+                nicht: "keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um " + R3(t1 - t0) + " °C, die Schneegrenze wandert " + R3(sn1 - sn0) + " m (planet-core.js:1883 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren); die Reise springt nur ganze Ma (stamm/feld-leben.js:1272)",
+            };
+            // S2: −21 ka — Meer, Kühlung, Landbrücke (das Land der 48 Punkte)
+            const [, tL, eL, lL, mL] = a.lgm, [, , e0, l0] = a.heute;
+            aus[2] = {
+                werte: { meerM: mL, globalDT: R3(tL - t0), landDeltaProzent: R3(100 * (lL - l0)), eisDeltaProzent: R3(100 * (eL - e0)) },
+                zeuge: { punkte: 48, aenderung: Math.abs(mL) + Math.abs(tL - t0) },
+                nicht: "keine Erd-Saat (R4) und keine Eiszeit: −21 ka liegt das Meer " + mL + " m, die Welt " + R3(tL - t0) + " °C anders (planet-core.js:1618 planetMeer: lineare 10-Ma-Fächer, keine Bahn-Zyklen); Eisrand und Landbrücke folgen aus keiner Kaltzeit",
+            };
+            // S3: das Spektrum über 3 Ma (301 Werte, 10 ka): die stärksten Gipfel 20–70 ka und 70–200 ka (signifikant: Leistung ≥ 5 × Median)
+            const s3 = a.s3 || [];
+            const spek = (y) => {
+                const n = y.length, xm = (n - 1) / 2, ym = mittel(y);
+                let sxy = 0, sxx = 0;
+                y.forEach((v, i) => ((sxy += (i - xm) * (v - ym)), (sxx += (i - xm) ** 2)));
+                const d = y.map((v, i) => v - ym - (sxx ? (sxy / sxx) * (i - xm) : 0));
+                const P = [];
+                for (let per = 20; per <= 1000; per += 1) {
+                    const f = 10 / per;
+                    let re = 0, im = 0;
+                    d.forEach((v, i) => ((re += v * Math.cos(2 * Math.PI * f * i)), (im += v * Math.sin(2 * Math.PI * f * i))));
+                    P.push([per, re * re + im * im]);
+                }
+                const med = P.map((x) => x[1]).sort((p, q) => p - q)[P.length >> 1];
+                const gipfel = (lo, hi) => { const b2 = P.filter((x) => x[0] >= lo && x[0] <= hi).sort((p, q) => q[1] - p[1])[0]; return b2 && med > 0 && b2[1] >= 5 * med ? b2[0] : null; };
+                return { g41: gipfel(20, 70), g100: gipfel(70, 200), rest: R3(Math.sqrt(mittel(d.map((v) => v * v)))), d };
+            };
+            // Eis-Stellvertreter: die Kälte an 6 Punkten hoher Breite (−T); r über die trendbereinigten Reihen (die Zyklen, nicht der Trend)
+            const eisReihe = s3.map((x) => -x[1]), meerReihe = s3.map((x) => x[4]);
+            const sp = spek(eisReihe), spM = spek(meerReihe);
+            const kor = (x, y) => { const mx = mittel(x), my = mittel(y); let a2 = 0, b2 = 0, c2 = 0; x.forEach((v, i) => ((a2 += (v - mx) * (y[i] - my)), (b2 += (v - mx) ** 2), (c2 += (y[i] - my) ** 2))); return b2 > 1e-9 && c2 > 1e-9 ? a2 / Math.sqrt(b2 * c2) : null; };
+            const rZyklus = s3.length > 2 ? kor(sp.d, spM.d) : null;
+            aus[3] = {
+                werte: Object.assign({ spanneMa: R3(s3.length ? -s3[s3.length - 1][0] : 0), werteN: s3.length }, sp.g41 !== null ? { gipfel41Ka: sp.g41 } : {}, sp.g100 !== null ? { gipfel100Ka: sp.g100 } : {}, rZyklus !== null ? { rEisMeer: R3(rZyklus) } : {}),
+                zeuge: { werte: s3.length, restEisGrad: sp.rest, restMeerM: spM.rest, gipfel: (sp.g41 !== null) + (sp.g100 !== null), ms: a.s3Ms },
+                nicht: "kein Glazialtakt: über 3 Ma schwankt die Welt um " + sp.rest + " °C (ohne Trend), das Meer um " + spM.rest + " m — der Planet kennt keine Bahn-Zyklen (planet-core.js:1883 planetKlimaGlobal: Neigung fest, kein Milanković), das Meer ist linear in 10-Ma-Fächern (planet-core.js:1618 planetMeer)",
+            };
+            // S4: das Becken — kein Leser einer Wasserbilanz; gemessen die Spanne des Meeres über 540 Ma
+            const s5 = a.s5 || [];
+            aus[4] = {
+                werte: { meerMaxM: R3(Math.max(...s5.map((x) => x[4]))), meerMinM: R3(Math.min(...s5.map((x) => x[4]))) },
+                zeuge: { becken: 0, epochen: s5.length },
+                nicht: "kein Becken mit Wasserbilanz: der See der Reise-Welt ist ein Senken-Knoten des Netzes (gelaende-core.js:1922 benannteSeen) ohne Verdunstung und Zufluss-Bilanz, kein Salz; das Meer des Planeten steigt und fällt (" + R3(Math.min(...s5.map((x) => x[4]))) + " … " + R3(Math.max(...s5.map((x) => x[4]))) + " m über 540 Ma), aber kein Becken trocknet aus",
+            };
+            // S5: 540 Ma gegen die Scotese-Kurve (die Anomalie gegen heute), die Kreide flutet den Kontinent, Pangäa trocken
+            const sc = (U[5] && U[5].scotese) || [];
+            const scAt = (z) => { for (let i = 0; i + 1 < sc.length; i++) if (z <= sc[i][0] && z >= sc[i + 1][0]) { const u = (sc[i][0] - z) / (sc[i][0] - sc[i + 1][0]); return sc[i][1] + u * (sc[i + 1][1] - sc[i][1]); } return null; };
+            const abw = s5.map((x) => { const s = scAt(x[0]); return s === null ? null : Math.abs(x[1] - t0 - (s - sc[0][1])); }).filter((v) => v !== null);
+            const fl = a.flut || [];
+            const kreide = fl[1] && fl[1][1] ? (100 * fl[1][2]) / fl[1][1] : null;
+            aus[5] = {
+                werte: Object.assign({ spanneMa: R3(s5.length ? -s5[s5.length - 1][0] : 0), scoteseAbwGrad: R3(Math.max(...abw)), tSpanneGrad: R3(Math.max(...s5.map((x) => x[1])) - Math.min(...s5.map((x) => x[1]))) }, kreide !== null ? { kreideFlutProzent: R3(kreide) } : {}, fl[2] && fl[2][3] ? { pangaeaWuesteProzent: R3((100 * fl[2][4]) / fl[2][3]) } : {}),
+                zeuge: { epochen: s5.length, punkte: 24, flut: fl },
+                nicht: "keine Erd-Saat (R4): der Samen der Welt ist nicht die Erde (planet-core.js:307 planetPlan liest keinen Erd-Schlüssel) — die Station misst seine Kurve gegen die Scotese-Anomalie",
+            };
+            // S6: der Schneeball — die Eisfläche über 4 Ga an der Welt und an vier weiteren Saaten
+            const welt = b.welt || [];
+            const reihen = [["welt", welt.filter((x) => x[0] <= 0)]].concat((b.saaten || []).map(([s, r]) => [s, r]));
+            const epi = reihen.map(([s, r]) => { const max = Math.max(...r.map((x) => x[2])); const i = r.findIndex((x) => x[2] >= 0.9); const endet = i >= 0 && r.slice(i + 1).some((x) => x[2] < 0.9); return [s, R3(max), i >= 0, endet]; });
+            const eisMax = Math.max(...epi.map((x) => x[1]));
+            aus[6] = {
+                werte: { eisMaxProzent: R3(100 * eisMax), saatenProzent: R3((100 * epi.filter((x) => x[2] && x[3]).length) / Math.max(1, epi.length)), saaten: epi.length },
+                zeuge: { saaten: epi.length, episoden: epi.filter((x) => x[2]).length, je: epi },
+                nicht: "kein Schneeball: über 4 Ga bleibt die Eisfläche der " + epi.length + " Saaten ≤ " + R3(100 * eisMax) + " % (planet-core.js:1883 planetKlimaGlobal: der Walker-Thermostat gleicht den jungen Stern aus, die Eis-Albedo des Energiebilanz-Modells kippt bei diesem Fluss nie in den Schneeball, und kein Leser bricht ein Eis wieder auf)",
+            };
+            // S7: flüssiges Wasser über 4 Ga, der Verlust des Ozeans; die Leuchtkraft gibt der Faden nicht heraus
+            const vor = welt.filter((x) => x[0] <= 0);
+            const wasser = vor.filter((x) => x[3] < 1 && x[2] < 1).length;
+            const nach = welt.filter((x) => x[0] > 0);
+            const verlust = nach.find((x) => x[3] >= 1);
+            aus[7] = {
+                werte: Object.assign({ wasserZeitProzent: R3((100 * wasser) / Math.max(1, vor.length)), tVor4GaGrad: vor.length ? vor[0][1] : null, letzteZeitMa: welt.length ? welt[welt.length - 1][0] : null }, verlust ? { ozeanVerlustGa: R3(verlust[0] / 1000) } : {}),
+                zeuge: { epochen: vor.length, leuchtkraft: 0 },
+                nicht: "die Leuchtkraft des Sterns gibt der Faden nicht heraus (planet-core.js:1889 planetKlimaGlobal rechnet sie nach Gough, voxel-worker.js:1175 antwortet nur je Ort), die Zeit endet bei +" + (welt.length ? welt[welt.length - 1][0] : "?") + " Ma (planet-core.js:678 Schlüsselbilder: " + String(b.ende || "").slice(0, 80) + "), kein Himmel des Archaikums, keine Erd-Saat",
+            };
+            // S8: der Superkontinent (das größte zusammenhängende Land), die Ozeanfläche bis zum Ende der Zeit, die Sonne
+            const su = b.super || [];
+            const best = su.slice().sort((p, q) => (q[3] || 0) - (p[3] || 0))[0];
+            aus[8] = {
+                werte: Object.assign({}, best ? { landZusammenProzent: R3(100 * best[3]), superMa: best[0] } : {}, { ozeanAmEndeProzent: welt.length ? R3(100 * (1 - welt[welt.length - 1][3])) : null }),
+                zeuge: { zeiten: su.length, je: su, sonne: 0 },
+                nicht: "Ozeanfläche → 0 und die Sonne bei +5 Ga nicht erzeugbar: die Zeit des Planeten endet bei +1,06 Ga (planet-core.js:678), die Sonnenscheibe hat keine Größe je Epoche (welt-licht.js:711 sonnenRichtung: nur die Richtung)",
+            };
+            // S9: heute → Eiszeit → heute: keine Moräne; Fremdwelt-Probe am Gerät
+            aus[9] = { werte: {}, zeuge: {}, auge: await M.auge("zeit-klima-s9", { ort: "wiese" }), nicht: "keine Moräne, kein Eisrand der Eiszeit im Gelände: die Kaltzeit ist eine neue Ort-Saat (gelaende-core.js:5802 ortSaat), das Eis legt nichts ab; 1 000 Planeten tragen keine eigenen Konstanten (voxel-worker.js:1176)" };
+            const o = {};
+            for (const nr of ziel) o[nr] = aus[nr] || M.nicht("ungemessen");
+            return { sprossen: o };
+        },
+        sprossen: {
+            1: {
+                u: { jahre: 100 },
+                soll: [
+                    K.soll(KG, 1, "+100 a bei +2 °C", { key: "dT100aGrad", rel: "≥", zahl: 2, einheit: "°C" }),
+                    K.soll(KG, 1, "Schneegrenze +300 m ±30 %", { key: "schneegrenzeDeltaM", ref: 300, refQuelle: "Erde: Gradient 6,5 K/km — +2 °C heben die Schneegrenze um ~300 m (IPCC AR5 WG1, Kap. 4)", einheit: "m" }),
+                    K.soll(KG, 1, "Küste wandert um Δh/Strandneigung ±25 %", { key: "kuesteJeSoll", ref: 1, refQuelle: "Erde: Bruun-Regel, Rückzug = Δh / Strandneigung (Bruun 1962)" }),
+                ],
+                zeuge: zMin({ punkte: 48, kuestenPunkte: 10, schneeAenderung: 1e-6, kuesteAenderung: 1e-6 }),
+                zeugeText: "48 Punkte, 10 Küsten, Schneegrenze und Küste wanderten in 100 a",
+                taeter: "planet-core.js planetKlimaGlobal (keine Drift in Jahren)",
+                nicht: "keine Treibhaus-Drift in 100 a",
+                leser: "stamm/feld-leben.js:1272 — die Reise springt nur ganze Ma; planet-core.js:1883 planetKlimaGlobal trägt keinen CO₂-Antrieb in Jahren",
+                gruen: gut({ dT100aGrad: 2.1, schneegrenzeDeltaM: 310, kuesteJeSoll: 1.1 }, { punkte: 48, kuestenPunkte: 20, schneeAenderung: 310, kuesteAenderung: 140 }),
+                attrappen: [
+                    { name: "die Schneegrenze aus dem Gradienten gerechnet (keine Welt)", roh: leer({ dT100aGrad: 2, schneegrenzeDeltaM: 300, kuesteJeSoll: 1 }) },
+                    { name: "die Welt blieb stehen (Bruun 1 aus 0/0)", roh: gut({ dT100aGrad: 2, schneegrenzeDeltaM: 300, kuesteJeSoll: 1 }, { punkte: 48, kuestenPunkte: 20, schneeAenderung: 0, kuesteAenderung: 0 }) },
+                ],
+            },
+            2: {
+                u: { zeitMa: -0.021 },
+                soll: [
+                    K.soll(KG, 2, "Meer −120 ±10 m", { key: "meerM", ref: -120, refQuelle: "Erde: Meeresspiegel des letzten glazialen Maximums −120 m (Clark et al. 2009; Lambeck et al. 2014)", einheit: "m" }),
+                    K.soll(KG, 2, "global −6 ±2 °C", { key: "globalDT", ref: -6, refQuelle: "Erde: globale Kühlung des LGM −6 °C (Tierney et al. 2020)", einheit: "°C" }),
+                ],
+                zeuge: zMin({ punkte: 48, aenderung: 1 }),
+                zeugeText: "48 Punkte zur Kaltzeit, Meer und Wärme änderten sich",
+                taeter: "planet-core.js planetMeer (keine Eiszeit) · planetPlan (keine Erd-Saat, R4)",
+                nicht: "keine Erd-Saat, keine Eiszeit −21 ka",
+                leser: "planet-core.js:307 planetPlan — kein Erd-Schlüssel (R4); planet-core.js:1618 planetMeer interpoliert 10-Ma-Fächer, kein Glazial",
+                gruen: gut({ meerM: -118, globalDT: -5.6 }, { punkte: 48, aenderung: 124 }),
+                attrappen: [{ name: "die LGM-Zahlen eingesetzt", roh: leer({ meerM: -120, globalDT: -6 }) }],
+            },
+            3: {
+                u: { spanneMa: 3, schrittKa: 10 },
+                soll: [
+                    K.soll(KG, 3, "Gipfel bei 41 ±5", { key: "gipfel41Ka", ref: 41, refQuelle: "Erde: Obliquität 41 ka im Stapel LR04 (Lisiecki & Raymo 2005)", einheit: "ka" }),
+                    K.soll(KG, 3, "100 ±15 ka", { key: "gipfel100Ka", ref: 100, refQuelle: "Erde: Exzentrizität ~100 ka im Stapel LR04 (Lisiecki & Raymo 2005)", einheit: "ka" }),
+                    K.soll(KG, 3, "r ≤ −0,8", { key: "rEisMeer" }),
+                    K.soll(KG, 3, "über 3 Ma", { key: "spanneMa", rel: "≥", einheit: "Ma" }),
+                ],
+                zeuge: zMin({ werte: 300, gipfel: 2 }),
+                zeugeText: "301 Werte über 3 Ma, zwei Gipfel über dem Rauschen",
+                taeter: "planet-core.js planetKlimaGlobal (keine Bahn-Zyklen) · planetMeer (lineare Fächer)",
+                nicht: "kein Glazialtakt",
+                leser: "planet-core.js:1883 planetKlimaGlobal — Neigung fest, kein Milanković-Antrieb; planet-core.js:1618 planetMeer linear zwischen 10-Ma-Fächern",
+                gruen: gut({ gipfel41Ka: 42, gipfel100Ka: 98, rEisMeer: -0.86, spanneMa: 3 }, { werte: 301, gipfel: 2 }),
+                attrappen: [{ name: "r = −1 aus zwei Geraden (kein Gipfel)", roh: gut({ gipfel41Ka: 41, gipfel100Ka: 100, rEisMeer: -1, spanneMa: 3 }, { werte: 301, gipfel: 0 }) }],
+            },
+            4: {
+                u: {},
+                soll: [K.soll(KG, 4, "V/(E−P) ±30 %", { key: "trockenJeSoll", ref: 1, refQuelle: "Erde: Austrocknungszeit eines Beckens t = V/(E−P) (Messinische Salinitätskrise, Hsü 1972)" })],
+                zeuge: zMin({ becken: 1 }),
+                zeugeText: "ein Becken fiel trocken",
+                taeter: "gelaende-core.js benannteSeen (Senken ohne Bilanz)",
+                nicht: "kein Becken mit Wasserbilanz",
+                leser: "gelaende-core.js:1922 benannteSeen — der See ist ein Senken-Knoten; kein Leser rechnet Verdunstung gegen Zufluss, kein Salz",
+                gruen: gut({ trockenJeSoll: 1.1 }, { becken: 1 }),
+                attrappen: [{ name: "die Austrocknungszeit als Formel", roh: leer({ trockenJeSoll: 1 }) }],
+            },
+            5: {
+                // die Scotese-Kurve (mittlere Erdtemperatur, °C, gerundet; Scotese et al. 2021): die Station misst die Anomalie gegen heute
+                u: { spanneMa: 540, scotese: [[0, 14.5], [-35, 20], [-50, 27], [-66, 22], [-90, 27], [-145, 21], [-200, 22], [-252, 30], [-300, 13], [-360, 18], [-400, 23], [-445, 14], [-470, 22], [-540, 24]] },
+                soll: [
+                    K.soll(KG, 5, "Mitteltemperatur im Band der Scotese-Kurve ±3 °C", { key: "scoteseAbwGrad", ref: 0, refQuelle: "Erde: Scotese et al. 2021, mittlere Erdtemperatur des Phanerozoikums — die größte Abweichung der Anomalie gegen heute", einheit: "°C" }),
+                    K.soll(KG, 5, "Kreide-Hochstand flutet 20–40 % des Kontinents", { key: "kreideFlutProzent", einheit: "%" }),
+                    K.soll(KG, 5, "über 540 Ma", { key: "spanneMa", rel: "≥", einheit: "Ma" }),
+                ],
+                zeuge: zMin({ epochen: 55, punkte: 24 }),
+                zeugeText: "55 Epochen an 24 Punkten",
+                taeter: "planet-core.js planetPlan (keine Erd-Saat, R4)",
+                nicht: "keine Erd-Saat (R4)",
+                leser: "planet-core.js:307 planetPlan — liest keinen Erd-Schlüssel; der Samen der Welt ist ein fremder Planet",
+                gruen: gut({ scoteseAbwGrad: 2.4, kreideFlutProzent: 28, spanneMa: 540 }, { epochen: 55, punkte: 24 }),
+                attrappen: [{ name: "die Scotese-Kurve eingesetzt", roh: leer({ scoteseAbwGrad: 0, kreideFlutProzent: 30, spanneMa: 540 }) }],
+            },
+            6: {
+                u: { saaten: ["welt", "k2-zeit-1", "k2-zeit-2", "k2-zeit-3", "k2-zeit-4"] },
+                soll: [K.soll(KG, 6, "Schneeball ≥ 90 % Eisfläche", { key: "eisMaxProzent", einheit: "%" }), K.soll(KG, 6, "in ≥ 30 % der fähigen Saaten", { key: "saatenProzent", einheit: "%" })],
+                zeuge: zMin({ saaten: 5, episoden: 1 }),
+                zeugeText: "5 Saaten über 4 Ga, eine Episode trat ein und endete",
+                taeter: "planet-core.js planetKlimaGlobal (Walker-Thermostat, kein Umschlag)",
+                nicht: "kein Schneeball",
+                leser: "planet-core.js:1883 planetKlimaGlobal — das Eis folgt dem Gleichgewicht des Sternflusses, kein Umschlag in den Schneeball und kein Ausstieg",
+                gruen: gut({ eisMaxProzent: 94, saatenProzent: 40 }, { saaten: 5, episoden: 2 }),
+                attrappen: [{ name: "der Schneeball als Behauptung", roh: leer({ eisMaxProzent: 95, saatenProzent: 40 }) }],
+            },
+            7: {
+                u: { spanneGa: 4 },
+                soll: [
+                    K.soll(KG, 7, "flüssiges Wasser ≥ 90 % der Zeit seit 4 Ga", { key: "wasserZeitProzent", einheit: "%" }),
+                    K.soll(KG, 7, "70–100 % Leuchtkraft", { key: "leuchtkraftProzent", einheit: "%" }),
+                    K.soll(KG, 7, "Ozeanverlust zwischen +0,5 und +2 Ga", { key: "ozeanVerlustGa", rel: "band", zahl: 0.5, bis: 2, einheit: "Ga" }),
+                ],
+                zeuge: zMin({ epochen: 80, leuchtkraft: 1 }),
+                zeugeText: "80 Epochen, die Leuchtkraft des Sterns aus der Welt",
+                taeter: "voxel-worker.js planetOrtAuftrag (gibt das globale Klima nicht heraus) · planet-core.js Schlüsselbilder bis +1,06 Ga",
+                nicht: "keine Leuchtkraft aus der Welt, die Zeit endet bei +1,06 Ga",
+                leser: "voxel-worker.js:1175 planetOrtAuftrag — antwortet je Ort, nie mit planetKlimaGlobal (sternFluss, tMittelC, eisBreite); planet-core.js:678 die Schlüsselbilder enden bei +1 061 Ma",
+                gruen: gut({ wasserZeitProzent: 96, leuchtkraftProzent: 75, ozeanVerlustGa: 1.1 }, { epochen: 80, leuchtkraft: 1 }),
+                attrappen: [{ name: "die Leuchtkraft nach Gough eingesetzt", roh: leer({ wasserZeitProzent: 96, leuchtkraftProzent: 72, ozeanVerlustGa: 1 }) }],
+            },
+            8: {
+                u: { zeitenMa: [150, 200, 250, 300, 350], raster: [12, 24] },
+                soll: [
+                    K.soll(KG, 8, "Land zu ≥ 70 % zusammenhängend", { key: "landZusammenProzent", einheit: "%" }),
+                    K.soll(KG, 8, "+250 Ma (±100 Ma)", { key: "superMa", ref: 250, refQuelle: "Erde: der nächste Superkontinent in ~250 Ma (Pangaea Proxima, Scotese)", einheit: "Ma" }),
+                    K.soll(KG, 8, "Ozeanfläche → 0 zwischen +0,5 und +2 Ga", { key: "ozeanNullGa", rel: "band", zahl: 0.5, bis: 2, einheit: "Ga" }),
+                    K.soll(KG, 8, "Sonnenscheibe bei +5 Ga ≥ 100× Fläche", { key: "sonneFaktor" }),
+                ],
+                zeuge: zMin({ zeiten: 5, sonne: 1 }),
+                zeugeText: "fünf Zeiten des Superkontinents gezählt, die Sonne wuchs",
+                taeter: "planet-core.js Schlüsselbilder (Ende +1,06 Ga) · welt-licht.js (keine Größe der Sonne je Epoche)",
+                nicht: "Ozeanverlust und Roter Riese nicht erzeugbar",
+                leser: "planet-core.js:678 — die Zeit endet bei +1 061 Ma; welt-licht.js:711 sonnenRichtung kennt keine Scheibengröße je Epoche",
+                gruen: gut({ landZusammenProzent: 76, superMa: 240, ozeanNullGa: 1.2, sonneFaktor: 120 }, { zeiten: 5, sonne: 1 }),
+                attrappen: [{ name: "die Halte als Zahlen ohne Bild der Sonne", roh: gut({ landZusammenProzent: 76, superMa: 250, ozeanNullGa: 1, sonneFaktor: 100 }, { zeiten: 5, sonne: 0 }) }],
+            },
+            9: {
+                u: {},
+                soll: [K.soll(KG, 9, "Lagefehler ≤ 5 %", { key: "moraeneLagefehlerProzent", einheit: "%" }), K.soll(KG, 9, "100 Saaten", { key: "saaten", rel: "≥" }), K.soll(KG, 9, "1 000 Planeten", { key: "planeten", rel: "≥" })],
+                auge: { pose: "Ego an der Wiese (heute keine Moräne, kein fremder Planet)", vorbild: "Fremdwelt-Probe R10 an Eisrand, Meeresspiegel und Klimazonen" },
+                taeter: "gelaende-core.js ortSaat (die Kaltzeit ist eine neue Saat, das Eis legt nichts ab)",
+                nicht: "keine Moräne am Eisrand",
+                leser: "gelaende-core.js:5802 ortSaat — die Kaltzeit würfelt das Gelände neu; kein Leser legt am Eisrand der Zeit eine Moräne",
+                gruen: gut({ moraeneLagefehlerProzent: 3, saaten: 100, planeten: 1000 }, {}),
+                attrappen: [{ name: "die Moräne ohne Bild", roh: leer({ moraeneLagefehlerProzent: 3, saaten: 100, planeten: 1000 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ ARCHIV (S1–S8) ════════════════════════════════════════
+    const archiv = {
+        sek: 25,
+        pfad: PFAD,
+        ungefahren: "die Bilder (Kliff und Schutthang, Wand aus 2 km, Ego-Bilder der Jury) schießt die Probe nur am Gerät",
+        mess: async function (H, U, M) {
+            const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const ziel = Object.keys(U);
+            // DIE WAND DER WELT: die Schichtstufe an Tafelland-Saaten (die Reise-Welt am Ort, `schichtOrt`): der Hang im 2-m-Raster (61 × 61) um
+            // die Treppe (Kliff ≥ 45°, Schutthang 30–40°), die Bänder des Schicht-Gesetzes; die Lagen im Fels (`felsLage`) in 3 m, eine Grenze über
+            // 100 m verfolgt, 1 000 Säulen à 30 m (Lücken: ein Sprung der Paket-Folge); 20 Orte × 10 Zeiten (Milieu Land/Meer) gegen den Stoff der Tiefe
+            const w = await H.seite(`
+const K = globalThis.__gelaendeCore;
+const samen = r._planetSamen();
+await r._fadenQuelle();
+const heim = r.constructor._weltGesetz(r.state.worldMeta).gelaende;
+const R3 = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const ortVon = (o) => ({ samen: o.samen, version: o.version, breite: o.breite, laenge: o.laenge, zeitMa: o.zeitMa, delta: o.delta });
+const lage = (o) => { const ort = ortVon(o); const O = K.ortGesetz(ort); const eg = K.erbgutNormal(K.ortErbgut(K.erbgutNormal(heim == null ? undefined : heim), o.delta.wildnis)); const saat = K.ortSaatWahl(ort, eg, SimplexNoise).saat; return { saat, O, L: K.lageAus({ seed: saat, baseHeight: K.GRUND.basis, waterLevel: K.GRUND.basis - O.meerUnterBasisM, ort, erbgut: { terme: eg, wildnis: eg[0] && eg[0].art === "wildnis" ? 1 : 0 }, regionSize: K.GRUND.kachel }, SimplexNoise) }; };
+const lagePunkt = (k) => [Math.round((Math.asin(((k * 0.6180339887) % 1) * 2 - 1) * 180) / Math.PI * 100) / 100, Math.round((((k * 137.508) % 360) - 180) * 100) / 100];
+const t0 = performance.now();
+const wand = (L, so) => { const n = 61, g = []; for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) g.push(K.hoehe(L, so.x - 60 + 2 * i, so.z - 60 + 2 * j, true)); const kl = [], sch = []; let mn = Infinity, mx = -Infinity; for (let j = 1; j < n - 1; j++) for (let i = 1; i < n - 1; i++) { const k = i + n * j; const a = (Math.atan(Math.hypot((g[k + 1] - g[k - 1]) / 4, (g[k + n] - g[k - n]) / 4)) * 180) / Math.PI; if (a >= 45) kl.push(a); if (a >= 30 && a <= 40) sch.push(a); if (g[k] < mn) mn = g[k]; if (g[k] > mx) mx = g[k]; } kl.sort((p, q) => p - q); return [kl.length, R3(kl[kl.length >> 1]), R3(kl[Math.floor(kl.length * 0.9)]), sch.length, R3(mx - mn)]; };
+const tafel = [];
+const L0 = r._gelaende(), so0 = K.schichtOrt(L0, -8000, -8000, 8000, 8000);
+if (so0) tafel.push(["heim", so0.x, so0.z].concat(wand(L0, so0), [K.schichtMessung(L0).baender]));
+for (let k = 0; tafel.length < 6 && k < 400 && performance.now() - t0 < 12000; k++) { const p = lagePunkt(k); const o = await r._planetAuftrag({ type: "planet-ort", samen, breite: p[0], laenge: p[1], zeitMa: 0 }); if (!o.land) continue; const x = lage(o); const so = K.schichtOrt(x.L, -8000, -8000, 8000, 8000); if (!so) continue; tafel.push([x.saat, so.x, so.z].concat(wand(x.L, so), [K.schichtMessung(x.L).baender])); }
+const x0 = so0 ? so0.x : 0, z0 = so0 ? so0.z : 0, y0 = K.hoehe(L0, x0, z0, true);
+const lg = new Set(); for (let d = 0; d <= 3; d += 0.05) { const q = {}; K.felsLage(x0, y0 - d, z0, 0, q); lg.add(q.paket + "/" + q.bank); }
+let s = 4242; const zf = () => ((s = (s * 16807) % 2147483647) / 2147483647);
+const verfolge = (xs, ys, zs, rx, rz) => { const q0 = {}; K.felsLage(xs, ys, zs, 0, q0); let yb = ys - q0.unten, weit = 0, sp = 0; for (let st = 1; st <= 100; st++) { const q = {}; K.felsLage(xs + rx * st, yb, zs + rz * st, 0, q); const c = Math.abs(q.unten) <= Math.abs(q.oben) ? yb - q.unten : yb + q.oben; const j = Math.abs(c - yb); if (j > sp) sp = j; if (j > 0.3) break; weit = st; yb = c; } return [weit, R3(sp)]; };
+const grenzen = [];
+for (let n = 0; n < 10; n++) { const x = n === 0 ? x0 : x0 + (zf() - 0.5) * 4000, z = n === 0 ? z0 : z0 + (zf() - 0.5) * 4000, w = zf() * 2 * Math.PI; grenzen.push(verfolge(x, K.hoehe(L0, x, z, true) - 1 - zf() * 4, z, Math.cos(w), Math.sin(w))); }
+const weiten = grenzen.map((g) => g[0]).sort((p, q) => p - q);
+const stetig = weiten[weiten.length >> 1], stetigVoll = grenzen.filter((g) => g[0] >= 100).length, sprung = Math.max(...grenzen.map((g) => g[1]));
+let luecken = 0, saeulen = 0;
+for (let n = 0; n < 1000; n++) { const x = (zf() - 0.5) * 20000, z = (zf() - 0.5) * 20000, y = K.hoehe(L0, x, z, true); let pv = null; for (let d = 0; d <= 30; d += 0.25) { const q = {}; K.felsLage(x, y - d, z, 0, q); if (pv !== null && Math.abs(q.paket - pv) > 1) luecken++; pv = q.paket; } saeulen++; }
+const mil = [];
+for (let k = 0; mil.length < 20 && k < 200; k++) { const p = lagePunkt(k); const a = await Promise.all([0, -10, -20, -30, -40, -50, -60, -70, -80, -90].map((z) => r._planetAuftrag({ type: "planet-ort", samen, breite: p[0], laenge: p[1], zeitMa: z }))); if (!a[0].land) continue; mil.push(a.map((o) => (o.land ? (K.ortGesetz(ortVon(o)).klimaHeute.spendeMm < 250 ? "wueste" : "land") : "meer"))); }
+const gestein = new Set(); for (let n = 0; n < 40; n++) { const x = (zf() - 0.5) * 2000, z = (zf() - 0.5) * 2000; const y = r._voxelSurfaceY(x, z); if (y === null) continue; for (const d of [15, 30, 60, 120]) gestein.add(r._terrainMaterialAt(x, z, y - d)); }
+return { tafel, heimY: R3(y0), lagen3m: lg.size, stetigM: stetig, stetigVoll, grenzen, sprungM: R3(sprung), luecken, saeulen, milieu: mil, gestein: [...gestein], ms: Math.round(performance.now() - t0) };
+`);
+            // die Tafelland-Saaten mit Kliff im Raster (tf); die Mediane laufen über ALLE Tafelland-Saaten — eine Treppe ohne Kliff zählt 0°
+            const alle = w.tafel || [];
+            const tf = alle.filter((x) => x[3] > 0);
+            const med = (a) => (a.length ? a.slice().sort((p, q) => p - q)[a.length >> 1] : NaN);
+            const h0 = w.heimY || 100, k0 = alle[0] && alle[0][0] === "heim" ? alle[0] : null;
+            const pose = (ab) => (k0 ? { px: k0[1] + ab, py: h0 + 20, pz: k0[2], lx: k0[1], ly: h0, lz: k0[2] } : { ort: "wiese" });
+            const mil = w.milieu || [];
+            const wechsel = mil.reduce((s, r) => s + r.slice(1).filter((m, i) => m !== r[i]).length, 0);
+            const arten = new Set(mil.flat());
+            const aus = {};
+            aus[1] = {
+                werte: Object.assign({ tafelSaaten: alle.length, mitKliff: tf.length }, alle.length ? { kliffGrad: R3(med(alle.map((x) => x[4] || 0))), kliffP90Grad: R3(med(alle.map((x) => x[5] || 0))), schuttZellen: tf.reduce((s, x) => s + x[6], 0) } : {}),
+                zeuge: { tafelSaaten: tf.length, kliffZellen: tf.reduce((s, x) => s + x[3], 0), schuttZellen: tf.reduce((s, x) => s + x[6], 0), je: alle.map((x) => x.slice(0, 8)) },
+            };
+            aus[2] = { werte: { lagen3m: w.lagen3m }, zeuge: { gestein: w.gestein }, auge: await M.auge("zeit-archiv-s2", pose(150)), nicht: "keine Gesteinsart je Lage: die Bänke des Fels-Gesetzes tragen Paket und Bank, keinen Stoff aus dem Ablagerungsmilieu (gelaende-core.js:3605 felsLageO); in der Tiefe liegt " + (w.gestein || []).join(", ") };
+            aus[3] = {
+                werte: { lagen3m: w.lagen3m, stetigM: w.stetigM, grenzenVoll: w.stetigVoll },
+                zeuge: { episoden: 0, lagen: w.lagen3m, sprungM: w.sprungM, grenzen: w.grenzen },
+                nicht: "die Lagen sind keine Ablagerungs-Episoden: die bereiste Geschichte schreibt nichts in den Fels (gelaende-core.js:3605 felsLageO: Bänke aus Rausch und Neigung, ohne Alter) — " + w.lagen3m + " Lagen in 3 m, die Grenzen im Median stetig über " + w.stetigM + " m (" + w.stetigVoll + " von 10 über 100 m)",
+            };
+            aus[4] = { werte: { saeulen: w.saeulen, luecken: w.luecken }, zeuge: { saeulen: w.saeulen, luecken: w.luecken, phasen: 0 }, nicht: "keine Diskordanz, keine Faltung, keine Verwerfung: " + w.saeulen + " Säulen à 30 m tragen " + w.luecken + " Lücken — die Pakete folgen lückenlos (gelaende-core.js:3605 felsLageO), keine Hebungs- oder Abtragsphase der Geschichte schreibt sich ein" };
+            aus[5] = { werte: { orte: mil.length, milieuWechsel: wechsel, milieuArten: arten.size, gesteinsArten: (w.gestein || []).length }, zeuge: { orte: mil.length, wechsel, gestein: w.gestein }, nicht: "das Gestein kennt kein Milieu: die Zeitreise trägt " + arten.size + " Milieus (" + [...arten].join(", ") + ", " + wechsel + " Wechsel an " + mil.length + " Orten über 90 Ma), die Bohrung findet " + (w.gestein || []).join(", ") + " — kein mariner Kalk, kein Evaporit, keine Kohle (stamm/vegetation-wiese.js:2362 _terrainMaterialAt)" };
+            aus[6] = { werte: Object.assign({ wandHoeheM: tf.length ? Math.max(...tf.map((x) => x[7])) : null }, k0 ? { abstandM: 2 } : {}), zeuge: { tafelSaaten: tf.length }, auge: await M.auge("zeit-archiv-s6", pose(2000)), nicht: "keine Kilometer-Wand: die höchste Wand der Tafelland-Saaten misst " + (tf.length ? Math.max(...tf.map((x) => x[7])) : "?") + " m im 120-m-Fenster (gelaende-core.js:397 Schicht-Gesetz, schichtDicke ≤ 60 m), keine Milieu-Lagen" };
+            aus[7] = { werte: { bilder: 0, tafelSaaten: tf.length }, zeuge: {}, auge: await M.auge("zeit-archiv-s7", { ort: "wiese" }), nicht: "Agens, Abfolge und Alter nicht lesbar: Wand und Landform tragen keine Geschichte (gelaende-core.js:5802 ortSaat würfelt jede Epoche neu)" };
+            aus[8] = { werte: { welten: 1, aufschluesse: tf.length }, zeuge: { welten: 1 }, nicht: "kein Gesteinsgedächtnis: die Säule trägt keine Epoche (gelaende-core.js:3605 felsLageO), die Welten tragen keine eigenen Konstanten (voxel-worker.js:1176)" };
+            const o = {};
+            for (const nr of ziel) o[nr] = aus[nr] || M.nicht("ungemessen");
+            return { sprossen: o };
+        },
+        sprossen: {
+            1: {
+                u: { fensterM: 120, rasterM: 2 },
+                soll: [K.soll(AR, 1, "Kliff 60–85°", { key: "kliffGrad", einheit: "°" })],
+                zeuge: zMin({ tafelSaaten: 3, kliffZellen: 50, schuttZellen: 50 }),
+                zeugeText: "≥ 3 Tafelland-Saaten mit Kliff und Schutthang im Raster",
+                taeter: "gelaende-core.js Schicht-Gesetz (T5: Pediment → Schutthang → Kliff)",
+                gruen: gut({ kliffGrad: 71, tafelSaaten: 6 }, { tafelSaaten: 6, kliffZellen: 400, schuttZellen: 600 }),
+                attrappen: [
+                    { name: "74° aus dem Regler kliffWinkel abgelesen (kein Raster)", roh: leer({ kliffGrad: 74 }) },
+                    { name: "ein Kliff ohne Schutthang", roh: gut({ kliffGrad: 71, tafelSaaten: 6 }, { tafelSaaten: 6, kliffZellen: 400, schuttZellen: 0 }) },
+                ],
+            },
+            2: {
+                u: {},
+                soll: [ohneZahl(AR, 2, "Bildvergleich gegen Fotos des Colorado-Plateaus (Farbbänder, Rhythmus)", "bildvergleich")],
+                auge: { pose: "Ego 150 m vor der Schichtstufe der Heimat", vorbild: "Fotos des Colorado-Plateaus (Farbbänder, Rhythmus), Prüfer-Satz R11" },
+                taeter: "gelaende-core.js felsLageO (Bänke ohne Gesteinsart)",
+                nicht: "keine Gesteinsart je Lage",
+                leser: "gelaende-core.js:3605 felsLageO — Paket und Bank aus Rausch und Neigung, kein Ablagerungsmilieu, keine Farbe je Lage",
+                unklar: "der Richter nennt keine Zahl — Vorschlag: „Farbbänder je 10 m ≥ 3, Rhythmus-Periode ±30 % des Fotos, Blindpaar Fehler ≥ 35 %“",
+                gruen: gut({ bildvergleich: 1 }, {}),
+                attrappen: [{ name: "der Vergleich ohne Bild", roh: leer({ bildvergleich: 1 }) }],
+            },
+            3: {
+                u: { tiefeM: 3, strecke: 100 },
+                soll: [
+                    K.soll(AR, 3, "Grabung 3 m: Lagen = Ablagerungs-Episoden der bereisten Geschichte ±10 %", { key: "lagenJeEpisoden", ref: 1, refQuelle: "Erde: die Lage als Ablagerungs-Episode (Steno 1669, Warven-Zählung De Geer 1912)" }),
+                    K.soll(AR, 3, "Grenzen stetig über ≥ 100 m", { key: "stetigM", einheit: "m" }),
+                ],
+                zeuge: zMin({ episoden: 1, lagen: 1 }),
+                zeugeText: "die bereiste Geschichte trug Episoden, die Grabung zählte Lagen",
+                taeter: "gelaende-core.js felsLageO (Lagen ohne Alter)",
+                nicht: "die Lagen tragen keine Episoden der Geschichte",
+                leser: "gelaende-core.js:3605 felsLageO — die Bank liest Rausch und Neigung, kein Leser schreibt die bereiste Geschichte (Zeit, Milieu) in den Fels",
+                gruen: gut({ lagenJeEpisoden: 1.05, stetigM: 100 }, { episoden: 6, lagen: 6 }),
+                attrappen: [{ name: "Lagen gezählt, keine Episode (1 aus 0/0)", roh: gut({ lagenJeEpisoden: 1, stetigM: 100 }, { episoden: 0, lagen: 4 }) }],
+            },
+            4: {
+                u: { saeulen: 1000, tiefeM: 30 },
+                soll: [K.soll(AR, 4, "1 000 Zufallssäulen", { key: "saeulen", rel: "≥" }), K.soll(AR, 4, "jede Lücke = eine Hebungs- oder Abtragsphase der Geschichte (100 %)", { key: "lueckenTrefferProzent", rel: "≥", zahl: 100, einheit: "%" })],
+                zeuge: zMin({ saeulen: 1000, luecken: 1, phasen: 1 }),
+                zeugeText: "1 000 Säulen, Lücken gefunden, jede einer Phase zugeordnet",
+                taeter: "gelaende-core.js felsLageO (lückenlose Pakete)",
+                nicht: "keine Diskordanz, Faltung, Verwerfung",
+                leser: "gelaende-core.js:3605 felsLageO — die Pakete folgen lückenlos; kein Leser frisst eine Lücke aus Hebung oder Abtrag der Geschichte",
+                gruen: gut({ saeulen: 1000, lueckenTrefferProzent: 100 }, { saeulen: 1000, luecken: 140, phasen: 12 }),
+                attrappen: [{ name: "100 % von 0 Lücken", roh: gut({ saeulen: 1000, lueckenTrefferProzent: 100 }, { saeulen: 1000, luecken: 0, phasen: 0 }) }],
+            },
+            5: {
+                u: { orte: 20, zeitenMa: [0, -10, -20, -30, -40, -50, -60, -70, -80, -90] },
+                soll: [K.soll(AR, 5, "Bohrung → Gestein der Lage jenes Alters stimmt ≥ 95 %", { key: "trefferProzent", einheit: "%" })],
+                zeuge: zMin({ orte: 20, wechsel: 1 }),
+                zeugeText: "20 Orte, das Milieu wechselte über die Zeit",
+                taeter: "stamm/vegetation-wiese.js _terrainMaterialAt (Stein ohne Milieu)",
+                nicht: "das Gestein kennt kein Milieu",
+                leser: "stamm/vegetation-wiese.js:2362 _terrainMaterialAt — unter 12 m „stein“ (oder Eisen-Ader), kein Kalk, Evaporit, Kohle nach dem Milieu der Zeit",
+                gruen: gut({ trefferProzent: 96 }, { orte: 20, wechsel: 40 }),
+                attrappen: [{ name: "96 % ohne Bohrung", roh: leer({ trefferProzent: 96 }) }],
+            },
+            6: {
+                u: { abstandM: 2000 },
+                soll: [K.soll(AR, 6, "Spiel-Wand aus 2 km", { key: "abstandM", rel: "≥", zahl: 2, einheit: "km" }), K.soll(AR, 6, "Fachleute ordnen ≥ 80 % der Lagen dem richtigen Milieu zu", { key: "milieuProzent", einheit: "%" })],
+                auge: { pose: "Ego 2 km vor der Schichtstufe der Heimat (die Welt trägt keine Kilometer-Wand)", vorbild: "Grand-Canyon-Fotos aus 2 km (Fachleute, R11)" },
+                taeter: "gelaende-core.js Schicht-Gesetz (Wände ≤ Schichtdicke × Lagen, kein Milieu)",
+                nicht: "keine Kilometer-Wand mit Milieu-Lagen",
+                leser: "gelaende-core.js:2058 schichtOrt — die Treppe der Tafelländer trägt Pakete ohne Milieu; kein Canyon von 1 km",
+                gruen: gut({ abstandM: 2, milieuProzent: 84 }, {}),
+                attrappen: [{ name: "die Fachleute ohne Bild", roh: leer({ abstandM: 2, milieuProzent: 84 }) }],
+            },
+            7: {
+                u: { orte: 50 },
+                soll: [
+                    K.soll(AR, 7, "Fachjury bestimmt aus 50 Ego-Bildern das Agens ≥ 70 %", { key: "agensProzent", einheit: "%" }),
+                    K.soll(AR, 7, "die Abfolge ≥ 60 %", { key: "abfolgeProzent", einheit: "%" }),
+                    K.soll(AR, 7, "das Alter Rang ≥ 0,6", { key: "alterRang" }),
+                ],
+                auge: { pose: "Ego an 50 Orten (heute: die Wiese)", vorbild: "Fachjury, Prüfer-Satz R11 (Zufall 25 %)" },
+                taeter: "gelaende-core.js ortSaat (keine Geschichte in Wand und Form)",
+                nicht: "Agens, Abfolge, Alter nicht in Wand und Form",
+                leser: "gelaende-core.js:5802 ortSaat — die Epoche würfelt das Gelände neu, kein Agens schreibt sich in die Form",
+                gruen: gut({ agensProzent: 74, abfolgeProzent: 64, alterRang: 0.66 }, {}),
+                attrappen: [{ name: "die Jury ohne Bild", roh: leer({ agensProzent: 74, abfolgeProzent: 64, alterRang: 0.66 }) }],
+            },
+            8: {
+                u: { welten: 100, aufschluesse: 5 },
+                soll: [K.soll(AR, 8, "100 Welten", { key: "welten", rel: "≥" }), K.soll(AR, 8, "aus 5 Aufschlüssen", { key: "aufschluesse", rel: "≥" }), K.soll(AR, 8, "≥ 80 % getroffen", { key: "trefferProzent", einheit: "%" })],
+                zeuge: zMin({ welten: 100 }),
+                zeugeText: "100 Welten, ihre Geschichte aus 5 Aufschlüssen gelesen",
+                taeter: "gelaende-core.js felsLageO (kein Gesteinsgedächtnis)",
+                nicht: "kein Gesteinsgedächtnis über 4,5 Ga",
+                leser: "gelaende-core.js:3605 felsLageO — die Säule trägt keine Epoche; voxel-worker.js:1176 liest keine Konstanten der Welten",
+                gruen: gut({ welten: 100, aufschluesse: 5, trefferProzent: 84 }, { welten: 100 }),
+                attrappen: [{ name: "84 % ohne Welt", roh: leer({ welten: 100, aufschluesse: 5, trefferProzent: 84 }) }],
+            },
+        },
+    };
+
+    return { leitern: { [KG]: klima, [AR]: archiv } };
+})());
+
 // ── DIE PERSPEKTIVE planet.erde (1 Leiter, 6 Sprossen): die echte Erde ──────────────────────────────────────────────────────────
 // Der Leser des Spiels ist der Planet-Faden (`r._planetAuftrag`, stamm/gelaende-chunks.js:643 → voxel-worker.js planetOrtAuftrag:1175 →
 // planet-core planetOrt/planetPunkt): je Lage { land, hoeheM, kuesteKm } — derselbe Weg, den die Reise des Spiels ruft. Die Erd-Referenz
