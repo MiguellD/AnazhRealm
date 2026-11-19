@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 150,
+  "weltTakte": 116,
   "zeilen": 1080
  },
  "geraet": {
@@ -22,16 +22,16 @@
   ]
  },
  "sicht": {
-  "radius": 0.4131603804819801,
-  "deckung": 0.0185,
+  "radius": 0.41297487817054895,
+  "deckung": 0.0162,
   "taeter": {
-   "Gelände": 0.0185
+   "Gelände": 0.0162
   },
   "vordergrund": {
    "radius": 0.41,
-   "deckung": 0.0156,
+   "deckung": 0.0139,
    "taeter": {
-    "Gelände": 0.0156
+    "Gelände": 0.0139
    },
    "leib": {
     "deckung": 0,
@@ -58,27 +58,27 @@
  },
  "pose": {
   "kamera": [
-   -300.604,
+   -300.617,
    25.711,
-   -816.864
+   -816.85
   ],
   "blick": [
-   -0.89437,
-   -0.24931,
-   -0.37142
+   -0.89477,
+   -0.24942,
+   -0.37038
   ]
  },
  "seitenfehler": 0,
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 89.2,
+  "mittel": 89.3,
   "sigma": 13,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 1.8 % (Gelände 1.8 %) · Ziel Blickziel im Bild frei 0.83 m · Luma 89.2 σ 13 schwarz 0.0 % weiß 0.0 % · Stand 18.546.342 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 1.6 % (Gelände 1.6 %) · Ziel Blickziel im Bild frei 0.83 m · Luma 89.3 σ 13 schwarz 0.0 % weiß 0.0 % · Stand 18.546.342 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
  "rot": [],
  "urteil": "GRÜN",
  "klasse": {
@@ -94,8 +94,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 943,
-   "wechsel": 1166397
+   "ms": 1067,
+   "wechsel": 1166400
   },
   "rinde": null,
   "toene": [
@@ -104,7 +104,7 @@
   "klassen": {
    "tier:fisch": {
     "objekte": 1,
-    "pixel": 3717
+    "pixel": 3508
    }
   },
   "abstand": null,

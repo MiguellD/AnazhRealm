@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": true,
-  "weltTakte": 203,
+  "weltTakte": 196,
   "zeilen": 1080
  },
  "geraet": {
@@ -92,8 +92,8 @@
    "n": 8,
    "tw": 1440,
    "th": 810,
-   "ms": 3318,
-   "wechsel": 968528
+   "ms": 2138,
+   "wechsel": 968567
   },
   "rinde": null,
   "toene": [
