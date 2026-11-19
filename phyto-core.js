@@ -6562,7 +6562,8 @@
         let tris = 0;
         if (!(vb > 0)) return 0;
         for (const m of meshes || [])
-            if (_budgetTeil(m) && m.teil !== "schatten" && m.mat && m.mat.verband === vb) tris += _budgetTris(m) * _budgetMal(m);
+            if (_budgetTeil(m) && m.teil !== "schatten" && m.mat && m.mat.verband === vb)
+                tris += _budgetTris(m) * _budgetMal(m);
         return tris;
     }
     // DER AUSGANG: faltet eine gelieferte Stufe auf ihre Zeile und berichtet vorher/nachher + Bruch; die Dreiecke gegen die
@@ -6570,7 +6571,13 @@
     function budgetErzwingen(meshes, zeile) {
         const vor = budgetSippen(meshes);
         const frei = budgetFrei(meshes, zeile);
-        const bericht = { vorher: { tris: vor.tris, draws: vor.draws }, nachher: null, faltungen: [], bruch: [], frei: frei };
+        const bericht = {
+            vorher: { tris: vor.tris, draws: vor.draws },
+            nachher: null,
+            faltungen: [],
+            bruch: [],
+            frei: frei,
+        };
         if (!zeile || !(zeile.draws >= 1) || !(zeile.tris > 0)) {
             bericht.nachher = bericht.vorher;
             bericht.bruch.push({ feld: "zeile" });
@@ -6585,7 +6592,8 @@
         const nach = budgetSippen(out);
         bericht.nachher = { tris: nach.tris, draws: nach.draws };
         if (nach.draws > zeile.draws) bericht.bruch.push({ feld: "draws", ist: nach.draws, soll: zeile.draws });
-        if (nach.tris - frei > zeile.tris) bericht.bruch.push({ feld: "tris", ist: nach.tris - frei, soll: zeile.tris });
+        if (nach.tris - frei > zeile.tris)
+            bericht.bruch.push({ feld: "tris", ist: nach.tris - frei, soll: zeile.tris });
         return { meshes: out, bericht: bericht };
     }
 
