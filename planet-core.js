@@ -643,11 +643,11 @@
   const MEMO = new WeakMap();
   function memoVon(plan) {
     let m = MEMO.get(plan);
-    if (!m) { m = { abs: [], scheiben: new Map(), meerBin: new Map(), meerRef: new Map(), proben: new Map(), naehteJe: null, tang: null }; MEMO.set(plan, m); }
+    if (!m) { m = { abs: [], scheiben: new Map(), meerBin: new Map(), meerRef: new Map(), proben: new Map(), naehteJe: null, tang: null, ell: null, randForm: null, kegelPl: null, kegelS: null, klimaG: null, anker: null, ortAnker: null }; MEMO.set(plan, m); }
     return m;
   }
   // Ein-Eintrag-Zwischenspeicher je Tafel (Identität des Plans): spart die WeakMap im Punkt-Pfad, ändert kein Ergebnis
-  let TG_P = null, TG_V = null, EL_P = null, EL_V = null, NJ_P = null, NJ_V = null;
+  let TG_P = null, TG_V = null, EL_P = null, EL_V = null, NJ_P = null, NJ_V = null, RF_P = null, RF_V = null;
   function tangentenJeScholle(plan) {
     if (plan === TG_P) return TG_V;
     const M = memoVon(plan);
@@ -846,6 +846,13 @@
     const S = {
       plan, zeitMa: t, b, abschnitt: A, nS, nG, nO, nP, R, sw, sm, sr, sAus, sgrp, qS, pz, pom, rho,
       bFest, nbStart: null, nbList: null, ketten: null, kettenN: 0, reife: 1 - kexp(-(t - A.t0 + 1) / TAU_W), Q: ohneQ ? 0 : plan.Q, meerKm: 0, refKm: 0, kuesteF: 0,
+      // B0 EINE Gestalt je Scheibe: jedes Feld, das ein späterer Leser setzt, steht hier — vorher wuchs die Scheibe Feld um Feld in
+      // wechselnder Folge (Meer, Ketten, Mantel, Nachklang, Tafeln), und jeder Leser im Punkt-Pfad sah mehrere Gestalten (polymorph):
+      // 6,11 → 4,60 µs je Punkt an erde-01, kein Byte bewegt
+      paarC: null, sigmaKm: 0, eisKm: 0, landAnteil: 0, ozeanAlterMittel: 0, meerFertig: false,
+      kettenAmp: null, kettenBreite: null, kettenG0: 0, kettenIdx: null, kettenCos: 0,
+      dynC: undefined, dynS: undefined, nk: undefined, nahtAmp: undefined, randTafel: undefined,
+      zKopf: null, zListe: null, zLB: null, zF: null, zN: 0, kKopf: null, kAnz: null, kListe: null, kN: 0, sKopf: null, sListe: null, sN: 0, paarTafel: null, paarZeilen: null,
     };
     if (ohneQ) return S;
     // Nachbar-Liste aus 4 096 Fibonacci-Proben
@@ -907,20 +914,10 @@
       }
       if (cnt > 0) idx.push(h);
     }
-    // Hüll-Kappe je Kette
-    const kap = new Float64Array(nH * 4);
-    for (const h of idx) {
-      let cx = 0, cy = 0, cz = 0;
-      for (let kk = 0; kk < 24; kk++) { const ii = (h * 24 + kk) * 4; if (K[ii + 3] < 0) continue; cx += K[ii]; cy += K[ii + 1]; cz += K[ii + 2]; }
-      const l = Math.sqrt(cx * cx + cy * cy + cz * cz) || 1; cx /= l; cy /= l; cz /= l;
-      let mn = 1;
-      for (let kk = 0; kk < 24; kk++) { const ii = (h * 24 + kk) * 4; if (K[ii + 3] < 0) continue; const d = cx * K[ii] + cy * K[ii + 1] + cz * K[ii + 2]; if (d < mn) mn = d; }
-      const marg = 320 / S.R; kap[4 * h] = cx; kap[4 * h + 1] = cy; kap[4 * h + 2] = cz; kap[4 * h + 3] = kcos(Math.min(PI, acosF(mn) + marg));
-    }
-    // dicht gepackt: nur die Ketten, die zur Zeit t Stützen tragen
-    const n = idx.length, Kc = new Float64Array(n * 96), kc = new Float64Array(n * 4), ka = new Float64Array(n * 48), kb = new Float64Array(n * 24);
-    for (let c = 0; c < n; c++) { const h = idx[c]; Kc.set(K.subarray(h * 96, h * 96 + 96), c * 96); kc.set(kap.subarray(4 * h, 4 * h + 4), 4 * c); ka.set(KA.subarray(h * 48, h * 48 + 48), c * 48); kb.set(KB.subarray(h * 24, h * 24 + 24), c * 24); }
-    S.ketten = Kc; S.kettenKap = kc; S.kettenAmp = ka; S.kettenBreite = kb; S.kettenG0 = g0; S.kettenIdx = Int32Array.from(idx); S.kettenCos = kcos(Math.min(PI, 300 / S.R));
+    // dicht gepackt: nur die Ketten, die zur Zeit t Stützen tragen (die Hüll-Kappe je Kette fiel mit dem Zellen-Index, kettenKandidaten)
+    const n = idx.length, Kc = new Float64Array(n * 96), ka = new Float64Array(n * 48), kb = new Float64Array(n * 24);
+    for (let c = 0; c < n; c++) { const h = idx[c]; Kc.set(K.subarray(h * 96, h * 96 + 96), c * 96); ka.set(KA.subarray(h * 48, h * 48 + 48), c * 48); kb.set(KB.subarray(h * 24, h * 24 + 24), c * 24); }
+    S.ketten = Kc; S.kettenAmp = ka; S.kettenBreite = kb; S.kettenG0 = g0; S.kettenIdx = Int32Array.from(idx); S.kettenCos = kcos(Math.min(PI, 300 / S.R));
   }
 
   // G3.1 die Platte über dem Hotspot h zur Ausbruchs-Zeit T = 3,5·kAbs Ma: Bezugs-Scholle (≥ 0) einer Kontinent-Platte oder −1 − j für
@@ -937,17 +934,125 @@
     const r = p < S.nG ? S.abschnitt.mList[S.abschnitt.mStart[p]] : -1 - (p - S.nG);
     M.kegelPl.set(key, r); return r;
   }
-  // elliptischer Winkel-Abstand zur Mitte der Scholle s (dieselbe Ellipse wie ihr Krustenfeld)
-  function ellAbst(S, s, x, y, z) {
-    const plan = S.plan, sm = S.sm, o = 9 * s, TG = tangentenJeScholle(plan), E = ellipseJeScholle(plan);
-    const lx = sm[o] * x + sm[o + 3] * y + sm[o + 6] * z, ly = sm[o + 1] * x + sm[o + 4] * y + sm[o + 7] * z, lz = sm[o + 2] * x + sm[o + 5] * y + sm[o + 8] * z;
-    const pu = lx * TG[6 * s] + ly * TG[6 * s + 1] + lz * TG[6 * s + 2], pv = lx * TG[6 * s + 3] + ly * TG[6 * s + 4] + lz * TG[6 * s + 5];
-    const ru = E[3 * s] * pu + E[3 * s + 1] * pv, rv = -E[3 * s + 1] * pu + E[3 * s] * pv, a = E[3 * s + 2], q2 = ru * ru + rv * rv;
-    const fak = q2 > 1e-18 ? Math.sqrt((ru * ru / (a * a) + rv * rv * a * a) / q2) : 1;
-    return acosF(x * S.sw[3 * s] + y * S.sw[3 * s + 1] + z * S.sw[3 * s + 2]) * fak;
+  // B0 Die Kosten an den Ort, nie an die Zahl der Schollen (Gebot 7): fern der eigenen Kruste ist der Abstand einer Gruppe das Minimum
+  // über ihre Schollen — vorher je Punkt über JEDE Scholle der Gruppe (bei nS 40 im Mittel 24 ellAbst und 35 acosF je Punkt). Eine Zelle
+  // des Würfel-Gitters (6·ZN² Zellen, Halbmesser ≤ 0,07 rad) trägt je Gruppe nur die Schollen, deren untere Schranke in der Zelle unter
+  // der kleinsten oberen Schranke liegt (fak ∈ [1/a, a], acosF ±2·10⁻⁸ rad, Z_RAND deckt beides): dasselbe Minimum. Gebaut am ersten
+  // Punkt der Zelle, je Scheibe (die Schollen fahren mit der Zeit).
+  const ZN = 16, Z_RAND = 1e-6;
+  let ZMITTE = null;   // je Zelle: Mitte (3) und Halbmesser (1), einmal je Lauf
+  function zellenMitten() {
+    const n = 6 * ZN * ZN, Z = new Float64Array(4 * n), e = new Float64Array(15);
+    const richtung = (f, u, v, o) => {
+      const sg = (f & 1) ? -1 : 1, a = f >> 1;
+      const px = a === 0 ? sg : u, py = a === 0 ? u : (a === 1 ? sg : v), pz = a === 2 ? sg : v, l = Math.sqrt(px * px + py * py + pz * pz);
+      e[o] = px / l; e[o + 1] = py / l; e[o + 2] = pz / l;
+    };
+    for (let f = 0; f < 6; f++) for (let i = 0; i < ZN; i++) for (let j = 0; j < ZN; j++) {
+      const u0 = -1 + 2 * i / ZN, u1 = -1 + 2 * (i + 1) / ZN, v0 = -1 + 2 * j / ZN, v1 = -1 + 2 * (j + 1) / ZN, zi = (f * ZN + i) * ZN + j;
+      richtung(f, 0.5 * (u0 + u1), 0.5 * (v0 + v1), 0);
+      richtung(f, u0, v0, 3); richtung(f, u1, v0, 6); richtung(f, u0, v1, 9); richtung(f, u1, v1, 12);
+      let r = 0; for (let c = 3; c < 15; c += 3) { const w = acosF(e[0] * e[c] + e[1] * e[c + 1] + e[2] * e[c + 2]); if (w > r) r = w; }
+      Z[4 * zi] = e[0]; Z[4 * zi + 1] = e[1]; Z[4 * zi + 2] = e[2]; Z[4 * zi + 3] = r;
+    }
+    return Z;
+  }
+  function zelleVon(x, y, z) {
+    const ax = Math.abs(x), ay = Math.abs(y), az = Math.abs(z);
+    let f, u, v;
+    if (ax >= ay && ax >= az) { f = x > 0 ? 0 : 1; u = y / ax; v = z / ax; }
+    else if (ay >= az) { f = y > 0 ? 2 : 3; u = x / ay; v = z / ay; }
+    else { f = z > 0 ? 4 : 5; u = x / az; v = y / az; }
+    let i = Math.floor((u + 1) * 0.5 * ZN), j = Math.floor((v + 1) * 0.5 * ZN);
+    i = i < 0 ? 0 : (i >= ZN ? ZN - 1 : i); j = j < 0 ? 0 : (j >= ZN ? ZN - 1 : j);
+    return (f * ZN + i) * ZN + j;
+  }
+  const _zTh = new Float64Array(3 * 64);
+  function zuwachs(buf, n, Art) { if (n <= buf.length) return buf; const b = new Art(Math.max(n, buf.length + (buf.length >> 1))); b.set(buf); return b; }
+  // Block der Zelle in S.zListe ab o: nG + 1 relative Anfänge (je Gruppe g ihre Kandidaten von o + zListe[o + g] bis o + zListe[o + g + 1]),
+  // dahinter die Schollen (nG + nS ≤ 96 < 256: ein Byte je Eintrag), je Gruppe aufsteigend nach ihrer unteren Schranke in der Zelle;
+  // parallel je Eintrag diese Schranke (zLB, Int16 in 1/1 024 rad) und der kleinste Ellipsen-Faktor der Zelle (zF, Uint8 in 1/160),
+  // beide nach unten gerundet: Schranken bleiben Schranken
+  function zellenKandidaten(S, x, y, z) {
+    const zi = zelleVon(x, y, z);
+    if (S.zKopf === null) { S.zKopf = new Int32Array(6 * ZN * ZN).fill(-1); S.zListe = new Uint8Array(1024); S.zN = 0; }
+    const o0 = S.zKopf[zi]; if (o0 >= 0) return o0;
+    const Zm = ZMITTE || (ZMITTE = zellenMitten()), A = S.abschnitt, sw = S.sw, sr = S.sr, Q = S.Q, E = ellipseJeScholle(S.plan);
+    const cx = Zm[4 * zi], cy = Zm[4 * zi + 1], cz = Zm[4 * zi + 2], r = Zm[4 * zi + 3] + Z_RAND;
+    const o = S.zN; S.zKopf[zi] = o;
+    const nMax = o + S.nG + 1 + S.nS, L = S.zListe = zuwachs(S.zListe, nMax, Uint8Array); let n = o + S.nG + 1;
+    if (S.zLB === null) { S.zLB = new Int16Array(L.length); S.zF = new Uint8Array(L.length); }
+    const ZB = S.zLB = zuwachs(S.zLB, L.length, Int16Array), ZF = S.zF = zuwachs(S.zF, L.length, Uint8Array);
+    const sm = S.sm, TG = tangentenJeScholle(S.plan);
+    for (let g = 0; g < S.nG; g++) {
+      let ubMin = Infinity;
+      for (let i = A.mStart[g]; i < A.mStart[g + 1]; i++) {
+        const s = A.mList[i], dc = cx * sw[3 * s] + cy * sw[3 * s + 1] + cz * sw[3 * s + 2], th = acosF(dc), a = E[3 * s + 2], k = i - A.mStart[g];
+        // fak² = 1/a² + (a² − 1/a²)·sin²ψ, ψ das Azimut um die Scholle gegen ihre Ellipse: in der Zelle weicht ψ höchstens um
+        // δ = asin(sin r / sin θ) ≤ (π/2)·r / sin θ ab, und sin²ψ ist 1-Lipschitz in ψ
+        let s2lo = 0, s2hi = 1;
+        const sinTh = Math.sqrt(Math.max(0, 1 - dc * dc));
+        if (sinTh > 2 * r && th > r && th + r < PI) {
+          const o = 9 * s, lx = sm[o] * cx + sm[o + 3] * cy + sm[o + 6] * cz, ly = sm[o + 1] * cx + sm[o + 4] * cy + sm[o + 7] * cz, lz = sm[o + 2] * cx + sm[o + 5] * cy + sm[o + 8] * cz;
+          const pu = lx * TG[6 * s] + ly * TG[6 * s + 1] + lz * TG[6 * s + 2], pv = lx * TG[6 * s + 3] + ly * TG[6 * s + 4] + lz * TG[6 * s + 5];
+          const ru = E[3 * s] * pu + E[3 * s + 1] * pv, rv = -E[3 * s + 1] * pu + E[3 * s] * pv, q2 = ru * ru + rv * rv;
+          if (q2 > 1e-18) { const s2 = rv * rv / q2, dl = HALBPI * r / sinTh + Z_RAND; s2lo = Math.max(0, s2 - dl); s2hi = Math.min(1, s2 + dl); }
+        }
+        const fLo = Math.sqrt(1 / (a * a) + (a * a - 1 / (a * a)) * s2lo) * (1 - 1e-9), fHi = Math.sqrt(1 / (a * a) + (a * a - 1 / (a * a)) * s2hi) * (1 + 1e-9);
+        _zTh[3 * k] = (th > r ? th - r : 0) * fLo - sr[s] * (1 - Q); _zTh[3 * k + 2] = fLo;
+        const ub = Math.min(PI + Z_RAND, th + r) * fHi - sr[s] * (1 - Q); _zTh[3 * k + 1] = ub; if (ub < ubMin) ubMin = ub;
+      }
+      L[o + g] = n - o;
+      const n0 = n;
+      for (let i = A.mStart[g]; i < A.mStart[g + 1]; i++) {
+        const k = i - A.mStart[g]; if (!(_zTh[3 * k] < ubMin)) continue;
+        const lb = Math.max(-32768, Math.min(32767, Math.floor(_zTh[3 * k] * 1024))), fl = Math.min(255, Math.floor(_zTh[3 * k + 2] * 160 * (1 - 1e-9)));
+        let p = n++; while (p > n0 && ZB[p - 1] > lb) { L[p] = L[p - 1]; ZB[p] = ZB[p - 1]; ZF[p] = ZF[p - 1]; p--; }
+        L[p] = A.mList[i]; ZB[p] = lb; ZF[p] = fl;
+      }
+    }
+    L[o + S.nG] = n - o; S.zN = n;
+    return o;
+  }
+  // B0 dasselbe Gitter für die Hotspot-Ketten: je Zelle die Stützen (q2·24 + kk, in der Folge des Gangs), deren 300-km-Scheibe die
+  // Zelle berühren kann. Vorher prüfte jeder Punkt jede Stütze jeder Kette, deren Kappe ihn deckt — auf dem Mond deckt fast jede
+  // Kappe jeden Punkt (755 von 1 775 Proben in punktRoh). Dieselben Stützen in derselben Folge: dieselben Bytes.
+  function kettenKandidaten(S, x, y, z) {
+    const zi = zelleVon(x, y, z);
+    if (S.kKopf === null) { S.kKopf = new Int32Array(6 * ZN * ZN).fill(-1); S.kAnz = new Uint16Array(6 * ZN * ZN); S.kListe = new Uint16Array(1024); S.kN = 0; }
+    if (S.kKopf[zi] >= 0) return zi;
+    const Zm = ZMITTE || (ZMITTE = zellenMitten()), K = S.ketten, nK = S.kettenIdx.length;
+    const cx = Zm[4 * zi], cy = Zm[4 * zi + 1], cz = Zm[4 * zi + 2], schwelle = kcos(Math.min(PI, 300 / S.R + Zm[4 * zi + 3] + Z_RAND));
+    const o = S.kN; let n = o;
+    for (let q = 0; q < nK * 24; q++) {
+      const ii = 4 * q; if (K[ii + 3] < 0) continue;
+      if (cx * K[ii] + cy * K[ii + 1] + cz * K[ii + 2] < schwelle) continue;
+      S.kListe = zuwachs(S.kListe, n + 1, Uint16Array); S.kListe[n++] = q;
+    }
+    S.kKopf[zi] = o; S.kAnz[zi] = n - o; S.kN = n;
+    return zi;
+  }
+  // B0 dasselbe Gitter für das Krustenfeld: je Zelle die Schollen, deren Fenster (d ≥ sAus, Winkel sr·1,75·a) die Zelle erreichen
+  // kann, aufsteigend wie der Gang. Vorher prüfte jeder Punkt jede Scholle (nS Skalarprodukte, bei nS 40 der Löwenanteil von
+  // krusteFeld). Die Prüfung je Punkt bleibt; die Zelle streicht nur, was dort sicher außerhalb liegt: dieselben Bytes.
+  function krustenKandidaten(S, x, y, z) {
+    const zi = zelleVon(x, y, z);
+    if (S.sKopf === null) { S.sKopf = new Int32Array(6 * ZN * ZN).fill(-1); S.sListe = new Uint8Array(1024); S.sN = 0; }
+    const o0 = S.sKopf[zi]; if (o0 >= 0) return o0;
+    const Zm = ZMITTE || (ZMITTE = zellenMitten()), sw = S.sw, sr = S.sr, E = ellipseJeScholle(S.plan);
+    const cx = Zm[4 * zi], cy = Zm[4 * zi + 1], cz = Zm[4 * zi + 2], r = Zm[4 * zi + 3] + Z_RAND;
+    const o = S.sN; S.sKopf[zi] = o;
+    const L = S.sListe = zuwachs(S.sListe, o + 1 + S.nS, Uint8Array); let n = o + 1;
+    for (let s = 0; s < S.nS; s++) {
+      const al = Math.min(PI, sr[s] * 1.75 * E[3 * s + 2]) + 1e-5;   // der Winkel von sAus, kcos ±10⁻¹⁶ in 10⁻⁵ rad gedeckt
+      if (al < PI && acosF(cx * sw[3 * s] + cy * sw[3 * s + 1] + cz * sw[3 * s + 2]) - r > al) continue;
+      L[n++] = s;
+    }
+    L[o] = n - o - 1; S.sN = n;
+    return o;
   }
   // ── Platten-Wertung (gerichtete Potenz-Wertung, K1/K3) ─────────────────────────────────────────────────
-  const W_ = { sc: new Float64Array(MAX_P), sx: new Float64Array(MAX_P), anc: new Int32Array(MAX_P), dC: new Float64Array(MAX_P), best: -1, zweit: -1, qx: 0, qy: 0, qz: 0, fGrp: -1 };
+  const W_ = { sc: new Float64Array(MAX_P), sx: new Float64Array(MAX_P), dC: new Float64Array(MAX_P), best: -1, zweit: -1, qx: 0, qy: 0, qz: 0, fGrp: -1 };
   function plattenWertung(S, x, y, z, grob) {
     const R = S.R, plan = S.plan;
     const sw0 = plan.saatW;
@@ -966,24 +1071,39 @@
     const ql = Math.sqrt(qx * qx + qy * qy + qz * qz); qx /= ql; qy /= ql; qz /= ql;
     W_.qx = qx; W_.qy = qy; W_.qz = qz;
     const A = S.abschnitt, sw = S.sw, sr = S.sr, sc = W_.sc, Q = S.Q;
-    let best = -1, bv = -1e9, zw = -1, zv = -1e9;
+    let best = -1, bv = -1e9, zw = -1, zv = -1e9, zo = -1;
     for (let g = 0; g < S.nG; g++) {
       // Abstand zur Krusten-Kante der Gruppe aus DEMSELBEN Krustenfeld (mit Rauschen), das die Küste zieht (K1);
       // fern der Schollen (Feld ohne Rauschen) dieselbe Formel geometrisch — stetig am Übergang.
       let dmin = 1e9, an = -1;
       if (KF.gF[g] > -0.74) { an = KF.gS[g]; dmin = (Q - KF.gF[g]) * sr[an]; }
-      else {
+      else if (grob) { // grobe Lesart (untere Schranke): Obermenge der Nachbarn
         for (let i = A.mStart[g]; i < A.mStart[g + 1]; i++) {
           const s = A.mList[i];
-          // untere Schranke ohne Ellipse (fak ≥ 1/a): genau, nur schneller
           const lb = acosF(x * sw[3 * s] + y * sw[3 * s + 1] + z * sw[3 * s + 2]) / ellipseJeScholle(plan)[3 * s + 2] - sr[s] * (1 - Q);
-          if (lb >= dmin) continue;
-          if (grob) { dmin = lb; an = s; continue; } // grobe Lesart (untere Schranke): Obermenge der Nachbarn
-          const d = ellAbst(S, s, x, y, z) - sr[s] * (1 - Q);
+          if (lb < dmin) { dmin = lb; an = s; }
+        }
+      } else {
+        // B0 nur die Kandidaten der Zelle (zellenKandidaten): dasselbe Minimum ohne den Gang über jede Scholle der Gruppe
+        if (zo < 0) zo = zellenKandidaten(S, x, y, z);
+        const ZL = S.zListe, ZB = S.zLB, ZF = S.zF, sm = S.sm, TG = tangentenJeScholle(plan), E = ellipseJeScholle(plan);
+        for (let i = zo + ZL[zo + g], i1 = zo + ZL[zo + g + 1]; i < i1; i++) {
+          // die Schranke der Zelle steigt im Gang: liegt sie über dem Kleinsten, liegen alle weiteren dort (dmin ist ein Minimum —
+          // die Folge ändert es nicht; an liest nur an ≥ 0)
+          if (ZB[i] * (1 / 1024) >= dmin) break;
+          const s = ZL[i], ac = acosF(x * sw[3 * s] + y * sw[3 * s + 1] + z * sw[3 * s + 2]), sq = sr[s] * (1 - Q);
+          // untere Schranke am Punkt mit dem kleinsten Faktor der Zelle (zF ≤ fak): genau, nur schneller
+          if (ac * (ZF[i] * 0.00625) - sq >= dmin) continue;
+          // elliptischer Winkel-Abstand zur Mitte der Scholle s (dieselbe Ellipse wie ihr Krustenfeld), der Winkel EINMAL je Kandidat
+          const o = 9 * s, lx = sm[o] * x + sm[o + 3] * y + sm[o + 6] * z, ly = sm[o + 1] * x + sm[o + 4] * y + sm[o + 7] * z, lz = sm[o + 2] * x + sm[o + 5] * y + sm[o + 8] * z;
+          const pu = lx * TG[6 * s] + ly * TG[6 * s + 1] + lz * TG[6 * s + 2], pv = lx * TG[6 * s + 3] + ly * TG[6 * s + 4] + lz * TG[6 * s + 5];
+          const ru = E[3 * s] * pu + E[3 * s + 1] * pv, rv = -E[3 * s + 1] * pu + E[3 * s] * pv, a = E[3 * s + 2], q2 = ru * ru + rv * rv;
+          const fak = q2 > 1e-18 ? Math.sqrt((ru * ru / (a * a) + rv * rv * a * a) / q2) : 1;
+          const d = ac * fak - sq;
           if (d < dmin) { dmin = d; an = s; }
         }
       }
-      W_.dC[g] = dmin; W_.anc[g] = an;
+      W_.dC[g] = dmin;
       const ox0 = S.pom[3 * g], oy0 = S.pom[3 * g + 1], oz0 = S.pom[3 * g + 2];
       const vx = oy0 * qz - oz0 * qy, vy = oz0 * qx - ox0 * qz, vz = ox0 * qy - oy0 * qx; const vl = Math.sqrt(vx * vx + vy * vy + vz * vz);
       let reach = 0.5 * (A.schuerze[g] + A.hinten[g]);
@@ -1051,19 +1171,22 @@
 
   // ── Krustenfeld: Vereinigung aller Schollen-Felder, jedes im eigenen Rahmen (K1) ──────────────────────
   const SF = { grob: 0 };   // das GROBE Feld der zuletzt gerechneten Scholle (G1.3: die Tektonik liest es)
-  const KF = { gF: new Float64Array(MAX_P), gS: new Int32Array(MAX_P), gV: new Float64Array(MAX_P), sBest: -1, fBest: -9, sF: new Float64Array(64), sFg: new Float64Array(64), sLx: new Float64Array(64 * 3), sIn: new Uint8Array(64) };
+  const KF = { gF: new Float64Array(MAX_P), gS: new Int32Array(MAX_P), gV: new Float64Array(MAX_P), sBest: -1, fBest: -9, sF: new Float64Array(64), sFg: new Float64Array(64), sLx: new Float64Array(64 * 3), sIn: new Uint8Array(64), inL: new Uint8Array(64), nIn: 0 };
   function krusteFeld(S, x, y, z, fussKm, nurGrob) {
-    const plan = S.plan, R = S.R, nS = S.nS, sw = S.sw, sm = S.sm, sr = S.sr, Q = S.Q;
+    const plan = S.plan, R = S.R, sw = S.sw, sm = S.sm, sr = S.sr, Q = S.Q;
     const lamCut = Math.max(32, 2 * fussKm);
     const gF = KF.gF, gV = KF.gV; for (let g = 0; g < S.nG; g++) { gF[g] = -9; gV[g] = -9; }
-    let fBest = -9, sBest = -1;
-    for (let s = 0; s < nS; s++) {
-      KF.sIn[s] = 0;
+    let fBest = -9, sBest = -1, nIn = 0;
+    // sIn trägt genau die Schollen im Fenster (Leser: die Kante der besten Scholle); sF, sFg, sLx lesen alle nur über inL
+    for (let q = 0; q < KF.nIn; q++) KF.sIn[KF.inL[q]] = 0;
+    const ko = krustenKandidaten(S, x, y, z), KL = S.sListe;
+    for (let e = ko + 1, e1 = ko + 1 + KL[ko]; e < e1; e++) {
+      const s = KL[e];
       const d = x * sw[3 * s] + y * sw[3 * s + 1] + z * sw[3 * s + 2];
-      if (d < S.sAus[s]) { KF.sF[s] = -9; KF.sFg[s] = -9; continue; }
+      if (d < S.sAus[s]) continue;
       const o = 9 * s;
       const lx = sm[o] * x + sm[o + 3] * y + sm[o + 6] * z, ly = sm[o + 1] * x + sm[o + 4] * y + sm[o + 7] * z, lz = sm[o + 2] * x + sm[o + 5] * y + sm[o + 8] * z;
-      KF.sLx[3 * s] = lx; KF.sLx[3 * s + 1] = ly; KF.sLx[3 * s + 2] = lz; KF.sIn[s] = 1;
+      KF.sLx[3 * s] = lx; KF.sLx[3 * s + 1] = ly; KF.sLx[3 * s + 2] = lz; KF.sIn[s] = 1; KF.inL[nIn++] = s;
       const f = schollenFeld(plan, s, lx, ly, lz, d, lamCut, nurGrob);
       const fg = SF.grob; KF.sF[s] = f; KF.sFg[s] = fg;
       const g = S.sgrp[s], a = gF[g], av = gV[g];
@@ -1074,7 +1197,7 @@
       if (f > fBest) { fBest = f; sBest = s; }
     }
     let gb = -1, gv = -9; for (let g = 0; g < S.nG; g++) if (gV[g] > gv) { gv = gV[g]; gb = g; }
-    KF.sBest = sBest; KF.fBest = fBest; W_.fGrp = gb;
+    KF.sBest = sBest; KF.fBest = fBest; KF.nIn = nIn; W_.fGrp = gb;
     return gv;
   }
 
@@ -1087,8 +1210,10 @@
     out[0] = tx / l; out[1] = ty / l; out[2] = tz / l;
   }
   const _ta = new Float64Array(3), _tb = new Float64Array(3);
+  const TA = { S: null, i: -1, qx: 0, qy: 0, qz: 0 };   // B0 die Tangente der eigenen Platte gilt für jeden Nachbarn am Punkt
   function paarRelativ(S, i, j, qx, qy, qz) {
-    ankerTangente(S, i, qx, qy, qz, _ta); ankerTangente(S, j, qx, qy, qz, _tb);
+    if (S !== TA.S || i !== TA.i || qx !== TA.qx || qy !== TA.qy || qz !== TA.qz) { ankerTangente(S, i, qx, qy, qz, _ta); TA.S = S; TA.i = i; TA.qx = qx; TA.qy = qy; TA.qz = qz; }
+    ankerTangente(S, j, qx, qy, qz, _tb);
     // Normale von i nach j: grad s_j − grad s_i (beide zeigen zu ihrem Anker)
     let nx = _tb[0] - _ta[0], ny = _tb[1] - _ta[1], nz = _tb[2] - _ta[2]; let nl = Math.sqrt(nx * nx + ny * ny + nz * nz);
     PR.nl = nl;
@@ -1125,20 +1250,38 @@
   // Alter des Ozean-Bodens an einem Rand der Platte i zum Nachbarn j im Abstand xKm: mit der Öffnungs-Rate des PAARS (am Rand
   // gemessen, je Scheibe fest), stetig im Raum; bei Öffnung zwischen Kontinenten T_offen·d_R/(d_R + d_Rand) (K6). EINE Funktion für
   // die eigene Seite und für die Partner-Seite des Sockels (G2.5).
-  function randAlter(S, A, i, j, xKm, dCi, t) {
-    const offenPaar = Math.max(0, -S.paarC[i * S.nP + j]);
-    // ein Rand, der nicht öffnet, erzeugt keinen Boden: + 1 000 Ma, stetig über die Rate (vorher stand am konvergenten Rand auf
-    // dem ersten Kilometer Boden von 0,05 Ma — ein Grat junger Tiefe von 1 km Breite an jeder Subduktion)
-    let a = xKm / (offenPaar * 0.5 + 0.05) + 1000 * (1 - glatt(0, 1, offenPaar));
-    if (i < S.nG && j < S.nG) {
-      const to = A.tOffen[i * A.nG + j];
-      if (to > -1e8) {
-        // K6 nur ZWISCHEN den getrennten Kontinenten: dort ist Rücken-Abstand + Rand-Abstand die halbe Öffnung (hr·T).
-        // Jenseits des eigenen Kontinents (x + d_Rand weit größer) gilt die Regel nicht — dort entscheiden andere Rücken.
-        const T = Math.max(1, t - to), dR = Math.max(0, dCi), L = (offenPaar * 0.5 + 0.05) * T + 150;
-        const wz = 1 - glatt(1.3 * L, 2.0 * L, xKm + dR);
-        a = wz > 1e-3 ? (T * xKm / (xKm + dR + 1)) / wz : 1e6;
+  // B0 Die Teile, die nur am Paar hängen (Nenner der Öffnung, Sockel, K6-Zeit und -Fenster), stehen je Scheibe in der Paar-Tafel —
+  // je Punkt und Rand bleibt der Abstand. Dieselben Ausdrücke einmal je Paar: dieselben Bytes. Zeilenweise am ersten Rand der Platte.
+  function paarZeile(S, A, i) {
+    const nP = S.nP, t = S.zeitMa;
+    if (S.paarTafel === null) { S.paarTafel = new Float64Array(5 * nP * nP); S.paarZeilen = new Uint8Array(nP); }
+    const PT = S.paarTafel;
+    for (let j = 0; j < nP; j++) {
+      const o = 5 * (i * nP + j), offenPaar = Math.max(0, -S.paarC[i * nP + j]);
+      // ein Rand, der nicht öffnet, erzeugt keinen Boden: + 1 000 Ma, stetig über die Rate (vorher stand am konvergenten Rand auf
+      // dem ersten Kilometer Boden von 0,05 Ma — ein Grat junger Tiefe von 1 km Breite an jeder Subduktion)
+      PT[o] = offenPaar * 0.5 + 0.05; PT[o + 1] = 1000 * (1 - glatt(0, 1, offenPaar)); PT[o + 2] = -1;
+      if (i < S.nG && j < S.nG) {
+        const to = A.tOffen[i * A.nG + j];
+        if (to > -1e8) {
+          // K6 nur ZWISCHEN den getrennten Kontinenten: dort ist Rücken-Abstand + Rand-Abstand die halbe Öffnung (hr·T).
+          // Jenseits des eigenen Kontinents (x + d_Rand weit größer) gilt die Regel nicht — dort entscheiden andere Rücken.
+          const T = Math.max(1, t - to), L = (offenPaar * 0.5 + 0.05) * T + 150;
+          PT[o + 2] = T; PT[o + 3] = 1.3 * L; PT[o + 4] = 2.0 * L - 1.3 * L;   // das Fenster glatt(1,3·L; 2·L; x + d_R)
+        }
       }
+    }
+    S.paarZeilen[i] = 1;
+  }
+  function randAlter(S, A, i, j, xKm, dCi) {
+    if (S.paarTafel === null || S.paarZeilen[i] === 0) paarZeile(S, A, i);
+    const PT = S.paarTafel, o = 5 * (i * S.nP + j), T = PT[o + 2];
+    let a = xKm / PT[o] + PT[o + 1];
+    if (T >= 0) {
+      const dR = Math.max(0, dCi);
+      let u = (xKm + dR - PT[o + 3]) / PT[o + 4]; u = u < 0 ? 0 : (u > 1 ? 1 : u);
+      const wz = 1 - u * u * (3 - 2 * u);
+      a = wz > 1e-3 ? (T * xKm / (xKm + dR + 1)) / wz : 1e6;
     }
     return a < 0.05 ? 0.05 : a;
   }
@@ -1172,6 +1315,10 @@
   // Gegner 2 (F4): die Form jedes Rand-Fachs aus dem Plan — Erhalt (glatt(0,1; 0,3) einer Ziehung, mal 0,75…1: etwa ein Fünftel abgetragen) und Lage des
   // Kamms landein (150–600 km, glatt längs des Streichens). Ein Gürtel ist nicht überall gleich erhalten und liegt nicht im festen Abstand zur Küste. Gesetzt.
   function randForm(plan) {
+    if (plan === RF_P) return RF_V;
+    const r = randFormPlan(plan); RF_P = plan; RF_V = r; return r;
+  }
+  function randFormPlan(plan) {
     const M = memoVon(plan); if (M.randForm) return M.randForm;
     const n = plan.nS * 32, F = new Float64Array(2 * n), k = plan.k;
     for (let i = 0; i < n; i++) {
@@ -1239,6 +1386,7 @@
   // Schablonen). Die Graben-Paare lesen das Vorzeichen (EIN Profil in ξ), alle anderen Schablonen den Abstand |x|.
   const RX = { j: -1, x: 0 };   // G2.5: Abstand zur Krusten-Kante einer Nachbar-Gruppe, die nicht Haupt-Partner ist (gesetzt in punktRoh)
   const RS = { invA: 0, hTpl: 0, hOro: 0, oroAlter: 0, randMin: 1e9, randArt: 0, randRate: 0, vAbst: 1e9, vArt: 0, vAlter: 0, vId: -1, vAktiv: 0, hKegel: 0 };
+  const _xKm = new Float64Array(MAX_P + 1);
   function raender(S, own, sec, mHaupt, x, y, z, huelle, nurHoehe) {
     const plan = S.plan, R = S.R, A = S.abschnitt, gS = plan.gS, k = plan.k, t = S.zeitMa, sc = W_.sx, qx = W_.qx, qy = W_.qy, qz = W_.qz;
     let invA = 0, hTpl = 0, hOro = 0, oroAlter = 0, randMin = 1e9, randArt = RAND_ART.innen, randRate = 0;
@@ -1248,15 +1396,25 @@
     const wkI = ownKont ? 1 - glatt(500, 900, dCo) : 0;
     const nb0 = S.nbStart[own], nb1 = S.nbStart[own + 1];
     const reife = S.reife; // 1 − e^(−Dauer/τw), je Scheibe fest
+    // B0 Jenseits der Schablonen (> 1 300 km) liest ein Rand nur das Alter (invA) und — als nächster — den Namen: die Relativbewegung
+    // braucht dort nur der EINE nächste Rand (der erste im Gang mit kleinstem Abstand). Vorher rechnete jeder Rand, der im Gang den
+    // laufenden Kleinsten unterbot, sie neu (auf dem Mond 7,3 Paar-Rechnungen je Punkt, davon 1,25 jenseits der Schablonen).
+    let iiNah = -1, xNah = 1e9;
     for (let ii = nb0 - 1; ii < nb1; ii++) {
       const j = ii < nb0 ? sec : S.nbList[ii];
-      if (j < 0 || j === own || (ii >= nb0 && j === sec)) continue;
-      const xW = Math.max(0, (sc[own] - sc[j]) * 0.5 * R);
-      const xKm = j === sec ? mHaupt : (!nurHoehe && j === RX.j ? RX.x : xW);
+      if (j < 0 || j === own || (ii >= nb0 && j === sec)) { _xKm[ii - nb0 + 1] = 1e9; continue; }
+      const xKm = j === sec ? mHaupt : (!nurHoehe && j === RX.j ? RX.x : Math.max(0, (sc[own] - sc[j]) * 0.5 * R));
+      _xKm[ii - nb0 + 1] = xKm;
+      const xa = xKm < 0 ? -xKm : xKm;
+      if (xKm <= 5000 && xa < xNah) { xNah = xa; iiNah = ii; }
+    }
+    for (let ii = nb0 - 1; ii < nb1; ii++) {
+      const xKm = _xKm[ii - nb0 + 1];
       if (xKm > 5000) continue;
+      const j = ii < nb0 ? sec : S.nbList[ii];
       const xa = xKm < 0 ? -xKm : xKm;   // Abstand; die Schablonen des Graben-Paars lesen das Vorzeichen (ξ)
-      const a = randAlter(S, A, own, j, xa, dCo, t), a2_ = a * a; invA += 1 / (a2_ * a2_);
-      if (xa > 1300 && xa >= randMin) continue;
+      const a = randAlter(S, A, own, j, xa, dCo), a2_ = a * a; invA += 1 / (a2_ * a2_);
+      if (xa > 1300 && (nurHoehe || ii !== iiNah)) continue;
       // Relativbewegung am Punkt: nur wo eine Schablone wirkt oder der nächste Rand benannt wird
       paarRelativC(S, own, j, qx, qy, qz);
       const c = PR.c, rate = PR.rate;
@@ -1353,7 +1511,7 @@
     let own = aufKruste ? gK : W_.best;
     // Radius gemischt über die Schollen am Punkt (Gewicht wie B): rechnet Feld-Abstände in km, stetig über jede Naht (G1.4, kont)
     let srW = 0, srN = 0;
-    for (let s = 0; s < S.nS; s++) { if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
+    for (let q = 0; q < KF.nIn; q++) { const s = KF.inL[q]; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
     const srM = srN > 0 ? srW / srN : 0.2;
     let sec = own === W_.best ? W_.zweit : W_.best;
     let mHaupt = sec >= 0 ? Math.max(0, (sc[own] - sc[sec]) * 0.5 * R) : 1e9;
@@ -1419,8 +1577,8 @@
     let becken = 0, beckenW = 0;
     if (S1 > 0) {
       const lamB = huelle ? 800 : Math.max(32, 2 * fussKm);
-      for (let s = 0; s < S.nS; s++) {
-        if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
+      for (let q = 0; q < KF.nIn; q++) {
+        const s = KF.inL[q]; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
         const seedB = (plan.schollen[8 * s + 5] | 0) + 91, lx = KF.sLx[3 * s], ly = KF.sLx[3 * s + 1], lz = KF.sLx[3 * s + 2];
         const nB = fbmKm(seedB, lx, ly, lz, R, 4000, lamB, BECKEN_GEWINN); becken += wb * schildFaktor(plan, s) * (nB >= 0 ? nB : -BECKEN_TIEF * nB * nB); beckenW += wb;
       }
@@ -1444,8 +1602,8 @@
     let hMem = 0, memAlter = 0;
     if (S1 > 0) {
       const NJ = naehteJeScholle(plan), TG = tangentenJeScholle(plan), nae = plan.naehte;
-      for (let s = 0; s < S.nS; s++) {
-        if (!KF.sIn[s]) continue;
+      for (let q = 0; q < KF.nIn; q++) {
+        const s = KF.inL[q];
         const f = KF.sFg[s]; if (f < Q - 0.3) continue;   // G1.3: das Gedächtnis liest das GROBE Feld
         const lx = KF.sLx[3 * s], ly = KF.sLx[3 * s + 1], lz = KF.sLx[3 * s + 2];
         const mx = plan.schollen[8 * s], my = plan.schollen[8 * s + 1], mz = plan.schollen[8 * s + 2], rs = S.sr[s];
@@ -1502,24 +1660,21 @@
     const hGeb = Math.max(hOro, hMem);
     // 7 Hotspot-Ketten (Kegel, über Kontinent Dom) — die Hülle trägt keine Kegel und liest keinen Vulkan: dort entfällt die Schleife
     if (S.kettenIdx && !huelle) {
-      const K = S.ketten, KP = S.kettenKap, cos300 = S.kettenCos;
+      const K = S.ketten, cos300 = S.kettenCos;
       const sig = 30 + 90 * S1, ozeanisch = 1 - S1;
-      for (let q2 = 0; q2 < S.kettenIdx.length; q2++) {
-        const h = S.kettenIdx[q2];
-        if (x * KP[4 * q2] + y * KP[4 * q2 + 1] + z * KP[4 * q2 + 2] < KP[4 * q2 + 3]) continue;
-        const st = plan.hotspots[6 * h + 5];
-        for (let kk = 0; kk < 24; kk++) {
-          const ii = (q2 * 24 + kk) * 4; const tau = K[ii + 3]; if (tau < 0) continue;
-          const dd = x * K[ii] + y * K[ii + 1] + z * K[ii + 2]; if (dd < cos300) continue; // 300 km, in km gemessen
-          const d = acosF(dd) * R;
-          const sigK = sig * S.kettenBreite[q2 * 24 + kk];
-          if (!huelle && d < 3.5 * sigK) {
-            const KA = S.kettenAmp, ia = (q2 * 24 + kk) * 2;
-            const hh = st * (4.2 * ozeanisch * KA[ia] + 0.6 * S1 * KA[ia + 1]) * gauss(d, sigK) * gS;
-            if (hh > hKegel) hKegel = hh;
-          }
-          if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.hotspot; vAlter = tau; vId = 800000000 + h * 10000 + (S.kettenG0 - kk + 5000); vAktiv = tau < 3.5 && plan.hotspots[6 * h + 4] >= t ? 1 : 0; }
+      const kz = kettenKandidaten(S, x, y, z), kL = S.kListe;
+      for (let e = S.kKopf[kz], e1 = e + S.kAnz[kz]; e < e1; e++) {
+        const q = kL[e], q2 = (q / 24) | 0, kk = q - 24 * q2, h = S.kettenIdx[q2], st = plan.hotspots[6 * h + 5];
+        const ii = 4 * q, tau = K[ii + 3];   // tau ≥ 0: die Liste trägt nur Stützen mit Ausbruch
+        const dd = x * K[ii] + y * K[ii + 1] + z * K[ii + 2]; if (dd < cos300) continue; // 300 km, in km gemessen
+        const d = acosF(dd) * R;
+        const sigK = sig * S.kettenBreite[q];
+        if (!huelle && d < 3.5 * sigK) {
+          const KA = S.kettenAmp, ia = 2 * q;
+          const hh = st * (4.2 * ozeanisch * KA[ia] + 0.6 * S1 * KA[ia + 1]) * gauss(d, sigK) * gS;
+          if (hh > hKegel) hKegel = hh;
         }
+        if (d < vAbst) { vAbst = d; vArt = VULKAN_ART.hotspot; vAlter = tau; vId = 800000000 + h * 10000 + (S.kettenG0 - kk + 5000); vAktiv = tau < 3.5 && plan.hotspots[6 * h + 4] >= t ? 1 : 0; }
       }
     }
     // G1.4 EINE Küste für alle Leser: kont ist stetig über die Schollen (max_s statt der nächsten Scholle) und sieht die Küste der
@@ -1534,8 +1689,8 @@
       let t1x = ey * z, t1y = -ex * z, t1z = ex * y - ey * x; const l1 = Math.sqrt(t1x * t1x + t1y * t1y + t1z * t1z); t1x /= l1; t1y /= l1; t1z /= l1;
       const t2x = y * t1z - z * t1y, t2y = z * t1x - x * t1z, t2z = x * t1y - y * t1x;
       let g0 = 0, g1 = 0, g2 = 0;
-      for (let s = 0; s < S.nS; s++) {
-        if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
+      for (let q = 0; q < KF.nIn; q++) {
+        const s = KF.inL[q]; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue;
         const seedB = (plan.schollen[8 * s + 5] | 0) + 91, o = 9 * s, sm = S.sm;
         const wA = wb * schildFaktor(plan, s);
         g0 += wA * beckenGrob(seedB, sm, o, R, x, y, z); g1 += wA * beckenGrob(seedB, sm, o, R, x + d0 * t1x, y + d0 * t1y, z + d0 * t1z); g2 += wA * beckenGrob(seedB, sm, o, R, x + d0 * t2x, y + d0 * t2y, z + d0 * t2z);
@@ -1944,7 +2099,7 @@
   function kontGrob(S, x, y, z) {
     const f = krusteFeld(S, x, y, z, 400, true);
     let srW = 0, srN = 0;
-    for (let s = 0; s < S.nS; s++) { if (!KF.sIn[s]) continue; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
+    for (let q = 0; q < KF.nIn; q++) { const s = KF.inL[q]; const wb = 1 - (KF.fBest - KF.sF[s]) / 0.15; if (wb <= 0) continue; srW += wb * S.sr[s]; srN += wb; }
     return (f - S.kuesteF) * (srN > 0 ? srW / srN : 0.2) * S.R;
   }
   function planetKlimaR(S, x, y, z, saison, aus, punkt) {
@@ -2380,7 +2535,7 @@
     return o;
   }
   function scheibeBytes(S) {
-    let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'rho', 'nbStart', 'nbList', 'ketten', 'kettenKap', 'kettenIdx', 'nahtAmp', 'randTafel']) if (S[key]) n += S[key].byteLength;
+    let n = 0; for (const key of ['sw', 'sm', 'sr', 'sAus', 'sgrp', 'qS', 'pz', 'pom', 'rho', 'nbStart', 'nbList', 'ketten', 'kettenIdx', 'nahtAmp', 'randTafel', 'zKopf', 'zListe', 'zLB', 'zF', 'kKopf', 'kAnz', 'kListe', 'sKopf', 'sListe', 'paarTafel', 'paarZeilen']) if (S[key]) n += S[key].byteLength;
     return n + 128;
   }
 

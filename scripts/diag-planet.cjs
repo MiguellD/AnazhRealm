@@ -843,7 +843,10 @@ function kosten() {
   zeile('kosten.abschnitt', pa.wert <= 25, pa.wert.toFixed(1) + ' ms (letzter Abschnitt kalt, mit Rand-Gedächtnis über alle Vorgänger)', '≤ 25 ms');
   // Scheibe warm: Abschnitt und Meer-Fächer warm, neue Zeit im selben Fach
   const ws = bestVon5(i => { const a = ns(); const s = P.planetScheibe(plan, 0.137 * (i + 1)); return { ms: (ns() - a) / 1e6, bytes: P._intern.scheibeBytes(s) }; });
-  zeile('kosten.scheibe', ws.wert.ms <= 5 && ws.wert.bytes <= 64 * 1024, ws.wert.ms.toFixed(2) + ' ms, ' + (ws.wert.bytes / 1024).toFixed(1) + ' KB', 'warm ≤ 5 ms, ≤ 64 KB');
+  // B0 die Zell-Listen (Kruste, Platten, Ketten) wachsen mit den gelesenen Zellen, nie mit der Welt: S trägt nach den 210 000 Adressen
+  // von kosten.punkt jede der 6·16² Zellen — die Zahl steht neben der warmen
+  const vollKB = P._intern.scheibeBytes(S) / 1024;
+  zeile('kosten.scheibe', ws.wert.ms <= 5 && ws.wert.bytes <= 64 * 1024 && vollKB <= 512, ws.wert.ms.toFixed(2) + ' ms, ' + (ws.wert.bytes / 1024).toFixed(1) + ' KB warm, ' + vollKB.toFixed(1) + ' KB mit allen Zellen', 'warm ≤ 5 ms, ≤ 64 KB; alle Zellen ≤ 512 KB');
   const mf = bestVon5(i => { const a = ns(); P.planetMeer(plan, -300 - 10 * i, 0.001 * (i + 1)); return (ns() - a) / 1e6; });
   zeile('kosten.meer', mf.wert <= 40, mf.wert.toFixed(1) + ' ms je Fach (Zusatz-Wasser erzwingt neue Lösung, Proben warm)', '≤ 40 ms');
   const kk = bestVon5(() => P.planetKarte(S, 1024, 'relief'));
