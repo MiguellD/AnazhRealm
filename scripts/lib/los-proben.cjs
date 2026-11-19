@@ -59,8 +59,8 @@ function losProben(FC, check) {
 // zugestellten Flügel: ROT beim Namen. Leser: die Vorprüfung jeder Bau-Bahn (gate:settlement, check.yml Gruppe 18).
 const OEFFNUNG_MUTANTEN = {
     "Flügel zu (0 statt 0,62 rad)": [
-        ["L.rotation.y=(cz<0?0.62:-0.62)+", "L.rotation.y=0+"],
-        ["L.rotation.y=(cx<0?-0.62:0.62)+", "L.rotation.y=0+"],
+        ["L.rotation.y=(cz<0?FLUEGEL_WINKEL:-FLUEGEL_WINKEL)+", "L.rotation.y=0+"],
+        ["L.rotation.y=(cx<0?-FLUEGEL_WINKEL:FLUEGEL_WINKEL)+", "L.rotation.y=0+"],
     ],
     // Rahmen vierfach tief: die doppelte Tiefe (Sturz, Pfosten 0,36 · Bank 0,48) reicht an keinem der 519 Plan-Häuser der Stadt 7/4750
     // über Dach und Sockel, auch nicht an der Hülle vor dem Schnitt (p3/n1911/los-huelle/vergleich.log) — sie wäre vakuös; vierfach an 94
@@ -290,17 +290,17 @@ function huelleProben(FC, check, { kernText, golden, taeter = false }) {
 
 // DER WÜRFEL JE LOS (Welle SAMEN, los-wurf): jedes Los zieht Zeiger-Wahl, Versatz, Fuge und Scheunen-Stand aus seinem EIGENEN
 // Strom (fachwerk `dorfLayout`, samen-core `samenBaum(seed)("los:<i>")`) — eine Front, die sich ändert, würfelt kein anderes Los neu.
-// Die Linse ändert je Fall jedes Los um WURF_DELTA (die Breite seiner Front, die Mitte bleibt; der Haken `__losStoer` am Ruf von
+// Die Linse ändert je Fall jedes Los um jedes WURF_DELTAS (die Breite seiner Front, die Mitte bleibt; der Haken `__losStoer` am Ruf von
 // dorfLayout, sonst der Kern Zeichen für Zeichen) und zählt je Probe die ANDEREN Häuser, die fehlen, hinzukommen, weiter als
 // WURF_WANDER m wandern oder sich drehen. Bis zur Welle zogen alle Lose aus dem EINEN Strom `rnd`: kippte ein Los an einer Probe,
 // stand Same 431794 85 m weiter (p3/n1911/los-huelle/ursache). Der Täter des Selbsttests ist dieser EINE Strom: ROT beim Los.
-// die Städte der Grammatik (ummauert, Markt, Viertel), an denen der EINE Strom kippt (main 92b7afd07 bei +5 cm: 7/18 an 2 von 28
-// Losen 9 Häuser, 7/30 an 2 von 37 Losen 2 Häuser) — die Dörfer 3/12 und 12345/6 kippen auch an ihm nie (p3/n1911/samen/messung-26baeab7)
-const WURF_FAELLE = [
-    { seed: 7, nH: 18 },
-    { seed: 7, nH: 30 },
-];
-const [WURF_DELTA, WURF_WANDER] = [0.05, 0.5];
+// die Stadt der Grammatik 7/30 (ummauert, Markt, Viertel): an ihr kippt der EINE Strom (main 92b7afd07: −5 cm an 7 von 37 Losen 13
+// Häuser, +1 cm an 2 Losen 2), und dort kreuzt bei −5 cm und +1 cm keine Front eine Schwelle des GESETZES (die Fuge des Snaps,
+// der Versuch zu 1,1 m) — die Linse misst den Würfel allein. Wo eine Front eine Schwelle kreuzt (7/18 +5 cm: 2 Häuser, 7/60 −5 cm
+// Los 10: 41), rückt das Gesetz, nicht der Wurf (p3/n1911/samen/messung-26baeab7/loswurf-fuge.log); die Dörfer 3/12 und 12345/6
+// kippen auch am EINEN Strom nie.
+const WURF_FAELLE = [{ seed: 7, nH: 30 }];
+const [WURF_DELTAS, WURF_WANDER] = [[-0.05, 0.01], 0.5];
 const LOS_HAKEN = ["var L = dorfLayout(p, ext.slice(von, bis), ", "var L = dorfLayout(p, (globalThis.__losStoer || function (e) { return e; })(ext.slice(von, bis), von), "]; // prettier-ignore
 const WURF_TAETER = [
     ["const g=plan.houses[i], wurf=losWurf(i);", "const g=plan.houses[i], wurf=rnd;"],
@@ -317,8 +317,8 @@ function wurfAnders(K) {
         globalThis.__losStoer = null;
         const H0 = haeuser(K.exportSettlement(dp)),
             lose = K.DORF(dp).houses;
-        lose.forEach((h, k) => {
-            globalThis.__losStoer = (ext, von) => ext.map((e, j) => (j + von === k ? Object.assign({}, e, { x0: e.x0 - WURF_DELTA / 2, x1: e.x1 + WURF_DELTA / 2 }) : e)); // prettier-ignore
+        for (const delta of WURF_DELTAS) lose.forEach((h, k) => {
+            globalThis.__losStoer = (ext, von) => ext.map((e, j) => (j + von === k ? Object.assign({}, e, { x0: e.x0 - delta / 2, x1: e.x1 + delta / 2 }) : e)); // prettier-ignore
             const H1 = haeuser(K.exportSettlement(dp));
             globalThis.__losStoer = null;
             for (const key of new Set([...H0.keys(), ...H1.keys()])) {
@@ -326,7 +326,7 @@ function wurfAnders(K) {
                 const [a, b] = [H0.get(key), H1.get(key)];
                 const d = a && b ? Math.hypot(a.x - b.x, a.z - b.z) : Infinity;
                 if (!(d <= WURF_WANDER) || Math.abs(Math.atan2(Math.sin(a.phi - b.phi), Math.cos(a.phi - b.phi))) > 0.05)
-                    out.push(`dorf ${dp.seed}/${dp.nH} Los ${k} (${h.rolle}) ±${WURF_DELTA * 100} cm → ${key} ${a && b ? d.toFixed(2) + " m" : a ? "fällt" : "kommt"}`);
+                    out.push(`dorf ${dp.seed}/${dp.nH} Los ${k} (${h.rolle}) ${delta * 100} cm → ${key} ${a && b ? d.toFixed(2) + " m" : a ? "fällt" : "kommt"}`);
             }
         });
     }
@@ -340,7 +340,7 @@ function wurfProben(check, { kernText, taeter = false }) {
     if (taeter)
         check(`Selbst-Test Würfel je Los: der EINE Strom (jedes Los zieht aus rnd) fällt beim Los (${n})`, !!v && v.length > 0, m.fehlt || `${v.length} — ${v.slice(0, 2).join(" · ")}`);
     else
-        check(`Würfel je Los (${n}): eine Front ±${WURF_DELTA * 100} cm würfelt kein anderes Haus neu (fehlt · kommt · wandert > ${WURF_WANDER} m)`, !!v && !v.length, m.fehlt || `${v.length} — ${v.slice(0, 3).join(" · ")}`);
+        check(`Würfel je Los (${n}): eine Front ${WURF_DELTAS.map((d) => d * 100).join(" / ")} cm würfelt kein anderes Haus neu (fehlt · kommt · wandert > ${WURF_WANDER} m)`, !!v && !v.length, m.fehlt || `${v.length} — ${v.slice(0, 3).join(" · ")}`);
     console.log(`  Würfel je Los${taeter ? " (Täter)" : ""}: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
 
