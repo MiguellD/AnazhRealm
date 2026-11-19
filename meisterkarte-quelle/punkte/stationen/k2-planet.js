@@ -322,6 +322,1420 @@ const KERN = (() => {
 const K = KERN;
 const L = K.kapitel("planet");
 
+// ── DIE PERSPEKTIVE planet.wasser (6 Leitern, 39 Sprossen; kreislauf S1 und stroemung S1 tragen schon Station und Tafel) ─────────
+// Die Leser des Spiels: das Wasser am Ort (`_koerperWasser` · `_nassAt` · `_hydroRiverAt` · `_waterFlowAt`, stamm/wasser-hydro.js), der
+// Pegel (`_pegelTakt`), das Eis (`_eisLinien` · `_eisAt`), der Schnee (`_schneeTafel` · `_schneeVersatz`, gelaende-core schneeTrittAm),
+// die Temperatur (gelaende-core temperaturAus über `_temperaturFeld`), der Wind (`_windAt`), das Medium der Kamera unter Wasser
+// (`_applyDayNightToScene` → `luft.U` · `_luftSichtM`), Sonne und Mond (`__weltLicht`), der Planet-Faden (`r._planetAuftrag`).
+// DAS MEER DER WELT: die Heimat (Samen anazh-realm-seed) liegt 289 km von der Küste ihres Planeten (planet-anker), ihr Gelände trägt aber
+// eine Bucht ~10,6 km nördlich des Spawns (Wasser-Art Meer, bis ~20 m tief) — jede Leiter, die Meer braucht, sucht sie an der Welt
+// (Strahlen vom Spawn, `_ensureHydroTilesAround`), nie an einer eingetragenen Zahl. Der See der Soll-Tafel (1816/−6168, bis 3,4 m) trägt
+// Eis und Grube. Die Messungen setzen Saison, Welt-Uhr, Wetter und Kamera nur in EINER Auswertung der Seite und stellen sie zurück.
+L.perspektive("wasser", (() => {
+    const PFAD = ["stamm/wasser-*.js", "stamm/bild-himmel.js", "stamm/bild-sicht.js", "stamm/stoff-material.js", "stamm/gelaende-*.js", "gelaende-core.js", "foundry-core.js", "welt-licht.js", "planet-core.js", "voxel-worker.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs"];
+    // DER ZEUGE DER WELT: jede genannte Zahl in `roh.zeuge` muss ihr Mindestmaß halten (Antworten der Welt, Streuung, vor ≠ nach) —
+    // eine Attrappe, die nur den Wortlaut der werte trägt, fällt hier
+    const zMin = (spec) => (roh) => {
+        const z = (roh && roh.zeuge) || {};
+        for (const [k, min] of Object.entries(spec)) if (!(typeof z[k] === "number" && z[k] >= min)) return "die Welt antwortete nicht: " + k + " " + (z[k] === undefined ? "fehlt" : z[k]) + " (Soll ≥ " + min + ")";
+        return null;
+    };
+    const gut = (werte, zeuge) => ({ werte, zeuge });
+    const leer = (werte) => ({ werte, zeuge: {} });
+
+    // ════════════════════════════════════════ SEEGANG ════════════════════════════════════════
+    const SEE = "planet.wasser.seegang";
+    const seegang = {
+        sek: 60,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "die Bilder (spiegelTreue an 12 Posen, Weißkappe im Bild, Auge Beaufort und Küste) schießt die Probe nur am Gerät (/bild an der Bucht)",
+        mess: async function (H, U, M) {
+            const MEER = `
+const L = r._gelaende(), G = globalThis.__gelaendeCore;
+const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const warte = async (x, z) => { let n = 0; while (r._ensureHydroTilesAround(x, z, 32) && n < 200) { await new Promise((f) => setTimeout(f, 50)); n++; } return n; };
+const tiefe = (x, z) => { const kw = r._koerperWasser(x, z, -Infinity), g = r._voxelSurfaceY(x, z); return kw > -Infinity && g !== null && Number.isFinite(g) && kw > g ? kw - g : 0; };
+let m = window.__pwMeer;
+if (!m) {
+m = { gefunden: false };
+let p = null;
+for (let d = 500; d <= 20000 && !p; d += 250) for (let a = 0; a < 32 && !p; a++) { const x = d * Math.cos((a * Math.PI) / 16), z = d * Math.sin((a * Math.PI) / 16); if (G.hoehe(L, x, z, false) < L.waterLevel - 2) p = [x, z]; }
+if (p) {
+for (const [a, b] of [[0, 0], [-1500, -1500], [1500, -1500], [-1500, 1500], [1500, 1500]]) await warte(p[0] + a, p[1] + b);
+const N = 61, T = new Float64Array(N * N);
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) T[i + N * j] = tiefe(p[0] + 50 * (i - 30), p[1] + 50 * (j - 30));
+let best = [0, p[0], p[1]], zellen = 0;
+const kueste = [], innen = [];
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+const t = T[i + N * j];
+if (!(t > 0)) continue;
+const x = p[0] + 50 * (i - 30), z = p[1] + 50 * (j - 30);
+zellen++;
+if (t > best[0]) best = [t, x, z];
+const rand = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => i + a < 0 || j + b < 0 || i + a >= N || j + b >= N || !(T[i + a + N * (j + b)] > 0));
+if (rand) kueste.push([x, z]); else innen.push([x, z, R(t)]);
+}
+const B = [best[1], best[2]], d0 = Math.hypot(B[0], B[1]), ux = -B[0] / d0, uz = -B[1] / d0;
+let s = null;
+for (let k = 1; k < 800 && !s; k++) { const x = B[0] + ux * 10 * k, z = B[1] + uz * 10 * k; if (!(tiefe(x, z) > 0) && r._voxelSurfaceY(x, z) > L.waterLevel) s = [x + ux * 6, z + uz * 6]; }
+let art = null;
+for (const t of (r.state.hydroTiles || new Map()).values()) { const sz = t.dim * t.cell; if (t.water && B[0] >= t.originX && B[1] >= t.originZ && B[0] < t.originX + sz && B[1] < t.originZ + sz) art = t.water.waterKind[Math.floor((B[0] - t.originX) / t.cell) + Math.floor((B[1] - t.originZ) / t.cell) * t.dim]; }
+const sy = s ? r._voxelSurfaceY(s[0], s[1]) : null;
+const jede = (A, n) => A.filter((q, i) => i % Math.max(1, Math.floor(A.length / n)) === 0).slice(0, n);
+m = { gefunden: true, p, B, tiefeMax: R(best[0]), spiegel: R(r._koerperWasser(B[0], B[1], -Infinity)), flaecheKm2: R((zellen * 2500) / 1e6), kuesteN: kueste.length, kuesteKm: R(kueste.length * 0.05), kueste: jede(kueste, 120), innen: jede(innen, 100), art, abstandKm: R(d0 / 1000), ufer: s ? [R(s[0]), R(sy + 1.7), R(s[1]), R(B[0]), R(L.waterLevel), R(B[1])] : null, richtung: [R(ux), R(uz)] };
+}
+window.__pwMeer = m;
+}
+`;
+            const meer = await H.seite(MEER + "return m;");
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const aus = {};
+            const ziel = Object.keys(U);
+            if (!meer || !meer.gefunden) {
+                for (const nr of ziel) aus[nr] = M.nicht("kein Meer im Gelände der Welt bis 20 km vom Spawn (gelaende-core hoehe unter dem Spiegel)");
+                return { sprossen: aus };
+            }
+            // DIE WELT AM MEER: der Wind je Wort des Wetters (`_windAt` an der tiefsten Stelle der Bucht, 600 s Wind-Uhr), der Hub der
+            // Welle (`_wasserHubM`, die Decke im Sturm), die Sicht der Kamera, die Neigung der Strände (das Gelände 20 m landwärts)
+            const welt = await H.seite(MEER + `
+const [bx, bz] = m.B;
+const alt = r.state.weather;
+const wind = {};
+try {
+for (const w of ["sunny", "cloudy", "foggy", "rainy", "stormy"]) {
+if (window.__wetterSetzen(w) !== w) throw new Error("das Wetter der Probe gilt nicht: " + w + " (es gilt " + r.state.weather + ")");
+const v = [];
+for (let t = 0; t < 600; t += 3) v.push(r._windAt(bx, bz, t).ms);
+wind[w] = [R(v.reduce((s, x) => s + x, 0) / v.length), R(Math.min(...v)), R(Math.max(...v))];
+}
+} finally { window.__wetterSetzen(alt); }
+const [ux, uz] = m.richtung;
+const neigung = m.kueste.map(([x, z]) => { const a = r._voxelSurfaceY(x, z), b = r._voxelSurfaceY(x + ux * 20, z + uz * 20); return a !== null && b !== null ? Math.abs(b - a) / 20 : null; }).filter((v) => v !== null);
+return { wind, hubMaxM: R(r.constructor._wasserHubM()), sichtM: R(r.state.camera.far), neigung: neigung.map(R), wetterNach: r.state.weather };
+`);
+            // DIE BILDER AM GERÄT (auf swiftshader schießt die Probe nicht): 12 Posen an der Bucht (4 Uhren × 3 Wetter, die Bühne der
+            // Werkbank setzt Uhr und Wetter je Schuss), die Klasse des gezeichneten Wassers mit ihren Maßen (spiegelTreue, weiss)
+            const bilder = [];
+            const pose = meer.ufer ? { px: meer.ufer[0], py: meer.ufer[1], pz: meer.ufer[2], lx: meer.ufer[3], ly: meer.ufer[4], lz: meer.ufer[5] } : null;
+            let stand0 = null;
+            if (!M.swift && pose) {
+                stand0 = await H.seite("const p = r.state.playerMesh.position; return [p.x, p.z, r.state.weather];");
+                const pfad = require("path");
+                for (const wetter of ["sunny", "cloudy", "rainy"])
+                    for (const uhr of [0.3, 0.45, 0.6, 0.75]) {
+                        if (M.uhr() > 38) break;
+                        try {
+                            const datei = pfad.join(pfad.dirname(H.aus), "wasser-see-" + wetter + "-" + uhr + ".png");
+                            const b = await H.ruf("/bild", Object.assign({ w: 1920, h: 1080, wahl: 0, uhr, wetter, datei, klasse: "^(wasserSatz|farWater|chunk-water-[a-z]+)$" }, pose));
+                            const kl = Object.values((b.klasse && b.klasse.klassen) || {}).sort((x, y) => (y.pixel || 0) - (x.pixel || 0))[0] || {};
+                            bilder.push({ wetter, uhr, spiegelTreue: kl.spiegelTreue, weiss: kl.weiss, pixel: kl.pixel || 0, datei: b.datei || datei });
+                        } catch (e) {
+                            bilder.push({ wetter, uhr, fehler: String((e && e.message) || e).slice(0, 160) });
+                        }
+                    }
+            }
+            const auge3 = pose ? await M.auge("wasser-seegang-s3", pose, { wetter: "stormy" }) : undefined;
+            const auge7 = pose ? await M.auge("wasser-seegang-s7", pose, { uhr: 0.7 }) : undefined;
+            if (stand0 && M.uhr() < 50) {
+                await H.ruf("/umstellen", { x: stand0[0], z: stand0[1] }).catch(() => null);
+                await H.seite("window.__wetterSetzen(" + JSON.stringify(stand0[2]) + "); return 1;").catch(() => null);
+            }
+            const st = bilder.filter((b) => Number.isFinite(b.spiegelTreue));
+            const mittel = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : NaN);
+            const streu = (a) => (a.length > 1 ? Math.sqrt(mittel(a.map((x) => (x - mittel(a)) ** 2))) : 0);
+            const W = welt.wind || {};
+            const worte = Object.keys(W);
+            // ein Wind U gilt als setzbar, wenn ein Wort des Wetters ihn im Mittel auf ±15 % trägt
+            const traegt = (u) => worte.find((w) => Math.abs(W[w][0] - u) <= 0.15 * u) || null;
+            const sturmMax = W.stormy ? W.stormy[2] : NaN;
+            const beaufort = (v) => [0.3, 1.6, 3.4, 5.5, 8.0, 10.8, 13.9, 17.2, 20.8, 24.5, 28.5, 32.7].filter((g) => v >= g).length;
+            const ort = "die Bucht " + meer.abstandKm + " km vom Spawn (" + meer.flaecheKm2 + " km², bis " + meer.tiefeMax + " m)";
+            const je = {};
+            // S1 die spiegelTreue an 12 Posen (Uhr × Wetter)
+            je[1] = {
+                werte: Object.assign({ wasserFlaecheKm2: meer.flaecheKm2 }, st.length ? { spiegelTreue: R(Math.min(...st.map((b) => b.spiegelTreue))), posen: st.length } : {}),
+                zeuge: { bilder: st.length, wetter: new Set(st.map((b) => b.wetter)).size, streuung: R(streu(st.map((b) => b.spiegelTreue))), je: bilder.map((b) => [b.wetter, b.uhr, R(b.spiegelTreue), b.fehler || null]) },
+                ...(M.swift ? { grund: "swiftshader: kein Bild — die spiegelTreue misst das Gerät" } : {}),
+            };
+            // S2 die Weißkappe bei 5/10/20 m/s: der Wind am Wasser je Wort; das Bild (weiss der Klasse) nur bei dem Wort, das U trägt
+            const ziele = (U[2] && U[2].winde) || [5, 10, 20];
+            const kappe = {};
+            const wk = {};
+            for (const u of ziele) {
+                const w = traegt(u);
+                wk["wind" + u + "Ms"] = w ? W[w][0] : null;
+                const b = w ? bilder.filter((x) => x.wetter === w && Number.isFinite(x.weiss)) : [];
+                if (b.length) kappe["kappe" + u] = R(100 * mittel(b.map((x) => x.weiss)));
+            }
+            const fehltWind = ziele.filter((u) => !traegt(u));
+            const kb = bilder.filter((x) => Number.isFinite(x.weiss));
+            je[2] = {
+                werte: Object.assign({ windSturmMs: W.stormy ? W.stormy[0] : null, windWolkeMs: W.cloudy ? W.cloudy[0] : null }, kappe),
+                zeuge: { bilder: Object.keys(kappe).length, windTreffer: ziele.length - fehltWind.length, streuung: R(streu(kb.map((x) => x.weiss))), wind: W },
+                ...(fehltWind.length ? { nicht: "Wind " + fehltWind.join(" und ") + " m/s am Wasser nicht stetig setzbar: die Worte des Wetters tragen im Mittel " + worte.map((w) => w + " " + W[w][0]).join(" · ") + " m/s (stamm/stoff-material.js:233 _windAt)" } : {}),
+            };
+            // S3 Blindtest Beaufort 0–12 (Auge); die Welt: die Beaufort-Stufe des Sturms und ob die offene See trägt
+            je[3] = {
+                werte: { beaufortMax: beaufort(sturmMax), sturmMaxMs: R(sturmMax), meerFlaecheKm2: meer.flaecheKm2 },
+                zeuge: { wind: W },
+                auge: auge3,
+                ...(beaufort(sturmMax) < 12 ? { nicht: "Beaufort 12 nicht erzeugbar: der Sturm am Wasser erreicht höchstens " + R(sturmMax) + " m/s (Beaufort " + beaufort(sturmMax) + "); der Seegang liest keinen Fetch (stamm/bild-sicht.js:1337 oceanSwell: Rauschen × Wind-Zeile); " + ort } : {}),
+            };
+            // S4 Brandung: die Strände der Bucht (Neigung des Geländes), keine Brechlinie in der Welt
+            const ng = (welt.neigung || []).filter((v) => v <= 0.1);
+            je[4] = {
+                werte: { straende: ng.length, kuesteKm: meer.kuesteKm, neigungMittel: R(mittel(welt.neigung || [])) },
+                zeuge: { straende: ng.length, brecher: 0 },
+                nicht: "keine Brandung: kein Leser bricht die Welle an der Tiefe — die Dünung des Wasser-Stoffs kennt nur die Tiefe als Blende (stamm/bild-sicht.js:1393 oceanSwell × aWave), das Ufer schäumt als Saum (WASSER_GESETZ.schaum.ufer); " + ort,
+            };
+            // S5 Dünung eines fernen Sturms, Kelvin-Keil
+            je[5] = {
+                werte: { sichtM: welt.sichtM, meerFlaecheKm2: meer.flaecheKm2 },
+                zeuge: { duenung: 0, kielwasser: 0 },
+                nicht: "kein Ozean bis 50 km (" + ort + "), kein Sturm in 500 km setzbar, keine Ausbreitung der Dünung (Rauschen mit fester Drift, stamm/bild-sicht.js:1337), kein Kielwasser (kein Kelvin-Keil hinter Boot oder Körper)",
+            };
+            // S6 Orkan, Kaventsmann, Tsunami: die Decke des Hubs
+            je[6] = {
+                werte: { hubMaxM: welt.hubMaxM, sturmMaxMs: R(sturmMax) },
+                zeuge: { stundenHs: 0, tsunami: 0 },
+                nicht: "Wellen ≥ 25 m nicht erzeugbar: der Hub der Welle ist höchstens " + welt.hubMaxM + " m (stamm/gelaende-fern.js:2679 _wasserHubM); kein Kaventsmann (keine Statistik der Wellenhöhe), kein Tsunami",
+            };
+            // S7 der ganze Planet (Auge): eine Bucht statt jeder Küste
+            je[7] = {
+                werte: { kuestePunkte: meer.kuesteN },
+                zeuge: { kuesten: 1 },
+                auge: auge7,
+                nicht: "kein Ozean-Feld über die Küsten: die Dünung ist Rauschen je Ort (stamm/bild-sicht.js:1337), die Welt trägt EINE Bucht (" + ort + "), 10 Saaten nur als Zahl im Planet-Faden",
+            };
+            // S8 fremde Meere
+            je[8] = {
+                werte: { hubMaxM: welt.hubMaxM },
+                zeuge: { meere: 0 },
+                nicht: "kein fremdes Meer: die Welt kennt die Stoff-Zeile Wasser allein (kein Methan-See, kein Lava-Meer), die Dünung trägt kein Wellenlänge-Periode-Paar (stamm/bild-sicht.js:1337 oceanSwell)",
+            };
+            for (const nr of ziel) aus[nr] = je[nr] || M.nicht("ungemessen");
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { posen: 12, uhr: [0.3, 0.45, 0.6, 0.75], wetter: ["sunny", "cloudy", "rainy"] },
+                soll: [K.soll(SEE, 1, "spiegelTreue ≥ 0,6", { key: "spiegelTreue" }), K.soll(SEE, 1, "12 Posen", { key: "posen", rel: "≥" })],
+                zeuge: zMin({ bilder: 12, wetter: 3, streuung: 1e-6 }),
+                zeugeText: "12 Bilder in 3 Wettern, die spiegelTreue streut",
+                taeter: "stamm/wasser-hydro.js _wasserBlick (der Spiegel-Pass) an der Bucht",
+                gruen: gut({ spiegelTreue: 0.66, posen: 12 }, { bilder: 12, wetter: 3, streuung: 0.05 }),
+                attrappen: [
+                    { name: "die spiegelTreue der Soll-Tafel (0,83 an EINER Pose) für alle 12", roh: gut({ spiegelTreue: 0.83, posen: 12 }, { bilder: 1, wetter: 1, streuung: 0 }) },
+                    { name: "12 Posen ohne Bild (swiftshader)", roh: leer({ spiegelTreue: 0.7, posen: 12 }) },
+                ],
+            },
+            2: {
+                u: { winde: [5, 10, 20] },
+                soll: [
+                    K.soll(SEE, 2, "gegen Monahan ±30 %", { key: "kappe5", ref: 0.0929, refQuelle: "Erde: Monahan & O'Muircheartaigh 1980, W = 3,84·10⁻⁶·U^3,41 — bei 5 m/s 0,093 %", einheit: "%" }),
+                    K.soll(SEE, 2, "gegen Monahan ±30 %", { key: "kappe10", ref: 0.987, refQuelle: "Erde: Monahan & O'Muircheartaigh 1980 — bei 10 m/s 0,99 %", einheit: "%" }),
+                    K.soll(SEE, 2, "gegen Monahan ±30 %", { key: "kappe20", ref: 10.48, refQuelle: "Erde: Monahan & O'Muircheartaigh 1980 — bei 20 m/s 10,5 %", einheit: "%" }),
+                ],
+                zeuge: zMin({ bilder: 3, windTreffer: 3, streuung: 1e-6 }),
+                zeugeText: "drei Bilder bei drei gesetzten Winden, das Weiß streut mit dem Wind",
+                taeter: "stamm/stoff-material.js _windAt (das Wetter trägt 10 und 20 m/s nicht)",
+                gruen: gut({ kappe5: 0.1, kappe10: 1.1, kappe20: 9.5 }, { bilder: 3, windTreffer: 3, streuung: 0.04 }),
+                attrappen: [
+                    { name: "Monahan aus dem Gesetz abgeschrieben (kein Bild, kein Wind)", roh: leer({ kappe5: 0.0929, kappe10: 0.987, kappe20: 10.48 }) },
+                    { name: "drei Zahlen aus EINEM Bild bei Wolke (der Wind 10 und 20 nie gesetzt)", roh: gut({ kappe5: 0.1, kappe10: 1.1, kappe20: 9.5 }, { bilder: 3, windTreffer: 1, streuung: 0.04 }) },
+                ],
+                nicht: "Wind 10 und 20 m/s am Wasser nicht stetig setzbar",
+                leser: "stamm/stoff-material.js:233 _windAt — der Wind folgt nur dem Wort des Wetters (Mittel 1 · 2,4 · 5 · 5,9 · 16,8 m/s), kein Leser setzt ihn in m/s",
+            },
+            3: {
+                u: { wetter: "stormy" },
+                soll: [K.soll(SEE, 3, "≥ 70 % richtig zugeordnet", { key: "richtigProzent", einheit: "%" }), K.soll(SEE, 3, "10 Bilder je Beaufort-Stufe", { key: "bilderJeStufe", rel: "≥" })],
+                auge: { pose: "Ego am Ufer der Bucht (~10,6 km nördlich des Spawns), Blick über die tiefste Stelle, Sturm", vorbild: "10 Fotos je Beaufort-Stufe 0–12 der offenen See (WMO-Bildtafel), Prüfer-Satz R11" },
+                taeter: "stamm/bild-sicht.js oceanSwell (Seegang ohne Fetch) · stamm/stoff-material.js _windAt",
+                nicht: "Beaufort 12 nicht erzeugbar (Sturm höchstens ~28 m/s)",
+                gruen: gut({ richtigProzent: 74, bilderJeStufe: 10 }, {}),
+                attrappen: [{ name: "der Blindtest ohne Bild", roh: leer({ richtigProzent: 74, bilderJeStufe: 10 }) }],
+            },
+            4: {
+                u: {},
+                soll: [
+                    K.soll(SEE, 4, "Brechlinie bei Tiefe 1,3·H ±20 %", { key: "brechTiefeJeH", ref: 1.28, refQuelle: "Erde: McCowan 1894, die Welle bricht bei H/h = 0,78 (h = 1,28·H)" }),
+                    K.soll(SEE, 4, "Brechertyp gegen Iribarren-Zahl ≥ 80 %", { key: "brechertypProzent", einheit: "%" }),
+                    K.soll(SEE, 4, "20 Stränden", { key: "straende", rel: "≥" }),
+                ],
+                zeuge: zMin({ straende: 20, brecher: 20 }),
+                zeugeText: "an 20 Stränden der Welt eine Brechlinie gemessen",
+                taeter: "stamm/bild-sicht.js oceanSwell (keine Brandung)",
+                nicht: "keine Brandung (kein Leser bricht die Welle an der Tiefe)",
+                leser: "stamm/bild-sicht.js:1393 — die Dünung kennt die Tiefe nur als Blende aWave, kein Brechen nach H/h und Strandneigung",
+                gruen: gut({ brechTiefeJeH: 1.3, brechertypProzent: 85, straende: 20 }, { straende: 20, brecher: 20 }),
+                attrappen: [{ name: "die Brechlinie aus McCowan eingesetzt (keine Welle bricht)", roh: gut({ brechTiefeJeH: 1.28, brechertypProzent: 85, straende: 24 }, { straende: 24, brecher: 0 }) }],
+            },
+            5: {
+                u: {},
+                soll: [
+                    K.soll(SEE, 5, "Sturm 500 km weg gesetzt", { key: "sturmKm", rel: "≥" }),
+                    K.soll(SEE, 5, "Ankunft der Dünung ±15 % der Gruppenlaufzeit", { key: "ankunftJeLaufzeit", ref: 1, refQuelle: "Erde: Gruppengeschwindigkeit der Tiefwasser-Dünung c_g = g·T/(4π) (Snodgrass et al. 1966)" }),
+                    K.soll(SEE, 5, "Kelvin-Winkel 19,5° ±2°", { key: "kelvinGrad", ref: 19.47, refQuelle: "Erde: Kelvin 1887, der Halbwinkel des Kielwassers arcsin(1/3) = 19,47°", einheit: "°" }),
+                ],
+                zeuge: zMin({ duenung: 1, kielwasser: 1 }),
+                zeugeText: "die Dünung kam an, ein Kielwasser stand im Bild",
+                taeter: "stamm/bild-sicht.js oceanSwell (keine Ausbreitung)",
+                nicht: "kein Ozean bis 50 km, keine Ausbreitung, kein Kelvin-Keil",
+                leser: "stamm/bild-sicht.js:1337 oceanSwell — Rauschen mit fester Drift; kein Leser trägt die Dünung eines fernen Sturms oder das Kielwasser",
+                gruen: gut({ sturmKm: 500, ankunftJeLaufzeit: 1.05, kelvinGrad: 19.8 }, { duenung: 1, kielwasser: 1 }),
+                attrappen: [{ name: "Kelvin 19,47° als Zahl ohne Kielwasser", roh: leer({ sturmKm: 500, ankunftJeLaufzeit: 1, kelvinGrad: 19.47 }) }],
+            },
+            6: {
+                u: {},
+                soll: [
+                    K.soll(SEE, 6, "H > 2·Hs in 1 h gegen Rayleigh ±50 %", { key: "kaventsJeRayleigh", ref: 1, refQuelle: "Erde: Rayleigh-Verteilung der Wellenhöhe (Longuet-Higgins 1952), P(H > 2·Hs) = e⁻⁸" }),
+                    K.soll(SEE, 6, "Tsunami-Laufzeit über 1 000 km ±10 %", { key: "tsunamiJeLaufzeit", ref: 1, refQuelle: "Erde: Flachwasserwelle c = √(g·h) (Lagrange; Tsunami 2004 im Indischen Ozean)" }),
+                ],
+                zeuge: zMin({ stundenHs: 1, tsunami: 1 }),
+                zeugeText: "eine Stunde Seegang gezählt, ein Tsunami lief",
+                taeter: "stamm/gelaende-fern.js _wasserHubM (Hub ≤ 4,4 m)",
+                nicht: "Wellen ≥ 25 m, Kaventsmann, Tsunami nicht erzeugbar",
+                leser: "stamm/gelaende-fern.js:2679 _wasserHubM — die Decke des Hubs; kein Leser zählt Wellenhöhen oder trägt einen Tsunami",
+                gruen: gut({ kaventsJeRayleigh: 1.2, tsunamiJeLaufzeit: 0.97 }, { stundenHs: 1, tsunami: 1 }),
+                attrappen: [{ name: "Rayleigh als Formel ohne gezählte Welle", roh: leer({ kaventsJeRayleigh: 1, tsunamiJeLaufzeit: 1 }) }],
+            },
+            7: {
+                u: { uhr: 0.7 },
+                soll: [
+                    K.soll(SEE, 7, "≥ 80 % im Blindtest nicht sicher von Fotos unterschieden", { key: "blindProzent", einheit: "%" }),
+                    K.soll(SEE, 7, "Kreuzkorrelation ≥ 0,7", { key: "kreuzKorr" }),
+                    K.soll(SEE, 7, "100 Küstenposen", { key: "posen", rel: "≥" }),
+                    K.soll(SEE, 7, "10 Saaten", { key: "saaten", rel: "≥" }),
+                ],
+                auge: { pose: "Ego am Ufer der Bucht (~10,6 km nördlich des Spawns), Abend", vorbild: "Küstenfotos zu Uhr und Wetter (Prüfer-Satz R11), 100 Posen aus 10 Saaten" },
+                taeter: "stamm/bild-sicht.js oceanSwell (kein Ozean-Feld)",
+                nicht: "kein Ozean-Feld über die Küsten, EINE Bucht",
+                gruen: gut({ blindProzent: 82, kreuzKorr: 0.74, posen: 100, saaten: 10 }, {}),
+                attrappen: [{ name: "die Kreuzkorrelation ohne Schiff", roh: leer({ blindProzent: 82, kreuzKorr: 0.74, posen: 100, saaten: 10 }) }],
+            },
+            8: {
+                u: {},
+                soll: [K.soll(SEE, 8, "Wellenlänge-Periode-Paar gegen die Dispersionsrelation mit deren g und ρ ±10 %", { key: "dispersionJeSoll", ref: 1, refQuelle: "Erde: Tiefwasser-Dispersion ω² = g·k (Airy 1841), im fremden Meer mit dessen g und ρ" })],
+                zeuge: zMin({ meere: 1 }),
+                zeugeText: "ein fremdes Meer stand, seine Welle gemessen",
+                taeter: "stamm/bild-sicht.js oceanSwell (keine Dispersion) · foundry-core.js WASSER_GESETZ (nur Wasser)",
+                nicht: "kein fremdes Meer, keine Dispersion",
+                leser: "stamm/bild-sicht.js:1337 oceanSwell — keine Dispersionsrelation; kein Stoff eines fremden Meers im Wasser-Gesetz",
+                gruen: gut({ dispersionJeSoll: 1.04 }, { meere: 1 }),
+                attrappen: [{ name: "ω² = g·k als Formel ohne Meer", roh: leer({ dispersionJeSoll: 1 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ GEZEITEN ════════════════════════════════════════
+    const GZ = "planet.wasser.gezeiten";
+    const gezeiten = {
+        sek: 30,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "die Bilder (Watt im Bild, Doppelmond) schießt die Probe nur am Gerät",
+        mess: async function (H, U, M) {
+            const MEER = `
+const L = r._gelaende(), G = globalThis.__gelaendeCore;
+const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const warte = async (x, z) => { let n = 0; while (r._ensureHydroTilesAround(x, z, 32) && n < 200) { await new Promise((f) => setTimeout(f, 50)); n++; } return n; };
+const tiefe = (x, z) => { const kw = r._koerperWasser(x, z, -Infinity), g = r._voxelSurfaceY(x, z); return kw > -Infinity && g !== null && Number.isFinite(g) && kw > g ? kw - g : 0; };
+let m = window.__pwMeer;
+if (!m) {
+m = { gefunden: false };
+let p = null;
+for (let d = 500; d <= 20000 && !p; d += 250) for (let a = 0; a < 32 && !p; a++) { const x = d * Math.cos((a * Math.PI) / 16), z = d * Math.sin((a * Math.PI) / 16); if (G.hoehe(L, x, z, false) < L.waterLevel - 2) p = [x, z]; }
+if (p) {
+for (const [a, b] of [[0, 0], [-1500, -1500], [1500, -1500], [-1500, 1500], [1500, 1500]]) await warte(p[0] + a, p[1] + b);
+const N = 61, T = new Float64Array(N * N);
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) T[i + N * j] = tiefe(p[0] + 50 * (i - 30), p[1] + 50 * (j - 30));
+let best = [0, p[0], p[1]], zellen = 0;
+const kueste = [], innen = [];
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+const t = T[i + N * j];
+if (!(t > 0)) continue;
+const x = p[0] + 50 * (i - 30), z = p[1] + 50 * (j - 30);
+zellen++;
+if (t > best[0]) best = [t, x, z];
+const rand = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => i + a < 0 || j + b < 0 || i + a >= N || j + b >= N || !(T[i + a + N * (j + b)] > 0));
+if (rand) kueste.push([x, z]); else innen.push([x, z, R(t)]);
+}
+const B = [best[1], best[2]], d0 = Math.hypot(B[0], B[1]), ux = -B[0] / d0, uz = -B[1] / d0;
+let s = null;
+for (let k = 1; k < 800 && !s; k++) { const x = B[0] + ux * 10 * k, z = B[1] + uz * 10 * k; if (!(tiefe(x, z) > 0) && r._voxelSurfaceY(x, z) > L.waterLevel) s = [x + ux * 6, z + uz * 6]; }
+let art = null;
+for (const t of (r.state.hydroTiles || new Map()).values()) { const sz = t.dim * t.cell; if (t.water && B[0] >= t.originX && B[1] >= t.originZ && B[0] < t.originX + sz && B[1] < t.originZ + sz) art = t.water.waterKind[Math.floor((B[0] - t.originX) / t.cell) + Math.floor((B[1] - t.originZ) / t.cell) * t.dim]; }
+const sy = s ? r._voxelSurfaceY(s[0], s[1]) : null;
+const jede = (A, n) => A.filter((q, i) => i % Math.max(1, Math.floor(A.length / n)) === 0).slice(0, n);
+m = { gefunden: true, p, B, tiefeMax: R(best[0]), spiegel: R(r._koerperWasser(B[0], B[1], -Infinity)), flaecheKm2: R((zellen * 2500) / 1e6), kuesteN: kueste.length, kuesteKm: R(kueste.length * 0.05), kueste: jede(kueste, 120), innen: jede(innen, 100), art, abstandKm: R(d0 / 1000), ufer: s ? [R(s[0]), R(sy + 1.7), R(s[1]), R(B[0]), R(L.waterLevel), R(B[1])] : null, richtung: [R(ux), R(uz)] };
+}
+window.__pwMeer = m;
+}
+`;
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const ziel = Object.keys(U);
+            const aus = {};
+            // DER SPIEGEL ÜBER 25 STUNDEN der Welt-Uhr (`spielZeit`, der Pegel nachgezogen) an der Küste und quer übers Watt (41 Punkte vom
+            // Ufer zur Tiefe, `_nassAt`), der Mond gegen die Sonne an 31 Tagen (`__weltLicht`), der Spiegel im Sturm gegen die Flaute
+            const w = await H.seite(MEER + `
+if (!m.gefunden) return { meer: false };
+const st = r.state, tagS = r.constructor.DAY_LENGTH_DEFAULT_MINUTES * 60;
+const [bx, bz] = m.B;
+const s = m.ufer ? [m.ufer[0], m.ufer[2]] : m.B;
+const quer = []; for (let k = 0; k <= 40; k++) quer.push([s[0] + ((bx - s[0]) * k) / 40, s[1] + ((bz - s[1]) * k) / 40]);
+const kq = m.kueste.slice(0, 20);
+const alt = [st.spielZeit, st.seasonPhase, st.regenStempel && st.regenStempel.slice()];
+const reihe = [], mond = [], kuesteHub = kq.map(() => [Infinity, -Infinity]);
+let windstau = null;
+try {
+for (let k = 0; k <= 25; k++) {
+st.spielZeit = alt[0] + (k * tagS) / 24;
+r._pegelTakt();
+let nass = 0; for (const [x, z] of quer) if (r._nassAt(x, z)) nass++;
+kq.forEach(([x, z], i) => { const v = r._koerperWasser(x, z, -Infinity); kuesteHub[i][0] = Math.min(kuesteHub[i][0], v); kuesteHub[i][1] = Math.max(kuesteHub[i][1], v); });
+reihe.push([k, R(r._koerperWasser(bx, bz, -Infinity)), nass]);
+}
+for (let d = 0; d <= 30; d++) {
+st.seasonPhase = (alt[1] + d / 365) % 1;
+const wi = r._sonnenWinkel(0.5);
+const a = __weltLicht.sonnenRichtung(wi), b = __weltLicht.mondRichtung(wi);
+mond.push(R((Math.acos(Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]))) * 180) / Math.PI));
+}
+} finally {
+st.spielZeit = alt[0]; st.seasonPhase = alt[1]; st.regenStempel = alt[2]; r._pegelTakt();
+}
+const wAlt = st.weather;
+try {
+if (window.__wetterSetzen("sunny") !== "sunny") throw new Error("das Wetter der Probe gilt nicht: sunny");
+r._pegelTakt();
+const flaute = r._koerperWasser(bx, bz, -Infinity);
+if (window.__wetterSetzen("stormy") !== "stormy") throw new Error("das Wetter der Probe gilt nicht: stormy");
+r._pegelTakt();
+windstau = [R(flaute), R(r._koerperWasser(bx, bz, -Infinity)), R(r._windAt(bx, bz, 0).ms)];
+} finally { window.__wetterSetzen(wAlt); r._pegelTakt(); }
+return { meer: true, reihe, mond, windstau, kuesteHub: kuesteHub.map(([a, b]) => R(b - a)), flaecheKm2: m.flaecheKm2, abstandKm: m.abstandKm, ufer: m.ufer };
+`);
+            if (!w.meer) {
+                for (const nr of ziel) aus[nr] = M.nicht("kein Meer im Gelände der Welt bis 20 km vom Spawn");
+                return { sprossen: aus };
+            }
+            // DER PLANET-FADEN: die Saaten antworten mit ihrem Anker (trägt einer einen Mond?), die Erde zu −3 Ga
+            const faden = await H.seite(`
+await r._fadenQuelle();
+const saaten = ["anazh-realm-seed", "erde", "mond-a", "mond-b", "mond-c"];
+const anker = await Promise.all(saaten.map((samen) => r._planetAuftrag({ type: "planet-anker", samen })));
+const e = anker[1], RAD = 180 / Math.PI;
+const zeiten = [0, -3000];
+const ort = await Promise.all(zeiten.map((zeitMa) => r._planetAuftrag({ type: "planet-ort", samen: "erde", breite: e.breite * RAD, laenge: e.laenge * RAD, zeitMa }).then((o) => [zeitMa, o.delta.meer.waterLevelM, o.version]).catch((x) => [zeitMa, null, String(x && x.message)])));
+return { anker: anker.map((a) => ({ samen: a.samen, felder: Object.keys(a), mond: "mond" in a || "mondMasse" in a })), ort };
+`);
+            const reihe = w.reihe;
+            const sp = reihe.map((x) => x[1]).filter(Number.isFinite);
+            const hub = sp.length ? Math.max(...sp) - Math.min(...sp) : NaN;
+            const nass = reihe.map((x) => x[2]);
+            const benetztDiff = Math.max(...nass) - Math.min(...nass);
+            const mond = w.mond.filter(Number.isFinite);
+            const spanne = mond.length ? Math.max(...mond) - Math.min(...mond) : NaN;
+            const monde = faden.anker.filter((a) => a.mond).length;
+            const ort = "die Bucht " + w.abstandKm + " km vom Spawn (" + w.flaecheKm2 + " km²)";
+            const je = {};
+            je[1] = {
+                werte: { hubM: R(hub), benetztDiff, stunden: reihe.length },
+                zeuge: { stunden: reihe.length, hubM: R(hub), benetztDiff },
+                ...(hub < 0.01 ? { nicht: "keine Gezeit: der Meeresspiegel an " + ort + " steht über 25 Stunden der Welt-Uhr (Hub " + R(hub) + " m, benetzt " + Math.min(...nass) + "–" + Math.max(...nass) + " von 41) — gelaende-core.js:5816 waterLevel = Basis − meerUnterBasisM, kein Leser der Himmels-Uhr" } : {}),
+                auge: await M.auge("wasser-gezeiten-s1", w.ufer ? { px: w.ufer[0], py: w.ufer[1], pz: w.ufer[2], lx: w.ufer[3], ly: w.ufer[4], lz: w.ufer[5] } : { ort: "wiese" }),
+            };
+            delete je[1].auge;
+            je[2] = {
+                werte: { tage: mond.length, mondWinkelSpanne: R(spanne), mondWinkel: mond[0] },
+                zeuge: { tage: mond.length, phasenSpanne: R(spanne) },
+                ...(spanne < 1 ? { nicht: "kein Mondlauf: der Mond steht der Sonne an " + mond.length + " Tagen gegenüber (Winkel " + mond[0] + "°, Spanne " + R(spanne) + "°; stamm/bild-himmel.js:1150 moonDir = −sunDir) — keine Spring- und Nipptide" } : {}),
+            };
+            je[3] = {
+                werte: { kuesten: 1, saaten: 1, buchtenJe1e4: 0, kuesteHubMax: R(Math.max(...w.kuesteHub)) },
+                zeuge: { hubKuesten: w.kuesteHub.filter((h) => h > 0.01).length },
+                nicht: "kein Tidenhub an " + w.kuesteHub.length + " Küstenpunkten (höchstens " + R(Math.max(...w.kuesteHub)) + " m), keine Resonanz der Bucht, EINE Küste der Heimat statt 20 aus 5 Saaten",
+            };
+            const stau = w.windstau ? w.windstau[1] - w.windstau[0] : NaN;
+            je[4] = {
+                werte: { windstauM: R(stau), sturmMs: w.windstau ? w.windstau[2] : null },
+                zeuge: { windstauM: R(stau) },
+                ...(!(stau > 0.01) ? { nicht: "kein Windstau: der Spiegel an " + ort + " steht im Sturm (" + (w.windstau && w.windstau[2]) + " m/s) wie in der Flaute (Δ " + R(stau) + " m) — der Meeresspiegel ist eine Konstante (gelaende-core.js:5816)" } : {}),
+            };
+            je[5] = {
+                werte: { konfigurationen: monde, saatenGefragt: faden.anker.length },
+                zeuge: { monde },
+                ...(monde < 5 ? { nicht: "keine Saat mit Mond: " + faden.anker.length + " Anker des Planet-Fadens tragen " + monde + " Monde (Felder " + faden.anker[0].felder.join(", ") + "; planet-core.js:312 planetPlan ohne Mond)" } : {}),
+            };
+            const o3 = faden.ort.find((x) => x[0] === -3000);
+            je[6] = {
+                werte: Object.assign({ meerDeltaM: o3 ? R(o3[1]) : null }, o3 && Number.isFinite(o3[1]) ? { zeitGa: -3 } : {}),
+                zeuge: { hubZeiten: 0, faden: faden.ort.filter((x) => Number.isFinite(x[1])).length },
+                nicht: "kein Mondabstand in der Zeit (planet-core.js:312 ohne Mond), kein Tidenhub an der Spiel-Küste; keine Erd-Saat mit Schlüssel (R4)",
+            };
+            je[7] = {
+                werte: {},
+                zeuge: {},
+                auge: await M.auge("wasser-gezeiten-s7", { ort: "wiese" }, { uhr: 0.95 }),
+                nicht: "kein Doppelmond, kein Eismond (planet-core.js:312 planetPlan: kein Mond je Saat)",
+            };
+            for (const nr of ziel) aus[nr] = je[nr] || M.nicht("ungemessen");
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { stunden: 25, quer: 41 },
+                soll: [K.soll(GZ, 1, "Periode ±2 %", { key: "periodeH", ref: 12.42, refQuelle: "Erde: halbtägige Mondgezeit M2, 12 h 25 min (12,42 h)", einheit: "h" })],
+                zeuge: zMin({ stunden: 25, hubM: 0.05, benetztDiff: 1 }),
+                zeugeText: "der Spiegel stieg und fiel über 25 Stunden, das Watt fiel trocken",
+                taeter: "gelaende-core.js waterLevel (eine Konstante, kein Leser der Himmels-Uhr)",
+                nicht: "keine Gezeit (der Meeresspiegel ist eine Konstante)",
+                leser: "gelaende-core.js:5816 — waterLevel = Basis − meerUnterBasisM; kein Leser hebt den Spiegel mit Mond und Uhr",
+                gruen: gut({ periodeH: 12.5, hubM: 1.2 }, { stunden: 25, hubM: 1.2, benetztDiff: 9 }),
+                attrappen: [{ name: "die Periode 12,42 h eingetragen, der Spiegel steht", roh: gut({ periodeH: 12.42, hubM: 0 }, { stunden: 25, hubM: 0, benetztDiff: 0 }) }],
+            },
+            2: {
+                u: { tage: 30 },
+                soll: [
+                    K.soll(GZ, 2, "Spring-Nipp-Takt 14,8 d ±2 %", { key: "springNippTage", ref: 14.77, refQuelle: "Erde: halber synodischer Monat 29,53 d / 2 = 14,77 d", einheit: "d" }),
+                    K.soll(GZ, 2, "Pegel über 30 Tage", { key: "tage", rel: "≥", einheit: "d" }),
+                ],
+                zeuge: zMin({ tage: 30, phasenSpanne: 90 }),
+                zeugeText: "der Mond lief durch seine Phasen, der Pegel folgte",
+                taeter: "stamm/bild-himmel.js _applyDayNightToScene (moonDir = −sunDir: ewiger Vollmond)",
+                nicht: "kein Mondlauf (ewiger Vollmond)",
+                leser: "welt-licht.js:720 mondRichtung — der Mond steht der Sonne stets gegenüber, kein synodischer Monat",
+                gruen: gut({ springNippTage: 14.7, tage: 30 }, { tage: 31, phasenSpanne: 180 }),
+                attrappen: [{ name: "14,77 d als Zahl, der Mond steht still", roh: gut({ springNippTage: 14.77, tage: 31 }, { tage: 31, phasenSpanne: 0 }) }],
+            },
+            3: {
+                u: {},
+                soll: [
+                    K.soll(GZ, 3, "Hub gegen Resonanz-Vorhersage ±30 %", { key: "hubJeResonanz", ref: 1, refQuelle: "Erde: Viertelwellen-Resonanz einer Bucht L = √(g·h)·T/4 (Bay of Fundy, Garrett 1972)" }),
+                    K.soll(GZ, 3, "≥ 1 Bucht > 8 m je 10⁴ km² Küste", { key: "buchtenJe1e4" }),
+                    K.soll(GZ, 3, "20 Küsten", { key: "kuesten", rel: "≥" }),
+                    K.soll(GZ, 3, "5 Saaten", { key: "saaten", rel: "≥" }),
+                ],
+                zeuge: zMin({ hubKuesten: 20 }),
+                zeugeText: "an 20 Küsten ein Hub gemessen",
+                taeter: "gelaende-core.js waterLevel (kein Tidenhub)",
+                nicht: "kein Tidenhub, EINE Küste",
+                leser: "gelaende-core.js:5816 — kein Hub des Spiegels je Küste, keine Resonanz aus Schelf und Bucht",
+                gruen: gut({ hubJeResonanz: 1.1, buchtenJe1e4: 1.4, kuesten: 20, saaten: 5 }, { hubKuesten: 20 }),
+                attrappen: [{ name: "die Resonanz eingesetzt, kein Hub an der Küste", roh: gut({ hubJeResonanz: 1, buchtenJe1e4: 1, kuesten: 20, saaten: 5 }, { hubKuesten: 0 }) }],
+            },
+            4: {
+                u: { wetter: ["sunny", "stormy"] },
+                soll: [
+                    K.soll(GZ, 4, "Windstau gegen ∝ U²·Fetch/h ±30 %", { key: "windstauJeSoll", ref: 1, refQuelle: "Erde: Windstau Δh ∝ τ·F/(ρ·g·h) mit τ ∝ U² (Nordsee-Sturmflut 1962)" }),
+                    K.soll(GZ, 4, "überflutete Fläche deckt die Tiefenkarte ≥ 90 %", { key: "deckungProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ windstauM: 0.05 }),
+                zeugeText: "der Sturm hob den Spiegel gegen die Flaute",
+                taeter: "gelaende-core.js waterLevel (der Wind hebt das Meer nicht)",
+                nicht: "kein Windstau",
+                leser: "gelaende-core.js:5816 — der Spiegel des Meers liest keinen Wind (stamm/stoff-material.js _windAt)",
+                gruen: gut({ windstauJeSoll: 1.1, deckungProzent: 93 }, { windstauM: 1.8 }),
+                attrappen: [{ name: "der Windstau als Formel, der Spiegel bleibt", roh: gut({ windstauJeSoll: 1, deckungProzent: 95 }, { windstauM: 0 }) }],
+            },
+            5: {
+                u: { saaten: ["anazh-realm-seed", "erde", "mond-a", "mond-b", "mond-c"] },
+                soll: [
+                    K.soll(GZ, 5, "Hub ∝ M/r³ zwischen Saaten ±10 %", { key: "hubJeMr3", ref: 1, refQuelle: "Erde: Gezeitenkraft ∝ M/r³ (Newton 1687), Mond 2,2-fach der Sonne" }),
+                    K.soll(GZ, 5, "5 Konfigurationen", { key: "konfigurationen", rel: "≥" }),
+                ],
+                zeuge: zMin({ monde: 5 }),
+                zeugeText: "fünf Saaten mit gemessenem Mond",
+                taeter: "planet-core.js planetPlan (kein Mond im Körper)",
+                nicht: "keine Saat mit Mond",
+                leser: "planet-core.js:312 planetPlan — der Körper trägt keine Mondmasse und keinen Mondabstand",
+                gruen: gut({ hubJeMr3: 1.04, konfigurationen: 5 }, { monde: 5 }),
+                attrappen: [{ name: "M/r³ gerechnet ohne Mond der Saat", roh: gut({ hubJeMr3: 1, konfigurationen: 5 }, { monde: 0 }) }],
+            },
+            6: {
+                u: { zeitMa: -3000 },
+                soll: [
+                    K.soll(GZ, 6, "Erd-Saat bei −3 Ga", { key: "zeitGa", rel: "=", zahl: -3, einheit: "Ga" }),
+                    K.soll(GZ, 6, "wie M/r³ ±20 %", { key: "hubJeMr3", ref: 1, refQuelle: "Erde: Mondabstand vor 3 Ga ~ 0,9 des heutigen (Gezeiten-Rhythmite, Williams 2000), Hub ∝ M/r³" }),
+                ],
+                zeuge: zMin({ hubZeiten: 2 }),
+                zeugeText: "der Tidenhub an der Spiel-Küste zu zwei Zeiten gemessen",
+                taeter: "planet-core.js planetPlan (kein Mond) · gelaende-core.js waterLevel",
+                nicht: "kein Mondabstand, kein Tidenhub, keine Erd-Saat",
+                leser: "planet-core.js:312 planetPlan — kein Mond; voxel-worker.js:1201 planetOrtAuftrag nennt nur den Meeresspiegel der Zeit",
+                gruen: gut({ zeitGa: -3, hubJeMr3: 1.1 }, { hubZeiten: 2 }),
+                attrappen: [{ name: "die Zeit gesetzt, der Hub nie gemessen", roh: gut({ zeitGa: -3, hubJeMr3: 1 }, { hubZeiten: 0, faden: 2 }) }],
+            },
+            7: {
+                u: {},
+                soll: [K.soll(GZ, 7, "Rang ≥ 0,7", { key: "rang" })],
+                auge: { pose: "der Himmel über der Wiese bei Nacht (heute: ein Vollmond, kein Doppelmond)", vorbild: "Bild der Gezeit eines Doppelmond-Planeten, Prüfer-Satz R11 (Fremdwelt-Probe R10)" },
+                taeter: "planet-core.js planetPlan (kein Mond)",
+                nicht: "kein Doppelmond, kein Eismond",
+                leser: "planet-core.js:312 planetPlan — kein Mond, keine Gezeitenheizung",
+                gruen: gut({ rang: 0.75 }, {}),
+                attrappen: [{ name: "der Rang ohne Mond", roh: leer({ rang: 0.75 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ STRÖMUNG ════════════════════════════════════════
+    const SR = "planet.wasser.stroemung";
+    const stroemung = {
+        sek: 25,
+        pfad: PFAD,
+        ungefahren: "der optische Fluss zweier Bilder (Sprosse 2) — die Werkbank misst keine Bewegung im Bild",
+        mess: async function (H, U, M) {
+            const MEER = `
+const L = r._gelaende(), G = globalThis.__gelaendeCore;
+const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const warte = async (x, z) => { let n = 0; while (r._ensureHydroTilesAround(x, z, 32) && n < 200) { await new Promise((f) => setTimeout(f, 50)); n++; } return n; };
+const tiefe = (x, z) => { const kw = r._koerperWasser(x, z, -Infinity), g = r._voxelSurfaceY(x, z); return kw > -Infinity && g !== null && Number.isFinite(g) && kw > g ? kw - g : 0; };
+let m = window.__pwMeer;
+if (!m) {
+m = { gefunden: false };
+let p = null;
+for (let d = 500; d <= 20000 && !p; d += 250) for (let a = 0; a < 32 && !p; a++) { const x = d * Math.cos((a * Math.PI) / 16), z = d * Math.sin((a * Math.PI) / 16); if (G.hoehe(L, x, z, false) < L.waterLevel - 2) p = [x, z]; }
+if (p) {
+for (const [a, b] of [[0, 0], [-1500, -1500], [1500, -1500], [-1500, 1500], [1500, 1500]]) await warte(p[0] + a, p[1] + b);
+const N = 61, T = new Float64Array(N * N);
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) T[i + N * j] = tiefe(p[0] + 50 * (i - 30), p[1] + 50 * (j - 30));
+let best = [0, p[0], p[1]], zellen = 0;
+const kueste = [], innen = [];
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+const t = T[i + N * j];
+if (!(t > 0)) continue;
+const x = p[0] + 50 * (i - 30), z = p[1] + 50 * (j - 30);
+zellen++;
+if (t > best[0]) best = [t, x, z];
+const rand = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => i + a < 0 || j + b < 0 || i + a >= N || j + b >= N || !(T[i + a + N * (j + b)] > 0));
+if (rand) kueste.push([x, z]); else innen.push([x, z, R(t)]);
+}
+const B = [best[1], best[2]], d0 = Math.hypot(B[0], B[1]), ux = -B[0] / d0, uz = -B[1] / d0;
+let s = null;
+for (let k = 1; k < 800 && !s; k++) { const x = B[0] + ux * 10 * k, z = B[1] + uz * 10 * k; if (!(tiefe(x, z) > 0) && r._voxelSurfaceY(x, z) > L.waterLevel) s = [x + ux * 6, z + uz * 6]; }
+let art = null;
+for (const t of (r.state.hydroTiles || new Map()).values()) { const sz = t.dim * t.cell; if (t.water && B[0] >= t.originX && B[1] >= t.originZ && B[0] < t.originX + sz && B[1] < t.originZ + sz) art = t.water.waterKind[Math.floor((B[0] - t.originX) / t.cell) + Math.floor((B[1] - t.originZ) / t.cell) * t.dim]; }
+const sy = s ? r._voxelSurfaceY(s[0], s[1]) : null;
+const jede = (A, n) => A.filter((q, i) => i % Math.max(1, Math.floor(A.length / n)) === 0).slice(0, n);
+m = { gefunden: true, p, B, tiefeMax: R(best[0]), spiegel: R(r._koerperWasser(B[0], B[1], -Infinity)), flaecheKm2: R((zellen * 2500) / 1e6), kuesteN: kueste.length, kuesteKm: R(kueste.length * 0.05), kueste: jede(kueste, 120), innen: jede(innen, 100), art, abstandKm: R(d0 / 1000), ufer: s ? [R(s[0]), R(sy + 1.7), R(s[1]), R(B[0]), R(L.waterLevel), R(B[1])] : null, richtung: [R(ux), R(uz)] };
+}
+window.__pwMeer = m;
+}
+`;
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const ziel = Object.keys(U);
+            const aus = {};
+            // DIE FLÜSSE DER HEIMAT: 12 Posen auf den Läufen des Gesetzes (`flussLaeufe` ±1 km, ≥ 150 m auseinander, im Kanal), je Pose die
+            // Strömung der Welt (`_waterFlowAt`) gegen die Richtung des Laufs; DAS MEER: die Strömung an seinen Punkten (Küste und innen)
+            const w = await H.seite(MEER + `
+await warte(0, 0);
+const lf = G.flussLaeufe(L, -1000, -1000, 1000, 1000, 16);
+const posen = [];
+for (const l of lf) for (const g of l.glieder) {
+const b = g.bahn || [];
+for (let i = 1; i + 1 < b.length && posen.length < 12; i += 3) {
+const q = b[i];
+if (posen.some((p) => Math.hypot(p[0] - q.x, p[1] - q.z) < 150)) continue;
+const rv = r._hydroRiverAt(q.x, q.z), f = r._waterFlowAt(q.x, q.z);
+if (!rv || !(rv.centerness > 0.9) || !f) continue;
+const tx = b[i + 1].x - b[i - 1].x, tz = b[i + 1].z - b[i - 1].z, tl = Math.hypot(tx, tz), fl = Math.hypot(f.x, f.z);
+const c = (tx * f.x + tz * f.z) / (tl * fl), s = (tx * f.z - tz * f.x) / (tl * fl);
+posen.push([R(q.x), R(q.z), R(fl), R((Math.atan2(s, c) * 180) / Math.PI), R(rv.breite)]);
+}
+}
+const meerPunkte = m.gefunden ? m.kueste.concat(m.innen.map((q) => [q[0], q[1]])) : [];
+const strom = meerPunkte.map(([x, z]) => r._waterFlowAt(x, z)).filter(Boolean).length;
+return { posen, laeufe: lf.length, meer: m.gefunden, meerPunkte: meerPunkte.length, kuestePunkte: m.gefunden ? m.kueste.length : 0, innenPunkte: m.gefunden ? m.innen.length : 0, strom, kuesteKm: m.kuesteKm, flaecheKm2: m.flaecheKm2, abstandKm: m.abstandKm };
+`);
+            const P = w.posen || [];
+            const abw = P.map((p) => Math.abs(p[3]));
+            const ort = w.meer ? "die Bucht " + w.abstandKm + " km vom Spawn (" + w.flaecheKm2 + " km²)" : "kein Meer bis 20 km";
+            const ohneStrom = "kein Strom im Meer: an " + w.meerPunkte + " Punkten von " + ort + " schweigt die Strömung (stamm/wasser-hydro.js:356 _waterFlowAt liest nur den Fluss)";
+            const je = {};
+            je[2] = {
+                werte: { flussPosen: P.length, flussRichtungAbwMax: R(abw.length ? Math.max(...abw) : NaN), flussMs: R(P.length ? P.reduce((s, p) => s + p[2], 0) / P.length : NaN) },
+                zeuge: { bildPaare: 0, flussPosen: P.length, je: P },
+                grund: "kein optischer Fluss: die Werkbank misst zwei Bilder nie gegeneinander (scripts/werkbank.cjs /bild: Pixel, Spiegel, Farbe)",
+            };
+            je[3] = {
+                werte: { ripJe500m: w.meer ? 0 : null, kuesteKm: w.kuesteKm, meerStrom: w.strom },
+                zeuge: { meerStrom: w.strom, kuestePunkte: w.kuestePunkte },
+                ...(w.strom === 0 ? { nicht: ohneStrom + "; kein Brandungsrückstrom, kein Küstenlängsstrom" } : {}),
+            };
+            const bewegt = w.strom;
+            je[4] = {
+                werte: { treibkoerper: w.meerPunkte, wirbelProzent: w.meerPunkte ? R((100 * bewegt) / w.meerPunkte) : null },
+                zeuge: { bewegt },
+                ...(bewegt === 0 ? { nicht: "kein Ozeanbecken 10³ km: " + ohneStrom } : {}),
+            };
+            je[5] = {
+                werte: { landetProzent: w.meerPunkte ? 0 : null, treibkoerper: w.meerPunkte },
+                zeuge: { bewegt },
+                ...(bewegt === 0 ? { nicht: "kein Becken 10⁴ km und keine Drift: " + ohneStrom } : {}),
+            };
+            je[6] = {
+                werte: { meerStrom: w.strom },
+                zeuge: { umwaelzung: 0 },
+                nicht: "keine Umwälzung: das Meer trägt weder Salz noch Wärme als Strömung (" + ohneStrom + ")",
+            };
+            je[7] = {
+                werte: {},
+                zeuge: { welten: 0 },
+                nicht: "keine Wirbel je Halbkugel: die Strömung des Planeten reist nicht aus dem Faden (voxel-worker.js:1202 planetOrtAuftrag ohne Wind und Zellen), fremde Ozeane trägt die Welt nicht",
+            };
+            for (const nr of ziel) aus[nr] = je[nr] || M.nicht("ungemessen");
+            return { sprossen: aus };
+        },
+        sprossen: {
+            2: {
+                u: { posen: 12, abstandS: 0.5 },
+                soll: [
+                    K.soll(SR, 2, "längs/quer ≥ 1,5", { key: "laengsQuer" }),
+                    K.soll(SR, 2, "Richtung ±20°", { key: "richtungAbwGrad", ref: 0, refQuelle: "Erde: das Wasser fließt längs des Laufs (Abweichung 0°)", einheit: "°" }),
+                    K.soll(SR, 2, "12 Posen", { key: "bildPosen", rel: "≥" }),
+                ],
+                zeuge: zMin({ bildPaare: 12, flussPosen: 12 }),
+                zeugeText: "12 Bildpaare am Fluss, der Fluss im Bild",
+                taeter: "scripts/werkbank.cjs /bild (kein optischer Fluss)",
+                leser: "scripts/werkbank.cjs:2110 /bild — kein Maß der Bewegung zweier Bilder 0,5 s auseinander (die Teilung misst Pixel, Spiegel, Farbe)",
+                gruen: gut({ laengsQuer: 2.1, richtungAbwGrad: 8, bildPosen: 12 }, { bildPaare: 12, flussPosen: 12 }),
+                attrappen: [{ name: "die Richtung aus _waterFlowAt statt aus dem Bild", roh: gut({ laengsQuer: 99, richtungAbwGrad: 0, bildPosen: 12 }, { bildPaare: 0, flussPosen: 12 }) }],
+            },
+            3: {
+                u: {},
+                soll: [
+                    K.soll(SR, 3, "Rip-Ströme ≥ 1 je 500 m brandender Küste", { key: "ripJe500m" }),
+                    K.soll(SR, 3, "Treibrichtung gegen Welleneinfall ±20°", { key: "treibAbwGrad", ref: 0, refQuelle: "Erde: Küstenlängsstrom längs der Komponente des Welleneinfalls (Longuet-Higgins 1970)", einheit: "°" }),
+                ],
+                zeuge: zMin({ meerStrom: 1, kuestePunkte: 20 }),
+                zeugeText: "die Küste trägt Strom",
+                taeter: "stamm/wasser-hydro.js _waterFlowAt (nur der Fluss)",
+                nicht: "kein Strom im Meer",
+                leser: "stamm/wasser-hydro.js:356 _waterFlowAt — die Strömung liest nur den Fluss (`_hydroRiverAt`), nie das Meer",
+                gruen: gut({ ripJe500m: 1.4, treibAbwGrad: 12 }, { meerStrom: 30, kuestePunkte: 120 }),
+                attrappen: [{ name: "Rip-Ströme gezählt an einer Küste ohne Strom", roh: gut({ ripJe500m: 1.4, treibAbwGrad: 12 }, { meerStrom: 0, kuestePunkte: 120 }) }],
+            },
+            4: {
+                u: { treibkoerper: 100 },
+                soll: [
+                    K.soll(SR, 4, "≥ 70 % folgen dem Wirbel", { key: "wirbelProzent", einheit: "%" }),
+                    K.soll(SR, 4, "Westrand ≥ 3× schneller als Ostrand", { key: "westJeOst" }),
+                    K.soll(SR, 4, "100 Treibkörper", { key: "treibkoerper", rel: "≥" }),
+                ],
+                zeuge: zMin({ bewegt: 70 }),
+                zeugeText: "die Treibkörper bewegten sich",
+                taeter: "stamm/wasser-hydro.js _waterFlowAt (kein Ozeanwirbel)",
+                nicht: "kein Ozeanbecken, kein Strom im Meer",
+                leser: "stamm/wasser-hydro.js:356 _waterFlowAt — kein Wirbel, keine Westrand-Verstärkung",
+                gruen: gut({ wirbelProzent: 76, westJeOst: 4.2, treibkoerper: 100 }, { bewegt: 100 }),
+                attrappen: [{ name: "100 Punkte, keiner treibt", roh: gut({ wirbelProzent: 76, westJeOst: 4.2, treibkoerper: 100 }, { bewegt: 0 }) }],
+            },
+            5: {
+                u: { jahre: 3 },
+                soll: [
+                    K.soll(SR, 5, "≥ 70 % des Treibguts landet an den Küsten", { key: "landetProzent", einheit: "%" }),
+                    K.soll(SR, 5, "3 Spieljahre", { key: "spieljahre", rel: "≥" }),
+                ],
+                zeuge: zMin({ bewegt: 70 }),
+                zeugeText: "das Treibgut kreuzte das Becken",
+                taeter: "stamm/wasser-hydro.js _waterFlowAt (kein Strom im Meer)",
+                nicht: "kein Becken 10⁴ km, keine Drift",
+                leser: "stamm/wasser-hydro.js:356 _waterFlowAt — keine Drift über Becken",
+                gruen: gut({ landetProzent: 74, spieljahre: 3 }, { bewegt: 100 }),
+                attrappen: [{ name: "die Landung vorhergesagt, nichts trieb", roh: gut({ landetProzent: 74, spieljahre: 3 }, { bewegt: 0 }) }],
+            },
+            6: {
+                u: {},
+                soll: [K.soll(SR, 6, "Umwälzung −50 %", { key: "umwaelzungProzent", rel: "≤", einheit: "%" })],
+                zeuge: zMin({ umwaelzung: 2 }),
+                zeugeText: "die Umwälzung vor und nach dem Puls gemessen",
+                taeter: "stamm/wasser-hydro.js (keine Umwälzung)",
+                nicht: "keine Umwälzung",
+                leser: "planet-core.js / stamm/wasser-*.js — kein Leser von Salz, Dichte und Umwälzung des Meers",
+                gruen: gut({ umwaelzungProzent: -55 }, { umwaelzung: 2 }),
+                attrappen: [{ name: "−50 % als Zahl ohne Puls", roh: leer({ umwaelzungProzent: -55 }) }],
+            },
+            7: {
+                u: { welten: 5 },
+                soll: [
+                    K.soll(SR, 7, "Wirbelzahl je Halbkugel folgt der Rotationsrate ±1", { key: "wirbelAbw", ref: 0, refQuelle: "Erde: zwei Subtropen-Wirbel je Halbkugel bei 24 h Tag (Stommel 1948, Munk 1950), Abweichung 0" }),
+                    K.soll(SR, 7, "5 Welten", { key: "welten", rel: "≥" }),
+                ],
+                zeuge: zMin({ welten: 5 }),
+                zeugeText: "fünf Welten mit gezählten Wirbeln",
+                taeter: "voxel-worker.js planetOrtAuftrag (keine Strömung im Faden)",
+                nicht: "keine Wirbel, keine fremden Ozeane",
+                leser: "voxel-worker.js:1202 planetOrtAuftrag — Wind und Zell-Zahl der Zirkulation reisen nicht aus dem Faden; kein Ozean-Wirbel im Planet-Kern",
+                gruen: gut({ wirbelAbw: 0, welten: 5 }, { welten: 5 }),
+                attrappen: [{ name: "die Wirbelzahl aus Held-Hou gerechnet, keine Welt", roh: leer({ wirbelAbw: 0, welten: 5 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ EIS ════════════════════════════════════════
+    const EI = "planet.wasser.eis";
+    const eis = {
+        sek: 40,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "die Bilder (Scholle im Blindpaar, Eismond) schießt die Probe nur am Gerät",
+        mess: async function (H, U, M) {
+            const MEER = `
+const L = r._gelaende(), G = globalThis.__gelaendeCore;
+const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const warte = async (x, z) => { let n = 0; while (r._ensureHydroTilesAround(x, z, 32) && n < 200) { await new Promise((f) => setTimeout(f, 50)); n++; } return n; };
+const tiefe = (x, z) => { const kw = r._koerperWasser(x, z, -Infinity), g = r._voxelSurfaceY(x, z); return kw > -Infinity && g !== null && Number.isFinite(g) && kw > g ? kw - g : 0; };
+let m = window.__pwMeer;
+if (!m) {
+m = { gefunden: false };
+let p = null;
+for (let d = 500; d <= 20000 && !p; d += 250) for (let a = 0; a < 32 && !p; a++) { const x = d * Math.cos((a * Math.PI) / 16), z = d * Math.sin((a * Math.PI) / 16); if (G.hoehe(L, x, z, false) < L.waterLevel - 2) p = [x, z]; }
+if (p) {
+for (const [a, b] of [[0, 0], [-1500, -1500], [1500, -1500], [-1500, 1500], [1500, 1500]]) await warte(p[0] + a, p[1] + b);
+const N = 61, T = new Float64Array(N * N);
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) T[i + N * j] = tiefe(p[0] + 50 * (i - 30), p[1] + 50 * (j - 30));
+let best = [0, p[0], p[1]], zellen = 0;
+const kueste = [], innen = [];
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+const t = T[i + N * j];
+if (!(t > 0)) continue;
+const x = p[0] + 50 * (i - 30), z = p[1] + 50 * (j - 30);
+zellen++;
+if (t > best[0]) best = [t, x, z];
+const rand = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => i + a < 0 || j + b < 0 || i + a >= N || j + b >= N || !(T[i + a + N * (j + b)] > 0));
+if (rand) kueste.push([x, z]); else innen.push([x, z, R(t)]);
+}
+const B = [best[1], best[2]], d0 = Math.hypot(B[0], B[1]), ux = -B[0] / d0, uz = -B[1] / d0;
+let s = null;
+for (let k = 1; k < 800 && !s; k++) { const x = B[0] + ux * 10 * k, z = B[1] + uz * 10 * k; if (!(tiefe(x, z) > 0) && r._voxelSurfaceY(x, z) > L.waterLevel) s = [x + ux * 6, z + uz * 6]; }
+let art = null;
+for (const t of (r.state.hydroTiles || new Map()).values()) { const sz = t.dim * t.cell; if (t.water && B[0] >= t.originX && B[1] >= t.originZ && B[0] < t.originX + sz && B[1] < t.originZ + sz) art = t.water.waterKind[Math.floor((B[0] - t.originX) / t.cell) + Math.floor((B[1] - t.originZ) / t.cell) * t.dim]; }
+const sy = s ? r._voxelSurfaceY(s[0], s[1]) : null;
+const jede = (A, n) => A.filter((q, i) => i % Math.max(1, Math.floor(A.length / n)) === 0).slice(0, n);
+m = { gefunden: true, p, B, tiefeMax: R(best[0]), spiegel: R(r._koerperWasser(B[0], B[1], -Infinity)), flaecheKm2: R((zellen * 2500) / 1e6), kuesteN: kueste.length, kuesteKm: R(kueste.length * 0.05), kueste: jede(kueste, 120), innen: jede(innen, 100), art, abstandKm: R(d0 / 1000), ufer: s ? [R(s[0]), R(sy + 1.7), R(s[1]), R(B[0]), R(L.waterLevel), R(B[1])] : null, richtung: [R(ux), R(uz)] };
+}
+window.__pwMeer = m;
+}
+`;
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const ziel = Object.keys(U);
+            const aus = {};
+            // DER SCHNEE: an 10 Posen (Ring 600 m um den Spawn) × 4 Jahreszeiten die tiefste Höhe, an der die Decke trägt (`_schneeTafel`,
+            // `_schneeVersatz` der Saison, gelaende-core schneeTrittAm), gegen die Nullgrad-Höhe des Tagesmittels (temperaturAus über
+            // `_temperaturFeld`, vier Stunden); der Tritt des Fußes am Gelände der Pose
+            const schnee = await H.seite(`
+const st = r.state, L = r._gelaende(), G = globalThis.__gelaendeCore, R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const posen = []; for (let k = 0; k < 10; k++) posen.push([600 * Math.cos(k * 0.6283), 600 * Math.sin(k * 0.6283)]);
+const alt = st.seasonPhase, wf = r._weatherFieldFor();
+const unten = L.waterLevel - 1000, oben = L.waterLevel + 4000;
+const je = [];
+try {
+for (const ph of [0.125, 0.375, 0.625, 0.875]) {
+st.seasonPhase = ph;
+const T = r._schneeTafel(), v = r._schneeVersatz();
+const mittelT = (y) => { const F = r._temperaturFeld(y, 0); let s = 0; for (let h = 0; h < 4; h++) s += G.temperaturAus(F, ph, (h + 0.5) / 4, wf) / 4; return s; };
+let n0 = null; for (let y = unten; y <= oben; y += 5) if (mittelT(y) <= 0) { n0 = y; break; }
+const linien = posen.map(([x, z]) => { if (!T) return null; for (let y = unten; y <= oben; y += 5) if (G.schneeTrittAm(L, T, x, y, z, v) > 0) return y; return null; });
+const fuss = posen.map(([x, z]) => { const g = r._voxelSurfaceY(x, z); return T && g !== null ? R(G.schneeTrittAm(L, T, x, g, z, v)) : 0; });
+je.push({ ph, null0: n0, linien, fuss });
+}
+} finally { st.seasonPhase = alt; }
+return { je, unten, oben };
+`);
+            // DER SEE FRIERT (der See der Soll-Tafel 1816/−6168): je Tag des Jahrs das Tagesmittel der Luft über dem Spiegel und ob das Eis
+            // den Spieler trägt (`_eisAt` am See, die Linien `_eisLinien` der Saison); DAS MEER FRIERT: an 40 Punkten der Bucht je Woche
+            const jahr = await H.seite(MEER + `
+const st = r.state, S = [1816, -6168];
+await warte(S[0], S[1]);
+const spiegel = r._koerperWasser(S[0], S[1], -Infinity), boden = r._voxelSurfaceY(S[0], S[1]);
+const alt = st.seasonPhase, wf = r._weatherFieldFor();
+const tage = [], wochen = [];
+const mp = m.gefunden ? m.innen.slice(0, 40) : [];
+try {
+for (let d = 0; d < 365; d++) {
+st.seasonPhase = d / 365;
+const F = r._temperaturFeld(spiegel, 0);
+let T = 0; for (let h = 0; h < 4; h++) T += G.temperaturAus(F, d / 365, (h + 0.5) / 4, wf) / 4;
+tage.push([R(T), r._eisAt(S[0], S[1]) === null ? 0 : 1]);
+if (d % 7 === 0 && mp.length) wochen.push(mp.filter(([x, z]) => r._eisAt(x, z) !== null).length / mp.length);
+}
+} finally { st.seasonPhase = alt; r._eisLinien(); }
+return { spiegel: R(spiegel), tiefe: R(spiegel - boden), art: r._wasserArtAt(S[0], S[1]), tage, wochen: wochen.map(R), meerPunkte: mp.length, meerKm2: m.gefunden ? m.flaecheKm2 : null, ufer: m.gefunden ? m.ufer : null };
+`);
+            // DER GIPFEL DER HEIMAT (±3 km): seine Höhe und ob der Schnee dort den Sommer überdauert (Firn — der Anfang eines Gletschers)
+            const gipfel = await H.seite(`
+const st = r.state, L = r._gelaende(), G = globalThis.__gelaendeCore, R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+let g = [-Infinity, 0, 0];
+for (let x = -3000; x <= 3000; x += 100) for (let z = -3000; z <= 3000; z += 100) { const h = G.hoehe(L, x, z, false); if (h > g[0]) g = [h, x, z]; }
+const alt = st.seasonPhase;
+let sommer = 0;
+try { st.seasonPhase = 0.375; const T = r._schneeTafel(); sommer = T ? G.schneeTrittAm(L, T, g[1], g[0], g[2], r._schneeVersatz()) : 0; } finally { st.seasonPhase = alt; }
+return { gipfelM: R(g[0]), ort: [g[1], g[2]], sommerTritt: R(sommer) };
+`);
+            // DER PLANET-FADEN: der Meeresspiegel der Heimat in der Zeit (das Eis des Kerns bindet Meer), die Äquator-Wärme von 10 Saaten zu −2,9 Ga
+            const faden = await H.seite(`
+await r._fadenQuelle();
+const RAD = 180 / Math.PI, R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const samen = r.state.worldMeta && r.state.worldMeta.seed || "anazh-realm-seed";
+const a = await r._planetAuftrag({ type: "planet-anker", samen });
+const zeiten = [0, -100, -300, -600];
+const meer = await Promise.all(zeiten.map((zeitMa) => r._planetAuftrag({ type: "planet-ort", samen, breite: a.breite * RAD, laenge: a.laenge * RAD, zeitMa }).then((o) => [zeitMa, R(o.delta.meer.waterLevelM)]).catch(() => [zeitMa, null])));
+const saaten = []; for (let i = 0; i < 10; i++) saaten.push("schneeball-" + i);
+const kalt = await Promise.all(saaten.map((s) => Promise.all([0, -2900].map((zeitMa) => r._planetAuftrag({ type: "planet-ort", samen: s, breite: 0, laenge: 0, zeitMa }).then((o) => o.delta.klima.sommer).catch(() => null))).then(([j, f]) => (Number.isFinite(j) && Number.isFinite(f) ? R(f - j) : null))));
+return { meer, kalt, felder: Object.keys(a) };
+`);
+            const je = {};
+            // S1
+            const kombi = [];
+            for (const s of schnee.je) s.linien.forEach((l) => { if (l !== null && s.null0 !== null) kombi.push(Math.abs(l - s.null0)); });
+            const mittelLinie = schnee.je.map((s) => { const v = s.linien.filter((x) => x !== null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : NaN; }).filter(Number.isFinite);
+            const winter = schnee.je.find((s) => s.ph === 0.875), sommer = schnee.je.find((s) => s.ph === 0.375);
+            const fussW = winter ? Math.max(...winter.fuss) : 0, fussS = sommer ? Math.max(...sommer.fuss) : 0;
+            const jz = schnee.je.filter((s) => s.null0 !== null && s.linien.some((l) => l !== null)).length;
+            je[1] = {
+                werte: Object.assign({ fussCm: R(100 * fussW), posen: Math.min(...schnee.je.map((s) => s.linien.filter((l) => l !== null).length)), jahreszeiten: jz }, kombi.length ? { abwM: R(Math.max(...kombi)) } : {}),
+                zeuge: { messungen: kombi.length, spanneM: R(mittelLinie.length ? Math.max(...mittelLinie) - Math.min(...mittelLinie) : 0), gegenlauf: fussW >= 0.05 && fussS < 0.005 ? 1 : 0, je: schnee.je.map((s) => [s.ph, s.null0, Math.min(...s.linien.filter((l) => l !== null)), Math.max(...s.linien.filter((l) => l !== null))]) },
+            };
+            // S2: Frostgrad-Summe ab dem ersten Frosttag nach dem wärmsten Tag bis zum ersten tragenden Tag
+            const T = jahr.tage.map((t) => t[0]), E = jahr.tage.map((t) => t[1]);
+            const n = T.length;
+            const warm = T.indexOf(Math.max(...T));
+            let start = -1, onset = -1, fdd = 0, auf = -1;
+            for (let k = 1; k < n; k++) {
+                const d = (warm + k) % n;
+                if (start < 0 && T[d] < 0) start = k;
+                if (start >= 0 && onset < 0) {
+                    fdd += Math.max(0, -T[d]);
+                    if (E[d]) onset = k;
+                }
+                if (onset >= 0 && auf < 0 && !E[d]) auf = k;
+            }
+            const traegtTage = E.filter(Boolean).length;
+            const brichtTage = E.filter((e, d) => !e && T[d] > 0).length;
+            je[2] = {
+                werte: Object.assign({ traegtTage, frostTage: T.filter((t) => t < 0).length, seeTiefeM: jahr.tiefe }, onset >= 0 ? { fddEinsetzen: R(fdd), einsetzenTag: (warm + onset) % n, tauTag: auf >= 0 ? (warm + auf) % n : null } : {}),
+                zeuge: { tage: n, traegtTage, brichtTage },
+            };
+            // S3 Meereis: Anteil der Bucht, den das Eis trägt, je Woche
+            const wo = jahr.wochen;
+            const wMax = wo.length ? Math.max(...wo) : NaN, wMin = wo.length ? Math.min(...wo) : NaN;
+            je[3] = {
+                werte: Object.assign({ eisAnteilWinter: R(wMax), eisAnteilSommer: R(wMin), meerKm2: jahr.meerKm2 }, wMin > 0 ? { winterJeSommer: R(wMax / wMin) } : {}),
+                zeuge: { wochen: wo.length, meerPunkte: jahr.meerPunkte },
+                auge: await M.auge("wasser-eis-s3", jahr.ufer ? { px: jahr.ufer[0], py: jahr.ufer[1], pz: jahr.ufer[2], lx: jahr.ufer[3], ly: jahr.ufer[4], lz: jahr.ufer[5] } : { ort: "wiese" }, { saison: "winter" }),
+                nicht: "Meereis 10⁶ km² nicht erzeugbar: das Meer der Welt ist eine Bucht von " + jahr.meerKm2 + " km² (Eis im Winter " + R(100 * wMax) + " %, im Sommer " + R(100 * wMin) + " % ihrer Punkte); keine Scholle, keine Rinne",
+            };
+            je[4] = {
+                werte: { gipfelM: gipfel.gipfelM, firnSommerM: gipfel.sommerTritt },
+                zeuge: { gletscher: 0 },
+                nicht: "kein Gletscher: kein Leser lässt Eis fließen (gelaende-core.js:1404 eisDicke ist stehendes See-Eis, die Schnee-Decke trägt nur Tritt); der Gipfel der Heimat " + gipfel.gipfelM + " m trägt im Sommer " + gipfel.sommerTritt + " m Schnee",
+            };
+            je[5] = {
+                werte: {},
+                zeuge: { kalbungen: 0 },
+                nicht: "kein Schelfeis, kein Eisberg: kein Leser kalbt oder treibt Eis (stamm/wasser-hydro.js _eisAt trägt nur stehendes Eis)",
+            };
+            const ms = faden.meer.map((x) => x[1]).filter(Number.isFinite);
+            je[6] = {
+                werte: { meerSpanneM: R(ms.length ? Math.max(...ms) - Math.min(...ms) : NaN) },
+                zeuge: { eisVolumen: 0, zeiten: ms.length },
+                nicht: "kein Eisschild in der Welt: das Eis bindet Meer nur als Zahl im Planet-Kern (planet-core.js:1611 eisKm), der Faden nennt kein Eis-Volumen (voxel-worker.js:1201, Felder " + faden.felder.join(", ") + ")",
+            };
+            const kalt = faden.kalt.filter(Number.isFinite);
+            je[7] = {
+                werte: { saatenGefragt: kalt.length, aequatorDeltaK: R(kalt.length ? kalt.reduce((a, b) => a + b, 0) / kalt.length : NaN) },
+                zeuge: { saaten: kalt.length },
+                auge: await M.auge("wasser-eis-s7", { ort: "wiese" }, { saison: "winter" }),
+                nicht: "keine Albedo-Kippe im Bild: die Eis-Linie der Energiebilanz (planet-core.js:1919 eisBreite) reist nicht aus dem Faden, kein Eismond (planet-core.js:312)",
+            };
+            for (const nr of ziel) aus[nr] = je[nr] || M.nicht("ungemessen");
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { posen: 10, jahreszeiten: [0.125, 0.375, 0.625, 0.875] },
+                soll: [
+                    K.soll(EI, 1, "Schneegrenze gegen Nullgrad-Höhe ±150 m", { key: "abwM", ref: 0, refQuelle: "Erde: die Schneegrenze folgt der Nullgrad-Höhe (Ohmura, Kasser & Funk 1992), Abweichung 0", einheit: "m" }),
+                    K.soll(EI, 1, "10 Posen", { key: "posen", rel: "≥" }),
+                    K.soll(EI, 1, "4 Jahreszeiten", { key: "jahreszeiten", rel: "≥" }),
+                    K.soll(EI, 1, "Fuß sinkt ≥ 5 cm", { key: "fussCm", einheit: "cm" }),
+                ],
+                zeuge: zMin({ messungen: 40, spanneM: 10, gegenlauf: 1 }),
+                zeugeText: "40 Linien der Welt, die Grenze wandert mit der Saison, der Fuß sinkt im Winter und nie im Sommer",
+                taeter: "gelaende-core.js schneeTrittAm / schneeVersatz (die Decke der Saison)",
+                gruen: gut({ abwM: 75, posen: 10, jahreszeiten: 4, fussCm: 21 }, { messungen: 40, spanneM: 140, gegenlauf: 1 }),
+                attrappen: [
+                    { name: "die Schneegrenze AN der Nullgrad-Höhe eingetragen (eine Linie, keine Saison)", roh: gut({ abwM: 0, posen: 10, jahreszeiten: 4, fussCm: 21 }, { messungen: 40, spanneM: 0, gegenlauf: 1 }) },
+                    { name: "der Fuß sinkt auch im Sommer (eine Konstante)", roh: gut({ abwM: 60, posen: 10, jahreszeiten: 4, fussCm: 21 }, { messungen: 40, spanneM: 140, gegenlauf: 0 }) },
+                ],
+            },
+            2: {
+                u: { see: [1816, -6168], tage: 365 },
+                soll: [K.soll(EI, 2, "Einsetzen gegen Frostgrad-Summe ±20 %", { key: "fddEinsetzen", ref: 13.7, refQuelle: "Erde: Stefan mit α = 2,7 cm/√(K·d) (Ashton 1986, windiger See ohne Schnee) — 10 cm tragend: (10/2,7)² = 13,7 K·d", einheit: "K·d" })],
+                zeuge: zMin({ tage: 365, traegtTage: 1, brichtTage: 1 }),
+                zeugeText: "der See trägt im Frost und bricht im Tauwetter",
+                taeter: "gelaende-core.js eisDicke (EIS.traegt) · stamm/wasser-hydro.js _eisAt",
+                gruen: gut({ fddEinsetzen: 14.5 }, { tage: 365, traegtTage: 110, brichtTage: 200 }),
+                attrappen: [{ name: "die Frostgrad-Summe aus Stefan eingesetzt, der See trägt nie", roh: gut({ fddEinsetzen: 13.7 }, { tage: 365, traegtTage: 0, brichtTage: 365 }) }],
+            },
+            3: {
+                u: { wochen: 53, punkte: 40 },
+                soll: [K.soll(EI, 3, "Verhältnis Winter/Sommer gegen Arktis ±30 %", { key: "winterJeSommer", ref: 2.5, refQuelle: "Erde: Arktis März 15,6 / September 6,3 Mio km² (NSIDC 1981–2010) = 2,5" })],
+                auge: { pose: "Ego am Ufer der Bucht im Winter, Blick über die tiefste Stelle", vorbild: "Foto einer Scholle im Packeis (Blindpaar, Prüfer-Satz R11)" },
+                taeter: "gelaende-core.js eisDicke (Meer-Eis der Bucht) — kein Meer von 10⁶ km²",
+                nicht: "Meereis 10⁶ km² nicht erzeugbar (eine Bucht)",
+                gruen: gut({ winterJeSommer: 2.6 }, {}),
+                attrappen: [{ name: "das Verhältnis der Arktis eingetragen", roh: leer({ winterJeSommer: 2.5 }) }],
+            },
+            4: {
+                u: {},
+                soll: [
+                    K.soll(EI, 4, "Fließgeschwindigkeit 10–200 m/a", { key: "fliessMa", einheit: "m/a" }),
+                    K.soll(EI, 4, "Spalten quer zur Zugspannung ±20°", { key: "spaltenAbwGrad", ref: 0, refQuelle: "Erde: Querspalten senkrecht zur größten Zugspannung (Nye 1952), Abweichung 0", einheit: "°" }),
+                ],
+                zeuge: zMin({ gletscher: 1 }),
+                zeugeText: "ein Gletscher floss",
+                taeter: "gelaende-core.js (kein Gletscher)",
+                nicht: "kein Gletscher",
+                leser: "gelaende-core.js:1404 eisDicke — stehendes Eis; kein Leser von Eis-Fluss, Spalten, Gletschertor",
+                gruen: gut({ fliessMa: 60, spaltenAbwGrad: 8 }, { gletscher: 1 }),
+                attrappen: [{ name: "60 m/a eingetragen ohne Gletscher", roh: leer({ fliessMa: 60, spaltenAbwGrad: 8 }) }],
+            },
+            5: {
+                u: {},
+                soll: [K.soll(EI, 5, "Eisberg treibt ≥ 100 km", { key: "treibKm", einheit: "km" }), K.soll(EI, 5, "1 Spieljahr", { key: "spieljahre", rel: "≥" })],
+                zeuge: zMin({ kalbungen: 1 }),
+                zeugeText: "ein Eisberg kalbte und trieb",
+                taeter: "stamm/wasser-hydro.js _eisAt (kein Eisberg)",
+                nicht: "kein Schelfeis, kein Eisberg",
+                leser: "stamm/wasser-hydro.js:703 _eisAt — stehendes Eis; kein Leser kalbt oder treibt",
+                gruen: gut({ treibKm: 140, spieljahre: 1 }, { kalbungen: 1 }),
+                attrappen: [{ name: "140 km ohne Eisberg", roh: leer({ treibKm: 140, spieljahre: 1 }) }],
+            },
+            6: {
+                u: { zeitenMa: [0, -100, -300, -600] },
+                soll: [K.soll(EI, 6, "ΔV_Eis / A_Ozean = Δh ±5 %", { key: "eisJeSpiegel", ref: 1, refQuelle: "Erde: Meeresspiegel-Äquivalent des Eises = V·ρ_Eis/ρ_Wasser / A_Ozean (Letztes Glaziales Maximum −120 m)" })],
+                zeuge: zMin({ eisVolumen: 2 }),
+                zeugeText: "das Eis-Volumen zu zwei Zeiten in der Welt gemessen",
+                taeter: "voxel-worker.js planetOrtAuftrag (kein Eis-Volumen im Faden)",
+                nicht: "kein Eisschild in der Welt",
+                leser: "voxel-worker.js:1201 planetOrtAuftrag — nennt den Meeresspiegel der Zeit, nie das Eis (planet-core.js:1611 eisKm)",
+                gruen: gut({ eisJeSpiegel: 1.02 }, { eisVolumen: 2 }),
+                attrappen: [{ name: "die Bilanz aus dem Kern-Text, kein Eis in der Welt", roh: gut({ eisJeSpiegel: 1 }, { eisVolumen: 0, zeiten: 4 }) }],
+            },
+            7: {
+                u: { saaten: 10, zeitMa: -2900 },
+                soll: [K.soll(EI, 7, "10 Saaten", { key: "saaten", rel: "≥" })],
+                auge: { pose: "die Wiese im Winter (kein Schneeball-Planet, kein Eismond in der Welt)", vorbild: "Sondenfoto eines Eismonds (Europa, Galileo) im Blindpaar, Prüfer-Satz R11" },
+                taeter: "planet-core.js planetKlimaGlobal (die Eis-Linie reist nicht aus dem Faden)",
+                nicht: "keine Albedo-Kippe in der Welt, kein Eismond",
+                leser: "planet-core.js:1919 eisBreite — die Eis-Linie der Energiebilanz reist nicht aus dem Faden (voxel-worker.js:1201)",
+                gruen: gut({ saaten: 10 }, {}),
+                attrappen: [{ name: "10 Saaten ohne Lauf", roh: leer({ saaten: 10 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ KREISLAUF ════════════════════════════════════════
+    const KR = "planet.wasser.kreislauf";
+    const kreislauf = {
+        sek: 30,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "das Bild der braunen Wiese (Sprosse 3) schießt die Probe nur am Gerät",
+        mess: async function (H, U, M) {
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const ziel = Object.keys(U);
+            const aus = {};
+            // DIE GRUBEN AM SEE (der See der Soll-Tafel): 20 Gruben 40–200 m vom Ufer, ihr Boden 1 m unter dem Spiegel des Sees — wie hoch
+            // füllt die Welt sie (`_atlasWaterLevelAt`, der Spiegel, den die Zellen des Wassers lesen)?
+            const gruben = await H.seite(`
+const L = r._gelaende(), G = globalThis.__gelaendeCore, R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const S = [1816, -6168];
+let nw = 0; while (r._ensureHydroTilesAround(S[0], S[1], 32) && nw < 200) { await new Promise((f) => setTimeout(f, 50)); nw++; }
+const spiegel = r._koerperWasser(S[0], S[1], -Infinity);
+const je = [];
+for (let a = 0; a < 4; a++) {
+const ux = Math.cos((a * Math.PI) / 2 + 0.3), uz = Math.sin((a * Math.PI) / 2 + 0.3);
+let k = 0; while (k < 400 && r._nassAt(S[0] + ux * k, S[1] + uz * k)) k += 4;
+for (const d of [40, 80, 120, 160, 200]) {
+const x = S[0] + ux * (k + d), z = S[1] + uz * (k + d), g = r._voxelSurfaceY(x, z);
+if (g === null || !(g > spiegel)) continue;
+const boden = spiegel - 1;
+const f = r._atlasWaterLevelAt(x, z, boden);
+je.push([R(x), R(z), d, R(g), Number.isFinite(f) ? R(f) : null]);
+}
+}
+const lf = G.flussLaeufe(L, -1000, -1000, 1000, 1000, 16);
+return { spiegel: R(spiegel), je, laeufe: lf.length };
+`);
+            // DIE DÜRRE AM BACH DER MESS-WIESE (derselbe Bach wie kreislauf S1): 60 Spieltage ohne Regen-Stempel auf der Welt-Uhr, der Pegel
+            // nachgezogen (`_pegelTakt`) — die Tiefe des Bachs vor und nach, die Welt-Uhr und die Stempel danach zurück
+            const duerre = await H.seite(`
+const st = r.state, R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const P = [-258.4, -1132.8];
+let nw = 0; while (r._ensureHydroTilesAround(P[0], P[1], 32) && nw < 200) { await new Promise((f) => setTimeout(f, 50)); nw++; }
+const tagS = r.constructor.DAY_LENGTH_DEFAULT_MINUTES * 60;
+const alt = [st.spielZeit, st.regenStempel && st.regenStempel.slice()];
+const lies = () => { const f = r._hydroRiverAt(P[0], P[1]); return f ? [R(f.surfaceY), R(f.depth), R(f.breite)] : null; };
+let vor, nach, mitRegen;
+try {
+r._pegelTakt();
+vor = lies();
+st.regenStempel = [];
+st.spielZeit = alt[0] + 60 * tagS;
+r._pegelTakt();
+nach = lies();
+st.spielZeit = alt[0]; st.regenStempel = alt[1] && alt[1].slice();
+r._pegelTakt();
+mitRegen = lies();
+} finally {
+st.spielZeit = alt[0]; st.regenStempel = alt[1]; r._pegelTakt();
+}
+return { vor, nach, mitRegen, tagS };
+`);
+            // DER REGEN UND DAS MEER IM PLANET-FADEN: 48 Lagen um den Anker der Heimat (±10° Breite, ±15° Länge), je Land-Lage der
+            // Abstand zur Küste (`kuesteKm`) und der Regen (`delta.wetter.regenQuote`, monoton im Niederschlag)
+            const faden = await H.seite(`
+await r._fadenQuelle();
+const RAD = 180 / Math.PI;
+const samen = r.state.worldMeta && r.state.worldMeta.seed || "anazh-realm-seed";
+const a = await r._planetAuftrag({ type: "planet-anker", samen });
+const L0 = [a.breite * RAD, a.laenge * RAD], P = [];
+for (let i = 0; i < 8; i++) for (let j = 0; j < 6; j++) P.push([L0[0] - 10 + (20 * j) / 5, L0[1] - 15 + (30 * i) / 7]);
+const o = await Promise.all(P.map((p) => r._planetAuftrag({ type: "planet-ort", samen, breite: p[0], laenge: p[1], zeitMa: 0 })));
+return o.map((x) => [x.land, x.kuesteKm, x.delta.wetter.regenQuote, x.version]);
+`);
+            const je = {};
+            // S2
+            const G2 = gruben.je;
+            const gefuellt = G2.filter((g) => g[4] !== null && g[4] > gruben.spiegel - 1 + 0.01);
+            const abw = G2.map((g) => Math.abs(gruben.spiegel - (g[4] !== null && g[4] > gruben.spiegel - 1 ? g[4] : gruben.spiegel - 1)));
+            je[2] = {
+                werte: Object.assign({ gruben: G2.length, gefuellt: gefuellt.length, laeufe: gruben.laeufe }, abw.length ? { grubeAbwM: R(Math.max(...abw)) } : {}),
+                zeuge: { gruben: G2.length, gefuellt: gefuellt.length, je: G2 },
+                ...(gefuellt.length === 0 ? { nicht: "kein Grundwasser-Spiegel: " + G2.length + " Gruben 40–200 m vom See (Boden 1 m unter seinem Spiegel " + gruben.spiegel + " m) bleiben trocken (gelaende-core.js:7728 atlasSpiegel füllt nur den Rand 3×3 eines Körpers); keine Quelle am Spiegel, kein Brunnen" } : {}),
+            };
+            // S3
+            const d0 = duerre.vor && duerre.vor[1], d1 = duerre.nach && duerre.nach[1];
+            const verloren = d0 > 0 && Number.isFinite(d1) ? 100 * (1 - d1 / d0) : NaN;
+            je[3] = {
+                werte: Object.assign({ tageOhneRegen: 60, bachTiefeVorM: R(d0), bachTiefeNachM: R(d1), bachHubM: duerre.vor && duerre.nach ? R(duerre.nach[0] - duerre.vor[0]) : null }, Number.isFinite(verloren) ? { querschnittVerlorenProzent: R(verloren) } : {}),
+                zeuge: { vor: duerre.vor, nach: duerre.nach, mitRegen: duerre.mitRegen },
+                auge: await M.auge("wasser-kreislauf-s3", { ort: "wiese" }),
+                nicht: "die Wiese bräunt nicht: kein Leser trägt 60 Tage Dürre in ihre Farbe (foundry-core.js:3085 wiesenTint liest die Feuchte des Orts, kein Gedächtnis der Bodenfeuchte)",
+            };
+            // S4: Spearman-Rang (Abstand zur Küste ↔ Regen) über die Land-Lagen
+            const land = faden.filter((x) => x[0] && Number.isFinite(x[1]) && Number.isFinite(x[2]));
+            const rang = (v) => { const o = v.map((x, i) => [x, i]).sort((p, q) => p[0] - q[0]); const r2 = new Array(v.length); for (let i = 0; i < o.length; ) { let j = i; while (j + 1 < o.length && o[j + 1][0] === o[i][0]) j++; for (let k = i; k <= j; k++) r2[o[k][1]] = (i + j) / 2; i = j + 1; } return r2; };
+            const pear = (x, y) => { const mx = x.reduce((s, v) => s + v, 0) / x.length, my = y.reduce((s, v) => s + v, 0) / y.length; let a = 0, b = 0, c = 0; for (let i = 0; i < x.length; i++) { a += (x[i] - mx) * (y[i] - my); b += (x[i] - mx) ** 2; c += (y[i] - my) ** 2; } return b > 0 && c > 0 ? a / Math.sqrt(b * c) : NaN; };
+            const km = land.map((x) => x[1]), rq = land.map((x) => x[2]);
+            const rho = land.length >= 3 ? pear(rang(km), rang(rq)) : NaN;
+            const sd = (v) => { const m = v.reduce((s, x) => s + x, 0) / Math.max(1, v.length); return Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / Math.max(1, v.length)); };
+            je[4] = {
+                werte: Object.assign({ landLagen: land.length }, Number.isFinite(rho) ? { rang: R(-rho) } : {}),
+                zeuge: { antworten: faden.length, land: land.length, streuungKm: R(sd(km)), streuungRegen: R(sd(rq)), fassung: faden.some((x) => x[3]) ? 1 : 0 },
+                nicht: "kein markiertes Meerwasser: der Regen der Welt ist ein Stempel des Wetters (stamm/wasser-hydro.js:127 _regenStempel), kein Leser trägt Wasser vom Meer in den Regen des Binnenlands",
+            };
+            je[5] = {
+                werte: {},
+                zeuge: { markiert: 0 },
+                nicht: "keine Verweilzeit je Speicher: kein Leser markiert Wasser in Atmosphäre und Ozean (stamm/wasser-hydro.js:127 _regenStempel, der Pegel faltet nur den Regen des Orts)",
+            };
+            je[6] = {
+                werte: {},
+                zeuge: { welten: 0 },
+                nicht: "kein fremder Kreislauf: die Welt kennt die Stoff-Zeile Wasser allein (kein Methan-Kreislauf, keine Phasen nach fremdem Druck)",
+            };
+            for (const nr of ziel) aus[nr] = je[nr] || M.nicht("ungemessen");
+            return { sprossen: aus };
+        },
+        sprossen: {
+            2: {
+                u: { see: [1816, -6168], gruben: 20 },
+                soll: [
+                    K.soll(KR, 2, "Grube unter dem Spiegel füllt sich bis zu ihm ±0,1 m", { key: "grubeAbwM", ref: 0, refQuelle: "Erde: eine Grube unter dem Grundwasser-Spiegel füllt sich bis zu ihm (Darcy 1856), Abweichung 0", einheit: "m" }),
+                    K.soll(KR, 2, "Quellen ≥ 90 % an Spiegel-Austritten", { key: "quellenProzent", einheit: "%" }),
+                ],
+                zeuge: zMin({ gruben: 10, gefuellt: 1 }),
+                zeugeText: "die Gruben der Welt füllten sich aus dem Grundwasser",
+                taeter: "gelaende-core.js atlasSpiegel (kein Grundwasser jenseits des Rands)",
+                nicht: "kein Grundwasser-Spiegel, keine Entnahme",
+                leser: "gelaende-core.js:7728 atlasSpiegel — füllt nur den Rand 3×3 eines Körpers; kein Aquifer als Volumen, kein Brunnen",
+                gruen: gut({ grubeAbwM: 0.06, quellenProzent: 92 }, { gruben: 20, gefuellt: 20 }),
+                attrappen: [{ name: "die Gruben am Rand des Sees (die füllt der See, nicht das Grundwasser)", roh: gut({ grubeAbwM: 0, quellenProzent: 92 }, { gruben: 20, gefuellt: 0 }) }],
+            },
+            3: {
+                u: { bach: [-258.4, -1132.8], tage: 60 },
+                soll: [K.soll(KR, 3, "Fluss ≥ 50 % Querschnitt verloren", { key: "querschnittVerlorenProzent", einheit: "%" }), K.soll(KR, 3, "nach 60 Tagen ohne Regen", { key: "tageOhneRegen", rel: "≥", einheit: "d" })],
+                auge: { pose: "die Mess-Wiese (Werkbank /bild am Ort wiese), nach 60 Tagen ohne Regen", vorbild: "Dürrefoto einer Frischwiese im Hochsommer (Blindpaar, Prüfer-Satz R11)" },
+                taeter: "stamm/wasser-hydro.js _pegelTafel (Dürre) · foundry-core.js wiesenTint (keine Dürre in der Farbe)",
+                nicht: "die Wiese bräunt nicht",
+                leser: "foundry-core.js:3085 wiesenTint — die Farbe der Wiese liest kein Gedächtnis der Bodenfeuchte",
+                gruen: gut({ querschnittVerlorenProzent: 58, tageOhneRegen: 60 }, {}),
+                attrappen: [{ name: "58 % ohne Lauf der Uhr", roh: leer({ querschnittVerlorenProzent: 58, tageOhneRegen: 60 }) }],
+            },
+            4: {
+                u: { lagen: 48 },
+                soll: [K.soll(KR, 4, "Rang ≥ 0,7", { key: "rang" })],
+                zeuge: zMin({ antworten: 30, land: 10, streuungKm: 1, streuungRegen: 1e-6, fassung: 1 }),
+                zeugeText: "N Antworten des Planet-Fadens, Abstand und Regen streuen",
+                taeter: "planet-core.js planetKlima (Feuchte über dem Land) · stamm/wasser-hydro.js _regenStempel (kein markiertes Wasser)",
+                nicht: "kein markiertes Meerwasser",
+                leser: "stamm/wasser-hydro.js:127 _regenStempel — der Regen ist ein Wort des Wetters, kein Wasser aus dem Meer",
+                gruen: gut({ rang: 0.74 }, { antworten: 48, land: 30, streuungKm: 180, streuungRegen: 0.08, fassung: 1 }),
+                attrappen: [{ name: "der Rang als Zahl ohne Antwort des Fadens", roh: leer({ rang: 0.74 }) }],
+            },
+            5: {
+                u: {},
+                soll: [K.soll(KR, 5, "markierte Wassermenge folgt der Verweilzeit (Atmosphäre ~9 d, Ozean ~10³ a) ±30 %", { key: "verweilJeErde", ref: 1, refQuelle: "Erde: Verweilzeit Atmosphäre ~9 d, Ozean ~3 000 a (Trenberth 2007; Oki & Kanae 2006)" })],
+                zeuge: zMin({ markiert: 1 }),
+                zeugeText: "markiertes Wasser in der Welt verfolgt",
+                taeter: "stamm/wasser-hydro.js _regenStempel (kein Speicher des Planeten)",
+                nicht: "keine Verweilzeit je Speicher",
+                leser: "stamm/wasser-hydro.js:127 _regenStempel — kein markiertes Wasser, keine Speicher Atmosphäre/Ozean",
+                gruen: gut({ verweilJeErde: 1.1 }, { markiert: 1 }),
+                attrappen: [{ name: "9 d als Zahl ohne Wasser", roh: leer({ verweilJeErde: 1 }) }],
+            },
+            6: {
+                u: {},
+                soll: [K.soll(KR, 6, "je Welt Bilanz geschlossen ±1 %", { key: "bilanzAbwProzent", rel: "±", ref: 0, refQuelle: "Erde: geschlossene Wasserbilanz Verdunstung = Niederschlag (Trenberth 2007), Abweichung 0", einheit: "%" })],
+                zeuge: zMin({ welten: 1 }),
+                zeugeText: "eine fremde Welt mit ihrem Kreislauf",
+                taeter: "foundry-core.js / schmiede STOFF_GESETZ (nur Wasser im Kreislauf)",
+                nicht: "kein fremder Kreislauf",
+                leser: "stamm/wasser-hydro.js — der Kreislauf kennt nur die Stoff-Zeile wasser",
+                gruen: gut({ bilanzAbwProzent: 0.4 }, { welten: 1 }),
+                attrappen: [{ name: "die Bilanz geschlossen behauptet", roh: leer({ bilanzAbwProzent: 0 }) }],
+            },
+        },
+    };
+
+    // ════════════════════════════════════════ TIEFSEE ════════════════════════════════════════
+    const TS = "planet.wasser.tiefsee";
+    const tiefsee = {
+        sek: 30,
+        pfad: PFAD,
+        mutiert: true,
+        ungefahren: "die Farbe des Lichts unter Wasser (auf swiftshader trägt die Himmels-Irradianz NaN) und die Bilder (Taucherfoto, Meeresboden) misst nur das Gerät",
+        mess: async function (H, U, M) {
+            const MEER = `
+const L = r._gelaende(), G = globalThis.__gelaendeCore;
+const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+const warte = async (x, z) => { let n = 0; while (r._ensureHydroTilesAround(x, z, 32) && n < 200) { await new Promise((f) => setTimeout(f, 50)); n++; } return n; };
+const tiefe = (x, z) => { const kw = r._koerperWasser(x, z, -Infinity), g = r._voxelSurfaceY(x, z); return kw > -Infinity && g !== null && Number.isFinite(g) && kw > g ? kw - g : 0; };
+let m = window.__pwMeer;
+if (!m) {
+m = { gefunden: false };
+let p = null;
+for (let d = 500; d <= 20000 && !p; d += 250) for (let a = 0; a < 32 && !p; a++) { const x = d * Math.cos((a * Math.PI) / 16), z = d * Math.sin((a * Math.PI) / 16); if (G.hoehe(L, x, z, false) < L.waterLevel - 2) p = [x, z]; }
+if (p) {
+for (const [a, b] of [[0, 0], [-1500, -1500], [1500, -1500], [-1500, 1500], [1500, 1500]]) await warte(p[0] + a, p[1] + b);
+const N = 61, T = new Float64Array(N * N);
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) T[i + N * j] = tiefe(p[0] + 50 * (i - 30), p[1] + 50 * (j - 30));
+let best = [0, p[0], p[1]], zellen = 0;
+const kueste = [], innen = [];
+for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+const t = T[i + N * j];
+if (!(t > 0)) continue;
+const x = p[0] + 50 * (i - 30), z = p[1] + 50 * (j - 30);
+zellen++;
+if (t > best[0]) best = [t, x, z];
+const rand = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => i + a < 0 || j + b < 0 || i + a >= N || j + b >= N || !(T[i + a + N * (j + b)] > 0));
+if (rand) kueste.push([x, z]); else innen.push([x, z, R(t)]);
+}
+const B = [best[1], best[2]], d0 = Math.hypot(B[0], B[1]), ux = -B[0] / d0, uz = -B[1] / d0;
+let s = null;
+for (let k = 1; k < 800 && !s; k++) { const x = B[0] + ux * 10 * k, z = B[1] + uz * 10 * k; if (!(tiefe(x, z) > 0) && r._voxelSurfaceY(x, z) > L.waterLevel) s = [x + ux * 6, z + uz * 6]; }
+let art = null;
+for (const t of (r.state.hydroTiles || new Map()).values()) { const sz = t.dim * t.cell; if (t.water && B[0] >= t.originX && B[1] >= t.originZ && B[0] < t.originX + sz && B[1] < t.originZ + sz) art = t.water.waterKind[Math.floor((B[0] - t.originX) / t.cell) + Math.floor((B[1] - t.originZ) / t.cell) * t.dim]; }
+const sy = s ? r._voxelSurfaceY(s[0], s[1]) : null;
+const jede = (A, n) => A.filter((q, i) => i % Math.max(1, Math.floor(A.length / n)) === 0).slice(0, n);
+m = { gefunden: true, p, B, tiefeMax: R(best[0]), spiegel: R(r._koerperWasser(B[0], B[1], -Infinity)), flaecheKm2: R((zellen * 2500) / 1e6), kuesteN: kueste.length, kuesteKm: R(kueste.length * 0.05), kueste: jede(kueste, 120), innen: jede(innen, 100), art, abstandKm: R(d0 / 1000), ufer: s ? [R(s[0]), R(sy + 1.7), R(s[1]), R(B[0]), R(L.waterLevel), R(B[1])] : null, richtung: [R(ux), R(uz)] };
+}
+window.__pwMeer = m;
+}
+`;
+            const R = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+            const ziel = Object.keys(U);
+            const aus = {};
+            // DAS MEDIUM DER KAMERA UNTER WASSER: die Kamera an der tiefsten Stelle der Bucht 0,1 m · 5 m · (Grund − 0,3 m) unter dem
+            // Spiegel, der Tag der Welt angewandt (`_applyDayNightToScene` — derselbe Leser, der jedes Bild färbt): die Farbe des Lichts
+            // (`luft.U.farbe`), der Abfall je Kanal, die Sicht (`_luftSichtM`); danach steht die Kamera, wo sie stand
+            const w = await H.seite(MEER + `
+if (!m.gefunden) return { meer: false };
+const st = r.state, cam = st.camera, alt = cam.position.clone();
+const [bx, bz] = m.B;
+const sp = r._koerperWasser(bx, bz, -Infinity), grund = r._voxelSurfaceY(bx, bz);
+const je = [];
+try {
+for (const t of [0.1, 5, Math.max(0.2, sp - grund - 0.3)]) {
+cam.position.set(bx, sp - t, bz);
+cam.updateMatrixWorld();
+r._applyDayNightToScene();
+const U = st.luft && st.luft.U;
+je.push({ t: R(t), unter: st.kameraUnterWasser === true, farbe: U ? U.farbe.value.toArray().map(R) : null, abfall: U ? U.abfall.value.toArray().map(R) : null, beta: U ? R(U.beta.value) : null, sichtM: R(r._luftSichtM(sp - t)), art: r._wasserArtAt(bx, bz) });
+}
+} finally {
+cam.position.copy(alt);
+cam.updateMatrixWorld();
+r._applyDayNightToScene();
+}
+const loecher = m.innen.filter(([x, z]) => { const g = r._voxelSurfaceY(x, z); return g === null || !Number.isFinite(g); }).length;
+return { meer: true, je, tiefeMax: m.tiefeMax, spiegel: R(sp), grund: R(grund), flaecheKm2: m.flaecheKm2, abstandKm: m.abstandKm, innen: m.innen.length, loecher, B: m.B, nachher: st.kameraUnterWasser === true };
+`);
+            // DER PLANET-FADEN: ein Profil von 101 Lagen über 1° Breite im tiefen Ozean der Heimat-Saat (der Start: entlang der Breite des
+            // Ankers die erste Lage unter −2 500 m)
+            const faden = await H.seite(`
+await r._fadenQuelle();
+const RAD = 180 / Math.PI;
+const samen = r.state.worldMeta && r.state.worldMeta.seed || "anazh-realm-seed";
+const a = await r._planetAuftrag({ type: "planet-anker", samen });
+const b0 = a.breite * RAD, l0 = a.laenge * RAD;
+let start = null;
+for (let k = 1; k <= 90 && !start; k += 6) {
+const reihe = await Promise.all([0, 1, 2, 3, 4, 5].map((j) => r._planetAuftrag({ type: "planet-ort", samen, breite: b0, laenge: l0 + (k + j) * 2, zeitMa: 0 })));
+const t = reihe.find((o) => !o.land && o.hoeheM < -2500);
+if (t) start = [t.breite, t.laenge];
+}
+if (!start) return { profil: [] };
+const P = []; for (let i = 0; i <= 100; i++) P.push([Math.max(-89, Math.min(89, start[0] - 0.5 + i / 100)), start[1]]);
+const o = await Promise.all(P.map((p) => r._planetAuftrag({ type: "planet-ort", samen, breite: p[0], laenge: p[1], zeitMa: 0 })));
+return { start, profil: o.map((x) => [x.land, x.hoeheM]), version: o[0] && o[0].version };
+`);
+            const ort = w.meer ? "die Bucht " + w.abstandKm + " km vom Spawn (" + w.flaecheKm2 + " km², bis " + w.tiefeMax + " m)" : "kein Meer bis 20 km";
+            const je = {};
+            const J = w.je || [];
+            const a = J[0], b = J[1], c = J[2];
+            const endlich = (x) => x && Array.isArray(x.farbe) && x.farbe.every(Number.isFinite) && x.farbe[0] > 0;
+            je[1] = {
+                werte: Object.assign(
+                    { kdRot: a && a.abfall ? a.abfall[0] : null },
+                    b && Number.isFinite(b.sichtM) ? { sichtM: b.sichtM } : {},
+                    endlich(a) && endlich(b) ? { rotProzent5m: R((100 * b.farbe[0]) / a.farbe[0]) } : {}
+                ),
+                zeuge: { unter: J.filter((x) => x.unter).length, farbe: [a, b].filter(endlich).length, je: J },
+                ...(!w.meer ? { nicht: "kein Wasser von 5 m Tiefe: " + ort } : {}),
+            };
+            const auge2 = w.meer ? await M.auge("wasser-tiefsee-s2", { px: w.B[0], py: w.spiegel - 2, pz: w.B[1], lx: w.B[0] + 20, ly: w.spiegel - 4, lz: w.B[1] }) : undefined;
+            je[2] = {
+                werte: { tiefeMaxM: w.tiefeMax },
+                zeuge: {},
+                auge: auge2,
+                nicht: "keine Sandrippel: kein Leser legt Rippel nach dem Wellen-Orbital in den Boden; das Küstenmeer der Welt reicht bis " + w.tiefeMax + " m (" + ort + ")",
+            };
+            je[3] = {
+                werte: Object.assign({ tiefeMaxM: w.tiefeMax }, endlich(a) && endlich(c) ? { lichtrestGrundProzent: R((100 * c.farbe[1]) / a.farbe[1]) } : {}),
+                zeuge: { tiefeM: w.tiefeMax },
+                nicht: "kein Schelf bis 200 m: das tiefste Wasser der Welt ist " + w.tiefeMax + " m (" + ort + "); keine Sprungschicht (kein Temperaturprofil des Wassers)",
+            };
+            const pr = (faden.profil || []).filter((x) => !x[0]).map((x) => x[1]);
+            const sd = (v) => { const m = v.reduce((s, x) => s + x, 0) / Math.max(1, v.length); return Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / Math.max(1, v.length)); };
+            je[4] = {
+                werte: Object.assign({ profilLagen: pr.length }, pr.length ? { profilTiefeM: R(-pr.reduce((s, x) => s + x, 0) / pr.length) } : {}),
+                zeuge: { antworten: pr.length, streuungM: R(sd(pr)) },
+                nicht: "die Tiefsee lebt nur als Zahl im Planet-Faden: die Welt baut kein Meer tiefer als " + w.tiefeMax + " m, der Spieler taucht nie zur Sohle; keine Schlote (der Faden nennt keinen Spreizungsrücken, voxel-worker.js:1202)",
+            };
+            const auge5 = w.meer ? await M.auge("wasser-tiefsee-s5", { px: w.B[0], py: w.grund + 3, pz: w.B[1], lx: w.B[0] + 6, ly: w.grund, lz: w.B[1] + 2 }) : undefined;
+            je[5] = {
+                werte: { loecher: w.loecher, bodenPosen: w.innen },
+                zeuge: { bodenPosen: w.innen },
+                auge: auge5,
+                nicht: "jeder Meeresboden nicht erzeugbar: die Welt trägt EINE Bucht (" + ort + "), andere Saaten nur im Planet-Faden",
+            };
+            je[6] = {
+                werte: {},
+                zeuge: { welten: 0 },
+                nicht: "kein fremder Ozean: das Wasser-Gesetz trägt nur Wasser (foundry-core.js WASSER_GESETZ.koerper see · fluss · bach), kein Eis-Ozean, kein Methan, kein Hochdruck",
+            };
+            for (const nr of ziel) aus[nr] = je[nr] || M.nicht("ungemessen");
+            return { sprossen: aus };
+        },
+        sprossen: {
+            1: {
+                u: { tiefen: [0.1, 5] },
+                soll: [
+                    K.soll(TS, 1, "Rot-Anteil fällt bis 5 m auf ≤ 30 %", { key: "rotProzent5m", rel: "≤", zahl: 30, einheit: "%" }),
+                    K.soll(TS, 1, "Sicht gegen Secchi-Referenz ±30 %", { key: "sichtM", ref: 8, refQuelle: "Erde: klarer See, Secchi-Tiefe ~8 m (Kirk 2011; Davies-Colley 1988)", einheit: "m" }),
+                ],
+                zeuge: zMin({ unter: 2, farbe: 2 }),
+                zeugeText: "die Kamera stand in 0,1 und 5 m unter dem Spiegel, das Licht der Welt in beiden",
+                taeter: "stamm/bild-himmel.js _dayNightApplyHemiUndLuft (das Medium unter Wasser) · foundry-core.js WASSER_GESETZ.koerper",
+                unklar: "die Sicht (waagrecht, −ln(Kontrast)/c) und die Secchi-Tiefe (senkrecht, ~1,7/Kd) sind zwei Größen — der Richter sollte die waagrechte Sicht gegen 4,8/c der Erd-Wasserart nennen",
+                gruen: gut({ rotProzent5m: 11, sichtM: 9.2 }, { unter: 3, farbe: 2 }),
+                attrappen: [{ name: "Beer-Lambert mit kd aus dem Gesetz gerechnet (keine Kamera unter Wasser)", roh: gut({ rotProzent5m: 10.5, sichtM: 8 }, { unter: 0, farbe: 0 }) }],
+            },
+            2: {
+                u: {},
+                soll: [
+                    K.soll(TS, 2, "Blindtest 50 Posen gegen Taucherfotos ≥ 60 %", { key: "blindProzent", einheit: "%" }),
+                    K.soll(TS, 2, "Rippel-Abstand gegen Wellen-Orbital ±30 %", { key: "rippelJeOrbital", ref: 1, refQuelle: "Erde: Orbital-Rippel λ ≈ 0,65 · Orbital-Durchmesser (Clifton & Dingler 1984)" }),
+                    K.soll(TS, 2, "50 Posen", { key: "posen", rel: "≥" }),
+                ],
+                auge: { pose: "unter dem Spiegel der Bucht, 2 m tief, Blick waagrecht", vorbild: "Taucherfotos im Küstenmeer 0–40 m (Prüfer-Satz R11)" },
+                taeter: "gelaende-core.js (kein Rippel im Boden)",
+                nicht: "keine Sandrippel",
+                leser: "gelaende-core.js — kein Leser formt den Boden nach dem Wellen-Orbital",
+                gruen: gut({ blindProzent: 64, rippelJeOrbital: 1.1, posen: 50 }, {}),
+                attrappen: [{ name: "der Blindtest ohne Bild", roh: leer({ blindProzent: 64, rippelJeOrbital: 1.1, posen: 50 }) }],
+            },
+            3: {
+                u: { tiefe: 200 },
+                soll: [K.soll(TS, 3, "Lichtrest bei 200 m ≤ 1 %", { key: "lichtrest200Prozent", einheit: "%" })],
+                zeuge: zMin({ tiefeM: 200 }),
+                zeugeText: "die Kamera stand in 200 m Tiefe",
+                taeter: "gelaende-core.js (kein Schelf bis 200 m) · foundry-core.js WASSER_GESETZ.koerper (keine Temperatur im Wasser)",
+                nicht: "kein Schelf bis 200 m, keine Sprungschicht",
+                leser: "gelaende-core.js — das Meer der Welt endet bei ~20 m; kein Temperaturprofil im Wasser",
+                gruen: gut({ lichtrest200Prozent: 0.4 }, { tiefeM: 200 }),
+                attrappen: [{ name: "der Lichtrest aus kd hochgerechnet (die Kamera nie in 200 m)", roh: gut({ lichtrest200Prozent: 0 }, { tiefeM: 19.9 }) }],
+            },
+            4: {
+                u: { profil: 101 },
+                soll: [K.soll(TS, 4, "Tiefen-Hypsometrie eines 100-km-Profils gegen Erde ±20 %", { key: "profilTiefeM", ref: 3682, refQuelle: "Erde: mittlere Ozeantiefe 3 682 m (Charette & Smith 2010)", einheit: "m" })],
+                zeuge: zMin({ antworten: 50, streuungM: 1 }),
+                zeugeText: "N Antworten des Planet-Fadens im Ozean, die Tiefe streut",
+                taeter: "gelaende-core.js (die Welt baut kein tiefes Meer) · voxel-worker.js planetOrtAuftrag (keine Schlote)",
+                nicht: "die Tiefsee nur als Zahl im Faden",
+                leser: "voxel-worker.js:1202 planetOrtAuftrag — der Rand der Platte (Spreizung) reist nicht aus dem Faden; gelaende-core baut am Ort kein Meer unter ~20 m",
+                unklar: "die Hypsometrie als Mittel-Tiefe des Profils gegen das Erd-Mittel 3 682 m gelesen; der Faden nennt den Radius nicht, das Profil ist 1° Breite (100 km nur bei Erd-Radius)",
+                gruen: gut({ profilTiefeM: 3900 }, { antworten: 101, streuungM: 240 }),
+                attrappen: [{ name: "3 682 m als Zahl ohne Faden", roh: leer({ profilTiefeM: 3682 }) }],
+            },
+            5: {
+                u: { posen: 100 },
+                soll: [
+                    K.soll(TS, 5, "Blindtest gegen Tiefsee-Fotos ≥ 60 %", { key: "blindProzent", einheit: "%" }),
+                    K.soll(TS, 5, "0 Löcher", { key: "loecher", rel: "≤", zahl: 0 }),
+                    K.soll(TS, 5, "500 Bodenposen", { key: "bodenPosen", rel: "≥" }),
+                    K.soll(TS, 5, "50 Saaten", { key: "saaten", rel: "≥" }),
+                ],
+                auge: { pose: "3 m über dem Grund der tiefsten Stelle der Bucht, Blick schräg auf den Boden", vorbild: "Tiefsee-Fotos des Meeresbodens (Prüfer-Satz R11), 500 Posen aus 50 Saaten" },
+                taeter: "gelaende-core.js (EINE Bucht statt jedes Meeresbodens)",
+                nicht: "jeder Meeresboden nicht erzeugbar",
+                gruen: gut({ blindProzent: 64, loecher: 0, bodenPosen: 500, saaten: 50 }, {}),
+                attrappen: [{ name: "der Blindtest ohne Bild", roh: leer({ blindProzent: 64, loecher: 0, bodenPosen: 500, saaten: 50 }) }],
+            },
+            6: {
+                u: {},
+                soll: [K.soll(TS, 6, "Licht, Druck und Phasen gegen deren Stoff ±20 %", { key: "stoffJeSoll", ref: 1, refQuelle: "Erde: Licht, Druck (ρ·g·h) und Phase des Wassers nach seiner Stoff-Zeile; der fremde Ozean nach seinem Stoff" })],
+                zeuge: zMin({ welten: 1 }),
+                zeugeText: "ein fremder Ozean stand",
+                taeter: "foundry-core.js WASSER_GESETZ.koerper (nur Wasser)",
+                nicht: "kein fremder Ozean",
+                leser: "foundry-core.js WASSER_GESETZ.koerper — die Körper see · fluss · bach, kein Stoff eines fremden Ozeans",
+                gruen: gut({ stoffJeSoll: 1.05 }, { welten: 1 }),
+                attrappen: [{ name: "±20 % als Zahl ohne Ozean", roh: leer({ stoffJeSoll: 1 }) }],
+            },
+        },
+    };
+
+    return { leitern: { [SEE]: seegang, [GZ]: gezeiten, [SR]: stroemung, [EI]: eis, [KR]: kreislauf, [TS]: tiefsee } };
+})());
+
 // ── DIE PERSPEKTIVE planet.erde (1 Leiter, 6 Sprossen): die echte Erde ──────────────────────────────────────────────────────────
 // Der Leser des Spiels ist der Planet-Faden (`r._planetAuftrag`, stamm/gelaende-chunks.js:643 → voxel-worker.js planetOrtAuftrag:1175 →
 // planet-core planetOrt/planetPunkt): je Lage { land, hoeheM, kuesteKm } — derselbe Weg, den die Reise des Spiels ruft. Die Erd-Referenz
@@ -389,7 +1803,7 @@ L.perspektive("erde", (() => {
                         auge: { pose: "Ego an 3 Posen der Region (Werkbank /bild am Ort)", vorbild: "Ortskundige wählen die Region aus 10 Kandidaten (≥ 70 %)" },
                         taeter: "planet-core.js planetPlan (kein Erd-Schlüssel, R4)",
                         nicht: "keine Erd-Saat mit Schlüssel (R4)",
-                        leser: "planet-core.js planetPlan(samen, P) — kein Eingang für den Erd-Schlüssel",
+                        leser: "planet-core.js:307 — planetPlan(samen, koerperIn) liest keinen Erd-Schlüssel (R4)",
                         gruen: gut({ lagefehlerKm: 3.2 }, 10),
                         attrappen: [{ name: "der Lagefehler als Konstante ohne Antwort des Fadens", roh: { werte: { lagefehlerKm: 3.2 }, zeuge: { antworten: 0 } } }],
                     },
@@ -399,7 +1813,7 @@ L.perspektive("erde", (() => {
                         zeuge: zeugeFaden(100),
                         taeter: "planet-core.js planetPlan (kein Erd-Schlüssel, R4)",
                         nicht: "keine Erd-Saat mit Schlüssel (R4)",
-                        leser: "planet-core.js planetPlan(samen, P) — kein Eingang für den Erd-Schlüssel",
+                        leser: "planet-core.js:307 — planetPlan(samen, koerperIn) liest keinen Erd-Schlüssel (R4)",
                         gruen: gut({ lagefehlerKm: 31, koeppenProzent: 84 }, 1100),
                         attrappen: [{ name: "Köppen 84 % aus einer Tabelle (keine Antwort des Fadens)", roh: { werte: { lagefehlerKm: 31, koeppenProzent: 84 }, zeuge: { antworten: 0 } } }],
                     },
@@ -416,7 +1830,7 @@ L.perspektive("erde", (() => {
                         auge: { pose: "Orbit über der Erde (heute nicht erzeugbar; geschossen am Boden der Wiese)", vorbild: "Satellitenmosaik der Erde, Panel-2AFC ≤ 70 %" },
                         taeter: "planet-core.js planetPlan (kein Erd-Schlüssel, R4)",
                         nicht: "keine Erd-Saat, keine Orbit-Pose",
-                        leser: "scripts/werkbank.cjs /bild — keine Pose über der Atmosphäre (Orbit)",
+                        leser: "scripts/werkbank.cjs:2110 — /bild kennt keine Pose über der Atmosphäre (Orbit)",
                         gruen: gut({ lagefehlerP90Km: 12, panelProzent: 60 }, 20),
                         attrappen: [{ name: "p90 12 km ohne Antwort des Fadens", roh: { werte: { lagefehlerP90Km: 12, panelProzent: 60 }, zeuge: { antworten: 0 } } }],
                     },
@@ -426,7 +1840,7 @@ L.perspektive("erde", (() => {
                         auge: { pose: "Ego am benannten Ort (heute: die Wiese)", vorbild: "ein Foto des Orts aus dem Ortsverzeichnis (GeoNames), Blindpaar ≤ 70 %" },
                         taeter: "planet-core.js (kein Ortsverzeichnis)",
                         nicht: "kein Ortsverzeichnis der Erde",
-                        leser: "planet-core.js — kein Leser benannter Orte (GeoNames)",
+                        leser: "planet-core.js:2290 — planetOrt kennt keine benannten Orte (Ortsverzeichnis GeoNames)",
                         gruen: gut({ lagefehlerP90Km: 0.6, blindProzent: 64 }, 1000),
                         attrappen: [{ name: "p90 0,6 km ohne Antwort", roh: { werte: { lagefehlerP90Km: 0.6, blindProzent: 64 }, zeuge: { antworten: 0 } } }],
                     },
@@ -440,7 +1854,7 @@ L.perspektive("erde", (() => {
                         zeuge: zeugeFaden(100),
                         taeter: "stamm/siedlung-ort.js (keine realen Städte)",
                         nicht: "keine Städte der Erde",
-                        leser: "stamm/siedlung-ort.js — kein Leser realer Stadtpläne (OpenStreetMap)",
+                        leser: "stamm/siedlung-ort.js:58 — _ortPlanSetzen liest keinen realen Stadtplan (OpenStreetMap)",
                         gruen: gut({ lageKm: 1.1, einwohnerAbw: 18, planAbw: 12 }, 100),
                         attrappen: [{ name: "100 Städte aus einer Liste ohne Welt", roh: { werte: { lageKm: 1.1, einwohnerAbw: 18, planAbw: 12 }, zeuge: { antworten: 0 } } }],
                     },
@@ -450,7 +1864,7 @@ L.perspektive("erde", (() => {
                         auge: { pose: "Ego am Wohnort des Prüfers (heute: die Wiese)", vorbild: "das eigene Foto des Prüfers vom Wohnort (Heimat-Probe, 100 Menschen)" },
                         taeter: "planet-core.js planetPlan (kein Erd-Schlüssel, R4)",
                         nicht: "keine Erd-Saat je km²",
-                        leser: "planet-core.js planetPlan(samen, P) — kein Eingang für den Erd-Schlüssel",
+                        leser: "planet-core.js:307 — planetPlan(samen, koerperIn) liest keinen Erd-Schlüssel (R4)",
                         gruen: gut({ erkanntProzent: 85, afcProzent: 70 }, 100),
                         attrappen: [{ name: "die Heimat-Probe ohne Bild", roh: { werte: { erkanntProzent: 85, afcProzent: 70 }, zeuge: { antworten: 0 } } }],
                     },
