@@ -1574,7 +1574,7 @@ class AnazhRealm_netz_p2p {
             const fern = this._leibSicht(m, this.isInFrustum(m), auge);
             // DER LEICHNAM liegt still: die Kopie dreht auf die Lage des Senders nach (rc.tq) — kein Atem, kein Gang
             if (rc.tq) {
-                if (m.userData._satz) this._tierSatzAus(m);
+                if (m.userData._satz) this._tierSatzAus(m, true);
                 m.position.y += ((rc.ty || 0) - m.position.y) * k;
                 const q = this._p2pLageQ || (this._p2pLageQ = new THREE.Quaternion());
                 m.quaternion.slerp(q.set(rc.tq[0], rc.tq[1], rc.tq[2], rc.tq[3]).normalize(), k);

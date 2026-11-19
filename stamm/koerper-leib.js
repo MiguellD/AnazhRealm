@@ -2459,6 +2459,29 @@ class AnazhRealm_koerper_leib {
         if (!B) U._poseBild = Z.slice();
         U._poseBaum = U._tierBaum;
     }
+    // DIE POSE VOR DEM ERSTEN BILD (S3 der Herde H3): ein Leib, der wieder ins Bild tritt (der Austritt aus dem Satz,
+    // `_tierSatzAus`, am Ende des Kreatur-Takts — nach der Auswertung), zeichnete ein Bild lang die Pose mit allen Winkeln null
+    // und sprang im nächsten Takt in seine Gestalt (GPU v17: Hirsch-Hals 0 → 1,27 rad, Wolf-Kopf 0 → 0,21; die Gleitung
+    // begann am Bild von vor dem Satz). Er hält seine Haltung (Rumpf, Hals, Kopf, Ohr), wird im selben Takt ausgewertet,
+    // bevor er sichtbar wird, und die Gleitung beginnt an dieser Pose. Ein Leichnam (`liegt`) liegt in der Pose bei 0.
+    _kreaturPoseFrisch(creature, liegt) {
+        const U = creature.userData;
+        this._tierBaumNeutralStance(creature, !liegt);
+        U._poseBild = null;
+        const mroles = !liegt && U._tierBaum && this._motionRolesForSoul(U.soul);
+        if (!mroles) return;
+        creature.updateMatrixWorld(true);
+        U._animFade = 1;
+        const geht = !!U._steuer && U._steuer.v > 0.1;
+        this._animateCompoundMotion(
+            creature,
+            mroles,
+            this.state.creatureAnimationTime,
+            U.walkPhase || 0,
+            geht,
+            U.emotions
+        );
+    }
     _kreaturPoseStand(creature) {
         const U = creature.userData;
         const K = this._kreaturPoseKanaele(U._tierBaum);

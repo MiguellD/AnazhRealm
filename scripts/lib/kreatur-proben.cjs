@@ -1599,8 +1599,10 @@ async function kreaturProben(r, T, opts) {
                         const el = Math.hypot(ex, ez) || 1;
                         // DIE SICHTLINIE (Flucht v14: bei 7,5 s stand N im Fels, bei 2 s füllte ein Stamm das Bild): N dreht in 30°-Schritten
                         // um das Leittier, bis vom Auge zur Leib-Mitte kein Gelände (je 0,5 m unter der Linie) und kein Bau, Fels oder
-                        // Stamm (`_fieldRaycast`, Radius 0,15 m) und kein anderer Leib der Herde (Flucht v15 bei 5 s: ein Läufer füllte das
-                        // Bild, 1 m vor dem Auge) liegt; `nahDreh` nennt die Drehung (null: keine freie Linie)
+                        // Stamm (`_fieldRaycast`, Radius 0,15 m) und kein anderer Leib der Herde in den ersten 3 m vor dem Auge liegt
+                        // (Flucht v15 bei 5 s: ein Läufer füllte das Bild, 1 m vor dem Auge; ein Glied der Herde weiter vorn gehört
+                        // ins Bild — v17 verwarf diesen Blick, äsen 7,5 s fiel von 6 auf 3 Tiere ≥ 200 px); `nahDreh` nennt die
+                        // Drehung (null: keine freie Linie)
                         const ziel = [lp.x, lp.y + 0.6, lp.z];
                         const frei = (P) => {
                             const ey = P.y - 0.5 + NAH_HOEHE;
@@ -1616,7 +1618,7 @@ async function kreaturProben(r, T, opts) {
                                 if (c === leit) continue;
                                 const [qx, qy, qz] = [c.position.x - P.x, c.position.y + 0.6 - ey, c.position.z - P.z];
                                 const f = Math.max(0, Math.min(1, (qx * dx + qy * dy + qz * dz) / dd));
-                                if (f < 1 && Math.hypot(qx - dx * f, qy - dy * f, qz - dz * f) < 0.9) return false;
+                                if (f * Math.sqrt(dd) < 3 && Math.hypot(qx - dx * f, qy - dy * f, qz - dz * f) < 0.9) return false;
                             }
                             return !r._fieldRaycast(P.x, ey, P.z, ziel[0], ziel[1], ziel[2], { radius: 0.15 }).hit;
                         };

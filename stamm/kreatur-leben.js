@@ -2964,7 +2964,7 @@ class AnazhRealm_kreatur_leben {
         const takt = (this._tierSatzTakt = (this._tierSatzTakt || 0) + 1);
         for (const Z of M.values()) if (Z) Z.dabei = 0;
         // ein Gefallener verlässt den Satz (er liegt als Leib, `_tickLeichname`)
-        for (const cr of st.leichname) if (cr.userData._satz) this._tierSatzAus(cr);
+        for (const cr of st.leichname) if (cr.userData._satz) this._tierSatzAus(cr, true);
         const kand = this._tierSatzKand || (this._tierSatzKand = []);
         kand.length = 0;
         // die Menge: die eigenen Tiere und die Sicht-Kopien der Mitspieler (`_p2pTickRemoteCreatures`; ein Gefallener nie)
@@ -3262,12 +3262,12 @@ class AnazhRealm_kreatur_leben {
         u._satzZ = cr.position.z;
         cr.visible = false;
     }
-    // EIN TIER VERLÄSST DEN SATZ: der Leib steht in seiner Stand-Pose wieder im Bild (der Gang setzt neu an); trägt das Feld
-    // ihn (fern), gehört `visible` dem Ziegel
-    _tierSatzAus(cr) {
+    // EIN TIER VERLÄSST DEN SATZ: der Leib steht wieder im Bild, ausgewertet vor dem ersten Bild (`_kreaturPoseFrisch`); trägt
+    // das Feld ihn (fern), gehört `visible` dem Ziegel; ein Leichnam (`liegt`) liegt in der Pose bei 0
+    _tierSatzAus(cr, liegt) {
         const u = cr.userData;
         u._satz = null;
-        this._tierBaumNeutralStance(cr);
+        this._kreaturPoseFrisch(cr, liegt);
         if (!this._kzBesitztFeld(cr)) cr.visible = this.state.creaturesHidden !== true;
     }
     // DER GANG IM SATZ je Takt (statt `_animateTierBaum`): der Weg des Leibs seit dem letzten Takt — ein Sprung der Lage ist
