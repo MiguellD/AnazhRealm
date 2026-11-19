@@ -1896,6 +1896,404 @@ const LK = global.__lebenCore;
 const sp = LK && LK.spanne();
 check("Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]", !!sp && sp[0] > 0 && sp[0] < 1 && sp[1] > 1);
 
+// ── DER BESTAND IST DAS GESETZ (leben-core `bestand`: das Gesetz der Zeit und der Jagd, sieben Sätze — Blatt und Läufe 1–4 im
+// Zweig koordination, vision/leben). Der Kern rechnet LAUF 4 des Spikes zahlengleich nach; die Welt von Lauf 4 (das Feld des
+// Spikes) und die Arten (tetrapoda) reicht dieser Treiber als Leser hinein, der Kern hält weder Feld noch Gattung.
+//   das Tor      Saat 1 · 2, Jahre 0–40: die Spur von Wolf und Beute je 4 Jahre gegen die VORLAGE (`ergebnis-zeit-4.json` des
+//                Spikes, nie aus dem Kern), dazu der Mutant (V½ des Satzes 3: 246 → 300 muss die Spur verlassen)
+//   --bestand    der volle Lauf (8 Saaten × 160 Jahre, ohne und mit Wolf, die S13-Zweige): S1–S15 Vorlage ↔ Kern
+//   --bestand --vorlage <zeit-kern-4.cjs> [--jahre 40]   Kern und Vorlage im Gleichschritt: Köpfe je Takt, ms je Jahres-Schritt
+const LAUF4 = {"soll":{"S1":{"wert":"8 von 8","jeSaat":[68,80,61,66,74,56,63,69]},"S2":{"wert":3.9865,"jeSaat":[4.0013,4.0579,3.9253,3.9355,4.0322,3.9131,3.9669,4.0596]},"S3":{"wert":0.0841,"jeSaat":[0.0885,0.0918,0.0935,0.0739,0.0685,0.077,0.0927,0.0868]},"S4":{"wert":0.8613,"jeSaat":[0.8479,0.8404,0.8462,0.883,0.8924,0.8802,0.8459,0.8545]},"S5":{"wert":0.6046,"jeSaat":[0.6053,0.6049,0.6051,0.6037,0.6009,0.6043,0.6087,0.6042]},"S6":{"wert":1.4844,"jeSaat":[1.4789,1.4524,1.4569,1.5519,1.5316,1.5442,1.4373,1.4223]},"S7":{"wert":0.4786,"jeSaat":[0.4767,0.4762,0.4732,0.4828,0.4872,0.4819,0.4731,0.4775]},"S8":{"wert":0.0011,"jeSaat":[0.0014,0.0013,0.0011,0.0009,0.0007,0.0008,0.0014,0.0011]},"S9":{"wert":0.0134,"jeSaat":[0.0131,0.011,0.0105,0.0127,0.0148,0.0173,0.017,0.011]},"S10":{"wert":"0 · 0","jeSaat":["0·0","0·0","0·0","0·0","0·0","0·0","0·0","0·0"]},"S11":{"wert":1.0047,"jeSaat":[1.1236,1.1078,0.9399,0.7154,0.8641,1.0376,1.2625,0.9864]},"S12":{"wert":0.9689,"jeSaat":[0.9683,0.9724,0.9691,0.9698,0.9665,0.9654,0.9723,0.9674]},"S13":{"wert":"Fall 38.3 % (7 von 8 Saaten ≥ 25 %) · Beute 98.5 % (8 von 8 ≥ 85 %) · lebt 8 von 8","jeSaat":["33%/98%/lebt","45%/101%/lebt","35%/97%/lebt","47%/100%/lebt","48%/98%/lebt","38%/99%/lebt","39%/97%/lebt","23%/99%/lebt"]},"S14":{"wert":"D 0,9–1,2: 0.0328 GRÜN (21279.2 Rudel-Jahre) · D ≥ 1,5: 0.8385 ROT (161.4 Rudel-Jahre) · D ≤ 0,6: -4.3839 GRÜN (16 Rudel-Jahre)","jeSaat":[]},"S15":{"wert":250.8978,"jeSaat":[249.9186,246.4353,254.7589,254.0979,248.0043,255.5524,252.0837,246.3311]}},"spur":{"1":{"wolf":[27,49,54,63,58,77,67,66,48,66,75],"reh":[11738,14900,17081,16639,16830,17285,17226,17203,17201,17453,17412]},"2":{"wolf":[17,39,63,62,64,70,71,68,60,77,71],"reh":[11763,15407,17452,17050,17055,17147,17413,17594,17638,17395,17376]}}};
+function bestandTreiber(T, L) {
+    const B = T.BESTAND_GESETZ;
+    const TG = T.VERHALTEN.temperament.gattung;
+    const dietVon = (g) => {
+        const d = T.GATTUNGEN[g];
+        const x = d && (d.dials ? d.dials.diet : d.diet);
+        if (!Number.isFinite(x)) throw new Error("bestand: GATTUNGEN." + g + ".diet fehlt");
+        return x;
+    };
+    const DIET = { deer: dietVon("deer"), wolf: dietVon("wolf") };
+    // „jagt mit“ ist das Temperament „wild“ des Tier-Buchs: für den Fleischfresser genau kg ≥ jagdKg (temperamentDerGattung)
+    if (!(DIET.wolf >= TG.fleischDiet)) throw new Error("bestand: der Wolf ist kein Fleischfresser — jagdKg trägt sein Temperament nicht");
+    const TJ = L.gesetz().refS / B.taktS / L.zeitJagd().jahreRef;
+    const SEITE = B.revierM * Math.sqrt(Math.PI);
+    const M_ART = { deer: 94.24042032034154, wolf: 64.01114942302421 }; // die Masse des Gusses, wie Lauf 4 sie trug
+    const K = L.bestand({
+        taktS: B.taktS,
+        revierSeiteM: SEITE,
+        beute: { M: M_ART.deer, verband: T.VERHALTEN.herde.wurf.deer, frassJeJahr: T.bestandFrass(DIET.deer, B) * TJ },
+        jaeger: { M: M_ART.wolf, verband: T.VERHALTEN.herde.wurf.wolf, beuteMasse: T.VERHALTEN.jagd.beuteMasse, jagdKg: TG.jagdKg },
+    });
+    // DIE WELT VON LAUF 4 — das Feld des Spikes als Leser: 16 Zellen je Revier, 9 von 16 tragen Äsung 0,2–0,42 (Wiese), darüber
+    // das Leben-Overlay des Felds (Halbwert 8,66 Takte); vor dem Schritt zerfällt es und K liest die Äsung (takt), nach dem
+    // Schritt äst die Herde den Fraß des Kerns hinein (aesen). Dieselbe Welt für jede Saat.
+    function welt(W, H, von) {
+        const [n, Z, HA] = [W * H, 16, (SEITE / 4) ** 2 / 1e4];
+        const FELD = { decayPerSec: 0.008, kahl: -1, max: 0.7, epsilon: 0.004 };
+        const LR = T.lebensraum("deer", "wiese", T.LEBENSRAUM_GESETZ);
+        const aesVon = (s, o) => Math.min(1, Math.max(0, s + o));
+        const kZelle = (aes) => LR * HA * T.bestandNahrung(DIET.deer, aes, 0);
+        const [C, S] = von ? [von.C, von.S] : [new Uint8Array(n), new Float64Array(n * Z)];
+        const O = von ? von.O.slice() : new Float64Array(n * Z);
+        const [Kap, je] = [new Float64Array(n), new Float64Array(Z)];
+        if (!von) {
+            const fr = L.strom(1, 0, 9, W * 1000 + H);
+            for (let i = 0; i < n; i++) {
+                let c = 0;
+                for (let k = 0; k < Z; k++) {
+                    const [u, s] = [fr(), fr()];
+                    if (u < 9 / 16) S[i * Z + c++] = 0.2 + s * (0.42 - 0.2);
+                }
+                C[i] = c;
+            }
+        }
+        const zerfall = Math.exp(-FELD.decayPerSec * B.taktS);
+        return {
+            C,
+            S,
+            O,
+            land: (i) => C[i] > 0,
+            futter: (i) => Kap[i],
+            takt() {
+                for (let i = 0; i < n; i++) {
+                    const b = i * Z;
+                    let summe = 0;
+                    for (let c = 0; c < C[i]; c++) {
+                        let o = O[b + c] * zerfall;
+                        if (Math.abs(o) < FELD.epsilon) o = 0;
+                        O[b + c] = o;
+                        summe += kZelle(aesVon(S[b + c], o));
+                    }
+                    Kap[i] = B.kopfJeHa * summe;
+                }
+            },
+            aesen(frass) {
+                for (let i = 0; i < n; i++) {
+                    const [F, b] = [frass[i], i * Z];
+                    if (!(F > 0)) continue;
+                    let jeSumme = 0;
+                    for (let c = 0; c < C[i]; c++) jeSumme += je[c] = LR * aesVon(S[b + c], O[b + c]);
+                    if (jeSumme > 0)
+                        for (let c = 0; c < C[i]; c++)
+                            if (je[c] > 0) O[b + c] = Math.max(FELD.kahl, Math.min(FELD.max, O[b + c] - (F * je[c]) / jeSumme));
+                }
+            },
+            klon() {
+                return welt(W, H, this);
+            },
+        };
+    }
+    const zaehl = (z) => {
+        let [d, w] = [0, 0];
+        for (const l of z.beute) d += l.length;
+        for (const R of z.rudel) w += R.tiere.length;
+        return [d, w];
+    };
+    // die Spur eines Laufs: Wolf und Beute nach jedem 105. Takt (4 Jahre), wie die Vorlage sie schreibt
+    function spur(saat, takte, W = 48) {
+        const feld = welt(W, W);
+        let z = K.anfang({ W, H: W, saat }, feld);
+        const aus = { wolf: [], reh: [] };
+        for (let k = 0; k < takte; k++) {
+            feld.takt();
+            z = K.schritt(z, saat, k, feld);
+            feld.aesen(z.frass);
+            if (!(k % 105)) {
+                const [d, w] = zaehl(z);
+                aus.wolf.push(w);
+                aus.reh.push(d);
+            }
+        }
+        return aus;
+    }
+    return { K, TJ, M_ART, welt, zaehl, spur };
+}
+// ein Kern aus seinem Quelltext, in eigenem Namensraum (der Mutant: EIN Wert verstellt, kein Haken im Kern)
+const kernAus = (quelle) => {
+    const m = { exports: {} };
+    new Function("module", "self", quelle)(m, {});
+    return m.exports;
+};
+function bestandUrteil(L) {
+    if (!L || typeof L.bestand !== "function" || typeof L.zeitJagd !== "function") return "leben-core trägt keinen Bestand (bestand · zeitJagd fehlen)";
+    const { spur } = bestandTreiber(core, L);
+    const fehl = [];
+    for (const saat of [1, 2]) {
+        const [ist, soll] = [spur(saat, 1051), LAUF4.spur[saat]];
+        for (const f of ["wolf", "reh"])
+            if (ist[f].join(" ") !== soll[f].join(" ")) fehl.push("Saat " + saat + " " + f + ": Kern " + ist[f].join(" ") + " ≠ Vorlage " + soll[f].join(" "));
+    }
+    return fehl.join(" · ");
+}
+if (process.argv.includes("--bestand")) {
+    const fs = require("fs");
+    const arg = (name, sonst) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : sonst);
+    const { K, TJ, M_ART, welt, zaehl } = bestandTreiber(core, LK);
+    const [W, TAKTE, SAATEN] = [48, 4200, [1, 2, 3, 4, 5, 6, 7, 8]];
+    const [n, AB, E] = [W * W, TAKTE / 2, Math.round(40 * TJ)];
+    const rund = (x, d = 3) => (Number.isFinite(x) ? +x.toFixed(d) : x);
+    const sum = (v) => v.reduce((a, b) => a + b, 0);
+    const mittel = (v) => (v.length ? sum(v) / v.length : NaN);
+    const vorlage = arg("--vorlage", null);
+    if (vorlage) {
+        // DER GLEICHSCHRITT: Vorlage und Kern, Takt um Takt abwechselnd unter derselben Last — Köpfe je Takt und ms je Jahres-Schritt
+        const VK = require(path.resolve(vorlage));
+        const takte = Math.round(Number(arg("--jahre", "40")) * TJ);
+        console.log(`GLEICHSCHRITT Kern ↔ Vorlage · ${W} × ${W} Reviere · ${takte} Takte (${rund(takte / TJ, 1)} Jahre) · ms je Jahres-Schritt (${TJ} Takte)`);
+        const zeilen = [];
+        for (const saat of SAATEN) {
+            const feld = welt(W, W);
+            let [zK, zV] = [K.anfang({ W, H: W, saat }, feld), VK.anfang({ W, H: W, saat })];
+            let [msK, msW, msV, ungleich] = [0, 0, 0, 0];
+            for (let k = 0; k < takte; k++) {
+                const t0 = performance.now();
+                zV = VK.schritt(zV, saat, k);
+                const t1 = performance.now();
+                feld.takt();
+                const t2 = performance.now();
+                zK = K.schritt(zK, saat, k, feld);
+                const t3 = performance.now();
+                feld.aesen(zK.frass);
+                const t4 = performance.now();
+                [msV, msK, msW] = [msV + t1 - t0, msK + t3 - t2, msW + t2 - t1 + t4 - t3];
+                let [d, w] = [0, 0];
+                for (const l of zV.reh) d += l.length;
+                for (const R of zV.rudel) w += R.tiere.length;
+                const [dK, wK] = zaehl(zK);
+                if (d !== dK || w !== wK || zV.ereignis.rissKg !== zK.ereignis.rissKg) ungleich++;
+            }
+            const j = takte / TJ;
+            zeilen.push({ saat, ungleich, kern: msK / j, welt: msW / j, vorlage: msV / j, koepfe: zaehl(zK) });
+            console.log(`  Saat ${saat} · Takte ungleich ${ungleich} von ${takte} · Kern ${rund(msK / j, 1)} ms + Welt-Leser ${rund(msW / j, 1)} ms · Vorlage ${rund(msV / j, 1)} ms · Ende Beute ${zaehl(zK)[0]} Wolf ${zaehl(zK)[1]}`);
+        }
+        const mw = (f) => rund(mittel(zeilen.map((x) => x[f])), 1);
+        console.log(`MITTEL je Jahres-Schritt: Kern ${mw("kern")} ms + Welt-Leser ${mw("welt")} ms = ${rund(mw("kern") + mw("welt"), 1)} ms · Vorlage ${mw("vorlage")} ms · Takte ungleich ${sum(zeilen.map((x) => x.ungleich))}`);
+        process.exit(sum(zeilen.map((x) => x.ungleich)) ? 1 : 0);
+    }
+    // DER VOLLE LAUF 4 — die Messung des Spike-Läufers, auf S1–S15 gekürzt (jede Zahl gerechnet wie dort)
+    const JAHR = (j) => Math.round(E + j * TJ);
+    const quantil = (v, q) => {
+        if (!v.length) return NaN;
+        const s = Array.from(v).sort((a, b) => a - b);
+        return s[Math.min(s.length - 1, Math.floor(q * s.length))];
+    };
+    const jm = (reihe, a, b) => {
+        let s = 0;
+        for (let k = a; k < b; k++) s += reihe[k];
+        return s / (b - a);
+    };
+    const KLASSEN = ["D ≤ 0,6", "0,6 < D < 0,9", "D 0,9–1,2", "1,2 < D < 1,5", "D ≥ 1,5"];
+    const klasseVon = (D) => (D <= 0.6 ? 0 : D < 0.9 ? 1 : D <= 1.2 ? 2 : D < 1.5 ? 3 : 4);
+    const neuKlasse = () => ({ rudelTakte: 0, kopfTakte: 0, geb: 0, welpe: 0, deckung: 0, alter: 0, wanderung: 0 });
+    // der Eingriff S13: jeder Beute-Kopf fällt mit `anteil`; der Strom gehört dem Läufer (wie in der Vorlage)
+    function eingriff(z, saat, anteil) {
+        let s = (Math.imul(saat | 0, 0x9e3779b1) ^ Math.imul(z.takt + 1, 0x85ebca77) ^ 0x7e1f) | 0;
+        const rng = () => {
+            s = (s + 0x6d2b79f5) | 0;
+            let t = Math.imul(s ^ (s >>> 15), 1 | s);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        let gefallen = 0;
+        for (const l of z.beute) for (let k = l.length - 1; k >= 0; k--) if (rng() < anteil) l.splice(k, 1), gefallen++;
+        return gefallen;
+    }
+    function lauf(saat, jaeger, zweig, halt) {
+        const feld = zweig ? zweig.feld : welt(W, W);
+        let z = zweig ? zweig.z : K.anfang({ W, H: W, saat, jaeger }, feld);
+        const von = zweig ? E : 0;
+        const nutz = z.param.nutz;
+        const habitat = [];
+        for (let i = 0; i < n; i++) if (feld.land(i)) habitat.push(i);
+        const bs0 = [];
+        for (const l of z.beute) for (const t of l) bs0.push(Math.cbrt(t.M / M_ART.deer));
+        const m = { takte: 0, rehS: 0, rehS2: 0, wolfS: 0, besetztHab: 0, leerIm: 0, gebReh: 0, reifReh: 0, reifWolf: 0, riss: 0, rissUnreif: 0, einwanderung: 0, bruchKopf: 0, bruchKg: 0, msKern: 0, msWelt: 0, wolfT: new Int32Array(TAKTE), rehT: new Int32Array(TAKTE), bs: [], klassen: KLASSEN.map(neuKlasse) };
+        let [dVor, wVor] = zaehl(z);
+        if (zweig) {
+            const gefallen = eingriff(z, saat, 0.5);
+            const [d] = zaehl(z);
+            if (d !== dVor - gefallen) m.bruchKopf++;
+            dVor = d;
+        }
+        let [besitzer, kopfVor] = [new Map(), new Map()];
+        const deckVon = new Map();
+        for (const R of z.rudel) {
+            kopfVor.set(R.id, R.tiere.length);
+            deckVon.set(R.id, R.deck);
+            for (const t of R.tiere) besitzer.set(t, R.id);
+        }
+        const lege = (D) => (D == null ? null : m.klassen[klasseVon(D)]);
+        for (let k = von; k < TAKTE; k++) {
+            if (halt != null && k === halt) m.amHalt = { z: K.klon(z), feld: feld.klon() };
+            const t0 = performance.now();
+            feld.takt();
+            const t1 = performance.now();
+            z = K.schritt(z, saat, k, feld);
+            const t2 = performance.now();
+            feld.aesen(z.frass);
+            m.msKern += t2 - t1;
+            m.msWelt += t1 - t0 + performance.now() - t2;
+            const ev = z.ereignis;
+            const [d, w] = zaehl(z);
+            m.wolfT[k] = w;
+            m.rehT[k] = d;
+            // die Erhaltung (S10): Köpfe = Köpfe davor + Geburten − Tode; jeder Geborene trägt eine Mutter; kg Riss = kg der Gerissenen
+            let [gD, gW, tD, tW, kgJ] = [0, 0, 0, 0, 0];
+            for (const t of ev.geburt) {
+                if (t.g === "beute") gD++;
+                else gW++;
+                if (t.m == null) m.einwanderung++;
+            }
+            for (const x of ev.tod) {
+                if (x.t.g === "beute") tD++;
+                else tW++;
+                if (x.ursache === "jagd") kgJ += x.t.kg;
+            }
+            m.einwanderung += ev.einwanderung;
+            if (d !== dVor + gD - tD || w !== wVor + gW - tW) m.bruchKopf++;
+            if (Math.abs(kgJ - ev.rissKg) > 1e-6 * (1 + kgJ) || Math.abs(ev.gedecktKg - nutz * ev.rissKg) > 1e-6 * (1 + kgJ)) m.bruchKg++;
+            [dVor, wVor] = [d, w];
+            // S14: Rudel-Takte, Geburten und Tode in die Klasse des D ihres Rudels
+            {
+                const [dNow, besitzerNeu, kopfNeu] = [new Map(), new Map(), new Map()];
+                for (const R of z.rudel) {
+                    dNow.set(R.id, R.deck);
+                    kopfNeu.set(R.id, R.tiere.length);
+                    for (const t of R.tiere) besitzerNeu.set(t, R.id);
+                }
+                const dVon = (id) => (dNow.has(id) && dNow.get(id) != null ? dNow.get(id) : deckVon.get(id));
+                for (const [id, kopf] of kopfVor) {
+                    const kl = lege(dVon(id));
+                    if (kl) kl.rudelTakte++, (kl.kopfTakte += kopf);
+                }
+                for (const t of ev.geburt) {
+                    const kl = t.g === "jaeger" ? lege(dVon(besitzerNeu.get(t))) : null;
+                    if (kl) kl.geb++;
+                }
+                for (const x of ev.tod) {
+                    const kl = x.t.g === "jaeger" ? lege(dVon(besitzer.get(x.t))) : null;
+                    if (kl) kl[x.ursache]++;
+                }
+                for (const [id, D] of dNow) if (D != null) deckVon.set(id, D);
+                [besitzer, kopfVor] = [besitzerNeu, kopfNeu];
+            }
+            if (k < AB) continue;
+            m.takte++;
+            m.rehS += d;
+            m.rehS2 += d * d;
+            m.wolfS += w;
+            const probe = !((k - AB) % 105);
+            for (const i of habitat) {
+                const l = z.beute[i];
+                if (z.besitz[i] >= 0) m.besetztHab++, !l.length && m.leerIm++;
+                if (probe) for (const t of l) if (t.r) m.bs.push(Math.cbrt(t.M / M_ART.deer));
+            }
+            m.gebReh += gD;
+            for (const x of ev.tod) if (x.ursache === "jagd") m.riss++, !x.t.r && m.rissUnreif++;
+            m.reifReh += ev.reifReh;
+            m.reifWolf += ev.reifWolf;
+        }
+        m.ende = { reh: dVor, wolf: wVor, rudelAb2: z.rudel.filter((R) => R.tiere.length >= 2).length };
+        [m.bs0p99, m.bsP99] = [quantil(bs0, 0.99), quantil(m.bs, 0.99)];
+        delete m.bs;
+        return m;
+    }
+    function proben(m, o) {
+        const [jahre, reh, wolf] = [m.takte / TJ, m.rehS / m.takte, m.wolfS / m.takte];
+        return {
+            S1: m.ende.rudelAb2 >= 1 ? 1 : 0,
+            S2: (1000 * wolf) / reh,
+            S3: m.riss / jahre / reh,
+            S4: reh / (o.rehS / o.takte),
+            S5: m.rissUnreif / m.riss,
+            S6: m.reifWolf / (m.wolfS / (K.ZEIT.jahreRef * TJ)),
+            S7: m.reifReh / m.gebReh,
+            S8: m.leerIm / m.besetztHab,
+            S9: Math.sqrt(Math.max(0, m.rehS2 / m.takte - reh * reh)) / reh,
+            S10: [m.bruchKopf + m.bruchKg, m.einwanderung],
+            S11: (m.msKern + m.msWelt) / (m.takte * 2) / (n / 256),
+            S12: m.bsP99 / m.bs0p99,
+            S15: m.ende.rudelAb2 >= 1 ? reh / wolf : NaN,
+            wolfEnde: m.ende.wolf,
+            msKernJahr: m.msKern / (TAKTE / TJ),
+            msWeltJahr: m.msWelt / (TAKTE / TJ),
+        };
+    }
+    const t0 = Date.now();
+    const sek = () => Math.round((Date.now() - t0) / 1000) + " s";
+    console.log(`LAUF 4 im Kern · ${W} × ${W} Reviere · ${SAATEN.length} Saaten · ${TAKTE} Takte · Start ${new Date().toLocaleString("de-DE")}`);
+    const O = SAATEN.map((saat) => lauf(saat, false));
+    console.log("ohne Wolf gelaufen", sek());
+    const Gm = SAATEN.map((saat) => lauf(saat, true, null, E));
+    console.log("mit Wolf gelaufen", sek());
+    const P = Gm.map((m, i) => proben(m, O[i]));
+    const ist = {};
+    for (const nr of ["S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S11", "S12", "S15"]) {
+        const v = P.map((p) => p[nr]);
+        ist[nr] = { wert: rund(mittel(v.filter(Number.isFinite)), 4), jeSaat: v.map((x) => rund(x, 4)) };
+    }
+    ist.S1 = { wert: sum(P.map((p) => p.S1)) + " von " + P.length, jeSaat: P.map((p) => p.wolfEnde) };
+    ist.S10 = { wert: sum(P.map((p) => p.S10[0])) + " · " + sum(P.map((p) => p.S10[1])), jeSaat: P.map((p) => p.S10.join("·")) };
+    // S13, die Rückstell-Probe: im Jahr 40 fällt die Hälfte der Beute; der Zweig läuft ab dem Zustand des Haupt-Laufs
+    const klassen = KLASSEN.map(neuKlasse);
+    const addiere = (b) => klassen.forEach((x, i) => Object.keys(x).forEach((f) => (x[f] += b[i][f])));
+    for (const m of Gm) addiere(m.klassen);
+    const S13 = Gm.map((m, i) => {
+        const [wolfVor, beuteVor] = [jm(m.wolfT, JAHR(-1), E), jm(m.rehT, JAHR(-1), E)];
+        const b = lauf(SAATEN[i], true, m.amHalt);
+        delete m.amHalt;
+        addiere(b.klassen);
+        let tief = Infinity;
+        for (let j = 1; j <= 4; j++) tief = Math.min(tief, jm(b.wolfT, JAHR(j - 1), JAHR(j)));
+        return { fall: 1 - tief / wolfVor, verhaeltnis: jm(b.rehT, JAHR(14), JAHR(15)) / beuteVor, lebt: b.ende.rudelAb2 >= 1, brueche: b.bruchKopf + b.bruchKg + b.einwanderung };
+    });
+    console.log("S13-Zweige gelaufen", sek());
+    {
+        const [fall, verh, lebt] = [mittel(S13.map((r) => r.fall)), mittel(S13.map((r) => r.verhaeltnis)), S13.filter((r) => r.lebt).length];
+        ist.S13 = {
+            wert: "Fall " + rund(100 * fall, 1) + " % (" + S13.filter((r) => r.fall >= 0.25).length + " von " + S13.length + " Saaten ≥ 25 %) · Beute " + rund(100 * verh, 1) + " % (" + S13.filter((r) => r.verhaeltnis >= 0.85).length + " von " + S13.length + " ≥ 85 %) · lebt " + lebt + " von " + S13.length,
+            jeSaat: S13.map((r) => rund(100 * r.fall, 0) + "%/" + rund(100 * r.verhaeltnis, 0) + "%/" + (r.lebt ? "lebt" : "tot")),
+        };
+        const wachstum = (x) => (x.geb - x.welpe - x.deckung - x.alter - x.wanderung) / (x.kopfTakte / TJ);
+        const baender = [[2, (r) => r >= -0.1 && r <= 0.1], [4, (r) => r >= 0.15 && r <= 0.45], [0, (r) => r <= -0.15]];
+        ist.S14 = {
+            wert: baender
+                .map(([i, ok]) => {
+                    const [rj, r] = [rund(klassen[i].rudelTakte / TJ, 1), rund(wachstum(klassen[i]), 4)];
+                    return KLASSEN[i] + ": " + (rj < 10 ? "nicht gemessen (" + rj + " Rudel-Jahre)" : r + " " + (ok(r) ? "GRÜN" : "ROT") + " (" + rj + " Rudel-Jahre)");
+                })
+                .join(" · "),
+            jeSaat: [],
+        };
+    }
+    let ungleich = 0;
+    console.log("── S1–S15: Vorlage (ergebnis-zeit-4.json) ↔ Kern · gleich heißt Wert UND jede Saat zahlengleich (S11 ist Zeit)");
+    for (const nr of Object.keys(LAUF4.soll)) {
+        const [a, b] = [LAUF4.soll[nr], ist[nr]];
+        const gleich = JSON.stringify([a.wert, a.jeSaat]) === JSON.stringify([b.wert, b.jeSaat]);
+        if (!gleich && nr !== "S11") ungleich++;
+        // die Urteils-Wörter der Vorlage (S14 steht dort wie gesetzt auf rot) klein: diese Tafel urteilt nur GLEICH ↔ UNGLEICH
+        const zeig = (s) => String(s).replace(/ROT/g, "rot").replace(/GRÜN/g, "grün");
+        console.log(`${nr} · Vorlage ${zeig(a.wert)} · Kern ${zeig(b.wert)} · ${nr === "S11" ? "Zeit" : gleich ? "GLEICH" : "UNGLEICH"}${a.jeSaat.length ? " · je Saat Kern " + b.jeSaat.join(" ") : ""}`);
+    }
+    console.log(`── KOSTEN je Jahres-Schritt (${TJ} Takte, ${n} Reviere, mit Wolf) je Saat: Kern ${P.map((p) => rund(p.msKernJahr, 1)).join(" ")} ms · Welt-Leser ${P.map((p) => rund(p.msWeltJahr, 1)).join(" ")} ms`);
+    console.log(`${ungleich ? "❌ " + ungleich + " Zeile(n) UNGLEICH" : "✅ Lauf 4 zahlengleich (S1–S10, S12–S15)"} · S13-Brüche ${sum(S13.map((r) => r.brueche))} · Ende ${new Date().toLocaleString("de-DE")} · ${sek()}`);
+    if (arg("--json", null)) fs.writeFileSync(arg("--json"), JSON.stringify({ ist, vorlage: LAUF4.soll, kosten: P.map((p) => [p.msKernJahr, p.msWeltJahr]) }));
+    process.exit(ungleich ? 1 : 0);
+}
+{
+    const grund = bestandUrteil(LK);
+    check("Bestand = Gesetz: Lauf 4 zahlengleich (Saat 1 · 2, Jahre 0–40, Spur von Wolf und Beute gegen die Vorlage)", grund === "", grund);
+    if (grund === "") {
+        // der Mutant: EIN Wert des Satzes 3 verstellt (V½ 246 → 300) — die Spur muss die Vorlage verlassen
+        const quelle = require("fs").readFileSync(path.join(root, "leben-core.js"), "utf8");
+        const stellen = quelle.split("vHalb: 246").length - 1;
+        const mutant = stellen === 1 ? bestandUrteil(kernAus(quelle.replace("vHalb: 246", "vHalb: 300"))) : "";
+        check("Bestand = Gesetz, Selbsttest: der Mutant V½ 246 → 300 fällt ROT", mutant !== "", mutant !== "" ? "" : stellen !== 1 ? "V½ steht " + stellen + "-mal im Kern" : "die Spur blieb gleich");
+    }
+}
+
 urteilEnde(
     errs.length,
     `\n❌ ROT — ${errs.length} Verletzung(en).`,
