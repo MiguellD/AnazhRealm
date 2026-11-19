@@ -2355,7 +2355,8 @@ class AnazhRealm_speicher_laden {
             terrainSteepness: steepness,
             terrainBaseHeight: baseHeight,
             weather,
-            worldMeta: {
+            // die Fusion gebiert eine Welt: ihr Tag der Prozesse beginnt bei 0 (`_weltGeburt`)
+            worldMeta: AnazhRealm._weltGeburt({
                 worldId: identity.newWorldId,
                 slug: identity.finalSlug,
                 creator: "local",
@@ -2368,7 +2369,7 @@ class AnazhRealm_speicher_laden {
                 // Γ1/Γ4 (genese-plan) — die Fusion gebiert NEUES Terrain (newSeed):
                 // kein Gesicht zu bewahren → die heutige Genese-Version (V18.179: 3).
                 genVersion: 3,
-            },
+            }),
             dslAbilities: mergedAbilities,
             dslHistory: mergedHistory,
             // Die fusionierte Welt trägt die Union beider Regel-Sätze (Dedup über die Signatur).

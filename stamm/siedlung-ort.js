@@ -1307,7 +1307,7 @@ class AnazhRealm_siedlung_ort {
             if (this._dorfWeltGing(welt, "Zug")) return null;
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
-            const wmD = this.state.worldMeta || (this.state.worldMeta = {});
+            const wmD = this._weltMetaDa();
             if (!wmD.settlementCells || typeof wmD.settlementCells !== "object") wmD.settlementCells = {};
             // der Wege-Schlüssel trägt den ORT: zwei Siedlungen mit demselben Samen bauen je ihre Wege (vorher gewann die
             // erste, die Stadt `dorf 7 120` neben `dorf 7 18` stand ohne einen Weg — Leben-Prüfung S-W1)
@@ -1370,7 +1370,7 @@ class AnazhRealm_siedlung_ort {
     // der Zähler im Welt-Gedächtnis lief im Stehen, und der nächste Wagen der Welt stand in einer anderen Gestalt (Lack Metall
     // 0,7 → 0, material.K4 „zu wenig Pixel" an Radeon und GTX).
     _bauSame(art, blick = false) {
-        const wm = this.state.worldMeta || (this.state.worldMeta = {});
+        const wm = this._weltMetaDa();
         const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});
         const n = (Number(z[art]) || 0) + 1;
         if (!blick) z[art] = n;
@@ -2020,7 +2020,7 @@ class AnazhRealm_siedlung_ort {
         const st = this.state;
         const i2 = info || this._autoSettlementCellInfo(cx, cz);
         if (!i2) return Promise.resolve(null);
-        const wm = st.worldMeta || (st.worldMeta = {});
+        const wm = this._weltMetaDa();
         if (!wm.settlementCells || typeof wm.settlementCells !== "object") wm.settlementCells = {};
         const key = i2.key || cx + "," + cz; // Zell-Infos tragen cx,cz — das Start-Dorf trägt "start"
         const q = this._autoSettlementQueue;
