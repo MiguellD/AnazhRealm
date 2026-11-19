@@ -334,19 +334,19 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         st.player.emotions.chaos = 0;
         st.weather = "sunny";
         window.__uebergangFaellt(r);
-        r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
-        const defaultDur = st.weatherTransition && st.weatherTransition.duration;
+        r.requestWeatherTransition("rainy"); // Default-Dauer (WETTER_UEBERGANG_S, 45 s der Welt-Uhr)
+        const defaultDur = st.weatherTransition && st.weatherTransition.dauer;
         st.weather = "sunny";
         window.__uebergangFaellt(r);
         st.player.emotions.peace = 1.0;
         r.requestWeatherTransition("rainy");
-        const peaceDur = st.weatherTransition && st.weatherTransition.duration;
+        const peaceDur = st.weatherTransition && st.weatherTransition.dauer;
         st.weather = "sunny";
         window.__uebergangFaellt(r);
         st.player.emotions.peace = 0;
         st.player.emotions.chaos = 1.0;
         r.requestWeatherTransition("rainy");
-        const chaosDur = st.weatherTransition && st.weatherTransition.duration;
+        const chaosDur = st.weatherTransition && st.weatherTransition.dauer;
         st.weather = "sunny";
         window.__uebergangFaellt(r);
         st.player.emotions.chaos = 0;

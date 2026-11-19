@@ -358,9 +358,11 @@ class AnazhRealm_speicher_laden {
         const [zug, wt] = Array.isArray(state.wetterZug) ? state.wetterZug : [];
         this._wetterZug = Number.isInteger(zug) ? zug : undefined;
         const ok = (x) => typeof x === "string" && x in AnazhRealm.WEATHER_INTENSITY;
+        // die Dauer in Sekunden der Welt-Uhr (`dauer`); ein Stand von vor zeit-ein-kalender trug sie in ms (`duration`)
+        const dauer = wt ? (Number.isFinite(wt.dauer) ? wt.dauer : wt.duration / 1000) : 0;
         this.state.weatherTransition =
-            wt && ok(wt.from) && ok(wt.to) && Number.isFinite(wt.startedAt) && wt.duration > 0
-                ? { from: wt.from, to: wt.to, progress: 0, duration: wt.duration, startedAt: wt.startedAt }
+            wt && ok(wt.from) && ok(wt.to) && Number.isFinite(wt.startedAt) && dauer > 0
+                ? { from: wt.from, to: wt.to, progress: 0, dauer, startedAt: wt.startedAt }
                 : null;
         // der Weg des Regens beginnt am Zustand mit dem Wetter des Stands, seinem Übergang oder Wort (`_regenStempel`), bevor ein
         // Zug ihn weiterschreibt (`_regenWeg`)
@@ -540,7 +542,7 @@ class AnazhRealm_speicher_laden {
                 Array.isArray(sa) && sa.length === 2 && sa.every(Number.isFinite) && sa[0] >= 0 && sa[0] < 1
                     ? sa
                     : [state.seasonPhase, Number.isFinite(state.spielZeit) ? state.spielZeit : this.state.spielZeit];
-            const jahr = this.state.seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400;
+            const jahr = this._kalender().jahrS;
             this.state.seasonPhase = state.seasonPhase;
             this._saisonAnker = { anker, t, jahr, phase: state.seasonPhase };
         }

@@ -211,7 +211,7 @@ class AnazhRealm_feld_brand {
     // DAS BETT, WIE DIE FRONT ES ANTRIFFT (stoffe.K2#2): je Brand misst die Welt jede Zelle EINMAL — Stoff, Last, Boden, Höhe und
     // das Gefälle über die Zelle (`gx`, `gz`, das `_brandTempo` liest) —, erreicht sie die Front wieder (eine zweite Nachbarin
     // brennt), liest sie das Gemessene (`_brandBett`, geleert, wenn ein neuer Brand fängt). Die Asche fragt der Index jedes Mal.
-    _brandStoff(cx, cz) {
+    _brandStoff(cx, cz, uhr) {
         const key = cx + "," + cz;
         const je = this._tatIndex().je.get(key);
         if (je && je.some((a) => a.tat === "brand")) return null;
@@ -219,7 +219,7 @@ class AnazhRealm_feld_brand {
         if (M.has(key)) return M.get(key);
         const cs = AnazhRealm.LIFE_FIELD.cell;
         const [x, z] = [(cx + 0.5) * cs, (cz + 0.5) * cs];
-        const leb = this.auraAt(x, z).lebendig;
+        const leb = this.auraAt(x, z, 0, uhr).lebendig;
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
             const [y, h] = [this._voxelSurfaceY(x, z), cs / 2];
@@ -345,8 +345,9 @@ class AnazhRealm_feld_brand {
         return this._feldAkt({ art: "brand", w: this.state.spielZeit, x, z }, true);
     }
 
-    // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass).
-    _brandFangen(x, z, ein) {
+    // Die Zelle unter (x, z) fängt Feuer → die Zelle oder null (sie brennt schon, trägt kein Bett, die Welt ist zu nass). `uhr`
+    // (s der Welt-Uhr): der Augenblick des Funkens (ein Feld-Akt zu seinem Stempel, `_feldAktWirkt`) — ohne ihn jetzt.
+    _brandFangen(x, z, ein, uhr = this.state.spielZeit) {
         const st = this.state;
         const bf = st.brandFeld || (st.brandFeld = new Map());
         const cs = AnazhRealm.LIFE_FIELD.cell;
@@ -357,9 +358,9 @@ class AnazhRealm_feld_brand {
         // zuerst (ohne Feld zündet der Rest nichts mehr) — bis w13-brand-takt fielen sie hier weg
         if (!bf.size) {
             if (this._brandRest) this._brandArbeit(Infinity);
-            [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [st.spielZeit, null, null, null];
+            [this._brandUhr, this._brandBett, this._brandRest, bf.glutBlock] = [uhr, null, null, null];
         }
-        return this._brandZuenden(cx, cz, st.spielZeit, x, z, ein);
+        return this._brandZuenden(cx, cz, uhr, x, z, ein, uhr);
     }
 
     // Die Front erreicht die Zelle zur Zeit t am Punkt (ex, ez) ihres Rands (der Herd: am Ort der Tat). Ihr Bett und ihr Tempo
@@ -371,10 +372,10 @@ class AnazhRealm_feld_brand {
     // der Spitze). Die Zelle brennt, bis die Spitze sie längs ihres Kopfs durchquert hat (bis an ihre fernste Ecke), und die
     // Flamme ihre Verweilzeit; was langsamer in sie zurückläuft (Flanke, Rückfeuer), trägt die Ankunft ihrer Nachbarinnen, nicht
     // ihr Brennen. Ohne Bett oder Tempo fällt sie aus dem Feld (null).
-    _brandZuenden(cx, cz, t, ex, ez, ein = null) {
+    _brandZuenden(cx, cz, t, ex, ez, ein = null, uhr = this.state.spielZeit) {
         const bf = this.state.brandFeld;
         const key = cx + "," + cz;
-        const f = this._brandStoff(cx, cz);
+        const f = this._brandStoff(cx, cz, uhr);
         const T = f && this._brandTempo(f, t);
         if (!T || !(T.R > 0)) {
             bf.delete(key);

@@ -1327,7 +1327,7 @@ class AnazhRealm_speicher_welten {
                     const zug = Number.isInteger(this._wetterZug) ? this._wetterZug : null;
                     return [
                         zug,
-                        wt ? { from: wt.from, to: wt.to, duration: wt.duration, startedAt: wt.startedAt } : null,
+                        wt ? { from: wt.from, to: wt.to, dauer: wt.dauer, startedAt: wt.startedAt } : null,
                     ];
                 },
                 { augenblick: true, marke: () => [this._wetterZug, st().weatherTransition, st().weather] },

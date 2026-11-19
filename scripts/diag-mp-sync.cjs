@@ -176,7 +176,7 @@ function abdruck(bauten, nahe) {
         ]);
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
     const wt = st.weatherTransition;
-    const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
+    const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.dauer]]);
     const stand = r._lebenImStand(nahe);
     const leben = stand.feld.map(String).sort();
     // (f) DER BEFUND hinter „leben VERSCHIEDEN“ (`lebenBefund`): was das Leben rechnet, je Seite — die gemerkte Boden-Klasse je
