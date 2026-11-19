@@ -2764,14 +2764,14 @@ class AnazhRealm_siedlung_bewohner {
     // nächsten Punkt, sondern auf das Bein zurück — auf den Punkt `linieM` voraus auf ihm (vom Anfang des Beins `linie`, ab
     // `_bewohnerWeg`); so steht er, wo ihn die Ankunft sähe. Schneidet der Weg zurück eine Wand (`_bewohnerWand`: das Bein
     // hielt Abstand, der Schräge daneben nicht — der Mast der Laterne #23861, der Tisch des Marktstands), geht er quer auf das
-    // Bein (sein Fußpunkt), sonst an seinen Anfang, sonst zum nächsten Punkt. Liefert den Punkt, auf den er geht (auf dem
-    // Bein: den nächsten).
+    // Bein (sein Fußpunkt), sonst an seinen Anfang, sonst zum nächsten Punkt. Liefert den Punkt, auf den er geht (auf dem Bein: den nächsten).
     _bewohnerLinie(b, x, z) {
         const [a, q] = [b.linie, b.weg[b.wi]];
         if (q._um) return q;
         const [lx, lz] = a ? [q.x - a.x, q.z - a.z] : [0, 0];
         const L = Math.hypot(lx, lz);
-        if (!(L > 1e-3) || Math.abs((x - a.x) * lz - (z - a.z) * lx) / L < 0.05) return q;
+        const quer = L > 1e-3 ? Math.abs((x - a.x) * lz - (z - a.z) * lx) / L : 0; // ≤ 5 cm daneben zum Punkt nur, wo die Schräge frei ist (los-huelle: #921207 an Mast #237674)
+        if (!(L > 1e-3) || quer < 1e-4 || (quer < 0.05 && !this._bewohnerWand({ x, z }, q))) return q;
         const s0 = ((x - a.x) * lx + (z - a.z) * lz) / (L * L);
         for (const s of [Math.max(0, s0 + AnazhRealm.BEWOHNER.linieM / L), Math.max(0, s0), 0]) {
             const m = s >= 1 ? q : { x: a.x + lx * s, z: a.z + lz * s };
