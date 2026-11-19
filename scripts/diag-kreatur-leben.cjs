@@ -1900,11 +1900,11 @@ check("Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]", !
 // Zweig koordination, vision/leben). Der Kern rechnet LAUF 4 des Spikes zahlengleich nach; die Welt von Lauf 4 (das Feld des
 // Spikes) und die Arten (tetrapoda) reicht dieser Treiber als Leser hinein, der Kern hält weder Feld noch Gattung.
 //   das Tor      Saat 1 · 2, Jahre 0–40: die Spur von Wolf und Beute je 4 Jahre gegen die VORLAGE (`ergebnis-zeit-4.json` des
-//                Spikes, nie aus dem Kern), dazu der Mutant (V½ des Satzes 3: 246 → 300 muss die Spur verlassen)
+//                Spikes, nie aus dem Kern), dazu der Mutant (V½ des Satzes 3: 246 → 300 muss die Spur verlassen; das Gesetz als Wert gereicht, kein Quelltext gelesen)
 //   --bestand    der volle Lauf (8 Saaten × 160 Jahre, ohne und mit Wolf, die S13-Zweige): S1–S15 Vorlage ↔ Kern
 //   --bestand --vorlage <zeit-kern-4.cjs> [--jahre 40]   Kern und Vorlage im Gleichschritt: Köpfe je Takt, ms je Jahres-Schritt
 const LAUF4 = {"soll":{"S1":{"wert":"8 von 8","jeSaat":[68,80,61,66,74,56,63,69]},"S2":{"wert":3.9865,"jeSaat":[4.0013,4.0579,3.9253,3.9355,4.0322,3.9131,3.9669,4.0596]},"S3":{"wert":0.0841,"jeSaat":[0.0885,0.0918,0.0935,0.0739,0.0685,0.077,0.0927,0.0868]},"S4":{"wert":0.8613,"jeSaat":[0.8479,0.8404,0.8462,0.883,0.8924,0.8802,0.8459,0.8545]},"S5":{"wert":0.6046,"jeSaat":[0.6053,0.6049,0.6051,0.6037,0.6009,0.6043,0.6087,0.6042]},"S6":{"wert":1.4844,"jeSaat":[1.4789,1.4524,1.4569,1.5519,1.5316,1.5442,1.4373,1.4223]},"S7":{"wert":0.4786,"jeSaat":[0.4767,0.4762,0.4732,0.4828,0.4872,0.4819,0.4731,0.4775]},"S8":{"wert":0.0011,"jeSaat":[0.0014,0.0013,0.0011,0.0009,0.0007,0.0008,0.0014,0.0011]},"S9":{"wert":0.0134,"jeSaat":[0.0131,0.011,0.0105,0.0127,0.0148,0.0173,0.017,0.011]},"S10":{"wert":"0 · 0","jeSaat":["0·0","0·0","0·0","0·0","0·0","0·0","0·0","0·0"]},"S11":{"wert":1.0047,"jeSaat":[1.1236,1.1078,0.9399,0.7154,0.8641,1.0376,1.2625,0.9864]},"S12":{"wert":0.9689,"jeSaat":[0.9683,0.9724,0.9691,0.9698,0.9665,0.9654,0.9723,0.9674]},"S13":{"wert":"Fall 38.3 % (7 von 8 Saaten ≥ 25 %) · Beute 98.5 % (8 von 8 ≥ 85 %) · lebt 8 von 8","jeSaat":["33%/98%/lebt","45%/101%/lebt","35%/97%/lebt","47%/100%/lebt","48%/98%/lebt","38%/99%/lebt","39%/97%/lebt","23%/99%/lebt"]},"S14":{"wert":"D 0,9–1,2: 0.0328 GRÜN (21279.2 Rudel-Jahre) · D ≥ 1,5: 0.8385 ROT (161.4 Rudel-Jahre) · D ≤ 0,6: -4.3839 GRÜN (16 Rudel-Jahre)","jeSaat":[]},"S15":{"wert":250.8978,"jeSaat":[249.9186,246.4353,254.7589,254.0979,248.0043,255.5524,252.0837,246.3311]}},"spur":{"1":{"wolf":[27,49,54,63,58,77,67,66,48,66,75],"reh":[11738,14900,17081,16639,16830,17285,17226,17203,17201,17453,17412]},"2":{"wolf":[17,39,63,62,64,70,71,68,60,77,71],"reh":[11763,15407,17452,17050,17055,17147,17413,17594,17638,17395,17376]}}};
-function bestandTreiber(T, L) {
+function bestandTreiber(T, L, gesetz) {
     const B = T.BESTAND_GESETZ;
     const TG = T.VERHALTEN.temperament.gattung;
     const dietVon = (g) => {
@@ -1919,12 +1919,15 @@ function bestandTreiber(T, L) {
     const TJ = L.gesetz().refS / B.taktS / L.zeitJagd().jahreRef;
     const SEITE = B.revierM * Math.sqrt(Math.PI);
     const M_ART = { deer: 94.24042032034154, wolf: 64.01114942302421 }; // die Masse des Gusses, wie Lauf 4 sie trug
-    const K = L.bestand({
+    const K = L.bestand(
+        {
         taktS: B.taktS,
         revierSeiteM: SEITE,
         beute: { M: M_ART.deer, verband: T.VERHALTEN.herde.wurf.deer, frassJeJahr: T.bestandFrass(DIET.deer, B) * TJ },
         jaeger: { M: M_ART.wolf, verband: T.VERHALTEN.herde.wurf.wolf, beuteMasse: T.VERHALTEN.jagd.beuteMasse, jagdKg: TG.jagdKg },
-    });
+        },
+        gesetz
+    );
     // DIE WELT VON LAUF 4 — das Feld des Spikes als Leser: 16 Zellen je Revier, 9 von 16 tragen Äsung 0,2–0,42 (Wiese), darüber
     // das Leben-Overlay des Felds (Halbwert 8,66 Takte); vor dem Schritt zerfällt es und K liest die Äsung (takt), nach dem
     // Schritt äst die Herde den Fraß des Kerns hinein (aesen). Dieselbe Welt für jede Saat.
@@ -2009,15 +2012,9 @@ function bestandTreiber(T, L) {
     }
     return { K, TJ, M_ART, welt, zaehl, spur };
 }
-// ein Kern aus seinem Quelltext, in eigenem Namensraum (der Mutant: EIN Wert verstellt, kein Haken im Kern)
-const kernAus = (quelle) => {
-    const m = { exports: {} };
-    new Function("module", "self", quelle)(m, {});
-    return m.exports;
-};
-function bestandUrteil(L) {
+function bestandUrteil(L, gesetz) {
     if (!L || typeof L.bestand !== "function" || typeof L.zeitJagd !== "function") return "leben-core trägt keinen Bestand (bestand · zeitJagd fehlen)";
-    const { spur } = bestandTreiber(core, L);
+    const { spur } = bestandTreiber(core, L, gesetz);
     const fehl = [];
     for (const saat of [1, 2]) {
         const [ist, soll] = [spur(saat, 1051), LAUF4.spur[saat]];
@@ -2287,10 +2284,10 @@ if (process.argv.includes("--bestand")) {
     check("Bestand = Gesetz: Lauf 4 zahlengleich (Saat 1 · 2, Jahre 0–40, Spur von Wolf und Beute gegen die Vorlage)", grund === "", grund);
     if (grund === "") {
         // der Mutant: EIN Wert des Satzes 3 verstellt (V½ 246 → 300) — die Spur muss die Vorlage verlassen
-        const quelle = require("fs").readFileSync(path.join(root, "leben-core.js"), "utf8");
-        const stellen = quelle.split("vHalb: 246").length - 1;
-        const mutant = stellen === 1 ? bestandUrteil(kernAus(quelle.replace("vHalb: 246", "vHalb: 300"))) : "";
-        check("Bestand = Gesetz, Selbsttest: der Mutant V½ 246 → 300 fällt ROT", mutant !== "", mutant !== "" ? "" : stellen !== 1 ? "V½ steht " + stellen + "-mal im Kern" : "die Spur blieb gleich");
+        const verstellt = jsonKlon(LK.zeitJagd());
+        verstellt.antwort.vHalb = 300;
+        const mutant = bestandUrteil(LK, verstellt);
+        check("Bestand = Gesetz, Selbsttest: der Mutant V½ 246 → 300 fällt ROT", mutant !== "", mutant !== "" ? "" : "die Spur blieb gleich");
     }
 }
 
