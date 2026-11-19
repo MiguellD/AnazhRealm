@@ -156,3 +156,28 @@ Urteil und Entscheide (VOR Spike 4):
 
 Reißt V1 oder V2 mit der Kuppel, fällt M7 als Kandidat, und der Bau fährt mit M2/M3/M6 und dem flachen Empfänger — was dann am
 Wald-Kopf rot bleibt, steht als Zahl in V6.
+
+## Spike 4 (19.11., Opus, Tafel `spike-messer.txt` ab „SPIKE 4“, voll in `s4-tafel.txt`) — die Kuppel FÄLLT; der Bau fährt mit der flachen Karte und der Flächen-Sicht
+
+Kein Soll bewegt: V1 ROT 0,123 EV (Wiese am Wald-Kopf, Uhr 0,282 — die Kuppel nimmt die tiefe Sonne mit ≈ 0,5 statt ≈ 0,1, im Knick
+8–12° holt k nicht nach; Fehlschuss) · V2 GRÜN fein 0,084 · V3 GRÜN 0,068 · V4 GRÜN (Karte Wiese 125,3 → 125,3, Genesis 125,4 → 128,4
+mit `zielKarte` 0,2468) · V5 kleinster Schritt −0,029 · **V6 (flach + Flächen-Sicht, Himmel = Tafel wie heute): Wiese am Wald-Kopf
+0,074 · Genesis fein 0,063 · Wiese main 0,073** — alle unter 0,10; Mittag k Wiese −0,007, Genesis +0,060, main +0,027; Genesis am
+Schritt 0,01 größter 0,133 (Steigung, im Feinschritt 0,063) · V7 ROT: Gold unter der Kuppel −2,10 / −1,98 EV (Soll −1 … −0,5).
+Vorhersagen: vier Treffer, fünf daneben. Die Schranke der Himmels-Näherung ändert V1 nicht (0,116 … 0,155).
+**M7 ist gefallen, wie vor-registriert.** Der Empfänger bleibt die flache Karte (M1). Der Himmel bleibt die Tafel des Messers.
+
+Benannte Kosten der Wahrheit, VOR dem Bau:
+- GOLD an der Wiese (Sonne 10°, Soll der Linse −1 … −0,5 EV, geurteilt nur an der ganzen Bahn): heute Wald-Kopf −0,66, main −1,03 (in
+  dieser Messung schon knapp außerhalb); mit der wahren Sicht −1,16 / −1,19. Der Messer zählt dann die Sonne, die das Bild wirklich
+  trägt, und zieht den Morgen dunkler. Reißt GOLD an der Bahn nach dem Bau, dreht NIEMAND die Sicht zurück; der EINE Stellwert ist
+  der Knoten des Gesetzes bei 10° (`welt-licht.js:84`), einmal aus der Messung gesetzt, die REF-Zeile der Linse muss halten.
+- Mittag Genesis: k +0,060 EV (die wahre Sicht ist 0,870 statt 0,932), die Karte rechnerisch ≈ 128 von 130.
+
+## Das Gesetz, wie es gebaut wird (Fassung nach vier Spikes)
+
+M1 flache 18-%-Karte als Empfänger und Anker · M2 die Sonnen-Sicht des Messers ist der Schatten, den das BILD zeichnet (dieselbe
+Schatten-Funktion, dieselbe Maske, dieselben Körper) · M3 die Klasse der eigenen Gestalten fällt ganz · M4 Kosten an Schirm + Änderung
+· M6 die Stichprobe ist die FLÄCHE der unteren Bildhälfte · die Linse tastet jeden reißenden Schritt 0,01 im Feinschritt nach.
+Zurückgezogen beim Namen: M2' („dieselbe Normale“), M5 (Zeitkonstante), M7 (Kuppel), „der Himmel ist ein Zwilling“, „der Messer
+liest, was im Blick LEUCHTET“.
