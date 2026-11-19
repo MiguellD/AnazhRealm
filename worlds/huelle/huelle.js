@@ -1646,6 +1646,18 @@
                 return w && k && k.PARAMS_BY_KIND && k.PARAMS_BY_KIND[w.kind] && typeof k.buildInstance === "function";
             })[0];
         if (!T || !g || !K) return null;
+        // DIE FLÜGEL IM MASS DES BAUS: die Bühne stellt sie in die Ruhe der Welt (`B.fluegel`, die Fern-Pose des Tors), der Kern
+        // baut sie zu — gemessen wird der Bau, nie die Pose (portale: die Wurzel 9,18 m tief gegen 8,39 m, die Flügel offen)
+        var A = stammKlasse(),
+            zu = new Map(),
+            fA = new T.Matrix4(),
+            fB = new T.Matrix4();
+        ((g.userData.werk && g.userData.werk.fluegel) || []).forEach(function (f) {
+            if (!A || f.mesh.parent !== g) return;
+            A._fluegelSchwenk(f.tuer, 0, fA, fB);
+            var m = new T.Matrix4().multiplyMatrices(f.welt, fA);
+            zu.set(f.mesh, f.tuer.basis ? m.multiply(f.tuer.basis) : m);
+        });
         // gemessen im Rahmen der Wurzel (w28-studio-seiten): der Teller der Bühne dreht das Werk ins Streiflicht, seine Maße nicht
         var mass = function (o, sicht) {
             var b = new T.Box3(),
@@ -1660,7 +1672,7 @@
                     if (!x.geometry.boundingBox) x.geometry.computeBoundingBox();
                     m.copy(x.geometry.boundingBox);
                     if (x.isInstancedMesh) x.getMatrixAt(i, im), m.applyMatrix4(im);
-                    b.union(m.applyMatrix4(rel.multiplyMatrices(rahmen, x.matrixWorld)));
+                    b.union(m.applyMatrix4(o === g && zu.has(x) ? zu.get(x) : rel.multiplyMatrices(rahmen, x.matrixWorld)));
                 }
             });
             return b.isEmpty() ? null : b.getSize(new T.Vector3()).toArray().map(function (v) {
