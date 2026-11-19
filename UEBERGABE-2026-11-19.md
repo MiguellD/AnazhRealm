@@ -1,84 +1,64 @@
-# Übergabe 19.11. nachmittags (Konto 15, Koordinator an der Radeon — die letzte Fable-Sitzung)
+# Übergabe 19.11.2026, 16:31 — Koordinator an der Radeon (Konto 15, letzte Fable-Sitzung)
 
-Stand nach LAGE 75a0ba45 (15:09). Budget gelesen kurz vor 15:13: Woche alle Modelle 84 %, Fable 97 % (Woche endet 24.11. 08:59 Ortszeit),
-Extra-Usage aus. Notbremse bei 98 % alle Modelle: TaskStop, notbremse.sh, dieses Blatt nachziehen.
-Wer hier weitermacht, liest zuerst den LAGE-Block, dann dieses Blatt, fährt den Blick (`messplatz-blick.cjs --kurz`), dann stempelt er.
+Dieses Blatt ersetzt die Fassung mit den Nachträgen. Budget 16:28: Woche alle Modelle 86 %, Fable 97 %, Extra-Usage aus; die
+Woche endet am 24.11. 09:00 Ortszeit. Wer weitermacht: LAGE-Block lesen, dieses Blatt lesen, `messplatz-blick.cjs --kurz` fahren,
+dann stempeln. Geräte (OMEN GTX 1060, GTX 1050) laufen auf Opus und melden nur Abgabe an EINEM Kopf oder harten Block.
 
-## Was heute gelandet und gesetzt ist
-- main 986eff04 (z623 grün 14:17). Landungen: heute 6, gestern 15. Karte 2: 35 von 1 718 (Rate 5,0 je Tag gegen nötige 60,1).
-- Gestempelt, im Zug wartend: `w28-licht-eine-skala` (cec1add5), `w28-bau-rezept`, `w28-kern-sprossen`, `w28-laub-kante`.
-- Regel E4.3 (Äste mit Frist) läuft zum ersten Mal: 164 Zweige → `refs/archiv/2026-11-19/<name>`; Verzeichnis
-  `zug/archiv/1911-frist-trocken.txt`, Befehle `…-befehle.txt`. Log des Laufs im Scratch `werkzeug/frist-lauf.log`
-  (ENDE-Zeile mit gut/rot). Bricht der Lauf ab: die Befehle sind je Zweig mit Lease gesichert, den Rest ab der letzten GUT-Zeile
-  neu fahren; danach `git ls-remote origin 'refs/archiv/2026-11-19/*' | wc -l` gegen die GUT-Zahl.
-- Werkzeug in `zug/dienst/`: `ungelandet.cjs --frist [--stunden 72] [--befehle]`, Blick `--kurz` mit PULS und LANDUNG,
-  `radeon-dienst.sh` mit `pushe()` ROT. Der Radeon-Dienst liest das erst nach seinem nächsten Start; nicht im Lauf tauschen.
-  An der Radeon sind die installierten Dateien von Hand geändert: beim nächsten `start.sh` kommt der Hand-Änderungs-Alarm,
-  er ist hier falsch (installiert = koordination 75a0ba45).
+## 1 Köpfe (per ls-remote, 16:31)
+main 986eff04 · integ-probe 00f9064a (Zug z625, Batterie läuft) · koordination: siehe LAGE.
 
-## In Fahrt (Opus), je mit dem nächsten Handgriff
-1. **Lichtmesser** GESTEMPELT 15:31 als `w28-laub-kante-2` (80471c53), wartet im Zug; Folge-Schnitt Ankunft läuft als Opus im Baum `AnazhRealm-probe`, Zweig `licht-ankunft`, Soll `vision/licht/soll-ankunft-umstellen.md`. (Erledigt: Stempel aus dem Scratch
-   `licht/bau/stempel.txt` nach NEU `refs/heads/w28-laub-kante-2` (`git commit-tree "$V^{tree}" -p $V -F stempel.txt`; vorher
-   Kopf unverändert, Ziel frei, `git merge-tree --write-tree <main> $V | wc -l` = 1). Konflikt mit der Licht-Welle in
-   `spec/asset-contract/v1/golden/manifest.json` + `recipes.json`: wer als Zweiter landet, prägt neu. Danach bestellen: der
-   Folge-Schnitt Ankunft (Lade-Bilder im vollen Takt, sobald nur der Term „licht“ offen ist, `stamm/dirigent-ankunft.js`), mit
-   Kalt-Ankunft vorher↔nachher — das Umstellen kostet heute +1,1 s (Genesis) bis +3,0 s (Wiese) gegen Pflicht B.
-2. **Herde** (Bau H1, Baum `AnazhRealm-leben`, Zweig `herde-gesetz`, noch nicht auf origin). Bei Abgabe: die NACHHER-Kontaktbögen
-   selbst ansehen (Scratch `leben/herde/kontakt-nachher-*.jpg`), S1–S5 aus `vision/leben/herde/entscheid-herde.md` urteilen, das
-   Blatt dem Schöpfer senden. Stempel nur zusammen mit `leben-leser` (a9465011) und `leben-erbe`.
-3. **Fresser Kreatur-Linse** (Leser, Baum `AnazhRealm-probe2`, Zweig `kreatur-linse-werk`): Täter beim Namen, Heilung als EIN
-   Commit. Vorbild Fahr-Linse: Heil-Commit ohne Arbeitsbaum auf main heben
-   (`git merge-tree --write-tree --merge-base <c>^ origin/main <c>` → `git commit-tree <tree> -p <main>`), Vorprüfung, Stempel.
-   Verdacht, ungeprüft: dieselbe Wurzel wie die Vendor-Tür der Licht-Welle (`SpriteNodeMaterial`).
-4. **Bergung, sieben Äste** (Leser, nur lesen): Blatt im Scratch `bergung/aeste-7.md`, je Ast Urteil a/b/c. Entscheid danach:
-   (a) und (c) wandern mit Grund ins Archiv, (b) bekommt einen Besitzer mit Datum.
-5. **OMEN (GTX 1060):** Los-Hülle (`los-huelle` 0fa7cc45, zieht main nach) → bei Abgabe Vorprüfung, Stempel `w28-los-huelle`
-   aus dem Scratch `los/stempel.txt`. Runde 498/1428 am f68dbf09, Punkt 5 (Buchung je Station) steht.
-6. **GTX 1050:** Licht Welle 2, Zensus; erster Punkt die Mond-Phase aus der Welt-Uhr (`stamm/bild-himmel.js:1150`, ewiger Vollmond
-   = sternloser Nacht-Himmel).
-7. **Cloud** `leben-erbe` 3888d21c (Epoche + Stand): Bericht kommt als `cloud-post/leben-erbe.md`; Ep2 ≤ 4 s und St2 ≤ 0,5 s an
-   der langsamen Kern-Klasse lokal nachmessen.
+## 2 Im Zug und gestempelt
+| Zweig | Stand | Nächster Handgriff |
+|---|---|---|
+| `w28-laub-kante-2` 80471c53 (Lichtmesser) | fährt allein in z625, Vorprüfung war 18/18 | landet von selbst bei grüner Batterie. Kosten als Zahl bei Pflicht B: Kalt-Ankunft Radeon Genesis 11,5 → 21,0 s, Wiese +2,5 s. NICHT zurückziehen (Wort des Schöpfers 19.11.: der Kaltstart ist kein Tor). |
+| `w28-licht-eine-skala` cec1add5 (Licht Welle 1) | z624 ROT am echt-Bein des OMEN: „K9 NACHT nachtOben 0 · nachtUnten 0“ (Wasser-Bild), „RAUCH: der Kamin legte keinen Satz an“ (Post-Kette) | Rest liegt beim Macher GTX 1050 (Zweig `licht-eine-skala` 21e5a4d6); bei Abgabe neue Vorprüfung, neuer Stempel-Name `w28-licht-eine-skala-2` |
+| `w28-laub-kante` 76d36e57 | wartet | landet mit dem Zug; kreuzt die Licht-Wellen in `spec/asset-contract/v1/golden/manifest.json` + `recipes.json` — wer später landet, prägt neu |
+| `w28-bau-rezept` ff2b8341 | rote Batterie (Kreatur-Linse, Probe `bewohner`: 4 Steckenbleiber an der werkstatt, Durchdringung 40 Takte) | Heiler läuft, siehe 3.2 |
+| `w28-kern-sprossen` df03a17c | rote Batterie (Wege 3 statt 3–8, Haltung 1,299° über Soll 1°; Täter die eigenen Charakterzüge in `koerper-core.js`) | OHNE Heiler — der nächste freie Opus-Platz |
 
-## Als Nächstes zu bestellen (noch kein Arbeiter)
-- **EINHEIT, Bild-Spike STUFE** an der Radeon, sobald die GPU frei ist: Soll B1–B5 steht in
-  `vision/einheit/entscheid-einheit.md` E6 — vor der Messung gesetzt, wird nicht bewegt. 6 Vorlagen (3 Häuser verschiedener
-  Stile, darunter japanisch; 3 Wagen). Spike nein = stopp. Danach Welle a → Stoff-Spike → Welle b → Welle c.
-- Träger-Schnitt für fahrende Wagen (`lack-luma-fahrt`), nach dem Stufen-Spike.
+Befund zum Fresser: `zug/fresser-kreatur-linse.md` (kein gemeinsamer Täter, main ist grün).
 
-## Regeln, die heute neu gelten
-- „angenommen“ erst nach der Batterie, nie nach dem Bildpaar allein (mein Fehler 12:58).
-- Kein Stempel ohne Soll-Datei vor der Welle (E4.1).
-- Regeln des Apparats setzt der Koordinator selbst, ohne Box-Frage; Zweige archivieren (verschieben) ja, vernichten nie.
-- Geräte melden nur Abgabe an EINEM Kopf oder harten Block; alles Neue startet als Opus; höchstens 3 lokale Arbeiter.
+## 3 Arbeiter in Fahrt (Opus, lokal; ihre Abgabe landet in dieser Sitzung — endet sie, liegt das Ergebnis im Zweig und im Scratch)
+Scratch-Wurzel: `C:\Users\micha\AppData\Local\Temp\claude\b95c25d6c0e867eb\f6f6f5fc-61d9-4857-94d5-77df7097c28a\scratchpad\`
+1. **Herde** — Baum `AnazhRealm-leben`, Zweig `herde-gesetz` (15bdb5f0, Posen-Gesetz H1). Am Bogen geurteilt: echter Schritt,
+   nicht stempelbar. Rest beim Bauer: R1 das äsende Tier sinkt mit dem Rumpf (Soll Widerrist = Stand ± 5 %; Leib-Anteil Kopf unten
+   0,042 gegen Satz 1,0) · R2 Flucht als Kapseln auf 8 m (Täter benennen) · R3 Bühne: Pixel-Zeile an die Nah-Kamera, Wolf-Ort
+   ohne hohes Gras · R4 „stehen“ zeigt Schritt-Posen. Abgabe: `leben\herde\kontakt-nachher2-*.jpg`, `mess-nachher2.json`. Die Bögen
+   selbst ansehen. Stempel nur zusammen mit `leben-leser` (a9465011) und `leben-erbe` (3888d21c); `gate:kreatur-takt` ist dort am
+   Basis-Kopf rot.
+2. **Heiler bau-rezept** — Baum `AnazhRealm-probe2`, Zweig `bau-rezept-tuer` (noch nicht auf origin). Abgabe: `bewohner`
+   vorher↔nachher, `gate:haus-welt` W7, Bild `bau-rezept\`. Dann Vorprüfung am Kopf, Stempel `w28-bau-rezept-2`.
+3. **Lichtmesser-Nachzug** — Baum `AnazhRealm-probe`, Zweig `licht-lesung-ev`: die Lesung gilt in EV statt in 0,05°
+   (`_bildSichtSteht`). Soll A1–A6 in `vision/licht/soll-ankunft-umstellen.md`. Er hält nichts auf; reißt A6 (Güte der Lesung),
+   fällt er. Der erste Hebel (`licht-ankunft` 51f6e767) ist gefallen und zurückgenommen.
+4. **OMEN:** Los-Hülle (`los-huelle` 34d507d6, schiebt). Rest: `bewohner` 5 Leiber statt ≤ 4, laterne_dorf 2 Takte. Bei Abgabe
+   Vorprüfung, Stempel `w28-los-huelle` aus `los\stempel.txt`. Daneben Runde der Stationen (Punkt 5, Buchung je Station).
+5. **GTX 1050:** Rest der Licht Welle 1 (oben), danach Welle 2 — erster Punkt die Mond-Phase aus der Welt-Uhr
+   (`stamm/bild-himmel.js:1150`, der ewige Vollmond löscht die Sterne).
+6. **Cloud:** `leben-erbe` 3888d21c (Epoche + Stand), seit Stunden ohne Push — prüfen, ob die Sitzung noch lebt; Bericht käme als
+   `cloud-post/leben-erbe.md`.
 
-## Ehrlich offen
-- Pflicht-OFFEN Rest A · B · C · E · F unverändert. Die Stand-Zeile in CLAUDE.md trägt noch V18.546.339.
-- Karte 2 erreicht bei dieser Rate am 17.12. etwa 175 Sprossen; ob die drei Grundgesetze die Rate heben, zeigt erst Welle a.
-- Der zweite Fresser ist noch ohne Namen; `w28-bau-rezept` trägt dazu eine eigene, unbelegte VK-Zeile.
+## 4 Entschieden, noch ohne Arbeiter (in dieser Reihenfolge)
+1. Heiler für `w28-kern-sprossen` (Soll-Zeilen der Probe bleiben).
+2. **EINHEIT, Bild-Spike STUFE** (Radeon, GPU): Soll B1–B5 in `vision/einheit/entscheid-einheit.md` E6, vor der Messung gesetzt.
+   6 Vorlagen (3 Häuser, darunter japanisch; 3 Wagen). Spike nein = stopp. Danach Welle a → Stoff-Spike → Welle b → Welle c.
+   Die Reihenfolge steht auch in `vision/PLAN-1712.md`.
+3. `w28-reise-raeumt` 6e659b8e (Bergung, Besitzer zum 20.11.): zuerst seine Linse an der GPU, dann Konflikte gegen main.
+4. Träger-Schnitt für fahrende Wagen (`lack-luma-fahrt`), nach dem Stufen-Spike.
 
-## Nachtrag 16:24 — was sich seit dem Blatt oben geändert hat (dieser Abschnitt gilt vor dem Text darüber)
-- **Der Stempel `w28-laub-kante-2` ist ZURÜCKGEZOGEN.** Kalt-Ankunft gegen den Vor-Kopf 6113b27e: Genesis +9,5 s, Wiese +2,5 s
-  (ABAB, je 3 Boots, Radeon). Sperr-Zeile LANGSAMER für den Zug-Kandidaten 00f9064a in `zug/abab.txt`; der Kopf liegt unter
-  `refs/archiv/2026-11-19/w28-laub-kante-2-zurueck` (80471c53). Der Folge-Schnitt „Lade-Bilder im vollen Takt“ ist gefallen
-  (`licht-ankunft` 51f6e767, zurückgenommen). Neue Welle, Opus, Baum `AnazhRealm-probe`, Zweig `licht-lesung-ev`: die Lesung gilt in
-  EV statt in Grad; Soll A1–A6 in `vision/licht/soll-ankunft-umstellen.md` + Nachtrag. Erst wenn A1 hält, neue Vorprüfung und ein
-  neuer Stempel (Name `w28-laub-kante-3`).
-- **Fresser „Kreatur-Linse“:** kein gemeinsamer Täter (`zug/fresser-kreatur-linse.md`). `w28-bau-rezept` und `w28-kern-sprossen`
-  tragen eine rote Batterie und landen so nicht. Heiler für bau-rezept läuft (Baum `AnazhRealm-probe2`, Zweig `bau-rezept-tuer`);
-  kern-sprossen ist ohne Heiler; der Rest von `los-huelle` ging an den OMEN.
-- **Herde:** `herde-gesetz` 15bdb5f0 am Bogen geurteilt, nicht stempelbar; der Bauer hat die Reste R1–R4 (LAGE d21844fe) und
-  liefert `kontakt-nachher2-*.jpg`.
-- **Bergung:** sechs Äste im Archiv, `w28-reise-raeumt` 6e659b8e hat einen Besitzer zum 20.11. (nächster freier Opus-Platz).
-- **Äste-Frist:** erster Lauf durch, 170 Refs unter `refs/archiv/2026-11-19/` (+1 der zurückgezogene Stempel).
-- **Zug:** z624 (`w28-licht-eine-skala` allein) endete mit EXIT=1 um 15:55 — der Grund ist noch nicht gelesen; das ist der erste
-  Handgriff des nächsten Takts (`rot-text.cjs --sha d8fe7358`).
-- **Regeln neu:** eine Preis-Zahl im Stempel braucht ABAB mit ≥ 3 Läufen je Seite, nie einen Einzellauf. Ein Stempel wird über
-  die Sperr-Zeile in `zug/abab.txt` + Archiv-Verschiebung zurückgezogen, nie über den Zug-Dienst von Hand.
+## 5 Was heute gesetzt wurde
+- **Äste-Frist (E4.3):** 164 Zweige + 6 Bergungs-Äste liegen unter `refs/archiv/2026-11-19/` (derselbe SHA, ein Push holt zurück);
+  Verzeichnis `zug/archiv/1911-frist-trocken.txt`, Log `zug/archiv/1911-frist-lauf.log`, Bergungs-Urteile
+  `bericht/1911-bergung-aeste-7.md`. Neun „ungeklärte“ Familien stehen mit SHA in LAGE (eb5c321d).
+- **Werkzeug** in `zug/dienst/`: `ungelandet.cjs --frist`, Blick mit PULS und LANDUNG, `pushe()` am Radeon-Dienst ROT. An der
+  Radeon kommt beim nächsten `start.sh` der Hand-Änderungs-Alarm; er ist dort falsch (installiert = koordination).
+- **Regeln:** „angenommen“ erst nach der Batterie · kein Stempel ohne Soll-Datei vor der Welle · eine Preis-Zahl im Stempel braucht
+  ABAB mit ≥ 3 Läufen je Seite · der Kaltstart ist kein Tor: Zahl benennen und landen, nie zurückziehen · Regeln des Apparats setzt
+  der Koordinator selbst · höchstens 3 lokale Arbeiter, alles Neue als Opus.
 
-## Nachtrag 16:26 — gilt vor allem darüber
-- **Der Rückzug des Lichtmesser-Stempels ist ZURÜCKGENOMMEN** (Wort des Schöpfers: „du schneidest wieder dinge wegen diesem
-  verdammten kaltstart?“). `w28-laub-kante-2` (80471c53) steht wieder als Kopf, die Sperr-Zeile in `zug/abab.txt` ist entfernt, er
-  landet mit dem Zug. Die Kosten (Kalt-Ankunft Genesis +9,5 s, Wiese +2,5 s) stehen als Zahl bei Pflicht B, sie sind kein Tor.
-  `licht-lesung-ev` läuft als Nachzug und hält nichts auf. Regel: nie einen Bild-Gewinn wegen der Kalt-Ankunft zurückziehen.
-- Zug z624 (`w28-licht-eine-skala`) ROT am echt-Bein des OMEN: K9 NACHT (nachtOben 0, nachtUnten 0) und RAUCH (Kamin ohne Satz,
-  Probe blind) — Rest beim Macher GTX 1050.
+## 6 Ehrlich
+- Landungen heute 6 (gestern 15), Karte 2: 36 von 1 718, Rate 5,0 je Tag gegen nötige 60,1. Schneller wurde es heute nicht.
+- Drei meiner Stempel hielten nicht: bau-rezept und kern-sprossen trugen eine rote Batterie, licht-eine-skala fiel am echt-Bein.
+  Die Vorprüfung fährt das echt-Bein der Karten nicht — das ist die Lücke, an der Licht Welle 1 durchkam (noch ohne Heilung).
+- Den Lichtmesser-Stempel habe ich wegen der Kalt-Ankunft zurückgezogen und nach dem Wort des Schöpfers wieder eingesetzt.
+- Pflicht-OFFEN Rest A · B · C · E · F unverändert; die Stand-Zeile in CLAUDE.md trägt noch V18.546.339.
