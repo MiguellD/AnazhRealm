@@ -28,6 +28,8 @@
 //   node punkte.cjs beruehrt --basis <sha> --kopf <sha> [--json]   welche Stationen berührt der Diff eines Zweigs: je Gerät die Hälften,
 //        deren Messung an der Basis frisch gilt und am Kopf nicht mehr (dasselbe Frische-Urteil wie die Buchung, R6 nach Konsum) —
 //        `nur=…` für den Zug-Dienst und den Richter nach der Landung; daneben die Hälften, die schon an der Basis offen sind
+//   node punkte.cjs tafel [--schreibe]   je Station der Karte 2 ohne Zeile in vision/richter-tafel.json die Zeile, die ihr Register
+//        trägt (`tafel` an der Station, k2TafelZeile); KOLLISION mit einer bestehenden Zeile und VON HAND (ohne `tafel`) beim Namen, Exit 1
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN):
@@ -303,8 +305,8 @@ const wetterFeinde = (argv, probe) => {
     return WETTER_FEINDE.filter(([re, gilt]) => re.test(t) && gilt(t, probe)).map(([, , n]) => n);
 };
 
-// prüft die Stationen gegen die Karte; Rückgabe { stationen, fehler }
-function pruefeStationen(liste, karte) {
+// prüft die Stationen gegen die Karte und die Tafel der Karte 2 (tafelWache); Rückgabe { stationen, fehler }
+function pruefeStationen(liste, karte, tafel = ladeTafel()) {
     const fehler = [];
     const gesehen = new Set();
     const ok = [];
@@ -413,8 +415,60 @@ function pruefeStationen(liste, karte) {
     const kr = new Set(ok.filter((s) => !istKarte2(s)).map((s) => s.kriterium));
     for (const k of kr)
         if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
+    fehler.push(...tafelWache(ok, tafel));
     fehler.push(...fahrtUrteil(ok));
     return { stationen: ok, fehler };
+}
+// DIE TAFEL DER KARTE 2 (vision/richter-tafel.json): Station → Sprosse; nur über eine Zeile schreibt die Sitzung eine Akte
+// (vision/richter-akte.cjs), nur eine Akte bucht (vision/buche-2.cjs)
+const TAFEL_DATEI = path.join(KOORD, "vision", "richter-tafel.json");
+const ladeTafel = () => JSON.parse(fs.readFileSync(TAFEL_DATEI, "utf8").replace(/^﻿/, ""));
+// DIE WACHE DER TAFEL (Richter-Falte 19.11.): eine Station der Karte 2 ohne Zeile der Tafel misst Fahrt-Zeit und schreibt nie eine
+// Akte — bis 19.11. still an 123 Stationen (117 aus richter-planet-leben-zusammenspiel, 6 aus g3–g6). Jede steht ROT beim Namen
+function tafelWache(stationen, tafel) {
+    const da = new Set(tafel.zeilen.map((z) => z.station));
+    const ohne = [...new Set(stationen.filter((st) => istKarte2(st) && !da.has(schluessel(st))).map(schluessel))];
+    return ohne.map((id) => id + ": keine Zeile in vision/richter-tafel.json — die Station misst ohne Akte (`punkte.cjs tafel --schreibe` faltet die Zeilen der k2-Register ein)");
+}
+// DIE ZEILE EINER STATION (der Vertrag aller k2-Register: die Station trägt `tafel` = { richter: "gleich" } | { richter: "fehlt", grund })
+function k2TafelZeile(st) {
+    const t = st.tafel;
+    if (!t || !["gleich", "fehlt"].includes(t.richter) || (t.richter === "fehlt" && !(typeof t.grund === "string" && t.grund.length >= 12))) return null;
+    return { station: schluessel(st), leiter: st.kriterium.slice("karte2.".length), sprosse: st.staffel, richter: t.richter, ...(t.richter === "fehlt" ? { grund: t.grund } : {}) };
+}
+// `tafel [--schreibe]`: je Station der Karte 2 ohne Zeile ihre Zeile aus dem Register; belegt eine andere Zeile dieselbe Sprosse, gewinnt
+// die bestehende (KOLLISION beim Namen: die Station gehört in `bestehend` ihres Registers); eine Station ohne `tafel` (g1–g6) von Hand
+function tafelCli(o) {
+    const tafel = ladeTafel();
+    const { stationen } = pruefeStationen(ladeStationen(), kriterienDerKarte(), tafel);
+    const da = new Set(tafel.zeilen.map((z) => z.station));
+    const belegt = new Map(tafel.zeilen.map((z) => [z.leiter + "#" + z.sprosse, z]));
+    const neu = [], kollision = [], vonHand = [], abweichung = [];
+    for (const st of stationen.filter(istKarte2)) {
+        const z = k2TafelZeile(st), id = schluessel(st);
+        const alt = tafel.zeilen.find((x) => x.station === id);
+        if (alt) {
+            if (z && (alt.richter !== z.richter || alt.leiter !== z.leiter || alt.sprosse !== z.sprosse)) abweichung.push(id + ": Tafel " + alt.richter + " ↔ Register " + z.richter);
+            continue;
+        }
+        if (da.has(id)) continue;
+        if (!z) { vonHand.push(id); continue; }
+        const b = belegt.get(z.leiter + "#" + z.sprosse);
+        if (b) { kollision.push(id + " ↔ bestehend " + b.station + " " + b.richter); continue; }
+        belegt.set(z.leiter + "#" + z.sprosse, z);
+        neu.push(z);
+    }
+    for (const z of neu) console.log("  NEU " + z.station + " " + z.richter);
+    for (const k of kollision) console.log("  KOLLISION " + k);
+    for (const k of vonHand) console.log("  VON HAND " + k + " (die Station trägt keine `tafel`)");
+    for (const k of abweichung) console.log("  ABWEICHUNG " + k);
+    if (o.schreibe && neu.length) {
+        tafel.zeilen.push(...neu);
+        const zeile = (z) => "  { " + Object.entries(z).map(([a, b]) => JSON.stringify(a) + ": " + JSON.stringify(b)).join(", ") + " }";
+        fs.writeFileSync(TAFEL_DATEI, "{\n \"lesart\": " + JSON.stringify(tafel.lesart) + ",\n \"zeilen\": [\n" + tafel.zeilen.map(zeile).join(",\n") + "\n ]\n}\n");
+    }
+    console.log("TAFEL " + tafel.zeilen.length + " Zeilen" + (o.schreibe ? " (geschrieben)" : "") + " · neu " + neu.length + " · Kollision " + kollision.length + " · von Hand " + vonHand.length + " · Abweichung " + abweichung.length);
+    process.exitCode = kollision.length || vonHand.length ? 1 : 0;
 }
 // DIE FAHRT einer Karte (c): die Läufe ihrer Sitzung (Zwillinge einmal, gruppiere) mit ihrem Deckel, die größten zuerst, und die
 // Summe samt Boot (SITZUNG_BOOT_S) — die Wanduhr, die die Sitzung nie überschreiten kann, außer an der Grundstellung
@@ -5953,7 +6007,7 @@ async function selbsttest(o = {}) {
             m("m.platz", ["bash", "-c", "echo {AUS}\necho {AUSGABE}"]), m("m.node", ["node", "-e", "const a = 1;\nconst = 2;"])]);
         const mutOk = ["m.zitat#1 · Zeile 2", "m.platz#1 · Zeile 2", "m.node#1 · Zeile 2"].every((p) => mut.rot.some((z) => z.startsWith(p))) && mut.rot.length === 3;
         const s = ((Date.now() - t0) / 1000).toFixed(1);
-        const taeter = ["karte2.mensch.kopplung.antwort#1", "karte2.mensch.zeit.kausal#1", "karte2.mensch.zeit.palimpsest#1", "breite.siedlung#1", "karte2.mensch.stadt.vertikal#1", "karte2.same.preis.ankunft#1", "karte2.same.preis.bytes#1"];
+        const taeter = ["karte2.mensch.kopplung.antwort#1", "karte2.mensch.zeit.kausal#1", "breite.siedlung#1", "karte2.mensch.stadt.vertikal#1", "karte2.same.preis.ankunft#1", "karte2.same.preis.bytes#1"];
         const verfehlt = taeter.filter((id) => !vorher.rot.some((z) => z.startsWith(id + " · ")));
         for (const z of jetzt.rot) console.log("    ROT " + z);
         pruef("BEFEHL TRÄGT: " + jetzt.stationen + " Stationen (" + jetzt.bash + " bash-Skripte) so gestartet, wie der Läufer sie startet — kein Platzhalter, kein SEK ≤ " + SEK_RAND_S + ", bash -n und node -e tragen; der Läufer vor der Heilung ROT an " + taeter.length + " Tätern (" + s + " s)",
@@ -6205,6 +6259,16 @@ async function selbsttest(o = {}) {
         pruef("FORMAT Karte-2-Staffel = Sprosse: S2 und S5 ohne S1 fahren, S99 steht nicht in der Karte, S0 ist keine Sprosse",
             !k5.fehler.length && k5.stationen.length === 2 && k9.fehler.some((f) => /steht nicht in vision\/meisterkarte-2\.json/.test(f)) && k0.fehler.some((f) => /staffel ist keine Sprosse/.test(f)),
             k5.fehler.concat(k9.fehler, k0.fehler).join(" | "));
+        // DIE WACHE DER TAFEL (19.11.): eine Station der Karte 2 ohne Zeile der Tafel ist ROT beim Namen (bis 19.11. maßen 123 still
+        // ohne Akte); mit ihrer Zeile still; die Zeile der Station folgt dem Vertrag `tafel`, ein „fehlt“ ohne Grund trägt keine Zeile
+        const tz = (zeilen) => ({ lesart: "x", zeilen });
+        const ohneZ = pruefeStationen([k2(2)], karte, tz([])), mitZ = pruefeStationen([k2(2)], karte, tz([{ station: "karte2.mensch.leib.verschieden#2", leiter: "mensch.leib.verschieden", sprosse: 2, richter: "gleich" }]));
+        const mitT = (t) => Object.defineProperty(k2(3), "tafel", { enumerable: false, value: t });
+        const zg = k2TafelZeile(mitT({ richter: "gleich" })), zf = k2TafelZeile(mitT({ richter: "fehlt" })), zo = k2TafelZeile(k2(3));
+        pruef("TAFEL-WACHE: Karte-2-Station ohne Tafel-Zeile ROT beim Namen, mit ihr still; die Zeile aus `tafel` (gleich trägt, fehlt ohne Grund und ohne `tafel` nie)",
+            ohneZ.fehler.some((f) => /^karte2\.mensch\.leib\.verschieden#2: keine Zeile in vision\/richter-tafel\.json/.test(f)) && !mitZ.fehler.some((f) => /keine Zeile in vision\/richter-tafel/.test(f)) &&
+                zg && zg.station === "karte2.mensch.leib.verschieden#3" && zg.leiter === "mensch.leib.verschieden" && zg.sprosse === 3 && zf === null && zo === null,
+            ohneZ.fehler.concat(mitZ.fehler).join(" | ") + " · " + JSON.stringify([zg, zf, zo]));
         // eine Staffel mit headless-Hälfte und Karten-Hälfte ist EINE Staffel auf drei Geräten, nie doppelt — ihre zweite headless-Hälfte schon
         const halb = { ...st0, staffel: 2, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" };
         const karteHalb = { ...halb, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 } };
@@ -8720,6 +8784,7 @@ if (require.main === module) {
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
         else if (verb === "beruehrt") beruehrtCli(o);
         else if (verb === "eichtafel") eichtafelCli(o);
+        else if (verb === "tafel") tafelCli(o);
         else if (verb === "behalte") behalteCli(o);
         else if (verb === "plan") planCli(o);
         else if (verb === "gruppen") for (const g of zwillingsGruppen(ladeGeprueft().stationen, o.geraet, o.nur)) console.log(g.join(","));

@@ -272,6 +272,10 @@ function leiter(def) {
             quelle: "KARTE2 " + def.leiter + " S" + S.nr + " = " + S.richter,
         };
         if (zeit) st.mass = new Function("j", "lauf", "const S = " + JSON.stringify(S) + ";\nreturn (" + sprosseMass + ")(S, j);");
+        // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): „gleich“, oder „fehlt“, wo ein Auge am Gerät urteilt
+        Object.defineProperty(st, "tafel", { enumerable: false, value: S.auge
+            ? { richter: "fehlt", grund: "Blindpaar: die Station legt das Bild an der Pose " + S.auge.pose + " (Vorbild " + S.auge.vorbild + ") und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge" }
+            : { richter: "gleich" } });
         return st;
     });
 }

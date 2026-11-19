@@ -26,7 +26,7 @@
 //       { auge: { pose, vorbild } } — der Blindpaar-Richter: die Probe schießt das Bild an fester Pose, GRÜN nie ohne Geräte-Urteil
 //   bestehend { <n>: "<Station>" } — die Sprosse urteilt schon eine Station (Tafel „gleich“ oder karte2.…#n): keine zweite;
 //             { <n>: { station, fehlt } } — sie misst den Richter nicht ganz in der Sitzung (z. B. nur headless): Tafel-Zeile „fehlt“ mit Grund.
-//             Führt die Tafel die Zuordnung noch nicht, trägt `--zeilen` sie als neue Zeile
+//             Die Zuordnung trägt vision/richter-tafel.json (von Hand; die Zeilen der Stationen selbst faltet `punkte.cjs tafel`)
 //   unklar    { <n>: "<Vorschlag in einem Satz>" } — der Richter ist unmessbar oder widersprüchlich: keine Station, das Blatt nennt ihn
 //   proben    { <n>: [{ name, j, gruen, zahl? }] } — die Mutanten der Leiter (dazu erzeugt die Fabrik je Sprosse ihre eigenen)
 //
@@ -42,7 +42,7 @@
 //   fehlt die Sprosse im Lauf oder warf ihre Messung: „S<n>: keine Messung der Sprosse“ — dasselbe Urteil wie über den LEEREN Lauf,
 //          also UNGEMESSEN beim Namen (punkte.cjs keinUrteil), nie ein ROT des Spiels
 //
-// Die Aufrufe: node k2-mensch.js --abdeckung | --zeilen | --selbsttest [--perspektive p]
+// Die Aufrufe: node k2-mensch.js --abdeckung | --herkunft | --selbsttest [--perspektive p]
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -346,7 +346,15 @@ function leiter(id, def) {
     const SPEC = { leiter: id, sprossen: Object.fromEntries(nrn.map((n) => [n, sprossen[n].auge ? { auge: sprossen[n].auge } : { umfang: sprossen[n].umfang || null, masse: sprossen[n].masse }])) };
     const probe = { ...probeBefehl(rumpf(def.messe), sek, { K: k2Werkzeug, SPEC: JSON.stringify(SPEC), ...seite }), ...(def.mutiert ? { mutiert: true } : {}) };
     leitern.push({ id, def, nrn });
-    return nrn.map((n) => ({
+    // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): ein Augen-Richter, dessen Umfang die Welt nicht trägt,
+    // urteilt ROT „Umfang nicht erzeugbar“ — ein ganzes Urteil, die Zeile „gleich“; jeder andere Augen-Richter „fehlt“
+    const tafel = (n) => {
+        const sp = sprossen[n];
+        return sp.auge && sp.erwartet !== "nicht"
+            ? { richter: "fehlt", grund: "auge: die Station schießt das Bild an der Pose „" + sp.auge.pose + "“ gegen das Vorbild „" + sp.auge.vorbild + "“ — es zählt erst mit dem Urteil am Gerät (Blindpaar)" }
+            : { richter: "gleich" };
+    };
+    return nrn.map((n) => Object.defineProperty({
         kriterium: "karte2." + id,
         karte2: true,
         staffel: n,
@@ -360,7 +368,7 @@ function leiter(id, def) {
         proben: probenDer(id, n, sprossen[n], (def.proben || {})[n]),
         pfad: ["scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", ...def.pfad],
         quelle: "KARTE2 " + id + " S" + n + " = " + L.sprossen.find((s) => s.nr === n).richter,
-    }));
+    }, "tafel", { enumerable: false, value: tafel(n) }));
 }
 const F = { leiter, KAPITEL, LEITER };
 
@@ -412,31 +420,9 @@ function abdeckung() {
     }
     return je;
 }
-// nur: die eingefalteten Perspektiven (Komma-Liste) — die Zeilen stehen seit der Richter-Falte (19.11.) in vision/richter-tafel.json;
-// `--zeilen` druckt sie zum Einfalten, nie in eine Datei neben den Akten
-function zeilen(nur) {
-    const aus = [];
-    const je = nur ? new Set(String(nur).split(",")) : null;
-    for (const x of leitern)
-        for (const n of je && !je.has(x.perspektive) ? [] : x.nrn) {
-            const sp = sprosseVon(x, n);
-            // ein Augen-Richter, dessen Umfang die Welt nicht trägt, urteilt ROT „Umfang nicht erzeugbar“ — ein ganzes Urteil, die Zeile „gleich“
-            aus.push(sp.auge && sp.erwartet !== "nicht"
-                ? { station: "karte2." + x.id + "#" + n, leiter: x.id, sprosse: n, richter: "fehlt", grund: "auge: die Station schießt das Bild an der Pose „" + sp.auge.pose + "“ gegen das Vorbild „" + sp.auge.vorbild + "“ — es zählt erst mit dem Urteil am Gerät (Blindpaar)" }
-                : { station: "karte2." + x.id + "#" + n, leiter: x.id, sprosse: n, richter: "gleich" });
-        }
-    // die Zuordnungen auf bestehende Stationen, die die Tafel noch nicht führt
-    const TAFEL = JSON.parse(fs.readFileSync(path.join(KOORD, "vision", "richter-tafel.json"), "utf8")).zeilen;
-    for (const x of leitern) {
-        if (je && !je.has(x.perspektive)) continue;
-        for (const [k, b] of Object.entries(x.def.bestehend || {})) {
-            const station = typeof b === "string" ? b : b.station, n = +k;
-            if (TAFEL.some((z) => z.station === station && z.leiter === x.id && z.sprosse === n)) continue;
-            aus.push(typeof b === "string" ? { station, leiter: x.id, sprosse: n, richter: "gleich" } : { station, leiter: x.id, sprosse: n, richter: "fehlt", grund: b.fehlt });
-        }
-    }
-    return aus;
-}
+// DIE TAFEL-ZEILEN: seit der Richter-Falte (19.11.) trägt jede Station ihre Zeile selbst (`tafel`, oben) und `punkte.cjs tafel
+// [--schreibe]` faltet sie für ALLE k2-Register ein — der eigene Drucker `--zeilen` fiel als Zwilling (die bestehenden Zuordnungen
+// standen am 19.11. alle in vision/richter-tafel.json)
 function selbsttest(nur) {
     const falsch = [];
     let n = 0;
@@ -483,12 +469,7 @@ function selbsttest(nur) {
 if (require.main === module) {
     const a = process.argv.slice(2);
     const nur = a.includes("--perspektive") ? a[a.indexOf("--perspektive") + 1] : null;
-    if (a.includes("--zeilen")) {
-        const lesart = "Neue Zeilen der Richter-Tafel (Format vision/richter-tafel.json) aus der Richter-Fabrik des Kapitels mensch (meisterkarte-quelle/punkte/stationen/k2-mensch*.js, erzeugt mit `node k2-mensch.js --zeilen`): je Station einer Leiter EINE Zeile ihrer Sprosse. „gleich“: die Probe misst den ganzen Richter der Sprosse (GRÜN/ROT mit Zahl, „Umfang nicht erzeugbar“, „fehlender Leser“ — jedes ein Urteil); „fehlt“: die Sprosse trägt einen Prüfer/Blindpaar-Richter (R5/R11), die Station schießt das Bild, es zählt erst mit dem Urteil am Gerät. Der Koordinator faltet sie in die Tafel ein.";
-        const zs = zeilen(nur);
-        const sp = zs.map((z) => "  " + JSON.stringify(z).replace(/^\{/, "{ ").replace(/\}$/, " }").replace(/","/g, "\", \"").replace(/":/g, "\": ").replace(/,"/g, ", \""));
-        console.log("{\n \"lesart\": " + JSON.stringify(lesart) + ",\n \"zeilen\": [\n" + sp.join(",\n") + "\n ]\n}");
-    } else if (a.includes("--herkunft")) {
+    if (a.includes("--herkunft")) {
         // jedes Soll, das nicht wörtlich im Wortlaut steht, mit seiner Herleitung (das Blatt nennt jede)
         for (const x of leitern) {
             if (nur && x.perspektive !== nur) continue;
@@ -512,5 +493,4 @@ if (require.main === module) {
     }
 }
 module.exports.abdeckung = abdeckung;
-module.exports.zeilen = zeilen;
 module.exports.leitern = leitern;

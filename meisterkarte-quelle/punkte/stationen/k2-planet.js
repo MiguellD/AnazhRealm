@@ -52,8 +52,10 @@ const KERN = (() => {
         if (belegtMap) return belegtMap;
         belegtMap = new Map();
         try {
+            // die Zeile einer Leiter-Station (`karte2.<leiter>#<nr>`) belegt nie: sie ist die Zeile DIESER Station (Richter-Falte 19.11.);
+            // trägt ein anderes Register dieselbe Station, fällt der Schlüssel doppelt in pruefeStationen
             for (const z of JSON.parse(fs.readFileSync(path.join(BASIS, "vision", "richter-tafel.json"), "utf8")).zeilen)
-                if (z.richter === "gleich") belegtMap.set(z.leiter + "#" + z.sprosse, "Tafel: " + z.station);
+                if (z.richter === "gleich" && z.station !== "karte2." + z.leiter + "#" + z.sprosse) belegtMap.set(z.leiter + "#" + z.sprosse, "Tafel: " + z.station);
         } catch (_e) {
             /* ein Baum ohne Tafel: nur die Stationen */
         }
@@ -302,6 +304,11 @@ const KERN = (() => {
                 if (nr === 1) st.beide = true;
                 // DAS BLATT (vision/richter/fabrik-planet-leben-zusammenspiel.md) liest diese Felder; die Maschine nie
                 Object.defineProperty(st, "blatt", { enumerable: false, value: { perspektive: kapitel + "." + pid, auge: sp.auge || null, nicht: sp.nicht || null, leser: sp.leser || null, unklar: sp.unklar || null, ungefahren: L.ungefahren || "ungefahren am Gerät" } });
+                // DIE TAFEL-ZEILE (der Vertrag aller k2-Register, punkte.cjs k2TafelZeile): „gleich“ — die Station urteilt die Sprosse ganz;
+                // „fehlt“ — ein Auge (Blindpaar, R11) urteilt sie am Gerät, die Station schreibt keine Akte
+                Object.defineProperty(st, "tafel", { enumerable: false, value: sp.auge
+                    ? { richter: "fehlt", grund: "auge: die Station schießt das Bild an der Pose „" + sp.auge.pose + "“ gegen das Vorbild „" + sp.auge.vorbild + "“ — es zählt erst mit dem Urteil am Gerät (Blindpaar)" }
+                    : { richter: "gleich" } });
                 stationen.push(st);
             }
         }
