@@ -1,7 +1,7 @@
 {
  "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
  "geraet": "gtx",
- "zeit": "2026-11-18T23:58:34.089Z",
+ "zeit": "2026-11-19T00:21:55.817Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.macht.wehrbau#1": {
@@ -2317,170 +2317,124 @@
   "kf9f430dead73": "bVXRjpswEPyXPF7rcwj4AEv34IRIOalVc5+wttfAhUBkw9Gm6r9XcCEJkH0CNOOdnd01fxcnUAdI8fnDVeWCL54W3xcOPpE4tJ9onz/cgi+WKgAWcfEVVAix6WDK5qfaUZ1DSg4FlCk5Y+ka96x61tMdpsglBVlCdkTS2Brz4gLyVISAnLZb0e4p3dOQrtvX1ym1kKgrUoPBgSj1KvSBT4GNS0Eigcb0yS5gFniBzzjtI0rE/oMOId6FoO12mlFCqcdKjQ/MePztjxBbMVOoc8CaFHnphpxKM+mv+DXRvCptoSVnwKxAeyGBF4InB6G93e0+phOiKRrnRskiX7NVxCmdYVN0ucpqcrKVxHIwL16FHvAHTqenhpiRIikhklOfM8AyRTvWEAZMBZz+jqaHHuCIFkgJ2QUaL/1wJW/eUEp3cy1FL7xPMQiPtIxDMyJ2Pdy1nVNJ1L2k18/R7mtgk1Tc4n2SxKkst8exPcYwDUv+Yy7JZaDRkkPl6pumAACH7Uj6gRL7IJkyb8VceCv5smTRXS0RFbuZd64ydQsWSXpqLkQMkIWMC/E2A9dwPA5FqBVGbNo4V3eDfS+DBei9hHxw7kEfvtaAnDEvBlKolOcj3/wU0zo/LRwJyNTmxgzdlkyZ+NFwtljURFZVPSB9Db7i1Kfl1ZW4X4P1rYNJW6ntJn0Xk0inuvvTK1tfK5UvSxNw02+jmqFzW5MWVHbtj5EIMX8APaMtMMWRjTqQPugOfac0GB6+jeb1POvyOcdifHtGcajjy6SPW9KiPUgoD4NMJn3m9eO3/iWGkV8mNKH79t6fjdCtEG+bddQddkJFT7YyeXfT0Qwal0FR334D//4D",
   "kb04d74aafa97": "hVXbjpswEP2XPG7rdbh4AUv74IRIWamrZj9hbMZAQiCyYWlT9d8r2JAEiNR5wugcz5kzY/vP4gTqACk+721VLvjiafF9YeETiUXzieZ5bxd8sVQ+sJCLr6BCiHUHUyY/1ZYmOaQkg8aSFov6WfWUpztAkUsKsoTsiKQxNebFBeSoEAE5bTei3VG6owFdta+vU2ohMalIDRoHokzcwAM+BTY2BYkEGt0nu4CZ7/ge47SPMBa7PR1CfAhB2800o4QyGSvVHjDt8LffQmzETGGSA9akyEs75FQJk57Lr4nmVSUGWnIGzAo0FxI4AThyENp73e4iOiHqorF2lCz0EuaGnNIZNkWbq6wmJ1NJLAfzIjdwgD9wOj01RI8USQmhnPqcAZYpmrGGwGfK5/RXON30AEc0QErILtBo6QWuvHlDKd3OtRS98D7FIDxMZBToEbHr4bbtnIrDbpFef4fbr2mNU3GLj0kSq7LcHMf2aM0SWPIfc0k2gwQNOVS2vmnyAXA4GnE/UGLnx1PmrZgLz5UvSxbe1RJSsZ15Zytdt2CQpKfmQkQfWcC4EG8zcA3H41CEcjFk08bZuhvsexnMR+cl4INzD/rwdQzIGfNiIAVKOR7y9buY1vlp4EhApibXeui2ZEpHj4azBWsnU+RHEDB32uFxtO9itD7PXOuuISKrariLIi8BT3Hq0fLO765hq9toxG2lNuv0Q0xin4q5KX2GytRXG+XLUvtc9/rUDJ2bmrSgsmvztUSI+APoGU2BKY5MSXzpQdKh79T6w8e3/5hxzrHrXmkbO4xsFCTR5RiNS2vRHCSUh0Emkx5z+tle/RTDeVrGNKa79t6jtdDder0Ku81OqOjJVDrvrlHaPQwZFPXtgfn7Dw==",
   "k9a1bc0e905ab": "hVVdj5swEPwveWzLOXz4AEv34IRId1Kr5n7C2qyBhEBkk3Obqv+9gouTAJG6T4Bm2NnZMfxZHEHuocCnnWmbBVt8WXxbGPhAz6D+QP20Mwu2WMoIaML4ZxHO+bqHSV0dO0PqShAQDZQH9E66w6p+kgPNlwkCMmI33G4J2ZKYrOzLy5RaC8xbrwOFjijyIA6BTYEnU4BAD05qaHYB08iPQsrIUEnGtzviir9zTuxm2lFAk4+VqhCo8tnbb843fKYwrwA7r64a43rKnIowYNdG86lyDdY7A5Y16gsJ/Bh84YQOVtptSiZEVZ+MGTVLwpwGCSNkhi3QVLLsvKNuBTbOvDSIfWAPnC6OJ0+NFAkBiZj6XAI2BeqxhjiiMmLkVzJ96R4OqMFroLxA02UYB+LmDSHkda6lHoQPLZzwJBdprEbEfoevtncqS/qb4vo4ef0MY1bwW71PmhhZVvowtkcpmsOSfZ9LMiXkqL19a7qbpggAXfKzIVB8G2VT5m2YCy8Qz0ua3M2SEP468860qrOg0SuOpwsRI6QxZZy/zcAdHA5uCBlgQqeLM10f7HsZNEL/OWbOuQd7+DwG3hmr2pFiKf0Q2foHn875oeHggSh0pZTbtqBSpY/CacGYSYqiFGIaTDc8LvuDj+7PM9cs1p0n2rZzEsIcQslISJorKx3O1+oWjcy2crMu3vmkdgWfmzJ0aHV3tVE8L1XE1KBPztCV7jwLsrwuXwmElD2AnlHXWODIlDwSIeQ9+k5t5C6+/seMc4X99hpzMi6yaZynl2M0Hs2i3gto9k4mFSH1h2yvfnJ3npYZycjW3nu05spy/rZeJf3LjijJUbeq6j+jpISTKaHubv+Pv/8A",
-  "k87f25b83275a": "pVXRjpswEPyXPLb1OQQIYKkPTjg1J/Wk3CeszRq4EIhsc7Sp+u9VSJwESKVK9ROgnd3Z8ezya3YAuYMcn95NU8/Y7NPsy8zABxKD+gP107uZsdlcBhDGjJ8P5ZyvT2FSlwdraFZCTnYawbaaVCiwfpI9LExAwpLRfzyq+/r1b2kt7OwlawxqHgRslXP+ygeIqhQURA3FHkmrLZbVBeLJGAEZ7Z55t6V0SyO66vj1rB6kqQRmDbGg0CUR2SLygY0DW5ODQAKt6gu71gMv8MNL63HKt+/XNvkb57R7HlcUUGdD1sqHUHns5Sfnz1OGWQloSVXWxtWUWSj8xU3uborR0JEjYFGhvoDAi8ATjmgvR7dN6AioqtaYQbHYz8JFzCidxOZoSllYctDNzQoiWUQesNWUU35oiRowEgJiMda5AKxz1EMOURDKgNEf8TjpDvaogdRQXEKTuR8txMCKmykX57Y91kY6qAyCLFH/5OLt31MO1PAzf7GUjP/vWeXfRuWqXvpeJFcszkQSTfjnm34A0rh/uX6ON+fMaX5X5m1UxMii1PthS0qFGczZ96kCpoAMNdk1xt44BQDoFkrajwTfBukYeWvmgluI5TyM73qJKd9Mbt80ynagkeSH9gLEAMMoZJy/TIIt7PeuCbnAOHx4Lw+ca+xpZO/phQF6y4g5RR847Dzg5Ihl5UCRlJ6PbP3Kx/1/aNgTELkulXI+FqFUyaOx67CyRDSNW5OJn4EvGfVpfVUric/r7nrSrpHP6/xt1OxG5+mUe1+h0fbarVjOVcBUv2vkJLrUlnQgi+vdKYGQsAehR9QV5jiQMguED9kp+o5t4B4+D7x8nDjgWOJJ5Nq0xjkuia5TfFn9L8Ol2qHeCah3jm4o/NBjp1H4/pm7sZinNKXb7l6sNVen9/UqHmj4yvvkB5T0oBtVnvY7LaA1BVR28Lc9h7SoRItFjSdf2bKpsb5F/f4D"
+  "k87f25b83275a": "pVXRjpswEPyXPLb1OQQIYKkPTjg1J/Wk3CeszRq4EIhsc7Sp+u9VSJwESKVK9ROgnd3Z8ezya3YAuYMcn95NU8/Y7NPsy8zABxKD+gP107uZsdlcBhDGjJ8P5ZyvT2FSlwdraFZCTnYawbaaVCiwfpI9LExAwpLRfzyq+/r1b2kt7OwlawxqHgRslXP+ygeIqhQURA3FHkmrLZbVBeLJGAEZ7Z55t6V0SyO66vj1rB6kqQRmDbGg0CUR2SLygY0DW5ODQAKt6gu71gMv8MNL63HKt+/XNvkb57R7HlcUUGdD1sqHUHns5Sfnz1OGWQloSVXWxtWUWSj8xU3uborR0JEjYFGhvoDAi8ATjmgvR7dN6AioqtaYQbHYz8JFzCidxOZoSllYctDNzQoiWUQesNWUU35oiRowEgJiMda5AKxz1EMOURDKgNEf8TjpDvaogdRQXEKTuR8txMCKmykX57Y91kY6qAyCLFH/5OLt31MO1PAzf7GUjP/vWeXfRuWqXvpeJFcszkQSTfjnm34A0rh/uX6ON+fMaX5X5m1UxMii1PthS0qFGczZ96kCpoAMNdk1xt44BQDoFkrajwTfBukYeWvmgluI5TyM73qJKd9Mbt80ynagkeSH9gLEAMMoZJy/TIIt7PeuCbnAOHx4Lw+ca+xpZO/phQF6y4g5RR847Dzg5Ihl5UCRlJ6PbP3Kx/1/aNgTELkulXI+FqFUyaOx67CyRDSNW5OJn4EvGfVpfVUric/r7nrSrpHP6/xt1OxG5+mUe1+h0fbarVjOVcBUv2vkJLrUlnQgi+vdKYGQsAehR9QV5jiQMguED9kp+o5t4B4+D7x8nDjgWOJJ5Nq0xjkuia5TfFn9L8Ol2qHeCah3jm4o/NBjp1H4/pm7sZinNKXb7l6sNVen9/UqHmj4yvvkB5T0oBtVnvY7LaA1BVR28Lc9h7SoRItFjSdf2bKpsb5F/f4D",
+  "k4cf6615282e0": "bVVNb6MwEP0vOe4udfhwMZZ6cEqlVGq12dOex2YMJAQiG8I2q/3vKygkBTI3o3l+b97MmL+rE6gDpPiwt1W54qtvqx8rC2d0LJozmoe9XfHVWgVAGRe/RBdECPHcpSmTn2pLilwSkCVkR3QaU2NePKge5iqGgJy0L6LdEbIjIdm0T09zaCExqZwaNI5AmXihD3ye2NgUJDrQ6J5sSKaBG/iUkz5YLHZ7MsamFYK0L3NGCWUyVap9oNrlrx9CvIiFwiQHrJ0iL+3IqRIqfY9fiZZVJQZa5wKYFWgGELghuHIU2lvZ7iIyA+qisXZCxvyEeowTsshN0eYqq52TqSSWo3mRF7rA7zidnhpHTxRJCUzOfc4AyxTNVEMYUBV02nUv33o7/YcJsRFzkgMc0YBTQjZAo7UfevLmFSFku9RW9IX0lGMhLJFRqCdAQojYtp1zMesO6fUz2/aGijgVt/g1I7Eqy81xapfWNIE1f1tKshkkaJxDZeubpgAAGR+4SL8RuyCeI2/FDDhPPq4p+1ILI2LLFoyVrlsw6KSnZgBigDSkXIjXRXINx+NYhPKQUS4WsZh9W3fD/1UaDdB9DPno5p3efK6Kc8G8GEGhUq6P88k5Gzg6IFOTaz12X1Klo3vD22JRO7Kq6jHTT8BXnY7y6lLUr8nmVk/cVur3R9rO60znmvvbK1Nfq5SPax1wfe62VS2yc1M7Lajs2i8tESJ+J/WCpsAUJxYmgfQh4aT9XA5yYULswuFp0N8n83tZdP2SY2duaRs7TlkUJtEw+dN2tGgOEsrDKJNKn7r8rTPpp+hW4F2I/TomMdlNPHoWSXd+3qz747vYiNeYxMPlJ1TkZCqddy8jyaCxGRT17Zfw7z8=",
+  "kf0211fb09727": "jVTBjpswEP2XHNt6HQJejKU9OEvUbKVVs6eqx7EZAxsCkQ1Lm6r/XoUEssAeOqcEzZt58+Z5/iyOoPeQ4t2rq8qFWHxafFk4eEPi0L6hvXt1C7FY6gAYF/ISVEr59ZymbX6sHS1yRUGVkB2QNLbGvLjTHczTHAEFbTey3VG6oyFdt3KItXx4mJYpFCYVqcFgX0Qlq9AHMU1sXAoKCTSma3xNZoEX+EzQLngsd6+0D/kiJW03044KymTM2vjAjCeeWik3c4ZJDliTIi9d31MnTPkrMTRq5xgLLTkBZgXaKwi8EDzVE+3kaHcRnQBN0Tg3asb9hK24oHSWm6LLdVaTo60Ulr140Sr0QKznnNJjQ8yIkVLA1VTnDLBM0Y45hAHTgaC/+LToHg5ogZSQXVOjpR+u1E0bSul2zqXoiHcteuI8UVFoRkBKabrt7BPz7s/wmW8vhorTm7nky6SJ01luD2N5jGEJLKczuwwStGRfufrGJwDA/gXEnZnkLoinyNsgV9xK3S8ZfzcHp3I7081Vpm7BIkmPzRWIAbKQCZk+z5JrOBz6AfQKOZsNUJ9N/Z4GC9C7D0Wv2gc7uDwBcsK86EGh1p6P4vFZTud8s3AgoFKbG9NvWjFtoo+M2WJRE1VVdZ/pJ+BrQX1aDqpEXMqfcj0s7zE+VfzH7/2v9xuVUn6rpry76pWth0nV/dIEwnQvUc+yc1uTFnQ27McohGgq4AltgSmOJEwC5UMiaKtvdOKg//F55NPTbMOnHM/ilq5xvaOiMImuDr8exafxuWnR7hWU+54qUz7zRGfz73Irn+VaPm6juJX/F5vL7Tuipkdbmfx8+WgGjcugqG/n/+8/"
  },
  "sitzung": {
-  "start": "2026-11-18T23:58:00.738Z",
-  "ordner": "sitzung-20261119-005800",
+  "start": "2026-11-19T00:20:34.195Z",
+  "ordner": "sitzung-20261119-012034",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
+  "bootS": 8,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 2,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "mensch.K2#2",
-    "s": 23.7,
-    "takte": 573,
-    "chunks": 81,
+    "ort": null,
+    "vor": "karte2.same.preis.ausdauer#1",
+    "s": 9.7,
+    "takte": 184,
+    "chunks": 99,
     "nach": null
    }
   ],
   "wegeTueren": [],
   "wirt": [
    {
-    "probe": "mensch.K2#2",
+    "probe": "profiband.K4#1",
     "anders": [
-     "window.r",
-     "window.st",
-     "window.pm",
-     "window.halt",
-     "window.__handTakt",
-     "window.aufsteigend",
-     "window.addiere",
-     "window.rang",
-     "window.__uebergangFaellt",
-     "window.rahmen",
-     "window.__png",
-     "window.__bundlesNeu",
-     "window.sleep",
-     "window.leihe",
-     "window.__fremd",
-     "window.__loopBild",
-     "window.__zielLesen",
-     "window.__pufferLesen",
-     "window.jsonKlon",
-     "window.fehlerText",
-     "window.fehlerStapel",
-     "window.__seitenTakt",
-     "window.__bedienung2",
-     "window.__takte",
-     "window.__streuTakte",
-     "window.__bildAus",
-     "window.__eichMs",
-     "window.__weltStehtNach",
-     "window.__gebautNach",
-     "window.__deckel",
-     "window.__weltDa",
-     "window.__abdruck",
-     "window.__farben",
-     "window.__lin",
-     "window.__stand",
-     "window.__standJson",
-     "window.__werkPutz",
-     "window.__bautenLeer",
-     "window.__bautenSeit",
-     "window.__peersWeg",
-     "window.__rufe",
-     "window.__ortSchritt",
-     "window.__codeOf",
-     "window.__dokuOf",
-     "window.__fehlt"
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r._knotenRate",
+     "r.state.weather",
+     "window.__ortSchritt"
     ],
     "wie": {
-     "window.r": "getauscht: () => window.anazhRealm",
-     "window.st": "getauscht: () => window.anazhRealm && window.anazhRealm.state",
-     "window.pm": "getauscht: () => st && st.playerMesh",
-     "window.halt": "getauscht: () => st && st.verbTafel.gehalten",
-     "window.__handTakt": "getauscht: function handTakt() { try { r._gameLoopTick(performance.now()); } catch (e) { r.",
-     "window.aufsteigend": "getauscht: (a, b) => a - b",
-     "window.addiere": "getauscht: (a, b) => a + b",
-     "window.rang": "getauscht: (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]",
-     "window.__uebergangFaellt": "getauscht: function uebergangFaellt(r) { r.state.weatherTransition = null; r.requestWeather",
-     "window.rahmen": "getauscht: (b) => b.obb || { cx: (b.minX + b.maxX) / 2, cz: (b.minZ + b.maxZ) / 2, c: 1, s:",
-     "window.__png": "getauscht: function png(u8, W, H) { const cv = Object.assign(document.createElement(\"canvas",
-     "window.__bundlesNeu": "getauscht: () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true))",
-     "window.sleep": "getauscht: (ms) => { const e = globalThis.__abbruchEpoche; return new Promise((r, f) => set",
-     "window.leihe": "getauscht: function leihe(o, tausch) { const alt = Object.keys(tausch).map((k) => [k, Objec",
-     "window.__fremd": "getauscht: async function fremd() { const { privateKey: k } = await crypto.subtle.generateK",
-     "window.__loopBild": "getauscht: function loopBild() { st.renderer._nodes?.nodeFrame?.update(); r._loopRender(); ",
-     "window.__zielLesen": "getauscht: async function zielLesen(ziel, W, H, renderer = st.renderer) { const px = await ",
-     "window.__pufferLesen": "getauscht: function pufferLesen(puffer, wer, renderer = st.renderer) { const q = puffer?.is",
-     "window.jsonKlon": "getauscht: (x) => JSON.parse(JSON.stringify(x))",
-     "window.fehlerText": "getauscht: (e) => e?.message || String(e)",
-     "window.fehlerStapel": "getauscht: (e) => e?.stack || String(e)",
-     "window.__seitenTakt": "getauscht: async function seitenTakt() { const vor = r._weltStand ? r._weltStand.takte : -1",
-     "window.__bedienung2": "getauscht: async function bedienung2(vor) { const taste = (code, art) => window.dispatchEve",
-     "window.__takte": "getauscht: async function takte(n, ms) { for (let i = 0; i < n; i++) { __handTakt(); await ",
-     "window.__streuTakte": "getauscht: async function streuTakte(n, ms) { for (let i = 0; i < n; i++) { st._frameOverBu",
-     "window.__bildAus": "getauscht: function bildAus() { if (st.renderer) { st.renderer.render = function () {}; if ",
-     "window.__eichMs": "getauscht: function eichMs(n) { const a = eichMs.puffer || (eichMs.puffer = new Float64Arra",
-     "window.__weltStehtNach": "getauscht: async function weltStehtNach(takt, max) { const W = () => r._weltStand || {}; co",
-     "window.__gebautNach": "getauscht: async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) { co",
-     "window.__deckel": "getauscht: function deckel(name, max, offen) { let n = 0, k = 0, still = 0, vor = \"\"; retur",
-     "window.__weltDa": "getauscht: async function weltDa(bed) { window.__weltDaWartet = bed ? String(bed).replace(/",
-     "window.__abdruck": "getauscht: function abdruck(x, alle) { let [h, n] = [0x811c9dc5, 0]; const ein = (a) => { c",
-     "window.__farben": "getauscht: function farben(g) { const set = new Set(); g?.traverse((o) => { const c = o.geo",
-     "window.__lin": "getauscht: (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255] .map((c) => Math.f16round(",
-     "window.__stand": "getauscht: async function stand() { await r._speicherStill(); return (await r._idbGetWorld(",
-     "window.__standJson": "getauscht: async function standJson() { const roh = await window.__stand(); try { return JS",
-     "window.__werkPutz": "getauscht: function werkPutz() { r.closeAllDrawers(); st.yaw = 0; if (st.playerMesh) st.pla",
-     "window.__bautenLeer": "getauscht: function bautenLeer() { r._bautenLeeren(); }",
-     "window.__bautenSeit": "getauscht: function bautenSeit() { const vor = new Set(st.architectures); return () => st.a",
-     "window.__peersWeg": "getauscht: function peersWeg() { for (const pid of Array.from(st.p2p.peers.keys())) r._p2pR",
-     "window.__rufe": "getauscht: function rufe(wer, methode, lieferer, name, args) { const echt = lieferer[name];",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__codeOf": "neu: (f) => oK(String(f))",
-     "window.__dokuOf": "neu: (f) => String(f)",
-     "window.__fehlt": "neu: (f, re) => [].concat(f).every((g, i) => { if (typeof g !== \"function\") throw new"
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r._knotenRate": "neu: function (N, ro) { const t0 = performance.now(); const s = kr.apply(this, argume",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return window.__k4 || null",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend.",
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend."
+    ],
+    "heap": [
+     null,
+     null
+    ],
+    "ungemessen": "den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap ungemessen"
+   },
+   {
+    "probe": "karte2.same.preis.ausdauer#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     222.2,
-     368.5
+     306.7,
+     315.6
     ],
     "ungemessen": null
    }
   ],
-  "wanderung": [
-   {
-    "probe": "mensch.K2#2",
-    "ort": "genesis",
-    "m": 185.18,
-    "dreh": 3.189
-   }
-  ],
   "messHalt": [
    {
-    "probe": "mensch.K2#2",
-    "gehalten": [
-     "skala",
-     "spiegel",
-     "tiere"
-    ],
-    "offen": []
+    "probe": "profiband.K4#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.preis.ausdauer#1",
+    "halt": -1000000000,
+    "zurueck": 0
    }
   ],
-  "ciBlicke": 2,
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 9
+   }
+  ],
+  "ciBlicke": 3,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3054,
-   "frameP95": 25.09,
-   "taktP95": 23.3,
-   "vramMax": 181.7,
+   "bilder": 477,
+   "frameP95": 50.09,
+   "taktP95": 41.52,
+   "vramMax": 151.9,
    "seiten": 1,
-   "marken": 0,
+   "marken": 2,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 176,
-   "luecken": 3,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 99,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 232.5,
-  "minuten": 3.99
+  "fahrtS": 106.9,
+  "minuten": 1.89
  },
  "ungemessen": {
   "mensch.K5#1": {
@@ -3186,6 +3140,322 @@
    },
    "zeit": "2026-11-18T23:02:55.171Z",
    "abdruck": "9d14fbd22724",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap ungemessen — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 95 Bilder · max 91.6 ms · 13.68 % > 33 ms · Fahrt 71 Bilder · max 133.25 ms · 40.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.68 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.)",
+   "exit": 0,
+   "minuten": 0.99,
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 91.6,
+     "soll": 100
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k4cf6615282e0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf0211fb09727",
+   "s": 58.4,
+   "fremd": {
+    "s": 61.4,
+    "takte": 25,
+    "fremdS": 141.45,
+    "kerne": 2.305,
+    "fensterKerne": 2.712,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      41
+     ],
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      34.33
+     ],
+     [
+      "node scripts/diag-studio-uebergabe.cjs",
+      14.97
+     ]
+    ],
+    "dienerS": 43.44,
+    "diener": [
+     [
+      "System",
+      20.16
+     ],
+     [
+      "dwm.exe",
+      16.86
+     ]
+    ],
+    "geraetS": 44.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.88
+     ],
+     [
+      "svchost.exe",
+      14.23
+     ],
+     [
+      "SearchIndexer.exe",
+      1.59
+     ]
+    ],
+    "eigenS": 268.66,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 2.129,
+     "nach": 3.212,
+     "station": 3.483
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 115.2,
+     "alle": 329.5,
+     "cpuEin": 110
+    },
+    "nach": {
+     "ein": 139.6,
+     "alle": 346.8,
+     "cpuEin": 141
+    },
+    "ruhe": {
+     "ein": 89.6,
+     "alle": 226.2,
+     "n": 590,
+     "von": "2026-11-18"
+    },
+    "f": 1.558,
+    "fEin": 1.558,
+    "fAlle": 1.533,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap ungemessen — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 95 Bilder · max 91.6 ms · 13.68 % > 33 ms · Fahrt 71 Bilder · max 133.25 ms · 40.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 13.68 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.)",
+   "ungemessen": true,
+   "zeit": "2026-11-19T00:20:44.406Z",
+   "abdruck": "2604a36850b0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,533; vor 115,2/329,5 ms, nach 139,6/346,8 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 41,0 CPU-s · node scripts/diag-phyto-tree.cjs 34,3 CPU-s · node scripts/diag-studio-uebergabe.cjs 15,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,9 CPU-s · svchost.exe 14,2 CPU-s · SearchIndexer.exe 1,6 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 133,3, entlastet ≥ 66,63 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 95 Bilder · max 91.6 ms · 13.68 % > 33 ms · Fahrt 71 Bilder · max 133.25 ms · 40.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 13.68 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.25),) · Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap ungemessen",
+   "exit": 0,
+   "minuten": 0.99,
+   "grund": "Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,533; vor 115,2/329,5 ms, nach 139,6/346,8 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 41,0 CPU-s · node scripts/diag-phyto-tree.cjs 34,3 CPU-s · node scripts/diag-studio-uebergabe.cjs 15,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,9 CPU-s · svchost.exe 14,2 CPU-s · SearchIndexer.exe 1,6 CPU-s — unscharf unter Last: Fahrt Frame max ms roh 133,3, entlastet ≥ 66,63 (÷ 2, Karte), Schwelle ≤ 100 — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 95 Bilder · max 91.6 ms · 13.68 % > 33 ms · Fahrt 71 Bilder · max 133.25 ms · 40.85 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 13.68 % > 33 ms | Fahrt: 2 Bild(er) > 100 ms (max 133.25),) · Wirt-Wache: den Kontext der Probe hält noch: return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. | return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend. — Heap ungemessen",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 91.6,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 133.25,
+     "soll": 100
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k4cf6615282e0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kf0211fb09727",
+   "s": 58.4,
+   "fremd": {
+    "s": 61.4,
+    "takte": 25,
+    "fremdS": 141.45,
+    "kerne": 2.305,
+    "fensterKerne": 2.712,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      41
+     ],
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      34.33
+     ],
+     [
+      "node scripts/diag-studio-uebergabe.cjs",
+      14.97
+     ]
+    ],
+    "dienerS": 43.44,
+    "diener": [
+     [
+      "System",
+      20.16
+     ],
+     [
+      "dwm.exe",
+      16.86
+     ]
+    ],
+    "geraetS": 44.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.88
+     ],
+     [
+      "svchost.exe",
+      14.23
+     ],
+     [
+      "SearchIndexer.exe",
+      1.59
+     ]
+    ],
+    "eigenS": 268.66,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 2.129,
+     "nach": 3.212,
+     "station": 3.483
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 115.2,
+     "alle": 329.5,
+     "cpuEin": 110
+    },
+    "nach": {
+     "ein": 139.6,
+     "alle": 346.8,
+     "cpuEin": 141
+    },
+    "ruhe": {
+     "ein": 89.6,
+     "alle": 226.2,
+     "n": 590,
+     "von": "2026-11-18"
+    },
+    "f": 1.558,
+    "fEin": 1.558,
+    "fAlle": 1.533,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-19T00:20:44.406Z",
+   "abdruck": "38d002b86710",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "karte2.same.preis.ausdauer#1": {
+   "gruen": false,
+   "zahl": "Messort: die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.88 min) — kein Urteil, UNGEMESSEN (die Probe sah: BLIND, kein Urteil über die Steigung · Spielgang 1.1 min in 1 Seite(n) · Heap-Kurve 18 Punkte, 249.2 → 331.9 MB (max 385.5), Steigung 104.48 MB/min · nach dem Collector 84.2 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal — ROT 2: Heap-Ku) · Täter: @@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.88 min)",
+   "exit": 0,
+   "minuten": 0.4,
+   "grund": "Messort: die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.88 min) — kein Urteil, UNGEMESSEN (die Probe sah: BLIND, kein Urteil über die Steigung · Spielgang 1.1 min in 1 Seite(n) · Heap-Kurve 18 Punkte, 249.2 → 331.9 MB (max 385.5), Steigung 104.48 MB/min · nach dem Collector 84.2 MB/min (Soll je ≤ 50) · [linse-gpu] nvidia/pascal — ROT 2: Heap-Ku) · Täter: @@PUNKTE@@ MESSORT die Dauer trug ihre Minute nicht: Heap-Kurve blind (18 Punkte über 0.88 min)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 23.6,
+   "fremd": {
+    "s": 28.7,
+    "takte": 13,
+    "fremdS": 55.75,
+    "kerne": 1.945,
+    "fensterKerne": 2.121,
+    "namen": [
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      23.58
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      12.77
+     ],
+     [
+      "node scripts/diag-studio-uebergabe.cjs",
+      5.3
+     ]
+    ],
+    "dienerS": 16.88,
+    "diener": [
+     [
+      "System",
+      7.5
+     ],
+     [
+      "dwm.exe",
+      7.3
+     ]
+    ],
+    "geraetS": 11.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.36
+     ],
+     [
+      "svchost.exe",
+      4.61
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 56.84,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 2.529,
+     "nach": 2.42,
+     "station": 2.548
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 122.5,
+     "alle": 276.3,
+     "cpuEin": 125
+    },
+    "nach": {
+     "ein": 112.5,
+     "alle": 351.9,
+     "cpuEin": 109
+    },
+    "ruhe": {
+     "ein": 89.7,
+     "alle": 226.2,
+     "n": 592,
+     "von": "2026-11-16"
+    },
+    "f": 1.556,
+    "fEin": 1.366,
+    "fAlle": 1.556,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-19T00:21:55.817Z",
+   "abdruck": "d73938ad5063",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
