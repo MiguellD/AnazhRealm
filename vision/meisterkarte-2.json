@@ -12080,10 +12080,10 @@
     "kriterien": 40,
     "sprossen": 274,
     "heute": 7,
-    "kern": 2,
-    "kernDazu": 2,
+    "kern": 0,
+    "kernDazu": 0,
     "anteilHeute": 2.7,
-    "anteilKern": 0.8
+    "anteilKern": 0
    },
    "perspektiven": [
     {
@@ -14860,7 +14860,7 @@
       }
      ],
      "heute": 0,
-     "kern": 2,
+     "kern": 0,
      "fuss": "kern",
      "beleg": "RT60 Feld 0,283 · Wald 0,649 · Gasse 1,522 · Höhle 3,195 s, Verdeckung Haus −11,2 dB (§32.K3 2/2); Klang-Takt Radeon p95 0,25 ms > 0,2 (§32.K5 1/2); kein HRTF, kein Medienwechsel. — KARTE: Kern 2 — am Abgriff gemessen (klang.K3); Bild-Preis in der Szene nicht gemessen; das alte Klang-Budget (an der Radeon 0,25 ms gegen 0,2) ist kein Preis mehr (R8).",
      "alt": [
@@ -20090,10 +20090,10 @@
   "sprossen": 1718,
   "heute": 35,
   "davonKopplungen": 33,
-  "kern": 9,
-  "kernDazu": 9,
+  "kern": 7,
+  "kernDazu": 7,
   "anteilHeute": 2.2,
-  "anteilKern": 0.4,
+  "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
   "fuss": {

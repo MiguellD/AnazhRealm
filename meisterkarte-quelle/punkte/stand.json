@@ -5815,7 +5815,7 @@
   },
   "karte2.erleben.klang.getuemmel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.getuemmel#1 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.getuemmel#2 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.getuemmel#3 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.getuemmel#4 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.getuemmel#5 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.getuemmel#6 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.getuemmel#1 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#1 gtx: ROT: S1 · ROT ✅ spitze_dbfs -11,72 (Soll ≤ 0) · ❌ dauer_min 0,234 (Soll ≥ 10) · ✅ duck_db 12,18 (Soll ≥ 8) · ❌ duck_db_bis 12,18 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 3 — Täter: Duck 12.18 dB bei Stimme (MUSIK.duck.gespraech klang-core.js:382, `_musikDuck` lief) · nur 3 Stimmen zugleich an der Wiese im Regen (wind, regen, glut) · die Leiter hört 0.234 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,234 statt ≥ 10 · duck_db_bis 12,18 statt ≤ 12 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 3) an f68dbf09 · karte2.erleben.klang.getuemmel#2 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#2 gtx: ROT: S2 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Dorfplatz mit 10² Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100 Quellen, die Welt erzeugte 0) an f68dbf09 · karte2.erleben.klang.getuemmel#3 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#3 gtx: ROT: S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 0 Bewohner und 0 Wagen — keine Großstadtstraße mit 10⁴ Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 10000 Quellen, die Welt erzeugte 0) an f68dbf09 · karte2.erleben.klang.getuemmel#4 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#4 gtx: ROT: S4 · ROT Leser fehlt: keine Vertäubung: die Hörschwelle steht fest bei -64 dB (klang-core.js:415 UMWELT.hoerschwelleDb), kein Klingeln, kein 130-dB-Ereignis an f68dbf09 · karte2.erleben.klang.getuemmel#5 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#5 gtx: ROT: S5 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Stadion mit 10⁵ Stimmen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100000 Stimmen, die Welt erzeugte 0) an f68dbf09 · karte2.erleben.klang.getuemmel#6 radeon: ungemessen (R10) · karte2.erleben.klang.getuemmel#6 gtx: ROT: S6 · ROT Leser fehlt: kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73); keine Warn-Stimme in UMWELT (wind · laub · ufer · fluss · fall · regen · glut · vogel · grille, klang-core.js:443) — hörbar bleibt nur der eigene Schritt (stamm/klang.js:888) an f68dbf09",
    "stationen": [
     {
      "id": "karte2.erleben.klang.getuemmel#1",
@@ -5831,10 +5831,10 @@
      "id": "karte2.erleben.klang.getuemmel#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ✅ spitze_dbfs -11,72 (Soll ≤ 0) · ❌ dauer_min 0,234 (Soll ≥ 10) · ✅ duck_db 12,18 (Soll ≥ 8) · ❌ duck_db_bis 12,18 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 3 — Täter: Duck 12.18 dB bei Stimme (MUSIK.duck.gespraech klang-core.js:382, `_musikDuck` lief) · nur 3 Stimmen zugleich an der Wiese im Regen (wind, regen, glut) · die Leiter hört 0.234 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,234 statt ≥ 10 · duck_db_bis 12,18 statt ≤ 12 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 3)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S1 · ROT ✅ spitze_dbfs -11,72 (Soll ≤ 0) · ❌ dauer_min 0,234 (Soll ≥ 10) · ✅ duck_db 12,18 (Soll ≥ 8) · ❌ duck_db_bis 12,18 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 3 — Täter: Duck 12.18 dB bei Stimme (MUSIK.duck.gespraech klang-core.js:382, `_musikDuck` lief) · nur 3 Stimmen zugleich an der Wiese im Regen (wind, regen, glut) · die Leiter hört 0.234 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,234 statt ≥ 10 · duck_db_bis 12,18 statt ≤ 12 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 3)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -5850,10 +5850,10 @@
      "id": "karte2.erleben.klang.getuemmel#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Dorfplatz mit 10² Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100 Quellen, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Dorfplatz mit 10² Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100 Quellen, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.getuemmel#3",
@@ -5868,10 +5868,10 @@
      "id": "karte2.erleben.klang.getuemmel#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 0 Bewohner und 0 Wagen — keine Großstadtstraße mit 10⁴ Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 10000 Quellen, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 0 Bewohner und 0 Wagen — keine Großstadtstraße mit 10⁴ Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 10000 Quellen, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.getuemmel#4",
@@ -5886,10 +5886,10 @@
      "id": "karte2.erleben.klang.getuemmel#4",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S4 · ROT Leser fehlt: keine Vertäubung: die Hörschwelle steht fest bei -64 dB (klang-core.js:415 UMWELT.hoerschwelleDb), kein Klingeln, kein 130-dB-Ereignis",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S4 · ROT Leser fehlt: keine Vertäubung: die Hörschwelle steht fest bei -64 dB (klang-core.js:415 UMWELT.hoerschwelleDb), kein Klingeln, kein 130-dB-Ereignis",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.getuemmel#5",
@@ -5904,10 +5904,10 @@
      "id": "karte2.erleben.klang.getuemmel#5",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S5 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Stadion mit 10⁵ Stimmen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100000 Stimmen, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Stadion mit 10⁵ Stimmen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100000 Stimmen, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.getuemmel#6",
@@ -5922,10 +5922,10 @@
      "id": "karte2.erleben.klang.getuemmel#6",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S6 · ROT Leser fehlt: kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73); keine Warn-Stimme in UMWELT (wind · laub · ufer · fluss · fall · regen · glut · vogel · grille, klang-core.js:443) — hörbar bleibt nur der eigene Schritt (stamm/klang.js:888)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S6 · ROT Leser fehlt: kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73); keine Warn-Stimme in UMWELT (wind · laub · ufer · fluss · fall · regen · glut · vogel · grille, klang-core.js:443) — hörbar bleibt nur der eigene Schritt (stamm/klang.js:888)",
+     "r6": "konsum"
     }
    ]
   },
@@ -6219,7 +6219,7 @@
   },
   "karte2.erleben.klang.raum": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.raum#1 radeon: ungemessen (R10) · karte2.erleben.klang.raum#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.raum#2 radeon: ungemessen (R10) · karte2.erleben.klang.raum#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.raum#3 radeon: ungemessen (R10) · karte2.erleben.klang.raum#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.raum#4 radeon: ungemessen (R10) · karte2.erleben.klang.raum#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.raum#5 radeon: ungemessen (R10) · karte2.erleben.klang.raum#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.raum#6 radeon: ungemessen (R10) · karte2.erleben.klang.raum#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN · karte2.erleben.klang.raum#7 radeon: ungemessen (R10) · karte2.erleben.klang.raum#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.klang.raum#1 radeon: ungemessen (R10) · karte2.erleben.klang.raum#1 gtx: ROT: S1 · ROT ✅ pegel_pct 100 (Soll ≥ 100) · ❌ laufzeit_pct 0 (Soll ≥ 100) · ✅ Umfang verlangt 24 Quellenlagen, die Welt erzeugte 24 — Täter: kein Laufzeitunterschied: tierRufSpielen führt den Ruf durch EINEN StereoPannerNode ohne Verzögerung je Ohr (klang-core.js:1277) — Lag 0 Samples an 23 von 24 Lagen · laufzeit_pct 0 statt ≥ 100 an f68dbf09 · karte2.erleben.klang.raum#2 radeon: ungemessen (R10) · karte2.erleben.klang.raum#2 gtx: ROT: S2 · ROT Umfang nicht erzeugbar: binnen einer Leiter (60 s) liest das Ohr EINEN Raum: das Feld der Wiese (RT60 0.3 s) — Wald, Gasse und Höhle verlangen drei Ortswechsel mit kaltem Ring (11–28 s je Ort); klang.K3#2 misst sie headless in 10 min (verlangt 4 Raumklassen, die Welt erzeugte 1) an f68dbf09 · karte2.erleben.klang.raum#3 radeon: ungemessen (R10) · karte2.erleben.klang.raum#3 gtx: ROT: S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten (begehbare Hüllen) — keine Siedlung mit 10³ begehbaren Orten; und das Ohr kennt kein vorn/hinten/oben (EIN StereoPanner je Quelle, klang-core.js:1277) (verlangt 1000 begehbare Orte, die Welt erzeugte 57) an f68dbf09 · karte2.erleben.klang.raum#4 radeon: ungemessen (R10) · karte2.erleben.klang.raum#4 gtx: ROT: S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten — keine Stadt mit 10⁵ Innenräumen; kein Raum-in-Raum: der Raum am Ohr liest 16 waagerechte Strahlen (UMWELT.raum, klang-core.js:440) (verlangt 100000 Innenräume, die Welt erzeugte 57) an f68dbf09 · karte2.erleben.klang.raum#5 radeon: ungemessen (R10) · karte2.erleben.klang.raum#5 gtx: ROT: S5 · ROT Umfang nicht erzeugbar: das weiteste Ohr des Gesetzes reicht 160 m (fahrt; FAHRT_OHR.hoerweiteM klang-core.js:1757, Tier-Ruf 59.1 m) — kein Fernschall bis 10 km, keine Laufzeit (fahrtAmOhr ohne Verzögerung, klang-core.js:1759), keine Luftdämpfung nach ISO 9613 (verlangt 10 km Fernschall, die Welt erzeugte 0,16) an f68dbf09 · karte2.erleben.klang.raum#6 radeon: ungemessen (R10) · karte2.erleben.klang.raum#6 gtx: ROT: S6 · ROT Leser fehlt: kein Medienwechsel: unter Wasser schweigt nur der Schritt (stamm/klang.js:911), c = 343 m/s fest (klang-core.js:1757 FAHRT_OHR), kein Körperschall und keine Bodenwelle an f68dbf09 · karte2.erleben.klang.raum#7 radeon: ungemessen (R10) · karte2.erleben.klang.raum#7 gtx: ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed) — 100 Saaten verlangt; c und Dämpfung stehen fest im Gesetz (klang-core.js:1757), keine Atmosphären-Zeile, kein Vakuum (verlangt 100 Saaten, die Welt erzeugte 1) an f68dbf09",
    "stationen": [
     {
      "id": "karte2.erleben.klang.raum#1",
@@ -6235,10 +6235,10 @@
      "id": "karte2.erleben.klang.raum#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 · ROT ✅ pegel_pct 100 (Soll ≥ 100) · ❌ laufzeit_pct 0 (Soll ≥ 100) · ✅ Umfang verlangt 24 Quellenlagen, die Welt erzeugte 24 — Täter: kein Laufzeitunterschied: tierRufSpielen führt den Ruf durch EINEN StereoPannerNode ohne Verzögerung je Ohr (klang-core.js:1277) — Lag 0 Samples an 23 von 24 Lagen · laufzeit_pct 0 statt ≥ 100",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S1 · ROT ✅ pegel_pct 100 (Soll ≥ 100) · ❌ laufzeit_pct 0 (Soll ≥ 100) · ✅ Umfang verlangt 24 Quellenlagen, die Welt erzeugte 24 — Täter: kein Laufzeitunterschied: tierRufSpielen führt den Ruf durch EINEN StereoPannerNode ohne Verzögerung je Ohr (klang-core.js:1277) — Lag 0 Samples an 23 von 24 Lagen · laufzeit_pct 0 statt ≥ 100",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6254,10 +6254,10 @@
      "id": "karte2.erleben.klang.raum#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 · ROT Umfang nicht erzeugbar: binnen einer Leiter (60 s) liest das Ohr EINEN Raum: das Feld der Wiese (RT60 0.3 s) — Wald, Gasse und Höhle verlangen drei Ortswechsel mit kaltem Ring (11–28 s je Ort); klang.K3#2 misst sie headless in 10 min (verlangt 4 Raumklassen, die Welt erzeugte 1)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: binnen einer Leiter (60 s) liest das Ohr EINEN Raum: das Feld der Wiese (RT60 0.3 s) — Wald, Gasse und Höhle verlangen drei Ortswechsel mit kaltem Ring (11–28 s je Ort); klang.K3#2 misst sie headless in 10 min (verlangt 4 Raumklassen, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.raum#3",
@@ -6272,10 +6272,10 @@
      "id": "karte2.erleben.klang.raum#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten (begehbare Hüllen) — keine Siedlung mit 10³ begehbaren Orten; und das Ohr kennt kein vorn/hinten/oben (EIN StereoPanner je Quelle, klang-core.js:1277) (verlangt 1000 begehbare Orte, die Welt erzeugte 57)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten (begehbare Hüllen) — keine Siedlung mit 10³ begehbaren Orten; und das Ohr kennt kein vorn/hinten/oben (EIN StereoPanner je Quelle, klang-core.js:1277) (verlangt 1000 begehbare Orte, die Welt erzeugte 57)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.raum#4",
@@ -6290,10 +6290,10 @@
      "id": "karte2.erleben.klang.raum#4",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten — keine Stadt mit 10⁵ Innenräumen; kein Raum-in-Raum: der Raum am Ohr liest 16 waagerechte Strahlen (UMWELT.raum, klang-core.js:440) (verlangt 100000 Innenräume, die Welt erzeugte 57)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten — keine Stadt mit 10⁵ Innenräumen; kein Raum-in-Raum: der Raum am Ohr liest 16 waagerechte Strahlen (UMWELT.raum, klang-core.js:440) (verlangt 100000 Innenräume, die Welt erzeugte 57)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.raum#5",
@@ -6308,10 +6308,10 @@
      "id": "karte2.erleben.klang.raum#5",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S5 · ROT Umfang nicht erzeugbar: das weiteste Ohr des Gesetzes reicht 160 m (fahrt; FAHRT_OHR.hoerweiteM klang-core.js:1757, Tier-Ruf 59.1 m) — kein Fernschall bis 10 km, keine Laufzeit (fahrtAmOhr ohne Verzögerung, klang-core.js:1759), keine Luftdämpfung nach ISO 9613 (verlangt 10 km Fernschall, die Welt erzeugte 0,16)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: das weiteste Ohr des Gesetzes reicht 160 m (fahrt; FAHRT_OHR.hoerweiteM klang-core.js:1757, Tier-Ruf 59.1 m) — kein Fernschall bis 10 km, keine Laufzeit (fahrtAmOhr ohne Verzögerung, klang-core.js:1759), keine Luftdämpfung nach ISO 9613 (verlangt 10 km Fernschall, die Welt erzeugte 0,16)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.raum#6",
@@ -6326,10 +6326,10 @@
      "id": "karte2.erleben.klang.raum#6",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S6 · ROT Leser fehlt: kein Medienwechsel: unter Wasser schweigt nur der Schritt (stamm/klang.js:911), c = 343 m/s fest (klang-core.js:1757 FAHRT_OHR), kein Körperschall und keine Bodenwelle",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S6 · ROT Leser fehlt: kein Medienwechsel: unter Wasser schweigt nur der Schritt (stamm/klang.js:911), c = 343 m/s fest (klang-core.js:1757 FAHRT_OHR), kein Körperschall und keine Bodenwelle",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.klang.raum#7",
@@ -6344,10 +6344,10 @@
      "id": "karte2.erleben.klang.raum#7",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S7 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed) — 100 Saaten verlangt; c und Dämpfung stehen fest im Gesetz (klang-core.js:1757), keine Atmosphären-Zeile, kein Vakuum (verlangt 100 Saaten, die Welt erzeugte 1)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed) — 100 Saaten verlangt; c und Dämpfung stehen fest im Gesetz (klang-core.js:1757), keine Atmosphären-Zeile, kein Vakuum (verlangt 100 Saaten, die Welt erzeugte 1)",
+     "r6": "konsum"
     }
    ]
   },
@@ -37451,7 +37451,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 386,
+  "konsum": 399,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37613,10 +37613,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3240
+  "ohne": 3227
  },
  "kopfVoll": "dabd69bb4d26d8cb10c0a63bfb16f7800462a992",
- "zeit": "2026-11-19T10:09:55.244Z",
+ "zeit": "2026-11-19T10:21:03.206Z",
  "vorher": "dabd69bb",
  "bilanz": {
   "gewinn": [],
