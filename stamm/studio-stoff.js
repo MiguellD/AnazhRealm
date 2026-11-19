@@ -40,6 +40,31 @@ class AnazhRealm_studio_stoff {
     // einzelnen Strähne fällt, und das Licht geht zur Fläche: die Faser trägt den Anteil `faser.anteil` = (1 − unter · flaeche),
     // den Rest der Standard-Stoff an der Normale der Kappe. Bis hier flimmerte die Faser im Gang (K6, Radeon: Kopf 9,6–10,6 % der
     // Pixel über halb zum Grund; geweitet und grau noch bis 5,9 %, das Licht der Fläche 0,4–1,4 %).
+    // DER SAUM LIEST DAS LICHT AN SEINEM ORT (licht-eine-skala, die Klasse Schein-Emissiv): die Look-Terme der Labs (Haut: SSS-
+    // Saum · Fell: Rim, Sheen, Funkeln · Strähne: Spitzen-Rim, Glanz) sind Anteile des Lichts, das eine weiße Karte am selben Ort
+    // zurückwirft — Term × Bestrahlung ÷ π, je direktem Licht (lightColor trägt den Schatten) und für die Umgebung (Bestrahlung
+    // der Lichter + des Himmels). Bis hier standen sie als Emission: eine Konstante, die in der EINEN Skala nachts × k leuchtete
+    // (die Figur glühte ohne Quelle) und am Mittag unter der Belichtung verschwand.
+    static _saumLichtModell() {
+        if (AnazhRealm._saumLichtK) return AnazhRealm._saumLichtK;
+        const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
+        class SaumLicht extends Basis {
+            constructor(saum) {
+                super();
+                this.saum = saum;
+            }
+            direct(e, builder) {
+                super.direct(e, builder);
+                e.reflectedLight.directDiffuse.addAssign(e.lightColor.mul(this.saum).mul(1 / Math.PI));
+            }
+            indirectSpecular(builder) {
+                super.indirectSpecular(builder);
+                const { irradiance, iblIrradiance, reflectedLight } = builder.context;
+                reflectedLight.indirectDiffuse.addAssign(irradiance.add(iblIrradiance).mul(this.saum).mul(1 / Math.PI));
+            }
+        }
+        return (AnazhRealm._saumLichtK = SaumLicht);
+    }
     static _haarLichtModell() {
         if (AnazhRealm._haarLichtK) return AnazhRealm._haarLichtK;
         const T = THREE.TSL;
@@ -664,9 +689,19 @@ class AnazhRealm_studio_stoff {
                         mat.customProgramCacheKey = function () {
                             return schluessel.call(this) + "|haarLicht";
                         };
-                    } else if (add) mat.emissiveNode = add;
+                    } else if (add) {
+                        // DER SAUM IST LICHT (licht-eine-skala, die Klasse Schein-Emissiv fällt): Haut-Saum, Fell-Rim, Sheen und
+                        // Strähnen-Glanz sind Rückwurf des Lichts am Ort (`_saumLichtModell`), nie Emission
+                        const K = AnazhRealm._saumLichtModell();
+                        const saum = add;
+                        mat.setupLightingModel = () => new K(saum);
+                        const schluessel = mat.customProgramCacheKey;
+                        mat.customProgramCacheKey = function () {
+                            return schluessel.call(this) + "|saumLicht:" + kind;
+                        };
+                    }
                     // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
-                    // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
+                    // (outputNode multipliziert den fertigen Output inkl. der Saum-Terme).
                     if (Number.isFinite(L.wrap)) {
                         const w = ndv
                             .max(0.0)

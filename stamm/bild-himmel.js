@@ -1035,6 +1035,11 @@ class AnazhRealm_bild_himmel {
                 .mul(himmel)
         );
         const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
+        // DIE SCHLIERE STREUT DAS LICHT DES ORTS (licht-eine-skala, die Klasse Schein-Emissiv): ihr Ton × die Beleuchtungsstärke der
+        // waagrechten Fläche ÷ π (`uLicht`, die Lesung des Lichtmessers `_belichtungE`, `_tickRain`) — die weiße Karte im Regen.
+        // Bis hier zeichnete sie ihren Ton als Konstante: nachts leuchtete der Regen in der EINEN Skala × k.
+        const uLicht = T.uniform(new THREE.Vector3(0, 0, 0));
+        mat.colorNode = T.vec4(T.materialColor.mul(uLicht).mul(1 / Math.PI), 1);
         // DIE SCHLIERE IST DER WEG DES TROPFENS IN DER BELICHTUNG DES AUGES (w15-pfuetze): v = (Drift, −`fall`), ihr Weg
         // v × `belichtung` (`uWeg`: 9 m/s → 15 cm) — Länge und Neigung im Wind aus EINEM Gesetz. Das Quad trägt den Hüllkasten des
         // Wegs (|sin θ| · L + Breite × cos θ · L), die Schliere ist seine Diagonale in der Richtung des Falls (die Deckung je Fragment
@@ -1058,7 +1063,7 @@ class AnazhRealm_bild_himmel {
         mesh.userData.inventar = "wetter-regen";
         mesh.visible = false;
         this.state.scene.add(mesh);
-        this._rainSystem = { mesh, uZeit, uDrift, uWeg, uProj, RG };
+        this._rainSystem = { mesh, uZeit, uDrift, uWeg, uProj, uLicht, RG };
         return this._rainSystem;
     }
     _tickRain() {
@@ -1088,6 +1093,9 @@ class AnazhRealm_bild_himmel {
         const cam = st.camera;
         if (cam) sys.mesh.position.copy(cam.position);
         sys.mesh.material.opacity = Math.min(RG.deckung, wf.rain * RG.deckung);
+        // das Licht der Schliere: die letzte Lesung des Lichtmessers (ohne Lesung hält sie ihr Licht, vor der ersten ist sie dunkel)
+        const E = this._belichtungGelesen ? this._belichtungE : null;
+        if (E) sys.uLicht.value.set(E[0], E[1], E[2]);
         // Die Uhr der Schlieren: die Bild-Uhr (s, A9), auf eine Stunde gefaltet (float-Genauigkeit im Vertex).
         const t = this._bildZeit % 3600;
         sys.uZeit.value = t;
