@@ -2339,7 +2339,7 @@ class AnazhRealm_vegetation_streu {
         const h = this._rollGenome(plan.sKey, "tree-genome").zustand("phyto-growth");
         this._nebenAuftrag("wald", { type: "wuchs", P: plan.P, h, rang: 0 }).then(
             (m) => {
-                flug.delete(k);
+                if (!flug.delete(k)) return; // der Leser wuchs schon ohne ihn (`_wuchsVerbraucht`): kein Vorrat für niemanden
                 V.set(k, new Float64Array(m.zahlen));
                 this._weltRegt();
             },
@@ -2349,6 +2349,18 @@ class AnazhRealm_vegetation_streu {
             }
         );
         return false;
+    }
+
+    // DER WUCHS IST VERBRAUCHT (w28-funktion-welt-2): eine Baum-Art des Wurfs wuchs an ihrem ersten Leser (`_defaultBlueprints`,
+    // einmal je Sitzung) — ihr Wuchs im Vorrat und eine Bestellung im Flug haben keinen Leser mehr und fallen. Bis hier blieb
+    // im Vorrat, was die Saat bestellt hatte, bevor der Leser kam, und fehlte, wo der Leser zuerst kam: A gegen A an 2a1a6e1c
+    // `_wuchsVorrat` 5 von 14 anders (Birke, Buche, Erle der Wiese). Jede Stufe und jedes Welt-Maß des Plans (`sKey|…`).
+    _wuchsVerbraucht(speciesKey, seed) {
+        const plan = this._wuchsPlan(speciesKey, seed, null);
+        if (!plan) return;
+        const vor = plan.sKey + "|";
+        for (const M of [this._wuchsVorrat, this._wuchsFlug])
+            if (M) for (const k of [...M.keys()]) if (k.startsWith(vor)) M.delete(k);
     }
 
     // FEHLT DER WUCHS DER SAAT? (w4-b-pflanzen): die Saat des Chunks (cx, cz) wächst Büsche (`SAAT_BUSCH`, je Region EINE Variante:

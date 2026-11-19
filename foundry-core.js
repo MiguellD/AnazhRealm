@@ -7400,14 +7400,19 @@ function __leibRaumFeld(prims, vox, x, y, z) {
     let a = 8 * vox;
     for (const p of prims) {
         if (a < TIEF) break;
-        const ex = x - p.c[0],
-            ey = y - p.c[1],
-            ez = z - p.c[2];
+        // die Kette als EINE Röhre an ihrem ersten Glied (wie `__tierFeld`)
+        const K = p.kette;
+        if (K && K.glieder[0] !== p) continue;
+        const pc = K ? K.c : p.c,
+            pext = K ? K.ext : p.ext;
+        const ex = x - pc[0],
+            ey = y - pc[1],
+            ez = z - pc[2];
         const d2 = ex * ex + ey * ey + ez * ez;
-        if (d2 > p.ext * p.ext) continue;
+        if (d2 > pext * pext) continue;
         const bl = p.blend || MM.blend;
-        if (Math.sqrt(d2) - (p.ext - bl - 2 * vox) >= a + bl) continue;
-        const b = p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z);
+        if (Math.sqrt(d2) - (pext - bl - 2 * vox) >= a + bl) continue;
+        const b = K ? __kettenRoehre(K, x, y, z) : p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z); // prettier-ignore
         const dab = a > b ? a - b : b - a;
         if (dab >= bl) {
             if (b < a) a = b;
@@ -7418,9 +7423,19 @@ function __leibRaumFeld(prims, vox, x, y, z) {
     }
     return a;
 }
+// DER RAHMEN EINES PRIMITIVS (w28-raum-ofen): Mi/r — die drei oberen Zeilen durch den Radius, die Einheits-Kugel des Primitivs. Das
+// Feld ist homogen in (Mi, r) (`__tierAbstand`: (|Mi·x| − r)/|Miᵀ·q̂|), der Rahmen trägt damit die GRÖSSE der Kugel, die bauTier
+// und bauMensch als Radius der Geometrie legen (`s(r, …)`), nie in Mi. Bis w28-raum-ofen trug der Re-Fit eine Ecke mit Mi_q⁻¹·Mi_p:
+// beim Leib mit dem kleineren Radius blieb sie um r_p statt r_q vom Zentrum und fiel neben jedes Feld (gemessen am Hirsch-Kalb der
+// Stufe 1, gate:tier-anatomie S11: 18,6 % der 2 371 Ecken > 10 mm neben der Fläche, max 121,5 mm; mit dem Radius 0,0 %). Der Mensch
+// der Menge trägt je Knoten dieselben Radien: seine Tafel bleibt byte-gleich (Stufe 2 und 3).
+function __leibRaumRahmen(p) {
+    const s = 1 / p.r;
+    return new THREE.Matrix4().fromArray(Array.from(p.Mi)).premultiply(new THREE.Matrix4().makeScale(s, s, s));
+}
 // Die Ecken V (x, y, z je Ecke, Spreiz-Pose) vom Leib mit den Primitiven P0 auf den Leib mit P1 (gepaart über `ti`): getragen von
-// den nächsten Primitiven (Gewicht e^(−Abstand/LEIB_RAUM.tragen) über dem nächsten), dann `LEIB_RAUM.newton` Schritte auf das
-// Nullniveau des Felds von P1 (Schritt höchstens `LEIB_RAUM.schritt`).
+// den nächsten Primitiven (Gewicht e^(−Abstand/LEIB_RAUM.tragen) über dem nächsten, im Rahmen `__leibRaumRahmen` (Mi_q/r_q)⁻¹·
+// (Mi_p/r_p)), dann `LEIB_RAUM.newton` Schritte auf das Nullniveau des Felds von P1 (Schritt höchstens `LEIB_RAUM.schritt`).
 function __leibRaumRefit(V, P0, P1, vox) {
     const LR = LEIB_RAUM;
     const nach = new Map(P1.map((p) => [p.ti, p]));
@@ -7428,7 +7443,7 @@ function __leibRaumRefit(V, P0, P1, vox) {
     for (const p of P0) {
         const q = nach.get(p.ti);
         if (!q) continue;
-        const A = new THREE.Matrix4().fromArray(Array.from(q.Mi)).invert().multiply(new THREE.Matrix4().fromArray(Array.from(p.Mi)));
+        const A = __leibRaumRahmen(q).invert().multiply(__leibRaumRahmen(p));
         paare.push({ p, e: A.elements });
     }
     if (!paare.length) throw new Error("LEIB-RAUM: kein Primitiv des Leibs findet seinen Partner (fail-closed)");
@@ -7558,6 +7573,197 @@ function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox,
 // Die Zahlen des Re-Fits: `tragen` die Weite (m), über die das nächste Primitiv eine Ecke trägt; `newton` die Schritte auf das
 // Nullniveau, `schritt` (m) ihr größter, `gradient` (m) die Weite des Differenzen-Gradienten.
 var LEIB_RAUM = Object.freeze({ tragen: 0.03, newton: 8, schritt: 0.05, gradient: 1e-3 });
+
+// ── DER LEIB-RAUM DES TIERS (w28-raum-ofen; Leben Welle 2, der Spike Leib-Raum im Zweig `koordination`): eine Art, ein
+// Individuum, ein Jungtier ist ein PUNKT auf EINER Vorlage je Bauplan, kein eigener Guss — dieselbe Maschine wie der Leib-Raum der
+// Menge (`__leibRaumRefit`, der Rahmen trägt den Radius), ohne Fett-Depot und ohne Spreiz-Pose (das Tier steht in seiner Ruhe).
+// DIE VORLAGE (`__tierRaumVorlage`): der bauTier-Baum an den Dials der Art, ihre Haut wie der Guss sie gießt (`__tierHaut`: dieselben
+// Primitive, dieselbe Rasterweite samt Ziel der Dreiecke, dieselbe Hülle `__huelleAusFeld` — ihre Ecken sind die des Gusses) und
+// IHR PRIMITIV-SATZ: jeder Knoten trägt genau die Primitive der Vorlage (`ti` = Platz im Baum). Die Raster-Schwelle
+// `TIER_HAUT.minVox` nimmt am Knoten nichts heraus und nichts hinzu — gemessen fielen am Kalb die Ohren unter sie (Ecken bis
+// 211 mm neben der Fläche), bei +2σ traten die Pfoten in die Haut. Ein Knoten mit anderem Baum (Glieder-Zahl, Wort) bricht laut.
+// Die Fabrik des Baums trägt, was die Primitive lesen (Klasse, Radius, Höhe, Lage); die Raster der Kugeln gießt nie ein Knoten.
+function __tierRaumBaum(kern, d, namen) {
+    const mat = {};
+    const M = (k) => mat[k] || (mat[k] = Object.assign(new THREE.MeshBasicMaterial(), { userData: { __klasse: k } }));
+    const kugel = (r, k, sc) => {
+        if (k === "hornhaut") return new THREE.Group();
+        const m = new THREE.Mesh(new THREE.SphereGeometry(r, 4, 3), M(k));
+        if (sc) m.scale.set(sc[0], sc[1], sc[2]);
+        return m;
+    };
+    const B = kern.bauTier(
+        {
+            gruppe: () => new THREE.Group(),
+            kugel,
+            kugelFein: (r, k) => kugel(r, k),
+            zylinder: (rt, rb, h, k) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, 4, 1), M(k)),
+            v3: (x, y, z) => new THREE.Vector3(x, y, z),
+            richte: (node, dir) => node.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize()),
+            fellSchweif: () => {},
+        },
+        d
+    );
+    const root = B.teile.wolf;
+    root.updateMatrixWorld(true);
+    // die Gelenke nach den Namen des Skeletts der Vorlage (die Rute: tailSeg<i>)
+    const nodeName = new Map();
+    for (const nm of namen) {
+        const t = /^tailSeg(\d+)$/.exec(nm);
+        const node = t ? (B.tailSegs || [])[+t[1]] : B.teile[nm];
+        if (node) nodeName.set(node, nm);
+    }
+    const gelenkVon = (n) => {
+        for (let c = n; c; c = c.parent) if (nodeName.has(c)) return nodeName.get(c);
+        return "wolf";
+    };
+    // die Gestalt des Baums: je Knoten Mesh-Typ und Klasse in traverse-Reihenfolge (gleiche Gestalt ⇒ gleicher Platz `ti`)
+    const gestalt = [];
+    root.traverse((o) => gestalt.push(o.isMesh ? o.geometry.type + ":" + o.material.userData.__klasse : "g"));
+    const H = (B.masse && B.masse.H) || kern.deriveTierParams(d).size || 2.4;
+    return { B, root, nodeName, gelenkVon, gestalt: gestalt.join(","), H };
+}
+// Was die Haut eines Baums nimmt, wie `__tierHaut` `nimmHaut`: die nahe Stufe gießt den Kopf nicht in die Leib-Haut (er trägt seine
+// starren Häute). Je Baum SEIN Kopf — der Kopf der Vorlage liegt in keinem Knoten-Baum.
+function __tierRaumNimm(b, fein) {
+    const kopf = b.B.teile.headGroup || null;
+    return (n) => {
+        if (fein) return true;
+        for (let c = n; c; c = c.parent) if (c === kopf) return false;
+        return true;
+    };
+}
+// Die Rasterweite der Haut eines Baums, wie `__tierHaut` sie wählt (das Ziel der Dreiecke weitet sie), und ihre Primitive.
+function __tierRaumRaster(b, nimm, fein) {
+    const TH = TIER_HAUT;
+    let vox = (fein ? TH.voxFern : TH.voxNah) * b.H;
+    const blend = TH.blend * b.H;
+    let prims = __tierPrims(b.root, b.root, nimm, vox, blend, b.gelenkVon);
+    let feld = __tierFeld(prims, vox, blend);
+    const ziel = fein ? TH.dreieckeFern : TH.dreieckeNah;
+    const dreiecke = 2 * __tierKanten(feld.f, feld.nx, feld.ny, feld.nz);
+    if (dreiecke > ziel) {
+        vox *= Math.sqrt(dreiecke / ziel);
+        prims = __tierPrims(b.root, b.root, nimm, vox, blend, b.gelenkVon);
+        feld = __tierFeld(prims, vox, blend);
+    }
+    return { vox, blend, prims, feld };
+}
+// DIE VORLAGE eines Bauplans: die Art `art` (tetrapoda GATTUNGEN) mit den Dials `ov` auf der Stufe `lod` (0 nah: der Leib ohne den
+// Kopf, der seine starren Häute trägt; 1 die Grobstufe: der ganze Leib in EINER Haut). Rückgabe { kern, dials, fein, namen,
+// b, vox, P (der Primitiv-Satz), geo (die Haut, Ecken wie der Guss), H }.
+function __tierRaumVorlage(kern, art, ov, lod) {
+    const dials0 = (kern.GATTUNGEN && kern.GATTUNGEN[art]) || null;
+    if (!dials0) throw new Error("TIER-RAUM: die Art " + art + " steht nicht im Gesetzbuch (fail-closed)");
+    const dials = Object.assign({}, dials0, ov || {});
+    const fein = (lod | 0) >= 1;
+    // die Namen der Gelenke und ihre Bone-Ordnung: das Skelett des Gusses selbst
+    const sk = bakeTierInstance(kern, art, 0, lod, ov || null).userData.__skelett;
+    const namen = sk.joints.map((j) => j.name);
+    const b = __tierRaumBaum(kern, dials, namen);
+    const R = __tierRaumRaster(b, __tierRaumNimm(b, fein), fein);
+    const platz = new Map();
+    let i = 0;
+    b.root.traverse((o) => platz.set(o, i++));
+    for (const p of R.prims) {
+        p.ti = platz.get(p.node);
+        p.blend = R.blend; // `__leibRaumFeld` liest die Verrundung des Primitivs (sonst die der Menge)
+    }
+    const genutzt = new Set(R.prims.map((p) => p.j));
+    const skinJoints = namen.filter((nm) => genutzt.has(nm)); // die Bone-Ordnung der Haut (`__tierHaut`: Baum-Ordnung, nur getragene)
+    const { zentren, kandidaten } = __primGewichte(R.prims, b.H, R.blend, R.vox, R.feld.lo, R.feld.hi);
+    const hk =
+        kern && typeof kern.surfaceNets === "function"
+            ? kern
+            : typeof __koerperCore !== "undefined" && __koerperCore && typeof __koerperCore.surfaceNets === "function"
+              ? __koerperCore
+              : null;
+    if (!hk) throw new Error("TIER-RAUM: Hüllen-Maschine (koerper-core.surfaceNets) fehlt (fail-closed)");
+    const eW = TIER_HAUT.eW * b.H;
+    const F = R.feld;
+    const geo = __huelleAusFeld(hk, F.f, F.nx, F.ny, F.nz, F.lo, R.vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten, fein);
+    if (!geo) throw new Error("TIER-RAUM: die Haut der Vorlage " + art + " ohne Fläche (fail-closed)");
+    return { kern, art, dials, fein, namen, b, vox: R.vox, blend: R.blend, P: R.prims, geo, H: b.H };
+}
+// DER PRIMITIV-SATZ DER VORLAGE AM KNOTEN d (E7: die Schwelle `TIER_HAUT.minVox` urteilt an der Vorlage, nie an der Art): der Baum
+// an d, seine Rasterweite (wie sein Guss sie wählte) und je Knoten des Baums `userData.__haut` = „die Vorlage nahm ihn“ — `__tierPrims`
+// liest es. Rückgabe { b, P (je Primitiv `ti`, `blend`), vox, fehlt (Primitive der Vorlage ohne Partner), extra (fremde) }.
+function __tierRaumSatz(V, d) {
+    const b = __tierRaumBaum(V.kern, d, V.namen);
+    if (b.gestalt !== V.b.gestalt)
+        throw new Error("TIER-RAUM: der Baum an den Dials " + JSON.stringify(d) + " ist nicht der der Vorlage " + V.art + " (Glieder-Zahl oder Wort; fail-closed)"); // prettier-ignore
+    const nimm = __tierRaumNimm(b, V.fein);
+    const R = __tierRaumRaster(b, nimm, V.fein);
+    const satz = new Set(V.P.map((p0) => p0.ti));
+    const platz = new Map();
+    let i = 0;
+    b.root.traverse((o) => {
+        platz.set(o, i);
+        if (o.isMesh) o.userData.__haut = satz.has(i);
+        i++;
+    });
+    const P = __tierPrims(b.root, b.root, nimm, R.vox, R.blend, b.gelenkVon);
+    const da = new Set();
+    for (const p of P) {
+        p.ti = platz.get(p.node);
+        p.blend = R.blend;
+        da.add(p.ti);
+    }
+    let fehlt = 0;
+    for (const t of satz) if (!da.has(t)) fehlt++;
+    return { b, P, vox: R.vox, fehlt, extra: P.length - (satz.size - fehlt) };
+}
+// DER LEIB AN DEN DIALS d im Primitiv-Satz der Vorlage: die Ecken der Vorlage auf sein Feld getragen (`__leibRaumRefit`), Ecken und
+// Gelenke im Maßstab der Vorlage (× H_Vorlage / H_d: die Größe trägt die Instanz-Matrix, der Raum nur die Form). Rückgabe
+// { X (Float64Array 3n), P, vox, H, gelenke (Float64Array 3 je Name der Vorlage) }.
+function __tierRaumLeib(V, d) {
+    const { b, P, vox, fehlt, extra } = __tierRaumSatz(V, d);
+    if (fehlt || extra)
+        throw new Error("TIER-RAUM: `__tierPrims` am Knoten " + JSON.stringify(d) + ": " + fehlt + " Primitive der Vorlage " + V.art + " ohne Partner, " + extra + " fremde (fail-closed)"); // prettier-ignore
+    const s = V.H / b.H;
+    const W = __leibRaumRefit(Float64Array.from(V.geo.attributes.position.array), V.P, P, vox);
+    for (let k = 0; k < W.length; k++) W[k] *= s;
+    const inv = new THREE.Matrix4().copy(b.root.matrixWorld).invert();
+    const gelenke = new Float64Array(V.namen.length * 3);
+    const lage = new THREE.Vector3();
+    for (const [node, nm] of b.nodeName) {
+        lage.setFromMatrixPosition(node.matrixWorld).applyMatrix4(inv).multiplyScalar(s);
+        gelenke.set([lage.x, lage.y, lage.z], V.namen.indexOf(nm) * 3);
+    }
+    return { X: W, P, vox, H: b.H, gelenke };
+}
+// DIE TAFEL DES TIER-RAUMS: `achsen` = [{ achse, knoten: [Werte], dials? }] — `achse` ein Dial des Gesetzbuchs (size, neck, leg,
+// build …), oder `dials(wert)` legt den Knoten als Dials (eine Achse über mehrere Dials: das Alter, die Art). Je Knoten der Weg
+// jeder Ecke der Vorlage und jedes Gelenks (die Gelenk-Formziele: der Satz dreht das Individuum um SEINE Gelenke — mit den Knochen
+// der Vorlage lag der Drehpunkt bis 43 mm (±2σ) und 58 mm (Kalb) falsch), Ruhe gegen Ruhe, im Maßstab der Vorlage. Rückgabe
+// { achsen, n, ziele: Float32Array [Ecke][Knoten][xyz], lage: die Vorlage auf ihrem eigenen Feld, gelenke: { namen, lage, ziele:
+// Float32Array [Gelenk][Knoten][xyz] } } — jede Zahl auf dem Raster des Leib-Raums (`__leibRaumRaster`).
+function __tierRaumTafel(kern, vorlage, achsen) {
+    if (!Array.isArray(achsen) || !achsen.length) throw new Error("TIER-RAUM: ohne Achsen keine Tafel (fail-closed)");
+    if (!vorlage || vorlage.kern !== kern) throw new Error("TIER-RAUM: die Vorlage gehört nicht zu diesem Kern (fail-closed)");
+    const n = vorlage.geo.attributes.position.count,
+        nj = vorlage.namen.length;
+    const L0 = __tierRaumLeib(vorlage, vorlage.dials);
+    const slots = achsen.reduce((s, a) => s + a.knoten.length, 0);
+    const ziele = new Float32Array(n * slots * 3),
+        gz = new Float32Array(nj * slots * 3);
+    let slot = 0;
+    for (const a of achsen)
+        for (const wert of a.knoten) {
+            const d = Object.assign({}, vorlage.dials, typeof a.dials === "function" ? a.dials(wert) : { [a.achse]: wert });
+            const Lk = __tierRaumLeib(vorlage, d);
+            for (let i = 0; i < n; i++) for (let c = 0; c < 3; c++) ziele[(i * slots + slot) * 3 + c] = Lk.X[i * 3 + c] - L0.X[i * 3 + c];
+            for (let j = 0; j < nj; j++) for (let c = 0; c < 3; c++) gz[(j * slots + slot) * 3 + c] = Lk.gelenke[j * 3 + c] - L0.gelenke[j * 3 + c];
+            slot++;
+        }
+    return {
+        achsen: achsen.map((a) => ({ achse: a.achse, knoten: a.knoten.slice() })),
+        n,
+        ziele: __leibRaumRaster(ziele),
+        lage: __leibRaumRaster(Float32Array.from(L0.X)),
+        gelenke: { namen: vorlage.namen.slice(), lage: __leibRaumRaster(Float32Array.from(L0.gelenke)), ziele: __leibRaumRaster(gz) },
+    };
+}
 
 // ── DIE HAUT IST EIN GUSS (w21-leib-bau, koerper MENSCH_GESTALT.leibHaut): die Haut der Nah- und der Grobstufe ist EIN glattes
 // Feld über JEDEM ihrer Primitive — Rumpf, Hals, Glieder (die Muskeln unter der Haut: `dicke` darüber) und der Kopf (Schädel,
@@ -8561,15 +8767,122 @@ function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon, klassen, zylinder) 
             sy = Math.sqrt(e[4] * e[4] + e[5] * e[5] + e[6] * e[6]),
             sz = Math.sqrt(e[8] * e[8] + e[9] * e[9] + e[10] * e[10]);
         const minHalb = r * Math.min(sx, sy, sz);
-        if (minHalb < TIER_HAUT.minVox * vox) return;
+        // E7, der Satz der Vorlage: `userData.__haut` (der Knoten eines Tier-Raums, `__tierRaumLeib`) sagt, ob die Vorlage das
+        // Primitiv in ihre Haut nahm — true trägt, false nie; die Schwelle urteilt nur ohne Satz (der Guss, die Vorlage selbst)
+        const satz = node.userData.__haut;
+        if (satz === false || (satz !== true && minHalb < TIER_HAUT.minVox * vox)) return;
         const Mi = Float64Array.from(new THREE.Matrix4().copy(M).invert().elements);
         const ext = r * Math.max(sx, sy, sz) + blend + 2 * vox;
         sp.setFromMatrixPosition(M);
         const auf = Math.max(0, TIER_HAUT.minDicke * vox - minHalb);
         prims.push({ node, r, Mi, c: [sp.x, sp.y, sp.z], ext: ext + auf, auf, j: gelenkVon(node) });
     });
+    __kettenAus(prims, baum, blend, vox);
     prims.sort((a, b) => b.ext - a.ext);
     return prims;
+}
+
+// ── DIE KETTENRÖHRE (R2 ketten-haut; der Same: die Richter-Probe `kette.cjs` der zweiten Spike-Runde im Zweig `koordination`): Hals
+// und Rute des Baus sind Ketten von Gliedern — gingen ihre Kugeln Glied für Glied ins smin, bliebe die Haut eine Funktion der
+// DICHTE, nicht der Gestalt (smin(a, a) = a − blend/4: eine Kette gleicher Radien trug bei 4 … 16 Gliedern 0,53 … 1,35 r, die
+// dichte bläht, die spärliche trägt Perlen). Eine Kette geht als EIN Primitiv ins Feld: die Röhre, die je Strecke zweier Glieder das
+// Ellipsoid zwischen ihnen führt (ihre Rahmen Mi/r und Auflagen linear über den Fußpunkt) — harte Vereinigung in der Kette, das
+// smin nur gegen den übrigen Leib. Eine Kette gleicher Radien IST dann die Röhre ihres Radius, gleich wie dicht.
+// EIN GLIED ist eine Gruppe, deren einziges Mesh die Fell-Kugel des Primitivs ist (die Kette ist ein Gesetz des Tier-Baus; der Leib
+// des Menschen folgt seiner eigenen Haut, MENSCH_GESTALT.leibHaut, und bleibt byte-gleich); das nächste Glied ist ihr Kind (die Rute: jedes
+// Glied hängt am vorigen) oder ihr nächstes Geschwister (der Hals: die Glieder stehen nebeneinander am Rumpf). Je Kette trägt jedes
+// Glied `kette` = { glieder (in Bau-Folge), c, ext (die Kugel um die Röhre), F (die Rahmen), R (die Halbachsen) }; das Feld liest
+// die Kette am ersten Glied, die übrigen tragen ihr Gelenk (die Gewichte der Haut, der Re-Fit), nie ihre Kugel.
+function __kettenAus(prims, baum, blend, vox) {
+    const gliedVon = new Map();
+    for (const p of prims) {
+        const g = p.node.parent;
+        if (!g || g === baum || g.isMesh || p.node.material.userData.__klasse !== "fell") continue;
+        let n = 0;
+        for (const c of g.children) if (c.isMesh) n++;
+        if (n === 1) gliedVon.set(g, p);
+    }
+    const vor = (g) => {
+        if (gliedVon.has(g.parent)) return g.parent;
+        const sib = g.parent ? g.parent.children : [];
+        const i = sib.indexOf(g);
+        return i > 0 && gliedVon.has(sib[i - 1]) ? sib[i - 1] : null;
+    };
+    const nach = new Map();
+    for (const g of gliedVon.keys()) {
+        const v = vor(g);
+        if (v) nach.set(v, nach.has(v) ? null : g); // eine Gabel endet die Kette
+    }
+    const ziel = new Set(nach.values());
+    for (const g0 of gliedVon.keys()) {
+        if (ziel.has(g0) || !nach.get(g0)) continue;
+        const glieder = [];
+        for (let g = g0; g; g = nach.get(g)) glieder.push(gliedVon.get(g));
+        const lo = [1e9, 1e9, 1e9],
+            hi = [-1e9, -1e9, -1e9];
+        for (const p of glieder)
+            for (let d = 0; d < 3; d++) {
+                lo[d] = Math.min(lo[d], p.c[d]);
+                hi[d] = Math.max(hi[d], p.c[d]);
+            }
+        const c = [(lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2];
+        let ext = 0;
+        for (const p of glieder) ext = Math.max(ext, Math.hypot(p.c[0] - c[0], p.c[1] - c[1], p.c[2] - c[2]) + p.ext);
+        const K = {
+            glieder,
+            c,
+            ext,
+            F: glieder.map((p) => Float64Array.from(p.Mi, (m, i) => ((i & 3) < 3 ? m / p.r : m))),
+            R: glieder.map((p) => p.ext - blend - 2 * vox),
+        };
+        for (const p of glieder) p.kette = K;
+    }
+}
+// Der Abstand zur Kettenröhre K (erste Ordnung wie `__tierAbstand`): je Strecke der Fußpunkt t ∈ [0, 1], dort der Rahmen
+// (1 − t)·F_k + t·F_k+1 als Einheits-Kugel, die Auflage ebenso; das Minimum über die Strecken.
+function __kettenRoehre(K, x, y, z) {
+    const G = K.glieder;
+    let best = Infinity;
+    for (let k = 0; k < G.length - 1; k++) {
+        const a = G[k].c,
+            b = G[k + 1].c;
+        const ux = b[0] - a[0],
+            uy = b[1] - a[1],
+            uz = b[2] - a[2];
+        const L2 = ux * ux + uy * uy + uz * uz;
+        let t = L2 > 0 ? ((x - a[0]) * ux + (y - a[1]) * uy + (z - a[2]) * uz) / L2 : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const fx = a[0] + t * ux - x,
+            fy = a[1] + t * uy - y,
+            fz = a[2] + t * uz - z;
+        // die untere Schranke: weiter vom Fußpunkt als die größere Halbachse der Strecke um `best`
+        if (Math.sqrt(fx * fx + fy * fy + fz * fz) - Math.max(K.R[k], K.R[k + 1]) >= best) continue;
+        const A = K.F[k],
+            B = K.F[k + 1],
+            s = 1 - t;
+        const m0 = s * A[0] + t * B[0],
+            m1 = s * A[1] + t * B[1],
+            m2 = s * A[2] + t * B[2],
+            m4 = s * A[4] + t * B[4],
+            m5 = s * A[5] + t * B[5],
+            m6 = s * A[6] + t * B[6],
+            m8 = s * A[8] + t * B[8],
+            m9 = s * A[9] + t * B[9],
+            m10 = s * A[10] + t * B[10];
+        const qx = m0 * x + m4 * y + m8 * z + s * A[12] + t * B[12],
+            qy = m1 * x + m5 * y + m9 * z + s * A[13] + t * B[13],
+            qz = m2 * x + m6 * y + m10 * z + s * A[14] + t * B[14];
+        const ql = Math.sqrt(qx * qx + qy * qy + qz * qz) || 1e-9;
+        const ex = qx / ql,
+            ey = qy / ql,
+            ez = qz / ql;
+        const gx = m0 * ex + m1 * ey + m2 * ez,
+            gy = m4 * ex + m5 * ey + m6 * ez,
+            gz = m8 * ex + m9 * ey + m10 * ez;
+        const d = (ql - 1) / (Math.sqrt(gx * gx + gy * gy + gz * gz) || 1e-9) - (s * G[k].auf + t * G[k + 1].auf);
+        if (d < best) best = d;
+    }
+    return best;
 }
 
 // DAS FELD AN EINEM PUNKT (trilinear; außerhalb des Rasters frei, der Deckel von `__tierFeld`): F = { f, nx, ny, nz, lo }
@@ -8664,20 +8977,28 @@ function __tierFeld(prims, vox, blend, anker, rahmen) {
     const TIEF = -3 * vox;
     const f = new Float32Array(nx * ny * nz).fill(WEIT);
     for (const p of prims) {
+        // die Kette (`__kettenAus`) geht als EINE Röhre ins Feld, an ihrem ersten Glied; die übrigen Glieder gießen nichts
+        const K = p.kette;
+        if (K && K.glieder[0] !== p) {
+            p.node.userData.__nichtGiessen = true;
+            continue;
+        }
         const bl = p.blend || blend; // die Verrundung des Primitivs (der fallende Stoff der Menge trägt seine eigene)
-        const R = p.ext - bl - 2 * vox;
-        const cx = p.c[0],
-            cy = p.c[1],
-            cz = p.c[2];
-        const i0 = Math.max(0, Math.floor((p.c[0] - p.ext - lo[0]) / vox)),
-            i1 = Math.min(nx - 1, Math.ceil((p.c[0] + p.ext - lo[0]) / vox)),
-            j0 = Math.max(0, Math.floor((p.c[1] - p.ext - lo[1]) / vox)),
-            j1 = Math.min(ny - 1, Math.ceil((p.c[1] + p.ext - lo[1]) / vox)),
-            k0 = Math.max(0, Math.floor((p.c[2] - p.ext - lo[2]) / vox)),
-            k1 = Math.min(nz - 1, Math.ceil((p.c[2] + p.ext - lo[2]) / vox));
+        const pc = K ? K.c : p.c,
+            pext = K ? K.ext : p.ext;
+        const R = pext - bl - 2 * vox;
+        const cx = pc[0],
+            cy = pc[1],
+            cz = pc[2];
+        const i0 = Math.max(0, Math.floor((cx - pext - lo[0]) / vox)),
+            i1 = Math.min(nx - 1, Math.ceil((cx + pext - lo[0]) / vox)),
+            j0 = Math.max(0, Math.floor((cy - pext - lo[1]) / vox)),
+            j1 = Math.min(ny - 1, Math.ceil((cy + pext - lo[1]) / vox)),
+            k0 = Math.max(0, Math.floor((cz - pext - lo[2]) / vox)),
+            k1 = Math.min(nz - 1, Math.ceil((cz + pext - lo[2]) / vox));
         // Nur die KUGEL mit Radius ext (nicht der Würfel): jenseits davon erreicht das Primitiv die
         // Schale um das Nullniveau nie (b ≥ R + blend + 2·vox − R).
-        const ext2 = p.ext * p.ext;
+        const ext2 = pext * pext;
         for (let k = k0; k <= k1; k++) {
             const z = lo[2] + k * vox,
                 ez = z - cz;
@@ -8699,7 +9020,7 @@ function __tierFeld(prims, vox, blend, anker, rahmen) {
                         ex = x - cx;
                     if (Math.sqrt(ex * ex + eyz) - R >= a + bl) continue;
                     // die Dicke, die hier nicht gilt (`p.dickeWeg`: die Haut des Leibs über der Naht, `__leibHaut`), kehrt zurück
-                    const b = p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z);
+                    const b = K ? __kettenRoehre(K, x, y, z) : p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z); // prettier-ignore
                     // polynomiales smin (IQ): die Naht verrundet mit Radius ~blend
                     const dab = a > b ? a - b : b - a;
                     if (dab >= bl) {

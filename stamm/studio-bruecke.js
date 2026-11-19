@@ -1696,7 +1696,7 @@ class AnazhRealm_studio_bruecke {
         // eine Rückgabe im letzten Takt (`_foundryLoslassen`) oder ein Untätiger, dessen Ruhezeit ablief (`ruheFaellig`): der
         // Ruhe-Deckel wiegt, was untätig wurde
         const _f = this._foundry;
-        if (_f && (_f.ruheOffen || performance.now() >= _f.ruheFaellig)) this._foundryRuheDeckel();
+        if (_f && (_f.ruheOffen || this.state.spielZeit >= _f.ruheFaellig)) this._foundryRuheDeckel();
         const q = this._foundryIngestQueue;
         if (!q || !q.length) return;
         let n;
@@ -2208,8 +2208,11 @@ class AnazhRealm_studio_bruecke {
             const rec = recipes[id];
             const pol = KP[rec.kind];
             const werk = (pol && pol.werk) || null;
+            // ein Werk des Grunds hat kein Ziel einer Hand: der Ort setzt es (`_werkDesGrunds`), die Welt ist sein Leser
+            const grund = this._werkDesGrunds(null, null, rec);
             let ziel = null;
-            if (pol && pol.prefix) ziel = bps[pol.prefix + id] ? pol.prefix + id : null;
+            if (grund) ziel = null;
+            else if (pol && pol.prefix) ziel = bps[pol.prefix + id] ? pol.prefix + id : null;
             else if (werk) ziel = id;
             else
                 ziel =
@@ -2233,13 +2236,16 @@ class AnazhRealm_studio_bruecke {
                     werk ||
                     (ziel
                         ? "werk"
-                        : streu.has(id)
-                          ? "streu"
-                          : kanal === "forest" || kanal === "settlement"
-                            ? "welt"
-                            : null),
+                        : grund
+                          ? "welt"
+                          : streu.has(id)
+                            ? "streu"
+                            : kanal === "forest" || kanal === "settlement"
+                              ? "welt"
+                              : null),
                 quelle: { datei, anker: id },
             };
+            if (grund) t.grund = true;
             teile.push(t);
             teilVon.set(id, t);
             if (ziel && !zielVon.has(ziel)) zielVon.set(ziel, t);
@@ -2391,7 +2397,8 @@ class AnazhRealm_studio_bruecke {
             ohneEltern,
             zwillinge,
             tot: teile.filter((t) => !t.konsum).map((t) => t.rezept || t.ziel),
-            ohneGriff: teile.filter((t) => !t.ziel).map((t) => t.rezept),
+            // ein Werk des Grunds (`grund`) hat seinen Griff im Ort, der es setzt
+            ohneGriff: teile.filter((t) => !t.ziel && !t.grund).map((t) => t.rezept),
         };
         this._stammbaumMerker = {
             recipes,
@@ -2457,7 +2464,10 @@ class AnazhRealm_studio_bruecke {
         const baum = this._stammbaum();
         const alt = this._wortKatalogMerker;
         if (alt && alt.baum === baum && alt.recipes === recipes && alt.nRez === ids.length) return alt;
-        const namen = Object.keys(bps).sort();
+        // ein Werk des Grunds ist kein Wort (`_werkDesGrunds`: der Ort setzt es) — weder sein Bauplan noch der Name hinter dem Präfix
+        const namen = Object.keys(bps)
+            .filter((n) => !this._werkDesGrunds(n, bps[n]))
+            .sort();
         const KP = AnazhRealm.KIND_POLICY;
         const falte = AnazhRealm._wortFalten;
         // die Wörter eines Etiketts sind seine Nomen und Namen (groß geschrieben): „Dojo mit Pergola" gab der Welt das Wort

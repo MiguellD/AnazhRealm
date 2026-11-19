@@ -921,11 +921,13 @@ class AnazhRealm_kreatur_verhalten {
         }
         const pm = st.playerMesh;
         if (pm && pm.position && !(st.player && st.player.mountedArch != null)) this._leibTeil(pm, teil(n++));
-        if (n < 2) return;
         const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
-        for (let gang = 0; gang < AnazhRealm.LEIB_GAENGE; gang++) {
+        for (let gang = 0; n >= 2 && gang < AnazhRealm.LEIB_GAENGE; gang++) {
             if (!this._leibKontaktGang(T, n, nah)) break;
         }
+        // die Teile halten keinen Leib über den Takt (w28-funktion-welt-2): ein Teil hielt den gegangenen Leib samt Gestalt
+        // fest (A gegen A an ea7885fb `r._leibKontaktTeile[13].q` — 54 Puffer, die die Welt nicht mehr trug)
+        for (const t of T) t.q = null;
     }
     // DER TEIL EINES LEIBS im Kontakt Leib an Leib: das Tier seine Strecke −halb … +halb längs der Gier mit seinem Radius
     // (`_kreaturLeib`), der Spieler zu Fuß seine Kapsel (`_spielerKapsel`). `t` wird überschrieben.
@@ -1043,9 +1045,10 @@ class AnazhRealm_kreatur_verhalten {
             this._leibPaar(a, this._leibTeil(o, b), i + j, nah);
         }
         const pm = st.playerMesh;
-        if (!pm || !pm.position || (st.player && st.player.mountedArch != null)) return;
-        if (Math.abs(pm.position.x - a.x) > grob || Math.abs(pm.position.z - a.z) > grob) return;
-        this._leibPaar(a, this._leibTeil(pm, b), i + cr.length, nah);
+        const geht = pm && pm.position && !(st.player && st.player.mountedArch != null);
+        if (geht && Math.abs(pm.position.x - a.x) <= grob && Math.abs(pm.position.z - a.z) <= grob)
+            this._leibPaar(a, this._leibTeil(pm, b), i + cr.length, nah);
+        a.q = b.q = null; // die Teile halten keinen Leib über den Schritt (A gegen A an d7985519 `r._leibWegB.q`)
     }
 
     // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — zu Fuß trägt ihn der Schwerpunkt, bis die

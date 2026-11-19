@@ -22,7 +22,13 @@ class AnazhRealm_dirigent_takt {
             // Spiel-Zeit (`spielZeit`, unten) — nie den rAF-Stempel; die Liste der Wanduhr-Leser mit Grund ist die Tafel
             // spec/uhr/geraetezeit.json, ihre Wand gate:wetter-wache (W).
             const wandDelta = Math.max(0.001, (t - lastTime) / 1000);
-            const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
+            // DER ZEITLOSE TAKT (w28-funktion-welt-2): ein Takt am Stempel des letzten — es verging keine Zeit — baut die Welt
+            // (Strom, Foundry, Stufen, Fege-Takte) und lebt nicht: Spiel-Takt 0, und er ruht wie ein Lade-Takt (`ruht`, unten).
+            // Bis hier trug ihn der Boden der Wanduhr (`wandDelta` ≥ 1 ms) als 1 ms Leben: N Rufe am selben Stempel bewegten Tiere,
+            // Bewohner, Licht und Schwarm um N ms — die Welt hing daran, WIE OFT einer fragte, nicht an ihrer Uhr (A gegen A,
+            // zwei Abdrücke zugleich an 88b3f266: 515 gegen 206 Takte des Einschwingens, 44 Dinge anders). rAF stempelt nie zweimal.
+            const zeitlos = t === lastTime;
+            const delta = zeitlos ? 0 : Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
             const wandZeit = t / 1000;
             // DER WELT-WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht, die neue kommt an — bis sie steht, taktet keine
@@ -80,7 +86,7 @@ class AnazhRealm_dirigent_takt {
                 // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
                 // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
                 if (bild) this._erstZeichnungStand().bildWartet.clear();
-                const ruht = !bild && this._ladeTakt();
+                const ruht = zeitlos || (!bild && this._ladeTakt());
                 // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
                 this._ladeBildTakt = bild && this._ladeTakt();
                 // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was

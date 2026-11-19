@@ -935,6 +935,7 @@ class AnazhRealm_bau_vorlagen {
                 } finally {
                     this._growTreeNoise = welt;
                 }
+                this._wuchsVerbraucht(species, `builtin-${species}-v1`); // sein Wuchs im Vorrat hat keinen Leser mehr
                 const sk = this._lastTreeSkeleton;
                 this._lastTreeSkeleton = null; // der Seiten-Kanal des Wuchses
                 if (!Array.isArray(parts) || parts.length < 2)
