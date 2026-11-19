@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 5,
+    "heute": 6,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 2.7,
+    "anteilHeute": 3.1,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -17342,7 +17342,7 @@
        "richter": "20 per Satz erzeugte Verben × 5 Eingaben ≥ 95 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Tastatur/Maus und Gamepad mit Totzone und freier Belegung (koerper-bewegung.js:2413-2434); kein Touch (nur ein pointerdown-Stempel), WebXR und Spracherkennung 0 Treffer. — KARTE: 0 — Eingabe → Pixel an der Radeon Ego gehend 235 ms, Third 81,6 ms (leib.K1 ROT) gegen ≤ 100 ms; der v1-Pfad ist nur an der GTX gebucht (spielgang.K3).",
@@ -20088,11 +20088,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 35,
+  "heute": 36,
   "davonKopplungen": 33,
   "kern": 6,
   "kernDazu": 6,
-  "anteilHeute": 2.2,
+  "anteilHeute": 2.3,
   "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20103,7 +20103,7 @@
   },
   "gliederLeitern": 9,
   "beide": 33,
-  "nachwache": 2
+  "nachwache": 3
  },
  "zusammengelegt": [
   {

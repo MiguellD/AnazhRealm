@@ -20867,7 +20867,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#2 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, scripts/lib/albedo-tafel.cjs +18) · karte2.mensch.menge.bevoelkerung#2 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#3 gtx: ROT: S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner in 20 Saaten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#4 gtx: ROT: S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#5 gtx: ROT: S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#6 gtx: ROT: S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#7 gtx: ROT: S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#8 gtx: ROT: S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal an f68dbf09 · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) · karte2.mensch.menge.bevoelkerung#9 gtx: ROT: S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal an f68dbf09",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -20903,11 +20903,11 @@
     {
      "id": "karte2.mensch.menge.bevoelkerung#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#3",
@@ -20922,10 +20922,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner in 20 Saaten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner in 20 Saaten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#4",
@@ -20940,10 +20940,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#4",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#5",
@@ -20958,10 +20958,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#5",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#6",
@@ -20976,10 +20976,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#6",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#7",
@@ -20994,10 +20994,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#7",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#8",
@@ -21012,10 +21012,10 @@
      "id": "karte2.mensch.menge.bevoelkerung#8",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     },
     {
      "id": "karte2.mensch.menge.bevoelkerung#9",
@@ -21030,16 +21030,16 @@
      "id": "karte2.mensch.menge.bevoelkerung#9",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1211 Bewohner in 1 Siedlungen (die Stadt 1211 in 309 Häusern) (gemessen 1211, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal",
+     "r6": "konsum"
     }
    ]
   },
   "karte2.mensch.menge.bild": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 24.9 fps · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.mensch.menge.bild#2 radeon: ungemessen (R10) · karte2.mensch.menge.bild#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#3 radeon: ungemessen (R10) · karte2.mensch.menge.bild#3 gtx: ungemessen (R10) · karte2.mensch.menge.bild#4 radeon: ungemessen (R10) · karte2.mensch.menge.bild#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#5 radeon: ungemessen (R10) · karte2.mensch.menge.bild#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#6 radeon: ungemessen (R10) · karte2.mensch.menge.bild#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.bild#7 radeon: ungemessen (R10) · karte2.mensch.menge.bild#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: 25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 24.9 fps · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.mensch.menge.bild#2 radeon: ungemessen (R10) · karte2.mensch.menge.bild#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th · karte2.mensch.menge.bild#3 radeon: ungemessen (R10) · karte2.mensch.menge.bild#3 gtx: ungemessen (R10) · karte2.mensch.menge.bild#4 radeon: ungemessen (R10) · karte2.mensch.menge.bild#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th · karte2.mensch.menge.bild#5 radeon: ungemessen (R10) · karte2.mensch.menge.bild#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th · karte2.mensch.menge.bild#6 radeon: ungemessen (R10) · karte2.mensch.menge.bild#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th · karte2.mensch.menge.bild#7 radeon: ungemessen (R10) · karte2.mensch.menge.bild#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bild#1",
@@ -21078,7 +21078,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th",
      "ungemessen": true
     },
     {
@@ -21114,7 +21114,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th",
      "ungemessen": true
     },
     {
@@ -21132,7 +21132,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th",
      "ungemessen": true
     },
     {
@@ -21150,7 +21150,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th",
      "ungemessen": true
     },
     {
@@ -21168,14 +21168,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 15 s nach 89.5 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 74.1 s · S2 im Bild 32, gehend 22, Zwillinge 0 (th",
      "ungemessen": true
     }
    ]
   },
   "karte2.mensch.menge.dichte": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.dichte#2 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#3 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#4 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#5 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#6 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.mensch.menge.dichte#7 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.menge.dichte#2 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache · karte2.mensch.menge.dichte#3 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache · karte2.mensch.menge.dichte#4 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache · karte2.mensch.menge.dichte#5 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache · karte2.mensch.menge.dichte#6 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache · karte2.mensch.menge.dichte#7 radeon: ungemessen (R10) · karte2.mensch.menge.dichte#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache",
    "stationen": [
     {
      "id": "karte2.mensch.menge.dichte#2",
@@ -21192,7 +21192,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache",
      "ungemessen": true
     },
     {
@@ -21210,7 +21210,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache",
      "ungemessen": true
     },
     {
@@ -21228,7 +21228,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache",
      "ungemessen": true
     },
     {
@@ -21246,7 +21246,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache",
      "ungemessen": true
     },
     {
@@ -21264,7 +21264,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache",
      "ungemessen": true
     },
     {
@@ -21282,7 +21282,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 77 s gerissen: Stille seit 18.6 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 58.1 s · am Messort stadt-voll (ego)) · Wirt-Wache",
      "ungemessen": true
     }
    ]
@@ -29282,7 +29282,7 @@
   },
   "karte2.planet.kosmos.himmelsmechanik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: Last: Referenz f 1,496 (Faden 1,496 · alle Kerne 1,093; vor 116,4/287 ms, nach 109,8/268,4 ms, Ruhe 77,8/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/zug-dienst.sh 93,4 CPU-s · node scripts/diag-k · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Last: Referenz f 1,603 (Faden 1,479 · alle Kerne 1,603; vor 132,5/362,5 ms, nach 123,9/342,3 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.himmelsmechanik#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: Last: Referenz f 1,496 (Faden 1,496 · alle Kerne 1,093; vor 116,4/287 ms, nach 109,8/268,4 ms, Ruhe 77,8/262,7 ms seit 2026-11-17) · fremd: sh.exe dienst/zug-dienst.sh 93,4 CPU-s · node scripts/diag-k · karte2.planet.kosmos.himmelsmechanik#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Last: Referenz f 1,603 (Faden 1,479 · alle Kerne 1,603; vor 132,5/362,5 ms, nach 123,9/342,3 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor · karte2.planet.kosmos.himmelsmechanik#2 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#2 gtx: ROT: S2 · ROT Umfang nicht erzeugbar: über 365 Tage der Welt (worldMeta.tag) steht die Mittagssonne auf 1 Höhe(n) (74.21°): die Sonnenbahn liest nur die Uhr (welt-licht.js:711 sonnenRichtung, stamm/bild-himmel.js:1383), weder Tag noch Breite (verlangt 365 Tage mit eigener Mittagshöhe, die Welt erzeugte 1) an f68dbf09 · karte2.planet.kosmos.himmelsmechanik#3 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#3 gtx: ROT: S3 · ROT Umfang nicht erzeugbar: über 30 Tage wechselt die Phase an 0 Tagen: der Mond steht stets 180° von der Sonne (Vollmond, stamm/bild-himmel.js:2600, welt-licht.js:720) (verlangt 29,53 Tage Mondumlauf (Tage mit wechselnder Phase), die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.himmelsmechanik#4 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#4 gtx: ROT: S4 · ROT Umfang nicht erzeugbar: 0 Finsternis-Lagen (Sonne–Mond < 1,5°) in 30 Tagen: der Mond verlässt die Gegenstellung nie, also keine Finsternis in keinem Jahr (verlangt 100 Jahre mit Finsternis-Geometrie, die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.himmelsmechanik#5 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#5 gtx: ROT: S5 · ROT Leser fehlt: der Sternhimmel dreht nur mit der Uhr (stamm/dirigent-takt.js:2422 starField.rotation aus timeOfDay), keine Präzession; die Reise in die Zeit (stamm/feld-leben.js:1277 zeitMa) erreicht −12 000 a, der Himmel liest sie nicht an f68dbf09 · karte2.planet.kosmos.himmelsmechanik#6 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#6 gtx: ROT: S6 · ROT Leser fehlt: Neigung und Perihel: die Sonnenbahn kennt weder Achsneigung noch Bahn (welt-licht.js:711 sonnenRichtung, Mittagshöhe 74.21° an jedem Tag), kein Leser einer Epoche nach Laskar an f68dbf09 · karte2.planet.kosmos.himmelsmechanik#7 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#7 gtx: ROT: S7 · ROT Leser fehlt: die Tageslänge hängt an keiner Epoche (stamm/bild-himmel.js:2712 _uhrSetzen), die Mondscheibe ist fest (Radius 9 m bei 380 m, stamm/dirigent-ankunft.js:340, stamm/bild-himmel.js:3328) — die Reise in die Zeit (stamm/feld-leben.js:1277) ändert keins von beiden an f68dbf09 · karte2.planet.kosmos.himmelsmechanik#8 radeon: ungemessen (R10) · karte2.planet.kosmos.himmelsmechanik#8 gtx: ROT: S8 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed), mit EINER Sonne und EINEM Mond (verlangt 1000 Saaten, die Welt erzeugte 1) an f68dbf09",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#1",
@@ -29317,10 +29317,10 @@
      "id": "karte2.planet.kosmos.himmelsmechanik#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 · ROT Umfang nicht erzeugbar: über 365 Tage der Welt (worldMeta.tag) steht die Mittagssonne auf 1 Höhe(n) (74.21°): die Sonnenbahn liest nur die Uhr (welt-licht.js:711 sonnenRichtung, stamm/bild-himmel.js:1383), weder Tag noch Breite (verlangt 365 Tage mit eigener Mittagshöhe, die Welt erzeugte 1)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: über 365 Tage der Welt (worldMeta.tag) steht die Mittagssonne auf 1 Höhe(n) (74.21°): die Sonnenbahn liest nur die Uhr (welt-licht.js:711 sonnenRichtung, stamm/bild-himmel.js:1383), weder Tag noch Breite (verlangt 365 Tage mit eigener Mittagshöhe, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#3",
@@ -29335,10 +29335,10 @@
      "id": "karte2.planet.kosmos.himmelsmechanik#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S3 · ROT Umfang nicht erzeugbar: über 30 Tage wechselt die Phase an 0 Tagen: der Mond steht stets 180° von der Sonne (Vollmond, stamm/bild-himmel.js:2600, welt-licht.js:720) (verlangt 29,53 Tage Mondumlauf (Tage mit wechselnder Phase), die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: über 30 Tage wechselt die Phase an 0 Tagen: der Mond steht stets 180° von der Sonne (Vollmond, stamm/bild-himmel.js:2600, welt-licht.js:720) (verlangt 29,53 Tage Mondumlauf (Tage mit wechselnder Phase), die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#4",
@@ -29353,10 +29353,10 @@
      "id": "karte2.planet.kosmos.himmelsmechanik#4",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S4 · ROT Umfang nicht erzeugbar: 0 Finsternis-Lagen (Sonne–Mond < 1,5°) in 30 Tagen: der Mond verlässt die Gegenstellung nie, also keine Finsternis in keinem Jahr (verlangt 100 Jahre mit Finsternis-Geometrie, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: 0 Finsternis-Lagen (Sonne–Mond < 1,5°) in 30 Tagen: der Mond verlässt die Gegenstellung nie, also keine Finsternis in keinem Jahr (verlangt 100 Jahre mit Finsternis-Geometrie, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#5",
@@ -29371,10 +29371,10 @@
      "id": "karte2.planet.kosmos.himmelsmechanik#5",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S5 · ROT Leser fehlt: der Sternhimmel dreht nur mit der Uhr (stamm/dirigent-takt.js:2422 starField.rotation aus timeOfDay), keine Präzession; die Reise in die Zeit (stamm/feld-leben.js:1277 zeitMa) erreicht −12 000 a, der Himmel liest sie nicht",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S5 · ROT Leser fehlt: der Sternhimmel dreht nur mit der Uhr (stamm/dirigent-takt.js:2422 starField.rotation aus timeOfDay), keine Präzession; die Reise in die Zeit (stamm/feld-leben.js:1277 zeitMa) erreicht −12 000 a, der Himmel liest sie nicht",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#6",
@@ -29389,10 +29389,10 @@
      "id": "karte2.planet.kosmos.himmelsmechanik#6",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S6 · ROT Leser fehlt: Neigung und Perihel: die Sonnenbahn kennt weder Achsneigung noch Bahn (welt-licht.js:711 sonnenRichtung, Mittagshöhe 74.21° an jedem Tag), kein Leser einer Epoche nach Laskar",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S6 · ROT Leser fehlt: Neigung und Perihel: die Sonnenbahn kennt weder Achsneigung noch Bahn (welt-licht.js:711 sonnenRichtung, Mittagshöhe 74.21° an jedem Tag), kein Leser einer Epoche nach Laskar",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#7",
@@ -29407,10 +29407,10 @@
      "id": "karte2.planet.kosmos.himmelsmechanik#7",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S7 · ROT Leser fehlt: die Tageslänge hängt an keiner Epoche (stamm/bild-himmel.js:2712 _uhrSetzen), die Mondscheibe ist fest (Radius 9 m bei 380 m, stamm/dirigent-ankunft.js:340, stamm/bild-himmel.js:3328) — die Reise in die Zeit (stamm/feld-leben.js:1277) ändert keins von beiden",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S7 · ROT Leser fehlt: die Tageslänge hängt an keiner Epoche (stamm/bild-himmel.js:2712 _uhrSetzen), die Mondscheibe ist fest (Radius 9 m bei 380 m, stamm/dirigent-ankunft.js:340, stamm/bild-himmel.js:3328) — die Reise in die Zeit (stamm/feld-leben.js:1277) ändert keins von beiden",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.himmelsmechanik#8",
@@ -29425,10 +29425,10 @@
      "id": "karte2.planet.kosmos.himmelsmechanik#8",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S8 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed), mit EINER Sonne und EINEM Mond (verlangt 1000 Saaten, die Welt erzeugte 1)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S8 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed), mit EINER Sonne und EINEM Mond (verlangt 1000 Saaten, die Welt erzeugte 1)",
+     "r6": "konsum"
     }
    ]
   },
@@ -29550,7 +29550,7 @@
   },
   "karte2.planet.kosmos.sterne": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.sterne#1 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sterne#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.sterne#1 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#1 gtx: ROT: S1 · ROT Leser fehlt: die Sonne trägt kein Alter: e0(staerke) (welt-licht.js:691) ohne Epoche; die Reise in die Zeit (stamm/feld-leben.js:1278) reicht bis +1 Ga, nicht +5 Ga, und erbt den Himmel der Heimat (stamm/netz-portal.js:701) an f68dbf09 · karte2.planet.kosmos.sterne#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#2 gtx: ROT: S2 · ROT Leser fehlt: die Sonnenscheibe ist fest (HIMMEL.sonneWinkelGrad 0.53°, stamm/bild-himmel.js:3328) und der Himmel kippt nie mit der Sonne (welt-licht.js:989 himmelSicht) — kein Leser eines Riesen-Stadiums an f68dbf09 · karte2.planet.kosmos.sterne#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#3 gtx: ROT: S3 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Nebel, kein Haufen (verlangt 1000 Sterne mit Ort im Raum, die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.sterne#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#4 gtx: ROT: S4 · ROT Umfang nicht erzeugbar: in 30 Halten à 10 Tage (300 Tage der Welt) ändert sich die Helligkeit an 0 Halten (aMag wird einmal gesetzt, stamm/bild-himmel.js:368) — kein Stern stirbt (verlangt 300 Tage mit Lichtwechsel, die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.sterne#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#5 gtx: ROT: S5 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „kompakte Überreste“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Körper mit eigener Raumkrümmung, keine Linsung im Bild (welt-licht.js:989) an f68dbf09 · karte2.planet.kosmos.sterne#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#6 gtx: ROT: S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — keine Metallizität, kein Alter je Stern (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.sterne#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sterne#7 gtx: ROT: S7 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „Sterne als Generationen“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453); kein Planet mit Gestein außer der Welt selbst (stamm/daten.js:84 ULTIVERSUM) an f68dbf09",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.sterne#1",
@@ -29566,10 +29566,10 @@
      "id": "karte2.planet.kosmos.sterne#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "zahl": "S1 · ROT Leser fehlt: die Sonne trägt kein Alter: e0(staerke) (welt-licht.js:691) ohne Epoche; die Reise in die Zeit (stamm/feld-leben.js:1278) reicht bis +1 Ga, nicht +5 Ga, und erbt den Himmel der Heimat (stamm/netz-portal.js:701)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S1 · ROT Leser fehlt: die Sonne trägt kein Alter: e0(staerke) (welt-licht.js:691) ohne Epoche; die Reise in die Zeit (stamm/feld-leben.js:1278) reicht bis +1 Ga, nicht +5 Ga, und erbt den Himmel der Heimat (stamm/netz-portal.js:701)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -29585,10 +29585,10 @@
      "id": "karte2.planet.kosmos.sterne#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 · ROT Leser fehlt: die Sonnenscheibe ist fest (HIMMEL.sonneWinkelGrad 0.53°, stamm/bild-himmel.js:3328) und der Himmel kippt nie mit der Sonne (welt-licht.js:989 himmelSicht) — kein Leser eines Riesen-Stadiums",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S2 · ROT Leser fehlt: die Sonnenscheibe ist fest (HIMMEL.sonneWinkelGrad 0.53°, stamm/bild-himmel.js:3328) und der Himmel kippt nie mit der Sonne (welt-licht.js:989 himmelSicht) — kein Leser eines Riesen-Stadiums",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sterne#3",
@@ -29603,10 +29603,10 @@
      "id": "karte2.planet.kosmos.sterne#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S3 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Nebel, kein Haufen (verlangt 1000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Nebel, kein Haufen (verlangt 1000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sterne#4",
@@ -29621,10 +29621,10 @@
      "id": "karte2.planet.kosmos.sterne#4",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S4 · ROT Umfang nicht erzeugbar: in 30 Halten à 10 Tage (300 Tage der Welt) ändert sich die Helligkeit an 0 Halten (aMag wird einmal gesetzt, stamm/bild-himmel.js:368) — kein Stern stirbt (verlangt 300 Tage mit Lichtwechsel, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: in 30 Halten à 10 Tage (300 Tage der Welt) ändert sich die Helligkeit an 0 Halten (aMag wird einmal gesetzt, stamm/bild-himmel.js:368) — kein Stern stirbt (verlangt 300 Tage mit Lichtwechsel, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sterne#5",
@@ -29639,10 +29639,10 @@
      "id": "karte2.planet.kosmos.sterne#5",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S5 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „kompakte Überreste“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Körper mit eigener Raumkrümmung, keine Linsung im Bild (welt-licht.js:989)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S5 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „kompakte Überreste“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — kein Körper mit eigener Raumkrümmung, keine Linsung im Bild (welt-licht.js:989)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sterne#6",
@@ -29657,10 +29657,10 @@
      "id": "karte2.planet.kosmos.sterne#6",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — keine Metallizität, kein Alter je Stern (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453) — keine Metallizität, kein Alter je Stern (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sterne#7",
@@ -29675,16 +29675,16 @@
      "id": "karte2.planet.kosmos.sterne#7",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S7 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „Sterne als Generationen“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453); kein Planet mit Gestein außer der Welt selbst (stamm/daten.js:84 ULTIVERSUM)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S7 · ROT Leser fehlt: Umfang nicht erzeugbar (der Umfang „Sterne als Generationen“ trägt keine Zahl): die 2803 Sterne liegen auf der Kuppel, 0 mit Ort im Raum (stamm/bild-himmel.js:453); kein Planet mit Gestein außer der Welt selbst (stamm/daten.js:84 ULTIVERSUM)",
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.kosmos.sternhimmel": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 61 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.98 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 22 Median 34 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 46 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 12 Median 20 · halbe Nacht bei Sonne -13.4° | -15.1° · γ 0.89 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔81 43↔50 49↔55 19↔20; roh 47↔52 25↔22 29↔25 23↔24) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0253,\"X\":0.0078,\"rb\":0.004 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -16.0° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 20 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔75 36↔44 47↔53 21↔23; roh 48↔49 35↔21 28↔29 16↔16) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.16,\"Y\":0.0117,\"X\":0.0063,\"rb\":0.00 · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kosmos.sternhimmel#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.sternhimmel#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 61 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.98 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 22 Median 34 · halbe Nacht bei Sonne -15.4° | -15.8° · γ 0.91 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 46 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 12 Median 20 · halbe Nacht bei Sonne -13.4° | -15.1° · γ 0.89 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔81 43↔50 49↔55 19↔20; roh 47↔52 25↔22 29↔25 23↔24) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":4,\"hell\":0.2,\"Y\":0.0253,\"X\":0.0078,\"rb\":0.004 · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: ✅ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 62 Median 78 · halbe Nacht bei Sonne -15.4° | -15.1° · γ 0.99 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 21 Median 33 · halbe Nacht bei Sonne -16.0° | -15.8° · γ 0.92 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 34 Median 45 · halbe Nacht bei Sonne -14.7° | -15.1° · γ 0.97 (n 53) · Grenzgröße des Felds -5.00…6.00 · ✅ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 13 Median 20 · halbe Nacht bei Sonne -14.0° | -15.1° · γ 0.90 (n 53) · Grenzgröße des Felds -5.00…6.00 · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 72↔75 36↔44 47↔53 21↔23; roh 48↔49 35↔21 28↔29 16↔16) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":3,\"hell\":0.16,\"Y\":0.0117,\"X\":0.0063,\"rb\":0.00 · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.kosmos.sternhimmel#2 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#2 gtx: ROT: S2 · ROT Umfang nicht erzeugbar: 2803 Sterne bis mag 6 im Feld (aMag, stamm/bild-himmel.js:465); 0 von 2803 Punkten wandern über 100 Tage gegen das Feld — die 3 Wandelsterne sind feste Punkte (stamm/bild-himmel.js:312) (verlangt 9000 Sterne bis mag 6, die Welt erzeugte 2803) an f68dbf09 · karte2.planet.kosmos.sternhimmel#3 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#3 gtx: ROT: S3 · ROT Umfang nicht erzeugbar: kein Milchstraßen-Band: höchstens 0.191 der Sterne in ±10° um einen Großkreis (gleichverteilt ≈ 0,17, ein Band ab 0,3), 0 Galaxien-Körper in der Szene; die „Galaxy-Skybox“ zeichnet nur die Atmosphäre (stamm/bild-himmel.js:234) (verlangt 1 Galaxie von innen (Band oder Galaxien-Körper), die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.sternhimmel#4 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#4 gtx: ROT: S4 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist reisbar (verlangt 1000000 Sterne mit Ort im Raum, die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.sternhimmel#5 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#5 gtx: ROT: S5 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist ansteuerbar (verlangt 1000000000 Sterne mit Ort im Raum, die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.sternhimmel#6 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#6 gtx: ROT: S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum; keine Galaxie von außen, keine Andromeda (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0) an f68dbf09 · karte2.planet.kosmos.sternhimmel#7 radeon: ungemessen (R10) · karte2.planet.kosmos.sternhimmel#7 gtx: ROT: S7 · ROT Umfang nicht erzeugbar: die Welt zeigt 0 Galaxien (Band-Anteil 0.191, 0 Galaxien-Körper) (verlangt 100000000000 Galaxien, die Welt erzeugte 0) an f68dbf09",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.sternhimmel#1",
@@ -29721,10 +29721,10 @@
      "id": "karte2.planet.kosmos.sternhimmel#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 · ROT Umfang nicht erzeugbar: 2803 Sterne bis mag 6 im Feld (aMag, stamm/bild-himmel.js:465); 0 von 2803 Punkten wandern über 100 Tage gegen das Feld — die 3 Wandelsterne sind feste Punkte (stamm/bild-himmel.js:312) (verlangt 9000 Sterne bis mag 6, die Welt erzeugte 2803)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: 2803 Sterne bis mag 6 im Feld (aMag, stamm/bild-himmel.js:465); 0 von 2803 Punkten wandern über 100 Tage gegen das Feld — die 3 Wandelsterne sind feste Punkte (stamm/bild-himmel.js:312) (verlangt 9000 Sterne bis mag 6, die Welt erzeugte 2803)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sternhimmel#3",
@@ -29739,10 +29739,10 @@
      "id": "karte2.planet.kosmos.sternhimmel#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S3 · ROT Umfang nicht erzeugbar: kein Milchstraßen-Band: höchstens 0.191 der Sterne in ±10° um einen Großkreis (gleichverteilt ≈ 0,17, ein Band ab 0,3), 0 Galaxien-Körper in der Szene; die „Galaxy-Skybox“ zeichnet nur die Atmosphäre (stamm/bild-himmel.js:234) (verlangt 1 Galaxie von innen (Band oder Galaxien-Körper), die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: kein Milchstraßen-Band: höchstens 0.191 der Sterne in ±10° um einen Großkreis (gleichverteilt ≈ 0,17, ein Band ab 0,3), 0 Galaxien-Körper in der Szene; die „Galaxy-Skybox“ zeichnet nur die Atmosphäre (stamm/bild-himmel.js:234) (verlangt 1 Galaxie von innen (Band oder Galaxien-Körper), die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sternhimmel#4",
@@ -29757,10 +29757,10 @@
      "id": "karte2.planet.kosmos.sternhimmel#4",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S4 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist reisbar (verlangt 1000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist reisbar (verlangt 1000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sternhimmel#5",
@@ -29775,10 +29775,10 @@
      "id": "karte2.planet.kosmos.sternhimmel#5",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S5 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist ansteuerbar (verlangt 1000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum — kein Stern ist ansteuerbar (verlangt 1000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sternhimmel#6",
@@ -29793,10 +29793,10 @@
      "id": "karte2.planet.kosmos.sternhimmel#6",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum; keine Galaxie von außen, keine Andromeda (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die 2803 Sterne liegen auf der Kuppel (480 m um das Auge, stamm/bild-himmel.js:453), 0 mit Ort im Raum; keine Galaxie von außen, keine Andromeda (verlangt 100000000000 Sterne mit Ort im Raum, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.sternhimmel#7",
@@ -29811,10 +29811,10 @@
      "id": "karte2.planet.kosmos.sternhimmel#7",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S7 · ROT Umfang nicht erzeugbar: die Welt zeigt 0 Galaxien (Band-Anteil 0.191, 0 Galaxien-Körper) (verlangt 100000000000 Galaxien, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Welt zeigt 0 Galaxien (Band-Anteil 0.191, 0 Galaxien-Körper) (verlangt 100000000000 Galaxien, die Welt erzeugte 0)",
+     "r6": "konsum"
     }
    ]
   },
@@ -29954,7 +29954,7 @@
   },
   "karte2.planet.kosmos.welten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Messort: kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBI · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.planet.kosmos.welten#1 radeon: ungemessen (R10) — zuletzt an 389a6496: Last: Referenz f 1,346 (Faden 1,346 · alle Kerne 1,259; vor 95,9/330,7 ms, nach 112,9/302,3 ms, Ruhe 83,9/262,7 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=a · karte2.planet.kosmos.welten#1 gtx: ungemessen (R10) — zuletzt an b7ed8419: Messort: kugel-heim: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AWT9B5ht13XfCf5PuvneyunVq5cDMgFmgiBI · karte2.planet.kosmos.welten#2 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#2 gtx: ROT: S2 · ROT ✅ fall_leib_abw_pct 0,99 (Soll ≤ 2) · ❌ fall_fahrzeug_abw_pct — (Soll ≤ 2) · ❌ fall_wurf_abw_pct — (Soll ≤ 2) · ❌ sprung_abw_pct 100 (Soll ≤ 5) · ✅ Umfang verlangt 3 g (größte gefahrene Schwere-Stufe), die Welt erzeugte 3 — Täter: g 3×: Sprunghöhe -0.000 m gegen 0.132 m aus 1/g; Fahrzeug und Wurf ungemessen: der Lauf fährt keinen Fall eines Gefährts (stamm/koerper-fahrt.js) und keinen Freikörper (stamm/koerper-frei.js:534 liest state.gravity) · fall_fahrzeug_abw_pct — statt ≤ 2 · fall_wurf_abw_pct — statt ≤ 2 · sprung_abw_pct 100 statt ≤ 5 an f68dbf09 · karte2.planet.kosmos.welten#3 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#3 gtx: ROT: S3 · ROT Leser fehlt: die Tageslänge ist die EINE Uhr der Welt (stamm/bild-himmel.js:2712 _uhrSetzen), das Gesetz der Welt trägt keine Rotation (stamm/speicher-welten.js:88: schwere, himmel, wetter, gelaende, ort) — keine gebundene Welt, keine Welt mit 4-h-Tag an f68dbf09 · karte2.planet.kosmos.welten#4 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#4 gtx: ROT: S4 · ROT Umfang nicht erzeugbar: das Ultiversum trägt 2 Welten (erde, ferne, stamm/daten.js:84), keine Bauart aus der Lage (verlangt 1000 Welten, die Welt erzeugte 2) an f68dbf09 · karte2.planet.kosmos.welten#5 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#5 gtx: ROT: S5 · ROT Umfang nicht erzeugbar: die Welt wirft 1 Sonnen-Schatten (Richtlicht mit Schatten), EINE Sonne (welt-licht.js:711) (verlangt 2 Sonnen mit Schatten, die Welt erzeugte 1) an f68dbf09 · karte2.planet.kosmos.welten#6 radeon: ungemessen (R10) · karte2.planet.kosmos.welten#6 gtx: ROT: S6 · ROT Umfang nicht erzeugbar: 0 von 2 Welten tragen einen Radius im Gesetz (stamm/speicher-welten.js:88) — das Gelände ist eben (verlangt 1000000 Welten mit Radius, die Welt erzeugte 0) an f68dbf09",
    "stationen": [
     {
      "id": "karte2.planet.kosmos.welten#1",
@@ -29989,10 +29989,10 @@
      "id": "karte2.planet.kosmos.welten#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S2 · ROT ✅ fall_leib_abw_pct 0,99 (Soll ≤ 2) · ❌ fall_fahrzeug_abw_pct — (Soll ≤ 2) · ❌ fall_wurf_abw_pct — (Soll ≤ 2) · ❌ sprung_abw_pct 100 (Soll ≤ 5) · ✅ Umfang verlangt 3 g (größte gefahrene Schwere-Stufe), die Welt erzeugte 3 — Täter: g 3×: Sprunghöhe -0.000 m gegen 0.132 m aus 1/g; Fahrzeug und Wurf ungemessen: der Lauf fährt keinen Fall eines Gefährts (stamm/koerper-fahrt.js) und keinen Freikörper (stamm/koerper-frei.js:534 liest state.gravity) · fall_fahrzeug_abw_pct — statt ≤ 2 · fall_wurf_abw_pct — statt ≤ 2 · sprung_abw_pct 100 statt ≤ 5",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S2 · ROT ✅ fall_leib_abw_pct 0,99 (Soll ≤ 2) · ❌ fall_fahrzeug_abw_pct — (Soll ≤ 2) · ❌ fall_wurf_abw_pct — (Soll ≤ 2) · ❌ sprung_abw_pct 100 (Soll ≤ 5) · ✅ Umfang verlangt 3 g (größte gefahrene Schwere-Stufe), die Welt erzeugte 3 — Täter: g 3×: Sprunghöhe -0.000 m gegen 0.132 m aus 1/g; Fahrzeug und Wurf ungemessen: der Lauf fährt keinen Fall eines Gefährts (stamm/koerper-fahrt.js) und keinen Freikörper (stamm/koerper-frei.js:534 liest state.gravity) · fall_fahrzeug_abw_pct — statt ≤ 2 · fall_wurf_abw_pct — statt ≤ 2 · sprung_abw_pct 100 statt ≤ 5",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.welten#3",
@@ -30007,10 +30007,10 @@
      "id": "karte2.planet.kosmos.welten#3",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S3 · ROT Leser fehlt: die Tageslänge ist die EINE Uhr der Welt (stamm/bild-himmel.js:2712 _uhrSetzen), das Gesetz der Welt trägt keine Rotation (stamm/speicher-welten.js:88: schwere, himmel, wetter, gelaende, ort) — keine gebundene Welt, keine Welt mit 4-h-Tag",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S3 · ROT Leser fehlt: die Tageslänge ist die EINE Uhr der Welt (stamm/bild-himmel.js:2712 _uhrSetzen), das Gesetz der Welt trägt keine Rotation (stamm/speicher-welten.js:88: schwere, himmel, wetter, gelaende, ort) — keine gebundene Welt, keine Welt mit 4-h-Tag",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.welten#4",
@@ -30025,10 +30025,10 @@
      "id": "karte2.planet.kosmos.welten#4",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S4 · ROT Umfang nicht erzeugbar: das Ultiversum trägt 2 Welten (erde, ferne, stamm/daten.js:84), keine Bauart aus der Lage (verlangt 1000 Welten, die Welt erzeugte 2)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: das Ultiversum trägt 2 Welten (erde, ferne, stamm/daten.js:84), keine Bauart aus der Lage (verlangt 1000 Welten, die Welt erzeugte 2)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.welten#5",
@@ -30043,10 +30043,10 @@
      "id": "karte2.planet.kosmos.welten#5",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S5 · ROT Umfang nicht erzeugbar: die Welt wirft 1 Sonnen-Schatten (Richtlicht mit Schatten), EINE Sonne (welt-licht.js:711) (verlangt 2 Sonnen mit Schatten, die Welt erzeugte 1)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die Welt wirft 1 Sonnen-Schatten (Richtlicht mit Schatten), EINE Sonne (welt-licht.js:711) (verlangt 2 Sonnen mit Schatten, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.kosmos.welten#6",
@@ -30061,10 +30061,10 @@
      "id": "karte2.planet.kosmos.welten#6",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S6 · ROT Umfang nicht erzeugbar: 0 von 2 Welten tragen einen Radius im Gesetz (stamm/speicher-welten.js:88) — das Gelände ist eben (verlangt 1000000 Welten mit Radius, die Welt erzeugte 0)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: 0 von 2 Welten tragen einen Radius im Gesetz (stamm/speicher-welten.js:88) — das Gelände ist eben (verlangt 1000000 Welten mit Radius, die Welt erzeugte 0)",
+     "r6": "konsum"
     }
    ]
   },
@@ -32446,7 +32446,7 @@
   },
   "karte2.same.entfaltung.abwesenheit": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.abwesenheit#1 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#2 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#3 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#4 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#5 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#6 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.entfaltung.abwesenheit#7 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.abwesenheit#1 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\" · karte2.same.entfaltung.abwesenheit#2 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\" · karte2.same.entfaltung.abwesenheit#3 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\" · karte2.same.entfaltung.abwesenheit#4 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\" · karte2.same.entfaltung.abwesenheit#5 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\" · karte2.same.entfaltung.abwesenheit#6 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\" · karte2.same.entfaltung.abwesenheit#7 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\"",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.abwesenheit#1",
@@ -32464,7 +32464,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\"",
      "ungemessen": true,
      "beide": true
     },
@@ -32483,7 +32483,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\"",
      "ungemessen": true
     },
     {
@@ -32501,7 +32501,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\"",
      "ungemessen": true
     },
     {
@@ -32519,7 +32519,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\"",
      "ungemessen": true
     },
     {
@@ -32537,7 +32537,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\"",
      "ungemessen": true
     },
     {
@@ -32555,7 +32555,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\"",
      "ungemessen": true
     },
     {
@@ -32573,7 +32573,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Deckel 93 s gerissen: Stille seit 92.8 s nach 93 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 0 s · same.entfaltung.abwesenheit S7 umfang {\"art\"",
      "ungemessen": true
     }
    ]
@@ -36869,7 +36869,7 @@
   },
   "karte2.same.preis.eingabe": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) · karte2.same.preis.eingabe#1 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+   "beleg": "Maschine: S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) an f68dbf09 gtx — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an f68dbf09: Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) — zuletzt an f68dbf09: Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: ROT: S4 · ROT Leser fehlt: Stimme: kein Hörer der Sprache im Spiel — die Stimme spricht nur aus (speechSynthesis, stamm/netz-p2p.js:2558), der Satz geht getippt über den Chat (stamm/dirigent-ankunft.js:642) an f68dbf09 · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) — zuletzt an f68dbf09: Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: ROT: S6 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2) an f68dbf09 · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: ROT: S7 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} — ein per Satz erschaffenes Verb erreicht höchstens sie (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2) an f68dbf09",
    "stationen": [
     {
      "id": "karte2.same.preis.eingabe#1",
@@ -36884,11 +36884,11 @@
     {
      "id": "karte2.same.preis.eingabe#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true,
+     "gruen": true,
+     "zahl": "S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "GRÜN trotz Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 4,0 CPU-s · bash.exe dienst-omen/landung-dienst.sh --selbsttest 2,0 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 21,3 CPU-s · svchost.exe 7,7 CPU-s · SearchIndexer.exe 0,7 CPU-s",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -36906,7 +36906,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf",
      "ungemessen": true
     },
     {
@@ -36924,7 +36924,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf",
      "ungemessen": true
     },
     {
@@ -36940,10 +36940,10 @@
      "id": "karte2.same.preis.eingabe#4",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S4 · ROT Leser fehlt: Stimme: kein Hörer der Sprache im Spiel — die Stimme spricht nur aus (speechSynthesis, stamm/netz-p2p.js:2558), der Satz geht getippt über den Chat (stamm/dirigent-ankunft.js:642)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S4 · ROT Leser fehlt: Stimme: kein Hörer der Sprache im Spiel — die Stimme spricht nur aus (speechSynthesis, stamm/netz-p2p.js:2558), der Satz geht getippt über den Chat (stamm/dirigent-ankunft.js:642)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.preis.eingabe#5",
@@ -36960,7 +36960,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
+     "grund": "ungemessen (R10) — zuletzt an f68dbf09: Last: Referenz f 1,513 (Faden 1,398 · alle Kerne 1,513; vor 125,8/345,5 ms, nach 105,8/321,4 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxf",
      "ungemessen": true
     },
     {
@@ -36976,10 +36976,10 @@
      "id": "karte2.same.preis.eingabe#6",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S6 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.preis.eingabe#7",
@@ -36994,10 +36994,10 @@
      "id": "karte2.same.preis.eingabe#7",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
-     "ungemessen": true
+     "zahl": "S7 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} — ein per Satz erschaffenes Verb erreicht höchstens sie (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+     "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
+     "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Seite hört 2 von 5 Eingabe-Arten {\"tastatur\":1,\"pad\":1,\"finger\":0,\"stimme\":0,\"haende\":0} — ein per Satz erschaffenes Verb erreicht höchstens sie (verlangt 5 Eingabe-Arten mit Hörer, die Welt erzeugte 2)",
+     "r6": "konsum"
     }
    ]
   },
@@ -37451,7 +37451,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 484,
+  "konsum": 521,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37613,10 +37613,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3142
+  "ohne": 3105
  },
  "kopfVoll": "986eff04e91381457c211607664671c49b5d9d0f",
- "zeit": "2026-11-19T13:29:41.943Z",
+ "zeit": "2026-11-19T14:01:07.611Z",
  "vorher": "986eff04",
  "bilanz": {
   "gewinn": [],
