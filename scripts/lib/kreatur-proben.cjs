@@ -1180,6 +1180,7 @@ async function kreaturProben(r, T, opts) {
                     }
                 return n;
             };
+            const grast = A._lebensraumGesetz().E.gattung[gattung].nahrung > 0;
             const platzOrt = (sichtFrei, x, z) => {
                 if (!lebt(x, z) || !r._landAt(x, z) || !r._landAt(x, z - KAM_M) || !imUmkreisLand(x, z, 40)) return null;
                 if (sichtFrei && [0, 0.5, 1].some((f) => r._bodenKlasseAt(x, z - KAM_M * f) === "wald")) return null;
@@ -1189,12 +1190,21 @@ async function kreaturProben(r, T, opts) {
                 if (sichtFrei && [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].some((f) => r.getTerrainHeightAt(x, z - KAM_M * (1 - f)) + 0.9 > hA + (hT - hA) * f)) return null; // prettier-ignore
                 // der Grund trägt den Wurf (`_kreaturGrundFrei`, die Frage jedes Geworfenen) am Ort und im Ring 8 m
                 if ([-1, 0, 1, 2, 3, 4, 5, 6, 7].some((k) => !r._kreaturGrundFrei(x + (k < 0 ? 0 : 8 * Math.cos(k * 0.785)), z + (k < 0 ? 0 : 8 * Math.sin(k * 0.785))))) return null; // prettier-ignore
+                // und eben, wo die Gattung äst (das Maß Kopf unten; der Wolf äst nicht): der Grund im Ring 8 m spannt ≤ 1 m (Ort −45/215, Boden-Spanne 4,9 m: der äsende Kopf hangauf stand
+                // 0,26 m Grund über der Leib-Mitte, Kopf unten 0,33 statt 0,75 — die Messbühne misst das Posen-Gesetz auf der Ebene)
+                const hR = [-1, 0, 1, 2, 3, 4, 5, 6, 7].map((k) => r.getTerrainHeightAt(x + (k < 0 ? 0 : 8 * Math.cos(k * 0.785)), z + (k < 0 ? 0 : 8 * Math.sin(k * 0.785)))); // prettier-ignore
+                if (grast && Math.max(...hR) - Math.min(...hR) > 1) return null;
                 const o = neben(x, z);
                 return huelleNah(x, z, o.y - 0.5, 40) ? null : o;
             };
             const heimFrei = platz(true);
-            const orte = heimFrei || platz(false);
-            if (!orte) throw new Error(`herde-bild: kein Lebensraum ${gattung} ohne Hülle im Umkreis 40 m`);
+            // trägt die freie Sicht keine 12 Orte (eben, im Revier: der Wolf fand an der GPU 3), füllen Orte mit Wald auf der
+            // Sichtlinie auf — die freien zuerst in der Wahl gleicher Halme
+            const orte =
+                heimFrei && heimFrei.length >= ORTE
+                    ? heimFrei
+                    : [...(heimFrei || []), ...(platz(false) || []).filter((o) => !(heimFrei || []).some((q) => q.x === o.x && q.z === o.z))].slice(0, 2 * ORTE); // prettier-ignore
+            if (!orte.length) throw new Error(`herde-bild: kein Lebensraum ${gattung} ohne Hülle im Umkreis 40 m`);
             for (const o of orte) o.halme = taeter === "herde-bild-fern" ? null : halme(o.x, o.z);
             // DIE WAHL NACH DER ZÄHLUNG ALLER: trägt ein Kandidat seine Kacheln noch nicht (null — die Welt stand nur um den
             // Spieler, 1 bzw. 3 von 12 gezählt), geht der Spieler hin, bis die Welt dort steht, und zählt neu; erst dann wählt der Ort
@@ -1206,26 +1216,36 @@ async function kreaturProben(r, T, opts) {
                     for (const q of orte) if (q.halme === null) q.halme = halme(q.x, q.z);
                 }
             const gezaehlt = orte.filter((o) => o.halme !== null);
-            const heim = gezaehlt.length ? gezaehlt.reduce((a, b) => (b.halme < a.halme ? b : a)) : orte[0];
+            const reihe = gezaehlt.length ? gezaehlt.slice().sort((a, b) => a.halme - b.halme) : orte;
             // DER WURF: die volle Kopfzahl des Kerns — je Versuch eine eigene Saat, der Spieler 140 m fern (der Wurf wirft außer Blick)
             const seq0 = s._creatureNetSeq || 0;
-            let [glieder, versuch] = [[], 0];
-            for (; versuch < 40 && glieder.length < soll; versuch++) {
-                leer();
-                Object.assign(s, { _creatureNetSeq: seq0, creatureAnimationTime: 100 });
-                Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
-                pm.set(heim.x + 140, heim.y, heim.z);
-                kamera(1, 0);
-                // zwei stille Takte: der Rand des Blicks (`_blickRand`) wird an der ruhenden Kamera gerechnet — nach dem Sprung
-                // der Kamera ist er −1 (keine Geburt in diesem Takt, `_kreaturLeibImBlick`)
-                (takt(dt), kamera(1, 0), takt(dt), kamera(1, 0), leer());
-                glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, seele, "happy", r._faunaRng("herde-bild:" + versuch), soll); // prettier-ignore
-            }
-            if (glieder.length < soll) {
-                // DER GRUND DER ABSAGE je Bedingung des Wurfs, im Ring 2–12 m um den Ort (die Fragen von `_kreaturWurf`)
+            const werfen = (o) => {
+                let [gl, v] = [[], 0];
+                for (; v < 40 && gl.length < soll; v++) {
+                    leer();
+                    Object.assign(s, { _creatureNetSeq: seq0, creatureAnimationTime: 100 });
+                    Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
+                    pm.set(o.x + 140, o.y, o.z);
+                    kamera(1, 0);
+                    // zwei stille Takte: der Rand des Blicks (`_blickRand`) wird an der ruhenden Kamera gerechnet — nach dem Sprung
+                    // der Kamera ist er −1 (keine Geburt in diesem Takt, `_kreaturLeibImBlick`)
+                    (takt(dt), kamera(1, 0), takt(dt), kamera(1, 0), leer());
+                    gl = r._kreaturWurf({ x: o.x, z: o.z }, seele, "happy", r._faunaRng("herde-bild:" + v), soll); // prettier-ignore
+                }
+                return [gl, v];
+            };
+            // DAS REVIER TRÄGT DEN ORT (T3): das Gesetz legt den Anker des Wurfs in den Lebensraum (`_kreaturRevier`: die Mitte
+            // und das Sechseck bei 0,7 Leinen) — trägt er ihn nicht ganz, wandert der Anker, und „stehen“ zieht heim (`_gezeigt`
+            // ziehen, d > Leine). Täter v12/v13: der Ort 61/226 (Lichtung im Wald) — der Anker wanderte, die Herde lief im Stehen
+            // 1,17 m/s. Je Ort in der Folge der Halme legt das Gesetz den Anker; liegt er anders, wirft die Bühne an SEINEM Anker
+            // (geprüft wie jeder Ort, `platzOrt`) — gewählt ist der erste Ort, dessen Revier den Anker hält und jedes Glied trägt.
+            const LGg = A._lebensraumGesetz();
+            const revierAbsage = [];
+            // DER GRUND DER ABSAGE je Bedingung des Wurfs, im Ring 2–12 m um den Ort (die Fragen von `_kreaturWurf`)
+            const absage = (o) => {
                 const nein = { blick: 0, grund: 0, wildnis: 0, grundriss: 0, siedlung: 0, reich: 0, land: 0, lebt: 0 };
                 for (let k = 0; k < 48; k++) {
-                    const [x, z] = [heim.x + Math.cos(k * 2.4) * (2 + k / 4.8), heim.z + Math.sin(k * 2.4) * (2 + k / 4.8)];
+                    const [x, z] = [o.x + Math.cos(k * 2.4) * (2 + k / 4.8), o.z + Math.sin(k * 2.4) * (2 + k / 4.8)];
                     if (r._kreaturLeibImBlick(x, z, gattung, A._lebenKern().spanne()[1])) nein.blick++;
                     if (!r._kreaturGrundFrei(x, z)) nein.grund++;
                     if (!r._wildnisTraegt(x, z)) nein.wildnis++;
@@ -1235,8 +1255,37 @@ async function kreaturProben(r, T, opts) {
                     if (!r._landAt(x, z)) nein.land++;
                     if (!lebt(x, z)) nein.lebt++;
                 }
-                throw new Error(`herde-bild: der Wurf trägt ${glieder.length} statt ${soll} (${gattung}, 40 Saaten, Rand ${r._kreaturBlickRand().toFixed(3)}, Ort ${Math.round(heim.x)}/${Math.round(heim.z)}, Absage von 48: ${JSON.stringify(nein)})`); // prettier-ignore
+                return nein;
+            };
+            const pruefe = (o) => {
+                const [gl, v] = werfen(o);
+                if (gl.length < soll) return { gl, v, ok: false, grund: `Wurf ${gl.length} von ${soll}, 40 Saaten, Absage von 48: ${JSON.stringify(absage(o))}` }; // prettier-ignore
+                const lt = r._kreaturLeittier(gl[0]);
+                const leine = r._gehegeLeine(lt, r._creatureMoveCharacter(lt).leashM);
+                const rv = r._kreaturRevier(lt, { x: o.x, z: o.z }, leine);
+                const verschobenM = Math.hypot(rv.x - o.x, rv.z - o.z);
+                const draussen = gl.filter((c) => !(LGg.lebensraum(gattung, r._bodenKlasseAt(c.position.x, c.position.z), LGg.L) > 0)).length; // prettier-ignore
+                o.revier = { verschobenM: rund(verschobenM, 2), frei: !!rv.frei, draussen, leineM: rund(leine, 1) };
+                return { gl, v, rv, ok: !rv.frei && verschobenM < 0.01 && !draussen };
+            };
+            let [heim, glieder, versuch] = [null, [], 0];
+            for (const o0 of reihe) {
+                let o = o0;
+                let p = pruefe(o);
+                // der Anker des Gesetzes wandert höchstens drei Schritte (je Schritt bis 1½ Leinen), bis er ruht
+                for (let schritt = 0; schritt < 3 && !p.ok && p.rv && !p.rv.frei; schritt++) {
+                    revierAbsage.push({ x: rund(o.x, 1), z: rund(o.z, 1), ...o.revier, zumAnker: true });
+                    const a = platzOrt(!!heimFrei, p.rv.x, p.rv.z) || platzOrt(false, p.rv.x, p.rv.z);
+                    if (!a) break;
+                    ((o = a), (o.halme = halme(a.x, a.z)), (p = pruefe(o)));
+                }
+                if (p.ok) {
+                    [heim, glieder, versuch] = [o, p.gl, p.v];
+                    break;
+                }
+                revierAbsage.push({ x: rund(o.x, 1), z: rund(o.z, 1), ...(o.revier || {}), grund: p.grund || "Revier" });
             }
+            if (!heim) throw new Error(`herde-bild: kein Ort, dessen Revier den Anker hält (${gattung}): ${JSON.stringify(revierAbsage)}`); // prettier-ignore
             const leit = r._kreaturLeittier(glieder[0]);
             // DIE KAMERA H
             const H = neben(heim.x, heim.z - KAM_M);
@@ -1292,9 +1341,13 @@ async function kreaturProben(r, T, opts) {
                 let n = 0;
                 Tt.headGroup.traverse((o) => (k.add(v3.setFromMatrixPosition(o.matrixWorld)), n++));
                 k.divideScalar(n);
-                const sch = v3.setFromMatrixPosition(Tt.legFL.matrixWorld).y;
-                const boden = r.getTerrainHeightAt(c.position.x, c.position.z);
-                return { kopfM: k.y - boden, schulterM: sch - boden, ueberSchulterM: k.y - sch, unten: k.y - boden < 0.5 * (sch - boden) };
+                v3.setFromMatrixPosition(Tt.legFL.matrixWorld);
+                const sch = v3.y;
+                // der Grund je Punkt (unter dem Kopf, unter der Schulter): am Hang lag der Grund der Leib-Mitte bis 0,35 m unter
+                // dem vor dem Maul (Ort −45/215, Boden-Spanne 4,9 m) — der äsende Kopf am Gras zählte „oben“
+                const [bK, bS] = [r.getTerrainHeightAt(k.x, k.z), r.getTerrainHeightAt(v3.x, v3.z)];
+                const b0 = r.getTerrainHeightAt(c.position.x, c.position.z);
+                return { kopfM: k.y - bK, kopfMitteM: k.y - b0, schulterM: sch - bS, ueberSchulterM: k.y - sch, hangM: bK - b0, unten: k.y - bK < 0.5 * (sch - bS) }; // prettier-ignore
             };
             // DER LEIB AM BODEN (R1): der Widerrist — die höchste gehäutete Ecke im Band 0,15 hinter der Schulter (im Raum des
             // Tiers, +z vorn) — und die vier Pfoten: über dem Grund an ihrem Ort, und ob sie unter dem Rumpf stehen (längs
@@ -1365,8 +1418,8 @@ async function kreaturProben(r, T, opts) {
             };
             const winkelAlt = new Map();
             const spur = glieder.map(() => []);
-            const phasen = ZUST.map((z) => ({ zustand: z, taetigkeit: TAET[z], takte: 0, getroffen: 0, gezeigt: 0, flucht: 0, leib: 0, satz: 0, fern: 0, wegM: 0, zustaende: {} })); // prettier-ignore
-            const grasenLeib = { takte: 0, ohneHals: 0, eingefroren: 0, unten: 0, hals: [], fade: [], abstand: [], kopf: [], schulter: [] };
+            const phasen = ZUST.map((z) => ({ zustand: z, taetigkeit: TAET[z], takte: 0, getroffen: 0, gezeigt: 0, flucht: 0, leib: 0, satz: 0, fern: 0, wegM: 0, zustaende: {}, sprungM: 0, sprungBei: null, laeufer: { n: 0, erstK: null, leit: 0, task: {}, zumLeitM: [] } })); // prettier-ignore
+            const grasenLeib = { takte: 0, ohneHals: 0, eingefroren: 0, unten: 0, hals: [], fade: [], abstand: [], kopf: [], schulter: [], hang: [] };
             const aesen = { proben: 0, unten: 0, leibProben: 0, leibUnten: 0, leib: 0, satz: 0, satzUnten: 0, fern: 0 };
             const zug = { takte: 0, art: {}, diag: [], v: [] };
             const schuesse = [];
@@ -1388,7 +1441,7 @@ async function kreaturProben(r, T, opts) {
                     if (!t.rechteck) return null;
                     const [x0, y0, x1, y1] = t.rechteck.R;
                     const [mx, my, hx, hy] = [(x0 + x1) / 2, (y0 + y1) / 2, 0.65 * (x1 - x0) + 2, 0.65 * (y1 - y0) + 2];
-                    return { mx, my, hx, hy, px: 0 };
+                    return { mx, my, hx, hy, px: 0, dunkel: 0 };
                 });
                 for (let p = 0, i = 0; p < W * Hh; p++, i += 4) {
                     if (Math.abs(G[i] - O[i]) + Math.abs(G[i + 1] - O[i + 1]) + Math.abs(G[i + 2] - O[i + 2]) <= 18) continue;
@@ -1399,9 +1452,9 @@ async function kreaturProben(r, T, opts) {
                         const d = ((x - b.mx) / b.hx) ** 2 + ((y - b.my) / b.hy) ** 2;
                         if (d < e) [q, e] = [b, d];
                     }
-                    if (q) q.px++;
+                    if (q) (q.px++, (q.dunkel += 0.2126 * G[i] + 0.7152 * G[i + 1] + 0.0722 * G[i + 2] < 8));
                 }
-                tiere.forEach((t, i) => (t.maskeMass = box[i] ? rund((box[i].px * 921600) / (W * Hh), 0) : 0));
+                tiere.forEach((t, i) => ((t.maskeMass = box[i] ? rund((box[i].px * 921600) / (W * Hh), 0) : 0), (t.dunkelPx = box[i] ? box[i].dunkel : 0))); // prettier-ignore
                 schussMs += performance.now() - z0;
                 return G;
             };
@@ -1443,7 +1496,18 @@ async function kreaturProben(r, T, opts) {
                     P.gezeigt += u._gezeigt === TAET[z];
                     P.flucht += u._motionZustand === "flucht";
                     const sp = spur[i];
-                    P.wegM += Math.hypot(sp[sp.length - 1][0] - sp[sp.length - 2][0], sp[sp.length - 1][1] - sp[sp.length - 2][1]); // prettier-ignore
+                    const dW = Math.hypot(sp[sp.length - 1][0] - sp[sp.length - 2][0], sp[sp.length - 1][1] - sp[sp.length - 2][1]); // prettier-ignore
+                    P.wegM += dW;
+                    if (dW > P.sprungM) [P.sprungM, P.sprungBei] = [dW, `t ${rund(kp / 60, 2)} s, Tier ${i}, ${stufe(c)}`];
+                    if (z === "stehen" && u._steuer?.v > 0.1) {
+                        const L = P.laeufer;
+                        L.n++;
+                        L.erstK ??= kp;
+                        L[stufe(c)] = (L[stufe(c)] || 0) + 1;
+                        L.leit += c === leit;
+                        L.task[u.task?.name || "-"] = (L.task[u.task?.name || "-"] || 0) + 1;
+                        L.zumLeitM.push(Math.hypot(c.position.x - leit.position.x, c.position.z - leit.position.z));
+                    }
                     const zs = zustandVon(c);
                     P.zustaende[zs] = (P.zustaende[zs] || 0) + 1;
                     const tb = u._tierBaum;
@@ -1481,7 +1545,7 @@ async function kreaturProben(r, T, opts) {
                             else grasenLeib.hals.push(tb.teile.neckRoot.rotation.x);
                             if (U._animEingefroren) grasenLeib.eingefroren++;
                             (grasenLeib.unten += kf.unten), grasenLeib.kopf.push(kf.kopfM), grasenLeib.schulter.push(kf.schulterM);
-                            grasenLeib.fade.push(U._animFade ?? 1);
+                            (grasenLeib.fade.push(U._animFade ?? 1), grasenLeib.hang.push(kf.hangM));
                             grasenLeib.abstand.push(Math.hypot(c.position.x - cam.position.x, c.position.z - cam.position.z));
                         }
                     }
@@ -1494,6 +1558,7 @@ async function kreaturProben(r, T, opts) {
                 }
                 // S1 je Bild: drei Zeitpunkte je Zustand — Stufe, Rechteck, Kopf; an der GPU Bild und Maske
                 if (SCHUSS.includes(kp)) {
+                    const leck0 = [s.creatureAnimationTime, glieder.map((c) => [c.position.x, c.position.z])];
                     const tiere = glieder.map((c) => ({ stufe: stufe(c), rechteck: rechteck(c, W, Hh), kopf: stufe(c) === "leib" ? kopf(c) : null })); // prettier-ignore
                     const sch = { zustand: z, t: rund(kp / 60, 1), tiere };
                     if (bilder) {
@@ -1508,6 +1573,9 @@ async function kreaturProben(r, T, opts) {
                             r._tickKreaturZiegel(au, r._feldGrenzen(false));
                             r._tickTierSatz(au);
                             r._ruheImBild();
+                            // die Sicht der Leiber (`_leibSicht`, im Spiel derselbe Takt in `updateCreatures`): ein Leib, der
+                            // eben aus dem Feld kam, zeichnet erst mit ihr — sonst stand am Bild N die schwindende Kapsel allein
+                            for (const c of r.state.creatures) if (c && c.userData) r._leibSicht(c, r.isInFrustum(c), au);
                         };
                         const lp = leit.position;
                         const [ex, ez] = [H.x - lp.x, H.z - lp.z];
@@ -1521,10 +1589,13 @@ async function kreaturProben(r, T, opts) {
                         const stufeN = (c) => (c.userData._satz ? "satz" : r._kzBesitztFeld(c) ? "fern" : "leib");
                         sch.nah = glieder.map((c) => ({ stufe: stufeN(c), rechteck: rechteck(c, W, Hh), kopf: stufeN(c) === "leib" ? kopf(c) : null })); // prettier-ignore
                         sch.leitLeib = stufeN(leit) === "leib" ? leibMass(leit) : null;
+                        // das Bild nach dem Wechsel: der schwindende Satz (Kapseln, `WELT_SCHWUND_MS` an der Wanduhr) ist aus, ehe N schießt
+                        await sleep(A.WELT_SCHWUND_MS + 50);
                         sch.N = await bild(W, Hh, sch.nah);
                         kameraH();
                         stufenAm();
                     }
+                    sch.leck = { zeitS: rund(s.creatureAnimationTime - leck0[0], 4), wegM: rund(glieder.reduce((a, c, i) => a + Math.hypot(c.position.x - leck0[1][i][0], c.position.z - leck0[1][i][1]), 0), 3) }; // prettier-ignore
                     schuesse.push(sch);
                 }
             }
@@ -1537,14 +1608,14 @@ async function kreaturProben(r, T, opts) {
                 const n = ab0(a, b) * ab0(b, c) * ab0(a, c);
                 return n > 1e-9 ? (2 * flaeche2) / n : 0;
             };
-            const s4Welt = { max: 0, vBeiMax: null, maxSprint: 0, sprintProben: 0 };
-            spur.forEach((sp) => {
+            const s4Welt = { max: 0, vBeiMax: null, maxSprint: 0, sprintProben: 0, bei: null };
+            spur.forEach((sp, ti) => {
                 for (let k = VOR + 3 * PHASE + 6; k + 6 < sp.length; k += 3) {
                     const [a, b, c] = [sp[k - 6], sp[k], sp[k + 6]];
                     const v = ab0(a, c) / 0.2;
                     if (v < 2) continue;
                     const aq = v * v * kruemmung(a, b, c);
-                    if (aq > s4Welt.max) Object.assign(s4Welt, { max: aq, vBeiMax: v });
+                    if (aq > s4Welt.max) Object.assign(s4Welt, { max: aq, vBeiMax: v, bei: { tier: ti, leit: glieder[ti] === leit, tS: rund((k - VOR - 3 * PHASE) / 60, 2), rM: rund((v * v) / aq, 2) } }); // prettier-ignore
                     if (v >= 8) ((s4Welt.sprintProben++), (s4Welt.maxSprint = Math.max(s4Welt.maxSprint, aq)));
                 }
             });
@@ -1600,7 +1671,7 @@ async function kreaturProben(r, T, opts) {
                     if (i < 180) continue;
                     const kf = kopf(leit);
                     if (!kf) return { ungemessen: "der Leib trägt keinen Kopf-Baum" };
-                    ys.push(kf.kopfM);
+                    ys.push(kf.kopfMitteM); // S2: das Wippen über dem Grund der Leib-Mitte (der Grund unter dem Kopf wandert mit)
                     om.push(tbL._gang.omega);
                     const f = median(om) / TAU2;
                     if (f > 0 && ys.length >= (10 / f) * 60) break;
@@ -1707,7 +1778,10 @@ async function kreaturProben(r, T, opts) {
                     kopfUnten: sc.nah.filter((t) => t.kopf?.unten).length,
                     maskeMass: sc.nah.map((t) => t.maskeMass),
                     leit: sc.leitLeib,
+                    dunkelPx: sc.nah.map((t) => t.dunkelPx),
                 },
+                dunkelPxH: sc.tiere.map((t) => t.dunkelPx ?? null),
+                leck: sc.leck,
                 tiere: sc.tiere.map((t) => ({
                     stufe: t.stufe,
                     hoehePx: t.rechteck?.hoehePx ?? null,
@@ -1725,7 +1799,7 @@ async function kreaturProben(r, T, opts) {
                 n: glieder.length,
                 soll,
                 wurfSaat: versuch - 1,
-                ort: { x: rund(heim.x, 1), z: rund(heim.z, 1), sichtOhneWald: !!heimFrei, kameraM: KAM_M },
+                ort: { x: rund(heim.x, 1), z: rund(heim.z, 1), sichtOhneWald: (heimFrei || []).includes(heim), kameraM: KAM_M, revier: heim.revier || null, revierAbsage }, // prettier-ignore
                 einstellung: {
                     ort: `der Ort mit den wenigsten Büscheln der Nah-Wiese (Kreis 10 m + Gang ${GANG_M} × 4 m zur Kamera) unter ${orte.length} Orten der Suche`, // prettier-ignore
                     halme: heim.halme ?? null,
@@ -1740,7 +1814,7 @@ async function kreaturProben(r, T, opts) {
                 aktionOffen,
                 phasen: phasen.map((P) => {
                     const n = P.takte * glieder.length;
-                    return { zustand: P.zustand, taetigkeit: P.taetigkeit, getroffen: rund(P.getroffen / n, 3), gezeigt: rund(P.gezeigt / n, 3), flucht: rund(P.flucht / n, 3), leib: rund(P.leib / P.takte, 2), satz: rund(P.satz / P.takte, 2), fern: rund(P.fern / P.takte, 2), wegM: rund(P.wegM, 1), vMittelMS: rund(P.wegM / Math.max(1, n * dt), 2), zustaende: Object.fromEntries(Object.entries(P.zustaende).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, m]) => [k, rund(m / n, 3)])) }; // prettier-ignore
+                    return { zustand: P.zustand, taetigkeit: P.taetigkeit, getroffen: rund(P.getroffen / n, 3), gezeigt: rund(P.gezeigt / n, 3), flucht: rund(P.flucht / n, 3), leib: rund(P.leib / P.takte, 2), satz: rund(P.satz / P.takte, 2), fern: rund(P.fern / P.takte, 2), wegM: rund(P.wegM, 1), vMittelMS: rund(P.wegM / Math.max(1, n * dt), 2), zustaende: Object.fromEntries(Object.entries(P.zustaende).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, m]) => [k, rund(m / n, 3)])), sprungM: rund(P.sprungM, 3), sprungBei: P.sprungBei, laeufer: { ...P.laeufer, erstS: P.laeufer.erstK === null ? null : rund(P.laeufer.erstK / 60, 2), zumLeitM: P.laeufer.zumLeitM.length ? rund(median(P.laeufer.zumLeitM), 1) : null } }; // prettier-ignore
                 }),
                 bewegungM: rund(phasen.reduce((a, P) => a + P.wegM, 0), 1),
                 s1: {
@@ -1761,7 +1835,7 @@ async function kreaturProben(r, T, opts) {
                         leibTakte: aesen.leibProben,
                         satzTakte: aesen.satz,
                         satzUnten: aesen.satzUnten,
-                        grasenLeib: { takte: grasenLeib.takte, ohneHals: grasenLeib.ohneHals, eingefroren: grasenLeib.eingefroren, halsMedian: grasenLeib.hals.length ? rund(median(grasenLeib.hals), 3) : null, halsQ: grasenLeib.hals.length ? [0.1, 0.25, 0.75, 0.9].map((q) => rund(quantil(grasenLeib.hals, q), 2)) : null, verhaeltnisQ: grasenLeib.kopf.length ? [0.1, 0.5, 0.9].map((q) => rund(quantil(grasenLeib.kopf.map((k, i) => k / grasenLeib.schulter[i]), q), 2)) : null, fadeMedian: grasenLeib.fade.length ? rund(median(grasenLeib.fade), 3) : null, abstandMedianM: grasenLeib.abstand.length ? rund(median(grasenLeib.abstand), 1) : null, unten: grasenLeib.unten, kopfMedianM: grasenLeib.kopf.length ? rund(median(grasenLeib.kopf), 3) : null, schulterMedianM: grasenLeib.schulter.length ? rund(median(grasenLeib.schulter), 3) : null }, // prettier-ignore
+                        grasenLeib: { takte: grasenLeib.takte, ohneHals: grasenLeib.ohneHals, eingefroren: grasenLeib.eingefroren, halsMedian: grasenLeib.hals.length ? rund(median(grasenLeib.hals), 3) : null, halsQ: grasenLeib.hals.length ? [0.1, 0.25, 0.75, 0.9].map((q) => rund(quantil(grasenLeib.hals, q), 2)) : null, verhaeltnisQ: grasenLeib.kopf.length ? [0.1, 0.5, 0.9].map((q) => rund(quantil(grasenLeib.kopf.map((k, i) => k / grasenLeib.schulter[i]), q), 2)) : null, fadeMedian: grasenLeib.fade.length ? rund(median(grasenLeib.fade), 3) : null, abstandMedianM: grasenLeib.abstand.length ? rund(median(grasenLeib.abstand), 1) : null, unten: grasenLeib.unten, kopfMedianM: grasenLeib.kopf.length ? rund(median(grasenLeib.kopf), 3) : null, schulterMedianM: grasenLeib.schulter.length ? rund(median(grasenLeib.schulter), 3) : null, hangQ: grasenLeib.hang.length ? [0.1, 0.5, 0.9].map((q) => rund(quantil(grasenLeib.hang, q), 3)) : null }, // prettier-ignore
                         fernTakte: aesen.fern,
                         kopfMitteM: Object.fromEntries(Object.entries(kopfHoehe).map(([k, a]) => [k, a.length ? { takte: a.length, min: rund(Math.min(...a), 3), median: rund(median(a), 3) } : null])), // prettier-ignore
                     },
@@ -1772,7 +1846,7 @@ async function kreaturProben(r, T, opts) {
                 s3: Object.fromEntries(Object.entries(sprung).map(([n, S]) => [n, { ...S, max: rund(S.max, 4), stetig: rund(S.stetig, 4) }])), // prettier-ignore
                 s4: {
                     gesetz: { vMS: rund(vS, 2), querMS2: rund(s4Gesetz.max, 2), vBeiMax: s4Gesetz.vBei && rund(s4Gesetz.vBei, 2), rM: s4Gesetz.max > 0 ? rund(s4Gesetz.vBei ** 2 / s4Gesetz.max, 2) : null }, // prettier-ignore
-                    welt: { querMS2: rund(s4Welt.max, 2), vBeiMax: s4Welt.vBeiMax && rund(s4Welt.vBeiMax, 2), querSprintMS2: rund(s4Welt.maxSprint, 2), sprintProben: s4Welt.sprintProben }, // prettier-ignore
+                    welt: { querMS2: rund(s4Welt.max, 2), vBeiMax: s4Welt.vBeiMax && rund(s4Welt.vBeiMax, 2), querSprintMS2: rund(s4Welt.maxSprint, 2), sprintProben: s4Welt.sprintProben, bei: s4Welt.bei }, // prettier-ignore
                 },
                 s5: {
                     gang: Object.fromEntries(Object.entries(zug.art).map(([a, n]) => [a, rund(n / Math.max(1, zug.takte), 3)])),
