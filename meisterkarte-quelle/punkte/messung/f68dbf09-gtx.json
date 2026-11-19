@@ -1,7 +1,7 @@
 {
  "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
  "geraet": "gtx",
- "zeit": "2026-11-19T12:46:28.720Z",
+ "zeit": "2026-11-19T13:26:51.244Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.erleben.spieler.wegfindung#1": {
@@ -30900,12 +30900,62 @@
   },
   "karte2.mensch.geist.innenleben#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.347Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "s": 77.2,
+   "fremd": {
+    "s": 80.7,
+    "takte": 36,
+    "fremdS": 32.39,
+    "kerne": 0.402,
+    "fensterKerne": 0.479,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.67
+     ]
+    ],
+    "dienerS": 31.88,
+    "diener": [
+     [
+      "dwm.exe",
+      14.31
+     ],
+     [
+      "System",
+      9.48
+     ]
+    ],
+    "geraetS": 61.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.31
+     ],
+     [
+      "svchost.exe",
+      16.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 173.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:25:26.238Z",
    "abdruck": "687d95dba243",
    "port": 7804,
    "bahn": "sitzung",
@@ -30913,12 +30963,62 @@
   },
   "karte2.mensch.geist.innenleben#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.347Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "s": 77.2,
+   "fremd": {
+    "s": 80.7,
+    "takte": 36,
+    "fremdS": 32.39,
+    "kerne": 0.402,
+    "fensterKerne": 0.479,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.67
+     ]
+    ],
+    "dienerS": 31.88,
+    "diener": [
+     [
+      "dwm.exe",
+      14.31
+     ],
+     [
+      "System",
+      9.48
+     ]
+    ],
+    "geraetS": 61.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.31
+     ],
+     [
+      "svchost.exe",
+      16.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 173.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:25:26.238Z",
    "abdruck": "06aea9d0aad2",
    "port": 7804,
    "bahn": "sitzung",
@@ -30927,12 +31027,62 @@
   },
   "karte2.mensch.geist.innenleben#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.347Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "s": 77.2,
+   "fremd": {
+    "s": 80.7,
+    "takte": 36,
+    "fremdS": 32.39,
+    "kerne": 0.402,
+    "fensterKerne": 0.479,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.67
+     ]
+    ],
+    "dienerS": 31.88,
+    "diener": [
+     [
+      "dwm.exe",
+      14.31
+     ],
+     [
+      "System",
+      9.48
+     ]
+    ],
+    "geraetS": 61.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.31
+     ],
+     [
+      "svchost.exe",
+      16.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 173.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:25:26.238Z",
    "abdruck": "19390244a24d",
    "port": 7804,
    "bahn": "sitzung",
@@ -30941,12 +31091,62 @@
   },
   "karte2.mensch.geist.innenleben#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.347Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "s": 77.2,
+   "fremd": {
+    "s": 80.7,
+    "takte": 36,
+    "fremdS": 32.39,
+    "kerne": 0.402,
+    "fensterKerne": 0.479,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.67
+     ]
+    ],
+    "dienerS": 31.88,
+    "diener": [
+     [
+      "dwm.exe",
+      14.31
+     ],
+     [
+      "System",
+      9.48
+     ]
+    ],
+    "geraetS": 61.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.31
+     ],
+     [
+      "svchost.exe",
+      16.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 173.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:25:26.238Z",
    "abdruck": "93daca8310ad",
    "port": 7804,
    "bahn": "sitzung",
@@ -30955,12 +31155,62 @@
   },
   "karte2.mensch.geist.innenleben#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.347Z",
+   "zahl": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "exit": 1,
+   "minuten": 1.29,
+   "grund": "Deckel 77 s gerissen: Stille seit 20.1 s nach 77 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@ 56.8 s · am Messort stadt-voll (ego))",
+   "s": 77.2,
+   "fremd": {
+    "s": 80.7,
+    "takte": 36,
+    "fremdS": 32.39,
+    "kerne": 0.402,
+    "fensterKerne": 0.479,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      6
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.7
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.67
+     ]
+    ],
+    "dienerS": 31.88,
+    "diener": [
+     [
+      "dwm.exe",
+      14.31
+     ],
+     [
+      "System",
+      9.48
+     ]
+    ],
+    "geraetS": 61.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.31
+     ],
+     [
+      "svchost.exe",
+      16.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 173.08,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T13:25:26.238Z",
    "abdruck": "abfab035ff0b",
    "port": 7804,
    "bahn": "sitzung",
@@ -30969,12 +31219,12 @@
   },
   "karte2.mensch.menge.bevoelkerung#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.375Z",
+   "zeit": "2026-11-19T13:26:50.986Z",
    "abdruck": "45e5dc273c73",
    "port": 7804,
    "bahn": "sitzung",
@@ -30982,12 +31232,12 @@
   },
   "karte2.mensch.menge.bevoelkerung#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.375Z",
+   "zeit": "2026-11-19T13:26:50.986Z",
    "abdruck": "7b71fb1a6963",
    "port": 7804,
    "bahn": "sitzung",
@@ -30996,12 +31246,12 @@
   },
   "karte2.mensch.menge.bevoelkerung#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.375Z",
+   "zeit": "2026-11-19T13:26:50.986Z",
    "abdruck": "1519598d47ad",
    "port": 7804,
    "bahn": "sitzung",
@@ -31010,12 +31260,12 @@
   },
   "karte2.mensch.menge.bevoelkerung#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.375Z",
+   "zeit": "2026-11-19T13:26:50.986Z",
    "abdruck": "59a633cc470b",
    "port": 7804,
    "bahn": "sitzung",
@@ -31024,12 +31274,12 @@
   },
   "karte2.mensch.menge.bevoelkerung#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.375Z",
+   "zeit": "2026-11-19T13:26:50.986Z",
    "abdruck": "356bdb8ec1bf",
    "port": 7804,
    "bahn": "sitzung",
@@ -31038,12 +31288,12 @@
   },
   "karte2.mensch.menge.bevoelkerung#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.375Z",
+   "zeit": "2026-11-19T13:26:50.986Z",
    "abdruck": "d99761f44ad5",
    "port": 7804,
    "bahn": "sitzung",
@@ -31052,12 +31302,12 @@
   },
   "karte2.mensch.menge.bevoelkerung#8": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.375Z",
+   "zeit": "2026-11-19T13:26:50.986Z",
    "abdruck": "b40aad42b442",
    "port": 7804,
    "bahn": "sitzung",
@@ -31066,12 +31316,12 @@
   },
   "karte2.mensch.menge.bevoelkerung#9": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.375Z",
+   "zeit": "2026-11-19T13:26:50.986Z",
    "abdruck": "6c9dfc3a42e5",
    "port": 7804,
    "bahn": "sitzung",
@@ -31080,12 +31330,12 @@
   },
   "karte2.mensch.menge.bild#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.446Z",
+   "zeit": "2026-11-19T13:26:51.013Z",
    "abdruck": "d55a2d060149",
    "port": 7804,
    "bahn": "sitzung",
@@ -31093,12 +31343,12 @@
   },
   "karte2.mensch.menge.bild#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.446Z",
+   "zeit": "2026-11-19T13:26:51.013Z",
    "abdruck": "31bbe87a9ccb",
    "port": 7804,
    "bahn": "sitzung",
@@ -31107,12 +31357,12 @@
   },
   "karte2.mensch.menge.bild#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.446Z",
+   "zeit": "2026-11-19T13:26:51.013Z",
    "abdruck": "b5d6f4d32e76",
    "port": 7804,
    "bahn": "sitzung",
@@ -31121,12 +31371,12 @@
   },
   "karte2.mensch.menge.bild#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.446Z",
+   "zeit": "2026-11-19T13:26:51.013Z",
    "abdruck": "4dc1b6635b60",
    "port": 7804,
    "bahn": "sitzung",
@@ -31135,12 +31385,12 @@
   },
   "karte2.mensch.menge.bild#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.446Z",
+   "zeit": "2026-11-19T13:26:51.013Z",
    "abdruck": "971e3a20f3ea",
    "port": 7804,
    "bahn": "sitzung",
@@ -31149,12 +31399,12 @@
   },
   "karte2.mensch.menge.dichte#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.476Z",
+   "zeit": "2026-11-19T13:26:51.036Z",
    "abdruck": "752fd35f68d1",
    "port": 7804,
    "bahn": "sitzung",
@@ -31162,12 +31412,12 @@
   },
   "karte2.mensch.menge.dichte#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.476Z",
+   "zeit": "2026-11-19T13:26:51.036Z",
    "abdruck": "c441b796f32e",
    "port": 7804,
    "bahn": "sitzung",
@@ -31176,12 +31426,12 @@
   },
   "karte2.mensch.menge.dichte#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.476Z",
+   "zeit": "2026-11-19T13:26:51.036Z",
    "abdruck": "b107ec7c9b47",
    "port": 7804,
    "bahn": "sitzung",
@@ -31190,12 +31440,12 @@
   },
   "karte2.mensch.menge.dichte#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.476Z",
+   "zeit": "2026-11-19T13:26:51.036Z",
    "abdruck": "52425a785dab",
    "port": 7804,
    "bahn": "sitzung",
@@ -31204,12 +31454,12 @@
   },
   "karte2.mensch.menge.dichte#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.476Z",
+   "zeit": "2026-11-19T13:26:51.036Z",
    "abdruck": "711fc3801258",
    "port": 7804,
    "bahn": "sitzung",
@@ -31218,12 +31468,12 @@
   },
   "karte2.mensch.menge.dichte#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.476Z",
+   "zeit": "2026-11-19T13:26:51.036Z",
    "abdruck": "db132523fd83",
    "port": 7804,
    "bahn": "sitzung",
@@ -31232,12 +31482,12 @@
   },
   "karte2.planet.kosmos.himmelsmechanik#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.499Z",
+   "zeit": "2026-11-19T13:26:51.063Z",
    "abdruck": "c75978cf618d",
    "port": 7804,
    "bahn": "sitzung",
@@ -31245,12 +31495,12 @@
   },
   "karte2.planet.kosmos.himmelsmechanik#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.499Z",
+   "zeit": "2026-11-19T13:26:51.063Z",
    "abdruck": "4774f9fa23b1",
    "port": 7804,
    "bahn": "sitzung",
@@ -31259,12 +31509,12 @@
   },
   "karte2.planet.kosmos.himmelsmechanik#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.499Z",
+   "zeit": "2026-11-19T13:26:51.063Z",
    "abdruck": "2f139066aadd",
    "port": 7804,
    "bahn": "sitzung",
@@ -31273,12 +31523,12 @@
   },
   "karte2.planet.kosmos.himmelsmechanik#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.499Z",
+   "zeit": "2026-11-19T13:26:51.063Z",
    "abdruck": "a36b06e3e2f4",
    "port": 7804,
    "bahn": "sitzung",
@@ -31287,12 +31537,12 @@
   },
   "karte2.planet.kosmos.himmelsmechanik#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.499Z",
+   "zeit": "2026-11-19T13:26:51.063Z",
    "abdruck": "4e823ac973ab",
    "port": 7804,
    "bahn": "sitzung",
@@ -31301,12 +31551,12 @@
   },
   "karte2.planet.kosmos.himmelsmechanik#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.499Z",
+   "zeit": "2026-11-19T13:26:51.063Z",
    "abdruck": "675d573261b5",
    "port": 7804,
    "bahn": "sitzung",
@@ -31315,12 +31565,12 @@
   },
   "karte2.planet.kosmos.himmelsmechanik#8": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.499Z",
+   "zeit": "2026-11-19T13:26:51.063Z",
    "abdruck": "37aef2e3fd1c",
    "port": 7804,
    "bahn": "sitzung",
@@ -31329,12 +31579,12 @@
   },
   "karte2.planet.kosmos.sternhimmel#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.520Z",
+   "zeit": "2026-11-19T13:26:51.088Z",
    "abdruck": "f2358d491536",
    "port": 7804,
    "bahn": "sitzung",
@@ -31342,12 +31592,12 @@
   },
   "karte2.planet.kosmos.sternhimmel#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.520Z",
+   "zeit": "2026-11-19T13:26:51.088Z",
    "abdruck": "d848aee998e0",
    "port": 7804,
    "bahn": "sitzung",
@@ -31356,12 +31606,12 @@
   },
   "karte2.planet.kosmos.sternhimmel#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.520Z",
+   "zeit": "2026-11-19T13:26:51.088Z",
    "abdruck": "7a5f7b294bd0",
    "port": 7804,
    "bahn": "sitzung",
@@ -31370,12 +31620,12 @@
   },
   "karte2.planet.kosmos.sternhimmel#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.520Z",
+   "zeit": "2026-11-19T13:26:51.088Z",
    "abdruck": "714ab1d40927",
    "port": 7804,
    "bahn": "sitzung",
@@ -31384,12 +31634,12 @@
   },
   "karte2.planet.kosmos.sternhimmel#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.520Z",
+   "zeit": "2026-11-19T13:26:51.088Z",
    "abdruck": "a41b31880e5b",
    "port": 7804,
    "bahn": "sitzung",
@@ -31398,12 +31648,12 @@
   },
   "karte2.planet.kosmos.sternhimmel#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.520Z",
+   "zeit": "2026-11-19T13:26:51.088Z",
    "abdruck": "5f1e7212e2e1",
    "port": 7804,
    "bahn": "sitzung",
@@ -31412,12 +31662,12 @@
   },
   "karte2.planet.kosmos.sterne#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.556Z",
+   "zeit": "2026-11-19T13:26:51.123Z",
    "abdruck": "ba924cbe595a",
    "port": 7804,
    "bahn": "sitzung",
@@ -31425,12 +31675,12 @@
   },
   "karte2.planet.kosmos.sterne#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.556Z",
+   "zeit": "2026-11-19T13:26:51.123Z",
    "abdruck": "3eb22036f081",
    "port": 7804,
    "bahn": "sitzung",
@@ -31439,12 +31689,12 @@
   },
   "karte2.planet.kosmos.sterne#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.556Z",
+   "zeit": "2026-11-19T13:26:51.123Z",
    "abdruck": "9b52206cc5c3",
    "port": 7804,
    "bahn": "sitzung",
@@ -31453,12 +31703,12 @@
   },
   "karte2.planet.kosmos.sterne#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.556Z",
+   "zeit": "2026-11-19T13:26:51.123Z",
    "abdruck": "d009de855f19",
    "port": 7804,
    "bahn": "sitzung",
@@ -31467,12 +31717,12 @@
   },
   "karte2.planet.kosmos.sterne#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.556Z",
+   "zeit": "2026-11-19T13:26:51.123Z",
    "abdruck": "05f8a9342d03",
    "port": 7804,
    "bahn": "sitzung",
@@ -31481,12 +31731,12 @@
   },
   "karte2.planet.kosmos.sterne#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.556Z",
+   "zeit": "2026-11-19T13:26:51.123Z",
    "abdruck": "8e5dd1d45a9c",
    "port": 7804,
    "bahn": "sitzung",
@@ -31495,12 +31745,12 @@
   },
   "karte2.planet.kosmos.sterne#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.556Z",
+   "zeit": "2026-11-19T13:26:51.123Z",
    "abdruck": "715485d351d5",
    "port": 7804,
    "bahn": "sitzung",
@@ -31509,12 +31759,12 @@
   },
   "karte2.planet.kosmos.welten#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.608Z",
+   "zeit": "2026-11-19T13:26:51.177Z",
    "abdruck": "65b9977368ee",
    "port": 7804,
    "bahn": "sitzung",
@@ -31522,12 +31772,12 @@
   },
   "karte2.planet.kosmos.welten#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.608Z",
+   "zeit": "2026-11-19T13:26:51.177Z",
    "abdruck": "a8ec0e994d2c",
    "port": 7804,
    "bahn": "sitzung",
@@ -31536,12 +31786,12 @@
   },
   "karte2.planet.kosmos.welten#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.608Z",
+   "zeit": "2026-11-19T13:26:51.177Z",
    "abdruck": "20115a6fb615",
    "port": 7804,
    "bahn": "sitzung",
@@ -31550,12 +31800,12 @@
   },
   "karte2.planet.kosmos.welten#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.608Z",
+   "zeit": "2026-11-19T13:26:51.177Z",
    "abdruck": "68dd036fa244",
    "port": 7804,
    "bahn": "sitzung",
@@ -31564,12 +31814,12 @@
   },
   "karte2.planet.kosmos.welten#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.608Z",
+   "zeit": "2026-11-19T13:26:51.177Z",
    "abdruck": "d6fd6f9440a0",
    "port": 7804,
    "bahn": "sitzung",
@@ -31578,12 +31828,12 @@
   },
   "karte2.same.entfaltung.abwesenheit#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.638Z",
+   "zeit": "2026-11-19T13:26:51.213Z",
    "abdruck": "683493027ceb",
    "port": 7804,
    "bahn": "sitzung",
@@ -31591,12 +31841,12 @@
   },
   "karte2.same.entfaltung.abwesenheit#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.638Z",
+   "zeit": "2026-11-19T13:26:51.213Z",
    "abdruck": "a33889ecfde1",
    "port": 7804,
    "bahn": "sitzung",
@@ -31605,12 +31855,12 @@
   },
   "karte2.same.entfaltung.abwesenheit#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.638Z",
+   "zeit": "2026-11-19T13:26:51.213Z",
    "abdruck": "e280f3a68110",
    "port": 7804,
    "bahn": "sitzung",
@@ -31619,12 +31869,12 @@
   },
   "karte2.same.entfaltung.abwesenheit#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.638Z",
+   "zeit": "2026-11-19T13:26:51.213Z",
    "abdruck": "f313e75617af",
    "port": 7804,
    "bahn": "sitzung",
@@ -31633,12 +31883,12 @@
   },
   "karte2.same.entfaltung.abwesenheit#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.638Z",
+   "zeit": "2026-11-19T13:26:51.213Z",
    "abdruck": "84da88f318f6",
    "port": 7804,
    "bahn": "sitzung",
@@ -31647,12 +31897,12 @@
   },
   "karte2.same.entfaltung.abwesenheit#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.638Z",
+   "zeit": "2026-11-19T13:26:51.213Z",
    "abdruck": "a1564a0e9212",
    "port": 7804,
    "bahn": "sitzung",
@@ -31661,12 +31911,12 @@
   },
   "karte2.same.entfaltung.abwesenheit#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.638Z",
+   "zeit": "2026-11-19T13:26:51.213Z",
    "abdruck": "134f9b583faa",
    "port": 7804,
    "bahn": "sitzung",
@@ -31675,12 +31925,12 @@
   },
   "karte2.same.preis.eingabe#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.720Z",
+   "zeit": "2026-11-19T13:26:51.244Z",
    "abdruck": "1d53b86f91ed",
    "port": 7804,
    "bahn": "sitzung",
@@ -31688,12 +31938,12 @@
   },
   "karte2.same.preis.eingabe#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.720Z",
+   "zeit": "2026-11-19T13:26:51.244Z",
    "abdruck": "d58482038d0e",
    "port": 7804,
    "bahn": "sitzung",
@@ -31702,12 +31952,12 @@
   },
   "karte2.same.preis.eingabe#3": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.720Z",
+   "zeit": "2026-11-19T13:26:51.244Z",
    "abdruck": "7cded9cd3e84",
    "port": 7804,
    "bahn": "sitzung",
@@ -31716,12 +31966,12 @@
   },
   "karte2.same.preis.eingabe#4": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.720Z",
+   "zeit": "2026-11-19T13:26:51.244Z",
    "abdruck": "5d827d2a2673",
    "port": 7804,
    "bahn": "sitzung",
@@ -31730,12 +31980,12 @@
   },
   "karte2.same.preis.eingabe#5": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.720Z",
+   "zeit": "2026-11-19T13:26:51.244Z",
    "abdruck": "fa671969dc39",
    "port": 7804,
    "bahn": "sitzung",
@@ -31744,12 +31994,12 @@
   },
   "karte2.same.preis.eingabe#6": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.720Z",
+   "zeit": "2026-11-19T13:26:51.244Z",
    "abdruck": "86c307d65f6d",
    "port": 7804,
    "bahn": "sitzung",
@@ -31758,12 +32008,12 @@
   },
   "karte2.same.preis.eingabe#7": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"}) — offen, UNGEMESSEN",
    "ungemessen": true,
-   "zeit": "2026-11-19T12:46:28.720Z",
+   "zeit": "2026-11-19T13:26:51.244Z",
    "abdruck": "6b45fba5cf35",
    "port": 7804,
    "bahn": "sitzung",
@@ -35959,6 +36209,140 @@
    },
    "fahrtS": 229.9,
    "minuten": 18.51
+  },
+  {
+   "start": "2026-11-19T12:46:41.446Z",
+   "ordner": "sitzung-20261119-134641",
+   "port": 7804,
+   "warten": 36.82,
+   "bootS": 6.9,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.mensch.menge.bevoelkerung#2",
+    "karte2.mensch.menge.bevoelkerung#3",
+    "karte2.mensch.menge.bevoelkerung#4",
+    "karte2.mensch.menge.bevoelkerung#5",
+    "karte2.mensch.menge.bevoelkerung#6",
+    "karte2.mensch.menge.bevoelkerung#7",
+    "karte2.mensch.menge.bevoelkerung#8",
+    "karte2.mensch.menge.bevoelkerung#9",
+    "karte2.mensch.menge.bild#2",
+    "karte2.mensch.menge.bild#4",
+    "karte2.mensch.menge.bild#5",
+    "karte2.mensch.menge.bild#6",
+    "karte2.mensch.menge.bild#7",
+    "karte2.mensch.menge.dichte#2",
+    "karte2.mensch.menge.dichte#3",
+    "karte2.mensch.menge.dichte#4",
+    "karte2.mensch.menge.dichte#5",
+    "karte2.mensch.menge.dichte#6",
+    "karte2.mensch.menge.dichte#7",
+    "karte2.planet.kosmos.himmelsmechanik#2",
+    "karte2.planet.kosmos.himmelsmechanik#3",
+    "karte2.planet.kosmos.himmelsmechanik#4",
+    "karte2.planet.kosmos.himmelsmechanik#5",
+    "karte2.planet.kosmos.himmelsmechanik#6",
+    "karte2.planet.kosmos.himmelsmechanik#7",
+    "karte2.planet.kosmos.himmelsmechanik#8",
+    "karte2.planet.kosmos.sternhimmel#2",
+    "karte2.planet.kosmos.sternhimmel#3",
+    "karte2.planet.kosmos.sternhimmel#4",
+    "karte2.planet.kosmos.sternhimmel#5",
+    "karte2.planet.kosmos.sternhimmel#6",
+    "karte2.planet.kosmos.sternhimmel#7",
+    "karte2.planet.kosmos.sterne#1",
+    "karte2.planet.kosmos.sterne#2",
+    "karte2.planet.kosmos.sterne#3",
+    "karte2.planet.kosmos.sterne#4",
+    "karte2.planet.kosmos.sterne#5",
+    "karte2.planet.kosmos.sterne#6",
+    "karte2.planet.kosmos.sterne#7",
+    "karte2.planet.kosmos.welten#2",
+    "karte2.planet.kosmos.welten#3",
+    "karte2.planet.kosmos.welten#4",
+    "karte2.planet.kosmos.welten#5",
+    "karte2.planet.kosmos.welten#6",
+    "karte2.same.entfaltung.abwesenheit#1",
+    "karte2.same.entfaltung.abwesenheit#2",
+    "karte2.same.entfaltung.abwesenheit#3",
+    "karte2.same.entfaltung.abwesenheit#4",
+    "karte2.same.entfaltung.abwesenheit#5",
+    "karte2.same.entfaltung.abwesenheit#6",
+    "karte2.same.entfaltung.abwesenheit#7",
+    "karte2.same.preis.eingabe#1",
+    "karte2.same.preis.eingabe#2",
+    "karte2.same.preis.eingabe#3",
+    "karte2.same.preis.eingabe#4",
+    "karte2.same.preis.eingabe#5",
+    "karte2.same.preis.eingabe#6",
+    "karte2.same.preis.eingabe#7"
+   ],
+   "orte": [
+    {
+     "ort": "stadt-voll",
+     "vor": "karte2.mensch.geist.innenleben#2",
+     "s": 106.6,
+     "takte": 2582,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.mensch.geist.innenleben#2",
+     "anders": [
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      434.7,
+      538.2
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.mensch.geist.innenleben#2",
+     "gehalten": [
+      "skala",
+      "spiegel"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.mensch.menge.bevoelkerung#2: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999163888888888\"} — offen: karte2.mensch.menge.bevoelkerung#2, karte2.mensch.menge.bevoelkerung#3, karte2.mensch.menge.bevoelkerung#4, karte2.mensch.menge.bevoelkerung#5, karte2.mensch.menge.bevoelkerung#6, karte2.mensch.menge.bevoelkerung#7, karte2.mensch.menge.bevoelkerung#8, karte2.mensch.menge.bevoelkerung#9, karte2.mensch.menge.bild#2, karte2.mensch.menge.bild#4, karte2.mensch.menge.bild#5, karte2.mensch.menge.bild#6, karte2.mensch.menge.bild#7, karte2.mensch.menge.dichte#2, karte2.mensch.menge.dichte#3, karte2.mensch.menge.dichte#4, karte2.mensch.menge.dichte#5, karte2.mensch.menge.dichte#6, karte2.mensch.menge.dichte#7, karte2.planet.kosmos.himmelsmechanik#2, karte2.planet.kosmos.himmelsmechanik#3, karte2.planet.kosmos.himmelsmechanik#4, karte2.planet.kosmos.himmelsmechanik#5, karte2.planet.kosmos.himmelsmechanik#6, karte2.planet.kosmos.himmelsmechanik#7, karte2.planet.kosmos.himmelsmechanik#8, karte2.planet.kosmos.sternhimmel#2, karte2.planet.kosmos.sternhimmel#3, karte2.planet.kosmos.sternhimmel#4, karte2.planet.kosmos.sternhimmel#5, karte2.planet.kosmos.sternhimmel#6, karte2.planet.kosmos.sternhimmel#7, karte2.planet.kosmos.sterne#1, karte2.planet.kosmos.sterne#2, karte2.planet.kosmos.sterne#3, karte2.planet.kosmos.sterne#4, karte2.planet.kosmos.sterne#5, karte2.planet.kosmos.sterne#6, karte2.planet.kosmos.sterne#7, karte2.planet.kosmos.welten#2, karte2.planet.kosmos.welten#3, karte2.planet.kosmos.welten#4, karte2.planet.kosmos.welten#5, karte2.planet.kosmos.welten#6, karte2.same.entfaltung.abwesenheit#1, karte2.same.entfaltung.abwesenheit#2, karte2.same.entfaltung.abwesenheit#3, karte2.same.entfaltung.abwesenheit#4, karte2.same.entfaltung.abwesenheit#5, karte2.same.entfaltung.abwesenheit#6, karte2.same.entfaltung.abwesenheit#7, karte2.same.preis.eingabe#1, karte2.same.preis.eingabe#2, karte2.same.preis.eingabe#3, karte2.same.preis.eingabe#4, karte2.same.preis.eingabe#5, karte2.same.preis.eingabe#6, karte2.same.preis.eingabe#7",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 0,
+    "frameP95": null,
+    "taktP95": null,
+    "vramMax": null,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.mensch.geist.innenleben#2",
+      "m": 446,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 134,
+    "luecken": 3,
+    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   },
+   "fahrtS": 199.8,
+   "minuten": 40.21
   }
  ]
 }
