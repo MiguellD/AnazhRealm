@@ -18,6 +18,7 @@
 //   stand <repo> <geraet> <kopf40> <zustand> [--erledigt n] [--gesamt n] [--station id] [--liste L]   die eigene Zeile
 //   durch <repo> <geraet> <kopf40> <main40> [--erledigt n]  die eigene Liste ist durch; sind alle durch und main weiter: die naechste Runde
 //   weiter <repo> <main40>                  sind alle durch und main weiter als der Kopf: die naechste Runde
+//   zurueck <repo> <geraet> <kopf40> <grund>  eine Zeile ohne Station (durch/laeuft 0/0, liste |) zurück auf offen, mit Notiz
 //   alarm <repo> <melder> [--geraet g --grund text]   jedes Geraet > RUNDE_ALARM_MIN ohne Fortschritt (oder: der genannte Grund,
 //                                           sofort, z. B. die Platte): Feld alarm + EINE Zeile zug/erledigt.txt
 //   reihe <messung-dir> <geraet> <liste>    → "<ungebucht,..>|<gebucht gruen,..>" (stderr: die Reihe mit Grund)
@@ -130,7 +131,8 @@ function aendere(repo, botschaft, f) {
     process.stderr.write("RUNDE: Schreiben scheiterte 10x (" + fehler + ")\n");
     process.exit(1);
 }
-const alleDurch = (r) => GERAETE.every((g) => r.g[g] && r.g[g].zustand === "durch");
+// „durch“ zählt nur mit einer Liste (19.11. 06:17: „gtx durch 0/0 … liste |“ nach dem Listen-Bruch hätte sonst die nächste Runde geöffnet)
+const alleDurch = (r) => GERAETE.every((g) => r.g[g] && r.g[g].zustand === "durch" && liste(r.g[g].liste).length > 0);
 function oeffne(r, main) { // die naechste Runde am main-Kopf des Moments
     const z = iso(jetzt());
     r.runde = { n: (r.runde ? r.runde.n : 0) + 1, kopf: main, start: z, vorher: r.runde ? r.runde.kopf : "-" };
@@ -191,13 +193,14 @@ if (was === "lies") {
     console.log("ok");
 } else if (was === "durch" || was === "weiter") {
     const [repo, g, kopf, main] = was === "durch" ? arg : [arg[0], null, null, arg[1]];
-    let anders = false;
+    let anders = false, leerDurch = false;
     const { r } = aendere(repo, was === "durch" ? "Runde " + g + ": durch am " + k8(kopf) : "Runde weiter: main " + k8(main), (r) => {
         if (!r.runde) return false;
         let neu = false;
         if (g) {
             if (r.runde.kopf !== kopf) { anders = true; return false; }
             const e = r.g[g] || leer(r.runde.start);
+            if (!liste(e.liste).length) { leerDurch = true; return false; } // nie „durch“ ohne Liste (LISTE ROT beim Rufer)
             if (e.zustand !== "durch") { e.zustand = "durch"; e.station = "-"; e.fortschritt = iso(jetzt()); e.alarm = "-"; r.g[g] = e; neu = true; }
             if (opt("erledigt") !== null && e.erledigt !== Number(opt("erledigt"))) { e.erledigt = Number(opt("erledigt")); neu = true; } // der Endstand: was am Kopf einen Eintrag trägt
         }
@@ -205,8 +208,26 @@ if (was === "lies") {
         return neu ? {} : false;
     });
     if (anders) { console.log("ANDERE RUNDE " + r.runde.n + " " + r.runde.kopf); process.exit(4); }
+    if (leerDurch) { console.log("LEERE LISTE — " + g + " wird nie „durch“ ohne Station (die Zeile bleibt)"); process.exit(5); }
     if (!r.runde) { console.log("-"); process.exit(0); }
     console.log(alleDurch(r) ? "ALLE DURCH runde " + r.runde.n + " " + r.runde.kopf + " (main nicht weiter)" : "runde " + r.runde.n + " " + r.runde.kopf + " " + GERAETE.map((x) => x + "=" + ((r.g[x] || {}).zustand || "offen")).join(" "));
+} else if (was === "zurueck") {
+    // zurueck <repo> <geraet> <kopf40> <grund> — eine Zeile, die OHNE Station „durch“ oder „laeuft“ steht (der Listen-Bruch 19.11. 05:53:
+    // „gtx durch 0/0 am f68dbf09“), zurück auf offen; die Notiz-Zeile nennt den Grund. Eine Zeile MIT Liste fasst das Verb nie an.
+    const [repo, g, kopf, grund] = arg;
+    let tat = "";
+    aendere(repo, "Runde " + g + ": zurück auf offen am " + k8(kopf), (r) => {
+        if (!r.runde || r.runde.kopf !== kopf) { tat = "ANDERE RUNDE"; return false; }
+        const e = r.g[g] || leer(r.runde.start);
+        if (liste(e.liste).length) { tat = "hat eine Liste — unverändert"; return false; }
+        if (e.zustand === "offen") { tat = "schon offen"; return false; }
+        const z = iso(jetzt());
+        (r.notizen = r.notizen || []).push("notiz " + z + " " + g + " " + (grund || "zurück auf offen") + " (vorher " + e.zustand + " " + e.erledigt + "/" + e.gesamt + " liste " + e.liste + ")");
+        r.g[g] = leer(z);
+        tat = "zurück auf offen";
+        return {};
+    });
+    console.log(g + ": " + tat);
 } else if (was === "alarm") {
     const [repo, melder] = arg;
     const zeilen = [];

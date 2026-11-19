@@ -238,6 +238,13 @@ runde_takt() {
     read -r RN RK RV RZ RLISTE <<<"$RL"
     runde_alarm
     ungepusht_pruefen
+    # DER LISTEN-BRUCH VON 05:53 (Live 06:17: „gtx durch 0/0 am f68dbf09“ gebucht): steht die eigene Zeile „durch“ ohne Station, war es nie
+    # eine Messung — zurück auf offen (Notiz in zug/runde.txt), der Neubau folgt in diesem Takt
+    if [ "$RZ" = durch ] && [ "$(zahl "$RLISTE")" = 0 ]; then
+        runde zurueck "$RUNDE_REPO" "$GERAET" "$RK" "durch 0/0 war ein Listen-Bruch (die Liste reiste als Argument), zurück auf offen" >>"$L"
+        log "Runde $RN am ${RK:0:8}: die Zeile stand durch 0/0 ohne Liste — zurück auf offen, die Liste wird neu gebaut"
+        RZ=offen RLISTE=-
+    fi
     if [ "$RZ" = durch ]; then
         puls landung "${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }Runde $RN am ${RK:0:8}: die OMEN ist durch — $(runde weiter "$RUNDE_REPO" "$(main_kopf)")"
         return
@@ -289,6 +296,8 @@ runde_takt() {
         REST=$(offen_am "$RK" "$RLISTE") || { liste_rot "runde.cjs offen nach der Fahrt am ${RK:0:8} scheiterte (Exit $?)"; return; }
         [ -n "$REST" ] && log "Runde $RN am ${RK:0:8}: die Liste ist gefahren, ohne Eintrag blieben $(zahl "$REST"): ${REST:0:400} (kandidat.sh OFFEN nach 4 Versuchen)"
     fi
+    # nie ein Null-Bericht (Live 06:17: „0 grün / 0 rot / 0 ungemessen“ ging hinaus) und nie „durch“ ohne Station: LISTE ROT davor
+    if [ "$GESAMT" = 0 ]; then liste_rot "Runde $RN am ${RK:0:8}: die Liste trägt 0 Stationen — kein Bericht, kein durch"; return; fi
     summe "$RK" "gtx-${RK:0:8}" "${RLISTE/|/,}"
     richte_runde "$RK" "$RV" "$RLISTE"
     sag "landung Runde $RN am ${RK:0:8}: die OMEN ist durch ($GESAMT Stationen) — $(runde durch "$RUNDE_REPO" "$GERAET" "$RK" "$(main_kopf)" --erledigt $((GESAMT - $(zahl "$REST"))))"
@@ -371,6 +380,7 @@ STUMMEL
     eval "$(declare -f ohne_band | sed '1s/ohne_band/ohne_band_echt/')"
     eval "$(declare -f offen_am | sed '1s/offen_am/offen_am_echt/')"
     puls() { echo "PULS $*" >>"$L"; }
+    geraet_durch() { runde stand "$RUNDE_REPO" "$1" "$2" laeuft --liste x.K1#1 --gesamt 1 >/dev/null; runde durch "$RUNDE_REPO" "$1" "$2" "$3" >/dev/null; } # ein Gerät durch MIT Liste (ohne Liste nie)
     sag() { echo "SAG $*" >>"$L"; }
     warter() { cat "$X/warter" 2>/dev/null; }
     main_kopf() { cat "$X/main"; }
@@ -415,7 +425,7 @@ STUMMEL
     rm -f "$X/warter" "$X/warter_nach" "$X/landung_nach"
     runde_takt # main ist jetzt k2
     e1=$(feld gtx)
-    runde durch "$RUNDE_REPO" radeon "$k0" "$(main_kopf)" >/dev/null # das andere Gerät ist auch durch → die nächste Runde
+    geraet_durch radeon "$k0" "$(main_kopf)" >/dev/null # das andere Gerät ist auch durch → die nächste Runde
     z=$(feld runde)
     # die Sitzungen der Runde 1: je Linse EINE (Teile zu je zwei Läufen, s7+s8 ein Zwilling) — nie je Station eine
     n=$(grep -c " ${k0:0:8} gtx-${k0:0:8}[-w0-9]* Versuch 1 START (.*,.*)" "$KETTE_LOG")
@@ -442,7 +452,7 @@ STUMMEL
     else echo "ROT b  Halt: Zeile „$(echo "$e1" | cut -c1-24)“ (Soll halt ≥3/8), Flagge $w, weiter an „$f1“ (Soll „$(nte "$e1" $((${n:-0} + 1)))“), am Kopf $(am "$k2") (Soll 8, eindeutig $(eindeutig "$k2"))"; fi
     # b — der Macher am Schloss (Runde 3 am k1): WEICHT an der Grenze, keine Station solange er wartet, dann an derselben Station weiter
     echo "$k1" >"$X/main"
-    runde durch "$RUNDE_REPO" radeon "$k2" "$k1" >/dev/null
+    geraet_durch radeon "$k2" "$k1" >/dev/null
     echo 2 >"$X/warter_nach"
     runde_takt
     e1=$(feld gtx)
@@ -458,7 +468,7 @@ STUMMEL
     else echo "ROT b  Weichen: Zeile „$(echo "$e1" | cut -c1-24)“ (Soll weicht 2–7/8), während er wartet $w → $v (Soll gleich), weiter an „$f1“, am Kopf $(am "$k1") (Soll 8)"; fi
     # c — Neustart (Runde 4 am k2b): der Dienst stirbt in Station 4 ohne Push, ein neuer Prozess ohne Gedächtnis setzt dort fort
     echo "$k2b" >"$X/main"
-    runde durch "$RUNDE_REPO" radeon "$k1" "$k2b" >/dev/null
+    geraet_durch radeon "$k1" "$k2b" >/dev/null
     echo 4 >"$X/tod_in"
     (runde_takt) >/dev/null 2>&1
     e1=$(feld gtx)
@@ -605,7 +615,7 @@ ATTRAPPE
     offen_am() { offen_am_echt "$@"; }
     rm -f "$S/landung.halt" "$S/liste-rot.alarm"
     touch "$X/nur_erste"
-    runde durch "$RUNDE_REPO" radeon "$k2b" "$k1" >/dev/null # die Runde 5 am k1: die gtx-Zeile beginnt leer
+    geraet_durch radeon "$k2b" "$k1" >/dev/null # die Runde 5 am k1: die gtx-Zeile beginnt leer
     echo "$k1" >"$X/main"
     j=$(wc -l <"$KETTE_LOG")
     runde_takt
@@ -618,8 +628,8 @@ ATTRAPPE
         echo "OK n  die echte Tafel: Quelle $quelle Stationen (gebucht 0) → Liste $lz in zug/runde.txt, die erste Sitzung fuhr; kein node-Aufruf über 30 000 Zeichen"
     else echo "ROT n  die echte Tafel: Quelle $quelle (Soll ≥ 1 000), Liste $lz (Soll ≥ Quelle), erste Sitzung $nz (Soll ≥ 1), argv über 30 000: $(head -c 120 "$X/argv-lang" 2>/dev/null | tr '\n' ' '), Zeile „$(echo "$e1" | cut -c1-30)“"; fi
     # o — STILLES SCHEITERN IST ROT: die Kette bricht (ohne /band Exit 1, nichts) → EIN Alarm „LISTE ROT“, die Zeile bleibt (nie laeuft 0/0)
-    runde durch "$RUNDE_REPO" gtx "$k1" "$k2" >/dev/null 2>&1
-    runde durch "$RUNDE_REPO" radeon "$k1" "$k2" >/dev/null # Runde 6 am k2
+    geraet_durch gtx "$k1" "$k2"
+    geraet_durch radeon "$k1" "$k2" >/dev/null # Runde 6 am k2
     echo "$k2" >"$X/main"
     ohne_band() { return 1; }
     runde_takt
@@ -634,12 +644,13 @@ ATTRAPPE
     offen_am() { echo "$2" | tr ',|' '\n\n' | grep . | while read -r s; do grep -qxF "$1:$s" "$X/gepusht" 2>/dev/null || echo "$s"; done | paste -sd, -; }
     git -C "$X/klon" fetch -q origin +refs/heads/koordination:refs/t/k
     koord zug/runde.txt | sed "s/^gtx .*/gtx laeuft 0\/0 station - fortschritt 2026-11-19T04:53:00Z alarm - liste |/" >"$X/rt.txt"
-    local bb bl tt cc
+    local bb bl tt cc ix
+    ix=$(cygpath -m "$X/idx") # git (Windows) braucht die Laufwerks-Form im GIT_INDEX_FILE
     bb=$(git -C "$X/klon" rev-parse refs/t/k) bl=$(git -C "$X/klon" hash-object -w --no-filters "$X/rt.txt")
-    rm -f "$X/idx"
-    GIT_INDEX_FILE=$X/idx git -C "$X/klon" read-tree "$bb"
-    GIT_INDEX_FILE=$X/idx git -C "$X/klon" update-index --cacheinfo "100644,$bl,zug/runde.txt"
-    tt=$(GIT_INDEX_FILE=$X/idx git -C "$X/klon" write-tree)
+    rm -f "$ix"
+    GIT_INDEX_FILE=$ix git -C "$X/klon" read-tree "$bb"
+    GIT_INDEX_FILE=$ix git -C "$X/klon" update-index --cacheinfo "100644,$bl,zug/runde.txt"
+    tt=$(GIT_INDEX_FILE=$ix git -C "$X/klon" write-tree)
     cc=$(git -C "$X/klon" $A0 commit-tree "$tt" -p "$bb" -m bruch) && git -C "$X/klon" push -q origin "$cc:refs/heads/koordination"
     touch "$X/nur_erste"
     runde_takt
@@ -648,7 +659,30 @@ ATTRAPPE
     f5=$(koord zug/runde.txt | grep -c "^notiz .* gtx neu gebaut nach Listen-Bruch: vorher laeuft 0/0 liste |")
     if [ "$(echo "$e1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)" = 8 ] && [ "$f5" = 1 ] && koord zug/runde.txt | grep -q "^runde 6 "; then
         echo "OK p  Listen-Bruch „laeuft 0/0 … liste |“: der erste Takt baute die Liste neu (8 Stationen), dieselbe Runde 6, die Notiz steht in zug/runde.txt"
-    else echo "ROT p  Listen-Bruch: Zeile „$(echo "$e1" | cut -c1-40)“ (Soll Liste mit 8), Notiz $f5 (Soll 1), Runde $(koord zug/runde.txt | grep -c '^runde 6 ') (Soll 6)"; fi
+    else echo "ROT p  Listen-Bruch: Zeile „$(echo "$e1" | cut -c1-40) … $(echo "$e1" | sed "s/.* liste //" | cut -c1-60)“ (Soll Liste mit 8), Notiz $f5 (Soll 1), Runde $(koord zug/runde.txt | grep -c '^runde 6 ') (Soll 6)"; fi
+    # q — „gtx durch 0/0 … liste |“ (Live 06:17, am f68dbf09 gebucht): runde.cjs schreibt „durch“ ohne Station nie (Exit 5); steht die
+    # Zeile doch so, setzt der erste Takt sie selbst zurück auf offen (Notiz „… zurück auf offen“) und baut die Liste neu — kein Null-Bericht
+    local f6 f7 rq
+    git -C "$X/klon" fetch -q origin +refs/heads/koordination:refs/t/k
+    koord zug/runde.txt | sed "s/^gtx .*/gtx durch 0\/0 station - fortschritt 2026-11-19T05:17:00Z alarm - liste |/" >"$X/rt.txt"
+    bb=$(git -C "$X/klon" rev-parse refs/t/k) bl=$(git -C "$X/klon" hash-object -w --no-filters "$X/rt.txt")
+    rm -f "$ix"
+    GIT_INDEX_FILE=$ix git -C "$X/klon" read-tree "$bb"
+    GIT_INDEX_FILE=$ix git -C "$X/klon" update-index --cacheinfo "100644,$bl,zug/runde.txt"
+    tt=$(GIT_INDEX_FILE=$ix git -C "$X/klon" write-tree)
+    cc=$(git -C "$X/klon" $A0 commit-tree "$tt" -p "$bb" -m durch-null) && git -C "$X/klon" push -q origin "$cc:refs/heads/koordination"
+    runde durch "$RUNDE_REPO" gtx "$(koord zug/runde.txt | sed -n 's/^runde [0-9]* kopf \([0-9a-f]*\) .*/\1/p')" "$k0" >/dev/null 2>&1
+    rq=$?
+    j=$(wc -l <"$KETTE_LOG")
+    touch "$X/nur_erste"
+    runde_takt
+    rm -f "$X/nur_erste" "$S/landung.halt"
+    e1=$(feld gtx)
+    f6=$(koord zug/runde.txt | grep -c "^notiz .* gtx durch 0/0 war ein Listen-Bruch .* zurück auf offen")
+    f7=$(tail -n +$((j + 1)) "$KETTE_LOG" | grep -c "GEPUSHT (Versuch 1) 0 Station" )
+    if [ "$rq" = 5 ] && [ "$f6" = 1 ] && [ "$(echo "$e1" | sed 's/.* liste //' | tr ',|' '\n\n' | grep -c .)" = 8 ]; then
+        echo "OK q  „durch 0/0 … liste |“: runde.cjs durch ohne Station verweigert (Exit 5); der erste Takt setzte die Zeile zurück auf offen (Notiz) und baute die Liste neu (8)"
+    else echo "ROT q  durch 0/0: runde durch ohne Station Exit $rq (Soll 5), Notiz $f6 (Soll 1), Zeile „$(echo "$e1" | cut -c1-40) … $(echo "$e1" | sed 's/.* liste //' | cut -c1-60)“ (Soll Liste mit 8)"; fi
     command rm -rf "$X"
 }
 MUTANTEN=${ST_MUTANTEN-"liste-als-argument leere-liste-laeuft je-station behalt-gruppe bild-omen sprung von-vorn volle-liste tafel-reihe still blind halt-rm nur-schloss tafel-blind tafel-alle"}
@@ -659,14 +693,14 @@ selbsttest() {
     wait
     grep -E "^(OK|ROT)" "$O/echt" | sed 's/^/  /'
     grep -q "^ROT" "$O/echt" && rot=1
-    [ "$(grep -c "^OK" "$O/echt")" = 17 ] || rot=1
+    [ "$(grep -c "^OK" "$O/echt")" = 18 ] || rot=1
     for m in $MUTANTEN; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-140)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-100 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 17 Fälle grün (a–p), $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "landung-dienst SELBSTTEST GRÜN: 18 Fälle grün (a–q), $mr/$mz Mutanten ROT"; return 0; fi
     echo "landung-dienst SELBSTTEST ROT: $(grep -c "^OK" "$O/echt" 2>/dev/null) Fälle OK, $mr/$mz Mutanten ROT"
     return 1
 }

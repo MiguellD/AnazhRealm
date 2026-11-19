@@ -300,6 +300,10 @@ takt() {
     read -r RN RK RV RZ RLISTE <<<"$RL"
     runde_alarm
     ungepusht_pruefen
+    if [ "$RZ" = durch ] && [ "$(zahl "$RLISTE")" = 0 ]; then # „durch“ ohne Station war nie eine Messung: zurück auf offen (Notiz)
+        runde zurueck "$R" radeon "$RK" "durch 0/0 ohne Liste war ein Listen-Bruch, zurück auf offen" >>"$L"
+        RZ=offen RLISTE=-
+    fi
     if [ "$RZ" = durch ]; then
         puls radeon "${UNGEPUSHT_TEXT:+$UNGEPUSHT_TEXT · }Runde $RN am ${RK:0:8}: die Radeon ist durch — $(runde weiter "$R" "$(main_jetzt)") · $(node "$RUNDE_CJS" ablage "$BILD_ABLAGE" 2>/dev/null)"
         return 0
@@ -488,13 +492,14 @@ STUMMEL
     reihe) vor_mir_da() { return 1; } ;; # die alte Regel: nach HAND_ZEIT_S tritt die Fahrt wieder ein, gleich wer schon wartet
     esac
     # neu <botschaft> — eine Landung auf main und (gespielt) beide Geräte durch: die nächste Runde am neuen Kopf
+    geraet_durch() { runde stand "$R" "$1" "$2" laeuft --liste x.K1#1 --gesamt 1 >/dev/null; runde durch "$R" "$1" "$2" "$3" >/dev/null; } # durch nur MIT Liste
     neu() {
         local rl ok
         git -C "$R" $A commit -q --allow-empty -m "$1" && git -C "$R" push -q origin main
         K=$(main_jetzt)
         rl=$(runde lies "$R" radeon)
         if [ "$rl" = - ]; then runde anlegen "$R" "$K" >/dev/null
-        else ok=$(echo "$rl" | cut -d' ' -f2); runde durch "$R" gtx "$ok" "$K" >/dev/null; runde durch "$R" radeon "$ok" "$K" >/dev/null; fi
+        else ok=$(echo "$rl" | cut -d' ' -f2); geraet_durch gtx "$ok" "$K"; geraet_durch radeon "$ok" "$K"; fi
     }
     feld() { git -C "$R" fetch -q origin +refs/heads/koordination:refs/t/k && git -C "$R" show refs/t/k:zug/runde.txt | grep "^$1 "; }
     gem() { git -C "$X/pm.git" show "punkte-maschine:meisterkarte-quelle/punkte/messung/${1:0:8}-radeon.json" 2>/dev/null | grep -c '"ende"'; }
@@ -609,7 +614,7 @@ STUMMEL
     z1=$(tail -n +$((j + 1)) "$STUB/nur.log" | paste -sd' ' -)
     b1=$(gem "$alt") b2=$(gem "$(main_jetzt)")
     vor=$(feld runde)
-    runde durch "$R" gtx "$alt" "$(main_jetzt)" >/dev/null # die OMEN ist auch durch
+    geraet_durch gtx "$alt" "$(main_jetzt)" # die OMEN ist auch durch
     takt
     z2=$(kopf)
     if [ "$b1" = 3 ] && [ "$b2" = 0 ] && [ "$z1" = "z.K2#1,z.K3#1 z.K1#1" ] && echo "$vor" | grep -q "kopf $alt " && [ "$z2" = "$(main_jetzt)" ]; then
@@ -667,6 +672,23 @@ STUMMEL
     if [ "$quelle" -ge 1000 ] && [ "$lz" -ge "$quelle" ] && [ -n "$n1" ] && [ "${#n1}" -le 8000 ] && [ ! -s "$X/argv-lang" ]; then
         echo "OK t  die echte Tafel an der Radeon: Quelle $quelle → Liste $lz in zug/runde.txt, die erste Fahrt --nur mit ${#n1} Zeichen (≤ 8 000); kein node-Aufruf über 30 000 Zeichen"
     else echo "ROT t  die echte Tafel: Quelle $quelle (Soll ≥ 1 000), Liste $lz (Soll ≥ Quelle), erste Fahrt ${#n1} Zeichen (Soll 1–8 000), argv über 30 000: $(head -c 120 "$X/argv-lang" 2>/dev/null | tr '\n' ' ')"; fi
+    # u — DIE RETTUNG IN EINEM ZUG (Koordinator 06:38: push-pfade „-“ lief an der Radeon > 39 min, je Datei hash-object + Vergleich +
+    # update-index — ~36 000 git-Starts für ~12 000 Pfade): 2 400 eigene Mess-Dateien im Baum, die der Ursprung nicht trägt — `ungepusht`
+    # zählt sie, `push-pfade -` bringt sie in EINEM hash-object, EINEM ls-tree und EINEM update-index nach origin; Deckel 60 s je Schritt
+    local u0 u1 u2 tu1 tu2 nu
+    mkdir -p "$PM/meisterkarte-quelle/punkte/messung"
+    node -e 'const fs=require("fs"),p=require("path"),d=process.argv[1];for(let i=0;i<2400;i++){const k=(0x10000000+i*7919).toString(16).slice(-8);fs.writeFileSync(p.join(d,k+"-radeon.json"),JSON.stringify({je:{["u.K"+i+"#1"]:{gruen:true}}})+"\n")}' "$(cygpath -m "$PM/meisterkarte-quelle/punkte/messung")"
+    tu1=$(date +%s%N)
+    u0=$(node "$RUNDE_CJS" ungepusht "$PM" punkte-maschine radeon "$X/u.seit" 2>/dev/null | cut -d' ' -f1)
+    tu1=$((($(date +%s%N) - tu1) / 1000000))
+    tu2=$(date +%s%N)
+    node "$RUNDE_CJS" push-pfade "$PM" punkte-maschine radeon - "Rettung im Selbsttest" >"$X/u.out" 2>&1
+    tu2=$((($(date +%s%N) - tu2) / 1000000))
+    u1=$(node "$RUNDE_CJS" ungepusht "$PM" punkte-maschine radeon "$X/u.seit" 2>/dev/null | cut -d' ' -f1)
+    nu=$(git -C "$X/pm.git" ls-tree --name-only punkte-maschine meisterkarte-quelle/punkte/messung/ | grep -c -- "-radeon.json$")
+    if [ "${u0:-0}" -ge 2400 ] && [ "$u1" = 0 ] && [ "$nu" -ge 2400 ] && [ "$tu1" -le 60000 ] && [ "$tu2" -le 60000 ]; then
+        echo "OK u  Rettung in einem Zug: ungepusht $u0 in $tu1 ms, push-pfade - brachte $u0 Pfade in $tu2 ms nach origin (Deckel je 60 s), danach 0"
+    else echo "ROT u  Rettung: ungepusht vorher ${u0:-?} (Soll ≥ 2 400) in $tu1 ms, push-pfade $tu2 ms (Deckel 60 000), danach $u1 (Soll 0), am Ursprung $nu — $(tail -n 1 "$X/u.out" | cut -c1-100)"; fi
     command rm -rf "$X"
 }
 selbsttest() {
@@ -678,14 +700,14 @@ selbsttest() {
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 12 ] || rot=1
+    [ "$(echo "$echt" | grep -c "^OK")" = 13 ] || rot=1
     for m in von-vorn rest warter pid reihe ziel bild still-push referenz-rechner liste-als-argument; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 12 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 13 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }
