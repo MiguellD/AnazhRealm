@@ -358,6 +358,40 @@ const BRUECHE = [[1 / 4, "¼"], [1 / 3, "⅓"], [1 / 2, "½"], [2 / 3, "⅔"], [
         for (const [n, f] of [["W heute", (z) => z.W], ["Los-Breite heute", (z) => z.losB]]) { const b = B(f); const best = EINHEITEN.filter(([nm]) => !nm.startsWith("1 Rute")).map(([nm, U2]) => [nm, rasterAnteil(b, U2 / 4, 0.5)]).sort((x, y) => y[1].k - x[1].k);
             console.log(`    ${n}: am Edinburgh-Raster R ${pz(rasterAnteil(b, st, 0.5).a * 1e3, 1e3)} κ ${r3(rasterAnteil(b, st, 0.5).k)} · beste belegte Einheit ${best[0][0]} R ${pz(best[0][1].a * 1e3, 1e3)} κ ${r3(best[0][1].k)} · in ¾–2½ U (Edinburgh) ${pz(b.filter((v) => v >= 0.75 * U - 0.5 && v <= 2.5 * U + 0.5).length, b.length)}`); }
     }
+    // ═════ ZUSATZ 19.11. (gesetz-v3-struktur.md, Entscheid 1 und 4 des Koordinators) — nur angehängt, alle Zeilen darüber unverändert ═════
+    // (E1) DIE MASSZAHL DER ABSTECKUNG: Anteil der Lose, deren Breite ± 0,5 m an einem VIERTEL der Block-Einheit U liegt (k·U/4, k ≥ 1),
+    //      Soll ≥ ⅔ (Stell & Tait 2016 S. 5). Die Einheit je Block liest der Zähler aus dem Feld EINHEIT_FELD (Vorgabe `blockEinheit`) des
+    //      Hauses (hp, reist als ov) — heute trägt es keines; dann zählt er gegen perch 5,03 m, Freiburg 50 Fuß à 0,324 m und die beste
+    //      Einheit im belegten schottischen Band 5,8–12,8 m (T08 S. 233), alle über die Los-Breite der Stadt (Lesart oben) bzw. LOS_FELD.
+    {
+        const EINHEIT_FELD = process.env.EINHEIT_FELD || "blockEinheit";
+        const mitFeld = M.filter((z) => z.hp && Number.isFinite(z.hp[EINHEIT_FELD]));
+        console.log(`\n══ ZUSATZ E1 — ANTEIL AM VIERTEL DER BLOCK-EINHEIT (± 0,5 m, Soll ≥ ⅔): Feld ${EINHEIT_FELD} je Los ${mitFeld.length}/${M.length}`);
+        if (mitFeld.length) { let n = 0; for (const z of mitFeld) { const u = z.hp[EINHEIT_FELD] / 4, k = Math.max(1, Math.round(z.losB / u)); if (Math.abs(z.losB - k * u) <= 0.5 + 1e-9) n++; }
+            console.log(`  am Feld: ${n}/${mitFeld.length} = ${pz(n, mitFeld.length)}`); }
+        const b = B((z) => z.losB), zeile = (nm, U) => { const r = rasterAnteil(b, U / 4, 0.5); return `${nm} (U ${r2(U)} m, Viertel ${r2(U / 4)} m): Anteil ${pz(r.a * 1e3, 1e3)} · Zufall p0 ${r3(r.p0)} · κ ${r3(r.k)}`; };
+        console.log(`  HEUTE Los-Breite gegen ${zeile("perch 16½ ft", RUTE)}`);
+        console.log(`  HEUTE Los-Breite gegen ${zeile("Freiburg 50 Fuß à 0,324 m", 50 * 0.324)}`);
+        let best = null; for (let U = 5.8; U <= 12.8001; U += 0.01) { const r = rasterAnteil(b, U / 4, 0.5); if (!best || r.a > best.r.a) best = { U, r }; }
+        console.log(`  HEUTE Los-Breite gegen ${zeile("beste Einheit im Band 5,8–12,8 m", best.U)}`);
+        const bW = B((z) => z.W), rW = rasterAnteil(bW, RUTE / 4, 0.5), rWF = rasterAnteil(bW, 50 * 0.324 / 4, 0.5);
+        console.log(`  zum Vergleich Haus-Front W: perch-Viertel ${pz(rW.a * 1e3, 1e3)} · Freiburg-Viertel ${pz(rWF.a * 1e3, 1e3)}`);
+    }
+    // (E4) DIE KANTEN-GENERATION DER FRONT (`gen` des Straßen-Graphs, FC:5280/5322/5393/5425/5467/5477) je Los, und die Geschosse, die
+    //      London 1667 (s. VII–IX: by-lane 2 · street of note 3 · high street 4) daraus machte, WENN gen 0 → 4, gen 1 → 3, gen 2 → 2
+    //      gelesen würde (Lesart, nicht Gesetz: die Zuordnung ist Lücke L15). Dazu die heutigen eingeschossigen Häuser nach Lage und Rolle.
+    {
+        console.log(`\n══ ZUSATZ E4 — KANTEN-GENERATION DER FRONT (alle ${M.length} Lose · nur Wohnhäuser)`);
+        const WH = M.filter((z) => z.rolle === "wohnhaus");
+        const zaehle = (S, f) => Object.entries(S.reduce((a, z) => ((a[f(z)] = (a[f(z)] || 0) + 1), a), {})).sort().map(([k, c]) => `${k} ${c} (${pz(c, S.length)})`).join(" · ");
+        console.log(`  gen der Front: alle ${zaehle(M, (z) => "gen " + z.frontGen)} | Wohnhäuser ${zaehle(WH, (z) => "gen " + z.frontGen)}`);
+        console.log(`  gen × Lage: ${zaehle(M, (z) => "gen " + z.frontGen + "/" + z.lage)}`);
+        const lon = (z) => (z.frontGen === 0 ? 4 : z.frontGen === 1 ? 3 : 2);
+        console.log(`  Geschosse nach der Lesart gen 0→4 · 1→3 · 2→2: alle ${zaehle(M, (z) => lon(z) + " G.")} | Wohnhäuser ${zaehle(WH, (z) => lon(z) + " G.")}`);
+        console.log(`  Geschosse HEUTE: alle ${zaehle(M, (z) => z.st + " G.")}`);
+        const E1 = M.filter((z) => z.st === 1);
+        console.log(`  heute eingeschossig ${E1.length} (${pz(E1.length, M.length)}): nach Lage ${zaehle(E1, (z) => z.lage)} · nach gen ${zaehle(E1, (z) => "gen " + z.frontGen)} · nach Rolle ${zaehle(E1, (z) => z.rolle)}`);
+    }
     if (process.env.ZAEHL_JSON) { fs.writeFileSync(process.env.ZAEHL_JSON, JSON.stringify(L.map((z) => { const o = Object.assign({}, z); delete o.hp; return o; }))); console.log("geschrieben " + process.env.ZAEHL_JSON); }
     console.log(`\nLaufzeit ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 })().catch((e) => { console.error(e); process.exit(1); });

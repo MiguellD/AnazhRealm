@@ -1,6 +1,6 @@
 # GESETZ v3 — DIE STRUKTUR DES BAUENS (Runde 3, nach dem Zensus; Lese-Baum n1011-hg main b7ed8419, nur gelesen)
 
-## (K) ENTSCHEIDE DES KOPFES ZU §0 (19.11. 01:40) — gelten über dem Text darunter
+## (K) ENTSCHEIDE DES KOPFES ZU §0 (19.11. 01:26; Punkt 2 berichtigt 01:30 nach dem Entscheid des Koordinators) — gelten über dem Text darunter
 
 Dieses Blatt ist STRUKTUR: kein Code, kein Spike, keine gewählte Zahl. Vom Kopf gelesen ist der Rohbericht und §0, nicht jede der
 31 fallenden Stellen am Code.
@@ -8,8 +8,10 @@ Dieses Blatt ist STRUKTUR: kein Code, kein Spike, keine gewählte Zahl. Vom Kopf
 1. **Zähler vor dem Spike.** S2, S8, S9 und S10 haben keinen Zähler am HAUS des Kerns, S3 und S5 zählen über einen Nachbau der heutigen
    Kette. Das Gesetz liefert darum je Haus ein Feld `hp.schritte` (jeder Schritt der Kette mit Eingang und Ausgang); die Zähler lesen
    dieses Feld. Der Umbau der Zähler ist Teil der Grundlinie, nicht des Gesetzes.
-2. **S4 allein entscheidet nichts** (κ = 0 ist der Zufall, das belegte Band schließt ihn ein). S4 gilt nur zusammen mit: das Los nennt
-   sein Absteck-Modul als Größe mit Quelle (Lücke), und jede Abweichung vom Modul ist ein benannter Schritt in `hp.schritte`.
+2. **S4 neu (Entscheid Koordinator 01:26):** Maßzahl der Absteckung = Anteil der Lose, deren Breite ± 0,5 m an einem VIERTEL der
+   Block-Einheit liegt, Soll ≥ ⅔ (Stell & Tait). κ wird daneben weiter gezählt, ist aber kein Soll mehr (0,27 hing an der
+   Einheitsbreite: 0,33 bei 8 m, 0,13 bei 6,54 m). Die Einheit je Block ist eine Gründungsgröße des Plans; jede Abweichung vom
+   Viertel ist ein benannter Schritt in `hp.schritte`.
 3. **Die Ecke hat EINE Definition:** ein Los mit zwei Fronten an zwei Kanten des Straßen-Netzes. Der Flankenabstand (56,0 % / 33,9 %)
    war eine Lesart des Zählers und fällt; die Regel der Stufe 1 (FC:4091) liest danach dieselbe Größe.
 4. **S6 wird eine Zahl:** der Stand reist als Feld, der Zähler rechnet ihn aus der Lage nach — Abweichung 0.
@@ -18,333 +20,335 @@ Dieses Blatt ist STRUKTUR: kein Code, kein Spike, keine gewählte Zahl. Vom Kopf
 6. **Zwei Traufe-Regeln (nah 7,80 m, fern 8,60 m bei drei Geschossen, FC:211–215 gegen 4072/4120)** sind ein Zwilling: EINE Regel,
    die ferne liest die nahe. Fund-Zeile für die Tafel.
 7. **Wohnturm und Patrizierhaus** sind Wohnhäuser eines Standes, kein Sonderbau: ihre Höhen-Zeilen fallen unter S5.
-8. **FRAGE AN DEN KOORDINATOR (nicht entschieden):** setzt das Wort `nH` die Zahl der Lose, oder folgt sie aus Front ÷ Absteckung?
-   Folgt sie aus der Absteckung, sind „dieselben 2 595 Lose“ keine feste Menge mehr und S8 misst an derselben STADT (Samen, Wort),
-   nicht an denselben Losen. Vorschlag des Kopfes: die Lose folgen aus dem Plan, `nH` wird Ergebnis.
+8. **ENTSCHIEDEN (Koordinator, zweiter Gang, Entscheid E6 unten):** die Lose FOLGEN aus dem Plan (Front ÷ Absteckung in Vierteln der
+   Block-Einheit); `nH` ist Ergebnis und Lese-Zahl. Das Wort setzt Samen und Größe der STADT (Markt, Straßen-Klassen, Druck), nie die
+   Zahl der Lose. S8 misst an derselben Stadt (Samen, Wort); die Grundlinie nennt die Zahl der Lose heute und am Gesetz nebeneinander.
+   (Bis 01:30 stand hier die Frage; der Vorschlag des Kopfes ist damit entschieden.)
 9. **Naht Person:** 7 von 11 Gesinde-Zeilen in `spike/gesetz-proto.cjs:50–56` sind „Annahme“ — das Person-Gesetz liest sie als Datum.
    Gemeldet; Name und Form von `haushalt` bleiben unberührt.
 
+## (E) ENTSCHEIDE DES KOORDINATORS IM ZWEITEN GANG (19.11., bindend; eingearbeitet in §0–§6)
+
+| E | Entscheid | eingearbeitet |
+|---|---|---|
+| E1 | Maßzahl der Absteckung = Anteil der Lose ± 0,5 m am Viertel der Block-Einheit, Soll ≥ ⅔ (ST15 S. 5); κ daneben gezählt, kein Soll | §4 S4; Zähler `v3/zaehl-los.cjs` Zusatz E1 |
+| E2 | Die Einheit je Block ist Gründungsgröße des Plans (Freiburg 50 × 100 Fuß, perch 5,03 m, Schottland 5,8–12,8 m); Lose ¾–2½ Einheiten; Tiefe ÷ Breite 2 bis 25 ist die zweite Gründungsgröße | §1 Glied 1/2; §3 L1, L2, L4 |
+| E3 | Haushalt → Los über den belegten Zins je Viertel; die Verteilung Stand über Frontbreite ist HYPOTHESE | ersetzt durch E7 (die erste Lesart baute einen Kreis, §0 Abschnitt „erledigt“) |
+| E4 | Geschosse nach Straßen-Klasse 2 · 3 · 4 (London 1667), Höhe bis Gesims nach Straßenbreite 36 · 45 · 54 Fuß (Paris 1784), die Ecke erbt die breitere Straße; „+1 Geschoss bei Wohlstand > 0,9“ (FC:4444) fällt | §1 Glied 7; §2 F6; §3 L14, L17, L26; Zähler Zusatz E4 |
+| E5 | L_max aus dem Querschnitt des Holz-Profils (Durchbiegung), Forchheim ~5 m als Gegenprobe, Balkenabstand 40–60 cm; der Hang aus dem Grund (Sockel folgt dem Gefälle in Stufen) ohne historische Zahl; Zeit-Achse: erst teilt sich die Front, dann füllt sich der Hof | §1 Glied 9, 10, 12; §2 F21; §3 L6, L20, L24, L33 |
+| E6 | `nH`: die Lose folgen aus dem Plan; das Wort setzt Stadt, nicht Lose; S8 an derselben Stadt | (K) 8; §4 S8; §6 G6 |
+| E7 | Zins-Kante ohne Kreis: das Los trägt Viertel und Lage, Zins = Funktion beider, der Stand FOLGT aus dem Zins, der Haushalt aus Stand und Adresse. Kette: Plan → Los → Zins → Stand/Gewerbe → Haushalt → Haus. „Der Haushalt trägt so viele Viertel, wie sein Stand zahlt“ fällt. Zins ist ein eigenes Glied (12 Glieder) | §1 Glied 3; §5 Person |
+| E8 | Eingeschossiges Haus: Befund mit Messnamen, kein Würfel. EINE belegbare Ursache am Quellen-Blatt prüfen (Klasse unter Londons unterster: Dorfweg; Hinterhof-Bau nach der Front-Teilung); trägt sie die ≥ 10 % nicht am Text, steht die Lücke offen | §0 Punkt 3; §3 L36 |
+| E9 | `hp.schritte` je Haus ist PFLICHT-Ausgang. Der Umbau der Zähler S2, S3, S5, S8, S9, S10 auf das HAUS des Kerns ist Grundlinie und läuft VOR dem Spike. Ein Zähler über einen Nachbau der heutigen Kette ist kein Richter | §4 (Spalte Richter); §6 G1–G3 |
+| E10 | Die zwei Traufe-Regeln fallen in der Bau-Welle auf EINE Quelle (Höhe aus Straßen-Klasse und Geschosshöhe) — Fund-Zeile jetzt, kein Einzelschnitt vorab. Die sieben „Annahme“-Zeilen des Gesindes gehen als benannte HYPOTHESEN ans Person-Gesetz | §2 F28; §5 Person |
+
+---
 
 Kein Code, kein Prototyp, kein Spike, keine gewählte Zahl. Dieses Blatt sagt: was folgt woraus, welche Stellwerte fallen (datei:zeile),
-wo ein Datum mit Quelle stehen muss (benannte Lücke L1 … L32). Kern FC = `fachwerk-core.js` an der Wurzel des Lese-Baums, SHA-256
+wo ein Datum mit Quelle stehen muss (benannte Lücke L1 … L37). Kern FC = `fachwerk-core.js` an der Wurzel des Lese-Baums, SHA-256
 028cc2d0…bea06 (gedruckt in `v3/zaehl-faellt.log` Z. 1). Jede datei:zeile ist an der Quelle selbst nachgelesen; wo eine Zeile nur aus
-einem Blatt übernommen ist, steht „(nach Blatt X, nicht nachgelesen)". Leser-Zahlen: `node v3/zaehl-faellt.cjs` → `v3/zaehl-faellt.log`
-(333 Dateien *.js/*.cjs/*.mjs ohne node_modules, vendor, spec, p3; Kommentar-Treffer zählen mit und sind im Log sichtbar).
+einem Blatt übernommen ist, steht „(nach Blatt X, nicht nachgelesen)". Leser-Zahlen: `node v3/zaehl-faellt.cjs` → `v3/zaehl-faellt.log`.
+Quellen-Kürzel (ST15, T08, L07, LON, PAR84, E-F, …) wie in `v3/quellen-los-haus.md`; Status T (Volltext) · S (sekundär) · NG dort.
 
-Gelesen: v3/ ganz (vier Zensus-Blätter, drei Skripte, drei Logs), v2/entscheid-v2.md §0 und §4, v2/pruefung-spike-v2.md,
-v2/pruefung-quelle-v2.md, entscheid.md §0, tafel.md (Gliederung, D2/D6), spike/gesetz-proto.cjs:40–114, das Person-Gesetz
-`git show 90b6950d:vision/person/gesetz.md` (lokal vorhanden). Nicht gelesen: der Zweig `bau-oeffnungen` (kein git), `v3/quellen-los-haus.md`
-(existiert noch nicht — §3 ordnet darum nur Themen zu, gefüllt ist keine Lücke).
+Gelesen: v3/ ganz (vier Zensus-Blätter, `quellen-los-haus.md`, die Skripte und Logs), v2/entscheid-v2.md §0 und §4,
+v2/pruefung-spike-v2.md, v2/pruefung-quelle-v2.md, entscheid.md §0, tafel.md (Gliederung, D2/D6), spike/gesetz-proto.cjs:40–114, das
+Person-Gesetz `git show 90b6950d:vision/person/gesetz.md`. Nicht gelesen: der Zweig `bau-oeffnungen` (kein git).
 
-**Die Kette (Entscheid des Koordinators, bindend):** Plan (Straßen-Klasse, Markt) → LOS (Absteckung: Breite, Tiefe, Ecke, Hang) →
-Stand und Gewerbe des Loses (aus seiner LAGE) → HAUSHALT (Person-Gesetz, Funktion der Adresse) → HAUS (Breite aus dem Los, Geschosse
-aus Straßen-Klasse und Stand, Tiefe und Tragwerk aus Bedarf und Spannweite, Sockel aus dem Hang). Kein Schritt läuft rückwärts.
-Das Tragwerk fügt sich dem Grundriss.
+**Die Kette (Entscheid des Koordinators mit E7, bindend):** Plan (Straßen-Klasse, Straßenbreite, Markt, Block-Einheit) → LOS (Viertel,
+Tiefe, Lage, Ecke, Hang) → ZINS (aus Viertel und Lage) → Stand und Gewerbe (aus dem Zins und der Lage) → HAUSHALT (Person-Gesetz, aus
+Stand und Adresse) → HAUS (Breite aus dem Los, Geschosse aus Straßen-Klasse, Höhe bis Gesims aus Straßenbreite, Tiefe und Tragwerk aus
+Bedarf und Spannweite, Sockel aus dem Gefälle). Kein Schritt läuft rückwärts. Das Tragwerk fügt sich dem Grundriss. Die Zeit teilt erst
+die Front, dann füllt sie den Hof.
 
----
-
-## §0 WAS NICHT STEHT (Lücken der Struktur und Widersprüche der Befunde)
-
-1. **Vier der zehn SOLL-Zahlen hat kein v3-Skript.** S2 (Ständer in Tür/Treppe), S8 (Vielfalt), S9 (Grundriss gültig) und S10 (Preis)
-   zählen nur Skripte der Runde 2, und die lesen den PROTOTYP, nicht das Haus des Kerns: S2 `v2/spike/linse-v2.cjs` und
-   `zaehl/pruef-spike-v2.cjs` (am Grundriss A), S8 `zaehl/richter-kopplung.cjs` / `zaehl/vielfalt-zweit.cjs` (Maß wie
-   `v2/spike/stadt-b.cjs:110`), S9 `v2/spike/spike-v2.cjs` (über `grundrissVon` des Prototyps), S10 kein Skript. „Ohne Umbau zählen"
-   geht für diese vier nicht. §4 nennt je Zahl das Feld, das das Gesetz liefern muss, und §6 G4 den Zähler, der vorher fehlt.
-2. **S3 und S5 zählen HEUTE durch einen Nachbau der heutigen Kette — am Gesetz zählen sie nicht ohne Umbau.** zaehl-los.cjs:307–344
-   rechnet W0 KULTUR → W1 Jitter (FC:2208) → W2 × (0,84 + 0,30·wohl) (FC:4439) → W3 Rollen-Zeile nach und prüft W3 = hp.W
-   (zaehl-los.cjs:320); zaehl-hoehe.cjs:88–110 ebenso S0 … S3 für die Geschosse. Fallen diese Zeilen (§2), trifft der Nachbau nicht mehr,
-   die Zerlegung ist leer. Das Gesetz muss die Zerlegung selbst liefern: je variierender Größe die benannten Schritte mit ihrem Beitrag
-   und ihrem Samen (Feld `hp.schritte`, §4 S3/S5). Der Zähler daraus ist ein Block, kein Nachbau — aber er ist ein Umbau.
-3. **S4 schließt „kein Raster" nicht aus.** Das Band κ 0 … 0,53 beginnt bei 0 = so viel wie der Zufall; heute steht κ bei −0,04, also
-   0,04 unter dem Band. Ein Los ohne jedes Modul, das nur leicht vom Zufall abweicht, besteht S4. Der Zensus nennt dazu Ziel 0,27 und
-   zugleich R in 0,534 … 0,788 (zensus-absteckung.md §d). Außerdem hängt κ an der Einheit: zaehl-los.cjs liest `EINHEITEN` (Edinburgh
-   7,32 m als Vorgabe); das Gesetz muss seine Einheit nennen (L1), sonst misst S4 gegen eine fremde.
-4. **S6 ist eine Reihenfolge, keine Zahl.** Kein Skript prüft „die Lage ist VOR dem Stand gerechnet". Zählbar wird es nur, wenn der Stand
-   als Feld neben seinem Eingang reist (`hp.stand`, `hp.lage.abstandMarkt`, `hp.lage.klasse`) und ein Zähler den Stand aus der Lage
-   byte-gleich nachrechnet. Heute liest zaehl-los.cjs `wohl` (ρ(wohl, Abstand Markt) −0,48, zensus-los-haushalt.md §b).
-5. **Hang ist in node nicht zählbar, und der Hang muss vor dem Haus stehen.** `exportSettlement` rechnet ohne `dp.hoehe` eben
-   (FC:9795–9797). Die Hang-Klasse entsteht erst in `ortPlan` im Faden (FC:11110–11112, Export in den Slot FC:11177), also NACH dem Haus;
-   kein Leser im Haus (zaehl-faellt.log „slot.hang": 0 Leser im Bau; die zwei Treffer in worlds/gelaende/studio.js:363, 386 sind eine
-   andere Größe). Mit Ort trägt der Export das Höhen-Raster schon heute: `dp.ort` holt vor dem Export `dp.hoehe`
-   (stamm/siedlung-ort.js:259–287), und der Straßen-Graph liest es (`trasseLenk`, FC:5269). Der Hang kann also im Glied LOS gelesen
-   werden, an derselben Stelle wie die Trasse. Offen: ob der Export, den der Wirt nach der Ort-Wahl neu rechnet („am Ort der Ort-Wahl neu",
-   FC:9650), derselbe ist, dessen ov das HAUS baut — nicht nachgelesen. Ohne Ort (Labor, Akt) ist der Grund eben; das ist dann die
-   Wahrheit des Rasters, kein Fallback, solange das Feld „eben" heißt und nicht „unbekannt".
-6. **Ecke: zwei Definitionen, keine im Kern.** Der Zensus zählt 56,0 % (Fahrbahnrand ≤ 3,5 m) oder 33,9 % (≤ 1,5 m) — eine Lesart
-   (zaehl-los.cjs:38, 185–193). Stufe 1 hält 9 m am Kanten-Anfang frei, „die Ecke gehört dem letzten Haus der Kante davor"
-   (`eckeM`, FC:4072, 4091–4092) — eine dritte. Das Gesetz muss die Ecke im Plan definieren (das Los am Knoten zweier Wege), sonst
-   schwankt S7 mit der Lesart um den Faktor 1,65.
-7. **Die Straßen-Klasse existiert im Plan — aber als Wachstums-Generation, nicht als Rang.** Der Zensus Höhe nennt es „nicht gelesen"
-   (zensus-hoehe.md:115). Gelesen: jede Kante trägt `gen` (0 Stamm FC:5280, 1 Querverbindung FC:5322, 2 Gasse/Vorstadt FC:5393, 5425,
-   5467, 5477), dazu `w`, `quer`, `gasse`, `vor`, `treppe`. Das ist die Reihenfolge des Wachsens, nicht die Klasse einer Ordnung
-   (London 1667: high street / street of note / by-lane). Die Zuordnung ist eine Lücke (L15), keine Rechnung.
-8. **Wort nH gegen Zahl der Lose.** Heute ist die Zahl der Lose das Wort von DORF (FC:4415, 4420), und der Plan wächst danach:
-   Mauer-Radius Rw = 26 + 8,4·√nG (FC:5364), Kanten-Zahl aus nGestalt (FC:5281). Stufe 1 rechnet die Zahl aus der Front:
-   n = ⌊frei / platzM⌋ je Blockkante (FC:4092). Unter der Kette (Los aus Absteckung) folgt n aus Front ÷ Los-Breite. Welche der zwei
-   Regeln bleibt, ist nicht entschieden. Folge für das SOLL: „an denselben 2 595 Losen" (S1, S8) setzt n = nH voraus; ändert die
-   Absteckung n, ist die Menge eine andere (§6 G6).
-9. **Ein Klassen-Gefälle der Geschosse steht gegen S8.** London 1667 setzt by-lanes auf 2 Geschosse, nichts auf 1 (zensus-hoehe.md:78).
-   Die Traufe-Spanne 4,70 m hält nur, solange ≥ 10 % der Häuser 1 Geschoss haben (heute 13,6 %, zensus-hoehe.md:14–17). Liest das Gesetz
-   die Klasse nach London, fällt das eingeschossige Haus weg, außer der Stand (arm) bringt es zurück. Ob S8 hält, hängt dann an L16.
-10. **Gesinde ist Annahme, und das Person-Gesetz liest es als Datum.** Person §2: „Plätze = `haushalt(gewerbe, klasse).gesinde`" und
-    „Die Gesinde-Zahlen bleiben Datum des Bau-Gesetzes". In spike/gesetz-proto.cjs:50–56 tragen 7 der 11 Gewerbe-Zeilen das Wort
-    „Annahme". Das Datum der Naht ist zu sieben Elfteln keins (L10).
-11. **„Klasse" (Person) und „Stand" (Koordinator) sind zwei Namen.** Person liest `klasse`; die Kette sagt „Stand". Es darf EIN Feld sein;
-    das Blatt nennt es `stand` und setzt `klasse ≡ stand` an der Naht (§5). Wer die Stufen zählt (2? 3? 4 wie die Wohl-Stufen des Zensus),
-    steht nirgends (L7).
-12. **Sonderbau ist nicht abgegrenzt.** S5 lässt die Tafel-Zeile der Rolle nur beim Sonderbau stehen, Person sagt: Sonderbau trägt keinen
-    Haushalt. Die Liste ist eine Spike-Annahme (gesetz-proto.cjs:68: kirche, burg, scheune, halle, turm, rathaus, kapelle, bergfried,
-    torhaus, zeughaus, speicher, zunfthaus). Wohnturm (6 Geschosse, FC:2199) und Patrizierhaus (≥ 3, FC:2200) stehen dort NICHT — sie
-    tragen einen Haushalt (gesetz-proto.cjs:66 ordnet ihnen `kaufmann` zu), also fällt ihre Höhen-Zeile unter S5. Ob der Wohnturm ein
-    Sonderbau ist (der Geschlechterturm als Wehrbau), ist eine Entscheidung, kein Datum.
-13. **Der Würfel-Anteil der Breite hat drei Rechnungen; S3 nennt eine.** 66,0 % = kontrafaktisch ohne Jitter + Kultur-Würfel
-    (zaehl-los.cjs:333), 68,6 % mit Wohl-Würfel, 79,9 % exakte Zerlegung (zensus-absteckung.md §1). S3 → 0 verlangt, dass ALLE drei
-    Würfel fallen; gemessen werden muss darum mit der vollen Zerlegung (Feld `hp.schritte`), sonst bleibt der Wohl-Würfel unsichtbar.
-14. **Die Traufe hat heute zwei Regeln.** Nah: 0,55 + 2,55 + 2,35·(st − 1) (FC:178, 211–215; bei st 3: 7,80 m). Fern: st·2,7 + 0,5
-    (STADT_MASSEN FC:4072, `hausMasse` FC:4120; bei st 3: 8,60 m). Das ist ein Zwilling der Höhe zwischen den Stufen (§5 Ferne).
-15. **Der Tragwerks-Zähler sieht Balken längs x nicht** (zensus-haus-tragwerk.md, Leser-Grenze) und prüft nicht, ob unter einem
-    Unterzug Ständer bis zum Grund stehen. Beides braucht S1 (§4).
-16. **Bahn 1 ist nur aus dem Entscheid bekannt.** Der Zweig `bau-oeffnungen` ist nicht gelesen; die Naht in §5 steht auf
-    entscheid-v2.md §4.2/§4.3 und pruefung-quelle-v2.md K1–K6.
-17. **Der Stoff des Orts existiert auf main nicht.** `bauOrt` hat 0 Treffer als Feld (Grep: nur `bauOrtWrap` FC:3499 und
-    `_erdbauOrtFaellt` stamm/gelaende-boden.js:493 — andere Größen). Das Tragwerk braucht die Holzart (L_max), die Kette nennt sie nicht.
-    Ohne sie hat Glied 7 keinen Welt-Eingang (§1).
-18. **Moderne, Ringe, Erbe und Chronik sind nicht gezählt.** Alle Zensus-Zahlen sind Pläne G (Gründung ≤ 1549, nH 90, alle ummauert).
-    Die Würfel FC:4431 (Ersatzbau), 4437 (Ring-Breite), 4440–4443 (Stadtkörper), 4453–4460 (Moderne, Gewerbe-Halle) und die Höhe aus dem
-    Erbe FC:4491–4495 wirken dort nicht. §2 nennt sie; ihr Anteil ist unbekannt.
+**Zählung der Lücken (§3, 37 Zeilen): gefüllt 16 · HYPOTHESE 4 · entfällt durch Entscheid 2 · offen 15.** Von den 16 gefüllten tragen 7 einen
+offenen Rest (L2, L4, L6, L12, L20, L26, L27).
 
 ---
 
-## §1 DIE KETTE (elf Glieder)
+## §0 WAS NICHT STEHT (offen, nach Gewicht)
 
-Heutige Reihenfolge im Export (nachgelesen): `exportSettlement` FC:9722 → **DORF** FC:9733 (alle Häuser, ihr Wohlstand, ihre Rolle,
-FC:4403–4517) → **Hülle** je Haus `massBauExport` FC:9776–9794 → **dorfLayout** FC:9825 (Plan, Straßen, dann die Lage jedes Hauses,
-FC:5357 ff.) → `reihenSnap`, `brandwand` FC:9826–9828 → im Faden **ortPlan** (Boden, Spanne, Hang-Klasse FC:11109–11112, Platte
-FC:11114–11123) → HAUS je Slot aus dem ov. Rückwärts heißt: ein Glied liest eine Größe, die in dieser Reihenfolge NACH ihm entsteht,
-oder eine frühere Größe wird nachträglich nach einer späteren umgebaut.
+1. **Die Zähler am HAUS fehlen (E9, Grundlinie vor dem Spike).** Am Haus des Kerns zählen heute nur S1 (`zaehl-balken.cjs`), S4
+   (`zaehl-los.cjs` Zusatz E1, sobald das Feld der Block-Einheit da ist) und S7-Ecke. S2, S8, S9 und S10 haben keinen Zähler am Haus; die
+   Skripte der Runde 2 lesen den Prototyp. S3 und S5 zählen über einen Nachbau der heutigen Kette (zaehl-los.cjs:307–344,
+   zaehl-hoehe.cjs:88–110), der am Gesetz nicht mehr trifft. Keiner dieser sechs ist heute Richter.
+2. **Das Soll S4 „≥ ⅔“ ist am Zufall erfüllbar, wenn das Viertel klein ist.** Gezählt (zaehl-los.log Zusatz E1, Los-Breite der Stadt
+   heute, ± 0,5 m): am perch-Viertel 1,26 m liegen **78,4 %** — der Zufall allein gibt p0 = 0,795 (κ −0,056). An der besten Einheit im
+   schottischen Band (U 5,91 m, Viertel 1,48 m) **70,1 %** bei p0 0,677 (κ 0,074). Am Freiburg-Viertel 4,05 m **27,7 %** bei p0 0,247.
+   Unter einem Viertel von 1,5 m erfüllt eine gleichverteilte Breite das Soll schon ohne jede Absteckung. Darum zählt S4 nur gegen die
+   Einheit, die der Plan als Feld trägt (nie gegen eine im Nachhinein beste), und p0 steht neben dem Anteil. Dazu kommt ein Befund der
+   Quellen: in England ist der perch selbst die Einheit der Lose (Burford 1½ und 3 perches, Stratford 3½; VCHX, W89 S. 182), nicht sein
+   Viertel. Das Viertel-Schema ist schottisch (ST15 S. 5, T08 S. 232–233). Welche Schule je Region gilt, ist Lücke L1/L37.
+3. **Das eingeschossige Haus der Stadt hat am Text keine Ursache (E8).** Heute eingeschossig: **354 von 2 595 (13,6 %)**, davon 79,1 % an
+   Kanten gen 2 (Gasse 135, Vorstadt 128), 268 Wohnhäuser, dazu Schmiede 30, Werkstatt 31, Backhaus 25 (zaehl-los.log Zusatz E4).
+   Geprüft am Quellen-Blatt:
+   - London 1667 kennt keine Straßen-Klasse unter by-lanes; auch dort 2 Geschosse + Keller + Dach (LON s. VII).
+   - Bow Lane: „two and four storeys“ (SAT90 S. 163).
+   - Die Hof-Füllung (Edinburgh 1490 ⅓ der Hinterhöfe, ST15 S. 5) und das „separate cottage“ hinten (Oxford, P37) nennen keine
+     Geschosszahl.
+   - Dorfwege gibt es in den Plänen G nicht (alle 30 „grossstadt“).
 
-Welt-Eingänge (zulässig): Gelände H(x, z) (`dp.hoehe`, FC:9797), Wasser (`nassAm`, FC:5503), Stoff des Orts (fehlt, §0.17), Epoche,
-Region und Jahr (DORF FC:4405–4414), Same der Siedlung (DP.seed), Größe der Stadt (nH).
+   Die ≥ 10 % trägt am Text keine Ursache. Die Lücke steht offen (L36), mit Messname „eingeschossig ohne Ursache“ in S8.
+4. **Welche Kante welche Klasse ist (L15), und welche Ordnung wo gilt (L37).** Die Kante trägt `gen` (Wachstums-Generation, FC:5280,
+   5322, 5393, 5425, 5467, 5477), keine Klasse einer Ordnung. Gezählt: die Fronten der 2 595 Lose liegen an gen 0 **674 (26,0 %)**,
+   gen 1 **351 (13,5 %)**, gen 2 **1 570 (60,5 %)**. Liest man gen 0/1/2 als London high street / street of note / by-lane, folgen
+   4 / 3 / 2 Geschosse zu **26,0 / 13,5 / 60,5 %**, bei Wohnhäusern 21,1 / 13,4 / 65,5 %. Heute sind es 1 G. 13,6 · 2 G. 45,1 ·
+   3 G. 38,9 · 4 G. 0,1 · 6 G. 2,2 %. Unter dieser Lesart hat kein Haus 1 Geschoss. Was das für S8 heißt, rechnet dieses Blatt nicht.
+   Paris bindet die Höhe nicht an eine Klasse, sondern an die Breite (`kante.w` ist vorhanden). Welche Ordnung in welcher Region und
+   Epoche gilt, und wie London (Zahl der Geschosse) und Paris (Höhe bis Gesims) zusammen lesen, steht in keiner Quelle (L37).
+5. **Hang ist in node nicht zählbar.** `exportSettlement` rechnet ohne `dp.hoehe` eben (FC:9795–9797). Die Hang-Klasse entsteht erst in
+   `ortPlan` (FC:11110–11112, Slot FC:11177), ohne Leser im Haus. Mit `dp.ort` trägt der Export das Höhen-Raster schon heute
+   (stamm/siedlung-ort.js:259–287), die Trasse liest es (FC:5269). Der Hang kann also im Glied LOS gelesen werden. Offen bleibt, ob der
+   Export, den der Wirt nach der Ort-Wahl neu rechnet (FC:9650), derselbe ist, dessen ov das HAUS baut (nicht nachgelesen). Der
+   Zähler in der Welt ist nicht gebaut (§6 G4).
+6. **Zins → Stand ist nicht belegt.** Belegt ist der Zins je Einheits-Los (Cockermouth 4 d, ST15 S. 5; Freiburg 12 Pf. je Hofstätte,
+   L07 S. 7). Dass der Zins auch an der Lage hängt, und wie aus dem Zins ein Stand folgt, steht in keiner Quelle am Text
+   (Hearth-Tax nach Straße NG). E7 setzt die Kette; die Funktionen darin sind HYPOTHESE (L7, L35).
+7. **Der Stoff des Orts fehlt auf main.** `bauOrt` hat 0 Treffer als Feld. E5 verlangt L_max aus dem Querschnitt des Holz-Profils; das
+   Profil des Orts (Holzart, Durchmesser) hat keinen Welt-Eingang (L20).
+8. **Grenzen des Tragwerks-Zählers:** Balken längs x sieht `zaehl-balken.cjs` nicht; Ständer bis zum Grund unter dem Unterzug prüft er nicht.
+9. **Bahn 1 ist nur aus dem Entscheid bekannt** (Zweig nicht gelesen; Naht aus entscheid-v2.md §4.2/4.3, pruefung-quelle-v2.md K1–K6).
+10. **Moderne, Ringe, Erbe, Chronik sind nicht gezählt.** Alle Zahlen sind Pläne G (Gründung ≤ 1549, nH 90). Die Würfel FC:4431, 4437,
+    4440–4443, 4453–4460 und die Erbe-Höhe FC:4491–4495 wirken dort nicht.
 
-| # | Glied | Eingänge (nur frühere Glieder oder Welt) | Ausgänge (Feldnamen) | HEUTE (Funktion · Reihenfolge · rückwärts?) | Eingang im Spiel |
+**Erledigt und aus §0 genommen (je eine Zeile):**
+- Ecke: eine Definition (K3).
+- S6: eine Zahl (K4).
+- Zahl der Lose: E6.
+- Wohnturm/Patrizier: kein Sonderbau (K7).
+- Traufe-Zwilling: Fund-Zeile (K6, E10).
+- Rechnung des Würfel-Anteils: `hp.schritte` (K1, E9).
+- κ ist kein Soll mehr (E1).
+- **E3 baute in seiner ersten Lesart einen Kreis.** „Der Haushalt trägt so viele Viertel, wie sein Stand zahlt“ heißt: der Haushalt
+  wählt die Breite des Loses. Die Kette rechnet aber den Stand aus der Lage des Loses. Los → Stand → Haushalt → Los wäre ein Kreis,
+  die Kante Haushalt → Los läuft rückwärts. E7 setzt die Lesart ohne Kreis: das Los trägt Viertel und Lage, der Stand folgt aus dem
+  Zins.
+
+---
+
+## §1 DIE KETTE (zwölf Glieder)
+
+Heutige Reihenfolge im Export (nachgelesen):
+1. `exportSettlement` FC:9722.
+2. **DORF** FC:9733: alle Häuser, Wohlstand, Rolle (FC:4403–4517).
+3. **Hülle** je Haus: `massBauExport` FC:9776–9794.
+4. **dorfLayout** FC:9825: Plan, Straßen, Lage jedes Hauses (FC:5357 ff.).
+5. `reihenSnap`, `brandwand` FC:9826–9828.
+6. Im Faden **ortPlan**: Boden, Spanne, Hang-Klasse (FC:11109–11112), Platte (FC:11114–11123).
+7. HAUS je Slot aus dem ov.
+
+Rückwärts heißt: ein Glied liest eine Größe, die erst nach ihm entsteht, oder eine frühere Größe wird nach einer späteren umgebaut.
+
+Welt-Eingänge: Gelände H (`dp.hoehe`, FC:9797), Wasser (`nassAm`, FC:5503), Stoff des Orts (fehlt), Epoche, Region und Jahr
+(FC:4405–4414), Same der Siedlung, Größe der STADT (das Wort nH; nicht die Zahl der Lose, E6).
+
+| # | Glied | Eingänge | Ausgänge (Feldnamen) | HEUTE (Funktion · rückwärts?) | Eingang im Spiel |
 |---|---|---|---|---|---|
-| 1 | **Plan** | Größe nH, Region, Jahr, Epoche, Same, Gelände H, Wasser | `kante.klasse` (L15), `kante.w`, `platz` {cx, cz, ex, ez}, `mauer.Rw`, Knoten | `strassengraph` FC:5262 ff., gerufen in `dorfLayout` FC:5365 — NACH DORF. Rw aus nG FC:5364, Kanten-Zahl aus nGestalt FC:5281: der Plan liest die Haus-ZAHL (nicht ihre Form) | Kante: `gen`, `w`, `quer`, `gasse`, `vor` vorhanden (FC:5280, 5322, 5393, 5425, 5467, 5477); Klasse als Rang **fehlt** (§0.7); Markt `platz` vorhanden |
-| 2 | **Los** (Absteckung) | Plan (Kante, Knoten, Klasse, Mauer), Gelände H unter dem Rechteck, Modul der Absteckung (L1) | `los.adresse` (Plan, Kante, Seite, Nr.), `hp.losBreite`, `hp.losTiefe`, `hp.ecke` (Seite x0/x1 oder null), `hp.hang` {spanne, richtung}, `los.abstandMarkt`, `los.klasse` | **gibt es nicht.** Die Stelle ist die Folge der Hülle: `tryPlace` FC:5487–5533 setzt die Hülle an die erste Stelle, an der sie passt; Folge = Index FC:5560–5562, Metrik edepth·34 + cur + Würfel FC:5590–5600; Fuge gewürfelt FC:5530; Schritt 1,1 m FC:5532. **Rückwärts:** das Los folgt dem Haus. `plan.lose` nur mit Chronik FC:4501–4504. Stufe 1 hat eigene Lose (`breit = frei/n` FC:4092–4094) | Los-Breite/-Tiefe **fehlen** als Feld (zaehl-los.log Z. 9: 0 von 2 595); Ecke **fehlt**; Hang-Klasse vorhanden, aber erst FC:11112 nach dem Haus; Spanne lokal, nicht exportiert (FC:11110–11111) |
-| 3 | **Stand und Gewerbe** | Los: `abstandMarkt`, `los.klasse`, `losBreite` (Zins nach Breite, L8), Anker der Viertel im Plan (Markt, Kirche, Wasser, Tor) | `hp.stand` (≡ Person `klasse`), `hp.gewerbe`, `hp.sonderbau` (bool) | Stand: `wohl` = (1,22 − 0,5·t)(0,78 + 0,44·rnd), t = Index FC:4429, 4438; arm FC:4447. Gewerbe/Rolle: Viertel nach Index FC:4383–4386, Grund-Satz Los 1 / ⌊0,62n⌋ FC:4323, 4386, 4468, Patrizier/Wohnturm nach wohl FC:4340, alles in `stadtViertel` FC:4376–4401 VOR der Lage. **Rückwärts gegen die Kette:** die Lage entsteht danach; nur der Viertel-Name folgt der Lage (vorstadt, hafen FC:5607–5608) | Lage (`slot.x/z`, Platz) vorhanden, aber nach dem Stand; Stand **fehlt** als Feld (heute `wohl`); Gewerbe **fehlt** (heute `rolle`, Tafel) |
-| 4 | **Haushalt** | Adresse = Los (Gewerbe, Stand, Baujahr), Same | `haushalt(gewerbe, stand)` → {gesinde}; aus Person §2: Paar, Kinder je Zeit t; `hp.leute` (Bemessung, L11) | **keiner vor dem Haus.** Jeder Welt-Ruf `bauRezept(…, null, …)` (FC:4436, 4381, 4398, 4450, 4462, 4468, 4473); `bauProgramm` FC:2229/2245 läuft in DORF nie. Die Köpfe folgen dem Haus: `leuteVon` FC:9527–9538 aus W·D·st·wohl; der Wirt liest sie stamm/siedlung-bewohner.js:839, Körper :848 | `haushalt`/`GEWERBE` nur im Prototyp (gesetz-proto.cjs:45–57, 99–102), nicht im Kern; **fehlt** |
-| 5 | **Haus-Hülle** | Los (`losBreite`, `losTiefe`), Klasse, Stand, Haushalt (Bedarf), Stoff (Spannweite, über Glied 7), Bauweise der Region/Ära (L29) | `hp.W`, `hp.D`, `hp.storeys`, `hp.traufe`, `hp.schritte` (§0.2) | `_bauweiseWurf` FC:2204–2210 (pitch/W/D/st aus KULTUR + Würfel, Klemmen 5–15/4–11/1–12), Kultur-Würfel im Pool FC:4435, Ring-Breite FC:4437, Wohl × Breite FC:4439, +1 Geschoss FC:4444, Maß-Zeile der Rolle FC:2227–2228 über FC:4382, Erbe-Höhe FC:4491–4495; Traufe FC:211–215. **Rückwärts:** die Hülle wird gebaut, bevor es ein Los gibt; mit Chronik schrumpft der frühere Bau nachträglich ins spätere Los (PASSUNG FC:9780–9791) | Klasse **fehlt** (§0.7); Stand **fehlt**; Los **fehlt**; Bedarf **fehlt** |
-| 6 | **Grundriss** | Hülle, Haushalt (Programm), Gewerbe (Räume), Ecke (Eingang an der Flanke) | Räume je Geschoss, Treppe (Lage, Lauf, Podest), Türen, Herd; `HAUS.dims.zonen` (für S2, §4) | Raumteilung `layout` FC:606–617 mit Würfel `rndI` FC:598–605; Schnitte nur auf Ständerachsen `bz` FC:609–613; Flur aus W·0,15 FC:261; Treppe im Flur, Lage aus dem Samen `shaftCX` FC:370; Herd aus Samen FC:586–592; Innenwände FC:897–917. **Rückwärts:** der Raum folgt dem Raster (FC:609), nicht das Raster dem Raum | Haushalt **fehlt**; das Programm `BAU_NUTZUNG.raeume` steht nur für `wohnhaus` (FC:2183) |
-| 7 | **Tragwerk** | Grundriss (Raumwände, Treppenloch, Türen), Hülle, Holz des Orts (L_max, L20/L21) | Balkenlagen mit Richtung, Unterzüge, Innenständer, Wechsel als Meshes in `subsystems.geruest`; `HAUS.P.balkenB/H` | `geruest` FC:458–474: Ständer nur im Außenring `postsRing` FC:451–454, Balken auf jeder Achse `bx = axis(W/2,[−fw,fw])` FC:418–422 (Teilung `bayMax` 1,7 FC:181, 420), jeder Balken über die volle Tiefe `layJoists` FC:466–470, Loch ohne Wechsel `clipSpanZ` FC:357–359. Kein Unterzug, kein Innenständer. 2 522 von 2 595 Häusern über L_max (zensus-haus-tragwerk.md) | Holzart des Orts **fehlt** (§0.17); Querschnitt 0,15 × 0,21 fest FC:179 |
-| 8 | **Sockel** | Los `hp.hang` (Spanne und Richtung unter dem Rechteck), Hülle, Grundriss (Keller-Bedarf) | `hp.sockel` {talseite, hoehe}, `hp.untergeschoss` (bool), Boden y der Straßenseite | fester Sockel `foundH` 0,55 FC:178, `baseY` FC:211, Platte 25 cm vor der Wand FC:426–449; Keller fest 2,40 m FC:212–213, gewürfelt 35 % FC:4446; `terrain:0` FC:4436 → `gelaende()` leer FC:1488. Das Gelände passt sich dem Haus an: Platte mit Saum FC:11114–11123, Erdbau (gelaende-core.js:2085–2094, nach zensus-los-haushalt.md, nicht nachgelesen) | Gelände vorhanden (dp.hoehe, ctx.hoehe); Hang-Klasse vorhanden (FC:11112) **ohne Leser**; Richtung **fehlt** |
-| 9 | **Öffnungen** | Grundriss (Räume, Türen), Tragwerk (Felder zwischen Ständern), Ecke (Flanke an der Straße), Brandwand (Nachbar) | `WALLS[].win` {cy, ch, wd}, `WALLS[].type` (door/window/wand), Schau-Seiten | `wallSpec` FC:477–497: Felder zwischen Achsen, Fenster symmetrisch, Takt gewürfelt FC:479, Tür nur vorn FC:488, kein Fenster an ±fw FC:478; Brandwand FC:502–504 liest `hp.brandwand` — **der einzige heutige Leser der Lage im Haus** (geschrieben nach dem Layout FC:9503–9516, 9828). Flügel, Glas: Bahn 1 (FC:1080–1097) | Brandwand vorhanden; Ecke **fehlt** |
-| 10 | **Dach** | Hülle (D, W), Stoff des Orts (Deckung, Schnee), Tragwerk (Spannweite der Sparren) | Neigung, Dachform, Sparren-Querschnitt, Firstpfette | Neigung KULTUR ± Würfel FC:2207, geklemmt an `grenzNeigung` FC:208, 2230; `ROOFMODE` FC:217; Sparren 10 × 10 (`P.spar` FC:180, `strut` nach zensus-haus-tragwerk.md FC:297–298); `sparH` 0,15 hat 0 Leser (zaehl-faellt.log) | Deckung je Stil vorhanden (STIL_GRENZNEIGUNG FC:160–208, nach tafel.md); Schnee am Ort **fehlt** im Haus |
-| 11 | **Zeit / Geschichte** | Gründung des Plans, Epoche der Region, Adresse (Samen), Los | `hp.baujahr`, Ereignisse des Loses (Teilung, Zusammenlegung, Aufstockung, Ersatzbau), je als benannter Schritt mit Samen aus der Adresse | Baujahr = jahr + spanne·t·(0,55 + 0,45·rnd) FC:4433 (Index + Würfel); Ringe `chronikJahr` FC:4430; Ersatzbau-Würfel 12 % FC:4431, früherer Bau `fr[]` FC:4450, geklemmt ins Los des jüngeren FC:4395, 4477; Schnitt der Chronik FC:4501–4504. Aufstockung, Teilung, Zusammenlegung **gibt es nicht** | Baujahr vorhanden (aus Index); Ereignisse **fehlen** |
+| 1 | **Plan** | Wort (Same, Größe der Stadt), Region, Jahr, Epoche, Gelände, Wasser | `kante.klasse` (L15), `kante.w` (Straßenbreite, Paris), `platz`, `mauer.Rw`, je Block `block.einheit` und `block.tiefeZuBreite` (Gründungsgrößen E2, L1/L4) | `strassengraph` FC:5262 ff., gerufen in `dorfLayout` FC:5365 NACH DORF. Rw aus nG FC:5364, Kanten-Zahl aus nGestalt FC:5281: der Plan liest die Haus-ZAHL. Unter E6 kehrt sich das: die Zahl der Lose folgt aus dem Plan | `gen`, `w`, `quer`, `gasse`, `vor` vorhanden; Klasse als Rang **fehlt**; Block-Einheit **fehlt**; Stufe 1 hat Blöcke `netz.bloecke` (FC:4086) |
+| 2 | **Los** (Absteckung) | Plan (Block-Einheit, Tiefe ÷ Breite, Kante, Knoten), Gelände unter dem Rechteck | `los.adresse`, `hp.losViertel` (¾–2½ Einheiten = 3–10 Viertel, E2), `hp.losBreite`, `hp.losTiefe`, `hp.blockEinheit`, `hp.lage` {kante, klasse, abstandMarkt}, `hp.ecke` (zwei Fronten, K3), `hp.hang` {spanne, richtung} | **gibt es nicht.** `tryPlace` FC:5487–5533 setzt die Hülle an die erste Stelle, an der sie passt; Folge = Index FC:5560–5562; Fuge gewürfelt FC:5530. **Rückwärts:** das Los folgt dem Haus. Stufe 1: `breit = frei/n` FC:4092–4094 | Breite, Tiefe, Ecke, Viertel **fehlen** (zaehl-los.log: 0 von 2 595); Hang-Klasse erst FC:11112 |
+| 3 | **Zins** (E7) | Los: `hp.losViertel`, `hp.lage` | `hp.zins` | **gibt es nicht** | Zins je Einheit belegt (4 d, 12 Pf.); Lage-Anteil HYPOTHESE (L7) |
+| 4 | **Stand und Gewerbe** | Zins, Lage (Anker der Viertel: Markt, Kirche, Wasser, Tor) | `hp.stand` (≡ Person `klasse`), `hp.gewerbe`, `hp.sonderbau` | `wohl` aus Index + Würfel FC:4429, 4438; arm FC:4447; Rolle nach Index FC:4383–4386, 4323, 4468, Patrizier FC:4340 — alles VOR der Lage; nur der Viertel-Name folgt der Lage (FC:5607–5608) | Stand, Gewerbe **fehlen** als Feld |
+| 5 | **Haushalt** | Stand, Gewerbe, Adresse (Person-Gesetz) | `haushalt(gewerbe, stand).gesinde` (Bau), Paar/Kinder je t (Person §2), `hp.leute` (Bemessung, L11) | keiner vor dem Haus: `bauRezept(…, null, …)` FC:4436 u. a.; `bauProgramm` FC:2229 läuft in DORF nie; Köpfe folgen dem Haus `leuteVon` FC:9527–9538 | nur im Prototyp gesetz-proto.cjs:45–57, 99–102 |
+| 6 | **Haus-Hülle** | Los (Breite, Tiefe), Haushalt (Bedarf), Bauweise der Region/Ära (L29) | `hp.W`, `hp.D`, `hp.schritte` (PFLICHT, E9) | `_bauweiseWurf` FC:2204–2210, Kultur-Würfel FC:4435, FC:4437, 4439, Maß-Zeilen FC:2227–2228; mit Chronik PASSUNG FC:9780–9791. **Rückwärts:** Hülle vor dem Los | Los **fehlt**; Bedarf **fehlt** |
+| 7 | **Höhe** (Teil der Hülle) | `hp.lage.klasse` → Geschosse (London 2/3/4, LON s. VII–IX), `kante.w` → Höhe bis Gesims (Paris 36/45/54 Fuß, PAR84 Art. 1), Geschosshöhe der Ordnung (LON 8½–10½ ft), Ecke → breitere Straße (PAR84 Art. 2), Stand (L16) | `hp.storeys`, `hp.traufe` (EINE Quelle für nah und fern, E10) | +1 Geschoss FC:4444 (fällt, E4); Tafel KULTUR.st; Traufe nah FC:211–215, fern FC:4072/4120 (Zwilling) | Klasse **fehlt**; Breite `w` vorhanden |
+| 8 | **Grundriss** | Hülle, Haushalt (Programm), Gewerbe (Laden vorn: York 5–8 ft, RJ87), Los-Breite (schmal → Seitengang + Hinterhaus, breit ≥ 1½ Einheiten → quer/Hof: ST15 S. 23, P37), Ecke | Räume, Treppe, Türen, Herd; `HAUS.dims.zonen` | `layout` FC:606–617 mit Würfel `rndI` FC:598–605, Schnitte auf `bz` FC:609; Flur W·0,15 FC:261; Treppe aus Samen FC:370. **Rückwärts:** der Raum folgt dem Raster | Haushalt **fehlt** |
+| 9 | **Tragwerk** | Grundriss (Raumwände, Loch, Türen), Hülle, Holz-Profil des Orts → Querschnitt → L_max durch Durchbiegung (E5); Gegenprobe Forchheim ~5 m (E-F S. 115) | Balkenlagen, Unterzüge, Innenständer, Wechsel als Meshes in `subsystems.geruest`; Balkenabstand (40–60 cm belegt, E-F S. 115) | `geruest` FC:458–474: Ständer nur außen FC:451–454; Balken auf jeder Ständerachse `bx` FC:422, **Abstand ≤ `bayMax` 1,7 m** (FC:181, 420); Balken über volle Tiefe FC:466–470; Loch ohne Wechsel FC:357–359 | Holz des Orts **fehlt**; Querschnitt 0,15 × 0,21 fest FC:179 |
+| 10 | **Sockel** | Gelände unter dem Rechteck (`hp.hang`): der Sockel folgt dem Gefälle in Stufen (E5, Geometrie, keine historische Zahl; „up a few steps“ ST15 S. 8 als Fall) | `hp.sockel` {stufen, talseite}, `hp.untergeschoss`, Boden y der Straßenseite | `foundH` 0,55 FC:178; Platte FC:426–449; Keller 2,40 m FC:212–213, Würfel 35 % FC:4446; `terrain:0` FC:4436 → FC:1488. Gelände folgt dem Haus FC:11114–11123 | Gelände vorhanden; Hang-Klasse ohne Leser; Richtung **fehlt** |
+| 11 | **Öffnungen** | Grundriss, Tragwerk-Felder, Ecke, Brandwand | `WALLS[].win`, `WALLS[].type`, Schau-Seiten | `wallSpec` FC:477–497 (Tür nur vorn FC:488); Brandwand FC:502–504 liest `hp.brandwand` — der einzige heutige Lage-Leser im Haus | Brandwand vorhanden; Ecke **fehlt** |
+| 12 | **Dach** | Hülle, Deckung des Orts → Neigung (Stroh 50°, Ziegel 45° vor 1700 / 35° danach, Steinplatte 30–35°, Schiefer 25–30°: SPEL, BAB), Dachkörper über dem Gesims (Paris 10/15 Fuß nach Haustiefe, PAR84), Tragwerk | Neigung, Dachform, Sparren | KULTUR-Neigung ± Würfel FC:2207, `grenzNeigung` FC:208, 2230; Sparren 10 × 10 `P.spar` FC:180; `sparH` 0 Leser | Deckung je Stil vorhanden (STIL_GRENZNEIGUNG, nach tafel.md) |
+| 13 | **Zeit / Geschichte** | Gründung, Epoche, Adresse (Samen), Los | `hp.baujahr`, Ereignisse in `hp.schritte`: erst Teilung der Front (Freiburg 17 m → 2 Häuser 1252–55, L07 S. 18; York 3 → ≥ 12, RJ87), dann Füllung des Hofs (Edinburgh 1400 nur vorn, 1490 ⅓, ein Jh. später voll, ST15 S. 5), Ersatzbau, Aufstockung (L19) | Baujahr aus Index + Würfel FC:4433; Ersatzbau-Würfel FC:4431, `fr[]` FC:4450; keine Teilung, keine Hof-Füllung, keine Aufstockung | Baujahr vorhanden; Ereignisse **fehlen** |
 
-**Was die Kette am Grundriss-Tragwerk verlangt (Wortlaut des Entscheids, als Struktur):** tragende Linien liegen auf Raumwänden;
-wo eine Spannweite L_max übersteigt, tritt ein Unterzug, ein Innenständer oder ein Wechsel ein — als liegendes Holz in
-`subsystems.geruest`; ein Ständer steht nie in Tür, Lauf oder Podest als Zwang (Zwang wäre: die Tür setzt die Achse, so dass der Test
-leer misst — pruefung-spike-v2.md (3)). Damit liest Glied 7 Glied 6 und nie umgekehrt; Glied 9 liest beide.
+Zählung: zwölf Glieder der Kette (Plan, Los, Zins, Stand/Gewerbe, Haushalt, Hülle, Grundriss, Tragwerk, Sockel, Öffnungen, Dach, Zeit). Die
+Höhe (Zeile 7) ist der Teil der Hülle, den E4 eigens setzt, kein eigenes Glied.
+
+**Tragwerk und Grundriss (Wortlaut des Entscheids, als Struktur):** tragende Linien liegen auf Raumwänden. Wo die Spannweite L_max
+übersteigt, tritt Unterzug, Innenständer oder Wechsel ein, als liegendes Holz in `subsystems.geruest`. Ein Ständer steht nie in Tür,
+Lauf oder Podest als Zwang. Glied 9 liest Glied 8, nie umgekehrt; Glied 11 liest beide.
 
 ---
 
-## §2 WAS FÄLLT (beim Namen; Leser aus `v3/zaehl-faellt.log`)
-
-„Leser" = Trefferzeilen außer der Definition. Bei Ausdrücken ohne eigenen Namen (Würfel in einer Zeile) ist die Zahl 0; ihr Ergebnis
-lesen die Felder, die in der Spalte stehen.
+## §2 WAS FÄLLT (Leser aus `v3/zaehl-faellt.log`)
 
 | # | fällt | datei:zeile | Leser | an seine Stelle tritt |
 |---|---|---|---|---|
-| F1 | `tryPlace` in der Rolle „die erste Stelle, an der die Hülle passt" | FC:5487–5533 | 3 (Rufe FC:5602, 5604; Kommentar FC:5549) | Glied 2: die Absteckung teilt die Kante in Lose; das Haus steht im Los. Die Prüfungen Mauer, Wasser, Weg-Freihaltung, Friedhof (FC:5502–5518) werden Bedingungen des LOSES |
-| F2 | Folge der Lose = Los-Index, Zeiger-Metrik edepth·34 + cur + rnd·2 | FC:5560–5562, 5590, 5594, 5600 | `edepth` 14, davon 3 im Setzer (5590, 5594, 5600); die übrigen 11 bauen den Graph und bleiben | Glied 2: Lage aus Plan (Kante, Klasse, Abstand zum Markt); die Gründungsfolge wird Glied 11 (Ereignis), nicht Lage |
-| F3 | Fuge gewürfelt und Schritt 1,1 m | FC:5530, 5532 | 0 (Ausdruck in `cu.cur`) | Glied 2: Fuge = Rest der Teilung bzw. Traufgasse/Brandwand (L12) |
-| F4 | Setzer-Jitter zur Straße `jitAmp` | FC:5361, 5494 | 3 (5494, 5515, 5706) | fällt ersatzlos in der Stadt (0,05 m); außerhalb: Bauflucht des Plans (L30) |
-| F5 | Wohlstand-Würfel | FC:4438 | 0 als Ausdruck; das Feld `.wohl` lesen 9 Zeilen (u. a. FC:4340, 4483, 4512, 9533, Chronik FC:4262, 4295; Labor und diag-settlement je 1) | Glied 3: `hp.stand` aus der Lage (L7) |
-| F6 | Wohl-Stufe +1 Geschoss | FC:4444 | 0 | Glied 5: Geschosse aus Klasse und Stand (L14, L16) |
-| F7 | Kultur-Würfel im Pool | FC:4435 (`poolAt` FC:4424 bleibt, 6 Leser: Region × Ära ist Ursache) | 0 | Glied 5: Bauweise des Loses aus Region × Ära ohne Würfel (L29) |
-| F8 | Maß-Jitter W/D/st/pitch in `_bauweiseWurf` | FC:2204–2210 | 1 (FC:2225 `bauRezept`; dieser hat 18 Leser, darunter PRESETS FC:5775 und gate:fachwerk-contract scripts/diag-fachwerk-contract.cjs:98 — §5) | W Glied 5 aus dem Los; D aus Bedarf/Spannweite; pitch Glied 10; Messfehler der Rute nur als benannter Schritt (L5) |
-| F9 | Doppel-Klemme der Breite 5–15 | FC:2208, 4439 (×(0,84 + 0,30·wohl)) | 0 | fällt ersatzlos: die Verteilung der Breite ist die der Absteckung (L3) |
-| F10 | Ring-Breite „Parzellen-Gedächtnis" | FC:4437 | 0 | Glied 2 (Kern schmal ist eine Frage der Absteckung, L3/L4) |
-| F11 | Maß-Zeilen der Rollen mit Haushalt in `BAU_NUTZUNG`: gasthaus FC:2184, schmiede 2185, kaufhaus 2187, kontor 2188, pfarrhaus 2190, werkstatt 2195, backhaus 2196, gerberei 2198, wohnturm 2199 (§0.12), patrizierhaus 2200 — die Ops auf W, D, storeys | FC:2184–2200, angewandt FC:2227–2228 | `BAU_NUTZUNG` 7 (Code FC:2222, 2223, Export 12480, scripts/diag-settlement.cjs:711) | W, D, st: Glied 5. Form-Ops (arkade, vorkragung, veranda, balcony, annexN): L31. Es bleiben die Zeilen der Sonderbauten (rathaus 2186, zunfthaus 2189, kapelle 2191, bergfried 2192, torhaus 2193, zeughaus 2194, speicher 2197) |
-| F12 | Rolle nach Index: Viertel nach Los-Nummer, Grund-Satz Los 1 / ⌊0,62n⌋, Patrizier/Wohnturm nach wohl ∧ Index | FC:4383–4386, 4323, 4468, 4340 | `stadtViertel` 1 (FC:4487); `STADT_GRAMMATIK` 15 bleibt als Tafel der Anker | Glied 3: Gewerbe aus der Lage (L9) |
-| F13 | Keller-, Anbau-, Balkon-, Grundriss-Würfel, arm-Schwelle | FC:4446, 4448, 4449, 4447 | 0 je | Keller: Glied 8 + Gewerbe (L28); Anbau, Grundriss I/L: Glied 6 aus Programm und Los; Balkon: Glied 6 (Programm) oder ersatzlos; arm: Glied 3 |
-| F14 | Ersatzbau-Würfel 12 % | FC:4431 (+ `fr[]` FC:4450) | 0 | Glied 11: Ereignis mit Samen aus der Adresse (L6) |
-| F15 | Stadtkörper-, Downtown-, Gewerbe-Würfel | FC:4440–4443, 4453–4460 | 3 | Glied 11 (Neubau der Moderne als Ereignis) — nicht gezählt (§0.18) |
-| F16 | Höhe aus Tiefe und `breitMax` nur mit `DP.erbe` | FC:4491–4495 | `STADT_FORM` 20 (die Ton-, Kern- und Mauer-Zeilen FC:3895–4027 bleiben) | Glied 5: Traufe nach Straßenbreite als Datum (L17) |
-| F17 | `terrain:0` als „das Haus kennt kein Gelände" | FC:4436, 4399, 4473, 4483, 5815; Leser FC:1488 | 9 | Glied 8 liest `hp.hang`. Die Vertrags-Grenze „die Welt trägt den Boden" (FC:50) bleibt: das Haus baut keine Wiese, es liest den Hang |
-| F18 | fester Sockel 0,55 m | FC:178, 211, 426–449 | `foundH` 8 | Glied 8: Sockel aus der Spanne unter dem Rechteck (L24) |
-| F19 | durchlaufender Deckenbalken | FC:466–470 | `layJoists` 1 (FC:473) | Glied 7: Balken zwischen tragenden Linien, Unterzug/Innenständer |
-| F20 | Loch ohne Wechsel | FC:357–359, 469 | `clipSpanZ` 1 | Glied 7: Wechsel am Lochrand |
-| F21 | Balken auf jeder Ständerachse ±fw, Teilung bayMax | FC:418–422, 181 | `bayMax` 2 | Glied 7 aus Glied 6 (Raumwände) |
-| F22 | Raum-Schnitte nur auf Ständerachsen; Raum-Gewichte gewürfelt | FC:609–613; FC:598–605 | Schnitte 1; `rndI` 20, davon 1 im Programm (FC:601), 19 in Teilbauten und Möbeln ab FC:1100 (bleiben) | Glied 6 aus Haushalt und Gewerbe |
-| F23 | Flur aus W·0,15, Treppe aus dem Samen | FC:261, 369–371 | `shaftCX` 1 | Glied 6 (Treppe aus dem Programm, Podest licht ≥ NORM.podest FC:254) |
-| F24 | `sparH` ohne Leser | FC:180 | 0 | Glied 10: Sparren-Querschnitt aus der Spannweite (L23) oder ersatzlos |
-| F25 | Flächenformel der Bewohner | FC:9532–9537 (`leuteVon`) | `leuteVon` 10 (Wirt stamm/siedlung-bewohner.js:460, 779, 839; scripts/lib/kreatur-mensch.cjs:390; Chronik FC:4512) | Glied 4: `hp.leute` des Haushalts (der Zweig FC:9531 liest es schon); die Rollen-Zahlen LEUTE_GESETZ.rolle FC:9526 bleiben für Sonderbau |
-| F26 | `hp.parzelle` ohne Erzeuger | FC:2255 | 1 (Kommentar FC:2236) | Glied 2: `hp.losBreite`, `hp.losTiefe` |
-| F27 | Packer `bauProgramm` (capK/capL/F0, W/D-Klammer) | FC:2245–2276 | 2 (FC:2229; Fingerabdruck scripts/diag-altlasten.cjs:955) | Glied 5/6: Hülle aus Los + Bedarf, Grundriss in der Hülle |
-| F28 | zweite Traufe-Regel der Ferne | FC:4072 (`geschossM`, `sockelM`), FC:4119–4120 | `STADT_MASSEN` 5, `hausMasse` 2 | Glied 5 Ausgang `hp.traufe` (§5 Ferne) |
-| F29 | Lose der Stufe 1 (`breit = frei/n`, erster passender Platz) | FC:4090–4106 | `kachelMassen` 13 (stamm/siedlung-wege.js:2061, 2075 u. a.) | Glied 2 auf der Blockkante der Kachel (§5 Ferne) |
-| F30 | PASSUNG: früherer Bau schrumpft ins spätere Los | FC:9780–9791 | 7 | Glied 2 → 5: jeder Bau desselben Loses liest dasselbe Los |
-| F31 | Los = Hülle (`massBauExport(…).ext` als `ext` des Layouts) | FC:9778–9779 | `massBauExport` 4 | die Hülle bleibt Geometrie; das Los kommt aus Glied 2 |
+| F1 | `tryPlace` als „erste Stelle, an der die Hülle passt“ | FC:5487–5533 | 3 (Rufe FC:5602, 5604; Kommentar 5549) | Glied 2; die Prüfungen Mauer, Wasser, Weg, Friedhof (FC:5502–5518) werden Bedingungen des Loses |
+| F2 | Folge der Lose = Index, Metrik edepth·34 + cur + rnd·2 | FC:5560–5562, 5590, 5594, 5600 | 3 im Setzer (von `edepth` 14) | Glied 2 (Lage), Glied 13 (Gründungsfolge als Ereignis) |
+| F3 | Fuge gewürfelt, Schritt 1,1 m | FC:5530, 5532 | 0 | Rest der Teilung in Vierteln (Glied 2) |
+| F4 | Setzer-Jitter `jitAmp` | FC:5361, 5494 | 3 | ersatzlos in der Stadt; außerhalb Bauflucht (L30) |
+| F5 | Wohlstand-Würfel | FC:4438 | Feld `.wohl` 9 | Glied 3 → 4: Stand aus dem Zins |
+| F6 | +1 Geschoss bei wohl > 0,9 | FC:4444 | 0 | **fällt (E4)**; Glied 7 |
+| F7 | Kultur-Würfel im Pool | FC:4435 (`poolAt` FC:4424 bleibt) | 0 | Bauweise aus Region × Ära ohne Würfel (L29) |
+| F8 | Maß-Jitter in `_bauweiseWurf` | FC:2204–2210 | 1 (FC:2225; `bauRezept` 18 Leser inkl. PRESETS FC:5775, diag-fachwerk-contract.cjs:98) | W aus dem Los; D aus Bedarf; Neigung Glied 12; Abweichung vom Viertel nur als benannter Schritt (L5) |
+| F9 | Doppel-Klemme der Breite 5–15 | FC:2208, 4439 | 0 | ersatzlos (Verteilung = Absteckung) |
+| F10 | Ring-Breite | FC:4437 | 0 | Glied 2 |
+| F11 | Maß-Zeilen der Haushalts-Rollen in BAU_NUTZUNG (FC:2184, 2185, 2187, 2188, 2190, 2195, 2196, 2198, 2199, 2200) | FC:2184–2200, angewandt 2227–2228 | `BAU_NUTZUNG` 7 | Glieder 6–8; Form-Ops L31; Sonderbau-Zeilen bleiben (2186, 2189, 2191–2194, 2197) |
+| F12 | Rolle nach Index | FC:4383–4386, 4323, 4468, 4340 | `stadtViertel` 1 | Glied 4 aus Zins und Lage |
+| F13 | Keller-, Anbau-, Balkon-, Grundriss-Würfel, arm | FC:4446–4449 | 0 | Keller: London — jedes Haus der drei Sorten mit Keller 6½ ft (LON s. VII–IX, L28); Anbau, Grundriss: Glied 8 |
+| F14 | Ersatzbau-Würfel 12 % | FC:4431, 4450 | 0 | Glied 13 (Ereignis mit Samen) |
+| F15 | Stadtkörper-, Downtown-, Gewerbe-Würfel | FC:4440–4443, 4453–4460 | 3 | Glied 13 (nicht gezählt) |
+| F16 | Höhe aus Tiefe mit `DP.erbe` | FC:4491–4495 | `STADT_FORM` 20 (Ton-/Kern-Zeilen bleiben) | Glied 7 (Paris nach Straßenbreite) |
+| F17 | `terrain:0` als Gelände-Blindheit | FC:4436, 4399, 4473, 4483, 5815; Leser 1488 | 9 | Glied 10 liest `hp.hang`; die Vertrags-Grenze FC:50 bleibt |
+| F18 | fester Sockel 0,55 m | FC:178, 211, 426–449 | `foundH` 8 | Glied 10: Stufen nach dem Gefälle |
+| F19 | durchlaufender Deckenbalken | FC:466–470 | 1 | Glied 9 |
+| F20 | Loch ohne Wechsel | FC:357–359 | 1 | Glied 9 |
+| F21 | Balken auf jeder Ständerachse, Abstand ≤ 1,7 m | FC:418–422, 181 | `bayMax` 2 | Glied 9: Abstand 40–60 cm (E-F S. 115), Lage aus dem Grundriss |
+| F22 | Raum-Schnitte auf Achsen; Raum-Gewichte gewürfelt | FC:609–613; 598–605 | 2 (Schnitte 1, `rndI` im Programm 1; 19 weitere `rndI` in Teilbauten/Möbeln bleiben) | Glied 8 |
+| F23 | Flur W·0,15, Treppe aus Samen | FC:261, 369–371 | `shaftCX` 1 | Glied 8 |
+| F24 | `sparH` ohne Leser | FC:180 | 0 | Glied 12 (L23) oder ersatzlos |
+| F25 | Flächenformel der Bewohner | FC:9532–9537 | `leuteVon` 10 | Glied 5 (`hp.leute`; FC:9531 liest es schon) |
+| F26 | `hp.parzelle` ohne Erzeuger | FC:2255 | 1 | Glied 2 |
+| F27 | Packer `bauProgramm` | FC:2245–2276 | 2 | Glieder 6/8 |
+| F28 | zweite Traufe-Regel der Ferne — **Fund-Zeile (E10): fällt in der Bau-Welle mit der nahen auf EINE Quelle, kein Einzelschnitt vorab** | FC:4072, 4119–4120 gegen FC:211–215 | `STADT_MASSEN` 5, `hausMasse` 2 | Glied 7 `hp.traufe` |
+| F29 | Lose der Stufe 1 | FC:4090–4106 | `kachelMassen` 13 | Glied 2 auf der Blockkante |
+| F30 | PASSUNG | FC:9780–9791 | 7 | jeder Bau des Loses liest dasselbe Los |
+| F31 | Los = Hülle | FC:9778–9779 | `massBauExport` 4 | Glied 2 |
 
-**Leser-Summe der fallenden Stellen: 118** (3 + 3 + 0 + 3 + 9 + 0 + 0 + 1 + 0 + 0 + 7 + 1 + 0 + 0 + 3 + 20 + 9 + 8 + 1 + 1 + 2 + 2 + 1 + 0
-+ 10 + 1 + 2 + 7 + 13 + 7 + 4, mit F2 = 3 und F22 = 2). Darin stecken Namen, die nur teilweise fallen (STADT_FORM 20, BAU_NUTZUNG 7,
-kachelMassen 13, leuteVon 10, massBauExport 4 — die Funktion bleibt, ihre heutige Rolle fällt). Würfel als Ausdruck zählen 0.
-
-Nicht in dieser Kette (benannt, damit es nicht still fällt): Fenster-Takt und OG-Material gewürfelt (FC:479–480, Bahn 1/Stoff);
-Herd-Strom `_chS` (FC:586, Grundriss gehört Glied 6, der Strom bleibt bis dort benannt).
+**Leser-Summe: 118** (Namen, die nur teilweise fallen, mitgezählt: STADT_FORM 20, kachelMassen 13, leuteVon 10, BAU_NUTZUNG 7,
+massBauExport 4; Würfel als Ausdruck zählen 0). Nicht in dieser Kette: Fenster-Takt und OG-Material FC:479–480 (Bahn 1/Stoff), Herd-Strom
+FC:586.
 
 ---
 
-## §3 DIE BENANNTEN LÜCKEN
+## §3 DIE BENANNTEN LÜCKEN — eingearbeitet aus `v3/quellen-los-haus.md`
 
-Thema = Abschnitt des Quellen-Blatts `v3/quellen-los-haus.md` (A Absteck-Modul · B Los-Breite/-Tiefe mit Verteilung · C Lage ↔ Stand ·
-D Haus auf dem Los · E Geschosse nach Ordnung · F Balken-Spannweiten · G Hang). Das Blatt existiert am 19.11. nicht; keine Lücke ist gefüllt.
-Belege, die der Zensus schon nennt, stehen dabei (nur als Richtung, nicht als Wert für das Spiel).
+Status: **gefüllt** (Zahl mit Quelle, T am Volltext, Stelle) · **HYPOTHESE** (nur sekundär, oder eine Funktion ohne Beleg) · **entfällt** (Entscheid
+macht es zur Geometrie, kein Datum) · **offen**. Thema A–G wie zuvor.
 
-| L | Größe | Einheit | Quelle, die sie tragen kann | heute im Code an ihrer Stelle | Thema |
+| L | Größe | Status | Zahl · Einheit · Quelle (Stelle im Quellen-Blatt) | heute im Code | Th. |
 |---|---|---|---|---|---|
-| L1 | Modul der Absteckung (Einheit) je Region und Epoche | m | Gründungsurkunde, Parzellen-Aufnahme (Edinburgh 24 ft = 7,32 m, Thame 1 Rute 5,03 m, Freiburg Hofstätte 50 Fuß = 16,2 m — zensus-absteckung.md §c) | keine; Rundung ½ m FC:2208, 4439 | A |
-| L2 | Teilungs-Brüche und ihr Anteil (¾ … 2½ Einheiten, halbe/drittel Hofstätte) | Anteil je Bruch | Parzellen-Aufnahme | keine | A |
-| L3 | Verteilung der Los-Breite in einer Stadt (Quantile) | m | Kataster, Parzellen-Aufnahme (OS 1849–53 Edinburgh: nur Zusammenfassung) — Quantile nicht gefunden | Folge der Hülle FC:9776–9794 + Fuge FC:5530 | B |
-| L4 | Los-Tiefe je Lage (Kern, Rand, Vorstadt) | m | Parzellen-Aufnahme (Thame bis 660 ft, Halb-Burgage 72 × 33 ft) | freier Grund bis zum Hindernis (Lesart zaehl-los.cjs:21) | B |
-| L5 | Messfehler der Rute: Streuung des gemessenen Moduls | m oder % | Maß-Gesetze (Act 1824), Aufnahmen (Alnwick „about 14 foot") | Jitter ±1,1 m FC:2208 ohne Maß | A |
-| L6 | Rate von Erbteilung und Zusammenlegung | Anteil der Lose je Jahrhundert | Steuerliste, Häuserbuch, Grundbuch (Stirling 1580, Edinburgh 1670er: Fälle) | Ersatzbau-Würfel 12 % FC:4431 (keine Teilung) | B |
-| L7 | Stand je Lage: Anteile der Stände nach Abstand zum Markt und nach Straßen-Klasse; Zahl der Stufen | Anteil | Steuerliste nach Straße (Lay Subsidy 1332, Cirencester 1522: Richtung belegt) | `wohl` aus Index + Würfel FC:4438 | C |
-| L8 | Breite ↔ Stand (Zins nach Front) | Zins je m Front | Zinsliste + Parzellen-Aufnahme (Cockermouth 1270: 4 d je Einheits-Los) | keine Kopplung (ρ +0,10, zensus-los-haushalt.md) | C |
-| L9 | Gewerbe je Lage (Handel am Markt, Handwerk an Gasse/Wasser, Gasthof am Tor) | Anteil je Lage | Steuerliste nach Straße (London 1332), Zunftlisten | Viertel nach Index FC:4383–4386, Grund-Satz FC:4323 | C |
-| L10 | Gesinde je Gewerbe und Stand | Köpfe | Zensus-Listen (Laslett, Kussmaul 1981) | 7/11 Annahme in gesetz-proto.cjs:50–56; im Kern nichts | C (Naht Person) |
-| L11 | Bemessungs-Haushalt: für welche Köpfe das Haus gebaut wird (Paar + Gesinde bei Baujahr oder Höchststand des Hauslaufs) | Köpfe | Bauaufnahme + Nachlass-Inventar | Flächenformel FC:9532–9537 | D |
-| L12 | Haus-Front ↔ Los-Breite: Füllgrad, Traufgasse, Torfahrt | m, Anteil | Bauaufnahme, Parzellen-Aufnahme | 3,4 % füllen das Los (zensus-los-haushalt.md Punkt 6); Torfahrt 3,5 m war in v2 gewählt | D |
-| L13 | Haus-Tiefe ↔ Los-Tiefe (Vorderhaus, Hof, Hinterhaus) | m | Bauaufnahme | D aus KULTUR + Jitter, Klemme 4–11 FC:2209 | D |
-| L14 | Geschosse je Straßen-Klasse | Geschosse | Bauordnung (London 1667: 2/3/4 belegt; Mitteleuropa fehlt) | +1 bei wohl > 0,9 FC:4444, Tafel KULTUR.st | E |
-| L15 | Zuordnung der Kante des Spiels (`gen`, `w`, `quer`, `gasse`, `vor`) zur Klasse der Ordnung | Klasse | Bauordnung + Stadtplan derselben Stadt | keine (§0.7) | E |
-| L16 | Geschosse je Stand bei gleicher Straße | Geschosse | Bauaufnahme, Steuerliste mit Hausbeschreibung | Wohl-Stufe FC:4444 | E |
-| L17 | Traufhöhe ↔ Straßenbreite | m je m | Bauordnung (Paris 1783/84: Regel belegt, Zahl unsicher) | `STADT_FORM.stab` nur mit Erbe FC:4494 | E |
-| L18 | Geschosshöhen je Ordnung und Epoche | m | Bauordnung (London 1667: 9/10/10½ ft), Bauaufnahme | egH 2,55 / ogH 2,35 fest FC:178; Ferne 2,7 FC:4072 | E |
-| L19 | Aufstockung über die Zeit | Geschosse je Jahrhundert | Dendro-Bauaufnahme (Genf: Richtung) | keine | E |
-| L20 | Holzart des Orts und Stamm-Durchmesser → Querschnitt, L_max | m | Holzbau-Norm (EN 1995) + Holz-Datum des Orts | Balken 0,15 × 0,21 FC:179; L_max im Zähler aus Eiche d 0,258 | F |
-| L21 | Lasten Decke g, q, Dach | kN/m² | Lasten-Norm (EN 1991) | im Zähler gewählt 1,5 / 2,0 / 0,75 (zensus-haus-tragwerk.md „unsicher") | F |
-| L22 | Lage von Unterzug und Innenständer gegen die Raumteilung | Lage | Bauaufnahme | keiner | F |
-| L23 | Sparren-Querschnitt und -Abstand | cm | Bauaufnahme | 10 × 10 (`P.spar`), `sparH` ungelesen FC:180 | F |
-| L24 | Spanne unter dem Rechteck → Sockelhöhe, ab wann Untergeschoss zur Talseite | m | Bauaufnahme (Guildford Undercroft, Chester Rows: Fälle) | foundH 0,55 FC:178; Klassen 1,5 / 4 m ORT_GESETZ FC:10005–10006 | G |
-| L25 | Anteil der Hanghäuser mit Talgeschoss | % | Häuserbuch, Bauaufnahme — Anteil nicht gefunden | keiner | G |
-| L26 | Was das Eckhaus anders trägt (zweite Schau-Seite, Laden, Erker) | Merkmal, Anteil | Bauaufnahme, Urkunde (Paderborn 1349, Freiburg 1517: Begriff belegt, Wert nicht) | keins (§0.6) | D |
-| L27 | Wo die Haustür steht (Traufe/Giebel zur Straße) je Region | Seite | Bauaufnahme | Tür immer vorn FC:488 | D |
-| L28 | Keller je Gewerbe, Stand und Hang | Anteil | Bauaufnahme | Würfel 35 % FC:4446 | D / G |
-| L29 | Bauweise eines Loses im Pool von Region × Ära (statt Würfel) | Bauweise | Dendro-/Bauaufnahme je Region | Würfel FC:4435 | kein Thema des Quellen-Blatts (Stoff/Schule) |
-| L30 | Bauflucht: Abstand Haus ↔ Straße außerhalb der Stadt | m | Bauordnung, Dorfaufnahme | `jitAmp` 0,2–0,9 FC:5361 | A |
-| L31 | Gewerbe → Bauteil (Laden-Arkade, Laube, Vorkragung, Trockenboden) | Merkmal | Bauaufnahme | Ops in BAU_NUTZUNG FC:2184–2200 | D |
-| L32 | Gründungsfolge / Wachstum der Stadt (welches Los wann besetzt) | Jahr | Stadtgeschichte (Conzen: Richtung), Urkunden | Index t FC:4429, Baujahr FC:4433 | kein Thema des Quellen-Blatts (Zeit) |
+| L1 | Modul / Block-Einheit | **gefüllt** | perch 16½ ft = 5,03 m (VCHX; W89 S. 182); 18-ft-Rute Northumberland (W89 S. 107); Freiburg 50 Fuß à 32,4 cm = 16,2 m (L07 S. 7–8); Schottland Block-Einheit 5,8–12,8 m (T08 S. 233) — §1 Tafel, §B „Absteck-Modul“ | Rundung ½ m FC:2208, 4439 | A |
+| L2 | Lose in Einheiten, Teilungs-Brüche | **gefüllt**, Rest offen | ¾–2½ Einheiten, ⅔ ± 0,5 m am Viertel (ST15 S. 5; T08 S. 232–233); Teilung halbiert die FRONT (ST15 S. 5, L07 S. 18). Rest: Anteil je Bruch NG | keine | A |
+| L3 | Verteilung der Los-Breite (Quantile) | **offen** | NG (nur Spannen: York 35–60 ft, Modus ~50 ft, RJ87; 21 Gruppen-Mittel 6,02–12,80 m, T08) | Folge der Hülle | B |
+| L4 | Los-Tiefe; Tiefe ÷ Breite | **gefüllt**, Rest offen | T ÷ B 2,0–2,6 Freiburg (L07 S. 17), 3,4 Stratford (S), 4,7–6,3 Burford spät, 10–25 Oxford/Burford früh (VCHX, P37); Tiefen Freiburg 32–40 m. Rest: Tiefe je Lage NG | freier Grund bis Hindernis | B |
+| L5 | Abweichung vom Modul (Messfehler) | **HYPOTHESE** | Freiburg Breiten 14–18 m um 16,2 m (L07 S. 17) — Messfehler und Teilung nicht getrennt; Taits ± 0,15/0,3 m ist die heutige Mess-Güte (T08 S. 227), nicht die der Rute | Jitter FC:2208 | A |
+| L6 | Teilung, Hof-Füllung über die Zeit | **gefüllt** (Ordnung), Rest offen | erst Front geteilt (Freiburg 1 → 2, 1252–55, L07 S. 18; York 3 → ≥ 12, RJ87 S. 9), dann Hof: Edinburgh 1400 0 → 1490 ⅓ → ein Jh. später voll (ST15 S. 5). Rest: Rate je Jahrhundert NG | Ersatzbau-Würfel FC:4431 | B |
+| L7 | Zins aus Lage; Stand aus Zins | **HYPOTHESE** | keine Quelle am Text (Hearth-Tax nach Straße NG); Covent Garden 9,2 Herdstellen (S) | wohl FC:4438 | C |
+| L8 | Zins je Einheit | **gefüllt** | Cockermouth 1270: 4 d je Einheits-Los (ST15 S. 5); Freiburg 12 Pf. je Hofstätte (L07 S. 7) | keiner | C |
+| L9 | Gewerbe je Lage | **offen** | belegt nur die Schichtung im Los (Läden vorn, Haupthaus hinten: RJ87 S. 139/156, SAT90 S. 163); Verteilung nach Straße NG | Index FC:4383 | C |
+| L10 | Gesinde je Gewerbe | **HYPOTHESE** | nicht im Quellen-Blatt; 7 von 11 Zeilen „Annahme“ (gesetz-proto.cjs:50–56) → ans Person-Gesetz als benannte Hypothesen (E10) | keiner | C |
+| L11 | Bemessungs-Haushalt | **offen** | NG | FC:9532–9537 | D |
+| L12 | Haus auf dem Los (Stellung, Füllgrad) | **gefüllt** (Regel), Rest offen | schmal → Haus an der Front mit Seitengang und Hinterhaus (P37); breit ≥ 1½ Einheiten → quer oder um Hof (ST15 S. 23); Oxford Füllgrad ~½ an einem Haus (P37 S. ~185). Rest: Statistik des Füllgrads NG | 3,4 % füllen | D |
+| L13 | Haus-Tiefe ↔ Los-Tiefe | **offen** | ein Fall: Freiburg Vorderhaus innen 6 × ~9 m, Vorderhaus + Flügel + Hinterhaus (L07 S. 12–13); Regel NG | D 4–11 FC:2209 | D |
+| L14 | Geschosse je Straßen-Klasse | **gefüllt** | by-lanes 2 · streets of note 3 · high streets 4, je + Keller + Dach (LON s. VII–IX) | FC:4444 | E |
+| L15 | Zuordnung `gen`/`w` der Kante ↔ Klasse der Ordnung | **offen** | keine Quelle; heute gen 0/1/2 = 26,0/13,5/60,5 % der Fronten (zaehl-los.log Zusatz E4) | keine | E |
+| L16 | Geschosse je Stand | **offen** | NG | FC:4444 | E |
+| L17 | Höhe bis Gesims nach Straßenbreite | **gefüllt** | < 24 / 24–29 / ≥ 30 Fuß → 36 / 45 / 54 Fuß bis Gesims, Dach + 10/15 Fuß (PAR84 Art. 1, S. 456; OCR-Vorbehalt dort) | FC:4494 (nur Erbe) | E |
+| L18 | Geschosshöhen | **gefüllt** | 8½–10½ ft lichte Höhe, Keller 6½ ft (LON s. VII–IX); DE/CH NG | 2,55/2,35 FC:178 | E |
+| L19 | Aufstockung | **offen** | NG (Edinburgh 1636 „five, six storeys“ ist ein Stand, keine Rate, ST15 S. 17) | keine | E |
+| L20 | Holz-Profil → L_max | **gefüllt** (Gegenprobe), Rest offen | Forchheim: freie Deckenbalken-Spannweite mit Unterzug ~5 m (E-F S. 115); Freiburg 6 m Innenmaß (L07 S. 13). Rest: Durchmesser/Holzart des Orts und Querschnitte NG | 0,15 × 0,21 FC:179 | F |
+| L21 | Lasten | **offen** | NG | im Zähler gewählt | F |
+| L22 | Lage des Unterzugs | **offen** | ein Befund (Forchheim: Unterzug auf Säulen; Dachbalken 13 m brauchen Unterzug, E-F); Regel NG | keiner | F |
+| L23 | Sparren-Querschnitt | **offen** | NG | 10 × 10 FC:180 | F |
+| L24 | Sockel aus dem Gefälle | **entfällt** (E5) | Geometrie des Grunds; Fall „up a few steps“ (ST15 S. 8) | foundH FC:178 | G |
+| L25 | Anteil Hanghäuser | **entfällt** (E5) | ist ein gezähltes Ergebnis des Grunds (§6 G4), kein Eingang | keiner | G |
+| L26 | Ecke | **gefüllt**, Rest offen | Eckhaus nimmt an der schmaleren Straße die Höhe der breiteren, über die Tiefe des Vorderbaus (PAR84 Art. 2, S. 456); York: Eck-Tenement in ≥ 6 Läden an der Seitengasse (RJ87 S. 156). Rest: zweite Schau-Seite, Wert NG | keins | D |
+| L27 | Stellung Traufe/Giebel | **gefüllt** (Freiburg), Rest S | Freiburg 13. Jh. traufständig (L07 S. 13); Lübeck giebelständig 26/74 % und Scheutz-Typen nur S | Tür vorn FC:488 | D |
+| L28 | Keller | **gefüllt** (London) | jedes Haus der drei Sorten mit Keller, 6½ ft (LON s. VII–IX); Freiburg hofseitige Gewölbekeller (L07 S. 13) | Würfel 35 % FC:4446 | D |
+| L29 | Bauweise im Pool | **offen** | nicht im Quellen-Blatt | Würfel FC:4435 | — |
+| L30 | Bauflucht außerhalb der Stadt | **offen** | NG | `jitAmp` FC:5361 | A |
+| L31 | Gewerbe → Bauteil | **gefüllt** | Laden 5–10 ft vorn mit Solar darüber (RJ87 S. 11, 139); Auskragung 52–60 cm je Geschoss, England 15. Jh. (ST15 S. 12); Paris 1783 verbietet Auskragung (PAR83 Art. 6) | Ops FC:2184–2200 | D |
+| L32 | Gründungsfolge der Lose | **offen** | NG | Index FC:4429 | — |
+| L33 | Balkenabstand | **gefüllt** | 40–60 cm (E-F S. 115) | ≤ 1,7 m `bayMax` FC:181, 420 | F |
+| L34 | Dachneigung nach Deckung | **gefüllt** | Stroh 50°, Ziegel 45° (vor 1700) / 35°, Steinplatte 30–35°, Schiefer 25–30° (SPEL, BAB) | KULTUR ± Würfel FC:2207 | — |
+| L35 | Stand über Frontbreite (eigene Zeile, E3) | **HYPOTHESE** | am Text NICHT belegt (Quellen-Blatt §C „ungeprüft“) | keiner | C |
+| L36 | Ursache des eingeschossigen Stadthauses | **offen** | am Text keine (§0 Punkt 3) | heute 13,6 % | E |
+| L37 | Welche Ordnung je Region/Epoche (perch- oder Viertel-Schule; London oder Paris) | **offen** | NG; die Quellen sind England, Schottland, Freiburg, Paris | keine | A/E |
 
-Keine Lücke ist hier mit einem Wert gefüllt. Die Dach-Neigung je Deckung (STIL_GRENZNEIGUNG) ist Stoff und steht nicht in dieser Liste.
+**Zählung: gefüllt 16** (L1, L2, L4, L6, L8, L12, L14, L17, L18, L20, L26, L27, L28, L31, L33, L34) · **HYPOTHESE 4** (L5, L7, L10, L35) ·
+**entfällt 2** (L24, L25) · **offen 15** (L3, L9, L11, L13, L15, L16, L19, L21, L22, L23, L29, L30, L32, L36, L37).
 
 ---
 
-## §4 §SOLL (wörtlich; je Zahl Zähl-Skript und Feld, das das Gesetz liefern muss)
+## §4 §SOLL — DIE SOLL-TAFEL (vor dem Spike)
 
-| S | SOLL (Kopf BAU) | Zähl-Skript | Feld des Gesetzes · ohne Umbau? |
-|---|---|---|---|
-| S1 | Balkenlinien über L_max: heute 2 522 von 2 595 Losen (99 von 100) → 0, erreicht durch Unterzug/Innenständer/Wechsel als liegendes Holz in subsystems.geruest, NICHT durch ein größeres L_max; gezählt mit zaehl-balken.cjs, auch Balken längs x (Lücke des Skripts benennen). | `v3/zaehl-balken.cjs` | Meshes in `HAUS(…).subsystems.geruest`: Deckenbalken `P.balkenB × P.balkenH` lang in z; Unterzug/Wechsel lang quer (in x), Oberkante zwischen Balken-Unterkante − 0,25 m und Balken-Oberkante (zaehl-balken.cjs:118–129); `HAUS.P`, `HAUS.dims`. **Ohne Umbau, solange die Balken in z liegen.** Lücke des Skripts: eine Lage, die längs x spannt, sieht es nicht (ein Filter je Richtung fehlt); ob unter dem Unterzug Ständer bis zum Grund stehen, prüft es nicht |
-| S2 | Ständer in Tür oder Treppe einschließlich Podest: ≤ 10 % nach Wortlaut (Runde 2: 12,5 % am Podest). | **keins in v3** (v2: linse-v2.cjs, pruef-spike-v2.cjs am Prototyp) | `HAUS.dims.zonen` [{art: tür · lauf · podest, x0, z0, x1, z1, geschoss}] — heute intern (`circR` FC:325, 355, 392, 905, nicht exportiert) — und Ständer als Meshes in `geruest`. Podest nach Wortlaut 0,9 m ab Wand-ACHSE, nicht licht (pruefung-spike-v2.md Punkt 1). **Umbau: Zähler neu** |
-| S3 | Würfel-Anteil an der Los-Breite der WOHNHÄUSER derselben Stadt: heute 66,0 % → 0 % Varianz OHNE benannte Ursache; zufällige Ursachen der Wirklichkeit (Messfehler der Rute, Erbteilung, Zusammenlegung) sind erlaubt, wenn jede ein benannter Schritt mit Samen aus der Adresse ist und ihr Anteil einzeln gezählt wird. | `v3/zaehl-los.cjs` (Teil „Würfel-Anteil", :307–344) | `hp.losBreite` (LOS_FELD) und `hp.schritte.losBreite` = [{name, delta, samen}] — Zerlegung Cov(Δ, B)/Var(B) je Plan. **Umbau:** der Nachbau :307–344 trifft am Gesetz nicht (§0.2); ein Block, der `hp.schritte` liest. Rechnung = volle Zerlegung (§0.13) |
-| S4 | Absteckung: κ im Band 0 … 0,53 (heute −0,04; Entwurf Runde 2: 1,0), gezählt mit zaehl-los.cjs über LOS_FELD. | `v3/zaehl-los.cjs` (ZAHL B, κ :352–360) | `hp.losBreite` bzw. `slot.ov.losBreite`; die Einheit des Gesetzes (L1) als Zeile in `EINHEITEN` oder als Feld `hp.losEinheit` (heute nicht gelesen → eine Zeile Umbau). **Sonst ohne Umbau.** Siehe §0.3 (0 = Zufall liegt im Band) |
-| S5 | Geschosszahl: Varianz-Anteil reiner Würfel heute 22,3 % → 0 %; Straßen-Klasse ist ein Eingang (London 1667), Stand ist ein Eingang; die Tafel-Zeile der Rolle (heute 47,7 %) bleibt nur, wo die Rolle den Bau wirklich bestimmt (Sonderbau) — sonst fällt sie. | `v3/zaehl-hoehe.cjs` (Zerlegung :88–110) | `hp.storeys`, `hp.schritte.storeys` (klasse, stand, sonderbau, aufstockung), `hp.sonderbau`, `hp.lage.klasse`, `hp.stand`. **Umbau** wie S3 (Nachbau S0…S3 trifft nicht mehr) |
-| S6 | ρ(Stand, Abstand zum Markt) hat einen Kausalpfad: die Lage ist VOR dem Stand gerechnet (heute wird die Lage nach der Höhe gerechnet). | `v3/zaehl-los.cjs` / `zaehl-hoehe.cjs` (ρ über Export-Lage ↔ `platz`) | `hp.stand`, `hp.lage.abstandMarkt`; Pfad: Nachrechnung stand = f(lage) byte-gleich (§0.4). ρ: ohne Umbau, wenn das Skript `stand` statt `wohl` liest (ein Name) |
-| S7 | Ecke und Hang haben je mindestens einen Leser im Haus (heute 0): Ecke → zweite Schau-Seite; Hang → Sockel/Untergeschoss aus der Spanne unter dem Rechteck. | `v3/zaehl-los.cjs` (ECKE_FELD, HANG_FELD :37, 198–199; Vergleich Ecke/sonst :261–262) | `hp.ecke` und ein Haus-Ausgang, der es zeigt (`WALLS[].type` der Flanke ≠ heute); `hp.hang` {spanne, richtung} und `hp.sockel`/`hp.untergeschoss`. Ecke: ohne Umbau (die KS-Tafel liest Haus-Felder; ein Feld der Flanke muss dazu). Hang: **in node nicht zählbar** (§0.5) — Zähler in der Welt nötig (§6 G1) |
-| S8 | Sichtbare Vielfalt an denselben 2 595 Losen ≥ heute: 440 Formen / 21 Breiten / Traufe-Spanne 4,70 m / häufigste Form ≤ 5,8 %. | **keins in v3** (v2: zaehl/richter-kopplung.cjs, Maß v2/spike/stadt-b.cjs:110) | `hp.W`, `hp.D`, `hp.storeys`, `hp.traufe` (die Traufe ist heute linear in st, zensus-hoehe.md Punkt 2; mit L18 nicht mehr). Menge §0.8. **Umbau: Zähler auf den Export** |
-| S9 | Häuser ohne gültigen Grundriss ≤ 5 %. | **keins in v3** (v2: spike-v2.cjs über den Prototyp) | `hp.grundriss` {ok, grund} je Los (Signatur `grundrissVon` → {ok:false, grund}, entscheid-v2.md §1). **Umbau: Zähler neu** |
-| S10 | Preis: Rezept je Haus ≤ 50 µs kalt (heute 0,6–4,2 µs warm/kalt) — Bedingung, kein eigener Punkt. | **keins** (heute gemessen in Runde 1, pruefung-spike Urteil 16) | ein Ruf je Los ohne Welt (`hausVonLos(plan, los)`), kalt und warm in einem Prozess. **Umbau: Messung neu** |
+„Richter“ = das Skript, das am HAUS des Kerns bzw. am Export die Zahl zählt, und das Feld, das es liest. Ein Nachbau der heutigen Kette
+oder eine Linse am Prototyp ist KEIN Richter (E9).
+
+| S | Maß | heute | Soll | Richter (Skript · liest Feld) | Feld des Gesetzes | Quelle / Entscheid |
+|---|---|---|---|---|---|---|
+| S1 | Häuser mit Decken-Balkenlinie, deren lichte Spannweite zwischen Auflagern L_max übersteigt | 2 522 / 2 595 (die 100: 99) | 0, durch Unterzug / Innenständer / Wechsel als liegendes Holz, nicht durch größeres L_max; auch Balken längs x | `v3/zaehl-balken.cjs` · `subsystems.geruest` (Mesh-Hüllen), `HAUS.P`, `HAUS.dims` — Richter heute; Lücke: Lage längs x (ein Filter), Ständer bis zum Grund | Meshes in `geruest`; `P.balkenB/H` | L_max aus Querschnitt (E5), Gegenprobe Forchheim ~5 m (E-F S. 115) |
+| S2 | Ständer in Tür, Lauf oder Podest (Podest 0,9 m ab Wandachse) | am Haus nie gezählt (Prototyp R2: 12,5 %) | ≤ 10 % nach Wortlaut | neu (§6 G1) · `HAUS.dims.zonen` + Ständer in `geruest`; heute: Prototyp-Linse, zählt nicht | `HAUS.dims.zonen` (heute intern `circR` FC:325) | Kopf BAU; pruefung-spike-v2 Punkt 1 |
+| S3 | Würfel-Anteil an Var(Los-Breite), Wohnhäuser derselben Stadt | 66,0 % (volle Zerlegung 79,9 %) | 0 % ohne benannte Ursache; Messfehler, Teilung, Zusammenlegung als benannte Schritte mit Samen, je einzeln gezählt | neu (§6 G2) · `hp.schritte.losBreite`; heute: Nachbau zaehl-los.cjs:307–344, zählt nicht | `hp.schritte` (PFLICHT) | E9; L5, L6 |
+| S4 | Anteil der Lose ± 0,5 m am Viertel der Block-Einheit | Feld fehlt (0 / 2 595); gegen perch 78,4 % (p0 0,795) · Freiburg 27,7 % (p0 0,247) · beste U 5,91 m 70,1 % (p0 0,677) | ≥ ⅔, gegen die Einheit des Plan-Felds; p0 und κ daneben gedruckt | `v3/zaehl-los.cjs` Zusatz E1 · `hp.blockEinheit`, `hp.losBreite` — Richter, sobald das Feld da ist | `hp.blockEinheit`, `hp.losBreite`, `hp.losViertel` | E1, E2; ST15 S. 5; §0 Punkt 2 |
+| S5 | Würfel-Anteil an Var(Geschosse); Tafel-Anteil der Rolle | Würfel 22,3 %, Rolle 47,7 % | Würfel 0 %; Rollen-Zeile nur beim Sonderbau; Eingänge Klasse und Stand; +1 bei wohl > 0,9 fällt | neu (§6 G2) · `hp.schritte.storeys`, `hp.sonderbau`; heute: Nachbau zaehl-hoehe.cjs:88–110, zählt nicht | `hp.schritte`, `hp.lage.klasse`, `hp.stand` | E4; LON s. VII–IX; K7 |
+| S6 | Abweichung Stand ↔ Nachrechnung aus Zins(Viertel, Lage) | kein Stand-Feld; ρ(wohl, Abstand Markt) −0,48 ohne Pfad | 0 (byte-gleich) | neu (§6 G3) · `hp.stand`, `hp.zins`, `hp.losViertel`, `hp.lage` | dieselben | K4, E7 |
+| S7 | Leser von Ecke und Hang im Haus | 0 / 0 | je ≥ 1: Ecke → Höhe der breiteren Straße + zweite Schau-Seite; Hang → Sockel in Stufen | Ecke: `v3/zaehl-los.cjs` ECKE_FELD + Haus-Vergleich (:261–262); Hang: Zähler in der Welt (§6 G4), in node nicht zählbar | `hp.ecke`, `hp.hang`, `hp.sockel`, `WALLS[].type` der Flanke | K3, E4, E5; PAR84 Art. 2 |
+| S8 | Formen W×D×st · Breiten-Stufen · Traufe Q90−Q10 · häufigste Form; Messname „eingeschossig ohne Ursache“ | 440 / 21 / 4,70 m / 5,8 % an 2 595 Losen (Pläne G) | ≥ heute an derselben Stadt (Samen, Wort); Zahl der Lose heute und am Gesetz nebeneinander; eingeschossig ohne Ursache als Befund, nicht gewürfelt | neu (§6 G2) · Export `hp.W/D/storeys/traufe`; heute: v2 richter-kopplung über Prototyp, zählt nicht | `hp.W`, `hp.D`, `hp.storeys`, `hp.traufe` | K5, E6, E8 |
+| S9 | Häuser ohne gültigen Grundriss | am Haus nie gezählt (Prototyp R2: 32,1 %) | ≤ 5 % | neu (§6 G2) · `hp.grundriss` {ok, grund}; heute: spike-v2 am Prototyp, zählt nicht | `hp.grundriss` | Kopf BAU |
+| S10 | Preis je Haus, kalt | bauRezept 0,6–4,2 µs (Runde 1) | ≤ 50 µs kalt (Bedingung) | neu (§6 G2) · Ruf je Los kalt/warm in einem Prozess | — | Kopf BAU |
 
 ---
 
 ## §5 DIE NÄHTE
 
-**Person-Gesetz** (90b6950d, lokal gelesen). Richtung:
-- Person liest vom Bau die **Adresse = das Los** (Gewerbe, Klasse, Baujahr; Person §1) und **`haushalt(gewerbe, klasse).gesinde`**
-  (Person §2). `kinder[klasse]` ist gefallen (Person §2, letzter Absatz). **Sonderbau trägt keinen Haushalt** (Person §1).
-- Person liest vom HAUS (für den Tag, Person §5): Bett-Punkt im eigenen Los, Herd, Werk = das eigene Haus, beim Tagelöhner ein Werk-Los
-  im Umkreis zweier Blöcke.
-- Das Haus liest von Person: nur den Bemessungs-Haushalt (L11), und der folgt aus dem Hauslauf (Person §2), der seinerseits nur Adresse
-  und Same liest.
-- **Kein Kreis:** Los → Haushalt-Tafel (Bau) → Hauslauf (Person) → Haus (Programm) → Tag (Person). Der Hauslauf liest keine Geometrie
-  des Hauses, der Tag liest sie. Würde der Hauslauf je die Kammerzahl lesen (wie viele Kinder ein Haus fasst), entstünde der Kreis
-  Haushalt ↔ Haus — das Blatt schließt das aus.
-- `klasse` (Person) ≡ `stand` (Kette), ein Feld (§0.11).
-- `leuteVon(ov)` (FC:9527) bleibt der Name, den der Wirt ruft (stamm/siedlung-bewohner.js:839); die Flächenformel FC:9532–9537 fällt
-  (F25). stamm/siedlung-bewohner.js:717–741 gehört der Person-Welle und ist hier nicht berührt.
+**Person-Gesetz** (90b6950d):
+- Person liest vom Bau die Adresse = das Los (Gewerbe, Klasse, Baujahr) und `haushalt(gewerbe, klasse).gesinde`. `kinder[klasse]` ist
+  gefallen. Sonderbau trägt keinen Haushalt.
+- Mit E7 liest Person den Stand, der aus dem Zins des Loses folgt; `klasse` (Person) ≡ `stand` (Bau), ein Feld.
+- **Die sieben „Annahme“-Zeilen des Gesindes** (gesetz-proto.cjs:50–56: schmied, wirt, gerber, weber, brauer, kraemer, geistlich) gehen
+  ans Person-Gesetz als benannte HYPOTHESEN, nicht als Datum (E10, L10). Die vier übrigen (tageloehner, ackerbuerger, baecker,
+  kaufmann) stammen aus Entwurf B und sind ebenfalls nicht am Quellen-Blatt belegt.
+- Richtung: Los → Zins → Stand → Haushalt-Tafel (Bau) → Hauslauf (Person) → Haus (Programm) → Tag (Person: Bett-Punkt, Herd, Werk-Los).
+  Der Hauslauf liest keine Geometrie des Hauses. Damit gibt es keinen Kreis Haushalt ↔ Haus und keinen Kreis Haushalt ↔ Los (E7).
+- `leuteVon(ov)` bleibt der Name, den der Wirt ruft (stamm/siedlung-bewohner.js:839); die Flächenformel fällt (F25).
+  stamm/siedlung-bewohner.js:717–741 bleibt unberührt (Person-Welle).
 
-**Bahn 1 Öffnungen** (aus entscheid-v2.md §4.2/4.3 und pruefung-quelle-v2.md K1–K6; Zweig nicht gelesen):
-- Bahn 1 liest `WALLS[].win` {cy, ch, wd} (FC:494–495) und schreibt es nie (entscheid-v2.md §4.2). Das Gesetz schreibt WALLS aus
-  Glied 6 und 7 (heute `wallSpec` FC:477–497).
-- Das Gesetz liest von Bahn 1 nichts für die Kette. Für S7 Ecke braucht es, dass die Seitenregel `fensterAt(…, aus)` (Cherry-Pick
-  5a5b53f37, entscheid-v2.md §4.3) die Flanke als Außenseite nimmt, wenn `hp.ecke` sie nennt — so wie heute `hp.brandwand` die Seite
-  schließt (FC:502–504). `hp.ecke` und `hp.brandwand` sind dieselbe Art Feld (Lage → Seite), nur mit umgekehrtem Urteil.
-- Öffnungen folgen dem Tragwerk (heute kein Fenster an ±fw, FC:478); im Gesetz folgen sie den Feldern von Glied 7.
+**Bahn 1 Öffnungen** (aus entscheid-v2.md §4.2/4.3, pruefung-quelle-v2.md K1–K6):
+- Bahn 1 liest `WALLS[].win` (FC:494–495) und schreibt es nie; das Gesetz schreibt WALLS aus Glied 8/9.
+- Für S7-Ecke nimmt die Seitenregel `fensterAt(…, aus)` (5a5b53f37) die Flanke als Außenseite, wenn `hp.ecke` sie nennt. Das ist das
+  Muster von `hp.brandwand` (FC:502–504) mit umgekehrtem Urteil.
+- Paris 1783 verbietet Auskragung (PAR83 Art. 6), England kennt sie (ST15 S. 12): Auskragung gehört je Ordnung zur Fassade (L31, L37).
 
 **Erdbau / Gelände.**
-- Richtung: Gelände H → `hp.hang` (Glied 2) → Sockel (Glied 8) → Platte/Erdbau. Heute ist die Richtung umgekehrt: die Platte legt das
-  Gelände auf die Höhe des Hauses (FC:11114–11123), der Erdbau glättet (gelaende-core.js:2085–2094, nicht nachgelesen).
-- Der Boden y der Straßenseite bleibt „die Gasse vor der Tür" (FC:11109). Das Untergeschoss steht zur Talseite.
-- Der Erdbau darf die Spanne, auf die der Sockel antwortet, nicht wieder einebnen. Er muss `hp.sockel` lesen (die Talseite ausnehmen).
-  Ohne das stünde der Sockel in der Luft oder im Grund.
-- Die Sockelplatte am Hang ist eine Fund-Zeile (entscheid-v2.md §1 Punkt 9 (3)) und liegt im Erdbau, nicht in dieser Kette.
+- Richtung: Gelände → `hp.hang` (Glied 2) → Sockel in Stufen (Glied 10) → Platte/Erdbau. Heute läuft es umgekehrt (FC:11114–11123;
+  Erdbau gelaende-core.js:2085–2094 nach Zensus).
+- Der Erdbau muss `hp.sockel` lesen und die Stufen nicht einebnen.
 
-**Ferne / LOD** — dieselbe Kette in jeder Stufe, kein Zwilling:
-- Stufe 1 (`kachelMassen` FC:4074–4114) hat eigene Lose: `breit = frei/n` und „erster Platz, dessen Tiefe die Traufe trägt"
-  (FC:4092–4106, F29). Sie muss Glied 2 auf ihrer Blockkante rufen.
-- Die Traufe der Ferne (`hausMasse` FC:4119–4120 mit `STADT_MASSEN.geschossM 2,7`, `sockelM 0,5`) ist eine zweite Regel (§0.14, F28).
-  Ferne liest `hp.traufe` aus Glied 5.
-- Die Fern-Masse der Stufe 2 (`planMassen` FC:4131–4137) liest W, D des ov schon heute — nur die Traufe nicht.
-- Jede Stufe ruft dieselbe Funktion je Los; die Kosten tragen Schirm und Änderung (Preis S10 ≤ 50 µs je Haus).
+**Ferne / LOD:**
+- Stufe 1 ruft Glied 2 auf ihrer Blockkante (heute eigene Lose FC:4092–4106).
+- Die Traufe hat EINE Quelle (Glied 7, E10); `hausMasse` liest `hp.traufe`.
 
-**Worker-Kanal** (`bauOrt` ohne `?? Heimat`):
-- Heute: der Wirt reicht `dp` an den Faden (`_foundryRequestSettlement` stamm/siedlung-ort.js:264), der Faden ruft `exportSettlement`
-  (foundry-bruecke.js:249–250). `dp.ort` {x, z} holt vorher `dp.hoehe` (siedlung-ort.js:259–287).
-- Die Welt-Eingänge der Kette reisen in `dp`: Gelände (`dp.hoehe`, da), Epoche (`dp.epoche`, da), Same (da), Stoff des Orts (`bauOrt`,
-  **fehlt** auf main, §0.17).
-- Ohne `bauOrt` wirft der Bau (entscheid-v2.md §4.1). Ein Preset mit `bauOrt: HEIMAT` als Datum ist derselbe Fallback in die Daten
-  verlegt, sobald ein Welt-Slot ohne ov in die Heimat fällt (pruefung-quelle-v2.md Punkt 7, stamm/siedlung-ort.js:535–536). Das Gesetz
-  verlangt: das ov jedes Welt-Slots trägt `bauOrt`; ein Slot ohne es wirft beim Namen.
-- Die Asset-Goldens (gate:fachwerk-contract, scripts/diag-fachwerk-contract.cjs:98 ruft `bauRezept(…, null, LAB_SEED)`; PRESETS frieren
-  dieselben Bytes FC:24, 5775) brechen, sobald F8 fällt. Das ist die erwartete Wirkung, kein Fehler; sie ist hier benannt.
+**Worker-Kanal:**
+- Die Welt-Eingänge reisen in `dp`: `dp.hoehe` (da), `dp.epoche` (da), Same (da), Stoff des Orts `bauOrt` (fehlt; ohne ihn wirft der Bau, kein
+  `?? Heimat`, kein HEIMAT-Preset als Daten-Fallback — pruefung-quelle-v2.md Punkt 7).
+- Das Wort `nH` setzt die Stadt, die Zahl der Lose ist Ergebnis (E6).
+- Die Goldens von gate:fachwerk-contract brechen, sobald F8 fällt — benannt, erwartet.
 
 ---
 
-## §6 WAS DER SPIKE v3 VORHER BRAUCHT, UND DIE REIHENFOLGE DER GLIEDER
+## §6 VOR DEM SPIKE: ZÄHLER, MENGE, BILDER — UND DIE REIHENFOLGE DER GLIEDER
 
-**Grundlinie, bevor ein Spike fährt:**
-- **G1 Hang-Zähler in der Welt.** Er liest je Ort das Ergebnis von `ortWahl` (voxel-worker.js:926 ff.) → `v2.slots[k]`. Seine Felder:
-  `hang` (FC:11177), die Spanne neu aus `ctx.hoehe` über `rechteck(slot.obb)` (FC:11041, wie FC:11110–11111), die Richtung
-  H(Frontmitte) − H(Rückmitte). Er druckt plattform/hanghaus/stelzen, Spanne Q10/50/90, Tal vorn/hinten, je Rolle, und die Kontrolle
-  Δ Haus = 0 (W, D, st, foundH gleich zwischen den Klassen). Alternative ohne Welt: `exportSettlement` mit einem Höhen-Raster, wie das
-  Labor es holt (worlds/fachwerk/fachwerk.js:234 `trasseAufWelt`) — dann gilt der Hang nur für diese Raster.
-- **G2 Die Ecke.** Eine Definition im Plan (§0.6), und die heutige Zahl unter genau dieser Definition.
-- **G3 Die 16 Vorher-Bilder** am main-Kopf (entscheid-v2.md §0 Punkt 6; Treiber p3/n1811/bau-bild, ungefahren).
-- **G4 Die fehlenden Zähler am Haus des Kerns:** S2 (Zonen + Ständer), S8 (auf den Export), S9 (`hp.grundriss`), S10 (Ruf je Los
-  kalt/warm). Jeder Zähler druckt erst den HEUTE-Wert. S2 heute am HAUS ist nie gezählt; `postsRing` spart nur die Haustür aus (FC:452).
-- **G5 S3/S5 über `hp.schritte`.** Der Zähler liest die Schritte; die HEUTE-Zahl (66,0 % / 22,3 %) bleibt die des Nachbaus.
-- **G6 Die Menge.** Dieselben 30 Pläne G (Saat 1–30, nH 90, pool.cjs:94–100). Ändert die Absteckung die Zahl der Lose (§0.8), gelten
-  S1/S8/S9 als Anteile an der neuen Menge, und die Zahl der Lose je Plan steht neben dem Wort nH.
-- **G7 Preis-Grundlinie:** `bauRezept` 0,6–0,7 µs warm / 2,7–4,2 µs kalt, DORF nH 90 0,71–5,2 ms (entscheid-v2.md §3, Runde 1) —
-  im selben Prozess wie der künftige Ruf neu gemessen.
+**Grundlinie (in dieser Reihenfolge, alles vor dem Spike):**
+- **G1 Zähler S2 am Haus:** `HAUS.dims.zonen` (Tür, Lauf, Podest 0,9 m ab Wandachse) gegen die Ständer in `geruest`. Er druckt den
+  Wert HEUTE (am Haus nie gezählt; `postsRing` spart nur die Haustür aus, FC:452).
+- **G2 Zähler S3, S5, S8, S9, S10 über `hp.schritte` und den Export:**
+  - S3/S5 lesen `hp.schritte`; die HEUTE-Zahl bleibt die des Nachbaus (66,0 % / 22,3 %), als Vorher-Zahl, nicht als Richter.
+  - S8 liest den Export derselben Stadt.
+  - S9 liest `hp.grundriss`.
+  - S10 ruft je Los kalt und warm in einem Prozess (Vorher: bauRezept 0,6–4,2 µs, DORF nH 90 0,71–5,2 ms).
+- **G3 Zähler S6:** Nachrechnung Stand aus Zins(Viertel, Lage).
+- **G4 Hang-Zähler in der Welt:**
+  - Gelesen wird je Ort `ortWahl` (voxel-worker.js:926 ff.) → `v2.slots[k]`.
+  - Je Slot: `hang` (FC:11177), Spanne neu aus `ctx.hoehe` über `rechteck(slot.obb)` (FC:11041, wie 11110–11111), Richtung
+    H(Front) − H(Rück).
+  - Ausgabe: Anteile plattform/hanghaus/stelzen, Spanne Q10/50/90, Tal vorn/hinten, je Rolle; Kontrolle Δ Haus = 0.
+  - Ohne Welt: Export mit dem Raster, das das Labor holt (worlds/fachwerk/fachwerk.js:234).
+- **G5 Feld der Block-Einheit:** sobald `hp.blockEinheit` reist, zählt `zaehl-los.cjs` Zusatz E1 ohne Umbau. Vorher-Zahlen stehen in §4 S4.
+- **G6 Die Menge:** dieselbe Stadt (Saat 1–30, Wort nH 90, pool.cjs:94–100); die Zahl der Lose heute (2 595 Haushalts-Lose) und am
+  Gesetz nebeneinander (E6).
+- **G7 Die 16 Vorher-Bilder** am main-Kopf (Treiber p3/n1811/bau-bild, ungefahren).
 
-**Reihenfolge, in der die Glieder gebaut werden können** (jede Stufe ersetzt; keine läuft neben der alten; jede ist für sich am Bild
-prüfbar):
-1. **Plan:** `kante.klasse` aus L15 auf jeder Kante, der Markt als Ursprung des Abstands. Häuser byte-gleich. Bild: die Straßen nach
-   Klasse eingefärbt (Blick-Sonde).
-2. **Los:** die Absteckung teilt jede Kante. `tryPlace` fällt (F1–F4); das heutige Haus steht in seinem Los, Front an der Front des
-   Loses. Gezählt: S4, der Anteil „Hülle überragt das Los", `hp.ecke`, `hp.hang` (wo ein Raster da ist). Bild: die Los-Grenzen in der
-   Gasse.
-3. **Stand und Gewerbe aus der Lage** (F5, F12). Gezählt: S6. Bild: die Viertel nach Gewerbe.
-4. **Hülle aus Los, Klasse und Stand** (F6–F11, F16, F26, F27). Erste Stufe, die das Haus ändert. Gezählt: S3, S5, S8. Bild: die
-   Gasse am selben Standpunkt wie G3.
-5. **Haushalt und Grundriss in der Hülle** (Naht Person; F22, F23, F25). Gezählt: S9. Bild: Innenraum Stube/Kammer.
-6. **Tragwerk aus dem Grundriss** (F19–F21). Gezählt: S1, S2. Bild: Dachboden und EG-Decke von unten.
-7. **Sockel aus dem Hang, Schau-Seite aus der Ecke** (F17, F18; Naht Erdbau, Bahn 1). Gezählt: S7. Bild: ein Hanghaus von der Talseite,
-   ein Eckhaus von der Seitenstraße.
-8. **Dach aus Spannweite und Stoff** (F24). Bild: Dachwerk.
-9. **Zeit:** Teilung, Zusammenlegung, Aufstockung, Ersatzbau als benannte Schritte mit Samen aus der Adresse (F14, F15, F30). Gezählt:
-   S3 je Schritt einzeln. Bild: dieselbe Gasse in zwei Jahren.
-10. **Ferne liest dieselbe Kette** (F28, F29). Gezählt: Traufe nah = fern je Haus. Bild: die Stadt vom Hügel.
+**Reihenfolge der Glieder** (jede Stufe ersetzt; keine läuft neben der alten; jede am Bild prüfbar):
+1. **Plan:** Klasse und Breite je Kante, Block-Einheit und Tiefe ÷ Breite je Block. Häuser byte-gleich. Bild: Straßen nach Klasse.
+2. **Los:** die Absteckung in Vierteln; `tryPlace` fällt (F1–F4, F29–F31). Das heutige Haus steht in seinem Los. Gezählt: S4, Anteil
+   „Hülle überragt das Los“, Zahl der Lose gegen nH. Bild: Los-Grenzen.
+3. **Zins, Stand und Gewerbe** (F5, F12). Gezählt: S6. Bild: die Viertel nach Gewerbe.
+4. **Hülle und Höhe** aus Los, Klasse, Breite (F6–F11, F16, F26, F27, F28). Gezählt: S3, S5, S8. Bild: die Gasse wie G7.
+5. **Haushalt und Grundriss** (F22, F23, F25). Gezählt: S9. Bild: Innenraum, Laden vorn.
+6. **Tragwerk aus dem Grundriss** (F19–F21). Gezählt: S1, S2. Bild: EG-Decke von unten.
+7. **Sockel aus dem Gefälle, Ecke** (F17, F18). Gezählt: S7. Bild: Hanghaus von der Talseite, Eckhaus.
+8. **Dach** aus Deckung und Spannweite (F24). Bild: Dachwerk.
+9. **Zeit:** erst Teilung der Front, dann Füllung des Hofs, Ersatzbau (F14, F15). Gezählt: S3 je Schritt. Bild: dieselbe Gasse in zwei
+   Jahren.
+10. **Ferne** liest dieselbe Kette (F28, F29). Gezählt: Traufe nah = fern je Haus. Bild: die Stadt vom Hügel.
 
-S10 (Preis) ist auf jeder Stufe Bedingung.
+S10 ist auf jeder Stufe Bedingung.
