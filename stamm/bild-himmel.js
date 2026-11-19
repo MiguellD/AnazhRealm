@@ -81,6 +81,8 @@ class AnazhRealm_bild_himmel {
             // zwischen den Wolken nie (`_wolkenSchatten`)
             sonneKlar: uniform(1),
         });
+        // DAS BAND DER GALAXIE (stern-bild): seine Uniforms in derselben geteilten Heimat (`_kosmosBand` schreibt sie)
+        st.skyboxUniforms.band = this._uniformHeimatTeilen(__weltLicht.kosmosBandUniformen());
         return st.skyboxUniforms;
     }
 
@@ -365,60 +367,61 @@ class AnazhRealm_bild_himmel {
         const STAR_COUNT = H.n + NP;
         const RADIUS = 480; // knapp innerhalb der Skybox-Sphere (500)
         const positions = new Float32Array(STAR_COUNT * 3);
-        const colors = new Float32Array(STAR_COUNT * 3);
         const mags = new Float32Array(STAR_COUNT);
-        const tmpCol = new THREE.Color();
         for (let i = 0; i < H.n; i++) {
-            for (let c = 0; c < 3; c++) {
-                positions[i * 3 + c] = RADIUS * H.richtung[i * 3 + c];
-                colors[i * 3 + c] = H.ton[i * 3 + c];
-            }
+            for (let c = 0; c < 3; c++) positions[i * 3 + c] = RADIUS * H.richtung[i * 3 + c];
             mags[i] = H.mag[i];
         }
         // die Veränderlichen am Tag des Felds, die Planeten auf ihren Bahnen
         H.wechsel.forEach(([n], q) => (mags[n] = Z.wechselMag[q]));
         Z.planeten.forEach((p, q) => {
             const i = H.n + q;
-            for (let c = 0; c < 3; c++) {
-                positions[i * 3 + c] = RADIUS * p.richtung[c];
-                colors[i * 3 + c] = p.ton[c];
-            }
+            for (let c = 0; c < 3; c++) positions[i * 3 + c] = RADIUS * p.richtung[c];
             mags[i] = p.mag;
         });
-        // Jeder Stern ist ein 4-Vertex-Quad in einer InstancedMesh: die Quad-uv ist per TSL
-        // `attribute("uv", "vec2")` WGSL-konform lesbar → Soft-Falloff smoothstep(0.5..0.08).
-        // Quad-Normal zeigt zum Sphären-Zentrum (die Kamera — starField.position folgt ihr).
-        // worldSize ≈ aSize × 1.0: bei RADIUS=480, FOV 70° und 720p ist 1 Welt-Einheit ≈ 1 px — kein
-        // pixelRatio-Uniform, DPR wirkt über die Render-Auflösung.
+        // Jeder Stern ist ein 4-Vertex-Quad in einer InstancedMesh: die Quad-uv ist per TSL `attribute("uv", "vec2")` WGSL-konform
+        // lesbar → die Streu-Scheibe um die Mitte. Quad-Normal zeigt zum Sphären-Zentrum (die Kamera — starField.position folgt ihr).
         const TSL = THREE.TSL;
-        const { uniform, attribute, vec2, vec4, float, length, smoothstep } = TSL;
+        const { uniform, attribute, vec2, vec4, float, length } = TSL;
 
         const uOpacity = uniform(0.5);
-        // DER FUSSABDRUCK EINES PUNKTS (licht-eine-skala, S13): die Kante seines Quads in Welt-Einheiten auf der Stern-Kugel —
-        // `HIMMEL.sternPixel` Pixel des Szenen-Ziels (`_dayNightApplyStarField` schreibt sie aus Blickfeld und Höhe des Ziels).
-        // Die Breite, die das Auge sieht, kommt aus dem Streulicht der Kette, nie aus der Geometrie. Die Sichtbarkeit ist der
-        // Kontrast gegen den Himmel daneben: bis hier dämpfte ein eigener Schwellen-Term (`sternKontrast` über der Grenzgröße)
-        // jeden Punkt, und das Quad von 3–6,5 Einheiten verdünnte sein Licht auf ein Zehntel — bei Mond stand kein Stern.
-        const uFuss = uniform(1);
+        // DAS PIXEL AUF DER KUGEL (licht-eine-skala, S13): die Kante eines Pixels des Szenen-Ziels in Welt-Einheiten auf der
+        // Stern-Kugel (`_dayNightApplyStarField` schreibt sie aus Blickfeld und Höhe des Ziels). Die Sichtbarkeit ist der Kontrast
+        // gegen den Himmel daneben — kein Schwellen-Term (`sternKontrast` fiel mit licht-eine-skala).
+        const uPixel = uniform(1);
 
         const planeGeo = new THREE.PlaneGeometry(1, 1);
+        // DIE KANTE JE PUNKT in Pixeln (`aKante`, `_sternPunkt` schreibt sie mit seinem Licht): so weit, wie sein Bild reicht
+        const aKante = new THREE.InstancedBufferAttribute(new Float32Array(STAR_COUNT), 1);
+        planeGeo.setAttribute("aKante", aKante);
+        const kante = attribute("aKante", "float");
 
         const starMat = new THREE.MeshBasicNodeMaterial();
         // die Vorlage des Quads wächst VOR der Instanz-Matrix (Lehre 22): die Instanz trägt Ort und Blick, der Stoff die Kante
-        starMat.positionNode = TSL.positionLocal.mul(uFuss);
-        // Soft-Falloff vom Quad-Center: smoothstep(0.5, 0.08, dist) ist die
-        // ursprüngliche V8.29-Formel — Quad-uv 0..1 mit Center bei (0.5, 0.5).
+        starMat.positionNode = TSL.positionLocal.mul(uPixel.mul(kante));
+        // DAS BILD EINES PUNKTS IST SEINE STREU-SCHEIBE (stern-bild; Moffat 1969, das Profil jeder Stern-Photometrie, IRAF/DAOPHOT):
+        // PSF(r) = (β − 1) ÷ (π α²) · (1 + r²/α²)^(−β) in Pixeln (`HIMMEL.sternBild`), auf der Kreis-Scheibe der Kante auf 1
+        // normiert — die Scheibe trägt GENAU das Licht der Größenklasse (Fläche × Leuchtdichte = Lichtstrom). Der schwache Punkt
+        // ist ein Sub-Pixel-Kern, dessen Deckung mit dem Strom fällt; der helle reicht mit seinem Saum weit über die Grenze des
+        // Sichtbaren: er steht als größere, weichere Scheibe. Bis stern-bild trug jeder Punkt dieselbe Fläche (smoothstep 0,5 →
+        // 0,08 auf 2 Pixeln Kante, `sternPixel`) — die Tonkurve sättigte jeden hellen Kern zum selben Punkt: Helligkeits-Spanne
+        // im Bild 1,2–1,4 Größenklassen.
+        const SB = AnazhRealm.HIMMEL.sternBild;
         const uv = attribute("uv", "vec2");
-        const d = length(uv.sub(vec2(float(0.5), float(0.5))));
-        const falloff = smoothstep(float(0.5), float(0.08), d);
+        const r = length(uv.sub(vec2(float(0.5), float(0.5)))).mul(kante);
+        const halb = kante.mul(0.5);
+        const q = r.mul(r).mul(1 / (SB.alpha * SB.alpha));
+        const qR = halb.mul(halb).mul(1 / (SB.alpha * SB.alpha));
+        const psf = TSL.pow(q.add(1), -SB.beta).mul((SB.beta - 1) / (Math.PI * SB.alpha * SB.alpha));
+        const scheibe = float(1).sub(TSL.pow(qR.add(1), 1 - SB.beta));
         // DAS LICHT JE PUNKT trägt die Instanz-Farbe (`setColorAt`): r184 multipliziert sie selbst in die Farbe des Stoffs
         // (NodeMaterial.setupDiffuseColor, `vInstanceColor`) — EINMAL. Bis licht-eine-skala las der Knoten sie zusätzlich als
         // Attribut: die Farbe stand im Quadrat (bei Tönen um 1 unsichtbar; mit dem Licht in der EINEN Skala, 10⁻¹⁰ je Punkt,
         // trug das Quadrat 10⁻²⁰ — kein Stern im Bild, auch mit tausendfachem Licht und einem roten Stoff nicht).
-        // DIE LEUCHTDICHTE DES PUNKTS: sein Licht am Auge (die Instanz-Farbe, lx in der EINEN Skala) ÷ der Raumwinkel seines
-        // Fußabdrucks (Kante² × der Anteil des weichen Abfalls ÷ Radius²) — m 0 in 2 Pixeln Kante bei 810 Zeilen: 0,7 cd/m²
-        const raumwinkel = uFuss.mul(uFuss).mul(AnazhRealm.HIMMEL.sternAbfall / (RADIUS * RADIUS));
-        starMat.colorNode = vec4(TSL.vec3(1).div(raumwinkel), falloff.mul(uOpacity));
+        // DIE LEUCHTDICHTE AM PIXEL: sein Licht am Auge (die Instanz-Farbe, lx in der EINEN Skala) × PSF ÷ der Raumwinkel eines
+        // Pixels (Pixel² ÷ Radius²) — außerhalb der Scheibe nichts (der Kreis, der die Normierung trägt)
+        const raumwinkel = uPixel.mul(uPixel).mul(1 / (RADIUS * RADIUS));
+        starMat.colorNode = vec4(TSL.vec3(psf.div(scheibe.mul(raumwinkel))), TSL.step(r, halb).mul(uOpacity));
 
         // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
         starMat.transparent = true;
@@ -443,26 +446,19 @@ class AnazhRealm_bild_himmel {
         // ist kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
         this.state.starFieldUniforms = {
             opacity: uOpacity,
-            fuss: uFuss,
+            pixel: uPixel,
             radius: RADIUS,
         };
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
         starField.name = "himmel-sterne";
-        // Per-Instance-Matrix (`_sternMatrix`): Translation auf die Sphäre + Rotation (Normal zum Zentrum), Kante 1 (den Fußabdruck
-        // trägt der Stoff, `uFuss`). Die Sterne einmal beim Build, die Planeten je Stufe des Tags; die siderale Rotation läuft über
-        // starField.rotation.
+        // Per-Instance-Matrix (`_sternMatrix`): Translation auf die Sphäre + Rotation (Normal zum Zentrum), Kante 1 (die Kante
+        // trägt der Stoff, `uPixel` × `aKante`). Die Sterne einmal beim Build, die Planeten je Stufe des Tags; die siderale Rotation
+        // läuft über starField.rotation.
+        starField.userData.kante = aKante;
         for (let i = 0; i < STAR_COUNT; i++) {
             AnazhRealm._sternMatrix(starField, i, positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
-            // DER STERN IST EINE PUNKT-QUELLE (licht-eine-skala): die Größenklasse m trägt die Beleuchtungsstärke
-            // `HIMMEL.sternLx0` · 10^(−0,4·m) am Auge in der EINEN Skala; der Stoff teilt sie durch den Raumwinkel seines
-            // Fußabdrucks (`uFuss`). Bis hierher trug jeder Punkt ≤ 0,9 Welt-Einheiten, 14 500 cd/m² im Maßstab der Sonne.
-            // Sein Ton trägt die Luma 1 (`_lichtLinear`, die EINE Norm der Lichtfarbe): bis hier trug er sie mit (warm 0,925,
-            // kühl 0,853), der Stern stand 7–15 % unter seiner Größenklasse.
-            starField.setColorAt(
-                i,
-                this._sternLicht(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2], mags[i], tmpCol)
-            );
+            this._sternPunkt(starField, i, i < H.n ? H.kelvin[i] : Z.planeten[i - H.n].ton, mags[i]);
         }
         // der Stand, den das Feld zeigt: die Saat seines Himmels und die Stufe des Tags (`_kosmosFeldZeit` folgt ihr)
         starField.userData.kosmos = k;
@@ -470,6 +466,7 @@ class AnazhRealm_bild_himmel {
         starField.userData.radius = RADIUS;
         starField.instanceMatrix.needsUpdate = true;
         if (starField.instanceColor) starField.instanceColor.needsUpdate = true;
+        aKante.needsUpdate = true;
         starField.userData.mags = mags; // die Größenklasse je Punkt (Linsen zählen an ihr, was im Bild steht)
         starField.frustumCulled = false;
         // Sterne werfen und empfangen keine Schatten (unendlich ferne Billboards).
@@ -482,12 +479,50 @@ class AnazhRealm_bild_himmel {
         );
     }
 
-    // DAS LICHT EINES PUNKTS am Auge in der EINEN Skala (licht-eine-skala): sein Ton in der Norm der Lichtfarbe (`_lichtLinear`,
-    // Luma 1) × die Beleuchtungsstärke seiner Größenklasse `HIMMEL.sternLx0` · 10^(−0,4·m) — die Instanz-Farbe des Felds.
-    _sternLicht(r, g, b, m, out) {
-        out.setRGB(r, g, b);
-        const lum = (AnazhRealm.HIMMEL.sternLx0 * 10 ** (-0.4 * m)) / __weltLicht.EINHEIT_LX;
-        return this._lichtLinear({ farbe: out }, out).multiplyScalar(lum);
+    // DER PUNKT i DES FELDS, der EINE Schreiber seines Bilds (licht-eine-skala, stern-bild): sein Licht am Auge in der EINEN Skala —
+    // die Farbe des Sterns ist die seiner Temperatur (`kelvin`, der Planck-Ort über `_lichtLinear`, Luma 1), die des Planeten sein
+    // Ton (rgb, das Licht der Sonne von seiner Fläche) — × die Beleuchtungsstärke seiner Größenklasse `KOSMOS.sternLx0` · 10^(−0,4·m)
+    // (die Instanz-Farbe), und die Kante seiner Streu-Scheibe (`aKante`, `_sternKante`).
+    _sternPunkt(sf, i, ton, m) {
+        const c = this._sternPunktFarbe || (this._sternPunktFarbe = new THREE.Color());
+        const L = typeof ton === "number" ? { kelvin: ton } : { farbe: c.setRGB(ton[0], ton[1], ton[2]) };
+        const lum = (__weltLicht.KOSMOS.sternLx0 * 10 ** (-0.4 * m)) / __weltLicht.EINHEIT_LX;
+        sf.setColorAt(i, this._lichtLinear(L, c).multiplyScalar(lum));
+        sf.userData.kante.array[i] = AnazhRealm._sternKante(m);
+    }
+
+    // DAS BAND DES KOSMOS k in den Uniforms des Himmels (stern-bild, welt-licht.js `kosmosBand`): je Klasse ihr Licht je pc
+    // Sehstrahl in der Farbe ihrer Temperatur (`_lichtLinear`, Luma 1) ÷ EINHEIT_LX, ihre Höhe und ihre Weite s0; einmal je Saat,
+    // mit dem Feld (seine Drehung trägt die Lage des Bands, `_kosmosBandLage`)
+    _kosmosBand(k) {
+        const U = this.state.skyboxUniforms && this.state.skyboxUniforms.band;
+        if (!U || U.kosmos === k || !this.state.starField) return;
+        U.kosmos = k;
+        const B = __weltLicht.kosmosBand(k.K);
+        U.galaxie.value.set(1 / B.hR, B.R0, B.kappa, B.hd);
+        U.aussen.value.set(B.aussen[0], B.aussen[1]);
+        const c = new THREE.Color();
+        B.klassen.forEach((kl, i) => {
+            this._lichtLinear({ kelvin: kl.kelvin }, c).multiplyScalar(kl.a / __weltLicht.EINHEIT_LX);
+            U.farbe[i].value.set(c.r, c.g, c.b);
+            U.form[i].value.set(1 / kl.hz, kl.s0);
+        });
+        this._kosmosBandLage();
+    }
+
+    // DIE LAGE DES BANDS: Welt → Galaxie = Eᵀ · Rᵀ (R die siderale Drehung des Felds, E die Zeilen galaktisch → Feld,
+    // `kosmosSystem(…).ebene`) — je Bild mit der Drehung des Felds (`_loopRender`), dieselbe Lage wie jeder Punkt
+    _kosmosBandLage() {
+        const U = this.state.skyboxUniforms && this.state.skyboxUniforms.band;
+        const sf = this.state.starField;
+        if (!U || !U.kosmos || !sf) return;
+        const E = U.kosmos.K.heim.system.ebene;
+        const R = (this._bandDrehung || (this._bandDrehung = new THREE.Matrix3())).setFromMatrix4(
+            (this._bandM4 || (this._bandM4 = new THREE.Matrix4())).makeRotationFromEuler(sf.rotation)
+        );
+        // M = Eᵀ · Rᵀ = (R · E)ᵀ
+        const RE = U.lage.value.set(E[0], E[1], E[2], E[3], E[4], E[5], E[6], E[7], E[8]).premultiply(R);
+        RE.transpose();
     }
 
     // DER TAG DES FELDS: die Stufe des Tags hat sich bewegt (`_kosmosJetzt`) — die Veränderlichen tragen ihre Größe am neuen Tag,
@@ -498,18 +533,18 @@ class AnazhRealm_bild_himmel {
             Z = k.zeit,
             R = sf.userData.radius,
             mags = sf.userData.mags;
-        const c = new THREE.Color();
         H.wechsel.forEach(([n], q) => {
             mags[n] = Z.wechselMag[q];
-            sf.setColorAt(n, this._sternLicht(H.ton[n * 3], H.ton[n * 3 + 1], H.ton[n * 3 + 2], mags[n], c));
+            this._sternPunkt(sf, n, H.kelvin[n], mags[n]);
         });
         Z.planeten.forEach((p, q) => {
             const i = H.n + q;
             mags[i] = p.mag;
-            sf.setColorAt(i, this._sternLicht(p.ton[0], p.ton[1], p.ton[2], p.mag, c));
+            this._sternPunkt(sf, i, p.ton, p.mag);
             AnazhRealm._sternMatrix(sf, i, R * p.richtung[0], R * p.richtung[1], R * p.richtung[2]);
         });
         if (sf.instanceColor) sf.instanceColor.needsUpdate = true;
+        sf.userData.kante.needsUpdate = true;
         if (Z.planeten.length) {
             sf.instanceMatrix.clearUpdateRanges();
             sf.instanceMatrix.addUpdateRange(H.n * 16, Z.planeten.length * 16);
@@ -1837,20 +1872,18 @@ class AnazhRealm_bild_himmel {
         // ein neuer Samen (Welt-Wechsel): das Feld zeigt den Himmel der neuen Saat; eine neue Stufe des Tags: Planeten und
         // Veränderliche ziehen nach
         if (this.state.starField && this.state.starField.userData.kosmos !== k) this._buildStarField();
+        this._kosmosBand(k);
         const sf0 = this.state.starField;
         if (sf0 && sf0.userData.t !== k.t) this._kosmosFeldZeit(sf0, k);
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
         u.opacity.value = skyMul;
-        // der Fußabdruck: `sternPixel` Pixel des Ziels, in das die Szene zeichnet, auf der Stern-Kugel (Blickfeld ÷ Zeilen × Radius)
-        // — das Szenen-Ziel der Post-Kette, ohne sie der Zeichenpuffer (`_schirm`); bis hier blieb der Fußabdruck ohne Szenen-Ziel
-        // ungeschrieben (der Wert des Baus)
+        // das Pixel: ein Pixel des Ziels, in das die Szene zeichnet, auf der Stern-Kugel (Blickfeld ÷ Zeilen × Radius) — das
+        // Szenen-Ziel der Post-Kette, ohne sie der Zeichenpuffer (`_schirm`); bis hier blieb es ohne Szenen-Ziel ungeschrieben
         const cam = this.state.camera;
         const ziel = this.state.scenePass && this.state.scenePass.renderTarget;
         const zeilen = ziel && ziel.height > 0 ? ziel.height : this._schirm().hoehe;
-        if (cam && zeilen > 0)
-            u.fuss.value =
-                ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / zeilen) * u.radius;
+        if (cam && zeilen > 0) u.pixel.value = ((2 * Math.tan((cam.fov * Math.PI) / 360)) / zeilen) * u.radius;
         const sf = this.state.starField;
         if (sf) sf.visible = zeigt;
     }
@@ -3336,20 +3369,11 @@ AnazhRealm._schirmDreieck = __weltLicht.schirmDreieck; // der Baustein der Engin
 AnazhRealm.HIMMEL = Object.freeze({
     grenzgroesse: __weltLicht.GRENZGROESSE, // die Anker der EINEN Tag-Achse (welt-licht.js `tagAchse`)
     kosmosSchrittTage: 1 / 96,
-    // die Beleuchtungsstärke eines Sterns der Größenklasse 0 am Auge in lx (die photometrische Skala der visuellen
-    // Größenklasse: m = −2,5 · log10(E) − 13,98, also 2,54 µlx bei m 0), und der Anteil des Stern-Quads, den sein weicher
-    // Abfall füllt (das Integral von 1 − smoothstep(0,08; 0,5; d) über die Scheibe, `_buildStarField`)
-    sternLx0: 2.54e-6,
-    sternAbfall: (() => {
-        let f = 0;
-        for (let i = 0; i < 500; i++) {
-            const d = (i + 0.5) / 1000;
-            const t = Math.min(1, Math.max(0, (d - 0.08) / 0.42));
-            f += 2 * Math.PI * d * (1 - t * t * (3 - 2 * t)) * 0.001;
-        }
-        return f;
-    })(),
-    sternPixel: 2, // die Kante des Punkt-Quads in Pixeln des Szenen-Ziels (sein weicher Abfall füllt 0,29 davon: ≈ 1 Pixel)
+    // DIE STREU-SCHEIBE EINES PUNKTS (stern-bild, `_buildStarField`): das Moffat-Profil in Pixeln des Szenen-Ziels — Breite `alpha`
+    // (FWHM 2α·√(2^(1/β) − 1) = 0,77 Pixel: der Kern trägt im Mittel so viel Leuchtdichte wie der 2-Pixel-Abfall bis stern-bild),
+    // der Saum `beta` (r^(−2β)); die Scheibe reicht, bis ihr Saum unter ein `saum`-tel des Kerns eines Sterns der Feldgrenze fällt
+    // (`_sternKante`), mindestens `kernPx` Pixel weit (dort trägt die Scheibe ≥ 91 % des Profils, die Normierung den Rest)
+    sternBild: Object.freeze({ alpha: 0.6, beta: 2, saum: 4, kernPx: 2 }),
     // die Leuchtdichte der Vollmond-Scheibe in cd/m² (≈ 2 500; ihr Licht ADDIERT sich zum Himmel vor ihr — am Tag steht sie
     // als blasser Schleier im Blau, 2 500 gegen ≈ 5 000–8 000 cd/m², nachts als die hellste Fläche des Bilds)
     mondCd: 2500,
@@ -3360,8 +3384,16 @@ AnazhRealm.HIMMEL = Object.freeze({
     sonneWinkelGrad: 0.53,
     sonneCd: 1.6e9,
 });
+// DIE KANTE DER STREU-SCHEIBE eines Punkts der Größenklasse m in Pixeln (`_sternPunkt`): der Radius, an dem sein Moffat-Saum auf
+// 1/saum des Kerns eines Sterns der Feldgrenze fällt (α · √((saum · 10^(0,4·(G − m)))^(1/β) − 1)), mindestens `kernPx` — der
+// hellste Punkt (Venus −4,4) reicht 10 Pixel weit, Sirius-gleich (−1,5) 5, die Feldgrenze 2. Die Fläche wächst mit dem Licht.
+AnazhRealm._sternKante = (m) => {
+    const S = AnazhRealm.HIMMEL.sternBild;
+    const v = Math.pow(S.saum * Math.pow(10, 0.4 * (__weltLicht.KOSMOS.feldGrenze - m)), 1 / S.beta) - 1;
+    return 2 * Math.max(S.kernPx, v > 0 ? S.alpha * Math.sqrt(v) : 0);
+};
 // DIE MATRIX EINES PUNKTS (`_buildStarField`, `_kosmosFeldZeit`): der Punkt (x, y, z) auf der Kuppel des Felds, das Quad zur
-// Mitte gewandt (die Kamera — starField folgt ihr), Kante 1 — die Kante des Fußabdrucks trägt der Stoff (`uFuss`, Lehre 22)
+// Mitte gewandt (die Kamera — starField folgt ihr), Kante 1 — die Kante der Streu-Scheibe trägt der Stoff (`uPixel` × `aKante`, Lehre 22)
 AnazhRealm._sternMatrix = (sf, i, x, y, z) => {
     const T =
         AnazhRealm._sternMatrixTmp ||

@@ -2426,6 +2426,7 @@ class AnazhRealm_dirigent_takt {
             this.state.starField.position.copy(this.state.camera.position);
             const tod = this.state.timeOfDay || 0;
             this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
+            this._kosmosBandLage(); // das Band der Galaxie dreht mit (stern-bild)
         }
         // WELLE J3 — Sonne·Mond SYNCHRON an die Kamera heften (wie das
         // Stern-Feld) → sie stehen fest am Himmel statt um den Welt-Ursprung zu
