@@ -90,3 +90,42 @@ Was die Messung an Gesetz und Soll ändert (kein Soll wird bewegt; zwei Zeilen f
    Bild liegt bei ihnen zwischen 6 und 12 m; B2 ist heute ROT; B4 landet zwischen −15 und −30 %.
 5. Unbelegt und so benannt: nur Samen 1 · japanisch/chinesisch L2 springen bei 6 m auf 40 px ohne Erklärung · `fachwerk-core.js`
    weicht am gelesenen Baum um 361 Zeilen von main ab · `haelt`, `g` und die Hysterese sind ungemessen.
+
+## E7 — Die Stufe fällt in die Sicht (19.11., Wort des Schöpfers)
+
+Wort: „bauen wir dann nicht wieder das LOD-System für jedes Asset einzeln, müsste es nicht eine Art Ableitung geben, die nur die
+Dinge zeichnet, die man sieht … bei jedem System das gleiche?“ — Ja. Befund an der Quelle:
+- E6 (Stufe als Funktion der L0) nimmt jeder Stufe ihr eigenes Rezept, behält aber die diskreten Stufen L0/L1/L2 mit der Grenze
+  `d_k` — ein Stufen-Begriff je Vorlage bleibt. Das ist der halbe Schnitt.
+- Die Sicht entscheidet heute jedes System für sich. Die Siedlung trägt eine eigene Berg-Verdeckung und eine Wald-vor-Wald-Abfrage
+  je Region (`stamm/siedlung-instanz.js:130–305`), der Baum einen eigenen Early-Z-Kern (`stamm/vegetation-baum.js:540–586`).
+  Das sind getrennte Antworten auf EINE Frage: trägt das hier einen Pixel?
+- Das Werkzeug liegt im Vendor: three r184 WebGPU hat `drawIndexedIndirect`, `IndirectStorageBufferAttribute` und Compute
+  (`vendor/three.webgpu.min.js`).
+
+**Entscheid: EIN Gesetz — gezeichnet wird, was Pixel trägt.** Es hat zwei Hälften an EINEM Ort im Kern und gilt gleich für
+Haus, Wagen, Baum, Fels und Kreatur:
+1. **Detail = Pixel-Fehler.** Jede L0 wird EINMAL in Haufen (~128 Dreiecke) geschnitten. Eltern entstehen durch Verschmelzen
+   mit der Funktion aus E6: Zonen, Stoff und Öffnungen bleiben, Teile unter dem Bildpunkt gehen in den Stoff der Fläche. Je Bild
+   wählt der Schnitt durch die Hierarchie den Haufen, dessen Fehler am Schirm < 1 px ist. Es gibt kein `d_k`, keine L1/L2 und
+   keine Stufe je Vorlage.
+2. **Sicht = Tiefe.** Aus der Tiefe des letzten Bildes entsteht eine Hi-Z-Pyramide. Jeder Haufen prüft seine Hülle dagegen,
+   verdeckte zeichnen nicht. Das ersetzt Berg-Verdeckung, Wald-vor-Wald und die Kern-Tricks je System, sobald die Klasse fällt.
+
+Die Kosten folgen dem Schirm (Gebot 7), nie der Weltgröße.
+
+**Folge:**
+- Der Spike (b) der GTX 1050 (`einheit-stufe-aus-l0`) läuft weiter: seine Verschmelz-Funktion IST der Eltern-Bauer dieser
+  Hierarchie, generisch über jede L0, kein Fachwerk-Zweig.
+- Neu ist der **Spike SICHT** (Zweig `einheit-sicht`). Schritt 0 misst ZUERST, welcher Anteil der heute gezeichneten Dreiecke an
+  Wiese und Genesis (Ego + Third) keinen Pixel trägt (verdeckt oder unter dem Bildpunkt), am ID-Bild gezählt und nicht gerechnet.
+  Liegt er unter 30 %, ist der Hebel klein: stopp und Befund. Sonst folgt der Spike an EINER Klasse (die Häuser der Siedlung) mit
+  Hi-Z + Haufen-Schnitt hinter dem einen Kern-Modul.
+- Soll, gesetzt VOR der Messung:
+  - S1: gezeichnete Dreiecke im Blick ≤ 50 % von heute.
+  - S2: B1 ≤ 1 % der Objekt-Maske > 8/255 gegen die L0.
+  - S3: Draws ≤ heute.
+  - S4: Frame p95 an der Radeon ≤ heute.
+  - S5: das Bildpaar ohne sichtbares Ploppen bei Bewegung.
+- Meine Vorhersage: der Anteil ohne Pixel liegt an Wiese Third zwischen 55 und 75 %, davon der größere Teil verdeckt (Wände
+  hinter Wänden, Häuser hinter Häusern), nicht unter dem Bildpunkt.
