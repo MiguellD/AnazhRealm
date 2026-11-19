@@ -5477,7 +5477,7 @@
     function dorfLayout(plan, ext, seed, H){
   const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, n=ext.length, nG=plan.nGestalt||n;   /*nG: die Lose der GESTALT (der Chronik) — Mauer, Platz und Staende stehen fuer jeden Schnitt gleich*/
   let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
-  const losBaum=samenKern().samenBaum(seed), losWuerfe=[], losWurf=(i)=>losWuerfe[i]||(losWuerfe[i]=losBaum('los:'+i));   /*DER WUERFEL JE LOS (Welle SAMEN, los-wurf): jedes Los zieht Zeiger-Wahl, Versatz, Fuge und Scheunen-Stand aus seinem EIGENEN Strom — der Samen-Baum des Orts (`seed`) am Pfad `los:<i>` —, nie aus dem EINEN Strom `rnd` der Gestalt (Graph, Mauer, Baeume ziehen weiter aus ihm). Bis hier kippte ein Los an einer Probe, und jedes Los danach wuerfelte neu: an main 986eff04 stand Same 431794 85 m weiter, weil das Rathaus an seiner Weg-Probe 21 Versuche mehr brauchte (p3/n1911/los-huelle/ursache), die wachen 3 x 3 Kacheln trugen +11 Haeuser*/
+  const samenOrt=samenKern().samenBaum(seed), losWuerfe=[], losWurf=(i)=>losWuerfe[i]||(losWuerfe[i]=samenOrt('los:'+i));   /*DER WUERFEL JE LOS (Welle SAMEN, los-wurf): jedes Los zieht Zeiger-Wahl, Versatz, Fuge und Scheunen-Stand aus seinem EIGENEN Strom — der Samen-Baum des Orts (`seed`) am Pfad `los:<i>` —, nie aus dem EINEN Strom `rnd` der Gestalt (Graph, Vorstadt, Felder und Mauer ziehen weiter aus ihm; jeder Versuch eines Baums aus `baum:<n>`). Bis hier kippte ein Los an einer Probe, und jedes Los danach wuerfelte neu: an main 986eff04 stand Same 431794 85 m weiter, weil das Rathaus an seiner Weg-Probe 21 Versuche mehr brauchte (p3/n1911/los-huelle/ursache), die wachen 3 x 3 Kacheln trugen +11 Haeuser*/
   const staedt=plan.staedtisch;
   const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
   const DS=3;
@@ -5769,11 +5769,11 @@
   if(mauer){ X0=Math.min(X0,-Rw-8);X1=Math.max(X1,Rw+8);Z0=Math.min(Z0,-Rw-8);Z1=Math.max(Z1,Rw+8); }
   feldwege.forEach(fw=>fw.pts.forEach(q=>{ X0=Math.min(X0,q.x-4);X1=Math.max(X1,q.x+4);Z0=Math.min(Z0,q.z-4);Z1=Math.max(Z1,q.z+4); }));
   const trees=[]; let tries=0;
-  while(trees.length<Math.min(30,6+n)&&tries<520){ tries++;
+  while(trees.length<Math.min(30,6+n)&&tries<520){ tries++; const wb=samenOrt('baum:'+tries);   /*JE VERSUCH SEIN STROM (Welle SAMEN): ein Haus, das rueckt, verwirft einen Versuch — die Wuerfe der uebrigen bleiben (bis hier zog jeder Versuch aus `rnd`, und ein verworfener verschob jeden Baum danach)*/
     let tx,tz;
-    if(rnd()<0.58&&obbs.length){ const q2=obbs[(rnd()*obbs.length)|0].o;
-      tx=q2.cx+Math.sin(q2.phi)*(q2.ez+2.5+rnd()*5)+(rnd()-0.5)*7; tz=q2.cz+Math.cos(q2.phi)*(q2.ez+2.5+rnd()*5)+(rnd()-0.5)*7; }
-    else { tx=X0-6+rnd()*(X1-X0+12); tz=Z0-6+rnd()*(Z1-Z0+12); }
+    if(wb()<0.58&&obbs.length){ const q2=obbs[(wb()*obbs.length)|0].o;
+      tx=q2.cx+Math.sin(q2.phi)*(q2.ez+2.5+wb()*5)+(wb()-0.5)*7; tz=q2.cz+Math.cos(q2.phi)*(q2.ez+2.5+wb()*5)+(wb()-0.5)*7; }
+    else { tx=X0-6+wb()*(X1-X0+12); tz=Z0-6+wb()*(Z1-Z0+12); }
     let ok=true;
     for(const q2 of obbs) if(distPunktOBB(tx,tz,q2.o)<1.2){ok=false;break;}
     if(ok) for(const rd of roads){ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); if(Math.hypot(tx-q.x,tz-q.z)<rd.w/2+0.9){ok=false;break;} } if(!ok)break; }
@@ -5782,7 +5782,7 @@
     if(ok&&brunnen.some(b2=>Math.hypot(tx-b2.x,tz-b2.z)<3.5))ok=false;
     if(ok&&mauer&&Math.abs(Math.hypot(tx,tz)-Rw)<2.6)ok=false;
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
-    if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
+    if(ok) trees.push({x:tx,z:tz,h:2.6+wb()*1.8}); }
   const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
   const LATERNE_WAND=laterneWandM();   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
   const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:wegRand(rd)})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/

@@ -26,7 +26,7 @@ const {
 } = require("./lib/welt-boot.cjs");
 const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
 const { verkehrsnetzProben } = require("./lib/verkehrsnetz-proben.cjs");
-const { losProben, huelleProben } = require("./lib/los-proben.cjs");
+const { losProben, huelleProben, wurfProben } = require("./lib/los-proben.cjs");
 const {
     gassenGefaelle,
     erdbauMedian,
@@ -1110,6 +1110,7 @@ hauptLauf(async () => {
         check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
         errs.push(...breiteSelbsttest(taeterFaelle, breiteRollen)); // die Breite der Stadt: der grüne Gang und seine Täter
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden, taeter: true }); // die Hülle vor dem Schnitt fällt beim Namen
+        wurfProben(check, { kernText: kernText(), taeter: true }); // der EINE Strom der Lose (vor Welle SAMEN) fällt beim Los
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -1329,6 +1330,7 @@ hauptLauf(async () => {
         check("Snap-Probe: ferne Nachbarn (Fuge>1.8m) bleiben stehen", weit === 0, `snaps=${weit}`);
         losProben(FC, check);
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden }); // die Hülle liest keine Öffnung, das Los je Same wie am Golden
+        wurfProben(check, { kernText: kernText() }); // der Würfel je Los: eine Front würfelt kein anderes Haus neu (Welle SAMEN)
         const stadt = FC.exportSettlement({ seed: 7, nH: 60 }); // die Großstadt: ihre Reihen docken (der Markt-Flecken von 20 Häusern steht seit der Stadt-Grammatik in Vierteln ohne Reihe)
         const bwSlots = stadt.slots.filter((s) => s.ov?.brandwand).length;
         check(

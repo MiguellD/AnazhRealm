@@ -288,4 +288,58 @@ function huelleProben(FC, check, { kernText, golden, taeter = false }) {
     console.log(`  Hülle/Los: ${LOSE_FAELLE.length} Fälle × ${1 + Object.keys(OEFFNUNG_MUTANTEN).length} Kerne + Zensus ${Z.n} Bauten (${Z.gestapelt} gestapelt, ohne Liste) · ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
 
-module.exports = { losProben, huelleProben, oeffnungsZensus, zensusBauten, MARKE_TAETER, OEFFNUNG_MUTANTEN, HUELLE_TAETER, LOSE_FAELLE, kernMutante, kernAusText, loseVon, loseUrteil };
+// DER WÜRFEL JE LOS (Welle SAMEN, los-wurf): jedes Los zieht Zeiger-Wahl, Versatz, Fuge und Scheunen-Stand aus seinem EIGENEN
+// Strom (fachwerk `dorfLayout`, samen-core `samenBaum(seed)("los:<i>")`) — eine Front, die sich ändert, würfelt kein anderes Los neu.
+// Die Linse ändert je Fall jedes Los um WURF_DELTA (die Breite seiner Front, die Mitte bleibt; der Haken `__losStoer` am Ruf von
+// dorfLayout, sonst der Kern Zeichen für Zeichen) und zählt je Probe die ANDEREN Häuser, die fehlen, hinzukommen, weiter als
+// WURF_WANDER m wandern oder sich drehen. Bis zur Welle zogen alle Lose aus dem EINEN Strom `rnd`: kippte ein Los an einer Probe,
+// stand Same 431794 85 m weiter (p3/n1911/los-huelle/ursache). Der Täter des Selbsttests ist dieser EINE Strom: ROT beim Los.
+const WURF_FAELLE = [
+    { seed: 3, nH: 12 },
+    { seed: 12345, nH: 6 },
+];
+const [WURF_DELTA, WURF_WANDER] = [0.05, 0.5];
+const LOS_HAKEN = ["var L = dorfLayout(p, ext.slice(von, bis), ", "var L = dorfLayout(p, (globalThis.__losStoer || function (e) { return e; })(ext.slice(von, bis), von), "]; // prettier-ignore
+const WURF_TAETER = [
+    ["const g=plan.houses[i], wurf=losWurf(i);", "const g=plan.houses[i], wurf=rnd;"],
+    ["    const wurf=losWurf(i);", "    const wurf=rnd;"],
+];
+// je Fall und Los: die anderen Häuser, die anders stehen, beim Namen (Same#n)
+function wurfAnders(K) {
+    const out = [];
+    const haeuser = (ex) => {
+        const n = {};
+        return new Map(ex.slots.map((s) => [s.seed + "#" + (n[s.seed] = (n[s.seed] || 0) + 1), s]));
+    };
+    for (const dp of WURF_FAELLE) {
+        globalThis.__losStoer = null;
+        const H0 = haeuser(K.exportSettlement(dp)),
+            lose = K.DORF(dp).houses;
+        lose.forEach((h, k) => {
+            globalThis.__losStoer = (ext, von) => ext.map((e, j) => (j + von === k ? Object.assign({}, e, { x0: e.x0 - WURF_DELTA / 2, x1: e.x1 + WURF_DELTA / 2 }) : e)); // prettier-ignore
+            const H1 = haeuser(K.exportSettlement(dp));
+            globalThis.__losStoer = null;
+            for (const key of new Set([...H0.keys(), ...H1.keys()])) {
+                if (key.startsWith(h.seed + "#")) continue;
+                const [a, b] = [H0.get(key), H1.get(key)];
+                const d = a && b ? Math.hypot(a.x - b.x, a.z - b.z) : Infinity;
+                if (!(d <= WURF_WANDER) || Math.abs(Math.atan2(Math.sin(a.phi - b.phi), Math.cos(a.phi - b.phi))) > 0.05)
+                    out.push(`dorf ${dp.seed}/${dp.nH} Los ${k} (${h.rolle}) ±${WURF_DELTA * 100} cm → ${key} ${a && b ? d.toFixed(2) + " m" : a ? "fällt" : "kommt"}`);
+            }
+        });
+    }
+    return out;
+}
+function wurfProben(check, { kernText, taeter = false }) {
+    const t0 = Date.now();
+    const m = kernMutante(kernText, taeter ? [LOS_HAKEN, ...WURF_TAETER] : [LOS_HAKEN]);
+    const v = m.text ? wurfAnders(kernAusText(m.text, taeter ? "wurf-taeter" : "wurf")) : null;
+    const n = WURF_FAELLE.map((dp) => dp.seed + "/" + dp.nH).join(", ");
+    if (taeter)
+        check(`Selbst-Test Würfel je Los: der EINE Strom (jedes Los zieht aus rnd) fällt beim Los (${n})`, !!v && v.length > 0, m.fehlt || `${v.length} — ${v.slice(0, 2).join(" · ")}`);
+    else
+        check(`Würfel je Los (${n}): eine Front ±${WURF_DELTA * 100} cm würfelt kein anderes Haus neu (fehlt · kommt · wandert > ${WURF_WANDER} m)`, !!v && !v.length, m.fehlt || `${v.length} — ${v.slice(0, 3).join(" · ")}`);
+    console.log(`  Würfel je Los${taeter ? " (Täter)" : ""}: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+}
+
+module.exports = { losProben, huelleProben, wurfProben, oeffnungsZensus, zensusBauten, MARKE_TAETER, OEFFNUNG_MUTANTEN, HUELLE_TAETER, LOSE_FAELLE, kernMutante, kernAusText, loseVon, loseUrteil };
