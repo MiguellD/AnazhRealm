@@ -907,9 +907,11 @@
   function innenwaende(){const g=grp(); if(ROUND)return g; const t=0.12,dW=1.0,dH=2.0; let curK=0;
     const seg=(h,f,a0,a1,hh,y0)=>{ if(a1-a0<0.05)return; const ac=(a0+a1)/2,al=a1-a0; if(h){beam(g,ac,y0+hh/2,f,al,hh,t,'gefach');addSolid(ac,y0+hh/2,f,al,hh,t);} else {beam(g,f,y0+hh/2,ac,t,hh,al,'gefach');addSolid(f,y0+hh/2,ac,t,hh,al);} };
     const door=(h,f,c,y0,hh)=>{ const lw=dW-0.08,lh=dH-0.08,openA=h?1.4:1.4*Math.sign(f||1),yT=y0+dH+0.12,yB=y0+hh,yc=(yT+yB)/2,yh=yB-yT; let lg,block;
-      if(h){ beam(g,c-dW/2,y0+dH/2,f,0.1,dH,t+0.02,'holz');beam(g,c+dW/2,y0+dH/2,f,0.1,dH,t+0.02,'holz');beam(g,c,y0+dH+0.06,f,dW+0.2,0.12,t+0.02,'holz');
+      if(h){ oeffnung(g,()=>{ beam(g,c-dW/2,y0+dH/2,f,0.1,dH,t+0.02,'holz');beam(g,c+dW/2,y0+dH/2,f,0.1,dH,t+0.02,'holz');beam(g,c,y0+dH+0.06,f,dW+0.2,0.12,t+0.02,'holz'); });   // Stock + Sturz der Innentür (Öffnung)
+       
         if(yh>0.05){beam(g,c,yc,f,dW+0.2,yh,t,'gefach');addSolid(c,yc,f,dW+0.2,yh,t);} lg=grp(); bohle(lg,lw/2,y0+dH/2,0,lw,lh,true,'holz'); lg.position.set(...deform(c-dW/2+0.04,0,f)); block=[c-dW/2,y0,f-0.08,c+dW/2,y0+dH,f+0.08]; }
-      else { beam(g,f,y0+dH/2,c-dW/2,t+0.02,dH,0.1,'holz');beam(g,f,y0+dH/2,c+dW/2,t+0.02,dH,0.1,'holz');beam(g,f,y0+dH+0.06,c,t+0.02,0.12,dW+0.2,'holz');
+      else { oeffnung(g,()=>{ beam(g,f,y0+dH/2,c-dW/2,t+0.02,dH,0.1,'holz');beam(g,f,y0+dH/2,c+dW/2,t+0.02,dH,0.1,'holz');beam(g,f,y0+dH+0.06,c,t+0.02,0.12,dW+0.2,'holz'); });
+       
         if(yh>0.05){beam(g,f,yc,c,t,yh,dW+0.2,'gefach');addSolid(f,yc,c,t,yh,dW+0.2);} lg=grp(); bohle(lg,0,y0+dH/2,lw/2,lw,lh,false,'holz'); lg.position.set(...deform(f,0,c-dW/2+0.04)); block=[f-0.08,y0,c-dW/2,f+0.08,y0+dH,c+dW/2]; }
       lg.rotation.y=openA; lg.userData={door:true,preOpen:true,openA,block}; g.add(lg);
       if(h) addCircR(c-dW/2, f-0.8, c+dW/2, f+0.8, curK,'tür'); else addCircR(f-0.8, c-dW/2, f+0.8, c+dW/2, curK,'tür'); };   // Türschwung = volle Blattlänge ~0.8 m → kein Möbel im Schwenkbereich
@@ -1650,10 +1652,11 @@
       for(let lv=0;lv<nLev;lv++){ const y0=baseY+lv*P.egH, wH=P.egH;
         if(isDoor&&lv===0){ lichtAuf(x,y0+(wH-0.8)/2,z,chord,wH-0.8,'x',0); beam(g,x,y0+wH-0.4,z,chord,0.8,0.3,wr,[0,Math.PI/2-a,0]); continue; }
         if(s%2===0){ beam(g,x,y0+0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]); beam(g,x,y0+wH-0.5,z,chord,1.0,0.3,wr,[0,Math.PI/2-a,0]);
-          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; lichtAuf(x,wy,z,ww*0.9,wh,'x',1); beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);
-          beam(g,x,wy+wh/2+0.07,z,ww+0.18,0.1,0.16,'holz',rr); beam(g,x,wy-wh/2-0.07,z,ww+0.2,0.1,0.18,'holz',rr); beam(g,x,wy,z,0.06,wh,0.13,'holz',rr); beam(g,x,wy,z,ww,0.06,0.13,'holz',rr); }
+          const ww=chord*0.5,wh=Math.max(0.5,wH-1.9),wy=y0+wH/2,rr=[0,Math.PI/2-a,0]; lichtAuf(x,wy,z,ww*0.9,wh,'x',1); oeffnung(g,()=>{ beam(g,x,wy,z,ww*0.9,wh,0.1,'glas',rr);   // das Fenster des Rundbaus als Öffnung (Marke `oeffnung`): Glas, Sturz, Bank, Kreuz
+          beam(g,x,wy+wh/2+0.07,z,ww+0.18,0.1,0.16,'holz',rr); beam(g,x,wy-wh/2-0.07,z,ww+0.2,0.1,0.18,'holz',rr); beam(g,x,wy,z,0.06,wh,0.13,'holz',rr); beam(g,x,wy,z,ww,0.06,0.13,'holz',rr); }); }
         else beam(g,x,y0+wH/2,z,chord,wH,0.3,wr,[0,Math.PI/2-a,0]); } }
-    { const dHalf=Math.min(1.1,Math.max(0.7,2*Math.PI*rad/seg)), bt=(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund'; bogenRahmen(g,0,baseY+P.egH-0.6,-rad-0.04,dHalf,true,bt,wr); beam(g,0,baseY-0.02,-rad-0.02,2*dHalf+0.3,0.06,0.35,'stein'); for(let st=0;st<4;st++)beam(g,0,baseY-0.12-st*0.16,-rad-0.35-st*0.32,2*dHalf+0.1,0.16,0.4,'stein'); }   // RUNDBAU-TÜR: der Bogen fliesst auch hier durch + Eingangsstufen
+    { const dHalf=Math.min(1.1,Math.max(0.7,2*Math.PI*rad/seg)), bt=(P.bogenTyp&&P.bogenTyp!=='none')?P.bogenTyp:'rund'; oeffnung(g,()=>{ bogenRahmen(g,0,baseY+P.egH-0.6,-rad-0.04,dHalf,true,bt,wr); beam(g,0,baseY-0.02,-rad-0.02,2*dHalf+0.3,0.06,0.35,'stein'); });   // Bogen + Schwelle der Rundbau-Tür (Öffnung)
+      for(let st=0;st<4;st++)beam(g,0,baseY-0.12-st*0.16,-rad-0.35-st*0.32,2*dHalf+0.1,0.16,0.4,'stein'); }   // RUNDBAU-TÜR: der Bogen fliesst auch hier durch + Eingangsstufen
     { const iwr=(P.stil==='huette'||P.stil==='stroh')?'holz':'putz', tIW=0.18, gap=0.55, ri=rad-0.45;   // ECHTE INNENWAENDE: der Zylinder bekommt Raeume statt leerer Roehre
       for(let lv=0; lv<nLev; lv++){ const y0=baseY+lv*P.egH, wh=P.egH, ym=y0+wh/2;
         beam(g, 0, ym, -(ri+gap)/2, tIW, wh, ri-gap, iwr); beam(g, 0, ym, (ri+gap)/2, tIW, wh, ri-gap, iwr);   // Spine entlang z, mittige Tuerluecke
@@ -1767,7 +1770,7 @@
     [-Dp/2,Dp/2].forEach(zf=>beam(g,0,(base+springY)/2,zf,W,springY-base,0.22,'putz'));   // TAMBOUR-KASTEN: schliesst Wandkrone→Springlinie an den Seiten (Pendentifs bleiben innen) → kein Durchblick mehr
     [-W/2,W/2].forEach(xf=>beam(g,xf,(base+springY)/2,0,0.22,springY-base,Dp,'putz'));
     beam(g,0,springY-0.04,0,W,0.1,Dp,'putz');   // Deck auf dem Kasten → der Dom sitzt auf einer Flaeche
-    [-Dp/2,Dp/2].forEach(zf=>{ for(let i=-1;i<=1;i++) beam(g,i*W*0.27,base+(springY-base)*0.55,zf,W*0.13,(springY-base)*0.42,0.05,'glas'); }); [-W/2,W/2].forEach(xf=>{ for(let i=-1;i<=1;i++) beam(g,xf,base+(springY-base)*0.55,i*Dp*0.27,0.05,(springY-base)*0.42,Dp*0.13,'glas'); });   // Fenster im Tambour-Kasten (ersetzt die innen verdeckte Rundtrommel)
+    oeffnung(g,()=>{ [-Dp/2,Dp/2].forEach(zf=>{ for(let i=-1;i<=1;i++) beam(g,i*W*0.27,base+(springY-base)*0.55,zf,W*0.13,(springY-base)*0.42,0.05,'glas'); }); [-W/2,W/2].forEach(xf=>{ for(let i=-1;i<=1;i++) beam(g,xf,base+(springY-base)*0.55,i*Dp*0.27,0.05,(springY-base)*0.42,Dp*0.13,'glas'); }); });   // (Marke `oeffnung`) Fenster im Tambour-Kasten (ersetzt die innen verdeckte Rundtrommel)
     for(let bd=0;bd<bands;bd++){ const a=prof(bd/bands),bb=prof((bd+1)/bands),r0=a[0],y0=a[1],r1=bb[0],y1=bb[1];
       for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI,c0=Math.cos(a0),s0=Math.sin(a0),c1=Math.cos(a1),s1=Math.sin(a1);
         const P00=[r0*c0,y0,r0*s0],P01=[r0*c1,y0,r0*s1],P10=[r1*c0,y1,r1*s0],P11=[r1*c1,y1,r1*s1];
