@@ -115,3 +115,17 @@ Gelesen an der Mess-Datei der GTX am Runden-Kopf f68dbf09: von 498 Urteilen 3 gr
 **Gebucht seit 16:31:** richter-ohne-urteil (punkte-maschine c784e730), richter-saat (92cbf940). Entscheide E7 und E8 in vision/einheit/entscheid-einheit.md.
 
 **Ehrlich:** Die GPU-Probe von welt-tag-null 265c7f19 gab nach. Gestempelt wurde am GPU-Grün des baumgleichen Spielbaums 44e48a7e; das steht im Stempel-Text. Ob die 177 ungemessenen Stationen zurückkommen (tagNull), zeigt erst die nächste GTX-Runde.
+
+## 10 GESICHERT (21:23, Woche alle Modelle 98 %, Notbremse gezogen)
+
+Alle lokalen Arbeiter sind beendet, ihr Stand ist gepusht (per ls-remote). notbremse.sh lief nur trocken. Die Bäume von heute waren sauber gepusht; die alten w27-/heim3-Bäume melden 36–420 Checkout-Artefakte und werden NIE gesichert. aufraeumen.ps1 lief nicht. main 92b7afd0 V18.546.345 (welt-tag-null gelandet), Zug z629 fährt mit kern-sprossen-heil.
+
+| Zweig | Kopf | Stand | nächster Handgriff |
+|---|---|---|---|
+| stein-ein-gesetz | 935703a5 (Vorprüfung 2 auf 82429a87) | GPU-Probe ROT: gate:haus-fern „alemannisch/s7: Glas L1: Farbe 0.153 von der L0 entfernt“; bild:dorf@0.5 GRÜN; Code-Check lief noch | die L1 faltet den Stein-Ton in die Fläche (E8.3), keine Schwelle heben; dann neue Vorprüfung |
+| laub-kante-3 | 2b52e702 | Satz-Wand an der Wurzel geheilt (diag-chunk-satz.cjs bereichTreu ~1081, 3/20 → 0/20 rot). D9 deterministisch: Dorf beim Mitspieler 29,83 m daneben, main 0 m. Der Anker  (stamm/siedlung-ort.js ~1022) verschiebt sich; Verdacht b8c6c199 (Hangwald) | den Linien-Commit für D9 benennen und heilen, dann Vorprüfung [gpu-probe: gate:post-kette, gate:wasser-leben:bild] |
+| herde-gesetz | 4e01beac | headless GRÜN. v18: S3 Hirsch 1,27 → 0,081 rad, Wolf-S1 5/6. Geschnitten: Satz-Austritt (`_kreaturPoseFrisch`), Schnappen, Kamera-Wahl | GPU v19 am Kopf, Wolf-Huf 0,035 m (Soll 0,03), dann Vorprüfung [gpu-probe: gate:kreatur-leben] |
+| kosmos-umfang | 647063f7 | main gemergt, EIN Belichtungs-Schreiber (`_sternLicht`), 2-px-Fußabdruck statt Quads; Bildpaar angenommen | Vorprüfung mit [gpu-probe: bild:wiese@0.02]; feld.sh (GPU +5,9 ms trennen); danach richter-kosmos 509822dc buchen |
+| einheit-sicht | fb20f497 | E9. A gegen A: Flug-Rauschen 7–19 % am selben Kopf, über dem Rauschen +2,9 bis +3,6 Punkte in 3 von 24 Bildern. Schatten sauber, Ordnung sauber | Wurzel: die Leser der Szene-Tiefe (Wasser, Feld, `_szeneTiefe`) bekommen die Tiefe vor dem späten Zug; die Leser-Kopie gehört hinter den späten Zug, dann S5 neu |
+| einheit-stufe-aus-l0 | fa836365 | GTX 1050: Muster-Phase 0,288 → 0,000 | stein-ein-gesetz + main mergen, Bild B1 an einer Backstein-Pose, Relief als Kanten-Term |
+| los-huelle-2 | 7cc663f0 | OMEN | erwachen/omen-2026-11-19.md lesen |
