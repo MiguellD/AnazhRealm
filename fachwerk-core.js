@@ -1104,16 +1104,16 @@
   const BANK_VOR=0.03;
   function fensterAt(g,cx,cy,cz,w,h,horiz,capY,aus,tief,nachInnen,riegelIn){ if(!(tief>0)) throw new Error('fachwerk fensterAt: die Stärke der Wand fehlt ('+tief+')'); if(!Array.isArray(riegelIn)||!(riegelIn[0]>=0)||!(riegelIn[1]>=0)||typeof nachInnen!=='boolean') throw new Error('fachwerk fensterAt: Riegel in der Öffnung oder Schlagrichtung fehlt');
     lichtAuf(cx,cy,cz,w,h,horiz?'z':'x',1); const fr='holz', samen=fensterSamen(P.seed,horiz?'z':'x',horiz?cz:cx,horiz?cx:cz,cy), gl=samenSchlaeft(samen)?'glasschlaf':'glas', _cap=(capY!=null?capY:Math.min(roofUnderY(cx,cz),roofUnderY(cx+(horiz?0.22:0),cz+(horiz?0.22:0))));   // BOGEN-DECKEL-GESETZ: lokale Dachgrenze schlägt Hauptdach; Doppel-Sample gegen Randfälle
-    const s=aus||((horiz?cz:cx)<0?-1:1), bo={art:'fenster',cap:_cap,versatz:s*0.14}, rT=tief+2*RAHMEN_VOR, bT=rT+2*BANK_VOR, dreh=(horiz?-s:s)*(nachInnen?-1:1), hF=h-2*riegelIn[1], wF=w-2*riegelIn[0], fen={samen,dreh,w:wF,h:hF,rT,quer:!horiz,einheit:()=>windowSash(1,1,true,fr,gl)};   // `einheit`: derselbe Flügel als Einheit 1 × 1 — die Welt zeichnet jeden wachen Flügel als Instanz EINES Gitters je Haus, per Skala (w, h)
+    const s=aus||((horiz?cz:cx)<0?-1:1), bo={art:'fenster',cap:_cap,versatz:s*0.14}, rT=tief+2*RAHMEN_VOR, bT=rT+2*BANK_VOR, dreh=(horiz?-s:s)*(nachInnen?-1:1), hF=h-2*riegelIn[1], wF=w-2*riegelIn[0], fen={samen,dreh,w:wF,h:hF,quer:!horiz,einheit:()=>windowSash(1,1,true,fr,gl)};   // `einheit`: derselbe Flügel als Einheit 1 × 1 — die Welt zeichnet jeden wachen Flügel als Instanz EINES Gitters je Haus, per Skala (w, h)
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,rT,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,bo); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,bT,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,rT,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,rT,fr);              // Pfosten
       const L=grp(); const inner=windowSash(wF,hF,true,fr,gl); inner.position.x=wF/2; L.add(inner);
-      L.position.set(...deform(cx-wF/2,cy,cz)); L.rotation.y=(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:dreh*fensterAnschlag(rT),open:false,fenster:fen}; g.add(L);
+      L.position.set(...deform(cx-wF/2,cy,cz)); L.rotation.y=(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:dreh*fensterAnschlag(),open:false,fenster:fen}; g.add(L);
       strahlFluegel(L,wF,0,hF);
     } else { beam(g,cx,cy+h/2+0.05,cz,rT,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr,bo); beam(g,cx,cy-h/2-0.05,cz,bT,0.1,w+0.22,fr);
       beam(g,cx,cy,cz-w/2-0.05,rT,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,rT,h+0.1,0.1,fr);
       const L=grp(); const inner=windowSash(wF,hF,false,fr,gl); inner.position.z=wF/2; L.add(inner);
-      L.position.set(...deform(cx,cy,cz-wF/2)); L.rotation.y=(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:dreh*fensterAnschlag(rT),open:false,fenster:fen}; g.add(L);
+      L.position.set(...deform(cx,cy,cz-wF/2)); L.rotation.y=(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:dreh*fensterAnschlag(),open:false,fenster:fen}; g.add(L);
       strahlFluegel(L,0,wF,hF); } }
   // DAS FENSTER AM GELÄNDER (Bahn 1): vor dem OG-Vorderfenster des steilen Steinhauses steht der Französische Balkon 0,20 m vor der
   // Achse — sein Flügel schlägt nach INNEN, wie Fenstertüren am Geländer gebaut werden (der Flügel nach außen schlug durch das Gitter).
@@ -2803,7 +2803,7 @@
     // (koerper-core TAGES_GESETZ: `wach`, `werk[0]`, je Mensch ± `streuH`; der Wirt reicht es als `tag`), der Samen des Fensters
     // streut beide Wenden wie der Same den Menschen (6 Bit Aufstehen, 5 Bit Aufbruch). Nass (Regen, Sturm — das Wort, das die Welt am
     // Spieler zeigt) bleibt jeder zu. Offen steht er BIS ZUM ANSCHLAG — kein Würfel: in der Laibung schlägt er an ihre Kante
-    // (`fensterAnschlag`: acos(Flügel-Stärke / Rahmen-Tiefe)), davor an alles, was sein Schwenk trifft (eine Wand, ein Giebel, ein
+    // (`fensterAnschlag`: der rechte Winkel am Band in der Laibung), davor an alles, was sein Schwenk trifft (eine Wand, ein Giebel, ein
     // Geländer — `fensterFreiWinkel`, am Bau gemessen). Jede Differenz zweier Flügel ist eine dieser Ursachen: Samen (Schlaf,
     // Wenden), Uhr, Nässe, die Laibung und was vor ihr steht. Folge (gerechnet am heutigen Tag: wach 6,5, werk 8, streuH 0,5): offen
     // ab 6–7 Uhr bis 7,5–8,5 Uhr — um 8 Uhr trocken 0,55 · 0,5 ≈ 27 % der Flügel, vor 6 und ab 8,5 Uhr keiner. Ein Zustand
@@ -2811,15 +2811,22 @@
     function _streu(bits, n) {
         return (2 * bits) / n - 1;
     }
-    // DER ANSCHLAG IN DER LAIBUNG: der Flügel (Stärke FLUEGEL_STAERKE, windowSash t) dreht um sein Scharnier in der Achse; seine
-    // Rückseite berührt die Kante des Pfostens (halbe Rahmen-Tiefe vor der Achse), wo cos θ = Stärke / Rahmen-Tiefe.
+    // DAS BAND UND DER ANSCHLAG IN DER LAIBUNG: der Flügel (Stärke FLUEGEL_STAERKE, windowSash t) dreht um seine Kante zur
+    // Öffnungs-Seite (`fensterBand`: die Achse der Wand + t/2 zur Seite, zu der er schwenkt) — so taucht keine Ecke in die eigene
+    // Laibung, die Rückkante schwenkt von ihr weg. Das Band liegt in der Ebene der Laibung: bei 90° liegt das Blatt an ihr an, weiter
+    // ginge es in den Pfosten — der Anschlag IST der rechte Winkel (Folge der Lage des Bands, kein Stellwert).
     var FLUEGEL_STAERKE = 0.05;
     // RAHMEN_VOR: so weit steht der Rahmen des Fensters vor jeder Haut seiner Wand (fensterAt) — der Falz des Flügels in ihm: was
     // der Flügel tiefer als dieses Maß in fremde Geometrie reicht, schneidet (die Probe der Linse gate:haus-fern F liest es)
     var RAHMEN_VOR = 0.01;
-    function fensterAnschlag(rahmenTiefe) {
-        if (!(rahmenTiefe > FLUEGEL_STAERKE)) throw new Error("fachwerk fensterAnschlag: die Laibung ist flacher als der Flügel (" + rahmenTiefe + ")");
-        return Math.acos(FLUEGEL_STAERKE / rahmenTiefe);
+    function fensterAnschlag() {
+        return Math.PI / 2;
+    }
+    // das Band in Welt-Lage: der Ursprung des Flügels (Scharnier-Kante in der Wand-Achse) um t/2 zur Seite, zu der er schwenkt (R_y:
+    // längs x schwenkt das freie Ende nach −sin, längs z nach +sin)
+    function fensterBand(Lf, richt) {
+        var F = Lf.userData.fenster, sg = richt > 0 ? 1 : -1;
+        return (F.quer ? new THREE.Vector3((sg * FLUEGEL_STAERKE) / 2, 0, 0) : new THREE.Vector3(0, 0, (-sg * FLUEGEL_STAERKE) / 2)).applyMatrix4(Lf.matrixWorld);
     }
     function fensterZustand(samen, stunde, nass, tag) {
         if (!Number.isFinite(stunde) || stunde < 0 || stunde >= 24) throw new Error("fachwerk fensterZustand: die Stunde der Welt fehlt (" + stunde + ")");
@@ -6351,11 +6358,11 @@
     // FLUEGEL_EINHEIT_Y: die Unterkante der Einheit auf dem Knie der Kontakt-AO (AO_KNIE) — die Einheit trägt keine AO-Stufe, der
     // Flügel eines EG-Fensters (Mitte ~1,1 m: AO 0,76 + 0,24 · 1,1/2,6 = 0,86) ist darum ~16 % heller als im Rumpf (Folge, nicht am Bild gemessen).
     var FLUEGEL_EINHEIT_Y = AO_KNIE + 0.5;
-    function fensterBlattBasis(hx, hz, y, dreh, w, h) {
+    function fensterBlattBasis(hx, hz, px, pz, y, dreh, w, h) {   // (hx, hz) die Kante in der Achse, (px, pz) das Band — dort hängt die Einheit
         var m = new THREE.Matrix4().makeTranslation(hx, y, hz);
         m.multiply(new THREE.Matrix4().makeRotationY(dreh));
         m.multiply(new THREE.Matrix4().makeScale(w, h, 1));
-        m.multiply(new THREE.Matrix4().makeTranslation(-hx, -FLUEGEL_EINHEIT_Y, -hz));
+        m.multiply(new THREE.Matrix4().makeTranslation(-px, -FLUEGEL_EINHEIT_Y, -pz));
         return m.elements.slice();
     }
     // DER FREIE SCHWENK (Bahn 1): wie weit ein Flügel aufgeht, misst der Bau — bis zum Anschlag in der Laibung (`fensterAnschlag`),
@@ -6374,10 +6381,10 @@
         return tt > 1e-4 && tt < 1 - 1e-4;
     }
     function fensterFreiWinkel(Lf, hindernisse, richt) {
-        var F = Lf.userData.fenster, th0 = fensterAnschlag(F.rT);
+        var F = Lf.userData.fenster, th0 = fensterAnschlag(), band = fensterBand(Lf, richt);
         var A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3();
         var trifft = function (th) {
-            var M = Lf.matrixWorld.clone().multiply(new THREE.Matrix4().makeRotationY(richt * th));
+            var M = new THREE.Matrix4().makeTranslation(band.x, 0, band.z).multiply(new THREE.Matrix4().makeRotationY(richt * th)).multiply(new THREE.Matrix4().makeTranslation(-band.x, 0, -band.z)).multiply(Lf.matrixWorld);
             var P = function (u, y) { return (F.quer ? new THREE.Vector3(0, y, u) : new THREE.Vector3(u, y, 0)).applyMatrix4(M); };
             var S = [], sb = new THREE.Box3();
             [-0.45, 0, 0.45].forEach(function (k) { S.push([P(0.15, k * F.h), P(F.w, k * F.h)]); });
@@ -6451,11 +6458,12 @@
             bakeLOD(halter, col, lg, 0, true);
             var wg = geomsZuGruppe(lg);
             if (!wg.children.length) throw new Error("fachwerk fensterFluegelTrennen: ein Flügel ohne Gitter");
-            wg.position.set(hx, 0, hz); // HINGE-Achse (Extraktor liest anc.position)
+            var band = fensterBand(Lf, richt);
+            wg.position.set(band.x, 0, band.z); // das BAND (Extraktor liest anc.position, der Wirt dreht um es)
             wg.userData = {
                 side: richt,
                 offen: 0,
-                fenster: { samen: F.samen, anschlag: anschlag, basis: fensterBlattBasis(hx, hz, e[13], (F.quer ? -Math.PI / 2 : 0) + Lf.rotation.y, F.w, F.h) },
+                fenster: { samen: F.samen, anschlag: anschlag, basis: fensterBlattBasis(hx, hz, band.x, band.z, e[13], (F.quer ? -Math.PI / 2 : 0) + Lf.rotation.y, F.w, F.h) },
             };
             Lf.parent.remove(Lf);
             wraps.push(wg);

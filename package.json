@@ -161,6 +161,7 @@
         "gate:sprache": "node scripts/diag-sprache.cjs --selftest && node scripts/diag-sprache.cjs",
         "gate:ci-deckung": "node scripts/diag-ci-deckung.cjs --selftest && node scripts/diag-ci-deckung.cjs",
         "gate:haus-fern": "node scripts/diag-haus-fern.cjs",
+        "gate:haus-fluegel": "node scripts/diag-haus-fern.cjs --fluegel",
         "gate:tor-fern": "node scripts/diag-tor-fern.cjs --selftest",
         "gate:arch-feld": "node scripts/diag-arch-feld.cjs --selftest && node scripts/diag-arch-feld.cjs",
         "gate:analog-nah": "node scripts/diag-analog-nah.cjs --selftest && node scripts/diag-analog-nah.cjs",

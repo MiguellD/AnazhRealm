@@ -924,6 +924,10 @@ jobs:
               # Statik wuchs auf 94 s, 38628488866) — er steht jetzt in der vollen Batterie (CPU), lokal in `npm run check`.
               run: npm run gate:haus-fern
 
+            - name: Der Flügel im Haus (Stufe F der Familie haus-fern — jedes wache Fenster-Blatt zu im Falz, offen bis zum Anschlag frei; Bahn 1)
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1
+              run: npm run gate:haus-fluegel
+
             - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 10
               # DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur (haus_ u. a.) lebt

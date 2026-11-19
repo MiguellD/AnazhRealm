@@ -529,9 +529,7 @@ function fluegelProbe(g0, id, seed, schub = 0) {
     g0.traverse((o) => {
         if (!o.isMesh) return;
         for (let a = o.parent; a; a = a.parent) if (a.userData && typeof a.userData.side === "number") return;
-        const tr = dreieckeVon(o, o.matrixWorld), bb = new T.Box3(); // prettier-ignore
-        tr.forEach((v) => v.forEach((p) => bb.expandByPoint(p)));
-        rumpf.push({ tr, bb });
+        for (const v of dreieckeVon(o, o.matrixWorld)) rumpf.push({ v, bb: new T.Box3().setFromPoints(v) }); // je Dreieck seine Hülle
     });
     const out = { n: blaetter.length, zu: [], offen: [] };
     for (const w of blaetter) {
@@ -553,13 +551,15 @@ function fluegelProbe(g0, id, seed, schub = 0) {
             const bb = new T.Box3();
             blatt.forEach((v) => v.forEach((p) => bb.expandByPoint(p)));
             let tri = null;
+            const blattBB = blatt.map((v) => new T.Box3().setFromPoints(v));
             for (const R of rumpf) {
                 if (!R.bb.intersectsBox(bb)) continue;
-                for (const r of R.tr) {
-                    for (const s of blatt)
-                        for (let k = 0; k < 3 && !tri; k++)
-                            if (strecke(s[k], s[(k + 1) % 3], r[0], r[1], r[2]) || strecke(r[k], r[(k + 1) % 3], s[0], s[1], s[2])) tri = r;
-                    if (tri) break;
+                const r = R.v;
+                for (let i = 0; i < blatt.length && !tri; i++) {
+                    if (!blattBB[i].intersectsBox(R.bb)) continue;
+                    const s = blatt[i];
+                    for (let k = 0; k < 3 && !tri; k++)
+                        if (strecke(s[k], s[(k + 1) % 3], r[0], r[1], r[2]) || strecke(r[k], r[(k + 1) % 3], s[0], s[1], s[2])) tri = r;
                 }
                 if (tri) break;
             }
@@ -585,7 +585,6 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
         TUER_FANG = null;
     }
     g[3] = ersatz3 ? ersatz3(id, seed) : stufe3(id, seed, "haus") || new T.Group();
-    const fluegel = fluegelProbe(g[0], id, seed);
     const werf = {},
         alle = {};
     for (const s of [0, 1, 2, 3]) {
@@ -595,7 +594,7 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
     const p = FC.hausParams(FC.PRESETS[id], null);
     p.seed = seed;
     const M = massen(p);
-    const z = { id, seed, wurf: {}, kosten: {}, befund: [], fluegel };
+    const z = { id, seed, wurf: {}, kosten: {}, befund: [] };
     if (glasDefekt) glasDefekt(g, M.H);
     z.glas = [0, 1, 2].map((s) => glasJeStufe(g[s], M.H.windows || []));
     z.ton = [0, 1, 2].map((s) => {
@@ -630,7 +629,6 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
 }
 function hausUrteil(z) {
     const f = z.befund.slice();
-    for (const x of z.fluegel ? z.fluegel.zu.concat(z.fluegel.offen) : []) f.push(`Flügel schneidet: ${x}`);
     for (const s of [0, 1, 2])
         if (z.wurf[s] < SOLL.wurfIou) f.push(`Wurf L${s} IoU ${f3(z.wurf[s])} < ${SOLL.wurfIou}`);
     for (const s of [2, 3]) if (z.first[s] === "z") f.push(`First der Stufe ${s} quer (längs z)`);
@@ -776,13 +774,6 @@ function selbsttest() {
             if (w.userData && typeof w.userData.side === "number")
                 w.traverse((m) => m.isMesh && m.geometry.translate(w.position.x, 0, w.position.z));
     };
-    // F: jedes Blatt 5 cm längs der Wand verschoben steckt in seinem Pfosten — die Probe nennt es (zu und offen)
-    {
-        const g0 = FC.buildInstance("alemannisch", 1, 0);
-        const p = fluegelProbe(g0, "alemannisch", 1, 0.05);
-        if (!(p.n > 0 && p.zu.length === p.n)) fehler.push(`F: ein Flügel 5 cm in der Wand ist nicht rot (${p.zu.length} von ${p.n})`);
-        entsorge(g0);
-    }
     if (!hausUrteil(hausFall("alemannisch", 1, null, doppelt)).some((x) => /^Türblatt L0/.test(x)))
         fehler.push("T: ein Türblatt vor seinem Scharnier ist nicht rot");
     // G: die Band-Fassade vor dem Akt — die L2 ohne ihr Glas, je Öffnung ein Kasten im Stoff `dunkel` über dem Fenster
@@ -819,7 +810,51 @@ function selbsttest() {
     return fehler;
 }
 
+// DIE EIGENE STUFE F (`--fluegel`, npm gate:haus-fluegel): je Kultur × Samen 1/7/42 die L0 und ihre Flügel-Blätter (fluegelProbe), die
+// festen Lichter (`fenster.fest` am Bau: kein Schwenk-Raum außen und innen) beim Namen; Selbsttest: jedes Blatt 5 cm in der Wand ist ROT.
+function fluegelStufe() {
+    const t0 = Date.now();
+    console.log("=== DER FLÜGEL IM HAUS (gate:haus-fluegel, Stufe F der Familie haus-fern) ===");
+    const rot = [];
+    const g0 = FC.buildInstance("alemannisch", 1, 0);
+    const mut = fluegelProbe(g0, "alemannisch", 1, 0.05);
+    entsorge(g0);
+    if (!(mut.n > 0 && mut.zu.length === mut.n))
+        rot.push(`SELBSTTEST F: ein Flügel 5 cm in der Wand ist nicht rot (zu ${mut.zu.length}, offen ${mut.offen.length} von ${mut.n})`);
+    console.log(`  Selbsttest F (alemannisch/s1, jedes Blatt zu 5 cm in der Wand): erkannt ${mut.zu.length} von ${mut.n} — ${mut.zu[0] || "keins"}`);
+    let n = 0, zu = 0, offen = 0; // prettier-ignore
+    const fest = [];
+    for (const id of KULTUREN)
+        for (const s of [1, 7, 42]) {
+            const g = FC.buildInstance(id, s, 0);
+            const p = fluegelProbe(g, id, s);
+            entsorge(g);
+            n += p.n;
+            zu += p.zu.length;
+            offen += p.offen.length;
+            for (const x of p.zu.concat(p.offen)) rot.push("F FLÜGEL SCHNEIDET " + x);
+            const pp = FC.hausParams(FC.PRESETS[id], null);
+            pp.seed = s;
+            if ((pp.storeys || 1) > 11) continue;
+            const H = FC.HAUS(T, FC.mat, Object.assign({}, pp, { nur: (pp.storeys || 1) >= 6 ? { moebel: false } : {} }));
+            const st = { g: H.build({ gelaende: false }) };
+            FC.fensterFluegelTrennen(st, pp.col);
+            st.g.traverse((o) => {
+                const F = o.userData && o.userData.fenster;
+                if (F && F.fest) {
+                    const q = new T.Vector3().setFromMatrixPosition(o.matrixWorld);
+                    fest.push(`${id}/s${s} ${F.quer ? "x" : "z"} ${f3(q.x)},${f3(q.y)},${f3(q.z)}`);
+                }
+            });
+            entsorge(st.g);
+        }
+    console.log(`  Flügel im Haus (F, Falz ${FALZ} m = fachwerk RAHMEN_VOR, Soll 0): ${n} wache Blätter · zu schneiden ${zu} · offen bis zum Anschlag ${offen}`);
+    console.log(`  Feste Lichter (kein Schwenk-Raum außen und innen): ${fest.length}${fest.length ? " — " + fest.join(" · ") : ""}`);
+    console.log(`  ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    wandEnde(rot, "jeder wache Flügel liegt zu im Falz und schwenkt offen bis zum Anschlag frei — kein Blatt in fremder Geometrie.");
+}
 (function main() {
+    if (ARG.includes("--fluegel")) return fluegelStufe();
     const t0 = Date.now();
     console.log("=== DIE LINSE DES HAUS-FERNKÖRPERS (gate:haus-fern) ===");
     if (!hatStufe3("haus") || !hatStufe3("ausstattung")) {
@@ -874,11 +909,6 @@ function selbsttest() {
         })
         .join(" · ");
     console.log(`  Türblatt am Scharnier (T, Soll ≤ ${SOLL.tuer} m): ${tuerZeile}`);
-    const fl = zeilen.map((z) => z.fluegel);
-    console.log(
-        `  Flügel im Haus (F, Falz ${FALZ} m, Soll 0): ${fl.reduce((a, x) => a + x.n, 0)} wache Blätter · zu schneiden ` +
-            `${fl.reduce((a, x) => a + x.zu.length, 0)} · offen bis zum Anschlag ${fl.reduce((a, x) => a + x.offen.length, 0)}`
-    );
     const glasZeile = [1, 2]
         .map((s) => {
             const rn = zeilen.map((z) => (z.glas[0].nacht > 0 ? z.glas[s].nacht / z.glas[0].nacht : 0));
