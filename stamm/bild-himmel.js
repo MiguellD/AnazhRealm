@@ -1930,147 +1930,74 @@ class AnazhRealm_bild_himmel {
     // Licht (die Ersatz-Lichter, `_dayNightApplyAmbient`), das Bild fällt gleichmäßig in der Sonnenhöhe zur lesbaren Nacht.
     // Bis H1 stand die sonnenzugewandte Karte auf Mittelgrau + 1 EV, das Auge folgte ihrem Licht mit 0,34 und glitt ab ~14,5°
     // zum Deckel der Nacht: die Sonne in 7° stand an der Wiese einmal 0,16, einmal 1,29 EV unter dem Mittag (Radeon).
+    // DAS AUGE (Licht-Spike): ab der ersten Rücklese der Mess-Kette (`_augeKetteZeichnen`, bild-kosten.js) schreibt NUR die Kette
+    // die Belichtung — das raumwinkel-gewichtete Mittel Z der gedeckelten Leuchtdichte des aufgelösten Bilds, in Puffer-Einheiten.
+    // Unvollständige Kompensation, geankert an der Eich-Sicht: k(Z) = kE · (Z ÷ zE)^(−m) (`AnazhRealm.AUGE`; m am
+    // Instanz-Feld `_augeM`, gesetzt beim Bau der Kette aus `AUGE.m` — G hier und F am Uniform lesen es). Der gehaltene Zustand
+    // folgt dem Ziel exponentiell im LOG-Raum mit EINER τ in beide Richtungen, gemischt nach dem Zustand (Zapfen über `tauObenCdM2`, Stäbchen unter `tauUntenCdM2`, dazwischen linear
+    // in log10 Z). Der Bleich-Ast (Minuten der Dunkel-Adaption) ist nicht diese Welle. dt: die Wanduhr, die `_raumBlendeTakt`
+    // in derselben Methode führt (`_raumBlendeZeit`, auf 0,25 s gekappt) — das Auge des Spielers adaptiert in seiner Zeit.
+    // DER START (laut, kein Rückfall): solange noch keine Messung zurück ist, steht der Zustand auf dem Wert, den das Gesetz der
+    // Kamera aus dem Licht (`_belichtungAusLicht`) gäbe (Zustand = zE · (k_alt ÷ kE)^(−1/m)) — sobald `_augeZ` steht, gilt nur
+    // die Kette. Bricht die Kette (`_augeBruch`, gemeldet beim EINEN Melder), hält der Zustand seinen letzten Wert.
+    // Der Deckel der ersten Stufe für das NÄCHSTE Bild: schulter ÷ k(Zustand) (das S von K1 in k·L, in Puffer-Einheiten).
+    // `_augeAus` (true) ist Mess-Werkzeug des Spikes (die Preis-Messung): die Kette zeichnet nicht, der Schreiber hält das letzte k.
+    // DIE BLENDE DES RAUMS (`_raumBlendeTakt`) schreibt keine Belichtung: sie stellt `_raumStufen`, das nur `_belichtungAusLicht`
+    // liest — mit der Kette trägt sie nur noch den Start.
     _dayNightApplyBelichtung(achse) {
-        const k = this._belichtungAusLicht(achse.e);
+        const A = AnazhRealm.AUGE;
+        const vorZeit = this._raumBlendeZeit;
+        const kAlt = this._belichtungAusLicht(achse.e);
         this._raumBlendeTakt();
-        if (k == null) return;
-        this._kMain = k;
-        this.state.renderer.toneMappingExposure = this._mitKappe(k);
+        const dt = vorZeit == null ? 0 : Math.min(0.25, Math.max(0, (this._raumBlendeZeit - vorZeit) / 1000));
+        const R = this.state.renderer;
+        if (!R) return;
+        if (this._augeAus && this._augeK > 0) {
+            R.toneMappingExposure = this._augeK;
+            return;
+        }
+        const K = this._augeKette();
+        const [m, kE, zE] = [this._augeM, K.U.kE.value, K.U.zE.value];
+        K.U.m.value = m; // F liest dasselbe m
+        if (this._augeZ == null) {
+            if (kAlt == null) return;
+            this._augeZustand = zE * (kAlt / kE) ** (-1 / m); // der START des Zustands, nie ein Rückfall
+        } else if (!this._augeBruch) {
+            // die Auflösung der Messung (die kleinste Halb-Float-Zahl): ein schwarzes Bild hat kein log
+            const ziel = Math.max(this._augeZ, 2 ** -24);
+            const zc = this._augeZustand * A.einheitCdM2;
+            const [lo, hi] = [Math.log10(A.tauUntenCdM2), Math.log10(A.tauObenCdM2)];
+            const t = Math.min(1, Math.max(0, (Math.log10(Math.max(zc, 1e-12)) - lo) / (hi - lo)));
+            const tau = A.tauStaebchenS + (A.tauZapfenS - A.tauStaebchenS) * t;
+            this._augeTau = tau;
+            const l = Math.log(this._augeZustand);
+            this._augeZustand = Math.exp(l + (Math.log(ziel) - l) * (1 - Math.exp(-dt / tau)));
+        }
+        if (!(this._augeZustand > 0)) return;
+        const k = kE * (this._augeZustand / zE) ** -m;
+        this._augeK = k;
+        K.U.deckel.value = A.schulter / k;
+        R.toneMappingExposure = k;
         this.state._belichtungSteht = true;
     }
 
-    // k = min(k_main, Kappe); Spike-Variante B (`_kappeNurNacht`): die Kappe gilt nur unter der Nacht (nightFactor ≥ 0,5)
-    _mitKappe(k) {
-        const kap = this._lichtKappe;
-        if (!(kap > 0)) return k;
-        const nf = this.state.postProcessingUniforms?.nightFactor?.value ?? 0;
-        if (this._kappeNurNacht && !(nf >= 0.5)) return k;
-        return Math.min(k, kap);
-    }
-
-    // DIE KAPPE (Licht-Spike, entscheid §1.3 mit §8 #1): k = min(k_main, 0,76 ÷ L_diff,max), L_diff,max = der hellste Kanal des
-    // hellsten beleuchteten Flecks der Sicht in Szenen-Einheiten (vor Belichtung), am MAXIMUM. Gemessen am Bild: die Sicht im
-    // Szenen-Ziel-Format (dieselben Programme wie der Szenen-Pass, sein MRT) auf 240 × 135, Strahler aus (das Leuchten jedes
-    // Stoffs × `strahlerAn` 0, die Flammen des Brands, Himmel/Sonne/Mond/Sterne verborgen), Rücklese, Maximum. Roh: eine Messung
-    // im Flug, ihr Ergebnis greift ab dem nächsten Bild.
-    _lichtKappeMessen() {
-        const st = this.state;
-        const R = st.renderer,
-            sp = st.scenePass;
-        // das Protokoll der Belichtung je gezeichnetem Bild (die Kappe misst nach dem Bild: hier steht das k, mit dem es zeichnete)
-        if (R) (this._kappeLog || (this._kappeLog = [])).push(+R.toneMappingExposure.toPrecision(4));
-        if (this._kappeLog && this._kappeLog.length > 64) this._kappeLog.shift();
-        if (this._kappeFlug || !R || !sp || !st.scene || !st.camera || !st.atmoUniforms) return this._kappeFlug || null;
-        const [W, H] = [240, 135];
-        let K = this._kappeZiel;
-        if (!K) {
-            K = this._kappeZiel = sp.renderTarget.clone();
-            K.setSize(W, H);
-        }
-        const aus = [];
-        st.scene.traverse((o) => {
-            if (o.visible && (/^himmel/.test(o.name) || o.name === "brand-flammen" || o.name === "kreatur-aura"))
-                aus.push(o);
-        });
-        aus.forEach((o) => (o.visible = false));
-        const an = st.atmoUniforms.strahlerAn;
-        an.value = 0;
-        const [vor, mrt, autoClear] = [R.getRenderTarget(), R.getMRT(), R.autoClear];
-        try {
-            R.setMRT(sp.getMRT());
-            R.autoClear = true;
-            R.setRenderTarget(K);
-            R.render(st.scene, st.camera);
-        } finally {
-            R.setRenderTarget(vor);
-            R.setMRT(mrt);
-            R.autoClear = autoClear;
-            an.value = 1;
-            aus.forEach((o) => (o.visible = true));
-        }
-        // DIE QUELLE SCHLIESST IHRE EIGENE FLÄCHE AUS (entscheid §8 #2, aus dem Datum der Quelle): je Platz des Pools die Kugel
-        // ihres Kerns (`kernM`, die nahe Ebene des Licht-Gesetzes) um ihren Ort, im Mess-Bild als Scheibe (ohne Tiefe: was im
-        // Bild vor oder hinter ihr liegt, fällt mit) — Herd-Steine und Scheite im Kern sind Leib der Quelle, nicht Fleck der Sicht.
-        // Das Licht des Auges (Ersatz) zählt nicht.
-        // Der Leib einer Gestalt-Quelle (`leibM`, der Kopf der Laterne) zählt mit; die Lava ist eine Fläche im Boden — ihr
-        // Leuchten fällt mit `strahlerAn`, ihre Kugel schlösse das Ufer mit aus (benannt, nicht gelöst).
-        const scheiben = [],
-            quellen = [];
-        {
-            const A = st.atmoUniforms,
-                cam = st.camera,
-                halter = (this._leuchtPool && this._leuchtPool.halter) || [],
-                v = this._kappeV || (this._kappeV = new THREE.Vector3());
-            cam.updateMatrixWorld();
-            const fy = 1 / Math.tan(((cam.fov / 2) * Math.PI) / 180);
-            for (let i = 0; i < A.lichtLage.length; i++) {
-                const p = A.lichtLage[i].value;
-                if (!(p.w > 0) || A.lichtErsatz[i].value === 1) continue;
-                const q = halter[i];
-                const rk = Math.max(Math.sqrt(A.lichtKern[i].value), (q && q.leibM) || 0);
-                quellen.push([q ? q.quelle : "?", +rk.toFixed(3), q ? +(q.leibM || 0).toFixed(3) : null]);
-                if (q && q.quelle === "lava") continue;
-                v.set(p.x, p.y, p.z).applyMatrix4(cam.matrixWorldInverse);
-                const d = -v.z;
-                if (!(rk > 0) || d <= rk) continue;
-                v.applyMatrix4(cam.projectionMatrix);
-                scheiben.push([
-                    ((v.x + 1) / 2) * W,
-                    ((1 - v.y) / 2) * H,
-                    (rk / Math.sqrt(d * d - rk * rk)) * fy * (H / 2),
-                ]);
-            }
-        }
-        const h16 = THREE.DataUtils.fromHalfFloat;
-        const f11 = (v, mb) => {
-            const e = v >> mb,
-                m = v & ((1 << mb) - 1);
-            return e === 0 ? (m / (1 << mb)) * 2 ** -14 : e === 31 ? 65504 : 2 ** (e - 15) * (1 + m / (1 << mb));
+    // DER STAND DES AUGES (Lese-Glied der Sonden: Bild-Protokoll und Preis) — Z der letzten Rücklese, der Zustand (Puffer und
+    // cd/m²), k, der Deckel, die Größen der Stufen, die Zeit der Messung, die Ablesung (G/F), m und die zuletzt benutzte τ
+    _augeStand() {
+        const K = this._augeKette();
+        return {
+            z: this._augeZ ?? null,
+            zustand: this._augeZustand ?? null,
+            zCdM2: this._augeZustand > 0 ? this._augeZustand * AnazhRealm.AUGE.einheitCdM2 : null,
+            k: this._augeK ?? null,
+            deckel: K.U.deckel.value,
+            stufen: K.groessen.map((g) => g.slice()),
+            zeit: this._augeZeit ?? null,
+            feld: !!this._augeFeld,
+            m: this._augeM,
+            tau: this._augeTau ?? null,
+            bruch: !!this._augeBruch,
         };
-        this._kappeFlug = R.readRenderTargetPixelsAsync(K, 0, 0, W, H, 0)
-            .then((px) => {
-                let max = 0,
-                    wo = -1,
-                    n = 0;
-                const pack = px instanceof Uint32Array || px.BYTES_PER_ELEMENT === 4;
-                const roh = pack
-                    ? new Uint32Array(px.buffer, px.byteOffset, px.byteLength >> 2)
-                    : new Uint16Array(px.buffer, px.byteOffset, px.byteLength >> 1);
-                const je = pack ? 1 : 4;
-                // die Zeile auf 256 Byte (WebGPU bytesPerRow), in Elementen des Felds
-                const zeile = (Math.ceil((W * je * roh.BYTES_PER_ELEMENT) / 256) * 256) / roh.BYTES_PER_ELEMENT;
-                let raus = 0;
-                for (let y = 0; y < H; y++)
-                    for (let x = 0; x < W; x++) {
-                        if (scheiben.some(([cx, cy, rr]) => (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= rr * rr)) {
-                            raus++;
-                            continue;
-                        }
-                        const i = y * zeile + x * je;
-                        let a, b, c;
-                        if (pack) {
-                            const v = roh[i];
-                            [a, b, c] = [f11(v & 0x7ff, 6), f11((v >>> 11) & 0x7ff, 6), f11((v >>> 22) & 0x3ff, 5)];
-                        } else [a, b, c] = [h16(roh[i]), h16(roh[i + 1]), h16(roh[i + 2])];
-                        const v = Math.max(a, b, c);
-                        if (v > max) ((max = v), (wo = x + y * W));
-                        n++;
-                    }
-                this._kappeMess = {
-                    max,
-                    wo: [wo % W, Math.floor(wo / W)],
-                    n,
-                    raus,
-                    scheiben: scheiben.map((s) => s.map((q) => +q.toFixed(1))),
-                    quellen,
-                    format: pack ? "rg11b10" : "rgba16f",
-                };
-                this._lichtKappe = max > 0 ? 0.76 / max : 0;
-                if (this._kMain > 0) R.toneMappingExposure = this._mitKappe(this._kMain);
-                return this._kappeMess;
-            })
-            .finally(() => (this._kappeFlug = null));
-        return this._kappeFlug;
     }
 
     // DIE BELICHTUNG DES ORTS bei der Sonnenhöhe e (sin): das Gesetz der Kamera aus dem Licht, das jetzt gilt — null, solange
@@ -3460,6 +3387,27 @@ AnazhRealm._schirmDreieck = __weltLicht.schirmDreieck; // der Baustein der Engin
 // Sterne des Feldes (+6). `wandelsterne` = die hellen Planeten als PUNKTE des Feldes (Venus −4,2 weißgelb,
 // Jupiter −2,3 cremeweiß, Mars −1,0 rötlich; Pixel knapp über dem hellsten Stern). `mondGegenHimmel` =
 // Leuchtdichte des Vollmonds gegen den blauen Tageshimmel (≈ 2500 : 5000 cd/m²) — am Tag ein blasser Schleier.
+// DAS AUGE (Licht-Spike, die Mess-Kette `_augeKetteZeichnen` und ihr EIN Schreiber `_dayNightApplyBelichtung`):
+// k(Z) = kEPuffer · (Z ÷ zE)^(−m) in Puffer-Einheiten, zE = zECdM2 ÷ einheitCdM2 (0,2654 Einheiten).
+AnazhRealm.AUGE = Object.freeze({
+    // die Kompensation (der EINE Stellwert, zur Laufzeit am Instanz-Feld `_augeM`): aus dem Anker Vollmond-Wiese 0,1 lx
+    // Boden-Luma 36,5; 0,04 über dem sekundär belegten Band 0,2–0,9, Hood 1979 über Reinhard & Devlin 2005
+    m: 0.9415,
+    // das Raumwinkel-Mittel der Mess-Wiese am Mittag (cd/m²) — die Eich-Sicht
+    zECdM2: 4270,
+    // das gemessene k von main am Mittag der Mess-Wiese (Puffer-Einheiten) — das k an der Eich-Sicht
+    kEPuffer: 0.527,
+    // das S von K1 in k·L: der Deckel der ersten Stufe ist schulter ÷ k (Puffer-Einheiten)
+    schulter: 3,
+    // 1 Puffer-Einheit = 6 710 ÷ 0,417 cd/m² (der Maßstab des Mittags)
+    einheitCdM2: 16090,
+    // die Zeit des Nachlaufs (Durand & Dorsey 2000 §3.3, die Grenzen CIE 191): über `tauObenCdM2` die Zapfen, unter
+    // `tauUntenCdM2` die Stäbchen, dazwischen linear in log10 Z gemischt — in beide Richtungen dieselbe
+    tauZapfenS: 0.1,
+    tauStaebchenS: 0.4,
+    tauObenCdM2: 5,
+    tauUntenCdM2: 0.005,
+});
 AnazhRealm.HIMMEL = Object.freeze({
     grenzgroesse: __weltLicht.GRENZGROESSE, // die Anker der EINEN Tag-Achse (welt-licht.js `tagAchse`)
     sternMagSchwach: 6,

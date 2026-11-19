@@ -2169,6 +2169,181 @@ class AnazhRealm_bild_kosten {
             traa.laufPxSetzen(Z.unschaerfe === false ? AnazhRealm.ZUGANG.laufPxAus : traa.maxVelocityLength);
     }
 
+    // DIE MESS-KETTE DES AUGES (Licht-Spike): die Kasten-Kette über das aufgelöste Szenen-Bild — Ziele in Halb-Float ohne Tiefe
+    // und Mips, linear gefiltert, je Stufe ÷ 4 aufgerundet bis 1 × 1 (1 920 × 1 080: 480 × 270 → 120 × 68 → 30 × 17 → 8 × 5 →
+    // 2 × 2 → 1 × 1), gezeichnet von `_augeKetteZeichnen`, ihr Ergebnis liest der EINE Schreiber `_dayNightApplyBelichtung`.
+    // Uniforms: `deckel` (der Schreiber, Puffer-Einheiten, ≤ 0 kein Deckel), `tanH`/`aspekt` (die Kamera je Bild), `m`/`kE`/`zE`
+    // (das Gesetz k(Z); m spiegelt `this._augeM`, das Feld, das auch G liest), `feld`.
+    // ZWEI ABLESUNGEN DERSELBEN KETTE (ein Schalter zwischen zwei Mess-Ablesungen des Spikes, `this._augeFeld` → `feld`; die
+    // Bau-Welle trägt EINE davon, der Schalter fällt mit ihr): G (0) die Belichtung `toneMappingExposure` aus dem 1 × 1; F (1) roh
+    // je Pixel k(Z(x)) aus der ZWEITEN Stufe (≈ 1° je Zelle), bilinear am Schirm — ohne Zeit-Glättung, ohne Kanten-Wächter.
+    // `faktor` ist der EINE Faktor vor der Kurve (`_schirmKurve`).
+    _augeKette() {
+        if (this._augeKetteStand) return this._augeKetteStand;
+        const T = THREE.TSL;
+        const A = AnazhRealm.AUGE;
+        const U = {
+            deckel: T.uniform(0),
+            tanH: T.uniform(Math.tan(Math.PI / 6)),
+            aspekt: T.uniform(16 / 9),
+            feld: T.uniform(0),
+            m: T.uniform(A.m), // gespiegelt aus `this._augeM` (der Schreiber und `_augeKetteZeichnen`)
+            kE: T.uniform(A.kEPuffer),
+            zE: T.uniform(A.zECdM2 / A.einheitCdM2),
+        };
+        const stufe = (i) => {
+            const ziel = new THREE.RenderTarget(1, 1, {
+                type: THREE.HalfFloatType,
+                depthBuffer: false,
+                generateMipmaps: false,
+                minFilter: THREE.LinearFilter,
+                magFilter: THREE.LinearFilter,
+            });
+            ziel.name = ziel.texture.name = "auge:" + i;
+            return { ziel, quad: null };
+        };
+        const K = { U, stufe, stufen: [], groessen: [], quelle: null, flug: null, gen: 0, laeufe: 0 };
+        for (let i = 0; i < 6; i++) K.stufen.push(stufe(i));
+        // F: Z(x) = R ÷ G der zweiten Stufe am Schirm (die Auflösung der Messung als Boden: ein schwarzes Feld hat kein log)
+        const f = T.texture(K.stufen[1].ziel.texture).sample(T.screenUV);
+        const zx = f.r.div(f.g.max(1e-12)).max(2 ** -24);
+        K.faktor = U.feld.greaterThan(0.5).select(U.kE.mul(zx.div(U.zE).pow(U.m.negate())), T.toneMappingExposure);
+        if (this._augeM == null) this._augeM = A.m; // der EINE Stellwert zur Laufzeit (G und F)
+        this._augeKetteStand = K;
+        return K;
+    }
+
+    // DIE KETTE ZEICHNEN (`_loopRender`, nach `pp.render()`): sie liest das aufgelöste Szenen-Bild DIESES Bilds — dieselbe Textur,
+    // die `sceneColor` der Post-Kette abtastet (das Ziel der zeitlichen Auflösung, ohne sie das Szenen-Ziel), linear, vor Belichtung
+    // und Kurve. Jede Stufe EIN Quad-Pass: vier bilineare Taps je Ziel-Texel auf den Ecken der 2 × 2-Unterblöcke seines 4 × 4-Blocks
+    // (jeder Quell-Pixel zählt einmal mit gleichem Gewicht; wo die Quelle nicht durch 4 teilt, klemmt ClampToEdge — der Rand zählt
+    // dort mehrfach, benannt, nicht geflickt). Die ERSTE Stufe trägt je Tap R = min(Y, deckel) · w und G = w, w = cos³ θ =
+    // (1 + x² + y²)^(−3/2) (x, y in Einheiten der Brennweite); jede weitere mittelt. Am 1 × 1 ist Z = R ÷ G. Die Größen folgen der
+    // Quelle (ihre Größe hat die Post-Kette in diesem Bild gesetzt). Rücklese des 1 × 1 asynchron, höchstens EINE im Flug, nach
+    // `_augeZ` (Puffer-Einheiten) mit dem Stempel des Bilds. Ein Bruch meldet sich beim EINEN Melder (`_augeBruch`), still nie.
+    _augeKetteZeichnen() {
+        const st = this.state;
+        const K = this._augeKette();
+        K.U.feld.value = this._augeFeld ? 1 : 0;
+        K.U.m.value = this._augeM;
+        if (this._augeAus || this._augeBruch) return;
+        const [r, pp, cam] = [st.renderer, st.postProcessing, st.camera];
+        const quelle = st.traaNode
+            ? st.traaNode.getTextureNode().value
+            : st.scenePass && st.scenePass.getTextureNode().value;
+        if (!r || !pp || !cam || !quelle || !quelle.image) return;
+        try {
+            const T = THREE.TSL;
+            const Quad = pp._quadMesh && pp._quadMesh.constructor;
+            if (typeof Quad !== "function") throw new Error("AUGE: Quad der Post-Kette fehlt (Vendor-Drift)");
+            if (typeof r.readRenderTargetPixelsAsync !== "function")
+                throw new Error(
+                    "AUGE: der Renderer liest kein Ziel zurück (readRenderTargetPixelsAsync fehlt, Vendor)"
+                );
+            const gr = [];
+            for (let [w, h] = [quelle.image.width | 0, quelle.image.height | 0]; w > 1 || h > 1;) {
+                [w, h] = [Math.ceil(w / 4), Math.ceil(h / 4)];
+                gr.push([w, h]);
+            }
+            if (gr.length < 2) return; // die Quelle ist noch nicht bemessen (das Ziel der Auflösung vor ihrem ersten Lauf)
+            K.groessen = gr;
+            while (K.stufen.length < gr.length) K.stufen.push(K.stufe(K.stufen.length));
+            const bau = (i) => {
+                const { Fn, float, vec2, vec3, vec4, floor, min, dot, screenCoordinate } = T;
+                const q = i === 0 ? (K.quelle = T.texture(quelle)) : T.texture(K.stufen[i - 1].ziel.texture);
+                const mat = new THREE.MeshBasicNodeMaterial();
+                mat.name = "auge:" + i;
+                mat.fog = false;
+                mat.depthTest = false;
+                mat.depthWrite = false;
+                mat.fragmentNode = Fn(() => {
+                    const g = vec2(q.size());
+                    const b = floor(screenCoordinate.xy).mul(4);
+                    const sr = float(0).toVar(),
+                        sg = float(0).toVar();
+                    for (const [dx, dy] of [
+                        [1, 1],
+                        [3, 1],
+                        [1, 3],
+                        [3, 3],
+                    ]) {
+                        const uv = b.add(vec2(dx, dy)).div(g);
+                        const c = q.sample(uv).level(0);
+                        if (i > 0) {
+                            sr.addAssign(c.r);
+                            sg.addAssign(c.g);
+                            continue;
+                        }
+                        const Y = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+                        const ys = K.U.deckel.greaterThan(0).select(min(Y, K.U.deckel), Y);
+                        const x = uv.x.mul(2).sub(1).mul(K.U.tanH).mul(K.U.aspekt);
+                        const y = float(1).sub(uv.y.mul(2)).mul(K.U.tanH);
+                        const w = x.mul(x).add(y.mul(y)).add(1).pow(-1.5);
+                        sr.addAssign(ys.mul(w));
+                        sg.addAssign(w);
+                    }
+                    return vec4(sr.mul(0.25), sg.mul(0.25), 0, 1);
+                })();
+                return Object.assign(new Quad(mat), { name: "auge:" + i });
+            };
+            gr.forEach(([w, h], i) => {
+                const s = K.stufen[i];
+                if (!s.quad) s.quad = bau(i);
+                if (s.ziel.width !== w || s.ziel.height !== h) {
+                    s.ziel.setSize(w, h);
+                    r.initRenderTarget(s.ziel);
+                    // DIE GENERATION (wie Godray und Zeit-Auflösung): r184 bindet die neu angelegte Textur nur bei neuer Generation
+                    r._textures.get(s.ziel.texture).generation = "auge:" + i + ":" + ++K.gen;
+                }
+            });
+            K.quelle.value = quelle;
+            K.U.tanH.value = Math.tan((cam.fov * Math.PI) / 360);
+            K.U.aspekt.value = cam.aspect;
+            const ganz = this._einmalRender(K, () => {
+                const vor = r.getRenderTarget(),
+                    mrt = r.getMRT(),
+                    rof = r.getRenderObjectFunction(),
+                    autoClear = r.autoClear;
+                r.setMRT(null);
+                r.setRenderObjectFunction(null);
+                r.autoClear = true;
+                try {
+                    for (let i = 0; i < gr.length; i++) {
+                        r.setRenderTarget(K.stufen[i].ziel);
+                        K.stufen[i].quad.render(r);
+                    }
+                } finally {
+                    r.setRenderTarget(vor);
+                    r.setMRT(mrt);
+                    r.setRenderObjectFunction(rof);
+                    r.autoClear = autoClear;
+                }
+            });
+            if (!ganz) return; // die Pipelines im Vorbau (`_einmalRender`): keine Lesung eines leeren Ziels
+            K.laeufe++;
+            if (K.flug) return;
+            const bild = { takt: st.weltTakt, zeit: this._bildZeit };
+            K.flug = r
+                .readRenderTargetPixelsAsync(K.stufen[gr.length - 1].ziel, 0, 0, 1, 1)
+                .then((px) => {
+                    const v = (j) => (px instanceof Uint16Array ? AnazhRealm._halbZuFloat(px[j]) : px[j]);
+                    const [R, G] = [v(0), v(1)];
+                    if (!(G > 0) || !(R >= 0) || !Number.isFinite(R / G))
+                        throw new Error(`AUGE: das 1 × 1 trägt kein Mittel (R ${R}, G ${G})`);
+                    this._augeZ = R / G;
+                    this._augeZeit = bild;
+                })
+                .catch((err) => {
+                    this._augeBruch = true;
+                    this._stoffBruch("die Rücklese der Mess-Kette des Auges — die Belichtung hält ihren Zustand", err);
+                })
+                .finally(() => (K.flug = null));
+        } catch (err) {
+            this._augeBruch = true;
+            this._stoffBruch("die Mess-Kette des Auges (Licht-Spike) — die Belichtung hält ihren Zustand", err);
+        }
+    }
+
     // DIE EINE TONKURVE IM AUSGABE-KNOTEN (Licht-Spike, entscheid §1/§5): Belichtung → Khronos PBR Neutral für Helligkeit und
     // Buntheit (Schulter-Beginn 0,76, Entsättigung 0,15, Fuß 0,08/6,25/0,04 — die Zahlen des Vendors `mT`) → der FARBTON der
     // Eingangsfarbe in Oklab (Ottosson 2020) gehalten; ein C außerhalb des Gamuts sinkt in 4 Bisektions-Schritten. Danach die
@@ -2206,7 +2381,8 @@ class AnazhRealm_bild_kosten {
             );
         };
         return T.Fn(() => {
-            const x0 = vec3(farbe).max(vec3(0)).mul(T.toneMappingExposure).toVar();
+            // die Belichtung: G `toneMappingExposure`, F je Pixel aus dem Feld der Mess-Kette (`_augeKette().faktor`)
+            const x0 = vec3(farbe).max(vec3(0)).mul(this._augeKette().faktor).toVar();
             // Khronos PBR Neutral, wörtlich wie vendor `mT`
             const tief = min(x0.r, min(x0.g, x0.b));
             const fuss = tief.lessThan(0.08).select(tief.sub(tief.mul(tief).mul(6.25)), float(0.04));

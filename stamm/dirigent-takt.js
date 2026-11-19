@@ -2576,7 +2576,6 @@ class AnazhRealm_dirigent_takt {
                 const L = this.state.spiegelLeser;
                 if (L && this.state._traaR && this.state._traaR.sprung) L.an.value = 0;
                 pp.render();
-                this._lichtKappeMessen(); // Licht-Spike: die Kappe misst die Sicht (eine Messung im Flug, nach dem Bau des Passes)
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
                 // Knoten-Fehler der Kette bricht HIER — laut beim Namen (K22), der Schirm zeichnet danach direkt
@@ -2594,6 +2593,9 @@ class AnazhRealm_dirigent_takt {
         }
         // DER SPIEGEL DES GESETZES (D10): nach dem Bild der Post-Kette, aus ihrer Tiefe — das Wasser des nächsten liest ihn
         if (!direkt) this._spiegelPassZeichne();
+        // DIE MESS-KETTE DES AUGES (Licht-Spike): nach dem Bild der Post-Kette, aus ihrem aufgelösten Szenen-Bild — der Schreiber der
+        // Belichtung und die Ablesung F des nächsten Bilds lesen sie (ein Bruch meldet sich in ihr, nie hier)
+        if (!direkt) this._augeKetteZeichnen();
         // DIE KONTAKT-VERDECKUNG (schatten.K3): nach dem Bild, aus seiner Tiefe — der Boden des nächsten liest sie
         this._kontaktPassZeichne(direkt);
         // DER RÜCKSTRAHL DES BODENS (schatten.K4): aus dem Szenen-Pass dieses Bilds — die Umgebung des nächsten liest ihn

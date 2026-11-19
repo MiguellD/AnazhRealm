@@ -700,8 +700,6 @@ class AnazhRealm_stoff_material {
             // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
             // über den Zitter auf (der Mip-Versatz log2(Szene/Ausgabe) jedes Hochskalierers). EIN Schreiber: `_loopRender`.
             schirmJeSzene: TSL.uniform(1).setName("schirmJeSzene"),
-            // Licht-Spike: das Leuchten der Strahler (1; 0 nur im Mess-Bild der Kappe, `_lichtKappeMessen`)
-            strahlerAn: TSL.uniform(1),
             // DIE NÄSSE DER WELT (wetter.K2, EIN Schreiber `_naesseTakt`) und der Dach-Pool ihrer Himmels-Sicht (`_dachTakt`)
             naesse: TSL.uniform(0),
             // die Stärke des Regens (das Wetter-Feld `rain`, 0 ohne Regen): die Tropfen-Ringe der Pfütze (`_pfuetzeKnoten`)
@@ -2089,12 +2087,6 @@ class AnazhRealm_stoff_material {
         mat.userData = mat.userData || {};
         if (mp && (mp.seh === "glut" || mp.leucht > 0)) {
             mat.userData.lichtPool = "quelle";
-            if (!mat.userData.strahlerAn) {
-                mat.emissiveNode = (mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive).mul(
-                    atmo.strahlerAn
-                );
-                mat.userData.strahlerAn = true;
-            }
             return mat;
         }
         this._naesseImStoff(mat, himmel);
@@ -2115,7 +2107,7 @@ class AnazhRealm_stoff_material {
                 if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
                 em = em.add(glut);
             }
-            knoten[licht] = em.mul(atmo.strahlerAn).add(this._lichtPoolTerm(Te, atmo, himmel || null));
+            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
         }
         mat.emissiveNode = knoten[licht];
         mat.userData.lichtPool = true;
