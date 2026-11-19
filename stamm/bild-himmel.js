@@ -1935,7 +1935,11 @@ class AnazhRealm_bild_himmel {
         this._raumBlendeTakt();
         if (k == null) return;
         this.state.renderer.toneMappingExposure = k;
-        this.state._belichtungSteht = true;
+        // … und sie steht erst mit der Sicht des Bildes (`_bildSichtSteht`, laub-messer): der Messer misst die Schatten der Stunde
+        // am Bild, seine Lesung kommt ein bis zwei Bilder später — der Ladeschirm der Ankunft weicht nach der Lesung
+        // (`_weltbildLuecken`, Term „licht“), nie mit der Belichtung ohne Schatten. Steht sie einmal, bleibt der Term zu (je Stand
+        // der Welt; ein Sprung der Uhr im Spiel trägt bis zur Lesung die Sicht der Stunde davor)
+        if (!this.state._belichtungSteht) this.state._belichtungSteht = this._bildSichtSteht();
     }
 
     // DIE BELICHTUNG DES ORTS bei der Sonnenhöhe e (sin): das Gesetz der Kamera aus dem Licht, das jetzt gilt — null, solange
@@ -2182,10 +2186,13 @@ class AnazhRealm_bild_himmel {
             out[1] += c.g * k;
             out[2] += c.b * k;
         };
-        // der Lichtmesser misst den Boden im Bild: die Sonne, die der Horizont des Gesetzes ihm nimmt, misst er nicht
-        // (`_horizontSichtImBild`, dieselbe Karte wie jeder Empfänger); den Wurf der Wolke trägt er im Mittel (lightMul im Richtlicht)
-        // … und auf dem Boden, wie das Bild ihn zeigt: je Fläche max(N·L, 0) ihrer Neigung (an der Stelle von sin h☉)
-        add(dl.color, dl.intensity * (dy > 0 ? this._horizontSichtImBild(dir) : 0));
+        // DER EMPFÄNGER IST DIE WAAGRECHTE 18-%-KARTE (M1, der Anker des Mittags): die Sonne mit dem Sinus ihrer Höhe × die Sicht
+        // des BILDES (M2, `_bildSonnenSicht`: der Schatten, den das Bild in seiner unteren Hälfte zeichnet — Kaskaden, Horizont
+        // und Wolke aus derselben Schatten-Funktion wie jeder Stoff, als Flächen-Mittel). Bis laub-messer führte der Messer eine
+        // eigene Gestalt der Welt (der Grat auf dem 32-m-Gitter, Ellipsen im Rahmen der Karten mit fester Dichte, der Boden als
+        // Ebene unter dem Auge mit eigener Neigung): er sah einen anderen Schatten als das Bild, und die Belichtung lief ihm
+        // beim Sonnenaufgang der Mess-Wiese um 0,12–0,16 EV je 0,002 der Uhr davon (Tag-Achse, Radeon, Kopf 6113b27e).
+        add(dl.color, dl.intensity * dy * this._bildSonnenSicht());
         // der Anteil des Richtlichts an der Lesung (die Blende des Raums liest ihn: im Raum misst der Messer die Sonne nicht)
         const so = this._belichtungSonne || (this._belichtungSonne = [0, 0, 0]);
         if (out === this._belichtungE) [so[0], so[1], so[2]] = out;
