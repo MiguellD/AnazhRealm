@@ -1621,13 +1621,13 @@ class AnazhRealm_bild_himmel {
         const E0 = this._atmoE0(tint);
         U.licht.value = E0;
         const Mo = AnazhRealm.MOONLIGHT;
-        const mi = (Mo.intensity * (tint ? tint.lightMul : 1)) / Math.max(E0, 1e-6);
+        const mi = (Mo.intensity * __weltLicht.PHYS.mond * (tint ? tint.lightMul : 1)) / Math.max(E0, 1e-6);
         U.mondE.value.set(Mo.r * mi, Mo.g * mi, Mo.b * mi);
         // das Sternen-Licht hängt allein an der Höhe der Sonne (die Dämmerung) — der Schlüssel der Himmels-Sicht trägt es mit
         const N = this._atmoSternenLicht(sunDir.y);
         U.nachtE.value.set(N[0], N[1], N[2]).divideScalar(Math.max(E0, 1e-6));
         const s = st._sonne;
-        const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}`;
+        const schluessel = `${s ? s.winkel : 0}:${h}:${A.mediumBeta}:${__weltLicht.PHYS.mond}:${__weltLicht.PHYS.stern}`;
         const rend = st.renderer;
         if (!rend || rend._isHeadlessNull || !st.rendererReady) return A;
         // DIE LEINE FRAGT DIE TAFELN (wie das Bild, die Karte und die Umgebung, `_gpuLeineStraff`): an gespannter Leine zeichnet
@@ -1785,7 +1785,7 @@ class AnazhRealm_bild_himmel {
         const zeigt = (this._sterneZeigen = skyMul > 0 && achse.grenze - AnazhRealm.STERN_HELLSTE + 0.5 > 0);
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
-        u.opacity.value = skyMul;
+        u.opacity.value = skyMul * __weltLicht.PHYS.mond;
         if (u.grenze) u.grenze.value = achse.grenze;
         const sf = this.state.starField;
         if (sf && u.grenze) sf.visible = zeigt;
@@ -1892,7 +1892,8 @@ class AnazhRealm_bild_himmel {
             dl.color.setRGB(a.col.r, a.col.g, a.col.b);
             // V18.378 — der Durchlass liest die ECHTE Mond-Höhe (md.y), nicht −sunDir.y (die
             // z-Bogen-Formel gibt dem Mond eine eigene Normierung → eigene Höhe).
-            dl.intensity = M.intensity * tint.lightMul * tint.direkt * this._mondDurchlass(md.y);
+            dl.intensity =
+                M.intensity * __weltLicht.PHYS.mond * tint.lightMul * tint.direkt * this._mondDurchlass(md.y);
         }
         // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es. Es
         // ist das Auge der EINEN Tag-Achse (`tag`): es gleitet über die Sonnenhöhe vom Tag in die Nacht (mit
@@ -1952,11 +1953,23 @@ class AnazhRealm_bild_himmel {
         const dt = vorZeit == null ? 0 : Math.min(0.25, Math.max(0, (this._raumBlendeZeit - vorZeit) / 1000));
         const R = this.state.renderer;
         if (!R) return;
+        const K = this._augeKette();
+        // SPIKE Vor-Belichtung: `_vor` 1 = das Gesetz von main ohne, 2 = mit Vor-Belichtung (k_vor = das k DIESES Bilds, es steht
+        // vor dem Zeichnen); `_vorK` hält ein k von Hand (die Falsifikation des k-Sprungs)
+        if (this._vor) {
+            const k = this._vorK > 0 ? this._vorK : kAlt;
+            if (!(k > 0)) return;
+            this._augeK = R.toneMappingExposure = k;
+            K.U.kVor.value = this._vor === 2 ? k : 1;
+            K.U.deckel.value = A.schulter / k;
+            this.state._belichtungSteht = true;
+            return;
+        }
+        K.U.kVor.value = 1;
         if (this._augeAus && this._augeK > 0) {
             R.toneMappingExposure = this._augeK;
             return;
         }
-        const K = this._augeKette();
         const [m, kE, zE] = [this._augeM, K.U.kE.value, K.U.zE.value];
         K.U.m.value = m; // F liest dasselbe m
         if (this._augeZ == null) {
@@ -2291,7 +2304,7 @@ class AnazhRealm_bild_himmel {
     _dayNightApplyAmbient(achse) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const baseAmb = 0.04 * achse.nacht;
+        const baseAmb = 0.04 * achse.nacht * __weltLicht.PHYS.mond;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -2532,7 +2545,7 @@ class AnazhRealm_bild_himmel {
             hl.groundColor.copy(earth);
             // Hemi = NUR der Nachthimmel-Boden 0.1 (EIN Himmel, V18.507): der Tag-Term (Vorlagen-Hemi 0.55·π)
             // zählte die Himmels-Umgebung doppelt; die Mond-Nacht bleibt eigen getuned.
-            hl.intensity = 0.1 * achse.nacht * tint.lightMul;
+            hl.intensity = 0.1 * achse.nacht * tint.lightMul * __weltLicht.PHYS.mond;
         }
         // DAS MEDIUM DER KAMERA (W-L-d): unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera, nie das
         // des Körpers (bis V18.531: eine Kamera 20 m über dem Ufer zeigte Voll-Bild-Unterwasser, solange die Augen des

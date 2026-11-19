@@ -139,9 +139,15 @@ var __weltLicht = (function () {
     // bürgerlichen Dämmerung so viel wie der Vollmond im Zenit (`daemmer`; die REF: 3 lx bei −6°, gleich dem Vollmond bei −8°)
     // und fällt mit der Dämmerung der Tag-Achse bis −18° auf 0, während der Mond steigt. Die tiefe Nacht trägt es nie.
     const DAEMMER_ENDE = tagAchse(Math.sin((-6 * Math.PI) / 180)).daemmerung;
+    // SPIKE Vor-Belichtung (w28-licht-spike): die Nacht-Quellen im EINEN Maßstab — `mond` der Faktor auf Mond, Knoten und
+    // Füll-Lichter, `stern` auf das Sternen-Leuchten (1 = der heutige Nacht-Maßstab)
+    const PHYS = { mond: 1, stern: 1 };
     function nachtHimmel(achse) {
         const d = Math.max(0, Math.min(1, achse.daemmerung));
-        return STERNENLICHT.leuchtdichte * (1 - d) + STERNENLICHT.daemmer * achse.nacht * Math.min(1, d / DAEMMER_ENDE);
+        return (
+            STERNENLICHT.leuchtdichte * PHYS.stern * (1 - d) +
+            STERNENLICHT.daemmer * PHYS.mond * achse.nacht * Math.min(1, d / DAEMMER_ENDE)
+        );
     }
     // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
     // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
@@ -674,7 +680,11 @@ var __weltLicht = (function () {
     function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
         const s = Math.max(0, Math.min(1, h / B.nachtKnotenGrad));
-        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], B.nachtKnotenE * s * s * (3 - 2 * s), 1e-6);
+        const E = Math.max(
+            0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2],
+            B.nachtKnotenE * PHYS.mond * s * s * (3 - 2 * s),
+            1e-12
+        );
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
     }
 
@@ -1131,7 +1141,7 @@ var __weltLicht = (function () {
         U.mond.value.set(m[0], m[1], m[2]);
         const E0 = e0(1);
         U.licht.value = E0;
-        const mi = MOONLIGHT.intensity / Math.max(E0, 1e-6);
+        const mi = (MOONLIGHT.intensity * PHYS.mond) / Math.max(E0, 1e-6);
         U.mondE.value.set(MOONLIGHT.r * mi, MOONLIGHT.g * mi, MOONLIGHT.b * mi);
         const sw = nachtHimmel(achse);
         U.nachtE.value
@@ -1333,6 +1343,7 @@ var __weltLicht = (function () {
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,
         MOONLIGHT,
+        PHYS,
         STERNENLICHT,
         nachtHimmel,
         schirmDreieck,

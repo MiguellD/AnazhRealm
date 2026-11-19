@@ -2190,6 +2190,11 @@ class AnazhRealm_bild_kosten {
             m: T.uniform(A.m), // gespiegelt aus `this._augeM` (der Schreiber und `_augeKetteZeichnen`)
             kE: T.uniform(A.kEPuffer),
             zE: T.uniform(A.zECdM2 / A.einheitCdM2),
+            // SPIKE Vor-Belichtung: k_vor — der Puffer trägt L × k_vor (1 = aus); `cdJeEinheit` der Maßstab, den das Auge
+            // der Nacht liest (heute der Nacht-Maßstab 1,1607; im EINEN Maßstab 16 090); `formatDeckel` das Ende des Formats
+            kVor: T.uniform(1),
+            cdJeEinheit: T.uniform(AnazhRealm.NACHT_AUGE.luxJeEinheit),
+            formatDeckel: T.uniform(32768),
         };
         const stufe = (i) => {
             const ziel = new THREE.RenderTarget(1, 1, {
@@ -2207,7 +2212,9 @@ class AnazhRealm_bild_kosten {
         // F: Z(x) = R ÷ G der zweiten Stufe am Schirm (die Auflösung der Messung als Boden: ein schwarzes Feld hat kein log)
         const f = T.texture(K.stufen[1].ziel.texture).sample(T.screenUV);
         const zx = f.r.div(f.g.max(1e-12)).max(2 ** -24);
-        K.faktor = U.feld.greaterThan(0.5).select(U.kE.mul(zx.div(U.zE).pow(U.m.negate())), T.toneMappingExposure);
+        K.faktor = U.feld
+            .greaterThan(0.5)
+            .select(U.kE.mul(zx.div(U.zE).pow(U.m.negate())), T.toneMappingExposure.div(U.kVor));
         if (this._augeM == null) this._augeM = A.m; // der EINE Stellwert zur Laufzeit (G und F)
         this._augeKetteStand = K;
         return K;
@@ -2283,7 +2290,7 @@ class AnazhRealm_bild_kosten {
                             sg.addAssign(c.g.mul(gew));
                             continue;
                         }
-                        const Y = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
+                        const Y = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722)).div(K.U.kVor);
                         const ys = K.U.deckel.greaterThan(0).select(min(Y, K.U.deckel), Y);
                         const x = uv.x.mul(2).sub(1).mul(K.U.tanH).mul(K.U.aspekt);
                         const y = float(1).sub(uv.y.mul(2)).mul(K.U.tanH);
@@ -2442,17 +2449,18 @@ class AnazhRealm_bild_kosten {
         const [T, NA] = [THREE.TSL, AnazhRealm.NACHT_AUGE];
         const nacht = this._nachtAugeU || (this._nachtAugeU = T.uniform(0));
         if (!farbe) return nacht;
+        const KV = this._augeKette().U;
         // der Stäbchen-ANTEIL eines Pixels der photopischen Leuchtdichte l: das mesopische Band der Leuchtdichte …
         const sVon = (l) => {
             const zapfen = T.log(
-                l.mul(T.float(NA.luxJeEinheit)).max(T.float(NA.staebchenCd)).div(T.float(NA.staebchenCd))
+                l.div(KV.kVor).mul(KV.cdJeEinheit).max(T.float(NA.staebchenCd)).div(T.float(NA.staebchenCd))
             )
                 .div(T.float(Math.log(NA.zapfenCd / NA.staebchenCd)))
                 .clamp(0, 1);
             // … und am BILD (w28-glut-nacht): ein Pixel, das die Belichtung der Nacht über Mittelgrau hebt, sieht das Auge mit
             // den Zapfen — der Anteil blendet von `bildZapfen[0]` bis `bildZapfen[1]` (Leuchtdichte × Belichtung) aus. Die
             // Skala der Leuchtdichte allein legt die Zapfen-Schwelle auf das 29-Fache von Bild-Weiß: der Feuerschein stand rosa
-            const hell = T.smoothstep(NA.bildZapfen[0], NA.bildZapfen[1], l.mul(T.toneMappingExposure));
+            const hell = T.smoothstep(NA.bildZapfen[0], NA.bildZapfen[1], l.div(KV.kVor).mul(T.toneMappingExposure));
             return T.float(1).sub(zapfen).mul(nacht).mul(T.float(1).sub(hell));
         };
         // DAS GRAU DER STÄBCHEN IST SKOTOPISCH (w28-glut-nacht; CIE 191:2010: L_mes = m·L_p + (1 − m)·L_s): die Stäbchen sehen
@@ -2520,7 +2528,10 @@ class AnazhRealm_bild_kosten {
             // Nässe wie das Wasser an seiner Zelle. r184 mischt nur `output` nach dem Stoff, das Glanz-Ziel schreibt ohne
             // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75. Der Eintrag
             // `output` trägt die Ditherung des Ziels (`_ausgabeDither`): durch ihn schreibt jeder Stoff des Passes.
-            scenePass.setMRT(TSL.mrt({ output: this._ausgabeDither(TSL.output), glanz: this._glanzKnoten() }));
+            // SPIKE Vor-Belichtung: DIE EINE STELLE — jeder Stoff schreibt × k_vor, gedeckelt am Ende des Formats
+            const vorU = this._augeKette().U;
+            const vorAus = TSL.vec4(TSL.output.rgb.mul(vorU.kVor).min(vorU.formatDeckel), TSL.output.a);
+            scenePass.setMRT(TSL.mrt({ output: this._ausgabeDither(vorAus), glanz: this._glanzKnoten() }));
             const glanz = scenePass.getTexture("glanz");
             glanz.type = THREE.UnsignedByteType;
             glanz.format = THREE.RedFormat;

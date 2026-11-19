@@ -181,7 +181,7 @@ class AnazhRealm_bild_schatten {
                                 .and(eben(ay, by))
                                 .and(this._offenerHimmel(T, p.xyz).greaterThan(0.5)),
                             () => {
-                                summe.addAssign(farbe.load(px).rgb);
+                                summe.addAssign(farbe.load(px).rgb.div(this._augeKette().U.kVor)); // SPIKE Vor-Belichtung
                                 n.addAssign(1);
                             }
                         );
