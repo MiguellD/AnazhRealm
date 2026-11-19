@@ -5,6 +5,1568 @@
 const K = require("./k2-planet.js").kern;
 const L = K.kapitel("zusammenspiel");
 
+// ── DIE PERSPEKTIVE zusammenspiel.planet (8 Leitern, 50 Sprossen, 2 belegt: bahn-klima S1 — g1.js SCHNEE_JAHR, wetter-welt S1 — g3.js
+// WETTER_PAAR_PROBE): die Kopplungen des Planeten, jede mit ihrem Gegenlauf (R7). Gemessen wird in der warmen Welt der Sitzung: die Ursache
+// am Ort über `r` (der EINE Spiegel `state.waterLevel` — die Lage liest ihn über ihren Getter, stamm/gelaende-boden.js:770 —, das Relief
+// `_terrainMacroSurfaceY`/`_terrainSaatY`, der Fluss `_hydroRiverAt`, die Siedlung `_autoSettlementCellInfo`/`_autoSettlementFindSite`,
+// die Bewohner `_bewohnerSiedlungen`, der Wind `_windAt`/`_windForm`, die Nässe `_naesseKurve`/`_naesseGesetz`/`_pfuetzeGesetz`), das Wetter
+// nur über `window.__wetterSetzen`, der Planet über den Planet-Faden (`r._planetAuftrag` planet-ort/planet-anker, je Lage delta.klima/meer/
+// wetter/wuchs/wildnis, zeitMa) und das Wetter am Ort über phyto-core `wetterAt` mit dem Δ des Orts (derselbe Weg wie `_wetterAmOrt`).
+// Die Saaten „zsp-0 …“ teilt jede Leiter (der Faden merkt den Plan je Samen, ~0,1 s je neuer Saat). Jede Mutation wird zurückgenommen
+// (der Spiegel im finally, die Hüllen `_slopeAt`/`_hydroRiverAt` gelöscht, das Wetter auf sein Wort zurück).
+L.perspektive("planet", (() => {
+    const A = "planet.kopplung.siedlungslage";
+    const B = "planet.kopplung.land-meer-luft";
+    const C = "planet.kopplung.bahn-klima";
+    const D = "planet.kopplung.wetter-welt";
+    const E = "planet.kopplung.stadtklima";
+    const F = "planet.kopplung.kaskade";
+    const G = "planet.kopplung.ereignis-spur";
+    const P = "planet.kopplung.gegenwart";
+    const PLANET_PFAD = ["planet-core.js", "voxel-worker.js", "stamm/gelaende-chunks.js", "gelaende-core.js", "phyto-core.js", "stamm/bild-himmel.js", "scripts/werkbank.cjs"];
+    // der Zeuge des Planet-Fadens: N Saaten, N Antworten, Streuung, und das Paar mit ↔ ohne Ursache (R7)
+    const zeugePlanet = (minSaaten, minPaare) => (roh) => {
+        const z = roh.zeuge || {};
+        if (!(z.saaten >= minSaaten)) return "nur " + (z.saaten || 0) + " Saaten des Planet-Fadens (Soll ≥ " + minSaaten + ")";
+        if (!(z.antworten > 0) || !(z.streuung > 0)) return "die Antworten des Fadens tragen keine Streuung (eine Konstante, nicht der Planet)";
+        if (!(z.gegenlauf >= minPaare)) return "der Gegenlauf (Ursache gekappt) fehlt: " + (z.gegenlauf || 0) + " Paare (Soll ≥ " + minPaare + ")";
+        if (z.gegenWirkt === true) return "im Gegenlauf bleibt die Wirkung (keine Kopplung, Rauschen)";
+        return null;
+    };
+    const PZ = (n, g) => ({ saaten: n, antworten: 20 * n, streuung: 812, gegenlauf: g, gegenWirkt: false });
+    const leer = { werte: {}, zeuge: {} };
+
+    return {
+        leitern: {
+            // ════════ siedlungslage — Gelände, Wasser und Gestein tragen Siedlung und Verkehr ════════
+            // S1 hebt den EINEN Spiegel (`state.waterLevel` + 1 m, im finally zurück) an 50 Uferpunkten und liest die Leser Ufer (`_atlasWaterLevelAt`),
+            // Schilf (`_ortNass` im Band 30/60 m), Fuß (`_koerperWasserSpiegel`), Steg und Boot (die Welt fragt nach ihrem Leser) und daneben Spiegel,
+            // Wand (`_landAt`) und Nässe (`_nassAt`); der Gegenlauf liest dieselben Punkte zweimal ohne Hebung. S3 die Orte der Region (25 × 25 Zellen,
+            // `_autoSettlementFindSite`) an Küste/Fluss gegen Zufallspunkte, der Gegenlauf mit eingeebnetem Relief und gekapptem Fluss (Hüllen
+            // `_slopeAt` → 0, `_hydroRiverAt` → null an der Instanz, gelöscht im finally). S4 die Steigung der Trassen der geladenen Orte gegen
+            // `ORT_GESETZ.trasse`. S2/S5 fragen die Welt nach Bodenart und Schicht; S6/S7 sind Jury-Sprossen (Auge).
+            [A]: {
+                sek: 40,
+                dorf: true,
+                mutiert: true,
+                pfad: ["stamm/wasser-*.js", "stamm/gelaende-boden.js", "stamm/siedlung-ort.js", "stamm/siedlung-wege.js", "stamm/kreatur-leben.js", "stamm/vegetation-baum.js", "gelaende-core.js", "fachwerk-core.js", "scripts/werkbank.cjs"],
+                ungefahren: "die Bildpaare (S1 Ufer, S2 Bodenart) und die Jury (S6, S7) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r, a) => {
+                        const st = r.state;
+                        const wl = st.waterLevel;
+                        const p = st.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const aus = { wl };
+                        const ufer = [];
+                        for (let k = 0; k < 1200 && ufer.length < a.n; k++) {
+                            const ang = k * 2.39996;
+                            let vor = null;
+                            for (let d = 150; d <= 20000; d += 40) {
+                                const x = p.x + Math.cos(ang) * d;
+                                const z = p.z + Math.sin(ang) * d;
+                                if (r._terrainMacroSurfaceY(x, z) < wl) {
+                                    if (vor) ufer.push(vor);
+                                    break;
+                                }
+                                vor = [x, z];
+                            }
+                        }
+                        const band = (x, z) => {
+                            let s = 0;
+                            for (let k = 0; k < 8; k++)
+                                for (const d of [30, 60]) {
+                                    const qx = x + Math.cos(k * 0.785) * d;
+                                    const qz = z + Math.sin(k * 0.785) * d;
+                                    s += r._ortNass(qx, qz, r._terrainMacroSurfaceY(qx, qz));
+                                }
+                            return r3(s);
+                        };
+                        const leser = {
+                            ufer: (x, z, g) => r._atlasWaterLevelAt(x, z, g),
+                            schilf: (x, z) => band(x, z),
+                            fuss: (x, z, g) => r._koerperWasserSpiegel(x, z, g),
+                            spiegel: (x, z) => r._waterLevelAt(x, z),
+                            wand: (x, z) => (r._landAt(x, z, 0) ? 1 : 0),
+                            naesse: (x, z) => (r._nassAt(x, z) ? 1 : 0),
+                        };
+                        const namen = Object.keys(leser);
+                        const lies = () => ufer.map(([x, z]) => { const g = r._terrainMacroSurfaceY(x, z); return namen.map((k) => leser[k](x, z, g)); });
+                        const vor = lies();
+                        const gegen = lies();
+                        let nach;
+                        try {
+                            st.waterLevel = wl + 1;
+                            nach = lies();
+                        } finally {
+                            st.waterLevel = wl;
+                        }
+                        const zur = lies();
+                        const je = {};
+                        namen.forEach((n, j) => {
+                            let folgt = 0;
+                            let still = 0;
+                            for (let i = 0; i < ufer.length; i++) {
+                                if (nach[i][j] !== vor[i][j]) folgt++;
+                                if (gegen[i][j] !== vor[i][j]) still++;
+                            }
+                            je[n] = [folgt, still];
+                        });
+                        const fehlt = ["_stegAt", "_bootAt", "_stegeAm", "_bootAmUfer"].filter((n) => typeof r[n] === "function");
+                        aus.s1 = { punkte: ufer.length, je, zurueck: JSON.stringify(vor) === JSON.stringify(zur), steg: fehlt.length, pose: ufer[0] ? [ufer[0][0], r._terrainMacroSurfaceY(ufer[0][0], ufer[0][1]), ufer[0][1]] : null };
+                        const art = ["_bodenArtAt", "_gesteinAt", "_schichtAt", "_bodenartAt", "_gesteinsArt"].filter((n) => typeof r[n] === "function");
+                        let bG = 0;
+                        let bF = 0;
+                        let bN = 0;
+                        for (let t = 0; t < 4; t++) {
+                            const ang = t * 0.7854 + 0.3;
+                            let altB = null;
+                            const fels = [];
+                            const bk = [];
+                            for (let i = 0; i < 120; i++) {
+                                const x = p.x + Math.cos(ang) * (i * 10 - 600);
+                                const z = p.z + Math.sin(ang) * (i * 10 - 600);
+                                bk.push(r._bodenKlasseAt(x, z));
+                                fels.push(r._rockGeologyClass(r._slopeAt(x, z), 0));
+                            }
+                            for (let i = 1; i < bk.length; i++) {
+                                if (bk[i] !== bk[i - 1]) {
+                                    bG++;
+                                    if ([i - 1, i, i + 1].some((j) => j > 0 && j < fels.length && fels[j] !== fels[j - 1])) bF++;
+                                }
+                                bN++;
+                            }
+                            altB = bk;
+                        }
+                        aus.s2 = { bodenLeser: art.length, grenzen: bG, mitFels: bF, punkte: bN };
+                        const SG = AnazhRealm._siedlungGesetz();
+                        const infos = [];
+                        for (let cx = -a.zellen; cx <= a.zellen; cx++) for (let cz = -a.zellen; cz <= a.zellen; cz++) { const i = r._autoSettlementCellInfo(cx, cz); if (i) infos.push(i); }
+                        const gunst = (x, z) => {
+                            let k1 = 0;
+                            let f1 = 0;
+                            for (let k = 0; k < 12; k++)
+                                for (const d of [0, 120, 300]) {
+                                    const qx = x + Math.cos(k * 0.5236) * d;
+                                    const qz = z + Math.sin(k * 0.5236) * d;
+                                    if (r._terrainMacroSurfaceY(qx, qz) < wl) k1 = 1;
+                                    if (r._hydroRiverAt(qx, qz)) f1 = 1;
+                                }
+                            return k1 || f1 ? 1 : 0;
+                        };
+                        const orte = infos.map((i) => r._autoSettlementFindSite(i));
+                        const echt = orte.map((o) => (o ? gunst(o.x, o.z) : null));
+                        const eigen = ["_slopeAt", "_hydroRiverAt"].map((n) => Object.prototype.hasOwnProperty.call(r, n));
+                        let flach = [];
+                        try {
+                            r._slopeAt = () => 0;
+                            r._hydroRiverAt = () => null;
+                            flach = infos.map((i) => r._autoSettlementFindSite(i));
+                        } finally {
+                            if (!eigen[0]) delete r._slopeAt;
+                            if (!eigen[1]) delete r._hydroRiverAt;
+                        }
+                        const gunstFlach = flach.map((o) => (o ? gunst(o.x, o.z) : null));
+                        let verschoben = 0;
+                        for (let i = 0; i < orte.length; i++) if (!!orte[i] !== !!flach[i] || (orte[i] && flach[i] && Math.hypot(orte[i].x - flach[i].x, orte[i].z - flach[i].z) > 1)) verschoben++;
+                        const zuf = [];
+                        const R = (a.zellen + 0.5) * SG.cellM;
+                        for (let i = 0; i < 4000 && zuf.length < 200; i++) {
+                            const x = p.x + (((i * 0.6180339) % 1) * 2 - 1) * R;
+                            const z = p.z + (((i * 0.7548776) % 1) * 2 - 1) * R;
+                            if (r._landAt(x, z, 0.2) && r._slopeAt(x, z) <= globalThis.__gelaendeCore.ERDBAU.boeschung) zuf.push(gunst(x, z));
+                        }
+                        const anteil = (v) => { const w = v.filter((x) => x !== null); return w.length ? r3((100 * w.reduce((s, x) => s + x, 0)) / w.length) : null; };
+                        const nHmax = infos.reduce((m, i) => Math.max(m, i.nH || 0), 0);
+                        aus.s3 = { zellen: (2 * a.zellen + 1) ** 2, orte: echt.filter((x) => x !== null).length, anteil: anteil(echt), gegen: anteil(gunstFlach), zufall: anteil(zuf), zufallN: zuf.length, verschoben, nHmax, wand: 500 };
+                        const OG = AnazhRealm.Gesetz("fachwerk:ORT_GESETZ");
+                        const seg = [];
+                        const strecken = [];
+                        for (const S of (r._bewohnerSiedlungen || new Map()).values()) {
+                            const pl = S.plan || {};
+                            for (const w of [].concat(pl.roads || [], pl.feldwege || [])) {
+                                const pts = (w && (w.pts || w.punkte)) || (Array.isArray(w) ? w : null);
+                                if (pts && pts.length > 1) strecken.push(pts.map((q) => ({ x: S.ox + q.x, z: S.oz + q.z })));
+                            }
+                        }
+                        for (const k of (r._wegenetzKanten || new Map()).values()) if (k && k.pts && k.pts.length > 1) strecken.push(k.pts);
+                        for (const pts of strecken)
+                            for (let i = 1; i < pts.length; i++) {
+                                const l = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+                                if (!(l > 0.5)) continue;
+                                seg.push(Math.abs(r.getTerrainHeightAt(pts[i].x, pts[i].z) - r.getTerrainHeightAt(pts[i - 1].x, pts[i - 1].z)) / l);
+                            }
+                        const sturz = ["_bergsturz", "_rutschung", "_passSperren", "_felssturz"].filter((n) => typeof r[n] === "function");
+                        aus.s4 = { grenze: OG.trasse, segmente: seg.length, strecken: strecken.length, unter: seg.filter((s) => s <= OG.trasse).length, max: r3(Math.max(0, ...seg)), sturz: sturz.length, netz: r._wegenetzKanten ? r._wegenetzKanten.size : 0 };
+                        let haeuser = 0;
+                        const kultur = {};
+                        for (const S of (r._bewohnerSiedlungen || new Map()).values()) for (const s of (S.plan && S.plan.slots) || []) { haeuser++; kultur[s.kultur] = (kultur[s.kultur] || 0) + 1; }
+                        aus.s5 = { haeuser, kultur, schichtLeser: art.length, erzLeser: ["_erzAt", "_bergwerk"].filter((n) => typeof r[n] === "function").length };
+                        aus.s6 = { nHmax, wand: 500 };
+                        return aus;
+                    };
+                    const w = await S(seite, { n: 50, zellen: 12 });
+                    const aus = {};
+                    const s1 = w.s1;
+                    const benannt = ["ufer", "schilf", "fuss"];
+                    const anteil = (n) => (s1.punkte ? s1.je[n][0] / s1.punkte : 0);
+                    const leserProzent = s1.punkte ? Math.round((1000 * (benannt.reduce((s, n) => s + anteil(n), 0) + 0 + 0)) / 5) / 10 : null;
+                    const still = Object.values(s1.je).reduce((s, v) => s + v[1], 0);
+                    const pose = s1.pose ? { px: s1.pose[0] - 40, py: s1.pose[1] + 25, pz: s1.pose[2] - 40, lx: s1.pose[0], ly: s1.pose[1], lz: s1.pose[2] } : { ort: "wiese" };
+                    aus[1] = {
+                        werte: { leserProzent },
+                        zeuge: { punkte: s1.punkte, je: s1.je, still, zurueck: s1.zurueck, stegBoot: s1.steg },
+                        auge: await M.auge("siedlungslage-s1", pose),
+                        ...(s1.punkte < 50 ? { nicht: "nur " + s1.punkte + " Uferpunkte in 20 km um den Spieler (Soll 50)" } : {}),
+                    };
+                    const s2 = w.s2;
+                    aus[2] = {
+                        werte: { leser: s2.bodenLeser, grenzenProzent: s2.grenzen ? Math.round((1000 * s2.mitFels) / s2.grenzen) / 10 : null },
+                        zeuge: s2,
+                        auge: await M.auge("siedlungslage-s2", { ort: "wiese" }),
+                        ...(s2.bodenLeser ? {} : { nicht: "die Welt trägt keine Bodenart und kein Gestein unter der Fläche (kein Leser _bodenArtAt/_gesteinAt/_schichtAt) — die Bodenklasse liest nur Wasser-Abstand, Hang und Wald" }),
+                    };
+                    const s3 = w.s3;
+                    aus[3] = {
+                        werte: { anteilProzent: s3.anteil, gegenlaufProzent: s3.gegen, zufallProzent: s3.zufall },
+                        zeuge: s3,
+                        nicht: s3.nHmax * 5 >= 1e5 ? null : "keine Stadt > 10⁵ Einwohner in der Region (größter Ort " + s3.nHmax + " Häuser, die Wand des Rang-Gesetzes 500)",
+                    };
+                    if (!aus[3].nicht) delete aus[3].nicht;
+                    const s4 = w.s4;
+                    aus[4] = {
+                        werte: { steigungProzent: s4.segmente ? Math.round((1000 * s4.unter) / s4.segmente) / 10 : null },
+                        zeuge: s4,
+                        nicht: "kein Verkehr eines Landes: das Wegenetz liegt nur zwischen geladenen Orten (" + s4.netz + " Kanten, " + s4.strecken + " Strecken) — und kein Bergsturz sperrt einen Pass (" + s4.sturz + " Leser)",
+                    };
+                    const s5 = w.s5;
+                    aus[5] = { werte: { haeuser: s5.haeuser }, zeuge: s5, nicht: "keine Schicht unter der Stadt: kein Leser des Gesteins (" + s5.schichtLeser + "), der Baustein folgt der Kultur des Hauses (" + Object.keys(s5.kultur).join(", ") + ")" };
+                    aus[6] = { werte: {}, zeuge: w.s6, auge: await M.auge("siedlungslage-s6", { ort: "wiese" }), nicht: "keine Millionenstadt (größter Ort " + w.s6.nHmax + " Häuser, Wand 500)" };
+                    aus[7] = { werte: {}, zeuge: {}, auge: await M.auge("siedlungslage-s7", { ort: "wiese" }), nicht: "keine Zivilisation über Epochen im Zeitsprung: die Orte der Welt stehen am Hash ihrer Zelle, kein Planet-Zeitpunkt verlegt sie" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: { n: 50 },
+                        soll: [K.soll(A, 1, "100 % der Leser", { key: "leserProzent", einheit: "%" })],
+                        auge: { pose: "50 m über dem ersten Uferpunkt, Blick aufs Ufer, vor ↔ nach der Hebung um 1 m", vorbild: "Bildpaar: Ufer, Schilf, Steg, Boot und Fuß folgen dem Spiegel (Blindpaar R11)" },
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.punkte >= 50)) return "nur " + (z.punkte || 0) + " Uferpunkte (Soll 50)";
+                            if (z.still !== 0) return "im Gegenlauf ohne Hebung bewegen sich Leser (" + z.still + ")";
+                            if (z.zurueck !== true) return "der Spiegel kehrte nicht zurück";
+                            return null;
+                        },
+                        taeter: "stamm/wasser-hydro.js _waterLevelAt/_koerperWasserSpiegel (Steg und Boot ohne Leser)",
+                        leser: "stamm/siedlung-ort.js:3313 — _wegenetzLegen setzt keinen Steg und kein Boot ans Ufer (kein Leser des Spiegels für Steg/Boot)",
+                        gruen: { werte: { leserProzent: 100 }, zeuge: { punkte: 50, still: 0, zurueck: true } },
+                        attrappen: [{ name: "100 % ohne Uferpunkte der Welt", roh: { werte: { leserProzent: 100 }, zeuge: { punkte: 0 } } }],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(A, 2, "ändert ≥ 5 Leser", { key: "leser" }), K.soll(A, 2, "≥ 50 % der Biomgrenzen folgen einer Gesteinsgrenze", { key: "grenzenProzent", einheit: "%" })],
+                        auge: { pose: "Wiese, Bildpaar vor ↔ nach der Mutation der Bodenart", vorbild: "≥ 5 Leser ändern sich im Bild (Blindpaar R11)" },
+                        zeuge: (roh) => ((roh.zeuge || {}).grenzen > 0 ? null : "keine Biomgrenze gezählt"),
+                        taeter: "stamm/kreatur-leben.js _bodenKlasseAt (keine Bodenart, kein Gestein)",
+                        nicht: "keine Bodenart, kein Gestein",
+                        leser: "stamm/kreatur-leben.js:1703 — _bodenKlasseAt liest Wasser-Abstand, Hang und Wald, keine Bodenart und kein Gestein",
+                        gruen: { werte: { leser: 6, grenzenProzent: 62 }, zeuge: { grenzen: 40 } },
+                        attrappen: [{ name: "6 Leser aus einer Liste", roh: { werte: { leser: 6, grenzenProzent: 62 }, zeuge: {} } }],
+                    },
+                    3: {
+                        u: { zellen: 12 },
+                        soll: [
+                            K.soll(A, 3, "Siedlungen an Furt, Terrasse, Küste ≥ 80 %", { key: "anteilProzent", einheit: "%" }),
+                            K.soll(A, 3, "Anteil fällt auf das Zufallsniveau (≤ 30 %)", { key: "gegenlaufProzent", einheit: "%" }),
+                            K.soll(A, 3, "Städte > 10⁵ ≤ 10 km von Küste oder Strom ≥ 70 %", { key: "staedteProzent", einheit: "%" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.orte >= 20)) return "nur " + (z.orte || 0) + " Orte der Region gemessen (Soll ≥ 20)";
+                            if (!(z.zufallN >= 50)) return "kein Zufallsniveau gemessen";
+                            if (!(z.verschoben > 0)) return "der Gegenlauf (eingeebnet, Fluss gekappt) verschiebt keinen Ort — die Lage liest das Relief nicht";
+                            return null;
+                        },
+                        taeter: "stamm/siedlung-ort.js _autoSettlementFindSite (Anker am Zell-Hash, kein Zug zu Furt, Terrasse, Küste)",
+                        leser: "stamm/siedlung-ort.js:1726 — _autoSettlementFindSite prüft Land, Hang und Nahrung am Hash-Anker, liest weder Fluss noch Küste",
+                        gruen: { werte: { anteilProzent: 84, gegenlaufProzent: 22, staedteProzent: 75 }, zeuge: { orte: 120, zufallN: 200, verschoben: 60 } },
+                        attrappen: [{ name: "84 % aus einer Karte ohne Orte der Welt", roh: { werte: { anteilProzent: 84, gegenlaufProzent: 22, staedteProzent: 75 }, zeuge: { orte: 0 } } }],
+                        proben: [{ name: "der Gegenlauf verschiebt keinen Ort", roh: { werte: { anteilProzent: 84, gegenlaufProzent: 22, staedteProzent: 75 }, zeuge: { orte: 120, zufallN: 200, verschoben: 0 } }, gruen: false }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(A, 4, "Trassen-Steigung ≤ Grenze in ≥ 95 %", { key: "steigungProzent", einheit: "%" }), K.soll(A, 4, "die Trasse verlegt sich auf den nächsten Pass in ≥ 80 %", { key: "verlegtProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).segmente >= 100 && (roh.zeuge || {}).sturz > 0 ? null : "keine 100 Trassen-Segmente oder kein Bergsturz als Gegenlauf"),
+                        taeter: "stamm/siedlung-ort.js _wegenetzLegen (Netz nur zwischen geladenen Orten, kein Bergsturz)",
+                        nicht: "kein Land-Netz, kein Bergsturz",
+                        leser: "stamm/siedlung-ort.js:3313 — _wegenetzLegen legt Kanten nur zwischen geladenen Orten; kein Ereignis sperrt einen Pass",
+                        gruen: { werte: { steigungProzent: 97, verlegtProzent: 85 }, zeuge: { segmente: 400, sturz: 1 } },
+                        attrappen: [{ name: "97 % ohne Segmente der Welt", roh: { werte: { steigungProzent: 97, verlegtProzent: 85 }, zeuge: { segmente: 0 } } }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(A, 5, "Stadt-Bausteine aus der Schicht unter der Stadt ≥ 90 %", { key: "bausteinProzent", einheit: "%" }), K.soll(A, 5, "der Baustein der Stadt wechselt in ≥ 80 %", { key: "wechselProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).haeuser > 0 && (roh.zeuge || {}).schichtLeser > 0 ? null : "keine Häuser oder keine Schicht der Welt gelesen"),
+                        taeter: "fachwerk-core.js STILMODE (der Baustein folgt der Kultur, nie dem Gestein)",
+                        nicht: "keine Schicht unter der Stadt",
+                        leser: "stamm/siedlung-ort.js:1410 — die Zelle trägt Kultur und Epoche, kein Gestein; fachwerk-core.js:190 STILMODE wählt den Stoff nach dem Stil",
+                        gruen: { werte: { bausteinProzent: 93, wechselProzent: 85 }, zeuge: { haeuser: 40, schichtLeser: 1 } },
+                        attrappen: [{ name: "93 % ohne Häuser", roh: { werte: { bausteinProzent: 93, wechselProzent: 85 }, zeuge: { haeuser: 0 } } }],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(A, 6, "Treffer ≥ 3× Zufall", { key: "trefferFaktor" })],
+                        auge: { pose: "Geländekarte eines Kontinents ohne Städte (heute: Wiese)", vorbild: "Jury rät die Lagen der Millionenstädte (Prüfer-Satz R11), Gegenlauf mit vertauschter Karte" },
+                        taeter: "fachwerk-core.js GROESSE_WAND (keine Millionenstadt)",
+                        nicht: "keine Millionenstadt",
+                        leser: "fachwerk-core.js:3682 — GROESSE_WAND 500 Häuser: keine Stadt über 10⁶",
+                        gruen: { werte: { trefferFaktor: 3.4 }, zeuge: {} },
+                        attrappen: [{ name: "die Jury ohne Karte", roh: { werte: { trefferFaktor: 3.4 }, zeuge: {} } }],
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(A, 7, "Jury erkennt die geologische Ursache der Hauptstädte ≥ 70 %", { key: "juryProzent", einheit: "%" }), K.soll(A, 7, "die Siedlung schrumpft oder wandert in ≥ 70 %", { key: "wandertProzent", einheit: "%" })],
+                        auge: { pose: "Hauptstadt je Epoche im Zeitsprung (heute: Wiese)", vorbild: "Jury erkennt die geologische Ursache (Prüfer-Satz R11)" },
+                        taeter: "stamm/siedlung-ort.js _autoSettlementCellInfo (Orte am Zell-Hash, keine Geschichte)",
+                        nicht: "keine Zivilisation über Epochen",
+                        leser: "stamm/siedlung-ort.js:1410 — die Zelle liest keinen Planet-Zeitpunkt (Hafen verlandet, Fluss verlegt)",
+                        gruen: { werte: { juryProzent: 75, wandertProzent: 74 }, zeuge: {} },
+                        attrappen: [{ name: "die Jury ohne Epochen", roh: { werte: { juryProzent: 75, wandertProzent: 74 }, zeuge: {} } }],
+                    },
+                },
+            },
+
+            // ════════ land-meer-luft — EIN Klima aus Gebirge, Meer und Luft ════════
+            // Der Planet-Faden an der Heimat-Saat und den Saaten „zsp-0 …“: Breitenkreise ±42°/52° im 3°-Takt (Kamm = Land ≥ 800 m, lokales Maximum),
+            // Luv = West (Westwind-Zone), Lee = Ost; der Niederschlag am Ort ist der nasse Anteil des Wetters (phyto-core `wetterAt` über 400 Zeiten mit
+            // dem Δ regenQuote/sturmQuote des Orts — derselbe Weg wie `_wetterAmOrt`). Gegenlauf: flache Paare ohne Kamm (Verhältnis → 1). S2 Rang der
+            // Trockenheit gegen Meeresabstand und Schatten, Gegenlauf mit vertauschtem Prädiktor; S3 Nebel an Westküsten der Subtropen gegen Umland; S4
+            // West- gegen Ostküste gleicher Breite; S5 das Lee der 40 höchsten Kämme −1 Ma ↔ 0 (die gehobenen),
+            // Gegenlauf flaches Land über dieselbe Zeit; S6 Widersprüche Klima ↔ Relief an 20 Orten je Saat.
+            [B]: {
+                sek: 50,
+                pfad: PLANET_PFAD,
+                ungefahren: "die Bildpaare (S1 Kammlinie, S5 Hebung) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r, a) => {
+                        await r._fadenQuelle();
+                        const t0 = performance.now();
+                        const PC = globalThis.__phytoCore;
+                        const heim = r._planetSamen();
+                        const ws = (r.state.worldMeta && r.state.worldMeta.seed) || "anazh-realm-seed";
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const ort = (samen, b, l, t) => r._planetAuftrag({ type: "planet-ort", samen, breite: b, laenge: ((((l + 180) % 360) + 360) % 360) - 180, zeitMa: t || 0 });
+                        const nassJe = new Map();
+                        const nass = (d, art) => {
+                            const k = d.regenQuote.toFixed(4) + "|" + d.sturmQuote.toFixed(4) + "|" + (art || "n");
+                            if (nassJe.has(k)) return nassJe.get(k);
+                            const o = { regenQuote: d.regenQuote, sturmQuote: d.sturmQuote };
+                            let n = 0;
+                            for (let i = 0; i < 400; i++) {
+                                const z = PC.wetterAt(ws, 0, 0, i * 97.3, o).zeile;
+                                if (art === "nebel" ? z === "nebel" : z === "regen" || z === "sturm") n++;
+                            }
+                            nassJe.set(k, n / 400);
+                            return n / 400;
+                        };
+                        const med = (v) => { const w = v.filter(Number.isFinite).sort((x, y) => x - y); return w.length ? w[Math.floor(w.length / 2)] : null; };
+                        const rang = (v) => { const i = v.map((x, k) => [x, k]).sort((p, q) => p[0] - q[0]); const o = new Array(v.length); i.forEach((p, k) => (o[p[1]] = k)); return o; };
+                        const spear = (x, y) => { if (x.length < 5) return null; const a1 = rang(x), b1 = rang(y), n = x.length; const ma = (n - 1) / 2; let s = 0, sa = 0, sb = 0; for (let k = 0; k < n; k++) { s += (a1[k] - ma) * (b1[k] - ma); sa += (a1[k] - ma) ** 2; sb += (b1[k] - ma) ** 2; } return sa && sb ? s / Math.sqrt(sa * sb) : null; };
+                        const saaten = [heim];
+                        for (let i = 0; i < a.n - 1; i++) saaten.push("zsp-" + i);
+                        const aus = { s1: { kaemme: [], flach: [], flachOrte: [], saaten: 0, antworten: 0 }, s2: { je: [], gegen: [] }, s3: { kuesten: 0, faktoren: [], wueste: 0, saaten: 0 }, s4: { dT: [] }, s6: { orte: 0, wider: 0, welten: 0 } };
+                        let ant = 0;
+                        const hs = [];
+                        for (let si = 0; si < saaten.length; si++) {
+                            if (performance.now() - t0 > a.budgetMs) break;
+                            const samen = saaten[si];
+                            let kamm = false;
+                            for (const b of [42, -42, 52]) {
+                                const L = [];
+                                for (let l = -180; l < 180; l += 3) L.push(l);
+                                const o = await Promise.all(L.map((l) => ort(samen, b, l)));
+                                ant += o.length;
+                                o.forEach((x) => hs.push(x.hoeheM));
+                                const n = o.length;
+                                const at = (i) => o[(i + n) % n];
+                                for (let i = 0; i < n; i++) {
+                                    const x = at(i);
+                                    const istMax = x.land && x.hoeheM >= 800 && [-2, -1, 1, 2].every((d) => at(i + d).hoeheM <= x.hoeheM);
+                                    if (istMax && at(i - 1).land && at(i + 1).land) {
+                                        const luv = nass(at(i - 1).delta.wetter);
+                                        const lee = nass(at(i + 1).delta.wetter);
+                                        aus.s1.kaemme.push({ samen, b, l: L[i], h: r3(x.hoeheM), luv: r3(luv), lee: r3(lee), v: r3((luv + 0.0025) / (lee + 0.0025)) });
+                                        kamm = true;
+                                    }
+                                    const flach = [-3, -2, -1, 0, 1, 2, 3].every((d) => at(i + d).land && at(i + d).hoeheM < 400);
+                                    if (flach && aus.s1.flach.length < 400) {
+                                        const w1 = nass(at(i - 1).delta.wetter);
+                                        const e1 = nass(at(i + 1).delta.wetter);
+                                        aus.s1.flach.push(r3((w1 + 0.0025) / (e1 + 0.0025)));
+                                        if (aus.s1.flachOrte.length < 30 && i % 4 === 0) aus.s1.flachOrte.push({ samen, b, l: L[i] });
+                                    }
+                                    if (Math.abs(b) === 42 && x.land && !at(i - 1).land && !at(i - 2).land) {
+                                        for (let j = i + 1; j < i + 40; j++)
+                                            if (at(j).land && !at(j + 1).land && !at(j + 2).land) {
+                                                const tw = (x.delta.klima.sommer + x.delta.klima.winter) / 2;
+                                                const te = (at(j).delta.klima.sommer + at(j).delta.klima.winter) / 2;
+                                                aus.s4.dT.push({ samen, b, d: r3(tw - te) });
+                                                break;
+                                            } else if (!at(j).land) break;
+                                    }
+                                }
+                            }
+                            if (kamm) aus.s1.saaten++;
+                            if (si < 12) {
+                                const P = [];
+                                for (let b = -55; b <= 55; b += 10) for (let l = -180; l < 180; l += 15) P.push([b, l]);
+                                const o = await Promise.all(P.map((q) => ort(samen, q[0], q[1])));
+                                ant += o.length;
+                                const W = await Promise.all(P.map((q) => ort(samen, q[0], q[1] - 6)));
+                                ant += W.length;
+                                const tro = [], pre = [], sch = [];
+                                o.forEach((x, k) => {
+                                    if (!x.land) return;
+                                    tro.push(-nass(x.delta.wetter));
+                                    pre.push(x.kuesteKm);
+                                    sch.push(Math.max(0, W[k].hoeheM - x.hoeheM));
+                                });
+                                if (tro.length >= 20) {
+                                    const rk = rang(pre), rs = rang(sch);
+                                    const komb = rk.map((v, k) => v + rs[k]);
+                                    aus.s2.je.push(r3(spear(tro, komb)));
+                                    const perm = komb.map((_, k) => komb[(k * 7 + 3) % komb.length]);
+                                    aus.s2.gegen.push(r3(spear(tro, perm)));
+                                }
+                                for (const b of [18, 25, -18, -25]) {
+                                    const L = [];
+                                    for (let l = -180; l < 180; l += 3) L.push(l);
+                                    const q = await Promise.all(L.map((l) => ort(samen, b, l)));
+                                    ant += q.length;
+                                    const n = q.length;
+                                    for (let i = 0; i < n; i++) {
+                                        const x = q[i], w1 = q[(i - 1 + n) % n], w2 = q[(i - 2 + n) % n], i2 = q[(i + 3) % n];
+                                        if (x.land && !w1.land && !w2.land && i2.land) {
+                                            aus.s3.kuesten++;
+                                            const nk = nass(x.delta.wetter, "nebel"), nu = nass(i2.delta.wetter, "nebel");
+                                            aus.s3.faktoren.push(r3((nk + 0.0025) / (nu + 0.0025)));
+                                            if (nass(x.delta.wetter) < 0.1) aus.s3.wueste++;
+                                        }
+                                    }
+                                }
+                                aus.s3.saaten++;
+                            }
+                            const orte = [];
+                            for (let k = 0; k < 20; k++) orte.push([((k * 37.3 + si * 11.1) % 120) - 60, ((k * 71.9 + si * 23.7) % 360) - 180]);
+                            const o1 = await Promise.all(orte.map((q) => ort(samen, q[0], q[1])));
+                            const o2 = await Promise.all(orte.map((q) => ort(samen, q[0] + 1, q[1])));
+                            ant += 40;
+                            for (let k = 0; k < 20; k++) {
+                                aus.s6.orte++;
+                                const dh = o2[k].hoeheM - o1[k].hoeheM, dt = o2[k].delta.klima.sommer - o1[k].delta.klima.sommer;
+                                let w = false;
+                                if (o1[k].land && o2[k].land && Math.abs(dh) > 500 && Math.sign(dt) === Math.sign(dh)) w = true;
+                                if (o1[k].land && nass(o1[k].delta.wetter) > 0.5 && o1[k].kuesteKm > 2000) w = true;
+                                if (w) aus.s6.wider++;
+                            }
+                            aus.s6.welten++;
+                        }
+                        aus.s1.antworten = ant;
+                        const mh = hs.reduce((s, x) => s + x, 0) / Math.max(1, hs.length);
+                        aus.streuung = r3(Math.sqrt(hs.reduce((s, x) => s + (x - mh) ** 2, 0) / Math.max(1, hs.length)));
+                        aus.saatenGefragt = Math.min(saaten.length, aus.s6.welten > 0 ? saaten.length : 1);
+                        const kh = r._planetAnker ? await r._planetAnker() : null;
+                        const hk = { samen: heim, b: kh ? (kh.breite * 180) / Math.PI : 0, l: kh ? (kh.laenge * 180) / Math.PI : 0 };
+                        const wandel = async (liste, mitH) => {
+                            const j0 = await Promise.all(liste.map((k) => ort(k.samen, k.b, k.l, 0)));
+                            const f0 = await Promise.all(liste.map((k) => ort(k.samen, k.b, k.l, -1)));
+                            const j1 = await Promise.all(liste.map((k) => ort(k.samen, k.b, k.l + 3, 0)));
+                            const f1 = await Promise.all(liste.map((k) => ort(k.samen, k.b, k.l + 3, -1)));
+                            return liste.map((k, i) => {
+                                const lj = nass(j1[i].delta.wetter), lf = nass(f1[i].delta.wetter);
+                                return { samen: k.samen, b: k.b, l: k.l, dh: r3(j0[i].hoeheM - f0[i].hoeheM), lj: r3(lj), lf: r3(lf), p: lf > 0 ? r3((100 * (lj - lf)) / lf) : null };
+                            });
+                        };
+                        const kk = aus.s1.kaemme.slice().sort((p, q) => q.h - p.h).slice(0, 40);
+                        const geh = await wandel(kk);
+                        const hoch = geh.filter((g) => g.dh > 100 && g.p != null);
+                        const fl = (await wandel(aus.s1.flachOrte)).filter((g) => g.p != null && Math.abs(g.dh) < 100);
+                        aus.s5 = { kaemme: geh.length, gehoben: hoch.length, saaten: new Set(hoch.map((g) => g.samen)).size, leeProzent: r3(med(hoch.map((g) => g.p))), flach: fl.length, gegenProzent: r3(med(fl.map((g) => g.p))), hebungM: r3(med(hoch.map((g) => g.dh))), bsp: hoch.slice(0, 3) };
+                        aus.heim = hk;
+                        aus.s1.med = r3(med(aus.s1.kaemme.map((k) => k.v)));
+                        aus.s1.flachMed = r3(med(aus.s1.flach));
+                        aus.ms = r3(performance.now() - t0);
+                        return aus;
+                    };
+                    const w = await S(seite, { n: 32, budgetMs: 36000 });
+                    const med = (v) => { const x = v.filter(Number.isFinite).sort((p, q) => p - q); return x.length ? x[Math.floor(x.length / 2)] : null; };
+                    const aus = {};
+                    const z0 = { antworten: w.s1.antworten, streuung: w.streuung };
+                    const flachN = w.s1.flach.length;
+                    aus[1] = {
+                        werte: { luvLee: w.s1.med, gegenLuvLee: w.s1.flachMed },
+                        zeuge: { ...z0, saaten: w.s1.saaten, kaemme: w.s1.kaemme.length, gegenlauf: flachN, gegenWirkt: w.s1.flachMed != null && w.s1.flachMed >= 1.5, bsp: w.s1.kaemme.slice(0, 4) },
+                        auge: await M.auge("land-meer-luft-s1", { ort: "wiese" }),
+                    };
+                    const rho = med(w.s2.je);
+                    const rg = med(w.s2.gegen);
+                    aus[2] = { werte: { rang: rho, gegenRang: rg }, zeuge: { ...z0, saaten: w.s2.je.length, gegenlauf: w.s2.gegen.length, gegenWirkt: rg != null && Math.abs(rg) >= 0.3 } };
+                    const f3 = w.s3.faktoren;
+                    aus[3] = {
+                        werte: { nebelFaktor: med(f3), anteilProzent: f3.length ? Math.round((1000 * f3.filter((x) => x >= 2).length) / f3.length) / 10 : null, wuesteProzent: w.s3.kuesten ? Math.round((1000 * w.s3.wueste) / w.s3.kuesten) / 10 : null },
+                        zeuge: { ...z0, saaten: w.s3.saaten, gegenlauf: w.s3.kuesten, kuesten: w.s3.kuesten },
+                    };
+                    const dT = w.s4.dT.map((x) => x.d);
+                    const proSaat = {};
+                    for (const x of w.s4.dT) (proSaat[x.samen] = proSaat[x.samen] || []).push(x.d);
+                    aus[4] = { werte: { dT: med(dT) }, zeuge: { ...z0, saaten: Object.keys(proSaat).length, gegenlauf: dT.length, paare: dT.length, positiv: dT.filter((x) => x > 0).length } };
+                    const s5 = w.s5;
+                    aus[5] = {
+                        werte: { leeProzent: s5.leeProzent, gegenProzent: s5.gegenProzent, hebungM: s5.hebungM },
+                        zeuge: { ...z0, ...s5, gegenlauf: s5.flach, gegenWirkt: s5.gegenProzent != null && Math.abs(s5.gegenProzent) >= 25 },
+                        auge: await M.auge("land-meer-luft-s5", { ort: "wiese" }),
+                    };
+                    aus[6] = { werte: { ohneWiderspruchProzent: w.s6.orte ? Math.round((1000 * (w.s6.orte - w.s6.wider)) / w.s6.orte) / 10 : null }, zeuge: { ...z0, saaten: w.s6.welten, gegenlauf: w.s6.orte, orte: w.s6.orte, wider: w.s6.wider } };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [K.soll(B, 1, "Niederschlag Luv/Lee ≥ 2:1", { key: "luvLee" })],
+                        auge: { pose: "die Kammlinie eines Gebirges der Heimat-Saat (heute: Wiese)", vorbild: "im Bild grün/braun an der Kammlinie getrennt (Blindpaar R11)" },
+                        zeuge: zeugePlanet(30, 20),
+                        taeter: "planet-core.js planetKlimaR (Regenschatten) über voxel-worker.js planetOrtAuftrag",
+                        gruen: { werte: { luvLee: 2.4, gegenLuvLee: 1.05 }, zeuge: PZ(30, 40) },
+                        attrappen: [{ name: "2,4 : 1 ohne Saaten", roh: { werte: { luvLee: 2.4 }, zeuge: {} } }],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(B, 2, "Wüstenanteil gegen Meeresabstand und Schatten Rang ≥ 0,7", { key: "rang" })],
+                        zeuge: zeugePlanet(10, 10),
+                        taeter: "planet-core.js planetKlimaR (Kontinentalität, Regenschatten)",
+                        gruen: { werte: { rang: 0.76, gegenRang: 0.04 }, zeuge: PZ(10, 10) },
+                        attrappen: [{ name: "Rang 0,76 ohne Faden", roh: { werte: { rang: 0.76 }, zeuge: { saaten: 10 } } }],
+                        proben: [{ name: "der vertauschte Prädiktor trägt denselben Rang", roh: { werte: { rang: 0.76 }, zeuge: { ...PZ(10, 10), gegenWirkt: true } }, gruen: false }],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(B, 3, "an ≥ 70 % der Ostrand-Ströme", { key: "anteilProzent", einheit: "%" }), K.soll(B, 3, "Nebelhäufigkeit ≥ 2× Umland", { key: "nebelFaktor" })],
+                        zeuge: (roh) => zeugePlanet(10, 20)(roh) || (!((roh.werte || {}).wuesteProzent >= 50) ? "keine Küstenwüste neben dem Nebel (" + (roh.werte || {}).wuesteProzent + " %)" : null),
+                        taeter: "phyto-core.js wetterAt (die Zeile Nebel liest kein Meer, kein Auftrieb)",
+                        leser: "phyto-core.js:4423 — wetterAt wählt nebel aus der Feuchte-Welle, das Δ des Orts verschiebt nur Regen und Sturm",
+                        gruen: { werte: { anteilProzent: 75, nebelFaktor: 2.6, wuesteProzent: 70 }, zeuge: PZ(10, 40) },
+                        attrappen: [{ name: "Nebel 2,6× ohne Küsten des Planeten", roh: { werte: { anteilProzent: 75, nebelFaktor: 2.6, wuesteProzent: 70 }, zeuge: {} } }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(B, 4, "Temperatur unterscheidet sich ≥ 5 K", { key: "dT", einheit: "K" })],
+                        zeuge: (roh) => zeugePlanet(10, 10)(roh) || ((roh.zeuge || {}).positiv / Math.max(1, (roh.zeuge || {}).paare) < 0.7 ? "das Vorzeichen (Westküste wärmer) hält nur an " + (roh.zeuge || {}).positiv + " von " + (roh.zeuge || {}).paare + " Paaren" : null),
+                        taeter: "planet-core.js planetKlimaR (Meeresströmung als Lesart der Küstenseite)",
+                        gruen: { werte: { dT: 6.2 }, zeuge: { ...PZ(10, 12), paare: 12, positiv: 11 } },
+                        attrappen: [{ name: "6,2 K aus einer Tabelle", roh: { werte: { dT: 6.2 }, zeuge: { paare: 12, positiv: 11 } } }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(B, 5, "Niederschlag Lee −50 %", { key: "leeProzent", rel: "≤", zahl: -50, einheit: "%" })],
+                        auge: { pose: "die Region um den höchsten Kamm vor ↔ nach 10⁶ a (heute: Wiese)", vorbild: "Bildpaar grün → Steppe (Blindpaar R11)" },
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.gehoben >= 3)) return "nur " + (z.gehoben || 0) + " Kämme, die sich über 10⁶ a um > 100 m hoben (Soll ≥ 3)";
+                            if (!(z.gegenlauf >= 3)) return "der Gegenlauf (flaches Land über dieselbe Zeit) fehlt";
+                            if (z.gegenWirkt === true) return "das Lee flacher Orte wandelt sich ebenso (" + z.gegenProzent + " %): das Klima der Zeit, nicht die Hebung";
+                            return null;
+                        },
+                        taeter: "planet-core.js planetScheibe (Hebung über 10⁶ a)",
+                        gruen: { werte: { leeProzent: -55, gegenProzent: -4, hebungM: 300 }, zeuge: { gehoben: 6, gegenlauf: 20, gegenProzent: -4, gegenWirkt: false } },
+                        attrappen: [
+                            { name: "−55 % ohne gehobenen Kamm", roh: { werte: { leeProzent: -55 }, zeuge: {} } },
+                            { name: "das flache Land trocknet ebenso (Gegenlauf ohne Unterschied)", roh: { werte: { leeProzent: -55 }, zeuge: { gehoben: 6, gegenlauf: 20, gegenProzent: -50, gegenWirkt: true } } },
+                        ],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(B, 6, "kein Widerspruch Klima ↔ Relief/Meer in ≥ 95 %", { key: "ohneWiderspruchProzent", einheit: "%" })],
+                        zeuge: (roh) => (((roh.zeuge || {}).saaten || 0) < 1000 ? "nur " + ((roh.zeuge || {}).saaten || 0) + " Welten (Soll 1 000 × 20 Orte)" : zeugePlanet(1000, 20000)(roh)),
+                        taeter: "planet-core.js planetKlimaR",
+                        gruen: { werte: { ohneWiderspruchProzent: 97 }, zeuge: PZ(1000, 20000) },
+                        attrappen: [{ name: "97 % an einer Welt", roh: { werte: { ohneWiderspruchProzent: 97 }, zeuge: PZ(1, 20) } }],
+                    },
+                },
+            },
+
+            // ════════ bahn-klima — die Bahn formt Klima und Leben (S1 belegt: g1.js SCHNEE_JAHR) ════════
+            // Die Welt wird gefragt, ob der Planet-Faden eine andere Bahn liest: derselbe Auftrag mit `koerper` (Neigung 0, gebunden) gegen die Erd-Saat —
+            // gleich = der Faden kennt nur PLANET_ERDE (voxel-worker.js planetPlanVon). S2 misst die Jahresamplitude (Sommer − Winter) beider Anfragen,
+            // S3 die Reihe von Meeresspiegel und Sommer an der Heimat über 0 … −1 Ma (Zyklen = Extrema), S4 den Versatz der Jahres-Phase je Breitengrad
+            // (die Blüte folgt `_saisonPraesenz` der Phase) und den Leser des Laichs, S5 die gebundene Bahn, S6 die Zonen gegen das Zwei-Moden-Modell.
+            [C]: {
+                sek: 20,
+                pfad: PLANET_PFAD,
+                ungefahren: "Schneelinie und Laub im Bild (S2) und die Klima-Zonen im Bild (S6) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r, a) => {
+                        await r._fadenQuelle();
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const samen = r._planetSamen();
+                        const an = await r._planetAnker();
+                        const B0 = (an.breite * 180) / Math.PI;
+                        const L0 = (an.laenge * 180) / Math.PI;
+                        const kh = r._gelaende().ort.klimaHeute;
+                        const ort = (b, l, t, extra) => r._planetAuftrag(Object.assign({ type: "planet-ort", samen, breite: b, laenge: l, zeitMa: t || 0 }, extra || {}));
+                        const amp = (o) => kh.sommer + o.delta.klima.sommer - (kh.winter + o.delta.klima.winter);
+                        const aus = {};
+                        const erde = await ort(45, L0);
+                        const null0 = await ort(45, L0, 0, { koerper: { neigungRad: 0 }, neigungRad: 0 });
+                        const n45 = await ort(45, L0, 0, { koerper: { neigungRad: 0.7854 }, neigungRad: 0.7854 });
+                        aus.s2 = { ampErde: r3(amp(erde)), amp0: r3(amp(null0)), amp45: r3(amp(n45)), gleich: JSON.stringify(erde.delta) === JSON.stringify(null0.delta) };
+                        const reihe = await Promise.all(Array.from({ length: 51 }, (_, i) => ort(B0, L0, -i * 0.02)));
+                        const wl = reihe.map((o) => o.delta.meer.waterLevelM);
+                        const so = reihe.map((o) => o.delta.klima.sommer);
+                        const extrema = (v) => { let n = 0; for (let i = 1; i < v.length - 1; i++) if ((v[i] - v[i - 1]) * (v[i + 1] - v[i]) < 0) n++; return n; };
+                        aus.s3 = { schritte: reihe.length, zyklenMeer: extrema(wl), zyklenSommer: extrema(so), spanneMeerM: r3(Math.max(...wl) - Math.min(...wl)), spanneSommerK: r3(Math.max(...so) - Math.min(...so)), laskar: ["_insolation65N", "_laskarReihe"].filter((n) => typeof r[n] === "function").length };
+                        const br = [30, 35, 40, 45, 50, 55, 60];
+                        const ph = await Promise.all(br.map((b) => ort(b, L0)));
+                        const phase = ph.map((o) => kh.sommerPhase + o.delta.klima.sommerPhase);
+                        const SG = { x: 0, y: 0, z: 0 };
+                        const bl = [];
+                        for (let d = 0; d < 365; d += 5) bl.push(r._saisonPraesenz(d / 365, SG).y);
+                        const steig = (phase[phase.length - 1] - phase[0]) * 365 / (br[br.length - 1] - br[0]);
+                        aus.s4 = { breiten: br.length, phase: phase.map(r3), dJeGrad: r3(steig), bluete: r3(Math.max(...bl) - Math.min(...bl)), laich: ["_laichTakt", "_mondPhase", "_laichen"].filter((n) => typeof r[n] === "function").length };
+                        const geb = await ort(45, L0, 0, { koerper: { tagStunden: 8760, gebunden: true } });
+                        aus.s5 = { gleich: JSON.stringify(erde.delta) === JSON.stringify(geb.delta), tagAmpErde: r3(kh.tagAmp + erde.delta.klima.tagAmp), tagAmpGebunden: r3(kh.tagAmp + geb.delta.klima.tagAmp) };
+                        const zonen = [];
+                        for (let b = 0; b <= 80; b += 10)
+                            for (const l of [-150, -90, -30, 30, 90, 150]) {
+                                const o = await ort(b, l);
+                                if (!o.land) zonen.push({ b, t: (kh.sommer + o.delta.klima.sommer + kh.winter + o.delta.klima.winter) / 2 });
+                            }
+                        const x = (b) => Math.sin((b * Math.PI) / 180);
+                        const ref = (b) => 14.97 - 28.0 * (1.5 * x(b) * x(b) - 0.5);
+                        aus.s6 = { zonen: zonen.length, imBand: zonen.filter((q) => Math.abs(q.t - ref(q.b)) <= 5).length, bsp: zonen.slice(0, 6).map((q) => [q.b, r3(q.t), r3(ref(q.b))]) };
+                        return aus;
+                    };
+                    const w = await S(seite, {});
+                    const aus = {};
+                    const s2 = w.s2;
+                    aus[2] = {
+                        werte: { amp0Prozent: s2.ampErde ? Math.round((1000 * s2.amp0) / s2.ampErde) / 10 : null, amp45Faktor: s2.ampErde ? Math.round((1000 * s2.amp45) / s2.ampErde) / 1000 : null },
+                        zeuge: s2,
+                        auge: await M.auge("bahn-klima-s2", { ort: "wiese" }),
+                        ...(s2.gleich ? { nicht: "der Planet-Faden liest keine Neigung: derselbe Auftrag mit Neigung 0 antwortet wie die Erd-Saat (Amplitude " + s2.ampErde + " K)" } : {}),
+                    };
+                    const s3 = w.s3;
+                    aus[3] = { werte: { zyklen: s3.zyklenMeer, spanneMeerM: s3.spanneMeerM }, zeuge: s3, nicht: "kein Milanković-Antrieb: über 1 Ma " + s3.zyklenMeer + " Extrema des Meeres (Spanne " + s3.spanneMeerM + " m), keine Juni-Insolation 65° N und keine Laskar-Reihe in der Welt" };
+                    const s4 = w.s4;
+                    aus[4] = { werte: { bluehDJeGrad: s4.dJeGrad, laichSaaten: s4.laich ? null : 0 }, zeuge: s4 };
+                    const s5 = w.s5;
+                    aus[5] = { werte: {}, zeuge: s5, nicht: "keine gebundene Welt: der Faden liest keinen Körper (Antwort " + (s5.gleich ? "gleich" : "anders") + " der Erd-Saat), PLANET_ERDE ist fest" };
+                    const s6 = w.s6;
+                    aus[6] = { werte: { imBandProzent: s6.zonen ? Math.round((1000 * s6.imBand) / s6.zonen) / 10 : null }, zeuge: s6, auge: await M.auge("bahn-klima-s6", { ort: "wiese" }), nicht: "1 000 Welten mit eigener Bahn: der Faden kennt nur PLANET_ERDE — gemessen ist die Erd-Saat allein" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    2: {
+                        u: {},
+                        soll: [K.soll(C, 2, "Jahresamplitude ≤ 10 % der Erd-Saat", { key: "amp0Prozent", einheit: "%" }), K.soll(C, 2, "45°: ≥ 2×", { key: "amp45Faktor" })],
+                        auge: { pose: "Hang mit Schneelinie und Laub, Saat mit Neigung 0° ↔ 45° (heute: Wiese)", vorbild: "Schneelinie und Laub im Bild (Blindpaar R11)" },
+                        taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
+                        nicht: "der Faden liest keine Neigung",
+                        leser: "voxel-worker.js:1159 — planetPlanVon(samen) baut jeden Plan mit P.PLANET_ERDE, kein Auftrag trägt einen Körper",
+                        gruen: { werte: { amp0Prozent: 6, amp45Faktor: 2.3 }, zeuge: { gleich: false } },
+                        attrappen: [{ name: "6 % ohne Antwort des Fadens", roh: { werte: { amp0Prozent: 6, amp45Faktor: 2.3 }, zeuge: {} } }],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(C, 3, "r ≥ 0,7 gegen Laskar", { key: "rLaskar" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).zyklenMeer >= 20 ? null : "das Meer der Heimat trägt über 1 Ma " + ((roh.zeuge || {}).zyklenMeer || 0) + " Extrema (Milanković ≥ 20)"),
+                        taeter: "planet-core.js planetKlimaGlobal (Einstrahlung nur aus Neigung und Sternfluss)",
+                        nicht: "kein Milanković-Antrieb",
+                        leser: "planet-core.js:1904 — planetKlimaGlobal liest Neigung und Sternfluss, keine Exzentrizität und Präzession (Laskar 2004)",
+                        gruen: { werte: { rLaskar: 0.78 }, zeuge: { zyklenMeer: 46 } },
+                        attrappen: [{ name: "r 0,78 ohne Reihe der Welt", roh: { werte: { rLaskar: 0.78 }, zeuge: {} } }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [
+                            K.soll(C, 4, "~4 d je Breitengrad ±1 d", { key: "bluehDJeGrad", ref: 4, refQuelle: "Erde: Hopkins' bioklimatisches Gesetz, ~4 Tage Verspätung je Breitengrad (Hopkins 1918)", einheit: "d" }),
+                            K.soll(C, 4, "Laichtakt mit der Mondphase, 100 Saaten", { key: "laichSaaten", rel: "≥", zahl: 100 }),
+                        ],
+                        zeuge: (roh) => ((roh.zeuge || {}).breiten >= 5 && (roh.zeuge || {}).laich > 0 ? null : "keine 5 Breiten oder kein Leser des Laichs"),
+                        taeter: "stamm/bild-himmel.js _saisonPraesenz (die Blüte folgt der Phase der Heimat, nie der Breite)",
+                        leser: "stamm/bild-himmel.js:882 — _saisonPraesenz(phase) liest keine Breite; kein Leser von Mondphase und Laich",
+                        gruen: { werte: { bluehDJeGrad: 4.2, laichSaaten: 100 }, zeuge: { breiten: 7, laich: 1 } },
+                        attrappen: [{ name: "4,2 d je Grad aus einer Tabelle", roh: { werte: { bluehDJeGrad: 4.2, laichSaaten: 100 }, zeuge: {} } }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(C, 5, "Temperatur Tag/Nacht gegen Energie-Bilanz ±5 K", { key: "abweichungK", rel: "≤", zahl: 5, einheit: "K" }), K.soll(C, 5, "Leben im Terminator-Band ≥ 80 %", { key: "terminatorProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).gleich === false ? null : "der Faden antwortet der gebundenen Bahn wie der Erde"),
+                        taeter: "voxel-worker.js planetPlanVon (PLANET_ERDE fest)",
+                        nicht: "keine gebundene Welt",
+                        leser: "voxel-worker.js:1159 — planetPlanVon(samen) baut jeden Plan mit P.PLANET_ERDE (tagStunden 24)",
+                        gruen: { werte: { abweichungK: 3, terminatorProzent: 85 }, zeuge: { gleich: false } },
+                        attrappen: [{ name: "3 K ohne gebundene Antwort", roh: { werte: { abweichungK: 3, terminatorProzent: 85 }, zeuge: {} } }],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(C, 6, "Energie-Bilanz-Modell ±5 K in ≥ 90 %", { key: "imBandProzent", rel: "≥", zahl: 90, einheit: "%" })],
+                        auge: { pose: "Klima-Zonen im Bild (heute: Wiese)", vorbild: "Zwei-Moden-Modell North 1975: T = 14,97 − 28,0·P₂(sin φ) °C, ±5 K" },
+                        taeter: "voxel-worker.js planetPlanVon (eine Bahn für jede Welt)",
+                        nicht: "1 000 Welten mit eigener Bahn",
+                        leser: "voxel-worker.js:1159 — planetPlanVon(samen) kennt nur PLANET_ERDE",
+                        gruen: { werte: { imBandProzent: 93 }, zeuge: { zonen: 40 } },
+                        attrappen: [{ name: "93 % ohne Zonen", roh: { werte: { imBandProzent: 93 }, zeuge: {} } }],
+                    },
+                },
+            },
+
+            // ════════ wetter-welt — eine Front läuft durch die Welt (S1 belegt: g3.js WETTER_PAAR_PROBE) ════════
+            // S2 die Richtung jedes Wind-Lesers (`_windAt` an 200 Punkten bis 3 km, `_windDirAt` der Uniform) und die Form des Winds (`_windForm`: Lee <
+            // frei < Düse); Gegenlauf: die Front bis 24 h später gedreht — die Leser folgen ihr.
+            // S3 MIT Gegenlauf: die Nässe nach 30 min Regen (`_naesseKurve` unter dem Feld des Worts rainy) ↔ trocken (sunny: 0) — daraus die Luma der
+            // Boden-Farbe (`_bodenFarbeAt`) unter dem Gesetz nasser Oberflächen (`_naesseGesetz`) und die Deckung der Pfütze (`_pfuetzeGesetz` über der Mulde
+            // `muldeEcken`) gegen die Senke des Reliefs (Ring-Mittel − Mitte auf `_terrainSaatY`) an 400 Punkten. S4 die Bewohner im Freien (`drinnen`) klar ↔
+            // Sturm (über `__wetterSetzen`, 120 Takte), Gegenlauf dieselben Takte ohne Wechsel; S5 die Küste im Sturm; S6 die Dachneigung der Häuser gegen den
+            // Schnee-Pegel an ihrer Höhe.
+            [D]: {
+                sek: 40,
+                dorf: true,
+                mutiert: true,
+                pfad: ["stamm/stoff-material.js", "stamm/bild-himmel.js", "stamm/gelaende-boden.js", "stamm/siedlung-bewohner.js", "stamm/siedlung-ort.js", "gelaende-core.js", "phyto-core.js", "fachwerk-core.js", "scripts/werkbank.cjs"],
+                ungefahren: "das Sturmbild (S2), das Bildpaar Marktplatz (S4) und das Bildpaar der Küste (S5) schießt nur das Gerät; die Luma nass/trocken misst headless das Gesetz der Farbe, nicht das Bild",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const ruhig = async (r) => {
+                        const st = r.state;
+                        const p = st.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const aus = {};
+                        const t = st.spielZeit || 0;
+                        const wi = (d) => { d = ((((d + 180) % 360) + 360) % 360) - 180; return Math.abs(d); };
+                        const lauf = (tt) => {
+                            const g = r._windDirAt(tt);
+                            const ga = Math.atan2(g.x, g.z);
+                            const winkel = [];
+                            const form = [];
+                            for (let i = 0; i < 200; i++) {
+                                const x = p.x + Math.cos(i * 2.39996) * (20 + i * 15);
+                                const z = p.z + Math.sin(i * 2.39996) * (20 + i * 15);
+                                const w = r._windAt(x, z, tt, {});
+                                winkel.push(wi((Math.atan2(w.x, w.z) - ga) * (180 / Math.PI)));
+                                form.push(r._windForm(x, z, g));
+                            }
+                            form.sort((a1, b1) => a1 - b1);
+                            return { ga: (ga * 180) / Math.PI, streuung: Math.max(...winkel), form };
+                        };
+                        const l1 = lauf(t);
+                        let l2 = null;
+                        let spaeterS = 0;
+                        for (const dt of [5400, 21600, 43200, 86400]) {
+                            const l = lauf(t + dt);
+                            if (!l2 || wi(l.ga - l1.ga) > wi(l2.ga - l1.ga)) { l2 = l; spaeterS = dt; }
+                        }
+                        const fo = l1.form;
+                        aus.s2 = { punkte: fo.length, streuungGrad: r3(l1.streuung), streuungSpaeter: r3(l2.streuung), drehungGrad: r3(wi(l2.ga - l1.ga)), spaeterS, formLee: r3(fo[0]), formFrei: r3(fo[Math.floor(fo.length * 0.5)]), formDuese: r3(fo[fo.length - 1]), formLeeAnteil: r3(fo.filter((v) => v < 0.95).length / fo.length), formDueseAnteil: r3(fo.filter((v) => v > 1.05).length / fo.length), wolke: ["_wolkenWind", "_wolkeWindAt", "_rauchWindAt"].filter((n) => typeof r[n] === "function").length };
+                        const R = AnazhRealm;
+                        const Num = { k: (v) => v, mul: (a1, b1) => a1 * b1, sub: (a1, b1) => a1 - b1, max: Math.max, klemm: (v) => Math.min(1, Math.max(0, v)), ecke: (v) => v, mix: (a1, b1, s) => a1 + (b1 - a1) * s };
+                        const nRegen = R._naesseKurve(0, r._weatherFieldFor("rainy"), 1800);
+                        const nTrocken = R._naesseKurve(0, r._weatherFieldFor("sunny"), 1800);
+                        const L = r._gelaende();
+                        const pts = [];
+                        for (let i = 0; i < 400; i++) pts.push([p.x - 30 + (i % 20) * 3.1, p.z - 30 + Math.floor(i / 20) * 3.1]);
+                        const arr = new Float32Array(pts.length * 3);
+                        pts.forEach((q, k) => { arr[3 * k] = q[0]; arr[3 * k + 1] = r._terrainSaatY(q[0], q[1], true); arr[3 * k + 2] = q[1]; });
+                        const mulde = globalThis.__gelaendeCore.muldeEcken(L, arr, pts.length, 0, new Map());
+                        const senke = pts.map((q, k) => {
+                            let s = 0;
+                            for (let j = 0; j < 8; j++) for (const d of [3.6, 7.2]) s += r._terrainSaatY(q[0] + Math.cos(j * 0.785) * d, q[1] + Math.sin(j * 0.785) * d, true);
+                            return s / 16 - arr[3 * k + 1];
+                        });
+                        const pearson = (x, y) => { const n = x.length; const mx = x.reduce((s, v) => s + v, 0) / n, my = y.reduce((s, v) => s + v, 0) / n; let sxy = 0, sx = 0, sy = 0; for (let k = 0; k < n; k++) { sxy += (x[k] - mx) * (y[k] - my); sx += (x[k] - mx) ** 2; sy += (y[k] - my) ** 2; } return sx > 0 && sy > 0 ? sxy / Math.sqrt(sx * sy) : null; };
+                        const deck = (n) => Array.from(mulde, (m) => R._pfuetzeGesetz(Num, m, n, 1).deckung);
+                        const dR = deck(nRegen);
+                        const dT = deck(nTrocken);
+                        const enc = (v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+                        const Y = (c) => 0.2126 * enc(c[0]) + 0.7152 * enc(c[1]) + 0.0722 * enc(c[2]);
+                        const Ylin = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+                        const luma = [];
+                        const lumaT = [];
+                        const lin = [];
+                        const alb = [];
+                        for (let k = 0; k < pts.length; k += 4) {
+                            const c = [0, 0, 0];
+                            r._bodenFarbeAt(pts[k][0], arr[3 * k + 1], pts[k][1], c);
+                            const nass = (n) => c.map((ch) => ch * R._naesseGesetz(Num, ch, 0.8, 0, n, null).faktor);
+                            if (Y(c) > 0) {
+                                luma.push(Y(nass(nRegen)) / Y(c));
+                                lumaT.push(Y(nass(nTrocken)) / Y(c));
+                                lin.push(Ylin(nass(nRegen)) / Ylin(c));
+                                alb.push(Ylin(c));
+                            }
+                        }
+                        const mitte = (v) => { const x = v.slice().sort((a1, b1) => a1 - b1); return x.length ? x[Math.floor(x.length / 2)] : null; };
+                        aus.s3 = { punkte: pts.length, naesseRegen: r3(nRegen), naesseTrocken: r3(nTrocken), muldePos: Array.from(mulde).filter((m) => m > 0).length, pfuetzenRegen: dR.filter((d) => d > 0).length, pfuetzenTrocken: dT.filter((d) => d > 0).length, rPfuetze: r3(pearson(dR, senke)), rTrocken: r3(pearson(dT, senke)), lumaVerh: r3(mitte(luma)), lumaTrocken: r3(mitte(lumaT)), linearVerh: r3(mitte(lin)), albedoLinear: r3(mitte(alb)), farben: luma.length };
+                        const haeuser = [];
+                        for (const Si of (r._bewohnerSiedlungen || new Map()).values())
+                            for (const s of (Si.plan && Si.plan.slots) || []) {
+                                const x = Si.ox + s.x, z = Si.oz + s.z;
+                                const y = r._terrainSaatY(x, z, true);
+                                haeuser.push({ neigung: s.ov && Number.isFinite(s.ov.pitchDeg) ? s.ov.pitchDeg : null, schnee: r._schneePegelAt(y), kultur: s.kultur });
+                            }
+                        const hn = haeuser.filter((h) => h.neigung != null);
+                        aus.s6 = { orte: (r._bewohnerSiedlungen || new Map()).size, haeuser: haeuser.length, mitNeigung: hn.length, rDach: r3(hn.length >= 5 ? pearson(hn.map((h) => h.neigung), hn.map((h) => h.schnee)) : null), schneeSpanne: r3(hn.length ? Math.max(...hn.map((h) => h.schnee)) - Math.min(...hn.map((h) => h.schnee)) : null), formen: haeuser.filter((h) => /innenhof|stelz|windturm/i.test(String(h.kultur))).length };
+                        return aus;
+                    };
+                    const sturm = async (r, a) => {
+                        const st = r.state;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const alt = st.weather;
+                        const leute = () => { const o = []; for (const Si of (r._bewohnerSiedlungen || new Map()).values()) for (const b of Si.liste || []) o.push(b); return o; };
+                        const frei = () => leute().filter((b) => !b.drinnen).length;
+                        let t = performance.now();
+                        const takt = (n) => { for (let i = 0; i < n; i++) r._gameLoopTick((t += 1000 / 60)); };
+                        const p = st.playerMesh.position;
+                        const kueste = [];
+                        for (let k = 0; k < 400 && kueste.length < 40; k++) {
+                            const ang = k * 2.39996;
+                            let vor = null;
+                            for (let d = 150; d <= 20000; d += 50) {
+                                const x = p.x + Math.cos(ang) * d, z = p.z + Math.sin(ang) * d;
+                                if (r._terrainMacroSurfaceY(x, z) < st.waterLevel) { if (vor) kueste.push(vor); break; }
+                                vor = [x, z];
+                            }
+                        }
+                        const land = () => kueste.map(([x, z]) => (r._landAt(x, z, 0) ? 1 : 0));
+                        const n = leute().length;
+                        const f0 = frei();
+                        takt(a.takte);
+                        const f1 = frei();
+                        const k0 = land();
+                        let f2 = null;
+                        let k1 = null;
+                        let wort = null;
+                        try {
+                            window.__wetterSetzen("stormy");
+                            takt(a.takte);
+                            wort = st.weather;
+                            f2 = frei();
+                            k1 = land();
+                        } finally {
+                            window.__wetterSetzen(alt);
+                            takt(10);
+                        }
+                        let kAnders = 0;
+                        for (let i = 0; i < k0.length; i++) if (k0[i] !== k1[i]) kAnders++;
+                        return { bewohner: n, freiKlar: f0, freiKlar2: f1, freiSturm: f2, wortSturm: wort, zurueck: st.weather === alt, alt, kuestePunkte: kueste.length, kuesteAnders: kAnders, leser: ["_wetterFlucht", "_bewohnerRegen", "_schutzSuchen"].filter((x) => typeof r[x] === "function").length };
+                    };
+                    const w = await S(ruhig, {});
+                    let s = null;
+                    let sf = null;
+                    try {
+                        s = await S(sturm, { takte: 120 });
+                    } catch (e) {
+                        sf = String((e && e.message) || e).slice(0, 200);
+                    }
+                    const aus = {};
+                    aus[2] = { werte: { streuungGrad: w.s2.streuungGrad }, zeuge: w.s2, auge: await M.auge("wetter-welt-s2", { ort: "wiese" }) };
+                    aus[3] = { werte: { lumaVerh: w.s3.lumaVerh, rPfuetze: w.s3.rPfuetze, lumaTrocken: w.s3.lumaTrocken, rTrocken: w.s3.rTrocken }, zeuge: w.s3 };
+                    if (s) {
+                        aus[4] = { werte: { freiProzent: s.freiKlar ? Math.round((1000 * s.freiSturm) / s.freiKlar) / 10 : null }, zeuge: s, auge: await M.auge("wetter-welt-s4", { ort: "wiese" }) };
+                        aus[5] = { werte: { kuesteVerschiebungM: s.kuesteAnders }, zeuge: s, auge: await M.auge("wetter-welt-s5", { ort: "wiese" }), nicht: "kein Gelände-Wandel durch Wetter: das Relief ist eine Funktion der Saat und des Erdbaus — im Sturm ändern " + s.kuesteAnders + " von " + s.kuestePunkte + " Küstenpunkten ihr Land; keine Düne, keine Rinne" };
+                    } else {
+                        aus[4] = { werte: {}, zeuge: { fehler: sf }, auge: await M.auge("wetter-welt-s4", { ort: "wiese" }) };
+                        aus[5] = { werte: {}, zeuge: { fehler: sf }, auge: await M.auge("wetter-welt-s5", { ort: "wiese" }), nicht: "kein Gelände-Wandel durch Wetter (die Sturm-Messung warf: " + sf + ")" };
+                    }
+                    aus[6] = { werte: { rDach: w.s6.rDach, haeufigerFaktor: w.s6.formen ? null : 0 }, zeuge: w.s6 };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    2: {
+                        u: {},
+                        soll: [K.soll(D, 2, "dieselbe Richtung ±20°", { key: "streuungGrad", rel: "≤", zahl: 20, einheit: "°" })],
+                        auge: { pose: "ein Sturmbild an der Wiese: Gras, Bäume, Wolken, Rauch, Wasser", vorbild: "dieselbe Richtung ±20°, Lee < frei < Düse (Blindpaar R11)" },
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.punkte >= 50)) return "nur " + (z.punkte || 0) + " Punkte des Winds";
+                            if (!(z.formLee < z.formFrei && z.formFrei < z.formDuese)) return "Lee < frei < Düse hält nicht (" + z.formLee + " · " + z.formFrei + " · " + z.formDuese + ")";
+                            if (!(z.drehungGrad >= 5) || !(z.streuungSpaeter <= 20)) return "der Gegenlauf (die Front bis 24 h später gedreht) fehlt oder die Leser folgen ihr nicht (" + z.drehungGrad + "° Drehung, " + z.streuungSpaeter + "° Streuung)";
+                            if (!(z.wolke > 0)) return "Wolken und Rauch lesen den Wind am Ort nicht";
+                            return null;
+                        },
+                        taeter: "stamm/stoff-material.js _windAt/_windForm",
+                        leser: "stamm/stoff-material.js:214 — _windDirAt speist Gras und Laub; kein Leser für Wolken und Rauch am Ort",
+                        gruen: { werte: { streuungGrad: 12 }, zeuge: { punkte: 200, formLee: 0.7, formFrei: 1, formDuese: 1.3, drehungGrad: 30, streuungSpaeter: 10, wolke: 1 } },
+                        attrappen: [
+                            { name: "12° ohne Punkte", roh: { werte: { streuungGrad: 12 }, zeuge: {} } },
+                            { name: "die Front dreht nicht (kein Gegenlauf)", roh: { werte: { streuungGrad: 12 }, zeuge: { punkte: 200, formLee: 0.7, formFrei: 1, formDuese: 1.3, drehungGrad: 0, streuungSpaeter: 10, wolke: 1 } } },
+                        ],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(D, 3, "Luma porös nass/trocken 0,5–0,8", { key: "lumaVerh" }), K.soll(D, 3, "Pfützen in Senken r ≥ 0,5", { key: "rPfuetze" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.punkte >= 300)) return "nur " + (z.punkte || 0) + " Punkte des Bodens (Soll 400)";
+                            if (!(z.naesseRegen > 0)) return "der Regen benetzt nicht (Nässe " + z.naesseRegen + ")";
+                            if (!(z.pfuetzenRegen > 0)) return "keine Pfütze im Regen";
+                            if (z.naesseTrocken !== 0 || z.pfuetzenTrocken !== 0) return "der Gegenlauf trocken trägt Nässe " + z.naesseTrocken + " und " + z.pfuetzenTrocken + " Pfützen (die Wirkung bleibt)";
+                            return null;
+                        },
+                        taeter: "stamm/stoff-material.js _naesseGesetz/_pfuetzeGesetz über gelaende-core.js muldeEcken",
+                        gruen: { werte: { lumaVerh: 0.62, rPfuetze: 0.71 }, zeuge: { punkte: 400, naesseRegen: 0.98, pfuetzenRegen: 60, naesseTrocken: 0, pfuetzenTrocken: 0 } },
+                        attrappen: [
+                            { name: "Luma 0,62 und r 0,71 ohne Boden der Welt", roh: { werte: { lumaVerh: 0.62, rPfuetze: 0.71 }, zeuge: {} } },
+                            { name: "die Pfützen stehen auch trocken (Gegenlauf ohne Wirkung)", roh: { werte: { lumaVerh: 0.62, rPfuetze: 0.71 }, zeuge: { punkte: 400, naesseRegen: 0.98, pfuetzenRegen: 60, naesseTrocken: 0, pfuetzenTrocken: 60 } } },
+                        ],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(D, 4, "Anteil im Freien bei Sturm ≤ 30 % des klaren Werts", { key: "freiProzent", einheit: "%" })],
+                        auge: { pose: "der Marktplatz des nächsten Orts, klar ↔ Sturm (heute: Wiese)", vorbild: "Bildpaar Marktplatz (Blindpaar R11)" },
+                        zeuge: (roh) => ((roh.zeuge || {}).bewohner >= 10 && (roh.zeuge || {}).wortSturm === "stormy" && (roh.zeuge || {}).zurueck ? null : "keine 10 Bewohner, kein Sturm oder das Wetter kehrte nicht zurück"),
+                        taeter: "stamm/siedlung-bewohner.js (kein Leser des Wetters)",
+                        leser: "stamm/siedlung-bewohner.js:2331 drinnenSoll — folgt dem Tagesplan der Stunde, kein Leser von _weatherIsWet (stamm/bild-himmel.js:2861)",
+                        gruen: { werte: { freiProzent: 20 }, zeuge: { bewohner: 27, wortSturm: "stormy", zurueck: true } },
+                        attrappen: [{ name: "20 % ohne Bewohner", roh: { werte: { freiProzent: 20 }, zeuge: {} } }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(D, 5, "Küstenlinie messbar verändert", { key: "kuesteVerschiebungM", rel: ">", zahl: 0, refQuelle: "der Richter selbst: „messbar verändert“ — jede Verschiebung über 0 an derselben Pose zählt", einheit: "Punkte" })],
+                        auge: { pose: "die Küste vor ↔ nach 10 Spieljahren an derselben Pose (heute: Wiese)", vorbild: "Bildpaar: Dünenversatz in Windrichtung, Küstenlinie verändert (Blindpaar R11)" },
+                        taeter: "gelaende-core.js hoehe (das Relief liest kein Wetter)",
+                        nicht: "kein Gelände-Wandel durch Wetter",
+                        leser: "gelaende-core.js:2819 hoehe — das Relief ist Saat + Erdbau, kein Leser von Regen, Wind und Landfall",
+                        gruen: { werte: { kuesteVerschiebungM: 6 }, zeuge: {} },
+                        attrappen: [{ name: "6 ohne Sturm", roh: { werte: { kuesteVerschiebungM: 6 }, zeuge: {} } }],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(D, 6, "Dachneigung ↔ Schneelast r ≥ 0,5", { key: "rDach" }), K.soll(D, 6, "Innenhof, Stelzen, Windturm ≥ 3× häufiger", { key: "haeufigerFaktor" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).orte >= 100 ? null : "nur " + ((roh.zeuge || {}).orte || 0) + " Orte geladen (Soll 100 über Klimazonen)"),
+                        taeter: "fachwerk-core.js pitchDeg (die Dachneigung folgt dem Stil, nie dem Schnee)",
+                        leser: "fachwerk-core.js:5737 — pitchDeg liest den Stil (STILMODE pMin), keine Schneelast; keine Bauform Innenhof/Stelzen/Windturm",
+                        gruen: { werte: { rDach: 0.62, haeufigerFaktor: 3.4 }, zeuge: { orte: 100 } },
+                        attrappen: [{ name: "r 0,62 an einem Ort", roh: { werte: { rDach: 0.62, haeufigerFaktor: 3.4 }, zeuge: { orte: 1 } } }],
+                    },
+                },
+            },
+
+            // ════════ stadtklima — die Megastadt macht ihr eigenes Wetter ════════
+            // S1 der Wind in den Gassen der geladenen Orte (`_windAt` an den Mitten ihrer Wege gegen die Richtung der Gasse) mit dem Gegenlauf derselben
+            // Punkte, 300 m abseits; S2 die Temperatur am Kern gegen den Rand auf gleicher Höhe (`_temperaturAt`); S3–S6 fragen die Welt nach der Größe des
+            // Orts, nach Dunst und Böe am Ort und nach den Bewohnern (Umfang nicht erzeugbar).
+            [E]: {
+                sek: 10,
+                dorf: true,
+                pfad: ["stamm/stoff-material.js", "stamm/bild-himmel.js", "stamm/siedlung-ort.js", "stamm/siedlung-bewohner.js", "fachwerk-core.js", "gelaende-core.js", "scripts/werkbank.cjs"],
+                ungefahren: "das Bildpaar der tauenden Stadt (S2) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r) => {
+                        const st = r.state;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const t = st.spielZeit || 0;
+                        const ab = [];
+                        const abG = [];
+                        let groesste = 0;
+                        let bewohner = 0;
+                        let kern = null;
+                        for (const Si of (r._bewohnerSiedlungen || new Map()).values()) {
+                            const pl = Si.plan || {};
+                            groesste = Math.max(groesste, (pl.slots || []).length);
+                            bewohner += (Si.liste || []).length;
+                            if (!kern) kern = { x: Si.ox, z: Si.oz };
+                            for (const w of pl.roads || []) {
+                                const pts = (w && (w.pts || w.punkte)) || (Array.isArray(w) ? w : null);
+                                if (!pts) continue;
+                                for (let i = 1; i < pts.length; i++) {
+                                    const dx = pts[i].x - pts[i - 1].x, dz = pts[i].z - pts[i - 1].z;
+                                    if (Math.hypot(dx, dz) < 2) continue;
+                                    const mx = Si.ox + (pts[i].x + pts[i - 1].x) / 2, mz = Si.oz + (pts[i].z + pts[i - 1].z) / 2;
+                                    const g = Math.atan2(dx, dz);
+                                    const dev = (w1) => { let d = Math.abs(Math.atan2(w1.x, w1.z) - g) * (180 / Math.PI) % 180; return d > 90 ? 180 - d : d; };
+                                    ab.push(dev(r._windAt(mx, mz, t, {})));
+                                    abG.push(dev(r._windAt(mx + 300, mz + 300, t, {})));
+                                }
+                            }
+                        }
+                        const m = (v) => (v.length ? v.reduce((s, x) => s + x, 0) / v.length : null);
+                        const yK = kern ? r._terrainSaatY(kern.x, kern.z, true) : null;
+                        let rand = null;
+                        if (kern)
+                            for (let j = 0; j < 64; j++)
+                                for (const d of [400, 600, 800]) {
+                                    const x = kern.x + Math.cos(j * 0.0982) * d, z = kern.z + Math.sin(j * 0.0982) * d;
+                                    const y = r._terrainSaatY(x, z, true);
+                                    if (!rand || Math.abs(y - yK) < Math.abs(rand.y - yK)) rand = { x, z, y };
+                                }
+                        const tK = kern ? r._temperaturAt(yK, 0) : null;
+                        const tR = rand ? r._temperaturAt(rand.y, 0) : null;
+                        const tRoh = kern ? r._temperaturAt(r._terrainSaatY(kern.x + 600, kern.z, true), 0) : null;
+                        const wf = r._weatherFieldFor();
+                        const bk = kern ? r._windAt(kern.x, kern.z, t, {}) : null;
+                        const bf = kern ? r._windAt(kern.x + 600, kern.z, t, {}) : null;
+                        return { segmente: ab.length, abweichung: r3(m(ab)), abweichungFrei: r3(m(abG)), schatten: ["_schattenTrocknen", "_naesseSchatten"].filter((n) => typeof r[n] === "function").length, groesste, bewohner, dK: tK != null && tR != null ? r3(tK - tR) : null, dHoeheM: rand ? r3(rand.y - yK) : null, dKOhneHoehe: tK != null ? r3(tK - tRoh) : null, nebel: r3(wf.fog), boeFaktor: bk && bf && bf.boe ? r3(bk.boe / bf.boe) : null };
+                    };
+                    const w = await S(seite, {});
+                    const aus = {};
+                    aus[1] = { werte: { abweichungGrad: w.abweichung, abweichungFrei: w.abweichungFrei }, zeuge: w };
+                    aus[2] = { werte: { dK: w.dK }, zeuge: w, auge: await M.auge("stadtklima-s2", { ort: "wiese" }), ...(w.groesste >= 100 ? {} : { nicht: "keine Stadt mit 10² Häusern geladen (größter Ort " + w.groesste + " Häuser); _temperaturAt liest nur die Höhe: Kern − Rand auf gleicher Höhe " + w.dK + " K (" + w.dHoeheM + " m Höhenversatz), 600 m daneben ohne Höhen-Abgleich " + w.dKOhneHoehe + " K — die Höhe, keine Stadt" }) };
+                    aus[3] = { werte: { sichtProzent: 100, boeFaktor: w.boeFaktor }, zeuge: w, nicht: "keine Stadt mit 10⁴ Häusern (die Wand des Rang-Gesetzes 500); der Dunst ist ein Wetter-Feld der ganzen Welt (Nebel " + w.nebel + ")" };
+                    aus[4] = { werte: {}, zeuge: w, nicht: "keine 10⁶ Bewohner (geladen " + w.bewohner + ")" };
+                    aus[5] = { werte: {}, zeuge: w, nicht: "keine Megastadt ≥ 10⁷ (größter Ort " + w.groesste + " Häuser), kein Niederschlag am Ort aus der Stadt" };
+                    aus[6] = { werte: {}, zeuge: w, nicht: "keine Industriestadt und kein Smog: Sicht und Himmel folgen dem Wetter-Feld, nie der Epoche der Stadt" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [K.soll(E, 1, "Wind folgt der Gasse ±20°", { key: "abweichungGrad", rel: "≤", zahl: 20, einheit: "°" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.segmente >= 10)) return "nur " + (z.segmente || 0) + " Gassen-Stücke gemessen";
+                            if (!(z.abweichungFrei - z.abweichung >= 10)) return "der Gegenlauf 300 m abseits weicht gleich ab (" + z.abweichungFrei + "° ↔ " + z.abweichung + "°): die Gasse lenkt nicht";
+                            if (!(z.schatten > 0)) return "kein Leser lässt die Pfütze im Schatten später trocknen";
+                            return null;
+                        },
+                        taeter: "stamm/stoff-material.js _windAt (liest keine Häuser)",
+                        leser: "stamm/stoff-material.js:233 — _windAt liest Relief (windForm), keine Gasse; _trockenRate (stoff-material.js:2236) kennt keinen Schatten",
+                        gruen: { werte: { abweichungGrad: 12 }, zeuge: { segmente: 40, abweichung: 12, abweichungFrei: 44, schatten: 1 } },
+                        attrappen: [{ name: "12° ohne Gassen", roh: { werte: { abweichungGrad: 12 }, zeuge: {} } }],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(E, 2, "Kern ≥ 2 K wärmer", { key: "dK", einheit: "K" })],
+                        auge: { pose: "die Stadt in klarer Winternacht (heute: Wiese)", vorbild: "Bildpaar: Schnee taut im Kern zuerst (Blindpaar R11)" },
+                        taeter: "stamm/bild-himmel.js _temperaturAt (nur die Höhe)",
+                        nicht: "keine Stadt mit 10² Häusern",
+                        leser: "stamm/bild-himmel.js:2874 — _temperaturAt(y, traegTage) liest keinen Ort (x, z), keine Wärmeinsel",
+                        gruen: { werte: { dK: 2.5 }, zeuge: {} },
+                        attrappen: [{ name: "2,5 K ohne Stadt", roh: { werte: { dK: 2.5 }, zeuge: {} } }],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(E, 3, "Sicht im Kern ≤ 50 % des Umlands", { key: "sichtProzent", einheit: "%" }), K.soll(E, 3, "Böe am Turmfuß ≥ 1,5×", { key: "boeFaktor" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).groesste >= 1e4 ? null : "keine Stadt mit 10⁴ Häusern"),
+                        taeter: "fachwerk-core.js GROESSE_WAND (500 Häuser)",
+                        nicht: "keine Stadt mit 10⁴ Häusern",
+                        leser: "stamm/bild-himmel.js:2820 _weatherFieldFor — trägt Nebel für die ganze Welt, keinen Dunst am Ort",
+                        gruen: { werte: { sichtProzent: 40, boeFaktor: 1.7 }, zeuge: { groesste: 12000 } },
+                        attrappen: [{ name: "40 % ohne Stadt", roh: { werte: { sichtProzent: 40, boeFaktor: 1.7 }, zeuge: {} } }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(E, 4, "Anteil im Freien bei Regen ≤ 30 %", { key: "freiProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).bewohner >= 1e6 ? null : "keine 10⁶ Bewohner"),
+                        taeter: "stamm/siedlung-bewohner.js (Bewohner nur der geladenen Orte)",
+                        nicht: "keine 10⁶ Bewohner",
+                        leser: "stamm/siedlung-bewohner.js:277 _bewohnerSiedlungen — die Bewohner leben nur in geladenen Orten, kein Leser des Regens",
+                        gruen: { werte: { freiProzent: 22 }, zeuge: { bewohner: 1e6 } },
+                        attrappen: [{ name: "22 % ohne Bewohner", roh: { werte: { freiProzent: 22 }, zeuge: {} } }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(E, 5, "Niederschlag im Lee ≥ +10 % gegen Luv", { key: "leePlusProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).groesste >= 1e6 ? null : "keine Megastadt"),
+                        taeter: "phyto-core.js wetterAt (liest keine Stadt)",
+                        nicht: "keine Megastadt ≥ 10⁷",
+                        leser: "phyto-core.js:4423 — wetterAt liest Saat, Ort, Zeit und das Δ des Planeten, keine Stadt",
+                        gruen: { werte: { leePlusProzent: 14 }, zeuge: { groesste: 2e6 } },
+                        attrappen: [{ name: "+14 % ohne Stadt", roh: { werte: { leePlusProzent: 14 }, zeuge: {} } }],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(E, 6, "Sicht und Himmelsfarbe gegen historische Messreihen ±30 %", { key: "abweichungProzent", rel: "≤", zahl: 30, einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).smog > 0 ? null : "kein Smog in der Welt"),
+                        taeter: "stamm/bild-himmel.js _weatherFieldFor (kein Smog der Epoche)",
+                        nicht: "keine Industriestadt, kein Smog",
+                        leser: "stamm/bild-himmel.js:2820 _weatherFieldFor — Sicht und Himmel lesen das Wetter-Feld, keine Epoche der Stadt (Kohle 1850)",
+                        gruen: { werte: { abweichungProzent: 18 }, zeuge: { smog: 1 } },
+                        attrappen: [{ name: "18 % ohne Smog", roh: { werte: { abweichungProzent: 18 }, zeuge: {} } }],
+                    },
+                },
+            },
+
+            // ════════ kaskade — Vulkan formt Küste formt Stadt formt Verkehr ════════
+            // Die Welt wird nach jedem Glied gefragt (Rutschung, Fluss-Verlagerung, Deich, Beben, Tsunami); S4 misst die Flut selbst: der EINE Spiegel 2 m
+            // gehoben (im finally zurück) — die geflutete Fläche der Leser (`_nassAt`, `_landAt`) gegen die Tiefenkarte (`_voxelSurfaceY` < Spiegel)
+            // an 400 Punkten um die Küste, der Gegenlauf ohne Hebung.
+            [F]: {
+                sek: 15,
+                mutiert: true,
+                pfad: ["stamm/wasser-*.js", "stamm/feld-brand.js", "stamm/siedlung-*.js", "gelaende-core.js", "planet-core.js", "scripts/werkbank.cjs"],
+                ungefahren: "das Bild der Folge (S1) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r) => {
+                        const st = r.state;
+                        const wl = st.waterLevel;
+                        const p = st.playerMesh.position;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const glieder = {};
+                        for (const n of ["_rutschung", "_bergsturz", "_flussVerlegen", "_deichBauen", "_beben", "_tsunami", "_sturmflut", "_lavaGiessen", "_ausbruch"]) glieder[n] = typeof r[n] === "function";
+                        const pts = [];
+                        for (let k = 0; k < 600 && pts.length < 400; k++) {
+                            const ang = k * 2.39996;
+                            let a1 = false, b1 = false;
+                            for (let d = 150; d <= 20000; d += 20) {
+                                const x = p.x + Math.cos(ang) * d, z = p.z + Math.sin(ang) * d;
+                                const m = r._terrainMacroSurfaceY(x, z);
+                                if (m < wl) break;
+                                if (!a1 && m > wl + 0.2 && m < wl + 1.8) { pts.push([x, z, m]); a1 = true; }
+                                if (!b1 && m > wl + 2.2 && m < wl + 4) { pts.push([x, z, m]); b1 = true; }
+                            }
+                        }
+                        const lies = () => pts.map(([x, z]) => (r._nassAt(x, z) || !r._landAt(x, z, 0) ? 1 : 0));
+                        const vor = lies();
+                        const gegen = lies();
+                        let nach;
+                        try {
+                            st.waterLevel = wl + 2;
+                            nach = lies();
+                        } finally {
+                            st.waterLevel = wl;
+                        }
+                        const tief = pts.map(([x, z]) => { const b = r._voxelSurfaceY(x, z); return b !== null && Number.isFinite(b) && b < wl + 2 - 0.05 ? 1 : 0; });
+                        const tiefMakro = pts.filter((q) => q[2] < wl + 2).length;
+                        let gleich = 0, neu = 0, still = 0, beide = 0, eins = 0;
+                        for (let i = 0; i < pts.length; i++) {
+                            if (nach[i] === tief[i]) gleich++;
+                            if (nach[i] && tief[i]) beide++;
+                            if (nach[i] || tief[i]) eins++;
+                            if (nach[i] && !vor[i]) neu++;
+                            if (gegen[i] !== vor[i]) still++;
+                        }
+                        return { glieder, punkte: pts.length, gleich, beide, eins, neu, still, tief: tief.reduce((s, x) => s + x, 0), tiefMakro, zurueck: st.waterLevel === wl };
+                    };
+                    const w = await S(seite, {});
+                    const g = w.glieder;
+                    const da = Object.keys(g).filter((n) => g[n]);
+                    const fehlt = (namen) => namen.filter((n) => !g[n]).join(", ");
+                    const aus = {};
+                    aus[1] = { werte: { saatenMitFolge: 0 }, zeuge: { glieder: g }, auge: await M.auge("kaskade-s1", { ort: "wiese" }), nicht: "keine Rutschung sperrt eine Straße (" + fehlt(["_rutschung", "_bergsturz"]) + " fehlen)" };
+                    aus[2] = { werte: {}, zeuge: { glieder: g }, nicht: "kein Ausbruch formt Land: " + (g._lavaGiessen ? "die Lava (_lavaGiessen) gießt Glut ins Feld, kein Erdbau der Küste" : "keine Lava") };
+                    aus[3] = { werte: {}, zeuge: { glieder: g }, nicht: "kein Fluss verlagert sich und keine Stadt baut einen Deich (" + fehlt(["_flussVerlegen", "_deichBauen"]) + ")" };
+                    aus[4] = { werte: { flaecheProzent: w.eins ? Math.round((1000 * w.beide) / w.eins) / 10 : null }, zeuge: w, nicht: "keine Sturmflut und kein Deich (" + fehlt(["_sturmflut", "_deichBauen"]) + "): gemessen ist die Flut des gehobenen Spiegels allein; Flucht und Verkehr lesen keine Flut" };
+                    aus[5] = { werte: {}, zeuge: { glieder: g }, nicht: "keine Kette Beben → Rutschung → Tsunami (" + fehlt(["_beben", "_rutschung", "_tsunami"]) + ")" };
+                    aus[6] = { werte: {}, zeuge: { glieder: g }, nicht: "keine Vulkaninsel nach Ausbruch (" + (da.length ? "vorhanden: " + da.join(", ") : "kein Glied") + ")" };
+                    aus[7] = { werte: {}, zeuge: { glieder: g }, nicht: "keine Kette aus den Gesetzen einer Welt" };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [K.soll(F, 1, "20 Saaten: Folge tritt ein", { key: "saatenMitFolge", rel: "≥", zahl: 20 })],
+                        auge: { pose: "die gesperrte Straße nach der Rutschung (heute: Wiese)", vorbild: "die Folge im Bild sichtbar (Blindpaar R11)" },
+                        taeter: "stamm/siedlung-ort.js (kein Ereignis sperrt eine Straße)",
+                        nicht: "keine Rutschung",
+                        leser: "stamm/siedlung-ort.js:3313 — _wegenetzLegen liest kein Ereignis; keine Rutschung im Gelände",
+                        gruen: { werte: { saatenMitFolge: 20 }, zeuge: {} },
+                        attrappen: [{ name: "20 Saaten ohne Welt", roh: { werte: { saatenMitFolge: 20 }, zeuge: {} } }],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(F, 2, "Küstenlinie verschiebt sich messbar", { key: "kuesteM", rel: ">", zahl: 0, refQuelle: "der Richter selbst: „verschiebt sich messbar“ — jede Verschiebung über 0 m nach dem Ausbruch zählt", einheit: "m" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).kueste > 0 ? null : "keine Küste verschoben"),
+                        taeter: "stamm/feld-brand.js _lavaGiessen (kein Erdbau)",
+                        nicht: "kein Ausbruch formt Land",
+                        leser: "stamm/feld-leben.js:2460 _lavaGiessen — schreibt Glut ins Feld, kein Erdbau der Küste; die Strandfarbe liest kein Gestein",
+                        gruen: { werte: { kuesteM: 40 }, zeuge: { kueste: 1 } },
+                        attrappen: [{ name: "40 m ohne Ausbruch", roh: { werte: { kuesteM: 40 }, zeuge: {} } }],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(F, 3, "nach Verlagerung entsteht Deich am Prallufer in ≥ 80 %", { key: "deichProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).deiche > 0 ? null : "kein Deich gezählt"),
+                        taeter: "stamm/wasser-hydro.js (der Fluss liegt fest)",
+                        nicht: "kein verlagerter Fluss, kein Deich",
+                        leser: "stamm/wasser-hydro.js:597 — _hydroRiverAt liest die feste Hydrosphäre; kein Leser verlegt den Lauf",
+                        gruen: { werte: { deichProzent: 85 }, zeuge: { deiche: 12 } },
+                        attrappen: [{ name: "85 % ohne Deich", roh: { werte: { deichProzent: 85 }, zeuge: {} } }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [
+                            K.soll(F, 4, "überflutete Fläche = Tiefenkarte ≥ 90 %", { key: "flaecheProzent", einheit: "%" }),
+                            K.soll(F, 4, "≥ 90 % der Bewohner verlassen die Zone", { key: "fluchtProzent", einheit: "%" }),
+                            K.soll(F, 4, "Verkehr auf gefluteten Trassen 0", { key: "verkehrGeflutet" }),
+                        ],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.punkte >= 200)) return "nur " + (z.punkte || 0) + " Punkte der Küste";
+                            if (!(z.neu > 0)) return "die Hebung flutet keinen Punkt";
+                            if (z.still !== 0) return "im Gegenlauf ändern sich " + z.still + " Punkte";
+                            return null;
+                        },
+                        taeter: "stamm/siedlung-bewohner.js (keine Flucht vor der Flut), kein Deich",
+                        nicht: "keine Sturmflut, kein Deich",
+                        leser: "stamm/siedlung-bewohner.js:2331 drinnenSoll — der Tagesplan liest keine Flut; kein Deich im Gesetz",
+                        gruen: { werte: { flaecheProzent: 96, fluchtProzent: 92, verkehrGeflutet: 0 }, zeuge: { punkte: 400, neu: 80, still: 0 } },
+                        attrappen: [{ name: "96 % ohne Flut", roh: { werte: { flaecheProzent: 96, fluchtProzent: 92, verkehrGeflutet: 0 }, zeuge: { punkte: 400, neu: 0, still: 0 } } }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(F, 5, "30 nie gesehene Zufalls-Auslöseorte: Kette läuft in ≥ 80 %", { key: "ketteProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).orte >= 30 ? null : "keine 30 Auslöseorte"),
+                        taeter: "gelaende-core.js (kein Beben, kein Tsunami)",
+                        nicht: "keine Kette Beben → Tsunami",
+                        leser: "gelaende-core.js:2819 hoehe — kein Leser von Beben und Rutschung; kein Tsunami im Wasser (stamm/wasser-hydro.js)",
+                        gruen: { werte: { ketteProzent: 83 }, zeuge: { orte: 30 } },
+                        attrappen: [{ name: "83 % ohne Orte", roh: { werte: { ketteProzent: 83 }, zeuge: {} } }],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(F, 6, "Siedlung und Trasse entstehen in ≥ 70 % der Saaten", { key: "siedlungProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).saaten >= 10 ? null : "keine Saaten mit Ausbruch"),
+                        taeter: "planet-core.js planetVulkane (kein Ausbruch als Ereignis der Welt)",
+                        nicht: "keine Vulkaninsel nach Ausbruch",
+                        leser: "voxel-worker.js:1196 — planetOrtAuftrag reicht keinen Vulkan (o.vulkan) an die Welt",
+                        gruen: { werte: { siedlungProzent: 74 }, zeuge: { saaten: 20 } },
+                        attrappen: [{ name: "74 % ohne Saaten", roh: { werte: { siedlungProzent: 74 }, zeuge: {} } }],
+                    },
+                    7: {
+                        u: {},
+                        soll: [K.soll(F, 7, "100 Welten: Kette läuft in ≥ 70 %", { key: "ketteProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).welten >= 100 ? null : "keine 100 Welten"),
+                        taeter: "gelaende-core.js / planet-core.js (keine Ereignis-Kette)",
+                        nicht: "keine Kette aus den Gesetzen",
+                        leser: "planet-core.js:1633 planetScheibe — die Scheibe der Zeit ist stetig, keine Ereignis-Kette reicht in die Welt",
+                        gruen: { werte: { ketteProzent: 72 }, zeuge: { welten: 100 } },
+                        attrappen: [{ name: "72 % ohne Welten", roh: { werte: { ketteProzent: 72 }, zeuge: {} } }],
+                    },
+                },
+            },
+
+            // ════════ ereignis-spur — Ausbruch, Trapp, Einschlag, Sterben über die Äonen ════════
+            // Der Planet-Faden an 31 Orten (Anker + Netz ±50°) über 0 … −500 Ma (51 Schritte): das Welt-Mittel von Wuchs (decke) und Jahresmittel — ein
+            // Einbruch ist ein Fall der Decke um > 50 % zum Vorschritt, die Ursache ein Sprung des Klimas um ≥ 2 K im selben Schritt. Die Welt wird nach
+            // Grabung/Bohrung gefragt (`_ascheAt` ist die Asche-Decke eines Brands an der Oberfläche, keine Schicht nach Alter).
+            [G]: {
+                sek: 20,
+                pfad: PLANET_PFAD,
+                ungefahren: "das Licht am Boden im Einschlag (S5) misst nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r) => {
+                        await r._fadenQuelle();
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const samen = r._planetSamen();
+                        const an = await r._planetAnker();
+                        const B0 = (an.breite * 180) / Math.PI, L0 = (an.laenge * 180) / Math.PI;
+                        const netz = [[B0, L0]];
+                        for (let b = -50; b <= 50; b += 20) for (let l = -150; l <= 150; l += 75) netz.push([b, l]);
+                        const decke = [];
+                        const temp = [];
+                        for (let i = 0; i <= 50; i++) {
+                            const o = await Promise.all(netz.map((q) => r._planetAuftrag({ type: "planet-ort", samen, breite: q[0], laenge: q[1], zeitMa: -i * 10 })));
+                            decke.push(o.reduce((s, x) => s + x.delta.wuchs.decke, 0) / o.length);
+                            temp.push(o.reduce((s, x) => s + (x.delta.klima.sommer + x.delta.klima.winter) / 2, 0) / o.length);
+                        }
+                        let einbrueche = 0, mitUrsache = 0, spruenge = 0;
+                        for (let i = 1; i < decke.length; i++) {
+                            const fall = decke[i - 1] > 0 && decke[i] < 0.5 * decke[i - 1];
+                            const sprung = Math.abs(temp[i] - temp[i - 1]) >= 2;
+                            if (sprung) spruenge++;
+                            if (fall) { einbrueche++; if (sprung) mitUrsache++; }
+                        }
+                        const grab = ["_grabung", "_bohrung", "_schichtfolgeAt", "_bohrkern"].filter((n) => typeof r[n] === "function").length;
+                        const asche = typeof r._ascheAt === "function" ? 1 : 0;
+                        const mt = temp.reduce((s, x) => s + x, 0) / temp.length;
+                        return { schritte: decke.length, orte: netz.length, einbrueche, mitUrsache, spruenge, grab, asche, tSpanne: r3(Math.max(...temp) - Math.min(...temp)), tStreuung: r3(Math.sqrt(temp.reduce((s, x) => s + (x - mt) ** 2, 0) / temp.length)), maxSprungK: r3(Math.max(...temp.slice(1).map((x, i) => Math.abs(x - temp[i])))), dSpanne: r3(Math.max(...decke) - Math.min(...decke)) };
+                    };
+                    const w = await S(seite, {});
+                    const aus = {};
+                    aus[1] = { werte: {}, zeuge: w, nicht: "keine Grabung: kein Leser der Schichtfolge nach Alter in der Welt (" + w.grab + "); _ascheAt liest nur die Asche-Decke der Oberfläche nach einem Brand, kein Ausbruch legt Asche ins Alter" };
+                    aus[2] = { werte: {}, zeuge: w, nicht: "kein Großausbruch: das Welt-Mittel des Planeten (" + w.orte + " Orte) springt in 500 Ma " + w.spruenge + "-mal um ≥ 2 K je 10 Ma (größter Schritt " + w.maxSprungK + " K), kein Jahr nach einem Ausbruch" };
+                    aus[3] = { werte: {}, zeuge: w, nicht: "kein Trapp als Ereignis der Welt: der Faden reicht keinen Vulkan und kein Gestein (keine Bohrung)" };
+                    aus[4] = { werte: {}, zeuge: w, nicht: "kein Einschlag, keine Grenzlage, keine Bohrung" };
+                    aus[5] = { werte: { sterben: w.einbrueche }, zeuge: w, nicht: "kein Massensterben mit Ursache und Spur: " + w.einbrueche + " Einbrüche der Decke in 500 Ma, kein Fossil, kein Licht-Einbruch" };
+                    aus[6] = { werte: { einbrueche: w.einbrueche - w.mitUrsache, ursachenOhneSpur: w.spruenge - w.mitUrsache }, zeuge: w };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [K.soll(G, 1, "Grabung im Umkreis findet die Asche am erwarteten Alter in ≥ 95 %", { key: "ascheProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).grab > 0 ? null : "keine Grabung in der Welt"),
+                        taeter: "voxel-worker.js planetOrtAuftrag (keine Schichtfolge)",
+                        nicht: "keine Grabung, kein Ausbruch",
+                        leser: "voxel-worker.js:1196 — planetOrtAuftrag reicht keine Schichtfolge und keinen Vulkan an die Welt",
+                        gruen: { werte: { ascheProzent: 97 }, zeuge: { grab: 1 } },
+                        attrappen: [{ name: "97 % ohne Grabung", roh: { werte: { ascheProzent: 97 }, zeuge: {} } }],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(G, 2, "Welt-Temperatur −0,5 bis −2 K", { key: "dTWelt", rel: "band", zahl: -2, bis: -0.5, einheit: "K" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).ausbruch > 0 ? null : "kein Ausbruch VEI 7 in der Welt"),
+                        taeter: "planet-core.js planetKlimaGlobal (stetig über Ma, kein Ausbruch)",
+                        nicht: "kein Großausbruch",
+                        leser: "planet-core.js:1897 — planetKlimaGlobal(plan, zeitMa) kennt kein Aerosol, kein Jahr nach einem Ausbruch",
+                        gruen: { werte: { dTWelt: -1.1 }, zeuge: { ausbruch: 1 } },
+                        attrappen: [{ name: "−1,1 K ohne Ausbruch", roh: { werte: { dTWelt: -1.1 }, zeuge: {} } }],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(G, 3, "Mitteltemperatur ändert sich ≥ 2 °C", { key: "dTMittel", einheit: "°C" }), K.soll(G, 3, "Basalt in Bohrungen der Fläche ≥ 95 %", { key: "basaltProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).grab > 0 ? null : "keine Bohrung in der Welt"),
+                        taeter: "voxel-worker.js planetOrtAuftrag (kein Trapp, kein Gestein)",
+                        nicht: "kein Trapp als Ereignis",
+                        leser: "voxel-worker.js:1196 — planetOrtAuftrag reicht o.vulkan (Trapp) und das Gestein nicht an die Welt",
+                        gruen: { werte: { dTMittel: 3, basaltProzent: 97 }, zeuge: { grab: 1 } },
+                        attrappen: [{ name: "3 °C ohne Bohrung", roh: { werte: { dTMittel: 3, basaltProzent: 97 }, zeuge: {} } }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(G, 4, "zufällige Bohrungen weltweit mit Grenzlage am selben Alter ≥ 90 %", { key: "bohrProzent", einheit: "%" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).grab > 0 ? null : "keine Bohrung in der Welt"),
+                        taeter: "planet-core.js (kein Einschlag)",
+                        nicht: "kein Einschlag",
+                        leser: "planet-core.js:1633 planetScheibe — kein Einschlag, keine Grenzlage; die Welt bohrt nicht",
+                        gruen: { werte: { bohrProzent: 93 }, zeuge: { grab: 1 } },
+                        attrappen: [{ name: "93 % ohne Bohrung", roh: { werte: { bohrProzent: 93 }, zeuge: {} } }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(G, 5, "≥ 5 große Sterben", { key: "sterben" }), K.soll(G, 5, "Licht am Boden −3 EV", { key: "lichtEV", rel: "≤", zahl: -3, einheit: "EV" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).grab > 0 && (roh.zeuge || {}).mitUrsache >= 5 ? null : "keine 5 Sterben mit Ursache und Spur"),
+                        taeter: "planet-core.js (kein Massensterben)",
+                        nicht: "kein Massensterben",
+                        leser: "planet-core.js:1883 planetKlimaGlobal — keine Sterbe-Ereignisse, kein Licht-Einbruch am Boden",
+                        gruen: { werte: { sterben: 5, lichtEV: -3.2 }, zeuge: { grab: 1, mitUrsache: 5 } },
+                        attrappen: [{ name: "5 Sterben aus einer Liste", roh: { werte: { sterben: 5, lichtEV: -3.2 }, zeuge: {} } }],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(G, 6, "Einbrüche ohne Ursache = 0", { key: "einbrueche" }), K.soll(G, 6, "Ursachen ohne Spur = 0", { key: "ursachenOhneSpur" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.saaten >= 1000)) return "nur " + (z.saaten || 1) + " Saat (Soll 1 000)";
+                            if (!(z.einbrueche > 0)) return "keine Einbrüche gezählt (0 = 0 trägt nichts)";
+                            return null;
+                        },
+                        taeter: "planet-core.js (keine Ereignis-Ketten über 4,5 Ga)",
+                        gruen: { werte: { einbrueche: 0, ursachenOhneSpur: 0 }, zeuge: { saaten: 1000, einbrueche: 40 } },
+                        attrappen: [{ name: "0 = 0 ohne Ereignisse", roh: { werte: { einbrueche: 0, ursachenOhneSpur: 0 }, zeuge: { saaten: 1000, einbrueche: 0 } } }],
+                    },
+                },
+            },
+
+            // ════════ gegenwart — die Gegenwart als Ergebnis der Geschichte ════════
+            // S1/S6: die Relikte (die Nische Findling `_rockGeologyClass` an 1 000 Punkten der Welt) gegen die Eis-Geschichte des Orts (Jahresmittel der Heimat
+            // aus dem Faden über 0 … −2,6 Ma; Eis unter −10 °C). S2: Gipfel > 2 km der Saaten gegen die konvergente Grenze (Δ ks über dem Minimum der Saat).
+            // S3: Fjord-Küsten (Trog = Regler-Vorgabe + Δ ≥ 0,7, Küste ≥ 300 m hoch) ohne Eis heute und −20 ka. S4 der Meeresspiegel der Geschichte. S5:
+            // 1 000 Orte um den Spieler (±20 km) — Land der Welt gegen Land des Planeten an derselben Lage (x Ost, z Süd), dazu ±200 km die Höhe (r);
+            // Gegenlauf: der Planet an verschobener Lage (−31°, +97°) und −1 Ma.
+            [P]: {
+                sek: 40,
+                pfad: [...PLANET_PFAD, "stamm/vegetation-baum.js", "stamm/gelaende-kollision.js"],
+                ungefahren: "die Bildpaare Durchbruch/Fjord (S3) und Ankunft (S5) schießt nur das Gerät",
+                mess: async function (H, U, M) {
+                    const S = (fn, a) => H.seite("return await (" + String(fn) + ")(r, " + JSON.stringify(a || {}) + ");");
+                    const seite = async (r, a) => {
+                        await r._fadenQuelle();
+                        const t0 = performance.now();
+                        const st = r.state;
+                        const r3 = (v) => (Number.isFinite(v) ? Math.round(v * 1e3) / 1e3 : null);
+                        const samen = r._planetSamen();
+                        const an = await r._planetAnker();
+                        const B0 = (an.breite * 180) / Math.PI, L0 = (an.laenge * 180) / Math.PI;
+                        const kh = r._gelaende().ort.klimaHeute;
+                        const ort = (s, b, l, t) => r._planetAuftrag({ type: "planet-ort", samen: s, breite: b, laenge: ((((l + 180) % 360) + 360) % 360) - 180, zeitMa: t || 0 });
+                        const tj = (o) => (kh.sommer + o.delta.klima.sommer + kh.winter + o.delta.klima.winter) / 2;
+                        const zeiten = [0, -0.02, -0.1, -0.5, -1, -2, -2.6];
+                        const gesch = await Promise.all(zeiten.map((t) => ort(samen, B0, L0, t)));
+                        const tMin = Math.min(...gesch.map(tj));
+                        const eis = tMin < -10;
+                        const p = st.playerMesh.position;
+                        const wl = st.waterLevel;
+                        let relikte = 0, punkte = 0;
+                        for (let i = 0; i < 1000; i++) {
+                            const x = p.x + (((i * 0.6180339) % 1) * 2 - 1) * 2000;
+                            const z = p.z + (((i * 0.7548776) % 1) * 2 - 1) * 2000;
+                            if (r._terrainMacroSurfaceY(x, z) < wl) continue;
+                            punkte++;
+                            if (r._rockGeologyClass(r._slopeAt(x, z), 0) === "findling") relikte++;
+                        }
+                        const aus = { s1: { relikte, punkte, eis, tMinC: r3(tMin), zeiten: zeiten.length, mitUrsache: eis ? relikte : 0 } };
+                        const gip = { gipfel: 0, konv: 0, saaten: 0, antworten: 0, land: 0, landKonv: 0 };
+                        const hs = [];
+                        for (let si = 0; si < a.saaten; si++) {
+                            if (performance.now() - t0 > a.budgetMs) break;
+                            const s = si === 0 ? samen : "zsp-" + (si - 1);
+                            const P = [];
+                            for (let b = -66; b <= 66; b += 6) for (let l = -180; l < 180; l += 6) P.push([b, l]);
+                            const o = await Promise.all(P.map((q) => ort(s, q[0], q[1])));
+                            gip.antworten += o.length;
+                            const nb = 60;
+                            const ksMin = Math.min(...o.filter((x) => x.land).map((x) => x.delta.wildnis.ks));
+                            o.forEach((x, k) => {
+                                hs.push(x.hoeheM);
+                                if (x.land) {
+                                    gip.land++;
+                                    if (x.delta.wildnis.ks > ksMin + 0.05) gip.landKonv++;
+                                }
+                                if (!(x.land && x.hoeheM > 2000)) return;
+                                const nachbarn = [k - 1, k + 1, k - nb, k + nb].filter((j) => j >= 0 && j < o.length).map((j) => o[j].hoeheM);
+                                if (nachbarn.some((h) => h > x.hoeheM)) return;
+                                gip.gipfel++;
+                                if (x.delta.wildnis.ks > ksMin + 0.05) gip.konv++;
+                            });
+                            gip.saaten++;
+                        }
+                        const mh = hs.reduce((s1, x) => s1 + x, 0) / Math.max(1, hs.length);
+                        gip.streuung = r3(Math.sqrt(hs.reduce((s1, x) => s1 + (x - mh) ** 2, 0) / Math.max(1, hs.length)));
+                        aus.s2 = gip;
+                        const K2 = [];
+                        for (let b = -70; b <= 70; b += 5) for (let l = -180; l < 180; l += 5) K2.push([b, l]);
+                        const k2 = await Promise.all(K2.map((q) => ort(samen, q[0], q[1])));
+                        const k2f = await Promise.all(K2.map((q) => ort(samen, q[0], q[1], -0.02)));
+                        const reg = (r._gelaende().ort.regler || []).find((x) => x.id === "trog");
+                        const trogDef = reg ? reg.def : 0.7;
+                        let kuesten = 0, fjord = 0, fjordOhne = 0, fjordEis = 0;
+                        k2.forEach((x, k) => {
+                            if (!(x.land && Math.abs(x.kuesteKm) < 60)) return;
+                            kuesten++;
+                            if (trogDef + x.delta.wildnis.trog >= 0.7 && x.hoeheM >= 300) {
+                                fjord++;
+                                if (Math.min(tj(x), tj(k2f[k])) > -10) fjordOhne++;
+                                else fjordEis++;
+                            }
+                        });
+                        aus.s3 = { kuesten, fjord, fjordOhne, fjordEis, trogDef };
+                        const wlr = gesch.map((o) => o.delta.meer.waterLevelM);
+                        aus.s4 = { spanneM: r3(Math.max(...wlr) - Math.min(...wlr)), rias: ["_riaAt", "_strandTerrasse"].filter((n) => typeof r[n] === "function").length };
+                        const R = 6371000;
+                        const Q = [];
+                        for (let i = 0; i < 1000; i++) Q.push([p.x + (((i * 0.6180339) % 1) * 2 - 1) * 20000, p.z + (((i * 0.7548776) % 1) * 2 - 1) * 20000]);
+                        const lagen = Q.map(([x, z]) => [B0 - (z / R) * (180 / Math.PI), L0 + (x / (R * Math.cos((B0 * Math.PI) / 180))) * (180 / Math.PI)]);
+                        const pl = await Promise.all(lagen.map((q) => ort(samen, q[0], q[1])));
+                        const pv = await Promise.all(lagen.map((q) => ort(samen, q[0] - 31, q[1] + 97)));
+                        const pz = await Promise.all(lagen.map((q) => ort(samen, q[0], q[1], -1)));
+                        let gleich = 0, weltLand = 0, planetLand = 0, gleichVerschoben = 0, gleichFrueh = 0;
+                        Q.forEach(([x, z], k) => {
+                            const wland = r._terrainMacroSurfaceY(x, z) >= wl;
+                            if (wland) weltLand++;
+                            if (pl[k].land) planetLand++;
+                            if (wland === pl[k].land) gleich++;
+                            if (wland === pv[k].land) gleichVerschoben++;
+                            if (wland === pz[k].land) gleichFrueh++;
+                        });
+                        const Q2 = [];
+                        for (let i = 0; i < 1000; i++) Q2.push([p.x + (((i * 0.3819660) % 1) * 2 - 1) * 200000, p.z + (((i * 0.5698403) % 1) * 2 - 1) * 200000]);
+                        const lagen2 = Q2.map(([x, z]) => [B0 - (z / R) * (180 / Math.PI), L0 + (x / (R * Math.cos((B0 * Math.PI) / 180))) * (180 / Math.PI)]);
+                        const p2 = await Promise.all(lagen2.map((q) => ort(samen, q[0], q[1])));
+                        const p2v = await Promise.all(lagen2.map((q) => ort(samen, q[0] - 31, q[1] + 97)));
+                        const hw = Q2.map(([x, z]) => r._terrainMacroSurfaceY(x, z));
+                        const pear = (x, y) => { const n = x.length; const mx = x.reduce((s1, v) => s1 + v, 0) / n, my = y.reduce((s1, v) => s1 + v, 0) / n; let sxy = 0, sx = 0, sy = 0; for (let k = 0; k < n; k++) { sxy += (x[k] - mx) * (y[k] - my); sx += (x[k] - mx) ** 2; sy += (y[k] - my) ** 2; } return sx > 0 && sy > 0 ? sxy / Math.sqrt(sx * sy) : null; };
+                        let gleich200 = 0, gleich200V = 0;
+                        hw.forEach((h, k) => { if ((h >= wl) === p2[k].land) gleich200++; if ((h >= wl) === p2v[k].land) gleich200V++; });
+                        aus.s5 = { orte: Q.length, gleich, weltLand, planetLand, gleichVerschoben, gleichFrueh, orte200: Q2.length, gleich200, gleich200V, weltLand200: hw.filter((h) => h >= wl).length, planetLand200: p2.filter((x) => x.land).length, rHoehe: r3(pear(hw, p2.map((x) => x.hoeheM))), rGegen: r3(pear(hw, p2v.map((x) => x.hoeheM))) };
+                        aus.ms = r3(performance.now() - t0);
+                        return aus;
+                    };
+                    const w = await S(seite, { saaten: 12, budgetMs: 22000 });
+                    const aus = {};
+                    const s1 = w.s1;
+                    aus[1] = { werte: { ursacheProzent: s1.relikte ? Math.round((1000 * s1.mitUrsache) / s1.relikte) / 10 : null }, zeuge: s1 };
+                    const s2 = w.s2;
+                    aus[2] = { werte: { gipfelProzent: s2.gipfel ? Math.round((1000 * s2.konv) / s2.gipfel) / 10 : null, landProzent: s2.land ? Math.round((1000 * s2.landKonv) / s2.land) / 10 : null }, zeuge: s2 };
+                    const s3 = w.s3;
+                    aus[3] = { werte: { fjordeOhneEis: s3.fjordOhne }, zeuge: s3, auge: await M.auge("gegenwart-s3", { ort: "wiese" }) };
+                    aus[4] = { werte: { spiegelSpanneM: w.s4.spanneM }, zeuge: w.s4, nicht: "keine Meeresspiegel-Geschichte im Relief: der Spiegel der Welt ist eine Zahl (state.waterLevel), über 2,6 Ma schwankt der Planet um " + w.s4.spanneM + " m — keine Ria, keine Strandterrasse" };
+                    const s5 = w.s5;
+                    aus[5] = { werte: { gleichOrte: s5.gleich, rHoehe: s5.rHoehe, rGegen: s5.rGegen }, zeuge: s5, auge: await M.auge("gegenwart-s5", { ort: "wiese" }) };
+                    aus[6] = { werte: { ohneUrsache: s1.relikte - s1.mitUrsache }, zeuge: { ...s1, orte: 1000 } };
+                    return { sprossen: aus };
+                },
+                sprossen: {
+                    1: {
+                        u: {},
+                        soll: [K.soll(P, 1, "Ursache in der Geschichte des Orts = 100 %", { key: "ursacheProzent", einheit: "%" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.relikte >= 1000)) return "nur " + (z.relikte || 0) + " Relikte gezählt (Soll 1 000)";
+                            if (!(z.zeiten >= 5)) return "keine Geschichte des Orts gefragt";
+                            return null;
+                        },
+                        taeter: "stamm/vegetation-baum.js _rockGeologyClass (Findling am flachen Grund, ohne Eis)",
+                        leser: "stamm/vegetation-baum.js:1411 — _rockGeologyClass(slope, relH) setzt den Findling nach dem Hang, liest keine Eis-Geschichte",
+                        gruen: { werte: { ursacheProzent: 100 }, zeuge: { relikte: 1200, zeiten: 7 } },
+                        attrappen: [{ name: "100 % ohne Relikte", roh: { werte: { ursacheProzent: 100 }, zeuge: { relikte: 0 } } }],
+                    },
+                    2: {
+                        u: {},
+                        soll: [K.soll(P, 2, "Gipfel > 2 km an einer jemals konvergenten Grenze ≥ 95 %", { key: "gipfelProzent", einheit: "%" })],
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.saaten >= 100)) return "nur " + (z.saaten || 0) + " Saaten (Soll 100)";
+                            if (!(z.gipfel >= 100) || !(z.streuung > 0)) return "keine 100 Gipfel oder keine Streuung";
+                            if (!(z.land >= 100)) return "der Gegenlauf (beliebiges Land, kein Gipfel) fehlt";
+                            const w = roh.werte || {};
+                            if (!(w.gipfelProzent > w.landProzent)) return "Gipfel liegen nicht häufiger an konvergenten Grenzen als beliebiges Land (" + w.gipfelProzent + " % ↔ " + w.landProzent + " %)";
+                            return null;
+                        },
+                        taeter: "planet-core.js planetPunktR (Orogen an der konvergenten Grenze)",
+                        gruen: { werte: { gipfelProzent: 97, landProzent: 30 }, zeuge: { saaten: 100, gipfel: 400, streuung: 1800, land: 5000 } },
+                        attrappen: [{ name: "97 % an zwölf Saaten", roh: { werte: { gipfelProzent: 97 }, zeuge: { saaten: 12, gipfel: 40, streuung: 1800 } } }],
+                    },
+                    3: {
+                        u: {},
+                        soll: [K.soll(P, 3, "Fjorde außerhalb jemals vereister Küsten = 0", { key: "fjordeOhneEis" })],
+                        auge: { pose: "ein Durchbruch und eine Fjord-Küste (heute: Wiese)", vorbild: "Bildpaar gegen ein Foto (Blindpaar R11)" },
+                        taeter: "planet-core.js ortRoh (der Trog liest die Temperatur von heute, nie das Eis)",
+                        leser: "planet-core.js:2325 — trog = glatt(16, −2, tJs) liest das Jahresmittel von heute, keine Eis-Geschichte",
+                        zeuge: (roh) => ((roh.zeuge || {}).kuesten >= 50 && (roh.zeuge || {}).fjord > 0 ? null : "keine 50 Küsten oder kein Fjord gezählt (0 = 0 trägt nichts)"),
+                        gruen: { werte: { fjordeOhneEis: 0 }, zeuge: { kuesten: 300, fjord: 40 } },
+                        attrappen: [{ name: "0 Fjorde ohne Küsten", roh: { werte: { fjordeOhneEis: 0 }, zeuge: {} } }],
+                    },
+                    4: {
+                        u: {},
+                        soll: [K.soll(P, 4, "Rias nur an überfluteten Flusstälern ≥ 95 %", { key: "riasProzent", einheit: "%" }), K.soll(P, 4, "Strandterrassen auf Höhen früherer Stände ±10 m", { key: "terrasseAbwM", rel: "≤", zahl: 10, einheit: "m" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).rias > 0 ? null : "keine Ria und keine Strandterrasse in der Welt"),
+                        taeter: "gelaende-core.js hoehe (keine Meeresspiegel-Geschichte)",
+                        nicht: "keine Meeresspiegel-Geschichte im Relief",
+                        leser: "stamm/gelaende-boden.js:770 — der Spiegel ist state.waterLevel, eine Zahl; gelaende-core.js hoehe liest keinen früheren Stand",
+                        gruen: { werte: { riasProzent: 96, terrasseAbwM: 6 }, zeuge: { rias: 1 } },
+                        attrappen: [{ name: "96 % ohne Rias", roh: { werte: { riasProzent: 96, terrasseAbwM: 6 }, zeuge: {} } }],
+                    },
+                    5: {
+                        u: {},
+                        soll: [K.soll(P, 5, "1 000 Orte", { key: "gleichOrte", rel: "≥", zahl: 1000 })],
+                        auge: { pose: "Ankunft am Spieler, Zeitreise −1 Ma → 0 (heute: Wiese)", vorbild: "Bildpaar Zustand(x, 0) der Zeit-Funktion = Ankunftsbild (Blindpaar R11)" },
+                        taeter: "gelaende-core.js hoehe (das Relief der Welt ist nicht der Planet am Ort)",
+                        leser: "gelaende-core.js:2819 hoehe — das Relief der Heimat liest die Leit-Stützen des Planeten nicht (ort null, die Konstanten)",
+                        zeuge: (roh) => {
+                            const z = roh.zeuge || {};
+                            if (!(z.orte >= 1000)) return "nur " + (z.orte || 0) + " Orte";
+                            if (!(z.gleichVerschoben < z.gleich)) return "der Gegenlauf (der Planet an verschobener Lage) stimmt ebenso (" + z.gleichVerschoben + " ↔ " + z.gleich + "): das Maß trennt nicht";
+                            if (z.rHoehe != null && !(z.rHoehe - (z.rGegen || 0) >= 0.2)) return "die Höhe der Welt folgt dem Planeten nicht (r " + z.rHoehe + " ↔ verschoben " + z.rGegen + ", ±200 km)";
+                            return null;
+                        },
+                        gruen: { werte: { gleichOrte: 1000 }, zeuge: { orte: 1000, gleich: 1000, gleichVerschoben: 400 } },
+                        attrappen: [
+                            { name: "1 000 ohne Orte", roh: { werte: { gleichOrte: 1000 }, zeuge: {} } },
+                            { name: "der verschobene Planet stimmt ebenso (Gegenlauf ohne Unterschied)", roh: { werte: { gleichOrte: 1000 }, zeuge: { orte: 1000, gleich: 1000, gleichVerschoben: 1000 } } },
+                        ],
+                    },
+                    6: {
+                        u: {},
+                        soll: [K.soll(P, 6, "Merkmale ohne Ursache = 0", { key: "ohneUrsache" })],
+                        zeuge: (roh) => ((roh.zeuge || {}).orte >= 1000 && (roh.zeuge || {}).punkte > 0 ? null : "keine 1 000 Zufallsorte der Welt"),
+                        taeter: "stamm/vegetation-baum.js _rockGeologyClass (der Findling ohne Eis)",
+                        leser: "stamm/vegetation-baum.js:1411 — _rockGeologyClass liest den Hang, keine Geschichte",
+                        gruen: { werte: { ohneUrsache: 0 }, zeuge: { orte: 1000, punkte: 900 } },
+                        attrappen: [{ name: "0 ohne Orte", roh: { werte: { ohneUrsache: 0 }, zeuge: {} } }],
+                    },
+                },
+            },
+        },
+    };
+})());
+
 // ── DIE PERSPEKTIVE zusammenspiel.leben (3 Leitern, 21 Sprossen, belegt: leben-formt-planet S1 — g1.js PFAD_SITZUNG, stadt-im-netz S1 —
 // Tafel vegetation.K4#1): das Leben als Wandler des Planeten, der Planet als Former der Arten, die Siedlung im Netz. Jede Sprosse misst
 // ihre Wirkung MIT ihrem Gegenlauf (R7: die Ursache gekappt → die Wirkung verschwindet). Die Leser des Spiels:

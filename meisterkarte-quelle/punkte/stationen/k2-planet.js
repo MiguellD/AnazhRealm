@@ -237,14 +237,71 @@ const KERN = (() => {
         };
         // die Uhr der Leiter: Sekunden seit ihrem Start (die Messung teilt ihren Deckel selbst)
         M.uhr = () => (Date.now() - M.t0) / 1000;
+        // DAS DORF DER PROBE für die Leiter (`dorf: true`): was der Rumpf vor den Leitern gründete — sein Fehler wirft die Leiter mit
+        // dem Grund, nie still ohne Bewohner
+        M.dorfDa = () => {
+            if (!M.dorf) throw new Error("das Dorf der Probe: keine Leiter der Perspektive trägt dorf: true");
+            if (M.dorf.fehler) throw new Error("das Dorf der Probe: " + M.dorf.fehler);
+            return M.dorf;
+        };
         return M;
+    }
+
+    // DAS DORF DER PROBE (19.11.). Die Sitzung nimmt ihren Grund nach der Zeile „anfang“ und spielt ihn nach jeder mutierenden Probe
+    // zurück (`punkte.cjs` grundNehmen/grundSpielen, worldMeta mit Orten und Siedlungen): an der Wiese lebt also kein Dorf, das eine
+    // andere Probe gründete — headless maß Welt 1 nach dem Grund 0 Orte und 0 Städte. Eine Leiter, die Bewohner liest, trägt
+    // `dorf: true`; die Probe gründet dann VOR ihren Leitern EINMAL das Dorf über den Akt des Spiels (`spawnSettlement`,
+    // stamm/siedlung-ort.js: dieselbe Foundry, derselbe Erdbau, dasselbe Gedächtnis `settlementCells` „d:<same>@x,z“ wie jedes Dorf
+    // der Welt), wartet, bis es lebt (≥ 8 Bewohner), und gilt als `mutiert` — die Sitzung spielt danach den Grund zurück. Lebt ≤ 230 m
+    // schon ein Dorf, nimmt die Probe dieses. Die Seite trägt seinen Schlüssel in `window.__dorfDerProbe`, die Leiter liest `M.dorfDa()`.
+    const DORF_S = 60;
+    const DORF_A = { same: 7, nH: 8 };
+    async function dorfSeite(r, a) {
+        const st = r.state, pm = st.playerMesh.position;
+        const nah = () => [...(r._bewohnerSiedlungen || new Map()).values()].filter((q) => q && q.plan && Math.hypot(q.ox - pm.x, q.oz - pm.z) < 230).sort((p, q) => Math.hypot(p.ox - pm.x, p.oz - pm.z) - Math.hypot(q.ox - pm.x, q.oz - pm.z));
+        const lebt = () => nah().find((q) => q.liste && q.lebt && q.liste.length >= 8);
+        const t0 = performance.now();
+        let D = lebt(), gebaut = false;
+        if (!D && !nah().length) {
+            let ort = null;
+            for (const R of [100, 130, 160]) for (let k = 0; k < 16 && !ort; k++) { const w = (k / 16) * 2 * Math.PI, x = pm.x + Math.cos(w) * R, z = pm.z + Math.sin(w) * R; if (r._landAt(x, z, 0.2) && !(r._nassAt && r._nassAt(x, z))) ort = { x, z }; }
+            if (!ort) return { fehler: "kein Land 100–160 m um den Spieler für das Dorf der Probe" };
+            const res = await r.spawnSettlement({ seed: a.same, nH: a.nH, position: { x: ort.x, y: 0, z: ort.z } });
+            if (!res) return { fehler: "der Akt spawnSettlement gründete nichts (Foundry kalt, Reich einer Stadt oder keine Ort-Wahl; das Log der Welt nennt den Grund)" };
+            gebaut = true;
+        }
+        if (!D) {
+            try { await window.__gebautNach("das Dorf der Probe", { fertig: () => !!lebt(), max: 400 }); } catch (e) { return { fehler: "das Dorf lebt nicht: " + String((e && e.message) || e).slice(0, 160) }; }
+            D = lebt();
+        }
+        if (!D) return { fehler: "kein lebendes Dorf ≤ 230 m um den Spieler" };
+        window.__dorfDerProbe = D.key;
+        const y = r.getTerrainHeightAt(D.ox, D.oz);
+        return { key: D.key, n: D.liste.length, ms: Math.round(performance.now() - t0), gebaut, region: D.plan.region, jahr: D.plan.jahr, seed: D.plan.seed, ab: Math.round(Math.hypot(D.ox - pm.x, D.oz - pm.z)), pose: { px: D.ox, py: y + 9, pz: D.oz + 32, lx: D.ox, ly: y + 1.5, lz: D.oz } };
     }
     // DER RUMPF DER PROBE: die Leitern nacheinander, jede unter ihrem Deckel; nach jeder Leiter steht das JSON ({AUS}) — eine gerissene
     // Frist behält, was gemessen ist
-    async function probeRumpf(H, M, LEITERN) {
+    async function probeRumpf(H, M, LEITERN, DORF) {
         const fs = require("fs");
         await H.frist();
         const aus = { fassung: 1, leitern: {} };
+        if (DORF) {
+            const t0 = Date.now();
+            let uhr = null;
+            try {
+                M.dorf = await Promise.race([
+                    H.seite("return await (" + DORF.code + ")(r, " + JSON.stringify(DORF.a) + ");"),
+                    new Promise((_, nein) => (uhr = setTimeout(() => nein(new Error("der Deckel des Dorfs " + DORF.sek + " s")), DORF.sek * 1000))),
+                ]);
+            } catch (e) {
+                M.dorf = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+            }
+            clearTimeout(uhr);
+            if (!M.dorf || typeof M.dorf !== "object") M.dorf = { fehler: "die Seite gab kein Dorf" };
+            aus.dorf = Object.assign({ s: (Date.now() - t0) / 1000 }, M.dorf);
+            H.schritt("dorf");
+            fs.writeFileSync(H.aus, JSON.stringify(aus));
+        }
         for (const id of Object.keys(LEITERN)) {
             const L = LEITERN[id];
             M.t0 = Date.now();
@@ -272,6 +329,7 @@ const KERN = (() => {
         const stuecke = [];
         let sek = 10;
         let mutiert = false;
+        let dorf = false;
         for (const id of ids) {
             const x = leiterVon(id);
             if (x.kapitel !== kapitel) throw new Error(id + " gehört zum Kapitel " + x.kapitel + ", nicht " + kapitel);
@@ -284,8 +342,15 @@ const KERN = (() => {
             stuecke.push(JSON.stringify(id) + ": { sek: " + L.sek + ", U: " + JSON.stringify(U) + ", mess: " + knapp(L.mess) + " }");
             sek += L.sek;
             mutiert = mutiert || !!L.mutiert;
+            dorf = dorf || !!L.dorf;
         }
-        const art = "async (H) => { const M = (" + knapp(probeHilfen) + ")(H); const LEITERN = {" + stuecke.join(",\n") + "}; return (" + knapp(probeRumpf) + ")(H, M, LEITERN); }";
+        // das Dorf der Probe: sein Deckel zählt zur Probe, und die Gründung mutiert die Welt (die Sitzung spielt danach den Grund zurück)
+        if (dorf) {
+            sek += DORF_S;
+            mutiert = true;
+        }
+        const DORF = dorf ? "{ code: " + JSON.stringify(knapp(dorfSeite)) + ", a: " + JSON.stringify(DORF_A) + ", sek: " + DORF_S + " }" : "null";
+        const art = "async (H) => { const M = (" + knapp(probeHilfen) + ")(H); const LEITERN = {" + stuecke.join(",\n") + "}; return (" + knapp(probeRumpf) + ")(H, M, LEITERN, " + DORF + "); }";
         const probe = seiteProbe(sek, art, mutiert ? { mutiert: true } : {});
         const stationen = [];
         const B = belegt();
