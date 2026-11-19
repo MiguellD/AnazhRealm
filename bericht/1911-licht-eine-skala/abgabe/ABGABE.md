@@ -3,7 +3,7 @@
 Kopf **085b9ee10** (Zweig `licht-eine-skala`, gepusht; trägt main **dabd69bb** per Merge 3d5b1807e, Probe-Merge sauber).
 Alle Zahlen und Bilder unten an DIESEM Kopf, die main-Seite der Paare an f68dbf09 (dieselbe Kamera, 1920 × 1080).
 
-**Satz:** EINE Skala steht, die Ausgabe ist farbton-treu, der Tag bewegt sich nicht (wiese-mittag 77,68 = 77,71); das Bild an der Quelle ist halb —
+**Satz:** EINE Skala steht, die Ausgabe ist farbton-treu, der Tag bewegt sich nicht (wiese-mittag Bild-Mittel 77,68 gegen main 77,71); das Bild an der Quelle ist halb —
 Flamme farbig statt weiß, Steinkreis flach, Hof halb. Die Skala gilt für alles außer der Klasse Erscheinung, 9 Mitglieder
 (Membran-Zielbild, Filigran, Saum, Scheibe, Rahmen-Glut, Tor-Beschläge, Kreatur-Aura, Platzhalter, Namensschild — das
 Namensschild ist der neunte Name, als Berichtigung); Rest ohne Gesetz 1 (Tierauge).
