@@ -340,8 +340,12 @@ class AnazhRealm_dirigent_ankunft {
         const moonGeo = new THREE.SphereGeometry(9, 16, 16);
         const moonMat = AnazhRealm._himmelImUnendlichen(
             new THREE.MeshBasicNodeMaterial({
-                // die Scheibe des Vollmonds: ihre Leuchtdichte in der EINEN Skala (`HIMMEL.mondCd`), ADDIERT zum Himmel vor ihr
-                color: new THREE.Color(0xd0d4e0).multiplyScalar(AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX),
+                // die Scheibe des Vollmonds: ihre Leuchtdichte in der EINEN Skala (`HIMMEL.mondCd`), ADDIERT zum Himmel vor ihr; ihr
+                // Ton auf Luma 1 (`_lichtLinear`, die EINE Norm der Lichtfarbe) — bis hier trug 0xd0d4e0 Luma 0,659 mit: 1 648 statt
+                // 2 500 cd/m²
+                color: this._lichtLinear({ farbe: 0xd0d4e0 }, new THREE.Color()).multiplyScalar(
+                    AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX
+                ),
                 fog: false,
                 transparent: true,
                 blending: THREE.AdditiveBlending,

@@ -1740,10 +1740,14 @@ async function checkBandHimmelTag({ page, check }) {
             return { n, venus, grenze: +g.toFixed(2) };
         };
         // 5 MOND: die Scheibe trägt ihre Leuchtdichte in der EINEN Skala, additiv (der Stand bis licht-eine-skala: eine Deckkraft
-        // je Stunde, `mondGegenHimmel`) — je Kanal relativ ± 1e-3 gegen 0xd0d4e0 × mondCd ÷ EINHEIT_LX
+        // je Stunde, `mondGegenHimmel`) — je Kanal relativ ± 1e-3 gegen 0xd0d4e0 auf Luma 1 × mondCd ÷ EINHEIT_LX (der Ton trägt
+        // die Leuchtdichte nicht mit, licht-eine-skala)
         const mondStand = () => {
             const m = st.moonMesh.material;
-            const soll = new window.THREE.Color(0xd0d4e0).multiplyScalar(AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX);
+            const ton = new window.THREE.Color(0xd0d4e0);
+            const soll = ton.multiplyScalar(
+                AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX / (0.2126 * ton.r + 0.7152 * ton.g + 0.0722 * ton.b)
+            );
             const ab = Math.max(...["r", "g", "b"].map((c) => Math.abs(m.color[c] / soll[c] - 1)));
             return { additiv: m.blending === window.THREE.AdditiveBlending, ab: +ab.toExponential(2) };
         };

@@ -453,8 +453,11 @@ class AnazhRealm_bild_himmel {
             // DER STERN IST EINE PUNKT-QUELLE (licht-eine-skala): die Größenklasse m trägt die Beleuchtungsstärke
             // `HIMMEL.sternLx0` · 10^(−0,4·m) am Auge in der EINEN Skala; der Stoff teilt sie durch den Raumwinkel seines
             // Fußabdrucks (`uFuss`). Bis hierher trug jeder Punkt ≤ 0,9 Welt-Einheiten, 14 500 cd/m² im Maßstab der Sonne.
+            // Sein Ton trägt die Luma 1 (`_lichtLinear`, die EINE Norm der Lichtfarbe): bis hier trug er sie mit (warm 0,925,
+            // kühl 0,853), der Stern stand 7–15 % unter seiner Größenklasse.
             const lum = (AnazhRealm.HIMMEL.sternLx0 * 10 ** (-0.4 * mags[i])) / __weltLicht.EINHEIT_LX;
-            tmpCol.setRGB(colors[i * 3] * lum, colors[i * 3 + 1] * lum, colors[i * 3 + 2] * lum);
+            tmpCol.setRGB(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
+            this._lichtLinear({ farbe: tmpCol }, tmpCol).multiplyScalar(lum);
             starField.setColorAt(i, tmpCol);
         }
         starField.instanceMatrix.needsUpdate = true;
@@ -2542,10 +2545,13 @@ class AnazhRealm_bild_himmel {
             sun.userData.skyOffset.copy(dir).multiplyScalar(sunDist);
             sun.visible = sun.userData.skyOffset.y > -10; // unter Horizont ausblenden
             // Sonne dimmt mit Wetter (rainy = trüber Schein); die Scheibe trägt ihre Leuchtdichte (`HIMMEL.sonneCd` in der
-            // EINEN Skala) — sie endet am Deckel des Szenen-Ziels (`_vorBelichtung`), nie an ihrer Quelle.
+            // EINEN Skala) — sie endet am Deckel des Szenen-Ziels (`_vorBelichtung`), nie an ihrer Quelle. Ihr Ton trägt die Luma 1
+            // (`_lichtLinear`, die EINE Norm der Lichtfarbe): die Leuchtdichte steht im Datum, nicht im Ton — bis hier trug der Ton
+            // (1, 0,92, 0,7) Luma 0,921, die Scheibe stand bei 1,47·10⁹ statt `sonneCd` 1,6·10⁹ cd/m² (beide über dem Deckel).
             if (sun.material && sun.material.color) {
                 const L = (AnazhRealm.HIMMEL.sonneCd / __weltLicht.EINHEIT_LX) * lightMul;
-                sun.material.color.setRGB(1.0 * L, 0.92 * L, 0.7 * L);
+                const ton = this._sonneTon || (this._sonneTon = { farbe: new THREE.Color(1.0, 0.92, 0.7) });
+                this._lichtLinear(ton, sun.material.color).multiplyScalar(L);
             }
         }
         if (moon) {
