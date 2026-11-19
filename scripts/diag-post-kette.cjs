@@ -1250,7 +1250,8 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
             const nachtVor = nachtU ? nachtU.value : null;
             const dunkel = async (k, c, nacht) => {
                 flach.material.color.setRGB(c, c, c);
-                rend.toneMappingExposure = k;
+                // die Kamera auf Hand (`_belichtungHand`): der EINE Schreiber hält k, auch durch die Lesung der Aufnahme
+                r._belichtungHand(k);
                 if (nacht && nachtU) nachtU.value = 1;
                 for (let i = 0; i < nFrames; i++) {
                     setzeKamera();
@@ -1289,7 +1290,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
                     };
                     const mitte = async (m, nacht) => {
                         flach.material = m;
-                        rend.toneMappingExposure = flammeProbe.k;
+                        r._belichtungHand(flammeProbe.k);
                         for (let i = 0; i < nFrames; i++) {
                             nachtU.value = nacht;
                             setzeKamera();
@@ -1395,6 +1396,8 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe) {
             } finally {
                 cam.layers.mask = maskeVor;
                 if (nachtU) nachtU.value = nachtVor;
+                // die Kamera zurück an den Lichtmesser, dann die Belichtung von vor der Probe (der nächste Takt misst sie neu)
+                r._belichtungHand(null);
                 rend.toneMappingExposure = kVor;
                 st.scene.remove(flach);
                 flach.geometry.dispose();
