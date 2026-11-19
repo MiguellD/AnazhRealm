@@ -1,0 +1,249 @@
+{
+ "maske": 4,
+ "schwelle": 8,
+ "zeilen": [
+  {
+   "fall": "gt-L1-d12.0",
+   "maske": 13938,
+   "anders": 1502,
+   "anteil": 10.78,
+   "stark": 0.85,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "gt-L1-d26.0",
+   "maske": 15022,
+   "anders": 159,
+   "anteil": 1.06,
+   "stark": 0.05,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "gt-L1-d6.0",
+   "maske": 73756,
+   "anders": 8480,
+   "anteil": 11.5,
+   "stark": 0.73,
+   "b1": "REISST",
+   "rauschen": 0.06
+  },
+  {
+   "fall": "haus_alemannisch-L1-d12.0",
+   "maske": 387547,
+   "anders": 99623,
+   "anteil": 25.71,
+   "stark": 0.83,
+   "b1": "REISST",
+   "rauschen": 0.04
+  },
+  {
+   "fall": "haus_alemannisch-L1-d26.0",
+   "maske": 95723,
+   "anders": 14452,
+   "anteil": 15.1,
+   "stark": 0.55,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_alemannisch-L1-d50.0",
+   "maske": 19127,
+   "anders": 1268,
+   "anteil": 6.63,
+   "stark": 0.66,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_alemannisch-L2-d100.0",
+   "maske": 1660,
+   "anders": 446,
+   "anteil": 26.87,
+   "stark": 1.33,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_alemannisch-L2-d26.0",
+   "maske": 79015,
+   "anders": 50952,
+   "anteil": 64.48,
+   "stark": 5.31,
+   "b1": "REISST",
+   "rauschen": 0
+  },
+  {
+   "fall": "haus_alemannisch-L2-d50.0",
+   "maske": 19761,
+   "anders": 7144,
+   "anteil": 36.15,
+   "stark": 1.99,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_japanisch-L1-d12.0",
+   "maske": 290844,
+   "anders": 8554,
+   "anteil": 2.94,
+   "stark": 0.34,
+   "b1": "REISST",
+   "rauschen": 0
+  },
+  {
+   "fall": "haus_japanisch-L1-d26.0",
+   "maske": 44007,
+   "anders": 1915,
+   "anteil": 4.35,
+   "stark": 0.17,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_japanisch-L1-d50.0",
+   "maske": 10565,
+   "anders": 495,
+   "anteil": 4.69,
+   "stark": 0.09,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_japanisch-L2-d100.0",
+   "maske": 1128,
+   "anders": 370,
+   "anteil": 32.8,
+   "stark": 12.5,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_japanisch-L2-d26.0",
+   "maske": 48271,
+   "anders": 17930,
+   "anteil": 37.14,
+   "stark": 9.01,
+   "b1": "REISST",
+   "rauschen": 0
+  },
+  {
+   "fall": "haus_japanisch-L2-d50.0",
+   "maske": 11175,
+   "anders": 3321,
+   "anteil": 29.72,
+   "stark": 10.97,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_modern-L1-d12.0",
+   "maske": 352258,
+   "anders": 16186,
+   "anteil": 4.59,
+   "stark": 1.06,
+   "b1": "REISST",
+   "rauschen": 0
+  },
+  {
+   "fall": "haus_modern-L1-d26.0",
+   "maske": 53936,
+   "anders": 3157,
+   "anteil": 5.85,
+   "stark": 0.9,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_modern-L1-d50.0",
+   "maske": 12769,
+   "anders": 747,
+   "anteil": 5.85,
+   "stark": 1.38,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_modern-L2-d100.0",
+   "maske": 1312,
+   "anders": 265,
+   "anteil": 20.2,
+   "stark": 5.26,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "haus_modern-L2-d26.0",
+   "maske": 54864,
+   "anders": 32236,
+   "anteil": 58.76,
+   "stark": 11.5,
+   "b1": "REISST",
+   "rauschen": 0
+  },
+  {
+   "fall": "haus_modern-L2-d50.0",
+   "maske": 12945,
+   "anders": 3412,
+   "anteil": 26.36,
+   "stark": 8.23,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "limousine-L1-d12.0",
+   "maske": 17614,
+   "anders": 1498,
+   "anteil": 8.5,
+   "stark": 0.49,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "limousine-L1-d26.0",
+   "maske": 15686,
+   "anders": 174,
+   "anteil": 1.11,
+   "stark": 0.04,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "limousine-L1-d6.0",
+   "maske": 91987,
+   "anders": 9225,
+   "anteil": 10.03,
+   "stark": 0.55,
+   "b1": "REISST",
+   "rauschen": 0
+  },
+  {
+   "fall": "suv-L1-d12.0",
+   "maske": 20770,
+   "anders": 2317,
+   "anteil": 11.16,
+   "stark": 0.41,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "suv-L1-d26.0",
+   "maske": 16449,
+   "anders": 401,
+   "anteil": 2.44,
+   "stark": 0.04,
+   "b1": "REISST",
+   "rauschen": null
+  },
+  {
+   "fall": "suv-L1-d6.0",
+   "maske": 101266,
+   "anders": 9794,
+   "anteil": 9.67,
+   "stark": 0.35,
+   "b1": "REISST",
+   "rauschen": 0
+  }
+ ]
+}

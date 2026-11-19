@@ -1,0 +1,137 @@
+[
+ {
+  "fall": "gt-L1-d12.0",
+  "versatz": 0.62,
+  "rest": 10.51
+ },
+ {
+  "fall": "gt-L1-d26.0",
+  "versatz": 0.06,
+  "rest": 1.05
+ },
+ {
+  "fall": "gt-L1-d6.0",
+  "versatz": 0.77,
+  "rest": 11.14
+ },
+ {
+  "fall": "haus_alemannisch-L1-d12.0",
+  "versatz": 2.06,
+  "rest": 24.4
+ },
+ {
+  "fall": "haus_alemannisch-L1-d26.0",
+  "versatz": 1.24,
+  "rest": 13.73
+ },
+ {
+  "fall": "haus_alemannisch-L1-d50.0",
+  "versatz": 0.69,
+  "rest": 5.86
+ },
+ {
+  "fall": "haus_alemannisch-L2-d100.0",
+  "versatz": 0.01,
+  "rest": 26.87
+ },
+ {
+  "fall": "haus_alemannisch-L2-d26.0",
+  "versatz": 5.3,
+  "rest": 48.51
+ },
+ {
+  "fall": "haus_alemannisch-L2-d50.0",
+  "versatz": 2.16,
+  "rest": 28.44
+ },
+ {
+  "fall": "haus_japanisch-L1-d12.0",
+  "versatz": -0.29,
+  "rest": 2.94
+ },
+ {
+  "fall": "haus_japanisch-L1-d26.0",
+  "versatz": -0.06,
+  "rest": 4.39
+ },
+ {
+  "fall": "haus_japanisch-L1-d50.0",
+  "versatz": 0.18,
+  "rest": 4.72
+ },
+ {
+  "fall": "haus_japanisch-L2-d100.0",
+  "versatz": -1.89,
+  "rest": 32.18
+ },
+ {
+  "fall": "haus_japanisch-L2-d26.0",
+  "versatz": -0.47,
+  "rest": 34.06
+ },
+ {
+  "fall": "haus_japanisch-L2-d50.0",
+  "versatz": -0.82,
+  "rest": 27.87
+ },
+ {
+  "fall": "haus_modern-L1-d12.0",
+  "versatz": -0.14,
+  "rest": 4.55
+ },
+ {
+  "fall": "haus_modern-L1-d26.0",
+  "versatz": -0.72,
+  "rest": 5.64
+ },
+ {
+  "fall": "haus_modern-L1-d50.0",
+  "versatz": -1.01,
+  "rest": 5.93
+ },
+ {
+  "fall": "haus_modern-L2-d100.0",
+  "versatz": 0.19,
+  "rest": 20.05
+ },
+ {
+  "fall": "haus_modern-L2-d26.0",
+  "versatz": 0.58,
+  "rest": 59.46
+ },
+ {
+  "fall": "haus_modern-L2-d50.0",
+  "versatz": 0.93,
+  "rest": 25.13
+ },
+ {
+  "fall": "limousine-L1-d12.0",
+  "versatz": 0.17,
+  "rest": 8.47
+ },
+ {
+  "fall": "limousine-L1-d26.0",
+  "versatz": 0,
+  "rest": 1.11
+ },
+ {
+  "fall": "limousine-L1-d6.0",
+  "versatz": 0.45,
+  "rest": 9.88
+ },
+ {
+  "fall": "suv-L1-d12.0",
+  "versatz": 0.28,
+  "rest": 10.96
+ },
+ {
+  "fall": "suv-L1-d26.0",
+  "versatz": 0.15,
+  "rest": 2.42
+ },
+ {
+  "fall": "suv-L1-d6.0",
+  "versatz": 0.37,
+  "rest": 9.48
+ }
+]

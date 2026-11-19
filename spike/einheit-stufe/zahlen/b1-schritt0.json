@@ -1,0 +1,78 @@
+{
+ "maske": 4,
+ "schwelle": 8,
+ "zeilen": [
+  {
+   "fall": "gt-L1-d3.2",
+   "maske": 709489,
+   "anders": 40119,
+   "anteil": 5.65,
+   "stark": 0.7,
+   "b1": "REISST"
+  },
+  {
+   "fall": "haus_alemannisch-L1-d7.0",
+   "maske": 1349390,
+   "anders": 468054,
+   "anteil": 34.69,
+   "stark": 1.05,
+   "b1": "REISST"
+  },
+  {
+   "fall": "haus_alemannisch-L2-d14.5",
+   "maske": 263762,
+   "anders": 183811,
+   "anteil": 69.69,
+   "stark": 7.41,
+   "b1": "REISST"
+  },
+  {
+   "fall": "haus_japanisch-L1-d8.1",
+   "maske": 1182474,
+   "anders": 64229,
+   "anteil": 5.43,
+   "stark": 0.83,
+   "b1": "REISST"
+  },
+  {
+   "fall": "haus_japanisch-L2-d31.9",
+   "maske": 30228,
+   "anders": 10899,
+   "anteil": 36.06,
+   "stark": 9.14,
+   "b1": "REISST"
+  },
+  {
+   "fall": "haus_modern-L1-d7.3",
+   "maske": 1367621,
+   "anders": 36389,
+   "anteil": 2.66,
+   "stark": 0.61,
+   "b1": "REISST"
+  },
+  {
+   "fall": "haus_modern-L2-d7.3",
+   "maske": 1397179,
+   "anders": 745816,
+   "anteil": 53.38,
+   "stark": 14.37,
+   "b1": "REISST"
+  },
+  {
+   "fall": "limousine-L1-d3.3",
+   "maske": 761161,
+   "anders": 42825,
+   "anteil": 5.63,
+   "stark": 0.42,
+   "b1": "REISST"
+  },
+  {
+   "fall": "suv-L1-d3.1",
+   "maske": 871336,
+   "anders": 50004,
+   "anteil": 5.74,
+   "stark": 0.46,
+   "b1": "REISST"
+  }
+ ]
+}
