@@ -668,7 +668,7 @@ class AnazhRealm_dienst {
     // als der NÄCHSTE, den der Takt im Vor-Fenster abweisen musste — die Näheren fragen je Frame und sind dann bedient;
     // was in der zweiten Hälfte übrig ist, bekommt, wer fragt (die Ziegel-Schlange fragt nach Distanz). Vorher bekam,
     // wer im Frame zuerst fragte; und eine Schwelle über das GANZE Fenster ließ das übrige Budget liegen und die Fernen
-    // verhungern (gemessen 03.10., gate:arch-feld mit echter Distanz: 415 Freigaben in 1 000 Takten, die Eiche in
+    // verhungern (gemessen 03.10., die frühere Feld-Linse der Bauten mit echter Distanz: 415 Freigaben in 1 000 Takten, die Eiche in
     // 154 m nie). `d2` = Distanz² zum Spieler (ohne Angabe: vorne).
     _weltBakeErlaubt(d2) {
         const D = Number.isFinite(d2) ? d2 : 0;

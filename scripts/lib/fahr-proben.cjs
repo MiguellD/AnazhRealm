@@ -248,6 +248,26 @@ async function probeLeben(expected) {
         stelle(x, zz, 2);
         await __weltStehtNach(frame);
     };
+    // DER WAGEN TRÄGT SEINE GEZEICHNETE GESTALT, BEVOR EINE STATION IHN MISST (die EINE Naht jedes Werks, das die Proben setzen:
+    // `setzen`, der Stoß-Wagen, die Wagen der L6): Hülle und Boxen eines Studio-Wagens lesen das Maß der Stufe, die er zeichnet
+    // (`_wagenMassSetzen` → `_fahrUmriss`: 64 Richtungen) — die Karte trägt keins, an ihr stehen die Stationen des Gesetzes (das
+    // Rechteck, 16 Richtungen). `__gebautNach` allein fragt „gezeichnet“: lädt die Mesh-Stufe noch, steht der Wagen als Karte,
+    // und ein Ritt ohne Warten (`frame`) bekommt sie nie. Befund (laub-kante, L8 Lockstep, 8 von 12 Läufen ROT, main 0 von 5):
+    // beim zweiten Setzen lag die L0 des GT nicht mehr im Foundry-Cache (`_foundryStufeBereit` false — der erste war abgebaut,
+    // sein Körper untätig, `_foundryRuheDeckel`), der gemischte Lauf fuhr die Karte: Stufe 2 statt 0, Hülle 16 statt 64
+    // Richtungen, der Bär einen Sim-Schritt später berührt — Wagen 0,08644 m · Bär 0,613841 m, in jedem roten Lauf dieselbe Zahl.
+    // Gewartet wird nur, wo der Abstand eine Mesh-Stufe wählt (`_foundryLodForEntry` < 2) und das Maß fehlt: wählt er die
+    // Karte, stehen die Stationen zu Recht; steht das Maß, kostet die Naht keinen Takt und keine Bestellung.
+    const werkGebaut = async (e) => {
+        await __gebautNach(e);
+        const pr = r._foundryPresetForEntry(e);
+        const offen = () => !e._gestaltMass && r._foundryLodForEntry(e) < 2;
+        if (!pr || !r._fahrzeugGesetzFor(e) || !offen()) return;
+        await __gebautNach(e, {
+            fertig: () => !offen(),
+            bau: () => r._foundryFlattenFor(e, pr, r._foundryLodForEntry(e)),
+        });
+    };
     // Ein Werk setzen, aufsitzen, einschwingen. `fahrt` = Fahrt-Richtung (sin, cos); ein Studio-Fahrzeug liegt längs x.
     const setzen = async (typ, x, zz, fahrt, vorAufsitzen) => {
         stelle(x, zz, 1.2);
@@ -260,7 +280,7 @@ async function probeLeben(expected) {
         if (!e) return null;
         // der Bau wartet im Takt der Probe (`frame`: Muster-Zeiten, die Bahn-Wache je Bild), nie im Takt der Seite — dessen
         // Wanduhr-Takt (`performance.now()`) trug je Lauf andere Schritte in die Welt, ehe der Wagen fuhr (Lehre 13)
-        await __gebautNach(e);
+        await werkGebaut(e);
         if (vorAufsitzen) vorAufsitzen(e);
         const mr = r.mountArchitecture(e);
         if (!mr || !mr.ok) return null;
@@ -672,7 +692,7 @@ async function probeLeben(expected) {
             taeter,
         };
     };
-    // ── VK — DER VERKEHR DER STADT (PFLICHT-OFFEN C): die Metropole des Messorts `stadt-voll` („dorf 7 300" an ihrem Anker), der
+    // ── VK — DER VERKEHR DER STADT (Leiter mensch.netz.verkehr): die Metropole des Messorts `stadt-voll` („dorf 7 300" an ihrem Anker), der
     // Spieler an ihrem Markt neben der Trasse; je Stunde (`stunden`: Tag und Nacht) bis jeder Bewohner seinen Leib trägt und jeder
     // Fahrer am Steuer sitzt, dann `sek` Sekunden im Takt des Spiels. Gezählt: die Wagen (Gesetz, gestellt, fahrend), ihr Weg, wer
     // steckt, jeder Stoß der Hülle, jede Berührung eines Wagens mit einem Bewohner (die Kapsel tiefer als 0,1 m im Rechteck der
@@ -980,7 +1000,7 @@ async function probeLeben(expected) {
             // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll]; der Bewegte urteilt im Takt seines Schritts, jede Probe
             // gilt. `nah`: Proben diesseits der Karten-Grenze (thresh12 − Hysterese); ohne sie misst die Probe nichts.
             const [LD, SK] = [A.LOD_DISTANCES, { nah: 0, ohneBild: 0, ohneBildOrte: [], ohneFahrer: 0, ohneFahrerOrte: [], veraltet: 0, veraltetOrte: [] }]; // prettier-ignore
-            // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1): DER BEWOHNER AM STEUER — die wenigsten fahrenden Wagen mit einem
+            // DER RICHTER VON Leiter mensch.netz.verkehr (pflicht.C#1): DER BEWOHNER AM STEUER — die wenigsten fahrenden Wagen mit einem
             // Bewohner am Steuer in einer Probe [Zahl, Probe, wer nicht fuhr]; DIE WEGE-KARTE — je fahrendem Wagen, ob seine Mitte auf
             // dem Boden liegt, den die Stadt als Weg malt (Straße samt Gehweg, Abbieger, Wende, Platz: der EINE Leser ihrer Formen,
             // `_aufWeg`, den die Natur-Wand liest) [Proben, ab, Orte]; DIE BEWEGUNG — je Wagen der Weg in jeder vollen Minute der Uhr
@@ -2303,7 +2323,7 @@ async function probeLeben(expected) {
                     { silent: true, precise: true, rotationY: gasse.fahrt - Math.PI / 2 }
                 );
                 if (!e) return null;
-                await __gebautNach(e);
+                await werkGebaut(e);
                 return e.blockerAABBs?.length ? e : null;
             },
             lage: (e) => ({ x: e.position.x, z: e.position.z }),
@@ -2405,7 +2425,7 @@ async function probeLeben(expected) {
                     { x, y: hh(x, zz) + 0.5, z: zz },
                     { silent: true, precise: true, rotationY: rotY }
                 );
-                if (e) await __gebautNach(e);
+                if (e) await werkGebaut(e);
                 return e?.blockerAABBs?.length ? e : null;
             };
             // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse im Rahmen
@@ -2634,9 +2654,10 @@ async function probeLeben(expected) {
                         tasten(false);
                         st.maxCreatures = kappeL;
                     }
+                    const huelle = gS._fahrHuelleKette ? gS._fahrHuelleKette.n : null; // die Richtungen der Hülle, die er fuhr
                     weg(gS);
                     r.removeCreature(b);
-                    return lage && Object.assign(lage, { spur, start: stand, ruhe: ruhe >= 3, bilder, unruhe });
+                    return lage && Object.assign(lage, { spur, start: stand, ruhe: ruhe >= 3, bilder, unruhe, huelle });
                 };
                 const l60 = await lockProbe(KADENZ[60]);
                 const lMix = await lockProbe(KADENZ.gemischt);
@@ -2669,6 +2690,9 @@ async function probeLeben(expected) {
                               unruhe: [l60.unruhe, lMix.unruhe],
                               startAbw,
                               gleicherStart: startAbw !== null && startAbw <= 1e-7,
+                              // DIE GLEICHE HÜLLE: beide Läufe fahren die Hülle der gezeichneten Gestalt (`werkGebaut`)
+                              huelle: [l60.huelle, lMix.huelle],
+                              gleicheHuelle: l60.huelle !== null && l60.huelle === lMix.huelle,
                               erst,
                           }
                         : null;

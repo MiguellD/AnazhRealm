@@ -217,7 +217,7 @@ class AnazhRealm_studio_glieder {
         return welt;
     }
 
-    // DIE GATTUNG eines Tiers — Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle für Fern-Satz, Treffer-
+    // DIE GATTUNG eines Tiers — Dedup Gattung×Glied (Soll-Tafel): EINE kanonische Quelle für Fern-Satz, Treffer-
     // Volumen und Glied-Vorrat (_gliederBestellen) — gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul], sonst soul.
     _kreaturGattung(cr) {
         const ud = (cr && cr.userData) || {};

@@ -199,7 +199,7 @@ class AnazhRealm_wasser_hydro {
     // Front davor regnete: mit dem ersten Regen stieg jeder Lauf in Stufen von 1 cm zur Krone, und jede Stufe baute die Chunks mit
     // Wasser neu — am Bach der Mess-Wiese 634 Marken-Wechsel in der ersten Spielminute; am Ufer (Null-Renderer, 2 700 Takte = 51 s)
     // 18 Stufen, 451 Wechsel des Wassernetzes bis zum letzten Takt, 2 968 gefallene Kacheln der Nah-Wiese und Nah-Streu, das Ufer
-    // stand nie (gate:fenster-wechsel, gate:ziel-zensus: „DER BAU STEHT NICHT: das Ufer im Blick"); seither steht das Netz nach der
+    // stand nie (die frühere Fenster-Linse, gate:ziel-zensus: „DER BAU STEHT NICHT: das Ufer im Blick"); seither steht das Netz nach der
     // Ankunft (letzter Wechsel Takt 84), 0 Kacheln fallen, die Faltung kostet einmal 5,4 ms. Ein Gedächtnis (der Zustand) faltet
     // nie neu. Hält eine Messung das Wetter oder spricht der Spieler sein Wort, zieht kein Zug: die Welt bleibt ohne Vergangenheit.
     _pegelVergangenheit(x, z) {

@@ -474,6 +474,18 @@
      "        if (entry) this.state.architectures.splice(this.state.architectures.indexOf(entry), 1);"
     ]
    ]
+  ],
+  "losstill": [
+   [
+    "haus",
+    "W7 zweiter Akt"
+   ],
+   [
+    [
+     "            if (so && so.gefallen)\n                so.gefallen.push({",
+     "            if (false)\n                so.gefallen.push({"
+    ]
+   ]
   ]
  }
 }

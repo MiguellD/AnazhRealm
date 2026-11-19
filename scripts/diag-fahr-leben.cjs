@@ -641,12 +641,17 @@ function stationVerdict(s) {
                     probe(
                         lk.gleicherStart === true,
                         `lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${lk.startAbw} > 1e-7)`,
-                        () => [
-                            [
-                                lk.abw <= STATION.lockstepM && lk.baerAbw <= STATION.lockstepM,
-                                `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${lk.abw?.toFixed(3)} m anders als bei 60 fps (Bär ${lk.baerAbw?.toFixed(3)} m)${lk.erst ? ` — zuerst in Schritt ${lk.erst.schritt}: ${lk.erst.groesse} um ${lk.erst.d}` : ""}`,
-                            ],
-                        ]
+                        () =>
+                            probe(
+                                lk.gleicheHuelle === true,
+                                `lockstep hülle: die Läufe fahren verschiedene Hüllen (60 fps ${lk.huelle?.[0]} · gemischt ${lk.huelle?.[1]} Richtungen — 64 die gezeichnete Gestalt, 16 die Stationen: ein Wagen fuhr als Karte, seine Mesh-Stufe lud noch)`,
+                                () => [
+                                    [
+                                        lk.abw <= STATION.lockstepM && lk.baerAbw <= STATION.lockstepM,
+                                        `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${lk.abw?.toFixed(3)} m anders als bei 60 fps (Bär ${lk.baerAbw?.toFixed(3)} m)${lk.erst ? ` — zuerst in Schritt ${lk.erst.schritt}: ${lk.erst.groesse} um ${lk.erst.d}` : ""}`,
+                                    ],
+                                ]
+                            )
                     )
             )
         ),
@@ -837,7 +842,7 @@ const wegenetzVerdict = (m) =>
         [m.boden.wiese > 0 && m.boden.wald >= 0.1 && m.boden.dorf >= 0.05, `Boden ${JSON.stringify(m.boden)}`],
     ]);
 
-// ════ VK — DER VERKEHR DER STADT (PFLICHT-OFFEN C, `verkehr` in probeLeben): das ganze Kriterium — die Metropole am Messort
+// ════ VK — DER VERKEHR DER STADT (Leiter mensch.netz.verkehr, `verkehr` in probeLeben): das ganze Kriterium — die Metropole am Messort
 // stadt-voll um 10 und 23 Uhr je `sek` Bilder-Sekunden (10 min Spielzeit), ≥ `wagen` Wagen, jeder mit einem Bewohner am Steuer,
 // jeder erreicht sein Ziel (gezählte Ankünfte, keine Fahrt über `fristS`) — jedes Ende des Netzes trägt seine Wende, kein Boden
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
@@ -874,7 +879,7 @@ const verkehrVerdict = (m) =>
             !!m.wurf && !m.wurf[0],
             `der Takt warf ${m.wurf ? `${m.wurf[0]}× (die Fehler-Grenze des Loops fing ihn, die Stadt der Messung stand): ${m.wurf[1]}` : "ungezählt"}`,
         ],
-        // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
+        // DER RICHTER VON Leiter mensch.netz.verkehr (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
         // mit einem Bewohner am Steuer [die wenigsten, Probe, wer nicht: Nr. und Zustand], jede Probe eines Fahrenden auf der
         // Trasse der Wege-Karte [Proben, ab, Orte], in jeder vollen Minute fährt jeder ≥ `weg60M` m [der kürzeste Weg einer
         // Minute, sein Wagen, volle Minuten, die Minute, der Grund am Kopf seiner Reihe — `spieler`: die Stadt floss nicht um den
@@ -2006,7 +2011,7 @@ hauptLauf(async () => {
                 },
                 b: { minAbstand: 0, spielerDv: 3.2, angestossen: true },
             },
-            lockstep: { abw: 0, baerAbw: 0, ruhe: true, gleicherStart: true },
+            lockstep: { abw: 0, baerAbw: 0, ruhe: true, gleicherStart: true, gleicheHuelle: true, huelle: [64, 64] },
             reiter: [
                 {
                     typ: "fahrzeug_gt",
@@ -2110,8 +2115,13 @@ hauptLauf(async () => {
             ],
             [
                 "der Wagen steht je nach Bildrate anders",
-                { lockstep: { abw: 0.06, baerAbw: 0, ruhe: true, gleicherStart: true } },
-                "lockstep",
+                { lockstep: { ...gutS.lockstep, abw: 0.06 } },
+                "lockstep:",
+            ],
+            [
+                "der gemischte Lauf fährt den Wagen als Karte: die Hülle der Stationen statt der gezeichneten Gestalt (laub-kante: Wagen 0,08644 m · Bär 0,613841 m)",
+                { lockstep: { ...gutS.lockstep, abw: 0.08644, baerAbw: 0.613841, gleicheHuelle: false, huelle: [64, 16] } },
+                "lockstep hülle",
             ],
             [
                 "der 60-fps-Lauf beginnt am frisch gesetzten Stand, der gemischte einen Schritt später (K70-N1: 1,2 mm nach 200 Schritten)",
@@ -2173,8 +2183,8 @@ hauptLauf(async () => {
             ],
             [
                 "der Bär steht je nach Bildrate anders, der Wagen gleich",
-                { lockstep: { abw: 0, baerAbw: 1.39, ruhe: true, gleicherStart: true } },
-                "lockstep",
+                { lockstep: { ...gutS.lockstep, baerAbw: 1.39 } },
+                "lockstep:",
             ],
             [
                 "5 Kisten ruhen 2,4 s",
@@ -2692,7 +2702,7 @@ hauptLauf(async () => {
                 for (const h of TAETER ? [10] : STUNDE != null ? [STUNDE] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
                     const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen an Wagen \[-[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    check(`VK (Leiter mensch.netz.verkehr) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen an Wagen \[-[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },
@@ -2919,7 +2929,7 @@ hauptLauf(async () => {
         frei("lockstep"),
         (S.lockSchwimmer ? `Schwimmer ${S.lockSchwimmer.abw} m / Höhe ${S.lockSchwimmer.abwY} m · ` : "") +
             (S.lockstep
-                ? `Start ${S.lockstep.startAbw} nach ${S.lockstep.ruheBilder} Bildern${S.lockstep.ruhe ? "" : ` (unruhig: ${(S.lockstep.unruhe || []).join(" / ")})`} · Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}` : ""}`
+                ? `Start ${S.lockstep.startAbw} nach ${S.lockstep.ruheBilder} Bildern${S.lockstep.ruhe ? "" : ` (unruhig: ${(S.lockstep.unruhe || []).join(" / ")})`} · Hülle ${(S.lockstep.huelle || []).join(" / ")} Richtungen · Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}` : ""}`
                 : "keine Probe")
     );
     const reiterZeile = (q) =>

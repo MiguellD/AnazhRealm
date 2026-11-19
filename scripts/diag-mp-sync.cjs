@@ -1,5 +1,5 @@
 // diag-mp-sync.cjs — DIE MEHRSPIELER-WAND (`npm run gate:mp-sync`). Die CI-Wand der Zwei-Seiten-Familie
-// (smoke-webrtc · smoke-copresence: zwei echte Seiten, ein echter signaling-server; der Bit-Beweis des Leibs aus smoke-lockstep
+// (zwei echte Seiten, ein echter signaling-server; der Bit-Beweis des Leibs aus smoke-lockstep
 // fiel in (e)).
 //
 // Zwei Klassen beim Namen:

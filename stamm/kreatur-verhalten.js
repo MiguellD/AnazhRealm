@@ -2233,12 +2233,14 @@ class AnazhRealm_kreatur_verhalten {
         if (typeof THREE === "undefined") return;
         const texture = this._getCreatureTaskAuraTexture();
         if (!texture) return;
-        const mat = new THREE.SpriteMaterial({
-            map: texture,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            transparent: true,
-        });
+        const mat = this._erscheinungStoff(
+            new THREE.SpriteNodeMaterial({
+                map: texture,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                transparent: true,
+            })
+        );
         mat.color.setHSL(hue / 360, 0.6, 0.65);
         const sprite = new THREE.Sprite(mat);
         sprite.name = "kreatur-aura";
@@ -2280,12 +2282,14 @@ class AnazhRealm_kreatur_verhalten {
         if (typeof THREE === "undefined") return;
         const texture = this._getCreatureTaskAuraTexture();
         if (!texture) return;
-        const spriteMat = new THREE.SpriteMaterial({
-            map: texture,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            transparent: true,
-        });
+        const spriteMat = this._erscheinungStoff(
+            new THREE.SpriteNodeMaterial({
+                map: texture,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                transparent: true,
+            })
+        );
         spriteMat.color.setHex(colorHex);
         const sprite = new THREE.Sprite(spriteMat);
         sprite.name = "kreatur-traglast";

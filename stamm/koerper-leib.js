@@ -1649,7 +1649,7 @@ class AnazhRealm_koerper_leib {
             });
         return n;
     }
-    // DER LEIB EINES MENSCHEN (die Kopf-Klasse, PFLICHT-OFFEN A: mensch-kopf und haar an jedem Menschen): die Wurzel eines Leibs
+    // DER LEIB EINES MENSCHEN (die Kopf-Klasse der Soll-Tafel: mensch-kopf und haar an jedem Menschen): die Wurzel eines Leibs
     // (`_leibWurzel`: sein Knoten unter der Szene) heißt nach dem, der er ist — der Spieler `spieler`, jeder Bewohner `bewohner`
     // (der Mensch der Menge, `_bewohnerGeburt`: sein Leib trägt den Baum der Glieder wie ein Tier, `_tierBaum`, und ist doch keines);
     // sonst null. Leser: die Täter-Klasse (`_taeterKlasse`: der EINE Name jeder Kosten-Linse), die Teilung (`_kopfKlasse`), der

@@ -474,7 +474,7 @@ const PORTAL_RENDER_CONFIG = {
         // Baum); das Soll-Bild (Cluster-Karten an ihrem Traeger, Weiden-Straehnen entlang der Peitsche, Stamm und
         // Starkaeste ganz) braucht hoechstens 17,6k (Tanne s2) — die Zeile steht offen bei 18 000, der Haushalt
         // verschiebt sich um das L0-Band (docs/studio-vertrag.md B2c). flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
-        // (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
+        // (Leiter same.preis.takt). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
         // Gestalt der Welt — und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
         // Laub-Karte in Blatt-Groessen; nur tree[0] — w10-lod: die Laub-Krone der L1 IST die der L0, ihre Karte kostet 2
