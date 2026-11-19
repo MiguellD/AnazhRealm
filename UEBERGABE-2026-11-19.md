@@ -17,7 +17,7 @@ Wer hier weitermacht, liest zuerst den LAGE-Block, dann dieses Blatt, fährt den
   er ist hier falsch (installiert = koordination 75a0ba45).
 
 ## In Fahrt (Opus), je mit dem nächsten Handgriff
-1. **Lichtmesser** `laub-messer` e6707798, Vorprüfung 2 = 56777f23 (seit 15:08). Bei „voll 18/18“: Stempel aus dem Scratch
+1. **Lichtmesser** GESTEMPELT 15:31 als `w28-laub-kante-2` (80471c53), wartet im Zug; Folge-Schnitt Ankunft läuft als Opus im Baum `AnazhRealm-probe`, Zweig `licht-ankunft`, Soll `vision/licht/soll-ankunft-umstellen.md`. (Erledigt: Stempel aus dem Scratch
    `licht/bau/stempel.txt` nach NEU `refs/heads/w28-laub-kante-2` (`git commit-tree "$V^{tree}" -p $V -F stempel.txt`; vorher
    Kopf unverändert, Ziel frei, `git merge-tree --write-tree <main> $V | wc -l` = 1). Konflikt mit der Licht-Welle in
    `spec/asset-contract/v1/golden/manifest.json` + `recipes.json`: wer als Zweiter landet, prägt neu. Danach bestellen: der
