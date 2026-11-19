@@ -2,6 +2,334 @@
  "lesart": "Zeilen für vision/richter-tafel.json (der Koordinator faltet sie ein): Station der Punkte-Maschine → Sprosse der Meisterkarte 2, je neue Station der Leitern erleben.* · same.* · planet.kosmos.* (meisterkarte-quelle/punkte/stationen/k2-erleben.js · k2-same.js · k2-kosmos.js) EINE Zeile. „gleich“: die Station urteilt die Sprosse ganz. „fehlt“: die Sprosse urteilt ein Auge am Gerät.",
  "zeilen": [
   {
+   "station": "karte2.erleben.spieler.praesenz#2",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.praesenz#3",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.praesenz#4",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.praesenz#5",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.praesenz#6",
+   "leiter": "erleben.spieler.praesenz",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#2",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#3",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#4",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose stadt-voll third, Mittag, Sommer, Sonne — der Markt im Gedränge, Bewohner bei ihren Verben (Vorbild Quellen der Epoche: Berufs- und Werkstattbilder (Schmied 1200, Mechaniker 1950) im Blindpaar) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#5",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#6",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.rolle#7",
+   "leiter": "erleben.spieler.rolle",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#1",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#2",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 2,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose wiese ego, Blick 60° zum Boden auf das Ziel des Hiebs, nach einem Hieb der Hand (`tryMouseBreak`), Mittag, Sommer, Sonne, wahl 0 (Vorbild Real-Foto desselben Stoffs nach derselben Tat (Grube im Wiesenboden, gesplittertes Holz, zerpflücktes Laub)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#3",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#4",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 4,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose das Werkstück des Spielers auf der Werkbank, ego, Mittag (Vorbild Museumsfoto des Werkstücks der Epoche (Töpferware, Gewebe, Schmiedestück)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#5",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.hand#6",
+   "leiter": "erleben.spieler.hand",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#1",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#2",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#3",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#4",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#5",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#6",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.wegfindung#7",
+   "leiter": "erleben.spieler.wegfindung",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#1",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#2",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#3",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#4",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#5",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#6",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#7",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#8",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 8,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.zeit#9",
+   "leiter": "erleben.spieler.zeit",
+   "sprosse": 9,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#1",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#2",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#3",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#4",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#5",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#6",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.gemeinsam#7",
+   "leiter": "erleben.spieler.gemeinsam",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#1",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#2",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#3",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#4",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#5",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 5,
+   "richter": "fehlt",
+   "grund": "Blindpaar: die Station legt das Bild an der Pose Orbit-Bild des Planeten über der Lage des Ankers nach gesetzter Hebung, im Raffer (Vorbild Gegenlauf derselben Saat ohne Hebung; Erd-Muster Gebirge → Regenschatten → Wüste (Anden/Atacama)) und urteilt nie GRÜN — das Urteil fällt am Gerät mit dem Auge"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#6",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.nichtleib#7",
+   "leiter": "erleben.spieler.nichtleib",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#1",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 1,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#2",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 2,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#3",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 3,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#4",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 4,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#5",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 5,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#6",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 6,
+   "richter": "gleich"
+  },
+  {
+   "station": "karte2.erleben.spieler.forscher#7",
+   "leiter": "erleben.spieler.forscher",
+   "sprosse": 7,
+   "richter": "gleich"
+  },
+  {
    "station": "karte2.same.preis.takt#1",
    "leiter": "same.preis.takt",
    "sprosse": 1,
