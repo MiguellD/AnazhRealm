@@ -1,7 +1,7 @@
 {
  "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
  "geraet": "gtx",
- "zeit": "2026-11-19T10:05:24.242Z",
+ "zeit": "2026-11-19T10:11:58.812Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.erleben.spieler.wegfindung#1": {
@@ -13398,6 +13398,927 @@
    "bahn": "sitzung",
    "zwilling": "karte2.erleben.bild.kamera#1",
    "modus": "session"
+  },
+  "karte2.erleben.klang.raum#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ✅ pegel_pct 100 (Soll ≥ 100) · ❌ laufzeit_pct 0 (Soll ≥ 100) · ✅ Umfang verlangt 24 Quellenlagen, die Welt erzeugte 24 — Täter: kein Laufzeitunterschied: tierRufSpielen führt den Ruf durch EINEN StereoPannerNode ohne Verzögerung je Ohr (klang-core.js:1277) — Lag 0 Samples an 23 von 24 Lagen · laufzeit_pct 0 statt ≥ 100",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "ROT: S1 · ROT ✅ pegel_pct 100 (Soll ≥ 100) · ❌ laufzeit_pct 0 (Soll ≥ 100) · ✅ Umfang verlangt 24 Quellenlagen, die Welt erzeugte 24 — Täter: kein Laufzeitunterschied: tierRufSpielen führt den Ruf durch EINEN StereoPannerNode ohne Verzögerung je Ohr (klang-core.js:1277) — Lag 0 Samples an 23 von 24 Lagen · laufzeit_pct 0 statt ≥ 100",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 38.3,
+   "fremd": {
+    "s": 43.6,
+    "takte": 14,
+    "fremdS": 88.27,
+    "kerne": 2.025,
+    "fensterKerne": 2.715,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.31
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      9.19
+     ],
+     [
+      "bash.exe",
+      8.19
+     ]
+    ],
+    "dienerS": 37.5,
+    "diener": [
+     [
+      "System",
+      15.98
+     ],
+     [
+      "dwm.exe",
+      12.58
+     ]
+    ],
+    "geraetS": 99.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.08
+     ],
+     [
+      "svchost.exe",
+      45.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.5
+     ]
+    ],
+    "eigenS": 137.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:08:29.441Z",
+   "abdruck": "55fc73fee372",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.raum#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: binnen einer Leiter (60 s) liest das Ohr EINEN Raum: das Feld der Wiese (RT60 0.3 s) — Wald, Gasse und Höhle verlangen drei Ortswechsel mit kaltem Ring (11–28 s je Ort); klang.K3#2 misst sie headless in 10 min (verlangt 4 Raumklassen, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: binnen einer Leiter (60 s) liest das Ohr EINEN Raum: das Feld der Wiese (RT60 0.3 s) — Wald, Gasse und Höhle verlangen drei Ortswechsel mit kaltem Ring (11–28 s je Ort); klang.K3#2 misst sie headless in 10 min (verlangt 4 Raumklassen, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 38.3,
+   "fremd": {
+    "s": 43.6,
+    "takte": 14,
+    "fremdS": 88.27,
+    "kerne": 2.025,
+    "fensterKerne": 2.715,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.31
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      9.19
+     ],
+     [
+      "bash.exe",
+      8.19
+     ]
+    ],
+    "dienerS": 37.5,
+    "diener": [
+     [
+      "System",
+      15.98
+     ],
+     [
+      "dwm.exe",
+      12.58
+     ]
+    ],
+    "geraetS": 99.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.08
+     ],
+     [
+      "svchost.exe",
+      45.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.5
+     ]
+    ],
+    "eigenS": 137.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:08:29.441Z",
+   "abdruck": "22fe164f3a7a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.raum#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.raum#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten (begehbare Hüllen) — keine Siedlung mit 10³ begehbaren Orten; und das Ohr kennt kein vorn/hinten/oben (EIN StereoPanner je Quelle, klang-core.js:1277) (verlangt 1000 begehbare Orte, die Welt erzeugte 57)",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten (begehbare Hüllen) — keine Siedlung mit 10³ begehbaren Orten; und das Ohr kennt kein vorn/hinten/oben (EIN StereoPanner je Quelle, klang-core.js:1277) (verlangt 1000 begehbare Orte, die Welt erzeugte 57)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 38.3,
+   "fremd": {
+    "s": 43.6,
+    "takte": 14,
+    "fremdS": 88.27,
+    "kerne": 2.025,
+    "fensterKerne": 2.715,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.31
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      9.19
+     ],
+     [
+      "bash.exe",
+      8.19
+     ]
+    ],
+    "dienerS": 37.5,
+    "diener": [
+     [
+      "System",
+      15.98
+     ],
+     [
+      "dwm.exe",
+      12.58
+     ]
+    ],
+    "geraetS": 99.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.08
+     ],
+     [
+      "svchost.exe",
+      45.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.5
+     ]
+    ],
+    "eigenS": 137.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:08:29.441Z",
+   "abdruck": "9cfe8b0d1b4f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.raum#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.raum#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten — keine Stadt mit 10⁵ Innenräumen; kein Raum-in-Raum: der Raum am Ohr liest 16 waagerechte Strahlen (UMWELT.raum, klang-core.js:440) (verlangt 100000 Innenräume, die Welt erzeugte 57)",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 57 Bauten — keine Stadt mit 10⁵ Innenräumen; kein Raum-in-Raum: der Raum am Ohr liest 16 waagerechte Strahlen (UMWELT.raum, klang-core.js:440) (verlangt 100000 Innenräume, die Welt erzeugte 57)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 38.3,
+   "fremd": {
+    "s": 43.6,
+    "takte": 14,
+    "fremdS": 88.27,
+    "kerne": 2.025,
+    "fensterKerne": 2.715,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.31
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      9.19
+     ],
+     [
+      "bash.exe",
+      8.19
+     ]
+    ],
+    "dienerS": 37.5,
+    "diener": [
+     [
+      "System",
+      15.98
+     ],
+     [
+      "dwm.exe",
+      12.58
+     ]
+    ],
+    "geraetS": 99.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.08
+     ],
+     [
+      "svchost.exe",
+      45.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.5
+     ]
+    ],
+    "eigenS": 137.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:08:29.441Z",
+   "abdruck": "05f6bf4b7688",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.raum#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.raum#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: das weiteste Ohr des Gesetzes reicht 160 m (fahrt; FAHRT_OHR.hoerweiteM klang-core.js:1757, Tier-Ruf 59.1 m) — kein Fernschall bis 10 km, keine Laufzeit (fahrtAmOhr ohne Verzögerung, klang-core.js:1759), keine Luftdämpfung nach ISO 9613 (verlangt 10 km Fernschall, die Welt erzeugte 0,16)",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: das weiteste Ohr des Gesetzes reicht 160 m (fahrt; FAHRT_OHR.hoerweiteM klang-core.js:1757, Tier-Ruf 59.1 m) — kein Fernschall bis 10 km, keine Laufzeit (fahrtAmOhr ohne Verzögerung, klang-core.js:1759), keine Luftdämpfung nach ISO 9613 (verlangt 10 km Fernschall, die Welt erzeugte 0,16)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 38.3,
+   "fremd": {
+    "s": 43.6,
+    "takte": 14,
+    "fremdS": 88.27,
+    "kerne": 2.025,
+    "fensterKerne": 2.715,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.31
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      9.19
+     ],
+     [
+      "bash.exe",
+      8.19
+     ]
+    ],
+    "dienerS": 37.5,
+    "diener": [
+     [
+      "System",
+      15.98
+     ],
+     [
+      "dwm.exe",
+      12.58
+     ]
+    ],
+    "geraetS": 99.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.08
+     ],
+     [
+      "svchost.exe",
+      45.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.5
+     ]
+    ],
+    "eigenS": 137.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:08:29.441Z",
+   "abdruck": "ce8c4ae23aa1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.raum#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.raum#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Leser fehlt: kein Medienwechsel: unter Wasser schweigt nur der Schritt (stamm/klang.js:911), c = 343 m/s fest (klang-core.js:1757 FAHRT_OHR), kein Körperschall und keine Bodenwelle",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "ROT: S6 · ROT Leser fehlt: kein Medienwechsel: unter Wasser schweigt nur der Schritt (stamm/klang.js:911), c = 343 m/s fest (klang-core.js:1757 FAHRT_OHR), kein Körperschall und keine Bodenwelle",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 38.3,
+   "fremd": {
+    "s": 43.6,
+    "takte": 14,
+    "fremdS": 88.27,
+    "kerne": 2.025,
+    "fensterKerne": 2.715,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.31
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      9.19
+     ],
+     [
+      "bash.exe",
+      8.19
+     ]
+    ],
+    "dienerS": 37.5,
+    "diener": [
+     [
+      "System",
+      15.98
+     ],
+     [
+      "dwm.exe",
+      12.58
+     ]
+    ],
+    "geraetS": 99.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.08
+     ],
+     [
+      "svchost.exe",
+      45.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.5
+     ]
+    ],
+    "eigenS": 137.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:08:29.441Z",
+   "abdruck": "9ac798c6a437",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.raum#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.raum#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed) — 100 Saaten verlangt; c und Dämpfung stehen fest im Gesetz (klang-core.js:1757), keine Atmosphären-Zeile, kein Vakuum (verlangt 100 Saaten, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung hält EINE Saat (anazh-realm-seed) — 100 Saaten verlangt; c und Dämpfung stehen fest im Gesetz (klang-core.js:1757), keine Atmosphären-Zeile, kein Vakuum (verlangt 100 Saaten, die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 38.3,
+   "fremd": {
+    "s": 43.6,
+    "takte": 14,
+    "fremdS": 88.27,
+    "kerne": 2.025,
+    "fensterKerne": 2.715,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      23.31
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      9.19
+     ],
+     [
+      "bash.exe",
+      8.19
+     ]
+    ],
+    "dienerS": 37.5,
+    "diener": [
+     [
+      "System",
+      15.98
+     ],
+     [
+      "dwm.exe",
+      12.58
+     ]
+    ],
+    "geraetS": 99.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.08
+     ],
+     [
+      "svchost.exe",
+      45.63
+     ],
+     [
+      "SearchIndexer.exe",
+      1.5
+     ]
+    ],
+    "eigenS": 137.27,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:08:29.441Z",
+   "abdruck": "c8bf994849df",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.raum#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.getuemmel#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ✅ spitze_dbfs -11,72 (Soll ≤ 0) · ❌ dauer_min 0,234 (Soll ≥ 10) · ✅ duck_db 12,18 (Soll ≥ 8) · ❌ duck_db_bis 12,18 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 3 — Täter: Duck 12.18 dB bei Stimme (MUSIK.duck.gespraech klang-core.js:382, `_musikDuck` lief) · nur 3 Stimmen zugleich an der Wiese im Regen (wind, regen, glut) · die Leiter hört 0.234 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,234 statt ≥ 10 · duck_db_bis 12,18 statt ≤ 12 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 3)",
+   "exit": 0,
+   "minuten": 0.75,
+   "grund": "ROT: S1 · ROT ✅ spitze_dbfs -11,72 (Soll ≤ 0) · ❌ dauer_min 0,234 (Soll ≥ 10) · ✅ duck_db 12,18 (Soll ≥ 8) · ❌ duck_db_bis 12,18 (Soll ≤ 12) · ❌ Umfang verlangt 7 Stimmen zugleich, die Welt erzeugte 3 — Täter: Duck 12.18 dB bei Stimme (MUSIK.duck.gespraech klang-core.js:382, `_musikDuck` lief) · nur 3 Stimmen zugleich an der Wiese im Regen (wind, regen, glut) · die Leiter hört 0.234 min — 10 min übersteigen den Deckel einer Leiter (60 s) · dauer_min 0,234 statt ≥ 10 · duck_db_bis 12,18 statt ≤ 12 · gemessen unter dem Umfang (verlangt 7 Stimmen zugleich, die Welt erzeugte 3)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 44.8,
+   "fremd": {
+    "s": 49.2,
+    "takte": 15,
+    "fremdS": 121.64,
+    "kerne": 2.474,
+    "fensterKerne": 3.296,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      25.38
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      10.89
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      10.81
+     ]
+    ],
+    "dienerS": 46.97,
+    "diener": [
+     [
+      "System",
+      19.73
+     ],
+     [
+      "dwm.exe",
+      15.13
+     ]
+    ],
+    "geraetS": 120.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      61.64
+     ],
+     [
+      "svchost.exe",
+      55.05
+     ],
+     [
+      "SearchIndexer.exe",
+      3.56
+     ]
+    ],
+    "eigenS": 155.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:11:58.812Z",
+   "abdruck": "0d6afb2617fd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.getuemmel#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Dorfplatz mit 10² Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100 Quellen, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.75,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Dorfplatz mit 10² Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100 Quellen, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 44.8,
+   "fremd": {
+    "s": 49.2,
+    "takte": 15,
+    "fremdS": 121.64,
+    "kerne": 2.474,
+    "fensterKerne": 3.296,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      25.38
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      10.89
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      10.81
+     ]
+    ],
+    "dienerS": 46.97,
+    "diener": [
+     [
+      "System",
+      19.73
+     ],
+     [
+      "dwm.exe",
+      15.13
+     ]
+    ],
+    "geraetS": 120.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      61.64
+     ],
+     [
+      "svchost.exe",
+      55.05
+     ],
+     [
+      "SearchIndexer.exe",
+      3.56
+     ]
+    ],
+    "eigenS": 155.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:11:58.812Z",
+   "abdruck": "efbe7c2e4d48",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.getuemmel#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.getuemmel#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 0 Bewohner und 0 Wagen — keine Großstadtstraße mit 10⁴ Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 10000 Quellen, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.75,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 0 Bewohner und 0 Wagen — keine Großstadtstraße mit 10⁴ Quellen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 10000 Quellen, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 44.8,
+   "fremd": {
+    "s": 49.2,
+    "takte": 15,
+    "fremdS": 121.64,
+    "kerne": 2.474,
+    "fensterKerne": 3.296,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      25.38
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      10.89
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      10.81
+     ]
+    ],
+    "dienerS": 46.97,
+    "diener": [
+     [
+      "System",
+      19.73
+     ],
+     [
+      "dwm.exe",
+      15.13
+     ]
+    ],
+    "geraetS": 120.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      61.64
+     ],
+     [
+      "svchost.exe",
+      55.05
+     ],
+     [
+      "SearchIndexer.exe",
+      3.56
+     ]
+    ],
+    "eigenS": 155.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:11:58.812Z",
+   "abdruck": "d24b9cec7426",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.getuemmel#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.getuemmel#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Leser fehlt: keine Vertäubung: die Hörschwelle steht fest bei -64 dB (klang-core.js:415 UMWELT.hoerschwelleDb), kein Klingeln, kein 130-dB-Ereignis",
+   "exit": 0,
+   "minuten": 0.75,
+   "grund": "ROT: S4 · ROT Leser fehlt: keine Vertäubung: die Hörschwelle steht fest bei -64 dB (klang-core.js:415 UMWELT.hoerschwelleDb), kein Klingeln, kein 130-dB-Ereignis",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 44.8,
+   "fremd": {
+    "s": 49.2,
+    "takte": 15,
+    "fremdS": 121.64,
+    "kerne": 2.474,
+    "fensterKerne": 3.296,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      25.38
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      10.89
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      10.81
+     ]
+    ],
+    "dienerS": 46.97,
+    "diener": [
+     [
+      "System",
+      19.73
+     ],
+     [
+      "dwm.exe",
+      15.13
+     ]
+    ],
+    "geraetS": 120.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      61.64
+     ],
+     [
+      "svchost.exe",
+      55.05
+     ],
+     [
+      "SearchIndexer.exe",
+      3.56
+     ]
+    ],
+    "eigenS": 155.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:11:58.812Z",
+   "abdruck": "f29fe20e61ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.getuemmel#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.getuemmel#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Stadion mit 10⁵ Stimmen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100000 Stimmen, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.75,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — kein Stadion mit 10⁵ Stimmen; und kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73) (verlangt 100000 Stimmen, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 44.8,
+   "fremd": {
+    "s": 49.2,
+    "takte": 15,
+    "fremdS": 121.64,
+    "kerne": 2.474,
+    "fensterKerne": 3.296,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      25.38
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      10.89
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      10.81
+     ]
+    ],
+    "dienerS": 46.97,
+    "diener": [
+     [
+      "System",
+      19.73
+     ],
+     [
+      "dwm.exe",
+      15.13
+     ]
+    ],
+    "geraetS": 120.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      61.64
+     ],
+     [
+      "svchost.exe",
+      55.05
+     ],
+     [
+      "SearchIndexer.exe",
+      3.56
+     ]
+    ],
+    "eigenS": 155.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:11:58.812Z",
+   "abdruck": "dc7469d72d20",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.getuemmel#1",
+   "modus": "session"
+  },
+  "karte2.erleben.klang.getuemmel#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Leser fehlt: kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73); keine Warn-Stimme in UMWELT (wind · laub · ufer · fluss · fall · regen · glut · vogel · grille, klang-core.js:443) — hörbar bleibt nur der eigene Schritt (stamm/klang.js:888)",
+   "exit": 0,
+   "minuten": 0.75,
+   "grund": "ROT: S6 · ROT Leser fehlt: kein zugewandter Sprecher: Bewohner sprechen nicht, der Begleiter spricht über speechSynthesis außerhalb des Klang-Graphen (stamm/werkstatt-hud.js:73); keine Warn-Stimme in UMWELT (wind · laub · ufer · fluss · fall · regen · glut · vogel · grille, klang-core.js:443) — hörbar bleibt nur der eigene Schritt (stamm/klang.js:888)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k264732138086",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k0247d25e2ba6",
+   "s": 44.8,
+   "fremd": {
+    "s": 49.2,
+    "takte": 15,
+    "fremdS": 121.64,
+    "kerne": 2.474,
+    "fensterKerne": 3.296,
+    "namen": [
+     [
+      "SDXHelper.exe -Embedding",
+      25.38
+     ],
+     [
+      "bash.exe dienst-omen/landung-dienst.sh --selbsttest",
+      10.89
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      10.81
+     ]
+    ],
+    "dienerS": 46.97,
+    "diener": [
+     [
+      "System",
+      19.73
+     ],
+     [
+      "dwm.exe",
+      15.13
+     ]
+    ],
+    "geraetS": 120.77,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      61.64
+     ],
+     [
+      "svchost.exe",
+      55.05
+     ],
+     [
+      "SearchIndexer.exe",
+      3.56
+     ]
+    ],
+    "eigenS": 155.86,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-19T10:11:58.812Z",
+   "abdruck": "21e671a7d7e8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.klang.getuemmel#1",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -17422,186 +18343,6 @@
    "bahn": "sitzung",
    "zwilling": "karte2.erleben.bild.flaeche#3",
    "modus": "session"
-  },
-  "karte2.erleben.klang.raum#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.171Z",
-   "abdruck": "55fc73fee372",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.raum#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.171Z",
-   "abdruck": "22fe164f3a7a",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.raum#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.raum#3": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.171Z",
-   "abdruck": "9cfe8b0d1b4f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.raum#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.raum#4": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.171Z",
-   "abdruck": "05f6bf4b7688",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.raum#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.raum#5": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.171Z",
-   "abdruck": "ce8c4ae23aa1",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.raum#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.raum#6": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.171Z",
-   "abdruck": "9ac798c6a437",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.raum#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.raum#7": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.171Z",
-   "abdruck": "c8bf994849df",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.raum#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.getuemmel#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.266Z",
-   "abdruck": "0d6afb2617fd",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.getuemmel#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.266Z",
-   "abdruck": "efbe7c2e4d48",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.getuemmel#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.getuemmel#3": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.266Z",
-   "abdruck": "d24b9cec7426",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.getuemmel#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.getuemmel#4": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.266Z",
-   "abdruck": "f29fe20e61ea",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.getuemmel#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.getuemmel#5": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.266Z",
-   "abdruck": "dc7469d72d20",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.getuemmel#1",
-   "modus": "session"
-  },
-  "karte2.erleben.klang.getuemmel#6": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"}) — offen, UNGEMESSEN",
-   "ungemessen": true,
-   "zeit": "2026-11-19T10:04:08.266Z",
-   "abdruck": "21e671a7d7e8",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.erleben.klang.getuemmel#1",
-   "modus": "session"
   }
  },
  "sitzung": {
@@ -21598,6 +22339,304 @@
    },
    "fahrtS": 179.1,
    "minuten": 3.36
+  },
+  {
+   "start": "2026-11-19T10:04:18.187Z",
+   "ordner": "sitzung-20261119-110418",
+   "port": 7804,
+   "warten": 0.23,
+   "bootS": 14.6,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.erleben.klang.raum#1",
+    "karte2.erleben.klang.raum#2",
+    "karte2.erleben.klang.raum#3",
+    "karte2.erleben.klang.raum#4",
+    "karte2.erleben.klang.raum#5",
+    "karte2.erleben.klang.raum#6",
+    "karte2.erleben.klang.raum#7",
+    "karte2.erleben.klang.getuemmel#1",
+    "karte2.erleben.klang.getuemmel#2",
+    "karte2.erleben.klang.getuemmel#3",
+    "karte2.erleben.klang.getuemmel#4",
+    "karte2.erleben.klang.getuemmel#5",
+    "karte2.erleben.klang.getuemmel#6"
+   ],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.erleben.bild.kamera#1",
+     "s": 29.5,
+     "takte": 834,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.erleben.bild.kamera#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      184.9,
+      213.3
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.erleben.bild.kamera#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.erleben.bild.kamera#1",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.erleben.klang.raum#1: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.4999438888888888\"} — offen: karte2.erleben.klang.raum#1, karte2.erleben.klang.raum#2, karte2.erleben.klang.raum#3, karte2.erleben.klang.raum#4, karte2.erleben.klang.raum#5, karte2.erleben.klang.raum#6, karte2.erleben.klang.raum#7, karte2.erleben.klang.getuemmel#1, karte2.erleben.klang.getuemmel#2, karte2.erleben.klang.getuemmel#3, karte2.erleben.klang.getuemmel#4, karte2.erleben.klang.getuemmel#5, karte2.erleben.klang.getuemmel#6",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 1929,
+    "frameP95": 41.69,
+    "taktP95": 25.01,
+    "vramMax": 132.6,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.erleben.bild.kamera#1",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 139,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 169.9,
+   "minuten": 3.19
+  },
+  {
+   "start": "2026-11-19T10:07:29.844Z",
+   "ordner": "sitzung-20261119-110729",
+   "port": 7804,
+   "warten": 0.17,
+   "bootS": 11.6,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "offen": [
+    "karte2.erleben.klang.getuemmel#1",
+    "karte2.erleben.klang.getuemmel#2",
+    "karte2.erleben.klang.getuemmel#3",
+    "karte2.erleben.klang.getuemmel#4",
+    "karte2.erleben.klang.getuemmel#5",
+    "karte2.erleben.klang.getuemmel#6"
+   ],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.erleben.klang.raum#1",
+     "s": 29.9,
+     "takte": 885,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.erleben.klang.raum#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      187.7,
+      225.3
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.erleben.klang.raum#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.erleben.klang.raum#1",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "grund": "die Welt trägt nicht mehr vor karte2.erleben.klang.getuemmel#1: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49986056388888883\"} — offen: karte2.erleben.klang.getuemmel#1, karte2.erleben.klang.getuemmel#2, karte2.erleben.klang.getuemmel#3, karte2.erleben.klang.getuemmel#4, karte2.erleben.klang.getuemmel#5, karte2.erleben.klang.getuemmel#6",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2014,
+    "frameP95": 41.73,
+    "taktP95": 31.01,
+    "vramMax": 131.2,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.erleben.klang.raum#1",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 162,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 189.5,
+   "minuten": 3.5
+  },
+  {
+   "start": "2026-11-19T10:10:59.743Z",
+   "ordner": "sitzung-20261119-111059",
+   "port": 7804,
+   "warten": 0.2,
+   "bootS": 12.5,
+   "grundstellungS": [],
+   "proben": 1,
+   "freigaben": [],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "karte2.erleben.klang.getuemmel#1",
+     "s": 27.5,
+     "takte": 630,
+     "chunks": 81,
+     "nach": null
+    }
+   ],
+   "wegeTueren": [],
+   "wirt": [
+    {
+     "probe": "karte2.erleben.klang.getuemmel#1",
+     "anders": [
+      "r._bildZeit",
+      "r._wolkenZeit",
+      "r._weltaktGehalten",
+      "r._setWeather",
+      "r.state.weather",
+      "window.__wieseMessen",
+      "window.__wieseUrteil",
+      "window.__ortSchritt"
+     ],
+     "wie": {
+      "r._bildZeit": "neu: () => S.T",
+      "r._wolkenZeit": "neu: () => S.T",
+      "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+      "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+      "r.state.weather": "neu: () => wert",
+      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+      "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     },
+     "haelt": [],
+     "heap": [
+      184.6,
+      226
+     ],
+     "ungemessen": null
+    }
+   ],
+   "messHalt": [
+    {
+     "probe": "karte2.erleben.klang.getuemmel#1",
+     "halt": -1000000000,
+     "zurueck": 0
+    },
+    {
+     "probe": "karte2.erleben.klang.getuemmel#1",
+     "gehalten": [
+      "tiere"
+     ],
+     "offen": []
+    }
+   ],
+   "ciBlicke": 2,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 2438,
+    "frameP95": 41.7,
+    "taktP95": 32.8,
+    "vramMax": 133.4,
+    "seiten": 1,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "karte2.erleben.klang.getuemmel#1",
+      "m": 1083,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 158,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 177.4,
+   "minuten": 3.32
   }
  ],
  "konsumTafel": {
