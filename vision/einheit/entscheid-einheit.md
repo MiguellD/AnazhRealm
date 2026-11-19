@@ -129,3 +129,32 @@ Die Kosten folgen dem Schirm (Gebot 7), nie der Weltgröße.
   - S5: das Bildpaar ohne sichtbares Ploppen bei Bewegung.
 - Meine Vorhersage: der Anteil ohne Pixel liegt an Wiese Third zwischen 55 und 75 %, davon der größere Teil verdeckt (Wände
   hinter Wänden, Häuser hinter Häusern), nicht unter dem Bildpunkt.
+
+## E8 — Spike (b) „Stufe aus der L0“: die Wurzel trägt, die Welle geht (19.11. 18:2x)
+
+Abgabe der GTX 1050: `einheit-stufe-aus-l0` c2b8b8cbd, Blatt `spike/einheit-stufe-aus-l0/MUSTER.md`.
+- alemannisch L2 bei 26 m: B1 65,11 → 4,81 % vorn und 45,31 → 2,98 % hinten, bei 6 414 Dreiecken (Soll ≤ 6 412).
+- Wagen L1 bei 12 m: suv 11,76 → 6,72 %, limousine 8,52 → 5,33 %, gt 16,83 → 13,84 %.
+
+Die Vorhersage (unter 10 %, B1 reißt noch) traf. **Mein Auge** (Bild L0 | aus L0 | heute): die mittlere Fassung ist dasselbe Haus
+mit Fachwerk, Gefachen, Backstein, Tür und Fenstern an ihrem Ort; die heutige ist ein anderes Haus. Die Funktion nimmt nur die
+L0-Netze und den Bildpunkt `s` und hat keine Zweige je Stufe — sie ist der Detail-Teil von E7, wie bestellt.
+
+**Entscheide:**
+1. **Der Zwilling der Steingröße fällt in main**, nicht nur im Spike-Zweig: `infill` liest `VERBAND_GESETZ.mauerwerk`, mit Re-Mint.
+   Die L0 steigt dadurch von 77 526 auf 96 630 Dreiecke (+25 %). Die Zahl wird benannt und an der Profi-Band-Pose gemessen, sie ist
+   kein Tor. E7 bindet die Kosten an den Pixel, und solange zwei Steingrößen fahren, misst B1 den Zwilling statt der Funktion.
+2. **Rest Muster:** der Stoff webt in der Phase der L0. Ursprung und Lage des Verbands kommen aus demselben Anker wie die Steine der
+   L0, sodass die Lagen auf denselben Linien liegen.
+3. **Rest Relief:** was unter dem Bildpunkt liegt, fällt, und sein Licht geht in den Stoff. Kanten von Balken und Traufe, die
+   schmaler als `s` sind, tragen ihr Mittel aus Eigenschatten und Kante als Ton der Zone. Das ist dasselbe Gesetz wie die Farbe,
+   keine zweite Regel.
+4. **Draws:** die abgeleitete Fassung faltet sich in Opak und Glas. Soll: Draws je Haus ≤ heute (4).
+5. **Erst der Richter:** gt „heute“ springt zwischen Läufen (11,55 · 11,94 · 16,83 %). Ein Richter mit 5 Punkten Rauschen urteilt
+   kein 1 %. Die Quelle des Rauschens wird zuerst beim Namen genannt; ohne die gilt keine Wagen-Zahl.
+
+**Welle a (GTX 1050, Zweig `einheit-stufe-aus-l0`):** die Funktion sitzt EINMAL im Kern hinter `_foundryWorkerRequest`. Sie gilt
+an allen 6 Vorlagen (3 Häuser, darunter japanisch; 3 Wagen), mit 1–5.
+Soll: B1 ≤ 1 % an allen 6, Dreiecke ≤ Soll der Tafel, Draws ≤ heute. Linse: Mutant „Stufe aus eigenem Rezept“ ROT.
+Datei-Besitz: die GTX 1050 hält `fachwerk-core.js`, `vehicle-core.js` und `foundry-bruecke.js`; der Spike SICHT (Laptop,
+`einheit-sicht`) hält `siedlung-instanz.js` und sein neues Sicht-Modul.
