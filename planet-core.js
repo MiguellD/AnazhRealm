@@ -54,7 +54,7 @@
 (function (root) {
   'use strict';
 
-  const VERSION = 'planet-h2-8';
+  const VERSION = 'planet-h2-9';
 
   // ── planetMathe (K9) ───────────────────────────────────────────────────────────────────────────────────
   const PI = 3.141592653589793, HALBPI = 1.5707963267948966, TAU = 6.283185307179586;
@@ -2567,7 +2567,12 @@
   function klemm(r, v) { return v < r.min ? r.min : (v > r.max ? r.max : v); }
   // Lesart von Kontinentalität (km zur Küste, + landein) als Regler „land" (Entscheid §6: Küste um −0,2, Inneres 0,35–0,9, Meer bis −0,6)
   function landAus(kont) { return kont < 0 ? -0.2 + 0.4 * Math.max(-1, kont / 300) : -0.2 + 0.55 * glatt(0, 300, kont) + 0.55 * glatt(300, 2000, kont); }
-  const _ankP = {}, _ankK = {};
+  const _ankP = {}, _ankK = {}, _ankB = {}, _ankD = {};
+  // B5 der Anker wird dort gesucht, wo er gelesen wird: im Band des Orts (ortRoh und der Faden lesen fuss 16), vorher fuss 40 — 1 von 30
+  // Ankern lag bei fuss 16 im Meer. Und er trägt jede Größe, die als Verhältnis zu ihm reist (Spende, Krautschicht, Wald; ein Verhältnis
+  // zu 0 ist tot: 5 von 30 Ankern ohne Wald, 2 ohne Spende) und das Klima der Heimat auf seiner wahren Höhe, wo sein Biom gelesen wird
+  // (kein E: 4 von 30 Ankern lagen als Tundra auf Hochflächen, gesucht auf Meeres-Niveau)
+  const ANKER_FUSS_KM = 16;
   // Der Anker: der Ort, an dem die Konstanten des heutigen Ort-Gesetzes (Sommer/Winter am Meer) wahr sind — auf Land, Küste ≤ 300 km,
   // kein aktiver Rand näher als 500 km. Suche über 512 Fibonacci-Proben (~1 000 km Abstand), Wertung ((ΔS/4)² + (ΔW/6)²), dann drei
   // Runden 3×3-Verfeinerung zu 240 · 120 · 60 km. Bricht beim Namen, wenn kein Ort trägt (K10). Memo je (Plan, Zeit, Konstanten).
@@ -2580,15 +2585,18 @@
     const tMitte = 0.5 * (kh.sommer + kh.winter);
     const wert = (x, y, z) => {
       const tZ = G.T0 + G.T2 * (1.5 * y * y - 0.5); if (tZ - tMitte > 14 || tMitte - tZ > 14) return Infinity;   // Zone zuerst (ohne Punkt)
-      const h = planetPunktR(S, x, y, z, 40, _ankP);
+      const h = planetPunktR(S, x, y, z, ANKER_FUSS_KM, _ankP);
       if (!(h > 0) || _ankP.kont < 0 || _ankP.kont > 300 || (_ankP.randArt === RAND_ART.konvergent && _ankP.randAbstandKm < 500) || _ankP.orogenAktiv) return Infinity;
       planetKlimaR(S, x, y, z, -1, _ankK, _ankP);
+      if (!(_ankK.abflussMm > 0)) return Infinity;
+      pflanzenDeckung(_ankK.tJahrC, _ankK.niederschlagMm, _ankD); if (!(_ankD.decke > 0) || !(_ankD.wald > 0)) return Infinity;
+      planetBiom(_ankK, h, _ankB); if (_ankB.hauptklasse === 4) return Infinity;
       const hk = _ankP.hoeheKm > 0 ? _ankP.hoeheKm : 0, dS = (_ankK.tSommerC + KLIMA.lapse * hk - kh.sommer) / 4, dW = (_ankK.tWinterC + KLIMA.lapse * hk - kh.winter) / 6;
       return dS * dS + dW * dW;
     };
     let best = Infinity, bx = 0, by = 0, bz = 0;
     for (let i = 0; i < N; i++) { const v = wert(F[3 * i], F[3 * i + 1], F[3 * i + 2]); if (v < best) { best = v; bx = F[3 * i]; by = F[3 * i + 1]; bz = F[3 * i + 2]; } }
-    if (best === Infinity) throw new Error('planetAnker: kein Ort trägt die heutigen Konstanten (Land, Küste ≤ 300 km, kein aktiver Rand < 500 km) (K10)');
+    if (best === Infinity) throw new Error('planetAnker: kein Ort trägt die heutigen Konstanten (Land, Küste ≤ 300 km, kein aktiver Rand < 500 km, Spende, Wuchs, kein E) (K10)');
     const tb = new Float64Array(6);
     for (let runde = 0; runde < 3; runde++) {
       tangente(bx, by, bz, tb); const sch = (240 >> runde) / R; let nx = bx, ny = by, nz = bz;
@@ -2601,7 +2609,7 @@
     }
     const bl = planetBreiteLaenge(bx, by, bz, new Float64Array(2)), breite = bl[0], laenge = bl[1];
     const sb = ksin(breite), cb = kcos(breite), sl = ksin(laenge), cl = kcos(laenge);
-    planetPunktR(S, bx, by, bz, 40, _ankP); planetKlimaR(S, bx, by, bz, -1, _ankK, _ankP);
+    planetPunktR(S, bx, by, bz, ANKER_FUSS_KM, _ankP); planetKlimaR(S, bx, by, bz, -1, _ankK, _ankP);
     const hk = _ankP.hoeheKm > 0 ? _ankP.hoeheKm : 0;
     const A = Object.freeze({ breite, laenge, zeitMa, wertung: best, auf: Object.freeze([bx, by, bz]), ost: Object.freeze([-sl, 0, cl]), nord: Object.freeze([-sb * cl, cb, -sb * sl]),
       sommerC: _ankK.tSommerC + KLIMA.lapse * hk, winterC: _ankK.tWinterC + KLIMA.lapse * hk, kuesteKm: _ankP.kont, randKm: _ankP.randAbstandKm, randArt: _ankP.randArt });
