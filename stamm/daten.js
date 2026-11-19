@@ -1743,6 +1743,8 @@ class AnazhRealm_daten {
             "speicher.weist.bau": ["{n} × Bau ohne Bauplan (sein Bauplan ist gefallen)", "{n} × structure without a blueprint (its blueprint has fallen)"],
             "speicher.weist.bauplan": ["{n} × Bauplan (unlesbar oder von widerrufener Herkunft)", "{n} × blueprint (unreadable or of revoked origin)"],
             "speicher.weist.faehigkeit": ["{n} × gewährte Fähigkeit (die Regel- oder Sende-Wand trägt sie nicht)", "{n} × granted ability (the rule or broadcast wall won't carry it)"],
+            "speicher.weist.gau": ["{n} × Gau mit Akten ohne seinen Stand (er wird Funktion seiner Epoche, seine Akte fallen)", "{n} × region with deeds but without its state (it becomes a function of its epoch, its deeds fall)"],
+            "speicher.weist.gau-alt": ["der Stand der Gaue (der Stand ist älter als die Epoche: jeder Gau rechnet als Funktion)", "the state of the regions (the save predates the epoch: every region computes as a function)"],
             "speicher.weist.halle": ["{n} × Portal-Halle (widerrufene Herkunft oder keine gültige Adresse)", "{n} × portal hall (revoked origin or no valid address)"],
             "speicher.weist.praegung": ["{n} × Prägung, die ihr Studio-Prüfer abweist", "{n} × imprint its studio check rejects"],
             "speicher.weist.programm": ["{n} × Fähigkeit (ihr Programm trägt eine Tat, die der Interpreter nicht kennt oder nie ausführt)", "{n} × ability (its program carries a deed the interpreter does not know or never runs)"],

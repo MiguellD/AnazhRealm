@@ -2431,45 +2431,578 @@ if (process.argv.includes("--bestand-welt")) {
     });
     return;
 }
-// C2a — DER GAU IM FADEN, GEMESSEN (`--gau [--jahre 10,100,1000] [--aus <datei>]`): die Bühne `gau` (dieselbe wie gate:kreatur-takt)
-// in ZWEI Booten der Seite — G1 die B4-Spur aus dem Faden · G2 die längste Arbeit des Haupt-Fadens je Ruf des Wirts · G3 der Stand
-// beider Boote Byte für Byte (ihr Hash) · G4 die Rundreise · G5 ms je Jahres-Schritt im Faden und das Aufholen eines Gaus ohne
-// Akte über n Jahre (nur im ersten Boot). Das Urteil der Zeilen bleibt beim Tor; hier stehen die Zahlen.
+// C2a — DER GAU IM FADEN, GEMESSEN (`--gau [--aus <datei>]`): die Bühne `gau` (dieselbe wie gate:kreatur-takt) in ZWEI Booten der
+// Seite — G1 die B4-Spur aus dem Faden · G2 die längste Arbeit des Haupt-Fadens je Ruf des Wirts · G3 der Stand beider Boote Byte
+// für Byte (ihr Hash) · G4 die Rundreise · G5 die Kosten im Faden. Danach (C2a3, Entscheide D3 · D4) DIE EPOCHE UND DER STAND, je
+// Zeile ihr Urteil — die Sonde `window.__ep` in der Seite, nach der Bühne; die Uhr der Epoche liest sie aus dem Kern
+// (`bestand(wirt).epoche`), nie aus einer eigenen Zahl:
+//   Ep1 die Funktion hält die Bänder von B4 (W1 · W2 · W3) bei Welt-Alter 100 und 1 000 Jahren, Saaten 1–3: je Alter die 20
+//       jungen Jahre seiner Epoche (40–60 Jahre nach ihrem Anfang), je 5 Takte gefragt wie ein Leser die Funktion fragt, am
+//       Welt-Alter und am Ende gepackt (W1 aus dem Kopf des Stands an beiden)
+//   Ep2 jeder Neustart der Funktion steht am Anfang der Epoche seines Takts, jedes Weitergehen in ihr; das längste Aufholen
+//       (2 P − 1 Takte) in Sekunden und ms je Jahres-Schritt, mit der Maschine und ihrer Kern-Bindung (taskset / affinity)
+//   Ep3 die Funktion am Takt 2 625 (100 Jahre) byte-gleich, ob zuvor bei t − 10, bei t − 1 000 oder nie gefragt (zweites Boot)
+//   Ep4 die Naht am Grenz-Takt 2 P als Zahl: die Funktion gegen den stetigen Schritt (Köpfe, Herden, Rudel), Median und Max
+//       über die Saaten; in der Epoche stetig (Takt 2 P + 1)
+//   Ep5 der Stand-Fall unberührt: der B4-Lauf und der Abdruck der Bühne (Soll eab4d269 · 54670176, gemessen am Gerät)
+//   St1 speichern → laden (die Zeile `gauStand` der Stand-Datei) = der ungespeicherte Lauf am Takt und 20 Takte später
+//   St2 die Zeit des Ladens bei Welt-Alter 100 Jahren, ohne Aufholen
+//   St3 der Halt: 4 und 12 besuchte Gaue — Läufe, Felder, gepackte Stände, der Haufen des Gau-Fadens (CDP; er wächst von 4 auf 12
+//       höchstens um die gepackten Stände und 10 MB, sonst nennt die Zeile das Netz des Gelände-Kerns als Täter, mit dem Haufen
+//       nach einem Wieder-Besuch ohne neue Fläche) — und wer wiederkehrt
+//   St4 die Größe des gepackten Stands je Gau und der Zeile mit 1 und 4 Gauen; ein alter Stand ohne Gau-Teil lädt laut
+// Die Täter (Selbsttest; je Täter ein frischer Gau-Faden aus dem Quelltext mit EINER geänderten Stelle, am kleinen Gau 12 × 12,
+// Ep1 am echten): „Epoche ohne Jäger“ · „Epoche rechnet ab Takt 0“ · „Funktion läuft über die Epochen-Grenze weiter“ · „Epoche
+// springt in jedem Takt“ · „Stand lädt und holt auf“ · „fünfter Gau bleibt im Faden“. Die Zeiten sind Richtwerte der Maschine, die
+// die Zeile nennt; das Urteil über Ep2 und St2 fällt an der langsamen Kern-Klasse des Geräts (D5).
 if (process.argv.includes("--gau")) {
     const fs = require("fs");
+    const os = require("os");
     const { statikServer, nullWelt, hauptLauf, argOpt } = require("./lib/welt-boot.cjs");
     const { KREATUR_PROBEN_SRC, urteil } = require("./lib/kreatur-proben.cjs");
-    const jahre = argOpt("--jahre", "10,100,1000").split(",").map(Number);
+    // der Abdruck der Bühne am Gerät (Zweig koordination, vision/leben/bau/c2a-gau-messung.txt): der Stand am Takt 160, ohne und mit Akt
+    const ABDRUCK = { stand: "eab4d269", akt: "54670176" };
+    const SAATEN = [1, 2, 3];
+    const rund = (x, d = 2) => (Number.isFinite(x) ? +x.toFixed(d) : x);
+    const median = (v) => v.slice().sort((a, b) => a - b)[Math.floor((v.length - 1) / 2)];
+    const mittel = (v) => v.filter(Number.isFinite).reduce((a, b) => a + b, 0) / Math.max(1, v.filter(Number.isFinite).length);
+    // DIE SONDE in der Seite (nach der Bühne): `window.__ep`
+    const EP_HELFER = () => {
+        const A = r.constructor;
+        const KG = { deer: 94.24042032034154, wolf: 64.01114942302421 };
+        const B = A._lebenKern().bestand(Object.assign({}, r._gauWirt(KG), { feld: undefined }));
+        const [P, TJ, N] = [B.epoche(0).takte, B.ZEIT.taktJeJahr, A.GAU.n];
+        const J = (j) => Math.round(j * TJ);
+        const ep = (window.__ep = { P, TJ, N, klein: 0, log: [] });
+        // der kleine Gau der Täter: `klein` Regionen je Seite statt GAU.n (dieselbe Naht, ein Sechzehntel der Rechnung)
+        const fq = r._gauFrage;
+        r._gauFrage = function (m, tr) {
+            const n = ep.klein;
+            if (n && m && m.type === "gau") Object.assign(m, { n, x0: m.gx * n - n / 2, z0: m.gz * n - n / 2 });
+            return fq.call(this, m, tr);
+        };
+        // ein Auftrag an den Gau (gx, 0) mit Saat und Masse von Lauf 4 — jeder steht im Protokoll (Ep2)
+        // `wo` — die Stelle der Sonde (der Fortschritt, den Node alle 20 s liest)
+        ep.q = async (saat, takt, opt, gx = 0, akte = []) => {
+            ep.wo = `Auftrag Gau ${gx}, Saat ${saat}, Takt ${takt}${ep.klein ? " (klein)" : ""}`;
+            const a = await r._gauAuftrag(gx, 0, takt, akte, Object.assign({ saat, kg: KG }, opt));
+            const z = a.zeit;
+            ep.log.push({ k: [gx, saat, ep.klein].join("|"), t: takt, ab: z.ab, takte: z.takte, ms: z.rechenMs, stand: z.stand });
+            return a;
+        };
+        // ein frisch geborener Faden: der alte stirbt mit seinen offenen Fragen — auch der Vorweg-Frage des Autosaves
+        // (`_standSichern` → `_gauStandHolen`, ungewartet), deren Versprechen sonst ewig in `_gauStandHolt` steht
+        ep.frisch = () => {
+            if (r._gauFadenStand) r._gauFadenStand.worker.terminate();
+            r._gauFadenStand = null;
+            r._gauStandHolt = null;
+        };
+        ep.gleich = (a, b) => !!a && !!b && a.length === b.length && a.every((v, i) => v === b[i]);
+        ep.sha = async (b) =>
+            Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", b)))
+                .map((x) => x.toString(16).padStart(2, "0"))
+                .join("")
+                .slice(0, 16);
+        // der Kopf des gepackten Stands (leben-core `gauPack`: u32 Länge, JSON ab Byte 8) — die Rudel mit ihrer Kopfzahl `nT`
+        ep.kopf = (b) => JSON.parse(new TextDecoder().decode(b.subarray(8, 8 + new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(0, true))));
+        // Ep2 — der Weg der Funktion im Protokoll: jeder Neustart (`zeit.ab`) am Anfang der Epoche seines Takts (der Kern sagt
+        // ihn), jedes Weitergehen in derselben Epoche ab dem vorigen Takt dieses Gaus; ein Stand (Akt, Lesen, gepackt) ist keine
+        ep.struktur = (log) => {
+            const [vor, fehl] = [new Map(), []];
+            let [neu, maxTakte, maxMs] = [0, 0, 0];
+            for (const e of log) {
+                if (e.stand) continue;
+                const a = B.epoche(e.t).anfang;
+                const p = vor.get(e.k);
+                if (e.ab !== null) {
+                    neu++;
+                    if (e.takte > maxTakte) [maxTakte, maxMs] = [e.takte, e.ms];
+                    if (e.ab !== a || e.takte !== e.t - a) fehl.push(`Takt ${e.t} neu ab ${e.ab} (Soll ${a}), ${e.takte} Takte`);
+                } else if (!p || p.anfang !== a || e.t < p.t || e.takte !== e.t - p.t)
+                    fehl.push(`Takt ${e.t} ging weiter (zuvor ${p ? p.t + ", Epoche ab " + p.anfang : "nie"}; Soll Epoche ab ${a})`);
+                vor.set(e.k, { t: e.t, anfang: a });
+            }
+            return { ok: !fehl.length && neu > 0, neu, n: log.length, fehl: fehl.slice(0, 3), maxTakte, maxMs };
+        };
+        // Ep4 — der Sprung: die Reviere des stetigen Schritts (Ra) gegen die der Funktion am selben Takt (Rb). Köpfe nach Kennung,
+        // die Herde = die Beute eines Reviers (ihre Kennungen), das Rudel = seine Kennungen
+        ep.naht = (Ra, Rb) => {
+            const [ia, ib, ra, rb] = [new Set(), new Set(), new Map(), new Map()];
+            let [delta, herden, herdenAnders, herdenZahl] = [0, 0, 0, 0];
+            const leg = (t, I, R) => {
+                I.add(t.id);
+                if (t.g !== "beute") (R.get(t.v) || R.set(t.v, []).get(t.v)).push(t.id);
+            };
+            for (let i = 0; i < Ra.length; i++) {
+                const [ta, tb] = [Ra[i].tiere, Rb[i].tiere];
+                delta += Math.abs(ta.length - tb.length);
+                const [ba, bb] = [ta, tb].map((T) =>
+                    T.filter((t) => t.g === "beute")
+                        .map((t) => t.id)
+                        .sort()
+                );
+                if (ba.length || bb.length) {
+                    herden++;
+                    if (ba.join() !== bb.join()) herdenAnders++;
+                    if (ba.length !== bb.length) herdenZahl++;
+                }
+                for (const t of ta) leg(t, ia, ra);
+                for (const t of tb) leg(t, ib, rb);
+            }
+            const nur = (X, Y) => [...X].filter((x) => !Y.has(x)).length;
+            const [sa, sb] = [ra, rb].map((R) => new Set([...R.values()].map((l) => l.sort().join())));
+            return { koepfe: [ia.size, ib.size], anders: nur(ia, ib) + nur(ib, ia), delta, herden, herdenAnders, herdenZahl, rudel: [sa.size, sb.size], rudelAnders: nur(sa, sb) + nur(sb, sa) };
+        };
+        // Ep1 — die Funktion in den 20 JUNGEN Jahren der Epoche, die das Welt-Alter `alter` trägt (aus dem Kern: 40 bis 60 Jahre
+        // nach ihrem Anfang, die schwächste Strecke nach dem Neustart): 100 Jahre = das Ende des Fensters (Takt 2100–2625),
+        // 1 000 Jahre = sein Anfang (Takt 26250–26775; das Welt-Alter ist die Grenze 25 P — ein Fenster davor risse sie und
+        // rechnete zwei Epochen). Je 5 Takte gefragt (der letzte Halt vor dem Ende t − 10); gepackt am Welt-Alter und am Ende:
+        // W1 aus dem Kopf des Stands an beiden (ein Rudel mit ≥ 2 Köpfen und ein Wolf, wie B4), W2 · W3 über die Proben.
+        ep.fenster = async (s, alter) => {
+            const von = B.epoche(alter).anfang + P;
+            const bis = von + J(20);
+            const takte = [];
+            for (let t = von + 5; t <= bis - 10; t += 5) takte.push(t);
+            if (alter < von + 5) takte.unshift(alter);
+            takte.push(bis);
+            let [w, d, n, lebt, stand] = [0, 0, 0, true, null];
+            let a = null;
+            for (const t of takte) {
+                const pack = t === alter || t === bis;
+                a = await ep.q(s, t, pack ? { packen: true } : undefined);
+                [w, d, n] = [w + a.jaeger, d + a.beute, n + 1];
+                if (!pack) continue;
+                lebt = lebt && a.jaeger > 0 && ep.kopf(a.stand).rudel.some((R) => R.nT >= 2);
+                if (t === alter) stand = a.stand;
+            }
+            const rudel2 = ep.kopf(a.stand).rudel.filter((R) => R.nT >= 2).length;
+            return { stand, band: { lebt, W2: d > 0 ? (1000 * w) / d : null, W3: w > 0 ? d / w : null, wolf: a.jaeger, beute: a.beute, rudel2, proben: n, von, bis } };
+        };
+        // die Seite um den Stand (St1 · St4): was Holen und Laden setzen, kehrt danach zurück
+        ep.seite = () => ({
+            halt: new Map(r._gauHalt()),
+            w: [r._gauStandHalt, r._gauStandGen, r._lebenGen, r._gauStandUebergang, r._gauStandGesetzt, r._ladeAbweisung],
+            log: Object.prototype.hasOwnProperty.call(r, "log") ? r.log : null,
+        });
+        ep.zurueck = (m) => {
+            const h = r._gauHalt();
+            h.clear();
+            for (const [k, l] of m.halt) h.set(k, l);
+            [r._gauStandHalt, r._gauStandGen, r._lebenGen, r._gauStandUebergang, r._gauStandGesetzt, r._ladeAbweisung] = m.w;
+            if (m.log) r.log = m.log;
+            else delete r.log;
+        };
+        // St1 · St2 — der Stand-Gau `sa` am Takt T: gepackt in die Zeile der Stand-Datei (`_gauStandHolen` → `_gauStandImStand`),
+        // 20 Takte ungespeichert weiter; dann geladen (`_gauStandAusStand` → `gau-staende-setzen`) und wieder gefragt
+        ep.st1 = async (sa, T) => {
+            const m = ep.seite();
+            try {
+                const P0 = (await ep.q(sa, T, { lesen: [0], packen: true })).stand;
+                r._gauStandHalt = null;
+                ep.wo = "St1: der Stand der Gaue aus dem Faden (_gauStandHolen)";
+                await r._gauStandHolen();
+                const H = r._gauStandHalt;
+                const zeile = JSON.stringify(r._gauStandImStand());
+                const P20 = (await ep.q(sa, T + 20, { lesen: [0], packen: true })).stand;
+                const t0 = performance.now();
+                ep.wo = "St1: die Stände in den Faden (_gauStandAusStand)";
+                r._gauStandAusStand(JSON.parse(zeile));
+                await r._gauStandGesetzt;
+                const L0 = await ep.q(sa, T, { lesen: [0], packen: true });
+                const ladenMs = performance.now() - t0;
+                const L20 = (await ep.q(sa, T + 20, { lesen: [0], packen: true })).stand;
+                const meins = JSON.parse(zeile).staende.find((s) => s.takt === T);
+                return {
+                    gleich0: ep.gleich(P0, L0.stand),
+                    gleich20: ep.gleich(P20, L20),
+                    takte: L0.zeit.takte,
+                    ab: L0.zeit.ab,
+                    entpackMs: L0.zeit.entpackMs,
+                    ladenMs,
+                    holMs: H.ms,
+                    staende: H.karte.size,
+                    zeichen: zeile.length,
+                    bytes: P0.length,
+                    eins: meins ? JSON.stringify({ v: 1, staende: [meins] }).length : null,
+                    ue: r._gauStandUebergang,
+                };
+            } finally {
+                ep.zurueck(m);
+            }
+        };
+        // St4 — ein alter Stand ohne Gau-Teil (`gauStand` fehlt) bei einem Gau mit Akten: er wird Funktion, laut
+        ep.alt = async () => {
+            const m = ep.seite();
+            try {
+                const h = r._gauHalt();
+                h.clear();
+                h.set("0,0", [{ takt: 1, art: "aus", id: "linse:alt" }]);
+                const [warn, log] = [[], r.log];
+                r.log = function (t, art) {
+                    if (art === "WARN") warn.push(String(t));
+                    return log.apply(this, arguments);
+                };
+                r._ladeAbweisung = new Map();
+                ep.wo = "St4: der alte Stand ohne Gau-Teil (_gauStandAusStand)";
+                r._gauStandAusStand(undefined);
+                await r._gauStandGesetzt;
+                return { ue: r._gauStandUebergang, akte: (h.get("0,0") || []).length, weist: [...r._ladeAbweisung], warn: warn.filter((w) => w.includes("Leben D4")) };
+            } finally {
+                ep.zurueck(m);
+            }
+        };
+        // JE SAAT in einem frischen Faden: die Naht am Grenz-Takt 2 P, die Fenster um 100 und um 1 000 Jahre; an Saat 1 dazu
+        // Ep3 (t − 1 000), St1 · St2 (der Stand-Gau, der die Grenze stetig überquerte) und der alte Stand (St4)
+        ep.saat = async (s) => {
+            const t0 = performance.now();
+            ep.frisch();
+            const P2 = 2 * P;
+            const alle = Array.from({ length: N * N }, (_, i) => i);
+            const f99 = await ep.q(s, P2 - 1, { packen: true });
+            const f00 = await ep.q(s, P2, { packen: true });
+            const Ra = (await ep.q(s + 1000, P2, { stand: f99.stand.slice(), lesen: alle })).reviere;
+            const Rb = (await ep.q(s + 2000, P2, { stand: f00.stand.slice(), lesen: alle })).reviere;
+            const naht = ep.naht(Ra, Rb);
+            const a1 = (await ep.q(s, P2 + 1, { packen: true })).stand;
+            const b1 = (await ep.q(s + 2000, P2 + 1, { lesen: [0], packen: true })).stand;
+            naht.innen = ep.gleich(a1, b1);
+            const aus = { saat: s, naht, aufholen: { takte: f99.zeit.takte, ms: f99.zeit.rechenMs, feldMs: f99.zeit.feldMs } };
+            const w100 = await ep.fenster(s, J(100));
+            aus.w100 = w100.band;
+            if (s === 1) {
+                await ep.q(1, J(100) - 1000);
+                const t1000 = (await ep.q(1, J(100), { packen: true })).stand;
+                aus.ep3 = { t10: await ep.sha(w100.stand), t1000: await ep.sha(t1000), gleich: ep.gleich(w100.stand, t1000), bytes: t1000.length };
+            }
+            aus.w1000 = (await ep.fenster(s, J(1000))).band;
+            if (s === 1) [aus.st1, aus.alt] = [await ep.st1(s + 1000, J(100)), await ep.alt()];
+            aus.s = (performance.now() - t0) / 1000;
+            return aus;
+        };
+        // St3 — der Halt: die Gaue (gx, 0) am Takt 1, der ungerade mit einem Akt (Stand), Gau 1 dazu am Schirm (gelesen)
+        ep.st3 = {};
+        const besuch = (gx) => ep.q(1, 1, { packen: true, lesen: gx === 1 ? [0] : undefined }, gx, gx % 2 ? [{ takt: 1, art: "aus", id: "linse:" + gx }] : []);
+        ep.besuche = async (von, bis) => {
+            if (von === 1) ep.frisch();
+            let a = null;
+            for (let gx = von; gx <= bis; gx++) {
+                a = await besuch(gx);
+                ep.st3[gx] = await ep.sha(a.stand);
+            }
+            return a.faden;
+        };
+        ep.wieder = async () => {
+            const aus = {};
+            for (const gx of [1, 3, 4]) {
+                const a = await besuch(gx);
+                aus[gx] = { ab: a.zeit.ab, neu: a.zeit.neu, takte: a.zeit.takte, entpackMs: a.zeit.entpackMs, gleich: (await ep.sha(a.stand)) === ep.st3[gx] };
+            }
+            return aus;
+        };
+        // St4 — die Zeile der Stand-Datei aus dem Faden (alle Stand-Gaue, ohne `kennt`): je Gau die Bytes, die Zeile mit 1 und 4
+        ep.datei = async () => {
+            const m = ep.seite();
+            try {
+                r._gauStandHalt = null;
+                ep.wo = "St4: die Zeile aus dem Faden (_gauStandHolen)";
+                await r._gauStandHolen();
+                const [H, v] = [r._gauStandHalt, r._gauStandImStand()];
+                const L = (k) => JSON.stringify({ v: 1, staende: v.staende.slice(0, k) }).length;
+                const bytes = (t) => (t.length / 4) * 3 - (t.endsWith("==") ? 2 : t.endsWith("=") ? 1 : 0);
+                return { n: v.staende.length, bytes: v.staende.map((s) => bytes(s.text)), ms: H.ms, eins: L(1), vier: L(4), alle: JSON.stringify(v).length };
+            } finally {
+                ep.zurueck(m);
+            }
+        };
+        // DER TÄTER: ein frischer Gau-Faden aus dem Quelltext mit EINER geänderten Stelle (der Kern als Blob in der Tafel der Quelle
+        // oder der Rumpf des Fadens selbst); die Seite rechnet weiter mit dem wahren Kern — die Uhr der Sonde bleibt die echte
+        ep.unter = async (mut, fn) => {
+            const Q = r._quelleStand();
+            await r._fadenQuelle();
+            const altUrl = Q.url;
+            if (mut) {
+                const [datei, von, zu] = mut;
+                const FQ = A.FADEN_QUELLE;
+                const u = (p) => new URL(p + "?v=" + A.VERSION, location.href).href;
+                const text = await (await fetch(u(datei))).text();
+                if (text.split(von).length !== 2) throw new Error("der Täter findet seine Stelle in " + datei + " nicht: " + von);
+                const neu = text.replace(von, () => zu);
+                const blob = URL.createObjectURL(new Blob([neu], { type: "text/javascript" }));
+                const adr = (p) => (p === datei ? blob : u(p));
+                const tafel = { kerne: FQ.kerne.map(adr), spaet: Object.fromEntries(Object.entries(FQ.spaet).map(([k, p]) => [k, adr(p)])) };
+                const rumpf = datei === FQ.faden ? neu : await (await fetch(u(FQ.faden))).text();
+                Q.url = URL.createObjectURL(new Blob(["self.__anazhQuelle = " + JSON.stringify(tafel) + ";", rumpf], { type: "text/javascript" }));
+            }
+            ep.frisch();
+            const n0 = ep.log.length;
+            try {
+                return await fn(() => ep.log.slice(n0));
+            } finally {
+                Q.url = altUrl;
+                ep.frisch();
+            }
+        };
+        ep.selbst = async (normal1) => {
+            const P2 = 2 * P;
+            const klein = async (fn) => {
+                ep.klein = 12;
+                try {
+                    return await fn();
+                } finally {
+                    ep.klein = 0;
+                }
+            };
+            const W1 = async () => {
+                const a = await ep.q(1, J(100), { packen: true });
+                const rudel2 = ep.kopf(a.stand).rudel.filter((R) => R.nT >= 2).length;
+                return { ok: rudel2 >= 1 && a.jaeger > 0, ist: `W1 am Takt ${J(100)}: Wolf ${a.jaeger} in ${rudel2} Rudeln mit ≥ 2 Köpfen` };
+            };
+            const F = [
+                ["Ep1", "Epoche ohne Jäger", ["leben-core.js", "Object.assign({}, opt, { takt: E.anfang })", "Object.assign({}, opt, { takt: E.anfang, jaeger: false })"], W1, true],
+                [
+                    "Ep2",
+                    "Epoche rechnet ab Takt 0",
+                    ["leben-core.js", "const k = Math.max(0, Math.floor(takt / EPOCHE_TAKTE) - 1);", "const k = 0;"],
+                    async (log) => {
+                        await ep.q(1, P2);
+                        const s = ep.struktur(log());
+                        return { ok: s.ok, ist: s.ok ? `${s.neu} Neustart am Takt ${P2}, ab dem Anfang der Epoche` : s.fehl.join(" · ") };
+                    },
+                ],
+                [
+                    "Ep3",
+                    "Funktion läuft über die Epochen-Grenze weiter",
+                    ["voxel-worker.js", 'const weiter = folgt && (e.stand || (e.ursprung.art === "epoche" && e.ursprung.anfang === E.anfang));', "const weiter = folgt;"],
+                    async () => {
+                        const nie = (await ep.q(1, J(100), { packen: true })).stand;
+                        await ep.q(1, J(100) - 1000);
+                        const t1000 = (await ep.q(1, J(100), { packen: true })).stand;
+                        return { ok: ep.gleich(nie, t1000), ist: `am Takt ${J(100)} nach t − 1 000 ${await ep.sha(t1000)} · nie gefragt ${await ep.sha(nie)}` };
+                    },
+                ],
+                [
+                    "Ep4",
+                    "Epoche springt in jedem Takt",
+                    ["leben-core.js", "return { k, anfang: k * EPOCHE_TAKTE, takte: EPOCHE_TAKTE };", "return { k: takt, anfang: Math.max(0, takt - EPOCHE_TAKTE), takte: EPOCHE_TAKTE };"],
+                    async () => {
+                        const f = (await ep.q(1, P2, { packen: true })).stand;
+                        await ep.q(2001, P2, { stand: f.slice(), lesen: [0] });
+                        const a = (await ep.q(1, P2 + 1, { packen: true })).stand;
+                        const b = (await ep.q(2001, P2 + 1, { lesen: [0], packen: true })).stand;
+                        return { ok: ep.gleich(a, b), ist: `am Takt ${P2 + 1} Funktion ${await ep.sha(a)} · stetig ${await ep.sha(b)}` };
+                    },
+                ],
+                [
+                    "St1",
+                    "Stand lädt und holt auf",
+                    ["voxel-worker.js", "gauGepackt.set(s.key, { gx: s.gx, gz: s.gz, takt: s.takt, bytes: b, akte: null });", "void b;"],
+                    async () => {
+                        const f = (await ep.q(1, P2 - 1, { packen: true })).stand;
+                        await ep.q(1001, P2, { stand: f, lesen: [0] });
+                        const s = await ep.st1(1001, P2 + 10);
+                        return { ok: s.gleich0 && s.gleich20 && s.takte === 0, ist: `geladen = ungespeichert ${s.gleich0} · 20 Takte später ${s.gleich20} · aufgeholt ${s.takte} Takte` };
+                    },
+                ],
+                [
+                    "St3",
+                    "fünfter Gau bleibt im Faden",
+                    ["voxel-worker.js", "const GAU_HALT = 4;", "const GAU_HALT = 99;"],
+                    async () => {
+                        let a = null;
+                        for (let gx = 1; gx <= 6; gx++) a = await ep.q(1, 1, {}, gx);
+                        return { ok: a.faden.gaue <= 4 && a.faden.felder <= 4, ist: `nach 6 Gauen ${a.faden.gaue} Läufe · ${a.faden.felder} Felder im Faden` };
+                    },
+                ],
+            ];
+            const aus = [];
+            for (const [zeile, name, mut, pruef, gross] of F) {
+                const lauf = (m) => ep.unter(m, (log) => (gross ? pruef(log) : klein(() => pruef(log))));
+                aus.push({ zeile, name, normal: gross ? normal1 : await lauf(null), taeter: await lauf(mut) });
+            }
+            return aus;
+        };
+    };
+    // der Haufen des Gau-Fadens (St3), aus Node über CDP am Faden „gau“: erst die Müllabfuhr, dann die belegte Größe — und die
+    // Knoten des Netzes, das der Gelände-Kern je Welt merkt (gelaende-core `netzZaehler`, im Faden an seinem `state`): der Täter
+    // beim Namen, wenn der Haufen mit der FLÄCHE wächst statt mit dem Halt
+    const fadenHeap = async (page) => {
+        for (const w of page.workers()) {
+            const c = w.client;
+            if ((await c.send("Runtime.evaluate", { expression: "self.name", returnByValue: true })).result.value !== "gau") continue;
+            await c.send("HeapProfiler.collectGarbage");
+            const u = await c.send("Runtime.getHeapUsage");
+            const n = await c.send("Runtime.evaluate", { expression: "G.netzZaehler(state).knoten.reduce((a, b) => a + b, 0)", returnByValue: true });
+            if (n.exceptionDetails) throw new Error("St3: der Zähler des Gelände-Netzes im Gau-Faden warf — " + n.exceptionDetails.text);
+            return { mb: rund(u.usedSize / 1e6, 1), knoten: n.result.value };
+        }
+        throw new Error("St3: kein Faden „gau“ unter den Fäden der Seite");
+    };
+    const cpu = os.cpus();
+    const bindung = fs.existsSync("/proc/self/status")
+        ? (fs.readFileSync("/proc/self/status", "utf8").match(/Cpus_allowed_list:\s*(\S+)/) || [])[1]
+        : "laut Aufruf (kein /proc)";
+    const maschine = `${cpu[0].model.trim()} · ${cpu.length} logische Kerne · Prozess gebunden an ${bindung} · ${os.platform()}`;
     hauptLauf(async () => {
-        const boot = async (gau) => {
+        const uhr = Date.now();
+        const zeit = {};
+        const seit = (t) => rund((Date.now() - t) / 1000, 1);
+        // DER FORTSCHRITT (stderr, alle 20 s): die Stelle in Node und die der Sonde in der Seite (`ep.wo`) — ein Hänger nennt sich
+        let stelle = "Boot";
+        const boot = async (rolle) => {
             const server = statikServer();
             const port = Number(process.env.KREATUR_TAKT_PORT || 4478);
             const { browser, page } = await nullWelt(server, { port, frist: 3600000 }, 120000, "index.html", "networkidle0");
             page.setDefaultTimeout(3500000);
+            const ticker = setInterval(
+                () =>
+                    page.evaluate(() => window.__ep && window.__ep.wo).then(
+                        (w) => console.error(`· ${seit(uhr)} s — ${stelle}${w ? " · " + w : ""}`),
+                        (e) => console.error(`· ${seit(uhr)} s — ${stelle} · die Seite antwortet nicht: ${e.message}`)
+                    ),
+                20000
+            );
             try {
                 await page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady));
                 await page.evaluate(() => window.__weltStehtNach(() => r._gameLoopTick(performance.now())));
-                const aus = await page.evaluate((src, o) => (0, eval)("(" + src + ")")(r, window.THREE, o), KREATUR_PROBEN_SRC, { proben: ["gau"], gau });
-                return aus.gau;
+                stelle = "die Bühne gau";
+                const aus = await page.evaluate((src, o) => (0, eval)("(" + src + ")")(r, window.THREE, o), KREATUR_PROBEN_SRC, { proben: ["gau"], gau: {} });
+                await page.evaluate(EP_HELFER);
+                return Object.assign({ gau: aus.gau }, await rolle(page));
             } finally {
+                clearInterval(ticker);
                 await browser.close();
                 server.close();
             }
         };
-        const [A, B] = [await boot({ jahre }), await boot({})];
-        const [uA, uB] = [urteil("gau", A), urteil("gau", B)];
-        const boote = A.g3.hash === B.g3.hash && A.g3.hashAkt === B.g3.hashAkt;
+        const A = await boot(async (page) => {
+            zeit.boot1 = seit(uhr);
+            const t1 = Date.now();
+            const PT = await page.evaluate(() => ({ P: window.__ep.P, TJ: window.__ep.TJ }));
+            const E = [];
+            for (const s of SAATEN) {
+                stelle = "Saat " + s;
+                E.push(await page.evaluate((s) => window.__ep.saat(s), s));
+            }
+            const struktur = await page.evaluate(() => window.__ep.struktur(window.__ep.log));
+            zeit.saaten = seit(t1);
+            const t2 = Date.now();
+            stelle = "St3 vier Gaue";
+            const st3 = { v4: await page.evaluate(() => window.__ep.besuche(1, 4)) };
+            stelle = "St3 der Haufen nach 4 (CDP)";
+            st3.h4 = await fadenHeap(page);
+            stelle = "St3 zwölf Gaue";
+            st3.v12 = await page.evaluate(() => window.__ep.besuche(5, 12));
+            stelle = "St3 der Haufen nach 12 (CDP)";
+            st3.h12 = await fadenHeap(page);
+            stelle = "St4 die Zeile";
+            st3.datei = await page.evaluate(() => window.__ep.datei());
+            stelle = "St3 wieder";
+            st3.wieder = await page.evaluate(() => window.__ep.wieder());
+            stelle = "St3 der Haufen nach dem Wieder-Besuch (CDP)";
+            st3.h12w = await fadenHeap(page);
+            zeit.st3 = seit(t2);
+            const t3 = Date.now();
+            const w = E[0].w100;
+            const normal1 = { ok: w.lebt, ist: `W1 am Takt 2625: Wolf ${w.wolf} in ${w.rudel2} Rudeln mit ≥ 2 Köpfen` };
+            stelle = "die Täter";
+            const selbst = await page.evaluate((n) => window.__ep.selbst(n), normal1);
+            zeit.taeter = seit(t3);
+            return { PT, E, struktur, st3, selbst };
+        });
+        stelle = "Boot 2";
+        const t4 = Date.now();
+        const B = await boot(async (page) => ({
+            nie: await page.evaluate(async () => {
+                const ep = window.__ep;
+                ep.frisch();
+                const a = await ep.q(1, Math.round(100 * ep.TJ), { packen: true });
+                return { sha: await ep.sha(a.stand), takte: a.zeit.takte, ab: a.zeit.ab, bytes: a.stand.length };
+            }),
+        }));
+        zeit.boot2 = seit(t4);
+        zeit.gesamt = seit(uhr);
+        const [GA, GB] = [A.gau, B.gau];
+        const [uA, uB] = [urteil("gau", GA), urteil("gau", GB)];
+        const boote = GA.g3.hash === GB.g3.hash && GA.g3.hashAkt === GB.g3.hashAkt;
         const farbe = (ok) => (ok ? "GRÜN" : "ROT");
+        const { P, TJ } = A.PT;
+        const E = A.E;
+        const S1 = E[0];
+        // Ep1 — die Bänder von B4 (Mittel über die Saaten, wie `--bestand-welt`)
+        const band = (k) => {
+            const L = E.map((e) => e[k]);
+            const [lebt, W2, W3] = [L.filter((b) => b.lebt).length, mittel(L.map((b) => b.W2)), mittel(L.map((b) => b.W3))];
+            const ok = lebt === L.length && W2 >= 2 && W2 <= 8 && W3 >= 180 && W3 <= 390;
+            const je = (f, d) => L.map((b) => rund(b[f], d)).join(" ");
+            return { ok, text: `W1 ${lebt} von ${L.length} (Wolf am Ende ${je("wolf", 0)}) · W2 ${rund(W2)} (${je("W2", 2)}) · W3 ${rund(W3, 1)} (${je("W3", 1)})` };
+        };
+        const [b100, b1000] = [band("w100"), band("w1000")];
+        // Ep2 — das längste Aufholen je Saat (2 P − 1 Takte ab Takt 0) und die Struktur aller Neustarts
+        const S = A.struktur;
+        const aufS = E.map((e) => e.aufholen.ms / 1000);
+        const okEp2 = S.ok && S.maxTakte === 2 * P - 1 && Math.max(...aufS) <= 4;
+        // Ep3 — dieselbe Funktion am Takt 100 Jahre: t − 10 und t − 1 000 im ersten Boot, nie gefragt im zweiten
+        const e3 = S1.ep3;
+        const okEp3 = e3.gleich && e3.t10 === e3.t1000 && e3.t1000 === B.nie.sha;
+        // Ep4 — die Naht, Median · Max über die Saaten
+        const mm = (f) => {
+            const v = E.map((e) => f(e.naht));
+            return `${median(v)} · ${Math.max(...v)}`;
+        };
+        const okEp4 = E.length >= 3 && E.every((e) => e.naht.innen && e.naht.anders > 0);
+        // Ep5 — der B4-Lauf (GAU_B4) und der Abdruck der Bühne
+        const b4 = (z) => z.wolf.join(" ") === GAU_B4.wolf.join(" ") && z.reh.join(" ") === GAU_B4.reh.join(" ") && ["land", "zellen", "kSumme"].every((f) => z.feld[f] === GAU_B4.feld[f]);
+        const okEp5 = b4(GA) && b4(GB) && GA.g3.hash === ABDRUCK.stand && GB.g3.hash === ABDRUCK.stand && GA.g3.hashAkt === ABDRUCK.akt;
+        // St1 · St2
+        const s1 = S1.st1;
+        const okSt1 = s1.gleich0 && s1.gleich20 && s1.takte === 0 && s1.ab === null;
+        const okSt2 = s1.takte === 0 && s1.ladenMs <= 500;
+        // St3
+        const T3 = A.st3;
+        const W = T3.wieder;
+        const haltSt3 =
+            T3.v4.gaue === 4 && T3.v4.felder === 4 && T3.v4.gepackt === 0 && T3.v12.gaue === 4 && T3.v12.felder === 4 && T3.v12.gepackt === 4 &&
+            W[1].ab === null && !W[1].neu && W[3].ab === null && W[3].neu && W[3].gleich && W[4].ab === 0 && W[4].gleich;
+        // der Haufen hält mit dem Halt: von 4 auf 12 Gaue wächst er höchstens um die gepackten Stände und 10 MB Spiel
+        const [h4, h12, h12w] = [T3.h4, T3.h12, T3.h12w];
+        const haufenSt3 = h12.mb - h4.mb <= T3.v12.gepacktBytes / 1e6 + 10;
+        const okSt3 = haltSt3 && haufenSt3;
+        const taeterSt3 = haufenSt3
+            ? ""
+            : ` — der Haufen wächst mit der FLÄCHE, nicht mit dem Halt: Täter das Netz des Gelände-Kerns (gelaende-core \`netzZaehler\`, Knoten ${h4.knoten} → ${h12.knoten}, gemerkt je Welt ohne Grenze), der Wieder-Besuch ohne neue Fläche ${rund(h12w.mb - h12.mb, 1)} MB`;
+        // St4
+        const D = T3.datei;
+        const MB = (b) => rund(b / 1e6, 2);
+        const groessen = [s1.bytes, ...D.bytes];
+        const alt = S1.alt;
+        const weist = Object.fromEntries(alt.weist);
+        const okSt4 = !!alt.ue && /älter als die Epoche/.test(alt.ue.grund || "") && alt.ue.fallen.length === 1 && alt.akte === 0 && alt.warn.length === 1 && weist["speicher.weist.gau"] === 1 && weist["speicher.weist.gau-alt"] === 1;
         const text = [
             `C2a — der Gau im Faden · Gau (0, 0) der Heimat, 48 × 48 Regionen · zwei Boote`,
-            `${farbe(uA.ok && uB.ok)} G1 der B4-Lauf aus dem Faden: Wolf je 4 Jahre ${A.wolf.join(" ")} · Beute ${A.reh.join(" ")} · Land ${A.feld.land} · Zellen ${A.feld.zellen} · Σ K ${A.feld.kSumme}${uA.ok ? "" : " — " + uA.grund}`,
-            `${farbe(Math.max(A.haupt.maxMs, B.haupt.maxMs) <= 1)} G2 Haupt-Faden je Ruf des Wirts: längste Arbeit ${A.haupt.maxMs} ms (${A.haupt.wo}, ${A.haupt.rufe} Rufe) · zweites Boot ${B.haupt.maxMs} ms (${B.haupt.wo}, ${B.haupt.rufe} Rufe) — Soll ≤ 1 ms; die Geburt des Wirts (Masse des Gusses) ${A.spiel.wirtMs} · ${B.spiel.wirtMs} ms`,
-            `${farbe(boote && A.g3.gleich && A.g3.akt && B.g3.gleich && B.g3.akt)} G3 Determinismus: Boot 1 ${A.g3.hash} · Boot 2 ${B.g3.hash} (ohne Akt) · mit EINEM Akt „aus“ am Takt 100 ${A.g3.hashAkt} · ${B.g3.hashAkt} · je Boot zwei Fäden gleich ${A.g3.gleich} · ${B.g3.gleich} · ${A.g3.bytes} Bytes am Takt 160`,
-            `${farbe(A.g4.gleich && B.g4.gleich)} G4 Stand-Rundreise: heraus am Takt 100 (${A.g4.bytes} Bytes), herein, ${A.g4.takte} Takte weiter = geradeaus ${A.g4.gleich} · ${B.g4.gleich} · am Stand der Seite (die Akte im Leben des Stands, ${A.stand.zeichen} Zeichen je Akt-Reihe): speichern, laden, ab der Saat weiter = geradeaus ${A.stand.gleich} · ${B.stand.gleich}`,
-            `G5 Kosten im Faden: Feld des Gaus ${A.zeit.feldS} s (davon ${A.zeit.kacheln} Hydro-Kacheln ${A.zeit.hydroS} s) · zweites Boot ${B.zeit.feldS} s · ${A.zeit.msJeJahr} · ${B.zeit.msJeJahr} ms je Jahres-Schritt über die ersten 36 Jahre`,
-            ...(A.aufholen || []).map((h) => `   Aufholen ohne Akte ${h.jahre} Jahre (${h.takte} Takte): ${h.s} s = ${h.msJeJahr} ms je Jahres-Schritt · am Ende Beute ${h.beute} · Wolf ${h.jaeger}${h.jahre === 100 && h.s > 2 ? " — FUND: über 2 s" : ""}`),
-            `Der Weg des Spiels (Masse des Gusses ${A.spiel.kg.join(" · ")} kg, Saat des Gaus ${A.spiel.saat}): am Takt 1 Beute ${A.spiel.beute} · Wolf ${A.spiel.jaeger}`,
-            `Die Lese-Naht am Takt 100, mittlere Zeile: ${A.lesen.reviere} Reviere · Beute ${A.lesen.beute} · Wolf ${A.lesen.jaeger} · abgeäste Zellen ${A.lesen.abgeaest}`,
+            `${farbe(uA.ok && uB.ok)} G1 der B4-Lauf aus dem Faden: Wolf je 4 Jahre ${GA.wolf.join(" ")} · Beute ${GA.reh.join(" ")} · Land ${GA.feld.land} · Zellen ${GA.feld.zellen} · Σ K ${GA.feld.kSumme}${uA.ok ? "" : " — " + uA.grund}`,
+            `${farbe(Math.max(GA.haupt.maxMs, GB.haupt.maxMs) <= 1)} G2 Haupt-Faden je Ruf des Wirts: längste Arbeit ${GA.haupt.maxMs} ms (${GA.haupt.wo}, ${GA.haupt.rufe} Rufe) · zweites Boot ${GB.haupt.maxMs} ms (${GB.haupt.wo}, ${GB.haupt.rufe} Rufe) — Soll ≤ 1 ms; die Geburt des Wirts (Masse des Gusses) ${GA.spiel.wirtMs} · ${GB.spiel.wirtMs} ms`,
+            `${farbe(boote && GA.g3.gleich && GA.g3.akt && GB.g3.gleich && GB.g3.akt)} G3 Determinismus: Boot 1 ${GA.g3.hash} · Boot 2 ${GB.g3.hash} (ohne Akt) · mit EINEM Akt „aus“ am Takt 100 ${GA.g3.hashAkt} · ${GB.g3.hashAkt} · je Boot zwei Fäden gleich ${GA.g3.gleich} · ${GB.g3.gleich} · ${GA.g3.bytes} Bytes am Takt 160`,
+            `${farbe(GA.g4.gleich && GB.g4.gleich)} G4 Stand-Rundreise: heraus am Takt 100 (${GA.g4.bytes} Bytes), herein, ${GA.g4.takte} Takte weiter = geradeaus ${GA.g4.gleich} · ${GB.g4.gleich} · am Stand der Seite (die Akte im Leben des Stands, ${GA.stand.zeichen} Zeichen je Akt-Reihe): speichern, laden, ab der Saat weiter = geradeaus ${GA.stand.gleich} · ${GB.stand.gleich}`,
+            `G5 Kosten im Faden: Feld des Gaus ${GA.zeit.feldS} s (davon ${GA.zeit.kacheln} Hydro-Kacheln ${GA.zeit.hydroS} s) · zweites Boot ${GB.zeit.feldS} s · ${GA.zeit.msJeJahr} · ${GB.zeit.msJeJahr} ms je Jahres-Schritt über die ersten 36 Jahre`,
+            `Der Weg des Spiels (Masse des Gusses ${GA.spiel.kg.join(" · ")} kg, Saat des Gaus ${GA.spiel.saat}): am Takt 1 Beute ${GA.spiel.beute} · Wolf ${GA.spiel.jaeger}`,
+            `Die Lese-Naht am Takt 100, mittlere Zeile: ${GA.lesen.reviere} Reviere · Beute ${GA.lesen.beute} · Wolf ${GA.lesen.jaeger} · abgeäste Zellen ${GA.lesen.abgeaest}`,
+            ``,
+            `C2a3 — die EPOCHE (P = ${P} Takte = ${rund(P / TJ, 1)} Jahre, aus dem Kern) und der STAND · Saaten ${SAATEN.join(" ")} · Maschine: ${maschine}`,
+            `${farbe(b100.ok && b1000.ok)} Ep1 Gleichgewicht der Funktion (je Welt-Alter die 20 jungen Jahre seiner Epoche, 40–60 Jahre nach ihrem Anfang: Takt ${S1.w100.von}–${S1.w100.bis} · ${S1.w1000.von}–${S1.w1000.bis}, je 5 Takte, ${S1.w100.proben} · ${S1.w1000.proben} Proben, W1 am Welt-Alter und am Ende): 100 Jahre ${b100.text} | 1 000 Jahre ${b1000.text} — Soll W1 alle · W2 2–8 · W3 180–390 (die Bänder von B4)`,
+            `${farbe(okEp2)} Ep2 Aufholen der Funktion: ${S.neu} Neustarts in ${S.n} Aufträgen, jeder am Anfang seiner Epoche ${S.ok}${S.fehl.length ? " (" + S.fehl.join(" · ") + ")" : ""} · das längste ${S.maxTakte} Takte = ${rund(S.maxTakte / TJ, 1)} Jahre: je Saat ${aufS.map((x) => rund(x)).join(" · ")} s = ${E.map((e) => rund((e.aufholen.ms / e.aufholen.takte) * TJ, 1)).join(" · ")} ms je Jahres-Schritt — Soll ≤ 4 s (Urteil an der langsamen Kern-Klasse des Geräts); Richtwert dieser Maschine`,
+            `${farbe(okEp3)} Ep3 dieselbe Funktion am Takt ${Math.round(100 * TJ)} (100 Jahre, Saat 1): zuvor bei t − 10 ${e3.t10} · bei t − 1 000 ${e3.t1000} · nie gefragt (zweiter Prozess, ${B.nie.takte} Takte ab ${B.nie.ab}) ${B.nie.sha} — byte-gleich im ersten Boot ${e3.gleich}, ${e3.bytes} Bytes`,
+            `${farbe(okEp4)} Ep4 die Naht am Grenz-Takt ${2 * P} (die Funktion gegen den stetigen Schritt, Median · Max über ${E.length} Saaten): Köpfe anders (Kennung) ${mm((n) => n.anders)} von ${mm((n) => n.koepfe[0])} · Köpfe je Revier Σ|Δ| ${mm((n) => n.delta)} · Herden anders ${mm((n) => n.herdenAnders)} von ${mm((n) => n.herden)} (Kopfzahl anders ${mm((n) => n.herdenZahl)}) · Rudel anders ${mm((n) => n.rudelAnders)} von ${mm((n) => n.rudel[0])} → ${mm((n) => n.rudel[1])} · in der Epoche stetig (Takt ${2 * P + 1}) ${E.map((e) => e.naht.innen).join(" · ")}`,
+            `${farbe(okEp5)} Ep5 der Stand-Fall unberührt: B4-Lauf gleich ${b4(GA)} · ${b4(GB)} (Wolf ${GA.wolf.join(" ")}, Σ K ${GA.feld.kSumme}) · Abdruck am Takt 160 ${GA.g3.hash} · ${GB.g3.hash} (Soll ${ABDRUCK.stand}, gemessen am Gerät) · mit Akt ${GA.g3.hashAkt} (Soll ${ABDRUCK.akt})`,
+            `${farbe(okSt1)} St1 speichern → laden: der Stand-Gau (Saat 1, über den Grenz-Takt ${2 * P} stetig) am Takt ${Math.round(100 * TJ)} in der Zeile gauStand (${s1.staende} Stand-Gaue), geladen = ungespeichert ${s1.gleich0} · 20 Takte später ${s1.gleich20} · nach dem Laden ${s1.takte} Takte aufgeholt`,
+            `${farbe(okSt2)} St2 Laden bei Welt-Alter 100 Jahren: ${rund(s1.ladenMs, 1)} ms (die Zeile lesen, ${s1.staende} Stände in den Faden, der Gau entpackt ${rund(s1.entpackMs, 1)} ms) · ${s1.takte} Takte aufgeholt — Soll ≤ 500 ms ohne Aufholen; Richtwert dieser Maschine · das Holen aus dem Faden ${rund(s1.holMs, 1)} ms`,
+            `${farbe(okSt3)} St3 der Halt des Gau-Fadens: nach 4 Gauen ${T3.v4.gaue} Läufe · ${T3.v4.felder} Felder · ${T3.v4.gepackt} gepackt · Haufen ${h4.mb} MB | nach 12 Gauen ${T3.v12.gaue} Läufe · ${T3.v12.felder} Felder · ${T3.v12.gepackt} gepackte Stände ${MB(T3.v12.gepacktBytes)} MB · Haufen ${h12.mb} MB (Soll ≤ ${rund(h4.mb + T3.v12.gepacktBytes / 1e6 + 10, 1)}) · nach dem Wieder-Besuch ${h12w.mb} MB | wieder: Gau 1 (am Schirm) im Faden ${W[1].ab === null && !W[1].neu} · Gau 3 (verdrängt, mit Akt) aus dem gepackten Stand ${W[3].ab === null} (entpackt ${rund(W[3].entpackMs, 1)} ms, gleich ${W[3].gleich}) · Gau 4 (verdrängt, Funktion) vergessen, neu ab Takt ${W[4].ab} (gleich ${W[4].gleich}) · Halt ${haltSt3 ? "hält" : "REISST"}${taeterSt3}`,
+            `${farbe(okSt4)} St4 Größe: der gepackte Stand je Gau ${MB(Math.min(...groessen))}–${MB(Math.max(...groessen))} MB (100 Jahre ${MB(s1.bytes)} MB, Takt 1 ${D.bytes.map(MB).join(" ")} MB) · die Zeile gauStand mit 1 Gau ${MB(s1.eins)} MB (100 Jahre) · mit 1 · 4 · ${D.n} Gauen ${MB(D.eins)} · ${MB(D.vier)} · ${MB(D.alle)} MB (Takt 1) · ein alter Stand ohne Gau-Teil: ${alt.ue ? alt.ue.fallen.length : 0} Gau mit Akten wird Funktion („${alt.ue && alt.ue.grund}“), Akte danach ${alt.akte} · WARN ${alt.warn.length} · Wände ${JSON.stringify(weist)}`,
+            ...A.selbst.map((f) =>
+                f.normal.ok && !f.taeter.ok
+                    ? `✅ Selbsttest ${f.zeile} Täter „${f.name}“: wahr ${f.normal.ist} · Täter ${f.taeter.ist} → ROT beim Namen`
+                    : `❌ SELBST-TEST ROT — ${f.zeile} Täter „${f.name}“ fällt nicht: wahr ${f.normal.ok} (${f.normal.ist}) · Täter ${f.taeter.ok} (${f.taeter.ist})`
+            ),
+            `${farbe(zeit.gesamt <= 180)} Laufzeit des Blocks ${zeit.gesamt} s (Boot 1 mit Bühne ${zeit.boot1} s · Saaten ${zeit.saaten} s [${E.map((e) => rund(e.s, 1)).join(" · ")}] · St3 ${zeit.st3} s · Täter ${zeit.taeter} s · Boot 2 ${zeit.boot2} s) — Soll ≤ 180 s`,
         ].join("\n");
         console.log(text);
         const aus = argOpt("--aus", "");

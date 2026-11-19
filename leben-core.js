@@ -48,6 +48,9 @@
 //       akt(g, { takt, art: "aus" | "ein", id, … }) → wirkte · feldTakt(feld, O, Kap) · feldAesen(feld, O, frass)
 //       koepfe(z, i) → { beute, jaeger, rudel } · tiereIn(z, i) → [{ id, g, v, m, w, alterS, kg, M, r, a, e }] · frassAm(g, i, c)
 //       gauPack(g) → Uint8Array · gauEntpack(bytes, feld) → g      der Gau als reines Datum (Stand, Mitspieler)
+//     additiv (C2a3, die EPOCHE — Entscheid D3; P = 40 Jahre, gelesen NUR über `epoche(takt).takte`):
+//       anfang({ …, takt? }) · gauAnfang(feld, saat, { takt? }) — der volle Anfang an einem Takt ≥ 0 (Standard 0, byte-gleich)
+//       epoche(takt) → { k, anfang, takte } · gauEpoche(feld, saat, takt, opt?) → g am Anfang seiner Epoche (g.epoche = { k, anfang })
 //   selbsttest()                           → { steigung, steigungAus, masseMonoton, reifeTreffer, lebenWolf }
 //       steigung     Regression Kind auf Eltern-Mittel (Phänotyp lnM) über 10⁵ Paare, Soll h2 0,46 ± 0,02
 //       steigungAus  dieselbe Regression mit `gruender` statt `kind` (die Mutante), Soll 0 ± 0,02
@@ -343,6 +346,11 @@
             return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
     }
+
+    // DIE EPOCHE DES GAUS (C2a3, Entscheid D3 des Koordinators, 19.11.): P = 40 Jahre der EINEN Uhr — die Länge, nach der ein Gau
+    // ohne Geschichte neu aus dem vollen Anfang rechnet (`epoche`, `gauEpoche` im Bestand). Gesetzt, nicht gemessen; reißt das
+    // Gleichgewicht am Epochen-Ende (Ep1), ist P zu kurz — das ist dann der Befund.
+    const EPOCHE = Object.freeze({ jahre: 40 });
 
     // bestand(wirt, gesetz = ZEIT_JAGD) → { ZEIT, RAUM, FENSTER, anfang(opt, welt), schritt(z, saat, takt, welt), klon(z), verwundbar, bedarfVon }
     //   anfang({ W, H, saat, jaeger?, nutz? }, welt) → Zustand am Takt 0 · schritt verbraucht den Zustand und liefert ihn am
@@ -707,15 +715,19 @@
             }
         }
 
+        // `opt.takt` (C2a3 EPOCHE, D3): der Takt, an dem der Anfang steht (Standard 0) — die Kennungen der Gründer tragen ihn als
+        // Geburts-Takt, der erste Wurf jedes Rudels liegt im Jahr danach. Am Takt 0 Byte für Byte der Anfang von zuvor.
         function anfang(opt, welt) {
             const { W, H, saat } = opt;
+            const t0 = opt.takt == null ? 0 : opt.takt;
             if (!(Number.isInteger(W) && W > 0 && Number.isInteger(H) && H > 0)) throw new Error("leben-core bestand: anfang ohne Raster W × H");
+            if (!(Number.isInteger(t0) && t0 >= 0)) throw new Error("leben-core bestand: anfang am Takt " + t0 + " (ganz, ≥ 0)");
             if (!welt || typeof welt.land !== "function" || typeof welt.futter !== "function") throw new Error("leben-core bestand: der Welt-Leser trägt land(i) und futter(i)");
             const n = W * H;
             const z = {
                 W,
                 H,
-                takt: 0,
+                takt: t0,
                 param: {
                     jaeger: opt.jaeger !== false,
                     nutz: opt.nutz == null ? WOLF.nutz : opt.nutz,
@@ -734,7 +746,7 @@
                 const rng = strom(saat, -1, 0, i);
                 const list = [];
                 const kopf = welt.land(i) ? VERBAND.beute[0] + Math.floor(rng() * (VERBAND.beute[1] - VERBAND.beute[0] + 1)) : 0;
-                for (let j = 0; j < kopf; j++) list.push(gruenderTier("beute", indId(String(i), 0, j), rng));
+                for (let j = 0; j < kopf; j++) list.push(gruenderTier("beute", indId(String(i), t0 * TAKT_S, j), rng));
                 z.beute.push(list);
             }
             if (z.param.jaeger) {
@@ -748,10 +760,10 @@
                     if (z.besitz[von] >= 0) continue;
                     const terr = rudelRevier(z, von);
                     if (!terr) break;
-                    const R = rudelNeu(z, terr, terr[0], rng() * TJ); // der Wurf-Tag des Rudels: gleichverteilt im ersten Jahr
+                    const R = rudelNeu(z, terr, terr[0], t0 + rng() * TJ); // der Wurf-Tag des Rudels: gleichverteilt im ersten Jahr
                     z.frei -= terr.length;
                     const kopf = VERBAND.jaeger[0] + Math.floor(rng() * (VERBAND.jaeger[1] - VERBAND.jaeger[0] + 1));
-                    for (let j = 0; j < kopf; j++) R.tiere.push(gruenderTier("jaeger", indId("r" + R.id, 0, j), rng));
+                    for (let j = 0; j < kopf; j++) R.tiere.push(gruenderTier("jaeger", indId("r" + R.id, t0 * TAKT_S, j), rng));
                 }
                 // Satz 7b: auch die Köpfe des Anfangs tragen ein Abwander-Alter (eigener Strom 5)
                 for (const R of z.rudel) {
@@ -1274,10 +1286,35 @@
             g.leser = { land: (i) => F.C[i] > 0, futter: (i) => g.Kap[i] };
             return g;
         }
-        // der Gau am Takt 0: der volle Gründer-Bestand (anfang), die Fraß-Schicht leer
+        // der Gau am Takt `opt.takt` (Standard 0): der volle Gründer-Bestand (anfang), die Fraß-Schicht leer
         function gauAnfang(F, saat, opt) {
             const g = gauLeer(F, saat);
-            g.z = anfang({ W: F.W, H: F.H, saat, jaeger: opt ? opt.jaeger : undefined, nutz: opt ? opt.nutz : undefined }, g.leser);
+            g.z = anfang({ W: F.W, H: F.H, saat, takt: opt ? opt.takt : undefined, jaeger: opt ? opt.jaeger : undefined, nutz: opt ? opt.nutz : undefined }, g.leser);
+            return g;
+        }
+        // ── DIE EPOCHE (C2a3, Entscheid D3 im Zweig koordination, LAGE 10:17): ein Gau ohne Geschichte ist eine FUNKTION seiner
+        // Adresse und der Welt-Uhr — sein Zustand am Takt t ist der Lauf ab dem vollen Anfang am Takt a(t) = (⌊t ÷ P⌋ − 1) · P,
+        // nie kleiner als 0 (die Welt hat keinen Takt vor 0: unter 2 P ist es der Lauf ab Takt 0), mit P = EPOCHE.jahre Jahren der
+        // EINEN Uhr. Aufholen also 1 bis 2 P Takte (unter 2 P: t), gleich wie alt die Welt ist. Jede Epoche k = a(t) ÷ P zieht
+        // ihren EIGENEN Strom (`epochenSaat`): Epoche 0 trägt die Saat des Gaus unverändert — der Lauf ab Takt 0 ist Byte für Byte
+        // der von zuvor —, jede spätere eine aus Saat und k gemischte (ein unbesuchter Gau hat keine Geschichte, nur sein
+        // Gleichgewicht; derselbe Strom in jeder Epoche wäre eine Zeitschleife). Am Grenz-Takt k · P springt die Funktion: das
+        // ist die Kosten-Zahl von D3 (Ep4), nicht geglättet. Ein STAND (Akt, am Schirm gehalten, gepackt) läuft stetig — den
+        // Unterschied hält der Wirt (voxel-worker `gauAuftrag`), die Uhr der Epoche lebt NUR hier.
+        const EPOCHE_TAKTE = Math.round(EPOCHE.jahre * TJ);
+        if (Math.abs(EPOCHE.jahre * TJ - EPOCHE_TAKTE) > 1e-9 || !(EPOCHE_TAKTE > 0)) throw new Error("leben-core bestand: die Epoche (" + EPOCHE.jahre + " Jahre) ist kein ganzer Takt-Schritt (" + EPOCHE.jahre * TJ + ")");
+        function epoche(takt) {
+            if (!(Number.isInteger(takt) && takt >= 0)) throw new Error("leben-core bestand: epoche(" + takt + ") — ein ganzer Takt ≥ 0");
+            const k = Math.max(0, Math.floor(takt / EPOCHE_TAKTE) - 1);
+            return { k, anfang: k * EPOCHE_TAKTE, takte: EPOCHE_TAKTE };
+        }
+        const epochenSaat = (saat, k) => (k === 0 ? saat | 0 : mix((saat | 0) ^ Math.imul(k, 0x27d4eb2d)) | 0);
+        // der Gau als FUNKTION am Takt `takt`: der Anfang seiner Epoche (gauAnfang am Takt a(t), Strom der Epoche) — der Wirt
+        // rechnet ihn mit gauBis bis `takt`. `g.epoche` = { k, anfang } nennt den Ursprung.
+        function gauEpoche(F, saat, takt, opt) {
+            const E = epoche(takt);
+            const g = gauAnfang(F, epochenSaat(saat, E.k), Object.assign({}, opt, { takt: E.anfang }));
+            g.epoche = { k: E.k, anfang: E.anfang };
             return g;
         }
         function gauSchritt(g) {
@@ -1493,7 +1530,7 @@
             if (d !== K0.nD || i !== K0.nI) throw new Error("leben-core bestand: der Stand des Gaus geht nicht auf (" + d + " von " + K0.nD + " Zahlen, " + i + " von " + K0.nI + " Ganzzahlen)");
             return g;
         }
-        return Object.freeze({ ZEIT, RAUM, FENSTER, anfang, schritt, klon, verwundbar, bedarfVon, gauFeld, feldTakt, feldAesen, gauAnfang, gauSchritt, gauBis, akt, koepfe, tiereIn, frassAm, tragAm, todeSeit, gauPack, gauEntpack });
+        return Object.freeze({ ZEIT, RAUM, FENSTER, anfang, schritt, klon, verwundbar, bedarfVon, gauFeld, feldTakt, feldAesen, gauAnfang, gauSchritt, gauBis, akt, koepfe, tiereIn, frassAm, tragAm, todeSeit, gauPack, gauEntpack, epoche, gauEpoche });
     }
 
     // ── SELBSTTEST — der Prüf-Strom (mulberry32, feste Saat) lebt NUR hier, nie in einer Gesetz-Funktion ──────────────────────

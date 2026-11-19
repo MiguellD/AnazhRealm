@@ -430,6 +430,14 @@ function nachricht(e) {
             self.postMessage(Object.assign({ type: "gau-result", requestId: msg.requestId }, a.antwort), a.transfer);
         } else if (msg.type === "gau-geht") {
             gauGeht(msg.gx, msg.gz);
+        } else if (msg.type === "gau-staende") {
+            // DER STAND DER GAUE für die Stand-Datei (D4, `gauStaende`): jeder Stand-Gau gepackt, als Text
+            self.postMessage(Object.assign({ type: "gau-staende-result", requestId: msg.requestId }, gauStaende(msg)));
+        } else if (msg.type === "gau-staende-setzen") {
+            // … und zurück aus einem geladenen Stand (`gauStaendeSetzen`): die Stand-Gaue der Datei ersetzen die der Sitzung
+            self.postMessage(
+                Object.assign({ type: "gau-staende-setzen-result", requestId: msg.requestId }, gauStaendeSetzen(msg))
+            );
         } else if (msg.type === "ping") {
             self.postMessage({ type: "pong", requestId: msg.requestId || null });
         }
@@ -454,20 +462,136 @@ function nachricht(e) {
 //             Bestandsdichte des Walds — die EINE Formel, die `_bodenKlasseAt` des Stamms ruft) → der Lebensraum der Beute (LR)
 //             und das Substrat der Äsung (S: gelaende-core `weltFeld`, die Stimme „lebendig“ — die Quelle von `worldFieldAt`).
 //             EINMAL je Gau gebaut; die Hydro-Kacheln über dem Gau rechnet der Faden selbst und lässt sie danach fallen.
-//   der STAND leben-core `gauAnfang` am Takt 0 (voller Gründer-Bestand), `gauBis` bis zum Takt des Auftrags mit den Akten; ein
-//             Stand, der hereinreist (`stand`, Laden oder Mitspieler), ersetzt ihn. Ein Auftrag VOR dem Stand des Gaus oder mit
-//             anderen Akten als den gewirkten rechnet ab Takt 0 neu (die Antwort nennt es: `zeit.abNull`).
+//   der LAUF  (C2a3, D3 und D4) ein Gau ist FUNKTION oder STAND. FUNKTION — ohne Akt, nie am Schirm gelesen, nie gepackt: sein
+//             Zustand am Takt t ist der Lauf ab dem vollen Anfang seiner Epoche (leben-core `gauEpoche`, a(t) = (⌊t ÷ P⌋ − 1) · P,
+//             P = 40 Jahre), gleich, wann und wie oft er zuvor gefragt wurde; ein Lauf geht nur innerhalb seiner Epoche weiter.
+//             STAND — ab dem ersten Akt, dem ersten Lesen am Schirm (`lesen`: die Reviere, die die Seite verkörpert) oder einem
+//             Stand, der hereinreist (`stand`: Laden, Mitspieler): er läuft STETIG ab seinem Ursprung (dem Anfang seiner Epoche
+//             bzw. dem Stand), über jede Epochen-Grenze. Ein Auftrag vor dem Lauf oder mit geänderter Vergangenheit der Akte
+//             rechnet ab dem Ursprung neu — nie ab Takt 0, außer der Ursprung IST Takt 0 (die Antwort nennt es: `zeit.ab`,
+//             `zeit.abNull`); vor den Ursprung eines Stands führt kein Weg (Wurf beim Namen).
+//   der HALT  der Faden hält höchstens GAU_HALT Läufe; der nächste verdrängt den, der am längsten nicht am Schirm war (nie
+//             gelesen zuerst). Der Verdrängte ist nicht mehr am Schirm: trägt er Akte, bleibt er Stand und wird gepackt
+//             (`gauGepackt`, Bytes im Faden — er kehrt als Stand wieder), sonst ist er wieder Funktion und wird vergessen. Jeder
+//             Stand — laufend oder gepackt — reist in der Stand-Datei (`gau-staende`). Felder hält der Faden nur für seine Läufe.
 // Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, takt, akte, lesen?, packen?, stand? }
-// Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, tode?, stand? }
+// Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, faden, reviere?, tode?, stand? }
 //   mit `lesen`: je Revier auch `K: { beute, jaeger: null }` und `tode`: die Tode des Gesetzes in den gelesenen Revieren seit
 //   der letzten Antwort mit `lesen` ({ id, g, revier, takt, ursache, jaeger } — höchstens das letzte Jahr, nie im Stand).
-// Ein Gau, den die Seite nicht mehr hält, geht (`gau-geht`: Feld und Lauf — sein Stand lebt als Bytes bei der Seite).
+//   additiv (C2a3): `zeit.ab` (der Takt, ab dem dieser Auftrag neu rechnete, null = der Lauf ging weiter) · `zeit.epoche`
+//   ({ k, anfang } des Ursprungs einer Funktion, null beim gepackten Ursprung) · `zeit.stand` · `zeit.entpackMs` ·
+//   `faden` = { gaue, gepackt, gepacktBytes, felder, koepfe, heapMB } (die Speicher-Zahl des Fadens nach dem Auftrag).
+// Ein Gau, den die Seite nicht mehr hält, geht (`gau-geht`): wie die Verdrängung — mit Akten gepackt, sonst vergessen.
+const GAU_HALT = 4;
 const gaue = new Map();
 const gauFelder = new Map();
+const gauGepackt = new Map();
 const gauKerne = new Map();
+let gauUhr = 0;
 function gauGeht(gx, gz) {
-    const vorn = JSON.stringify([gx, gz]).slice(0, -1) + ",";
-    for (const m of [gaue, gauFelder]) for (const k of [...m.keys()]) if (k.startsWith(vorn)) m.delete(k);
+    for (const [k, e] of [...gaue]) if (e.gx === gx && e.gz === gz) gauVerdraengt(k);
+}
+// EIN LAUF VERLÄSST DEN FADEN — er ist damit nicht mehr am Schirm: Stand bleibt er nur mit Akten (sie leben, bis die Welt sie
+// vergisst), dann reist er gepackt in `gauGepackt` (mit der Akten-Reihe, die in ihm wirkte); ohne Akt ist er wieder Funktion und
+// geht ganz (sein nächster Auftrag liest die Epoche). Ein Feld, das kein Lauf mehr liest, geht mit.
+function gauVerdraengt(key) {
+    const e = gaue.get(key);
+    gaue.delete(key);
+    if (e.g && e.akte.length)
+        gauGepackt.set(key, {
+            gx: e.gx,
+            gz: e.gz,
+            takt: e.g.z.takt,
+            bytes: e.K.gauPack(e.g),
+            akte: e.akte.slice(0, e.g.aktN),
+        });
+    for (const x of gaue.values()) if (x.feldKey === e.feldKey) return;
+    gauFelder.delete(e.feldKey);
+}
+// DER HALT: über GAU_HALT Läufen geht der, der am längsten nicht am Schirm war (nie gelesen = 0: jede Funktion vor jedem
+// Stand), bei Gleichstand der am längsten nicht gefragte — nie der des Auftrags
+function gauRaum(behalt) {
+    while (gaue.size > GAU_HALT) {
+        let [weg, w] = [null, null];
+        for (const [k, e] of gaue)
+            if (k !== behalt && (!w || e.amSchirm < w.amSchirm || (e.amSchirm === w.amSchirm && e.zuletzt < w.zuletzt)))
+                [weg, w] = [k, e];
+        gauVerdraengt(weg);
+    }
+}
+// die Speicher-Zahl des Fadens: Läufe, gepackte Stände und ihre Bytes, Felder, Köpfe der Läufe, der Haufen des Fadens
+function gauFadenZahl() {
+    let [bytes, koepfe] = [0, 0];
+    for (const p of gauGepackt.values()) bytes += p.bytes.length;
+    for (const e of gaue.values())
+        if (e.g) {
+            for (const l of e.g.z.beute) koepfe += l.length;
+            for (const R of e.g.z.rudel) koepfe += R.tiere.length;
+        }
+    const m = self.performance && self.performance.memory;
+    return {
+        gaue: gaue.size,
+        gepackt: gauGepackt.size,
+        gepacktBytes: bytes,
+        felder: gauFelder.size,
+        koepfe,
+        heapMB: m ? Math.round(m.usedJSHeapSize / 1e4) / 100 : null,
+    };
+}
+// die Bytes eines Stands als Text der Stand-Datei (base64) und zurück — im Faden, nie im Haupt-Faden (Lehre 24)
+function gauText(bytes) {
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+}
+function gauBytes(text) {
+    const s = atob(text);
+    const b = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i);
+    return b;
+}
+// DER STAND DER GAUE (D4, Auftrag `gau-staende`): jeder Stand-Gau — die laufenden frisch gepackt, die verdrängten wie sie
+// liegen — als { key, gx, gz, takt, text }; `kennt` ([[key, takt], …]: was die Seite schon hält) spart den Text (`gleich`).
+function gauStaende(msg) {
+    const t0 = performance.now();
+    const kennt = new Map(msg.kennt || []);
+    const aus = [];
+    let bytes = 0;
+    const zeile = (key, gx, gz, takt, packe) => {
+        if (kennt.get(key) === takt) return void aus.push({ key, gx, gz, takt, gleich: true });
+        const b = packe();
+        bytes += b.length;
+        aus.push({ key, gx, gz, takt, text: gauText(b) });
+    };
+    // die Läufe einer anderen Welt (der Stand des Fadens wechselte, ihr erster Auftrag räumt sie erst) sind kein Stand dieser
+    if (gauWelt === state.seed + "|" + state.hydroWelt) {
+        for (const [k, e] of gaue) if (e.stand && e.g) zeile(k, e.gx, e.gz, e.g.z.takt, () => e.K.gauPack(e.g));
+        for (const [k, p] of gauGepackt) zeile(k, p.gx, p.gz, p.takt, () => p.bytes);
+    }
+    return { staende: aus, bytes, ms: performance.now() - t0, faden: gauFadenZahl() };
+}
+// … und aus einer geladenen Stand-Datei (Auftrag `gau-staende-setzen`): die Stände der Datei ersetzen jeden Stand der Sitzung
+// (ein Stand-Gau, den die Datei nicht trägt, ist wieder Funktion); sie liegen gepackt, bis ihr Gau gefragt wird
+function gauStaendeSetzen(msg) {
+    const t0 = performance.now();
+    const welt = state.seed + "|" + state.hydroWelt;
+    if (gauWelt !== welt) (gaue.clear(), gauFelder.clear(), gauGepackt.clear(), (gauWelt = welt));
+    for (const [k, e] of [...gaue]) if (e.stand) gaue.delete(k);
+    for (const f of [...gauFelder.keys()]) if (![...gaue.values()].some((e) => e.feldKey === f)) gauFelder.delete(f);
+    gauGepackt.clear();
+    let bytes = 0;
+    for (const s of msg.staende || []) {
+        if (typeof s.text !== "string" || typeof s.key !== "string" || !Number.isInteger(s.takt))
+            throw new Error(
+                "voxel-worker gau: ein Stand der Stand-Datei ohne Schlüssel, Takt oder Text (" +
+                    JSON.stringify(Object.keys(s || {})) +
+                    ")"
+            );
+        const b = gauBytes(s.text);
+        bytes += b.length;
+        gauGepackt.set(s.key, { gx: s.gx, gz: s.gz, takt: s.takt, bytes: b, akte: null });
+    }
+    return { n: gauGepackt.size, bytes, ms: performance.now() - t0, faden: gauFadenZahl() };
 }
 let gauWelt = null;
 function gauKern(wirt) {
@@ -565,9 +689,22 @@ function gauAuftrag(msg) {
     if (state.erdbau) throw new Error("voxel-worker: der Gau-Faden liest nur die Saat — sein Stand trägt einen Erdbau");
     // eine andere Welt (Samen und Welt der Regionen des Stands) räumt die Gaue der alten
     const welt = state.seed + "|" + state.hydroWelt;
-    if (gauWelt !== welt) (gaue.clear(), gauFelder.clear(), (gauWelt = welt));
+    if (gauWelt !== welt) (gaue.clear(), gauFelder.clear(), gauGepackt.clear(), (gauWelt = welt));
     const K = gauKern(msg.wirt);
-    const zeit = { neu: false, kacheln: 0, hydroMs: 0, feldMs: 0, abNull: false, takte: 0, rechenMs: 0, packMs: 0 };
+    const zeit = {
+        neu: false,
+        kacheln: 0,
+        hydroMs: 0,
+        feldMs: 0,
+        abNull: false,
+        ab: null,
+        epoche: null,
+        stand: false,
+        takte: 0,
+        rechenMs: 0,
+        packMs: 0,
+        entpackMs: 0,
+    };
     const feldKey = JSON.stringify([msg.gx, msg.gz, msg.x0, msg.z0, msg.n, msg.seite, msg.zn, msg.beute]);
     let roh = gauFelder.get(feldKey);
     if (!roh) {
@@ -579,30 +716,97 @@ function gauAuftrag(msg) {
     }
     const key = [feldKey, msg.saat, JSON.stringify(msg.wirt)].join("|");
     let e = gaue.get(key);
-    if (!e) gaue.set(key, (e = Object.assign(gauFeldAm(K, msg.n, roh), { gx: msg.gx, gz: msg.gz, g: null, akte: [] })));
+    if (!e)
+        gaue.set(
+            key,
+            (e = Object.assign(gauFeldAm(K, msg.n, roh), {
+                K,
+                feldKey,
+                gx: msg.gx,
+                gz: msg.gz,
+                g: null,
+                akte: [],
+                stand: false,
+                ursprung: null,
+                amSchirm: 0,
+                zuletzt: 0,
+            }))
+        );
     const akte = msg.akte || [];
     const zeilen = akte.map((a) => JSON.stringify(a));
-    if (msg.stand) {
-        // der Stand reist herein: er trägt, wie viele Akte in ihm schon wirkten (`aktN`) — die Liste des Auftrags beginnt mit ihnen
-        e.g = K.gauEntpack(msg.stand, e.F);
-        e.akte = zeilen.slice(0, e.g.aktN);
+    // ein Stand reist herein (`stand`: Laden der Seite, Mitspieler) oder kehrt aus dem Faden zurück (`gauGepackt`: verdrängt oder
+    // aus der Stand-Datei): er trägt, wie viele Akte in ihm schon wirkten (`aktN`) — die Liste des Auftrags beginnt mit ihnen
+    const gepackt = msg.stand ? null : !e.g && gauGepackt.get(key);
+    if (msg.stand || gepackt) {
+        const [p0, bytes] = [performance.now(), msg.stand || gepackt.bytes];
+        e.g = K.gauEntpack(bytes, e.F);
+        zeit.entpackMs = performance.now() - p0;
+        e.akte = gepackt && gepackt.akte ? gepackt.akte : zeilen.slice(0, e.g.aktN);
+        e.ursprung = { art: "stand", bytes, takt: e.g.z.takt, akte: e.akte };
+        e.stand = true;
+        gauGepackt.delete(key);
     }
-    // derselbe Lauf geht weiter, wenn der Auftrag nicht vor ihm liegt und seine Akte mit den gewirkten beginnen; sonst ab Takt 0
-    const weiter =
+    // DER EINE WEG DES LAUFS (D3 · D4). Derselbe Lauf geht weiter, wenn der Auftrag nicht vor ihm liegt, seine Akte mit den
+    // gewirkten beginnen und kein neuer Akt vor ihm liegt — und er ein STAND ist oder die Funktion derselben Epoche (der erste
+    // Takt, den dieser Auftrag braucht — sein Takt oder sein erster neuer Akt —, liegt in der Epoche ihres Ursprungs).
+    // Sonst rechnet er neu: ein Stand ab seinem Ursprung, eine Funktion ab dem Anfang der Epoche dieses ersten Takts.
+    const neuAb = zeilen.length > (e.g ? e.g.aktN : 0) ? akte[e.g ? e.g.aktN : 0].takt : Infinity;
+    const tErst = Math.min(msg.takt, akte.length ? akte[0].takt : Infinity);
+    const E = K.epoche(tErst);
+    const folgt =
         e.g &&
         msg.takt >= e.g.z.takt &&
         e.akte.length >= e.g.aktN &&
         e.akte.slice(0, e.g.aktN).every((s, k) => s === zeilen[k]) &&
-        !(zeilen.length > e.g.aktN && akte[e.g.aktN].takt < e.g.z.takt);
-    if (!weiter) {
-        zeit.abNull = !!e.g;
-        e.g = K.gauAnfang(e.F, msg.saat);
+        !(neuAb < e.g.z.takt);
+    const weiter = folgt && (e.stand || (e.ursprung.art === "epoche" && e.ursprung.anfang === E.anfang));
+    const lief = !!e.g;
+    if (!weiter && e.stand) {
+        const U = e.ursprung;
+        // vor den Ursprung eines Stands führt kein Weg: sein Gestern ist nicht im Faden (laut, beim Namen — nie still ab der Saat)
+        const vor = (t) => {
+            throw new Error(
+                "voxel-worker gau: der Auftrag (Takt " +
+                    msg.takt +
+                    ") reicht vor den Ursprung des Stand-Gaus (Takt " +
+                    t +
+                    ") oder ändert seine gewirkten Akte"
+            );
+        };
+        if (U.art === "stand") {
+            if (
+                msg.takt < U.takt ||
+                U.akte.some((s, k) => s !== zeilen[k]) ||
+                (zeilen.length > U.akte.length && akte[U.akte.length].takt < U.takt)
+            )
+                vor(U.takt);
+            const p0 = performance.now();
+            e.g = K.gauEntpack(U.bytes, e.F);
+            zeit.entpackMs += performance.now() - p0;
+        } else {
+            if (tErst < U.anfang) vor(U.anfang);
+            e.g = K.gauEpoche(e.F, msg.saat, U.takt);
+        }
+    } else if (!weiter) {
+        e.g = K.gauEpoche(e.F, msg.saat, tErst);
+        e.ursprung = { art: "epoche", takt: tErst, k: E.k, anfang: E.anfang };
     }
+    if (!weiter) {
+        zeit.ab = e.g.z.takt;
+        zeit.abNull = lief && zeit.ab === 0;
+    }
+    if (e.ursprung.art === "epoche") zeit.epoche = { k: e.ursprung.k, anfang: e.ursprung.anfang };
     const [r0, von] = [performance.now(), e.g.z.takt];
     K.gauBis(e.g, msg.takt, akte);
     e.akte = zeilen;
     zeit.rechenMs = performance.now() - r0;
     zeit.takte = e.g.z.takt - von;
+    // STAND wird der Gau mit dem ersten Akt und dem ersten Lesen am Schirm; die Uhr des Fadens ordnet den Halt (`gauRaum`)
+    if (msg.lesen || akte.length) e.stand = true;
+    zeit.stand = e.stand;
+    e.zuletzt = ++gauUhr;
+    if (msg.lesen) e.amSchirm = gauUhr;
+    gauRaum(key);
     const z = e.g.z;
     let [beute, jaeger] = [0, 0];
     for (const l of z.beute) beute += l.length;
@@ -633,6 +837,7 @@ function gauAuftrag(msg) {
         zeit.packMs = performance.now() - p0;
         transfer.push(antwort.stand.buffer);
     }
+    antwort.faden = gauFadenZahl();
     return { antwort, transfer };
 }
 

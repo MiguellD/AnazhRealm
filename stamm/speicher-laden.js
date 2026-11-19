@@ -107,6 +107,96 @@ class AnazhRealm_speicher_laden {
         this._weltbildKommt().then(() => this._spielerSagt(zeile));
     }
 
+    // DIE NAHT DER STAND-GAUE (Leben D4) — die Stand-Datei und der Gau-Faden, beide Richtungen an EINER Stelle: hinaus
+    // `_gauStandHolen` (im Ruf des Speicherns, `saveState`) → `_gauStandImStand` (die Zeile `gauStand` der Stand-Tafel), herein
+    // `_gauStandAusStand` (die Lade-Kette). Jeder Gau, den der Gau-Faden als Stand hält (am Schirm, mit Akten, aus einem Stand),
+    // reist GEPACKT als Text seiner Bytes — nach dem Laden läuft er stetig weiter, ohne Aufholen; die Zeile wird nur neu
+    // gefragt, wenn der Faden Neues gab (ihre Marke `_gauStandGen`).
+    // DIE STAND-GAUE IM STAND (Zeile `gauStand`): { v: 1, staende: [{ key, gx, gz, takt, text }] } — was der Gau-Faden zuletzt
+    // als Stand gab, gebunden an den Samen der Welt; ohne Faden die leere Liste (ein Stand ohne die Zeile ist ein alter:
+    // `_gauStandAusStand` nennt seinen Übergang).
+    _gauStandImStand() {
+        const H = this._gauStandHalt;
+        const staende = H && H.seed === this._gelaende().seed ? [...H.karte.values()] : [];
+        return { v: 1, staende };
+    }
+    // DER STAND DER GAUE AUS DEM FADEN (Auftrag `gau-staende`, voxel-worker `gauStaende`), vorweg im Ruf des Speicherns: er
+    // steht, bevor der Besen den Stand des Takts zusammensetzt. Der Faden packt und schreibt den Text (nie der Haupt-Faden,
+    // Lehre 24); was die Seite schon hält (`kennt`: Schlüssel und Takt), kommt nur als `gleich`. Eine Frage zur Zeit; ohne
+    // Gau-Faden gibt es keinen Stand-Gau. Neues hebt die Marke der Zeile.
+    _gauStandHolen() {
+        const f = this._gauFadenStand;
+        if (!f) return Promise.resolve(false);
+        if (this._gauStandHolt) return this._gauStandHolt;
+        const seed = this._gelaende().seed;
+        const alt = this._gauStandHalt && this._gauStandHalt.seed === seed ? this._gauStandHalt.karte : new Map();
+        const kennt = [...alt].map(([k, s]) => [k, s.takt]);
+        return (this._gauStandHolt = this._gauFrage({ type: "gau-staende", kennt })
+            .then((m) => {
+                const karte = new Map();
+                for (const s of m.staende)
+                    karte.set(
+                        s.key,
+                        s.gleich ? alt.get(s.key) : { key: s.key, gx: s.gx, gz: s.gz, takt: s.takt, text: s.text }
+                    );
+                const neu = karte.size !== alt.size || m.staende.some((s) => !s.gleich);
+                this._gauStandHalt = { seed, karte, ms: m.ms, bytes: m.bytes, faden: m.faden };
+                if (neu) this._gauStandGen = (this._gauStandGen | 0) + 1;
+                return neu;
+            })
+            .catch((e) => this._bruchMelden("GAU: der Stand der Gaue kam nicht aus dem Faden — " + e.message))
+            .finally(() => (this._gauStandHolt = null)));
+    }
+    // DIE STAND-GAUE AUS DEM STAND (Leben D4, die Zeile `gauStand` von `_gauStandImStand`): sie gehen gepackt in den Gau-Faden
+    // (Auftrag `gau-staende-setzen`, vor jeder Frage nach dem Laden) und laufen dort stetig weiter, ab ihrem Takt — kein Aufholen.
+    // Sie ersetzen jeden Stand der Sitzung. EIN Gau mit Akten ist Stand (D3); trägt der Stand ihn nicht (ein alter Stand ohne
+    // die Zeile, ein Stand-Gau, den der Faden vor dem Stand nicht mehr gab), wird er Funktion seiner Epoche und seine Akte fallen
+    // — laut, beim Namen (Log, die Zeile der Wände `speicher.weist.gau`, `_gauStandUebergang`), nie still ab einer Saat.
+    _gauStandAusStand(v) {
+        const H = this._gauHalt();
+        const form = (s) =>
+            s &&
+            typeof s.key === "string" &&
+            typeof s.text === "string" &&
+            [s.gx, s.gz, s.takt].every(Number.isInteger);
+        const liste = v && v.v === 1 && Array.isArray(v.staende) ? v.staende : null;
+        const staende = liste ? liste.filter(form) : [];
+        const traegt = new Set(staende.map((s) => s.gx + "," + s.gz));
+        const fallen = [...H].filter(([k, L]) => L.length && !traegt.has(k)).map(([k]) => k);
+        for (const k of fallen) H.delete(k);
+        if (fallen.length) this._lebenGen = (this._lebenGen || 0) + 1;
+        const grund =
+            v === undefined
+                ? "älter als die Epoche, ohne Gau-Teil"
+                : !liste
+                  ? "mit unlesbarem Gau-Teil"
+                  : staende.length < liste.length
+                    ? `mit ${liste.length - staende.length} unlesbaren Stand-Gauen`
+                    : null;
+        this._gauStandUebergang = grund || fallen.length ? { grund, fallen, staende: staende.length } : null;
+        if (this._gauStandUebergang) {
+            this.log(
+                `Leben D4: der Stand ${grund || "trägt nicht jeden Gau mit Akten"} — ${fallen.length} Gau(e) mit Akten werden Funktion ihrer Epoche (${fallen.join(" · ") || "keiner"}), ihre Akte fallen; jeder Gau ohne Stand rechnet ab dem Anfang seiner Epoche.`,
+                "WARN"
+            );
+            if (grund) this._ladeWeist("speicher.weist.gau-alt");
+            this._ladeWeist("speicher.weist.gau", fallen.length);
+        }
+        // die Seite hält, was die Datei trug (der nächste Stand schickt es nicht neu: `kennt`)
+        this._gauStandHalt = {
+            seed: this._gelaende().seed,
+            karte: new Map(staende.map((s) => [s.key, { key: s.key, gx: s.gx, gz: s.gz, takt: s.takt, text: s.text }])),
+        };
+        this._gauStandGen = (this._gauStandGen | 0) + 1;
+        // der Faden lebt (er hielte sonst die Stände der Sitzung) oder die Datei trägt Stände: sie gehen jetzt an ihn
+        if (this._gauFadenStand || staende.length)
+            this._gauStandGesetzt = this._fadenQuelle()
+                .then(() => this._gauFrage({ type: "gau-staende-setzen", staende }))
+                .catch((e) =>
+                    this._bruchMelden("GAU: die Stand-Gaue des Stands kamen nicht in den Faden — " + e.message)
+                );
+    }
+
     // DIE GRUNDSTELLUNG OHNE NEULADEN (w4-grundstellung; der Schöpfer 29.10.: „Die Welt ist in wenigen Sekunden geladen — das
     // Prüftheater hat ein Ende"). Ohne `grund` nimmt sie den Grund der laufenden Welt: ihren Stand (das Speicher-Gesetz,
     // `buildStateSnapshot`) und je Zeile der GRUND_TAFEL den Augenblick, den der Stand nicht trägt. Mit `grund` (sein JSON) spielt
@@ -552,6 +642,8 @@ class AnazhRealm_speicher_laden {
         this.state.faunaLifecycle.feldUhr = this.state.spielZeit;
         // DAS LEBEN DES STANDS (feld.K2#2): Feld, Bestand und offene Akte setzen fort, was der Stand trug (`_lebenAusStand`)
         this._lebenAusStand(state.leben);
+        // DIE STAND-GAUE DES STANDS (Leben D4): gepackt zurück in den Gau-Faden, nach den Akten des Lebens (`_gauStandAusStand`)
+        this._gauStandAusStand(state.gauStand);
         // `state.dayLengthMinutes` des Stands setzt der Restore NIE: die Tag-Länge ist die Wahl des Spielers (localStorage,
         // `setDayLength`) — der Kopf trägt sie nur für die Taille v1 (Leben-Schau 2, gate:wetter-wache (T)).
         // ERFINDER-WELLE — die Welt-Klang-Wahl (Genre-Id; der Konsument `_klangStudioPreset`

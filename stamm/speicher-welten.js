@@ -1338,6 +1338,7 @@ class AnazhRealm_speicher_welten {
                 () => this._lebenImStand(),
                 { augenblick: true, marke: () => [this._lebenGen, this._bestandReist().join()] },
             ],
+            ["gauStand", () => this._gauStandImStand(), { augenblick: true, marke: () => [this._gauStandGen | 0] }],
             // DER ZUSTAND DES PEGELS reist, nie die Stempel des Regens (wetter.K3, speicher.K3, `_pegelZustand`): der Regen der
             // Sitzung gefaltet in die Speicher des Gesetzes zur Uhr des Stands — 50 Zahlen, wie lange es auch regnete (Gebot 7).
             // Nach dem Reload fällt der Bach weiter, wie er fiel, und die Dürre hält. Ein Augenblick wie die Uhr: er ist ihre
