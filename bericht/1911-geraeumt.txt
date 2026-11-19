@@ -1,8 +1,8 @@
-# 1911 Räumen am OMEN — ZWISCHENSTAND 2026-11-19 11:39: NICHTS gelöscht
+# 1911 Räumen am OMEN — ZWISCHENSTAND 2026-11-19 11:43: p3/n1611/heap gelöscht auf das Wort des Schöpfers (OMEN-Sitzung, 11:42), sonst nichts
 
 ## p3/messplatz/koord — BLEIBT (lebender Dienst-Baum, p3/messplatz/messplatz.sh:11 MK, Checkout heute 11:22/11:27/11:29)
 
-## p3/n1611/heap — Verzeichnis; gelöscht wird nur auf das Wort des Schöpfers in der OMEN-Sitzung
+## p3/n1611/heap — GELÖSCHT 11:42:59 (rm -rf absoluter Pfad, kein lebender Leser); Verzeichnis vor dem Löschen:
 p3/n1611/heap · Dateien 76 · Bytes 3283876299 (3.06 GiB) · ältestes 2026-11-16T07:56Z · jüngstes 2026-11-16T13:58Z
 
 Dateien > 20 MB (10):
@@ -36,4 +36,4 @@ Größte Unterordner:
    202855113 bericht/1811-strahler
    161816745 probe-post/w28-strauch-gestalt
 
-Freier Platz C: 47 GB von 476 GB (91 % belegt), unverändert.
+Freier Platz C: vorher 47 GB frei (430 GB belegt) ↔ nachher 50 GB frei (427 GB belegt) von 476 GB.
