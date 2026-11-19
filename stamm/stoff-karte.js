@@ -254,6 +254,7 @@ class AnazhRealm_stoff_karte {
             masse: null, // __phytoCore.karteMasse der Schicht
             cap: 0, // Schichten der Texturen
             n: 0, // vergebene Schichten
+            profil: Object.assign([], { stand: 0 }), // je Schicht das Profil ihrer Gestalt (`_karteProfil`), `stand` zählt die Einträge
             map: null,
             nmap: null,
             lmap: null, // die Sonnen-Sicht der Krone (A7-Term): der Anteil des Richtlichts, den die eigene Krone durchlässt
@@ -638,16 +639,23 @@ class AnazhRealm_stoff_karte {
     // — dort, wo die Kaskaden den Wurf der Karten legen, misst sie ihn mit: am Punkt (x, y, z) zum Licht `L` 0, wenn der Strahl
     // zur Sonne die Krone einer werfenden Karte trifft, sonst 1. Werfer sind DIESELBEN Instanzen, die der Schattenpass zeichnet:
     // die Zwillings-Gruppe der Karte (`_impostorWurfLeaf`) mit dem Fenster ihrer Maske vom Auge der Stufen (`_instanzFenster`,
-    // dieselben Kanten `_blendeK`); ihre Krone ist die Ellipse in ihrem Rahmen (aKarte: Halbbreite y, Höhe z × Instanz-Skala) auf
-    // der Ebene durch den Anker quer zum Licht, wie der Wurf sie zeichnet (binär, alphaTest). Jenseits der Kaskaden (`maxFar`)
-    // fällt kein Wurf. Bis hier maß die Kamera am Abend der Mess-Wiese die Sonne, die der Wald auf dem Grat dem Boden schon
-    // nahm: das Bild stand im Wurf, die Belichtung für die Sonne, und als der Grat selbst sie nahm, sprang sie um 0,38 EV
-    // (3,30 → 4,29, Uhr 0,728 → 0,73) — die Tag-Achse (gate:tag-achse:echt) maß SPRUNG wiese 0,36 EV, an Genesis morgens
-    // fünf Schritte über 0,1 EV.
+    // dieselben Kanten `_blendeK`); ihre Krone ist DAS PROFIL IHRER GESTALT (`_karteProfil`: je Band der Höhe die Halbbreite,
+    // gemessen an der Gestalt, aus der die Karte backt) auf der Ebene durch den Anker quer zum Licht, wie der Wurf sie zeichnet
+    // (binär, alphaTest). Jenseits der Kaskaden (`maxFar`) fällt kein Wurf. Bis hier maß die Kamera am Abend der Mess-Wiese die
+    // Sonne, die der Wald auf dem Grat dem Boden schon nahm: das Bild stand im Wurf, die Belichtung für die Sonne, und als der
+    // Grat selbst sie nahm, sprang sie um 0,38 EV (3,30 → 4,29, Uhr 0,728 → 0,73) — die Tag-Achse (gate:tag-achse:echt) maß
+    // SPRUNG wiese 0,36 EV, an Genesis morgens fünf Schritte über 0,1 EV.
+    // BIS laub-kante WAR DIE KRONE DIE ELLIPSE IM RAHMEN der Karte (aKarte: Halbbreite × Höhe). Der Rahmen ist die Zelle, nie die
+    // Krone: phyto-core `impostorFrame` hält ihn mindestens halb so breit wie hoch. Mit dem Kegel der Konifere (r/H am Kronen-Fuß
+    // 0,42–0,51 → 0,14–0,17, astfreier Schaft darunter) stand die Ellipse 0,25 · H breit über die ganze Höhe, wo das Bild einen
+    // Kegel auf einem Schaft wirft: an der Mess-Wiese nahmen morgens je Strahl 7–12 Kronen 80–140 m hinter dem Auge dem Messer
+    // die Sonne ganz (Radeon, Uhr 0,27: Sicht 0,0014, 32 von 32 Strahlen), während das Bild sie schon trug — die Belichtung
+    // glich sie nie aus, das Bild stieg über fünf Schritte der Uhr um 0,12–0,16 EV (gate:tag-achse:echt SPRUNG wiese 0,16).
     _kartenWurfSicht(x, y, z, L) {
         const W = this._kartenWurfWerfer(L);
         if (!W || (x - W.ex) ** 2 + (z - W.ez) ** 2 > W.weit2) return 1;
-        const { liste, kopf, folge, nx, nz, binM } = W;
+        const { liste, kopf, folge, nx, nz, binM, profil } = W;
+        const N = AnazhRealm.KARTE_PROFIL.baender;
         const ln = L.x * nx + L.z * nz;
         const quer = (x - W.ex) * -nz + (z - W.ez) * nx;
         const [b0, b1] = [Math.floor((quer - W.quer) / binM) - W.bin0, Math.floor((quer + W.quer) / binM) - W.bin0];
@@ -656,16 +664,30 @@ class AnazhRealm_stoff_karte {
         let sicht = 1;
         for (let b = Math.max(0, b0); b <= b1 && b < kopf.length; b++)
             for (let k = kopf[b]; k >= 0; k = folge[k]) {
-                const o = k * 6;
+                const o = k * 7;
                 const t = ((liste[o] - x) * nx + (liste[o + 2] - z) * nz) / ln;
                 if (!(t > 0)) continue;
                 const u = (x + L.x * t - liste[o]) * -nz + (z + L.z * t - liste[o + 2]) * nx;
-                const w = y + L.y * t - liste[o + 1] - liste[o + 4];
-                const q = (u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]);
+                // die Höhe des Strahls im Rahmen (−½ der Anker, N − ½ das Haupt) zwischen den Mitten zweier Bänder: die Halbbreite
+                // der Gestalt dort, linear — von der Mitte des obersten Bands zum Haupt und von der des untersten zum Anker
+                // fällt sie auf 0 (der Wipfel ist eine Spitze, unter dem Anker steht nichts)
+                const p = ((y + L.y * t - liste[o + 1]) / (2 * liste[o + 4])) * N - 0.5;
+                if (!(p > -0.5 && p < N - 0.5)) continue;
+                const P = profil[liste[o + 6]];
+                const j = Math.floor(p);
+                const hw =
+                    liste[o + 3] *
+                    (j < 0
+                        ? P[0] * (p + 0.5) * 2
+                        : j + 1 < N
+                          ? P[j] + (P[j + 1] - P[j]) * (p - j)
+                          : P[j] * (N - 0.5 - p) * 2);
+                if (!(hw > 1e-3)) continue;
+                const q = (u * u) / (hw * hw);
                 if (q > 1) continue;
                 // DIE KRONE IST KEIN SCHILD (w28-nacht-bilanz): ihr Wurf trägt das Profil ihrer Dichte — der Kern (q < ¼) nimmt
-                // die Sonne mit ihrer Deckung, zum Rand fällt sie linear auf 0 (im Mittel ⅝, die Hälfte ihres Rahmens — die
-                // Maske der Karte, nie die volle Ellipse; stetig am Rand, die Sehne √(1 − q) knickt dort). Bis hier nahm jede Krone binär: der
+                // die Sonne mit ihrer Deckung, zum Rand fällt sie linear auf 0 (stetig am Rand, die Sehne √(1 − q) knickt
+                // dort). Bis hier nahm jede Krone binär: der
                 // Messer stand im Wurf, während das Bild schon zu einem Drittel in der Sonne lag, und sprang in EINEM Schritt
                 // der Uhr (Wiese, Radeon, Sommersonne über der Waldkante: Sicht 0,07 → 0,79 über Uhr 0,254 → 0,26, die
                 // Belichtung −1,04 EV, das Bild −0,34 EV je 0,002).
@@ -673,6 +695,36 @@ class AnazhRealm_stoff_karte {
                 if (sicht < 0.004) return 0;
             }
         return sicht;
+    }
+
+    // DAS PROFIL DER KARTE (laub-kante): die Gestalt, aus der die Karte backt (`huellen`: die Hüllen der Bühne, dieselben
+    // Geometrien wie der Rahmen), als Halbbreite je Band ihrer Rahmen-Höhe — `KARTE_PROFIL.baender` Bänder vom Anker zum Haupt,
+    // je Band der Radius um die Stammachse, unter dem `anteil` seiner Ecken liegen (ein einzelner langer Ast spannt das Band
+    // nicht), als Teil der Rahmen-Halbbreite; ein Band ohne Ecke trägt 0. Der EINE Leser ist der Lichtmesser
+    // (`_kartenWurfSicht`); das Profil reist mit dem Rahmen auf die Platte der Schale (`frame.profil`).
+    _karteProfil(huellen, n, fr) {
+        const { baender: N, faecher: F, anteil } = AnazhRealm.KARTE_PROFIL;
+        const hist = new Uint32Array(N * F);
+        const zahl = new Uint32Array(N);
+        const H = fr.halfH * 2;
+        for (let h = 0; h < n; h++) {
+            const a = huellen[h].geometry.attributes.position.array;
+            for (let i = 0; i + 2 < a.length; i += 3) {
+                const b = Math.min(N - 1, Math.max(0, Math.floor((a[i + 1] / H) * N)));
+                hist[b * F + Math.min(F - 1, Math.floor((Math.hypot(a[i], a[i + 2]) / fr.halfW) * F))]++;
+                zahl[b]++;
+            }
+        }
+        const aus = new Array(N).fill(0);
+        for (let b = 0; b < N; b++) {
+            let s = 0;
+            for (let f = 0; f < F && zahl[b]; f++)
+                if ((s += hist[b * F + f]) >= zahl[b] * anteil) {
+                    aus[b] = +((f + 1) / F).toFixed(4);
+                    break;
+                }
+        }
+        return aus;
     }
 
     // DIE WERFER DES LICHTMESSERS: je Karte, die ihr Fenster behält, Anker, Halbbreite, halbe Höhe und die Deckung ihrer Krone im
@@ -698,7 +750,9 @@ class AnazhRealm_stoff_karte {
         const auge = maske ? lu.uLodAuge.value : cam.position;
         const n = g.liveCount;
         const pr = this._fernPraesenz();
-        const stand = `${n}|${m.instanceMatrix.version}|${maske}|${Math.round(auge.x)}|${Math.round(auge.z)}|${this._blendeK && this._blendeK.d0}|${pr.toFixed(3)}`;
+        // das Profil je Schicht des Atlas (`_karteGebacken` legt es, `profilStand` zählt): die Krone jeder werfenden Karte
+        const profil = this._impostorAtlas().profil;
+        const stand = `${n}|${m.instanceMatrix.version}|${maske}|${Math.round(auge.x)}|${Math.round(auge.z)}|${this._blendeK && this._blendeK.d0}|${pr.toFixed(3)}|${profil.stand}`;
         let W = this._kartenWurfMerk;
         if (!W || W.stand !== stand) {
             const a = m.instanceMatrix.array;
@@ -712,7 +766,7 @@ class AnazhRealm_stoff_karte {
                       kanten: this._blendeK,
                   }
                 : null;
-            const liste = W && W.liste.length >= n * 6 ? W.liste : new Float32Array(n * 6);
+            const liste = W && W.liste.length >= n * 7 ? W.liste : new Float32Array(n * 7);
             const nadel = this._karteNadel(null).array;
             const PC = globalThis.__phytoCore;
             const laub = PC.kroneImJahr(PC.WIND_ZAHLEN, pr, 1, 1, 1, 1, 0).deckung;
@@ -726,14 +780,24 @@ class AnazhRealm_stoff_karte {
                 const dS = Lm && Math.hypot(a[o + 12] - Lm.ex, a[o + 14] - Lm.ez) * Lm.perf * Math.min(Lm.ref / Math.max(Math.abs(sicht), 1e-3), 1); // prettier-ignore
                 if (Lm && !AnazhRealm._blendeBehaelt(Lm.kanten, "karte", dS, dS, dS, dS, sicht < 0)) continue;
                 const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
-                const c = nadel[Math.floor(ak[i * 4] + 0.5)] ? 1 : laub;
-                liste.set([a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5, c], k * 6);
+                const schicht = Math.floor(ak[i * 4] + 0.5);
+                // eine Karte wirft erst gebacken, und jeder Bake legt ihr Profil: ohne es bricht der Messer laut, nie still
+                if (!profil[schicht])
+                    throw this._stoffBruch(
+                        `der Lichtmesser: die werfende Karte der Schicht ${schicht} trägt kein Profil`
+                    );
+                const c = nadel[schicht] ? 1 : laub;
+                liste.set(
+                    [a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5, c, schicht],
+                    k * 7
+                );
                 hwMax = Math.max(hwMax, ak[i * 4 + 1] * s);
                 k++;
             }
             W = this._kartenWurfMerk = {
                 stand,
                 liste,
+                profil,
                 n: k,
                 hwMax,
                 lx: NaN,
@@ -752,12 +816,13 @@ class AnazhRealm_stoff_karte {
             const rand = weit * lr * 2;
             const quer = (o) => (W.liste[o] - e.x) * -nz + (W.liste[o + 2] - e.z) * nx;
             const bin0 = Math.floor(-weit / binM) - 2;
+            // (die Fächer ordnen nach der Halbbreite des Rahmens, `hwMax`: das Profil ist nie breiter)
             const kopf =
                 W.kopf && W.kopf.length === Math.ceil((2 * weit) / binM) + 5
                     ? W.kopf.fill(-1)
                     : new Int32Array(Math.ceil((2 * weit) / binM) + 5).fill(-1);
             for (let k = 0; k < W.n; k++) {
-                const b = Math.floor(quer(k * 6) / binM) - bin0;
+                const b = Math.floor(quer(k * 7) / binM) - bin0;
                 if (b < 0 || b >= kopf.length) continue;
                 W.folge[k] = kopf[b];
                 kopf[b] = k;
@@ -1165,7 +1230,10 @@ class AnazhRealm_stoff_karte {
             const ziele = this._karteGpuTexturen(at);
             z._platte = null;
             const t0 = performance.now();
-            if (ziele && k.bytes && k.bytes.byteLength === lage.ausB) {
+            // (eine Platte ohne das Profil ihrer Gestalt — gelegt vor laub-kante — ist keine: die Karte backt und legt sie neu)
+            const profilDa =
+                k.frame && Array.isArray(k.frame.profil) && k.frame.profil.length === AnazhRealm.KARTE_PROFIL.baender;
+            if (ziele && k.bytes && k.bytes.byteLength === lage.ausB && profilDa) {
                 for (const q of lage.kopien)
                     rend.backend.device.queue.writeTexture(
                         { texture: ziele[q.tex], mipLevel: q.mip, origin: { x: 0, y: 0, z: z.idx } },
@@ -1418,11 +1486,13 @@ class AnazhRealm_stoff_karte {
         }
         at.offen = null;
         // `koerper`: der Rest des Körpers, aus dem dieser Bake las — die Schale hängt die Karte an dessen Kerne (`kerneVon`)
+        // das Profil der Gestalt reist mit dem Rahmen (`_karteGebacken`, die Platte der Schale)
+        fr.profil = this._karteProfil(B.huellen, h, fr);
         const platte = z._liefer && {
             preset: z.preset,
             rest: z._liefer.rest,
             koerper: key,
-            frame: { halfW: fr.halfW, halfH: fr.halfH },
+            frame: { halfW: fr.halfW, halfH: fr.halfH, profil: fr.profil },
             jahr: jahr.stufe,
         };
         // der Abzug des Labors liest die Schicht, bevor die nächste Karte die Bühne trägt (`_karteAbzug`)
@@ -1889,6 +1959,10 @@ class AnazhRealm_stoff_karte {
         // RAHMEN-EINHEIT: das Quad nimmt DENSELBEN Rahmen wie die Bake-Kamera (halfH = 1,02·maxY/2, halfW radial) —
         // keine Wurzel-Höhe mehr (bis V18.528 stand das Quad auf max(0,5, maxY − minY): vertikal verzerrt).
         if (!z.rahmenFest) z.frame = { halfH: fr.halfH, halfW: fr.halfW };
+        // das Profil der Gestalt (`_karteProfil`, frisch gemessen oder von der Platte): der Lichtmesser liest es je Schicht
+        const at = this._impostorAtlas();
+        at.profil[z.idx] = fr.profil;
+        at.profil.stand++;
         this._karteEndet(z, true);
         // Die Karte ist gebacken → aufgeschobene Streu-Regionen neu streamen, wie bei jeder Asset-Ankunft: ein Baum-Platz,
         // dessen Nah-Stufe fehlt, wartet auf die gebackene Karte (`_foundryFlattenFor` Stufe 2 liefert vorher false). Ohne
@@ -2064,6 +2138,9 @@ AnazhRealm.KARTE_RELIEF = Object.freeze({ gaenge: 3, texel: 4, start: 0.48, halt
 // Jahreszeit-Mitte ist eine Stufe; beim Jahr von 2400 s backt jede Karte alle 75 s einmal. `sommer` die Phase der Stufe 0 (die
 // Mitte des Sommers: Präsenz 1, Tönung ×1).
 AnazhRealm.KARTE_JAHR = Object.freeze({ stufen: 32, sommer: 0.375 });
+// DAS PROFIL DER KARTE (laub-kante, `_karteProfil`): `baender` Bänder der Rahmen-Höhe, je Band die Halbbreite der Gestalt als
+// der Radius, unter dem `anteil` ihrer Ecken liegen, gezählt in `faecher` Fächern der Rahmen-Halbbreite.
+AnazhRealm.KARTE_PROFIL = Object.freeze({ baender: 12, faecher: 32, anteil: 0.9 });
 // Die Bühne gibt ihren Speicher frei, wenn die Schlange so lange leer ist (ms; `_karteBuehneRuhe`).
 AnazhRealm.KARTE_BUEHNE_RUHE_MS = 3000;
 // DIE SONNEN-SICHT DER KRONE (A7-Term, `_karteBuehne`): die Richtungen, aus denen die Bühne die Sicht misst, als (Höhe,
