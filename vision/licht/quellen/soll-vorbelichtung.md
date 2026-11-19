@@ -40,3 +40,39 @@ seine Zeile (Nachtrag mit Datum, keine Zeile fällt still).
 
 **Nicht in diesem Spike:** das Gesetz des Auges (Bereich, m), die Dämmerung als Bild-Folge, die physikalischen Werte ALLER Quellen
 (nur die des Ort-Paars), ein Bau am Spiel. Kein Stempel.
+
+## Nachtrag 19.11. 02:40 — nach dem Zensus (e49829453) und dem Entscheid des Koordinators 02:31, VOR dem Spike (keine Zeile oben fällt)
+
+**Die Quellen des Spikes stehen physikalisch, in E₀ = 16 090:** Mond 0,26 lx waagrecht bei Vollmond im Zenit-Durchlass (statt 0,51;
+Zeile 2 und 2v zusätzlich bei den bestellten 0,1 lx), Herd 2–5 lx in 2 m (gesetzt: 3,5 lx, statt 22), Ambient, Hemisphäre und
+Sternen-Leuchten × 7,21·10⁻⁵ × (0,26 ÷ 0,51) bzw. ihr Quell-Wert (Sternen-Leuchten 0,0005 lx), Mondscheibe 2 500 cd/m². Die
+Leuchtflächen (Flamme, Glut) bleiben bis zur Tafel des Quellen-Lesers auf ihrem heutigen Wert, im Maßstab M gelesen (0,27–0,86
+Einheiten = 4 300–13 800 cd/m²) — im Blatt so benannt. Fällt der physikalische Herd nachts unter die Schwelle des Bilds, ist das
+ein Befund (m, Ort-Term), kein Grund zurückzudrehen.
+
+**Die Scheiben-Ausnahme (S):** die Sonnenscheibe (1,6·10⁹ cd/m²) ist am Puffer gedeckelt, an EINER Stelle, der Deckel eine
+Funktion des Formats; die Beleuchtungsstärke der Sonne nie. FÄLLT, wenn die gedeckelte Scheibe am Mittag das Format-Ende trifft
+(weißer Block, NaN/Inf im Puffer), wenn die Karte der Mess-Wiese sich durch den Deckel um > 0,5 Code ändert, oder wenn der Deckel
+an mehr als einer Stelle stehen muss.
+
+**Die elf brechenden Leser, je eine Zeile (erwartetes Verhalten; „hält" nur mit Zahl):**
+
+| # | Leser | erwartet | FÄLLT, wenn |
+|---|---|---|---|
+| L1 | Mess-Kette `_augeKetteZeichnen` | liest ÷ k_vor; Z am Mittag 0,2046 Einheiten | Z weicht > 1 % ab (= F2) |
+| L2 | `AnazhRealm.AUGE` (kE, zE, 16 090) | bleibt, weil M der EINE Maßstab ist | eine Zahl muss sich ändern |
+| L3 | τ in `_dayNightApplyBelichtung` | liest Zustand × 16 090 als cd/m², jetzt auch nachts wahr | τ der Mond-Wiese liegt nicht am Stäbchen-Ende (0,4 s) |
+| L4 | Feld-Faktor F | fällt mit F (kein Leser mehr) | er bleibt im Bild-Pfad |
+| L5 | `_nachtAuge` sVon | liest P ÷ k_vor × 16 090 cd/m²; `luxJeEinheit` und 0,224 fallen (Absenz-Grep) | der Stäbchen-Anteil der Mond-Wiese ≠ der von main bei gleicher Leuchtdichte (± 0,02) |
+| L6 | Brand-Flamme, Umkehr über `_nachtAuge` | folgt L5 | Flammen-Luma gegen main > 2 Code (= F6) |
+| L7 | Bloom-Schwelle 0,86 | steht im BELICHTETEN Raum, die Zahl bleibt | Vermerk statt Fall: der Schein ändert sich gegen main (heute belichtet 0,44 mittags / 1,08 nachts) — gemessen als ΔLuma im Ring um die Sonne |
+| L8 | Godray-Schwelle 0,8 | belichteter Raum, die Zahl bleibt | wie L7 |
+| L9 | lokaler Kontrast | belichteter Raum (Wahl steht auf 0) | bei Wahl 0 ändert sich ein Pixel |
+| L10 | TRAA Flimmer-Dämpfung 1 ÷ (L + 1) | belichteter Raum; die Geschichte rechnet mit k_jetzt ÷ k_davor um | Geister-Helligkeit > 2 Code in Bild 1–3 nach einem k-Sprung von 1 EV (= F1) |
+| L11 | Albedo-Eichung der Werkbank · post-kette DUNKEL_NACHT_LICHT | Albedo misst im Szenen-Raum (÷ k_vor), die Karte liest 0,180; die Injektion 0,02 steht im belichteten Raum | die Karte liest unter Vor-Belichtung ≠ 0,180 ± 0,002 |
+
+**Rückleser der Strahldichte (R):** Spiegel-Pass, Rückstrahl, Wasser teilen durch das k_vor des Bilds, das sie schrieb. FÄLLT,
+wenn eine gespiegelte oder rückgestrahlte Fläche der Mess-Wiese gegen main um > 1 Code abweicht.
+
+**Bilder des Spikes (fünf, je main ↔ Spike):** Mittag mit Himmel im Blick · Herd nah (physikalischer Herd, physikalischer Mond) ·
+Mond frei · Innenraum · unter dem Kronendach. Zeile 1 (Mess-Wiese, Blick zum Boden) bleibt die Gleichheits-Messung.
