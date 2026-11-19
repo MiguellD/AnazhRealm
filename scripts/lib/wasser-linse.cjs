@@ -1546,7 +1546,7 @@ async function wasserRegen(o = {}) {
         // der Sturm wechselt das Medium, der Himmel verwirft seine Bestrahlungs-Tafel bis zur neuen Lesung (`_atmoTakt`) — die Probe
         // wartet auf sie und wendet das Licht an; bis hier trug der Regen ein eigenes, unbeleuchtetes Licht
         r._applyDayNightToScene();
-        for (let i = 0; i < 100 && !(st.atmoLut && st.atmoLut.tafel); i++) await new Promise((q) => setTimeout(q, 30));
+        for (let i = 0; i < 100 && !(st.atmoLut && st.atmoLut.tafel); i++) await sleep(30);
         if (!(st.atmoLut && st.atmoLut.tafel)) return { fehler: "die Bestrahlungs-Tafel des Sturms kam nicht zurück (der Lichtmesser liest nichts)" };
         r._applyDayNightToScene();
         r._tickRain();
