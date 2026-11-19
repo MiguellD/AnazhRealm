@@ -97,5 +97,20 @@ const zaehle = (S, f) => Object.entries(S.reduce((a, z) => ((a[f(z)] = (a[f(z)] 
       // und nur unter Wohnhäusern mit Kultur-st 1 (der Rest ist dann allein die Wohl-Stufe: wohl = Rang + Würfel)
       const K1 = W.filter((z) => kSt(z) === 1);
       console.log(`  Wohnhäuser mit Kultur-st 1 (${K1.length}): ρ(1G, Abstand Markt) ${r3(spearman(K1.map((z) => (z.st === 1 ? 1 : 0)), K1.map((z) => z.dMarkt)))} · ρ(1G, t) ${r3(spearman(K1.map((z) => (z.st === 1 ? 1 : 0)), K1.map((z) => z.t)))} · ρ(1G, wohl) ${r3(spearman(K1.map((z) => (z.st === 1 ? 1 : 0)), K1.map((z) => z.wohl)))}`); }
+    // ═════ ZUSATZ 19.11. vierter Gang (Entscheid 3 des Koordinators): S8-Zeile „Eingeschosser an Hauptstraßen-Fronten“, Soll 0 ═════
+    // Was heute als Hauptstraße zählbar ist, in zwei Lesarten: (I) der Plan selbst — die Stamm-Kanten gen 0 (= die breiteste Breite des
+    // Plans 5,0 m, DORF_NORM.strasseW FC:3649), ohne und mit den Markt-Fronten; (II) die absolute Breite gegen das Band der Hauptstraße
+    // des Quellen-Blatts quellen-strasse-zins.md (7,5–13,7 m) — und je Klasse-Band, welche Fronten heute überhaupt hineinfallen.
+    {
+        console.log(`\nZUSATZ S8 — EINGESCHOSSER AN HAUPTSTRASSEN-FRONTEN (Soll 0)`);
+        const zeig = (n, S) => { const e = S.filter((z) => z.st === 1); console.log(`  ${n}: Fronten ${S.length} · eingeschossig ${e.length} (${pz(e.length, S.length)})${e.length ? " — " + zaehle(e, (z) => z.rolle) + " · Lage " + zaehle(e, (z) => z.lage) : ""}`); };
+        zeig("(I a) gen 0 (Stamm, 5,0 m)", M.filter((z) => z.frontGen === 0));
+        zeig("(I b) gen 0 ohne Markt-Fronten (Lage haupt)", M.filter((z) => z.lage === "haupt"));
+        zeig("(I c) gen 0 oder Markt-Front", M.filter((z) => z.frontGen === 0 || z.lage === "markt"));
+        zeig("(I d) breiteste Breite des Plans (frontW = max)", M.filter((z) => z.frontW === Math.max(...M.map((y) => y.frontW))));
+        zeig("(II) absolute Breite im Band der Hauptstraße 7,5–13,7 m", M.filter((z) => z.frontW >= 7.5 && z.frontW <= 13.7));
+        const BAND = [["Fußgasse 1,75–2,7", 1.75, 2.7], ["Mindest-Gasse 4,3", 4.3, 4.3], ["Karrenstraße 4,7–7,3", 4.7, 7.3], ["Straße von Rang 5,8–11,0", 5.8, 11.0], ["Hauptstraße 7,5–13,7", 7.5, 13.7]];
+        console.log(`  Fronten je Band des Quellen-Blatts (Bänder überlappen): ${BAND.map(([n, a, b]) => `${n} m: ${M.filter((z) => z.frontW >= a - 1e-9 && z.frontW <= b + 1e-9).length}`).join(" · ")} · in keinem Band: ${M.filter((z) => !BAND.some(([, a, b]) => z.frontW >= a - 1e-9 && z.frontW <= b + 1e-9)).length}`);
+    }
     console.log(`\nLaufzeit ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 })().catch((e) => { console.error(e); process.exit(1); });
