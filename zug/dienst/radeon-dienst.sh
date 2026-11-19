@@ -112,7 +112,20 @@ nichts_offen() { grep -q "ist jede Station auf radeon frisch gemessen" "$W/radeo
 export PUNKTE_REFERENZ_NAME=radeon
 UNGEPUSHT_SEIT=$S/radeon.ungepusht
 UNGEPUSHT_FRIST_S=${UNGEPUSHT_FRIST_S:-900}
-pushe() { node "$RUNDE_CJS" push-pfade "$PM" punkte-maschine radeon "$1" "$2" >>"$L" 2>&1; } # <kopf|-> <botschaft>
+# pushe <kopf|*|-> <botschaft> — DER GESCHEITERTE PUSH ENDET LAUT (Koordinator 19.11., Entscheid E4 Punkt 2, Muster M6/M11: „Push
+# scheitert still“, der Blick sagte „RADEON ok“): die Versuch-Zeilen von runde.cjs gehen wie bisher in die Fahrt-Datei $L; scheitert
+# der Push ganz, steht dort „PUSH ROT <kopf8>: <grund>“ und in $S/radeon.push-rot Zeit, Kopf und Grund (der Blick liest sie); der
+# nächste gelungene Push löscht die Datei. Rückgabe 1 — nie still Exit 0.
+pushe() {
+    local o rc
+    o=$(node "$RUNDE_CJS" push-pfade "$PM" punkte-maschine radeon "$1" "$2" 2>>"$L")
+    rc=$?
+    [ -n "$o" ] && echo "$o" >>"$L"
+    if [ "$rc" = 0 ]; then rm -f "$S/radeon.push-rot"; return 0; fi
+    log "PUSH ROT ${1:0:8}: ${o:-runde.cjs push-pfade Exit $rc ohne Zeile} — die Messung bleibt im Baum, nichts verworfen"
+    echo "$(date -Iseconds) ${1:0:8} ${o:-runde.cjs push-pfade Exit $rc ohne Zeile}" >"$S/radeon.push-rot"
+    return 1
+}
 # baum_frisch — der Mess-Baum an den Ursprungs-Kopf, nie per Rebase: eigene Commits vor dem Ursprung (aus der Zeit des Rebase-Pushs)
 # bleiben als Zweig radeon-ungepusht-<zeit> liegen, ihre Mess-Dateien gehen nach origin, soweit er sie nicht trägt (push-pfade -);
 # scheitert das, bleibt der Baum stehen (nichts verworfen) und die Linse meldet es
@@ -488,6 +501,7 @@ STUMMEL
     bild) bilder_halten() { :; } ;; # die alte Regel: git add -A nimmt jedes Roh-Bild mit
     liste-als-argument) liste_datei() { echo "$2"; } ;; # die alte Regel: die Liste reist als EIN Argument
     still-push) ungepusht_pruefen() { UNGEPUSHT_TEXT=; } ;; # die alte Regel: ein Push scheitert, niemand sagt es
+    pushe-still) pushe() { node "$RUNDE_CJS" push-pfade "$PM" punkte-maschine radeon "$1" "$2" >>"$L" 2>&1; } ;; # die Regel bis 19.11.: keine PUSH-ROT-Zeile, keine Datei
     referenz-rechner) unset PUNKTE_REFERENZ_NAME ;; # die alte Regel: die Referenz heißt nach dem Rechner (geteilt)
     reihe) vor_mir_da() { return 1; } ;; # die alte Regel: nach HAND_ZEIT_S tritt die Fahrt wieder ein, gleich wer schon wartet
     esac
@@ -642,14 +656,18 @@ STUMMEL
     takt
     z1=$(git -C "$R" fetch -q origin +refs/heads/koordination:refs/t/k && git -C "$R" show refs/t/k:zug/erledigt.txt | grep -c "ALARM radeon: RADEON: [0-9]* Messungen ungepusht seit")
     b1=$(gem "$K")
+    # laut: „PUSH ROT <kopf8>: PUSH SCHEITERT 2x: …“ in der Fahrt-Datei und $S/radeon.push-rot, solange er scheitert
+    zr=$(grep -c "PUSH ROT ${K:0:8}: PUSH SCHEITERT 2x" "$L")
+    fr=$([ -s "$S/radeon.push-rot" ] && echo da || echo fehlt)
     rm -f "$X/pm.git/hooks/pre-receive"
     for mp in 1 2 3 4; do takt; [ "$(gem "$K")" = 2 ] && break; done
     b2=$(gem "$K")
+    fr2=$([ -e "$S/radeon.push-rot" ] && echo steht || echo weg)
     UNGEPUSHT_FRIST_S=900
     unset RUNDE_PUSH_VERSUCHE
     zv=$(grep -c "runde.cjs push-pfade Versuch 1/2 gescheitert" "$L") # jeder Versuch steht sofort im Protokoll
-    if [ "$z1" -ge 1 ] && [ "${b1:-0}" = 0 ] && [ "$b2" = 2 ] && [ "$zv" -ge 1 ]; then echo "OK p  Push scheitert (Zeile „Versuch 1/2 gescheitert“ sofort im Protokoll): ALARM „RADEON: n Messungen ungepusht seit …“ in zug/erledigt.txt, nichts verworfen; der Ursprung nimmt wieder an → nachgeholt 2 von 2 (ohne Rebase)"
-    else echo "ROT p  Push scheitert: Versuch-Zeilen ${zv:-0} (Soll ≥ 1), Alarm-Zeilen $z1 (Soll ≥ 1), am Ursprung während der Ablehnung ${b1:-0} (Soll 0), danach $b2 (Soll 2)"; fi
+    if [ "$z1" -ge 1 ] && [ "${b1:-0}" = 0 ] && [ "$b2" = 2 ] && [ "$zv" -ge 1 ] && [ "$zr" -ge 1 ] && [ "$fr" = da ] && [ "$fr2" = weg ]; then echo "OK p  Push scheitert (Zeile „Versuch 1/2 gescheitert“ sofort im Protokoll, „PUSH ROT ${K:0:8}: PUSH SCHEITERT 2x“ $zr-mal in der Fahrt-Datei, radeon.push-rot steht): ALARM „RADEON: n Messungen ungepusht seit …“ in zug/erledigt.txt, nichts verworfen; der Ursprung nimmt wieder an → nachgeholt 2 von 2 (ohne Rebase), radeon.push-rot fällt"
+    else echo "ROT p  Push scheitert: Versuch-Zeilen ${zv:-0} (Soll ≥ 1), PUSH-ROT-Zeilen ${zr:-0} (Soll ≥ 1), radeon.push-rot $fr (Soll da) → $fr2 (Soll weg), Alarm-Zeilen $z1 (Soll ≥ 1), am Ursprung während der Ablehnung ${b1:-0} (Soll 0), danach $b2 (Soll 2)"; fi
     # q — ABSENZ: kein Pfad, den zwei Schreiber teilen — die Referenz der Radeon heißt referenz-radeon.json, eine Rechner-Referenz reist nie
     z2=$(git -C "$X/pm.git" ls-tree --name-only punkte-maschine meisterkarte-quelle/punkte/messung/ | sed "s|.*/||" | grep "^referenz-" | tr '\n' ' ')
     if [ "$z2" = "referenz-radeon.json " ]; then echo "OK q  Absenz: am Ursprung nur referenz-radeon.json — kein Pfad eines Rechners oder eines anderen Geräts"
@@ -695,7 +713,7 @@ STUMMEL
 selbsttest() {
     local echt m r rot=0 mz=0 mr=0 O
     O=$(mktemp -d)
-    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push referenz-rechner liste-als-argument"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
+    local MUT=${ST_MUTANTEN-"von-vorn rest warter pid reihe ziel bild still-push pushe-still referenz-rechner liste-als-argument"} # ST_MUTANTEN="" fährt nur die Fälle (die Mutanten getrennt, wenn der Zug wenig Zeit lässt)
     # echt und jede Mutante in ihrem eigenen Sandkasten, nebeneinander
     for m in echt $MUT; do (st_lauf "${m#echt}" >"$O/$m" 2>&1) & done
     wait
