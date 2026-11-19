@@ -56,5 +56,23 @@ Wert, steht er als benannte Hypothese mit Spanne im Kern und in dieser Tafel.
 - NICHT gelesen: das Futter-Minimum für Reproduktion, Fuller im Original, r_max nach McCullough 1979, Rothirsch-Kälber je Kuh,
   Streifgebiet der Kuh in ha, der Riss-Anteil je Jahr für Isle Royale · Yellowstone · Białowieża · Minnesota.
 
+## Lauf 1 (19.11. 05:05) — S1 ROT: Wolf 0 von 8, die Beute stirbt in allen 8 Saaten mit aus
+
+Lebende Phase (Jahre 0–16): Wölfe je 1 000 Köpfe 3,3–4,6 (S2-Band), Unreife am Riss 0,57–0,66, Geborene reif 0,29–0,41, ohne Wolf
+Überleben Kitz 0,611 · Kuh 0,742 (Feld 0,59 · 0,76) und CV 0,010. Aber: 51–59 Risse je Wolf je Jahr (Feld 15–28 Hirsche),
+9,5–10,2 kg Riss je Wolf je Tag, Deckung ÷ Erhaltung 2,04 → 1,81 bis zuletzt, Beute 12 458 → 136; alle neun Zellen der
+Empfindlichkeits-Reihe enden bei 0. Kosten ohne Wolf bei 19 900 Köpfen 0,416 ms je 256 Reviere (S11 ROT, bleibt ROT).
+
+**MEIN FEHLER in der Werte-Tafel, beim Namen:** die Sattheit 5,7 kg je Tag ist bei Stahler schon Riss-BRUTTO; die Tafel gab sie
+als Futter aus, der Kern teilte nochmals durch den Nutz-Anteil — 12,8 statt 9,0 kg Riss je Tag am erwachsenen 64-kg-Wolf.
+Folge: der Wolf reißt als feste Quote das Zwei- bis Dreifache des Felds, über dem Zuwachs der Beute (0,39–0,44 Geburten gegen
+0,16–0,25 Verlust je Kopf je Jahr).
+
+**Lauf 2, VOR der Rechnung gesetzt:** genau EINE Korrektur — das Plateau ist 0,396 kg Riss-brutto je Tag je kg^¾, gefressen wird
+Riss × Nutz-Anteil, die Deckung misst Gefressenes ÷ Erhaltung. Soll S1–S12 unverändert. Vorhersagen: Deckung am Plateau 1,44 bei
+Nutz 0,7; Risse je Wolf je Jahr 24–44; bei Wurf-Schwelle 1,5 stirbt der Wolf aus (1,44 < 1,5), bei Nutz 0,6 wirft er nur knapp
+(1,23). Fällt Lauf 2 an S1, fallen die Sätze 3 und 4 des Gesetzes (feste Quote ohne Antwort auf die Beute-Dichte vor der
+Erschöpfung), und es geht an den Zensus der funktionellen Antwort (Messier) — ohne dritte Formel am selben Tag.
+
 Fällt das Gesetz an S1 oder an drei der Proben S2–S8, geht es zurück an den Zensus; ein Soll, das nach einem Ergebnis geändert
 wird, steht hier offen mit Datum und Grund.
