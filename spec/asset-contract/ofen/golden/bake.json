@@ -166,15 +166,15 @@
   },
   "wolf-L0|fell|wolf": {
    "meshes": 1,
-   "verts": 8936,
-   "tris": 17868,
-   "sha256": "7c09cfcfdc0ac4809624329c6d1aa1d9602937556ba76a4b7afa2f8f348802c7"
+   "verts": 8904,
+   "tris": 17804,
+   "sha256": "b554124430fadad91f873b4edf0df7c556713682c83f580b1951cf8c739d93d7"
   },
   "wolf-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 13174,
-   "tris": 26304,
-   "sha256": "b24d8145ec3f98f75de8e047bab231036bdc0fe87aa13ee4f5f7929d484f11f6"
+   "verts": 13064,
+   "tris": 26084,
+   "sha256": "70030e02a1e2c5ebe496fb64e262163e986a0af86b141ecc49118148e2f7cb83"
   },
   "wolf-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -277,9 +277,9 @@
   },
   "wolf-L1|fell|wolf": {
    "meshes": 1,
-   "verts": 3442,
-   "tris": 5612,
-   "sha256": "173bfd55ea2f2138ea82c9aad75355cecd09ab4de4bcaf4512c3edd734984712"
+   "verts": 3428,
+   "tris": 5584,
+   "sha256": "c45666b04fe4d806fc237a1b57be4c65cdac9b317122711fa10139bd60d5fd91"
   },
   "wolf-L1|straehneD|wolf": {
    "meshes": 1,
@@ -598,15 +598,15 @@
   },
   "fox-L0|fell|wolf": {
    "meshes": 1,
-   "verts": 9476,
-   "tris": 18948,
-   "sha256": "8c082773f8421d7363ed1a73d29c72429aabb3cb7e03d20e473404ede68b7061"
+   "verts": 9412,
+   "tris": 18820,
+   "sha256": "abd72f1786505d7f330d67d6ec56485039b4b06f20cac9827a7731a299aed080"
   },
   "fox-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 13550,
-   "tris": 27056,
-   "sha256": "c4ec8d8863475e3e5596d512dec92544ec0617e3e4e386389e34ccdb6339d3bc"
+   "verts": 13450,
+   "tris": 26856,
+   "sha256": "95f8d5ec9a11c404ae852fcfd86cccbadaec9aa9b3eac7cd3a9645bd5054844c"
   },
   "fox-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -715,9 +715,9 @@
   },
   "fox-L1|fell|wolf": {
    "meshes": 1,
-   "verts": 3620,
-   "tris": 5938,
-   "sha256": "6ef35c2179aa421217c3aad42c55d87150f054bdd22cdfa0a84744ea0b7b88a9"
+   "verts": 3602,
+   "tris": 5902,
+   "sha256": "789f1fca0cd779898a7a67a91a400c12ad908e326a95a677c832b1666b2d3680"
   },
   "fox-L1|straehneD|wolf": {
    "meshes": 1,
@@ -904,9 +904,9 @@
   },
   "bear-L0|fell|wolf": {
    "meshes": 2,
-   "verts": 10002,
-   "tris": 19824,
-   "sha256": "8f95a64bdd473f7036043777ec0ef9d2ac0f5a85c81e03d34045c4cc162f8bad"
+   "verts": 10012,
+   "tris": 19844,
+   "sha256": "e5618f40cc24c7b8e56b3026c1531eab40b7bd6b225ae76ddb33fb2bdc7c5a76"
   },
   "bear-L0|fell|headGroup": {
    "meshes": 1,
@@ -1012,9 +1012,9 @@
   },
   "bear-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 14324,
-   "tris": 28604,
-   "sha256": "f8578e4052772d2bdca461b86b31ac8ff16891a83ba47153c6e33ddda5625498"
+   "verts": 14334,
+   "tris": 28624,
+   "sha256": "1c4cd6ce8d65c568f377b7f3cd4790dc904bb4eeca764e1de76e104b53a80c29"
   },
   "bear-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1099,9 +1099,9 @@
   },
   "bear-L1|fell|wolf": {
    "meshes": 1,
-   "verts": 3558,
-   "tris": 6124,
-   "sha256": "91ee25b28b4558347800b8dc972cecd26f3af674afba44ab740970974f6464ed"
+   "verts": 3540,
+   "tris": 6088,
+   "sha256": "9d762fe5f5386b1c913c7652dc9dccc61b98b4243061cdd1123ea01e4711ac29"
   },
   "bear-L1|straehneD|wolf": {
    "meshes": 1,
@@ -1342,15 +1342,15 @@
   },
   "deer-L0|fell|wolf": {
    "meshes": 1,
-   "verts": 8700,
-   "tris": 17396,
-   "sha256": "426bc623810149f616259bf48a34b6b659a730b5cae3b82ded302137294f51d4"
+   "verts": 8684,
+   "tris": 17364,
+   "sha256": "0ac4ab22f812820402ce2cba864ec5c8678d676d4e7b7f4297e5f23df7d5939a"
   },
   "deer-L0|fellSchale|wolf": {
    "meshes": 1,
-   "verts": 12734,
-   "tris": 25424,
-   "sha256": "828fe95c999d16f8c1f2dd286f99a4f176e960920086b5f4eb422a6bc6703f5d"
+   "verts": 12714,
+   "tris": 25384,
+   "sha256": "55ac10c020db35724452fd8679ac7a5dacfe9f1acf54a37f057ca6abdbaf5c98"
   },
   "deer-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1438,9 +1438,9 @@
   },
   "deer-L1|fell|wolf": {
    "meshes": 1,
-   "verts": 2777,
-   "tris": 5146,
-   "sha256": "82c467a7c46231b6c5c5006c13a54a0fb0db8d6a1f31b99dc30c335e2bbcf95b"
+   "verts": 2773,
+   "tris": 5138,
+   "sha256": "7377625a6ef20cf57a2d28f8535158944788862f168b76d27c4ce459d15ef66d"
   },
   "deer-L1|straehneD|wolf": {
    "meshes": 1,
