@@ -74,3 +74,11 @@ Wer hier weitermacht, liest zuerst den LAGE-Block, dann dieses Blatt, fährt den
   Handgriff des nächsten Takts (`rot-text.cjs --sha d8fe7358`).
 - **Regeln neu:** eine Preis-Zahl im Stempel braucht ABAB mit ≥ 3 Läufen je Seite, nie einen Einzellauf. Ein Stempel wird über
   die Sperr-Zeile in `zug/abab.txt` + Archiv-Verschiebung zurückgezogen, nie über den Zug-Dienst von Hand.
+
+## Nachtrag 16:26 — gilt vor allem darüber
+- **Der Rückzug des Lichtmesser-Stempels ist ZURÜCKGENOMMEN** (Wort des Schöpfers: „du schneidest wieder dinge wegen diesem
+  verdammten kaltstart?“). `w28-laub-kante-2` (80471c53) steht wieder als Kopf, die Sperr-Zeile in `zug/abab.txt` ist entfernt, er
+  landet mit dem Zug. Die Kosten (Kalt-Ankunft Genesis +9,5 s, Wiese +2,5 s) stehen als Zahl bei Pflicht B, sie sind kein Tor.
+  `licht-lesung-ev` läuft als Nachzug und hält nichts auf. Regel: nie einen Bild-Gewinn wegen der Kalt-Ankunft zurückziehen.
+- Zug z624 (`w28-licht-eine-skala`) ROT am echt-Bein des OMEN: K9 NACHT (nachtOben 0, nachtUnten 0) und RAUCH (Kamin ohne Satz,
+  Probe blind) — Rest beim Macher GTX 1050.
