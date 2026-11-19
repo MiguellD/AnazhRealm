@@ -3,9 +3,12 @@
 // Aufruf:  node vision/buche-2.cjs                    liest vision/richter/, schreibt die Karte zurück, baut die Seite
 //          node vision/buche-2.cjs --akten DIR --karte DATEI [--trocken]   andere Akten/Karte (Probe); --trocken schreibt nichts
 //          node vision/buche-2.cjs --selbsttest        Mutanten gegen die echte Karte im Speicher, schreibt nichts
+//          node vision/buche-2.cjs --klassen [--trocken]   das Klassen-Gesetz: schreibt sprossen[].klasse und klasseGrund, dazu
+//                                                      vision/vorrat/klasse-offen.json und vision/richter/klassen-unsicher.md
 //
-// Die Maschine fasst in der Karte NUR an: kriterien[].heute, kriterien[].kern (in Glieder-Leitern dazu heuteSprossen, kernSprossen),
+// Die Buchung fasst in der Karte NUR an: kriterien[].heute, kriterien[].kern (in Glieder-Leitern dazu heuteSprossen, kernSprossen),
 // gruppen[].summe.{heute,kern,kernDazu,anteilHeute,anteilKern} und summe.{…}. Keine Sprosse, kein Soll, keine Klasse, kein Text.
+// Der Befehl `--klassen` fasst NUR sprossen[].klasse und sprossen[].klasseGrund an (DAS KLASSEN-GESETZ, unten).
 //
 // ── DIE AKTE ── vision/richter/<leiter-id>.<sprosse>.json (von Hand) oder <leiter-id>.<sprosse>.<sha8>-<gerät>.json (die Mess-Sitzung,
 // vision/richter-akte.cjs: je Gerät und Kopf eine Datei — zwei Geräte schreiben nie in dieselbe). Alle Dateien einer Sprosse werden
@@ -611,8 +614,9 @@ function aktenLesen(dir) {
 // DIE KLASSE AN DER TAFEL (16.11., vorrat3-klasse): die Tafel vision/richter-tafel.json bindet Stationen an Sprossen; trägt eine
 // solche Sprosse in der Karte keine `klasse`, kann ihre Akte höchstens Kern heben („KLASSE FEHLT“). Bis 16.11. wurde die Klasse von
 // Hand mit der Tafel-Zeile gesetzt und dabei vergessen (zwei gemessene Sprossen fielen daran). Jeder Lauf nennt darum jede solche
-// Zeile beim Namen — kein Abbruch: die Buchung bleibt richtig (Kern), nur das Vergessen wird laut. Regel der Klasse:
-// vision/vorrat/klasse-offen.json (Feld regel), offene erste Sprossen mit Grund ebenda.
+// Zeile beim Namen — kein Abbruch: die Buchung bleibt richtig (Kern), nur das Vergessen wird laut. Seit 19.11. schreibt das
+// Klassen-Gesetz (unten, `--klassen`) die Klasse jeder Sprosse; ohne Klasse bleiben nur die offenen ersten Sprossen mit Grund in
+// vision/vorrat/klasse-offen.json und, bis zu deren Entscheid, keine Sprosse darüber (sie tragen die sichere Lesart als Boden).
 const TAFEL = path.join(__dirname, "richter-tafel.json");
 function tafelOhneKlasse(karte, tafel) {
     const sprosse = new Map();
@@ -628,6 +632,501 @@ function tafelOhneKlasse(karte, tafel) {
 const tafelZeilen = (aus) => [...aus.map((a) => "  TAFEL OHNE KLASSE: " + a), `TAFEL: ${aus.length} Zeile(n) ohne Klasse der Sprosse`];
 
 const schreibe = (karte) => JSON.stringify(karte, null, 1) + "\n";
+
+// ───────────────────────── DAS KLASSEN-GESETZ (19.11.) ─────────────────────────
+// EINE Funktion Umfang → Zeile der Preis-Treppe (R5, R8). Bis 19.11. stand `klasse` von Hand an 234 von 1 718 Sprossen; jede Leiter
+// endete darum an ihrer ersten Sprosse ohne Klasse (vision/richter/klassen-luecke.md). Der Befehl `--klassen` schreibt `klasse` und
+// daneben `klasseGrund` in jede Sprosse; die Buchung liest weiter NUR das Feld (kein zweiter Rechen-Weg zur Buch-Zeit).
+//   1  TREPPE      die Klasse ist die KLEINSTE Zeile, deren Obergrenze den Umfang fasst. Die Obergrenzen liest das Gesetz aus der
+//                  Karte (preisTreppe[].umfang, umfangsKlassen): Ort bis 10² Bauten, 10³ Leiber, 1 km, ≤ 1 km² · Stadt bis 10⁵ Bauten,
+//                  10⁶ Menschen, 20 km, ~10³ km² (±10 %) · Megastadt und Kontinent darüber. Die Lücke zwischen zwei Zeilen gehört zur
+//                  höheren. Planet und Welten trägt nur ein WORT (Planet, Orbit, Welten, Sonnensystem, Galaxie, Kosmos), nie eine Zahl.
+//   2  ERBEN       wo der Umfang nicht wächst (Zeit an einem Ort, Vielfalt, Prüfhärte), erbt die Sprosse die Klasse der Sprosse darunter.
+//   3  MONOTON     nie unter der Klasse der Sprosse darunter.
+//   4  TRÄGER      eine Zahl hebt nur mit Träger (Bauten, Leiber, km, km²): „10³ Welten“ ist Planet und Welten wegen „Welten“,
+//                  „10² Generationen“ erbt. Eine bloße Zahl („10⁴“) zählt den Träger der REIHE — das gezählte Nomen der nächsten
+//                  Sprosse darunter (R5: jede weitere Sprosse liegt eine Zehnerpotenz desselben Umfangs höher).
+//   5  HAND        von Hand gesetzte Klassen bleiben (`klasseGrund: "hand"`); alles andere rechnet jeder Lauf neu (idempotent).
+//   6  NICHT RATEN was das Gesetz nicht sicher liest (Träger unklar, zwei Zeilen zugleich, Welt-Wechsel, Erd-Schlüssel, Region ohne
+//                  Größe, Himmel und Feld vom Boden aus), hebt nicht: die Sprosse nimmt die sichere Lesart und steht im Blatt
+//                  vision/richter/klassen-unsicher.md. Eine unsichere ERSTE Sprosse bleibt leer, mit Grund in klasse-offen.json.
+// klasseGrund: `wort:<Wort>` · `zahl:<Größe>` · `geerbt:S<n>` (`geerbt:R5`: erste Sprosse ohne Maß ist EIN Ort) · `hand`.
+const KLASSE_OFFEN = path.join(__dirname, "vorrat", "klasse-offen.json");
+const KLASSEN_BLATT = path.join(AKTEN, "klassen-unsicher.md");
+const [ORT, STADT, MEGA, PLANET] = [0, 1, 2, 3];
+const B_ = "A-Za-zÄÖÜäöüß";
+const ganz = (kern) => new RegExp(`[${B_}-]*(?:${kern})[${B_}-]*`);
+const frei = (kern) => new RegExp(`(?<![${B_}])(?:${kern})(?![${B_}])`);
+// die Worte der Tafel der Umfangs-Klassen (R5: gleiche Worte heißen überall dieselbe Größe); `himmel`: das Wort kann auch ein Ding am
+// Himmel meinen (Regel 6)
+// `wechsel`: EIN fremdes Ziel („Heimat + 1 Fremdwelt“, „EINE Nachbargalaxie als Ziel“) — der Umfang kosmisch, die Pose am Ziel ein Ort:
+// zwei Lesarten, das Wort hebt nicht (Regel 6)
+const KLASSEN_WORTE = [
+    { rang: PLANET, re: frei("Fremdwelt"), wechsel: true },
+    { rang: PLANET, re: frei("Nachbargalaxie"), wechsel: true },
+    { rang: PLANET, re: new RegExp(`fremde[rn]? Planet[${B_}]*`) },
+    { rang: PLANET, re: ganz("[Pp]lanet"), himmel: true },
+    { rang: PLANET, re: ganz("Orbit") },
+    { rang: PLANET, re: ganz("Sonnensystem") },
+    { rang: PLANET, re: ganz("[Gg]alaxie") },
+    { rang: PLANET, re: ganz("Kosmos|kosmisch") },
+    { rang: PLANET, re: frei("Alls?") },
+    { rang: PLANET, re: ganz("Welten") },
+    { rang: PLANET, re: new RegExp(`(?:jede[rn]?|fremde[nr]?) Welt(?![${B_}])`) },
+    { rang: PLANET, re: ganz("Fremdwelten") },
+    { rang: MEGA, re: ganz("Megast[aä]dt") },
+    { rang: MEGA, re: ganz("Megaregion|Hyperstadt|Ökumenopolis") },
+    { rang: MEGA, re: ganz("Tokio") },
+    { rang: MEGA, re: ganz("Kontinent") },
+    { rang: MEGA, re: frei("Reich|Jenseits") },
+    { rang: STADT, re: ganz("[Ss]t[aä]dt") },
+    { rang: STADT, re: ganz("Metropole") },
+    { rang: ORT, re: ganz("Dorf") },
+    { rang: ORT, re: frei("Weiler") },
+    { rang: ORT, re: frei("(?:1|EIN|ein) Ort") },
+];
+const HOCH_ZIFFERN = "⁰¹²³⁴⁵⁶⁷⁸⁹";
+const hochZahl = (s) => {
+    let n = "";
+    for (const c of s) if (c !== "⁻") n += HOCH_ZIFFERN.indexOf(c);
+    return (s.includes("⁻") ? -1 : 1) * +n;
+};
+const ZAHL_RE = /(\d+(?: \d{3})*(?:,\d+)?)(?:·10([⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+)|([⁰¹²³⁴⁵⁶⁷⁸⁹⁻]+))?[⁺+]?/g;
+const ZAHLWORT_RE = new RegExp(`(Tausende|Millionen|Milliarden)(?![${B_}])`, "g");
+const ZAHLWORT = { Tausende: 1e3, Millionen: 1e6, Milliarden: 1e9 };
+// jede Zahl eines Umfangs: { wert, roh, bis, hoch (als Zehnerpotenz geschrieben), unten (untere Grenze einer Spanne), faktor, vorWort }
+function zahlenIn(u) {
+    const aus = [];
+    let m;
+    ZAHL_RE.lastIndex = 0;
+    while ((m = ZAHL_RE.exec(u))) {
+        const mant = +m[1].replace(/ /g, "").replace(",", ".");
+        const wert = m[2] ? mant * 10 ** hochZahl(m[2]) : m[3] ? mant ** hochZahl(m[3]) : mant;
+        const vor = u.slice(0, m.index),
+            nach = u.slice(ZAHL_RE.lastIndex);
+        const pm = new RegExp(`([${B_}_]+)\\s*(?:auf\\s+)?[≥≤~≈±+−]?\\s*$`).exec(vor);
+        aus.push({
+            wert,
+            roh: m[0],
+            von: m.index,
+            bis: ZAHL_RE.lastIndex,
+            hoch: !!(m[2] || m[3]),
+            unten: /^\s*(?:[–…]|bis)\s*[+−≥~≈]?\s*\d/.test(nach),
+            faktor: vor.trimEnd().endsWith("×") || /^\s?×/.test(nach),
+            vorWort: pm ? pm[1] : "",
+        });
+    }
+    ZAHLWORT_RE.lastIndex = 0;
+    while ((m = ZAHLWORT_RE.exec(u))) aus.push({ wert: ZAHLWORT[m[1]], roh: m[1], von: m.index, bis: ZAHLWORT_RE.lastIndex, hoch: true, unten: false, faktor: false, vorWort: "" });
+    return aus.sort((a, b) => a.von - b.von);
+}
+const zahlWert = (text, wo) => {
+    const z = zahlenIn(String(text))[0];
+    if (!z) bruch(`Klassen-Gesetz: keine Zahl in „${text}“ (${wo})`);
+    return z.wert;
+};
+// die Grenzen der Treppe aus der Karte (EINE Quelle) — unlesbar: Bruch
+function klassenGesetz(karte) {
+    const namen = karte.preisTreppe.map((t) => t.klasse);
+    if (namen.join(" | ") !== "Ort | Stadt | Megastadt und Kontinent | Planet und Welten") bruch(`Klassen-Gesetz: die Preis-Treppe trägt andere Zeilen (${namen.join(" | ")})`);
+    const [ort, stadt] = karte.preisTreppe;
+    const lies = (text, re, wo) => {
+        const m = re.exec(text);
+        if (!m) bruch(`Klassen-Gesetz: ${wo} unlesbar in „${text}“`);
+        return zahlWert(m[1], wo);
+    };
+    const tafel = (wort) => karte.umfangsKlassen.find((k) => k.wort.includes(wort)) || bruch(`Klassen-Gesetz: die Tafel umfangsKlassen trägt kein Wort „${wort}“`);
+    const dekade = (x) => 10 ** Math.floor(Math.log10(x));
+    return {
+        namen,
+        bauten: [lies(ort.umfang, /bis (\S+) Bauten/, "Ort Bauten"), lies(stadt.umfang, /–(\S+) Bauten/, "Stadt Bauten")],
+        leiber: [lies(ort.umfang, /(\S+) Leiber/, "Ort Leiber"), lies(stadt.umfang, /–(\S+) Menschen/, "Stadt Menschen")],
+        km: [lies(ort.umfang, /Sicht bis (\S+) km/, "Ort Sicht"), lies(stadt.umfang, /Sicht bis (\S+) km/, "Stadt Sicht")],
+        // „~10³ km²“ der Metropole: die Tilde gelesen als ±10 % (das Band von R2) — 32 × 32 km ist das Vorbild der Zeile Stadt
+        km2: [lies(tafel("Dorf").mass, /≤ (\S+) km²/, "Dorf km²"), lies(tafel("Metropole").mass, /~(\S+) km²/, "Metropole km²") * 1.1],
+        // das Erd-Maß: Leiber ab dem Wert der Tafel (darunter trägt sie die Zeile „Jenseits ≥ 4·10⁸“, die Karte schreibt „Hyperstadt … 10⁹
+        // Menschen“), Fläche ab seiner Größenordnung (darunter nennt die Tafel keine Fläche: „jeder Meeresboden ~3,6·10⁸ km²“ ist planetar)
+        planet: { leiber: lies(tafel("Planet").menschen, /^(\S+)$/, "Planet Menschen"), km2: dekade(lies(tafel("Planet").mass, /^(\S+) km²/, "Planet km²")) },
+    };
+}
+const stufe = (v, [a, b]) => (v <= a ? ORT : v <= b ? STADT : MEGA);
+const LEIBER_RE = /(?:^|-)(?:Leiber|Menschen|Bewohner|Personen|Person|Einwohner|Köpfe|Zuschauer|Kämpfer|Spieler|Mitspieler|Sprecher|Zuhörer|Besucher|Gäste|Fahrgäste|Arbeitende|Teilnehmer|Reisende|Fahrer|Bewaffnete|Bevölkerung)n?$/;
+const BAUTEN_RE = /(?:[Bb]auten|Gebäude|Häuser|Bauwerke|[Hh]aus)n?$/;
+// gezählt, aber ob als Leib: unklar (Regel 6)
+const UNKLAR_RE = /(?:^|-)(?:Wesen|Lebewesen|Individuen|Tiere|Nutztiere|Haustiere|Gesichter|Stimmen|Fahrzeuge|Glieder|Nahe|Körper)n?$/;
+// ein Größen-Wort hinter der Zahl ist ein Etikett, kein gezähltes Nomen („10⁴ Stadt“, „10⁶ Region“)
+const ETIKETT_RE = /^(?:Stadt|Dorf|Weiler|Region|Megastadt|Großstadt|Kleinstadt|Metropole|Megaregion|Kontinent|Planet)$/;
+// der Träger steht VOR der Zahl und ist kein Maß der Treppe
+const VOR_DING = new Set(["Raffer", "Zeitlupe", "Volumen", "U_eff", "Zoom"]);
+const EINHEIT_RE = new RegExp(`^\\s?(km²|km|m²|m³|m|ha)(?![${B_}²³])`);
+const OHNE_MASS_RE = new RegExp(
+    `^\\s?(?:Jahren?|Jahr|J|a|ka|Ma|Ga|d|h|min|s|Tagen?|Tag|Wochen|Monaten?|Stunden?|Minuten|Spieljahren?|Spieljahr|Spieltagen?|Spielstunden|Spielminuten|Übungsstunden|Generationen|Jahrhunderten?|Jahrtausenden?|Jahrzehnten?|Sitzungen|kg|t|g|mg|bar|K|W|dB|cd|Hz|kB|MB|%|µm|mm|cm|Lj|Geschosse|Etagen|Erdmassen)(?![${B_}])`
+);
+const REGION_RE = new RegExp(`(?<![${B_}-])(?:Region(?:en)?|Landes|Landschaft)(?![${B_}])`);
+// die Erde als Vergleich („mehr Disparität als die Erde“, „die größte tägliche Tierwanderung der Erde“) ist kein Umfang
+const ERD_VERGLEICH_RE = new RegExp(`als die Erde|(?:größte|höchste|längste|tiefste|älteste)[^,;()]* der Erde`, "g");
+// Leiber ohne Zahl („Umstehende einer Szene“, „Paar“): sie heben nichts, nennen aber den Träger der Reihe
+// „10⁴ im Protest“, „10⁵ im Stadion“: die bloße Zahl zählt, was an einem Ort versammelt ist
+const MENGE_ORT_RE = new RegExp(`^ (?:im|am|in einer|in der|auf dem) [${B_}-]+|^ unterwegs`);
+const MENGE_RE =new RegExp(`(?<![${B_}-])(?:Leiber|Menschen|Bewohner|Personen|Einwohner|Zuschauer|Umstehende|Paar)(?![${B_}-])`);
+const HORIZONT_RE = /bis zum Horizont|Horizont \d/;
+const ERD_RE = new RegExp(`Erd-Saat|Erdgeschichte|(?<!unter )(?<![${B_}])[Dd](?:er|ie) (?:ganze |bewohnte )?Erde(?![${B_}])`);
+const WELTWECHSEL_RE = new RegExp(`[Ff]remd(?!es Gerät)[${B_}-]*(?: [${B_}-]+)?|(?<![${B_}])Mars(?![${B_}])|Asteroid[${B_}-]*|im freien Raum|auf Mond|eines Systems|Gasriese[${B_}-]*`);
+const HIMMEL_RE = new RegExp(`(?<![${B_}])(?:Stern|Sterne|Sternen|Sonne|Mond|Kompass)(?![${B_}])|Dipol|(?<![${B_}])mag \\d`);
+const REISE_RE = /reisbar|ansteuerbar|anfliegbar|Landung|→|Reise|Abstieg/;
+
+// EINE Sprosse lesen: { sicher: { rang, grund } | null, fraglich: [{ rang, grund }], traeger: { art, wort, nr } | null }
+// `reihe`: die Träger der Sprossen darunter (für die bloße Zahl, Regel 4) · `erste`: die erste Sprosse der Leiter (R5: EIN Ort, EIN Ding)
+function umfangLesen(G, s, reihe = [], erste = false) {
+    const u = String(s.umfang || "");
+    const N = (r) => G.namen[r];
+    const sig = [],
+        frag = [];
+    let traeger = null,
+        bloss = false; // eine bloße Zahl stand schon in diesem Umfang
+    let uWort = u; // der Text ohne die Worte EINES fremden Ziels
+    for (const W of KLASSEN_WORTE) {
+        const m = W.re.exec(uWort);
+        if (!m) continue;
+        if (W.wechsel) {
+            frag.push({ rang: W.rang, grund: `Welt-Wechsel: „${m[0]}“ ist EIN fremdes Ziel — Umfang kosmisch oder die Pose am Ziel ein Ort?` });
+            uWort = uWort.slice(0, m.index) + " ".repeat(m[0].length) + uWort.slice(m.index + m[0].length);
+        } else sig.push({ rang: W.rang, grund: "wort:" + m[0], decke: W.rang === ORT, himmel: !!W.himmel });
+    }
+    const hatPlanetWort = sig.some((x) => x.rang === PLANET);
+    const ausReihe = [...reihe].reverse().find(Boolean) || null;
+    const leibInReihe = [...reihe].reverse().find((t) => t && t.art !== "ding") || null;
+    const zaehlung = (art, z, text) => {
+        sig.push({ rang: stufe(z.wert, G[art]), grund: "zahl:" + text, decke: true, zahl: true });
+        if (art === "leiber" && z.wert >= G.planet.leiber && !hatPlanetWort) frag.push({ rang: PLANET, grund: `Planet-Maß: „${text}“ erreicht das Erd-Maß der Tafel umfangsKlassen, ohne Welt-Wort` });
+    };
+    const alsLeiber = (z, text, warum) => z.wert > G.leiber[0] && frag.push({ rang: stufe(z.wert, G.leiber), grund: `Träger unklar: „${text}“ ${warum} — als Leiber gelesen ${N(stufe(z.wert, G.leiber))}` });
+    for (const z of zahlenIn(u)) {
+        const nach = u.slice(z.bis);
+        let m;
+        if ((m = /^ × (\d+) km(?![²/A-Za-z])/.exec(nach))) {
+            sig.push({ rang: stufe(z.wert * +m[1], G.km2), grund: `zahl:${z.roh} × ${m[1]} km`, mass: true, zahl: true });
+            continue;
+        }
+        if (z.faktor || z.unten || /^\s?\//.test(nach)) continue; // ein Faktor, die untere Grenze einer Spanne, eine Rate („10⁵/Tag“)
+        if ((m = /^-(km|m)-/.exec(nach)) || (m = EINHEIT_RE.exec(nach))) {
+            if (nach[m[0].length] === "/") continue; // „km/h“
+            const e = m[1],
+                text = `${z.roh} ${e}`;
+            if (e === "km" || e === "m") sig.push({ rang: stufe(e === "km" ? z.wert : z.wert / 1e3, G.km), grund: "zahl:" + text, mass: true, zahl: true });
+            else if (e !== "m³") {
+                const km2 = e === "km²" ? z.wert : e === "ha" ? z.wert / 100 : z.wert / 1e6;
+                sig.push({ rang: stufe(km2, G.km2), grund: "zahl:" + text, mass: true, zahl: true });
+                if (km2 >= G.planet.km2 && !hatPlanetWort) frag.push({ rang: PLANET, grund: `Planet-Maß: „${text}“ erreicht das Erd-Maß der Tafel umfangsKlassen, ohne Welt-Wort` });
+            }
+            continue;
+        }
+        if (OHNE_MASS_RE.test(nach)) continue; // Zeit, Masse, Druck: kein Maß der Treppe
+        // das gezählte Nomen: Adjektive überspringen („10⁶ lebende Arten“), eine Präposition beendet („10⁴ im Bild“)
+        let rest = nach,
+            wort = null;
+        for (let i = 0; i < 3; i++) {
+            const t = new RegExp(`^\\s*-?([${B_}_][${B_}_-]*)`).exec(rest);
+            if (!t) break;
+            rest = rest.slice(t[0].length);
+            if (!/^[a-zäöü]/.test(t[1])) {
+                wort = t[1];
+                break;
+            }
+            if (!/e$/.test(t[1])) break;
+        }
+        if (wort && rest.startsWith("/")) continue; // „10⁶ Menschen/km²“, „10³ Wege/h“
+        const text = wort ? `${z.roh} ${wort}` : z.roh;
+        // der Träger der Reihe ist das Nomen an der Zahl der Reihe: steht eine bloße Zahl davor („10³ (Stadt, 300 Häuser)“), nennt das
+        // spätere Nomen ein Beiwerk, nicht die Reihe
+        const merke = (art) => traeger || bloss || (traeger = { art, wort, nr: s.nr });
+        if (VOR_DING.has(z.vorWort)) {
+            traeger = traeger || { art: "ding", wort: z.vorWort, nr: s.nr };
+        } else if (wort && LEIBER_RE.test(wort)) {
+            merke("leiber");
+            zaehlung("leiber", z, text);
+        } else if (wort && BAUTEN_RE.test(wort)) {
+            merke("bauten");
+            zaehlung("bauten", z, text);
+        } else if (wort && UNKLAR_RE.test(wort)) {
+            merke("unklar");
+            alsLeiber(z, text, "zählt Körper, die die Treppe nicht nennt");
+        } else if (wort && !ETIKETT_RE.test(wort) && /[enrsa]$/.test(wort)) {
+            merke("ding"); // ein gezähltes Nomen ohne Maß der Treppe („10² Generationen“): hebt nicht
+            if (/^Sternen?$/.test(wort) && z.wert >= 1e6 && !hatPlanetWort) frag.push({ rang: PLANET, grund: `Träger Sterne: „${text}“ — Himmel vom Boden aus oder Reise?` });
+        } else if (z.hoch) {
+            // die bloße Zahl: der Träger der Reihe (Regel 4)
+            bloss = true;
+            const inMenge = /^(?:in|von|mit|zwischen|über|unter)$/.test(z.vorWort);
+            if (ausReihe && (ausReihe.art === "leiber" || ausReihe.art === "bauten")) zaehlung(ausReihe.art, z, `${z.roh} (Reihe ${ausReihe.wort} ab S${ausReihe.nr})`);
+            else if (!ausReihe || inMenge) alsLeiber(z, z.roh, ausReihe ? `nach „${z.vorWort}“ zählt nicht die Reihe (${ausReihe.wort})` : "ohne Nomen, die Reihe nennt keinen Träger");
+            else if (ausReihe.art === "unklar") alsLeiber(z, z.roh, `zählt die Reihe ${ausReihe.wort} (ab S${ausReihe.nr}): Körper, die die Treppe nicht nennt`);
+            else if (leibInReihe) alsLeiber(z, z.roh, `ohne Nomen, die Reihe nennt zwei Träger (${leibInReihe.wort} S${leibInReihe.nr}, ${ausReihe.wort} S${ausReihe.nr})`);
+            else if (!traeger && (m = MENGE_ORT_RE.exec(nach))) alsLeiber(z, `${z.roh}${m[0]}`, `nennt eine Menge an einem Ort, die Reihe zählt ${ausReihe.wort}`);
+        }
+    }
+    const hoechst = (a) => a.reduce((b, x) => (!b || x.rang > b.rang ? x : b), null);
+    let sicher = hoechst(sig);
+    // zwei Zeilen zugleich: eine Zählung oder ein Ort-Wort deckelt, ein Maß (km, km²) reicht höher — die Zählung gilt, das Maß steht im Blatt
+    const decke = hoechst(sig.filter((x) => x.decke)),
+        mass = hoechst(sig.filter((x) => x.mass)),
+        ohneMass = hoechst(sig.filter((x) => !x.mass));
+    if (decke && mass && mass.rang > ohneMass.rang) {
+        frag.push({ rang: mass.rang, grund: `zwei Zeilen zugleich: ${decke.grund} sagt ${N(decke.rang)}, ${mass.grund} sagt ${N(mass.rang)}` });
+        sicher = ohneMass;
+    }
+    // Himmel und Feld vom Boden aus bleiben Ort: steht „Planet“ neben einem Himmels- oder Feld-Wort und nennt nichts die Reise, hebt das
+    // Wort an der ERSTEN Sprosse nicht (R5: EIN Ort — „1 Stern, 1 Planet, 1 Mond“, „Kompass auf einem Dipol-Planeten“); darüber ist es unsicher
+    if (sicher && sicher.himmel && HIMMEL_RE.test(u) && !REISE_RE.test(u) && !sig.some((x) => x.rang === PLANET && !x.himmel)) {
+        if (!erste) frag.push({ rang: PLANET, grund: `Himmel oder Feld vom Boden aus: „${sicher.grund.slice(5)}“ neben „${HIMMEL_RE.exec(u)[0]}“ — Ding am Himmel oder Umfang?` });
+        sicher = hoechst(sig.filter((x) => !x.himmel && !(x.mass && decke && x.rang > ohneMass.rang)));
+    }
+    if (!traeger && MENGE_RE.test(u)) traeger = { art: "leiber", wort: MENGE_RE.exec(u)[0], nr: s.nr };
+    const hoch = sicher ? sicher.rang : -1;
+    let m;
+    if (hoch < PLANET && (ERD_RE.test(u.replace(ERD_VERGLEICH_RE, "")) || /Schlüssel/.test(String(s.preis || "")))) frag.push({ rang: PLANET, grund: "Erd-Schlüssel: die Erde als Saat mit Schlüssel zählt erst die Zeile Planet und Welten (Spalte Bytes)" });
+    if (hoch < PLANET && (m = WELTWECHSEL_RE.exec(uWort))) frag.push({ rang: PLANET, grund: `Welt-Wechsel: „${m[0].trim()}“ ohne Welt-Wort` });
+    if (hoch < MEGA && HORIZONT_RE.test(u)) frag.push({ rang: MEGA, grund: "Horizont: Sicht des Bilds (Zeile Megastadt und Kontinent) oder Reichweite des Gesetzes?" });
+    if (hoch < MEGA && (m = REGION_RE.exec(u)) && !sig.some((x) => x.zahl)) frag.push({ rang: MEGA, grund: `„${m[0]}“ ohne Größe` });
+    return { sicher, fraglich: frag.filter((f) => f.rang > hoch), traeger };
+}
+
+const istHand = (s) => !!s.klasse && (s.klasseGrund === undefined || s.klasseGrund === "hand");
+// die ganze Karte rechnen (schreibt nichts): je Sprosse { klasse | null, grund }, dazu Blatt-Stoff und der Vergleich mit der Hand
+function klassenRechnen(karte, offenDatei) {
+    const G = klassenGesetz(karte);
+    const R = (name) => {
+        const r = G.namen.indexOf(name);
+        if (r < 0) bruch(`Klassen-Gesetz: die Klasse „${name}“ steht nicht in der Preis-Treppe`);
+        return r;
+    };
+    const offenAlt = new Map(((offenDatei && offenDatei.offen) || []).map((o) => [o.leiter + "#" + o.sprosse, o]));
+    // was ein früherer Lauf löste (klasse-offen.json aufgeloest, quelle "gesetz"): der Grund, der offen stand, bleibt dort erhalten —
+    // der Lauf rechnet daraus dieselbe Zeile wieder (idempotent), und fällt die Lesart, steht die Sprosse mit ihrem alten Grund wieder offen
+    const geloestAlt = new Map(((offenDatei && offenDatei.aufgeloest) || []).filter((a) => a.quelle === "gesetz").map((a) => [a.leiter + "#" + a.sprosse, a]));
+    const aus = { G, je: new Map(), unsicher: [], offen: [], geloest: [], hand: { gleich: 0, abweichung: [], enthaltung: [] }, monotonie: [], verteilung: {}, reihe: 0 };
+    for (const g of karte.gruppen) {
+        const V = (aus.verteilung[g.id] = { leer: 0 });
+        for (const n of G.namen) V[n] = 0;
+        for (const L of g.kriterien) {
+            const reihe = [];
+            let unten = null; // { rang, offen: die Kette erbt von einer offenen ersten Sprosse, nr }
+            let haengt = null; // der Eintrag der offenen ersten Sprosse, an dem die Kette hängt
+            L.sprossen.forEach((s, i) => {
+                const k = L.id + "#" + s.nr;
+                const lies = umfangLesen(G, s, reihe, i === 0);
+                reihe.push(lies.traeger);
+                const eigen = lies.sicher;
+                let klasse = null,
+                    grund = null,
+                    rang = null;
+                if (istHand(s)) {
+                    rang = R(s.klasse);
+                    klasse = s.klasse;
+                    grund = "hand";
+                    // was das Gesetz hier geschrieben hätte
+                    const gesetz = i === 0 ? (lies.fraglich.length ? null : eigen ? eigen.rang : ORT) : Math.max(unten ? unten.rang : ORT, eigen ? eigen.rang : ORT);
+                    const zeile = { leiter: L.id, sprosse: s.nr, umfang: s.umfang, hand: s.klasse, gesetz: gesetz == null ? null : G.namen[gesetz], grund: gesetz == null ? lies.fraglich.map((f) => f.grund).join(" · ") : eigen && eigen.rang === gesetz ? eigen.grund : i ? "geerbt:S" + L.sprossen[i - 1].nr : "geerbt:R5" };
+                    if (gesetz == null) aus.hand.enthaltung.push(zeile);
+                    else if (gesetz === rang) aus.hand.gleich++;
+                    else aus.hand.abweichung.push(zeile);
+                    if (unten && !unten.offen && rang < unten.rang) aus.monotonie.push(`${L.id} S ${s.nr} „${s.klasse}“ (hand) steht unter S ${unten.nr} „${G.namen[unten.rang]}“`);
+                    haengt = null;
+                    unten = { rang, offen: false, nr: s.nr };
+                } else if (i === 0) {
+                    const war = geloestAlt.get(k);
+                    const alt = offenAlt.get(k) || (war && { leiter: L.id, sprosse: s.nr, umfang: s.umfang, preis: s.preis, richter: s.richter, grund: war.offen });
+                    if (lies.fraglich.length || (alt && !(eigen && eigen.rang > ORT))) {
+                        // die unsichere erste Sprosse bleibt leer (einen benannten Zweifel löst nur eine Größe ÜBER Ort, nie ein Wort
+                        // nach unten); darüber gilt als Boden die sichere Lesart
+                        haengt = { leiter: L.id, sprosse: s.nr, umfang: s.umfang, preis: s.preis, richter: s.richter, grund: alt ? alt.grund : lies.fraglich.map((f) => f.grund).join(" · "), alt, boden: eigen ? eigen.rang : ORT, darueber: [] };
+                        aus.offen.push(haengt);
+                        unten = { rang: haengt.boden, offen: true, nr: s.nr };
+                    } else {
+                        rang = eigen ? eigen.rang : ORT;
+                        klasse = G.namen[rang];
+                        grund = eigen ? eigen.grund : "geerbt:R5";
+                        if (alt) aus.geloest.push({ leiter: L.id, sprosse: s.nr, umfang: s.umfang, klasse, grund, alt: alt.grund });
+                        unten = { rang, offen: false, nr: s.nr };
+                    }
+                } else {
+                    const boden = unten ? unten.rang : ORT;
+                    const traegt = eigen && eigen.rang >= boden && eigen.rang > ORT;
+                    rang = Math.max(boden, eigen ? eigen.rang : ORT);
+                    klasse = G.namen[rang];
+                    grund = traegt ? eigen.grund : "geerbt:S" + L.sprossen[i - 1].nr;
+                    if (traegt && / \(Reihe /.test(grund)) aus.reihe++;
+                    const frag = lies.fraglich.filter((f) => f.rang > rang);
+                    if (frag.length) aus.unsicher.push({ leiter: L.id, sprosse: s.nr, umfang: s.umfang, klasse, lesart: G.namen[Math.max(...frag.map((f) => f.rang))], grund: frag.map((f) => f.grund).join(" · ") });
+                    if (haengt && !traegt) haengt.darueber.push(s.nr);
+                    else haengt = null;
+                    unten = { rang, offen: !!haengt, nr: s.nr };
+                }
+                aus.je.set(k, { klasse, grund });
+                V[klasse || "leer"]++;
+            });
+        }
+    }
+    return aus;
+}
+// die Karte auf den Stand des Gesetzes setzen (in place): → Zahl der geänderten Sprossen
+function klassenSetzen(karte, R) {
+    let n = 0;
+    for (const g of karte.gruppen)
+        for (const L of g.kriterien)
+            for (const s of L.sprossen) {
+                const { klasse, grund } = R.je.get(L.id + "#" + s.nr);
+                if ((s.klasse || null) === klasse && (s.klasseGrund || null) === grund) continue;
+                n++;
+                // Reihenfolge der Felder: klasse und klasseGrund hinter preis (wie die von Hand gesetzten)
+                const alt = { ...s };
+                for (const f of Object.keys(s)) delete s[f];
+                for (const f of Object.keys(alt)) {
+                    if (f === "klasse" || f === "klasseGrund") continue;
+                    s[f] = alt[f];
+                    if (f === "preis" && klasse) Object.assign(s, { klasse, klasseGrund: grund });
+                }
+                if (klasse && !s.klasse) Object.assign(s, { klasse, klasseGrund: grund });
+            }
+    return n;
+}
+// klasse-offen.json auf den Stand des Gesetzes: offen = die leeren ersten Sprossen (ihr Grund bleibt), aufgeloest = die Zeilen von Hand
+// + was das Gesetz löste (`quelle: "gesetz"`, je Lauf neu)
+function klassenOffenNeu(datei, R, karte) {
+    const neu = JSON.parse(JSON.stringify(datei));
+    neu.offen = R.offen.map((o) => o.alt || { leiter: o.leiter, sprosse: o.sprosse, umfang: o.umfang, preis: o.preis, richter: o.richter, grund: o.grund });
+    neu.aufgeloest = (datei.aufgeloest || []).filter((a) => a.quelle !== "gesetz").concat(
+        R.geloest.map((x) => ({ leiter: x.leiter, sprosse: x.sprosse, klasse: x.klasse, quelle: "gesetz", grund: `${x.klasse} — ${x.grund}: die kleinste Zeile der Treppe, die den Umfang „${x.umfang}“ fasst (Klassen-Gesetz Regel 1)`, offen: x.alt }))
+    );
+    let erste = 0,
+        gesetzt = 0;
+    for (const g of karte.gruppen) for (const L of g.kriterien) (erste++, R.je.get(L.id + "#" + L.sprossen[0].nr).klasse && gesetzt++);
+    neu.stand = { ...datei.stand, ersteSprossen: erste, gesetzt, offen: neu.offen.length };
+    return neu;
+}
+// das Blatt für den Koordinator: was das Gesetz nicht sicher las — er entscheidet in einem Zug (klasse setzen, klasseGrund "hand")
+function klassenBlatt(R) {
+    const z = (...a) => "| " + a.map((x) => String(x).replace(/\|/g, "/")).join(" | ") + " |";
+    const kurz = (L) => L.replace(/^(planet|leben|mensch|erleben|same)\./, (m) => m);
+    const aus = [
+        "# Klassen der Karte 2: was das Gesetz nicht sicher las",
+        "",
+        "Erzeugt von `node vision/buche-2.cjs --klassen` (jeder Lauf schreibt das Blatt neu, nie von Hand ändern). Entscheid: `klasse` in",
+        "`vision/meisterkarte-2.json` setzen und `klasseGrund` auf `hand` — der nächste Lauf lässt sie stehen und zieht die Sprossen darüber nach.",
+        "",
+        `## A · Erste Sprossen aus klasse-offen.json, die Regel 1 löst (${R.geloest.length})`,
+        "",
+        z("Leiter", "Umfang", "Klasse", "Grund"),
+        z("---", "---", "---", "---"),
+        ...R.geloest.map((x) => z(kurz(x.leiter), x.umfang, x.klasse, x.grund)),
+        "",
+        `## B · Erste Sprossen, die leer bleiben (${R.offen.length}) — darüber gilt bis zum Entscheid die sichere Lesart als Boden`,
+        "",
+        z("Leiter", "Umfang", "Boden", "erben ihn", "Grund"),
+        z("---", "---", "---", "---", "---"),
+        ...R.offen.map((x) => z(kurz(x.leiter), x.umfang, R.G.namen[x.boden], x.darueber.length ? "S " + x.darueber.join(", ") : "—", x.grund)),
+        "",
+        `## C · Unsichere Sprossen (${R.unsicher.length}) — gesetzt ist die sichere Lesart, die andere steht daneben`,
+        "",
+        z("Leiter", "S", "Umfang", "gesetzt", "andere Lesart", "Grund"),
+        z("---", "---", "---", "---", "---", "---"),
+        ...R.unsicher.map((x) => z(kurz(x.leiter), x.sprosse, x.umfang, x.klasse, x.lesart, x.grund)),
+        "",
+        `## D · Das Gesetz gegen die Hand (${R.hand.abweichung.length} anders, ${R.hand.enthaltung.length} unsicher, ${R.hand.gleich} gleich) — die Hand bleibt stehen`,
+        "",
+        z("Leiter", "S", "Umfang", "Hand", "Gesetz", "Grund"),
+        z("---", "---", "---", "---", "---", "---"),
+        ...R.hand.abweichung.concat(R.hand.enthaltung).map((x) => z(kurz(x.leiter), x.sprosse, x.umfang, x.hand, x.gesetz || "unsicher", x.grund)),
+    ];
+    return aus.join("\n") + "\n";
+}
+// DIE WACHE (Gebot 10): Karte, klasse-offen.json und Blatt stehen am Fixpunkt des Gesetzes — sonst der Täter beim Namen.
+//   (a) KLASSE UNTER DEM UMFANG   eine Sprosse trägt ein Größen-Wort oder eine Größe oberhalb ihrer gesetzten Klasse
+//   (b) MONOTONIE                 eine Sprosse steht unter der Sprosse darunter
+//   (c) OHNE KLASSE               eine Sprosse ohne `klasse` und ohne Zeile in klasse-offen.json
+// Leser: jeder Buchungs-Lauf (haupt, laut ohne Abbruch) und `--selbsttest` (ROT).
+function klassenWache(karte, offenDatei, blatt) {
+    const R = klassenRechnen(karte, offenDatei);
+    const G = R.G,
+        aus = [];
+    const offen = new Set(((offenDatei && offenDatei.offen) || []).map((o) => o.leiter + "#" + o.sprosse));
+    for (const g of karte.gruppen)
+        for (const L of g.kriterien) {
+            let unten = null;
+            for (const s of L.sprossen) {
+                const k = L.id + "#" + s.nr,
+                    wo = `${L.id} S ${s.nr}`;
+                const soll = R.je.get(k);
+                if (!s.klasse) {
+                    if (!offen.has(k)) aus.push(`OHNE KLASSE und ohne Zeile in klasse-offen.json: ${wo} „${s.umfang}“`);
+                    else if (soll.klasse) aus.push(`OHNE KLASSE, das Gesetz liest sie: ${wo} „${s.umfang}“ → ${soll.klasse} (${soll.grund})`);
+                    continue;
+                }
+                const rang = G.namen.indexOf(s.klasse);
+                if (rang < 0) aus.push(`KLASSE UNBEKANNT: ${wo} trägt „${s.klasse}“, die Preis-Treppe kennt sie nicht`);
+                if (offen.has(k)) aus.push(`klasse-offen.json führt ${wo} als offen, die Karte trägt „${s.klasse}“`);
+                if (s.klasseGrund === undefined) aus.push(`OHNE klasseGrund: ${wo} „${s.klasse}“ (von Hand gesetzt: klasseGrund "hand")`);
+                else if (s.klasseGrund !== "hand" && (s.klasse !== soll.klasse || s.klasseGrund !== soll.grund)) {
+                    const eigen = umfangLesen(G, s).sicher; // ohne Reihe: nur was die Sprosse selbst trägt
+                    if (soll.klasse && rang < G.namen.indexOf(soll.klasse) && eigen && eigen.rang > rang) aus.push(`KLASSE UNTER DEM UMFANG: ${wo} gesetzt „${s.klasse}“, der Umfang „${s.umfang}“ trägt ${eigen.grund} → ${soll.klasse}`);
+                    else aus.push(`KLASSE NICHT AM GESETZ: ${wo} trägt „${s.klasse}“ (${s.klasseGrund}), das Gesetz rechnet ${soll.klasse ? `„${soll.klasse}“ (${soll.grund})` : "keine (unsicher)"}`);
+                }
+                if (unten && rang < unten.rang) aus.push(`MONOTONIE: ${wo} „${s.klasse}“ steht unter S ${unten.nr} „${G.namen[unten.rang]}“`);
+                if (rang >= 0) unten = { rang, nr: s.nr };
+            }
+        }
+    if (blatt !== undefined && blatt !== klassenBlatt(R)) aus.push("BLATT nicht am Stand: vision/richter/klassen-unsicher.md weicht vom Gesetz ab");
+    return aus;
+}
+const klassenWacheLesen = (karte) =>
+    klassenWache(karte, JSON.parse(fs.readFileSync(KLASSE_OFFEN, "utf8")), fs.existsSync(KLASSEN_BLATT) ? fs.readFileSync(KLASSEN_BLATT, "utf8") : "");
+// der Befehl: node vision/buche-2.cjs --klassen [--trocken] [--karte DATEI]
+function klassenBefehl(argv) {
+    const arg = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
+    const karteDatei = path.resolve(arg("--karte", KARTE));
+    const trocken = argv.includes("--trocken");
+    const roh = fs.readFileSync(karteDatei, "utf8");
+    const karte = JSON.parse(roh);
+    const offenRoh = fs.readFileSync(KLASSE_OFFEN, "utf8");
+    const offenDatei = JSON.parse(offenRoh);
+    const R = klassenRechnen(karte, offenDatei);
+    const H = R.hand,
+        hand = H.gleich + H.abweichung.length + H.enthaltung.length;
+    const blatt = klassenBlatt(R);
+    const leer = [...R.je.values()].filter((x) => !x.klasse).length;
+    let vorLeer = 0;
+    for (const g of karte.gruppen) for (const L of g.kriterien) for (const s of L.sprossen) if (!s.klasse) vorLeer++;
+    console.log(`KLASSEN-GESETZ: ${R.je.size} Sprossen · ohne Klasse ${vorLeer} → ${leer} · aus der Reihe gezählt ${R.reihe} · Blatt ${blatt.split("\n").length - 1} Zeilen (unsicher ${R.unsicher.length})`);
+    console.log(`GEGEN DIE HAND: ${H.gleich} von ${hand} gleich (${hand ? ((H.gleich / hand) * 100).toFixed(1).replace(".", ",") : "–"} %) · anders ${H.abweichung.length} · unsicher ${H.enthaltung.length}`);
+    for (const x of H.abweichung) console.log(`  ANDERS: ${x.leiter} S ${x.sprosse} „${x.umfang}“ — Hand „${x.hand}“, Gesetz „${x.gesetz}“ (${x.grund})`);
+    for (const x of H.enthaltung) console.log(`  UNSICHER: ${x.leiter} S ${x.sprosse} „${x.umfang}“ — Hand „${x.hand}“, das Gesetz ließe sie leer (${x.grund})`);
+    console.log(`MONOTONIE: ${R.monotonie.length} Bruch/Brüche`);
+    for (const x of R.monotonie) console.log("  " + x);
+    for (const x of R.geloest) console.log(`  GELÖST: ${x.leiter} S ${x.sprosse} „${x.umfang}“ → ${x.klasse} (${x.grund})`);
+    for (const x of R.offen) console.log(`  LEER: ${x.leiter} S ${x.sprosse} „${x.umfang}“${x.darueber.length ? " — darüber erben S " + x.darueber.join(", ") : ""}`);
+    const kopf = ["Kapitel", ...R.G.namen, "leer"];
+    console.log("VERTEILUNG: " + kopf.join(" · "));
+    const summe = Object.fromEntries(kopf.slice(1).map((n) => [n, 0]));
+    for (const [id, V] of Object.entries(R.verteilung)) {
+        console.log(`  ${id}: ${kopf.slice(1).map((n) => V[n]).join(" · ")}`);
+        for (const n of kopf.slice(1)) summe[n] += V[n];
+    }
+    console.log(`  Σ: ${kopf.slice(1).map((n) => summe[n]).join(" · ")}`);
+    const n = klassenSetzen(karte, R);
+    const aus = schreibe(karte),
+        offenAus = JSON.stringify(klassenOffenNeu(offenDatei, R, karte), null, 1) + "\n";
+    const blattAlt = karteDatei === KARTE && fs.existsSync(KLASSEN_BLATT) ? fs.readFileSync(KLASSEN_BLATT, "utf8") : "";
+    const nebenbei = karteDatei === KARTE ? [offenAus !== offenRoh && "klasse-offen.json", blatt !== blattAlt && "klassen-unsicher.md"].filter(Boolean) : [];
+    if (!trocken) {
+        if (aus !== roh) fs.writeFileSync(karteDatei, aus);
+        if (karteDatei === KARTE) {
+            if (offenAus !== offenRoh) fs.writeFileSync(KLASSE_OFFEN, offenAus);
+            if (blatt !== blattAlt) fs.writeFileSync(KLASSEN_BLATT, blatt);
+        }
+    }
+    console.log(`${trocken ? "TROCKEN (nichts geschrieben)" : "GESCHRIEBEN"}: ${n} Sprosse(n) geändert${nebenbei.length ? " · " + nebenbei.join(" + ") : ""}`);
+}
+
 const zeile = (z) =>
     `KARTE 2: ${z.heute} von ${z.sprossen} gebucht (${z.anteil.toFixed(1).replace(".", ",")} %), ${z.kern} im Kern · an beiden Geräten ${z.beide} · Nachwache offen ${z.nachwache}`;
 
@@ -680,10 +1179,12 @@ function selbsttest() {
             console.log("  ROT   " + name + " — " + e.message);
         }
     };
-    // die Probe-Leitern A und G tragen im Speicher die Klasse Ort (A Sprosse 1 ist in der Karte offen: vision/vorrat/klasse-offen.json)
+    // die Probe-Leitern A und G tragen im Speicher die Klasse Ort (die Proben messen den Preis der Zeile Ort; die Karte nennt für A
+    // seit dem Klassen-Gesetz „Megastadt und Kontinent“) · `klasseWeg`: die Mutante, A ohne Klasse
     const lauf = (akten, o = {}) => {
         const k = neu();
-        if (!o.ohneKlasse) for (const id of [A, G]) for (const s of finde(k, id).sprossen) s.klasse = s.klasse || "Ort";
+        if (!o.ohneKlasse) for (const id of [A, G]) for (const s of finde(k, id).sprossen) s.klasse = "Ort";
+        if (o.klasseWeg) for (const s of finde(k, A).sprossen) delete s.klasse;
         if (o.klasse) finde(k, A).sprossen[0].klasse = o.klasse;
         const z = (o.rechne || rechne)(k, akten, kern0, o.kopf || KOPF);
         return { k, z, L: (id) => finde(k, id) };
@@ -1040,9 +1541,151 @@ function selbsttest() {
         return K.istAhn(a, n) && !K.istAhn(n, a) && !K.istAhn(a, a) && K.aufMain(a) && K.aufMain(n) ? true : `ahn ${K.istAhn(a, n)} umgekehrt ${K.istAhn(n, a)}`;
     });
     pruefe("Mutant KLASSE FEHLT in der Karte: höchstens Kern, laut benannt", () => {
-        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1) }, { ohneKlasse: true });
+        const { L, z } = lauf({ [A + ".1"]: fahrt(A, 1) }, { ohneKlasse: true, klasseWeg: true });
         return L(A).heute === 0 && L(A).kern === 1 && /KLASSE FEHLT/.test(z.bericht[0].warum) ? true : `heute ${L(A).heute} · ${z.bericht[0].warum}`;
     });
+    // ── DAS KLASSEN-GESETZ (19.11.): die Lesart, der Fixpunkt, die Mutanten der Wache ──
+    {
+        const offenDatei = JSON.parse(fs.readFileSync(KLASSE_OFFEN, "utf8"));
+        const GK = klassenGesetz(neu());
+        const lies = (umfang, erste = false, preis = "P") => umfangLesen(GK, { nr: erste ? 1 : 2, umfang, preis }, [], erste);
+        const zeigt = (umfang, klasse, grund) => {
+            const r = lies(umfang).sicher;
+            const ist = r ? `${GK.namen[r.rang]} (${r.grund})` : "erbt";
+            return ist === (klasse ? `${klasse} (${grund})` : "erbt") ? null : `„${umfang}“ → ${ist}`;
+        };
+        pruefe("KLASSEN-GESETZ Regel 1: die kleinste Zeile, die den Umfang fasst — die Lücke zwischen zwei Zeilen gehört zur höheren", () => {
+            const f = [
+                zeigt("10² Bauten", "Ort", "zahl:10² Bauten"),
+                zeigt("500 Häuser", "Stadt", "zahl:500 Häuser"),
+                zeigt("10⁵ Gebäude", "Stadt", "zahl:10⁵ Gebäude"),
+                zeigt("10⁶ Bauten", "Megastadt und Kontinent", "zahl:10⁶ Bauten"),
+                zeigt("10³ Leiber", "Ort", "zahl:10³ Leiber"),
+                zeigt("5 000 Bewohner", "Stadt", "zahl:5 000 Bewohner"),
+                zeigt("10⁶ Menschen", "Stadt", "zahl:10⁶ Menschen"),
+                zeigt("10⁷ Menschen", "Megastadt und Kontinent", "zahl:10⁷ Menschen"),
+                zeigt("Sicht 800 m", "Ort", "zahl:800 m"),
+                zeigt("Region 2 km", "Stadt", "zahl:2 km"),
+                zeigt("Sicht 20 km", "Stadt", "zahl:20 km"),
+                zeigt("25 km", "Megastadt und Kontinent", "zahl:25 km"),
+                zeigt("32 × 32 km", "Stadt", "zahl:32 × 32 km"),
+                zeigt("Region 10⁴ km²", "Megastadt und Kontinent", "zahl:10⁴ km²"),
+                zeigt("ein Dorf", "Ort", "wort:Dorf"),
+                zeigt("eine Metropole", "Stadt", "wort:Metropole"),
+                zeigt("Megaregion", "Megastadt und Kontinent", "wort:Megaregion"),
+                zeigt("Boden bis Orbit", "Planet und Welten", "wort:Orbit"),
+            ].filter(Boolean);
+            return f.length ? f.join(" · ") : true;
+        });
+        pruefe("KLASSEN-GESETZ Regel 4: eine Zahl hebt nur mit Träger — „10³ Welten“ ist Planet und Welten wegen „Welten“, „10² Generationen“ erbt", () => {
+            const f = [
+                zeigt("10³ Welten", "Planet und Welten", "wort:Welten"),
+                zeigt("10² Generationen"),
+                zeigt("10⁶ Jahre an einem Hang"),
+                zeigt("Raffer 10⁵: ein Jahr in 5 min"),
+                zeigt("× Uhr × Wetter, Katastrophe"),
+                zeigt("10⁴ Arten, 20 Saaten"),
+            ].filter(Boolean);
+            // die bloße Zahl zählt den Träger der Reihe: ohne Reihe hebt sie nicht, mit „Bewohner“ darunter ist 10⁴ die Zeile Stadt
+            const ohne = umfangLesen(GK, { nr: 3, umfang: "10⁴" }, [null, null]);
+            const mit = umfangLesen(GK, { nr: 3, umfang: "10⁴" }, [null, { art: "leiber", wort: "Bewohner", nr: 2 }]);
+            if (ohne.sicher || !ohne.fraglich.length) f.push("„10⁴“ ohne Reihe hob oder blieb stumm");
+            if (!mit.sicher || GK.namen[mit.sicher.rang] !== "Stadt" || mit.sicher.grund !== "zahl:10⁴ (Reihe Bewohner ab S2)") f.push("„10⁴“ in der Reihe Bewohner: " + JSON.stringify(mit.sicher));
+            return f.length ? f.join(" · ") : true;
+        });
+        pruefe("KLASSEN-GESETZ Regel 6: Welt-Wechsel, Erd-Schlüssel, zwei Zeilen, Region ohne Größe und der Himmel vom Boden heben nicht", () => {
+            const f = [];
+            const unsicher = (umfang, muster, erste, preis) => {
+                const r = lies(umfang, erste, preis);
+                if (!r.fraglich.some((x) => muster.test(x.grund))) f.push(`„${umfang}“ nennt keinen Zweifel ${muster}`);
+                return r;
+            };
+            if (unsicher("Heimat + 1 Fremdwelt", /Welt-Wechsel/, true).sicher) f.push("„1 Fremdwelt“ hob");
+            unsicher("fremde Ozeane", /Welt-Wechsel/);
+            unsicher("1 Ort, 1 Ereignis-Typ", /Erd-Schlüssel/, true, "P · Schlüssel ≤ 10 kB");
+            unsicher("Flüsse einer Region", /ohne Größe/, true);
+            const zwei = unsicher("10³ Häuser, ~50 km", /zwei Zeilen zugleich/);
+            if (!zwei.sicher || GK.namen[zwei.sicher.rang] !== "Stadt") f.push("zwei Zeilen: die sichere Lesart ist nicht die Zählung");
+            // Himmel und Feld vom Boden aus: an der ersten Sprosse Ort ohne Zweifel, darüber ein Zweifel — die Reise hebt
+            const erste = lies("1 Stern, 1 Planet, 1 Mond", true);
+            if (erste.sicher || erste.fraglich.length) f.push("erste Sprosse „1 Stern, 1 Planet, 1 Mond“ ist nicht Ort ohne Zweifel");
+            if (unsicher("~9 000 Sterne bis mag 6, Planeten wandern", /Himmel oder Feld/).sicher) f.push("„Planeten wandern“ hob");
+            const reise = lies("Planet → Mond (3,8·10⁵ km), Landung");
+            if (!reise.sicher || GK.namen[reise.sicher.rang] !== "Planet und Welten") f.push("die Reise „Planet → Mond, Landung“ hob nicht");
+            return f.length ? f.join(" · ") : true;
+        });
+        // der Fixpunkt im Speicher: die Karte, klasse-offen.json und das Blatt, wie `--klassen` sie schreibt
+        const fix = () => {
+            const k = neu();
+            const R = klassenRechnen(k, offenDatei);
+            const n = klassenSetzen(k, R);
+            return { k, R, n, offen: klassenOffenNeu(offenDatei, R, k), blatt: klassenBlatt(R) };
+        };
+        const sprosse = (k, id, nr) => finde(k, id).sprossen.find((s) => s.nr === nr);
+        pruefe("KLASSEN-GESETZ Fixpunkt: der zweite Lauf ändert 0 Sprossen, klasse-offen.json und das Blatt bleiben byte-gleich, die Wache schweigt", () => {
+            const F = fix();
+            const R2 = klassenRechnen(F.k, F.offen);
+            const n2 = klassenSetzen(F.k, R2);
+            const w = klassenWache(F.k, F.offen, F.blatt);
+            if (n2 !== 0) return `der zweite Lauf änderte ${n2} Sprosse(n)`;
+            if (JSON.stringify(klassenOffenNeu(F.offen, R2, F.k)) !== JSON.stringify(F.offen)) return "klasse-offen.json wandert im zweiten Lauf";
+            if (klassenBlatt(R2) !== F.blatt) return "das Blatt wandert im zweiten Lauf";
+            return w.length ? `die Wache meldet am Fixpunkt ${w.length}: ${w[0]}` : true;
+        });
+        pruefe("KLASSEN-GESETZ Soll: Monotonie 0 · ≥ 97 % der Hand gleich · ≤ 22 Sprossen leer, jede mit Zeile in klasse-offen.json", () => {
+            const { R, offen } = fix();
+            const hand = R.hand.gleich + R.hand.abweichung.length + R.hand.enthaltung.length;
+            const leer = [...R.je.entries()].filter(([, x]) => !x.klasse).map(([k]) => k);
+            const zeilen = new Set(offen.offen.map((o) => o.leiter + "#" + o.sprosse));
+            if (R.monotonie.length) return `Monotonie: ${R.monotonie[0]}`;
+            if (R.hand.gleich / hand < 0.97) return `nur ${R.hand.gleich} von ${hand} der Hand gleich`;
+            if (leer.length > 22 || leer.some((k) => !zeilen.has(k) || !k.endsWith("#1"))) return `leer ${leer.length}: ${leer.filter((k) => !zeilen.has(k)).join(", ")}`;
+            return true;
+        });
+        pruefe("KLASSEN-GESETZ Hand bleibt: eine von Hand gesetzte Klasse steht nach dem Lauf, die Sprossen darüber ziehen nach", () => {
+            const k = neu();
+            const id = "mensch.geist.netz"; // „10²“, „10³“, „10⁴“ …: das Gesetz liest Ort bis Sprosse 4
+            Object.assign(sprosse(k, id, 3), { klasse: "Stadt", klasseGrund: "hand" });
+            klassenSetzen(k, klassenRechnen(k, offenDatei));
+            const s = [2, 3, 4].map((nr) => sprosse(k, id, nr));
+            return s[0].klasse === "Ort" && s[1].klasse === "Stadt" && s[1].klasseGrund === "hand" && s[2].klasse === "Stadt" && s[2].klasseGrund === "geerbt:S3"
+                ? true
+                : s.map((x) => `${x.klasse} (${x.klasseGrund})`).join(" · ");
+        });
+        const mutant = (name, muster, mut) =>
+            pruefe(name, () => {
+                const F = fix();
+                mut(F.k, F);
+                const w = klassenWache(F.k, F.offen, F.blatt);
+                return w.length === 1 && muster.test(w[0]) ? true : `${w.length} Meldung(en): ${w.slice(0, 2).join(" | ")}`;
+            });
+        mutant("KLASSEN-WACHE Mutant (a) Klasse unter dem Umfang: „Megastadt“ unter der Klasse Ort ist ROT beim Namen", /^KLASSE UNTER DEM UMFANG: mensch\.stadt\.messlatte S 4 gesetzt „Ort“.*wort:Megastadt → Megastadt und Kontinent$/, (k) => {
+            sprosse(k, "mensch.stadt.messlatte", 4).klasse = "Ort";
+        });
+        mutant("KLASSEN-WACHE Mutant (a) Zahl: „10⁴ Bauten“ unter der Klasse Ort ist ROT beim Namen", /^KLASSE UNTER DEM UMFANG: mensch\.bau\.innen S 4 gesetzt „Ort“.*zahl:10⁴ Bauten → Stadt$/, (k) => {
+            sprosse(k, "mensch.bau.innen", 4).klasse = "Ort";
+        });
+        mutant("KLASSEN-WACHE Mutant (b) Monotonie: eine Sprosse unter der Sprosse darunter ist ROT beim Namen, auch von Hand", /^MONOTONIE: mensch\.bau\.innen S 6 „Ort“ steht unter S 5 „Megastadt und Kontinent“$/, (k, F) => {
+            Object.assign(sprosse(k, "mensch.bau.innen", 6), { klasse: "Ort", klasseGrund: "hand" });
+            // die Hand ist gesetzt: Blatt und Sprossen darüber folgen ihr, der Bruch der Monotonie bleibt als EINE Meldung
+            const R = klassenRechnen(k, F.offen);
+            klassenSetzen(k, R);
+            F.blatt = klassenBlatt(R);
+        });
+        mutant("KLASSEN-WACHE Mutant (c) ohne Klasse und ohne Zeile in klasse-offen.json ist ROT beim Namen", /^OHNE KLASSE und ohne Zeile in klasse-offen\.json: mensch\.bau\.innen S 3 /, (k) => {
+            const s = sprosse(k, "mensch.bau.innen", 3);
+            delete s.klasse;
+            delete s.klasseGrund;
+        });
+        mutant("KLASSEN-WACHE Mutant Blatt: ein Blatt, das dem Gesetz nicht folgt, ist ROT", /^BLATT nicht am Stand/, (k, F) => {
+            F.blatt = F.blatt.replace("## C ·", "## C  ·");
+        });
+        // die Linse an der echten Karte: Karte, klasse-offen.json und Blatt im Repo stehen am Fixpunkt
+        pruefe("KLASSEN-WACHE an der Karte im Repo: jede Sprosse trägt ihre Klasse nach dem Gesetz oder eine Zeile in klasse-offen.json", () => {
+            const w = klassenWacheLesen(neu());
+            return w.length ? `${w.length} Verstoß/Verstöße — ${w.slice(0, 3).join(" | ")}` : true;
+        });
+    }
     pruefe("TAFEL Mutant: eine Tafel-Zeile auf eine Sprosse ohne Klasse wird beim Namen gemeldet, die mit Klasse nicht, kein Abbruch", () => {
         const k = neu();
         delete finde(k, B).sprossen[0].klasse; // die Mutante: die Klasse vergessen
@@ -1088,6 +1731,7 @@ function selbsttest() {
 // ───────────────────────── Haupt ─────────────────────────
 function haupt(argv) {
     if (argv.includes("--selbsttest")) return selbsttest();
+    if (argv.includes("--klassen")) return klassenBefehl(argv);
     const arg = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
     const karteDatei = path.resolve(arg("--karte", KARTE));
     const aktenDir = path.resolve(arg("--akten", AKTEN));
@@ -1118,6 +1762,12 @@ function haupt(argv) {
     }
     for (const b of z.bericht) console.log(`  ${b.leiter} S ${b.sprosse}: ${b.stand === "NULL" ? "0" : b.stand} — ${b.warum}${b.notiz.map((n) => " · " + n).join("")}`);
     for (const t of tafelZeilen(tafelOhneKlasse(karte, JSON.parse(fs.readFileSync(TAFEL, "utf8"))))) console.log(t);
+    // die Wache des Klassen-Gesetzes je Buchungs-Lauf: laut beim Namen, kein Abbruch (die Buchung liest nur das Feld und bleibt richtig)
+    if (karteDatei === KARTE) {
+        const w = klassenWacheLesen(karte);
+        for (const x of w.slice(0, 20)) console.log("  KLASSEN-GESETZ: " + x);
+        console.log(`KLASSEN: ${w.length} Verstoß/Verstöße gegen das Klassen-Gesetz${w.length > 20 ? " (die ersten 20 beim Namen)" : ""}${w.length ? " — node vision/buche-2.cjs --klassen" : ""}`);
+    }
     console.log(zeile(z));
 }
 
@@ -1129,4 +1779,4 @@ if (require.main === module) {
         process.exit(2);
     }
 }
-module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest, tafelOhneKlasse };
+module.exports = { rechne, fahrtUrteil, preisUrteil, treppeLesen, brueckeLesen, lastVon, kopfFolgeAusGit, kopfFolgeFest, tafelOhneKlasse, klassenGesetz, umfangLesen, klassenRechnen, klassenWache };
