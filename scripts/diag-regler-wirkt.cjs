@@ -581,14 +581,17 @@ async function stufenMessen(h, opts) {
         // eine Stufe ohne Teile hält jede Zeile und zeigt nichts: immer rot, ohne Ratsche
         if (!pl.k.teile?.length) leer.push(`${pl.art} ${pl.p}${pl.r ? " " + pl.r.join("=") : ""} L${pl.s}`);
         // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß (Entscheidung A): am Regler-Rand richtet der WURF
+        // DER STEIN AUSSER DER ZEILE (E8.1): gegen die Zeile zählen die Dreiecke ohne die freien — die Zahl des Ausgangs (phyto-core
+        // `budgetFrei` vor der Faltung, Bericht `frei`; nach der Faltung trägt kein Teil mehr seinen Verband allein)
+        const gegen = { tris: pl.k.tris - (pl.k.budget?.frei || 0), draws: pl.k.draws };
         const zu = ["tris", "draws"].filter(
             (f) =>
-                Number.isFinite(pl.zeile[f]) && !(pl.k[f] <= pl.zeile[f]) && !(f === "tris" && pl.r && pl.zeile.nurWurf)
+                Number.isFinite(pl.zeile[f]) && !(gegen[f] <= pl.zeile[f]) && !(f === "tris" && pl.r && pl.zeile.nurWurf)
         );
         const n = `${kerne[pl.art] || "phyto"}:${pl.art}:${pl.r ? pl.r[0] : "(Rezept)"}`;
         if (zu.length)
             (bruch[n] = bruch[n] || []).push(
-                `${pl.r ? pl.r.join("=") + " an " : ""}${pl.p} L${pl.s}: ${zu.map((f) => `${f} ${pl.k[f]} > ${pl.zeile[f]}`).join(", ")}`
+                `${pl.r ? pl.r.join("=") + " an " : ""}${pl.p} L${pl.s}: ${zu.map((f) => `${f} ${gegen[f]} > ${pl.zeile[f]}`).join(", ")}`
             );
     });
     // DIE KLASSE BEIM NAMEN (w28-putz-wand): gerichtet wird das Höchste, genannt JEDER Fall über dem Soll (`ueber`) — hinter

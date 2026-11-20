@@ -185,6 +185,8 @@ class AnazhRealm_studio_bruecke {
             } else if (p) {
                 f.pending.delete(m.reqId);
                 const meshes = m.meshes || [];
+                // der Stein außer der Zeile (E8.1): die Zahl des Ausgangs reist am Körper zur Kosten-Leiste (`_foundryKosten`)
+                if (m.budget && m.budget.frei > 0) meshes.frei = m.budget.frei;
                 // EIN AUFTRAG WARTET NUR AUF DAS, WAS ER BRAUCHT (B3a): ein Körper mit Laub-Karte oder Wurf liest den EINEN
                 // Blatt-Atlas (`_foundryTreeMaterial` → `_blattAtlasProbe`); kam er vor dessen Fracht, geht er mit ihr in
                 // die Welt (`_foundryBlattAtlas`) — nie malt der Haupt-Faden den Atlas selbst. Sein Platz im Faden ist frei.
@@ -1323,7 +1325,7 @@ class AnazhRealm_studio_bruecke {
         };
         const fracht = (fr) =>
             Array.from(new Set(fr.rgba.mips.concat(fr.bc ? fr.bc.mips : []).map((s) => s.data.buffer)));
-        const antwort = (m, meshes, vonPlatte, l) =>
+        const antwort = (m, meshes, vonPlatte, l, frei) =>
             roh(
                 {
                     type: "asset",
@@ -1336,6 +1338,7 @@ class AnazhRealm_studio_bruecke {
                     meshes,
                     platte: vonPlatte,
                     liefer: liest(l),
+                    ...(frei > 0 ? { budget: { frei } } : {}),
                 },
                 puffer(meshes)
             );
@@ -1349,7 +1352,10 @@ class AnazhRealm_studio_bruecke {
                     if (G) spurIn(auftrag);
                     msg.liefer = liest(auftrag);
                     // Put VOR dem Transfer (die Serialisierung läuft hier im Worker; danach sind die Puffer weg).
-                    if (msg.meshes.length) schreib(auftrag, { meshes: msg.meshes });
+                    // der Stein außer der Zeile (E8.1, `budget.frei`) liegt mit dem Körper — die Leiste der Werkstatt liest ihn auch von der Platte
+                    const frei = msg.budget && msg.budget.frei > 0 ? msg.budget.frei : 0;
+                    if (msg.meshes.length)
+                        schreib(auftrag, frei ? { meshes: msg.meshes, frei } : { meshes: msg.meshes });
                     // Der Vorrat: der Körper liegt jetzt auf der Platte — zum Haupt-Thread reist er nicht (kein Leser).
                     if (auftrag.vorrat) return roh(Object.assign({}, msg, { meshes: [], vorrat: true }));
                 }
@@ -1510,7 +1516,7 @@ class AnazhRealm_studio_bruecke {
             }
             lies(l).then((wert) => {
                 const hit = wert && Array.isArray(wert.meshes) ? wert.meshes : null;
-                if (hit) return antwort(m, hit, true, l);
+                if (hit) return antwort(m, hit, true, l, wert.frei);
                 if (m.nurPlatte) return antwort(m, [], false, l);
                 schreibAuftrag.set(m.reqId, l);
                 studio();
@@ -3713,7 +3719,8 @@ class AnazhRealm_studio_bruecke {
         let tris = 0;
         for (const m of teile) tris += Math.floor((m.index ? m.index.length : m.position.array.length / 3) / 3);
         const werfer = teile.filter((m) => AnazhRealm._teilWirft(m)).length;
-        return { tris, stoffe: stoffe.size, meshes: teile.length, werfer };
+        // `frei`: der Stein außer der Zeile (E8.1), gezählt am Ausgang vor der Faltung (phyto budgetFrei) — die Leiste urteilt ohne ihn
+        return { tris, stoffe: stoffe.size, meshes: teile.length, werfer, frei: (meshes && meshes.frei) || 0 };
     }
     // Die Dreiecke einer Geometrie (indiziert oder nicht).
     static _geomDreiecke(g) {
