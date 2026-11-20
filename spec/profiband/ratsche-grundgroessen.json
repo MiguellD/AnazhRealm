@@ -25,7 +25,6 @@
             "stamm/vegetation-wiese.js": ["0x6d2b79f5 ×2"],
             "stamm/vegetation-baum.js": ["0x6d2b79f5"],
             "stamm/bild-sicht.js": ["1664525"],
-            "stamm/bild-himmel.js": ["0x6d2b79f5"],
             "stamm/klang.js": ["Math.random ×2", "0x6d2b79f5", "1664525 ×2"],
             "stamm/feld-leben.js": ["Math.random"],
             "stamm/speicher-welten.js": ["Math.random ×4"],
