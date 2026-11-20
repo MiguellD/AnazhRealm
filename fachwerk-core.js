@@ -2289,11 +2289,19 @@
     ];
     // prettier-ignore
     function wohnNutzung(hp, rahmen){ for(const z of BAU_WOHNEN) if(z.wenn.every(w=>_bauWenn(w,hp,rahmen))) return z.nutzung; return 'wohnhaus'; }
-    // DER HAUSHALT DES LOSES (das Datum, das der Bau liest — nicht mehr aus seiner Fläche zurückgerechnet): 1 bis 1 + 2,5·(1 + wohl)
-    // Personen aus dem Samen des Hauses (ein eigener Strom: der Würfel des Plans zieht, was er zog)
+    // DER HAUSHALT DES LOSES (das Datum, das der Bau liest — nicht mehr aus seiner Fläche zurückgerechnet) aus dem Samen des Hauses
+    // (ein eigener Strom: der Würfel des Plans zieht, was er zog): 1 + k Personen, k Poisson-verteilt (bis 11, ohne Transzendente:
+    // die Gewichte λ^k/k! normiert) um das Mittel der gemessenen Haushalte vor der Industrie — Laslett (Household and Family in Past
+    // Time, 1972; 100 englische Gemeinden 1574–1821): im Mittel 4,75, bei den Armen um 4, bei Bauern und Gentry 5,9 bis 6,6 —
+    // HAUSHALT_MITTEL + HAUSHALT_JE_WOHL·(wohl − 1). Bis hier galt 1 bis 1 + 2,5·(1 + wohl) gleichverteilt (Mittel 3,0 bei wohl 1, jedes
+    // fünfte Haus ein Mensch): an der Stadt dorf 7 30 standen 45 Leute in 18 Wohnhäusern, die ersten zwei jedes Hauses tragen dort
+    // den Wagen — kein Fremder blieb fürs Werk am Rathaus (gate:kreatur-takt zielplan), das Start-Dorf fiel von 77 auf 64 Bewohner
+    const HAUSHALT_MITTEL=4.75, HAUSHALT_JE_WOHL=1.6;
     // prettier-ignore
     function haushaltVon(seed, wohl){ const u=((Math.imul((seed>>>0)^0x5bd1e995,0x9E3779B1)>>>0)%10007)/10007, w=isFinite(wohl)?Math.max(0,wohl):1;
-  return { personen:Math.max(1,Math.min(12,1+Math.floor(u*(2.5+2.5*w)))), wohl:w }; }
+  const l=Math.max(0.2,HAUSHALT_MITTEL-1+HAUSHALT_JE_WOHL*(w-1)), q=[1]; for(let k=1;k<12;k++) q.push(q[k-1]*l/k); const S=q.reduce((a,b)=>a+b,0);
+  let k=0, c=q[0]/S; while(k<11&&u>=c){ k++; c+=q[k]/S; }
+  return { personen:Math.max(1,Math.min(12,1+k)), wohl:w }; }
     // der Würfel der bauweise (die Streu-Folge pitch → W → D → st, byte-treu dem früheren Kultur-Rezept)
     // prettier-ignore
     function _bauweiseWurf(k, seed){

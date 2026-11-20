@@ -719,10 +719,10 @@ class AnazhRealm_siedlung_bewohner {
         // der Stand im Ring vor der Tür (`wort` trennt den Heim-Stand von der Station des Werks) am Rand der Gasse, sonst in ihr
         // und weiteren Ringen; `gilt` (x, z): was er darüber trägt; `anker`: die Tür, der er gehört (beim Hof-Haus: Ring vor dem Tor)
         const ringStand = function* (g, wort, tx, tz, ux, uz, gilt = null, nurRand = false, anker = { x: tx, z: tz }) {
-            // (die Maße des Rings: BEWOHNER.ring — dieselbe Tafel liest gate:kreatur-takt zielplan als Schranke eines Stands)
+            // (die Maße des Rings: BEWOHNER.ring — dieselbe Tafel liest gate:kreatur-takt zielplan als Schranke eines Stands). Der Gast (`nurRand`) geht am Rand ALLE Ringe bis an die Schranke: bis hier endete er nach `amRand` Versuchen (±9 m), an der 9,3-m-Gasse vor gasthaus #846868 (die Stadt dorf 7 30) fand 19 von 22 keinen Stand, kein Fremder kam an (zielplan) // prettier-ignore
             const RG = BW.ring;
             for (const amRand of nurRand ? [true] : [true, false])
-                for (let v = 0; v < (amRand ? RG.amRand : RG.alle); v++) {
+                for (let v = 0; v < (amRand && !nurRand ? RG.amRand : RG.alle); v++) {
                     const stufe = Math.floor(v / RG.jeStufe);
                     const vor = RG.vor0M + stufe * RG.stufeM + g.axis(wort + "vor" + v) * RG.streuM;
                     const quer = (g.axis(wort + "quer" + v) * 2 - 1) * (RG.quer0M + stufe);

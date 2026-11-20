@@ -1270,8 +1270,9 @@ hauptLauf(async () => {
             Z.ok,
             Z.saaten.join(" · ")
         );
-        // 18 Lose, eine Scheune und das Burg-Viertel der Stadt-Grammatik (Palas, Bergfried, Torhaus, Kapelle) — bis zu ihr 21 Slots
-        check(`Z2 OHNE EPOCHE ${alt.slots.length} Slots (18 Häuser)`, alt.slots.length === 23);
+        // 18 Lose, zwei Scheunen und das Burg-Viertel der Stadt-Grammatik (Palas, Bergfried, Torhaus, Kapelle) — bis zu ihr 21 Slots;
+        // bis w28-bau-rezept fiel die zweite Scheune des Plans beim Setzen still (23 von 24 Losen), jetzt steht jedes Los des Plans
+        check(`Z2 OHNE EPOCHE ${alt.slots.length} Slots (18 Häuser)`, alt.slots.length === 24 && alt.slots.length === FC.DORF({ seed: 5 }).houses.length); // prettier-ignore
         console.log("ZIPF " + JSON.stringify(Z.zipf));
         check(
             `Z3 ZIPF: ζ ${Z.zipf.zeta} [${Z.zipf.ki.join("; ")}] über ${Z.je.length} Saaten × 32 × 32 km (Soll 0,8–1,2), ${Z.zipf.export}`,
