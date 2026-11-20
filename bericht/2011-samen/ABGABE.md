@@ -1,6 +1,6 @@
 # Abgabe Welle `samen-ein-baum` — EIN Samen-Baum, der Würfel je Los, je DSL-Op ihr Strom (OMEN GTX 1060, 20.11.)
 
-**Kopf:** `samen-ein-baum` **60fb7c67d** (Vorprüfung, leer über dem Merge-Kopf e07bb72db), Probe-Tag `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]`. Davor kam die Heilung 9f70eaca1 (leer über a69426b28), siehe die nächsten beiden Abschnitte. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
+**Kopf:** `samen-ein-baum` **02447ebc7** (der Schnitt der S0-Nacht über der Vorprüfung 60fb7c67d), Probe-Tag `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]`. Davor kam die Vorprüfung 60fb7c67d, leer über dem Merge-Kopf e07bb72db. Davor kam die Heilung 9f70eaca1 (leer über a69426b28), siehe die nächsten beiden Abschnitte. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
 - die Welle 3e68a828a;
 - Merge main 3da9d9ae9 (Kosmos) und Merge `ein-schreiber-wand` c16c528cc mit dem Register-Anker (151204179);
 - die Prüfstand-Seite (fc148849f);
@@ -8,6 +8,26 @@
 - Merge main 31ea3847e (Wand, stein-ein-gesetz) und Merge main 3e362397e (z635: los-huelle-2, Zeit-Kalender, Vorab-Statik; V18.546.349).
 
 Zweig ab main 92b7afd07. Ich stempele nicht. Roh liegt auf dem OMEN unter `p3/n1911/samen/`.
+
+## Die S0-Nacht am Kopf 02447ebc7 (Wort des Koordinators 17:3x: gate:pruefbuehne-licht ROT an der Radeon, 21,8 < 22)
+- **Gerät oder Inhalt:** Es ist der Inhalt. Gemessen an der GTX 1060, je zwei Boots im Wechsel (`s0/kette.txt`):
+  - der Kopf trägt 21,8 und 21,8;
+  - main + Laub-Kante 5 (e77d5ff45) trägt 22,3 und 22,3;
+  - an der Radeon waren es dieselben Zahlen.
+- **Was dunkler wurde:** Der Strom „je DSL-Op ihr Strom“ wirft die Feuerstelle (`near_player 3`) 0,82 m daneben: 31,64|8,76 statt 32,09|8,08.
+  - Der Ring 1–3 m liegt damit auf einem dunkleren Fleck desselben Boden-Stoffs. Die Albedo des Flecks ist 0,1067 statt 0,1085. Das Korn des Stoffs (`_mikroStoff`) liegt in der Welt.
+  - Das Licht blieb gleich: Belichtung 46 770,794, derselbe Pool, Himmel 0 und Sternen-Licht 0 an beiden.
+  - Licht je Albedo am Stoff 1–10 m ist gleich auf 0,2 %.
+- **Der Schnitt** (`scripts/diag-pruefbuehne.cjs`, `S0_NACHT`):
+  - Der Schuss ohne das Feuer misst an derselben Kamera die Albedo: hell − dunkel unter weißem Umgebungslicht π im linearen Ziel (`__linsenZiel`), am Ring und am Stoff 1–10 m.
+  - Das Urteil liest den Ring am Gesetz: jeder Pixel linear × (Albedo des Stoffs ÷ Albedo des Flecks). Die Soll bleibt 22; „abgesoffen“ bleibt am Pixel.
+  - Das Programm der Linsen-Lampe zählt nicht als Boden-Programm (`S0_MS`). Der erste Lauf hatte es als „Boden-Programm 2 … synchron“ gezählt.
+- **Gemessen** (gpu-lauf, `s0/k7`, `k8`, `b7`):
+  - am Gesetz: Kopf 23,3 und 23,3 (Fleck 21,8, k 1,103), Basis 23,6 (Fleck 22,3, k 1,086);
+  - alle drei Läufe ✅;
+  - die Kamera 2 Stufen tiefer bleibt ROT (am Gesetz 4,2).
+- **Neuer Selbsttest-Fall „der Wurf auf dunkles Korn“:** am Fleck ROT, am Gesetz GRÜN, ohne Albedo blind.
+- **Statik:** diag-apparat, diag-ci-deckung und diag-pipeline-constitution sind grün.
 
 ## Der Merge am Kopf 60fb7c67d (Wort des Koordinators 16:35)
 - **e07bb72db** = a69426b28 + Merge main e0d37353c (z643: Sicht-Heilung der Frost-Wand, Streu-Gestalt, Abdruck am Takt, Takt T8; V18.546.352) 47b2439e3 + Merge `w28-laub-kante-5` 0d3f21c54. Der Inhalt ist der Heilung 9f70eaca1 gleich.
