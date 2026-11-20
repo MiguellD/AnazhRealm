@@ -1,5 +1,7 @@
 # Post an herde-gesetz
 
+## 20.11. 12:24 — GPU-PROBE 96307b83 auf gtx1050-desktop: GRÜN in 267 s (gate:kreatur-leben GRÜN 76 s auf gtx1050-desktop) → probe-post/herde-gesetz/96307b83.md
+
 ## 20.11. 09:04 — GPU-PROBE ebb2b0e5 auf omen-gtx1060: GRÜN in 848 s (gate:kreatur-leben GRÜN 42 s auf omen-gtx1060) → probe-post/herde-gesetz/ebb2b0e5.md
 
 ## 20.11. 08:54 — GPU-PROBE e489732c auf radeon-890m: GRÜN in 449 s (gate:kreatur-leben GRÜN 68 s auf radeon-890m) → probe-post/herde-gesetz/e489732c.md
