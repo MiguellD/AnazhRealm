@@ -401,79 +401,6 @@ class AnazhRealm_bild_kosten {
                 };
                 be.__anazhEinSchreiben = true;
             }
-            // DIE VERDECKUNGS-ABFRAGE SCHLIESST NUR, WAS SIE BEGANN (0910-3 A, Leben-Schau 2: am Bach beim Aussteigen „No
-            // occlusion queries are active" in renderContext_4/_6, danach ungültige Command-Buffer und „Invalid value used in
-            // weak set"). r184 hält die offene Occlusion-Query nur indirekt: sie beginnt im Draw eines Objekts mit
-            // `occlusionTest` und endet träge beim Draw des NÄCHSTEN (`lastOcclusionObject`). Drei Vendor-Stellen nehmen dabei
-            // an, dass JEDES gezählte Objekt (`renderContext.occlusionQueryCount`, die Render-Liste) in einem durchgehenden
-            // Pass begann:
-            //   (1) `copyFramebufferToTexture` (das Tiefen-Abbild für Wasser und Feld-Pass, jede Viewport-Textur) beendet den
-            //       Pass mitten im Bild: die offene Query endet nie („ended with incomplete occlusion query"), die nächste
-            //       Zeichnung schließt sie im neuen Pass, in dem keine offen ist;
-            //   (2) `finishRender` schließt, sobald weniger begonnen als gezählt wurden — auch wenn keine offen ist. Ein
-            //       gezähltes Objekt beginnt nicht, wenn seine Pipeline nicht steht (die Erst-Zeichnung wartet oder verschiebt
-            //       es) oder als gescheitert gilt (`pipelineData.error`, auch durch einen FREMDEN Fehler, den r184s Fehler-
-            //       Bereich um den asynchronen Bau einfängt) → „No occlusion queries are active", der Frame ungültig;
-            //   (3) `resolveOccludedAsync` legt jedes Objekt mit 0 Proben in ein WeakSet — die Lücke eines nie begonnenen
-            //       Index ist `undefined` → „Invalid value used in weak set" (das Ergebnis eines ungültigen Frames ist 0);
-            //   (4) `beginRender` setzt `lastOcclusionObject` (und den Abfrage-Satz) nur bei Zähler > 0 zurück: war in einem
-            //       Probe-Frame ein Stellvertreter der LETZTE Draw, schließt der nächste Frame mit Zähler 0 (der Berg-Cull fragt
-            //       jeden `queryTakt`-ten) seine Abfrage beim ersten Draw — in einem Pass ohne Abfrage-Satz (Gegenprüfung
-            //       10.10., Radeon, Mess-Wiese, Bündel seitlich: 176 Meldungen in 45 s am Kopf 1457bfa9, 382 an main).
-            // Der EINE Ort: der Bruch schließt die offene Abfrage im alten Pass, `finishRender` schließt nur eine offene, und mit
-            // ihm endet die Abfrage des Kontexts (`lastOcclusionObject` fällt; den Satz zerstört r184 selbst im nächsten
-            // Probe-Frame), das Auflösen überspringt Lücken. Nachgestellt in gate:verdeckungs-abfrage (am Bach, Aussteigen;
-            // die Stationen Bruch, Gift, Letzter).
-            const VERDECKT_LEER = {};
-            const offen = (d) => {
-                const o = d.lastOcclusionObject;
-                return !!(o && o.occlusionTest === true);
-            };
-            if (
-                typeof be.copyFramebufferToTexture !== "function" ||
-                typeof be.finishRender !== "function" ||
-                typeof be.resolveOccludedAsync !== "function"
-            )
-                this.log(
-                    "VERDECKUNGS-ABFRAGE: r184-Backend copyFramebufferToTexture/finishRender/resolveOccludedAsync nicht gefunden (Vendor-Drift)",
-                    "ERROR"
-                );
-            else if (!be.__anazhVerdeckung) {
-                const bruchRoh = be.copyFramebufferToTexture;
-                be.copyFramebufferToTexture = function (textur, kontext, rechteck) {
-                    const d = this.get(kontext);
-                    if (d && d.currentPass && d.occlusionQuerySet !== undefined) {
-                        if (offen(d)) {
-                            d.currentPass.endOcclusionQuery();
-                            d.occlusionQueryIndex++;
-                        }
-                        d.lastOcclusionObject = null;
-                    }
-                    return bruchRoh.call(this, textur, kontext, rechteck);
-                };
-                const schlussRoh = be.finishRender;
-                be.finishRender = function (kontext) {
-                    const d = this.get(kontext);
-                    // keine offen → r184s Vergleich `occlusionQueryCount > occlusionQueryIndex` schließt nichts; danach liest
-                    // r184 nur noch den Zähler (resolveQuerySet über occlusionQueryCount)
-                    if (d && d.occlusionQuerySet !== undefined && !offen(d))
-                        d.occlusionQueryIndex = Math.max(d.occlusionQueryIndex, kontext.occlusionQueryCount);
-                    const aus = schlussRoh.call(this, kontext);
-                    // (4) die Abfrage endet mit ihrem Render — der nächste Frame (Zähler 0) erbt keinen offenen Stellvertreter
-                    if (d) d.lastOcclusionObject = null;
-                    return aus;
-                };
-                const aufloesenRoh = be.resolveOccludedAsync;
-                be.resolveOccludedAsync = function (kontext) {
-                    const d = this.get(kontext);
-                    const objekte = d ? d.currentOcclusionQueryObjects : null;
-                    if (objekte)
-                        for (let i = 0; i < objekte.length; i++)
-                            if (objekte[i] === undefined) objekte[i] = VERDECKT_LEER;
-                    return aufloesenRoh.call(this, kontext);
-                };
-                be.__anazhVerdeckung = true;
-            }
         }
         // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
         // Originals auf den EINEN geteilten Schatten-Stoff; der Material-Setter zählt bei jedem Wechsel über 0 die
@@ -647,11 +574,19 @@ class AnazhRealm_bild_kosten {
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
-                let merk;
+                let merk,
+                    offen = false;
                 const aufnahme = this._currentRenderBundle;
                 if (vorbau) {
                     const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
                     if (!arena || scene !== welt.state.scene) return;
+                    // EIN PASS, MEHRERE RENDER-OBJEKTE (z637): die Kaskaden des Schattens zeichnen in EINEN Render-Kontext (GTX 1050:
+                    // drei Kameras, je ein eigener Schatten-Stoff und Bau-Schlüssel) — der Pass galt nach der ersten Kaskade als
+                    // vorgebaut, die zwei anderen bauten nie: der Leib des Menschen hing mit 5 Teilen bis VORBAU_TAKTE (je Leib
+                    // ~130 s, `_leibWarm` nie vor dem Deckel der Frost-Wand), und der echte Leib hätte sie im Spiel kalt gebaut. Offen
+                    // ist das RENDER-OBJEKT, das nicht selbst Knoten-Bau und Pipeline trägt (`_vorbauFehlt` fragt dasselbe): es merkt
+                    // seinen Pass neu vor und baut, auch wenn ein anderes seines Passes schon baute.
+                    offen = !(N.get(ro).nodeBuilderState && this._pipelines.isReady(ro));
                     const wahl =
                         gastArt === true && !welt._eingabeRuht()
                             ? null
@@ -663,7 +598,8 @@ class AnazhRealm_bild_kosten {
                                   welt.state._weltbildDa,
                                   N.nodeFrame.frameId,
                                   gast,
-                                  gast && gastArt === "bild"
+                                  gast && gastArt === "bild",
+                                  offen
                               );
                     if (wahl !== "bauen") {
                         // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
@@ -717,9 +653,9 @@ class AnazhRealm_bild_kosten {
                 const ungebaut = ungebautVon(N, ro);
                 let pass = buehne ? undefined : E.gezeichnet.get(object);
                 const vor = vorbau ? E.vorgebaut.get(object) : undefined;
-                if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k))))
+                if (vorbau && !offen && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k))))
                     return void merk.delete(k);
-                if (pass !== undefined && pass.has(k)) {
+                if (!vorbau && pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
                     zeichne(this, ro, aufnahme, false);
@@ -841,15 +777,20 @@ class AnazhRealm_bild_kosten {
     // früher Bau die Ankunft nichts (anders als der Gast der Ankunft, auf den kein Bild wartet): GTX 1050 kalt, main 9b3750ba,
     // 3 von 3 Boots waren die zwei Stoffe des Rings die LETZTEN Pipelines vor dem Bild (bestellt 18,6–20,4 s, 2,2–2,8 s
     // Übersetzung, das Weltbild 0,2–0,6 s danach), die Schlange des GPU-Prozesses stand davor 0,5–2,3 s leer.
-    static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false, vorBild = false) {
+    // `offen`: das Render-Objekt trägt nicht selbst Knoten-Bau und Pipeline — es merkt seinen Pass neu vor, auch wenn ein anderes
+    // desselben Passes (eine Kaskade im selben Render-Kontext) schon baute.
+    static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false, vorBild = false, offen = false) {
         let merk = E.vorgemerkt.get(arena);
         if (lade && !vorBild) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
         // ein Gast merkt jeden Pass selbst vor, in dem er noch nicht baute (der der Bedienung kam nach dem Ladeschirm, der der
         // Ankunft hing schon davor und merkte dort wie jeder Vorbau), und baut wie jede Erst-Zeichnung unter der Frist des
         // Render-Aufrufs (`ERST_BAU_MS`) — der Schutz des Gasts der Bedienung ist die ruhende Eingabe
         const darf = bild || (lade && vorBild);
-        const vor = gast && darf ? E.vorgebaut.get(arena) : undefined;
-        if (gast && darf && !(vor && vor.has(pass))) {
+        const vor = darf ? E.vorgebaut.get(arena) : undefined;
+        const schon = !!vor && vor.has(pass);
+        // ein Gast merkt jeden Pass, in dem er nicht baute; jeder Vorbau das Render-Objekt eines gebauten Passes, das selbst
+        // nicht steht (die zweite und dritte Kaskade)
+        if (darf && (gast ? offen || !schon : offen && schon)) {
             if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
             merk.add(pass);
         }

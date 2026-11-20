@@ -233,19 +233,28 @@ hauptLauf(async () => {
     await server.zeige(page, 120000, "index.html");
     const boot = await page.evaluate(
         async ({ minChunks }) => {
-            for (const weiter = __deckel("das erste Weltbild", 1200); weiter(); ) {
-                const st = r && r.state;
-                // B urteilt den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm
-                if (
-                    st?.rendererReady &&
-                    st.playerMesh &&
-                    !st._deferredAvatarSoul &&
-                    st.voxelChunks &&
-                    st.voxelChunks.size >= minChunks &&
-                    st._leibWarm
-                )
-                    break;
-                await sleep(300);
+            // DER HÄNGER BEIM NAMEN (z637): der Deckel warf ohne Täter („die Welt hat nichts mehr offen“, Exit 2) — der Leib-Vorbau
+            // hielt `_leibWarm` (GTX 1050 und OMEN: der Mensch mit 5 Teilen, je ein Kaskaden-Paar ohne Bau, `_vorbauFehlt`). Jetzt
+            // urteilt die Boot-Zeile ROT und nennt, was der Vorbau hält: Leib · Takte · fehlende Teile · offene Leiber.
+            let haenger = null;
+            try {
+                for (const weiter = __deckel("das erste Weltbild", 1200); weiter(); ) {
+                    const st = r && r.state;
+                    // B urteilt den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm
+                    if (
+                        st?.rendererReady &&
+                        st.playerMesh &&
+                        !st._deferredAvatarSoul &&
+                        st.voxelChunks &&
+                        st.voxelChunks.size >= minChunks &&
+                        st._leibWarm
+                    )
+                        break;
+                    await sleep(300);
+                }
+            } catch (e) {
+                const V = st && st._leibVorwaermung;
+                haenger = `${e.message.split(" — ")[0]}${V && V.leib ? ` · Leib-Vorbau hält: ${V.leib.name} nach ${V.takte} Takten, ${r._vorbauFehlt(V.leib)} Teile fehlen, ${V.offen.length} Leiber offen` : ""}`;
             }
             const rend = r && st && st.renderer;
             return {
@@ -254,6 +263,7 @@ hauptLauf(async () => {
                 chunks: r && st.voxelChunks ? st.voxelChunks.size : -1,
                 weltbild: r && st._weltbildDa ? `${(st._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
                 warm: !!(r && st._leibWarm),
+                ...(haenger ? { haenger } : {}),
             };
         },
         { minChunks: 25 }
@@ -967,27 +977,52 @@ hauptLauf(async () => {
 
     // DIE TÄTER — die Wand beweist sich an jedem Lauf.
     console.log("\n=== DIE TÄTER (die Wachen und die Bild-Probe beißen) ===");
+    // T1 — ein Index über der Vertex-Zahl, zweimal: als Index des Vendors (Uint16) und als Storage-Index (`_sichtSpeicher`, wie
+    // der Bau-Satz seit E9 — der Compute der Sicht liest ihn, wo er liegt). Die Wache nennt BEIDE beim Namen. Gelesen wird, wenn
+    // beide gezeichnet haben (das Ereignis der Erst-Zeichnung, `F.ungezeichnet`), nie nach einer Zahl von Bildern: der neue Stoff
+    // baut in Raten (`_knotenRate`) — GTX 1050 im Spiel-Takt, main a71e06c7 und einheit-sicht 9f1c5ff3: erst nach 49 und 59
+    // Bildern (6,0 und 6,6 s) zeichnete der Täter, die Wache nannte ihn an beiden. Bis hier las T1 nach 600 ms + 8 Bildern und
+    // urteilte die Bau-Ration statt der Wache (z637 ROT am Kandidaten).
     const t1 = await page.evaluate(async () => {
         const T = window.THREE;
         const F = window.__frostWand;
-        const geo = new T.BufferGeometry();
-        geo.setAttribute("position", new T.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3));
-        geo.setIndex(new T.BufferAttribute(new Uint16Array([0, 1, 3]), 1));
-        const m = new T.Mesh(geo, new T.MeshBasicNodeMaterial({ color: 0xff00ff }));
-        m.name = "frost-taeter-bereich";
-        m.frustumCulled = false;
         const cam = st.camera;
-        m.position.copy(new T.Vector3(0, 0, -2).applyQuaternion(cam.quaternion).add(cam.position));
-        F.wurzel.add(m);
-        await F.zeichne(8);
-        F.wurzel.remove(m);
+        const taeter = (name, index) => {
+            const geo = new T.BufferGeometry();
+            geo.setAttribute("position", new T.BufferAttribute(new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]), 3));
+            geo.setIndex(index);
+            const m = new T.Mesh(geo, new T.MeshBasicNodeMaterial({ color: 0xff00ff }));
+            m.name = name;
+            m.frustumCulled = false;
+            m.position.copy(new T.Vector3(0, 0, -2).applyQuaternion(cam.quaternion).add(cam.position));
+            F.wurzel.add(m);
+            return m;
+        };
+        const ms = [
+            taeter("frost-taeter-bereich", new T.BufferAttribute(new Uint16Array([0, 1, 3]), 1)),
+            taeter("frost-taeter-speicher", r._sichtSpeicher(new Uint32Array([0, 1, 3]))),
+        ];
+        const N = st.renderer._nodes.nodeFrame,
+            a = N.frameId;
+        let bruch = "";
+        try {
+            for (const weiter = __deckel("die Täter T1 im Bild", 100); ms.some((m) => F.ungezeichnet(m, cam)) && weiter(); )
+                await F.zeichne(1);
+        } catch (e) {
+            bruch = e.message;
+        }
+        for (const m of ms) F.wurzel.remove(m);
         const W = r._indexWache;
-        return W ? W.brueche.filter((b) => b.art === "bereich").map((b) => `${b.objekt}: ${b.detail}`) : null;
+        return {
+            bilder: N.frameId - a,
+            bruch,
+            namen: W ? W.brueche.filter((b) => b.art === "bereich").map((b) => `${b.objekt}: ${b.detail}`) : [],
+        };
     });
     check(
-        "T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen",
-        !!t1 && t1.some((s) => /frost-taeter-bereich/.test(s)),
-        t1
+        "T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen — Vendor- und Storage-Index",
+        ["frost-taeter-bereich", "frost-taeter-speicher"].every((n) => t1.namen.some((s) => s.includes(n))),
+        `gezeichnet nach ${t1.bilder} Bildern${t1.bruch ? " · " + t1.bruch : ""} · ${t1.namen.join(" | ") || "keiner genannt"}`
     );
     // T3 — die Puffer-Wache beißt: 3 × Uint16 (6 Bytes) auf einen eigenen Puffer der Welt-GPU
     const t3 = await page.evaluate(() => {

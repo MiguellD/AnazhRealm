@@ -99,7 +99,6 @@ const OBERKANTE_BENANNT = {
         "Platzierung: die Todes-Ebene hebt den Spieler unter der Welt auf die Oberfläche",
     ],
     _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
-    _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
     _bodenUmzug: [
         ["_voxelSurfaceY", "_terrainMacroSurfaceY"],
         "Platzierung: ein Save eines alten Bodens setzt Bauten, Gruben und Spieler auf die Oberfläche des neuen (K16)",
