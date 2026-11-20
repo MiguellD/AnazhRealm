@@ -7,6 +7,11 @@ case "$BASH" in */sh | */sh.exe) set +o posix ;; *) [ -x /usr/bin/sh ] && exec /
 cd /c/Users/micha/AnazhRealm-profiband
 TOK=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill 2>/dev/null | sed -n 's/^password=//p')
 API=https://api.github.com/repos/MiguellD/AnazhRealm
+# JE AUFRUF EINE EIGENE LAUF-LISTE (20.11.): bis hierher schrieb jeder Rufer dieselbe Datei ci-runs.tmp. Fragte ein Arbeiter oder ein
+# Warter, während der Zug-Dienst las, bekam der Dienst fremde oder leere Zeilen — vor z632 standen w28-los-huelle-2 und
+# w28-kern-sprossen-heil-2 so mit grüner Probe als „GPU-Probe nicht GRÜN (GPU-Probe zug-vorab-statik …)“ im Wartezimmer.
+CT=/tmp/claude/w4/ci-runs.$$.tmp
+trap 'rm -f "$CT"' EXIT
 # „    voll: n/m“ eines Laufs — wie viele Gruppen der VOLLEN Batterie er grün trug (0/0 = nur der Puls)
 voll_zahl() {
   curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$1/jobs?per_page=100&filter=latest" | node -e '
@@ -16,7 +21,7 @@ for z in "$@"; do
   sha=$(git ls-remote origin "refs/heads/$z" | cut -c1-40)
   echo "== $z ${sha:0:8}"
   curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs?head_sha=$sha&per_page=20" | node -e '
-let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);for(const r of (j.workflow_runs||[]))console.log(r.id+"\t"+r.name+"\t"+r.status+"\t"+(r.conclusion||"-"));})' > /tmp/claude/w4/ci-runs.tmp
+let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);for(const r of (j.workflow_runs||[]))console.log(r.id+"\t"+r.name+"\t"+r.status+"\t"+(r.conclusion||"-"));})' > "$CT"
   while IFS=$'\t' read -r id name st co; do
     # EIN WACKLER OHNE TÄTER HÄLT KEINEN ZWEIG VOR DEM ZUG (15.11.: w28-wand-acht b8700e9e, ein Zweig nur aus diag-betriebsgesetz.cjs, fiel
     # an „Die Fahr-Linse des Lebens“ und ging heim — der Zug selbst lässt denselben Schritt seit 08.11. ohne Neulauf landen). Ist am
@@ -66,5 +71,5 @@ let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{let r=[];try{r=JSON.pars
       curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$id/jobs?per_page=100&filter=latest" | node -e '
 let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const f=(j.jobs||[]).filter(x=>x.conclusion==="failure");console.log("    rot ("+f.length+"/"+(j.jobs||[]).length+"): "+f.map(x=>x.name+" ["+((x.steps||[]).filter(s=>s.conclusion==="failure").map(s=>s.name).join(","))+"]").join(" · "));})'
     fi
-  done < /tmp/claude/w4/ci-runs.tmp
+  done < "$CT"
 done
