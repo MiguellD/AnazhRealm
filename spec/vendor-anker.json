@@ -574,37 +574,41 @@
         ]
     },
     {
-        "warum": "DIE VERDECKUNGS-ABFRAGE: r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der Wirt hält die offene am selben Feld (`lastOcclusionObject`), schließt sie vor dem Pass-Bruch, lässt `finishRender` nur eine offene schließen und füllt die Lücken nie begonnener Indizes vor dem WeakSet.",
+        "warum": "DIE SICHT DER EINHEIT (Bild/tiefe, E7): der Satz-Index ist ein Storage-Index (der Compute liest ihn), der Sicht-Index und der Auftrag sind Storage + Index bzw. Storage + Indirect; `_attributes.update(a, 2|4)` lädt sie vor dem Compute (die Typ-Nummern INDEX 2, INDIRECT 4); der Zug liest `geometry.indirect` und zieht EIN drawIndexedIndirect je Offset. Die Verdeckungs-Abfrage (occlusionTest, ihr Wirt im Pass-Bruch) fiel mit dem Berg und Wald-vor-Wald.",
         "anker": [
             {
-                "sub": "if(void 0!==n.occlusionQuerySet){const e=n.lastOcclusionObject;e!==r&&(null!==e&&!0===e.occlusionTest&&(n.currentPass.endOcclusionQuery(),n.occlusionQueryIndex++),!0===r.occlusionTest&&(n.currentPass.beginOcclusionQuery(n.occlusionQueryIndex),n.occlusionQueryObjects[n.occlusionQueryIndex]=r),n.lastOcclusionObject=r)}",
-                "organ": "Verdeckungs-Abfrage (träges Ende am nächsten Objekt, `lastOcclusionObject`)"
+                "sub": "createIndexAttribute(e){let t=GPUBufferUsage.INDEX|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST;(e.isStorageBufferAttribute||e.isStorageInstancedBufferAttribute)&&(t|=GPUBufferUsage.STORAGE)",
+                "organ": "_sichtTiefeRechnen (der Satz-Index und der Sicht-Index tragen STORAGE)"
             },
             {
-                "sub": "t.occlusionQueryIndex=0,t.occlusionQueryObjects=new Array(s),t.lastOcclusionObject=null",
-                "organ": "Verdeckungs-Abfrage (beginRender: Index, Objekt-Feld mit Lücken, keine offene)"
+                "sub": "createIndirectStorageAttribute(e){this.attributeUtils.createAttribute(e,GPUBufferUsage.STORAGE|GPUBufferUsage.INDIRECT|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST)}",
+                "organ": "_sichtSatzNeu (der Auftrag: Storage + Indirect)"
             },
             {
-                "sub": "r>t.occlusionQueryIndex&&t.currentPass.endOcclusionQuery()",
-                "organ": "Verdeckungs-Abfrage (finishRender schließt nach Zähler, nicht nach offen)"
+                "sub": "const Ay=1,Ey=2,wy=3,Cy=4",
+                "organ": "_sichtTiefeRechnen (`_attributes.update`: INDEX 2, INDIRECT 4)"
             },
             {
-                "sub": "for(let t=0;t<s.length;t++)n[t]===BigInt(0)&&e.add(s[t])",
-                "organ": "Verdeckungs-Abfrage (resolveOccludedAsync: das WeakSet nimmt jede Lücke)"
+                "sub": "class Ex extends we{constructor(e,t,r=Float32Array){super(ArrayBuffer.isView(e)?e:new r(e*t),t),this.isStorageBufferAttribute=!0}}",
+                "organ": "_sichtSpeicher (StorageBufferAttribute ist eine Flagge am BufferAttribute)"
+            },
+            {
+                "sub": "class YC extends Ex{constructor(e,t){super(e,t,Uint32Array),this.isIndirectStorageBufferAttribute=!0}}",
+                "organ": "_sichtSpeicher (IndirectStorageBufferAttribute: dazu die Flagge des Auftrags)"
+            },
+            {
+                "sub": "const r=this.getIndex(e);null!==r&&this.updateAttribute(r,Ey);const s=e.geometry.indirect;null!==s&&this.updateAttribute(s,Cy)",
+                "organ": "_sichtSatzNeu (der Zug lädt Index und Auftrag nur bei neuer Version — der Compute-Inhalt bleibt)"
+            },
+            {
+                "sub": "const t=this.get(n).buffer,r=e.getIndirectOffset(),s=Array.isArray(r)?r:[r];for(let e=0;e<s.length;e++)o.drawIndexedIndirect(t,s[e])",
+                "organ": "_sichtSatzNeu (EIN drawIndexedIndirect je Offset)"
             }
         ]
     },
     {
-        "warum": "das Feld der Hülle des Auflösens: beginRender reicht es als `currentOcclusionQueryObjects` weiter",
+        "warum": "der Abbild-Knoten der Szenen-Tiefe zieht je Render einmal",
         "anker": [
-            {
-                "sub": "t.currentOcclusionQuerySet=t.occlusionQuerySet,t.currentOcclusionQueryBuffer=t.occlusionQueryBuffer,t.currentOcclusionQueryObjects=t.occlusionQueryObjects",
-                "organ": "Verdeckungs-Abfrage (beginRender: das Objekt-Feld wandert nach current*)"
-            },
-            {
-                "sub": "{currentOcclusionQueryBuffer:r,currentOcclusionQueryObjects:s}=t;if(r&&s){const e=new WeakSet;t.currentOcclusionQueryObjects=null",
-                "organ": "Verdeckungs-Abfrage (resolveOccludedAsync liest currentOcclusionQueryObjects)"
-            },
             {
                 "sub": "else if(t===ri.RENDER){const t=this._getMaps(this.updateBeforeMap,r);if(t.renderId!==this.renderId)",
                 "organ": "_szeneTiefe (der Abbild-Knoten zieht je Render einmal)"

@@ -1738,12 +1738,9 @@ class AnazhRealm_dirigent_regler {
                       // stehendem Spieler): Mints/Tode + die Top-Wiederkehrer-Schlüssel —
                       // die Familie, die im Kreis stirbt und wiederaufersteht, beim Namen.
                       gruppenChurn: this._archGruppenChurnZensus(),
-                      // WELLE 5 — der BERG-SCHATTEN im Trace: Tests gesamt + verdeckte
-                      // Region-Frames (die Verdeckungs-Ersparnis wird messbar).
-                      bergCull: {
-                          tests: this._bergCullTests || 0,
-                          verdecktFrames: this._bergCullVerdeckt || 0,
-                      },
+                      // DIE SICHT (Bild/tiefe, E7) im Trace: Bilder (ohne Tiefe), geprüfte und verdeckte Haufen, die
+                      // Dreiecke des Bau-Satzes und des Sicht-Index, die Urteile der Region-Bündel.
+                      sicht: this._sichtTiefeZahl(),
                       // DER EINE WELT-MARCH im Trace: wie viele Einträge leben (belegt), wie viel Listen-Raum
                       // bleibt, wie viele Analog-Sätze und Gesetz-Plätze — die Kapazitäts-Wahrheit.
                       weltMarch: this.state.weltMarch

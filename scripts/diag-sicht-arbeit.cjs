@@ -30,7 +30,7 @@
 //       dem Halt als Rand, `PASS_WAHL_WGSL` — sein Gesetz prüft gate:foundry-crossfade (4));
 //   (D) DIE DREH-TREUE: nach einer Neu-Wahl mitten in einer gehaltenen Drehung zeichnet die gehaltene Wahl jede Zelle, die
 //       das echte Frustum trifft;
-//   (F) DIE FAHRT (w24-fahrt-takt): 20 m/s in Bildern zu 33 ms Wanduhr — der Anker des Hauptbilds hält über den Weg des Auges
+//   (F) DIE FAHRT (w24-fahrt-takt): 20 m/s in Bildern zu 33 ms Welt-Uhr — der Anker des Hauptbilds hält über den Weg des Auges
 //       (höchstens jedes fünfte Bild neu), die gehaltene Wahl trägt jede Zelle der Sätze am Gesetz vom Auge des Bilds
 //       (0 Löcher); ohne Weg legt jedes Bild neu an, ohne den Rand des Wegs reißen Löcher (scharf);
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen. Mit der Instanz-Wahl und dem
@@ -938,7 +938,7 @@ const server = statikServer();
             }
             L.aus();
             // (F) DIE FAHRT (w24-fahrt-takt, der Halt der Lage ist der Weg des Auges, `_lageAnker`): die Kamera fährt 20 m/s QUER zum
-            // Blick (der Blick aus dem Seitenfenster), je Bild 33 ms Wanduhr, das Auge der Maske mit ihr — der Anker des Hauptbilds
+            // Blick (der Blick aus dem Seitenfenster), je Bild 33 ms Welt-Uhr (`_weltUhrNimm`, das Tempo des Auges liest sie), das Auge der Maske mit ihr — der Anker des Hauptbilds
             // hält über die Strecke, die das Auge in `zeitS` fährt, nie je Bild neu; die gehaltene Wahl zeichnet jede Zelle, die das
             // Gesetz ohne Rand vom Auge DIESES Bilds trifft (`zellenWahr`). Quer, weil ein Weg im Kegel des Blicks (schräg 30°
             // gemessen: 0 Löcher ohne Rand in 2805 Zellen) jede neue Lage in der alten trägt — erst quer wandern die Ebenen des
@@ -954,7 +954,7 @@ const server = statikServer();
                 try {
                     vergiss();
                     for (let f = 0; f <= o.bilder; f++) {
-                        await sleep(33);
+                        r._weltUhrNimm(st.spielZeit + 0.033); // die Welt-Uhr durch ihre EINE Tür von außen (`_weltUhrNimm`)
                         stelle(yaw, 0, f * 0.667);
                         u.copy(cam.position);
                         const g0 = genHaupt();
