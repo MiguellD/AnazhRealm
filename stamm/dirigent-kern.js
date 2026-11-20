@@ -1826,8 +1826,18 @@ class AnazhRealm {
         const nimm = (id, q) => {
             const d = Math.hypot(q.x - x, q.y - y, q.z - z);
             if (d > R + q.L.reichweiteM || !(this._leuchtStaerke(q, t) > 0)) return;
-            const imBild = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), q.L.reichweiteM));
-            out.push(Object.assign(q, { id, rang: (imBild ? 0 : 1e9) + Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
+            const imKegel = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), q.L.reichweiteM));
+            // DER RANG NACH DEM BEITRAG AM SCHIRM (nacht-lichter): zuerst jede Quelle, deren Fleck im Bild liegt (die Kugel ihrer
+            // Höhe um den Kopf — dort fällt das meiste ihres Lichts), unter ihnen nach dem, was sie ans Auge trägt: ihre Stärke im
+            // Abstand des Auges (I ÷ (d² + k² + 1)); dann die, deren Reichweite den Kegel nur streift; hinter dem Kegel der Abstand
+            // (das Drehen blendet). Bis hier rangierte der Abstand zur Kugel der Reichweite: die Wandlaterne 17,9 m hinter dem
+            // Bildrand nahm den Platz der Wandlaterne 19 m im Bild (Dorf P0, Radeon: 3 von 4 sichtbaren Quellen mit Fleck).
+            const k2 = q.L.kernM * q.L.kernM;
+            const fleck = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), (q.L.hoeheM || 1) + q.L.kernM));
+            const rang = fleck
+                ? -this._leuchtStaerke(q, t, true) / (d * d + k2 + 1)
+                : (imKegel ? 1e8 : 1e9) + d;
+            out.push(Object.assign(q, { id, rang }));
         };
         const auge = this._augenLeuchte;
         if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));

@@ -6640,7 +6640,7 @@
     var LICHT_GESETZ = {
         feuer: { kelvin: 2000, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, cdM2: 8, schaltet: true, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, cd: 25.7, glasStreu: 0.05, schaltet: true, reichweiteM: 12, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        laterne: { kelvin: 1900, cd: 25.7, glasStreu: 0.05, schaltet: true, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
     // DIE FLAMME EINER LEUCHTE (nacht-lichter): ihr leuchtender Leib als Scheibe der Fläche cd ÷ `FEUER_LEUCHTDICHTE` — der Halbmesser ist
     // der Kern ihres Abfalls (`lichtAbfall`). Die Laterne: 25,7 cd ÷ 15 000 cd/m² = 17 cm², Halbmesser 2,3 cm (bis nacht-lichter
@@ -6649,6 +6649,16 @@
         return Math.round(1000 * Math.sqrt(L.cd / (Math.PI * FEUER_LEUCHTDICHTE))) / 1000;
     }
     LICHT_GESETZ.laterne.kernM = lichtFlammeM(LICHT_GESETZ.laterne);
+    // DIE REICHWEITE FOLGT AUS DER LICHTSTÄRKE (nacht-lichter): der Abstand, in dem die Leuchte waagrecht unter ihr noch ein Achtel
+    // des Vollmonds trägt (`LICHT_SCHWELLE_LX` 0,0325 lx, der Vollmond im Zenit 0,26 lx) — darunter trägt sie kein Pixel, das der
+    // Mond nicht trägt. Die Laterne: √(25,7 · (1 + k²) ÷ 0,0325) = 28,1 m (bis nacht-lichter die eigene Zahl 12 m: der Kreis des
+    // Lichts brach 12 m vom Mast hart ab, die Gasse zwischen zwei Masten in 24 m stand schwarz). Das Herdfeuer trägt seine Reichweite
+    // aus dem Labor (sein Schaltplan hebt es nachts ×45 — aus der Stärke folgten 119 m).
+    var LICHT_SCHWELLE_LX = 0.0325;
+    function lichtReichweiteM(L) {
+        return Math.round(10 * Math.pow((L.cd * Math.pow(1 + L.kernM * L.kernM, L.abfall / 2)) / LICHT_SCHWELLE_LX, 1 / L.abfall)) / 10;
+    }
+    LICHT_GESETZ.laterne.reichweiteM = lichtReichweiteM(LICHT_GESETZ.laterne);
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
     // steht — DIESELBE Leuchte wie die Laterne (Lichtstärke, Kern, Farbtemperatur, Zeitplan, Reichweite, Abfall, Glas), nur ihr
     // Leib hängt anders: der Kopf `hoeheM` über der Gasse, `armM` vor der Wand. Bis nacht-lichter folgte ihr Kern aus dem
@@ -7764,7 +7774,7 @@
         };
         // der Fuß und der Mast als EIN Drehkörper (nah acht Seiten mit Wulst und Kragen unter dem Kopf)
         var profil = fein
-            ? [[m.fr, -0.2], [m.fr, 0.1], [m.fr * 0.82, 0.16], [m.fr * 0.62, m.fh], [m.mr * 1.5, m.fh + 0.1], [m.mr, m.fh + 0.22], [m.mr, m.yK0 - 0.14], [m.mr * 1.7, m.yK0 - 0.04], [m.mr * 1.7, m.yK0], [0, m.yK0]]
+            ? [[m.fr, -0.2], [m.fr, 0.1], [m.fr * 0.82, 0.16], [m.fr * 0.62, m.fh], [m.mr * 1.5, m.fh + 0.1], [m.mr, m.fh + 0.22], [m.mr, m.yKr], [m.mr * 1.7, m.yK0 - 0.04], [m.mr * 1.7, m.yK0], [0, m.yK0]]
             : [[m.fr, -0.2], [m.fr * 0.62, m.fh], [m.mr, m.fh + 0.22], [m.mr, m.yK0], [0, m.yK0]];
         eisen(ausDreh(profil, fein ? 8 : 4, false, false));
         ausLaterneKopf(g, m, eisen, fein);
@@ -8286,7 +8296,12 @@
             mass = AUS_MASS[id];
         if (!pre || !pre.fx || !pre.fx.licht || typeof mass !== "function") return 0;
         var m = mass(pre.s.groesse);
-        return m.yK0 < m.yL ? Math.max(m.yL - m.yK0, m.yK1 - m.yL, m.kb / 2) : 0;
+        // DER KRAGEN GEHÖRT ZUM LEIB (nacht-lichter): unter dem Boden des Kopfs weitet sich der Mast zum Kragen (`yKr` bis `yK0`,
+        // Halbmesser 7,7 cm in 0,20–0,24 m unter der Flamme) — jenseits der nahen Ebene `yL − yK0` warf er ein Achteck von 1,25 m
+        // Halbmesser um den Fuß jeder werfenden Laterne (Radeon, Dorf Uhr 0: der Boden-Fleck 0–2 m stand 0,41 EV über 6–8 m).
+        // Der Leib reicht bis zum Fuß des Kragens; darunter wirft der Mast (4,5 cm) seinen eigenen Fleck von 0,5 m.
+        var unten = m.yKr != null ? Math.min(m.yKr, m.yK0) : m.yK0;
+        return unten < m.yL ? Math.max(m.yL - unten, m.yK1 - m.yL, m.kb / 2) : 0;
     }
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
@@ -8320,7 +8335,8 @@
             // der Licht-Mittelpunkt (LICHT_GESETZ.laterne hoeheM) ist die Mitte des Glas-Kopfs
             var kh = 0.4 * G,
                 yL = LICHT_GESETZ.laterne.hoeheM * G;
-            return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
+            // `yKr`: der Fuß des Kragens unter dem Kopf (nah: der Mast weitet sich von dort bis zum Boden des Kopfs)
+            return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yKr: yL - kh / 2 - 0.14, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
         },
         grabstein: function (G) {
             // die Tafel b × h × d auf dem Sockel sb × sh × sd, das Kreuz aus Balken der Breite kb
