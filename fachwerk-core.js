@@ -2148,16 +2148,18 @@
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
       M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
-      M.feuer.userData.__leucht=LEUCHT_FEUER;                                                  // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
+      M.feuer.userData.__leucht=FEUER_LEUCHT_JE_LUMA;                                          // DAS LEUCHT-GESETZ (05.10.; nacht-lichter): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht in cd/m² je Luma der Farbe; die Welt webt emissiveNode = Farbe × leucht ÷ EINHEIT_LX)
       return M; }
-    // Die Stärke des Leuchtens: Leuchtdichte = lineare Vertex-Farbe × 2,5 (die Flammen-Wurzel 0,55/0,30/0,08 leuchtet
-    // 1,4/0,75/0,2, die Glut-Mitte 0,75/0,25/0,08, ihr Rand 0,15/0,10/0,08). Bis 05.10. leuchtete jede Glut-Fläche gleich
-    // (0xff5212 × 1,5) — das Bett las sich als cremige Scheibe, die Flamme als gelber Kegel.
+    // Die Stärke des Leuchtens: Leuchtdichte = lineare Vertex-Farbe × `FEUER_LEUCHT_JE_LUMA` — die Wurzel der Flamme (FLAMME.ton,
+    // 0,55/0,30/0,08, Luma 0,337) steht bei `FEUER_LEUCHTDICHTE` 15 000 cd/m², die Glut-Mitte 0,75/0,25/0,08 (Luma 0,344) bei 15 300, ihr Rand
+    // 0,15/0,10/0,08 bei 4 900. Bis nacht-lichter stand daneben die Zahl des Labors `LEUCHT_FEUER` 2,5 (Welt-Einheiten je Farbe: die Wurzel 13 560 cd/m²
+    // — eine zweite Leuchtdichte der Flamme neben dem Gesetz). Bis 05.10. leuchtete jede Glut-Fläche gleich (0xff5212 × 1,5).
+    // Das Labor (r128, Legacy-Licht ohne Skala) zeichnet die Wurzel der Flamme bei `LABOR_FLAMME` im Bild — seine Eichung (wie die
+    // Stärken seiner Sonne), keine zweite Physik: dieselbe Vertex-Farbe, dasselbe Verhältnis je Ecke (Lab = Welt).
     // prettier-ignore
-    const LEUCHT_FEUER=2.5;
-    // Das Labor (r128) liest dasselbe Gesetz: sein Standard-Shader nimmt die Vertex-Farbe als Leuchten (Lab = Welt).
+    const LABOR_FLAMME=0.84;
     // prettier-ignore
-    function _leuchtLab(m){ const k=m.userData.__leucht; m.onBeforeCompile=function(s){ s.fragmentShader=s.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive;\n#ifdef USE_COLOR\n\ttotalEmissiveRadiance = vColor * '+k.toFixed(3)+';\n#endif'); }; }
+    function _leuchtLab(m){ const k=(m.userData.__leucht/FEUER_LEUCHT_JE_LUMA)*LABOR_FLAMME/FEUER_WURZEL_LUMA; m.onBeforeCompile=function(s){ s.fragmentShader=s.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive;\n#ifdef USE_COLOR\n\ttotalEmissiveRadiance = vColor * '+k.toFixed(3)+';\n#endif'); }; }
     // mat — die Rollen-Auflösung (byte-treu Lab Z.2996 `const mat=r=>M[r]||M.holz;` + Lazy-Guard).
     // prettier-ignore
     function mat(r){ const MM=materials(); return MM[r]||MM.holz; }
@@ -6612,50 +6614,53 @@
     // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
     // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
     // Szene (physicallyCorrectLights).
-    // DIE EINE SKALA (licht-eine-skala, rein additiv): jede Zeile trägt neben der Zahl des Labors ihr Licht in SI — `cd` die
-    // Lichtstärke der Quelle in Candela (≙ lx in 1 m nach dem Abfall der Zeile, cd · (1 + kern²)/(d² + kern²)): das Herdfeuer 10,2
-    // (3,5 lx in 2 m, das Band 2–5 lx des Nordstern-Solls; Hypothese mit Band, kein Messwert eines Holzfeuers), die Laterne 25,7
-    // (2 lx am Boden unter 3,6 m, das Band 2–5 lx der Gasse; ein Gas-Brenner trägt 10–30 cd); `cdM2` die Leuchtdichte des
-    // erleuchteten Fensters (8 cd/m²: Hypothese „Raum im Licht einer Flamme hinter Glas", 50 lx auf heller Wand ÷ π) und des
-    // Laternen-Kopfs (640 cd/m²: seine 25,7 cd über die Ansicht des Glas-Kopfs von ≈ 0,04 m² — das Glas streut die Flamme); `schaltet`:
+    // DIE LICHTSTÄRKE, EINE GRÖSSE (nacht-lichter): jede Leuchte trägt GENAU EINE Zahl ihres Lichts — `cd` die Lichtstärke in
+    // Candela (≙ lx in 1 m nach dem Abfall der Zeile, cd · (1 + kern²)/(d² + kern²)): das Herdfeuer 10,2 (3,5 lx in 2 m, das Band
+    // 2–5 lx des Nordstern-Solls; Hypothese mit Band, kein Messwert eines Holzfeuers), die Laterne 25,7 (2 lx am Boden unter 3,6 m,
+    // das Band 2–5 lx der Gasse; ein Gas-Brenner trägt 10–30 cd). Alles andere Licht der Leuchte FOLGT aus ihr: der leuchtende
+    // Leib (Fläche = cd ÷ `FEUER_LEUCHTDICHTE`, `lichtFlammeM`), das Glas des Kopfs (eine Scheibe, von innen beleuchtet: Leuchtdichte
+    // = `glasStreu` · E ÷ π mit E = cd · cos θ ÷ (r² + kern²) je Ecke, `laterneGlasTon` · `laterneGlasJeLuma`), die Wandlaterne (dieselbe Leuchte am Arm).
+    // Bis nacht-lichter trug jede Zeile daneben die Zahl des Labors (`staerke` 1 / 19) und der Kopf eine eigene Leuchtdichte (`cdM2`
+    // 640, flach über das ganze Glas — nachts 2 100-mal Bild-Weiß: das Glas stand als ein Fleck Orange), die Wandlaterne 3,6 cd
+    // mit einem Kern von 2,74 m. `cdM2` bleibt NUR das Fenster: die Leuchtdichte eines erleuchteten Raums hinter Glas (8 cd/m²:
+    // Hypothese „Raum im Licht einer Flamme hinter Glas", 50 lx auf heller Wand ÷ π) — eine Fläche, keine Quelle im Pool. `schaltet`:
     // der Zeitplan `zeit` ist ein SCHALTPLAN (der Anteil brennender Quellen je Tageszeit, auf seinen größten Wert bezogen) — ohne
     // `schaltet` trägt `zeit` nur die Belichtung des Labors (das Herdfeuer brennt bei Tag und Nacht mit derselben Lichtstärke).
-    // Leser der SI-Spalten: die Welt (`_leuchtStaerke`, `_leuchtTakt`: Wert ÷ die Einheit der EINEN Skala).
+    // Leser: die Welt (`_leuchtStaerke`, `_leuchtTakt`: Wert ÷ die Einheit der EINEN Skala) und das Labor (geeicht am Herdfeuer).
     // DAS BOGEN-GESETZ (K66): die Kurven der Bögen — hufeisen: der Mittelpunkt um R·tan(hufeisenAlpha) über dem Kämpfer, der Bogen
     // läuft um hufeisenAlpha unter die Mitte; spitz: zwei Mittelpunkte im Abstand spitzE·R von der Achse auf der Kämpferlinie
     // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
     var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
+    // DIE LEUCHTDICHTE DER FLAMME: der leuchtende Leib eines Holz- oder Kerzenfeuers in cd/m² (13 800–16 000, Hollan: Messung
+    // an Kerzen- und Holzflammen; ein schwarzer Körper bei 2 000 K trüge das Dreißigfache — der Ruß der Flamme ist dünn).
+    // Der Stoff `feuer` (Glut, Flamme, Herdfeuer) leuchtet in seiner Vertex-Farbe: die Wurzel der Flamme (FLAMME.ton, die
+    // hellste Ecke) steht bei dieser Leuchtdichte (`FEUER_LEUCHT_JE_LUMA`). Die Flamme einer Leuchte ist ihr Leib: Fläche =
+    // cd ÷ diese Leuchtdichte. Leser: die Welt (`_stoffAusStudio`, das Licht des Brands), das Labor.
+    var FEUER_LEUCHTDICHTE = 15000;
     var LICHT_GESETZ = {
-        feuer: { kelvin: 2000, staerke: 1, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        feuer: { kelvin: 2000, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, cdM2: 8, schaltet: true, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, staerke: 19, cd: 25.7, cdM2: 640, schaltet: true, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        laterne: { kelvin: 1900, cd: 25.7, glasStreu: 0.05, schaltet: true, reichweiteM: 12, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
+    // DIE FLAMME EINER LEUCHTE (nacht-lichter): ihr leuchtender Leib als Scheibe der Fläche cd ÷ `FEUER_LEUCHTDICHTE` — der Halbmesser ist
+    // der Kern ihres Abfalls (`lichtAbfall`). Die Laterne: 25,7 cd ÷ 15 000 cd/m² = 17 cm², Halbmesser 2,3 cm (bis nacht-lichter
+    // stand der Kern als eigene Zahl 0,1 m daneben). Das Herdfeuer trägt sein Glutbett als Kern (Ø 0,76 m, klang bettRefM).
+    function lichtFlammeM(L) {
+        return Math.round(1000 * Math.sqrt(L.cd / (Math.PI * FEUER_LEUCHTDICHTE))) / 1000;
+    }
+    LICHT_GESETZ.laterne.kernM = lichtFlammeM(LICHT_GESETZ.laterne);
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
-    // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:
-    // der Kopf `hoeheM` über der Gasse, `armM` vor der Wand. Der Kern folgt aus dem Wand-Gesetz der Laterne (K66: die Wand trägt
-    // höchstens das Doppelte der Gasse unter ihr, ((h² + k²)/(a² + k²))^(abfall/2) ≤ 2 — mit dem Kern des Masts trug die Wand in
-    // 0,4 m das Fünfzigfache, die Sättigung von K66), die Stärke aus der Gasse: unter ihr trägt der Boden, was er unter dem Mast
-    // trägt. Leser: das Rezept der Wandlaterne (fx.licht), der Licht-Takt der Welt, gate:settlement DORF-LICHT.
+    // steht — DIESELBE Leuchte wie die Laterne (Lichtstärke, Kern, Farbtemperatur, Zeitplan, Reichweite, Abfall, Glas), nur ihr
+    // Leib hängt anders: der Kopf `hoeheM` über der Gasse, `armM` vor der Wand. Bis nacht-lichter folgte ihr Kern aus dem
+    // Wand-Gesetz (K66: die Wand trägt höchstens das Doppelte der Gasse, Kern 2,74 m, 3,6 cd) — eine Flamme von 2,74 m Halbmesser
+    // in einem Glas von 22 cm: das Licht an der Wand stand gedeckelt, die Gasse trug ein Siebtel einer Laterne. Die Wand trägt
+    // jetzt, was eine Flamme in 0,4 m trägt; das Bild trägt es die Belichtung (der Messer liest den Pool) und die EINE Tonkurve.
+    // Leser: das Rezept der Wandlaterne (fx.licht), der Licht-Takt der Welt, gate:settlement DORF-LICHT.
     LICHT_GESETZ.wandlaterne = (function (L, h, a) {
-        var q = Math.pow(2, 2 / L.abfall),
-            k2 = Math.max(L.kernM * L.kernM, (h * h - q * a * a) / (q - 1)),
-            boden = L.staerke * Math.pow((1 + L.kernM * L.kernM) / (L.hoeheM * L.hoeheM + L.kernM * L.kernM), L.abfall / 2),
-            r3 = function (v) {
-                return Math.round(v * 1000) / 1000;
-            };
-        return {
-            kelvin: L.kelvin,
-            staerke: r3(boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
-            cd: r3((L.cd / L.staerke) * boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
-            cdM2: L.cdM2,
-            schaltet: L.schaltet,
-            reichweiteM: L.reichweiteM,
-            abfall: L.abfall,
-            kernM: r3(Math.sqrt(k2)),
-            hoeheM: h,
-            armM: a,
-            zeit: JSON.parse(JSON.stringify(L.zeit)),
-        };
+        var aus = JSON.parse(JSON.stringify(L));
+        aus.hoeheM = h;
+        aus.armM = a;
+        return aus;
     })(LICHT_GESETZ.laterne, 2.8, 0.4);
     // DIE LICHTFARBE einer Farbtemperatur (K11b): der Planck-Ort (Kim, Kang et al. 2002, kubische Näherung 1 667–25 000 K)
     // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
@@ -6674,11 +6679,6 @@
         }
         return s;
     }
-    // DIE LEUCHTDICHTE DER FLAMME: der leuchtende Leib eines Holz- oder Kerzenfeuers in cd/m² (13 800–16 000, Hollan: Messung
-    // an Kerzen- und Holzflammen; ein schwarzer Körper bei 2 000 K trüge das Dreißigfache — der Ruß der Flamme ist dünn).
-    // Der Stoff `feuer` (Glut, Flamme, Herdfeuer) leuchtet in seiner Vertex-Farbe × dieser Leuchtdichte, wo die Zahl des Labors
-    // `LEUCHT_FEUER` steht. Leser: die Welt (`_stoffAusStudio`, das Licht des Brands).
-    var FEUER_LEUCHTDICHTE = 15000;
     function lichtFarbe(kelvin) {
         var T = Math.min(25000, Math.max(1667, +kelvin)), T2 = T * T, T3 = T2 * T;
         var x = T <= 4000 ? -0.2661239e9 / T3 - 0.2343589e6 / T2 + 0.8776956e3 / T + 0.17991 : -3.0258469e9 / T3 + 2.1070379e6 / T2 + 0.2226347e3 / T + 0.24039;
@@ -7773,8 +7773,14 @@
     // Eck-Stäbe des Rahmens, die Haube.
     function ausLaterneKopf(g, m, eisen, fein) {
         eisen(ausSetze(ausKiste(m.kb + 0.04, 0.03, m.kb + 0.04, fein ? 0.008 : 0), 0, m.yK0 + 0.015, 0));
-        var glas = ausSetze(ausKiste(m.kb, m.kh - 0.03, m.kb, 0), 0, m.yL + 0.015, 0);
-        ausFaerbe(glas, "laternenglas", 0, null);
+        // DAS GLAS IST EINE SCHEIBE, VON INNEN BELEUCHTET (nacht-lichter): je Fläche ein Fächer um ihre Mitte, je Ecke der Ton
+        // = die Bestrahlung der Flamme (0, yL, 0) dort, bezogen auf die Mitte der Scheibe des Masts (`laterneGlasTon`) — die Welt
+        // trägt die Leuchtdichte `glasStreu` · E ÷ π (`laterneGlasE`) mal diesen Ton: hell in der Mitte, 3 EV dunkler an der Ecke
+        var glas = ausSetze(ausKisteFaecher(m.kb, m.kh - 0.03, m.kb), 0, m.yL + 0.015, 0);
+        ausFaerbe(glas, "laternenglas", 0, function (x, y, z, nx, ny, nz) {
+            var t = laterneGlasTon(x, y - m.yL, z, nx, ny, nz);
+            return { ton: [t, t, t] };
+        });
         ausTeil(g, glas, "laternenglas");
         var i, j;
         if (fein) for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) eisen(ausSetze(ausKiste(0.022, m.kh, 0.022, 0), (i * m.kb) / 2, m.yL, (j * m.kb) / 2));
@@ -7788,6 +7794,54 @@
         var h = m.hb,
             spitze = [0, m.yT, 0];
         eisen(ausVielecke([[[-h, y0, -h], [h, y0, -h], spitze], [[h, y0, -h], [h, y0, h], spitze], [[h, y0, h], [-h, y0, h], spitze], [[-h, y0, h], [-h, y0, -h], spitze], [[-h, y0, -h], [-h, y0, h], [h, y0, h], [h, y0, -h]]], [0, (y0 + m.yT) / 2, 0]));
+    }
+    // DIE KISTE ALS FÄCHER: sechs Flächen, je vier Dreiecke um die Mitte der Fläche (die Ecke in der Mitte trägt ihren eigenen
+    // Ton — die von innen beleuchtete Scheibe ist in der Mitte am hellsten, das trägt keine Kiste aus vier Ecken)
+    function ausKisteFaecher(lx, ly, lz) {
+        var h = [lx / 2, ly / 2, lz / 2],
+            polys = [];
+        for (var a = 0; a < 3; a++)
+            for (var s = -1; s <= 1; s += 2) {
+                var u = (a + 1) % 3,
+                    v = (a + 2) % 3,
+                    P = function (pu, pv) {
+                        var q = [0, 0, 0];
+                        q[a] = s * h[a];
+                        q[u] = pu * h[u];
+                        q[v] = pv * h[v];
+                        return q;
+                    },
+                    E = [P(-1, -1), P(1, -1), P(1, 1), P(-1, 1)],
+                    M = P(0, 0);
+                for (var i = 0; i < 4; i++) polys.push([E[i], E[(i + 1) % 4], M]);
+            }
+        return ausVielecke(polys, [0, 0, 0]);
+    }
+    // DER TON DES LATERNEN-GLASES an (x, y, z) um die Flamme (m): die Bestrahlung der Scheibe cd · cos θ ÷ (r² + kern²) (θ gegen
+    // die Normale der Scheibe n), bezogen auf die Mitte der Scheibe des Masts in der Größe 1 (`laterneGlasE`) —
+    // die Mitte des Masts trägt 1, die Ecke 0,11, die Mitte der Wandlaterne (Kopf 0,85) 1,4. Leser: `ausLaterneKopf`.
+    function laterneGlasTon(x, y, z, nx, ny, nz) {
+        var L = LICHT_GESETZ.laterne,
+            k2 = L.kernM * L.kernM,
+            a = Math.abs(x * nx + y * ny + z * nz),
+            r2 = x * x + y * y + z * z,
+            b = AUS_MASS.laterne(1).kb / 2;
+        return r2 > 0 ? ((a / Math.sqrt(r2)) * (b * b + k2)) / (r2 + k2) : 1;
+    }
+    // DIE BESTRAHLUNG DER SCHEIBE in ihrer Mitte (lx), der Bezug des Tons: der Mast in der Größe 1 (die Flamme 0,13 m hinter dem
+    // Glas). Die Leuchtdichte des Glases dort ist `glasStreu` · E ÷ π (23 cd/m² bei 25,7 cd) — Leser: die Welt (`_leuchtTakt`,
+    // die Glut des Datums `laterne`), die Linse gate:post-kette (GLAS).
+    function laterneGlasE(L) {
+        var b = AUS_MASS.laterne(1).kb / 2;
+        return L.cd / (b * b + L.kernM * L.kernM);
+    }
+    // DIE LEUCHTDICHTE DES GLASES JE LUMA SEINER VERTEX-FARBE (cd/m²; wie `FEUER_LEUCHT_JE_LUMA` die Flamme): der Bake legt den
+    // Ton auf den Grundton des Glases (`_colFor`), die Welt liest die Luma der Ecke — die Mitte des Masts steht bei `glasStreu` ·
+    // E ÷ π. Leser: die Welt (`_leuchtFlaeche`, die Glut des Datums × Luma der Vertex-Farbe in `_leuchtStoff`).
+    function laterneGlasJeLuma(L) {
+        materials();
+        var c = _colFor("laternenglas");
+        return (L.glasStreu * laterneGlasE(L)) / Math.PI / (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
     }
     // DIE WANDLATERNE (K66-2): der Ursprung liegt im Boden unter dem Licht, +x zeigt zur Wand (sie steht in x = armM). Die
     // Wandplatte, der Arm über dem Knauf der Haube, der Haken, an dem der Kopf hängt, nah die Strebe von der Platte zum Arm.
@@ -11678,6 +11732,10 @@
         zunge: [[0, 0], [0.5, 0.06], [0.56, 0.2], [0.44, 0.42], [0.26, 0.64], [0.1, 0.86], [0, 1]],
         ton: [[0.55, 0.1], [0.3, 0.16], [0.08, 0.045]],
     };
+    // DIE FLAMME LEUCHTET IN IHRER LEUCHTDICHTE (nacht-lichter): die Wurzel ihres Tons (die hellste Ecke, Luma 0,337) steht bei
+    // `FEUER_LEUCHTDICHTE` — je Luma der Vertex-Farbe `FEUER_LEUCHT_JE_LUMA` cd/m² (44 470). Leser: der Stoff `feuer` (`__leucht`).
+    var FEUER_WURZEL_LUMA = 0.2126 * FLAMME.ton[0][0] + 0.7152 * FLAMME.ton[1][0] + 0.0722 * FLAMME.ton[2][0];
+    var FEUER_LEUCHT_JE_LUMA = FEUER_LEUCHTDICHTE / FEUER_WURZEL_LUMA;
 
     var RAUCH_GESETZ = {
         maxTeilchen: 26,
@@ -12814,8 +12872,13 @@
         // DAS VERBAND-GESETZ (w28-haus-stoff): die Tafel der Maler und ihre Zeilen für die Welt (Leser: der Wirt, `_verbandStoff`)
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZeilen: verbandZeilen,
-        // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
-        LEUCHT_FEUER: LEUCHT_FEUER,
+        // das Leucht-Gesetz der Flamme (Leuchtdichte = lineare Farbe × FEUER_LEUCHT_JE_LUMA, cd/m²) und das Licht der Leuchte aus ihrer
+        // Lichtstärke: ihr Leib, die Bestrahlung ihres Glases und der Ton je Ecke (nacht-lichter)
+        FEUER_LEUCHT_JE_LUMA: FEUER_LEUCHT_JE_LUMA,
+        lichtFlammeM: lichtFlammeM,
+        laterneGlasE: laterneGlasE,
+        laterneGlasJeLuma: laterneGlasJeLuma,
+        laterneGlasTon: laterneGlasTon,
         FEUER_LEUCHTDICHTE: FEUER_LEUCHTDICHTE,
         glutLeuchtdichte: glutLeuchtdichte,
         BOGEN_GESETZ: BOGEN_GESETZ,

@@ -1602,7 +1602,7 @@ class AnazhRealm {
         const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
         for (const k in atmo.lichtGlut)
             this._lichtLinear(LG[k], atmo.lichtGlut[k].value).multiplyScalar(
-                ((LG[k].cdM2 || 0) / __weltLicht.EINHEIT_LX) * this._lichtSchaltplan(LG[k])
+                (this._leuchtFlaeche(LG[k]) / __weltLicht.EINHEIT_LX) * this._lichtSchaltplan(LG[k])
             );
         const pool =
             this._leuchtPool ||
@@ -1700,6 +1700,52 @@ class AnazhRealm {
         this._lichtWurfTakt(pool, cam);
     }
 
+    // DIE LEUCHTDICHTE DER LEUCHTENDEN FLÄCHE eines Datums (cd/m², nacht-lichter): das Fenster trägt seine (`cdM2`, die Fläche
+    // eines erleuchteten Raums, flach), das Glas einer Leuchte die Scheibe, von innen beleuchtet — je Luma seiner Vertex-Farbe
+    // (fachwerk `laterneGlasJeLuma`: die Mitte des Masts `glasStreu` · E ÷ π, E aus der Lichtstärke; die Ecke trägt im Ton die
+    // Bestrahlung dort, fachwerk `laterneGlasTon`) — der Stoff multipliziert die Luma der Ecke (`_leuchtStoff`). Ein Datum ohne beides leuchtet nicht als
+    // Fläche (das Herdfeuer: sein Leib ist der Stoff `feuer`). Bis nacht-lichter trug der Kopf der Laterne eine eigene Leuchtdichte
+    // (`cdM2` 640, flach über das ganze Glas) neben seiner Lichtstärke.
+    _leuchtFlaeche(L) {
+        if (L.cdM2 > 0) return L.cdM2;
+        if (!(L.glasStreu > 0)) return 0;
+        return globalThis.__fachwerkCore.laterneGlasJeLuma(L);
+    }
+
+    // DER POOL AM AUGE (nacht-lichter, der Lichtmesser): die Beleuchtungsstärke, die die Plätze des Licht-Pools auf eine waagrechte
+    // Fläche am Auge werfen (rgb, Welt-Einheiten, zu `w` addiert in `aus`) — dieselbe Stärke, derselbe Abfall, dieselbe Farbe wie
+    // im Stoff (`_leuchtTakt`, fachwerk `lichtAbfall`), ohne Flackern (der Messer mittelt), × die Blende des Platzes × cos θ der
+    // Quelle über der Fläche (unter dem Auge 0). Das Licht des Auges und der Himmels-Ersatz zählen nicht: der Messer misst die
+    // Lichter des Orts. Leser: die Belichtung (`_belichtungAusLicht`). Bis nacht-lichter las der Messer nur Sonne, Mond und
+    // Himmel — unter der Laterne stand die Blende des Mondlichts, jede Wand in ihrem Licht 2 100-mal über Bild-Weiß.
+    _poolAmAuge(w, aus) {
+        aus[0] = w[0];
+        aus[1] = w[1];
+        aus[2] = w[2];
+        this._poolE = 0;
+        const pool = this._leuchtPool;
+        const cam = this.state.camera;
+        if (!pool || !cam) return aus;
+        const cp = cam.position;
+        const c = this._poolAugeC || (this._poolAugeC = new THREE.Color());
+        const FC = globalThis.__fachwerkCore;
+        for (let k = 0; k < pool.halter.length; k++) {
+            const q = pool.halter[k];
+            if (!q || q.quelle === "auge" || q.L.ersatz || !(pool.blende[k] > 0)) continue;
+            const dy = q.y - cp.y;
+            const d = Math.hypot(q.x - cp.x, dy, q.z - cp.z);
+            if (!(dy > 0)) continue;
+            const e = this._leuchtStaerke(q, 0, true) * pool.blende[k] * FC.lichtAbfall(q.L, d) * (dy / d);
+            if (!(e > 0)) continue;
+            this._lichtLinear(q.L, c);
+            aus[0] += c.r * e;
+            aus[1] += c.g * e;
+            aus[2] += c.b * e;
+            this._poolE += e;
+        }
+        return aus;
+    }
+
     // DIE LICHTFARBE einer Quelle, linear, in die Farbe `c` (K11b): ein Wärmestrahler trägt seine Farbtemperatur (`kelvin`,
     // fachwerk `lichtFarbe` über den Planck-Ort) — das Feuer, die Glut, die Laterne, die Fenster und das Licht des Auges. Das
     // Tor ist kein Wärmestrahler: sein Datum (porta GLUT_GESETZ) trägt die Farbe als sRGB-Absicht, die das FARB-GESETZ linear
@@ -1743,12 +1789,12 @@ class AnazhRealm {
     // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9; licht-eine-skala P8): ihre Lichtstärke in Candela (`L.cd`, lx in 1 m)
     // × Flackern × Schaltplan × Masse ÷ die Einheit der EINEN Skala (`EINHEIT_LX`) — die EINE Stelle, an der ein Pool-Licht in
     // den Maßstab der Welt tritt. Ein Datum ohne `cd` bricht laut. Bis hier lief die Zahl des Labors × π × Zeitplan: das
-    // Herdfeuer trug nachts × 45 (2,3 Mio. lx in 1 m im einen Maßstab).
-    _leuchtStaerke(q, t) {
+    // Herdfeuer trug nachts × 45 (2,3 Mio. lx in 1 m im einen Maßstab). `ruhig`: ohne Flackern (der Lichtmesser, `_poolAmAuge`).
+    _leuchtStaerke(q, t, ruhig) {
         const L = q.L;
         if (!(L.cd >= 0))
             throw new Error(`_leuchtStaerke: die Quelle „${q.quelle || "?"}“ trägt keine Lichtstärke (cd)`);
-        const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
+        const fl = L.flacker && !ruhig ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
         return ((L.cd * (1 + fl)) / __weltLicht.EINHEIT_LX) * q.masse * this._lichtSchaltplan(L);
     }
 
