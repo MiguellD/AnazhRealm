@@ -720,7 +720,7 @@ async function tatSeite(MESS, vorher) {
     Object.assign(T, { gefaellt: T.staemme.length, gepflueckt: T.ernte.length });
     T.stunde = await stunden(1, T);
     r.saveState();
-    await sleep(2500); // der Save landet vor dem Reload
+    await r._speicherStill(); // der Stand ist fest vor dem Reload (die Schranke des Speicher-Fadens — bis abdruck-am-takt 2,5 s nach der Wanduhr)
     return T;
 }
 
