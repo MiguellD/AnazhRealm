@@ -411,7 +411,7 @@ function buehne() {
         rend._renderScene = zaehlUm(spielSzene);
         const W = 160,
             H = 120;
-        const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+        const rt = __messZiel(W, H, { depthBuffer: true, samples: 0 });
         const schuss = async (sc = szene) => {
             nf.update();
             rend.setRenderTarget(rt);

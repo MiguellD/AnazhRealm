@@ -333,6 +333,23 @@ const TUEREN = new Set(["ersetzen", "weltpull", "portal", "einladung", "geburt"]
 // (eine Tür im Fenster des Wechsels), B prüfen und A. `schein`: "spread" (der alte Spread am Lade-Engpass) · "sperre" (saveState
 // ohne die Sperre des Welt-Wechsels) · "stand" (der Prototyp trägt Stand: der Griff des Prüfbühnen-Zensus bis 30.10., `P[n]`
 // weckte den Getter `dslPositions` mit dem Prototyp als this — der Abschied bricht den Tausch beim Namen, die Tür sagt es).
+// DIE SECHS SCHEINE DES SELBSTTESTS mit Namen, Schlüssel in `selbst` und der Fahrt, die ihn trägt (5 und 6 teilen eine Sitzung)
+const SCHEINE = [
+    ["1 Spread am Lade-Engpass", "spread", "spread"],
+    ["2 saveState ohne die Sperre", "sperre", "sperre"],
+    ["3 Prototyp trägt Stand", "stand", "stand"],
+    ["4 Geburt verwirft die Saat", "zufall", "zufall"],
+    ["5 Rausch-Strom überlebt den Abschied", "rausch", "rausch"],
+    ["6 Geburt ohne Null-Punkt", "tagnull", "rausch"],
+];
+// welcher Schein blind blieb — je einer mit den ersten zwei Befunden seiner Fahrt (oder „kein Befund“: die Fahrt sah nichts)
+const blindeScheine = (selbst) =>
+    !selbst
+        ? ["kein Selbsttest gefahren"]
+        : SCHEINE.filter(([, k]) => !selbst[k].length).map(([n, , f]) => {
+              const b = selbst.befunde[f] || [];
+              return `${n} — seine Fahrt meldete ${b.length ? `${b.length} andere Befunde: ${b.slice(0, 2).join(" · ")}` : "keinen Befund"}`;
+          });
 async function fahreWeg(browser, weg, schein) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
@@ -723,9 +740,10 @@ async function fahreSaat(browser, schein) {
         // Null-Punkt, das zweite Laden desselben Stands lässt ihn stehen
         const alt = await page.evaluate(() => {
             const lade = (s) => (r._loadStateRestoreWorldMeta(s), r._loadStateRestoreSoulAndAtmosphere(s), r.state.worldMeta.tagNull);
+            // der Stand trägt die Stunde, die die Welt hat (die Uhr über ihren Schreiber, nie ins Abbild geschrieben)
+            r._uhrSetzen(0.375, "regler");
             const s = r.buildStateSnapshot();
             delete s.worldMeta.tagNull;
-            s.timeOfDay = 0.375;
             const erst = lade(s);
             return { erst, zweit: lade(r.buildStateSnapshot()) };
         });
@@ -803,7 +821,7 @@ hauptLauf(async () => {
             zufall,
             rausch,
             tagnull,
-            befunde: { spread: spread.befunde, sperre: sperre.befunde, zufall: zufallRep.befunde, rausch: rauschRep.befunde },
+            befunde: { spread: spread.befunde, sperre: sperre.befunde, stand: stand.befunde, zufall: zufallRep.befunde, rausch: rauschRep.befunde },
         };
         console.log(
             `\n  SELBSTTEST 1 (der alte Spread am Lade-Engpass zum Schein): ${namen.length} Felder von A beim Namen — ${namen
@@ -831,8 +849,28 @@ hauptLauf(async () => {
             selbst.zufall.length > 0 &&
             selbst.rausch.length > 0 &&
             selbst.tagnull.length > 0;
+        // DER BLINDE SCHEIN BEIM NAMEN (20.11., Probe 584c2060 an der OMEN: „ein Schein blieb unentdeckt“ — die Schlusszeile ist
+        // alles, was der Probe-Post trägt, und sie nannte weder den Schein noch, was seine Fahrt stattdessen meldete; der Neulauf
+        // war grün, der Täter blieb ungenannt): welcher der sechs blind blieb, und die ersten Befunde seiner Fahrt
+        const blind = blindeScheine(selbst);
+        // die Namens-Funktion an einem gestellten Fall: Schein 5 blind mit fremdem Befund, Schein 3 blind ohne Befund, der Rest gesehen
+        const gestellt = blindeScheine({
+            spread: [1],
+            sperre: [1],
+            stand: [],
+            zufall: [1],
+            rausch: [],
+            tagnull: [1],
+            befunde: { spread: [], sperre: [], stand: [], zufall: [], rausch: ["x trägt y", "z", "w"] },
+        }).join(" | ");
+        const gestelltSoll = "3 Prototyp trägt Stand — seine Fahrt meldete keinen Befund | 5 Rausch-Strom überlebt den Abschied — seine Fahrt meldete 3 andere Befunde: x trägt y · z";
+        console.log(`  SELBSTTEST 7 (ein blinder Schein steht in der Schlusszeile beim Namen): ${gestellt === gestelltSoll ? gestellt : `FALSCH — ${gestellt}`}`);
+        if (gestellt !== gestelltSoll) {
+            pass = false;
+            blind.push("7 die Namens-Funktion selbst");
+        }
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser — und alle sechs Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, jede Saat wächst in jedem Leser — und alle sechs Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : `blind an Schein ${blind.join(" | ")} (die Linse sah ihn nicht)`)}`
         );
     } else {
         pass = !rot;

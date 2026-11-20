@@ -300,7 +300,8 @@ class AnazhRealm {
             timeOfDay: 0.5,
             // JAHRESZEIT (Vorlagen-Phaenologie): eine langsame Uhr treibt die Saison; die Foundry
             // backt die Assets in dieser Jahreszeit (Herbst golden, Winter kahl). Auto-Zyklus an,
-            // per Chat/DSL setzbar. seasonPhase 0=Fruehling .25=Sommer .5=Herbst .75=Winter.
+            // per Chat/DSL setzbar. seasonPhase 0=Fruehling .25=Sommer .5=Herbst .75=Winter. Die Länge des Jahrs ist die des
+            // Kalenders (`_kalender().jahrK` Kalender-Zeit: am Standard-Tag 40 min, sie folgt dem Tag).
             season: "summer",
             seasonPhase: 0.375,
             autoSeason: true,
@@ -308,7 +309,6 @@ class AnazhRealm {
             // der EINE Lofi-Konsument liest (null = das Host-Rezept KLANG_HOST_RECIPE,
             // byte-alt). Gesetzt aus der Werkstatt („Als Welt-Klang setzen"), persistiert.
             klangPreset: null,
-            seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
             dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
             _uhrSpielZeit: -Infinity, // der Anker des Gangs der Uhr (`tickDayNight`): der erste Takt setzt ihn
             directionalLight: null, // Reference, in initThreeJS gesetzt
@@ -370,7 +370,7 @@ class AnazhRealm {
             },
             // Welle 6.G3 (V8.24) — sanfter Wetter-Übergang. null heißt: kein
             // aktiver Übergang. Ein Wechsel zwischen sunny/rainy interpoliert
-            // Skybox-Tint + Symphonie-Filter über WEATHER_TRANSITION_DURATION_MS.
+            // Skybox-Tint + Symphonie-Filter über WETTER_UEBERGANG_S.
             weatherTransition: null,
             // Sky-Harmonie: die DSL/Mood-Himmelsfarbe BLENDET als Tönung zur Tag-Nacht-Farbe (überschreibt nie)
             // und fadet in beiden Achsen: skyTint lerpt Richtung skyTintTo (Farbe, von skybox_color gesetzt),
@@ -1949,7 +1949,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.347";
+AnazhRealm.VERSION = "18.546.351";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

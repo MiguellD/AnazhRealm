@@ -166,6 +166,7 @@ function nachKarte(root, trocken) {
         `Karte: ${Object.keys(h.karte.mod).length} Namen · neu ${h.neu.length} (je beim Vorgänger) · tot ${h.tot.length}` +
             `\nnach Domäne: ${alt.length} → ${S.length} Dateien, größte ${Math.max(...zeilen)} Z., ${Date.now() - t0} ms`
     );
+    console.log("Decke: " + deckenUrteil(S).text);
     for (const n of h.neu) console.log(`  neu  ${n.name} → ${n.soll}`);
     for (const n of h.tot) console.log(`  tot  ${n}`);
     const b = beweise(root, T, S);
@@ -360,6 +361,23 @@ function richter(root, trocken) {
     return 0;
 }
 
+// ── DAS DECKEN-URTEIL ─────────────────────────────────────────────────────────────────────────────────────────────────
+// Rein über die Dateien von S: `ueber` nennt jede Datei über der Decke mit ihrer Zeilenzahl (ROT beim Namen), `kante` jede, die
+// höchstens KANTE Zeilen unter ihr steht — eine Auskunft, kein Urteil: zwei Zweige, je unter der Decke, heben eine Datei an der
+// Kante zusammen darüber (z637: stamm/bild-sicht.js 3 987 + 13 + 9 = 4 009), der nächste Schneider liest ihren Namen hier.
+const KANTE = 15;
+const tsd = (n) => String(n).replace(/\B(?=(\d{3})+$)/g, " ");
+function deckenUrteil(S) {
+    const z = S.map((x) => [x.pfad, x.text.split("\n").length - 1]).sort((a, b) => b[1] - a[1]);
+    const ueber = z.filter(([, n]) => n > DECKE);
+    const kante = z.filter(([, n]) => n <= DECKE && n >= DECKE - KANTE);
+    const text = [
+        ueber.length ? "über der Decke: " + ueber.map(([p, n]) => `${p} ${tsd(n)} > ${tsd(DECKE)}`).join(", ") : "",
+        kante.length ? `an der Kante (≤ ${KANTE} Z. darunter): ` + kante.map(([p, n]) => `${p} ${tsd(n)}`).join(", ") : "",
+    ];
+    return { ueber, kante, text: text.filter(Boolean).join(" · ") || `größte ${tsd(z.length ? z[0][1] : 0)} Z.` };
+}
+
 // ── Selbsttest ────────────────────────────────────────────────────────────────────────────────────────────────────────
 function selbsttest() {
     const pruef = stamm.pruefZaehler();
@@ -368,13 +386,21 @@ function selbsttest() {
     const t0 = Date.now();
     const r = stamm.ordne(T, K);
     const S = stamm.schneide(r.text);
-    // 1) der Umzug ist ein Fixpunkt und trägt sich um
+    // 1) der Umzug ist ein Fixpunkt und trägt sich um — je Bedingung EIN Urteil (bis z637 standen die drei in einem, ohne Datei)
+    pruef("ordne: Fixpunkt", stamm.ordne(r.text, K).text === r.text, `${S.length} Dateien, ${Date.now() - t0} ms`);
+    pruef("ordne: S∘S⁻¹ = id", stamm.fuege(S) === r.text);
+    const dk = deckenUrteil(S);
+    pruef(`ordne: keine Datei über der Decke ${tsd(DECKE)}`, !dk.ueber.length, dk.text);
+    // die Linse der Decke am erfundenen Täter: 4 001 Zeilen fallen beim Namen, 4 000 halten, die Kante steht als Auskunft
+    const zeilen = (pfad, n) => ({ pfad, text: "\n".repeat(n) });
+    const erf = deckenUrteil([zeilen("stamm/erfunden.js", DECKE + 1), zeilen("stamm/voll.js", DECKE), zeilen("stamm/luft.js", DECKE - KANTE - 1)]);
     pruef(
-        "ordne: Fixpunkt, S∘S⁻¹ = id, keine Datei über der Decke",
-        stamm.ordne(r.text, K).text === r.text &&
-            stamm.fuege(S) === r.text &&
-            S.every((x) => x.text.split("\n").length - 1 <= 4000),
-        `${S.length} Dateien, ${Date.now() - t0} ms`
+        "Decke: eine Datei mit 4 001 Zeilen ist ROT beim Namen, die Kante nur Auskunft",
+        erf.ueber.join() === `stamm/erfunden.js,${DECKE + 1}` &&
+            erf.kante.join() === `stamm/voll.js,${DECKE}` &&
+            erf.text === `über der Decke: stamm/erfunden.js 4 001 > 4 000 · an der Kante (≤ ${KANTE} Z. darunter): stamm/voll.js 4 000` &&
+            !deckenUrteil([zeilen("stamm/voll.js", DECKE)]).ueber.length,
+        erf.text
     );
     // 2) dieselbe Klasse (der Rumpf-Hash je Glied)
     const b = beweise(ROOT, T, S);

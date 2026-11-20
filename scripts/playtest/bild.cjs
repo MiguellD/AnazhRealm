@@ -73,7 +73,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         r.setTimeOfDay(0.4, "human");
         const beforeT = st.timeOfDay;
         st._uhrSpielZeit = st.spielZeit;
-        st.spielZeit += 0.5; // die Welt-Uhr: 0.5 s, dayLength=60min=3600s → +0.00014
+        r._weltUhrNimm(st.spielZeit + 0.5); // die Welt-Uhr: 0.5 s, dayLength=60min=3600s → +0.00014
         r.tickDayNight(0.5);
         out.tickAdvances = st.timeOfDay > beforeT;
         // DER TAG AN DER WELT-UHR (w28-nacht-licht): die Wanduhr allein bewegt ihn nie (unter 250-ms-Takten lief er 2,5-mal so schnell
@@ -334,19 +334,19 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         st.player.emotions.chaos = 0;
         st.weather = "sunny";
         window.__uebergangFaellt(r);
-        r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
-        const defaultDur = st.weatherTransition && st.weatherTransition.duration;
+        r.requestWeatherTransition("rainy"); // Default-Dauer (WETTER_UEBERGANG_S, 45 s der Welt-Uhr)
+        const defaultDur = st.weatherTransition && st.weatherTransition.dauer;
         st.weather = "sunny";
         window.__uebergangFaellt(r);
         st.player.emotions.peace = 1.0;
         r.requestWeatherTransition("rainy");
-        const peaceDur = st.weatherTransition && st.weatherTransition.duration;
+        const peaceDur = st.weatherTransition && st.weatherTransition.dauer;
         st.weather = "sunny";
         window.__uebergangFaellt(r);
         st.player.emotions.peace = 0;
         st.player.emotions.chaos = 1.0;
         r.requestWeatherTransition("rainy");
-        const chaosDur = st.weatherTransition && st.weatherTransition.duration;
+        const chaosDur = st.weatherTransition && st.weatherTransition.dauer;
         st.weather = "sunny";
         window.__uebergangFaellt(r);
         st.player.emotions.chaos = 0;
@@ -1590,7 +1590,8 @@ async function checkBandWeltUhr({ page, check }) {
         const [S0, ox, oz] = [st.spielZeit + 100, pm.x + 40, pm.z - 25]; // ein fester Ort der Böe
         const start = (t0) => {
             r._gameLoopTick(t0); // der Anker der Wanduhr
-            [st.spielZeit, st._fixedSimTime, st._fixedAccumulator] = [S0, undefined, 0];
+            r._weltUhrNeu(S0); // die Welt-Uhr der Böe, bestellt bei der Welt
+            [st._fixedSimTime, st._fixedAccumulator] = [undefined, 0];
             for (let i = 1; i <= 30; i++) r._gameLoopTick(t0 + 20 * i);
             const w = r._windAt(ox, oz, r._bildZeit);
             const d = W?.uWindDir.value;
@@ -1705,11 +1706,16 @@ async function checkBandLookPhysik({ page, check }) {
 // 4 NACHT genau die Punkte der Funktion, mindestens 90 % (ein Veränderlicher im Minimum fällt unter die Grenze) · 5 MOND die Scheibe
 // in der EINEN Skala (`HIMMEL.mondCd` ÷ `EINHEIT_LX`, additiv über dem Himmel — blass am Tag, deckend nachts trägt der Himmel vor
 // ihr) · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN Unendlich-Knoten ·
-// 8 PIXEL der Fußabdruck des Punkts ist `HIMMEL.sternPixel` Pixel des Szenen-Ziels · 9 KOSMOS jeder Punkt IST ein Stern der
-// Funktion (Richtung vom Heim-Stern, Größe am Tag des Felds) oder ein Planet des Heim-Systems auf seiner Bahn, die Zahl ist die der
-// Funktion, die Saat die des Planeten (`_planetSamen`). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, eine Sonne
-// ohne Knoten und der alte Würfel-Himmel (2 800 gleichverteilte Punkte bis kosmos-umfang) werden rot — der Würfel beim Punkt und
-// seinem Stern.
+// 8 STAFFEL das Pixel des Szenen-Ziels auf der Kugel, und jeder Punkt trägt den Halbmesser seiner Streu-Scheibe aus seiner Größe
+// (`HIMMEL.sternBild`: θ0 · 10^(0,2·(G − m)), der Saum des Auges ∝ θ⁻²) — der hellste reicht mindestens dreimal so weit wie der
+// schwächste · 9 KOSMOS jeder Punkt IST ein Stern der Funktion (Richtung vom Heim-Stern, Größe am Tag des Felds) oder ein
+// Planet des Heim-Systems auf seiner Bahn, die Zahl ist die der Funktion, die Saat die des Planeten (`_planetSamen`) · 10 CHROMA
+// das Licht jedes Sterns ist sein Strom in der Farbe SEINER Temperatur (der Planck-Ort fachwerk `lichtFarbe`, Luma 1; bis
+// stern-bild ein eigener milder Ton: 4–8 von 1 000 Punkten getönt) · 11 BAND die Uniforms des Himmels tragen das Band der Funktion
+// (`kosmosBand`: je Klasse Licht, Höhe, Weite; die Lage Welt → Galaxie mit der Drehung des Felds), und es LIEST: Mitte über
+// Nacht-Himmel ÷ Pol über Nacht-Himmel ≥ 1,5. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, eine Sonne ohne
+// Knoten, der alte Würfel-Himmel (2 800 gleichverteilte Punkte bis kosmos-umfang), die gleiche Kante (`sternPixel` bis stern-bild),
+// der graue Ton und der Himmel ohne Band werden rot — jeder beim Namen seiner Regel.
 async function checkBandHimmelTag({ page, check }) {
     const probe = (stoerung) => {
         const T = window.THREE;
@@ -1746,11 +1752,22 @@ async function checkBandHimmelTag({ page, check }) {
                 st.starField.setMatrixAt(i, M);
             }
         }
+        // die Mutanten von stern-bild: die gleiche Kante (jeder Punkt θ0), der graue Ton (jede Farbe auf ihre Luma), kein Band
+        const sfM = st.starField;
+        const kanteWar = sfM && stoerung === "staffel" ? sfM.userData.kante.array.slice() : null;
+        if (kanteWar) sfM.userData.kante.array.fill(AnazhRealm.HIMMEL.sternBild.theta0);
+        const farbeWar = sfM && stoerung === "grau" ? sfM.instanceColor.array.slice() : null;
+        if (farbeWar) {
+            const a = sfM.instanceColor.array;
+            for (let i = 0; i < a.length; i += 3) a[i] = a[i + 1] = a[i + 2] = 0.2126 * a[i] + 0.7152 * a[i + 1] + 0.0722 * a[i + 2];
+        }
+        const bandU = st.skyboxUniforms && st.skyboxUniforms.band;
+        const bandWar = bandU && stoerung === "bandlos" ? bandU.farbe.map((u) => u.value.clone()) : null;
+        if (bandWar) for (const u of bandU.farbe) u.value.set(0, 0, 0);
         const sonneVN = st.sunMesh.material.vertexNode;
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
         const zeit = (t) => {
-            st.timeOfDay = t;
-            if (st.world) st.world.timeOfDay = t;
+            r._uhrSetzen(t, "regler");
             r._setWeather("sunny", "human");
             window.__uebergangFaellt(r);
             r._applyDayNightToScene();
@@ -1835,14 +1852,80 @@ async function checkBandHimmelTag({ page, check }) {
             const ab = Math.max(...["r", "g", "b"].map((c) => Math.abs(m.color[c] / soll[c] - 1)));
             return { additiv: m.blending === window.THREE.AdditiveBlending, ab: +ab.toExponential(2) };
         };
-        // 8 PIXEL: der Fußabdruck je Punkt (`fuss`) = sternPixel · 2 tan(fov/2) ÷ Zeilen des Szenen-Ziels × Radius der Kugel
+        // 8 STAFFEL: das Pixel (`pixel`) = 2 tan(fov/2) ÷ Zeilen des Szenen-Ziels × Radius der Kugel; die Kante je Punkt aus seiner
+        // Größe (θ0 · 10^(0,2·(G − m)) in Grad — selbst gerechnet aus `HIMMEL.sternBild`)
         const fussStand = () => {
             // das Ziel, in das die Szene zeichnet: das Szenen-Ziel, ohne Post-Kette der Zeichenpuffer (`_schirm`)
             const [cam, ziel] = [st.camera, st.scenePass && st.scenePass.renderTarget];
             const zeilen = ziel && ziel.height > 0 ? ziel.height : r._schirm().hoehe;
-            if (!U || !U.fuss || !cam || !(zeilen > 0)) return null;
-            const soll = ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / zeilen) * U.radius;
-            return { ist: U.fuss.value, soll, ab: Math.abs(U.fuss.value / soll - 1) };
+            if (!U || !U.pixel || !cam || !(zeilen > 0)) return null;
+            const soll = ((2 * Math.tan((cam.fov * Math.PI) / 360)) / zeilen) * U.radius;
+            const SB = AnazhRealm.HIMMEL.sternBild;
+            const G = W.KOSMOS.feldGrenze;
+            const ka = sf.userData.kante && sf.userData.kante.array;
+            let falsch = 0,
+                arg = null,
+                kMin = Infinity,
+                kMax = 0;
+            for (let i = 0; ka && i < mags.length; i++) {
+                const k = SB.theta0 * Math.pow(10, 0.2 * (G - mags[i]));
+                if (Math.abs(ka[i] / k - 1) > 1e-4) {
+                    falsch++;
+                    if (!arg) arg = { i, ist: +ka[i].toFixed(4), soll: +k.toFixed(4), m: +mags[i].toFixed(2) };
+                }
+                kMin = Math.min(kMin, ka[i]);
+                kMax = Math.max(kMax, ka[i]);
+            }
+            return { ist: U.pixel.value, soll, ab: Math.abs(U.pixel.value / soll - 1), kante: !!ka, falsch, arg, staffel: kMax / kMin };
+        };
+        // 10 CHROMA: je Stern Ton = lichtFarbe(T der Funktion) auf Luma 1, Luma = sternLx0 · 10^(−0,4·m) ÷ EINHEIT_LX
+        const chroma = () => {
+            const S = soll();
+            const a = sf.instanceColor && sf.instanceColor.array;
+            if (!a) return { fehl: ["keine Instanz-Farbe"] };
+            const FW = window.__fachwerkCore;
+            let falsch = 0,
+                arg = null,
+                getoent = 0;
+            for (let i = 0; i < S.H.n; i++) {
+                const t = FW.lichtFarbe(S.H.kelvin[i]);
+                const y = 0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2];
+                const lum = (W.KOSMOS.sternLx0 * 10 ** (-0.4 * mags[i])) / W.EINHEIT_LX;
+                const ist = [a[3 * i], a[3 * i + 1], a[3 * i + 2]];
+                const ab = Math.max(...ist.map((v, c) => Math.abs(v / ((t[c] / y) * lum) - 1) * (t[c] > 0.02 ? 1 : 0)));
+                if (!(ab <= 1e-3)) {
+                    falsch++;
+                    if (!arg) arg = { i, T: Math.round(S.H.kelvin[i]), ab: +ab.toFixed(3) };
+                }
+                if ((Math.max(...ist) - Math.min(...ist)) / Math.max(...ist) > 0.15) getoent++;
+            }
+            return { falsch, arg, getoentJe1000: Math.round((1000 * getoent) / Math.max(1, S.H.n)) };
+        };
+        // 11 BAND: die Uniforms gegen `kosmosBand` der Funktion, die Lage gegen (Drehung des Felds · E)ᵀ, das Lesen an der Funktion
+        const band = () => {
+            const B = st.skyboxUniforms && st.skyboxUniforms.band;
+            if (!B) return { fehl: ["der Himmel trägt keine Uniforms des Bands"] };
+            const S = soll();
+            const KB = W.kosmosBand(S.K);
+            const fehl = [];
+            KB.klassen.forEach((k, i) => {
+                const f = B.farbe[i].value,
+                    y = 0.2126 * f.x + 0.7152 * f.y + 0.0722 * f.z,
+                    sollY = k.a / W.EINHEIT_LX;
+                if (!(Math.abs(y / sollY - 1) <= 1e-3)) fehl.push(`Klasse ${i} Licht ${y.toExponential(2)} ↔ ${sollY.toExponential(2)}`);
+                if (!(Math.abs(B.form[i].value.x * k.hz - 1) <= 1e-4 && Math.abs(B.form[i].value.y / k.s0 - 1) <= 1e-4))
+                    fehl.push(`Klasse ${i} Form`);
+            });
+            const E = S.K.heim.system.ebene;
+            const Rm = new T.Matrix3().setFromMatrix4(new T.Matrix4().makeRotationFromEuler(sf.rotation));
+            const M = new T.Matrix3().set(...E).premultiply(Rm).transpose();
+            const dl = Math.max(...M.elements.map((v, j) => Math.abs(v - B.lage.value.elements[j])));
+            if (!(dl <= 1e-4)) fehl.push(`Lage ±${dl.toFixed(4)} neben (Drehung · E)ᵀ`);
+            const himmel = W.STERNENLICHT.leuchtdichte * W.EINHEIT_LX;
+            const mitte = W.kosmosBandLicht(KB, [-KB.aussen[0], -KB.aussen[1], 0]),
+                pol = W.kosmosBandLicht(KB, [0, 0, 1]);
+            const liest = (mitte + himmel) / (pol + himmel);
+            return { fehl, liest: +liest.toFixed(2), an: B.farbe.some((u) => u.value.x > 0) };
         };
         const out = { punkte: mags ? mags.length : 0, fremdeKoerper: 0 };
         st.scene.traverse(
@@ -1859,6 +1942,8 @@ async function checkBandHimmelTag({ page, check }) {
         out.kosmos = sf ? kosmos() : ["kein Feld"];
         out.mondNacht = mondStand();
         out.fuss = fussStand();
+        out.chroma = sf ? chroma() : { fehl: ["kein Feld"] };
+        out.band = sf ? band() : { fehl: ["kein Feld"] };
         out.einDurchgang = !!(sf?.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
         const unendlich = AnazhRealm._unendlichKnoten;
@@ -1876,6 +1961,9 @@ async function checkBandHimmelTag({ page, check }) {
         if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
         if (stoerung === "grenze") delete r._tagAchse;
         if (stoerung === "wuerfel") r._buildStarField(); // geheilt: das Feld der Funktion neu
+        if (kanteWar) sfM.userData.kante.array.set(kanteWar);
+        if (farbeWar) sfM.instanceColor.array.set(farbeWar);
+        if (bandWar) bandU.farbe.forEach((u, i) => u.value.copy(bandWar[i]));
         zeit(zeitWar);
         return out;
     };
@@ -1896,7 +1984,17 @@ async function checkBandHimmelTag({ page, check }) {
             if (!(m && m.additiv && m.ab <= 1e-3))
                 rot.push(`5 MOND: ${w} ${m ? `${m.additiv ? "additiv" : "NICHT additiv"}, Leuchtdichte ${m.ab} neben HIMMEL.mondCd ÷ EINHEIT_LX` : "keine Scheibe"}`);
         if (!(S.fuss && S.fuss.ab <= 1e-3))
-            rot.push(`8 PIXEL: der Fußabdruck des Sterns ${S.fuss ? `${S.fuss.ist} ↔ Soll ${S.fuss.soll} (sternPixel)` : "ungelesen (kein fuss, keine Kamera oder kein Szenen-Ziel)"}`);
+            rot.push(`8 STAFFEL: das Pixel auf der Kugel ${S.fuss ? `${S.fuss.ist} ↔ Soll ${S.fuss.soll}` : "ungelesen (kein pixel, keine Kamera oder kein Szenen-Ziel)"}`);
+        else if (!S.fuss.kante || S.fuss.falsch > 0 || !(S.fuss.staffel >= 3))
+            rot.push(
+                `8 STAFFEL: ${!S.fuss.kante ? "kein aKante je Punkt" : `${S.fuss.falsch} Punkte neben der Kante ihrer Größe${S.fuss.arg ? ` (Punkt ${S.fuss.arg.i}, m ${S.fuss.arg.m}: ${S.fuss.arg.ist} ↔ ${S.fuss.arg.soll}°)` : ""}, hellster ÷ schwächster ${S.fuss.staffel.toFixed(2)} (Soll ≥ 3)`}`
+            );
+        if (S.chroma.fehl || S.chroma.falsch > 0)
+            rot.push(
+                `10 CHROMA: ${S.chroma.fehl ? S.chroma.fehl.join(" · ") : `${S.chroma.falsch} Sterne neben der Farbe ihrer Temperatur (Stern ${S.chroma.arg.i}, ${S.chroma.arg.T} K, ±${S.chroma.arg.ab}), getönt ${S.chroma.getoentJe1000} je 1 000`}`
+            );
+        if (S.band.fehl && S.band.fehl.length) rot.push(`11 BAND: ${S.band.fehl.join(" · ")}`);
+        else if (!(S.band.liest >= 1.5)) rot.push(`11 BAND: Mitte ÷ Pol über dem Nacht-Himmel ${S.band.liest} (Soll ≥ 1,5)`);
         if (S.mittag.n === 0 && S.mittag.zeichnet)
             rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld ohne sichtbaren Punkt");
         if (S.mittag.n > 0 && !S.mittag.zeichnet) rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld seine sichtbaren Punkte nicht");
@@ -1908,12 +2006,13 @@ async function checkBandHimmelTag({ page, check }) {
     };
     const rot = urteil(await safeEvaluate(page, probe, null));
     check(
-        "Himmel-Tag: sichtbar genau, was die Kosmos-Funktion der Saat heller als die Grenze des Gesetzes zeigt (mittags kein Fixstern, in der Dämmerung die hellen Planeten, nachts das Feld), jeder Punkt ein Stern oder Planet der Funktion, der Mond in der EINEN Skala, der Stern ein Pixel, jeder Himmelskörper im Unendlichen",
+        "Himmel-Tag: sichtbar genau, was die Kosmos-Funktion der Saat heller als die Grenze des Gesetzes zeigt (mittags kein Fixstern, in der Dämmerung die hellen Planeten, nachts das Feld), jeder Punkt ein Stern oder Planet der Funktion, der Mond in der EINEN Skala, die Streu-Scheibe in der Staffel seiner Größe, die Farbe seiner Temperatur, das Band der Galaxie, jeder Himmelskörper im Unendlichen",
         rot.length === 0,
         rot.join(" · ")
     );
     const s = {};
-    for (const k of ["kugel", "grenze", "doppel", "vorne", "wuerfel", null]) s[k] = urteil(await safeEvaluate(page, probe, k));
+    for (const k of ["kugel", "grenze", "doppel", "vorne", "wuerfel", "staffel", "grau", "bandlos", null])
+        s[k] = urteil(await safeEvaluate(page, probe, k));
     const selbst = [
         s.kugel.some((e) => e.startsWith("1 KÖRPER")) || "Himmelskugel blieb grün",
         s.grenze.some((e) => e.startsWith("2 MITTAG")) || "Mittags-Grenze −3 blieb grün",
@@ -1921,10 +2020,13 @@ async function checkBandHimmelTag({ page, check }) {
         s.vorne.some((e) => e.startsWith("7 UNENDLICH") && e.includes("himmel-sonne")) ||
             "Sonne vor der Welt blieb grün",
         s.wuerfel.some((e) => e.startsWith("9 KOSMOS") && e.includes("Stern ")) || "der Würfel-Himmel blieb grün",
-        s.null.length === 0 || "nach der Heilung nicht grün",
+        s.staffel.some((e) => e.startsWith("8 STAFFEL")) || "die gleiche Kante blieb grün",
+        s.grau.some((e) => e.startsWith("10 CHROMA")) || "der graue Ton blieb grün",
+        s.bandlos.some((e) => e.startsWith("11 BAND")) || "der Himmel ohne Band blieb grün",
+        s.null.length === 0 || `nach der Heilung nicht grün: ${s.null.join(" · ")}`,
     ].filter((x) => x !== true);
     check(
-        "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten und der Würfel-Himmel werden rot",
+        "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten, der Würfel-Himmel, die gleiche Kante, der graue Ton und der Himmel ohne Band werden rot",
         selbst.length === 0,
         selbst.join(" · ")
     );

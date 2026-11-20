@@ -104,7 +104,11 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
                 n: p.length,
                 ...(x.echt ? { p90: Math.round(p90(p)), max: Math.round(Math.max(...p)) } : {}),
             };
-        else if (alt.schritte?.[n]?.geschaetzt) schritte[n] = alt.schritte[n];
+        // EIN NEUER SCHRITT BEHÄLT DEN EINTRAG SEINES ZWEIGS (20.11., z633): ein Schritt, den noch kein gelandeter Lauf fuhr, trägt
+        // die Zeit, die sein Zweig mitbringt — beim Neu-Messen bleibt sie stehen und heißt „geschaetzt", bis ein gelandeter Lauf
+        // sie wiegt. Vorher blieb nur, wer das Wort schon trug: heilte der Zug (T) ALT, fielen die zwei Einträge von
+        // w28-kern-sprossen-heil-2 aus der Tafel, und der Kandidat mit vier Abgaben fuhr an (T) UNGEMESSEN rot.
+        else if (alt.schritte?.[n]) schritte[n] = { ...alt.schritte[n], geschaetzt: true };
         else ohne.push(n);
     }
     if (!gemessen || !Object.keys(schritte).length)

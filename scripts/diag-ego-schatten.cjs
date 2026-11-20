@@ -181,7 +181,7 @@ function buehne(arg) {
         rend.shadowMap.enabled = true;
         const szene = new T.Scene();
         szene.name = "ego-schatten:buehne";
-        const ziel = new T.RenderTarget(W, H, { depthBuffer: true });
+        const ziel = __messZiel(W, H, { depthBuffer: true });
         ziel.texture.name = "ego-schatten:bild";
         const knoten = [];
         const sammle = (o) => {

@@ -272,10 +272,18 @@ class AnazhRealm_gelaende_fern {
             G.it = null;
             // das Gedächtnis ist durch: seine Gefallenen gehen (trägt die Welt inzwischen eine neue Karte, fällt nichts)
             if (!weg.length || E.karte(this) !== karte) continue;
-            const werte = istMap ? weg.map((k) => karte.get(k)) : weg;
-            for (const k of weg) karte.delete(k);
-            if (E.geht) E.geht(this, weg, werte);
-            fiel += weg.length;
+            // die Runde läuft über Bilder: ein Eintrag, den inzwischen sein eigener Räumer nahm (`_ortSameFaellt`), geht nicht
+            // zweimal — bis stern-bild reichte die Runde ihn als undefined an `geht` (Loop-Wurf „reading 'size'“, Tab-Tod)
+            // AUCH EINE MENGE (register-gang-frisch): `waterCAActive` räumt der Takt des Wasser-Automaten für jeden Chunk, der
+            // nicht mehr steht (`_tickWorldWaterCA`) — dieselben Schlüssel, die die Runde sammelt. Bis hier fragte der Abschied
+            // nur die Map: `fiel` zählte die fremd Geräumten mit, der Stand der Tafel (`M.summe`) lag um sie unter der Tafel, und
+            // nach `nachMs` begann ein Gang ohne jede Änderung. Die Linse: gate:takt T19 (Karte und Menge).
+            const da = weg.filter((k) => karte.has(k));
+            if (!da.length) continue;
+            const werte = istMap ? da.map((k) => karte.get(k)) : da;
+            for (const k of da) karte.delete(k);
+            if (E.geht) E.geht(this, da, werte);
+            fiel += da.length;
         }
         M.fiel += fiel;
         M.nun += fiel;

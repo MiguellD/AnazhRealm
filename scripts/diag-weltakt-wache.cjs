@@ -363,18 +363,18 @@ async function tatProbe(m) {
     const deckel = Math.ceil((2 * P.constructor._vogelGesetz().V.flug.periodeS) / 5);
     const taten = [];
     const hoere = (mess) => {
-        for (let w = 0; ; w++, st.spielZeit += 5) {
+        for (let w = 0; ; w++, r._weltUhrNimm(st.spielZeit + 5)) {
             um.letzteMischung = -Infinity;
             stelle(4);
             const x = mess();
             if (Object.values(x).every(Number.isFinite) || w >= deckel) return x;
         }
     };
-    for (let n = 1, t0 = st.spielZeit; n <= 10; n++, st.spielZeit = t0 += 30) taten.push({ delta: tat(() => r.processChatCommand("pflege das land")), ...hoere(() => {
+    for (let n = 1, t0 = st.spielZeit; n <= 10; n++, r._weltUhrNimm((t0 += 30))) taten.push({ delta: tat(() => r.processChatCommand("pflege das land")), ...hoere(() => {
             const [mischung, antwort] = ohr(m.x, um.lage);
             return { antwort, nachbar: ohr(m.x + 32)[1], mischung, ausgabe: um.graph.zensus().find((v) => v.name === "vogel").db };
         }) });
-    st.spielZeit += 120;
+    r._weltUhrNimm(st.spielZeit + 120);
     const stempel = { delta: tat(() => r.dslRun(["deposit_emotion", "joy", 0.8], { source: "human" })), ...hoere(() => ({ antwort: ohr(m.x)[1] })) };
     stelle(30);
     [st.taten, st.nexusWirk, st.llm.enabled] = [[], 1e6, true];
@@ -396,13 +396,13 @@ async function tatProbe(m) {
     };
     const t0 = st.spielZeit;
     for (let s = 0, T = performance.now() / 1000; s <= 150; s += 5) {
-        st.spielZeit = t0 + s;
+        r._weltUhrNimm(t0 + s);
         await plan[s]?.();
         r._tickWorldRules((T += 5));
         stelle(2);
     }
     delete r._loopSelfAnalysis;
-    const fr = new THREE.Frustum().setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+    const fr = r._frustumVon(cam);
     const plan2 = [["nexus", O[0], 1, "(Programm probe-a"], ["rule:nexus", O[1], g.fires, `weil lebendig am Ort niedrig ist (<1.01). (Gesetz Nr. ${g.id} des Nexus`], ["nexus", O[2], 1, "probe-h"], ["llm:grok", O[3], 1, `auf dein Wort „${W}“`], ["human", O[0], 1, "human"]];
     const S = plan2.map(([wer, o, n, soll]) => ({ wer, n, soll, o, welt: wer !== "human", blick: fr.containsPoint(new THREE.Vector3(...o.slice(1))) }));
     const RI = ["nördlich", "nordöstlich", "östlich", "südöstlich", "südlich", "südwestlich", "westlich", "nordwestlich"];

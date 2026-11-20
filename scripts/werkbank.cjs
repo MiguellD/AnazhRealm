@@ -289,8 +289,7 @@ function boeSelbsttest() {
 function tierZahl() {
     const T = THREE;
     const st = r.state;
-    const frustum = (kam) =>
-        kam && new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse), kam.coordinateSystem);
+    const frustum = (kam) => kam && r._frustumVon(kam, true);
     const cam = st.camera;
     const csm = st.csmNode;
     const dl = st.directionalLight;

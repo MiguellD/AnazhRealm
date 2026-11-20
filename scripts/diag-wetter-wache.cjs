@@ -19,12 +19,22 @@
 //       Leser der Gerätezeit in stamm/ und den Wurzel-Dateien (performance.now · Date.now · new Date() · der rAF-Stempel) steht je
 //       Datei und Glied mit Zahl und Grund in spec/uhr/geraetezeit.json; ein neuer Leser, eine Zahl über der Tafel und jede
 //       Weitergabe des rAF-Stempels im Takt an ein Glied ohne Grund (`this._bildZeit = wandZeit`) ist ROT beim Namen (Datei:Zeile).
+//   (K) KALENDER: Licht, Tag der Prozesse, Pegel und Jahr gehen bei jeder Tag-Länge im Verhältnis 1; DAS JAHR AM LAUB: im Winter des
+//       Kalenders deckt keine Laub-Art über `JAHR_LAUB_DECKUNG` ihrer Sommer-Fläche, die Nadel steht (`jahrLaubRot`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): jedes Urteil fällt bei jedem eingeschmuggelten Täter rot und bleibt
 // bei Bühne, Verweigerung und Wunsch grün.
 //   node scripts/diag-wetter-wache.cjs [--selftest | --quelle]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    starteBrowser,
+    nullRenderer,
+    hauptLauf,
+    selbsttestEnde,
+    wandEnde,
+    SELBSTTEST,
+} = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -134,6 +144,272 @@ function uhrQuelle() {
     }
     return { rot: uhrRotVon(befunde, T), B: Object.values(befunde) };
 }
+// ── (K) DER KALENDER (zeit-ein-kalender): `spielZeit` ist die EINE laufende Größe; Tag, Tag der Prozesse, Pegel und Jahr sind
+// Funktionen von ihr durch die EINE Tag-Länge (`_kalender`, `_kalenderZeit`, das Gesetz `WELT_GESETZ_ERDE.kalender`). Die Schreiber
+// der Uhr, der Schritt 1/60 und die Zahlen des Jahrs hält die Ein-Schreiber-Wand (`spec/stamm/grundgroessen.json`, gate:constitution);
+// hier urteilt der Lauf (Null-Renderer): bei jeder Tag-Länge gehen Licht, Tag der Prozesse, Pegel und Jahr im Verhältnis 1 (vor dem
+// Kalender am 8-min-Tag 7,5 : 1 : 1 : 1). Jeder Leser, der davon abweicht, ist ROT beim Namen.
+// (K) das Urteil des Laufs (rein): je Tag-Länge die Tage, die Licht, Tag der Prozesse, Pegel und Jahr im selben Fenster der
+// Welt-Uhr gingen — jedes Verhältnis zum Licht 1 (±1 %: der Pegel liest die volle Sekunde), sonst ROT beim Leser.
+function kalenderRot(je) {
+    const rot = [];
+    const leser = {
+        prozess: "der Tag der Prozesse (`_weltTag`)",
+        pegel: "der Pegel (`pegelLauf`)",
+        jahr: "das Jahr (`seasonPhase`)",
+    };
+    if (!(je && je.length >= 2)) return ["(K) KALENDER: der Lauf maß keine zwei Tag-Längen"];
+    for (const j of je)
+        for (const [k, name] of Object.entries(leser)) {
+            const v = j.licht / j[k];
+            if (!(Math.abs(v - 1) <= 0.01))
+                rot.push(
+                    `(K) KALENDER ${j.min} min: das Licht geht ${v.toFixed(3)}-mal so schnell wie ${name} — ${(+j[k]).toFixed(4)} gegen ${j.licht.toFixed(4)} Tage in ${j.welt.toFixed(0)} s Welt-Uhr`
+                );
+        }
+    return rot;
+}
+function kalenderSelbsttest() {
+    const j = (o) => ({ min: 8, welt: 240, licht: 0.5, prozess: 0.5, pegel: 0.5, jahr: 0.5, ...o });
+    return [
+        [kalenderRot([j(), j({ min: 60 })]), null],
+        [
+            kalenderRot([j({ pegel: 0.0667 }), j({ min: 60 })]),
+            /8 min: das Licht geht 7\.496-mal so schnell wie der Pegel/,
+        ],
+        [kalenderRot([j(), j({ min: 60, jahr: 0.3 })]), /60 min: .* wie das Jahr/],
+    ].flatMap(([rot, soll], i) =>
+        (soll ? rot.length === 1 && soll.test(rot) : !rot.length) ? [] : [`kalender Fall ${i}: ${rot}`]
+    );
+}
+// (K) die Probe im Seiten-Kontext (eine frische Welt, der echte Takt `_gameLoopTick`): je Tag-Länge `o.minuten` ein Fenster von
+// `o.sek` Sekunden Welt-Uhr; gelesen die Tage des Lichts (`worldMeta.tag` + `timeOfDay`), des Tags der Prozesse (`_weltTag`), des
+// Pegels (Zeit ÷ Tag, wie der Lauf des Kerns sie bekommt, `pegelLauf`) und des Jahrs (Phase ÷ `jahreJeTag`).
+function kalenderProbe(o) {
+    const [r, K] = [window.anazhRealm, globalThis.__gelaendeCore];
+    const st = r.state;
+    st.renderer.setAnimationLoop(null);
+    let arg = null;
+    const lauf = K.pegelLauf;
+    const spion = { value: (...a) => ((arg = { t: a[2], tagS: a[3] }), lauf.apply(K, a)) };
+    globalThis.__gelaendeCore = Object.create(K, { pegelLauf: spion });
+    const [tag0, jahr0, jeTag] = [st.dayLengthMinutes, st.autoSeason, AnazhRealm.WELT_GESETZ_ERDE.kalender.jahreJeTag];
+    st.autoSeason = true; // das Jahr des Spiels läuft (die Aufnahme hält es beim Boot an, `saisonFest`)
+    const lies = () => {
+        r._pegelStand = null;
+        r._pegelTafel();
+        return {
+            licht: (st.worldMeta.tag || 0) + st.timeOfDay,
+            prozess: r._weltTag(),
+            jahr: st.seasonPhase,
+            pegel: arg.t / arg.tagS,
+            z: st.spielZeit,
+        };
+    };
+    const [je, T0] = [[], performance.now()];
+    let k = 0;
+    const takt = () => r._gameLoopTick(T0 + ++k * o.schrittSek * 1000);
+    try {
+        for (const min of o.minuten) {
+            st.dayLengthMinutes = min;
+            for (let i = 0; i < 4; i++) takt();
+            const a = lies();
+            while (st.spielZeit - a.z < o.sek) takt();
+            const b = lies();
+            const jahr = ((((b.jahr - a.jahr) % 1) + 1) % 1) / jeTag;
+            je.push({
+                min,
+                welt: b.z - a.z,
+                licht: b.licht - a.licht,
+                prozess: b.prozess - a.prozess,
+                pegel: b.pegel - a.pegel,
+                jahr,
+            });
+        }
+    } finally {
+        globalThis.__gelaendeCore = K;
+        [st.dayLengthMinutes, st.autoSeason] = [tag0, jahr0];
+    }
+    return je;
+}
+
+// (K) DAS JAHR AM LAUB (saison-am-laub): der Kalender trägt die Welt in den Winter — und jede Pflanzen-Art liest ihn. Gemessen an
+// jedem Körper jeder Art (Baum, Strauch, Blume, Farn; L0 · L1 · L2, gebaut über den echten Faden des Studios, asset-worker-harness)
+// die Laub-Fläche (Stoff foliage · foliageTex) je Typ des Jahrs, gewogen mit der Präsenz, die die Welt im Winter ihres Kalenders
+// trägt (`uLaubPraesenz` nach `_tickSeason`: x Laub, y Blüte, jede andere Ecke steht ganz): die Deckung des Winters = Σ Fläche ×
+// Präsenz² ÷ Fläche des Sommers. Eine Laub-Art über `JAHR_LAUB_DECKUNG` ist ROT beim Namen („Laubkrone sommergrün bei Jahr im
+// Winter"); die Nadel (der Phänotyp der Art, `artPhaenotyp().conifer`) steht und tönt nicht — fällt sie, ist sie ROT. Bis
+// saison-am-laub stand die Blume ROT: ihre L2 (die Kugel der Blütenfarbe, Typ 0) deckte im Winter 100 %, L0/L1 7–9 % (der Korb).
+const JAHR_LAUB_DECKUNG = 0.05;
+function jahrLaubRot(J) {
+    const rot = [];
+    if (!(J && J.arten && J.arten.length)) return ["(K) JAHR AM LAUB: keine Art gebaut"];
+    if (!(J.phase >= 0.75 && J.praesenz && J.praesenz[0] <= 0.25))
+        rot.push(
+            `(K) JAHR AM LAUB: der Kalender trug die Welt in den Winter (Phase ${J.phase}), ihr Laub steht mit Präsenz ${J.praesenz} — sommergrün`
+        );
+    // die Karte: ihre Reihe des Jahrs (`_karteJahrFarbe`) teilt die gebackene Albedo durch die Tönung ihres Bakes — als Objekt-Puffer
+    // lud die Diät sie nie nach, die GPU trug 1 und die Rinde der Ferne stand im Winter × uSeasonMul (magenta)
+    for (const [n, geteilt] of Object.entries(J.karteReihen || {}))
+        if (!geteilt)
+            rot.push(
+                `(K) JAHR AM LAUB Karte: die Reihe ${n} liegt in einer eigenen Gruppe — die Diät lädt sie nie, die Karte zeichnet ihr Jahr nicht (Rinde × uSeasonMul)`
+            );
+    // das Feld (die Fernform "gesetz": Blume, Fels — `_streuGesetzFit`, gezeichnet im Welt-March): seine Teile tragen ihren Typ des
+    // Jahrs (`jahr`) und ziehen sich um die Präsenz wie die Gestalt (`jahrMass`); Deckung = Σ Volumen × Präsenz³ ÷ Σ Volumen
+    for (const f of J.feld || []) {
+        if (f.fehlt) rot.push(`(K) JAHR AM LAUB Feld ${f.id}: ${f.fehlt}`);
+        else if (f.kind === "flower" && f.winter > JAHR_LAUB_DECKUNG)
+            rot.push(
+                `(K) JAHR AM LAUB Feld ${f.id}: Laubkrone sommergrün bei Jahr im Winter — die Fernform deckt ${(100 * f.winter).toFixed(1)} % (Teile ${JSON.stringify(f.typen)})`
+            );
+        else if (f.kind !== "flower" && f.winter < 0.99)
+            rot.push(
+                `(K) JAHR AM LAUB Feld ${f.id}: der Stein trägt das Jahr — Deckung ${(100 * f.winter).toFixed(1)} %`
+            );
+    }
+    for (const a of J.arten) {
+        const d = a.flaeche > 0 ? a.winter / a.flaeche : null;
+        if (d == null) continue;
+        if (a.nadel ? d < 0.99 : d > JAHR_LAUB_DECKUNG)
+            rot.push(
+                a.nadel
+                    ? `(K) JAHR AM LAUB ${a.id} L${a.lod}: die Nadel fällt im Winter — Deckung ${(100 * d).toFixed(1)} %`
+                    : `(K) JAHR AM LAUB ${a.id} L${a.lod}: Laubkrone sommergrün bei Jahr im Winter — ${(100 * d).toFixed(1)} % ihrer Laub-Fläche deckt (Typen ${JSON.stringify(a.typen)})`
+            );
+    }
+    return rot;
+}
+function jahrLaubSelbsttest() {
+    const a = (o) => ({ id: "eiche", lod: 1, nadel: false, flaeche: 100, winter: 0.4, typen: { 1: 1 }, ...o });
+    const J = (arten, o) => ({ phase: 0.875, praesenz: [0.06, 0], arten, ...o });
+    return [
+        [jahrLaubRot(J([a(), a({ id: "fichte", nadel: true, winter: 100 })])), null],
+        [
+            jahrLaubRot(J([a({ id: "blume", lod: 2, winter: 100, typen: { 0: 1 } })])),
+            /blume L2: Laubkrone sommergrün .* 100\.0 %/,
+        ],
+        [jahrLaubRot(J([a({ id: "fichte", nadel: true, winter: 50 })])), /fichte L1: die Nadel fällt/],
+        [jahrLaubRot(J([a()], { praesenz: [1, 1] })), /Präsenz 1,1 — sommergrün/],
+        [
+            jahrLaubRot(J([a()], { karteReihen: { nadel: true, jahr: false } })),
+            /Karte: die Reihe jahr liegt in einer eigenen Gruppe/,
+        ],
+        [
+            jahrLaubRot(J([a()], { feld: [{ id: "blume", kind: "flower", winter: 1, typen: { 0: 4 } }] })),
+            /Feld blume: Laubkrone sommergrün .* 100.0 %/,
+        ],
+        [
+            jahrLaubRot(J([a()], { feld: [{ id: "findling", kind: "rock", winter: 0.5, typen: { 1: 1 } }] })),
+            /Feld findling: der Stein trägt das Jahr/,
+        ],
+    ].flatMap(([rot, soll], i) =>
+        (soll ? rot.length === 1 && soll.test(rot) : !rot.length) ? [] : [`jahr-laub Fall ${i}: ${rot}`]
+    );
+}
+// (K) die Probe des Winters im Seiten-Kontext: der Kalender läuft (8-min-Tag, `autoSeason`, der echte Takt), bis das Jahr der Welt
+// in der Mitte des Winters steht (0,86–0,9); gelesen Phase und Präsenz der Uniform, die jeder Laub-Stoff liest
+function jahrWinterProbe(o) {
+    const r = window.anazhRealm, st = r.state; // prettier-ignore
+    st.renderer.setAnimationLoop(null);
+    const [tag0, jahr0] = [st.dayLengthMinutes, st.autoSeason];
+    st.autoSeason = true;
+    st.dayLengthMinutes = 8;
+    const T0 = performance.now();
+    let k = 0;
+    try {
+        while (!(st.seasonPhase >= 0.86 && st.seasonPhase < 0.9) && k < 4000)
+            r._gameLoopTick(T0 + ++k * o.schrittSek * 1000);
+        const p = st.seasonUniforms.uLaubPraesenz.value;
+        // die Reihen der Karte (Nadel, Jahr je Schicht): sie wechseln zur Laufzeit — nur in der geteilten Gruppe lädt die Diät sie
+        const reihe = (u) => !!(u && u.groupNode && u.groupNode.shared === true);
+        const karteReihen = { nadel: reihe(r._karteNadel(null)), jahr: reihe(r._karteJahrFarbe(null)) };
+        return {
+            phase: +st.seasonPhase.toFixed(4),
+            praesenz: [+p.x.toFixed(4), +p.y.toFixed(4)],
+            takte: k,
+            karteReihen,
+        };
+    } finally {
+        [st.dayLengthMinutes, st.autoSeason] = [tag0, jahr0];
+    }
+}
+// (K) das Feld im Winter (Seiten-Kontext): je Art der Fernform "gesetz" die Passung der Studio-Gestalt (`_streuGesetzFit`, derselbe
+// Fit, den der Welt-March zeichnet), je Teil sein Typ des Jahrs und sein Volumen, gewogen mit der Präsenz des Winters
+async function jahrFeldProbe(o) {
+    const r = window.anazhRealm;
+    const SG = r.constructor._saisonGesetz().typ;
+    const T = globalThis.__terrainCore.PHYTO_PRESETS;
+    const out = [];
+    for (const [id, rec] of Object.entries(T)) {
+        if (!(rec && (rec.kind === "flower" || rec.kind === "rock"))) continue;
+        let fit = null;
+        for (let i = 0; !fit && i < 600; i++) {
+            fit = r._streuGesetzFit(id, 1, 0, 0);
+            if (!fit) await window.sleep(50); // das EINE Warten der Seite (welt-boot `sleep`)
+        }
+        if (!fit) {
+            out.push({ id, kind: rec.kind, fehlt: "die Passung steht nach 600 Fragen nicht" });
+            continue;
+        }
+        const pr = (j) => (j === SG.laub ? o.praesenz[0] : j === SG.bluete ? o.praesenz[1] : 1);
+        let v = 0,
+            w = 0;
+        const typen = {};
+        for (const k of fit) {
+            // die Blume wiegt ihr Laub (der Stoff des Jahrs: Laub, Blüte — der Stängel steht wie an der Gestalt), der Stein jeden Teil
+            if (rec.kind === "flower" && !k.laubStoff) continue;
+            v += k.vol;
+            w += k.vol * pr(k.jahr) ** 3;
+            typen[k.jahr || 0] = (typen[k.jahr || 0] || 0) + 1;
+        }
+        out.push({ id, kind: rec.kind, winter: +(v > 0 ? w / v : 1).toFixed(4), typen });
+    }
+    return out;
+}
+// (K) die Arten: je Laub-Art und Stufe die Laub-Fläche je Typ (der echte Faden des Studios), gewogen mit der Präsenz des Winters
+async function jahrLaubArten(praesenz) {
+    const H = require("./lib/asset-worker-harness.cjs");
+    const { ctx } = H.KLASSE;
+    const [T, PC, SG] = [ctx.__terrainCore.PHYTO_PRESETS, ctx.__phytoCore, ctx.SAISON_GESETZ];
+    const p = { [SG.typ.laub]: praesenz[0], [SG.typ.bluete]: praesenz[1] };
+    const dek = (b64, Typ) => {
+        const b = Buffer.from(b64, "base64");
+        return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
+    };
+    return H.runWithWorker(PORT + 1, async ({ build }) => {
+        const out = [];
+        for (const [id, rec] of Object.entries(T)) {
+            if (!(rec && ["tree", "shrub", "flower", "fern"].includes(rec.kind))) continue;
+            const nadel = !!(rec.s && PC.artPhaenotyp(rec.s, rec).conifer);
+            for (const lod of [0, 1, 2]) {
+                const a = { id, lod, nadel, flaeche: 0, winter: 0, typen: {} };
+                for (const m of (await build({ presetId: id, seed: 1, lod })).meshes) {
+                    if (m.kind !== "foliage" && m.kind !== "foliageTex") continue;
+                    const P = dek(m.attrs.position.b64, Float32Array);
+                    const at = m.attrs.aType ? dek(m.attrs.aType.b64, Float32Array) : null;
+                    const I = m.index ? dek(m.index, P.length / 3 > 65535 ? Uint32Array : Uint16Array) : null;
+                    const n = I ? I.length : P.length / 3;
+                    for (let t = 0; t + 2 < n; t += 3) {
+                        const [i, j, k] = I ? [I[t], I[t + 1], I[t + 2]] : [t, t + 1, t + 2];
+                        const d = (q, s) => P[q * 3 + s] - P[i * 3 + s];
+                        const [ux, uy, uz, vx, vy, vz] = [d(j, 0), d(j, 1), d(j, 2), d(k, 0), d(k, 1), d(k, 2)];
+                        const A = 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
+                        const ty = at ? Math.round(at[i]) : 0;
+                        const pr = ty in p ? p[ty] : 1;
+                        a.flaeche += A;
+                        a.winter += A * pr * pr;
+                        a.typen[ty] = (a.typen[ty] || 0) + A;
+                    }
+                }
+                for (const ty in a.typen) a.typen[ty] = +(a.typen[ty] / (a.flaeche || 1)).toFixed(3);
+                out.push(a);
+            }
+        }
+        return out;
+    });
+}
+
 // der Selbsttest: der erlaubte Leser grün; der neue Leser (auch `new Date()`), die Zahl darüber, der Eintrag ohne Leser, die Bild-Uhr
 // aus dem rAF-Stempel und die Spiel-Zeit ohne ihren Takt — je beim Namen
 function uhrSelbsttest() {
@@ -178,7 +454,7 @@ if (SELBSTTEST) {
     const v = wetterSelbsttest()
         .map((x) => "wetter: " + x)
         .concat(himmelSelbsttest().map((x) => "himmel: " + x))
-        .concat(uhrSelbsttest());
+        .concat(uhrSelbsttest(), kalenderSelbsttest(), jahrLaubSelbsttest());
     const U = (b, n, ohne) => {
         const vor = { himmel: 2, wind: 2, böe: 1.1, wasser: ohne === "T" ? 3 : 2 };
         delete vor[ohne];
@@ -209,10 +485,18 @@ if (SELBSTTEST) {
         saatRot(stumm).length !== 1
     )
         v.push("saat: die Folge, Wanduhr, blinde Saat, blinder Ort, stehende Front oder stummer Zug");
-    const F = (o) => frontRot(Object.assign({ nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" }, o));
+    const F = (o) =>
+        frontRot(
+            Object.assign(
+                { nassTrocken: 0.3, lag: 270, soll: 273, worte: [1, 2, 3, 4, 5], welt: "stormy", labor: "sturm" },
+                o
+            )
+        );
     if (
         F({}).length ||
-        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
+        [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some(
+            (o) => F(o).length !== 1
+        )
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
     // der Selbsttest: jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.
@@ -276,11 +560,19 @@ function probe(o) {
     // WETTER_ZUG_SEK (Ereignis-Takte), die Folge ist das Wort nach jedem Takt
     const wm = st.worldMeta || (st.worldMeta = {});
     const pm = st.playerMesh.position;
-    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, st.spielZeit, AnazhRealm.WETTER_ZUG_SEK];
+    const [saat0, pn, x0, y0, uhr0, Z] = [
+        wm.seed,
+        performance.now,
+        pm.x,
+        pm.z,
+        st.spielZeit,
+        AnazhRealm.WETTER_ZUG_SEK,
+    ];
     const P = globalThis.__phytoCore;
     const zug = (saat, d) => {
         const g = P.windGrund(saat);
-        [wm.seed, pm.x, pm.z, st.spielZeit] = [saat, x0 + d * g.x, y0 + d * g.z, 0];
+        [wm.seed, pm.x, pm.z] = [saat, x0 + d * g.x, y0 + d * g.z];
+        r._weltUhrNeu(0); // je Lauf eine neue Welt-Uhr, bestellt bei der Welt
         window.__wetterSetzen("sunny");
         r.dslRun(["weather", "frei"], { source: "human" });
     };
@@ -289,7 +581,8 @@ function probe(o) {
         const [folge, s0] = [[], window.__wetterSpion().seq];
         for (let i = 0; i < o.zuege; i++) {
             performance.now = () => pn.call(performance) + uhr * (i + 1);
-            [st.spielZeit, st.weatherEffectTime] = [Z * (i + 1), 0];
+            r._weltUhrNimm(Z * (i + 1)); // der Zug der Welt-Uhr über ihren EINEN Weg (vorwärts)
+            st.weatherEffectTime = 0;
             r._loopWeatherAndGrowth(0);
             folge.push(st.weather);
             window.__uebergangFaellt(r);
@@ -305,18 +598,26 @@ function probe(o) {
     const gleich = (k) => A.filter((w, i) => w === B[i + k]).length / (A.length - k);
     let lag = 0;
     for (let k = 1; k < A.length / 2; k++) if (gleich(k) > gleich(lag)) lag = k;
-    const worte = new Set(Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41)));
+    const worte = new Set(
+        Array.from({ length: 4096 }, (_, i) => r._wetterAmOrt((i % 64) * 977, (i >> 6) * 977, i * 41))
+    );
     const kern = P.wetterAt;
     P.wetterAt = () => ({ zeile: "sturm" });
     zug("saat-a", 0);
-    [st.spielZeit, st.weatherEffectTime] = [Z, 0];
+    r._weltUhrNimm(Z);
+    st.weatherEffectTime = 0;
     r._loopWeatherAndGrowth(0);
     P.wetterAt = kern;
     const nass = (w) => r._weatherIsWet(w);
-    aus.front = { nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length, lag: Z * lag, worte: [...worte] };
+    aus.front = {
+        nassTrocken: A.filter((w, i) => nass(w) && !nass(B[i])).length / A.length,
+        lag: Z * lag,
+        worte: [...worte],
+    };
     Object.assign(aus.front, { soll: 3000 / P.WIND_FELD.front.zugMS, welt: st.weather });
     window.__uebergangFaellt(r);
-    [wm.seed, pm.x, pm.z, st.spielZeit] = [saat0, x0, y0, uhr0];
+    [wm.seed, pm.x, pm.z] = [saat0, x0, y0];
+    r._weltUhrNeu(uhr0); // die Welt-Uhr des Anfangs zurück über die Welt
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
     // (Q) der Zwilling `time_of_day` ist fort
@@ -369,7 +670,10 @@ function saatRot(Z) {
     const [a, au, b, bu, c] = Z.laeufe;
     const rot = Z.laeufe
         .filter(([, f]) => f.folge.split(" ").length !== Z.zuege || f.fade !== wechsel(f.folge) || !f.fade)
-        .map(([n, f]) => `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`);
+        .map(
+            ([n, f]) =>
+                `(Z) SAAT ${n}: ${f.fade} Wechsel über _setWeather in ${Z.zuege} Takten (${f.folge || "keiner"})`
+        );
     for (const [x, y] of [
         [a, au],
         [b, bu],
@@ -380,7 +684,8 @@ function saatRot(Z) {
         [c, "die Saat"],
         [b, "den Ort"],
     ])
-        if (x[1].folge === a[1].folge) rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
+        if (x[1].folge === a[1].folge)
+            rot.push(`(Z) SAAT: die Folge ist blind für ${was} — ${x[0]} = ${a[0]}: ${a[1].folge}`);
     return rot;
 }
 
@@ -420,7 +725,8 @@ function uhrRot(U) {
     for (const n of ["himmel", "wind", "böe"])
         if (!(n in U.vor)) rot.push(`(U) UHR ${n}: die Bühne kennt sie nicht (${Object.keys(U.vor).join(", ")})`);
     if (!(U.verweigert > 0)) rot.push(`(U) die Bild-Uhr: der Loop schrieb sie nicht — die Wache sah keinen Zug`);
-    if (U.wort !== 3) rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
+    if (U.wort !== 3)
+        rot.push(`(U) WORT: ${U.wort} von 3 — die Bühne zeichnet keinen Regen oder nimmt ein falsches Wort still`);
     return rot;
 }
 
@@ -673,12 +979,18 @@ hauptLauf(async () => {
         wesenSek: WESEN_SEK,
     });
     const laufS = (Date.now() - t0) / 1000;
+    // (K) in einer FRISCHEN Welt: der Kalender bei kurzem und langem Tag
+    const page3 = await boot(browser);
+    const KAL = await page3.evaluate(kalenderProbe, { minuten: [8, 60], sek: 240, schrittSek: SCHRITT_SEK });
+    const JL = await page3.evaluate(jahrWinterProbe, { schrittSek: SCHRITT_SEK });
+    JL.feld = await page3.evaluate(jahrFeldProbe, { praesenz: JL.praesenz });
     const lab = await browser.newPage();
     await server.zeige(lab, 60000, "worlds/terrain/index.html");
     await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
     S.front.labor = await lab.evaluate(laborProbe);
     await browser.close();
     server.close();
+    JL.arten = await jahrLaubArten(JL.praesenz);
 
     console.log("=== DIE WACHE VON UHR UND WETTER — Halt heißt Halt, frei gehören sie dem Spieler (Null-Renderer) ===");
     for (const [n, w] of Object.entries(S.halt)) {
@@ -725,7 +1037,19 @@ hauptLauf(async () => {
         `  Front · Regen an A bei trockenem B ${(100 * F.nassTrocken).toFixed(0)} % · Lag ${F.lag} s (Soll ${F.soll.toFixed(0)} s ±20 %)` +
             ` · Worte ${F.worte.length}/5 (${F.worte.join(" ")}) · Mutation des Kerns: Welt ${F.welt}, Labor ${F.labor}`
     );
-    const rot = urteil(S, H);
+    for (const j of KAL)
+        console.log(
+            `  Kalender ${String(j.min).padStart(2)} min · in ${j.welt.toFixed(0)} s Welt-Uhr: Licht ${j.licht.toFixed(4)} · Prozesse ${j.prozess.toFixed(4)} · Pegel ${j.pegel.toFixed(4)} · Jahr ${j.jahr.toFixed(4)} Tage (Licht : Pegel ${(j.licht / j.pegel).toFixed(3)})`
+        );
+    const laub = JL.arten.filter((a) => !a.nadel && a.flaeche > 0);
+    const dmax = laub.reduce((m, a) => (a.winter / a.flaeche > m.d ? { d: a.winter / a.flaeche, a } : m), {
+        d: 0,
+        a: null,
+    });
+    console.log(
+        `  Jahr am Laub · Kalender im Winter (Phase ${JL.phase} nach ${JL.takte} Takten, Präsenz Laub ${JL.praesenz[0]} · Blüte ${JL.praesenz[1]}): ${laub.length} Laub-Stufen, höchste Deckung ${(100 * dmax.d).toFixed(1)} % (${dmax.a ? dmax.a.id + " L" + dmax.a.lod : "–"}), ${JL.arten.length - laub.length} Nadel- und leere Stufen; Feld (Fernform gesetz) ${(JL.feld || []).map((f) => f.id + " " + (f.fehlt ? "–" : (100 * f.winter).toFixed(1) + " %")).join(" · ")}`
+    );
+    const rot = [...urteil(S, H), ...kalenderRot(KAL), ...jahrLaubRot(JL)];
     wandEnde(
         rot,
         "unter der Bühne dreht kein Schreiber das Wetter; frei gehen Uhr und Wetter nach dem Wort des Spielers, die Welt" +
