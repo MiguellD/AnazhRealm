@@ -294,11 +294,11 @@ function huelleProben(FC, check, { kernText, golden, taeter = false }) {
 // dorfLayout, sonst der Kern Zeichen für Zeichen) und zählt je Probe die ANDEREN Häuser, die fehlen, hinzukommen, weiter als
 // WURF_WANDER m wandern oder sich drehen. Bis zur Welle zogen alle Lose aus dem EINEN Strom `rnd`: kippte ein Los an einer Probe,
 // stand Same 431794 85 m weiter (p3/n1911/los-huelle/ursache). Der Täter des Selbsttests ist dieser EINE Strom: ROT beim Los.
-// die Stadt der Grammatik 7/30 (ummauert, Markt, Viertel): an ihr kippt der EINE Strom (main 92b7afd07: −5 cm an 7 von 37 Losen 13
-// Häuser, +1 cm an 2 Losen 2), und dort kreuzt bei −5 cm und +1 cm keine Front eine Schwelle des GESETZES (die Fuge des Snaps,
-// der Versuch zu 1,1 m) — die Linse misst den Würfel allein. Wo eine Front eine Schwelle kreuzt (7/18 +5 cm: 2 Häuser, 7/60 −5 cm
-// Los 10: 41), rückt das Gesetz, nicht der Wurf (p3/n1911/samen/messung-26baeab7/loswurf-fuge.log); die Dörfer 3/12 und 12345/6
-// kippen auch am EINEN Strom nie.
+// die Stadt der Grammatik 7/30 (ummauert, Markt, Viertel): an ihr kippt der EINE Strom (main 92b7afd07: -5 cm an 7 von 37 Losen 13
+// Häuser, +1 cm an 2 Losen 2), und dort kreuzt bei -5 cm und +1 cm keine Front eine Schwelle des GESETZES (eine Probe des Setzers,
+// der Versuch zu 1,1 m, die Kirche als Anker ihres Viertels) — die Linse misst den Würfel allein. Wo eine Front eine Schwelle kreuzt
+// (7/18 -5 cm an der Kirche: 15 Häuser, 7/60 -5 cm Los 10: 41), rückt das Gesetz, nicht der Wurf (p3/n1911/samen/messung-26baeab7/
+// loswurf-final.log); die Dörfer 3/12 und 12345/6 kippen auch am EINEN Strom nie.
 const WURF_FAELLE = [{ seed: 7, nH: 30 }];
 const [WURF_DELTAS, WURF_WANDER] = [[-0.05, 0.01], 0.5];
 const LOS_HAKEN = ["var L = dorfLayout(p, ext.slice(von, bis), ", "var L = dorfLayout(p, (globalThis.__losStoer || function (e) { return e; })(ext.slice(von, bis), von), "]; // prettier-ignore

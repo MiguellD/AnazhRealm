@@ -5656,8 +5656,7 @@
         if(rd.quer){QD.ok++; (QD.pos=QD.pos||[]).push([Math.round(o.cx),Math.round(o.cz)]);}
         cu.lastEnd=sc+exH;
         const dN9=(staedt&&plan.jahr>1700)? Math.min(1, Math.hypot(q.x,q.z)/(Rw*0.82)) : 1;   /*SETZER-VERDICHTUNG: die Fuge waechst mit dem Radius — der KERN rueckt in die Snap-Zone und fusioniert zur geschlossenen STRASSENWAND, der Saum atmet*/
-        const fz=gap*(0.22+0.78*dN9)+(staedt?wurf()*0.15*dN9:wurf()*1.2);                        /*DIE FUGE HINTER DEM LOS (FUGE_GESETZ): bis zur halben Traufgasse bleibt sie dem Snap (er dockt sie Wand an Wand), darüber ist sie eine Traufgasse — nie 0,5–1,0 m*/
-        cu.cur=sc+exH+(fz<FUGE_GESETZ.trauf/2?fz:Math.max(fz,FUGE_GESETZ.trauf+FUGE_GESETZ.saum));
+        cu.cur=sc+exH+gap*(0.22+0.78*dN9)+(staedt?wurf()*0.15*dN9:wurf()*1.2);
         return pl[i]; }
       cu.cur+=1.1; }
     return null; };
@@ -5738,7 +5737,8 @@
     if(stadt&&(g.viertel==='wohnen'||g.viertel==='handwerk')&&Math.hypot(placedP.obb.cx,placedP.obb.cz)<=Rw&&nassAm(placedP.obb.cx,placedP.obb.cz,Math.hypot(placedP.obb.ex,placedP.obb.ez)+SD.hafenM)) g.viertel='hafen';   /*DIE ROLLE HAFEN FOLGT DER LAGE: was im Ring am Wasser des Rasters wohnt und wirkt, ist Hafen (Speicher, Gerberei und Werkstatt des Handwerks, die Haeuser am Ufer) — ohne Wasser (`H.nass`) entsteht keiner*/
     const cu=parentCu[i];
     if(g.rolle!=='kirche'&&i>0&&i%8===0){ const q=at(roads[cu.rd],Math.max(2,cu.cur-2));
-      brunnen.push({x:q.x+cu.side*q.nx*(wegRand(roads[cu.rd])+0.6), z:q.z+cu.side*q.nz*(wegRand(roads[cu.rd])+0.6)}); }
+      const bx=q.x+cu.side*q.nx*(wegRand(roads[cu.rd])+0.6), bz=q.z+cu.side*q.nz*(wegRand(roads[cu.rd])+0.6);
+      if(!imTor(bx,bz,VERKEHR_GESETZ.abzweigZulaufM)) brunnen.push({x:bx, z:bz}); }   /*DER ZULAUF DER WENDE TRAEGT KEINEN BRUNNEN (Welle SAMEN, los-wurf): Los, Gasse und Laterne hielten das Geviert des Torplatzes frei, der Brunnen nicht — an 11/200 stand er nach dem Wurf je Los 2,7 m vor dem Geviert im Zulauf der Wende, mit dem Haus daneben trug sie eine Enge (an main hielt es der Zufall des EINEN Stroms); der Zulauf ist VERKEHR_GESETZ.abzweigZulaufM lang*/
   }
   const gradK=new Array(G.nodes.length).fill(0); if(stadt) for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradK[rd.a]++; gradK[rd.b]++; }
   for(let r=0;r<roads.length;r++){ let mx=8; const rd=roads[r];
@@ -9368,15 +9368,9 @@
     //     aus worlds/fachwerk/fachwerk.js gewandert): REIHEN-SNAP · BRANDWAND ·
     //     META. KONSUM BEIDSEITIG: buildDorf (Lab-Shell) UND exportSettlement
     //     (unten) rufen DIESELBEN Funktionen — eine Wahrheit, zwei Leser. ═══
-    // REIHEN-SNAP-GESETZ: verdichtetes Bauen — parallele Baulinien-Nachbarn docken auf Norm-gap an (die Stadtgeschichte baute
-    // Wand an Wand); läuft VOR der Platzierung, damit Solids/OBB konsistent fließen. DIE FUGE ZWISCHEN ZWEI NACHBARN (Welle SAMEN,
-    // FUGE_GESETZ): ENTWEDER Wand an Wand (gedockt, die Brandwand) ODER eine Traufgasse ab FUGE_GESETZ.trauf — nie dazwischen.
-    // Es entscheidet der KÖRPER (die Hülle des Loses `obb`, samt Traufe und Anbau), nie die Wand-Breite `dims.W`: ein Paar,
-    // dessen Körper näher als die Traufgasse stehen, dockt; eines ab ihr bleibt. Und die Kette hält: wer schon an einem Nachbarn
-    // steht, gehört zu dessen Reihe (`kette`) — die kürzere Reihe dockt starr an der längeren, ganz. Bis hier entschied die Wand-Breite
-    // (Fuge(W) bis 1,8 m: an der Stadt 7/4750 sah der Snap 230 Paare mit Anbau nie, deren Körper 0,1–1,0 m trennten), und
-    // beide rückten je halb: das dritte Haus der Reihe zog das zweite vom ersten weg (80 Fugen von 0,1–1,0 m im Fenster des
-    // Snaps) — 322 Fugen zwischen 1 cm und 1 m, die 0,70-m-Fuge des Gelenks 712412 ↔ 400335 war eine von ihnen.
+    // REIHEN-SNAP-GESETZ: verdichtetes Bauen — parallele Baulinien-Nachbarn mit
+    // Fuge<1.8m docken auf Norm-gap an (die Stadtgeschichte baute Wand an Wand);
+    // läuft VOR der Platzierung, damit Solids/OBB konsistent fließen.
     // dorfB: [{dims,kern}] · pl: die Layout-Plätze (lay.pl — wird MUTIERT:
     // x/z + obb.cx/cz rücken zusammen) · gap: plan.norm.gap. Rückgabe: Snap-Zahl.
     // DAS LOS IM ORT (w28-gruendung-flach): ein Platz, den das Layout gesetzt hat — ein Haus ohne Platz parkt `dorfLayout` bei
@@ -9387,9 +9381,6 @@
       const dicht=(gap<=0.6);
       let snaps=0;
       if(dicht){
-      const kette=dorfB.map((_,k)=>[k]), von=dorfB.map((_,k)=>k);                               // DIE KETTE: wer an wem steht (gedockt oder Wand an Wand) — je Haus seine Reihe
-      const binde=(a,b)=>{ const ka=von[a], kb=von[b]; if(ka===kb) return; for(const k of kette[kb]){ kette[ka].push(k); von[k]=ka; } kette[kb]=[]; };
-      const ruecke=(k,mx,mz)=>{ const q=pl[k]; q.x+=mx; q.z+=mz; q.obb.cx+=mx; q.obb.cz+=mz; };
       for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims||A.kern) continue;
         const qi=pl[i]; if(!imOrt(qi)) continue; const ci=Math.cos(qi.phi), si=Math.sin(qi.phi);
         for(let j=i+1;j<dorfB.length;j++){ const Bj=dorfB[j]; if(!Bj.dims||Bj.kern) continue;
@@ -9399,14 +9390,12 @@
           const dx=qj.obb.cx-qi.obb.cx, dz=qj.obb.cz-qi.obb.cz;
           const lx=dx*ci-dz*si, lz=dx*si+dz*ci;
           const Wi=A.dims.W||8, Wj=Bj.dims.W||8, Di=A.dims.D||8, Dj=Bj.dims.D||8;
-          const soll=(Wi+Wj)/2+gap, fuge=Math.abs(lx)-(Wi+Wj)/2, koerper=Math.abs(lx)-(qi.obb.ex+qj.obb.ex);
-          if(Math.abs(lz)>Math.min(Di,Dj)*0.45 && Math.abs(lz)>=0.6*(qi.obb.ez+qj.obb.ez)) continue;     // Nachbarn: die Wände oder die Körper stehen Seite an Seite
-          if(fuge<=gap+0.02){ binde(i,j); continue; }                                            // schon Wand an Wand: eine Reihe
-          if(koerper>=FUGE_GESETZ.trauf+FUGE_GESETZ.saum || von[i]===von[j]) continue;          // die Traufgasse bleibt (mit dem Saum, den das Los-Gesetz danach noch rückt)
-          const zug=Math.abs(lx)-soll, s2=Math.sign(lx), mvx=s2*zug*ci, mvz=-s2*zug*si;         // Wand an Wand (die Norm-Fuge, die Brandwand schneidet den Körper an der Wand); lokal (±zug,0) → Welt via R(phi) — Straßenfronten bleiben
-          if(kette[von[i]].length<=kette[von[j]].length) for(const k of kette[von[i]]) ruecke(k,mvx,mvz);   // die kürzere Reihe dockt ganz an der längeren, starr — keine Fuge in ihr öffnet sich
-          else for(const k of kette[von[j]]) ruecke(k,-mvx,-mvz);
-          binde(i,j);
+          const soll=(Wi+Wj)/2+gap, fuge=Math.abs(lx)-(Wi+Wj)/2;
+          if(Math.abs(lz)>Math.min(Di,Dj)*0.45 || fuge<=gap+0.02 || fuge>1.8) continue;
+          const zug=(Math.abs(lx)-soll)/2, s2=Math.sign(lx);                                  // beide je halbe Fuge aufeinander zu — Straßenfronten bleiben
+          const mvx=s2*zug*ci, mvz=-s2*zug*si;                                                // lokal (±zug,0) → Welt via R(phi)
+          qi.x+=mvx; qi.z+=mvz; qi.obb.cx+=mvx; qi.obb.cz+=mvz;
+          qj.x-=mvx; qj.z-=mvz; qj.obb.cx-=mvx; qj.obb.cz-=mvz;
           snaps++; } }
       }
       return snaps;
@@ -9428,12 +9417,6 @@
     // der Slot den Bau im Los). Rückgabe { paare (im ersten Gang gerückt), rest: [[i, j, tief]] (was nach dem letzten Gang
     // noch ineinander liegt — der Leser nennt es beim Namen) }.
     var LOS_GESETZ = { fugeM: 0.02, gaenge: 8 };
-    // DIE FUGE ZWISCHEN ZWEI NACHBARN (Welle SAMEN, Entscheid des Koordinators 19.11.): Wand an Wand ODER die Traufgasse ab
-    // `trauf` m zwischen den Körpern — nie dazwischen. Leser: `reihenSnap` (dockt, was näher steht) und `dorfLayout` (die Fuge,
-    // die der Würfel eines Loses hinter ihm lässt: nahe der Wand bleibt sie dem Snap, ab der halben Traufgasse wird sie eine).
-    // `saum`: was eine Traufgasse an der Krümmung der Gasse verliert (der Würfel misst sie längs der Gasse, die Körper stehen auf
-    // der Sehne — an einem Knick der Gasse liest 1,00 m als 0,995 m); der Würfel legt sie um ihn weiter.
-    var FUGE_GESETZ = { trauf: 1.0, saum: 0.05 };
     // der Grundriss, den der Slot trägt (`hausSlot`): der Bau im Los, an der Brandwand an der Außenkante der Wand geschnitten
     function losGrundriss(dorfB, pl, lose, i) {
         var o = lose && lose[i] ? obbImLos(pl[i], dorfB[i].ext) : pl[i].obb,
@@ -12810,7 +12793,6 @@
         wandXVon: wandXVon,
         grundrissTief: grundrissTief,
         LOS_GESETZ: LOS_GESETZ,
-        FUGE_GESETZ: FUGE_GESETZ, // Welle SAMEN: Wand an Wand oder die Traufgasse ab `trauf` — nie dazwischen (reihenSnap · dorfLayout)
         wandLaternen: wandLaternen,
         platzSaum: platzSaum,
         brunnenWeicht: brunnenWeicht,

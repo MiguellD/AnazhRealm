@@ -1306,7 +1306,7 @@ hauptLauf(async () => {
             [0, x].map(() => ({ dims: { W: 8, D: 7 }, kern: false, p: {} })),
             [0, x].map((cx) => ({ phi: 0, x: cx, z: 0, obb: { cx, cz: 0, phi: 0, ex: 4, ez: 3.5 } })),
         ];
-        const [Bs, pl] = paar(8.6); // die Körper 0,6 m auseinander: weder Wand an Wand noch Traufgasse (FUGE_GESETZ)
+        const [Bs, pl] = paar(9);
         const snaps = FC.reihenSnap(Bs, pl, gap);
         const fuge = Math.abs(pl[1].obb.cx - pl[0].obb.cx) - 8; // (Wi+Wj)/2 = 8
         check("Snap-Probe: zwei dichte Nachbarn docken an (1 Paar)", snaps === 1, `snaps=${snaps}`);
@@ -1328,18 +1328,6 @@ hauptLauf(async () => {
         );
         const weit = FC.reihenSnap(...paar(30), gap);
         check("Snap-Probe: ferne Nachbarn (Fuge>1.8m) bleiben stehen", weit === 0, `snaps=${weit}`);
-        // DIE FUGE ZWISCHEN ZWEI NACHBARN (Welle SAMEN, FUGE_GESETZ): die Traufgasse (Körper ab trauf) bleibt, und die Kette hält —
-        // drei Häuser je 0,6 m: beide Fugen docken (vor der Welle rückten beide je halb, das dritte zog das zweite um 0,47 m zurück)
-        const T = FC.FUGE_GESETZ.trauf,
-            gasse = FC.reihenSnap(...paar(8 + T + 0.2), gap);
-        const kette = [[0, 8.6, 17.2].map(() => ({ dims: { W: 8, D: 7 }, kern: false, p: {} })), [0, 8.6, 17.2].map((cx) => ({ phi: 0, x: cx, z: 0, obb: { cx, cz: 0, phi: 0, ex: 4, ez: 3.5 } }))];
-        FC.reihenSnap(...kette, gap);
-        const kf = [1, 2].map((k) => kette[1][k].obb.cx - kette[1][k - 1].obb.cx - 8);
-        check(
-            `Fugen-Probe: die Traufgasse (Körper ${T + 0.2} m) bleibt, eine Reihe aus drei dockt ganz (beide Fugen die Norm-Fuge)`,
-            gasse === 0 && kf.every((x) => Math.abs(x - gap) < 1e-9),
-            `gasse ${gasse} · Fugen ${kf.map((x) => x.toFixed(3)).join(" / ")}`
-        );
         losProben(FC, check);
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden }); // die Hülle liest keine Öffnung, das Los je Same wie am Golden
         wurfProben(check, { kernText: kernText() }); // der Würfel je Los: eine Front würfelt kein anderes Haus neu (Welle SAMEN)
