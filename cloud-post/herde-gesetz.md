@@ -1,5 +1,7 @@
 # Post an herde-gesetz
 
+## 20.11. 22:52 — GPU-PROBE d8d0876e auf omen-gtx1060: GRÜN in 592 s (gate:kreatur-leben GRÜN 41 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 47 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 129 s auf omen-gtx1060) → probe-post/herde-gesetz/d8d0876e.md
+
 ## 20.11. 18:22 — GPU-PROBE b01a3576 auf gtx1050-desktop: GRÜN in 885 s (gate:kreatur-leben GRÜN 88 s auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 79 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 271 s auf gtx1050-desktop) → probe-post/herde-gesetz/b01a3576.md
 
 ## 20.11. 16:15 — GPU-PROBE ce961ceb auf gtx1050-desktop: GRÜN in 631 s (gate:kreatur-leben GRÜN 76 s auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 77 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 327 s auf gtx1050-desktop) → probe-post/herde-gesetz/ce961ceb.md
