@@ -1728,6 +1728,91 @@ function baumStufeUrteil(z) {
     return { rot, zeile };
 }
 
+// DER BAUM VOR DEM ORT (w28-ort-vor-wald; Seite, vor dem Sprung gerufen — `werkbank pop`, gate:pop): je Baum des Walds (`_waldDart`),
+// den die Welt nimmt (`removeArchitecture`), Zeit, Abstand zum Spieler und sein Grund — die Marke trägt der Ruf, der ihn nimmt: der
+// Plan folgt dem Rand eines Orts, der nach der Pflanzung kam (`saum`: `_waldNachwuchs`, gerufen vom Saum `_saumRaeumen`), eine Fläche
+// des Dorfs (`wege`: `_wegeRaeumen` — Weg, Platz, Acker, Feldweg) oder ein Haus (`grundriss`: `_grundrissRaeumen`), sonst `sonst`.
+// `__baumFall(ab)` liest, was seit `ab` (performance.now) fiel und was davon im Laub-Rand.
+function baumFallHaken() {
+    if (window.__baumFall) return "da";
+    const st = r.state;
+    const L = [];
+    let grund = null;
+    const marke = (name, g) => {
+        const ur = r[name];
+        r[name] = function (...a) {
+            const vor = grund;
+            grund = grund || g;
+            try {
+                return ur.apply(this, a);
+            } finally {
+                grund = vor;
+            }
+        };
+    };
+    marke("_waldNachwuchs", "saum");
+    marke("_wegeRaeumen", "wege");
+    marke("_grundrissRaeumen", "grundriss");
+    const rm = r.removeArchitecture;
+    r.removeArchitecture = function (e, ...a) {
+        if (e && e._waldDart === true && e.position) {
+            const p = st.playerMesh.position;
+            const d = Math.round(Math.hypot(e.position.x - p.x, e.position.z - p.z));
+            L.push({ t: performance.now(), d, typ: e.type, grund: grund || "sonst" });
+        }
+        return rm.call(this, e, ...a);
+    };
+    window.__baumFall = (ab) => {
+        const R = r._laubRand();
+        const seit = L.filter((f) => f.t > ab);
+        return { laubRand: R, faelle: seit.length, nach: seit.filter((f) => f.d <= R).map(({ d, typ, grund }) => ({ d, typ, grund })) }; // prettier-ignore
+    };
+    return "ok";
+}
+// DIE ORTE LIEGEN (w28-ort-vor-wald; Seite, nach dem Sprung): Takt um Takt mit seinem Bild (`__werkTakt`), bis kein Vorrat ohne Grund
+// (`_dorfVorraete`; einer ohne Plan v2 legt ihn erst beim Erwachen), kein Dorf-Akt (`_dorfOffen`) und kein wartender Pflanz-Gang
+// (`_waldPflanzWarten`) 120 Takte am Stück offen steht; Deckel 90 s → { takte, ms, offen } (`offen` null: sie liegen).
+function baumFallWarten() {
+    return (async () => {
+        const t0 = performance.now();
+        let [takte, ruhig, offen] = [0, 0, null];
+        while (performance.now() - t0 < 90000) {
+            const bild = __werkTakt();
+            takte++;
+            const V = [...(r._dorfVorraete || new Map())].filter(([, w]) => !w.grund && !(w.da && !w.v2)).map(([k]) => k);
+            const d = r._dorfOffen();
+            const p = r._waldPflanzWarten ? r._waldPflanzWarten.size : 0;
+            offen = V.length || d || p ? `Vorräte ohne Grund ${V.length}${V.length ? ` (${V.slice(0, 3).join(" ")})` : ""} · Dorf offen ${d} · Pflanz-Gänge warten ${p}` : null; // prettier-ignore
+            ruhig = offen ? 0 : ruhig + 1;
+            if (ruhig >= 120) break;
+            await bild;
+        }
+        return { takte, ms: Math.round(performance.now() - t0), offen: ruhig >= 120 ? null : offen };
+    })();
+}
+// DAS URTEIL DES BAUMS VOR DEM ORT (rein; `__baumFall` und `baumFallWarten` nach dem Sprung): ROT, wenn die Orte bis zum Deckel nicht
+// lagen (ungemessen) oder im Laub-Rand ein Baum des Walds fiel, den keine Fläche des Erwachens nahm — der Saum seines Orts, der nach
+// seiner Pflanzung kam (`saum`), oder ein anderer Weg (`sonst`). Die Flächen des Erwachens (Wege, Grundriss: sie legt das Erwachen,
+// nie der Grund im Vorlauf) stehen offen beim Namen. → { rot, zeile }
+function baumFallUrteil(f) {
+    const rot = [];
+    const je = (g) => f.nach.filter((e) => e.grund === g).length;
+    const taeter = f.nach.filter((e) => e.grund !== "wege" && e.grund !== "grundriss");
+    if (f.offen)
+        rot.push(`BAUM VOR DEM ORT: ungemessen — die Orte lagen ${Math.round(f.ms / 1000)} s nach dem Sprung nicht (${f.offen})`);
+    if (taeter.length)
+        rot.push(
+            `BAUM VOR DEM ORT: ${taeter.length} Bäume des Walds fielen nach dem Sprung im Laub-Rand (≤ ${Math.round(f.laubRand)} m) — sie standen vor dem Grund ihres Orts: ${taeter
+                .slice()
+                .sort((a, b) => a.d - b.d)
+                .slice(0, 6)
+                .map((e) => `${e.typ} ${e.d} m (${e.grund})`)
+                .join(" · ")}`
+        );
+    const zeile = `${f.faelle} Bäume des Walds fielen nach dem Sprung, ${f.nach.length} im Laub-Rand (≤ ${Math.round(f.laubRand)} m): Saum ${je("saum")}, sonst ${je("sonst")} · offen (die Fläche legt das Erwachen): Wege ${je("wege")}, Grundriss ${je("grundriss")} · die Orte lagen nach ${f.takte} Takten (${f.ms} ms)`; // prettier-ignore
+    return { rot, zeile };
+}
+
 // DIE ABWEICHUNG ZWEIER ZENSUS (rein): die Dinge, die in `b` eine andere Stufe tragen als in `a` — je Bewohner sein Wechsel, je Klasse
 // die Differenz ihrer Instanzen. `dinge` zählt sie (ein Bewohner einmal: sein Satz `bewohner-satz` zählt nicht noch als Klasse).
 function stufenAbweichung(a, b) {
@@ -1955,6 +2040,19 @@ async function bildLinsenSelbsttest() {
         const leer = { ...wahr, ohne: [{ typ: "baum_fichte", d: 150 }] };
         klasse("S gesäter Baum ohne Instanz", (f) => !/^BAUM OHNE STUFE: 1 gesäte Bäume des Walds im Blick tragen weder Instanz noch Mesh noch Dach \(das Dach ab 184\.0 m\): baum_fichte 150 m$/.test(U(leer, f)) && (U(leer, f) || "kein ROT"), baumStufeUrteil, mutante(baumStufeUrteil, "if (z.ohne.length)", "if (false)", {})); // prettier-ignore
     }
+    // S: der Baum vor dem Ort (w28-ort-vor-wald) — GTX 1050, Sprung an die Mess-Wiese am Kopf 3d180ada: 264 Bäume fielen im Saum ihres
+    // Orts nach dem Sprung, dazu 14 auf Wegen, 5 unter Häusern; die Mutante stellt den Saum zu den offenen Flächen (sie sähe den Täter nie)
+    {
+        const F = (z, f = baumFallUrteil) => f(z).rot.join(" | ");
+        const flaeche = [{ d: 95, typ: "baum_fichte", grund: "wege" }, { d: 195, typ: "baum_birke", grund: "grundriss" }]; // prettier-ignore
+        const ruhig = { laubRand: 216, faelle: 543, takte: 900, ms: 21000, offen: null, nach: flaeche };
+        const taeter = { ...ruhig, nach: [...flaeche, { d: 150, typ: "baum_fichte", grund: "saum" }, { d: 96, typ: "baum_kiefer", grund: "saum" }] }; // prettier-ignore
+        if (F(ruhig)) v.push(`S: die offenen Flächen des Erwachens fallen ROT: ${F(ruhig)}`);
+        if (!/Saum 0, sonst 0 · offen \(die Fläche legt das Erwachen\): Wege 1, Grundriss 1 · die Orte lagen nach 900 Takten/.test(baumFallUrteil(ruhig).zeile)) v.push(`S: die Zeile des Baums vor dem Ort nennt die Flächen nicht: ${baumFallUrteil(ruhig).zeile}`); // prettier-ignore
+        if (!/^BAUM VOR DEM ORT: ungemessen — die Orte lagen 90 s nach dem Sprung nicht \(Vorräte ohne Grund 1\)$/.test(F({ ...ruhig, ms: 90000, offen: "Vorräte ohne Grund 1" }))) v.push("S: ein Gang, dessen Orte nie lagen, misst den Fall still"); // prettier-ignore
+        if (!/^BAUM VOR DEM ORT: 1 Bäume .*: baum_eiche 40 m \(sonst\)$/.test(F({ ...ruhig, nach: [{ d: 40, typ: "baum_eiche", grund: "sonst" }] }))) v.push("S: ein Fall ohne Marke geht still durch"); // prettier-ignore
+        klasse("S Baum vor dem Ort", (f) => !/^BAUM VOR DEM ORT: 2 Bäume des Walds fielen nach dem Sprung im Laub-Rand \(≤ 216 m\) — sie standen vor dem Grund ihres Orts: baum_kiefer 96 m \(saum\) · baum_fichte 150 m \(saum\)$/.test(F(taeter, f)) && (F(taeter, f) || "kein ROT"), baumFallUrteil, mutante(baumFallUrteil, 'e.grund !== "wege" && e.grund !== "grundriss"', 'e.grund === "sonst"', {})); // prettier-ignore
+    }
     // R: die Ratsche des Orts
     const rot = [{ schluessel: "leib", grund: "Sicht verdeckt 4.9 %" }];
     const R = ortUrteil(rot, { leib: "main 5 %" }, "stadt");
@@ -1969,6 +2067,7 @@ async function bildLinsenSelbsttest() {
 module.exports = {
     bildLinsenSelbsttest,
     baumStufeUrteil,
+    baumFallUrteil,
     stufenUrteil,
     stufenAbweichung,
     inhaltFamilie,
@@ -1988,7 +2087,7 @@ module.exports = {
         ABNAHME_INSTALL +
         `window.__abnahmeMessen = ${abnahmeMessen}; window.__zielGestalt = ${zielGestalt}; window.__gestaltLeben = ${gestaltLeben}; window.__leinwandRot = ${leinwandRot};` +
         `window.__schirmRot = ${schirmRot}; window.__stufenZensus = ${stufenZensus}; window.__stufenOhne = ${STUFEN_OHNE};` +
-        `window.__baumStufeZensus = ${baumStufeZensus};` +
+        `window.__baumStufeZensus = ${baumStufeZensus}; window.__baumFallHaken = ${baumFallHaken}; window.__baumFallWarten = ${baumFallWarten};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
         // DIE TIEFE DES BILDS an der Kamera (EIN Bild nach dem Neubeginn, `opt.tiefe` der Aufnahme): die Blick-Wahl und der Arm
         `window.__zielMessen = ${zielMessen};` +
