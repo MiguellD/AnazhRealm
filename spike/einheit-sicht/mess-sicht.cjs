@@ -212,9 +212,10 @@ function flug(o) {
             for (let p = 0; p < N; p++) if (M[p] && L[p] - blind[i][p] > 8) hell++;
             aus.je.push({ i, maske: n, ab8: d, anteil: +anteil.toFixed(5), ab8Bild: dAlle, hell, dunkel: d - hell });
             if (i === 0) aus.bilder.mit0 = bildUrl(u8);
-            if (anteil > schlimmst.anteil) {
-                schlimmst = { i, anteil };
-                // das Unterschieds-Bild: Maske grau, abweichende Pixel rot
+            // das Unterschieds-Bild (Maske grau, abweichende Pixel rot) des schlimmsten Bilds und des letzten (das Paar je Stand)
+            const letzt = i === o.schritte - 1;
+            if (anteil > schlimmst.anteil || letzt) {
+                if (anteil > schlimmst.anteil) schlimmst = { i, anteil };
                 const v = new Uint8Array(N * 4);
                 for (let p = 0, j = 0; p < N; p++, j += 4) {
                     const x = Math.abs(L[p] - blind[i][p]) > 8;
@@ -223,8 +224,8 @@ function flug(o) {
                     v[j + 2] = x ? 0 : M[p] ? 90 : L[p] >> 2;
                     v[j + 3] = 255;
                 }
-                aus.bilder.schlimmst = bildUrl(v);
-                aus.bilder.schlimmstMit = bildUrl(u8);
+                if (schlimmst.i === i) [aus.bilder.schlimmst, aus.bilder.schlimmstMit] = [bildUrl(v), bildUrl(u8)];
+                if (letzt) [aus.bilder.letzt, aus.bilder.letztMit] = [bildUrl(v), bildUrl(u8)];
             }
         });
         const sz2 = r._sichtTiefeZahl();

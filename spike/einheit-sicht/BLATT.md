@@ -284,3 +284,21 @@ Halmen und Lichtflecken des Rasens, nicht an Häusern — ein Versatz des Muster
 in Bild 4–20 von bis zu 3,14 % auf ≤ 1,82 %. In Bild 21–23 springt es von Lauf zu Lauf (Bild 23: 9,77 · 1,17 · 0,92 · 6,63 %) —
 dort trennt der Flug die Sicht nicht vom Rauschen. **S5 bleibt ROT**, offen mit Grund: die Quelle des Versatzes in Bild 21–23
 ist nicht benannt (Messname `FLUG genesis/third VORZEICHEN`).
+
+### S5 — der wandernde Schatten beim Namen (GTX 1050, 20.11. 04:16–04:28)
+
+**Der Zeuge** (je Schuss des Flugs: Tempo des Auges, Sonne, Fit jeder Kaskade): die Sonne steht in allen fünf Flügen gleich
+(0 · 0,962 · 0,272), der Fit der nahen Kaskade nicht — Bild 23 x0 −52,27 und −52,32 m (blind, 15,5 und 15,7 m/s) gegen −44,62 m
+bei Breite 16,97 statt 24,52 m (mit, 0 m/s). Täter: `_augeWegJetzt` (`stamm/bild-wahl.js`) rechnete das Tempo an der Gerätezeit
+(`performance.now()`, Schwelle 250 ms), und die Box der Kaskaden liegt über den Weg, den es trägt (`_kaskadenPassen`): dauerte
+ein Schuss länger, fiel das Tempo auf 0 und die Box schrumpfte; im Spiel dasselbe je Gerät und Last.
+
+**Geschnitten:** das Tempo liest die Welt-Uhr (`spielZeit`, ein Schritt ohne Welt-Zeit ist ein Sprung); die Tafel der Wanduhr
+verliert die Ausnahme `laden _augeWegJetzt`, die Wand (W) hält den Rückfall; die Fahrt der Linse sicht-arbeit (F) läuft 33 ms
+Welt-Uhr je Bild statt 33 ms Wanduhr, durch die EINE Tür der Uhr von außen (`_weltUhrNimm`, die Ein-Schreiber-Wand nannte
+`st.spielZeit +=` in der Linse einen Täter).
+
+**Gemessen** (drei Läufe, je ein Boot, Genesis Third, 24 × 1,5 m): A gegen A und Sicht gegen blind in JEDEM Bild **0,00 %** der
+Maske (138 099 bis 1 519 757 Pixel), im ganzen Bild 0 Pixel > 8/255 — vorher Bild 23 9,77 · 1,17 · 0,92 · 6,63 % Rauschen und
+7,2 bis 14,6 % Sicht gegen blind. Die Sicht arbeitet dabei: 14 106 Haufen geprüft, 779 verdeckt, 169 spät gezeichnet, Dreiecke des
+Satzes im Blick 240 903 → 167 140 (−30,6 %). **S5 GRÜN** (Soll: kein Bild über 1 % — 0 von 24).
