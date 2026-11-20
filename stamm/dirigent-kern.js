@@ -1966,10 +1966,9 @@ class AnazhRealm {
             // (das Drehen blendet). Bis hier rangierte der Abstand zur Kugel der Reichweite: die Wandlaterne 17,9 m hinter dem
             // Bildrand nahm den Platz der Wandlaterne 19 m im Bild (Dorf P0, Radeon: 3 von 4 sichtbaren Quellen mit Fleck).
             const k2 = q.L.kernM * q.L.kernM;
-            const fleck = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), (q.L.hoeheM || 1) + q.L.kernM));
-            const rang = fleck
-                ? -this._leuchtStaerke(q, t, true) / (d * d + k2 + 1)
-                : (imKegel ? 1e8 : 1e9) + d;
+            const fleck =
+                !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), (q.L.hoeheM || 1) + q.L.kernM));
+            const rang = fleck ? -this._leuchtStaerke(q, t, true) / (d * d + k2 + 1) : (imKegel ? 1e8 : 1e9) + d;
             out.push(Object.assign(q, { id, rang }));
         };
         const auge = this._augenLeuchte;
