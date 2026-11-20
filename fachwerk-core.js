@@ -421,8 +421,10 @@
   let LOFT=null;
   if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
     const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+(KNIESTOCK?NORM.podest:0.3)));                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
-    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;
-    if(austritt(dir)<=zBandTop){                                                             // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
+    const zBandTritt=(Dp/2)*(1-(NORM.kopfSpar-lRise)/Math.max(0.6,ridgeY-eaveY));                   // DIE LETZTE STUFE (w28-bau-rezept-tuer): wer auf ihr steht (eine Steigung unter dem Estrich), hat kopfSpar über sich — bis hier galt nur das Podest-Ende; lief der Lauf zum First, stand die letzte Stufe unter der Schräge (Dorf 25 Slots, Haus D 9 m mit drei Geschossen: Stufe bei 0,88 m, Band ±0,85 m, am Kopf 1,5 m Dach, der Körper fiel 4,9 m in den Schacht)
+    const frei=(d)=>austritt(d)<=zBandTop && Math.abs(((d>0)?stZ0:wz1)+d*(lRun-lGo))<=zBandTritt;
+    if(!frei(dir) && frei(-dir)) dir=-dir;
+    if(frei(dir)){                                                            // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
     const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
     LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot};
     flights.push({base:levels[i].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot, dir, N:lN, rise:lRise, go:lGo, isLoft:true, atLevel:'attic', topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'});

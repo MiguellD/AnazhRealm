@@ -44,16 +44,12 @@ const BASIS = {
     ],
     // S-S2 (Steigen): der Körper als Zylinder — die Kante stößt hinter dem Antritt an den Estrich
     kappe: [ZYLINDER],
-    // die Null-Spur: ohne Speicher und Keller hatte die rechte Spur 0 m
-    spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller) ? 0.90 : 0;"]],
+    // die Null-Spur: ab drei Geschossen trägt die rechte Spur den Lauf OG→2.OG — ohne Breite steigt er nicht. Die Basis der Welle L
+    // (0 m nur ohne Speicher UND Keller) traf im Dorf seit w28-bau-rezept-tuer kein Haus mehr (jedes dreigeschossige trägt eins von
+    // beiden): der Fall war blind, sein Rot kam vom Speicherlauf unter der Schräge. Der Defekt nimmt der Spur ab drei Geschossen die Breite.
+    spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller)&&levels.length<3 ? 0.90 : 0;"]],
     // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
-    austritt: [
-        [
-            KERN,
-            "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;\n    if(austritt(dir)<=zBandTop){",
-            "    {",
-        ],
-    ],
+    austritt: [[KERN, "    if(!frei(dir) && frei(-dir)) dir=-dir;\n    if(frei(dir)){", "    {"]],
     // K10: das Dorf stand flach — der Dorf-Boden 0 und jedes Haus auf y = 0, gleich wo die Welt es trug
     flach: [
         [
@@ -484,8 +480,7 @@ hauptLauf(async () => {
         const f = urteil(o);
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
-        if (process.env.STUDIO_BEGEHEN_JSON)
-            jsonSchreiben(process.env.STUDIO_BEGEHEN_JSON, o);
+        if (process.env.STUDIO_BEGEHEN_JSON) jsonSchreiben(process.env.STUDIO_BEGEHEN_JSON, o);
     } finally {
         await browser.close();
         server.close();
