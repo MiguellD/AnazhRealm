@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T11:47:44.013Z",
+ "zeit": "2026-11-20T12:39:17.293Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -5735,6 +5735,5868 @@
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.zeit.erde#1",
    "modus": "session"
+  },
+  "karte2.planet.geologie.gebirge#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "076236bd92cd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.gebirge#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "01bf50909c80",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.gebirge#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "192926370410",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.gebirge#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "09ab8252ce08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.gebirge#7": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "dd08f1bc3375",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.platten#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "8039253001d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.platten#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "5c5890931cf4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.platten#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "4588d8fd6d97",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.platten#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "4d73bb1313d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.vulkan#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "d72f698b1498",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.vulkan#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "6aa54d7ddd78",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.vulkan#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "df3bf9e1d10f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.unterwelt#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "f9630d5c3fbd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.unterwelt#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "5f2b3523897e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.unterwelt#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "8c1f26539e2c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.lagerstaette#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "8a7674df31ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.lagerstaette#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "5c6d18e40b3e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.inneres#1": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "cbc74e9a975f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.inneres#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "4ea4cb21f6ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.inneres#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "68a462790a0f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.inneres#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "65ea7049b79a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.inneres#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "73f73f8e6092",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.einschlag#1": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "8dc64a4c5463",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.einschlag#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "1d67cf804f3a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.einschlag#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "5f7000e3b169",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.einschlag#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "c6ea12835ad0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.einschlag#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "830ecac2c431",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.geologie.einschlag#7": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 3.11,
+    "kerne": 1.227,
+    "fensterKerne": 1.227,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.69
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.55
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      0.52
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "dwm.exe",
+      0.88
+     ],
+     [
+      "System",
+      0.41
+     ]
+    ],
+    "geraetS": 1.64,
+    "geraet": [
+     [
+      "svchost.exe",
+      0.92
+     ],
+     [
+      "MsMpEng.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 5.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:31:18.866Z",
+   "abdruck": "f834a4be75ee",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.geologie.gebirge#2",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.klimageschichte#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um 0 °C, die Schneegrenze wandert 0 m (planet-core.js:1883 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren); die Reise springt nur ganze Ma (stamm/feld-leben.js:1272) · dT100aGrad 0 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM 0 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll ungemessen gegen Soll 1 ± 25 % ✗ · Täter: planet-core.js planetKlimaGlobal (keine Drift in Jahren)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: keine Treibhaus-Drift in 100 a: die Welt erwärmt sich um 0 °C, die Schneegrenze wandert 0 m (planet-core.js:1883 planetKlimaGlobal: Sternfluss und Walker-Thermostat über Ma, kein CO₂-Antrieb in Jahren); die Reise springt nur ganze Ma (stamm/feld-leben.js:1272) · dT100aGrad 0 °C gegen Soll ≥ 2 °C ✗ · schneegrenzeDeltaM 0 gegen Soll 300 ± 30 % ✗ · kuesteJeSoll ungemessen gegen Soll 1 ± 25 % ✗ · Täter: planet-core.js planetKlimaGlobal (keine Drift in Jahren)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "2ecddd69391b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.klimageschichte#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: keine Erd-Saat (R4) und keine Eiszeit: −21 ka liegt das Meer 0.002 m, die Welt 0 °C anders (planet-core.js:1618 planetMeer: lineare 10-Ma-Fächer, keine Bahn-Zyklen); Eisrand und Landbrücke folgen aus keiner Kaltzeit · meerM 0,002 m gegen Soll -120 ± 10 m ✗ · globalDT 0 °C gegen Soll -6 ± 2 °C ✗ · Täter: planet-core.js planetMeer (keine Eiszeit) · planetPlan (keine Erd-Saat, R4)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: keine Erd-Saat (R4) und keine Eiszeit: −21 ka liegt das Meer 0.002 m, die Welt 0 °C anders (planet-core.js:1618 planetMeer: lineare 10-Ma-Fächer, keine Bahn-Zyklen); Eisrand und Landbrücke folgen aus keiner Kaltzeit · meerM 0,002 m gegen Soll -120 ± 10 m ✗ · globalDT 0 °C gegen Soll -6 ± 2 °C ✗ · Täter: planet-core.js planetMeer (keine Eiszeit) · planetPlan (keine Erd-Saat, R4)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "1bc0f2ecd5d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.klimageschichte#3": {
+   "gruen": false,
+   "zahl": "S3 Umfang nicht erzeugbar: kein Glazialtakt: über 3 Ma schwankt die Welt um 0.001 °C (ohne Trend), das Meer um 0 m — der Planet kennt keine Bahn-Zyklen (planet-core.js:1883 planetKlimaGlobal: Neigung fest, kein Milanković), das Meer ist linear in 10-Ma-Fächern (planet-core.js:1618 plane · gipfel41Ka ungemessen gegen Soll 41 ± 5 ka ✗ · gipfel100Ka ungemessen gegen Soll 100 ± 15 ka ✗ · rEisMeer 0,032 gegen Soll ≤ -0,8 ✗ · spanneMa 3 Ma gegen Soll ≥ 3 Ma ✓ · Täter: planet-core.js planetKlimaGlobal (keine Bahn-Zyklen) · planetMeer (lineare Fächer)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S3 Umfang nicht erzeugbar: kein Glazialtakt: über 3 Ma schwankt die Welt um 0.001 °C (ohne Trend), das Meer um 0 m — der Planet kennt keine Bahn-Zyklen (planet-core.js:1883 planetKlimaGlobal: Neigung fest, kein Milanković), das Meer ist linear in 10-Ma-Fächern (planet-core.js:1618 plane · gipfel41Ka ungemessen gegen Soll 41 ± 5 ka ✗ · gipfel100Ka ungemessen gegen Soll 100 ± 15 ka ✗ · rEisMeer 0,032 gegen Soll ≤ -0,8 ✗ · spanneMa 3 Ma gegen Soll ≥ 3 Ma ✓ · Täter: planet-core.js planetKlimaGlobal (keine Bahn-Zyklen) · planetMeer (lineare Fächer)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "50045369a28d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.klimageschichte#4": {
+   "gruen": false,
+   "zahl": "S4 Umfang nicht erzeugbar: kein Becken mit Wasserbilanz: der See der Reise-Welt ist ein Senken-Knoten des Netzes (gelaende-core.js:1922 benannteSeen) ohne Verdunstung und Zufluss-Bilanz, kein Salz; das Meer des Planeten steigt und fällt (-16.327 … 29.229 m über 540 Ma), aber kein Becken · trockenJeSoll ungemessen gegen Soll 1 ± 30 % ✗ · Täter: gelaende-core.js benannteSeen (Senken ohne Bilanz)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S4 Umfang nicht erzeugbar: kein Becken mit Wasserbilanz: der See der Reise-Welt ist ein Senken-Knoten des Netzes (gelaende-core.js:1922 benannteSeen) ohne Verdunstung und Zufluss-Bilanz, kein Salz; das Meer des Planeten steigt und fällt (-16.327 … 29.229 m über 540 Ma), aber kein Becken · trockenJeSoll ungemessen gegen Soll 1 ± 30 % ✗ · Täter: gelaende-core.js benannteSeen (Senken ohne Bilanz)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "68f1e86f6ee6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.klimageschichte#5": {
+   "gruen": false,
+   "zahl": "S5 Umfang nicht erzeugbar: keine Erd-Saat (R4): der Samen der Welt ist nicht die Erde (planet-core.js:307 planetPlan liest keinen Erd-Schlüssel) — die Station misst seine Kurve gegen die Scotese-Anomalie · scoteseAbwGrad 14,634 °C gegen Soll 0 ± 3 °C ✗ · kreideFlutProzent 0 % gegen Soll 20–40 % ✗ · spanneMa 540 Ma gegen Soll ≥ 540 Ma ✓ · Täter: planet-core.js planetPlan (keine Erd-Saat, R4)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S5 Umfang nicht erzeugbar: keine Erd-Saat (R4): der Samen der Welt ist nicht die Erde (planet-core.js:307 planetPlan liest keinen Erd-Schlüssel) — die Station misst seine Kurve gegen die Scotese-Anomalie · scoteseAbwGrad 14,634 °C gegen Soll 0 ± 3 °C ✗ · kreideFlutProzent 0 % gegen Soll 20–40 % ✗ · spanneMa 540 Ma gegen Soll ≥ 540 Ma ✓ · Täter: planet-core.js planetPlan (keine Erd-Saat, R4)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "d360dab3fde4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.klimageschichte#6": {
+   "gruen": false,
+   "zahl": "S6 Umfang nicht erzeugbar: kein Schneeball: über 4 Ga bleibt die Eisfläche der 5 Saaten ≤ 25 % (planet-core.js:1883 planetKlimaGlobal: der Walker-Thermostat gleicht den jungen Stern aus, die Eis-Albedo des Energiebilanz-Modells kippt bei diesem Fluss nie in den Schneeball, und kein Lese · eisMaxProzent 25 % gegen Soll ≥ 90 % ✗ · saatenProzent 0 % gegen Soll ≥ 30 % ✗ · Täter: planet-core.js planetKlimaGlobal (Walker-Thermostat, kein Umschlag)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S6 Umfang nicht erzeugbar: kein Schneeball: über 4 Ga bleibt die Eisfläche der 5 Saaten ≤ 25 % (planet-core.js:1883 planetKlimaGlobal: der Walker-Thermostat gleicht den jungen Stern aus, die Eis-Albedo des Energiebilanz-Modells kippt bei diesem Fluss nie in den Schneeball, und kein Lese · eisMaxProzent 25 % gegen Soll ≥ 90 % ✗ · saatenProzent 0 % gegen Soll ≥ 30 % ✗ · Täter: planet-core.js planetKlimaGlobal (Walker-Thermostat, kein Umschlag)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "337cbb33beb6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.klimageschichte#7": {
+   "gruen": false,
+   "zahl": "S7 Umfang nicht erzeugbar: die Leuchtkraft des Sterns gibt der Faden nicht heraus (planet-core.js:1889 planetKlimaGlobal rechnet sie nach Gough, voxel-worker.js:1175 antwortet nur je Ort), die Zeit endet bei +1050 Ma (planet-core.js:678 Schlüsselbilder: planet: zeitMa 1100 liegt außerha · wasserZeitProzent 100 % gegen Soll ≥ 90 % ✓ · leuchtkraftProzent ungemessen gegen Soll 70–100 % ✗ · ozeanVerlustGa ungemessen gegen Soll 0,5–2 Ga ✗ · Täter: voxel-worker.js planetOrtAuftrag (gibt das globale Klima nicht heraus) · planet-core.js Schlüsselbilder bis +1,06 Ga",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S7 Umfang nicht erzeugbar: die Leuchtkraft des Sterns gibt der Faden nicht heraus (planet-core.js:1889 planetKlimaGlobal rechnet sie nach Gough, voxel-worker.js:1175 antwortet nur je Ort), die Zeit endet bei +1050 Ma (planet-core.js:678 Schlüsselbilder: planet: zeitMa 1100 liegt außerha · wasserZeitProzent 100 % gegen Soll ≥ 90 % ✓ · leuchtkraftProzent ungemessen gegen Soll 70–100 % ✗ · ozeanVerlustGa ungemessen gegen Soll 0,5–2 Ga ✗ · Täter: voxel-worker.js planetOrtAuftrag (gibt das globale Klima nicht heraus) · planet-core.js Schlüsselbilder bis +1,06 Ga",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "416e62ea15a8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.klimageschichte#8": {
+   "gruen": false,
+   "zahl": "S8 Umfang nicht erzeugbar: Ozeanfläche → 0 und die Sonne bei +5 Ga nicht erzeugbar: die Zeit des Planeten endet bei +1,06 Ga (planet-core.js:678), die Sonnenscheibe hat keine Größe je Epoche (welt-licht.js:711 sonnenRichtung: nur die Richtung) · landZusammenProzent 94 % gegen Soll ≥ 70 % ✓ · superMa 300 Ma gegen Soll 250 ± 100 Ma ✓ · ozeanNullGa ungemessen gegen Soll 0,5–2 Ga ✗ · sonneFaktor ungemessen gegen Soll ≥ 100 ✗ · Täter: planet-core.js Schlüsselbilder (Ende +1,06 Ga) · welt-licht.js (keine Größe der Sonne je Epoche)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S8 Umfang nicht erzeugbar: Ozeanfläche → 0 und die Sonne bei +5 Ga nicht erzeugbar: die Zeit des Planeten endet bei +1,06 Ga (planet-core.js:678), die Sonnenscheibe hat keine Größe je Epoche (welt-licht.js:711 sonnenRichtung: nur die Richtung) · landZusammenProzent 94 % gegen Soll ≥ 70 % ✓ · superMa 300 Ma gegen Soll 250 ± 100 Ma ✓ · ozeanNullGa ungemessen gegen Soll 0,5–2 Ga ✗ · sonneFaktor ungemessen gegen Soll ≥ 100 ✗ · Täter: planet-core.js Schlüsselbilder (Ende +1,06 Ga) · welt-licht.js (keine Größe der Sonne je Epoche)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "eae4de77c84c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.archiv#1": {
+   "gruen": false,
+   "zahl": "S1 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: gelaende-core.js Schicht-Gesetz (T5: Pediment → Schutthang → Kliff)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S1 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: gelaende-core.js Schicht-Gesetz (T5: Pediment → Schutthang → Kliff)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "4ff576dab4aa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.archiv#3": {
+   "gruen": false,
+   "zahl": "S3 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: gelaende-core.js felsLageO (Lagen ohne Alter)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S3 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: gelaende-core.js felsLageO (Lagen ohne Alter)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "76dc696b1497",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.archiv#4": {
+   "gruen": false,
+   "zahl": "S4 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: gelaende-core.js felsLageO (lückenlose Pakete)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S4 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: gelaende-core.js felsLageO (lückenlose Pakete)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "262dab78e1a2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.archiv#5": {
+   "gruen": false,
+   "zahl": "S5 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: stamm/vegetation-wiese.js _terrainMaterialAt (Stein ohne Milieu)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S5 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: stamm/vegetation-wiese.js _terrainMaterialAt (Stein ohne Milieu)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "09cf0f03799b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.planet.zeit.archiv#8": {
+   "gruen": false,
+   "zahl": "S8 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: gelaende-core.js felsLageO (kein Gesteinsgedächtnis)",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "ROT: S8 die Messung der Leiter warf nach 25,007 s: der Deckel der Leiter 25 s · Täter: gelaende-core.js felsLageO (kein Gesteinsgedächtnis)",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke4ba1a0d7222",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49,
+   "fremd": {
+    "s": 53.7,
+    "takte": 22,
+    "fremdS": 94.97,
+    "kerne": 1.769,
+    "fensterKerne": 2.433,
+    "namen": [
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.81
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      8.91
+     ]
+    ],
+    "dienerS": 26.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.03
+     ],
+     [
+      "System",
+      7.52
+     ]
+    ],
+    "geraetS": 37.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.31
+     ],
+     [
+      "svchost.exe",
+      15.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.97
+     ]
+    ],
+    "eigenS": 111.56,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:32:45.869Z",
+   "abdruck": "07c7d2706c77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.zeit.klimageschichte#1",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fremde-physik#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "56f6e1da0165",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.zivilisation#1": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "a906520dd09b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.zivilisation#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "ac6f1fba5b56",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.zivilisation#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "ba11c926a53e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.zivilisation#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "e7835f627ab1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.zivilisation#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "6297c685f507",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.zivilisation#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "47d12750eeb6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.mikroben#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "4d377a5323c0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.mikroben#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "0911ba2befd0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.mikroben#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "aba02e039d26",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fossil#1": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "b7e98687d374",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fossil#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "3b1d9780ce16",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fossil#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "34521194517d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fossil#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "251da6bcca52",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fossil#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "0f97e2a0a237",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.leben.evolution.fossil#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 3.88,
+    "kerne": 1.67,
+    "fensterKerne": 1.67,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      0.8
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… LAUF-ENDE/|ÜBER 600 paar5/lauf2.log d",
+      0.48
+     ]
+    ],
+    "dienerS": 0.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      0.36
+     ],
+     [
+      "System",
+      0.17
+     ]
+    ],
+    "geraetS": 0.81,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.52
+     ],
+     [
+      "svchost.exe",
+      0.28
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 4.44,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:34:50.692Z",
+   "abdruck": "3d13d82dad27",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.evolution.fremde-physik#6",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "a1c0e24fa932",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "2f949c3676e2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "a27184340d1a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#7": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "9afd8f38c010",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.formschatz#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "be73618a149f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.formschatz#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "fe7e346a9bef",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.formschatz#8": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "a1b65bd2f72c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.boden#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "9e00246f269b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.boden#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "e6d079daff1f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#1": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "a29761ac132f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "ad76e9b4ddf3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "a008cc63f80b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "8bdc2c0ba085",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 2.6,
+    "takte": 1,
+    "fremdS": 5.13,
+    "kerne": 2.004,
+    "fensterKerne": 2.004,
+    "namen": [
+     [
+      "node bin/prettier.cjs --write --log-level warn phyto-core.js stamm/bild-himmel.js stamm/bi",
+      1.27
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh nacht-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      0.72
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh streu-gestalt-alt bash scratchpad/sg-bild.sh scratchpad/alt-ba",
+      0.38
+     ]
+    ],
+    "dienerS": 1.56,
+    "diener": [
+     [
+      "System",
+      0.5
+     ],
+     [
+      "dwm.exe",
+      0.48
+     ]
+    ],
+    "geraetS": 1.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.08
+     ],
+     [
+      "svchost.exe",
+      0.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 4.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:36:19.031Z",
+   "abdruck": "606d30b60d34",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.lagen#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "635385e0dfc8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.lagen#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "d893d9bb7087",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.lagen#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "6d059ffdc527",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.lagen#7": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "e76c1aefdd3b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.wolken#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "8c4708163229",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.wolken#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "67a31a7eecd6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.wolken#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "bdb66169854b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.wolken#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "478cc4400eae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.klimazonen#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "0238bd2c04b9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.klimazonen#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "4af225430bce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.extreme#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "5a4636da6abb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.extreme#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "9d81bdbc4404",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.extreme#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "3eb2fea56446",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.vorhersage#1": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "65c8db8c370d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.vorhersage#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "819e8595515c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.vorhersage#4": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "088e56040073",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.vorhersage#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "714fc903c1fd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.vorhersage#6": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "4670ba17dd0a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.fremde-atmosphaeren#2": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "85b9fc051d8f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.fremde-atmosphaeren#3": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "0b6111d488c0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
+  },
+  "karte2.planet.wetter.fremde-atmosphaeren#5": {
+   "gruen": false,
+   "zahl": "Start: spawn ENAMETOOLONG",
+   "exit": null,
+   "minuten": 0,
+   "grund": "Start: spawn ENAMETOOLONG",
+   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
+   "s": 0,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 14.98,
+    "kerne": 3.006,
+    "fensterKerne": 3.006,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      5.27
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      1.2
+     ],
+     [
+      "Claude.exe --type=utility --utility-sub-type=node.mojom.NodeServi… --lang=de --service-san",
+      1.05
+     ]
+    ],
+    "dienerS": 3.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.14
+     ],
+     [
+      "System",
+      0.89
+     ]
+    ],
+    "geraetS": 5.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.03
+     ],
+     [
+      "svchost.exe",
+      2.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 6.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:37:47.629Z",
+   "abdruck": "d90e802ae65f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.wetter.lagen#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -5754,7 +11616,8 @@
   "k9fdacaef9a7c": "dVVdj5swEPwveWzrM58BLN2DE07KVa2ae+rzGtbAhUBkQ2hT9b9XJpAEuO4jmtkZz67Nn9UJkgNk+PSu62rFVp9WX1Yazkg0qjOqp3e9YqsosR10GX/jpijnfGtgiSpOjaZlISiICvIjklY1WJRPSU8LbSd1JKPdC+/2lO5pQDcdv9WWPz/P25QC05o0IHFsEkXSDYHNga3OQCCBVvbCA9gPEaTPaF9hzPfvdCyjbJx8oCqgSqfOo7UfoM9eO85flvi0AGxIWVR61E1SX7gOu4l1S46CjlwA8xLVQAI7AFuMZvtIun1EZ0RZtlpPxEI39Z2QUbrAZqiLJG/ISdUCqwEuIiewgW2WnrJTS+TEkRAQinnWOWCVoZp4sNxErm1Gf4Xzpgc4ogJSQT5mabmBI+7ZUEp3Sy9lb7yXGI2vLWl74YRohkozk1Sc9Y3oZfy+vy5VzIctNZXNRHSSF+o4jUd66Fgu+7a0pHNIUZFDrZsbOvQAMGSDFu219l48Z94PM/Acsbb8x7OElO8W2elaNh0oJNmpHYjooR/4jPPXBbiB43Hce+l6bjIfnG7MYj/a8D2014Gxkf1nDtdrQC5YlCNJSs+LfLbdZHPwWcGRgMhUIeU4beEnMvpoOTssGyLquhnH61puZBsv1UMsJtfN4xsR/3Z+7t7uM+3rhc+t9N1r1dxOKtaW9Jg8m9uYLNCFakgHSX6bjxQIxvZiJhdUJWY4iTH1hAspo528ur6EnO+D4erLz5OFvSw7FmgCrnSrx62KgjSS7IOno0N1EFAdBqC39kPbYV9NSD/47hpRFcU0pvNKO87ftvH1XfnON/w1pvHQ/IQJPalaFublozm0Ooeyuf8C/v4D",
   "k46e76358decc": "dVRNr5swEPwvObb1M98flnpwQqT3pEqlp57XsAZeCCAbQpuq/72CB0mAdE8IzeyOZ9b+s2sgOUGGL++6rnZs92n3ZafhgkSjuqB6edc7tgsT00Kb8Y+inPPDAEtU0bSaloWgICrIz0g61WJRviQjLTCt1JKM9kfex5TG1Kf7/uvXNbUUmNakBYkzMQylHQBbAzudgUACnRyHTWA3QJAuo2MFEY/f6Vz8B+e0P64nCqjSpdLQc3102dtvzo98ozAtAFtSFpWeZyapK2yL3QZtT5Uq6MkVMC9RTSQwfTDFLHS0so9DuiLKstN6MSywU9cKGKUbbIa6SPKWNKoWWE1wEVq+CeyJ01nTEblQJAQEYu1zDlhlqBYaDDuRnsnor2Dd9ARnVEAqyGcvDdu3xN0bSunrVks5Ch9HzMI9Q5pOsCAOgdJscCrKxkb0Ov+PP5Yx4kPIU2WrITrJC3Ve2iMdtAybfdtK0jmkqMip1u0NHTgAGEybH40LxWMnWjPvh5l4lvAM9/EsAeWvG+90LdseFJKs6SYiOuj6LuP8bQNu4Xyed17ajp2sg9PtsNiPMlwHTc8fZGT/yeHjGpArFuVMktJxQnfd/KLgTEBkqpByTlq4iQyfLWaPZUtEXbdztLZhhyajNq1ujoTjFdjfwuMHHvXGz8NDnmMd+Vrz2L1W7e2UwjOkw+RluInJBl2olvSQ5LdspEAI2RPoFVWJGS4sTB1hQzqg75IiZ/74vFjW6ybha4GDuZXu9LxRoZ+Gkj15NnpUJwHVaQI6nhuY1rh6++/8dRpoRDSicf9o0IGnPedvh30wNGswoY2qZTG8cjSHTudQtvfn/e8/",
   "k9ebfcc39a423": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/I13FXHOtx0sVvml1rTIBQVRQnZG0qga8+Il7mm+aSWWZLTd8TaiNKIe3bSvr3NqITCpSA0SR2IQSNsHNgc2OgWBBBrZDxvAro8gXUb78kMeHelYm5Zz2u7mEwWUyVRpsHY9dNnhnfMdXyhMcsCaFHmpx5lx4grbYo9By1slClpyA8wKVAMJTA9MMQrtrWyjgM6Ismi0ngzz7cS1fEbpApuizuOsJhdVCSwHuAgszwT2idPppSFyokgI8MXc5wywTFFNNBh2LNcmo7/9edMTnFEBKSEbvTRszxJPbyil+6WWohfejxiFrw1pOv6E2AVK086pMO0b0dt4HvUG8pAPW9lVOhui4yxX56k90kHLsNn3pSSdQYKKnCpdP9C+A4A+G2bRflbkhHPm8zIDzxJrw/14F5/y/cI7Xcm6BYUkvTQDER10PZdxfliAazifx52XtmPH8+B03S32Rxmug+ba62Sk/8nh/gzIDfNiJEnpOIE7b35VcCYgUpVLOSYt3FgGny1mi0VNRFXVY7S2YQcmozYtH44E/RPYPMLjWx6+W7/2b888+9rxuea+e6Xqxy3F2pAOk9fuJcYLdK5q0kKcPbKRAqGTvcjjhqrAFCcWJo6wIWG0lXfZN5/zyBuevfw6WdbbsmOOnbmlbvS4UYGXBJJ98m20qE4CytMAdNaub1r96m1+8v3djKMR0pBG7UeDtjxpOT9sw/uf8oNv+CGk4dD8gjG9qErm3a9HM2h0BkX9/O7//gM=",
-  "k87f9ed0672b4": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/F6Uc77tYLHKL7WmRS4oiBKyM5JG1ZgXL3FP800rsSSj7Y63EaUR9eimfX2dUwuBSUVqkDgSg0DaPrA5sNEpCCTQyH7YAHZ9BOky2pcf8uhIx9q0nNN2N58ooEymSoO166HLDu+c7/hCYZID1qTISz3OjBNX2BZ7DFreKlHQkhtgVqAaSGB6YIpRaG9lGwV0RpRFo/VkmG8nruUzShfYFHUeZzW5qEpgOcBFYHkmsE+cTi8NkRNFQoAv5j5ngGWKaqLBsGO5Nhn97c+bnuCMCkgJ2eilYXuWeHpDKd0vtRS98H7EKHxtSNPxJ8QuUJp2ToVp34jexvPovowh5298rHQ2RMdZrs5Te6SDlmGz70tJOoMEFTlVun6gfQcA/WHzQ9rPipxwznxeZuBZYm24H+/iU75feKcrWbegkKSXZiCig67nMs4PC3AN5/O489J27HgenK67xf4ow3XQXHudjPQ/OdyfAblhXowkKR0ncOfNrwrOBESqcinHpIUby+CzxWyxqImoqnqM1jbswGTUpuXDkaB/AptHeHzLw3fr1/7tmWdfOz7X3HevVP24pVgb0mHy2r3EeIHOVU1aiLNHNlIgdLIXedxQFZjixMLEETYkjLbyLvvmcx55w7OXXyfLelt2zLEzt9SNHjcq8JJAsk++jRbVSUB5GoDO2vVNq1+9zU++v5txNEIa0qj9aNCWJy3nh214/1N+8A0/hDQcml8wphdVybz79WgGjc6gqJ/f/d9/"
+  "k87f9ed0672b4": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/F6Uc77tYLHKL7WmRS4oiBKyM5JG1ZgXL3FP800rsSSj7Y63EaUR9eimfX2dUwuBSUVqkDgSg0DaPrA5sNEpCCTQyH7YAHZ9BOky2pcf8uhIx9q0nNN2N58ooEymSoO166HLDu+c7/hCYZID1qTISz3OjBNX2BZ7DFreKlHQkhtgVqAaSGB6YIpRaG9lGwV0RpRFo/VkmG8nruUzShfYFHUeZzW5qEpgOcBFYHkmsE+cTi8NkRNFQoAv5j5ngGWKaqLBsGO5Nhn97c+bnuCMCkgJ2eilYXuWeHpDKd0vtRS98H7EKHxtSNPxJ8QuUJp2ToVp34jexvPovowh5298rHQ2RMdZrs5Te6SDlmGz70tJOoMEFTlVun6gfQcA/WHzQ9rPipxwznxeZuBZYm24H+/iU75feKcrWbegkKSXZiCig67nMs4PC3AN5/O489J27HgenK67xf4ow3XQXHudjPQ/OdyfAblhXowkKR0ncOfNrwrOBESqcinHpIUby+CzxWyxqImoqnqM1jbswGTUpuXDkaB/AptHeHzLw3fr1/7tmWdfOz7X3HevVP24pVgb0mHy2r3EeIHOVU1aiLNHNlIgdLIXedxQFZjixMLEETYkjLbyLvvmcx55w7OXXyfLelt2zLEzt9SNHjcq8JJAsk++jRbVSUB5GoDO2vVNq1+9zU++v5txNEIa0qj9aNCWJy3nh214/1N+8A0/hDQcml8wphdVybz79WgGjc6gqJ/f/d9/",
+  "ke4ba1a0d7222": "dVVdj5swEPwveWzrM58BLN2Dc1yVq1odeerzGtZAQiCyIbSp+t8rCCQBrvuIZnbGs2vzZ3WC+AApPu11Va7Y6tPqy0rDGYlGdUb1tNcrtgpi00Kb8R3vinLOXzpYrPJTrWmRCwqihOyIpFE15sVT3NN800osyWj7ytuI0oh6dNPyW73w5+d5m0JgUpEaJI5NgkDaPrA5sNEpCCTQyF54ALs+gnQZ7csPebSnY3XKtP36HqW7uaqAMpk6D9auhy57azl/XbpMcsCaFHmpR904cYVtsZtYu+QoaMkFMCtQDSQwPTDFaLaPpI0COiPKotF6IubbiWv5jNIFNkWdx1lNTqoSWA5wEVieCWyz9JSeGiInjoQAX8yzzgDLFNXEg2HHcm0y+sufNz3AERWQErIxS8P2LHHPhlK6XXopeuO9xGh8bUjT8SfEbqg07ZIK074RvYzfo+tShXzY0q7SmYiOs1wdp/FIBy3DZt+XlnQGCSpyqHR9Q/sOAPps0KK9VuSEc+b9MAPPEmvDfTyLT/l2kZ2uZN2CQpKemoGIDrqeyzh/W4BrOB7HvZe2Y8fzwem6W+xHG66D5trrbKT/mcP1GpAL5sVIktJxApe9bJw5+KzgSECkKpdynLZwYxl8tJwtFjURVVWP47UNOzA7L+VDLF2um8c3Ivxt/dzu7jPt63VTfeC9V6hUfTutWBvSYfLc3ch4gc5VTVqIs9uMpEAIGLUXc7mgKjDFSZSJI2xIGG3l1fnF5zzyhusvP0+W9rLsmGMXcqkbPW5W4CWBZB88Hy2qg4DyMACdteubFvvWBfXOt9eYyiCkIZ2XbDnfReH1bfnBN/wtpPuh+QljelKVzLvXj2bQ6AyK+v4b+PsP"
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -30773,6 +36636,460 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.kopplung.aufwaerts#1",
+   "modus": "session"
+  },
+  "karte2.same.physik.koerper#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.92,
+   "grund": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 54.4,
+   "fremd": {
+    "s": 57.9,
+    "takte": 23,
+    "fremdS": 155.13,
+    "kerne": 2.679,
+    "fensterKerne": 3.123,
+    "namen": [
+     [
+      "node.exe scripts/diag-altlasten.cjs --selftest",
+      60.42
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      8.55
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.2
+     ]
+    ],
+    "dienerS": 60.58,
+    "diener": [
+     [
+      "System",
+      37.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.5
+     ]
+    ],
+    "geraetS": 51.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.91
+     ],
+     [
+      "svchost.exe",
+      18.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.61
+     ]
+    ],
+    "eigenS": 278.31,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:39:17.293Z",
+   "abdruck": "56791731cbac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.physik.koerper#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.92,
+   "grund": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 54.4,
+   "fremd": {
+    "s": 57.9,
+    "takte": 23,
+    "fremdS": 155.13,
+    "kerne": 2.679,
+    "fensterKerne": 3.123,
+    "namen": [
+     [
+      "node.exe scripts/diag-altlasten.cjs --selftest",
+      60.42
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      8.55
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.2
+     ]
+    ],
+    "dienerS": 60.58,
+    "diener": [
+     [
+      "System",
+      37.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.5
+     ]
+    ],
+    "geraetS": 51.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.91
+     ],
+     [
+      "svchost.exe",
+      18.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.61
+     ]
+    ],
+    "eigenS": 278.31,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:39:17.293Z",
+   "abdruck": "779b3ce68e29",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.physik.koerper#1",
+   "modus": "session"
+  },
+  "karte2.same.physik.koerper#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.92,
+   "grund": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 54.4,
+   "fremd": {
+    "s": 57.9,
+    "takte": 23,
+    "fremdS": 155.13,
+    "kerne": 2.679,
+    "fensterKerne": 3.123,
+    "namen": [
+     [
+      "node.exe scripts/diag-altlasten.cjs --selftest",
+      60.42
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      8.55
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.2
+     ]
+    ],
+    "dienerS": 60.58,
+    "diener": [
+     [
+      "System",
+      37.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.5
+     ]
+    ],
+    "geraetS": 51.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.91
+     ],
+     [
+      "svchost.exe",
+      18.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.61
+     ]
+    ],
+    "eigenS": 278.31,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:39:17.293Z",
+   "abdruck": "76d8c8cc5402",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.physik.koerper#1",
+   "modus": "session"
+  },
+  "karte2.same.physik.koerper#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.92,
+   "grund": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 54.4,
+   "fremd": {
+    "s": 57.9,
+    "takte": 23,
+    "fremdS": 155.13,
+    "kerne": 2.679,
+    "fensterKerne": 3.123,
+    "namen": [
+     [
+      "node.exe scripts/diag-altlasten.cjs --selftest",
+      60.42
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      8.55
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.2
+     ]
+    ],
+    "dienerS": 60.58,
+    "diener": [
+     [
+      "System",
+      37.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.5
+     ]
+    ],
+    "geraetS": 51.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.91
+     ],
+     [
+      "svchost.exe",
+      18.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.61
+     ]
+    ],
+    "eigenS": 278.31,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:39:17.293Z",
+   "abdruck": "bab38fc25890",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.physik.koerper#1",
+   "modus": "session"
+  },
+  "karte2.same.physik.koerper#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.92,
+   "grund": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 54.4,
+   "fremd": {
+    "s": 57.9,
+    "takte": 23,
+    "fremdS": 155.13,
+    "kerne": 2.679,
+    "fensterKerne": 3.123,
+    "namen": [
+     [
+      "node.exe scripts/diag-altlasten.cjs --selftest",
+      60.42
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      8.55
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.2
+     ]
+    ],
+    "dienerS": 60.58,
+    "diener": [
+     [
+      "System",
+      37.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.5
+     ]
+    ],
+    "geraetS": 51.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.91
+     ],
+     [
+      "svchost.exe",
+      18.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.61
+     ]
+    ],
+    "eigenS": 278.31,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:39:17.293Z",
+   "abdruck": "31dff932fc41",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.physik.koerper#1",
+   "modus": "session"
+  },
+  "karte2.same.physik.koerper#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.92,
+   "grund": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 54.4,
+   "fremd": {
+    "s": 57.9,
+    "takte": 23,
+    "fremdS": 155.13,
+    "kerne": 2.679,
+    "fensterKerne": 3.123,
+    "namen": [
+     [
+      "node.exe scripts/diag-altlasten.cjs --selftest",
+      60.42
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      8.55
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.2
+     ]
+    ],
+    "dienerS": 60.58,
+    "diener": [
+     [
+      "System",
+      37.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.5
+     ]
+    ],
+    "geraetS": 51.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.91
+     ],
+     [
+      "svchost.exe",
+      18.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.61
+     ]
+    ],
+    "eigenS": 278.31,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:39:17.293Z",
+   "abdruck": "699b75150037",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.physik.koerper#1",
+   "modus": "session"
+  },
+  "karte2.same.physik.koerper#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.92,
+   "grund": "Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 54.4,
+   "fremd": {
+    "s": 57.9,
+    "takte": 23,
+    "fremdS": 155.13,
+    "kerne": 2.679,
+    "fensterKerne": 3.123,
+    "namen": [
+     [
+      "node.exe scripts/diag-altlasten.cjs --selftest",
+      60.42
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh herde-gesetz-baer bash herde/baer-lauf.sh",
+      8.55
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.2
+     ]
+    ],
+    "dienerS": 60.58,
+    "diener": [
+     [
+      "System",
+      37.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      12.5
+     ]
+    ],
+    "geraetS": 51.88,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      31.91
+     ],
+     [
+      "svchost.exe",
+      18.2
+     ],
+     [
+      "SearchIndexer.exe",
+      1.61
+     ]
+    ],
+    "eigenS": 278.31,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T12:39:17.293Z",
+   "abdruck": "1b2fb05764fc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.physik.koerper#1",
    "modus": "session"
   }
  },
