@@ -829,6 +829,9 @@ const FORBIDDEN = [
     ...["_laborLichtStaerke", "luxJeEinheit", "sternKontrast", "uGrenze", '"aMag"', "sonneLeucht", "mondGegenHimmel", "FUNKEN.leucht", "uBelicht"].map((t) => [t, "licht-eine-skala — jede Quelle in der EINEN Skala (cd ÷ EINHEIT_LX), die Klasse Erscheinung durch `_erscheinung`", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
     // kosmos-umfang — DER HIMMEL IST EINE FUNKTION DER SAAT (welt-licht.js `kosmos` · `kosmosHimmel` · `kosmosZeit`): der Würfel-Himmel
     // (Mulberry32 aus worldMeta.seed, 2 800 gleichverteilte Punkte, Größen aus einer Zählungs-Kurve) und die drei festen Wandelsterne fielen
+    // stern-bild — DAS BILD EINES PUNKTS IST DIE STREU-FUNKTION DES AUGES (`_sternPunkt`, `HIMMEL.sternBild`): der eigene Ton des Felds,
+    // die gleiche Kante je Punkt, die Lichtzahl im Stamm und der Leser je Punkt mit Luma 1 fielen
+    ...["kTon", "sternAbfall", "_sternLicht", "kernPx", "HIMMEL.sternLx0"].map((t) => [t, "stern-bild — das Licht je Punkt schreibt _sternPunkt (Temperatur, KOSMOS.sternLx0, Streu-Funktion des Auges)", ["scripts/playtest.cjs"]]), // prettier-ignore
     ...["_sternMag", "STERN_HELLSTE", "sternMagSchwach", "sternZaehlung", "wandelsterne", "_sternPixel", "FIX_COUNT"].map((t) => [t, "kosmos-umfang — die Punkte des Himmels sind die Sicht der Kosmos-Funktion (_kosmosJetzt)", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
@@ -956,7 +959,7 @@ const ZWILLINGE = [
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
-        fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
+        fingerprint: "Math.max(norm,A.reich[s])",
         gesetzbuch: "fachwerk-core.js",
         verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",

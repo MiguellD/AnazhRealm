@@ -3233,7 +3233,7 @@ async function K5_VOR(abdruck) {
     P.y = r.getTerrainHeightAt(P.x, P.z) + AnazhRealm.PLAYER_FOOT_OFFSET;
     let t = 1e4,
         quelle;
-    const takt = (dt) => (r._loopFixedStep(dt, (t += dt)), r.updateCreatures(dt), (s.spielZeit += dt));
+    const takt = (dt) => (r._loopFixedStep(dt, (t += dt)), r.updateCreatures(dt), r._weltUhrNimm(s.spielZeit + dt));
     const dp = r.damagePlayer;
     r.damagePlayer = (a, q) => dp.call(r, a, (quelle = q));
     const neu = (seele, dx, dz, gier) => {

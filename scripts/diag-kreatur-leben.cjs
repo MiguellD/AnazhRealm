@@ -213,7 +213,7 @@ async function lebenBuehnen() {
         const altNaesse = s.naesse;
         const orte = [];
         if (taeter === "brand-flucht") decke("_kreaturGlutNah", () => () => false);
-        // die Bühne führt die Uhr von Hand (`s.spielZeit += dt`, `_tickBrand`) und rechnet keinen Takt des Bestands: das Entfachen ist am
+        // die Bühne führt die Uhr von Hand (`r._weltUhrNimm(s.spielZeit + dt)`, `_tickBrand`) und rechnet keinen Takt des Bestands: das Entfachen ist am
         // Eingang an der Reihe (`_feldFolgeSteht`, w28-mp-boden — im Spiel tritt es hinter die Takte, die die nahen Regionen nachholen)
         decke("_feldFolgeSteht", () => () => true);
         for (const gegen of [false, true])
@@ -243,7 +243,7 @@ async function lebenBuehnen() {
                 lauf(120); // die Herde steht (die Spiel-Uhr ruht: der Herd glüht erst mit dem ersten Schritt des Brands)
                 const floh = new Set();
                 for (let k = 0; k < 600; k++) {
-                    s.spielZeit += dt;
+                    r._weltUhrNimm(s.spielZeit + dt);
                     r._tickBrand();
                     lauf(1);
                     for (const c of herde) if (c.userData._motionZustand === "flucht") floh.add(c);
@@ -341,7 +341,8 @@ async function lebenBuehnen() {
                 get: (o, k) => o[k] || (o[k] = r._streamRng("bestand-" + saat + "-" + String(k))),
             });
             r._faunaStroeme = { seed: s.worldMeta.seed, rng };
-            [s._creatureNetSeq, s.spielZeit, s.faunaLifecycle] = [1e4 * saat, 0, { lastTick: 0 }];
+            [s._creatureNetSeq, s.faunaLifecycle] = [1e4 * saat, { lastTick: 0 }];
+            r._weltUhrNeu(0); // je Saat eine neue Welt-Uhr: bestellt bei der Welt (nur die Geburt stellt sie zurück)
             [s.lifeField, s.faunaBestand] = [];
             halb = !!mitHalb;
             const [n, ms, msGau, nah] = [[], [], [], r._bestandNah()];
@@ -353,7 +354,7 @@ async function lebenBuehnen() {
             const tal = nah.reduce((a, b) => (r._bestandArt(b, "deer").K > r._bestandArt(a, "deer").K ? b : a));
             let [kappe, K] = [0, 0];
             for (let k = 0; k < takte; k++) {
-                s.spielZeit += 10;
+                r._weltUhrNimm(s.spielZeit + 10);
                 ruhigSpieler();
                 const t0 = performance.now();
                 r.tickFaunaLifecycle();
@@ -462,7 +463,7 @@ async function lebenBuehnen() {
         // DIE JUNGE WELT: an der Welt-Uhr 0 holen die nahen Regionen der Altlast ihre Stunde nach (100 Takte des Spiels, die Uhr
         // steht); der Gau steht an seinem Takt 0 mit dem vollen Gründer-Bestand (leben-core `gauAnfang`)
         // (die Folge der Altlast wartet auf das Bild des Gaus, `_bestandGauSteht`: erst die Antwort, dann die Takte)
-        s.spielZeit = 0;
+        r._weltUhrNeu(0);
         await gauFahrt(r._bestandNah(), 3e6)(0);
         for (let k = 0; k < 100; k++) r.tickFaunaLifecycle();
         const jung = {
@@ -1392,7 +1393,7 @@ async function lebenBuehnen() {
         };
         // ein Takt des Lebens (taktS der Spiel-Zeit): das Verzeichnis trägt die Zeile, das wilde Gesetz zählt sie nicht
         const leben = () => {
-            s.spielZeit += A._bestandGesetz().B.taktS;
+            r._weltUhrNimm(s.spielZeit + (A._bestandGesetz().B.taktS));
             ruhigSpieler();
             r.tickFaunaLifecycle();
             const T = r._gehegeTiereVon(Z);
@@ -1506,7 +1507,7 @@ async function lebenBuehnen() {
         for (let k = 0; k < 3; k++) leben();
         const davor = leiber().length;
         blick();
-        s.spielZeit += 1 / 30;
+        r._weltUhrNimm(s.spielZeit + (1 / 30));
         r.tickFaunaLifecycle();
         const nebenM = rund(Math.max(-1, ...leiber().map((c) => Math.min(...Z.ruhe.map((q) => ab(c.position, q))))), 2);
         z.ankunft = { vor: davor, erstes: leiber().length, platz: nebenM };

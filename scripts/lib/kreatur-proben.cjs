@@ -233,9 +233,7 @@ async function kreaturProben(r, T, opts) {
         r._loopFrustumCulling();
     };
     const imBlick = (x, y, z) => {
-        const cam = s.camera;
-        const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        return new T.Frustum().setFromProjectionMatrix(m).containsPoint(new T.Vector3(x, y, z));
+        return r._frustumVon(s.camera).containsPoint(new T.Vector3(x, y, z));
     };
     // DER PLATZ EINES SATZ-TIERS: die Instanz der Tier-Senke `teil` (fell · wurf …), deren Lage c trägt
     const satzPlatz = (c, teil) => {
@@ -303,8 +301,8 @@ async function kreaturProben(r, T, opts) {
                     this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
                 }
         );
-    // DIE UHR DER BÜHNE rückt um `d` Sekunden (der Takt des Spiels, `spielZeit += delta`) — der eine Uhr-Schritt der Proben
-    const uhrVor = (d) => (s.spielZeit += d);
+    // DIE UHR DER BÜHNE rückt um `d` Sekunden (der EINE Weg der Welt-Uhr, `_weltUhrNimm`) — der eine Uhr-Schritt der Proben
+    const uhrVor = (d) => r._weltUhrNimm(s.spielZeit + d);
     // DER TAKT WIE IM SPIEL (die Folge von `_gameLoopTick`): erst der feste Sim-Schritt der Leiber (`_kreaturStossSchritt`,
     // `_leibKontakte`), dann der Frame-Takt der Tiere (`updateCreatures`).
     const takt = (dt) => {
@@ -920,7 +918,7 @@ async function kreaturProben(r, T, opts) {
             const peilKoerper = [...beute, s.playerMesh];
             const wv = woelfe.map((w) => w.position.clone());
             for (let k = 0; k < 10800; k++) {
-                s.spielZeit += dt;
+                r._weltUhrNimm(s.spielZeit + dt);
                 ruhigSpieler();
                 takt(dt);
                 r.tickFaunaLifecycle();
@@ -2229,7 +2227,7 @@ async function kreaturProben(r, T, opts) {
         // DER TAKT: die Uhr, das Revier, der Spieler (`spieler(x, z)` am Zentrum der Uhr), das Auge auf das Leittier; liefert
         // die Züge des Verbands je Glied
         const takt = (spieler) => {
-            s.spielZeit += 1 / 60;
+            r._weltUhrNimm(s.spielZeit + (1 / 60));
             for (const q of sk.zellen.values()) [q.revier, q.frisch] = [q === c, s.spielZeit];
             VG.schwarmZentrum(c.wurf, s.spielZeit, sonne, regen, VG.V, zt);
             const [x, z] = [c.x + zt.dx, c.z + zt.dz];

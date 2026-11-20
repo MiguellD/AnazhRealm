@@ -84,7 +84,7 @@ const LAUF = (k) => {
         core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab });
     if (k.taeter === "satz") AnazhRealm._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
     if (k.taeter === "schwere") r._gangZeile = () => undefined;
-    if (k.g) s.gravity = -k.g;
+    if (k.g) r.dslEffects.gravity([-k.g]); // die Schwere über das Wort der Welt (DSL `gravity`), nie in den Zustand
     const pm = s.playerMesh.position;
     const x0 = pm.x + 40,
         z0 = pm.z + 40;
@@ -192,7 +192,8 @@ const LAUF = (k) => {
             ...window.__schlupf(spur, leib, 60, hueft, uhr), // nach 60 Takten Einschwingen
         };
     } finally {
-        [core.gangSchritt, AnazhRealm._gangWahl, s.gravity] = [echt, wahl, g0];
+        [core.gangSchritt, AnazhRealm._gangWahl] = [echt, wahl];
+        r.dslEffects.gravity([g0]);
         delete r._gangZeile;
         if (cr) r.removeCreature(cr);
     }
@@ -391,14 +392,14 @@ const SCHWERE = (k) => {
     const g0 = s.gravity;
     const o = {};
     try {
-        s.gravity = -G_MOND;
+        r.dslEffects.gravity([-G_MOND]);
         const L = r._gaitBeinMass(rig).L;
         const gait = r._gaitGesetz(rig, 5.16);
         o.mensch = gait.omega / core.gangSchritt(5.16, L, Object.assign({}, block, { g: G_MOND })).omega;
         r._animateHumanoidRig(rig, 1000, 1, true, false, null, gait);
         o.becken = beckenG.length ? beckenG[beckenG.length - 1] : "nie gerufen";
     } finally {
-        s.gravity = g0;
+        r.dslEffects.gravity([g0]);
         core.gangBecken = beckenEcht;
         r._gangZeile = zeileEcht;
     }

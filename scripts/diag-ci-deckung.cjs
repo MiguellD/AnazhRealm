@@ -1959,8 +1959,20 @@ async function selbsttestZeiten() {
     const gut = t.kopf === G && t.schritte.A && t.schritte.A.s === 214;
     const w = `A ${t.schritte.A ? t.schritte.A.s : "—"} s, Kopf ${String(t.kopf).slice(0, 8)}`;
     console.log(`  ${gut ? "✅" : "❌"} Selbsttest „ein roter, nie gelandeter Lauf mit 723 s" → ${w}`);
+    // ein neuer Schritt, den noch kein gelandeter Lauf fuhr, behält beim Neu-Messen die Zeit seines Zweigs (z633: der Zug heilte
+    // (T) ALT, die zwei neuen Schritte des Heilers fielen aus der Tafel und der Kandidat fuhr an (T) UNGEMESSEN rot)
+    const mitNeu = { jobs: { voll: { steps: [...jetzt.jobs.voll.steps, { name: "B", run: "npm run gate:b" }] } } };
+    const n = await messe(api, mitNeu, { schritte: { B: { s: 13, n: 1 } } }, 0, (sha) => sha === G).then(
+        (x) => x,
+        (e) => ({ out: { schritte: {} }, ohne: [e.message] })
+    );
+    const B = n.out.schritte.B;
+    const bleibt = !!B && B.s === 13 && B.geschaetzt === true && !n.ohne.length && n.out.schritte.A?.s === 214;
+    const wb = B ? `B ${B.s} s${B.geschaetzt ? " geschaetzt" : ""}` : `B fehlt (ohne Messung: ${n.ohne.join(", ") || "—"})`;
+    console.log(`  ${bleibt ? "✅" : "❌"} Selbsttest „ein neuer Schritt ohne gelandeten Lauf behält die Zeit seines Zweigs" → ${wb}`);
     return (ok ? [] : [`ci-zeiten an einer leeren API: ${u}`]).concat(
-        gut ? [] : [`der Täter-Lauf ${T.slice(0, 8)} vergiftet die Tafel: ${w}`]
+        gut ? [] : [`der Täter-Lauf ${T.slice(0, 8)} vergiftet die Tafel: ${w}`],
+        bleibt ? [] : [`das Neu-Messen wirft den Eintrag eines neuen Schritts aus der Tafel: ${wb}`]
     );
 }
 async function selbsttestLauf() {

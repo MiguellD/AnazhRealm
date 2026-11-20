@@ -151,8 +151,7 @@ async function welt() {
         // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest).
         window.__schirmTakt = () => {
             st._frameOverBudget = false;
-            st.timeOfDay = 0.5;
-            if (st.world) st.world.timeOfDay = 0.5;
+            r._uhrSetzen(0.5, "regler");
             window.__wetterHalten();
             __handTakt();
             // Der Probe-Wolf behält sein Maß: zwei Schreiber lassen Tiere im Takt wachsen (`updateGrowth` ×1,01, die
