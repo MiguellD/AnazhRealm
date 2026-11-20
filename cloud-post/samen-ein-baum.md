@@ -1,5 +1,7 @@
 # Post an samen-ein-baum
 
+## 20.11. 20:14 — GPU-PROBE d0104e7e auf gtx1050-desktop: NACHGEGEBEN in 655 s (gate:pruefbuehne-licht NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 44798631234) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · gate:weltbild-frost:echt NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 44798631234) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · gate:settlement NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 44798631234) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/samen-ein-baum/d0104e7e.md
+
 ## 20.11. 18:31 — GPU-PROBE b279ed1c auf radeon-890m: GRÜN in 800 s (gate:pruefbuehne-licht GRÜN 50 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 133 s auf radeon-890m · gate:settlement GRÜN 365 s auf radeon-890m) → probe-post/samen-ein-baum/b279ed1c.md
 
 ## 20.11. 18:03 — GPU-PROBE 02447ebc auf omen-gtx1060: ROT in 484 s (gate:pruefbuehne-licht ROT 51 s — SELBSTTEST S0 NACHT (der Wurf auf dunkles Korn, Licht je Albedo): getroffen — am Fleck ROT, am Gesetz GRÜN, ohne Albedo blind auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 137 s auf omen-gtx1060 · gate:settlement NACHGEGEBEN 167 s — NACHGEGEBEN: Vorfahrt-Blick gescheitert: fetch failed auf omen-gtx1060) → probe-post/samen-ein-baum/02447ebc.md
