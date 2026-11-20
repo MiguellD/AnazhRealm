@@ -1805,23 +1805,8 @@ class AnazhRealm_bild_sicht {
         // (leerer Slot, ungenutzter Platz) fällt außerhalb des Clip-Raums und erzeugt kein Fragment. Der Saum (2 mrad +
         // 2 cm) hält Silhouetten, die ihre Hülle berühren, gegen Rundung im Raster. Die Clip-Tiefe hinter der fernen Ebene
         // klemmt auf die Ebene: das Fragment schreibt seine Tiefe selbst, die Raster-Tiefe entscheidet nur die Deckung.
-        // DER TEIL IM JAHR (saison-am-laub): jeder Teil des Felds trägt seinen Jahres-Typ im Farb-Wort (`_weltKapselHolen`, die
-        // niedersten Bits von Grün und Blau: 1 Laub, 2 Blüte, 0 steht) — er liest DASSELBE Gesetz wie die Gestalt (`_jahrLage`,
-        // `_foundryTreeMaterial`): Laub und Blüte ziehen sich um ihre Präsenz (`uLaubPraesenz` x · y) auf ihre Mitte und tönen
-        // (`uSeasonMul`), Stein, Rinde, Bau und Leib stehen in ihrer Farbe. Bis saison-am-laub tönte das Feld jedes kompakte Teil
-        // (Blütenkopf UND Stein, jedes Ellipsoid eines Leibs) und hielt die Blüte im Winter voll: magenta Köpfe im Schnee.
-        const jahrMassFn = TSL.wgslFn(
-            "fn jahrMass(ci: u32, praesenz: vec3<f32>) -> f32 {\n" +
-                "    let j = ((ci >> 7u) & 2u) | (ci & 1u);\n" +
-                "    return select(select(1.0, praesenz.y, j == 2u), praesenz.x, j == 1u);\n" +
-                "}"
-        );
-        const jahrTonFn = TSL.wgslFn(
-            "fn jahrTon(ci: u32) -> bool {\n" +
-                "    let j = ((ci >> 7u) & 2u) | (ci & 1u);\n" +
-                "    return j == 1u || j == 2u;\n" +
-                "}"
-        );
+        // DER TEIL IM JAHR (saison-am-laub, `FELD_JAHR_WGSL` neben seinem Schreiber): Laub und Blüte ziehen sich und tönen, der Rest steht
+        const jahrPunktFn = TSL.wgslFn(AnazhRealm.FELD_JAHR_WGSL);
         const sv = `${W.gesetzBlock}u`;
         const stellvertreter = TSL.wgslFn(
             "fn feldStellvertreter(i: u32, ecke: vec3<f32>, vp: mat4x4<f32>, camPos: vec3<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
@@ -1947,11 +1932,9 @@ class AnazhRealm_bild_sicht {
                 "                    for (var k2: i32 = 0; k2 < anzG; k2 = k2 + 1) {\n" +
                 "                        let qA = kapselTexel(kapseln, poG + k2 * 2);\n" +
                 "                        let qB = kapselTexel(kapseln, poG + k2 * 2 + 1);\n" +
-                "                        // DER TEIL IM JAHR (`jahrMass`): Laub und Blüte ziehen sich um ihre Präsenz auf ihre Mitte, der Rest steht\n" +
-                "                        let prQ = jahrMass(select(u32(qB.w), u32(-qA.w - 1.0), qA.w < 0.0), praesenz);\n" +
-                "                        if (prQ < 0.02) { continue; }\n" +
-                "                        let mQ = select(qA.xyz, (qA.xyz + qB.xyz) * 0.5, qA.w >= 0.0);\n" +
-                "                        let pQ = mQ + (pP - mQ) / prQ;\n" +
+                "                        let jq = jahrPunkt(pP, qA, qB, praesenz);\n" +
+                "                        if (jq.w < 0.02) { continue; }\n" +
+                "                        let pQ = jq.xyz;\n" +
                 "                        var dkG = 0.0;\n" +
                 "                        if (qA.w >= 0.0) {\n" +
                 "                            let ba2 = qB.xyz - qA.xyz;\n" +
@@ -1968,7 +1951,7 @@ class AnazhRealm_bild_sicht {
                 "                            // KEIL (pB.w = Typ 2..5 + 0,49·Walm): der Kasten, oben geschnitten (sdKeil)\n" +
                 "                            dkG = sdKeil(pQ, qA.xyz, qB.xyz, qB.w);\n" +
                 "                        }\n" +
-                "                        dkG = dkG * prQ;\n" +
+                "                        dkG = dkG * jq.w;\n" +
                 "                        if (dkG < dmG) { dmG = dkG; nkG = k2; }\n" +
                 "                    }\n" +
                 "                    if (dmG * sk < 0.008) {\n" +
@@ -1978,9 +1961,7 @@ class AnazhRealm_bild_sicht {
                 "                        let qB = kapselTexel(kapseln, poG + nkG * 2 + 1);\n" +
                 "                        var gvG = vec3<f32>(0.0);\n" +
                 "                        var ciG: u32 = 0u;\n" +
-                "                        let ciJ = select(u32(qB.w), u32(-qA.w - 1.0), qA.w < 0.0);\n" +
-                "                        let mJ = select(qA.xyz, (qA.xyz + qB.xyz) * 0.5, qA.w >= 0.0);\n" +
-                "                        let pJ = mJ + (pP - mJ) / max(jahrMass(ciJ, praesenz), 0.02);\n" +
+                "                        let pJ = jahrPunkt(pP, qA, qB, praesenz).xyz;\n" +
                 "                        if (qA.w >= 0.0) {\n" +
                 "                            let ba2 = qB.xyz - qA.xyz;\n" +
                 "                            let pa2 = pJ - qA.xyz;\n" +
@@ -2009,7 +1990,7 @@ class AnazhRealm_bild_sicht {
                 "                            // Platz-Raum → Welt: rotY(+yaw); uniforme Skala dreht die Richtung nicht\n" +
                 "                            bestN = normalize(vec3<f32>(cy * gvG.x + sy * gvG.z, gvG.y, cy * gvG.z - sy * gvG.x));\n" +
                 "                        }\n" +
-                "                        bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, jahrTon(ciJ));\n" +
+                "                        bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, jahrPunkt(pP, qA, qB, vec3<f32>(0.0)).w < 0.5);\n" +
                 "                        break;\n" +
                 "                    }\n" +
                 "                    tG = tG + max(dmG * sk, 0.004);\n" +
@@ -2028,10 +2009,9 @@ class AnazhRealm_bild_sicht {
                 "            for (var k: i32 = 0; k < anzahl; k = k + 1) {\n" +
                 "                let pA = kapselTexel(kapseln, po + k * 2);\n" +
                 "                let pB = kapselTexel(kapseln, po + k * 2 + 1);\n" +
-                "                let prQ = jahrMass(select(u32(pB.w), u32(-pA.w - 1.0), pA.w < 0.0), praesenz);\n" +
-                "                if (prQ < 0.02) { continue; }\n" +
-                "                let mQ = select(pA.xyz, (pA.xyz + pB.xyz) * 0.5, pA.w >= 0.0);\n" +
-                "                let pQ = mQ + (pL - mQ) / prQ;\n" +
+                "                let jq = jahrPunkt(pL, pA, pB, praesenz);\n" +
+                "                if (jq.w < 0.02) { continue; }\n" +
+                "                let pQ = jq.xyz;\n" +
                 "                var dk = 0.0;\n" +
                 "                if (pA.w >= 0.0) {\n" +
                 "                    let ba = pB.xyz - pA.xyz;\n" +
@@ -2049,7 +2029,7 @@ class AnazhRealm_bild_sicht {
                 "                    // KEIL (pB.w = Typ 2..5 + 0,49·Walm): der Kasten, oben geschnitten (sdKeil)\n" +
                 "                    dk = sdKeil(pQ, pA.xyz, pB.xyz, pB.w);\n" +
                 "                }\n" +
-                "                dk = dk * prQ;\n" +
+                "                dk = dk * jq.w;\n" +
                 "                if (dk < dm) { dm = dk; nk = k; }\n" +
                 "            }\n" +
                 "            if (dm < 0.008) {\n" +
@@ -2059,9 +2039,7 @@ class AnazhRealm_bild_sicht {
                 "                let pB = kapselTexel(kapseln, po + nk * 2 + 1);\n" +
                 "                var gvK = vec3<f32>(0.0);\n" +
                 "                var ci: u32 = 0u;\n" +
-                "                let ciJ = select(u32(pB.w), u32(-pA.w - 1.0), pA.w < 0.0);\n" +
-                "                let mJ = select(pA.xyz, (pA.xyz + pB.xyz) * 0.5, pA.w >= 0.0);\n" +
-                "                let pJ = mJ + (pL - mJ) / max(jahrMass(ciJ, praesenz), 0.02);\n" +
+                "                let pJ = jahrPunkt(pL, pA, pB, praesenz).xyz;\n" +
                 "                if (pA.w >= 0.0) {\n" +
                 "                    let ba = pB.xyz - pA.xyz;\n" +
                 "                    let pa = pJ - pA.xyz;\n" +
@@ -2095,7 +2073,7 @@ class AnazhRealm_bild_sicht {
                 "                        r0.y * gvK.x + r1.y * gvK.y + r2.y * gvK.z,\n" +
                 "                        r0.z * gvK.x + r1.z * gvK.y + r2.z * gvK.z));\n" +
                 "                }\n" +
-                "                bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, jahrTon(ciJ));\n" +
+                "                bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, jahrPunkt(pL, pA, pB, vec3<f32>(0.0)).w < 0.5);\n" +
                 "                break;\n" +
                 "            }\n" +
                 "            tK = tK + max(dm / lenDL, 0.004);\n" +
@@ -2106,7 +2084,7 @@ class AnazhRealm_bild_sicht {
                 "    // je Paar das obere um +2 verschoben — der Exponent des f32 ist nie 0, kein Denormal fällt der Hardware zum Opfer\n" +
                 "    return vec4<f32>(bitcast<f32>(pack2x16float(vec2<f32>(bestRgb.r, bestRgb.g + 2.0))), bitcast<f32>(pack2x16float(vec2<f32>(bestRgb.b, bestN.x + 2.0))), bitcast<f32>(pack2x16float(vec2<f32>(bestN.y, bestN.z + 2.0))), bestT);\n" +
                 "}",
-            [sdEllipsoidRauFn, gradEllipsoidRauFn, sdKeilFn, gradKeilFn, kapselTexelFn, jahrMassFn, jahrTonFn] // der raue Ellipsoid, der Keil, die 2D-Kapsel-Liste + der Teil im Jahr
+            [sdEllipsoidRauFn, gradEllipsoidRauFn, sdKeilFn, gradKeilFn, kapselTexelFn, jahrPunktFn] // der raue Ellipsoid, der Keil, die 2D-Kapsel-Liste + der Teil im Jahr
         );
         const feldAlbedo = TSL.wgslFn(
             "fn feldAlbedo(p: vec4<f32>) -> vec3<f32> {\n" +
@@ -2213,7 +2191,6 @@ class AnazhRealm_bild_sicht {
             // DIE SAISON der Ellipsoide (die kompakten Teile der Gesetz-Streu): dieselbe EINE Uniform wie Laub, Gras, Karte
             // und Fern-Ring (eingeführt 05.10. für die Kronen-Lappen der Baum-Sätze, die am selben Tag fielen).
             saison: this._ensureSeasonUniforms().uSeasonMul,
-            // die Präsenz des EINEN Jahrs (`jahrMass`): Laub (x) und Blüte (y) des Felds ziehen sich wie die Gestalt
             praesenz: this._ensureSeasonUniforms().uLaubPraesenz,
             liste: TSL.texture(wm.liste),
             kapseln: TSL.texture(wm.kapseln),
