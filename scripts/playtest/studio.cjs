@@ -41,8 +41,9 @@ async function checkBandStoffSignatur({ page, check }) {
         out.leucht =
             l1 !== l2 &&
             k(l1) === k(l2) &&
-            l1.userData.stoffWerte.leucht === 2 &&
-            l2.userData.stoffWerte.leucht === 3.5;
+            // das Maß tritt als cd/m² in die Einheit der Welt (nacht-lichter: ÷ `__weltLicht.EINHEIT_LX`, `_foundryTreeMaterial`)
+            Math.abs(l1.userData.stoffWerte.leucht * window.__weltLicht.EINHEIT_LX - 2) < 1e-9 &&
+            Math.abs(l2.userData.stoffWerte.leucht * window.__weltLicht.EINHEIT_LX - 3.5) < 1e-9;
         // JEDE SIGNATUR DER WELT EIN PROGRAMM (w22-ankunft-kalt; bis hier je ein gebautes Paar für Regler und Wind der Art): die
         // Stoffe, die der Boot baute — die Regler eines Bau-Stoffs (10 Stoffe, 8 Rauheiten), der Wind jeder Art (Rinde, Karten-Laub,
         // Wurf: je 17–18) —, tragen je Signatur EINEN Schlüssel, sonst stehen die Plätze, an denen zwei Stoffe einer Signatur zwei

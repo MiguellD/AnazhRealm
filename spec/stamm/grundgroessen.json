@@ -77,6 +77,13 @@
             "lies": "die EINE Bühne (welt-licht.js `buehne`: Sonne, Umgebung, Belichtung)",
             "mutant": "const sonne = new THREE.DirectionalLight(0xffffff, 3);"
         },
+        "lichtstaerke": {
+            "groesse": "licht",
+            "rx": "\\b(?:cdM2|cd)\\s*:\\s*(?!(?:0|1)(?![\\d.]))\\d|\\bLEUCHT_FEUER\\s*=|\\bstaerke\\s*:\\s*[\\d.]+\\s*,\\s*cd\\b",
+            "was": "eine Leuchte trägt ihr Licht selbst (eine Zahl der Lichtstärke oder Leuchtdichte außer den Trägern 0 und 1, die das Gesetz zur Laufzeit füllt, oder eine Zahl des Labors neben der Lichtstärke)",
+            "lies": "fachwerk-core.js LICHT_GESETZ (EINE Zahl je Quelle: cd; Leib, Glas und Wandlaterne folgen aus ihr — lichtFlammeM, laterneGlasJeLuma) und FEUER_LEUCHTDICHTE",
+            "mutant": "const lampe = { kelvin: 2700, cd: 40, reichweiteM: 10 };"
+        },
         "schwere-literal": {
             "groesse": "kraft",
             "rx": "(?<![\\w.])9\\.81(?![\\w\\d])|\\b[gG]\\s*[:=]\\s*-?9\\.8\\b",
@@ -201,7 +208,7 @@
         "licht": {
             "name": "Licht",
             "welle": "LICHT",
-            "schreiber": "welt-licht.js `buehne` (`sonnenRichtung` · `tagAchse` · `belichtung` · Tonkurve) · stamm/bild-himmel.js `_dayNightApplyBelichtung` · stamm/dirigent-ankunft.js (die Sonne der Welt)",
+            "schreiber": "welt-licht.js `buehne` (`sonnenRichtung` · `tagAchse` · `belichtung` · Tonkurve) · stamm/bild-himmel.js `_dayNightApplyBelichtung` · stamm/dirigent-ankunft.js (die Sonne der Welt) · fachwerk-core.js `LICHT_GESETZ` (die Lichtstärke je Leuchte, nacht-lichter)",
             "leser": "__weltLicht\\b",
             "kanon": {
                 "welt-licht.js": [
@@ -214,6 +221,11 @@
                 ],
                 "stamm/dirigent-ankunft.js": [
                     "directionalLight = new THREE.DirectionalLight("
+                ],
+                "fachwerk-core.js": [
+                    "feuer: { kelvin: 2000, cd: 10.2,",
+                    "fenster: { kelvin: 2800, cdM2: 8,",
+                    "laterne: { kelvin: 1900, cd: 25.7,"
                 ]
             }
         },

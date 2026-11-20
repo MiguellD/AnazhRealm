@@ -181,9 +181,13 @@ const S0_LICHT_M = 10; // der Umkreis der gezählten Lichter um das Feuer
 // das Feuer trägt in 2 m mindestens dieses Vielfache der waagrechten Bestrahlung der Nacht — der Nordstern Fachwerk: nachts hebt
 // warmes Licht den Platz auf 2–5 lx, der Rest bleibt im Mondlicht bei 0,1–0,3 lx (2 lx gegen 0,2 lx)
 const S0_E2_NACHT = 10;
+// unter der Laterne (2 m neben ihr, das Auge 1,5 m unter dem Kopf: 2,5 lx gegen den Mond 0,26 lx) schließt die Blende mindestens so
+// viele Stufen (nacht-lichter: der Messer liest den Pool am Auge; Radeon 0432dd70: 1,22 Stufen, k 52 802 → 22 675 — die Kurve der
+// Belichtung steigt mit 0,75 je Stufe Licht; der Messer ohne Pool: 0 Stufen)
+const S0_MESSER_EV = 1.0;
 async function s0Probe(page, station, schein) {
     return page.evaluate(
-        async (st, umkreis, e2min, schein) => {
+        async (st, umkreis, e2min, schein, messerEv) => {
             const s = r.state;
             const T = window.THREE;
             const out = {
@@ -356,6 +360,26 @@ async function s0Probe(page, station, schein) {
             uhr(0);
             await takt(45);
             const nachtL = laterneAn();
+            // DER MESSER LIEST DEN POOL (nacht-lichter): unter der Laterne (das Auge 1,5 m unter ihrem Kopf, 2 m daneben) misst die
+            // Kamera ihr Licht — die Belichtung aus dem Licht (`_belichtungAusLicht`) mit dem Pool am Auge (`_poolAmAuge`) gegen
+            // dieselbe ohne ihn (der Messer des Himmels allein): ≥ `S0_MESSER_EV` Stufen enger. Selbsttest: der Messer liest den Pool
+            // nicht (der Messer bis nacht-lichter) — die Probe nennt `_poolAmAuge`.
+            if (schein) r._poolAmAuge = (w, aus) => ((aus[0] = w[0]), (aus[1] = w[1]), (aus[2] = w[2]), aus);
+            {
+                const e = r._tagAchseWert ? r._tagAchseWert.e : null;
+                const kMit = e == null ? null : r._belichtungAusLicht(e);
+                const echt = r._poolAmAuge;
+                r._poolAmAuge = (w, aus) => ((aus[0] = w[0]), (aus[1] = w[1]), (aus[2] = w[2]), aus);
+                const kOhne = e == null ? null : r._belichtungAusLicht(e);
+                r._poolAmAuge = echt;
+                const ev = kMit > 0 && kOhne > 0 ? Math.log2(kOhne / kMit) : null;
+                out.messer = { kMit, kOhne, ev: ev == null ? null : +ev.toFixed(2), poolE: r._poolE };
+                if (!(ev >= messerEv))
+                    out.befunde.push(
+                        `S0 Messer: unter der Laterne schließt die Belichtung ${ev == null ? "—" : ev.toFixed(2)} Stufen (Soll ≥ ${messerEv}) — ` +
+                            "der Lichtmesser liest den Pool am Auge nicht (`_poolAmAuge` in `_belichtungAusLicht`)"
+                    );
+            }
             uhr(0.5);
             await takt(45);
             const mittagL = laterneAn();
@@ -411,7 +435,8 @@ async function s0Probe(page, station, schein) {
         station,
         S0_LICHT_M,
         S0_E2_NACHT,
-        !!schein
+        !!schein,
+        S0_MESSER_EV
     );
 }
 
@@ -428,6 +453,7 @@ function zeigeS0(rep, schein) {
         );
     }
     if (rep.laterne) console.log(`    Laterne des Plans: nachts ${rep.laterne.nachts} · mittags ${rep.laterne.mittags} Plätze`);
+    if (rep.messer) console.log(`    Messer unter der Laterne: k ${rep.messer.kMit} mit dem Pool · ${rep.messer.kOhne} ohne — ${rep.messer.ev} Stufen (Pool am Auge ${rep.messer.poolE})`);
     if (rep.fenster) console.log(`    Fenster-Glut: nachts ${rep.fenster.nachts} · mittags ${rep.fenster.mittags}`);
     if (rep.stoffe)
         console.log(
@@ -1847,6 +1873,7 @@ hauptLauf(async () => {
             laterne: s0B.some((b) => /^S0 Laterne: .*`laterne_dorf`/.test(b)),
             stoff: s0B.some((b) => /^S0 Stoff ohne Pool: .*pruef-schein/.test(b)),
             bauer: s0B.some((b) => /^S0 Bauer ohne Pool: .*`_scheinRueckfall`/.test(b)),
+            messer: s0B.some((b) => /^S0 Messer: .*`_poolAmAuge`/.test(b)),
         };
         selbst = {
             benannt: namen,
@@ -1857,7 +1884,8 @@ hauptLauf(async () => {
                 s0Namen.every((b) => /das Verzeichnis nennt die Feuerstelle nicht/.test(b)) &&
                 s0Rest.laterne &&
                 s0Rest.stoff &&
-                s0Rest.bauer,
+                s0Rest.bauer &&
+                s0Rest.messer,
             s0Rest,
         };
         console.log(
@@ -1869,7 +1897,7 @@ hauptLauf(async () => {
             }`
         );
         console.log(
-            `  SELBSTTEST S0 (Feuer ohne Datum · Laterne ungelesen · Stoff und Bauer ohne Pool): ${selbst.s0Treffer ? "getroffen — " + s0Namen[0] : s.s0?.abbruch || "BLIND " + JSON.stringify(selbst.s0Rest)}`
+            `  SELBSTTEST S0 (Feuer ohne Datum · Laterne ungelesen · Stoff und Bauer ohne Pool · Messer ohne Pool): ${selbst.s0Treffer ? "getroffen — " + s0Namen[0] : s.s0?.abbruch || "BLIND " + JSON.stringify(selbst.s0Rest)}`
         );
     }
     if (JSON_AUS) jsonSchreiben(JSON_AUS, { berichte, selbst });

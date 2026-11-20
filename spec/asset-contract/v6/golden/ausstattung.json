@@ -1,6 +1,6 @@
 {
   "cv": 6,
-  "minted": "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)",
+  "minted": "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall",
   "cases": {
     "feuerstelle-s1-L0": {
       "objects": 4,
@@ -109,13 +109,13 @@
     },
     "laterne-s1-L0": {
       "objects": 2,
-      "vertices": 425,
-      "sha256": "f8e5304058250123dc11b2b3917c49e8e31e8fa2bcc998aa3fec722fc31c60da"
+      "vertices": 473,
+      "sha256": "f321680086ebc739abee94518a185f8fb2591403b6185cda738c1b629f9f6ea9"
     },
     "laterne-s1-L1": {
       "objects": 2,
-      "vertices": 81,
-      "sha256": "852e274dbf98f757f4976c121352c7d150fadb71526e32827a56cf158ebabc7a"
+      "vertices": 129,
+      "sha256": "eab24956b9ce00bf6d5c586e189cd13c433f60015acbc36b97bd65c6a8e67886"
     },
     "laterne-s1-L3": {
       "objects": 1,
@@ -124,13 +124,13 @@
     },
     "wandlaterne-s1-L0": {
       "objects": 2,
-      "vertices": 592,
-      "sha256": "107a8236e2dc59a440c8c70f0cff5d0e9b18636bd3f7954e8f74c7d290bac6c0"
+      "vertices": 640,
+      "sha256": "517177c7e263e397dc86df7e11042370ad2aa4f1329703dc2b05072ea45436a1"
     },
     "wandlaterne-s1-L1": {
       "objects": 2,
-      "vertices": 136,
-      "sha256": "758bf26c9eeb6e1bd05aceb0d02d80ddf958672b18d28e911570b8cc2343d6c9"
+      "vertices": 184,
+      "sha256": "73fe6b54eeedbb3492658ee735a42c50fed2d9165723e1cbc83dae09c42fd573"
     },
     "wandlaterne-s1-L3": {
       "objects": 1,

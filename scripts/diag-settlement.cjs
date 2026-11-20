@@ -1646,14 +1646,15 @@ hauptLauf(async () => {
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
         );
-        // DAS LICHT DER WANDLATERNE: die Wand in armM trägt höchstens das Doppelte der Gasse unter ihr (das Wand-Gesetz
-        // der Laterne, K66), ihr Licht brennt nachts in der Farbe der Laterne (das Datum ihres Rezepts hält gate:fachwerk-contract)
-        const wandGesetz = LWd
-            ? ((LWd.hoeheM ** 2 + LWd.kernM ** 2) / (LWd.armM ** 2 + LWd.kernM ** 2)) ** (LWd.abfall / 2)
-            : Infinity;
+        // DAS LICHT DER WANDLATERNE IST DAS DER LATERNE (nacht-lichter): dieselbe Leuchte — Lichtstärke, Kern (die Flamme),
+        // Farbtemperatur, Reichweite, Abfall, Glas —, nur ihr Leib hängt anders (Kopf hoeheM über der Gasse, armM vor der Wand),
+        // und sie brennt nachts. Bis nacht-lichter urteilte hier das Wand-Gesetz K66 (die Wand ≤ 2 × die Gasse): es hielt nur mit
+        // einem Kern von 2,74 m in einem Glas von 22 cm — die Gasse trug ein Siebtel einer Laterne. Das Datum ihres Rezepts hält
+        // gate:fachwerk-contract.
+        const gleich = ["cd", "kernM", "kelvin", "reichweiteM", "abfall", "glasStreu"].filter((s) => !LWd || LWd[s] !== LGd[s]);
         check(
-            `Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in ${LWd ? LWd.armM : "?"} m trägt ${wandGesetz.toFixed(2)} × die Gasse unter ihr (Soll ≤ 2), ${LWd ? LWd.kelvin : "?"} K wie die Laterne`,
-            wandGesetz <= 2.001 && !!LWd && LWd.zeit.nacht > 0 && LWd.kelvin === LGd.kelvin
+            `Das Licht der Wandlaterne ist das der Laterne (${LWd ? LWd.cd : "?"} cd, Kern ${LWd ? LWd.kernM : "?"} m, ${LWd ? LWd.kelvin : "?"} K), ihr Leib ${LWd ? LWd.hoeheM : "?"} m über der Gasse und ${LWd ? LWd.armM : "?"} m vor der Wand${gleich.length ? " — anders: " + gleich.join(", ") : ""}`,
+            !!LWd && !gleich.length && LWd.zeit.nacht > 0 && LWd.armM > 0 && LWd.hoeheM < LGd.hoeheM
         );
         // DIE WANDLATERNE IM ORTPLAN (K66-2 N1): fällt ein Slot ins Wasser (ortPlan, auch der Rückfall von `_ortWahl`), hängt jede
         // Wandlaterne armM vor der Wand des Hauses, mit dem die Welt sie hebt (`v2.slots[l.slot]`, `_spawnSettlementSlot`), und die
