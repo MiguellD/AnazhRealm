@@ -1,5 +1,7 @@
 # Post an samen-ein-baum
 
+## 20.11. 20:34 — GPU-PROBE d0104e7e auf radeon-890m: GRÜN in 1826 s (gate:pruefbuehne-licht GRÜN 59 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 145 s auf radeon-890m · gate:settlement GRÜN 453 s auf radeon-890m) → probe-post/samen-ein-baum/d0104e7e.md
+
 ## 20.11. 20:14 — GPU-PROBE d0104e7e auf gtx1050-desktop: NACHGEGEBEN in 655 s (gate:pruefbuehne-licht NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 44798631234) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · gate:weltbild-frost:echt NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 44798631234) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · gate:settlement NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 44798631234) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/samen-ein-baum/d0104e7e.md
 
 ## 20.11. 18:31 — GPU-PROBE b279ed1c auf radeon-890m: GRÜN in 800 s (gate:pruefbuehne-licht GRÜN 50 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 133 s auf radeon-890m · gate:settlement GRÜN 365 s auf radeon-890m) → probe-post/samen-ein-baum/b279ed1c.md
