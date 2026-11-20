@@ -704,9 +704,16 @@ async function menschBuehnen() {
         const platzR = Math.hypot(pz.ex, pz.ez) + 12;
         const ohnePlatz = liste.filter((b) => !(b.orte.platz && ab(b.orte.platz, pc) <= platzR));
         platz6.forEach((p, i) => (liste[i].orte.platz = p));
-        // DIE WIEDERKEHR (mensch.K2 Staffel 2): wer blieb, sah jede Lage; wer nach 1 h Abwesenheit kommt, findet sie (≤ 2 m)
+        // DIE WIEDERKEHR (mensch.K2 Staffel 2): wer blieb, sah jede Lage; wer nach 1 h Abwesenheit kommt, findet sie (≤ 2 m) —
+        // gezählt jenseits des RÜCKSTANDS, den die Welt dem Gehenden selbst führt (`rueck`, `_bewohnerGehen`: so weit liegt er
+        // hinter seinem Tag f(Same, t), nach Warten und Ausweichen, und holt ihn mit dem Steuer-Gesetz auf). Die Ankunft stellt
+        // ihn auf seinen Tag; der, der blieb, sah ihn um seinen Rückstand zurück. Bis hier urteilte die Linse mit ±2 m ohne ihn
+        // und hing am Zufall einer Begegnung kurz vor der Prüf-Stunde (z642: zunfthaus #508675 um 18,57 Uhr 2,77 m, sein
+        // Rückstand 2,37 m bei voller Eile — jenseits davon 0,40 m)
         const Sx = () => r._bewohnerSiedlungen.get(S.key).liste || [];
-        const lagen = () => new Map(Sx().map((b) => [`${wer(b)}:${b.same}`, b.leib && b.leib.position.clone()]));
+        const rueckVon = (b) => (b.weg && Number.isFinite(b.rueck) ? Math.max(0, b.rueck) : 0);
+        const lagen = () =>
+            new Map(Sx().map((b) => [`${wer(b)}:${b.same}`, b.leib && Object.assign(b.leib.position.clone(), { rueck: rueckVon(b) })])); // prettier-ignore
         const blieb = new Map();
         let haendlerFehlt = [];
         for (let i = 1; i <= 240; i++) {
@@ -777,7 +784,7 @@ async function menschBuehnen() {
             const ab0 = [];
             if (hat("bewohner-wiederkehr")) decke("_bewohnerAnkunft", () => () => {}, ab0);
             const [ueber, P] = [[], pm.clone()];
-            let [n, maxM] = [0, 0];
+            let [n, maxM, rohM, rueckM] = [0, 0, 0, 0];
             for (const [T, sah] of blieb) {
                 pm.x = P.x + A.AUTO_SETTLEMENT.nearM * A.BEWOHNER.fernFaktor + 80;
                 r._uhrSetzen(((T + 23) / 24) % 1, "regler");
@@ -795,13 +802,14 @@ async function menschBuehnen() {
                         break;
                 const kam = lagen();
                 for (const [id, v] of sah) {
-                    const d = v && kam.get(id) ? kam.get(id).distanceTo(v) : NaN;
-                    [n, maxM] = [n + 1, Math.max(maxM, d)];
-                    if (!(d <= 2)) ueber.push(`${id} um ${q3(T)} Uhr ${q3(d)} m`);
+                    const roh = v && kam.get(id) ? kam.get(id).distanceTo(v) : NaN;
+                    const d = roh - (v ? v.rueck : 0); // jenseits seines Rückstands
+                    [n, maxM, rohM, rueckM] = [n + 1, Math.max(maxM, d), Math.max(rohM, roh), Math.max(rueckM, v ? v.rueck : 0)];
+                    if (!(d <= 2)) ueber.push(`${id} um ${q3(T)} Uhr ${q3(d)} m (Abstand ${q3(roh)} m, Rückstand ${q3(v && v.rueck)} m)`);
                 }
             }
             for (const f of ab0) f();
-            return { n, maxM: q3(maxM), ueberN: ueber.length, ueber: ueber.slice(0, 5) };
+            return { n, maxM: q3(maxM), rohM: q3(rohM), rueckM: q3(rueckM), ueberN: ueber.length, ueber: ueber.slice(0, 5) };
         };
         // Täter (Selbsttest) im eigenen Fenster nach dem Tag: der Teleport an den Soll-Ort, eine Spielstunde nach der Ankunft
         // um 7 Uhr, mit eigenem Messer
@@ -1038,7 +1046,7 @@ function menschUrteil(name, z, soll) {
         soll(z.wege.sprungN === 0, `Sprung im Nahbereich: ${z.wege.sprungN} Takte > 2 m`);
         soll(
             wk.n > 0 && wk.ueberN === 0,
-            `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m (max ${wk.maxM} m: ${wk.ueber})`
+            `Wiederkehr nach 1 h Abwesenheit: ${wk.ueberN} von ${wk.n} über ±2 m jenseits des Rückstands (max ${wk.maxM} m: ${wk.ueber})`
         );
         soll(sg.schlupf <= 0.05 && sg.wegLeib >= 10, `der Satz gleitet: Schlupf ${sg.schlupf} über ${sg.wegLeib} m`);
         const ht = z.haltung || { n: 0, mit: 0, maxGrad: "ungemessen", wer: "", je: {} };
