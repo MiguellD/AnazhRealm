@@ -1480,7 +1480,10 @@ async function lebenBuehnen() {
         // Folge des Felds an seinem Stempel steht (die Regionen holen ihre Stunde mit aufholJeTakt je Takt nach: die Bühne taktet,
         // bis sie steht). Die Zeile IST der Bestand: das alte Tier ist fort (`fort`), der nächste Takt liest dieselben Nummern,
         // und sein Leib steht nach (5) wieder an seinem Ruhe-Platz
-        for (let k = 0; k < 400 && !r._feldFolgeSteht(s.spielZeit); k++) leben();
+        // (der Takt der Altlast liest die Spur des Gaus an seinem Takt: die Bühne wartet je Takt auf die Antwort des Fadens, wie
+        // das Spiel sie zwischen zwei Bildern bekommt — ein Takt ohne sie wartet geordnet, `_bestandGauSteht`; die Uhr steht dabei)
+        for (let k = 0; k < 400 && !r._feldFolgeSteht(s.spielZeit); k++)
+            (await gauLies(r._bestandNah()), r.tickFaunaLifecycle());
         const opfer = leiber()[0]; // ohne Leib (das Gehege steht leer) fällt keiner: `fiel` 0
         const alt = opfer && opfer.userData._bestand;
         if (opfer) r.damageCreature(opfer, 1e9, { source: "player", fromPos: pm.clone() });

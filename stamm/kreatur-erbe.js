@@ -355,7 +355,7 @@ class AnazhRealm_kreatur_erbe {
         const b = this._gauBildStand && this._gauBilder().get(o.gx + "," + o.gz);
         const m = b && b.spur.get(o.revier);
         const s = m && m.get(Math.floor(uhr / AnazhRealm._bestandGesetz().B.taktS));
-        if (!s) return this._gauFrassAt(x, z);
+        if (!s || !s.f) return this._gauFrassAt(x, z);
         const [a, c] = [Math.floor((x / S - ix) * zn), Math.floor((z / S - iz) * zn)];
         return s.f[Math.min(zn - 1, a) * zn + Math.min(zn - 1, c)] || 0;
     }
@@ -610,13 +610,22 @@ class AnazhRealm_kreatur_erbe {
         const fall = voll ? Infinity : b.spurFall;
         if (voll) b.spurFall = Infinity;
         (a.reviere || []).forEach((rv, j) => {
-            if (!sp || !this._gauSpurRevier(b.gx, b.gz, rv.i)) return;
+            const key = sp && this._gauSpurRevier(b.gx, b.gz, rv.i);
+            if (!key) return;
             const m = b.spur.get(rv.i) || b.spur.set(rv.i, new Map()).get(rv.i);
             const L = a.reviere.length;
             const Z = sp.frass.length / sp.beute.length;
-            for (let k = 0; k * L + j < sp.beute.length && sp.von + k < fall; k++)
-                m.set(sp.von + k, { n: sp.beute[k * L + j], f: sp.frass.slice((k * L + j) * Z, (k * L + j + 1) * Z) });
-            for (const t of m.keys()) if (t < a.takt - 400) m.delete(t);
+            for (let k = 0; k * L + j < sp.beute.length && sp.von + k < fall; k++) {
+                const q = (k * L + j) * Z;
+                m.set(sp.von + k, {
+                    n: sp.beute[k * L + j],
+                    f: Number.isNaN(sp.frass[q]) ? null : sp.frass.slice(q, q + Z),
+                });
+            }
+            // die Spur bleibt ab dem ältesten Takt, den die Altlast des Reviers noch liest (ihr nächster), und die letzten 400
+            const R = this._bestandRegionen().regionen[key];
+            const bis = Math.min(a.takt - 400, R ? R.t / T + 1 : a.takt);
+            for (const t of m.keys()) if (t < bis) m.delete(t);
         });
         const AJ = this._gauJaegerOrt || (this._gauJaegerOrt = new Map());
         const stufen = AnazhRealm.LIFE_FIELD.stufen;

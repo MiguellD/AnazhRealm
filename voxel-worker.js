@@ -460,9 +460,10 @@ function nachricht(e) {
 // Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, takt, akte, lesen?, packen?, stand?, tode? }
 // Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, stand?, tode? }
 // Ein Gau, den die Seite nicht mehr hält, geht (`gau-geht`: Feld und Lauf — sein Stand lebt als Bytes bei der Seite).
-// DIE SPUR DER BEUTE (`spur` je Gau): die Köpfe der Beute je Revier an jedem der letzten GAU_SPUR Takte — der Takt der Altlast
-// liest sie an SEINEM Takt (Mehrspieler-Gleichlauf: das Bild der Seite steht auf ihrer Zeit, der Takt auf der des Felds); die
-// Stunde des Aufholens (BESTAND_REGION.aufholS 3600 s / taktS 10) und ein Rand
+// DIE SPUR (`spur` je Gau): die Köpfe der Beute je Revier an jedem Takt des Laufs — der Takt der Altlast liest sie an SEINEM
+// Takt (Mehrspieler-Gleichlauf: das Bild der Seite steht auf ihrer Zeit, der Takt auf der des Felds), auch wenn er weit hinter dem
+// Gau steht (eine Region holt ihre Stunde nach); der Fraß je Zelle an den letzten GAU_SPUR Takten (die Stunde des Aufholens,
+// BESTAND_REGION.aufholS 3600 s / taktS 10, und ein Rand)
 const GAU_SPUR = 400;
 const gaue = new Map();
 const gauFelder = new Map();
@@ -585,14 +586,22 @@ function gauAuftrag(msg) {
     let e = gaue.get(key);
     if (!e) gaue.set(key, (e = Object.assign(gauFeldAm(K, msg.n, roh), { gx: msg.gx, gz: msg.gz, g: null, akte: [] })));
     const N = msg.n * msg.n;
+    // die Köpfe der Beute je Takt ab `spurUnten` lückenlos (je Takt und Revier 2 Byte — ein Tag der Welt 69 kB je Gau), der Fraß
+    // je Zelle im Ring der letzten GAU_SPUR Takte (den liest nur der gestempelte Leser des Felds, nahe am Jetzt)
     if (!e.spurT)
-        [e.spurT, e.spurN, e.spurF, e.spurUnten] = [new Int32Array(GAU_SPUR).fill(-1), new Int16Array(GAU_SPUR * N), new Float32Array(GAU_SPUR * N * e.F.Z), 0]; // prettier-ignore
-    const hat = (k) => e.spurT[k % GAU_SPUR] === k;
+        [e.spurT, e.spurN, e.spurF, e.spurUnten] = [new Int32Array(GAU_SPUR).fill(-1), new Int16Array(64 * N), new Float32Array(GAU_SPUR * N * e.F.Z), 0]; // prettier-ignore
+    const hatF = (k) => e.spurT[k % GAU_SPUR] === k;
     const merke = () => {
         const [k, z] = [e.g.z.takt, e.g.z];
+        const q = (k - e.spurUnten) * N;
+        if (q + N > e.spurN.length) {
+            const neu = new Int16Array(Math.max(2 * e.spurN.length, q + N));
+            neu.set(e.spurN);
+            e.spurN = neu;
+        }
+        for (let i = 0; i < N; i++) e.spurN[q + i] = z.beute[i].length;
         const s = k % GAU_SPUR;
         e.spurT[s] = k;
-        for (let i = 0; i < N; i++) e.spurN[s * N + i] = z.beute[i].length;
         for (let i = 0; i < N; i++) for (let c = 0; c < e.F.Z; c++) e.spurF[(s * N + i) * e.F.Z + c] = K.frassAm(e.g, i, c); // prettier-ignore
     };
     const akte = msg.akte || [];
@@ -611,10 +620,7 @@ function gauAuftrag(msg) {
         msg.takt >= e.g.z.takt &&
         e.akte.length >= e.g.aktN &&
         e.akte.slice(0, e.g.aktN).every((s, k) => s === zeilen[k]) &&
-        !(zeilen.length > e.g.aktN && akte[e.g.aktN].takt < e.g.z.takt) &&
-        // eine Spur, die vor dem Lauf beginnen soll und die der Faden nicht mehr hält, rechnet ihn neu (seit dem Stand: ab ihm) —
-        // nur, wenn der neue Lauf sie halten kann (höchstens GAU_SPUR Takte vor dem Ziel; sonst rechnete jede Bestellung ab 0)
-        !(msg.spurAb != null && msg.spurAb >= e.spurUnten && msg.spurAb > msg.takt - GAU_SPUR && msg.spurAb < e.g.z.takt && !hat(msg.spurAb)); // prettier-ignore
+        !(zeilen.length > e.g.aktN && akte[e.g.aktN].takt < e.g.z.takt);
     if (!weiter) {
         zeit.abNull = !!e.g;
         e.g = K.gauAnfang(e.F, msg.saat);
@@ -648,18 +654,18 @@ function gauAuftrag(msg) {
         }));
     // die Spur der gelesenen Reviere ab `spurAb` (nie vor dem ersten Takt, den der Faden hält): je Takt eine Zeile
     if (msg.lesen && msg.spurAb != null) {
-        let ab = Math.max(msg.spurAb, e.spurUnten, msg.takt - GAU_SPUR + 1);
-        while (ab < msg.takt && !hat(ab)) ab++;
+        const ab = Math.min(msg.takt, Math.max(msg.spurAb, e.spurUnten));
         const L = msg.lesen;
         const n = msg.takt - ab + 1;
         const beute = new Int16Array(n * L.length);
         for (let k = 0; k < n; k++)
-            for (let j = 0; j < L.length; j++) beute[k * L.length + j] = e.spurN[((ab + k) % GAU_SPUR) * N + L[j]];
+            for (let j = 0; j < L.length; j++) beute[k * L.length + j] = e.spurN[(ab + k - e.spurUnten) * N + L[j]];
         // und der Fraß je Zelle (Takt, Revier, Zelle): der gestempelte Leser des Felds liest ihn an SEINEM Takt (`_gauFrassAm`)
         const Z = e.F.Z;
-        const frass = new Float32Array(n * L.length * Z);
+        // (NaN, wo der Ring den Takt nicht mehr hält — die Seite merkt dort nur die Köpfe)
+        const frass = new Float32Array(n * L.length * Z).fill(NaN);
         for (let k = 0; k < n; k++)
-            for (let j = 0; j < L.length; j++) {
+            for (let j = 0; hatF(ab + k) && j < L.length; j++) {
                 const q = (((ab + k) % GAU_SPUR) * N + L[j]) * Z;
                 frass.set(e.spurF.subarray(q, q + Z), (k * L.length + j) * Z);
             }

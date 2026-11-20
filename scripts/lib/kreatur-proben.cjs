@@ -2927,6 +2927,8 @@ async function kreaturProben(r, T, opts) {
             fleisch0: null,
             fleischEnde: null,
             fressS: 0,
+            rudelKg: 0,
+            rudelVoll: 0,
             gaeste: [],
         };
         for (const [szene, nW, gr, n] of [
@@ -2954,6 +2956,7 @@ async function kreaturProben(r, T, opts) {
                 woelfe.forEach(ruhig);
                 r._kreaturVerbinden(woelfe);
                 const hetzer = new Set();
+                const magenVor = new Map();
                 let riss = false;
                 for (let k = 0, ende = 5400; k < ende; k++) {
                     ruhigSpieler();
@@ -2984,6 +2987,13 @@ async function kreaturProben(r, T, opts) {
                     }
                     if (!riss || !mahl) continue;
                     if (woelfe.some((c) => c.userData._motionZustand === "fressen")) R.fressS = rund(R.fressS + dt, 2);
+                    // was das Rudel frisst (kg in seine Mägen, je Bild der Zuwachs) gegen das, was seine Mägen fassen
+                    for (const c of woelfe) {
+                        const m = c.userData.magen || 0;
+                        if (magenVor.has(c)) R.rudelKg += Math.max(0, m - magenVor.get(c));
+                        else R.rudelVoll += r._kreaturMagenVoll(c);
+                        magenVor.set(c, m);
+                    }
                     for (const G of R.gaeste)
                         if (G.c.userData._motionZustand === "fressen") {
                             G.frissS = rund(G.frissS + dt, 2);
@@ -2993,6 +3003,7 @@ async function kreaturProben(r, T, opts) {
                 if (hetzer.size) Q.jagden++;
                 if (riss) Q.risse++;
                 if (mahl && riss && beute.userData.kadaver) R.fleischEnde = rund(beute.userData.kadaver.fleisch, 1);
+                [R.rudelKg, R.rudelVoll] = [rund(R.rudelKg, 1), rund(R.rudelVoll, 1)];
                 for (const G of R.gaeste) delete G.c;
                 leer(1);
             }
@@ -4195,10 +4206,13 @@ function urteil(name, z) {
             );
             for (const G of R.gaeste)
                 soll(G.frissS > 0, `kein Geruch: der ${G.seele} folgt dem Kadaver nicht (frisst ${G.frissS} s)`);
-            // DAS MAHL (Tiere K2 Staffel 2): das Rudel frisst ≥ 60 s der 120 s nach dem Riss (Fuchs und Bär oben: im Fenster)
+            // DAS MAHL (Tiere K2 Staffel 2): das Rudel frisst in den 120 s nach dem Riss ≥ 40 % dessen, was seine Mägen fassen
+            // (Fuchs und Bär oben: im Fenster). Gemessen in kg, nie in Sekunden: die Sekunden am Kadaver hängen daran, wann der Bär
+            // kommt und wie viele Wölfe zugleich am Leib Platz finden (herde-gesetz: dieselben 56 kg, das Rudel zu viert am Leib,
+            // der Bär nach 19,7 s — leer nach 46 s, 55,2 s am Kadaver; main 105 s) — der magere Riss (4,7 kg) bleibt weit darunter
             soll(
-                R.fressS >= 60,
-                `das Rudel frisst nicht: ${R.fressS} s am Kadaver in 120 s nach dem Riss (Soll ≥ 60 s)`
+                R.rudelKg >= 0.4 * R.rudelVoll,
+                `das Rudel frisst nicht: ${R.rudelKg} kg in seine Mägen (${R.rudelVoll} kg) in 120 s nach dem Riss, ${R.fressS} s am Kadaver (Soll ≥ 40 %)`
             );
         }
     }

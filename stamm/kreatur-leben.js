@@ -2192,7 +2192,7 @@ class AnazhRealm_kreatur_leben {
         for (const t of tiere) if (t.g in n) n[t.g]++;
         const { jaeger, gejagt, beuteVon } = this._bestandJagd(tiere, diet);
         const gau = this._gauRevier(key);
-        let beuteN = takt == null ? (gau ? gau.koepfe.beute : 0) : this._gauBeuteAm(key, takt); // am Takt: die Spur (`_gauSpurAb`)
+        let beuteN = !gau ? 0 : takt == null ? gau.koepfe.beute : this._gauBeuteAm(key, takt); // am Takt: die Spur (`_gauSpurAb`)
         for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
         const beute = Math.min(1, beuteN / B.beuteVoll);
         // je Zelle Lebensraum × Äsung (der Jungwuchs, den der Fraß liest); K aus der EINEN Formel (`_bestandKapazitaet`)

@@ -3086,6 +3086,7 @@
             return Infinity;
         });
         var v = new M3.Vector3();
+        var ecken = [[], [], [], []];
         t0.root.traverse(function (n) {
             var A = n.isSkinnedMesh && n.geometry.attributes;
             if (!A || A.aSchale) return; // die Haut, nie das Fell (wie minY)
@@ -3111,7 +3112,9 @@
                 for (var k = 0; k < 4; k++) {
                     var j = bi.indexOf(komp(SI, i, k));
                     if (j < 0 || !(komp(SW, i, k) > 0.5)) continue;
-                    sohle[j] = Math.min(sohle[j], v.fromBufferAttribute(A.position, i).applyMatrix4(n.matrixWorld).y);
+                    v.fromBufferAttribute(A.position, i).applyMatrix4(n.matrixWorld);
+                    sohle[j] = Math.min(sohle[j], v.y);
+                    ecken[j].push(v.x, v.y, v.z);
                 }
         });
         var mass = ketten.map(function (K, j) {
@@ -3123,7 +3126,48 @@
                 by = (p2.y - p1.y) * f,
                 bz = (p2.z - p1.z) * f;
             var p0w = T.wolf.worldToLocal(p0.clone());
+            // DIE SOHLE ALS PROFIL (e): die untere Hälfte der Pfoten-Haut als Unterkante, längs (je Fach des Abstands dz zum
+            // Pfoten-Gelenk die tiefste Höhe dh über der Sohle) und quer (je Fach des Seitenabstands |dx|) — kippt die Pfote auf der
+            // Halbierenden (tierPose, Schritt 3), trägt sie der Punkt des Profils, der am tiefsten taucht (dz·sin − dh·cos)
+            var E = ecken[j],
+                yS = Number.isFinite(sohle[j]) ? sohle[j] : t0.minY,
+                band = yS + 0.5 * Math.max(0, p2.y - yS),
+                FL = 8,
+                FQ = 4,
+                lo = 0,
+                hi = 0,
+                br = 0;
+            for (var ie = 0; ie < E.length; ie += 3) {
+                if (E[ie + 1] > band) continue;
+                lo = Math.min(lo, E[ie + 2] - p2.z);
+                hi = Math.max(hi, E[ie + 2] - p2.z);
+                br = Math.max(br, Math.abs(E[ie] - p2.x));
+            }
+            var eL = [],
+                eQ = [];
+            for (var fe = 0; fe < FL; fe++) eL.push(0, Infinity);
+            for (fe = 0; fe < FQ; fe++) eQ.push(0, Infinity);
+            for (ie = 0; ie < E.length; ie += 3) {
+                if (E[ie + 1] > band) continue;
+                var dzE = E[ie + 2] - p2.z,
+                    dxE = Math.abs(E[ie] - p2.x),
+                    dhE = E[ie + 1] - yS,
+                    iL = Math.min(FL - 1, Math.floor(((dzE - lo) / Math.max(1e-9, hi - lo)) * FL)),
+                    iQ = Math.min(FQ - 1, Math.floor((dxE / Math.max(1e-9, br)) * FQ));
+                if (dhE < eL[2 * iL + 1]) {
+                    eL[2 * iL] = dzE * f;
+                    eL[2 * iL + 1] = dhE * f;
+                }
+                if (dhE < eQ[2 * iQ + 1]) {
+                    eQ[2 * iQ] = dxE * f;
+                    eQ[2 * iQ + 1] = dhE * f;
+                }
+            }
+            var e = { l: [], q: [] };
+            for (fe = 0; fe < eL.length; fe += 2) if (eL[fe + 1] < Infinity) e.l.push(eL[fe], eL[fe + 1]);
+            for (fe = 0; fe < eQ.length; fe += 2) if (eQ[fe + 1] < Infinity) e.q.push(eQ[fe], eQ[fe + 1]);
             return {
+                e: e,
                 p0: [p0w.x * f, p0w.y * f, p0w.z * f],
                 a: [ay, az],
                 b: [by, bz],
@@ -3773,6 +3817,22 @@
                 vN.set(BM3.p0[0] / fLab, BM3.p0[1] / fLab, BM3.p0[2] / fLab).applyMatrix4(T.wolf.matrixWorld).sub(vZiel);
                 if (!(vN.lengthSq() > 1e-8)) vN.set(Z3[4], Z3[5], Z3[6]);
                 else vN.normalize().add(vZiel2.set(Z3[4], Z3[5], Z3[6])).normalize();
+                // die gekippte Pfote steht auf ihrem Profil (tierBeinMass e): längs die Zehe (die Pfote hinter dem Lot, sie rollt
+                // über sie) oder der Ballen (vor dem Lot), quer der Rand — die Sohle hebt sich um das, was der tiefste Punkt des
+                // Profils taucht (dz·sin − dh·cos). Ohne sie tauchte die Kante in den Grund (K8 huf, der Bär an +4σ: p95 4,2 cm
+                // auf der Wiese, 6,0 cm am Hang); mit der äußersten Kante allein schwebte er (Median +2,0 cm)
+                if (BM3.e) {
+                    var kL = (vN.x - Z3[4]) * vorX + (vN.z - Z3[6]) * vorZ,
+                        kQ = Math.abs((vN.x - Z3[4]) * vorZ - (vN.z - Z3[6]) * vorX),
+                        kC = Math.sqrt(Math.max(0, 1 - kL * kL - kQ * kQ)),
+                        hebL = 0,
+                        hebQ = 0;
+                    for (var iE = 0; iE < BM3.e.l.length; iE += 2)
+                        hebL = Math.max(hebL, BM3.e.l[iE] * kL - BM3.e.l[iE + 1] * kC);
+                    for (iE = 0; iE < BM3.e.q.length; iE += 2)
+                        hebQ = Math.max(hebQ, BM3.e.q[iE] * kQ - BM3.e.q[iE + 1] * kC);
+                    vZiel.y += (hebL + hebQ) * skala;
+                }
             } else vN.set(Z3[4], Z3[5], Z3[6]);
             vZiel.addScaledVector(vN, Math.hypot(BM3.c[0], BM3.c[1]) * skala);
             var wX = vZiel.x,

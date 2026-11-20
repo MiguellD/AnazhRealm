@@ -2085,9 +2085,13 @@ async function checkBandKreaturKosten({ page, check }) {
         const saveBudget = r._ofenBudget;
         const saveMemoW = A._tierOfenMemo;
         const saveFrustumW = r.isInFrustum;
+        // gefangen wird nur der Guss der Gestalt, die die Probe gerade gießt (`fangOffen`): der lebende Bestand zeichnet im Takt
+        // seine eigenen Leiber (herde-gesetz: ein Fuchs der Altlast, gegossen im Takt des Wolfs, gab dem Wolf das Soll des
+        // Fuchses — 6 046 statt 5 728 Dreiecke — und dem Fuchs danach keinen Ausgang)
+        let fangOffen = true;
         r._ofenBudget = function (core, kind, lod) {
             const aus = saveBudget.apply(this, arguments);
-            budgetFang.set(kind + "|" + (lod | 0), aus);
+            if (fangOffen) budgetFang.set(kind + "|" + (lod | 0), aus);
             return aus;
         };
         r.isInFrustum = function () {
@@ -2308,6 +2312,8 @@ async function checkBandKreaturKosten({ page, check }) {
         for (const art of ["wolf", "fox", "bear", "deer"]) {
             const seele = Object.keys(SM).find((k) => SM[k] === art);
             budgetFang.clear();
+            A._tierOfenMemo = new Map(); // je Gestalt ein frischer Guss: ihr Ausgang wird gefangen, nie der Treffer im Merkbuch
+            fangOffen = true;
             const x0 = pm.x + 10,
                 hW = r.getTerrainHeightAt(x0, pm.z);
             const cw = seele
@@ -2316,6 +2322,7 @@ async function checkBandKreaturKosten({ page, check }) {
                       bodySize: 1,
                   })
                 : null;
+            fangOffen = false;
             if (!cw) {
                 o.w.push({ name: "tier:" + art, fehler: "Spawn fehlgeschlagen" });
                 continue;
@@ -2387,6 +2394,7 @@ async function checkBandKreaturKosten({ page, check }) {
         }
         {
             budgetFang.clear();
+            fangOffen = true;
             const gW = r._buildHumanGroup();
             const vl = gW ? vorlagenVon(gW) : {};
             const l0 = vl["0"] ? geoMenge(vl["0"].root) : new Set();

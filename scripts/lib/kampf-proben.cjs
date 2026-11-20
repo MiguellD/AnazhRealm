@@ -466,6 +466,10 @@ async function WELLE_L(ort) {
                     reach = r._kampfBladeReach(),
                     w20 = r._trefferWirkung(r._kampfUrteil(20, 0, null));
                 stelle(hirsch, 1.5);
+                // derselbe Leib für jeden Hieb (die neutrale Stance): der Hirsch trägt sonst die Pose, in der ihn der letzte
+                // Takt ließ (herde-gesetz) — der Hieb traf den Bauch an der Spitze (eff 0,75) statt der Brust am Schlagpunkt,
+                // das Tempo am Kontakt streute je Lauf um 10 %, und schneide messer fiel 0,17 → 0,15 (in einem anderen Lauf stieg es)
+                if (hirsch.userData._tierBaum) r._tierBaumNeutralStance(hirsch);
                 zielen(punkt(hirsch, null));
                 const sw = schwung(),
                     t = traf(sw, hirsch),
