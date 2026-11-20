@@ -2277,10 +2277,10 @@
    "summe": {
     "kriterien": 9,
     "sprossen": 61,
-    "heute": 1,
+    "heute": 0,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 1.6,
+    "anteilHeute": 0,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -2452,7 +2452,7 @@
        "richter": "tiefes Feld gegen Hubble-Deep-Field: Galaxien je Bogenminute² ±20 %"
       }
      ],
-     "heute": 1,
+     "heute": 0,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Mechanik von Sprosse 1 steht: 2 800 Sterne aus der Saat an einer Kugel von 480 m (stamm/bild-himmel.js:307-421), drei Wandelsterne als feste Punkte. Bild-Preis in der Szene des Richters an beiden Geräten nicht gemessen.",
@@ -20088,11 +20088,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 36,
+  "heute": 35,
   "davonKopplungen": 33,
   "kern": 7,
   "kernDazu": 7,
-  "anteilHeute": 2.3,
+  "anteilHeute": 2.1,
   "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20102,7 +20102,7 @@
    "ungemessen": 113
   },
   "gliederLeitern": 9,
-  "beide": 33,
+  "beide": 32,
   "nachwache": 3
  },
  "zusammengelegt": [
