@@ -159,7 +159,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         const draht = (o) => jsonKlon(o);
         const nullAlsNull = [];
         if (r._sanitizePose(draht({ x: NaN, y: 0, z: 0, yaw: 0 })) !== null) nullAlsNull.push("subworld-pose");
-        r._p2pHandleCreaturePos("peerB", draht({ list: [{ id: "ortlos", x: NaN, y: 0, z: 0, soul: "wesen" }] }));
+        r._p2pHandleCreaturePos("peerB", draht({ list: [{ id: "ortlos", x: NaN, y: 0, z: 0, soul: "wesen", bs: 1 }] }));
         if (st.p2p.remoteCreatures.has("peerB:ortlos")) nullAlsNull.push("creature-pos");
         r._p2pMsgInput(draht({ peerId: "peerB", s0: 1, f: [[0, 0]], a: { s: 1, t: 0, x: 1, y: NaN, z: 2 } }));
         const lsB = st.p2p.peers.get("peerB").lockstep;
@@ -1389,7 +1389,7 @@ async function checkBandLateMultiUser({ page, check }) {
         // _p2pHandleCreaturePos legt eine Sicht-Kreatur an.
         p2p.remoteCreatures.clear();
         r._p2pHandleCreaturePos("farPeer", {
-            list: [{ id: "c9", x: 5, y: 6, z: 5, yaw: 0, soul: "wesen" }],
+            list: [{ id: "c9", x: 5, y: 6, z: 5, yaw: 0, soul: "wesen", bs: 1 }],
         });
         out.remoteCreatureCreated = p2p.remoteCreatures.has("farPeer:c9");
         // NICHT in state.creatures (updateCreatures ignoriert sie).
@@ -1398,7 +1398,7 @@ async function checkBandLateMultiUser({ page, check }) {
 
         // Reconcile: eine Liste OHNE c9 → die Sicht-Kreatur verschwindet.
         r._p2pHandleCreaturePos("farPeer", {
-            list: [{ id: "c10", x: 7, y: 6, z: 7, yaw: 0, soul: "fuchs" }],
+            list: [{ id: "c10", x: 7, y: 6, z: 7, yaw: 0, soul: "fuchs", bs: 1 }],
         });
         out.reconcileRemoves = !p2p.remoteCreatures.has("farPeer:c9") && p2p.remoteCreatures.has("farPeer:c10");
 
@@ -1410,7 +1410,7 @@ async function checkBandLateMultiUser({ page, check }) {
         p2p.remoteCreatures.clear();
         r._p2pHandleChannelMessage(
             "chPeer",
-            JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 1, y: 6, z: 1, soul: "wesen" }] })
+            JSON.stringify({ type: "creature-pos", list: [{ id: "c1", x: 1, y: 6, z: 1, soul: "wesen", bs: 1 }] })
         );
         out.creaturePosChannelAllowed = p2p.remoteCreatures.has("chPeer:c1");
 

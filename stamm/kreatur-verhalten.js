@@ -1420,7 +1420,7 @@ class AnazhRealm_kreatur_verhalten {
         ud._gezeigt = zeigt && ud._taetigkeit ? (d > leash || ud._draussen ? "ziehen" : ud._taetigkeit) : null;
         if (neu) {
             ud._wanderSlot = slot;
-            const idNum = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
+            const idNum = this._leibNummer(creature); // die Los-Nummer des Leibs, nie die laufende Nummer (Welle SAMEN)
             // der Weg dieses Slots im Tempo der Tätigkeit, die das Tier zeigt (äsen schleicht), wenigstens sein Raum
             const blick = Math.max(this._kreaturRaum(creature), mag * stride * this._kreaturTaetigkeitTempo(creature));
             const Z = this._kreaturWanderZiel(creature, idNum, slot, blick, leash);

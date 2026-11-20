@@ -98,8 +98,9 @@ class AnazhRealm_kreatur_leben {
         if (this.state.creatures.length >= this.state.maxCreatures && !(weicht = this._bestandWeicht()))
             return nein("obergrenze");
         // SPIELER-KLEMME: kein Wesen materialisiert IM Spieler — näher als CREATURE_SPAWN_CLEAR_M wird
-        // radial auf den Ring geschoben (deckungsgleich → Goldwinkel über netSeq, kein Math.random).
+        // radial auf den Ring geschoben (deckungsgleich → Goldwinkel über den Platz im Wurf, nie über die laufende Nummer).
         // Opt-out `precise` für bit-treue Pfade (Restore/Peer-Sicht).
+        const ort = { x, z }; // der Ort des Leibs, wie ihn der Wurf rief: ein Pfad seiner Lose (`_leibLos`)
         if (!opts.precise && this.state.playerMesh) {
             const pm = this.state.playerMesh.position;
             const dx = x - pm.x;
@@ -107,7 +108,7 @@ class AnazhRealm_kreatur_leben {
             const d = Math.hypot(dx, dz);
             const MIN = AnazhRealm.CREATURE_SPAWN_CLEAR_M;
             if (d < MIN) {
-                const ang = d > 1e-4 ? Math.atan2(dz, dx) : ((this.state._creatureNetSeq || 0) + 1) * 2.39996;
+                const ang = d > 1e-4 ? Math.atan2(dz, dx) : ((opts.platz | 0) + 1) * 2.39996;
                 x = pm.x + Math.cos(ang) * MIN;
                 z = pm.z + Math.sin(ang) * MIN;
             }
@@ -136,17 +137,25 @@ class AnazhRealm_kreatur_leben {
         // zuerst, lange bevor das Tier in Hieb-Reichweite kommt — ab dem ersten Bild in Reichweite ist der Leib treffbar
         this._gliederBestellen(group);
         // Kreatur-Sicht-Sync — eine pro-Peer eindeutige netId für den
-        // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit).
+        // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit). Sie ist REINE KENNUNG und speist kein Los.
         this.state._creatureNetSeq = (this.state._creatureNetSeq || 0) + 1;
         group.userData.netId = "c" + this.state._creatureNetSeq;
-        group.userData.name = this._pickCreatureName(group.userData.netId);
+        // DIE LOSE DES LEIBS (Welle SAMEN): Name, Größe, der erste Ruhe-Pegel und der Kurs des Wanderns ziehen aus der Los-Nummer
+        // des Leibs (`userData.los`) — der Samen-Baum der Welt am Pfad Ort × Art × Platz im Wurf (`_leibLos`), oder die Nummer, die
+        // der Rufer trägt (das Tier des Bestands: seine Kennung im Bestand). Bis hier zogen sie aus der laufenden Nummer
+        // `_creatureNetSeq`, die zählt, wie viele Leiber vor diesem kamen: A gegen A am Ort dorf (gate:takt, werkbank abdruck)
+        // trugen die fünf Leiber des Boot-Wurfs c18–c22 nach 593 Takten Einschwingen, c24–c28 nach 1300 — dieselbe Welt, derselbe
+        // Same, andere Größen (D4 Tiere 4 von 29 anders).
+        group.userData.los = Number.isFinite(opts.los) ? opts.los : this._leibLos(ort, chosenSoul, opts.platz | 0);
+        group.userData.name = this._pickCreatureName("s" + group.userData.los);
         // GRÖSSENKLASSE: jede Kreatur trägt eine Körpergröße (klein/normal/gross/GIGANT), deterministisch
-        // aus ihrer netId (Peer-/Re-Wachstum-konsistent) oder aus dem Snapshot (opts.bodySize).
+        // aus ihrer Los-Nummer oder aus dem Snapshot/Bestand (opts.bodySize); die Sicht-Kopie beim Mitspieler liest sie aus
+        // dem creature-pos-Strom (`bs`).
         // Das Template wird NUR UNIFORM skaliert — Symmetrie und Physik-Verhältnisse bleiben invariant.
         // Muss VOR der hp-Init unten stehen (die Stats lesen bodySize).
         group.userData.bodySize = Number.isFinite(opts.bodySize)
             ? opts.bodySize
-            : this._creatureBodySize(group.userData.netId);
+            : this._creatureBodySize("s" + group.userData.los);
         // Die Körpergröße skaliert das Studio-Tier UNIFORM; die Glied-Dicke ist Gesetz der Art (ART_GESTALT.bein,
         // deriveTierParams: Beinmuskel ∝ Größe^0,67). Die Galileo-Allometrie des Wirts (√L auf die Glied-Kinder) fiel
         // (Integration W5-Körper): das Studio-Tier trägt keine Teil-Kinder, sie lief seit Welle 5 für kein Wesen mehr.
@@ -325,14 +334,15 @@ class AnazhRealm_kreatur_leben {
 
     // Spawnt am alten Ort mit alter Seele, setzt den persistierten Namen + memory; Specs nicht direkt
     // (live aus memory). Liefert die THREE.Group oder null.
-    _restoreCreatureFromSnapshot(snap, emotion = "happy") {
+    // `los`: die Los-Nummer, die der Rufer trägt (das Tier des Bestands); sonst zieht der Leib sie an seinem Ort (`_leibLos`).
+    _restoreCreatureFromSnapshot(snap, emotion = "happy", los = undefined) {
         if (!snap || !snap.position) return null;
         // Restore ist PRECISE (bit-treu; die Spieler-Klemme gilt nur frischen Spawns); die Guss-Dials geprüft (`_standGussDials`).
         const restoreDials = this._standGussDials(snap);
         const c = this.spawnCreatureAt(snap.position.x, snap.position.y, snap.position.z, emotion, snap.soul, {
             precise: true,
-            // S7 — die persistierte Körpergröße zurück (sonst würfelte der Restore aus der
-            // neuen netId eine andere Größe).
+            los,
+            // S7 — die persistierte Körpergröße zurück (sonst zöge der Restore sie aus der Los-Nummer an seinem Ort).
             bodySize: Number.isFinite(snap.bodySize) ? snap.bodySize : undefined,
             dialsOv: restoreDials,
         });
@@ -590,7 +600,26 @@ class AnazhRealm_kreatur_leben {
         return soul && Number.isFinite(soul.auraY) ? soul.auraY : 0.9;
     }
 
-    // Der Name aus der Identität (netId, Γ5): derselbe Wurf auf jedem Peer und nach jedem Reload-Guss.
+    // DIE LOS-NUMMER EINES LEIBS (Welle SAMEN): der Samen-Baum der Welt (samen-core `samenBaum`, die Wurzel ist der Same der
+    // Welt) am Pfad `leib:<Ort>:<Art>:<Platz im Wurf>` — der Ort auf den Dezimeter, die Art die Seele. Dieselbe Welt ruft am
+    // selben Ort dieselbe Art an denselben Platz: derselbe Leib, gleich wie viele Leiber vorher kamen und gingen. Der Wertebereich
+    // ist der der Kennung im Bestand (1e6 + h mod 9e8, `_bestandLeib`): die Leser (Wander-Kurs, Ruhe-Pegel) sehen eine Nummer.
+    _leibLos(ort, art, platz) {
+        const same = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const pfad = `leib:${Math.round(ort.x * 10)},${Math.round(ort.z * 10)}:${art}:${platz}`;
+        return 1e6 + (globalThis.__samenCore.samenBaum(same).saat(pfad) % 9e8);
+    }
+    // Die Los-Nummer, die ein Leser eines Loses fragt (Wander-Kurs, Ruhe-Pegel). Jeder Leib trägt sie seit seiner Geburt
+    // (`spawnCreatureAt`); ein Leib ohne sie bricht beim Namen — nie fällt der Leser auf die Kennung zurück.
+    _leibNummer(creature) {
+        const n = creature && creature.userData && creature.userData.los;
+        if (!Number.isFinite(n))
+            throw new Error(`Der Leib ${creature && creature.userData && creature.userData.netId} trägt keine Los-Nummer (spawnCreatureAt)`); // prettier-ignore
+        return n;
+    }
+
+    // Der Name aus der Los-Nummer des Leibs (`_leibLos`, Γ5) oder der Kennung eines Tiers im Bestand: derselbe Wurf auf jedem
+    // Peer und nach jedem Reload-Guss.
     _pickCreatureName(netId) {
         const pool = AnazhRealm.CREATURE_NAME_POOL;
         const g = this._rollGenome(String(netId == null ? "c0" : netId), "creature-name");
@@ -1897,9 +1926,10 @@ class AnazhRealm_kreatur_leben {
             const a = dreh + k * 2.39996;
             const x = ort.x + Math.cos(a) * abstand * Math.sqrt(geboren.length);
             const z = ort.z + Math.sin(a) * abstand * Math.sqrt(geboren.length);
-            // außer Blick ist der LEIB, der dort stünde (seine Kugel, `_kreaturLeibImBlick`; ein Tier ohne
-            // Bestand würfelt seine Größe erst im Guss — gefragt wird die größte des Gesetzes) — auch der erste
-            const bs = tiere ? tiere[geboren.length].bs : AnazhRealm._verhaltenGesetz().groessen.at(-1).max;
+            // außer Blick ist der LEIB, der dort stünde (seine Kugel, `_kreaturLeibImBlick`; ein Tier ohne Bestand trägt die Größe
+            // seiner Los-Nummer — Ort des Wurfs × Art × Platz im Wurf, `_leibLos`, Welle SAMEN) — auch der erste
+            const los = tiere ? null : this._leibLos(ort, soul, geboren.length);
+            const bs = tiere ? tiere[geboren.length].bs : this._creatureBodySize("s" + los);
             if (gattung && this._kreaturLeibImBlick(x, z, gattung, bs)) continue;
             if (k > 0) {
                 const fern = Math.hypot(x - p.x, z - p.z) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN;
@@ -1910,7 +1940,7 @@ class AnazhRealm_kreatur_leben {
             const y = (Number.isFinite(gY) ? gY : p.y) + 1;
             const c = tiere
                 ? this._bestandLeib(tiere[geboren.length], x, y, z)
-                : this.spawnCreatureAt(x, y, z, emotion, soul);
+                : this.spawnCreatureAt(x, y, z, emotion, soul, { los, platz: geboren.length });
             if (!c) break; // die Obergrenze oder die Gestalt: der Rest des Wurfs fällt mit
             if (!tiere) c.userData.wanderAnchor = { x: ort.x, z: ort.z };
             // DIE MARKE DES WURFS (`feldWurf`, wie am Wurf eines Werks, im Save): ein Bau, der nach der Geburt kommt, räumt das
@@ -2058,9 +2088,10 @@ class AnazhRealm_kreatur_leben {
         let magen = this._kreaturMagen(creature);
         if (gez === "nahrung" && weidet && voll > 0)
             magen = ud.magen = Math.min(voll, magen + LG.aesung(voll, VG.aas.verdauSec, G) * dt);
-        // der erste Pegel aus der Identität (deterministisch, kein Zufall): die Tiere eines Orts ruhen nicht im Gleichschritt
+        // der erste Pegel aus der Los-Nummer des Leibs (deterministisch, kein Zufall, nie die laufende Nummer — Welle SAMEN): die
+        // Tiere eines Orts ruhen nicht im Gleichschritt
         if (!Number.isFinite(ud._ruhe)) {
-            const id = parseInt(String(ud.netId || "c0").slice(1), 10) || 0;
+            const id = this._leibNummer(creature);
             ud._ruhe = ((this._verhaltenHash(id, 4099) % 1000) / 1000) * LG.E.schwelle.ruhig;
         }
         ud._ruhe = LG.ruhePegel(ud._ruhe, gez === "ruhen", dt, G);
@@ -2693,20 +2724,21 @@ class AnazhRealm_kreatur_leben {
     // EIN TIER WIRD LEIB: sein Stand kehrt wieder (`_restoreCreatureFromSnapshot` — Gedächtnis, Wunde, Bindung), ein Tier ohne
     // Stand wird gegossen (Seele, Größe); Alter, Anker und Name sind die des Tiers.
     _bestandLeib(t, x, y, z) {
+        // DIE KENNUNG IST DIE DES TIERS (w28-funktion-welt-2): die netId des Leibs und seine Los-Nummer (`userData.los`: der Kurs
+        // seines Wanderns, die Ziele seines Reviers, der erste Ruhe-Pegel) und der Verband (`_kreaturVerbinden`) — aus der Nummer
+        // des Tiers im Bestand (`t.id`, je Region gezählt), nie aus der Zahl der Leiber, die vor ihm gezeichnet wurden
+        // (`_creatureNetSeq`): A gegen A an ea7885fb `tier:wesen` anders, weil vor dem Sprung der Welt-Uhr je Lauf andere Leiber
+        // kamen und gingen
+        const nr = 1e6 + (globalThis.__samenCore.samenHash(String(t.id)) % 9e8);
         const c = t.snap
             ? this._restoreCreatureFromSnapshot(
-                  Object.assign({}, t.snap, { position: { x, y, z }, verband: undefined })
+                  Object.assign({}, t.snap, { position: { x, y, z }, verband: undefined }),
+                  "happy",
+                  nr
               )
-            : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize: t.bs });
+            : this.spawnCreatureAt(x, y, z, "happy", t.soul, { bodySize: t.bs, los: nr });
         if (!c) return null;
-        // DIE KENNUNG IST DIE DES TIERS (w28-funktion-welt-2): die netId des Leibs trägt den Kurs seines Wanderns, die Ziele
-        // seines Reviers und den Verband (`_kreaturVerbinden`) — aus der Nummer des Tiers im Bestand (`t.id`, je Region gezählt),
-        // nie aus der Zahl der Leiber, die vor ihm gezeichnet wurden (`_creatureNetSeq`): A gegen A an ea7885fb `tier:wesen`
-        // anders, weil vor dem Sprung der Welt-Uhr je Lauf andere Leiber kamen und gingen
-        const s = String(t.id);
-        let h = 2166136261;
-        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-        const netId = "c" + (1e6 + ((h >>> 0) % 9e8));
+        const netId = "c" + nr;
         Object.assign(c.userData, {
             netId,
             alterS: t.alterS,

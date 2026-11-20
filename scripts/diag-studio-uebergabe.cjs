@@ -306,7 +306,7 @@ async function weltPruefen() {
             const c = r.spawnCreatureAt(pm.x + 30, pm.y + 1, pm.z, "happy", "wolf", { precise: true });
             s.maxCreatures = alt;
             if (!c) return null;
-            const n = hoehe(c) / (r._creatureBodySize(c.userData.netId) || 1);
+            const n = hoehe(c) / (c.userData.bodySize || 1);
             r.removeCreature(c);
             return n;
         };

@@ -1490,6 +1490,8 @@ class AnazhRealm_netz_p2p {
                 z: +c.position.z.toFixed(2),
                 yaw: +((c.rotation && c.rotation.y) || 0).toFixed(2),
                 soul: (c.userData && c.userData.soul) || "wesen",
+                // die Größe reist mit (Welle SAMEN): sie zieht aus der Los-Nummer des Leibs, nie aus der Kennung
+                bs: +((c.userData && c.userData.bodySize) || 1).toFixed(3),
             };
             // DER LEICHNAM REIST MIT SEINER LAGE (Welle LF kampf Nachbesserung 3): die Quaternion des Kipp-Takts
             // (_tickLeichname) — die Kopie liegt, wie der Leib beim Sender liegt, und sinkt liegend. Vorher reiste nur die
@@ -1519,12 +1521,13 @@ class AnazhRealm_netz_p2p {
             if (!Number.isFinite(ex) || !Number.isFinite(ey) || !Number.isFinite(ez)) continue;
             let rc = remote.get(key);
             if (!rc) {
+                // S7 — die Sicht-Kopie trägt die Körpergröße des Originals: sie reist im Strom (`bs`). Die Kennung e.id ist
+                // reine Kennung (Welle SAMEN: die Größe zieht beim Sender aus der Los-Nummer des Leibs, nie aus der netId);
+                // ein Eintrag ohne Größe als Zahl trägt keine Kopie, wie ein Ort ohne Zahl.
+                const _peerBs = this._fremdeZahl(e.bs);
+                if (!Number.isFinite(_peerBs) || _peerBs <= 0) continue;
                 const mesh = this._buildCreatureGroup(typeof e.soul === "string" ? e.soul : "wesen");
                 if (!mesh) continue;
-                // S7 — die Sicht-Kopie trägt die Körpergröße des Originals (aus seiner netId
-                // = e.id deterministisch abgeleitet → derselbe Wuchs wie beim Sender, ohne ein
-                // eigenes Sync-Feld; der gewachsene Wald-Disziplin Γ5 treu).
-                const _peerBs = this._creatureBodySize(e.id);
                 mesh.scale.setScalar(_peerBs);
                 mesh.position.set(ex, ey, ez);
                 // die Kopie trägt kein Feld (kein Ziegel): ihr Nah-Kreis ist das Feld des Stufen-Gesetzes (`_kreaturNah`)

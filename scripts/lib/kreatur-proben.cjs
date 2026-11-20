@@ -1335,7 +1335,33 @@ async function kreaturProben(r, T, opts) {
             if (typeof f !== "function") fehlt.push(n);
             else if (!__fehlt(f, /Math\.random\s*\(/)) treffer.push(n);
         }
-        return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer };
+        // DIE LOSE DES LEIBS HÄNGEN NIE AN DER LAUFENDEN NUMMER (Welle SAMEN): bis hier würfelten Größe und Name eines Geworfenen
+        // aus `_creatureNetSeq`, und A gegen A am Ort dorf (gate:takt, werkbank abdruck) trug nach 593 Takten Einschwingen andere
+        // Boot-Tiere als nach 1300. Derselbe Wurf am selben Ort aus demselben Strom, einmal nach 0, einmal nach 100 000 Leibern:
+        // Los-Nummer, Größe und Name jedes Geworfenen gleich. Der Täter: die Los-Nummer aus der laufenden Nummer (der alte Stand).
+        if (taeter === "zufall-nummer")
+            decke(
+                "_leibLos",
+                () =>
+                    function () {
+                        return (this.state._creatureNetSeq || 0) + 1;
+                    }
+            );
+        const heim = frei(-40, 60, 40) || land(-40, 60);
+        const wurf = (seq) => {
+            leer();
+            Object.assign(s, { _creatureNetSeq: seq });
+            Object.assign(r, { _faunaStroeme: null });
+            pm.set(heim.x + 140, heim.y, heim.z);
+            kamera(1, 0);
+            const g = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("los-probe"), 7);
+            return g.map((c) => [c.userData.los, c.userData.bodySize, c.userData.name].join("|"));
+        };
+        const [vorher, nachher] = [wurf(0), wurf(1e5)];
+        leer();
+        const nummerAnders =
+            vorher.filter((x, i) => x !== nachher[i]).length + Math.abs(vorher.length - nachher.length);
+        return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer, leiber: vorher.length, nummerAnders };
     });
 
     // ── peer: die Sicht-Kopie beim Mitspieler dreht und geht ──
@@ -1344,6 +1370,16 @@ async function kreaturProben(r, T, opts) {
         if (!remote) return { fehler: "kein p2p-Zustand" };
         // Der Täter: die Kopie geht nicht — am lebenden Chokepoint: der echte Takt zieht Lage und Gier nach, nur der Gang
         // der Kopie ruht.
+        // Der Täter der Größe (der alte Stand): die Kopie zieht ihre Größe aus der Kennung, nicht aus dem Strom
+        if (taeter === "peer-groesse")
+            decke(
+                "_p2pHandleCreaturePos",
+                (alt) =>
+                    function (peerId, msg) {
+                        const list = msg.list.map((e) => Object.assign({}, e, { bs: this._creatureBodySize(e.id) }));
+                        return alt.call(this, peerId, Object.assign({}, msg, { list }));
+                    }
+            );
         if (taeter === "peer")
             decke(
                 "_p2pTickRemoteCreatures",
@@ -1367,7 +1403,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 150; k++) {
             x += 1.5 * dt;
             r._p2pHandleCreaturePos("linse-peer", {
-                list: [{ id: "c9001", x, y: o.y, z: o.z, yaw: Math.PI / 2, soul: "wesen" }],
+                list: [{ id: "c9001", x, y: o.y, z: o.z, yaw: Math.PI / 2, soul: "wesen", bs: 1.37 }],
             });
             r._p2pTickRemoteCreatures(100 + k * dt, dt);
         }
@@ -1377,6 +1413,8 @@ async function kreaturProben(r, T, opts) {
         return {
             gierFehlerGrad: rund(Math.abs(grad(wrap(rc.mesh.rotation.y - Math.PI / 2))), 1),
             gangV: tb?._gang ? rund(tb._gang.v || 0, 2) : 0,
+            // die Größe des Originals reist im Strom (`bs`, Welle SAMEN), nie aus der Kennung
+            groesse: rund(rc.mesh.scale.x, 3),
         };
     });
 
@@ -2706,7 +2744,7 @@ async function kreaturProben(r, T, opts) {
         const kopien = [];
         for (let i = 0; i < 8; i++) {
             const o = land(Math.cos(i * 0.785 + 0.3) * (20 + 2.5 * i), Math.sin(i * 0.785 + 0.3) * (20 + 2.5 * i));
-            kopien.push({ id: "k" + i, x: o.x, y: o.y, z: o.z, yaw: 0, soul: seelen[i % 4] });
+            kopien.push({ id: "k" + i, x: o.x, y: o.y, z: o.z, yaw: 0, soul: seelen[i % 4], bs: 1 });
         }
         for (let k = 0; k < 120; k++) {
             r._p2pHandleCreaturePos("linse-satz", { list: kopien });
@@ -2945,11 +2983,14 @@ function urteil(name, z) {
     if (name === "peer") {
         soll(z.gierFehlerGrad <= 15, `Sicht-Kopie blickt ${z.gierFehlerGrad}° neben die Laufrichtung`);
         soll(z.gangV > 0.5, `Sicht-Kopie geht nicht (Gang-Tempo ${z.gangV})`);
+        soll(z.groesse === 1.37, `Sicht-Kopie trägt Größe ${z.groesse} statt der gesandten 1,37`);
     }
     if (name === "zufall") {
         soll(z.fehlt.length === 0, `benannte Methode fehlt: ${z.fehlt.join(", ")}`);
         soll(z.methoden > z.benannt, `nur ${z.methoden} Methoden gelesen (die Tier-Klasse fehlt — Probe vakuös)`);
         soll(z.treffer.length === 0, `Math.random im Kreatur-Leben: ${z.treffer.join(", ")}`);
+        soll(z.leiber >= 2, `Probe vakuös: der Wurf der Lose trägt ${z.leiber} Leiber`);
+        soll(z.nummerAnders === 0, `ein Los des Leibs hängt an der laufenden Nummer: ${z.nummerAnders} von ${z.leiber} Geworfenen nach 100 000 Leibern anders (Los-Nummer, Größe, Name)`); // prettier-ignore
     }
     if (name === "nexus") {
         soll(
@@ -3212,8 +3253,14 @@ const TAETER = {
         ["leittier-uhr", /Leittier ohne Ereignis: der Pulk flieht nie/],
         ["leittier-hoehe", /landet neben dem Scheitel/],
     ],
-    peer: [["peer", /Sicht-Kopie/]],
-    zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
+    peer: [
+        ["peer", /Sicht-Kopie/],
+        ["peer-groesse", /Sicht-Kopie trägt Größe [0-9.]+ statt/],
+    ],
+    zufall: [
+        ["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/],
+        ["zufall-nummer", /ein Los des Leibs hängt an der laufenden Nummer: [1-9]/],
+    ],
     nexus: [
         ["nexus-wuerfel", /der Würfel schreibt ein Körper-Gesetz/],
         ["nexus-gesetz", /jenseits des Gesetz-Bands/],

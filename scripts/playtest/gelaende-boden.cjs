@@ -1786,11 +1786,8 @@ async function checkBandTodZensus({ page, check }) {
                 for (const [key, rc] of remote) if (rc.peerId === "zensus-peer") r._disposeRemoteCreature(key, rc);
             });
             const qLiegt = new T.Quaternion().setFromAxisAngle(new T.Vector3(ort.dx, 0, ort.dz), A.TOD_KIPP_RAD);
-            const ids = [];
-            for (let i = 0; i < 400 && ids.length < 2; i++) {
-                const g = r._creatureBodySize("c99" + i);
-                if (g > 0.95 && g < 1.05) ids.push("c99" + i);
-            }
+            // die Größe reist im Strom (`bs`, Welle SAMEN): beide Kopien tragen Größe 1
+            const ids = ["c990", "c991"];
             const kopieListe = [2, 40].map((m, i) => {
                 const x = ort.px + ort.dx * m + ort.dz * 1.5,
                     z = ort.pz + ort.dz * m - ort.dx * 1.5;
@@ -1801,6 +1798,7 @@ async function checkBandTodZensus({ page, check }) {
                     z,
                     yaw: 0,
                     soul: i ? "wolf" : "wesen",
+                    bs: 1,
                     q: [qLiegt.x, qLiegt.y, qLiegt.z, qLiegt.w],
                 };
             });
