@@ -124,7 +124,7 @@ const LEITERN = [];
             leiter: "planet.kosmos.sternhimmel",
             sek: 40,
             mutiert: true,
-            pfad: ["stamm/bild-himmel.js", "stamm/dirigent-takt.js", "spec/profiband/haushalt.json"],
+            pfad: ["stamm/bild-himmel.js", "stamm/dirigent-takt.js", "welt-licht.js", "spec/profiband/haushalt.json"],
             welt: [{ wort: "gezaehlt", ab: 1, was: "in der Welt gezählte Sterne" }],
             bestehend: [1],
             sprossen: {
@@ -204,7 +204,7 @@ const LEITERN = [];
                     st.scene.traverse((o) => {
                         if (/galax|milchstr|andromeda/i.test(o.name || "")) galax++;
                     });
-                    return { n, hell, raum, kuppelM: +m.toFixed(1), band: +band.toFixed(3), gewandert, galax, wandel: A.HIMMEL.wandelsterne.length };`,
+                    return { n, hell, raum, kuppelM: +m.toFixed(1), band: +band.toFixed(3), gewandert, galax, wandel: r._kosmosJetzt().zeit.planeten.length };`,
                     30
                 );
                 L.zeile("Sternhimmel der Sitzung: " + JSON.stringify(z));
@@ -326,7 +326,7 @@ const LEITERN = [];
         leiter({
             leiter: "planet.kosmos.systeme",
             sek: 40,
-            pfad: ["stamm/bild-himmel.js", "stamm/dirigent-ankunft.js", "stamm/feld-leben.js", "spec/profiband/haushalt.json"],
+            pfad: ["stamm/bild-himmel.js", "stamm/dirigent-ankunft.js", "stamm/feld-leben.js", "welt-licht.js", "spec/profiband/haushalt.json"],
             welt: [{ wort: "gezaehlt", ab: 1, was: "in der Welt gezählte Himmelskörper" }],
             sprossen: {
                 1: {
@@ -369,7 +369,7 @@ const LEITERN = [];
                     });
                     const planeten = koerper.filter((n) => n !== (st.sunMesh && st.sunMesh.name) && n !== (st.moonMesh && st.moonMesh.name)).length;
                     const monde = st.moonMesh ? 1 : 0;
-                    return { koerper, planeten, monde, saat: st.worldMeta && st.worldMeta.seed, wandel: r.constructor.HIMMEL.wandelsterne.map((w) => w.name || w.mag) };`,
+                    return { koerper, planeten, monde, saat: st.worldMeta && st.worldMeta.seed, wandel: r._kosmosJetzt().zeit.planeten.map((p) => p.art) };`,
                     30
                 );
                 L.zeile("Systeme der Sitzung: " + JSON.stringify(z));
@@ -785,7 +785,7 @@ const LEITERN = [];
         leiter({
             leiter: "planet.kosmos.galaxien",
             sek: 40,
-            pfad: ["stamm/bild-himmel.js", "stamm/feld-leben.js", "spec/profiband/haushalt.json"],
+            pfad: ["stamm/bild-himmel.js", "stamm/feld-leben.js", "welt-licht.js", "spec/profiband/haushalt.json"],
             welt: [{ wort: "gezaehlt", ab: 1, was: "in der Welt gezählte Galaxien" }],
             sprossen: {
                 1: {

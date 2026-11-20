@@ -6022,7 +6022,11 @@ function pflichtZeilen(p) {
 // in der letzten Zeile beim Namen (bis dahin „Selbsttest ohne (3c)“ von Hand, Exit 1 allein durch den ausgelassenen Teil)
 const SELBST_TEILE = ["3c"];
 // die Felder, die das Spiel nicht mehr schreibt, je mit dem Schnitt, der sie fällte (der Selbsttest (1t) hält jede Station davon frei)
-const TOTE_FELDER = [[/\bwetterWunsch\b/, "seit feld.K2#2: die Liste wetterWuensche, der Schreiber wetterSchreiber, der Zug _wetterZugZiehen"]];
+const TOTE_FELDER = [
+    [/\bwetterWunsch\b/, "seit feld.K2#2: die Liste wetterWuensche, der Schreiber wetterSchreiber, der Zug _wetterZugZiehen"],
+    [/\b(HIMMEL\.wandelsterne|HIMMEL\.sternZaehlung|HIMMEL\.sternMagSchwach|_sternMag|STERN_HELLSTE)\b/,
+        "seit kosmos-umfang: der Himmel ist die Sicht der Kosmos-Funktion (welt-licht.js kosmos), die Planeten liest r._kosmosJetzt().zeit.planeten"],
+];
 async function selbsttest(o = {}) {
     const ohne = new Set(String(o.ohne || "").split(",").filter(Boolean));
     for (const t of ohne) if (!SELBST_TEILE.includes(t)) throw new Error("--ohne " + t + ": nur " + SELBST_TEILE.join(", "));
@@ -6224,8 +6228,12 @@ async function selbsttest(o = {}) {
         const tot = (texte) => texte.flatMap(([f, t]) => TOTE_FELDER.flatMap(([re, grund]) => (re.test(t) ? [f + " liest " + re.source + " (" + grund + ")"] : [])));
         const texte = fs.readdirSync(path.join(DIR, "stationen")).filter((f) => /\.(c?js)$/.test(f)).map((f) => [f, fs.readFileSync(path.join(DIR, "stationen", f), "utf8")]);
         const heute = tot(texte), mut = tot([["mutante.js", "const w = st.wetterWunsch && st.wetterWunsch.quelle;"]]);
-        pruef("TOTE FELDER keine Station liest ein Feld, das das Spiel nicht mehr schreibt (" + texte.length + " Dateien); die Mutante „wetterWunsch gelesen“ fällt beim Namen",
-            heute.length === 0 && mut.length === 1 && /wetterWunsch/.test(mut[0]), JSON.stringify({ heute, mut }));
+        // die zweite Mutante: die Zeile der Sternhimmel-Probe vor kosmos-umfang (k2-kosmos.js:207 las die gefallenen Wandelsterne)
+        const himmel = tot([["k2-kosmos.js", "galax, wandel: A.HIMMEL.wandelsterne.length };"]]);
+        pruef("TOTE FELDER keine Station liest ein Feld, das das Spiel nicht mehr schreibt (" + texte.length + " Dateien); die Mutanten „wetterWunsch gelesen“ " +
+            "und „HIMMEL.wandelsterne gelesen“ fallen beim Namen",
+            heute.length === 0 && mut.length === 1 && /wetterWunsch/.test(mut[0]) && himmel.length === 1 && /^k2-kosmos\.js liest .*wandelsterne/.test(himmel[0]),
+            JSON.stringify({ heute, mut, himmel }));
     }
     // (1a) DIE PROBEN: jede Station urteilt ihre Roh-Ausgaben (die Mutanten der Soll-Tafel ROT), eine falsche Probe beim Namen
     {
