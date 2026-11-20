@@ -19,7 +19,7 @@
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
-const { statikServer, starteBrowser, hauptLauf, sleep, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, waitFor, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 hauptLauf(async () => {
@@ -46,8 +46,10 @@ hauptLauf(async () => {
             console.error(window.__linktNicht.at(-1));
         };
     });
-    // Die Welt einige Sekunden LEBEN lassen (der natürliche Loop läuft; swiftshader-GL ist zäh).
-    await sleep(6000);
+    // Die Welt LEBT bis zu IHREM Ereignis: der natürliche Loop zeichnet das erste Weltbild (`_weltbildDa`, sein EINER Schreiber —
+    // an ihm weicht der Ladeschirm). Bis abdruck-am-takt 6 s Wanduhr: unter Last urteilten die Wände (W3) über eine Welt, die
+    // noch kein Bild trug; eine GL-Welt, die nie ein Weltbild zeichnet, steht mit dieser Bedingung in der Stall-Akte.
+    const weltbildMs = await waitFor(page, () => !!st._weltbildDa, "die GL-Welt zeichnet ihr erstes Weltbild");
     const out = await page.evaluate(async () => {
         const o = { err: null };
         try {
@@ -152,7 +154,7 @@ hauptLauf(async () => {
     );
     console.log(`  W4 Fern-Ring: da=${out.fernRingDa} cursor=${out.fernRingCursor} (CPU-Gesetz wandert)`);
     console.log(
-        `  W5 Welt lebt: tickOk=${out.tickOk}/12 frames=${out.frames} spielerEndlich=${out.spielerEndlich} · Substanz farben=${out.farben} nonzero=${out.nonzero} im Frame ${out.schussFrames}${out.tickErr ? " tickErr=" + out.tickErr : ""}`
+        `  W5 Welt lebt: erstes Weltbild ${(weltbildMs / 1000).toFixed(1)} s nach dem Renderer · tickOk=${out.tickOk}/12 frames=${out.frames} spielerEndlich=${out.spielerEndlich} · Substanz farben=${out.farben} nonzero=${out.nonzero} im Frame ${out.schussFrames}${out.tickErr ? " tickErr=" + out.tickErr : ""}`
     );
     const z = out.zensus || [];
     console.log(`  W6 Sampler je Stoff (Grenze vertex ${out.grenze && out.grenze[1]} · fragment ${out.grenze && out.grenze[2]}), ${z.length} Stoff-Stufen, ${out.ohneLink} Zensus-Pipelines ohne Link:`); // prettier-ignore

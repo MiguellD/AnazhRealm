@@ -6,7 +6,7 @@
 //   node scripts/diag-gpu-fehler.cjs --selftest
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, hauptLauf, sleep, selbsttestEnde, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, sleep, waitFor, selbsttestEnde, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
@@ -91,7 +91,9 @@ hauptLauf(async () => {
         s: (Date.now() - t0) / 1000,
     });
     await page.evaluate(gegendruck, ["spaet", 3000]);
-    await sleep(3500);
+    // „laufend abgegeben“ beginnt an SEINEM Ereignis: das späte Gerät gab den ersten Submit ab (`__ab` an seiner Queue, der
+    // Zähler des Abgriffs) — bis abdruck-am-takt 3,5 s Wanduhr: unter Last stand der erste nach ihr noch aus
+    await waitFor(page, () => window.__gpuFehler.geraete.some((d) => d.label === "spaet" && d.queue.__ab > 0), "das späte Gerät gibt den ersten Submit ab"); // prettier-ignore
     const spaet = await abgabe();
     await page.evaluate(() => ((window.__raf = requestAnimationFrame), (window.requestAnimationFrame = () => 0)));
     const ohneBild = await abgabe();

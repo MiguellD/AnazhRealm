@@ -2185,7 +2185,9 @@ async function checkBandWCIchWahrheit({ page, check }) {
             const anImFlow = !!item && item.style.display !== "none" && !!lab && lab.textContent === "Freude";
             for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
             r._updateEmotionFeedback();
-            await sleep(1700);
+            // bis zu SEINEM Ereignis (das Item verlässt den Flow), nie 1,7 s nach der Wanduhr (abdruck-am-takt); ein Item, das
+            // bleibt, steht mit dieser Bedingung in der Stall-Akte
+            if (item) await __weltDa(() => item.style.display === "none");
             const ruheAusFlow = !!item && item.style.display === "none";
             st.player.emotions.joy = 0.9;
             r._updateEmotionFeedback();
