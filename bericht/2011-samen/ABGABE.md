@@ -1,6 +1,6 @@
 # Abgabe Welle `samen-ein-baum` — EIN Samen-Baum, der Würfel je Los, je DSL-Op ihr Strom (OMEN GTX 1060, 20.11.)
 
-**Kopf:** `samen-ein-baum` **02447ebc7** (der Schnitt der S0-Nacht über der Vorprüfung 60fb7c67d), Probe-Tag `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]`. Davor kam die Vorprüfung 60fb7c67d, leer über dem Merge-Kopf e07bb72db. Davor kam die Heilung 9f70eaca1 (leer über a69426b28), siehe die nächsten beiden Abschnitte. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
+**Kopf:** `samen-ein-baum` **b279ed1ce** (die S0-Nacht am Median, Soll 22,4, über 02447ebc7 und der Vorprüfung 60fb7c67d), Probe-Tag `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]`. Davor kam die Vorprüfung 60fb7c67d, leer über dem Merge-Kopf e07bb72db. Davor kam die Heilung 9f70eaca1 (leer über a69426b28), siehe die nächsten beiden Abschnitte. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
 - die Welle 3e68a828a;
 - Merge main 3da9d9ae9 (Kosmos) und Merge `ein-schreiber-wand` c16c528cc mit dem Register-Anker (151204179);
 - die Prüfstand-Seite (fc148849f);
@@ -8,6 +8,22 @@
 - Merge main 31ea3847e (Wand, stein-ein-gesetz) und Merge main 3e362397e (z635: los-huelle-2, Zeit-Kalender, Vorab-Statik; V18.546.349).
 
 Zweig ab main 92b7afd07. Ich stempele nicht. Roh liegt auf dem OMEN unter `p3/n1911/samen/`.
+
+## Die S0-Nacht am Kopf b279ed1ce (Wort des Koordinators 18:0x: die Soll in der Einheit des Gesetzes, EINE Zahl)
+- **Die Zahl** ist der Median je Pixel: Licht ÷ Albedo des Pixels × Albedo des Stoffs (0,1177), zurück in sRGB.
+  - Gemessen an der GTX 1060, je zwei Boots im Wechsel K B K B (`s0/k10`, `b10`, `k11`, `b11`): Kopf 22,79 und 22,79, main + Laub-Kante 5 22,89 und 22,89.
+  - Alle vier Läufe sind ✅, auch nach dem Urteil der Probe-Zeile (`urteil-zeile.cjs`: GRÜN).
+- **Die Soll ist 22,4:** die Mitte zwischen dem Bruch von z637 am Gesetz (22,89 × 0,9596 = 21,97) und dem kleineren gesunden Wert 22,79. Die alte 22 galt am Fleck; am Gesetz hätte sie den Bruch von z637 nicht mehr genannt.
+- **Der Rest beim Namen:** Kopf und Basis liegen am Median 0,44 % auseinander, am Mittel 1,3 % (23,3 / 23,6; das Mittel des Linearen 26,9 / 27,2).
+  - Das Licht je Albedo streut je Pixel von 18,2 bis 26,7 (q10–q90).
+  - Ursache sind die Mulden des Korns: `_mikroGestalt` kippt die Normale, die Nacht schattiert sie, die Albedo-Lampe nicht. Dazu kommt die sRGB-Kurve.
+  - Das Mittel trug den Fleck mit, der Median nicht.
+- **Selbsttest:**
+  - neu „Licht −4 %, der Bruch von z637“: 21,97 liegt unter der Soll, Kopf und Basis darüber;
+  - „der Wurf auf dunkles Korn“: am Fleck 21,8 unter der Soll, am Gesetz 22,79 darüber, ohne Albedo blind;
+  - die Kamera 2 Stufen tiefer bleibt darunter (3,0).
+  - Die Zeilen tragen kein Rot-Wort mehr: An 02447ebc las die Probe „am Fleck ROT“ als rote Zeile.
+- Die 23,3 / 23,6 und 26,8 / 26,9 unten sind Zwischenstände des Mittels und gelten nicht mehr.
 
 ## Die S0-Nacht am Kopf 02447ebc7 (Wort des Koordinators 17:3x: gate:pruefbuehne-licht ROT an der Radeon, 21,8 < 22)
 - **Gerät oder Inhalt:** Es ist der Inhalt. Gemessen an der GTX 1060, je zwei Boots im Wechsel (`s0/kette.txt`):
