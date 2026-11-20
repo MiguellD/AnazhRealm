@@ -252,3 +252,35 @@ ebenfalls 1 Ding anders (Bewohner-Netz), der Dorf-Takt schwankt (eingeschwungen 
    renderTransparents). `ordnung` 9997 ordnet ihn nur INNERHALB der opaken Liste: nach allen opaken Körpern und dem
    Auslöser (9996,5), vor Feld-March (9998) und Panorama (9999). Direkt hinter den frühen Zug kann er nicht: seine Argumente
    schreibt erst der Bruch, und der kommt nach den opaken Verdeckern, deren Tiefe die späte Prüfung braucht.
+
+### E9 — die Leser der Szenen-Tiefe hinter dem späten Zug (GTX 1050, 20.11.)
+
+**Geschnitten.** Das EINE Abbild bricht zu zwei Zeitpunkten (`stamm/bild-sicht.js` `_tiefenAbbild(frame, abbild, punkt)`): „sicht"
+löst der Auslöser mit EIGENEM Knoten aus (`stamm/bild-tiefe.js` `_sichtAusloeser`, r184 bucht `updateBefore` je
+`updateReference` — ein Knoten auf derselben Textur wie die Leser liefe nur einmal je Render), die Pyramide misst darin; „leser"
+bricht der Knoten der Leser (Wasser, Feld-Pass, Rauch-Saum, Spiegel) NACH dem späten Zug, nur wenn der Bruch der Sicht in diesem
+Render Aufträge trug (`A.spaet`). Die Bündel-Urteile laufen an der Welt-Uhr (`spielZeit`, s) statt an der Gerätezeit: der
+bewegte Verdecker fährt in ihr, die Pause hält ihn (Wanduhr-Wand (W) grün, die gefallene Frist `_archRegionBundleCull` aus der Tafel).
+
+**Linse** (Familie Verdeckung, `gate:verdeckungs-abfrage`): der Leser-Zeuge kopiert das Abbild nach dem Bruch der Sicht und nach
+dem Hauptbild — am Kopf vor dem Schnitt ROT „LESER OHNE SPÄTEN ZUG (FREI): 75 Haufen spät gezeichnet, 0 von 28 800 Texeln",
+mit dem Schnitt 806 von 28 800; der Mutant „ohne Leser-Bruch" fällt ROT, der Schritt der Frei-Phase ist EIN Hauptbild nach dem
+EINEN Einschwingen (`__weltStehtNach`; auf der GTX 1050 lagen sonst 400 Renders ohne Hauptbild zwischen zweien).
+
+**Gemessen** (GTX 1050, Genesis Third, ein Boot je Lauf, `mess-sicht.cjs --nur-b --orte "" --flug genesis`):
+
+| | mit Leser-Bruch | ohne (vorher) |
+|---|--:|--:|
+| GPU je Frame, ABBA × 8 zu 24 Bildern im selben Boot, Lauf 1 · Lauf 2 | 26,308 · 26,506 ms | 26,268 · 26,440 ms |
+| Render-Pässe · draw · drawIndexed · drawIndexedIndirect je Frame | 9,83 · 8 · 23 · 62,5 | 7,83 · 7 · 23 · 62,5 |
+| S5 Flug Bild 23, Anteil der Maske > 8/255 gegen blind (Lauf 1 · 2) | 14,56 · 11,74 % | 14,35 · 11,72 % |
+
+Der Bruch kostet +0,04 bis +0,07 ms (+0,2 %, die Runden überlappen) und zwei Render-Pässe samt einem Zug je Frame. **S5 bewegt er
+nicht** — die benannte Rest-Ursache (die Leser) ist widerlegt; ebenso das Bündel-Urteil (Sicht an, Bündel nie verdeckt: Bild 23
+7,36 gegen 7,21 % mit Urteil). Was bleibt, färbt beidseitig (Bild 23: 10 711 Pixel heller, 16 013 dunkler, Quotient 1,008) auf
+Halmen und Lichtflecken des Rasens, nicht an Häusern — ein Versatz des Musters, kein fehlender Haufen.
+
+**Das Werkzeug:** der Flug markierte die Schatten-Map einmal je Fahrt (gegen Lehre 17); je Schuss neu fällt das Rauschen A gegen A
+in Bild 4–20 von bis zu 3,14 % auf ≤ 1,82 %. In Bild 21–23 springt es von Lauf zu Lauf (Bild 23: 9,77 · 1,17 · 0,92 · 6,63 %) —
+dort trennt der Flug die Sicht nicht vom Rauschen. **S5 bleibt ROT**, offen mit Grund: die Quelle des Versatzes in Bild 21–23
+ist nicht benannt (Messname `FLUG genesis/third VORZEICHEN`).

@@ -46,40 +46,6 @@ function stellen(o) {
     })();
 }
 
-// das Einschwingen wie das Band: bis der Bau ruht (Frist capMs)
-function einschwingen(k) {
-    return (async () => {
-        const st = r.state;
-        const vorDecke = st.perfTargetMs;
-        st.perfTargetMs = 1000;
-        const t0 = performance.now();
-        const dl = t0 + (k.capMs || 240000);
-        let takte = 0,
-            ruhig = 0,
-            vor = null,
-            o = {};
-        const stand = () => {
-            let instanzen = 0;
-            if (st.archInstanceGroups) for (const g of st.archInstanceGroups.values()) instanzen += g.mesh ? g.mesh.count : 0;
-            return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut: __ungebaut() };
-        };
-        const ziel = Math.min(12, st.chunkRingRadius || 4);
-        while (performance.now() < dl) {
-            if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
-            const bild = __werkTakt();
-            takte++;
-            o = __einschwingOffen(r);
-            const s = stand();
-            if (vor) for (const key of Object.keys(s)) if (s[key] !== vor[key]) o[key] = `${vor[key]}→${s[key]}`;
-            vor = s;
-            ruhig = Object.keys(o).length ? 0 : ruhig + 1;
-            if (takte >= 40 && ruhig >= (k.ruhig || 30)) break;
-            await bild;
-        }
-        st.perfTargetMs = vorDecke;
-        return { eingeschwungen: ruhig >= (k.ruhig || 30), takte, ms: Math.round(performance.now() - t0), offen: Object.keys(o).length ? o : null };
-    })();
-}
 
 // S1 · S3 · S4 an der Pose: der Draw-Zähler (Hauptbild: Züge, Dreiecke, der Bau-Satz), dann die Bank — n Einzel-Bilder ohne rAF,
 // je Bild bis die GPU fertig ist, unter der Bühne und der Skala des Geräts (wie `gpuBank`)
@@ -139,12 +105,19 @@ function flug(o) {
             cam.lookAt(p.clone().add(vorn));
             cam.updateMatrixWorld(true);
         };
-        const roh = { beginn: r._sichtTiefeBeginn, buendel: r._sichtBuendelVerdeckt, satz: r._sichtSatz };
+        const roh = { beginn: r._sichtTiefeBeginn, buendel: r._sichtBuendelVerdeckt, satz: r._sichtSatz, abbild: r._tiefenAbbild };
         const zurueck = () => {
-            for (const k of ["_sichtTiefeBeginn", "_sichtBuendelVerdeckt", "_sichtSatz"]) delete r[k];
+            for (const k of ["_sichtTiefeBeginn", "_sichtBuendelVerdeckt", "_sichtSatz", "_tiefenAbbild"]) delete r[k];
         };
         const modus = {
             mit: () => {},
+            // VORHER (E9): der Zeitpunkt der Leser bricht nie — Wasser, Feld-Pass und Rauch lesen das Abbild vom Bruch der Sicht
+            vorher: () => {
+                r._tiefenAbbild = function (frame, abbild, punkt) {
+                    if (punkt === "leser") return;
+                    return roh.abbild.call(this, frame, abbild, punkt);
+                };
+            },
             blind: () => {
                 r._sichtTiefeBeginn = function (k) {
                     const ok = roh.beginn.call(this, k);
@@ -195,6 +168,8 @@ function flug(o) {
                 for (let k = 0; k < 32; k++) __loopBild();
                 for (let i = 0; i < o.schritte; i++) {
                     if (i) setze(i);
+                    // je Schuss die Schatten-Map neu (Lehre 17): sonst hängt die Lage jeder Kaskade am Takt der Fahrt
+                    r._schattenAlleNeu();
                     __loopBild();
                     je(i, await __zielLesen(rt, BW, BH));
                 }
@@ -232,7 +207,10 @@ function flug(o) {
                 if (x && M[p]) d++;
             }
             const anteil = n ? d / n : 0;
-            aus.je.push({ i, maske: n, ab8: d, anteil: +anteil.toFixed(5), ab8Bild: dAlle });
+            // DAS VORZEICHEN: ein fehlender Haufen färbt einseitig, ein Versatz des Musters (Halme, Lichtflecken) beidseitig
+            let hell = 0;
+            for (let p = 0; p < N; p++) if (M[p] && L[p] - blind[i][p] > 8) hell++;
+            aus.je.push({ i, maske: n, ab8: d, anteil: +anteil.toFixed(5), ab8Bild: dAlle, hell, dunkel: d - hell });
             if (i === 0) aus.bilder.mit0 = bildUrl(u8);
             if (anteil > schlimmst.anteil) {
                 schlimmst = { i, anteil };
@@ -259,11 +237,114 @@ function flug(o) {
             for (let p = 0; p < N; p++) if (M[p] && Math.abs(L[p] - blind[i][p]) > 8) d++;
             aus.je[i].rauschen = n ? +(d / n).toFixed(5) : 0;
         });
+        // VORHER: derselbe Flug mit der Sicht OHNE den Bruch der Leser (E9 vor dem Schnitt) gegen den ersten blinden Flug
+        let schlimmstV = { i: -1, anteil: -1 };
+        await fahrt("vorher", (i, u8) => {
+            const L = luma(u8),
+                { M, n } = maske[i];
+            let d = 0;
+            for (let p = 0; p < N; p++) if (M[p] && Math.abs(L[p] - blind[i][p]) > 8) d++;
+            const anteil = n ? d / n : 0;
+            aus.je[i].vorher = +anteil.toFixed(5);
+            if (anteil > schlimmstV.anteil) {
+                schlimmstV = { i, anteil };
+                const v = new Uint8Array(N * 4);
+                for (let p = 0, j = 0; p < N; p++, j += 4) {
+                    const x = Math.abs(L[p] - blind[i][p]) > 8;
+                    v[j] = x ? 255 : M[p] ? 90 : L[p] >> 2;
+                    v[j + 1] = x ? 0 : M[p] ? 90 : L[p] >> 2;
+                    v[j + 2] = x ? 0 : M[p] ? 90 : L[p] >> 2;
+                    v[j + 3] = 255;
+                }
+                aus.bilder.schlimmstVorher = bildUrl(v);
+                aus.bilder.schlimmstVorherMit = bildUrl(u8);
+            }
+        });
+        aus.schlimmstVorher = schlimmstV;
         const d = (a, b) => Object.fromEntries(Object.keys(b).map((k) => [k, b[k] - (a[k] || 0)]));
         aus.sicht = { blind: d(sz0, sz1), mit: d(sz1, sz2) };
         aus.schlimmst = schlimmst;
         rt.dispose();
         return aus;
+    })();
+}
+
+// E9 IM SELBEN BOOT (Seite): die Kamera am Platz des Flugs (Pose 0), je Zustand (mit = der Bruch der Leser, vorher = ohne) die
+// EINE Bank-Runde (`__bankRunde`: n Frames ohne rAF, dann auf die GPU warten) im Wechsel ABBA; danach je Zustand EINE gezählte
+// Runde: Render-Pässe, Züge (draw · drawIndexed · indirekt) und Bündel-Abspielungen je Frame an den WebGPU-Prototypen.
+function bankE9(o) {
+    return (async () => {
+        const T = window.THREE;
+        const rend = st.renderer;
+        rend.setAnimationLoop(null);
+        __buehne();
+        const cam = st.camera;
+        const p0 = new T.Vector3().fromArray(o.p),
+            vorn = new T.Vector3().fromArray(o.l).sub(p0).normalize();
+        cam.position.copy(p0);
+        cam.lookAt(p0.clone().add(vorn));
+        cam.updateMatrixWorld(true);
+        const roh = r._tiefenAbbild;
+        const zustand = {
+            mit: () => delete r._tiefenAbbild,
+            vorher: () => {
+                r._tiefenAbbild = function (frame, abbild, punkt) {
+                    if (punkt === "leser") return;
+                    return roh.call(this, frame, abbild, punkt);
+                };
+            },
+        };
+        const je = { mit: [], vorher: [] };
+        try {
+            zustand.mit();
+            await __bankRunde(6);
+            for (let k = 0; k < o.runden; k++)
+                for (const z of k % 2 ? ["vorher", "mit"] : ["mit", "vorher"]) {
+                    zustand[z]();
+                    await __bankRunde(4);
+                    je[z].push(await __bankRunde(o.n));
+                }
+            const med = (a, key) => {
+                const v = a.map((x) => x[key]).sort((x, y) => x - y);
+                return +((v[(v.length - 1) >> 1] + v[v.length >> 1]) / 2).toFixed(3);
+            };
+            const aus = {};
+            for (const z of ["mit", "vorher"])
+                aus[z] = { gpuMs: med(je[z], "jeFrame"), cpuMs: med(je[z], "cpuJeFrame"), runden: je[z].map((x) => +x.jeFrame.toFixed(2)) };
+            // die Zählung je Zustand (eigene Runde, nie in der Zeit)
+            const RP = GPURenderPassEncoder.prototype,
+                CE = GPUCommandEncoder.prototype;
+            const namen = ["draw", "drawIndexed", "drawIndirect", "drawIndexedIndirect", "executeBundles"];
+            const zaehle = async (z) => {
+                zustand[z]();
+                await __bankRunde(4);
+                const c = { paesse: 0, draw: 0, drawIndexed: 0, drawIndirect: 0, drawIndexedIndirect: 0, executeBundles: 0 };
+                const alt = namen.map((m) => RP[m]);
+                const bp = CE.beginRenderPass;
+                namen.forEach((m, i) => {
+                    RP[m] = function (...a) {
+                        c[m]++;
+                        return alt[i].apply(this, a);
+                    };
+                });
+                CE.beginRenderPass = function (...a) {
+                    c.paesse++;
+                    return bp.apply(this, a);
+                };
+                try {
+                    await __bankRunde(o.nZaehl);
+                } finally {
+                    namen.forEach((m, i) => (RP[m] = alt[i]));
+                    CE.beginRenderPass = bp;
+                }
+                for (const k of Object.keys(c)) c[k] = +(c[k] / o.nZaehl).toFixed(2);
+                return c;
+            };
+            aus.zaehlung = { mit: await zaehle("mit"), vorher: await zaehle("vorher") };
+            return aus;
+        } finally {
+            delete r._tiefenAbbild;
+        }
     })();
 }
 
@@ -286,7 +367,7 @@ async function main() {
         const { ort: spec, haushalt } = BAND.ladeSpec(ort);
         const o = { x: spec.spieler[0], z: spec.spieler[1], gier: spec.blick ? BAND.ortGier(spec) : null, takt: spec.ortTakt || [], dorfZug: !!spec.dorfZug, kamera: haushalt.sichten[sicht].kamera };
         const u = await evalRuf(`return (${stellen.toString()})(${JSON.stringify(o)});`, "mess-stellen");
-        const ein = await evalRuf(`return (${einschwingen.toString()})({ capMs: 240000, ruhig: 30 });`, "mess-einschwingen");
+        const ein = await rufe("/einschwingen", { capMs: 240000, ruhig: 30 }); // das EINE Einschwingen des Bands (werkbank `bandEinschwingen`)
         return { u, ein };
     };
     try {
@@ -327,9 +408,23 @@ async function main() {
                     f.bilder[k] = path.relative(ROOT, datei).split(path.sep).join("/");
                 }
                 ergebnis.flug = { ort: FLUG, kamera: kam, ...f };
+                const bank = await evalRuf(`return (${bankE9.toString()})(${JSON.stringify({ p: kam.p, l: kam.l, n: 24, runden: 8, nZaehl: 6 })});`, "mess-bank-e9");
+                ergebnis.bankE9 = bank;
+                console.log(
+                    `BANK E9 ${FLUG}/third (ABBA × 8, n 24): GPU je Frame mit Leser-Bruch ${bank.mit.gpuMs} ms · vorher ${bank.vorher.gpuMs} ms ` +
+                        `(CPU ${bank.mit.cpuMs} / ${bank.vorher.cpuMs}) · Runden mit ${bank.mit.runden.join(" ")} · vorher ${bank.vorher.runden.join(" ")} · ` +
+                        `je Frame mit ${JSON.stringify(bank.zaehlung.mit)} · vorher ${JSON.stringify(bank.zaehlung.vorher)}`
+                );
+                console.log(`FLUG ${FLUG}/third VORZEICHEN je Bild heller/dunkler: ` + f.je.map((x) => `${x.i}:${x.hell}/${x.dunkel}`).join(" "));
                 const ueber = f.je.filter((x) => x.anteil > 0.01).length;
                 // über dem Rauschen: ein Bild, in dem die Sicht mehr als 1 % der Maske über den Boden von A gegen A hinaus ändert
                 const ueberR = f.je.filter((x) => x.anteil - (x.rauschen || 0) > 0.01).length;
+                const ueberV = f.je.filter((x) => x.vorher - (x.rauschen || 0) > 0.01).length;
+                console.log(
+                    `FLUG ${FLUG}/third VORHER (ohne Leser-Bruch): schlimmstes Bild ${f.schlimmstVorher.i} ${(100 * f.schlimmstVorher.anteil).toFixed(3)} % · ` +
+                        `über dem Rauschen: ${ueberV} von ${f.je.length} · je Bild vorher/mit/Rauschen ` +
+                        f.je.map((x) => `${x.i}:${(100 * x.vorher).toFixed(2)}/${(100 * x.anteil).toFixed(2)}/${(100 * (x.rauschen || 0)).toFixed(2)}`).join(" ")
+                );
                 console.log(
                     `FLUG ${FLUG}/third: S2 Bild 0 ${(100 * f.je[0].anteil).toFixed(3)} % der ${f.je[0].maske} Masken-Pixel > 8/255 · S5 schlimmstes Bild ${f.schlimmst.i} ` +
                         `${(100 * f.schlimmst.anteil).toFixed(3)} % · Bilder über 1 %: ${ueber} von ${f.je.length} · über dem Rauschen: ${ueberR} · ` +

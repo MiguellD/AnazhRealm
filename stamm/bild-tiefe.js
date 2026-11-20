@@ -594,7 +594,7 @@ class AnazhRealm_bild_tiefe {
         N.p5 = kamera.projectionMatrix.elements[5];
         N.nah = kamera.near;
         N.fern = kamera.far;
-        N.t = performance.now();
+        N.t = this.state.spielZeit; // die Welt-Uhr (s): der bewegte Verdecker fährt in ihr, die Pause hält ihn
         T.bruchOffen = true;
     }
 
@@ -917,7 +917,7 @@ class AnazhRealm_bild_tiefe {
         const ST = AnazhRealm.SICHT_TIEFE;
         const weg =
             Math.hypot(e[12] - u.auge[0], e[13] - u.auge[1], e[14] - u.auge[2]) +
-            (ST.bewegtMs * Math.max(0, performance.now() - u.t)) / 1000;
+            ST.bewegtMs * Math.max(0, this.state.spielZeit - u.t);
         return weg <= ST.buendelM;
     }
 
