@@ -1194,6 +1194,10 @@ class AnazhRealm_vegetation_streu {
         ];
         let ruh = this._streuRuh;
         if (!ruh || rv.some((x, i) => x !== ruh.v[i])) ruh = this._streuRuh = { v: rv };
+        // DIE EPOCHE DES ORTS (der Grundriss und der Wald am Ort: `_ortSameGen`, `_forestDartStand`): unter ihr antwortet jeder Ort
+        // dasselbe — eine Zelle fragt ihn je Epoche einmal (`_streuGestaltWechsel`), nie je Gang
+        let ortE = this._streuOrtE;
+        if (!ortE || ortE.v[0] !== rv[1] || ortE.v[1] !== rv[2]) ortE = this._streuOrtE = { v: [rv[1], rv[2]] };
         const cur = this._scatterLodCursor;
         let scanned = 0;
         let realloc = 0;
@@ -1291,8 +1295,10 @@ class AnazhRealm_vegetation_streu {
             // antwortete; eine neue Epoche (ein Grundriss, der Wald am Ort: `_ortSameGen`) fragt ihn neu — antwortet er anders,
             // materialisiert sie neu. Bis hier urteilte die ruhige Zelle nur Abstand und Band: am Dorfrand trug dieselbe Eiche je
             // nach Tempo des Rechners Bestand (Gestalt 1, ihr Nachbar stand noch im künftigen Grundriss) oder Solitär (3).
-            // (Derselbe Same wie die Sichthöhe oben: wartete er, wartete schon sie.)
-            const gestaltWechsel = this._streuGestaltWechsel(cell, tf);
+            // (Derselbe Same wie die Sichthöhe oben: wartete er, wartete schon sie.) Je Epoche des Orts einmal: wer ihr schon
+            // folgt (`_ortE`), fragt nicht neu — am Dorf bis hier 57 000 Fragen je Ankunft, `_tickScatterLod` +0,05 ms je Ruf.
+            const gestaltWechsel = cell._ortE !== ortE && this._streuGestaltWechsel(cell, tf);
+            if (!gestaltWechsel) cell._ortE = ortE;
             // DAS BAND DER STREU (K36): wandert die Zelle durchs Band, folgt ihr Partner dem Auge wie bei der Architektur;
             // hält sie, weil ihr Partner lud, tauscht sie, sobald er steht — die Zelle materialisiert neu (Partner + Halt).
             const bandWechsel = this._zusagenVon(
@@ -1385,6 +1391,7 @@ class AnazhRealm_vegetation_streu {
             cell.halt = rec.halt;
             cell.fuss = rec.fuss;
             // die Gestalt reist mit ihren Slots — und mit ihr der Scheitel der Krone (die Sichthöhe ist die der neuen Gestalt)
+            cell._ortE = ortE; // ihr Bau fragte den Ort dieser Epoche
             if (cell.gestalt !== rec.gestalt) {
                 cell.gestalt = rec.gestalt;
                 if (cell.promotable) this._streuKroneTragen(cell, visH);
