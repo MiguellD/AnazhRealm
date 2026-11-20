@@ -448,7 +448,7 @@ class AnazhRealm_kreatur_erbe {
     _gauBild(gx, gz) {
         const B = this._gauBilder();
         const k = gx + "," + gz;
-        if (!B.has(k))
+        if (!B.has(k) && !(this._gauBildMemo = null))
             B.set(k, {
                 gx,
                 gz,
@@ -472,10 +472,21 @@ class AnazhRealm_kreatur_erbe {
     }
     // DAS REVIER DER REGION `key` IM BILD SEINES GAUS — oder null: der Faden hat es (noch) nicht geantwortet.
     _gauRevier(key) {
-        const [ix, iz] = key.split(",").map(Number);
-        const o = this._gauOrt(ix, iz);
-        const b = this._gauBildStand && this._gauBilder().get(o.gx + "," + o.gz);
-        return (b && b.reviere.get(o.revier)) || null;
+        const k = key.indexOf(",");
+        return this._gauRevierAm(+key.slice(0, k), +key.slice(k + 1));
+    }
+    // DASSELBE AN DER REGION (ix, iz) ohne Schlüssel: der Leser des Fraßes am Ort (`_gauFrassAt`) fragt es je Halm und je Fuß —
+    // das Bild des letzten Gaus bleibt gemerkt (`_gauBildMemo`, fällt mit jedem neuen oder gegangenen Bild). Bis hier baute
+    // jede Frage zwei Schlüssel und drei Felder (gate:fall-waechter am Kopf 13,4 s in `_gauFrassAt`, die Seite +23 % Takt-Zeit).
+    _gauRevierAm(ix, iz) {
+        const st = this._gauBildStand;
+        if (!st || st.seed !== this._gelaende().seed) return null; // eine andere Welt: ihr Bild ist keins (`_gauBilder`)
+        const n = AnazhRealm.GAU.n;
+        const gx = Math.floor((ix + n / 2) / n);
+        const gz = Math.floor((iz + n / 2) / n);
+        let m = this._gauBildMemo;
+        if (!m || m.st !== st || m.gx !== gx || m.gz !== gz) m = this._gauBildMemo = { st, gx, gz, b: st.gaue.get(gx + "," + gz) };
+        return (m.b && m.b.reviere.get(ix - gx * n + n / 2 + (iz - gz * n + n / 2) * n)) || null;
     }
     // DER BESTAND EINER ART IN EINER REGION — der EINE Leser für jeden, der fragt, wie viele einer Gattung dort leben und was die
     // Region ihr trägt (Spiel, Linse, Probe): die Gattungen des Gesetzes (`_gauRolle`) aus dem Bild ihres Gaus (`_gauRevier`), die
@@ -512,12 +523,15 @@ class AnazhRealm_kreatur_erbe {
     // DER FRASS DES GAUS AM ORT (Feld-Einheiten wie das Leben-Overlay: ≤ 0 abgeäst; E3 — die Fraß-Schicht gehört dem Gau): die
     // Zelle des Reviers aus dem Bild, 0 ohne Bild.
     _gauFrassAt(x, z) {
-        const [S, zn] = [this._bestandSeite(), AnazhRealm.BESTAND_REGION.zellen];
-        const [ix, iz] = [Math.floor(x / S), Math.floor(z / S)];
-        const R = this._gauRevier(ix + "," + iz);
+        const S = this._bestandSeite();
+        const zn = AnazhRealm.BESTAND_REGION.zellen;
+        const fx = x / S;
+        const fz = z / S;
+        const ix = Math.floor(fx);
+        const iz = Math.floor(fz);
+        const R = this._gauRevierAm(ix, iz);
         if (!R) return 0;
-        const [a, c] = [Math.floor((x / S - ix) * zn), Math.floor((z / S - iz) * zn)];
-        return R.frass[Math.min(zn - 1, a) * zn + Math.min(zn - 1, c)] || 0;
+        return R.frass[Math.min(zn - 1, Math.floor((fx - ix) * zn)) * zn + Math.min(zn - 1, Math.floor((fz - iz) * zn))] || 0;
     }
     // DER TAKT-STEMPEL EINES AKTS (E2): der Takt NACH dem höchsten, den die Seite je bestellte — der Akt liegt nie vor dem Stand
     // des Gaus im Faden (ein Akt davor ließe ihn ab Takt 0 neu rechnen).
@@ -576,6 +590,7 @@ class AnazhRealm_kreatur_erbe {
             if (!je.has(k) && !b.flug) {
                 this._gauGeht(b.gx, b.gz);
                 this._gauBilder().delete(k);
+                this._gauBildMemo = null;
             }
     }
     // DIE ANTWORT DES FADENS WIRD DAS BILD: je gelesenem Revier Köpfe, Fraß und die Tiere als Datensätze der Zeichnung — Kennung
