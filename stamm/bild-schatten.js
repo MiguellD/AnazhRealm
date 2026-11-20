@@ -488,8 +488,7 @@ class AnazhRealm_bild_schatten {
 
     // DIE WAHL DES WURFS je Bild (aus `_leuchtTakt`, nach den Plätzen): unter den Plätzen mit Licht (ohne das Licht des Auges,
     // es folgt der Kamera und trägt nur ohne Himmel) die Quelle mit der größten Wichtigkeit im Bild — die Bestrahlung in
-    // `bezugM` (der Abfall des Gesetzes, wie der Stoff ihn rechnet) × die Fläche ihrer Reichweite im Bild (R / Abstand)²,
-    // ihre Kugel im Frustum —, wichtig erst, wenn sie in `bezugM` mindestens `wichtigAb` des Lichts der Welt trägt (die
+    // ihrem Abfall im Abstand des Auges (was sie ans Auge trägt, der Rang des Pools), ihre Kugel im Frustum —, wichtig erst, wenn sie in `bezugM` mindestens `wichtigAb` des Lichts der Welt trägt (die
     // waagrechte Bestrahlung der Belichtung, `_belichtungE`: mittags wirft kein Lagerfeuer sichtbar). Die Wahl hält,
     // solange keine andere um `halten` wichtiger ist. Die Karte zeichnet neu bei neuer Wahl oder Lage (die Lage des Lichts
     // springt nur mit der Karte: Karte und Abfrage tragen dieselbe Lage) und im Takt `takt` Bilder, wenn in diesem Bild
@@ -520,8 +519,14 @@ class AnazhRealm_bild_schatten {
                 Math.pow(LW.bezugM * LW.bezugM + atmo.lichtKern[k].value, -farbe.w / 2) *
                 Math.max(0, 1 - d ** 4) ** 2;
             if (!(eBezug >= LW.wichtigAb * eWelt)) continue;
+            // DIE WICHTIGKEIT IST, WAS SIE ANS AUGE TRÄGT (nacht-lichter, das Gesetz des Rangs im Pool `_leuchtQuellen`): die
+            // Bestrahlung ihres Abfalls im Abstand des Auges. Bis hier × die Fläche ihrer Reichweite im Bild (R / Abstand)²: seit die
+            // Reichweite aus der Lichtstärke folgt (die Laterne 12 → 28,1 m), nahm die Laterne 17 m weg dem Glutbrunnen 5 m vor dem
+            // Auge den Wurf (Radeon, Pfosten 2 m vom Feuer: Kontrast 1,65:1 an main, 1,00:1 hier)
             const ab = Math.max(1, Math.hypot(lage.x - cp.x, lage.y - cp.y, lage.z - cp.z));
-            const w = eBezug * (lage.w / ab) ** 2;
+            const w =
+                (0.2126 * farbe.x + 0.7152 * farbe.y + 0.0722 * farbe.z) *
+                Math.pow(ab * ab + atmo.lichtKern[k].value, -farbe.w / 2);
             if (q.id === W.id) ((altK = k), (altW = w));
             if (w > bestW) ((best = k), (bestW = w));
         }
