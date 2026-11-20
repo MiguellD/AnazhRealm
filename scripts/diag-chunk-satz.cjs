@@ -1078,13 +1078,17 @@ const { errs, check } = pruefer();
                 const fl = b.geom.fluechtig === true;
                 if (fl && (b.geom.index !== null || !Array.isArray(b.geom.quelle))) return false;
                 const nach = fl ? r._satzBlock(...b.geom.quelle) : null;
+                // … samt den Gewichten der gepackten Formen (die vierte Stelle: `aLageU`, `aLageV`, `aVerband` — `_satzBlock` legt sie
+                // nur in der Werkbank an, der flüchtige Block trägt sie nicht): die Nachrechnung liefert jedes Attribut, das der Block
+                // nicht hält. Bis hier las die Linse das Gewicht am Block — ein flüchtiger Bau-Block (Feuerstelle, unter Last: 3 von 20
+                // Läufen, CI voll 8/18 an 00f9064a und 106b754a) brach mit „reading 'array'“
                 const g = fl
                     ? {
                           attributes: Object.fromEntries(
-                              Object.entries(b.geom.attributes).map(([k, a]) => [
-                                  k,
-                                  a.array === null ? nach.attributes[k] : a,
-                              ])
+                              [...new Set([...Object.keys(nach.attributes), ...Object.keys(b.geom.attributes)])].map((k) => {
+                                  const a = b.geom.attributes[k];
+                                  return [k, !a || a.array === null ? nach.attributes[k] : a];
+                              })
                           ),
                           index: nach.index,
                       }
@@ -1316,7 +1320,25 @@ const { errs, check } = pruefer();
             const eng = [ortho(120), ortho(400)],
                 ring = ortho(4000);
             res.neu = { messung: {}, wachse: {} };
+            // DIE RUHE-FRIST DES VERDICHTENS LIEGT VOR DER MESSUNG (laub-messer): ein Satz über seinem Ziel schrumpft nach
+            // `ruheTakte` Takten (`_chunkSatzVerdichten`) und jeder Pass legt danach seinen Abschnitt neu — eine Änderung, keine
+            // Ruhe. Die Frist zählt die Takte des Loops VOR der Probe (die Null-Welt kennt nur den Abschnitt des Hauptbilds,
+            // ihre Sätze stehen über dem Ziel): wann sie abläuft, hing an der Wanduhr des Läufers. Vorprüfung 00520c2e (CI):
+            // „ruhe, Frame 3: formationenSatz: k0 · k1 schrieb seinen Abschnitt — 5276 B“ — dieselbe Zeile byte-gleich, wenn
+            // die Frist des kleinsten Fels-Satzes im dritten Frame abläuft (Gegen-Probe am Kopf); lokal am Vor-Kopf 6113b27e
+            // und am Kopf „druck: bodenSatz haupt · k0 · k1“ in 1 von 6 und 1 von 4 Läufen. Die Probe lässt jede offene Frist
+            // JETZT ablaufen (der Satz schrumpft vor dem ersten Frame, der nicht zählt); im Fenster verdichtet keiner.
+            const ruheT = r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte;
+            const fristAb = () => {
+                for (const x of s.chunkSaetze.values()) if (x.ueberSeit >= 0) x.ueberSeit = x.takt - ruheT;
+                r._tickChunkSatz();
+            };
+            const verdichtet = () => [...s.chunkSaetze.values()].reduce((a, x) => a + (x.verdichtet || 0), 0);
+            fristAb();
+            let v0 = verdichtet();
             res.neu.messung.ruhe = phase(eng, 5);
+            res.neu.verdichtet = verdichtet() - v0;
+            fristAb();
             // der Druck braucht die volle Last: seit der Höhlen-Sicht tragen die Ring-Kaskaden nur, was ein Empfänger
             // braucht, und der Index reichte — am Exemplar zeichnet hier jede Höhlen-Zelle (die Methode des Stamms bleibt)
             r._hoehlenSicht = function (satz) {
@@ -1329,11 +1351,13 @@ const { errs, check } = pruefer();
             const bodenS = s.chunkSaetze.get("boden");
             if (bodenS) r._chunkSatzGeometrie(bodenS, bodenS.vKap, bodenS.iEnde);
             let w0 = wachseSumme();
+            v0 = verdichtet();
             try {
                 res.neu.messung.druck = phase([ring, ring], 5);
             } finally {
                 delete r._hoehlenSicht;
             }
+            res.neu.verdichtet += verdichtet() - v0;
             res.neu.wachse.druck = wachseSumme() - w0;
             res.neu.boden = (() => {
                 const b = s.chunkSaetze.get("boden");
@@ -1841,9 +1865,10 @@ const { errs, check } = pruefer();
         const vNeu = urteilNeu(nu.messung);
         check(
             "(j) NEUSCHREIBEN — kein Pass schreibt in Ruhe, kein Pass den Abschnitt eines anderen (Bytes je Frame nach dem ersten)",
-            vNeu.length === 0,
-            vNeu.slice(0, 3).join(" · ") ||
-                `ruhe ${bytesJeFrame(nu.messung.ruhe)} B · druck ${bytesJeFrame(nu.messung.druck)} B · Boden ${JSON.stringify(nu.boden)}`
+            vNeu.length === 0 && nu.verdichtet === 0,
+            (nu.verdichtet ? `im Mess-Fenster verdichtet ${nu.verdichtet}× (die Ruhe-Frist lief in die Messung) · ` : "") +
+                (vNeu.slice(0, 3).join(" · ") ||
+                    `ruhe ${bytesJeFrame(nu.messung.ruhe)} B · druck ${bytesJeFrame(nu.messung.druck)} B · Boden ${JSON.stringify(nu.boden)}`)
         );
         check(
             "(j) … der zu kleine Index wächst unter Druck (beide Kaskaden über dem Ring), statt zu verdrängen; jeder Abschnitt treu",

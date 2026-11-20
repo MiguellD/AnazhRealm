@@ -690,7 +690,7 @@ function albedoSicht(opts) {
 function linsenZiel(W, H) {
     const T = window.THREE,
         { renderer: rend, scene: sc } = st,
-        rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+        rt = __messZiel(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
     let wahl;
     const zeichne = (cam) => {
         if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
@@ -945,7 +945,7 @@ function tafelGanz(o) {
                 e = q.y.mul(1.2).add(0.17);
             const dir = TSL.vec3(e.cos().mul(a.cos()), e.sin(), e.cos().mul(a.sin())).normalize();
             const male = async (node) => {
-                const rt = new T.RenderTarget(W, Hh, { type: T.HalfFloatType, depthBuffer: false });
+                const rt = __messZiel(W, Hh, { type: T.HalfFloatType, depthBuffer: false });
                 const s2 = new T.Scene(),
                     c2 = new T.OrthographicCamera(0, 1, 1, 0, -1, 1);
                 const m = new T.MeshBasicNodeMaterial();
@@ -1106,7 +1106,9 @@ function tafelGanzSelbsttest() {
 }
 
 // DIE TAG-ACHSE IM BILD (licht.K1, `werkbank licht --tag`): am Messort in Ego je Uhr (über den Pfad des Spielers) der Schuss aus dem
-// Ausgabe-Pfad: Sonnenhöhe, Belichtung des ersten Frames (`sofort`) und des stehenden Himmels (`frisch`), aus der unteren
+// Ausgabe-Pfad: Sonnenhöhe, Belichtung vor jedem Bild (`sofort`), am ersten Bild nach der Lesung des Messers (`nach`, nach
+// `lesung` Bildern) und des stehenden Himmels (`frisch`), an den Uhren der Wand mit Sonne die Sicht des Messers neben dem
+// Flächen-Mittel des Bild-Schattens (`sicht`, `flaeche`), aus der unteren
 // Bildhälfte Luma, Leuchtdichte Y (linear, ausgegeben), die Stufen der Szene X (je Pixel durch die Tonkurve zurück) und R/B;
 // mittags dazu die 18-%-Karte waagrecht 2,5 m vor dem Auge (ihre Luma, der Anker). Ein Spion zählt die Schreiber der
 // Belichtung. Die Uhr läuft die GANZE Bahn in 0,01, um den Horizont in 0,002 nach (`tagFeinUhren`).
@@ -1126,11 +1128,13 @@ function tagKurve(o) {
             enumerable: true,
             get: () => k,
             set: (v) => {
+                if (haltK) return; // der Schuss ohne Richtlicht der Probe SICHT hält die Kamera seines Schusses mit Licht (`flaeche`)
                 const s = window.__spielStapel().split(" ← ")[0];
                 if (v !== k) schreiber[s] = (schreiber[s] || 0) + 1;
                 k = v;
             },
         });
+        let haltK = false;
         const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         // die Tonkurve zurück (Khronos PBR Neutral, BELICHTUNG.kurve): Fuß 6,25·x², darüber x − 0,04, die Schulter
         const vor = (d) => (d < 0.04 ? Math.sqrt(d / 6.25) : d <= 0.76 ? d + 0.04 : 0.52 + 0.0576 / Math.max(1 - d, 1e-3));
@@ -1138,11 +1142,107 @@ function tagKurve(o) {
             H = 270;
         const zeilen = [];
         let karte = null;
+        let mutant = null;
+        const bild = () => new Promise((ok) => requestAnimationFrame(ok));
+        // DIE LESUNG DER NEUEN UHR (ASYNC, laub-messer): der Messer liest die Sicht des Bildes (`_bildSonnenSicht`) — die Schatten
+        // der neuen Stunde zeichnet erst das nächste Bild, seine Lesung kommt danach. Gezählt die BILDER des Spiels vom Uhr-Wort,
+        // bis die Sicht des neuen Lichts steht (`_bildSichtSteht`): die gezeichneten Bilder (`_shadowFrame`, EINS je `_loopRender` —
+        // ein Takt, den die GPU-Leine aussetzt, zeichnet keins: an der Radeon 2 Bilder in 3–9 Takten), dann der ERSTE Takt nach der
+        // Lesung: seine Belichtung ist der Tast-Punkt (`nach`). Jeder Takt ist `__seitenTakt` (ein Bild der Seite, dann der Takt von
+        // Hand): ein Takt ohne Bild der Seite davor zeichnet nur das Post-Quad (der Node-Frame steht, die Szene und ihre Schatten
+        // sind die des Bilds davor) — seine Lesung gälte als die des neuen Lichts (Diagnose: Mittag → Uhr 0,27 Sicht 0,969 statt 0,300)
+        const lesen = async () => {
+            const b0 = r._shadowFrame | 0;
+            for (let n = 0; n < 240 && !r._bildSichtSteht(); n++) await window.__seitenTakt();
+            // steht sie nach 240 Takten nicht, trägt die Zeile 99 Bilder (ROT an der Schranke)
+            const bilder = r._bildSichtSteht() ? (r._shadowFrame | 0) - b0 : 99;
+            // das erste BILD nach der Lesung: ein Takt ohne Bild (die Leine gespannt) trägt das Licht des Tags nicht
+            for (let n = 0, b1 = r._shadowFrame | 0; n < 240 && (r._shadowFrame | 0) === b1; n++) await window.__seitenTakt();
+            return bilder;
+        };
+        // DIE WELT DER LINSE STEHT, BEVOR DIE ERSTE UHR SPRINGT: nach dem Umstellen hat der Messer noch keine Lesung, die steht —
+        // das Einschwingen der Werkbank springt den Himmel je Takt (Genesis: 4 070 Sprünge in 89 Bildern, jede Lesung im Flug
+        // verfällt), die Sicht ist die Vorgabe 1. Die erste Zeile mäße sonst den Anlauf des Werkzeugs statt eines Uhr-Worts
+        // (Genesis, Uhr 0: −0,09 EV in vier Läufen)
+        await lesen();
+        // DAS FLÄCHEN-MITTEL DES BILD-SCHATTENS (SICHT, unabhängig vom Messer): drei Schüsse derselben Szene unter derselben Kamera
+        // und demselben Boden — `an` (der Schuss der Zeile), `frei` (die Sonne OHNE jeden Schatten: die Stärke der Kaskaden 0,
+        // Horizont- und Wolken-Karte aus), `aus` (ohne das Richtlicht). Je Pixel der unteren Bildhälfte, das die Sonne erreicht
+        // (frei − aus über 5 % von aus), der Schatten des Bildes V = (an − aus) / (frei − aus) in 0 … 1 (Szenen-Luma, Tonkurve
+        // zurück); das Mittel über diese Pixel ist das Flächen-Mittel. Danach das Licht der Stunde wieder ganz.
+        // DIESELBE KAMERA, DERSELBE BODEN: ohne Richtlicht oder ohne Schatten mäße der Messer eine andere Belichtung und der
+        // Rückstrahl einen anderen Boden — `frei` und `aus` halten die Belichtung des Schusses `an` (`haltK`) und den Rückstrahl,
+        // der steht (`rueckstrahl: "halten"`). Ungehalten zählte die Probe den Unterschied der Kamera und des Boden-Lichts als
+        // Sonne (Radeon, Mess-Wiese, Uhr 0,27: gezählt über r ≥ 0,1 · 0,2 · 0,4 r_ref → 0,80 · 0,43 · 0,30).
+        // DAS MITTEL, NIE DIE ZAHL ÜBER EINER SCHWELLE: die Zähl-Probe der Vor-Probe (r = (an − aus) / aus ≥ 0,2 · r_ref, r_ref =
+        // Sonne ÷ Himmel auf der unbeschatteten waagrechten Karte) zählt jeden Halbschatten als Licht — am Platz von Genesis,
+        // Sonne 10°, liegt ein weicher Lichtfleck der Bäume (die Kacheln des Passes 0,2–0,55): gezählt 0,158, Band 0,08–0,20, der
+        // Messer 0,050; und r ÷ r_ref als Mittel liest mittags 0,62–0,67 unter voller Sonne (der Bezug der waagrechten Karte gilt
+        // keinem Halm). Die Zahlen der Schwellen 0,4 · 0,2 · 0,1 stehen als Band in der Messung (`flaecheBand`).
+        const SICHT_UHREN = [0.27, 0.28, 0.33, 0.5, 0.72, 0.73];
+        const szene = (u8) => {
+            const a = new Float32Array((W * H) / 2);
+            for (let i = (H / 2) * W * 4, j = 0; i < W * H * 4; i += 4) a[j++] = vor(luma709([lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]]));
+            return a;
+        };
+        const flaeche = async (u8, kAn) => {
+            const dl = st.directionalLight;
+            const csm = st.csmNode;
+            const L = dl.position.clone().sub(dl.target.position).normalize();
+            const rref = (luma709([dl.color.r, dl.color.g, dl.color.b]) * dl.intensity * Math.max(0, L.y)) / Math.max(luma709(r._himmelE || [0, 0, 0]), 1e-9);
+            if (!(rref > 0) || !csm || !csm.lights?.length) return null;
+            const an = szene(u8);
+            const schuss = async () => szene((await window.__ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl: "halten" })).u8);
+            const i0 = dl.intensity;
+            const staerke = csm.lights.map((l) => l.shadow.intensity);
+            const karten = [st.horizontKarte, st.wolkenKarte].filter(Boolean);
+            const aktiv = karten.map((K) => K.U.aktiv.value);
+            const takte = ["_horizontKarteTakt", "_wolkenKarteTakt"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
+            const schatten = (an) => {
+                csm.lights.forEach((l, i) => (l.shadow.intensity = an ? staerke[i] : 0));
+                karten.forEach((K, i) => (K.U.aktiv.value = an ? aktiv[i] : 0));
+                for (const [m, eigen, f] of takte)
+                    if (!an) r[m] = () => (m === "_horizontKarteTakt" ? st.horizontKarte || null : undefined);
+                    else if (eigen) r[m] = f;
+                    else delete r[m];
+            };
+            let aus, frei;
+            k = kAn;
+            haltK = true;
+            try {
+                schatten(false);
+                frei = await schuss();
+                schatten(true);
+                dl.intensity = 0;
+                aus = await schuss();
+            } finally {
+                schatten(true);
+                haltK = false;
+                dl.intensity = i0;
+                r._himmelSprung = true;
+                r._applyDayNightToScene();
+            }
+            const n = [0, 0, 0];
+            const S = [0.4, 0.2, 0.1];
+            let [summe, zahl] = [0, 0];
+            for (let i = 0; i < an.length; i++) {
+                const q = aus[i] > 0 ? (an[i] - aus[i]) / aus[i] : 0;
+                for (let j = 0; j < 3; j++) if (q >= S[j] * rref) n[j]++;
+                const d = frei[i] - aus[i];
+                if (!(aus[i] > 0 && d > 0.05 * aus[i])) continue;
+                summe += Math.min(1, Math.max(0, (an[i] - aus[i]) / d));
+                zahl++;
+            }
+            // unter 2 % der Fläche erreicht die Sonne kein Bild, das einen Schatten trüge: ohne Urteil
+            if (zahl < 0.02 * an.length) return null;
+            return [+(summe / zahl).toFixed(4), n.map((x) => +(x / an.length).toFixed(4)), +(zahl / an.length).toFixed(3)];
+        };
         try {
             for (const u of o.uhren) {
-                if (st.world) st.world.timeOfDay = u;
                 if (r.setTimeOfDay(u, "human") !== true) throw new Error(`die Uhr nimmt den Spieler nicht (${u})`);
                 const sofort = k;
+                const lesung = await lesen();
+                const nach = k;
                 // die Leuchtquellen der Stunde blenden ein (`_leuchtTakt`), bis jeder Platz des Pools steht
                 for (let i = 0, p; i < 20 && r._leuchtTakt; i++, await sleep(50)) {
                     r._leuchtTakt();
@@ -1150,6 +1250,7 @@ function tagKurve(o) {
                 }
                 await window.__weltStehtWarten();
                 const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                const [kAn, sichtAn] = [k, r._bildSonnenSicht()]; // die Kamera und die Sicht DIESES Schusses (vor der Karte des Ankers)
                 const s = [0, 0, 0, 0, 0];
                 let n = 0;
                 for (let i = (H / 2) * W * 4; i < W * H * 4; i += 4, n++) {
@@ -1161,6 +1262,8 @@ function tagKurve(o) {
                     uhr: u,
                     sonne: +((Math.asin(r._sonnenRichtung().y) * 180) / Math.PI).toFixed(2),
                     sofort: +sofort.toFixed(4),
+                    lesung,
+                    nach: +nach.toFixed(4),
                     frisch: +k.toFixed(4),
                     hell: +(s[0] / n).toFixed(1),
                     Y: +(luma709(s.slice(1)) / n).toPrecision(4),
@@ -1185,12 +1288,43 @@ function tagKurve(o) {
                     km.geometry.dispose();
                     km.material.dispose();
                 }
+                // SICHT: der Messer dieses Schusses (die Lesung seines Bilds) neben dem Flächen-Mittel des Bild-Schattens
+                if (SICHT_UHREN.includes(u) && r._bildSichtMisst() && r._sonnenRichtung().y > 0) {
+                    const f = await flaeche(u8, kAn);
+                    if (f) [z.sicht, z.flaeche, z.flaecheBand, z.flaecheAnteil] = [+sichtAn.toFixed(4), f[0], f[1], f[2]];
+                }
+            }
+            // DER MUTANT DER LESUNG (live, einmal je Ort — der Lauf mit dem Mittag): die Rück-Lesung des Passes kommt 8 Bilder
+            // später; die Zählung muss es sehen (das Urteil: der Mutant über der Schranke, sonst ist ASYNC blind)
+            if (o.uhren.includes(0.5) && r._bildSichtMisst()) {
+                const ur = rend.readRenderTargetPixelsAsync;
+                const ziel = st.rueckstrahlLeser.rt;
+                rend.readRenderTargetPixelsAsync = function (...a) {
+                    const p = ur.apply(this, a);
+                    if (a[0] !== ziel) return p;
+                    return p.then(async (px) => {
+                        for (let i = 0; i < 8; i++) await bild();
+                        return px;
+                    });
+                };
+                try {
+                    const u0 = st.timeOfDay;
+                    const u1 = u0 === 0.3 ? 0.31 : 0.3;
+                    if (st.rueckstrahlLeser.lesung) await st.rueckstrahlLeser.lesung;
+                    if (r.setTimeOfDay(u1, "human") !== true) throw new Error(`die Uhr nimmt den Spieler nicht (${u1})`);
+                    mutant = { lesung: await lesen() };
+                    if (st.rueckstrahlLeser.lesung) await st.rueckstrahlLeser.lesung;
+                    r.setTimeOfDay(u0, "human");
+                } finally {
+                    rend.readRenderTargetPixelsAsync = ur;
+                }
             }
         } finally {
+            // der Spion fällt, die Belichtung schreibt wieder der EINE Schreiber (die Kamera frei, an der Uhr der Seite)
             delete rend.toneMappingExposure;
-            rend.toneMappingExposure = k;
+            r._blendeBestellen(null);
         }
-        return { zeilen, schreiber, karte, bahn: o.uhren.length === 100 };
+        return { zeilen, schreiber, karte, mutant, bahn: o.uhren.length === 100 };
     })();
 }
 
@@ -1202,14 +1336,29 @@ function tagKurve(o) {
 //   stehenden Himmel · SCHREIBER nicht EINER · BLIND ohne Mittag und Mitternacht. Das EV ist das des Ausgabe-Bilds (Y). Trägt die
 //   Messung nicht die ganze Bahn (`bahn`: die 100 Uhren; `--kurz` ist die Wand gate:tag-achse:echt), urteilt sie die Mechanik der
 //   Kamera (`TAG_WAND`: Anker, Stetigkeit, EIN Schreiber); was die Szene antwortet, urteilt die Station über die ganze Bahn.
-const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05 };
-const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|SCHREIBER|BLIND) /;
-// die Nachtastung im Feinschritt 0,002: jede Lücke einer Seite, deren Sonne im Fenster um den Horizont steht (−18 … 15°)
+//   ASYNC SEIT laub-messer (Entscheid 19.11.): der Messer liest die Sicht des BILDES, er kann dem Bild nicht vorausgehen — der
+//   Tast-Punkt ist das erste Bild NACH der Lesung der neuen Uhr (`nach`) gegen den stehenden Himmel (`frisch`), Schwelle
+//   unverrückt; dazu die Schranke `lesung`: höchstens 3 Bilder vom Uhr-Wort bis zur Lesung. Der wörtliche Wert vor jedem Bild
+//   (`sofort`) steht als Zahl in der Zeile des Orts, ungeurteilt. Der Mutant (live, je Ort): die Lesung 8 Bilder später muss die
+//   Schranke reißen, sonst ist ASYNC blind. SICHT der Messer liest die Sicht des Bildes: |Sicht des Messers − Flächen-Mittel des
+//   Bild-Schattens| über 0,10 (an den Uhren mit Sonne der Wand).
+const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05, lesung: 3, sicht: 0.1 };
+const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|SICHT|SCHREIBER|BLIND) /;
+// DER MESSER DES KOPFS 6113b27e (vor laub-messer: Ellipsen der Karten, Ebene unter dem Auge, 32-m-Gitter) neben dem Flächen-Mittel
+// des Bild-Schattens — GEMESSEN (Radeon 890M, Mess-Wiese Ego, 1920 × 1080, Uhr 0,27, Gier 0): der Mutant „Ellipse zurück“ des Selbsttests.
+// Die Fläche steht am UNTEREN Rand ihres Bands (gezählt an den Schwellen 0,4 · 0,2 · 0,1: 0,249 · 0,319 · 0,386) — ROT auch dort
+const TAG_SICHT_KOPF = { sicht: 0.0115, flaeche: 0.249 };
+// die Nachtastung im Feinschritt 0,002: jede Lücke einer Seite, deren Sonne im Fenster um den Horizont steht (−18 … 15°) — und
+// JEDER REISSENDE SCHRITT 0,01 der Bahn (laub-messer: über `sprung` EV zwischen zwei Zeilen): das Urteil fällt dort im Feinschritt
+// (eine Rampe über 0,01 ist kein Sprung, ein Sprung bleibt einer — die Schwelle steht)
 function tagFeinUhren(zeilen) {
+    const ev = (a, b) => Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9));
     return zeilen.flatMap((a, i) => {
         const b = zeilen[i + 1];
-        const drin = b && b.uhr - a.uhr < 0.021 && a.uhr % 0.5 && [a, b].some((x) => x.sonne >= -18 && x.sonne <= 15);
-        return drin ? Array.from({ length: Math.round((b.uhr - a.uhr) / 0.002) - 1 }, (_, j) => +(a.uhr + 0.002 * (j + 1)).toFixed(3)) : [];
+        if (!b || !(b.uhr - a.uhr < 0.021) || !(b.uhr - a.uhr > 0.0021)) return [];
+        const horizont = a.uhr % 0.5 && [a, b].some((x) => x.sonne >= -18 && x.sonne <= 15);
+        const reisst = b.uhr - a.uhr < 0.0105 && Math.abs(ev(b.Y, a.Y)) > TAG_SOLL.sprung;
+        return horizont || reisst ? Array.from({ length: Math.round((b.uhr - a.uhr) / 0.002) - 1 }, (_, j) => +(a.uhr + 0.002 * (j + 1)).toFixed(3)) : [];
     });
 }
 function tagKurveUrteil(welt) {
@@ -1244,8 +1393,12 @@ function tagKurveUrteil(welt) {
             if (Math.abs(d) > S.sprung) rot("SPRUNG", `Uhr ${alle[i - 1].uhr} → ${x.uhr} ${r2(d)} EV`);
             if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
             if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
-            if (Math.abs(ev(x.sofort, x.frisch)) > S.async) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.sofort, x.frisch))} EV`);
+            if (!(x.lesung <= S.lesung)) rot("ASYNC", `Uhr ${x.uhr} die Lesung nach ${x.lesung} Bildern (Schranke ${S.lesung})`);
+            if (!(Math.abs(ev(x.nach, x.frisch)) <= S.async)) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.nach, x.frisch))} EV`);
+            if (x.sicht != null && !(Math.abs(x.sicht - x.flaeche) <= S.sicht)) rot("SICHT", `Uhr ${x.uhr} der Messer ${r2(x.sicht)} neben dem Bild ${x.flaeche == null ? "ohne Maß" : r2(x.flaeche)}`);
         });
+        // der Mutant der Lesung (live): 8 Bilder später reißt die Schranke — sonst zählte die Linse die Bilder nicht
+        if (m.mutant && !(m.mutant.lesung > S.lesung)) rot("ASYNC", `blind: die Lesung des Mutanten (+8 Bilder) nach ${m.mutant.lesung} Bildern`);
         const gold = [];
         for (const s of [alle.filter((x) => x.uhr < 0.5), alle.filter((x) => x.uhr > 0.5)]) {
             const i = s.findIndex((x, j) => j && (s[j - 1].sonne - 10) * (x.sonne - 10) <= 0);
@@ -1260,9 +1413,18 @@ function tagKurveUrteil(welt) {
         if (n.length !== 1) rot("SCHREIBER", n.join(", ") || "keiner");
         // DIE SECHS ZAHLEN DES ORTS (das Soll der Karte licht.K1 in EINER Zeile, wie die Station sie nennt — der Probe-Post trägt sie)
         const mit = ([v, uhr]) => `${r2(v)} (Uhr ${uhr})`;
+        // … dazu der Messer (laub-messer): die größte Lücke Sicht des Messers − Bild, ASYNC am neuen Tast-Punkt, die Bilder bis zur
+        // Lesung (Spitze, und die des Mutanten), der wörtliche Wert vor jedem Bild (ungeurteilt)
+        const mitSicht = alle.some((x) => x.sicht != null);
+        // der Messer misst (sein Mutant lief), und keine Zeile trägt seine Sicht neben dem Bild: die Probe wäre blind
+        if (m.mutant && !mitSicht) rot("SICHT", "blind: der Messer misst, keine Zeile trägt seine Sicht neben dem Bild");
+        const lesung = Math.max(...alle.map((x) => x.lesung));
         zahlen[ort] =
             `Karte ${m.karte} · Sprung ${mit(spitze(schritt))} · Buckel ${mit(spitze((x) => Math.max(e(x), 0)))} · Sonne 10° ${gold.join(" | ")} · ` +
-            `Nacht ${r2(e(nacht))} EV Luma ${nacht.hell} · REF ${mit(spitze(ref))}${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
+            `Nacht ${r2(e(nacht))} EV Luma ${nacht.hell} · REF ${mit(spitze(ref))} · ` +
+            `Sicht ${mitSicht ? mit(spitze((x) => (x.sicht != null && x.flaeche != null ? x.sicht - x.flaeche : 0))) : "ohne Messung"} · ` +
+            `ASYNC ${mit(spitze((x) => ev(x.nach, x.frisch)))} nach ${lesung} Bildern${m.mutant ? ` (Mutant ${m.mutant.lesung})` : ""} · ` +
+            `sofort ${mit(spitze((x) => ev(x.sofort, x.frisch)))} EV${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
     }
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven, zahlen };
 }
@@ -1276,8 +1438,22 @@ function tagKurveUrteil(welt) {
 function tagKurveSelbsttest() {
     const T = require("../../spec/farbe/tag-kurve.json");
     const kurve = (q, fall) => {
-        const alle = q.zeilen.map((r) => Object.fromEntries(T.spalten.map((s, i) => [s, r[i]])));
+        // die Kurve des Kopfs trägt `sofort` und `frisch` (11.11.); der Tast-Punkt nach der Lesung steht dort wie der stehende
+        // Himmel, die Lesung nach 2 Bildern — jeder Mutant unten spielt seinen Fall hinein
+        const alle = q.zeilen.map((r) => Object.fromEntries(T.spalten.map((s, i) => [s, r[i]]))).map((x) => Object.assign(x, { nach: x.frisch, lesung: 2 }));
         const z = (u) => alle.find((x) => x.uhr === u);
+        // DER FEINSCHRITT (laub-messer): ein Schritt 0,01 am Vormittag (Sonne 29°, außerhalb des Fensters um den Horizont) reißt mit
+        // 0,3 EV — die Nachtastung nennt seine vier Uhren; als Rampe (je 0,06 EV) fällt er GRÜN, als Sprung im letzten Feinschritt
+        // bleibt er ROT beim Namen
+        if (/^FEIN/.test(fall)) {
+            const [a, b] = [0.4, 0.41].map((uhr, i) => Object.assign({}, z(0.33), { uhr, Y: z(0.33).Y * 2 ** (0.3 * i) }));
+            alle.push(a, b);
+            alle.sort((x, y) => x.uhr - y.uhr);
+            const uhren = tagFeinUhren(alle).filter((u) => u > 0.4 && u < 0.41);
+            if (fall === "FEIN-UHREN") return uhren.join();
+            for (const [i, uhr] of uhren.entries())
+                if (fall !== "FEIN-OHNE") alle.push(Object.assign({}, a, { uhr, Y: fall === "FEIN-RAMPE" ? a.Y * 2 ** (0.06 * (i + 1)) : a.Y }));
+        }
         if (fall === "BUCKEL") z(0.33).Y = z(0.5).Y * 1.2;
         if (fall === "SPRUNG") z(0.276).Y *= 1.2;
         if (fall === "GOLD") z(0.276).Y = z(0.278).Y = z(0.5).Y;
@@ -1285,8 +1461,23 @@ function tagKurveSelbsttest() {
         if (fall === "REF") z(0.33).X *= 1.5;
         if (fall === "NACHT") z(0).hell = 10;
         if (fall === "HELL") z(0).Y *= 4;
-        if (fall === "ASYNC") z(0.722).sofort *= 2;
+        // ASYNC am neuen Tast-Punkt: das erste Bild nach der Lesung neben dem stehenden Himmel · LESUNG: die Lesung 8 Bilder später
+        // (2 + 8) reißt die Schranke · HIMMEL: der Himmel des Messers eine Uhr hinterher — das Bild nach der Lesung trägt die
+        // Belichtung der Uhr davor (0,72 unter 0,722: −0,12 EV) · SOFORT: der wörtliche Wert vor jedem Bild urteilt nicht mehr
+        if (fall === "ASYNC") z(0.722).nach *= 2;
+        if (fall === "LESUNG") z(0.722).lesung += 8;
+        if (fall === "HIMMEL") z(0.722).nach = z(0.72).frisch;
+        if (fall === "SOFORT") z(0.722).sofort *= 2;
+        // SICHT (laub-messer, gemessen am Kopf 6113b27e, Radeon, Mess-Wiese Ego 1920 × 1080, Uhr 0,27): der Messer des Kopfs
+        // (Ellipsen der Karten, Ebene unter dem Auge, 32-m-Gitter) neben dem Flächen-Mittel des Bild-Schattens — „Ellipse zurück“
+        // ist ROT beim Namen; der Messer, der die Sicht des Bildes liest, steht daneben GRÜN (gemessen am Schnitt, dieselbe Pose
+        // in der Welt des Tors: 0,303 gegen 0,346)
+        if (fall === "SICHT") Object.assign(z(0.27), TAG_SICHT_KOPF);
+        if (fall === "SICHT-BILD") Object.assign(z(0.27), { sicht: 0.303, flaeche: 0.346 });
         const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" };
+        // der Mutant der Lesung (live): gesehen (10 Bilder) ist kein Befund, übersehen (2 Bilder) ist ASYNC blind
+        if (fall === "MUTANT") m.mutant = { lesung: 10 };
+        if (fall === "MUTANT-BLIND") m.mutant = { lesung: 2 };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
         if (fall === "BLIND") m.zeilen = [];
         return tagKurveUrteil({ wiese: m }).befunde.join();
@@ -1297,6 +1488,8 @@ function tagKurveSelbsttest() {
         A.BELICHTUNG = Object.assign({}, A.BELICHTUNG, mutante);
         return R.filter((x) => !(Math.abs(A._belichtungStufen(x[0], x[1] / R[0][1]) - x[2]) <= 0.005)).map((x) => `GESETZ Sonne ${x[0]}°`).join();
     };
+    // nur die Befunde eines Namens (die Kurve des Kopfs trägt daneben ihre offenen Posten der Staffel)
+    const nur = (text, re) => text.split(",").filter((b) => re.test(b)).join();
     return [
         [kurve(T.kopf, "WAND"), ""],
         [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "GOLD,GOLD,WARM"],
@@ -1305,6 +1498,23 @@ function tagKurveSelbsttest() {
         [kurve(T.kopf, "WARM"), /WARM wiese: Sonne 10° R\/B 7\.55 gegen 7\.55 mittags/],
         [kurve(T.kopf, "HELL"), /NACHT wiese: -1\.36 EV/],
         ...["ANKER", "SPRUNG", "BUCKEL", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
+        // ASYNC seit laub-messer: die Schranke der Lesung, der Himmel eine Uhr hinterher, der übersehene Mutant — ROT beim Namen;
+        // der wörtliche Wert vor jedem Bild und der gesehene Mutant sind kein Befund
+        [kurve(T.kopf, "LESUNG"), /(^|,)ASYNC wiese: Uhr 0\.722 die Lesung nach 10 Bildern/],
+        [kurve(T.kopf, "HIMMEL"), /(^|,)ASYNC wiese: Uhr 0\.722 -0\.12 EV/],
+        [kurve(T.kopf, "MUTANT-BLIND"), /(^|,)ASYNC wiese: blind: die Lesung des Mutanten \(\+8 Bilder\) nach 2 Bildern/],
+        [nur(kurve(T.kopf, "SOFORT"), /ASYNC/), ""],
+        [nur(kurve(T.kopf, "MUTANT"), /ASYNC/), ""],
+        // SICHT: der Messer des Kopfs 6113b27e neben dem Bild-Schatten ROT, der Messer der Sicht des Bildes GRÜN
+        [kurve(T.kopf, "SICHT"), /(^|,)SICHT wiese: Uhr 0\.27 der Messer /],
+        [nur(kurve(T.kopf, "SICHT-BILD"), /SICHT/), ""],
+        [nur(kurve(T.kopf, "MUTANT"), /SICHT/), /^SICHT wiese: blind: der Messer misst/],
+        // DER FEINSCHRITT: die Nachtastung nennt die vier Uhren des reißenden Schritts; ohne sie und als Sprung im Feinschritt ROT
+        // beim Namen, als Rampe GRÜN
+        [kurve(T.kopf, "FEIN-UHREN"), "0.402,0.404,0.406,0.408"],
+        [nur(kurve(T.kopf, "FEIN-OHNE"), /SPRUNG/), "SPRUNG wiese: Uhr 0.4 → 0.41 0.30 EV"],
+        [nur(kurve(T.kopf, "FEIN-SPRUNG"), /SPRUNG/), "SPRUNG wiese: Uhr 0.408 → 0.41 0.30 EV"],
+        [nur(kurve(T.kopf, "FEIN-RAMPE"), /SPRUNG/), ""],
         [gesetz(), ""],
         [gesetz({ steigung: 1, stufen: [[10, 0], [-20, 0]] }), /GESETZ Sonne 10°/],
     ];
@@ -2423,33 +2633,29 @@ function luftTiefe(o) {
             return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
         };
         const med = (a) => (a.length ? +rang(a.slice().sort(aufsteigend)).toPrecision(4) : null);
-        // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
+        // β des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
-        let blende = 1;
         const anwenden = r._dayNightApplyLuft;
-        const belichten = r._dayNightApplyBelichtung;
         r._dayNightApplyLuft = function (...a) {
             anwenden.apply(this, a);
             if (dichte != null) U.beta.value = dichte;
         };
-        r._dayNightApplyBelichtung = function (...a) {
-            belichten.apply(this, a);
-            st.renderer.toneMappingExposure *= blende;
-        };
+        // DIE BLENDE k ÜBER DER MESSUNG (laub-kante-3): die Kamera des Spiels folgt der Lesung dieses Schusses, k ist ihre Korrektur
+        // (`_blendeBestellen({ mal: k })`, die EINE Tür der Welt zum EINEN Schreiber — auch durch die Lesung der Aufnahme). Bis hier
+        // umhüllte die Linse den Schreiber (`toneMappingExposure *= blende`) und setzte die Belichtung neben ihm. GEMESSEN (Radeon,
+        // Genesis): die feste Hand bei k × der Lesung VOR dem Schuss riss K1-1 (T/T_soll 0,50–0,79) und K2-1 (0,041 > 0,02), die
+        // Korrektur über der Lesung DES Schusses steht wie die Hülle (K1-1, K2-1 GRÜN)
         const schuss = async (b, k) => {
             const alt = U.beta.value;
-            const e = st.renderer.toneMappingExposure;
-            blende = k;
-            st.renderer.toneMappingExposure = e * k;
+            r._blendeBestellen({ mal: k });
             if (b != null) U.beta.value = dichte = b;
             if (st.fernRing) r._tickFeldPass(st.fernRing);
             try {
                 return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             } finally {
                 dichte = null;
-                blende = 1;
                 U.beta.value = alt;
-                st.renderer.toneMappingExposure = e;
+                r._blendeBestellen(null);
             }
         };
         const blick = (az) => {
@@ -2498,7 +2704,6 @@ function luftTiefe(o) {
         };
         const bRef = luftBetaRef(R);
         const uhr = (u) => {
-            if (st.world) st.world.timeOfDay = u;
             if (r.setTimeOfDay(u, "human") !== true) throw new Error(`__luftTiefe: die Uhr nimmt den Spieler nicht (${u})`);
             const sd = r._sonnenRichtung();
             return { sonne: +((Math.asin(sd.y) * 180) / Math.PI).toFixed(2), az: Math.atan2(sd.x, -sd.z) };
@@ -2594,7 +2799,7 @@ function luftTiefe(o) {
             }
         } finally {
             delete r._dayNightApplyLuft;
-            delete r._dayNightApplyBelichtung;
+            r._blendeBestellen(null);
             PU.bloomStrength.value = bloom0;
             cam.fov = fov0;
             cam.updateProjectionMatrix();

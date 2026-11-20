@@ -795,12 +795,13 @@ var __weltLicht = (function () {
     // DIE SONNENBAHN — die EINE Formel der Welt (Licht, Schatten, Himmelskörper, Bühne der Studios). OFFEN (w28-nacht-licht): die Bahn
     // aus Jahr × Breite (Meeus Kap. 13, sin h = sin φ sin δ + cos φ cos δ cos H) stand gebaut und gemessen — Mittag 74,2° → 74,6°,
     // 05 Uhr im Sommer die Dämmerung (Dorf Luma 70 → 88) — und fiel an gate:tag-achse:echt: die Sonne des Sommers geht im
-    // Nordosten auf, hinter dem Grat der Mess-Wiese (Azimut 76°) tritt sie bei 10° hervor, der Lichtmesser (`_horizontSichtImBild`)
+    // Nordosten auf, hinter dem Grat der Mess-Wiese (Azimut 76°) tritt sie bei 10° hervor, der Lichtmesser (seine eigene Messung im Bild)
     // springt 0,55 EV, das Bild 0,34 EV je Schritt der Uhr (Radeon). GEMESSEN (w28-nacht-bilanz, Radeon, Wiese): die nahen Kronen
     // stehen im Messer (2 627 von 2 632 Werfern), der Grat nimmt dort nichts (Sicht 0,199 bei L.y 0,168) — es sprang die binäre
-    // Krone (`_kartenWurfSicht`: Sicht 0,07 → 0,79 über Uhr 0,254 → 0,26, während die Waldkante das Bild über fünf Schritte
+    // Krone (der Karten-Wurf des Messers: Sicht 0,07 → 0,79 über Uhr 0,254 → 0,26, während die Waldkante das Bild über fünf Schritte
     // freigibt). Mit dem Dichte-Profil der Krone fiel der Sprung auf 0,15–0,18 EV (Soll 0,1): die Bahn bleibt draußen, bis der
-    // Messer den Wurf der Waldkante so stetig liest, wie das Bild ihn zeigt (32 Strahlen kippen gemeinsam).
+    // Messer den Wurf der Waldkante so stetig liest, wie das Bild ihn zeigt (32 Strahlen kippen gemeinsam). Seit laub-messer liest
+    // er die Sicht des Bildes selbst (`_bildSonnenSicht`, 18 432 Proben der unteren Bildhälfte); seine eigenen Gestalten sind gefallen.
     function sonnenRichtung(winkel) {
         const x = Math.cos(winkel);
         const y = Math.sin(winkel);
