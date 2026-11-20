@@ -94,4 +94,7 @@ Die Bilanz: main 8/8, Kopf 8/8, fuge-offen 3/3, `fehler` [] (`gpu-1c574fb1/bild-
    - Die Räumung (`_naturRaeumen`) räumt nur Grundriss und Weg, die Probe zählt den ganzen Grund (`!_ortFrei`).
    - Nicht geschnitten.
 5. **haus-fern** am 980bf4887: Der 1. Lauf starb nach 28 s ohne Meldung neben einem GPU-Lauf, der 2. Lauf war grün (285,6 s).
-6. **`npm run check`** ganz habe ich nicht gefahren; die Batterie fährt CI mit `[ci voll]`.
+6. **`npm run check`** (am Kopf `check:statik` mit 52 Gliedern `&& gate:haus-fern`): kein Glied steht offen, alle sind am Baum 1c574fb1b grün gefahren. Ich habe es nur nicht als EINEN Aufruf gefahren.
+   - 51 Glieder grün (`tore-1c574fb1/ZUSAMMEN.txt` statik00–50, Liste gleich `check:statik` am Kopf).
+   - Das 52. Glied `node scripts/diag-taille.cjs` ist grün am Gerät (`gpu-1c574fb1/taille.log`, 7 s).
+   - `gate:haus-fern` ist grün (273 s).
