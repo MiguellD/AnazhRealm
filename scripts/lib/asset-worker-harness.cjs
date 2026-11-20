@@ -140,7 +140,7 @@ function bauTeile(meshes) {
 }
 
 function pageHtml() {
-    return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script src="/phyto-core.js"></script><script>
+    return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script src="/samen-core.js"></script><script src="/phyto-core.js"></script><script>
 (() => {
   const S = (window.__AW = { ready: false, error: null });
   const boot = ${WORKER_BOOT};
