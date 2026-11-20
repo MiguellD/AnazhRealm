@@ -1656,6 +1656,7 @@ function baumStufeZensus() {
         !!(
             (r._saatOffen && r._saatOffen.has(k)) ||
             (r._saatGehend && r._saatGehend.has(k)) ||
+            (r._waldPflanzWarten && r._waldPflanzWarten.has(k)) || // der Pflanz-Gang wartet auf den Plan seines Walds
             (st.pendingFoliageChunks && st.pendingFoliageChunks.has(k))
         );
     const memo = r._forestDartMemo;
