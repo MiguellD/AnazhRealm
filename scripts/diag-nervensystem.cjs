@@ -24,7 +24,6 @@ const { fehlerText, statikServer,
     waitFor,
     ROOT,
     hauptLauf,
-    sleep,
     wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 
@@ -319,7 +318,9 @@ hauptLauf(async () => {
             });
             return { bau: window.__bauWerk(w()), stand: window.__werkStand(w()) };
         }, e.werk.id);
-        await sleep(1500); // der IDB-Put des Saves landet, bevor der Reload ihn abschneidet
+        // der Stand des Saves ist fest, bevor der Reload ihn abschneidet (die Schranke des Speicher-Fadens — bis abdruck-am-takt
+        // 1,5 s nach der Wanduhr)
+        await page.evaluate(() => r._speicherStill().then(() => true));
         await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         e.geladen = await page.evaluate(async (o) => {
             await window.__buch();

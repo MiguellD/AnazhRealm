@@ -829,7 +829,7 @@ async function labPruefen(browser) {
     const page = await browser.newPage();
     try {
         await server.zeige(page, 60000, "worlds/klang/index.html", "load");
-        return await page.evaluate(async () => {
+        return await page.evaluate(() => {
             const K = __klangCore;
             const o = { weltModus: !!document.getElementById("weltModeBtn"), graphGebaut: 0, orte: {} };
             if (!o.weltModus) return o;
@@ -841,10 +841,12 @@ async function labPruefen(browser) {
             try {
                 document.getElementById("weltModeBtn").click();
                 const knopf = document.querySelector('[data-welt-ort="seeufer"]');
-                if (knopf) knopf.click();
-                await sleep(1500);
-                const z = __klangWelt?.zensus?.() || [];
-                o.seeuferUfer = z.some((v) => v.name === "ufer" && v.an);
+                // DER MISCH-TAKT VON HAND, GEZÄHLT (abdruck-am-takt): jeder Klick auf den Ort ist EIN Takt der Mischung (`ort` →
+                // `anwenden`), und der Graph bestellt je Takt höchstens EINE Stimme — nach `stimmenMax` Takten steht jede gewählte.
+                // Bis hier 1,5 s Wanduhr über dem 0,1-s-Intervall des Labs: unter Last liefen in ihr zu wenige Takte.
+                const ufer = () => (__klangWelt?.zensus?.() || []).some((v) => v.name === "ufer" && v.an);
+                for (o.mischTakte = 0; knopf && o.mischTakte < K.UMWELT.stimmenMax && !ufer(); o.mischTakte++) knopf.click();
+                o.seeuferUfer = ufer();
                 for (const [ort, lage] of Object.entries(K.UMWELT.orte)) {
                     const m = K.umweltMischung({ ...lage, boe: 0.7 });
                     // −∞ als −999 über die Brücke (null > −64 wäre wahr — Lehre 17).
