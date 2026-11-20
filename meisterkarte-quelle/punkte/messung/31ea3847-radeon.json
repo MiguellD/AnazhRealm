@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T09:25:23.791Z",
+ "zeit": "2026-11-20T10:12:48.613Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -3815,6 +3815,652 @@
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.sport.mannschaft#1",
    "modus": "session"
+  },
+  "karte2.mensch.macht.wehrbau#2": {
+   "gruen": false,
+   "zahl": "S2 ROT an Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 verfehlt ≥ 0.7 — Täter: fachwerk-core.js mauerRing/STADTMAUER: eine Wand (dick 1.6 m, hoch 5.6 m) für jede Epoche, nach MAUER_BIS keine · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R93 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R93 (Soll Steinring, Same 7) · 1650 hanse → Steinring R91 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R86 (Soll Palisade, Same 11) · 1350 mittelalt · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 49 s gerissen",
+   "exit": 3,
+   "minuten": 0.82,
+   "grund": "ROT: S2 ROT an Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 verfehlt ≥ 0.7 — Täter: fachwerk-core.js mauerRing/STADTMAUER: eine Wand (dick 1.6 m, hoch 5.6 m) für jede Epoche, nach MAUER_BIS keine · Jahrhundert erkannt (Palisade → Steinring → Bastion → kein Wall) 0.5 (Soll ≥ 0.7) · Umfang 4 (Soll ≥ 4 Stichjahre 900/1350/1650/1900) · 900 mittelalter → Steinring R93 (Soll Palisade, Same 7) · 1350 mittelalter → Steinring R93 (Soll Steinring, Same 7) · 1650 hanse → Steinring R91 (Soll Bastion, Same 7) · 1900 gruenderzeit → kein Wall (Soll kein Wall, Same 7) · 900 mittelalter → Steinring R86 (Soll Palisade, Same 11) · 1350 mittelalt · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 49 s gerissen",
+   "konsum": "kaafb2018507e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49.3,
+   "fremd": {
+    "s": 51.6,
+    "takte": 21,
+    "fremdS": 118.11,
+    "kerne": 2.288,
+    "fensterKerne": 3.371,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34244-profil-xUJsgt --no-p",
+      21
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.48
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      7.05
+     ]
+    ],
+    "dienerS": 31.39,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.83
+     ],
+     [
+      "System",
+      7.02
+     ]
+    ],
+    "geraetS": 41.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.67
+     ],
+     [
+      "svchost.exe",
+      17.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 114.92,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:09:49.894Z",
+   "abdruck": "72c53b931a2e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.wehrbau#3": {
+   "gruen": false,
+   "zahl": "S3 ROT an Umfang 20 < 32 Saaten mit Mauerring — Täter: fachwerk-core.js exportSettlement: die Straßen des jüngeren Jahrs kennen den alten Ring nicht (die Mauer steht oder fällt, nie wird sie Gasse) · Ring als Straße 0.047 (Soll ≥ 0.7) · Umfang 20 (Soll ≥ 32 Saaten mit Mauerring) · 20 Saaten mit Ring 1700 (von 20), Deckung des alten Rings durch die Straßen 1900 ≤ 4 m: 1:0.07 2:0.09 3:0.02 4:0.05 5:0.11 6:0.07 7:0.03 8:0.04 9:0.01 10:0.04 11:0.00 12:0.03 · 5225 ms · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 49 s gerissen",
+   "exit": 3,
+   "minuten": 0.82,
+   "grund": "ROT: S3 ROT an Umfang 20 < 32 Saaten mit Mauerring — Täter: fachwerk-core.js exportSettlement: die Straßen des jüngeren Jahrs kennen den alten Ring nicht (die Mauer steht oder fällt, nie wird sie Gasse) · Ring als Straße 0.047 (Soll ≥ 0.7) · Umfang 20 (Soll ≥ 32 Saaten mit Mauerring) · 20 Saaten mit Ring 1700 (von 20), Deckung des alten Rings durch die Straßen 1900 ≤ 4 m: 1:0.07 2:0.09 3:0.02 4:0.05 5:0.11 6:0.07 7:0.03 8:0.04 9:0.01 10:0.04 11:0.00 12:0.03 · 5225 ms · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 49 s gerissen",
+   "konsum": "kaafb2018507e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49.3,
+   "fremd": {
+    "s": 51.6,
+    "takte": 21,
+    "fremdS": 118.11,
+    "kerne": 2.288,
+    "fensterKerne": 3.371,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34244-profil-xUJsgt --no-p",
+      21
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.48
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      7.05
+     ]
+    ],
+    "dienerS": 31.39,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.83
+     ],
+     [
+      "System",
+      7.02
+     ]
+    ],
+    "geraetS": 41.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.67
+     ],
+     [
+      "svchost.exe",
+      17.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 114.92,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:09:49.894Z",
+   "abdruck": "ff86a8f4d4f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.wehrbau#2",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.wehrbau#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: Umfang nicht erzeugbar: keine Burgen in der Fläche: 1 Burg als Slot der vollen Stadt, keine Festung an Hügel oder Furt (gemessen 1, Soll 100 Burgen je 10⁴ km²) · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 49 s gerissen",
+   "exit": 3,
+   "minuten": 0.82,
+   "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: keine Burgen in der Fläche: 1 Burg als Slot der vollen Stadt, keine Festung an Hügel oder Furt (gemessen 1, Soll 100 Burgen je 10⁴ km²) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 49 s gerissen",
+   "konsum": "kaafb2018507e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49.3,
+   "fremd": {
+    "s": 51.6,
+    "takte": 21,
+    "fremdS": 118.11,
+    "kerne": 2.288,
+    "fensterKerne": 3.371,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34244-profil-xUJsgt --no-p",
+      21
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.48
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      7.05
+     ]
+    ],
+    "dienerS": 31.39,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.83
+     ],
+     [
+      "System",
+      7.02
+     ]
+    ],
+    "geraetS": 41.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.67
+     ],
+     [
+      "svchost.exe",
+      17.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 114.92,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:09:49.894Z",
+   "abdruck": "3291e1a73852",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.wehrbau#2",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.wehrbau#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: Umfang nicht erzeugbar: keine Grenzbefestigung: 19 Wände im Pool, 0 außerhalb eines Orts (0 km) — jede Mauer ist ein Ring um einen Ort (gemessen 0, Soll 1000 km Grenzbefestigung) · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 49 s gerissen",
+   "exit": 3,
+   "minuten": 0.82,
+   "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: keine Grenzbefestigung: 19 Wände im Pool, 0 außerhalb eines Orts (0 km) — jede Mauer ist ein Ring um einen Ort (gemessen 0, Soll 1000 km Grenzbefestigung) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 49 s gerissen",
+   "konsum": "kaafb2018507e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49.3,
+   "fremd": {
+    "s": 51.6,
+    "takte": 21,
+    "fremdS": 118.11,
+    "kerne": 2.288,
+    "fensterKerne": 3.371,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34244-profil-xUJsgt --no-p",
+      21
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.48
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      7.05
+     ]
+    ],
+    "dienerS": 31.39,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.83
+     ],
+     [
+      "System",
+      7.02
+     ]
+    ],
+    "geraetS": 41.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.67
+     ],
+     [
+      "svchost.exe",
+      17.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 114.92,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:09:49.894Z",
+   "abdruck": "131f2c146bf8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.wehrbau#2",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.wehrbau#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: keine Familien von Wehrbauten: 5 Wehrbauten (Ringe, Türme, Burgen) in einer Form (STADTMAUER) für jede Epoche (gemessen 5, Soll 10000 Wehrbauten aller Epochen) · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 49 s gerissen",
+   "exit": 3,
+   "minuten": 0.82,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: keine Familien von Wehrbauten: 5 Wehrbauten (Ringe, Türme, Burgen) in einer Form (STADTMAUER) für jede Epoche (gemessen 5, Soll 10000 Wehrbauten aller Epochen) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 49 s gerissen",
+   "konsum": "kaafb2018507e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49.3,
+   "fremd": {
+    "s": 51.6,
+    "takte": 21,
+    "fremdS": 118.11,
+    "kerne": 2.288,
+    "fensterKerne": 3.371,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34244-profil-xUJsgt --no-p",
+      21
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.48
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      7.05
+     ]
+    ],
+    "dienerS": 31.39,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.83
+     ],
+     [
+      "System",
+      7.02
+     ]
+    ],
+    "geraetS": 41.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.67
+     ],
+     [
+      "svchost.exe",
+      17.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 114.92,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:09:49.894Z",
+   "abdruck": "7c59e6c230b2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.wehrbau#2",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.wehrbau#8": {
+   "gruen": false,
+   "zahl": "S8 ROT: Umfang nicht erzeugbar: keine fremde Welt mit eigener Waffe: der Wehrbau kennt nur die Wand der Menschen (gemessen 0, Soll 2 fremde Welten mit eigener Waffe) · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 49 s gerissen",
+   "exit": 3,
+   "minuten": 0.82,
+   "grund": "ROT: S8 ROT: Umfang nicht erzeugbar: keine fremde Welt mit eigener Waffe: der Wehrbau kennt nur die Wand der Menschen (gemessen 0, Soll 2 fremde Welten mit eigener Waffe) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 49 s gerissen",
+   "konsum": "kaafb2018507e",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 49.3,
+   "fremd": {
+    "s": 51.6,
+    "takte": 21,
+    "fremdS": 118.11,
+    "kerne": 2.288,
+    "fensterKerne": 3.371,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34244-profil-xUJsgt --no-p",
+      21
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.48
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      7.05
+     ]
+    ],
+    "dienerS": 31.39,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.83
+     ],
+     [
+      "System",
+      7.02
+     ]
+    ],
+    "geraetS": 41.23,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.67
+     ],
+     [
+      "svchost.exe",
+      17.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 114.92,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:09:49.894Z",
+   "abdruck": "541032bba303",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.wehrbau#2",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.stand#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: Umfang nicht erzeugbar: die Welt trägt 1213 Bewohner, keinen Lebenslauf und keine Lebensdauer nach Stand (gemessen 1213, Soll 1000000 Bewohner mit Stand und Lebenslauf) · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 44 s gerissen",
+   "exit": 3,
+   "minuten": 0.75,
+   "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: die Welt trägt 1213 Bewohner, keinen Lebenslauf und keine Lebensdauer nach Stand (gemessen 1213, Soll 1000000 Bewohner mit Stand und Lebenslauf) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 44 s gerissen",
+   "konsum": "k9fdacaef9a7c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 44.3,
+   "fremd": {
+    "s": 49.3,
+    "takte": 20,
+    "fremdS": 101.03,
+    "kerne": 2.051,
+    "fensterKerne": 2.302,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh frost-streuung-1 node scripts/diag-weltbild-frost.cjs --echt",
+      6.45
+     ],
+     [
+      "sh werkzeug/gpu-lauf.sh taeter-z637-einheit-sicht-2 sh -c npm run gate:pruefbuehne-licht",
+      6.22
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      6
+     ]
+    ],
+    "dienerS": 32.59,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.17
+     ],
+     [
+      "System",
+      7.36
+     ]
+    ],
+    "geraetS": 35.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.78
+     ],
+     [
+      "svchost.exe",
+      15.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.63
+     ]
+    ],
+    "eigenS": 124.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:12:48.613Z",
+   "abdruck": "cc6436064336",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.stand#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: Umfang nicht erzeugbar: keine Epochen der Bewohner: 1213 Bewohner der Gegenwart, keine Revolution, keine Reform (gemessen 1213, Soll 1000000000 Bewohner über alle Epochen) · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 44 s gerissen",
+   "exit": 3,
+   "minuten": 0.75,
+   "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: keine Epochen der Bewohner: 1213 Bewohner der Gegenwart, keine Revolution, keine Reform (gemessen 1213, Soll 1000000000 Bewohner über alle Epochen) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 44 s gerissen",
+   "konsum": "k9fdacaef9a7c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 44.3,
+   "fremd": {
+    "s": 49.3,
+    "takte": 20,
+    "fremdS": 101.03,
+    "kerne": 2.051,
+    "fensterKerne": 2.302,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh frost-streuung-1 node scripts/diag-weltbild-frost.cjs --echt",
+      6.45
+     ],
+     [
+      "sh werkzeug/gpu-lauf.sh taeter-z637-einheit-sicht-2 sh -c npm run gate:pruefbuehne-licht",
+      6.22
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      6
+     ]
+    ],
+    "dienerS": 32.59,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.17
+     ],
+     [
+      "System",
+      7.36
+     ]
+    ],
+    "geraetS": 35.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.78
+     ],
+     [
+      "svchost.exe",
+      15.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.63
+     ]
+    ],
+    "eigenS": 124.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:12:48.613Z",
+   "abdruck": "bc648c4c41ad",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.stand#4",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.stand#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: keine fremde Art mit Rängen: jede Siedlung ist eine der Menschen (gemessen 0) · [linse-gpu] amd/rdna-3 · gemessen vor dem Abbruch: Frist der Probe 44 s gerissen",
+   "exit": 3,
+   "minuten": 0.75,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: keine fremde Art mit Rängen: jede Siedlung ist eine der Menschen (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 44 s gerissen",
+   "konsum": "k9fdacaef9a7c",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 44.3,
+   "fremd": {
+    "s": 49.3,
+    "takte": 20,
+    "fremdS": 101.03,
+    "kerne": 2.051,
+    "fensterKerne": 2.302,
+    "namen": [
+     [
+      "sh.exe werkzeug/gpu-lauf.sh frost-streuung-1 node scripts/diag-weltbild-frost.cjs --echt",
+      6.45
+     ],
+     [
+      "sh werkzeug/gpu-lauf.sh taeter-z637-einheit-sicht-2 sh -c npm run gate:pruefbuehne-licht",
+      6.22
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      6
+     ]
+    ],
+    "dienerS": 32.59,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.17
+     ],
+     [
+      "System",
+      7.36
+     ]
+    ],
+    "geraetS": 35.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.78
+     ],
+     [
+      "svchost.exe",
+      15.42
+     ],
+     [
+      "SearchIndexer.exe",
+      0.63
+     ]
+    ],
+    "eigenS": 124.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:12:48.613Z",
+   "abdruck": "d0818f0daa74",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.stand#4",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -3829,7 +4475,9 @@
   "kc497f6c53232": "dVRNj5swEP0vHNt6zWcAS3twwkqp1KrZU89jGAMJAWRDaKn63ysIZBfYztF6b+bNmxn/MWqIL5Di01lXpcGMT8YXQ8MNiUZ1Q/V01gYzwtiy0WH8HpRzfhhgscrrRtMiFxRECdkVSasazIuneKQFlp3YktHuhXcnSk/Up/vu+XlNLQQmFWlA4kwMQ+kEwNbAVqcgkEArx2IT2AsQpMfoGEHET2c6x77jnHYv64oCymSpNNx5Pnpjgy98ozDJARtS5KWea8aJJxybPQptu0oUdKQHzApUEwksHywxCx2t7E4hXRFl0Wq9KBY4iWcHjNINNkWdx1lDalUJLCe4CG3fAvaB02ndErlQJAQEYu1zBlimqBYaTCeWO4vRX8E66QWuqICUkM1emo5vizdvKKXHrZZiFD6WmIXvTGm5wYI4DJSmg1NROiai/fx+ui9jxPkrnyNdFdFxlqvr0h7pom067NtWks4gQUUulW4e6MAFwGDa/IiOtU5utGa+NTPxbLEzvfe9BJQfN97pSjYdKCRp3U5EdNHzh038ugE3cL3OOy8d14nXg9PNsNjvZXguWjt/kJH+Zw73MyA95sVMktJ1Q2+d/KbgSkCkKpdynrTwYhl+tJgdFg0RVdXMo3VMJ7QY7Wn5cCQcT2D/GB4/8Oi3/fP4+rrWOGarVPPoSuxM6TJ5Gy4v3qBz1ZAO4uwxCykQBpkb/3tUBaa4sCxxhQMJo528y+wDzk/+dOby82I5+23GHAczS93qeYNCPwkl++Cb6FBdBJSXCejuvMCyx1Xb/+DHuydnM+r4Kg48Gd4O0f0P+c73/GtEoyl5jTGtVSXz4ZejGbQ6g6J5+97//gM=",
   "k6c69a1414137": "dVRNr5swEPwvObb1M98flt7BCZFepUqlp57XsAZeCCAbQpuq/72CB0mAdE8Jmtkdz6z9Z9dAcoIMX951Xe3Y7tPuy07DBYlGdUH18q53bBcmpoU24x9FOeeHAZaoomk1LQtBQVSQn5F0qsWifElGWmBaqSUZ7Y+8jymNqU/3/evrmloKTGvSgsSZGIbSDoCtgZ3OQCCBTo7DJrAbIEiX0bGCiMfvdC7+g3PaH9cTBVTpUmnouT667Otvzo98ozAtAFtSFpWeZyapK2yL3QZtT5Uq6MkVMC9RTSQwfTDFLHS0so9DuiLKstN6MSywU9cKGKUbbIa6SPKWNKoWWE1wEVq+CeyJ01nTEblQJAQEYu1zDlhlqBYaDDuRnsnor2Dd9ARnVEAqyGcvDdu3xN0bSunbVks5Ch9HzMI9Q5pOsCAOgdJscCrKxkb0On+PP5Yx4kPIU2WrITrJC3Ve2iMdtAybfdtK0jmkqMip1u0NHTgAGEybH40LxWMnWjPvh5l4lvAM9/EsAeVvG+90LdseFJKs6SYiOuj6LuP86wbcwvk877y0HTtZB6fbYbEfZbgOmp4/yMj+k8PHNSBXLMqZJKXjhO66+UXBmYDIVCHlnLRwExk+W8wey5aIum7naG3DDk1GbVrdHAnHK7C/hccPPOqNn4eHPMc68rXmsXut2tsphWdIh8nLcBOTDbpQLekhyW/ZSIEQsifQK6oSM1xYmDrChnRA3yVFzvzj82JZr5uErwUO5la60/NGhX4aSvbk2ehRnQRUpwnoeG5gWuPq7b/zt2mgEdGIxv2jQQeeDv8P+2Bo1mBCG1XLYnjlaA6dzqFs78/7338=",
   "k83e395db23ef": "jVRNj5swEP0vObb1OnwFsLQHZxM1e9g2PVU9js0YSAhENqzbVP3vFQSSBbZS54TQvJk3b57n9+IM8ggpPhxMVS7Y4sPi08LAKxKD+hX1w8Es2CKWjose49egnPPPbZrU+bk2tMgFBVFCdkLS6Brz4kF2sMhxE1cxarfc7ind05CuLb/Fmj8+TssUApOK1KBwKBLHyouATRMbk4JAAo3qGvfJQYSgAka7iDZ8f6BD8G+cU7uddhRQJmPW8SoIMWDPlvPtnGGSA9akyEsz9JRJIDyX3RrZOUaDJRfArEDdg8AJwRED0U4Ou4/pBKiKxphRs8hLAjdilM5yUzS5zGpy1pXAsk8XsRs6wNZzTum5IWrESAiIxFTnDLBMUY84LD2pVg6jP6Np0SOcUAMpIRu0XHqhK+7aUEp3cy5FR7xrMRBfLZXjRyNgu1Da2WeTdoXoZfi/vxpqw9sl95FOmhiZ5fo0lkf56C696cwmgwQ1OVamvmVGPgBG/QvYdGbie38zRd4H6XGuWC2Dt3NElO9muplK1RY0kvTc9ED0MQgDxtOXWXINp9Pgd+X5npwNULemfksj8NFZhS2N9B87uD4BcsG8GEBK+X4csKe1P01+1XAiIFKdKzVsWgRSxe8Z02JRE1FV9bBab+nFDqMeLW+qxBHnP/j6fhue1O6X+72U93128YVv36te6fo2qVgtlc9U9xLllLjNdU0syOy2HyUQ4qmAF9QFpjiSMPGFBwmjVt7pbPzh4+PIqJfZhi85tuKWpjGDo+IwidXVGf1RfB6fG4v6KKA89gB/FUSOy1r78698x1/4mj/t4o3l/xfb6+07o6RnXam8vXw0g8ZkUNT38//nLw==",
-  "k0c19508b6c1d": "dVRdj5swEPwveWzrM58BLN2DEyLlpFblnvq8hjWQEIhsCL1U/e8VBJIA130D7eyMZ9b+szpDfIQUXw66Klds9WX1baXhgkSjuqB6OegVWwWxaaHN+DvvKuKcb7u2WOXnWtMiFxRECdkJSaNqzIuXuIf5ppVYktF2x9uI0oh6dNO+vs6hhcCkIjVIHIFBIG0f2Lyx0SkIJNDInmxodn0E6TLalx/y6EDH2rSc03Y3ZxRQJlOlwdr10GVvH5zv+EJhkgPWpMhLPXLGiStsi92JlqdKFLTkCpgVqAYQmB6YYhTaW9lGAZ0BZdFoPSHz7cS1fEbpojdFncdZTc6qElgO7SKwPBPYJ06n54bIiSIhwBdznzPAMkU10WDYsVybjP7250OPcEIFpIRs9NKwPUs8vKGU7pdail54TzEKXxvSdPwJsAuUpp1TYdoPotfxf9QbyEM+bGVX6YxEx1muTlN7pIOWYbPvS0k6gwQVOVa6vnf7DgD6bOCiPVfkhHPk4zADzhJrw30+i0/5fuGdrmTdgkKSnpsBiA66nss4f1s013A6jTsvbceO58HpulvsZxmug+ba62Sk/8nhdg3IFfNiBEnpOIE7H35RcCIgUpVLOSYt3FgGny1mi0VNRFXVY7S2YQcmozYt744E/RXY3MPjWx5+WL/27488+9rxueZ+eqXq+ynF2pAOk5fuJsaL7lzVpIU4u2cjBUIne5HHFVWBKU4sTBxhQ8JoK2+yrz7nkTdce/l1sqzX5cQcO3NL3ehxowIvCST75NloUR0FlMeh0Vm7vmn1q7f5yfc3Mw5GSEMatc8GbXnSfW/D25vyg2/4W0jDYfgZY3pWlcy7V49m0OgMivrx3P/9Bw=="
+  "k0c19508b6c1d": "dVRdj5swEPwveWzrM58BLN2DEyLlpFblnvq8hjWQEIhsCL1U/e8VBJIA130D7eyMZ9b+szpDfIQUXw66Klds9WX1baXhgkSjuqB6OegVWwWxaaHN+DvvKuKcb7u2WOXnWtMiFxRECdkJSaNqzIuXuIf5ppVYktF2x9uI0oh6dNO+vs6hhcCkIjVIHIFBIG0f2Lyx0SkIJNDInmxodn0E6TLalx/y6EDH2rSc03Y3ZxRQJlOlwdr10GVvH5zv+EJhkgPWpMhLPXLGiStsi92JlqdKFLTkCpgVqAYQmB6YYhTaW9lGAZ0BZdFoPSHz7cS1fEbpojdFncdZTc6qElgO7SKwPBPYJ06n54bIiSIhwBdznzPAMkU10WDYsVybjP7250OPcEIFpIRs9NKwPUs8vKGU7pdail54TzEKXxvSdPwJsAuUpp1TYdoPotfxf9QbyEM+bGVX6YxEx1muTlN7pIOWYbPvS0k6gwQVOVa6vnf7DgD6bOCiPVfkhHPk4zADzhJrw30+i0/5fuGdrmTdgkKSnpsBiA66nss4f1s013A6jTsvbceO58HpulvsZxmug+ba62Sk/8nhdg3IFfNiBEnpOIE7H35RcCIgUpVLOSYt3FgGny1mi0VNRFXVY7S2YQcmozYt744E/RXY3MPjWx5+WL/27488+9rxueZ+eqXq+ynF2pAOk5fuJsaL7lzVpIU4u2cjBUIne5HHFVWBKU4sTBxhQ8JoK2+yrz7nkTdce/l1sqzX5cQcO3NL3ehxowIvCST75NloUR0FlMeh0Vm7vmn1q7f5yfc3Mw5GSEMatc8GbXnSfW/D25vyg2/4W0jDYfgZY3pWlcy7V49m0OgMivrx3P/9Bw==",
+  "kaafb2018507e": "dVRNj5swEP0vHNt6zfeHpT04IVJWqtT01PMYxsCGALIhVKn63ysIJAts54TQezPP7439x2ggOUOGL++6rgxmfDG+GRquSDSqK6qXd20wI0osGx3G70U55/sBlqiiaTUtC0FBVJBfkHSqxaJ8SUZaaNmpLRntD7w/UXqiAd31r69raikwrUkLEmdiFEknBLYGdjoDgQQ6OQ6bwF6IID1Gxwpjfnqnc/GfnNP+sJ4ooEqXSiPfC9Bjbz3nB75RmBaALSmLSs8zk9QTjs0eg7anShX05AaYl6gmElgBWGIWOlrZnyK6Isqy03oxLHRSzw4ZpRtshrpI8pY0qhZYTXAR2YEF7BOns6YjcqFICAjF2uccsMpQLTSYTiJ9i9Hf4brpGS6ogFSQz16aTmCLpzeU0uNWSzkKH0fMwn1TWm64IA6B0mxwKs7GRvQ2/z/dlzHmQ8hTZashOskLdVnaI120TYd930rSOaSoyLnW7QMdugAYTpsfjwvFT268Zj4PM/Fs4Zvex7OElB833ulatj0oJFnTTUR00Qs8xvnbBtzC5TLvvHRcJ1kHp9thsT/K8Fy0/GCQkf0nh/s1IDcsypkkpetGHtvvsjX4quBCQGSqkHJOW3iJjD5bzh7Lloi6bud4HdOJLEYdWj1cicZrsHsEyPc87s1f8YdMxzrwtZSxe63ax0mFb0qXyetwG5MNulAt6SHJH/lIgTDI3mRyQ1VihgsbU1c4kDLaJ09JsTt/fF0s7G3bscDB4Ep3et6qKEgjyT55OnpUZwHVeQK6vhda9rh+ux/8eLfoGMU0putKe85/7uNwaNZgQhtVy2J46WgOnc6hbJ9P/N9/",
+  "k9fdacaef9a7c": "dVVdj5swEPwveWzrM58BLN2DE07KVa2ae+rzGtbAhUBkQ2hT9b9XJpAEuO4jmtkZz67Nn9UJkgNk+PSu62rFVp9WX1Yazkg0qjOqp3e9YqsosR10GX/jpijnfGtgiSpOjaZlISiICvIjklY1WJRPSU8LbSd1JKPdC+/2lO5pQDcdv9WWPz/P25QC05o0IHFsEkXSDYHNga3OQCCBVvbCA9gPEaTPaF9hzPfvdCyjbJx8oCqgSqfOo7UfoM9eO85flvi0AGxIWVR61E1SX7gOu4l1S46CjlwA8xLVQAI7AFuMZvtIun1EZ0RZtlpPxEI39Z2QUbrAZqiLJG/ISdUCqwEuIiewgW2WnrJTS+TEkRAQinnWOWCVoZp4sNxErm1Gf4Xzpgc4ogJSQT5mabmBI+7ZUEp3Sy9lb7yXGI2vLWl74YRohkozk1Sc9Y3oZfy+vy5VzIctNZXNRHSSF+o4jUd66Fgu+7a0pHNIUZFDrZsbOvQAMGSDFu219l48Z94PM/Acsbb8x7OElO8W2elaNh0oJNmpHYjooR/4jPPXBbiB43Hce+l6bjIfnG7MYj/a8D2014Gxkf1nDtdrQC5YlCNJSs+LfLbdZHPwWcGRgMhUIeU4beEnMvpoOTssGyLquhnH61puZBsv1UMsJtfN4xsR/3Z+7t7uM+3rhc+t9N1r1dxOKtaW9Jg8m9uYLNCFakgHSX6bjxQIxvZiJhdUJWY4iTH1hAspo528ur6EnO+D4erLz5OFvSw7FmgCrnSrx62KgjSS7IOno0N1EFAdBqC39kPbYV9NSD/47hpRFcU0pvNKO87ftvH1XfnON/w1pvHQ/IQJPalaFublozm0Ooeyuf8C/v4D"
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -19456,6 +20104,979 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.wirtschaft.handel#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.9,
+    "takte": 14,
+    "fremdS": 78.53,
+    "kerne": 2.315,
+    "fensterKerne": 3.114,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41960-profil-38s9Hk --no-p",
+      17.53
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      5.36
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh kn2-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      4.75
+     ]
+    ],
+    "dienerS": 19.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.58
+     ],
+     [
+      "System",
+      4.86
+     ]
+    ],
+    "geraetS": 25.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.94
+     ],
+     [
+      "svchost.exe",
+      10.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 91.77,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:06:37.248Z",
+   "abdruck": "debde65f83eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.9,
+    "takte": 14,
+    "fremdS": 78.53,
+    "kerne": 2.315,
+    "fensterKerne": 3.114,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41960-profil-38s9Hk --no-p",
+      17.53
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      5.36
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh kn2-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      4.75
+     ]
+    ],
+    "dienerS": 19.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.58
+     ],
+     [
+      "System",
+      4.86
+     ]
+    ],
+    "geraetS": 25.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.94
+     ],
+     [
+      "svchost.exe",
+      10.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 91.77,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:06:37.248Z",
+   "abdruck": "a3a120a83a99",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.technik#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.9,
+    "takte": 14,
+    "fremdS": 78.53,
+    "kerne": 2.315,
+    "fensterKerne": 3.114,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41960-profil-38s9Hk --no-p",
+      17.53
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      5.36
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh kn2-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      4.75
+     ]
+    ],
+    "dienerS": 19.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.58
+     ],
+     [
+      "System",
+      4.86
+     ]
+    ],
+    "geraetS": 25.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.94
+     ],
+     [
+      "svchost.exe",
+      10.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 91.77,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:06:37.248Z",
+   "abdruck": "a2add3abd1df",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.technik#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.9,
+    "takte": 14,
+    "fremdS": 78.53,
+    "kerne": 2.315,
+    "fensterKerne": 3.114,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41960-profil-38s9Hk --no-p",
+      17.53
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      5.36
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh kn2-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      4.75
+     ]
+    ],
+    "dienerS": 19.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.58
+     ],
+     [
+      "System",
+      4.86
+     ]
+    ],
+    "geraetS": 25.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.94
+     ],
+     [
+      "svchost.exe",
+      10.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 91.77,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:06:37.248Z",
+   "abdruck": "f1a7e40c13ee",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.technik#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.9,
+    "takte": 14,
+    "fremdS": 78.53,
+    "kerne": 2.315,
+    "fensterKerne": 3.114,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41960-profil-38s9Hk --no-p",
+      17.53
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      5.36
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh kn2-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      4.75
+     ]
+    ],
+    "dienerS": 19.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.58
+     ],
+     [
+      "System",
+      4.86
+     ]
+    ],
+    "geraetS": 25.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.94
+     ],
+     [
+      "svchost.exe",
+      10.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 91.77,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:06:37.248Z",
+   "abdruck": "aa0669631d4b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.technik#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.9,
+    "takte": 14,
+    "fremdS": 78.53,
+    "kerne": 2.315,
+    "fensterKerne": 3.114,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41960-profil-38s9Hk --no-p",
+      17.53
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      5.36
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh kn2-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      4.75
+     ]
+    ],
+    "dienerS": 19.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.58
+     ],
+     [
+      "System",
+      4.86
+     ]
+    ],
+    "geraetS": 25.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.94
+     ],
+     [
+      "svchost.exe",
+      10.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 91.77,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:06:37.248Z",
+   "abdruck": "34f93c83c348",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.technik#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.9,
+    "takte": 14,
+    "fremdS": 78.53,
+    "kerne": 2.315,
+    "fensterKerne": 3.114,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41960-profil-38s9Hk --no-p",
+      17.53
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss bash ku/spiel.sh",
+      5.36
+     ],
+     [
+      "sh.exe werkzeug/gpu-lauf.sh kn2-s0 node scripts/diag-pruefbuehne.cjs --licht --selftest",
+      4.75
+     ]
+    ],
+    "dienerS": 19.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.58
+     ],
+     [
+      "System",
+      4.86
+     ]
+    ],
+    "geraetS": 25.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.94
+     ],
+     [
+      "svchost.exe",
+      10.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 91.77,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:06:37.248Z",
+   "abdruck": "cf18d561fe28",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.technik#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.grenze#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 41.8,
+    "takte": 17,
+    "fremdS": 104.16,
+    "kerne": 2.492,
+    "fensterKerne": 3.593,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27780-profil-zDTdeQ --no-p",
+      28.83
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… == $c/\"; git show --stat --format=\"%c",
+      5.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      5.78
+     ]
+    ],
+    "dienerS": 25.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.39
+     ],
+     [
+      "dwm.exe",
+      5.97
+     ]
+    ],
+    "geraetS": 27.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.92
+     ],
+     [
+      "svchost.exe",
+      11.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 96.63,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:08:10.965Z",
+   "abdruck": "e91d24083eb8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.grenze#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 41.8,
+    "takte": 17,
+    "fremdS": 104.16,
+    "kerne": 2.492,
+    "fensterKerne": 3.593,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27780-profil-zDTdeQ --no-p",
+      28.83
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… == $c/\"; git show --stat --format=\"%c",
+      5.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      5.78
+     ]
+    ],
+    "dienerS": 25.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.39
+     ],
+     [
+      "dwm.exe",
+      5.97
+     ]
+    ],
+    "geraetS": 27.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.92
+     ],
+     [
+      "svchost.exe",
+      11.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 96.63,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:08:10.965Z",
+   "abdruck": "649094ddf36a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.grenze#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.grenze#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 41.8,
+    "takte": 17,
+    "fremdS": 104.16,
+    "kerne": 2.492,
+    "fensterKerne": 3.593,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27780-profil-zDTdeQ --no-p",
+      28.83
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… == $c/\"; git show --stat --format=\"%c",
+      5.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      5.78
+     ]
+    ],
+    "dienerS": 25.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.39
+     ],
+     [
+      "dwm.exe",
+      5.97
+     ]
+    ],
+    "geraetS": 27.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.92
+     ],
+     [
+      "svchost.exe",
+      11.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 96.63,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:08:10.965Z",
+   "abdruck": "f2b5c118451b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.grenze#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.grenze#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 41.8,
+    "takte": 17,
+    "fremdS": 104.16,
+    "kerne": 2.492,
+    "fensterKerne": 3.593,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27780-profil-zDTdeQ --no-p",
+      28.83
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… == $c/\"; git show --stat --format=\"%c",
+      5.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      5.78
+     ]
+    ],
+    "dienerS": 25.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.39
+     ],
+     [
+      "dwm.exe",
+      5.97
+     ]
+    ],
+    "geraetS": 27.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.92
+     ],
+     [
+      "svchost.exe",
+      11.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 96.63,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:08:10.965Z",
+   "abdruck": "584494c80807",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.grenze#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.grenze#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 41.8,
+    "takte": 17,
+    "fremdS": 104.16,
+    "kerne": 2.492,
+    "fensterKerne": 3.593,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27780-profil-zDTdeQ --no-p",
+      28.83
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… == $c/\"; git show --stat --format=\"%c",
+      5.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      5.78
+     ]
+    ],
+    "dienerS": 25.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.39
+     ],
+     [
+      "dwm.exe",
+      5.97
+     ]
+    ],
+    "geraetS": 27.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.92
+     ],
+     [
+      "svchost.exe",
+      11.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 96.63,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:08:10.965Z",
+   "abdruck": "1099f6556ac4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.grenze#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.grenze#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 41.8,
+    "takte": 17,
+    "fremdS": 104.16,
+    "kerne": 2.492,
+    "fensterKerne": 3.593,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27780-profil-zDTdeQ --no-p",
+      28.83
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… == $c/\"; git show --stat --format=\"%c",
+      5.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      5.78
+     ]
+    ],
+    "dienerS": 25.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.39
+     ],
+     [
+      "dwm.exe",
+      5.97
+     ]
+    ],
+    "geraetS": 27.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.92
+     ],
+     [
+      "svchost.exe",
+      11.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 96.63,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:08:10.965Z",
+   "abdruck": "8c3972452a15",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.grenze#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.grenze#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 41.8,
+    "takte": 17,
+    "fremdS": 104.16,
+    "kerne": 2.492,
+    "fensterKerne": 3.593,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27780-profil-zDTdeQ --no-p",
+      28.83
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… == $c/\"; git show --stat --format=\"%c",
+      5.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      5.78
+     ]
+    ],
+    "dienerS": 25.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.39
+     ],
+     [
+      "dwm.exe",
+      5.97
+     ]
+    ],
+    "geraetS": 27.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.92
+     ],
+     [
+      "svchost.exe",
+      11.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 96.63,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:08:10.965Z",
+   "abdruck": "84155c30a705",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.grenze#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.grenze#8": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S8: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S8: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 41.8,
+    "takte": 17,
+    "fremdS": 104.16,
+    "kerne": 2.492,
+    "fensterKerne": 3.593,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27780-profil-zDTdeQ --no-p",
+      28.83
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… == $c/\"; git show --stat --format=\"%c",
+      5.84
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-c-kopf bash nacht/fahrt.sh kopf-c nacht/faelle-kopf-c.",
+      5.78
+     ]
+    ],
+    "dienerS": 25.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.39
+     ],
+     [
+      "dwm.exe",
+      5.97
+     ]
+    ],
+    "geraetS": 27.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.92
+     ],
+     [
+      "svchost.exe",
+      11.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 96.63,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T10:08:10.965Z",
+   "abdruck": "f53f35c56cf7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.grenze#1",
    "modus": "session"
   }
  },
