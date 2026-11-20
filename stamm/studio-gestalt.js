@@ -292,16 +292,30 @@ class AnazhRealm_studio_gestalt {
         // Der Schatten-Teil (S3) trägt je Vertex, ob er deckt (Rinde 1) oder die Atlas-Alpha schneidet (Karte 0).
         if (m.aDeckt && m.aDeckt.array) geo.setAttribute("aDeckt", new T.BufferAttribute(m.aDeckt.array, 1));
         // DER VERBAND JE ECKE (w28-haus-stoff, phyto-core `_budgetVerbinden`): eine gefaltete Stufe trägt die Nummer der Zeile des
-        // Verband-Gesetzes je Ecke — der Bau-Satz legt sie in die vierte Stelle seines `aRegler` (`_satzBlockEcken`)
-        if (m.aVerband && m.aVerband.array) geo.setAttribute("aVerband", new T.BufferAttribute(m.aVerband.array, 1));
+        // Verband-Gesetzes je Ecke — der Bau-Satz legt sie in die vierte Stelle seines `aRegler` (`_satzBlockEcken`), und
+        // außerhalb des Satzes (der Foundry-Faden der Welt) liest der Stoff sie hier je Ecke (`_foundryTreeMaterial`, `ecken.verband`).
+        // Bis einheit-relief las er dort nur die Zeile des Stoffs der Gruppe: die L1 einer Backstein-Wand (Gruppe Lehm, Zeile 0)
+        // webte nie, die L0 webte Naturstein (Zeile des ersten Teils) über Backstein, Giebel und Dach. Als Float32: WebGPU kennt
+        // keine einstellige Byte-Spur (three r184 `_getVertexFormat`: einstellig nur 32-Bit und gestreckt 16-Bit).
+        const verbandEcke = !!(m.aVerband && m.aVerband.array);
+        if (verbandEcke)
+            geo.setAttribute(
+                "aVerband",
+                new T.BufferAttribute(
+                    m.aVerband.array instanceof Float32Array ? m.aVerband.array : Float32Array.from(m.aVerband.array),
+                    1
+                )
+            );
         // und ihre Lage in der Wand (`aLage`, fachwerk `_wandLage`) — der Bau-Satz legt sie in die vierten Stellen von Farbe und Glut
-        if (m.aLage && m.aLage.array) geo.setAttribute("aLage", new T.BufferAttribute(m.aLage.array, 2));
+        const lageEcke = !!(m.aLage && m.aLage.array);
+        if (lageEcke) geo.setAttribute("aLage", new T.BufferAttribute(m.aLage.array, 2));
         // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
         // des Leibs, der ihn zeichnet (`_tonFaktor`)
         const ton = !!(m.aTon && m.aTon.array);
         if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
-        // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
-        const ecken = { ton, jahr };
+        // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton, Jahr, Verband und Lage an ihrem Namen
+        // (`_foundryTreeMaterial`)
+        const ecken = { ton, jahr, verband: verbandEcke, lage: lageEcke };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) {
             geo.computeVertexNormals();

@@ -164,8 +164,13 @@ function teileAus(meshes) {
         .map((m) => {
             const t = { kind: m.kind, mat: m.mat };
             for (const k of ["tuer", "joint", "teil"]) if (m[k]) t[k] = m[k];
-            for (const k of Object.keys(m.attrs))
-                t[k] = { array: dek(m.attrs[k].b64, Float32Array), itemSize: m.attrs[k].itemSize };
+            // in der Form des Kerns (die Antwort trägt sie): bis einheit-relief las die Linse jedes Attribut als Float32 —
+            // der Verband je Ecke (Uint8) zerfiel zu einem Viertel seiner Ecken
+            for (const k of Object.keys(m.attrs)) {
+                const Form = /^(Ui|I)nt(8|16|32)Array$|^Float32Array$/.test(m.attrs[k].form) && globalThis[m.attrs[k].form];
+                if (!Form) throw new Error(`teileAus: ${m.kind}.${k} reist ohne bekannte Form (${m.attrs[k].form})`);
+                t[k] = { array: dek(m.attrs[k].b64, Form), itemSize: m.attrs[k].itemSize };
+            }
             if (m.index) t.index = dek(m.index, Uint32Array);
             return t;
         });
@@ -479,7 +484,9 @@ const jahrUrteil = (mess) =>
 // Spitze, der Wirt suchte den Fuß je Lieferung per Float-Schlüssel (`halmAehrenFuss`) und warf am Schilf (Rohr und Rispe tragen
 // Typ halm um ihre Achse): Fernwald 748 Fehler der Welt, der Zug z349 fiel an 12 Wänden. Eine zweite Verlegung über den
 // geborenen Ankern findet keinen Schlüssel und bricht (die Mutante „Nachsuche"). → null oder der Täter des Baus `fall`
-const WIRT = (t) => KLASSE.AnazhRealm.prototype._foundryBuildMesh.call({ _foundryTreeMaterial() {}, _haarAchse() {} }, t);
+// Der Stub des Stoffs hält die Ecken fest, die der Wirt ihm reicht (`wirtEcken`, das Urteil (E) des Verbands liest sie).
+let wirtEcken = null;
+const WIRT = (t) => KLASSE.AnazhRealm.prototype._foundryBuildMesh.call({ _foundryTreeMaterial(_k, _m, _a, _b, _c, ecken) { wirtEcken = ecken; }, _haarAchse() {} }, t); // prettier-ignore
 // die erste Ähren-Ecke (aCenter y > 0) von `t`, deren Anker keinen Schlüssel `s` einer Ecke am Boden (aCenter y 0) trifft
 const ohneFuss = ({ position: { array: p }, aCenter: { array: c } }, s, an = new Set(Array.from(p, (y, i) => i % 3 == 1 && !(c[i] > 1e-4) && s(p, c, i - 1)))) => c.findIndex((y, i) => i % 3 == 1 && y > 1e-4 && !an.has(c.slice(i - 1, i + 2) + "")); // prettier-ignore
 // (E) DAS ECK-FORMAT DER EINEN PIPE (w28-preis-ort, der Preis des Orts): jede gebaute Gestalt trägt Float32 nur in der Lage — die
@@ -502,13 +509,37 @@ function eckFormUrteil(fall, t, mesh) {
         return `${fall}: Farbe der Art ${t.kind} in ${art(c)} statt half × 4`;
     return null;
 }
-// `eck` (Liste, optional) sammelt die Täter des Eck-Formats (E)
+// (E) DER VERBAND JE ECKE (einheit-relief): trägt eine gefaltete Stufe die Zeile des Verband-Gesetzes JE ECKE (`aVerband` Uint8,
+// phyto-core `_budgetVerbinden`) und ihre Lage in der Wand (`aLage`, fachwerk `_wandLage`), reicht der Wirt beide in WebGPU-Form
+// (aVerband Float32 × 1 — r184 kennt kein Uint8 × 1) mit `ecken.verband`/`ecken.lage` an den Stoff, und der Stoff liest die Zeile
+// je Ecke (studio-stoff `_verbandStoff`, `verband:ecke+lage`). Bis einheit-relief las der Stoff außerhalb des Bau-Satzes nur die
+// Zeile seines Materials: an 12 m kippte die Ausfachung von Backstein mit Fuge (L0) in eine glatte braune Fläche (L1), und die L0
+// webte Naturstein über Dach, Holz und Putz. Die Mutante „Wirt vor einheit-relief" ist ROT beim Namen der Art. → null oder der Täter
+function verbandUrteil(fall, t, mesh, ecken) {
+    const g = mesh && mesh.geometry;
+    if (!g) return null;
+    const meldet = !!(ecken && (ecken.verband || ecken.lage));
+    if (!t.aVerband) return meldet ? `${fall}: Verband je Ecke — die Art ${t.kind} meldet ihn dem Stoff ohne aVerband` : null;
+    const v = g.attributes.aVerband,
+        l = g.attributes.aLage;
+    const form = (a) => `${a.array.constructor.name} × ${a.itemSize}`;
+    if (!v || v.array.constructor.name !== "Float32Array" || v.itemSize !== 1)
+        return `${fall}: Verband je Ecke — aVerband der Art ${t.kind} ${v ? "in " + form(v) : "fehlt am Wirt"} statt Float32 × 1`;
+    for (let i = 0; i < v.count; i++)
+        if (v.array[i] !== t.aVerband.array[i]) return `${fall}: Verband je Ecke — die Art ${t.kind} verfälscht die Zeile an Ecke ${i}`;
+    if (!ecken || ecken.verband !== true) return `${fall}: Verband je Ecke — der Stoff der Art ${t.kind} liest nur die Zeile seines Materials`;
+    if (!!t.aLage !== (ecken.lage === true) || (t.aLage && !(l && l.itemSize === 2)))
+        return `${fall}: Verband je Ecke — die Lage der Art ${t.kind} reist nicht an den Stoff (aLage ${t.aLage ? "da" : "fehlt"}, ecken.lage ${ecken.lage})`;
+    return null;
+}
+// `eck` (Liste, optional) sammelt die Täter des Eck-Formats und des Verbands je Ecke (E)
 function aehre(fall, teile, wirt = WIRT, eck = null) {
     for (const t of teile) {
         const ohne = t.kind == "grass" ? ohneFuss(t, (p, c, i) => [c[i], p[i + 1], c[i + 2]] + "") : -1;
         try {
+            wirtEcken = null;
             const mesh = wirt(t);
-            const e = eck ? eckFormUrteil(fall, t, mesh) : null;
+            const e = eck ? eckFormUrteil(fall, t, mesh) || verbandUrteil(fall, t, mesh, wirtEcken) : null;
             if (e) eck.push(e);
         } catch (e) {
             return `${fall}: der Wirt bricht (${e.message})`;
@@ -593,7 +624,7 @@ hauptLauf(async () => {
     const bildMess = {};
     const wurfMess = [];
     const jahrMess = [];
-    const [aehren, aehrenProbe, eckForm] = [[], {}, []];
+    const [aehren, aehrenProbe, eckForm, verbandProbe] = [[], {}, [], []];
     const [leuchtFlaechen, leuchtGesehen] = [[], new Set()];
     let kronenProbe = null;
     await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
@@ -867,6 +898,13 @@ hauptLauf(async () => {
         }
         // Die Tafel schreiben (`--tafel`, auf dem Stand TAFEL_STAND): nur die Bild-Messung, kein Urteil.
         if (tafelSchreiben) return;
+        // (E) DER VERBAND JE ECKE an einem Haus: die v1-Goldens tragen keines — alemannisch/s7 (Backstein-Ausfachung, die vier
+        // Posen der Relief-Abgabe) in jeder Stufe durch den Wirt; die Teile mit aVerband tragen die Mutante
+        for (const l of [0, 1, 2]) {
+            const teile = teileAus((await build({ presetId: "alemannisch", seed: 7, lod: l, season: "summer" })).meshes);
+            verbandProbe.push(...teile.filter((t) => t.aVerband));
+            aehren.push(aehre(`alemannisch-s7-L${l}`, teile, WIRT, eckForm));
+        }
         // SELBST-TEST S3 (W8) vorbereitet: der Umschlag OHNE zusatzBudget — welche Kerne verlieren ihre Zeilen?
         const ohneZB = jsonKlon(bookReply.renderConfig || {});
         if (ohneZB.lod) delete ohneZB.lod.zusatzBudget;
@@ -944,6 +982,21 @@ hauptLauf(async () => {
         const eOk = eS.some((x) => /in Float32Array × 3 statt/.test(x));
         console.log(`Eck-Wand (E): ${aehren.length} Gestalten, ${eckForm.length} Täter · Selbsttest ${eOk ? "✅" : "❌"} — ${eS[0] || "keine Mutante gebaut"}`);
         if (!eOk) fails.push("Selbsttest der Eck-Wand feuert nicht");
+        // (E) DER VERBAND JE ECKE und sein Selbsttest: der Wirt vor einheit-relief (aVerband in Uint8 × 1, die Ecken ohne verband
+        // und lage — der Stoff las die Zeile seines Materials) MUSS rot werden; ein Haus ohne Teil mit aVerband macht die Linse blind
+        if (!verbandProbe.length) fails.push("Eck-Format: alemannisch-s7 trägt in keiner Stufe Verband je Ecke — die Linse sieht nichts");
+        const vorRelief = (t) => {
+            const m = WIRT(t);
+            const a = m.geometry.attributes.aVerband;
+            if (a) m.geometry.setAttribute("aVerband", new a.constructor(Uint8Array.from(a.array), 1));
+            wirtEcken = wirtEcken && { ton: wirtEcken.ton, jahr: wirtEcken.jahr };
+            return m;
+        };
+        const vS = [];
+        aehre("Mutante Wirt vor einheit-relief", verbandProbe, vorRelief, vS);
+        const vOk = vS.some((x) => /Verband je Ecke — aVerband der Art \w+ in Uint8Array × 1 statt Float32 × 1/.test(x));
+        console.log(`Verband je Ecke (E): ${verbandProbe.length} Teile mit aVerband (alemannisch/s7 L0–L2) · Selbsttest ${vOk ? "✅" : "❌"} — ${vS[0] || "keine Mutante gebaut"}`); // prettier-ignore
+        if (!vOk) fails.push("Selbsttest des Verbands je Ecke feuert nicht");
         // (Z3) DAS LEUCHTEN und sein Selbsttest an einer Lieferung im Speicher: (m1) Emissiv auf einem Stoff der Seh-Klasse
         // `stoff` an einem Nicht-Tor · (m2) `unbeleuchtet` an einem Nicht-Tor · (m3) `licht: "gibtEsNicht"` MÜSSEN rot werden
         const LU = leuchtUrteil(leuchtFlaechen);
