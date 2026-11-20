@@ -844,12 +844,17 @@ const foundryKanal = (() => {
     //     bilden eine Zone, die Zone ist ein Raster in `zellePx` Bildpunkten,
     //     ihre größten Rechtecke die Fläche (ein Fenster bleibt offen), `hinterM` hinter der Front der Steine, in der flächen-
     //     gewichteten Farbe der Steine und DERSELBEN Zeile — der Stoff webt den Stein (`_verbandStoff`). Ebenen unter `minFlaeche`
-    //     (Kanten und Kuppen der Steine: ihr Relief) fallen. Ein Stein, der auch sein kleinstes Rechteck nicht bis auf die Zelle am
+    //     (Kanten und Kuppen der Steine: ihr Relief) fallen — noch nach Fläche, nie nach Zellen: in Zellen (`minZellen`) stand
+    //     das Relief der Deckung als Fläche (die Kuppen der Ziegel, roemisch L2 60 → 10 544 Dreiecke, 17 Budget-Brüche der Klasse).
+    //     Ein Stein, der auch sein kleinstes Rechteck nicht bis auf die Zelle am
     //     Umriss füllt (das Dreieck am Giebel), behält seine Dreiecke für den Pixelfehler.
     //   STEINE OHNE ZEILE — eine Insel der übrigen (verschweißt), die ein Quader in ihrem Rahmen ist (jede Fläche parallel zu einer
     //     Achse aus ihrer Haupt-Normale) und deren Front ihr Rechteck bis auf die Zelle am Umriss füllt, ist ein Stein des Musters,
     //     das kein Stoff webt (die Bohle, die Schindel, der Rahmen): er fällt wie der Verband in die Flächen seiner Zonen (Zeile 0,
-    //     die Farbe ihr Mittel) — Front und Rücken immer, die Flanken als Zone ab `minFlaeche`. Walze und Strebe sind kein Quader.
+    //     die Farbe ihr Mittel) — Front und Rücken immer, die Flanken als Zone ab `minZellen` Zellen; eine Flanke, deren schmale Seite
+    //     unter der Zelle liegt, ist Dünnes. Das Maß ist der Bildpunkt, nie die Fläche: 0,5 m² waren an der L1 1 718 Bildpunkte, an der
+    //     L2 367 — die 6 cm hohe Front einer Bohle (ihre Oberseite trägt die Haupt-Normale) fiel als Flanke von 0,11 m². Walze und
+    //     Strebe sind kein Quader.
     //   DÜNNES FÄLLT — jedes andere gesehene Dreieck, dessen kleinste Höhe unter `s` liegt.
     //   DETAIL = PIXELFEHLER — die übrigen verlieren jede Ecke, deren Wegfall die Fläche um weniger als `fehlerPx` Bildpunkte
     //     verschiebt (`__pixelKollaps`): der Blockbau, das Holz, der Ziegel ohne Verband-Zeile tragen an der Grenze nur, was Pixel trägt.
@@ -857,7 +862,7 @@ const foundryKanal = (() => {
     //     ist das ganze Teil Detail seines Trägers (die Beschläge der Flügel): es fällt als Mittel in dessen Stoff (der Träger trägt
     //     das gesehene Dreieck nächst seiner Mitte, seine Farbe rückt auf das flächengewichtete Mittel beider).
     // Was die Sicht aus keiner Richtung zeigt, fällt. Die Felder eines Teils (Tür, Gelenk, Stoff) reisen mit.
-    const STUFE_AUS_L0 = Object.freeze({ luecke: 0.06, minFlaeche: 0.5, ebeneM: 0.02, zellePx: 2, hinterM: 0.003, fehlerPx: 0.5, winkel: 0.002 });
+    const STUFE_AUS_L0 = Object.freeze({ luecke: 0.06, minFlaeche: 0.5, minZellen: 32, ebeneM: 0.02, zellePx: 2, hinterM: 0.003, fehlerPx: 0.5, winkel: 0.002 });
     // DETAIL = PIXELFEHLER (E7): Halbkanten-Kollaps u → v über die Dreiecke `tris` (Nummern in I), in der Reihenfolge des kleinsten
     // Fehlers, solange er unter `eps` (m) bleibt. Die bleibende Ecke ist eine der L0 — jede Dreiecks-Ecke behält ihre Felder (Normale,
     // Farbe, Verband) und nimmt die Lage ihres Ziels; die Lage ist auf 1 mm verschweißt (eine flach schattierte Kiste ist EINE Fläche).
@@ -1233,7 +1238,8 @@ const foundryKanal = (() => {
             steine = 0,
             flankenTris = 0,
             gedreht = 0,
-            umriss = 0;
+            umriss = 0,
+            duenn = 0;
         // DER VORLAUF je Teil — DIE L0 IN RUHE: ein Tür-Flügel liegt in seiner gebackenen Offen-Pose (`tuer.offen`), die Welt zeigt
         // ihn geschlossen — um das Scharnier (hx, zf) um −offen gedreht, wie der Wirt ihn schwenkt (`_fluegelSchwenk` bei 0); die
         // Stufe trägt ihn geschlossen im Leib (kein `tuer`: die Stufen ab der L1 zeigen keinen Flügel). Die Sicht des Wirts sah
@@ -1496,8 +1502,8 @@ const foundryKanal = (() => {
                 }
                 const winkel = new Map();
                 for (const r of stein.values()) {
-                    let q = 0;
-                    const W = r.u1 - r.u0,
+                    let q = 0,
+                        W = r.u1 - r.u0,
                         H = r.v1 - r.v0;
                     if (!(W * H - r.A <= c * (W + H))) {
                         const R = __rechteckKlein(P, I, r.tris, tA, bA);
@@ -1507,7 +1513,13 @@ const foundryKanal = (() => {
                             continue;
                         }
                         q = Math.round(R.th / O.winkel);
+                        [W, H] = [R.W, R.H];
                         gedreht++;
+                    }
+                    // DIE FLANKE UNTER DER ZELLE ist Dünnes: ihre schmale Seite trägt keine zwei Bildpunkte
+                    if (e.fl && Math.min(W, H) < c) {
+                        duenn++;
+                        continue;
                     }
                     if (!winkel.has(q)) winkel.set(q, []);
                     winkel.get(q).push(r.tris);
@@ -1604,9 +1616,9 @@ const foundryKanal = (() => {
                     }
                     if (!(fl > 0)) continue;
                     // die Flanke eines Steins ohne Zeile trägt ihr Relief als ZONE: ihre Ebene teilen fremde Steine quer über die
-                    // Fassade (die Oberseiten einer Bohlen-Lage), das Auge sieht den zusammenhängenden Streifen — unter `minFlaeche`
-                    // fällt er wie die Kante des Verbands (Schwarzwald L2 2 178 → 364 Flanken-Dreiecke)
-                    if (e.fl && fl < O.minFlaeche) continue;
+                    // Fassade (die Oberseiten einer Bohlen-Lage), das Auge sieht den zusammenhängenden Streifen — unter `minZellen`
+                    // Zellen fällt er (die Zone der Bohlen-Fronten: L1 schwarzwald ohne Fläche 24,2 → 3,5 m²)
+                    if (e.fl && fl < O.minZellen * c * c) continue;
                     tiefe /= nEck;
                     if (farbe) for (let j = 0; j < farbe.length; j++) farbe[j] /= fl;
                     // die Zone als Raster der Zelle `c`: eine Zelle trägt, wo ein Stein sie berührt (die Fuge unter einer Zelle
@@ -1686,7 +1698,7 @@ const foundryKanal = (() => {
             aus.push(neu);
         }
         for (const ti of traeger.keys()) throw new Error("Stufe aus der L0: der Träger " + ti + " gefallener Teile fällt selbst");
-        return { teile: aus, zonen, kollaps: [vorKollaps, nachKollaps], unterZelle, steine: [steine, flankenTris], rahmen: [gedreht, umriss] };
+        return { teile: aus, zonen, kollaps: [vorKollaps, nachKollaps], unterZelle, steine: [steine, flankenTris, duenn], rahmen: [gedreht, umriss] };
     }
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
