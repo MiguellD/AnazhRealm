@@ -1325,10 +1325,7 @@ class AnazhRealm_speicher_welten {
                 () => {
                     const wt = st().weatherTransition; // ohne `progress`: der Takt rechnet ihn aus der Welt-Uhr
                     const zug = Number.isInteger(this._wetterZug) ? this._wetterZug : null;
-                    return [
-                        zug,
-                        wt ? { from: wt.from, to: wt.to, dauer: wt.dauer, startedAt: wt.startedAt } : null,
-                    ];
+                    return [zug, wt ? { from: wt.from, to: wt.to, dauer: wt.dauer, startedAt: wt.startedAt } : null];
                 },
                 { augenblick: true, marke: () => [this._wetterZug, st().weatherTransition, st().weather] },
             ],

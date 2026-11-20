@@ -438,13 +438,13 @@ function wasserSchmelze(r, x, z, P) {
         pg.neuBau += st.dirtyVoxelChunks.size;
         st.dirtyVoxelChunks = new Set([...alt, ...st.dirtyVoxelChunks]);
     };
-    const lauf = () => {
+    const lauf = (jahrLaeuft = true) => {
         // das Jahr folgt der Welt-Uhr (feld.K2#2, `_tickSeason`): je Schritt 0,2 s Welt-Zeit, der Anker neu am Beginn (eine andere
         // Phase oder Länge des Jahrs setzt ihn). Die Länge des Jahrs ist die des Kalenders (zeit-ein-kalender: tagS ÷ jahreJeTag) —
         // ein Jahr von 10,4 s ist ein Tag von 10,4 · jahreJeTag Sekunden
         const alt = [st.seasonPhase, st.autoSeason, st.dayLengthMinutes, st.spielZeit];
         const jeTag = AnazhRealm.WELT_GESETZ_ERDE.kalender.jahreJeTag;
-        Object.assign(st, { seasonPhase: 0.375, autoSeason: true, dayLengthMinutes: (10.4 * jeTag) / 60 });
+        Object.assign(st, { seasonPhase: 0.375, autoSeason: jahrLaeuft, dayLengthMinutes: (10.4 * jeTag) / 60 });
         r._tickSeason(); // der Anker des Jahrs zur Uhr jetzt
         const w = [];
         let neuBau = 0;
@@ -491,6 +491,16 @@ function wasserSchmelze(r, x, z, P) {
         const top = w.reduce((b, o, i) => (o.h > w[b].h ? i : b), 0);
         Object.assign(pg, { hub: w[top].h, wochen: w.filter((o) => o.h > 0).length, gegen: w.filter((o) => o.h > 0 !== o.a).length });
         Object.assign(pg, { fluss: spanne(w.map((o) => o.f)), flut: koerper(w[top].s), ruhe: koerper(0.375) });
+        // DIE FESTHALTE-PROBE: ohne Jahres-Welle hält das Feld Schnee und Spiegel. Das Jahr läuft im Tag des Kalenders und der Lauf
+        // des Regens mit ihm (zeit-ein-kalender: die 10,4 s Welt-Uhr des Jahrs sind ⅔ Tag — vor dem Kalender 10,4 s von 3 600): der
+        // Spiegel der Probe steht darum gegen denselben Lauf mit stehendem Jahr (`autoSeason` false) — der Unterschied ist das Jahr allein
+        r._temperaturFeld = (yy, tr) => {
+            const F = r.constructor.prototype._temperaturFeld.call(r, yy, tr);
+            return { ...F, jahr: { ...F.jahr, amp: 1e-9 } };
+        };
+        const [[h, wh], [, ws]] = [lauf(), lauf(false)];
+        [aus.halt, pg.halt] = [h.pegel, Math.max(...wh.map((o, i) => Math.abs(o.h - ws[i].h)))];
+        delete r._temperaturFeld;
         // R (wetter.K3) DER REGEN SPEIST DEN BACH: das Wort des Spielers „Sturm", 20 min Welt-Uhr im Takt des Regens (`_tickRain`
         // je 5 s): der Spiegel am Bach P.fluss (`_waterLevelAt`) über dem trockenen (`hub`), die Tafeln an den Faden (`post`), das
         // gezeichnete Wasser am See (`koerper`, wie P2); das Regen-Feld gehalten (der Sturm regnet nicht), hebt er nichts (`fest`).
@@ -519,12 +529,6 @@ function wasserSchmelze(r, x, z, P) {
         }
         r._weatherFieldFor = () => r.constructor.prototype._weatherFieldFor.call(r, "sunny");
         pg.regen.fest = sturm().hub;
-        r._temperaturFeld = (yy, tr) => {
-            const F = r.constructor.prototype._temperaturFeld.call(r, yy, tr);
-            return { ...F, jahr: { ...F.jahr, amp: 1e-9 } };
-        };
-        const [h, wh] = lauf();
-        [aus.halt, pg.halt] = [h.pegel, Math.max(...wh.map((o) => Math.abs(o.h)))];
         return [aus, pg];
     } finally {
         ["_temperaturFeld", "_voxelZustandPost", "_pegelTakt", "_weatherFieldFor"].forEach((k) => delete r[k]);
