@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T10:12:48.613Z",
+ "zeit": "2026-11-20T11:29:22.043Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -21077,6 +21077,4027 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.macht.grenze#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "d6d21be5297e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "c8579d8ebbda",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.krieg#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "846b77ba23f5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.krieg#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "4b295bfe2a8f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.krieg#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "369b471b3609",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.krieg#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "a0161bbd3e7a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.krieg#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "1c8c58ad7cfc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.krieg#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#8": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S8: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S8: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "4cd09611b535",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.krieg#1",
+   "modus": "session"
+  },
+  "karte2.mensch.macht.krieg#9": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S9: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S9: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 34.13,
+    "kerne": 1.289,
+    "fensterKerne": 1.453,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.59
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      3.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.69
+     ]
+    ],
+    "dienerS": 12.5,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.02
+     ],
+     [
+      "System",
+      3.69
+     ]
+    ],
+    "geraetS": 17.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.02
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 73.8,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:21:15.407Z",
+   "abdruck": "0cc38045cff3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.macht.krieg#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.4,
+    "takte": 11,
+    "fremdS": 27.52,
+    "kerne": 1.043,
+    "fensterKerne": 1.116,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      4.7
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=high ",
+      1.92
+     ]
+    ],
+    "dienerS": 12,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      4.88
+     ],
+     [
+      "dwm.exe",
+      2.78
+     ]
+    ],
+    "geraetS": 19.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.06
+     ],
+     [
+      "svchost.exe",
+      6.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 67.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:22:28.970Z",
+   "abdruck": "2941b130ced7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.4,
+    "takte": 11,
+    "fremdS": 27.52,
+    "kerne": 1.043,
+    "fensterKerne": 1.116,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      4.7
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=high ",
+      1.92
+     ]
+    ],
+    "dienerS": 12,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      4.88
+     ],
+     [
+      "dwm.exe",
+      2.78
+     ]
+    ],
+    "geraetS": 19.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.06
+     ],
+     [
+      "svchost.exe",
+      6.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 67.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:22:28.970Z",
+   "abdruck": "b13469b18e5d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.4,
+    "takte": 11,
+    "fremdS": 27.52,
+    "kerne": 1.043,
+    "fensterKerne": 1.116,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      4.7
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=high ",
+      1.92
+     ]
+    ],
+    "dienerS": 12,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      4.88
+     ],
+     [
+      "dwm.exe",
+      2.78
+     ]
+    ],
+    "geraetS": 19.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.06
+     ],
+     [
+      "svchost.exe",
+      6.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 67.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:22:28.970Z",
+   "abdruck": "1cf478863452",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.4,
+    "takte": 11,
+    "fremdS": 27.52,
+    "kerne": 1.043,
+    "fensterKerne": 1.116,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      4.7
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=high ",
+      1.92
+     ]
+    ],
+    "dienerS": 12,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      4.88
+     ],
+     [
+      "dwm.exe",
+      2.78
+     ]
+    ],
+    "geraetS": 19.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.06
+     ],
+     [
+      "svchost.exe",
+      6.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 67.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:22:28.970Z",
+   "abdruck": "8130cf11df80",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.4,
+    "takte": 11,
+    "fremdS": 27.52,
+    "kerne": 1.043,
+    "fensterKerne": 1.116,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      4.7
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=high ",
+      1.92
+     ]
+    ],
+    "dienerS": 12,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      4.88
+     ],
+     [
+      "dwm.exe",
+      2.78
+     ]
+    ],
+    "geraetS": 19.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.06
+     ],
+     [
+      "svchost.exe",
+      6.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 67.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:22:28.970Z",
+   "abdruck": "2512a2ab7e11",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.4,
+    "takte": 11,
+    "fremdS": 27.52,
+    "kerne": 1.043,
+    "fensterKerne": 1.116,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      4.7
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=high ",
+      1.92
+     ]
+    ],
+    "dienerS": 12,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      4.88
+     ],
+     [
+      "dwm.exe",
+      2.78
+     ]
+    ],
+    "geraetS": 19.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.06
+     ],
+     [
+      "svchost.exe",
+      6.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 67.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:22:28.970Z",
+   "abdruck": "5cd4b8bf1d31",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.4,
+    "takte": 11,
+    "fremdS": 27.52,
+    "kerne": 1.043,
+    "fensterKerne": 1.116,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.95
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      4.7
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=high ",
+      1.92
+     ]
+    ],
+    "dienerS": 12,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      4.88
+     ],
+     [
+      "dwm.exe",
+      2.78
+     ]
+    ],
+    "geraetS": 19.89,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13.06
+     ],
+     [
+      "svchost.exe",
+      6.22
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 67.91,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:22:28.970Z",
+   "abdruck": "eb2ab74e47c1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.schrift#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 40.5,
+    "takte": 17,
+    "fremdS": 45.13,
+    "kerne": 1.113,
+    "fensterKerne": 1.313,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      9.11
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      7.36
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… SITZUNG karte ende/|Welt tot nacht/la",
+      3.22
+     ]
+    ],
+    "dienerS": 18,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.39
+     ],
+     [
+      "dwm.exe",
+      5.2
+     ]
+    ],
+    "geraetS": 25.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      12.95
+     ],
+     [
+      "MsMpEng.exe",
+      11.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 92.39,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:23:50.078Z",
+   "abdruck": "b202406680e6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.schrift#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 40.5,
+    "takte": 17,
+    "fremdS": 45.13,
+    "kerne": 1.113,
+    "fensterKerne": 1.313,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      9.11
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      7.36
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… SITZUNG karte ende/|Welt tot nacht/la",
+      3.22
+     ]
+    ],
+    "dienerS": 18,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.39
+     ],
+     [
+      "dwm.exe",
+      5.2
+     ]
+    ],
+    "geraetS": 25.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      12.95
+     ],
+     [
+      "MsMpEng.exe",
+      11.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 92.39,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:23:50.078Z",
+   "abdruck": "61a47bc618d9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.schrift#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.schrift#3": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 40.5,
+    "takte": 17,
+    "fremdS": 45.13,
+    "kerne": 1.113,
+    "fensterKerne": 1.313,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      9.11
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      7.36
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… SITZUNG karte ende/|Welt tot nacht/la",
+      3.22
+     ]
+    ],
+    "dienerS": 18,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.39
+     ],
+     [
+      "dwm.exe",
+      5.2
+     ]
+    ],
+    "geraetS": 25.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      12.95
+     ],
+     [
+      "MsMpEng.exe",
+      11.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 92.39,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:23:50.078Z",
+   "abdruck": "f62d7f4bb037",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.schrift#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.schrift#4": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 40.5,
+    "takte": 17,
+    "fremdS": 45.13,
+    "kerne": 1.113,
+    "fensterKerne": 1.313,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      9.11
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      7.36
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… SITZUNG karte ende/|Welt tot nacht/la",
+      3.22
+     ]
+    ],
+    "dienerS": 18,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.39
+     ],
+     [
+      "dwm.exe",
+      5.2
+     ]
+    ],
+    "geraetS": 25.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      12.95
+     ],
+     [
+      "MsMpEng.exe",
+      11.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 92.39,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:23:50.078Z",
+   "abdruck": "9ef8af267844",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.schrift#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.schrift#5": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 40.5,
+    "takte": 17,
+    "fremdS": 45.13,
+    "kerne": 1.113,
+    "fensterKerne": 1.313,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      9.11
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      7.36
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… SITZUNG karte ende/|Welt tot nacht/la",
+      3.22
+     ]
+    ],
+    "dienerS": 18,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.39
+     ],
+     [
+      "dwm.exe",
+      5.2
+     ]
+    ],
+    "geraetS": 25.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      12.95
+     ],
+     [
+      "MsMpEng.exe",
+      11.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 92.39,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:23:50.078Z",
+   "abdruck": "64866f8a356c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.schrift#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.schrift#6": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:527:138) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 40.5,
+    "takte": 17,
+    "fremdS": 45.13,
+    "kerne": 1.113,
+    "fensterKerne": 1.313,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      9.11
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      7.36
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… SITZUNG karte ende/|Welt tot nacht/la",
+      3.22
+     ]
+    ],
+    "dienerS": 18,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.39
+     ],
+     [
+      "dwm.exe",
+      5.2
+     ]
+    ],
+    "geraetS": 25.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      12.95
+     ],
+     [
+      "MsMpEng.exe",
+      11.69
+     ],
+     [
+      "SearchIndexer.exe",
+      0.61
+     ]
+    ],
+    "eigenS": 92.39,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:23:50.078Z",
+   "abdruck": "b56357c636ab",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.schrift#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.gestalt#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.1,
+   "fremd": {
+    "s": 42.1,
+    "takte": 17,
+    "fremdS": 154.28,
+    "kerne": 3.666,
+    "fensterKerne": 7.951,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      101.78
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.66
+     ]
+    ],
+    "dienerS": 38.52,
+    "diener": [
+     [
+      "System",
+      23.02
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.34
+     ]
+    ],
+    "geraetS": 31.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.58
+     ],
+     [
+      "svchost.exe",
+      12.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.05
+     ]
+    ],
+    "eigenS": 98.13,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:24:30.135Z",
+   "abdruck": "8bc134085ccf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.gestalt#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.1,
+   "fremd": {
+    "s": 42.1,
+    "takte": 17,
+    "fremdS": 154.28,
+    "kerne": 3.666,
+    "fensterKerne": 7.951,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      101.78
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.66
+     ]
+    ],
+    "dienerS": 38.52,
+    "diener": [
+     [
+      "System",
+      23.02
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.34
+     ]
+    ],
+    "geraetS": 31.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.58
+     ],
+     [
+      "svchost.exe",
+      12.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.05
+     ]
+    ],
+    "eigenS": 98.13,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:24:30.135Z",
+   "abdruck": "4e43b769b9a4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.gestalt#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.gestalt#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.1,
+   "fremd": {
+    "s": 42.1,
+    "takte": 17,
+    "fremdS": 154.28,
+    "kerne": 3.666,
+    "fensterKerne": 7.951,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      101.78
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.66
+     ]
+    ],
+    "dienerS": 38.52,
+    "diener": [
+     [
+      "System",
+      23.02
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.34
+     ]
+    ],
+    "geraetS": 31.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.58
+     ],
+     [
+      "svchost.exe",
+      12.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.05
+     ]
+    ],
+    "eigenS": 98.13,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:24:30.135Z",
+   "abdruck": "4e31fd4af3d5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.gestalt#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.gestalt#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.1,
+   "fremd": {
+    "s": 42.1,
+    "takte": 17,
+    "fremdS": 154.28,
+    "kerne": 3.666,
+    "fensterKerne": 7.951,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      101.78
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.66
+     ]
+    ],
+    "dienerS": 38.52,
+    "diener": [
+     [
+      "System",
+      23.02
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.34
+     ]
+    ],
+    "geraetS": 31.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.58
+     ],
+     [
+      "svchost.exe",
+      12.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.05
+     ]
+    ],
+    "eigenS": 98.13,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:24:30.135Z",
+   "abdruck": "9db02527b898",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.gestalt#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.gestalt#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.1,
+   "fremd": {
+    "s": 42.1,
+    "takte": 17,
+    "fremdS": 154.28,
+    "kerne": 3.666,
+    "fensterKerne": 7.951,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      101.78
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.66
+     ]
+    ],
+    "dienerS": 38.52,
+    "diener": [
+     [
+      "System",
+      23.02
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.34
+     ]
+    ],
+    "geraetS": 31.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.58
+     ],
+     [
+      "svchost.exe",
+      12.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.05
+     ]
+    ],
+    "eigenS": 98.13,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:24:30.135Z",
+   "abdruck": "af99f7793205",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.gestalt#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.gestalt#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.1,
+   "fremd": {
+    "s": 42.1,
+    "takte": 17,
+    "fremdS": 154.28,
+    "kerne": 3.666,
+    "fensterKerne": 7.951,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      101.78
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.66
+     ]
+    ],
+    "dienerS": 38.52,
+    "diener": [
+     [
+      "System",
+      23.02
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.34
+     ]
+    ],
+    "geraetS": 31.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.58
+     ],
+     [
+      "svchost.exe",
+      12.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.05
+     ]
+    ],
+    "eigenS": 98.13,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:24:30.135Z",
+   "abdruck": "67b10418a9bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.gestalt#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.gestalt#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.1,
+   "fremd": {
+    "s": 42.1,
+    "takte": 17,
+    "fremdS": 154.28,
+    "kerne": 3.666,
+    "fensterKerne": 7.951,
+    "namen": [
+     [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      101.78
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.66
+     ]
+    ],
+    "dienerS": 38.52,
+    "diener": [
+     [
+      "System",
+      23.02
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.34
+     ]
+    ],
+    "geraetS": 31.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.58
+     ],
+     [
+      "svchost.exe",
+      12.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.05
+     ]
+    ],
+    "eigenS": 98.13,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:24:30.135Z",
+   "abdruck": "2e87d71faa15",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.gestalt#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.diffusion#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.1,
+   "fremd": {
+    "s": 41.2,
+    "takte": 17,
+    "fremdS": 63.39,
+    "kerne": 1.537,
+    "fensterKerne": 2.741,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36856-profil-lMxT1p --no-p",
+      19.86
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      8.7
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.47
+     ]
+    ],
+    "dienerS": 20.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.53
+     ],
+     [
+      "System",
+      5.58
+     ]
+    ],
+    "geraetS": 22.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.42
+     ],
+     [
+      "MsMpEng.exe",
+      9.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 93.23,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:01.330Z",
+   "abdruck": "d058398a21cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.diffusion#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.1,
+   "fremd": {
+    "s": 41.2,
+    "takte": 17,
+    "fremdS": 63.39,
+    "kerne": 1.537,
+    "fensterKerne": 2.741,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36856-profil-lMxT1p --no-p",
+      19.86
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      8.7
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.47
+     ]
+    ],
+    "dienerS": 20.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.53
+     ],
+     [
+      "System",
+      5.58
+     ]
+    ],
+    "geraetS": 22.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.42
+     ],
+     [
+      "MsMpEng.exe",
+      9.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 93.23,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:01.330Z",
+   "abdruck": "f949fa223ab4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.diffusion#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.diffusion#3": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.1,
+   "fremd": {
+    "s": 41.2,
+    "takte": 17,
+    "fremdS": 63.39,
+    "kerne": 1.537,
+    "fensterKerne": 2.741,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36856-profil-lMxT1p --no-p",
+      19.86
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      8.7
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.47
+     ]
+    ],
+    "dienerS": 20.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.53
+     ],
+     [
+      "System",
+      5.58
+     ]
+    ],
+    "geraetS": 22.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.42
+     ],
+     [
+      "MsMpEng.exe",
+      9.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 93.23,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:01.330Z",
+   "abdruck": "f0b7ce08c6f5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.diffusion#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.diffusion#4": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.1,
+   "fremd": {
+    "s": 41.2,
+    "takte": 17,
+    "fremdS": 63.39,
+    "kerne": 1.537,
+    "fensterKerne": 2.741,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36856-profil-lMxT1p --no-p",
+      19.86
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      8.7
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.47
+     ]
+    ],
+    "dienerS": 20.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.53
+     ],
+     [
+      "System",
+      5.58
+     ]
+    ],
+    "geraetS": 22.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.42
+     ],
+     [
+      "MsMpEng.exe",
+      9.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 93.23,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:01.330Z",
+   "abdruck": "b8d61eefb250",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.diffusion#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.diffusion#5": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.1,
+   "fremd": {
+    "s": 41.2,
+    "takte": 17,
+    "fremdS": 63.39,
+    "kerne": 1.537,
+    "fensterKerne": 2.741,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36856-profil-lMxT1p --no-p",
+      19.86
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      8.7
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.47
+     ]
+    ],
+    "dienerS": 20.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.53
+     ],
+     [
+      "System",
+      5.58
+     ]
+    ],
+    "geraetS": 22.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.42
+     ],
+     [
+      "MsMpEng.exe",
+      9.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 93.23,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:01.330Z",
+   "abdruck": "ed8a76a5a42f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.diffusion#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.diffusion#6": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:525:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.1,
+   "fremd": {
+    "s": 41.2,
+    "takte": 17,
+    "fremdS": 63.39,
+    "kerne": 1.537,
+    "fensterKerne": 2.741,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36856-profil-lMxT1p --no-p",
+      19.86
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      8.7
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.47
+     ]
+    ],
+    "dienerS": 20.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.53
+     ],
+     [
+      "System",
+      5.58
+     ]
+    ],
+    "geraetS": 22.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.42
+     ],
+     [
+      "MsMpEng.exe",
+      9.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.08
+     ]
+    ],
+    "eigenS": 93.23,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:01.330Z",
+   "abdruck": "fd38e3271d09",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.diffusion#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.wissen#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 31.56,
+    "kerne": 1.19,
+    "fensterKerne": 1.5,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.73
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      3.95
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      3.33
+     ]
+    ],
+    "dienerS": 12.91,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.36
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "geraetS": 17.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.16
+     ],
+     [
+      "MsMpEng.exe",
+      7.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 67.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:41.582Z",
+   "abdruck": "5fde49f38bfb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.wissen#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 31.56,
+    "kerne": 1.19,
+    "fensterKerne": 1.5,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.73
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      3.95
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      3.33
+     ]
+    ],
+    "dienerS": 12.91,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.36
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "geraetS": 17.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.16
+     ],
+     [
+      "MsMpEng.exe",
+      7.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 67.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:41.582Z",
+   "abdruck": "542423fcc20e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.wissen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.wissen#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 31.56,
+    "kerne": 1.19,
+    "fensterKerne": 1.5,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.73
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      3.95
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      3.33
+     ]
+    ],
+    "dienerS": 12.91,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.36
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "geraetS": 17.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.16
+     ],
+     [
+      "MsMpEng.exe",
+      7.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 67.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:41.582Z",
+   "abdruck": "05794ea028e0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.wissen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.wissen#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 31.56,
+    "kerne": 1.19,
+    "fensterKerne": 1.5,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.73
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      3.95
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      3.33
+     ]
+    ],
+    "dienerS": 12.91,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.36
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "geraetS": 17.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.16
+     ],
+     [
+      "MsMpEng.exe",
+      7.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 67.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:41.582Z",
+   "abdruck": "5b73ef8cab7e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.wissen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.wissen#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 31.56,
+    "kerne": 1.19,
+    "fensterKerne": 1.5,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.73
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      3.95
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      3.33
+     ]
+    ],
+    "dienerS": 12.91,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.36
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "geraetS": 17.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.16
+     ],
+     [
+      "MsMpEng.exe",
+      7.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 67.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:41.582Z",
+   "abdruck": "8912cad2b613",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.wissen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.wissen#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.4,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.1,
+   "fremd": {
+    "s": 26.5,
+    "takte": 11,
+    "fremdS": 31.56,
+    "kerne": 1.19,
+    "fensterKerne": 1.5,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      4.73
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      3.95
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      3.33
+     ]
+    ],
+    "dienerS": 12.91,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.36
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "geraetS": 17.36,
+    "geraet": [
+     [
+      "svchost.exe",
+      9.16
+     ],
+     [
+      "MsMpEng.exe",
+      7.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 67.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:26:41.582Z",
+   "abdruck": "181a44e93c02",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.wissen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.bildkunst#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.5,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 53.52,
+    "kerne": 1.293,
+    "fensterKerne": 1.639,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.38
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.25
+     ]
+    ],
+    "dienerS": 24.69,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.11
+     ],
+     [
+      "System",
+      7.8
+     ]
+    ],
+    "geraetS": 29.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.84
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 91.98,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:27:58.507Z",
+   "abdruck": "f8f087c02bc6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.bildkunst#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.5,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 53.52,
+    "kerne": 1.293,
+    "fensterKerne": 1.639,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.38
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.25
+     ]
+    ],
+    "dienerS": 24.69,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.11
+     ],
+     [
+      "System",
+      7.8
+     ]
+    ],
+    "geraetS": 29.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.84
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 91.98,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:27:58.507Z",
+   "abdruck": "1af46633dc19",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.bildkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.bildkunst#3": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.5,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 53.52,
+    "kerne": 1.293,
+    "fensterKerne": 1.639,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.38
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.25
+     ]
+    ],
+    "dienerS": 24.69,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.11
+     ],
+     [
+      "System",
+      7.8
+     ]
+    ],
+    "geraetS": 29.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.84
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 91.98,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:27:58.507Z",
+   "abdruck": "8235efed25e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.bildkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.bildkunst#4": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.5,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 53.52,
+    "kerne": 1.293,
+    "fensterKerne": 1.639,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.38
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.25
+     ]
+    ],
+    "dienerS": 24.69,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.11
+     ],
+     [
+      "System",
+      7.8
+     ]
+    ],
+    "geraetS": 29.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.84
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 91.98,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:27:58.507Z",
+   "abdruck": "482f5e62f00a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.bildkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.bildkunst#5": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.5,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 53.52,
+    "kerne": 1.293,
+    "fensterKerne": 1.639,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.38
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.25
+     ]
+    ],
+    "dienerS": 24.69,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.11
+     ],
+     [
+      "System",
+      7.8
+     ]
+    ],
+    "geraetS": 29.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.84
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 91.98,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:27:58.507Z",
+   "abdruck": "de70ac5ad0fa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.bildkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.bildkunst#6": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.5,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 53.52,
+    "kerne": 1.293,
+    "fensterKerne": 1.639,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.38
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.25
+     ]
+    ],
+    "dienerS": 24.69,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.11
+     ],
+     [
+      "System",
+      7.8
+     ]
+    ],
+    "geraetS": 29.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.84
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 91.98,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:27:58.507Z",
+   "abdruck": "caf1342d7ce6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.bildkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.bildkunst#7": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.64,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:521:121) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.5,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 53.52,
+    "kerne": 1.293,
+    "fensterKerne": 1.639,
+    "namen": [
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      7.38
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.25
+     ]
+    ],
+    "dienerS": 24.69,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.11
+     ],
+     [
+      "System",
+      7.8
+     ]
+    ],
+    "geraetS": 29.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.84
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 91.98,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:27:58.507Z",
+   "abdruck": "8d9f29e67534",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.bildkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.65,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.8,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 73.72,
+    "kerne": 1.779,
+    "fensterKerne": 3.259,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8392-profil-Cjp1tb --no-pr",
+      23.23
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.31
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      5.53
+     ]
+    ],
+    "dienerS": 24.19,
+    "diener": [
+     [
+      "System",
+      10.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.94
+     ]
+    ],
+    "geraetS": 24.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.81
+     ],
+     [
+      "MsMpEng.exe",
+      11.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 91.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:28:40.691Z",
+   "abdruck": "faac0023181f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.65,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.8,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 73.72,
+    "kerne": 1.779,
+    "fensterKerne": 3.259,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8392-profil-Cjp1tb --no-pr",
+      23.23
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.31
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      5.53
+     ]
+    ],
+    "dienerS": 24.19,
+    "diener": [
+     [
+      "System",
+      10.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.94
+     ]
+    ],
+    "geraetS": 24.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.81
+     ],
+     [
+      "MsMpEng.exe",
+      11.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 91.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:28:40.691Z",
+   "abdruck": "65f03fea3726",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.erzaehlkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#3": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.65,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.8,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 73.72,
+    "kerne": 1.779,
+    "fensterKerne": 3.259,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8392-profil-Cjp1tb --no-pr",
+      23.23
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.31
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      5.53
+     ]
+    ],
+    "dienerS": 24.19,
+    "diener": [
+     [
+      "System",
+      10.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.94
+     ]
+    ],
+    "geraetS": 24.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.81
+     ],
+     [
+      "MsMpEng.exe",
+      11.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 91.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:28:40.691Z",
+   "abdruck": "1d86e65f1c0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.erzaehlkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#4": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.65,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.8,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 73.72,
+    "kerne": 1.779,
+    "fensterKerne": 3.259,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8392-profil-Cjp1tb --no-pr",
+      23.23
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.31
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      5.53
+     ]
+    ],
+    "dienerS": 24.19,
+    "diener": [
+     [
+      "System",
+      10.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.94
+     ]
+    ],
+    "geraetS": 24.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.81
+     ],
+     [
+      "MsMpEng.exe",
+      11.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 91.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:28:40.691Z",
+   "abdruck": "c98ff0396a6c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.erzaehlkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#5": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.65,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.8,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 73.72,
+    "kerne": 1.779,
+    "fensterKerne": 3.259,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8392-profil-Cjp1tb --no-pr",
+      23.23
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.31
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      5.53
+     ]
+    ],
+    "dienerS": 24.19,
+    "diener": [
+     [
+      "System",
+      10.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.94
+     ]
+    ],
+    "geraetS": 24.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.81
+     ],
+     [
+      "MsMpEng.exe",
+      11.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 91.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:28:40.691Z",
+   "abdruck": "9a49010cacca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.erzaehlkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#6": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.65,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.8,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 73.72,
+    "kerne": 1.779,
+    "fensterKerne": 3.259,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8392-profil-Cjp1tb --no-pr",
+      23.23
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.31
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      5.53
+     ]
+    ],
+    "dienerS": 24.19,
+    "diener": [
+     [
+      "System",
+      10.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.94
+     ]
+    ],
+    "geraetS": 24.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.81
+     ],
+     [
+      "MsMpEng.exe",
+      11.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 91.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:28:40.691Z",
+   "abdruck": "d24f11fbf788",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.erzaehlkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#7": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.65,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:66) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.8,
+   "fremd": {
+    "s": 41.4,
+    "takte": 17,
+    "fremdS": 73.72,
+    "kerne": 1.779,
+    "fensterKerne": 3.259,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8392-profil-Cjp1tb --no-pr",
+      23.23
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      6.31
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      5.53
+     ]
+    ],
+    "dienerS": 24.19,
+    "diener": [
+     [
+      "System",
+      10.06
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.94
+     ]
+    ],
+    "geraetS": 24.27,
+    "geraet": [
+     [
+      "svchost.exe",
+      11.81
+     ],
+     [
+      "MsMpEng.exe",
+      11.44
+     ],
+     [
+      "SearchIndexer.exe",
+      0.94
+     ]
+    ],
+    "eigenS": 91.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:28:40.691Z",
+   "abdruck": "41e224d7d79a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.erzaehlkunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.strassenleben#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 38.9,
+    "takte": 16,
+    "fremdS": 50.08,
+    "kerne": 1.288,
+    "fensterKerne": 1.896,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.14
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.23
+     ]
+    ],
+    "dienerS": 18.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.28
+     ],
+     [
+      "System",
+      4.77
+     ]
+    ],
+    "geraetS": 26.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13
+     ],
+     [
+      "svchost.exe",
+      12.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 85.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:29:22.043Z",
+   "abdruck": "ea1eae56c9fa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.strassenleben#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 38.9,
+    "takte": 16,
+    "fremdS": 50.08,
+    "kerne": 1.288,
+    "fensterKerne": 1.896,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.14
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.23
+     ]
+    ],
+    "dienerS": 18.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.28
+     ],
+     [
+      "System",
+      4.77
+     ]
+    ],
+    "geraetS": 26.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13
+     ],
+     [
+      "svchost.exe",
+      12.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 85.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:29:22.043Z",
+   "abdruck": "74967772d47e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.strassenleben#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.strassenleben#3": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 38.9,
+    "takte": 16,
+    "fremdS": 50.08,
+    "kerne": 1.288,
+    "fensterKerne": 1.896,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.14
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.23
+     ]
+    ],
+    "dienerS": 18.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.28
+     ],
+     [
+      "System",
+      4.77
+     ]
+    ],
+    "geraetS": 26.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13
+     ],
+     [
+      "svchost.exe",
+      12.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 85.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:29:22.043Z",
+   "abdruck": "ca006e541f8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.strassenleben#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.strassenleben#4": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 38.9,
+    "takte": 16,
+    "fremdS": 50.08,
+    "kerne": 1.288,
+    "fensterKerne": 1.896,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.14
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.23
+     ]
+    ],
+    "dienerS": 18.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.28
+     ],
+     [
+      "System",
+      4.77
+     ]
+    ],
+    "geraetS": 26.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13
+     ],
+     [
+      "svchost.exe",
+      12.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 85.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:29:22.043Z",
+   "abdruck": "6a580d5a1b3e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.strassenleben#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.strassenleben#5": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 38.9,
+    "takte": 16,
+    "fremdS": 50.08,
+    "kerne": 1.288,
+    "fensterKerne": 1.896,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.14
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.23
+     ]
+    ],
+    "dienerS": 18.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.28
+     ],
+     [
+      "System",
+      4.77
+     ]
+    ],
+    "geraetS": 26.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13
+     ],
+     [
+      "svchost.exe",
+      12.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 85.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:29:22.043Z",
+   "abdruck": "fe5ca13cb5b2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.strassenleben#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.strassenleben#6": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 38.9,
+    "takte": 16,
+    "fremdS": 50.08,
+    "kerne": 1.288,
+    "fensterKerne": 1.896,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.14
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.23
+     ]
+    ],
+    "dienerS": 18.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.28
+     ],
+     [
+      "System",
+      4.77
+     ]
+    ],
+    "geraetS": 26.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13
+     ],
+     [
+      "svchost.exe",
+      12.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 85.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:29:22.043Z",
+   "abdruck": "8fc1117341b5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.strassenleben#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.strassenleben#7": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "exit": 2,
+   "minuten": 0.61,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]:1:1), <anonymous>:522:85) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async eval (eval at <anonymous> ([eval]:1:1), <anonymous>:513:5)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 36.6,
+   "fremd": {
+    "s": 38.9,
+    "takte": 16,
+    "fremdS": 50.08,
+    "kerne": 1.288,
+    "fensterKerne": 1.896,
+    "namen": [
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      8.03
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh nacht-spike-karte bash nacht/fahrt.sh karte nacht/faelle-spi",
+      6.14
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh krone-umriss-zensus bash z/lauf.sh",
+      5.23
+     ]
+    ],
+    "dienerS": 18.55,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.28
+     ],
+     [
+      "System",
+      4.77
+     ]
+    ],
+    "geraetS": 26.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      13
+     ],
+     [
+      "svchost.exe",
+      12.34
+     ],
+     [
+      "SearchIndexer.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 85.95,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T11:29:22.043Z",
+   "abdruck": "b4b6b4e53833",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.strassenleben#1",
    "modus": "session"
   }
  },
