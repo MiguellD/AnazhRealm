@@ -1602,7 +1602,7 @@ class AnazhRealm {
         const LG = globalThis.__fachwerkCore.LICHT_GESETZ;
         for (const k in atmo.lichtGlut)
             this._lichtLinear(LG[k], atmo.lichtGlut[k].value).multiplyScalar(
-                ((LG[k].cdM2 || 0) / __weltLicht.EINHEIT_LX) * this._lichtSchaltplan(LG[k])
+                (this._leuchtFlaeche(LG[k]) / __weltLicht.EINHEIT_LX) * this._lichtSchaltplan(LG[k])
             );
         const pool =
             this._leuchtPool ||
@@ -1623,15 +1623,7 @@ class AnazhRealm {
         const jetzt = performance.now() / 1000;
         const schritt = Math.max(0, jetzt - pool.uhr) / LP.blendeS;
         pool.uhr = jetzt;
-        if (jetzt - pool.t >= LP.wahlS || !(Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM)) {
-            pool.t = jetzt;
-            pool.x = cp.x;
-            pool.y = cp.y;
-            pool.z = cp.z;
-            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam));
-            q.sort((a, b) => a.rang - b.rang);
-            pool.wahl = q.slice(0, LP.plaetze);
-        }
+        this._leuchtWahl(pool, cam, jetzt);
         // die Plätze: gewählt bleibt und blendet ein, abgewählt blendet aus, der freie Platz nimmt die nächste Gewählte
         const H = pool.halter;
         for (let k = 0; k < H.length; k++) {
@@ -1700,6 +1692,74 @@ class AnazhRealm {
         this._lichtWurfTakt(pool, cam);
     }
 
+    // DIE WAHL DES ORTS (der eine Schritt, den Licht-Takt und Lichtmesser teilen): die `plaetze` Quellen mit dem höchsten Rang
+    // (`_leuchtQuellen`) — neu je `wahlS`, nach `wahlM` Weg und nach jedem Sprung der Uhr (`_uhrSetzen` setzt `t` auf −∞).
+    _leuchtWahl(pool, cam, jetzt = performance.now() / 1000) {
+        const LP = AnazhRealm.LICHT_POOL;
+        const cp = cam.position;
+        if (jetzt - pool.t < LP.wahlS && Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM) return;
+        pool.t = jetzt;
+        pool.x = cp.x;
+        pool.y = cp.y;
+        pool.z = cp.z;
+        const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam));
+        q.sort((a, b) => a.rang - b.rang);
+        pool.wahl = q.slice(0, LP.plaetze);
+    }
+
+    // DIE LEUCHTDICHTE DER LEUCHTENDEN FLÄCHE eines Datums (cd/m², nacht-lichter): das Fenster trägt seine (`cdM2`, die Fläche
+    // eines erleuchteten Raums, flach), das Glas einer Leuchte die Scheibe, von innen beleuchtet — je Luma seiner Vertex-Farbe
+    // (fachwerk `laterneGlasJeLuma`: die Mitte des Masts `glasStreu` · E ÷ π, E aus der Lichtstärke; die Ecke trägt im Ton die
+    // Bestrahlung dort, fachwerk `laterneGlasTon`) — der Stoff multipliziert die Luma der Ecke (`_leuchtStoff`). Ein Datum ohne beides leuchtet nicht als
+    // Fläche (das Herdfeuer: sein Leib ist der Stoff `feuer`). Bis nacht-lichter trug der Kopf der Laterne eine eigene Leuchtdichte
+    // (`cdM2` 640, flach über das ganze Glas) neben seiner Lichtstärke.
+    _leuchtFlaeche(L) {
+        if (L.cdM2 > 0) return L.cdM2;
+        if (!(L.glasStreu > 0)) return 0;
+        return globalThis.__fachwerkCore.laterneGlasJeLuma(L);
+    }
+
+    // DER POOL AM AUGE (nacht-lichter, der Lichtmesser): die Beleuchtungsstärke, die die Leuchten des Orts auf eine waagrechte
+    // Fläche am Auge werfen (rgb, Welt-Einheiten, zu `w` addiert in `aus`) — dieselbe Stärke, derselbe Abfall, dieselbe Farbe wie
+    // im Stoff (`_leuchtTakt`, fachwerk `lichtAbfall`), ohne Flackern (der Messer mittelt), × cos θ der Quelle über der Fläche
+    // (unter dem Auge 0). Das Licht des Auges und der Himmels-Ersatz zählen nicht: der Messer misst die Lichter des Orts.
+    // Leser: die Belichtung (`_belichtungAusLicht`). Bis nacht-lichter las der Messer nur Sonne, Mond und Himmel — unter der
+    // Laterne stand die Blende des Mondlichts, jede Wand in ihrem Licht 2 100-mal über Bild-Weiß.
+    // DIE WAHL DES ORTS ZUR UHR, NIE DIE BLENDE DES BILDS (licht.K1: die Kamera folgt dem Licht des Orts, steht die Uhr, stehen
+    // Leuchten UND Messer im selben Bild): der Messer stellt eine fällige Wahl selbst (`_leuchtWahl` — nach dem Uhr-Wort liest er
+    // vor dem nächsten Licht-Takt) und liest die gewählten Quellen in voller Stärke; die Blende (`blendeS`) ist der Übergang des
+    // Bilds zwischen zwei Plätzen. Bis hier las er die Plätze × ihre Blende, und das Uhr-Wort (`setTimeOfDay` → ein Anwenden des
+    // Tags) fand die Wahl der alten Stunde: unter der Bühne kamen die Laternen erst mit dem nächsten Schuss in die Belichtung
+    // (gate:tag-achse:echt, genesis Uhr 0, Radeon: Bild 1–7 nach dem Wort Pool 0, k 50 721; `frisch` Pool 7,96e-6, k 34 391 —
+    // ASYNC 0,56 EV, Soll 0,05).
+    _poolAmAuge(w, aus) {
+        aus[0] = w[0];
+        aus[1] = w[1];
+        aus[2] = w[2];
+        this._poolE = 0;
+        const pool = this._leuchtPool;
+        const cam = this.state.camera;
+        if (!pool || !cam) return aus;
+        this._leuchtWahl(pool, cam);
+        const cp = cam.position;
+        const c = this._poolAugeC || (this._poolAugeC = new THREE.Color());
+        const FC = globalThis.__fachwerkCore;
+        for (const q of pool.wahl) {
+            if (q.quelle === "auge" || q.L.ersatz) continue;
+            const dy = q.y - cp.y;
+            const d = Math.hypot(q.x - cp.x, dy, q.z - cp.z);
+            if (!(dy > 0)) continue;
+            const e = this._leuchtStaerke(q, 0, true) * FC.lichtAbfall(q.L, d) * (dy / d);
+            if (!(e > 0)) continue;
+            this._lichtLinear(q.L, c);
+            aus[0] += c.r * e;
+            aus[1] += c.g * e;
+            aus[2] += c.b * e;
+            this._poolE += e;
+        }
+        return aus;
+    }
+
     // DIE LICHTFARBE einer Quelle, linear, in die Farbe `c` (K11b): ein Wärmestrahler trägt seine Farbtemperatur (`kelvin`,
     // fachwerk `lichtFarbe` über den Planck-Ort) — das Feuer, die Glut, die Laterne, die Fenster und das Licht des Auges. Das
     // Tor ist kein Wärmestrahler: sein Datum (porta GLUT_GESETZ) trägt die Farbe als sRGB-Absicht, die das FARB-GESETZ linear
@@ -1743,12 +1803,12 @@ class AnazhRealm {
     // DIE STÄRKE einer Quelle zur Bild-Uhr t (K11, A9; licht-eine-skala P8): ihre Lichtstärke in Candela (`L.cd`, lx in 1 m)
     // × Flackern × Schaltplan × Masse ÷ die Einheit der EINEN Skala (`EINHEIT_LX`) — die EINE Stelle, an der ein Pool-Licht in
     // den Maßstab der Welt tritt. Ein Datum ohne `cd` bricht laut. Bis hier lief die Zahl des Labors × π × Zeitplan: das
-    // Herdfeuer trug nachts × 45 (2,3 Mio. lx in 1 m im einen Maßstab).
-    _leuchtStaerke(q, t) {
+    // Herdfeuer trug nachts × 45 (2,3 Mio. lx in 1 m im einen Maßstab). `ruhig`: ohne Flackern (der Lichtmesser, `_poolAmAuge`).
+    _leuchtStaerke(q, t, ruhig) {
         const L = q.L;
         if (!(L.cd >= 0))
             throw new Error(`_leuchtStaerke: die Quelle „${q.quelle || "?"}“ trägt keine Lichtstärke (cd)`);
-        const fl = L.flacker ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
+        const fl = L.flacker && !ruhig ? L.flacker.amp * globalThis.__fachwerkCore.lichtFlackern(L, t, q.phase) : 0;
         return ((L.cd * (1 + fl)) / __weltLicht.EINHEIT_LX) * q.masse * this._lichtSchaltplan(L);
     }
 
@@ -1780,8 +1840,17 @@ class AnazhRealm {
         const nimm = (id, q) => {
             const d = Math.hypot(q.x - x, q.y - y, q.z - z);
             if (d > R + q.L.reichweiteM || !(this._leuchtStaerke(q, t) > 0)) return;
-            const imBild = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), q.L.reichweiteM));
-            out.push(Object.assign(q, { id, rang: (imBild ? 0 : 1e9) + Math.max(0, d - q.L.reichweiteM) * 1e3 + d }));
+            const imKegel = !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), q.L.reichweiteM));
+            // DER RANG NACH DEM BEITRAG AM SCHIRM (nacht-lichter): zuerst jede Quelle, deren Fleck im Bild liegt (die Kugel ihrer
+            // Höhe um den Kopf — dort fällt das meiste ihres Lichts), unter ihnen nach dem, was sie ans Auge trägt: ihre Stärke im
+            // Abstand des Auges (I ÷ (d² + k² + 1)); dann die, deren Reichweite den Kegel nur streift; hinter dem Kegel der Abstand
+            // (das Drehen blendet). Bis hier rangierte der Abstand zur Kugel der Reichweite: die Wandlaterne 17,9 m hinter dem
+            // Bildrand nahm den Platz der Wandlaterne 19 m im Bild (Dorf P0, Radeon: 3 von 4 sichtbaren Quellen mit Fleck).
+            const k2 = q.L.kernM * q.L.kernM;
+            const fleck =
+                !F || F.intersectsSphere(kugel.set(kugel.center.set(q.x, q.y, q.z), (q.L.hoeheM || 1) + q.L.kernM));
+            const rang = fleck ? -this._leuchtStaerke(q, t, true) / (d * d + k2 + 1) : (imKegel ? 1e8 : 1e9) + d;
+            out.push(Object.assign(q, { id, rang }));
         };
         const auge = this._augenLeuchte;
         if (auge) nimm(auge, Object.assign({}, auge, { x, y, z }));
@@ -1949,7 +2018,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.353";
+AnazhRealm.VERSION = "18.546.354";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

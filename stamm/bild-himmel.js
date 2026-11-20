@@ -2098,8 +2098,18 @@ class AnazhRealm_bild_himmel {
         this._belichtungGelesen = !!w;
         const EA = w && this._belichtungAnker();
         if (!EA) return null;
+        // DER MESSER LIEST DIE LICHTER DES ORTS (nacht-lichter): zum Himmel die Plätze des Licht-Pools auf derselben waagrechten
+        // Fläche am Auge (`_poolAmAuge`) — unter der Laterne schließt die Blende, wie das Auge es tut. `_belichtungE` bleibt die
+        // Lesung des Himmels (Regen, Raum und Wurf lesen sie).
+        const wp = this._poolAmAuge(w, this._belichtungMitPool || (this._belichtungMitPool = [0, 0, 0]));
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
-        const k = __weltLicht.belichtung(w, EA, e, (h, q) => AnazhRealm._belichtungStufen(h, q), AnazhRealm.BELICHTUNG);
+        const k = __weltLicht.belichtung(
+            wp,
+            EA,
+            e,
+            (h, q) => AnazhRealm._belichtungStufen(h, q),
+            AnazhRealm.BELICHTUNG
+        );
         // DER RAUM AM AUGE (w28-innenlicht): unter einer Decke misst die Kamera das Licht des Raums — das Licht von draußen ×
         // F (`_raumBlendeTakt`: das Raum-Licht der Decke × der Anteil des Himmels am Licht, die Sonne erreicht den Messer im
         // Raum nicht), `_raumStufen` = log2 F. Dasselbe Gesetz der Kamera wie für jedes Licht des Tags, dasselbe Glied wie das
@@ -2821,7 +2831,7 @@ class AnazhRealm_bild_himmel {
             return false;
         }
         // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`),
-        // und der Licht-Pool wählt im nächsten Takt neu (`_leuchtTakt`: seine Wahl liest den Zeitplan der Quellen zur Uhr — mit
+        // und der Licht-Pool wählt neu, sobald ihn Licht-Takt oder Lichtmesser lesen (`_leuchtWahl`: sie liest den Zeitplan der Quellen zur Uhr — mit
         // der Wahl der alten Stunde blendeten die Laternen des Genesis-Orts erst bis zu `wahlS` nach dem Sprung ein, mitten im
         // Schuss: gate:tag-achse:echt SPRUNG 0,2–0,6 EV an Dämmerung und Morgen)
         if (quelle !== "uhr" && v !== this.state.timeOfDay) {
