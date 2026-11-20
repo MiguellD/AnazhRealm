@@ -19310,7 +19310,7 @@
   },
   "karte2.mensch.leib.ausdruck": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.ausdruck#1 radeon: ungemessen (R10) · karte2.mensch.leib.ausdruck#1 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#2 radeon: ungemessen (R10) · karte2.mensch.leib.ausdruck#2 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#3 radeon: ungemessen (R10) · karte2.mensch.leib.ausdruck#3 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#4 radeon: ungemessen (R10) · karte2.mensch.leib.ausdruck#4 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#5 radeon: ungemessen (R10) · karte2.mensch.leib.ausdruck#5 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#6 radeon: ungemessen (R10) · karte2.mensch.leib.ausdruck#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.ausdruck#1 radeon: ungemessen (R10) · karte2.mensch.leib.ausdruck#1 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.ausdruck#2 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.ausdruck#3 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.ausdruck#4 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.ausdruck#5 gtx: ungemessen (R10) · karte2.mensch.leib.ausdruck#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.ausdruck#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.leib.ausdruck#1",
@@ -19338,7 +19338,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19356,7 +19356,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19374,7 +19374,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19392,7 +19392,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19410,7 +19410,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19542,7 +19542,7 @@
   },
   "karte2.mensch.leib.spur": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.spur#1 radeon: ungemessen (R10) · karte2.mensch.leib.spur#1 gtx: ungemessen (R10) · karte2.mensch.leib.spur#2 radeon: ungemessen (R10) · karte2.mensch.leib.spur#2 gtx: ungemessen (R10) · karte2.mensch.leib.spur#3 radeon: ungemessen (R10) · karte2.mensch.leib.spur#3 gtx: ungemessen (R10) · karte2.mensch.leib.spur#4 radeon: ungemessen (R10) · karte2.mensch.leib.spur#4 gtx: ungemessen (R10) · karte2.mensch.leib.spur#5 radeon: ungemessen (R10) · karte2.mensch.leib.spur#5 gtx: ungemessen (R10) · karte2.mensch.leib.spur#6 radeon: ungemessen (R10) · karte2.mensch.leib.spur#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.spur#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.spur#1 gtx: ungemessen (R10) · karte2.mensch.leib.spur#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.spur#2 gtx: ungemessen (R10) · karte2.mensch.leib.spur#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.spur#3 gtx: ungemessen (R10) · karte2.mensch.leib.spur#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.spur#4 gtx: ungemessen (R10) · karte2.mensch.leib.spur#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.spur#5 gtx: ungemessen (R10) · karte2.mensch.leib.spur#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.spur#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.leib.spur#1",
@@ -19550,7 +19550,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -19570,7 +19570,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19588,7 +19588,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19606,7 +19606,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19624,7 +19624,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19642,7 +19642,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19774,7 +19774,7 @@
   },
   "karte2.mensch.leib.tracht": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.tracht#1 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#1 gtx: ungemessen (R10) · karte2.mensch.leib.tracht#2 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#2 gtx: Station seit der Messung geändert · karte2.mensch.leib.tracht#3 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#3 gtx: ungemessen (R10) · karte2.mensch.leib.tracht#4 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#4 gtx: Station seit der Messung geändert · karte2.mensch.leib.tracht#5 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#5 gtx: Station seit der Messung geändert · karte2.mensch.leib.tracht#6 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#6 gtx: Station seit der Messung geändert · karte2.mensch.leib.tracht#7 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.tracht#1 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#1 gtx: ungemessen (R10) · karte2.mensch.leib.tracht#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.tracht#2 gtx: Station seit der Messung geändert · karte2.mensch.leib.tracht#3 radeon: ungemessen (R10) · karte2.mensch.leib.tracht#3 gtx: ungemessen (R10) · karte2.mensch.leib.tracht#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.tracht#4 gtx: Station seit der Messung geändert · karte2.mensch.leib.tracht#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.tracht#5 gtx: Station seit der Messung geändert · karte2.mensch.leib.tracht#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.tracht#6 gtx: Station seit der Messung geändert · karte2.mensch.leib.tracht#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.tracht#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.leib.tracht#1",
@@ -19802,7 +19802,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19838,7 +19838,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19856,7 +19856,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19874,7 +19874,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19892,7 +19892,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19908,7 +19908,7 @@
   },
   "karte2.mensch.leib.verschieden": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.verschieden#1 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#1 gtx: ungemessen (R10) · karte2.mensch.leib.verschieden#2 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#2 gtx: Station seit der Messung geändert · karte2.mensch.leib.verschieden#3 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#3 gtx: ungemessen (R10) · karte2.mensch.leib.verschieden#4 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#4 gtx: Station seit der Messung geändert · karte2.mensch.leib.verschieden#5 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#5 gtx: Station seit der Messung geändert · karte2.mensch.leib.verschieden#6 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#6 gtx: Station seit der Messung geändert · karte2.mensch.leib.verschieden#7 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.leib.verschieden#1 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#1 gtx: ungemessen (R10) · karte2.mensch.leib.verschieden#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.verschieden#2 gtx: Station seit der Messung geändert · karte2.mensch.leib.verschieden#3 radeon: ungemessen (R10) · karte2.mensch.leib.verschieden#3 gtx: ungemessen (R10) · karte2.mensch.leib.verschieden#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.verschieden#4 gtx: Station seit der Messung geändert · karte2.mensch.leib.verschieden#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.verschieden#5 gtx: Station seit der Messung geändert · karte2.mensch.leib.verschieden#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.verschieden#6 gtx: Station seit der Messung geändert · karte2.mensch.leib.verschieden#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.leib.verschieden#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.mensch.leib.verschieden#1",
@@ -19936,7 +19936,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19972,7 +19972,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19990,7 +19990,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20008,7 +20008,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20026,7 +20026,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23055,7 +23055,7 @@
   },
   "karte2.mensch.sport.arena": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.arena#1 radeon: ungemessen (R10) · karte2.mensch.sport.arena#1 gtx: ungemessen (R10) · karte2.mensch.sport.arena#2 radeon: ungemessen (R10) · karte2.mensch.sport.arena#2 gtx: ungemessen (R10) · karte2.mensch.sport.arena#3 radeon: ungemessen (R10) · karte2.mensch.sport.arena#3 gtx: ungemessen (R10) · karte2.mensch.sport.arena#4 radeon: ungemessen (R10) · karte2.mensch.sport.arena#4 gtx: ungemessen (R10) · karte2.mensch.sport.arena#5 radeon: ungemessen (R10) · karte2.mensch.sport.arena#5 gtx: ungemessen (R10) · karte2.mensch.sport.arena#6 radeon: ungemessen (R10) · karte2.mensch.sport.arena#6 gtx: ungemessen (R10) · karte2.mensch.sport.arena#7 radeon: ungemessen (R10) · karte2.mensch.sport.arena#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.arena#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.arena#1 gtx: ungemessen (R10) · karte2.mensch.sport.arena#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.arena#2 gtx: ungemessen (R10) · karte2.mensch.sport.arena#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.arena#3 gtx: ungemessen (R10) · karte2.mensch.sport.arena#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.arena#4 gtx: ungemessen (R10) · karte2.mensch.sport.arena#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.arena#5 gtx: ungemessen (R10) · karte2.mensch.sport.arena#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.arena#6 gtx: ungemessen (R10) · karte2.mensch.sport.arena#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.arena#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.sport.arena#1",
@@ -23063,7 +23063,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -23083,7 +23083,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23101,7 +23101,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23119,7 +23119,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23137,7 +23137,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23155,7 +23155,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23173,7 +23173,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23305,7 +23305,7 @@
   },
   "karte2.mensch.sport.koennen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.koennen#1 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#1 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#2 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#2 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#3 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#4 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#5 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) · karte2.mensch.sport.koennen#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.sport.koennen#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.koennen#1 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.koennen#2 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.koennen#3 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.koennen#4 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.koennen#5 gtx: ungemessen (R10) · karte2.mensch.sport.koennen#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.sport.koennen#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.sport.koennen#1",
@@ -23313,7 +23313,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -23333,7 +23333,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23351,7 +23351,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23369,7 +23369,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23387,7 +23387,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -23405,7 +23405,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -37625,8 +37625,8 @@
   "ohne": 3389
  },
  "kopfVoll": "dd2aed614e13fcda50cde3c2252981f2037da37b",
- "zeit": "2026-11-20T04:58:48.767Z",
- "vorher": "31ea3847",
+ "zeit": "2026-11-20T05:21:45.498Z",
+ "vorher": "dd2aed61",
  "bilanz": {
   "gewinn": [],
   "fall": [],
