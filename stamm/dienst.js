@@ -1136,11 +1136,16 @@ class AnazhRealm_dienst {
             const def = defs[i];
             const o = (slot + i) * 8; // 2 Texel × 4 Floats
             const f = def.farbe || { r: 0.55, g: 0.5, b: 0.45 };
-            // Farbe als 24-bit-Pack im f32 (exakt bis 2^24 — die Mantisse trägt es):
+            // Farbe als 24-bit-Pack im f32 (exakt bis 2^24 — die Mantisse trägt es). DER TEIL IM JAHR (saison-am-laub, der
+            // EINE Schreiber): die niedersten Bits von Grün und Blau tragen seinen Jahres-Typ (`def.jahr`, SAISON_GESETZ `typ`:
+            // Laub → 1, Blüte → 2, sonst 0 — Stein, Bau, Leib stehen); das Feld liest ihn (`jahrMass`, `jahrTon`). Die Farbe
+            // weicht je Kanal um höchstens 1/255.
+            const SGt = AnazhRealm._saisonGesetz().typ;
+            const jc = def.jahr === SGt.laub ? 1 : def.jahr === SGt.bluete ? 2 : 0;
             const pack =
                 (Math.min(255, Math.max(0, Math.round(f.r * 255))) << 16) +
-                (Math.min(255, Math.max(0, Math.round(f.g * 255))) << 8) +
-                Math.min(255, Math.max(0, Math.round(f.b * 255)));
+                (((Math.min(255, Math.max(0, Math.round(f.g * 255))) & 0xfe) | (jc >> 1)) << 8) +
+                ((Math.min(255, Math.max(0, Math.round(f.b * 255))) & 0xfe) | (jc & 1));
             if (def.box || def.ellipsoid || def.prism) {
                 // BOX [Zentrum|−(farbe+1)][Halbmaße|0]; ELLIPSOID pB.w=1; KEIL pB.w = Typ 2..5 (First +z · −z · +x · −x,
                 // `HUELLE_KEIL_TYP`) + 0,49 · Walm (das WGSL `sdKeil` liest Typ und Walm aus demselben Float).

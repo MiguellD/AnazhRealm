@@ -248,6 +248,26 @@ function jahrLaubRot(J) {
         rot.push(
             `(K) JAHR AM LAUB: der Kalender trug die Welt in den Winter (Phase ${J.phase}), ihr Laub steht mit Präsenz ${J.praesenz} — sommergrün`
         );
+    // die Karte: ihre Reihe des Jahrs (`_karteJahrFarbe`) teilt die gebackene Albedo durch die Tönung ihres Bakes — als Objekt-Puffer
+    // lud die Diät sie nie nach, die GPU trug 1 und die Rinde der Ferne stand im Winter × uSeasonMul (magenta)
+    for (const [n, geteilt] of Object.entries(J.karteReihen || {}))
+        if (!geteilt)
+            rot.push(
+                `(K) JAHR AM LAUB Karte: die Reihe ${n} liegt in einer eigenen Gruppe — die Diät lädt sie nie, die Karte zeichnet ihr Jahr nicht (Rinde × uSeasonMul)`
+            );
+    // das Feld (die Fernform "gesetz": Blume, Fels — `_streuGesetzFit`, gezeichnet im Welt-March): seine Teile tragen ihren Typ des
+    // Jahrs (`jahr`) und ziehen sich um die Präsenz wie die Gestalt (`jahrMass`); Deckung = Σ Volumen × Präsenz³ ÷ Σ Volumen
+    for (const f of J.feld || []) {
+        if (f.fehlt) rot.push(`(K) JAHR AM LAUB Feld ${f.id}: ${f.fehlt}`);
+        else if (f.kind === "flower" && f.winter > JAHR_LAUB_DECKUNG)
+            rot.push(
+                `(K) JAHR AM LAUB Feld ${f.id}: Laubkrone sommergrün bei Jahr im Winter — die Fernform deckt ${(100 * f.winter).toFixed(1)} % (Teile ${JSON.stringify(f.typen)})`
+            );
+        else if (f.kind !== "flower" && f.winter < 0.99)
+            rot.push(
+                `(K) JAHR AM LAUB Feld ${f.id}: der Stein trägt das Jahr — Deckung ${(100 * f.winter).toFixed(1)} %`
+            );
+    }
     for (const a of J.arten) {
         const d = a.flaeche > 0 ? a.winter / a.flaeche : null;
         if (d == null) continue;
@@ -271,6 +291,18 @@ function jahrLaubSelbsttest() {
         ],
         [jahrLaubRot(J([a({ id: "fichte", nadel: true, winter: 50 })])), /fichte L1: die Nadel fällt/],
         [jahrLaubRot(J([a()], { praesenz: [1, 1] })), /Präsenz 1,1 — sommergrün/],
+        [
+            jahrLaubRot(J([a()], { karteReihen: { nadel: true, jahr: false } })),
+            /Karte: die Reihe jahr liegt in einer eigenen Gruppe/,
+        ],
+        [
+            jahrLaubRot(J([a()], { feld: [{ id: "blume", kind: "flower", winter: 1, typen: { 0: 4 } }] })),
+            /Feld blume: Laubkrone sommergrün .* 100.0 %/,
+        ],
+        [
+            jahrLaubRot(J([a()], { feld: [{ id: "findling", kind: "rock", winter: 0.5, typen: { 1: 1 } }] })),
+            /Feld findling: der Stein trägt das Jahr/,
+        ],
     ].flatMap(([rot, soll], i) =>
         (soll ? rot.length === 1 && soll.test(rot) : !rot.length) ? [] : [`jahr-laub Fall ${i}: ${rot}`]
     );
@@ -289,10 +321,51 @@ function jahrWinterProbe(o) {
         while (!(st.seasonPhase >= 0.86 && st.seasonPhase < 0.9) && k < 4000)
             r._gameLoopTick(T0 + ++k * o.schrittSek * 1000);
         const p = st.seasonUniforms.uLaubPraesenz.value;
-        return { phase: +st.seasonPhase.toFixed(4), praesenz: [+p.x.toFixed(4), +p.y.toFixed(4)], takte: k };
+        // die Reihen der Karte (Nadel, Jahr je Schicht): sie wechseln zur Laufzeit — nur in der geteilten Gruppe lädt die Diät sie
+        const reihe = (u) => !!(u && u.groupNode && u.groupNode.shared === true);
+        const karteReihen = { nadel: reihe(r._karteNadel(null)), jahr: reihe(r._karteJahrFarbe(null)) };
+        return {
+            phase: +st.seasonPhase.toFixed(4),
+            praesenz: [+p.x.toFixed(4), +p.y.toFixed(4)],
+            takte: k,
+            karteReihen,
+        };
     } finally {
         [st.dayLengthMinutes, st.autoSeason] = [tag0, jahr0];
     }
+}
+// (K) das Feld im Winter (Seiten-Kontext): je Art der Fernform "gesetz" die Passung der Studio-Gestalt (`_streuGesetzFit`, derselbe
+// Fit, den der Welt-March zeichnet), je Teil sein Typ des Jahrs und sein Volumen, gewogen mit der Präsenz des Winters
+async function jahrFeldProbe(o) {
+    const r = window.anazhRealm;
+    const SG = r.constructor._saisonGesetz().typ;
+    const T = globalThis.__terrainCore.PHYTO_PRESETS;
+    const out = [];
+    for (const [id, rec] of Object.entries(T)) {
+        if (!(rec && (rec.kind === "flower" || rec.kind === "rock"))) continue;
+        let fit = null;
+        for (const t0 = performance.now(); !fit && performance.now() - t0 < 30000;) {
+            fit = r._streuGesetzFit(id, 1, 0, 0);
+            if (!fit) await new Promise((f) => setTimeout(f, 50));
+        }
+        if (!fit) {
+            out.push({ id, kind: rec.kind, fehlt: "die Passung steht nach 30 s nicht" });
+            continue;
+        }
+        const pr = (j) => (j === SG.laub ? o.praesenz[0] : j === SG.bluete ? o.praesenz[1] : 1);
+        let v = 0,
+            w = 0;
+        const typen = {};
+        for (const k of fit) {
+            // die Blume wiegt ihr Laub (der Stoff des Jahrs: Laub, Blüte — der Stängel steht wie an der Gestalt), der Stein jeden Teil
+            if (rec.kind === "flower" && !k.laubStoff) continue;
+            v += k.vol;
+            w += k.vol * pr(k.jahr) ** 3;
+            typen[k.jahr || 0] = (typen[k.jahr || 0] || 0) + 1;
+        }
+        out.push({ id, kind: rec.kind, winter: +(v > 0 ? w / v : 1).toFixed(4), typen });
+    }
+    return out;
 }
 // (K) die Arten: je Laub-Art und Stufe die Laub-Fläche je Typ (der echte Faden des Studios), gewogen mit der Präsenz des Winters
 async function jahrLaubArten(praesenz) {
@@ -906,6 +979,7 @@ hauptLauf(async () => {
     const page3 = await boot(browser);
     const KAL = await page3.evaluate(kalenderProbe, { minuten: [8, 60], sek: 240, schrittSek: SCHRITT_SEK });
     const JL = await page3.evaluate(jahrWinterProbe, { schrittSek: SCHRITT_SEK });
+    JL.feld = await page3.evaluate(jahrFeldProbe, { praesenz: JL.praesenz });
     const lab = await browser.newPage();
     await server.zeige(lab, 60000, "worlds/terrain/index.html");
     await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
@@ -969,7 +1043,7 @@ hauptLauf(async () => {
         a: null,
     });
     console.log(
-        `  Jahr am Laub · Kalender im Winter (Phase ${JL.phase} nach ${JL.takte} Takten, Präsenz Laub ${JL.praesenz[0]} · Blüte ${JL.praesenz[1]}): ${laub.length} Laub-Stufen, höchste Deckung ${(100 * dmax.d).toFixed(1)} % (${dmax.a ? dmax.a.id + " L" + dmax.a.lod : "–"}), ${JL.arten.length - laub.length} Nadel- und leere Stufen`
+        `  Jahr am Laub · Kalender im Winter (Phase ${JL.phase} nach ${JL.takte} Takten, Präsenz Laub ${JL.praesenz[0]} · Blüte ${JL.praesenz[1]}): ${laub.length} Laub-Stufen, höchste Deckung ${(100 * dmax.d).toFixed(1)} % (${dmax.a ? dmax.a.id + " L" + dmax.a.lod : "–"}), ${JL.arten.length - laub.length} Nadel- und leere Stufen; Feld (Fernform gesetz) ${(JL.feld || []).map((f) => f.id + " " + (f.fehlt ? "–" : (100 * f.winter).toFixed(1) + " %")).join(" · ")}`
     );
     const rot = [...urteil(S, H), ...kalenderRot(KAL), ...jahrLaubRot(JL)];
     wandEnde(
