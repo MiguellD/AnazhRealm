@@ -2370,7 +2370,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                 // (U) STUFE: aus der Ruhe tauscht ein ferner Chunk seine Stufe hin und zurück, wie der Streaming-Takt
                 // (`_rebuildVoxelChunk(cx, cz, lod)`, hier synchron) — gezählt je Takt die Einheiten und die Rufe des Walds
                 {
-                    // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im `foliageRadius`,
+                    // DIE RUHE VOR DEM WECHSEL: offener Wuchs ist keine Ruhe. Nach dem Gehen liegen Chunks neu im Laub-Rand (`_laubRand`),
                     // deren Vegetation wartet (`pendingFoliageChunks`, der Wuchs-Takt je Wanduhr gedrosselt); füllt sie der Wuchs
                     // oder der Neubau des Ziels (`_populateVoxelChunkVegetation` → `_weltRegt()`) mitten in der Phase, regt sich
                     // die Menge — nicht die Stufe.
@@ -2872,10 +2872,17 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         await simPhase(5);
                         await __weltStehtNach(takt); // die Neubauten am Wasser (wetter.K3) vor der nächsten Weck-Probe
                         W.regen.nachher = await simPhase(60);
-                        const fr = st.foliageRadius;
+                        // der Laub-Rand rückt (das Gesetz `_laubRand` wächst mit dem gebauten Ring): der Ring tut seinen Schritt am EINEN
+                        // Schreiber (`_ringWaechst`) — von einer Stufe unter dem Ziel zurück an das Ziel, im selben Zug (kein Bild sieht die
+                        // Lücke); sein Ereignis weckt den Wuchs, und der schläft wieder, ohne das Gesetz je Bild zu fragen
                         W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };
-                        await weck("wuchs", () => (st.foliageRadius = (fr != null ? fr : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX) + 1e-3));
-                        st.foliageRadius = fr;
+                        await weck("wuchs", () => {
+                            const ring = st._activeRingRadius;
+                            st._activeRingRadius = ring - 1;
+                            r._ringWaechst();
+                            W.wuchs.ring = [ring, st._activeRingRadius];
+                            st._activeRingRadius = ring;
+                        });
                         // die Ernte ist fällig: ihr Takt zur Zeit ihres Nachwachsens
                         S.frame();
                         r._tickScatterRegrow(Infinity);
