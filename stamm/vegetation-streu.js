@@ -1635,9 +1635,9 @@ class AnazhRealm_vegetation_streu {
     // Scatter-Streaming: 3×3-Region-Ring um den Spieler generieren, ferne disposen, nahe Cells
     // promovieren; bounded durch maxRegionsPerFrame. Die Streu trägt keinen Schalter (G1: `gpuScatter` fiel — er hieß GPU
     // und schaltete nur die CPU-Streu ab).
-    // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (gekappt auf die gebaute Ring-Kante) —
-    // kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der nächste Tick selbst-heilend nach.
-    // Headless: foliageRadius = MAX. Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
+    // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im Laub-Rand liegt (`_laubRand`, gekappt auf die gebaute Ring-Kante)
+    // — kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der nächste Tick selbst-heilend nach.
+    // Headless: der Haushalt ganz. Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
     // `bahn` (der Streamer, w7-rang): die Region gilt, wenn sie entlang der Strecke, die der Spieler binnen des Vorlaufs fährt,
     // in Reichweite liegt (`_bedarfKasten`, der EINE Rang; bis w14-strom-tempo an ihren Endpunkten) — sie streut, bevor die
     // Bahn ankommt.
@@ -1961,7 +1961,13 @@ class AnazhRealm_vegetation_streu {
     // Tier-Satz, die Fahrer, je `nahLeiber`): seine Größe am Schirm (Größe × Brennweite / Abstand vom Auge, Bildpunkte) mal seine
     // Bewegung (1 + Tempo / LOD_SCHIRM.bewegungMS: wer geht, verliert im Satz die Phasen seines Gangs, wer steht, nichts).
     // Die Brennweite trägt sie je Zeichenpuffer (`_bedeutungF`), nie je Leib.
-    _bedeutung(groesse, d, tempo) {
+    // DER SCHIRM IST DAS BILD (w28-bau-rezept-tuer): wer außer dem Bild steht (seine Körper-Kugel — die Größe als halbe Höhe
+    // um die halbe Höhe über dem Fuß `p` — gegen den Blick des Takts, `_frustumCache`), hat am Schirm keine Größe: er zählt
+    // `LOD_SCHIRM.ausserBild` und folgt jedem im Bild, unter seinesgleichen nach Größe und Gang. Bis hier wählte die Nah-Wahl
+    // nach Abstand und Gang allein: im dichten Dorf des Bau-Rezepts (4,71 Leute je Haus) stand der Zeuge patrizierhaus
+    // #946581 2,99 m vor dem Auge bei 40° im Bild (halbes Bildfeld 45,7°) und ging leer aus — die vier Leiber trugen drei,
+    // die 1,13 · 2,03 · 2,36 m neben dem Spieler bei 87° · 84° · 52° außer Bild standen.
+    _bedeutung(groesse, d, tempo, p) {
         const z = this._schirm().hoehe;
         const B = this._bedeutungF || (this._bedeutungF = { z: NaN, f: 0, v: 0 });
         if (B.z !== z) {
@@ -1969,7 +1975,13 @@ class AnazhRealm_vegetation_streu {
             B.f = AnazhRealm._brennweite(z);
             B.v = AnazhRealm.LOD_SCHIRM.bewegungMS;
         }
-        return ((groesse * B.f) / Math.max(d, 0.5)) * (1 + Math.abs(tempo || 0) / B.v);
+        const b = ((groesse * B.f) / Math.max(d, 0.5)) * (1 + Math.abs(tempo || 0) / B.v);
+        const F = this._frustumCache; // der Blick des Takts (`_loopFrustumCulling`) — vor dem ersten Blick gibt es kein Bild
+        if (!F) return b;
+        const K = this._bedeutungK || (this._bedeutungK = new THREE.Sphere(new THREE.Vector3(), 0));
+        K.center.set(p.x, p.y + groesse, p.z);
+        K.radius = groesse;
+        return F.intersectsSphere(K) ? b : b * AnazhRealm.LOD_SCHIRM.ausserBild;
     }
 
     // DIE SCHWELLEN DER BAUM-STUFEN aus dem Gesetz: die Wahrnehmungs-Distanz misst in Bäumen der Referenz-Höhe lodRef, die Schwelle
@@ -2944,13 +2956,15 @@ AnazhRealm.LOD_DISTANCES = (() => {
 // (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d). `leib` = der Haushalt des Felds der Leiber (`_feldGrenzen`):
 // das Feld trägt jenseits der Nah-Grenze, zurück erst `feldHystM` diesseits; der Mensch der Menge, sobald sein Leib
 // (`mengeKoerperM` hoch) unter `mengePx` Bildpunkte fällt, zurück `mengeHystM` diesseits. `bewegungMS` = das Tempo, bei dem die
-// Bedeutung eines Leibs sich verdoppelt (`_bedeutung`: der Gang des Menschen, 1,4 m/s).
+// Bedeutung eines Leibs sich verdoppelt (`_bedeutung`: der Gang des Menschen, 1,4 m/s). `ausserBild` = das Gewicht eines Leibs
+// außer dem Bild (`_bedeutung`: er folgt jedem im Bild — ein Leib im Bild auf nahM (8 m) wiegt das 31-Fache eines außer Bild auf 0,5 m im Gang).
 AnazhRealm.LOD_SCHIRM = Object.freeze({
     px: 1,
     zeilen: 1080,
     hyst: 0.1,
     leib: Object.freeze({ feldHystM: 10, mengeKoerperM: 1.8, mengePx: 64, mengeHystM: 4 }),
     bewegungMS: 1.4,
+    ausserBild: 1e-3,
     fehler: (() => {
         const je = (t) =>
             Object.freeze(
@@ -3090,7 +3104,7 @@ AnazhRealm.SPECIES_TAG_REFERENCE = Object.freeze({
     baum_kiefer: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
     baum_tanne: Object.freeze({ lebendig: 1.4, dichte: 0.8, brennbar: 0.8, magieleitung: 0.7 }),
 });
-// Kapazitäts-gewachsene DICHTE, Schwester von `foliageRadius`: fährt die Instanz-Zahl pro Zelle
+// Kapazitäts-gewachsene DICHTE, Schwester des Laub-Rands (`_laubRand`): fährt die Instanz-Zahl pro Zelle
 // (die Last-Dichte der Nah-Streu, `_nahStreuKachel`) — weniger Instanzen senken die Dreiecke
 // direkt (anders als LOD-Schwellen auf gebackener Geometrie). Build-zeit (greift beim
 // Streamen/Spawn); headless → 1.

@@ -35,6 +35,7 @@ const {
     lokal,
     kasten,
     ortUrteil,
+    slotHuelle,
     POOL_AUSSER_RANG,
     poolZaehlen,
     ortVerdikt,
@@ -735,7 +736,7 @@ function gruendungFlach(FC, o = {}) {
 
 hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
-    // die Bau-Typen der EINEN Grammatik: ihre Tafel und die Rollen des Gesetzes davor (das Haus, die Kirche, der Palas, die Scheune)
+    // die Bau-Typen der EINEN Grammatik: die Zeilen des Bau-Gesetzes (BAU_NUTZUNG) und die Rollen davor (die Kirche, der Palas, die Scheune)
     const breiteRollen = [...Object.keys(FC.BAU_NUTZUNG), "kirche", "burg", "scheune"];
 
     // ===== SELBST-TEST =====
@@ -793,6 +794,74 @@ hauptLauf(async () => {
         );
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
+        // das HOF-Haus (`eingangVon`): die Haustür (Diele 0,55) öffnet auf das Hofpflaster, der Gang betritt das Tor im Torriegel
+        // (0,63) von seiner Vorplatz-Platte (0,3 über dem Grund) — die Probe am Tor hält, dieselbe Probe an der Haustür fällt mit
+        // der Schwelle 0,55 beim Namen (bis w28-bau-rezept las sie jede Hof-Tür so)
+        const hofHaus = Object.assign(haus(8, 8, 10), { tuer: { x: 0, z: -2, y: 0.55, W: 4, D: 4 } });
+        const platte = (x, z) => (z - 100 < 2 ? 10.3 : 10);
+        const u4 = ortUrteil(ortT([Object.assign({}, hofHaus, { eingang: { z: -6, y: 0.63 } })]), platte);
+        const u5 = ortUrteil(ortT([hofHaus]), platte);
+        check(
+            "Selbst-Test 11c: das Hof-Haus geht durch sein Tor (1/1); die Haustür über dem Hofpflaster fällt mit 0,55",
+            u4.tuerenOk === 1 && u5.tuerenOk === 0 && u5.tuerenFehl[0].schwelle === 0.55,
+            { tor: u4.tuerenFehl, haustuer: u5.tuerenFehl }
+        );
+        // das L-Haus: der Grund unter der leeren Ecke der obb (x > 0, z < 0) liegt 1 m tiefer — unter den Wänden (`grund.boxen`)
+        // steht es eben (Sockel 0), die obb allein läse die Ecke als Sockel 1
+        // das Grund-Datum des Kerns (`grundVon`, keine Hüllen-Zeile): seine Boxen im Rahmen des Hauses
+        const lHaus = Object.assign(haus(8, 8, 10), { grund: {} });
+        lHaus.grund.boxen = [
+            [-2.5, 0, -2.5, 2.5, 0, 3],
+            [0, 2.5, 0, 2.5, 0, 3],
+        ];
+        const ecke = (x, z) => (x - 100 > 8.2 && z - 100 < 7.8 ? 9 : 10);
+        const [u6, u7] = [ortUrteil(ortT([lHaus]), ecke), ortUrteil(ortT([haus(8, 8, 10)]), ecke)];
+        check(
+            "Selbst-Test 11d: das L-Haus steht auf seinen Wänden (Sockel 0); die obb allein liest die leere Ecke als Sockel 1",
+            u6.sockelMax === 0 && u7.sockelMax === 1 && u7.sockelTaeter[0].si === 0,
+            { waende: u6.sockelTaeter, obb: u7.sockelTaeter }
+        );
+        // DER FUSS DES GEBAUTEN KÖRPERS (`sl.huelle`): ein Hof-Haus auf ebenem Grund, dessen Ring (hofarm) erst 0,55 m über Grade
+        // beginnt, fällt mit 0,55 beim Namen seines Körpers; mit Sockel bis Grade hält es. Und am echten Kern: jedes Hof-Haus
+        // des Messort-Plans steht mit dem Fuß jedes Körpers auf Grade (`slotHuelle`); ohne die Solids unter der Diele vor der
+        // Front (die Mutante: der Hof-Ring ohne seinen Sockel, wie bis w28-bau-rezept) fällt es am hofarm
+        const hofSlots = FC.exportSettlement({ seed: 4291161376, nH: 13 })
+            .slots.filter((sl) => (sl.grund?.arten || []).includes("hofarm"))
+            .slice(0, 2);
+        // das gesetzte Haus: der Grund eines Hof-Hauses des Kerns (`grundVon`), je Körper EIN Kasten vom Fuß bis 3 m — der des Rings ab `fuss`
+        const ringHaus = (fuss) =>
+            Object.assign({}, hofSlots[0], {
+                y: 10,
+                huelle: ((q) => q.boxen.map((b, k) => [b[0], q.arten[k] === "hofarm" ? fuss : 0, b[2], b[1], 3, b[3]]))(hofSlots[0].grund),
+            });
+        const [u8, u9] = [ortUrteil(ortT([ringHaus(0.55)]), eben), ortUrteil(ortT([ringHaus(0)]), eben)];
+        const amKern = (mutante) =>
+            ortUrteil(
+                ortT(
+                    hofSlots.map((sl) => {
+                        const hu = slotHuelle(FC, sl);
+                        return Object.assign({}, sl, {
+                            y: 10,
+                            // die Mutante: ohne jeden Körper, der unter der Diele ganz vor der Front liegt (die Sockel-Platte des Rings)
+                            huelle: mutante ? hu.filter((q) => !(q[4] <= sl.tuer.y + 0.01 && q[5] < sl.tuer.z - 0.1)) : hu,
+                        });
+                    })
+                ),
+                eben
+            );
+        const [u10, u11] = [amKern(false), amKern(true)];
+        check(
+            "Selbst-Test 11e: der Fuß des gebauten Körpers — der schwebende Hof-Ring fällt mit 0,55 beim Namen (hofarm), mit Sockel hält er; am Kern steht jedes Hof-Haus auf Grade, ohne den Sockel des Rings fällt es",
+            u8.sockelMax === 0.55 &&
+                u8.sockelTaeter[0].art === "hofarm" &&
+                u8.sockelTaeter[0].fuss === 0.55 &&
+                u9.sockelMax === 0 &&
+                hofSlots.length === 2 &&
+                u10.sockelMax === 0 &&
+                u11.sockelMax > 0.3 &&
+                u11.sockelTaeter.every((q) => q.art === "hofarm"),
+            { schwebt: u8.sockelTaeter, kern: u10.sockelTaeter, mutante: u11.sockelTaeter }
+        );
         // DIE SICHT DER POSE: der freie Strahl hält; ein Kamm 3 m über dem Boden und die lange Wand eines Nachbarn (ihr Kreis mit
         // der kleineren Halbachse erreicht den Strahl nicht) fallen je beim Namen; die Wand des Ziels selbst zählt nicht
         const ziel = { cx: 20, cz: 0, phi: 0, ex: 3, ez: 3 };
@@ -840,6 +909,7 @@ hauptLauf(async () => {
             slots: 16,
             sockelMax: 0,
             sockelMedian: 0,
+            huellen: 16,
             tuerenOk: 2,
             tuerenN: 2,
             kronen: 0,
@@ -1215,8 +1285,9 @@ hauptLauf(async () => {
             Z.ok,
             Z.saaten.join(" · ")
         );
-        // 18 Lose, eine Scheune und das Burg-Viertel der Stadt-Grammatik (Palas, Bergfried, Torhaus, Kapelle) — bis zu ihr 21 Slots
-        check(`Z2 OHNE EPOCHE ${alt.slots.length} Slots (18 Häuser)`, alt.slots.length === 23);
+        // 18 Lose, zwei Scheunen und das Burg-Viertel der Stadt-Grammatik (Palas, Bergfried, Torhaus, Kapelle) — bis zu ihr 21 Slots;
+        // bis w28-bau-rezept fiel die zweite Scheune des Plans beim Setzen still (23 von 24 Losen), jetzt steht jedes Los des Plans
+        check(`Z2 OHNE EPOCHE ${alt.slots.length} Slots (18 Häuser)`, alt.slots.length === 24 && alt.slots.length === FC.DORF({ seed: 5 }).houses.length); // prettier-ignore
         console.log("ZIPF " + JSON.stringify(Z.zipf));
         check(
             `Z3 ZIPF: ζ ${Z.zipf.zeta} [${Z.zipf.ki.join("; ")}] über ${Z.je.length} Saaten × 32 × 32 km (Soll 0,8–1,2), ${Z.zipf.export}`,
@@ -1661,14 +1732,15 @@ hauptLauf(async () => {
             lichtFehl.length === 0,
             lichtFehl.slice(0, 3).join(" · ")
         );
-        // DAS LICHT DER WANDLATERNE: die Wand in armM trägt höchstens das Doppelte der Gasse unter ihr (das Wand-Gesetz
-        // der Laterne, K66), ihr Licht brennt nachts in der Farbe der Laterne (das Datum ihres Rezepts hält gate:fachwerk-contract)
-        const wandGesetz = LWd
-            ? ((LWd.hoeheM ** 2 + LWd.kernM ** 2) / (LWd.armM ** 2 + LWd.kernM ** 2)) ** (LWd.abfall / 2)
-            : Infinity;
+        // DAS LICHT DER WANDLATERNE IST DAS DER LATERNE (nacht-lichter): dieselbe Leuchte — Lichtstärke, Kern (die Flamme),
+        // Farbtemperatur, Reichweite, Abfall, Glas —, nur ihr Leib hängt anders (Kopf hoeheM über der Gasse, armM vor der Wand),
+        // und sie brennt nachts. Bis nacht-lichter urteilte hier das Wand-Gesetz K66 (die Wand ≤ 2 × die Gasse): es hielt nur mit
+        // einem Kern von 2,74 m in einem Glas von 22 cm — die Gasse trug ein Siebtel einer Laterne. Das Datum ihres Rezepts hält
+        // gate:fachwerk-contract.
+        const gleich = ["cd", "kernM", "kelvin", "reichweiteM", "abfall", "glasStreu"].filter((s) => !LWd || LWd[s] !== LGd[s]);
         check(
-            `Das Licht der Wandlaterne hält das Wand-Gesetz: die Wand in ${LWd ? LWd.armM : "?"} m trägt ${wandGesetz.toFixed(2)} × die Gasse unter ihr (Soll ≤ 2), ${LWd ? LWd.kelvin : "?"} K wie die Laterne`,
-            wandGesetz <= 2.001 && !!LWd && LWd.zeit.nacht > 0 && LWd.kelvin === LGd.kelvin
+            `Das Licht der Wandlaterne ist das der Laterne (${LWd ? LWd.cd : "?"} cd, Kern ${LWd ? LWd.kernM : "?"} m, ${LWd ? LWd.kelvin : "?"} K), ihr Leib ${LWd ? LWd.hoeheM : "?"} m über der Gasse und ${LWd ? LWd.armM : "?"} m vor der Wand${gleich.length ? " — anders: " + gleich.join(", ") : ""}`,
+            !!LWd && !gleich.length && LWd.zeit.nacht > 0 && LWd.armM > 0 && LWd.hoeheM < LGd.hoeheM
         );
         // DIE WANDLATERNE IM ORTPLAN (K66-2 N1): fällt ein Slot ins Wasser (ortPlan, auch der Rückfall von `_ortWahl`), hängt jede
         // Wandlaterne armM vor der Wand des Hauses, mit dem die Welt sie hebt (`v2.slots[l.slot]`, `_spawnSettlementSlot`), und die
@@ -2821,39 +2893,20 @@ hauptLauf(async () => {
                             phi: e.rotationY || 0,
                             y: e.position.y - 0.5,
                             rolle: sl.rolle,
+                            kultur: sl.kultur,
+                            ov: sl.ov || null,
+                            seed: sl.seed,
                             tuer: sl.tuer,
+                            // der Eingang der EINEN Regel (`eingangVon`): beim Hof-Haus das Tor im Torriegel, nie die Haustür
+                            // über dem Hofpflaster
+                            eingang: sl.tuer ? globalThis.__fachwerkCore.eingangVon(sl) : null,
                             obb: ob,
                             grund: sl.grund || null,
                         });
                     }
                     const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };
-                    res.urteil = anker ? ortUrteil(ortW, (x, z) => r.getTerrainHeightAt(x, z)) : null;
-                    // DER SPLAT AM TIEFSTEN PUNKT je Sockel-Haus (die Linse nennt ihn beim Namen): jeder Splat der Normalform der Welt
-                    // (`_erdbauNorm`), der den Punkt deckt, in seiner Reihenfolge — auf der Fläche gewinnt der letzte (gelaende-core
-                    // `erdbauY`), unter einem freien (der Brücke) gilt der Grund
-                    const E = r._erdbauNorm;
-                    for (const h of (res.urteil && res.urteil.sockelFehl) || []) {
-                        if (!h.tief || !E || !E.zellen) continue;
-                        const [wx, wz] = [anker.x + h.tief[0], anker.z + h.tief[1]];
-                        const Zm = globalThis.__gelaendeCore.ERDBAU ? globalThis.__gelaendeCore.ERDBAU.zelleM : null;
-                        const liste = Zm ? E.zellen.get((Math.floor(wx / Zm) + 32768) * 65536 + (Math.floor(wz / Zm) + 32768)) || [] : [];
-                        const decken = [];
-                        for (const k of liste) {
-                            const q = E.splats[k];
-                            let d;
-                            if (q.frei || q.platte) {
-                                const ux = Math.abs((wx - q.cx) * q.c - (wz - q.cz) * q.s) - q.ex, vz = Math.abs((wx - q.cx) * q.s + (wz - q.cz) * q.c) - q.ez;
-                                d = Math.max(ux, vz, 0);
-                            } else {
-                                let s = q.len2 > 0 ? ((wx - q.x0) * q.dx + (wz - q.z0) * q.dz) / q.len2 : 0;
-                                s = s < 0 ? 0 : s > 1 ? 1 : s;
-                                d = Math.max(0, Math.hypot(wx - q.x0 - q.dx * s, wz - q.z0 - q.dz * s) - q.hw);
-                            }
-                            if (d === 0) decken.push(`${k}:${q.frei ? "frei" : q.platte ? "platte" : "trasse w" + q.weg} y${Math.round((q.platte ? q.y : q.y0) * 100) / 100}`);
-                        }
-                        h.splats = decken.length ? decken.slice(-5).join(" ") : Zm ? "keiner deckt" : "ERDBAU.zelleM fehlt";
-                        h.welt = Math.round(r.getTerrainHeightAt(wx, wz) * 100) / 100;
-                    }
+                    // das Urteil fällt nach diesem Gang (unten): Node legt je Slot die Hülle seines Baus dazu (`slotHuelle`)
+                    res.ortW = anker ? ortW : null;
                     // die Kronen des Wald-Plans über den Grundrissen (Dach-Fläche + Krone T)
                     const F = AnazhRealm.FOREST;
                     const seedInt = r._forestSeedInt();
@@ -3213,6 +3266,48 @@ hauptLauf(async () => {
             modus,
             messort
         );
+        // DAS URTEIL DES ORTS mit dem Fuß des gebauten Körpers: je Slot die Hülle seines Stufe-0-Baus aus dem Kern (`slotHuelle`,
+        // hier in Node — die Seite baut kein Haus im Haupt-Faden), dann das Urteil an der Höhe der Welt
+        if (outO.ortW) {
+            for (const sl of outO.ortW.slots) sl.huelle = slotHuelle(FC, sl);
+            outO.huellen = outO.ortW.slots.filter((sl) => sl.huelle && sl.huelle.length).length;
+            outO.urteil = await page.evaluate(
+                (urteilSrc, ortW) => {
+                    const u = new Function(urteilSrc)()[0](ortW, (x, z) => r.getTerrainHeightAt(x, z));
+            // DER SPLAT AM TIEFSTEN PUNKT je Sockel-Haus (die Linse nennt ihn beim Namen): jeder Splat der Normalform der Welt
+            // (`_erdbauNorm`), der den Punkt deckt, in seiner Reihenfolge — auf der Fläche gewinnt der letzte (gelaende-core
+            // `erdbauY`), unter einem freien (der Brücke) gilt der Grund
+            const E = r._erdbauNorm;
+            // (und am Tritt vor jeder Tür ohne Gang: derselbe Splat-Befund an ihrer Stufe, `stufeBei.tief`)
+            for (const h of [...((u && u.sockelFehl) || []), ...((u && u.tuerenFehl) || []).map((t) => t.stufeBei).filter(Boolean)]) {
+                if (!h.tief || !E || !E.zellen) continue;
+                const [wx, wz] = [ortW.ort.x + h.tief[0], ortW.ort.z + h.tief[1]];
+                const Zm = globalThis.__gelaendeCore.ERDBAU ? globalThis.__gelaendeCore.ERDBAU.zelleM : null;
+                const liste = Zm ? E.zellen.get((Math.floor(wx / Zm) + 32768) * 65536 + (Math.floor(wz / Zm) + 32768)) || [] : [];
+                const decken = [];
+                for (const k of liste) {
+                    const q = E.splats[k];
+                    let d;
+                    if (q.frei || q.platte) {
+                        const ux = Math.abs((wx - q.cx) * q.c - (wz - q.cz) * q.s) - q.ex, vz = Math.abs((wx - q.cx) * q.s + (wz - q.cz) * q.c) - q.ez;
+                        d = Math.max(ux, vz, 0);
+                    } else {
+                        let s = q.len2 > 0 ? ((wx - q.x0) * q.dx + (wz - q.z0) * q.dz) / q.len2 : 0;
+                        s = s < 0 ? 0 : s > 1 ? 1 : s;
+                        d = Math.max(0, Math.hypot(wx - q.x0 - q.dx * s, wz - q.z0 - q.dz * s) - q.hw);
+                    }
+                    if (d === 0) decken.push(`${k}:${q.frei ? "frei" : q.platte ? "platte" : "trasse w" + q.weg} y${Math.round((q.platte ? q.y : q.y0) * 100) / 100}`);
+                }
+                h.splats = decken.length ? decken.slice(-5).join(" ") : Zm ? "keiner deckt" : "ERDBAU.zelleM fehlt";
+                h.welt = Math.round(r.getTerrainHeightAt(wx, wz) * 100) / 100;
+            }
+                    return u;
+                },
+                `${lokal}\n${kasten}\nreturn [${ortUrteil}, kasten]`,
+                outO.ortW
+            );
+            delete outO.ortW;
+        }
         // DIE GASSE (rein, hier) und IHR LICHT-POOL (die Seite): Mitternacht, die Kamera der Gasse in Augenhöhe, ein frischer Pool
         // über den EINEN Schreiber (`_leuchtTakt`) — gezählt die Plätze, die eine sichtbare Quelle des Orts trägt, und die an
         // einer näheren brennenden Quelle des Orts, als jede sichtbare ist, die noch wartet (`poolNaeher`).
@@ -3477,6 +3572,7 @@ hauptLauf(async () => {
             ...je(outO, "haeuser slots wasserSlots kronen laternenWelt laternenPlan laterneWand laterneWandSoll"),
             ...je(outO, "laterneWeg laterneWegSoll vorplatzOk vorplatzN vorplatzFehl terrasseWand terrasseWiese"),
             ...je(outO, "terrasseHalm terrasseFerne terrasseFerneFehl vorplatzFeld fremdBauten"),
+            ...je(outO, "huellen"),
             ...je(u, "sockelMedian sockelMax sockelFehl tuerenOk tuerenN"),
         ]);
         Object.assign(m, {
@@ -3500,6 +3596,7 @@ hauptLauf(async () => {
                 )
         );
         if (u.tuerenFehl?.length) console.log("  Türen ohne Gang: " + JSON.stringify(u.tuerenFehl));
+        if (u.sockelTaeter?.length) console.log("  Sockel über dem Grund: " + JSON.stringify(u.sockelTaeter));
         if (outO.terrasseFehl?.length)
             console.log("  Wand im Wiesen-Stoff (x, y, z, Steile, Schutt, Hub): " + JSON.stringify(outO.terrasseFehl));
         if (outO.slotFehl?.length) console.log("  Slots ohne Haus: " + JSON.stringify(outO.slotFehl));

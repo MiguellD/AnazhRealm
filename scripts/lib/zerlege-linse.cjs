@@ -808,7 +808,7 @@ function lauf(k) {
                     szeneSkalaAnfang: skala0,
                     geraet: r._geraeteProfil().messung,
                     pixelRatio: rend.getPixelRatio(),
-                    foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
+                    laubRand: Math.round(r._laubRand()), // das Gesetz des Rands (Haushalt ∩ gebauter Ring)
                     foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
                     archRadius: Math.round(st.architectureCullingRadius),
                     ring: st._activeRingRadius,

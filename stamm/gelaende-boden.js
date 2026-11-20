@@ -2982,7 +2982,13 @@ class AnazhRealm_gelaende_boden {
             !(st.pendingGrass && st.pendingGrass.size)
         )
             ring++;
-        st._activeRingRadius = ring;
+        // DER RING REGT DIE WELT (w28-nadel-bestand): sein Schritt rückt den Laub-Rand (`_laubRand`, Haushalt ∩ gebauter Ring) —
+        // das EINE Ereignis des Gesetzes (der Haushalt ist Konstante), das jeden Schläfer weckt, der an ihm misst (der Wuchs,
+        // `_tickFoliageGrowth`). Bis hier fragte der Wuchs das Gesetz in jedem Bild (gate:stand-takt RUHE-SIM: 7 200 Einheiten in 60 s).
+        if (ring !== st._activeRingRadius) {
+            st._activeRingRadius = ring;
+            this._weltRegt();
+        }
     }
 
     _setLastPlayerVoxelChunk(pcx, pcz) {

@@ -1630,6 +1630,104 @@ function stufenZensus() {
 }
 const STUFEN_OHNE = /^(tier:|vogel$|dorf-rauch$|vorbau:|rueckstrahl:|spiegel:|kontakt:|feld-pass$|Render Pipeline$|TRAA$|himmel)/;
 
+// DER BAUM OHNE STUFE (Seite; w28-nadel-bestand, gate:laub-kante an der Tafel-Pose): jeder Baum des Samens im Blick trägt an jedem
+// Schirm genau EINE Stufe. Der Same steht hier aus dem Haushalt, nie aus dem Rand, den die Welt gerade hält: jeder gebaute Chunk im
+// Sichtkegel, dessen Mitte binnen des Laub-Haushalts (PERF_FOLIAGE_RADIUS_MAX, so weit der gebaute Ring reicht) liegt, ist gesät und
+// wartet nicht — sonst trägt jeder Baum seines Plans keine Stufe (die Zahl, wo das Gedächtnis des Stands seine Zellen kennt); jeder
+// gesäte Baum des Walds (`_waldDart`) im Kegel trägt eine Instanz oder ein Mesh. Der Täter (Radeon und GTX 1050, Mess-Wiese, main
+// a71e06c7): der Laub-Rand wuchs nur im Regler (`_nexusPerfActuate`), jede Probe hält ihn (`__weltStehtNach`) — im Fenster 1920 × 1080
+// stand die Saat bei 129,6 m, 53 Chunks warteten, 565 statt 1 416 Bäume, der Nadel-Bestand hinter dem Waldmantel fehlte.
+function baumStufeZensus() {
+    const st = r.state;
+    const F = r._frustumVon(st.camera); // der EINE Bau des Sichtkegels (die Ein-Schreiber-Wand: kein eigenes Frustum)
+    const p = st.playerMesh.position;
+    const { span } = r._voxelChunkConfig();
+    const ring =
+        st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+    const R = Math.min(AnazhRealm.PERF_FOLIAGE_RADIUS_MAX, (ring + 1) * span);
+    const box = new THREE.Box3();
+    const kugel = new THREE.Sphere(new THREE.Vector3(), 12);
+    const imBlick = (q) => (kugel.center.set(q.x, (Number.isFinite(q.y) ? q.y : p.y) + 8, q.z), F.intersectsSphere(kugel));
+    const wartet = (k) =>
+        !!(
+            (r._saatOffen && r._saatOffen.has(k)) ||
+            (r._saatGehend && r._saatGehend.has(k)) ||
+            (r._waldPflanzWarten && r._waldPflanzWarten.has(k)) || // der Pflanz-Gang wartet auf den Plan seines Walds
+            (st.pendingFoliageChunks && st.pendingFoliageChunks.has(k))
+        );
+    const memo = r._forestDartMemo;
+    const C = AnazhRealm.FOREST.cell;
+    const chunks = [];
+    for (const k of st.voxelChunks ? st.voxelChunks.keys() : []) {
+        const i = k.indexOf(",");
+        const [cx, cz] = [+k.slice(0, i), +k.slice(i + 1)];
+        const [mx, mz] = [(cx + 0.5) * span, (cz + 0.5) * span];
+        const y = r._voxelSurfaceY(mx, mz);
+        const y0 = Number.isFinite(y) ? y : p.y;
+        box.min.set(cx * span, y0 - 60, cz * span);
+        box.max.set((cx + 1) * span, y0 + 60, (cz + 1) * span);
+        if (!F.intersectsBox(box)) continue;
+        // die Bäume seines Plans im Blick: das Gedächtnis des Stands, wo es jede Zelle des Chunks kennt (sonst null)
+        let baeume = 0;
+        for (let gx = Math.floor((cx * span) / C); baeume !== null && gx <= Math.floor(((cx + 1) * span - 1e-6) / C); gx++)
+            for (let gz = Math.floor((cz * span) / C); baeume !== null && gz <= Math.floor(((cz + 1) * span - 1e-6) / C); gz++) {
+                const a = memo && memo.get(gx + "," + gz);
+                if (!a) baeume = null;
+                else
+                    for (const d of a)
+                        if (d.x >= cx * span && d.x < (cx + 1) * span && d.z >= cz * span && d.z < (cz + 1) * span)
+                            baeume += imBlick({ x: d.x, y: d.surfaceY, z: d.z }) ? 1 : 0;
+            }
+        const gesaet = !!(st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(k)) && !wartet(k);
+        chunks.push({ k, d: Math.round(Math.hypot(mx - p.x, mz - p.z)), gesaet, baeume });
+    }
+    // DAS DACH TRÄGT, WAS NOCH NICHT EINTRAT (K53 · w22): jenseits der inneren Kante des Kronendachs im Boden-Stoff (die Uniform
+    // `fernKroneNah.U.waldR`, vom Spieler gemessen) trägt der Boden den Baum, der noch keine Karte zeichnet; steht die Karte des
+    // Dachs nicht (`bereit`), trägt es nichts — jeder Baum ohne Instanz und Mesh ist dann ohne Stufe
+    const nk = st.fernKroneNah;
+    const dachAb = nk && nk.U && nk.U.bereit.value > 0 ? nk.U.waldR.value : Infinity;
+    let wald = 0;
+    let dach = 0;
+    const ohne = [];
+    for (const e of st.architectures || []) {
+        if (!e || e._waldDart !== true || !e.position || !imBlick(e.position)) continue;
+        wald++;
+        if ((e.instSlots && e.instSlots.length) || e.mesh) continue;
+        const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+        if (d > dachAb) dach++;
+        else ohne.push({ typ: e.type, d: Math.round(d) });
+    }
+    return { R, ring, laubRand: r._laubRand(), dachAb, zeilen: r._schirm().hoehe, chunks, wald, dach, ohne };
+}
+// DAS URTEIL DES BAUMS OHNE STUFE (rein; `baumStufeZensus`): ROT je Chunk des Samens im Blick (Mitte ≤ R), der nicht gesät ist oder
+// wartet — mit den Bäumen seines Plans —, und je Baum des Walds im Blick ohne Instanz und Mesh. → { rot, zeile }
+function baumStufeUrteil(z) {
+    const rot = [];
+    const ungesaet = z.chunks.filter((c) => c.d <= z.R && !c.gesaet);
+    if (ungesaet.length) {
+        const b = ungesaet.reduce((n, c) => n + (c.baeume || 0), 0);
+        const unbekannt = ungesaet.filter((c) => c.baeume === null).length;
+        rot.push(
+            `BAUM OHNE STUFE: ${ungesaet.length} Chunks des Samens im Blick (Mitte ≤ ${z.R.toFixed(1)} m) sind nicht gesät, der Laub-Rand der Welt steht bei ${z.laubRand.toFixed(1)} m — ${b} Bäume des Plans ohne Stufe${unbekannt ? ` (+ ${unbekannt} Chunks ohne Plan im Gedächtnis)` : ""}: ` +
+                ungesaet
+                    .sort((a, c) => a.d - c.d)
+                    .slice(0, 6)
+                    .map((c) => `${c.k} ${c.d} m${c.baeume !== null ? ` ${c.baeume} Bäume` : ""}`)
+                    .join(" · ")
+        );
+    }
+    if (z.ohne.length)
+        rot.push(
+            `BAUM OHNE STUFE: ${z.ohne.length} gesäte Bäume des Walds im Blick tragen weder Instanz noch Mesh noch Dach (das Dach ab ${Number.isFinite(z.dachAb) ? z.dachAb.toFixed(1) + " m" : "nirgends"}): ${z.ohne
+                .slice(0, 6)
+                .map((e) => `${e.typ} ${e.d} m`)
+                .join(" · ")}`
+        );
+    const gesaet = z.chunks.filter((c) => c.d <= z.R && c.gesaet).length;
+    const zeile = `Same im Blick: ${gesaet} von ${gesaet + ungesaet.length} Chunks gesät (≤ ${z.R.toFixed(1)} m, Ring ${z.ring}, Laub-Rand ${z.laubRand.toFixed(1)} m, ${z.zeilen} Zeilen), ${z.wald} Bäume des Walds, ${z.dach || 0} unterm Dach, ${z.ohne.length} ohne Stufe`; // prettier-ignore
+    return { rot, zeile };
+}
+
 // DIE ABWEICHUNG ZWEIER ZENSUS (rein): die Dinge, die in `b` eine andere Stufe tragen als in `a` — je Bewohner sein Wechsel, je Klasse
 // die Differenz ihrer Instanzen. `dinge` zählt sie (ein Bewohner einmal: sein Satz `bewohner-satz` zählt nicht noch als Klasse).
 function stufenAbweichung(a, b) {
@@ -1844,6 +1942,19 @@ async function bildLinsenSelbsttest() {
         if (kl.dinge !== 4 || kl.zeile !== "f:haus:L1 0→2 · fimp:atlas:L2 232→230") v.push(`S: die Klassen-Abweichung zählt falsch: ${kl.dinge} · ${kl.zeile}`);
         if (!STUFEN_OHNE.test("tier:bestaeuber") || !STUFEN_OHNE.test("dorf-rauch") || !STUFEN_OHNE.test("vorbau:baum_eiche") || STUFEN_OHNE.test("fimp:atlas:L2") || STUFEN_OHNE.test("bewohner-satz")) v.push("S: die Liste ohne Stufe trennt Leben und Stufen nicht"); // prettier-ignore
     }
+    // S: der Baum ohne Stufe (w28-nadel-bestand) — die Mess-Wiese im Fenster 1080 an main: der Laub-Rand der Welt hielt bei 129,6 m, der
+    // Same reicht bis 216 m (Ring 4); die Mutante liest den Samen am Rand der Welt (die Linse sähe den Täter nicht), die zweite schweigt
+    // zum gesäten Baum ohne Instanz
+    {
+        const c = (k, d, gesaet, baeume = 20) => ({ k, d, gesaet, baeume });
+        const wahr = { R: 216, ring: 4, laubRand: 216, dachAb: 184, zeilen: 1080, wald: 400, dach: 12, ohne: [], chunks: [c("-6,-24", 40, true), c("-9,-27", 132, true), c("-4,-25", 153, true, null), c("-12,-30", 240, false)] }; // prettier-ignore
+        const taeter = { ...wahr, laubRand: 129.6, chunks: [c("-6,-24", 40, true), c("-9,-27", 132, false), c("-4,-25", 153, false, null), c("-12,-30", 240, false)] }; // prettier-ignore
+        const U = (z, f = baumStufeUrteil) => f(z).rot.join(" | ");
+        if (U(wahr)) v.push(`S: der gesäte Same fällt: ${U(wahr)}`);
+        klasse("S Baum ohne Stufe", (f) => !/^BAUM OHNE STUFE: 2 Chunks des Samens im Blick \(Mitte ≤ 216\.0 m\) sind nicht gesät, der Laub-Rand der Welt steht bei 129\.6 m — 20 Bäume des Plans ohne Stufe \(\+ 1 Chunks ohne Plan im Gedächtnis\): -9,-27 132 m 20 Bäume · -4,-25 153 m$/.test(U(taeter, f)) && (U(taeter, f) || "kein ROT"), baumStufeUrteil, mutante(baumStufeUrteil, "c.d <= z.R && !c.gesaet", "c.d <= z.laubRand && !c.gesaet", {})); // prettier-ignore
+        const leer = { ...wahr, ohne: [{ typ: "baum_fichte", d: 150 }] };
+        klasse("S gesäter Baum ohne Instanz", (f) => !/^BAUM OHNE STUFE: 1 gesäte Bäume des Walds im Blick tragen weder Instanz noch Mesh noch Dach \(das Dach ab 184\.0 m\): baum_fichte 150 m$/.test(U(leer, f)) && (U(leer, f) || "kein ROT"), baumStufeUrteil, mutante(baumStufeUrteil, "if (z.ohne.length)", "if (false)", {})); // prettier-ignore
+    }
     // R: die Ratsche des Orts
     const rot = [{ schluessel: "leib", grund: "Sicht verdeckt 4.9 %" }];
     const R = ortUrteil(rot, { leib: "main 5 %" }, "stadt");
@@ -1857,6 +1968,7 @@ async function bildLinsenSelbsttest() {
 
 module.exports = {
     bildLinsenSelbsttest,
+    baumStufeUrteil,
     stufenUrteil,
     stufenAbweichung,
     inhaltFamilie,
@@ -1876,6 +1988,7 @@ module.exports = {
         ABNAHME_INSTALL +
         `window.__abnahmeMessen = ${abnahmeMessen}; window.__zielGestalt = ${zielGestalt}; window.__gestaltLeben = ${gestaltLeben}; window.__leinwandRot = ${leinwandRot};` +
         `window.__schirmRot = ${schirmRot}; window.__stufenZensus = ${stufenZensus}; window.__stufenOhne = ${STUFEN_OHNE};` +
+        `window.__baumStufeZensus = ${baumStufeZensus};` +
         `window.__blickWahl = ${blickWahl}; window.__nahFolgt = ${nahFolgt};` +
         // DIE TIEFE DES BILDS an der Kamera (EIN Bild nach dem Neubeginn, `opt.tiefe` der Aufnahme): die Blick-Wahl und der Arm
         `window.__zielMessen = ${zielMessen};` +

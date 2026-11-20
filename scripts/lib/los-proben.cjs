@@ -307,6 +307,8 @@ const WURF_TAETER = [
     ["const g=plan.houses[i], wurf=losWurf(i);", "const g=plan.houses[i], wurf=rnd;"],
     ["    const wurf=losWurf(i);", "    const wurf=rnd;"],
 ];
+const WURF_ENG_TAETER = [["if(stadt&&cu.eng+ENG_FUGE<=2*exH) return null;", "if(stadt&&cu.eng<=2*exH) return null;"]];
+const WURF_SNAP_TAETER = [["const zug=(Math.abs(lx)-soll)/2*Math.min(1,(1.8-fuge)/0.3), s2=Math.sign(lx);", "const zug=(Math.abs(lx)-soll)/2, s2=Math.sign(lx);"]];
 // je Fall und Los: die anderen Häuser, die anders stehen, beim Namen (Same#n)
 function wurfAnders(K) {
     const out = [];
@@ -342,6 +344,16 @@ function wurfProben(check, { kernText, taeter = false }) {
         check(`Selbst-Test Würfel je Los: der EINE Strom (jedes Los zieht aus rnd) fällt beim Los (${n})`, !!v && v.length > 0, m.fehlt || `${v.length} — ${v.slice(0, 2).join(" · ")}`);
     else
         check(`Würfel je Los (${n}): eine Front ${WURF_DELTAS.map((d) => d * 100).join(" / ")} cm würfelt kein anderes Haus neu (fehlt · kommt · wandert > ${WURF_WANDER} m)`, !!v && !v.length, m.fehlt || `${v.length} — ${v.slice(0, 3).join(" · ")}`);
+    if (taeter) {
+        // die Breite eines anderen Loses ohne Fuge (vor w28-bau-rezept-tuer): bei gleicher Breite urteilt sein Zentimeter
+        const mE = kernMutante(kernText, [LOS_HAKEN, ...WURF_ENG_TAETER]);
+        const vE = mE.text ? wurfAnders(kernAusText(mE.text, "wurf-eng")) : null;
+        check(`Selbst-Test Würfel je Los: die Breite eines anderen Loses ohne Fuge (eng) fällt beim Los (${n})`, !!vE && vE.length > 0, mE.fehlt || `${vE.length} — ${vE.slice(0, 2).join(" · ")}`);
+        // der Snap der Reihe mit der harten Kante bei 1,8 m (vor w28-bau-rezept-tuer): 5 cm Front rücken den Nachbarn um 0,86 m
+        const mS = kernMutante(kernText, [LOS_HAKEN, ...WURF_SNAP_TAETER]);
+        const vS = mS.text ? wurfAnders(kernAusText(mS.text, "wurf-snap")) : null;
+        check(`Selbst-Test Würfel je Los: der Snap der Reihe mit harter Kante fällt beim Los (${n})`, !!vS && vS.length > 0, mS.fehlt || `${vS.length} — ${vS.slice(0, 2).join(" · ")}`);
+    }
     console.log(`  Würfel je Los${taeter ? " (Täter)" : ""}: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
 
@@ -360,7 +372,8 @@ const BRANDWAND_TAETER = {
     // die Brandwand vor dem Schnitt: „anliegend“ an den Wänden dims.W/D statt an der Körper-Hülle
     "brandwand an dims": { R: [["ex=a.ex+halb(b,ci,-si), ez=a.ez+halb(b,si,ci);", "ex=(A.dims.W+Bj.dims.W)/2, ez=(A.dims.D+Bj.dims.D)/2;"]], faelle: LOSE_FAELLE.slice(0, 2) },
     // die Toleranz ohne die Reichweite der Öffnungen (nur die Norm gap + 0,15)
-    "ohne Reichweite": { R: [["<Math.max(norm,A.reich[s])", "<norm"]], faelle: LOSE_FAELLE.slice(1, 2) },
+    // (seit bau-rezept-tuer am Burg-Paar 12/60: die Brandwand urteilt über die ganze seitliche Überdeckung, an 2/120 reicht die Norm allein)
+    "ohne Reichweite": { R: [["<Math.max(norm,A.reich[s])", "<norm"]], faelle: [{ seed: 12, nH: 60 }] },
     // nur vor dem Los-Gesetz: die Brandwand urteilt nicht, wo die Lose stehen
     "nur vor dem Los-Gesetz": { R: [["            // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)", "            if (0) // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)"]], faelle: [{ seed: 2, nH: 400 }] },
 };

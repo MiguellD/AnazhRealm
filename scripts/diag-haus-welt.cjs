@@ -1380,9 +1380,14 @@ async function proben(phasen) {
                 w8.chatSatz = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 240) : null;
                 w8.lichtungGrund = r._t(A.NATUR_WAND_GRUND.lichtung); // der Grund der Natur-Wand im Satz (die EINE Quelle des Worts, eine Zeile der Tafel)
             }
-            const h0 = H[0];
+            // DER HAIN IM HAUS fragt das Haus, das am weitesten vor dem Freiraum des Genesis-Orts steht: am Freiraum fällt ein
+            // Wurf mit der Krone seiner Art benannt an der Lichtung, bevor die Wand des Hauses ihn sieht (bau-rezept-tuer: das erste
+            // Haus, haus_provenzalisch 43 m vor der Mitte, „lichtung 5 · haus 0“ — die Probe war blind für die Wand des Hauses)
+            const mitteVon = (h) => welt(h, r._grundrissVon(h).ox, r._grundrissVon(h).oz);
+            const fern = (h) => (r._grundrissVon(h) ? Math.hypot(mitteVon(h).x - L.x, mitteVon(h).z - L.z) : -1);
+            const h0 = H.reduce((a, h) => (!a || fern(h) > fern(a) ? h : a), null);
             if (h0) {
-                const mitte = welt(h0, r._grundrissVon(h0).ox, r._grundrissVon(h0).oz);
+                const mitte = mitteVon(h0);
                 const kiH = hain(mitte.x, mitte.z);
                 w8.kiHaus = kiH.neu.filter((e) => imGrundrissVon([h0], e.position.x, e.position.z)).length;
                 w8.kiWeichtHaus = kiH.weicht.haus;

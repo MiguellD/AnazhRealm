@@ -282,6 +282,7 @@
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
   const NORM={flur:1.00, treppe:0.90, auftritt:0.26, steigung:0.19, steigungSpar:0.21, schritt:0.62, podest:0.90, kopf:2.00, kopfSpar:1.90, eingang:1.30};
   const hasAttic = (ridgeY - eaveY) > NORM.kopfSpar;          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
+  const dachRaum = hasAttic && ROOFMODE!=='flat';   /*DAS FLACHE DACH TRAEGT KEINEN DACHRAUM (w28-bau-rezept-tuer) — kein Lauf, kein Loch im Estrich: `ROOFMODE` ist die EINE Dach-Quelle — Arkade und Zinnen decken flach (`dachdeckung`: EINE Platte auf eaveY ueber dem ganzen Grundriss, ohne Loch). Bis hier fragte der Dachraum nur die Neigung des Sattels, den das flache Dach nie baut: das gasthaus #846868 (Arkade, Dorf 7/18) trug einen Speicherlauf N 12 in die Platte — auf Stufe 11 Kopfraum 0,32 m, auf der letzten Stufe der Kopf ueber der Platte (gate:studio-begehen: Kopfraum 99)*/          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
   const DORMER = (hasAttic && !modern && P.hip<0.45 && Dp>5.5) ? (()=>{ const gx=clamp(((P.seed%5)-2)*0.5, -W/2+1.5, W/2-1.5), gW=clamp(W*0.16,1.15,1.6), zBack=-Dp*0.22, zFront=zBack-1.0; const yBack=roofSkinY(gx,zBack), baseY2=roofSkinY(gx,zFront)+0.02, frontTop=yBack-0.08; return (frontTop-baseY2>0.85)?{gx,gW,zBack,zFront,yBack,baseY2,frontTop}:null; })() : null;   // EINE Gauben-Quelle: Struktur (dachwerk) UND Dachhaut-Aussparung (dachdeckung) lesen sie
   const stW = NORM.treppe;                                    // Haupttreppe-Breite = Norm
   const mainW = ((levels.length>=2)||(levels.length===1&&hasAttic)) ? stW : 0;   // LINKE Spur: Haupt-/Estrichtreppe — nur wenn nach oben gegangen wird
@@ -401,7 +402,7 @@
   const mxL=wx0, mxR=wx0+mainW;                                         // Haupttreppe-Zone (links) — Breite = mainW
   const lxL=wx1-loftW, lxR=wx1;                                         // Speichertreppe-Zone (rechts)
   const DiF = Dp/2-0.08;                                                // innere Haustiefe
-  const hasLoft = levels.length>=2 && hasAttic;
+  const hasLoft = levels.length>=2 && dachRaum;
   let lW=0,lN=0,lRise=0,lGo=0,lRun=0;
   if(hasLoft){ const lH=eaveY-levels[levels.length-1].y;
     lN  = Math.max(3, Math.ceil(lH / NORM.steigungSpar));               // Speichertreppe: Raumspar-Steigung ≤0.21 (DIN-Trick) — KEINE 0.42-Leiter
@@ -425,13 +426,15 @@
   for(let k=0;k<levels.length-1;k++){ const h=levels[k+1].y-levels[k].y;                  // Zwischenlauf levels[k]→levels[k+1]
     const tr=(k%2===0)?'L':'R', dir=(k%2===0)?1:-1, Ns=Math.max(3,Math.ceil(h/NORM.steigung)), go=stRun/Ns, rise=h/Ns;
     flights.push({base:levels[k].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot:(dir>0)?stZ0:wz1, dir, N:Ns, rise, go, isLoft:false, atLevel:k+1, topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'}); }
-  if(levels.length===1 && hasAttic){                                                        // GESETZ: kein Zwischengeschoss, aber ein NUTZBARER Estrich → es MUSS eine Treppe dorthin geben; bei flachem Dach KEINE Treppe (sonst sticht sie raus)
+  if(levels.length===1 && dachRaum){                                                        // GESETZ: kein Zwischengeschoss, aber ein NUTZBARER Estrich → es MUSS eine Treppe dorthin geben; bei flachem Dach KEINE Treppe (sonst sticht sie raus)
     flights.push({base:levels[0].y, tr:'L', x0:TRACK.L[0], x1:TRACK.L[1], zFoot:stZ0, dir:1, N:stN, rise:stRise, go:stGo, isLoft:false, atLevel:'attic', topEdge:'back', footEdge:'front'}); }
   let LOFT=null;
   if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
     const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+(KNIESTOCK?NORM.podest:0.3)));                    // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — vor dem Kniestock MIT seinem Austritt-Podest (NORM.podest, wie die Haupttreppe), ohne ihn 0,3 m Kopfraum — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach; bis siedlung-k5-nah reichten 0,3 m: der Körper stand am Kniestock)
-    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;
-    if(austritt(dir)<=zBandTop){                                                             // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
+    const zBandTritt=(Dp/2)*(1-(NORM.kopfSpar-lRise)/Math.max(0.6,ridgeY-eaveY));                   // DIE LETZTE STUFE (w28-bau-rezept-tuer): wer auf ihr steht (eine Steigung unter dem Estrich), hat kopfSpar über sich — bis hier galt nur das Podest-Ende; lief der Lauf zum First, stand die letzte Stufe unter der Schräge (Dorf 25 Slots, Haus D 9 m mit drei Geschossen: Stufe bei 0,88 m, Band ±0,85 m, am Kopf 1,5 m Dach, der Körper fiel 4,9 m in den Schacht)
+    const frei=(d)=>austritt(d)<=zBandTop && Math.abs(((d>0)?stZ0:wz1)+d*(lRun-lGo))<=zBandTritt;
+    if(!frei(dir) && frei(-dir)) dir=-dir;
+    if(frei(dir)){                                                            // KEIN SPEICHERLAUF OHNE STEHRAUM AM AUSTRITT: trägt keine Richtung ihn samt Podest in den Stehraum, bleibt der Estrich geschlossen wie unter dem flachen Dach (bis siedlung-k5-nah endete er 0,46 m vor dem Kniestock: kein Körper kam vom Lauf)
     const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
     LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot};
     flights.push({base:levels[i].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot, dir, N:lN, rise:lRise, go:lGo, isLoft:true, atLevel:'attic', topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'});
@@ -441,7 +444,7 @@
     const lvF=levels.findIndex(L=>Math.abs(L.y-f.base)<0.01); if(lvF>=0) levelOpen[lvF][f.footEdge]=true; });
   // ════ KELLERTREPPE — GETEILTES Treppengesetz statt Parallelcode: als AUFSTEIGENDER Lauf kellerY→baseY (deckungsgleich mit absteigend), rechte Schachtspur. Wangen/Handlauf/Pfosten kommen aus flight(). ════
   if(P.keller){ const kDrop=baseY-kellerY, kN=Math.max(8,Math.ceil(kDrop/0.21)), kRun=wz1-stZ0, kGo=kRun/kN, kRise=kDrop/kN;
-    flights.push({base:kellerY, tr:'R', x0:lxL, x1:lxR, zFoot:stZ0, dir:1, N:kN, rise:kRise, go:kGo, isLoft:false, atLevel:'keller', topEdge:'back', footEdge:'front'}); }
+    flights.push({base:kellerY, tr:'R', x0:lxL, x1:lxR, zFoot:wz1, dir:-1, N:kN, rise:kRise, go:kGo, isLoft:false, atLevel:'keller', topEdge:'front', footEdge:'back'}); }   // DER ABGANG AN DER OFFENEN KANTE (w28-bau-rezept): das Kellermaul ist vorn offen (Brüstung hinten und seitlich, der Zustieg GBLK davor) — der Lauf tritt VORN aus; bis hier stieg er vorn aus kellerY auf und trat hinten hinter der Brüstung aus: wer an der offenen Kante eintrat, stand über 3 m Tiefe (gate:haus-welt W2 haus_italienisch 204 cm, W10 haus_schwarzwald keller-kopf 0,36 m)
 
 
   function axis(half,special){ let pts=[-half,...special,half].filter(v=>Math.abs(v)<=half+1e-6);
@@ -489,7 +492,7 @@
     const voids=[];                                                                              // GESETZ: ÜBER JEDER Treppen-Durchdringung wird die Deckenbalkenlage ausgespart — sonst läuft ein horizontaler Träger durch die Treppe. Im Hochhaus an JEDER Zwischendecke, nicht nur über dem EG.
     if(!(levels.length===1 && !hasAttic)){
       for(let k=0;k<levels.length-1;k++) voids.push({y:levels[k].top, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});   // jede Zwischendecke (EG .. vorletztes OG) über dem Schacht
-      if(levels.length===1 && hasAttic) voids.push({y:eaveY, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});             // Estrichloch bei 1 Geschoss + nutzbarem Dachraum
+      if(levels.length===1 && dachRaum) voids.push({y:eaveY, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});             // Estrichloch bei 1 Geschoss + nutzbarem Dachraum
     }
     if(LOFT) voids.push({y:eaveY, x0:LOFT.x0-0.05, x1:LOFT.x1+0.05, z0:LOFT.z0-0.05, z1:LOFT.z1+0.05});
     const layJoists=(y)=>{ const vs=voids.filter(v=>Math.abs(v.y-y)<0.05);
@@ -910,7 +913,7 @@
       railSeg(wx0,stZ0,wx0,wz1,0,hcz); railSeg(wx1,stZ0,wx1,wz1,0,hcz); };               // Seiten immer gesichert (Schacht→Lane)
     for(let k=1;k<levels.length;k++) floorWithStair(levels[k].y, levelOpen[k]);          // jedes OG mit Podest-Kehre
     // ── Dachboden (Estrich) auf eaveY: VOLL begehbar; niedriger Traufkopfraum = real ──
-    if(levels.length===1){ if(hasAttic) floorWithStair(eaveY,{front:false,back:true}); else rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }   // Estrich nur bei nutzbarem Dachraum; flaches Dach → geschlossene Decke
+    if(levels.length===1){ if(dachRaum) floorWithStair(eaveY,{front:false,back:true}); else rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }   // Estrich nur bei nutzbarem Dachraum; flaches Dach → geschlossene Decke
     else if(!LOFT){ rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }                                          // ≥2 Geschosse ohne Speicherlauf (flaches Dach oder kein Stehraum am Austritt): geschlossene Estrich-Decke, kein Speicherloch/Kniestock
     else { levelTop=eaveY; const L=LOFT;                                     // Estrich voll minus Loch der Speichertreppe (LOFT)
       rect(eaveY-0.05,-Wi,L.x0,-Di,Di,'boden'); rect(eaveY-0.05,L.x1,Wi,-Di,Di,'boden');
@@ -993,8 +996,9 @@
     return g; }
 
   // Kassetten-Türflügel (zentriert am Ursprung) — für die Haustür
-  function leafFrame(w,h,role,extSign){ const lf=grp(); const sw=0.12,t=0.05; const e=extSign||1;   // e = welche lokale z-Seite die SCHAUSEITE (Kassetten) trägt (+1 = +z, −1 = −z)
+  function leafFrame(w,h,role,extSign,flach){ const lf=grp(); const sw=0.12,t=0.05; const e=extSign||1;   // e = welche lokale z-Seite die SCHAUSEITE (Kassetten) trägt (+1 = +z, −1 = −z)
     beam(lf,0,0,0,w,h,0.05,role);                                                             // massiver Kern (kein Durchblick), zentriert
+    if(flach&&P.flaechig) return lf;   // FLÄCHEN-STUFE (nur das Tor des Rings, `flach`; die Haustür trägt ihre Kassetten in jede Stufe — gate:haus-fern T zählt ihre Blätter in L0 und L1): das Blatt als EINE Fläche wie die Bretterwand (`plankX`) — Stiele, Riegel, Kassetten stehen 18–30 mm vor (gate:fachwerk-contract DIE STUFE AM TEIL: das Hof-Tor trug in der Stufe 1 seine 2 × 108 Dreiecke, hof 0,83)
     beam(lf,-w/2+sw/2,0,e*0.018,sw,h,t,role); beam(lf,w/2-sw/2,0,e*0.018,sw,h,t,role);        // Stiele (auf der Schauseite vorstehend)
     beam(lf,0,h/2-sw/2,e*0.018,w,sw,t,role); beam(lf,0,-h/2+sw/2,e*0.018,w,sw,t,role); beam(lf,0,h*0.06,e*0.018,w,sw,t,role); // Riegel
     const piw=w-2*sw, upH=h*0.40, loH=h*0.30;
@@ -1545,35 +1549,78 @@
     return g; }
   function hof(){ const g=grp(); if(P.grundriss!=='hof') return g;   // INNENHOF (siheyuan/riad/cour d'honneur) — ADDITIV: zwei Arme + Torriegel um den offenen Hof, der Hof ist die Luft im Ring
     const armW=clamp(W*0.30,2.6,3.6), courtD=clamp(W*1.0,5,9), gateW=2.8, zF=-Dp/2, zC=zF-courtD;
-    const wH=Math.min(eaveY-baseY-0.5, P.egH*0.92), wr=(P.stil==='stein'||P.stil==='klinker'||P.stil==='modern')?'putz':((P.stil==='huette'||P.stil==='stroh')?'holz':'gefach');
+    const wH=Math.min(eaveY-baseY-0.5, P.egH*0.92), wr=(P.stil==='huette'||P.stil==='stroh')?'holz':'gefach';   // die Wand des Rings ist die des Hauses: `gefach` trägt je Stil seinen Stoff (RM: Putz am Stein- und am modernen Haus, Backstein am Klinker — bis Vorrat 12b stand der Ring des Klinker-Hauses nah verputzt, fern in Backstein)
     // HOFMAUER-SOLIDS (Welle L, additiv — kein beam ändert sich, Kollision == Optik): Boden, Querwände mit Tor-Lücke und Sturz,
     // Lochwände der Arme, Pflaster und Brunnen tragen ihre Solids wie jede Wand des Hauses (vorher lief der Körper durch die
     // ganze Hofmauer, die Welt-Fernstufe sah sie nur als Bounding-Box 8,2 m vor den Haus-Solids)
     // DIE FERNE STUFE (Marke `fern`): die Arme trägt der Körper der Liste ('hofarm': Wand und Dach), ihre Fenster das Fern-Fenster — der Hof legt nur Pflaster
     // und Brunnen (vorher zeichnete die L2 jeden Arm zweimal: marokkanisch Hofbau 3528 Dreiecke über dem Körper); Massen und Solids bleiben
     const _fern=(P.nur||{}).fern===true, hb=(...a)=>_fern?null:beam(...a);
+    // DER SOCKEL DES RINGS (Vorrat 12b, Auge am Dorf: der Torriegel stand 0,55 m über dem Grund — jeder Balken des Hofs beginnt auf der Diele, und
+    // der Erdbau schneidet den gezeichneten Boden unter jedem Hof-Arm, `grundVon` boden 1: man sah unter die Wand ins Loch): der Ring und sein Hof
+    // WACHSEN aus dem Sockel wie jeder Flügel (`fundament`: selbe foundH, selber Stein, 25 cm vor der Wand) — EINE Platte von der Front des
+    // Hauses bis vor den Torriegel, als Masse `sockel` trägt sie auch der Fernkörper. Linse: gate:settlement Teil O Sockel (der Fuß der Hülle).
+    if(!P.pilotis){ const sm=0.25, sz0=zC-sm, sz1=zF-sm, sy=baseY-P.foundH/2;
+      hb(g,0,sy,(sz0+sz1)/2,W+2*sm,P.foundH,sz1-sz0,'stein'); addSolid(0,sy,(sz0+sz1)/2,W+2*sm,P.foundH,sz1-sz0);
+      addMasse({art:'sockel',x0:-W/2-sm,x1:W/2+sm,z0:sz0,z1:sz1,y0:baseY-P.foundH,y1:baseY}); }
+    // DAS HOF-FENSTER-GESETZ — EINE Reihe für JEDE Wand des Rings, die an die Luft grenzt (Vorrat 12b: bis hier trugen es nur die Stirnen
+    // längs z; die langen Wände des Torriegels kamen aus einer Vollwand, die nur die Tor-Lücke kannte — zur Gasse stand er blind):
+    // je 2,2 m Lauf ein Fenster, 0,9 m hoch, höchstens 0,8 m breit; ein Lauf unter 1,4 m trägt keins. Das Tor teilt den Lauf.
+    const wcy=baseY+Math.min(wH-0.55,1.5), wfh=0.9;
+    const reihe=(a,b)=>{ const len=b-a, r=[]; if(len<1.4) return r; const n=Math.max(1,Math.round(len/2.2)), w=Math.min(0.8,len/n*0.4); for(let i=0;i<n;i++) r.push({c:a+len*(i+0.5)/n,w}); return r; };
+    // DAS TOR (Vorrat 12b: ein nacktes Loch) — Gewände und Sturz rahmen die Lücke wie der Türstock die Haustür (vor der Wand, die lichte
+    // Breite bleibt die des Eingangs-Korridors); trägt das Haus eine Bogen-Art, schließt sie der Bogen des EINEN Bogen-Gesetzes
+    // (`bogenRahmen`: Keile, Kämpfer, die Mauer der Zwickel bis unter den Sturz der Lochwand) — passt sein Scheitel nicht über 0,8 m
+    // Gewände, der Stichbogen, flacher als R/5 der Sturz (wie die Laube). Zur Gasse hängen zwei Flügel (`leafFrame`, das Blatt der
+    // Haustür) am Gewände innen und stehen offen in den Riegel: der Gang bleibt frei, kein Wirt bewegt sie. Stein am gemauerten Haus
+    // (stein · klinker · modern; am Klinker trägt ihn der Backstein), sonst Holz.
+    const tr=(P.stil==='stein'||P.stil==='klinker'||P.stil==='modern')?'stein':'holz';
+    const torRahmen=(zz,T,vorn)=>{ const gw2=T.w/2, yT=baseY+T.lh, dp=0.34, t=0.19; let bg=null, yS=yT, ja=gw2-0.02, jb=gw2+0.22;
+      if(P.bogenTyp&&P.bogenTyp!=='none'){ let kurve=P.bogenTyp, R=kurve==='hufeisen'?gw2*Math.cos(BOGEN_GESETZ.hufeisenAlpha):gw2, steig=bogenSteig(kurve,R,0), stich=0;
+        if(T.lh-steig<0.8){ kurve='stich'; R=gw2; stich=Math.min(R,T.lh-1.5); steig=stich; }
+        if(!(kurve==='stich'&&stich<0.2*R)){ const aus=bogenAussen(kurve,R)+t;
+          bg=bogenRahmen(g,T.x,yT-steig,zz,R,true,kurve,tr,{art:'tor',t,tiefe:dp,versatz:0,cap:baseY+wH,stich,zwickel:[-gw2,gw2,yT],pfeiler:[[-aus,-R],[R,aus]]});
+          if(bg){ yS=yT-steig; ja=R-0.02; jb=aus; } } }
+      for(const sg of [-1,1]){ beam(g,T.x+sg*(ja+jb)/2,(baseY+yS)/2,zz,jb-ja,yS-baseY,dp,tr); if(bg) beam(g,T.x+sg*(ja+jb)/2,yS-0.06,zz,jb-ja+0.06,0.12,dp+0.06,tr); }   // das Gewände; unter dem Bogen sein Kämpfer
+      if(!bg) beam(g,T.x,yT+0.10,zz,2*jb+0.12,0.24,dp+0.04,tr);   // der Sturz liegt auf beiden Gewänden, vor dem Sturzband der Lochwand
+      if(!vorn) return;
+      const lw=gw2-0.05, lhh=T.lh-0.14, hx=gw2-0.03;
+      for(const sg of [-1,1]){ const L=grp(), lf=leafFrame(lw,lhh,'holz',-1,true); lf.position.x=-sg*lw/2; L.add(lf);
+        L.position.set(...deform(T.x+sg*hx,baseY+0.10+lhh/2,zz+0.22)); L.rotation.y=sg*1.4+(DEF_bk>0?(T.x+sg*hx)*DEF_bk:0); g.add(L); } };
+    // DIE WAND DES RINGS — EINE Lochwand je Flucht (`lochWand`: Türen und Fenster sind dieselbe Öffnungs-Art): `frei` nennt ihre Läufe
+    // an der Luft, T das Tor, `mitte` die Achse des Riegels (die Außenseite). Die ferne Stufe trägt dieselben Fenster als Fern-Fenster.
+    const wand=(horiz,fix,a0,a1,frei,T,mitte)=>{ const F=[], ax=horiz?'z':'x';
+      for(const [a,b] of frei){ if(T) F.push(...reihe(a,Math.min(b,T.x-T.w/2)),...reihe(Math.max(a,T.x+T.w/2),b)); else F.push(...reihe(a,b)); }
+      if(T) lichtAuf(T.x,baseY+T.lh/2,fix,T.w,T.lh,'z',0);   // das Tor steht offen: es lässt den Himmel in den Riegel (`raumVon`), nah wie fern
+      if(_fern){ for(const f of F){ const px=horiz?f.c:fix, pz=horiz?fix:f.c; FERNFENSTER.push({cx:SHIFT?px+SHIFT:px, cy:wcy, cz:pz, w:f.w, h:wfh, perp:ax, kind:'hof', s:fix<mitte?-1:1, schlaf:fensterSchlaeft(P.seed,ax,fix,f.c,wcy)}); } return; }
+      const L=F.map(f=>({c:f.c,w:f.w+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03})); if(T) L.push({c:T.x,w:T.w,b:baseY,t:baseY+T.lh});
+      const n0=g.children.length; lochWand(g,horiz,fix,a0,a1,baseY,baseY+wH,L,wr,0.22,true);
+      if(GLATT) for(let i=n0;i<g.children.length;i++) eben(g.children[i]);   // die glatte Wand trägt EINEN Ton (`eben`): die Patina je Stück stand als helle Felder unter den Fenstern
+      for(const f of F){ if(horiz) fensterAt(g,f.c,wcy,fix,f.w,wfh,true,baseY+wH); else fensterAt(g,fix,wcy,f.c,f.w,wfh,false,baseY+wH); }   // der Deckel des Fenster-Bogens ist die Traufe des Rings (`roofUnderY` kennt nur das Hauptdach: der Bogen stieß durch das Dach des Arms)
+      if(T) torRahmen(fix,T,fix<mitte); };
     const bar=(x0,x1,z0,z1,alongZ,gate)=>{ const cx=(x0+x1)/2,cz=(z0+z1)/2,lx=x1-x0,lz=z1-z0, rY=baseY+wH+(alongZ?lx:lz)/2*0.7;
       addMasse({art:'hofarm',x0,x1,z0,z1,eY:baseY+wH,rY:ROOFMODE==='flat'?null:rY,first:alongZ?'z':'x',eOv:0});
       hb(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden'); addSolid(cx,baseY+0.04,cz,lx,0.08,lz);
-      const xWall=(zz)=>{ if(!gate){ hb(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); addSolid(cx,baseY+wH/2,zz,lx,wH,0.22); return; }   // ohne Korridor: volle Querwand
-        const gw2=gate.w/2, lh=Math.min(wH-0.25, gate.h), L=(gate.x-gw2)-x0, R=x1-(gate.x+gw2);   // EINGANGS-KORRIDOR (Sperrflaeche der Haustuer) bleibt frei → das Tor emergiert auf der Tuer-Achse, nicht hart gesetzt
-        if(L>0.05){ hb(g,x0+L/2,baseY+wH/2,zz,L,wH,0.22,wr); addSolid(x0+L/2,baseY+wH/2,zz,L,wH,0.22); } if(R>0.05){ hb(g,x1-R/2,baseY+wH/2,zz,R,wH,0.22,wr); addSolid(x1-R/2,baseY+wH/2,zz,R,wH,0.22); }   // Wandstuecke links/rechts vom Tor
-        if(wH>lh+0.05){ hb(g,gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22,wr); addSolid(gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22); } };   // Sturz: die niedrige Wand bestimmt die Torform (flach, kein Bogen)
-      xWall(z0); xWall(z1);
-      { const nzW=Math.max(1,Math.round(lz/2.2)), wcy=baseY+Math.min(wH-0.55,1.5), wfw=Math.min(0.8,lz/nzW*0.4), wfh=0.9, zh=[];   // HOF-FENSTER-GESETZ: Arme schauen in den Hof UND zur Strasse — LOCHWAND
-        for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; zh.push({c:pz,w:wfw+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03}); }
-        if(_fern){ for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; for(const xw of [x0,x1]) FERNFENSTER.push({cx:SHIFT?xw+SHIFT:xw, cy:wcy, cz:pz, w:wfw, h:wfh, perp:'x', kind:'hof', s:xw<cx?-1:1, schlaf:fensterSchlaeft(P.seed,'x',xw,pz,wcy)}); } }
-        else { lochWand(g,false,x0,z0,z1,baseY,baseY+wH,zh,wr,0.22,true); lochWand(g,false,x1,z0,z1,baseY,baseY+wH,zh,wr,0.22,true);
-        for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; fensterAt(g,x0,wcy,pz,wfw,wfh,false); fensterAt(g,x1,wcy,pz,wfw,wfh,false); } } }
+      const T=gate?{x:gate.x,w:gate.w,lh:Math.min(wH-0.25,gate.h)}:null;   // EINGANGS-KORRIDOR (Sperrflaeche der Haustuer) bleibt frei → das Tor emergiert auf der Tuer-Achse, nicht hart gesetzt
+      wand(true,z0,x0,x1,T?[[x0,x1]]:[],T,cz); wand(true,z1,x0,x1,T?[[x0+armW,x1-armW]]:[],T,cz);   // längs x: der Torriegel schaut zur Gasse und zwischen den Armen in den Hof; die Stirnen der Arme stoßen an Riegel und Haus (keine Luft)
+      wand(false,x0,z0,z1,[[z0,z1]],null,cx); wand(false,x1,z0,z1,[[z0,z1]],null,cx);   // längs z: Arme schauen in den Hof UND zur Strasse
       if(ROOFMODE==='flat'){ hb(g,cx,baseY+wH+0.06,cz,lx,0.12,lz,'putz'); }   // flaches Hof-Arm-Dach (Mediterran) statt Pultdach
       else { const half=(alongZ?lx:lz)/2, dy=rY-(baseY+wH), ang=Math.atan2(dy,half), len=Math.hypot(half,dy);
       [1,-1].forEach(s=>{ if(alongZ) hb(g,cx+s*half/2,(baseY+wH+rY)/2,cz,len,0.10,lz+0.3,'ziegel',[0,0,-s*ang]);
-                          else hb(g,cx,(baseY+wH+rY)/2,cz+s*half/2,lx+0.3,0.10,len,'ziegel',[s*ang,0,0]); }); } };
+                          else hb(g,cx,(baseY+wH+rY)/2,cz+s*half/2,lx+0.3,0.10,len,'ziegel',[s*ang,0,0]); });
+        // DER GIEBEL DES RINGS: das Dreieck unter dem First ist Wand wie am Flügel (tri, EIN Ton bei glatter Wand) — vorher stand es offen, man sah von der Gasse in die Unterseite der Dachhaut. Der Riegel schließt an beiden Stirnen, der Arm über dem Dach des Riegels; am Haus schließt die Hauswand
+        if(!_fern){ const ey=baseY+wH, gt=(a,b,c)=>{ const m=tri(g,a,b,c,wr); if(GLATT) eben(m); };
+          if(alongZ) gt([x1,ey,z0],[x0,ey,z0],[cx,rY,z0]);
+          else { gt([x0-0.11,ey,z0],[x0-0.11,ey,z1],[x0-0.11,rY,cz]); gt([x1+0.11,ey,z1],[x1+0.11,ey,z0],[x1+0.11,rY,cz]); } } } };
     bar(-W/2,-W/2+armW,zC+gateW,zF,true);            // linker Arm (First entlang z)   // Arm stößt an den Torriegel — kein Dach-Kreuz
     bar(W/2-armW,W/2,zC+gateW,zF,true);              // rechter Arm
     bar(-W/2,W/2,zC,zC+gateW,false,{x:doorX, w:doorW+0.9, h:P.doorH+0.3});           // Torriegel vorne (First entlang x)
     beam(g,0,baseY+0.03,(zF+zC+gateW)/2,W-2*armW+0.3,0.06,courtD-gateW,'weg'); addSolid(0,baseY+0.03,(zF+zC+gateW)/2,W-2*armW+0.3,0.06,courtD-gateW);   // Hofpflaster
-    const wz=(zF+zC+gateW)/2; beam(g,0,baseY+0.45,wz,1.1,0.9,1.1,'stein'); beam(g,0,baseY+0.92,wz,1.3,0.1,1.3,'stein'); addSolid(0,baseY+0.45,wz,1.1,0.9,1.1); addSolid(0,baseY+0.92,wz,1.3,0.1,1.3);   // Brunnen in der Mitte
+    // DER BRUNNEN DES HOFS steht NEBEN dem Eingangs-Korridor (die Sperrfläche der Haustür, so breit wie das Tor): an der Wand eines Arms, wo der Hof ihn
+    // neben dem Korridor trägt — sonst trägt der Hof keinen. Bis w28-bau-rezept stand er in der Mitte, auf der Achse der Tür: der Gang vom Tor zur
+    // Haustür lief gegen ihn (die werkstatt des Start-Dorfs, W 8: 0,75 m je Seite neben ihm, der Bewohner fand keinen Weg — gate:kreatur-takt bewohner)
+    const hw=W/2-armW-0.11, gw2=(doorW+0.9)/2;
+    if(hw-1.4>=gw2){ const wx=((P.seed>>>0)&1?1:-1)*(hw-0.75), wz=(zF+zC+gateW)/2; beam(g,wx,baseY+0.45,wz,1.1,0.9,1.1,'stein'); beam(g,wx,baseY+0.92,wz,1.3,0.1,1.3,'stein'); addSolid(wx,baseY+0.45,wz,1.1,0.9,1.1); addSolid(wx,baseY+0.92,wz,1.3,0.1,1.3); }
     return g; }
   // LOCHWAND-GESETZ — EINE Wand-mit-Öffnungen-Quelle: Vollsegmente zwischen den Löchern, Brüstungs- und Sturzband je Loch. Türen UND Fenster sind dieselbe Öffnungs-Art. sol (Welle L, additiv): jedes Segment trägt sein Solid (die Hofmauer); ohne sol bleibt die Wand ohne (die Aufrufer mit eigener Solid-Quelle).
   function lochWand(g,horiz,fix,a0,a1,y0,y1,holes,role,tk,sol){ tk=tk||0.24; const B=(c,cy,len,hh)=>{ if(len<0.03||hh<0.03)return; horiz?beam(g,c,cy,fix,len,hh,tk,role):beam(g,fix,cy,c,tk,hh,len,role); if(sol){ if(horiz)addSolid(c,cy,fix,len,hh,tk); else addSolid(fix,cy,c,tk,hh,len); } };
@@ -2157,16 +2204,18 @@
       for(const _k in M){ _HEX[_k]=M[_k].color.getHex(); M[_k].color.convertSRGBToLinear(); _karteEins(M[_k]); }   // FARB-GESETZ (Architektur-Welle 05.10.): das Hex ist eine sRGB-ABSICHT — der Stoff zeigt seinen linearen Wert (r128 läse es roh), _HEX hält die Absicht für den Bake (_colFor)
       M.laternenglas.userData.__licht='laterne';                                               // der Kopf der Laterne glüht nach SEINEM Datum (LICHT_GESETZ.laterne: 1900 K, Zeitplan abends 1) — dasselbe Datum wie ihr Licht-Pool, nie die Fenster-Glut
       M.glas.userData.__licht='fenster';                           // DAS LEUCHTQUELLEN-GESETZ (K11): die wachen Fenster glühen nach dem Zeitplan LICHT_GESETZ.fenster (reist als mat.licht; das Schlaf-Glas bleibt dunkel)
-      M.feuer.userData.__leucht=LEUCHT_FEUER;                                                  // DAS LEUCHT-GESETZ (05.10.): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht, die Welt webt emissiveNode = Farbe × LEUCHT_FEUER)
+      M.feuer.userData.__leucht=FEUER_LEUCHT_JE_LUMA;                                          // DAS LEUCHT-GESETZ (05.10.; nacht-lichter): die Glut leuchtet in ihrer Vertex-Farbe — heiße Mitte, kühler Rand, gelbe Flammen-Wurzel, rote Spitze (reist als mat.leucht in cd/m² je Luma der Farbe; die Welt webt emissiveNode = Farbe × leucht ÷ EINHEIT_LX)
       return M; }
-    // Die Stärke des Leuchtens: Leuchtdichte = lineare Vertex-Farbe × 2,5 (die Flammen-Wurzel 0,55/0,30/0,08 leuchtet
-    // 1,4/0,75/0,2, die Glut-Mitte 0,75/0,25/0,08, ihr Rand 0,15/0,10/0,08). Bis 05.10. leuchtete jede Glut-Fläche gleich
-    // (0xff5212 × 1,5) — das Bett las sich als cremige Scheibe, die Flamme als gelber Kegel.
+    // Die Stärke des Leuchtens: Leuchtdichte = lineare Vertex-Farbe × `FEUER_LEUCHT_JE_LUMA` — die Wurzel der Flamme (FLAMME.ton,
+    // 0,55/0,30/0,08, Luma 0,337) steht bei `FEUER_LEUCHTDICHTE` 15 000 cd/m², die Glut-Mitte 0,75/0,25/0,08 (Luma 0,344) bei 15 300, ihr Rand
+    // 0,15/0,10/0,08 bei 4 900. Bis nacht-lichter stand daneben die Zahl des Labors `LEUCHT_FEUER` 2,5 (Welt-Einheiten je Farbe: die Wurzel 13 560 cd/m²
+    // — eine zweite Leuchtdichte der Flamme neben dem Gesetz). Bis 05.10. leuchtete jede Glut-Fläche gleich (0xff5212 × 1,5).
+    // Das Labor (r128, Legacy-Licht ohne Skala) zeichnet die Wurzel der Flamme bei `LABOR_FLAMME` im Bild — seine Eichung (wie die
+    // Stärken seiner Sonne), keine zweite Physik: dieselbe Vertex-Farbe, dasselbe Verhältnis je Ecke (Lab = Welt).
     // prettier-ignore
-    const LEUCHT_FEUER=2.5;
-    // Das Labor (r128) liest dasselbe Gesetz: sein Standard-Shader nimmt die Vertex-Farbe als Leuchten (Lab = Welt).
+    const LABOR_FLAMME=0.84;
     // prettier-ignore
-    function _leuchtLab(m){ const k=m.userData.__leucht; m.onBeforeCompile=function(s){ s.fragmentShader=s.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive;\n#ifdef USE_COLOR\n\ttotalEmissiveRadiance = vColor * '+k.toFixed(3)+';\n#endif'); }; }
+    function _leuchtLab(m){ const k=(m.userData.__leucht/FEUER_LEUCHT_JE_LUMA)*LABOR_FLAMME/FEUER_WURZEL_LUMA; m.onBeforeCompile=function(s){ s.fragmentShader=s.fragmentShader.replace('vec3 totalEmissiveRadiance = emissive;','vec3 totalEmissiveRadiance = emissive;\n#ifdef USE_COLOR\n\ttotalEmissiveRadiance = vColor * '+k.toFixed(3)+';\n#endif'); }; }
     // mat — die Rollen-Auflösung (byte-treu Lab Z.2996 `const mat=r=>M[r]||M.holz;` + Lazy-Guard).
     // prettier-ignore
     function mat(r){ const MM=materials(); return MM[r]||MM.holz; }
@@ -2242,24 +2291,60 @@
     // prettier-ignore
     const BAU_NUTZUNG={
       wohnhaus:{ zeile:'beweis:wohnhaus', geschosse:[1,4], grundriss:['I','L'], raeume:[['wohnen','p',20,20,'alle','kern']] },
-      gasthaus:{ mass:[['W','plus',2.5],['W','hoechstens',15],['D','plus',1],['D','hoechstens',11],['storeys','mindestens',2],['arkade','setze',1,{aus:'region',in:['mitteleuropa','mediterran']}]] },
-      schmiede:{ mass:[['W','setze',5.5],['D','setze',5],['storeys','setze',1],['balcony','setze',0],['annexN','setze',0],['grundriss','setze','I'],['turm','setze',0],['kuppel','setze',0]] },
-      rathaus:{ mass:[['W','mindestens',13],['D','mindestens',10],['storeys','setze',3],['turm','setze',1],['grundriss','setze','I'],['annexN','setze',0],['arm','setze',0],['keller','setze',1],['balcony','setze',0],['zinnen','setze',1,{aus:'band',ist:'mittelalter'}],['arkade','setze',1,{aus:'band',nicht:'mittelalter'}]] },   // der wehrhafte Rat des Mittelalters, die Laube der Neuzeit
-      kaufhaus:{ mass:[['W','hoechstens',8.5],['D','mindestens',10],['storeys','mindestens',3],['grundriss','setze','I'],['annexN','setze',0],['arm','setze',0],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },   // schmal und tief am Platz, der Laden unten
-      kontor:{ mass:[['W','mindestens',10],['D','mindestens',10],['storeys','setze',3],['arkade','setze',1],['arm','setze',0],['annexN','setze',0],['balcony','setze',0]] },   // der Hof der fremden Kaufleute (Fondaco): Bogengang, drei Geschosse
-      zunfthaus:{ mass:[['W','mindestens',11],['D','mindestens',9],['storeys','setze',3],['portikus','setze',1],['grundriss','setze','I'],['arm','setze',0],['annexN','setze',0]] },
-      pfarrhaus:{ mass:[['W','hoechstens',10],['W','mindestens',8],['storeys','setze',2],['grundriss','setze','I'],['arm','setze',0],['balcony','setze',0]] },
-      kapelle:{ mass:[['W','setze',7],['D','setze',8],['storeys','setze',1],['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I'],['arm','setze',0],['turm','setze',0]] },
-      bergfried:{ mass:[['W','setze',8],['D','setze',8],['storeys','setze',5],['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },   // der Turm des Herrn: fünf Geschosse unter dem Zinnenkranz
-      torhaus:{ mass:[['W','setze',7.5],['D','setze',6.5],['storeys','setze',2],['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },
-      zeughaus:{ mass:[['W','setze',12],['D','setze',8],['storeys','setze',2],['turm','setze',0],['kuppel','setze',0]] },
-      werkstatt:{ mass:[['W','hoechstens',8],['storeys','hoechstens',2],['annexN','setze',1],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },
-      backhaus:{ mass:[['W','setze',6],['D','setze',6],['storeys','setze',1],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0]] },
-      speicher:{ mass:[['W','mindestens',9],['D','setze',11],['storeys','setze',4],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0],['arm','setze',0]] },
-      gerberei:{ mass:[['W','mindestens',9],['storeys','setze',2],['veranda','setze',1],['grundriss','setze','I'],['balcony','setze',0]] },   // der Trockenboden vor der Wand
-      wohnturm:{ mass:[['W','setze',6],['D','setze',6],['storeys','setze',6],['zinnen','setze',1],['grundriss','setze','I'],['annexN','setze',0],['balcony','setze',0],['keller','setze',0],['arm','setze',0],['turm','setze',0],['kuppel','setze',0]] },   // der Geschlechterturm: sechs Geschosse über sechs Metern im Geviert
-      patrizierhaus:{ mass:[['W','mindestens',10],['storeys','mindestens',3],['balcony','setze',1],['arm','setze',0]] },
+      reihenhaus:{ zeile:'stein:reihenhaus', geschosse:[2,5], grundriss:['I','L'], raeume:[['wohnen','p',20,20,'alle','kern'],['salon','b',30,0,'og','strasse'],['kueche','b',16,0,'keller','keller'],['kohlenkeller','b',6,0,'keller','strasse'],['dienstbotenkammer','s',8,0,'dach','dach',2],['abort','b',3,0,'eg','getrennt']] },
+      hofhaus:{ zeile:'mittelmeer:hofhaus', geschosse:[1,3], grundriss:['hof','U','L','I'], raeume:[['wohnen','p',20,20,'alle','hof_umlauf'],['kueche','b',10,0,'eg','hof_umlauf'],['vorrat','p',3,0,'keller','keller'],['hof','b',30,0,'eg','offen'],['zisterne','b',9,0,'keller','keller'],['loggia','s',12,0,'og','laube']] },
+      hofhaus_pastas:{ zeile:'antike:hofhaus_pastas', geschosse:[1,2], grundriss:['hof','U','L'], raeume:[['hof','b',59,0,'eg','offen'],['pastas','b',52.5,0,'eg','laube'],['andron','b',18.4,0,'eg','strasse'],['oikos','b',24,0,'eg','kern'],['bad','b',4,0,'eg','kern'],['vorrat','p',3,0,'eg','hinten'],['wohnen_og','p',8,6,'og','oben']] },
+      mietshaus:{ zeile:'moderne:mietshaus', geschosse:[4,5], grundriss:['hof','U','L','I'], raeume:[['wohnung','p',8,14,'og','kern'],['laden','b',40,0,'eg','strasse'],['treppenhaus','s',14,0,'alle','kern'],['hof','b',28.5,0,'eg','offen'],['werkstatt_hof','b',60,0,'eg','fluegel'],['kohlenkeller','p',1.5,0,'keller','keller'],['trockenboden','b',60,0,'dach','dach']] },
+      gasthaus:{ zeile:'werk:gasthaus', geschosse:[2,3], grundriss:['L','U','hof','I'], raeume:[['gaststube','s',1.3,0,'eg','strasse',32],['kueche','b',15,0,'eg','hinten'],['keller','b',20,0,'keller','keller'],['kammer_gast','s',9,0,'og','oben',4],['wohnen_wirt','p',20,20,'og','oben'],['stall_remise','s',8,0,'eg','hof_umlauf',4]], mass:[['arkade','setze',1,{aus:'region',in:['mitteleuropa','mediterran']}]] },
+      schmiede:{ zeile:'werk:schmiede', geschosse:[1,1], grundriss:['I'], personen:2, raeume:[['esse_werkraum','b',27,0,'eg','kern'],['beschlagstand','b',9,0,'eg','strasse']], mass:[['balcony','setze',0],['annexN','setze',0],['turm','setze',0],['kuppel','setze',0]] },
+      rathaus:{ zeile:'stein:rathaus', geschosse:[2,4], grundriss:['I','L'], personen:24, raeume:[['halle','b',150,0,'eg','strasse'],['ratssaal','p',2.5,0,'og','strasse'],['archiv','b',30,0,'eg','kern'],['ratskeller','b',120,0,'keller','keller'],['uhrturm','b',25,0,'alle','turm']], mass:[['annexN','setze',0],['arm','setze',0],['balcony','setze',0],['zinnen','setze',1,{aus:'band',ist:'mittelalter'}],['arkade','setze',1,{aus:'band',nicht:'mittelalter'}]] },   // der wehrhafte Rat des Mittelalters, die Laube der Neuzeit
+      kaufhaus:{ zeile:'stein:kaufhaus', geschosse:[3,5], grundriss:['L','I'], raeume:[['laden','b',45,0,'eg','strasse'],['lager','b',20,0,'eg','fluegel'],['speicher','b',35,0,'og','kern'],['wohnen','p',20,20,'og','oben'],['keller','b',25,0,'keller','keller']], mass:[['annexN','setze',0],['arm','setze',0],['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },   // schmal und tief am Platz, der Laden unten
+      kontor:{ zeile:'mittelmeer:fondaco', geschosse:[2,3], grundriss:['hof','U'], raeume:[['magazin','p',15,0,'eg','hof_umlauf'],['kontor','b',20,0,'eg','strasse'],['kammer','p',12,0,'og','hof_umlauf'],['hof','b',80,0,'eg','offen']], mass:[['arkade','setze',1],['arm','setze',0],['annexN','setze',0],['balcony','setze',0]] },   // der Hof der fremden Kaufleute (Fondaco): Bogengang, drei Geschosse
+      zunfthaus:{ zeile:'fachwerk:zunfthaus', geschosse:[2,3], grundriss:['I','L'], raeume:[['wohnen','p',20,20,'eg','hinten'],['trinkstube','b',80,0,'og','strasse'],['kueche','b',20,0,'eg','hinten'],['keller','b',40,0,'keller','keller'],['herberge','s',4,0,'dach','dach',6]], mass:[['portikus','setze',1],['arm','setze',0],['annexN','setze',0]] },
+      pfarrhaus:{ zeile:'sakral:pfarrhaus', geschosse:[2,2], grundriss:['I','L'], raeume:[['wohnen','p',20,20,'alle','kern'],['amtsstube','b',20,0,'eg','strasse'],['kueche','b',15,0,'eg','hinten']], mass:[['arm','setze',0],['balcony','setze',0]] },
+      kapelle:{ zeile:'sakral:kapelle', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['schiff','b',45,0,'eg','kern'],['chor','b',10,0,'eg','kern']], mass:[['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['arm','setze',0],['turm','setze',0]] },
+      bergfried:{ zeile:'herrschaft:bergfried', geschosse:[6,9], grundriss:['I'], personen:2, raeume:[['verlies','b',25,0,'eg','turm'],['eingang','b',25,0,'og','turm'],['wachstube','b',25,0,'og','turm'],['wehrplatte','b',81,0,'dach','dach']], mass:[['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },   // der Turm des Herrn: fünf Geschosse unter dem Zinnenkranz
+      torhaus:{ zeile:'herrschaft:stadttor', geschosse:[2,5], grundriss:['I'], personen:4, raeume:[['durchfahrt','b',28,0,'eg','kern'],['wachstube','b',15,0,'eg','anbau'],['zollstube','b',10,0,'eg','anbau'],['torkammer','b',28,0,'og','kern'],['wehrplatte','b',60,0,'dach','dach']], mass:[['zinnen','setze',1],['turm','setze',0],['kuppel','setze',0]] },
+      zeughaus:{ zeile:'herrschaft:zeughaus', geschosse:[2,3], grundriss:['I','L'], personen:0, raeume:[['ruestkammer','b',80,0,'eg','kern'],['magazin','b',60,0,'og','kern'],['wache','b',15,0,'eg','strasse']], mass:[['turm','setze',0],['kuppel','setze',0]] },
+      werkstatt:{ zeile:'werk:werkstatt', geschosse:[1,3], grundriss:['hof','L','I'], raeume:[['werkraum','b',35,0,'eg','strasse'],['lager','b',12,0,'eg','fluegel'],['wohnen','p',20,20,'og','oben'],['schuppen','b',18,0,'eg','anbau'],['werkhof','b',24,0,'eg','offen']], mass:[['balcony','setze',0],['vorkragung','setze',1,{aus:'stil',ist:'alt'}]] },
+      backhaus:{ zeile:'werk:backhaus', geschosse:[1,1], grundriss:['I'], personen:2, raeume:[['ofen','b',10,0,'eg','anbau'],['vorraum','b',15,0,'eg','kern'],['teigraum','b',8,0,'eg','kern']], mass:[['annexN','setze',0],['balcony','setze',0]] },
+      speicher:{ zeile:'werk:speicher', geschosse:[3,6], grundriss:['I'], personen:0, raeume:[['schuettboden','b',95,0,'alle','kern']], mass:[['annexN','setze',0],['balcony','setze',0],['arm','setze',0]] },
+      gerberei:{ zeile:'werk:gerberei', geschosse:[2,4], grundriss:['I','L'], raeume:[['wasserwerkstatt','b',30,0,'eg','kern'],['lohgrube','s',4,0,'eg','hinten',8],['trockenboden','b',60,0,'dach','laube'],['wohnen','p',20,20,'og','oben']], mass:[['veranda','setze',1],['balcony','setze',0]] },   // der Trockenboden vor der Wand
+      wohnturm:{ zeile:'mittelmeer:turmhaus', geschosse:[3,6], grundriss:['I'], raeume:[['laden_lager','b',25,0,'eg','strasse'],['wohnen','p',20,20,'og','turm'],['kueche','b',12,0,'dach','oben']], mass:[['zinnen','setze',1],['annexN','setze',0],['balcony','setze',0],['keller','setze',0],['arm','setze',0],['turm','setze',0],['kuppel','setze',0]] },   // der Geschlechterturm: sechs Geschosse über sechs Metern im Geviert
+      patrizierhaus:{ zeile:'stein:stadtpalais', geschosse:[2,4], grundriss:['hof','U','L','I'], raeume:[['wohnen','p',20,20,'og','kern'],['sala','b',90,0,'og','strasse'],['kontor','b',80,0,'eg','strasse'],['hof','b',121,0,'eg','hof_umlauf'],['remise','s',5,0,'eg','fluegel',4],['kueche','b',35,0,'eg','fluegel'],['dienerkammer','s',8,0,'dach','dach',6],['treppe','b',40,0,'alle','kern']], mass:[['balcony','setze',1],['arm','setze',0]] },
+      // DIE BAUTEN VOR DER GRAMMATIK (w28-bau-rezept, das Schreiber-Ende): bis hier schrieb DORF sie als Literale nach dem Rezept —
+      // der Turm der Moderne (DOWNTOWN), die Halle des Gewerbes, die Kirche der Epoche, der Palas des Herrn, die Scheune des Hofs
+      turm:{ zeile:'moderne:buerohaus', geschosse:[8,23], grundriss:['I'], personen:60, raeume:[['buero','p',12,4,'og','kern'],['foyer','b',80,0,'eg','strasse'],['kern','s',30,0,'alle','kern']], mass:[['dachTyp','setze','flach'],['grundriss','setze','I'],['balcony','setze',0],['keller','setze',0],['annexN','setze',0],['arm','setze',0],['turmbau','setze',1]] },
+      halle:{ zeile:'werk:fabrikhalle', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['halle','b',110,0,'eg','kern'],['lager','b',30,0,'eg','kern'],['kontor','b',15,0,'eg','strasse']], mass:[['stil','setze','klinker'],['pitchDeg','setze',14],['grundriss','setze','I'],['balcony','setze',0],['annexN','setze',0],['arm','setze',1],['turmbau','setze',0]] },
+      kirche:{ zeile:'sakral:kirche', geschosse:[1,2], grundriss:['I'], personen:1, raeume:[['schiff','b',110,0,'eg','kern'],['chor','b',30,0,'eg','kern'],['sakristei','b',12,0,'eg','hinten']], mass:[['mark','setze',1],['keller','setze',0]] },   // der Turm der Kirche ist ihre Marke (markBei), kein Raum: ein Turm-Raum hebt ihn in die L2 als eigenen Draw
+      burg:{ zeile:'herrschaft:palas', geschosse:[3,3], grundriss:['I'], personen:12, raeume:[['saal','b',90,0,'og','kern'],['kammer','s',14,0,'og','kern',4],['kueche','b',30,0,'eg','hinten'],['wache','b',20,0,'eg','strasse']], mass:[['turm','setze',1],['zinnen','setze',1],['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I'],['arm','setze',0]] },
+      scheune:{ zeile:'hof:scheune', geschosse:[1,1], grundriss:['I'], personen:0, raeume:[['tenne','b',14,0,'eg','kern'],['stall','b',8,0,'eg','kern']], mass:[['keller','setze',0],['annexN','setze',0],['balcony','setze',0],['grundriss','setze','I']] },
     };
+    // DIE NUTZUNG DES WOHN-LOSES (rahmen): die erste Zeile, deren Bedingungen alle treffen — das Hofhaus der Antike und des Südens,
+    // wo der Haushalt es trägt (wohl ≥ 1), in der dichten Stadt das Reihenhaus, ab dem Baujahr 1850 das Mietshaus, sonst das Wohnhaus
+    // prettier-ignore
+    const BAU_WOHNEN=[
+      { nutzung:'hofhaus_pastas', wenn:[{aus:'region',ist:'antik'},{aus:'wohl',ab:1}] },
+      { nutzung:'hofhaus', wenn:[{aus:'region',ist:'mediterran'},{aus:'wohl',ab:1}] },
+      { nutzung:'mietshaus', wenn:[{aus:'dicht',ist:true},{aus:'baujahr',ab:1850}] },
+      { nutzung:'reihenhaus', wenn:[{aus:'dicht',ist:true}] },
+      { nutzung:'wohnhaus', wenn:[] },
+    ];
+    // prettier-ignore
+    function wohnNutzung(hp, rahmen){ for(const z of BAU_WOHNEN) if(z.wenn.every(w=>_bauWenn(w,hp,rahmen))) return z.nutzung; return 'wohnhaus'; }
+    // DER HAUSHALT DES LOSES (das Datum, das der Bau liest — nicht mehr aus seiner Fläche zurückgerechnet) aus dem Samen des Hauses
+    // (ein eigener Strom: der Würfel des Plans zieht, was er zog): 1 + k Personen, k Poisson-verteilt (bis 11, ohne Transzendente:
+    // die Gewichte λ^k/k! normiert) um das Mittel der gemessenen Haushalte vor der Industrie — Laslett (Household and Family in Past
+    // Time, 1972; 100 englische Gemeinden 1574–1821): im Mittel 4,75, bei den Armen um 4, bei Bauern und Gentry 5,9 bis 6,6 —
+    // HAUSHALT_MITTEL + HAUSHALT_JE_WOHL·(wohl − 1). Bis hier galt 1 bis 1 + 2,5·(1 + wohl) gleichverteilt (Mittel 3,0 bei wohl 1, jedes
+    // fünfte Haus ein Mensch): an der Stadt dorf 7 30 standen 45 Leute in 18 Wohnhäusern, die ersten zwei jedes Hauses tragen dort
+    // den Wagen — kein Fremder blieb fürs Werk am Rathaus (gate:kreatur-takt zielplan), das Start-Dorf fiel von 77 auf 64 Bewohner
+    const HAUSHALT_MITTEL=4.75, HAUSHALT_JE_WOHL=1.6;
+    // prettier-ignore
+    function haushaltVon(seed, wohl){ const u=((Math.imul((seed>>>0)^0x5bd1e995,0x9E3779B1)>>>0)%10007)/10007, w=isFinite(wohl)?Math.max(0,wohl):1;
+  const l=Math.max(0.2,HAUSHALT_MITTEL-1+HAUSHALT_JE_WOHL*(w-1)), q=[1]; for(let k=1;k<12;k++) q.push(q[k-1]*l/k); const S=q.reduce((a,b)=>a+b,0);
+  let k=0, c=q[0]/S; while(k<11&&u>=c){ k++; c+=q[k]/S; }
+  return { personen:Math.max(1,Math.min(12,1+k)), wohl:w }; }
     // der Würfel der bauweise (die Streu-Folge pitch → W → D → st, byte-treu dem früheren Kultur-Rezept)
     // prettier-ignore
     function _bauweiseWurf(k, seed){
@@ -2277,7 +2362,7 @@
 }
     // prettier-ignore
     function _bauWenn(w, hp, rahmen){ if(!w) return true; const v=(rahmen&&w.aus in rahmen)?rahmen[w.aus]:hp[w.aus];
-  return ('ist' in w)?v===w.ist : ('nicht' in w)?v!==w.nicht : ('in' in w)?w.in.indexOf(v)>=0 : true; }
+  return ('ist' in w)?v===w.ist : ('nicht' in w)?v!==w.nicht : ('in' in w)?w.in.indexOf(v)>=0 : ('ab' in w)?v>=w.ab : true; }
     // prettier-ignore
     function bauRezept(z, haushalt, seed){
   z=z||{}; const nz=z.nutzung||'wohnhaus', N=BAU_NUTZUNG[nz];
@@ -2287,7 +2372,10 @@
   if(!hp) return null;
   if(N.mass) for(const o of N.mass){ if(!_bauWenn(o[3],hp,z.rahmen)) continue; const f=o[0], v=o[2];
     hp[f]= o[1]==='setze'?v : o[1]==='plus'?hp[f]+v : o[1]==='mindestens'?Math.max(hp[f],v) : Math.min(hp[f],v); }
-  if(haushalt&&N.raeume) bauProgramm(N, hp, haushalt, z.rahmen||{});
+  if(haushalt&&N.raeume) bauProgramm(N, hp, haushalt, z.rahmen||{}); else if(hp.programm) hp.programm=null;   // eine Nutzung ohne Programm baut ihr Maß über dem Los, nicht das Programm des Wohn-Loses
+  // DER DECKEL DES LOSES (`z.deckel`, das Schreiber-Ende in DORF): ein früherer Bau steht im Los des jüngeren — seine Maße enden an dessen
+  // Breite und Tiefe, sein Hof (vor der Front, courtD = clamp(W, 5, 9) wie hof()) steht nur, wo die Tiefe des Loses ihn trägt oder das Los selbst ein Hof ist
+  const dk=z.deckel; if(dk){ hp.W=Math.min(hp.W,dk.W); hp.D=Math.min(hp.D,dk.D); if(hp.grundriss==='hof'&&dk.grundriss!=='hof'&&hp.D+Math.max(5,Math.min(9,hp.W))>dk.D) hp.grundriss='I'; }
   hp.pitchDeg=Math.max(hp.pitchDeg, grenzNeigung(hp));   // die gebaute Neigung steht im Rezept (STIL_GRENZNEIGUNG), keine tote Zahl
   return hp;
 }
@@ -2295,7 +2383,7 @@
     // auf den VORHANDENEN Teilen des Hauses (GRUND, die Flügel im 3,3-m-Modul, der Hof, die Anbau-Zellen) — keine neue Form.
     //   Fläche je Raum: je Person (personen × (m² + m²·wohl)), je Bau, je Stück (× zahl); netto ÷ LEUTE_GESETZ.nutz = brutto.
     //   Die Parzelle (`hp.parzelle`, sonst der Bau selbst) ist das Land: ihr Fuß × (dicht 1,3 · frei 1,6) trägt den Körper,
-    //   × (dicht 1,6 · frei 2,6) Körper samt Hof und Flügeln. Geschosse: das kleinste in [min, max] der Zeile (und nie unter dem,
+    //   × (dicht 1,6 · frei 4) Körper samt Hof (der offene Raum, wie er ist) und Flügeln. Geschosse: das kleinste in [min, max] der Zeile (und nie unter dem,
     //   was der Ort über die Kultur hob — dann auch über ihrem Maximum), dessen Körper die Parzelle trägt. Turm-Räume ≥ halber Körper: der Körper bleibt schlank
     //   (0,55 × Parzelle) und steigt. Grundriss: die erste Form der Rangfolge, die trägt — hof (ein offener Raum ≥ 20 m², Raum
     //   `hof`), U/T (Flügel ≥ 24 m²), kreuz (≥ 36), L (Flügel ≥ 8 oder Überlauf des Körpers ≥ 8), I (kein Flügel, kein Überlauf).
@@ -2314,12 +2402,12 @@
     if(lage==='turm') A.turm+=a;
     A[g==='og'?'og':g==='alle'?'alle':'eg']+=a; }
   const pz=hp.parzelle||hp, F0=Math.max(20,pz.W*pz.D), dicht=!!rahmen.dicht, kultSt=(KULTUR[hp.kultur]||{}).st||1;
-  const turmig=A.turm>0&&A.turm>=0.5*(A.eg+A.og+A.alle), capK=Math.min(165, F0*(turmig?0.55:dicht?1.3:1.6)), capL=F0*(dicht?1.6:2.6);
+  const turmig=A.turm>0&&A.turm>=0.5*(A.eg+A.og+A.alle), capK=Math.min(165, F0*(turmig?0.55:dicht?1.3:1.6)), capL=F0*(dicht?1.6:4);
   const gmin=N.geschosse[0], sOrt=(pz.storeys||1)>kultSt?pz.storeys:gmin, gmax=Math.max(N.geschosse[1],sOrt);   // was der Ort über die Kultur hob (Stadtkörper, Viertel), steht über dem Maximum der Zeile
   const fuss=(eg,s)=>(s>1?Math.max(eg+A.alle/s, A.og/(s-1)+A.alle/s):eg+A.og+A.alle)/nutz;
   let gr='I', armF=0;
   for(const g of N.grundriss){
-    if(g==='hof'&&A.offen>=20){ armF=Math.min(A.fluegel,42); if(fuss(A.eg+A.fluegel-armF,gmax)+A.offen/nutz<=capL){ gr='hof'; break; } armF=0; continue; }
+    if(g==='hof'&&A.offen>=20){ armF=Math.min(A.fluegel,42); if(fuss(A.eg+A.fluegel-armF,gmax)+A.offen<=capL){ gr='hof'; break; } armF=0; continue; }
     if((g==='U'||g==='T')&&A.fluegel>=24){ armF=Math.min(A.fluegel,30); if(fuss(A.eg+A.fluegel-armF,gmax)+armF/nutz<=capL){ gr=g; break; } armF=0; continue; }
     if(g==='kreuz'&&A.fluegel>=36){ armF=Math.min(A.fluegel,45); if(fuss(A.eg+A.fluegel-armF,gmax)+armF/nutz<=capL){ gr=g; break; } armF=0; continue; }
     if(g==='L'){ armF=Math.min(A.fluegel,15); const ueber=fuss(A.eg+A.fluegel-armF,gmax)-capK; if((A.fluegel>=8||ueber*nutz>=8)&&fuss(A.eg+A.fluegel-armF,gmax)+15/nutz<=capL){ gr='L'; if(!armF) armF=Math.min(15,ueber*nutz); break; } armF=0; continue; }
@@ -4456,7 +4544,7 @@
       const kulturVon=(regel,p)=> regel==='herr'?herrK : regel==='sakral'?sakral : (regel==='fern'&&fern.length)?fern[p.seed%fern.length] : null;
       const setze=(p,z,band,name)=>{ const k=z.kultur?kulturVon(z.kultur,p):null;
         if(k&&k!==p.kultur) Object.assign(p,bauRezept({bauweise:k},null,p.seed),{kultur:k});                // das Haus der Kultur der Zeile über demselben Samen
-        p.rolle=z.typ; p.viertel=name; bauRezept({nutzung:z.typ,rahmen:{region:o.region,band},los:p},null,p.seed); };
+        p.rolle=z.typ; p.viertel=name; };   // die Zeile der Nutzung schreibt das Schreiber-Ende in DORF (`bauRezept` zuletzt, auf dem endgültigen Los)
       const vonLos=new Array(n).fill('wohnen');
       for(const name of ['kirchhof','markt','handwerk']){ const [a,b]=V[name].lose(n); for(let i=a;i<Math.min(b,n);i++) vonLos[i]=name; }
       vonLos[0]='kirchhof';
@@ -4468,8 +4556,7 @@
             const key=name+band+zi, k=(zahl[key]=(zahl[key]||0)+1);
             if(z.n?k<=z.n:z.je?k%z.je===0:true){ zeile=z; break; } }
           for(const p of [p0].concat(fr[i].map(q=>q.v))){ if(bandVon(p.baujahr)!==band) continue;
-            if(zeile&&p.rolle==='wohnhaus') setze(p,zeile,band,name); else p.viertel=name; } }
-        for(const q of fr[i]){ q.v.W=Math.min(q.v.W,p0.W); q.v.D=Math.min(q.v.D,p0.D); } }       // der frühere Bau steht im Los des jüngeren
+            if(zeile&&p.rolle==='wohnhaus') setze(p,zeile,band,name); else p.viertel=name; } } }
       const neu=[], palas=o.burg>=0?geb[o.burg]:null, band=palas?bandVon(palas.baujahr):null;
       if(band){ palas.viertel='burg';
         for(const z of V.burg.bauten[band]){ const bs=1+((o.rv()*1e6)|0), bp=bauRezept({bauweise:herrK},null,bs);
@@ -4530,39 +4617,46 @@
   if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel — als NEUBAU des alten Loses im Jahrhundert der Moderne (der alte Bau bleibt in fr)
     const ty=Math.min(jahr+spanne, Math.max(1905+p.seed%Math.max(1,jahr+spanne-1904), p.baujahr+1)), PT=poolAt(ty, ringe);
     fr[i].push({ab:p.baujahr, v:Object.assign({}, p)}); p.baujahr=ty; p.kultur=PT[p.seed%PT.length];
-    p.stil=(rnd()<0.62)?'glas':'klinker'; p.storeys=8+((rnd()*16)|0); p.W=12+((rnd()*6)|0); p.D=10+((rnd()*5)|0);
-    p.dachTyp='flach'; p.grundriss='I'; p.balcony=0; p.keller=0; p.annexN=0; p.arm=0; p.turmbau=1; p.rolle='turm'; } } }
+    p.stil=(rnd()<0.62)?'glas':'klinker'; p.storeys=8+((rnd()*16)|0); p.W=12+((rnd()*6)|0); p.D=10+((rnd()*5)|0); p.rolle='turm'; } } }   // das Los des Turms; seine Form ist die Zeile `turm` am Schreiber-Ende
   if(gewerbe){ for(let i=(n*0.78)|0;i<n;i++){ if(rnd()<0.6&&gr[i]>=1850){ const p=geb[i];   // GEWERBE-GESETZ: Hallen-Viertel am Rand (ein Los, das vor 1850 gegruendet ist, traegt keine Halle)
-    p.rolle='halle'; p.stil='klinker'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1;
-    p.pitchDeg=14; p.grundriss='I'; p.balcony=0; p.annexN=0; p.arm=1; p.sektor=gwA; p.turmbau=0; } } }
+    p.rolle='halle'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1; p.sektor=gwA; } } }   // das Los der Halle; ihre Form ist die Zeile `halle` am Schreiber-Ende
   const markBei=(L,y)=>(L&&L.mark)?L.mark:(region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(y>1880?{k:'hochhaus',set:{}}:y>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
-  const kirche=(p,mk,ab)=>Object.assign(p,bauRezept({bauweise:mk.k},null,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',mark:1,keller:0,baujahr:ab});
+  const kirche=(p,mk,ab)=>Object.assign(p,bauRezept({bauweise:mk.k},null,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',baujahr:ab});   // das Los der Kirche (die Marke ihrer Epoche); ihre Form ist die Zeile `kirche` am Schreiber-Ende
   if(n>=8){ const p=geb[0];                                                                   /*DIE KIRCHE DER EPOCHE: je Epoche der Achse vor der Gegenwart ein Bau ihrer Marke (ab der Mitte ihrer Spanne, die erste ab der Gruendung)*/
     if(ringe) fr[0]=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr).map((k,j)=>{ const E=EPOCHEN[k], ab=j?E.jahr+d+((E.spanne/2)|0):gr[0]; return {ab, v:kirche(Object.assign({},p),markBei(E,E.jahr+d),ab)}; }).filter(f=>f.ab<jahr);
     kirche(p,markBei(leg,jahr),jahr); }
   const losBauten=i=>[geb[i]].concat(fr[i].map(f=>f.v));                                      /*der Bau-Typ ist die Rolle des LOSES: jeder seiner Bauten traegt sie*/
-  const SG=STADT_GRAMMATIK, GO={region, jahr};
-  for(const z of SG.grund) if(n>=z.ab) for(const p of losBauten(z.los(n))){ p.rolle=z.typ; bauRezept({nutzung:z.typ,rahmen:GO,los:p},null,p.seed); }   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus und Schmiede jedes Orts*/
+  const SG=STADT_GRAMMATIK;
+  for(const z of SG.grund) if(n>=z.ab) for(const p of losBauten(z.los(n))) p.rolle=z.typ;   /*DER GRUND-SATZ (das SONDERBAU-GESETZ als Zeilen der Tafel): Gasthaus und Schmiede jedes Orts*/
   const grammatik=staedtisch&&SG.zeit.some(z=>jahr>=z[1]&&jahr<z[2]);                        /*DIE STADT DER GRAMMATIK: staedtisch, ihre Gestalt in einem Band der Tafel (`zeit`) — die Chronik-Stadt steht in der Gegenwart, Antike und Moderne tragen keine Zeile: sie bleiben, was sie waren*/
   const herrBar=staedtisch&&jahr<1700&&n>=16, muenze=herrBar&&rnd()<0.5, herr=muenze||(herrBar&&grammatik&&n>=SG.herrAb), burgAb=geb.length;   /*BURG-GESETZ: die Stadt hat einen Herrn — in der Grammatik ab `herrAb` Losen jede (die Muenze faellt wie bisher; ein Herr ohne Muenze zaehlt nicht in das Mass der Gestalt, `nGestalt`)*/
   if(herr){
     const bk=(region==='nordisch')?'norwegisch':'gotisch', bs=1+((rnd()*1e6)|0);
     const bp=bauRezept({bauweise:bk},null,bs); Object.assign(bp,{seed:bs,kultur:bk,terrain:0,baujahr:jahr-((rnd()*80)|0),rolle:'burg',wohl:1.2,
-      W:13+((rnd()*2)|0), D:11, storeys:3, turm:1, zinnen:1, keller:0, annexN:0, balcony:0, grundriss:'I', arm:0});
+      W:13+((rnd()*2)|0), D:11, storeys:3});   // das Los des Palas; seine Form ist die Zeile `burg` am Schreiber-Ende
     geb.push(bp); }
   const alle=[], za=[], schQ={weiler:.75,dorf:.55,markt:.28,stadt:.06,grossstadt:.04,metropole:.03}[groesse];
-  geb.forEach((p,gi)=>{ const pi=alle.length; alle.push(p); za.push({gr:gi<n?gr[gi]:p.baujahr, fr:(fr[gi]||[]).map(f=>(f.v.W=Math.min(f.v.W,p.W), f.v.D=Math.min(f.v.D,p.D), f))});   /*der fruehere Bau steht im Los des juengeren*/
+  geb.forEach((p,gi)=>{ const pi=alle.length; alle.push(p); za.push({gr:gi<n?gr[gi]:p.baujahr, fr:fr[gi]||[]});   /*der fruehere Bau steht im Los des juengeren: sein Deckel ist das Los am Schreiber-Ende*/
     if(p.rolle==='wohnhaus'&&Math.min(p.W,p.D)>=6.5&&rnd()<schQ){
       const cap2=Math.min(7,Math.min(p.W,p.D)-2), sn=1+((rnd()*1e6)|0);
       alle.push({W:Math.max(4,Math.round((cap2-rnd()*1.5)*2)/2), D:Math.max(4,Math.round((cap2-0.5-rnd()*1.5)*2)/2), storeys:1,
         pitchDeg:Math.max(28,p.pitchDeg-6), brace:'k', stil:(region==='mediterran'||region==='antik')?'stein':'huette',
-        hip:0, roofCurve:0, grundriss:'I', dachTyp:'sattel', bogenTyp:'none', seed:sn, kultur:p.kultur, col:p.col,
-        keller:0, terrain:0, annexN:0, balcony:0, rolle:'scheune', parent:pi, baujahr:za[pi].gr, wohl:p.wohl,
+        hip:0, roofCurve:0, dachTyp:'sattel', bogenTyp:'none', seed:sn, kultur:p.kultur, col:p.col,
+        terrain:0, rolle:'scheune', parent:pi, baujahr:za[pi].gr, wohl:p.wohl,   // das Los der Scheune; ihre Form ist die Zeile `scheune` am Schreiber-Ende
         treppgiebel:0,kuppel:0,portikus:0,arkade:0,turm:0,zinnen:0,veranda:0,vorkragung:0,pilotis:0,terrasse:0}); za.push({gr:za[pi].gr, fr:[]}); } });
   /*DIE VIERTEL DER STADT (STADT_GRAMMATIK, nach den Scheunen: der Strom des Plans `rnd` zieht, was er vor der Grammatik zog — sie wuerfelt aus eigener Saat): je Los sein Viertel, je Bau des Loses der Bau-Typ seiner Epoche; das Burg-Viertel stellt seine Lose hinter den Palas. `nBurg` Lose mehr als das alte Mass: Mauer und Netz wachsen mit den Haeusern (`nGestalt`), nicht mit den Tuermen des Herrn*/
   let sv=((Math.round((DP.seed||1)*827+53)*2654435761)>>>0); const rv=()=>{ sv=(sv*1664525+1013904223)>>>0; return sv/4294967296; };
   const nBurg=grammatik?stadtViertel(geb, fr, n, {region, jahr, burg:herr?burgAb:-1, poolAt:y=>poolAt(y, ringe), rv}).map(p=>{ alle.push(p); za.push({gr:p.baujahr, fr:[]}); }).length:0;
   for(const a of alle) if(a.rolle==='scheune'&&alle[a.parent].viertel) a.viertel=alle[a.parent].viertel;   /*die Scheune steht im Viertel ihres Hofs*/
+  /*DAS SCHREIBER-ENDE (w28-bau-rezept): jeder Schreiber oben setzt nur das Los (Mass, Kultur, Jahr, Rolle) — hier schreibt das Bau-Gesetz
+    jeden Bau EINMAL, zuletzt, auf seinem endgueltigen Los: die Zeile seiner Rolle (das Wohn-Los die Zeile seines Rahmens, BAU_WOHNEN), ihr
+    Raumprogramm fuer den Haushalt des Loses (`haushaltVon`); ein frueherer Bau unter dem Deckel des Loses, das ihn ersetzt, die Scheune unter
+    ihrem eigenen. Eine Rolle ohne Zeile wirft beim Namen (`bauRezept`)*/
+  const bandVon=y=>{ for(const z of SG.zeit) if(y>=z[1]&&y<z[2]) return z[0]; return null; };
+  const schreibe=(b,deckel)=>{ const rr={region, jahr, band:bandVon(b.baujahr), dicht:staedtisch};
+    b.parzelle={W:b.W, D:b.D, storeys:b.storeys};
+    bauRezept({nutzung:b.rolle==='wohnhaus'?wohnNutzung(b,rr):b.rolle, rahmen:rr, los:b, deckel:deckel||(b.rolle==='scheune'?b.parzelle:null)}, haushaltVon(b.seed,b.wohl), b.seed); };
+  alle.forEach((b,ai)=>{ schreibe(b,null); for(const f of za[ai].fr) schreibe(f.v,b); });
   const zugHandwerk=rv()*Math.PI*2;                                                         /*die Seite der Stadt, an der ihr Handwerk liegt (dorfLayout `zug`)*/
   /*DER GRUNDRISS WAECHST MIT DEN GESCHOSSEN (STADT_FORM, nach allen Rollen: Kirche, Burg und die Bau-Typen der Viertel setzen ihre Masse selbst — ihr Fuss folgt ihrer Hoehe wie der jedes Hauses): Breite und Tiefe tragen die Traufe / `schlank`, die Breite bis `breitMax` (das Raster der Plaetze), die Tiefe bis `tiefMax` (der Block hinter der Strasse); der Turm der Moderne bleibt ein Turm. Bis hier wuchs im Viertel nur die Hoehe: der Kern stand als Staebe (Traufe / Tiefe 2,6 im Median, 156 von 205 Haeusern ueber 2)*/
   if(DP.erbe&&DP.erbe.hoch>0) for(const v of alle){ if(v.turmbau||!(v.W>0)||!(v.D>0)) continue;
@@ -5645,7 +5739,7 @@
       for(const sg of [1,-1]) for(let u=ab+(sg<0?SD.gasseTeilung/2:0); u<L-ab/2; u+=SD.gasseTeilung){ const P=at(rd,u);
         if(Math.hypot(P.x,P.z)<=Rw-SD.mauerM&&distPunktOBB(P.x,P.z,platzObb)>=SD.gasseAb&&!imTor(P.x,P.z,SD.gasseM)) gasse(i,P,P.th+sg*Math.PI/2); } } };
     zweige(0,nR,SD.gasseAb); const n1=roads.length; zweige(nR,n1,SD.gasseHinterM); }             /*die Gasse von der Strasse, dann die Hintergasse von der Gasse (sie traegt die Reihe im Blockinnern)*/
-  const curs=[];
+  const curs=[], ENG_FUGE=0.25;   /*ein Viertelmeter: das halbe Raster der Breiten, das Fuenffache der Front, um die die Linse ein Los wackelt (5 cm)*/
   const ordn=[...roads.keys()].sort((a,b)=>{ const qa=(roads[a].gen===2&&(roads[a].len||99)<=44)?0:1, qb=(roads[b].gen===2&&(roads[b].len||99)<=44)?0:1; return qa-qb; });   /*QUERGASSEN-VORRANG (#1): Kurzgassen setzen ZUERST — sonst frisst das Hauptstrassen-Hinterland ihr Bauland (GEMESSEN 0 Saeumer trotz len)*/
   for(const r of ordn){ const st0= (edepth[r]===0&&platz)? platz.ex*0.7 : (roads[r].gen===2&&(roads[r].len||99)<=44? 1.6 : 2.5);
     curs.push({rd:r, side: 1, cur:st0}); curs.push({rd:r, side:-1, cur:st0}); }
@@ -5655,7 +5749,7 @@
     const rd=roads[cu.rd], gw=gehwegVon(plan,rd), e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
     const QD=(globalThis.__qd=globalThis.__qd||{t:0,mauer:0,obb:0,laen:0,ok:0}); if(rd.quer)QD.t++;
     /*DIE FRONT DER STADT BLEIBT (STADT_DICHTE): der Zeiger sucht bis ans Ende seines Wegs und steht, wo er stand, wenn das Los nicht passt — `eng` merkt die schmalste Breite, die scheiterte (was davor steht, wird nie weniger: so breit passt hier nichts mehr). Ausser der Stadt 26 Versuche zu 1,1 m, und jeder gescheiterte verbrauchte sie: an stadt-voll trug eine Strasse im Ring ein Haus je 46 m Front (die Vorstadt eines je 20 m)*/
-    const cur0=cu.cur; if(stadt&&cu.eng<=2*exH) return null;
+    const cur0=cu.cur; if(stadt&&cu.eng+ENG_FUGE<=2*exH) return null;   /*DIE BREITE EINES ANDEREN LOSES URTEILT ERST UEBER DER FUGE (w28-bau-rezept-tuer, Welle SAMEN): `eng` ist die Breite eines anderen Loses, das hier scheiterte — mit seinem eigenen Wurf (Versatz je Versuch) und seiner Tiefe; bei GLEICHER Breite (die Lose wuerfeln auf das halbe Meter) hing das Ja an seinem Zentimeter: an dorf 7/30 machte Los 17 um 1 cm breiter sechs Haeuser neu (Wuerfel je Los 19 Verletzungen, im Plan 17). Mit der Fuge urteilt die Breite nur ueber ein Los, das um ENG_FUGE breiter ist*/
     for(let tr=0;tr<(stadt?1e4:26);tr++){
       const sc=cu.cur+exH; if(sc>rd.pts.length*DS-(rd.quer?2.8:6)){ if(rd.quer)QD.laen++; if(stadt){ cu.cur=cur0; cu.eng=2*exH; } return null; }   /*quer nutzt die volle Laenge*/
       const q=at(rd,sc), jit=(wurf()-0.5)*2*jitAmp;
@@ -5730,8 +5824,8 @@
     const g=plan.houses[i], wurf=losWurf(i);                                                 /*der Wuerfel des Loses (Scheunen-Stand, Zeiger-Wahl)*/
     if(g.rolle==='scheune'){
       const j=g.parent, P0=pl[j]; if(!P0||Math.abs(P0.obb.cz)>5000){ pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}}; continue; }
-      const e=ext[i]; let exS=(e.x1-e.x0)/2, ezS=(e.z1-e.z0)/2, phi=P0.phi;
-      if(wurf()<0.55&&exS<=P0.obb.ez-0.05&&ezS<=P0.obb.ex+3){ phi=P0.phi+Math.PI/2; const t2=exS; exS=ezS; ezS=t2; }
+      const e=ext[i], exS=(e.x1-e.x0)/2, ezS=(e.z1-e.z0)/2, phi=P0.phi;
+      wurf();   /*DIE SCHEUNE ÖFFNET ZUM HOF (w28-bau-rezept): ihr Tor schaut auf die Rückseite ihres Hauses, der Gang läuft über den Hof. Quer gestellt (der Wurf hier, 55 %) schaute es ins Gelände ohne Gasse — am Hang vor eine Terrassen-Wand (Akt 7/18: 10,5 m bei 1,8 m vor dem Tor, Auto-Dorf: 3,4 m tiefer); der Wurf bleibt im Strom, die Lose danach stehen, wo sie standen*/
       const c=Math.cos(P0.phi), s2=Math.sin(P0.phi), ox=s2, oz=c;
       let done=false;
       for(let k2=0;k2<5&&!done;k2++){
@@ -5779,10 +5873,11 @@
       if(!imTor(bx,bz,VERKEHR_GESETZ.abzweigZulaufM)) brunnen.push({x:bx, z:bz}); }   /*DER ZULAUF DER WENDE TRAEGT KEINEN BRUNNEN (Welle SAMEN, los-wurf): Los, Gasse und Laterne hielten das Geviert des Torplatzes frei, der Brunnen nicht — an 11/200 stand er nach dem Wurf je Los 2,7 m vor dem Geviert im Zulauf der Wende, mit dem Haus daneben trug sie eine Enge (an main hielt es der Zufall des EINEN Stroms); der Zulauf ist VERKEHR_GESETZ.abzweigZulaufM lang*/
   }
   const gradK=new Array(G.nodes.length).fill(0); if(stadt) for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradK[rd.a]++; gradK[rd.b]++; }
+  roads.forEach((rd,r)=>{ rd.leer=!!rd.gasse&&!rd.durch&&!curs.some(cu=>cu.rd===r&&cu.lastEnd!=null); });   /*die Sackgasse der Dichte ohne ein Haus ist kein Weg*/
+  const amK=new Array(G.nodes.length).fill(0); for(const rd of roads) if(!rd.leer){ if(rd.a>=0) amK[rd.a]++; if(rd.b>=0) amK[rd.b]++; }   /*DIE STRASSE REICHT BIS ZU IHREM ABZWEIG: je Knoten die Wege, die an ihm beginnen oder enden — der Export kuerzte die Strasse auf ihre Haeuser, und die Gasse, die an ihrem Ende-Knoten abzweigt, hing 7 m frei daneben (Stadt dorf 7 30: das Patrizierhaus #22772 an einem Netz-Teil von 21 Knoten, die Naht von einem Brunnen gesperrt, sein Bewohner ohne Besuch)*/
   for(let r=0;r<roads.length;r++){ let mx=8; const rd=roads[r];
     for(const cu of curs) if(cu.rd===r) mx=Math.max(mx,cu.cur+4);
-    rd.leer=!!rd.gasse&&!rd.durch&&!curs.some(cu=>cu.rd===r&&cu.lastEnd!=null);   /*die Sackgasse der Dichte ohne ein Haus ist kein Weg*/
-    const ganz=rd.durch||(stadt&&rd.a>=0&&rd.b>=0&&((gradK[rd.a]>=2&&gradK[rd.b]>=2)||(rd.w||0)>=VERKEHR_GESETZ.breiteM));   /*DIE STRASSE ZWISCHEN ZWEI KNOTEN TRAEGT IHRE GANZE LAENGE (die Stadt der Grammatik), die Trasse der Wagen bis an ihr Ende (dort liegt ihr Torplatz): bis hier reichte jede Strasse so weit wie ihr Zeiger — im Dorf laeuft er mit jedem Versuch, in der Stadt nur mit einem Haus (der Lauf ohne Brand); an stadt-voll endeten drei Arme der Hauptstrasse 12–15 m vor ihrem Knoten, das Netz der Wagen zerfiel (672 → 255 m, 13 → 5 Plaetze an den Wenden, kein Wagen fuhr)*/
+    const ganz=rd.durch||(rd.b>=0&&!rd.leer&&amK[rd.b]>=2)||(stadt&&rd.a>=0&&rd.b>=0&&((gradK[rd.a]>=2&&gradK[rd.b]>=2)||(rd.w||0)>=VERKEHR_GESETZ.breiteM));   /*DIE STRASSE ZWISCHEN ZWEI KNOTEN TRAEGT IHRE GANZE LAENGE (die Stadt der Grammatik), die Trasse der Wagen bis an ihr Ende (dort liegt ihr Torplatz): bis hier reichte jede Strasse so weit wie ihr Zeiger — im Dorf laeuft er mit jedem Versuch, in der Stadt nur mit einem Haus (der Lauf ohne Brand); an stadt-voll endeten drei Arme der Hauptstrasse 12–15 m vor ihrem Knoten, das Netz der Wagen zerfiel (672 → 255 m, 13 → 5 Plaetze an den Wenden, kein Wagen fuhr)*/
     rd.len=ganz?(rd.pts.length-1)*DS:Math.min(mx, rd.pts.length*DS-3); }   /*der Anschluss (`durch`) traegt seine ganze Laenge: er verbindet zwei Strassen*/
   for(let r=roads.length-1;r>=0;r--) if(roads[r].leer) roads.splice(r,1);
   if(stadt){ const need=new Array(roads.length).fill(0);                                       /*DER ABZWEIG HAELT SEINEN STAMM (die Stadt der Grammatik): jeder Weg reicht mindestens bis zum Anfang jedes Wegs, der an ihm beginnt (ein Anschluss `durch` auch an seinem Ende) — sein Zeiger steht am letzten Haus der EIGENEN Front. An stadt-voll endete die Ausfallstrasse im Westen nach 143 von 228 m, ihre Abzweige bei 174 und 224 m hingen frei: der Fahrer des Hauses dort fand keinen Weg zu seinem Wagen (gate:fahr-leben VK „DER BAU STEHT NICHT“)*/
@@ -6631,50 +6726,63 @@
     // Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit Datum — die Laternen eines Plans, K10; `_leuchtStoff`:
     // Fenster). Das Labor (r128, Legacy-Licht) zeichnet den Abfall als (1 − d/R)^abfall — r128 kennt 1/d² nur für die ganze
     // Szene (physicallyCorrectLights).
-    // DIE EINE SKALA (licht-eine-skala, rein additiv): jede Zeile trägt neben der Zahl des Labors ihr Licht in SI — `cd` die
-    // Lichtstärke der Quelle in Candela (≙ lx in 1 m nach dem Abfall der Zeile, cd · (1 + kern²)/(d² + kern²)): das Herdfeuer 10,2
-    // (3,5 lx in 2 m, das Band 2–5 lx des Nordstern-Solls; Hypothese mit Band, kein Messwert eines Holzfeuers), die Laterne 25,7
-    // (2 lx am Boden unter 3,6 m, das Band 2–5 lx der Gasse; ein Gas-Brenner trägt 10–30 cd); `cdM2` die Leuchtdichte des
-    // erleuchteten Fensters (8 cd/m²: Hypothese „Raum im Licht einer Flamme hinter Glas", 50 lx auf heller Wand ÷ π) und des
-    // Laternen-Kopfs (640 cd/m²: seine 25,7 cd über die Ansicht des Glas-Kopfs von ≈ 0,04 m² — das Glas streut die Flamme); `schaltet`:
+    // DIE LICHTSTÄRKE, EINE GRÖSSE (nacht-lichter): jede Leuchte trägt GENAU EINE Zahl ihres Lichts — `cd` die Lichtstärke in
+    // Candela (≙ lx in 1 m nach dem Abfall der Zeile, cd · (1 + kern²)/(d² + kern²)): das Herdfeuer 10,2 (3,5 lx in 2 m, das Band
+    // 2–5 lx des Nordstern-Solls; Hypothese mit Band, kein Messwert eines Holzfeuers), die Laterne 25,7 (2 lx am Boden unter 3,6 m,
+    // das Band 2–5 lx der Gasse; ein Gas-Brenner trägt 10–30 cd). Alles andere Licht der Leuchte FOLGT aus ihr: der leuchtende
+    // Leib (Fläche = cd ÷ `FEUER_LEUCHTDICHTE`, `lichtFlammeM`), das Glas des Kopfs (eine Scheibe, von innen beleuchtet: Leuchtdichte
+    // = `glasStreu` · E ÷ π mit E = cd · cos θ ÷ (r² + kern²) je Ecke, `laterneGlasTon` · `laterneGlasJeLuma`), die Wandlaterne (dieselbe Leuchte am Arm).
+    // Bis nacht-lichter trug jede Zeile daneben die Zahl des Labors (`staerke` 1 / 19) und der Kopf eine eigene Leuchtdichte (`cdM2`
+    // 640, flach über das ganze Glas — nachts 2 100-mal Bild-Weiß: das Glas stand als ein Fleck Orange), die Wandlaterne 3,6 cd
+    // mit einem Kern von 2,74 m. `cdM2` bleibt NUR das Fenster: die Leuchtdichte eines erleuchteten Raums hinter Glas (8 cd/m²:
+    // Hypothese „Raum im Licht einer Flamme hinter Glas", 50 lx auf heller Wand ÷ π) — eine Fläche, keine Quelle im Pool. `schaltet`:
     // der Zeitplan `zeit` ist ein SCHALTPLAN (der Anteil brennender Quellen je Tageszeit, auf seinen größten Wert bezogen) — ohne
     // `schaltet` trägt `zeit` nur die Belichtung des Labors (das Herdfeuer brennt bei Tag und Nacht mit derselben Lichtstärke).
-    // Leser der SI-Spalten: die Welt (`_leuchtStaerke`, `_leuchtTakt`: Wert ÷ die Einheit der EINEN Skala).
+    // Leser: die Welt (`_leuchtStaerke`, `_leuchtTakt`: Wert ÷ die Einheit der EINEN Skala) und das Labor (geeicht am Herdfeuer).
     // DAS BOGEN-GESETZ (K66): die Kurven der Bögen — hufeisen: der Mittelpunkt um R·tan(hufeisenAlpha) über dem Kämpfer, der Bogen
     // läuft um hufeisenAlpha unter die Mitte; spitz: zwei Mittelpunkte im Abstand spitzE·R von der Achse auf der Kämpferlinie
     // (Radius (1 + spitzE)·R, Scheitel 1,61 R). Leser: bogenRahmen (Keilsteine im Verband) und die Linse gate:fachwerk-contract BOGEN-VERBAND.
     var BOGEN_GESETZ = Object.freeze({ hufeisenAlpha: 0.35, spitzE: 0.8 });
+    // DIE LEUCHTDICHTE DER FLAMME: der leuchtende Leib eines Holz- oder Kerzenfeuers in cd/m² (13 800–16 000, Hollan: Messung
+    // an Kerzen- und Holzflammen; ein schwarzer Körper bei 2 000 K trüge das Dreißigfache — der Ruß der Flamme ist dünn).
+    // Der Stoff `feuer` (Glut, Flamme, Herdfeuer) leuchtet in seiner Vertex-Farbe: die Wurzel der Flamme (FLAMME.ton, die
+    // hellste Ecke) steht bei dieser Leuchtdichte (`FEUER_LEUCHT_JE_LUMA`). Die Flamme einer Leuchte ist ihr Leib: Fläche =
+    // cd ÷ diese Leuchtdichte. Leser: die Welt (`_stoffAusStudio`, das Licht des Brands), das Labor.
+    var FEUER_LEUCHTDICHTE = 15000;
     var LICHT_GESETZ = {
-        feuer: { kelvin: 2000, staerke: 1, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        feuer: { kelvin: 2000, cd: 10.2, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 45 }, reichweiteM: 9, abfall: 2, kernM: 0.76, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { kelvin: 2800, cdM2: 8, schaltet: true, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { kelvin: 1900, staerke: 19, cd: 25.7, cdM2: 640, schaltet: true, reichweiteM: 12, abfall: 2, kernM: 0.1, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        laterne: { kelvin: 1900, cd: 25.7, glasStreu: 0.05, schaltet: true, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
+    // DIE FLAMME EINER LEUCHTE (nacht-lichter): ihr leuchtender Leib als Scheibe der Fläche cd ÷ `FEUER_LEUCHTDICHTE` — der Halbmesser ist
+    // der Kern ihres Abfalls (`lichtAbfall`). Die Laterne: 25,7 cd ÷ 15 000 cd/m² = 17 cm², Halbmesser 2,3 cm (bis nacht-lichter
+    // stand der Kern als eigene Zahl 0,1 m daneben). Das Herdfeuer trägt sein Glutbett als Kern (Ø 0,76 m, klang bettRefM).
+    function lichtFlammeM(L) {
+        return Math.round(1000 * Math.sqrt(L.cd / (Math.PI * FEUER_LEUCHTDICHTE))) / 1000;
+    }
+    LICHT_GESETZ.laterne.kernM = lichtFlammeM(LICHT_GESETZ.laterne);
+    // DIE REICHWEITE FOLGT AUS DER LICHTSTÄRKE (nacht-lichter): der Abstand, in dem die Leuchte waagrecht unter ihr noch ein Achtel
+    // des Vollmonds trägt (`LICHT_SCHWELLE_LX` 0,0325 lx, der Vollmond im Zenit 0,26 lx) — darunter trägt sie kein Pixel, das der
+    // Mond nicht trägt. Die Laterne: √(25,7 · (1 + k²) ÷ 0,0325) = 28,1 m (bis nacht-lichter die eigene Zahl 12 m: der Kreis des
+    // Lichts brach 12 m vom Mast hart ab, die Gasse zwischen zwei Masten in 24 m stand schwarz). Das Herdfeuer trägt seine Reichweite
+    // aus dem Labor (sein Schaltplan hebt es nachts ×45 — aus der Stärke folgten 119 m).
+    var LICHT_SCHWELLE_LX = 0.0325;
+    function lichtReichweiteM(L) {
+        return Math.round(10 * Math.pow((L.cd * Math.pow(1 + L.kernM * L.kernM, L.abfall / 2)) / LICHT_SCHWELLE_LX, 1 / L.abfall)) / 10;
+    }
+    LICHT_GESETZ.laterne.reichweiteM = lichtReichweiteM(LICHT_GESETZ.laterne);
     // DIE WANDLATERNE (K66-2): die Leuchte der dichten Gasse hängt an der Hauswand, wo kein Mast vor der Wand und neben dem Weg
-    // steht — ihr Licht ist das der Laterne (Farbtemperatur, Zeitplan, Reichweite, Abfall), abgeleitet aus zwei Maßen ihres Leibs:
-    // der Kopf `hoeheM` über der Gasse, `armM` vor der Wand. Der Kern folgt aus dem Wand-Gesetz der Laterne (K66: die Wand trägt
-    // höchstens das Doppelte der Gasse unter ihr, ((h² + k²)/(a² + k²))^(abfall/2) ≤ 2 — mit dem Kern des Masts trug die Wand in
-    // 0,4 m das Fünfzigfache, die Sättigung von K66), die Stärke aus der Gasse: unter ihr trägt der Boden, was er unter dem Mast
-    // trägt. Leser: das Rezept der Wandlaterne (fx.licht), der Licht-Takt der Welt, gate:settlement DORF-LICHT.
+    // steht — DIESELBE Leuchte wie die Laterne (Lichtstärke, Kern, Farbtemperatur, Zeitplan, Reichweite, Abfall, Glas), nur ihr
+    // Leib hängt anders: der Kopf `hoeheM` über der Gasse, `armM` vor der Wand. Bis nacht-lichter folgte ihr Kern aus dem
+    // Wand-Gesetz (K66: die Wand trägt höchstens das Doppelte der Gasse, Kern 2,74 m, 3,6 cd) — eine Flamme von 2,74 m Halbmesser
+    // in einem Glas von 22 cm: das Licht an der Wand stand gedeckelt, die Gasse trug ein Siebtel einer Laterne. Die Wand trägt
+    // jetzt, was eine Flamme in 0,4 m trägt; das Bild trägt es die Belichtung (der Messer liest den Pool) und die EINE Tonkurve.
+    // Leser: das Rezept der Wandlaterne (fx.licht), der Licht-Takt der Welt, gate:settlement DORF-LICHT.
     LICHT_GESETZ.wandlaterne = (function (L, h, a) {
-        var q = Math.pow(2, 2 / L.abfall),
-            k2 = Math.max(L.kernM * L.kernM, (h * h - q * a * a) / (q - 1)),
-            boden = L.staerke * Math.pow((1 + L.kernM * L.kernM) / (L.hoeheM * L.hoeheM + L.kernM * L.kernM), L.abfall / 2),
-            r3 = function (v) {
-                return Math.round(v * 1000) / 1000;
-            };
-        return {
-            kelvin: L.kelvin,
-            staerke: r3(boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
-            cd: r3((L.cd / L.staerke) * boden * Math.pow((h * h + k2) / (1 + k2), L.abfall / 2)),
-            cdM2: L.cdM2,
-            schaltet: L.schaltet,
-            reichweiteM: L.reichweiteM,
-            abfall: L.abfall,
-            kernM: r3(Math.sqrt(k2)),
-            hoeheM: h,
-            armM: a,
-            zeit: JSON.parse(JSON.stringify(L.zeit)),
-        };
+        var aus = JSON.parse(JSON.stringify(L));
+        aus.hoeheM = h;
+        aus.armM = a;
+        return aus;
     })(LICHT_GESETZ.laterne, 2.8, 0.4);
     // DIE LICHTFARBE einer Farbtemperatur (K11b): der Planck-Ort (Kim, Kang et al. 2002, kubische Näherung 1 667–25 000 K)
     // als Farbort x, y → XYZ (Y = 1) → lineares sRGB (IEC 61966-2-1, Weiß D65), negativ außerhalb des Gamuts geklemmt, auf den
@@ -6693,11 +6801,6 @@
         }
         return s;
     }
-    // DIE LEUCHTDICHTE DER FLAMME: der leuchtende Leib eines Holz- oder Kerzenfeuers in cd/m² (13 800–16 000, Hollan: Messung
-    // an Kerzen- und Holzflammen; ein schwarzer Körper bei 2 000 K trüge das Dreißigfache — der Ruß der Flamme ist dünn).
-    // Der Stoff `feuer` (Glut, Flamme, Herdfeuer) leuchtet in seiner Vertex-Farbe × dieser Leuchtdichte, wo die Zahl des Labors
-    // `LEUCHT_FEUER` steht. Leser: die Welt (`_stoffAusStudio`, das Licht des Brands).
-    var FEUER_LEUCHTDICHTE = 15000;
     function lichtFarbe(kelvin) {
         var T = Math.min(25000, Math.max(1667, +kelvin)), T2 = T * T, T3 = T2 * T;
         var x = T <= 4000 ? -0.2661239e9 / T3 - 0.2343589e6 / T2 + 0.8776956e3 / T + 0.17991 : -3.0258469e9 / T3 + 2.1070379e6 / T2 + 0.2226347e3 / T + 0.24039;
@@ -7776,7 +7879,7 @@
         };
         // der Fuß und der Mast als EIN Drehkörper (nah acht Seiten mit Wulst und Kragen unter dem Kopf)
         var profil = fein
-            ? [[m.fr, -0.2], [m.fr, 0.1], [m.fr * 0.82, 0.16], [m.fr * 0.62, m.fh], [m.mr * 1.5, m.fh + 0.1], [m.mr, m.fh + 0.22], [m.mr, m.yK0 - 0.14], [m.mr * 1.7, m.yK0 - 0.04], [m.mr * 1.7, m.yK0], [0, m.yK0]]
+            ? [[m.fr, -0.2], [m.fr, 0.1], [m.fr * 0.82, 0.16], [m.fr * 0.62, m.fh], [m.mr * 1.5, m.fh + 0.1], [m.mr, m.fh + 0.22], [m.mr, m.yKr], [m.mr * 1.7, m.yK0 - 0.04], [m.mr * 1.7, m.yK0], [0, m.yK0]]
             : [[m.fr, -0.2], [m.fr * 0.62, m.fh], [m.mr, m.fh + 0.22], [m.mr, m.yK0], [0, m.yK0]];
         eisen(ausDreh(profil, fein ? 8 : 4, false, false));
         ausLaterneKopf(g, m, eisen, fein);
@@ -7785,8 +7888,14 @@
     // Eck-Stäbe des Rahmens, die Haube.
     function ausLaterneKopf(g, m, eisen, fein) {
         eisen(ausSetze(ausKiste(m.kb + 0.04, 0.03, m.kb + 0.04, fein ? 0.008 : 0), 0, m.yK0 + 0.015, 0));
-        var glas = ausSetze(ausKiste(m.kb, m.kh - 0.03, m.kb, 0), 0, m.yL + 0.015, 0);
-        ausFaerbe(glas, "laternenglas", 0, null);
+        // DAS GLAS IST EINE SCHEIBE, VON INNEN BELEUCHTET (nacht-lichter): je Fläche ein Fächer um ihre Mitte, je Ecke der Ton
+        // = die Bestrahlung der Flamme (0, yL, 0) dort, bezogen auf die Mitte der Scheibe des Masts (`laterneGlasTon`) — die Welt
+        // trägt die Leuchtdichte `glasStreu` · E ÷ π (`laterneGlasE`) mal diesen Ton: hell in der Mitte, 3 EV dunkler an der Ecke
+        var glas = ausSetze(ausKisteFaecher(m.kb, m.kh - 0.03, m.kb), 0, m.yL + 0.015, 0);
+        ausFaerbe(glas, "laternenglas", 0, function (x, y, z, nx, ny, nz) {
+            var t = laterneGlasTon(x, y - m.yL, z, nx, ny, nz);
+            return { ton: [t, t, t] };
+        });
         ausTeil(g, glas, "laternenglas");
         var i, j;
         if (fein) for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) eisen(ausSetze(ausKiste(0.022, m.kh, 0.022, 0), (i * m.kb) / 2, m.yL, (j * m.kb) / 2));
@@ -7800,6 +7909,54 @@
         var h = m.hb,
             spitze = [0, m.yT, 0];
         eisen(ausVielecke([[[-h, y0, -h], [h, y0, -h], spitze], [[h, y0, -h], [h, y0, h], spitze], [[h, y0, h], [-h, y0, h], spitze], [[-h, y0, h], [-h, y0, -h], spitze], [[-h, y0, -h], [-h, y0, h], [h, y0, h], [h, y0, -h]]], [0, (y0 + m.yT) / 2, 0]));
+    }
+    // DIE KISTE ALS FÄCHER: sechs Flächen, je vier Dreiecke um die Mitte der Fläche (die Ecke in der Mitte trägt ihren eigenen
+    // Ton — die von innen beleuchtete Scheibe ist in der Mitte am hellsten, das trägt keine Kiste aus vier Ecken)
+    function ausKisteFaecher(lx, ly, lz) {
+        var h = [lx / 2, ly / 2, lz / 2],
+            polys = [];
+        for (var a = 0; a < 3; a++)
+            for (var s = -1; s <= 1; s += 2) {
+                var u = (a + 1) % 3,
+                    v = (a + 2) % 3,
+                    P = function (pu, pv) {
+                        var q = [0, 0, 0];
+                        q[a] = s * h[a];
+                        q[u] = pu * h[u];
+                        q[v] = pv * h[v];
+                        return q;
+                    },
+                    E = [P(-1, -1), P(1, -1), P(1, 1), P(-1, 1)],
+                    M = P(0, 0);
+                for (var i = 0; i < 4; i++) polys.push([E[i], E[(i + 1) % 4], M]);
+            }
+        return ausVielecke(polys, [0, 0, 0]);
+    }
+    // DER TON DES LATERNEN-GLASES an (x, y, z) um die Flamme (m): die Bestrahlung der Scheibe cd · cos θ ÷ (r² + kern²) (θ gegen
+    // die Normale der Scheibe n), bezogen auf die Mitte der Scheibe des Masts in der Größe 1 (`laterneGlasE`) —
+    // die Mitte des Masts trägt 1, die Ecke 0,11, die Mitte der Wandlaterne (Kopf 0,85) 1,4. Leser: `ausLaterneKopf`.
+    function laterneGlasTon(x, y, z, nx, ny, nz) {
+        var L = LICHT_GESETZ.laterne,
+            k2 = L.kernM * L.kernM,
+            a = Math.abs(x * nx + y * ny + z * nz),
+            r2 = x * x + y * y + z * z,
+            b = AUS_MASS.laterne(1).kb / 2;
+        return r2 > 0 ? ((a / Math.sqrt(r2)) * (b * b + k2)) / (r2 + k2) : 1;
+    }
+    // DIE BESTRAHLUNG DER SCHEIBE in ihrer Mitte (lx), der Bezug des Tons: der Mast in der Größe 1 (die Flamme 0,13 m hinter dem
+    // Glas). Die Leuchtdichte des Glases dort ist `glasStreu` · E ÷ π (23 cd/m² bei 25,7 cd) — Leser: die Welt (`_leuchtTakt`,
+    // die Glut des Datums `laterne`), die Linse gate:post-kette (GLAS).
+    function laterneGlasE(L) {
+        var b = AUS_MASS.laterne(1).kb / 2;
+        return L.cd / (b * b + L.kernM * L.kernM);
+    }
+    // DIE LEUCHTDICHTE DES GLASES JE LUMA SEINER VERTEX-FARBE (cd/m²; wie `FEUER_LEUCHT_JE_LUMA` die Flamme): der Bake legt den
+    // Ton auf den Grundton des Glases (`_colFor`), die Welt liest die Luma der Ecke — die Mitte des Masts steht bei `glasStreu` ·
+    // E ÷ π. Leser: die Welt (`_leuchtFlaeche`, die Glut des Datums × Luma der Vertex-Farbe in `_leuchtStoff`).
+    function laterneGlasJeLuma(L) {
+        materials();
+        var c = _colFor("laternenglas");
+        return (L.glasStreu * laterneGlasE(L)) / Math.PI / (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
     }
     // DIE WANDLATERNE (K66-2): der Ursprung liegt im Boden unter dem Licht, +x zeigt zur Wand (sie steht in x = armM). Die
     // Wandplatte, der Arm über dem Knauf der Haube, der Haken, an dem der Kopf hängt, nah die Strebe von der Platte zum Arm.
@@ -8244,7 +8401,12 @@
             mass = AUS_MASS[id];
         if (!pre || !pre.fx || !pre.fx.licht || typeof mass !== "function") return 0;
         var m = mass(pre.s.groesse);
-        return m.yK0 < m.yL ? Math.max(m.yL - m.yK0, m.yK1 - m.yL, m.kb / 2) : 0;
+        // DER KRAGEN GEHÖRT ZUM LEIB (nacht-lichter): unter dem Boden des Kopfs weitet sich der Mast zum Kragen (`yKr` bis `yK0`,
+        // Halbmesser 7,7 cm in 0,20–0,24 m unter der Flamme) — jenseits der nahen Ebene `yL − yK0` warf er ein Achteck von 1,25 m
+        // Halbmesser um den Fuß jeder werfenden Laterne (Radeon, Dorf Uhr 0: der Boden-Fleck 0–2 m stand 0,41 EV über 6–8 m).
+        // Der Leib reicht bis zum Fuß des Kragens; darunter wirft der Mast (4,5 cm) seinen eigenen Fleck von 0,5 m.
+        var unten = m.yKr != null ? Math.min(m.yKr, m.yK0) : m.yK0;
+        return unten < m.yL ? Math.max(m.yL - unten, m.yK1 - m.yL, m.kb / 2) : 0;
     }
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
@@ -8278,7 +8440,8 @@
             // der Licht-Mittelpunkt (LICHT_GESETZ.laterne hoeheM) ist die Mitte des Glas-Kopfs
             var kh = 0.4 * G,
                 yL = LICHT_GESETZ.laterne.hoeheM * G;
-            return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
+            // `yKr`: der Fuß des Kragens unter dem Kopf (nah: der Mast weitet sich von dort bis zum Boden des Kopfs)
+            return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yKr: yL - kh / 2 - 0.14, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
         },
         grabstein: function (G) {
             // die Tafel b × h × d auf dem Sockel sb × sh × sd, das Kreuz aus Balken der Breite kb
@@ -9446,7 +9609,7 @@
           const Wi=A.dims.W||8, Wj=Bj.dims.W||8, Di=A.dims.D||8, Dj=Bj.dims.D||8;
           const soll=(Wi+Wj)/2+gap, fuge=Math.abs(lx)-(Wi+Wj)/2;
           if(Math.abs(lz)>Math.min(Di,Dj)*0.45 || fuge<=gap+0.02 || fuge>1.8) continue;
-          const zug=(Math.abs(lx)-soll)/2, s2=Math.sign(lx);                                  // beide je halbe Fuge aufeinander zu — Straßenfronten bleiben
+          const zug=(Math.abs(lx)-soll)/2*Math.min(1,(1.8-fuge)/0.3), s2=Math.sign(lx);   /*DER SNAP LAEUFT AUS (w28-bau-rezept-tuer, Welle SAMEN): unter 1,5 m schliesst er die Fuge ganz, bis 1,8 m immer weniger — bis hier sprang er an 1,8 m von 0 auf die ganze Fuge: an dorf 7/30 rueckte wohnhaus #163268 um 0,86 m an den Nachbarn, weil Los 8 um 5 cm schmaler war (seine Fuge 1,80 → 1,75), und trug danach eine Brandwand (Wuerfel je Los 1 Verletzung, 0,66 m). Jetzt rueckt eine Front von 5 cm ein Haus der Reihe hoechstens 0,15 m*/                                  // beide je halbe Fuge aufeinander zu — Straßenfronten bleiben
           const mvx=s2*zug*ci, mvz=-s2*zug*si;                                                // lokal (±zug,0) → Welt via R(phi)
           qi.x+=mvx; qi.z+=mvz; qi.obb.cx+=mvx; qi.obb.cz+=mvz;
           qj.x-=mvx; qj.z-=mvz; qj.obb.cx-=mvx; qj.obb.cz-=mvz;
@@ -9595,7 +9758,7 @@
             var L = Math.hypot(b[0] - a[0], b[1] - a[1]),
                 sicht = true;
             for (var u = 0.25; sicht && u < L; u += 0.5) {
-                var w = welt(a[0] + ((b[0] - a[0]) * u) / L, a[1] + ((b[1] - a[1]) * u) / L);
+                var w = welt(b[0] + ((a[0] - b[0]) * u) / L, b[1] + ((a[1] - b[1]) * u) / L); // vom Haus zum Platz, je 0,5 m — dieselben Proben wie der Richter (gate:settlement, platzWiese): an einer streifenden Ecke sah der Kern sonst einen anderen Nachbarn als der Richter
                 for (j = 0; sicht && j < obbs.length; j++) if (j !== i && distPunktOBB(w[0], w[1], obbs[j]) < 1e-6) sicht = false;
             }
             if (sicht) fasser.push({ h: h, gx: gx, gz: gz, a: a, b: b });
@@ -9894,15 +10057,22 @@
                 c = Math.cos(sl.phi),
                 s2 = Math.sin(sl.phi),
                 tief = O.vorplatzM;
-            for (var t = 0; t <= O.vorplatzM + O.gasseM; t += 0.25)
+            for (var t = 0, tl = O.vorplatzM + O.gasseM + losHof({ losVorn: losVorn(q) }, ez); t <= tl; t += 0.25)
                 if (aufWeg(q.x + tu.x * c + (ez - t) * s2, q.z - tu.x * s2 + (ez - t) * c, 0)) {
                     tief = Math.max(O.vorplatzM, t);
                     break;
                 }
             flaechen.push(vorplatzFlaeche(sl, tief));
         }
+        // DER MUND DES WEGS: jedes Ende eines Wegs ist eine Kreuzung oder ihr Zulauf (die Wege des Plans enden vor ihrem Knoten) — kein
+        // Tritt, über den ein halber Wagen (`VERKEHR_GESETZ.halbM`) nicht an das Ende käme. Bis bau-rezept-tuer stand an der Stadt dorf 7 30
+        // ein Brunnen 2,6 m vor dem Anfang einer Gasse: die Naht des Wege-Netzes (`wegeNetz`) fand keinen freien Schritt, 21 Knoten hingen
+        // abseits, der Bewohner des Patrizierhauses #22772 ging 3 Wege am Tag (gate:kreatur-takt bewohner, `ausser`).
+        var enden = [];
+        for (a = 0; a < wege.length; a++) enden.push(wege[a].pts[0], wege[a].pts[wege[a].pts.length - 1]);
         var frei = function (x, z) {
             if (aufWeg(x, z, 0.35)) return false; // wie gezogen: die Mitte 0,6 m hinter dem Rand (der Kranz ragt 0,32 m hinein)
+            for (var e = 0; e < enden.length; e++) if (Math.hypot(x - enden[e].x, z - enden[e].z) < r + VERKEHR_GESETZ.halbM) return false;
             for (var j = 0; j < flaechen.length; j++) if (!fernOBB(x, z, flaechen[j], r) && distPunktOBB(x, z, flaechen[j]) < r) return false;
             for (j = 0; j < (lay.felder || []).length; j++) if (!fernOBB(x, z, lay.felder[j], r) && distPunktOBB(x, z, lay.felder[j]) < r) return false;
             for (j = 0; j < tore.length; j++) if (distPunktOBB(x, z, tore[j]) < r) return false; // der Torplatz ist der Raum der Wende
@@ -9943,7 +10113,8 @@
     // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — die Seite eines Hauses, vor der ein fremder Körper steht, wird
     // fensterlose Brandmauer (der Same erfährt es via hp.brandwand: keine Öffnung, kein Flügel in den Nachbarn). Gemessen an der EINEN
     // Hülle (los-huelle-2): die obb des Loses (`q.obb`, die Körper-Hülle `koerperHuelle`) von A gegen die von B, B auf die Achsen von
-    // A projiziert (jede Gier), die Seite von A, die zu B zeigt (die dominante Achse), seitlich überdeckt (0,6 der Summe), die Fuge der
+    // A projiziert (jede Gier), die Seite von A, die zu B zeigt (die dominante Achse), seitlich überdeckt (irgendwo in der Summe — bis bau-rezept-tuer nur 0,6 davon: an
+    // der Ecke zweier Körper ragten die Öffnungen des größeren Haushalts 2–10 cm in den Nachbarn, B1 3 Paare an 2/120 und 2/400), die Fuge der
     // Körper unter der Norm (gap + 0,15) oder unter der Reichweite der Öffnungen dieser Seite (`reich`, derselbe Gang der Hülle): keine
     // Öffnung reicht in einen fremden Körper. Bis los-huelle-2 maß sie „anliegend“ an dims.W/D (den Wänden) um die Mitten der Hülle,
     // nur parallel (≤ 0,26 rad) und nur vor dem Los-Gesetz — an der Stadt 7/4750 (3 × 3) ragte an 26 Paaren (25 Häusern) die Öffnung
@@ -9959,7 +10130,7 @@
           const b=Bj.q.obb, dx=b.cx-a.cx, dz=b.cz-a.cz, lx=dx*ci-dz*si, lz=dx*si+dz*ci;          // ins Haus-Lokal von A (R(-phi))
           const ex=a.ex+halb(b,ci,-si), ez=a.ez+halb(b,si,ci);                                  // die Summe der Körper längs der Achsen von A
           const s=Math.abs(lx)/ex>=Math.abs(lz)/ez?(lx>0?'x1':'x0'):(lz>0?'z1':'z0'), aufX=s[0]==='x';
-          if(Math.abs(aufX?lz:lx)<(aufX?ez:ex)*0.6 && Math.abs(aufX?lx:lz)-(aufX?ex:ez)<Math.max(norm,A.reich[s])){
+          if(Math.abs(aufX?lz:lx)<(aufX?ez:ex) && Math.abs(aufX?lx:lz)-(aufX?ex:ez)<Math.max(norm,A.reich[s])){
             A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[s]=1; bwN++; } } }
       return bwN;
     }
@@ -9967,15 +10138,17 @@
     //    Größe eines Hauses aus Personen und Wohlstand, und das Haus TRÄGT seinen Haushalt (`hp.leute`) — den liest diese Funktion.
     //    Ein Haus ohne Haushalt (ein Rezept der Kultur, kein Los) bewohnen so viele, wie seine Wohnfläche bei seinem Wohlstand trägt — je Geschoss die Grundfläche W·D, davon `nutz` bewohnbar
     //    (Wände, Stiege), je Person `flaeche` + `wohlFlaeche`·wohl m² (die Kammer der Armen, die Stube der Reichen), ganzzahlig,
-    //    mindestens 1, höchstens `max`. Die Rollen ohne Haushalt tragen ihre Zahl (`rolle`): die Scheune und die Halle des
-    //    Gewerbes niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und Gesellen. REIN: dieselbe Zeile ⇒ dieselbe Zahl.
-    //    Leser: der Wirt (die Bewohner je Haus) und gate:kreatur-takt bewohner.
-    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12, rolle: { scheune: 0, halle: 0, kirche: 1, schmiede: 2, kapelle: 0, speicher: 0, zeughaus: 0, backhaus: 2, torhaus: 2 } };
+    //    mindestens 1, höchstens `max`. Ein Haus ohne Haushalt, dessen Rolle eine Zeile mit Leuten hat, trägt die Zahl seiner
+    //    Zeile (BAU_NUTZUNG.personen: die Scheune und die Halle niemanden, die Kirche ihren Pfarrer, die Schmiede Meister und
+    //    Gesellen) — die EINE Quelle; bis w28-bau-rezept hielt eine Rollen-Tafel hier ihren Zwilling. REIN: dieselbe Zeile ⇒
+    //    dieselbe Zahl. Leser: der Wirt (die Bewohner je Haus) und gate:kreatur-takt bewohner.
+    var LEUTE_GESETZ = { nutz: 0.7, flaeche: 20, wohlFlaeche: 20, max: 12 };
     function leuteVon(hp) {
         if (!hp || typeof hp !== "object") return 0;
         var rolle = typeof hp.rolle === "string" ? hp.rolle : "wohnhaus";
-        if (Object.prototype.hasOwnProperty.call(LEUTE_GESETZ.rolle, rolle)) return LEUTE_GESETZ.rolle[rolle];
         if (isFinite(hp.leute) && hp.leute !== null) return Math.max(0, Math.min(LEUTE_GESETZ.max, Math.round(Number(hp.leute)))); // der Haushalt des Loses (bauProgramm schreibt ihn)
+        var N = Object.prototype.hasOwnProperty.call(BAU_NUTZUNG, rolle) ? BAU_NUTZUNG[rolle] : null;
+        if (N && isFinite(N.personen)) return Math.max(0, Math.min(LEUTE_GESETZ.max, N.personen));
         var W = Number(hp.W), D = Number(hp.D), st = Number(hp.storeys);
         var wohl = isFinite(hp.wohl) ? Math.max(0, Number(hp.wohl)) : 1;
         if (!(W > 0 && D > 0)) return 1;
@@ -10317,6 +10490,8 @@
                     { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez } // an der Brandwand schneidet `hausSlot` (die EINE Zeile)
                 )
             );
+            var lv = losVorn(q);
+            if (lv !== null) slots[slots.length - 1].losVorn = lv;
         }
         // die Mauer der Gestalt (das Layout) oder die des Schnitts (`schnittMauer`: der Schnitt einer Chronik vor MAUER_BIS, staedtisch)
         // die Kachel einer Stadt trägt die Mauer nur an ihren Rand-Kanten (`kachelMauer`), in der Zeit der Mauern
@@ -10480,6 +10655,24 @@
     // Tiefe `tief` (ohne: ORT_GESETZ.vorplatzM) — die Erdbau-Platte des Vorplatzes (`ortPlan`, die Tiefe bis zur Gasse; ihr Boden:
     // `vorplatzBoden`). `tuer`: die Fläche vor der Haustür selbst (beim HOF-Haus die Stufe im Hof). null ohne Tür. Rückgabe {cx, cz,
     // phi, ex, ez} im Rahmen des Plans.
+    // DER HOF DES LOSES LIEGT VOR DER TÜR (w28-bau-rezept-tuer): das Los trägt das Haus aller seiner Jahre (`plan.lose`, die Hülle des
+    // größten Baus) — der Bau seines Jahrs steht in ihm, der Haupt-Bau eines späteren Hofs hinten, die Front des Loses an der Gasse.
+    // `losVorn(q)`: die Front des Loses im Rahmen des Hauses (z, die Tür blickt nach −z) aus seiner obb (`q.obb`, Plan) und dem Rahmen
+    // (`q.x`, `q.z`, `q.phi`); null, wo das Los nicht tiefer ist. `losHof(sl, ez)`: so weit liegt die Front des Loses vor dem Eingang
+    // `ez` — um so viel reicht die Suche nach der Gasse weiter (der Gang führt über den Hof). Bis hier suchte sie vorplatzM + gasseM
+    // (6,6 m) ab der Tür: im Dorf 7/18 der Gründerzeit stand das wohnhaus #119906 mit 5 Leuten 8,6 m hinter der Front seines Loses,
+    // sein Vorplatz endete nach 1,6 m, und 1,8 m vor der Tür stieg der Grund am Akt um 7,0 m (gate:settlement O, Türen 19/20).
+    function losVorn(q) {
+        if (!q || !q.obb || !isFinite(q.x) || !isFinite(q.z)) return null;
+        var c = Math.cos(q.phi || 0),
+            s = Math.sin(q.phi || 0),
+            dx = q.obb.cx - q.x,
+            dz = q.obb.cz - q.z;
+        return Math.round((dx * s + dz * c - q.obb.ez) * 1e6) / 1e6;
+    }
+    function losHof(sl, ez) {
+        return sl && isFinite(sl.losVorn) && isFinite(ez) ? Math.max(0, ez - sl.losVorn) : 0;
+    }
     function vorplatzFlaeche(sl, tief, tuer) {
         var tu = sl && sl.tuer;
         if (!tu || !isFinite(tu.x) || !isFinite(tu.z) || !isFinite(tu.w)) return null;
@@ -11499,7 +11692,7 @@
                 // der erste Meter der Fläche, die der Gang betritt (ihr Median: eine Naht zweier Wege gleich hinter dem Vorplatz
                 // teilt sich in zwei kleine Stufen statt einer großen)
                 var tritt = [];
-                for (var t0 = O.vorplatzM; t0 <= O.vorplatzM + O.gasseM; t0 += 0.25) {
+                for (var t0 = O.vorplatzM; t0 <= O.vorplatzM + O.gasseM + losHof(sl, eingang(sl).z); t0 += 0.25) {
                     var va = vorne(sl, eingang(sl).z - t0);
                     var ya = aufY(va[0], va[1]);
                     if (ya !== null) tritt.push([t0, ya]);
@@ -11528,7 +11721,7 @@
             neu = false;
             for (si = 0; si < NS; si++) {
                 if (hy[si] !== null || !hatTuer(ps[si])) continue;
-                for (var t = O.vorplatzM; t <= O.vorplatzM + O.gasseM && hy[si] === null; t += 0.5) {
+                for (var t = O.vorplatzM; t <= O.vorplatzM + O.gasseM + losHof(ps[si], eingang(ps[si]).z) && hy[si] === null; t += 0.5) {
                     var v1 = vorne(ps[si], eingang(ps[si]).z - t);
                     for (var sj = 0; sj < NS; sj++)
                         if (sj !== si && hy[sj] !== null && ps[sj].obb && inPlatte(v1[0], v1[1], ps[sj].obb)) {
@@ -11699,6 +11892,10 @@
         zunge: [[0, 0], [0.5, 0.06], [0.56, 0.2], [0.44, 0.42], [0.26, 0.64], [0.1, 0.86], [0, 1]],
         ton: [[0.55, 0.1], [0.3, 0.16], [0.08, 0.045]],
     };
+    // DIE FLAMME LEUCHTET IN IHRER LEUCHTDICHTE (nacht-lichter): die Wurzel ihres Tons (die hellste Ecke, Luma 0,337) steht bei
+    // `FEUER_LEUCHTDICHTE` — je Luma der Vertex-Farbe `FEUER_LEUCHT_JE_LUMA` cd/m² (44 470). Leser: der Stoff `feuer` (`__leucht`).
+    var FEUER_WURZEL_LUMA = 0.2126 * FLAMME.ton[0][0] + 0.7152 * FLAMME.ton[1][0] + 0.0722 * FLAMME.ton[2][0];
+    var FEUER_LEUCHT_JE_LUMA = FEUER_LEUCHTDICHTE / FEUER_WURZEL_LUMA;
 
     var RAUCH_GESETZ = {
         maxTeilchen: 26,
@@ -12841,8 +13038,13 @@
         // DAS VERBAND-GESETZ (w28-haus-stoff): die Tafel der Maler und ihre Zeilen für die Welt (Leser: der Wirt, `_verbandStoff`)
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZeilen: verbandZeilen,
-        // das Leucht-Gesetz der Glut (Leuchtdichte = lineare Farbe × LEUCHT_FEUER): die Welt webt es in jede Glut ihres Bodens (die Lava)
-        LEUCHT_FEUER: LEUCHT_FEUER,
+        // das Leucht-Gesetz der Flamme (Leuchtdichte = lineare Farbe × FEUER_LEUCHT_JE_LUMA, cd/m²) und das Licht der Leuchte aus ihrer
+        // Lichtstärke: ihr Leib, die Bestrahlung ihres Glases und der Ton je Ecke (nacht-lichter)
+        FEUER_LEUCHT_JE_LUMA: FEUER_LEUCHT_JE_LUMA,
+        lichtFlammeM: lichtFlammeM,
+        laterneGlasE: laterneGlasE,
+        laterneGlasJeLuma: laterneGlasJeLuma,
+        laterneGlasTon: laterneGlasTon,
         FEUER_LEUCHTDICHTE: FEUER_LEUCHTDICHTE,
         glutLeuchtdichte: glutLeuchtdichte,
         BOGEN_GESETZ: BOGEN_GESETZ,

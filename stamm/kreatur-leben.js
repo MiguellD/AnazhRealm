@@ -2899,7 +2899,7 @@ class AnazhRealm_kreatur_leben {
             // die Hysterese der Nah-Wahl: wer lebt, zählt um 1 / (1 − h)² bedeutender — ein Paar an gleichem Abstand tauscht nicht je Takt
             const dx = cr.position.x - auge.x,
                 dz = cr.position.z - auge.z;
-            const b = this._bedeutung(cr.scale.x || 1, Math.sqrt(dx * dx + dz * dz), u._laufV);
+            const b = this._bedeutung(cr.scale.x || 1, Math.sqrt(dx * dx + dz * dz), u._laufV, cr.position);
             u._satzB = u._satz ? b : b / ((1 - h) * (1 - h));
             kand.push(cr);
         }

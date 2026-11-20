@@ -16,7 +16,7 @@
 // Sechste Aufgabe (Klinge 6, D2-N1/N2): jede Linse schneidet einen Block über den EINEN Schneider (stammLib.rumpf) und
 // trifft eine Stelle des Stamms über die EINE Engstelle (stammLib.ersetze/treffer), nie am ersten Text-Treffer.
 // Siebte Aufgabe (Klinge 7, w22-gpu-probe, w26-probe-zeit): der Einlass der GPU-Probe lässt nur gate:, zeit:gate: und bild:
-// durch, zeit: nur auf die Band-Geräte.
+// durch, zeit: nur auf die Band-Geräte; ihr Artefakt trägt den Versuch im Namen, der Post urteilt am jüngsten je Bein.
 // Achte Aufgabe (Klinge 8, w27-gpu-wahl-heil): jede Linse liest einen GPU-Puffer über die EINE Puffer-Lesung, nie am Rohen.
 // Neunte Aufgabe (Klinge 9, w28-probe-urteil, Lehre 6): eine gedruckte ROTE Zeile ist Urteil — der Kopf der GPU-Probe urteilt Log UND
 // Exit über scripts/lib/urteil-zeile.cjs (BEKANNT heißt nur die Ratsche des Messorts, sichtbar im Kopf), die Wache am
@@ -564,6 +564,18 @@ function probeGesetz(doc) {
     if (!/KOPF="\$KOPF\$\{KOPF:\+ · \}\$p \$U \$d s\$\{GRUND:\+/.test(lauf))
         v.push("Klinge 9: der Kopf nennt den Grund der Probe nicht");
     if (!/ROT wie an main \(bekannt\): \$BEK/.test(post)) v.push("Klinge 9: das BEKANNTE ROT fehlt dem Kopf des Posts");
+    // Klinge 7, der Versuch (20.11., w28-nacht-lichter ffd68679, Lauf 44821323126): der zweite Versuch eines nachgegebenen Beins
+    // fuhr GRÜN, der Post las das gleichnamige Artefakt des ersten und urteilte wieder NACHGEGEBEN. Je Versuch ein eigener Name,
+    // und der Post urteilt am jüngsten Versuch des Beins — nie am festen Ordner.
+    const hoch = doc.jobs.probe.steps.find((s) => /upload-artifact/.test(s.uses || ""))?.with?.name;
+    if (hoch !== "probe-${{ matrix.label }}-v${{ github.run_attempt }}")
+        v.push(`Versuch: das Artefakt der Probe trägt den Versuch nicht im Namen (${hoch})`);
+    const postLauf = doc.jobs.post.steps.find((s) => /^Post/.test(s.name || ""))?.run || "";
+    if (
+        /D="probe\/probe-\$L"\n/.test(postLauf) ||
+        !/D=\$\(ls -d "probe\/probe-\$L"-v\* 2> \/dev\/null \| sort -V \| tail -n 1\)\n/.test(postLauf)
+    )
+        v.push("Versuch: der Post liest einen festen Ordner je Bein statt des jüngsten Versuchs");
     return v;
 }
 
@@ -894,6 +906,9 @@ function selftest() {
             ["Exit allein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/UG=\$\(node scripts\/lib\/urteil-zeile[\s\S]*?esac\n/, 'elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi\n'); }, /Klinge 9: der Kopf der Probe urteilt am Exit allein/], // prettier-ignore
             ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/\$\{GRUND:\+ — \$\{GRUND:0:240\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
             ["bekannt still", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = s.run.replace(/ROT wie an main \(bekannt\): \$BEK/, ""); }, /Klinge 9: das BEKANNTE ROT/], // prettier-ignore
+            // der Versuch: der Stand bis 20.11. — EIN Name je Bein über alle Versuche, der Post am festen Ordner
+            ["Artefakt ohne Versuch", (z) => { z.jobs.probe.steps.find((x) => /upload-artifact/.test(x.uses || "")).with.name = "probe-${{ matrix.label }}"; }, /Versuch: das Artefakt/], // prettier-ignore
+            ["Post am festen Ordner", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = s.run.replace(/D=\$\(ls -d [^\n]*\n/, 'D="probe/probe-$L"\n'); }, /Versuch: der Post/], // prettier-ignore
         ],
         probeGesetz,
         { fehler: fails, gruen: require("js-yaml").load(ausDatei(PROBE_DATEI)) }

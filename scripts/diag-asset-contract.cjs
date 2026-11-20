@@ -424,8 +424,9 @@ function wurfUrteil(mess, budget) {
 // (Z3) DAS LEUCHTEN JEDER LIEFERUNG TRÄGT SEIN DATUM (licht-eine-skala, Entscheid des Koordinators; rein — der Selbsttest
 // füttert es): je gelieferter Fläche, die leuchtet (`mat.licht`, `mat.leucht` > 0 oder `mat.emissive`, foundry-bruecke.js
 // `out.mat`), EINE Quelle —
-//   licht      der Name eines Emitter-Datums: es steht im fachwerk `LICHT_GESETZ` und trägt `cdM2` (die Quelle im Gesetz);
-//   leucht     ohne `unbeleuchtet`: das Leucht-Gesetz des Feuers (Wert = fachwerk `LEUCHT_FEUER`);
+//   licht      der Name eines Emitter-Datums: es steht im fachwerk `LICHT_GESETZ` und trägt seine leuchtende Fläche — die
+//              Leuchtdichte `cdM2` (das Fenster) oder die Lichtstärke `cd` mit `glasStreu` (das Glas einer Leuchte, nacht-lichter);
+//   leucht     ohne `unbeleuchtet`: das Leucht-Gesetz der Flamme (Wert = fachwerk `FEUER_LEUCHT_JE_LUMA`, cd/m² je Luma);
 //   tor        `leucht` mit `unbeleuchtet` (Filigran · Saum · Scheibe) oder Emissiv (Rahmen-Glut · Tor-Beschläge) an der Art
 //              Tor (`kind` gate) — die Klasse Erscheinung;
 //   quelle     Emissiv der Seh-Klasse `glut`: die Lichter des Studios (die Zahl der Studio-Tafel in der Einheit der Welt);
@@ -444,14 +445,14 @@ function leuchtUrteil(flaechen, fc = FC) {
         const leucht = typeof f.leucht === "number" && f.leucht > 0;
         if (typeof f.licht === "string") {
             const D = fc.LICHT_GESETZ[f.licht];
-            if (D && D.cdM2 > 0) zahl.licht++;
-            else rot.push(`Emitter-Datum ohne Gesetz: ${wer(f)} trägt licht „${f.licht}" — ${D ? "die Zeile trägt kein cdM2" : "keine Zeile im fachwerk LICHT_GESETZ"}`); // prettier-ignore
+            if (D && (D.cdM2 > 0 || (D.cd > 0 && D.glasStreu > 0))) zahl.licht++;
+            else rot.push(`Emitter-Datum ohne Gesetz: ${wer(f)} trägt licht „${f.licht}" — ${D ? "die Zeile trägt weder cdM2 noch cd mit glasStreu" : "keine Zeile im fachwerk LICHT_GESETZ"}`); // prettier-ignore
         } else if (leucht && f.unbeleuchtet) {
             if (f.art === "gate") zahl.tor++;
             else rot.push(`Unbeleuchtetes außerhalb der Klasse: ${wer(f)} leuchtet ohne Licht-Antwort (leucht ${f.leucht}) — nur die Art Tor trägt Filigran, Saum und Scheibe`); // prettier-ignore
         } else if (leucht) {
-            if (f.leucht === fc.LEUCHT_FEUER) zahl.leucht++;
-            else rot.push(`Leucht-Gesetz ohne Quelle: ${wer(f)} leuchtet × ${f.leucht} (das Gesetz des Feuers trägt LEUCHT_FEUER ${fc.LEUCHT_FEUER})`); // prettier-ignore
+            if (f.leucht === fc.FEUER_LEUCHT_JE_LUMA) zahl.leucht++;
+            else rot.push(`Leucht-Gesetz ohne Quelle: ${wer(f)} leuchtet × ${f.leucht} (das Gesetz der Flamme trägt FEUER_LEUCHT_JE_LUMA ${fc.FEUER_LEUCHT_JE_LUMA})`); // prettier-ignore
         } else if (Array.isArray(f.emissive)) {
             if (f.seh === "glut") zahl.quelle++;
             else if (f.art === "gate") zahl.tor++;

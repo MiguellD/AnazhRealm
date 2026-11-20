@@ -183,7 +183,14 @@ function tonKurveJs(farbe, schulter, mut = {}) {
     const c = farbe.map((v) => v - (x < 0.08 ? x - 6.25 * x * x : 0.04));
     const stauch = (sp) => (sp >= S ? (1 - (d * d) / (sp + d - S) + (mut.sprung || 0)) / sp : 1);
     if (mut.kanalweise) return c.map((v) => v * stauch(v));
-    return c.map((v) => v * stauch(Math.max(...c)));
+    const sp = Math.max(...c);
+    const aus = c.map((v) => v * stauch(sp));
+    // der Weg zu Weiß (nacht-lichter, welt-licht `BELICHTUNG.weiss`): über Weiß begrenzt zum größten Kanal, genau 0 bis Weiß
+    const WS = quelle().W.BELICHTUNG.weiss;
+    const s = Math.log2(Math.max(sp, 1)) / WS.stufen;
+    const w = mut.ohneWeiss ? 0 : WS.kappe * (1 - Math.pow(2, -s * s));
+    const hell = Math.max(...aus);
+    return aus.map((v) => v + (hell - v) * w);
 }
 // die sRGB-Kodierung der Ausgabe (IEC 61966-2-1) in 8 Bit
 const srgb8 = (v) => {
@@ -738,6 +745,8 @@ function urteil(z) {
     return v;
 }
 
+// der grüne Lauf der Flamme: das Soll der EINEN Kurve am Quellen-Ton, auf 8 Bit gerundet
+const FLAMME_GRUEN = (K) => flammenSoll(K, 3000, 20000, { schulter: quelle().W.BELICHTUNG.schulter, deckel: quelle().W.BELICHTUNG.deckel }).map(Math.round);
 function selbsttest() {
     const fehler = SK.selbsttest().map((s) => "Shader-Kosten-Linse: " + s);
     const ausgabe = {
@@ -796,15 +805,16 @@ function selbsttest() {
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
         flamme: {
             toene: {
-                // KERN und MANTEL: der Ton des Feuers in der EINEN Kurve (gemessen GTX 1050, licht-eine-skala, k 20 000) — photopisch,
-                // Tag = Nacht = ohne Umkehr; GLIMMEN: gerechnet bei k 20 000 (der Mantel in 0,158 cd/m²)
-                kern: { kelvin: 3000, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [255, 183, 109], nacht: [255, 183, 109], ohne: [255, 183, 109] },
-                mantel: { kelvin: 2350, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [255, 159, 64], nacht: [255, 159, 64], ohne: [255, 159, 64] },
+                // KERN und MANTEL: der Ton des Feuers in der EINEN Kurve (gemessen GTX 1050, licht-eine-skala, k 20 000: [255,183,109] /
+                // [255,159,64]) — photopisch, Tag = Nacht = ohne Umkehr; seit nacht-lichter mit dem Weg zu Weiß gerechnet (`flammenSoll`,
+                // [255,196,142] / [255,176,119]); GLIMMEN: gerechnet bei k 20 000 (der Mantel in 0,158 cd/m²)
+                kern: { kelvin: 3000, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: FLAMME_GRUEN(3000), nacht: FLAMME_GRUEN(3000), ohne: FLAMME_GRUEN(3000) },
+                mantel: { kelvin: 2350, cd: 15000, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: FLAMME_GRUEN(2350), nacht: FLAMME_GRUEN(2350), ohne: FLAMME_GRUEN(2350) },
                 glimmen: { kelvin: 2350, cd: 0.1581, k: 20000, nfTag: 0, nfNacht: 1, nfOhne: 1, tag: [171, 100, 10], nacht: [169, 97, 35], ohne: [131, 84, 45] },
             },
             quelle: { uniform: true, augeLiest: true, zwilling: null, kette: true, umkehr: true },
             // (j2) die Kurve der Seite: die Schulter aus welt-licht.js (dieselbe Datei wie die Seite), der Deckel und die Wurzel wie gemessen
-            kurve: { platz: true, schulter: quelle().W.BELICHTUNG.schulter, deckel: 32768 },
+            kurve: { platz: true, schulter: quelle().W.BELICHTUNG.schulter, deckel: quelle().W.BELICHTUNG.deckel },
             kelvin0: 3000,
             // (A3) der Verlauf am Knie, mit der Rechen-Form gerechnet und auf 8 Bit gerundet
             knie: {
@@ -899,9 +909,9 @@ function selbsttest() {
         ["der Mantel fällt ins mesopische Band (ohne Umkehr entsättigt)", (z) => (z.flamme.toene.mantel.ohne = [163, 106, 59]), /FLAMME: MANTEL — OHNE die Umkehr .*Δ 92 > 6.*`FEUER_LEUCHTDICHTE`/],
         // (j2) KONSUM — MUTANTE-M1: die Kurve staucht je Kanal statt am größten (der Kern läuft nach Weiß); MUTANTE-M2: das Soll bei
         // einer fremden Temperatur (der Mantel bei 2 600 K gerechnet, bei 2 350 K gemessen); der Stand von main (der Fuß fraß das Blau)
-        ["MUTANTE-M1: die Kurve je Kanal (der Kern weiß)", (z) => (z.flamme.toene.kern.tag = flammenSoll(3000, 3000, 20000, z.flamme.kurve, { kanalweise: true }).map(Math.round)), /FLAMME: KERN \(3000 K\) KONSUM — am Schirm \[255,255,25\d\], Soll \[255,183\.\d+,109\]/],
-        ["MUTANTE-M1: ein gelb-weißes Bild", (z) => (z.flamme.toene.mantel.tag = [255, 230, 160]), /FLAMME: MANTEL \(2350 K\) KONSUM — am Schirm \[255,230,160\].*Δ 0 \/ 71\.\d+ \/ 95\.\d+ > 2/],
-        ["MUTANTE-M2: der Mantel bei 2 600 K gerechnet", ["flamme.toene.mantel.kelvin=", 2600], /FLAMME: MANTEL \(2600 K\) KONSUM — am Schirm \[255,159,64\], Soll /],
+        ["MUTANTE-M1: die Kurve je Kanal (der Kern weiß)", (z) => (z.flamme.toene.kern.tag = flammenSoll(3000, 3000, 20000, z.flamme.kurve, { kanalweise: true }).map(Math.round)), /FLAMME: KERN \(3000 K\) KONSUM — am Schirm \[255,255,25\d\], Soll \[255,195\.\d+,142\.\d+\]/],
+        ["MUTANTE-M1: ein gelb-weißes Bild", (z) => (z.flamme.toene.mantel.tag = [255, 230, 160]), /FLAMME: MANTEL \(2350 K\) KONSUM — am Schirm \[255,230,160\].*Δ 0 \/ 53\.\d+ \/ 40\.\d+ > 2/],
+        ["MUTANTE-M2: der Mantel bei 2 600 K gerechnet", ["flamme.toene.mantel.kelvin=", 2600], /FLAMME: MANTEL \(2600 K\) KONSUM — am Schirm \[255,176,119\], Soll /],
         ["der Mantel am Stand von main (der Fuß fraß das Blau)", (z) => (z.flamme.toene.mantel.tag = [200, 118, 18]), /FLAMME: MANTEL \(2350 K\) KONSUM — am Schirm \[200,118,18\]/],
         ["Kurve der Seite ungemessen (blind)", ["flamme.kurve"], /FLAMME: KONSUM — die Kurve der Seite ist nicht gemessen .*blind/],
         ["die Kurve steht nicht auf ihrem Platz (blind)", ["flamme.kurve.platz=", false], /FLAMME: KONSUM — die Kurve der Seite ist nicht gemessen/],

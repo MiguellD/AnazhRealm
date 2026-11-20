@@ -1947,7 +1947,7 @@ class AnazhRealm_gelaende_fern {
         const pm = st.playerMesh;
         if (!k || !pm) return;
         const K = AnazhRealm.FERN_KRONE_NAH;
-        k.U.waldR.value = this._laubRand();
+        k.U.waldR.value = this._laubRand() - AnazhRealm.KARTEN_HORIZONT_SAUM_M; // die innere Kante des Dachs: der Saum des Eintritts
         k.U.spieler.value.set(pm.position.x, pm.position.z);
         const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
         const span = this._voxelChunkConfig().span;
@@ -2006,8 +2006,13 @@ class AnazhRealm_gelaende_fern {
         const K = AnazhRealm.FERN_KRONE_NAH;
         const dSp = _T.positionWorld.xz.sub(k.U.spieler).length();
         const dAuge = _T.positionWorld.sub(_T.cameraPosition).length();
+        // DIE INNERE KANTE IST DER SAUM DES EINTRITTS (w28-nadel-bestand): ein Wurf des Felds tritt bei Laub-Rand − Saum · u ein
+        // (`_archKartenHorizont`, u gleichverteilt aus seinem Samen) — der Anteil der Bäume ohne Karte steigt über den Saum linear
+        // von 0 auf 1, und das Dach trägt genau ihn (`waldR` = Laub-Rand − `KARTEN_HORIZONT_SAUM_M`, die Rampe linear über
+        // denselben Saum). Bis hier begann das Dach erst am Laub-Rand: im Saum davor stand ein Baum, der noch nicht eintrat, ohne
+        // Karte und ohne Dach (GTX 1080, Tafel-Pose lod.K1#1: 25 Bäume im Blick bei 187–216 m, gate:laub-kante „Baum ohne Stufe“).
         k.ohneWald = _T.max(
-            _T.smoothstep(k.U.waldR, k.U.waldR.add(K.saumM), dSp),
+            _T.clamp(dSp.sub(k.U.waldR).div(AnazhRealm.KARTEN_HORIZONT_SAUM_M), 0.0, 1.0),
             _T.smoothstep(_T.float(K.sichtM - K.saumM), _T.float(K.sichtM), dAuge)
         );
         return k.ohneWald;
