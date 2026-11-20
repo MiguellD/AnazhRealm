@@ -272,10 +272,14 @@ class AnazhRealm_gelaende_fern {
             G.it = null;
             // das Gedächtnis ist durch: seine Gefallenen gehen (trägt die Welt inzwischen eine neue Karte, fällt nichts)
             if (!weg.length || E.karte(this) !== karte) continue;
-            const werte = istMap ? weg.map((k) => karte.get(k)) : weg;
-            for (const k of weg) karte.delete(k);
-            if (E.geht) E.geht(this, weg, werte);
-            fiel += weg.length;
+            // die Runde läuft über Bilder: ein Eintrag, den inzwischen sein eigener Räumer nahm (`_ortSameFaellt`), geht nicht
+            // zweimal — bis stern-bild reichte die Runde ihn als undefined an `geht` (Loop-Wurf „reading 'size'“, Tab-Tod)
+            const da = istMap ? weg.filter((k) => karte.has(k)) : weg;
+            if (!da.length) continue;
+            const werte = istMap ? da.map((k) => karte.get(k)) : da;
+            for (const k of da) karte.delete(k);
+            if (E.geht) E.geht(this, da, werte);
+            fiel += da.length;
         }
         M.fiel += fiel;
         M.nun += fiel;
