@@ -346,7 +346,7 @@ async function jahrFeldProbe(o) {
         let fit = null;
         for (let i = 0; !fit && i < 600; i++) {
             fit = r._streuGesetzFit(id, 1, 0, 0);
-            if (!fit) await new Promise((f) => setTimeout(f, 50));
+            if (!fit) await window.sleep(50); // das EINE Warten der Seite (welt-boot `sleep`)
         }
         if (!fit) {
             out.push({ id, kind: rec.kind, fehlt: "die Passung steht nach 600 Fragen nicht" });
