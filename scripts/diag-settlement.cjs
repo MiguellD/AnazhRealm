@@ -2396,17 +2396,38 @@ hauptLauf(async () => {
                 // je Takt die abgelaufene EINE Frist (der Null-Renderer baut sonst am Stück): der Schritt des Zugs trägt sein
                 // Pflicht-Stück — EINE Rate des Gangs oder EIN Haus; so zählen die Takte bis zum ersten Haus
                 const ohneEnde = leihe(r, { _bauFristOhneEnde: () => false });
-                for (
-                    const weiter = __deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
-                    (!erst || (!erstes && bild < 400)) && weiter();
-                ) {
-                    haus += !erst;
-                    r._fristStellen(performance.now() - 1e3, false);
-                    r._tickAutoSettlement(pw);
-                    bild++;
-                    const e = st.architectures.find((e) => !vor0.has(e) && /^haus_/.test(e.type) && stufe(e));
-                    if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
-                    await sleep(5);
+                // HÄNGT die Welt vor dem ersten Haus, nennt die Meldung den Zug beim Namen: die Zelle im Export, der Vorrat (sein
+                // Wasser-Urteil), der Zug (Gang, Reihe), die Trasse und die abgewiesenen Zellen — bis samen-ein-baum nannte sie nur
+                // das Offene der Welt (wald 4476, 3635 Takte), nie, wo der Dorf-Zug stand
+                const zugZustand = () => {
+                    const q = r._autoSettlementQueue, v = r._dorfVorraete && r._dorfVorraete.get(key);
+                    return JSON.stringify({
+                        pending: r._autoSettlementPendingKey || null,
+                        zelle: !!(wm.settlementCells || {})[key],
+                        vorrat: v ? { da: !!v.da, vorgebacken: !!v.vorgebacken, nass: v.wasser ? v.wasser.nass : "-", slots: v.v2 && v.v2.slots ? v.v2.slots.length : null } : null,
+                        zug: q ? { zelle: q.cellKey, idx: q.idx, reihe: q.reihe ? q.reihe.length : null, gang: !!q.gang } : null,
+                        trasse: r._ortTrasseMass || null,
+                        abgewiesen: [...(r._autoSettlementRejected || [])].slice(0, 6),
+                        haus,
+                        bild,
+                    }).slice(0, 700);
+                };
+                try {
+                    for (
+                        const weiter = __deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
+                        (!erst || (!erstes && bild < 400)) && weiter();
+                    ) {
+                        haus += !erst;
+                        r._fristStellen(performance.now() - 1e3, false);
+                        r._tickAutoSettlement(pw);
+                        bild++;
+                        const e = st.architectures.find((e) => !vor0.has(e) && /^haus_/.test(e.type) && stufe(e));
+                        if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
+                        await sleep(5);
+                    }
+                } catch (f) {
+                    f.message = "DER ZUG " + zugZustand() + " · " + f.message;
+                    throw f;
                 }
                 ohneEnde();
                 r._bauFristTakt = null;

@@ -101,18 +101,20 @@ function ortUrteil(v2, hoehe, o) {
         if (!ob) continue;
         const c = Math.cos(ob.phi || 0);
         const s = Math.sin(ob.phi || 0);
-        let mn = Infinity;
+        let [mn, tief] = [Infinity, null];
         for (let i = 0; i <= 8; i++)
             for (let j = 0; j <= 8; j++) {
                 const lx = ob.ex * (i / 4 - 1);
                 const lz = ob.ez * (j / 4 - 1);
                 const [px, pz] = [ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c];
-                if (!imKeller(sl, px, pz)) mn = Math.min(mn, hoehe(ox + px, oz + pz));
+                if (imKeller(sl, px, pz)) continue;
+                const h = hoehe(ox + px, oz + pz);
+                if (h < mn) [mn, tief] = [h, [px, pz]];
             }
         const hoch = Math.max(0, sl.y - mn);
         sockel.push(hoch);
         if (hoch > 0)
-            sockelJe.push({ si, rolle: sl.rolle || null, m: Math.round(hoch * 1000) / 1000, x: Math.round(sl.x * 10) / 10, z: Math.round(sl.z * 10) / 10 });
+            sockelJe.push({ si, rolle: sl.rolle || null, m: Math.round(hoch * 1000) / 1000, x: Math.round(sl.x * 10) / 10, z: Math.round(sl.z * 10) / 10, tief });
     }
     sockelJe.sort((a, b) => b.m - a.m);
     // die WAND je Haus: das Rechteck der Tür-Zeile (W × D um den Slot), sonst der Grundriss (das Dach ragt über die Wand)
@@ -126,6 +128,31 @@ function ortUrteil(v2, hoehe, o) {
     const wege = [];
     for (const rd of v2.roads || [])
         for (let k = 1; k < (rd.pts || []).length; k++) wege.push([rd.pts[k - 1], rd.pts[k], (rd.w || 3) / 2]);
+    // AM TIEFSTEN PUNKT des Sockels (die ersten drei Häuser): der nächste Weg (Abstand zum Rand, < 0 = im Weg) und das nächste
+    // andere Haus (Abstand der Mitte, sein Boden) — so steht der Täter beim Namen, ob ein Weg-Schnitt oder eine Nachbar-Terrasse
+    for (const h of sockelJe.slice(0, 3)) {
+        const [px, pz] = h.tief;
+        let weg = Infinity;
+        for (const [a, b, hw] of wege) {
+            const dx = b.x - a.x, dz = b.z - a.z, l2 = dx * dx + dz * dz;
+            let t = l2 > 0 ? ((px - a.x) * dx + (pz - a.z) * dz) / l2 : 0;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            weg = Math.min(weg, Math.hypot(px - a.x - dx * t, pz - a.z - dz * t) - hw);
+        }
+        const ich = v2.slots[h.si];
+        const nb = v2.slots
+            .map((sl, j) => ({ j, d: Math.hypot(sl.x - px, sl.z - pz), y: sl.y, rolle: sl.rolle || null }))
+            .filter((q) => q.j !== h.si)
+            .sort((a, b) => a.d - b.d)[0];
+        const r1 = (v) => Math.round(v * 100) / 100;
+        Object.assign(h, {
+            tief: [r1(px), r1(pz)],
+            grund: r1(hoehe(ox + px, oz + pz) - ich.y),
+            wegRand: Number.isFinite(weg) ? r1(weg) : null,
+            nachbar: nb ? { si: nb.j, rolle: nb.rolle, d: r1(nb.d), dy: r1(nb.y - ich.y) } : null,
+        });
+    }
+    for (const h of sockelJe.slice(3)) delete h.tief;
     const hz = new Map();
     const zelle = (i, j) => {
         const q = (i + 32768) * 65536 + (j + 32768);
@@ -258,7 +285,7 @@ function ortVerdikt(m) {
         );
     if (!(m.sockelMax === 0))
         fehl.push(
-            `Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})${m.sockelFehl?.length ? ` — ${m.sockelFehl.map((h) => `Slot ${h.si} ${h.rolle || "?"} ${h.m} m bei ${h.x}/${h.z}`).join(" · ")}` : ""}`
+            `Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})${m.sockelFehl?.length ? ` — ${m.sockelFehl.map((h) => `Slot ${h.si} ${h.rolle || "?"} ${h.m} m bei ${h.x}/${h.z} (tief ${h.tief}: Weg-Rand ${h.wegRand} m, Nachbar ${h.nachbar ? `Slot ${h.nachbar.si} ${h.nachbar.rolle} in ${h.nachbar.d} m, Boden ${h.nachbar.dy} m` : "–"})`).join(" · ")}` : ""}`
         );
     if (!(m.tuerenN > 0 && m.tuerenOk === m.tuerenN)) fehl.push(`Türen erreichbar ${m.tuerenOk}/${m.tuerenN}`);
     if (!(m.kronen === 0)) fehl.push(`Kronen in Grundrissen ${m.kronen}`);
