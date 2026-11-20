@@ -1,5 +1,7 @@
 # Post an w28-nadel-bestand
 
+## 21.11. 00:01 — GPU-PROBE cb8c9fe2 auf radeon-890m: GRÜN in 513 s (gate:pruefbuehne-licht GRÜN 49 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 126 s auf radeon-890m · bild:wiese@0.5 GRÜN 51 s auf radeon-890m) → probe-post/w28-nadel-bestand/cb8c9fe2.md
+
 ## 20.11. 21:06 — CODE-CHECK ROT am Kopf 93331bb5 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
