@@ -236,19 +236,28 @@ hauptLauf(async () => {
     await server.zeige(page, 120000, "index.html");
     const boot = await page.evaluate(
         async ({ minChunks }) => {
-            for (const weiter = __deckel("das erste Weltbild", 1200); weiter(); ) {
-                const st = r && r.state;
-                // B urteilt den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm
-                if (
-                    st?.rendererReady &&
-                    st.playerMesh &&
-                    !st._deferredAvatarSoul &&
-                    st.voxelChunks &&
-                    st.voxelChunks.size >= minChunks &&
-                    st._leibWarm
-                )
-                    break;
-                await sleep(300);
+            // DER HÄNGER BEIM NAMEN (z637): der Deckel warf ohne Täter („die Welt hat nichts mehr offen“, Exit 2) — der Leib-Vorbau
+            // hielt `_leibWarm` (GTX 1050 und OMEN: der Mensch mit 5 Teilen, je ein Kaskaden-Paar ohne Bau, `_vorbauFehlt`). Jetzt
+            // urteilt die Boot-Zeile ROT und nennt, was der Vorbau hält: Leib · Takte · fehlende Teile · offene Leiber.
+            let haenger = null;
+            try {
+                for (const weiter = __deckel("das erste Weltbild", 1200); weiter(); ) {
+                    const st = r && r.state;
+                    // B urteilt den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm
+                    if (
+                        st?.rendererReady &&
+                        st.playerMesh &&
+                        !st._deferredAvatarSoul &&
+                        st.voxelChunks &&
+                        st.voxelChunks.size >= minChunks &&
+                        st._leibWarm
+                    )
+                        break;
+                    await sleep(300);
+                }
+            } catch (e) {
+                const V = st && st._leibVorwaermung;
+                haenger = `${e.message.split(" — ")[0]}${V && V.leib ? ` · Leib-Vorbau hält: ${V.leib.name} nach ${V.takte} Takten, ${r._vorbauFehlt(V.leib)} Teile fehlen, ${V.offen.length} Leiber offen` : ""}`;
             }
             const rend = r && st && st.renderer;
             return {
@@ -257,6 +266,7 @@ hauptLauf(async () => {
                 chunks: r && st.voxelChunks ? st.voxelChunks.size : -1,
                 weltbild: r && st._weltbildDa ? `${(st._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
                 warm: !!(r && st._leibWarm),
+                ...(haenger ? { haenger } : {}),
             };
         },
         { minChunks: 25 }
