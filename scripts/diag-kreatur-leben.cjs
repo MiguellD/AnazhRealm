@@ -1556,7 +1556,8 @@ async function lebenBuehnen() {
             get: (o, k) => o[k] || (o[k] = r._streamRng("leben-" + saat + "-" + String(k))),
         });
         r._faunaStroeme = { seed: s.worldMeta.seed, rng };
-        [s.spielZeit, s.lifeField, s.faunaBestand] = [0, undefined, undefined];
+        r._weltUhrNeu(0); // je Lauf eine neue Welt-Uhr (nur die Geburt stellt sie zurück)
+        [s.lifeField, s.faunaBestand] = [undefined, undefined];
         const R = keys.map((key) => Object.assign(r._bestandRegion(key, false), { t: 0 }));
         const frei = R.map((Rj) => !Rj.tiere.some((t) => t.gehege));
         const t0 = performance.now();
