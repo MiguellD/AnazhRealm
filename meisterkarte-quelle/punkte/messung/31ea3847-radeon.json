@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T07:20:20.896Z",
+ "zeit": "2026-11-20T08:36:59.828Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -18678,6 +18678,330 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kosmos.welten#2",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.markt#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.51,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 29.2,
+   "fremd": {
+    "s": 34.5,
+    "takte": 14,
+    "fremdS": 108.81,
+    "kerne": 3.154,
+    "fensterKerne": 3.368,
+    "namen": [
+     [
+      "node.exe scripts/diag-ofen-contract.cjs",
+      40.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.61
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      5.7
+     ]
+    ],
+    "dienerS": 20.22,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.63
+     ],
+     [
+      "dwm.exe",
+      6.16
+     ]
+    ],
+    "geraetS": 25.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.16
+     ],
+     [
+      "svchost.exe",
+      10.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 94.61,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T08:36:59.828Z",
+   "abdruck": "74278454cbf2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.markt#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.51,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 29.2,
+   "fremd": {
+    "s": 34.5,
+    "takte": 14,
+    "fremdS": 108.81,
+    "kerne": 3.154,
+    "fensterKerne": 3.368,
+    "namen": [
+     [
+      "node.exe scripts/diag-ofen-contract.cjs",
+      40.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.61
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      5.7
+     ]
+    ],
+    "dienerS": 20.22,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.63
+     ],
+     [
+      "dwm.exe",
+      6.16
+     ]
+    ],
+    "geraetS": 25.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.16
+     ],
+     [
+      "svchost.exe",
+      10.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 94.61,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T08:36:59.828Z",
+   "abdruck": "6d386a26821a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.markt#2",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.markt#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.51,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 29.2,
+   "fremd": {
+    "s": 34.5,
+    "takte": 14,
+    "fremdS": 108.81,
+    "kerne": 3.154,
+    "fensterKerne": 3.368,
+    "namen": [
+     [
+      "node.exe scripts/diag-ofen-contract.cjs",
+      40.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.61
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      5.7
+     ]
+    ],
+    "dienerS": 20.22,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.63
+     ],
+     [
+      "dwm.exe",
+      6.16
+     ]
+    ],
+    "geraetS": 25.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.16
+     ],
+     [
+      "svchost.exe",
+      10.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 94.61,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T08:36:59.828Z",
+   "abdruck": "e676dd946ca5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.markt#2",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.markt#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.51,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 29.2,
+   "fremd": {
+    "s": 34.5,
+    "takte": 14,
+    "fremdS": 108.81,
+    "kerne": 3.154,
+    "fensterKerne": 3.368,
+    "namen": [
+     [
+      "node.exe scripts/diag-ofen-contract.cjs",
+      40.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.61
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      5.7
+     ]
+    ],
+    "dienerS": 20.22,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.63
+     ],
+     [
+      "dwm.exe",
+      6.16
+     ]
+    ],
+    "geraetS": 25.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.16
+     ],
+     [
+      "svchost.exe",
+      10.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 94.61,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T08:36:59.828Z",
+   "abdruck": "c5abed0ed588",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.markt#2",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.markt#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.51,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 29.2,
+   "fremd": {
+    "s": 34.5,
+    "takte": 14,
+    "fremdS": 108.81,
+    "kerne": 3.154,
+    "fensterKerne": 3.368,
+    "namen": [
+     [
+      "node.exe scripts/diag-ofen-contract.cjs",
+      40.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.61
+     ],
+     [
+      "sh.exe dienst/radeon-dienst.sh",
+      5.7
+     ]
+    ],
+    "dienerS": 20.22,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.63
+     ],
+     [
+      "dwm.exe",
+      6.16
+     ]
+    ],
+    "geraetS": 25.7,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.16
+     ],
+     [
+      "svchost.exe",
+      10.67
+     ],
+     [
+      "SearchIndexer.exe",
+      0.8
+     ]
+    ],
+    "eigenS": 94.61,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T08:36:59.828Z",
+   "abdruck": "4a1e106d3f06",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.markt#2",
    "modus": "session"
   }
  },
