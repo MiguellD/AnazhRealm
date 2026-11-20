@@ -92,7 +92,7 @@
             "stamm/siedlung-verkehr.js": ["Frustum"],
             "stamm/bild-schatten.js": ["Frustum"],
             "stamm/koerper-fahrt.js": ["Frustum"],
-            "stamm/kreatur-verhalten.js": ["Frustum"],
+            "stamm/kreatur-sicht.js": ["Frustum"],
             "stamm/feld-leben.js": ["Frustum"],
             "phyto-core.js": ["STUFEN_BILD_PX"],
             "foundry-core.js": ["HALM_STUFEN"],
