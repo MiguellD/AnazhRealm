@@ -957,8 +957,8 @@ async function kreaturProben(r, T, opts) {
         // Flucht endet am Radius
         if (taeter === "herde-zerfall") decke("_kreaturVerbandZug", () => () => {});
         // das Revier je Glied statt je Wurf (w28-wander-revier): jedes Glied legt seinen Anker drei Leinen weit in seine eigene
-        // Richtung — die Herde hat kein gemeinsames Revier mehr und zerfällt beim Wandern (eine Leine weit hielt der Zug des
-        // Verbands sie noch: 1)
+        // Richtung — die Herde hat kein gemeinsames Revier mehr: sie zerfällt beim Wandern, oder der Zug des Verbands hält jedes
+        // Glied gespannt fern seines Ankers (eine Leine weit hielt er sie noch: 1)
         if (taeter === "herde-revier")
             decke(
                 "_kreaturRevier",
@@ -1006,7 +1006,7 @@ async function kreaturProben(r, T, opts) {
             };
             const t = { n: glieder.length, fremdN: fremd.length, wurf: anteil(), summe: 0, bilder: 0, fluchtTakte: 0 };
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
-            Object.assign(t, { enge: 0, engst: [Infinity] });
+            Object.assign(t, { enge: 0, engst: [Infinity], leine: [0, 0, 0] });
             const [alt, beginn] = [glieder.map((c) => c.position.clone()), []];
             // DAS WANDERN DAUERT 120 s (z353): ohne den Zug des Verbands (Täter herde-zerfall) trieb die Herde am Ort des
             // dichteren Walds (heim2-w20-wald-kosten) in 50 s nur auf 0,916 (Soll ≥ 0,9) auseinander, an main 0,791 — die Zahl der
@@ -1043,6 +1043,13 @@ async function kreaturProben(r, T, opts) {
                         const q = ab(p, b.position) / (r._kreaturRaum(c) + r._kreaturRaum(b));
                         if (q < e[0]) e = [rund(q, 2), b.userData.name, c.userData.name, (k / 60) | 0];
                     }
+                    // DIE LEINE DES REVIERS: im Wandern steht das Glied in der Leine seines Ankers — dieselbe Leine, die das Wandern
+                    // zieht (`_creatureCharacterWander`: `_gehegeLeine` über `_creatureMoveCharacter`), in Leinen gezählt
+                    if (art === "wander" && k >= 600) {
+                        const A = c.userData.wanderAnchor;
+                        const L = A ? ab(p, A) / r._gehegeLeine(c, r._creatureMoveCharacter(c).leashM) : Infinity;
+                        ((t.leine[0] += L > 1 ? 1 : 0), t.leine[1]++, (t.leine[2] = Math.max(t.leine[2], L)));
+                    }
                     const d = ab(p, alt[i]);
                     if (d > 1 / 60) ((sx += (p.x - alt[i].x) / d), (sz += (p.z - alt[i].z) / d), nl++);
                     alt[i].copy(p);
@@ -1054,6 +1061,9 @@ async function kreaturProben(r, T, opts) {
                 if (k >= 600) t.enge += e[0];
                 if (!(e[0] >= t.engst[0])) t.engst = e;
             }
+            // wie weit die Anker der Glieder auseinander liegen (das Revier des Wurfs ist EINES)
+            const an = glieder.map((c) => c.userData.wanderAnchor).filter(Boolean);
+            t.anker = rund(Math.max(0, ...an.flatMap((A, i) => an.slice(0, i).map((o) => ab(A, o)))), 1);
             return t;
         };
         const [W, F, X, B] = ["wander", "flucht", "fremd", "blick"].map(lauf);
@@ -1066,6 +1076,8 @@ async function kreaturProben(r, T, opts) {
             fluchtMin: t.fb ? rund(t.fMin, 3) : null,
             enge: rund(t.enge / t.bilder, 2),
             engst: t.engst,
+            leine: t.leine[1] ? { jenseits: rund(t.leine[0] / t.leine[1], 3), max: rund(t.leine[2], 2) } : null,
+            anker: t.anker,
         });
         // DER GRUND EINES KOMMENDEN ORTS (tiere.K1#2, Herde am Hang: das Dorf erwachte nach dem Wurf, sein Erdbau trug den Hang
         // unter zwei der fünf Leiber ab): der erste Nachbar des Start-Dorfs im Wegenetz (`_wegenetzNachbarn`, ein Ort des Gesetzes
@@ -2948,6 +2960,16 @@ function urteil(name, z) {
             W.mittel >= 0.9,
             `Verband zerfällt beim Wandern: im Mittel ${W.mittel} der ${W.n} Glieder binnen ${FR} Paar-Räumen vom Mittel von 10 bis 120 s (Soll ≥ 0,9; Wurf ${W.wurfAnteil})`
         );
+        // DAS EINE REVIER DES VERBANDS: ein Revier je Glied (Täter herde-revier) zeigt sich auf einem von zwei Wegen — der Verband
+        // zerfällt (oben), oder sein Zug hält jedes Glied gespannt fern seines Ankers (es zeigt „ziehen“ und steht). Die Probe sah
+        // nur den ersten, und welcher Weg fällt, entscheiden die Leib-Größen: am Kopf d0104e7e hielt der Verband unter dem Täter
+        // 0,794, mit den Größen aus der Los-Nummer (Tier-Leser, Welle SAMEN) 1,0 — jedes Glied 1,3–3,4 Leinen vor seinem Anker, die
+        // Anker 30–50 m auseinander; gesund ≤ 0,6 Leinen (headless, 20.11.). Beide Wege zusammen lassen dem Täter keinen dritten.
+        const L = W.leine || {};
+        soll(
+            L.jenseits <= 0.1,
+            `Verband ohne gemeinsames Revier: ${Math.round(L.jenseits * 100)} % der Glied-Bilder von 10 bis 120 s jenseits der Leine ihres Ankers (Soll ≤ 10 %; bis ${L.max} Leinen, die Anker bis ${W.anker} m auseinander)`
+        );
         soll(
             F.fluchtMittel !== null && F.fluchtMittel >= 0.8,
             `Verband zerfällt auf der Flucht: im Mittel ${F.fluchtMittel} der ${F.n} Glieder binnen ${FR} Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten ${F.fluchtMin}, Wurf ${F.wurfAnteil})`
@@ -3257,7 +3279,7 @@ const TAETER = {
         // in der Richtung lag er am Rand (main 0,89 / Φ 0,784 gegen 0,9 / 0,8) und fällt mit dem Revier im Lebensraum
         // (w28-wander-revier: die Glieder ziehen zu Zielen IN der Leine des gemeinsamen Wurf-Ankers, 1 / Φ 0,879) — nicht sein Grund
         ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/],
-        ["herde-revier", /zerfällt beim Wandern/],
+        ["herde-revier", /zerfällt beim Wandern|ohne gemeinsames Revier: [1-9]\d* % /],
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
