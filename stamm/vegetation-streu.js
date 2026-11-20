@@ -668,22 +668,27 @@ class AnazhRealm_vegetation_streu {
             // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn; ihre Krone streut Laub.
             if (zelle && layer.promotable) {
                 this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
-                // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
-                const kc = AnazhRealm.FOREST.crown[species];
-                const kr = kc ? kc * tf.scale : Number.isFinite(visH) ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe : 0;
-                // der Scheitel: der Fuß der Zelle + ihre Sichthöhe — der Schwarm landet auf ihm (`_kronenOben`)
-                this._kronenStreuNeu(
-                    `s:${layer.name}:${cellX},${cellZ}`,
-                    tf.x,
-                    tf.z,
-                    kr,
-                    visH > 0 ? zelle.fuss.y + visH : NaN
-                );
+                this._streuKroneTragen(zelle, visH);
             }
             return zelle;
         });
         // ohne Zelle: die Wand nahm ihn oder sein Bau ist ungemappt (er fällt) — er wartet nur, wenn sein Bau einen Wartenden zählte
         return rec || ((region._wartenN | 0) > warten0 ? null : false);
+    }
+
+    // DIE KRONE EINER STREU-BAUM-ZELLE in der Kronen-Karte (`_kronenStreuNeu`, `s:<schicht>:<zelle>`): der Radius der des
+    // Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe; der Scheitel der Fuß der Zelle + die Sichthöhe ihrer
+    // Gestalt — der Schwarm landet auf ihm (`_kronenOben`). Leser: ihr Bau und der Wechsel ihrer Gestalt (`_tickScatterLod`).
+    _streuKroneTragen(zelle, visH) {
+        const kc = AnazhRealm.FOREST.crown[zelle.species];
+        const kr = kc ? kc * zelle.scale : Number.isFinite(visH) ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe : 0;
+        this._kronenStreuNeu(
+            `s:${zelle.layer}:${zelle.cellX},${zelle.cellZ}`,
+            zelle.x,
+            zelle.z,
+            kr,
+            visH > 0 ? zelle.fuss.y + visH : NaN
+        );
     }
 
     // DIE REGION STEHT (ihr Pass ist durch): ihre Zellen in der Reihe der Plätze (Schicht, Wurf — wie der One-Shot), ihre Zahl je
@@ -1117,6 +1122,18 @@ class AnazhRealm_vegetation_streu {
         return !!keys && (keys[newLod] || keys[0]) === cell.bpName;
     }
 
+    // Antwortet der Ort der Zelle jetzt eine andere Gestalt, als sie trägt (K20: der EINE Streu-Same, `_scatterFoundrySeed`)?
+    // Nur ein Foundry-Baum, dessen Ort wählt (`_ortWaehlt`: Bestand oder Solitär), kann wechseln; wartet die Antwort (der Plan
+    // des Walds fehlt, null), hält die Zelle ihre Gestalt. Leser: das Epochen-Urteil der ruhigen Zelle (`_tickScatterLod`).
+    _streuGestaltWechsel(cell, tf) {
+        if (!Number.isInteger(cell.gestalt) || !this._foundryEnabled()) return false;
+        const preset = this._foundryPresetFor(cell.species);
+        if (!preset || !AnazhRealm._ortWaehlt(preset)) return false;
+        const same = this._scatterFoundrySeed(cell.cellX, cell.cellZ, cell.variantIndex, cell.species, tf);
+        const g = same === null ? null : this._foundryVariantFor(same, preset);
+        return Number.isInteger(g) && g !== cell.gestalt;
+    }
+
     // Scatter-LOD-Tick: Stufe + Band-Partner wurden beim Region-Bau zur BAU-Zeit-Distanz gewählt, der
     // Dither maskiert aber nach LIVE-Distanz (ferne Bäume verschwänden). Ein gedeckeltes Rolling-Slice
     // (bounded Scan + wenige Reallokationen/Frame) rechnet mit DENSELBEN Quellen neu:
@@ -1270,6 +1287,12 @@ class AnazhRealm_vegetation_streu {
             // Eine WARTENDE Gesetz-Zelle (ihr Satz stand beim Bau nicht: Fit-Takt, Kapsel-Liste) wiederholt den Spawn,
             // solange ihr Fern-Wunsch jenseits der Grenze gilt — slot-frei, nur wo ein echter Renderer den Welt-March zeichnet.
             const warten = !bahnWechsel && cell.wartet === true && newLod === cell.lod && this._weltMarchGezeichnet();
+            // DIE GESTALT FOLGT DEM ORT (K20, streu-gestalt-am-ort): die Zelle trägt die Gestalt, die ihr Ort beim Materialisieren
+            // antwortete; eine neue Epoche (ein Grundriss, der Wald am Ort: `_ortSameGen`) fragt ihn neu — antwortet er anders,
+            // materialisiert sie neu. Bis hier urteilte die ruhige Zelle nur Abstand und Band: am Dorfrand trug dieselbe Eiche je
+            // nach Tempo des Rechners Bestand (Gestalt 1, ihr Nachbar stand noch im künftigen Grundriss) oder Solitär (3).
+            // (Derselbe Same wie die Sichthöhe oben: wartete er, wartete schon sie.)
+            const gestaltWechsel = this._streuGestaltWechsel(cell, tf);
             // DAS BAND DER STREU (K36): wandert die Zelle durchs Band, folgt ihr Partner dem Auge wie bei der Architektur;
             // hält sie, weil ihr Partner lud, tauscht sie, sobald er steht — die Zelle materialisiert neu (Partner + Halt).
             const bandWechsel = this._zusagenVon(
@@ -1277,7 +1300,7 @@ class AnazhRealm_vegetation_streu {
                 () => !warten && !bahnWechsel && newLod === cell.lod && this._streuBandWechsel(cell, dist, visH, tf),
                 Z
             );
-            const ruhig = newLod === cell.lod && !warten && !bahnWechsel && !bandWechsel;
+            const ruhig = newLod === cell.lod && !warten && !bahnWechsel && !bandWechsel && !gestaltWechsel;
             // der Partner lädt: die Zelle schläft auf ihm — ohne Zusage bleibt die Wahl wach
             if (!bandWechsel && cell.halt === "wartet" && !(ruhig && this._schlafen(cell, Z, wunsch, wecke)))
                 offen += partner = 1;
@@ -1290,15 +1313,21 @@ class AnazhRealm_vegetation_streu {
             // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Fels [0], Blume [0,2], Strauch [1,2]; Grammatik
             // ohne eigene Stufe; diesseits der Nah-Grenze auch der Fern-Wunsch) → nur den Wunsch quittieren: kein
             // Materialisieren, kein Duplikat-Slot.
-            if (!warten && !bahnWechsel && !bandWechsel && this._scatterGleicheGestalt(cell, newLod, dist)) {
+            if (
+                !warten &&
+                !bahnWechsel &&
+                !bandWechsel &&
+                !gestaltWechsel &&
+                this._scatterGleicheGestalt(cell, newLod, dist)
+            ) {
                 cell.lod = newLod;
                 regung++;
                 continue;
             }
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
             // `fade` m näher wäre es noch L2 — kein Flackern am Dither-Band). Die leere private Hülle reapt
-            // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint).
-            if (hatRegional) {
+            // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint). Der Wechsel der Gestalt bleibt auf der Stufe.
+            if (hatRegional && !gestaltWechsel) {
                 const fadeM = AnazhRealm.LOD_DISTANCES.fade;
                 if (newLod !== 2 || this._chooseLODForDistance(Math.max(0, dist - fadeM), cell.lod, visH) !== 2)
                     continue;
@@ -1355,6 +1384,11 @@ class AnazhRealm_vegetation_streu {
             cell.bandWunsch = rec.bandWunsch;
             cell.halt = rec.halt;
             cell.fuss = rec.fuss;
+            // die Gestalt reist mit ihren Slots — und mit ihr der Scheitel der Krone (die Sichthöhe ist die der neuen Gestalt)
+            if (cell.gestalt !== rec.gestalt) {
+                cell.gestalt = rec.gestalt;
+                if (cell.promotable) this._streuKroneTragen(cell, visH);
+            }
             // Das Realloc-Budget deckelt Mesh-Züge; ein slot-freier Fernform-Wechsel (Gesetz-Platz) zählt nicht.
             if (hatteSlots || rec.slots.length) realloc++;
         }
