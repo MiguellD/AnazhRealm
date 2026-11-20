@@ -2869,11 +2869,17 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         await simPhase(5);
                         await __weltStehtNach(takt); // die Neubauten am Wasser (wetter.K3) vor der nächsten Weck-Probe
                         W.regen.nachher = await simPhase(60);
-                        // der Laub-Rand rückt (das Gesetz `_laubRand` wächst mit dem gebauten Ring): die Probe schiebt ihn um 1 mm
+                        // der Laub-Rand rückt (das Gesetz `_laubRand` wächst mit dem gebauten Ring): der Ring tut seinen Schritt am EINEN
+                        // Schreiber (`_ringWaechst`) — von einer Stufe unter dem Ziel zurück an das Ziel, im selben Zug (kein Bild sieht die
+                        // Lücke); sein Ereignis weckt den Wuchs, und der schläft wieder, ohne das Gesetz je Bild zu fragen
                         W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };
-                        const laubRand = r._laubRand;
-                        await weck("wuchs", () => (r._laubRand = () => laubRand.call(r) + 1e-3));
-                        delete r._laubRand;
+                        await weck("wuchs", () => {
+                            const ring = st._activeRingRadius;
+                            st._activeRingRadius = ring - 1;
+                            r._ringWaechst();
+                            W.wuchs.ring = [ring, st._activeRingRadius];
+                            st._activeRingRadius = ring;
+                        });
                         // die Ernte ist fällig: ihr Takt zur Zeit ihres Nachwachsens
                         S.frame();
                         r._tickScatterRegrow(Infinity);

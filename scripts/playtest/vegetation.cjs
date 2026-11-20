@@ -28,6 +28,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         out.nearIncluded = r._foliageChunkInRadius(pcx, pcz) === true;
         // (2) Rand wächst (der Ring baut aus) → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
         r._laubRand = () => 9999;
+        r._weltRegt(); // sein Ereignis (der Schritt des Rings, `_ringWaechst`): der Schlaf des Wuchses hört es, er fragt das Gesetz nie
         out.farIncludedAfterGrow = r._foliageChunkInRadius(pcx + 6, pcz + 6) === true;
         // (3) CONSUM: _tickFoliageGrowth drainiert einen wartenden, in-radius Chunk-Key. Drain-Mechanik
         // isoliert: _frameOverBudget (pausiert Wachstum legitim, siehe (4)) hier AUS — die warme
@@ -46,6 +47,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         const tk3 = `${pcx + 4},${pcz + 4}`;
         for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
         r._laubRand = () => 9999;
+        r._weltRegt();
         st.pendingFoliageChunks = new Set([tk3, tk2]); // der fernere zuerst eingereiht: die Wahl folgt der Nähe
         st._frameOverBudget = true;
         r._wuchsNaechster = undefined;
