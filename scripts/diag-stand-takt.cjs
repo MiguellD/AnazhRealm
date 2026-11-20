@@ -105,7 +105,12 @@ function selbsttest() {
             versorgt: true,
             phase: phase(25, 30),
             nachher: phase(0, 20),
-            treue: treuPhase(40),
+            treue: (() => {
+                const t = treuPhase(40);
+                t.takte.nahStreu.geweckt = 2; // die Weck-Probe: ihre Kachel ging die heile Wache selbst
+                return t;
+            })(),
+            weckProbe: { frame: 1, kacheln: 1 },
             regler: phase(12, 10),
             wahrnehmung: phase(30, 4),
             schirm: Object.assign(phase(30, 4), { stehtSofort: false, zeilen: [360, 480] }),
@@ -228,6 +233,12 @@ function selbsttest() {
             ["wecken.treue.takte.archLod.wirkt=", 1],
             /TREUE: archLod .* nach dem Bau die Welt in 1 Gängen/,
         ],
+        [
+            "der Weckruf der Treue zeigt keinen geweckten Gang",
+            ["wecken.treue.takte.nahStreu.geweckt=", 0],
+            /STUMPF: der Weckruf in der Treue-Phase \(1 Kacheln neu\) zeigt keinen geweckten Gang der Nah-Streu/,
+        ],
+        ["die Weck-Probe weckt keine Kachel", ["wecken.weckProbe.kacheln=", 0], /LEER: die Weck-Probe der Treue weckte keine Kachel/],
         [
             "ein Regler-Schritt weckt den Cull nicht",
             ["wecken.regler.takte.archCull", { summe: 0, mitArbeit: 0 }],
@@ -2135,10 +2146,13 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                                 wechsel[a[0]] = wechsel[a[0]] || `${orte[a[0]]} → ${a[2]}`;
                             orte[a[0]] = a[2];
                         }
-                        ruf();
+                        // das Urteil der HEILEN Wache je Takt (sie geht weiter, nur ihre Antwort fällt): nur ein Gang, den sie
+                        // schlafen ließe, zählt als verschlafen (`wirkt`, stand-linse); ging sie ihn selbst, ist er `geweckt`
+                        window.__standWacheUrteil[a[0]] = ruf();
                         return false;
                     });
                     const fs = [];
+                    window.__standWacheUrteil = {};
                     L.frame();
                     try {
                         // der Wächter gegen ein Hängen ist kein Maß: das Maß ist die Runde (eine offene Runde fällt rot)
@@ -2153,6 +2167,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         }
                     } finally {
                         ab();
+                        delete window.__standWacheUrteil;
                     }
                     const ph = window.__standPhase(fs);
                     const g = gang();
@@ -2277,8 +2292,16 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                     W.stufe = e ? e._lodLevel : null;
                     W.bisRuhe = await bisRuhe(600);
                     W.nachher = await phase(20);
-                    // die Treue nach dem Bau: die gebrochene Wache findet nichts, was die schlafende verschlief
-                    W.treue = await treuePhase();
+                    // die Treue nach dem Bau: die gebrochene Wache findet nichts, was die schlafende verschlief — und ein
+                    // WECKRUF in der Phase (die Probe: nach dem ersten Gang der Nah-Streu wächst die Kachel des Spielers neu, wie eine
+                    // Antwort des Gaus, deren Fraß-Stufe springt, `_nahStreuNeuIn`) ist ein geweckter Gang, nie ein verschlafener
+                    W.weckProbe = { kacheln: 0 };
+                    W.treue = await treuePhase((f, g) => {
+                        if (W.weckProbe.frame !== undefined || !(g.nahStreu > 0)) return;
+                        const K = AnazhRealm.NAH_STREU.kachel;
+                        const [kx, kz] = [Math.floor(pm.x / K) * K, Math.floor(pm.z / K) * K];
+                        W.weckProbe = { frame: g.nahStreu, kacheln: r._nahStreuNeuIn(kx, kz, kx + K, kz + K) };
+                    });
                     await bisRuhe(300);
                     // ein Regler-Schritt (der Cull-Radius 20 m enger) weckt den Cull-Gang, er räumt den Rand
                     const rad = st.architectureCullingRadius;
@@ -3060,7 +3083,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
     const namen = Object.keys(STAND.TAKTE);
     const phase = (_, x) =>
         x?.takte && x.frames
-            ? `${x.frames} Frames · Σ ${x.summe} · ` + namen.map((n) => ((t = {}) => `${n} ${t.mittel ?? "?"}${t.runde ? ` ${t.gang}/${t.runde}` : ""}${t.wirkt ? ` wirkt ${t.wirkt}` : ""}`)(x.takte[n])).join(" · ")
+            ? `${x.frames} Frames · Σ ${x.summe} · ` + namen.map((n) => ((t = {}) => `${n} ${t.mittel ?? "?"}${t.runde ? ` ${t.gang}/${t.runde}` : ""}${t.wirkt ? ` wirkt ${t.wirkt}` : ""}${t.geweckt ? ` geweckt ${t.geweckt}` : ""}`)(x.takte[n])).join(" · ")
             : x;
     const { simRuhe, simWecken, ...rest } = befund;
     for (const [n, x] of Object.entries(rest)) console.log(`  ${n}: ${JSON.stringify(x, phase)}`);
