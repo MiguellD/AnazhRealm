@@ -44,7 +44,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { fehlerText, statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben, fadenScope } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, starteBrowser, ROOT, hauptLauf, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben, fadenScope } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 
 // Die Welten auf der Hülle (Studios mit Reglern + die Nebenwelten mit der Brücke allein) und das Gelände-Studio, das als
@@ -442,8 +442,10 @@ async function gang() {
             const page = await browser.newPage();
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             page.on("request", (q) => pfade.push(new URL(q.url()).pathname));
+            // die Seite steht an IHREM Ereignis, nie an der Wanduhr: eine Nebenwelt lädt ihre Engine im statischen Graphen der Seite
+            // (Skript-Marken und statische Modul-Importe — vollständig bei `load`, ihre Brücke fragt keine Datei), ein Studio steht
+            // an seiner Kosten-Leiste (das EINE Warten unten: die Zeile trägt ihr Maß erst nach Bühne und Werk)
             await s.zeige(page, 90000, seite(id), "load");
-            await sleep(1500);
             // H4 + H10: die Kosten-Leiste je Stufe (gezählt, gezeichnet, Deckel) bzw. je Ort (Audio-Graph-ms) — gelesen im STAND
             // DER ÖFFNUNG, vor dem ersten Zug (H3), sobald jede Zeile ihre Gegenzahlen, ihre Zeit und ihre Deckel trägt (das Ofen-Labor
             // erst nach dem Backen); das EINE Warten (welt-boot `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte

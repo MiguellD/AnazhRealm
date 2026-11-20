@@ -3223,8 +3223,8 @@ async function abdruckBefehl() {
     const AB = require("./lib/abdruck.cjs");
     if (SELBST)
         return selbsttestEnde(
-            AB.abdruckSelbsttest(),
-            "dieselbe Welt mit anderen Erzeugungs-ids und anderer Folge ist 0 anders; die Erzeugungs-ID im Schlüssel und die Wanduhr im Pool fallen ROT beim Namen ihres Dings"
+            await AB.abdruckSelbsttest(),
+            "dieselbe Welt mit anderen Erzeugungs-ids und anderer Folge ist 0 anders, ebenso ein Einschwingen, das 800 Takte länger baut, und ein Bau, der später ankommt; die Erzeugungs-ID im Schlüssel, die Wanduhr im Pool, der Zeit-Takt im Einschwingen und das Leben neben dem Bau fallen ROT beim Namen ihres Dings"
         );
     const kopf = () => require("child_process").execSync("git rev-parse HEAD", { cwd: root }).toString().trim();
     const lauf = { orte: String(opt("--orte", "genesis,wiese,dorf")).split(","), takte: Number(opt("--takte", 240)) };
