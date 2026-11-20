@@ -99,9 +99,9 @@
             "datei": 2
         },
         "scripts/diag-studio-uebergabe.cjs": {
-            "zweck": "Messung: führt die Hülle im vm als Studio-Seite aus (sie sendet das Werk); Struktur: die EINE Route der Übergabe in der Heimat",
+            "zweck": "Messung: führt die Hülle im vm als Studio-Seite aus (sie sendet das Werk; vor ihr der Samen-Baum samen-core.js, ihr Würfel zieht aus ihm); Struktur: die EINE Route der Übergabe in der Heimat",
             "stamm": 1,
-            "datei": 1
+            "datei": 2
         },
         "scripts/diag-v1-pfad.cjs": {
             "zweck": "Struktur: Render-Fluss (W2) und Zeit-Graph (W7) am AST, Absenzen W3–W6 über den Helfer",
@@ -121,6 +121,10 @@
         },
         "scripts/lib/abnahme-urteil.cjs": {
             "zweck": "Messung: die Version des Stamms im Stempel des Beweisbilds",
+            "datei": 1
+        },
+        "scripts/lib/asset-worker-harness.cjs": {
+            "zweck": "Messung: der Kontext eines Kerns im vm (`kernKontext`) trägt den Samen-Baum (samen-core.js) — er lädt in jedem Faden vor jedem Kern (Welle SAMEN)",
             "datei": 1
         },
         "scripts/lib/speicher-proben.cjs": {
