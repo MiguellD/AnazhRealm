@@ -927,6 +927,252 @@ class AnazhRealm_bild_tiefe {
         const T = this._sichtTiefeZ;
         return T ? Object.assign({}, T.zahl) : null;
     }
+
+    // DIE SICHT EINER GESTALT (Einheit E10, die Stufe aus der L0): was an der Grenze einer Stufe gesehen wird, sagt die EINE
+    // Sicht — die Tiefe der GPU, nie ein Raster im Faden. Die gelieferte L0 (ihre Flügel in Ruhe, wie die Welt sie zeigt:
+    // `_fluegelSchwenk` bei 0) wird aus den Richtungen von SICHT_GESTALT orthografisch in der Zelle `s` gezeichnet (ein Bildpunkt
+    // an der Grenze), je Bildpunkt die Nummer ihres vordersten Dreiecks; ein Dreieck unter einem Bildpunkt, das keine Mitte
+    // trifft, ist gesehen, wenn sein Schwerpunkt nicht hinter der vordersten Fläche seines Bildpunkts liegt (`epsM`). Glas
+    // verdeckt nichts und ist gesehen. → je Teil ein Uint8Array je Dreieck (1 = gesehen), null für den Beipack. Ohne WebGPU-Gerät
+    // (der Null-Renderer zeichnet nie) und bei jedem Fehler der GPU bricht sie beim Namen.
+    async _sichtDerGestalt(meshes, s) {
+        const dev = this._sichtTiefeGeraet();
+        if (!dev)
+            throw new Error("SICHT DER GESTALT: kein WebGPU-Gerät — die Stufe aus der L0 liest die Sicht der GPU");
+        if (!(s > 0)) throw new Error("SICHT DER GESTALT: Bildpunkt " + s);
+        const t0 = performance.now();
+        const SG = AnazhRealm.SICHT_GESTALT;
+        const aus = meshes.map(() => null);
+        const teile = [];
+        let n = 0;
+        for (let i = 0; i < meshes.length; i++) {
+            const m = meshes[i];
+            if (!m || !m.position || !m.position.array) continue;
+            if (!m.index) throw new Error("SICHT DER GESTALT: Teil " + i + " ohne Index");
+            const nt = m.index.length / 3;
+            aus[i] = new Uint8Array(nt);
+            if (m.mat && m.mat.opacity < 1) {
+                aus[i].fill(1);
+                continue;
+            }
+            if (m.tuer && m.tuer.basis) throw new Error("SICHT DER GESTALT: Flügel mit Basis in Teil " + i);
+            teile.push({ i, m, ab: n, nt });
+            n += nt;
+        }
+        if (!n) return aus;
+        // die Dreiecke in EINEM Puffer (drei Ecken je Dreieck), der Rahmen der Gestalt
+        const Q = new Float32Array(n * 9);
+        const lo = [Infinity, Infinity, Infinity],
+            hi = [-Infinity, -Infinity, -Infinity];
+        const Mz = new THREE.Matrix4(),
+            Mt = new THREE.Matrix4();
+        for (const t of teile) {
+            const P = t.m.position.array,
+                I = t.m.index;
+            const e = t.m.tuer ? AnazhRealm._fluegelSchwenk(t.m.tuer, 0, Mz, Mt).elements : null;
+            for (let k = 0, o = t.ab * 9; k < t.nt * 3; k++, o += 3) {
+                const q = I[k] * 3;
+                let x = P[q],
+                    y = P[q + 1],
+                    z = P[q + 2];
+                if (e) [x, y, z] = [e[0] * x + e[4] * y + e[8] * z + e[12], e[1] * x + e[5] * y + e[9] * z + e[13], e[2] * x + e[6] * y + e[10] * z + e[14]]; // prettier-ignore
+                Q[o] = x;
+                Q[o + 1] = y;
+                Q[o + 2] = z;
+                if (x < lo[0]) lo[0] = x;
+                if (y < lo[1]) lo[1] = y;
+                if (z < lo[2]) lo[2] = z;
+                if (x > hi[0]) hi[0] = x;
+                if (y > hi[1]) hi[1] = y;
+                if (z > hi[2]) hi[2] = z;
+            }
+        }
+        // je Richtung ihr Rahmen aus den acht Ecken der Kiste: die Achsen (t, b) des Bilds, die Tiefe längs d (vorn = 0)
+        const ecken = [];
+        for (let k = 0; k < 8; k++) ecken.push([k & 1 ? hi[0] : lo[0], k & 2 ? hi[1] : lo[1], k & 4 ? hi[2] : lo[2]]);
+        const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+        const richt = [];
+        for (let k = 0; k < SG.oben; k++) richt.push([0, 1, 0]);
+        for (const el of SG.hoehen)
+            for (let k = 0; k < SG.azimute; k++) {
+                const az = (k * 2 * Math.PI) / SG.azimute + SG.versatz;
+                richt.push([Math.cos(el) * Math.cos(az), Math.sin(el), Math.cos(el) * Math.sin(az)]);
+            }
+        const maxPx = dev.limits.maxTextureDimension2D;
+        const uni = new Float32Array(richt.length * 64);
+        let wMax = 1,
+            hMax = 1;
+        const rahmen = richt.map((d, i) => {
+            const up = Math.abs(d[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+            const tl = Math.hypot(
+                up[1] * d[2] - up[2] * d[1],
+                up[2] * d[0] - up[0] * d[2],
+                up[0] * d[1] - up[1] * d[0]
+            );
+            const ta = [(up[1] * d[2] - up[2] * d[1]) / tl, (up[2] * d[0] - up[0] * d[2]) / tl, (up[0] * d[1] - up[1] * d[0]) / tl]; // prettier-ignore
+            const ba = [d[1] * ta[2] - d[2] * ta[1], d[2] * ta[0] - d[0] * ta[2], d[0] * ta[1] - d[1] * ta[0]];
+            const u = ecken.map((c) => dot(c, ta) / s),
+                v = ecken.map((c) => dot(c, ba) / s),
+                w = ecken.map((c) => dot(c, d));
+            const u0 = Math.min(...u),
+                v0 = Math.min(...v),
+                dmax = Math.max(...w);
+            const W = Math.ceil(Math.max(...u) - u0) + 2,
+                H = Math.ceil(Math.max(...v) - v0) + 2;
+            if (W > maxPx || H > maxPx)
+                throw new Error(`SICHT DER GESTALT: ${W}×${H} Bildpunkte über ${maxPx} (Bildpunkt ${s} m)`);
+            const span = Math.max(1e-3, dmax - Math.min(...w)) * 1.001;
+            uni.set([...ta, s, ...ba, 0, ...d, 0, u0, v0, W, H, dmax, span, SG.epsM / span, 0], i * 64);
+            wMax = Math.max(wMax, W);
+            hMax = Math.max(hMax, H);
+            return { W, H };
+        });
+        const G = this._sichtGestaltGpu(dev);
+        dev.pushErrorScope("out-of-memory");
+        dev.pushErrorScope("validation");
+        const U = GPUBufferUsage;
+        const quellen = [];
+        const puffer = (label, size, usage) => (quellen.push(dev.createBuffer({ label, size, usage })), quellen[quellen.length - 1]); // prettier-ignore
+        const ecke = puffer("sicht-gestalt:ecken", Q.byteLength, U.VERTEX | U.STORAGE | U.COPY_DST);
+        const lage = puffer("sicht-gestalt:lage", uni.byteLength, U.UNIFORM | U.COPY_DST);
+        const urteil = puffer("sicht-gestalt:urteil", n * 4, U.STORAGE | U.COPY_SRC);
+        const lese = puffer("sicht-gestalt:lese", n * 4, U.MAP_READ | U.COPY_DST);
+        dev.queue.writeBuffer(ecke, 0, Q);
+        dev.queue.writeBuffer(lage, 0, uni);
+        const T = GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING;
+        const nummer = dev.createTexture({
+            label: "sicht-gestalt:nummer",
+            size: [wMax, hMax],
+            format: "r32uint",
+            usage: T,
+        });
+        const tiefe = dev.createTexture({ label: "sicht-gestalt:tiefe", size: [wMax, hMax], format: "depth32float", usage: T }); // prettier-ignore
+        const nv = nummer.createView(),
+            tv = tiefe.createView();
+        const enc = dev.createCommandEncoder({ label: "sicht-gestalt" });
+        for (let i = 0; i < richt.length; i++) {
+            const { W, H } = rahmen[i];
+            const scheibe = { buffer: lage, offset: i * 256, size: 80 };
+            const rp = enc.beginRenderPass({
+                label: "sicht-gestalt:bild",
+                colorAttachments: [{ view: nv, loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" }],
+                depthStencilAttachment: { view: tv, depthClearValue: 1, depthLoadOp: "clear", depthStoreOp: "store" },
+            });
+            rp.setViewport(0, 0, W, H, 0, 1);
+            rp.setScissorRect(0, 0, W, H);
+            rp.setPipeline(G.bild);
+            rp.setBindGroup(
+                0,
+                dev.createBindGroup({ layout: G.bildLayout, entries: [{ binding: 0, resource: scheibe }] })
+            );
+            rp.setVertexBuffer(0, ecke);
+            rp.draw(n * 3);
+            rp.end();
+            const cp = enc.beginComputePass({ label: "sicht-gestalt:urteil" });
+            cp.setBindGroup(
+                0,
+                dev.createBindGroup({
+                    layout: G.urteilLayout,
+                    entries: [
+                        { binding: 0, resource: scheibe },
+                        { binding: 1, resource: { buffer: ecke } },
+                        { binding: 2, resource: { buffer: urteil } },
+                        { binding: 3, resource: tv },
+                        { binding: 4, resource: nv },
+                    ],
+                })
+            );
+            cp.setPipeline(G.marke);
+            cp.dispatchWorkgroups(Math.ceil(W / 8), Math.ceil(H / 8));
+            cp.setPipeline(G.klein);
+            cp.dispatchWorkgroups(Math.ceil(n / 64));
+            cp.end();
+        }
+        enc.copyBufferToBuffer(urteil, 0, lese, 0, n * 4);
+        dev.queue.submit([enc.finish()]);
+        const fehler = [dev.popErrorScope(), dev.popErrorScope()];
+        const ende = () => {
+            for (const b of quellen) b.destroy();
+            nummer.destroy();
+            tiefe.destroy();
+        };
+        try {
+            for (const f of await Promise.all(fehler))
+                if (f) throw new Error("SICHT DER GESTALT: die GPU warf — " + f.message);
+            await lese.mapAsync(GPUMapMode.READ);
+            const u = new Uint32Array(lese.getMappedRange());
+            for (const t of teile) {
+                const S = aus[t.i];
+                for (let k = 0; k < t.nt; k++) S[k] = u[t.ab + k] ? 1 : 0;
+            }
+            lese.unmap();
+        } finally {
+            ende();
+        }
+        const Z = G.zahl;
+        Z.laeufe++;
+        Z.dreiecke += n;
+        Z.ms += performance.now() - t0;
+        return aus;
+    }
+
+    // Die Pipelines der Sicht einer Gestalt (einmal je Gerät, explizite Layouts): das Bild (Nummer je Bildpunkt, Tiefe), die
+    // Marke (jede gezeigte Nummer) und das Kleine (der Schwerpunkt eines Dreiecks unter einem Bildpunkt).
+    _sichtGestaltGpu(dev) {
+        const Z = this._sichtGestaltZ;
+        if (Z && Z.dev === dev) return Z;
+        const W = AnazhRealm.SICHT_GESTALT_WGSL;
+        const C = GPUShaderStage.COMPUTE;
+        const bildLayout = dev.createBindGroupLayout({
+            label: "sicht-gestalt:bild",
+            entries: [{ binding: 0, visibility: GPUShaderStage.VERTEX, buffer: { type: "uniform" } }],
+        });
+        const urteilLayout = dev.createBindGroupLayout({
+            label: "sicht-gestalt:urteil",
+            entries: [
+                { binding: 0, visibility: C, buffer: { type: "uniform" } },
+                { binding: 1, visibility: C, buffer: { type: "read-only-storage" } },
+                { binding: 2, visibility: C, buffer: { type: "storage" } },
+                { binding: 3, visibility: C, texture: { sampleType: "depth" } },
+                { binding: 4, visibility: C, texture: { sampleType: "uint" } },
+            ],
+        });
+        const bildModul = dev.createShaderModule({ label: "sicht-gestalt:bild", code: W.lage + W.bild });
+        const urteilModul = dev.createShaderModule({ label: "sicht-gestalt:urteil", code: W.lage + W.urteil });
+        const urteilPipe = dev.createPipelineLayout({
+            label: "sicht-gestalt:urteil",
+            bindGroupLayouts: [urteilLayout],
+        });
+        this._sichtGestaltZ = {
+            dev,
+            bildLayout,
+            urteilLayout,
+            bild: dev.createRenderPipeline({
+                label: "sicht-gestalt:bild",
+                layout: dev.createPipelineLayout({ label: "sicht-gestalt:bild", bindGroupLayouts: [bildLayout] }),
+                vertex: {
+                    module: bildModul,
+                    entryPoint: "ecke",
+                    buffers: [{ arrayStride: 12, attributes: [{ shaderLocation: 0, offset: 0, format: "float32x3" }] }],
+                },
+                fragment: { module: bildModul, entryPoint: "nummer", targets: [{ format: "r32uint" }] },
+                primitive: { topology: "triangle-list", cullMode: "none" },
+                depthStencil: { format: "depth32float", depthWriteEnabled: true, depthCompare: "less" },
+            }),
+            marke: dev.createComputePipeline({
+                label: "sicht-gestalt:marke",
+                layout: urteilPipe,
+                compute: { module: urteilModul, entryPoint: "marke" },
+            }),
+            klein: dev.createComputePipeline({
+                label: "sicht-gestalt:klein",
+                layout: urteilPipe,
+                compute: { module: urteilModul, entryPoint: "klein" },
+            }),
+            zahl: { laeufe: 0, dreiecke: 0, ms: 0 },
+        };
+        return this._sichtGestaltZ;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_bild_tiefe]);
 
@@ -1146,6 +1392,72 @@ fn stufe(@builtin(global_invocation_id) g: vec3u) {
         }
     }
     P[U.ziel + g.y * U.zw + g.x] = vec2f(mx, mn);
+}
+`,
+});
+
+// DIE SICHT EINER GESTALT (E10, `_sichtDerGestalt`): die Richtungen — `oben` Bilder von oben, `azimute` je Höhe aus `hoehen`
+// (rad über dem Horizont), um `versatz` gedreht (kein Azimut fällt auf eine Achse des Baus) — und `epsM` die Tiefen-Marge des
+// Schwerpunkts eines Dreiecks unter einem Bildpunkt (m). Dieselben Richtungen sah der Spike E10 (`sichtbar`).
+AnazhRealm.SICHT_GESTALT = Object.freeze({ oben: 1, hoehen: Object.freeze([0, 0.5, 1.05]), azimute: 12, versatz: 0.13, epsM: 0.005 }); // prettier-ignore
+
+// DIE SICHT EINER GESTALT in WGSL: `lage` die Richtung (Achsen t, b, d; Rahmen u0, v0, W, H in Bildpunkten; Tiefe vorn, Spanne,
+// Marge), `bild` zeichnet je Bildpunkt die Nummer des vordersten Dreiecks (1 …, 0 = leer), `urteil` marke (jede gezeigte Nummer)
+// und klein (der Schwerpunkt eines Dreiecks unter einem Bildpunkt gegen die vorderste Tiefe seines Bildpunkts).
+AnazhRealm.SICHT_GESTALT_WGSL = Object.freeze({
+    lage: `
+struct Lage { t: vec4f, b: vec4f, d: vec4f, rahmen: vec4f, tiefe: vec4f };
+@group(0) @binding(0) var<uniform> R: Lage;
+fn bildpunkt(q: vec3f) -> vec2f {
+    return vec2f(dot(q, R.t.xyz) / R.t.w - R.rahmen.x, dot(q, R.b.xyz) / R.t.w - R.rahmen.y);
+}
+fn tiefeVon(q: vec3f) -> f32 {
+    return (R.tiefe.x - dot(q, R.d.xyz)) / R.tiefe.y;
+}
+`,
+    bild: `
+struct Ecke { @builtin(position) p: vec4f, @location(0) @interpolate(flat) nr: u32 };
+@vertex fn ecke(@location(0) q: vec3f, @builtin(vertex_index) vi: u32) -> Ecke {
+    let b = bildpunkt(q);
+    var o: Ecke;
+    o.p = vec4f(b.x / R.rahmen.z * 2.0 - 1.0, b.y / R.rahmen.w * 2.0 - 1.0, tiefeVon(q), 1.0);
+    o.nr = vi / 3u + 1u;
+    return o;
+}
+@fragment fn nummer(e: Ecke) -> @location(0) u32 {
+    return e.nr;
+}
+`,
+    urteil: `
+@group(0) @binding(1) var<storage, read> Q: array<f32>;
+@group(0) @binding(2) var<storage, read_write> sicht: array<atomic<u32>>;
+@group(0) @binding(3) var vorn: texture_depth_2d;
+@group(0) @binding(4) var nummern: texture_2d<u32>;
+@compute @workgroup_size(8, 8) fn marke(@builtin(global_invocation_id) g: vec3u) {
+    if (f32(g.x) >= R.rahmen.z || f32(g.y) >= R.rahmen.w) { return; }
+    let nr = textureLoad(nummern, vec2i(g.xy), 0).r;
+    if (nr > 0u) { atomicStore(&sicht[nr - 1u], 1u); }
+}
+fn ort(k: u32) -> vec3f {
+    return vec3f(Q[k * 3u], Q[k * 3u + 1u], Q[k * 3u + 2u]);
+}
+@compute @workgroup_size(64) fn klein(@builtin(global_invocation_id) g: vec3u) {
+    let t = g.x;
+    if (t >= arrayLength(&sicht)) { return; }
+    if (atomicLoad(&sicht[t]) != 0u) { return; }
+    let a = ort(t * 3u);
+    let b = ort(t * 3u + 1u);
+    let c = ort(t * 3u + 2u);
+    let pa = bildpunkt(a);
+    let pb = bildpunkt(b);
+    let pc = bildpunkt(c);
+    if (abs((pb.x - pa.x) * (pc.y - pa.y) - (pc.x - pa.x) * (pb.y - pa.y)) * 0.5 >= 1.0) { return; }
+    let m = (pa + pb + pc) / 3.0;
+    let x = i32(floor(m.x));
+    let y = i32(floor(R.rahmen.w - m.y));
+    if (x < 0 || y < 0 || f32(x) >= R.rahmen.z || f32(y) >= R.rahmen.w) { return; }
+    if (textureLoad(nummern, vec2i(x, y), 0).r == 0u) { return; }
+    if (tiefeVon((a + b + c) / 3.0) <= textureLoad(vorn, vec2i(x, y), 0) + R.tiefe.z) { atomicStore(&sicht[t], 1u); }
 }
 `,
 });

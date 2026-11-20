@@ -1573,7 +1573,12 @@ class AnazhRealm_studio_bruecke {
         // DER INGEST-TAKT: jedes Ergebnis passiert _foundryIngestTakt; der Loop-Tick gibt je Frame nur wenige frei —
         // sonst laufen Burst-Konversionen (_foundryBuildGroup) als Microtasks in EINER LongTask. Misses und headless
         // passieren sofort; Konsumenten tragen null-bis-fertig.
-        const auftrag = this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, rang)
+        // DIE STUFE AUS DER L0 (Einheit E10): trägt die Zeile der Stufe `ausL0`, baut der Faden sie aus der L0 mit der Sicht
+        // des Wirts (`_foundryStufeAusL0`) — nie aus ihrem eigenen Rezept
+        const lauf = this._foundryAusL0(presetId, lod)
+            ? this._foundryStufeAusL0(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, rang)
+            : this._foundryWorkerRequest(presetId, seed, lod, hasOv ? ov : null, platte, nurPlatte, rang);
+        const auftrag = lauf
             .then((meshes) => {
                 if (!(meshes && meshes.bruch)) return meshes;
                 const G = f.gebrochen || (f.gebrochen = new Map());
@@ -1786,16 +1791,52 @@ class AnazhRealm_studio_bruecke {
         }, fr.dauerMs * AnazhRealm.FOUNDRY_GEIST_FACH);
         fr.beiAblauf();
     }
-    _foundryWorkerRequest(presetId, seed, lod, ov, platte, nurPlatte, wo) {
+    // Trägt die Budget-Zeile der Stufe `ausL0` (Einheit E10: die Stufe ist eine Funktion der L0, `__stufeAusL0` der Brücke)?
+    // Vor dem Buch kennt der Wirt die Art nicht — dann geht die Anfrage ohne Sicht, und die Brücke bricht sie beim Namen.
+    _foundryAusL0(preset, lod) {
+        const f = this._foundry;
+        const rec = lod > 0 && f && f.recipes ? f.recipes[preset] : null;
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const z = rec && L && L.budget && L.budget[rec.kind] ? L.budget[rec.kind][lod] : null;
+        return !!(z && z.ausL0 === true);
+    }
+    // DIE STUFE AUS DER L0 im Wirt: die Platte der Stufe zuerst (`nurPlatte`); sonst die L0 (Platte oder Bau — dieselbe Lieferung,
+    // die ihr Leser bekommt), ihre Sicht am Bildpunkt der Grenze (`_sichtDerGestalt`, die GPU) und der Bau der Stufe im Faden aus
+    // genau dieser L0, auf die Platte unter dem Schlüssel der Stufe. Der Bildpunkt ist der des Solls (die Grenze `_wechselGesetz`
+    // am Schirm des Solls ÷ seine Brennweite): die Stufe hängt am Gesetz, nie am Gerät, die Platte trägt sie für jeden Schirm.
+    // Eine gebrochene L0 bricht die Stufe mit ihrem Grund; ohne Sicht (kein WebGPU-Gerät) bricht sie beim Namen.
+    async _foundryStufeAusL0(presetId, seed, lod, ov, platte, nurPlatte, rang) {
+        if (platte) {
+            const da = await this._foundryWorkerRequest(presetId, seed, lod, ov, platte, true, rang);
+            if ((da && da.length) || nurPlatte) return da;
+        }
+        const platteL0 = platte ? this._foundryKoerperKey(presetId, seed, 0, ov) : null;
+        const l0 = await this._foundryWorkerRequest(presetId, seed, 0, ov, platteL0, false, rang);
+        if (!l0 || l0.bruch || !l0.length) return l0;
+        const kind = this._foundry.recipes[presetId].kind;
+        const s = AnazhRealm._wechselGesetz(kind, lod, 1, 0, undefined, presetId) / AnazhRealm._brennweite(0);
+        let sicht;
+        try {
+            sicht = await this._sichtDerGestalt(l0, s);
+        } catch (e) {
+            const b = [];
+            b.bruch = `${presetId} L${lod} aus der L0: ${(e && e.message) || e}`;
+            return b;
+        }
+        return this._foundryWorkerRequest(presetId, seed, lod, ov, platte, false, rang, { s, sicht });
+    }
+    _foundryWorkerRequest(presetId, seed, lod, ov, platte, nurPlatte, wo, ausL0) {
         const f = this._foundry;
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         // W-A1 — msg.ov reist NUR, wenn wirklich Overrides da sind (die Bruecke reicht ov ausschliesslich an
         // Zweit-Kern-buildInstance durch). `platte` (der Schlüssel) und `nurPlatte` liest die Transport-Schale
         // und nimmt sie heraus, bevor das Studio die Anfrage sieht; die Saison setzt NUR die Schale (Sommer).
+        // `ausL0` = { s, sicht }: die Stufe aus der L0 (`_foundryStufeAusL0`).
         const msg = { type: "build-asset", presetId, seed, lod };
         if (ov && typeof ov === "object" && Object.keys(ov).length) msg.ov = ov;
         if (platte) msg.platte = platte;
         if (nurPlatte) msg.nurPlatte = true;
+        if (ausL0) msg.ausL0 = ausL0;
         // 45 s ARBEITS-Zeit (die EINE Frist, `_foundryFrist`): ein Koniferen-lod0-Asset hat ~170k Verts; die
         // Wartezeit in der Schlange zählt nicht mit. fail-LAUT (V18.462): das Timeout ist vom kalten Buch
         // unterscheidbar — der Aufrufer sieht sonst beide als null.

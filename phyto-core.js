@@ -6557,13 +6557,23 @@
     // trägt den Stoff seines größten Teils (alemannisch L0: der Backstein im Stück des Natursteins). Der Ausgang berichtet die
     // Zahl (`frei`), die Wände (gate:asset-contract, gate:regler-wirkt) lesen sie dort; der Bau des Gesetzbuchs (fachwerk
     // buildInstance) liest dasselbe Feld der Zeile. Eine Zeile ohne das Feld stellt nichts frei.
+    // Ein Teil, das die Zeile je Ecke trägt (`aVerband`, `_budgetVerbinden`: die gefaltete L0, aus der die Stufe kommt — Einheit
+    // E10), stellt je Dreieck frei: jedes, dessen erste Ecke den Verband nennt.
     function budgetFrei(meshes, zeile) {
         const vb = zeile && zeile.ohneVerband;
         let tris = 0;
         if (!(vb > 0)) return 0;
-        for (const m of meshes || [])
-            if (_budgetTeil(m) && m.teil !== "schatten" && m.mat && m.mat.verband === vb)
-                tris += _budgetTris(m) * _budgetMal(m);
+        for (const m of meshes || []) {
+            if (!_budgetTeil(m) || m.teil === "schatten") continue;
+            const V = m.aVerband && m.aVerband.array;
+            if (V) {
+                const I = m.index;
+                const nt = I ? I.length : V.length;
+                let n = 0;
+                for (let t = 0; t < nt; t += 3) if (V[I ? I[t] : t] === vb) n++;
+                tris += n * _budgetMal(m);
+            } else if (m.mat && m.mat.verband === vb) tris += _budgetTris(m) * _budgetMal(m);
+        }
         return tris;
     }
     // DER AUSGANG: faltet eine gelieferte Stufe auf ihre Zeile und berichtet vorher/nachher + Bruch; die Dreiecke gegen die

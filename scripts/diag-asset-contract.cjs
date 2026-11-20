@@ -181,7 +181,7 @@ const SEH_FAELLE = [
     ["mensch", 0], // Auge · Haut · Haar · Stoff
     ["wolf", 0], // das glimmende Auge · Hornhaut · Nase · Fell
     ["suv", 0], // Glas · Chrom · Lack · Gummi · Lichter
-    ["alemannisch", 1], // Glas · Putz · Holz
+    ["alemannisch", 0], // Glas · Putz · Holz (die L1 kommt aus der L0, E10)
     ["verkalkt", 0], // Metall · Stein · Leucht-Linien, je Flügel
 ];
 const sehVon = (stoff) => {
@@ -781,6 +781,9 @@ hauptLauf(async () => {
         // gezählt in der Seite (ohne Puffer-Transport). Fehlt die Gestalten-Zahl, ist das ein Bruch (nie still).
         const alle = Object.keys(buch).filter((p) => budget && budget[artVon(p)] && Array.isArray(stufen[artVon(p)]));
         const welt = [];
+        // DIE STUFE AUS DER L0 (Einheit E10, Zeile `ausL0`): ihr Bau liest die Sicht der GPU des Wirts (`_sichtDerGestalt`), die
+        // dieser Faden nicht trägt — sie wird hier nur beim Namen gezählt, ihre Wand ist gate:haus-fern (der echte Wirt baut sie)
+        const ausL0 = [];
         for (const preset of alle) {
             const kind = artVon(preset);
             if (kernVonArt[kind] && !(Number.isInteger(gestalten[preset]) && gestalten[preset] >= 1)) {
@@ -790,6 +793,10 @@ hauptLauf(async () => {
             for (const lod of stufen[kind]) {
                 const z = budget[kind][lod];
                 if (z?.karte) continue;
+                if (z?.ausL0) {
+                    ausL0.push(`${preset}-L${lod}`);
+                    continue;
+                }
                 if (kernVonArt[kind]) {
                     for (let s = 1; s <= gestalten[preset]; s++)
                         welt.push({ presetId: preset, seed: s, lod, season: "summer" });
@@ -810,6 +817,8 @@ hauptLauf(async () => {
         const weltK = welt.length
             ? await kostenListe(welt, (c) => gestaltenV(gestalten, c.presetId) >= 2 && c.lod === ersteStufe(c.presetId), true)
             : [];
+        if (ausL0.length)
+            console.log(`Stufe aus der L0 (E10): ${ausL0.length} Rezept-Stufen ohne Bau im Faden (die Sicht der GPU; Wand gate:haus-fern) — z. B. ${ausL0.slice(0, 3).join(" · ")}`); // prettier-ignore
         welt.forEach((c, i) => miss(c, weltK[i], `${c.presetId}-s${c.seed}-L${c.lod}`));
         welt.forEach((c, i) => leuchtNimm(`${c.presetId}-s${c.seed}-L${c.lod}`, artVon(c.presetId), weltK[i] && weltK[i].teile));
         const abdruecke = {};

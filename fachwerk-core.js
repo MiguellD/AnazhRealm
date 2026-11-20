@@ -98,10 +98,14 @@
                 // dem Zuschlag; dichter hieße, die Regler-Ränder der Fachwerk-Rezepte zu strecken: W=14, doppel, roofCurve bis 6236).
                 // DER STEIN AUSSER DER ZEILE (E8.1, 19.11.): jede Zeile trägt `ohneVerband` (gesetzt bei VERBAND_GESETZ, unten) — der
                 // Backstein zählt nicht gegen `tris`, sein Maß ist das Verband-Gesetz.
+                // DIE STUFE AUS DER L0 (Einheit E7/E10, 20.11.): L1 und L2 tragen `ausL0` — die Foundry-Brücke leitet sie aus der
+                // gelieferten L0 ab (`__stufeAusL0`: Muster im Stoff ab zwei Bildpunkten, Dünnes unter einem Bildpunkt fällt, was
+                // die Sicht aus keiner Richtung zeigt, fällt), am Bildpunkt ihrer Grenze; die Sicht rechnet der Wirt
+                // (`_sichtDerGestalt`). Das eigene Rezept der Stufen (`buildStufe` 1/2) liest die Welt nicht mehr.
                 haus: {
                     0: { tris: 132000, band: 40000, draws: 12, schatten: 3 },
-                    1: { tris: 44000, band: 10000, draws: 4, schatten: 3 },
-                    2: { tris: 7000, band: 2000, draws: 4, schatten: 3 },
+                    1: { tris: 44000, band: 10000, draws: 4, schatten: 3, ausL0: true },
+                    2: { tris: 7000, band: 2000, draws: 4, schatten: 3, ausL0: true },
                     3: { tris: 96, draws: 1, schatten: 3, nurWurf: true },
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Mesh-Zone zeichnet der Welt-March die Hülle des
                     // Gesetzbuchs — die Liste der Stufe 3 (`huelle()`, Beipack `__fern`); der Wirts-Fit fiel

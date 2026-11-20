@@ -222,7 +222,7 @@ function pageHtml() {
   });
   window.__build = (msg) => ask(Object.assign({ type: "build-asset" }, msg)).then((r) => ({
     presetId: r.presetId, seed: r.seed, lod: r.lod, cv: r.cv,
-    budget: r.budget || null, budgetBruch: r.budgetBruch || null,
+    budget: r.budget || null, budgetBruch: r.budgetBruch || null, bruch: r.bruch || null,
     meshes: (r.meshes || []).map((m) => {
       const out = { kind: m.kind, mat: m.mat, attrs: {} };
       // Scharnier + Gelenk reisen mit (die Draw-Regel liest sie; der Fingerabdruck nicht).

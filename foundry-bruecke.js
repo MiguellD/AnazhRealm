@@ -834,6 +834,538 @@ const foundryKanal = (() => {
         }
         return { teile, farbe: fn ? [farbe[0] / fn, farbe[1] / fn, farbe[2] / fn] : null };
     }
+    // DIE STUFE AUS DER L0 (Einheit E7/E10, „gezeichnet wird, was Pixel trägt"): eine Stufe ist eine Funktion der GELIEFERTEN L0
+    // und des Bildpunkts `s` an ihrer Grenze (m) — kein Rezept je Stufe, kein Zweig je Studio. Was an der Grenze gesehen wird, sagt
+    // die EINE Sicht: `sicht` trägt je Teil der L0 ein Byte je Dreieck, gerechnet vom Wirt aus dem Tiefen-Test der GPU in 37
+    // Richtungen (`_sichtDerGestalt`) — nie ein Raster im Faden. Dann:
+    //   MUSTER IM STOFF — die gesehenen Dreiecke mit Verband-Zeile (Backstein, Ziegel, Naturstein) fallen je Ebene und Zone in eine
+    //     Fläche: Teile (verschweißt auf 1 mm) näher als `luecke` bilden eine Zone, die Zone ist ein Raster in `zellePx` Bildpunkten,
+    //     ihre größten Rechtecke die Fläche (ein Fenster bleibt offen), `hinterM` hinter der Front der Steine, in der flächen-
+    //     gewichteten Farbe der Steine und DERSELBEN Zeile — der Stoff webt den Stein (`_verbandStoff`). Ebenen unter `minFlaeche`
+    //     (Kanten und Kuppen der Steine: ihr Relief) fallen.
+    //   DÜNNES FÄLLT — jedes andere gesehene Dreieck, dessen kleinste Höhe unter `s` liegt.
+    //   DETAIL = PIXELFEHLER — die übrigen verlieren jede Ecke, deren Wegfall die Fläche um weniger als `fehlerPx` Bildpunkte
+    //     verschiebt (`__pixelKollaps`): der Blockbau, das Holz, der Ziegel ohne Verband-Zeile tragen an der Grenze nur, was Pixel trägt.
+    //   EIN TEIL UNTER DER ZELLE FÄLLT — trägt kein gesehenes Dreieck eines Teils eine Höhe über der Zelle und keines ein Muster,
+    //     ist das ganze Teil Detail seines Trägers (die Beschläge der Flügel): ein eigener Zug für Bildpunkte unter der Zelle.
+    // Was die Sicht aus keiner Richtung zeigt, fällt. Die Felder eines Teils (Tür, Gelenk, Stoff) reisen mit.
+    const STUFE_AUS_L0 = Object.freeze({ luecke: 0.06, minFlaeche: 0.5, ebeneM: 0.02, zellePx: 2, hinterM: 0.003, fehlerPx: 0.5 });
+    // DETAIL = PIXELFEHLER (E7): Halbkanten-Kollaps u → v über die Dreiecke `tris` (Nummern in I), in der Reihenfolge des kleinsten
+    // Fehlers, solange er unter `eps` (m) bleibt. Die bleibende Ecke ist eine der L0 — jede Dreiecks-Ecke behält ihre Felder (Normale,
+    // Farbe, Verband) und nimmt die Lage ihres Ziels; die Lage ist auf 1 mm verschweißt (eine flach schattierte Kiste ist EINE Fläche).
+    // Der Fehler einer Ecke = ihr Abstand zur neuen Fläche + der Fehler, den sie schon trug; ein Rand (Kante mit einem Dreieck: Umriss,
+    // Naht der Sicht) wandert nur entlang seiner selbst, kein Dreieck kippt (Normale dreht ≤ 60°), die Fläche bleibt mannigfaltig
+    // (Link-Bedingung). Antwort je Dreiecks-Ecke: `von` (Feld-Ecke der L0), `lage` (Ecke der Lage), `ur` (ihre Lage vorher), `xyz`.
+    function __pixelKollaps(P, I, tris, eps) {
+        const T = tris.length,
+            von = new Int32Array(T * 3),
+            ecke = new Int32Array(T * 3);
+        const schluessel = new Map(),
+            xyz = [];
+        for (let k = 0; k < T; k++)
+            for (let j = 0; j < 3; j++) {
+                const i = I[tris[k] * 3 + j];
+                const qx = Math.round(P[i * 3] * 1000), qy = Math.round(P[i * 3 + 1] * 1000), qz = Math.round(P[i * 3 + 2] * 1000); // prettier-ignore
+                if (Math.abs(qx) >= 65536 || Math.abs(qy) >= 65536 || Math.abs(qz) >= 65536)
+                    throw new Error("Stufe aus der L0: eine Ecke liegt jenseits ±65 m der Vorlage");
+                const key = ((qx + 65536) * 131072 + (qy + 65536)) * 131072 + (qz + 65536);
+                let w = schluessel.get(key);
+                if (w === undefined) {
+                    schluessel.set(key, (w = xyz.length / 3));
+                    xyz.push(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
+                }
+                von[k * 3 + j] = i;
+                ecke[k * 3 + j] = w;
+            }
+        const ur = ecke.slice();
+        const W = xyz.length / 3,
+            X = Float64Array.from(xyz);
+        const lebt = new Uint8Array(T).fill(1),
+            weg = new Uint8Array(W),
+            fehler = new Float64Array(W);
+        const vt = Array.from({ length: W }, () => []);
+        for (let k = 0; k < T; k++) {
+            const a = ecke[k * 3], b = ecke[k * 3 + 1], c = ecke[k * 3 + 2]; // prettier-ignore
+            if (a === b || b === c || c === a) {
+                lebt[k] = 0; // auf 1 mm entartet
+                continue;
+            }
+            vt[a].push(k);
+            vt[b].push(k);
+            vt[c].push(k);
+        }
+        const fan = (x) => {
+            const L = vt[x].filter((k) => lebt[k]);
+            vt[x] = L;
+            return L;
+        };
+        const hat = (k, x) => ecke[k * 3] === x || ecke[k * 3 + 1] === x || ecke[k * 3 + 2] === x;
+        const nachbarn = (x) => {
+            const N = new Set();
+            for (const k of fan(x)) for (let j = 0; j < 3; j++) if (ecke[k * 3 + j] !== x) N.add(ecke[k * 3 + j]);
+            return N;
+        };
+        const rand = (a, b) => {
+            let n = 0;
+            for (const k of fan(a)) if (hat(k, b)) n++;
+            return n === 1;
+        };
+        const randEcke = (x) => {
+            for (const y of nachbarn(x)) if (rand(x, y)) return true;
+            return false;
+        };
+        // Normale (ungeteilt) des Dreiecks k, die Ecke u auf die Lage von v gelegt
+        const normale = (k, u, v, out) => {
+            const e = [0, 1, 2].map((j) => (ecke[k * 3 + j] === u ? v : ecke[k * 3 + j]) * 3);
+            const ux = X[e[1]] - X[e[0]], uy = X[e[1] + 1] - X[e[0] + 1], uz = X[e[1] + 2] - X[e[0] + 2]; // prettier-ignore
+            const vx = X[e[2]] - X[e[0]], vy = X[e[2] + 1] - X[e[0] + 1], vz = X[e[2] + 2] - X[e[0] + 2]; // prettier-ignore
+            out[0] = uy * vz - uz * vy;
+            out[1] = uz * vx - ux * vz;
+            out[2] = ux * vy - uy * vx;
+            return e;
+        };
+        // Abstand des Punkts p zum Dreieck (a, b, c) — Ericson, Real-Time Collision Detection 5.1.5
+        const abstand = (p, a, b, c) => {
+            const d = (i, j) => [X[i] - X[j], X[i + 1] - X[j + 1], X[i + 2] - X[j + 2]];
+            const dot = (x, y) => x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
+            const ab = d(b, a), ac = d(c, a), ap = d(p, a);
+            const d1 = dot(ab, ap), d2 = dot(ac, ap); // prettier-ignore
+            let q;
+            if (d1 <= 0 && d2 <= 0) q = [0, 0];
+            else {
+                const bp = d(p, b), d3 = dot(ab, bp), d4 = dot(ac, bp); // prettier-ignore
+                if (d3 >= 0 && d4 <= d3) q = [1, 0];
+                else {
+                    const vc = d1 * d4 - d3 * d2;
+                    if (vc <= 0 && d1 >= 0 && d3 <= 0) q = [d1 / (d1 - d3), 0];
+                    else {
+                        const cp = d(p, c), d5 = dot(ab, cp), d6 = dot(ac, cp); // prettier-ignore
+                        if (d6 >= 0 && d5 <= d6) q = [0, 1];
+                        else {
+                            const vb = d5 * d2 - d1 * d6;
+                            if (vb <= 0 && d2 >= 0 && d6 <= 0) q = [0, d2 / (d2 - d6)];
+                            else {
+                                const va = d3 * d6 - d5 * d4;
+                                if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+                                    const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+                                    q = [1 - w, w];
+                                } else {
+                                    const den = 1 / (va + vb + vc);
+                                    q = [vb * den, vc * den];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            const x = ap[0] - ab[0] * q[0] - ac[0] * q[1], y = ap[1] - ab[1] * q[0] - ac[1] * q[1], z = ap[2] - ab[2] * q[0] - ac[2] * q[1]; // prettier-ignore
+            return Math.hypot(x, y, z);
+        };
+        const n0 = [0, 0, 0],
+            n1 = [0, 0, 0];
+        // der Fehler des Kollaps u → v (Infinity: verboten)
+        const kosten = (u, v, uRand) => {
+            if (uRand && !rand(u, v)) return Infinity;
+            const Nu = nachbarn(u),
+                Nv = nachbarn(v);
+            let gemeinsam = 0,
+                geteilt = 0;
+            for (const x of Nu) if (Nv.has(x)) gemeinsam++;
+            for (const k of fan(u)) if (hat(k, v)) geteilt++;
+            if (gemeinsam !== geteilt) return Infinity; // Link-Bedingung (Dreiecke an u·v: je ein Gegenüber)
+            let dmin = Infinity;
+            for (const k of fan(u)) {
+                if (hat(k, v)) continue;
+                normale(k, -1, -1, n0);
+                const e = normale(k, u, v, n1);
+                const l0 = Math.hypot(n0[0], n0[1], n0[2]),
+                    l1 = Math.hypot(n1[0], n1[1], n1[2]);
+                if (!(l1 > 1e-12) || n0[0] * n1[0] + n0[1] * n1[1] + n0[2] * n1[2] < 0.5 * l0 * l1) return Infinity;
+                const d = abstand(u * 3, e[0], e[1], e[2]);
+                if (d < dmin) dmin = d;
+            }
+            if (dmin === Infinity) dmin = Math.hypot(X[u * 3] - X[v * 3], X[u * 3 + 1] - X[v * 3 + 1], X[u * 3 + 2] - X[v * 3 + 2]);
+            return Math.max(fehler[v], fehler[u] + dmin);
+        };
+        // die Halde: je Ecke ihr bester Kollaps (Kosten, Ziel, Marke); veraltete Einträge fallen beim Ziehen
+        const ziel = new Int32Array(W).fill(-1),
+            marke = new Int32Array(W),
+            halde = [];
+        const kleiner = (a, b) => a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]);
+        const hoch = (i) => {
+            while (i > 0) {
+                const p = (i - 1) >> 1;
+                if (!kleiner(halde[i], halde[p])) break;
+                [halde[i], halde[p]] = [halde[p], halde[i]];
+                i = p;
+            }
+        };
+        const runter = (i) => {
+            for (;;) {
+                const l = 2 * i + 1,
+                    r = l + 1;
+                let m = i;
+                if (l < halde.length && kleiner(halde[l], halde[m])) m = l;
+                if (r < halde.length && kleiner(halde[r], halde[m])) m = r;
+                if (m === i) return;
+                [halde[i], halde[m]] = [halde[m], halde[i]];
+                i = m;
+            }
+        };
+        const bewerte = (u) => {
+            marke[u]++;
+            let best = Infinity,
+                bz = -1;
+            const uRand = randEcke(u);
+            for (const v of [...nachbarn(u)].sort((a, b) => a - b)) {
+                const c = kosten(u, v, uRand);
+                if (c < best) {
+                    best = c;
+                    bz = v;
+                }
+            }
+            ziel[u] = bz;
+            if (best <= eps) {
+                halde.push([best, u, marke[u]]);
+                hoch(halde.length - 1);
+            }
+        };
+        for (let u = 0; u < W; u++) if (vt[u].length) bewerte(u);
+        while (halde.length) {
+            const [c, u, mk] = halde[0];
+            const letzt = halde.pop();
+            if (halde.length) {
+                halde[0] = letzt;
+                runter(0);
+            }
+            if (weg[u] || mk !== marke[u]) continue;
+            const v = ziel[u];
+            if (v < 0 || weg[v] || kosten(u, v, randEcke(u)) !== c) {
+                bewerte(u);
+                continue;
+            }
+            for (const k of fan(u)) {
+                if (hat(k, v)) {
+                    lebt[k] = 0;
+                    continue;
+                }
+                for (let j = 0; j < 3; j++) if (ecke[k * 3 + j] === u) ecke[k * 3 + j] = v;
+                vt[v].push(k);
+            }
+            vt[u] = [];
+            weg[u] = 1;
+            fehler[v] = c;
+            const ring = nachbarn(v);
+            bewerte(v);
+            for (const x of ring) bewerte(x);
+        }
+        let n = 0;
+        for (let k = 0; k < T; k++) if (lebt[k]) n++;
+        const aus = { von: new Int32Array(n * 3), lage: new Int32Array(n * 3), ur: new Int32Array(n * 3), xyz: X, W };
+        for (let k = 0, o = 0; k < T; k++) {
+            if (!lebt[k]) continue;
+            for (let j = 0; j < 3; j++, o++) {
+                aus.von[o] = von[k * 3 + j];
+                aus.lage[o] = ecke[k * 3 + j];
+                aus.ur[o] = ur[k * 3 + j];
+            }
+        }
+        return aus;
+    }
+    // Der Flügel in Ruhe: Lage und Normale eines Teils mit `tuer` um sein Scharnier (hx, zf) auf den Winkel gedreht, den der Wirt
+    // ihm geschlossen gibt (`_fluegelSchwenk` bei 0: −offen; ohne gebackene Offen-Pose 0) — Drehung um y wie three `makeRotationY`.
+    // null für jedes andere Teil. Ein Flügel mit eigener Basis (das Tor der Porta) kennt die Ruhe der Stufe nicht: Bruch beim Namen.
+    function __fluegelZu(m) {
+        const t = m && m.tuer;
+        if (!t) return null;
+        if (t.basis) throw new Error("Stufe aus der L0: ein Flügel mit Basis — seine Ruhe kennt nur der Wirt");
+        const w = Number.isFinite(t.offen) && t.offen !== 0 ? -t.offen : 0;
+        const c = Math.cos(w),
+            sn = Math.sin(w);
+        const dreh = (src, hx, zf) => {
+            const out = new src.constructor(src.length);
+            for (let i = 0; i < src.length; i += 3) {
+                const x = src[i] - hx,
+                    z = src[i + 2] - zf;
+                out[i] = c * x + sn * z + hx;
+                out[i + 1] = src[i + 1];
+                out[i + 2] = -sn * x + c * z + zf;
+            }
+            return out;
+        };
+        const aus = { position: dreh(m.position.array, t.hx || 0, t.zf || 0) };
+        if (m.normal && m.normal.array) aus.normal = dreh(m.normal.array, 0, 0);
+        return aus;
+    }
+    function __stufeAusL0(teile, s, sicht) {
+        const O = STUFE_AUS_L0;
+        if (!(s > 0) || !Array.isArray(sicht) || sicht.length !== teile.length)
+            throw new Error("Stufe aus der L0: Bildpunkt " + s + " oder Sicht (" + (sicht && sicht.length) + " gegen " + teile.length + " Teile) fehlt");
+        const aus = [];
+        const zelleM = O.zellePx * s;
+        let zonen = 0,
+            vorKollaps = 0,
+            nachKollaps = 0,
+            unterZelle = 0;
+        for (let mi = 0; mi < teile.length; mi++) {
+            const m = teile[mi];
+            if (!m || !m.position || !m.index) {
+                aus.push(m);
+                continue;
+            }
+            // DIE L0 IN RUHE: ein Tür-Flügel liegt in seiner gebackenen Offen-Pose (`tuer.offen`), die Welt zeigt ihn geschlossen —
+            // um das Scharnier (hx, zf) um −offen gedreht, wie der Wirt ihn schwenkt (`_fluegelSchwenk` bei 0); die Stufe trägt ihn
+            // geschlossen im Leib (kein `tuer`: die Stufen ab der L1 zeigen keinen Flügel). Die Sicht des Wirts sah dieselbe Ruhe.
+            const zu = __fluegelZu(m);
+            const P = zu ? zu.position : m.position.array,
+                I = m.index,
+                n = P.length / 3,
+                nt = I.length / 3,
+                S = sicht[mi];
+            if (!S || S.length !== nt)
+                throw new Error("Stufe aus der L0: Teil " + mi + " trägt " + nt + " Dreiecke, die Sicht " + (S ? S.length : 0));
+            const V = m.aVerband && m.aVerband.array ? m.aVerband.array : null;
+            const nrTeil = m.mat && m.mat.verband > 0 ? m.mat.verband | 0 : 0;
+            const nrVon = (t) => (V ? V[I[t * 3]] | 0 : nrTeil);
+            const attrs = Object.keys(m).filter((k) => m[k] && m[k].array && m[k].itemSize && m[k].array.length === n * m[k].itemSize);
+            // die Muster-Ecken verschweißt (1 mm, ±65 m im Vorlagen-Raum): ein Stein ist eine zusammenhängende Menge Dreiecke
+            const schweiss = new Map(),
+                wid = new Int32Array(n).fill(-1);
+            const weld = (i) => {
+                if (wid[i] >= 0) return wid[i];
+                const qx = Math.round(P[i * 3] * 1000),
+                    qy = Math.round(P[i * 3 + 1] * 1000),
+                    qz = Math.round(P[i * 3 + 2] * 1000);
+                if (Math.abs(qx) >= 65536 || Math.abs(qy) >= 65536 || Math.abs(qz) >= 65536)
+                    throw new Error("Stufe aus der L0: Teil " + mi + " liegt jenseits ±65 m der Vorlage");
+                const k = ((qx + 65536) * 131072 + (qy + 65536)) * 131072 + (qz + 65536);
+                let w = schweiss.get(k);
+                if (w === undefined) schweiss.set(k, (w = schweiss.size));
+                return (wid[i] = w);
+            };
+            const behalten = [],
+                musterT = [];
+            let ueberZelle = false;
+            for (let t = 0; t < nt; t++) {
+                if (!S[t]) continue;
+                const a = I[t * 3] * 3,
+                    b = I[t * 3 + 1] * 3,
+                    c = I[t * 3 + 2] * 3;
+                const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2]; // prettier-ignore
+                const vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2]; // prettier-ignore
+                const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; // prettier-ignore
+                const fl2 = Math.hypot(nx, ny, nz);
+                if (!(fl2 > 1e-12)) continue;
+                if (nrVon(t)) {
+                    musterT.push(t);
+                    continue;
+                }
+                const kante = Math.max(Math.hypot(ux, uy, uz), Math.hypot(vx, vy, vz), Math.hypot(P[c] - P[b], P[c + 1] - P[b + 1], P[c + 2] - P[b + 2])); // prettier-ignore
+                if (fl2 / kante < s) continue; // die kleinste Höhe (2 · Fläche ÷ längste Kante) unter einem Bildpunkt
+                if (fl2 / kante >= zelleM) ueberZelle = true;
+                behalten.push(t);
+            }
+            // ein Teil unter der Zelle fällt (die Beschläge): kein Muster, kein gesehenes Dreieck über der Zelle
+            if (!musterT.length && !ueberZelle) {
+                if (behalten.length) unterZelle++;
+                continue;
+            }
+            // die Teile (Steine) über die verschweißten Ecken der Muster-Dreiecke
+            const eltern = new Int32Array(musterT.length * 3 + 1);
+            for (const t of musterT) for (let j = 0; j < 3; j++) weld(I[t * 3 + j]);
+            for (let i = 0; i < schweiss.size; i++) eltern[i] = i;
+            const finde = (x) => {
+                while (eltern[x] !== x) x = eltern[x] = eltern[eltern[x]];
+                return x;
+            };
+            for (const t of musterT) {
+                const a = finde(wid[I[t * 3]]);
+                eltern[finde(wid[I[t * 3 + 1]])] = a;
+                eltern[finde(wid[I[t * 3 + 2]])] = a;
+            }
+            // die Ebenen je Zeile (Normale auf 1/20, Abstand auf `ebeneM`)
+            const ebenen = new Map();
+            for (const t of musterT) {
+                const a = I[t * 3] * 3,
+                    b = I[t * 3 + 1] * 3,
+                    c = I[t * 3 + 2] * 3;
+                const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2]; // prettier-ignore
+                const vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2]; // prettier-ignore
+                let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; // prettier-ignore
+                const fl2 = Math.hypot(nx, ny, nz);
+                nx /= fl2;
+                ny /= fl2;
+                nz /= fl2;
+                const nr = nrVon(t);
+                const dq = Math.round((nx * P[a] + ny * P[a + 1] + nz * P[a + 2]) / O.ebeneM);
+                const key = ((((nr * 41 + Math.round(nx * 20) + 20) * 41 + Math.round(ny * 20) + 20) * 41 + Math.round(nz * 20) + 20) * 16384 + dq + 8192); // prettier-ignore
+                let e = ebenen.get(key);
+                if (!e) ebenen.set(key, (e = { nr, n: [nx, ny, nz], tris: [], flaeche: 0 }));
+                e.tris.push(t);
+                e.flaeche += fl2 / 2;
+            }
+            // die neue Geometrie: die behaltenen Dreiecke nach dem Pixelfehler (jede Ecke ihre Felder der L0, die Lage ihres Ziels),
+            // dann die Flächen der Zonen
+            const K = __pixelKollaps(P, I, behalten, O.fehlerPx * s);
+            vorKollaps += behalten.length;
+            nachKollaps += K.von.length / 3;
+            const ecken = [],
+                idx = [],
+                alt = new Map();
+            for (let k = 0; k < K.von.length; k++) {
+                const i = K.von[k],
+                    w = K.lage[k],
+                    bleibt = w === K.ur[k],
+                    key = bleibt ? i : -1 - (i * K.W + w);
+                let q = alt.get(key);
+                if (q === undefined) {
+                    alt.set(key, (q = ecken.length));
+                    ecken.push(bleibt ? { von: i } : { von: i, lage: [K.xyz[w * 3], K.xyz[w * 3 + 1], K.xyz[w * 3 + 2]] });
+                }
+                idx.push(q);
+            }
+            const C = m.color && m.color.array ? m.color : null;
+            const pt = (i, ax) => P[i * 3] * ax[0] + P[i * 3 + 1] * ax[1] + P[i * 3 + 2] * ax[2];
+            const c = O.zellePx * s;
+            for (const e of ebenen.values()) {
+                if (e.flaeche < O.minFlaeche) continue;
+                const up = Math.abs(e.n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+                let tA = [up[1] * e.n[2] - up[2] * e.n[1], up[2] * e.n[0] - up[0] * e.n[2], up[0] * e.n[1] - up[1] * e.n[0]];
+                const tl = Math.hypot(tA[0], tA[1], tA[2]);
+                tA = tA.map((x) => x / tl);
+                const bA = [e.n[1] * tA[2] - e.n[2] * tA[1], e.n[2] * tA[0] - e.n[0] * tA[2], e.n[0] * tA[1] - e.n[1] * tA[0]];
+                // je Teil (Stein) sein Rechteck in der Ebene
+                const stein = new Map();
+                for (const t of e.tris) {
+                    const k = finde(wid[I[t * 3]]);
+                    let r = stein.get(k);
+                    if (!r) stein.set(k, (r = { u0: 1e9, u1: -1e9, v0: 1e9, v1: -1e9, tris: [] }));
+                    r.tris.push(t);
+                    for (let j = 0; j < 3; j++) {
+                        const i = I[t * 3 + j],
+                            u = pt(i, tA),
+                            v = pt(i, bA);
+                        if (u < r.u0) r.u0 = u;
+                        if (u > r.u1) r.u1 = u;
+                        if (v < r.v0) r.v0 = v;
+                        if (v > r.v1) r.v1 = v;
+                    }
+                }
+                // Steine näher als `luecke` bilden eine Zone
+                const R = [...stein.values()],
+                    ze = R.map((_, i) => i);
+                const zf = (x) => {
+                    while (ze[x] !== x) x = ze[x] = ze[ze[x]];
+                    return x;
+                };
+                const ordnung = R.map((_, i) => i).sort((a, b) => R[a].u0 - R[b].u0 || a - b);
+                for (let a = 0; a < ordnung.length; a++) {
+                    const ra = R[ordnung[a]];
+                    for (let b = a + 1; b < ordnung.length; b++) {
+                        const rb = R[ordnung[b]];
+                        if (rb.u0 > ra.u1 + O.luecke) break;
+                        if (rb.v0 <= ra.v1 + O.luecke && ra.v0 <= rb.v1 + O.luecke) ze[zf(ordnung[b])] = zf(ordnung[a]);
+                    }
+                }
+                const gruppen = new Map();
+                R.forEach((r, i) => {
+                    const g = zf(i);
+                    if (!gruppen.has(g)) gruppen.set(g, []);
+                    gruppen.get(g).push(r);
+                });
+                for (const g of gruppen.values()) {
+                    // die Farbe flächengewichtet, die Tiefe das Mittel der Ecken
+                    let tiefe = 0,
+                        nEck = 0,
+                        fl = 0;
+                    const farbe = C ? new Array(C.itemSize).fill(0) : null;
+                    let gu0 = 1e9, gv0 = 1e9, gu1 = -1e9, gv1 = -1e9; // prettier-ignore
+                    for (const r of g) {
+                        if (r.u0 < gu0) gu0 = r.u0;
+                        if (r.v0 < gv0) gv0 = r.v0;
+                        if (r.u1 > gu1) gu1 = r.u1;
+                        if (r.v1 > gv1) gv1 = r.v1;
+                        for (const t of r.tris) {
+                            const ia = I[t * 3], ib = I[t * 3 + 1], ic = I[t * 3 + 2]; // prettier-ignore
+                            const ux = P[ib * 3] - P[ia * 3], uy = P[ib * 3 + 1] - P[ia * 3 + 1], uz = P[ib * 3 + 2] - P[ia * 3 + 2]; // prettier-ignore
+                            const vx = P[ic * 3] - P[ia * 3], vy = P[ic * 3 + 1] - P[ia * 3 + 1], vz = P[ic * 3 + 2] - P[ia * 3 + 2]; // prettier-ignore
+                            const f = Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) / 2;
+                            fl += f;
+                            for (const i of [ia, ib, ic]) {
+                                tiefe += pt(i, e.n);
+                                nEck++;
+                                if (farbe) for (let j = 0; j < farbe.length; j++) farbe[j] += (C.array[i * C.itemSize + j] * f) / 3;
+                            }
+                        }
+                    }
+                    if (!(fl > 0)) continue;
+                    tiefe /= nEck;
+                    if (farbe) for (let j = 0; j < farbe.length; j++) farbe[j] /= fl;
+                    // die Zone als Raster der Zelle `c`: eine Zelle trägt, wo ein Stein sie berührt (die Fuge unter einer Zelle
+                    // schließt sich); die größten Rechtecke der getragenen Zellen sind die Fläche, Löcher bleiben offen
+                    const nu = Math.max(1, Math.ceil((gu1 - gu0) / c)),
+                        nv = Math.max(1, Math.ceil((gv1 - gv0) / c));
+                    const zelle = new Uint8Array(nu * nv);
+                    for (const r of g) {
+                        const a0 = Math.max(0, Math.floor((r.u0 - gu0) / c)), a1 = Math.min(nu - 1, Math.floor((r.u1 - gu0) / c)); // prettier-ignore
+                        const b0 = Math.max(0, Math.floor((r.v0 - gv0) / c)), b1 = Math.min(nv - 1, Math.floor((r.v1 - gv0) / c)); // prettier-ignore
+                        for (let b = b0; b <= b1; b++) for (let a = a0; a <= a1; a++) zelle[b * nu + a] = 1;
+                    }
+                    const w0 = tiefe - O.hinterM;
+                    const ecke = (u, v) =>
+                        ecken.push({
+                            neu: [tA[0] * u + bA[0] * v + e.n[0] * w0, tA[1] * u + bA[1] * v + e.n[1] * w0, tA[2] * u + bA[2] * v + e.n[2] * w0],
+                            n: e.n,
+                            farbe,
+                            nr: e.nr,
+                        });
+                    for (let b = 0; b < nv; b++)
+                        for (let a = 0; a < nu; a++) {
+                            if (zelle[b * nu + a] !== 1) continue;
+                            let w = 1;
+                            while (a + w < nu && zelle[b * nu + a + w] === 1) w++;
+                            let h = 1;
+                            for (; b + h < nv; h++) {
+                                let voll = true;
+                                for (let x = a; x < a + w && voll; x++) voll = zelle[(b + h) * nu + x] === 1;
+                                if (!voll) break;
+                            }
+                            for (let y = b; y < b + h; y++) for (let x = a; x < a + w; x++) zelle[y * nu + x] = 2;
+                            const u0 = gu0 + a * c, u1 = Math.min(gu1, gu0 + (a + w) * c), v0 = gv0 + b * c, v1 = Math.min(gv1, gv0 + (b + h) * c); // prettier-ignore
+                            const basis = ecken.length;
+                            ecke(u0, v0);
+                            ecke(u1, v0);
+                            ecke(u1, v1);
+                            ecke(u0, v1);
+                            // gewickelt nach der Normale der Ebene: (t, b) mit t × b = n läuft gegen den Uhrzeigersinn
+                            idx.push(basis, basis + 1, basis + 2, basis, basis + 2, basis + 3);
+                        }
+                    zonen++;
+                }
+            }
+            if (!idx.length) continue;
+            const neu = {};
+            for (const k in m) if (k !== "index" && !(zu && k === "tuer") && !attrs.includes(k)) neu[k] = m[k];
+            for (const a of attrs) {
+                const k = m[a].itemSize,
+                    src = (zu && zu[a]) || m[a].array,
+                    arr = new src.constructor(ecken.length * k);
+                ecken.forEach((q, i) => {
+                    if (q.von !== undefined) {
+                        for (let j = 0; j < k; j++) arr[i * k + j] = src[q.von * k + j];
+                        if (q.lage && a === "position") arr.set(q.lage, i * 3);
+                    } else if (a === "position") arr.set(q.neu, i * 3);
+                    else if (a === "normal") arr.set(q.n, i * 3);
+                    else if (a === "color" && q.farbe) for (let j = 0; j < k; j++) arr[i * k + j] = q.farbe[j];
+                    else if (a === "aVerband") arr[i] = q.nr;
+                });
+                neu[a] = { array: arr, itemSize: k };
+            }
+            neu.index = Uint32Array.from(idx);
+            aus.push(neu);
+        }
+        return { teile: aus, zonen, kollaps: [vorKollaps, nachKollaps], unterZelle };
+    }
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
         let meshes = [];
@@ -879,6 +1411,21 @@ const foundryKanal = (() => {
                 }
             }
             const isZweitKern = !!zweit;
+            // DIE STUFE AUS DER L0 (Einheit E7/E10): trägt die Budget-Zeile der Stufe `ausL0`, baut der Faden die L0 (dieselbe
+            // Lieferung, die der Wirt als Stufe 0 bekam: Bau, Ausgang ihrer Zeile, Beipack), und die Stufe ist ihre Funktion
+            // (`__stufeAusL0`) mit dem Bildpunkt und der Sicht, die der Wirt reicht (`msg.ausL0` = { s, sicht }) — das eigene
+            // Rezept der Stufe läuft nie. Zeile und Anfrage sagen dasselbe, sonst bricht der Bau beim Namen.
+            const PCk = (typeof self !== "undefined" ? self : globalThis).__phytoCore;
+            const pkZ = isZweitKern ? zweit.kern.PRESETS[msg.presetId] : null;
+            const zeileK = isZweitKern ? PCk.budgetZeile(zweit.kern.PORTAL_RENDER_CONFIG, pkZ && pkZ.kind, msg.lod | 0) : null;
+            const ausL0 = !!(zeileK && zeileK.zeile && zeileK.zeile.ausL0);
+            if (ausL0 !== !!msg.ausL0)
+                throw new Error(
+                    ausL0
+                        ? "die Stufe kommt aus der L0 (Zeile ausL0), die Anfrage trägt keine Sicht"
+                        : "die Anfrage trägt eine Sicht (ausL0), die Zeile der Stufe nicht"
+                );
+            const lodBau = ausL0 ? 0 : msg.lod | 0;
             // W-A1 (Katalysator §5) — DER REGLER-KANAL: msg.ov (B4-Overrides der Werkstatt)
             // reist in BEIDE Zweige (buildInstance nimmt ov als 4. Argument — der Pflanzen-
             // Pfad traegt Object.assign(P, ov) seit je, die Bruecke reichte nur null).
@@ -888,9 +1435,9 @@ const foundryKanal = (() => {
             // ov umgeht IDB + f.cache am Host).
             const g = isZweitKern
                 ? zweitBaecker
-                    ? zweitBaecker(zweit.kern, msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
-                    : zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
-                : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
+                    ? zweitBaecker(zweit.kern, msg.presetId, Number(msg.seed) || 0, lodBau, msg.ov || null)
+                    : zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, lodBau, msg.ov || null)
+                : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, lodBau, msg.ov || null);
             g.updateMatrixWorld(true);
             // WELLE L (Q13 F-D8, additiv, must-ignore): DAS RAD REIST EINMAL. Ein Fahrzeug trägt seine Naben als Daten
             // (vehicle-core buildWheels: userData.rad {ecke, front, os}, userData.radDreht am drehenden Teil). Die Teile
@@ -955,7 +1502,7 @@ const foundryKanal = (() => {
             if (isZweitKern) {
                 const PC = (typeof self !== "undefined" ? self : globalThis).__phytoCore;
                 const pk = zweit.kern.PRESETS[msg.presetId];
-                const bz = PC.budgetZeile(zweit.kern.PORTAL_RENDER_CONFIG, pk && pk.kind, msg.lod | 0);
+                const bz = PC.budgetZeile(zweit.kern.PORTAL_RENDER_CONFIG, pk && pk.kind, lodBau);
                 const res = PC.budgetErzwingen(meshes, bz && bz.zeile);
                 meshes = res.meshes;
                 budgetBericht = {
@@ -969,7 +1516,7 @@ const foundryKanal = (() => {
                 };
                 if (res.bericht.bruch.length) {
                     budgetBruch = res.bericht.bruch;
-                    console.error("[budget] " + msg.presetId + " L" + (msg.lod | 0) + ": " + JSON.stringify(budgetBruch));
+                    console.error("[budget] " + msg.presetId + " L" + lodBau + ": " + JSON.stringify(budgetBruch));
                 }
             }
             // DIE HÜLLEN REISEN MIT (Welle L + S3, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
@@ -984,6 +1531,30 @@ const foundryKanal = (() => {
             // zeichnet — der Spiegel des Wassers liest sie (das Kronen-Buch des Wirts), nie eine Ableitung im Haupt-Faden.
             if (!isZweitKern && PRESETS[msg.presetId] && /^(tree|shrub)$/.test(PRESETS[msg.presetId].kind))
                 meshes.push({ kind: "__krone", huelle: __kroneDerMeshes(meshes) });
+            // die Stufe aus der gelieferten L0 (Beipack eingeschlossen: die Hülle jeder Stufe sind die Solids der L0), dann der
+            // Ausgang IHRER Zeile; der Bericht trägt die Stufe, die L0 und die Ableitung (Bildpunkt, gesehen, Zonen, ms)
+            if (ausL0) {
+                const t0 = Date.now();
+                const l0 = budgetBericht;
+                const s = Number(msg.ausL0.s);
+                const abl = __stufeAusL0(meshes, s, msg.ausL0.sicht);
+                const res = PCk.budgetErzwingen(abl.teile, zeileK.zeile);
+                meshes = res.meshes;
+                let gesehen = 0;
+                for (const S of msg.ausL0.sicht) if (S) for (let i = 0; i < S.length; i++) gesehen += S[i];
+                budgetBericht = {
+                    stufe: zeileK.stufe,
+                    vorher: res.bericht.vorher,
+                    nachher: res.bericht.nachher,
+                    faltungen: res.bericht.faltungen.length,
+                    ...(res.bericht.frei > 0 ? { frei: res.bericht.frei } : {}),
+                    ausL0: { s, l0: l0 && l0.nachher ? l0.nachher.tris : null, gesehen, zonen: abl.zonen, kollaps: abl.kollaps, unterZelle: abl.unterZelle, ms: Date.now() - t0 },
+                };
+                if (res.bericht.bruch.length) {
+                    budgetBruch = (budgetBruch || []).concat(res.bericht.bruch);
+                    console.error("[budget] " + msg.presetId + " L" + (msg.lod | 0) + " aus der L0: " + JSON.stringify(res.bericht.bruch));
+                }
+            }
         } catch (e) {
             // DER BRUCH BEIM NAMEN (w28-leib-kanon): ein Guss, der wirft, antwortet mit seinem Grund (Art, Stufe, Satz) — nie mit
             // einer leeren Antwort, die der Besteller als „noch nicht" las und ewig neu stellte (ein Bewohner 10 109-mal)
