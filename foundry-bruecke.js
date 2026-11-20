@@ -839,10 +839,13 @@ const foundryKanal = (() => {
     // die EINE Sicht: `sicht` trägt je Teil der L0 ein Byte je Dreieck, gerechnet vom Wirt aus dem Tiefen-Test der GPU in 37
     // Richtungen (`_sichtDerGestalt`) — nie ein Raster im Faden. Dann:
     //   MUSTER IM STOFF — die gesehenen Dreiecke mit Verband-Zeile (Backstein, Ziegel, Naturstein) fallen je Ebene und Zone in eine
-    //     Fläche: Teile (verschweißt auf 1 mm) näher als `luecke` bilden eine Zone, die Zone ist ein Raster in `zellePx` Bildpunkten,
+    //     Fläche: ein Stein ist je Ebene, was dort Kanten teilt (verschweißt auf 1 mm), sein Rahmen der der Ebene oder — füllt er
+    //     dort sein Rechteck nicht — der seines kleinsten Rechtecks (auf `winkel` rad); Steine eines Winkels näher als `luecke`
+    //     bilden eine Zone, die Zone ist ein Raster in `zellePx` Bildpunkten,
     //     ihre größten Rechtecke die Fläche (ein Fenster bleibt offen), `hinterM` hinter der Front der Steine, in der flächen-
     //     gewichteten Farbe der Steine und DERSELBEN Zeile — der Stoff webt den Stein (`_verbandStoff`). Ebenen unter `minFlaeche`
-    //     (Kanten und Kuppen der Steine: ihr Relief) fallen.
+    //     (Kanten und Kuppen der Steine: ihr Relief) fallen. Ein Stein, der auch sein kleinstes Rechteck nicht bis auf die Zelle am
+    //     Umriss füllt (das Dreieck am Giebel), behält seine Dreiecke für den Pixelfehler.
     //   STEINE OHNE ZEILE — eine Insel der übrigen (verschweißt), die ein Quader in ihrem Rahmen ist (jede Fläche parallel zu einer
     //     Achse aus ihrer Haupt-Normale) und deren Front ihr Rechteck bis auf die Zelle am Umriss füllt, ist ein Stein des Musters,
     //     das kein Stoff webt (die Bohle, die Schindel, der Rahmen): er fällt wie der Verband in die Flächen seiner Zonen (Zeile 0,
@@ -854,7 +857,7 @@ const foundryKanal = (() => {
     //     ist das ganze Teil Detail seines Trägers (die Beschläge der Flügel): es fällt als Mittel in dessen Stoff (der Träger trägt
     //     das gesehene Dreieck nächst seiner Mitte, seine Farbe rückt auf das flächengewichtete Mittel beider).
     // Was die Sicht aus keiner Richtung zeigt, fällt. Die Felder eines Teils (Tür, Gelenk, Stoff) reisen mit.
-    const STUFE_AUS_L0 = Object.freeze({ luecke: 0.06, minFlaeche: 0.5, ebeneM: 0.02, zellePx: 2, hinterM: 0.003, fehlerPx: 0.5 });
+    const STUFE_AUS_L0 = Object.freeze({ luecke: 0.06, minFlaeche: 0.5, ebeneM: 0.02, zellePx: 2, hinterM: 0.003, fehlerPx: 0.5, winkel: 0.002 });
     // DETAIL = PIXELFEHLER (E7): Halbkanten-Kollaps u → v über die Dreiecke `tris` (Nummern in I), in der Reihenfolge des kleinsten
     // Fehlers, solange er unter `eps` (m) bleibt. Die bleibende Ecke ist eine der L0 — jede Dreiecks-Ecke behält ihre Felder (Normale,
     // Farbe, Verband) und nimmt die Lage ihres Ziels; die Lage ist auf 1 mm verschweißt (eine flach schattierte Kiste ist EINE Fläche).
@@ -1168,6 +1171,55 @@ const foundryKanal = (() => {
         const den = 1 / (va + vb + vc);
         return zu(a, vb * den, vc * den);
     }
+    // DAS KLEINSTE RECHTECK um die Ecken eines Steins in seiner Ebene (`__stufeAusL0`, der Rahmen je Stein): die Hülle seiner
+    // Ecken in (tA, bA), je Kante ihr umschreibendes Rechteck, das kleinste gilt — sein Winkel gegen tA in [−winkel/2, π/2 − winkel/2)
+    // (ein Rechteck ist sich um π/2 gleich) und seine Seiten W · H
+    function __rechteckKlein(P, I, tris, tA, bA) {
+        const pts = [];
+        for (const t of tris)
+            for (let j = 0; j < 3; j++) {
+                const i = I[t * 3 + j] * 3;
+                pts.push([P[i] * tA[0] + P[i + 1] * tA[1] + P[i + 2] * tA[2], P[i] * bA[0] + P[i + 1] * bA[1] + P[i + 2] * bA[2]]);
+            }
+        pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+        const kreuz = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+        const unten = [],
+            oben = [];
+        for (const p of pts) {
+            while (unten.length >= 2 && kreuz(unten[unten.length - 2], unten[unten.length - 1], p) <= 0) unten.pop();
+            unten.push(p);
+        }
+        for (let i = pts.length - 1; i >= 0; i--) {
+            while (oben.length >= 2 && kreuz(oben[oben.length - 2], oben[oben.length - 1], pts[i]) <= 0) oben.pop();
+            oben.push(pts[i]);
+        }
+        const h = unten.slice(0, -1).concat(oben.slice(0, -1));
+        const viertel = Math.PI / 2;
+        let best = { W: Infinity, H: Infinity, th: 0 };
+        for (let i = 0; i < h.length; i++) {
+            const dx = h[(i + 1) % h.length][0] - h[i][0],
+                dy = h[(i + 1) % h.length][1] - h[i][1],
+                l = Math.hypot(dx, dy);
+            if (!(l > 1e-9)) continue;
+            const cx = dx / l,
+                cy = dy / l;
+            let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity; // prettier-ignore
+            for (const p of h) {
+                const u = p[0] * cx + p[1] * cy,
+                    v = p[1] * cx - p[0] * cy;
+                if (u < u0) u0 = u;
+                if (u > u1) u1 = u;
+                if (v < v0) v0 = v;
+                if (v > v1) v1 = v;
+            }
+            if (!((u1 - u0) * (v1 - v0) < best.W * best.H)) continue;
+            let th = Math.atan2(cy, cx);
+            th -= Math.floor(th / viertel) * viertel;
+            if (th >= viertel - STUFE_AUS_L0.winkel / 2) th -= viertel;
+            best = { W: u1 - u0, H: v1 - v0, th };
+        }
+        return best;
+    }
     function __stufeAusL0(teile, s, sicht) {
         const O = STUFE_AUS_L0;
         if (!(s > 0) || !Array.isArray(sicht) || sicht.length !== teile.length)
@@ -1179,7 +1231,9 @@ const foundryKanal = (() => {
             nachKollaps = 0,
             unterZelle = 0,
             steine = 0,
-            flankenTris = 0;
+            flankenTris = 0,
+            gedreht = 0,
+            umriss = 0;
         // DER VORLAUF je Teil — DIE L0 IN RUHE: ein Tür-Flügel liegt in seiner gebackenen Offen-Pose (`tuer.offen`), die Welt zeigt
         // ihn geschlossen — um das Scharnier (hx, zf) um −offen gedreht, wie der Wirt ihn schwenkt (`_fluegelSchwenk` bei 0); die
         // Stufe trägt ihn geschlossen im Leib (kein `tuer`: die Stufen ab der L1 zeigen keinen Flügel). Die Sicht des Wirts sah
@@ -1366,17 +1420,6 @@ const foundryKanal = (() => {
                 }
                 for (const t of L) if (hoehe(t) >= s) behalten.push(t); // DÜNNES FÄLLT: die kleinste Höhe unter einem Bildpunkt
             }
-            // die Teile (Steine) über die verschweißten Ecken der Muster-Dreiecke
-            const eltern = Int32Array.from({ length: schweiss.size }, (_, i) => i);
-            const finde = (x) => {
-                while (eltern[x] !== x) x = eltern[x] = eltern[eltern[x]];
-                return x;
-            };
-            for (const t of musterT) {
-                const a = finde(wid[I[t * 3]]);
-                eltern[finde(wid[I[t * 3 + 1]])] = a;
-                eltern[finde(wid[I[t * 3 + 2]])] = a;
-            }
             // die Ebenen je Zeile (Normale auf 1/20, Abstand auf `ebeneM`)
             const ebenen = new Map();
             for (const t of musterT) {
@@ -1399,6 +1442,78 @@ const foundryKanal = (() => {
                 e.tris.push(t);
                 e.flaeche += fl2 / 2;
             }
+            // DER RAHMEN JE STEIN (vor dem Pixelfehler): je Ebene jeder Stein — die Dreiecke, die in ihr Kanten teilen (eine geteilte
+            // Ecke verbindet nie: die drei Stufen der Treppe berühren sich in einer Ecke, ihre Seiten überdecken sich, die Fläche zählte
+            // doppelt und füllte ihr gemeinsames Rechteck bis über die oberste Stufe) — und sein
+            // Rechteck — im Rahmen der Ebene, sonst das kleinste Rechteck um seine Hülle: die Flanke der Schindel steht um die Neigung
+            // des Dachs gedreht in ihrer Ebene, ihr Rechteck im Rahmen der Ebene war bis zu neunfach leer und stand als Platte über dem
+            // Dach. Ein Stein, der sein Rechteck bis auf die Zelle am Umriss füllt, fällt in die Zonen seines Winkels; jeder andere
+            // (das Dreieck am Giebel, die Fläche mit schrägem Rand) behält seine Dreiecke — sie gehen durch den Pixelfehler, Dünnes fällt
+            const c = O.zellePx * s;
+            const pt = (i, ax) => P[i * 3] * ax[0] + P[i * 3 + 1] * ax[1] + P[i * 3 + 2] * ax[2];
+            const rahmen = [];
+            for (const e of ebenen.values()) {
+                if (e.nr && e.flaeche < O.minFlaeche) continue; // die Kanten der Steine: ihr Relief (die Front eines Steins ohne Zeile fällt nie)
+                const up = Math.abs(e.n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+                let tA = [up[1] * e.n[2] - up[2] * e.n[1], up[2] * e.n[0] - up[0] * e.n[2], up[0] * e.n[1] - up[1] * e.n[0]];
+                const tl = Math.hypot(tA[0], tA[1], tA[2]);
+                tA = tA.map((x) => x / tl);
+                const bA = [e.n[1] * tA[2] - e.n[2] * tA[1], e.n[2] * tA[0] - e.n[0] * tA[2], e.n[0] * tA[1] - e.n[1] * tA[0]];
+                const NW = schweiss.size,
+                    kante = new Map(),
+                    ke = e.tris.map((_, i) => i);
+                const kf = (x) => {
+                    while (ke[x] !== x) x = ke[x] = ke[ke[x]];
+                    return x;
+                };
+                e.tris.forEach((t, i) => {
+                    for (let j = 0; j < 3; j++) {
+                        const a = wid[I[t * 3 + j]],
+                            b = wid[I[t * 3 + ((j + 1) % 3)]],
+                            k = a < b ? a * NW + b : b * NW + a,
+                            o = kante.get(k);
+                        if (o === undefined) kante.set(k, i);
+                        else ke[kf(i)] = kf(o);
+                    }
+                });
+                const stein = new Map();
+                for (let i = 0; i < e.tris.length; i++) {
+                    const t = e.tris[i],
+                        k = kf(i);
+                    let r = stein.get(k);
+                    if (!r) stein.set(k, (r = { u0: 1e9, u1: -1e9, v0: 1e9, v1: -1e9, A: 0, tris: [] }));
+                    r.tris.push(t);
+                    r.A += nrm(t, nq) / 2;
+                    for (let j = 0; j < 3; j++) {
+                        const i = I[t * 3 + j],
+                            u = pt(i, tA),
+                            v = pt(i, bA);
+                        if (u < r.u0) r.u0 = u;
+                        if (u > r.u1) r.u1 = u;
+                        if (v < r.v0) r.v0 = v;
+                        if (v > r.v1) r.v1 = v;
+                    }
+                }
+                const winkel = new Map();
+                for (const r of stein.values()) {
+                    let q = 0;
+                    const W = r.u1 - r.u0,
+                        H = r.v1 - r.v0;
+                    if (!(W * H - r.A <= c * (W + H))) {
+                        const R = __rechteckKlein(P, I, r.tris, tA, bA);
+                        if (!(R.W * R.H - r.A <= c * (R.W + R.H))) {
+                            for (const t of r.tris) if (hoehe(t) >= s) behalten.push(t);
+                            umriss++;
+                            continue;
+                        }
+                        q = Math.round(R.th / O.winkel);
+                        gedreht++;
+                    }
+                    if (!winkel.has(q)) winkel.set(q, []);
+                    winkel.get(q).push(r.tris);
+                }
+                rahmen.push({ e, tE: tA, bE: bA, winkel });
+            }
             // die neue Geometrie: die behaltenen Dreiecke nach dem Pixelfehler (jede Ecke ihre Felder der L0, die Lage ihres Ziels),
             // dann die Flächen der Zonen
             const K = __pixelKollaps(P, I, behalten, O.fehlerPx * s);
@@ -1420,35 +1535,29 @@ const foundryKanal = (() => {
                 idx.push(q);
             }
             const C = m.color && m.color.array ? m.color : null;
-            const pt = (i, ax) => P[i * 3] * ax[0] + P[i * 3 + 1] * ax[1] + P[i * 3 + 2] * ax[2];
-            const c = O.zellePx * s;
-            for (const e of ebenen.values()) {
-                if (e.nr && e.flaeche < O.minFlaeche) continue; // die Kanten der Steine: ihr Relief (die Front eines Steins ohne Zeile fällt nie)
-                const up = Math.abs(e.n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
-                let tA = [up[1] * e.n[2] - up[2] * e.n[1], up[2] * e.n[0] - up[0] * e.n[2], up[0] * e.n[1] - up[1] * e.n[0]];
-                const tl = Math.hypot(tA[0], tA[1], tA[2]);
-                tA = tA.map((x) => x / tl);
-                const bA = [e.n[1] * tA[2] - e.n[2] * tA[1], e.n[2] * tA[0] - e.n[0] * tA[2], e.n[0] * tA[1] - e.n[1] * tA[0]];
-                // je Teil (Stein) sein Rechteck in der Ebene
-                const stein = new Map();
-                for (const t of e.tris) {
-                    const k = finde(wid[I[t * 3]]);
-                    let r = stein.get(k);
-                    if (!r) stein.set(k, (r = { u0: 1e9, u1: -1e9, v0: 1e9, v1: -1e9, tris: [] }));
-                    r.tris.push(t);
-                    for (let j = 0; j < 3; j++) {
-                        const i = I[t * 3 + j],
-                            u = pt(i, tA),
-                            v = pt(i, bA);
-                        if (u < r.u0) r.u0 = u;
-                        if (u > r.u1) r.u1 = u;
-                        if (v < r.v0) r.v0 = v;
-                        if (v > r.v1) r.v1 = v;
-                    }
-                }
+            for (const { e, tE, bE, winkel } of rahmen)
+                for (const [q, steinTris] of winkel) {
+                // je Winkel der Rahmen der Ebene um ihn gedreht (t × b = n bleibt), je Stein sein Rechteck in ihm
+                const co = Math.cos(q * O.winkel),
+                    si = Math.sin(q * O.winkel);
+                const tA = [0, 1, 2].map((k) => co * tE[k] + si * bE[k]),
+                    bA = [0, 1, 2].map((k) => co * bE[k] - si * tE[k]);
+                const R = steinTris.map((tris) => {
+                    const r = { u0: 1e9, u1: -1e9, v0: 1e9, v1: -1e9, tris };
+                    for (const t of tris)
+                        for (let j = 0; j < 3; j++) {
+                            const i = I[t * 3 + j],
+                                u = pt(i, tA),
+                                v = pt(i, bA);
+                            if (u < r.u0) r.u0 = u;
+                            if (u > r.u1) r.u1 = u;
+                            if (v < r.v0) r.v0 = v;
+                            if (v > r.v1) r.v1 = v;
+                        }
+                    return r;
+                });
                 // Steine näher als `luecke` bilden eine Zone
-                const R = [...stein.values()],
-                    ze = R.map((_, i) => i);
+                const ze = R.map((_, i) => i);
                 const zf = (x) => {
                     while (ze[x] !== x) x = ze[x] = ze[ze[x]];
                     return x;
@@ -1577,7 +1686,7 @@ const foundryKanal = (() => {
             aus.push(neu);
         }
         for (const ti of traeger.keys()) throw new Error("Stufe aus der L0: der Träger " + ti + " gefallener Teile fällt selbst");
-        return { teile: aus, zonen, kollaps: [vorKollaps, nachKollaps], unterZelle, steine: [steine, flankenTris] };
+        return { teile: aus, zonen, kollaps: [vorKollaps, nachKollaps], unterZelle, steine: [steine, flankenTris], rahmen: [gedreht, umriss] };
     }
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
@@ -1761,7 +1870,7 @@ const foundryKanal = (() => {
                     nachher: res.bericht.nachher,
                     faltungen: res.bericht.faltungen.length,
                     ...(res.bericht.frei > 0 ? { frei: res.bericht.frei } : {}),
-                    ausL0: { s, l0: l0 && l0.nachher ? l0.nachher.tris : null, gesehen, zonen: abl.zonen, kollaps: abl.kollaps, unterZelle: abl.unterZelle, steine: abl.steine, ms: Date.now() - t0 },
+                    ausL0: { s, l0: l0 && l0.nachher ? l0.nachher.tris : null, gesehen, zonen: abl.zonen, kollaps: abl.kollaps, unterZelle: abl.unterZelle, steine: abl.steine, rahmen: abl.rahmen, ms: Date.now() - t0 },
                 };
                 if (res.bericht.bruch.length) {
                     budgetBruch = (budgetBruch || []).concat(res.bericht.bruch);
