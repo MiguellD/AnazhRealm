@@ -1995,11 +1995,13 @@ class AnazhRealm_bild_himmel {
     // Bis H1 stand die sonnenzugewandte Karte auf Mittelgrau + 1 EV, das Auge folgte ihrem Licht mit 0,34 und glitt ab ~14,5°
     // zum Deckel der Nacht: die Sonne in 7° stand an der Wiese einmal 0,16, einmal 1,29 EV unter dem Mittag (Radeon).
     _dayNightApplyBelichtung(achse) {
-        const k = this._belichtungAusLicht(achse.e);
+        const kLicht = this._belichtungAusLicht(achse.e);
         this._raumBlendeTakt();
         const hand = this.state.belichtungHand;
-        if (!this.state.renderer || (k == null && !(hand && hand.k > 0))) return;
-        this.state.renderer.toneMappingExposure = hand ? (hand.k > 0 ? hand.k : k * hand.blende) : k;
+        if (!this.state.renderer || (kLicht == null && !(hand && hand.k > 0))) return;
+        // die Kamera auf Hand (`_belichtungHand`) trägt ihren Wert durch DIESEN Schreiber — die Automatik oder die Hand, ein Satz
+        const k = hand ? (hand.k > 0 ? hand.k : kLicht * hand.blende) : kLicht;
+        this.state.renderer.toneMappingExposure = k;
         // … und sie steht erst mit der Sicht des Bildes (`_bildSichtSteht`, laub-messer): der Messer misst die Schatten der Stunde
         // am Bild, seine Lesung kommt ein bis zwei Bilder später — der Ladeschirm der Ankunft weicht nach der Lesung
         // (`_weltbildLuecken`, Term „licht“), nie mit der Belichtung ohne Schatten. Steht sie einmal, bleibt der Term zu (je Stand

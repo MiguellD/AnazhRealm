@@ -1239,7 +1239,6 @@ function tagKurve(o) {
         };
         try {
             for (const u of o.uhren) {
-                if (st.world) st.world.timeOfDay = u;
                 if (r.setTimeOfDay(u, "human") !== true) throw new Error(`die Uhr nimmt den Spieler nicht (${u})`);
                 const sofort = k;
                 const lesung = await lesen();
@@ -1312,11 +1311,9 @@ function tagKurve(o) {
                     const u0 = st.timeOfDay;
                     const u1 = u0 === 0.3 ? 0.31 : 0.3;
                     if (st.rueckstrahlLeser.lesung) await st.rueckstrahlLeser.lesung;
-                    if (st.world) st.world.timeOfDay = u1;
                     if (r.setTimeOfDay(u1, "human") !== true) throw new Error(`die Uhr nimmt den Spieler nicht (${u1})`);
                     mutant = { lesung: await lesen() };
                     if (st.rueckstrahlLeser.lesung) await st.rueckstrahlLeser.lesung;
-                    if (st.world) st.world.timeOfDay = u0;
                     r.setTimeOfDay(u0, "human");
                 } finally {
                     rend.readRenderTargetPixelsAsync = ur;
@@ -2707,7 +2704,6 @@ function luftTiefe(o) {
         };
         const bRef = luftBetaRef(R);
         const uhr = (u) => {
-            if (st.world) st.world.timeOfDay = u;
             if (r.setTimeOfDay(u, "human") !== true) throw new Error(`__luftTiefe: die Uhr nimmt den Spieler nicht (${u})`);
             const sd = r._sonnenRichtung();
             return { sonne: +((Math.asin(sd.y) * 180) / Math.PI).toFixed(2), az: Math.atan2(sd.x, -sd.z) };
