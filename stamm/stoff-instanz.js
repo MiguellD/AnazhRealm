@@ -2268,8 +2268,8 @@ class AnazhRealm_stoff_instanz {
     // Backend weitete die Mensch-Indizes, die Welt band acht Mensch-Meshes als uint32 auf 16-bit-Puffern („Index range …
     // does not fit", 1 760 Meldungen in Sekunden), jeder Render-Kontext der Welt wurde verworfen — das Bild stand, die Uhr
     // lief. Gerufen direkt nach dem Bau des Welt-Renderers (vor jedem init, vor jedem Attribut): jedes Backend der Seite
-    // erbt (1) den schmalen Index und das Index-Maximum, gebucht am EINEN Weg jedes Index auf die GPU (Anlegen ganz,
-    // Nachschreiben nur die geschriebenen Bereiche — die Sätze schreiben je Pass), (2) die Index-Wache am Draw (ein
+    // erbt (1) den schmalen Index am Anlegen und das Index-Maximum, gebucht am ersten Draw ganz, danach je Nachschreiben
+    // nur die geschriebenen Bereiche — die Sätze schreiben je Pass), (2) die Index-Wache am Draw (ein
     // Vergleich), (3) die GPU-Wache an seinem Device und an der Konsolen-Funktion von three.
     _backendGesetz(renderer) {
         const be = renderer && renderer.backend;
@@ -2288,10 +2288,6 @@ class AnazhRealm_stoff_instanz {
             } finally {
                 if (schmal) attr.normalized = false;
             }
-            const d = this.get(attr);
-            // die Puffer-Größe einmal gelesen (GPUBuffer.size ist ein Binding-Aufruf — je Draw kostete er ~0,3 µs)
-            d.__indexBytes = d.buffer ? d.buffer.size : 0;
-            AnazhRealm._indexMaxBuchen(d, attr.array, null);
             return aus;
         };
         const nachschreiben = P.updateAttribute;
@@ -2325,13 +2321,21 @@ class AnazhRealm_stoff_instanz {
     // (der Array-Typ), passt in den Puffer, der auf der GPU liegt, und kein gezeichneter Index greift über die Vertex-Zahl.
     // Ein Bruch steht beim NAMEN im Log (Objekt-Pfad · Geometrie · Zahlen · Backend), einmal je Geometrie und Art, gezählt
     // in `_indexWache` — vor der Device-Meldung, die nur „Index range … does not fit" kennt. Kosten: je Draw ein Vergleich
-    // gegen das am Anlegen/Nachschreiben gebuchte Maximum (`_indexMaxBuchen`); den gezeichneten Bereich liest sie nur im
+    // gegen das am ersten Draw/Nachschreiben gebuchte Maximum (`_indexMaxBuchen`); den gezeichneten Bereich liest sie nur im
     // Verdacht (Maximum ≥ Vertex-Zahl — ein Satz trägt Luft hinter seinem Hochwasser), einmal je Version und Bereich.
+    // DIE BUCHUNG AM DRAW (z637, Frost-Wand T1): jeder Index, den ein Draw bindet, geht HIER durch — gebucht wird er beim ersten
+    // (die Puffer-Größe einmal gelesen: GPUBuffer.size ist ein Binding-Aufruf, je Draw kostete er ~0,3 µs; das Maximum über das
+    // ganze Array, danach je Nachschreiben seine Bereiche). Bis hier buchte das Anlegen (`createIndexAttribute`), und die Wache
+    // ließ jeden Index ohne Buchung still durch (`!(bytes > 0)`) — einen, der als Storage vor seinem ersten Draw auf die GPU
+    // kam, hätte sie nie gesehen. Jetzt hat sie keinen Zweig, der einen Index durchwinkt.
     _indexWacheDraw(be, ro, idx) {
         const d = be.get(idx);
-        const bytes = d.__indexBytes;
-        if (!(bytes > 0)) return;
         const arr = idx.array;
+        if (d.__indexBytes === undefined) {
+            d.__indexBytes = d.buffer.size;
+            AnazhRealm._indexMaxBuchen(d, arr, null);
+        }
+        const bytes = d.__indexBytes;
         let art = null,
             detail = null;
         if (arr.byteLength > bytes) {
