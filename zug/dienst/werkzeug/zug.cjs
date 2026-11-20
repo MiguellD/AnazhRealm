@@ -1570,6 +1570,299 @@ function nachweis(args) {
     return frei ? 1 : 0;
 }
 
+// ── taeter: DER TÄTER AN DEN ECHT-WÄNDEN, vom Dienst selbst ─────────────────────────────────────────────────────────────
+// 20.11., z637 (Lauf 44686031159): vier je für sich grüne Stempel fuhren zusammen, der Kandidat fiel am Job „echt omen“ an Prüfbühne
+// S0 und Frost-Wand — einem Job, der NUR am Kandidaten fährt, an keiner Vorprüfung eines Zweigs. Alle vier blieben gefahren, der
+// Dirigent suchte 70 min von Hand (je Stempel merge-tree, Baum, Junction, die rote Linse unter gpu-lauf.sh): einer allein rot, drei
+// unschuldig, die drei bekamen von Hand neue Köpfe. Jetzt der Dienst: die roten echt-Schritte des Laufs → ihr Befehl aus check.yml AM
+// KANDIDATEN (Schritt-Name → run:, die Umgebung des Jobs echt) → je Stempel ALLEIN auf der Basis des Kandidaten jeder rote Befehl
+// EINMAL unter gpu-lauf.sh (die CI hat dort Vorfahrt) → je Stempel EINE Zeile TÄTER/UNSCHULDIG. Steht ein Täter, bekommen die
+// Unschuldigen (kein Täter der Vorab-Statik) einen neuen Kopf: ein leerer Commit auf den alten Stempel, derselbe Betreff samt Tags mit
+// dem Vorsatz „neuer Kopf nach rotem z<N> …“ hinter „Abgabe <zweig>: “ (bereit() in zug-dienst.sh sieht nur Betreffe, die mit
+// „Abgabe“ BEGINNEN). Steht kein Einzeltäter, wird nichts gestempelt (Kombination oder Gerät). Scheitert ein Schritt der Maschine,
+// steht „TÄTER-SUCHE ABGEBROCHEN: <grund>“ und nichts wird gestempelt — nie ein halbes Urteil.
+const TAETER_DECKEL = { stempel: 4, waende: 3, s: 900, fahrten: 3 };
+const TAETER_AUTOR = { name: "MiguellD", mail: "87209049+MiguellD@users.noreply.github.com" };
+const WAND_RUN = /^(npm run |node scripts\/)/;
+const wandKurz = (n) => n.replace(/\s*\(.*$/, "").replace(/ auf der Karte$/, "");
+const zweigKurz = (z) => z.replace(/^w2\d-/, "");
+// die Schritte des Jobs echt aus dem check.yml-Text des Kandidaten: je roter Name sein run: und die Umgebung (Job + Schritt); ein
+// Name, der dort fehlt, oder ein Schritt, der keine Wand ist, WIRFT (die Suche bricht ab)
+function echtBefehle(ymlText, namen) {
+    const yaml = require(require.resolve("js-yaml", { paths: [__dirname, VOLL] }));
+    const job = ((yaml.load(ymlText) || {}).jobs || {}).echt;
+    if (!job || !Array.isArray(job.steps)) throw new Error("check.yml des Kandidaten trägt keinen Job „echt“ mit Schritten");
+    return namen.map((name) => {
+        const s = job.steps.find((x) => x && x.name === name);
+        if (!s || typeof s.run !== "string") throw new Error(`Befehl nicht in check.yml gefunden: „${name}“`);
+        const run = s.run.trim();
+        if (!WAND_RUN.test(run) || run.includes("\n")) throw new Error(`der rote Schritt „${name}“ ist keine Wand (run: ${run.slice(0, 80)})`);
+        return { name, kurz: wandKurz(name), run, env: { ...(job.env || {}), ...(s.env || {}) } };
+    });
+}
+function neuerBetreff(alt, zid, waende) {
+    const vor = `neuer Kopf nach rotem ${zid} (allein an der Radeon grün: ${waende.join(", ")}) — `;
+    const m = /^(Abgabe [^:]+: )([\s\S]*)$/.exec(alt);
+    return m ? m[1] + vor + m[2] : vor + alt;
+}
+// DAS URTEIL (rein, der Selbsttest ersetzt nur `lauf`): stempel = [{ spec, betreff }], waende = echtBefehle, statik = Set der Zweige,
+// die die Vorab-Statik fallen ließ; lauf(spec, wand) → { rot, zeile } · { ohne } (kein Urteil nach allen Fahrten) · { abbruch }; pflicht(stempel) → die Pflicht-Wände, die
+// seinem Probe-Tag fehlen (probeTagLuecke am Beitrag). Zurück: die Zeilen und die neuen Köpfe.
+function taeterUrteil({ zid, stempel, waende, statik = new Set(), geraete = [], lauf, pflicht = () => [] }) {
+    const n = waende.length;
+    if (stempel.length > TAETER_DECKEL.stempel || n > TAETER_DECKEL.waende)
+        return { zeilen: [`TÄTER-SUCHE ABGEBROCHEN: Deckel ${TAETER_DECKEL.stempel} Stempel × ${TAETER_DECKEL.waende} Wände, der Zug trägt ${stempel.length} × ${n}`], neu: [] };
+    if (!n) return { zeilen: ["TÄTER-SUCHE ABGEBROCHEN: kein roter echt-Schritt im Lauf"], neu: [] };
+    const je = [];
+    for (const st of stempel) {
+        const urteile = [];
+        for (const w of waende) {
+            const r = lauf(st.spec, w);
+            if (r.abbruch) return { zeilen: [`TÄTER-SUCHE ABGEBROCHEN: ${zweigKurz(st.spec.split("@")[0])} an ${w.kurz}: ${r.abbruch}`], neu: [] };
+            urteile.push({ w, ...r });
+        }
+        je.push({ st, urteile });
+    }
+    const zeilen = [];
+    const taeter = je.filter((x) => x.urteile.some((u) => u.rot));
+    for (const { st, urteile } of je) {
+        const z = st.spec.split("@")[0];
+        const rot = urteile.filter((u) => u.rot);
+        const ohne = urteile.filter((u) => u.ohne);
+        const gruen = n - rot.length - ohne.length;
+        const rest = `${ohne.length && rot.length ? ` · ${ohne.map((u) => `${u.w.kurz} ohne Urteil`).join(" · ")}` : ""}${gruen && gruen < n ? ` · ${gruen} von ${n} allein GRÜN` : ""}`;
+        zeilen.push(
+            rot.length
+                ? `TÄTER ${z}: ${rot.map((u) => `${u.w.kurz} ROT allein (${u.zeile})`).join(" · ")}${rest}`
+                : ohne.length
+                  ? `OHNE URTEIL ${z}: ${ohne.map((u) => `${u.w.kurz} ohne Urteil (${u.ohne})`).join(" · ")}${gruen ? ` · ${gruen} von ${n} allein GRÜN` : ""} — weder Täter noch neuer Kopf`
+                  : `UNSCHULDIG ${z}: ${n} von ${n} roten Wänden allein GRÜN${statik.has(z) ? " — doch Täter der Vorab-Statik, kein neuer Kopf" : ""}`
+        );
+    }
+    if (!taeter.length) {
+        zeilen.push(`KEIN EINZELTÄTER an der Radeon: Kombination oder Gerät (${geraete.join(", ") || "?"}) — kein neuer Kopf`);
+        return { zeilen, neu: [] };
+    }
+    const neu = je
+        .filter((x) => x.urteile.every((u) => !u.rot && !u.ohne) && !statik.has(x.st.spec.split("@")[0]))
+        .map(({ st }) => ({ spec: st.spec, betreff: tagErgaenzt(neuerBetreff(st.betreff, zid, waende.map((w) => w.kurz)), pflicht(st)) }));
+    return { zeilen, neu };
+}
+// rot-text.cjs liegt in der Quelle neben werkzeug/, installiert in dienst/ neben werkzeug/ — dieselbe Datei, zwei Orte
+function rotLeser() {
+    const ort = [path.join(__dirname, "..", "rot-text.cjs"), path.join(__dirname, "..", "dienst", "rot-text.cjs")].find((f) => fs.existsSync(f));
+    if (!ort) throw new Error("rot-text.cjs fehlt neben werkzeug/ (die Lesung der roten Zeile)");
+    return require(ort).taeter;
+}
+// DER BAUM EINES STEMPELS ALLEIN: ein Temp-Worktree von INTEG an der Basis (node_modules als Junction), darin DERSELBE Bau-Weg wie im
+// Zug (mergeAlle im Kind mit ZUG_WT, die Klassen a–i: ein nacktes merge-tree fiel am ersten Beweis an der Versions-Zeile von
+// index.html, die der Zug als Klasse c löst). Zurück { wt, weg } oder { abbruch, weg }.
+function stempelBaum(zid, basis, spec) {
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), `zug-taeter-${zid}-`));
+    const wt = path.join(d, "wt");
+    const weg = () => {
+        git(["worktree", "remove", "--force", wt], INTEG, true);
+        fs.rmSync(d, { recursive: true, force: true });
+    };
+    try {
+        git(["worktree", "add", "-q", "--detach", wt, basis], INTEG);
+        fs.symlinkSync(path.join(VOLL, "node_modules"), path.join(wt, "node_modules"), "junction");
+        const k = spawnSync(process.execPath, ["-e", `const z=require(${JSON.stringify(__filename)});console.log("BAU "+JSON.stringify(z.mergeAlle(${JSON.stringify(basis)},${JSON.stringify([spec])})))`], {
+            encoding: "utf8",
+            maxBuffer: 1 << 26,
+            env: { ...process.env, ZUG_WT: wt },
+        });
+        const m = /^BAU (.*)$/m.exec(k.stdout || "");
+        if (!m) return { abbruch: `der Bau-Weg allein scheitert: ${((k.stdout || "") + (k.stderr || "")).trim().split("\n").pop().slice(0, 200)}`, weg };
+        const g = JSON.parse(m[1]);
+        if (g.drin.length !== 1) return { abbruch: `allein auf der Basis ${basis.slice(0, 8)} nicht baubar: ${g.zeilen.join(" · ").slice(0, 200)}`, weg };
+        return { wt, weg };
+    } catch (e) {
+        return { abbruch: `der Baum allein: ${String(e.message).split("\n")[0].slice(0, 200)}`, weg };
+    }
+}
+// DREI AUSGÄNGE JE FAHRT (20.11., erster Beweis-Lauf z637: „laub-kante-4 · Pruefbuehne S0: ROT — Error: listen EADDRINUSE …:4394“ —
+// ein Absturz der Fahrt stand als Täter, von Hand war main + laub-kante-4 an S0 GRÜN, Nacht-Luma 22,3): GRÜN (Exit 0) · ROT nur, wenn
+// die Linse ihr Urteil sprach (eine ⛔/❌-Zeile der Wand, gelesen wie rot-text.cjs) · OHNE URTEIL alles andere — Absturz, Port, Schloss,
+// Deckel, die Maschine. Ohne Urteil wird die Fahrt wiederholt (TAETER_DECKEL.fahrten), danach steht der Stempel „ohne Urteil“.
+const FAHRT_MASCHINE = /EADDRINUSE|Cannot find module|MODULE_NOT_FOUND|is not recognized as|command not found|Missing script|^(NEBEN-)?SCHLOSS BLOCKIERT/m;
+function fahrtUrteil(status, txt, taeterZeile) {
+    if (status === 0) return { wort: "GRÜN" };
+    const rein = txt.split("\n").filter((x) => !/^gpu-lauf: /.test(x)).join("\n");
+    const zeilen = taeterZeile(rein).map((l) => l.trim());
+    const erste = zeilen.find((l) => !/^\(/.test(l)) || rein.trim().split("\n").pop() || `Exit ${status}`;
+    if (status === 75) return { wort: "OHNE", grund: `GPU-Schloss blockiert (${erste.slice(0, 140)})` };
+    if (status === 124) return { wort: "OHNE", grund: `Deckel ${TAETER_DECKEL.s} s` };
+    if (status === null || FAHRT_MASCHINE.test(rein)) return { wort: "OHNE", grund: `Absturz der Fahrt, nicht die Wand (Exit ${status}): ${(rein.match(FAHRT_MASCHINE) ? rein.split("\n").find((l) => FAHRT_MASCHINE.test(l)) : erste).trim().slice(0, 160)}` };
+    // ❌ liest rot-text (ohne die erwarteten Mutanten-❌); das ⛔ der Bild-Wände („⛔ S0 BILD ROT · Nacht …“) kennt rot-text nicht — es
+    // steht als eigene Zeile der Linse
+    const urteil = zeilen.find((l) => /❌/.test(l) && !/✅/.test(l)) || rein.split("\n").map((l) => l.trim()).find((l) => /^⛔/.test(l));
+    return urteil ? { wort: "ROT", zeile: urteil.slice(0, 200) } : { wort: "OHNE", grund: `kein Urteil der Wand (Exit ${status}): ${erste.slice(0, 160)}` };
+}
+// DER PORT JE FAHRT, AUS DER QUELLE DER LINSE: die Wand liest ihren Port aus der Umgebung (diag-pruefbuehne.cjs: PRUEFBUEHNE_PORT,
+// Default 4394 — eine fremde Welt am selben Rechner hielt ihn); gelesen wird der Befehl (npm run → das Skript in package.json des
+// Baums) und je genanntem scripts/…-Skript jedes `process.env.<…PORT>`; jeder bekommt einen freien Port (listen 0)
+function portUmgebung(wt, run) {
+    const pkg = JSON.parse(fs.readFileSync(path.join(wt, "package.json"), "utf8")).scripts || {};
+    let befehl = run;
+    for (let i = 0, m; i < 3 && (m = /npm run (?:-s )?(\S+)/.exec(befehl)); i++) befehl = befehl.replace(m[0], pkg[m[1]] || "");
+    const namen = new Set();
+    for (const [f] of befehl.matchAll(/scripts\/[\w./-]+\.c?js/g)) {
+        const p = path.join(wt, f);
+        if (fs.existsSync(p)) for (const [, n] of fs.readFileSync(p, "utf8").matchAll(/process\.env\.([A-Z][A-Z0-9_]*PORT)\b/g)) namen.add(n);
+    }
+    if (!namen.size) return {};
+    const k = spawnSync(process.execPath, ["-e", `const n=require("net");const s=[];let i=0;const f=()=>{const v=n.createServer();v.listen(0,"127.0.0.1",()=>{s.push(v);if(++i<${namen.size})f();else{console.log(s.map(x=>x.address().port).join(" "));s.forEach(x=>x.close())}})};f()`], { encoding: "utf8" });
+    const ports = (k.stdout || "").trim().split(" ").filter(Boolean);
+    if (ports.length !== namen.size) throw new Error(`kein freier Port für ${[...namen].join(", ")}`);
+    return Object.fromEntries([...namen].map((n, i) => [n, ports[i]]));
+}
+// EINE Wand im Baum eines Stempels: der Befehl unter gpu-lauf.sh (Deckel 900 s, das GPU-Schloss mit Vorfahrt der CI), je Fahrt ein
+// frischer Port; ohne Urteil bis zu TAETER_DECKEL.fahrten Fahrten
+function wandLauf(zid, wt, spec, w, taeterZeile, melde = () => {}) {
+    const t0 = Date.now();
+    let u;
+    for (let f = 1; f <= TAETER_DECKEL.fahrten; f++) {
+        const port = portUmgebung(wt, w.run);
+        const r = spawnSync("sh", [path.join(__dirname, "gpu-lauf.sh"), `taeter-${zid}-${zweigKurz(spec.split("@")[0])}`, "sh", "-c", w.run], {
+            cwd: wt,
+            encoding: "utf8",
+            maxBuffer: 1 << 28,
+            env: { ...process.env, ...w.env, ...port, GPU_LAUF_MAX_S: String(TAETER_DECKEL.s) },
+        });
+        u = fahrtUrteil(r.status, (r.stdout || "") + (r.stderr || ""), taeterZeile);
+        if (u.wort !== "OHNE") break;
+        melde(`Fahrt ${f}/${TAETER_DECKEL.fahrten} ohne Urteil: ${u.grund}`);
+    }
+    const s = ((Date.now() - t0) / 1000).toFixed(0);
+    return u.wort === "GRÜN" ? { rot: false, s } : u.wort === "ROT" ? { rot: true, s, zeile: u.zeile } : { ohne: `${u.grund} — ${TAETER_DECKEL.fahrten} Fahrten`, s };
+}
+// taeter <zid> --log <fahre-log> [--kandidat <sha>] [--lauf <id>] [--trocken] — die Suche nach einem roten Zug (zug-dienst.sh
+// urteilen); --trocken setzt keinen Kopf (nur der Beweis-Aufruf, nie der Dienst). Exit 0 Urteil steht · 1 ein Push fiel · 2 abgebrochen
+async function taeter(args) {
+    const wert = (k) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : null; }; // prettier-ignore
+    const zid = args[0];
+    const trocken = args.includes("--trocken");
+    try {
+        if (!zid || /^--/.test(zid)) throw new Error("Aufruf: taeter <zid> --log <fahre-log> [--kandidat <sha>] [--lauf <id>] [--trocken]");
+        if (!process.env.TOKEN) throw new Error("kein Token (git credential fill gab keins)");
+        const log = wert("--log") && fs.existsSync(wert("--log")) ? fs.readFileSync(wert("--log"), "utf8") : "";
+        const kand = wert("--kandidat") || (/Kandidat ([0-9a-f]{40})/.exec(log) || [])[1];
+        const laufId = wert("--lauf") || ([...log.matchAll(/FAHRT ROT.*?Lauf (\d{8,})/g)].pop() || [])[1];
+        if (!kand || !laufId) throw new Error(`Kandidat oder Lauf nicht im Log (${kand ? "" : "Kandidat "}${laufId ? "" : "Lauf"})`);
+        const { basis, zweige } = zugAufbau(git(["rev-parse", kand], INTEG), INTEG);
+        if (!zweige.length) throw new Error(`der Kandidat ${kand.slice(0, 8)} trägt keinen Merge eines Stempels`);
+        // die Vorab-Statik dieses Zugs: ihr Urteil MUSS im Log stehen, sonst ist „kein Statik-Täter“ nicht belegt
+        if (!/VORAB-STATIK (GRÜN|MAIN ROT|ROT|: )/.test(log)) throw new Error("das Fahrt-Log trägt kein Urteil der Vorab-Statik");
+        const statik = new Set([...log.matchAll(/gefallen (\S+?)@\S*: VORAB-STATIK ROT/g)].map((m) => m[1]));
+        const run = await api(`/actions/runs/${laufId}`);
+        const { letzte } = lesart(await jobsAlle(run));
+        const echtRot = [...letzte].filter(([n, j]) => /^echt/.test(n) && ROT.has(j.conclusion));
+        const namen = [...new Set(echtRot.flatMap(([, j]) => rotSchritte(j)))].filter((s) => s !== "?");
+        const geraete = echtRot.map(([n]) => n.replace(/^echt\s+(\S+).*$/, "$1"));
+        if (!echtRot.length) {
+            console.log(`KEINE TÄTER-SUCHE: kein roter echt-Job im Lauf ${laufId}`);
+            return 0;
+        }
+        const waende = echtBefehle(git(["show", `${kand}:.github/workflows/check.yml`], INTEG), namen);
+        const stempel = zweige.map((spec) => ({ spec, betreff: git(["log", "-1", "--format=%s", spec.split("@")[1]], INTEG) }));
+        console.log(`TÄTER-SUCHE ${zid} am Kandidaten ${kand.slice(0, 8)} (Lauf ${laufId}, Basis ${basis.slice(0, 8)}): ${stempel.length} Stempel × ${waende.length} Wände (${waende.map((w) => `${w.kurz} = ${w.run}`).join(" · ")})`);
+        const leser = rotLeser();
+        let baum = null; // je Stempel EIN Baum für alle seine Wände
+        let u;
+        try {
+            u = taeterUrteil({
+                zid, stempel, waende, statik, geraete,
+                pflicht: (st) => (probeTagLuecke(beitrag(basis, st.spec.split("@")[1], INTEG), st.betreff) || { fehlt: [] }).fehlt,
+                lauf: (spec, w) => {
+                    if (!baum || baum.spec !== spec) {
+                        if (baum) baum.weg();
+                        baum = { spec, ...stempelBaum(zid, basis, spec) };
+                    }
+                    const ort = `  ${spec.split("@")[0]} · ${w.kurz}:`;
+                    const r = baum.abbruch ? { abbruch: baum.abbruch } : wandLauf(zid, baum.wt, spec, w, leser, (z) => console.log(`${ort} ${z}`));
+                    console.log(`${ort} ${r.abbruch ? `ABBRUCH ${r.abbruch}` : r.ohne ? `OHNE URTEIL ${r.s} s — ${r.ohne}` : r.rot ? `ROT ${r.s} s — ${r.zeile}` : `GRÜN ${r.s} s`}`);
+                    return r;
+                },
+            });
+        } finally {
+            if (baum) baum.weg();
+        } // prettier-ignore
+        for (const z of u.zeilen) console.log(z);
+        if (u.zeilen.some((z) => /^TÄTER-SUCHE ABGEBROCHEN/.test(z))) return 2;
+        let fiel = 0;
+        for (const { spec, betreff } of u.neu) {
+            const [z, sha] = spec.split("@");
+            if (trocken) {
+                console.log(`NEUER KOPF (trocken, nicht gesetzt) ${z} auf ${sha.slice(0, 8)}: ${betreff}`);
+                continue;
+            }
+            const jetzt = git(["ls-remote", "origin", `refs/heads/${z}`], INTEG).split(/\s/)[0];
+            if (jetzt !== sha) {
+                console.log(`NEUER KOPF entfällt ${z}: der Zweig trägt schon ${String(jetzt).slice(0, 8) || "nichts"} statt ${sha.slice(0, 8)}`);
+                continue;
+            }
+            const env = { ...process.env, GIT_AUTHOR_NAME: TAETER_AUTOR.name, GIT_AUTHOR_EMAIL: TAETER_AUTOR.mail, GIT_COMMITTER_NAME: TAETER_AUTOR.name, GIT_COMMITTER_EMAIL: TAETER_AUTOR.mail };
+            const c = spawnSync("git", ["commit-tree", `${sha}^{tree}`, "-p", sha, "-m", betreff, "-m", CO], { cwd: INTEG, encoding: "utf8", env });
+            const neu = (c.stdout || "").trim();
+            const p = c.status === 0 ? git(["push", "origin", `${neu}:refs/heads/${z}`], INTEG, true) : c;
+            if (p.status === 0) console.log(`NEUER KOPF ${z} ${neu.slice(0, 8)} auf ${sha.slice(0, 8)}: ${betreff}`);
+            else fiel++, console.log(`NEUER KOPF ABGEWIESEN ${z}: ${pushGrund(p.stderr || p.stdout || "")}`);
+        }
+        return fiel ? 1 : 0;
+    } catch (e) {
+        console.log(`TÄTER-SUCHE ABGEBROCHEN: ${String(e.message || e).split("\n")[0].slice(0, 300)}`);
+        return 2;
+    }
+}
+
+// ── probe-tag: DAS BILD-TAG VOR DER FAHRT ───────────────────────────────────────────────────────────────────────────
+// dieselbe Wurzel wie taeter (z637): ein Beitrag an Sicht, Tiefe, Siedlung oder Ankunft trifft die Wände Prüfbühne S0 und Frost-Wand,
+// die nur am Kandidaten (echt omen) fahren — trägt sein Betreff sie nicht im [gpu-probe: …]-Tag, sah sie keine Probe am Zweig. Der
+// Zug lässt ihn dann nicht fahren; er wartet mit dem Grund beim Namen (zug-dienst.sh bereit). DIE EINE STELLE der Pfade und Wände:
+const PROBE_PFLICHT = {
+    pfade: [/^stamm\/siedlung-/, /^stamm\/bild-sicht\.js$/, /^stamm\/bild-tiefe\.js$/, /^stamm\/dirigent-ankunft\.js$/],
+    gates: ["gate:pruefbuehne-licht", "gate:weltbild-frost:echt"],
+};
+// der Beitrag eines Stempels: git diff --name-only <basis> $(git merge-tree --write-tree <basis> <sha>) (auch mit Konflikt-Markern:
+// merge-tree schreibt den Baum dann trotzdem)
+function beitrag(basis, sha, repo) {
+    const mt = git(["merge-tree", "--write-tree", basis, sha], repo, true);
+    const baum = (mt.stdout || "").split("\n")[0].trim();
+    if (!/^[0-9a-f]{40}$/.test(baum)) throw new Error(`merge-tree ${basis.slice(0, 8)} ${sha.slice(0, 8)}: ${(mt.stderr || mt.stdout || "").trim().slice(0, 200)}`);
+    return git(["diff", "--name-only", basis, baum], repo).split("\n").filter(Boolean);
+}
+function probeTagLuecke(dateien, betreff) {
+    const datei = dateien.find((d) => PROBE_PFLICHT.pfade.some((rx) => rx.test(d)));
+    if (!datei) return null;
+    const tag = ((/\[gpu-probe:([^\]]*)\]/.exec(betreff) || [])[1] || "").split(",").map((s) => s.trim());
+    const fehlt = PROBE_PFLICHT.gates.filter((g) => !tag.includes(g));
+    return fehlt.length ? { datei, fehlt } : null;
+}
+function probeTagFehlt(dateien, betreff) {
+    const l = probeTagLuecke(dateien, betreff);
+    return l ? `Probe-Tag ohne ${undListe(l.fehlt)} (Beitrag fasst ${l.datei} an)` : null;
+}
+// der neue Kopf eines Unschuldigen trägt sein Tag unverändert — fehlt ihm eine Pflicht-Wand des Bau-Pfads, kommt sie HINTEN ins Tag
+// (sonst wartete der neue Kopf sofort an probe-tag, und die Probe am Zweig sähe die Wand wieder nicht)
+function tagErgaenzt(betreff, fehlt) {
+    if (!fehlt.length) return betreff;
+    if (/\[gpu-probe:[^\]]*\]/.test(betreff)) return betreff.replace(/\[gpu-probe:([^\]]*)\]/, (_, x) => `[gpu-probe:${x.replace(/\s*$/, "")}, ${fehlt.join(", ")}]`);
+    return /\[ci voll\]\s*$/.test(betreff) ? betreff.replace(/\s*\[ci voll\]\s*$/, ` [gpu-probe: ${fehlt.join(", ")}] [ci voll]`) : `${betreff} [gpu-probe: ${fehlt.join(", ")}]`;
+}
+// probe-tag <zweig@sha> [--basis <ref>] — der Beitrag = git diff --name-only <basis> $(merge-tree --write-tree <basis> <sha>) im Klon des
+// Dienstes; Exit 0 „PROBE-TAG OK“, 1 „PROBE-TAG FEHLT: <grund>“, 2 die Maschine
+function probeTag(args) {
+    const bi = args.indexOf("--basis");
+    const spec = args.find((a, i) => !a.startsWith("--") && (bi < 0 || i !== bi + 1));
+    const basis = bi >= 0 ? args[bi + 1] : "origin/main";
+    if (!spec) throw new Error("Aufruf: probe-tag <zweig@sha> [--basis <ref>]");
+    const sha = spec.includes("@") ? spec.split("@")[1] : spec;
+    const grund = probeTagFehlt(beitrag(basis, sha, VOLL), git(["log", "-1", "--format=%s", sha], VOLL));
+    console.log(grund ? `PROBE-TAG FEHLT: ${grund}` : "PROBE-TAG OK");
+    return grund ? 1 : 0;
+}
+
 // ── Selbsttest der Auflösung (ohne Netz) ─────────────────────────────────────────────────────────────────────────────
 // das Erbe an einem echten git-Baum im Temp: Basis → Zweig (enthält die Basis) → Merge --no-ff → Versions-Stufe
 function selbsttestErbe(pr) {
@@ -1694,6 +1987,110 @@ function selbsttestVorab(pr) {
         fs.rmSync(d, { recursive: true, force: true });
     }
 }
+// die Täter-Suche an den echt-Wänden, gestellt wie z637: der Job echt aus einem check.yml-Text, drei Stempel, zwei rote Wände; ersetzt
+// ist nur der Lauf an der Karte (lauf), das Urteil ist dasselbe taeterUrteil, das der Dienst fährt
+function selbsttestTaeter(pr) {
+    const S0 = "Pruefbuehne S0 auf der Karte (der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)";
+    const FR = "Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)";
+    const yml = [
+        "jobs:",
+        "    echt:",
+        "        env:",
+        "            CI_KLASSE: gpu",
+        "            LINSE_GPU: karte",
+        "            TOR_KLASSE: bruch",
+        "        steps:",
+        "            - name: Dependencies installieren",
+        "              run: npm ci --no-audit --no-fund",
+        `            - name: ${S0}`,
+        "              run: npm run gate:pruefbuehne-licht",
+        `            - name: ${FR}`,
+        "              timeout-minutes: 25",
+        "              run: npm run gate:weltbild-frost:echt",
+    ].join("\n");
+    const waende = echtBefehle(yml, [S0, FR]);
+    pr("Täter-Suche: der rote Schritt-Name findet seinen Befehl und die Umgebung des Jobs echt in check.yml",
+        waende.map((w) => `${w.kurz}=${w.run}`).join("|") === "Pruefbuehne S0=npm run gate:pruefbuehne-licht|Frost-Wand=npm run gate:weltbild-frost:echt" &&
+            waende.every((w) => w.env.CI_KLASSE === "gpu" && w.env.LINSE_GPU === "karte" && w.env.TOR_KLASSE === "bruch"));
+    const tag = "[gpu-probe: gate:post-kette, bild:wiese@0.5] [ci voll]";
+    const stempel = [
+        { spec: "w28-einheit-sicht-2@292a20d5", betreff: "Abgabe w28-einheit-sicht-2: E9 + S5 [gpu-probe: gate:sicht-arbeit] [ci voll]" },
+        { spec: "w28-laub-kante-4@f578d89c", betreff: `Abgabe w28-laub-kante-4: der Waldmantel trägt tiefe Kronen-Ansätze ${tag}` },
+        { spec: "w28-saison-am-laub@fe837c5c", betreff: "Abgabe w28-saison-am-laub: jede Pflanzen-Klasse liest das Jahr [gpu-probe: bild:wiese@0.5] [ci voll]" },
+    ];
+    const gestellt = (rotAn) => (spec, w) => (rotAn(spec, w) ? { rot: true, zeile: `❌ ${w.kurz} gestellt` } : { rot: false });
+    // laub-kante-4 fasst stamm/dirigent-ankunft.js an (Bau-Pfad): seinem Tag fehlen die Pflicht-Wände; saison-am-laub gestellt ohne Lücke
+    const pflicht = (st) => (st.spec.startsWith("w28-laub-kante-4@") ? probeTagLuecke(["stamm/dirigent-ankunft.js"], st.betreff).fehlt : []);
+    const a = taeterUrteil({ zid: "z637", stempel, waende, geraete: ["omen"], pflicht, lauf: gestellt((s) => s.startsWith("w28-einheit-sicht-2@")) });
+    const neuL = a.neu.find((n) => n.spec.startsWith("w28-laub-kante-4@"));
+    const neuS = a.neu.find((n) => n.spec.startsWith("w28-saison-am-laub@"));
+    pr("Täter-Suche (a) einer allein rot an zwei Wänden → 1 TÄTER, 2 UNSCHULDIG, zwei neue Köpfe",
+        a.zeilen.length === 3 && /^TÄTER w28-einheit-sicht-2: Pruefbuehne S0 ROT allein \(❌ Pruefbuehne S0 gestellt\) · Frost-Wand ROT allein/.test(a.zeilen[0]) &&
+            a.zeilen.slice(1).every((z) => /^UNSCHULDIG w28-\S+: 2 von 2 roten Wänden allein GRÜN$/.test(z)) &&
+            a.neu.map((n) => n.spec.split("@")[0]).join(" ") === "w28-laub-kante-4 w28-saison-am-laub");
+    pr("Täter-Suche (a) der neue Betreff: beginnt mit „Abgabe <zweig>: “, dann der Vorsatz, die Tags am Ende — ohne Lücke unverändert, am Bau-Pfad um die Pflicht-Wände ergänzt",
+        neuS && neuS.betreff === "Abgabe w28-saison-am-laub: neuer Kopf nach rotem z637 (allein an der Radeon grün: Pruefbuehne S0, Frost-Wand) — jede Pflanzen-Klasse liest das Jahr [gpu-probe: bild:wiese@0.5] [ci voll]" &&
+            neuL && neuL.betreff === "Abgabe w28-laub-kante-4: neuer Kopf nach rotem z637 (allein an der Radeon grün: Pruefbuehne S0, Frost-Wand) — der Waldmantel trägt tiefe Kronen-Ansätze [gpu-probe: gate:post-kette, bild:wiese@0.5, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]" &&
+            probeTagFehlt(["stamm/dirigent-ankunft.js"], neuL.betreff) === null &&
+            tagErgaenzt("Abgabe w28-a: x [ci voll]", ["gate:pruefbuehne-licht"]) === "Abgabe w28-a: x [gpu-probe: gate:pruefbuehne-licht] [ci voll]");
+    const b = taeterUrteil({ zid: "z637", stempel, waende, geraete: ["omen"], lauf: gestellt(() => false) });
+    pr("Täter-Suche (b) kein Stempel allein rot → KEIN EINZELTÄTER (Gerät omen beim Namen), kein neuer Kopf",
+        !b.neu.length && b.zeilen.filter((z) => /^UNSCHULDIG /.test(z)).length === 3 && b.zeilen[3] === "KEIN EINZELTÄTER an der Radeon: Kombination oder Gerät (omen) — kein neuer Kopf");
+    let n = 0;
+    const c = taeterUrteil({ zid: "z637", stempel, waende, lauf: (spec, w) => (++n === 3 ? { abbruch: "GPU-Schloss blockiert (SCHLOSS BLOCKIERT von ci-runner)" } : gestellt((s) => s.startsWith("w28-einheit"))(spec, w)) });
+    let cy = "";
+    try { echtBefehle(yml, [S0, "Kamera-Treue auf der Karte (verschwunden)"]); } catch (e) { cy = e.message; } // prettier-ignore
+    let cw = "";
+    try { echtBefehle(yml, ["Dependencies installieren"]); } catch (e) { cw = e.message; } // prettier-ignore
+    const cd = taeterUrteil({ zid: "z9", stempel: [...stempel, ...stempel], waende, lauf: () => ({ rot: false }) });
+    pr("Täter-Suche (c) abgebrochen: Schloss blockiert mitten in der Suche · Befehl fehlt in check.yml · Schritt ohne Wand · Deckel — nie ein neuer Kopf",
+        c.zeilen.length === 1 && /^TÄTER-SUCHE ABGEBROCHEN: laub-kante-4 an Pruefbuehne S0: GPU-Schloss blockiert/.test(c.zeilen[0]) && !c.neu.length &&
+            /^Befehl nicht in check\.yml gefunden: „Kamera-Treue/.test(cy) && /keine Wand/.test(cw) &&
+            /^TÄTER-SUCHE ABGEBROCHEN: Deckel 4 Stempel × 3 Wände, der Zug trägt 6 × 2$/.test(cd.zeilen[0]) && !cd.neu.length);
+    const d = taeterUrteil({ zid: "z637", stempel, waende, statik: new Set(["w28-saison-am-laub"]), lauf: gestellt((s) => s.startsWith("w28-einheit")) });
+    pr("Täter-Suche (d) ein Unschuldiger, der an der Vorab-Statik fiel, bekommt keinen neuen Kopf",
+        d.neu.map((x) => x.spec.split("@")[0]).join() === "w28-laub-kante-4" && /UNSCHULDIG w28-saison-am-laub: .* doch Täter der Vorab-Statik/.test(d.zeilen.join("\n")));
+    // DREI AUSGÄNGE JE FAHRT, an den echten Zeilen des ersten Beweis-Laufs z637 und der Hand-Messung (frost-ks.out, Lauf 44686031159)
+    const leser = rotLeser();
+    const fu = (st, z) => fahrtUrteil(st, z.join("\n"), leser);
+    const eaddr = fu(1, ["gpu-lauf: Schloss taeter-z637-laub-kante-4 nach 3 s", "node:events:497", "      throw er; // Unhandled 'error' event", "Error: listen EADDRINUSE: address already in use 127.0.0.1:4394", "    at Server.setupListenHandle [as _listen2] (node:net:1908:16)", "    at listenInCluster (node:net:1965:12)"]);
+    const eaddrX = fu(1, ["Error: listen EADDRINUSE: address already in use 127.0.0.1:4394", "    at Server.setupListenHandle (node:net:1908:16)", "❌ ROT — die Bühne bootet nicht"]);
+    const s0 = fu(1, ['⛔ S0 BILD ROT · Nacht {"luma":21.4,"schwarz":0} (33 s, amd/rdna-3 · Holz kienspan)']);
+    const tf = fu(1, ["  ✅ S1 Selbsttest: leere Bühne und Block-Zwilling sind ROT", "  ❌ T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen", "❌ ROT — 1 Verletzung(en): T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen"]);
+    const sturz = fu(2, ["diag-weltbild-frost.cjs ABSTURZ: Error: DER BAU STEHT NICHT: das erste Weltbild nach 1375 Takten — die Welt hat nichts mehr offen"]);
+    pr("Fahrt: GRÜN bei Exit 0 · ROT nur mit ⛔/❌-Urteil der Wand · EADDRINUSE (auch neben einer ❌), Absturz ohne Urteil, Deckel und Schloss sind OHNE URTEIL",
+        fu(0, ["x"]).wort === "GRÜN" && eaddr.wort === "OHNE" && /EADDRINUSE/.test(eaddr.grund) && eaddrX.wort === "OHNE" &&
+            s0.wort === "ROT" && /luma":21\.4/.test(s0.zeile) && tf.wort === "ROT" && /^❌ T1 die Index-Wache/.test(tf.zeile) &&
+            sturz.wort === "OHNE" && fu(124, ["…"]).wort === "OHNE" && fu(75, ["SCHLOSS BLOCKIERT von ci-runner"]).wort === "OHNE");
+    const e = taeterUrteil({ zid: "z637", stempel, waende, geraete: ["omen"],
+        lauf: (spec, w) => (spec.startsWith("w28-einheit") && w.kurz === "Pruefbuehne S0" ? { rot: true, zeile: s0.zeile } : spec.startsWith("w28-laub") && w.kurz === "Pruefbuehne S0" ? { ohne: `${eaddr.grund} — 3 Fahrten` } : { rot: false }) }); // prettier-ignore
+    pr("Täter-Suche (e) eine Fahrt, die mit EADDRINUSE endet, wird nie Täter: der Stempel steht OHNE URTEIL, ohne neuen Kopf; einheit-sicht-2 ist der eine Täter",
+        e.zeilen.filter((z) => /^TÄTER /.test(z)).length === 1 && /^TÄTER w28-einheit-sicht-2: Pruefbuehne S0 ROT allein .* · 1 von 2 allein GRÜN$/.test(e.zeilen[0]) &&
+            /^OHNE URTEIL w28-laub-kante-4: Pruefbuehne S0 ohne Urteil \(Absturz der Fahrt.*EADDRINUSE.*\) · 1 von 2 allein GRÜN — weder Täter noch neuer Kopf$/.test(e.zeilen[1]) &&
+            e.neu.map((x) => x.spec.split("@")[0]).join() === "w28-saison-am-laub");
+    // der Port je Fahrt aus der Quelle der Linse (npm run → package.json → scripts/… → process.env.<…PORT>)
+    const pd = fs.mkdtempSync(path.join(os.tmpdir(), "zug-port-"));
+    try {
+        fs.mkdirSync(path.join(pd, "scripts"));
+        fs.writeFileSync(path.join(pd, "package.json"), JSON.stringify({ scripts: { "gate:pruefbuehne-licht": "node scripts/diag-pruefbuehne.cjs --licht --selftest", "gate:frost": "node scripts/diag-frost.cjs" } }));
+        fs.writeFileSync(path.join(pd, "scripts", "diag-pruefbuehne.cjs"), "const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;\n");
+        fs.writeFileSync(path.join(pd, "scripts", "diag-frost.cjs"), "await server.lausche(0);\n");
+        const p1 = portUmgebung(pd, "npm run gate:pruefbuehne-licht");
+        pr("Port je Fahrt: PRUEFBUEHNE_PORT aus der Quelle der Linse, frei und ≠ 4394; eine Linse mit Port 0 bekommt nichts",
+            Object.keys(p1).join() === "PRUEFBUEHNE_PORT" && Number(p1.PRUEFBUEHNE_PORT) > 0 && p1.PRUEFBUEHNE_PORT !== "4394" && !Object.keys(portUmgebung(pd, "npm run gate:frost")).length);
+    } finally {
+        fs.rmSync(pd, { recursive: true, force: true });
+    }
+    // das Probe-Tag am Bau-Pfad: Sicht, Tiefe, Siedlung, Ankunft fordern beide Wände im [gpu-probe: …]-Tag
+    const t1 = probeTagFehlt(["scripts/x.cjs", "stamm/bild-sicht.js"], "Abgabe w28-a: x [gpu-probe: gate:pruefbuehne-licht, bild:genesis@0.5] [ci voll]");
+    const t2 = probeTagFehlt(["stamm/siedlung-ort.js"], "Abgabe w28-a: x [ci voll]");
+    pr("Probe-Tag am Bau-Pfad: fehlt eine Wand oder das ganze Tag, steht der Grund beim Namen; mit beiden Wänden oder ohne Bau-Pfad nichts",
+        t1 === "Probe-Tag ohne gate:weltbild-frost:echt (Beitrag fasst stamm/bild-sicht.js an)" &&
+            t2 === "Probe-Tag ohne gate:pruefbuehne-licht und gate:weltbild-frost:echt (Beitrag fasst stamm/siedlung-ort.js an)" &&
+            probeTagFehlt(["stamm/dirigent-ankunft.js"], "Abgabe w28-a: x [gpu-probe: gate:weltbild-frost:echt, gate:pruefbuehne-licht] [ci voll]") === null &&
+            probeTagFehlt(["stamm/bild-tiefe-alt.js", "stamm/gelaende.js", "scripts/siedlung-x.cjs"], "Abgabe w28-a: x [ci voll]") === null &&
+            probeTagFehlt(["stamm/bild-tiefe.js"], "Abgabe w28-a: x [gpu-probe: gate:pruefbuehne-licht:echt] [ci voll]") !== null);
+}
 // die roten Zeilen der Zeit-Tafel ((T) ALT · (T) UNGEMESSEN) aus der Ausgabe von diag-ci-deckung.cjs — nur sie, nie fremdes Rot
 const zeitRest = (text) =>
     text
@@ -1804,11 +2201,12 @@ function selbsttest(args = []) {
     pr("Format: Pfade aus format:check", fp.join() === "stamm,phyto-core.js");
     pr("Format: stamm/x.js und phyto-core.js geprüft, stamm/u/y.js · stamm/k.json · scripts/z.cjs nicht",
         formatGeprueft("stamm/x.js", fp) && formatGeprueft("phyto-core.js", fp) && !formatGeprueft("stamm/u/y.js", fp) && !formatGeprueft("stamm/k.json", fp) && !formatGeprueft("scripts/z.cjs", fp));
+    selbsttestTaeter(pr);
     console.log(fall.length ? `zug selbsttest ROT: ${fall.join(" · ")}` : `zug selbsttest grün (${faelle} Fälle)`);
     return fall.length ? 1 : 0;
 }
 
-if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE, mergeAlle, vorabLauf, vorabStatik };
+if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE, mergeAlle, vorabLauf, vorabStatik, taeterUrteil, echtBefehle, neuerBetreff, probeTagFehlt };
 else (async () => {
     const [verb, ...args] = process.argv.slice(2);
     let rc = 2;
@@ -1827,12 +2225,14 @@ else (async () => {
         else if (verb === "selbsttest") rc = selbsttest(args);
         else if (verb === "vorab") rc = vorab(args);
         else if (verb === "nachweis") rc = nachweis(args);
+        else if (verb === "taeter") rc = await taeter(args);
+        else if (verb === "probe-tag") rc = probeTag(args);
         else if (verb === "erbe") {
             // erbe <kandidat> — liest nur: greift das Erbe der vollen Batterie an diesem Kandidaten (Trockenlauf, kein Push, kein Anstoß)
             const e = await erbeVoll(git(["rev-parse", args.find((a) => !a.startsWith("--"))], INTEG));
             console.log(`ERBE ${e.erbt ? "GREIFT" : "NEIN"}: ${e.zeile}`);
             rc = e.erbt ? 0 : 1;
-        } else console.log("zug.sh bereit|bau|vorab|urteil|teile|wackler|landen|punkte|nachweis|erbe|selbsttest [--vorab] — siehe zug.md");
+        } else console.log("zug.sh bereit|bau|vorab|urteil|teile|wackler|landen|punkte|nachweis|taeter|probe-tag|erbe|selbsttest [--vorab] — siehe zug.md");
     } catch (e) {
         console.log(`zug ${verb} FEHLER: ${e.message}`);
         rc = 2;

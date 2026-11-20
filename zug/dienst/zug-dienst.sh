@@ -117,6 +117,14 @@ bereit() {
             echo "$b ${sha:0:8}: die volle Batterie fehlt am Kopf (angestoßen, der Zug wartet auf ihr Urteil)" >>"$W/zug-nie-leer.wartet"
             continue
         }
+        # DAS PROBE-TAG AM BAU-PFAD (20.11., z637): fasst der Beitrag Sicht, Tiefe, Siedlung oder Ankunft an, trägt sein [gpu-probe: …]-Tag
+        # die Wände, die sonst nur am Kandidaten fahren (echt omen) — die Pfade und Wände stehen an EINER Stelle (zug.cjs PROBE_PFLICHT);
+        # fehlt eine, wartet der Kopf mit dem Grund beim Namen, statt einen ganzen Zug an ihr fallen zu lassen
+        pt=$(sh "$WZ/zug.sh" probe-tag "$b@$sha" </dev/null 2>&1)
+        [ "$pt" = "PROBE-TAG OK" ] || {
+            echo "$b ${sha:0:8}: ${pt#PROBE-TAG FEHLT: }" >>"$W/zug-nie-leer.wartet"
+            continue
+        }
         # das Bild ist Pflicht, sobald der Zweig das SPIEL berührt — auch ohne Tag im Betreff
         sp=$(git -C $R diff --name-only "origin/main...$sha" 2>/dev/null | grep -cE "^(stamm/|worlds/|index[.]html$|[^/]+[.]js$)")
         case "$t" in *"[gpu-probe:"*) sp=1 ;; esac
@@ -187,6 +195,20 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
             TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p') \
                 node "$D/rot-text.cjs" "$lauf" >"$W/zug-rot-$id.txt" 2>&1
             grep -E "^ROT |❌" "$W/zug-rot-$id.txt" | head -6 | cut -c1-330 | sed "s/^/$(date +%H:%M) $id rot: /" >>"$L"
+        fi
+        # DER TÄTER AN DEN ECHT-WÄNDEN (20.11., z637: 70 min Handsuche, drei Unschuldige bekamen von Hand neue Köpfe): fiel ein echt-Job,
+        # fährt zug.cjs taeter je Stempel allein jede rote echt-Wand an der Radeon (gpu-lauf.sh, Deckel 4 × 3, je Lauf 900 s), schreibt je
+        # Stempel EINE Zeile TÄTER/UNSCHULDIG ins Fahrt-Log und nach zug-taeter.txt und setzt den Unschuldigen neue Köpfe — nur, wenn ein
+        # Täter steht. Ein Abbruch steht als „TÄTER-SUCHE ABGEBROCHEN: <grund>“, und kein Kopf wird gesetzt.
+        if [ -n "$lauf" ] && grep -q "^ROT echt" "$W/zug-rot-$id.txt" 2>/dev/null; then
+            puls zug "$id sucht den Täter an den echt-Wänden (Radeon)"
+            local tz
+            tz=$(sh "$WZ/zug.sh" taeter "$id" --log "$F" --lauf "$lauf" </dev/null 2>&1)
+            echo "$tz" | sed "s/^/$(date +%H:%M:%S) [$id] /" >>"$F"
+            echo "$tz" | grep -E "^(TÄTER |UNSCHULDIG|OHNE URTEIL|KEIN EINZELTÄTER|KEINE TÄTER-SUCHE|TÄTER-SUCHE ABGEBROCHEN|NEUER KOPF|zug taeter FEHLER)" | sed "s/^/$(date +%H:%M) $id /" >>"$W/zug-taeter.txt"
+            echo "$tz" | grep -E "^(TÄTER |UNSCHULDIG|OHNE URTEIL|KEIN EINZELTÄTER|TÄTER-SUCHE ABGEBROCHEN|NEUER KOPF|zug taeter FEHLER)" | cut -c1-330 | sed "s/^/$(date +%H:%M) $id /" >>"$L"
+            echo "$tz" | grep -qE "^(TÄTER |UNSCHULDIG|OHNE URTEIL|KEIN EINZELTÄTER|KEINE TÄTER-SUCHE|TÄTER-SUCHE ABGEBROCHEN)" ||
+                echo "$(date +%H:%M) $id TÄTER-SUCHE ABGEBROCHEN: kein Urteil — $(echo "$tz" | tail -1 | cut -c1-200)" | tee -a "$W/zug-taeter.txt" >>"$L"
         fi ;;
     esac
     if grep -q "zug bau FEHLER" "$F" 2>/dev/null; then
