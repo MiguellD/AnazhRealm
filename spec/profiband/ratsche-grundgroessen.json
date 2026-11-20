@@ -111,8 +111,9 @@
         },
         "beobachter": {
             "scripts/diag-albedo-tafel.cjs": ["toneMappingExposure", "toneMapping"],
-            "scripts/diag-wetter-wache.cjs": ["spielZeit"],
-            "scripts/lib/albedo-tafel.cjs": ["toneMapping ×7"]
+            "scripts/diag-wetter-wache.cjs": ["spielZeit ×5"],
+            "scripts/lib/albedo-tafel.cjs": ["toneMapping ×7"],
+            "scripts/lib/licht-linsen.cjs": ["toneMappingExposure ×3", "RenderTarget ×2", "timeOfDay ×2"]
         }
     }
 }

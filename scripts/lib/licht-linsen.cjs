@@ -690,7 +690,7 @@ function albedoSicht(opts) {
 function linsenZiel(W, H) {
     const T = window.THREE,
         { renderer: rend, scene: sc } = st,
-        rt = __messZiel(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+        rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
     let wahl;
     const zeichne = (cam) => {
         if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
@@ -945,7 +945,7 @@ function tafelGanz(o) {
                 e = q.y.mul(1.2).add(0.17);
             const dir = TSL.vec3(e.cos().mul(a.cos()), e.sin(), e.cos().mul(a.sin())).normalize();
             const male = async (node) => {
-                const rt = __messZiel(W, Hh, { type: T.HalfFloatType, depthBuffer: false });
+                const rt = new T.RenderTarget(W, Hh, { type: T.HalfFloatType, depthBuffer: false });
                 const s2 = new T.Scene(),
                     c2 = new T.OrthographicCamera(0, 1, 1, 0, -1, 1);
                 const m = new T.MeshBasicNodeMaterial();
@@ -1140,6 +1140,7 @@ function tagKurve(o) {
         let karte = null;
         try {
             for (const u of o.uhren) {
+                if (st.world) st.world.timeOfDay = u;
                 if (r.setTimeOfDay(u, "human") !== true) throw new Error(`die Uhr nimmt den Spieler nicht (${u})`);
                 const sofort = k;
                 // die Leuchtquellen der Stunde blenden ein (`_leuchtTakt`), bis jeder Platz des Pools steht
@@ -1186,10 +1187,8 @@ function tagKurve(o) {
                 }
             }
         } finally {
-            // die Belichtung zurück an die Welt: die Blende des Spions bestellt (k), dann dem Gesetz der Kamera zurückgegeben
             delete rend.toneMappingExposure;
-            r._blendeBestellen({ k });
-            r._blendeBestellen(null);
+            rend.toneMappingExposure = k;
         }
         return { zeilen, schreiber, karte, bahn: o.uhren.length === 100 };
     })();
@@ -2424,25 +2423,33 @@ function luftTiefe(o) {
             return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
         };
         const med = (a) => (a.length ? +rang(a.slice().sort(aufsteigend)).toPrecision(4) : null);
-        // β des Schusses über dem Anwenden des Himmels, die Blende bestellt bei der Welt (`_blendeBestellen`: das Gesetz der Kamera
-        // mal k, über jedes Anwenden des Tags); der Feld-Pass wie in der Spiel-Schleife
+        // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
+        let blende = 1;
         const anwenden = r._dayNightApplyLuft;
+        const belichten = r._dayNightApplyBelichtung;
         r._dayNightApplyLuft = function (...a) {
             anwenden.apply(this, a);
             if (dichte != null) U.beta.value = dichte;
         };
+        r._dayNightApplyBelichtung = function (...a) {
+            belichten.apply(this, a);
+            st.renderer.toneMappingExposure *= blende;
+        };
         const schuss = async (b, k) => {
             const alt = U.beta.value;
-            r._blendeBestellen({ mal: k });
+            const e = st.renderer.toneMappingExposure;
+            blende = k;
+            st.renderer.toneMappingExposure = e * k;
             if (b != null) U.beta.value = dichte = b;
             if (st.fernRing) r._tickFeldPass(st.fernRing);
             try {
                 return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             } finally {
                 dichte = null;
-                r._blendeBestellen(null);
+                blende = 1;
                 U.beta.value = alt;
+                st.renderer.toneMappingExposure = e;
             }
         };
         const blick = (az) => {
@@ -2491,6 +2498,7 @@ function luftTiefe(o) {
         };
         const bRef = luftBetaRef(R);
         const uhr = (u) => {
+            if (st.world) st.world.timeOfDay = u;
             if (r.setTimeOfDay(u, "human") !== true) throw new Error(`__luftTiefe: die Uhr nimmt den Spieler nicht (${u})`);
             const sd = r._sonnenRichtung();
             return { sonne: +((Math.asin(sd.y) * 180) / Math.PI).toFixed(2), az: Math.atan2(sd.x, -sd.z) };
@@ -2586,7 +2594,7 @@ function luftTiefe(o) {
             }
         } finally {
             delete r._dayNightApplyLuft;
-            r._blendeBestellen(null);
+            delete r._dayNightApplyBelichtung;
             PU.bloomStrength.value = bloom0;
             cam.fov = fov0;
             cam.updateProjectionMatrix();
