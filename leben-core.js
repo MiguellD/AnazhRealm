@@ -9,7 +9,7 @@
 // REIN: kein Zustand, keine Wanduhr, kein eigener Zufall, kein THREE. Der Zufall bleibt in den Strömen des Wirts (der Takt-Strom
 // `_faunaRng("bestand:"+key+"@"+R.t)` für Segregation und Mutation, `_rollGenome(id, "erbe")` für die Umwelt-Streuung e); der
 // Kern bekommt Gleichverteilte u ∈ [0, 1) bzw. Normalverteilte n und rechnet nur. Falsche Eingaben brechen LAUT (throw).
-// Die EINE benannte Ausnahme: der Bestand (§2) zieht aus `strom(saat, takt, art, i)` — am Samen verankert, eine reine Funktion
+// Die EINE benannte Ausnahme: der Bestand (§2) zieht aus `strom(saat, takt, art, i, wirt.samen)` — am Samen verankert, eine reine Funktion
 // seiner vier Zahlen; derselbe (Zustand, saat, takt, welt) gibt denselben Zustand.
 //
 // ── DIE SIGNATUREN (EINGEFROREN ab Welle 1, Bahn B1 — B2 und B3 bauen parallel dagegen) ──────────────────────────────────────
@@ -40,7 +40,7 @@
 //   ── additiv (Schritt B, das Gesetz der Zeit und der Jagd — §2 unten trägt die Sätze und den Leser `welt`) ──
 //   zeitJagd()                             → ZEIT_JAGD         die Werte der sieben Sätze, jede Rate je Jahr mit Quelle
 //   anker(f, D, tafel = ZEIT_JAGD.anker)   → die Anker-Tafel des Satzes 4 an der Deckung D (faehen · welpen · welpeJaehrling · ueberleben)
-//   strom(saat, takt, art, i)              → () => u ∈ [0, 1)  der am Samen verankerte Strom des Bestands
+//   strom(saat, takt, art, i, samen)       → () => u ∈ [0, 1)  der am Samen verankerte Strom des Bestands (samen: der Strom des Wirts, `wirt.samen`)
 //   bestand(wirt, gesetz = ZEIT_JAGD)      → { ZEIT, RAUM, FENSTER, anfang(opt, welt), schritt(z, saat, takt, welt), klon(z),
 //                                              verwundbar(t), bedarfVon(R) }   der Bestand als reine Funktion über ein Raster
 //     additiv (C2a, der Gau — der Bestand über EINEM Feld mit Fraß-Schicht und Akten; braucht `wirt.feld`, §2 „DER GAU“):
@@ -48,7 +48,7 @@
 //       akt(g, { takt, art: "aus" | "ein", id, … }) → wirkte · feldTakt(feld, O, Kap) · feldAesen(feld, O, frass)
 //       koepfe(z, i) → { beute, jaeger, rudel } · tiereIn(z, i) → [{ id, g, v, m, w, alterS, kg, M, r, a, e }] · frassAm(g, i, c)
 //       gauPack(g) → Uint8Array · gauEntpack(bytes, feld) → g      der Gau als reines Datum (Stand, Mitspieler)
-//   selbsttest()                           → { steigung, steigungAus, masseMonoton, reifeTreffer, lebenWolf }
+//   selbsttest(samen)                      → { steigung, steigungAus, masseMonoton, reifeTreffer, lebenWolf }
 //       steigung     Regression Kind auf Eltern-Mittel (Phänotyp lnM) über 10⁵ Paare, Soll h2 0,46 ± 0,02
 //       steigungAus  dieselbe Regression mit `gruender` statt `kind` (die Mutante), Soll 0 ± 0,02
 //       masseMonoton masseZurZeit steigt streng über das Leben (0 … lebensdauerS), danach nie fallend, nie über M∞ (vier Massen)
@@ -331,17 +331,16 @@
         h ^= h >>> 16;
         return h >>> 0;
     }
-    function strom(saat, takt, art, i) {
+    // DER GENERATOR IST GEREICHT (Ein-Schreiber-Wand, Größe Samen): der Kern hasht nur den Samen aus seinen vier Zahlen, den Strom
+    // zieht er aus `samen(same)` des Wirts — der EINE Strom der Welt (gelaende-core `samenStrom`, im Stamm `_samenStrom`). Ohne
+    // `samen` bricht er laut; einen eigenen Generator trägt kein Kern (bis 20.11. stand hier ein mulberry32).
+    function strom(saat, takt, art, i, samen) {
+        if (typeof samen !== "function") throw new Error("leben-core strom: der Wirt reicht keinen Strom (samen)");
         let s = mix((saat | 0) + 0x9e3779b9);
         s = mix(s ^ Math.imul(takt + 1, 0x9e3779b1));
         s = mix(s ^ Math.imul(art + 1, 0x85ebca77));
         s = mix(s ^ Math.imul(i + 1, 0xc2b2ae3d));
-        return function () {
-            s = (s + 0x6d2b79f5) | 0;
-            let t = Math.imul(s ^ (s >>> 15), 1 | s);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        return samen(s);
     }
 
     // bestand(wirt, gesetz = ZEIT_JAGD) → { ZEIT, RAUM, FENSTER, anfang(opt, welt), schritt(z, saat, takt, welt), klon(z), verwundbar, bedarfVon }
@@ -355,6 +354,9 @@
         for (const k in ZEIT_JAGD) if (ZJ[k] == null) throw new Error("leben-core bestand: dem gereichten Gesetz fehlt " + k);
         const ankerZJ = (f, D) => anker(f, D, ZJ.anker);
         if (!wirt || !wirt.beute || !wirt.jaeger) throw new Error("leben-core bestand: der Wirt nennt beute und jaeger");
+        // der Strom der Welt, den der Wirt reicht (`samen(same)` → () => u): Seite und Faden reichen gelaende-core `samenStrom`
+        const SAMEN = wirt.samen;
+        if (typeof SAMEN !== "function") throw new Error("leben-core bestand: der Wirt reicht keinen Strom (wirt.samen)");
         const spanneVon = (v, wer) => {
             if (!Array.isArray(v) || v.length !== 2 || !Number.isInteger(v[0]) || !Number.isInteger(v[1]) || !(v[0] >= 1 && v[1] >= v[0]))
                 throw new Error("leben-core bestand: " + wer + " ist keine Verbands-Spanne [min, max]");
@@ -704,14 +706,14 @@
                 ereignis: null,
             };
             for (let i = 0; i < n; i++) {
-                const rng = strom(saat, -1, 0, i);
+                const rng = strom(saat, -1, 0, i, SAMEN);
                 const list = [];
                 const kopf = welt.land(i) ? VERBAND.beute[0] + Math.floor(rng() * (VERBAND.beute[1] - VERBAND.beute[0] + 1)) : 0;
                 for (let j = 0; j < kopf; j++) list.push(gruenderTier("beute", indId(String(i), 0, j), rng));
                 z.beute.push(list);
             }
             if (z.param.jaeger) {
-                const rng = strom(saat, -1, 1, 0);
+                const rng = strom(saat, -1, 1, 0, SAMEN);
                 const reihe = Array.from({ length: n }, (_, i) => i);
                 for (let i = n - 1; i > 0; i--) {
                     const j = Math.floor(rng() * (i + 1));
@@ -728,7 +730,7 @@
                 }
                 // Satz 7b: auch die Köpfe des Anfangs tragen ein Abwander-Alter (eigener Strom 5)
                 for (const R of z.rudel) {
-                    const ar = strom(saat, -1, 5, R.id);
+                    const ar = strom(saat, -1, 5, R.id, SAMEN);
                     for (const t of R.tiere) t.ab = abwanderAlter(ar);
                     R.kern = kernVon(z, R);
                 }
@@ -853,7 +855,7 @@
                     tot += s;
                     koepfe += list.length;
                 }
-                const rng = strom(saat, takt, 4, R.id);
+                const rng = strom(saat, takt, 4, R.id, SAMEN);
                 const V = koepfe / R.tiere.length; // Weißwedel-Äquivalente je Wolf: 1 WÄ je Beute-KOPF, je Kopf des Rudels
                 const soll = (R.satt * V) / (V + ANTWORT.vHalb);
                 R.v = V;
@@ -897,7 +899,7 @@
             for (let i = 0; i < n; i++) {
                 const list = z.beute[i];
                 if (!list.length) continue;
-                const rng = strom(saat, takt, 0, i);
+                const rng = strom(saat, takt, 0, i, SAMEN);
                 const x = K[i] > 0 ? last[i] / K[i] : Infinity;
                 const pK = 1 - Math.exp((LN_KITZ * x) / TJ);
                 const pA = 1 - Math.exp((LN_ADULT * x) / TJ);
@@ -948,7 +950,7 @@
             //     Überleben je Kopf stetig in D (Welpe im ersten Jahr · ab einem Jahr), das Jahres-Überleben als Wurzel je Takt;
             //     das Alter am Lebens-Ende (bleibt); der EINE Wurf je Jahr: Anteil der Würfe und Welpen je Wurf stetig in D
             for (const R of z.rudel) {
-                const rng = strom(saat, takt, 1, R.id);
+                const rng = strom(saat, takt, 1, R.id, SAMEN);
                 R.fRiss.push(R.riss);
                 R.fErh.push(R.erh);
                 if (R.fRiss.length > FENSTER) R.fRiss.shift(), R.fErh.shift();
@@ -975,7 +977,7 @@
                         const w = ankerZJ("welpen", D);
                         let welpen = Math.floor(w);
                         if (rng() < w - welpen) welpen++;
-                        const ar = strom(saat, takt, 5, R.id); // Satz 7b: das Abwander-Alter je Welpe, einmal aus der Saat (eigener Strom)
+                        const ar = strom(saat, takt, 5, R.id, SAMEN); // Satz 7b: das Abwander-Alter je Welpe, einmal aus der Saat (eigener Strom)
                         for (let k = 0; k < welpen; k++) {
                             const mu = zug(reife, mutterW, rng);
                             const va = zug(reife, (t) => (t === mu ? 0 : t.eig), rng);
@@ -991,7 +993,7 @@
 
             // 5 — die Abwanderung der Beute im Jährlings-Jahr: Bock 0,80 · Kuh 0,13; Ziel nach dem freien Platz unter K
             if (jaehr.length) {
-                const rng = strom(saat, takt, 2, 0);
+                const rng = strom(saat, takt, 2, 0, SAMEN);
                 let habitat = null;
                 for (let q = 0; q < jaehr.length; q += 2) {
                     const [t, i] = [jaehr[q], jaehr[q + 1]];
@@ -1225,7 +1227,7 @@
             if (a.g !== "beute" && a.g !== "jaeger") throw new Error("leben-core bestand: „ein“ nennt beute oder jaeger");
             if (!(Number.isInteger(a.revier) && a.revier >= 0 && a.revier < z.W * z.H)) throw new Error("leben-core bestand: „ein“ ohne Revier des Gaus (" + a.revier + ")");
             if (!(zahl(a.alterS, "akt.alterS") >= 0)) throw new Error("leben-core bestand: „ein“ mit negativem Alter");
-            const rng = strom(g.saat, z.takt, 6, kennZahl(a.id));
+            const rng = strom(g.saat, z.takt, 6, kennZahl(a.id), SAMEN);
             const u = rng();
             const t = tier(a.g, a.id, vektor(a.a, "akt.a").slice(), vektor(a.e, "akt.e").slice(), a.m == null ? null : String(a.m), a.alterS, typeof a.w === "boolean" ? a.w : u < BEUTE.weiblich);
             if (a.g === "beute") return z.beute[a.revier].push(t), true;
@@ -1371,15 +1373,10 @@
         return Object.freeze({ ZEIT, RAUM, FENSTER, anfang, schritt, klon, verwundbar, bedarfVon, gauFeld, feldTakt, feldAesen, gauAnfang, gauSchritt, gauBis, akt, koepfe, tiereIn, frassAm, gauPack, gauEntpack });
     }
 
-    // ── SELBSTTEST — der Prüf-Strom (mulberry32, feste Saat) lebt NUR hier, nie in einer Gesetz-Funktion ──────────────────────
-    function selbsttest() {
-        let s = 0x1eb3e;
-        const u = () => {
-            s = (s + 0x6d2b79f5) | 0;
-            let t = Math.imul(s ^ (s >>> 15), 1 | s);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+    // ── SELBSTTEST — der Prüf-Strom ist der gereichte Strom der Welt (`samen`, gelaende-core `samenStrom`) an fester Saat ──────
+    function selbsttest(samen) {
+        if (typeof samen !== "function") throw new Error("leben-core selbsttest: es fehlt der Strom (samen)");
+        const u = samen(0x1eb3e);
         const nv = () => {
             const n = new Array(ACHSEN);
             for (let i = 0; i < ACHSEN; i++) n[i] = normal(u(), u());

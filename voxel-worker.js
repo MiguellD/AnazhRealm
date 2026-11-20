@@ -478,7 +478,7 @@ function gauKern(wirt) {
         const f = wirt.feld;
         // K je Zelle = die Formel des Stamms (`_kreaturBestand`): Lebensraum × Fläche × Nahrung nach der Kost an der Äsung
         const kZelle = (aes, lr) => lr * f.ha * T.bestandNahrung(f.diet, aes, 0);
-        K = self.__lebenCore.bestand(Object.assign({}, wirt, { feld: Object.assign({}, f, { kZelle }) }));
+        K = self.__lebenCore.bestand(Object.assign({}, wirt, { feld: Object.assign({}, f, { kZelle }), samen: self.__gelaendeCore.samenStrom }));
         gauKerne.set(key, K);
     }
     return K;

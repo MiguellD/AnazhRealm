@@ -1320,7 +1320,7 @@ async function lebenBuehnen() {
                 r._bestandTode(tode);
                 if (nach) nach(k, R[j]);
             }
-        s.spielZeit = 0;
+        // die Uhr steht nach dem Lauf, wo er sie stellte (0): `_bestandSchritt` gibt sie nach jedem Takt zurück
         return { R: R.filter((x, j) => frei[j]), s: (performance.now() - t0) / 1000 };
     };
     const lnM = (t) => Math.log(r._bestandMasseAdult(t) / r._gattungKg(t.g));
@@ -2190,6 +2190,9 @@ if (V) {
 // ── die Größe ist das Gesetz des Lebens (leben-core `__lebenCore`, leben-erbe): die Spanne des Gesetzes umschließt das Art-Mittel
 // (das Neugeborene unten, das größte Erwachsene bei +4σ oben) — bis leben-erbe vier Größen-Bänder im Buch der Tiere ──
 require(path.join(root, "leben-core.js"));
+// der EINE Strom der Welt (gelaende-core `samenStrom`), den der Wirt dem Kern reicht — wie Seite und Faden
+require(path.join(root, "gelaende-core.js"));
+const SAMEN_STROM = global.__gelaendeCore.samenStrom;
 const LK = global.__lebenCore;
 const sp = LK && LK.spanne();
 check("Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]", !!sp && sp[0] > 0 && sp[0] < 1 && sp[1] > 1);
@@ -2198,10 +2201,12 @@ check("Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]", !
 // Zweig koordination, vision/leben). Der Kern rechnet LAUF 4 des Spikes zahlengleich nach; die Welt von Lauf 4 (das Feld des
 // Spikes) und die Arten (tetrapoda) reicht dieser Treiber als Leser hinein, der Kern hält weder Feld noch Gattung.
 //   das Tor      Saat 1 · 2, Jahre 0–40: die Spur von Wolf und Beute je 4 Jahre gegen die VORLAGE (`ergebnis-zeit-4.json` des
-//                Spikes, nie aus dem Kern), dazu der Mutant (V½ des Satzes 3: 246 → 300 muss die Spur verlassen; das Gesetz als Wert gereicht, kein Quelltext gelesen)
+//                Spikes, nie aus dem Kern; seit 20.11. zieht der Kern den EINEN Strom der Welt statt des mulberry32 des Spikes —
+//                die Spur ist dieselbe Rechnung an anderen Würfen, einmal am Kern neu gemünzt: Wolf 48–77 → 50–79, Beute ~17 400;
+//                die S-Zeilen unten bleiben die Zahlen des Spikes, `--bestand` liest sie seither als Vergleich, nicht als Gleichheit), dazu der Mutant (V½ des Satzes 3: 246 → 300 muss die Spur verlassen; das Gesetz als Wert gereicht, kein Quelltext gelesen)
 //   --bestand    der volle Lauf (8 Saaten × 160 Jahre, ohne und mit Wolf, die S13-Zweige): S1–S15 Vorlage ↔ Kern
 //   --bestand --vorlage <zeit-kern-4.cjs> [--jahre 40]   Kern und Vorlage im Gleichschritt: Köpfe je Takt, ms je Jahres-Schritt
-const LAUF4 = {"soll":{"S1":{"wert":"8 von 8","jeSaat":[68,80,61,66,74,56,63,69]},"S2":{"wert":3.9865,"jeSaat":[4.0013,4.0579,3.9253,3.9355,4.0322,3.9131,3.9669,4.0596]},"S3":{"wert":0.0841,"jeSaat":[0.0885,0.0918,0.0935,0.0739,0.0685,0.077,0.0927,0.0868]},"S4":{"wert":0.8613,"jeSaat":[0.8479,0.8404,0.8462,0.883,0.8924,0.8802,0.8459,0.8545]},"S5":{"wert":0.6046,"jeSaat":[0.6053,0.6049,0.6051,0.6037,0.6009,0.6043,0.6087,0.6042]},"S6":{"wert":1.4844,"jeSaat":[1.4789,1.4524,1.4569,1.5519,1.5316,1.5442,1.4373,1.4223]},"S7":{"wert":0.4786,"jeSaat":[0.4767,0.4762,0.4732,0.4828,0.4872,0.4819,0.4731,0.4775]},"S8":{"wert":0.0011,"jeSaat":[0.0014,0.0013,0.0011,0.0009,0.0007,0.0008,0.0014,0.0011]},"S9":{"wert":0.0134,"jeSaat":[0.0131,0.011,0.0105,0.0127,0.0148,0.0173,0.017,0.011]},"S10":{"wert":"0 · 0","jeSaat":["0·0","0·0","0·0","0·0","0·0","0·0","0·0","0·0"]},"S11":{"wert":1.0047,"jeSaat":[1.1236,1.1078,0.9399,0.7154,0.8641,1.0376,1.2625,0.9864]},"S12":{"wert":0.9689,"jeSaat":[0.9683,0.9724,0.9691,0.9698,0.9665,0.9654,0.9723,0.9674]},"S13":{"wert":"Fall 38.3 % (7 von 8 Saaten ≥ 25 %) · Beute 98.5 % (8 von 8 ≥ 85 %) · lebt 8 von 8","jeSaat":["33%/98%/lebt","45%/101%/lebt","35%/97%/lebt","47%/100%/lebt","48%/98%/lebt","38%/99%/lebt","39%/97%/lebt","23%/99%/lebt"]},"S14":{"wert":"D 0,9–1,2: 0.0328 GRÜN (21279.2 Rudel-Jahre) · D ≥ 1,5: 0.8385 ROT (161.4 Rudel-Jahre) · D ≤ 0,6: -4.3839 GRÜN (16 Rudel-Jahre)","jeSaat":[]},"S15":{"wert":250.8978,"jeSaat":[249.9186,246.4353,254.7589,254.0979,248.0043,255.5524,252.0837,246.3311]}},"spur":{"1":{"wolf":[27,49,54,63,58,77,67,66,48,66,75],"reh":[11738,14900,17081,16639,16830,17285,17226,17203,17201,17453,17412]},"2":{"wolf":[17,39,63,62,64,70,71,68,60,77,71],"reh":[11763,15407,17452,17050,17055,17147,17413,17594,17638,17395,17376]}}};
+const LAUF4 = {"soll":{"S1":{"wert":"8 von 8","jeSaat":[68,80,61,66,74,56,63,69]},"S2":{"wert":3.9865,"jeSaat":[4.0013,4.0579,3.9253,3.9355,4.0322,3.9131,3.9669,4.0596]},"S3":{"wert":0.0841,"jeSaat":[0.0885,0.0918,0.0935,0.0739,0.0685,0.077,0.0927,0.0868]},"S4":{"wert":0.8613,"jeSaat":[0.8479,0.8404,0.8462,0.883,0.8924,0.8802,0.8459,0.8545]},"S5":{"wert":0.6046,"jeSaat":[0.6053,0.6049,0.6051,0.6037,0.6009,0.6043,0.6087,0.6042]},"S6":{"wert":1.4844,"jeSaat":[1.4789,1.4524,1.4569,1.5519,1.5316,1.5442,1.4373,1.4223]},"S7":{"wert":0.4786,"jeSaat":[0.4767,0.4762,0.4732,0.4828,0.4872,0.4819,0.4731,0.4775]},"S8":{"wert":0.0011,"jeSaat":[0.0014,0.0013,0.0011,0.0009,0.0007,0.0008,0.0014,0.0011]},"S9":{"wert":0.0134,"jeSaat":[0.0131,0.011,0.0105,0.0127,0.0148,0.0173,0.017,0.011]},"S10":{"wert":"0 · 0","jeSaat":["0·0","0·0","0·0","0·0","0·0","0·0","0·0","0·0"]},"S11":{"wert":1.0047,"jeSaat":[1.1236,1.1078,0.9399,0.7154,0.8641,1.0376,1.2625,0.9864]},"S12":{"wert":0.9689,"jeSaat":[0.9683,0.9724,0.9691,0.9698,0.9665,0.9654,0.9723,0.9674]},"S13":{"wert":"Fall 38.3 % (7 von 8 Saaten ≥ 25 %) · Beute 98.5 % (8 von 8 ≥ 85 %) · lebt 8 von 8","jeSaat":["33%/98%/lebt","45%/101%/lebt","35%/97%/lebt","47%/100%/lebt","48%/98%/lebt","38%/99%/lebt","39%/97%/lebt","23%/99%/lebt"]},"S14":{"wert":"D 0,9–1,2: 0.0328 GRÜN (21279.2 Rudel-Jahre) · D ≥ 1,5: 0.8385 ROT (161.4 Rudel-Jahre) · D ≤ 0,6: -4.3839 GRÜN (16 Rudel-Jahre)","jeSaat":[]},"S15":{"wert":250.8978,"jeSaat":[249.9186,246.4353,254.7589,254.0979,248.0043,255.5524,252.0837,246.3311]}},"spur":{"1":{"wolf":[24,49,49,65,69,65,60,65,60,59,50],"reh":[11820,14684,17024,17022,16853,16754,17342,17646,17621,17348,17690]},"2":{"wolf":[23,43,55,78,78,56,68,79,69,55,68],"reh":[11816,15114,17213,16727,16499,16944,17058,17082,17340,17256,17401]}}};
 function bestandTreiber(T, L, gesetz) {
     const B = T.BESTAND_GESETZ;
     const TG = T.VERHALTEN.temperament.gattung;
@@ -2221,6 +2226,7 @@ function bestandTreiber(T, L, gesetz) {
     const K = L.bestand(
         {
         taktS: B.taktS,
+        samen: SAMEN_STROM,
         revierSeiteM: SEITE,
         // das Feld des Gaus (C2a): 16 Zellen je Revier, die Zahlen von LIFE_FIELD (Zerfall, Klemme), K je Zelle = die Formel des Stamms
         feld: { zellen: 16, zerfallJeS: 0.008, epsilon: 0.004, kahl: -1, max: 0.7, kopfJeHa: B.kopfJeHa, kZelle: (aes, lr) => lr * HA * T.bestandNahrung(DIET.deer, aes, 0) },
@@ -2244,7 +2250,7 @@ function bestandTreiber(T, L, gesetz) {
             if (quelle) (S.set(quelle.S), LR.set(quelle.LR));
             else {
                 const LR0 = T.lebensraum("deer", "wiese", T.LEBENSRAUM_GESETZ);
-                const fr = L.strom(1, 0, 9, W * 1000 + H);
+                const fr = L.strom(1, 0, 9, W * 1000 + H, SAMEN_STROM);
                 for (let i = 0; i < n; i++) {
                     let c = 0;
                     for (let k = 0; k < Z; k++) {

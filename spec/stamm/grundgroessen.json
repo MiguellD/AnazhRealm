@@ -179,10 +179,10 @@
         "samen": {
             "name": "Samen",
             "welle": "SAMEN",
-            "schreiber": "stamm/siedlung-ort.js `_bauSame` (Welt-Same → benannter Teil-Same) → `_samenStrom`",
+            "schreiber": "stamm/siedlung-ort.js `_bauSame` (Welt-Same → benannter Teil-Same) → `_samenStrom` = gelaende-core.js `samenStrom` (das EINE LCG, Seite und Faden; ein Kern bekommt es über seinen Wirt)",
             "leser": "_samenStrom\\(|_bauSame\\(",
             "kanon": {
-                "stamm/siedlung-ort.js": [
+                "gelaende-core.js": [
                     "s * 1664525 + 1013904223"
                 ]
             }
