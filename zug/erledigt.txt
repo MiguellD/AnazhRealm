@@ -1891,3 +1891,4 @@ omen-gtx-gtx-f68dbf09-w030546-1-f68dbf09 UNGEMESSEN 2 GRÜN / 0 ROT / 3 UNGEMESS
 2026-11-20 05:05 RUNDE 2 ALARM gtx: ohne Fortschritt seit 19 min (laeuft, 10/1428, Station karte2.mensch.leib.tracht#7, Kopf 31ea3847) — gesehen von radeon (radeon-dienst)
 2026-11-20 05:15 RUNDE 2 ALARM gtx: OMEN: 477 Messungen ungepusht seit 05:53 — weicht 15/1428, Station karte2.mensch.leib.ausdruck#6, Kopf 31ea3847; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-20 05:22 RUNDE 2 ALARM radeon: ohne Fortschritt seit 19 min (weicht, 56/1428, Station -, Kopf 31ea3847) — gesehen von radeon (radeon-dienst)
+2026-11-20 06:39 RUNDE 2 ALARM radeon: ohne Fortschritt seit 16 min (weicht, 355/1428, Station -, Kopf 31ea3847) — gesehen von radeon (radeon-dienst)
