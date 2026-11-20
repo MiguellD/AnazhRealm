@@ -1252,7 +1252,11 @@ class AnazhRealm_vegetation_baum {
             const [ga, ha, gb, hb] = this._waldPflanzKasten(cx, cz);
             const R = AnazhRealm.WALD_PLAN.reich;
             this._waldPlanKasten(ga - R, ha - R, gb + R, hb + R);
-            if (!this._waldPlanKasten(ga, ha, gb, hb)) {
+            // DER ORT LIEGT VOR SEINEM WALD (w28-ort-vor-wald): erreicht der Saum eines Orts in Arbeit den Chunk (`_ortInArbeit`:
+            // sein Grund liegt noch nicht), wartet der Gang wie auf seinen Plan — der Grund legt den Rand, und der Chunk pflanzt am
+            // Plan mit ihm. Bis hier pflanzte er vorher, und der Saum räumte den Wald nach dem Bild (`_saumRaeumen`; GTX 1050,
+            // Sprung an die Mess-Wiese: 264 Bäume im Laub-Rand)
+            if (!this._waldPlanKasten(ga, ha, gb, hb) || this._ortInArbeit(ox, oz, ox + span, oz + span) !== null) {
                 (this._waldPflanzWarten || (this._waldPflanzWarten = new Set())).add(ck);
                 return 0;
             }
