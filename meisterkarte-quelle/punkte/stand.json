@@ -7424,16 +7424,16 @@
   },
   "karte2.erleben.schoepfen.gespraech": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.gespraech#1 radeon: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#1 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.gespraech#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#3 radeon: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#3 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.gespraech#4 radeon: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#4 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.gespraech#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#5 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.gespraech#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.schoepfen.gespraech#1 radeon: ROT: S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler (die Werkbank, kein Neuling am Gerät) — 20 Neulinge ab 10 Jahren verlangt (R11) (verlangt 20 Neulinge ab 10 Jahren, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.schoepfen.gespraech#1 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.gespraech#2 radeon: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#2 gtx: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#3 radeon: ROT: S3 · ROT Umfang nicht erzeugbar: die Leiter fährt 0.1 s, kein Gespräch einer Stunde; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 60 min Gespräch an einem Ort, die Welt erzeugte 0) an 31ea3847 · karte2.erleben.schoepfen.gespraech#3 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.gespraech#4 radeon: ROT: S4 · ROT Umfang nicht erzeugbar: der Lauf der Leiter ist eine Sitzung — 10 Sitzungen über Wochen verlangt (verlangt 10 Sitzungen, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.schoepfen.gespraech#4 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.gespraech#5 radeon: ROT: S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler — eine Gruppe von 10 mit der KI verlangt; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 10 Spieler mit der KI an einer Stadt, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.schoepfen.gespraech#5 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.gespraech#6 radeon: ungemessen (R10) · karte2.erleben.schoepfen.gespraech#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.gespraech#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler (die Werkbank, kein Neuling am Gerät) — 20 Neulinge ab 10 Jahren verlangt (R11) (verlangt 20 Neulinge ab 10 Jahren, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler (die Werkbank, kein Neuling am Gerät) — 20 Neulinge ab 10 Jahren verlangt (R11) (verlangt 20 Neulinge ab 10 Jahren, die Welt erzeugte 1)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -7468,10 +7468,10 @@
      "id": "karte2.erleben.schoepfen.gespraech#3",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S3 · ROT Umfang nicht erzeugbar: die Leiter fährt 0.1 s, kein Gespräch einer Stunde; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 60 min Gespräch an einem Ort, die Welt erzeugte 0)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die Leiter fährt 0.1 s, kein Gespräch einer Stunde; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 60 min Gespräch an einem Ort, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.schoepfen.gespraech#3",
@@ -7486,10 +7486,10 @@
      "id": "karte2.erleben.schoepfen.gespraech#4",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S4 · ROT Umfang nicht erzeugbar: der Lauf der Leiter ist eine Sitzung — 10 Sitzungen über Wochen verlangt (verlangt 10 Sitzungen, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: der Lauf der Leiter ist eine Sitzung — 10 Sitzungen über Wochen verlangt (verlangt 10 Sitzungen, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.schoepfen.gespraech#4",
@@ -7504,10 +7504,10 @@
      "id": "karte2.erleben.schoepfen.gespraech#5",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler — eine Gruppe von 10 mit der KI verlangt; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 10 Spieler mit der KI an einer Stadt, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler — eine Gruppe von 10 mit der KI verlangt; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 10 Spieler mit der KI an einer Stadt, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.schoepfen.gespraech#5",
@@ -9848,16 +9848,16 @@
   },
   "karte2.erleben.spieler.forscher": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.forscher#1 radeon: ungemessen (R10) · karte2.erleben.spieler.forscher#1 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#2 radeon: ungemessen (R10) · karte2.erleben.spieler.forscher#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#3 radeon: ungemessen (R10) · karte2.erleben.spieler.forscher#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#4 radeon: ungemessen (R10) · karte2.erleben.spieler.forscher#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#5 radeon: ungemessen (R10) · karte2.erleben.spieler.forscher#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#6 radeon: ungemessen (R10) · karte2.erleben.spieler.forscher#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#7 radeon: ungemessen (R10) · karte2.erleben.spieler.forscher#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.forscher#1 radeon: ROT: S1 · ROT Leser fehlt: Krater des Mondes: die Mondscheibe ist eine Kugel [16,16] ohne Karte und Farbknoten (stamm/dirigent-ankunft.js:340) — kein Krater, dessen Lage Fernrohr und Anflug teilen; kein Anflug an den Mond; das Fernrohr vergrößert nur das Bild (stamm/koerper-fahrt.js:2246 `setZoomActive`, 5 Fernrohr-Baupläne) an 31ea3847 · karte2.erleben.spieler.forscher#1 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#2 radeon: ROT: S2 · ROT Umfang nicht erzeugbar: die Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1; geprüft 201 von 201) kennen als Instrument nur das Fernrohr — kein Mikroskop, Thermometer, Kompass, Lot (verlangt 5 Instrumente der Welt, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.spieler.forscher#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#3 radeon: ROT: S3 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — Wärme, Strömung, Wind, Bestand, Dichte der Menschen an 31ea3847 · karte2.erleben.spieler.forscher#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#4 radeon: ROT: S4 · ROT Umfang nicht erzeugbar: kein Zeit-Instrument in den Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1) — 0 Lesungen der Vergangenheit (verlangt 10 Lesungen eines Zeit-Instruments der Welt, die Welt erzeugte 0) an 31ea3847 · karte2.erleben.spieler.forscher#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#5 radeon: ROT: S5 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — die vorhergesagte Folge eines Versuchs hat keine Karte, die sie nennt an 31ea3847 · karte2.erleben.spieler.forscher#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#6 radeon: ROT: S6 · ROT Leser fehlt: Lernen blinder Neulinge: kein Protokoll im Spiel (vor/nach 60 min, Kontrollgruppe Lehrfilm) — ein Panel nach R11 (vision/REGELN.md:17), kein Haken der Welt an 31ea3847 · karte2.erleben.spieler.forscher#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.forscher#7 radeon: ROT: S7 · ROT Umfang nicht erzeugbar: eine Saat (anazh-realm-seed) × 1 Instrumente = 1 (Saat, Instrument)-Paare (verlangt 100 (Saat, Instrument)-Paare der Sitzung, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.spieler.forscher#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.forscher#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "S1 · ROT Leser fehlt: Krater des Mondes: die Mondscheibe ist eine Kugel [16,16] ohne Karte und Farbknoten (stamm/dirigent-ankunft.js:340) — kein Krater, dessen Lage Fernrohr und Anflug teilen; kein Anflug an den Mond; das Fernrohr vergrößert nur das Bild (stamm/koerper-fahrt.js:2246 `setZoomActive`, 5 Fernrohr-Baupläne)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S1 · ROT Leser fehlt: Krater des Mondes: die Mondscheibe ist eine Kugel [16,16] ohne Karte und Farbknoten (stamm/dirigent-ankunft.js:340) — kein Krater, dessen Lage Fernrohr und Anflug teilen; kein Anflug an den Mond; das Fernrohr vergrößert nur das Bild (stamm/koerper-fahrt.js:2246 `setZoomActive`, 5 Fernrohr-Baupläne)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -9874,10 +9874,10 @@
      "id": "karte2.erleben.spieler.forscher#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S2 · ROT Umfang nicht erzeugbar: die Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1; geprüft 201 von 201) kennen als Instrument nur das Fernrohr — kein Mikroskop, Thermometer, Kompass, Lot (verlangt 5 Instrumente der Welt, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: die Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1; geprüft 201 von 201) kennen als Instrument nur das Fernrohr — kein Mikroskop, Thermometer, Kompass, Lot (verlangt 5 Instrumente der Welt, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.forscher#2",
@@ -9892,10 +9892,10 @@
      "id": "karte2.erleben.spieler.forscher#3",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S3 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — Wärme, Strömung, Wind, Bestand, Dichte der Menschen",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S3 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — Wärme, Strömung, Wind, Bestand, Dichte der Menschen",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.forscher#3",
@@ -9910,10 +9910,10 @@
      "id": "karte2.erleben.spieler.forscher#4",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S4 · ROT Umfang nicht erzeugbar: kein Zeit-Instrument in den Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1) — 0 Lesungen der Vergangenheit (verlangt 10 Lesungen eines Zeit-Instruments der Welt, die Welt erzeugte 0)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: kein Zeit-Instrument in den Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1) — 0 Lesungen der Vergangenheit (verlangt 10 Lesungen eines Zeit-Instruments der Welt, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.forscher#4",
@@ -9928,10 +9928,10 @@
      "id": "karte2.erleben.spieler.forscher#5",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S5 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — die vorhergesagte Folge eines Versuchs hat keine Karte, die sie nennt",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S5 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — die vorhergesagte Folge eines Versuchs hat keine Karte, die sie nennt",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.forscher#5",
@@ -9946,10 +9946,10 @@
      "id": "karte2.erleben.spieler.forscher#6",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S6 · ROT Leser fehlt: Lernen blinder Neulinge: kein Protokoll im Spiel (vor/nach 60 min, Kontrollgruppe Lehrfilm) — ein Panel nach R11 (vision/REGELN.md:17), kein Haken der Welt",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S6 · ROT Leser fehlt: Lernen blinder Neulinge: kein Protokoll im Spiel (vor/nach 60 min, Kontrollgruppe Lehrfilm) — ein Panel nach R11 (vision/REGELN.md:17), kein Haken der Welt",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.forscher#6",
@@ -9964,10 +9964,10 @@
      "id": "karte2.erleben.spieler.forscher#7",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S7 · ROT Umfang nicht erzeugbar: eine Saat (anazh-realm-seed) × 1 Instrumente = 1 (Saat, Instrument)-Paare (verlangt 100 (Saat, Instrument)-Paare der Sitzung, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: eine Saat (anazh-realm-seed) × 1 Instrumente = 1 (Saat, Instrument)-Paare (verlangt 100 (Saat, Instrument)-Paare der Sitzung, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.forscher#7",
@@ -9982,7 +9982,7 @@
   },
   "karte2.erleben.spieler.gemeinsam": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#2 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.gemeinsam#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.erleben.spieler.gemeinsam#1 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#2 radeon: ROT: S2 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 10 Spieler der Sitzung, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.spieler.gemeinsam#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.erleben.spieler.gemeinsam#3 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.erleben.spieler.gemeinsam#4 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · karte2.erleben.spieler.gemeinsam#5 gtx: ungemessen (R10) · karte2.erleben.spieler.gemeinsam#6 radeon: ROT: S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 100000 Spieler der Sitzung, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.spieler.gemeinsam#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.gemeinsam#7 radeon: ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 1000000 Spieler der Sitzung, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.spieler.gemeinsam#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.gemeinsam#1",
@@ -9990,7 +9990,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
      "ungemessen": true,
      "beide": true
     },
@@ -10008,10 +10008,10 @@
      "id": "karte2.erleben.spieler.gemeinsam#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S2 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 10 Spieler der Sitzung, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 10 Spieler der Sitzung, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.gemeinsam#2",
@@ -10028,7 +10028,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
      "ungemessen": true
     },
     {
@@ -10046,7 +10046,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
      "ungemessen": true
     },
     {
@@ -10064,7 +10064,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an",
      "ungemessen": true
     },
     {
@@ -10080,10 +10080,10 @@
      "id": "karte2.erleben.spieler.gemeinsam#6",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 100000 Spieler der Sitzung, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 100000 Spieler der Sitzung, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.gemeinsam#6",
@@ -10098,10 +10098,10 @@
      "id": "karte2.erleben.spieler.gemeinsam#7",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 1000000 Spieler der Sitzung, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 1000000 Spieler der Sitzung, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.gemeinsam#7",
@@ -10232,7 +10232,7 @@
   },
   "karte2.erleben.spieler.nichtleib": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.nichtleib#1 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#1 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#2 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#2 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#3 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#3 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#4 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#4 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#5 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#5 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#6 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#6 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#7 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.nichtleib#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#1 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#2 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#3 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#4 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#5 radeon: ungemessen (R10) · karte2.erleben.spieler.nichtleib#5 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#6 gtx: ungemessen (R10) · karte2.erleben.spieler.nichtleib#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — · karte2.erleben.spieler.nichtleib#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.nichtleib#1",
@@ -10240,7 +10240,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
      "ungemessen": true,
      "beide": true
     },
@@ -10260,7 +10260,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
      "ungemessen": true
     },
     {
@@ -10278,7 +10278,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
      "ungemessen": true
     },
     {
@@ -10296,7 +10296,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
      "ungemessen": true
     },
     {
@@ -10332,7 +10332,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
      "ungemessen": true
     },
     {
@@ -10350,7 +10350,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —",
      "ungemessen": true
     },
     {
@@ -10366,7 +10366,7 @@
   },
   "karte2.erleben.spieler.praesenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · karte2.erleben.spieler.praesenz#1 gtx: Station seit der Messung geändert — zuletzt an b7ed8419: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 229.1 →  · karte2.erleben.spieler.praesenz#2 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#2 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#3 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#3 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#4 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#4 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#5 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#5 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#6 radeon: ungemessen (R10) · karte2.erleben.spieler.praesenz#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.praesenz#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · karte2.erleben.spieler.praesenz#1 gtx: Station seit der Messung geändert — zuletzt an b7ed8419: Wirt-Wache: den Kontext der Probe hält noch: if (!window.__zeigerDerProbe) { const stand = (window.__zeigerDerProbe = { el: null, rpl: HTMLCanvasElement.prototype.re — Heap nach der Rücknahme 229.1 →  · karte2.erleben.spieler.praesenz#2 radeon: ROT: S2 · ROT Leser fehlt: die drei Schwellen je Zufallslage: kein Leser, der in jeder Saat Lagen zieht und Taste → Bild, Fuß und Kamera je Lage urteilt (scripts/werkbank.cjs:1892 `/latenz` misst nur am Ort der Pose) — je Saat 2088 · 1086 · 879 · 733 · 735 · 670 · 943 · 794 · 755 · 754 ms, Heimweg 810 ms (zurück true, Versatz 0 m) (verlangt 10 Saaten der Sitzung, die Welt erzeugte 10) an 31ea3847 · karte2.erleben.spieler.praesenz#2 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —  · karte2.erleben.spieler.praesenz#3 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —  · karte2.erleben.spieler.praesenz#4 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —  · karte2.erleben.spieler.praesenz#5 gtx: ungemessen (R10) · karte2.erleben.spieler.praesenz#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen —  · karte2.erleben.spieler.praesenz#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.praesenz#1",
@@ -10392,10 +10392,10 @@
      "id": "karte2.erleben.spieler.praesenz#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S2 · ROT Leser fehlt: die drei Schwellen je Zufallslage: kein Leser, der in jeder Saat Lagen zieht und Taste → Bild, Fuß und Kamera je Lage urteilt (scripts/werkbank.cjs:1892 `/latenz` misst nur am Ort der Pose) — je Saat 2088 · 1086 · 879 · 733 · 735 · 670 · 943 · 794 · 755 · 754 ms, Heimweg 810 ms (zurück true, Versatz 0 m) (verlangt 10 Saaten der Sitzung, die Welt erzeugte 10) · gemessen vor dem Abbruch: Frist der Probe 39 s gerissen",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S2 · ROT Leser fehlt: die drei Schwellen je Zufallslage: kein Leser, der in jeder Saat Lagen zieht und Taste → Bild, Fuß und Kamera je Lage urteilt (scripts/werkbank.cjs:1892 `/latenz` misst nur am Ort der Pose) — je Saat 2088 · 1086 · 879 · 733 · 735 · 670 · 943 · 794 · 755 · 754 ms, Heimweg 810 ms (zurück true, Versatz 0 m) (verlangt 10 Saaten der Sitzung, die Welt erzeugte 10)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.praesenz#2",
@@ -10412,7 +10412,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — ",
      "ungemessen": true
     },
     {
@@ -10430,7 +10430,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — ",
      "ungemessen": true
     },
     {
@@ -10448,7 +10448,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — ",
      "ungemessen": true
     },
     {
@@ -10466,7 +10466,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — ",
      "ungemessen": true
     },
     {
@@ -10482,7 +10482,7 @@
   },
   "karte2.erleben.spieler.rolle": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.02 s, bauen 0 s, fahren 0.25 s, kaempfen 0.03 s · gehen Änderung Δ 3.30 % (Rauschen 0.05 %) [Wesen gattung deer, groesse 0.92, temperament scheu, task wander, ruht false, nah true, satz false, sichtbar true, zustand flucht, 13.89 m] · bauen Änderung Δ 2.11 % (Rauschen 0.00 %) · fahren Änderung Δ 3.51 % (Rauschen 0.04 %) · kaempfen Änderung Δ 1.31 % (Rauschen 0.22 %) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.erleben.spieler.rolle#2 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#2 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#3 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#3 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#4 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#4 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#5 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#5 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#6 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#6 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#7 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3 an 7de938ab radeon · gehalten: 4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.02 s, bauen 0 s, fahren 0.25 s, kaempfen 0.03 s · gehen Änderung Δ 3.30 % (Rauschen 0.05 %) [Wesen gattung deer, groesse 0.92, temperament scheu, task wander, ruht false, nah true, satz false, sichtbar true, zustand flucht, 13.89 m] · bauen Änderung Δ 2.11 % (Rauschen 0.00 %) · fahren Änderung Δ 3.51 % (Rauschen 0.04 %) · kaempfen Änderung Δ 1.31 % (Rauschen 0.22 %) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.erleben.spieler.rolle#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb · karte2.erleben.spieler.rolle#2 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb · karte2.erleben.spieler.rolle#3 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#4 radeon: ungemessen (R10) · karte2.erleben.spieler.rolle#4 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb · karte2.erleben.spieler.rolle#5 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb · karte2.erleben.spieler.rolle#6 gtx: ungemessen (R10) · karte2.erleben.spieler.rolle#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb · karte2.erleben.spieler.rolle#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.rolle#1",
@@ -10511,7 +10511,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb",
      "ungemessen": true
     },
     {
@@ -10529,7 +10529,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb",
      "ungemessen": true
     },
     {
@@ -10565,7 +10565,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb",
      "ungemessen": true
     },
     {
@@ -10583,7 +10583,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb",
      "ungemessen": true
     },
     {
@@ -10601,7 +10601,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abb",
      "ungemessen": true
     },
     {
@@ -10617,16 +10617,16 @@
   },
   "karte2.erleben.spieler.wegfindung": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.wegfindung#1 radeon: ungemessen (R10) · karte2.erleben.spieler.wegfindung#1 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#2 radeon: ungemessen (R10) · karte2.erleben.spieler.wegfindung#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#3 radeon: ungemessen (R10) · karte2.erleben.spieler.wegfindung#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#4 radeon: ungemessen (R10) · karte2.erleben.spieler.wegfindung#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#5 radeon: ungemessen (R10) · karte2.erleben.spieler.wegfindung#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#6 radeon: ungemessen (R10) · karte2.erleben.spieler.wegfindung#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#7 radeon: ungemessen (R10) · karte2.erleben.spieler.wegfindung#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.spieler.wegfindung#1 radeon: ROT: S1 · ROT Umfang nicht erzeugbar: die Welt wechselte am Ort in 0 von 50 Saaten, gewachsen (≥ 1 Architektur am Erwachen) 0 — Architekturen je Saat —; je Saat — ms, Heimweg 0 ms (zurück true, Versatz 0 m); Ende: die Frist: 0 Saaten in 0 ms; die Wiese wuchs in 20513 ms, der Heimweg hält das Doppelte frei (verlangt 50 Saaten der Sitzung, die Welt erzeugte 0) an 31ea3847 · karte2.erleben.spieler.wegfindung#1 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#2 radeon: ROT: S2 · ROT Leser fehlt: Erfolg und Umweg eines menschlichen Testspielers: kein Leser des Ziel-Gangs (Start, Ziel, gegangener Weg) — der Ort wäre eine Route neben `/latenz` (scripts/werkbank.cjs:1892), der Testspieler ein Panel (R11) (verlangt 1 Landmarken in 1 km um die Wiese, die Welt erzeugte 30) an 31ea3847 · karte2.erleben.spieler.wegfindung#2 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#3 radeon: ROT: S3 · ROT Leser fehlt: Karte aus dem Gesetz: kein Haken, der die Welt als Karte vor den Spieler legt (Höhenlinien, Wege, Ortsnamen) — `_wegeKarteEnsure` (stamm/siedlung-wege.js:16) ist eine Boden-Textur, keine Karte des Spielers (verlangt 10 km Weite des Planeten der Welt, die Welt erzeugte 40030,2) an 31ea3847 · karte2.erleben.spieler.wegfindung#3 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#4 radeon: ROT: S4 · ROT Umfang nicht erzeugbar: die größte Siedlung der Sitzung trägt 0 Bewohner (0 Siedlungen) — keine Stadt von 10⁶ (verlangt 1000000 Bewohner der größten Siedlung der Sitzung, die Welt erzeugte 0) an 31ea3847 · karte2.erleben.spieler.wegfindung#4 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#5 radeon: ROT: S5 · ROT ❌ gestirn_fehler_grad 46,028 (Soll ≤ 1) · ❌ seereise_erfolg — (Soll ≥ 0,8) · ✅ Umfang verlangt 1000 km Weite des Planeten der Welt, die Welt erzeugte 40030,2 — Täter: die Sonnenbahn kennt weder Breite noch Saison (welt-licht.js:711 `sonnenRichtung`): Mittag winter 74,2° statt 28,2°; Pol der Sterne 67,1° statt 45,5° (stamm/dirigent-takt.js:2422 feste Achse); Seereise: kein Leser (stamm/feld-leben.js:1278 die Reise springt) · gestirn_fehler_grad 46,028 statt ≤ 1 · seereise_erfolg — statt ≥ 0,8 an 31ea3847 · karte2.erleben.spieler.wegfindung#5 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#6 radeon: ROT: S6 · ROT Leser fehlt: Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche (verlangt 40000 km Umfang des Planeten der Welt, die Welt erzeugte 40030,2) an 31ea3847 · karte2.erleben.spieler.wegfindung#6 gtx: Station seit der Messung geändert · karte2.erleben.spieler.wegfindung#7 radeon: ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung hält eine Saat (anazh-realm-seed) und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten (verlangt 100 Saaten der Sitzung, die Welt erzeugte 1) an 31ea3847 · karte2.erleben.spieler.wegfindung#7 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.spieler.wegfindung#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true,
+     "zahl": "S1 · ROT Umfang nicht erzeugbar: die Welt wechselte am Ort in 0 von 50 Saaten, gewachsen (≥ 1 Architektur am Erwachen) 0 — Architekturen je Saat —; je Saat — ms, Heimweg 0 ms (zurück true, Versatz 0 m); Ende: die Frist: 0 Saaten in 0 ms; die Wiese wuchs in 20513 ms, der Heimweg hält das Doppelte frei (verlangt 50 Saaten der Sitzung, die Welt erzeugte 0)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S1 · ROT Umfang nicht erzeugbar: die Welt wechselte am Ort in 0 von 50 Saaten, gewachsen (≥ 1 Architektur am Erwachen) 0 — Architekturen je Saat —; je Saat — ms, Heimweg 0 ms (zurück true, Versatz 0 m); Ende: die Frist: 0 Saaten in 0 ms; die Wiese wuchs in 20513 ms, der Heimweg hält das Doppelte frei (verlangt 50 Saaten der Sitzung, die Welt erzeugte 0)",
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -10643,10 +10643,10 @@
      "id": "karte2.erleben.spieler.wegfindung#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S2 · ROT Leser fehlt: Erfolg und Umweg eines menschlichen Testspielers: kein Leser des Ziel-Gangs (Start, Ziel, gegangener Weg) — der Ort wäre eine Route neben `/latenz` (scripts/werkbank.cjs:1892), der Testspieler ein Panel (R11) (verlangt 1 Landmarken in 1 km um die Wiese, die Welt erzeugte 30)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S2 · ROT Leser fehlt: Erfolg und Umweg eines menschlichen Testspielers: kein Leser des Ziel-Gangs (Start, Ziel, gegangener Weg) — der Ort wäre eine Route neben `/latenz` (scripts/werkbank.cjs:1892), der Testspieler ein Panel (R11) (verlangt 1 Landmarken in 1 km um die Wiese, die Welt erzeugte 30)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.wegfindung#2",
@@ -10661,10 +10661,10 @@
      "id": "karte2.erleben.spieler.wegfindung#3",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S3 · ROT Leser fehlt: Karte aus dem Gesetz: kein Haken, der die Welt als Karte vor den Spieler legt (Höhenlinien, Wege, Ortsnamen) — `_wegeKarteEnsure` (stamm/siedlung-wege.js:16) ist eine Boden-Textur, keine Karte des Spielers (verlangt 10 km Weite des Planeten der Welt, die Welt erzeugte 40030,2)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S3 · ROT Leser fehlt: Karte aus dem Gesetz: kein Haken, der die Welt als Karte vor den Spieler legt (Höhenlinien, Wege, Ortsnamen) — `_wegeKarteEnsure` (stamm/siedlung-wege.js:16) ist eine Boden-Textur, keine Karte des Spielers (verlangt 10 km Weite des Planeten der Welt, die Welt erzeugte 40030,2)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.wegfindung#3",
@@ -10679,10 +10679,10 @@
      "id": "karte2.erleben.spieler.wegfindung#4",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S4 · ROT Umfang nicht erzeugbar: die größte Siedlung der Sitzung trägt 0 Bewohner (0 Siedlungen) — keine Stadt von 10⁶ (verlangt 1000000 Bewohner der größten Siedlung der Sitzung, die Welt erzeugte 0)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die größte Siedlung der Sitzung trägt 0 Bewohner (0 Siedlungen) — keine Stadt von 10⁶ (verlangt 1000000 Bewohner der größten Siedlung der Sitzung, die Welt erzeugte 0)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.wegfindung#4",
@@ -10697,10 +10697,10 @@
      "id": "karte2.erleben.spieler.wegfindung#5",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S5 · ROT ❌ gestirn_fehler_grad 46,028 (Soll ≤ 1) · ❌ seereise_erfolg — (Soll ≥ 0,8) · ✅ Umfang verlangt 1000 km Weite des Planeten der Welt, die Welt erzeugte 40030,2 — Täter: die Sonnenbahn kennt weder Breite noch Saison (welt-licht.js:711 `sonnenRichtung`): Mittag winter 74,2° statt 28,2°; Pol der Sterne 67,1° statt 45,5° (stamm/dirigent-takt.js:2422 feste Achse); Seereise: kein Leser (stamm/feld-leben.js:1278 die Reise springt) · gestirn_fehler_grad 46,028 statt ≤ 1 · seereise_erfolg — statt ≥ 0,8",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S5 · ROT ❌ gestirn_fehler_grad 46,028 (Soll ≤ 1) · ❌ seereise_erfolg — (Soll ≥ 0,8) · ✅ Umfang verlangt 1000 km Weite des Planeten der Welt, die Welt erzeugte 40030,2 — Täter: die Sonnenbahn kennt weder Breite noch Saison (welt-licht.js:711 `sonnenRichtung`): Mittag winter 74,2° statt 28,2°; Pol der Sterne 67,1° statt 45,5° (stamm/dirigent-takt.js:2422 feste Achse); Seereise: kein Leser (stamm/feld-leben.js:1278 die Reise springt) · gestirn_fehler_grad 46,028 statt ≤ 1 · seereise_erfolg — statt ≥ 0,8",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.wegfindung#5",
@@ -10715,10 +10715,10 @@
      "id": "karte2.erleben.spieler.wegfindung#6",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S6 · ROT Leser fehlt: Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche (verlangt 40000 km Umfang des Planeten der Welt, die Welt erzeugte 40030,2)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S6 · ROT Leser fehlt: Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche (verlangt 40000 km Umfang des Planeten der Welt, die Welt erzeugte 40030,2)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.wegfindung#6",
@@ -10733,10 +10733,10 @@
      "id": "karte2.erleben.spieler.wegfindung#7",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "S7 · ROT Umfang nicht erzeugbar: die Sitzung hält eine Saat (anazh-realm-seed) und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten (verlangt 100 Saaten der Sitzung, die Welt erzeugte 1)",
+     "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+     "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung hält eine Saat (anazh-realm-seed) und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten (verlangt 100 Saaten der Sitzung, die Welt erzeugte 1)",
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.spieler.wegfindung#7",
@@ -37423,7 +37423,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 200,
+  "konsum": 222,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37585,11 +37585,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3426
+  "ohne": 3404
  },
  "kopfVoll": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
- "zeit": "2026-11-20T02:40:17.184Z",
- "vorher": "3da9d9ae",
+ "zeit": "2026-11-20T03:51:04.015Z",
+ "vorher": "31ea3847",
  "bilanz": {
   "gewinn": [],
   "fall": [],
