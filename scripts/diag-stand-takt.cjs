@@ -646,7 +646,7 @@ async function tatSeite(MESS, vorher) {
         for (let d = 20, n = 0; d <= 900 && n < 8; d += 10)
             for (let k = 0; k < 36; k++) {
                 const U = { x: MESS.x + d * Math.cos(k * 0.1745), z: MESS.z + d * Math.sin(k * 0.1745) };
-                if (Math.abs(F0(U.x, U.z) - 0.5) > 0.1 || !r._landAt(U.x, U.z, 1) || r._canopyLightAt(U.x, U.z) < 0.6) continue;
+                if (Math.abs(F0(U.x, U.z) - 0.5) > 0.1 || !r._landAt(U.x, U.z, 1) || r._bodenLichtFeld(U.x, U.z, U.x, U.z)(U.x, U.z) < 0.6) continue;
                 n++, await stehen(U);
                 const o = ring(false).filter((q) => q.w[2] >= 0.995);
                 if (o.filter((q) => q.w[1] >= 0.6).length >= 6 && o.filter((q) => q.w[1] <= 0.2).length >= 6)
