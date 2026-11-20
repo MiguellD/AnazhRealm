@@ -1745,6 +1745,11 @@ async function checkBandKreaturKosten({ page, check }) {
             if (tag) counts[tag]++;
             return savedACM.apply(this, arguments);
         };
+        // DIE HALTUNG VOR DER RUHE (H1): der Leib jenseits der Grenze friert erst, wenn seine Haltung an ihrem Ziel ruht — die
+        // frisch gesetzten Proben schwingen erst ein (höchstens 40 s Spiel-Zeit), dann zählt die Leiter
+        for (let k = 0; k < 2000 && !probes.hinter.userData._animEingefroren; k++) r.updateCreatures(0.02), pin();
+        o.einschwingen = probes.hinter.userData._animEingefroren === true;
+        counts = { voll: 0, halb: 0, viertel: 0, hinter: 0 };
         const N = 100;
         for (let k = 0; k < N; k++) {
             r.updateCreatures(0.02);
