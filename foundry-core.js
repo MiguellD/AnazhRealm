@@ -520,7 +520,10 @@ const PORTAL_RENDER_CONFIG = {
                     quote: 0.35,
                     geruest: 0.25,
                     vorhang: 0.6,
-                    wedel: { ab: 0, teile: 2, breite: 2.03, nadel: 0.045, rand: 0.3, winkel: 40, spalte: 1.5, holz: 0.15 },
+                    // wedel.teile (laub-kante): die L1 trägt je Strähne nie mehr Stücke als die L0 (tree[0].wedel.teile 1) — der Kegel
+                    // (phyto-core `koniferenKegel`) gibt der Fichte mehr kurze Nadel-Äste, jeder stand mit dem Mindest-Maß 2 Stücke:
+                    // Fichte s7 L1-Wedel 2320 → 3152 Dreiecke, Quote fichte-s2 0,38 > 0,35. Das Nadel-Maß (`nadel`) teilt die langen.
+                    wedel: { ab: 0, teile: 1, breite: 2.03, nadel: 0.045, rand: 0.3, winkel: 40, spalte: 1.5, holz: 0.15 },
                     straehne: { teile: 1, breite: 0.95, holz: 0.06 },
                     deckung: [0.8, 1.15],
                     ringToleranz: 0.001,
@@ -4732,7 +4735,7 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.92, delta: 2.05, slim: 0.72, trop: 0.1, leaf: 0.7 },
-        ph: { hoeheM: 26.2, hd: 70 }, // Welt-Maß (K20): Fichte im Bestand (Altbestand 30–50 m)
+        ph: { hoeheM: 26.2, hd: 70, krone: "fichte" }, // Welt-Maß (K20): Fichte im Bestand (Altbestand 30–50 m)
     },
     birke: {
         kind: "tree",
@@ -4750,13 +4753,13 @@ const PRESETS = {
         kind: "tree",
         panel: "plant",
         s: { api: 0.95, delta: 2.35, slim: 0.18, trop: 0.05, leaf: 0.88 },
-        ph: { hoeheM: 39.9, hd: 18 }, // Welt-Maß (K20): der Mammutbaum, Solitär-Riese: gedrungen
+        ph: { hoeheM: 39.9, hd: 18, krone: "mammut" }, // Welt-Maß (K20): der Mammutbaum, Solitär-Riese: gedrungen
     },
     tanne: {
         kind: "tree",
         panel: "plant",
         s: { api: 0.9, delta: 2.1, slim: 0.74, trop: 0.05, leaf: 0.78 },
-        ph: { hoeheM: 26.9, hd: 65 }, // Welt-Maß (K20): Weißtanne im Bestand (30–50 m)
+        ph: { hoeheM: 26.9, hd: 65, krone: "tanne" }, // Welt-Maß (K20): Weißtanne im Bestand (30–50 m)
     },
     strauch: {
         kind: "shrub",

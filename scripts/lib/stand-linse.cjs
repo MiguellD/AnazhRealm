@@ -454,7 +454,14 @@ function simUrteil(b, v) {
         if (!(Z.mit >= 0.5 && Z.mit <= 2)) v.push(`FRONT-MIT: ${Z.koepfe} Köpfe mit dem Wind, Median ${Z.mit} m/s (Soll 0,5–2)`);
         if (!(Z.gegen <= 0.2)) v.push(`FRONT-GEGEN: gegen den Wind bis ${Z.gegen} m/s (Soll ≤ 0,2)`);
         if (!(Z.ohneWind < 0.5)) v.push(`BRAND-BLIND: ohne Wind läuft die Front bis ${Z.ohneWind} m/s`);
-        if (!(Z.asche >= 1) || !(Z.lebNach < Z.lebVor - 0.1)) v.push(`BRAND-ASCHE: ${Z.asche} Aschen, lebendig am Herd ${Z.lebVor} → ${Z.lebNach}`);
+        // die Asche senkt lebendig am Herd (auraAt, der Leser) — gemessen NETTO des Leben-Overlays, das derselbe Leser im selben
+        // Fenster trägt (Fraß und Tod des Bestands, kreatur-leben `_depositLife`): bis laub-messer schrieb die Linse jede Regung
+        // des Overlays der Asche zu — Vorprüfung 00520c2e (CI): 0,75 → 0,725 bei Asche 0,3 und Overlay −0,09 → +0,19; lokal
+        // dieselbe Asche bei Overlay −0,077 → +0,059 (Radeon-Laptop) und −0,08 → −0,03 (CPU zweifach gedrosselt)
+        const ov = [Z.ovVor || 0, Z.ovNach || 0];
+        const asche = +(Z.lebVor - ov[0] - (Z.lebNach - ov[1])).toFixed(3);
+        if (!(Z.asche >= 1) || !(asche > 0.1))
+            v.push(`BRAND-ASCHE: ${Z.asche} Aschen, lebendig am Herd ${Z.lebVor} → ${Z.lebNach} (Leben-Overlay ${ov[0]} → ${ov[1]}, die Asche senkt ${asche}, Soll > 0.1)`);
         if (!(Z.glut > 0) || !Z.licht) v.push(`BRAND-LESER: glut am Herd +${Z.glut}, Leuchtquelle ${Z.licht ? "da" : "fehlt"}`);
         if (Z.nachher.sims.brand.summe > 0) v.push(`BRAND-RUHE: nach dem Erlöschen arbeitet der Brand — ${Z.nachher.sims.brand.summe} Einheiten`);
     }

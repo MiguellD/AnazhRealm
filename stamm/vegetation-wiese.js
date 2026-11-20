@@ -60,6 +60,12 @@ class AnazhRealm_vegetation_wiese {
                     }
                 }
         }
+        return AnazhRealm._kronenLichtLeser(kronen);
+    }
+    // Der Leser des Bodenlichts über einer Liste von Kronen [x, z, 1/(σ·r)², …] — die EINE Formel des Labors für jedes Licht
+    // der Kronen (`_bodenLichtFeld` am Register, `_waldLichtFeld` am Plan).
+    static _kronenLichtLeser(kronen) {
+        const U = AnazhRealm.UNDERGROWTH;
         return (x, z) => {
             let deckung = 0;
             for (let i = 0; i < kronen.length; i += 3) {
@@ -70,6 +76,22 @@ class AnazhRealm_vegetation_wiese {
             }
             return Math.exp(-U.canopyK * deckung);
         };
+    }
+    // DAS LICHT DES PLANS (der Saum, laub-kante-4): dasselbe Bodenlicht unter den stehenden Darts des Wald-Gesetzes der Zellen
+    // [ga, gb] × [ha, hb] (`_forestCellDarts`, Krone T) — der Strauch-Teppich wird MIT dem Wald gepflanzt, vor dem Register
+    // seiner Kronen. Bis laub-kante-4 las er das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, eine Rausch-Deckung aus den
+    // Treibern, wo Bäume wachsen DÜRFEN): der Strauch stand in der Wiese wie im Wald, nie im Saum vor dem Trauf.
+    _waldLichtFeld(ga, ha, gb, hb, seedInt, geborenMerk) {
+        const U = AnazhRealm.UNDERGROWTH;
+        const kronen = [];
+        for (let gz = ha; gz <= hb; gz++)
+            for (let gx = ga; gx <= gb; gx++)
+                for (const d of this._forestCellDarts(gx, gz, seedInt, geborenMerk)) {
+                    if (!(d.T > 0)) continue;
+                    const s = U.kronenSigma * d.T;
+                    kronen.push(d.x, d.z, 1 / (s * s));
+                }
+        return AnazhRealm._kronenLichtLeser(kronen);
     }
 
     // Die Wiese ist Boden-Funktion: jede Gras-Zelle wird gras-los verbucht (null), die Halme zeichnet
@@ -2472,41 +2494,6 @@ class AnazhRealm_vegetation_wiese {
         return f < 0 ? 0 : f;
     }
 
-    // Das Kronenlicht-Feld der PLATZIERUNG, [0,1] (1 = Lichtung, →0 geschlossen): wo Kronen stehen DÜRFEN — der
-    // Strauch-Teppich des Chunk-Streuers liest es (er wird mit dem Wald gepflanzt, vor dessen Kronen); das Licht der
-    // STEHENDEN Kronen, das Nah-Wiese und Nah-Streu lesen, ist `_bodenLichtFeld`. Liest dieselben Treiber,
-    // aus denen der Wald gepflanzt wird (`_placementStandAt("forest")` × wet × Höhe), statt Baum-
-    // Positionen (der Wald streamt chunkweise); ohne Slope/Perf (Ökologie ist perf-unabhängig). Rein +
-    // seed-gebunden (Γ5); `wetHint` spart den `_feuchteAt`-Zweitaufruf.
-    _canopyLightAt(x, z, surfaceY, wetHint) {
-        const P = AnazhRealm.PLACEMENT_DENSITY;
-        const U = AnazhRealm.UNDERGROWTH;
-        const ss = (e0, e1, v) => {
-            let t = (v - e0) / (e1 - e0);
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            return t * t * (3 - 2 * t);
-        };
-        // Kronen-Deckung ≈ die P1-Wald-Dichte (DERSELBE forestStand × wet × Höhe wie
-        // `_placementDensityFactor("forest")`, aber ohne Slope/Perf).
-        const stand = typeof this._placementStandAt === "function" ? this._placementStandAt(x, z, "forest") : 0; // [-1,1]
-        const clump = Math.max(P.clumpLo, Math.min(P.clumpHi, 1 + P.clumpAmp * stand));
-        let wet = Number.isFinite(wetHint)
-            ? wetHint
-            : typeof this._feuchteAt === "function"
-              ? this._feuchteAt(x, z, surfaceY)
-              : 0;
-        wet = wet < 0 ? 0 : wet > 1 ? 1 : wet;
-        const wetF = P.wetBase + P.wetGain * wet;
-        const baseH = (this.state && this.state.terrainBaseHeight) || 0;
-        const relH = Number.isFinite(surfaceY) ? surfaceY - baseH : 0;
-        const highF = 1 - P.highAmp * ss(P.highLo, P.highHi, relH); // hoch → weniger Kronen → mehr Bodenlicht
-        // × der Wald-Anteil des Orts (die Tafel `ortGesetz(teil).wuchs`, wie `_placementDensityFactor`; die Heimat 1)
-        let cover = clump * wetF * highF * this._gelaende().ort.wuchs.wald;
-        if (cover < 0) cover = 0;
-        const L = Math.exp(-cover * U.canopyK);
-        return L < 0 ? 0 : L > 1 ? 1 : L;
-    }
-
     // ─── DER WALD-GENERATOR (die phytogenesis-plantForest-Ökologie, übersetzt) ───
     // Variabel-radius Poisson-Disc (Kronen-Schüchternheit) + Arten-Nische + reverse-J-Größe + bimodaler
     // Dichte-Gradient + Mammut-Nische. ZELL-DETERMINISTISCH statt globaler Poisson: jede FOREST.cell-Zelle
@@ -3222,13 +3209,15 @@ AnazhRealm.PLACEMENT_DENSITY = Object.freeze({
 
 // UNTERWUCHS: `canopyK` ist die EINE Dämpfung des Bodenlichts unter Kronen, L = exp(−canopyK · Deckung) (das Labor-
 // Gesetz phytogenesis `canopyLight`). Das Licht der STEHENDEN Kronen (`_bodenLichtFeld`: je Krone des Registers
-// exp(−d² / (kronenSigma · r)²) bis q < kronenQMax, wie das Labor) lesen Nah-Wiese und Nah-Streu; das Platzierungs-Feld
-// (`_canopyLightAt`, Deckung aus den Treibern der Baum-Platzierung) liest der Strauch-Teppich, der mit dem Wald
-// gepflanzt wird.
+// exp(−d² / (kronenSigma · r)²) bis q < kronenQMax, wie das Labor) lesen Nah-Wiese und Nah-Streu; dasselbe Licht am Plan
+// des Walds (`_waldLichtFeld`) liest der Strauch-Teppich, der mit dem Wald gepflanzt wird — der Saum vor dem Trauf.
+// saumZellen: so viele Wald-Zellen um seinen Chunk liest der Teppich (2 × 12 m: die Reichweite des Schattens 2,82 Kronen-
+// Radien einer Krone bis 8,5 m); der Pflanz-Gang wartet auf ihren Plan.
 AnazhRealm.UNDERGROWTH = Object.freeze({
     canopyK: 0.85, // exp(-cover·canopyK): Dach-Dämpfung des Bodenlichts (1=Lichtung, →0 dichtes Dach)
     kronenSigma: 1.15, // der Schatten einer Krone: Gauß-Breite in Kronen-Radien (Labor `cr = T · 1,15`)
     kronenQMax: 6, // bis q = d² / (σ·r)² < 6 wirft eine Krone Schatten (Labor) — Reichweite 2,82 Kronen-Radien
+    saumZellen: 2,
 });
 
 // Wald-Generator (unten, Vorlage `plantForest`): variabel-radius Poisson-Disc mit

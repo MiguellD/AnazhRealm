@@ -96,8 +96,8 @@
         // waldwissen, McMahon 1973; der Solitär hd · FREISTAND.hd): ihr Schirm misst im Kern 19–23 m bei 22–25 m Höhe, und ihr
         // Solitär trägt den kleineren (Fichte Same 3 9,7 m Radius gegen 11,5 im Bestand) — aus ihm folgte ein Stamm von über
         // einem Meter und ein Solitär, der schlanker ist als sein Bestand. Offen, bis die Krone der Konifere ihr Maß trägt.
-        // DER SOLITÄR (K20, `P.freistand`, FREISTAND unten): ein Baum im Offenen trägt seine Krone tief — der Schaft hebt sie
-        // nur bis zum Kronenansatz FREISTAND.ansatz (kein Hub auf die Bestandshöhe).
+        // DER SOLITÄR UND DER TRAUF (K20, `P.freistand`, FREISTAND unten): ein Baum mit Licht von der Seite trägt seine Krone
+        // tief — ihr tiefster Blatt-Anker bei FREISTAND.fuss seiner gewachsenen Höhe (kein Hub auf die Bestandshöhe).
         const weltMass = P.weltSkala > 0 && P.hoeheM > 0;
         const frei = weltMass && P.freistand === 1;
         const kroneTraegt = weltMass && !P.conifer;
@@ -113,6 +113,20 @@
                 : frei
                   ? (P.height / (P.hd * FREISTAND.hd) / 2) * (P.trunkMul || 1)
                   : (P.hoeheM / P.hd / 2 / P.weltSkala) * (P.trunkMul || 1);
+        // die Höhe, an der die Krone der Konifere ihr Maß nimmt (Vorlagen-Einheiten): im Welt-Maß die Höhe der Art, sonst die Form
+        const kegelHoehe = P.conifer
+            ? (weltMass ? P.hoeheM / P.weltSkala : P.height) * (frei ? KONIFERE_KEGEL.frei : 1)
+            : 0;
+        // DER AST AUS DEM KEGEL (laub-kante): ein Ast am Stamm der Konifere (der Quirl und die Seitenäste des ersten
+        // Stamm-Laufs) wächst so lang, dass er mit seinen Fortsetzungen (das Leit-Kind trägt `fAst` seiner Länge je Stufe: die
+        // Reihe 1 / (1 − fAst)) den Kegel seiner Art an seiner Höhe `uy` (Anteil der Form-Höhe) erreicht, quer zum Stamm unter
+        // dem Winkel `wb` — unten lang, zum Wipfel kurz; `koniferenKegel` stellt ihn danach genau an den Mantel.
+        const kegelAst = (uy, wb) => {
+            const fAst = lerp(0.72, 0.8, P.apical),
+                cb = P.crownBase || 0;
+            const reich = P.kroneAnteil * kegelHoehe * clamp((1 - uy) / Math.max(1e-3, 1 - cb), 0, 1);
+            return (reich * (1 - fAst)) / Math.max(0.2, Math.sin(wb));
+        };
 
         // DER SCHIRM KENNT KEINE KAPPE (w28-stamm-krone): `countCap` schneidet Detail (der gefühlte Baum der Werkstatt wächst mit
         // 3 600 · 600 · 90 Strängen), der Stamm aber trägt die Krone des GANZEN Wuchses. Ein Lauf über der Kappe wächst darum als
@@ -189,16 +203,7 @@
                             const wb = lerp(1.18, 0.62, uy);
                             let cd = vnorm(vadd(vscl(d, Math.cos(wb)), vscl(sd, Math.sin(wb))));
                             cd = vnorm(vadd(cd, [0, -(P.coniferDroop == null ? 0.22 : P.coniferDroop), 0]));
-                            grow(
-                                p2,
-                                cd,
-                                brad,
-                                P.height * lerp(0.15, 0.06, uy) * (P.barkType === "sequoia" ? 0.95 : 1.0),
-                                depth + 1,
-                                sw1,
-                                myRun,
-                                false
-                            );
+                            grow(p2, cd, brad, kegelAst(uy, wb), depth + 1, sw1, myRun, false);
                         }
                     }
                 }
@@ -318,13 +323,20 @@
                     len: length * lerp(0.72, 0.8, P.apical),
                     lead: true,
                 });
-                for (let i = 0; i < nW; i++)
+                for (let i = 0; i < nW; i++) {
+                    const bend = P.conifer ? lerp(1.0, 0.5, depth / P.maxDepth) : lerp(0.6, 1.15, distal);
                     children.push({
                         area: ((1 - f) * parentArea) / nW,
-                        bend: P.conifer ? lerp(1.0, 0.5, depth / P.maxDepth) : lerp(0.6, 1.15, distal),
-                        len: length * (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical) * seitenast),
+                        bend,
+                        // der Seitenast am Stamm der Konifere (Tiefe 0) ist ein Ast der Krone: sein Maß aus dem Kegel
+                        len:
+                            P.conifer && depth === 0
+                                ? kegelAst(clamp(tip[1] / P.height, 0, 1), bend)
+                                : length *
+                                  (P.conifer ? lerp(0.4, 0.52, P.apical) : lerp(0.55, 0.72, P.apical) * seitenast),
                         lead: false,
                     });
+                }
             } else if (lift) {
                 children.push({ area: parentArea, bend: 0.08, len: length * 0.82, lead: true });
             } else {
@@ -387,15 +399,32 @@
         }
         // DER HUB DES SCHAFTS reist mit (K20, das Welt-Maß): die Krone wuchs in der Form-Höhe, der Schaft trägt sie um `schaftHub`
         // (Vorlagen-Einheiten) höher — das Maß ihres Details (die Sichthöhe der SSE-Stufenwahl) ist die Höhe ohne ihn.
-        // Der Solitär trägt seinen kurzen Stamm (FREISTAND.ansatz): der Schaft hebt die Krone, bis ihr tiefster Blatt-Anker
-        // bei ansatz × Höhe steht (der Stamm misst die Höhe seines Wuchses, H/D bleibt unter dem Bestand).
+        // Der Solitär und der Baum am Trauf (FREISTAND.fuss): die Krone streckt sich lotrecht bis zum Wipfel seiner gewachsenen
+        // Höhe h0, ihr tiefster Blatt-Anker steht bei fuss · h0 — der Stamm bleibt kurz (das Seitenlicht hält die unteren Äste).
         // Der Bestand (T2) hebt Stamm UND Krone: die Krone reicht über BESTAND.krone der Höhe (kein Ballen auf dem Stiel).
         const hVor = schirmNur.length ? segs.reduce((h, q) => Math.max(h, q.p0[1], q.p1[1]), 0) : 0;
         const schaft = !weltMass
             ? 0
             : frei
-              ? schaftHub(segs, leaves, runMeta, 0, FREISTAND.ansatz, 0, P.alter > 0)
-              : schaftHub(segs, leaves, runMeta, P.hoeheM / P.weltSkala, 0, bestand ? BESTAND.krone : 0, P.alter > 0);
+              ? schaftHub(segs, leaves, runMeta, null, 0, P.alter > 0, FREISTAND.fuss[P.conifer ? "nadel" : "laub"])
+              : schaftHub(
+                    segs,
+                    leaves,
+                    runMeta,
+                    P.hoeheM / P.weltSkala,
+                    bestand || P.conifer ? BESTAND.krone : 0,
+                    P.alter > 0
+                );
+        // (die Konifere im Bestand trägt ihre Krone über BESTAND.krone der Höhe wie der Laubbaum — der Kronen-Ansatz folgt dem
+        // Stand: frei und am Trauf ab FREISTAND.fuss, im Bestand über BESTAND.krone; laub-kante)
+        if (P.conifer)
+            koniferenKegel(
+                segs,
+                leaves,
+                runMeta,
+                P.kroneAnteil * (frei ? KONIFERE_KEGEL.frei : 1),
+                P.whorlSpacing * P.height
+            );
         // DER STAMM AUS DER KRONE: der Radius des Stamms aus dem Schirm, den die Krone nach Wuchs und Hub spannt (vor dem
         // Blatt-Budget: jede Stufe misst dieselben Anker), jeder Strang reist mit seinem Anteil.
         // (die Anker über der Kappe wuchsen ohne den Hub: lotrecht ändert er den Schirm nicht, die Jugend wächst um den Fuß —
@@ -446,6 +475,105 @@
     // Gestalt 1 im Bestand und frei, acht Bäume aus fünf Arten): im Mittel +1,8 %, −3 bis +8 % (ohne das Blatt −16 %, mit
     // der ganzen Blatt-Größe +9 %). gate:pflanzen-nah (H) „Krone/BHD" hält das Ergebnis an der sichtbaren Krone im Band.
     const STAMM_KRONE = Object.freeze({ kd: 21.5, azimute: 8 });
+    // DER KEGEL DER KONIFERE (laub-kante, 18.11.): die Krone der Konifere trägt ihr Maß — jeder Ast (der Lauf am Stamm samt allem, was
+    // aus ihm wächst) steht im Kegel um die Stamm-Achse, der am Kronen-Fuß (dem tiefsten Ansatz eines Asts, nach dem Hub des Schafts)
+    // den Radius `anteil` · H trägt und am Wipfel der Nadeln (H, die Nadel-Masse — nie der kahle Leit-Trieb) spitz endet. `anteil`
+    // ist die Zeile der Art in der EINEN Kronen-Tafel des Pflanz-Gesetzes (FOREST_PACK.crown ÷ die Höhe der Größe 1, treeParams
+    // `kroneAnteil`) — derselbe Radius, mit dem der Wald seine Stämme stellt (`forestTooClose`): die Krone schließt im Bestand, weil
+    // Plan und Wuchs dieselbe Zahl lesen. Jeder Ast reicht um seinen Ansatz am Stamm bis an den Mantel: der Faktor, mit dem sein
+    // weitester Punkt oder Nadel-Anker den Mantel berührt — wer ihn durchstößt, wird gestaucht, seine Nadeln mit ihm (`scale`: der
+    // gestauchte Ast ist ein kleinerer Ast, seine Wedel-Karte folgt seinem Maß), wer vor ihm endet, gestreckt (die Reihe seiner
+    // Fortsetzungen bricht am kleinsten Ast der Form ab, `growSkeleton` `kegelAst`) — Gestalt, Verzweigung, Nadel-Zahl und
+    // Zufalls-Strom bleiben. Die Äste wachsen in Quirlen den Stamm hinab bis zum Kronen-Fuß, nach unten länger (der Kegel).
+    // Befund (Kern, Same 1–3, r/H der Nadel-Anker je Zehntel der Höhe): bis hier wuchs der Quirl-Ast als Rekursion des Laub-Asts
+    // (das Leit-Kind 0,72–0,8 seiner Länge je Stufe bis maxDepth) — der Schirm der Fichte maß r/H 0,42–0,51, der Tanne 0,30–0,46
+    // gegen ihre Tafel 0,105 / 0,110 (gate:pflanzen-nah (H) nahm die Konifere aus); aus dem Dorf stand jede Fichte und Tanne als
+    // runder Laub-Ballen vor dem Himmel (fimp:fichte:L2 kante 0,32, tanne 0,30). Ein Ast endet nie am Mantel (der Schnitt nahm der
+    // Fichte 83 % ihrer Nadeln: die Spitzen der Rekursion lagen jenseits). `frei`: der Solitär trägt die breitere Krone
+    // (UNGEPRÜFT, die Tafel kennt nur den Bestand).
+    const KONIFERE_KEGEL = Object.freeze({ frei: 1.4, streck: 2.5 });
+    function koniferenKegel(segs, leaves, runMeta, anteil, trieb) {
+        if (!(anteil > 0))
+            throw new Error("[phyto] der Kegel der Konifere: die Krone ihrer Art fehlt (kroneAnteil, KERN-PFLICHT)");
+        let H = 0;
+        for (const l of leaves) H = Math.max(H, l.pos[1]);
+        if (!(H > 0)) return;
+        // die Spitze des Kegels steht einen Jahrestrieb (`trieb`, der Quirl-Abstand) über der Nadel-Masse: der oberste Quirl trägt
+        // seine kurzen Äste (ein Kegel, der an der Nadel-Spitze endet, nahm ihnen jedes Maß — kahle Stange)
+        const Hk = H + (trieb > 0 ? trieb : 0);
+        const stamm = new Map();
+        const istStamm = (r) => {
+            if (r < 0) return true;
+            let v = stamm.get(r);
+            if (v === undefined) {
+                const m = runMeta[r];
+                v = !m || m.parentRun < 0 || (m.isLead && istStamm(m.parentRun));
+                stamm.set(r, v);
+            }
+            return v;
+        };
+        const astVon = (r) => {
+            while (r >= 0 && runMeta[r] && !istStamm(runMeta[r].parentRun)) r = runMeta[r].parentRun;
+            return r;
+        };
+        const aeste = new Map(); // Ast → { a: Ansatz, pkt: Set der Punkte (Arrays, je eines nur einmal) }
+        const ast = (r) => {
+            const w = astVon(r);
+            if (w < 0 || istStamm(w)) return null;
+            let A = aeste.get(w);
+            if (!A) aeste.set(w, (A = { a: null, pkt: new Set(), nadeln: [] }));
+            return A;
+        };
+        for (const s of segs) {
+            const A = ast(s.runId);
+            if (!A) continue;
+            if (!A.a && s.runId === astVon(s.runId)) A.a = s.p0.slice();
+            A.pkt.add(s.p0);
+            A.pkt.add(s.p1);
+        }
+        for (const l of leaves) {
+            const A = l.run == null ? null : ast(l.run);
+            if (A) {
+                A.pkt.add(l.pos);
+                A.nadeln.push(l);
+            }
+        }
+        let yFuss = H;
+        for (const A of aeste.values()) if (A.a && A.nadeln.length) yFuss = Math.min(yFuss, A.a[1]);
+        if (!(yFuss < H)) return;
+        const R = (y) => anteil * H * Math.min(1, Math.max(0, (Hk - y) / (Hk - yFuss)));
+        for (const A of aeste.values()) {
+            if (!A.a) continue;
+            const a = A.a;
+            const P = [...A.pkt];
+            const haelt = (f) =>
+                P.every((q) => {
+                    const x = a[0] + (q[0] - a[0]) * f,
+                        y = a[1] + (q[1] - a[1]) * f,
+                        z = a[2] + (q[2] - a[2]) * f;
+                    return Math.hypot(x - a[0], z - a[2]) <= R(y) + 1e-9; // um den Stamm an seinem Ansatz (der Leit-Trieb wankt)
+                });
+            // der Ast reicht bis an den Mantel: zu lang gestaucht, zu kurz gestreckt (höchstens `KONIFERE_KEGEL.streck`, die
+            // Reihe seiner Fortsetzungen endet am kleinsten Ast der Form vor ihrer Summe)
+            let lo = 0,
+                hi = 1;
+            if (haelt(1)) {
+                if (haelt(KONIFERE_KEGEL.streck)) lo = hi = KONIFERE_KEGEL.streck;
+                else ((lo = 1), (hi = KONIFERE_KEGEL.streck));
+            }
+            for (let i = 0; i < 12; i++) {
+                const m = (lo + hi) / 2;
+                if (haelt(m)) lo = m;
+                else hi = m;
+            }
+            for (const q of P) {
+                q[0] = a[0] + (q[0] - a[0]) * lo;
+                q[1] = a[1] + (q[1] - a[1]) * lo;
+                q[2] = a[2] + (q[2] - a[2]) * lo;
+            }
+            if (lo < 1) for (const l of A.nadeln) l.scale *= lo; // (gestreckt behält die Nadel ihr Maß, wie der Ast seine Stärke)
+        }
+    }
     function stammAusKrone(leaves, blattMass) {
         const N = STAMM_KRONE.azimute,
             ls = blattMass > 0 ? blattMass : 1;
@@ -2202,8 +2330,10 @@
     // wächst nur: ein Baum, dessen Wipfel schon höher steht, bleibt, wie er wuchs (ein gestauchter Schaft zog die Krone
     // in den Stamm-Abschnitt der Rinden-Linse). Punkte, die sich Stränge teilen, rücken genau einmal. Rückgabe: der Hub ziel − h0
     // (Vorlagen-Einheiten; 0, wo der Schaft nicht wächst).
-    // Mit `ansatz` (der Solitär, FREISTAND.ansatz) zielt der Hub statt auf eine Höhe auf den Kronenansatz: der tiefste
-    // Punkt der Krone (Ast-Ansatz oder hängendes Blatt, yk) steht danach bei ansatz × Höhe, (yk + dh) / (h0 + dh) = ansatz.
+    // Mit `ziel` null und `fuss` (der Solitär und der Trauf, FREISTAND.fuss) behält der Baum seine gewachsene Höhe h0, und die
+    // Krone streckt sich lotrecht über [kb, h0], bis ihr tiefster Punkt (Ast-Ansatz oder hängendes Blatt, yk) bei fuss · h0 steht:
+    // mit a = (yk − yb) / (h0 − yb) ist kb = (fuss · h0 − a · h0) / (1 − a) — der Stamm unter ihr wird kürzer (laub-kante-4,
+    // der Waldmantel; bis dahin hob der Ansatz die Krone nur und senkte sie nie).
     // Mit `krone` (der Bestand, BESTAND.krone) hebt der Hub Stamm UND Krone: der Ast-Ansatz yb steht danach bei (1 − krone) ×
     // ziel, der Stamm streckt sich bis dorthin, und die Krone [yb, h0] streckt sich lotrecht über [(1 − krone) · ziel, ziel] —
     // ein Bestandsbaum trägt seine Krone über den oberen Teil seiner Höhe, nie als Ballen auf dem Stiel (Spike T1). Dann
@@ -2218,7 +2348,7 @@
     // ganze Gestalt). Bis w12-riesenhalm hob der Hub das junge Skelett — weniger Ordnungen, die halbe Form-Höhe — auf die
     // Höhe des gewachsenen: je jünger, desto länger der kahle Schaft unter einer kleinen Krone (Kronen-Fuß der Tanne @0,06
     // bei 0,51 H, gewachsen 0,34 H; die Fichte 0,40 gegen 0,26) — aus dem Jungwuchs der Narbe ragten Riesenhalme.
-    function schaftHub(segs, leaves, runMeta, ziel, ansatz, krone, jung) {
+    function schaftHub(segs, leaves, runMeta, ziel, krone, jung, fuss) {
         let h0 = 0,
             yb = Infinity;
         const erst = new Set();
@@ -2230,10 +2360,9 @@
             if (m && m.parentRun === 0) yb = Math.min(yb, s.p0[1]);
         }
         if (!(yb > 1e-6) || !(h0 > yb)) return 0;
-        let yk = yb;
-        if (ansatz > 0) for (const l of leaves) yk = Math.min(yk, l.pos[1]);
-        const dh = ansatz > 0 && ansatz < 1 ? (ansatz * h0 - yk) / (1 - ansatz) : ziel - h0;
-        if (!(dh > 0)) return 0;
+        const dh = ziel === null ? 0 : ziel - h0;
+        const frei = ziel === null && fuss > 0 && fuss < 1;
+        if (!(dh > 0) && !frei) return 0;
         if (jung) {
             const [k, gewachsen] = [(h0 + dh) / h0, new Set()];
             const wachse = (q) => gewachsen.has(q) || (gewachsen.add(q), (q[0] *= k), (q[1] *= k), (q[2] *= k));
@@ -2242,7 +2371,13 @@
             return 0;
         }
         const streck = (yb + dh) / yb;
-        const kb = krone > 0 && !(ansatz > 0) ? (1 - krone) * (h0 + dh) : 0;
+        let kb = krone > 0 ? (1 - krone) * (h0 + dh) : 0;
+        if (frei) {
+            let yk = yb;
+            for (const l of leaves) yk = Math.min(yk, l.pos[1]);
+            const a = (yk - yb) / (h0 - yb);
+            kb = Math.max(1e-3 * h0, (fuss * h0 - a * h0) / (1 - a));
+        }
         const kStreck = kb > 0 ? (h0 + dh - kb) / (h0 - yb) : 0;
         const laenge = (q) => Math.hypot(q.p1[0] - q.p0[0], q.p1[1] - q.p0[1], q.p1[2] - q.p0[2]);
         const vorher = segs.map((q) => (q.runId === 0 ? laenge(q) : 0));
@@ -2346,7 +2481,10 @@
             barkB: bc[1],
             leafCol: LC[barkType],
             coniferDroop: isCon ? clamp(0.13 + trop * 0.25, 0.05, 0.5) : undefined,
-            whorlSpacing: isCon ? lerp(0.1, 0.15, 1 - leaf) : undefined,
+            // der Quirl-Abstand (Anteil der Form-Höhe): Fichte 0,0395 · Tanne 0,0385 → ~1 m im Welt-Maß, ein Quirl je zwei bis drei
+            // Jahrestrieben (Picea abies / Abies alba im Altbestand 0,3–0,5 m je Jahr; UNGEPRÜFT je Art) — bis laub-kante
+            // 0,10–0,15 (2,9 m, sieben Quirle je Baum: im Kegel standen sie als Büschel am kahlen Stamm)
+            whorlSpacing: isCon ? lerp(0.035, 0.05, 1 - leaf) : undefined,
             crownBase: isCon
                 ? lerp(0.1, 0.48, clamp((0.55 - slim) / 0.45, 0, 1))
                 : isShrub
@@ -2437,6 +2575,14 @@
     // ihr Solitär (`solitaerGestalt`) und wächst frei, für jeden Leser derselbe Baum: Bühne, Werk und Wald des Studios, die
     // Welt, ihr Bäcker der Karte und der gefühlte Baum (bis w12-eiche-same prägte ihn der Wirt, die Bühne nie: die Eiche
     // Same 3 stand im Studio als Bestand, in der Welt als Solitär). Ohne `gestalten` kein Solitär, byte-gleich.
+    function konifereKroneAnteil(ph) {
+        const r = ph.krone && FOREST_PACK.crown[ph.krone];
+        if (!(r > 0) || !(ph.hoeheM > 0))
+            throw new Error(
+                `[phyto] die Konifere trägt keine Zeile der Kronen-Tafel (ph.krone ${ph.krone}, hoeheM ${ph.hoeheM})`
+            );
+        return r / ph.hoeheM;
+    }
     function treeParams(dials, seedInt, stufe, art, weltSkala, alter, gestalten) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
         const lerp = (a, b, t) => a + (b - a) * t;
@@ -2487,6 +2633,10 @@
             coniferDroop: ph.coniferDroop,
             crownBase: ph.crownBase,
             whorlSpacing: ph.whorlSpacing,
+            // DIE KRONE DER KONIFERE (laub-kante): ihr Radius am Kronen-Fuß als Anteil der Höhe — die Zeile ihrer Art (`ph.krone`)
+            // in der EINEN Kronen-Tafel FOREST_PACK.crown (m, Größe 1) durch die Höhe der Größe 1 (`ph.hoeheM`); growSkeleton
+            // `koniferenKegel` stellt jeden Ast in diesen Kegel. Eine Konifere ohne ihre Zeile bricht laut (KERN-PFLICHT).
+            kroneAnteil: ph.conifer ? konifereKroneAnteil(ph) : undefined,
             flare: ph.flare,
             // Das Totholz trägt seine L1 mit den Wurzeln seiner L0 (w28-nadel-stufe, lod.K5): ohne Krone ist der Fuß die halbe
             // Silhouette — vier dickere Wurzeln statt fünf standen am Haushalt 12 m über einen Bildpunkt neben der L0.
@@ -2721,15 +2871,37 @@
     // DER SOLITÄR (K20, nordstern §4.5: „Solitär gedrungener", Solitäreiche Marbach): der frei stehende Laubbaum trägt den
     // dicken Stamm seines breiten Schirms (STAMM_KRONE, w28-stamm-krone); die Schlankheit einer frei stehenden Konifere ist
     // hd · FREISTAND.hd ihrer Art im Bestand (Fichte 70 → 31,5; Bestand H/D 40–100) — growSkeleton liest `P.freistand`.
-    // Frei steht ein Baum, wenn kein stehender Nachbar näher ist als FREISTAND.abstand × die Summe der Kronen (der Wirt,
-    // `_forestStehtFrei`): Lichtkonkurrenz reicht über die Kronen-Berührung (pack 1,16) hinaus, ab dem Doppelten fehlt sie.
-    // ansatz: der tiefste Blatt-Anker des Solitärs bei 0,3 × Höhe, die Karten hängen darunter: die sichtbare Krone beginnt
-    // bei 0,15–0,2 der Höhe (Marbach: kurzer dicker Stamm unter der Krone — ohne ihn
-    // stand die Krone als Busch auf dem Boden, Blick-Sonde 12.10.).
+    // DER WALDMANTEL (laub-kante-4): frei steht ein Baum, der Licht von der Seite hat — die Richtungen seiner stehenden
+    // Nachbarn näher als FREISTAND.abstand × die Summe der Kronen (der Wirt, `_forestStehtFrei`; Lichtkonkurrenz reicht über
+    // die Kronen-Berührung, pack 1,16, hinaus, ab dem Doppelten fehlt sie) lassen eine Lücke von mindestens FREISTAND.seite
+    // (`forestSeitenlicht`). Der Solitär (kein Nachbar, Lücke 2π) und der Baum am Trauf (der Bestand auf einer Seite, offen
+    // zur anderen ≥ 120°) sind EIN Fall: das Seitenlicht hält die unteren Äste. Im Innern (Nachbarn ringsum, die größte
+    // Lücke < 120°) trägt er den kahlen Schaft des Bestands. Bis laub-kante-4 machte JEDER Nachbar den Baum zum Bestand:
+    // der Trauf stand mit kahlen Stämmen zur Wiese (Tafel-Pose, laub-kante Spielgang 6 rote Klassen).
+    // fuss: der tiefste Blatt-Anker des freien Baums je Laub und Nadel als Anteil seiner Höhe — die Karten des Laubs hängen
+    // tiefer als die Nadel-Quirle: der sichtbare Kronen-Fuß (L0, gate:pflanzen-nah) Buche 0,10 · Eiche 0,12 · Birke 0,18 ·
+    // Fichte 0,10 (Marbach: kurzer dicker Stamm unter der tiefen Krone; ohne ihn stand die Krone als Busch auf dem Boden,
+    // Blick-Sonde 12.10.). Bis laub-kante-4 hob der Ansatz 0,3 die Krone nur und senkte sie nie: die freie Fichte trug 0,28.
     // ab: die Gestalt des Solitärs (`solitaerGestalt`) — eine Baum-Art mit mindestens `ab` Bestand-Gestalten
     // (budget.gestalten, die Massen-Arten des Walds) trägt DAZU ihren Solitär als Gestalt V+1: der Bestand behält alle
     // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
-    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, ansatz: 0.3, ab: 2 });
+    const FREISTAND = Object.freeze({
+        hd: 0.45,
+        abstand: 2,
+        fuss: Object.freeze({ laub: 0.32, nadel: 0.12 }),
+        seite: (2 * Math.PI) / 3,
+        ab: 2,
+    });
+    // DAS SEITENLICHT (der Waldmantel): die größte Lücke (rad) zwischen den Richtungen `winkel` (rad, je stehendem Nachbarn)
+    // rund um den Baum — ohne Nachbarn 2π. Rein; der EINE Leser des Freistands (`_forestStehtFrei`, gate:fernwald H).
+    function forestSeitenlicht(winkel) {
+        const n = winkel.length;
+        if (!n) return 2 * Math.PI;
+        const w = Array.from(winkel, (a) => a - 2 * Math.PI * Math.floor(a / (2 * Math.PI))).sort((a, b) => a - b);
+        let gap = w[0] + 2 * Math.PI - w[n - 1];
+        for (let i = 1; i < n; i++) gap = Math.max(gap, w[i] - w[i - 1]);
+        return gap;
+    }
     // DER BESTAND (T2, 16.10., nordstern §4.5 „hohe, schlanke Stämme im Bestand, breite Solitäre im Offenen"): ein Laubbaum,
     // der im Bestand steht (Welt-Maß, nicht frei, keine Konifere, keine Solitär-Art — Weide und Karst tragen `ph.solitaer`,
     // `bestandArt` ist der EINE Leser), wächst seine Seitenäste × BESTAND.seitenast (der
@@ -2937,8 +3109,12 @@
     // DIE KRONEN-DECKUNG DES GEPFLANZTEN BESTANDS (K16, die Naht): der Anteil des Bodens unter Kronen, den planForestCell samt der
     // Kronen-Schüchternheit des Hosts im Mittel stehen lässt — die Fernform des Waldes (das Kronendach des Rings) liest diese
     // Zahl, nie die Geburt. Die Geburt ist die Rate der Darts (F.dartsPerCell je F.cell², Wurf gegen forestGeburt(sd)); die
-    // Schüchternheit (Zentren >= F.pack·(Ti+Tj), das prio-Maximum gewinnt) ist ein Matérn-II-Prozess: ein Dart der Krone T steht
-    // mit (1 − e^(−λA))/(λA), A = π·pack²·E[(T+Tj)²]; seine Krone überlappt keine andere, die Deckung ist die Summe ihrer Flächen.
+    // Selbst-Ausdünnung (`forestSteht`: es stirbt, wen ein STEHENDER besserer Nachbar näher als pack·Schluss·(Ti+Tj) überwächst)
+    // ist ein Matérn-III-Prozess: die Stehenden einer Krone T wachsen mit der Geburt t ∈ [0, 1] wie dρ/dt = λ·e^(−ρA) (die
+    // Stehenden um einen Dart als Poisson-Feld genähert), ρ = ln(1 + λA)/A, A = π·(pack·Schluss)²·E[(T+Tj)²]; die Kronen greifen
+    // im Schluss ineinander, die Deckung ist die Vereinigung ihrer Flächen Σ: 1 − e^(−Σ). Genähert (flach, Stand −0,2…0,8,
+    // gepflanzt gegen Modell): 0 / 0 · 0,32 / 0,38 · 0,48 / 0,53 · 0,77 / 0,70 · 0,83 / 0,73 — UNSICHER ±0,1. Bis w28-laub-kante
+    // (Matérn II, (1 − e^(−λA))/A, die Summe der Flächen) sättigte das Modell wie der Wald bei 1/A.
     // Die Kronen: T = Art-Krone × Größe (forestTreeSize über ihre Quantile samt der Überhälter). Befund 11.10.: das Dach las die
     // Geburt (0,90) als Deckung, der gepflanzte Bestand deckt 0,16 — die Ferne stand als geschlossenes Grün vor offenem Wald.
     // kronen = [[Gewicht, Kronen-Radius bei Größe 1], …] (die Arten-Mischung am Ort); F = { cell, dartsPerCell, pack }.
@@ -2960,15 +3136,17 @@
     const _deckWert = new Float64Array(_deckNQ + _deckNU); // die geklemmte Größe je Stufe (je Ruf aus sd)
     const _deckFaktor = new Float64Array(_deckNQ + _deckNU); // der Matérn-Faktor je Stufe (je Art)
     const _deckHat = new Uint8Array(_deckNQ + _deckNU);
-    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort, wald) {
+    function forestKronenDeckung(sd, geburt, kronen, F, st, schnee, ort, wald, hang) {
         // der Bestand am Standort (FOREST_PACK.bestand, `st` der Stand): Lichtung und Schluss wie in planForestCell / forestSteht;
         // die Waldgrenze im Schnee des Sommers und im Klima des Orts (`forestWaldgrenze`, `schnee` der Anteil des Gelände-Kerns zur
         // Sommer-Mitte, `wald` der Wald-Anteil seines Ort-Gesetzes); der Saum am Siedlungsrand (`forestOrt`, `ort` der Abstand
-        // jenseits des nächsten Rands, `forestOrtAbstand`)
+        // jenseits des nächsten Rands, `forestOrtAbstand`; `hang` die Steilheit, über der Pflug-Grenze rodet der Ort nicht)
         const schluss = forestSchluss(st);
-        const g = geburt * forestLichtung(st) * forestWaldgrenze(schnee, wald) * forestOrt(ort);
+        // die Lichtung nimmt NACH der Selbst-Ausdünnung (`gelichtet`, planForestCell): die Stämme des gedünnten Bestands × Lichtung
+        const g = geburt * forestWaldgrenze(schnee, wald) * forestOrt(ort, hang);
+        const licht = forestLichtung(st);
         const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (g > 0 ? g : 0);
-        if (!(lambda > 0) || !kronen || !kronen.length) return 0;
+        if (!(lambda > 0) || !(licht > 0) || !kronen || !kronen.length) return 0;
         let wSumme = 0;
         for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
         if (!(wSumme > 0)) return 0;
@@ -3012,13 +3190,13 @@
                 const t = kronen[k][1] * V[st];
                 if (!H[st]) {
                     const A = Math.PI * F.pack * F.pack * schluss * schluss * (t * t + 2 * t * mT + mT2);
-                    Q[st] = (1 - Math.exp(-lambda * A)) / A;
+                    Q[st] = Math.log1p(lambda * A) / A;
                     H[st] = 1;
                 }
                 deckung += w * _deckAnteil[g] * Math.PI * t * t * Q[st];
             }
         }
-        return deckung > 1 ? 1 : deckung;
+        return 1 - Math.exp(-licht * deckung);
     }
 
     // DIE NISCHE EINES ORTS (EINE Formel für den gepflanzten und den fernen Wald): Klima, Bestands-Mosaik, Feuchte,
@@ -3179,6 +3357,10 @@
         // Standort wie in der Ertragstafel (BWI 4). Bis hierher sättigte Matérn II bei fester Packung: 36–48 Stämme/ha bei
         // jeder Dichte, das Dach deckte 0,16, die Mess-Wiese war ein Loch des Zufalls. Gemessen (flach, 3 600 Zellen, Stand-Bänder
         // < −0,1 · −0,1–0,15 · 0,15–0,4 · ≥ 0,4): 1 · 61 · 131 · 349 Stämme/ha; Mess-Wiese Kronen-Deckung 0,108 → 0,116 (≤ 0,12).
+        // Das Urteil blieb Matérn II (der Tote nahm dem Nachbarn den Stand): flach, Stand 0,5, Dach 107 + Schicht 58 Stämme/ha,
+        // Deckung 0,43. Mit der Selbst-Ausdünnung (`forestSteht`, w28-laub-kante; flach, Stand 0,5 / 0,8): Dach 261 / 296 + Schicht
+        // 123 / 168 = 384 / 464 Stämme/ha, Kronen-Deckung 0,77 / 0,83 — im Band der REF 370–900; Stand 0 – 0,3 (Lichtungs-Saum)
+        // 0,32–0,48, die Lichtung selbst (Stand < −0,1) 0.
         // DIE WALDGRENZE (`forestWaldgrenze`): `waldgrenze` ist der Schnee-Anteil des Sommers, ab dem kein Baum mehr geboren wird —
         // darunter die Kampfzone (die Geburt fällt glatt von 1 bei 0). Der Wald endet unter dem Schnee, nie in ihm: wo ein
         // Zehntel des Sommer-Bodens Schnee trägt, ist die Vegetationszeit zu kurz für Holz (Körner 2012, Alpine Treelines: die
@@ -3188,7 +3370,18 @@
         // eines Orts (m) — innen kein Baum, über die Tiefe steigt die Geburt glatt auf ihren Bestand (Krautsaum 5–10 m,
         // Strauchgürtel ≥ 5 m, Waldmantel 15–20 m; das ganze Profil 25–40 m: WWF Schweiz 2012, Naturschutzbund AT 2017, Bio
         // Austria 2023).
-        bestand: { lichtung: [-0.1, 0.15], schluss: [0.15, 0.6], min: 0.6, waldgrenze: 0.1, saum: 40 },
+        // DIE RODUNG DES ORTS (`forestOrt`, der Hangwald): `rodung` ist die Neigung (|∇h|), über die der Ort sein Land vom Acker
+        // bis zur Weide rodet — darunter voll gerodet, darüber Wald. 0,36 die Pflug-Grenze (die Hang-Stufe 35 % der Schweizer
+        // Direktzahlungsverordnung DZV Art. 43, ab der Ackerbau mit dem Gespann endet; GEWÄHLT innerhalb 0,27–0,36), 0,58 die
+        // Weide-Grenze (~30°, GEWÄHLT; die Steillagen-Stufe 50 % der DZV mäht noch, über 30° beweidet nur noch Kleinvieh).
+        bestand: {
+            lichtung: [-0.1, 0.15],
+            schluss: [0.15, 0.6],
+            min: 0.6,
+            waldgrenze: 0.1,
+            saum: 40,
+            rodung: [0.36, 0.58],
+        },
     };
     function forestLichtung(st) {
         const B = FOREST_PACK.bestand;
@@ -3229,12 +3422,27 @@
     // Infinity, `forestOrtAbstand`), die Geburt steigt glatt von 0 am Rand auf 1 in der Tiefe des Saums. Ohne Ort (∞) und
     // jenseits des Saums ist der Wald byte-gleich. Bis hierher wuchs der geschlossene Bestand bis an die Höfe: die Dorf-Pose
     // stand 21 m hinter dem Rand im Bestand mit Unterstand (Bildzeit im CPU-Raster 7 964 ms gegen main 3 965).
-    function forestOrt(d) {
+    // DER HANGWALD (w28-laub-kante): ein Dorf rodet, was es bebauen oder beackern kann — `hang` ist die Steilheit des Bodens
+    // (|∇h|, derselbe Leser wie die Hang-Regel der Geburt); jenseits der beackerbaren Neigung (`bestand.rodung`) rodet der Ort
+    // seinen Saum nicht, der Bestand steht als Hang- und Bannwald bis an seinen Rand. Die Rodung (1 − Saum) fällt glatt mit der
+    // Neigung; unter der Pflug-Grenze ist jeder Wurf, wie er war.
+    // DER GRUND DES ORTS (laub-kante, Bildpaar paar4): drinnen (`d` < 0, die Reichweite des Ort-Gesetzes, fachwerk
+    // `siedlungsReich`) liegt sein Land — Platz, Gassen, Lose, Höfe; dort wächst kein Baum, wie steil es auch ist. Bis hier hob
+    // die Neigung die Rodung auch drinnen auf: am Dorf standen Fichte, Tanne, Eiche binnen 5–24 m der Dorf-Pose auf Platz und
+    // Gasse (18 L0-Bäume, 130 k Dreiecke; Vordergrund der Probe bild:dorf 0,254 > 0,25), main trug dort 0.
+    function forestOrt(d, hang) {
         if (typeof d !== "number" || Number.isNaN(d))
             throw new Error("phyto-core forestOrt: der Abstand zum Siedlungsrand fehlt (KERN-PFLICHT)");
-        let t = d / FOREST_PACK.bestand.saum;
-        t = t < 0 ? 0 : t > 1 ? 1 : t;
-        return t * t * (3 - 2 * t);
+        if (!Number.isFinite(hang))
+            throw new Error("phyto-core forestOrt: die Steilheit des Bodens fehlt (KERN-PFLICHT)");
+        if (d < 0) return 0;
+        const B = FOREST_PACK.bestand;
+        let t = d / B.saum;
+        t = t > 1 ? 1 : t;
+        const saum = t * t * (3 - 2 * t);
+        let h = (hang - B.rodung[0]) / (B.rodung[1] - B.rodung[0]);
+        h = h < 0 ? 0 : h > 1 ? 1 : h;
+        return saum + (1 - saum) * h * h * (3 - 2 * h);
     }
     // Der Abstand von (x, z) jenseits des nächsten Siedlungsrands: `raender` je Ort [x, z, rand] (die Mitte seines Plans und
     // seine Reichweite, m) — der Wirt legt sie mit dem Erdbau des Orts (`_ortRaender`), der Faden trägt dieselbe Liste.
@@ -3341,10 +3549,10 @@
     }
 
     // DAS URTEIL DER KRONEN-SCHÜCHTERNHEIT (Host-Topologie "cell", w4-b-pflanzen): ein geborener Dart `d` der Zelle (gx, gz)
-    // steht, wenn KEIN besserer geborener Dart (`forestPrioWins`) der Zellen ±2 ihm zu nah ist (`forestTooClose`, Packung `pk`).
-    // Rein: eine Funktion des Darts und der geborenen Darts seiner Nachbarn (`geboren(cx, cz)` → die Darts von `planForestCell`),
-    // reihenfolge-frei (die Antwort ist eine Existenz-Frage). DIE REIHE (`FOREST_URTEIL_REIHE`): die eigene Zelle, dann Ring 1,
-    // dann Ring 2 — ein Verlierer fällt fast immer am ersten Nachbarn. Die EINE Quelle des Urteils für den Wald-Faden (der
+    // steht, wenn KEIN STEHENDER besserer Dart (`forestPrioWins`) der Zellen ±2 ihm zu nah ist (`forestTooClose`, Packung `pk`;
+    // die Selbst-Ausdünnung unten). Rein: eine Funktion der geborenen Darts seiner Zelle und ihrer Nachbarn (`geboren(cx, cz)` →
+    // die Darts von `planForestCell`), reihenfolge-frei. DIE REIHE (`FOREST_URTEIL_REIHE`): die eigene Zelle, dann Ring 1,
+    // dann Ring 2 — das Fenster des Urteils. Die EINE Quelle des Urteils für den Wald-Faden (der
     // Bestand je Zelle, voxel-worker `waldDarts`) und den Wirt ohne Faden; bis w4-b-pflanzen urteilte der Haupt-Faden jeden
     // geborenen Dart selbst (`_forestDartSteht`): headless kalt bis zum Bild 58 398 Urteile über 58 562 entpackte Darts.
     const FOREST_URTEIL_REIHE = Object.freeze(
@@ -3357,21 +3565,147 @@
     // des Dachs ±2 (FOREST_URTEIL_REIHE), der Schirm des Unterstands ±1 darüber (`forestSchicht`). Der Wirt plant und lädt sie
     // (stamm WALD_PLAN.urteil).
     const FOREST_URTEIL_REICH = 3;
-    function forestSteht(d, gx, gz, geboren, pk) {
-        const R = FOREST_URTEIL_REIHE;
-        for (let q = 0; q < R.length; q += 2) {
-            const nb = geboren(gx + R[q], gz + R[q + 1]);
-            for (let k = 0; k < nb.length; k++) {
-                const o = nb[k];
-                if (o === d) continue;
-                if (
-                    forestTooClose(d.x - o.x, d.z - o.z, d.T, o.T, pk * Math.min(d.schluss, o.schluss)) &&
-                    forestPrioWins(o, d)
-                )
-                    return false;
-            }
+    // DIE SELBST-AUSDÜNNUNG (w28-laub-kante): es stirbt, wen ein LEBENDER Nachbar überwächst — ein geborener Dart steht, wenn kein
+    // STEHENDER besserer Dart ihm zu nah ist (Matérn III; die Konkurrenz im Bestand geht von lebenden Kronen aus: Yoda et al. 1963,
+    // die −3/2-Regel der Selbst-Ausdünnung; Kenkel 1988, Ecology 69: die Überlebenden eines Bestands stehen regelmäßig, ihr Abstand
+    // folgt der Krone des Nachbarn). Bis hier urteilte der Wald Matérn II: auch ein Dart, der selbst fiel, nahm jedem schwächeren
+    // Nachbarn den Stand — der Bestand sättigte bei 1/A, wie viele Darts die Geburt auch stellte (flach, Stand 0,5: 2 256 geborene
+    // Darts/ha → 107 Stämme/ha im Dach, Kronen-Deckung 0,41; der Dorf-Hang 0,15). Gerechnet in der Reihe des Vorrangs
+    // (`forestPrioWins`) über die geborenen Darts des Fensters der EIGENEN Zelle (±2, `FOREST_URTEIL_REIHE`): rein und
+    // reihenfolge-frei — das Urteil eines Darts ist eine Funktion seiner Zelle und ihrer Nachbarn, jeder Leser (Wald-Faden, Wirt,
+    // Kamm) rechnet dasselbe. Das Fenster merkt `_fensterMemo` je Zelle, gültig, solange jede ihrer 25 Nachbar-Listen dieselbe ist.
+    const _fensterMemo = typeof WeakMap === "function" ? new WeakMap() : null;
+    // DER GANG DES URTEILS (die Wurzel der Kosten): das Urteil eines Darts der eigenen Zelle fragt nur, was es braucht — ein
+    // Dart steht, wenn kein besserer (`forestPrioWins`) STEHENDER Dart des Fensters ihm näher ist als (T + T') · pk · min(Schluss);
+    // ob der bessere steht, fragt derselbe Gang (gemerkt je Fenster), bis der Beste der Kette ohne Besseren in Reichweite steht.
+    // Dasselbe Urteil wie die Reihe des Vorrangs über alle Darts des Fensters, Wort für Wort — ohne sie zu sortieren und ohne die
+    // Darts zu urteilen, die keinen Dart der eigenen Zelle erreichen (bis hier je Zelle alle ~900 Darts des Fensters sortiert
+    // und geurteilt: 0,43 ms je Zelle). Die Nachbarn eines Darts: die Fächer (`FENSTER_FACH` m) der Zellen des Fensters, je Liste
+    // der Geburt EINMAL gelegt (`zellFaecher`) mit Kasten, größter Krone und größtem Schluss — ein Fach zählt, wenn es in der
+    // Reichweite pk · min(Schluss, seinem) · (T + seiner größten Krone) liegt.
+    const FENSTER_FACH = 4;
+    const _zellFaecher = typeof WeakMap === "function" ? new WeakMap() : null;
+    function zellFaecher(a) {
+        let f = _zellFaecher ? _zellFaecher.get(a) : undefined;
+        if (f) return f;
+        const B = FENSTER_FACH;
+        let x0 = Infinity;
+        let z0 = Infinity;
+        let x1 = -Infinity;
+        let z1 = -Infinity;
+        for (let i = 0; i < a.length; i++) {
+            const d = a[i];
+            if (d.x < x0) x0 = d.x;
+            if (d.z < z0) z0 = d.z;
+            if (d.x > x1) x1 = d.x;
+            if (d.z > z1) z1 = d.z;
         }
-        return true;
+        const nx = a.length ? Math.floor((x1 - x0) / B) + 1 : 0;
+        const nz = a.length ? Math.floor((z1 - z0) / B) + 1 : 0;
+        const fach = [];
+        const idx = new Array(nx * nz);
+        for (let i = 0; i < a.length; i++) {
+            const d = a[i];
+            const q = Math.floor((d.x - x0) / B) * nz + Math.floor((d.z - z0) / B);
+            let e = idx[q];
+            if (!e) {
+                e = idx[q] = { x0: d.x, z0: d.z, x1: d.x, z1: d.z, tMax: 0, sMax: 0, d: [], i: [], w: null };
+                fach.push(e);
+            }
+            e.d.push(d);
+            e.i.push(i);
+            if (d.x < e.x0) e.x0 = d.x;
+            if (d.z < e.z0) e.z0 = d.z;
+            if (d.x > e.x1) e.x1 = d.x;
+            if (d.z > e.z1) e.z1 = d.z;
+            if (d.T > e.tMax) e.tMax = d.T;
+            if (d.schluss > e.sMax) e.sMax = d.schluss;
+        }
+        f = { x0, z0, x1, z1, tMax: 0, sMax: 0, fach };
+        for (const e of fach) {
+            // das Fach in der Reihe des Vorrangs (der Beste zuerst), gepackt: je Dart x, z, T, Schluss, Vorrang und sein Platz
+            const o = e.i
+                .map((_, k) => k)
+                .sort((p, q) => (forestPrioWins(e.d[p], e.d[q]) ? -1 : forestPrioWins(e.d[q], e.d[p]) ? 1 : 0));
+            e.d = o.map((k) => e.d[k]);
+            e.i = Int32Array.from(o, (k) => e.i[k]);
+            e.w = new Float64Array(o.length * 5);
+            for (let k = 0; k < o.length; k++) {
+                const d = e.d[k];
+                e.w.set([d.x, d.z, d.T, d.schluss, d.prio], k * 5);
+            }
+            if (e.tMax > f.tMax) f.tMax = e.tMax;
+            if (e.sMax > f.sMax) f.sMax = e.sMax;
+        }
+        if (_zellFaecher) _zellFaecher.set(a, f);
+        return f;
+    }
+    function forestDachFenster(gx, gz, geboren, pk) {
+        const R = FOREST_URTEIL_REIHE;
+        const nN = R.length >> 1;
+        const own = geboren(gx, gz);
+        const nb = new Array(nN);
+        for (let q = 0; q < R.length; q += 2) nb[q >> 1] = geboren(gx + R[q], gz + R[q + 1]);
+        const m = _fensterMemo ? _fensterMemo.get(own) : undefined;
+        if (m && m.pk === pk) {
+            let gleich = true;
+            for (let i = 0; i < nN && gleich; i++) gleich = m.nb[i] === nb[i];
+            if (gleich) return m.steht;
+        }
+        const FA = new Array(nN);
+        for (let i = 0; i < nN; i++) FA[i] = zellFaecher(nb[i]);
+        // das Urteil je Dart, gemerkt im Fenster (je Zelle ein Feld in der Reihe ihrer Geburt: 0 offen, 1 steht, 2 fällt)
+        const U = new Array(nN);
+        const urteile = (c, i) => {
+            let u = U[c];
+            if (!u) u = U[c] = new Uint8Array(nb[c].length);
+            if (u[i]) return u[i] === 1;
+            const d = nb[c][i];
+            const dx = d.x;
+            const dz = d.z;
+            const dT = d.T;
+            const ds = d.schluss;
+            const dp = d.prio;
+            let v = true;
+            // die eigene Zelle zuerst (dort steht meist der Nachbar, der den Dart überwächst), dann die übrigen des Fensters
+            for (let w = -1; w < nN && v; w++) {
+                const cc = w < 0 ? c : w;
+                if (w === c) continue;
+                const k = FA[cc];
+                const rc = pk * (ds < k.sMax ? ds : k.sMax) * (dT + k.tMax);
+                if (dx + rc < k.x0 || dx - rc > k.x1 || dz + rc < k.z0 || dz - rc > k.z1) continue;
+                for (let e = 0; e < k.fach.length && v; e++) {
+                    const f = k.fach[e];
+                    const r = pk * (ds < f.sMax ? ds : f.sMax) * (dT + f.tMax);
+                    if (dx + r < f.x0 || dx - r > f.x1 || dz + r < f.z0 || dz - r > f.z1) continue;
+                    const W = f.w;
+                    for (let j = 0, n = f.i.length; j < n; j++) {
+                        const ox = W[j * 5];
+                        const oz = W[j * 5 + 1];
+                        const op = W[j * 5 + 4];
+                        // das Fach steht in der Reihe des Vorrangs (`forestPrioWins`): ab dem ersten Schwächeren nur Schwächere
+                        if (!(op > dp || (op === dp && (ox > dx || (ox === dx && oz > dz))))) break;
+                        const os = W[j * 5 + 3];
+                        const md = (dT + W[j * 5 + 2]) * pk * (ds < os ? ds : os);
+                        const ex = dx - ox;
+                        const ez = dz - oz;
+                        if (ex * ex + ez * ez < md * md && urteile(cc, f.i[j])) {
+                            v = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            u[i] = v ? 1 : 2;
+            return v;
+        };
+        const steht = new Set();
+        for (let k = 0; k < nb[0].length; k++) if (urteile(0, k)) steht.add(nb[0][k]); // nb[0]: die eigene Zelle (die Reihe beginnt bei ihr)
+        if (_fensterMemo) _fensterMemo.set(own, { pk, nb, steht });
+        return steht;
+    }
+    function forestSteht(d, gx, gz, geboren, pk) {
+        return forestDachFenster(gx, gz, geboren, pk).has(d);
     }
     // DIE SCHICHT EINES DARTS (FOREST_PACK.schicht): 1 im Dach (`forestSteht`), sonst — nur UNTER DEM SCHIRM: der Dart steht
     // unter der Krone (|d − o| < o.T) eines Baums des Dachs der Zellen ±1 (Unterstand wächst im Schatten des Altholzes, nie auf der
@@ -3384,8 +3718,14 @@
     function forestImDach(o, gx, gz, geboren, pk) {
         let v = _dachMemo ? _dachMemo.get(o) : undefined;
         if (v === undefined) {
-            v = forestSteht(o, gx, gz, geboren, pk);
-            if (_dachMemo) _dachMemo.set(o, v);
+            // das Fenster urteilt über alle Darts seiner Zelle: jeder trägt sein Urteil ins Gedächtnis
+            const S = forestDachFenster(gx, gz, geboren, pk);
+            v = S.has(o);
+            if (_dachMemo) {
+                const own = geboren(gx, gz);
+                for (let k = 0; k < own.length; k++) _dachMemo.set(own[k], S.has(own[k]));
+                _dachMemo.set(o, v);
+            }
         }
         return v;
     }
@@ -3393,15 +3733,27 @@
         if (forestImDach(d, gx, gz, geboren, pk)) return 1;
         const S = FOREST_PACK.schicht;
         const R = FOREST_URTEIL_REIHE;
+        const dx = d.x;
+        const dz = d.z;
+        // die Fächer der Zellen (`zellFaecher`): gefragt wird nur ein Fach, dessen Kasten in der Reichweite liegt
+        const fern = (f, r) => dx + r < f.x0 || dx - r > f.x1 || dz + r < f.z0 || dz - r > f.z1;
         let schirm = false;
         for (let q = 0; q < 18 && !schirm; q += 2) {
-            const nb = geboren(gx + R[q], gz + R[q + 1]);
-            for (let k = 0; k < nb.length && !schirm; k++) {
-                const o = nb[k];
-                const dx = d.x - o.x;
-                const dz = d.z - o.z;
-                schirm =
-                    o !== d && dx * dx + dz * dz < o.T * o.T && forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
+            const K = zellFaecher(geboren(gx + R[q], gz + R[q + 1]));
+            if (fern(K, K.tMax)) continue;
+            for (let e = 0; e < K.fach.length && !schirm; e++) {
+                const f = K.fach[e];
+                if (fern(f, f.tMax)) continue;
+                for (let k = 0; k < f.d.length && !schirm; k++) {
+                    const o = f.d[k];
+                    const ex = dx - o.x;
+                    const ez = dz - o.z;
+                    schirm =
+                        o !== d &&
+                        ex * ex + ez * ez < o.T * o.T &&
+                        !o.gelichtet &&
+                        forestImDach(o, gx + R[q], gz + R[q + 1], geboren, pk);
+                }
             }
         }
         if (!schirm) return 0;
@@ -3410,20 +3762,23 @@
             const sz = Math.max(d.s * S.alter[i], G); // die Größe in der Schicht
             if (!(sz < d.s)) return 0; // schon der Boden des Spans ist seine ganze Größe: unter dem Dach kein Platz
             const a = sz / d.s;
+            const dT = d.T * a;
             let frei = true;
             for (let q = 0; q < R.length && frei; q += 2) {
-                const nb = geboren(gx + R[q], gz + R[q + 1]);
-                for (let k = 0; k < nb.length; k++) {
-                    const o = nb[k];
-                    const pa = S.pack * Math.min(d.schluss, o.schluss);
-                    const ao = Math.min(Math.max(o.s * S.alter[i], G) / o.s, 1);
-                    if (
-                        o !== d &&
-                        forestTooClose(d.x - o.x, d.z - o.z, d.T * a, o.T * ao, pa) &&
-                        forestPrioWins(o, d)
-                    ) {
-                        frei = false;
-                        break;
+                const K = zellFaecher(geboren(gx + R[q], gz + R[q + 1]));
+                // die Krone der Schicht ist nie größer als die ganze (ao ≤ 1): die Reichweite (T·a + T) · pack · min(Schluss)
+                if (fern(K, (dT + K.tMax) * S.pack * Math.min(d.schluss, K.sMax))) continue;
+                for (let e = 0; e < K.fach.length && frei; e++) {
+                    const f = K.fach[e];
+                    if (fern(f, (dT + f.tMax) * S.pack * Math.min(d.schluss, f.sMax))) continue;
+                    for (let k = 0; k < f.d.length; k++) {
+                        const o = f.d[k];
+                        const pa = S.pack * Math.min(d.schluss, o.schluss);
+                        const ao = Math.min(Math.max(o.s * S.alter[i], G) / o.s, 1);
+                        if (o !== d && forestTooClose(dx - o.x, dz - o.z, dT, o.T * ao, pa) && forestPrioWins(o, d)) {
+                            frei = false;
+                            break;
+                        }
                     }
                 }
             }
@@ -3436,11 +3791,26 @@
     // Schicht (nie unter FOREST_PACK.groesse[0] — der Wirt setzt sie, wie sie ist) und der Krone T·alter.
     // `nurDach`: nur die Kronen des Dachs (die Kamm-Krone der Ferne — kein Unterstand reicht über das Dach in den Himmel).
     function forestStehende(gx, gz, geboren, pk, nurDach) {
+        // die Zellen ±FOREST_URTEIL_REICH, die Fenster und Schirm dieser Zelle lesen, je EINMAL beim Rufer geholt (sein
+        // Gedächtnis trägt Schlüssel-Text: je Dart der Schicht 59 Rufe)
+        const RR = FOREST_URTEIL_REICH;
+        const WW = 2 * RR + 1;
+        const nah = new Array(WW * WW);
+        const geb = geboren;
+        geboren = (cx, cz) => {
+            const a = cx - gx + RR;
+            const b = cz - gz + RR;
+            if (a < 0 || b < 0 || a >= WW || b >= WW) return geb(cx, cz);
+            const q = a * WW + b;
+            return nah[q] || (nah[q] = geb(cx, cz));
+        };
         const own = geboren(gx, gz);
         const out = [];
+        const S = nurDach ? forestDachFenster(gx, gz, geboren, pk) : null;
         for (let k = 0; k < own.length; k++) {
             const d = own[k];
-            const a = nurDach ? +forestSteht(d, gx, gz, geboren, pk) : forestSchicht(d, gx, gz, geboren, pk);
+            if (d.gelichtet) continue; // die Lichtung nahm ihn nach dem Wuchs (`planForestCell`)
+            const a = S ? +S.has(d) : forestSchicht(d, gx, gz, geboren, pk);
             if (a === 1) out.push(d);
             else if (a > 0)
                 out.push(Object.assign({}, d, { s: Math.max(d.s * a, FOREST_PACK.groesse[0]), T: d.T * a, alter: a }));
@@ -3641,7 +4011,8 @@
             const sd = forestStandDensity(ctx.fbm, x, z);
             const st = ctx.stand(x, z); // der Stand des Standorts (FOREST_PACK.bestand): Lichtung und Schluss
             const wurf = rng();
-            const geburt = forestGeburt(sd) * forestLichtung(st);
+            // die Geburt ohne die Lichtung: die Lichtung nimmt erst nach der Selbst-Ausdünnung (`gelichtet`, unten)
+            const geburt = forestGeburt(sd);
             if (wurf > geburt) continue;
             if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
             // die Waldgrenze (`forestWaldgrenze`): derselbe Wurf gegen die Geburt im Schnee des Sommers am Boden des Darts —
@@ -3717,12 +4088,26 @@
                 (Math.imul((Math.round(x * 16) | 0) ^ (Math.round(z * 16) | 0), 2654435761) ^ (seedInt + i)) >>> 0;
             // DER ORT VOR DEM WALD (K10): reserviert ein Ort den Grund (ctx.ortFrei, der Erdbau des Wirts), fällt die Krone,
             // die ihn berührt — NACH allen Würfen des Darts, die folgenden Darts bleiben byte-gleich.
-            if (ctx.ortFrei && !ctx.ortFrei(x, z, T)) continue;
+            // DER GRUND NIMMT NACH DEM WUCHS (laub-kante, wie die Lichtung unten): der Dart wird geboren und nimmt im Urteil des
+            // Dachs seinen Platz, der Grund nimmt ihn danach (`gelichtet`) — ein Haus im Wald nimmt die Kronen über seinem Grund
+            // und sonst keinen Baum. Bis hier fiel er vor der Geburt: unter der Selbst-Ausdünnung (Matérn III) wuchs, wen er
+            // überwuchs, in die Lücke, und wen DER überwächst, fiel — der Ort würfelte den Bestand um sich neu (gate:fernwald F,
+            // Eiche −2123/−2153, ein Haus über ihrer einzigen Nachbarin, der Birke 9,8 m: frisch standen zwei Tannen im
+            // Freistand-Kreis, 8,1 und 13,5 m, die vor dem Haus nicht standen — Gestalt gemerkt 3 · frisch 2).
+            const amGrund = !!ctx.ortFrei && !ctx.ortFrei(x, z, T);
             // DER SAUM AM SIEDLUNGSRAND (`forestOrt`, w20-wald-kosten): derselbe Wurf gegen die Geburt jenseits des Rands eines
             // Orts (ctx.ort: der Abstand, `forestOrtAbstand` über die Ränder des Wirts) — wie K10 NACH allen Würfen des Darts:
             // ein Ort dünnt den Bestand um sich, er würfelt ihn nie neu; ohne Ort bleibt jeder Wurf, wie er war.
-            if (wurf > grenze * forestOrt(ctx.ort(x, z))) continue;
-            out.push({ x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY, schluss: forestSchluss(st) });
+            const gOrt = grenze * forestOrt(ctx.ort(x, z), slope);
+            if (wurf > gOrt) continue;
+            const dart = { x, z, sp, s, T, prio, keep, totRoll, rotY, seed, surfaceY, schluss: forestSchluss(st) };
+            // DIE LICHTUNG NIMMT NACH DEM WUCHS (w28-laub-kante): derselbe Wurf gegen die Geburt × Lichtung — der Dart wird
+            // geboren und nimmt im Bestand seinen Platz (das Urteil des Dachs zählt ihn), die Lichtung (Mahd, Weide, Wurf)
+            // nimmt ihn danach: er steht nicht (`forestStehende`) und schirmt keinen Unterstand. Bis hier fiel er vor der
+            // Geburt — unter der Selbst-Ausdünnung (Matérn III) wuchs der gedünnte Rest in die Lücke, die Lichtung schloss
+            // sich (Mess-Wiese, Ring 25 m: Kronen-Deckung 0,114 → 0,164, 12 Bäume); jetzt trägt sie Lichtung × Bestand.
+            if (amGrund || wurf > gOrt * forestLichtung(st)) dart.gelichtet = true; // nur am genommenen Dart: kein Stehender trägt das Feld
+            out.push(dart);
         }
         return out;
     }
@@ -7105,6 +7490,7 @@
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
         FREISTAND: FREISTAND,
+        forestSeitenlicht: forestSeitenlicht,
         BESTAND: BESTAND, // T2: der Laubbaum im Bestand (Seitenast-Länge und Kronen-Hub)
         bestandArt: bestandArt, // steht die Art im Bestand (Laubbaum ohne `solitaer`)?
         STAMM_KRONE: STAMM_KRONE, // w28-stamm-krone: der Stamm des Laubbaums aus dem Schirm seiner Krone
