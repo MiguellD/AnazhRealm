@@ -300,8 +300,9 @@ class AnazhRealm_studio_gestalt {
         // des Leibs, der ihn zeichnet (`_tonFaktor`)
         const ton = !!(m.aTon && m.aTon.array);
         if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
-        // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
-        const ecken = { ton, jahr };
+        // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton, Jahr und den Verband je Ecke an ihrem Namen
+        // (`_foundryTreeMaterial`)
+        const ecken = { ton, jahr, verband: !!(m.aVerband && m.aVerband.array) };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) {
             geo.computeVertexNormals();

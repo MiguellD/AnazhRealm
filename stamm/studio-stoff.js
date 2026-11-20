@@ -261,15 +261,18 @@ class AnazhRealm_studio_stoff {
     // gäbe dem anderen still seine Bedeutung). `ecken.ton` (mensch.K4): der Ton je Ecke (`aTon`) — der Stoff färbt nach der
     // Palette des zeichnenden Leibs (`_tonFaktor`). `ecken.jahr` (vegetation.K5): die Jahres-Ecken (`_jahrEcken`) — ihr Laub
     // fällt im Winter auf seine Mitte (`_jahrLage`); der wiegende Stoff der Nah-Streu erbt es vom Stoff der Art
-    // (`userData.jahr`). Fail-closed: ein anderes Wort an dieser Stelle bricht laut beim Namen.
+    // (`userData.jahr`). `ecken.verband`: die Zeile des Verbands je Ecke (`aVerband`, eine gefaltete Stufe) — außerhalb des Satzes
+    // webt der Stoff nach ihr. Fail-closed: ein anderes Wort an dieser Stelle bricht laut beim Namen.
     _foundryTreeMaterial(kind, mp, wiegen, baum, krone, ecken) {
         if (
             ecken != null &&
             (typeof ecken !== "object" ||
-                Object.entries(ecken).some(([k, v]) => (k !== "ton" && k !== "jahr") || typeof v !== "boolean"))
+                Object.entries(ecken).some(
+                    ([k, v]) => (k !== "ton" && k !== "jahr" && k !== "verband") || typeof v !== "boolean"
+                ))
         )
             throw this._stoffBruch(
-                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr } aus Wahrheitswerten, nie ` +
+                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr, verband } aus Wahrheitswerten, nie ` +
                     (typeof ecken === "object"
                         ? "{ " +
                           Object.entries(ecken)
@@ -281,6 +284,10 @@ class AnazhRealm_studio_stoff {
         const ton = !!ecken && ecken.ton === true;
         const jahr = !!ecken && ecken.jahr === true;
         const satz = !!(mp && mp.satzRegler === true);
+        // DER VERBAND JE ECKE außerhalb des Satzes: eine gefaltete Stufe (phyto-core `_budgetVerbinden`) trägt die Zeile je Ecke
+        // (`aVerband`) — die Ecke nennt sie, wie im Satz (`aRegler.w`), nie die Zeile des ersten Teils als Wert des Stoffs (bis hier
+        // webte die gefaltete L0 außerhalb des Satzes Backstein über Balken und Putz, die Stufe aus der L0 keinen Stein)
+        const eckVerband = !satz && !!ecken && ecken.verband === true;
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -324,7 +331,8 @@ class AnazhRealm_studio_stoff {
             (satz === true ? "|satz" : "") +
             (_krone ? "|krone" : "") +
             (ton ? "|ton" : "") +
-            (jahr ? "|jahr" : "");
+            (jahr ? "|jahr" : "") +
+            (eckVerband ? "|verband:ecke" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -416,8 +424,8 @@ class AnazhRealm_studio_stoff {
         };
         // DAS MIKRO-RELIEF DER FACETTE (unten, `_mikroGestalt`): der facettierte Studio-Stein, eine Weiche des Baus
         const mikro = flat && kind === "unknown";
-        // DER VERBAND (unten, `_verbandStoff`): der matte Bau-Stoff — im Satz jeder (die Ecke nennt ihre Zeile, 0 = keine), sonst
-        // der Stoff, dessen Gesetzbuch ihm eine Zeile gab; nie die Facette, der Stein-Rahmen, das Gewebe, das Unbeleuchtete
+        // DER VERBAND (unten, `_verbandStoff`): der matte Bau-Stoff — im Satz jeder (die Ecke nennt ihre Zeile, 0 = keine), außerhalb
+        // die gefaltete Stufe mit Zeile je Ecke (`eckVerband`), sonst der Stoff, dessen Gesetzbuch ihm eine Zeile gab; nie die Facette, der Stein-Rahmen, das Gewebe, das Unbeleuchtete
         const verband =
             kind === "unknown" &&
             !mikro &&
@@ -426,7 +434,7 @@ class AnazhRealm_studio_stoff {
             !!mp &&
             !mp.webe &&
             typeof mp.stein !== "string" &&
-            (satz === true ? mp.seh === "stoff" : mp.verband > 0);
+            (satz === true ? mp.seh === "stoff" : eckVerband || mp.verband > 0);
         // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
         // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
         // `_foundryBuildGroup` garantiert das color-Attribut.
@@ -796,7 +804,9 @@ class AnazhRealm_studio_stoff {
             const nr =
                 satz === true
                     ? TSL.attribute("aRegler", "vec4").w.mul(127.0)
-                    : this._stoffWert(TSL, "userData.stoffWerte.verband");
+                    : eckVerband
+                      ? TSL.attribute("aVerband", "float")
+                      : this._stoffWert(TSL, "userData.stoffWerte.verband");
             // die Lage der Ecke in ihrer Wand (im Satz: die vierten Stellen von Farbe und Glut, `BAU_SATZ_ATTR`) — EIN Varying
             const ecke =
                 satz === true
@@ -926,7 +936,7 @@ class AnazhRealm_studio_stoff {
             // Fels zuerst, trug die Wand seines (headless, Start an der Genesis). Die Folge der Bauten verschob w13-kreatur-blick.
             mikro ? "mikro" : "",
             // der Verband webt in colorNode (`_verbandStoff`): sein Zweig steht in der Signatur
-            verband ? "verband" : "",
+            verband ? (eckVerband ? "verband:ecke" : "verband") : "",
             // DIE KRONE (K68-N1, `_laubStoffNormale`) schreibt Normale und Empfangs-Ort: ein Klingen-Laub mit Krone (Baum, Strauch)
             // und eines ohne (Farn, Blüte, Schilf) bauen eigene Graphen
             _krone ? "krone" : "",

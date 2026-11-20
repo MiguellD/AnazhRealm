@@ -536,6 +536,48 @@ function wurfIou(a, b, d, r) {
     for (let k = 0; k < A.length; k++) s += A[k] & B[k], v += A[k] | B[k]; // prettier-ignore
     return v ? s / v : 0;
 }
+// (7) DIE HERKUNFT AUS DER L0 (gate:haus-fern Q, Einheit E7/E10): wie weit liegt jede Ecke einer Stufe von der Oberfläche der L0?
+//     `l0` und `stufe` sind Listen { P: Lage, I: Index }. Ein Gitter der Weite `grenzeM` trägt jedes Dreieck der L0 in jede Zelle
+//     seiner um `grenzeM` geweiteten Kiste (ein geteilter Schlüssel legt nur Kandidaten dazu, nie einen fort); je Ecke der nächste
+//     Punkt (`naechster`, Ericson) über die Dreiecke ihrer Zelle → Float64Array je Ecke in Metern, gekappt auf `grenzeM`.
+function herkunft(l0, stufe, grenzeM) {
+    const gitter = new Map();
+    const z = (x) => Math.floor(x / grenzeM);
+    const key = (i, j, k) => (i * 73856093) ^ (j * 19349663) ^ (k * 83492791);
+    l0.forEach(({ P, I }, mi) => {
+        for (let t = 0; t < I.length; t += 3) {
+            const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity]; // prettier-ignore
+            for (let e = 0; e < 3; e++)
+                for (let c = 0; c < 3; c++) {
+                    const v = P[I[t + e] * 3 + c];
+                    if (v < lo[c]) lo[c] = v;
+                    if (v > hi[c]) hi[c] = v;
+                }
+            for (let i = z(lo[0] - grenzeM); i <= z(hi[0] + grenzeM); i++)
+                for (let j = z(lo[1] - grenzeM); j <= z(hi[1] + grenzeM); j++)
+                    for (let k = z(lo[2] - grenzeM); k <= z(hi[2] + grenzeM); k++) {
+                        const q = key(i, j, k);
+                        let L = gitter.get(q);
+                        if (!L) gitter.set(q, (L = []));
+                        L.push(mi, t);
+                    }
+        }
+    });
+    const aus = [];
+    for (const { P } of stufe)
+        for (let v = 0; v < P.length; v += 3) {
+            const p = [P[v], P[v + 1], P[v + 2]];
+            const L = gitter.get(key(z(p[0]), z(p[1]), z(p[2]))) || [];
+            let d = grenzeM;
+            for (let q = 0; q < L.length && d > 1e-6; q += 2) {
+                const { P: Q, I } = l0[L[q]], t = L[q + 1]; // prettier-ignore
+                const ecke = (e) => [Q[I[t + e] * 3], Q[I[t + e] * 3 + 1], Q[I[t + e] * 3 + 2]];
+                d = Math.min(d, Math.hypot(...sub(p, naechster(p, ecke(0), ecke(1), ecke(2)))));
+            }
+            aus.push(d);
+        }
+    return Float64Array.from(aus);
+}
 // die quadrierte Distanz-Transformation einer Zeile von `g` (n Werte ab `o` mit Schritt `w`), an Ort und Stelle — die untere Hülle
 // der Parabeln (Felzenszwalb & Huttenlocher)
 // das Raster um die Abbildung `ab(p, i) → [u, v]` aller Ecken der Puffer `pufs`, Kante `r`, `rand` Pixel Rand ringsum
@@ -565,6 +607,7 @@ function edt(g, o, w, n) {
 
 module.exports = {
     wechselProbe,
+    herkunft,
     wurfIou,
     rasterDreieck,
     dek,

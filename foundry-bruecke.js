@@ -852,7 +852,7 @@ const foundryKanal = (() => {
     //     Achse aus ihrer Haupt-Normale) und deren Front ihr Rechteck bis auf die Zelle am Umriss füllt, ist ein Stein des Musters,
     //     das kein Stoff webt (die Bohle, die Schindel, der Rahmen): er fällt wie der Verband in die Flächen seiner Zonen (Zeile 0,
     //     die Farbe ihr Mittel) — Front und Rücken immer, die Flanken als Zone ab `minZellen` Zellen; eine Flanke, deren schmale Seite
-    //     unter der Zelle liegt, ist Dünnes. Das Maß ist der Bildpunkt, nie die Fläche: 0,5 m² waren an der L1 1 718 Bildpunkte, an der
+    //     unter dem Bildpunkt `s` liegt, ist Dünnes. Das Maß ist der Bildpunkt, nie die Fläche: 0,5 m² waren an der L1 1 718 Bildpunkte, an der
     //     L2 367 — die 6 cm hohe Front einer Bohle (ihre Oberseite trägt die Haupt-Normale) fiel als Flanke von 0,11 m². Walze und
     //     Strebe sind kein Quader.
     //   DÜNNES FÄLLT — jedes andere gesehene Dreieck, dessen kleinste Höhe unter `s` liegt.
@@ -1516,8 +1516,9 @@ const foundryKanal = (() => {
                         [W, H] = [R.W, R.H];
                         gedreht++;
                     }
-                    // DIE FLANKE UNTER DER ZELLE ist Dünnes: ihre schmale Seite trägt keine zwei Bildpunkte
-                    if (e.fl && Math.min(W, H) < c) {
+                    // DIE FLANKE UNTER DEM BILDPUNKT ist Dünnes (dasselbe Maß wie jedes Dünne, `s`): unter der Zelle `c` fielen die
+                    // 2–3 cm tiefen Flanken der Fachwerk-Balken, die die L0 an der L1 als Linie eines Bildpunkts zeigt
+                    if (e.fl && Math.min(W, H) < s) {
                         duenn++;
                         continue;
                     }

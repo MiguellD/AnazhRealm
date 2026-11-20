@@ -26,6 +26,9 @@
 //      Scharnier = die Gruppen-Position), offen am Scharnier und vom Wirt zugedreht (`_tickTorFluegel`: um −offen) in
 //      der Scharnier-Ebene; L1: das Blatt, das der Bau an Ort und Stelle bakt; die L2 trägt keins (DESTNUR). Abstand
 //      ≤ 0,05 m je Tür.
+//   Q  STUFE AUS DER L0: die Haus-Stufen, die die Welt zeichnet (Zeile `ausL0`), aus DERSELBEN Brücke im vm — jede Ecke ≤ 6
+//      Bildpunkte von der L0 in Ruhe, der Pop an der Grenze ≤ 1 px (die Probe `QUELLE_PROBE`); der Mutant „Stufe aus eigenem
+//      Rezept" ist rot.
 //
 // Die Linse misst die deklarierte Stufe 3 (`buildInstance(…, 3)`, dieselbe Funktion wie das Vogel des Labors
 // `fragFuer(B, 3)`: gate:fachwerk-contract hält die Split-Parität); fehlt sie, wirft keine Stufe (rot). Rot nennt jede
@@ -34,8 +37,9 @@
 // der langen Achse — der Befund vor dem Akt) MUSS in A, F und I rot werden; eine Stufe ohne Werfer in W.
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
 "use strict";
-const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
-const { rasterDreieck, wechselProbe, wurfIou } = require("./lib/kronen-linse.cjs");
+const { wandEnde, studioKern, ausDatei } = require("./lib/welt-boot.cjs");
+const { kanalImVm } = require("./lib/asset-worker-harness.cjs");
+const { rasterDreieck, wechselProbe, wurfIou, herkunft } = require("./lib/kronen-linse.cjs");
 
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
@@ -56,6 +60,9 @@ const RASTER = 1 / 4096;
 //   Umriss      min 0,843 (japanisch, entlang x) · Median x 0,903 / z 0,945 → Soll je Achse ≥ 0,84, Median ≥ 0,90. Grund: die
 //               L1 trägt die Windbretter am Ortgang (+0,14 m über der Dachhaut), Fensterläden, Türblätter und Kamin-Hut — die L2
 //               ist der Körper mit Dachhaut; der Keller (unter y = 0) sieht kein Auge und zählt nicht.
+//   Herkunft    das Gesetz der Ableitung legt eine Ecke ≤ Zelle + Pixelfehler (`zellePx` 2 + `fehlerPx` 0,5) von der L0; gemessen
+//               max 4,75 Bildpunkte (schwarzwald L1: Ecken im Keller unter dem Grund, die die ganze Sicht der Linse zeigt, die Sicht
+//               des Wirts nicht) → Soll ≤ 6. Das Rezept der Stufe liegt 18–40 Bildpunkte fern (schwarzwald L1 36,8, hochhaus L1 40).
 const SOLL = {
     wurfIou: 0.87,
     wurfMedian: 0.92,
@@ -64,6 +71,7 @@ const SOLL = {
     wand: -0.015,
     dach: -0.03,
     tuer: 0.05,
+    herkunft: 6,
     glut: [2 / 3, 3 / 2],
     glasTag: [1 / 4, 4],
     glasFarbe: 0.15,
@@ -649,9 +657,93 @@ function huelleFern(ids, regel = WIRT._huelleFern) {
     return { txt, bruch, faelle, alle: faelle ? alle / faelle : 0, bleiben: faelle ? bleiben / faelle : 0 };
 }
 
+// ── Q  DIE STUFE AUS DER L0 (Einheit E7/E10): trägt die Budget-Zeile einer Haus-Stufe `ausL0`, zeichnet die Welt die Ableitung der
+//    Brücke aus der gelieferten L0 (`__stufeAusL0`: der Bildpunkt `s` an der Grenze, die Sicht des Wirts) — nie das Rezept der Stufe.
+//    Die Linse fährt DIESELBE Brücke im vm (`kanalImVm`, die Kerne des Manifests) an den Vorlagen `QUELLE_PROBE` (Samen 1: die
+//    schwerste L1, der Turm, die Deckung, das Fachwerk): die L0, dann jede Stufe mit `ausL0` = { s = die Grenze des Wirts
+//    (`_wechselGesetz`) ÷ Brennweite, sicht: jedes Dreieck gesehen — die Sicht der GPU rechnet nur der Wirt (`_sichtDerGestalt`), jede
+//    ist eine Teilmenge davon }, und misst (a) die HERKUNFT (kronen-linse `herkunft`): jede Ecke der Stufe liegt ≤ SOLL.herkunft
+//    Bildpunkte von der L0 in Ruhe (die Flügel zu: um −offen am Scharnier, `_fluegelSchwenk` bei 0); (b) den POP der Welt-Stufe an
+//    ihrer Grenze (`wechselProbe` über die Lieferung, die Flügel der L0 an ihrem Scharnier). Eine Zeile ohne `ausL0` ist rot (die
+//    Stufe käme aus dem Rezept). `kanal`: die Brücke (der Selbsttest reicht den Mutanten „Stufe aus eigenem Rezept"). Bis hier las
+//    keine Linse die Stufe der Welt — P maß an den Häusern das Rezept, das die Welt seit der Zeile `ausL0` nie zeichnet. ──
+// `--quelle-klasse`: jede Kultur (der Lauf, der die Zeilen der Tafel LOD_SCHIRM.fehler.haus prägt — ~10 s je Haus im vm, nie im Tor)
+const QUELLE_PROBE = (ARG.includes("--quelle-klasse") ? KULTUREN : ["schwarzwald", "hochhaus", "roemisch", "japanisch"]).filter((k) => !NUR || NUR.test(k)); // prettier-ignore
+function quelle(ids, kanal) {
+    const [txt, bruch, B, lieferung] = [[], [], LOD.budget.haus, new Map()];
+    let hoechste = 0;
+    // die L0 in Ruhe: ein Flügel (`tuer`) um −offen an seinem Scharnier gedreht, wie der Wirt ihn schließt
+    const ruhe = (m) => {
+        const [P, t] = [m.position.array, m.tuer];
+        if (!t || !t.offen) return P;
+        const [c, sn, hx, zf, o] = [Math.cos(-t.offen), Math.sin(-t.offen), t.hx || 0, t.zf || 0, new Float32Array(P.length)];
+        for (let i = 0; i < P.length; i += 3) {
+            const [x, z] = [P[i] - hx, P[i + 2] - zf];
+            [o[i], o[i + 1], o[i + 2]] = [c * x + sn * z + hx, P[i + 1], -sn * x + c * z + zf];
+        }
+        return o;
+    };
+    const netz = (ms, zu) => ms.filter((m) => m.position && m.index).map((m) => ({ P: zu ? ruhe(m) : m.position.array, I: m.index }));
+    const frage = (id, lod, ausL0) => {
+        const a = kanal({ type: "build-asset", presetId: id, seed: 1, lod, ...(ausL0 ? { ausL0 } : {}) });
+        if (!a || a.bruch || !a.meshes || !a.meshes.some((m) => m.position)) throw new Error(`${id} L${lod}: ${(a && a.bruch) || "keine Lieferung"}`);
+        lieferung.set(`${id}/${lod}`, a.meshes);
+        return a.meshes;
+    };
+    for (const id of ids) {
+        const z = [];
+        try {
+            const l0 = frage(id, 0);
+            const n0 = netz(l0, true);
+            for (const lod of STUFEN_HAUS.filter((s) => s && B[s] && !B[s].nurWurf)) {
+                if (!B[lod].ausL0) {
+                    bruch.push(`${id} L${lod}: die Zeile trägt kein ausL0 — die Stufe käme aus ihrem Rezept`);
+                    continue;
+                }
+                const s = WIRT._wechselGesetz("haus", lod, 1, 0, undefined, id) / WIRT._brennweite(0);
+                const sicht = l0.map((m) => (m.position && m.index ? new Uint8Array(m.index.length / 3).fill(1) : null));
+                const d = herkunft(n0, netz(frage(id, lod, { s, sicht })), (SOLL.herkunft + 1) * s);
+                const max = Math.max(...d) / s;
+                hoechste = Math.max(hoechste, max);
+                z.push(`L${lod} Herkunft max ${max.toFixed(2)} Bildpunkte (s ${(s * 100).toFixed(2)} cm, ${d.length} Ecken)`);
+                if (max > SOLL.herkunft) bruch.push(`${id} L${lod}: eine Ecke liegt ${max.toFixed(2)} Bildpunkte von der L0 (Soll ≤ ${SOLL.herkunft})`);
+            }
+        } catch (e) {
+            bruch.push(`${id}: ${e.message}`);
+        }
+        txt.push(`${id} ${z.join(" · ")}`);
+    }
+    // (b) der Pop der Welt-Stufe: die Lieferungen als Gruppen, die Flügel der L0 unter ihrem Scharnier (userData side/offen wie der Bau)
+    const gruppe = (ms) => {
+        const g = new T.Group();
+        for (const m of ms || []) {
+            if (!m.position || !m.index) continue;
+            const bg = new T.BufferGeometry();
+            bg.setAttribute("position", new T.BufferAttribute(m.position.array, 3));
+            bg.setIndex(new T.BufferAttribute(m.index, 1));
+            const [o, t] = [new T.Mesh(bg), m.tuer];
+            if (!t) {
+                g.add(o);
+                continue;
+            }
+            const w = new T.Group();
+            w.position.set(t.hx || 0, 0, t.zf || 0);
+            w.userData = { side: Number(t.seite) || 1, offen: t.offen || 0 };
+            o.position.set(-(t.hx || 0), 0, -(t.zf || 0));
+            w.add(o);
+            g.add(w);
+        }
+        return g;
+    };
+    const welt = { PRESETS: FC.PRESETS, PORTAL_RENDER_CONFIG: FC.PORTAL_RENDER_CONFIG, buildInstance: (id, _s, lod) => gruppe(lieferung.get(`${id}/${lod}`)) };
+    const P = wechselProbe({ ids: ids.filter((id) => lieferung.has(`${id}/0`)), kern: () => welt, wirt: WIRT, fern: 0 });
+    for (const b of P.bruch) bruch.push(`Pop ${b}`);
+    return { txt: txt.concat(P.txt.map((t) => `Pop ${t}`)), bruch, hoechste };
+}
+
 // ── SELBSTTEST: der Befund vor dem Akt als gebauter Körper (die Massen-Hülle als Quader, der First auf der langen Achse:
 //    alemannisch W 7 / D 8,5 → First längs z) muss in A, F und I rot werden; eine Stufe ohne Werfer in W. ──
-function selbsttest() {
+function selbsttest(kanal) {
     const fehler = [];
     const aufgeblaeht = (id, seed) => {
         const p = FC.hausParams(FC.PRESETS[id], null);
@@ -731,6 +823,17 @@ function selbsttest() {
         return teile.filter((q) => q === kasten || q === dach || vol(q) >= gross / 4);
     }).bruch;
     if (!b8.some((b) => /^fraenkisch\/s\d+: das Dach deckt fern/.test(b))) fehler.push("H: das halbe Dach der Hülle fern ist nicht rot");
+    // Q: die Brücke als Mutant „Stufe aus eigenem Rezept" (die Stufe baut ihr Rezept, die Ableitung fällt) — die Herkunft ist rot;
+    //    eine Stufe ohne Sicht bricht im Faden beim Namen
+    let mut = ausDatei("foundry-bruecke.js");
+    for (const [a, b] of [["const lodBau = ausL0 ? 0 : msg.lod | 0;", "const lodBau = msg.lod | 0;"], ["if (ausL0) {", "if (false) {"]]) {
+        if (!mut.includes(a)) fehler.push(`Q: der Mutant greift nicht (${a})`);
+        mut = mut.replace(a, b);
+    }
+    if (!quelle(["schwarzwald"], kanalImVm({ "foundry-bruecke.js": mut })).bruch.some((b) => /^schwarzwald L1: eine Ecke liegt/.test(b)))
+        fehler.push("Q: die Stufe aus ihrem eigenen Rezept ist nicht rot");
+    const ohne = kanal({ type: "build-asset", presetId: "schwarzwald", seed: 1, lod: 1 });
+    if (!(ohne && /die Stufe kommt aus der L0/.test(ohne.bruch || ""))) fehler.push("Q: eine Stufe ohne Sicht bricht nicht beim Namen");
     return fehler;
 }
 
@@ -748,6 +851,15 @@ function selbsttest() {
         process.exit(1);
     }
     const rot = [];
+    // DER PRÄGE-LAUF (`--quelle-klasse`): nur Q über jede Kultur — je Täter die Zeile der Tafel LOD_SCHIRM.fehler.haus
+    if (ARG.includes("--quelle-klasse")) {
+        const Q = quelle(QUELLE_PROBE, kanalImVm());
+        for (const z of Q.txt) console.log("  " + z);
+        return wandEnde(
+            Q.bruch.map((b) => "Q " + b),
+            "jede Haus-Stufe kommt aus der L0 und zeigt sich ≤ 1 px von ihr."
+        );
+    }
     const zeilen = [];
     for (const id of KULTUREN)
         for (const s of SAMEN) {
@@ -811,7 +923,10 @@ function selbsttest() {
                 )
                 .join(" · ")
     );
-    const P = pop(KULTUREN.concat(AUS, TORE));
+    // die Häuser, deren Stufen aus der L0 kommen (Zeile `ausL0`), misst Q an der Stufe der Welt — P maß an ihnen das Rezept, das die
+    // Welt nie zeichnet
+    const ausL0 = [1, 2].every((s) => LOD.budget.haus[s] && LOD.budget.haus[s].ausL0);
+    const P = pop((ausL0 ? [] : KULTUREN).concat(AUS, TORE));
     if (ZEILEN) for (const z of P.txt) console.log("  " + z);
     for (const b of P.bruch) rot.push("P POP AM WECHSEL " + b);
     console.log(`  Pop am Wechsel (P, Soll ≤ 1 px an der Grenze der Vorlage): ${P.txt.length} Vorlagen, ${P.bruch.length} Täter`);
@@ -821,13 +936,20 @@ function selbsttest() {
     console.log(
         `  Hülle fern (H, Soll: das Dach deckt die Kästen wie in der Liste − 0,05): ${HF.faelle} Fälle, ${HF.alle.toFixed(1)} → ${HF.bleiben.toFixed(1)} Teile je Haus, ${HF.bruch.length} Täter`
     );
-    const st = selbsttest();
+    const KANAL = kanalImVm();
+    const Q = quelle(QUELLE_PROBE, KANAL);
+    if (ZEILEN) for (const z of Q.txt) console.log("  " + z);
+    for (const b of Q.bruch) rot.push("Q STUFE AUS DER L0 " + b);
+    console.log(
+        `  Stufe aus der L0 (Q, Soll: Herkunft ≤ ${SOLL.herkunft} Bildpunkte, Pop ≤ 1 px, die Brücke im vm): ${QUELLE_PROBE.length} Vorlagen, Herkunft max ${Q.hoechste.toFixed(2)} Bildpunkte, ${Q.bruch.length} Täter`
+    );
+    const st = selbsttest(KANAL);
     for (const f of st) rot.push("SELBSTTEST " + f);
     console.log(
-        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, das halbe Dach der Hülle fern (H)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T), die schwarzen Bänder (G), S8, das halbe Dach der Hülle fern (H), die Stufe aus ihrem Rezept und ohne Sicht (Q)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
     );
     wandEnde(
         rot,
-        "jede Stufe wirft den grundriss-treuen Fernkörper, zeigt sich erst ≤ 1 px von der L0, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe."
+        "jede Stufe wirft den grundriss-treuen Fernkörper, zeigt sich erst ≤ 1 px von der L0, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier, jedes Fenster ist Glas in jeder Stufe, jede Haus-Stufe kommt aus der L0."
     );
 })();
