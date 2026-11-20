@@ -843,11 +843,16 @@ const foundryKanal = (() => {
     //     ihre größten Rechtecke die Fläche (ein Fenster bleibt offen), `hinterM` hinter der Front der Steine, in der flächen-
     //     gewichteten Farbe der Steine und DERSELBEN Zeile — der Stoff webt den Stein (`_verbandStoff`). Ebenen unter `minFlaeche`
     //     (Kanten und Kuppen der Steine: ihr Relief) fallen.
+    //   STEINE OHNE ZEILE — eine Insel der übrigen (verschweißt), die ein Quader in ihrem Rahmen ist (jede Fläche parallel zu einer
+    //     Achse aus ihrer Haupt-Normale) und deren Front ihr Rechteck bis auf die Zelle am Umriss füllt, ist ein Stein des Musters,
+    //     das kein Stoff webt (die Bohle, die Schindel, der Rahmen): er fällt wie der Verband in die Flächen seiner Zonen (Zeile 0,
+    //     die Farbe ihr Mittel) — Front und Rücken immer, die Flanken als Zone ab `minFlaeche`. Walze und Strebe sind kein Quader.
     //   DÜNNES FÄLLT — jedes andere gesehene Dreieck, dessen kleinste Höhe unter `s` liegt.
     //   DETAIL = PIXELFEHLER — die übrigen verlieren jede Ecke, deren Wegfall die Fläche um weniger als `fehlerPx` Bildpunkte
     //     verschiebt (`__pixelKollaps`): der Blockbau, das Holz, der Ziegel ohne Verband-Zeile tragen an der Grenze nur, was Pixel trägt.
     //   EIN TEIL UNTER DER ZELLE FÄLLT — trägt kein gesehenes Dreieck eines Teils eine Höhe über der Zelle und keines ein Muster,
-    //     ist das ganze Teil Detail seines Trägers (die Beschläge der Flügel): ein eigener Zug für Bildpunkte unter der Zelle.
+    //     ist das ganze Teil Detail seines Trägers (die Beschläge der Flügel): es fällt als Mittel in dessen Stoff (der Träger trägt
+    //     das gesehene Dreieck nächst seiner Mitte, seine Farbe rückt auf das flächengewichtete Mittel beider).
     // Was die Sicht aus keiner Richtung zeigt, fällt. Die Felder eines Teils (Tür, Gelenk, Stoff) reisen mit.
     const STUFE_AUS_L0 = Object.freeze({ luecke: 0.06, minFlaeche: 0.5, ebeneM: 0.02, zellePx: 2, hinterM: 0.003, fehlerPx: 0.5 });
     // DETAIL = PIXELFEHLER (E7): Halbkanten-Kollaps u → v über die Dreiecke `tris` (Nummern in I), in der Reihenfolge des kleinsten
@@ -1108,6 +1113,61 @@ const foundryKanal = (() => {
         if (m.normal && m.normal.array) aus.normal = dreh(m.normal.array, 0, 0);
         return aus;
     }
+    // je Dreieck t der Lage P (Index I): `nrm` die Normale (Einheit, nach `out`) und die doppelte Fläche, `hoehe` die kleinste Höhe
+    // (2 · Fläche ÷ längste Kante)
+    function __dreieckMass(P, I) {
+        const nrm = (t, out) => {
+            const a = I[t * 3] * 3,
+                b = I[t * 3 + 1] * 3,
+                c = I[t * 3 + 2] * 3;
+            const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2]; // prettier-ignore
+            const vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2]; // prettier-ignore
+            const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; // prettier-ignore
+            const fl2 = Math.hypot(nx, ny, nz);
+            out[0] = nx / fl2;
+            out[1] = ny / fl2;
+            out[2] = nz / fl2;
+            return fl2;
+        };
+        const nq = [0, 0, 0];
+        const hoehe = (t) => {
+            const a = I[t * 3] * 3,
+                b = I[t * 3 + 1] * 3,
+                c = I[t * 3 + 2] * 3;
+            const kante = Math.max(Math.hypot(P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]), Math.hypot(P[c] - P[a], P[c + 1] - P[a + 1], P[c + 2] - P[a + 2]), Math.hypot(P[c] - P[b], P[c + 1] - P[b + 1], P[c + 2] - P[b + 2])); // prettier-ignore
+            return nrm(t, nq) / kante;
+        };
+        return [nrm, hoehe];
+    }
+    // der Abstand des Punkts p zum Dreieck t der Lage P (Index I): der nächste Punkt nach Ericson (Ecke, Kante oder Fläche)
+    function __punktDreieck(p, P, I, t) {
+        const a = I[t * 3] * 3,
+            b = I[t * 3 + 1] * 3,
+            c = I[t * 3 + 2] * 3;
+        const ab = [P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]], ac = [P[c] - P[a], P[c + 1] - P[a + 1], P[c + 2] - P[a + 2]]; // prettier-ignore
+        const dot = (x, y) => x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
+        const zu = (o, u, v) => Math.hypot(p[0] - P[o] - u * ab[0] - v * ac[0], p[1] - P[o + 1] - u * ab[1] - v * ac[1], p[2] - P[o + 2] - u * ab[2] - v * ac[2]); // prettier-ignore
+        const ap = [p[0] - P[a], p[1] - P[a + 1], p[2] - P[a + 2]];
+        const d1 = dot(ab, ap), d2 = dot(ac, ap); // prettier-ignore
+        if (d1 <= 0 && d2 <= 0) return zu(a, 0, 0);
+        const bp = [p[0] - P[b], p[1] - P[b + 1], p[2] - P[b + 2]];
+        const d3 = dot(ab, bp), d4 = dot(ac, bp); // prettier-ignore
+        if (d3 >= 0 && d4 <= d3) return zu(a, 1, 0);
+        const vc = d1 * d4 - d3 * d2;
+        if (vc <= 0 && d1 >= 0 && d3 <= 0) return zu(a, d1 / (d1 - d3), 0);
+        const cp = [p[0] - P[c], p[1] - P[c + 1], p[2] - P[c + 2]];
+        const d5 = dot(ab, cp), d6 = dot(ac, cp); // prettier-ignore
+        if (d6 >= 0 && d5 <= d6) return zu(a, 0, 1);
+        const vb = d5 * d2 - d1 * d6;
+        if (vb <= 0 && d2 >= 0 && d6 <= 0) return zu(a, 0, d2 / (d2 - d6));
+        const va = d3 * d6 - d5 * d4;
+        if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
+            const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
+            return zu(a, 1 - w, w);
+        }
+        const den = 1 / (va + vb + vc);
+        return zu(a, vb * den, vc * den);
+    }
     function __stufeAusL0(teile, s, sicht) {
         const O = STUFE_AUS_L0;
         if (!(s > 0) || !Array.isArray(sicht) || sicht.length !== teile.length)
@@ -1117,27 +1177,92 @@ const foundryKanal = (() => {
         let zonen = 0,
             vorKollaps = 0,
             nachKollaps = 0,
-            unterZelle = 0;
-        for (let mi = 0; mi < teile.length; mi++) {
-            const m = teile[mi];
-            if (!m || !m.position || !m.index) {
-                aus.push(m);
-                continue;
-            }
-            // DIE L0 IN RUHE: ein Tür-Flügel liegt in seiner gebackenen Offen-Pose (`tuer.offen`), die Welt zeigt ihn geschlossen —
-            // um das Scharnier (hx, zf) um −offen gedreht, wie der Wirt ihn schwenkt (`_fluegelSchwenk` bei 0); die Stufe trägt ihn
-            // geschlossen im Leib (kein `tuer`: die Stufen ab der L1 zeigen keinen Flügel). Die Sicht des Wirts sah dieselbe Ruhe.
+            unterZelle = 0,
+            steine = 0,
+            flankenTris = 0;
+        // DER VORLAUF je Teil — DIE L0 IN RUHE: ein Tür-Flügel liegt in seiner gebackenen Offen-Pose (`tuer.offen`), die Welt zeigt
+        // ihn geschlossen — um das Scharnier (hx, zf) um −offen gedreht, wie der Wirt ihn schwenkt (`_fluegelSchwenk` bei 0); die
+        // Stufe trägt ihn geschlossen im Leib (kein `tuer`: die Stufen ab der L1 zeigen keinen Flügel). Die Sicht des Wirts sah
+        // dieselbe Ruhe. Dazu die gesehenen Dreiecke (mit Zeile das Muster, sonst roh), ob eines über der Zelle liegt, die gesehene
+        // Fläche mit ihrer Farbe und ihre Kiste.
+        const lauf = teile.map((m, mi) => {
+            if (!m || !m.position || !m.index) return null;
             const zu = __fluegelZu(m);
             const P = zu ? zu.position : m.position.array,
                 I = m.index,
-                n = P.length / 3,
                 nt = I.length / 3,
                 S = sicht[mi];
             if (!S || S.length !== nt)
                 throw new Error("Stufe aus der L0: Teil " + mi + " trägt " + nt + " Dreiecke, die Sicht " + (S ? S.length : 0));
             const V = m.aVerband && m.aVerband.array ? m.aVerband.array : null;
             const nrTeil = m.mat && m.mat.verband > 0 ? m.mat.verband | 0 : 0;
-            const nrVon = (t) => (V ? V[I[t * 3]] | 0 : nrTeil);
+            const [nrm, hoehe] = __dreieckMass(P, I);
+            const C = m.color && m.color.array ? m.color : null;
+            const L = { zu, P, nrVon: (t) => (V ? V[I[t * 3]] | 0 : nrTeil), nrm, hoehe, C, musterT: [], roh: [], ueber: false, A: 0, farbe: [0, 0, 0], lo: [Infinity, Infinity, Infinity], hi: [-Infinity, -Infinity, -Infinity] }; // prettier-ignore
+            const nq = [0, 0, 0];
+            for (let t = 0; t < nt; t++) {
+                const fl2 = S[t] ? nrm(t, nq) : 0;
+                if (!(fl2 > 1e-12)) continue;
+                if (L.nrVon(t)) L.musterT.push(t);
+                else {
+                    L.roh.push(t);
+                    if (hoehe(t) >= zelleM) L.ueber = true;
+                }
+                L.A += fl2 / 2;
+                for (let j = 0; j < 3; j++) {
+                    const i = I[t * 3 + j];
+                    for (let k = 0; k < 3; k++) {
+                        const x = P[i * 3 + k];
+                        if (x < L.lo[k]) L.lo[k] = x;
+                        if (x > L.hi[k]) L.hi[k] = x;
+                        if (C) L.farbe[k] += (C.array[i * C.itemSize + k] * fl2) / 6;
+                    }
+                }
+            }
+            // EIN TEIL UNTER DER ZELLE (die Beschläge): kein Muster, kein gesehenes Dreieck über der Zelle
+            L.faellt = !L.musterT.length && !L.ueber;
+            return L;
+        });
+        // DER TRÄGER: ein Teil unter der Zelle fällt als Mittel in den Stoff des Teils, dessen gesehenes Dreieck seiner Mitte am
+        // nächsten liegt (der Beschlag in seinen Flügel, die Lamelle in ihr Dach) — die Farbe des Trägers rückt auf das
+        // flächengewichtete Mittel beider; das gilt jeder Seh-Klasse unter der Zelle, nie einem Stoff beim Namen
+        const traeger = new Map();
+        lauf.forEach((F, fi) => {
+            if (!F || !F.faellt || !(F.A > 0)) return;
+            const p = [(F.lo[0] + F.hi[0]) / 2, (F.lo[1] + F.hi[1]) / 2, (F.lo[2] + F.hi[2]) / 2];
+            let best = Infinity,
+                ti = -1;
+            lauf.forEach((G, gi) => {
+                if (!G || G.faellt) return;
+                for (const T of [G.musterT, G.roh])
+                    for (const t of T) {
+                        const d = __punktDreieck(p, G.P, teile[gi].index, t);
+                        if (d < best) [best, ti] = [d, gi];
+                    }
+            });
+            if (ti < 0 || !F.C || !lauf[ti].C)
+                throw new Error("Stufe aus der L0: Teil " + fi + " fällt unter der Zelle — " + (ti < 0 ? "kein Teil trägt es" : "ohne Farbe (Teil " + (F.C ? ti : fi) + ")")); // prettier-ignore
+            const z = traeger.get(ti) || { A: 0, farbe: [0, 0, 0] };
+            z.A += F.A;
+            for (let k = 0; k < 3; k++) z.farbe[k] += F.farbe[k];
+            traeger.set(ti, z);
+            unterZelle++;
+        });
+        for (let mi = 0; mi < teile.length; mi++) {
+            const m = teile[mi],
+                L = lauf[mi];
+            if (!L) {
+                aus.push(m);
+                continue;
+            }
+            if (L.faellt) continue;
+            const zu = L.zu,
+                P = L.P,
+                I = m.index,
+                n = P.length / 3,
+                nrVon = L.nrVon,
+                nrm = L.nrm,
+                hoehe = L.hoehe;
             const attrs = Object.keys(m).filter((k) => m[k] && m[k].array && m[k].itemSize && m[k].array.length === n * m[k].itemSize);
             // die Muster-Ecken verschweißt (1 mm, ±65 m im Vorlagen-Raum): ein Stein ist eine zusammenhängende Menge Dreiecke
             const schweiss = new Map(),
@@ -1155,36 +1280,94 @@ const foundryKanal = (() => {
                 return (wid[i] = w);
             };
             const behalten = [],
-                musterT = [];
-            let ueberZelle = false;
-            for (let t = 0; t < nt; t++) {
-                if (!S[t]) continue;
-                const a = I[t * 3] * 3,
-                    b = I[t * 3 + 1] * 3,
-                    c = I[t * 3 + 2] * 3;
-                const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2]; // prettier-ignore
-                const vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2]; // prettier-ignore
-                const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; // prettier-ignore
-                const fl2 = Math.hypot(nx, ny, nz);
-                if (!(fl2 > 1e-12)) continue;
-                if (nrVon(t)) {
-                    musterT.push(t);
+                musterT = L.musterT,
+                roh = L.roh,
+                flanke = new Set();
+            const nq = [0, 0, 0];
+            // die Ecken verschweißt; die Inseln der übrigen Dreiecke (ohne Zeile)
+            for (const t of musterT) for (let j = 0; j < 3; j++) weld(I[t * 3 + j]);
+            for (const t of roh) for (let j = 0; j < 3; j++) weld(I[t * 3 + j]);
+            const wurzel = (E, x) => {
+                while (E[x] !== x) x = E[x] = E[E[x]];
+                return x;
+            };
+            const inselE = Int32Array.from({ length: schweiss.size }, (_, i) => i);
+            for (const t of roh) {
+                const a = wurzel(inselE, wid[I[t * 3]]);
+                inselE[wurzel(inselE, wid[I[t * 3 + 1]])] = a;
+                inselE[wurzel(inselE, wid[I[t * 3 + 2]])] = a;
+            }
+            const inseln = new Map();
+            for (const t of roh) {
+                const r = wurzel(inselE, wid[I[t * 3]]);
+                if (!inseln.has(r)) inseln.set(r, []);
+                inseln.get(r).push(t);
+            }
+            for (const L of inseln.values()) {
+                // STEIN OHNE ZEILE: die Haupt-Normale der Insel (die Richtung auf 1/20 mit der größten Fläche, ihr Mittel)
+                const richt = new Map();
+                let best = null;
+                for (const t of L) {
+                    const f = nrm(t, nq);
+                    const key = ((Math.round(nq[0] * 20) + 20) * 41 + Math.round(nq[1] * 20) + 20) * 41 + Math.round(nq[2] * 20) + 20; // prettier-ignore
+                    let r = richt.get(key);
+                    if (!r) richt.set(key, (r = [0, 0, 0, 0]));
+                    r[0] += nq[0] * f;
+                    r[1] += nq[1] * f;
+                    r[2] += nq[2] * f;
+                    r[3] += f;
+                    if (!best || r[3] > best[3]) best = r;
+                }
+                const lD = Math.hypot(best[0], best[1], best[2]);
+                const nD = [best[0] / lD, best[1] / lD, best[2] / lD];
+                // der Rahmen der Insel (wie die Ebene der Zone ihn nimmt): ein Quader in ihm — jede Fläche parallel zu einer Achse
+                const up = Math.abs(nD[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+                const tA = [up[1] * nD[2] - up[2] * nD[1], up[2] * nD[0] - up[0] * nD[2], up[0] * nD[1] - up[1] * nD[0]];
+                const tl = Math.hypot(tA[0], tA[1], tA[2]);
+                for (let k = 0; k < 3; k++) tA[k] /= tl;
+                const bA = [nD[1] * tA[2] - nD[2] * tA[1], nD[2] * tA[0] - nD[0] * tA[2], nD[0] * tA[1] - nD[1] * tA[0]];
+                const achse = (x) => Math.abs(nq[0] * x[0] + nq[1] * x[1] + nq[2] * x[2]);
+                let stein = true;
+                for (const t of L) {
+                    nrm(t, nq);
+                    if (Math.max(achse(nD), achse(tA), achse(bA)) < 0.99) {
+                        stein = false;
+                        break;
+                    }
+                }
+                if (stein) {
+                    // ein Rechteck in ihrer Ebene: die Front füllt ihr Rechteck bis auf die Zelle am Umriss
+                    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity, A = 0; // prettier-ignore
+                    for (const t of L) {
+                        const f = nrm(t, nq);
+                        if (nq[0] * nD[0] + nq[1] * nD[1] + nq[2] * nD[2] <= 0.9) continue;
+                        A += f / 2;
+                        for (let j = 0; j < 3; j++) {
+                            const i = I[t * 3 + j] * 3,
+                                u = P[i] * tA[0] + P[i + 1] * tA[1] + P[i + 2] * tA[2],
+                                v = P[i] * bA[0] + P[i + 1] * bA[1] + P[i + 2] * bA[2];
+                            if (u < u0) u0 = u;
+                            if (u > u1) u1 = u;
+                            if (v < v0) v0 = v;
+                            if (v > v1) v1 = v;
+                        }
+                    }
+                    stein = A > 0 && (u1 - u0) * (v1 - v0) - A <= zelleM * (u1 - u0 + v1 - v0);
+                }
+                if (stein) {
+                    // der Stein fällt in die Flächen seiner Zonen: Front und Rücken immer, die Flanken wie die Kanten des Verbands
+                    steine++;
+                    for (const t of L) {
+                        nrm(t, nq);
+                        musterT.push(t);
+                        if (achse(nD) <= 0.9) flanke.add(t);
+                    }
                     continue;
                 }
-                const kante = Math.max(Math.hypot(ux, uy, uz), Math.hypot(vx, vy, vz), Math.hypot(P[c] - P[b], P[c + 1] - P[b + 1], P[c + 2] - P[b + 2])); // prettier-ignore
-                if (fl2 / kante < s) continue; // die kleinste Höhe (2 · Fläche ÷ längste Kante) unter einem Bildpunkt
-                if (fl2 / kante >= zelleM) ueberZelle = true;
-                behalten.push(t);
-            }
-            // ein Teil unter der Zelle fällt (die Beschläge): kein Muster, kein gesehenes Dreieck über der Zelle
-            if (!musterT.length && !ueberZelle) {
-                if (behalten.length) unterZelle++;
-                continue;
+                for (const t of L) if (hoehe(t) >= s) behalten.push(t); // DÜNNES FÄLLT: die kleinste Höhe unter einem Bildpunkt
             }
             // die Teile (Steine) über die verschweißten Ecken der Muster-Dreiecke
-            const eltern = new Int32Array(musterT.length * 3 + 1);
-            for (const t of musterT) for (let j = 0; j < 3; j++) weld(I[t * 3 + j]);
-            for (let i = 0; i < schweiss.size; i++) eltern[i] = i;
+            const eltern = Int32Array.from({ length: schweiss.size }, (_, i) => i);
             const finde = (x) => {
                 while (eltern[x] !== x) x = eltern[x] = eltern[eltern[x]];
                 return x;
@@ -1209,9 +1392,10 @@ const foundryKanal = (() => {
                 nz /= fl2;
                 const nr = nrVon(t);
                 const dq = Math.round((nx * P[a] + ny * P[a + 1] + nz * P[a + 2]) / O.ebeneM);
-                const key = ((((nr * 41 + Math.round(nx * 20) + 20) * 41 + Math.round(ny * 20) + 20) * 41 + Math.round(nz * 20) + 20) * 16384 + dq + 8192); // prettier-ignore
+                const fl = flanke.has(t);
+                const key = ((((nr * 41 + Math.round(nx * 20) + 20) * 41 + Math.round(ny * 20) + 20) * 41 + Math.round(nz * 20) + 20) * 16384 + dq + 8192) * 2 + (fl ? 1 : 0); // prettier-ignore
                 let e = ebenen.get(key);
-                if (!e) ebenen.set(key, (e = { nr, n: [nx, ny, nz], tris: [], flaeche: 0 }));
+                if (!e) ebenen.set(key, (e = { nr, fl, n: [nx, ny, nz], tris: [], flaeche: 0 }));
                 e.tris.push(t);
                 e.flaeche += fl2 / 2;
             }
@@ -1239,7 +1423,7 @@ const foundryKanal = (() => {
             const pt = (i, ax) => P[i * 3] * ax[0] + P[i * 3 + 1] * ax[1] + P[i * 3 + 2] * ax[2];
             const c = O.zellePx * s;
             for (const e of ebenen.values()) {
-                if (e.flaeche < O.minFlaeche) continue;
+                if (e.nr && e.flaeche < O.minFlaeche) continue; // die Kanten der Steine: ihr Relief (die Front eines Steins ohne Zeile fällt nie)
                 const up = Math.abs(e.n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
                 let tA = [up[1] * e.n[2] - up[2] * e.n[1], up[2] * e.n[0] - up[0] * e.n[2], up[0] * e.n[1] - up[1] * e.n[0]];
                 const tl = Math.hypot(tA[0], tA[1], tA[2]);
@@ -1310,6 +1494,10 @@ const foundryKanal = (() => {
                         }
                     }
                     if (!(fl > 0)) continue;
+                    // die Flanke eines Steins ohne Zeile trägt ihr Relief als ZONE: ihre Ebene teilen fremde Steine quer über die
+                    // Fassade (die Oberseiten einer Bohlen-Lage), das Auge sieht den zusammenhängenden Streifen — unter `minFlaeche`
+                    // fällt er wie die Kante des Verbands (Schwarzwald L2 2 178 → 364 Flanken-Dreiecke)
+                    if (e.fl && fl < O.minFlaeche) continue;
                     tiefe /= nEck;
                     if (farbe) for (let j = 0; j < farbe.length; j++) farbe[j] /= fl;
                     // die Zone als Raster der Zelle `c`: eine Zelle trägt, wo ein Stein sie berührt (die Fuge unter einer Zelle
@@ -1350,6 +1538,7 @@ const foundryKanal = (() => {
                             ecke(u0, v1);
                             // gewickelt nach der Normale der Ebene: (t, b) mit t × b = n läuft gegen den Uhrzeigersinn
                             idx.push(basis, basis + 1, basis + 2, basis, basis + 2, basis + 3);
+                            if (e.fl) flankenTris += 2;
                         }
                     zonen++;
                 }
@@ -1372,10 +1561,23 @@ const foundryKanal = (() => {
                 });
                 neu[a] = { array: arr, itemSize: k };
             }
+            // der Träger nimmt seine gefallenen Teile als Mittel in seinen Stoff (jede Ecke um dieselbe Verschiebung)
+            const zt = traeger.get(mi);
+            if (zt) {
+                if (!neu.color) throw new Error("Stufe aus der L0: Träger " + mi + " ohne Farbe in der Stufe");
+                const ca = neu.color.array,
+                    cs = neu.color.itemSize;
+                for (let k = 0; k < 3; k++) {
+                    const d = (L.farbe[k] + zt.farbe[k]) / (L.A + zt.A) - L.farbe[k] / L.A;
+                    for (let i = k; i < ca.length; i += cs) ca[i] += d;
+                }
+                traeger.delete(mi);
+            }
             neu.index = Uint32Array.from(idx);
             aus.push(neu);
         }
-        return { teile: aus, zonen, kollaps: [vorKollaps, nachKollaps], unterZelle };
+        for (const ti of traeger.keys()) throw new Error("Stufe aus der L0: der Träger " + ti + " gefallener Teile fällt selbst");
+        return { teile: aus, zonen, kollaps: [vorKollaps, nachKollaps], unterZelle, steine: [steine, flankenTris] };
     }
     function __replyBuildAsset(msg) {
         const reqId = msg.reqId;
@@ -1559,7 +1761,7 @@ const foundryKanal = (() => {
                     nachher: res.bericht.nachher,
                     faltungen: res.bericht.faltungen.length,
                     ...(res.bericht.frei > 0 ? { frei: res.bericht.frei } : {}),
-                    ausL0: { s, l0: l0 && l0.nachher ? l0.nachher.tris : null, gesehen, zonen: abl.zonen, kollaps: abl.kollaps, unterZelle: abl.unterZelle, ms: Date.now() - t0 },
+                    ausL0: { s, l0: l0 && l0.nachher ? l0.nachher.tris : null, gesehen, zonen: abl.zonen, kollaps: abl.kollaps, unterZelle: abl.unterZelle, steine: abl.steine, ms: Date.now() - t0 },
                 };
                 if (res.bericht.bruch.length) {
                     budgetBruch = (budgetBruch || []).concat(res.bericht.bruch);
