@@ -331,16 +331,16 @@ return (async function leiterRahmen(H, P, lauf) {
                 for (const nr of [5, 6, 7, 8, 9]) await L.je(nr, async () => L.umfang(nr, z.far, sicht));
             }); }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-radeon\karte2.same.massstab.spanne_1.json 30
 [linse-gpu] amd/rdna-3
-@@ 0.8 s · Kamera und Saat der Sitzung: {"far":8500,"near":0.1,"fov":75,"saat":"anazh-realm-seed","saaten":1}
-@@ 0.8 s · same.massstab.spanne S1 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält 1 Saat (anazh-realm-seed), ein Start je Saat braucht eine neue Welt","t":0.8}
-@@ 0.8 s · same.massstab.spanne S2 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält 1 Saat (anazh-realm-seed), ein Start je Saat braucht eine neue Welt","t":0.8}
-@@ 0.8 s · same.massstab.spanne S3 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält 1 Saat (anazh-realm-seed), ein Start je Saat braucht eine neue Welt","t":0.8}
-@@ 0.8 s · same.massstab.spanne S4 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält 1 Saat (anazh-realm-seed), ein Start je Saat braucht eine neue Welt","t":0.8}
-@@ 0.8 s · same.massstab.spanne S5 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":0.8}
-@@ 0.8 s · same.massstab.spanne S6 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":0.8}
-@@ 0.8 s · same.massstab.spanne S7 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":0.8}
-@@ 0.8 s · same.massstab.spanne S8 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":0.8}
-@@ 0.8 s · same.massstab.spanne S9 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":0.8}
+@@ 13.7 s · Kamera und Saat der Sitzung: {"far":8500,"near":0.1,"fov":75,"saat":"anazh-realm-seed","saaten":1}
+@@ 13.7 s · same.massstab.spanne S1 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält 1 Saat (anazh-realm-seed), ein Start je Saat braucht eine neue Welt","t":13.7}
+@@ 13.7 s · same.massstab.spanne S2 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält 1 Saat (anazh-realm-seed), ein Start je Saat braucht eine neue Welt","t":13.7}
+@@ 13.7 s · same.massstab.spanne S3 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält 1 Saat (anazh-realm-seed), ein Start je Saat braucht eine neue Welt","t":13.7}
+@@ 13.7 s · same.massstab.spanne S4 umfang {"art":"umfang","erzeugt":1,"was":"die Sitzung hält 1 Saat (anazh-realm-seed), ein Start je Saat braucht eine neue Welt","t":13.7}
+@@ 13.7 s · same.massstab.spanne S5 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":13.7}
+@@ 13.7 s · same.massstab.spanne S6 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":13.7}
+@@ 13.7 s · same.massstab.spanne S7 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":13.7}
+@@ 13.8 s · same.massstab.spanne S8 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":13.7}
+@@ 13.8 s · same.massstab.spanne S9 umfang {"art":"umfang","erzeugt":8500,"was":"die Welt-Kamera reicht 8500 m (state.camera.far, stamm/dirigent-ankunft.js:468) — was dahinter liegt, zeichnet die Welt nicht","t":13.8}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
