@@ -1751,7 +1751,7 @@ async function checkBandHimmelTag({ page, check }) {
                 st.starField.setMatrixAt(i, M);
             }
         }
-        // die Mutanten von stern-bild: die gleiche Kante (jeder Punkt 2 · kernPx), der graue Ton (jede Farbe auf ihre Luma), kein Band
+        // die Mutanten von stern-bild: die gleiche Kante (jeder Punkt θ0), der graue Ton (jede Farbe auf ihre Luma), kein Band
         const sfM = st.starField;
         const kanteWar = sfM && stoerung === "staffel" ? sfM.userData.kante.array.slice() : null;
         if (kanteWar) sfM.userData.kante.array.fill(AnazhRealm.HIMMEL.sternBild.theta0);
