@@ -613,7 +613,7 @@ function abdruckKern(G) {
             aus = {},
             t0 = st.timeOfDay;
         for (const h of [6, 9, 12, 17, 21]) {
-            st.timeOfDay = h / 24;
+            r._uhrSetzen(h / 24, "regler");
             try {
                 r._applyDayNightToScene();
             } catch (e) {
@@ -645,7 +645,7 @@ function abdruckKern(G) {
                 3
             );
         }
-        st.timeOfDay = t0;
+        r._uhrSetzen(t0, "regler");
         try {
             r._applyDayNightToScene();
         } catch {
@@ -865,7 +865,7 @@ async function abdruckLauf({
                     st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                     st.yaw = 0;
                     st.pitch = 0;
-                    st.timeOfDay = 0.5;
+                    r._uhrSetzen(0.5, "regler");
                     st.perfTargetMs = 1000;
                     const ziel = Math.min(12, st.chunkRingRadius || 4);
                     let n = await __gebautNach("abdruck: Ring " + ziel, {
@@ -881,7 +881,7 @@ async function abdruckLauf({
                     r._weltUhrNimm(uhr);
                     t = stempel;
                     for (let k = 0; k < TAKTE; k++) {
-                        st.timeOfDay = 0.5;
+                        r._uhrSetzen(0.5, "regler");
                         await takt();
                     }
                     // DIE WELT STEHT BEI DIESER UHR (w28-funktion-welt-2): was der Sprung und die Takte regten (der Schnee-Versatz

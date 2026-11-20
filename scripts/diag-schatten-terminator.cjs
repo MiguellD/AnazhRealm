@@ -117,7 +117,7 @@ const grat = async (h, w) => {
   const p = await lies(K.rt, q, q >> 1);
   return p.filter((v, k) => k % 4 < 1 && v - p[k + 2] > H.bandM).length;
 };
-const g = await grat(50, 200), a = S.vec3(11e3, 55, S.uv().x.mul(-2e4).add(5e3)), rt = new T.RenderTarget(2, 1, { type: T.HalfFloatType });
+const g = await grat(50, 200), a = S.vec3(11e3, 55, S.uv().x.mul(-2e4).add(5e3)), rt = __messZiel(2, 1, { type: T.HalfFloatType });
 r._atmoZeichne(r.constructor._schirmDreieck(() => S.vec4(r._luftEnsure().farbe(a, a.add(S.vec3(500, 0, 0))), 1), "linse-h"), rt);
 const l = await lies(rt, 2, 0);
 return { grat: g, leer: await grat(-H.leerM, 0), ring: Object.values(r.state.fernRing.stoffe).filter((s) => s.receivedShadowPositionNode).length, luft: l[1] / l[5] };

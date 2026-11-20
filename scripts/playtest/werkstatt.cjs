@@ -873,7 +873,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         out.sorrowAfterTick = st.player.emotions.sorrow;
         // der Wunsch ist ein Akt mit Stempel (feld.K2#2): der jüngste der Liste, der nächste Zug zieht ihn
         const sorrowWunsch = st.wetterWuensche.at(-1)?.wort;
-        st.spielZeit += AnazhRealm.WETTER_ZUG_SEK;
+        r._weltUhrNimm(st.spielZeit + AnazhRealm.WETTER_ZUG_SEK);
         r._loopWeatherAndGrowth(0);
         out.sorrowTriggersRain = sorrowWunsch === "rainy" && st.weather === "rainy";
 
@@ -966,7 +966,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         r._tickWorldRules(400);
         const happyCount = st.creatureEmotions.filter((e) => e === "happy").length;
         const hopeWunsch = st.wetterWuensche.at(-1)?.wort;
-        st.spielZeit += AnazhRealm.WETTER_ZUG_SEK;
+        r._weltUhrNimm(st.spielZeit + AnazhRealm.WETTER_ZUG_SEK);
         r._loopWeatherAndGrowth(0);
         out.hopeTriggersSunnyHappy =
             hopeWunsch === "sunny" && st.weather === "sunny" && happyCount === st.creatureEmotions.length;

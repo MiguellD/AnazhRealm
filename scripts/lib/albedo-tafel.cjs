@@ -425,7 +425,7 @@ function laborZiel(R, W, H) {
     // `buehneZeichnet`); r184 frischt die Uniformen je Bild auch ohne ihn. Die Seite gehört ab hier der Messung.
     if (gpu) R.setAnimationLoop(null);
     if (gl) gl.getExtension("EXT_color_buffer_float");
-    const rt = new T[gpu ? "RenderTarget" : "WebGLRenderTarget"](W, H, { type: T.HalfFloatType, depthBuffer: true });
+    const rt = __messZiel(W, H, { type: T.HalfFloatType, depthBuffer: true }, T, gpu ? "RenderTarget" : "WebGLRenderTarget");
     const lies = async () => {
         let roh = gpu ? R.readRenderTargetPixelsAsync(rt, 0, 0, W, H) : new Float32Array(W * H * 4);
         if (gl) gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, roh);
@@ -795,7 +795,7 @@ function laborLaubGegenlicht(o) {
     cam.position.copy(auge);
     cam.lookAt(mitte);
     cam.updateMatrixWorld(true);
-    const rt = new T.WebGLRenderTarget(W, H, { type: T.HalfFloatType, format: T.RGBAFormat, depthBuffer: true });
+    const rt = __messZiel(W, H, { type: T.HalfFloatType, format: T.RGBAFormat, depthBuffer: true }, T, "WebGLRenderTarget");
     const lichter = [];
     sc.traverse((x) => {
         if (x.isLight) lichter.push([x, x.intensity]);

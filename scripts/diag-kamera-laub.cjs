@@ -324,7 +324,7 @@ async function leibStrafe(k) {
                     if (i > k.warm) out.boden[stand] = Math.max(out.boden[stand], Math.abs(b / b0 - 1));
                 }
                 if (n > 1) break;
-                const rt = new THREE.RenderTarget(W, H);
+                const rt = __messZiel(W, H);
                 rend.setOutputRenderTarget(rt);
                 for (let i = 0, g0 = r._gpuLeine.gerendert; i < 20 && r._gpuLeine.gerendert === g0; i++) await bild(k.dt);
                 rend.setOutputRenderTarget(null);

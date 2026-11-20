@@ -298,7 +298,7 @@ hauptLauf(async () => {
         // die Schleife ruht seit G4 (`R.setAnimationLoop(null)` dort): gezeichnet wird nur, was G8 und G10 rufen
         P.epoche = 5;
         rebuild();
-        const ziel = new THREE.RenderTarget(160, 90),
+        const ziel = __messZiel(160, 90),
             a = {};
         R.setOutputRenderTarget(ziel);
         const bild = async (an) => {

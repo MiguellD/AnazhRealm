@@ -73,7 +73,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         r.setTimeOfDay(0.4, "human");
         const beforeT = st.timeOfDay;
         st._uhrSpielZeit = st.spielZeit;
-        st.spielZeit += 0.5; // die Welt-Uhr: 0.5 s, dayLength=60min=3600s → +0.00014
+        r._weltUhrNimm(st.spielZeit + 0.5); // die Welt-Uhr: 0.5 s, dayLength=60min=3600s → +0.00014
         r.tickDayNight(0.5);
         out.tickAdvances = st.timeOfDay > beforeT;
         // DER TAG AN DER WELT-UHR (w28-nacht-licht): die Wanduhr allein bewegt ihn nie (unter 250-ms-Takten lief er 2,5-mal so schnell
@@ -1590,7 +1590,8 @@ async function checkBandWeltUhr({ page, check }) {
         const [S0, ox, oz] = [st.spielZeit + 100, pm.x + 40, pm.z - 25]; // ein fester Ort der Böe
         const start = (t0) => {
             r._gameLoopTick(t0); // der Anker der Wanduhr
-            [st.spielZeit, st._fixedSimTime, st._fixedAccumulator] = [S0, undefined, 0];
+            r._weltUhrNeu(S0); // die Welt-Uhr der Böe, bestellt bei der Welt
+            [st._fixedSimTime, st._fixedAccumulator] = [undefined, 0];
             for (let i = 1; i <= 30; i++) r._gameLoopTick(t0 + 20 * i);
             const w = r._windAt(ox, oz, r._bildZeit);
             const d = W?.uWindDir.value;
@@ -1749,8 +1750,7 @@ async function checkBandHimmelTag({ page, check }) {
         const sonneVN = st.sunMesh.material.vertexNode;
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
         const zeit = (t) => {
-            st.timeOfDay = t;
-            if (st.world) st.world.timeOfDay = t;
+            r._uhrSetzen(t, "regler");
             r._setWeather("sunny", "human");
             window.__uebergangFaellt(r);
             r._applyDayNightToScene();

@@ -179,8 +179,7 @@ hauptLauf(async () => {
         // die Bühne: Mittag, Sonne, ohne Übergang — VOR dem Warmup (die Umgebung malt sich gleich danach aus diesem Himmel).
         // Die Sonne setzt der Halter selbst (`__wetterSetzen`: der eine Zug, den der Halt durchlässt, danach hält die Uhr).
         window.__wetterSetzen("sunny");
-        s.timeOfDay = 0.5;
-        if (s.world) s.world.timeOfDay = 0.5;
+        r._uhrSetzen(0.5, "regler");
         window.__buehneStand = () => ({ wetter: s.weather, uebergang: !!s.weatherTransition, saison: s.season, zeit: s.timeOfDay, bauten: (s.architectures || []).length });
         window.__buehne0 = window.__buehneStand();
         window.__wetterSeq0 = window.__wetterBuch(0).seq;
@@ -315,7 +314,7 @@ hauptLauf(async () => {
             const zurueck = leihe(r, { _loopRender() {} });
             if (!window.__buehneLos) {
                 window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
-                s.timeOfDay = window.__buehne0.zeit; // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
+                r._uhrSetzen(window.__buehne0.zeit, "regler"); // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
             }
             try { r._gameLoopTick(performance.now()); } catch {} finally { zurueck(); }
             return { cc: cnt() - c0 };
@@ -387,7 +386,7 @@ hauptLauf(async () => {
         log(`Schlüssel-Warmup: ${setup.scheiben} Aufrufe`);
         for (let i = 0; i < 10; i++) {
             // SELBSTTEST: die Uhr der Welt läuft frei und der Wetter-Zug wird fällig — die Bühnen-Wand MUSS rot werden
-            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; const s = st; s.weatherEffectTime = 0; s.spielZeit += 120; });
+            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; const s = st; s.weatherEffectTime = 0; r._weltUhrNimm(s.spielZeit + 120); });
             if (SELBSTTEST_PROGRAMM && i === 5) await ruf("Selbsttest-Programm", () => { r.dslRun(["spawn_village", ["near_player"]], { source: "selbsttest" }); });
             await frame(`Warmup-Frame ${i}`);
         }

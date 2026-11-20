@@ -723,9 +723,10 @@ async function fahreSaat(browser, schein) {
         // Null-Punkt, das zweite Laden desselben Stands lässt ihn stehen
         const alt = await page.evaluate(() => {
             const lade = (s) => (r._loadStateRestoreWorldMeta(s), r._loadStateRestoreSoulAndAtmosphere(s), r.state.worldMeta.tagNull);
+            // der Stand trägt die Stunde, die die Welt hat (die Uhr über ihren Schreiber, nie ins Abbild geschrieben)
+            r._uhrSetzen(0.375, "regler");
             const s = r.buildStateSnapshot();
             delete s.worldMeta.tagNull;
-            s.timeOfDay = 0.375;
             const erst = lade(s);
             return { erst, zweit: lade(r.buildStateSnapshot()) };
         });
