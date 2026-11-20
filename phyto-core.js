@@ -97,7 +97,7 @@
         // Solitär trägt den kleineren (Fichte Same 3 9,7 m Radius gegen 11,5 im Bestand) — aus ihm folgte ein Stamm von über
         // einem Meter und ein Solitär, der schlanker ist als sein Bestand. Offen, bis die Krone der Konifere ihr Maß trägt.
         // DER SOLITÄR UND DER TRAUF (K20, `P.freistand`, FREISTAND unten): ein Baum mit Licht von der Seite trägt seine Krone
-        // tief — über FREISTAND.krone seiner gewachsenen Höhe (kein Hub auf die Bestandshöhe).
+        // tief — ihr tiefster Blatt-Anker bei FREISTAND.fuss seiner gewachsenen Höhe (kein Hub auf die Bestandshöhe).
         const weltMass = P.weltSkala > 0 && P.hoeheM > 0;
         const frei = weltMass && P.freistand === 1;
         const kroneTraegt = weltMass && !P.conifer;
@@ -399,14 +399,14 @@
         }
         // DER HUB DES SCHAFTS reist mit (K20, das Welt-Maß): die Krone wuchs in der Form-Höhe, der Schaft trägt sie um `schaftHub`
         // (Vorlagen-Einheiten) höher — das Maß ihres Details (die Sichthöhe der SSE-Stufenwahl) ist die Höhe ohne ihn.
-        // Der Solitär und der Baum am Trauf (FREISTAND.krone): die Krone streckt sich über [(1 − krone) · h0, h0] seiner
-        // gewachsenen Höhe h0 — der Ast-Ansatz sinkt zum Grund, der Stamm bleibt kurz (das Seitenlicht hält die unteren Äste).
+        // Der Solitär und der Baum am Trauf (FREISTAND.fuss): die Krone streckt sich lotrecht bis zum Wipfel seiner gewachsenen
+        // Höhe h0, ihr tiefster Blatt-Anker steht bei fuss · h0 — der Stamm bleibt kurz (das Seitenlicht hält die unteren Äste).
         // Der Bestand (T2) hebt Stamm UND Krone: die Krone reicht über BESTAND.krone der Höhe (kein Ballen auf dem Stiel).
         const hVor = schirmNur.length ? segs.reduce((h, q) => Math.max(h, q.p0[1], q.p1[1]), 0) : 0;
         const schaft = !weltMass
             ? 0
             : frei
-              ? schaftHub(segs, leaves, runMeta, null, FREISTAND.krone, P.alter > 0)
+              ? schaftHub(segs, leaves, runMeta, null, 0, P.alter > 0, FREISTAND.fuss)
               : schaftHub(
                     segs,
                     leaves,
@@ -416,7 +416,7 @@
                     P.alter > 0
                 );
         // (die Konifere im Bestand trägt ihre Krone über BESTAND.krone der Höhe wie der Laubbaum — der Kronen-Ansatz folgt dem
-        // Stand: frei und am Trauf über FREISTAND.krone, im Bestand über BESTAND.krone; laub-kante)
+        // Stand: frei und am Trauf ab FREISTAND.fuss, im Bestand über BESTAND.krone; laub-kante)
         if (P.conifer)
             koniferenKegel(
                 segs,
@@ -2336,8 +2336,10 @@
     // wächst nur: ein Baum, dessen Wipfel schon höher steht, bleibt, wie er wuchs (ein gestauchter Schaft zog die Krone
     // in den Stamm-Abschnitt der Rinden-Linse). Punkte, die sich Stränge teilen, rücken genau einmal. Rückgabe: der Hub ziel − h0
     // (Vorlagen-Einheiten; 0, wo der Schaft nicht wächst).
-    // Mit `ziel` null (der Solitär und der Trauf, FREISTAND.krone) behält der Baum seine gewachsene Höhe h0, und `krone`
-    // legt seine Krone über [(1 − krone) · h0, h0] — der Stamm unter ihr wird kürzer (laub-kante-4, der Waldmantel).
+    // Mit `ziel` null und `fuss` (der Solitär und der Trauf, FREISTAND.fuss) behält der Baum seine gewachsene Höhe h0, und die
+    // Krone streckt sich lotrecht über [kb, h0], bis ihr tiefster Punkt (Ast-Ansatz oder hängendes Blatt, yk) bei fuss · h0 steht:
+    // mit a = (yk − yb) / (h0 − yb) ist kb = (fuss · h0 − a · h0) / (1 − a) — der Stamm unter ihr wird kürzer (laub-kante-4,
+    // der Waldmantel; bis dahin hob der Ansatz die Krone nur und senkte sie nie).
     // Mit `krone` (der Bestand, BESTAND.krone) hebt der Hub Stamm UND Krone: der Ast-Ansatz yb steht danach bei (1 − krone) ×
     // ziel, der Stamm streckt sich bis dorthin, und die Krone [yb, h0] streckt sich lotrecht über [(1 − krone) · ziel, ziel] —
     // ein Bestandsbaum trägt seine Krone über den oberen Teil seiner Höhe, nie als Ballen auf dem Stiel (Spike T1). Dann
@@ -2352,7 +2354,7 @@
     // ganze Gestalt). Bis w12-riesenhalm hob der Hub das junge Skelett — weniger Ordnungen, die halbe Form-Höhe — auf die
     // Höhe des gewachsenen: je jünger, desto länger der kahle Schaft unter einer kleinen Krone (Kronen-Fuß der Tanne @0,06
     // bei 0,51 H, gewachsen 0,34 H; die Fichte 0,40 gegen 0,26) — aus dem Jungwuchs der Narbe ragten Riesenhalme.
-    function schaftHub(segs, leaves, runMeta, ziel, krone, jung) {
+    function schaftHub(segs, leaves, runMeta, ziel, krone, jung, fuss) {
         let h0 = 0,
             yb = Infinity;
         const erst = new Set();
@@ -2365,7 +2367,8 @@
         }
         if (!(yb > 1e-6) || !(h0 > yb)) return 0;
         const dh = ziel === null ? 0 : ziel - h0;
-        if (!(dh > 0) && !(ziel === null && krone > 0)) return 0;
+        const frei = ziel === null && fuss > 0 && fuss < 1;
+        if (!(dh > 0) && !frei) return 0;
         if (jung) {
             const [k, gewachsen] = [(h0 + dh) / h0, new Set()];
             const wachse = (q) => gewachsen.has(q) || (gewachsen.add(q), (q[0] *= k), (q[1] *= k), (q[2] *= k));
@@ -2374,7 +2377,13 @@
             return 0;
         }
         const streck = (yb + dh) / yb;
-        const kb = krone > 0 ? (1 - krone) * (h0 + dh) : 0;
+        let kb = krone > 0 ? (1 - krone) * (h0 + dh) : 0;
+        if (frei) {
+            let yk = yb;
+            for (const l of leaves) yk = Math.min(yk, l.pos[1]);
+            const a = (yk - yb) / (h0 - yb);
+            kb = Math.max(1e-3 * h0, (fuss * h0 - a * h0) / (1 - a));
+        }
         const kStreck = kb > 0 ? (h0 + dh - kb) / (h0 - yb) : 0;
         const laenge = (q) => Math.hypot(q.p1[0] - q.p0[0], q.p1[1] - q.p0[1], q.p1[2] - q.p0[2]);
         const vorher = segs.map((q) => (q.runId === 0 ? laenge(q) : 0));
@@ -2880,12 +2889,13 @@
     // zur anderen ≥ 120°) sind EIN Fall: das Seitenlicht hält die unteren Äste. Im Innern (Nachbarn ringsum, die größte
     // Lücke < 120°) trägt er den kahlen Schaft des Bestands. Bis laub-kante-4 machte JEDER Nachbar den Baum zum Bestand:
     // der Trauf stand mit kahlen Stämmen zur Wiese (Tafel-Pose, laub-kante Spielgang 6 rote Klassen).
-    // krone: die Krone des freien Baums reicht über 0,85 seiner Höhe (Marbach: kurzer dicker Stamm; Kronen-Fuß Eiche 0,11,
-    // Buche 0,01, Birke 0,17, Fichte 0,14, Tanne 0,15 H — bis laub-kante-4 hob der Ansatz 0,3 sie auf 0,24–0,31 H).
+    // fuss: der tiefste Blatt-Anker des freien Baums bei 0,16 seiner Höhe, die Karten hängen darunter (Marbach: kurzer dicker
+    // Stamm unter der tiefen Krone; ohne ihn stand die Krone als Busch auf dem Boden, Blick-Sonde 12.10.) — bis laub-kante-4
+    // hob der Ansatz 0,3 die Krone nur (Kronen-Fuß 0,24–0,31 H) und senkte sie nie.
     // ab: die Gestalt des Solitärs (`solitaerGestalt`) — eine Baum-Art mit mindestens `ab` Bestand-Gestalten
     // (budget.gestalten, die Massen-Arten des Walds) trägt DAZU ihren Solitär als Gestalt V+1: der Bestand behält alle
     // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
-    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, krone: 0.85, seite: (2 * Math.PI) / 3, ab: 2 });
+    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, fuss: 0.16, seite: (2 * Math.PI) / 3, ab: 2 });
     // DAS SEITENLICHT (der Waldmantel): die größte Lücke (rad) zwischen den Richtungen `winkel` (rad, je stehendem Nachbarn)
     // rund um den Baum — ohne Nachbarn 2π. Rein; der EINE Leser des Freistands (`_forestStehtFrei`, gate:fernwald H).
     function forestSeitenlicht(winkel) {
