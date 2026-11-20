@@ -519,7 +519,7 @@ class AnazhRealm_bild_himmel {
 
     // DAS BAND DES KOSMOS k in den Uniforms des Himmels (stern-bild, welt-licht.js `kosmosBand`): je Klasse ihr Licht je pc
     // Sehstrahl in der Farbe ihrer Temperatur (`_lichtLinear`, Luma 1) ÷ EINHEIT_LX, ihre Höhe und ihre Weite s0; einmal je Saat,
-    // mit dem Feld (seine Drehung trägt die Lage des Bands, `_kosmosBandLage`)
+    // mit dem Feld (seine Drehung trägt die Lage des Bands, `_sternDrehung`)
     _kosmosBand(k) {
         const U = this.state.skyboxUniforms && this.state.skyboxUniforms.band;
         if (!U || U.kosmos === k || !this.state.starField) return;
@@ -533,15 +533,18 @@ class AnazhRealm_bild_himmel {
             U.farbe[i].value.set(c.r, c.g, c.b);
             U.form[i].value.set(1 / kl.hz, kl.s0);
         });
-        this._kosmosBandLage();
     }
 
-    // DIE LAGE DES BANDS: Welt → Galaxie = Eᵀ · Rᵀ (R die siderale Drehung des Felds, E die Zeilen galaktisch → Feld,
-    // `kosmosSystem(…).ebene`) — je Bild mit der Drehung des Felds (`_loopRender`), dieselbe Lage wie jeder Punkt
-    _kosmosBandLage() {
-        const U = this.state.skyboxUniforms && this.state.skyboxUniforms.band;
+    // DIE SIDERALE DREHUNG DES FELDS um die geneigte Achse mit der Tageszeit — und mit ihr DIE LAGE DES BANDS: Welt → Galaxie =
+    // Eᵀ · Rᵀ (R die Drehung, E die Zeilen galaktisch → Feld, `kosmosSystem(…).ebene`), dieselbe Lage wie jeder Punkt. Der EINE
+    // Schreiber beider: je Bild (`_loopRender`) und mit jedem Stand des Tags (`_dayNightApplyStarField`) — bis stern-bild drehte
+    // nur das Bild, ein neu gebautes Feld stand bis zum nächsten Bild ungedreht neben seinem Band
+    _sternDrehung() {
         const sf = this.state.starField;
-        if (!U || !U.kosmos || !sf) return;
+        if (!sf) return;
+        sf.rotation.set(0.4, (this.state.timeOfDay || 0) * Math.PI * 2, 0.15);
+        const U = this.state.skyboxUniforms && this.state.skyboxUniforms.band;
+        if (!U || !U.kosmos) return;
         const E = U.kosmos.K.heim.system.ebene;
         const R = (this._bandDrehung || (this._bandDrehung = new THREE.Matrix3())).setFromMatrix4(
             (this._bandM4 || (this._bandM4 = new THREE.Matrix4())).makeRotationFromEuler(sf.rotation)
@@ -1899,6 +1902,7 @@ class AnazhRealm_bild_himmel {
         // Veränderliche ziehen nach
         if (this.state.starField && this.state.starField.userData.kosmos !== k) this._buildStarField();
         this._kosmosBand(k);
+        this._sternDrehung();
         const sf0 = this.state.starField;
         if (sf0 && sf0.userData.t !== k.t) this._kosmosFeldZeit(sf0, k);
         const u = this.state.starFieldUniforms;

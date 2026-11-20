@@ -2023,7 +2023,7 @@ async function checkBandHimmelTag({ page, check }) {
         s.staffel.some((e) => e.startsWith("8 STAFFEL")) || "die gleiche Kante blieb grün",
         s.grau.some((e) => e.startsWith("10 CHROMA")) || "der graue Ton blieb grün",
         s.bandlos.some((e) => e.startsWith("11 BAND")) || "der Himmel ohne Band blieb grün",
-        s.null.length === 0 || "nach der Heilung nicht grün",
+        s.null.length === 0 || `nach der Heilung nicht grün: ${s.null.join(" · ")}`,
     ].filter((x) => x !== true);
     check(
         "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten, der Würfel-Himmel, die gleiche Kante, der graue Ton und der Himmel ohne Band werden rot",
