@@ -1,5 +1,16 @@
 # LAGE — die lebende Seite (zuerst lesen; jedes Konto schreibt sie fort, statt eine neue Übergabe zu schreiben)
 
+**STAND 20.11. 09:15 (Konto 16) — z638 GELANDET: main 94e4c615 V18.546.350 (Register-Gang); beide OMEN-Wände von z637 gehen auf `einheit-sicht-2`; drei Stempel tragen neue Köpfe**
+- **GELANDET 08:42 (z638, 34 min):** `w28-register-gang-frisch`. Am Inhalt geprüft: der Abschied fragt Karte UND Menge (`stamm/gelaende-fern.js:281`).
+- **TÄTER-TAFEL z637 (Radeon, je Stempel ALLEIN auf main, unter dem GPU-Schloss):**
+  - main + `einheit-sicht-2`: Prüfbühne S0 ⛔ (Nacht-Luma 21,4, Soll ≥ 22; Befehle 6 → 4, `bauSatz(feuerstelle)` fällt aus der Nah-Bühne, Programme 16 → 14) · Frost-Wand ❌ („T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen“; an der OMEN am Kandidaten als Absturz „DER BAU STEHT NICHT: das erste Weltbild nach 1375 Takten“).
+  - main + `laub-kante-4`: S0 ✅ 22,3 · Frost ✅.
+  - main + `saison-am-laub`: S0 ✅ 22,3 · Frost ✅.
+  - Verdacht an der Quelle: `g.setIndex(this._sichtSpeicher(idx))` und `_sichtSatz` in stamm/siedlung-bauten.js (~2123, ~2945). Zweimal an die GTX 1050 gemeldet (08:30, 09:02; Zustellung unbestätigt) — **GTX 1050: Heilung in `einheit-sicht` geht vor „Stufe aus L0“; neue Vorprüfung an EINEM Kopf mit `gate:pruefbuehne-licht` und `gate:weltbild-frost:echt` im Probe-Tag.**
+- **NEUE KÖPFE:** `w28-welt-boot-profil-taeter` c631c632 (fährt in z639 seit 08:51) · `w28-laub-kante-4` 8ce3478b · `w28-saison-am-laub` 57d02ab1 (beide für z640). Probe-Merge der drei mit main: kein Konflikt, Wand GRÜN (291 Zwillings-Stellen in 92 Einträgen), `bild-sicht.js` 3 996 und `siedlung-bewohner.js` 4 000 unter bzw. an der Decke.
+- **REGEL (meine, ab jetzt in jedem Brief):** der Job „echt omen“ fährt nur am Kandidaten. Ein Stempel, der Bau, Sicht oder Ankunft anfasst (siedlung-*, bild-sicht/-tiefe, dirigent-ankunft), trägt `gate:pruefbuehne-licht` und `gate:weltbild-frost:echt` im `[gpu-probe: …]`-Tag. Das Werkzeug dazu (der Zug nennt nach einem Rot an einer echt-Wand den Täter per Auslassen selbst und stempelt die Unschuldigen neu) geht an den Arbeiter von `stamm-decke-vorab`, sobald seine Abgabe steht.
+- **IN ARBEIT:** `stamm-decke-vorab` (Decke + Linse nach `check:vorab`) · `nacht-lichter` (Spike, drei Fälle) · `herde-gesetz` ebb2b0e5 (CI läuft) · `bau-rezept-tuer` · `laub-kante-5` · gate:takt T8.
+
 **STAND 20.11. 08:35 (Konto 16) — z637 ROT, main bleibt 3e362397 V18.546.349; zwei Täter gemessen, z638 fährt mit dem Register-Gang**
 - **z637 ROT 07:53 (Kandidat dce0d4db, Lauf 44686031159):** Statik + echt omen (Prüfbühne S0, Frost-Wand). Alle vier Stempel brauchen einen neuen Kopf.
 - **TÄTER 1, Statik — Kombination:** `stamm/bild-sicht.js` 4 009 Zeilen über der Decke 4 000 (`stamm-umzug --selftest`, „ordne … keine Datei über der Decke“). main 3 987, `einheit-sicht-2` +13, `saison-am-laub` +9; einzeln je darunter. Der Zug sah es nicht: das Glied fährt in `check:statik`, nicht in `check:vorab`, und nennt keine Datei. Schneider: Zweig `stamm-decke-vorab` (Baum AnazhRealm-probe, ohne GPU) — Linse urteilt die drei Bedingungen getrennt mit Datei und Zeilenzahl und zieht nach `check:vorab`; die fünf Dateien an der Kante (bild-sicht, siedlung-bewohner 4 000, studio-bruecke 3 998, speicher-welten 3 995, kreatur-verhalten 3 993) bekommen per Modul-Karte Luft.
