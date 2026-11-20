@@ -111,6 +111,23 @@ const LAUF = (k) => {
             w.y = boden;
             return p.worldToLocal(w.clone());
         });
+        // DER KONTAKT DER PFOTE (wie beim Menschen Ferse und Ballen, „der tiefere Punkt trägt“): der Punkt unter dem
+        // Pfoten-Gelenk und die Zehe — die vorderste Stelle des Sohlen-Profils (tetrapoda tierBeinMass e, nahe der Sohle).
+        // Rollt die Pfote über die Zehe (tierPose: die gekippte Pfote steht auf ihrem Profil), steht die Zehe; vorher zählte
+        // nur der Punkt unter dem Gelenk, der im Abrollen zu Recht steigt (Satz fuchs Galopp Tastgrad 0,26 → 0,24)
+        const zehe = pfoten.map((p, j) => {
+            const E = (tb.bein[j] && tb.bein[j].e && tb.bein[j].e.l) || [];
+            let [dzMin, dzMax] = [Infinity, -Infinity];
+            for (let i = 0; i < E.length; i += 2) [dzMin, dzMax] = [Math.min(dzMin, E[i]), Math.max(dzMax, E[i])];
+            let best = null;
+            for (let i = 0; i < E.length; i += 2)
+                if (E[i + 1] <= 0.25 * (dzMax - dzMin) && (!best || E[i] > best[0])) best = [E[i], E[i + 1]];
+            if (!best || !(best[0] > 0)) return null;
+            const s = cr.scale.x || 1;
+            const w = new T.Vector3().setFromMatrixPosition(p.matrixWorld);
+            w.set(w.x + best[0] * s, boden + best[1] * s, w.z); // der Blick geht +x
+            return p.worldToLocal(w);
+        });
         const hueft = new T.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
         const v = k.vh * Math.sqrt(-s.gravity * tb.beinL * (cr.scale.x || 1));
         const satz = k.satz && r._tierSatzFuer(cr);
@@ -122,8 +139,8 @@ const LAUF = (k) => {
         const ecken = (S ? pfoten : []).map((p, j) => {
             const e = S.knochen.findIndex((x) => x.nm === p.name);
             const { q, j: b } = S.knochen[e];
-            const m = new T.Matrix4().multiplyMatrices(q.m.skeleton.boneInverses[b], q.m.bindMatrix);
-            return [e, lokal[j].clone().applyMatrix4(m.invert())];
+            const m = new T.Matrix4().multiplyMatrices(q.m.skeleton.boneInverses[b], q.m.bindMatrix).invert();
+            return [lokal[j], zehe[j]].filter(Boolean).map((l) => [e, l.clone().applyMatrix4(m)]);
         });
         const P = (z, [e, v]) =>
             new T.Vector3(
@@ -160,14 +177,14 @@ const LAUF = (k) => {
                 const [f, b] = [(a.getX(0) % 1) * S.n, Math.floor(a.getX(0)) * S.n];
                 const k0 = Math.floor(f);
                 m4.fromArray(S.fell.instanceMatrix.array, 0);
-                ecken.forEach((e, j) => {
-                    const lauf = P(b + k0, e).lerp(P(b + ((k0 + 1) % S.n), e), f - k0);
-                    spur[j].push([
-                        P(S.baender * S.n, e)
-                            .lerp(lauf, a.getY(0))
-                            .applyMatrix4(m4),
-                    ]);
-                });
+                ecken.forEach((E, j) =>
+                    spur[j].push(
+                        E.map((e) => {
+                            const lauf = P(b + k0, e).lerp(P(b + ((k0 + 1) % S.n), e), f - k0);
+                            return P(S.baender * S.n, e).lerp(lauf, a.getY(0)).applyMatrix4(m4);
+                        })
+                    )
+                );
                 uhr.push(cr.userData._satzPh);
             } else {
                 const div = stufe();
@@ -175,7 +192,7 @@ const LAUF = (k) => {
                 maxDiv = Math.max(maxDiv, auswertungen > 60 ? div : 1);
                 r._animateCompoundMotion(cr, roles, t, phase, true, cr.userData.emotions);
                 cr.updateMatrixWorld(true);
-                pfoten.forEach((p, j) => spur[j].push([p.localToWorld(lokal[j].clone())]));
+                pfoten.forEach((p, j) => spur[j].push([lokal[j], zehe[j]].filter(Boolean).map((l) => p.localToWorld(l.clone()))));
                 uhr.push((t * tb._gang.omega) / (2 * Math.PI)); // die Zeit im Takt des Gangs (die Phase eines Beins springt an seiner Kette)
             }
             auswertungen++;
