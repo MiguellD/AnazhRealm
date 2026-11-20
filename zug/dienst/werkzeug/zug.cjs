@@ -997,20 +997,31 @@ function mergeAlle(basis, zweige) {
 const VORAB = "check:vorab";
 const VORAB_MASCHINE = /Cannot find module|MODULE_NOT_FOUND|ENOENT|is not recognized as|command not found|Missing script/;
 const kurzSpec = (s) => `${s.split("@")[0]}@${(s.split("@")[1] || "").slice(0, 8)}`;
-function vorabLauf() {
+// vorabLauf [glieder] — fährt die Glieder von check:vorab (die &&-Kette des Kandidaten) EINZELN und alle, damit jedes rote Glied beim
+// Namen steht; die Täter-Suche wiederholt nur die roten (die Ein-Schreiber-Wand allein: ~2 s statt der ganzen Batterie je Auslassen)
+function vorabLauf(nur = null) {
     const pkg = JSON.parse(fs.readFileSync(path.join(ZUG, "package.json"), "utf8"));
     const cmd = (pkg.scripts || {})[VORAB];
     if (!cmd) throw new Error(`Vorab-Statik kann nicht laufen: package.json des Kandidaten (${git(["rev-parse", "--short=8", "HEAD"])}) trägt kein „${VORAB}“`);
+    const glieder = nur || cmd.split(" && ").map((g) => g.trim()).filter(Boolean);
     const t0 = Date.now();
-    const r = spawnSync(cmd, { cwd: ZUG, shell: true, encoding: "utf8", maxBuffer: 1 << 26 });
-    const s = ((Date.now() - t0) / 1000).toFixed(1);
-    const txt = (r.stdout || "") + (r.stderr || "");
+    const rotGlieder = [];
+    const rot = [];
+    for (const g of glieder) {
+        const r = spawnSync(g, { cwd: ZUG, shell: true, encoding: "utf8", maxBuffer: 1 << 26 });
+        if (r.status === 0) continue;
+        const txt = (r.stdout || "") + (r.stderr || "");
+        const z = txt.split("\n").map((l) => l.trim()).filter((l) => l.includes("❌"));
+        if (!z.length && (r.status === null || VORAB_MASCHINE.test(txt))) {
+            sauber();
+            throw new Error(`Vorab-Statik kann nicht laufen („${g}“, Exit ${r.status}): ${txt.trim().split("\n").slice(-2).join(" | ").slice(0, 300)}`);
+        }
+        rotGlieder.push(g);
+        rot.push(...(z.length ? z : [`${g}: ${txt.trim().split("\n").slice(-2).join(" | ").slice(0, 200)}`]));
+    }
     sauber(); // was eine Wand in den Baum schrieb, kommt nie in den Kandidaten
-    if (r.status === 0) return { gruen: true, s };
-    const rot = txt.split("\n").map((l) => l.trim()).filter((l) => l.includes("❌")).slice(0, 3);
-    if (!rot.length && (r.status === null || VORAB_MASCHINE.test(txt)))
-        throw new Error(`Vorab-Statik kann nicht laufen (Exit ${r.status}): ${txt.trim().split("\n").slice(-2).join(" | ").slice(0, 300)}`);
-    return { gruen: false, s, rot: rot.length ? rot : [txt.trim().split("\n").slice(-2).join(" | ").slice(0, 300)] };
+    const s = ((Date.now() - t0) / 1000).toFixed(1);
+    return rotGlieder.length ? { gruen: false, s, rot: rot.slice(0, 3), rotGlieder } : { gruen: true, s, n: glieder.length };
 }
 function juengster(specs) {
     const t = (s) => Number(git(["log", "-1", "--format=%ct", s.split("@")[1]], ZUG));
@@ -1022,9 +1033,10 @@ function vorabStatik(basis, gebaut) {
     const sek = () => ((Date.now() - t0) / 1000).toFixed(1);
     let v = vorabLauf();
     let laeufe = 1;
-    if (v.gruen) return { ...gebaut, zeilen: [...gebaut.zeilen, `VORAB-STATIK GRÜN am Bündel (${v.s} s): ${gebaut.drin.map(kurzSpec).join(" ")}`] };
+    if (v.gruen) return { ...gebaut, zeilen: [...gebaut.zeilen, `VORAB-STATIK GRÜN am Bündel (${v.n} Glieder, ${v.s} s): ${gebaut.drin.map(kurzSpec).join(" ")}`] };
+    const sv = v.s;
     mergeAlle(basis, []);
-    const m = vorabLauf();
+    const m = vorabLauf(v.rotGlieder);
     laeufe++;
     if (!m.gruen) {
         const voll = mergeAlle(basis, gebaut.drin);
@@ -1038,7 +1050,7 @@ function vorabStatik(basis, gebaut) {
         let wie;
         if (liste.length === 1) [taeter, wie] = [[{ spec: liste[0], rot: v.rot }], "allein im Bündel"];
         else {
-            const heil = liste.filter((spec) => (mergeAlle(basis, liste.filter((x) => x !== spec)), laeufe++, vorabLauf().gruen));
+            const heil = liste.filter((spec) => (mergeAlle(basis, liste.filter((x) => x !== spec)), laeufe++, vorabLauf(v.rotGlieder).gruen));
             if (heil.length === 1) [taeter, wie] = [[{ spec: heil[0], rot: v.rot }], "ohne ihn grün"];
             else if (heil.length > 1) {
                 const j = juengster(heil);
@@ -1047,7 +1059,7 @@ function vorabStatik(basis, gebaut) {
                 const allein = [];
                 for (const spec of liste) {
                     mergeAlle(basis, [spec]);
-                    const a = vorabLauf();
+                    const a = vorabLauf(v.rotGlieder);
                     laeufe++;
                     if (!a.gruen) allein.push({ spec, rot: a.rot });
                 }
@@ -1060,6 +1072,7 @@ function vorabStatik(basis, gebaut) {
             mergeAlle(basis, []);
             break;
         }
+        // was fährt, ist an der GANZEN Batterie grün (ein Auslassen kann eine andere Wand öffnen — dann sucht die Schleife weiter)
         const b = mergeAlle(basis, liste);
         v = vorabLauf();
         laeufe++;
@@ -1068,6 +1081,7 @@ function vorabStatik(basis, gebaut) {
             break;
         }
     }
+    const suche = sek();
     const weg = new Set(fallen.map((f) => f.spec.split("@")[0]));
     return {
         drin: ende.drin,
@@ -1075,7 +1089,7 @@ function vorabStatik(basis, gebaut) {
             ...gebaut.zeilen.filter((z) => !/^drin /.test(z) && !weg.has((/^gefallen (\S+?)[@:]/.exec(z) || [])[1])),
             ...ende.zeilen,
             ...fallen.map((f) => `gefallen ${kurzSpec(f.spec)}: VORAB-STATIK ROT an main ${basis.slice(0, 8)} (${f.wie}): ${f.rot.join(" · ")}`),
-            `VORAB-STATIK: ${fallen.length} Täter (${fallen.map((f) => f.spec.split("@")[0]).join(", ")}) in ${laeufe} Läufen, ${sek()} s — es fahren: ${ende.drin.map(kurzSpec).join(" ") || "keiner"}`,
+            `VORAB-STATIK: ${fallen.length} Täter (${fallen.map((f) => f.spec.split("@")[0]).join(", ")}) in ${laeufe} Läufen, ${suche} s (erste Batterie ${sv} s, Gegenprobe am Rest ${v.gruen ? v.s : "—"} s) — es fahren: ${ende.drin.map(kurzSpec).join(" ") || "keiner"}`,
         ],
     };
 }
@@ -1610,19 +1624,26 @@ function selbsttestErbe(pr) {
 // Vorab-Statik nennt die Wand als Täter (nachweis: VORAB), die drei übrigen bilden den Kandidaten, und der ist grün; (b) dieselben drei
 // ohne die Wand: grün, alle fahren; (c) die Mutante „ohne Vorab-Schritt“ (der alte Bau: alle vier gemergt, gepusht) — der Kandidat
 // ist rot an check:vorab, die Probe fängt ihn. Der Bau läuft im Kind mit ZUG_WT (nie im Worktree des Dienstes).
+// main 3da9d9ae trug check:vorab noch nicht (der Bau WÜRFE dort laut: „Vorab-Statik kann nicht laufen“) — die Probe-Basis ist main
+// 3da9d9ae + der Commit, der check:vorab einführte (zug-vorab-statik 192da910), per merge-tree, ohne Arbeitsbaum
 const Z631 = {
     main: "3da9d9ae96",
+    vorab: "192da91013421a900b9ec50da62baf14c008e839",
     wand: "w28-ein-schreiber-wand@8ea58de7",
     rest: ["w28-kern-sprossen-heil-2@3aff015f", "w28-los-huelle-2@f1de681c", "w28-stein-ein-gesetz@6429df6d"],
 };
 function selbsttestVorab(pr) {
     const repo = process.env.ZUG_PROBE_REPO || INTEG;
+    const da = (s) => git(["cat-file", "-e", `${s}^{commit}`], repo, true).status === 0;
     const voll = (k) => {
         const [z, s] = k.split("@");
-        if (git(["cat-file", "-e", `${s}^{commit}`], repo, true).status !== 0) git(["fetch", "-q", "origin", `refs/archiv/2026-11-20/${z}`, z], repo, true);
+        if (!da(s)) git(["fetch", "-q", "origin", `refs/archiv/2026-11-20/${z}`, z], repo, true);
         return `${z}@${git(["rev-parse", s], repo)}`;
     };
-    const main = git(["rev-parse", Z631.main], repo);
+    if (!da(Z631.vorab)) git(["fetch", "-q", "origin", "main", "zug-vorab-statik"], repo, true);
+    const m0 = git(["rev-parse", Z631.main], repo);
+    const mt = git(["merge-tree", "--write-tree", `--merge-base=${Z631.vorab}^`, m0, Z631.vorab], repo).split("\n")[0];
+    const main = git(["commit-tree", mt, "-p", m0, "-m", "Probe-Basis: main 3da9d9ae + check:vorab"], repo);
     const wand = voll(Z631.wand);
     const rest = Z631.rest.map(voll);
     if (!fs.existsSync(path.join(repo, "node_modules"))) throw new Error(`selbsttest --vorab: ${repo} trägt kein node_modules`);
@@ -1637,16 +1658,17 @@ function selbsttestVorab(pr) {
     };
     const kandidat = (out) => ((/^VORAB KANDIDAT (.*)$/m.exec(out) || [])[1] || "").split(" ").filter((x) => x && x !== "keiner");
     const name = (k) => k.split("@")[0];
+    const zeigen = (out, re) => out.trim().split("\n").filter((l) => re.test(l)).map((l) => l.slice(0, 240)).join("\n      ") || out.trim().split("\n").pop();
     try {
         const a = kind(["vorab", "--basis", main, wand, ...rest]);
         const fallA = new Map(a.out.split("\n").filter((l) => VORAB_RE.test(l)).map((l) => [/^gefallen (\S+?)@/.exec(l)[1], VORAB_RE.exec(l)[1]]));
         const ua = nachweisUrteil({ zweige: [wand, ...rest], inMain: new Set(), drin: new Set(kandidat(a.out).map(name)), gelandet: false, gefallen: new Set(fallA.keys()), vorab: fallA });
         const kA = kandidat(a.out).map(name).sort().join(" ");
-        console.log(`  (a) ${a.s} s: ${a.out.trim().split("\n").filter((l) => /VORAB/.test(l)).map((l) => l.slice(0, 220)).join("\n      ")}`);
+        console.log(`  (a) ${a.s} s: ${zeigen(a.out, /VORAB/)}`);
         pr("Vorab (a) z631: die Wand ist der Täter, die drei übrigen bilden den grünen Kandidaten, nachweis sagt VORAB (nie FREI)",
             a.rc === 0 && kA === rest.map(name).sort().join(" ") && /Ein-Schreiber|REGISTER-ZEILE/.test(a.out) && ua.map((u) => `${u.zweig}:${u.wort}`).join(" ") === `${name(wand)}:VORAB ${rest.map((r) => `${name(r)}:GEURTEILT`).join(" ")}`);
         const b = kind(["vorab", "--basis", main, ...rest]);
-        console.log(`  (b) ${b.s} s: ${(/^VORAB-STATIK .*$/m.exec(b.out) || ["—"])[0].slice(0, 200)}`);
+        console.log(`  (b) ${b.s} s: ${zeigen(b.out, /^VORAB/)}`);
         pr("Vorab (b) die drei ohne die Wand: grün, alle fahren", b.rc === 0 && /^VORAB-STATIK GRÜN/m.test(b.out) && kandidat(b.out).length === 3);
         // (c) die Mutante: der alte Bau ohne den Vorab-Schritt — derselbe Bau-Weg, das Urteil der Batterie am Kandidaten, der gepusht würde
         const c = spawnSync(process.execPath, ["-e", `const z=require(${JSON.stringify(__filename)});const g=z.mergeAlle(${JSON.stringify(main)},${JSON.stringify([wand, ...rest])});const v=z.vorabLauf();console.log("MUTANTE drin="+g.drin.length+" "+(v.gruen?"GRÜN":"ROT "+v.rot[0]))`], { encoding: "utf8", maxBuffer: 1 << 26, env: { ...process.env, ZUG_WT: wt } });
@@ -1654,6 +1676,10 @@ function selbsttestVorab(pr) {
         console.log(`  (c) ${co.trim().split("\n").pop().slice(0, 200)}`);
         // die Probe-Regel: was gepusht würde, ist an check:vorab grün. Die Mutante bricht sie → GEFANGEN (sonst ist die Probe blind)
         pr("Vorab (c) Mutante ohne Vorab-Schritt: der rote Kandidat (alle vier) führe durch — GEFANGEN", /^MUTANTE drin=4 ROT /m.test(co));
+        // (d) kein fail-soft: trägt der Kandidat kein check:vorab (main 3da9d9ae selbst), wirft der Bau laut — nie ein stilles Überspringen
+        const dd = kind(["vorab", "--basis", m0, rest[0]]);
+        console.log(`  (d) ${dd.s} s: ${dd.out.trim().split("\n").pop().slice(0, 200)}`);
+        pr("Vorab (d) ohne check:vorab im Kandidaten: lauter Fehler der Maschine", dd.rc === 2 && /^zug vorab FEHLER: Vorab-Statik kann nicht laufen/m.test(dd.out));
     } finally {
         git(["worktree", "remove", "--force", wt], repo, true);
         fs.rmSync(d, { recursive: true, force: true });
