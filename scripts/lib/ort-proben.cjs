@@ -251,7 +251,7 @@ function ortUrteil(v2, hoehe, o) {
             if (Math.abs(hk - hv) > vorStufe) {
                 vorStufe = Math.abs(hk - hv);
                 const im = v2.slots.findIndex((q) => q !== sl && q.obb && imRecht(q.obb, px, pz, 0));
-                stufeBei = { m: 0.3 + 0.25 * k, h: Math.round(1000 * (hk - sl.y)) / 1000, haus: im, keller: v2.slots.some((q) => imKeller(q, px, pz)) };
+                stufeBei = { m: 0.3 + 0.25 * k, h: Math.round(1000 * (hk - sl.y)) / 1000, haus: im, keller: v2.slots.some((q) => imKeller(q, px, pz)), tief: [Math.round(100 * px) / 100, Math.round(100 * pz) / 100] }; // prettier-ignore
             }
             hv = hk;
         }

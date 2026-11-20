@@ -282,6 +282,7 @@
   // ════ NORM · Wohnbau (SIA 500 / DIN 18065) — öffentliche Mindestwerte, GESETZT, nicht verhandelbar ════
   const NORM={flur:1.00, treppe:0.90, auftritt:0.26, steigung:0.19, steigungSpar:0.21, schritt:0.62, podest:0.90, kopf:2.00, kopfSpar:1.90, eingang:1.30};
   const hasAttic = (ridgeY - eaveY) > NORM.kopfSpar;          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
+  const dachRaum = hasAttic && ROOFMODE!=='flat';   /*DAS FLACHE DACH TRAEGT KEINEN DACHRAUM (w28-bau-rezept-tuer) — kein Lauf, kein Loch im Estrich: `ROOFMODE` ist die EINE Dach-Quelle — Arkade und Zinnen decken flach (`dachdeckung`: EINE Platte auf eaveY ueber dem ganzen Grundriss, ohne Loch). Bis hier fragte der Dachraum nur die Neigung des Sattels, den das flache Dach nie baut: das gasthaus #846868 (Arkade, Dorf 7/18) trug einen Speicherlauf N 12 in die Platte — auf Stufe 11 Kopfraum 0,32 m, auf der letzten Stufe der Kopf ueber der Platte (gate:studio-begehen: Kopfraum 99)*/          // GESETZ: nutzbarer Dachraum nur wenn First ≥1.9 m über Traufe — FRÜH gezogen, denn der Schacht hängt davon ab
   const DORMER = (hasAttic && !modern && P.hip<0.45 && Dp>5.5) ? (()=>{ const gx=clamp(((P.seed%5)-2)*0.5, -W/2+1.5, W/2-1.5), gW=clamp(W*0.16,1.15,1.6), zBack=-Dp*0.22, zFront=zBack-1.0; const yBack=roofSkinY(gx,zBack), baseY2=roofSkinY(gx,zFront)+0.02, frontTop=yBack-0.08; return (frontTop-baseY2>0.85)?{gx,gW,zBack,zFront,yBack,baseY2,frontTop}:null; })() : null;   // EINE Gauben-Quelle: Struktur (dachwerk) UND Dachhaut-Aussparung (dachdeckung) lesen sie
   const stW = NORM.treppe;                                    // Haupttreppe-Breite = Norm
   const mainW = ((levels.length>=2)||(levels.length===1&&hasAttic)) ? stW : 0;   // LINKE Spur: Haupt-/Estrichtreppe — nur wenn nach oben gegangen wird
@@ -401,7 +402,7 @@
   const mxL=wx0, mxR=wx0+mainW;                                         // Haupttreppe-Zone (links) — Breite = mainW
   const lxL=wx1-loftW, lxR=wx1;                                         // Speichertreppe-Zone (rechts)
   const DiF = Dp/2-0.08;                                                // innere Haustiefe
-  const hasLoft = levels.length>=2 && hasAttic;
+  const hasLoft = levels.length>=2 && dachRaum;
   let lW=0,lN=0,lRise=0,lGo=0,lRun=0;
   if(hasLoft){ const lH=eaveY-levels[levels.length-1].y;
     lN  = Math.max(3, Math.ceil(lH / NORM.steigungSpar));               // Speichertreppe: Raumspar-Steigung ≤0.21 (DIN-Trick) — KEINE 0.42-Leiter
@@ -425,7 +426,7 @@
   for(let k=0;k<levels.length-1;k++){ const h=levels[k+1].y-levels[k].y;                  // Zwischenlauf levels[k]→levels[k+1]
     const tr=(k%2===0)?'L':'R', dir=(k%2===0)?1:-1, Ns=Math.max(3,Math.ceil(h/NORM.steigung)), go=stRun/Ns, rise=h/Ns;
     flights.push({base:levels[k].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot:(dir>0)?stZ0:wz1, dir, N:Ns, rise, go, isLoft:false, atLevel:k+1, topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'}); }
-  if(levels.length===1 && hasAttic){                                                        // GESETZ: kein Zwischengeschoss, aber ein NUTZBARER Estrich → es MUSS eine Treppe dorthin geben; bei flachem Dach KEINE Treppe (sonst sticht sie raus)
+  if(levels.length===1 && dachRaum){                                                        // GESETZ: kein Zwischengeschoss, aber ein NUTZBARER Estrich → es MUSS eine Treppe dorthin geben; bei flachem Dach KEINE Treppe (sonst sticht sie raus)
     flights.push({base:levels[0].y, tr:'L', x0:TRACK.L[0], x1:TRACK.L[1], zFoot:stZ0, dir:1, N:stN, rise:stRise, go:stGo, isLoft:false, atLevel:'attic', topEdge:'back', footEdge:'front'}); }
   let LOFT=null;
   if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
@@ -491,7 +492,7 @@
     const voids=[];                                                                              // GESETZ: ÜBER JEDER Treppen-Durchdringung wird die Deckenbalkenlage ausgespart — sonst läuft ein horizontaler Träger durch die Treppe. Im Hochhaus an JEDER Zwischendecke, nicht nur über dem EG.
     if(!(levels.length===1 && !hasAttic)){
       for(let k=0;k<levels.length-1;k++) voids.push({y:levels[k].top, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});   // jede Zwischendecke (EG .. vorletztes OG) über dem Schacht
-      if(levels.length===1 && hasAttic) voids.push({y:eaveY, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});             // Estrichloch bei 1 Geschoss + nutzbarem Dachraum
+      if(levels.length===1 && dachRaum) voids.push({y:eaveY, x0:STAIR.x0, x1:STAIR.x1, z0:STAIR.z0, z1:STAIR.z1});             // Estrichloch bei 1 Geschoss + nutzbarem Dachraum
     }
     if(LOFT) voids.push({y:eaveY, x0:LOFT.x0-0.05, x1:LOFT.x1+0.05, z0:LOFT.z0-0.05, z1:LOFT.z1+0.05});
     const layJoists=(y)=>{ const vs=voids.filter(v=>Math.abs(v.y-y)<0.05);
@@ -912,7 +913,7 @@
       railSeg(wx0,stZ0,wx0,wz1,0,hcz); railSeg(wx1,stZ0,wx1,wz1,0,hcz); };               // Seiten immer gesichert (Schacht→Lane)
     for(let k=1;k<levels.length;k++) floorWithStair(levels[k].y, levelOpen[k]);          // jedes OG mit Podest-Kehre
     // ── Dachboden (Estrich) auf eaveY: VOLL begehbar; niedriger Traufkopfraum = real ──
-    if(levels.length===1){ if(hasAttic) floorWithStair(eaveY,{front:false,back:true}); else rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }   // Estrich nur bei nutzbarem Dachraum; flaches Dach → geschlossene Decke
+    if(levels.length===1){ if(dachRaum) floorWithStair(eaveY,{front:false,back:true}); else rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }   // Estrich nur bei nutzbarem Dachraum; flaches Dach → geschlossene Decke
     else if(!LOFT){ rect(eaveY-0.05,-Wi,Wi,-Di,Di,'boden'); }                                          // ≥2 Geschosse ohne Speicherlauf (flaches Dach oder kein Stehraum am Austritt): geschlossene Estrich-Decke, kein Speicherloch/Kniestock
     else { levelTop=eaveY; const L=LOFT;                                     // Estrich voll minus Loch der Speichertreppe (LOFT)
       rect(eaveY-0.05,-Wi,L.x0,-Di,Di,'boden'); rect(eaveY-0.05,L.x1,Wi,-Di,Di,'boden');
@@ -5736,7 +5737,7 @@
       for(const sg of [1,-1]) for(let u=ab+(sg<0?SD.gasseTeilung/2:0); u<L-ab/2; u+=SD.gasseTeilung){ const P=at(rd,u);
         if(Math.hypot(P.x,P.z)<=Rw-SD.mauerM&&distPunktOBB(P.x,P.z,platzObb)>=SD.gasseAb&&!imTor(P.x,P.z,SD.gasseM)) gasse(i,P,P.th+sg*Math.PI/2); } } };
     zweige(0,nR,SD.gasseAb); const n1=roads.length; zweige(nR,n1,SD.gasseHinterM); }             /*die Gasse von der Strasse, dann die Hintergasse von der Gasse (sie traegt die Reihe im Blockinnern)*/
-  const curs=[];
+  const curs=[], ENG_FUGE=0.25;   /*ein Viertelmeter: das halbe Raster der Breiten, das Fuenffache der Front, um die die Linse ein Los wackelt (5 cm)*/
   const ordn=[...roads.keys()].sort((a,b)=>{ const qa=(roads[a].gen===2&&(roads[a].len||99)<=44)?0:1, qb=(roads[b].gen===2&&(roads[b].len||99)<=44)?0:1; return qa-qb; });   /*QUERGASSEN-VORRANG (#1): Kurzgassen setzen ZUERST — sonst frisst das Hauptstrassen-Hinterland ihr Bauland (GEMESSEN 0 Saeumer trotz len)*/
   for(const r of ordn){ const st0= (edepth[r]===0&&platz)? platz.ex*0.7 : (roads[r].gen===2&&(roads[r].len||99)<=44? 1.6 : 2.5);
     curs.push({rd:r, side: 1, cur:st0}); curs.push({rd:r, side:-1, cur:st0}); }
@@ -5746,7 +5747,7 @@
     const rd=roads[cu.rd], gw=gehwegVon(plan,rd), e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
     const QD=(globalThis.__qd=globalThis.__qd||{t:0,mauer:0,obb:0,laen:0,ok:0}); if(rd.quer)QD.t++;
     /*DIE FRONT DER STADT BLEIBT (STADT_DICHTE): der Zeiger sucht bis ans Ende seines Wegs und steht, wo er stand, wenn das Los nicht passt — `eng` merkt die schmalste Breite, die scheiterte (was davor steht, wird nie weniger: so breit passt hier nichts mehr). Ausser der Stadt 26 Versuche zu 1,1 m, und jeder gescheiterte verbrauchte sie: an stadt-voll trug eine Strasse im Ring ein Haus je 46 m Front (die Vorstadt eines je 20 m)*/
-    const cur0=cu.cur; if(stadt&&cu.eng<=2*exH) return null;
+    const cur0=cu.cur; if(stadt&&cu.eng+ENG_FUGE<=2*exH) return null;   /*DIE BREITE EINES ANDEREN LOSES URTEILT ERST UEBER DER FUGE (w28-bau-rezept-tuer, Welle SAMEN): `eng` ist die Breite eines anderen Loses, das hier scheiterte — mit seinem eigenen Wurf (Versatz je Versuch) und seiner Tiefe; bei GLEICHER Breite (die Lose wuerfeln auf das halbe Meter) hing das Ja an seinem Zentimeter: an dorf 7/30 machte Los 17 um 1 cm breiter sechs Haeuser neu (Wuerfel je Los 19 Verletzungen, im Plan 17). Mit der Fuge urteilt die Breite nur ueber ein Los, das um ENG_FUGE breiter ist*/
     for(let tr=0;tr<(stadt?1e4:26);tr++){
       const sc=cu.cur+exH; if(sc>rd.pts.length*DS-(rd.quer?2.8:6)){ if(rd.quer)QD.laen++; if(stadt){ cu.cur=cur0; cu.eng=2*exH; } return null; }   /*quer nutzt die volle Laenge*/
       const q=at(rd,sc), jit=(wurf()-0.5)*2*jitAmp;
@@ -9538,7 +9539,7 @@
           const Wi=A.dims.W||8, Wj=Bj.dims.W||8, Di=A.dims.D||8, Dj=Bj.dims.D||8;
           const soll=(Wi+Wj)/2+gap, fuge=Math.abs(lx)-(Wi+Wj)/2;
           if(Math.abs(lz)>Math.min(Di,Dj)*0.45 || fuge<=gap+0.02 || fuge>1.8) continue;
-          const zug=(Math.abs(lx)-soll)/2, s2=Math.sign(lx);                                  // beide je halbe Fuge aufeinander zu — Straßenfronten bleiben
+          const zug=(Math.abs(lx)-soll)/2*Math.min(1,(1.8-fuge)/0.3), s2=Math.sign(lx);   /*DER SNAP LAEUFT AUS (w28-bau-rezept-tuer, Welle SAMEN): unter 1,5 m schliesst er die Fuge ganz, bis 1,8 m immer weniger — bis hier sprang er an 1,8 m von 0 auf die ganze Fuge: an dorf 7/30 rueckte wohnhaus #163268 um 0,86 m an den Nachbarn, weil Los 8 um 5 cm schmaler war (seine Fuge 1,80 → 1,75), und trug danach eine Brandwand (Wuerfel je Los 1 Verletzung, 0,66 m). Jetzt rueckt eine Front von 5 cm ein Haus der Reihe hoechstens 0,15 m*/                                  // beide je halbe Fuge aufeinander zu — Straßenfronten bleiben
           const mvx=s2*zug*ci, mvz=-s2*zug*si;                                                // lokal (±zug,0) → Welt via R(phi)
           qi.x+=mvx; qi.z+=mvz; qi.obb.cx+=mvx; qi.obb.cz+=mvz;
           qj.x-=mvx; qj.z-=mvz; qj.obb.cx-=mvx; qj.obb.cz-=mvz;
@@ -9986,7 +9987,7 @@
                 c = Math.cos(sl.phi),
                 s2 = Math.sin(sl.phi),
                 tief = O.vorplatzM;
-            for (var t = 0; t <= O.vorplatzM + O.gasseM; t += 0.25)
+            for (var t = 0, tl = O.vorplatzM + O.gasseM + losHof({ losVorn: losVorn(q) }, ez); t <= tl; t += 0.25)
                 if (aufWeg(q.x + tu.x * c + (ez - t) * s2, q.z - tu.x * s2 + (ez - t) * c, 0)) {
                     tief = Math.max(O.vorplatzM, t);
                     break;
@@ -10419,6 +10420,8 @@
                     { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez } // an der Brandwand schneidet `hausSlot` (die EINE Zeile)
                 )
             );
+            var lv = losVorn(q);
+            if (lv !== null) slots[slots.length - 1].losVorn = lv;
         }
         // die Mauer der Gestalt (das Layout) oder die des Schnitts (`schnittMauer`: der Schnitt einer Chronik vor MAUER_BIS, staedtisch)
         // die Kachel einer Stadt trägt die Mauer nur an ihren Rand-Kanten (`kachelMauer`), in der Zeit der Mauern
@@ -10582,6 +10585,24 @@
     // Tiefe `tief` (ohne: ORT_GESETZ.vorplatzM) — die Erdbau-Platte des Vorplatzes (`ortPlan`, die Tiefe bis zur Gasse; ihr Boden:
     // `vorplatzBoden`). `tuer`: die Fläche vor der Haustür selbst (beim HOF-Haus die Stufe im Hof). null ohne Tür. Rückgabe {cx, cz,
     // phi, ex, ez} im Rahmen des Plans.
+    // DER HOF DES LOSES LIEGT VOR DER TÜR (w28-bau-rezept-tuer): das Los trägt das Haus aller seiner Jahre (`plan.lose`, die Hülle des
+    // größten Baus) — der Bau seines Jahrs steht in ihm, der Haupt-Bau eines späteren Hofs hinten, die Front des Loses an der Gasse.
+    // `losVorn(q)`: die Front des Loses im Rahmen des Hauses (z, die Tür blickt nach −z) aus seiner obb (`q.obb`, Plan) und dem Rahmen
+    // (`q.x`, `q.z`, `q.phi`); null, wo das Los nicht tiefer ist. `losHof(sl, ez)`: so weit liegt die Front des Loses vor dem Eingang
+    // `ez` — um so viel reicht die Suche nach der Gasse weiter (der Gang führt über den Hof). Bis hier suchte sie vorplatzM + gasseM
+    // (6,6 m) ab der Tür: im Dorf 7/18 der Gründerzeit stand das wohnhaus #119906 mit 5 Leuten 8,6 m hinter der Front seines Loses,
+    // sein Vorplatz endete nach 1,6 m, und 1,8 m vor der Tür stieg der Grund am Akt um 7,0 m (gate:settlement O, Türen 19/20).
+    function losVorn(q) {
+        if (!q || !q.obb || !isFinite(q.x) || !isFinite(q.z)) return null;
+        var c = Math.cos(q.phi || 0),
+            s = Math.sin(q.phi || 0),
+            dx = q.obb.cx - q.x,
+            dz = q.obb.cz - q.z;
+        return Math.round((dx * s + dz * c - q.obb.ez) * 1e6) / 1e6;
+    }
+    function losHof(sl, ez) {
+        return sl && isFinite(sl.losVorn) && isFinite(ez) ? Math.max(0, ez - sl.losVorn) : 0;
+    }
     function vorplatzFlaeche(sl, tief, tuer) {
         var tu = sl && sl.tuer;
         if (!tu || !isFinite(tu.x) || !isFinite(tu.z) || !isFinite(tu.w)) return null;
@@ -11601,7 +11622,7 @@
                 // der erste Meter der Fläche, die der Gang betritt (ihr Median: eine Naht zweier Wege gleich hinter dem Vorplatz
                 // teilt sich in zwei kleine Stufen statt einer großen)
                 var tritt = [];
-                for (var t0 = O.vorplatzM; t0 <= O.vorplatzM + O.gasseM; t0 += 0.25) {
+                for (var t0 = O.vorplatzM; t0 <= O.vorplatzM + O.gasseM + losHof(sl, eingang(sl).z); t0 += 0.25) {
                     var va = vorne(sl, eingang(sl).z - t0);
                     var ya = aufY(va[0], va[1]);
                     if (ya !== null) tritt.push([t0, ya]);
@@ -11630,7 +11651,7 @@
             neu = false;
             for (si = 0; si < NS; si++) {
                 if (hy[si] !== null || !hatTuer(ps[si])) continue;
-                for (var t = O.vorplatzM; t <= O.vorplatzM + O.gasseM && hy[si] === null; t += 0.5) {
+                for (var t = O.vorplatzM; t <= O.vorplatzM + O.gasseM + losHof(ps[si], eingang(ps[si]).z) && hy[si] === null; t += 0.5) {
                     var v1 = vorne(ps[si], eingang(ps[si]).z - t);
                     for (var sj = 0; sj < NS; sj++)
                         if (sj !== si && hy[sj] !== null && ps[sj].obb && inPlatte(v1[0], v1[1], ps[sj].obb)) {

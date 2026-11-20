@@ -307,6 +307,8 @@ const WURF_TAETER = [
     ["const g=plan.houses[i], wurf=losWurf(i);", "const g=plan.houses[i], wurf=rnd;"],
     ["    const wurf=losWurf(i);", "    const wurf=rnd;"],
 ];
+const WURF_ENG_TAETER = [["if(stadt&&cu.eng+ENG_FUGE<=2*exH) return null;", "if(stadt&&cu.eng<=2*exH) return null;"]];
+const WURF_SNAP_TAETER = [["const zug=(Math.abs(lx)-soll)/2*Math.min(1,(1.8-fuge)/0.3), s2=Math.sign(lx);", "const zug=(Math.abs(lx)-soll)/2, s2=Math.sign(lx);"]];
 // je Fall und Los: die anderen Häuser, die anders stehen, beim Namen (Same#n)
 function wurfAnders(K) {
     const out = [];
@@ -342,6 +344,16 @@ function wurfProben(check, { kernText, taeter = false }) {
         check(`Selbst-Test Würfel je Los: der EINE Strom (jedes Los zieht aus rnd) fällt beim Los (${n})`, !!v && v.length > 0, m.fehlt || `${v.length} — ${v.slice(0, 2).join(" · ")}`);
     else
         check(`Würfel je Los (${n}): eine Front ${WURF_DELTAS.map((d) => d * 100).join(" / ")} cm würfelt kein anderes Haus neu (fehlt · kommt · wandert > ${WURF_WANDER} m)`, !!v && !v.length, m.fehlt || `${v.length} — ${v.slice(0, 3).join(" · ")}`);
+    if (taeter) {
+        // die Breite eines anderen Loses ohne Fuge (vor w28-bau-rezept-tuer): bei gleicher Breite urteilt sein Zentimeter
+        const mE = kernMutante(kernText, [LOS_HAKEN, ...WURF_ENG_TAETER]);
+        const vE = mE.text ? wurfAnders(kernAusText(mE.text, "wurf-eng")) : null;
+        check(`Selbst-Test Würfel je Los: die Breite eines anderen Loses ohne Fuge (eng) fällt beim Los (${n})`, !!vE && vE.length > 0, mE.fehlt || `${vE.length} — ${vE.slice(0, 2).join(" · ")}`);
+        // der Snap der Reihe mit der harten Kante bei 1,8 m (vor w28-bau-rezept-tuer): 5 cm Front rücken den Nachbarn um 0,86 m
+        const mS = kernMutante(kernText, [LOS_HAKEN, ...WURF_SNAP_TAETER]);
+        const vS = mS.text ? wurfAnders(kernAusText(mS.text, "wurf-snap")) : null;
+        check(`Selbst-Test Würfel je Los: der Snap der Reihe mit harter Kante fällt beim Los (${n})`, !!vS && vS.length > 0, mS.fehlt || `${vS.length} — ${vS.slice(0, 2).join(" · ")}`);
+    }
     console.log(`  Würfel je Los${taeter ? " (Täter)" : ""}: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
 

@@ -3277,7 +3277,8 @@ hauptLauf(async () => {
             // (`_erdbauNorm`), der den Punkt deckt, in seiner Reihenfolge — auf der Fläche gewinnt der letzte (gelaende-core
             // `erdbauY`), unter einem freien (der Brücke) gilt der Grund
             const E = r._erdbauNorm;
-            for (const h of (u && u.sockelFehl) || []) {
+            // (und am Tritt vor jeder Tür ohne Gang: derselbe Splat-Befund an ihrer Stufe, `stufeBei.tief`)
+            for (const h of [...((u && u.sockelFehl) || []), ...((u && u.tuerenFehl) || []).map((t) => t.stufeBei).filter(Boolean)]) {
                 if (!h.tief || !E || !E.zellen) continue;
                 const [wx, wz] = [ortW.ort.x + h.tief[0], ortW.ort.z + h.tief[1]];
                 const Zm = globalThis.__gelaendeCore.ERDBAU ? globalThis.__gelaendeCore.ERDBAU.zelleM : null;
