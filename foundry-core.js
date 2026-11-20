@@ -1657,8 +1657,8 @@ function __wuchsDerStufe(P, stufe, zufall) {
     return { segs: [], leaves: [], trunkR: P._trunkR, height: P.height, runMeta: {} };
 }
 
-function pushJointSphere(arr, pos, r, col, sway) {
-    // fuellt Naehte/Astachseln, schwingt wie pushSegment
+function pushJointSphere(arr, pos, r, col, sway, type) {
+    // fuellt Naehte/Astachseln, schwingt wie pushSegment; `type` der Typ des Jahrs (ohne: 0, die Rinde steht)
     const g = new THREE.SphereGeometry(r, 6, 4);
     g.translate(pos[0], pos[1], pos[2]);
     const ps = g.attributes.position,
@@ -1678,7 +1678,7 @@ function pushJointSphere(arr, pos, r, col, sway) {
         ac[i * 3] = pos[0];
         ac[i * 3 + 1] = pos[1];
         ac[i * 3 + 2] = pos[2];
-        at[i] = 0;
+        at[i] = type || 0;
         cl[i * 3] = col.r;
         cl[i * 3 + 1] = col.g;
         cl[i * 3 + 2] = col.b;
@@ -2875,11 +2875,14 @@ function emitFlower(P) {
         petalCol = vegFarbe(P.flowerCol),
         hsTop = hs;
     const bloom = (pos, bdir, headR, plen, prich, hsw) => {
-        // Korbblueten-Einheit (Vogel-Spirale + Fibonacci-Petalen)
+        // Korbblueten-Einheit (Vogel-Spirale + Fibonacci-Petalen). DER KORB IST BLUETE (saison-am-laub): Scheibe, Roehren und die
+        // Kugel der L2 tragen den Typ der Bluete (SAISON_GESETZ.typ.bluete) wie jedes Bluetenblatt — das Jahr zieht den ganzen Korb
+        // mit `bl` auf seine Mitte (injectWind, die Welt `_jahrLage`). Bis dahin trugen sie Typ 0 und standen das Jahr hindurch:
+        // die L2 einer Blume war im Winter eine volle Kugel der Bluetenfarbe (100 % ihrer Laub-Flaeche stand), L0/L1 7–9 %.
         const hr = perp(bdir),
             u2 = vnorm(vcross(hr, bdir));
         if (__lod === 2) {
-            pushJointSphere(folGeos, vadd(pos, vscl(bdir, headR * 0.35)), headR * 1.15, petalCol, hsw);
+            pushJointSphere(folGeos, vadd(pos, vscl(bdir, headR * 0.35)), headR * 1.15, petalCol, hsw, SAISON_GESETZ.typ.bluete);
             return;
         }
         pushSegment(
@@ -2902,7 +2905,8 @@ function emitFlower(P) {
             vadd(pos, vscl(bdir, -headR * 0.35)),
             headR * 0.74,
             vegFarbe(0x6a5a28).lerp(petalCol, 0.12),
-            hsw
+            hsw,
+            SAISON_GESETZ.typ.bluete
         );
         const ff = __lod === 0 ? 1 : 0.4,
             NF = Math.round(headR * headR * 900 * ff * __blueteDetail),
@@ -2928,7 +2932,7 @@ function emitFlower(P) {
                 1.4,
                 col,
                 col,
-                0
+                SAISON_GESETZ.typ.bluete
             );
         }
         let np = nearestFib(lerp(8, 18, prich));

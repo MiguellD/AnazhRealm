@@ -1136,11 +1136,16 @@ class AnazhRealm_dienst {
             const def = defs[i];
             const o = (slot + i) * 8; // 2 Texel × 4 Floats
             const f = def.farbe || { r: 0.55, g: 0.5, b: 0.45 };
-            // Farbe als 24-bit-Pack im f32 (exakt bis 2^24 — die Mantisse trägt es):
+            // Farbe als 24-bit-Pack im f32 (exakt bis 2^24 — die Mantisse trägt es). DER TEIL IM JAHR (saison-am-laub, der
+            // EINE Schreiber): die niedersten Bits von Grün und Blau tragen seinen Jahres-Typ (`def.jahr`, SAISON_GESETZ `typ`:
+            // Laub → 1, Blüte → 2, sonst 0 — Stein, Bau, Leib stehen); das Feld liest ihn (`jahrMass`, `jahrTon`). Die Farbe
+            // weicht je Kanal um höchstens 1/255.
+            const SGt = AnazhRealm._saisonGesetz().typ;
+            const jc = def.jahr === SGt.laub ? 1 : def.jahr === SGt.bluete ? 2 : 0;
             const pack =
                 (Math.min(255, Math.max(0, Math.round(f.r * 255))) << 16) +
-                (Math.min(255, Math.max(0, Math.round(f.g * 255))) << 8) +
-                Math.min(255, Math.max(0, Math.round(f.b * 255)));
+                (((Math.min(255, Math.max(0, Math.round(f.g * 255))) & 0xfe) | (jc >> 1)) << 8) +
+                ((Math.min(255, Math.max(0, Math.round(f.b * 255))) & 0xfe) | (jc & 1));
             if (def.box || def.ellipsoid || def.prism) {
                 // BOX [Zentrum|−(farbe+1)][Halbmaße|0]; ELLIPSOID pB.w=1; KEIL pB.w = Typ 2..5 (First +z · −z · +x · −x,
                 // `HUELLE_KEIL_TYP`) + 0,49 · Walm (das WGSL `sdKeil` liest Typ und Walm aus demselben Float).
@@ -2223,6 +2228,20 @@ class AnazhRealm_dienst {
 _stammZonen(AnazhRealm, [AnazhRealm_dienst]);
 
 // ===== ATLAS · Dienst — Außen-Konstanten =====
+// DER TEIL IM JAHR IM FELD (saison-am-laub): der Leser des Jahres-Typs, den der EINE Schreiber (`_weltKapselHolen`) in die
+// niedersten Bits von Grün und Blau des Farb-Worts legt (1 Laub, 2 Blüte, 0 steht) — DASSELBE Gesetz wie die Gestalt
+// (`_jahrLage`, `_foundryTreeMaterial`): Laub und Blüte ziehen sich um ihre Präsenz (`uLaubPraesenz` x · y) auf die Mitte ihres
+// Teils (xyz: der Strahl-Punkt im Raum des gestauchten Teils; w: die Präsenz, der Abstand × w), Stein, Rinde, Bau und Leib
+// stehen; mit Präsenz 0 ist w < 0,5 genau dort, wo das Feld tönt (`uSeasonMul`). Bis saison-am-laub tönte der Welt-March jedes
+// kompakte Teil (Blütenkopf, Stein, jedes Ellipsoid eines Leibs) und hielt die Blüte im Winter voll: magenta Köpfe im Schnee.
+AnazhRealm.FELD_JAHR_WGSL =
+    "fn jahrPunkt(p: vec3<f32>, a: vec4<f32>, b: vec4<f32>, praesenz: vec3<f32>) -> vec4<f32> {\n" +
+    "    let ci = select(u32(b.w), u32(-a.w - 1.0), a.w < 0.0);\n" +
+    "    let j = ((ci >> 7u) & 2u) | (ci & 1u);\n" +
+    "    let pr = select(select(1.0, praesenz.y, j == 2u), praesenz.x, j == 1u);\n" +
+    "    let m = select(a.xyz, (a.xyz + b.xyz) * 0.5, a.w >= 0.0);\n" +
+    "    return vec4<f32>(m + (p - m) / max(pr, 0.02), pr);\n" +
+    "}";
 // ═══ DER EINE GESETZ-STROM ═══
 // `AnazhRealm.Gesetz(pfad)`: EIN Chokepoint, durch den jeder Export jedes Kerns
 // (GESETZ_KERNE) erreichbar ist — ein neues Studio-Gesetz braucht nur einen Konsumenten mit Pfad.
