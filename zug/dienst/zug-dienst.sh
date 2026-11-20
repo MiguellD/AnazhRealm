@@ -40,6 +40,64 @@ if [ "$1" = "--frei" ]; then
     done
     exit 0
 fi
+# taeter_anstoss <id> <lauf> <fahrt-log> — DIE TÄTER-SUCHE ALS EIGENER PROZESS NEBEN DER SCHLEIFE (20.11.): sie fährt bis zu 4 × 3
+# Wände an der Karte (je Lauf GPU_LAUF_MAX_S=600, Frist 90 min über alles in zug.cjs) — hielte sie urteilen() an, stünde der Zug so
+# lange. Sie startet wie die Kinder des Richters (richter.sh: `( … ) &` in der verborgenen Konsole der Schleife, kein neues Fenster),
+# kehrt sofort zurück, und höchstens EINE läuft zugleich: die Sperre trägt die Windows-PID der Such-Hülle, gelesen von schleife_lebt
+# (pid + Start, Abbild sh/bash) — eine tote oder neu vergebene PID zählt nie. TAETER_BEFEHL ersetzt den Ruf nur im Selbsttest.
+TAETER_SPERRE=$W/zug-taeter.sperre
+TAETER_ZEILEN="^(TÄTER |UNSCHULDIG|OHNE URTEIL|KEIN TÄTER AN DIESER KARTE|KEINE TÄTER-SUCHE|TÄTER-SUCHE ABGEBROCHEN|NEUER KOPF|zug taeter FEHLER)"
+taeter_anstoss() {
+    local id=$1 lauf=$2 f=$3 p
+    p=$(tr -dc 0-9 2>/dev/null <"$TAETER_SPERRE")
+    if schleife_lebt "$TAETER_SPERRE"; then
+        echo "$(date +%H:%M) $id: Täter-Suche nicht gestartet — eine läuft schon (pid $p)" | tee -a "$W/zug-taeter.txt" >>"$L"
+        return 0
+    fi
+    (
+        cat /proc/$BASHPID/winpid >"$TAETER_SPERRE"
+        if [ -n "$TAETER_BEFEHL" ]; then tz=$(sh -c "$TAETER_BEFEHL" </dev/null 2>&1)
+        else tz=$(sh "$WZ/zug.sh" taeter "$id" --log "$f" --lauf "$lauf" </dev/null 2>&1); fi
+        echo "$tz" | sed "s/^/$(date +%H:%M:%S) [$id] /" >>"$f"
+        echo "$tz" | grep -E "$TAETER_ZEILEN" | sed "s/^/$(date +%H:%M) $id /" >>"$W/zug-taeter.txt"
+        echo "$tz" | grep -E "$TAETER_ZEILEN" | grep -v "^KEINE TÄTER-SUCHE" | cut -c1-330 | sed "s/^/$(date +%H:%M) $id /" >>"$L"
+        echo "$tz" | grep -qE "^(TÄTER |UNSCHULDIG|OHNE URTEIL|KEIN TÄTER AN DIESER KARTE|KEINE TÄTER-SUCHE|TÄTER-SUCHE ABGEBROCHEN)" ||
+            echo "$(date +%H:%M) $id TÄTER-SUCHE ABGEBROCHEN: kein Urteil — $(echo "$tz" | tail -1 | cut -c1-200)" | tee -a "$W/zug-taeter.txt" >>"$L"
+        rm -f "$TAETER_SPERRE"
+    ) </dev/null &
+    echo "$(date +%H:%M) $id: Täter-Suche angestoßen (eigener Prozess, Sperre $TAETER_SPERRE)" >>"$L"
+}
+# --selbsttest-taeter: ohne Karte — eine gestellte Suche (sleep) läuft, der Anstoß kehrt sofort zurück, eine zweite startet nicht,
+# nach ihrem Ende (Sperre weg) und an einer toten PID startet sie wieder
+if [ "$1" = "--selbsttest-taeter" ]; then
+    X=$(mktemp -d)
+    W=$X L=$X/log TAETER_SPERRE=$X/sperre
+    n=0 ok=0
+    pr() { n=$((n + 1)); if [ "$2" = 0 ]; then ok=$((ok + 1)); echo "OK   $1"; else echo "ROT  $1"; fi; }
+    TAETER_BEFEHL="sleep 20; echo 'KEIN TÄTER AN DIESER KARTE (radeon): gestellt'"
+    t0=$(date +%s)
+    taeter_anstoss zT1 1 "$X/f1.log"
+    dt=$(($(date +%s) - t0))
+    pr "der Anstoß kehrt sofort zurück, während die Suche läuft (${dt} s)" $([ $dt -le 3 ] && echo 0 || echo 1)
+    sleep 2
+    pr "die Sperre trägt eine lebende PID (sh/bash, pid + Start)" $(schleife_lebt "$X/sperre" && echo 0 || echo 1)
+    TAETER_BEFEHL="echo 'TÄTER zweite: darf nie laufen'"
+    taeter_anstoss zT2 1 "$X/f2.log"
+    sleep 1
+    pr "eine zweite Suche startet nicht, solange die erste lebt" $(grep -q "zT2: Täter-Suche nicht gestartet — eine läuft schon" "$X/log" && [ ! -s "$X/f2.log" ] && echo 0 || echo 1)
+    i=0; while [ -f "$X/sperre" ] && [ $i -lt 60 ]; do sleep 1; i=$((i + 1)); done
+    pr "die erste schreibt ihr Urteil ins Fahrt-Log und gibt die Sperre frei" $(grep -q "\[zT1\] KEIN TÄTER AN DIESER KARTE" "$X/f1.log" && grep -q "zT1 KEIN TÄTER" "$X/zug-taeter.txt" && [ ! -f "$X/sperre" ] && echo 0 || echo 1)
+    echo 4 >"$X/sperre"
+    TAETER_BEFEHL="echo 'TÄTER-SUCHE ABGEBROCHEN: gestellt'"
+    taeter_anstoss zT3 1 "$X/f3.log"
+    i=0; while ! grep -q "zT3 TÄTER-SUCHE ABGEBROCHEN" "$X/zug-taeter.txt" 2>/dev/null && [ $i -lt 20 ]; do sleep 1; i=$((i + 1)); done
+    pr "eine tote PID in der Sperre zählt nie — die Suche startet" $(grep -q "zT3 TÄTER-SUCHE ABGEBROCHEN: gestellt" "$X/zug-taeter.txt" && echo 0 || echo 1)
+    wait
+    rm -rf "$X"
+    echo "zug-dienst selbsttest-taeter: $ok von $n grün"
+    [ $ok = $n ]
+    exit
+fi
 [ -n "$blick" ] || schloss zug || exit 0
 
 bereit() {
@@ -121,10 +179,17 @@ bereit() {
         # die Wände, die sonst nur am Kandidaten fahren (echt omen) — die Pfade und Wände stehen an EINER Stelle (zug.cjs PROBE_PFLICHT);
         # fehlt eine, wartet der Kopf mit dem Grund beim Namen, statt einen ganzen Zug an ihr fallen zu lassen
         pt=$(sh "$WZ/zug.sh" probe-tag "$b@$sha" </dev/null 2>&1)
-        [ "$pt" = "PROBE-TAG OK" ] || {
+        # mehr als 3 Proben im Tag fallen am Einlass (gpu-probe.yml) — ROT beim Namen, kein Warten: nur ein neuer Kopf heilt es
+        case "$pt" in
+        "PROBE-TAG OK") ;;
+        "PROBE-TAG ROT: "*)
+            echo "$b ${sha:0:8}: PROBE-TAG ROT — ${pt#PROBE-TAG ROT: }" >>"$W/zug-nie-leer.wartet"
+            grep -q " $b ${sha:0:8} PROBE-TAG ROT" "$L" 2>/dev/null || echo "$b ${sha:0:8} PROBE-TAG ROT — ${pt#PROBE-TAG ROT: }" | sed "s/^/$(date +%H:%M) /" >>"$L"
+            continue ;;
+        *)
             echo "$b ${sha:0:8}: ${pt#PROBE-TAG FEHLT: }" >>"$W/zug-nie-leer.wartet"
-            continue
-        }
+            continue ;;
+        esac
         # das Bild ist Pflicht, sobald der Zweig das SPIEL berührt — auch ohne Tag im Betreff
         sp=$(git -C $R diff --name-only "origin/main...$sha" 2>/dev/null | grep -cE "^(stamm/|worlds/|index[.]html$|[^/]+[.]js$)")
         case "$t" in *"[gpu-probe:"*) sp=1 ;; esac
@@ -197,18 +262,12 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
             grep -E "^ROT |❌" "$W/zug-rot-$id.txt" | head -6 | cut -c1-330 | sed "s/^/$(date +%H:%M) $id rot: /" >>"$L"
         fi
         # DER TÄTER AN DEN ECHT-WÄNDEN (20.11., z637: 70 min Handsuche, drei Unschuldige bekamen von Hand neue Köpfe): fiel ein echt-Job,
-        # fährt zug.cjs taeter je Stempel allein jede rote echt-Wand an der Radeon (gpu-lauf.sh, Deckel 4 × 3, je Lauf 900 s), schreibt je
+        # fährt zug.cjs taeter je Stempel allein jede rote echt-Wand an der Radeon (gpu-lauf.sh, Deckel 4 × 3, je Lauf 600 s, Frist 90 min) als eigener Prozess, schreibt je
         # Stempel EINE Zeile TÄTER/UNSCHULDIG ins Fahrt-Log und nach zug-taeter.txt und setzt den Unschuldigen neue Köpfe — nur, wenn ein
         # Täter steht. Ein Abbruch steht als „TÄTER-SUCHE ABGEBROCHEN: <grund>“, und kein Kopf wird gesetzt.
         if [ -n "$lauf" ] && grep -q "^ROT echt" "$W/zug-rot-$id.txt" 2>/dev/null; then
-            puls zug "$id sucht den Täter an den echt-Wänden (Radeon)"
-            local tz
-            tz=$(sh "$WZ/zug.sh" taeter "$id" --log "$F" --lauf "$lauf" </dev/null 2>&1)
-            echo "$tz" | sed "s/^/$(date +%H:%M:%S) [$id] /" >>"$F"
-            echo "$tz" | grep -E "^(TÄTER |UNSCHULDIG|OHNE URTEIL|KEIN EINZELTÄTER|KEINE TÄTER-SUCHE|TÄTER-SUCHE ABGEBROCHEN|NEUER KOPF|zug taeter FEHLER)" | sed "s/^/$(date +%H:%M) $id /" >>"$W/zug-taeter.txt"
-            echo "$tz" | grep -E "^(TÄTER |UNSCHULDIG|OHNE URTEIL|KEIN EINZELTÄTER|TÄTER-SUCHE ABGEBROCHEN|NEUER KOPF|zug taeter FEHLER)" | cut -c1-330 | sed "s/^/$(date +%H:%M) $id /" >>"$L"
-            echo "$tz" | grep -qE "^(TÄTER |UNSCHULDIG|OHNE URTEIL|KEIN EINZELTÄTER|KEINE TÄTER-SUCHE|TÄTER-SUCHE ABGEBROCHEN)" ||
-                echo "$(date +%H:%M) $id TÄTER-SUCHE ABGEBROCHEN: kein Urteil — $(echo "$tz" | tail -1 | cut -c1-200)" | tee -a "$W/zug-taeter.txt" >>"$L"
+            puls zug "$id stößt die Täter-Suche an den echt-Wänden an (Radeon, eigener Prozess)"
+            taeter_anstoss "$id" "$lauf" "$F"
         fi ;;
     esac
     if grep -q "zug bau FEHLER" "$F" 2>/dev/null; then
