@@ -2415,7 +2415,12 @@ hauptLauf(async () => {
                         );
                 // die Umkehr gilt vor dem Gang: die Bahn des Gangs (je Schritt 4 m) kann die Stadt schon wecken (`_bedarfZeit`)
                 if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
-                const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
+                // DER RING LIEGT UM DEN ORT DER WAHL (`_dorfBereiten`: die Trasse rückt den Vorrat bis 128 m, jeder Abstand des Takts
+                // misst ab dort): ist er bereitet, geht der Gang auf seinen Ring zu — bis w28-bau-rezept ging er auf den Zellpunkt zu,
+                // und am Mess-Ort (nH 12, der Ort 63 m gerückt) stand der Spieler beim Erwachen 46 m hinter dem Ring, am Auge des
+                // Vorrats vorbei: das erste Haus in 132 m trat in die Mesh-Zone, die der Vorrat in 176 m als Fernform bestellt hatte
+                let mitte = cand;
+                const stell = (m) => (pm.position.set(mitte.x + m, pm.position.y, mitte.z), pm.position);
                 const nah = A.nearM + (cand.mehrM || 0); // der Ring, an dem die Zelle erwacht (`_autoSettlementZelle`)
                 // DER VORLAUF IST ZEIT (w13-dorf-strom): die Bahn naht mit 16 m/s 40 m jenseits des Rings der Sicht — der Ort
                 // bereitet sich vor, weil sie ihn binnen `bereitS` erreicht (`_bedarfZeit`); nH 13 (Selbsttest) steht still: dort
@@ -2424,6 +2429,7 @@ hauptLauf(async () => {
                 if (vorlauf) r._tickAutoSettlement(stell(nah + 200));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 const vr = vorlauf && !alt && r._dorfVorraete.get(key);
+                if (vr && vr.da) mitte = { x: vr.x, z: vr.z };
                 for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
                 // der Gang durch den Vorlauf-Ring (4 m/s, 20 s bis zum Ring): je 4 m ein Takt, der Vorrat liest die Reihe des Zugs,
                 // bis seine Stufen stehen — dann erwacht die Zelle am Ring (das Auge des Vorrats, `_dorfVorbacken`)
