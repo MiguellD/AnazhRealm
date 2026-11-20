@@ -3181,7 +3181,7 @@ class AnazhRealm_kreatur_verhalten {
         {
             const sa =
                 this._spielerLageAlt || (this._spielerLageAlt = { x: playerPos.x, z: playerPos.z, vx: 0, vz: 0 });
-            const dtS = delta > 1e-6 ? delta : 1 / 60;
+            const dtS = delta > 1e-6 ? delta : AnazhRealm.FIXED_DT;
             sa.vx = (playerPos.x - sa.x) / dtS;
             sa.vz = (playerPos.z - sa.z) / dtS;
             if (!(Math.hypot(sa.vx, sa.vz) < 50)) sa.vx = sa.vz = 0; // ein Sprung der Lage (Teleport) ist kein Lauf
