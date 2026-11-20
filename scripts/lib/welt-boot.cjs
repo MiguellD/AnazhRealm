@@ -1243,6 +1243,12 @@ function profileFegen(tmp = os.tmpdir()) {
         }
     }
 }
+// der Täter eines liegenden Profils im Selbsttest: EIN Satz je Kind aus seinem eigenen Bericht (stdout/stderr), nie geraten — die
+// Halter-Zeile zählt nur HINTER der Marke PROFIL (davor schreibt der Feger des Kinds dieselbe Zeile für fremde Alt-Profile)
+const profilTaeterVon = (wer, d, k) =>
+    !/anazh-/.test(d)
+        ? `${wer} nannte kein Profil (Status ${k.status}: ${(k.stderr || "").trim().split("\n")[0] || "stderr leer"})`
+        : `${wer} ließ ${d} liegen (${((k.stdout || "").split(/^PROFIL .+$/m)[1] || "").match(/^\[welt-boot\] bleibt liegen: .*$/m)?.[0] || `das Kind schwieg: sein Aufräumen lief nicht, Status ${k.status}`})`;
 const tempNeu = (name = "profil", pid = process.pid) => fs.mkdtempSync(path.join(os.tmpdir(), `anazh-${pid}-${name}-`));
 const signalEnde = (s) => process.exit(128 + os.constants.signals[s]);
 // DAS SICHTBARE FENSTER (Schöpfer 08./09.11.: „die GPU-Proben mit offenem Fenster, dann sehe ich, was geschieht“): LINSE_SICHTBAR=1
@@ -2474,10 +2480,28 @@ async function selbsttest() {
     await browser.close();
     // das Kind nennt sein Profil an der Marke, nie als erste Zeile: sein Feger schreibt vorher „bleibt liegen" für ein gehaltenes
     // Alt-Profil (Vollprobe 04.11. 20:06, ~2000 Alt-Profile im Temp: die Linse las die Feger-Zeile als Pfad — ROT ohne Täter)
-    const [mutante, ...kinder] = ['require("fs").rmSync = () => {}; await b.close()', "throw 0", 'process.emit("SIGTERM", "SIGTERM")'].map(
-        (c) => kind(`const b = await w.starteBrowser({ art: "null" }); require("fs").writeSync(1, "PROFIL " + b.profil + "\\n"); ${c}`).stdout.match(/^PROFIL (.+)$/m)?.[1]
+    const profilLaeufe = ['require("fs").rmSync = () => {}; await b.close()', "throw 0", 'process.emit("SIGTERM", "SIGTERM")'].map(
+        (c) => kind(`const b = await w.starteBrowser({ art: "null" }); require("fs").writeSync(1, "PROFIL " + b.profil + "\\n"); ${c}`)
     );
-    const liegen = [mutante, ...kinder].map((d) => !/anazh-/.test(d) || fs.existsSync(d));
+    const [mutante, ...kinder] = profilLaeufe.map((k) => k.stdout.match(/^PROFIL (.+)$/m)?.[1]);
+    // die Mutante liegt nur, wenn sie ihr Profil NANNTE und es noch da ist (eine Mutante ohne Browser bewies nichts und las sich „true")
+    const liegen = [mutante, ...kinder].map((d, i) => (i ? !/anazh-/.test(d) || fs.existsSync(d) : /anazh-/.test(d) && fs.existsSync(d)));
+    // DER TÄTER BEIM NAMEN (z634, 20.11.: der Zug fiel im Bau an „true,true,true" — ROT ohne Täter, am nachgebauten Kandidaten danach
+    // zweimal GRÜN): „liegt" hieß dreierlei, ohne es zu sagen — das Kind nannte kein Profil (sein Browser startete nicht), sein
+    // Aufräumen ließ es liegen (der Halter steht in seiner Zeile „bleibt liegen" HINTER der Marke), oder das Kind schwieg (sein
+    // Aufräumen lief nicht). Das Urteil bleibt streng; ein rotes nennt je Kind den Fall mit Pfad und Fehlertext
+    const profilTaeter = profilLaeufe
+        .map((k, i) => {
+            if (i) return liegen[i] ? profilTaeterVon(["", "Wurf", "Signal"][i], kinder[i - 1], k) : "";
+            if (liegen[0]) return "";
+            return /anazh-/.test(mutante) ? `Mutante ${mutante} liegt nicht: das Aufräumen geht nicht mehr durch fs.rmSync` : profilTaeterVon("Mutante", mutante, k);
+        })
+        .filter(Boolean);
+    const taeterProbe = [
+        profilTaeterVon("Wurf", undefined, { status: 1, stdout: "[welt-boot] bleibt liegen: EPERM alt\n", stderr: "Error: Failed to launch the browser process\n    at x" }),
+        profilTaeterVon("Signal", "T:/anazh-7-profil-a", { status: 143, stdout: "[welt-boot] bleibt liegen: EPERM alt\nPROFIL T:/anazh-7-profil-a\n[welt-boot] bleibt liegen: EPERM lockfile\n", stderr: "" }),
+        profilTaeterVon("Wurf", "T:/anazh-7-profil-b", { status: 2, stdout: "[welt-boot] bleibt liegen: EPERM alt\nPROFIL T:/anazh-7-profil-b\n", stderr: "" }),
+    ].join(" | ");
     loesche(mutante);
     const [tot, lebend, jung] = [tempNeu("profil", 2147483600), tempNeu(), tempNeu("profil", 2147483600)];
     const alt = new Date(Date.now() - 66e4);
@@ -2622,7 +2646,12 @@ async function selbsttest() {
     const urteile = [
         [
             profil === "true,false true,false,false false,true,true",
-            `Profil je Start (Besitzer, liegt nach close() · nach Mutante/Wurf/Signal · nach dem Fegen tot/lebend/jung): ${profil}`,
+            `Profil je Start (Besitzer, liegt nach close() · nach Mutante/Wurf/Signal · nach dem Fegen tot/lebend/jung): ${profil}${profilTaeter.length ? ` — TÄTER: ${profilTaeter.join(" | ")}` : ""}`,
+        ],
+        [
+            taeterProbe ===
+                "Wurf nannte kein Profil (Status 1: Error: Failed to launch the browser process) | Signal ließ T:/anazh-7-profil-a liegen ([welt-boot] bleibt liegen: EPERM lockfile) | Wurf ließ T:/anazh-7-profil-b liegen (das Kind schwieg: sein Aufräumen lief nicht, Status 2)",
+            `ein liegendes Profil nennt seinen Täter (kein Profil genannt · Halter hinter der Marke · Aufräumen lief nicht): ${taeterProbe}`,
         ],
         [
             /^pageerror: Error: __seitenWurf/.test(wurf[0]),
