@@ -16,10 +16,12 @@
 //       der Späteren, bis der Worker ihn fertig hat (sonst lief der Wiederholer ab, und der dritte Ablauf macht die Zelle
 //       gescheitert); je FADEN, auch im Werk-Helfer (`w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (`_foundryUhren`)
 //   DIE LINSE URTEILT AM EREIGNIS, NIE AN DER WANDUHR (takt-t8-geist): T8 liest seinen Stand am Ablauf des ersten und an der späten
-//       Antwort des Werks (kein Schlaf, kein lebendes Ergebnis-Objekt); T3–T6 stellen die Uhr des Spiels für ihren Lauf (`uhrSteht`).
+//       Antwort des Werks (kein Schlaf, kein lebendes Ergebnis-Objekt); T3–T6 stellen die Uhr des Spiels für ihren Lauf (`stehend`);
+//       T11 wartet auf das Buch der Foundry, mit dem der Bauplan seines Wagens kommt (`__weltDa`).
 //       Bis hier kippte T8, sobald die Seite nach seinem Lesen noch 1,6 s mit einem Makrotask lebte (kalt, unter Last), T3 bei 1 s
-//       Stand des Fadens im ersten Bake-Fenster, T5 bei 6 s (FOUNDRY_ALTER_MS) zwischen Bestellen und Antwort; und die 45-s-Fristen
-//       der Doppel von T5/T6 schrieben in T18 ihren Ablauf in das Log der Welt (`uhrenFallen`).
+//       Stand des Fadens im ersten Bake-Fenster, T5 bei 6 s (FOUNDRY_ALTER_MS) zwischen Bestellen und Antwort, T11, sobald das Buch
+//       später kam als die Beine davor liefen (der Schlaf von T8 trug es); und die 45-s-Fristen der Doppel von T5/T6 schrieben in
+//       T18 ihren Ablauf in das Log der Welt (`uhrenFallen`).
 //   T9  DIE KAPPEN DES LADE-TAKTS: unter dem Ladeschirm fragt jeder Leser des ersten Bilds mit Kappe je Takt die EINE Kappe
 //       (`_kappeOffen`): Pflanz-Schlange, Dorf-Zug, Cull-Bau, Laub, Boden-Strom (Stück und ms, keine eigene Uhr) — bis zur EINEN Frist
 //       je Lade-Frame (`_ladeFrist`); Ring-Boden und Fern-Ring (Lade-Takt) auch nach ihr; der Selbsttest nennt jeden vakuösen Leser.
@@ -651,7 +653,13 @@ hauptLauf(async () => {
             // Leser der Stau-Werke je Bild (`_stauFelder` fragt `_stauWorkClusters` nach Identität). Der Selbsttest fährt die alten
             // Klassen: der Wagen als Beweger (der Ruf ohne Drift), jede geschlossene Box als Damm, die Leiter ohne Sprosse.
             const t11 = await (async () => {
-                const [C, P, o] = [AnazhRealm, Object.getPrototypeOf(r), { schritt: 0, beweger: 0, stau: 0 }];
+                // DER WAGEN KOMMT MIT DEM BUCH (takt-t8-geist): sein Bauplan (`fahrzeug_suv`) steht erst, wenn das Buch der Foundry
+                // eingelesen ist (`_foundryIngestBook`) — T11 wartet auf dieses EREIGNIS (`__weltDa`, ohne Frist: ein Buch, das nie
+                // kommt, nennt die Stall-Akte samt der Bedingung). Bis hier trug ihn die Laufzeit der Beine davor (der Schlaf von T8,
+                // 2 s): kam das Buch später, stand kein Wagen, und T11 fiel mit „0/240 Schritte — Täter _verkehrSchritt“.
+                await __weltDa((w) => !!(w._foundry && w._foundry.ready && w._foundry.recipes));
+                const [C, P, o] = [AnazhRealm, Object.getPrototypeOf(r), { schritt: 0, beweger: 0, stau: 0, gestellt: false }];
+                o.bauplan = Object.prototype.hasOwnProperty.call(st.blueprints || {}, "fahrzeug_suv");
                 const S = {
                     raster: new Map(),
                     verkehr: { wagen: [], spurRaster: new Map(), zahl: AnazhRealm._verkehrZahl(1) },
@@ -662,7 +670,7 @@ hauptLauf(async () => {
                 try {
                     // die Werke des Staus vor der Ankunft des Wagens: weder sie noch ein Schritt rechnet sie neu
                     const c = r._stauWorkClusters();
-                    if (r._verkehrWagenStellen(W)) S.verkehr.wagen.push(Object.assign(W, { zustand: "faehrt", F: r._fahrerLinie([park, { x: park.x + 160, z: park.z }], 4) })), (W.entry._verkehrFaehrt = true); // prettier-ignore
+                    if (r._verkehrWagenStellen(W)) S.verkehr.wagen.push(Object.assign(W, { zustand: "faehrt", F: r._fahrerLinie([park, { x: park.x + 160, z: park.z }], 4) })), (W.entry._verkehrFaehrt = true), (o.gestellt = true); // prettier-ignore
                     for (let i = 0; i < 240; i++) {
                         r._verkehrSchritt(1 / 60);
                         o.beweger += r._blockerNetz().beweger.has(W.entry);
@@ -1045,7 +1053,8 @@ hauptLauf(async () => {
         _stauWorkClusters: !t11.stau,
     };
     const n11 = Object.keys(T11je).filter((k) => T11je[k] === SELBST);
-    const z11 = `${t11.schritt}/240 Schritte · Beweger ${t11.beweger} · Stau ${t11.stau}`;
+    // steht der Wagen nicht, nennt die Zeile es (ein Leser ohne Wagen ist vakuös, nie der Täter): der Bauplan kam mit dem Buch — oder nicht
+    const z11 = `${t11.schritt}/240 Schritte · Beweger ${t11.beweger} · Stau ${t11.stau}${t11.gestellt ? "" : ` · DER WAGEN STEHT NICHT (Bauplan fahrzeug_suv ${t11.bauplan ? "da" : "fehlt trotz Buch"})`}`;
     if (SELBST) {
         const [v, vak] = [(x) => (x ? "vakuös" : "rot"), (n) => (n.length ? "vakuös: " + n : "rot")];
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
