@@ -1348,7 +1348,7 @@ class AnazhRealm_siedlung_bewohner {
                 const rN = b.nah ? BW.nahM + BW.nahHystM : BW.nahM;
                 if (kreis && ad2 < rN * rN) {
                     // die Bedeutung (`_bedeutung`: Größe am Schirm mal Gang), wer lebt, mit der Hysterese der Gestalt bedeutender
-                    const bd = this._bedeutung(g.scale.y || 1, Math.sqrt(ad2), b.weg ? b.tempoJetzt : 0);
+                    const bd = this._bedeutung(g.scale.y || 1, Math.sqrt(ad2), b.weg ? b.tempoJetzt : 0, g.position);
                     b.bedeutung = b.nah ? bd / (1 - u._gelenk.hyst) ** 2 : bd;
                     nah.push(b);
                 }

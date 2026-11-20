@@ -893,8 +893,8 @@ async function menschBuehnen() {
         // true,false,false,true). Die Gruppe ist eine eigene Klasse, offen im Rumpf der Abgabe.
         const allein = (k) => S.liste.filter((o) => o !== k && o.leib && !o.drinnen && ab(o.leib.position, k.leib.position) < 2 * A.BEWOHNER.begegnungM).length < A.BEWOHNER.nahLeiber - 1; // prettier-ignore
         // DER WEG UM IHN: aus 9 m schräg vor seinem Gesicht (±0,6 rad) durch seinen Stand, der Vorbeigang 2 m daneben — der erste freie
-        const wegUm = (k) => {
-            for (const dw of [0.6, -0.6]) {
+        const wegUm = (k, faecher = [0.6, -0.6]) => {
+            for (const dw of faecher) {
                 const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
                 const [a, v] = [{ x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 }, { x: -2 * Math.sign(dw) * u.z, z: 2 * Math.sign(dw) * u.x }]; // prettier-ignore
                 if (frei(a, u) && frei({ x: a.x + v.x, z: a.z + v.z }, u)) return { a, u, v };
@@ -924,12 +924,16 @@ async function menschBuehnen() {
             const a = { x: W.a.x + W.v.x * v, z: W.a.z + W.v.z * v };
             stell(a.x, a.z);
             r._spielerLageAlt = null;
+            // DER BLICK GEHT MIT (w28-bau-rezept-tuer): der Spieler sieht in seine Richtung, auch ohne Fenster — die Nah-Wahl fragt
+            // das Bild (`_bedeutung`), und ein Blick, den keiner setzt, ist der von gestern
+            kamera(W.u.x, W.u.z);
             for (let i = 0; i < 60; i++) schritt();
             const z = { zuS: null, dMin: 99, beruehrt: 0, imBild: null };
             for (let l = 0, t = 0, e = null; l <= 21; l += 1.4 * dt, t += dt) {
                 stell(a.x + W.u.x * l, a.z + W.u.z * l); // der Lauf: der Kreatur-Takt liest ihn aus der Lage
                 schritt();
-                if (echt) [kamera(W.u.x, W.u.z), r._loopRender()];
+                kamera(W.u.x, W.u.z);
+                if (echt) r._loopRender();
                 const d = ab(pm, g.position);
                 z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
                 z.beruehrt += S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).length; // prettier-ignore
@@ -942,6 +946,7 @@ async function menschBuehnen() {
             return z;
         };
         // DER LAUF: der Vorbeigang, zwei Gänge ohne Erinnerung, der Schlag 5 m neben ihm, der vierte Gang
+        let zugebaut = false; // (der Täter „zugebaut“: nach der Flucht ist jeder Punkt Grundriss)
         const lauf = () => {
             g.userData.memory = [];
             // wer im Lauf davor (ein Täter des Selbsttests) wich, kehrt erst an seinen Stand zurück (die Uhr der Probe steht: er
@@ -968,7 +973,12 @@ async function menschBuehnen() {
             const W4 = b.weichen && b.weichen.ort;
             for (let i = 0; W4 && i < 3600 && !(b.da && !b.weg && !b.platz && ab(g.position, W4) < 0.5); i++) schritt();
             const fort = Math.round((ab(g.position, tat) - ab(stand, tat)) * 1000) / 1000;
-            const w4 = wegUm(b);
+            // DER FÄCHER DES VIERTEN GANGS (w28-bau-rezept-tuer): der Weich-Ort ist ein Stand des Gesetzes, oft vor Häusern — der
+            // Gang sucht den ersten freien von acht Winkeln (0,3–1,2 rad neben seinem Blick: der Kopf wendet sich immer). Bis hier nur
+            // ±0,6 rad: im Dorf des Bau-Rezepts stand #946581 4–5 m vor zwei Häusern, beide Wege zu (+0,6 nach 14 m, −0,6 im Haus)
+            zugebaut = true;
+            const w4 = wegUm(b, [0.6, -0.6, 0.9, -0.9, 0.3, -0.3, 1.2, -1.2]);
+            zugebaut = false;
             if (!w4) return { fehler: `kein freier Weg um den Zeugen ${wer(b)} an seinem neuen Stand` };
             G.push(gang(0, w4));
             const je = (k) => G.map((x) => x[k]);
@@ -984,9 +994,11 @@ async function menschBuehnen() {
             "begegnung-steht": "_bewohnerPlatz",
             "begegnung-vergessen": "_bewohnerZeuge",
             "begegnung-bleibt": "_bewohnerWeichen",
+            "begegnung-zugebaut": "_imGrundriss",
         })) {
             const zurueck = [];
-            decke(name, () => () => false, zurueck);
+            const zu = (f) => function (...a) { return zugebaut ? "haus" : f.apply(this, a); }; // prettier-ignore
+            decke(name, name === "_imGrundriss" ? zu : () => () => false, zurueck);
             if ([].concat(taeter).includes(t)) sicht[t] = lauf();
             for (const f of zurueck) f();
         }
@@ -1150,6 +1162,7 @@ module.exports = {
             ["begegnung-steht", /Berührung/],
             ["begegnung-vergessen", /die Erinnerung lenkt den Abstand nicht/],
             ["begegnung-bleibt", /der Zeuge weicht nicht/],
+            ["begegnung-zugebaut", /kein freier Weg um den Zeugen/],
         ],
     },
     urteil: menschUrteil,
