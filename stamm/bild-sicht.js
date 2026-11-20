@@ -1805,6 +1805,8 @@ class AnazhRealm_bild_sicht {
         // (leerer Slot, ungenutzter Platz) fällt außerhalb des Clip-Raums und erzeugt kein Fragment. Der Saum (2 mrad +
         // 2 cm) hält Silhouetten, die ihre Hülle berühren, gegen Rundung im Raster. Die Clip-Tiefe hinter der fernen Ebene
         // klemmt auf die Ebene: das Fragment schreibt seine Tiefe selbst, die Raster-Tiefe entscheidet nur die Deckung.
+        // DER TEIL IM JAHR (saison-am-laub, `FELD_JAHR_WGSL` neben seinem Schreiber): Laub und Blüte ziehen sich und tönen, der Rest steht
+        const jahrPunktFn = TSL.wgslFn(AnazhRealm.FELD_JAHR_WGSL);
         const sv = `${W.gesetzBlock}u`;
         const stellvertreter = TSL.wgslFn(
             "fn feldStellvertreter(i: u32, ecke: vec3<f32>, vp: mat4x4<f32>, camPos: vec3<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
@@ -1839,7 +1841,7 @@ class AnazhRealm_bild_sicht {
         // Strahl zieht in den GLIED-Raum (Knochen-Matrix = Animation), die Normale kommt aus dem SDF-Gradienten und die
         // Sonne beleuchtet (kein Nacht-Glühen). Rückgabe: rgb + Strahl-Länge (0 = kein Treffer → verworfen).
         const march = TSL.wgslFn(
-            "fn feldMarch(ndc: vec2<f32>, i: u32, camPos: vec3<f32>, invVP: mat4x4<f32>, nah: f32, fern: f32, fwd: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, saison: vec3<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
+            "fn feldMarch(ndc: vec2<f32>, i: u32, camPos: vec3<f32>, invVP: mat4x4<f32>, nah: f32, fern: f32, fwd: vec3<f32>, szeneTiefe: f32, schirm: vec2<f32>, ditherT: f32, saison: vec3<f32>, praesenz: vec3<f32>, liste: texture_2d<f32>, kapseln: texture_2d<f32>) -> vec4<f32> {\n" +
                 "    let kein = vec4<f32>(0.0);\n" +
                 "    let fern4 = invVP * vec4<f32>(ndc.x, ndc.y, 1.0, 1.0);\n" +
                 "    // DER SCHWUND: dieselbe Interleaved-Gradient-Blende wie die Studio-Stufen (__phytoCore.lodDitherIGN)\n" +
@@ -1930,22 +1932,26 @@ class AnazhRealm_bild_sicht {
                 "                    for (var k2: i32 = 0; k2 < anzG; k2 = k2 + 1) {\n" +
                 "                        let qA = kapselTexel(kapseln, poG + k2 * 2);\n" +
                 "                        let qB = kapselTexel(kapseln, poG + k2 * 2 + 1);\n" +
+                "                        let jq = jahrPunkt(pP, qA, qB, praesenz);\n" +
+                "                        if (jq.w < 0.02) { continue; }\n" +
+                "                        let pQ = jq.xyz;\n" +
                 "                        var dkG = 0.0;\n" +
                 "                        if (qA.w >= 0.0) {\n" +
                 "                            let ba2 = qB.xyz - qA.xyz;\n" +
-                "                            let pa2 = pP - qA.xyz;\n" +
+                "                            let pa2 = pQ - qA.xyz;\n" +
                 "                            let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
                 "                            dkG = length(pa2 - ba2 * h2) - qA.w;\n" +
                 "                        } else if (qB.w < 0.5) {\n" +
-                "                            let q2 = abs(pP - qA.xyz) - qB.xyz;\n" +
+                "                            let q2 = abs(pQ - qA.xyz) - qB.xyz;\n" +
                 "                            dkG = length(max(q2, vec3<f32>(0.0))) + min(max(q2.x, max(q2.y, q2.z)), 0.0);\n" +
                 "                        } else if (qB.w < 1.5) {\n" +
                 "                            // ELLIPSOID (pB.w≈1), rau\n" +
-                "                            dkG = sdEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
+                "                            dkG = sdEllipsoidRau(pQ, qA.xyz, qB.xyz);\n" +
                 "                        } else {\n" +
                 "                            // KEIL (pB.w = Typ 2..5 + 0,49·Walm): der Kasten, oben geschnitten (sdKeil)\n" +
-                "                            dkG = sdKeil(pP, qA.xyz, qB.xyz, qB.w);\n" +
+                "                            dkG = sdKeil(pQ, qA.xyz, qB.xyz, qB.w);\n" +
                 "                        }\n" +
+                "                        dkG = dkG * jq.w;\n" +
                 "                        if (dkG < dmG) { dmG = dkG; nkG = k2; }\n" +
                 "                    }\n" +
                 "                    if (dmG * sk < 0.008) {\n" +
@@ -1955,15 +1961,15 @@ class AnazhRealm_bild_sicht {
                 "                        let qB = kapselTexel(kapseln, poG + nkG * 2 + 1);\n" +
                 "                        var gvG = vec3<f32>(0.0);\n" +
                 "                        var ciG: u32 = 0u;\n" +
-                "                        var laubG = false;\n" +
+                "                        let pJ = jahrPunkt(pP, qA, qB, praesenz).xyz;\n" +
                 "                        if (qA.w >= 0.0) {\n" +
                 "                            let ba2 = qB.xyz - qA.xyz;\n" +
-                "                            let pa2 = pP - qA.xyz;\n" +
+                "                            let pa2 = pJ - qA.xyz;\n" +
                 "                            let h2 = clamp(dot(pa2, ba2) / max(dot(ba2, ba2), 1e-8), 0.0, 1.0);\n" +
                 "                            gvG = pa2 - ba2 * h2;\n" +
                 "                            ciG = u32(qB.w);\n" +
                 "                        } else if (qB.w < 0.5) {\n" +
-                "                            let q2 = pP - qA.xyz;\n" +
+                "                            let q2 = pJ - qA.xyz;\n" +
                 "                            let aq2 = abs(q2) - qB.xyz;\n" +
                 "                            if (aq2.x >= aq2.y && aq2.x >= aq2.z) { gvG = vec3<f32>(sign(q2.x), 0.0, 0.0); }\n" +
                 "                            else if (aq2.y >= aq2.z) { gvG = vec3<f32>(0.0, sign(q2.y), 0.0); }\n" +
@@ -1971,12 +1977,11 @@ class AnazhRealm_bild_sicht {
                 "                            ciG = u32(-qA.w - 1.0);\n" +
                 "                        } else if (qB.w < 1.5) {\n" +
                 "                            // ELLIPSOID-Normale (analytischer Noise-Gradient)\n" +
-                "                            gvG = gradEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
+                "                            gvG = gradEllipsoidRau(pJ, qA.xyz, qB.xyz);\n" +
                 "                            ciG = u32(-qA.w - 1.0);\n" +
-                "                            laubG = true; // das kompakte Teil (Blütenkopf, Stein) trägt die Saison\n" +
                 "                        } else {\n" +
                 "                            // KEIL-Normale: Kasten-Seite, Dach-Ebene oder Walm (gradKeil)\n" +
-                "                            gvG = gradKeil(pP, qA.xyz, qB.xyz, qB.w);\n" +
+                "                            gvG = gradKeil(pJ, qA.xyz, qB.xyz, qB.w);\n" +
                 "                            ciG = u32(-qA.w - 1.0);\n" +
                 "                        }\n" +
                 "                        if (dot(gvG, gvG) < 1e-10) {\n" +
@@ -1985,7 +1990,7 @@ class AnazhRealm_bild_sicht {
                 "                            // Platz-Raum → Welt: rotY(+yaw); uniforme Skala dreht die Richtung nicht\n" +
                 "                            bestN = normalize(vec3<f32>(cy * gvG.x + sy * gvG.z, gvG.y, cy * gvG.z - sy * gvG.x));\n" +
                 "                        }\n" +
-                "                        bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, laubG);\n" +
+                "                        bestRgb = vec3<f32>(f32((ciG >> 16u) & 255u), f32((ciG >> 8u) & 255u), f32(ciG & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, jahrPunkt(pP, qA, qB, vec3<f32>(0.0)).w < 0.5);\n" +
                 "                        break;\n" +
                 "                    }\n" +
                 "                    tG = tG + max(dmG * sk, 0.004);\n" +
@@ -2004,23 +2009,27 @@ class AnazhRealm_bild_sicht {
                 "            for (var k: i32 = 0; k < anzahl; k = k + 1) {\n" +
                 "                let pA = kapselTexel(kapseln, po + k * 2);\n" +
                 "                let pB = kapselTexel(kapseln, po + k * 2 + 1);\n" +
+                "                let jq = jahrPunkt(pL, pA, pB, praesenz);\n" +
+                "                if (jq.w < 0.02) { continue; }\n" +
+                "                let pQ = jq.xyz;\n" +
                 "                var dk = 0.0;\n" +
                 "                if (pA.w >= 0.0) {\n" +
                 "                    let ba = pB.xyz - pA.xyz;\n" +
-                "                    let pa = pL - pA.xyz;\n" +
+                "                    let pa = pQ - pA.xyz;\n" +
                 "                    let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
                 "                    dk = length(pa - ba * hh) - pA.w;\n" +
                 "                } else if (pB.w < 0.5) {\n" +
                 "                    // BOX (pA.w < 0, pB.w≈0): Zentrum|−(farbe+1) · Halbmaße\n" +
-                "                    let q = abs(pL - pA.xyz) - pB.xyz;\n" +
+                "                    let q = abs(pQ - pA.xyz) - pB.xyz;\n" +
                 "                    dk = length(max(q, vec3<f32>(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);\n" +
                 "                } else if (pB.w < 1.5) {\n" +
                 "                    // ELLIPSOID (pB.w≈1), rau\n" +
-                "                    dk = sdEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
+                "                    dk = sdEllipsoidRau(pQ, pA.xyz, pB.xyz);\n" +
                 "                } else {\n" +
                 "                    // KEIL (pB.w = Typ 2..5 + 0,49·Walm): der Kasten, oben geschnitten (sdKeil)\n" +
-                "                    dk = sdKeil(pL, pA.xyz, pB.xyz, pB.w);\n" +
+                "                    dk = sdKeil(pQ, pA.xyz, pB.xyz, pB.w);\n" +
                 "                }\n" +
+                "                dk = dk * jq.w;\n" +
                 "                if (dk < dm) { dm = dk; nk = k; }\n" +
                 "            }\n" +
                 "            if (dm < 0.008) {\n" +
@@ -2030,16 +2039,16 @@ class AnazhRealm_bild_sicht {
                 "                let pB = kapselTexel(kapseln, po + nk * 2 + 1);\n" +
                 "                var gvK = vec3<f32>(0.0);\n" +
                 "                var ci: u32 = 0u;\n" +
-                "                var laubK = false;\n" +
+                "                let pJ = jahrPunkt(pL, pA, pB, praesenz).xyz;\n" +
                 "                if (pA.w >= 0.0) {\n" +
                 "                    let ba = pB.xyz - pA.xyz;\n" +
-                "                    let pa = pL - pA.xyz;\n" +
+                "                    let pa = pJ - pA.xyz;\n" +
                 "                    let hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);\n" +
                 "                    gvK = pa - ba * hh;\n" +
                 "                    ci = u32(pB.w);\n" +
                 "                } else if (pB.w < 0.5) {\n" +
                 "                    // BOX-Normale: die Achse der größten Überschreitung trägt\n" +
-                "                    let q = pL - pA.xyz;\n" +
+                "                    let q = pJ - pA.xyz;\n" +
                 "                    let aq = abs(q) - pB.xyz;\n" +
                 "                    if (aq.x >= aq.y && aq.x >= aq.z) { gvK = vec3<f32>(sign(q.x), 0.0, 0.0); }\n" +
                 "                    else if (aq.y >= aq.z) { gvK = vec3<f32>(0.0, sign(q.y), 0.0); }\n" +
@@ -2047,12 +2056,11 @@ class AnazhRealm_bild_sicht {
                 "                    ci = u32(-pA.w - 1.0);\n" +
                 "                } else if (pB.w < 1.5) {\n" +
                 "                    // ELLIPSOID-Normale (analytischer Noise-Gradient)\n" +
-                "                    gvK = gradEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
+                "                    gvK = gradEllipsoidRau(pJ, pA.xyz, pB.xyz);\n" +
                 "                    ci = u32(-pA.w - 1.0);\n" +
-                "                    laubK = true; // das kompakte Teil trägt die Saison\n" +
                 "                } else {\n" +
                 "                    // KEIL-Normale: Kasten-Seite, Dach-Ebene oder Walm (gradKeil)\n" +
-                "                    gvK = gradKeil(pL, pA.xyz, pB.xyz, pB.w);\n" +
+                "                    gvK = gradKeil(pJ, pA.xyz, pB.xyz, pB.w);\n" +
                 "                    ci = u32(-pA.w - 1.0);\n" +
                 "                }\n" +
                 "                // die eigene Farbe des Eintrags (mensch.K4: der Bewohner in der Kapsel seiner Gestalt)\n" +
@@ -2065,7 +2073,7 @@ class AnazhRealm_bild_sicht {
                 "                        r0.y * gvK.x + r1.y * gvK.y + r2.y * gvK.z,\n" +
                 "                        r0.z * gvK.x + r1.z * gvK.y + r2.z * gvK.z));\n" +
                 "                }\n" +
-                "                bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, laubK);\n" +
+                "                bestRgb = vec3<f32>(f32((ci >> 16u) & 255u), f32((ci >> 8u) & 255u), f32(ci & 255u)) / 255.0 * select(vec3<f32>(1.0), saison, jahrPunkt(pL, pA, pB, vec3<f32>(0.0)).w < 0.5);\n" +
                 "                break;\n" +
                 "            }\n" +
                 "            tK = tK + max(dm / lenDL, 0.004);\n" +
@@ -2076,7 +2084,7 @@ class AnazhRealm_bild_sicht {
                 "    // je Paar das obere um +2 verschoben — der Exponent des f32 ist nie 0, kein Denormal fällt der Hardware zum Opfer\n" +
                 "    return vec4<f32>(bitcast<f32>(pack2x16float(vec2<f32>(bestRgb.r, bestRgb.g + 2.0))), bitcast<f32>(pack2x16float(vec2<f32>(bestRgb.b, bestN.x + 2.0))), bitcast<f32>(pack2x16float(vec2<f32>(bestN.y, bestN.z + 2.0))), bestT);\n" +
                 "}",
-            [sdEllipsoidRauFn, gradEllipsoidRauFn, sdKeilFn, gradKeilFn, kapselTexelFn] // der raue Ellipsoid, der Keil + die 2D-Kapsel-Liste
+            [sdEllipsoidRauFn, gradEllipsoidRauFn, sdKeilFn, gradKeilFn, kapselTexelFn, jahrPunktFn] // der raue Ellipsoid, der Keil, die 2D-Kapsel-Liste + der Teil im Jahr
         );
         const feldAlbedo = TSL.wgslFn(
             "fn feldAlbedo(p: vec4<f32>) -> vec3<f32> {\n" +
@@ -2183,6 +2191,7 @@ class AnazhRealm_bild_sicht {
             // DIE SAISON der Ellipsoide (die kompakten Teile der Gesetz-Streu): dieselbe EINE Uniform wie Laub, Gras, Karte
             // und Fern-Ring (eingeführt 05.10. für die Kronen-Lappen der Baum-Sätze, die am selben Tag fielen).
             saison: this._ensureSeasonUniforms().uSeasonMul,
+            praesenz: this._ensureSeasonUniforms().uLaubPraesenz,
             liste: TSL.texture(wm.liste),
             kapseln: TSL.texture(wm.kapseln),
         });
