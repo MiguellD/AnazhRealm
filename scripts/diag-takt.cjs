@@ -51,12 +51,17 @@
 //   T18 DIE RÜCKKEHR ZEIGT DENSELBEN BESTAND (w28-preis-ort, Heilung 2): eine Fahrt der echten Welt — Boot an der Mess-Wiese,
 //       Sprung 3 km, Rückkehr, Pendeln ±90 m — trägt an jedem Halt dieselbe Menge (Klasse, Art, Ort auf 1 cm) aller Einträge und
 //       Zellen der Deko-Streu binnen 120 m; der Selbsttest lässt den gewachsenen Wurf des Felds die Marke seiner Baum-Zelle setzen.
+//   T19 DER GANG DES REGISTERS VERABSCHIEDET NUR, WAS DIE KARTE NOCH TRÄGT (register-gang-frisch): ein Gang in Raten hält nach dem
+//       Sammeln, der zweite Räumer nimmt Gesammeltes (an der Karte `_ortSame`: `_grundrissFaellt` → `_ortSameFaellt`; an der Menge
+//       `waterCAActive`: `_tickWorldWaterCA`), der Gang geht zu Ende — kein Wurf, `_ortSameN` gleicht den Einträgen der Eimer,
+//       `fiel` und der Stand der Tafel zählen den fremd Geräumten nicht (`_zellGedaechtnisGeht`); der Selbsttest lässt Karte und
+//       Menge zu jedem Schlüssel ja sagen.
 // --selftest: der Wer-zuerst-fragt-Takt macht T3 rot, die Schwelle über das ganze Fenster
 // T4, die FIFO-Pumpe und die FIFO-Freigabe T5, die Nur-der-Nächste-Wahl (Pumpe UND Freigabe) T6, die löschende Frist T8, die Kappe
 // allein T9 (je Leser), der Wagen als Beweger, jede geschlossene Box als Damm und die Leiter ohne Sprosse T11 (je Leser), die
 // Frist ohne Ende T12 (je Bauer), die zweite Uhr eines Bauers und das Tor ohne Hunger T13 (je Bauer), der Vorbau neben dem Tor
 // und Rezeptbuch und Werkstatt am Stück T15 (je Täter), die Saat mit dem Boden, am Stück, mit Gedächtnis und die Probe an der Marke
-// T16 (je Täter), der Faden ohne die Normale T17.
+// T16 (je Täter), der Faden ohne die Normale T17, der Abschied ohne die Frage an Karte und Menge T19 (je Art).
 //
 //   node scripts/diag-takt.cjs [--selftest]          (npm run gate:takt)
 "use strict";
@@ -813,6 +818,119 @@ hauptLauf(async () => {
                 return o;
             })();
 
+            // T19 — DER GANG DES REGISTERS VERABSCHIEDET NUR, WAS DIE KARTE NOCH TRÄGT (register-gang-frisch): der Gang geht in
+            // Raten über mehrere Takte (`ZELL_RAEUMEN.jeTakt`), seine Gefallenen sammelt er, bis sein Gedächtnis durch ist. Hier hält
+            // er nach dem Sammeln und vor dem Abschied (ein `jeTakt`, das genau bis zum letzten Schlüssel des Gedächtnisses reicht),
+            // der ECHTE zweite Räumer nimmt Gesammeltes, dann geht der Gang zu Ende — an einer Karte mit Abschied und an einer Menge:
+            //   `_ortSame` (Map, `geht` zieht den Zähler ab): `_grundrissFaellt` → `_ortSameFaellt` nimmt einen von vier Eimern (der
+            //   Weg jedes neuen oder gefallenen Grundrisses — Bau, Abbau, Weg eines Dorfs). Bis stern-bild holte der Abschied den
+            //   Wert jedes gesammelten Schlüssels (`karte.get` → undefined) und reichte ihn an `geht`: CI 44658564648,
+            //   Persistenz-Härtung Teil 1, „Loop-Frame-Fehler … reading 'size' at stamm/gelaende-fern.js:2487“ — ein Bild des
+            //   Loops fiel, `_ortSameN` behielt die Einträge der gefallenen Eimer. Die Eimer schreibt der echte Schreiber
+            //   (`_ortGestaltSame`, Krone 0: das Urteil ohne den Plan des Walds), 4,8 km voraus, je 1,2 km auseinander.
+            //   `waterCAActive` (Set, Ring „boden“): der Takt des Wasser-Automaten nimmt jeden Schlüssel, dessen Chunk nicht steht
+            //   (`_tickWorldWaterCA`) — dieselben, die der Gang sammelt. Bis hier fragte der Abschied nur eine Map: `fiel` zählte
+            //   die fremd Geräumten mit, der Stand der Tafel (`_zellRaeumen.summe`) lag um sie unter der Tafel, und der nächste
+            //   Ruf nach `nachMs` begann einen Gang ohne jede Änderung.
+            // Zuvor derselbe Gang ohne zweiten Räumer (der gesunde Gang: dieselben Zahlen vor und nach dem Schnitt). Der Selbsttest
+            // fährt die alte Klasse: Karte und Menge sagen zu jedem Schlüssel ja — der Abschied fragt sie nicht.
+            const t19 = (() => {
+                const T = AnazhRealm.ZELL_GEDAECHTNISSE;
+                const pm = st.playerMesh.position;
+                const B = AnazhRealm.ORT_SAME_EIMER;
+                const { span } = r._voxelChunkConfig(0);
+                const art = Object.keys(globalThis.__terrainCore.PHYTO_PRESETS).find((p) => AnazhRealm._ortWaehlt(p));
+                const o = { art: art || "", gesund: null, karte: null, menge: null };
+                if (!art) return o;
+                // die Schlüssel aller räumbaren Gedächtnisse vor dem `bis`-ten (so viele liest der Gang, ehe er dort ankommt)
+                const summe = (bis = T.length) => {
+                    let s = 0;
+                    for (const E of T.slice(0, bis)) {
+                        const karte = !E.bestand && !E.schranke && E.karte(r);
+                        if (karte) s += karte.size;
+                    }
+                    return s;
+                };
+                const raeumt = () => !!(r._zellRaeumen && r._zellRaeumen.weiter);
+                const gehend = () => (r._saatGehend ? r._saatGehend.size : 0);
+                const zuEnde = () => {
+                    for (let i = 0; i < 400 && (i === 0 || gehend() || raeumt()); i++) r._pruneDistantVoxelChunks(pm);
+                };
+                const orte = [0, 1, 2, 3].map((i) => [(Math.floor(pm.x / B) + 100 + 25 * i) * B + 1, Math.floor(pm.z / B) * B + 1]); // prettier-ignore
+                const chunks = [0, 1, 2].map((i) => [Math.floor(pm.x / span) + 500 + 7 * i, Math.floor(pm.z / span)]);
+                // je Gedächtnis: seine Schlüssel fern des Spielers, ihr echter Schreiber, der echte zweite Räumer
+                const P = {
+                    _ortSame: {
+                        schluessel: orte.map(([x, z]) => Math.floor(x / B) + "," + Math.floor(z / B)),
+                        schreibe: () => orte.forEach(([x, z]) => [0, 1].forEach((d) => r._ortGestaltSame(x + d, z + d, 0, 7 + d, art))), // prettier-ignore
+                        raeumer: () => r._grundrissFaellt(orte[1][0], orte[1][1], orte[1][0] + 1, orte[1][1] + 1),
+                    },
+                    waterCAActive: {
+                        schluessel: chunks.map(([cx, cz]) => cx + "," + cz),
+                        schreibe: () => chunks.forEach(([cx, cz]) => r._wakeWaterCA(cx, cz)),
+                        raeumer: () => r._tickWorldWaterCA(),
+                    },
+                };
+                const gang = (name, zweiterRaeumer) => {
+                    const g = { pause: false, sammelte: -1, fremd: 0, fiel: -1, soll: -1, stand: -1, nWeg: -1, n: -1, eimer: -1, rest: -1, wurf: "" }; // prettier-ignore
+                    const iE = T.findIndex((E) => E.name === name);
+                    const p = P[name];
+                    if (iE < 0) return g;
+                    zuEnde(); // Saat und Register stehen: der Gang beginnt neu, und nichts sonst fällt
+                    p.schreibe();
+                    const karte = T[iE].karte(r);
+                    const [fiel0, summe0, n0] = [r._zellRaeumen.fiel, summe(), r._ortSameN | 0];
+                    // der Gang hält am letzten Schlüssel des Gedächtnisses: gesammelt, nicht verabschiedet
+                    const ZR = AnazhRealm.ZELL_RAEUMEN;
+                    const halt = leihe(AnazhRealm, {
+                        ZELL_RAEUMEN: Object.freeze({ ...ZR, nachMs: 0, jeTakt: summe(iE) + karte.size }),
+                    });
+                    try {
+                        r._pruneDistantVoxelChunks(pm);
+                    } finally {
+                        halt();
+                    }
+                    const G = r._zellRaeumen.weiter;
+                    g.sammelte = G && G.weg ? G.weg.length : -1;
+                    g.pause = !!G && G.E === T[iE] && !!G.it && G.karte === karte && g.sammelte === p.schluessel.length && p.schluessel.every((k) => G.weg.includes(k)); // prettier-ignore
+                    if (!g.pause) return g;
+                    let fremdSumme = 0;
+                    if (zweiterRaeumer) {
+                        const s0 = summe();
+                        p.raeumer();
+                        [fremdSumme, g.fremd] = [s0 - summe(), p.schluessel.filter((k) => !karte.has(k)).length];
+                    }
+                    // die alte Klasse: die Karte sagt zu jedem Schlüssel ja
+                    const blind = selbst && zweiterRaeumer ? leihe(karte, { has: () => true }) : () => {};
+                    try {
+                        for (let i = 0; i < 400 && raeumt(); i++) r._pruneDistantVoxelChunks(pm);
+                    } catch (e) {
+                        const wo = /stamm\/([\w-]+\.js)[^:\s]*:(\d+)/.exec(fehlerStapel(e));
+                        g.wurf = fehlerText(e) + " at " + (wo ? `stamm/${wo[1]}:${wo[2]}` : "unbekannt");
+                    } finally {
+                        blind();
+                    }
+                    const M = r._ortSame || new Map();
+                    g.fiel = r._zellRaeumen.fiel - fiel0;
+                    g.soll = summe0 - summe() - fremdSumme;
+                    g.stand = r._zellRaeumen.summe - summe(); // der Stand, an dem der nächste Ruf „geändert“ liest
+                    g.nWeg = n0 - (r._ortSameN | 0);
+                    [g.n, g.eimer] = [r._ortSameN | 0, [...M.values()].reduce((s, e) => s + e.size, 0)];
+                    g.rest = p.schluessel.filter((k) => karte.has(k)).length;
+                    return g;
+                };
+                const frist = leihe(r, { _bauFrist: () => Infinity }); // allein `jeTakt` teilt den Gang
+                try {
+                    o.gesund = gang("_ortSame", false);
+                    o.karte = gang("_ortSame", true);
+                    for (let i = 0; i < 400 && raeumt(); i++) r._pruneDistantVoxelChunks(pm); // nach einem Wurf: der Gang geht zu Ende
+                    o.menge = gang("waterCAActive", true);
+                } finally {
+                    frist();
+                }
+                return o;
+            })();
+
             // T17 — DAS GITTER IM FADEN GLEICHT DEM DES HAUPT-FADENS (w28-preis-ort, Heilung Gegner Gesetz F3): das Tuch-Gitter der
             // Tracht des Spielers, im Voxel-Faden gerechnet (`_tuchGitterFaden`, voxel-worker `tuch-gitter`), ist Byte für Byte das
             // Gitter des Haupt-Fadens (koerper-core `tuchGitter` an denselben Meshes) — zwei Wege zum selben Gitter, beide bewiesen. Der
@@ -863,6 +981,7 @@ hauptLauf(async () => {
             })();
 
             return {
+                t19,
                 t17,
                 t16,
                 t15,
@@ -962,6 +1081,32 @@ hauptLauf(async () => {
     const T18 = t18.halte.boot > 0 && (SELBST ? !t18.taeter["_streuWurf (liest die Marke des Felds)"] : t18.diff.n === 0);
     const n18 = T18 === SELBST ? (SELBST ? ["_streuWurf"] : Object.keys(t18.taeter).length ? Object.keys(t18.taeter) : ["unbenannt"]) : []; // prettier-ignore
     const z18 = `Boot ${t18.halte.boot} · Rückkehr ${t18.halte.rueck} · Pendeln ${t18.halte.pendel} (Takte Boot ${t18.halte.bootTakte} · fern ${t18.halte.fernTakte} · Rückkehr ${t18.halte.rueckTakte} · Pendeln ${t18.halte.pendelTakte}) · anders ${t18.diff.n}${t18.diff.n ? ` (weg ${t18.diff.weg.slice(0, 3).join(" ")} · neu ${t18.diff.neu.slice(0, 3).join(" ")}; ${JSON.stringify(t18.taeter)})` : ""}`; // prettier-ignore
+    // T19 je Gedächtnis-Art beim Namen: der Gang hielt nach dem Sammeln (nie vakuös), kein Wurf, `fiel` zählt genau, was der Gang
+    // nahm (die Schlüssel, die die Tafel verlor, ohne die des zweiten Räumers), der Stand der Tafel gleicht ihr, `_ortSameN`
+    // gleicht den Einträgen der Eimer, kein gesammelter Schlüssel bleibt — an der Karte im gesunden Gang und mit dem zweiten
+    // Räumer (er nahm 1 von 4), an der Menge mit ihm (er nahm alle). Im Selbsttest gilt das ROT nur mit dem Täter beim Namen:
+    // an der Karte der Wurf aus `gelaende-fern.js` bei gesundem Gang daneben, an der Menge `fiel` genau um die fremd Geräumten zu hoch.
+    const t19 = aus.t19;
+    const [g19, k19, m19] = [t19.gesund || {}, t19.karte || {}, t19.menge || {}];
+    const heil19 = (g) =>
+        g.pause === true && g.wurf === "" && g.fiel === g.soll && g.fiel === g.sammelte - g.fremd && g.stand === 0 && g.n === g.eimer && g.rest === 0; // prettier-ignore
+    const T19je = SELBST
+        ? {
+              "_zellGedaechtnisGeht (Karte)": !(heil19(g19) && k19.pause === true && k19.fremd === 1 && /gelaende-fern\.js/.test(k19.wurf)), // prettier-ignore
+              "_zellGedaechtnisGeht (Menge)": !(m19.pause === true && m19.fremd === m19.sammelte && m19.wurf === "" && m19.fiel === m19.soll + m19.fremd), // prettier-ignore
+          }
+        : {
+              "_zellGedaechtnisGeht (Karte)": heil19(g19) && g19.fremd === 0 && heil19(k19) && k19.fremd === 1,
+              "_zellGedaechtnisGeht (Menge)": heil19(m19) && m19.fremd === m19.sammelte,
+          };
+    const n19 = Object.keys(T19je).filter((k) => T19je[k] === SELBST);
+    const z19g = (g, was) =>
+        g.pause
+            ? `fiel ${g.fiel} von ${g.sammelte} gesammelten ${was} (Soll ${g.soll}), Stand der Tafel ${g.stand === 0 ? "gleich" : g.stand}, _ortSameN −${g.nWeg} auf ${g.n} bei ${g.eimer} Einträgen der Eimer, ${g.rest} gesammelte bleiben${g.wurf ? ` · WURF ${g.wurf}` : ""}`
+            : `der Gang hielt nicht nach dem Sammeln (${g.sammelte} gesammelt)`;
+    const z19 = t19.gesund
+        ? `_ortSame, gesunder Gang: ${z19g(g19, "Eimern")} · _ortSame, der zweite Räumer (_ortSameFaellt) nahm ${k19.fremd} zwischen Sammeln und Abschied: ${z19g(k19, "Eimern")} · waterCAActive (Set), der zweite Räumer (_tickWorldWaterCA) nahm ${m19.fremd}: ${z19g(m19, "Chunks")}`
+        : `keine Probe (Art mit Solitär: ${t19.art || "keine"})`;
     const z16 = `Pendeln ${t16.pendelGeht} Chunks gegangen · Abbauten je Takt nach der Frist ${t16.raten} · gehend am Ende ${t16.restGeht} · Tritt ${t16.tritt} Marke ${t16.marke} · ${t16.wuerfe} Würfe · die Probe las die Marke ${t16.markeGelesen}-mal`;
     const z15 = `${t15.rufe} Rufe, ${t15.vorbei} am Tor vorbei · Rezeptbuch in ${t15.buch} Stücken · Werkstatt in ${t15.werk} · im Bild-Takt ${t15.imBild}/30, im Zwischen-Takt ${t15.zwischen}/1`;
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
@@ -998,12 +1143,13 @@ hauptLauf(async () => {
             ...n16,
             ...n17,
             ...n18,
+            ...n19,
         ].some(Boolean);
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST (je T die alte Klasse): T3 ${z3} ${v(T3)}; T4 ${v(T4)}; ` +
                 `T5 ${z5} ${v(T5)}; T6 ${z6} ${v(T6)}; ` +
                 `T8 ${z8} ${v(T8)}; T9 ${z9} ${v(T9)}${vakuoes.length ? ` — vakuös: ${vakuoes}` : ""}; ` +
-                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}; T16 ${z16} ${vak(n16)}; T17 ${z17} ${vak(n17)}; T18 ${z18} ${vak(n18)}`
+                `T10 ${z10} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}; T15 ${z15} ${vak(n15)}; T16 ${z16} ${vak(n16)}; T17 ${z17} ${vak(n17)}; T18 ${z18} ${vak(n18)}; T19 ${z19} ${vak(n19)}`
         );
         process.exit(ok ? 0 : 1);
     }
@@ -1051,7 +1197,8 @@ hauptLauf(async () => {
     benannt(n17, `T17 das Tuch-Gitter im Faden gleicht dem Haupt-Faden: ${z17}`); // Byte für Byte, je Feld
     benannt(n16, `T16 die Saat folgt ihrem Saum: ${z16}`); // der Saum, der Abschied in Raten, die Gedächtnisse, die Probe ohne Marke
     benannt(n18, `T18 die Rückkehr zeigt denselben Bestand: ${z18}`); // Menge je Klasse, Art, Ort auf 1 cm: Boot = Rückkehr = Pendeln
-    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15, n16, n17, n18).length) {
+    benannt(n19, `T19 der Gang des Registers verabschiedet nur, was die Karte noch trägt: ${z19}`); // kein Wurf, Zähler = Eimer, `fiel` ohne den fremd Geräumten
+    if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10 && T14) || n11.concat(n12, n13, n15, n16, n17, n18, n19).length) {
         console.error("\n❌ ROT");
         process.exit(1);
     }
