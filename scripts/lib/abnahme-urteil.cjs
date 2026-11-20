@@ -678,8 +678,13 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // 20 % Zwischentöne (|L − Mitte| < ¼ Kontrast) und Wechsel über die Mitte in BEIDEN Achsen an ≥ 30 % der Nachbar-Paare →
     // die Klassen-Pixel des Fensters sind Raster. Eine Kante wechselt einmal je Zeile, ein Halm nur quer, eine aufgelöste
     // Alpha-Kante trägt Zwischentöne; ein Muster aus zwei Tönen im Pixel-Takt ist das sichtbare Dither (Prüfer K63 R2).
+    // DER WECHSEL AN DER KLASSE (laub-kante-5): ein Wechsel zählt nur, wo eines der zwei Nachbar-Pixel der Klasse gehört — das
+    // Raster über dem Himmel wechselt an jedem Paar mit ihr, das Raster eines FREMDEN Teils neben ihr (die Halm-Spitzen der
+    // Wiese unter dem Kronen-Fuß des Waldmantels, Tafel-Pose: fimp:fichte · tanne · strauch zweiton 0,0007 · 0,0005 · 0,0059 in
+    // Fenstern, deren Klassen-Pixel EINEN Ton tragen) ist nicht ihres
     const zmark = new Uint8Array(W * H);
-    const zw = new Float32Array(64);
+    const zw = new Float32Array(64),
+        zk = new Uint8Array(64);
     for (let y0 = 0; y0 + 8 <= H; y0 += 4)
         for (let x0 = 0; x0 + 8 <= W; x0 += 4) {
             let c = 0;
@@ -688,6 +693,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     const p = (y0 + j) * W + x0 + i;
                     if (m[p] === 1) c++;
                     zw[j * 8 + i] = L[p];
+                    zk[j * 8 + i] = m[p] === 1 ? 1 : 0;
                 }
             if (c < 16) continue;
             const so = zw.slice().sort();
@@ -703,8 +709,9 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                 for (let i = 0; i < 8; i++) {
                     const w0 = zw[j * 8 + i];
                     if (Math.abs(w0 - mid) < 0.25 * kz) zz++;
-                    if (i < 7 && w0 > mid !== zw[j * 8 + i + 1] > mid) tx++;
-                    if (j < 7 && w0 > mid !== zw[(j + 1) * 8 + i] > mid) ty++;
+                    const q = j * 8 + i;
+                    if (i < 7 && (zk[q] | zk[q + 1]) && w0 > mid !== zw[q + 1] > mid) tx++;
+                    if (j < 7 && (zk[q] | zk[q + 8]) && w0 > mid !== zw[q + 8] > mid) ty++;
                 }
             if (tx / 56 >= 0.3 && ty / 56 >= 0.3 && zz / 64 <= 0.2)
                 for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) zmark[(y0 + j) * W + x0 + i] = 1;
@@ -2582,6 +2589,19 @@ function sollTafelSelbsttest(tafel, q) {
         ).zweiton !== 0
     )
         v.push("Maß zweiton: ein Verlauf trägt Raster");
+    // der Wechsel an der Klasse: das Raster der Klasse über dem Himmel (sie deckt jedes zweite Pixel) bleibt Raster, das Raster
+    // eines fremden Teils unter ihr (die Halm-Spitzen unter dem Kronen-Fuß), dessen Fenster sie mit EINEM Ton trägt, ist nicht ihres
+    {
+        const halb = (x, y) => ((x + y) & 1 ? 1 : 0);
+        const mH = new Uint8Array(W * H);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) mH[y * W + x] = halb(x, y);
+        const zH = klassenMasse(bild((x, y) => (halb(x, y) ? 200 : 40)), mH, W, H).zweiton;
+        if (!(zH > 0.99)) v.push(`Maß zweiton: die Klasse auf jedem zweiten Pixel vor dem Himmel ${zH} statt 1`);
+        const mO = new Uint8Array(W * H);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) mO[y * W + x] = y % 8 < 4 ? 1 : 0;
+        const zO = klassenMasse(bild((x, y) => (y % 8 < 4 ? 60 : (x + y) & 1 ? 200 : 40)), mO, W, H).zweiton;
+        if (zO !== 0) v.push(`Maß zweiton: das Raster eines fremden Teils unter der einfarbigen Klasse zählt als ihres (${zO})`);
+    }
     const zb = sollRechnung({ art: "zweiton1f", beta: [0, 2.4] });
     if (!(zb.band && zb.band[1] === 0))
         v.push(`Rechnung zweiton1f: Bilder ohne Muster tragen Raster (${JSON.stringify(zb)})`);
