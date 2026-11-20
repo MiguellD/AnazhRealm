@@ -27,7 +27,7 @@
 //       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder der Schüsse ab (die Figur
 //       und das Feuer aus 6 m fielen 08.11. ohne Leser). Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, die Stärke des Welt-Feuers), das Auge des Tages. DIE NACHT
 //       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma am Gesetz: Licht je Albedo, abgesoffen).
-//       Selbsttest: der Wurf auf dunkles Korn (vorher ROT, am Gesetz GRÜN) und die
+//       Selbsttest: der Wurf auf dunkles Korn (am Fleck unter der Soll, am Gesetz darüber), der Bruch von z637 (Licht −4 %) und die
 //       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
 //       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt). Dazu DAS
@@ -1061,11 +1061,25 @@ async function himmelProbe(page, taub) {
 // desselben Stoffs: Luma 22,3 → 21,8 am Ring bei GLEICHEM Licht (Belichtung 46 770,794, Pool, Himmel gleich; OMEN wie Radeon). Darum
 // misst der Schuss ohne das Feuer an derselben Kamera auch die ALBEDO (wie `__albedoSicht`: hell − dunkel unter weißem
 // Umgebungslicht π im linearen Ziel, `__linsenZiel`) am Ring (`ring`) und am Stoff um ihn (`stoffM`, 1–10 m: viele Körner, der
-// Wurf verschiebt ihn kaum), und das Urteil liest den Ring am Gesetz: jeder Pixel linear × k = Albedo des Stoffs ÷ Albedo des
-// Rings, zurück in sRGB (`gesetz.luma`). Die Soll bleibt 22. Gemessen (GTX 1060): Fleck 0,1067 (Samen) / 0,1085 (main), Stoff
-// 0,1169 / 0,1163, Licht je Albedo am Stoff gleich auf 0,2 % — am Gesetz Luma 26,8 / 26,9, am Fleck 21,8 / 22,3. Abgesoffen bleibt
+// Wurf verschiebt ihn kaum), und das Urteil liest den Ring am Gesetz: je Pixel sein Licht je Albedo (linear ÷ Albedo des Pixels)
+// × die Albedo des Stoffs, zurück in sRGB, davon der MEDIAN (`gesetz.luma`). Gemessen (GTX 1060, je zwei Boots): Fleck 0,1067
+// (Samen) / 0,1085 (main + Laub-Kante 5), Stoff 0,1177 / 0,1178 — am Gesetz 22,79 / 22,89 (0,44 % auseinander), am Fleck 21,8 / 22,3.
+// DER REST beim Namen: das Licht je Albedo streut je Pixel q10–q90 18,2–26,7 — die Mulden des Korns (`_mikroGestalt` kippt die
+// Normale; die Nacht schattiert sie, die Lampe der Albedo nicht) und die sRGB-Kurve (konkav: mehr Streuung, kleineres Mittel). Das
+// Mittel trug den Fleck mit (23,3 / 23,6, 1,3 %; das Mittel des Linearen 26,9 / 27,2, 0,8 %), der Median nicht. Abgesoffen bleibt
 // am Pixel des Flecks (die Mulden des Korns sind der Stoff, nicht der Wurf).
-const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 }, ring: [1, 1.5, 2, 2.5, 3], stoffM: [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10] };
+// DIE SOLL IN DER EINHEIT DES GESETZES (Wort des Koordinators 20.11.): die Mitte zwischen dem Bruch von z637 am Gesetz und dem kleineren
+// gesunden Wert. z637: die Nah-Bühne ohne den EINEN Leser `_sichtZeichner` las 21,4 am Fleck, wo der gesunde Kopf 22,3 las (× 0,9596,
+// −4,0 %) — am Gesetz 22,89 × 0,9596 = 21,97; der kleinere gesunde Wert 22,79 (Samen); die Mitte 22,38 → 22,4. Die alte Soll 22 galt
+// am Fleck (main 1,3 % darüber); am Gesetz hätte sie den Bruch von z637 nicht mehr genannt.
+const S0_NACHT = {
+    nacht: { luma: 22.4, schwarz: 0.05 },
+    ring: [1, 1.5, 2, 2.5, 3],
+    stoffM: [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10],
+    albedoMin: 0.005, // ein Pixel ohne Albedo (Glut, Leere) trägt kein Licht je Albedo
+    gesund: { kopf: 22.79, basis: 22.89 }, // am Gesetz, GTX 1060 (Samen 02447ebc + Median, main + Laub-Kante 5 e77d5ff4)
+    bruchZ637: 0.9596, // 21,4 ÷ 22,3: der Bruch von z637 im Verhältnis zum gesunden Licht
+};
 function s0NachtUrteil(e, soll) {
     const g = e.grund;
     if (!g) return ["S0 Nacht: kein Boden im Schuss um Mitternacht — die Probe ist blind"];
@@ -1517,7 +1531,8 @@ async function lichtLauf() {
                             : null;
                     const eigen = pool.find((p) => Math.hypot(p.x - f.x, p.z - f.z) <= 1.5);
                     // DER RING AM GESETZ (oben `S0_NACHT`): die Albedo je geschriebenem Pixel (hell − dunkel), am Ring und am Stoff um ihn;
-                    // jeder Pixel des Rings linear × k (Albedo des Stoffs ÷ Albedo des Rings), zurück in sRGB
+                    // je Pixel des Rings sein Licht je Albedo × die Albedo des Stoffs, zurück in sRGB — der Median (q10/q90 die Streuung der
+                    // Mulden); k (Stoff ÷ Ring) ist Auskunft
                     let gesetz = null;
                     if (albedoBild) {
                         const { hell, dunkel } = albedoBild;
@@ -1532,13 +1547,15 @@ async function lichtLauf() {
                         };
                         const [aRing, aStoff] = [alb(NACHT.ring), alb(NACHT.stoffM)];
                         const k = aRing > 0 ? aStoff / aRing : 0;
-                        let [n, sl] = [0, 0];
+                        const je = [];
                         ringe(NACHT.ring, (i) => {
                             if (!(hell[i + 3] > 0)) return;
-                            n++;
-                            sl += 255 * linSrgb(Math.min(1, srgbLin(luma709(u8, i)) * k));
+                            const a = luma709([hell[i] - dunkel[i], hell[i + 1] - dunkel[i + 1], hell[i + 2] - dunkel[i + 2]]);
+                            if (a > NACHT.albedoMin) je.push(255 * linSrgb(Math.min(1, (srgbLin(luma709(u8, i)) / a) * aStoff)));
                         });
-                        gesetz = { luma: n ? +(sl / n).toFixed(1) : null, aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: n / 9 };
+                        je.sort((x, y) => x - y);
+                        const q = (p) => (je.length ? +je[Math.min(je.length - 1, Math.floor(p * je.length))].toFixed(2) : null);
+                        gesetz = { luma: q(0.5), q10: q(0.1), q90: q(0.9), aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: je.length / 9 };
                     }
                     return {
                         gesetz,
@@ -1761,18 +1778,24 @@ async function lichtLauf() {
         );
         console.log(`  SELBSTTEST S0 NACHT (z352): ${stoffTreffer ? "getroffen — der Stoff" : "BLIND"}`);
         // DER WURF AUF DUNKLES KORN (Welle SAMEN, Probe-Lauf 44765083728): das Feuer 0,82 m daneben, derselbe Stoff, dasselbe Licht —
-        // vorher las die Wand den Fleck (k = 1: ROT 21,8), am Gesetz liest sie das Licht (k = 0,1169 ÷ 0,1067: GRÜN). Ohne Albedo blind.
-        const wurf = { grund: { luma: 21.8, schwarz: 0 } };
-        const [wurfVorher, wurfGesetz, wurfBlind] = [
-            s0NachtUrteil({ ...wurf, gesetz: { luma: 21.8, aRing: 0.1067, aStoff: 0.1067, k: 1 } }, S0_NACHT.nacht),
-            s0NachtUrteil({ ...wurf, gesetz: { luma: 26.8, aRing: 0.1067, aStoff: 0.1169, k: 1.095 } }, S0_NACHT.nacht),
-            s0NachtUrteil(wurf, S0_NACHT.nacht),
-        ];
+        // am Fleck (k = 1, die alte Lesung) fällt er unter die Soll, am Gesetz (der Median, 22,79) hält er. Ohne Albedo blind.
+        // DER BRUCH VON z637 (Licht −4 %): am Gesetz unter der Soll; die gesunden Werte von Kopf und Basis halten. Die Kamera 2 Stufen
+        // tiefer (oben) bleibt und ersetzt ihn nicht. Die Zeilen tragen kein Rot-Wort: der getroffene Selbsttest ist kein Urteil
+        // (scripts/lib/urteil-zeile.cjs las „am Fleck ROT“ als rote Zeile, GPU-Probe 02447ebc).
+        const G = S0_NACHT.gesund;
+        const an = (luma) => s0NachtUrteil({ grund: { luma: 21.8, schwarz: 0 }, gesetz: { luma, aRing: 0.1067, aStoff: 0.1177, k: 1.103 } }, S0_NACHT.nacht);
+        const [wurfVorher, wurfGesetz, wurfBlind] = [an(21.8), an(G.kopf), s0NachtUrteil({ grund: { luma: 21.8, schwarz: 0 } }, S0_NACHT.nacht)];
         const wurfGetroffen = wurfVorher.length === 1 && wurfGesetz.length === 0 && /blind/.test(wurfBlind.join(""));
         console.log(
-            `  SELBSTTEST S0 NACHT (der Wurf auf dunkles Korn, Licht je Albedo): ${wurfGetroffen ? "getroffen — am Fleck ROT, am Gesetz GRÜN, ohne Albedo blind" : "BLIND " + JSON.stringify([wurfVorher, wurfGesetz, wurfBlind])}`
+            `  SELBSTTEST S0 NACHT (der Wurf auf dunkles Korn, Licht je Albedo): ${wurfGetroffen ? `getroffen — am Fleck 21.8 unter der Soll ${S0_NACHT.nacht.luma}, am Gesetz ${G.kopf} darüber, ohne Albedo blind` : "BLIND " + JSON.stringify([wurfVorher, wurfGesetz, wurfBlind])}`
         );
-        pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen;
+        const bruch = +(G.basis * S0_NACHT.bruchZ637).toFixed(2);
+        const [bruchU, kopfU, basisU] = [an(bruch), an(G.kopf), an(G.basis)];
+        const bruchGetroffen = bruchU.length === 1 && kopfU.length === 0 && basisU.length === 0;
+        console.log(
+            `  SELBSTTEST S0 NACHT (Licht −4 %, der Bruch von z637): ${bruchGetroffen ? `getroffen — der Bruch ${bruch} unter der Soll ${S0_NACHT.nacht.luma}, Kopf ${G.kopf} und Basis ${G.basis} darüber` : "BLIND " + JSON.stringify([bruchU, kopfU, basisU])}`
+        );
+        pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen && bruchGetroffen;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht && { ...nacht.grund, gesetz: nacht.gesetz && nacht.gesetz.luma })} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
