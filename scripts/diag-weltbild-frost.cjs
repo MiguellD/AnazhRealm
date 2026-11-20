@@ -150,10 +150,8 @@ function pruefRaum() {
     // Schweif-Mesh (3 611 Ecken, 10 Knochen) und die Haarsträhne (192 Ecken, 3 Knochen) bauten erst im gemessenen Durchgang.
     // Die Ebenen zählen: jeder Leib trägt eine zweite Kopf-Gruppe mit der Ebenen-Maske 4 oder 0, die keine Bühnen-Kamera (Maske 1)
     // zeichnet — ohne die Ebenen-Probe wartete der Zähler auf sie bis zum Deckel. Der Selbsttest (S2) hält die Zahl: Gruppen 0, ein Mesh 1.
-    const blick = new T.Frustum(),
-        m4 = new T.Matrix4();
     F.ungezeichnet = (wurzel, k) => {
-        blick.setFromProjectionMatrix(m4.multiplyMatrices(k.projectionMatrix, k.matrixWorldInverse), k.coordinateSystem, k.reversedDepth);
+        const blick = r._frustumVon(k, true);
         let fehlt = 0;
         wurzel.traverseVisible((o) => (fehlt += !!(o.isMesh && k.layers.test(o.layers) && !(o.frustumCulled && !blick.intersectsObject(o)) && !r._erstZeichnung.gezeichnet.get(o))));
         return fehlt;
@@ -201,8 +199,7 @@ function pruefRaum() {
     };
     F.drehe = () => (st.yaw += 1.1);
     F.mittag = () => {
-        st.timeOfDay = 0.5;
-        if (st.world) st.world.timeOfDay = 0.5;
+        r._uhrSetzen(0.5, "regler");
         st.pitch = -0.18;
     };
     return { weg: "spielpfad" };

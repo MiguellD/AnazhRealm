@@ -187,7 +187,7 @@ const HALT = () => {
 // ohne Objekt. WebGPU liest das Ausgabe-Ziel, WebGL seine Leinwand im selben Takt (vor dem Komponieren, toDataURL).
 async function schuss(ruhe, an, W, H, licht) {
     const S = ruhe(an),
-        ziel = S.R.isWebGPURenderer && new THREE.RenderTarget(W, H);
+        ziel = S.R.isWebGPURenderer && __messZiel(W, H);
     if (ziel) S.R.setOutputRenderTarget(ziel);
     let [i, gleich, vor, mit] = [0, 0];
     // DIE EINE BÜHNE (worlds/huelle/huelle.js `buehne`): ihr Bild steht erst, wenn ihr Licht liegt und der Vorbau durch ist — der
@@ -325,7 +325,7 @@ async function werkSchuss(w, o, blicke, W, H) {
     const { mitte: c, rad } = B.stelle(g);
     if (o.boden != null) B.grund().position.y = o.boden;
     if (o.nackt) B.nackt(true);
-    const ziel = new T.RenderTarget(W, H);
+    const ziel = __messZiel(W, H);
     B.renderer.setOutputRenderTarget(ziel);
     const cam = new T.PerspectiveCamera(45, W / H, Math.min(0.1, rad / 10), Math.max(200, 32 * rad));
     const bild = async () => {

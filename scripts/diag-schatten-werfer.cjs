@@ -103,8 +103,7 @@ function probe(selbsttest) {
         r._loopFrustumCulling(); // das Haupt-Urteil der Bundles für diesen Blick
     };
     const tag = (t) => {
-        st.timeOfDay = t;
-        if (st.world) st.world.timeOfDay = t;
+        r._uhrSetzen(t, "regler");
         r._applyDayNightToScene();
         st.directionalLight.updateMatrixWorld(true);
         st.directionalLight.target.updateMatrixWorld(true);
@@ -122,9 +121,7 @@ function probe(selbsttest) {
     const frustumVon = (i) => {
         const lw = csm.lights[i];
         lw.shadow.updateMatrices(lw);
-        const c = lw.shadow.camera;
-        const m = new T.Matrix4().multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
-        return new T.Frustum().setFromProjectionMatrix(m, c.coordinateSystem);
+        return r._frustumVon(lw.shadow.camera, true);
     };
     // DIE LAGE eines Passes, wie sie der echte Haken legt (`_passWahlLage`: Frustum, Auge, Scheibe der Kaskade, Blende) —
     // das Soll jedes Lesers ist das EINE Gesetz in dieser Lage. i ≥ 0: die Kaskade i, sonst das Hauptbild.
@@ -159,8 +156,7 @@ function probe(selbsttest) {
     };
     const empfaenger = () => {
         cam.updateMatrixWorld(true);
-        const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        const blickFr = new T.Frustum().setFromProjectionMatrix(m, cam.coordinateSystem);
+        const blickFr = r._frustumVon(cam, true);
         const far = Math.min(cam.far, csm.maxFar);
         const dir = cam.getWorldDirection(new T.Vector3());
         const yaw = Math.atan2(dir.x, dir.z);
@@ -1136,7 +1132,7 @@ function probe(selbsttest) {
 
     // ── Z1: die Karten-Ziele — der Knoten baut sein Ziel durch die Hülle (wie r184 setupRenderTarget) ──
     {
-        const rt = new T.RenderTarget(8, 8);
+        const rt = __messZiel(8, 8);
         const dt = new T.DepthTexture(8, 8);
         rt.depthTexture = dt;
         const knoten = { setupRenderTarget: () => ({ shadowMap: rt, depthTexture: dt }) };

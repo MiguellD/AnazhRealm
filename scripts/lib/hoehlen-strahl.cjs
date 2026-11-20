@@ -293,9 +293,7 @@ function installHoehlenStrahl() {
         const T = window.THREE;
         const R = raster(r, o.zelle || 4);
         if (!R) return { fehler: "kein Boden-Satz" };
-        licht.updateMatrixWorld();
-        const lm = new T.Matrix4().multiplyMatrices(licht.projectionMatrix, licht.matrixWorldInverse);
-        const lfr = new T.Frustum().setFromProjectionMatrix(lm, licht.coordinateSystem);
+        const lfr = r._frustumVon(licht, true);
         // zum Licht: gegen die Blick-Achse der Licht-Kamera
         const L = new T.Vector3(0, 0, 1).transformDirection(licht.matrixWorld);
         const imAbschnitt = new Set(liste);

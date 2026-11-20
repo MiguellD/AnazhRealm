@@ -513,7 +513,7 @@ function lauf(k) {
         // 200 px decken KANN: seine Gestalt passt in 2 · Reichweite × Höhe (`_kreaturLeib`; die Kugel R = Reichweite + Höhe/2, ihre
         // Mitte Höhe/2 über dem Fuß). `imBlick` zählt Tiere, die im Blick erschienen (das Schlupfloch der Staffel).
         const kreisGang = async () => {
-            const T = THREE, cam = st.camera, db = rend.getDrawingBufferSize(new T.Vector2()), fr = new T.Frustum(), v = new T.Vector3();
+            const T = THREE, cam = st.camera, db = rend.getDrawingBufferSize(new T.Vector2()), fr = r._frustumVon(null), v = new T.Vector3();
             const W = db.x, H = db.y, soll = (200 * W * H) / 921600, alt = new Set(st.creatures);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyW", key: "w" }));
             const schuss = async (rueckstrahl) => (await __ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl })).u8;
@@ -523,8 +523,7 @@ function lauf(k) {
                 for (let s = 0, naechst = 0; s < k.sek; s = st.spielZeit - kreis.z0) {
                     await sleep(250);
                     st.yaw = kreis.gier + (2 * Math.PI * s) / k.sek;
-                    cam.updateMatrixWorld();
-                    fr.setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+                    r._frustumVon(cam, false, fr); // der EINE Bau des Sichtkegels (wie der Takt)
                     kreis.max = Math.max(kreis.max, st.creatures.length);
                     const kand = [];
                     for (const c of st.creatures) {
@@ -1729,7 +1728,7 @@ function zerlegeLast(k) {
         }
         if (window.__zerlegeLastZustand) return { fehler: "Last steht schon" };
         const db = rend.getDrawingBufferSize(new T.Vector2());
-        const rt = new T.RenderTarget(Math.round(db.x), Math.round(db.y), { depthBuffer: false });
+        const rt = __messZiel(Math.round(db.x), Math.round(db.y), { depthBuffer: false });
         rt.texture.name = "zerlege-selbsttest";
         const { Fn, Loop, float, vec2, vec4, uv, sin, cos } = TSL;
         const iter = Math.max(1, k.iter || 96);

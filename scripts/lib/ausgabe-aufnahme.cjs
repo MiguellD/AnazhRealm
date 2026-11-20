@@ -340,7 +340,7 @@ async function weltStehtWarten(max) {
     };
     // steht sie schon, schießt die Bühne ohne Takt (ein Takt rendert und tickt, was die Linse für den Schuss gesetzt hat)
     const n = r._weltSteht() ? 0 : await __weltStehtNach(takt, max);
-    if (st.timeOfDay !== uhr) st.timeOfDay = st.world ? (st.world.timeOfDay = uhr) : uhr;
+    if (st.timeOfDay !== uhr) r._uhrSetzen(uhr, "regler");
     // DER HIMMEL DES SCHUSSES (A9-n2): die Umgebung frisch aus der Stunde, die jetzt gilt (die Drift-Schwelle hielt sonst die
     // Malung des Boots: Belichtung Erst-Boot 0,9935, Zweit-Boot 0,9904), das Gemüt ruhig wie in der Bühne
     for (const k in st.player?.emotions || {}) st.player.emotions[k] = 0;
@@ -366,8 +366,10 @@ function buehne(o) {
     window.__weltaktSpion();
     st.autoSeason = false;
     const s = r.setSeason(o?.saison || "sommer");
-    if (st.world) st.world.timeOfDay = uhr;
-    st.timeOfDay = uhr;
+    // … über den EINEN Schreiber der Uhr (`_uhrSetzen`, das Wort des Reglers): die Bühne BESTELLT die Stunde bei der Welt — der Anker
+    // des Gangs, der Sprung des Himmels und die Wahl des Licht-Pools folgen ihr. Bis beobachter-ein-weg schrieb sie `state.timeOfDay`
+    // daneben (und einen `state.world`, den es nicht gibt)
+    if (!r._uhrSetzen(uhr, "regler")) throw new Error(`DIE BÜHNE: die Welt nimmt die Uhr ${uhr} nicht`);
     // … und der Pool der Leuchtquellen zu seinem Fixpunkt (bis 31.10. wartete `bild` ihn ab, bis zu 20 × 50 ms je Schuss): jede
     // Gewählte hält ihren Platz mit Blende 1, jede Abgewählte fällt mit 0 — danach ändert kein Takt mehr etwas (die Bild-Uhr steht,
     // die Wahl am stehenden Auge)
@@ -423,14 +425,23 @@ function buehne(o) {
 // wo sie stand.
 function buehneSelbsttest() {
     const v = [], tiere = [], w0 = global.window;
+    let uhr0; // die Uhr der Attrappe: ihr Zustand liest sie, nur ihr Schreiber (`_uhrSetzen`) stellt sie
     const r = {
-        state: { creatures: tiere, maxCreatures: 10, playerMesh: { position: { x: 5, z: 7 } } },
+        state: {
+            creatures: tiere,
+            maxCreatures: 10,
+            playerMesh: { position: { x: 5, z: 7 } },
+            get timeOfDay() {
+                return uhr0;
+            },
+        },
         setSeason: () => true,
         _naesseTakt() {},
         _tickRain() {},
         _tickSeason() {},
         _applyDayNightToScene() {},
         _leuchtTakt() {},
+        _uhrSetzen: (t) => ((uhr0 = t), true),
         getTerrainHeightAt: () => 0,
         _landAt: (x) => x > 5,
         spawnCreatureAt: (x, y, z) => tiere[tiere.push({ position: { x, z }, userData: {} }) - 1],
@@ -452,16 +463,15 @@ function buehneSelbsttest() {
             laut = e.message;
         }
         if (!/50 von 60/.test(laut)) v.push(`eine Welt ohne Platz bricht nicht laut (${laut})`);
-        r.state.world = {};
         const uhr = (o) => {
             try {
-                return buehne(o) && `${r.state.timeOfDay}/${r.state.world.timeOfDay}`;
+                return buehne(o) && `${r.state.timeOfDay}`;
             } catch {
                 return `laut/${r.state.timeOfDay}`;
             }
         };
         const ist = [0.3, null, "nacht"].map((u) => uhr({ uhr: u })).join(" ");
-        if (ist !== "0.3/0.3 0.5/0.5 laut/0.5") v.push(`die Uhr der Bühne: ${ist}`);
+        if (ist !== "0.3 0.5 laut/0.5") v.push(`die Uhr der Bühne: ${ist}`);
     } finally {
         global.window = w0;
     }

@@ -1335,8 +1335,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
             aus.wasser = w;
             // (d) die Godrays mit der Sonne im Bild: tiefe Sonne, Blick in die Sonne; mit und ohne Godrays (der Regler).
             gruppe.visible = false;
-            st.timeOfDay = 0.3;
-            if (st.world) st.world.timeOfDay = 0.3;
+            r._uhrSetzen(0.3, "regler");
             r._applyDayNightToScene();
             // der Blick 0,2 rad UNTER die Sonne: sie steht in der oberen Bildhälfte — an der Mitte fiele eine gespiegelte Lage
             // mit der wahren zusammen (die Probe der LAGE wäre blind)
@@ -1425,12 +1424,11 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
             flach.position.set(x0, y0, z0 - 2);
             st.scene.add(flach);
             const maskeVor = cam.layers.mask;
-            const kVor = rend.toneMappingExposure;
             const nachtU = st.postProcessingUniforms && st.postProcessingUniforms.nightFactor;
             const nachtVor = nachtU ? nachtU.value : null;
             const dunkel = async (k, c, nacht) => {
                 flach.material.color.setRGB(c, c, c);
-                rend.toneMappingExposure = k;
+                r._blendeBestellen({ k }); // die Blende bestellt bei der Welt, nie am Renderer
                 if (nacht && nachtU) nachtU.value = 1;
                 for (let i = 0; i < nFrames; i++) {
                     setzeKamera();
@@ -1475,7 +1473,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                     };
                     const mitte = async (m, nacht) => {
                         flach.material = m;
-                        rend.toneMappingExposure = flammeProbe.k;
+                        r._blendeBestellen({ k: flammeProbe.k });
                         for (let i = 0; i < nFrames; i++) {
                             nachtU.value = nacht;
                             setzeKamera();
@@ -1519,7 +1517,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
                             m.colorNode = L.vec4(L.vec3(...ton).mul(t).div(L.toneMappingExposure), 1);
                             stoffe.push(m);
                             flach.material = m;
-                            rend.toneMappingExposure = flammeProbe.k;
+                            r._blendeBestellen({ k: flammeProbe.k });
                             for (let i = 0; i < nFrames; i++) {
                                 nachtU.value = 0;
                                 setzeKamera();
@@ -1619,7 +1617,7 @@ function buehne(nFrames, nachtLicht, flammeProbe, torProbe, knieProbe) {
             } finally {
                 cam.layers.mask = maskeVor;
                 if (nachtU) nachtU.value = nachtVor;
-                rend.toneMappingExposure = kVor;
+                r._blendeBestellen(null);
                 st.scene.remove(flach);
                 flach.geometry.dispose();
                 flach.material.dispose();
@@ -1815,12 +1813,11 @@ function rauchProbe(ort, P) {
             // die Uhr läuft mit, wie im Spiel: der Wurf des Kamins ist an `spielZeit` gesät — mit stehender Uhr zog jeder Ruf
             // dieselbe Zahl, die Probe bestand nur mit p = 1 − 0,7⁶ = 0,88 (am Leser gezählt: 35 von 40 Starts; laufend 40 von 40;
             // OMEN z624 ROT „legte keinen Satz an“)
-            const zeitVor = st.spielZeit;
+            // (über den EINEN Weg der Welt-Uhr von außen; sie geht nie zurück — die Probe nimmt ihre Sekunden nicht wieder)
             for (let i = 0; i < 200 && !st.dorfRauch.teilchen.length; i++) {
                 r._updateDorfRauch(0.1);
-                st.spielZeit = (st.spielZeit || 0) + 0.1;
+                r._weltUhrNimm(st.spielZeit + 0.1);
             }
-            st.spielZeit = zeitVor;
             const kamin = leser("dorfRauchSatz", st.dorfRauch.teilchen, (KG.vyBase + KG.vyRange / 2) * tafelVor.labHz);
             delete r._blockerMit;
             st.dorfRauch = vor.dorfRauch;

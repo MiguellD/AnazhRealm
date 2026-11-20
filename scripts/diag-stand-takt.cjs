@@ -877,7 +877,7 @@ async function brandSeite(MESS) {
     r._feldFolgeSteht = () => true;
     // je Schritt der Welt-Uhr bis `max` s (nie je Ruf: ein Rest über dem Budget schreitet nicht), `tick` der Takt des Brands oder des Spiels
     const brennen = (max, tick = () => r._tickBrand(), u = r._brandUhr) => {
-        while (r._brandUhr - u < max - 1e-9 && r._brandLebt()) (st.spielZeit = r._brandUhr + B.schrittS), tick();
+        while (r._brandUhr - u < max - 1e-9 && r._brandLebt()) r._weltUhrNimm(r._brandUhr + B.schrittS), tick();
         return Math.round(r._brandUhr - u);
     };
     const asche = () => L.slice(n0).filter((a) => a.tat === "brand");
@@ -1156,7 +1156,7 @@ async function brandSeite(MESS) {
         const [ms, lms, sms] = [[], [], []];
         let verzug = 0;
         for (let i = 0; i < 1200; i++) {
-            st.spielZeit += 1 / 60;
+            r._weltUhrNimm(st.spielZeit + (1 / 60));
             const t0 = performance.now();
             r._tickBrand();
             const t1 = performance.now();
@@ -1339,7 +1339,7 @@ async function narbeSeite(MESS) {
     // EIN Schritt der Uhr des Brands samt seiner ganzen Arbeit (jede fällige Zelle fängt zu ihrer Ankunft)
     const schritt = () => {
         const u = r._brandUhr;
-        for (let i = 0; i < 4000 && r._brandUhr === u && r._brandLebt(); i++) (st.spielZeit = u + B.schrittS), r._tickBrand();
+        for (let i = 0; i < 4000 && r._brandUhr === u && r._brandLebt(); i++) r._weltUhrNimm(u + B.schrittS), r._tickBrand();
         r._brandArbeit(Infinity);
         return r._brandUhr > u;
     };
@@ -1598,7 +1598,7 @@ async function lavaSeite(MESS) {
     // EIN Schritt der Uhr des Brands samt seiner ganzen Arbeit (wie N1)
     const schritt = () => {
         const u = r._brandUhr;
-        for (let i = 0; i < 4000 && r._brandUhr === u && r._brandLebt(); i++) (st.spielZeit = u + B.schrittS), r._tickBrand();
+        for (let i = 0; i < 4000 && r._brandUhr === u && r._brandLebt(); i++) r._weltUhrNimm(u + B.schrittS), r._tickBrand();
         r._brandArbeit(Infinity);
         return r._brandUhr > u;
     };
@@ -2888,7 +2888,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         const F = (W.feld = { wellen: [], geschrieben: 0 });
                         S.frame();
                         for (let w = 0; w < 4; w++) {
-                            st.spielZeit += 3000;
+                            r._weltUhrNimm(st.spielZeit + 3000);
                             for (let i = 0; i < 60; i++) r._depositLife(MESS.x + 4000 + i * 64, MESS.z + 4000 + w * 64);
                             F.geschrieben += 540;
                             const alle = [...st.lifeField.values()];
@@ -2919,7 +2919,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                             S.frame();
                             for (let i = 0; i < n && bf.size; i++) {
                                 const vor = bf.size;
-                                st.spielZeit = r._brandUhr + B.schrittS;
+                                r._weltUhrNimm(r._brandUhr + B.schrittS);
                                 takt();
                                 Z.zellen.push(Math.max(vor, bf.size));
                                 Z.einheiten.push(S.frame().brand);
@@ -2954,7 +2954,7 @@ if (NARBE) process.on("unhandledRejection", absturz).on("uncaughtException", abs
                         delete r._naesseTakt;
                         r._naesseUhr = st.spielZeit;
                         wort("rainy");
-                        for (Z.regenS = 0; Z.regenS < 600 && r._brandLebt(); Z.regenS++) (st.spielZeit = r._brandUhr + B.schrittS), takt();
+                        for (Z.regenS = 0; Z.regenS < 600 && r._brandLebt(); Z.regenS++) r._weltUhrNimm(r._brandUhr + B.schrittS), takt();
                         Object.assign(Z, { brennt: st.brandFeld.size, lebNach: +am().lebendig.toFixed(3), asche: st.worldMeta.taten.length - n0 });
                         wort("sunny");
                         r._naesseTakt(1e6);

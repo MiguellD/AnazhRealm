@@ -1071,24 +1071,32 @@ class AnazhRealm_dirigent_takt {
         // pro-Frame-Allocation. Vorher: 60 Allocs/s = unnötiger GC-Druck.
         // Jetzt: einmal allokiert, im Render-Loop nur Werte aktualisiert.
         if (!this._frustumCache) {
-            this._frustumCache = new THREE.Frustum();
+            this._frustumCache = this._frustumVon(null);
             this._frustumMatrixCache = new THREE.Matrix4();
         }
         // die Kamera, wie sie STEHT, nicht wie sie zuletzt gezeichnet wurde: ihre Matrizen zieht sonst erst das Rendern nach —
         // unter der GPU-Leine (und im Zeitraffer der Kreis-Station, 10 Takte je Bild) war das Frustum bis 1 Spiel-s alt, und
         // eine Geburt „außer Blick" (`_kreaturLeibImBlick`) prüfte gegen den Blick von gestern (w7-begegnung)
-        this.state.camera.updateMatrixWorld();
-        this._frustumMatrixCache.multiplyMatrices(
-            this.state.camera.projectionMatrix,
-            this.state.camera.matrixWorldInverse
-        );
-        this._frustumCache.setFromProjectionMatrix(this._frustumMatrixCache);
+        this._frustumVon(this.state.camera, undefined, this._frustumCache, this._frustumMatrixCache);
         // Mesh-Tiere cullt three JE PASS (Geometrie- bzw. Körper-Kugel gegen Blick und Kaskaden-Box) — ein
         // Frustum-Schreiber hier nahm ihnen den Schatten, sobald sie den Blick verließen (W7).
         // T3 — RENDERBUNDLES: das Region-Culling der gebündelten Gruppen lebt auf der
         // Bundle-Sichtbarkeit (three-Culling friert im Bundle-Replay ein — Sonde
         // diag-render-bundle). Nutzt das frisch gebaute _frustumCache von oben.
         this._archRegionBundleCull();
+    }
+
+    // DAS FRUSTUM EINER KAMERA (der EINE Bau des Sichtkegels: der Takt für seinen Blick, jeder Beobachter für seine Kamera — die
+    // Kaskade, das Licht, die Kamera einer Probe): `kam` wie sie STEHT (ihre Welt-Matrix frisch), mit `eigen` im Koordinaten-System
+    // und der Tiefe der Kamera (`coordinateSystem`, `reversedDepth`), ohne Wort in dem, das der Takt immer las (WebGL), in `F`
+    // (sonst neu); ohne Kamera das leere Frustum. Bis beobachter-ein-weg bauten zehn Proben ihr Frustum selbst neben dem des Takts.
+    _frustumVon(kam, eigen, F = new THREE.Frustum(), m = new THREE.Matrix4()) {
+        if (!kam) return F;
+        kam.updateMatrixWorld();
+        m.multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse);
+        return eigen
+            ? F.setFromProjectionMatrix(m, kam.coordinateSystem, kam.reversedDepth)
+            : F.setFromProjectionMatrix(m);
     }
 
     // Steckt der Spieler nach einem fill-Edit im Fels: die nächste offene Luft-Lücke ÜBER ihm finden
@@ -1769,6 +1777,17 @@ class AnazhRealm_dirigent_takt {
         this.state.spielZeit = t;
     }
 
+    // DIE UHR EINER NEUEN WELT (`_weltUhrNeu(t)`): nur die Geburt stellt die Welt-Uhr zurück — eine Messung, die je Saat ab einer
+    // festen Welt-Uhr misst (gate:kreatur-leben, gate:wetter-wache, die Stunde der Fahr-Probe) oder zu ihrem Anfang zurückkehrt,
+    // bestellt sie hier. Der Anker des Tags springt mit (`_uhrSpielZeit`: sonst stünde der Tag, bis die Uhr den alten Anker
+    // einholt). Ein Sprung (`_weltUhrSprung`) ist die Geburt NICHT: wer eine Welt gebiert, stellt ihren Bestand selbst — der
+    // Sprung nähme die Ströme der Saat (`_bestandSprung`: gate:kreatur-takt Teil 2 maß acht Saaten als eine). Bis
+    // beobachter-ein-weg schrieben acht Proben die Welt-Uhr selbst (auch rückwärts), und der Tag stand.
+    _weltUhrNeu(t = 0) {
+        this.state._uhrSpielZeit = t;
+        this.state.spielZeit = t;
+    }
+
     // Reiner Prioritäts-Dispatcher (Job-System, single-thread). jobs: [{name, prio, run(ms)}] — in der Reihe ihres Rangs, jeder am
     // EINEN Tor der Bau-Arbeit (`_bauer`): solange die Frist des Takts offen ist, trägt ein Job ihren Rest (`ms`; prio 0, der
     // Strom, fragt sie selbst), nach ihr geht nur der EINE mit Vortritt sein Pflicht-Stück (ms 0). Bis w28-takt-frist hielt er
@@ -2425,8 +2444,7 @@ class AnazhRealm_dirigent_takt {
         // eine geneigte Achse.
         if (this.state.camera && this.state.starField) {
             this.state.starField.position.copy(this.state.camera.position);
-            const tod = this.state.timeOfDay || 0;
-            this.state.starField.rotation.set(0.4, tod * Math.PI * 2, 0.15);
+            this._sternDrehung(); // die siderale Drehung des Felds und das Band der Galaxie mit ihr (stern-bild)
         }
         // WELLE J3 — Sonne·Mond SYNCHRON an die Kamera heften (wie das
         // Stern-Feld) → sie stehen fest am Himmel statt um den Welt-Ursprung zu

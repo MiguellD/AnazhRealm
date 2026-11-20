@@ -1976,7 +1976,8 @@ async function korpusAufbau(a) {
         for (const c of st.creatures.filter((c) => !v.wesen.has(c))) r.removeCreature(c);
         for (const [c, e] of v.gemuet) if (c.userData?.emotions) c.userData.emotions = e;
         pm.copy(v.leib[0]);
-        [st.gravity, st.jumpPower] = v.leib.slice(1);
+        r.dslEffects.gravity([v.leib[1]]); // die Schwere über das Wort der Welt, nie in den Zustand
+        st.jumpPower = v.leib[2];
         r._applyPlayerSpeed(v.leib[3]);
     };
     // DIE TÜREN: jeder Anbieter und der Proxy gehen durch die CSP, die Gegenprobe nie
@@ -2092,7 +2093,7 @@ async function regelRaffer(a) {
         sieh();
         // DIE WELT-UHR rückt mit, wie der Loop sie vor dem Tick setzt (`spielZeit`, w28-welt-uhr): eine Regel wird auf ihr geboren
         // und altert auf ihr — je Schritt 250 ms wie die Wanduhr des Raffers
-        st.spielZeit += 0.25;
+        r._weltUhrNimm(st.spielZeit + 0.25);
         if (R.s % (R.lauf ? 4 : 12) === 0) r.dslRun(r._composeNexusRule(R.rng), { source: "nexus" });
         r._tickWorldRules(st.spielZeit);
     }
