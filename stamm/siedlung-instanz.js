@@ -945,7 +945,7 @@ class AnazhRealm_siedlung_instanz {
             // Eine 3D-Stufe kann keine Brücke sein — die Maske blendet L0/L1 außerhalb ihres Bands aus.
             // DIE BRÜCKE IST NUR BRÜCKE, WENN SIE DA IST (gedockt, `_foundryStufeBereit`): sie bestellt nichts und hebt keinen
             // Rang. Ihr Bedarf-Stempel hob bis 05.10. den kalten Karten-Bake des nahen Baums vor dessen eigene Geometrie,
-            // die um Größen schneller ist (gemessen, gate:arch-feld Erst-Boot: die Karte einer Birke in 5 m ging vor elf
+            // die um Größen schneller ist (gemessen, die frühere Feld-Linse der Bauten Erst-Boot: die Karte einer Birke in 5 m ging vor elf
             // nahen Körpern in den Worker und hielt ihn 387 Takte; die Eichen-L0 brauchte 5). Den Rang einer Karte setzt,
             // wer sie als GESTALT braucht (die Fernstufe, `_foundryBuildImpostorFlat`).
             if (

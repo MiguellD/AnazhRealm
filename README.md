@@ -4,8 +4,8 @@ Ein als Co-Creation-Werk Mensch+KI entworfenes 3D-Browser-Sandbox-Ultiversum: ei
 Assets.
 
 **Stand:** die Versions-Wahrheit trägt `package.json` (alle `?v=`-Buster + `AnazhRealm.VERSION` folgen ihr über
-`npm run bump -- x.y.z`). Der gepflegte Stand steht im Kopf von `CLAUDE.md`, das EINE Offen-Dokument ist
-`docs/PFLICHT-OFFEN.md`, die Chronik ist `git log`.
+`npm run bump -- x.y.z`). Der gepflegte Stand steht im Kopf von `CLAUDE.md`, das Offene trägt
+die Meisterkarte 2 (Zweig `punkte-maschine`), die Chronik ist `git log`.
 
 ## Was es ist
 

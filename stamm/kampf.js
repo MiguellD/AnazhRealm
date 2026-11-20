@@ -927,7 +927,14 @@ class AnazhRealm_kampf {
         if (!R) {
             const geo = new THREE.BoxGeometry(F.dickeM, F.dickeM, F.dickeM * F.streck);
             const mat = new THREE.MeshBasicNodeMaterial();
-            this._lichtLinear(F, mat.color).multiplyScalar(F.leucht);
+            // die Späne glühen als schwarzer Strahler ihrer Temperatur (fachwerk `glutLeuchtdichte`, Planck × V(λ)), die
+            // Lichtfarbe auf die Leuchtdichte 1 gebracht — 1 900 K ≈ 2·10⁵ cd/m² (licht-eine-skala P8)
+            this._lichtLinear(F, mat.color);
+            mat.color.multiplyScalar(
+                globalThis.__fachwerkCore.glutLeuchtdichte(F.kelvin) /
+                    __weltLicht.EINHEIT_LX /
+                    (0.2126 * mat.color.r + 0.7152 * mat.color.g + 0.0722 * mat.color.b)
+            );
             const mesh = AnazhRealm._instanzMesh(geo, mat, 4 * F.zahl);
             mesh.name = mesh.userData.inventar = "funken"; // Identitäts-Stempel (gate:asset-inventory)
             mesh.castShadow = mesh.receiveShadow = false;
@@ -2672,8 +2679,8 @@ AnazhRealm.PFEIL_SEHNE_S = 0.05;
 AnazhRealm.PFEIL_SICHT_M = 40; // ein steckender Pfeil zeichnet bis hier (`_pfeilSteckenSicht`)
 // DIE FUNKEN DES STOFF-PAARS (`_funken`, `_funkenTakt`): metall die Schwelle der Tag-Achse stromleitung, haerte der Anteil der
 // Härte des Metalls, den der Abreiber tragen muss (Stein 0,65 an Stahl 0,85 = 0,76); zahl Funken eines vollen Treffers, tempo
-// m/s aus dem Kontakt, lebenSek bis zum Verlöschen der Späne; kelvin die Glut abgeschabter Eisen-Späne (≈ 1 900 K), leucht ihr
-// Faktor über der Lichtfarbe, der Stab dickeM × streck lang.
+// m/s aus dem Kontakt, lebenSek bis zum Verlöschen der Späne; kelvin die Glut abgeschabter Eisen-Späne (≈ 1 900 K) — ihre
+// Leuchtdichte folgt aus ihr (`_funkenTakt`), der Stab dickeM × streck lang.
 AnazhRealm.FUNKEN = Object.freeze({
     metall: 0.5,
     haerte: 0.75,
@@ -2681,7 +2688,6 @@ AnazhRealm.FUNKEN = Object.freeze({
     tempo: 4,
     lebenSek: 0.45,
     kelvin: 1900,
-    leucht: 4,
     dickeM: 0.012,
     streck: 5,
 });

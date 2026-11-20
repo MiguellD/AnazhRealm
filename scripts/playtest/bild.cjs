@@ -96,6 +96,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
         const hE = (grad) => Math.PI * lum(r._atmoSternenLicht(Math.sin((grad * Math.PI) / 180)));
         out.nachtBilanz = [-40, -6, 5].map((g) => +(hE(g) / (Mo.intensity * lum([Mo.r, Mo.g, Mo.b]))).toFixed(4));
+        out.mondLx = __weltLicht.MOND_LX;
         // setDayLength clamped
         r.setDayLength(5);
         out.setDayLength5 = st.dayLengthMinutes === 5;
@@ -182,11 +183,15 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         const NK = wave6g3Results.nachtKnoten || [];
         check("der Nacht-Knoten steht (Täter: `__weltLicht.belichtung`)", NK[0] > 0 && NK[1] === NK[2], NK.join(" "));
         const NB = wave6g3Results.nachtBilanz || [];
+        // die blaue Stunde in der EINEN Skala (licht-eine-skala): die REF (USNO Circular 171) trägt bei −6° 3,01 lx, der Vollmond
+        // `MOND_LX` — der Himmel ohne Mond trägt dort REF ÷ Mond (bis hier: so viel wie der Mond, das Gesetz der gestauchten Nacht)
+        const REF6 = require("../../spec/farbe/tag-ref.json").zeilen.find((z) => z[0] === -6)[1];
+        const blau = REF6 / (wave6g3Results.mondLx || NaN);
         check(
             "w28-nacht-bilanz: der Mond trägt die Nacht — der Himmel ohne Mond trägt in tiefer Nacht unter 1 % des Vollmonds, die blaue " +
-                "Stunde (−6°) so viel wie er, der Tag nichts (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als Füllung trug 65 %)",
-            NB[0] >= 0 && NB[0] < 0.01 && Math.abs(NB[1] - 1) < 0.05 && NB[2] === 0,
-            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} · Tag ${NB[2]}`
+                "Stunde (−6°) die REF ÷ Vollmond ± 5 %, der Tag unter 0,1 % (Täter: `__weltLicht.nachtHimmel` — das Sternen-Licht als Füllung trug 65 %)",
+            NB[0] >= 0 && NB[0] < 0.01 && Math.abs(NB[1] / blau - 1) < 0.05 && NB[2] >= 0 && NB[2] < 0.001,
+            `Himmel-E / Vollmond-E: Nacht ${NB[0]} · −6° ${NB[1]} (Soll ${blau.toFixed(2)}) · Tag ${NB[2]}`
         );
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
@@ -437,13 +442,13 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
 }
 
 async function checkBandWelle6G4Atmosphere({ page, check }) {
-    // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
-    // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
+    // ### 6.G4.a — Welt unter wandernder Sonne (Himmels-Umgebung + Licht-Material + Luft) ###
+    // Tiefe statt homogenem Licht: die Himmels-Umgebung (kein Ersatz-Licht) + licht-reaktives
     // Material + atmosphärischer Fog.
     const v827Results = await safeEvaluate(page, async () => {
         const out = {};
 
-        // 1. HemisphereLight im Scene + state-cached
+        // 1. die Luft streut den Himmel der EINEN Atmosphäre
         // Die In-Streuung der Luft IST der Himmel der EINEN Atmosphäre: nach dem ersten _applyDayNightToScene trägt
         // die Tafel das Licht von Sonne oder Mond (die Farbe über Wasser liest himmelFarbe, nie ein eigenes Uniform)
         r._applyDayNightToScene();
@@ -451,55 +456,31 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         const mE = atmoU.mondE.value;
         out.fogColorSet = atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
 
-        // EIN Himmel: am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
-        // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht (licht.K1): mittags und nachts
-        // steht das Gesetz der Kamera aus dem Licht des Orts (`_belichtungAusLicht`, die Stufen der Sonnenhöhe gegen den Anker).
-        // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
+        // EIN Himmel: die Himmels-Umgebung IST das Licht des Himmels zu jeder Stunde — Ambient und Hemisphäre der Nacht fielen
+        // in licht-eine-skala; die Szene trägt mittags und um Mitternacht keins. Dazu die Belichtung aus dem Licht (licht.K1):
+        // mittags und nachts steht das Gesetz der Kamera aus dem Licht des Orts (`_belichtungAusLicht`, die Stufen der
+        // Sonnenhöhe gegen den Anker). Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
         const gesetz = () => [st.renderer.toneMappingExposure, r._belichtungAusLicht(r._sonnenRichtung().y)];
+        const ersatz = () => {
+            let n = 0;
+            st.scene.traverse((o) => {
+                if (o.isAmbientLight || o.isHemisphereLight) n++;
+            });
+            return n;
+        };
         r.setTimeOfDay(0.5, "human");
-        const intensityNoon = st.hemiLight.intensity;
+        const ersatzMittag = ersatz();
         const mittag = gesetz();
         r.setTimeOfDay(0, "human");
-        const intensityNight = st.hemiLight.intensity;
+        const ersatzNacht = ersatz();
         const nacht = gesetz();
-        out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
+        out.ersatzLichter = `${ersatzMittag} / ${ersatzNacht}`;
+        out.keinErsatzLicht = ersatzMittag === 0 && ersatzNacht === 0;
         out.belichtungAusLicht = [mittag, nacht].every(([k, soll]) => Math.abs(k / soll - 1) < 1e-6);
         out.belichtungZahlen = [...mittag, ...nacht].map((v) => +(+v).toFixed(3)).join(" / ");
 
-        // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
-        // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
-        // testet MIT Opt-in und mockt den echten Leser (auraAt).
+        // 3. (gefallen in licht-eine-skala: die Bodenfarbe der Hemisphäre aus der Welt-Affinität — die Hemisphäre fiel mit)
         r.setTimeOfDay(0.5, "human");
-        const origWFA = r.worldFieldAt;
-        const origAuraAt = r.auraAt;
-        const savedAuraStrength = st.atmosphere ? st.atmosphere.auraTintStrength : undefined;
-        if (st.atmosphere) st.atmosphere.auraTintStrength = 1;
-        r.worldFieldAt = function () {
-            return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
-        };
-        r.auraAt = function (x, z) {
-            return r.worldFieldAt(x, z);
-        };
-        r._applyDayNightToScene();
-        // Mit `ColorManagement.enabled=true` speichert THREE.Color LINEAR (setHex/setRGB konvertieren
-        // sRGB→linear) → verglichen wird die sRGB-Display-Form via `convertLinearToSRGB()`; die Schwelle
-        // meint die wahrgenommene Helligkeit.
-        const tmpColor = new window.THREE.Color();
-        tmpColor.copy(st.hemiLight.groundColor).convertLinearToSRGB();
-        const groundLebendigG = tmpColor.g;
-        r.worldFieldAt = function () {
-            return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
-        };
-        r._applyDayNightToScene();
-        tmpColor.copy(st.hemiLight.groundColor).convertLinearToSRGB();
-        const groundGlutR = tmpColor.r;
-        // lebendig erhöht Grün, glut erhöht Rot
-        out.groundColorFollowsLebendig = groundLebendigG > 0.3;
-        out.groundColorFollowsGlut = groundGlutR > 0.5;
-        r.worldFieldAt = origWFA;
-        r.auraAt = origAuraAt;
-        if (st.atmosphere) st.atmosphere.auraTintStrength = savedAuraStrength;
-        r._applyDayNightToScene();
 
         // 4. Architektur-Material ist licht-reaktiv (Toon/PBR) — geprüft am KLASSISCHEN Bau-Pfad
         // (_buildFromBlueprint): stein_block ist Studio-bekannt und stünde foundry-ON als f:-Instanz ohne
@@ -536,13 +517,14 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
         );
-        check("EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
+        check(
+            `EIN Himmel — kein Ersatz-Licht der Nacht (Ambient/Hemisphäre in der Szene, Mittag / Mitternacht: ${v827Results.ersatzLichter})`,
+            v827Results.keinErsatzLicht
+        );
         check(
             `Belichtung aus dem Licht — mittags und nachts das Gesetz der Kamera (Mittag / Gesetz / Nacht / Gesetz ${v827Results.belichtungZahlen})`,
             v827Results.belichtungAusLicht
         );
-        check("HemisphereLight.groundColor.g hoch in lebendig-Region", v827Results.groundColorFollowsLebendig);
-        check("HemisphereLight.groundColor.r hoch in glut-Region", v827Results.groundColorFollowsGlut);
         check(
             "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
             v827Results.architectureUsesLambert
@@ -1466,7 +1448,7 @@ async function checkBandV18164WarumLicht({ page, check }) {
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
-        out.ladeNebelKonsum = __fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
+        out.ladeNebelKonsum = __fehlt(r._dayNightApplyLuft, /_builtRingRadius|foliageRadius/);
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
         out.fogDeckel = !st.scene.fog;
@@ -1713,15 +1695,25 @@ async function checkBandLookPhysik({ page, check }) {
     );
 }
 
-// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag: kein Planet aus Math.random am Mittagshimmel; die
-// Wandelsterne sind die hellsten PUNKTE des Sternfelds,
-// die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`); die Probe liest DIESELBEN Größen wie der Stern-Knoten (`aMag` ·
-// `grenze`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG kein Punkt · 3 DÄMMERUNG der Abendstern · 4 NACHT alle Punkte · 5 MOND Tag
-// blass, Nacht deckend · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN
-// Unendlich-Knoten. Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge und eine Sonne ohne Knoten werden rot.
+// Himmelskörper-Tag — eingefaltet aus gate:himmel-tag: kein Planet aus Math.random am Mittagshimmel; die Planeten sind PUNKTE des
+// Sternfelds, die Dämmerung setzt die Grenzgröße (Kanal `grenze` der EINEN Tag-Achse `_tagAchse`, sie schaltet das Feld,
+// `_sterneZeigen`); die Probe liest DIESELBEN Größen wie der Stamm (die Größenklassen `starField.userData.mags` · die Grenzgröße der
+// Achse — licht-eine-skala: der Stern-Knoten trägt keinen Schwellen-Term mehr, jeder Punkt leuchtet in seiner Leuchtdichte der EINEN
+// Skala) und urteilt gegen die Kosmos-Funktion der Saat des Planeten (welt-licht.js `kosmos`, selbst gerechnet, nie aus dem Stand des
+// Stamms) und die Grenze des Gesetzes (welt-licht.js `tagAchse`): 1 KÖRPER nur Sonne und Mond · 2 MITTAG die Grenze des Gesetzes,
+// kein Fixstern, sichtbar genau die Punkte, die die Funktion heller zeigt · 3 DÄMMERUNG genau die Punkte der Funktion, unter 5 % ·
+// 4 NACHT genau die Punkte der Funktion, mindestens 90 % (ein Veränderlicher im Minimum fällt unter die Grenze) · 5 MOND die Scheibe
+// in der EINEN Skala (`HIMMEL.mondCd` ÷ `EINHEIT_LX`, additiv über dem Himmel — blass am Tag, deckend nachts trägt der Himmel vor
+// ihr) · 6 ZEICHNEN genau dann, in EINEM Durchgang · 7 UNENDLICH Kuppel, Sterne, Sonne, Mond tragen den EINEN Unendlich-Knoten ·
+// 8 PIXEL der Fußabdruck des Punkts ist `HIMMEL.sternPixel` Pixel des Szenen-Ziels · 9 KOSMOS jeder Punkt IST ein Stern der
+// Funktion (Richtung vom Heim-Stern, Größe am Tag des Felds) oder ein Planet des Heim-Systems auf seiner Bahn, die Zahl ist die der
+// Funktion, die Saat die des Planeten (`_planetSamen`). Selbsttest: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, eine Sonne
+// ohne Knoten und der alte Würfel-Himmel (2 800 gleichverteilte Punkte bis kosmos-umfang) werden rot — der Würfel beim Punkt und
+// seinem Stern.
 async function checkBandHimmelTag({ page, check }) {
     const probe = (stoerung) => {
         const T = window.THREE;
+        const W = window.__weltLicht;
         let kugel = null;
         if (stoerung === "kugel") {
             kugel = new T.Mesh(new T.SphereGeometry(20, 8, 8), new T.MeshBasicMaterial({ color: 0xff66cc }));
@@ -1735,6 +1727,25 @@ async function checkBandHimmelTag({ page, check }) {
             };
         }
         if (stoerung === "doppel" && st.starField) st.starField.material.forceSinglePass = false;
+        if (stoerung === "wuerfel" && st.starField) {
+            // der Himmel bis kosmos-umfang: Mulberry32 aus worldMeta.seed, gleichverteilt auf der Kuppel von 480 m
+            let s = 0;
+            for (const c of String(st.worldMeta && st.worldMeta.seed)) s = (s * 31 + c.charCodeAt(0)) >>> 0;
+            const rng = () => {
+                s = (s + 0x6d2b79f5) >>> 0;
+                let t = s;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+            const M = new T.Matrix4();
+            for (let i = 0; i < st.starField.count; i++) {
+                const th = 2 * Math.PI * rng(),
+                    ph = Math.acos(2 * rng() - 1);
+                M.makeTranslation(480 * Math.sin(ph) * Math.cos(th), 480 * Math.cos(ph), 480 * Math.sin(ph) * Math.sin(th));
+                st.starField.setMatrixAt(i, M);
+            }
+        }
         const sonneVN = st.sunMesh.material.vertexNode;
         if (stoerung === "vorne") st.sunMesh.material.vertexNode = null;
         const zeit = (t) => {
@@ -1745,32 +1756,109 @@ async function checkBandHimmelTag({ page, check }) {
             r._applyDayNightToScene();
         };
         const sf = st.starField;
-        const mags = sf ? sf.geometry.getAttribute("aMag") : null;
+        const mags = sf ? sf.userData.mags : null;
         const U = st.starFieldUniforms;
-        const sichtbar = () => {
-            let n = 0;
-            let venus = false;
-            const g = U.grenze.value;
-            for (let i = 0; i < mags.count; i++) {
-                const v = Math.max(0, Math.min(1, g - mags.getX(i) + 0.5));
-                if (v > 0.001) n++;
-                if (i === mags.count - AnazhRealm.HIMMEL.wandelsterne.length && v > 0.5) venus = true;
-            }
-            return { n, venus, grenze: +g.toFixed(2) };
+        // DIE FUNKTION, selbst gerechnet: die Saat des Planeten, das Jahr seines Ort-Gesetzes, der Tag der Welt in der Stufe des Felds
+        // → je Punkt (Sterne nach Index, dann die Planeten) Richtung und Größe
+        const soll = () => {
+            const wm = st.worldMeta;
+            const K = W.kosmos(r._planetSamen(), { jahrTage: r._gelaende().ort.klimaHeute.jahrTage });
+            const H = W.kosmosHimmel(K);
+            const sch = AnazhRealm.HIMMEL.kosmosSchrittTage;
+            const Z = W.kosmosZeit(K, Math.floor(((wm ? wm.tag || 0 : 0) + st.timeOfDay) / sch) * sch);
+            const m = Array.from(H.mag);
+            H.wechsel.forEach(([n], q) => (m[n] = Z.wechselMag[q]));
+            for (const p of Z.planeten) m.push(p.mag);
+            return { K, H, Z, m };
         };
-        const out = { punkte: mags ? mags.count : 0, fremdeKoerper: 0 };
+        const sicht = (g, m) => Math.max(0, Math.min(1, g - m + 0.5)) > 0.001;
+        const sichtbar = () => {
+            const S = soll();
+            const y = r._sonnenRichtung().y;
+            // die Grenze, an der der Stamm das Feld schaltet (`_tagAchse`), gegen die Grenze des Gesetzes (welt-licht.js `tagAchse`)
+            const g = r._tagAchse(y).grenze;
+            const gesetz = W.tagAchse(y).grenze;
+            let n = 0,
+                fix = 0,
+                sollN = 0;
+            for (let i = 0; i < mags.length; i++)
+                if (sicht(g, mags[i])) {
+                    n++;
+                    if (i < S.H.n) fix++;
+                }
+            for (const m of S.m) if (sicht(gesetz, Math.fround(m))) sollN++;
+            return { n, fix, soll: sollN, grenze: +g.toFixed(2), gesetz: +gesetz.toFixed(2) };
+        };
+        // 9 KOSMOS: jeder Punkt des Felds gegen den Punkt der Funktion (Richtung im Rahmen des Felds, Größe am Tag des Felds)
+        const kosmos = () => {
+            const S = soll();
+            const fehl = [];
+            const saat = r._planetSamen();
+            const k = sf.userData.kosmos;
+            if (!k || k.saat !== saat) fehl.push(`das Feld zeigt die Saat ${k ? k.saat : "—"}, der Planet trägt ${saat}`);
+            const N = S.H.n + S.Z.planeten.length;
+            if (mags.length !== N) fehl.push(`${mags.length} Punkte, die Funktion trägt ${N}`);
+            const M = new T.Matrix4(),
+                p = new T.Vector3();
+            let arg = null,
+                falsch = 0;
+            for (let i = 0; i < Math.min(N, mags.length); i++) {
+                sf.getMatrixAt(i, M);
+                p.setFromMatrixPosition(M).normalize();
+                const d = i < S.H.n ? [S.H.richtung[3 * i], S.H.richtung[3 * i + 1], S.H.richtung[3 * i + 2]] : S.Z.planeten[i - S.H.n].richtung;
+                // der Winkel aus Kreuz und Punkt (atan2): acos nahe 1 trägt den Rundungsfehler der Float32-Richtung als 0,02°
+                const cx = p.y * d[2] - p.z * d[1],
+                    cy = p.z * d[0] - p.x * d[2],
+                    cz = p.x * d[1] - p.y * d[0];
+                const w = (Math.atan2(Math.hypot(cx, cy, cz), p.x * d[0] + p.y * d[1] + p.z * d[2]) * 180) / Math.PI;
+                const dm = Math.abs(mags[i] - Math.fround(S.m[i]));
+                if (w > 0.01 || dm > 1e-4) {
+                    falsch++;
+                    if (!arg || w > arg.w) arg = { i, w, dm };
+                }
+            }
+            if (arg)
+                fehl.push(
+                    `${falsch} Punkte neben der Funktion, am weitesten Punkt ${arg.i} (${arg.i < S.H.n ? "Stern " + S.H.index[arg.i] : "Planet " + (arg.i - S.H.n)}) ${arg.w.toFixed(2)}° neben seinem Ort, Größe ±${arg.dm.toFixed(3)}`
+                );
+            return fehl;
+        };
+        // 5 MOND: die Scheibe trägt ihre Leuchtdichte in der EINEN Skala, additiv (der Stand bis licht-eine-skala: eine Deckkraft
+        // je Stunde, `mondGegenHimmel`) — je Kanal relativ ± 1e-3 gegen 0xd0d4e0 auf Luma 1 × mondCd ÷ EINHEIT_LX (der Ton trägt
+        // die Leuchtdichte nicht mit, licht-eine-skala)
+        const mondStand = () => {
+            const m = st.moonMesh.material;
+            const ton = new window.THREE.Color(0xd0d4e0);
+            const soll = ton.multiplyScalar(
+                AnazhRealm.HIMMEL.mondCd / __weltLicht.EINHEIT_LX / (0.2126 * ton.r + 0.7152 * ton.g + 0.0722 * ton.b)
+            );
+            const ab = Math.max(...["r", "g", "b"].map((c) => Math.abs(m.color[c] / soll[c] - 1)));
+            return { additiv: m.blending === window.THREE.AdditiveBlending, ab: +ab.toExponential(2) };
+        };
+        // 8 PIXEL: der Fußabdruck je Punkt (`fuss`) = sternPixel · 2 tan(fov/2) ÷ Zeilen des Szenen-Ziels × Radius der Kugel
+        const fussStand = () => {
+            // das Ziel, in das die Szene zeichnet: das Szenen-Ziel, ohne Post-Kette der Zeichenpuffer (`_schirm`)
+            const [cam, ziel] = [st.camera, st.scenePass && st.scenePass.renderTarget];
+            const zeilen = ziel && ziel.height > 0 ? ziel.height : r._schirm().hoehe;
+            if (!U || !U.fuss || !cam || !(zeilen > 0)) return null;
+            const soll = ((AnazhRealm.HIMMEL.sternPixel * 2 * Math.tan((cam.fov * Math.PI) / 360)) / zeilen) * U.radius;
+            return { ist: U.fuss.value, soll, ab: Math.abs(U.fuss.value / soll - 1) };
+        };
+        const out = { punkte: mags ? mags.length : 0, fremdeKoerper: 0 };
         st.scene.traverse(
             (o) => o.userData && o.userData.skyOffset && o !== st.sunMesh && o !== st.moonMesh && out.fremdeKoerper++
         );
         const zeitWar = st.timeOfDay;
         zeit(0.5);
         out.mittag = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
-        out.mondTag = +st.moonMesh.material.opacity.toFixed(3);
+        out.mondTag = mondStand();
         zeit(0.75 + 1 / 360); // Sonnenuntergang: Sonne knapp unter dem Horizont (−1°)
         out.daemmerung = sichtbar();
         zeit(0);
         out.nacht = Object.assign(sichtbar(), { zeichnet: !!(sf?.visible) });
-        out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
+        out.kosmos = sf ? kosmos() : ["kein Feld"];
+        out.mondNacht = mondStand();
+        out.fuss = fussStand();
         out.einDurchgang = !!(sf?.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
         const unendlich = AnazhRealm._unendlichKnoten;
@@ -1787,6 +1875,7 @@ async function checkBandHimmelTag({ page, check }) {
         if (kugel) st.scene.remove(kugel);
         if (stoerung === "doppel" && sf) sf.material.forceSinglePass = true;
         if (stoerung === "grenze") delete r._tagAchse;
+        if (stoerung === "wuerfel") r._buildStarField(); // geheilt: das Feld der Funktion neu
         zeit(zeitWar);
         return out;
     };
@@ -1795,36 +1884,47 @@ async function checkBandHimmelTag({ page, check }) {
         if (!S) return ["keine Antwort der Seite"];
         if (S.fremdeKoerper > 0) rot.push(`1 KÖRPER: ${S.fremdeKoerper} Kugel(n) ohne Gesetz`);
         if (!(S.punkte > 1000)) rot.push(`Sternfeld fehlt (${S.punkte} Punkte)`);
-        if (S.mittag.n !== 0) rot.push(`2 MITTAG: ${S.mittag.n} Punkte sichtbar (Grenze ${S.mittag.grenze})`);
-        if (!(S.daemmerung.venus && S.daemmerung.n < S.punkte * 0.05))
-            rot.push(`3 DÄMMERUNG: Abendstern ${S.daemmerung.venus ? "da" : "fehlt"}, ${S.daemmerung.n} Punkte`);
-        if (!(S.nacht.n === S.punkte)) rot.push(`4 NACHT: nur ${S.nacht.n}/${S.punkte} Punkte`);
-        if (!(S.mondTag < 0.5 && S.mondNacht > 0.85)) rot.push(`5 MOND: Tag ${S.mondTag} · Nacht ${S.mondNacht}`);
+        if (S.mittag.n !== S.mittag.soll || S.mittag.fix !== 0 || S.mittag.grenze !== S.mittag.gesetz)
+            rot.push(
+                `2 MITTAG: ${S.mittag.n} Punkte sichtbar (${S.mittag.fix} Fixsterne), die Funktion zeigt ${S.mittag.soll} (Grenze ${S.mittag.grenze}, Gesetz ${S.mittag.gesetz})`
+            );
+        if (!(S.daemmerung.n === S.daemmerung.soll && S.daemmerung.n < S.punkte * 0.05))
+            rot.push(`3 DÄMMERUNG: ${S.daemmerung.n} Punkte, die Funktion zeigt ${S.daemmerung.soll} (Grenze ${S.daemmerung.grenze})`);
+        if (!(S.nacht.n === S.nacht.soll && S.nacht.n >= S.punkte * 0.9))
+            rot.push(`4 NACHT: ${S.nacht.n}/${S.punkte} Punkte, die Funktion zeigt ${S.nacht.soll}`);
+        for (const [w, m] of [["Tag", S.mondTag], ["Nacht", S.mondNacht]])
+            if (!(m && m.additiv && m.ab <= 1e-3))
+                rot.push(`5 MOND: ${w} ${m ? `${m.additiv ? "additiv" : "NICHT additiv"}, Leuchtdichte ${m.ab} neben HIMMEL.mondCd ÷ EINHEIT_LX` : "keine Scheibe"}`);
+        if (!(S.fuss && S.fuss.ab <= 1e-3))
+            rot.push(`8 PIXEL: der Fußabdruck des Sterns ${S.fuss ? `${S.fuss.ist} ↔ Soll ${S.fuss.soll} (sternPixel)` : "ungelesen (kein fuss, keine Kamera oder kein Szenen-Ziel)"}`);
         if (S.mittag.n === 0 && S.mittag.zeichnet)
             rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld ohne sichtbaren Punkt");
+        if (S.mittag.n > 0 && !S.mittag.zeichnet) rot.push("6 ZEICHNEN: mittags zeichnet das Sternfeld seine sichtbaren Punkte nicht");
         if (S.nacht.n > 0 && !S.nacht.zeichnet) rot.push("6 ZEICHNEN: nachts zeichnet das Sternfeld nicht");
         if (!S.einDurchgang) rot.push("6 ZEICHNEN: das Sternfeld zeichnet in zwei Durchgängen");
         if (S.vorn.length) rot.push(`7 UNENDLICH: ${S.vorn.join(" · ")} ohne den Unendlich-Knoten`);
+        if (S.kosmos.length) rot.push(`9 KOSMOS: ${S.kosmos.join(" · ")}`);
         return rot;
     };
     const rot = urteil(await safeEvaluate(page, probe, null));
     check(
-        "Himmel-Tag: mittags kein Punkt, in der Dämmerung der Abendstern, nachts alle Sterne, der Mond blass/deckend, jeder Himmelskörper im Unendlichen",
+        "Himmel-Tag: sichtbar genau, was die Kosmos-Funktion der Saat heller als die Grenze des Gesetzes zeigt (mittags kein Fixstern, in der Dämmerung die hellen Planeten, nachts das Feld), jeder Punkt ein Stern oder Planet der Funktion, der Mond in der EINEN Skala, der Stern ein Pixel, jeder Himmelskörper im Unendlichen",
         rot.length === 0,
         rot.join(" · ")
     );
     const s = {};
-    for (const k of ["kugel", "grenze", "doppel", "vorne", null]) s[k] = urteil(await safeEvaluate(page, probe, k));
+    for (const k of ["kugel", "grenze", "doppel", "vorne", "wuerfel", null]) s[k] = urteil(await safeEvaluate(page, probe, k));
     const selbst = [
         s.kugel.some((e) => e.startsWith("1 KÖRPER")) || "Himmelskugel blieb grün",
         s.grenze.some((e) => e.startsWith("2 MITTAG")) || "Mittags-Grenze −3 blieb grün",
         s.doppel.some((e) => e.startsWith("6 ZEICHNEN")) || "zwei Durchgänge blieben grün",
         s.vorne.some((e) => e.startsWith("7 UNENDLICH") && e.includes("himmel-sonne")) ||
             "Sonne vor der Welt blieb grün",
+        s.wuerfel.some((e) => e.startsWith("9 KOSMOS") && e.includes("Stern ")) || "der Würfel-Himmel blieb grün",
         s.null.length === 0 || "nach der Heilung nicht grün",
     ].filter((x) => x !== true);
     check(
-        "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten werden rot",
+        "Himmel-Tag SELBSTTEST: Himmelskugel, Mittags-Grenze −3, zwei Durchgänge, Sonne ohne Unendlich-Knoten und der Würfel-Himmel werden rot",
         selbst.length === 0,
         selbst.join(" · ")
     );

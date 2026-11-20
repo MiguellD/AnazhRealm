@@ -615,16 +615,12 @@ hauptLauf(async () => {
     }
 
     // ── D  DIE TÜR TRÄGT DIE ABSICHT: `initP2PSync` setzt `p2p.enabled` als erste Tat, kein Aufrufer setzt sie von
-    // Hand davor (Knopf, Boot, die Zwei-Seiten-Smokes) — sonst plant der close-Zweig nach einem gescheiterten
+    // Hand davor (Knopf, Boot) — sonst plant der close-Zweig nach einem gescheiterten
     // Erst-Aufbau des nackten Aufrufs keinen Rejoin. Der Laufzeit-Beweis ist gate:mp-sync (b); hier die Absenz.
     {
         const HAND = /\b(?:p2p|this\.state\.p2p|st\.p2p)\.enabled\s*=\s*true\b/;
         const tuer = (q) => [stammLib.fehlt({ ausser: "initP2PSync" }, HAND, q), stammLib.fehlt.wo];
         check("D Tür: kein Hand-Setzer der Absicht außerhalb der Tür (Knopf, Boot)", ...tuer());
-        const smokes = ["smoke-copresence.cjs", "smoke-webrtc.cjs"].filter(
-            (f) => !stammLib.fehlt(null, /p2p\.enabled\s*=\s*true/, { datei: "scripts/" + f })
-        );
-        check("D Tür: die Zwei-Seiten-Smokes rufen die Tür ohne Hand-Setzer", smokes.length === 0, smokes.join(", "));
         // Selbsttest: der Hand-Setzer zurück → ROT (die Tür trägt die Absicht: gate:mp-sync (b) am Verhalten)
         const mitHand = tuer((t) => t + "\n    _probe() {\n        this.state.p2p.enabled = true;\n    }\n");
         check("D Selbsttest: ein Hand-Setzer sieht ROT", !mitHand[0], mitHand[1]);

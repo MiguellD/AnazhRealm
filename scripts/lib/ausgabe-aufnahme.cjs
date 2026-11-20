@@ -388,7 +388,7 @@ function buehne(o) {
     // die Nässe der Bühne: `o.naesse` Sekunden des Worts (die Linse `werkbank licht --naesse`), sonst sein Ruhezustand
     r._naesseTakt(o?.naesse ?? 1e6);
     r._tickRain();
-    // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
+    // Das Gemüt des Spielers färbt das Licht (die Tönung, `_dayNightComputeTint`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
     for (const k in st.player?.emotions || {}) st.player.emotions[k] = 0;
     // Die Bühne SPRINGT Uhr, Wetter und Saison: der Sprung des Himmels (`_himmelSprung`, das Gesetz des Uhr-Schreibers) malt
     // die Himmels-Umgebung beim Anwenden des Tags aus den Quellen, die jetzt gelten — an der Raten-Drossel vorbei, nie an der

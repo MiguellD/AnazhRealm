@@ -42,7 +42,7 @@ const {
     teilAus,
     ROOT,
     hauptLauf,
-    pngDatei, SELBSTTEST, path, fs, stammLib, jsonSchreiben } = require("./lib/welt-boot.cjs");
+    pngDatei, SELBSTTEST, path, fs, stammLib, jsonSchreiben, akteUrteil, PROBE_WARTET } = require("./lib/welt-boot.cjs");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
 const SELBST = SELBSTTEST;
@@ -144,6 +144,9 @@ async function proben(phasen) {
     // DIE PHASEN: haus (W1 W2 W4c W5 W10 je Haus), start (dazu jedes Haus des Start-Dorfs), sohle,
     // lichtung, bau (W8), w4, w4b, w6, grund (W9) — der Hauptlauf fährt alle in zwei Welten, ein Selbsttest nur die seines Täters
     const P = new Set(phasen);
+    // DER WARTENDE BEIM NAMEN (los-huelle): jede Probe stempelt, worauf sie wartet, BEVOR sie wartet (welt-boot `__probeWartet`) —
+    // kehrt ein Versprechen der Seite nie zurück, nennt die Stall-Akte sie im Urteil („die Probe …“, `akteUrteil`)
+    const wartet = (name) => window.__probeWartet?.(name);
     const o = { haeuser: [], phasen: [...P] };
     if (!FC || typeof FC.HAUS !== "function") return { fehler: "__fachwerkCore fehlt" };
     const pm = s.playerMesh;
@@ -260,6 +263,7 @@ async function proben(phasen) {
         s.architectures.filter((e) => e.type && e.type.startsWith("haus_") && e.tuer && e.fundament);
     // der Export reist durch den Foundry-Worker, der Akt hebt über den Zug: warten, bis er steht (im Takt, nie an der Uhr —
     // bis w4-ssa-C schlief jeder Gang 100 ms dazu)
+    wartet("Drehbuch-Dorf 7/18: spawnSettlement steht");
     await warteBis(() => steht, 4, 120);
     const H = dorfHaeuser();
     o.gesamt = H.length;
@@ -336,6 +340,7 @@ async function proben(phasen) {
     const setze = async (vor, id, orte, gut = () => true, phi = 0.6, frei = true) => {
         for (const [x, z] of vor ? orte : []) {
             if (!r._landAt(x, z, 0.5) || (frei && !r._ortFrei(x, z, 14))) continue;
+            wartet(`setze ${id} bei ${Math.round(x)}/${Math.round(z)}`);
             stell(x, hh(x, z) + 2, z);
             await warteBis(() => !!r._bodenSichtChunks(x - 8, z - 8, x + 8, z + 8), 5, 200);
             if (!gut(x, z)) continue;
@@ -416,6 +421,7 @@ async function proben(phasen) {
     // ohne Hub
     let fe = null;
     if (P.has("fremd")) {
+        wartet("W11 Fremd-Slot");
         const kv = H.find((e) => gesetz(e).cellar);
         const { v } = slotVon(kv);
         const w = (o.w11 = {});
@@ -456,6 +462,7 @@ async function proben(phasen) {
         const takt = window.__anazhAutoSettlement;
         window.__anazhAutoSettlement = true;
         stell(start.x, start.y + 1, start.z);
+        wartet("W10 Start-Dorf: Zelle start, Zug und Wege");
         const zelle = () => (s.worldMeta?.settlementCells || {}).start;
         await warteBis(() => !!zelle() && !r._autoSettlementQueue && !r._stlWegePending, 1, 1200);
         window.__anazhAutoSettlement = takt;
@@ -482,6 +489,7 @@ async function proben(phasen) {
         stell(e.position.x, e.position.y + 3, e.position.z);
         // im Bau-Ereignis, nie in Takten
         const l0 = () => e._servedLod === 0 && !!e._hausHuelle && e._hausHuelle.stufe === 0;
+        wartet(`Haus ${o.haeuser.length} ${e.type}${h.start ? " (Start-Dorf)" : ""}: Stufe 0 und Gang`);
         await window.__gebautNach(e, { fertig: l0, bau: () => {}, takt: () => pumpe(10), max: 40 }).catch(() => null);
         h.stufe = e._servedLod;
         h.huelle = e._hausHuelle ? e._hausHuelle.stufe : null;
@@ -705,6 +713,7 @@ async function proben(phasen) {
     };
     let sbE = null; // das Haus des Spielers (W9 mit `--bild`)
     if (P.has("grund")) {
+        wartet("Phase grund");
         const BILD = P.has("bild");
         o.w9 = { bild: BILD, haeuser: [] };
         const [WB, HB, cam] = [480, 270, s.camera];
@@ -1098,6 +1107,7 @@ async function proben(phasen) {
     // Boxen jedes Baus, der vor dem Dorf stand und nicht weicht (Natur und Würfe des Felds weichen, `_weichtDemBau`; das Haus
     // räumt sie) — eine Box zählt über dem Boden des Hauses (+ Stufe)
     if (P.has("haus")) {
+        wartet("Phase haus");
         const STEP = A.PLAYER_STEP_UP;
         const w7 = { haeuser: H.length, imBau: 0, taeter: [] };
         // je Bau aus `vor` (nah, er weicht nicht) die Punkte des Hauses `e` in seinen Boxen: Mitte, Grundriss 5 × 5 (der EINE
@@ -1129,7 +1139,19 @@ async function proben(phasen) {
         );
         if (zelle) {
             const vorBau2 = new Set(s.architectures);
-            await r.spawnSettlement({ seed: 7, nH: 18, position: { x: zelle[1].x, y: start.y, z: zelle[1].z } });
+            wartet("W7 zweiter Akt 7/18 am Anker des ersten: spawnSettlement");
+            // DER ZWEITE AKT KEHRT ZURÜCK (los-huelle): mit seiner Bilanz — gehoben, und jedes Los, das nicht steht, beim Namen
+            // (`abgelehnt`: der Spieler im Grund; `gefallen`: die Wand, an der es fiel)
+            const r2 = await r.spawnSettlement({ seed: 7, nH: 18, position: { x: zelle[1].x, y: start.y, z: zelle[1].z } });
+            w7.akt2 = r2
+                ? {
+                      placed: r2.placed,
+                      skipped: r2.skipped,
+                      abgelehnt: (r2.abgelehnt || []).length,
+                      gefallen: (r2.gefallen || []).length,
+                      wer: [...(r2.abgelehnt || []), ...(r2.gefallen || []).map((g) => `${g.rolle} #${g.seed}: ${g.wand}`)].slice(0, 3),
+                  }
+                : null;
             await pumpe(8);
             const neu = s.architectures.filter(
                 (e) => !vorBau2.has(e) && /^(haus_|brunnen_|marktstand_)/.test(e.type || "")
@@ -1209,6 +1231,7 @@ async function proben(phasen) {
         return { neu, fehler, weicht };
     };
     if (P.has("lichtung")) {
+        wartet("Phase lichtung");
         const w8 = {};
         o.w8 = w8;
         // DER FREIRAUM DES GENESIS-ORTS (Pflicht F): um die Mitte des Plans steht keine Krone, kein Busch, kein Fels (fachwerk
@@ -1343,6 +1366,7 @@ async function proben(phasen) {
                 const vorC = new Set(s.architectures);
                 stell(L.x, yM + 2.2, L.z);
                 try {
+                    wartet("W8 Hain der KI: pflanz mir eine eiche");
                     await r.processChatCommand("pflanz mir eine eiche");
                 } catch (e) {
                     w8.kiFehler.push(String(e).slice(0, 80));
@@ -1373,6 +1397,7 @@ async function proben(phasen) {
     // Hain und bleibt, dann entsteht dort ein Damm (ein Bau ohne Haus-Zeile — seine Hülle sind Blocker-Boxen): kein Baum
     // bleibt in seinen Boxen (die Räumung der Wurzel), der zweite Hain mitten im Damm wächst nicht in sie und nennt den Bau
     if (P.has("bau")) {
+        wartet("Phase bau");
         const wb = {};
         o.bau = wb;
         const M0 = r._genesisMitte() || start;
@@ -1422,6 +1447,7 @@ async function proben(phasen) {
         }
     }
     if (P.has("w4")) {
+        wartet("Phase w4");
         stell(dorfMitte.x, (hh(dorfMitte.x, dorfMitte.z) || start.y) + 3, dorfMitte.z);
         await pumpe(200);
         // DER WURF IN DEN GRUNDRISS: je Haus ein Wurf jeder Art des Felds in seine Mitte, durch die EINE Natur-Wand
@@ -1498,6 +1524,7 @@ async function proben(phasen) {
         o.fernOrt = { x: Math.round(fx), z: Math.round(fz) };
     }
     if (P.has("w4b")) {
+        wartet("Phase w4b");
         // W4b (Kopf): 300 m vom Spieler (das Auto-Dorf ab 260 m, `AUTO_SETTLEMENT.nearM`), die Streu steht schon; dann
         // läuft der Spieler hin, der Promotions-Ring (64 m) macht aus Streu-Bäumen echte Bäume
         stell(start.x, start.y + 3, start.z);
@@ -1614,6 +1641,7 @@ async function proben(phasen) {
         o.w4b.nah = naturImHaus(FH);
     }
     if (P.has("w6")) {
+        wartet("Phase w6");
         // W6 (Kopf): je Kultur (marokkanisch, viktorianisch, alemannisch) ein Haus wie ein Slot am Hang, die Front bergauf;
         // der Lauf beginnt 6 m vor der Front, (a) im Takt des Spawns (die Kern-Hülle), (b) 60 m bzw. 20 m vor der Mitte, bis
         // die Stufe 2 bzw. 1 steht (der Sim-Schritt ruft keinen LOD-Takt).
@@ -1788,6 +1816,7 @@ async function proben(phasen) {
             const vorSlot = new Set(s.architectures);
             // K10: der Slot geht den Weg des Plans v2 — `_ortWahl` legt seinen Boden y und den Erdbau, bevor das Haus
             // steht (je Haus ein eigener Ort: der Samen trägt die Kultur)
+            wartet(`W6 Anlauf ${slot.kultur || ""}: _ortWahl des Slots`);
             const v2 = await r._ortWahl(
                 { seed: 700 + orte.length, slots: [slot], roads: [], laternen: [] },
                 { x: 0, z: 0 }
@@ -1832,6 +1861,7 @@ async function proben(phasen) {
     // `removeArchitecture` — kein Grund an ihrer Mitte, der Boden schließt jede Box mit eigenem Boden, der Keller trägt Erde.
     // Danach misst keine Phase dieses Dorf.
     if (P.has("grund")) {
+        wartet("Phase grund");
         o.w9 = o.w9 || {};
         o.w9.abbau = [];
         const dorf = H.find((e) => gesetz(e).cellar) || H[0];
@@ -2005,6 +2035,10 @@ function urteil(o) {
             );
         if (!o.w7 || !(o.w7.haeuser >= 6))
             f.push(`W7 Aufbau: ${o.w7 ? o.w7.haeuser : "?"} Dorf-Häuser abgetastet (Soll ≥ 6)`);
+        else if (o.w7.zweitesDorf !== undefined && !(o.w7.akt2 && o.w7.akt2.skipped <= o.w7.akt2.abgelehnt + o.w7.akt2.gefallen))
+            f.push(
+                `W7 zweiter Akt: ${o.w7.akt2 ? `${o.w7.akt2.placed} gehoben, ${o.w7.akt2.skipped} übersprungen, davon beim Namen ${o.w7.akt2.abgelehnt} abgelehnt + ${o.w7.akt2.gefallen} gefallen` : "keine Bilanz (der Akt gab null)"} — jedes Los, das nicht steht, trägt seinen Grund`
+            );
         else if (o.w7.imBau || o.w7.zweitesImBau || !Number.isFinite(o.w7.zweitesDorf))
             f.push(
                 `W7 Bau im Bau: ${o.w7.imBau} Häuser in einem früheren Bau oder mit der Tür an seiner Wand, zweites Dorf am selben Anker ${o.w7.zweitesImBau}/${o.w7.zweitesDorf} im ersten (${o.w7.taeter.join(" · ") || "Akt fehlt"})`
@@ -2325,6 +2359,9 @@ hauptLauf(async () => {
                 })
             );
             if (BILD) await page.evaluate(require("./lib/ausgabe-aufnahme.cjs").AUSGABE_INSTALL + WASSER_INSTALL);
+            // der Stempel des Wartenden muss die Seite erreichen (welt-boot `pulsSeite`): ohne ihn nennte die Akte keinen Täter
+            if ((await page.evaluate(() => typeof window.__probeWartet)) !== "function")
+                z.fehler.push("die Seite trägt kein __probeWartet — die Akte nennte den Wartenden nicht");
             const o = await page.evaluate(proben, phasen);
             await kontext.close();
             platz.z = null;
@@ -2356,6 +2393,14 @@ hauptLauf(async () => {
             return erg;
         };
         if (SELBST) {
+            // DER WARTENDE BEIM NAMEN (los-huelle): eine Probe, die nie zurückkehrt — die Akte nennt sie im Urteil, auch wenn nach
+            // ihrem Stempel noch GL-Stempel kamen; ohne Stempel sagt sie es
+            const fall = (stempel) => akteUrteil({ puls: { an: 0 }, luecke: 500, stapel: null, cpu: { renderer: 0, gpu: 0 }, stempel });
+            const mit = fall([`11:00:00.000 ${PROBE_WARTET} W7 zweiter Akt 7/18`, "11:00:01.000 gl.getError (synchron #4)"]);
+            const ohne = fall(["11:00:01.000 gl.getError (synchron #4)"]);
+            const okW = /^AWAIT .* · die Probe W7 zweiter Akt 7\/18$/.test(mit) && / · keine Probe stempelte$/.test(ohne);
+            console.log(`  ${okW ? "✅" : "❌"} Selbsttest „der Wartende beim Namen": die Akte nennt die Probe, die nie zurückkehrt — ${mit}`);
+            if (!okW) rot++;
             // je Täter: die Phase seiner Welt (sie fährt nur, was ihr Selbsttest rot machen soll — der Hauptlauf fährt alle),
             // dann die Proben, die er rot macht
             selbst = Object.keys(DEFEKTE)

@@ -1089,7 +1089,7 @@ class AnazhRealm_klang {
         }
     }
 
-    // DER VERKEHR IM OHR (w28-verkehr-bild, PFLICHT-OFFEN C): die `FAHRT_VERKEHR_K` nächsten Wagen der Städte in Fahrt (`VK.wagen`
+    // DER VERKEHR IM OHR (w28-verkehr-bild, Leiter mensch.netz.verkehr): die `FAHRT_VERKEHR_K` nächsten Wagen der Städte in Fahrt (`VK.wagen`
     // im Zustand `faehrt`, binnen der Hörweite klang:FAHRT_OHR) — jeder klingt mit der EINEN Stimme der Fahrt, sein Motor aus dem
     // Gas seines Fahrers. Bis hier hörte das Ohr nur den Sattel und den Nachlauf: die Stadt fuhr stumm. Die Kosten tragen die
     // K Stimmen am Ohr, nie die 20 Wagen der Stadt (Gebot 7); je Bild in einer Liste, nie neu gebaut. Leser: `_fahrtKlangTick`.

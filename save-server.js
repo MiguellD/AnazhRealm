@@ -884,7 +884,7 @@ function sendStaticFile(req, res) {
     });
 }
 
-// DER CACHE-KOPF JEDER STATISCHEN DATEI (1310-16, Pflicht-OFFEN B): bis hier sandte der Server weder Validator noch Regel — jeder
+// DER CACHE-KOPF JEDER STATISCHEN DATEI (1310-16, Leiter same.preis.ankunft): bis hier sandte der Server weder Validator noch Regel — jeder
 // Zweit-Boot lud 68 Skripte und 8,84 MB neu. Jetzt trägt jede Antwort ihren ETag (der Inhalt, wie er ausgeliefert wird: SHA-1,
 // stark) und `Cache-Control: no-cache` — der Browser hält die Datei und fragt bei jedem Boot nach; stimmt der ETag, antwortet
 // der Server 304 ohne Körper. Kein `immutable` auf `?v=`: der Stempel ist die VERSION, nicht der Inhalt — main ändert Code

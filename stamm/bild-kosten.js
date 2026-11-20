@@ -1591,6 +1591,9 @@ class AnazhRealm_bild_kosten {
                 // DAS ANLAUFEN (K68): Frames seit dem Beginn der Geschichte (Größen-Wechsel, Kamera-Sprung `_traaR.sprung`)
                 this._anlauf = uniform(0);
                 this._kern = uniform(AnazhRealm.ZEIT_KERN);
+                // k_jetzt ÷ k_davor: die Belichtung dieses Bilds gegen die des Bilds in der Geschichte (`updateBefore`)
+                this._kWechsel = uniform(1);
+                this._kDavor = 0;
                 // die Unschärfe der Bewegung (spielgang.K4, `_zugangTakt` → `laufPxSetzen`): ab so vielen Ausgabe-Pixeln Bewegung
                 // je Bild trägt das Jetzt allein — an r184s `maxVelocityLength`, aus `ZUGANG.laufPxAus`. Eine KONSTANTE des
                 // Resolve, nie eine Uniform: an (der Default) ist der Resolve byte-gleich dem ohne Zugang (vp-0611g: die Teilung
@@ -1739,6 +1742,9 @@ class AnazhRealm_bild_kosten {
                 this._anlauf.value = neu || sprung || lade ? 0 : Math.min(this._anlauf.value + 1, 1e6);
                 // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
                 // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
+                const kJetzt = r.toneMappingExposure;
+                this._kWechsel.value = this._kDavor > 0 && kJetzt > 0 ? kJetzt / this._kDavor : 1;
+                this._kDavor = kJetzt;
                 const k = 1 - this._lage;
                 this._geschichte.value = this._ziele[this._lage].textures[0];
                 this._flackerAlt.value = this._ziele[this._lage].textures[1];
@@ -1820,7 +1826,10 @@ class AnazhRealm_bild_kosten {
                             .xy.mul(vec2(0.5, -0.5))
                             .toVar();
                         const gUV = uvA.sub(versatz).toVar();
-                        const hist = geschichte.sample(gUV).toVar();
+                        // DIE GESCHICHTE IM k DIESES BILDS (licht-eine-skala): sie trägt L × k des Bilds davor — beim Wechsel der
+                        // Belichtung × k_jetzt ÷ k_davor (`_kWechsel`, `updateBefore`); die Tiefe in a bleibt
+                        const histRoh = geschichte.sample(gUV);
+                        const hist = vec4(histRoh.rgb.mul(this._kWechsel), histRoh.a).toVar();
                         const vorD = T.viewZToPerspectiveDepth(hist.a, nah, fern);
                         const posV = T.getViewPosition(gUV, vorD, this._previousCameraProjectionMatrixInverse);
                         const posW = this._previousCameraWorldMatrix.mul(vec4(posV, 1)).xyz;
@@ -2100,24 +2109,27 @@ class AnazhRealm_bild_kosten {
     // Nacht, EIN Schreiber `_dayNightApplyDirectionalLight` über die Post-Kette); mit `farbe` → der Versatz, den das Auge ihr
     // gibt (zum Grau ihrer Leuchtdichte, × Stäbchen-Anteil × Nacht — die Post-Kette addiert ihn). `vor`: der Ton, den das Auge
     // als `farbe` SIEHT (seine Umkehr — die Leuchtdichte bleibt unter dem Auge gleich, also derselbe Stäbchen-Anteil s:
-    // (farbe − L·s)/(1 − s)). Leser der Umkehr: die Flamme des Brands (`_brandFlammenZeichnen`) — ihr Ton ist an das BILD
-    // gebunden (`ziel` ÷ Belichtung, vor der Tonkurve), nicht an die Leuchtdichte einer Flamme: das Auge las sie nachts als
-    // 0,7 cd/m² (eine Flamme trägt Tausende) und nahm ihr 30 % der Farbe — cremeweiße Tropfen statt Feuer.
+    // (farbe − L·s)/(1 − s)). Leser der Umkehr: die Flamme des Brands (`_brandFlammenZeichnen`) — sie leuchtet in der
+    // Leuchtdichte der Flamme (fachwerk `FEUER_LEUCHTDICHTE` ÷ `EINHEIT_LX`, licht-eine-skala P8; bis dahin ein Bild-Ton
+    // `ziel` ÷ Belichtung) — und die Klasse Erscheinung (`_erscheinung`). Ohne Umkehr nahm das Auge ihr 30 % der Farbe.
     _nachtAuge(farbe, vor) {
         const [T, NA] = [THREE.TSL, AnazhRealm.NACHT_AUGE];
         const nacht = this._nachtAugeU || (this._nachtAugeU = T.uniform(0));
         if (!farbe) return nacht;
+        // DIE LEUCHTDICHTE DER WELT (licht-eine-skala): die Post-Kette reicht das vor-belichtete Bild (L × k, `_vorBelichtung`),
+        // ein Stoff im Szenen-Pass (`vor`: Flamme, Tor) seinen Ton vor der EINEN Stelle — dort ist er schon L
+        const lin = (l) => (vor ? l : l.div(this._vorBelichtung().k));
         // der Stäbchen-ANTEIL eines Pixels der photopischen Leuchtdichte l: das mesopische Band der Leuchtdichte …
         const sVon = (l) => {
             const zapfen = T.log(
-                l.mul(T.float(NA.luxJeEinheit)).max(T.float(NA.staebchenCd)).div(T.float(NA.staebchenCd))
+                lin(l).mul(T.float(__weltLicht.EINHEIT_LX)).max(T.float(NA.staebchenCd)).div(T.float(NA.staebchenCd))
             )
                 .div(T.float(Math.log(NA.zapfenCd / NA.staebchenCd)))
                 .clamp(0, 1);
             // … und am BILD (w28-glut-nacht): ein Pixel, das die Belichtung der Nacht über Mittelgrau hebt, sieht das Auge mit
             // den Zapfen — der Anteil blendet von `bildZapfen[0]` bis `bildZapfen[1]` (Leuchtdichte × Belichtung) aus. Die
             // Skala der Leuchtdichte allein legt die Zapfen-Schwelle auf das 29-Fache von Bild-Weiß: der Feuerschein stand rosa
-            const hell = T.smoothstep(NA.bildZapfen[0], NA.bildZapfen[1], l.mul(T.toneMappingExposure));
+            const hell = T.smoothstep(NA.bildZapfen[0], NA.bildZapfen[1], lin(l).mul(T.toneMappingExposure));
             return T.float(1).sub(zapfen).mul(nacht).mul(T.float(1).sub(hell));
         };
         // DAS GRAU DER STÄBCHEN IST SKOTOPISCH (w28-glut-nacht; CIE 191:2010: L_mes = m·L_p + (1 − m)·L_s): die Stäbchen sehen
@@ -2149,6 +2161,54 @@ class AnazhRealm_bild_kosten {
         }
         const s = sVon(T.luminance(farbe));
         return T.vec3(skot, skot, skot).sub(farbe).mul(s);
+    }
+
+    // DIE KLASSE ERSCHEINUNG (licht-eine-skala P8; EIN Mechanismus, DIESE Stelle): was kein Datum einer Quelle trägt, sondern
+    // einen BILDWERT, steht im Maß des Auges — sein Wert ÷ die Belichtung des Bilds, vor dem Auge der Nacht (seine Umkehr,
+    // `_nachtAuge`). Sie hat genau NEUN Mitglieder: das Zielbild der Tor-Membran (`_membranGraph`) · Filigran · Saum ·
+    // Scheibe (die Stoffe der Tore ohne Licht-Antwort) · Rahmen-Glut · Tor-Beschläge (ihr Emissiv, `_foundryTreeMaterial`,
+    // im Bau-Satz je Ecke) · die Aura der Kreatur · der Platzhalter eines Mitspielers · sein Namensschild (die Korrektur der
+    // Daten-Leser: bis hier „acht“, das Schild trug seine Canvas-Karte roh in die Skala). Der REST OHNE GESETZ ist genau einer:
+    // das Tierauge (tetrapoda, Emissiv ohne Quellen-Datum) geht durch dieselbe Stelle, ist aber kein Mitglied — offen, bis
+    // sein Kern ein Datum trägt. Die EINE Skala gilt für alles außer dieser Klasse; jeder weitere Stoff, der die Belichtung
+    // herausteilt, ist ein Bruch (gate:altlasten zählt Namen und Rest je Ruf-Stelle, gate:asset-contract das Leuchten je
+    // Lieferung).
+    _erscheinung(bildwert) {
+        return this._nachtAuge(THREE.TSL.vec3(bildwert).div(this._vorBelichtung().k), true);
+    }
+
+    // Ein Marker der Welt (unbeleuchtet, mit oder ohne Karte) als Erscheinung: seine Farbe × Karte durch die EINE Stelle.
+    _erscheinungStoff(mat) {
+        const f = THREE.TSL.vec4(THREE.TSL.materialColor);
+        mat.colorNode = THREE.TSL.vec4(this._erscheinung(f.rgb), f.a);
+        return mat;
+    }
+
+    // DIE VOR-BELICHTUNG (licht-eine-skala): das Szenen-Ziel hält L × k — die Leuchtdichte der Welt in der EINEN Skala
+    // (`__weltLicht.EINHEIT_LX`) mal die Belichtung DIESES Bilds. rg11b10 trägt 6 Bit Mantisse ab 2⁻¹⁴: die Mond-Wiese bei
+    // 0,26 lx stand unbelichtet auf 2–3 verschiedenen Puffer-Werten je Kanal, belichtet auf 132 / 153 (GTX 1050, Spike 6).
+    // DIE EINE STELLE des Schreibens ist der Eintrag `output` des MRT des Szenen-Passes (wie die Ditherung, `_ausgabeDither`),
+    // gedeckelt bei `deckel` (das Format endet bei 65 024 — die Sonnenscheibe und jede Quelle darüber enden hier, nie an ihrer
+    // Quelle); die EINE Stelle des Zurücknehmens das Ende der Post-Kette (÷ k, die Tonkurve des Renderers belichtet). `k` IST die
+    // Belichtung des Renderers (EIN Schreiber, `_dayNightApplyBelichtung`) — kein zweiter Wert. Wer das Ziel als Strahldichte
+    // zurückliest (Spiegel-Pass, Rückstrahl), teilt durch das k, mit dem es geschrieben wurde; die Geschichte der zeitlichen
+    // Auflösung rechnet beim Wechsel um (`_zeitAufloesung`). Schwellen der Post-Kette (Streulicht, Godrays, Flimmer-Dämpfung,
+    // `NACHT_AUGE.bildZapfen`) stehen damit im BELICHTETEN Raum.
+    _vorBelichtung() {
+        const T = THREE.TSL;
+        return (
+            this._vorBelichtungU ||
+            (this._vorBelichtungU = {
+                k: T.toneMappingExposure,
+                deckel: T.float(32768),
+                // der Deckel wirkt am GRÖSSTEN Kanal (das Verhältnis der Kanäle bleibt): je Kanal gedeckelt stand die Flamme
+                // unter der Blende der Nacht auf (32 768, 32 768, B) — gelb-weiß statt orange
+                deckeln: (rgb) => rgb.mul(T.float(32768).div(T.max(rgb.r, T.max(rgb.g, rgb.b)).max(32768))),
+                // das k, mit dem das Szenen-Ziel ZULETZT geschrieben wurde (EIN Schreiber nach dem Bild, `_loopRender`): der
+                // Teiler jedes Rücklesers, der das Bild davor liest
+                kBild: T.uniform(1),
+            })
+        );
     }
 
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
@@ -2185,7 +2245,10 @@ class AnazhRealm_bild_kosten {
             // Nässe wie das Wasser an seiner Zelle. r184 mischt nur `output` nach dem Stoff, das Glanz-Ziel schreibt ohne
             // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75. Der Eintrag
             // `output` trägt die Ditherung des Ziels (`_ausgabeDither`): durch ihn schreibt jeder Stoff des Passes.
-            scenePass.setMRT(TSL.mrt({ output: this._ausgabeDither(TSL.output), glanz: this._glanzKnoten() }));
+            // und die Vor-Belichtung (`_vorBelichtung`): L × k, gedeckelt am Format
+            const VB = this._vorBelichtung();
+            const belichtet = TSL.vec4(VB.deckeln(TSL.output.rgb.mul(VB.k)), TSL.output.a);
+            scenePass.setMRT(TSL.mrt({ output: this._ausgabeDither(belichtet), glanz: this._glanzKnoten() }));
             const glanz = scenePass.getTexture("glanz");
             glanz.type = THREE.UnsignedByteType;
             glanz.format = THREE.RedFormat;
@@ -2321,7 +2384,10 @@ class AnazhRealm_bild_kosten {
                 const c = uv === screenUV ? mitte : bild(uv);
                 const l = luminance(c);
                 const m = smoothstep(u.bloomThreshold, u.bloomThreshold.add(float(0.25)), l);
-                return c.mul(m);
+                // DAS STREULICHT AM DECKEL (licht-eine-skala): jeder Abgriff wiegt 1 ÷ (1 + Luma) — eine Quelle am Deckel des
+                // Formats (32 768 belichtet, eine Flamme unter der Belichtung der Nacht) stand sonst als ihr Abgriff-Muster im
+                // Bild (Mond-Wiese, Spike 6: fünf weiße Punkt-Blöcke am Horizont)
+                return c.mul(m).div(l.add(1));
             };
             const px = float(0.0018).mul(u.bloomRadius);
             const taps = [
@@ -2380,7 +2446,8 @@ class AnazhRealm_bild_kosten {
                 .add(lumAt(screenUV.add(vec2(float(0.0), lcPx.negate()))))
                 .mul(float(0.25));
             const selfLum = luminance(bloomed);
-            const detail = selfLum.sub(localAvg); // >0 heller als Umgebung (Kante/Spitze)
+            // die Differenz in L (÷ k): sie mal das belichtete Bild bleibt ein Term in L × k — ohne die Teilung wüchse er mit k²
+            const detail = selfLum.sub(localAvg).div(VB.k); // >0 heller als Umgebung (Kante/Spitze)
             const combined = bloomed.add(nurBeiStaerke(bloomed.mul(detail.mul(u.localContrast)), u.localContrast));
             // DAS AUGE DER NACHT (K66, Augen-Runde 15.10.: nachts leuchtete die Giebelwand gesättigt orange, ihr Abfall lief
             // tiefrot — HSV 0,92 an der Wand, 0,99 im Abfall): unter der Nacht sieht das Auge mesopisch — zwischen den
@@ -2389,7 +2456,8 @@ class AnazhRealm_bild_kosten {
             // Bestrahlung in Welt-Einheiten). Es ist die EINE Sättigung der Kette und nur ein Knoten der Nacht: am Tag
             // (`nightFactor` 0) fällt der Zweig (`nurBeiStaerke`), das Bild geht unberührt in die Tonkurve.
             const gesehen = combined.add(nurBeiStaerke(this._nachtAuge(combined), u.nightFactor));
-            const graded = gesehen.max(vec3(0, 0, 0));
+            // das Ende der Vor-Belichtung (`_vorBelichtung`): die Kette gibt L weiter, die Tonkurve des Renderers belichtet
+            const graded = gesehen.max(vec3(0, 0, 0)).div(VB.k);
             // DIE FARBSICHT (spielgang.K4, `AnazhRealm.FARBSICHT`): die Daltonisierung als die LETZTE Abbildung des Lichts vor der
             // Tonkurve, Δ = v · max(e · Bild, 0) — Weiß-treu (Grau trägt e = 0) und je Seite linear: sie vertauscht mit dem Versatz
             // der Tonkurve (PBR Neutral zieht unter ihrem Knie nur einen grauen Sockel ab), im Mittelbereich ist sie dieselbe wie
@@ -2403,7 +2471,14 @@ class AnazhRealm_bild_kosten {
             // < 0), die Tritanopie (e = 0,859 (B − G)) traf genau es (OMEN Ego RGB 71,6/93,1/104,5 → 59,1/85,2/105,2).
             const welt = istWelt(szenenTiefe, screenUV).select(float(1), float(0));
             const farbsichtDelta = u.farbSchub.mul(TSL.dot(u.farbFehler, gesehen).max(0).mul(welt));
-            u.ausgabe = { aus: graded, farbsicht: gesehen.add(farbsichtDelta).max(vec3(0, 0, 0)) };
+            // beide Ausgaben enden die Vor-Belichtung (÷ k): Δ ist je Seite linear, er trägt dieselbe Skala wie das Bild
+            u.ausgabe = {
+                aus: graded,
+                farbsicht: gesehen
+                    .add(farbsichtDelta)
+                    .max(vec3(0, 0, 0))
+                    .div(VB.k),
+            };
 
             // Die Ausgabe-Wandlung (die Tonkurve Khronos PBR Neutral + sRGB, `_ensureRenderer`) macht die Pipeline selbst im
             // Ausgabe-Quad — keine Zwischen-Textur.
@@ -2893,9 +2968,9 @@ AnazhRealm._atmoKern = function () {
     return G;
 };
 // DAS AUGE DER NACHT (K66, die Post-Kette `_ensurePostProcessing`: die Sättigung je Pixel unter der Nacht): das mesopische Band
-// der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); `luxJeEinheit`
-// die Eichung der Nacht (Vollmond 0,26 lx ≙ der Nacht-Bestrahlung der Welt 0,224, fachwerk LICHT_GESETZ) — eine Leuchtdichte
-// der Welt (Albedo/π · Bestrahlung) mal ihr ist cd/m².
+// der CIE 191:2010 — unter `staebchenCd` sieht das Auge ohne Farbe (Stäbchen), über `zapfenCd` voll (Zapfen); eine
+// Leuchtdichte der Welt (Albedo/π · Bestrahlung) mal die EINE Skala (`__weltLicht.EINHEIT_LX`) ist cd/m² — bis
+// licht-eine-skala trug die Nacht dafür eine eigene Eichung (1,16 lx je Einheit).
 // `bildZapfen`: die Helligkeit am Bild (Leuchtdichte × Belichtung), von der an bis zu der das Auge ganz mit den Zapfen
 // sieht — Mittelgrau (die Eichung der Belichtung, Lehre 21) bis Weiß.
 // `skotopisch`: die Gewichte der skotopischen Leuchtdichte für lineares sRGB — die Zeile V′ = −0,702·X + 1,039·Y + 0,433·Z
@@ -2906,7 +2981,6 @@ AnazhRealm._atmoKern = function () {
 // Der Mondton war die Herleitung für die FORM (V′), der Boden ist der Zweck der STÄRKE (Koordinator 17.11.).
 // `umkehrSchritte`: so oft liest die Umkehr den Stäbchen-Anteil an ihrem Urbild neu (Fixpunkt; gemessen an der Linse (j)).
 AnazhRealm.NACHT_AUGE = Object.freeze({
-    luxJeEinheit: 0.26 / 0.224,
     staebchenCd: 0.005,
     zapfenCd: 5,
     bildZapfen: Object.freeze([0.18, 1]),
