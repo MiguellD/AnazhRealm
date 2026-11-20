@@ -1069,6 +1069,9 @@ var __weltLicht = (function () {
         // Atmosphäre allein (exakt dasselbe Bild); der Spiegel des fernen Wassers liegt ganz darunter (2,6 m Auge, 170 m weit).
         return Fn(() => {
             const sicht = A.himmelFarbe(vDir).toVar();
+            // DAS BAND DER GALAXIE (stern-bild, `kosmosBandKnoten`): das ungelöste Sternlicht hinter der Luft — durch ihren Durchlass
+            // in Blickrichtung, unter den Wolken (die Wolke mischt über ihm); die Bühne eines Studios trägt keine Galaxie (`H.band`)
+            if (H.band) sicht.addAssign(kosmosBandKnoten(H.band, vDir).mul(A.durchlass(A.U.hKm.add(A.RG), vDir.y)));
             TSL.If(vDir.y.greaterThan(HG.hor[0]), () => {
                 const cov = uCloudCover;
                 const saW = clamp(dot(vDir, normalize(uSunDir)).mul(0.5).add(0.5), float(0.0), float(1.0));
@@ -1421,6 +1424,9 @@ var __weltLicht = (function () {
         // die schwächste Größe im Feld: die Grenzgröße der tiefen Nacht (`GRENZGROESSE`, −18° → +6) plus die halbe Klasse, um die
         // der Stern-Knoten der Welt unter seiner Grenze noch leuchtet (`_buildStarField`: die Schwelle ½ Klasse unter der Grenze)
         feldGrenze: GRENZGROESSE[GRENZGROESSE.length - 1][1] + 0.5,
+        // die Beleuchtungsstärke eines Sterns der Größenklasse 0 am Auge in lx (die photometrische Skala der visuellen Größenklasse:
+        // m = −2,5 · log10(E) − 13,98) — das Licht jedes Punkts des Felds UND des Bands (bis stern-bild `HIMMEL.sternLx0` im Stamm)
+        sternLx0: 2.54e-6,
         blatt: 8, // ein Knoten mit höchstens so vielen Sternen ist ein Blatt (die Sterne liegen gleichverteilt in seiner Zelle)
         // DIE STUFE DER GRÖSSE: je Klasse teilt sich der Bereich in Stufen von höchstens so viel mag, jede ein eigener Baum mit eigener
         // Sichtweite (die schwache Stufe einer Klasse sieht man nur nah — der Himmel steigt nie in Kästen, deren hellster möglicher
@@ -1799,13 +1805,6 @@ var __weltLicht = (function () {
             a = KM.abs(sb);
         return a * d < 1e-3 * D.hoehePc ? D.magJePc * d : (D.magJePc * D.hoehePc * (1 - KM.exp((-d * a) / D.hoehePc))) / a;
     }
-    // DER TON EINES STERNS (Farbe aus T_eff, mild wie das Auge ihn sieht): kühl ↔ warm über log T zwischen 3 500 K und 12 000 K
-    function kTon(T, out, o) {
-        const q = KM.max(0, KM.min(1, (KM.log(T) - KM.log(3500)) / (KM.log(12000) - KM.log(3500))));
-        out[o] = 1.0 + (0.78 - 1.0) * q;
-        out[o + 1] = 0.92 + (0.86 - 0.92) * q;
-        out[o + 2] = 0.75 + (1.0 - 0.75) * q;
-    }
     // DIE HELLIGKEIT DES LICHTWECHSELS am Tag t (mag über dem Maximum)
     function kWechsel(v, t) {
         let p = t / v.P + v.phase;
@@ -1903,7 +1902,9 @@ var __weltLicht = (function () {
         out[o + 2] = E[6] * x + E[7] * y + E[8] * z;
     }
     // DER HIMMEL DES HEIM-PLANETEN: jeder Stern der Funktion, der im Maximum seines Lichts heller als `feldGrenze` steht — Richtung im
-    // Rahmen des Felds, Größe im Maximum (`mag`), Ton, Index; je Stufe nur die Knoten in ihrer Sichtweite (der hellste Stern der
+    // Rahmen des Felds, Größe im Maximum (`mag`), Temperatur (`kelvin`, T_eff — seine Farbe ist die des EINEN Planck-Orts, fachwerk
+    // `lichtFarbe` über `_lichtLinear`; bis stern-bild trug er einen eigenen milden Ton `kTon`, 3 500 K Luma-normiert (1,06 · 0,98 ·
+    // 0,80): 4–8 von 1 000 Punkten getönt), Index; je Stufe nur die Knoten in ihrer Sichtweite (der hellste Stern der
     // Stufe ohne Staub). Gemerkt im Kosmos.
     function kosmosHimmel(K) {
         if (K._himmel) return K._himmel;
@@ -1912,7 +1913,7 @@ var __weltLicht = (function () {
             G = KOSMOS.feldGrenze;
         const dir = [],
             mag = [],
-            ton = [],
+            kelvin = [],
             index = [],
             wechsel = [];
         const t = [0, 0, 0];
@@ -1946,8 +1947,7 @@ var __weltLicht = (function () {
                     kInsFeld(E, (st.x - H.x) / d, (st.y - H.y) / d, (st.z - H.z) / d, t, 0);
                     dir.push(t[0], t[1], t[2]);
                     mag.push(m);
-                    kTon(st.T, t, 0);
-                    ton.push(t[0], t[1], t[2]);
+                    kelvin.push(st.T);
                     index.push(st.i);
                     if (st.wechsel) wechsel.push([mag.length - 1, st.wechsel]);
                     if (m <= 6) hell6++;
@@ -1960,12 +1960,12 @@ var __weltLicht = (function () {
         const um = new Int32Array(ord.length);
         ord.forEach((alt, neu) => (um[alt] = neu));
         const n = ord.length;
-        const R = { n, hell6, richtung: new Float32Array(3 * n), mag: new Float32Array(n), ton: new Float32Array(3 * n), index: new Float64Array(n) };
+        const R = { n, hell6, richtung: new Float32Array(3 * n), mag: new Float32Array(n), kelvin: new Float32Array(n), index: new Float64Array(n) };
         ord.forEach((alt, neu) => {
             for (let q = 0; q < 3; q++) {
                 R.richtung[3 * neu + q] = dir[3 * alt + q];
-                R.ton[3 * neu + q] = ton[3 * alt + q];
             }
+            R.kelvin[neu] = kelvin[alt];
             R.mag[neu] = mag[alt];
             R.index[neu] = index[alt];
         });
@@ -2029,6 +2029,94 @@ var __weltLicht = (function () {
         for (let q = 0; q < wechselMag.length; q++) hellste = KM.min(hellste, wechselMag[q]);
         return { t, wechselMag, planeten, hellste };
     }
+    // DAS BAND DER GALAXIE (stern-bild): das ungelöste Licht der Scheibe — die Sterne der Funktion, die schwächer als `feldGrenze`
+    // stehen (10¹¹ gegen die 9 000 Punkte des Felds), als Flächen-Helligkeit je Richtung. KEINE Textur: das Integral derselben
+    // Dichte, die den Baum der Sterne teilt (je Klasse n · heimDichte · e^(−(R−R0)/hR) · e^(−|z|/hz)), über den Sehstrahl, gedämpft
+    // vom Staub der Funktion (`KOSMOS.staub`, derselbe wie `kStaub`), je Klasse ab der Weite `s0`, in der ihr mittlerer Stern
+    // (Licht-Mittel über ihre Spanne M) unter die Feldgrenze fällt — davor steht er als Punkt im Feld. Geschlossen: R(s) ≈ R0 + s·c
+    // (c der Anteil des Strahls nach außen), der Staub e^(−κ·min(s, hd/|sin b|)). Gegen das Integral in 5-pc-Schritten (Saat
+    // anazh-realm-seed, 56 Richtungen): höchstens Faktor 1,18. `kosmosBand(K)` → die Zahlen; `kosmosBandLicht(B, g)` → cd/m² in der
+    // galaktischen Richtung g (Einheit); `kosmosBandKnoten(U, d)` → derselbe Ausdruck als TSL (Welt-Einheiten, U aus
+    // `kosmosBandUniformen`, d die Welt-Richtung; `U.lage` dreht sie in die Galaxie).
+    function kosmosBand(K) {
+        if (K._band) return K._band;
+        const H = K.heim.stern,
+            S = KOSMOS.staub,
+            G = KOSMOS.feldGrenze,
+            f = K.galaxie.heimDichte,
+            l = 0.4 * KM.LN10;
+        const R0 = KM.hypot(H.x, H.y);
+        const klassen = KOSMOS.klassen.map((c) => {
+            const L = (KM.exp(-l * c.M[0]) - KM.exp(-l * c.M[1])) / l / (c.M[1] - c.M[0]); // ⟨10^(−0,4 M)⟩ der Klasse
+            return Object.freeze({
+                // cd/m² je pc Sehstrahl: n · f Sterne je pc³ × ihr Licht in 10 pc (lx) × (10 pc)² je sr
+                a: c.n * f * KOSMOS.sternLx0 * L * 100,
+                hz: c.hz,
+                s0: KM.pow(10, (G + 2.5 * KM.log10(L) + 5) / 5),
+                kelvin: c.T,
+            });
+        });
+        K._band = Object.freeze({
+            klassen: Object.freeze(klassen),
+            R0,
+            hR: K.galaxie.hR,
+            kappa: l * S.magJePc,
+            hd: S.hoehePc,
+            aussen: Object.freeze([H.x / R0, H.y / R0]),
+        });
+        return K._band;
+    }
+    const kBandF = (a, s0, s1) =>
+        s1 <= s0 ? 0 : KM.abs(a) * (s1 - s0) < 1e-6 ? s1 - s0 : (KM.exp(-a * s0) - KM.exp(-a * s1)) / a;
+    function kosmosBandLicht(B, g) {
+        const c = g[0] * B.aussen[0] + g[1] * B.aussen[1],
+            az = KM.max(KM.abs(g[2]), 1e-4),
+            sd = B.hd / az;
+        let I = 0;
+        for (const k of B.klassen) {
+            const a = az / k.hz + c / B.hR;
+            I +=
+                k.a *
+                (kBandF(a + B.kappa, k.s0, KM.min(sd, B.R0)) + KM.exp(-B.kappa * sd) * kBandF(a, KM.max(k.s0, sd), B.R0));
+        }
+        return I;
+    }
+    // die Uniforms des Bands: `lage` (Welt → Galaxie, mat3), `galaxie` (1/hR, R0, κ, hd), `aussen` (xy), je Klasse `farbe`
+    // (Ton × a ÷ EINHEIT_LX, rgb) und `form` (1/hz, s0) — vor dem ersten Kosmos trägt jede farbe 0
+    function kosmosBandUniformen() {
+        const T = globalThis.THREE.TSL,
+            THREE = globalThis.THREE;
+        return {
+            lage: T.uniform(new THREE.Matrix3()),
+            galaxie: T.uniform(new THREE.Vector4(1, 1, 0, 1)),
+            aussen: T.uniform(new THREE.Vector2(1, 0)),
+            farbe: KOSMOS.klassen.map(() => T.uniform(new THREE.Vector3())),
+            form: KOSMOS.klassen.map(() => T.uniform(new THREE.Vector2(1, 0))),
+        };
+    }
+    function kosmosBandKnoten(U, d) {
+        const T = globalThis.THREE.TSL;
+        const g = U.lage.mul(d);
+        const Gx = U.galaxie;
+        const c = g.x.mul(U.aussen.x).add(g.y.mul(U.aussen.y));
+        const az = T.max(T.abs(g.z), 1e-4);
+        const sd = Gx.w.div(az);
+        const sdR = T.min(sd, Gx.y);
+        const durch = T.exp(Gx.z.negate().mul(sd));
+        // ∫ e^(−a s) ds von s0 bis s1 (a nie 0: ±1e-7 trägt auf 10 kpc weniger als 10⁻³)
+        const F = (a, s0, s1) => {
+            const a1 = T.select(T.abs(a).lessThan(1e-7), T.float(1e-7), a);
+            return T.max(T.exp(a1.negate().mul(s0)).sub(T.exp(a1.negate().mul(s1))).div(a1), 0).mul(T.step(s0, s1));
+        };
+        let summe = null;
+        U.form.forEach((form, k) => {
+            const a = az.mul(form.x).add(c.mul(Gx.x));
+            const s0 = form.y;
+            const I = F(a.add(Gx.z), s0, sdR).add(durch.mul(F(a, T.max(s0, sd), Gx.y)));
+            summe = summe ? summe.add(U.farbe[k].mul(I)) : U.farbe[k].mul(I);
+        });
+        return summe;
+    }
 
     return Object.freeze({
         ATMO_LUT,
@@ -2083,5 +2171,9 @@ var __weltLicht = (function () {
         kosmosSystem,
         kosmosHimmel,
         kosmosZeit,
+        kosmosBand,
+        kosmosBandLicht,
+        kosmosBandUniformen,
+        kosmosBandKnoten,
     });
 })();
