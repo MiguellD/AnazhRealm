@@ -513,6 +513,8 @@ function dorfVerdict(m) {
 }
 // LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
 // dem Bild, bis dahin offen in der Welt; der Ring außer Bild baut unter dem Ladeschirm nur im Leerlauf und kommt sicher.
+// m.g = [Takte, bis die Gestalt des Baums stand, sie steht] — die Hülle folgt der Gestalt (`_baumGestaltTeile` → null, solange sie
+// wartet), die Probe misst die Hülle erst an diesem Ereignis ·
 // m.h = [Skelette vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, mit dem Leib fern, mit dem Leib nah, offen danach] ·
 // m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf] · m.k = je Bauer der Kacheln um das Auge [vor dem Bild außer Blick, im Blick, danach außer Blick]
@@ -541,14 +543,17 @@ function kroneVerdict(c) {
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
     const [[wuchs, ohneLeib, fern, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
+    const gestalt = !!(m.g && m.g[1]);
     return [
+        !m.g && "die Gestalt des Baums: keine Probe",
+        m.g && !gestalt && `die Gestalt des Baums kam nie (nach ${m.g[0]} Takten, \`_ortGestaltSame\` wartet auf den Wald-Plan) — seine Hülle folgt ihr`,
         !m.k && "die Kacheln um das Auge: keine Probe",
         ...Object.entries(m.k || {}).map(([n, [warten, los]]) => (warten ? `${n} baut ${warten} Kacheln, die warten (\`_nahKachelWartet\`)` : !los && `${n} baut nichts`)), // prettier-ignore
         ...kroneVerdict(m.k ? m.krone || null : false),
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
         ohneLeib && "die Hülle wuchs ohne Leib (`_huellenBedarf`)",
         fern && "die Hülle wuchs fern vom Leib (`HUELLE_BEDARF_M`)",
-        (!boxen || rest) && "die Hülle fehlt am Leib (`_tickHuellenNach`)",
+        gestalt && (!boxen || rest) && "die Hülle fehlt am Leib (`_tickHuellenNach`)",
         ohne && "der Ring baut außer Bild ohne Leerlauf (`_tickVoxelChunkStreaming`)",
         !vorn && "der Ring baut das Bild nicht",
         !(ruf && mit) && "der Ring außer Bild kommt nie (`_ringLeerlauf`)",
@@ -1458,6 +1463,22 @@ async function probe(arg) {
     try {
         const [m, da, merk, sp, pc, ruf] = [(out.huelle = {}), st._weltbildDa, r._baumGestaltMerk, r._voxelChunkConfig().span, st.lastPlayerVoxelChunk, new Set()];
         const baum = st.architectures.find((e) => e && e._huelleG != null && e.blockerAABBs && e.blockerAABBs.length);
+        // DIE GESTALT VOR DER HÜLLE (laub-kante-5 × z643): `_huelleG` ist der Stempel einer früheren Antwort, nie die Antwort jetzt —
+        // fiel die Karte der Gestalt des Orts (ein neuer Stand des Walds), fragt der Baum seinen Ort neu, und steht der Wald-Plan um
+        // ihn nicht, wartet seine Gestalt (`_ortGestaltSame` null). Die Welt hält dann die alte Hülle (`_populateBlockerAABBs` kehrt
+        // vor der Zuweisung um) und fühlt neu, sobald die Gestalt steht (`_foundryGestaltFor`); die Probe aber nahm die Hülle ab und
+        // verlangte sie im selben Atemzug: 0,0,0,0,0 „die Hülle fehlt am Leib“ (z644, 2 von 2; am Merge-Baum 99–205 von 2 384 Bäumen ab
+        // 50 m mit wartender Gestalt, einer davon nach 28 Hand-Takten mit Gestalt und Boxen). Die Probe misst die Hülle darum am
+        // Ereignis ihrer Gestalt — gezählte Takte unter dem EINEN Deckel, nie die Wanduhr.
+        const pr = r._foundryPresetForEntry(baum);
+        const gestaltSteht = () => Number.isInteger(r._foundryGestaltFor(baum, pr, AnazhRealm._studioGestaltenKern(pr))) && !baum._huelleWartet;
+        m.g = [0, false];
+        try {
+            for (const weiter = window.__deckel("die Gestalt des Baums der Hülle", 120); !gestaltSteht() && weiter(); m.g[0]++) await __takte(1, 30);
+        } catch (e) {
+            m.g[2] = e.message;
+        }
+        m.g[1] = gestaltSteht();
         // DER BEDARF IST DER LEIB (w14-ankunft-weg): nach dem Bild wartet die Hülle, bis ein Leib sie berühren kann
         // (`_huellenBedarf`: der Spieler geht, und der Baum steht in HUELLE_BEDARF_M um ihn; eine Kreatur lebt) — die Kreaturen
         // ruhen, der Spieler steht, dann geht er weit vom Baum, dann neben ihn
@@ -2696,7 +2717,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] }, krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"], ["Krone doppelt", { krone: { je: { x: [12, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x baut 12 Kacheln für 9"], ["unter der Krone", { krone: { je: { x: [9, 9, 3, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x baut 3 Kacheln unter einer Krone"], ["wartet weiter", { krone: { je: { x: [9, 9, 0, 2] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x: unter der gelandeten Krone stehen 2"], ["Krone blind", { krone: { je: { x: [9, 9, 0, 0] }, mutant: { x: [12, 9, 0, 0] }, chunk: [0, 5], ausser: 6 } }, "die Krone vor der Kachel: unter der Krone wuchs nichts"], ["Täter unsichtbar", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [9, 9, 0, 3] }, chunk: [0, 5], ausser: 6 } }, "die Krone vor der Kachel: ohne die Frage baut nichts doppelt"], ["Chunk offen", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [4, 5], ausser: 6 } }, "im Chunk mit offener Pflanzung wachsen 4"], ["Chunk nie", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 0], ausser: 6 } }, "im gepflanzten Chunk wächst keine"], ["wartet außerhalb des Takts", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 0 } }, "außerhalb des Takts wartet die Kachel"], ["ohne Krone-Probe", { krone: null }, "die Krone vor der Kachel: keine Probe"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], g: [0, true], r: [false, true, true, true], k: { x: [0, 9] }, krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, [["Gestalt wartet", { h: [0, 0, 0, 0, 0], g: [120, false] }, "die Gestalt des Baums kam nie"], ["ohne Gestalt-Probe", { g: null }, "die Gestalt des Baums: keine Probe"], ["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"], ["Krone doppelt", { krone: { je: { x: [12, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x baut 12 Kacheln für 9"], ["unter der Krone", { krone: { je: { x: [9, 9, 3, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x baut 3 Kacheln unter einer Krone"], ["wartet weiter", { krone: { je: { x: [9, 9, 0, 2] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x: unter der gelandeten Krone stehen 2"], ["Krone blind", { krone: { je: { x: [9, 9, 0, 0] }, mutant: { x: [12, 9, 0, 0] }, chunk: [0, 5], ausser: 6 } }, "die Krone vor der Kachel: unter der Krone wuchs nichts"], ["Täter unsichtbar", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [9, 9, 0, 3] }, chunk: [0, 5], ausser: 6 } }, "die Krone vor der Kachel: ohne die Frage baut nichts doppelt"], ["Chunk offen", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [4, 5], ausser: 6 } }, "im Chunk mit offener Pflanzung wachsen 4"], ["Chunk nie", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 0], ausser: 6 } }, "im gepflanzten Chunk wächst keine"], ["wartet außerhalb des Takts", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 0 } }, "außerhalb des Takts wartet die Kachel"], ["ohne Krone-Probe", { krone: null }, "die Krone vor der Kachel: keine Probe"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7", "(Welt verändert: 1× Birke)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Seed 7"] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['["spawn_studio",'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["baum_birke"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -2784,7 +2805,7 @@ hauptLauf(async () => {
             ((K) => (K?.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)} · Krone vor der Kachel [gebaut, stehend, unter der kommenden, unter der gelandeten] ${JSON.stringify(m.krone && m.krone.je)} · Mutante ${JSON.stringify(m.krone && m.krone.mutant)} · Chunk [offen, gepflanzt] ${JSON.stringify(m.krone && m.krone.chunk)} · außerhalb des Takts unter der kommenden Krone gebaut ${m.krone && m.krone.ausser}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Gestalt nach ${m.g && m.g[0]} Takten ${m.g && m.g[1] ? "steht" : "fehlt"} · Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)} · Krone vor der Kachel [gebaut, stehend, unter der kommenden, unter der gelandeten] ${JSON.stringify(m.krone && m.krone.je)} · Mutante ${JSON.stringify(m.krone && m.krone.mutant)} · Chunk [offen, gepflanzt] ${JSON.stringify(m.krone && m.krone.chunk)} · außerhalb des Takts unter der kommenden Krone gebaut ${m.krone && m.krone.ausser}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);
