@@ -2931,13 +2931,28 @@ async function kreaturProben(r, T, opts) {
             rudelVoll: 0,
             gaeste: [],
         };
-        for (const [szene, nW, gr, n] of [
-            ["einWolf", 1, 1, 20],
-            ["rudel", 4, 1, taeter ? 20 : 60],
-            ["kitz", 4, 0.6, 20],
+        // DAS BAND DER NATUR je Szene (MacNulty et al. 2012: ein Wolf reißt den gesunden Hirsch selten, vier ein Fünftel bis zwei
+        // Fünftel der Jagden, das Kitz meist) — die EINE Quelle, das Urteil liest `Q.band`.
+        // DIE STICHPROBE TRÄGT IHR URTEIL (laub-kante): das Band gilt der Quote der Jagd, eine Szene misst sie an `n` Jagden mit
+        // der Streuung σ = √(p·(1 − p)/n) — 60 Jagden an der Kante 0,4: 0,063. Liegt die Quote außerhalb des Bands und binnen 2 σ
+        // seiner Kante, entscheiden die `n` nicht: die Szene jagt 4 · n (dieselben Orte, das Rudel aus anderer Stellung) und urteilt
+        // dort, σ halb so breit — EINE Verlängerung auf die feste Zahl, nie ein Halt am ersten grünen Zwischenstand; das Band
+        // bleibt, wie es ist. Befund (der Wald der Selbst-Ausdünnung, 921 → 1 849 Bäume binnen 300 m des Jagd-Kreises, 20 von
+        // 100 Bühnen an anderem Ort): rudel 22/60 → 27/60 = 0,45 ROT, an 240 Jagden derselben Welten 69 ↔ 75 = 0,29 ↔ 0,31 — die
+        // Quote stand, die Stichprobe fiel neu. Ein Täter jagt seine feste Zahl (der Selbsttest misst den Namen des Täters, nie
+        // die Schärfe der Quote).
+        const offen = (Q, lo, hi) => {
+            const v = Q.jagden ? +(Q.risse / Q.jagden).toFixed(2) : null;
+            const kante = v === null ? null : v > hi ? hi : v < lo ? lo : null;
+            return kante !== null && Math.abs(v - kante) <= 2 * Math.sqrt((kante * (1 - kante)) / Q.jagden);
+        };
+        for (const [szene, nW, gr, n, lo, hi] of [
+            ["einWolf", 1, 1, 20, 0, 0.1],
+            ["rudel", 4, 1, taeter ? 20 : 60, 0.2, 0.4],
+            ["kitz", 4, 0.6, 20, 0.6, 1],
         ]) {
-            const Q = (R.quote[szene] = { jagden: 0, risse: 0, erschoepft: 0 });
-            for (let o = 0; o < n && !(mahl && (szene !== "rudel" || R.rissS !== null)); o++) {
+            const Q = (R.quote[szene] = { jagden: 0, risse: 0, erschoepft: 0, band: [lo, hi] });
+            for (let o = 0, ziel = n; o < ziel && !(mahl && (szene !== "rudel" || R.rissS !== null)); o++) {
                 s.creatureAnimationTime = 100;
                 r._creatureAiFrame = 0;
                 s.emotionField = undefined;
@@ -3006,6 +3021,7 @@ async function kreaturProben(r, T, opts) {
                 [R.rudelKg, R.rudelVoll] = [rund(R.rudelKg, 1), rund(R.rudelVoll, 1)];
                 for (const G of R.gaeste) delete G.c;
                 leer(1);
+                if (o === n - 1 && ziel === n && !taeter && !mahl && offen(Q, lo, hi)) ziel = 4 * n;
             }
         }
         return { riss: R };
@@ -4171,16 +4187,13 @@ function urteil(name, z) {
     }
     if (name === "jagdkreis" || name === "mahl") {
         const R = z.riss;
-        // DAS BAND DER NATUR (MacNulty et al. 2012): ein Wolf reißt den gesunden Hirsch selten, vier ein Fünftel bis zwei
-        // Fünftel der Jagden, das Kitz meist — die Quote und das Ende jeder Jagd misst jagdkreis (alle 60 des Rudels), das Mahl
-        // misst mahl (es jagt nur bis zum ersten Riss)
+        // DAS BAND DER NATUR (MacNulty et al. 2012, `Q.band` aus der Probe): ein Wolf reißt den gesunden Hirsch selten, vier ein
+        // Fünftel bis zwei Fünftel der Jagden, das Kitz meist — die Quote und das Ende jeder Jagd misst jagdkreis (60 des Rudels,
+        // 240, wo die 60 nicht entscheiden), das Mahl misst mahl (es jagt nur bis zum ersten Riss)
         if (name === "jagdkreis") {
-            for (const [sz, lo, hi] of [
-                ["einWolf", 0, 0.1],
-                ["rudel", 0.2, 0.4],
-                ["kitz", 0.6, 1],
-            ]) {
+            for (const sz of ["einWolf", "rudel", "kitz"]) {
                 const Q = R.quote[sz],
+                    [lo, hi] = Q.band,
                     v = Q.jagden ? +(Q.risse / Q.jagden).toFixed(2) : null;
                 soll(
                     Q.jagden >= 10 && v >= lo && v <= hi,

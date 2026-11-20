@@ -948,9 +948,11 @@ class AnazhRealm_vegetation_baum {
         return this._ortSame;
     }
 
-    // DER SOLITÄR STEHT FREI (K20): kein stehender Baum des Wald-Gesetzes (der Bestand seiner Zellen, `_forestCellDarts`: das
-    // Urteil der Kronen-Schüchternheit trägt jeder Dart dort, phyto-core `forestStehende`) näher als phyto-core
-    // FREISTAND.abstand × die Summe der Kronen (T eigene Krone in m; der Baum an derselben Stelle ist er selbst). Die Nachbarn reichen
+    // DER BAUM STEHT FREI (K20, der Waldmantel laub-kante-4): die Richtungen der stehenden Bäume des Wald-Gesetzes (der Bestand
+    // seiner Zellen, `_forestCellDarts`: das Urteil der Kronen-Schüchternheit trägt jeder Dart dort, phyto-core `forestStehende`)
+    // näher als phyto-core FREISTAND.abstand × die Summe der Kronen (T eigene Krone in m; der Baum an derselben Stelle ist er
+    // selbst) lassen ihm Licht von der Seite — eine Lücke von mindestens FREISTAND.seite (phyto-core `forestSeitenlicht`): der
+    // Solitär (kein Nachbar) und der Baum am Trauf (offen zur Wiese) tragen ihre Krone tief. Die Nachbarn reichen
     // ±4 Zellen (48 m trägt 2 × (6 + 18) m: Eiche neben dem größten Mammut). Mess-Wiese 12.10.: der Bestand steht bei
     // 1,2–1,5 × der Kronen-Summe, frei steht jeder sechste bis siebte Baum. Ein Nachbar steht nur, wo ihn auch der Pflanz-Gang
     // setzt (`_enqueueVegetationSpawn`): die Wildnis trägt seinen Ort (`_wildnisTraegt`) und die Wand des Orts lässt ihn durch
@@ -970,7 +972,8 @@ class AnazhRealm_vegetation_baum {
     _forestStehtFrei(x, z, T, cellDarts) {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         const FS = core && core.FREISTAND;
-        if (!FS || !(FS.abstand > 0)) return AnazhRealm._kernPflichtBruch("phyto:FREISTAND.abstand");
+        if (!FS || !(FS.abstand > 0) || !(FS.seite > 0) || typeof core.forestSeitenlicht !== "function")
+            return AnazhRealm._kernPflichtBruch("phyto:FREISTAND.seite");
         let memo = null;
         if (this._forestGesetzWahr()) {
             if (this._freistandMemoVon !== this._forestDartMemo || !this._freistandMemo) {
@@ -1014,11 +1017,17 @@ class AnazhRealm_vegetation_baum {
                 memo.set(key, nah);
             }
         }
-        for (const o of nah) {
+        // das Seitenlicht über ALLE Nachbarn des Kreises reicht schon: kein Nachbar kann es nehmen (Wildnis und Wand nehmen
+        // nur Nachbarn fort) — ohne eine Frage an Wildnis und Wand
+        const winkel = nah.map((o) => Math.atan2(o.z - z, o.x - x));
+        if (core.forestSeitenlicht(winkel) >= FS.seite) return true;
+        const stehen = [];
+        for (let k = 0; k < nah.length; k++) {
+            const o = nah[k];
             if (!this._wildnisTraegt(o.x, o.z)) continue;
-            if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
+            if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) stehen.push(winkel[k]);
         }
-        return true;
+        return core.forestSeitenlicht(stehen) >= FS.seite;
     }
     // Der Leser der Zellen für die Fragen des Freistands (±4): jedes Feld, das das
     // Dart-Gedächtnis trägt, merkt er unter der Zahl seiner Zelle (`_grundrissSchluessel`), solange dasselbe Gedächtnis ohne
@@ -1252,7 +1261,8 @@ class AnazhRealm_vegetation_baum {
             const [ga, ha, gb, hb] = this._waldPflanzKasten(cx, cz);
             const R = AnazhRealm.WALD_PLAN.reich;
             this._waldPlanKasten(ga - R, ha - R, gb + R, hb + R);
-            if (!this._waldPlanKasten(ga, ha, gb, hb)) {
+            const S = AnazhRealm.UNDERGROWTH.saumZellen; // das Licht des Saums liest den Plan um den Chunk (`_waldLichtFeld`)
+            if (!this._waldPlanKasten(ga - S, ha - S, gb + S, hb + S)) {
                 (this._waldPflanzWarten || (this._waldPflanzWarten = new Set())).add(ck);
                 return 0;
             }
@@ -1308,13 +1318,16 @@ class AnazhRealm_vegetation_baum {
         }
         // Strauch-Teppich (Studio-Gesetz buildForest): Sträucher auf einem bushStep-RASTER (±2 m Jitter) mit
         // gc.shrub = gauss(L, 0.4, 0.16) · (1−rk) · 0.42; bushStep = PORTAL_RENDER_CONFIG.understory.bushStep
-        // (Vertrags-Default 4.4). Eingänge: L = _canopyLightAt, rk aus der Platzierungs-Slope, Pfad =
+        // (Vertrags-Default 4.4). Eingänge: L = das Licht der stehenden Darts (`_waldLichtFeld`, der Saum: die Glocke um 0,4
+        // liegt am Trauf und in der Lücke, nie in der offenen Wiese), rk aus der Platzierungs-Slope, Pfad =
         // _pathFieldAt. Raster an Welt-Koords, Wurf per Positions-Hash (Γ5) → reihenfolge-unabhängig; ein über
         // die Chunk-Naht gejitterter Punkt FÄLLT (kein Doppel). Bedingungslos das EINE Busch-Gesetz.
         {
             const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
             const bushStep = uCfg && Number.isFinite(uCfg.bushStep) ? uCfg.bushStep : 4.4;
             const GS = AnazhRealm.GRASS_SLOPE;
+            const S = AnazhRealm.UNDERGROWTH.saumZellen;
+            const licht = this._waldLichtFeld(c0x - S, c0z - S, c1x + S, c1z + S, seedInt, geborenMerk);
             const g0x = Math.ceil(ox / bushStep);
             const g1x = Math.ceil((ox + span) / bushStep) - 1;
             const g0z = Math.ceil(oz / bushStep);
@@ -1339,8 +1352,7 @@ class AnazhRealm_vegetation_baum {
                     if (wurf >= 0.42) continue;
                     const bsy = this._voxelSurfaceY(bxp, bzp);
                     if (bsy === null || !Number.isFinite(bsy)) continue;
-                    const bFeuchte = this._feuchteAt ? this._feuchteAt(bxp, bzp, bsy) : 0;
-                    const L = this._canopyLightAt(bxp, bzp, bsy, bFeuchte);
+                    const L = licht(bxp, bzp);
                     const trail = this._pfadFeldAt(bxp, bzp, bsy);
                     const dL = L - 0.4;
                     const glocke = Math.exp(-(dL * dL) / (2 * 0.16 * 0.16));

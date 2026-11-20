@@ -612,6 +612,48 @@ class AnazhRealm_bild_wahl {
         return [at.aLodLevel.array[0], +blende, +(blende && ud.foundryCrossfadeKanal === "farbe"), 0];
     }
 
+    // DAS FENSTER EINES GLIEDS IM GANZEN (laub-kante, Kosten am Schirm): behält die Maske der Blende in diesem Pass IRGENDEINE
+    // Instanz des Glieds? Dieselbe Rechnung wie `fenster` in `PASS_WAHL_WGSL`, über das Glied als Intervall: der XZ-Abstand vom
+    // Auge der Blende zur Kugel des Glieds in der Welt (`c`, `r`) ± ihr Radius und der Rand der Blende, je Maß das Band der
+    // Sichthöhen seiner Instanzen (`M`, `_fensterMass`), das Urteil am EINEN Blend-Gesetz (`_blendeBehaelt`). Nein: das Glied
+    // zieht in diesem Pass nicht — ein Zug, dessen Instanzen alle jenseits seiner Stufe stehen, ist ein leerer Befehl im Band.
+    // Befund (Bildpaar paar4, Dorf, Radeon): 33 Züge ohne eine Instanz, eiche · birke · weide · strauch L1, ihre Bäume standen
+    // alle in der Karte. Ohne Fenster (Art 0, die Nähe), ohne Maske im Kanal des Passes oder ohne Maß behält es (die GPU wählt).
+    static _fensterTraegt(F, L, c, r, M) {
+        if (!F || !(F[0] >= 1 && F[0] <= 4) || !L || !L.an || !(L.fit ? F[2] : F[1]) || !M || M.verdeckt) return true;
+        const d = Math.hypot(c.x - L.ex, c.z - L.ez),
+            lo = Math.max(0, d - r - L.haltBlende) * L.perf,
+            hi = (d + r + L.haltBlende) * L.perf,
+            k = (h) => Math.min(L.ref / Math.max(h, 1e-3), 1);
+        if (F[0] === 4) return AnazhRealm._blendeBehaelt(L.kanten, "karte", lo * k(M.s1), hi * k(M.s0), 0, 0, false);
+        return AnazhRealm._blendeBehaelt(L.kanten, F[0], lo * k(M.s1), hi * k(M.s0), lo * k(M.l1), hi * k(M.l0), false);
+    }
+
+    // DAS MASS EINES GLIEDS (`_fensterTraegt`): das Band der Sichthöhen seiner ersten `n` Instanzen — Skelett `aH0` und Blatt
+    // `aH0L` (Art 1–3), die Karte `aKarte.w` (Art 4); ein negatives (die Stufe ohne Partner, die verdeckte Karte) behält das
+    // Glied voll, wie `fenster` in `PASS_WAHL_WGSL`. Gerechnet, wenn der Block des Glieds kopiert (`_block`: eine neue Version).
+    static _fensterMass(at, n, art) {
+        const M = { s0: Infinity, s1: 0, l0: Infinity, l1: 0, verdeckt: false };
+        const S = art === 4 ? at.aKarte : at.aH0,
+            B = art === 4 ? at.aKarte : at.aH0L;
+        if (!S || !B || n <= 0) return null;
+        const sS = art === 4 ? S.itemSize : 1,
+            oS = art === 4 ? 3 : 0;
+        for (let i = 0; i < n; i++) {
+            const s = S.array[i * sS + oS],
+                l = art === 4 ? s : B.array[i];
+            if (s < 0 || l < 0) {
+                M.verdeckt = true;
+                return M;
+            }
+            if (s < M.s0) M.s0 = s;
+            if (s > M.s1) M.s1 = s;
+            if (l < M.l0) M.l0 = l;
+            if (l > M.l1) M.l1 = l;
+        }
+        return M;
+    }
+
     // DIE WAHL DER GPU (Rang 7 des Luft-Urteils 28.10., gebaut nach dem Spike gpu-wahl). Befund (Luft-Urteil, Stadt-Gipfel
     // stadt-voll): der Hauptpass zog 1 368k Dreiecke, davon die Klasse bewohner 868k — Haut und Kleid jedes Bewohners im
     // Nah-Kreis, auch hinter dem Blick —, jede Kaskade ihren Wurf ganz (je ~110k): die Senken des Gang-Satzes wählte keine
@@ -630,7 +672,7 @@ class AnazhRealm_bild_wahl {
             const arenen = [];
             for (const a of reg.values()) {
                 if (!a._wahl || !kamera.layers.test(a.layers)) continue;
-                const zug = a._wahlVor(rend, kamera);
+                const zug = a._wahlVor(rend, kamera, S.lage.auge); // das Auge der Wahl (`_wahlRechnen`): das Fenster im Ganzen
                 if (zug && zug.wahl.length) arenen.push(a, zug);
             }
             // je Bild neu, darum in der Lage des Auges (`L.auge`, w24-fahrt-takt: der Halt am Punkt, kein Weg)

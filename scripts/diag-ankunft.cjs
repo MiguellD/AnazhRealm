@@ -507,6 +507,8 @@ function dorfVerdict(m) {
     else if (!m.gesperrtLaut) out.push(`ein gesperrter Slot fällt still (${m.gesperrtGrund})`);
     if (m.mpAbweichung == null) out.push(`der Mitspieler: kein Vergleich (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     else if (m.mpAbweichung > 1) out.push(`beim Mitspieler steht das Dorf ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
+    if (m.mpImOrt == null) out.push(`der Mitspieler im Ort: kein Vergleich (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
+    else if (m.mpImOrt > 1) out.push(`steht der Mitspieler im Ort, rückt sein Dorf ${m.mpImOrt} m — die Wahl hält seinen Stand frei statt den des Sprechers (\`_dorfAkt\` frei)`);
     return out;
 }
 // LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
@@ -2278,6 +2280,11 @@ async function probe(arg) {
                 st.playerMesh.position.set(wo.x, wo.y, wo.z);
                 st.yaw = gier;
                 const vorM = new Set(st.architectures);
+                // JEDER PEER IN SEINER WELT: der Mitspieler hat den Akt des Sprechers nie gesehen — der Akt fällt ganz (Häuser,
+                // der Erdbau seines Orts `_erdbauOrtFaellt`, sein Gedächtnis in settlementCells), bevor der nächste ihn spricht.
+                // Bis hier blieb der Erdbau des Sprechers liegen, und der Mitspieler wählte um ihn herum (29,83 m daneben).
+                const wm = st.worldMeta || {};
+                const [erdVor, zellVor] = [new Set(Object.keys(wm.erdbau || {})), new Set(Object.keys(wm.settlementCells || {}))];
                 r.dslRun(satz.program, { source: quelle });
                 let n = -1;
                 let ruhig = 0;
@@ -2290,6 +2297,8 @@ async function probe(arg) {
                 const neuM = st.architectures.filter((a) => !vorM.has(a) && /^haus_/.test(a.type || ""));
                 const orte = neuM.map((a) => ({ x: a.position.x, z: a.position.z }));
                 for (const a of st.architectures.filter((a) => !vorM.has(a)).reverse()) r.removeArchitecture(a);
+                for (const k of Object.keys(wm.erdbau || {})) if (!erdVor.has(k)) r._erdbauOrtFaellt(k);
+                for (const k of Object.keys(wm.settlementCells || {})) if (!zellVor.has(k)) delete wm.settlementCells[k];
                 return orte;
             };
             ueber(P);
@@ -2306,6 +2315,16 @@ async function probe(arg) {
                 maxD = Math.max(maxD, dmin);
             }
             m.mpAbweichung = sprecher.length && mitspieler.length ? +maxD.toFixed(2) : null;
+            // DER MITSPIELER IM ORT: sein Spieler steht in der Mitte des Dorfs, das der Sprecher baute — die Wahl hält den Stand des
+            // SPRECHERS frei (`_dorfAkt` frei), nie den des ausführenden Peers; sein Dorf steht, wo das des Sprechers stand
+            if (sprecher.length) {
+                const [ix, iz] = [sprecher.reduce((s, a) => s + a.x, 0) / sprecher.length, sprecher.reduce((s, a) => s + a.z, 0) / sprecher.length];
+                const imOrt = await haeuserVon("remote:linse", { x: ix, y: r.getTerrainHeightAt(ix, iz) + 1.2, z: iz }, best.yaw - 1.3);
+                m.mpHaeuser.push(imOrt.length);
+                let maxI = 0;
+                for (const b of imOrt) maxI = Math.max(maxI, Math.min(...sprecher.map((a) => Math.hypot(a.x - b.x, a.z - b.z))));
+                m.mpImOrt = imOrt.length ? +maxI.toFixed(2) : null;
+            }
             m.hierNaechstes = sprecher.length ? +Math.min(...sprecher.map((a) => Math.hypot(a.x - P.x, a.z - P.z))).toFixed(1) : null;
             m.hierWeitestes = sprecher.length ? +Math.max(...sprecher.map((a) => Math.hypot(a.x - P.x, a.z - P.z))).toFixed(1) : null;
             ueber(P);
@@ -2692,13 +2711,14 @@ hauptLauf(async () => {
             [
                 "D9",
                 dorfVerdict,
-                { gestartet: true, buch: true, haeuser: 20, hinten: 0, cosHinten: [], ausserBild: 0, gesperrtSteht: false, gesperrtLaut: true, mpAbweichung: 0, mpHaeuser: [20, 20] },
+                { gestartet: true, buch: true, haeuser: 20, hinten: 0, cosHinten: [], ausserBild: 0, gesperrtSteht: false, gesperrtLaut: true, mpAbweichung: 0, mpImOrt: 0, mpHaeuser: [20, 20, 20] },
                 [
                     ["umringt", { haeuser: 13, hinten: 7, cosHinten: ["-0.61", "-0.86", "-0.70"] }, "7 Häuser hinter dem"],
                     ["gesperrter Slot steht", { gesperrtSteht: true, gesperrtAbstand: 21.3, gesperrtImBau: true }, "ein gesperrter Slot steht"],
                     ["gesperrter Slot fällt still", { gesperrtLaut: false, gesperrtGrund: "der Slot fiel am fehlenden Boden" }, "ein gesperrter Slot fällt"],
                     ["am Bildrand vorbei", { ausserBild: 3 }, "3 Häuser außerhalb des"],
                     ["Mitspieler 60 m daneben", { mpAbweichung: 61.4, mpHaeuser: [20, 20] }, "beim Mitspieler steht das"],
+                    ["Mitspieler im Ort rückt", { mpImOrt: 32.1 }, "steht der Mitspieler im Ort, rückt"],
                 ],
             ],
         ];
@@ -2793,6 +2813,6 @@ hauptLauf(async () => {
     console.log("=== D8 · D6 · D9 — DIE STIMME UND DAS DORF ===");
     zeige("D8", "der Spieler-Chat trägt Worte, das Log die Zahlen", out.kanal, kanalVerdict, (m) => `${(m.zeilen || []).filter((z) => !/^> /.test(z)).length} Zeilen · Log ${m.siedlungImLog}`);
     zeige("D6", "die KI nennt die Ursache (Dienst · Schlüssel · Proxy)", out.ki, kiVerdict, (m) => `Status „${(m.status || "").slice(0, 60)}" · ohne Schlüssel „${(m.ohneSchluessel || "—").slice(0, 60)}" · Proxy ${m.proxyUrl}`);
-    zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot fällt an seinem Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · gesperrter Slot steht ${m.gesperrtSteht}, laut ${m.gesperrtLaut} · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
+    zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot fällt an seinem Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · gesperrter Slot steht ${m.gesperrtSteht}, laut ${m.gesperrtLaut} · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben, im Ort ${m.mpImOrt} m (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     wandEnde(errs, "die Ankunft trägt ihre benannten Schnitte.");
 });
