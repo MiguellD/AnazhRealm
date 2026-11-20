@@ -96,7 +96,7 @@
             "stamm/siedlung-verkehr.js": ["Frustum"],
             "stamm/bild-schatten.js": ["Frustum"],
             "stamm/koerper-fahrt.js": ["Frustum"],
-            "stamm/kreatur-verhalten.js": ["Frustum"],
+            "stamm/kreatur-sicht.js": ["Frustum"],
             "stamm/feld-leben.js": ["Frustum"],
             "phyto-core.js": ["STUFEN_BILD_PX"],
             "foundry-core.js": ["HALM_STUFEN"],
@@ -107,8 +107,7 @@
         "beobachter": {
             "scripts/diag-albedo-tafel.cjs": ["toneMappingExposure", "toneMapping"],
             "scripts/diag-wetter-wache.cjs": ["spielZeit"],
-            "scripts/lib/albedo-tafel.cjs": ["toneMapping ×7"],
-            "scripts/lib/licht-linsen.cjs": ["toneMappingExposure ×3", "RenderTarget ×2", "timeOfDay ×2"]
+            "scripts/lib/albedo-tafel.cjs": ["toneMapping ×7"]
         }
     }
 }

@@ -629,8 +629,10 @@ const S0_NAH_INSTALL = () => {
         const feuer = window.__s0Feuer;
         const gruppen = () => st.archInstanceGroups || new Map();
         const feuerGruppe = (g) => !!g?.slotEntry?.includes(feuer);
+        // der Satz eines Objekts: was für ihn zeichnet (`_sichtZeichner`) — im Hauptbild seine zwei Züge der Sicht (Bild/tiefe),
+        // nie er selbst; fragte die Bühne nur nach dem Satz-Mesh, warf sie die Feuerstelle aus dem Schuss (Nacht-Luma 22,4 → 21,4)
         const satzVon = (o) => {
-            for (const s of (st.chunkSaetze || new Map()).values()) if (s.mesh === o) return s;
+            for (const s of (st.chunkSaetze || new Map()).values()) if (r._sichtZeichner(s).includes(o)) return s;
             return null;
         };
         const liest = (o, ohne) => {
@@ -716,7 +718,7 @@ const S0_NAH_INSTALL = () => {
             const out = {};
             for (const s of (st.chunkSaetze || new Map()).values()) {
                 const a = s.abschnitte?.get("haupt");
-                if (!a || !(a.n > 0) || !gezeichnet.has(s.mesh)) continue;
+                if (!a || !(a.n > 0) || !r._sichtZeichner(s).some((o) => gezeichnet.has(o))) continue;
                 let n = 0;
                 for (const z of a.liste || []) if (z?.huelle && !z.huelle.isEmpty() && z.huelle.distanceToPoint(m) > radius) n++;
                 const k = s.mesh?.name || s.art;

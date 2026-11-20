@@ -634,151 +634,6 @@ class AnazhRealm_stoff_karte {
         });
     }
 
-    // DER WURF DER KARTEN IM LICHTMESSER (w14-lod-sprung): die Kamera misst die Sonne auf dem Boden im Bild (`_horizontSichtImBild`)
-    // — dort, wo die Kaskaden den Wurf der Karten legen, misst sie ihn mit: am Punkt (x, y, z) zum Licht `L` 0, wenn der Strahl
-    // zur Sonne die Krone einer werfenden Karte trifft, sonst 1. Werfer sind DIESELBEN Instanzen, die der Schattenpass zeichnet:
-    // die Zwillings-Gruppe der Karte (`_impostorWurfLeaf`) mit dem Fenster ihrer Maske vom Auge der Stufen (`_instanzFenster`,
-    // dieselben Kanten `_blendeK`); ihre Krone ist die Ellipse in ihrem Rahmen (aKarte: Halbbreite y, Höhe z × Instanz-Skala) auf
-    // der Ebene durch den Anker quer zum Licht, wie der Wurf sie zeichnet (binär, alphaTest). Jenseits der Kaskaden (`maxFar`)
-    // fällt kein Wurf. Bis hier maß die Kamera am Abend der Mess-Wiese die Sonne, die der Wald auf dem Grat dem Boden schon
-    // nahm: das Bild stand im Wurf, die Belichtung für die Sonne, und als der Grat selbst sie nahm, sprang sie um 0,38 EV
-    // (3,30 → 4,29, Uhr 0,728 → 0,73) — die Tag-Achse (gate:tag-achse:echt) maß SPRUNG wiese 0,36 EV, an Genesis morgens
-    // fünf Schritte über 0,1 EV.
-    _kartenWurfSicht(x, y, z, L) {
-        const W = this._kartenWurfWerfer(L);
-        if (!W || (x - W.ex) ** 2 + (z - W.ez) ** 2 > W.weit2) return 1;
-        const { liste, kopf, folge, nx, nz, binM } = W;
-        const ln = L.x * nx + L.z * nz;
-        const quer = (x - W.ex) * -nz + (z - W.ez) * nx;
-        const [b0, b1] = [Math.floor((quer - W.quer) / binM) - W.bin0, Math.floor((quer + W.quer) / binM) - W.bin0];
-        // die Krone deckt mit ihrer Deckung im Jahr (`liste[o + 5]`, w21-laub-jahr-fern): die volle nimmt die Sonne ganz, die
-        // kahle Laub-Krone lässt durch, was ihre Winter-Karte durchlässt
-        let sicht = 1;
-        for (let b = Math.max(0, b0); b <= b1 && b < kopf.length; b++)
-            for (let k = kopf[b]; k >= 0; k = folge[k]) {
-                const o = k * 6;
-                const t = ((liste[o] - x) * nx + (liste[o + 2] - z) * nz) / ln;
-                if (!(t > 0)) continue;
-                const u = (x + L.x * t - liste[o]) * -nz + (z + L.z * t - liste[o + 2]) * nx;
-                const w = y + L.y * t - liste[o + 1] - liste[o + 4];
-                const q = (u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]);
-                if (q > 1) continue;
-                // DIE KRONE IST KEIN SCHILD (w28-nacht-bilanz): ihr Wurf trägt das Profil ihrer Dichte — der Kern (q < ¼) nimmt
-                // die Sonne mit ihrer Deckung, zum Rand fällt sie linear auf 0 (im Mittel ⅝, die Hälfte ihres Rahmens — die
-                // Maske der Karte, nie die volle Ellipse; stetig am Rand, die Sehne √(1 − q) knickt dort). Bis hier nahm jede Krone binär: der
-                // Messer stand im Wurf, während das Bild schon zu einem Drittel in der Sonne lag, und sprang in EINEM Schritt
-                // der Uhr (Wiese, Radeon, Sommersonne über der Waldkante: Sicht 0,07 → 0,79 über Uhr 0,254 → 0,26, die
-                // Belichtung −1,04 EV, das Bild −0,34 EV je 0,002).
-                sicht *= 1 - liste[o + 5] * Math.min(1, (1 - q) * (4 / 3));
-                if (sicht < 0.004) return 0;
-            }
-        return sicht;
-    }
-
-    // DIE WERFER DES LICHTMESSERS: je Karte, die ihr Fenster behält, Anker, Halbbreite, halbe Höhe und die Deckung ihrer Krone im
-    // Jahr (w21-laub-jahr-fern: die Nadel-Art ganz, die Laub-Krone nach phyto-core `kroneImJahr` in der Präsenz der Welt — dieselbe
-    // Deckung wie das Dach der Ferne) — neu, wenn die Gruppe sich
-    // ändert, die Präsenz wandert oder das Auge der Stufen einen Meter wandert (das Fenster), und quer zum Licht in Fächer von `binM` geordnet, neu, wenn
-    // das Licht sich um `HORIZONT_KARTE.lichtRad` dreht (das Maß, nach dem die Horizont-Karte neu malt) oder das Auge geht: ein Strahl
-    // prüft nur die Karten seines Fachs (der Rand trägt Krone und Drehung). Der Messer läuft in jedem Bild (`tickDayNight`): an der
-    // Mess-Wiese (Radeon, 2 213 Werfer, 82 Fächer) kostet eine Messung 0,106 statt 0,055 ms, mit neuem Licht je Bild 0,166 statt
-    // 0,118 ms. null, solange keine Karte wirft (kein Zwilling, kein Wurf des Lichts — `_lichtWirft`, auch ohne Schatten-Karte
-    // des Renderers: unter Holz kienspan baut r184 keine Kaskade —, die Sonne unter dem Horizont). Bis w20-fern-hang nahm der
-    // Messer unter kienspan dem ganzen Boden der Mess-Wiese die Sonne (Uhr 0,25–0,27: 32 von 32 Strahlen im Wurf des Walds hinter
-    // dem Auge, das Bild in der Sonne) — die Belichtung glich die Sonne nie aus, das Bild stieg je 0,002 der Uhr um bis zu 0,17 EV.
-    _kartenWurfWerfer(L) {
-        const st = this.state;
-        const g = st.archInstanceGroups ? st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE + "#S") : null;
-        const cam = st.camera;
-        const csm = st.csmNode;
-        if (!g || !(g.liveCount > 0) || !this._lichtWirft() || !cam || !csm || !(L.y > 0)) return null;
-        const m = g.mesh;
-        const lu = st.lodUniforms;
-        const maske = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && this._blendeK);
-        const auge = maske ? lu.uLodAuge.value : cam.position;
-        const n = g.liveCount;
-        const pr = this._fernPraesenz();
-        const stand = `${n}|${m.instanceMatrix.version}|${maske}|${Math.round(auge.x)}|${Math.round(auge.z)}|${this._blendeK && this._blendeK.d0}|${pr.toFixed(3)}`;
-        let W = this._kartenWurfMerk;
-        if (!W || W.stand !== stand) {
-            const a = m.instanceMatrix.array;
-            const ak = m.geometry.attributes.aKarte.array;
-            const Lm = maske
-                ? {
-                      ex: Math.round(auge.x),
-                      ez: Math.round(auge.z),
-                      perf: lu.uLodPerf.value,
-                      ref: lu.uLodRef.value,
-                      kanten: this._blendeK,
-                  }
-                : null;
-            const liste = W && W.liste.length >= n * 6 ? W.liste : new Float32Array(n * 6);
-            const nadel = this._karteNadel(null).array;
-            const PC = globalThis.__phytoCore;
-            const laub = PC.kroneImJahr(PC.WIND_ZAHLEN, pr, 1, 1, 1, 1, 0).deckung;
-            let k = 0,
-                hwMax = 0;
-            for (let i = 0; i < n; i++) {
-                const o = i * 16;
-                // das Fenster der Karte (das EINE Blend-Gesetz `_blendeBehaelt`, wie die Wahl der GPU es rechnet, `PASS_WAHL_WGSL`):
-                // der Abstand ihres Ankers vom Auge der Maske × Perf × min(Bezug/Sichthöhe, 1); verdeckt (Sichthöhe < 0) behält sie
-                const sicht = ak[i * 4 + 3];
-                const dS = Lm && Math.hypot(a[o + 12] - Lm.ex, a[o + 14] - Lm.ez) * Lm.perf * Math.min(Lm.ref / Math.max(Math.abs(sicht), 1e-3), 1); // prettier-ignore
-                if (Lm && !AnazhRealm._blendeBehaelt(Lm.kanten, "karte", dS, dS, dS, dS, sicht < 0)) continue;
-                const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
-                const c = nadel[Math.floor(ak[i * 4] + 0.5)] ? 1 : laub;
-                liste.set([a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5, c], k * 6);
-                hwMax = Math.max(hwMax, ak[i * 4 + 1] * s);
-                k++;
-            }
-            W = this._kartenWurfMerk = {
-                stand,
-                liste,
-                n: k,
-                hwMax,
-                lx: NaN,
-                lz: NaN,
-                folge: W && W.folge.length >= n ? W.folge : new Int32Array(n),
-            };
-        }
-        const e = cam.position;
-        const lr = AnazhRealm.HORIZONT_KARTE.lichtRad;
-        const fl = Math.max(Math.hypot(L.x, L.z), 1e-4);
-        if (!(Math.abs(L.x / fl - W.lx) < lr && Math.abs(L.z / fl - W.lz) < lr) || W.ex !== e.x || W.ez !== e.z) {
-            // die Fächer quer zum Licht um das Auge: der Rand trägt die Drehung bis lichtRad über die Weite der Kaskaden (maxFar)
-            const [nx, nz] = [L.x / fl, L.z / fl];
-            const weit = Math.min(cam.far, csm.maxFar);
-            const binM = 8;
-            const rand = weit * lr * 2;
-            const quer = (o) => (W.liste[o] - e.x) * -nz + (W.liste[o + 2] - e.z) * nx;
-            const bin0 = Math.floor(-weit / binM) - 2;
-            const kopf =
-                W.kopf && W.kopf.length === Math.ceil((2 * weit) / binM) + 5
-                    ? W.kopf.fill(-1)
-                    : new Int32Array(Math.ceil((2 * weit) / binM) + 5).fill(-1);
-            for (let k = 0; k < W.n; k++) {
-                const b = Math.floor(quer(k * 6) / binM) - bin0;
-                if (b < 0 || b >= kopf.length) continue;
-                W.folge[k] = kopf[b];
-                kopf[b] = k;
-            }
-            Object.assign(W, {
-                lx: nx,
-                lz: nz,
-                nx,
-                nz,
-                ex: e.x,
-                ez: e.z,
-                weit2: weit * weit,
-                binM,
-                bin0,
-                kopf,
-                quer: W.hwMax + rand,
-            });
-        }
-        return W;
-    }
-
     // KARTEN-ZENSUS: Zellen · gebacken · gescheitert · wartend · Atlas-Bytes · Haupt-Faden-ms je Bake. Reist im
     // Flugschreiber-Trace (anazhRealmPerf.json) und in der Fluss-Linse; devtools: anazhRealm._impostorCensus().
     _impostorCensus() {
@@ -1944,6 +1799,12 @@ class AnazhRealm_stoff_karte {
         if (!at.nadelU) {
             at.nadelU = (T || THREE.TSL).uniformArray([], "float").setName("karteNadel");
             at.jahrU = (T || THREE.TSL).uniformArray([], "vec4").setName("karteJahr");
+            // DIE HEIMAT DER REIHEN (saison-am-laub, Pflicht-Paar der Diät): die Reihen wechseln zur Laufzeit (die Stufe des Jahrs
+            // je gelegter Schicht, `_karteJahrGelegt`; die Nadel je neuer Zelle) — als Objekt-Puffer lud die Diät sie nur beim
+            // Erst-Init ihres Render-Objekts (ein Feld-Puffer ist kein freier Uniform des Wächters), die GPU trug die Tönung des
+            // Bakes für immer bei 1: die Karte zeichnete gebackene Albedo × uSeasonMul / 1 — jede Rinde der Ferne im Winter
+            // magenta (× 1,39 · 0,84 · 1,67), im Herbst orange. In der geteilten renderGroup lädt die Diät sie EINMAL je Render.
+            this._uniformHeimatTeilen({ nadel: at.nadelU, jahr: at.jahrU });
         }
         const [a, j] = [at.nadelU.array, at.jahrU.array];
         let n = a.length;
