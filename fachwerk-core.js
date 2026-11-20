@@ -11392,23 +11392,22 @@
             if (!lage.lauf) delete weg.lauf;
             wege.push(weg);
         }
-        if (platzY !== null)
-            erdbau.push({
-                art: "platte",
-                cx: r6(ox + pz.cx),
-                cz: r6(oz + pz.cz),
-                phi: r6(pz.phi || 0),
-                ex: r6(pz.ex + O.saumM),
-                ez: r6(pz.ez + O.saumM),
-                y: platzY,
-            });
+        // DER PLATZ WIE JEDER WEG (Welle SAMEN): sein Saum liegt VOR den Grundrissen (`wegSaeume`), sein Kern danach — bis hier lag
+        // die EINE Platte samt Saum hinter den Häusern und schnitt den Rand eines Hauses am Platz auf seine Höhe (Auto-Dorf −4,−4 am
+        // Würfel je Los: Slot 9 stand mit dem Rand seiner obb 0,87 m über dem Saum des Platzes, gate:settlement O)
+        if (platzY !== null) {
+            var platzPl = { art: "platte", cx: r6(ox + pz.cx), cz: r6(oz + pz.cz), phi: r6(pz.phi || 0), ex: r6(pz.ex), ez: r6(pz.ez), y: platzY };
+            wegSaeume.push(Object.assign({}, platzPl, { ex: r6(pz.ex + O.saumM), ez: r6(pz.ez + O.saumM) }));
+            erdbau.push(platzPl);
+        }
         // die Platte jedes Torplatzes, dem seine Trasse die Höhe gab (samt Saum wie der Platz; ihr Kern unten in `aufWeg`)
         var torKerne = [];
         tore.forEach(function (t) {
             if (t.y === null) return;
             var tq = { art: "platte", cx: r6(ox + t.q.cx), cz: r6(oz + t.q.cz), phi: r6(t.q.phi || 0), ex: r6(t.q.ex), ez: r6(t.q.ez), y: t.y };
             torKerne.push(tq);
-            erdbau.push(Object.assign({}, tq, { ex: r6(t.q.ex + O.saumM), ez: r6(t.q.ez + O.saumM) }));
+            wegSaeume.push(Object.assign({}, tq, { ex: r6(t.q.ex + O.saumM), ez: r6(t.q.ez + O.saumM) })); // der Saum vor den Grundrissen
+            erdbau.push(tq);
         });
         // DIE FLÄCHE der Wege und des Platzes, wie die Gelände-Funktion sie trägt (ctx.flaeche: der Erdbau-Term des Gesetzbuchs
         // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
@@ -12637,7 +12636,13 @@
         var iP = -1;
         for (i = 0; i < erdbau.length; i++) if (erdbau[i].art === "platte") iP = i;
         if (iP < 0 || !isFinite(v.platz.y)) throw new Error("fachwerk ortPlan: der Kern des Genesis-Orts trägt keinen Platz");
+        // der Platz liegt als Saum (vor den Grundrissen) und Kern: beide weichen dem Rund — der Saum fällt, das Rund steht am Kern
+        var kernP = erdbau[iP], iS = -1;
+        for (i = 0; i < iP; i++)
+            if (erdbau[i].art === "platte" && erdbau[i].cx === kernP.cx && erdbau[i].cz === kernP.cz && erdbau[i].ex > kernP.ex) iS = i;
+        if (iS < 0) throw new Error("fachwerk ortPlan: der Platz des Genesis-Orts trägt keinen Saum");
         erdbau.splice.apply(erdbau, [iP, 1].concat(kreis(0, 0, G.kern.r + O.saumM, v.platz.y, G.kern.platten)));
+        erdbau.splice(iS, 1);
         // das Ufer: ein Band um die Ellipse zwischen Wasser-Linie und Ufer-Rand, EINE Höhe (die Strecken EINES Wegs)
         var UF = G.ufer;
         var am = (UF.a + G.teich.a) / 2;

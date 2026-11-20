@@ -2359,7 +2359,11 @@ hauptLauf(async () => {
                         );
                 // die Umkehr gilt vor dem Gang: die Bahn des Gangs (je Schritt 4 m) kann die Stadt schon wecken (`_bedarfZeit`)
                 if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
-                const stell = (m) => (pm.position.set(cand.x + m, pm.position.y, cand.z), pm.position);
+                // DER RING STEHT AM ORT DES VORRATS (die Welt: `_autoSettlementZelle` misst `ort = w || i3`): die Ort-Wahl rückt den
+                // Plan bis 128 m — bis samen-ein-baum stand die Probe am Wunsch `cand`, und ein Vorrat, den die Wahl 48 + 16 m
+                // rückte, erwachte nie (C-K5: 3637 Takte, `zelle` false, `zug` null); nach dem Vorlauf misst sie ab seinem Ort
+                let bezug = cand;
+                const stell = (m) => (pm.position.set(bezug.x + m, pm.position.y, bezug.z), pm.position);
                 const nah = A.nearM + (cand.mehrM || 0); // der Ring, an dem die Zelle erwacht (`_autoSettlementZelle`)
                 // DER VORLAUF IST ZEIT (w13-dorf-strom): die Bahn naht mit 16 m/s 40 m jenseits des Rings der Sicht — der Ort
                 // bereitet sich vor, weil sie ihn binnen `bereitS` erreicht (`_bedarfZeit`); nH 13 (Selbsttest) steht still: dort
@@ -2368,6 +2372,7 @@ hauptLauf(async () => {
                 if (vorlauf) r._tickAutoSettlement(stell(nah + 200));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 const vr = vorlauf && !alt && r._dorfVorraete.get(key);
+                if (vr && Number.isFinite(vr.x) && Number.isFinite(vr.z)) bezug = { x: vr.x, z: vr.z };
                 for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
                 // der Gang durch den Vorlauf-Ring (4 m/s, 20 s bis zum Ring): je 4 m ein Takt, der Vorrat liest die Reihe des Zugs,
                 // bis seine Stufen stehen — dann erwacht die Zelle am Ring (das Auge des Vorrats, `_dorfVorbacken`)
