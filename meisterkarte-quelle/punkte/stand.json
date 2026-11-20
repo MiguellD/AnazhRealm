@@ -18060,7 +18060,7 @@
   },
   "karte2.mensch.kultur.bildkunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.bildkunst#1 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#1 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#2 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 radeon: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.bildkunst#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#1 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.bildkunst#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.bildkunst#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.bildkunst#1",
@@ -18068,7 +18068,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true,
      "beide": true
     },
@@ -18088,7 +18088,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18106,7 +18106,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18124,7 +18124,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18142,7 +18142,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18160,7 +18160,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18178,7 +18178,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18194,7 +18194,7 @@
   },
   "karte2.mensch.kultur.diffusion": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.diffusion#1 radeon: ungemessen (R10) · karte2.mensch.kultur.diffusion#1 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#2 radeon: ungemessen (R10) · karte2.mensch.kultur.diffusion#2 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#3 radeon: ungemessen (R10) · karte2.mensch.kultur.diffusion#3 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#4 radeon: ungemessen (R10) · karte2.mensch.kultur.diffusion#4 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#5 radeon: ungemessen (R10) · karte2.mensch.kultur.diffusion#5 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#6 radeon: ungemessen (R10) · karte2.mensch.kultur.diffusion#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.diffusion#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.diffusion#1 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.diffusion#2 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.diffusion#3 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.diffusion#4 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.diffusion#5 gtx: ungemessen (R10) · karte2.mensch.kultur.diffusion#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.diffusion#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.diffusion#1",
@@ -18202,7 +18202,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true,
      "beide": true
     },
@@ -18222,7 +18222,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18240,7 +18240,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18258,7 +18258,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18276,7 +18276,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18294,7 +18294,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18310,7 +18310,7 @@
   },
   "karte2.mensch.kultur.erzaehlkunst": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.erzaehlkunst#1 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#1 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#2 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#3 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#4 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#5 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#6 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#7 radeon: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.erzaehlkunst#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.erzaehlkunst#1 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.erzaehlkunst#2 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.erzaehlkunst#3 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.erzaehlkunst#4 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.erzaehlkunst#5 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.erzaehlkunst#6 gtx: ungemessen (R10) · karte2.mensch.kultur.erzaehlkunst#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.erzaehlkunst#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.erzaehlkunst#1",
@@ -18318,7 +18318,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true,
      "beide": true
     },
@@ -18338,7 +18338,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18356,7 +18356,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18374,7 +18374,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18392,7 +18392,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18410,7 +18410,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18428,7 +18428,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18444,7 +18444,7 @@
   },
   "karte2.mensch.kultur.gestalt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.gestalt#1 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#1 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#2 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#2 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#3 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#3 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#4 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#4 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#5 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#5 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#6 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#6 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#7 radeon: ungemessen (R10) · karte2.mensch.kultur.gestalt#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.gestalt#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.gestalt#1 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.gestalt#2 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.gestalt#3 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.gestalt#4 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.gestalt#5 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.gestalt#6 gtx: ungemessen (R10) · karte2.mensch.kultur.gestalt#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.gestalt#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.gestalt#1",
@@ -18452,7 +18452,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -18472,7 +18472,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18490,7 +18490,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18508,7 +18508,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18526,7 +18526,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18544,7 +18544,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18562,7 +18562,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18694,7 +18694,7 @@
   },
   "karte2.mensch.kultur.schrift": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.schrift#1 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#1 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#2 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#2 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#3 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#3 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#4 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#4 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#5 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#5 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#6 radeon: ungemessen (R10) · karte2.mensch.kultur.schrift#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.schrift#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.schrift#1 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.schrift#2 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.schrift#3 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.schrift#4 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.schrift#5 gtx: ungemessen (R10) · karte2.mensch.kultur.schrift#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.schrift#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.schrift#1",
@@ -18702,7 +18702,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true,
      "beide": true
     },
@@ -18722,7 +18722,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18740,7 +18740,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18758,7 +18758,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18776,7 +18776,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18794,7 +18794,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18810,7 +18810,7 @@
   },
   "karte2.mensch.kultur.sprache": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#1 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.sprache#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.sprache#1 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.sprache#2 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.sprache#3 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.sprache#4 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.sprache#5 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.sprache#6 gtx: ungemessen (R10) · karte2.mensch.kultur.sprache#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.sprache#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.sprache#1",
@@ -18818,7 +18818,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -18838,7 +18838,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18856,7 +18856,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18874,7 +18874,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18892,7 +18892,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18910,7 +18910,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18928,7 +18928,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -18944,7 +18944,7 @@
   },
   "karte2.mensch.kultur.strassenleben": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.strassenleben#1 radeon: ungemessen (R10) · karte2.mensch.kultur.strassenleben#1 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#2 radeon: ungemessen (R10) · karte2.mensch.kultur.strassenleben#2 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#3 radeon: ungemessen (R10) · karte2.mensch.kultur.strassenleben#3 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#4 radeon: ungemessen (R10) · karte2.mensch.kultur.strassenleben#4 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#5 radeon: ungemessen (R10) · karte2.mensch.kultur.strassenleben#5 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#6 radeon: ungemessen (R10) · karte2.mensch.kultur.strassenleben#6 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#7 radeon: ungemessen (R10) · karte2.mensch.kultur.strassenleben#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.strassenleben#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.strassenleben#1 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.strassenleben#2 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.strassenleben#3 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.strassenleben#4 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.strassenleben#5 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.strassenleben#6 gtx: ungemessen (R10) · karte2.mensch.kultur.strassenleben#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval] · karte2.mensch.kultur.strassenleben#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.strassenleben#1",
@@ -18952,7 +18952,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true,
      "beide": true
     },
@@ -18972,7 +18972,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -18990,7 +18990,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -19008,7 +19008,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -19026,7 +19026,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -19044,7 +19044,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -19062,7 +19062,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@ PROBE-FEHLER ReferenceError: POSE is not defined |     at eval (eval at <anonymous> ([eval]",
      "ungemessen": true
     },
     {
@@ -19194,7 +19194,7 @@
   },
   "karte2.mensch.kultur.wissen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.wissen#1 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#1 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#2 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#2 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#3 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#3 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#4 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#4 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#5 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#5 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#6 radeon: ungemessen (R10) · karte2.mensch.kultur.wissen#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kultur.wissen#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.wissen#1 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.wissen#2 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.wissen#3 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.wissen#4 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.wissen#5 gtx: ungemessen (R10) · karte2.mensch.kultur.wissen#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.kultur.wissen#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.kultur.wissen#1",
@@ -19202,7 +19202,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -19222,7 +19222,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19240,7 +19240,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19258,7 +19258,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19276,7 +19276,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -19294,7 +19294,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20194,7 +20194,7 @@
   },
   "karte2.mensch.macht.krieg": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#1 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#2 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#3 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#4 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#5 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#6 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#7 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#8 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) · karte2.mensch.macht.krieg#9 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.macht.krieg#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#1 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#2 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#3 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#4 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#5 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#6 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#7 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#8 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S8: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#8 gtx: ungemessen (R10) · karte2.mensch.macht.krieg#9 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S9: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · karte2.mensch.macht.krieg#9 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.mensch.macht.krieg#1",
@@ -20202,7 +20202,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true,
      "beide": true
     },
@@ -20222,7 +20222,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20240,7 +20240,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20258,7 +20258,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20276,7 +20276,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20294,7 +20294,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20312,7 +20312,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20330,7 +20330,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S8: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -20348,7 +20348,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S9: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
      "ungemessen": true
     },
     {
@@ -37649,8 +37649,8 @@
   "ohne": 3365
  },
  "kopfVoll": "a71e06c726849622e761447b9fddb52f90993367",
- "zeit": "2026-11-20T10:35:06.392Z",
- "vorher": "0e93ca0c",
+ "zeit": "2026-11-20T11:34:38.077Z",
+ "vorher": "a71e06c7",
  "bilanz": {
   "gewinn": [],
   "fall": [],
