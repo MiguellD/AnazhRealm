@@ -763,7 +763,7 @@ function buehne() {
                 for (const m of probe) m.dispose();
             }
             // (k) DER VORBAU NACH DEM BILD (w4-b-knoten, `_vorbauWahl`): unter dem Ladeschirm merkt er vor, nach dem Bild baut er — je Bild einer
-            const E0 = { vorgemerkt: new WeakMap(), vorbauBild: 7 };
+            const E0 = { vorgemerkt: new WeakMap(), vorgebaut: new WeakMap(), vorbauBild: 7 }; // wie der Zustand des Spiels: `_vorbauWahl` liest `vorgebaut` an jedem Vorbau nach dem Bild
             const vorbau = A._vorbauWahl ? [[1, 0, 7], [0, 1, 7], [0, 1, 8]].map(([l, b, f]) => A._vorbauWahl(E0, E0, 1, l, b, f)).join() : "fehlt";
             return {
                 vorbau,
