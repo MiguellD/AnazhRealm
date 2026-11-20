@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T03:44:09.523Z",
+ "zeit": "2026-11-20T04:00:39.389Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -1686,6 +1686,1072 @@
    "bahn": "sitzung",
    "zwilling": "karte2.erleben.schoepfen.gespraech#1",
    "modus": "session"
+  },
+  "karte2.erleben.schoepfen.teilen#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: kein fremdes Gerät in der Sitzung (state.p2p.peers 0) — B mit leerem Speicher fehlt (verlangt 1 Bauplan auf einem fremden Gerät (Peer, frisches Profil), die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: kein fremdes Gerät in der Sitzung (state.p2p.peers 0) — B mit leerem Speicher fehlt (verlangt 1 Bauplan auf einem fremden Gerät (Peer, frisches Profil), die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6de783ec5723",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "Verzeichnis": 1,
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.5,
+   "fremd": {
+    "s": 6,
+    "takte": 2,
+    "fremdS": 60.14,
+    "kerne": 10.04,
+    "fensterKerne": 10.04,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      34.92
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      7.75
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      4.03
+     ]
+    ],
+    "dienerS": 5.69,
+    "diener": [
+     [
+      "System",
+      2.56
+     ],
+     [
+      "dwm.exe",
+      1.81
+     ]
+    ],
+    "geraetS": 11.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.83
+     ],
+     [
+      "svchost.exe",
+      4
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 15.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:57:51.391Z",
+   "abdruck": "fc7e9693b277",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.teilen#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Leser fehlt: Zufallseintrag → Bild und Herkunft des Forks im Spiel: kein Weg des Spiels ruft `bibliothekFinde`/`bibliothekForke` (stamm/netz-identitaet.js:879, :909) — die Bibliothek der Sitzung trägt 0 Einträge, keiner kommt ins Bild",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S3 · ROT Leser fehlt: Zufallseintrag → Bild und Herkunft des Forks im Spiel: kein Weg des Spiels ruft `bibliothekFinde`/`bibliothekForke` (stamm/netz-identitaet.js:879, :909) — die Bibliothek der Sitzung trägt 0 Einträge, keiner kommt ins Bild",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6de783ec5723",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "Verzeichnis": 1,
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.5,
+   "fremd": {
+    "s": 6,
+    "takte": 2,
+    "fremdS": 60.14,
+    "kerne": 10.04,
+    "fensterKerne": 10.04,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      34.92
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      7.75
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      4.03
+     ]
+    ],
+    "dienerS": 5.69,
+    "diener": [
+     [
+      "System",
+      2.56
+     ],
+     [
+      "dwm.exe",
+      1.81
+     ]
+    ],
+    "geraetS": 11.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.83
+     ],
+     [
+      "svchost.exe",
+      4
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 15.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:57:51.391Z",
+   "abdruck": "c9f9d03e828f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.teilen#2",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.teilen#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: kein Such-Korpus im Spiel-Baum (spec/abnahme: 0 Dateien) — die Suche der Werkstatt (#workshop-search true, stamm/werkstatt-vorschau.js:244) misst gegen keinen Satz (verlangt 100 Sätze im Such-Korpus, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: kein Such-Korpus im Spiel-Baum (spec/abnahme: 0 Dateien) — die Suche der Werkstatt (#workshop-search true, stamm/werkstatt-vorschau.js:244) misst gegen keinen Satz (verlangt 100 Sätze im Such-Korpus, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6de783ec5723",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "Verzeichnis": 1,
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.5,
+   "fremd": {
+    "s": 6,
+    "takte": 2,
+    "fremdS": 60.14,
+    "kerne": 10.04,
+    "fensterKerne": 10.04,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      34.92
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      7.75
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      4.03
+     ]
+    ],
+    "dienerS": 5.69,
+    "diener": [
+     [
+      "System",
+      2.56
+     ],
+     [
+      "dwm.exe",
+      1.81
+     ]
+    ],
+    "geraetS": 11.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.83
+     ],
+     [
+      "svchost.exe",
+      4
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 15.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:57:51.391Z",
+   "abdruck": "5d0153b0fb39",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.teilen#2",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.teilen#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: der Speicher der Sitzung hält 1 Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231) — 100 fremd nachgebaute verlangt, kein fremdes Gerät (peers 0) (verlangt 100 Welten (Stichprobe fremder Nachbau), die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: der Speicher der Sitzung hält 1 Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231) — 100 fremd nachgebaute verlangt, kein fremdes Gerät (peers 0) (verlangt 100 Welten (Stichprobe fremder Nachbau), die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6de783ec5723",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "Verzeichnis": 1,
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.5,
+   "fremd": {
+    "s": 6,
+    "takte": 2,
+    "fremdS": 60.14,
+    "kerne": 10.04,
+    "fensterKerne": 10.04,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      34.92
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      7.75
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      4.03
+     ]
+    ],
+    "dienerS": 5.69,
+    "diener": [
+     [
+      "System",
+      2.56
+     ],
+     [
+      "dwm.exe",
+      1.81
+     ]
+    ],
+    "geraetS": 11.95,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.83
+     ],
+     [
+      "svchost.exe",
+      4
+     ],
+     [
+      "SearchIndexer.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 15.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:57:51.391Z",
+   "abdruck": "399e6b86dbd6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.teilen#2",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.schutz#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: der feindliche Korpus trägt 7 Injektionen (spec/abnahme/ki-feind-korpus.json, je Träger eine: bauplan, quelle, bibliothek, portal, kreatur, faehigkeit, welt) — ≥ 100 verlangt (verlangt 100 Injektionen im feindlichen Korpus, die Welt erzeugte 7)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: der feindliche Korpus trägt 7 Injektionen (spec/abnahme/ki-feind-korpus.json, je Träger eine: bauplan, quelle, bibliothek, portal, kreatur, faehigkeit, welt) — ≥ 100 verlangt (verlangt 100 Injektionen im feindlichen Korpus, die Welt erzeugte 7)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c72c0d40030",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.9,
+   "fremd": {
+    "s": 5.5,
+    "takte": 2,
+    "fremdS": 58.63,
+    "kerne": 10.718,
+    "fensterKerne": 10.718,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      32.23
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-5124-profil-ZbZlrv --no-pr",
+      7.53
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      5.86
+     ]
+    ],
+    "dienerS": 7.25,
+    "diener": [
+     [
+      "System",
+      5.27
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.92
+     ]
+    ],
+    "geraetS": 8.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.09
+     ],
+     [
+      "svchost.exe",
+      2.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 7.58,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:59:14.479Z",
+   "abdruck": "1ca325c0709b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.schutz#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: kein zweites Gerät in der Sitzung (state.p2p.peers 0), kein roter Spieler — 0 Versuche am fremden Werk (verlangt 100 Versuche eines roten Spielers am zweiten Gerät, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: kein zweites Gerät in der Sitzung (state.p2p.peers 0), kein roter Spieler — 0 Versuche am fremden Werk (verlangt 100 Versuche eines roten Spielers am zweiten Gerät, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c72c0d40030",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.9,
+   "fremd": {
+    "s": 5.5,
+    "takte": 2,
+    "fremdS": 58.63,
+    "kerne": 10.718,
+    "fensterKerne": 10.718,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      32.23
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-5124-profil-ZbZlrv --no-pr",
+      7.53
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      5.86
+     ]
+    ],
+    "dienerS": 7.25,
+    "diener": [
+     [
+      "System",
+      5.27
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.92
+     ]
+    ],
+    "geraetS": 8.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.09
+     ],
+     [
+      "svchost.exe",
+      2.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 7.58,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:59:14.479Z",
+   "abdruck": "a08554fd3f9f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.schutz#2",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.schutz#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler, keine Störer (verlangt 100 Spieler, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler, keine Störer (verlangt 100 Spieler, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c72c0d40030",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.9,
+   "fremd": {
+    "s": 5.5,
+    "takte": 2,
+    "fremdS": 58.63,
+    "kerne": 10.718,
+    "fensterKerne": 10.718,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      32.23
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-5124-profil-ZbZlrv --no-pr",
+      7.53
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      5.86
+     ]
+    ],
+    "dienerS": 7.25,
+    "diener": [
+     [
+      "System",
+      5.27
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.92
+     ]
+    ],
+    "geraetS": 8.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.09
+     ],
+     [
+      "svchost.exe",
+      2.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 7.58,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:59:14.479Z",
+   "abdruck": "763cc338c651",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.schutz#2",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.schutz#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler — kein feindlicher Werk-Korpus von 1 000 unter 10⁴ Spielern (verlangt 10000 Spieler, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler — kein feindlicher Werk-Korpus von 1 000 unter 10⁴ Spielern (verlangt 10000 Spieler, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c72c0d40030",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.9,
+   "fremd": {
+    "s": 5.5,
+    "takte": 2,
+    "fremdS": 58.63,
+    "kerne": 10.718,
+    "fensterKerne": 10.718,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      32.23
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-5124-profil-ZbZlrv --no-pr",
+      7.53
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      5.86
+     ]
+    ],
+    "dienerS": 7.25,
+    "diener": [
+     [
+      "System",
+      5.27
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.92
+     ]
+    ],
+    "geraetS": 8.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.09
+     ],
+     [
+      "svchost.exe",
+      2.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 7.58,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:59:14.479Z",
+   "abdruck": "765baebfd02f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.schutz#2",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.schutz#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler, keinen manipulierten Klienten (verlangt 1000000 Spieler, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler, keinen manipulierten Klienten (verlangt 1000000 Spieler, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c72c0d40030",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.9,
+   "fremd": {
+    "s": 5.5,
+    "takte": 2,
+    "fremdS": 58.63,
+    "kerne": 10.718,
+    "fensterKerne": 10.718,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      32.23
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-5124-profil-ZbZlrv --no-pr",
+      7.53
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      5.86
+     ]
+    ],
+    "dienerS": 7.25,
+    "diener": [
+     [
+      "System",
+      5.27
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.92
+     ]
+    ],
+    "geraetS": 8.44,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.09
+     ],
+     [
+      "svchost.exe",
+      2.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 7.58,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:59:14.479Z",
+   "abdruck": "422c35ad8e1f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.schutz#2",
+   "modus": "session"
+  },
+  "karte2.erleben.sinn.ziele#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Leser fehlt: eine Not, die ein Bewohner im Blick äußert: kein Bewohner spricht — die Bedürfnisse sind die Bindung seiner Orte (koerper-core `tagesBindung` in `_bewohnerListe`, stamm/siedlung-bewohner.js:458), keine Äußerung; der Haken säße im Bewohner-Takt (stamm/siedlung-bewohner.js:1554 `_tickBewohner`)",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: S2 · ROT Leser fehlt: eine Not, die ein Bewohner im Blick äußert: kein Bewohner spricht — die Bedürfnisse sind die Bindung seiner Orte (koerper-core `tagesBindung` in `_bewohnerListe`, stamm/siedlung-bewohner.js:458), keine Äußerung; der Haken säße im Bewohner-Takt (stamm/siedlung-bewohner.js:1554 `_tickBewohner`)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kc497f6c53232",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 9.9,
+   "fremd": {
+    "s": 14.2,
+    "takte": 5,
+    "fremdS": 188.19,
+    "kerne": 13.231,
+    "fensterKerne": 13.231,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      88.22
+     ],
+     [
+      "git pack-objects --delta-base-offset --honor-pack-keep pack/.tmp-36272-pack --stdin-packs",
+      39.41
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      14.23
+     ]
+    ],
+    "dienerS": 22.63,
+    "diener": [
+     [
+      "System",
+      12.41
+     ],
+     [
+      "dwm.exe",
+      6.59
+     ]
+    ],
+    "geraetS": 24.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.13
+     ],
+     [
+      "svchost.exe",
+      9.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.02
+     ]
+    ],
+    "eigenS": 49.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T04:00:39.389Z",
+   "abdruck": "ec19b57623ca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.sinn.ziele#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Leser fehlt: kein Leser offener Ziele: die Welt führt kein Ziel des Spielers — die Bewohner tragen ihre Bedürfnisse nur als Orte ihres Tags (`_bewohnerListe`, stamm/siedlung-bewohner.js:458) — in 10 Saaten (Bewohner/Siedlungen je Saat 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0; je Saat 2708 · 837 · 893 · 580 · 607 · 576 · 657 · 617 · 756 · 641 ms, Heimweg 615 ms (zurück true, Versatz 0 m)) (verlangt 10 Saaten, die Welt erzeugte 10)",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: S3 · ROT Leser fehlt: kein Leser offener Ziele: die Welt führt kein Ziel des Spielers — die Bewohner tragen ihre Bedürfnisse nur als Orte ihres Tags (`_bewohnerListe`, stamm/siedlung-bewohner.js:458) — in 10 Saaten (Bewohner/Siedlungen je Saat 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0 · 0/0; je Saat 2708 · 837 · 893 · 580 · 607 · 576 · 657 · 617 · 756 · 641 ms, Heimweg 615 ms (zurück true, Versatz 0 m)) (verlangt 10 Saaten, die Welt erzeugte 10)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kc497f6c53232",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 9.9,
+   "fremd": {
+    "s": 14.2,
+    "takte": 5,
+    "fremdS": 188.19,
+    "kerne": 13.231,
+    "fensterKerne": 13.231,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      88.22
+     ],
+     [
+      "git pack-objects --delta-base-offset --honor-pack-keep pack/.tmp-36272-pack --stdin-packs",
+      39.41
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      14.23
+     ]
+    ],
+    "dienerS": 22.63,
+    "diener": [
+     [
+      "System",
+      12.41
+     ],
+     [
+      "dwm.exe",
+      6.59
+     ]
+    ],
+    "geraetS": 24.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.13
+     ],
+     [
+      "svchost.exe",
+      9.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.02
+     ]
+    ],
+    "eigenS": 49.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T04:00:39.389Z",
+   "abdruck": "cbb8b03165c5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.sinn.ziele#2",
+   "modus": "session"
+  },
+  "karte2.erleben.sinn.ziele#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: die größte Siedlung der Sitzung trägt 0 Bewohner (0 Bewohner in 0 Siedlungen (0 gezählt nach `leuteVon` ihres Plans), die größte 0) — keine Stadt mit 10⁴ (verlangt 10000 Bewohner einer Stadt, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die größte Siedlung der Sitzung trägt 0 Bewohner (0 Bewohner in 0 Siedlungen (0 gezählt nach `leuteVon` ihres Plans), die größte 0) — keine Stadt mit 10⁴ (verlangt 10000 Bewohner einer Stadt, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kc497f6c53232",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 9.9,
+   "fremd": {
+    "s": 14.2,
+    "takte": 5,
+    "fremdS": 188.19,
+    "kerne": 13.231,
+    "fensterKerne": 13.231,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      88.22
+     ],
+     [
+      "git pack-objects --delta-base-offset --honor-pack-keep pack/.tmp-36272-pack --stdin-packs",
+      39.41
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      14.23
+     ]
+    ],
+    "dienerS": 22.63,
+    "diener": [
+     [
+      "System",
+      12.41
+     ],
+     [
+      "dwm.exe",
+      6.59
+     ]
+    ],
+    "geraetS": 24.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.13
+     ],
+     [
+      "svchost.exe",
+      9.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.02
+     ]
+    ],
+    "eigenS": 49.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T04:00:39.389Z",
+   "abdruck": "c96e90878b90",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.sinn.ziele#2",
+   "modus": "session"
+  },
+  "karte2.erleben.sinn.ziele#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — keine Metropole mit 10⁶ (verlangt 1000000 Bewohner einer Metropole, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die größte Siedlung trägt 0 Bewohner — keine Metropole mit 10⁶ (verlangt 1000000 Bewohner einer Metropole, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kc497f6c53232",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 9.9,
+   "fremd": {
+    "s": 14.2,
+    "takte": 5,
+    "fremdS": 188.19,
+    "kerne": 13.231,
+    "fensterKerne": 13.231,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      88.22
+     ],
+     [
+      "git pack-objects --delta-base-offset --honor-pack-keep pack/.tmp-36272-pack --stdin-packs",
+      39.41
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      14.23
+     ]
+    ],
+    "dienerS": 22.63,
+    "diener": [
+     [
+      "System",
+      12.41
+     ],
+     [
+      "dwm.exe",
+      6.59
+     ]
+    ],
+    "geraetS": 24.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.13
+     ],
+     [
+      "svchost.exe",
+      9.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.02
+     ]
+    ],
+    "eigenS": 49.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T04:00:39.389Z",
+   "abdruck": "26fc36b30b1a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.sinn.ziele#2",
+   "modus": "session"
+  },
+  "karte2.erleben.sinn.ziele#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Bewohner in 0 Siedlungen (0 gezählt nach `leuteVon` ihres Plans), die größte 0 — kein Planet mit 10⁹ Bewohnern; ein Zeitsprung lädt die Welt neu (stamm/feld-leben.js:1265) (verlangt 1000000000 Bewohner eines Planeten, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Bewohner in 0 Siedlungen (0 gezählt nach `leuteVon` ihres Plans), die größte 0 — kein Planet mit 10⁹ Bewohnern; ein Zeitsprung lädt die Welt neu (stamm/feld-leben.js:1265) (verlangt 1000000000 Bewohner eines Planeten, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kc497f6c53232",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 9.9,
+   "fremd": {
+    "s": 14.2,
+    "takte": 5,
+    "fremdS": 188.19,
+    "kerne": 13.231,
+    "fensterKerne": 13.231,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      88.22
+     ],
+     [
+      "git pack-objects --delta-base-offset --honor-pack-keep pack/.tmp-36272-pack --stdin-packs",
+      39.41
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      14.23
+     ]
+    ],
+    "dienerS": 22.63,
+    "diener": [
+     [
+      "System",
+      12.41
+     ],
+     [
+      "dwm.exe",
+      6.59
+     ]
+    ],
+    "geraetS": 24.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.13
+     ],
+     [
+      "svchost.exe",
+      9.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.02
+     ]
+    ],
+    "eigenS": 49.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T04:00:39.389Z",
+   "abdruck": "c1aba058e2c9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.sinn.ziele#2",
+   "modus": "session"
+  },
+  "karte2.erleben.sinn.ziele#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: der Speicher der Sitzung kennt 1 Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231), je Welt ein Planet (`_planetSamen`, stamm/gelaende-chunks.js:672) — 10³ verlangt (verlangt 1000 Planeten, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.18,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: der Speicher der Sitzung kennt 1 Welten (`worldsIndexLoad`, stamm/speicher-welten.js:231), je Welt ein Planet (`_planetSamen`, stamm/gelaende-chunks.js:672) — 10³ verlangt (verlangt 1000 Planeten, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kc497f6c53232",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 9.9,
+   "fremd": {
+    "s": 14.2,
+    "takte": 5,
+    "fremdS": 188.19,
+    "kerne": 13.231,
+    "fensterKerne": 13.231,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-41444-profil-RUNe4p --no-p",
+      88.22
+     ],
+     [
+      "git pack-objects --delta-base-offset --honor-pack-keep pack/.tmp-36272-pack --stdin-packs",
+      39.41
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-24904-profil-rcS5yE --no-p",
+      14.23
+     ]
+    ],
+    "dienerS": 22.63,
+    "diener": [
+     [
+      "System",
+      12.41
+     ],
+     [
+      "dwm.exe",
+      6.59
+     ]
+    ],
+    "geraetS": 24.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.13
+     ],
+     [
+      "svchost.exe",
+      9.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.02
+     ]
+    ],
+    "eigenS": 49.34,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T04:00:39.389Z",
+   "abdruck": "2aaab2174630",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.sinn.ziele#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -1694,7 +2760,10 @@
   "k9cdfed886c6d": "dVVdj5swEPwvPLbHmc8Alu7BCZFyUqVyT1Uf17AGLgSQTeI2Vf97BYFcgOs+opnd8ezY/DFaSI+Q4/O7amqDGl+MJ6OtoMbOTBvZfzao4ThB6Ka0tshXckkI0T81Y/rFeDIUXNBUKC8ob9AotR10KbsVYYztelgqy7ZTpCo5AV5DcULzLDssq+d0oIW2kzmCEr1nOiEkIQHZ6peXJbXimDVmBwInYhQJNwS6BJ5VDhxNOIth2Aj2QwThUzJUGLPknUzF3hgjer+cyKHO5kqjjR+gT19/M7ZnK4VZCdiZVVmraWaa+dx16H3Q+lSZBG1eAYsK5UgCOwCbT0IHK3USkQVRVGelZsNCN/OdkBKywuaoyrTozFY2HOsRziMnsIF+4nTenk0xU8Q5hHzpcwFY5yhnGiw3FRubkl/hsukRTijBrKGYvLTcwOEf3hBCDmst1SB8GDEJ31jC9sIZsV8oyXun4nxoRK7T9+QWxpj1Sx4rXwxRaVHK09we4aFjufTbWpIqIENpHhvV3dGhB4DhmPx4CBRLvHjJ/DjMyHP4xvIfzxISdlh5pxrRaZBo5u15JKKHfuBTxl5X4A5OpynzwvXcdLk41fXBfpThe2hvgl5G/p893K6BecWymkhCeF7k0902X4IvEk4m8FyWQkzb5n4qos/CqbHqTN403bRe13IjmxKX1HdXouEabO8LZDsWa+tH/LDTofZsKWXo3sjuflK+sYRHxaW/jekKXcrO1JAW9/0IjtDLXu3kirLCHGc2Zh53IaNEp/fQsSQYr774Ogvsdd2xxN7gWp3VlKooyCJBP3k6NMojh/o4Ar2NH9rOEL/td3a4WXSIYhKTRD8atGOZZux1F9/eldfe0x3L327NW0xJKxtR9i8fKeCsCqi6j7/D338=",
   "kcdd384bd7c37": "dVRNj5swEP0vHLv1mu8PS3twlpWyUquyp57HMAYSApENoU3V/15BILvA1kfrvZk3b579xzhDeoQcHw+6qQ1mfDG+GhouSDSqC6rHgzaYEaWWjQ7jt0M5588DLFXludW0KgUFUUNxQtKpFsvqMR1poWVntmS0f+F9QmlCA7rrn57W1Epg1pAWJM7EKJJOCGwN7HQOAgl0cmw2gb0QQXqMjieMeXKg89n1nNP+Zd1RQJ0tlUa+F6A3DvjCNwqzErAlVVnruWeaecKx2b3RdqpMQU+ugEWFaiKBFYAlZqGjlX0S0RVRVp3Wi2ahk3l2yCjdYHPUZVq05KwagfUEF5EdWMA+cTo/d0QuFAkBoVj7XADWOaqFBtNJpW8x+itcFz3CCRWQGorZS9MJbPHuDaV0v9VSjcLHFrNw35SWGy6Iw0JpPjgV52Mhep3vk1sYY87f+HzyVROdFqU6Le2RLtqmw75tJekCMlTk2Oj2jg5dAAyn5Md07JW48Zr5PszEs4Vveh9nCSnfb7zTjWx7UEjyczcR0UUvGJL4ugG3cDrNmZeO66Trxel2CPZHGZ6Llh8MMvL/7OH2DMgVy2omSem6kbcuflFwIiByVUo5b1p4qYw+C2aPVUtE07Tzah3TiSxGr7S+OxKNT2B3Xx5/5vFv++f+7W2tcazWqPY+lfBN6TJ5GV5eukGXqiU9pMV9F1IgDDI3/l9RVZjjwrLMFQ5kjPbyJvMacp4E0zOXD4twXrcVSxzMrHWn5wRFQRZJ9sk30aM6CqiPE9D1vdCyx6jtfvD9zZODGT/ENOk5/+hT1nP++hzf/pDvfMdfYxpPxc+Y0rNqZDn8crSAThdQte/f+99/",
   "k3f3d30245f6f": "dVRNj5swEP0vHLv1mu8PS3twwkpZqVLZU89jGAMbApENoUrV/15BIFlg66P13sybN8/+Y5whPUKOzx+6qQ1mfDO+GxouSDSqC6rnD20wI0otGx3Gb4dyzvcDLFXludW0KgUFUUNxQtKpFsvqOR1poWVntmS0f+V9QmlCA7rrX17W1Epg1pAWJM7EKJJOCGwN7HQOAgl0cmw2gb0QQXqMjieMefJB58PfOaf967qjgDpbKo18L0BvHPCVbxRmJWBLqrLWc88084Rjs3uj7VSZgp5cAYsK1UQCKwBLzEJHK/skoiuirDqtF81CJ/PskFG6weaoy7RoyVk1AusJLiI7sIB94XR+7ohcKBICQrH2uQCsc1QLDaaTSt9i9He4LnqEEyogNRSzl6YT2OLhDaX0sNVSjcLHFrNw35SWGy6Iw0JpPjgV52Mhep3vk1sYYz4seTr5qolOi1KdlvZIF23TYT+2knQBGSpybHR7R4cuAIZT8uMxUDxx4zXzMczEs4Vvep9nCSk/bLzTjWx7UEjyczcR0UUvGJL4tgG3cDrNmZeO66Trxel2CPZnGZ6Llh8MMvL/7OH2DMgVy2omSem6kcf2u3wNvig4ERC5KqWcty28VEZfhbPHqiWiadp5vY7pRBajV1rfXYnGZ7C7L5Dvedybv2L+vm49VmtUe59M+KZ0mbwMry/doEvVkh7S4r4PKRAGmZsdXFFVmOPCtswVDmSM9uk9ZDwJpqcunxYBvW4rljgYWutOzymKgiyS7Iuvokd1FFAfJ6Dre6Flj3Hb/eSHmyWHKH6KadJz/tmnrOf8bR/f/pG3wcM9z99vxc+Y0rNqZDn8dLSAThdQtY8v/u8/",
-  "k2c6d526a19e7": "dVRNj5swEP0vOXbrNZ8BLO3BWVbKSq3KnnoewxhICEQ2hDZV/3sFwdkFtnO05s28efM8fzZnSI+Q4+NBN/WGbb5svm40XJBoVBdUjwe9YZsotR10Gb8F5Zw/D2mpKs+tplUpKIgaihOSTrVYVo/pCAttJ3Mko/0L7xNKExrQXf/0tIRWArOGtCDRAKNIuiGwZWKncxBIoJNjsynZDxGkz+gYYcyTAzWx6zmn/cuyo4A6mzONtn6A/jjgC18xzErAllRlrU3PNPOF67B7o/VUmYKeXAGLCtUEAjsAWxiio5R9EtEFUFad1rNmoZv5TsgoXeXmqMu0aMlZNQLrKV1ETmAD+0Tp/NwROWMkBIRiqXMBWOeoZhwsN5Vbm9Ff4bLoEU6ogNRQGC0tN3DEuzaU0v2aSzUSH1sY4ltL2l44Aw4LpfmgVJyPhejVvCc3M8acv3ET+aKJTotSnebySA8dy2Xf1pR0ARkqcmx0e88OPQAMJ+fHdOyVePES+T7MhHPE1vI/zhJSvl9ppxvZ9qCQ5OduAqKHfjA48XWV3MLpZDwvXc9Nl4vT7WDsjzR8D+1tMNDI/7OH2zcgVywrA5LS8yJ/Wfyi4ERA5KqU0mxa+KmMPjNmj1VLRNO0ZrWu5UY2o1da3xWJxi+wuy+PP/P4t/Nz//a25DhWa1R7n0psLekxeRl+XrrKLlVLekiL+y6kQIgYdVf6X1FVmONMsswTLmSM9vJG8xpyngTTN5cPM3Ne1xVLHMSsdaeNg6IgiyT75Ez0qI4C6uOU6G390HZGq+1+8P1Nk4MVP8Q06Tn/qFPWc/76HN9uyHe+468xjafiZ0zNNabmng9vZ9XIcrh8tIBOF1C17yf/7z8="
+  "k2c6d526a19e7": "dVRNj5swEP0vOXbrNZ8BLO3BWVbKSq3KnnoewxhICEQ2hDZV/3sFwdkFtnO05s28efM8fzZnSI+Q4+NBN/WGbb5svm40XJBoVBdUjwe9YZsotR10Gb8F5Zw/D2mpKs+tplUpKIgaihOSTrVYVo/pCAttJ3Mko/0L7xNKExrQXf/0tIRWArOGtCDRAKNIuiGwZWKncxBIoJNjsynZDxGkz+gYYcyTAzWx6zmn/cuyo4A6mzONtn6A/jjgC18xzErAllRlrU3PNPOF67B7o/VUmYKeXAGLCtUEAjsAWxiio5R9EtEFUFad1rNmoZv5TsgoXeXmqMu0aMlZNQLrKV1ETmAD+0Tp/NwROWMkBIRiqXMBWOeoZhwsN5Vbm9Ff4bLoEU6ogNRQGC0tN3DEuzaU0v2aSzUSH1sY4ltL2l44Aw4LpfmgVJyPhejVvCc3M8acv3ET+aKJTotSnebySA8dy2Xf1pR0ARkqcmx0e88OPQAMJ+fHdOyVePES+T7MhHPE1vI/zhJSvl9ppxvZ9qCQ5OduAqKHfjA48XWV3MLpZDwvXc9Nl4vT7WDsjzR8D+1tMNDI/7OH2zcgVywrA5LS8yJ/Wfyi4ERA5KqU0mxa+KmMPjNmj1VLRNO0ZrWu5UY2o1da3xWJxi+wuy+PP/P4t/Nz//a25DhWa1R7n0psLekxeRl+XrrKLlVLekiL+y6kQIgYdVf6X1FVmONMsswTLmSM9vJG8xpyngTTN5cPM3Ne1xVLHMSsdaeNg6IgiyT75Ez0qI4C6uOU6G390HZGq+1+8P1Nk4MVP8Q06Tn/qFPWc/76HN9uyHe+468xjafiZ0zNNabmng9vZ9XIcrh8tIBOF1C17yf/7z8=",
+  "k6de783ec5723": "dVRNj5swEP0vObb1ms8AlvbghJW2UqVmTz2PYQxsCCAbQkXV/17B4mSBdE4IvTfz5s14/uwaSM6Q4dO7rqsd233ZfdtpuCLRqK6ont71ju2ixHbQZfwjKOf8OMISVTStpmUhKIgK8guSTrVYlE/JRAttJ3Uko/0L70+UnmhAD/3z85paCkxr0oJEQ4wi6YbA1sBOZyCQQCenYjPYDxGkz+gUYcxP79QEf+Oc9i/rigKqdKk02vsB+lODL3yjMC0AW1IWlTY1k9QXrsNuhbZdpQp6MgDmJaqZBHYAtjBCJyv7U0RXRFl2Wi+KhW7qOyGjdIPNUBdJ3pJG1QKrGS4iJ7CBPXA6azoiF4qEgFCsfc4BqwzVQoPlJnJvM/o7XCc9wwUVkApy46XlBo64e0Mpfd1qKSfhUwkjfG9J2wsXxHGgNBudirMpER3M/9PHMsZ8HPIc2aqITvJCXZb2SA8dy2U/tpJ0Dikqcq51e0OHHgCG8+bH00LxkxevmfdmZp4j9pb/uZeQ8teNd7qWbQ8KSdZ0MxE99INxE79vwC1cLmbnpeu5yXpwuh0X+7MM30N7H4wysv/M4eMZkAGL0pCk9LzIXye/KrgQEJkqpDSTFn4io0eL2WPZElHXrRmta7mRzehAq5sj0fQEDrfh8SOPe+vXkb+tNU7ZatXeuhJ7S3pMXseXl2zQhWpJD0l+m4UUCBF7AB1QlZjhwrLUEy6kI/quLPbMx9fFcg6biQ4FjmZWutNmg6IgjSR7cCZ6VGcB1XkGens/tJ1p1Q4/+etc0Ip7voojT8d/x0M4JmswMdeXmvs9/mtULYvx0tEcOp1D2d5P/N9/",
+  "k6c72c0d40030": "dVRNj5swEP0vObb1ms8AlvbghJVSqVXZU89jGAOBALIhtKn63ysIZBfYztF6b+bNm/H82TUQF5Di01nX1Y7tPu2+7DRckWhUV1RPZ71juyA2LbQZf+VDRJzz4wCLVd60mpa5oCAqyC5IOtViXj7FI803rcSSjPYvvI8ojahHD/3z85paCkxq0oLEmRgE0vaBrYGdTkEggU6OxSaw6yNIl9Ex/JBHZzrHoeec9i/rigKqZKk02Lseumzo7oVvFCY5YEvKvNJzzThxhW2xR6FtV4mCntwAsxLVRALTA1PMQkcr+yigK6IsO60XxXw7cS2fUbrBpqjzOGtJo2qB1QQXgeWZwD5wOm06IheKhABfrH3OAKsU1UKDYcdybzL6y18nLeCCCkgF2eylYXuWePOGUnraailH4WOJWfjekKbjL4jDQGk6OBWmYyJ6m9+j0UAe8mkrh0hXRXSc5eqytEc6aBk2+7aVpDNIUJGi1u0D7TsA6LOpFh1rRU64Zr41M/EssTfc9734lJ823ulatj0oJGnTTUR00PWGTfy6Abdwucw7L23HjteD0+2w2O9luA6ae2+Qkf5nDvdvQG6YlzNJSscJ3HXyq4ILAZGqXMp50sKNZfDRYvZYtkTUdTuP1jbswGT0RquHI8H4BQ6P4fEjD39bP0+vr2uNY7ZatY+uxN6QDpPX4efFG3SuWtJDnD1mIQVCwKi98f+GqsQUF5YljrAhYbSXd5k3n/PIm765/LxYzts2Y46DmZXu9LxBgZcEkn1wJnpUhYCqmIDO3vVNa1y1ww9+untyNsKer+LIk+HtGN5vyHd+4F9DGk7JG4zna0yLnEjMq4QUtWo6vbjxA65RtcyHa0gz6HQGZfsG+fsP",
+  "kc497f6c53232": "dVRNj5swEP0vHNt6zWcAS3twwkqp1KrZU89jGAMJAWRDaKn63ysIZBfYztF6b+bNmxn/MWqIL5Di01lXpcGMT8YXQ8MNiUZ1Q/V01gYzwtiy0WH8HpRzfhhgscrrRtMiFxRECdkVSasazIuneKQFlp3YktHuhXcnSk/Up/vu+XlNLQQmFWlA4kwMQ+kEwNbAVqcgkEArx2IT2AsQpMfoGEHET2c6x77jnHYv64oCymSpNNx5Pnpjgy98ozDJARtS5KWea8aJJxybPQptu0oUdKQHzApUEwksHywxCx2t7E4hXRFl0Wq9KBY4iWcHjNINNkWdx1lDalUJLCe4CG3fAvaB02ndErlQJAQEYu1zBlimqBYaTCeWO4vRX8E66QWuqICUkM1emo5vizdvKKXHrZZiFD6WmIXvTGm5wYI4DJSmg1NROiai/fx+ui9jxPkrnyNdFdFxlqvr0h7pom067NtWks4gQUUulW4e6MAFwGDa/IiOtU5utGa+NTPxbLEzvfe9BJQfN97pSjYdKCRp3U5EdNHzh038ugE3cL3OOy8d14nXg9PNsNjvZXguWjt/kJH+Zw73MyA95sVMktJ1Q2+d/KbgSkCkKpdynrTwYhl+tJgdFg0RVdXMo3VMJ7QY7Wn5cCQcT2D/GB4/8Oi3/fP4+rrWOGarVPPoSuxM6TJ5Gy4v3qBz1ZAO4uwxCykQBpkb/3tUBaa4sCxxhQMJo528y+wDzk/+dOby82I5+23GHAczS93qeYNCPwkl++Cb6FBdBJSXCejuvMCyx1Xb/+DHuydnM+r4Kg48Gd4O0f0P+c73/GtEoyl5jTGtVSXz4ZejGbQ6g6J5+97//gM="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
