@@ -406,7 +406,7 @@
         const schaft = !weltMass
             ? 0
             : frei
-              ? schaftHub(segs, leaves, runMeta, null, 0, P.alter > 0, FREISTAND.fuss)
+              ? schaftHub(segs, leaves, runMeta, null, 0, P.alter > 0, FREISTAND.fuss[P.conifer ? "nadel" : "laub"])
               : schaftHub(
                     segs,
                     leaves,
@@ -2889,13 +2889,14 @@
     // zur anderen ≥ 120°) sind EIN Fall: das Seitenlicht hält die unteren Äste. Im Innern (Nachbarn ringsum, die größte
     // Lücke < 120°) trägt er den kahlen Schaft des Bestands. Bis laub-kante-4 machte JEDER Nachbar den Baum zum Bestand:
     // der Trauf stand mit kahlen Stämmen zur Wiese (Tafel-Pose, laub-kante Spielgang 6 rote Klassen).
-    // fuss: der tiefste Blatt-Anker des freien Baums bei 0,16 seiner Höhe, die Karten hängen darunter (Marbach: kurzer dicker
-    // Stamm unter der tiefen Krone; ohne ihn stand die Krone als Busch auf dem Boden, Blick-Sonde 12.10.) — bis laub-kante-4
-    // hob der Ansatz 0,3 die Krone nur (Kronen-Fuß 0,24–0,31 H) und senkte sie nie.
+    // fuss: der tiefste Blatt-Anker des freien Baums je Laub und Nadel als Anteil seiner Höhe — die Karten des Laubs hängen
+    // tiefer als die Nadel-Quirle: der sichtbare Kronen-Fuß (L0, gate:pflanzen-nah) Buche 0,10 · Eiche 0,12 · Birke 0,18 ·
+    // Fichte 0,10 (Marbach: kurzer dicker Stamm unter der tiefen Krone; ohne ihn stand die Krone als Busch auf dem Boden,
+    // Blick-Sonde 12.10.). Bis laub-kante-4 hob der Ansatz 0,3 die Krone nur und senkte sie nie: die freie Fichte trug 0,28.
     // ab: die Gestalt des Solitärs (`solitaerGestalt`) — eine Baum-Art mit mindestens `ab` Bestand-Gestalten
     // (budget.gestalten, die Massen-Arten des Walds) trägt DAZU ihren Solitär als Gestalt V+1: der Bestand behält alle
     // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
-    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, fuss: 0.16, seite: (2 * Math.PI) / 3, ab: 2 });
+    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, fuss: Object.freeze({ laub: 0.32, nadel: 0.12 }), seite: (2 * Math.PI) / 3, ab: 2 });
     // DAS SEITENLICHT (der Waldmantel): die größte Lücke (rad) zwischen den Richtungen `winkel` (rad, je stehendem Nachbarn)
     // rund um den Baum — ohne Nachbarn 2π. Rein; der EINE Leser des Freistands (`_forestStehtFrei`, gate:fernwald H).
     function forestSeitenlicht(winkel) {
