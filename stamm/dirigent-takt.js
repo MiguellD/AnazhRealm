@@ -51,6 +51,7 @@ class AnazhRealm_dirigent_takt {
                 }
                 return;
             }
+            this._kalenderZeit(); // der Regler der Tag-Länge gilt ab der Grenze des Takts (der Versatz legt sich vor dem Schritt)
             this.state.spielZeit += delta; // DIE WELT-UHR: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
             this.state.weltTakt++; // … und ihre Takte (der Eintritt einer Karte, `aEin`)
             const spielZeit = this.state.spielZeit; // die Uhr jedes Glieds dieses Takts, das Welt trägt oder zeichnet

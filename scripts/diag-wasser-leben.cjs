@@ -310,7 +310,9 @@ function urteil(b) {
             const { pegel: p = {}, gluehen: g = {} } = k;
             if (!(p.hub >= 0.1 && p.wochen > 0 && p.fluss > 0) || p.gegen > 1) rot("P1 STARR", p);
             else if (!(p.flut[0] >= p.hub - 0.03 && p.flut[2] === p.flut[0] && p.ruhe[0] <= 0.03 && p.flut[1] > p.ruhe[1])) rot("P2 BLIND", p);
-            if (!(p.post > 0 && p.neuBau > 0) || p.halt > 0.001) rot("P3 TAKT", p);
+            // ohne Jahres-Welle hält das Feld den Spiegel gegen den Lauf mit stehendem Jahr bis auf EINE Stufe des Hubs (gelaende-core
+            // `PEGEL.stufe` 0,01 m: der Lauf des Regens geht im Tag des Kalenders, zeit-ein-kalender, und kippt an der Stufe)
+            if (!(p.post > 0 && p.neuBau > 0) || p.halt > 0.01 + 1e-9) rot("P3 TAKT", p);
             const rg = p.regen || {}; // wetter.K3: 20 min Sturm heben Bach und gezeichneten See ≥ 0,2 m, das gehaltene Regen-Feld nichts
             if (!(rg.hub >= 0.2 && rg.koerper >= rg.hub - 0.03 && rg.post > 0 && rg.fest <= 0.001)) rot("P4 REGEN", rg);
             // P5 die Knoten des Regens: der Weg von main, die Rampe an ihrem Knoten; der Zug ohne Wechsel legt keinen, der Lauf

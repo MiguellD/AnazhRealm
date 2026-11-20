@@ -21,10 +21,10 @@
         },
         "laenge-fest": {
             "groesse": "zeit",
-            "rx": "\\bPEGEL_TAG_S\\s*\\(\\)\\s*\\{|\\bseasonYearSeconds\\b[^\\n]*\\b2400\\b",
+            "rx": "\\bPEGEL_TAG_S\\b|\\bseasonYearSeconds\\b|\\b(?:jahreJeTag|stundeS|tagStunden)\\s*:\\s*\\d",
             "was": "eigene Tag- oder Jahr-Länge neben dem Tag-Regler",
-            "lies": "`state.dayLengthMinutes` und `state.seasonYearSeconds` (EIN Kalender, Welle ZEIT)",
-            "mutant": "const jahr = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;"
+            "lies": "den EINEN Kalender (`_kalender()`, `_kalenderZeit()`; das Gesetz `WELT_GESETZ_ERDE.kalender` in stamm/daten.js, Welle ZEIT)",
+            "mutant": "const kalender = { jahreJeTag: 1.5 };"
         },
         "dt-kopie": {
             "groesse": "zeit",
@@ -179,8 +179,11 @@
                 "stamm/koerper-bewegung.js": [
                     "FIXED_DT = 1 / 60"
                 ],
-                "stamm/dirigent-kern.js": [
-                    "seasonYearSeconds: 2400"
+                "stamm/daten.js": [
+                    "kalender: Object.freeze({ tagStunden: 24, stundeS: 3600, jahrTage: T.jahrTage, jahreJeTag: 1.5 })"
+                ],
+                "planet-core.js": [
+                    "tagStunden: 24, jahrTage: 365"
                 ]
             }
         },

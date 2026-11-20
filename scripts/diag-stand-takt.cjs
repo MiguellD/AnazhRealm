@@ -629,7 +629,7 @@ async function tatSeite(MESS, vorher) {
         const ps = ring(true);
         delete r._feuchteAt;
         const schritt = (dh) => {
-            r._weltUhrNimm(st.spielZeit + ((dh) * AnazhRealm.PEGEL_TAG_S) / 24);
+            r._weltUhrNimm(st.spielZeit + ((dh) * r._kalender().tagS) / 24);
             takt();
             for (const p of ps) p.w[3] ||= !r._geerntetIn(p.key).has(p.id) && r._weltStunde() - h0;
         };
@@ -665,7 +665,7 @@ async function tatSeite(MESS, vorher) {
     };
     const stunden = async (h, T) => {
         for (let n = h; n > 0; n -= 6) {
-            r._weltUhrNimm(st.spielZeit + ((Math.min(6, n)) * AnazhRealm.PEGEL_TAG_S) / 24);
+            r._weltUhrNimm(st.spielZeit + ((Math.min(6, n)) * r._kalender().tagS) / 24);
             for (let i = 0; i < 30; i++) takt();
         }
         await stehen(T.mitte);
@@ -1057,7 +1057,7 @@ async function brandSeite(MESS) {
         // die Welt-Stunde bis `h` (die Welt-Uhr `_weltUhrNimm` in Schritten ≤ 4 h — die Uhr des Spielers bewegt keinen Prozess, je Schritt ein Takt: der Nachwuchs wacht), dann steht die Welt
         const reif = async (h) => {
             for (let n = 0; n < 400 && r._weltStunde() < h; n++)
-                r._weltUhrNimm(st.spielZeit + ((Math.min(4, h - r._weltStunde() + 1e-3)) * AnazhRealm.PEGEL_TAG_S) / 24), takt();
+                r._weltUhrNimm(st.spielZeit + ((Math.min(4, h - r._weltStunde() + 1e-3)) * r._kalender().tagS) / 24), takt();
             await stehen(MESS);
         };
         // ASCHE: die Zelle des Herds (verbrannt, im Regen erloschen) auf der Asche, nach der Stufe Gras, nach der Stufe Busch
