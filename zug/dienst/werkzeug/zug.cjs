@@ -941,6 +941,161 @@ function formatStufe(basis, drin) {
     git(["commit", "-q", "-m", `Format-Stufe nach ${undListe(drin)} (prettier --write auf ${geaendert.length} Dateien des Bündels; Format ist kein Urteil)\n\n${CO}`], ZUG);
     return { n: geaendert.length, dateien: geaendert };
 }
+// mergeAlle <basis> <zweig[@sha]>… — DER EINE BAU-WEG der Merges: Basis auschecken, je Zweig Siegel-Probe und mergeEinen (Klassen a–i).
+// Druckt nichts: die Zeilen („drin …“ · „gefallen …“ · „schon drin …“) kommen zurück, denn nachweis liest „drin“ als „stand im
+// Kandidaten“ — ein Täter der Vorab-Statik darf dort nie stehen. Der Baum ZUG steht danach auf dem letzten Merge.
+function mergeAlle(basis, zweige) {
+    sauber();
+    git(["checkout", "-q", "--detach", "--force", basis], ZUG);
+    const drin = [];
+    const zeilen = [];
+    for (const spec of zweige) {
+        let [z, sha] = spec.split("@");
+        if (siegel(z)) {
+            zeilen.push(`gefallen ${z}: Siegel-Wort „${siegel(z)}" im Zweig-Namen (wandert in die Merge-Message)`);
+            continue;
+        }
+        if (!sha) {
+            holeZweig(z);
+            sha = git(["rev-parse", `refs/remotes/origin/${z}`], ZUG, true).stdout.trim();
+        } else if (git(["cat-file", "-e", `${sha}^{commit}`], ZUG, true).status !== 0) holeZweig(z);
+        if (!sha) {
+            zeilen.push(`gefallen ${z}: Zweig fehlt auf origin`);
+            continue;
+        }
+        sha = git(["rev-parse", sha], ZUG);
+        if (git(["merge-base", "--is-ancestor", sha, "HEAD"], ZUG, true).status === 0) {
+            zeilen.push(`schon drin ${z}@${sha.slice(0, 8)}`);
+            continue;
+        }
+        // 01.11. z118: ein Rumpf MITTEN im Cloud-Zweig trug das Siegel, der GANZE Kandidat fiel am Ende („Siegel-Wort in Merge-
+        // oder Stufen-Message“) — nun fällt nur der Zweig, der es bringt, beim Commit genannt (was der Merge brächte: HEAD..sha)
+        const sc = git(["log", "--format=%h %s%x00%B%x01", `HEAD..${sha}`], ZUG).split("\x01").find((m) => siegel(m));
+        if (sc) {
+            zeilen.push(`gefallen ${z}@${sha.slice(0, 8)}: Siegel-Wort „${siegel(sc)}" im Commit ${sc.trim().split("\0")[0].slice(0, 100)}`);
+            continue;
+        }
+        const r = mergeEinen(z, sha);
+        const kl = Object.entries(r.kl || {}).map(([d, k]) => `${d} ${Object.entries(k).map(([x, n]) => `${x}${n}`).join("")}`);
+        zeilen.push(r.drin ? `drin ${z}@${sha.slice(0, 8)}${kl.length ? ` · aufgelöst ${kl.join(", ")}` : ""}` : `gefallen ${z}@${sha.slice(0, 8)}: ${r.grund}`);
+        if (r.drin) drin.push(`${z}@${sha}`);
+    }
+    return { drin, zeilen };
+}
+
+// ── Vorab-Statik: die schnellen statischen Wände am Kandidaten, VOR dem Push nach integ-probe ─────────────────────────────
+// 20.11. 01:25, z631: vier je für sich grüne Stempel (Code-Check 18/18) bildeten gegen main 3da9d9ae den Kandidaten 77033d0a, und der
+// fiel an der Ein-Schreiber-Wand (diag-pipeline-constitution, 2 s reines node): eine Register-Zeile, die ein Zug VORHER (Kosmos) gefällt
+// hatte. Der Dienst sah es erst nach dem Puls (~10 min, dazu ein Neulauf), führte ALLE vier als nicht gelandet, und drei gesunde Abgaben
+// verloren einen ganzen Zug. Die Klasse: zwei einzeln grüne Zweige, deren KOMBINATION eine schnelle statische Wand bricht.
+// Die Batterie ist das Skript „check:vorab“ AUS DEM KANDIDATEN (package.json; check:statik ruft es zuerst — EINE Liste der Wände,
+// versioniert mit den Wänden selbst). Rot → der Täter per Auslassen, mit DEMSELBEN Bau-Weg (mergeAlle): heilt genau ein Auslassen,
+// ist er der Täter; heilen mehrere (erst die Kombination bricht), fällt der jüngste Stempel unter ihnen; heilt keines, fällt, wer
+// allein gegen main rot ist (sonst der jüngste). Ist main allein rot, gibt es keinen Täter im Zug: er fährt wie bisher, die Zeile
+// „VORAB-STATIK MAIN ROT“ nennt es. Kann die Batterie nicht laufen (Skript fehlt im Kandidaten, Modul fehlt), WIRFT der Bau — die
+// Maschine ist kein Urteil, nie ein stilles Überspringen.
+const VORAB = "check:vorab";
+const VORAB_MASCHINE = /Cannot find module|MODULE_NOT_FOUND|ENOENT|is not recognized as|command not found|Missing script/;
+const kurzSpec = (s) => `${s.split("@")[0]}@${(s.split("@")[1] || "").slice(0, 8)}`;
+function vorabLauf() {
+    const pkg = JSON.parse(fs.readFileSync(path.join(ZUG, "package.json"), "utf8"));
+    const cmd = (pkg.scripts || {})[VORAB];
+    if (!cmd) throw new Error(`Vorab-Statik kann nicht laufen: package.json des Kandidaten (${git(["rev-parse", "--short=8", "HEAD"])}) trägt kein „${VORAB}“`);
+    const t0 = Date.now();
+    const r = spawnSync(cmd, { cwd: ZUG, shell: true, encoding: "utf8", maxBuffer: 1 << 26 });
+    const s = ((Date.now() - t0) / 1000).toFixed(1);
+    const txt = (r.stdout || "") + (r.stderr || "");
+    sauber(); // was eine Wand in den Baum schrieb, kommt nie in den Kandidaten
+    if (r.status === 0) return { gruen: true, s };
+    const rot = txt.split("\n").map((l) => l.trim()).filter((l) => l.includes("❌")).slice(0, 3);
+    if (!rot.length && (r.status === null || VORAB_MASCHINE.test(txt)))
+        throw new Error(`Vorab-Statik kann nicht laufen (Exit ${r.status}): ${txt.trim().split("\n").slice(-2).join(" | ").slice(0, 300)}`);
+    return { gruen: false, s, rot: rot.length ? rot : [txt.trim().split("\n").slice(-2).join(" | ").slice(0, 300)] };
+}
+function juengster(specs) {
+    const t = (s) => Number(git(["log", "-1", "--format=%ct", s.split("@")[1]], ZUG));
+    return specs.reduce((a, b) => (t(b) > t(a) ? b : a));
+}
+function vorabStatik(basis, gebaut) {
+    if (!gebaut.drin.length) return gebaut;
+    const t0 = Date.now();
+    const sek = () => ((Date.now() - t0) / 1000).toFixed(1);
+    let v = vorabLauf();
+    let laeufe = 1;
+    if (v.gruen) return { ...gebaut, zeilen: [...gebaut.zeilen, `VORAB-STATIK GRÜN am Bündel (${v.s} s): ${gebaut.drin.map(kurzSpec).join(" ")}`] };
+    mergeAlle(basis, []);
+    const m = vorabLauf();
+    laeufe++;
+    if (!m.gruen) {
+        const voll = mergeAlle(basis, gebaut.drin);
+        return { drin: voll.drin, zeilen: [...gebaut.zeilen, `VORAB-STATIK MAIN ROT ${basis.slice(0, 8)} (kein Täter im Zug, der Zug fährt wie bisher, ${sek()} s): ${m.rot.join(" · ")}`] };
+    }
+    const fallen = [];
+    let liste = gebaut.drin.slice();
+    let ende = { drin: [], zeilen: [] };
+    for (;;) {
+        let taeter;
+        let wie;
+        if (liste.length === 1) [taeter, wie] = [[{ spec: liste[0], rot: v.rot }], "allein im Bündel"];
+        else {
+            const heil = liste.filter((spec) => (mergeAlle(basis, liste.filter((x) => x !== spec)), laeufe++, vorabLauf().gruen));
+            if (heil.length === 1) [taeter, wie] = [[{ spec: heil[0], rot: v.rot }], "ohne ihn grün"];
+            else if (heil.length > 1) {
+                const j = juengster(heil);
+                [taeter, wie] = [[{ spec: j, rot: v.rot }], `erst die Kombination mit ${heil.filter((x) => x !== j).map((x) => x.split("@")[0]).join(", ")} bricht — der jüngste Stempel fällt`];
+            } else {
+                const allein = [];
+                for (const spec of liste) {
+                    mergeAlle(basis, [spec]);
+                    const a = vorabLauf();
+                    laeufe++;
+                    if (!a.gruen) allein.push({ spec, rot: a.rot });
+                }
+                [taeter, wie] = allein.length ? [allein, "allein gegen main rot"] : [[{ spec: juengster(liste), rot: v.rot }], "kein Auslassen heilt — der jüngste Stempel fällt"];
+            }
+        }
+        for (const t of taeter) fallen.push({ ...t, wie });
+        liste = liste.filter((x) => !taeter.some((t) => t.spec === x));
+        if (!liste.length) {
+            mergeAlle(basis, []);
+            break;
+        }
+        const b = mergeAlle(basis, liste);
+        v = vorabLauf();
+        laeufe++;
+        if (v.gruen) {
+            ende = b;
+            break;
+        }
+    }
+    const weg = new Set(fallen.map((f) => f.spec.split("@")[0]));
+    return {
+        drin: ende.drin,
+        zeilen: [
+            ...gebaut.zeilen.filter((z) => !/^drin /.test(z) && !weg.has((/^gefallen (\S+?)[@:]/.exec(z) || [])[1])),
+            ...ende.zeilen,
+            ...fallen.map((f) => `gefallen ${kurzSpec(f.spec)}: VORAB-STATIK ROT an main ${basis.slice(0, 8)} (${f.wie}): ${f.rot.join(" · ")}`),
+            `VORAB-STATIK: ${fallen.length} Täter (${fallen.map((f) => f.spec.split("@")[0]).join(", ")}) in ${laeufe} Läufen, ${sek()} s — es fahren: ${ende.drin.map(kurzSpec).join(" ") || "keiner"}`,
+        ],
+    };
+}
+// vorab --basis <sha|ref> <zweig@sha>… — Bau-Weg und Vorab-Statik ohne Stufe und Push (der Probe-Rahmen: selbsttest --vorab); Exit 0 =
+// es bleibt ein Kandidat
+function vorab(args) {
+    const bi = args.indexOf("--basis");
+    if (bi < 0) throw new Error("vorab braucht --basis <ref>");
+    const zweige = args.filter((a, i) => !a.startsWith("--") && i !== bi + 1);
+    const frei = bauSchloss(zweige);
+    try {
+        const g = vorabStatik(git(["rev-parse", args[bi + 1]], ZUG), mergeAlle(git(["rev-parse", args[bi + 1]], ZUG), zweige));
+        for (const z of g.zeilen) console.log(z);
+        console.log(`VORAB KANDIDAT ${g.drin.map(kurzSpec).join(" ") || "keiner"}`);
+        return g.drin.length ? 0 : 1;
+    } finally {
+        frei();
+    }
+}
+
 function bau(args, opt = {}) {
     const frei = bauSchloss(args.filter((a) => !a.startsWith("--")));
     try {
@@ -961,39 +1116,9 @@ function bauRumpf(args, { trocken = false } = {}) {
     sauber();
     if (!/^[0-9a-f]{7,40}$/.test(basisRef)) holeZweig(basisRef.replace(/^origin\//, ""));
     const basis = git(["rev-parse", /^[0-9a-f]{7,40}$/.test(basisRef) ? basisRef : `origin/${basisRef.replace(/^origin\//, "")}`], INTEG);
-    git(["checkout", "-q", "--detach", "--force", basis], ZUG);
-    const drin = [];
-    for (const spec of zweige) {
-        let [z, sha] = spec.split("@");
-        if (siegel(z)) {
-            console.log(`gefallen ${z}: Siegel-Wort „${siegel(z)}" im Zweig-Namen (wandert in die Merge-Message)`);
-            continue;
-        }
-        if (!sha) {
-            holeZweig(z);
-            sha = git(["rev-parse", `refs/remotes/origin/${z}`], ZUG, true).stdout.trim();
-        } else if (git(["cat-file", "-e", `${sha}^{commit}`], ZUG, true).status !== 0) holeZweig(z);
-        if (!sha) {
-            console.log(`gefallen ${z}: Zweig fehlt auf origin`);
-            continue;
-        }
-        sha = git(["rev-parse", sha], ZUG);
-        if (git(["merge-base", "--is-ancestor", sha, "HEAD"], ZUG, true).status === 0) {
-            console.log(`schon drin ${z}@${sha.slice(0, 8)}`);
-            continue;
-        }
-        // 01.11. z118: ein Rumpf MITTEN im Cloud-Zweig trug das Siegel, der GANZE Kandidat fiel am Ende („Siegel-Wort in Merge-
-        // oder Stufen-Message“) — nun fällt nur der Zweig, der es bringt, beim Commit genannt (was der Merge brächte: HEAD..sha)
-        const sc = git(["log", "--format=%h %s%x00%B%x01", `HEAD..${sha}`], ZUG).split("\x01").find((m) => siegel(m));
-        if (sc) {
-            console.log(`gefallen ${z}@${sha.slice(0, 8)}: Siegel-Wort „${siegel(sc)}" im Commit ${sc.trim().split("\0")[0].slice(0, 100)}`);
-            continue;
-        }
-        const r = mergeEinen(z, sha);
-        const kl = Object.entries(r.kl || {}).map(([d, k]) => `${d} ${Object.entries(k).map(([x, n]) => `${x}${n}`).join("")}`);
-        console.log(r.drin ? `drin ${z}@${sha.slice(0, 8)}${kl.length ? ` · aufgelöst ${kl.join(", ")}` : ""}` : `gefallen ${z}@${sha.slice(0, 8)}: ${r.grund}`);
-        if (r.drin) drin.push(z);
-    }
+    const gebaut = vorabStatik(basis, mergeAlle(basis, zweige));
+    for (const z of gebaut.zeilen) console.log(z);
+    const drin = gebaut.drin.map((s) => s.split("@")[0]);
     if (!drin.length) {
         console.log(`KEIN KANDIDAT: kein Zweig drin (Basis ${basis.slice(0, 8)})`);
         return 1;
@@ -1371,10 +1496,15 @@ const pushInhalt = (grund) => /pre-receive hook declined|rule violations|GH0\d\d
 // im Bündel: GEURTEILT, der Dienst schickt ihn EINMAL heim (heim.sh, cloud-post/<zweig>.md). Konflikt, Zwischenstand-Klassen und
 // ein fehlender Zweig hängen am Bündel oder an main und bleiben FREI.
 const kopfEigen = (zeile) => /: Siegel-Wort „[^"“]*["“] im (Commit|Zweig-Namen)/.test(zeile || "");
-function nachweisUrteil({ zweige, inMain, drin, gelandet, gefallen = new Set(), eigen = new Set() }) {
+// VORAB (20.11., z631): ein Täter der Vorab-Statik wurde NICHT gefahren — er steht weder als geurteilt (sein Rot hing an main oder an
+// der Kombination) noch als „nicht gelandet“ (zug-nicht-gelandet.txt); der Dienst hält ihn in zug-vorab-rot.txt, bis sein Kopf ODER
+// main sich ändert. Das gilt auch, wenn er allein fuhr.
+const VORAB_RE = /: VORAB-STATIK ROT an main ([0-9a-f]{7,40}) /;
+function nachweisUrteil({ zweige, inMain, drin, gelandet, gefallen = new Set(), eigen = new Set(), vorab = new Map() }) {
     return zweige.map((spec) => {
         const [zweig, sha] = spec.split("@");
         if (inMain.has(spec)) return { zweig, sha, wort: "GELANDET" };
+        if (!drin.has(zweig) && vorab.has(zweig)) return { zweig, sha, wort: "VORAB", main: vorab.get(zweig) };
         if (drin.has(zweig) && !gelandet) return { zweig, sha, wort: "GEURTEILT" };
         if (!drin.has(zweig) && eigen.has(zweig)) return { zweig, sha, wort: "GEURTEILT", kopfEigen: true };
         if (!drin.has(zweig) && zweige.length === 1 && gefallen.has(zweig)) return { zweig, sha, wort: "GEURTEILT" };
@@ -1402,8 +1532,15 @@ function nachweis(args) {
     }
     let frei = 0;
     const eigen = new Set([...fall].filter(([, z]) => kopfEigen(z)).map(([b]) => b));
-    for (const u of nachweisUrteil({ zweige, inMain, drin, gelandet: args.includes("--gelandet"), gefallen: new Set(fall.keys()), eigen })) {
+    const vorab = new Map([...fall].filter(([, z]) => VORAB_RE.test(z)).map(([b, z]) => [b, VORAB_RE.exec(z)[1]]));
+    for (const u of nachweisUrteil({ zweige, inMain, drin, gelandet: args.includes("--gelandet"), gefallen: new Set(fall.keys()), eigen, vorab })) {
         if (u.wort === "FREI") frei++;
+        if (u.wort === "VORAB") {
+            // die ❌-Zeilen sind der Grund in der Warte-Liste; die Zeile darf hier länger sein als die 200 Zeichen der übrigen Gründe
+            const z = text.split("\n").filter((l) => l.includes(`gefallen ${u.zweig}@`) && VORAB_RE.test(l)).pop() || "";
+            console.log(`NACHWEIS VORAB ${u.zweig}@${u.sha} ${u.main} — ${z.replace(/^.*?: VORAB-STATIK ROT an main \S+ /, "").trim().slice(0, 600)}`);
+            continue;
+        }
         const grund = u.wort === "FREI" ? ` — ${u.grund}${fall.has(u.zweig) ? `: ${fall.get(u.zweig)}` : ""}` : u.kopfEigen ? ` — kopf-eigen: ${fall.get(u.zweig)}` : u.wort === "GEURTEILT" && fall.has(u.zweig) ? ` — fiel allein: ${fall.get(u.zweig)}` : "";
         console.log(`NACHWEIS ${u.wort} ${u.zweig}@${u.sha}${grund}`);
     }
@@ -1468,10 +1605,69 @@ function selbsttestErbe(pr) {
         fs.rmSync(d, { recursive: true, force: true });
     }
 }
-function selbsttest() {
+// selbsttest --vorab — DER ECHTE FALL z631 (20.11.) in einem Temp-Worktree des Repos (ZUG_PROBE_REPO, sonst INTEG; node_modules als
+// Junction): (a) main 3da9d9ae + w28-ein-schreiber-wand 8ea58de7 + kern-sprossen-heil-2 + los-huelle-2 + stein-ein-gesetz → die
+// Vorab-Statik nennt die Wand als Täter (nachweis: VORAB), die drei übrigen bilden den Kandidaten, und der ist grün; (b) dieselben drei
+// ohne die Wand: grün, alle fahren; (c) die Mutante „ohne Vorab-Schritt“ (der alte Bau: alle vier gemergt, gepusht) — der Kandidat
+// ist rot an check:vorab, die Probe fängt ihn. Der Bau läuft im Kind mit ZUG_WT (nie im Worktree des Dienstes).
+const Z631 = {
+    main: "3da9d9ae96",
+    wand: "w28-ein-schreiber-wand@8ea58de7",
+    rest: ["w28-kern-sprossen-heil-2@3aff015f", "w28-los-huelle-2@f1de681c", "w28-stein-ein-gesetz@6429df6d"],
+};
+function selbsttestVorab(pr) {
+    const repo = process.env.ZUG_PROBE_REPO || INTEG;
+    const voll = (k) => {
+        const [z, s] = k.split("@");
+        if (git(["cat-file", "-e", `${s}^{commit}`], repo, true).status !== 0) git(["fetch", "-q", "origin", `refs/archiv/2026-11-20/${z}`, z], repo, true);
+        return `${z}@${git(["rev-parse", s], repo)}`;
+    };
+    const main = git(["rev-parse", Z631.main], repo);
+    const wand = voll(Z631.wand);
+    const rest = Z631.rest.map(voll);
+    if (!fs.existsSync(path.join(repo, "node_modules"))) throw new Error(`selbsttest --vorab: ${repo} trägt kein node_modules`);
+    const d = fs.mkdtempSync(path.join(os.tmpdir(), "zug-vorab-"));
+    const wt = path.join(d, "wt");
+    git(["worktree", "add", "-q", "--detach", wt, main], repo);
+    fs.symlinkSync(path.join(repo, "node_modules"), path.join(wt, "node_modules"), "junction");
+    const kind = (args) => {
+        const t0 = Date.now();
+        const r = spawnSync(process.execPath, [__filename, ...args], { encoding: "utf8", maxBuffer: 1 << 26, env: { ...process.env, ZUG_WT: wt } });
+        return { out: (r.stdout || "") + (r.stderr || ""), rc: r.status, s: ((Date.now() - t0) / 1000).toFixed(1) };
+    };
+    const kandidat = (out) => ((/^VORAB KANDIDAT (.*)$/m.exec(out) || [])[1] || "").split(" ").filter((x) => x && x !== "keiner");
+    const name = (k) => k.split("@")[0];
+    try {
+        const a = kind(["vorab", "--basis", main, wand, ...rest]);
+        const fallA = new Map(a.out.split("\n").filter((l) => VORAB_RE.test(l)).map((l) => [/^gefallen (\S+?)@/.exec(l)[1], VORAB_RE.exec(l)[1]]));
+        const ua = nachweisUrteil({ zweige: [wand, ...rest], inMain: new Set(), drin: new Set(kandidat(a.out).map(name)), gelandet: false, gefallen: new Set(fallA.keys()), vorab: fallA });
+        const kA = kandidat(a.out).map(name).sort().join(" ");
+        console.log(`  (a) ${a.s} s: ${a.out.trim().split("\n").filter((l) => /VORAB/.test(l)).map((l) => l.slice(0, 220)).join("\n      ")}`);
+        pr("Vorab (a) z631: die Wand ist der Täter, die drei übrigen bilden den grünen Kandidaten, nachweis sagt VORAB (nie FREI)",
+            a.rc === 0 && kA === rest.map(name).sort().join(" ") && /Ein-Schreiber|REGISTER-ZEILE/.test(a.out) && ua.map((u) => `${u.zweig}:${u.wort}`).join(" ") === `${name(wand)}:VORAB ${rest.map((r) => `${name(r)}:GEURTEILT`).join(" ")}`);
+        const b = kind(["vorab", "--basis", main, ...rest]);
+        console.log(`  (b) ${b.s} s: ${(/^VORAB-STATIK .*$/m.exec(b.out) || ["—"])[0].slice(0, 200)}`);
+        pr("Vorab (b) die drei ohne die Wand: grün, alle fahren", b.rc === 0 && /^VORAB-STATIK GRÜN/m.test(b.out) && kandidat(b.out).length === 3);
+        // (c) die Mutante: der alte Bau ohne den Vorab-Schritt — derselbe Bau-Weg, das Urteil der Batterie am Kandidaten, der gepusht würde
+        const c = spawnSync(process.execPath, ["-e", `const z=require(${JSON.stringify(__filename)});const g=z.mergeAlle(${JSON.stringify(main)},${JSON.stringify([wand, ...rest])});const v=z.vorabLauf();console.log("MUTANTE drin="+g.drin.length+" "+(v.gruen?"GRÜN":"ROT "+v.rot[0]))`], { encoding: "utf8", maxBuffer: 1 << 26, env: { ...process.env, ZUG_WT: wt } });
+        const co = (c.stdout || "") + (c.stderr || "");
+        console.log(`  (c) ${co.trim().split("\n").pop().slice(0, 200)}`);
+        // die Probe-Regel: was gepusht würde, ist an check:vorab grün. Die Mutante bricht sie → GEFANGEN (sonst ist die Probe blind)
+        pr("Vorab (c) Mutante ohne Vorab-Schritt: der rote Kandidat (alle vier) führe durch — GEFANGEN", /^MUTANTE drin=4 ROT /m.test(co));
+    } finally {
+        git(["worktree", "remove", "--force", wt], repo, true);
+        fs.rmSync(d, { recursive: true, force: true });
+    }
+}
+function selbsttest(args = []) {
     const fall = [];
     let faelle = 0;
     const pr = (n, ok) => (faelle++, ok || fall.push(n));
+    if (args.includes("--vorab")) {
+        selbsttestVorab(pr);
+        console.log(fall.length ? `zug selbsttest --vorab ROT: ${fall.join(" · ")}` : `zug selbsttest --vorab grün (${faelle} Fälle)`);
+        return fall.length ? 1 : 0;
+    }
     pr("a kürzere Kommentar-Seite", loeseBlock("x.js", ["// lang lang", "// zwei"], [], ["// kurz"]).z.join() === "// kurz");
     const au = loeseBlock("x.js", ["// a", "// c", "// d"], ["// a", "// b", "// c", "// d"], ["// a", "// b", "// d"]);
     pr("a beide strichen verschiedene Kommentar-Zeilen → beide Streichungen", au && au.kl === "a" && au.z.join() === "// a,// d");
@@ -1542,6 +1738,12 @@ function selbsttest() {
             kopfEigen(`gefallen a@1: Siegel-Wort „fertig" im Commit bb4045f79a WIP x`) &&
             kopfEigen(`gefallen a: Siegel-Wort „RUND" im Zweig-Namen (wandert in die Merge-Message)`) &&
             !kopfEigen("gefallen b@2: merge scheitert: CONFLICT (content)") && !kopfEigen("gefallen b: Zweig fehlt auf origin"));
+    // z631 (20.11.): ein Täter der Vorab-Statik wurde nicht gefahren — VORAB, auch allein; nie FREI (zug-nicht-gelandet) und nie GEURTEILT
+    const vz = "gefallen w@1: VORAB-STATIK ROT an main 3da9d9ae (ohne ihn grün): ❌ REGISTER-ZEILE STIRBT";
+    pr("Nachweis Vorab: der Täter ist VORAB (im Bündel und allein), die übrigen urteilt ihr Zug",
+        nw({ zweige: ["w@1", "k@2"], inMain: new Set(), drin: new Set(["k"]), gelandet: false, gefallen: new Set(["w"]), vorab: new Map([["w", "3da9d9ae"]]) }) === "w:VORAB k:GEURTEILT" &&
+            nw({ zweige: ["w@1"], inMain: new Set(), drin: new Set(), gelandet: false, gefallen: new Set(["w"]), vorab: new Map([["w", "3da9d9ae"]]) }) === "w:VORAB" &&
+            VORAB_RE.exec(vz)[1] === "3da9d9ae" && !VORAB_RE.test("gefallen b@2: merge scheitert: CONFLICT (content)"));
     // der Grund eines gefallenen Pushs (z447): die letzte Zeile nennt ihn nie — die Mutante ist das alte „letzte Zeile“
     const pe = (...z) => [...z, "error: failed to push some refs to 'https://github.com/x/y.git'"].join("\n");
     const pg1 = pushGrund(pe("To https://github.com/x/y.git", " ! [remote rejected]     abc123 -> integ-probe (cannot lock ref 'refs/heads/integ-probe': is at 1 but expected 2)"));
@@ -1560,7 +1762,7 @@ function selbsttest() {
     return fall.length ? 1 : 0;
 }
 
-if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE };
+if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE, mergeAlle, vorabLauf, vorabStatik };
 else (async () => {
     const [verb, ...args] = process.argv.slice(2);
     let rc = 2;
@@ -1576,14 +1778,15 @@ else (async () => {
         else if (verb === "wackler") rc = await wackler(args);
         else if (verb === "landen") rc = await landen(args);
         else if (verb === "punkte") rc = await punkte(args);
-        else if (verb === "selbsttest") rc = selbsttest();
+        else if (verb === "selbsttest") rc = selbsttest(args);
+        else if (verb === "vorab") rc = vorab(args);
         else if (verb === "nachweis") rc = nachweis(args);
         else if (verb === "erbe") {
             // erbe <kandidat> — liest nur: greift das Erbe der vollen Batterie an diesem Kandidaten (Trockenlauf, kein Push, kein Anstoß)
             const e = await erbeVoll(git(["rev-parse", args.find((a) => !a.startsWith("--"))], INTEG));
             console.log(`ERBE ${e.erbt ? "GREIFT" : "NEIN"}: ${e.zeile}`);
             rc = e.erbt ? 0 : 1;
-        } else console.log("zug.sh bereit|bau|urteil|teile|wackler|landen|punkte|nachweis|erbe|selbsttest — siehe zug.md");
+        } else console.log("zug.sh bereit|bau|vorab|urteil|teile|wackler|landen|punkte|nachweis|erbe|selbsttest [--vorab] — siehe zug.md");
     } catch (e) {
         console.log(`zug ${verb} FEHLER: ${e.message}`);
         rc = 2;

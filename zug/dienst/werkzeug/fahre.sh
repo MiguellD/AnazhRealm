@@ -92,7 +92,8 @@ say "bau gegen main ${BASIS:0:8}: $*"
 # direkt nach integ-probe: dort laufen CPU-Batterie und echt im SELBEN Lauf parallel (echt braucht nur den Kopf-Richter) —
 # vorher erst integ-zug, dann integ-probe: ~12 + ~15 min hintereinander
 out=$(sh "$W/zug.sh" bau --basis origin/main "$@" --push +integ-probe 2>&1)
-echo "$out" | grep -E "^(drin|gefallen|schon drin|KANDIDAT|KEIN|PUSH|aufgefrischt)" | sed "s/^/  /"
+# VORAB-STATIK (20.11., z631): die Batterie check:vorab am Kandidaten vor dem Push — ihr Täter steht als „gefallen … VORAB-STATIK ROT“
+echo "$out" | grep -E "^(drin|gefallen|schon drin|KANDIDAT|KEIN|PUSH|aufgefrischt|VORAB-STATIK)" | sed "s/^/  /"
 K=$(echo "$out" | sed -n 's/^KANDIDAT \([0-9a-f]\{40\}\) .*/\1/p')
 [ -n "$K" ] || rot bau "kein Kandidat ($(echo "$out" | tail -1))"
 # der Grund steht im Urteil (z447): „zug bau FEHLER: …“ heißt Maschine — zug-dienst.sh gibt die Köpfe frei —, „PUSH URTEIL“ heißt Inhalt

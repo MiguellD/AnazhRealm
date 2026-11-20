@@ -49,9 +49,17 @@ bereit() {
     # EIN ABRUF FÜR ALLE ZWEIGE (13.11. z424: das Sammeln stand 14:51:21 → 15:09:46 = 18 min vor einem Zug mit EINEM bereiten Zweig —
     # gemessen 11,2 s je Zweig-Abruf bei 128 Zweigen, alle auf einmal 17,3 s). Der Abruf je Zweig bleibt nur für den Kopf, der
     # zwischen ls-remote und diesem Abruf wanderte (sein Objekt fehlt dann noch).
-    local z rs="" kopf=""
+    local z rs="" kopf="" mh vr
     for z in $ZWEIGE; do rs="$rs +$z:refs/remotes/origin/${z#refs/heads/}"; done
     git -C $R fetch -q origin $rs 2>/dev/null
+    # DER TÄTER DER VORAB-STATIK WARTET BEIM NAMEN (20.11., z631): zug-vorab-rot.txt trägt „<zweig> <kopf> <main8> <❌-Zeilen>“ — er
+    # wurde nicht gefahren; er wird wieder gesammelt, sobald sein Kopf ODER main sich ändert (sein Rot hing an main oder an der
+    # Kombination). Eine Zeile zu einem früheren main fällt hier.
+    mh=$(git -C $R rev-parse -q --verify origin/main 2>/dev/null)
+    if [ -s "$W/zug-vorab-rot.txt" ]; then
+        awk -v m="$mh" 'index(m, $3) == 1' "$W/zug-vorab-rot.txt" >"$W/zug-vorab-rot.txt.neu"
+        mv "$W/zug-vorab-rot.txt.neu" "$W/zug-vorab-rot.txt"
+    fi
     while read -r sha ref; do
         b=${ref#refs/heads/}
         case "$b" in *-pm) continue ;; esac
@@ -62,6 +70,11 @@ bereit() {
         case " $kopf " in *" $sha "*) continue ;; esac
         kopf="$kopf $sha"
         grep -q "^$b $sha$" "$G" && continue
+        vr=$(grep "^$b $sha " "$W/zug-vorab-rot.txt" 2>/dev/null | tail -1)
+        if [ -n "$vr" ]; then
+            echo "$b ${sha:0:8}: VORAB-STATIK ROT am Bündel mit main $(echo "$vr" | cut -d' ' -f3) — fährt wieder mit neuem Kopf oder neuem main: $(echo "$vr" | cut -d' ' -f4- | cut -c1-400)" >>"$W/zug-nie-leer.wartet"
+            continue
+        fi
         git -C $R cat-file -e "$sha^{commit}" 2>/dev/null || git -C $R fetch -q origin "+$ref:refs/remotes/origin/$b" 2>/dev/null
         t=$(git -C $R log -1 --format=%s "$sha" 2>/dev/null)
         # EIN BETREFF, DER „Abgabe w2…" TRÄGT, ABER NICHT DAMIT BEGINNT, STEHT BEIM NAMEN IN DER WARTELISTE (13.11.: w28-guss-bruch
@@ -208,6 +221,16 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
         sh "$D/heim.sh" "${z%@*}" "${z#*@}" "${rest#— kopf-eigen: }" </dev/null >/dev/null 2>&1
         echo "$(date +%H:%M) $id KOPF-EIGEN ${z%@*} ${z#*@}: ${rest#— kopf-eigen: } — bleibt draussen bis zu einem neuen Kopf" >>"$L"
     done
+    # VORAB GEHT NICHT IN DEN KREIS UND NICHT IN „NICHT GELANDET“ (20.11., z631): der Täter der Vorab-Statik wurde nicht gefahren —
+    # sein Kopf wird frei, und zug-vorab-rot.txt hält ihn wartend (bereit), bis sein Kopf oder main sich ändert
+    echo "$nw" | grep "^NACHWEIS VORAB " | while read -r _ _ z mb _ rest; do
+        frei_geben "$z"
+        echo "${z%@*} ${z#*@} $mb $rest" >>"$W/zug-vorab-rot.txt"
+        echo "$(date +%H:%M) $id VORAB-STATIK ${z%@*} ${z#*@}: nicht gefahren (main $mb) — wartet auf neuen Kopf oder neues main: ${rest:0:300}" >>"$L"
+    done
+    # main allein rot an der Vorab-Statik: kein Täter im Zug, er fuhr wie bisher — der Puls nennt es, solange main dieser Kopf ist
+    grep -h "VORAB-STATIK MAIN ROT" "$F" 2>/dev/null | tail -1 | sed "s/^ *//" >"$W/zug-vorab-main.txt"
+    [ -s "$W/zug-vorab-main.txt" ] && echo "$(date +%H:%M) $id $(cut -c1-300 "$W/zug-vorab-main.txt")" >>"$L"
     echo "$nw" | grep -q "^NACHWEIS" || echo "$(date +%H:%M) $id nachweis: kein Ergebnis — $(echo "$nw" | tail -1 | cut -c1-200)" >>"$L"
     rm -f "$S/zug.fahrt"
 }
@@ -215,7 +238,7 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
 # fällt, sobald ihr Kopf in main liegt oder der Zweig einen neuen Kopf trägt
 nicht_gelandet() {
     local f="$W/zug-nicht-gelandet.txt" b s id rest k out=""
-    [ -s "$f" ] || return 0
+    [ -s "$f" ] || { vorab_main; return 0; }
     : >"$f.neu"
     while read -r b s id rest; do
         git -C $R merge-base --is-ancestor "$s" origin/main 2>/dev/null && continue
@@ -226,6 +249,15 @@ nicht_gelandet() {
     done <"$f"
     mv "$f.neu" "$f"
     [ -n "$out" ] && echo " · NICHT GELANDET:$out"
+    vorab_main
+}
+# vorab_main — main allein rot an der Vorab-Statik (zug-vorab-main.txt, aus dem letzten Bau: „VORAB-STATIK MAIN ROT <main8> …“),
+# genannt im Puls, solange main dieser Kopf ist
+vorab_main() {
+    local vm
+    vm=$(cut -d' ' -f4 "$W/zug-vorab-main.txt" 2>/dev/null)
+    [ -n "$vm" ] || return 0
+    case "$(git -C $R rev-parse -q --verify origin/main 2>/dev/null)" in "$vm"*) echo " · MAIN $vm ROT an der Vorab-Statik:$(cut -d: -f2- "$W/zug-vorab-main.txt" | cut -c1-160)" ;; esac
 }
 
 [ -n "$blick" ] && {
