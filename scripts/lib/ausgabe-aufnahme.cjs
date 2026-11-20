@@ -1771,12 +1771,13 @@ function baumFallHaken() {
 }
 // DIE ORTE LIEGEN (w28-ort-vor-wald; Seite, nach dem Sprung): Takt um Takt mit seinem Bild (`__werkTakt`), bis kein Vorrat ohne Grund
 // (`_dorfVorraete`; einer ohne Plan v2 legt ihn erst beim Erwachen), kein Dorf-Akt (`_dorfOffen`) und kein wartender Pflanz-Gang
-// (`_waldPflanzWarten`) 120 Takte am Stück offen steht; Deckel 90 s → { takte, ms, offen } (`offen` null: sie liegen).
+// (`_waldPflanzWarten`) 120 Takte am Stück offen steht → { takte, ms }. Das EINE Warten (`__deckel`, welt-boot): es zählt einen Takt
+// nur, wenn weder die Welt noch die Orte offen haben, und wirft beim Namen, wenn die Orte nie liegen (die Warte-Wand: keine Wanduhr-Frist).
 function baumFallWarten() {
     return (async () => {
         const t0 = performance.now();
         let [takte, ruhig, offen] = [0, 0, null];
-        while (performance.now() - t0 < 90000) {
+        for (const weiter = window.__deckel("die Orte liegen", 1200, () => offen !== null); ruhig < 120 && weiter(); ) {
             const bild = __werkTakt();
             takte++;
             const V = [...(r._dorfVorraete || new Map())].filter(([, w]) => !w.grund && !(w.da && !w.v2)).map(([k]) => k);
@@ -1784,22 +1785,19 @@ function baumFallWarten() {
             const p = r._waldPflanzWarten ? r._waldPflanzWarten.size : 0;
             offen = V.length || d || p ? `Vorräte ohne Grund ${V.length}${V.length ? ` (${V.slice(0, 3).join(" ")})` : ""} · Dorf offen ${d} · Pflanz-Gänge warten ${p}` : null; // prettier-ignore
             ruhig = offen ? 0 : ruhig + 1;
-            if (ruhig >= 120) break;
             await bild;
         }
-        return { takte, ms: Math.round(performance.now() - t0), offen: ruhig >= 120 ? null : offen };
+        return { takte, ms: Math.round(performance.now() - t0) };
     })();
 }
-// DAS URTEIL DES BAUMS VOR DEM ORT (rein; `__baumFall` und `baumFallWarten` nach dem Sprung): ROT, wenn die Orte bis zum Deckel nicht
-// lagen (ungemessen) oder im Laub-Rand ein Baum des Walds fiel, den keine Fläche des Erwachens nahm — der Saum seines Orts, der nach
-// seiner Pflanzung kam (`saum`), oder ein anderer Weg (`sonst`). Die Flächen des Erwachens (Wege, Grundriss: sie legt das Erwachen,
-// nie der Grund im Vorlauf) stehen offen beim Namen. → { rot, zeile }
+// DAS URTEIL DES BAUMS VOR DEM ORT (rein; `__baumFall` und `baumFallWarten` nach dem Sprung): ROT, wenn im Laub-Rand ein Baum des Walds
+// fiel, den keine Fläche des Erwachens nahm — der Saum seines Orts, der nach seiner Pflanzung kam (`saum`), oder ein anderer Weg
+// (`sonst`). Die Flächen des Erwachens (Wege, Grundriss: sie legt das Erwachen, nie der Grund im Vorlauf) stehen offen beim Namen;
+// liegen die Orte nie, wirft schon das Warten beim Namen. → { rot, zeile }
 function baumFallUrteil(f) {
     const rot = [];
     const je = (g) => f.nach.filter((e) => e.grund === g).length;
     const taeter = f.nach.filter((e) => e.grund !== "wege" && e.grund !== "grundriss");
-    if (f.offen)
-        rot.push(`BAUM VOR DEM ORT: ungemessen — die Orte lagen ${Math.round(f.ms / 1000)} s nach dem Sprung nicht (${f.offen})`);
     if (taeter.length)
         rot.push(
             `BAUM VOR DEM ORT: ${taeter.length} Bäume des Walds fielen nach dem Sprung im Laub-Rand (≤ ${Math.round(f.laubRand)} m) — sie standen vor dem Grund ihres Orts: ${taeter
@@ -2045,11 +2043,10 @@ async function bildLinsenSelbsttest() {
     {
         const F = (z, f = baumFallUrteil) => f(z).rot.join(" | ");
         const flaeche = [{ d: 95, typ: "baum_fichte", grund: "wege" }, { d: 195, typ: "baum_birke", grund: "grundriss" }]; // prettier-ignore
-        const ruhig = { laubRand: 216, faelle: 543, takte: 900, ms: 21000, offen: null, nach: flaeche };
+        const ruhig = { laubRand: 216, faelle: 543, takte: 900, ms: 21000, nach: flaeche };
         const taeter = { ...ruhig, nach: [...flaeche, { d: 150, typ: "baum_fichte", grund: "saum" }, { d: 96, typ: "baum_kiefer", grund: "saum" }] }; // prettier-ignore
         if (F(ruhig)) v.push(`S: die offenen Flächen des Erwachens fallen ROT: ${F(ruhig)}`);
         if (!/Saum 0, sonst 0 · offen \(die Fläche legt das Erwachen\): Wege 1, Grundriss 1 · die Orte lagen nach 900 Takten/.test(baumFallUrteil(ruhig).zeile)) v.push(`S: die Zeile des Baums vor dem Ort nennt die Flächen nicht: ${baumFallUrteil(ruhig).zeile}`); // prettier-ignore
-        if (!/^BAUM VOR DEM ORT: ungemessen — die Orte lagen 90 s nach dem Sprung nicht \(Vorräte ohne Grund 1\)$/.test(F({ ...ruhig, ms: 90000, offen: "Vorräte ohne Grund 1" }))) v.push("S: ein Gang, dessen Orte nie lagen, misst den Fall still"); // prettier-ignore
         if (!/^BAUM VOR DEM ORT: 1 Bäume .*: baum_eiche 40 m \(sonst\)$/.test(F({ ...ruhig, nach: [{ d: 40, typ: "baum_eiche", grund: "sonst" }] }))) v.push("S: ein Fall ohne Marke geht still durch"); // prettier-ignore
         klasse("S Baum vor dem Ort", (f) => !/^BAUM VOR DEM ORT: 2 Bäume des Walds fielen nach dem Sprung im Laub-Rand \(≤ 216 m\) — sie standen vor dem Grund ihres Orts: baum_kiefer 96 m \(saum\) · baum_fichte 150 m \(saum\)$/.test(F(taeter, f)) && (F(taeter, f) || "kein ROT"), baumFallUrteil, mutante(baumFallUrteil, 'e.grund !== "wege" && e.grund !== "grundriss"', 'e.grund === "sonst"', {})); // prettier-ignore
     }
