@@ -1307,19 +1307,19 @@ class AnazhRealm_siedlung_bewohner {
         wurzel.updateMatrixWorld(true);
         return (R.pose = { wurzel, teile, ruhe });
     }
-    // DIE POSE EINES LEIBS AUF DER VORLAGE (w26-leib-raum, die Pose in der Ruhe ihres Knochens — SMPL: dieselbe Pose θ, die Gelenke
-    // des Raums): je Knochen der Vorlage die Drehung des gestellten Leibs `g` gegen seine Ruhe (`_tierBaum.ruhe`), auf die Ruhe der
-    // Vorlage gelegt, dazu der Schritt seiner Lage und das Maß seiner Skala. Die Gelenke der Person liegen dabei auf denen der
-    // Vorlage: gemessen weichen sie über die Achsen des Raums höchstens 21 mm quer ab (die Schulter, Geschlecht) — der Gang dreht
-    // die Glieder um die Querachse, die Querlage trägt er nicht.
+    // DIE POSE EINES LEIBS AUF DER VORLAGE (w26-leib-raum, SMPL: dieselbe Pose θ, die Gelenke des Raums): je Knochen der Vorlage die
+    // Winkel des gestellten Leibs `g` über seiner Ruhe (`_tierBaum.ruhe`; das Pose-Gesetz koerper `leibRigPose` ADDIERT sie) auf der Ruhe
+    // der Vorlage — wo beide gleich ruhen, seine Drehung —, dazu der Schritt seiner Lage und das Maß seiner Skala (die Gelenke weichen quer
+    // höchstens 21 mm ab: Schulter, Geschlecht). Bis hier galt die Drehung auch, wo der Arm nach seinem Bau anders ruht (`leibBauArme`): der
+    // Pfarrer #16036 (1,2° anders) stand in sad 1,3° anders als sein Stand im Satz (gate:kreatur-takt bewohner, die Haltung)
     _bewohnerRaumStellen(S, g) {
-        const P = this._bewohnerRaumPose(S);
-        const tb = g.userData._tierBaum;
-        const q = this._bewohnerRaumQ || (this._bewohnerRaumQ = new THREE.Quaternion());
+        const [P, tb] = [this._bewohnerRaumPose(S), g.userData._tierBaum];
+        const [q, eR, eS] = this._bewohnerRaumQ || (this._bewohnerRaumQ = [new THREE.Quaternion(), new THREE.Euler(), new THREE.Euler()]); // prettier-ignore
         for (const nm in P.teile) {
             const [d, r, s, sr] = [P.teile[nm], P.ruhe[nm], tb.teile[nm], tb.ruhe[nm]];
             if (!s || !sr) continue;
-            d.quaternion.copy(r.quaternion).multiply(q.copy(sr.quaternion).invert().multiply(s.quaternion));
+            if (Math.abs(r.quaternion.dot(sr.quaternion)) > 1 - 1e-9) d.quaternion.copy(r.quaternion).multiply(q.copy(sr.quaternion).invert().multiply(s.quaternion)); // prettier-ignore
+            else d.rotation.set(eR.setFromQuaternion(r.quaternion, s.rotation.order).x + s.rotation.x - eS.setFromQuaternion(sr.quaternion, s.rotation.order).x, eR.y + s.rotation.y - eS.y, eR.z + s.rotation.z - eS.z, s.rotation.order); // prettier-ignore
             d.position.copy(r.position).add(s.position).sub(sr.position);
             d.scale.copy(r.scale).multiply(s.scale).divide(sr.scale);
         }
@@ -2171,11 +2171,11 @@ class AnazhRealm_siedlung_bewohner {
         }
     }
     // DER ZEUGE WEICHT (kollektiv#1, w28-zeugen-weichen): wer die Tat am Ort o sah und sie fürchtet (`_kreaturFurchtErinnert` > 0),
-    // verlässt den Kreis, in dem er sie sah — die Flucht aus zweiter Hand des EINEN Furcht-Gesetzes (tetrapoda `fluchtRadius`, B = die
-    // Tat und `zeugeM`). Sein Soll (`_bewohnerSoll`) nennt bis zur nächsten Wende seines Tags den nächsten Stand jenseits des Kreises,
-    // den keiner zum Ziel hat (`belegt`) und dessen Weg (`_bewohnerStrecke`) ihn nie näher an die Tat führt, als er steht (headless
-    // führte der Weg zum nächsten Stand über das Netz 2 m vor ihr vorbei); dann holt ihn sein Tag zurück (`_bewohnerZiel`). Wer hinein
-    // oder jenseits geht, geht weiter; am Steuer bleibt er im Wagen. Bis hier weitete die Furcht nur den Raum des Vorbeigangs (0,5 m).
+    // verlässt ihren Kreis — die Flucht aus zweiter Hand des EINEN Furcht-Gesetzes (tetrapoda `fluchtRadius`, B = die Tat und `zeugeM`).
+    // Sein Soll (`_bewohnerSoll`) nennt bis zur Wende seines Tags den nächsten freien Stand jenseits des Kreises (`belegt`), dessen Weg
+    // (`_bewohnerStrecke`) ihn nie näher an die Tat führt, als er steht — die Seite urteilt allein der Weg; führt jeder an ihr vorbei,
+    // flieht er wie das Tier gerade fort über freies Land an den Kreis (±0,5, ±1 rad). Bis hier filterte die gerade Linie vorab, und
+    // feld #617311 am Dorfrand (sein Anschluss 4,2 m neben der Tat) blieb stehen (gate:kreatur-takt begegnung, fort 0). Am Steuer bleibt er.
     _bewohnerWeichen(S, b, o, stunde, belegt) {
         if (b.amSteuer || b.ankunft || !b.ziel || !(this._kreaturFurchtErinnert(b.leib) > 0)) return false;
         const B = { x: o.x, z: o.z, r: AnazhRealm.BEWOHNER.zeugeM };
@@ -2186,16 +2186,16 @@ class AnazhRealm_siedlung_bewohner {
         const p = { x: b.leib.position.x, z: b.leib.position.z };
         const [T, d2] = [{ minX: o.x, maxX: o.x, minZ: o.z, maxZ: o.z }, (p.x - o.x) ** 2 + (p.z - o.z) ** 2 - 1e-6];
         const fern = (w) => !!w && [p, ...w].every((e, i, v) => !i || this._streckeBoxAbstand2(T, v[i - 1].x, v[i - 1].z, e.x, e.z) >= d2); // prettier-ignore
-        const fort = [];
+        const [fort, gesehen] = [[], new Set()];
         for (const x of S.liste)
-            for (const k of AnazhRealm.BEWOHNER.staende) {
-                const q = x.orte[k]; // der billige Filter zuerst: jenseits des Kreises, frei, auf seiner Seite der Tat
-                if (!q || belegt.has(q) || Math.hypot(q.x - o.x, q.z - o.z) < R) continue;
-                if ((q.x - p.x) * (p.x - o.x) + (q.z - p.z) * (p.z - o.z) >= 0)
-                    fort.push([Math.hypot(q.x - p.x, q.z - p.z), q]);
-            }
-        fort.sort((a, c) => a[0] - c[0]);
-        const [, ort] = fort.find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0))) || [];
+            for (const q of AnazhRealm.BEWOHNER.staende.map((k) => x.orte[k]))
+                if (q && !gesehen.has(q) && !belegt.has(q) && Math.hypot(q.x - o.x, q.z - o.z) >= R) { gesehen.add(q); fort.push([Math.hypot(q.x - p.x, q.z - p.z), q]); } // prettier-ignore
+        let [, ort] = fort.sort((a, c) => a[0] - c[0]).find(([, q]) => fern(this._bewohnerStrecke(S, { ...p }, q, 0))) || []; // prettier-ignore
+        for (const w of ort ? [] : [0, 0.5, -0.5, 1, -1]) {
+            const [c, n, d] = [Math.cos(w), Math.sin(w), Math.sqrt(d2 + 1e-6) || 1], [vx, vz] = [((p.x - o.x) * c - (p.z - o.z) * n) / d, ((p.x - o.x) * n + (p.z - o.z) * c) / d]; // prettier-ignore
+            const q = { x: o.x + vx * R, z: o.z + vz * R, blick: Math.atan2(vx, vz) };
+            if (!ort && this._landAt(q.x, q.z) && !["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) && !this._bewohnerWand(p, q) && fern([q])) ort = q; // prettier-ignore
+        }
         if (!ort) return false;
         const bis = this._bewohnerWende(b, stunde, stunde + 24);
         b.weichen = { ort, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
@@ -2417,10 +2417,10 @@ class AnazhRealm_siedlung_bewohner {
         return null;
     }
 
-    // DIE SEKUNDEN EINER SPIELSTUNDE: der Tag des Spielers (`dayLengthMinutes`, Echtzeit je Zyklus) — der Gang der Uhr
-    // (`tickDayNight`) rückt sie um delta / (Minuten · 60) Tage je Takt.
+    // DIE SEKUNDEN EINER SPIELSTUNDE: der Tag des Kalenders (`_kalender`, zeit-ein-kalender) durch seine Stunden — der Gang der
+    // Uhr (`tickDayNight`) rückt sie um delta / tagS Tage je Takt.
     _bewohnerStundeSek() {
-        return ((this.state.dayLengthMinutes || AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES) * 60) / 24;
+        return this._kalender().tagS / AnazhRealm.WELT_GESETZ_ERDE.kalender.tagStunden;
     }
 
     // DER WEG (mensch.K2, „nie durch Hauswände"): vom Stand des Leibs zum Ziel — die Tür liegt in der Wand: wer aus ihr tritt
@@ -3573,9 +3573,8 @@ class AnazhRealm_siedlung_bewohner {
         const staende = new Set();
         for (const b of S.liste) for (const k of AnazhRealm.BEWOHNER.staende) if (b.orte[k]) staende.add(b.orte[k]);
         S.listeRest = staende.size; // der Rest des Werks (`_weltOffen` leute): je Stand einer
-        // ob ein Stand gerückt steht (sein Ort ist nicht sein Ursprung) und ob einer in diesem Gang rückte
+        // ob ein Stand gerückt steht (sein Ort ist nicht sein Ursprung)
         const weg = (o) => o.ur && (o.x !== o.ur.x || o.z !== o.ur.z);
-        let rueckte = false;
         // die Stände, deren Gesetz neben der Spur keinen Ort trägt (der Fehler des Plans, laut; die Kreatur-Linse liest ihn)
         const ohneOrt = S.standOhneOrt || (S.standOhneOrt = new Set());
         // DER RAUM ZU ALLEN STÄNDEN (der Ursprung jedes anderen und der Ort jedes gerückten) als RASTER in Zellen von `raumM`
@@ -3586,16 +3585,19 @@ class AnazhRealm_siedlung_bewohner {
         const RM = BW.raumM;
         const zelle = (kx, kz) => kx * 4194304 + kz;
         let gitter = null;
-        const legen = (x, z, p) => {
+        // DER VORRANG DER REIHE (mensch.K2): jeder Ursprung sperrt jeden, der gerückte Ort nur Spätere der Reihe — der Ort ist Funktion der
+        // Früheren, nie der Folge der Gänge (bis hier stellte dieselbe Saat kaufhaus #1295281832 je nach Vorgeschichte anders, VK-V)
+        const rang = new Map([...staende].map((p, i) => [p, i]));
+        const legen = (x, z, p, urs) => {
             const k = zelle(Math.floor(x / RM), Math.floor(z / RM));
             const L = gitter.get(k);
-            if (L) L.push(x, z, p);
-            else gitter.set(k, [x, z, p]);
+            if (L) L.push(x, z, p, urs);
+            else gitter.set(k, [x, z, p, urs]);
         };
         const heben = (x, z, p) => {
             const L = gitter.get(zelle(Math.floor(x / RM), Math.floor(z / RM)));
-            for (let i = 0; L && i < L.length; i += 3)
-                if (L[i + 2] === p && L[i] === x && L[i + 1] === z) return void L.splice(i, 3);
+            for (let i = 0; L && i < L.length; i += 4)
+                if (L[i + 2] === p && !L[i + 3] && L[i] === x && L[i + 1] === z) return void L.splice(i, 4);
         };
         const raumVon = (o) => (q) => {
             const kx = Math.floor(q.x / RM);
@@ -3604,8 +3606,8 @@ class AnazhRealm_siedlung_bewohner {
                 for (let c = kz - 1; c <= kz + 1; c++) {
                     const L = gitter.get(zelle(a, c));
                     if (L)
-                        for (let i = 0; i < L.length; i += 3)
-                            if (L[i + 2] !== o && (L[i] - q.x) ** 2 + (L[i + 1] - q.z) ** 2 < RM * RM) return true;
+                        for (let i = 0; i < L.length; i += 4)
+                            if (L[i + 2] !== o && (L[i + 3] || rang.get(L[i + 2]) < rang.get(o)) && (L[i] - q.x) ** 2 + (L[i + 1] - q.z) ** 2 < RM * RM) return true; // prettier-ignore
                 }
             return false;
         };
@@ -3652,21 +3654,20 @@ class AnazhRealm_siedlung_bewohner {
         for (const o of staende) {
             S.listeRest--;
             const ur = o.ur || (o.ur = { x: o.x, z: o.z, blick: o.blick });
-            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(rueckte && weg(o) && o._standSchmutz !== false))
-                continue;
+            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(weg(o) && o._standSchmutz !== false)) continue;
             if (!gitter) {
                 gitter = new Map();
                 for (const p of staende) {
                     const u = p.ur || p;
-                    legen(u.x, u.z, p);
-                    if (weg(p)) legen(p.x, p.z, p);
+                    legen(u.x, u.z, p, true);
+                    if (weg(p)) legen(p.x, p.z, p, false);
                 }
                 // DER PUNKT VOR JEDER TÜR BLEIBT FREI, auch dem gerückten (das Gesetz der Geburt, `_bewohnerListe`: über ihn geht
                 // jeder hinein und hinaus) — er liegt im Raster wie ein Stand ohne Eigner. Bis w28-stadt-grammatik hielt der Raum
                 // des Auswegs nur die Stände: an der Stadt rückten fünf Stände näher als `raumM` an den Punkt vor einer Tür (am
                 // Start-Dorf einer), der Stand 721,8/408,6 eines Gasts 0,5 m neben den vor wohnhaus #91693 — wer dort um 22 Uhr
                 // heimkam, blieb 1,4 m vor seiner Tür stehen (3 Steckenbleiber, gate:kreatur-takt bewohner „Stände gestapelt“).
-                for (const v of new Set(S.liste.map((b) => b.orte.vor))) legen(v.x, v.z, v);
+                for (const v of new Set(S.liste.map((b) => b.orte.vor))) legen(v.x, v.z, v, true);
             }
             const raum = raumVon(o);
             // das Gesetz seiner Art gilt auch dem gerückten (`gilt`, `_bewohnerListe`: der Stand am Platz bleibt am Platz);
@@ -3742,15 +3743,14 @@ class AnazhRealm_siedlung_bewohner {
                     `BEWOHNER: der Stand ${ur.x.toFixed(1)}/${ur.z.toFixed(1)} steht in einer Hülle, kein Ausweg`
                 );
             else if (q.x !== o.x || q.z !== o.z) {
-                rueckte = true;
                 // das Raster folgt ihm (der alte Ort fällt, wenn er gerückt war; der neue steht, wenn er nicht der Ursprung ist),
-                // und jeder gerückte urteilt in der Folge neu, in dessen Scheibe der alte liegt oder dessen Ort der neue sperrt
+                // und jeder spätere gerückte urteilt in der Folge neu, in dessen Scheibe der alte liegt oder dessen Ort der neue sperrt
                 const alt = weg(o) ? [o.x, o.z] : null;
                 if (alt) heben(alt[0], alt[1], o);
                 const hin = q.x !== ur.x || q.z !== ur.z;
-                if (hin) legen(q.x, q.z, o);
+                if (hin) legen(q.x, q.z, o, false);
                 for (const p of staende)
-                    if (p !== o && weg(p) && p._standSchmutz === false)
+                    if (rang.get(p) > rang.get(o) && weg(p) && p._standSchmutz === false)
                         if (
                             (alt && inScheibe(p, alt[0], alt[1])) ||
                             (hin && (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < RM * RM)

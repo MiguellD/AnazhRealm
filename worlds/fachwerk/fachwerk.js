@@ -227,7 +227,7 @@ function buildDorf(dp){
       const eB={x0:bx.min.x,x1:bx.max.x,z0:bx.min.z,z1:bx.max.z,y1:bx.max.y};
       st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); });
       let c=0; st.g.traverse(o=>{if(o.isMesh)c++;}); prims+=Math.max(60,(c*0.3)|0); nProxy++;
-      dorfB.push({p:hp, lod:'chunk', dyn:false, kern:false, ext:eB, dims:st.H.dims, wandX:FC.wandXVon(st.H.solids), fp:fpVon(st.H), masse:masseVon(st),
+      dorfB.push({p:hp, lod:'chunk', dyn:false, kern:false, ext:eB, reich:bx.reich, dims:st.H.dims, wandX:FC.wandXVon(st.H.solids), fp:fpVon(st.H), masse:masseVon(st),
         spawnL:{x:st.H.spawn.x, z:st.H.spawn.z}, hofGap:plan.norm.gap, meshes:[]}); } }       // HOF-GESETZ: Tür-Punkt + Parzellen-Spielraum wandern mit — das Haus-Wissen formt gleich den Hof
   const ext=dorfB.map(B=>B.ext);                                                              // das Los liest die EINE Hülle des Mass-Baus (oben) — bis los-huelle maß ein voll gebautes Haus seine eigene Box über den ganzen Bau (hier nie erreicht: dorfB trägt bis hierher nur Mass-Bauten)
   const hoehe=trasseAufWelt(dp), lay=dorfLayout(plan, ext, plan.seed, FC.hoeheAusRaster(hoehe));

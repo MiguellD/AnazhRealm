@@ -1469,11 +1469,9 @@ async function gesehenSeite(m) {
         return Math.sqrt(o.td.reduce((x, v) => x + v * v, 0) / o.td.length);
     };
     // DAS BILD: die Strömung, die das Wasser im Blick zeichnet, und die Deckkraft des Regens
-    const fr = new THREE.Frustum();
     const v = new THREE.Vector3();
     const stroemung = (cam) => {
-        cam.updateMatrixWorld();
-        fr.setFromProjectionMatrix(new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+        const fr = r._frustumVon(cam); // der EINE Bau des Sichtkegels (wie der Takt)
         let summe = 0;
         st.scene.traverse((o) => {
             const f =

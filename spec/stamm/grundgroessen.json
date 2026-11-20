@@ -15,16 +15,16 @@
             "groesse": "zeit",
             "rx": "\\.(?:timeOfDay|spielZeit|tagNull)\\s*[-+*/]?=(?!=)",
             "was": "schreibt Welt-Uhr, Tageszeit oder Null-Tag",
-            "lies": "den Takt (`spielZeit += delta`), `_uhrSetzen`, `_weltGeburt`; eine Probe stellt die Uhr über `__buehne({ uhr })`",
+            "lies": "den Takt (`spielZeit += delta`), `_uhrSetzen`, `_weltGeburt`; eine Probe BESTELLT bei der Welt: die Stunde über `__buehne({ uhr })` oder `r._uhrSetzen(t, 'regler')`, die Welt-Uhr über `r._weltUhrNimm(t)` (nur vor) oder `r._weltUhrNeu(t)` (die Geburt)",
             "beobachter": true,
             "mutant": "this.state.timeOfDay = 0.3;"
         },
         "laenge-fest": {
             "groesse": "zeit",
-            "rx": "\\bPEGEL_TAG_S\\s*\\(\\)\\s*\\{|\\bseasonYearSeconds\\b[^\\n]*\\b2400\\b",
+            "rx": "\\bPEGEL_TAG_S\\b|\\bseasonYearSeconds\\b|\\b(?:jahreJeTag|stundeS|tagStunden)\\s*:\\s*\\d",
             "was": "eigene Tag- oder Jahr-Länge neben dem Tag-Regler",
-            "lies": "`state.dayLengthMinutes` und `state.seasonYearSeconds` (EIN Kalender, Welle ZEIT)",
-            "mutant": "const jahr = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;"
+            "lies": "den EINEN Kalender (`_kalender()`, `_kalenderZeit()`; das Gesetz `WELT_GESETZ_ERDE.kalender` in stamm/daten.js, Welle ZEIT)",
+            "mutant": "const kalender = { jahreJeTag: 1.5 };"
         },
         "dt-kopie": {
             "groesse": "zeit",
@@ -66,7 +66,7 @@
             "groesse": "licht",
             "rx": "\\.toneMapping(?:Exposure)?\\s*=(?!=)",
             "was": "setzt Belichtung oder Tonkurve selbst",
-            "lies": "welt-licht.js `belichtung` und die Tonkurve der Bühne (`AnazhHuelle.buehne`); die Welt `_dayNightApplyBelichtung`",
+            "lies": "welt-licht.js `belichtung` und die Tonkurve der Bühne (`AnazhHuelle.buehne`); die Welt `_dayNightApplyBelichtung`; eine Probe bestellt die Blende `r._blendeBestellen({ k } | { mal } | null)`",
             "beobachter": true,
             "mutant": "renderer.toneMappingExposure = 1.25;"
         },
@@ -88,7 +88,7 @@
             "groesse": "kraft",
             "rx": "\\.gravity\\s*[-+*/]?=(?!=)",
             "was": "schreibt die Schwere der Welt",
-            "lies": "das Welt-Gesetz (`_weltGesetz` → `state.gravity`) oder das DSL-Wort `gravity`",
+            "lies": "das Welt-Gesetz (`_weltGesetz` → `state.gravity`) oder das DSL-Wort `gravity` (eine Probe: `r.dslEffects.gravity([g])`)",
             "beobachter": true,
             "mutant": "this.state.gravity = -3;"
         },
@@ -131,7 +131,7 @@
             "groesse": "sicht",
             "rx": "new\\s+(?:THREE|T)\\.Frustum\\b",
             "was": "eigenes Frustum",
-            "lies": "das Frustum des Takts (`_frustumCache`, stamm/dirigent-takt.js)",
+            "lies": "das Frustum des Takts (`_frustumCache`) oder das einer Kamera über den EINEN Bau (`r._frustumVon(kam)`, stamm/dirigent-takt.js)",
             "beobachter": true,
             "mutant": "const fr = new THREE.Frustum();"
         },
@@ -146,9 +146,17 @@
             "groesse": "beobachter",
             "rx": "new\\s+\\w+\\.(?:WebGL)?RenderTarget\\b",
             "was": "eigenes Render-Ziel einer Probe (linear, ungetont)",
-            "lies": "den Ausgabe-Pfad der Welt (scripts/lib/ausgabe-aufnahme.cjs)",
+            "lies": "den Ausgabe-Pfad der Welt (scripts/lib/ausgabe-aufnahme.cjs) oder das EINE Mess-Ziel der Seite (`__messZiel`, scripts/lib/welt-boot.cjs)",
             "beobachter": true,
             "mutant": "const rt = new T.RenderTarget(64, 64);"
+        },
+        "verdeckt": {
+            "groesse": "beobachter",
+            "rx": "\\.(?:timeOfDay|spielZeit|tagNull|gravity|toneMappingExposure)\\b(?:\\s*,[^\\]=\\n;]*)?\\]\\s*=(?!=)|Object\\.assign\\(\\s*[\\w.]+\\s*,\\s*\\{[^}\\n]*\\b(?:timeOfDay|spielZeit|tagNull|gravity|toneMappingExposure)\\s*:",
+            "was": "setzt eine Grundgröße verdeckt (im Ziel einer Zerlegung oder in Object.assign) — die Muster je Feld sahen sie nicht",
+            "lies": "den Schreiber der Welt (`_uhrSetzen` · `_weltUhrNimm` · `_weltUhrNeu` · `_blendeBestellen` · DSL `gravity`)",
+            "beobachter": true,
+            "mutant": "[st.spielZeit, st.weatherEffectTime] = [0, 0];"
         }
     },
     "groessen": {
@@ -171,8 +179,11 @@
                 "stamm/koerper-bewegung.js": [
                     "FIXED_DT = 1 / 60"
                 ],
-                "stamm/dirigent-kern.js": [
-                    "seasonYearSeconds: 2400"
+                "stamm/daten.js": [
+                    "kalender: Object.freeze({ tagStunden: 24, stundeS: 3600, jahrTage: T.jahrTage, jahreJeTag: 1.5 })"
+                ],
+                "planet-core.js": [
+                    "tagStunden: 24, jahrTage: 365"
                 ]
             }
         },
@@ -250,7 +261,7 @@
         "sicht": {
             "name": "Sicht/Stufe",
             "welle": "SICHT",
-            "schreiber": "stamm/stoff-material.js `_lodAuge` · stamm/vegetation-streu.js `LOD_SCHIRM` · stamm/dirigent-takt.js `_frustumCache`",
+            "schreiber": "stamm/stoff-material.js `_lodAuge` · stamm/vegetation-streu.js `LOD_SCHIRM` · stamm/dirigent-takt.js `_frustumVon` (der Takt hält sein Frustum in `_frustumCache`)",
             "leser": "_lodAuge\\(|\\bLOD_SCHIRM\\b|\\bLOD_DISTANCES\\b",
             "kanon": {
                 "stamm/vegetation-streu.js": [
@@ -258,21 +269,21 @@
                     "LOD_DISTANCES = ("
                 ],
                 "stamm/dirigent-takt.js": [
-                    "_frustumCache = new THREE.Frustum"
+                    "_frustumVon(kam, eigen, F = new THREE.Frustum()"
                 ]
             }
         },
         "beobachter": {
             "name": "Beobachter",
             "welle": "je Feld (ZEIT · LICHT · KRAFT · SICHT)",
-            "schreiber": "scripts/lib/welt-boot.cjs `__buehne` (Uhr · Sonne · Sommer) · scripts/lib/ausgabe-aufnahme.cjs (der Ausgabe-Pfad der Welt)",
-            "leser": "__buehne\\b|ausgabe-aufnahme",
+            "schreiber": "die Welt selbst — eine Probe BESTELLT (`_uhrSetzen` · `_weltUhrNimm` · `_weltUhrNeu` · `_blendeBestellen` · DSL `gravity` · `_frustumVon`); die Bühnen-Tür der Mess-Seite: scripts/lib/ausgabe-aufnahme.cjs `__buehne` (Uhr · Sonne · Sommer über die Schreiber der Welt, der Ausgabe-Pfad) · scripts/lib/welt-boot.cjs `__messZiel` (das EINE Mess-Ziel)",
+            "leser": "__buehne\\b|ausgabe-aufnahme|__messZiel\\b|_uhrSetzen\\b|_weltUhrNimm\\b|_weltUhrNeu\\b|_blendeBestellen\\b|_frustumVon\\b|dslEffects\\.gravity\\b",
             "kanon": {
                 "scripts/lib/ausgabe-aufnahme.cjs": [
-                    "st.timeOfDay = st.world ?",
-                    "st.world.timeOfDay = uhr;",
-                    "st.timeOfDay = uhr;",
                     "new T.RenderTarget"
+                ],
+                "scripts/lib/welt-boot.cjs": [
+                    "new T.WebGLRenderTarget(W, H, o) : new T.RenderTarget(W, H, o)"
                 ]
             }
         }

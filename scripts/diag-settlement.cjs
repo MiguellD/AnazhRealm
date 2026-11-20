@@ -26,7 +26,7 @@ const {
 } = require("./lib/welt-boot.cjs");
 const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
 const { verkehrsnetzProben } = require("./lib/verkehrsnetz-proben.cjs");
-const { losProben, huelleProben, wurfProben } = require("./lib/los-proben.cjs");
+const { losProben, huelleProben, wurfProben, brandwandProben } = require("./lib/los-proben.cjs");
 const {
     gassenGefaelle,
     erdbauMedian,
@@ -241,7 +241,7 @@ async function weltWachstum() {
     const [E0, erd0, p] = [alt.haeuser(), st.worldMeta.erdbau[alt.c.ort].length, { x: alt.c.x, z: alt.c.z }];
     const wachse = async (m) => {
         window.__marke(m);
-        st.spielZeit += res.uhr;
+        r._weltUhrNimm(st.spielZeit + res.uhr);
         const takt = r._ortWachstumTakt(p);
         await r._ortWachsFlug;
         window.__anazhAutoSettlement = true;
@@ -1124,6 +1124,7 @@ hauptLauf(async () => {
         errs.push(...breiteSelbsttest(taeterFaelle, breiteRollen)); // die Breite der Stadt: der grüne Gang und seine Täter
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden, taeter: true }); // die Hülle vor dem Schnitt fällt beim Namen
         wurfProben(check, { kernText: kernText(), taeter: true }); // der EINE Strom der Lose (vor Welle SAMEN) fällt beim Los
+        brandwandProben(FC, check, { kernText: kernText(), taeter: true }); // die Brandwand an dims (vor los-huelle-2) fällt beim Namen
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -1316,7 +1317,7 @@ hauptLauf(async () => {
         const gap = 0.06; // Metropol-Norm — dicht (<=0.6), der Snap-Pfad ist scharf
         // zwei Nachbarn (8 × 7 m) in einer Reihe, der zweite `x` m weiter (Grundriss-Daten einer Einheits-Probe, kein Ort)
         const paar = (x) => [
-            [0, x].map(() => ({ dims: { W: 8, D: 7 }, kern: false, p: {} })),
+            [0, x].map(() => ({ dims: { W: 8, D: 7 }, kern: false, p: {}, reich: { x0: 0, x1: 0, z0: 0, z1: 0 } })),
             [0, x].map((cx) => ({ phi: 0, x: cx, z: 0, obb: { cx, cz: 0, phi: 0, ex: 4, ez: 3.5 } })),
         ];
         const [Bs, pl] = paar(9);
@@ -1344,6 +1345,7 @@ hauptLauf(async () => {
         losProben(FC, check);
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden }); // die Hülle liest keine Öffnung, das Los je Same wie am Golden
         wurfProben(check, { kernText: kernText() }); // der Würfel je Los: eine Front würfelt kein anderes Haus neu (Welle SAMEN)
+        brandwandProben(FC, check, { kernText: kernText() }); // keine Öffnung reicht in den Körper eines Nachbarn (B1, los-huelle-2)
         const stadt = FC.exportSettlement({ seed: 7, nH: 60 }); // die Großstadt: ihre Reihen docken (der Markt-Flecken von 20 Häusern steht seit der Stadt-Grammatik in Vierteln ohne Reihe)
         const bwSlots = stadt.slots.filter((s) => s.ov?.brandwand).length;
         check(

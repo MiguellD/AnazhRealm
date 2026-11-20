@@ -529,7 +529,7 @@ hauptLauf(async () => {
             const ren8 = new THREE.WebGPURenderer({ antialias: false });
             await ren8.init();
             ren8.setSize(96, 64, false);
-            const rt8 = new THREE.RenderTarget(96, 64);
+            const rt8 = __messZiel(96, 64);
             ren8.setRenderTarget(rt8);
             const bild = async () => {
                 await ren8.renderAsync(szene8, cam8);

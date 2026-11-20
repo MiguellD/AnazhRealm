@@ -231,7 +231,8 @@ function pageHtml() {
       // Der Schatten-Teil der Baum-L1 (S3, teil "schatten") reist mit und steht im Fingerabdruck.
       if (m.teil !== undefined) out.teil = m.teil;
       for (const k of Object.keys(m)) {
-        if (m[k] && m[k].array && m[k].itemSize) out.attrs[k] = { itemSize: m[k].itemSize, b64: b64(m[k].array) };
+        // die Form reist mit (der Verband je Ecke ist Uint8, phyto-core _budgetVerbinden) — der Fingerabdruck liest sie nicht
+        if (m[k] && m[k].array && m[k].itemSize) out.attrs[k] = { itemSize: m[k].itemSize, form: m[k].array.constructor.name, b64: b64(m[k].array) };
       }
       if (m.index) out.index = b64(m.index);
       return out;
