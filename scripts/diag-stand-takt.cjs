@@ -1323,9 +1323,9 @@ function lavaUrteil(b) {
         us.tempVor > 100 && us.s >= 60 ? "" : `L6-LEER: keine Messung der Uhr: die Decke steht vor dem Sprung bei ${us.tempVor} °C, der Sprung der Welt-Uhr ${us.s} s`,
         ur.dStunde === 0 && Math.abs(ur.dTemp) <= 1 && ur.dUhr === 0 && ur.dAschen === 0 ? "" : `L6-SICHT: die Uhr des Spielers bewegt einen Prozess: der Regler 10 → 14 Uhr stellt die Welt-Stunde um ${ur.dStunde} h, die Decke der Lava um ${ur.dTemp} K, die Welt-Uhr um ${ur.dUhr} s, ${ur.dAschen} Aschen (verlangt je 0; die Decke ± 1 K: sie steht in der Luft der Stunde) — stamm/feld-leben.js _weltTag liest den Tag der Sicht (worldMeta.tag + timeOfDay) oder stamm/bild-himmel.js _uhrSetzen hebt spielZeit`,
         Math.abs(us.dStunde - us.s / 150) <= 0.01 && us.tempNach < us.tempVor - 1 && us.dBrandUhr >= us.s - 1 && us.aschen >= 1 ? "" : `L6-SPRUNG: der Sprung der Welt-Uhr altert die Welt nicht: nach _weltUhrNimm(+${us.s} s) Welt-Stunde +${us.dStunde} h (verlangt ${us.s / 150}), Decke ${us.tempVor} → ${us.tempNach} °C (verlangt kälter), Uhr des Brands +${us.dBrandUhr} s, ${us.aschen} Aschen (verlangt ≥ 1) — stamm/feld-leben.js _weltTag · _lavaZustand, stamm/feld-brand.js _tickBrand`,
-        us.schritte <= us.zuend + 2 ? "" : `L6-SCHLEIFE: der Brand holt den Sprung Takt um Takt: ${us.schritte} Schritte für ${us.s} s (verlangt ≤ ${us.zuend + 2}: je Zündung höchstens einer, ${us.zuend} Zündungen) — stamm/feld-brand.js _tickBrand (BRAND.sprungS, _brandNach)`,
+        us.leer === 0 ? "" : `L6-SCHLEIFE: der Brand holt den Sprung Takt um Takt: ${us.leer} von ${us.schritte} Schritten für ${us.s} s fallen im Sprung auf kein Ereignis (verlangt 0: jeder Schritt erreicht eine Ankunft oder das Ziel; ${us.zuend} Zündungen) — stamm/feld-brand.js _tickBrand (BRAND.sprungS, _brandNach)`,
         u.mutanteSicht?.regler?.dStunde >= 3.9 ? "" : `MUTANTE-L6-SICHT: mit dem Tag der Sicht in _weltTag liest die Linse nach dem Regler 10 → 14 Uhr ${u.mutanteSicht?.regler?.dStunde} h — sie sieht den Zwilling nicht`,
-        u.mutanteSchleife?.sprung?.schritte >= us.s - 1 ? "" : `MUTANTE-L6-SCHLEIFE: mit dem Schritt je schrittS zählt die Linse ${u.mutanteSchleife?.sprung?.schritte} Schritte für ${us.s} s — sie sieht die Schleife nicht`,
+        u.mutanteSchleife?.sprung?.leer >= us.s / 2 ? "" : `MUTANTE-L6-SCHLEIFE: mit dem Schritt je schrittS zählt die Linse ${u.mutanteSchleife?.sprung?.leer} leere von ${u.mutanteSchleife?.sprung?.schritte} Schritten für ${us.s} s — sie sieht die Schleife nicht`,
     ];
 }
 
@@ -1812,23 +1812,32 @@ async function lavaSeite(MESS) {
             r.setTimeOfDay(14 / 24, "regler"), r._tickBrand();
             const s1 = stand();
             r.setTimeOfDay(10 / 24, "regler"), r._tickBrand();
-            let [n, takte, zuend] = [0, 0, 0];
+            let [n, takte, zuend, leer] = [0, 0, 0, 0];
             r._brandZuenden = function (...a) {
                 zuend++;
                 return P._brandZuenden.apply(this, a);
             };
             const lauf = r._tickBrand;
-            r._brandSchritt = function (...a) {
+            // `leer`: die Schritte IM SPRUNG (die Welt-Uhr lag mehr als `sprungS` vor), die auf kein Ereignis fallen — keine wartende
+            // Zelle, deren Ankunft der Schritt erreicht, und nicht das Ziel. Bis hier verglich die Linse alle Schritte mit den
+            // Zündungen (≤ Zündungen + 2): ein kleiner Brand (die Herde äst die Mess-Wiese, 59 statt 119 Zündungen) trug dort die
+            // Ankünfte, die die Feuchte löscht, und den Schwanz unter `sprungS` (Schritt um Schritt, wie jedes Bild) als „Schleife“.
+            let vor = r._brandUhr;
+            r._brandSchritt = function (t, ...a) {
                 n++;
-                return P._brandSchritt.apply(this, a);
+                const rueck = st.spielZeit - vor;
+                vor = t;
+                if (rueck > B.sprungS + 1e-9 && st.spielZeit - t >= B.schrittS - 1e-9 && ![...bf().values()].some((z) => z.t0 === null && z.an <= t + 1e-9)) leer++;
+                return P._brandSchritt.call(this, t, ...a);
             };
             const s2 = stand();
+            vor = r._brandUhr;
             r._weltUhrNimm(st.spielZeit + UHR_S);
             for (; takte < 50000 && r._brandLebt() && (st.spielZeit - r._brandUhr >= B.schrittS - 1e-9 || r._brandRest); takte++) lauf.call(r);
             delete r._brandSchritt;
             delete r._brandZuenden;
             const s3 = stand();
-            return { regler: { dStunde: r3(s1.h - s0.h), dTemp: r3(s1.T - s0.T), dUhr: r3(s1.z - s0.z), dAschen: s1.a - s0.a }, sprung: { s: UHR_S, dStunde: r3(s3.h - s2.h), tempVor: r3(s2.T), tempNach: r3(s3.T), dBrandUhr: r3(s3.u - s2.u), schritte: n, zuend, takte, aschen: s3.a - s2.a, brennt: [...bf().values()].filter((q) => q.t0 !== null).length } };
+            return { regler: { dStunde: r3(s1.h - s0.h), dTemp: r3(s1.T - s0.T), dUhr: r3(s1.z - s0.z), dAschen: s1.a - s0.a }, sprung: { s: UHR_S, dStunde: r3(s3.h - s2.h), tempVor: r3(s2.T), tempNach: r3(s3.T), dBrandUhr: r3(s3.u - s2.u), schritte: n, leer, zuend, takte, aschen: s3.a - s2.a, brennt: [...bf().values()].filter((q) => q.t0 !== null).length } };
         };
         const L6 = (aus.l6 = uhrLauf());
         // die Mutanten: der Tag der Sicht in `_weltTag` (der Stand bis w28-lava-nachlauf) · der Schritt je `schrittS` (ebenso)
@@ -1921,12 +1930,12 @@ if (SELBSTTEST) {
                     l3: { ort: "probe", voll: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 1, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] }, halb: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 0, iw: 4200, R: 0.076, s: 250, narbe: [1, 0] }, mutanteLast: { leb: 0.401, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 300, stein: 0, iw: 2100, R: 0.04, s: 400, narbe: [1, 0] }, mutanteFlaeche: { leb: 0.802, aura: 0.802, iwSoll: 4200, anteil: 0.5, faengt: true, gras: 400, stein: 380, iw: 4200, R: 0.076, s: 250, narbe: [1, 1] } },
                     l4: { punkte: 32, max: 0, decke: [0.043, 0.962], aussen: 1, asche: 0, mutante: { max: 0.957, ueber0: 32 } },
                     l5: { quellen: 1, max: 7.4, min: 5.6, kern: 8, kernSoll: 8, zeit: 0, hoch: 0, herd: 45, glut: 1, soll: 6.495, mutante: { quellen: 1, max: 0.03, min: 0.02, kern: 0.76, kernSoll: 8, zeit: 1, hoch: 1, herd: 45, glut: 1, soll: 6.495 } },
-                    l6: { regler: { dStunde: 0, dTemp: 0, dUhr: 0, dAschen: 0 }, sprung: { s: 600, dStunde: 4, tempVor: 1377, tempNach: 900, dBrandUhr: 600, schritte: 30, zuend: 110, takte: 40, aschen: 35 }, mutanteSicht: { regler: { dStunde: 4, dTemp: -400, dUhr: 0, dAschen: 0 } }, mutanteSchleife: { sprung: { schritte: 600 } } },
+                    l6: { regler: { dStunde: 0, dTemp: 0, dUhr: 0, dAschen: 0 }, sprung: { s: 600, dStunde: 4, tempVor: 1377, tempNach: 900, dBrandUhr: 600, schritte: 30, leer: 0, zuend: 110, takte: 40, aschen: 35 }, mutanteSicht: { regler: { dStunde: 4, dTemp: -400, dUhr: 0, dAschen: 0 } }, mutanteSchleife: { sprung: { schritte: 600, leer: 500 } } },
                 },
                 [["N1-LEER", "n1.brennt", false], ["N1-LEER", "n1.s", 3], ["N1-LEER", "n1.fernAn", 12], ["N1-WARTET", "n1.zuend", 0], ["N1-QUADRAT", "n1.fern", 0.9], ["MUTANTE-N1-WARTET", "n1.mutanteWartet.zuend", 1], ["MUTANTE-N1-QUADRAT", "n1.mutanteQuadrat.fern", 0], ["N2-ENDE", "n2.dauer", 31.5], ["MUTANTE-N2", "n2.mutante.dauer", 52.4], ["MUTANTE-N2", "n2.mutante", null], ["N3-LEER", "n3.gemessen", 0], ["N3-LICHT", "n3.max", 5.3, "n3.mitte", true], ["MUTANTE-N3", "n3.mutante.max", 0], ["N4-LEER", "n4.gebaut", false], ["N4-ZEILE", "n4.abrufe", 0], ["MUTANTE-N4", "n4.mutante", 1], ["N5-LEER", "n5.paare", 2], ["N5-LEER", "n5.mass", null], ["N5-SAUM", "n5.mass", 1.6, "n5.abstand", 1.123, "n5.breite", 0.702], ["MUTANTE-N5", "n5.mutante.mass", 1.187], ["MUTANTE-N5", "n5.mutante.paare", 2], ["MUTANTE-N5", "n5.mutante", null], ["N6-LEER", "n6.flammen", 3], ["N6-LEER", "n6.sigma", null], ["N6-BAND", "n6.sigma", 0, "n6.min", 1, "n6.max", 1], ["MUTANTE-N6", "n6.mutante.sigma", 0.246], ["MUTANTE-N6", "n6.mutante.flammen", 3], ["MUTANTE-N6", "n6.mutante", null], ["N7-UHR", "n7.tag", 16], ["MUTANTE-N7-TON", "n7.mutanteTon.tag", 2.2], ["N7-LEER", "n7.quellen", 0], ["N7-LEER", "n7.herd", 1], ["N7-SCHEIN", "n7.max", 460], ["N7-SCHEIN", "n7.zeit", 4], ["N7-DUNKEL", "n7.max", 1], ["MUTANTE-N7", "n7.mutante.max", 3.2], ["MUTANTE-N7", "n7.mutante.zeit", 0], ["MUTANTE-N7", "n7.mutante", null],
                     // die Täter der Lava-Linse: je Fall der Stand vor w28-lava-zuendet (L2-DECKE: der Kopf 163a65de — alle Eintritte 2 m in der Zelle der Lava)
                     ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-KERN", "l5.kern", 0.76], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 6.5], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
-                    ["L6-LEER", "l6.sprung.tempVor", 20], ["L6-SICHT", "l6.regler.dStunde", 4], ["L6-SICHT", "l6.regler.dTemp", -400], ["L6-SICHT", "l6.regler.dUhr", 600], ["L6-SPRUNG", "l6.sprung.dStunde", 0], ["L6-SPRUNG", "l6.sprung.tempNach", 1377], ["L6-SPRUNG", "l6.sprung.dBrandUhr", 0], ["L6-SCHLEIFE", "l6.sprung.schritte", 600], ["MUTANTE-L6-SICHT", "l6.mutanteSicht.regler.dStunde", 0], ["MUTANTE-L6-SICHT", "l6.mutanteSicht", null], ["MUTANTE-L6-SCHLEIFE", "l6.mutanteSchleife.sprung.schritte", 30],
+                    ["L6-LEER", "l6.sprung.tempVor", 20], ["L6-SICHT", "l6.regler.dStunde", 4], ["L6-SICHT", "l6.regler.dTemp", -400], ["L6-SICHT", "l6.regler.dUhr", 600], ["L6-SPRUNG", "l6.sprung.dStunde", 0], ["L6-SPRUNG", "l6.sprung.tempNach", 1377], ["L6-SPRUNG", "l6.sprung.dBrandUhr", 0], ["L6-SCHLEIFE", "l6.sprung.leer", 1], ["MUTANTE-L6-SICHT", "l6.mutanteSicht.regler.dStunde", 0], ["MUTANTE-L6-SICHT", "l6.mutanteSicht", null], ["MUTANTE-L6-SCHLEIFE", "l6.mutanteSchleife.sprung.leer", 0],
                 ]
             ),
         ],
