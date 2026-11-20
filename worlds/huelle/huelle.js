@@ -737,6 +737,7 @@
         var werfer = 0;
         var befehle = 0;
         var vram = 0;
+        var verband = {};
         var gesehen = new Set();
         if (!obj || !obj.traverse) return { tris: 0, stoffe: 0, meshes: 0, werfer: 0, befehle: 0, vram: 0 };
         obj.traverse(function (o) {
@@ -745,6 +746,9 @@
             var n = g.index ? g.index.count / 3 : g.attributes && g.attributes.position ? g.attributes.position.count / 3 : 0;
             if (o.isInstancedMesh) n *= o.count;
             tris += n;
+            // der Verband des Stoffs (fachwerk `verbandReihe`, `userData.__verband`): die Zeile stellt ihren Stein frei (`ohneVerband`)
+            var vb = !Array.isArray(o.material) && o.material && o.material.userData ? o.material.userData.__verband : 0;
+            if (vb > 0) verband[vb] = (verband[vb] || 0) + n;
             meshes++;
             if (o.castShadow) werfer++;
             // die Befehle wie projectObject sie stellt: ein Stoff-Feld zeichnet je Gruppe mit sichtbarem Stoff (die Wurf-Stufe
@@ -766,7 +770,7 @@
                 }
             });
         });
-        return { tris: Math.round(tris), stoffe: nStoffe, meshes: meshes, werfer: werfer, befehle: befehle, vram: vram };
+        return { tris: Math.round(tris), stoffe: nStoffe, meshes: meshes, werfer: werfer, befehle: befehle, vram: vram, verband: verband };
     }
     // DIE GEGENZAHL (studios.K3): das Werk ALLEIN in EINEM eigenen Render des Studio-Renderers — nur seine Meshes in einer
     // eigenen Szene (die Kamera sieht Ebene 30, Lichter bleiben draußen, also kein Schatten-Pass), ungekappt (frustumCulled
@@ -1130,12 +1134,13 @@
             gebunden = +k.bank > 1.15 * k.bankCpu ? k.bank : "Bank " + k.bank + " CPU-gebunden",
             reihe = k.audio
                 ? [["Audio-ms", k.audio, null, k.audioDeckel]]
-                : [["△", k.leiste, k.gezeichnet, k.deckel], ["Befehle", k.befehle, k.befehleGezeichnet, null], ["VRAM", k.vram, k.vramGpu, k.vramDeckel]];
+                : [["△", k.leiste, k.gezeichnet, k.deckel, +k.frei || 0], ["Befehle", k.befehle, k.befehleGezeichnet, null], ["VRAM", k.vram, k.vramGpu, k.vramDeckel]];
         if (gpu && !k.audio) reihe.push(["GPU-ms", k.ms, bank || k.bank != null ? gebunden : null, k.msDeckel]);
+        // gegen den Deckel urteilt die Zahl ohne den Stein der Zeile (r[4], `frei`), die Gegenzahl sieht alles
         reihe.forEach(function (r) {
             var wo = (k.audio ? "" : "L") + k.stufe + " " + r[0] + " " + r[1];
             if (r[2] !== null && abw(r[1], r[2])) rot.push(wo + " ↔ " + r[2]);
-            if (r[3] !== null && !(+r[1] <= +r[3])) rot.push(wo + " über dem Deckel " + r[3]);
+            if (r[3] !== null && !(+r[1] - (r[4] || 0) <= +r[3])) rot.push(wo + (r[4] ? " (ohne Stein " + (+r[1] - r[4]) + ")" : "") + " über dem Deckel " + r[3]);
         });
         // die Bühne zeigt das Werk, das die Zeile zählt (studios.K4): das Maß ihrer Wurzel gegen den Bau des Kerns (`werkMass`)
         var zahl = function (t) {
@@ -1274,9 +1279,13 @@
                 g = c.gezeichnet,
                 d = zz.deckel || {};
             var deckel = b.tris || 1;
-            var anteil = Math.min(1, c.tris / deckel);
+            // DER STEIN AUSSER DER ZEILE (E8.1): die Zeile nennt den Verband, der nicht gegen ihre Dreiecke zählt (`ohneVerband`,
+            // dasselbe Feld wie fachwerk buildInstance und phyto budgetFrei) — gezählt wird alles, geurteilt ohne ihn. Die Labor-Gestalt
+            // zählt ihn an ihren Stoffen (`zaehle`), das Welt-Werk der Werkstatt bringt die Zahl des Ausgangs (`c.frei`)
+            var frei = !(b.ohneVerband > 0) ? 0 : c.frei != null ? c.frei : (c.verband || {})[b.ohneVerband] || 0;
+            var anteil = Math.min(1, (c.tris - frei) / deckel);
             g = g || {};
-            var daten = { stufe: s, leiste: c.tris, deckel: b.tris || 0, befehle: c.befehle, vram: c.vram, gezeichnet: g.tris, befehleGezeichnet: g.befehle };
+            var daten = { stufe: s, leiste: c.tris, frei: frei || null, deckel: b.tris || 0, befehle: c.befehle, vram: c.vram, gezeichnet: g.tris, befehleGezeichnet: g.befehle };
             if (zz.werk) Object.assign(daten, { werk: zz.werk.werk, werkBuehne: String(zz.werk.buehne), werkWelt: String(zz.werk.welt) });
             Object.assign(daten, { vramGpu: g.vram, vramDeckel: d.vram, msDeckel: d.ms, deckelFehlt: d.fehlt, ms: g.ms, zeitFehlt: g.zeitFehlt, bank: g.bank, bankCpu: g.bankCpu });
             // fertig: die Gegenzahl, die Zeit (oder ihr Grund) und die Deckel (oder ihr Grund) stehen — der Gang liest erst dann
@@ -1294,10 +1303,11 @@
             } else zz.band.style.display = "none";
             // die fertige Zeile urteilt ganz — am dataset, dasselbe Urteil an denselben Zahlen wie der Gang —, die werdende (und die
             // Werkstatt ohne Gegenzahl) am Deckel
-            var urteil = daten.fertig ? zeileUrteil(Object.assign({}, zz.z.dataset), daten.ms != null) : c.tris > deckel ? ["L" + s + " △ " + c.tris + " über dem Deckel " + deckel] : [];
+            var urteil = daten.fertig ? zeileUrteil(Object.assign({}, zz.z.dataset), daten.ms != null) : c.tris - frei > deckel ? ["L" + s + " △ " + (c.tris - frei) + " über dem Deckel " + deckel] : [];
             var klasse = urteil.length ? "fail" : b.band && c.tris > b.band ? "warn" : "pass";
             zz.z.className = "h-kosten-zeile " + klasse;
             var t = c.tris.toLocaleString("de-DE") + " / " + deckel.toLocaleString("de-DE") + " △";
+            if (frei) t += " (Stein frei " + frei.toLocaleString("de-DE") + ", gegen die Zeile " + (c.tris - frei).toLocaleString("de-DE") + ")";
             if (b.band) t += " · Band ×" + (c.tris / b.band).toFixed(2);
             var gezaehlt = c.befehle != null ? "gezählt " + c.befehle + ", " : "";
             if (g) t += " · gezeichnet " + g.tris.toLocaleString("de-DE") + " △ in " + g.befehle + " Befehlen (" + gezaehlt + "Zeile " + (b.draws || "–") + ")";
@@ -2529,7 +2539,7 @@
                 if (hatOv && !praegung) throw new Error("DIE BÜHNE: die Welt nimmt das Werk nicht (" + rec.kind + " " + w.preset + ": der Prüfer der Übergabe)");
                 const ov = wirt._foundryGestaltOv(praegung);
                 const g = new T.Group();
-                const werk = (g.userData.werk = { art: rec.kind, rezept: w.preset, lod, fluegel: [], raeder: [], leib: null, tris: 0, null: 0 });
+                const werk = (g.userData.werk = { art: rec.kind, rezept: w.preset, lod, fluegel: [], raeder: [], leib: null, tris: 0, frei: 0, null: 0 });
                 const ofen = wirt._workshopOvenPreview(rec, w.preset, ov, lod);
                 if (ofen !== undefined) {
                     wirt._wsOvenMemo = null; // der Guss gehört der Bühne, nie dem Memo der Werkstatt
@@ -2539,6 +2549,8 @@
                     ofen.traverse((x) => x.isBundleGroup && buendel.add(x));
                 } else {
                     const r = await faden.bau({ preset: w.preset, seed, lod, ov });
+                    // der Stein außer der Zeile (E8.1): der Ausgang des Fadens zählt ihn nach der Zeile (`budget.frei`, phyto budgetFrei)
+                    werk.frei = (r && r.budget && r.budget.frei) || 0;
                     const roh = r && r.meshes && r.meshes.length ? wirt._foundryBuildGroup(r.meshes, { lod, preset: w.preset }) : null;
                     if (!roh) throw new Error("DIE BÜHNE: der Faden liefert kein Werk (" + w.preset + " L" + lod + (r && r.bruch ? ": " + r.bruch : "") + ")");
                     const I = wirt._foundryWorldScaleMatrix(w.preset);
@@ -2855,8 +2867,11 @@
             werkOrt,
             // die Kosten des Werks: Dreiecke gegen das Budget seiner Stufe (das Buch), der Neubau
             zahlen: (k) => {
-                const ueber = k.budget > 0 && k.tris > k.budget;
-                kosten.textContent = k.tris == null ? "" : "△ " + zahl(k.tris) + (k.budget > 0 ? " / " + zahl(k.budget) : "") + (k.ms != null ? " · Neubau " + zahl(k.ms) + " ms" : "");
+                const ueber = k.budget > 0 && k.tris - (k.frei || 0) > k.budget;
+                kosten.textContent =
+                    k.tris == null
+                        ? ""
+                        : "△ " + zahl(k.tris) + (k.budget > 0 ? " / " + zahl(k.budget) : "") + (k.frei > 0 ? " (Stein frei " + zahl(k.frei) + ")" : "") + (k.ms != null ? " · Neubau " + zahl(k.ms) + " ms" : "");
                 kosten.classList.toggle("fail", !!ueber);
             },
         };
@@ -2937,7 +2952,7 @@
                 if (nr !== bauNr) return fuehrend;
                 S.ms = jetzt() - tBau;
                 const zeile = ((B.wirt.constructor._studioRenderConfig.lod.budget || {})[g.userData.werk.art] || {})[g.userData.werk.lod];
-                if (S.kopf) S.kopf.zahlen({ tris: g.userData.werk.tris, budget: zeile ? zeile.tris : 0, ms: S.ms });
+                if (S.kopf) S.kopf.zahlen({ tris: g.userData.werk.tris, budget: zeile ? zeile.tris : 0, frei: g.userData.werk.frei, ms: S.ms });
                 return g;
             }));
         };

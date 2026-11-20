@@ -6551,10 +6551,33 @@
         for (const b of beipack) out.push(b);
         return out;
     }
-    // DER AUSGANG: faltet eine gelieferte Stufe auf ihre Zeile und berichtet vorher/nachher + Bruch.
+    // DER STEIN AUSSER DER ZEILE (Einheit E8.1, 19.11.): ein Teil, dessen Verband die Zeile nennt (`ohneVerband` — die Nummer, die
+    // sein Stoff als `mat.verband` trägt, fachwerk `verbandReihe`), zählt nicht gegen ihre Dreiecke: sein Maß ist ein Gesetz
+    // (fachwerk VERBAND_GESETZ.mauerwerk in jeder Zeile), nie ein Budget. Gezählt wird VOR der Faltung — ein gefaltetes Stück
+    // trägt den Stoff seines größten Teils (alemannisch L0: der Backstein im Stück des Natursteins). Der Ausgang berichtet die
+    // Zahl (`frei`), die Wände (gate:asset-contract, gate:regler-wirkt) lesen sie dort; der Bau des Gesetzbuchs (fachwerk
+    // buildInstance) liest dasselbe Feld der Zeile. Eine Zeile ohne das Feld stellt nichts frei.
+    function budgetFrei(meshes, zeile) {
+        const vb = zeile && zeile.ohneVerband;
+        let tris = 0;
+        if (!(vb > 0)) return 0;
+        for (const m of meshes || [])
+            if (_budgetTeil(m) && m.teil !== "schatten" && m.mat && m.mat.verband === vb)
+                tris += _budgetTris(m) * _budgetMal(m);
+        return tris;
+    }
+    // DER AUSGANG: faltet eine gelieferte Stufe auf ihre Zeile und berichtet vorher/nachher + Bruch; die Dreiecke gegen die
+    // Zeile sind die der Stufe ohne die freien (`frei`, budgetFrei).
     function budgetErzwingen(meshes, zeile) {
         const vor = budgetSippen(meshes);
-        const bericht = { vorher: { tris: vor.tris, draws: vor.draws }, nachher: null, faltungen: [], bruch: [] };
+        const frei = budgetFrei(meshes, zeile);
+        const bericht = {
+            vorher: { tris: vor.tris, draws: vor.draws },
+            nachher: null,
+            faltungen: [],
+            bruch: [],
+            frei: frei,
+        };
         if (!zeile || !(zeile.draws >= 1) || !(zeile.tris > 0)) {
             bericht.nachher = bericht.vorher;
             bericht.bruch.push({ feld: "zeile" });
@@ -6569,7 +6592,8 @@
         const nach = budgetSippen(out);
         bericht.nachher = { tris: nach.tris, draws: nach.draws };
         if (nach.draws > zeile.draws) bericht.bruch.push({ feld: "draws", ist: nach.draws, soll: zeile.draws });
-        if (nach.tris > zeile.tris) bericht.bruch.push({ feld: "tris", ist: nach.tris, soll: zeile.tris });
+        if (nach.tris - frei > zeile.tris)
+            bericht.bruch.push({ feld: "tris", ist: nach.tris - frei, soll: zeile.tris });
         return { meshes: out, bericht: bericht };
     }
 
@@ -7212,6 +7236,7 @@
         budgetZeile: budgetZeile, // Stufen-Klammer + Budget-Zeile eines Kerns
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)
         budgetErzwingen: budgetErzwingen, // DER Ausgang: faltet auf die Zeile, berichtet vorher/nachher + Bruch
+        budgetFrei: budgetFrei, // E8.1: die Dreiecke, die die Zeile frei stellt (`ohneVerband`, vor der Faltung gezählt)
         WIND_GESETZ: WIND_GESETZ, // K19 — das Wind-Gesetz des Baums (f0 = kF·D/H², Stamm < Ast < Blatt, Last ∝ U^vogel)
         stammDurchmesser: stammDurchmesser, // K19 — der Fuß-Durchmesser der gelieferten Gestalt (Ring des Stamm-Strangs)
         windSchlankheit: windSchlankheit, // K19 — δ = D(Brusthöhe) / H der gelieferten Gestalt
