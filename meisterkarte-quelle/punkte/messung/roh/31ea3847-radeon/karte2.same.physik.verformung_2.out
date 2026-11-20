@@ -352,7 +352,7 @@ return (async function leiterRahmen(H, P, lauf) {
 @@ 0 s · same.physik.verformung S4 leser {"art":"leser","fehlt":"Spur im Boden: der Tritt der Leiber mindert nur Büschel, kein Rad und kein Fuß drückt den Boden ein (stamm/siedlung-wege.js:1638 `_trittDerLeiber`)","t":0}
 @@ 0 s · same.physik.verformung S5 umfang {"art":"umfang","erzeugt":0,"was":"die Welt trägt 0 m³ Schüttgut (Erde, Sand, Kies, Schnee) als freien Körper — das Feld ist starr","t":0}
 @@ 0 s · same.physik.verformung S6 leser {"art":"leser","fehlt":"bleibende Verformung: die Streckgrenze der Zeile urteilt nur Knick und Druck (stamm/bau-buch.js:1869 `_failsUnderLoad`), keine bleibende Form im Bild","t":0}
-@@ 0.1 s · same.physik.verformung S7 leser {"art":"leser","fehlt":"Gletscher: das Eis ist eine Phase des Spiegels ohne Fluss (stamm/wasser-hydro.js:703 `_eisAt`)","t":0}
+@@ 0 s · same.physik.verformung S7 leser {"art":"leser","fehlt":"Gletscher: das Eis ist eine Phase des Spiegels ohne Fluss (stamm/wasser-hydro.js:703 `_eisAt`)","t":0}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
