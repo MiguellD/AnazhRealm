@@ -11190,7 +11190,7 @@
   },
   "karte2.leben.evolution.fossil": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fossil#1 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#1 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#2 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#2 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#3 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#3 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#4 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#4 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#5 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#5 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#6 radeon: ungemessen (R10) · karte2.leben.evolution.fossil#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fossil#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.fossil#1 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.fossil#2 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.fossil#3 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.fossil#4 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.fossil#5 gtx: ungemessen (R10) · karte2.leben.evolution.fossil#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.fossil#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fossil#1",
@@ -11198,8 +11198,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
      "ungemessen": true,
+     "r6": "naehe",
      "beide": true
     },
     {
@@ -11218,8 +11219,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.fossil#2",
@@ -11236,8 +11238,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.fossil#3",
@@ -11254,8 +11257,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.fossil#4",
@@ -11272,8 +11276,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.fossil#5",
@@ -11290,8 +11295,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.fossil#6",
@@ -11306,7 +11312,7 @@
   },
   "karte2.leben.evolution.fremde-physik": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#1 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.fremde-physik#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#1 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#2 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#3 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#4 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.leben.evolution.fremde-physik#5 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.fremde-physik#6 gtx: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 radeon: ungemessen (R10) · karte2.leben.evolution.fremde-physik#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.fremde-physik#1",
@@ -11406,8 +11412,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.fremde-physik#6",
@@ -11440,7 +11447,7 @@
   },
   "karte2.leben.evolution.mikroben": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.mikroben#1 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#1 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#2 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#2 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#3 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#3 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#4 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#4 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#5 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#5 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#6 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.mikroben#1 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#1 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#2 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#2 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#3 radeon: ungemessen (R10) · karte2.leben.evolution.mikroben#3 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.mikroben#4 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.mikroben#5 gtx: ungemessen (R10) · karte2.leben.evolution.mikroben#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.mikroben#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.mikroben#1",
@@ -11504,8 +11511,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.mikroben#4",
@@ -11522,8 +11530,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.mikroben#5",
@@ -11540,8 +11549,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.mikroben#6",
@@ -11958,7 +11968,7 @@
   },
   "karte2.leben.evolution.zivilisation": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.zivilisation#1 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#1 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#2 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#2 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.leben.evolution.zivilisation#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.zivilisation#1 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.zivilisation#2 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.zivilisation#3 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.zivilisation#4 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.zivilisation#5 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.leben.evolution.zivilisation#6 gtx: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 radeon: ungemessen (R10) · karte2.leben.evolution.zivilisation#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.leben.evolution.zivilisation#1",
@@ -11966,8 +11976,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
      "ungemessen": true,
+     "r6": "naehe",
      "beide": true
     },
     {
@@ -11986,8 +11997,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.zivilisation#2",
@@ -12004,8 +12016,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.zivilisation#3",
@@ -12022,8 +12035,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.zivilisation#4",
@@ -12040,8 +12054,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.zivilisation#5",
@@ -12058,8 +12073,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.leben.evolution.zivilisation#6",
@@ -27070,7 +27086,7 @@
   },
   "karte2.planet.geologie.einschlag": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.einschlag#1 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#1 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#2 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#2 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#3 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#3 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#4 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#4 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#5 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#5 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#6 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#6 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#7 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.einschlag#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.einschlag#1 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#2 radeon: ungemessen (R10) · karte2.planet.geologie.einschlag#2 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.einschlag#3 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.einschlag#4 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.einschlag#5 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.einschlag#6 gtx: ungemessen (R10) · karte2.planet.geologie.einschlag#7 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.einschlag#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.einschlag#1",
@@ -27078,8 +27094,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
      "ungemessen": true,
+     "r6": "naehe",
      "beide": true
     },
     {
@@ -27116,8 +27133,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.einschlag#3",
@@ -27134,8 +27152,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.einschlag#4",
@@ -27152,8 +27171,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.einschlag#5",
@@ -27170,8 +27190,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.einschlag#6",
@@ -27188,8 +27209,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.einschlag#7",
@@ -27204,7 +27226,7 @@
   },
   "karte2.planet.geologie.gebirge": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.gebirge#1 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#1 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#2 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#2 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#3 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#3 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#4 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#4 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#5 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#5 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#6 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#6 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#7 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.gebirge#1 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#1 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.gebirge#2 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.gebirge#3 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#4 radeon: ungemessen (R10) · karte2.planet.geologie.gebirge#4 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.gebirge#5 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.gebirge#6 gtx: ungemessen (R10) · karte2.planet.geologie.gebirge#7 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.gebirge#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.gebirge#1",
@@ -27232,8 +27254,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.gebirge#2",
@@ -27250,8 +27273,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.gebirge#3",
@@ -27286,8 +27310,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.gebirge#5",
@@ -27304,8 +27329,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.gebirge#6",
@@ -27322,8 +27348,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.gebirge#7",
@@ -27338,7 +27365,7 @@
   },
   "karte2.planet.geologie.inneres": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.inneres#1 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#1 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#2 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#2 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#3 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#3 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#4 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#4 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#5 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#5 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#6 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.inneres#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.inneres#1 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.inneres#2 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.inneres#3 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.inneres#4 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.inneres#5 gtx: ungemessen (R10) · karte2.planet.geologie.inneres#6 radeon: ungemessen (R10) · karte2.planet.geologie.inneres#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.inneres#1",
@@ -27346,8 +27373,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
      "ungemessen": true,
+     "r6": "naehe",
      "beide": true
     },
     {
@@ -27366,8 +27394,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.inneres#2",
@@ -27384,8 +27413,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.inneres#3",
@@ -27402,8 +27432,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.inneres#4",
@@ -27420,8 +27451,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.inneres#5",
@@ -27454,7 +27486,7 @@
   },
   "karte2.planet.geologie.lagerstaette": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.lagerstaette#1 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#1 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#2 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#2 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#3 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#3 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#4 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#4 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#5 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#5 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#6 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.lagerstaette#1 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#1 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#2 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#2 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.lagerstaette#3 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#4 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#4 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#5 radeon: ungemessen (R10) · karte2.planet.geologie.lagerstaette#5 gtx: ungemessen (R10) · karte2.planet.geologie.lagerstaette#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.lagerstaette#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.lagerstaette#1",
@@ -27500,8 +27532,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.lagerstaette#3",
@@ -27554,8 +27587,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.lagerstaette#6",
@@ -27570,7 +27604,7 @@
   },
   "karte2.planet.geologie.platten": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.platten#1 radeon: ungemessen (R10) · karte2.planet.geologie.platten#1 gtx: ungemessen (R10) · karte2.planet.geologie.platten#2 radeon: ungemessen (R10) · karte2.planet.geologie.platten#2 gtx: ungemessen (R10) · karte2.planet.geologie.platten#3 radeon: ungemessen (R10) · karte2.planet.geologie.platten#3 gtx: ungemessen (R10) · karte2.planet.geologie.platten#4 radeon: ungemessen (R10) · karte2.planet.geologie.platten#4 gtx: ungemessen (R10) · karte2.planet.geologie.platten#5 radeon: ungemessen (R10) · karte2.planet.geologie.platten#5 gtx: ungemessen (R10) · karte2.planet.geologie.platten#6 radeon: ungemessen (R10) · karte2.planet.geologie.platten#6 gtx: ungemessen (R10) · karte2.planet.geologie.platten#7 radeon: ungemessen (R10) · karte2.planet.geologie.platten#7 gtx: ungemessen (R10) · karte2.planet.geologie.platten#8 radeon: ungemessen (R10) · karte2.planet.geologie.platten#8 gtx: ungemessen (R10) · karte2.planet.geologie.platten#9 radeon: ungemessen (R10) · karte2.planet.geologie.platten#9 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.platten#1 radeon: ungemessen (R10) · karte2.planet.geologie.platten#1 gtx: ungemessen (R10) · karte2.planet.geologie.platten#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.platten#2 gtx: ungemessen (R10) · karte2.planet.geologie.platten#3 radeon: ungemessen (R10) · karte2.planet.geologie.platten#3 gtx: ungemessen (R10) · karte2.planet.geologie.platten#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.platten#4 gtx: ungemessen (R10) · karte2.planet.geologie.platten#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.platten#5 gtx: ungemessen (R10) · karte2.planet.geologie.platten#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.platten#6 gtx: ungemessen (R10) · karte2.planet.geologie.platten#7 radeon: ungemessen (R10) · karte2.planet.geologie.platten#7 gtx: ungemessen (R10) · karte2.planet.geologie.platten#8 radeon: ungemessen (R10) · karte2.planet.geologie.platten#8 gtx: ungemessen (R10) · karte2.planet.geologie.platten#9 radeon: ungemessen (R10) · karte2.planet.geologie.platten#9 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.platten#1",
@@ -27598,8 +27632,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.platten#2",
@@ -27634,8 +27669,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.platten#4",
@@ -27652,8 +27688,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.platten#5",
@@ -27670,8 +27707,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.platten#6",
@@ -27740,7 +27778,7 @@
   },
   "karte2.planet.geologie.unterwelt": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.unterwelt#1 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#1 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#2 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#2 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#3 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#3 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#4 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#4 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#5 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#5 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#6 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.unterwelt#1 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#1 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#2 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#2 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.unterwelt#3 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.unterwelt#4 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#5 radeon: ungemessen (R10) · karte2.planet.geologie.unterwelt#5 gtx: ungemessen (R10) · karte2.planet.geologie.unterwelt#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.unterwelt#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.unterwelt#1",
@@ -27786,8 +27824,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.unterwelt#3",
@@ -27804,8 +27843,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.unterwelt#4",
@@ -27840,8 +27880,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.unterwelt#6",
@@ -27856,7 +27897,7 @@
   },
   "karte2.planet.geologie.vulkan": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.vulkan#1 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#1 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#2 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#2 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#3 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#3 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#4 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#4 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#5 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#5 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#6 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#6 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#7 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.geologie.vulkan#1 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#1 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#2 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#2 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.vulkan#3 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#4 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#4 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.vulkan#5 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.geologie.vulkan#6 gtx: ungemessen (R10) · karte2.planet.geologie.vulkan#7 radeon: ungemessen (R10) · karte2.planet.geologie.vulkan#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.geologie.vulkan#1",
@@ -27902,8 +27943,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.vulkan#3",
@@ -27938,8 +27980,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.vulkan#5",
@@ -27956,8 +27999,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.geologie.vulkan#6",
@@ -30129,7 +30173,7 @@
   },
   "karte2.planet.relief.boden": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.boden#1 radeon: ungemessen (R10) · karte2.planet.relief.boden#1 gtx: ungemessen (R10) · karte2.planet.relief.boden#2 radeon: ungemessen (R10) · karte2.planet.relief.boden#2 gtx: ungemessen (R10) · karte2.planet.relief.boden#3 radeon: ungemessen (R10) · karte2.planet.relief.boden#3 gtx: ungemessen (R10) · karte2.planet.relief.boden#4 radeon: ungemessen (R10) · karte2.planet.relief.boden#4 gtx: ungemessen (R10) · karte2.planet.relief.boden#5 radeon: ungemessen (R10) · karte2.planet.relief.boden#5 gtx: ungemessen (R10) · karte2.planet.relief.boden#6 radeon: ungemessen (R10) · karte2.planet.relief.boden#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.boden#1 radeon: ungemessen (R10) · karte2.planet.relief.boden#1 gtx: ungemessen (R10) · karte2.planet.relief.boden#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.boden#2 gtx: ungemessen (R10) · karte2.planet.relief.boden#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.boden#3 gtx: ungemessen (R10) · karte2.planet.relief.boden#4 radeon: ungemessen (R10) · karte2.planet.relief.boden#4 gtx: ungemessen (R10) · karte2.planet.relief.boden#5 radeon: ungemessen (R10) · karte2.planet.relief.boden#5 gtx: ungemessen (R10) · karte2.planet.relief.boden#6 radeon: ungemessen (R10) · karte2.planet.relief.boden#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.relief.boden#1",
@@ -30157,8 +30201,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.boden#2",
@@ -30175,8 +30220,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.boden#3",
@@ -30245,7 +30291,7 @@
   },
   "karte2.planet.relief.formschatz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.formschatz#1 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#1 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#2 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#2 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#3 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#3 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#4 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#4 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#5 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#5 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#6 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#6 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#7 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#7 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#8 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.formschatz#1 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#1 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#2 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#2 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#3 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#3 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.formschatz#4 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#5 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#5 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.formschatz#6 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#7 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#7 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#8 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.formschatz#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.relief.formschatz#1",
@@ -30309,8 +30355,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.formschatz#4",
@@ -30345,8 +30392,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.formschatz#6",
@@ -30381,8 +30429,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.formschatz#8",
@@ -30397,7 +30446,7 @@
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +23) — zuletzt an b7ed8419: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) · karte2.planet.relief.grossform#2 gtx: ungemessen (R10) · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) · karte2.planet.relief.grossform#3 gtx: ungemessen (R10) · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) · karte2.planet.relief.grossform#4 gtx: ungemessen (R10) · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) · karte2.planet.relief.grossform#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +23) — zuletzt an b7ed8419: Deckel 355 s gerissen: Stille seit 354.9 s nach 355 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · karte2.planet.relief.grossform#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.grossform#2 gtx: ungemessen (R10) · karte2.planet.relief.grossform#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.grossform#3 gtx: ungemessen (R10) · karte2.planet.relief.grossform#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.grossform#4 gtx: ungemessen (R10) · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.grossform#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -30426,8 +30475,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.grossform#2",
@@ -30444,8 +30494,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.grossform#3",
@@ -30462,8 +30513,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.grossform#4",
@@ -30516,8 +30568,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.grossform#7",
@@ -30532,7 +30585,7 @@
   },
   "karte2.planet.relief.wandel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.wandel#1 radeon: ungemessen (R10) · karte2.planet.relief.wandel#1 gtx: ungemessen (R10) · karte2.planet.relief.wandel#2 radeon: ungemessen (R10) · karte2.planet.relief.wandel#2 gtx: ungemessen (R10) · karte2.planet.relief.wandel#3 radeon: ungemessen (R10) · karte2.planet.relief.wandel#3 gtx: ungemessen (R10) · karte2.planet.relief.wandel#4 radeon: ungemessen (R10) · karte2.planet.relief.wandel#4 gtx: ungemessen (R10) · karte2.planet.relief.wandel#5 radeon: ungemessen (R10) · karte2.planet.relief.wandel#5 gtx: ungemessen (R10) · karte2.planet.relief.wandel#6 radeon: ungemessen (R10) · karte2.planet.relief.wandel#6 gtx: ungemessen (R10) · karte2.planet.relief.wandel#7 radeon: ungemessen (R10) · karte2.planet.relief.wandel#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.wandel#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.wandel#1 gtx: ungemessen (R10) · karte2.planet.relief.wandel#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.wandel#2 gtx: ungemessen (R10) · karte2.planet.relief.wandel#3 radeon: ungemessen (R10) · karte2.planet.relief.wandel#3 gtx: ungemessen (R10) · karte2.planet.relief.wandel#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.wandel#4 gtx: ungemessen (R10) · karte2.planet.relief.wandel#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.wandel#5 gtx: ungemessen (R10) · karte2.planet.relief.wandel#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.relief.wandel#6 gtx: ungemessen (R10) · karte2.planet.relief.wandel#7 radeon: ungemessen (R10) · karte2.planet.relief.wandel#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.relief.wandel#1",
@@ -30540,8 +30593,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
      "ungemessen": true,
+     "r6": "naehe",
      "beide": true
     },
     {
@@ -30560,8 +30614,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.wandel#2",
@@ -30596,8 +30651,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.wandel#4",
@@ -30614,8 +30670,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.wandel#5",
@@ -30632,8 +30689,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.relief.wandel#6",
@@ -31434,7 +31492,7 @@
   },
   "karte2.planet.wetter.extreme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.extreme#1 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#1 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#2 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#2 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#3 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#3 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#4 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#4 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#5 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#5 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#6 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.extreme#1 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#1 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.extreme#2 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.extreme#3 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.extreme#4 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#5 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#5 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#6 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.extreme#1",
@@ -31462,8 +31520,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.extreme#2",
@@ -31480,8 +31539,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.extreme#3",
@@ -31498,8 +31558,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.extreme#4",
@@ -31550,7 +31611,7 @@
   },
   "karte2.planet.wetter.fremde-atmosphaeren": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.fremde-atmosphaeren#1 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#1 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#2 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#2 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#3 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#3 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#4 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#4 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#5 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#5 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#6 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#6 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#7 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.fremde-atmosphaeren#1 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#1 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.fremde-atmosphaeren#2 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.fremde-atmosphaeren#3 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#4 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#4 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.fremde-atmosphaeren#5 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#6 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#6 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#7 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.fremde-atmosphaeren#1",
@@ -31578,8 +31639,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.fremde-atmosphaeren#2",
@@ -31596,8 +31658,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.fremde-atmosphaeren#3",
@@ -31632,8 +31695,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.fremde-atmosphaeren#5",
@@ -31684,7 +31748,7 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.wetter.klimazonen#2 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#2 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#3 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#3 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#4 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#4 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#5 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#5 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#6 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#6 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#7 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.wetter.klimazonen#2 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#2 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.klimazonen#3 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#4 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#4 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.klimazonen#5 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#6 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#6 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#7 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
@@ -31731,8 +31795,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.klimazonen#3",
@@ -31767,8 +31832,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.klimazonen#5",
@@ -31819,7 +31885,7 @@
   },
   "karte2.planet.wetter.lagen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.lagen#2 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#2 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#3 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#3 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#4 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#4 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#5 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#5 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#6 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#6 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#7 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.lagen#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.lagen#2 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#3 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#3 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.lagen#4 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.lagen#5 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#6 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#6 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#7 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.lagen#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.lagen#2",
@@ -31827,8 +31893,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.lagen#2",
@@ -31863,8 +31930,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.lagen#4",
@@ -31881,8 +31949,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.lagen#5",
@@ -31917,8 +31986,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.lagen#7",
@@ -31933,7 +32003,7 @@
   },
   "karte2.planet.wetter.vorhersage": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.vorhersage#1 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#1 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#2 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#2 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#3 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#3 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#4 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#4 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#5 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#5 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#6 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.vorhersage#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.vorhersage#1 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#2 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#2 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.vorhersage#3 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.vorhersage#4 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.vorhersage#5 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.vorhersage#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.vorhersage#1",
@@ -31941,8 +32011,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
      "ungemessen": true,
+     "r6": "naehe",
      "beide": true
     },
     {
@@ -31979,8 +32050,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.vorhersage#3",
@@ -31997,8 +32069,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.vorhersage#4",
@@ -32015,8 +32088,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.vorhersage#5",
@@ -32033,8 +32107,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.vorhersage#6",
@@ -32049,7 +32124,7 @@
   },
   "karte2.planet.wetter.wolken": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.wolken#1 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#1 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#2 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#2 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#3 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#3 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#4 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#4 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#5 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#5 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#6 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#6 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#7 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.wolken#1 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#1 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#2 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#2 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#3 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.wolken#3 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#4 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.wolken#4 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#5 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.wolken#5 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#6 radeon: Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6) · karte2.planet.wetter.wolken#6 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#7 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.wolken#1",
@@ -32095,8 +32170,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.wolken#3",
@@ -32113,8 +32189,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.wolken#4",
@@ -32131,8 +32208,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.wolken#5",
@@ -32149,8 +32227,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abdruck.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +6)",
+     "ungemessen": true,
+     "r6": "naehe"
     },
     {
      "id": "karte2.planet.wetter.wolken#6",
@@ -32183,7 +32262,7 @@
   },
   "karte2.planet.zeit.archiv": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.archiv#1 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#1 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#3 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#4 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#4 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#5 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#5 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#8 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.archiv#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.archiv#1 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#2 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#2 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#3 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.archiv#3 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#4 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.archiv#4 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#5 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.archiv#5 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#6 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#6 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#7 radeon: ungemessen (R10) · karte2.planet.zeit.archiv#7 gtx: ungemessen (R10) · karte2.planet.zeit.archiv#8 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.archiv#8 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.zeit.archiv#1",
@@ -32191,8 +32270,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -32229,8 +32309,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.archiv#3",
@@ -32247,8 +32328,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.archiv#4",
@@ -32265,8 +32347,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.archiv#5",
@@ -32319,8 +32402,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.archiv#8",
@@ -32335,7 +32419,7 @@
   },
   "karte2.planet.zeit.klimageschichte": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.klimageschichte#1 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#1 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#2 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#2 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#3 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#3 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#4 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#4 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#5 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#5 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#6 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#6 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#7 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#7 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#8 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#8 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#9 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#9 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.zeit.klimageschichte#1 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.klimageschichte#1 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.klimageschichte#2 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#3 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.klimageschichte#3 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#4 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.klimageschichte#4 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#5 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.klimageschichte#5 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#6 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.klimageschichte#6 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#7 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.klimageschichte#7 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#8 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6) · karte2.planet.zeit.klimageschichte#8 gtx: ungemessen (R10) · karte2.planet.zeit.klimageschichte#9 radeon: ungemessen (R10) · karte2.planet.zeit.klimageschichte#9 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.zeit.klimageschichte#1",
@@ -32343,8 +32427,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -32363,8 +32448,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.klimageschichte#2",
@@ -32381,8 +32467,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.klimageschichte#3",
@@ -32399,8 +32486,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.klimageschichte#4",
@@ -32417,8 +32505,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.klimageschichte#5",
@@ -32435,8 +32524,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.klimageschichte#6",
@@ -32453,8 +32543,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.klimageschichte#7",
@@ -32471,8 +32562,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/sicht-linse.cjs, scripts/lib/welt-boot.cjs +6)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.zeit.klimageschichte#8",
@@ -35878,7 +35970,7 @@
   },
   "karte2.same.physik.koerper": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.physik.koerper#1 radeon: ungemessen (R10) · karte2.same.physik.koerper#1 gtx: ungemessen (R10) · karte2.same.physik.koerper#2 radeon: ungemessen (R10) · karte2.same.physik.koerper#2 gtx: ungemessen (R10) · karte2.same.physik.koerper#3 radeon: ungemessen (R10) · karte2.same.physik.koerper#3 gtx: ungemessen (R10) · karte2.same.physik.koerper#4 radeon: ungemessen (R10) · karte2.same.physik.koerper#4 gtx: ungemessen (R10) · karte2.same.physik.koerper#5 radeon: ungemessen (R10) · karte2.same.physik.koerper#5 gtx: ungemessen (R10) · karte2.same.physik.koerper#6 radeon: ungemessen (R10) · karte2.same.physik.koerper#6 gtx: ungemessen (R10) · karte2.same.physik.koerper#7 radeon: ungemessen (R10) · karte2.same.physik.koerper#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.physik.koerper#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau · karte2.same.physik.koerper#1 gtx: ungemessen (R10) · karte2.same.physik.koerper#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau · karte2.same.physik.koerper#2 gtx: ungemessen (R10) · karte2.same.physik.koerper#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau · karte2.same.physik.koerper#3 gtx: ungemessen (R10) · karte2.same.physik.koerper#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau · karte2.same.physik.koerper#4 gtx: ungemessen (R10) · karte2.same.physik.koerper#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau · karte2.same.physik.koerper#5 gtx: ungemessen (R10) · karte2.same.physik.koerper#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau · karte2.same.physik.koerper#6 gtx: ungemessen (R10) · karte2.same.physik.koerper#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau · karte2.same.physik.koerper#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.same.physik.koerper#1",
@@ -35886,7 +35978,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau",
      "ungemessen": true,
      "beide": true
     },
@@ -35906,7 +35998,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau",
      "ungemessen": true
     },
     {
@@ -35924,7 +36016,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau",
      "ungemessen": true
     },
     {
@@ -35942,7 +36034,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau",
      "ungemessen": true
     },
     {
@@ -35960,7 +36052,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau",
      "ungemessen": true
     },
     {
@@ -35978,7 +36070,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau",
      "ungemessen": true
     },
     {
@@ -35996,7 +36088,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Frist der Probe 54 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter same.physik.koerper) · Täter: @@PUNKTE@@ FRIST 54 s der Probe gerissen — Abbau",
      "ungemessen": true
     },
     {
@@ -37502,7 +37594,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 279,
+  "konsum": 292,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37662,12 +37754,91 @@
    "wetter.K4#1 headless",
    "wetter.K5#1 headless",
    "wetter.K5#2 headless",
+   "karte2.leben.evolution.fossil#1 radeon",
+   "karte2.leben.evolution.fossil#2 radeon",
+   "karte2.leben.evolution.fossil#3 radeon",
+   "karte2.leben.evolution.fossil#4 radeon",
+   "karte2.leben.evolution.fossil#5 radeon",
+   "karte2.leben.evolution.fossil#6 radeon",
+   "karte2.leben.evolution.fremde-physik#6 radeon",
+   "karte2.leben.evolution.mikroben#4 radeon",
+   "karte2.leben.evolution.mikroben#5 radeon",
+   "karte2.leben.evolution.mikroben#6 radeon",
+   "karte2.leben.evolution.zivilisation#1 radeon",
+   "karte2.leben.evolution.zivilisation#2 radeon",
+   "karte2.leben.evolution.zivilisation#3 radeon",
+   "karte2.leben.evolution.zivilisation#4 radeon",
+   "karte2.leben.evolution.zivilisation#5 radeon",
+   "karte2.leben.evolution.zivilisation#6 radeon",
+   "karte2.planet.geologie.einschlag#1 radeon",
+   "karte2.planet.geologie.einschlag#3 radeon",
+   "karte2.planet.geologie.einschlag#4 radeon",
+   "karte2.planet.geologie.einschlag#5 radeon",
+   "karte2.planet.geologie.einschlag#6 radeon",
+   "karte2.planet.geologie.einschlag#7 radeon",
+   "karte2.planet.geologie.gebirge#2 radeon",
+   "karte2.planet.geologie.gebirge#3 radeon",
+   "karte2.planet.geologie.gebirge#5 radeon",
+   "karte2.planet.geologie.gebirge#6 radeon",
+   "karte2.planet.geologie.gebirge#7 radeon",
+   "karte2.planet.geologie.inneres#1 radeon",
+   "karte2.planet.geologie.inneres#2 radeon",
+   "karte2.planet.geologie.inneres#3 radeon",
+   "karte2.planet.geologie.inneres#4 radeon",
+   "karte2.planet.geologie.inneres#5 radeon",
+   "karte2.planet.geologie.lagerstaette#3 radeon",
+   "karte2.planet.geologie.lagerstaette#6 radeon",
+   "karte2.planet.geologie.platten#2 radeon",
+   "karte2.planet.geologie.platten#4 radeon",
+   "karte2.planet.geologie.platten#5 radeon",
+   "karte2.planet.geologie.platten#6 radeon",
+   "karte2.planet.geologie.unterwelt#3 radeon",
+   "karte2.planet.geologie.unterwelt#4 radeon",
+   "karte2.planet.geologie.unterwelt#6 radeon",
+   "karte2.planet.geologie.vulkan#3 radeon",
+   "karte2.planet.geologie.vulkan#5 radeon",
+   "karte2.planet.geologie.vulkan#6 radeon",
+   "karte2.planet.relief.boden#2 radeon",
+   "karte2.planet.relief.boden#3 radeon",
+   "karte2.planet.relief.formschatz#4 radeon",
+   "karte2.planet.relief.formschatz#6 radeon",
+   "karte2.planet.relief.formschatz#8 radeon",
+   "karte2.planet.relief.grossform#2 radeon",
+   "karte2.planet.relief.grossform#3 radeon",
+   "karte2.planet.relief.grossform#4 radeon",
+   "karte2.planet.relief.grossform#7 radeon",
+   "karte2.planet.relief.wandel#1 radeon",
+   "karte2.planet.relief.wandel#2 radeon",
+   "karte2.planet.relief.wandel#4 radeon",
+   "karte2.planet.relief.wandel#5 radeon",
+   "karte2.planet.relief.wandel#6 radeon",
+   "karte2.planet.wetter.extreme#2 radeon",
+   "karte2.planet.wetter.extreme#3 radeon",
+   "karte2.planet.wetter.extreme#4 radeon",
+   "karte2.planet.wetter.fremde-atmosphaeren#2 radeon",
+   "karte2.planet.wetter.fremde-atmosphaeren#3 radeon",
+   "karte2.planet.wetter.fremde-atmosphaeren#5 radeon",
+   "karte2.planet.wetter.klimazonen#3 radeon",
+   "karte2.planet.wetter.klimazonen#5 radeon",
+   "karte2.planet.wetter.lagen#2 radeon",
+   "karte2.planet.wetter.lagen#4 radeon",
+   "karte2.planet.wetter.lagen#5 radeon",
+   "karte2.planet.wetter.lagen#7 radeon",
+   "karte2.planet.wetter.vorhersage#1 radeon",
+   "karte2.planet.wetter.vorhersage#3 radeon",
+   "karte2.planet.wetter.vorhersage#4 radeon",
+   "karte2.planet.wetter.vorhersage#5 radeon",
+   "karte2.planet.wetter.vorhersage#6 radeon",
+   "karte2.planet.wetter.wolken#3 radeon",
+   "karte2.planet.wetter.wolken#4 radeon",
+   "karte2.planet.wetter.wolken#5 radeon",
+   "karte2.planet.wetter.wolken#6 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3347
+  "ohne": 3255
  },
  "kopfVoll": "a71e06c726849622e761447b9fddb52f90993367",
- "zeit": "2026-11-20T11:51:16.931Z",
+ "zeit": "2026-11-20T12:43:33.770Z",
  "vorher": "a71e06c7",
  "bilanz": {
   "gewinn": [],
