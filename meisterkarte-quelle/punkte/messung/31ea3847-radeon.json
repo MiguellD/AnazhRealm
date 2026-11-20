@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T04:00:39.389Z",
+ "zeit": "2026-11-20T05:16:06.500Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -7184,6 +7184,2210 @@
    "zeit": "2026-11-20T04:51:34.556Z",
    "bahn": "tod",
    "host": "MiguellD"
+  },
+  "karte2.mensch.leib.verschieden#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 42.1,
+    "takte": 16,
+    "fremdS": 396.64,
+    "kerne": 9.414,
+    "fensterKerne": 10.255,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-9820-profil-Q8IKDQ --no-pr",
+      256.98
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      46.42
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      23.84
+     ]
+    ],
+    "dienerS": 25.33,
+    "diener": [
+     [
+      "System",
+      10.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.03
+     ]
+    ],
+    "geraetS": 59.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.31
+     ],
+     [
+      "svchost.exe",
+      28.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 116.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:06:34.866Z",
+   "abdruck": "bc5aa760831a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.verschieden#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 42.1,
+    "takte": 16,
+    "fremdS": 396.64,
+    "kerne": 9.414,
+    "fensterKerne": 10.255,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-9820-profil-Q8IKDQ --no-pr",
+      256.98
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      46.42
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      23.84
+     ]
+    ],
+    "dienerS": 25.33,
+    "diener": [
+     [
+      "System",
+      10.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.03
+     ]
+    ],
+    "geraetS": 59.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.31
+     ],
+     [
+      "svchost.exe",
+      28.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 116.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:06:34.866Z",
+   "abdruck": "cabc5bd8b165",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.verschieden#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.verschieden#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 42.1,
+    "takte": 16,
+    "fremdS": 396.64,
+    "kerne": 9.414,
+    "fensterKerne": 10.255,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-9820-profil-Q8IKDQ --no-pr",
+      256.98
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      46.42
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      23.84
+     ]
+    ],
+    "dienerS": 25.33,
+    "diener": [
+     [
+      "System",
+      10.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.03
+     ]
+    ],
+    "geraetS": 59.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.31
+     ],
+     [
+      "svchost.exe",
+      28.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 116.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:06:34.866Z",
+   "abdruck": "99d44b03095f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.verschieden#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.verschieden#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 42.1,
+    "takte": 16,
+    "fremdS": 396.64,
+    "kerne": 9.414,
+    "fensterKerne": 10.255,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-9820-profil-Q8IKDQ --no-pr",
+      256.98
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      46.42
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      23.84
+     ]
+    ],
+    "dienerS": 25.33,
+    "diener": [
+     [
+      "System",
+      10.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.03
+     ]
+    ],
+    "geraetS": 59.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.31
+     ],
+     [
+      "svchost.exe",
+      28.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 116.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:06:34.866Z",
+   "abdruck": "668195da3c22",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.verschieden#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.verschieden#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 42.1,
+    "takte": 16,
+    "fremdS": 396.64,
+    "kerne": 9.414,
+    "fensterKerne": 10.255,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-9820-profil-Q8IKDQ --no-pr",
+      256.98
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      46.42
+     ],
+     [
+      "chrome.exe --allow-pre-commit-input --disable-background-networking --disable-background-t",
+      23.84
+     ]
+    ],
+    "dienerS": 25.33,
+    "diener": [
+     [
+      "System",
+      10.34
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.03
+     ]
+    ],
+    "geraetS": 59.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.31
+     ],
+     [
+      "svchost.exe",
+      28.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 116.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:06:34.866Z",
+   "abdruck": "0fce05851e87",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.verschieden#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.tracht#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 42.8,
+    "takte": 17,
+    "fremdS": 203.69,
+    "kerne": 4.757,
+    "fensterKerne": 6.162,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lkOBuJ --no-p",
+      109.66
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      47.78
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.92
+     ]
+    ],
+    "dienerS": 19.58,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      6.94
+     ],
+     [
+      "System",
+      6.14
+     ]
+    ],
+    "geraetS": 32.89,
+    "geraet": [
+     [
+      "svchost.exe",
+      16.61
+     ],
+     [
+      "MsMpEng.exe",
+      15.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.81
+     ]
+    ],
+    "eigenS": 100.55,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:08:18.860Z",
+   "abdruck": "960496c6668e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.tracht#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 42.8,
+    "takte": 17,
+    "fremdS": 203.69,
+    "kerne": 4.757,
+    "fensterKerne": 6.162,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lkOBuJ --no-p",
+      109.66
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      47.78
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.92
+     ]
+    ],
+    "dienerS": 19.58,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      6.94
+     ],
+     [
+      "System",
+      6.14
+     ]
+    ],
+    "geraetS": 32.89,
+    "geraet": [
+     [
+      "svchost.exe",
+      16.61
+     ],
+     [
+      "MsMpEng.exe",
+      15.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.81
+     ]
+    ],
+    "eigenS": 100.55,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:08:18.860Z",
+   "abdruck": "6c26554a8a39",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.tracht#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.tracht#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 42.8,
+    "takte": 17,
+    "fremdS": 203.69,
+    "kerne": 4.757,
+    "fensterKerne": 6.162,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lkOBuJ --no-p",
+      109.66
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      47.78
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.92
+     ]
+    ],
+    "dienerS": 19.58,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      6.94
+     ],
+     [
+      "System",
+      6.14
+     ]
+    ],
+    "geraetS": 32.89,
+    "geraet": [
+     [
+      "svchost.exe",
+      16.61
+     ],
+     [
+      "MsMpEng.exe",
+      15.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.81
+     ]
+    ],
+    "eigenS": 100.55,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:08:18.860Z",
+   "abdruck": "abfc3c062c7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.tracht#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.tracht#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 42.8,
+    "takte": 17,
+    "fremdS": 203.69,
+    "kerne": 4.757,
+    "fensterKerne": 6.162,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lkOBuJ --no-p",
+      109.66
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      47.78
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.92
+     ]
+    ],
+    "dienerS": 19.58,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      6.94
+     ],
+     [
+      "System",
+      6.14
+     ]
+    ],
+    "geraetS": 32.89,
+    "geraet": [
+     [
+      "svchost.exe",
+      16.61
+     ],
+     [
+      "MsMpEng.exe",
+      15.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.81
+     ]
+    ],
+    "eigenS": 100.55,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:08:18.860Z",
+   "abdruck": "70f2088374ad",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.tracht#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.tracht#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 42.8,
+    "takte": 17,
+    "fremdS": 203.69,
+    "kerne": 4.757,
+    "fensterKerne": 6.162,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lkOBuJ --no-p",
+      109.66
+     ],
+     [
+      "node.exe scratchpad/netzmass.cjs micha/AnazhRealm-probe2 scratchpad/fc-head-now.js fachwer",
+      47.78
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      11.92
+     ]
+    ],
+    "dienerS": 19.58,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      6.94
+     ],
+     [
+      "System",
+      6.14
+     ]
+    ],
+    "geraetS": 32.89,
+    "geraet": [
+     [
+      "svchost.exe",
+      16.61
+     ],
+     [
+      "MsMpEng.exe",
+      15.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.81
+     ]
+    ],
+    "eigenS": 100.55,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:08:18.860Z",
+   "abdruck": "776441a95ce7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.tracht#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.ausdruck#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 40.7,
+    "takte": 16,
+    "fremdS": 221.89,
+    "kerne": 5.449,
+    "fensterKerne": 7.203,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      140.81
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      21.42
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      9.78
+     ]
+    ],
+    "dienerS": 20.33,
+    "diener": [
+     [
+      "System",
+      7.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.13
+     ]
+    ],
+    "geraetS": 42.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.33
+     ],
+     [
+      "svchost.exe",
+      17.06
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 101.5,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:10:05.646Z",
+   "abdruck": "80b484a86777",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.ausdruck#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 40.7,
+    "takte": 16,
+    "fremdS": 221.89,
+    "kerne": 5.449,
+    "fensterKerne": 7.203,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      140.81
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      21.42
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      9.78
+     ]
+    ],
+    "dienerS": 20.33,
+    "diener": [
+     [
+      "System",
+      7.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.13
+     ]
+    ],
+    "geraetS": 42.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.33
+     ],
+     [
+      "svchost.exe",
+      17.06
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 101.5,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:10:05.646Z",
+   "abdruck": "cdc54167b4eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.ausdruck#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.ausdruck#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 40.7,
+    "takte": 16,
+    "fremdS": 221.89,
+    "kerne": 5.449,
+    "fensterKerne": 7.203,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      140.81
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      21.42
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      9.78
+     ]
+    ],
+    "dienerS": 20.33,
+    "diener": [
+     [
+      "System",
+      7.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.13
+     ]
+    ],
+    "geraetS": 42.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.33
+     ],
+     [
+      "svchost.exe",
+      17.06
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 101.5,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:10:05.646Z",
+   "abdruck": "c48c673e9fc4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.ausdruck#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.ausdruck#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 40.7,
+    "takte": 16,
+    "fremdS": 221.89,
+    "kerne": 5.449,
+    "fensterKerne": 7.203,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      140.81
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      21.42
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      9.78
+     ]
+    ],
+    "dienerS": 20.33,
+    "diener": [
+     [
+      "System",
+      7.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.13
+     ]
+    ],
+    "geraetS": 42.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.33
+     ],
+     [
+      "svchost.exe",
+      17.06
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 101.5,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:10:05.646Z",
+   "abdruck": "51288c2bdcb1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.ausdruck#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.ausdruck#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 40.7,
+    "takte": 16,
+    "fremdS": 221.89,
+    "kerne": 5.449,
+    "fensterKerne": 7.203,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      140.81
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      21.42
+     ],
+     [
+      "sh.exe dienst/zug-dienst.sh",
+      9.78
+     ]
+    ],
+    "dienerS": 20.33,
+    "diener": [
+     [
+      "System",
+      7.25
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.13
+     ]
+    ],
+    "geraetS": 42.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.33
+     ],
+     [
+      "svchost.exe",
+      17.06
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 101.5,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:10:05.646Z",
+   "abdruck": "1ed5736abc7c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.ausdruck#2",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.spur#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 43.3,
+    "takte": 17,
+    "fremdS": 243.66,
+    "kerne": 5.631,
+    "fensterKerne": 6.424,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      62.44
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lWo3vw --no-p",
+      58.33
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      53.56
+     ]
+    ],
+    "dienerS": 24.52,
+    "diener": [
+     [
+      "System",
+      9.44
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.81
+     ]
+    ],
+    "geraetS": 37.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.58
+     ],
+     [
+      "svchost.exe",
+      16.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.7
+     ]
+    ],
+    "eigenS": 103.11,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:11:47.355Z",
+   "abdruck": "1c504a8802e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.spur#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 43.3,
+    "takte": 17,
+    "fremdS": 243.66,
+    "kerne": 5.631,
+    "fensterKerne": 6.424,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      62.44
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lWo3vw --no-p",
+      58.33
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      53.56
+     ]
+    ],
+    "dienerS": 24.52,
+    "diener": [
+     [
+      "System",
+      9.44
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.81
+     ]
+    ],
+    "geraetS": 37.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.58
+     ],
+     [
+      "svchost.exe",
+      16.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.7
+     ]
+    ],
+    "eigenS": 103.11,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:11:47.355Z",
+   "abdruck": "05b6003b6d61",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.spur#1",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.spur#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 43.3,
+    "takte": 17,
+    "fremdS": 243.66,
+    "kerne": 5.631,
+    "fensterKerne": 6.424,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      62.44
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lWo3vw --no-p",
+      58.33
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      53.56
+     ]
+    ],
+    "dienerS": 24.52,
+    "diener": [
+     [
+      "System",
+      9.44
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.81
+     ]
+    ],
+    "geraetS": 37.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.58
+     ],
+     [
+      "svchost.exe",
+      16.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.7
+     ]
+    ],
+    "eigenS": 103.11,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:11:47.355Z",
+   "abdruck": "216f74636963",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.spur#1",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.spur#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 43.3,
+    "takte": 17,
+    "fremdS": 243.66,
+    "kerne": 5.631,
+    "fensterKerne": 6.424,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      62.44
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lWo3vw --no-p",
+      58.33
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      53.56
+     ]
+    ],
+    "dienerS": 24.52,
+    "diener": [
+     [
+      "System",
+      9.44
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.81
+     ]
+    ],
+    "geraetS": 37.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.58
+     ],
+     [
+      "svchost.exe",
+      16.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.7
+     ]
+    ],
+    "eigenS": 103.11,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:11:47.355Z",
+   "abdruck": "aaa9603ff4ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.spur#1",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.spur#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 43.3,
+    "takte": 17,
+    "fremdS": 243.66,
+    "kerne": 5.631,
+    "fensterKerne": 6.424,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      62.44
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lWo3vw --no-p",
+      58.33
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      53.56
+     ]
+    ],
+    "dienerS": 24.52,
+    "diener": [
+     [
+      "System",
+      9.44
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.81
+     ]
+    ],
+    "geraetS": 37.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.58
+     ],
+     [
+      "svchost.exe",
+      16.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.7
+     ]
+    ],
+    "eigenS": 103.11,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:11:47.355Z",
+   "abdruck": "d3e97a8d2200",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.spur#1",
+   "modus": "session"
+  },
+  "karte2.mensch.leib.spur#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.3,
+   "fremd": {
+    "s": 43.3,
+    "takte": 17,
+    "fremdS": 243.66,
+    "kerne": 5.631,
+    "fensterKerne": 6.424,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      62.44
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-lWo3vw --no-p",
+      58.33
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-hDBUrI --no-p",
+      53.56
+     ]
+    ],
+    "dienerS": 24.52,
+    "diener": [
+     [
+      "System",
+      9.44
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.81
+     ]
+    ],
+    "geraetS": 37.45,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.58
+     ],
+     [
+      "svchost.exe",
+      16.89
+     ],
+     [
+      "SearchIndexer.exe",
+      1.7
+     ]
+    ],
+    "eigenS": 103.11,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:11:47.355Z",
+   "abdruck": "eac57784d8ad",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.leib.spur#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 28.9,
+    "takte": 10,
+    "fremdS": 351.78,
+    "kerne": 12.188,
+    "fensterKerne": 13.495,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      178.94
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      41.33
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      37.78
+     ]
+    ],
+    "dienerS": 22.55,
+    "diener": [
+     [
+      "System",
+      8.05
+     ],
+     [
+      "dwm.exe",
+      7.05
+     ]
+    ],
+    "geraetS": 50.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.33
+     ],
+     [
+      "svchost.exe",
+      16.27
+     ],
+     [
+      "NisSrv.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 81.14,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:13:53.257Z",
+   "abdruck": "eb201688ed4e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 28.9,
+    "takte": 10,
+    "fremdS": 351.78,
+    "kerne": 12.188,
+    "fensterKerne": 13.495,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      178.94
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      41.33
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      37.78
+     ]
+    ],
+    "dienerS": 22.55,
+    "diener": [
+     [
+      "System",
+      8.05
+     ],
+     [
+      "dwm.exe",
+      7.05
+     ]
+    ],
+    "geraetS": 50.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.33
+     ],
+     [
+      "svchost.exe",
+      16.27
+     ],
+     [
+      "NisSrv.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 81.14,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:13:53.257Z",
+   "abdruck": "e6c8d974dca6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.koennen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 28.9,
+    "takte": 10,
+    "fremdS": 351.78,
+    "kerne": 12.188,
+    "fensterKerne": 13.495,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      178.94
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      41.33
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      37.78
+     ]
+    ],
+    "dienerS": 22.55,
+    "diener": [
+     [
+      "System",
+      8.05
+     ],
+     [
+      "dwm.exe",
+      7.05
+     ]
+    ],
+    "geraetS": 50.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.33
+     ],
+     [
+      "svchost.exe",
+      16.27
+     ],
+     [
+      "NisSrv.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 81.14,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:13:53.257Z",
+   "abdruck": "9e9583572c28",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.koennen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 28.9,
+    "takte": 10,
+    "fremdS": 351.78,
+    "kerne": 12.188,
+    "fensterKerne": 13.495,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      178.94
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      41.33
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      37.78
+     ]
+    ],
+    "dienerS": 22.55,
+    "diener": [
+     [
+      "System",
+      8.05
+     ],
+     [
+      "dwm.exe",
+      7.05
+     ]
+    ],
+    "geraetS": 50.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.33
+     ],
+     [
+      "svchost.exe",
+      16.27
+     ],
+     [
+      "NisSrv.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 81.14,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:13:53.257Z",
+   "abdruck": "466d1d67ec1c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.koennen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 28.9,
+    "takte": 10,
+    "fremdS": 351.78,
+    "kerne": 12.188,
+    "fensterKerne": 13.495,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      178.94
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      41.33
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      37.78
+     ]
+    ],
+    "dienerS": 22.55,
+    "diener": [
+     [
+      "System",
+      8.05
+     ],
+     [
+      "dwm.exe",
+      7.05
+     ]
+    ],
+    "geraetS": 50.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.33
+     ],
+     [
+      "svchost.exe",
+      16.27
+     ],
+     [
+      "NisSrv.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 81.14,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:13:53.257Z",
+   "abdruck": "50aad760e315",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.koennen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 28.9,
+    "takte": 10,
+    "fremdS": 351.78,
+    "kerne": 12.188,
+    "fensterKerne": 13.495,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      178.94
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      41.33
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      37.78
+     ]
+    ],
+    "dienerS": 22.55,
+    "diener": [
+     [
+      "System",
+      8.05
+     ],
+     [
+      "dwm.exe",
+      7.05
+     ]
+    ],
+    "geraetS": 50.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      33.33
+     ],
+     [
+      "svchost.exe",
+      16.27
+     ],
+     [
+      "NisSrv.exe",
+      0.41
+     ]
+    ],
+    "eigenS": 81.14,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:13:53.257Z",
+   "abdruck": "d0951f38008f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.koennen#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.arena#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.3,
+    "takte": 16,
+    "fremdS": 481.64,
+    "kerne": 11.115,
+    "fensterKerne": 11.915,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      260.06
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      56.31
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      48.69
+     ]
+    ],
+    "dienerS": 26.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.7
+     ],
+     [
+      "System",
+      8.39
+     ]
+    ],
+    "geraetS": 54.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.61
+     ],
+     [
+      "svchost.exe",
+      24.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 108.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:16:06.500Z",
+   "abdruck": "5f88298af1bc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.arena#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.3,
+    "takte": 16,
+    "fremdS": 481.64,
+    "kerne": 11.115,
+    "fensterKerne": 11.915,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      260.06
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      56.31
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      48.69
+     ]
+    ],
+    "dienerS": 26.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.7
+     ],
+     [
+      "System",
+      8.39
+     ]
+    ],
+    "geraetS": 54.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.61
+     ],
+     [
+      "svchost.exe",
+      24.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 108.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:16:06.500Z",
+   "abdruck": "33cb171e92d0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.arena#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.arena#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.3,
+    "takte": 16,
+    "fremdS": 481.64,
+    "kerne": 11.115,
+    "fensterKerne": 11.915,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      260.06
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      56.31
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      48.69
+     ]
+    ],
+    "dienerS": 26.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.7
+     ],
+     [
+      "System",
+      8.39
+     ]
+    ],
+    "geraetS": 54.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.61
+     ],
+     [
+      "svchost.exe",
+      24.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 108.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:16:06.500Z",
+   "abdruck": "e17c14291955",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.arena#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.arena#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.3,
+    "takte": 16,
+    "fremdS": 481.64,
+    "kerne": 11.115,
+    "fensterKerne": 11.915,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      260.06
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      56.31
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      48.69
+     ]
+    ],
+    "dienerS": 26.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.7
+     ],
+     [
+      "System",
+      8.39
+     ]
+    ],
+    "geraetS": 54.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.61
+     ],
+     [
+      "svchost.exe",
+      24.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 108.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:16:06.500Z",
+   "abdruck": "1ac21b81b58a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.arena#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.arena#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.3,
+    "takte": 16,
+    "fremdS": 481.64,
+    "kerne": 11.115,
+    "fensterKerne": 11.915,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      260.06
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      56.31
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      48.69
+     ]
+    ],
+    "dienerS": 26.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.7
+     ],
+     [
+      "System",
+      8.39
+     ]
+    ],
+    "geraetS": 54.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.61
+     ],
+     [
+      "svchost.exe",
+      24.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 108.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:16:06.500Z",
+   "abdruck": "720d9c32e4e8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.arena#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.arena#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.3,
+    "takte": 16,
+    "fremdS": 481.64,
+    "kerne": 11.115,
+    "fensterKerne": 11.915,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      260.06
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      56.31
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      48.69
+     ]
+    ],
+    "dienerS": 26.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.7
+     ],
+     [
+      "System",
+      8.39
+     ]
+    ],
+    "geraetS": 54.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.61
+     ],
+     [
+      "svchost.exe",
+      24.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 108.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:16:06.500Z",
+   "abdruck": "2710469b46e3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.arena#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.arena#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.3,
+    "takte": 16,
+    "fremdS": 481.64,
+    "kerne": 11.115,
+    "fensterKerne": 11.915,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33548-profil-ILfRKG --no-p",
+      260.06
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      56.31
+     ],
+     [
+      "node scripts/diag-settlement.cjs --selftest",
+      48.69
+     ]
+    ],
+    "dienerS": 26.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.7
+     ],
+     [
+      "System",
+      8.39
+     ]
+    ],
+    "geraetS": 54.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.61
+     ],
+     [
+      "svchost.exe",
+      24.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 108.3,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T05:16:06.500Z",
+   "abdruck": "a2e65746931d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.arena#1",
+   "modus": "session"
   }
  }
 }
