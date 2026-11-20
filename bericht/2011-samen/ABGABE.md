@@ -1,6 +1,6 @@
 # Abgabe Welle `samen-ein-baum` — EIN Samen-Baum, der Würfel je Los, je DSL-Op ihr Strom (OMEN GTX 1060, 20.11.)
 
-**Kopf:** `samen-ein-baum` **9f70eaca1 (leerer Abgabe-Commit über a69426b28)**: die Heilung des Code-Checks, siehe den nächsten Abschnitt. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
+**Kopf:** `samen-ein-baum` **60fb7c67d** (Vorprüfung, leer über dem Merge-Kopf e07bb72db), Probe-Tag `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]`. Davor kam die Heilung 9f70eaca1 (leer über a69426b28), siehe die nächsten beiden Abschnitte. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
 - die Welle 3e68a828a;
 - Merge main 3da9d9ae9 (Kosmos) und Merge `ein-schreiber-wand` c16c528cc mit dem Register-Anker (151204179);
 - die Prüfstand-Seite (fc148849f);
@@ -8,6 +8,25 @@
 - Merge main 31ea3847e (Wand, stein-ein-gesetz) und Merge main 3e362397e (z635: los-huelle-2, Zeit-Kalender, Vorab-Statik; V18.546.349).
 
 Zweig ab main 92b7afd07. Ich stempele nicht. Roh liegt auf dem OMEN unter `p3/n1911/samen/`.
+
+## Der Merge am Kopf 60fb7c67d (Wort des Koordinators 16:35)
+- **e07bb72db** = a69426b28 + Merge main e0d37353c (z643: Sicht-Heilung der Frost-Wand, Streu-Gestalt, Abdruck am Takt, Takt T8; V18.546.352) 47b2439e3 + Merge `w28-laub-kante-5` 0d3f21c54. Der Inhalt ist der Heilung 9f70eaca1 gleich.
+- **Der Konflikt** lag nur in `scripts/diag-ankunft.cjs`. Beide Seiten heilten dieselbe Wurzel D9 (der Mitspieler wählte auf dem Erdbau des Sprechers neu; die Laub-Kante maß 29,83 m, ich 2,03 m).
+  - Der Kopf behält meinen strengeren Schnitt: Er räumt Erdbau, Ortwahl (`_ortPlaene`) und Zellen, und ein Erdbau, der nicht fällt, bricht beim Namen.
+  - Dazu kommt ihr `st.worldMeta || {}`, und ihr Befund steht im Kommentar.
+- **Am e07bb72db:** gate:ankunft mit Selbsttest grün (D9 ✅, `heil4/ankunft.log`), `check:vorab` grün. Die drei Probe-Tore fährt die CI-Probe am OMEN-Läufer.
+- **Das Bildpaar** am Vorplatz von #508675, Tag 0,5. Das Haus ist ein Zunfthaus (haus_schwarzwald mit Portikus) im Start-Dorf am Genesis-Ort; Gerät GTX 1060 WebGPU.
+  - **Die beiden Stände:**
+    - vorher = e07bb72db ohne `ORT_GESETZ.schwelleM` (Schmierbaum n1911-kopf);
+    - nachher = der Kopf;
+    - dieselbe Pose (`p3/n1911/samen/vorplatz-bild.cjs`, die Posen des vorher-Laufs wörtlich).
+  - **Die PNG:** `vorplatz-508675-{nah,weit}-{vorher,nachher}.png`, alle vier Abnahmen GRÜN.
+  - **Die Zahl am Türpunkt:** Der Boden unter der Tür steigt von 91,114 auf 91,389 m (+0,275 m) — der Vorplatz trägt die Schwelle. 0,1 und 0,3 m davor sowie am Vorplatz liegt er an beiden Ständen auf 91,389 m.
+  - **Das Bild ist pixelgleich:** Der größte Kanal-Abstand ist 1 bzw. 2 von 255, kein Pixel liegt über 8 (`png-diff.cjs`).
+    - Der Schnitt liegt im Streifen von 0,075 m unter dem Türblatt. Nachher zeichnet er 133 (nah) bzw. 85 (weit) Dreiecke mehr, aber Türblatt und Zarge verdecken sie.
+    - Sichtbar wird er daher im Stand des Bewohners (Zeile bewohner), nicht im Bild der Fassade.
+  - **Die weite Pose** steht 1 m schräg neben der Türachse: Auf der Achse verdeckt die Säule des Portikus das Ziel (ROT „verdeckt von bauSatz in 1.08 m“, roh `heil4/bild/*-4-saeule`).
+  - **Was ein Art Director noch als Laien-Arbeit sieht:** Die offenen Fensterflügel zeigen schwarze Leere statt eines Raums.
 
 ## Die Heilung am neuen Kopf 9f70eaca1 (Code-Check Lauf 44710772496 am b0b898696: ROT an 3 von 22 Gruppen, Probe grün)
 Baum = 1c574fb1b + Heilung 304f06b0d + Merge main a71e06c72 (z640: saison-am-laub, stamm-decke-vorab; V18.546.351) 26930ad06 + der Verkehr im Schritt der begegnung (3175754f4, a69426b28). Der Entscheid je Zeile:
