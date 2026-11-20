@@ -958,7 +958,10 @@ async function menschBuehnen() {
             // keine Begegnung — die Zeile bestand, ohne zu messen), am Samen-Wurf floh wohnhaus/schmiede #724672 in den Gang
             // (0,45 m, 31 Takte Berührung, b0b898696, Lauf 44710772496). Wer weicht, geht als Gehender (`_bewohnerAusweichen`) —
             // dass der Spieler ihn auf der Flucht überholen kann, ist ehrlich offen, nicht die Frage dieser Zeile
-            for (let i = 0; i < 3600 && !(b.da && !b.weg && !b.platz); i++) schritt();
+            // (das Warten gilt dem Ort, den das Gesetz ihm gab — `b.weichen.ort`; im Schlag selbst steht er noch: sein Weg beginnt erst
+            // im nächsten Takt, ein Warten auf „steht“ endete dort sofort, fort 0,712 m. Ohne Weichen gibt es nichts zu warten)
+            const W4 = b.weichen && b.weichen.ort;
+            for (let i = 0; W4 && i < 3600 && !(b.da && !b.weg && !b.platz && ab(g.position, W4) < 0.5); i++) schritt();
             const fort = Math.round((ab(g.position, tat) - ab(stand, tat)) * 1000) / 1000;
             const w4 = wegUm(b);
             if (!w4) return { fehler: `kein freier Weg um den Zeugen ${wer(b)} an seinem neuen Stand` };

@@ -2446,7 +2446,17 @@ async function kreaturProben(r, T, opts) {
     // DER TAKT DER LEUTE wie im Spiel: erst ihr Werk (der Job `bewohner` des Planers, hier ohne Ende — die Liste und, nach einem
     // Wechsel der Wache, die Prüfung ihrer Stände, `_bewohnerWacheTakt`), dann die Leute. Bis w25-stadt-takt-3 prüfte die Wache
     // im Takt der Leute selbst; ein Takt ohne das Werk ließe ihre Stände ungeprüft
-    const leute = (dt) => (r._bewohnerWerkTakt(Infinity), r._tickBewohner(dt));
+    // DER VERKEHR GEHT MIT DEN LEUTEN (Welle SAMEN), wie im Spiel: der Schritt der Wagen vor den Leuten (`_verkehrSchritt`, im
+    // Sim-Schritt von `_gameLoopTick`), nach ihnen Einsteigen, Heimfahrt, Aussteigen (`_tickVerkehr`, im Takt des Bilds) — ohne
+    // Zeit fährt keiner. Bis hier ging der Takt der Leute ohne ihn: ein Wagen im Zustand „fährt“ stand still und hielt seine
+    // Querung (`_verkehrVorrang`, die Bahn durch den Ort, den er hält) für immer — am Samen-Wurf wartete der Zeuge
+    // wohnhaus/schmiede #724672 (begegnung) 3 600 Takte am Rand der Fahrbahn vor einem Wagen 25,5 m fort (vlong 1,915 m/s, fort 0,712 m)
+    const leute = (dt) => (
+        r._bewohnerWerkTakt(Infinity),
+        dt > 0 && r._verkehrSchritt(dt),
+        r._tickBewohner(dt),
+        dt > 0 && r._tickVerkehr()
+    );
     const leuteTakt = () => {
         for (let n = Infinity, still = 0, m; still < 5 && (m = (leute(0), r._weltOffen().leute)); n = m)
             still = m < n ? 0 : still + 1;
