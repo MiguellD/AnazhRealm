@@ -12,64 +12,76 @@ class AnazhRealm_studio_glieder {
             const pos = lf.geom.attributes.position;
             const col = lf.geom.attributes.color || null;
             const mc = !col && lf.mat && lf.mat.color ? lf.mat.color : null;
-            const bb = new THREE.Box3();
-            bb.makeEmpty();
-            let fr = 0,
-                fg = 0,
-                fb = 0,
-                fn = 0;
+            // DER TEIL IM JAHR (saison-am-laub): ein Teil, dessen Ecken das Jahr tragen (aType, SAISON_GESETZ `typ`), zerfällt in
+            // Laub, Blüte und das Stehende — je Gruppe EIN Primitiv mit seinem Typ (`jahr`), das Feld zieht und tönt es wie die
+            // Gestalt (`_weltKapselHolen` → `jahrMass`). Bis dahin war der Blütenkopf samt Stängel EIN Ellipsoid ohne Jahr.
+            const typ = lf.geom.attributes.aType || null;
+            const SGt = typ ? AnazhRealm._saisonGesetz().typ : null;
+            const gruppen = new Map();
+            // der Stoff des Jahrs (`userData.jahr`, `_foundryBuildMesh`): sein Teil ist Laub der Gestalt — die Linse (K) wiegt nur ihn
+            const laubStoff = !!(lf.mat && lf.mat.userData && lf.mat.userData.jahr === true);
             const schritt = pos.count > 2000 ? Math.ceil(pos.count / 2000) : 1;
             for (let i = 0; i < pos.count; i += schritt) {
+                const t = typ ? Math.round(typ.getX(i)) : 0;
+                const j = typ && (t === SGt.laub || t === SGt.bluete) ? t : 0;
+                let g = gruppen.get(j);
+                if (!g) gruppen.set(j, (g = { bb: new THREE.Box3().makeEmpty(), fr: 0, fg: 0, fb: 0, fn: 0 }));
                 v.fromBufferAttribute(pos, i);
                 if (lf.localMatrix) v.applyMatrix4(lf.localMatrix);
-                bb.expandByPoint(v);
+                g.bb.expandByPoint(v);
                 if (col) {
-                    fr += col.getX(i);
-                    fg += col.getY(i);
-                    fb += col.getZ(i);
-                    fn++;
+                    g.fr += col.getX(i);
+                    g.fg += col.getY(i);
+                    g.fb += col.getZ(i);
+                    g.fn++;
                 } else if (mc) {
-                    fr += mc.r;
-                    fg += mc.g;
-                    fb += mc.b;
-                    fn++;
+                    g.fr += mc.r;
+                    g.fg += mc.g;
+                    g.fb += mc.b;
+                    g.fn++;
                 }
             }
-            if (bb.isEmpty()) continue;
-            const c = bb.getCenter(new THREE.Vector3());
-            const h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
-            const farbe = fn ? { r: fr / fn, g: fg / fn, b: fb / fn } : null;
-            const vol = h.x * h.y * h.z;
-            const hmin = Math.min(h.x, h.y, h.z);
-            const hmax = Math.max(h.x, h.y, h.z);
-            // Kompakt (ein Stein, ein Blütenkopf): Ellipsoid statt AABB-Kapsel
-            if (hmin > 1e-6 && hmax / hmin <= 2.2) {
+            for (const [jahr, { bb, fr, fg, fb, fn }] of gruppen) {
+                if (bb.isEmpty()) continue;
+                const c = bb.getCenter(new THREE.Vector3());
+                const h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+                const farbe = fn ? { r: fr / fn, g: fg / fn, b: fb / fn } : null;
+                const vol = h.x * h.y * h.z;
+                const hmin = Math.min(h.x, h.y, h.z);
+                const hmax = Math.max(h.x, h.y, h.z);
+                // Kompakt (ein Stein, ein Blütenkopf): Ellipsoid statt AABB-Kapsel
+                if (hmin > 1e-6 && hmax / hmin <= 2.2) {
+                    kand.push({
+                        ellipsoid: true,
+                        c,
+                        h: new THREE.Vector3(Math.max(0.01, h.x), Math.max(0.01, h.y), Math.max(0.01, h.z)),
+                        farbe,
+                        vol,
+                        jahr,
+                        laubStoff,
+                    });
+                    continue;
+                }
+                let ax = "x";
+                if (h.y > h[ax]) ax = "y";
+                if (h.z > h[ax]) ax = "z";
+                const nb = ["x", "y", "z"].filter((kk) => kk !== ax);
+                const r = Math.max(0.02, (h[nb[0]] + h[nb[1]]) * 0.5);
+                const lang = Math.max(0, h[ax] - r);
+                const a = c.clone();
+                a[ax] -= lang;
+                const b = c.clone();
+                b[ax] += lang;
                 kand.push({
-                    ellipsoid: true,
-                    c,
-                    h: new THREE.Vector3(Math.max(0.01, h.x), Math.max(0.01, h.y), Math.max(0.01, h.z)),
+                    a,
+                    b,
+                    r,
                     farbe,
                     vol,
+                    jahr,
+                    laubStoff,
                 });
-                continue;
             }
-            let ax = "x";
-            if (h.y > h[ax]) ax = "y";
-            if (h.z > h[ax]) ax = "z";
-            const nb = ["x", "y", "z"].filter((kk) => kk !== ax);
-            const r = Math.max(0.02, (h[nb[0]] + h[nb[1]]) * 0.5);
-            const lang = Math.max(0, h[ax] - r);
-            const a = c.clone();
-            a[ax] -= lang;
-            const b = c.clone();
-            b[ax] += lang;
-            kand.push({
-                a,
-                b,
-                r,
-                farbe,
-                vol,
-            });
         }
         if (!kand.length) return null;
         kand.sort((p, q) => q.vol - p.vol);
