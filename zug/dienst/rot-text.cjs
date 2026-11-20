@@ -63,7 +63,9 @@ function taeter(t) {
     if (!n && !hart) aus.push("  (keine Täter-Zeile im Log erkannt — das Log selbst lesen)");
     return aus;
 }
-if (A[0] === "--selbsttest") {
+// als Modul gerufen (zug.cjs taeter: die erste rote Zeile einer Linse, die allein an der Radeon fuhr) nur die EINE Lesung des Täters
+if (require.main !== module) module.exports = { taeter };
+else if (A[0] === "--selbsttest") {
     const Z = "2026-11-12T00:00:00.0000000Z ";
     const log = [
         Z + '❌ bewohner  [Täter bewohner-haus] {"quote":0.988}',
@@ -100,7 +102,7 @@ if (A[0] === "--selbsttest") {
 const h = { Authorization: "Bearer " + process.env.TOKEN, Accept: "application/vnd.github+json" };
 const R = "https://api.github.com/repos/MiguellD/AnazhRealm";
 const hole = async (u) => (await fetch(u, { headers: h })).json();
-(async () => {
+if (require.main === module) (async () => {
     if (!A[0] || !process.env.TOKEN) throw new Error("Aufruf: TOKEN=… node rot-text.cjs <lauf-id> | --sha <kopf>");
     let lauf = A[0];
     if (lauf === "--sha") {
