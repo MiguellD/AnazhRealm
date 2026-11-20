@@ -599,7 +599,8 @@ class AnazhRealm_bild_sicht {
                     if (!zelle || !drin(zelle.x, zelle.z) || zelle.form === "boden" || zelle.wartet) continue;
                     const sg = this._spiegelStreuGestalt(zelle, S);
                     if (!sg) continue;
-                    // die Krone der Zelle wechselt nie (das Buch räumt nie): einmal gefunden, gemerkt
+                    // die Krone der Gestalt wechselt nie (das Buch räumt nie): einmal gefunden, gemerkt — bis die Zelle die
+                    // Gestalt ihres Orts wechselt (`_spiegelStreuGestalt`)
                     if (!sg.krone) sg.krone = this._foundryBaumKrone(sg.preset, sg.g, null);
                     if (sg.krone) setze(sg.krone, sg.x, NaN, sg.z, sg.s, sg.yaw);
                 }
@@ -609,11 +610,12 @@ class AnazhRealm_bild_sicht {
 
     // DIE GESTALT EINER STREU-ZELLE im Spiegel (gemerkt je Zellen-Datensatz): ihr Preset, die Gestalt, die Drehung und der Ort,
     // die ihre Materialisierung trägt (`_scatterMaterializeCell`: der EINE Streu-Same → `_foundryVariantFor`, dieselbe Gestalt
-    // auf jeder Bahn), die Skala × die Welt-Skala des Presets. Null für Zellen ohne Baum oder Strauch der Foundry.
+    // auf jeder Bahn), die Skala × die Welt-Skala des Presets. Null für Zellen ohne Baum oder Strauch der Foundry. Das
+    // Gedächtnis gilt, solange die Zelle ihre Gestalt trägt — antwortet ihr Ort neu, materialisiert sie neu (`_tickScatterLod`).
     _spiegelStreuGestalt(zelle, S) {
         if (!S.zellen) S.zellen = new WeakMap();
         let sg = S.zellen.get(zelle);
-        if (sg !== undefined) return sg;
+        if (sg !== undefined && (sg === null || sg.g === zelle.gestalt)) return sg;
         sg = null;
         const preset = Number.isInteger(zelle.gestalt) ? this._foundryPresetFor(zelle.species) : null;
         const rec = preset && this._foundry && this._foundry.recipes ? this._foundry.recipes[preset] : null;

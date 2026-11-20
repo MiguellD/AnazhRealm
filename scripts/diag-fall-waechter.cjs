@@ -1032,7 +1032,8 @@ hauptLauf(async () => {
         bruecke: PRUEF_SATZ.stabil["Brücke auf zwei Pfeilern"],
     });
     if (!befund.turm.fehler) {
-        await sleep(1500); // der IDB-Put des Saves landet
+        // der Stand des Saves ist fest (die Schranke des Speicher-Fadens — bis abdruck-am-takt 1,5 s nach der Wanduhr)
+        await page.evaluate(() => r._speicherStill().then(() => true));
         await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
         await warteAufWelt(page, 180000);
         const nach = await page.evaluate(probe, { nach: befund.turm, nach2: befund.turm2 });

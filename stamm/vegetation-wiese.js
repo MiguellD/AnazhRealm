@@ -154,17 +154,11 @@ class AnazhRealm_vegetation_wiese {
         // die gemähten Büschel (halten.K3, `_maehen`) fehlen, bis ihre Tat heilt — Identität ist die Gitter-Zelle gi|gj
         const gemaeht = this._geerntetIn("wiese:" + tx + "," + tz);
         const W = AnazhRealm._wortAlgebra();
+        const M32 = globalThis.__samenCore.mulberry32; // der EINE Generator (Welle SAMEN), die Saat je Zelle
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
                 if (gemaeht.has(gi + "|" + gj)) continue;
-                let hs = ((gi * 73856093) ^ (gj * 19349663) ^ seedInt ^ 0x6a09e667) >>> 0 || 1;
-                const w = () => {
-                    hs = (hs + 0x6d2b79f5) >>> 0;
-                    let t = hs;
-                    t = Math.imul(t ^ (t >>> 15), t | 1);
-                    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-                };
+                const w = M32(((gi * 73856093) ^ (gj * 19349663) ^ seedInt ^ 0x6a09e667) >>> 0 || 1);
                 const x = gi * step + (w() - 0.5) * 0.68;
                 const z = gj * step + (w() - 0.5) * 0.68;
                 // DIE ZELLE ÜBER DEM ANTEIL ZIEHT NICHTS (w27-ankunft-faden, Gesetz statt Schleife): der Rang ihrer Zelle ist die untere
@@ -1384,15 +1378,10 @@ class AnazhRealm_vegetation_wiese {
                         // die Blume ist ein Bedecktsamer (w28-reise-ort): vor ihrer Zeit blüht nichts (`wuchs.laub`, die Heimat 1)
                         (A.kind === "flower" ? WO.laub : 1);
                     if (!(lam > 0)) continue;
-                    let hs =
-                        ((gi * 73856093) ^ (gj * 19349663) ^ ((a + 1) * 0x85ebca6b) ^ seedInt ^ 0x5eedb0de) >>> 0 || 1;
-                    const w = () => {
-                        hs = (hs + 0x6d2b79f5) >>> 0;
-                        let t = hs;
-                        t = Math.imul(t ^ (t >>> 15), t | 1);
-                        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-                    };
+                    // der EINE Generator (Welle SAMEN: samen-core `mulberry32`), die Saat je (Zelle, Art)
+                    const w = globalThis.__samenCore.mulberry32(
+                        ((gi * 73856093) ^ (gj * 19349663) ^ ((a + 1) * 0x85ebca6b) ^ seedInt ^ 0x5eedb0de) >>> 0 || 1
+                    );
                     const anzahl = Math.floor(lam + w());
                     for (let i = 0; i < anzahl; i++) {
                         const px = x + (w() - 0.5) * Z;
@@ -2597,10 +2586,8 @@ class AnazhRealm_vegetation_wiese {
     _forestSeedInt() {
         const s = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
         if (this._forestSeedStr === s && this._forestSeedVal != null) return this._forestSeedVal;
-        let h = 2166136261 >>> 0;
-        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
         this._forestSeedStr = s;
-        this._forestSeedVal = h >>> 0;
+        this._forestSeedVal = globalThis.__samenCore.samenHash(s); // der EINE Text-Hash (Welle SAMEN: FNV-1a, samen-core)
         return this._forestSeedVal;
     }
 

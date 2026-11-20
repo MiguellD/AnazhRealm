@@ -2185,7 +2185,9 @@ async function checkBandWCIchWahrheit({ page, check }) {
             const anImFlow = !!item && item.style.display !== "none" && !!lab && lab.textContent === "Freude";
             for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
             r._updateEmotionFeedback();
-            await sleep(1700);
+            // bis zu SEINEM Ereignis (das Item verlässt den Flow), nie 1,7 s nach der Wanduhr (abdruck-am-takt); ein Item, das
+            // bleibt, steht mit dieser Bedingung in der Stall-Akte
+            if (item) await __weltDa(() => item.style.display === "none");
             const ruheAusFlow = !!item && item.style.display === "none";
             st.player.emotions.joy = 0.9;
             r._updateEmotionFeedback();
@@ -2228,6 +2230,7 @@ async function checkBandWCIchWahrheit({ page, check }) {
 // (kalte Auswahl → pending, leere Bühne, „Studio-Asset lädt…").
 async function checkBandRezeptKatalog({ page, check }) {
     // die porta-PARAMS-Länge als unabhängige Node-Referenz (derselbe Lade-Pfad wie im Worker, nur ohne Browser)
+    require(path.join(SKRIPTE, "..", "samen-core.js")); // der Samen-Baum vor jedem Kern (Welle SAMEN)
     require(path.join(SKRIPTE, "..", "porta-core.js"));
     const pp =
         globalThis.__portaCore && globalThis.__portaCore.PARAMS_BY_KIND && globalThis.__portaCore.PARAMS_BY_KIND.gate;

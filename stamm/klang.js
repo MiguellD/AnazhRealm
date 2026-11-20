@@ -121,11 +121,14 @@ class AnazhRealm_klang {
         };
         um.werkstatt = this._klangWerkstattBooten(um);
         // DER KERN DER WERKSTATT kommt aus der EINEN Quelle (w28-faden-quelle): die Studio-Fäden lesen dieselbe Datei — der Faden
-        // der Quelle holt sie EINMAL und schickt sie über den Port der Werkstatt (`_quelleReiche`)
+        // der Quelle holt sie EINMAL und schickt sie über den Port der Werkstatt (`_quelleReiche`); vor ihm der Samen-Baum (Welle
+        // SAMEN: die Texturen ziehen aus samen-core `mulberry32`)
         if (um.werkstatt)
             this._quelleReiche([um.werkstatt], {
                 type: "dateien",
-                urls: [new URL("klang-core.js?v=" + AnazhRealm.VERSION, location.href).href],
+                urls: ["samen-core.js", "klang-core.js"].map(
+                    (d) => new URL(d + "?v=" + AnazhRealm.VERSION, location.href).href
+                ),
             });
         // Der Hör-Ring: Mitte + ohr.radien × ohr.richtungen, Einheits-Richtungen fest (Welt-Achsen).
         const punkte = [{ r: 0, ux: 0, uz: 0 }];
@@ -208,7 +211,7 @@ class AnazhRealm_klang {
             d.port.onmessage = (e) => {
                 if (!e.data || e.data.type !== "quelle") return;
                 W.removeEventListener("message", halte);
-                W.importScripts(URL.createObjectURL(e.data.tafel[0][1]));
+                W.importScripts(...e.data.tafel.map((t) => URL.createObjectURL(t[1]))); // der Samen-Baum, dann der Kern
                 schale();
                 for (const g of gehalten.splice(0)) W.onmessage({ data: g });
             };
@@ -1228,15 +1231,13 @@ class AnazhRealm_klang {
 
     // W4 V3 — ein Mulberry32-Schritt auf dem Lofi-Harmonie-RNG. Deterministisch
     // (seed-getrieben), aber über die Akkordfolge hinweg fortschreitend — die
-    // Progression ist je Welt reproduzierbar, wiederholt sich aber nie exakt.
+    // Progression ist je Welt reproduzierbar, wiederholt sich aber nie exakt. Der Schritt ist der EINE Generator auf dem
+    // Zustand des Stands (Welle SAMEN: samen-core `mulberrySchritt`); ohne Lofi-Zustand bricht der Zug beim Namen — bis hier
+    // zog er still aus Math.random.
     _lofiRandom() {
         const lofi = this.state.symphony && this.state.symphony.lofi;
-        if (!lofi) return Math.random();
-        lofi.rngState = (lofi.rngState + 0x6d2b79f5) >>> 0;
-        let t = lofi.rngState;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        if (!lofi) throw new Error("Lofi: der Harmonie-Strom zieht ohne Lofi-Zustand (state.symphony.lofi fehlt)");
+        return globalThis.__samenCore.mulberrySchritt(lofi, "rngState");
     }
 
     // DIE EINE SKALEN-QUELLE: das Studio-Klang-Rezept führt die SKALA (fx.klang.scale, im Kern aus

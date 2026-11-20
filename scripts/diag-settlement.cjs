@@ -26,7 +26,7 @@ const {
 } = require("./lib/welt-boot.cjs");
 const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
 const { verkehrsnetzProben } = require("./lib/verkehrsnetz-proben.cjs");
-const { losProben, huelleProben, brandwandProben } = require("./lib/los-proben.cjs");
+const { losProben, huelleProben, wurfProben, brandwandProben } = require("./lib/los-proben.cjs");
 const {
     gassenGefaelle,
     erdbauMedian,
@@ -351,6 +351,18 @@ async function gtDorfweg(v2, anker, sek) {
             0,
             0,
         ];
+        // der Bau mit Blocker, der dem Wagen am nächsten steht (der Täter beim Namen, wo er den Weg verlässt oder auf ihm steckt)
+        const naechsterBau = (pos) =>
+            st.architectures
+                .filter((a) => a && a !== e && a.position && Array.isArray(a.blockerAABBs) && a.blockerAABBs.length)
+                .reduce(
+                    (b, a) =>
+                        Math.hypot(a.position.x - pos.x, a.position.z - pos.z) < b[0]
+                            ? [Math.hypot(a.position.x - pos.x, a.position.z - pos.z), a.type]
+                            : b,
+                    [Infinity, null]
+                );
+        let sVor = F.s;
         for (let i = 0, N = Math.round(sek * 60); i < N; i++) {
             frame();
             const pos = st.playerMesh.position;
@@ -360,19 +372,20 @@ async function gtDorfweg(v2, anker, sek) {
                 res.endeNachS = Math.round(((i + 1) / 60) * 10) / 10;
                 break;
             }
+            // STECKT der Wagen auf dem Weg (eine Sekunde < 0,1 m Fortschritt nach der ersten), nennt die Probe den Bau davor —
+            // bis samen-ein-baum nannte sie nur den, an dem er den Weg verließ (Auto-Dorf −4,−4: 1,83 m, ablage 0, kein Name)
+            if (i % 60 === 59) {
+                if (i > 60 && F.s - sVor < 0.1 && !res.steckt) {
+                    const [nd, naechster] = naechsterBau(pos);
+                    res.steckt = { s: Math.round((F.s - s0) * 10) / 10, naechster, abstand: Math.round(nd * 10) / 10, bei: [Math.round(pos.x * 10) / 10, Math.round(pos.z * 10) / 10] };
+                }
+                sVor = F.s;
+            }
             gezaehlt++;
             if (F.quer <= hw) aufWeg++;
             else if (!res.verlassen) {
                 // der Täter beim Namen: der nächste Bau mit Blocker am Ort, wo der Wagen den Weg verlässt
-                const [nd, naechster] = st.architectures
-                    .filter((a) => a && a !== e && a.position && Array.isArray(a.blockerAABBs) && a.blockerAABBs.length)
-                    .reduce(
-                        (b, a) =>
-                            Math.hypot(a.position.x - pos.x, a.position.z - pos.z) < b[0]
-                                ? [Math.hypot(a.position.x - pos.x, a.position.z - pos.z), a.type]
-                                : b,
-                        [Infinity, null]
-                    );
+                const [nd, naechster] = naechsterBau(pos);
                 res.verlassen = { s: Math.round((F.s - s0) * 10) / 10, naechster, abstand: Math.round(nd * 10) / 10 };
             }
         }
@@ -1180,6 +1193,7 @@ hauptLauf(async () => {
         check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
         errs.push(...breiteSelbsttest(taeterFaelle, breiteRollen)); // die Breite der Stadt: der grüne Gang und seine Täter
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden, taeter: true }); // die Hülle vor dem Schnitt fällt beim Namen
+        wurfProben(check, { kernText: kernText(), taeter: true }); // der EINE Strom der Lose (vor Welle SAMEN) fällt beim Los
         brandwandProben(FC, check, { kernText: kernText(), taeter: true }); // die Brandwand an dims (vor los-huelle-2) fällt beim Namen
         selbsttestEnde(errs);
         process.exit(0);
@@ -1401,6 +1415,7 @@ hauptLauf(async () => {
         check("Snap-Probe: ferne Nachbarn (Fuge>1.8m) bleiben stehen", weit === 0, `snaps=${weit}`);
         losProben(FC, check);
         huelleProben(FC, check, { kernText: kernText(), golden: loseGolden }); // die Hülle liest keine Öffnung, das Los je Same wie am Golden
+        wurfProben(check, { kernText: kernText() }); // der Würfel je Los: eine Front würfelt kein anderes Haus neu (Welle SAMEN)
         brandwandProben(FC, check, { kernText: kernText() }); // keine Öffnung reicht in den Körper eines Nachbarn (B1, los-huelle-2)
         const stadt = FC.exportSettlement({ seed: 7, nH: 60 }); // die Großstadt: ihre Reihen docken (der Markt-Flecken von 20 Häusern steht seit der Stadt-Grammatik in Vierteln ohne Reihe)
         const bwSlots = stadt.slots.filter((s) => s.ov?.brandwand).length;
@@ -2417,12 +2432,11 @@ hauptLauf(async () => {
                         );
                 // die Umkehr gilt vor dem Gang: die Bahn des Gangs (je Schritt 4 m) kann die Stadt schon wecken (`_bedarfZeit`)
                 if (fern) r._dorfZug = (...a) => ((q) => (q.reihe.reverse(), q))(zug.apply(r, a));
-                // DER RING LIEGT UM DEN ORT DER WAHL (`_dorfBereiten`: die Trasse rückt den Vorrat bis 128 m, jeder Abstand des Takts
-                // misst ab dort): ist er bereitet, geht der Gang auf seinen Ring zu — bis w28-bau-rezept ging er auf den Zellpunkt zu,
-                // und am Mess-Ort (nH 12, der Ort 63 m gerückt) stand der Spieler beim Erwachen 46 m hinter dem Ring, am Auge des
-                // Vorrats vorbei: das erste Haus in 132 m trat in die Mesh-Zone, die der Vorrat in 176 m als Fernform bestellt hatte
-                let mitte = cand;
-                const stell = (m) => (pm.position.set(mitte.x + m, pm.position.y, mitte.z), pm.position);
+                // DER RING STEHT AM ORT DES VORRATS (die Welt: `_autoSettlementZelle` misst `ort = w || i3`): die Ort-Wahl rückt den
+                // Plan bis 128 m — bis samen-ein-baum stand die Probe am Wunsch `cand`, und ein Vorrat, den die Wahl 48 + 16 m
+                // rückte, erwachte nie (C-K5: 3637 Takte, `zelle` false, `zug` null); nach dem Vorlauf misst sie ab seinem Ort
+                let bezug = cand;
+                const stell = (m) => (pm.position.set(bezug.x + m, pm.position.y, bezug.z), pm.position);
                 const nah = A.nearM + (cand.mehrM || 0); // der Ring, an dem die Zelle erwacht (`_autoSettlementZelle`)
                 // DER VORLAUF IST ZEIT (w13-dorf-strom): die Bahn naht mit 16 m/s 40 m jenseits des Rings der Sicht — der Ort
                 // bereitet sich vor, weil sie ihn binnen `bereitS` erreicht (`_bedarfZeit`); nH 13 (Selbsttest) steht still: dort
@@ -2431,7 +2445,7 @@ hauptLauf(async () => {
                 if (vorlauf) r._tickAutoSettlement(stell(nah + 200));
                 if (vorlauf) for (const v of r._dorfVorraete.values()) await v.fertig;
                 const vr = vorlauf && !alt && r._dorfVorraete.get(key);
-                if (vr && vr.da) mitte = { x: vr.x, z: vr.z };
+                if (vr && Number.isFinite(vr.x) && Number.isFinite(vr.z)) bezug = { x: vr.x, z: vr.z };
                 for (let i = 0; vorlauf && !alt && i < 20; i++) r._tickAutoSettlement(pm.position);
                 // der Gang durch den Vorlauf-Ring (4 m/s, 20 s bis zum Ring): je 4 m ein Takt, der Vorrat liest die Reihe des Zugs,
                 // bis seine Stufen stehen — dann erwacht die Zelle am Ring (das Auge des Vorrats, `_dorfVorbacken`)
@@ -2460,17 +2474,38 @@ hauptLauf(async () => {
                 // je Takt die abgelaufene EINE Frist (der Null-Renderer baut sonst am Stück): der Schritt des Zugs trägt sein
                 // Pflicht-Stück — EINE Rate des Gangs oder EIN Haus; so zählen die Takte bis zum ersten Haus
                 const ohneEnde = leihe(r, { _bauFristOhneEnde: () => false });
-                for (
-                    const weiter = __deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
-                    (!erst || (!erstes && bild < 400)) && weiter();
-                ) {
-                    haus += !erst;
-                    r._fristStellen(performance.now() - 1e3, false);
-                    r._tickAutoSettlement(pw);
-                    bild++;
-                    const e = st.architectures.find((e) => !vor0.has(e) && /^haus_/.test(e.type) && stufe(e));
-                    if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
-                    await sleep(5);
+                // HÄNGT die Welt vor dem ersten Haus, nennt die Meldung den Zug beim Namen: die Zelle im Export, der Vorrat (sein
+                // Wasser-Urteil), der Zug (Gang, Reihe), die Trasse und die abgewiesenen Zellen — bis samen-ein-baum nannte sie nur
+                // das Offene der Welt (wald 4476, 3635 Takte), nie, wo der Dorf-Zug stand
+                const zugZustand = () => {
+                    const q = r._autoSettlementQueue, v = r._dorfVorraete && r._dorfVorraete.get(key);
+                    return JSON.stringify({
+                        pending: r._autoSettlementPendingKey || null,
+                        zelle: !!(wm.settlementCells || {})[key],
+                        vorrat: v ? { da: !!v.da, vorgebacken: !!v.vorgebacken, nass: v.wasser ? v.wasser.nass : "-", slots: v.v2 && v.v2.slots ? v.v2.slots.length : null } : null,
+                        zug: q ? { zelle: q.cellKey, idx: q.idx, reihe: q.reihe ? q.reihe.length : null, gang: !!q.gang } : null,
+                        trasse: r._ortTrasseMass || null,
+                        abgewiesen: [...(r._autoSettlementRejected || [])].slice(0, 6),
+                        haus,
+                        bild,
+                    }).slice(0, 700);
+                };
+                try {
+                    for (
+                        const weiter = __deckel("C-K5: das erste Haus", 400, () => !!r._autoSettlementPendingKey);
+                        (!erst || (!erstes && bild < 400)) && weiter();
+                    ) {
+                        haus += !erst;
+                        r._fristStellen(performance.now() - 1e3, false);
+                        r._tickAutoSettlement(pw);
+                        bild++;
+                        const e = st.architectures.find((e) => !vor0.has(e) && /^haus_/.test(e.type) && stufe(e));
+                        if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
+                        await sleep(5);
+                    }
+                } catch (f) {
+                    // ein NEUER Fehler: die Probe druckt den Stapel, und der trägt die Meldung seiner Geburt
+                    throw new Error("DER ZUG " + zugZustand() + " · " + (f && f.message));
                 }
                 ohneEnde();
                 r._bauFristTakt = null;
@@ -3236,7 +3271,36 @@ hauptLauf(async () => {
             for (const sl of outO.ortW.slots) sl.huelle = slotHuelle(FC, sl);
             outO.huellen = outO.ortW.slots.filter((sl) => sl.huelle && sl.huelle.length).length;
             outO.urteil = await page.evaluate(
-                (urteilSrc, ortW) => new Function(urteilSrc)()[0](ortW, (x, z) => r.getTerrainHeightAt(x, z)),
+                (urteilSrc, ortW) => {
+                    const u = new Function(urteilSrc)()[0](ortW, (x, z) => r.getTerrainHeightAt(x, z));
+            // DER SPLAT AM TIEFSTEN PUNKT je Sockel-Haus (die Linse nennt ihn beim Namen): jeder Splat der Normalform der Welt
+            // (`_erdbauNorm`), der den Punkt deckt, in seiner Reihenfolge — auf der Fläche gewinnt der letzte (gelaende-core
+            // `erdbauY`), unter einem freien (der Brücke) gilt der Grund
+            const E = r._erdbauNorm;
+            for (const h of (u && u.sockelFehl) || []) {
+                if (!h.tief || !E || !E.zellen) continue;
+                const [wx, wz] = [ortW.ort.x + h.tief[0], ortW.ort.z + h.tief[1]];
+                const Zm = globalThis.__gelaendeCore.ERDBAU ? globalThis.__gelaendeCore.ERDBAU.zelleM : null;
+                const liste = Zm ? E.zellen.get((Math.floor(wx / Zm) + 32768) * 65536 + (Math.floor(wz / Zm) + 32768)) || [] : [];
+                const decken = [];
+                for (const k of liste) {
+                    const q = E.splats[k];
+                    let d;
+                    if (q.frei || q.platte) {
+                        const ux = Math.abs((wx - q.cx) * q.c - (wz - q.cz) * q.s) - q.ex, vz = Math.abs((wx - q.cx) * q.s + (wz - q.cz) * q.c) - q.ez;
+                        d = Math.max(ux, vz, 0);
+                    } else {
+                        let s = q.len2 > 0 ? ((wx - q.x0) * q.dx + (wz - q.z0) * q.dz) / q.len2 : 0;
+                        s = s < 0 ? 0 : s > 1 ? 1 : s;
+                        d = Math.max(0, Math.hypot(wx - q.x0 - q.dx * s, wz - q.z0 - q.dz * s) - q.hw);
+                    }
+                    if (d === 0) decken.push(`${k}:${q.frei ? "frei" : q.platte ? "platte" : "trasse w" + q.weg} y${Math.round((q.platte ? q.y : q.y0) * 100) / 100}`);
+                }
+                h.splats = decken.length ? decken.slice(-5).join(" ") : Zm ? "keiner deckt" : "ERDBAU.zelleM fehlt";
+                h.welt = Math.round(r.getTerrainHeightAt(wx, wz) * 100) / 100;
+            }
+                    return u;
+                },
                 `${lokal}\n${kasten}\nreturn [${ortUrteil}, kasten]`,
                 outO.ortW
             );
@@ -3507,11 +3571,12 @@ hauptLauf(async () => {
             ...je(outO, "laterneWeg laterneWegSoll vorplatzOk vorplatzN vorplatzFehl terrasseWand terrasseWiese"),
             ...je(outO, "terrasseHalm terrasseFerne terrasseFerneFehl vorplatzFeld fremdBauten"),
             ...je(outO, "huellen"),
-            ...je(u, "sockelMedian sockelMax tuerenOk tuerenN"),
+            ...je(u, "sockelMedian sockelMax sockelFehl tuerenOk tuerenN"),
         ]);
         Object.assign(m, {
             planHashGleich,
             gtWeg: gtO.gtWeg,
+            gtSteckt: gtO.steckt || null,
             gtEnde: gtO.endeNachS,
             quellenGasse: outO.gasse ? outO.gasse.n : null,
             poolGasse: outO.gasse ? outO.gasse.poolOrt : null,

@@ -2387,6 +2387,7 @@ hauptLauf(async () => {
             {
                 // DER KERN mit dem alten Rückwärts-Antrieb (0,4 × aEngine) fällt in FK; die Stimme mit falschem Motor-Ton in FK2
                 require(path.join(root, "vehicle-core.js"));
+                require(path.join(root, "samen-core.js")); // der Samen-Baum vor jedem Kern (Welle SAMEN)
                 require(path.join(root, "klang-core.js"));
                 const VCs = globalThis.__vehicleCore;
                 const KCs = globalThis.__klangCore;
@@ -2979,6 +2980,7 @@ hauptLauf(async () => {
             fk.length === 0,
             `GT ${fkGt.map((z) => `${z.art} ${z.grad}° ${z.weg.toFixed(2)} m`).join(" · ")}${fk.length ? " — Täter: " + fk.slice(0, 6).join(" · ") : ""}`
         );
+        require(path.join(root, "samen-core.js"));
         require(path.join(root, "klang-core.js"));
         const fk2 = bahnKernStimme(globalThis.__klangCore, globalThis.__vehicleCore);
         check(

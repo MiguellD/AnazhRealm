@@ -24,6 +24,7 @@
 const { urteilEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 require("../koerper-core.js");
+require("../samen-core.js"); // der Samen-Baum vor jedem Kern (Welle SAMEN)
 require("../phyto-core.js");
 const core = globalThis.__koerperCore;
 const { mulberry32 } = globalThis.__phytoCore; // der Test-Strom ist der Strom des Kerns

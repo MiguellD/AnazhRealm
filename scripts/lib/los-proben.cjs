@@ -59,8 +59,8 @@ function losProben(FC, check) {
 // zugestellten Flügel: ROT beim Namen. Leser: die Vorprüfung jeder Bau-Bahn (gate:settlement, check.yml Gruppe 18).
 const OEFFNUNG_MUTANTEN = {
     "Flügel zu (0 statt 0,62 rad)": [
-        ["L.rotation.y=(cz<0?0.62:-0.62)+", "L.rotation.y=0+"],
-        ["L.rotation.y=(cx<0?-0.62:0.62)+", "L.rotation.y=0+"],
+        ["L.rotation.y=(cz<0?FLUEGEL_WINKEL:-FLUEGEL_WINKEL)+", "L.rotation.y=0+"],
+        ["L.rotation.y=(cx<0?-FLUEGEL_WINKEL:FLUEGEL_WINKEL)+", "L.rotation.y=0+"],
     ],
     // Rahmen vierfach tief: die doppelte Tiefe (Sturz, Pfosten 0,36 · Bank 0,48) reicht an keinem der 519 Plan-Häuser der Stadt 7/4750
     // über Dach und Sockel, auch nicht an der Hülle vor dem Schnitt (p3/n1911/los-huelle/vergleich.log) — sie wäre vakuös; vierfach an 94
@@ -289,6 +289,63 @@ function huelleProben(FC, check, { kernText, golden, taeter = false }) {
     console.log(`  Hülle/Los: ${LOSE_FAELLE.length} Fälle × ${1 + Object.keys(OEFFNUNG_MUTANTEN).length} Kerne + Zensus ${Z.n} Bauten (${Z.gestapelt} gestapelt, ohne Liste) · ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
 
+// DER WÜRFEL JE LOS (Welle SAMEN, los-wurf): jedes Los zieht Zeiger-Wahl, Versatz, Fuge und Scheunen-Stand aus seinem EIGENEN
+// Strom (fachwerk `dorfLayout`, samen-core `samenBaum(seed)("los:<i>")`) — eine Front, die sich ändert, würfelt kein anderes Los neu.
+// Die Linse ändert je Fall jedes Los um jedes WURF_DELTAS (die Breite seiner Front, die Mitte bleibt; der Haken `__losStoer` am Ruf von
+// dorfLayout, sonst der Kern Zeichen für Zeichen) und zählt je Probe die ANDEREN Häuser, die fehlen, hinzukommen, weiter als
+// WURF_WANDER m wandern oder sich drehen. Bis zur Welle zogen alle Lose aus dem EINEN Strom `rnd`: kippte ein Los an einer Probe,
+// stand Same 431794 85 m weiter (p3/n1911/los-huelle/ursache). Der Täter des Selbsttests ist dieser EINE Strom: ROT beim Los.
+// die Stadt der Grammatik 7/30 (ummauert, Markt, Viertel): an ihr kippt der EINE Strom (main 92b7afd07: -5 cm an 7 von 37 Losen 13
+// Häuser, +1 cm an 2 Losen 2), und dort kreuzt bei -5 cm und +1 cm keine Front eine Schwelle des GESETZES (eine Probe des Setzers,
+// der Versuch zu 1,1 m, die Kirche als Anker ihres Viertels) — die Linse misst den Würfel allein. Wo eine Front eine Schwelle kreuzt
+// (7/18 -5 cm an der Kirche: 15 Häuser, 7/60 -5 cm Los 10: 41), rückt das Gesetz, nicht der Wurf (p3/n1911/samen/messung-26baeab7/
+// loswurf-final.log); die Dörfer 3/12 und 12345/6 kippen auch am EINEN Strom nie.
+const WURF_FAELLE = [{ seed: 7, nH: 30 }];
+const [WURF_DELTAS, WURF_WANDER] = [[-0.05, 0.01], 0.5];
+const LOS_HAKEN = ["var L = dorfLayout(p, ext.slice(von, bis), ", "var L = dorfLayout(p, (globalThis.__losStoer || function (e) { return e; })(ext.slice(von, bis), von), "]; // prettier-ignore
+const WURF_TAETER = [
+    ["const g=plan.houses[i], wurf=losWurf(i);", "const g=plan.houses[i], wurf=rnd;"],
+    ["    const wurf=losWurf(i);", "    const wurf=rnd;"],
+];
+// je Fall und Los: die anderen Häuser, die anders stehen, beim Namen (Same#n)
+function wurfAnders(K) {
+    const out = [];
+    const haeuser = (ex) => {
+        const n = {};
+        return new Map(ex.slots.map((s) => [s.seed + "#" + (n[s.seed] = (n[s.seed] || 0) + 1), s]));
+    };
+    for (const dp of WURF_FAELLE) {
+        globalThis.__losStoer = null;
+        const H0 = haeuser(K.exportSettlement(dp)),
+            lose = K.DORF(dp).houses;
+        for (const delta of WURF_DELTAS) lose.forEach((h, k) => {
+            globalThis.__losStoer = (ext, von) => ext.map((e, j) => (j + von === k ? Object.assign({}, e, { x0: e.x0 - delta / 2, x1: e.x1 + delta / 2 }) : e)); // prettier-ignore
+            const H1 = haeuser(K.exportSettlement(dp));
+            globalThis.__losStoer = null;
+            for (const key of new Set([...H0.keys(), ...H1.keys()])) {
+                if (key.startsWith(h.seed + "#")) continue;
+                const [a, b] = [H0.get(key), H1.get(key)];
+                const d = a && b ? Math.hypot(a.x - b.x, a.z - b.z) : Infinity;
+                if (!(d <= WURF_WANDER) || Math.abs(Math.atan2(Math.sin(a.phi - b.phi), Math.cos(a.phi - b.phi))) > 0.05)
+                    out.push(`dorf ${dp.seed}/${dp.nH} Los ${k} (${h.rolle}) ${delta * 100} cm → ${key} ${a && b ? d.toFixed(2) + " m" : a ? "fällt" : "kommt"}`);
+            }
+        });
+    }
+    return out;
+}
+function wurfProben(check, { kernText, taeter = false }) {
+    const t0 = Date.now();
+    const m = kernMutante(kernText, taeter ? [LOS_HAKEN, ...WURF_TAETER] : [LOS_HAKEN]);
+    const v = m.text ? wurfAnders(kernAusText(m.text, taeter ? "wurf-taeter" : "wurf")) : null;
+    const n = WURF_FAELLE.map((dp) => dp.seed + "/" + dp.nH).join(", ");
+    if (taeter)
+        check(`Selbst-Test Würfel je Los: der EINE Strom (jedes Los zieht aus rnd) fällt beim Los (${n})`, !!v && v.length > 0, m.fehlt || `${v.length} — ${v.slice(0, 2).join(" · ")}`);
+    else
+        check(`Würfel je Los (${n}): eine Front ${WURF_DELTAS.map((d) => d * 100).join(" / ")} cm würfelt kein anderes Haus neu (fehlt · kommt · wandert > ${WURF_WANDER} m)`, !!v && !v.length, m.fehlt || `${v.length} — ${v.slice(0, 3).join(" · ")}`);
+    console.log(`  Würfel je Los${taeter ? " (Täter)" : ""}: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+}
+
+
 // DIE ÖFFNUNG REICHT NIE IN DEN NACHBARN (B1, los-huelle-2): je Fall (LOSE_FAELLE) je Slot die Reichweite seiner Öffnungen über die
 // Körper-Hülle je Seite — die Hülle MIT Öffnung (der Mass-Bau unter HUELLE_TAETER, Box3 über den ganzen Bau) − die Körper-Hülle
 // (`massBau`), auf einer Brandwand-Seite 0 (dort baut das Haus keine Öffnung). Gezählt wird jedes Paar (A, B), deren Körper sich nicht
@@ -349,4 +406,4 @@ function brandwandProben(FC, check, { kernText, taeter = false }) {
     check(`Brandwand an der Körper-Hülle (B1, ${BW_FAELLE.length} Fälle): keine Öffnung einer Seite ohne Brandwand ragt > 1 cm in den Körper eines Nachbarn`, !z.length, `${z.length} Paare — ${z.slice(0, 3).join(" · ")}`);
     console.log(`  Brandwand B1: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
-module.exports = { losProben, huelleProben, brandwandProben, oeffnungImNachbarn, BRANDWAND_TAETER, oeffnungsZensus, zensusBauten, MARKE_TAETER, OEFFNUNG_MUTANTEN, HUELLE_TAETER, LOSE_FAELLE, kernMutante, kernAusText, loseVon, loseUrteil };
+module.exports = { losProben, huelleProben, wurfProben, brandwandProben, oeffnungImNachbarn, BRANDWAND_TAETER, oeffnungsZensus, zensusBauten, MARKE_TAETER, OEFFNUNG_MUTANTEN, HUELLE_TAETER, LOSE_FAELLE, kernMutante, kernAusText, loseVon, loseUrteil };

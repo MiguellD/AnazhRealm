@@ -1136,3 +1136,14 @@ der Richter (`scripts/diag-planet.cjs --bytes`) hält den SHA je `VERSION`; `_in
 im Faden: die Quelle der Fäden lädt ihn spät (`FADEN_QUELLE.spaet`), der Auftrag `planet-anker` des voxel-worker rechnet nach
 dem ersten Weltbild den Anker der Welt (`_planetAnker`), der Satz „reise“ der Konsole sagt ihn — die Seite trägt keinen
 Skript-Stempel für ihn.
+`samen-core.js` (`__samenCore`) — DER SAMEN-BAUM (Welle SAMEN): der EINE Generator `mulberry32` (32-bit-Zustand, Schritt
+γ = 0x6d2b79f5), sein Schritt auf einem Zustand des Wirts `mulberrySchritt` (die Harmonie der Lofi-Musik, der Strauch des
+Waldes), der EINE Text-Hash `samenHash` (FNV-1a über die UTF-16-Einheiten: Bau-Same, Strom eines Namens, Same des Walds), der
+Strom je Same und Salz `salzStrom` (die Ausstattung des Fachwerks, die Arena der Schmiede), die Saat eines Pfads `samenSaat` und
+der Baum `samenBaum` (Welt-Samen → je benanntem Pfad ein eigener Strom: das Los eines Dorfs `los:<i>`, die Op eines Programms
+`dsl:op:<n>` — eine Ziehung mehr in einem Pfad verschiebt nie einen anderen). Geladen VOR jedem Kern in jedem Kontext (die erste
+Zeile des Manifests, index.html vor phyto-core, die Fäden des Gesetzes `FADEN_QUELLE.kerne`, die Klang-Werkstatt, jede
+Labor-Seite, die Node-Lader); jeder Kern liest ihn je Ruf am globalen Namen (die Lese-Spur der Platte sieht ihn). Jede frühere
+Kopie des Generators ruft ihn mit ihrer Saat-Formel, wie sie stand — die Bytes jeder Welt blieben (die Goldens unberührt); die
+Zwillings-Wand in `gate:altlasten` sucht den Leib der Mischung als Muster in jeder Wurzel-Datei, jedem Skript und jeder
+Labor-Shell.

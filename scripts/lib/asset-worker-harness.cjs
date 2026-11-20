@@ -140,7 +140,7 @@ function bauTeile(meshes) {
 }
 
 function pageHtml() {
-    return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script src="/phyto-core.js"></script><script>
+    return `<!doctype html><meta charset="utf-8"><title>asset-worker</title><body><script src="/samen-core.js"></script><script src="/phyto-core.js"></script><script>
 (() => {
   const S = (window.__AW = { ready: false, error: null });
   const boot = ${WORKER_BOOT};
@@ -468,7 +468,9 @@ function absorber() {
 }
 // DER KONTEXT EINES KERNS IM VM: stumm, die Uhr steht, `self` und `globalThis` sind er selbst — `mit` legt dazu, was der
 // Kern dort liest (ohne: THREE als Absorber). Bis streaming-k5 baute jede Linse ihn selbst (die Vertrags-Linse zweimal, die
-// Streu-Linse, dieser Kanal, die Daten-Linse zweimal, der Baum, das Abnahme-Urteil).
+// Streu-Linse, dieser Kanal, die Daten-Linse zweimal, der Baum, das Abnahme-Urteil). Der Samen-Baum (samen-core.js, Welle
+// SAMEN) steht in jedem Kontext eines Kerns — er lädt in jedem Faden vor jedem Kern, jeder Strom zieht aus ihm.
+let samenText = null;
 function kernKontext(mit = { THREE: absorber() }) {
     const ctx = require("vm").createContext({
         console: { log() {}, warn() {}, error() {} },
@@ -477,6 +479,7 @@ function kernKontext(mit = { THREE: absorber() }) {
     });
     ctx.self = ctx;
     ctx.globalThis = ctx;
+    require("vm").runInContext((samenText ||= ausDatei(path.join(ROOT, "samen-core.js"))), ctx, { filename: "samen-core.js" });
     return ctx;
 }
 // DER KERN AUS SEINEM TEXT (die Kern-Mutante: der echte Kern mit einem eingeschmuggelten Täter; ein anderer Stand): die Texte der

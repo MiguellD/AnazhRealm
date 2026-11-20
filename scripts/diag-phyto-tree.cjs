@@ -16,6 +16,7 @@ const { vm, fadenScope, ROOT, stammLib, pruefer } = require("./lib/welt-boot.cjs
 // Der geteilte Kern läuft im IIFE-Muster und exportiert auf `root` (self||globalThis) — in
 // node ist das globalThis. Ein simpler require() reicht (die Datei ist kein CommonJS-Modul,
 // aber der IIFE-Seiteneffekt setzt globalThis.__phytoCore).
+require("../samen-core.js"); // der Samen-Baum vor jedem Kern (Welle SAMEN)
 require("../phyto-core.js");
 const mainCore = globalThis.__phytoCore;
 if (typeof mainCore?.growSkeleton !== "function") throw new Error("phyto-core.js hat __phytoCore.growSkeleton nicht exportiert");

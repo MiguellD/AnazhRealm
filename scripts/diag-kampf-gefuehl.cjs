@@ -12,7 +12,7 @@
 // und Wiederkehr über einen Reload (allein: `--k5`, mit dem echten Renderer); die Selbst-Tests S3–S18 feuern je an ihrer
 // Naht, jede Naht restauriert; Q15 der Treffer je Kern-Mutation im Takt des Spiels, im Bild und am Labor (allein: `--k1`, mit dem
 // echten Renderer). Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5 | --k1]
-const { statikServer, nullWelt, warteAufWelt, sleep, fehlerText, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, warteAufWelt, fehlerText, stammLib } = require("./lib/welt-boot.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
@@ -603,11 +603,12 @@ function q14Verdict(K) {
         .filter(([gut]) => !gut)
         .map(([, n]) => n);
 }
-// der Lauf: die Probe (sie speichert am Ende), der IDB-Put landet, der Reload, das erste Bild der geladenen Welt (ohne
-// Bild-Schleife von Hand, `__seitenTakt`), ihr Abdruck
+// der Lauf: die Probe (sie speichert am Ende), der Stand ist fest (die Schranke des Speicher-Fadens, `_speicherStill` — bis
+// abdruck-am-takt 1,5 s nach der Wanduhr: unter Last schnitt der Reload den Put ab), der Reload, das erste Bild der geladenen
+// Welt (ohne Bild-Schleife von Hand, `__seitenTakt`), ihr Abdruck
 async function k5Lauf(page) {
     const k5 = await page.evaluate(`(${K5_VOR})(${K5_ABDRUCK})`);
-    await sleep(1500);
+    await page.evaluate(() => r._speicherStill().then(() => true));
     await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
     await warteAufWelt(page, 180000);
     k5.nachReload = await page.evaluate(`__seitenTakt().then(${K5_ABDRUCK})`);

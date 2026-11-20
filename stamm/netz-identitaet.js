@@ -528,15 +528,9 @@ class AnazhRealm_netz_identitaet {
     // Stream-Gesetz: seed-deterministische RNG je Zweck — Stream-Name → FNV-1a (wie `_fastHash`) → der Strom dieses
     // Samens (`_samenStrom`, das EINE LCG der Welt, Numerical Recipes). Je Zweck ein eigener Suffix (z. B. seed +
     // "-muenze"), damit ein Draw mehr NIE einen anderen Stream re-rollt. NIE `Math.random` in Welt-Substanz (nur
-    // UI/Audio/Deko).
+    // UI/Audio/Deko). Der Hash ist der EINE Text-Hash (Welle SAMEN: samen-core `samenHash`).
     _streamRng(streamName) {
-        const s = String(streamName);
-        let h = 0x811c9dc5;
-        for (let i = 0; i < s.length; i++) {
-            h ^= s.charCodeAt(i);
-            h = Math.imul(h, 0x01000193);
-        }
-        return this._samenStrom(h >>> 0);
+        return this._samenStrom(globalThis.__samenCore.samenHash(String(streamName)));
     }
 
     // Versiegelt einen eigenen Bauplan mit dem Vibe-Pass (setzt signature + authorPubKey + signedHash +

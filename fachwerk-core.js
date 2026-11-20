@@ -69,6 +69,15 @@
     var VERSION = "1.0.0";
     var STUDIO_VERTRAG = 1; // G4.3 — EINE Versions-Semantik (v1.1 ist Adressierungs-Norm, kein Block-Bruch)
 
+    // DER SAMEN-KERN beim Namen (Welle SAMEN): jeder mulberry32-Strom dieses Kerns (die Ausstattung `ausZufall`, der Würfel
+    // je Los `dorfLayout`) zieht aus dem EINEN Generator (samen-core.js `__samenCore`), gelesen je Ruf am globalen Namen — die
+    // Lese-Spur der Platte (`_foundrySchale`) sieht ihn. Fehlt er, bricht der Ruf beim Namen.
+    function samenKern() {
+        var S = root.__samenCore;
+        if (!S) throw new Error("fachwerk-core: der Samen-Kern fehlt (samen-core.js lädt vor jedem Kern)");
+        return S;
+    }
+
     // ── B2-Daten: die Stufen-Wahrheit der Domäne (kindStages-Vertrag, Herleitung im Kopf) ──
     // ── B2c-Daten (W8, rein additiv): DAS BUDGET je Stufe — was eine gelieferte Haus-Stufe kosten darf
     //    (docs/studio-vertrag.md B2c). tris = die gebaute Hülle über alle 32 Stile × 16 Gestalten (gate:asset-
@@ -1115,12 +1124,12 @@
     if(horiz){ beam(g,cx,cy+h/2+0.05,cz,w+0.2,0.1,0.18,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,true,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,w+0.22,0.1,0.24,fr);     // Sturz + Fensterbank
       beam(g,cx-w/2-0.05,cy,cz,0.1,h+0.1,0.18,fr); beam(g,cx+w/2+0.05,cy,cz,0.1,h+0.1,0.18,fr);              // Pfosten
       const L=grp(); const inner=windowSash(w,h,true,fr,gl); inner.position.x=w/2; L.add(inner);
-      L.position.set(...deform(cx-w/2,cy,cz)); L.rotation.y=(cz<0?0.62:-0.62)+(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
+      L.position.set(...deform(cx-w/2,cy,cz)); L.rotation.y=(cz<0?FLUEGEL_WINKEL:-FLUEGEL_WINKEL)+(DEF_bk>0?(cx-w/2)*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
       strahlFluegel(L,w*Math.cos(L.rotation.y),-w*Math.sin(L.rotation.y),h);
     } else { beam(g,cx,cy+h/2+0.05,cz,0.18,0.1,w+0.2,fr); if(P.bogenTyp&&P.bogenTyp!=='none')bogenRahmen(g,cx,cy+h/2+0.12,cz,w*0.58,false,P.bogenTyp,fr,{art:'fenster',cap:_cap}); beam(g,cx,cy-h/2-0.05,cz,0.24,0.1,w+0.22,fr);
       beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);
       const L=grp(); const inner=windowSash(w,h,false,fr,gl); inner.position.z=w/2; L.add(inner);
-      L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-0.62:0.62)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
+      L.position.set(...deform(cx,cy,cz-w/2)); L.rotation.y=(cx<0?-FLUEGEL_WINKEL:FLUEGEL_WINKEL)+(DEF_bk>0?cx*DEF_bk:0); L.userData={window:true,openA:L.rotation.y}; g.add(L);
       strahlFluegel(L,w*Math.sin(L.rotation.y),w*Math.cos(L.rotation.y),h); } }
   // DIE ÖFFNUNG IST KEIN KÖRPER (los-huelle): was eine Öffnung baut — Flügel, Rahmen, Bank, Bogen, Gitter, Türblatt und -stock —, trägt
   // die Marke `oeffnung`; die Hülle des Mass-Baus (`massBau`, die EINE Box, die das Los liest) überspringt sie. Bis hier maß die Box den
@@ -2930,7 +2939,14 @@
     var RAHMEN_TIEFE = 0.1,
         SCHEIBE_RAND = 0.06,
         KREUZ = 0.02,
-        FLUEGEL_LAGE = [0.8138785, 0.5810352]; // cos und sin der Flügel-Öffnung der L0 (fensterAt: 0,62 rad)
+        // DIE ÖFFNUNG DES FLÜGELS (Welle SAMEN, ein Schreiber): der EINE Winkel (rad) — der Flügel der L0 dreht um ihn (`fensterTeile`),
+        // die Fern-Stufe liest seine Lage (`FLUEGEL_LAGE`: cos und sin auf 7 Stellen, eingefroren mit dem Golden v6 — atan2 der Lage
+        // ist nicht genau 0,62, cos(0,62) nicht genau 0,8138785; der Winkel ist die Quelle, die Lage seine Abschrift, die beim Laden
+        // auf 1e-7 gegen ihn steht). Bis hier stand 0,62 als Literal in beiden Flügel-Zeilen und die Lage ohne ihren Winkel.
+        FLUEGEL_WINKEL = 0.62,
+        FLUEGEL_LAGE = [0.8138785, 0.5810352];
+    if (Math.abs(Math.cos(FLUEGEL_WINKEL) - FLUEGEL_LAGE[0]) > 1e-7 || Math.abs(Math.sin(FLUEGEL_WINKEL) - FLUEGEL_LAGE[1]) > 1e-7)
+        throw new Error("fachwerk-core: FLUEGEL_LAGE ist nicht die Lage von FLUEGEL_WINKEL");
     // prettier-ignore
     function fensterFern(fen, B, geoms){
   const liste=fen&&fen.liste; if(!liste||!liste.length) return;
@@ -5597,6 +5613,7 @@
     function dorfLayout(plan, ext, seed, H){
   const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, n=ext.length, nG=plan.nGestalt||n;   /*nG: die Lose der GESTALT (der Chronik) — Mauer, Platz und Staende stehen fuer jeden Schnitt gleich*/
   let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
+  const samenOrt=samenKern().samenBaum(seed), losWuerfe=[], losWurf=(i)=>losWuerfe[i]||(losWuerfe[i]=samenOrt('los:'+i));   /*DER WUERFEL JE LOS (Welle SAMEN, los-wurf): jedes Los zieht Zeiger-Wahl, Versatz, Fuge und Scheunen-Stand aus seinem EIGENEN Strom — der Samen-Baum des Orts (`seed`) am Pfad `los:<i>` —, nie aus dem EINEN Strom `rnd` der Gestalt (Graph, Vorstadt, Felder und Mauer ziehen weiter aus ihm; jeder Versuch eines Baums aus `baum:<n>`). Bis hier kippte ein Los an einer Probe, und jedes Los danach wuerfelte neu: an main 986eff04 stand Same 431794 85 m weiter, weil das Rathaus an seiner Weg-Probe 21 Versuche mehr brauchte (p3/n1911/los-huelle/ursache), die wachen 3 x 3 Kacheln trugen +11 Haeuser*/
   const staedt=plan.staedtisch;
   const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
   const DS=3;
@@ -5679,7 +5696,7 @@
   if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=stadt?Math.max(SD.marktTief[0],Math.min(SD.marktTief[1],PW*SD.marktJeBreite)):Math.max(6,PW*0.55);   /*der Markt der Stadt ist ein Platz, kein Streifen (stadt-voll: 34 × 9,4 m → 34 × 22 m)*/
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
     if(platz.typ==='weg'){ const MS=AUSSTATTUNG.marktstand.tritt, rS=Math.hypot(MS.ex,MS.ez), zt=plan.schnitt||plan;
-      const standFrei=(s)=>roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (Leiter mensch.netz.verkehr): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
+      const standFrei=(s)=>roads.every(rd=>{ if(zt.staedtisch&&(rd.w||0)<VERKEHR_GESETZ.breiteM) return true;   /*DER STAND STEHT NIE AUF DEM WEG (Welle SAMEN): im Dorf jeder Weg mit seiner Breite, in der Stadt die Trasse samt standTrasseM — bis hier stand der Stand des Dorfs ohne Frage; am Würfel je Los lief ein Hauptweg des Auto-Dorfs −4,−4 über den Platz, der GT stand nach 1,8 m vor dem Stand (gate:settlement O)*/ const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (Leiter mensch.netz.verkehr): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
       const reihen=stadt&&SG.viertel.markt.dinge.find(q=>q.art==='marktstand');                 /*DER MARKT DER STADT traegt die Staende seiner Zeile: Reihen im Raster ueber dem Platz, ausser der Trasse (bis hier zwei bis drei Staende an festen Bruchteilen des Platzes)*/
       if(reihen){ const [gx,gz]=reihen.rasterM; let zi=0;                                       /*je Reihe die Front (`th`) nach Norden oder Sueden: zwei Reihen stehen einander ueber ihrer Gasse gegenueber*/
         for(let z=platz.cz-platz.ez+SD.standRandM; z<=platz.cz+platz.ez-SD.standRandM+1e-6; z+=gz, zi++) for(let x=-PW+SD.standRandM; x<=PW-SD.standRandM+1e-6; x+=gx){ const s={x,z,th:zi%2?0:Math.PI}; if(staende.length<reihen.max&&Math.abs(z-platz.cz)>=SD.marktGangM&&standFrei(s)) staende.push(s); } }   /*die Gasse des Markts laengs seiner langen Achse bleibt frei (`marktGangM` beidseits der Mitte): wer auf dem Platz steht, sieht die Fassaden an seinen Enden — am Messort stadt fand die Pose des Orts sonst keinen Bau mit freier Sichtlinie (127 Bauten, 68 Hindernisse)*/
@@ -5725,13 +5742,14 @@
     curs.push({rd:r, side: 1, cur:st0}); curs.push({rd:r, side:-1, cur:st0}); }
   const parentCu={}, wegK=stadt?roads.map(rd=>wegKasten(rd.pts)):null;                       /*DIE VORAUSWAHL DER NAEHE in der Stadt (wie `fernOBB`): der Kasten jedes Wegs und der Umkreis jedes Grundrisses — was sicher fern liegt, rechnet keine Probe; das Urteil bleibt bit-gleich (stadt-voll: der Export 21 s → 3 s an der schwersten Saat)*/
   const tryPlace=(i, cu, skipPair)=>{                                                       // SAT + STRASSEN-FREIHALTUNG + MAUER
+    const wurf=losWurf(i);                                                                   /*der Wuerfel des Loses (Versatz je Versuch, Fuge danach)*/
     const rd=roads[cu.rd], gw=gehwegVon(plan,rd), e=ext[i], exH=(e.x1-e.x0)/2, ezH=(e.z1-e.z0)/2, lcx=(e.x0+e.x1)/2, lcz=(e.z0+e.z1)/2;
     const QD=(globalThis.__qd=globalThis.__qd||{t:0,mauer:0,obb:0,laen:0,ok:0}); if(rd.quer)QD.t++;
     /*DIE FRONT DER STADT BLEIBT (STADT_DICHTE): der Zeiger sucht bis ans Ende seines Wegs und steht, wo er stand, wenn das Los nicht passt — `eng` merkt die schmalste Breite, die scheiterte (was davor steht, wird nie weniger: so breit passt hier nichts mehr). Ausser der Stadt 26 Versuche zu 1,1 m, und jeder gescheiterte verbrauchte sie: an stadt-voll trug eine Strasse im Ring ein Haus je 46 m Front (die Vorstadt eines je 20 m)*/
     const cur0=cu.cur; if(stadt&&cu.eng<=2*exH) return null;
     for(let tr=0;tr<(stadt?1e4:26);tr++){
       const sc=cu.cur+exH; if(sc>rd.pts.length*DS-(rd.quer?2.8:6)){ if(rd.quer)QD.laen++; if(stadt){ cu.cur=cur0; cu.eng=2*exH; } return null; }   /*quer nutzt die volle Laenge*/
-      const q=at(rd,sc), jit=(rnd()-0.5)*2*jitAmp;
+      const q=at(rd,sc), jit=(wurf()-0.5)*2*jitAmp;
       const phi=Math.atan2(cu.side*q.nx, cu.side*q.nz);
       const c=Math.cos(phi), s2=Math.sin(phi);
       const ccx=q.x+cu.side*q.nx*(rd.w/2+gw+jit+ezH), ccz=q.z+cu.side*q.nz*(rd.w/2+gw+jit+ezH);
@@ -5767,7 +5785,7 @@
         if(rd.quer){QD.ok++; (QD.pos=QD.pos||[]).push([Math.round(o.cx),Math.round(o.cz)]);}
         cu.lastEnd=sc+exH;
         const dN9=(staedt&&plan.jahr>1700)? Math.min(1, Math.hypot(q.x,q.z)/(Rw*0.82)) : 1;   /*SETZER-VERDICHTUNG: die Fuge waechst mit dem Radius — der KERN rueckt in die Snap-Zone und fusioniert zur geschlossenen STRASSENWAND, der Saum atmet*/
-        cu.cur=sc+exH+gap*(0.22+0.78*dN9)+(staedt?rnd()*0.15*dN9:rnd()*1.2);
+        cu.cur=sc+exH+gap*(0.22+0.78*dN9)+(staedt?wurf()*0.15*dN9:wurf()*1.2);
         return pl[i]; }
       cu.cur+=1.1; }
     return null; };
@@ -5800,15 +5818,15 @@
   const folge=[...Array(n).keys()];
   if(stadt) folge.sort((a,b)=>((plan.houses[a].viertel==='burg'&&plan.houses[a].rolle!=='scheune')?0:1)-((plan.houses[b].viertel==='burg'&&plan.houses[b].rolle!=='scheune')?0:1)||a-b);   /*der Herr baut zuerst: seine Lose nehmen den Berg, bevor die Stadt an ihn waechst*/
   for(const i of folge){
-    const g=plan.houses[i];
+    const g=plan.houses[i], wurf=losWurf(i);                                                 /*der Wuerfel des Loses (Scheunen-Stand, Zeiger-Wahl)*/
     if(g.rolle==='scheune'){
       const j=g.parent, P0=pl[j]; if(!P0||Math.abs(P0.obb.cz)>5000){ pl[i]={x:0,z:-9999-i*20,phi:0,obb:{cx:0,cz:-9999-i*20,phi:0,ex:1,ez:1}}; continue; }
       const e=ext[i], exS=(e.x1-e.x0)/2, ezS=(e.z1-e.z0)/2, phi=P0.phi;
-      rnd();   /*DIE SCHEUNE ÖFFNET ZUM HOF (w28-bau-rezept): ihr Tor schaut auf die Rückseite ihres Hauses, der Gang läuft über den Hof. Quer gestellt (der Wurf hier, 55 %) schaute es ins Gelände ohne Gasse — am Hang vor eine Terrassen-Wand (Akt 7/18: 10,5 m bei 1,8 m vor dem Tor, Auto-Dorf: 3,4 m tiefer); der Wurf bleibt im Strom, die Lose danach stehen, wo sie standen*/
+      wurf();   /*DIE SCHEUNE ÖFFNET ZUM HOF (w28-bau-rezept): ihr Tor schaut auf die Rückseite ihres Hauses, der Gang läuft über den Hof. Quer gestellt (der Wurf hier, 55 %) schaute es ins Gelände ohne Gasse — am Hang vor eine Terrassen-Wand (Akt 7/18: 10,5 m bei 1,8 m vor dem Tor, Auto-Dorf: 3,4 m tiefer); der Wurf bleibt im Strom, die Lose danach stehen, wo sie standen*/
       const c=Math.cos(P0.phi), s2=Math.sin(P0.phi), ox=s2, oz=c;
       let done=false;
       for(let k2=0;k2<5&&!done;k2++){
-        const sh=(k2===0)?Math.max(-1,Math.min(1,(rnd()-0.5)*2))*Math.max(0,P0.obb.ex-exS-0.15):0;
+        const sh=(k2===0)?Math.max(-1,Math.min(1,(wurf()-0.5)*2))*Math.max(0,P0.obb.ex-exS-0.15):0;
         const ux=c, uz=-s2;
         const ccx=P0.obb.cx+ox*(P0.obb.ez+1.4+k2*0.8+ezS)+ux*sh, ccz=P0.obb.cz+oz*(P0.obb.ez+1.4+k2*0.8+ezS)+uz*sh;
         const o={cx:ccx,cz:ccz,phi,ex:(e.x1-e.x0)/2,ez:(e.z1-e.z0)/2};                              /*die obb im Rahmen der Scheune (phi): exS/ezS stehen im Rahmen des Hauses P0 — gedreht trug sie quer zur Scheune deren Masse vertauscht (siedlung-k3-heil: 23 von 27 Scheunen, das Fundament der Welt 0,1-0,5 m zu schmal)*/
@@ -5837,7 +5855,7 @@
         for(const k in zug){ const F=zug[k]; if(F&&offen[k]>0&&Math.hypot(q.x-F.x,q.z-F.z)<F.r) m+=SD.zugFremd; } }
       return m; };
     let best=null,bs=1e9;
-    for(const cu of curs){ const m=curMetric(cu)+rnd()*2-(roads[cu.rd].quer&&!roads[cu.rd].gasse?12:0); if(m<bs){bs=m;best=cu;} }   /*die Gasse der Dichte traegt keinen Bonus: erst schliesst die Strasse ihre Reihe, dann fuellt sich der Block (die Kleinstadt von 20 Haeusern stand sonst verstreut an ihren Gassen, keine Wand an der anderen)*/   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
+    for(const cu of curs){ const m=curMetric(cu)+wurf()*2-(roads[cu.rd].quer&&!roads[cu.rd].gasse?12:0); if(m<bs){bs=m;best=cu;} }   /*die Gasse der Dichte traegt keinen Bonus: erst schliesst die Strasse ihre Reihe, dann fuellt sich der Block (die Kleinstadt von 20 Haeusern stand sonst verstreut an ihren Gassen, keine Wand an der anderen)*/   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
     if(g.viertel) offen[g.viertel]--;
     let placedP=tryPlace(i,best,-1);
     if(!placedP){ const so=curs.slice().sort((a,b2)=>curMetric(a)-curMetric(b2));
@@ -5848,7 +5866,8 @@
     if(stadt&&(g.viertel==='wohnen'||g.viertel==='handwerk')&&Math.hypot(placedP.obb.cx,placedP.obb.cz)<=Rw&&nassAm(placedP.obb.cx,placedP.obb.cz,Math.hypot(placedP.obb.ex,placedP.obb.ez)+SD.hafenM)) g.viertel='hafen';   /*DIE ROLLE HAFEN FOLGT DER LAGE: was im Ring am Wasser des Rasters wohnt und wirkt, ist Hafen (Speicher, Gerberei und Werkstatt des Handwerks, die Haeuser am Ufer) — ohne Wasser (`H.nass`) entsteht keiner*/
     const cu=parentCu[i];
     if(g.rolle!=='kirche'&&i>0&&i%8===0){ const q=at(roads[cu.rd],Math.max(2,cu.cur-2));
-      brunnen.push({x:q.x+cu.side*q.nx*(wegRand(roads[cu.rd])+0.6), z:q.z+cu.side*q.nz*(wegRand(roads[cu.rd])+0.6)}); }
+      const bx=q.x+cu.side*q.nx*(wegRand(roads[cu.rd])+0.6), bz=q.z+cu.side*q.nz*(wegRand(roads[cu.rd])+0.6);
+      if(!imTor(bx,bz,VERKEHR_GESETZ.abzweigZulaufM)) brunnen.push({x:bx, z:bz}); }   /*DER ZULAUF DER WENDE TRAEGT KEINEN BRUNNEN (Welle SAMEN, los-wurf): Los, Gasse und Laterne hielten das Geviert des Torplatzes frei, der Brunnen nicht — an 11/200 stand er nach dem Wurf je Los 2,7 m vor dem Geviert im Zulauf der Wende, mit dem Haus daneben trug sie eine Enge (an main hielt es der Zufall des EINEN Stroms); der Zulauf ist VERKEHR_GESETZ.abzweigZulaufM lang*/
   }
   const gradK=new Array(G.nodes.length).fill(0); if(stadt) for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradK[rd.a]++; gradK[rd.b]++; }
   roads.forEach((rd,r)=>{ rd.leer=!!rd.gasse&&!rd.durch&&!curs.some(cu=>cu.rd===r&&cu.lastEnd!=null); });   /*die Sackgasse der Dichte ohne ein Haus ist kein Weg*/
@@ -5888,11 +5907,11 @@
   if(mauer){ X0=Math.min(X0,-Rw-8);X1=Math.max(X1,Rw+8);Z0=Math.min(Z0,-Rw-8);Z1=Math.max(Z1,Rw+8); }
   feldwege.forEach(fw=>fw.pts.forEach(q=>{ X0=Math.min(X0,q.x-4);X1=Math.max(X1,q.x+4);Z0=Math.min(Z0,q.z-4);Z1=Math.max(Z1,q.z+4); }));
   const trees=[]; let tries=0;
-  while(trees.length<Math.min(30,6+n)&&tries<520){ tries++;
+  while(trees.length<Math.min(30,6+n)&&tries<520){ tries++; const wb=samenOrt('baum:'+tries);   /*JE VERSUCH SEIN STROM (Welle SAMEN): ein Haus, das rueckt, verwirft einen Versuch — die Wuerfe der uebrigen bleiben (bis hier zog jeder Versuch aus `rnd`, und ein verworfener verschob jeden Baum danach)*/
     let tx,tz;
-    if(rnd()<0.58&&obbs.length){ const q2=obbs[(rnd()*obbs.length)|0].o;
-      tx=q2.cx+Math.sin(q2.phi)*(q2.ez+2.5+rnd()*5)+(rnd()-0.5)*7; tz=q2.cz+Math.cos(q2.phi)*(q2.ez+2.5+rnd()*5)+(rnd()-0.5)*7; }
-    else { tx=X0-6+rnd()*(X1-X0+12); tz=Z0-6+rnd()*(Z1-Z0+12); }
+    if(wb()<0.58&&obbs.length){ const q2=obbs[(wb()*obbs.length)|0].o;
+      tx=q2.cx+Math.sin(q2.phi)*(q2.ez+2.5+wb()*5)+(wb()-0.5)*7; tz=q2.cz+Math.cos(q2.phi)*(q2.ez+2.5+wb()*5)+(wb()-0.5)*7; }
+    else { tx=X0-6+wb()*(X1-X0+12); tz=Z0-6+wb()*(Z1-Z0+12); }
     let ok=true;
     for(const q2 of obbs) if(distPunktOBB(tx,tz,q2.o)<1.2){ok=false;break;}
     if(ok) for(const rd of roads){ for(let u=0;u<=(rd.len||0);u+=DS){ const q=at(rd,u); if(Math.hypot(tx-q.x,tz-q.z)<rd.w/2+0.9){ok=false;break;} } if(!ok)break; }
@@ -5901,7 +5920,7 @@
     if(ok&&brunnen.some(b2=>Math.hypot(tx-b2.x,tz-b2.z)<3.5))ok=false;
     if(ok&&mauer&&Math.abs(Math.hypot(tx,tz)-Rw)<2.6)ok=false;
     if(ok&&trees.some(q2=>Math.hypot(tx-q2.x,tz-q2.z)<3.0))ok=false;
-    if(ok) trees.push({x:tx,z:tz,h:2.6+rnd()*1.8}); }
+    if(ok) trees.push({x:tx,z:tz,h:2.6+wb()*1.8}); }
   const laternen=[], marken=[];                                                               // LATERNEN-GESETZ: die moderne Stadt leuchtet; die Marken des Dorf-Lichts (jeder Meter Weg) liest die Wandlaterne (wandLaternen)
   const LATERNE_WAND=laterneWandM();   /*DIE LATERNE VOR DER WAND (K66): ihr Licht trifft keine Wand mit mehr als dem Doppelten der Gasse unter ihr — (h²+k²)/(d²+k²) ≤ 2, d ≥ 2,55 m; bis K66 stand sie 0,45 m vor dem Grundriss, die Giebelwand trug nachts das Sechsfache*/
   const LATERNE_FUSS=AUSSTATTUNG.laterne.tritt.r, laterneWege=roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), h:wegRand(rd)})).concat(feldwege.map(fw=>({pts:fw.pts, h:fw.w/2}))); for(const wl of laterneWege) wl.K=wegKasten(wl.pts);   /*DER FUSS DER LATERNE (K66, Pruefung 2): ihr Tritt aus dem Rezept (AUSSTATTUNG laterne, der Blocker der Welt) und die Wege, wie der Export sie traegt — Strasse und Feldweg*/
@@ -6870,18 +6889,11 @@
         return P;
     }
 
-    // Ein Zufalls-Strom je (Same, Teilsystem) — mulberry32, nur Ganzzahl-Arithmetik (plattformgleich). Eigene Ströme
-    // je Teilsystem halten die Gestalt über die Stufen deckungsgleich (L1 zieht dieselben Zahlen, baut nur gröber).
+    // Ein Zufalls-Strom je (Same, Teilsystem) — nur Ganzzahl-Arithmetik (plattformgleich). Eigene Ströme je Teilsystem
+    // halten die Gestalt über die Stufen deckungsgleich (L1 zieht dieselben Zahlen, baut nur gröber). Vor-Mischung und
+    // Generator leben EINMAL (Welle SAMEN): samen-core `salzStrom`, gelesen je Ruf am globalen Namen (`samenKern`).
     function ausZufall(seed, salz) {
-        var h = (Math.imul((seed >>> 0) ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(salz | 0, 0xc2b2ae35)) >>> 0;
-        h = (h ^ (h >>> 16)) >>> 0 || 0x6d2b79f5;
-        return function () {
-            h = (h + 0x6d2b79f5) >>> 0;
-            var t = h;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        return samenKern().salzStrom(seed, salz);
     }
 
     function ausGeo(pos, nrm, idx) {
@@ -10546,6 +10558,7 @@
         trasse: 0.09, // so steil darf der Lauf einer Gasse steigen (`trasseLenk`; die Marge zum Fuß trägt die Feinform zwischen den Raster-Punkten)
         saumM: 0.6, // so weit steht eine Platte über den Grundriss, eine Trasse über den Weg hinaus
         vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür (mindestens: er reicht bis zur Gasse des Hauses)
+        schwelleM: 0.15, // so weit reicht die Platte des Vorplatzes unter die Schwelle: der Punkt der Tür liegt IN ihr, nie auf ihrer Kante
         gasseM: 5, // so weit vor der Tür (über die halbe Wegbreite hinaus) findet das Haus seine Gasse
         hangPlattform: 1.5, // Spanne des Grunds unter dem Grundriss bis zur Plattform (m)
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
@@ -11507,23 +11520,22 @@
             if (!lage.lauf) delete weg.lauf;
             wege.push(weg);
         }
-        if (platzY !== null)
-            erdbau.push({
-                art: "platte",
-                cx: r6(ox + pz.cx),
-                cz: r6(oz + pz.cz),
-                phi: r6(pz.phi || 0),
-                ex: r6(pz.ex + O.saumM),
-                ez: r6(pz.ez + O.saumM),
-                y: platzY,
-            });
+        // DER PLATZ WIE JEDER WEG (Welle SAMEN): sein Saum liegt VOR den Grundrissen (`wegSaeume`), sein Kern danach — bis hier lag
+        // die EINE Platte samt Saum hinter den Häusern und schnitt den Rand eines Hauses am Platz auf seine Höhe (Auto-Dorf −4,−4 am
+        // Würfel je Los: Slot 9 stand mit dem Rand seiner obb 0,87 m über dem Saum des Platzes, gate:settlement O)
+        if (platzY !== null) {
+            var platzPl = { art: "platte", cx: r6(ox + pz.cx), cz: r6(oz + pz.cz), phi: r6(pz.phi || 0), ex: r6(pz.ex), ez: r6(pz.ez), y: platzY };
+            wegSaeume.push(Object.assign({}, platzPl, { ex: r6(pz.ex + O.saumM), ez: r6(pz.ez + O.saumM) }));
+            erdbau.push(platzPl);
+        }
         // die Platte jedes Torplatzes, dem seine Trasse die Höhe gab (samt Saum wie der Platz; ihr Kern unten in `aufWeg`)
         var torKerne = [];
         tore.forEach(function (t) {
             if (t.y === null) return;
             var tq = { art: "platte", cx: r6(ox + t.q.cx), cz: r6(oz + t.q.cz), phi: r6(t.q.phi || 0), ex: r6(t.q.ex), ez: r6(t.q.ez), y: t.y };
             torKerne.push(tq);
-            erdbau.push(Object.assign({}, tq, { ex: r6(t.q.ex + O.saumM), ez: r6(t.q.ez + O.saumM) }));
+            wegSaeume.push(Object.assign({}, tq, { ex: r6(t.q.ex + O.saumM), ez: r6(t.q.ez + O.saumM) })); // der Saum vor den Grundrissen
+            erdbau.push(tq);
         });
         // DIE FLÄCHE der Wege und des Platzes, wie die Gelände-Funktion sie trägt (ctx.flaeche: der Erdbau-Term des Gesetzbuchs
         // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
@@ -11708,13 +11720,22 @@
                             break;
                         }
                     }
+                // DIE STUFE TRÄGT DIE TÜR (Welle SAMEN): die Platte des Vorplatzes reicht `schwelleM` unter die Schwelle — der Punkt
+                // der Tür (`eingangVon`) lag genau auf ihrer inneren Kante, und auf der Kante gewann der Grund des Hauses (gelaende-core
+                // `erdbauY`: die Fläche des letzten Splats mit d = 0, die Kante entscheidet das Runden). Am Start-Dorf stand der
+                // Bewohner des Schwarzwaldhauses #508675 (Schwelle 0,55 m) in seiner Tür auf dem Grund 91,114 statt auf dem Vorplatz
+                // 91,389: die Diele 0,64 m über der Sohle, über der Stufe des Leibs (0,6) — 18 Takte in der Wand, gate:kreatur-takt
+                // bewohner. Der Saum der Gasse (`vorplatz`) bleibt am alten Rand: er misst von der Tür nach außen.
+                var tS = O.schwelleM / 2;
+                var cP = Math.cos(vf.phi || 0);
+                var sP = Math.sin(vf.phi || 0);
                 vorplaetze.push({
                     art: "platte",
-                    cx: r6(ox + vf.cx),
-                    cz: r6(oz + vf.cz),
+                    cx: r6(ox + vf.cx + sP * tS),
+                    cz: r6(oz + vf.cz + cP * tS),
                     phi: r6(vf.phi),
                     ex: r6(vf.ex),
-                    ez: r6(vf.ez),
+                    ez: r6(vf.ez + tS),
                     y: r6(y + ein.y / 2),
                     vorplatz: r6(saumG),
                 });
@@ -12752,7 +12773,13 @@
         var iP = -1;
         for (i = 0; i < erdbau.length; i++) if (erdbau[i].art === "platte") iP = i;
         if (iP < 0 || !isFinite(v.platz.y)) throw new Error("fachwerk ortPlan: der Kern des Genesis-Orts trägt keinen Platz");
+        // der Platz liegt als Saum (vor den Grundrissen) und Kern: beide weichen dem Rund — der Saum fällt, das Rund steht am Kern
+        var kernP = erdbau[iP], iS = -1;
+        for (i = 0; i < iP; i++)
+            if (erdbau[i].art === "platte" && erdbau[i].cx === kernP.cx && erdbau[i].cz === kernP.cz && erdbau[i].ex > kernP.ex) iS = i;
+        if (iS < 0) throw new Error("fachwerk ortPlan: der Platz des Genesis-Orts trägt keinen Saum");
         erdbau.splice.apply(erdbau, [iP, 1].concat(kreis(0, 0, G.kern.r + O.saumM, v.platz.y, G.kern.platten)));
+        erdbau.splice(iS, 1);
         // das Ufer: ein Band um die Ellipse zwischen Wasser-Linie und Ufer-Rand, EINE Höhe (die Strecken EINES Wegs)
         var UF = G.ufer;
         var am = (UF.a + G.teich.a) / 2;

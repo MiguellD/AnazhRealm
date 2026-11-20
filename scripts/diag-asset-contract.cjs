@@ -23,6 +23,7 @@ const {
     schwebe,
     unterBoden,
 } = require("./lib/kronen-linse.cjs");
+require("../samen-core.js"); // der Samen-Baum vor jedem Kern (Welle SAMEN)
 require("../phyto-core.js"); // das Budget-Gesetz (budgetSippen · kerneVereinen) — dieselbe Datei wie Worker und Wirt
 const PC = globalThis.__phytoCore;
 
