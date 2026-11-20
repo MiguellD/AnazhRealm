@@ -83,14 +83,14 @@ class AnazhRealm_wasser_hydro {
         const n = K.TEMPERATUR.jahrTage;
         const tag = Math.floor(st.seasonPhase * n) / n;
         const S = this._regenStempel();
-        const t = Math.floor(st.spielZeit || 0);
+        const t = Math.floor(this._kalenderZeit()); // die Kalender-Zeit (zeit-ein-kalender): der Lauf folgt der Tag-Länge
         const mittel = this._regenMittel();
         const Z = st.pegelZustand || null;
         const c = this._pegelStand;
         const gen = this._regenGen | 0;
         const gleich =
             c && c.t === t && c.S === S && c.gen === gen && c.n === S.length && c.mittel === mittel && c.Z === Z;
-        const lauf = gleich ? c.lauf : K.pegelLauf(L, S, t, AnazhRealm.PEGEL_TAG_S, mittel, Z);
+        const lauf = gleich ? c.lauf : K.pegelLauf(L, S, t, this._kalender().normS, mittel, Z);
         const q = lauf ? lauf.q.join() : "";
         const schmelze =
             c && c.tag === tag && c.feld === this._temperaturFeld && c.wl === L.waterLevel
@@ -126,32 +126,33 @@ class AnazhRealm_wasser_hydro {
     // Knoten.
     _regenStempel() {
         const st = this.state;
-        const t = Number.isFinite(st.spielZeit) ? st.spielZeit : 0;
+        const t = this._kalenderZeit(); // die Knoten liegen in der Kalender-Zeit (zeit-ein-kalender)
         if (!Array.isArray(st.regenStempel)) st.regenStempel = [];
         const S = st.regenStempel;
         if (!S.length) {
             const Z = st.pegelZustand;
             const ab = Z && Number.isFinite(Z.t) ? Z.t : t;
             const wt = st.weatherTransition;
-            if (wt && wt.from && wt.to && Number.isFinite(wt.startedAt) && wt.duration > 0)
-                this._regenWeg(wt.from, wt.to, wt.startedAt, wt.duration, ab);
-            else this._regenWeg(st.weather, st.weather, ab, 0, ab);
+            if (wt && wt.from && wt.to && Number.isFinite(wt.startedAt) && wt.dauer > 0)
+                this._regenWeg(wt.from, wt.to, wt.startedAt, wt.dauer, ab);
+            else this._regenWeg(st.weather, st.weather, this._kalenderUhr(ab), 0, ab);
         }
-        const ab = t - globalThis.__gelaendeCore.LAUF.fenster * AnazhRealm.PEGEL_TAG_S;
+        const ab = t - globalThis.__gelaendeCore.LAUF.fenster * this._kalender().normS;
         while (S.length > 4 && S[2] <= ab) S.splice(0, 2);
         return S;
     }
 
-    // DER WEG DES REGENS (wetter.K3, feld.K2#2): ab `beginn` (s der Welt-Uhr) der Regen des Worts `von`, über `dauerMs` linear zum Regen
+    // DER WEG DES REGENS (wetter.K3, feld.K2#2): ab `beginn` (s der Welt-Uhr) der Regen des Worts `von`, über `dauerS` (s der Welt-Uhr)
+    // linear zum Regen
     // von `nach` — dasselbe Feld, das `_weatherFieldFor` über den Übergang zeigt (`rein`: das Feld eines Worts). Was der alte Weg ab
     // `beginn` trug, fällt (ein Zug, der neu zieht, `_wunschNimm`, ersetzt ihn); an `beginn` steht der alte auf seinem Wert, die
-    // Stufe zum neuen. Kein Knoten liegt vor `ab` (dem Zustand `pegelZustand.t`, der faltet, was davor fiel). Zwei Seiten einer Uhr
+    // Stufe zum neuen. Kein Knoten liegt vor `ab` (Kalender-Zeit: dem Zustand `pegelZustand.t`, der faltet, was davor fiel). Zwei Seiten einer Uhr
     // legen aus denselben Akten dieselben Knoten, bit-gleich, gleich wann ihr Takt sie sieht. Bis w18-pegel-peers stempelte der Takt
     // des Pegels, was er je Bild vom Feld sah (`_regenSah`): A und B setzten dieselbe Rampe an anderen Proben (A 1921,07 · 1929,66 ·
     // 2041,03 s, B 1921,12 · 1927,51 · 1929,76 · 2041,63 s), die Klasse 15 des Laufs stand auf zwei Stufen, der Pegel der Peers
     // lief auseinander (gate:mp-sync (f) „pegel VERSCHIEDEN“). `S` (optional): die Knoten, in die er legt — ohne sie der Weg der
     // Welt (`state.regenStempel`); die Vergangenheit der Front (`_pegelVergangenheit`) legt ihre eigenen.
-    _regenWeg(von, nach, beginn, dauerMs, ab, S) {
+    _regenWeg(von, nach, beginn, dauerS, ab, S) {
         const st = this.state;
         if (!Number.isFinite(beginn)) return;
         if (!S) {
@@ -162,9 +163,11 @@ class AnazhRealm_wasser_hydro {
             ab = st.pegelZustand && Number.isFinite(st.pegelZustand.t) ? st.pegelZustand.t : -Infinity;
         const r0 = this._weatherFieldFor(von, true).rain;
         const r1 = this._weatherFieldFor(nach, true).rain;
-        const t1 = beginn + Math.max(0, dauerMs) / 1000;
-        let [a, ra] = [beginn, r0];
-        if (a < ab) [a, ra] = [ab, t1 > ab ? r0 + ((r1 - r0) * (ab - beginn)) / (t1 - beginn) : r1];
+        // die Knoten liegen in der Kalender-Zeit (`_kalenderZeit`, zeit-ein-kalender): der Lauf rechnet im Tag des Kalenders
+        const b = this._kalenderZeit(beginn);
+        const t1 = this._kalenderZeit(beginn + Math.max(0, dauerS));
+        let [a, ra] = [b, r0];
+        if (a < ab) [a, ra] = [ab, t1 > ab ? r0 + ((r1 - r0) * (ab - b)) / (t1 - b) : r1];
         // der alte Weg an `a` (von links): zwischen zwei Knoten linear, nach dem letzten gehalten
         let i = 0;
         while (i < S.length && S[i] < a) i += 2;
@@ -206,21 +209,21 @@ class AnazhRealm_wasser_hydro {
         const st = this.state;
         if (st.pegelZustand) return;
         const K = globalThis.__gelaendeCore;
-        const [Z, tagS, dauer] = [
-            AnazhRealm.WETTER_ZUG_SEK,
-            AnazhRealm.PEGEL_TAG_S,
-            this.constructor.WEATHER_TRANSITION_DURATION_MS,
-        ];
+        const [Z, normS, dauer] = [AnazhRealm.WETTER_ZUG_SEK, this._kalender().normS, AnazhRealm.WETTER_UEBERGANG_S];
+        // die Vergangenheit liegt in der Kalender-Zeit: das Raster der Züge läuft über die `fenster` Tage des Kalenders vor dem
+        // ersten Stempel (je Tag `normS` ÷ Zug Schritte, gleich bei jeder Tag-Länge — auch unter dem angehaltenen Tag der Bühne),
+        // das Wort und der Weg des Regens zur Welt-Uhr ihres Augenblicks (`_kalenderUhr`; am Standard-Tag die Kalender-Zeit selbst)
         const t0 = this._regenStempel()[0];
+        const U = (k) => this._kalenderUhr(k * Z);
         const S = [];
         let von = null;
-        for (let k = Math.floor((t0 - K.LAUF.fenster * tagS) / Z); k * Z < t0; k++) {
-            if (von === null) von = this._wetterAmOrt(x, z, (k - 1) * Z);
-            const nach = this._wetterAmOrt(x, z, k * Z);
-            this._regenWeg(von, nach, k * Z, von === nach ? 0 : dauer, -Infinity, S);
+        for (let k = Math.floor((t0 - K.LAUF.fenster * normS) / Z); k * Z < t0; k++) {
+            if (von === null) von = this._wetterAmOrt(x, z, U(k - 1));
+            const nach = this._wetterAmOrt(x, z, U(k));
+            this._regenWeg(von, nach, U(k), von === nach ? 0 : dauer, -Infinity, S);
             von = nach;
         }
-        st.pegelZustand = K.pegelZustand(S, t0, tagS, this._regenMittel(), null);
+        st.pegelZustand = K.pegelZustand(S, t0, normS, this._regenMittel(), null);
     }
 
     // DER ZUSTAND DES PEGELS ZUR WELT-UHR (speicher.K3, gelaende-core `pegelZustand`, reist im Stand als `pegelZustand`): die Stempel
@@ -232,11 +235,10 @@ class AnazhRealm_wasser_hydro {
         const st = this.state;
         const S = st.regenStempel;
         if (!(Array.isArray(S) && S.length >= 2) && !st.pegelZustand) return null;
-        const t = Number.isFinite(st.spielZeit) ? st.spielZeit : 0;
         return globalThis.__gelaendeCore.pegelZustand(
             S,
-            t,
-            AnazhRealm.PEGEL_TAG_S,
+            this._kalenderZeit(),
+            this._kalender().normS,
             this._regenMittel(),
             st.pegelZustand
         );

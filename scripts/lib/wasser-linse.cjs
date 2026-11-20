@@ -438,11 +438,13 @@ function wasserSchmelze(r, x, z, P) {
         pg.neuBau += st.dirtyVoxelChunks.size;
         st.dirtyVoxelChunks = new Set([...alt, ...st.dirtyVoxelChunks]);
     };
-    const lauf = () => {
+    const lauf = (jahrLaeuft = true) => {
         // das Jahr folgt der Welt-Uhr (feld.K2#2, `_tickSeason`): je Schritt 0,2 s Welt-Zeit, der Anker neu am Beginn (eine andere
-        // Phase oder Länge des Jahrs setzt ihn)
-        const alt = [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit];
-        Object.assign(st, { seasonPhase: 0.375, autoSeason: true, seasonYearSeconds: 10.4 });
+        // Phase oder Länge des Jahrs setzt ihn). Die Länge des Jahrs ist die des Kalenders (zeit-ein-kalender: tagS ÷ jahreJeTag) —
+        // ein Jahr von 10,4 s ist ein Tag von 10,4 · jahreJeTag Sekunden
+        const alt = [st.seasonPhase, st.autoSeason, st.dayLengthMinutes, st.spielZeit];
+        const jeTag = AnazhRealm.WELT_GESETZ_ERDE.kalender.jahreJeTag;
+        Object.assign(st, { seasonPhase: 0.375, autoSeason: jahrLaeuft, dayLengthMinutes: (10.4 * jeTag) / 60 });
         r._tickSeason(); // der Anker des Jahrs zur Uhr jetzt
         const w = [];
         let neuBau = 0;
@@ -460,7 +462,7 @@ function wasserSchmelze(r, x, z, P) {
                 Object.assign(w[k - 1], { h: R(r._atlasWaterLevelAt(...P.see, g) - P.ruhe), a: a > 0, f: (r._hydroRiverAt(...P.fluss) || {}).surfaceY, s: st.seasonPhase });
             }
         } finally {
-            [st.seasonPhase, st.autoSeason, st.seasonYearSeconds, st.spielZeit] = alt;
+            [st.seasonPhase, st.autoSeason, st.dayLengthMinutes, st.spielZeit] = alt;
             r._tickSeason();
         }
         const n = (f) => w.filter((b, i) => i && f(w[i - 1], b)).length;
@@ -489,6 +491,16 @@ function wasserSchmelze(r, x, z, P) {
         const top = w.reduce((b, o, i) => (o.h > w[b].h ? i : b), 0);
         Object.assign(pg, { hub: w[top].h, wochen: w.filter((o) => o.h > 0).length, gegen: w.filter((o) => o.h > 0 !== o.a).length });
         Object.assign(pg, { fluss: spanne(w.map((o) => o.f)), flut: koerper(w[top].s), ruhe: koerper(0.375) });
+        // DIE FESTHALTE-PROBE: ohne Jahres-Welle hält das Feld Schnee und Spiegel. Das Jahr läuft im Tag des Kalenders und der Lauf
+        // des Regens mit ihm (zeit-ein-kalender: die 10,4 s Welt-Uhr des Jahrs sind ⅔ Tag — vor dem Kalender 10,4 s von 3 600): der
+        // Spiegel der Probe steht darum gegen denselben Lauf mit stehendem Jahr (`autoSeason` false) — der Unterschied ist das Jahr allein
+        r._temperaturFeld = (yy, tr) => {
+            const F = r.constructor.prototype._temperaturFeld.call(r, yy, tr);
+            return { ...F, jahr: { ...F.jahr, amp: 1e-9 } };
+        };
+        const [[h, wh], [, ws]] = [lauf(), lauf(false)];
+        [aus.halt, pg.halt] = [h.pegel, Math.max(...wh.map((o, i) => Math.abs(o.h - ws[i].h)))];
+        delete r._temperaturFeld;
         // R (wetter.K3) DER REGEN SPEIST DEN BACH: das Wort des Spielers „Sturm", 20 min Welt-Uhr im Takt des Regens (`_tickRain`
         // je 5 s): der Spiegel am Bach P.fluss (`_waterLevelAt`) über dem trockenen (`hub`), die Tafeln an den Faden (`post`), das
         // gezeichnete Wasser am See (`koerper`, wie P2); das Regen-Feld gehalten (der Sturm regnet nicht), hebt er nichts (`fest`).
@@ -508,21 +520,15 @@ function wasserSchmelze(r, x, z, P) {
         // zieht (kein Knoten mehr), faltet der Lauf des Pegels (`pegelLauf`) byte-gleich zum Weg von main mit seinem Knoten
         {
             const regen = (w) => r.constructor.prototype._weatherFieldFor.call(r, w, true).rain;
-            const [s, n, T] = [regen("sunny"), regen("rainy"), r.constructor.PEGEL_TAG_S];
-            const weg = (...zuege) => zuege.reduce((S, [von, nach, t, ms]) => (r._regenWeg(von, nach, t, ms, -Infinity, S), S), []);
+            const [s, n, T] = [regen("sunny"), regen("rainy"), r._kalender().normS]; // der Tag der Kalender-Zeit (die Knoten liegen in ihr)
+            const weg = (...zuege) => zuege.reduce((S, [von, nach, t, s]) => (r._regenWeg(von, nach, t, s, -Infinity, S), S), []);
             const lauf = (S) => JSON.stringify(window.__gelaendeCore.pegelLauf(r._gelaende(), S, 400, T, r._regenMittel(), null));
-            const [S1, S2] = [weg(["sunny", "sunny", 0, 0], ["sunny", "rainy", 200, 45000]), weg(["sunny", "sunny", 0, 0], ["sunny", "sunny", 100, 0], ["sunny", "rainy", 200, 45000])]; // prettier-ignore
+            const [S1, S2] = [weg(["sunny", "sunny", 0, 0], ["sunny", "rainy", 200, 45]), weg(["sunny", "sunny", 0, 0], ["sunny", "sunny", 100, 0], ["sunny", "rainy", 200, 45])]; // prettier-ignore
             const [main1, main2] = [[0, s, 200, s, 245, n], [0, s, 100, s, 200, s, 245, n]];
             pg.knoten = { weg: S1.join(), main: main1.join(), lauf: lauf(S1) === lauf(main1), zug: S2.length, zugLauf: lauf(S2) === lauf(main2) };
         }
         r._weatherFieldFor = () => r.constructor.prototype._weatherFieldFor.call(r, "sunny");
         pg.regen.fest = sturm().hub;
-        r._temperaturFeld = (yy, tr) => {
-            const F = r.constructor.prototype._temperaturFeld.call(r, yy, tr);
-            return { ...F, jahr: { ...F.jahr, amp: 1e-9 } };
-        };
-        const [h, wh] = lauf();
-        [aus.halt, pg.halt] = [h.pegel, Math.max(...wh.map((o) => Math.abs(o.h)))];
         return [aus, pg];
     } finally {
         ["_temperaturFeld", "_voxelZustandPost", "_pegelTakt", "_weatherFieldFor"].forEach((k) => delete r[k]);
@@ -542,9 +548,11 @@ function wasserErstarrung(r, orte) {
     const alt = [st.timeOfDay, wm.tag, st.dayLengthMinutes, st._uhrSpielZeit, st.spielZeit];
     const aus = orte.map(([x, z]) => ({ x, z, y: r._voxelSurfaceY(x, z), frei: r.auraAt(x, z).glut, reihe: [] }));
     try {
+        // der Tag des Spiels (zeit-ein-kalender: hält die Bühne den Tag, hält sie mit ihm jeden Prozess des Kalenders an)
+        st.dayLengthMinutes = AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
         for (const o of aus) r.dslRun(["lava", o.x, o.y, o.z], { source: "human" });
         for (let k = 0; k <= 15; k++) {
-            if (k) st.spielZeit += AnazhRealm.PEGEL_TAG_S / 60; // je Schritt 0,4 h am Tag der Prozesse (`_weltTag`)
+            if (k) st.spielZeit += r._kalender().tagS / 60; // je Schritt 0,4 h am Tag der Prozesse (`_weltTag`)
             aus.forEach((o, i) => {
                 const d = r._lavaAt(o.x, o.z);
                 const licht = r._leuchtQuellen(o.x, o.y, o.z, 30).some((q) => q.id === wm.taten[n + i]);

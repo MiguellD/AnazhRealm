@@ -972,27 +972,27 @@ class AnazhRealm_bild_himmel {
     // 0 —, nie am ersten Bild ihrer Bühne: bis w18-pegel-peers setzte jede Seite ihn, wenn ihr Drift begann, und der Stand trug die
     // Phase ihres letzten Takts neben einer Uhr aus einem anderen Bild (A 0,37552 zur Uhr 2,854 s statt 0,37619) — B lud ein Jahr,
     // das 1,6 s hinter A stand, und der Tag der Schmelze des Pegels (`_pegelTafel`) wechselte auf B 1,6 s später als auf A.
+    // Die Uhr des Ankers ist die KALENDER-ZEIT (`k`, zeit-ein-kalender): sie geht stetig über den Regler der Tag-Länge und reist
+    // im worldMeta — das Jahr folgt dem Tag, ohne bei einem Wechsel des Reglers oder einem Laden unter einem anderen Tag zu springen.
     _saisonAnkerGilt() {
         const st = this.state;
-        const jahr = st.seasonYearSeconds > 0 ? st.seasonYearSeconds : 2400;
         let A = this._saisonAnker;
-        if (!A || A.phase !== st.seasonPhase || A.jahr !== jahr)
+        if (!A || A.phase !== st.seasonPhase)
             A = this._saisonAnker = {
                 anker: st.seasonPhase,
-                t: A === undefined ? 0 : st.spielZeit,
-                jahr,
+                k: A === undefined ? 0 : this._kalenderZeit(),
                 phase: st.seasonPhase,
             };
         return A;
     }
-    // DER ANKER IM STAND (`saisonAnker`): [Phase, Welt-Uhr] — die Phase des laufenden Jahrs zu jeder Uhr. Die Phase (Kopf) und die Uhr
+    // DER ANKER IM STAND (`saisonAnker`): [Phase, Kalender-Zeit] — die Phase des laufenden Jahrs zu jeder Uhr. Die Phase (Kopf) und die Uhr
     // (`spielZeit`, Augenblick) fragt der Stand in verschiedenen Bildern: bis w18-pegel-peers lud B das Jahr von A aus ihnen, 0,19–1,6 s
     // hinter A. Ein angehaltenes Jahr trägt keinen (seine Phase steht, `seasonPhase`).
     _saisonAnkerStand() {
         const st = this.state;
         if (st.autoSeason === false || typeof st.seasonPhase !== "number") return null;
         const A = this._saisonAnkerGilt();
-        return [A.anker, A.t];
+        return [A.anker, A.k];
     }
     // DIE PHASE DES JAHRS ZUR WELT-UHR `t`: die ihres Ankers plus die Welt-Zeit seitdem durch die Länge des Jahrs; ein angehaltenes
     // Jahr (`autoSeason` false) steht. Leser: der Takt der Saison (`_tickSeason`) und der Stand (`seasonPhase` zu seiner Uhr).
@@ -1000,7 +1000,7 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         if (st.autoSeason === false || typeof st.seasonPhase !== "number") return st.seasonPhase;
         const A = this._saisonAnkerGilt();
-        return (((A.anker + (t - A.t) / A.jahr) % 1) + 1) % 1;
+        return (((A.anker + (this._kalenderZeit(t) - A.k) / this._kalender().jahrK) % 1) + 1) % 1;
     }
     // Explizit setzen (Chat/DSL): "fruehling/sommer/herbst/winter" — die Phase springt auf die Saison-Mitte, die
     // Tönung folgt im nächsten Tick (kein Neubau).
@@ -1011,9 +1011,8 @@ class AnazhRealm_bild_himmel {
         this.state.seasonPhase = phaseFor[key];
         this.state.season = key;
         // der Anker des Jahrs zur Zeit des Worts (`uhr`, die Tat-Uhr seines Akts — beim Mitspieler dieselbe, feld.K2#2)
-        const yearSec = this.state.seasonYearSeconds > 0 ? this.state.seasonYearSeconds : 2400;
-        const t = Number.isFinite(uhr) ? uhr : this.state.spielZeit;
-        this._saisonAnker = { anker: phaseFor[key], t, jahr: yearSec, phase: phaseFor[key] };
+        const k = this._kalenderZeit(Number.isFinite(uhr) ? uhr : this.state.spielZeit);
+        this._saisonAnker = { anker: phaseFor[key], k, phase: phaseFor[key] };
         return true;
     }
     // ==================== WETTER: sichtbarer Regen ====================
@@ -2644,8 +2643,7 @@ class AnazhRealm_bild_himmel {
             this._applyDayNightToScene();
             return;
         }
-        const minutes = st.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
-        const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
+        const cycleSeconds = this._kalender().tagS; // der Tag des Kalenders (zeit-ein-kalender)
         const dz = Math.max(0, st.spielZeit - anker);
         // ein Schritt über eine Sekunde Spielzeit kam nie aus dem Takt des Loops (er trägt höchstens `TAKT_DECKEL_S` je Takt): die
         // Uhr sprang — der Himmel malt neu, der Licht-Pool wählt zur neuen Stunde (wie bei jedem Schreiber außer dem Gang)
@@ -3081,7 +3079,7 @@ class AnazhRealm_bild_himmel {
         const wm = st.worldMeta;
         const regen = AnazhRealm.WEATHER_FIELD[st.weather];
         if (lauf && dt > 0 && wm && regen && regen.rain > 0)
-            wm.nassTage = (+wm.nassTage || 0) + (dt / AnazhRealm.PEGEL_TAG_S) * regen.rain;
+            wm.nassTage = (+wm.nassTage || 0) + (dt / this._kalender().tagS) * regen.rain;
         const n0 = Number.isFinite(st.naesse) ? st.naesse : 0;
         const ziel = wf.rain > N.regenAb ? 1 : 0;
         const n = AnazhRealm._naesseKurve(n0, wf, dt);
@@ -3142,7 +3140,7 @@ class AnazhRealm_bild_himmel {
         this.state.wetterSchreiber = quelle !== "auto-zug" ? quelle || "?" : wunsch ? wunsch.quelle : "front";
         if (zug) {
             this.state.weatherTransition = null;
-            this.requestWeatherTransition(name, this.constructor.WEATHER_TRANSITION_DURATION_MS, zug.von, zug.beginn);
+            this.requestWeatherTransition(name, AnazhRealm.WETTER_UEBERGANG_S, zug.von, zug.beginn);
         } else if (oldWeather !== name) {
             this.requestWeatherTransition(name, undefined, oldWeather);
         }
@@ -3207,24 +3205,23 @@ class AnazhRealm_bild_himmel {
     }
 
     // [ATMOSPHERE] Startet einen Cross-Fade. Default-Dauer via _emotionModulate aus den Emotionen
-    // (peace ×1.6 langsamer, chaos ×0.4 schneller); eine explizite Dauer überschreibt.
-    // `beginn` ist die Welt-Uhr (s), ab der er läuft — ohne sie jetzt.
-    requestWeatherTransition(target, durationMs, fromWeather, beginn = this.state.spielZeit) {
+    // (peace ×1.6 langsamer, chaos ×0.4 schneller); eine explizite Dauer (`dauerS`, Sekunden der Welt-Uhr) überschreibt.
+    // `beginn` ist die Welt-Uhr (s), ab der er läuft — ohne sie jetzt. Bis zeit-ein-kalender trug er Millisekunden (`duration`).
+    requestWeatherTransition(target, dauerS, fromWeather, beginn = this.state.spielZeit) {
         // D5a (V18.128) — das Vokabular ist die WEATHER_INTENSITY-Tabelle
         // (sunny · rainy · stormy), nicht mehr das harte Binär-Paar.
         if (!(target in AnazhRealm.WEATHER_INTENSITY)) return false;
         let dur;
-        if (typeof durationMs === "number" && Number.isFinite(durationMs)) {
-            dur = Math.max(100, durationMs);
+        if (typeof dauerS === "number" && Number.isFinite(dauerS)) {
+            dur = Math.max(0.1, dauerS);
         } else {
             // Default mit Emotion-Modulation
-            const baseDur = this.constructor.WEATHER_TRANSITION_DURATION_MS; // 45000
-            const modulated = this._emotionModulate(baseDur, {
+            const modulated = this._emotionModulate(AnazhRealm.WETTER_UEBERGANG_S, {
                 peace: { mul: 1.6 }, // peace=1 → ×1.6 (72s)
                 chaos: { mul: 0.4 }, // chaos=1 → ×0.4 (18s)
                 sorrow: { mul: 1.2 }, // sorrow zieht Wolken langsam-melancholisch
             });
-            dur = Math.max(8000, Math.min(120000, modulated));
+            dur = Math.max(8, Math.min(120, modulated));
         }
         const wt = this.state.weatherTransition;
         let from = typeof fromWeather === "string" ? fromWeather : this.state.weather;
@@ -3245,20 +3242,20 @@ class AnazhRealm_bild_himmel {
             from,
             to: target,
             progress: 0,
-            duration: dur,
+            dauer: dur,
             startedAt: beginn,
         };
         this._regenWeg(from, target, beginn, dur); // der Weg des Regens folgt dem Übergang auf der Welt-Uhr (wetter.K3, feld.K2#2)
         return true;
     }
 
-    // Pro Frame: treibt weatherTransition.progress auf der Welt-Uhr (`startedAt` in s der Welt-Uhr, `duration` in ms); bei ≥ 1
+    // Pro Frame: treibt weatherTransition.progress auf der Welt-Uhr (`startedAt` und `dauer` in s der Welt-Uhr); bei ≥ 1
     // state.weather = to, Transition genullt. Währenddessen wirken Skybox-Mul (_applyDayNightToScene) und die Klang-Welt (der
     // Regen liest das transition-aware Wetter-Feld `_weatherFieldFor` — kein zweiter Schreiber).
     tickWeatherTransition(_currentTime) {
         const wt = this.state.weatherTransition;
         if (!wt) return;
-        wt.progress = Math.max(0, Math.min(1, ((this.state.spielZeit - wt.startedAt) * 1000) / wt.duration));
+        wt.progress = Math.max(0, Math.min(1, (this.state.spielZeit - wt.startedAt) / wt.dauer));
         if (wt.progress >= 1) {
             // Übergang abgeschlossen: state.weather steht seit dem Aufruf auf dem Ziel; der nächste
             // DayNight-Tick setzt die finale Skybox-Tönung (currentTint direkt).
