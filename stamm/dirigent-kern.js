@@ -1743,7 +1743,13 @@ class AnazhRealm {
                 const key = zelle(t);
                 if (Z.hoehen.has(key)) continue;
                 if (rest-- <= 0) break;
-                Z.hoehen.set(key, this.getTerrainHeightAt((tx + (t % n) + 0.5 - n / 2) * zm, (tz + Math.floor(t / n) + 0.5 - n / 2) * zm));
+                Z.hoehen.set(
+                    key,
+                    this.getTerrainHeightAt(
+                        (tx + (t % n) + 0.5 - n / 2) * zm,
+                        (tz + Math.floor(t / n) + 0.5 - n / 2) * zm
+                    )
+                );
                 Z.hoehenGefragt++;
             }
             if (Z.zeiger >= n * n) {

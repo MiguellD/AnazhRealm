@@ -2337,7 +2337,11 @@ class AnazhRealm_stoff_material {
         // EIN Gitter, EIN Sampler (der Boden trägt 16 je Stufe — drei Gitter rissen die Grenze: 17): die drei Bänder übereinander
         // (d0 · d1 · c), die Lage im Band auf die Mitte der Rand-Zellen geklemmt (sie tragen 0, kein Band blutet ins nächste)
         const rand = 0.5 / K.texel;
-        const uv = pw.xz.sub(LK.mitte).div(K.texel * K.zelleM).add(0.5).clamp(rand, 1 - rand);
+        const uv = pw.xz
+            .sub(LK.mitte)
+            .div(K.texel * K.zelleM)
+            .add(0.5)
+            .clamp(rand, 1 - rand);
         const band = (k) => Te.texture(LK.gitter, Te.vec2(uv.x, uv.y.add(k).div(3)));
         const a = band(0);
         const b = band(1);
@@ -2348,7 +2352,10 @@ class AnazhRealm_stoff_material {
             .div(K.lagenM[1] - K.lagenM[0])
             .clamp();
         const D = Te.cameraViewMatrix.mul(Te.vec4(Te.mix(a.xyz, b.xyz, t), 0)).xyz;
-        const E = Te.normalView.dot(D).max(0).mul(1 / K.skala);
+        const E = Te.normalView
+            .dot(D)
+            .max(0)
+            .mul(1 / K.skala);
         return c
             .mul(E)
             .mul(Te.diffuseColor.rgb)
@@ -2360,7 +2367,13 @@ class AnazhRealm_stoff_material {
     // am Rand geklemmt (die Rand-Zellen jedes Bands tragen 0).
     static _lichtKarteNeu(TSL) {
         const n = AnazhRealm.LICHT_KARTE.texel;
-        const t = new THREE.DataTexture(new Uint16Array(n * 3 * n * 4), n, 3 * n, THREE.RGBAFormat, THREE.HalfFloatType);
+        const t = new THREE.DataTexture(
+            new Uint16Array(n * 3 * n * 4),
+            n,
+            3 * n,
+            THREE.RGBAFormat,
+            THREE.HalfFloatType
+        );
         t.name = "licht-karte";
         t.magFilter = THREE.LinearFilter;
         t.minFilter = THREE.LinearFilter;
@@ -3843,7 +3856,15 @@ AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, w
 // Stärke einer Quelle (Kosten an Änderung, Gebot 7); die Blende in `blendeStufen` Stufen (ein Platz, der ein- oder ausblendet,
 // schreibt die Karte höchstens so oft neu); die Höhen des Bodens einer neuen Mitte höchstens `hoehenJeBild` je Bild, die alte
 // Mitte trägt, bis alle da sind (gemessen 9 216 Höhen in 48 ms an einem Bild). `skala` hebt E in den Bereich des Halb-Floats.
-AnazhRealm.LICHT_KARTE = Object.freeze({ texel: 96, zelleM: 1, nachM: 12, lagenM: [0.1, 2.6], skala: 1000, blendeStufen: 4, hoehenJeBild: 1024 });
+AnazhRealm.LICHT_KARTE = Object.freeze({
+    texel: 96,
+    zelleM: 1,
+    nachM: 12,
+    lagenM: [0.1, 2.6],
+    skala: 1000,
+    blendeStufen: 4,
+    hoehenJeBild: 1024,
+});
 // DIE NÄSSE (wetter.K2, `_naesseTakt` über `_naesseKurve`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke
 // (Wetter-Feld `rain` über `regenAb`; Regen 0,6 nach 10 min 0,91); ohne Regen VERDUNSTET der Film mit konstanter Rate (die erste
 // Trocken-Stufe, Penman: die Luft trägt das Wasser ab, solange die Fläche nass ist) — die Rate (sonne · Sonne + wind · Wind + luft)
