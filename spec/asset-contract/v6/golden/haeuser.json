@@ -525,7 +525,7 @@
     "hollaendisch-s7-L0": {
       "objects": 16,
       "vertices": 350730,
-      "sha256": "dfd2ebae8009c4a10989b2f572eb44e7a22041be464c0683608723294ccf0220"
+      "sha256": "eb734e671c0bce4faaf554b44e03fa49d9c3e9e26a11e9614406a17787c78a09"
     },
     "hollaendisch-s7-L1": {
       "objects": 10,
@@ -545,7 +545,7 @@
     "hollaendisch-s12345-L0": {
       "objects": 16,
       "vertices": 233682,
-      "sha256": "64e0071cad0f5e555a845f9f509e42aa6b044f9665d2ddbcb3db0891027c194a"
+      "sha256": "676ead4bb9f52606dc9d55a4d77bc567f260fcdd03369c9a1d1c49c8f014cd12"
     },
     "hollaendisch-s12345-L1": {
       "objects": 10,
@@ -565,7 +565,7 @@
     "hanseatisch-s7-L0": {
       "objects": 16,
       "vertices": 393474,
-      "sha256": "c2f74ba080bc8bebc791f052ac3093ae98ff9492709d814a558791364319d8bb"
+      "sha256": "893c2bee97eeb5e4bdc1e606c6e66da8dbfb233109775fc5eb007fc67e27eb4c"
     },
     "hanseatisch-s7-L1": {
       "objects": 10,
@@ -585,7 +585,7 @@
     "hanseatisch-s12345-L0": {
       "objects": 16,
       "vertices": 262722,
-      "sha256": "0bc10292965a08c6384f22f0fd7b43f3b22aa66f5a3f45df94a804b0208d6b6c"
+      "sha256": "4bf5931fcbbb5dc2d5feb786eb6cf31db8854ec104d5f28a66fcdc6fb0e190e4"
     },
     "hanseatisch-s12345-L1": {
       "objects": 10,
@@ -605,7 +605,7 @@
     "georgian-s7-L0": {
       "objects": 17,
       "vertices": 286278,
-      "sha256": "85cc80be997d4e7f68861be07eec4a158171a3e9ab92e47a85e5588e8ec639cd"
+      "sha256": "a61c5d42b47ded7e62b0f8fd327f00f73ef715c0672cfd828bdd9e6755ef3c70"
     },
     "georgian-s7-L1": {
       "objects": 10,
@@ -625,7 +625,7 @@
     "georgian-s12345-L0": {
       "objects": 17,
       "vertices": 206598,
-      "sha256": "150151d1dfdc6466e2c113c6ee852eaf655facbbc8215c11d292653a12c95f89"
+      "sha256": "e77cabef068aa6f5c8b319699c64fcbd0a339653c2bc3c56e67ad40794d916c1"
     },
     "georgian-s12345-L1": {
       "objects": 10,
@@ -645,7 +645,7 @@
     "viktorianisch-s7-L0": {
       "objects": 16,
       "vertices": 279762,
-      "sha256": "aeedf49d7a993dae792a4707d1af2e4606373f6f7a05e067882124d52753deee"
+      "sha256": "83a4559a93f22e5cddeffda2d4710dd2bdc23844343f675caf3f543611c7627b"
     },
     "viktorianisch-s7-L1": {
       "objects": 10,
@@ -665,7 +665,7 @@
     "viktorianisch-s12345-L0": {
       "objects": 16,
       "vertices": 218346,
-      "sha256": "585812400cd142730430925f868732305b4c769b5ef60394ec119edda497e2b8"
+      "sha256": "f4b5249fb69212c64e54c6000ba25ce35370093ca4bb3bfc8893c588fb315061"
     },
     "viktorianisch-s12345-L1": {
       "objects": 10,

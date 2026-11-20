@@ -84,8 +84,9 @@ const OEFFNUNG_MUTANTEN = {
         ["beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr);", "beam(g,cx,cy,cz-w/2-0.05,0.18,h+0.1,0.1,fr); beam(g,cx,cy,cz+w/2+0.05,0.18,h+0.1,0.1,fr); beam(g,cx+(cx<0?-0.22:0.22),cy,cz-w/2-0.12,0.45,h,0.04,fr); beam(g,cx+(cx<0?-0.22:0.22),cy,cz+w/2+0.12,0.45,h,0.04,fr);"],
     ],
 };
-// der Täter: die Hülle vor dem Schnitt (an main f68dbf09 `var bx = new THREE.Box3().setFromObject(mass.g);`)
-const HUELLE_TAETER = ["var bx = koerperHuelle(mass.g);", "var bx = new THREE.Box3().setFromObject(mass.g);"];
+// der Täter: die Hülle vor dem Schnitt (an main f68dbf09 `var bx = new THREE.Box3().setFromObject(mass.g);`) — die Box über den ganzen
+// Mass-Bau; sie trägt die Reichweite der Öffnungen (`reich`, los-huelle-2) weiter, die `brandwand` liest
+const HUELLE_TAETER = ["var bx = koerperHuelle(mass.g);", "var bx = koerperHuelle(mass.g).setFromObject(mass.g);"];
 // die Fälle: die Stadt der Lose (Teil A, 1 Paar), die Großstadt, ein Dorf, ein Weiler
 const LOSE_FAELLE = [
     { seed: 7, nH: 60 },
@@ -288,4 +289,63 @@ function huelleProben(FC, check, { kernText, golden, taeter = false }) {
     console.log(`  Hülle/Los: ${LOSE_FAELLE.length} Fälle × ${1 + Object.keys(OEFFNUNG_MUTANTEN).length} Kerne + Zensus ${Z.n} Bauten (${Z.gestapelt} gestapelt, ohne Liste) · ${((Date.now() - t0) / 1000).toFixed(1)} s`);
 }
 
-module.exports = { losProben, huelleProben, oeffnungsZensus, zensusBauten, MARKE_TAETER, OEFFNUNG_MUTANTEN, HUELLE_TAETER, LOSE_FAELLE, kernMutante, kernAusText, loseVon, loseUrteil };
+// DIE ÖFFNUNG REICHT NIE IN DEN NACHBARN (B1, los-huelle-2): je Fall (LOSE_FAELLE) je Slot die Reichweite seiner Öffnungen über die
+// Körper-Hülle je Seite — die Hülle MIT Öffnung (der Mass-Bau unter HUELLE_TAETER, Box3 über den ganzen Bau) − die Körper-Hülle
+// (`massBau`), auf einer Brandwand-Seite 0 (dort baut das Haus keine Öffnung). Gezählt wird jedes Paar (A, B), deren Körper sich nicht
+// > 1 cm durchdringen und bei dem A samt der Reichweite seiner Seite zu B > 1 cm in den Körper von B ragt (Grundriss, SAT über die
+// vier Achsen; die Seite: die dominante Achse von A zu B). Die Zählung ist die von p3/n1911/los-huelle/ursache/haus-im-haus2.cjs:
+// an der Stadt 7/4750 (3 × 3) vor dem Schnitt 26 Paare, an den Fällen der Lose 12 (7/60: 2, 2/120: 10).
+const BW_TIEF = 0.01;
+// die Fälle der Linse: die Fälle der Lose und die Stadt 2/400 — dort rückt das Los-Gesetz einen Körper an den Nachbarn (der Ruf danach)
+const BW_FAELLE = LOSE_FAELLE.concat([{ seed: 2, nH: 400 }]);
+// die Täter, je mit dem Fall, an dem sie fallen (der Selbsttest fährt nur ihn)
+const BRANDWAND_TAETER = {
+    // die Brandwand vor dem Schnitt: „anliegend“ an den Wänden dims.W/D statt an der Körper-Hülle
+    "brandwand an dims": { R: [["ex=a.ex+halb(b,ci,-si), ez=a.ez+halb(b,si,ci);", "ex=(A.dims.W+Bj.dims.W)/2, ez=(A.dims.D+Bj.dims.D)/2;"]], faelle: LOSE_FAELLE.slice(0, 2) },
+    // die Toleranz ohne die Reichweite der Öffnungen (nur die Norm gap + 0,15)
+    "ohne Reichweite": { R: [["<Math.max(norm,A.reich[s])", "<norm"]], faelle: LOSE_FAELLE.slice(1, 2) },
+    // nur vor dem Los-Gesetz: die Brandwand urteilt nicht, wo die Lose stehen
+    "nur vor dem Los-Gesetz": { R: [["            // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)", "            if (0) // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2)"]], faelle: [{ seed: 2, nH: 400 }] },
+};
+function oeffnungImNachbarn(K, KH, faelle) {
+    const ax = (o) => [[Math.cos(o.phi), -Math.sin(o.phi)], [Math.sin(o.phi), Math.cos(o.phi)]];
+    const proj = (o, a) => { const [u, v] = ax(o); return o.ex * Math.abs(u[0] * a[0] + u[1] * a[1]) + o.ez * Math.abs(v[0] * a[0] + v[1] * a[1]); };
+    const tief = (A, B) => { let m = Infinity; for (const a of [...ax(A), ...ax(B)]) m = Math.min(m, proj(A, a) + proj(B, a) - Math.abs((B.cx - A.cx) * a[0] + (B.cz - A.cz) * a[1])); return m; };
+    const weit = (o, s, r) => { const c = Math.cos(o.phi), si = Math.sin(o.phi), lx = s === "x1" ? r / 2 : s === "x0" ? -r / 2 : 0, lz = s === "z1" ? r / 2 : s === "z0" ? -r / 2 : 0; return { cx: o.cx + lx * c + lz * si, cz: o.cz - lx * si + lz * c, phi: o.phi, ex: o.ex + Math.abs(lx), ez: o.ez + Math.abs(lz) }; };
+    const seite = (o, b) => { const c = Math.cos(o.phi), s = Math.sin(o.phi), dx = b.cx - o.cx, dz = b.cz - o.cz, lx = dx * c - dz * s, lz = dx * s + dz * c; return Math.abs(lx) / o.ex >= Math.abs(lz) / o.ez ? (lx > 0 ? "x1" : "x0") : lz > 0 ? "z1" : "z0"; };
+    const aus = [];
+    for (const dp of faelle) {
+        const S = K.exportSettlement(dp).slots.filter((s) => s.obb && Math.abs(s.obb.cx) <= 5000 && Math.abs(s.obb.cz) <= 5000);
+        for (const a of S) {
+            const hp = Object.assign({}, a.ov);
+            delete hp.brandwand;
+            const e = K.massBau(hp).ext, m = KH.massBau(hp).ext, bw = a.ov.brandwand || {};
+            const r = { x0: e.x0 - m.x0, x1: m.x1 - e.x1, z0: e.z0 - m.z0, z1: m.z1 - e.z1 };
+            for (const b of S) {
+                if (b === a || Math.hypot(a.obb.cx - b.obb.cx, a.obb.cz - b.obb.cz) > 40 || tief(a.obb, b.obb) > BW_TIEF) continue;
+                const s = seite(a.obb, b.obb);
+                if (bw[s] || !(r[s] > 0)) continue;
+                const t = tief(weit(a.obb, s, r[s]), b.obb);
+                if (t > BW_TIEF) aus.push(`${dp.seed}/${dp.nH} Same ${a.seed} ${a.kultur}/${a.rolle} Seite ${s} → ${b.seed} ${b.rolle}: ${t.toFixed(3)} m`);
+            }
+        }
+    }
+    return aus;
+}
+function brandwandProben(FC, check, { kernText, taeter = false }) {
+    const t0 = Date.now();
+    const mitOeffnung = (text, name) => kernAusText(kernMutante(text, [HUELLE_TAETER]).text, name + "-mit-oeffnung");
+    if (taeter) {
+        for (const [name, { R, faelle }] of Object.entries(BRANDWAND_TAETER)) {
+            const m = kernMutante(kernText, R);
+            const z = m.text ? oeffnungImNachbarn(kernAusText(m.text, "bw-" + name), mitOeffnung(m.text, "bw-" + name), faelle) : null;
+            check(`Selbst-Test Brandwand B1: „${name}“ — die Zählung nennt die Öffnung im Nachbarn beim Namen`, !!z && z.length > 0, m.fehlt || `${z.length} Paare — ${z.slice(0, 2).join(" · ")}`);
+        }
+        console.log(`  Brandwand Selbsttest: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+        return;
+    }
+    const z = oeffnungImNachbarn(FC, mitOeffnung(kernText, "kopf"), BW_FAELLE);
+    check(`Brandwand an der Körper-Hülle (B1, ${BW_FAELLE.length} Fälle): keine Öffnung einer Seite ohne Brandwand ragt > 1 cm in den Körper eines Nachbarn`, !z.length, `${z.length} Paare — ${z.slice(0, 3).join(" · ")}`);
+    console.log(`  Brandwand B1: ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+}
+module.exports = { losProben, huelleProben, brandwandProben, oeffnungImNachbarn, BRANDWAND_TAETER, oeffnungsZensus, zensusBauten, MARKE_TAETER, OEFFNUNG_MUTANTEN, HUELLE_TAETER, LOSE_FAELLE, kernMutante, kernAusText, loseVon, loseUrteil };

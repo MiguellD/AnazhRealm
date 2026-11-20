@@ -169,29 +169,31 @@ class AnazhRealm_studio_stoff {
     // DIE LAGE DER ECKE (`lage`, das Gefüge der fernen Fachwerk-Wand): die Zeile liest u und v nicht an der Welt, sondern aus der
     // Ecke (`ecke`, im Satz: die vierten Stellen von Farbe und Glut, fachwerk `_wandLage` — Felder quer · Felder hoch): der
     // Ständer steht an der Ecke des Hauses, die Schwelle an seinem Fuß. Außerhalb des Satzes (`ecke` fehlt) liest sie die Welt.
-    // DAS KREUZ: wo beide Fugen sich kreuzen, steht EINE (`kreuz` = der Zuschlag auf das Produkt der Achsen) — am Balken wäre das
-    // Produkt ein schwarzer Fleck; nah und fern dasselbe Mittel (`eins` rechnet ihn ein).
+    // DAS KREUZ: wo beide Fugen sich kreuzen, steht EINE (die dunklere je Kanal: der Zuschlag min − Produkt auf das Produkt der
+    // Achsen, dieselbe Regel wie `verbandZeilen`) — am Balken wäre das Produkt ein schwarzer Fleck; nah und fern dasselbe Mittel
+    // (`eins` rechnet ihn ein). Der Stoff rechnet ihn aus den Fugen-Tönen, die die Kante (unten) schon gewogen hat.
     _verbandStoff(T, nr, ecke = null) {
         const Z = AnazhRealm.Gesetz("fachwerk:verbandZeilen")();
         if (
             !Array.isArray(Z) ||
             Z.length < 2 ||
             Z[0] !== null ||
-            Z.slice(1).some((z) => !z || !(z.lM > 0) || !(z.hM > 0))
+            Z.slice(1).some(
+                (z) => !z || !(z.lM > 0) || !(z.hM > 0) || !(z.tiefe >= 0) || !(z.licht > 0 && z.licht <= 1)
+            )
         )
             throw this._stoffBruch("das Verband-Gesetz fehlt in fachwerk:verbandZeilen");
-        // die Tafel: [lM, hM, lM / halbe Fuge U, hM / halbe Fuge V] · [Versatz, Ton, Unruhe, Lage der Ecke] · Fugen-Ton U ·
-        // Fugen-Ton V · eins · Kreuz — die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1).
+        // die Tafel: [lM, hM, lM / halbe Fuge U, hM / halbe Fuge V] · [Versatz, Ton, Unruhe, Lage der Ecke] · [Fugen-Ton U, Tiefe] ·
+        // [Fugen-Ton V, Licht der Fuge] · eins — die Zeile 0 ist die Identität (keine Fuge, kein Ton, alle Faktoren 1).
         // Die Unruhe als Hub der zwei Wellen (unten: ihre Steigung zusammen höchstens `VERBAND_WELLE.steil` je Reihe)
-        const W = 6;
+        const W = 5;
         const VW = AnazhRealm.VERBAND_WELLE;
         const zeile = (z) => [
             new THREE.Vector4(z.lM, z.hM, z.lM / Math.max(z.fugeU, 1e-6), z.hM / Math.max(z.fugeV, 1e-6)),
             new THREE.Vector4(z.versatz, z.ton, Math.min(0.9, z.unruhe || 0) / VW.steil, z.lage ? 1 : 0),
-            new THREE.Vector4(z.tonU[0], z.tonU[1], z.tonU[2], 0),
-            new THREE.Vector4(z.tonV[0], z.tonV[1], z.tonV[2], 0),
+            new THREE.Vector4(z.tonU[0], z.tonU[1], z.tonU[2], z.tiefe || 0),
+            new THREE.Vector4(z.tonV[0], z.tonV[1], z.tonV[2], z.licht == null ? 1 : z.licht),
             new THREE.Vector4(z.eins[0], z.eins[1], z.eins[2], 0),
-            new THREE.Vector4(z.kreuz ? z.kreuz[0] : 0, z.kreuz ? z.kreuz[1] : 0, z.kreuz ? z.kreuz[2] : 0, 0),
         ];
         const null0 = {
             lM: 1,
@@ -203,6 +205,8 @@ class AnazhRealm_studio_stoff {
             tonU: [1, 1, 1],
             tonV: [1, 1, 1],
             eins: [1, 1, 1],
+            tiefe: 0,
+            licht: 1,
         };
         // EINE Tafel für jeden Graphen (der feste Name, Lehre 23: ohne ihn trüge das WGSL `NodeBuffer_<Knoten-id>`)
         const tafel =
@@ -216,7 +220,7 @@ class AnazhRealm_studio_stoff {
                 .floor()
                 .clamp(0.0, Z.length - 1)
         ).mul(W);
-        const [mass, lage, tonU, tonV, eins, kreuz] = [0, 1, 2, 3, 4, 5].map((k) => tafel.element(i0.add(k)));
+        const [mass, lage, tonU, tonV, eins] = [0, 1, 2, 3, 4].map((k) => tafel.element(i0.add(k)));
         // der Rahmen der Fläche: t waagrecht in ihr, s ihre Falllinie (eine liegende Fläche nimmt die Achsen der Vorlage) — in der VORLAGE
         // (Einheit E8): das Muster liegt im Raster des Baus, in dem seine Steine liegen (fachwerk `infill`), nie am Ort der Welt; bis hier
         // webte jedes Haus sein Muster je nach Standort verschoben gegen seine Steine
@@ -233,19 +237,47 @@ class AnazhRealm_studio_stoff {
             lage.z.mul(T.sin(v0.mul(VW.welle[0])).add(T.sin(v0.mul(VW.welle[1]).add(VW.phase)).mul(VW.welle[2])))
         );
         const u = u0.add(T.fract(T.floor(v).mul(0.5)).mul(2.0).mul(lage.x));
+        // DIE KANTE (einheit-relief, `tiefe` · `licht` der Zeile): der Stein steht `tiefe` vor seiner Fuge. Schräg gesehen verdeckt
+        // seine Kante sie um tiefe · tan(Blickwinkel) je Achse: in der Linie der Fuge steht dann die Flanke des Steins (sein Ton, nicht
+        // der des Mörtels) — sichtbar bleibt k = 1 − tiefe · tan ÷ Breite der Fuge vom Mörtel, die Linie behält ihre Breite (nah auf den
+        // Pixel, fern als ihr Anteil). Alles im Schlitz — Grund und Flanken — sieht nur `licht` des Lichts. Der Blick in der Welt gegen
+        // die Achsen der Fläche (Vorlage → Welt). Ohne Tiefe (jede Zeile außer dem Mauerwerk) ist k = 1 und licht = 1: das Muster
+        // bleibt, was es war (das Kreuz rechnet dieselbe Regel wie `verbandZeilen`: die dunklere Fuge je Kanal). Bis hier webte die L1
+        // den Mörtel offen und voll beleuchtet über 17 % ihrer Fläche — an 12 m zeigt die L0 dort die Flanken ihrer Steine (an vier
+        // Posen: G der Ausfachung L1 ÷ L0 = 2,0 in linearem Licht). Die schmalere Fuge allein (die Flanke im Ton der Stirn) ließ die
+        // Stoßfuge schräg verschwinden: der Kontrast der Fuge fiel auf 0,49–0,61 der L0.
+        const tiefe = tonU.w;
+        const zumAuge = T.normalize(T.cameraPosition.sub(T.positionWorld));
+        const welt = (d) => T.normalize(T.modelWorldMatrix.mul(T.vec4(d, 0.0)).xyz);
+        const nah = T.abs(T.dot(zumAuge, welt(n))).max(0.05);
+        const sicht = (achse, M, Mz) =>
+            T.clamp(
+                T.float(1.0).sub(
+                    tiefe
+                        .mul(T.abs(T.dot(zumAuge, welt(achse))))
+                        .div(nah)
+                        .mul(Mz)
+                        .div(M.mul(2.0))
+                ),
+                1e-3,
+                1.0
+            );
         const S = this._steinStoff(
             T,
             { fuge: 1, fase: 0, ton: 1, fugeTon: 1, kuppe: 0 },
             { u, v, mU: mass.z, mV: mass.w, sU: T.fwidth(u0) }
         );
         const eine = T.vec3(1.0, 1.0, 1.0);
+        const fU = T.mix(eine, tonU.xyz, sicht(t, mass.x, mass.z));
+        const fV = T.mix(eine, tonV.xyz, sicht(s, mass.y, mass.w));
         return T.vec3(S.ton.sub(1.0).mul(lage.y).add(1.0))
             .mul(
-                T.mix(eine, tonU.xyz, S.achse[0])
-                    .mul(T.mix(eine, tonV.xyz, S.achse[1]))
-                    .add(kreuz.xyz.mul(S.achse[0].mul(S.achse[1])))
+                T.mix(eine, fU, S.achse[0])
+                    .mul(T.mix(eine, fV, S.achse[1]))
+                    .add(T.min(fU, fV).sub(fU.mul(fV)).mul(S.achse[0].mul(S.achse[1])))
             )
-            .mul(eins.xyz);
+            .mul(eins.xyz)
+            .mul(T.float(1.0).sub(S.fuge.mul(T.float(1.0).sub(tonV.w))));
     }
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
@@ -266,10 +298,13 @@ class AnazhRealm_studio_stoff {
         if (
             ecken != null &&
             (typeof ecken !== "object" ||
-                Object.entries(ecken).some(([k, v]) => (k !== "ton" && k !== "jahr") || typeof v !== "boolean"))
+                Object.entries(ecken).some(
+                    ([k, v]) =>
+                        (k !== "ton" && k !== "jahr" && k !== "verband" && k !== "lage") || typeof v !== "boolean"
+                ))
         )
             throw this._stoffBruch(
-                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr } aus Wahrheitswerten, nie ` +
+                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr, verband, lage } aus Wahrheitswerten, nie ` +
                     (typeof ecken === "object"
                         ? "{ " +
                           Object.entries(ecken)
@@ -281,6 +316,11 @@ class AnazhRealm_studio_stoff {
         const ton = !!ecken && ecken.ton === true;
         const jahr = !!ecken && ecken.jahr === true;
         const satz = !!(mp && mp.satzRegler === true);
+        // `ecken.verband` (einheit-relief): die gefaltete Stufe nennt die Zeile des Verband-Gesetzes je Ecke (`aVerband`) und
+        // `ecken.lage` ihre Lage in der Wand (`aLage`) — außerhalb des Satzes liest der Stoff sie dort, wie der Satz in seinem
+        // `aRegler` (unten am Verband); im Satz zählt seine Stelle, nie diese
+        const eckVerband = satz !== true && !!ecken && ecken.verband === true;
+        const eckLage = eckVerband && ecken.lage === true;
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -324,7 +364,8 @@ class AnazhRealm_studio_stoff {
             (satz === true ? "|satz" : "") +
             (_krone ? "|krone" : "") +
             (ton ? "|ton" : "") +
-            (jahr ? "|jahr" : "");
+            (jahr ? "|jahr" : "") +
+            (eckVerband ? (eckLage ? "|eckVb+lage" : "|eckVb") : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -416,8 +457,8 @@ class AnazhRealm_studio_stoff {
         };
         // DAS MIKRO-RELIEF DER FACETTE (unten, `_mikroGestalt`): der facettierte Studio-Stein, eine Weiche des Baus
         const mikro = flat && kind === "unknown";
-        // DER VERBAND (unten, `_verbandStoff`): der matte Bau-Stoff — im Satz jeder (die Ecke nennt ihre Zeile, 0 = keine), sonst
-        // der Stoff, dessen Gesetzbuch ihm eine Zeile gab; nie die Facette, der Stein-Rahmen, das Gewebe, das Unbeleuchtete
+        // DER VERBAND (unten, `_verbandStoff`): der matte Bau-Stoff — im Satz und wo die Ecke ihre Zeile trägt jeder (0 = keine),
+        // sonst der Stoff, dessen Gesetzbuch ihm eine Zeile gab; nie die Facette, der Stein-Rahmen, das Gewebe, das Unbeleuchtete
         const verband =
             kind === "unknown" &&
             !mikro &&
@@ -426,7 +467,7 @@ class AnazhRealm_studio_stoff {
             !!mp &&
             !mp.webe &&
             typeof mp.stein !== "string" &&
-            (satz === true ? mp.seh === "stoff" : mp.verband > 0);
+            (satz === true || eckVerband ? mp.seh === "stoff" : mp.verband > 0);
         // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
         // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
         // `_foundryBuildGroup` garantiert das color-Attribut.
@@ -460,14 +501,17 @@ class AnazhRealm_studio_stoff {
         const _toent = kind === "grass" || jahr === true;
         // DER TON JE ECKE (w28-baum-programm): jeder Teil einer Art des Jahrs trägt Ecken und den Stoff des Jahrs
         // (`_foundryBuildMesh`, `JAHR_ARTEN`) — die Regel, die bis dahin am Stoff stand (ein Teil mit Laub- oder Blüten-Ecken tönt
-        // ganz, jeder andere nie), steht an der Ecke: es tönt jede Ecke außer der stehenden (`JAHR_STEHT`: die Nadel, der Wedel, ein
-        // Teil ohne Laub) und dem Halm (Typ 4: das Schilf, dessen Teil kein Laub trägt). `select`: exakt uSeasonMul oder 1.
-        const _halm = AnazhRealm._saisonGesetz().typ.halm;
+        // ganz, jeder andere nie), steht an der Ecke: es tönt GENAU die Ecke, die das Jahr trägt — Laub und Blüte (SAISON_GESETZ
+        // `typ`), wie das Studio (injectWind `vSeasW = wT == laub || wT == bluete`). Die stehende Ecke (`JAHR_STEHT`: die Nadel, der
+        // Wedel, ein Teil ohne Laub), die Rinde im Laub-Stoff (Typ 0: Zweig, Ast, Stiel) und der Halm (Typ 4) stehen in ihrer Farbe.
+        // Bis saison-am-laub tönte die Welt jede Ecke außer −1 und 4: das Winter-Mul (1,39 · 0,84 · 1,67, gerechnet für das Sommer-
+        // Laub `bau`) färbte die roten Zweige des Gestrüpps und den Korb der Blume magenta. `select`: exakt uSeasonMul oder 1.
+        const SGt = AnazhRealm._saisonGesetz().typ;
         const _typ = TSL.vertexStage(TSL.attribute("aType", "float"));
         const _tonJeEcke =
             jahr === true && kind !== "grass" && _suF && _suF.uSeasonMul
                 ? TSL.select(
-                      _typ.greaterThan(AnazhRealm.JAHR_STEHT + 0.5).and(_typ.sub(_halm).abs().greaterThan(0.5)),
+                      _typ.sub(SGt.laub).abs().lessThan(0.5).or(_typ.sub(SGt.bluete).abs().lessThan(0.5)),
                       _suF.uSeasonMul,
                       TSL.vec3(1)
                   )
@@ -791,20 +835,26 @@ class AnazhRealm_studio_stoff {
         }
         // DER VERBAND (w28-haus-stoff, fachwerk VERBAND_GESETZ): Stein, Fuge und Ton der Fläche als Funktion ihrer Lage in der Welt
         // (`_verbandStoff`) — im Satz die Nummer der Zeile je Ecke (die vierte Stelle von `aRegler`: Dach, Sockel und Wand EINES
-        // Stoffs tragen je ihren), sonst die des Stoffs als Stoff-Wert. Der EINE Satz-Stoff der Klasse webt ihn für jedes Haus.
+        // Stoffs tragen je ihren), außerhalb des Satzes die der Ecke (`aVerband` der gefalteten Stufe, `ecken.verband`) oder die
+        // des Stoffs als Stoff-Wert. Der EINE Satz-Stoff der Klasse webt ihn für jedes Haus.
         if (verband) {
             const nr =
                 satz === true
                     ? TSL.attribute("aRegler", "vec4").w.mul(127.0)
-                    : this._stoffWert(TSL, "userData.stoffWerte.verband");
-            // die Lage der Ecke in ihrer Wand (im Satz: die vierten Stellen von Farbe und Glut, `BAU_SATZ_ATTR`) — EIN Varying
+                    : eckVerband
+                      ? TSL.attribute("aVerband", "float")
+                      : this._stoffWert(TSL, "userData.stoffWerte.verband");
+            // die Lage der Ecke in ihrer Wand (im Satz: die vierten Stellen von Farbe und Glut, `BAU_SATZ_ATTR`; sonst `aLage`)
+            // — EIN Varying
             const ecke =
                 satz === true
                     ? TSL.varying(
                           TSL.vec2(TSL.attribute("color", "vec4").w, TSL.attribute("aGlut", "vec4").w),
                           "vWandLage"
                       )
-                    : null;
+                    : eckLage
+                      ? TSL.varying(TSL.attribute("aLage", "vec2"), "vWandLage")
+                      : null;
             mat.colorNode = TSL.vec4(mat.colorNode.rgb.mul(this._verbandStoff(TSL, nr, ecke)), mat.colorNode.a);
         }
         // DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ): Querschnitt, Adern und Narbe je Pixel des Schirms, fern die Wiese als
@@ -926,7 +976,7 @@ class AnazhRealm_studio_stoff {
             // Fels zuerst, trug die Wand seines (headless, Start an der Genesis). Die Folge der Bauten verschob w13-kreatur-blick.
             mikro ? "mikro" : "",
             // der Verband webt in colorNode (`_verbandStoff`): sein Zweig steht in der Signatur
-            verband ? "verband" : "",
+            verband ? (eckVerband ? (eckLage ? "verband:ecke+lage" : "verband:ecke") : "verband") : "",
             // DIE KRONE (K68-N1, `_laubStoffNormale`) schreibt Normale und Empfangs-Ort: ein Klingen-Laub mit Krone (Baum, Strauch)
             // und eines ohne (Farn, Blüte, Schilf) bauen eigene Graphen
             _krone ? "krone" : "",

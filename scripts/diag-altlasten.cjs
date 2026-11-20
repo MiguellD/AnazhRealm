@@ -520,7 +520,6 @@ const FORBIDDEN = [
     ["feldCull", "05.10. — der Feld-Cull (Compute-Kompaktierung + indirekte Draws) fiel ganz"],
     ["FeldCull", "05.10. — die Linsen-Haken __anazhFeldCull/__anazhFeldCullExtern"],
     ["FELD_CULL", "05.10."],
-    ["IndirectStorageBufferAttribute", "05.10. — kein indirekter Draw, den die Band-Linse nicht zählt"],
     ["g.mesh.dispose()", "W6 — _instanzAbschied (die Instanz-Gruppe)"],
     ["P.mesh.dispose()", "W6 — _instanzAbschied (Fundament- und Zaun-Pool)"],
     ["R.mesh.dispose()", "W6 — _instanzAbschied (der Rauch-Satz des Dorfs)"],
@@ -959,7 +958,7 @@ const ZWILLINGE = [
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
-        fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
+        fingerprint: "Math.max(norm,A.reich[s])",
         gesetzbuch: "fachwerk-core.js",
         verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",

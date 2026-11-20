@@ -1799,6 +1799,12 @@ class AnazhRealm_stoff_karte {
         if (!at.nadelU) {
             at.nadelU = (T || THREE.TSL).uniformArray([], "float").setName("karteNadel");
             at.jahrU = (T || THREE.TSL).uniformArray([], "vec4").setName("karteJahr");
+            // DIE HEIMAT DER REIHEN (saison-am-laub, Pflicht-Paar der Diät): die Reihen wechseln zur Laufzeit (die Stufe des Jahrs
+            // je gelegter Schicht, `_karteJahrGelegt`; die Nadel je neuer Zelle) — als Objekt-Puffer lud die Diät sie nur beim
+            // Erst-Init ihres Render-Objekts (ein Feld-Puffer ist kein freier Uniform des Wächters), die GPU trug die Tönung des
+            // Bakes für immer bei 1: die Karte zeichnete gebackene Albedo × uSeasonMul / 1 — jede Rinde der Ferne im Winter
+            // magenta (× 1,39 · 0,84 · 1,67), im Herbst orange. In der geteilten renderGroup lädt die Diät sie EINMAL je Render.
+            this._uniformHeimatTeilen({ nadel: at.nadelU, jahr: at.jahrU });
         }
         const [a, j] = [at.nadelU.array, at.jahrU.array];
         let n = a.length;

@@ -3,8 +3,8 @@ class AnazhRealm_bild_wahl {
     // DIE SICHT JE PASS (scene.onBeforeRender / onAfterRender): die Region-Bundles tragen ihren Cull auf `visible`
     // (three-Culling friert im Replay ein). Bis V18.528 galt das Urteil der Haupt-Kamera für JEDEN Pass: ein Bundle im
     // Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch wenn
-    // sein Schatten ins Bild fiel. Jetzt liest der Hauptpass das Haupt-Urteil (_archRegionBundleCull: Frustum · Berg ·
-    // Query), jeder Schatten-Pass das EIGENE: je Region die Werfer-Hülle, darin je WERFER (jedes werfende Blatt-Mesh)
+    // sein Schatten ins Bild fiel. Jetzt liest der Hauptpass das Haupt-Urteil (_archRegionBundleCull: Frustum · die Tiefe
+    // der Sicht, Bild/tiefe), jeder Schatten-Pass das EIGENE: je Region die Werfer-Hülle, darin je WERFER (jedes werfende Blatt-Mesh)
     // sein Urteil nach dem EINEN Gesetz der Pass-Wahl (`_passTrifft`). Was in keiner Kaskade wirft, wirft nicht; was nur
     // im Schatten liegt, wirft. Im Schatten-Pass ist ein Region-Bundle eine Gruppe: ein Render unter dem Override-Stoff
     // sammelt keine Bundles (die Bundle-Wahrheit am Chokepoint `_renderScene`), three projiziert seine Kinder frisch — die
@@ -35,13 +35,17 @@ class AnazhRealm_bild_wahl {
         }
         // DER TAKT DER ARENEN im Hauptbild, vor jedem Pass dieses Frames (die Kaskaden rendern verschachtelt in ihm), dann
         // die Wahl der GPU: die Arenen legen die Aufträge dieses Passes, EIN Compute wählt jede Instanz jeder globalen Gruppe
-        if (!nach && k < 0 && kamera === this.state.camera) {
+        const hauptBild = !nach && k < 0 && kamera === this.state.camera;
+        if (hauptBild) {
             this._arenaTakt();
             this._wieseAugeTakt(kamera); // das Auge der Wiese für Stoff und Wahl dieses Bilds (die Nah-Wiese wirft nie)
-        }
+            this._sichtTiefeBeginn(kamera); // die Tiefe des letzten Bilds für den frühen Zug der Sicht (Bild/tiefe)
+        } else this._sichtTiefeRuht(); // die Züge der Sicht zeichnen nur im Hauptbild
         if (!nach) this._instanzWahlGpu(kamera, S);
-        // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
+        // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz; die Bau-Sätze des Hauptbilds
+        // schneiden danach ihre Haufen an der Tiefe (der frühe Zug: EIN Compute vor jedem Zeichnen dieses Bilds).
         this._chunkSatzPass(kamera, nach, k, S);
+        if (hauptBild) this._sichtTiefeRechnen(kamera);
 
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
@@ -227,23 +231,26 @@ class AnazhRealm_bild_wahl {
     }
 
     // DER WEG DES AUGES (w24-fahrt-takt, Gebot 7: der Takt kostet, was sich ändert — nie das Tempo): EIN Weg je Bild, die Richtung
-    // und das Tempo des letzten Schritts der Kamera (unter ZEIT_SPRUNG_M, binnen 250 ms; im Stand und nach einem Sprung Tempo 0).
-    // Leser: die Lage des Wegs (`_lageAnker`) und der Anker der Ferne der Wiese (`_wieseFernAnker`). Mehrere Pässe eines Bilds
-    // lesen denselben Schritt (das Auge steht zwischen ihnen).
+    // und das Tempo des letzten Schritts der Kamera (unter ZEIT_SPRUNG_M, binnen 0,25 s; im Stand und nach einem Sprung Tempo 0).
+    // Leser: die Lage des Wegs (`_lageAnker`), der Anker der Ferne der Wiese (`_wieseFernAnker`) und die Box der Kaskaden über den
+    // Weg (`_kaskadenPassen`). Mehrere Pässe eines Bilds lesen denselben Schritt (das Auge steht zwischen ihnen).
+    // DAS TEMPO AN DER WELT-UHR (`spielZeit`, s; einheit-sicht S5): an der Gerätezeit hing es an der Dauer jedes Takts — derselbe
+    // Weg ergab je Gerät und Last eine andere Box der nahen Kaskade, ihre Schatten-Kanten wanderten (Genesis-Flug Bild 23, GTX 1050:
+    // x0 −52,27 / −52,32 / −44,62 m bei 15,5 / 15,7 / 0 m/s). Ein Schritt ohne Welt-Zeit ist ein Sprung.
     _augeWegJetzt() {
         const W = this._augeWeg || (this._augeWeg = { x: NaN, y: 0, z: 0, t: -Infinity, u: [0, 0, 0], v: 0, n: 0 });
         const cam = this.state.camera;
         if (!cam) return W;
         const e = cam.matrixWorld.elements;
-        const t = performance.now();
+        const t = this.state.spielZeit;
         const [dx, dy, dz] = [e[12] - W.x, e[13] - W.y, e[14] - W.z];
         if (dx === 0 && dy === 0 && dz === 0) {
-            if (t - W.t > 250) W.v = 0;
+            if (t - W.t > 0.25) W.v = 0;
             return W;
         }
         const s = Math.hypot(dx, dy, dz);
         const dt = t - W.t;
-        W.v = s > 1e-4 && s < AnazhRealm.ZEIT_SPRUNG_M && dt < 250 ? (s / Math.max(dt, 1)) * 1000 : 0;
+        W.v = s > 1e-4 && s < AnazhRealm.ZEIT_SPRUNG_M && dt > 0 && dt < 0.25 ? s / dt : 0;
         // `n`: so viele Schritte in Folge in derselben Richtung (auf 25°) — ein einzelner Versatz ist noch kein Weg
         const gleich = W.v > 0 && W.n > 0 && (dx * W.u[0] + dy * W.u[1] + dz * W.u[2]) / s > 0.9;
         W.n = W.v > 0 ? (gleich ? W.n + 1 : 1) : 0;

@@ -371,7 +371,8 @@ async function checkBandOmegaGrammatik({ page, check }) {
         o.doricNoBuckle = r._failsUnderLoad(temple).buckles === false;
         const small = { parts: r._buildClassicalTemple("dorisch", { columnsFront: 4, columnsSide: 5 }) };
         o.loadCloses = r._loadPath(small).intact === true && r._loadPath(small).floatingParts.length === 0;
-        // KONTRAST: über-schlank knickt
+        // KONTRAST: über-schlank unter Last knickt (Euler ohne Eichfaktor: die Säule allein trägt
+        // sich bis ~30 m; erst die Platte 5 × 0,5 × 5 m Stein überlastet sie)
         o.overSlenderBuckles =
             r._failsUnderLoad({
                 parts: [
@@ -381,6 +382,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
                         size: { x: 0.2, y: 6, z: 0.164 },
                         position: { x: 0, y: 3, z: 0 },
                     },
+                    { shape: "box", material: "stein", size: { x: 5, y: 0.5, z: 5 }, position: { x: 0, y: 6.25, z: 0 } },
                 ],
             }).buckles === true;
         // die WAND-Verfeinerung: eine breite tragende Wand knickt NICHT (keine freie Säule)

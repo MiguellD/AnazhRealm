@@ -1856,9 +1856,11 @@ class AnazhRealm_bau_buch {
     }
     // (b) VERSAGEN: knickt oder bricht eine Ebene schlanker Glieder unter der LAST, die sie trägt? Jedes Glied trägt die
     // Spannung seiner Stoff-Zeile (schmiede `STOFF_GESETZ.tragSpannung`): das Kleinere aus seiner Streckgrenze σ_y (das
-    // gedrungene zerdrückt) und der Knick-Spannung nach EULER π²·E / (12·λ²) (das schlanke knickt, λ = Höhe / kleinste
-    // Breite), je geteilt durch die Sicherheit des Richters (`druckSicherheit`, `knickSicherheit`: Vorkrümmung, Schiefstand
-    // und Stoß eines Baus, den niemand vermessen hat). Die Last ist das GEWICHT über der halben Höhe des Glieds — die Masse der Teile darüber und
+    // gedrungene zerdrückt, geteilt durch `druckSicherheit`) und der Knick-Spannung nach EULER π²·E / (12·(β·λ)²) ohne
+    // Eichfaktor (das schlanke knickt, λ = Höhe / kleinste Breite) — F_cr = π²·E·I / (β·L)² des Rechteck-Querschnitts. β ist
+    // die Knicklänge der LAGERUNG: ein Glied ohne Halt oben ist eingespannt-frei (β = 2); liegt auf seinem Kopf ein
+    // querliegendes Teil, das zugleich den Kopf eines zweiten Glieds trägt (Riegel, Architrav, Dachbalken), ist es
+    // eingespannt-gelenkig (β = 0,7). Die Last ist das GEWICHT über der halben Höhe des Glieds — die Masse der Teile darüber und
     // seines eigenen oberen Teils aus ρ und Gestalt (`_teilMasse`) mal der Schwere der Welt —, getragen von jedem Glied, das
     // diese Ebene kreuzt: sie versagen, wenn die Last die Summe ihrer Trag-Kräfte übersteigt. Ein Glied ohne Last (ein
     // Zierstab, der Webstuhl-Pfosten) knickt nicht, die überladene Plattform schon; trägt ein gedrungenes Glied oder eine
@@ -1872,7 +1874,7 @@ class AnazhRealm_bau_buch {
         const P = AnazhRealm.PHYSIS;
         const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
         const schwere = Number.isFinite(this.state.gravity) ? Math.max(0, -this.state.gravity) : 9.81;
-        const glieder = bp.parts.map((p) => {
+        const teile = bp.parts.map((p) => {
             const ext = this._partWorldExtents(p);
             const w = Math.max(0.02, Math.min(ext.ex || 0, ext.ez || 0));
             const wmax = Math.max(0.02, Math.max(ext.ex || 0, ext.ez || 0));
@@ -1883,17 +1885,44 @@ class AnazhRealm_bau_buch {
             // lebendes Gewebe (die Bindung seiner Zeile) ist kein passiver Stab: der Leib hält sich mit Tonus und Skelett
             const saeule = schlank && !(z && z.bindung === "gewebe");
             return {
+                p,
+                ext,
+                z,
                 a: this._partWorldAABB(p),
                 saeule,
                 lambda,
-                // die Kraft in N, die das Glied trägt: Spannung der Zeile × mittlerer Querschnitt seiner Gestalt (Volumen / Höhe —
-                // die kannelierte Säule trägt mit ihrem Stein, nicht mit ihrer Hüll-Box) / Sicherheit
-                kraft: z
-                    ? SG.tragSpannung(z, lambda, P.knickSicherheit, P.druckSicherheit) *
-                      (this._teilVolumen(p) / Math.max(1e-6, ext.ey || 0))
-                    : 0,
+                quer: (ext.ey || 0) < wmax,
                 masse: this._teilMasse(p),
             };
+        });
+        // DIE LAGERUNG: der Kopf eines Glieds ist gehalten, wenn ein querliegendes Teil auf ihm aufliegt (seine Unterkante an
+        // der Oberkante des Glieds, ± 5 cm und 5 % der Höhe) und im Grundriss auch den Kopf eines zweiten Glieds deckt
+        const deckt = (t, g) =>
+            Math.abs(t.a.min.y - g.a.max.y) <= 0.05 + 0.05 * (g.ext.ey || 0) &&
+            t.a.min.x < g.a.max.x &&
+            t.a.max.x > g.a.min.x &&
+            t.a.min.z < g.a.max.z &&
+            t.a.max.z > g.a.min.z;
+        const glieder = teile.map((g) => {
+            const gehalten =
+                g.saeule &&
+                g.a &&
+                teile.some(
+                    (t) =>
+                        t !== g &&
+                        t.a &&
+                        t.quer &&
+                        deckt(t, g) &&
+                        teile.some((h) => h !== g && h.saeule && h.a && deckt(t, h))
+                );
+            g.beta = gehalten ? 0.7 : 2;
+            // die Kraft in N, die das Glied trägt: Spannung der Zeile × mittlerer Querschnitt seiner Gestalt (Volumen / Höhe —
+            // die kannelierte Säule trägt mit ihrem Stein, nicht mit ihrer Hüll-Box); Knicken ohne Sicherheit
+            g.kraft = g.z
+                ? SG.tragSpannung(g.z, g.lambda * g.beta, 1, P.druckSicherheit) *
+                  (this._teilVolumen(g.p) / Math.max(1e-6, g.ext.ey || 0))
+                : 0;
+            return g;
         });
         for (let i = 0; i < glieder.length; i++) {
             const g = glieder[i];
@@ -2586,11 +2615,11 @@ AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
 // diese Schwellen kalibrieren die groben Verstöße (Kippen, Knicken). browser-justierbar.
 AnazhRealm.PHYSIS = {
     groundBandFrac: 0.15, // Ω-Φ2: das untere Höhen-Band, das als Bodenkontakt zählt
-    // Ω-Φ3-b: die Sicherheit des Knick-Richters — die Euler-Spannung der Stoff-Zeile geteilt durch sie. Geeicht am alten
-    // Anker des Richters: die frei stehende Stein-Säule trägt sich bis 1:28, unter dem Gewicht von 9,5 m Stein bis 1:18
-    // (Euler mit E 50 GPa: 124 MPa / 500 = 247 kPa).
-    knickSicherheit: 500,
-    // … und gegen das Zerdrücken: ein Glied trägt ein Zehntel der Streckgrenze seiner Zeile (die Regel der Baumeister für
+    // Ω-Φ3-b: das Knicken trägt KEINEN Faktor — die Euler-Spannung der Stoff-Zeile mit der Knicklänge der Lagerung
+    // (`_failsUnderLoad`: β = 2 frei stehend, 0,7 unter einem Riegel). Bis w28 teilte der Richter sie durch 500, geeicht
+    // am alten Anker der Säule 1:28: jedes Glied knickte 125- bis 500-mal zu früh, eine 8 m hohe Stein-Säule 0,2 m unter
+    // ihrem eigenen Gewicht. Die Vorkrümmung, der Schiefstand und der Stoß eines Baus, den niemand vermessen hat, trägt
+    // die Sicherheit gegen das Zerdrücken: ein Glied trägt ein Zehntel der Streckgrenze seiner Zeile (die Regel der Baumeister für
     // Mauerwerk: zulässige Pressung = Druckfestigkeit / 10) — Stein 13 MPa, Holz 5 MPa, verdichtete Erde 20 kPa.
     druckSicherheit: 10,
     wallBraceRatio: 4, // Ω-Φ3-b: ab dieser Breite:Dicke ist ein Glied eine WAND (verstrebt), keine Säule
