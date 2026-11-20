@@ -15,6 +15,11 @@
 //   T8  der Abgelaufene bleibt im Faden (`_foundryFrist`): sein Besteller bekommt null, aber als Geist hält er Platz und Uhr
 //       der Späteren, bis der Worker ihn fertig hat (sonst lief der Wiederholer ab, und der dritte Ablauf macht die Zelle
 //       gescheitert); je FADEN, auch im Werk-Helfer (`w<k>_<n>`): die Uhr liest die Nummer am Ende, nie NaN (`_foundryUhren`)
+//   DIE LINSE URTEILT AM EREIGNIS, NIE AN DER WANDUHR (takt-t8-geist): T8 liest seinen Stand am Ablauf des ersten und an der späten
+//       Antwort des Werks (kein Schlaf, kein lebendes Ergebnis-Objekt); T3–T6 stellen die Uhr des Spiels für ihren Lauf (`uhrSteht`).
+//       Bis hier kippte T8, sobald die Seite nach seinem Lesen noch 1,6 s mit einem Makrotask lebte (kalt, unter Last), T3 bei 1 s
+//       Stand des Fadens im ersten Bake-Fenster, T5 bei 6 s (FOUNDRY_ALTER_MS) zwischen Bestellen und Antwort; und die 45-s-Fristen
+//       der Doppel von T5/T6 schrieben in T18 ihren Ablauf in das Log der Welt (`uhrenFallen`).
 //   T9  DIE KAPPEN DES LADE-TAKTS: unter dem Ladeschirm fragt jeder Leser des ersten Bilds mit Kappe je Takt die EINE Kappe
 //       (`_kappeOffen`): Pflanz-Schlange, Dorf-Zug, Cull-Bau, Laub, Boden-Strom (Stück und ms, keine eigene Uhr) — bis zur EINEN Frist
 //       je Lade-Frame (`_ladeFrist`); Ring-Boden und Fern-Ring (Lade-Takt) auch nach ihr; der Selbsttest nennt jeden vakuösen Leser.
@@ -213,6 +218,32 @@ hauptLauf(async () => {
     try {
         aus = await realm.page.evaluate(async (selbst) => {
             if (!r._buehneSteht()) return { fehler: "Bühne steht nicht" };
+            // DIE UHR DES SPIELS STEHT IM BEIN (takt-t8-geist): ein Bein, das eine Uhr des Spiels befragt (das Sekunden-Fenster der
+            // Bake-Uhr `_weltBakeErlaubt`, das Alter eines Wartenden `_foundryWahl`), stellt sie für seinen Lauf — synchron oder über
+            // Mikrotasks, nie über einen Makrotask (kein Takt der Welt sieht die stehende Uhr). Sein Urteil hängt an SEINEN
+            // Ereignissen, nie daran, wie lange der Faden zwischen zwei Zeilen stand.
+            const stehend =
+                (lauf) =>
+                (...a) => {
+                    const j = performance.now();
+                    const geht = leihe(performance, { now: () => j });
+                    let x = null;
+                    try {
+                        x = lauf(...a);
+                    } finally {
+                        if (x instanceof Promise) x = x.finally(geht);
+                        else geht();
+                    }
+                    return x;
+                };
+            // EIN DOPPEL GEHT MIT SEINEN UHREN (takt-t8-geist): die Fristen, die die echte Pumpe an einem Doppel stellte (45 s je
+            // Auftrag im Flug, `_foundryFrist`), fallen mit ihm. Bis hier liefen sie weiter: 45 s später, mitten in der Fahrt von
+            // T18, schrieb je Faden eines Doppels der Älteste „FOUNDRY TIMEOUT: build-asset(block2) …“ in das Log der Welt und
+            // pumpte den nächsten ins Leere.
+            const uhrenFallen = (f) => {
+                for (const fr of (f.fristen || new Map()).values()) clearTimeout(fr.uhr);
+                if (f.fristen) f.fristen.clear();
+            };
             // T3/T4 — der Feld-Bake-Takt: Fenster 1 verbrauchen ferne Fits das Budget, ein naher wird abgewiesen; im
             // Fenster 2 bekommt zuerst der nahe (T3), und was in der zweiten Fenster-Hälfte übrig ist, auch der ferne (T4).
             const werZuerst = function () {
@@ -243,7 +274,7 @@ hauptLauf(async () => {
                 this._weltBakeN++;
                 return true;
             };
-            const folge = (erlaubt) => {
+            const folge = stehend((erlaubt) => {
                 const ueber = st._frameOverBudget;
                 st._frameOverBudget = true;
                 r._weltBakeFenster = undefined;
@@ -262,7 +293,7 @@ hauptLauf(async () => {
                 r._weltBakeFenster = undefined;
                 r._weltBakeHunger = Infinity;
                 return { fernJa, nah1, fern2, nah2, fern3 };
-            };
+            });
             const a = folge(selbst ? werZuerst : r._weltBakeErlaubt);
             const b = selbst ? folge(ganzesFenster) : a;
             const t3 = { fernJa: a.fernJa, nah1: a.nah1, fern2: a.fern2, nah2: a.nah2, fern3: b.fern3 };
@@ -285,7 +316,7 @@ hauptLauf(async () => {
                 for (let k = 0; k < q.length; k++) if ((!darf || darf(q[k])) && (i < 0 || this._foundryAuftragD2((q[k].rang || q[k]).wo) < this._foundryAuftragD2((q[i].rang || q[i]).wo))) i = k; // prettier-ignore
                 return i;
             };
-            const schlange = (wahl, lauf) => {
+            const schlange = stehend((wahl, lauf) => {
                 const gesendet = [];
                 const f = {
                     ready: true,
@@ -302,8 +333,9 @@ hauptLauf(async () => {
                 } finally {
                     r._foundry = fEcht;
                     delete r._foundryWahl;
+                    uhrenFallen(f);
                 }
-            };
+            });
             const K = AnazhRealm.FOUNDRY_IM_FLUG;
             const t5 = schlange(selbst ? fifo : null, (f, gesendet, antworte, bestelle) => {
                 for (let i = 0; i < K; i++) bestelle("block" + i); // der Worker ist voll
@@ -317,7 +349,7 @@ hauptLauf(async () => {
                 return { folge: gesendet.slice(K, K + 2).map((m) => m.presetId), nummernSteigen: nr.every((n, i) => i === 0 || n > nr[i - 1]), imFlug: f.pending.size, K }; // prettier-ignore
             });
             // DIE FREIGABE (`_tickFoundryIngest`, die EINE Wahl): Ergebnisse am Wächter, EIN Tick (3 frei) — ihre Reihe
-            const freigabe = async (wahl, posten, alt) => {
+            const freigabe = stehend(async (wahl, posten, alt) => {
                 const [qE, frei, rE] = [r._foundryIngestQueue, [], st.renderer];
                 [st.renderer, r._foundryIngestQueue] = [{}, []]; // headless hält der Wächter nichts — ein Renderer, synchron bis zum Zählen
                 posten.forEach(([x, wo]) => r._foundryIngestTakt(x, wo).then((y) => frei.push(y)));
@@ -330,7 +362,7 @@ hauptLauf(async () => {
                 await null;
                 r._foundryIngestQueue = qE;
                 return { n, frei };
-            };
+            });
             const t6 = schlange(selbst ? nurNaechster : null, (f, gesendet, antworte, bestelle) => {
                 for (let i = 0; i < K; i++) bestelle("block" + i);
                 bestelle("alt");
@@ -344,7 +376,7 @@ hauptLauf(async () => {
             const t5i = await freigabe(selbst && fifo, [...Array(11).keys()].map((i) => ["e" + i, i < 10 ? { x: pm.x + 900 + i, z: pm.z } : pm])); // prettier-ignore
             // DER ANHÄNGER AM WÄCHTER (B5, Befund des B4-Prüfers): elf ferne Züge liegen am Wächter, ein naher Leser hängt sich an den
             // letzten (`_foundryZug` → `_foundryNaeher`) — dessen Rang-Datensatz steigt, er geht als erster frei; der Selbsttest friert ihn ein
-            const t5a = await (async () => {
+            const t5a = await stehend(async () => {
                 const [fE, qE, rE, reihe] = [r._foundry, r._foundryIngestQueue, st.renderer, []];
                 const f = {
                     ready: true,
@@ -371,12 +403,22 @@ hauptLauf(async () => {
                 } finally {
                     [r._foundry, st.renderer, r._foundryIngestQueue] = [fE, rE, qE];
                     delete r._foundryNaeher;
+                    uhrenFallen(f);
                 }
             })();
             const t6i = await freigabe(selbst && nurNaechster, [["alt", { x: pm.x + 900, z: pm.z }], ...[0, 1, 2, 3, 4, 5].map((i) => ["nah" + i, { x: pm.x + 5 + i, z: pm.z }])], true); // prettier-ignore
             // T8 — der Abgelaufene bleibt im Faden: zwei Aufträge (Frist 600 ms) an einen Worker, der lange baut. Läuft der erste ab,
             // bekommt sein Besteller null, aber die Uhr des zweiten startet nicht, solange sein Geist Platz und Uhr hält (die alte
-            // Frist löschte ihn); die Uhr startet am Ereignis (`_foundryUhren`), gemessen wird vor 600 + GEIST_FACH × 600 ms (2 s).
+            // Frist löschte ihn); die Uhr startet am Ereignis (`_foundryUhren`).
+            // GEURTEILT WIRD AN ZWEI EREIGNISSEN, NIE AN DER WANDUHR (takt-t8-geist): (A) der Besteller des ersten bekam null — sein
+            // Geist hält den Platz, der zweite ist offen, seine Uhr steht (`f.fristen`: `uhr` null); (B) die späte Antwort des Werks
+            // auf den ersten (`_foundryAntwort`) — der Geist ist eingelöst, die Uhr des zweiten läuft. Dann antwortet das Werk auch den
+            // zweiten: seine Uhr fällt mit, das Doppel trägt keine Frist und keinen Auftrag mehr (der Zeitgeber des Geists findet ihn
+            // eingelöst), und zurück geht je Ereignis ein Abbild. Bis hier schlief die Probe 2 s und gab das
+            // LEBENDE Ergebnis-Objekt zurück: der Geist fiel nach 600 + GEIST_FACH × 600 ms von selbst, die Uhr des zweiten lief an und
+            // ab, und sein Besteller schrieb „abgelaufen“ in das Objekt, sobald die Seite nach dem Lesen noch 1,6 s lebte und dabei
+            // einen Makrotask abgab (T10, T17: die Antwort eines Fadens) — das Urteil hing an der Laufzeit von T9–T17, kalt und unter
+            // Last ROT ohne Täter („abgelaufen,abgelaufen,true“).
             const fristGeist = r._foundryFrist;
             // die löschende Frist auf derselben Uhr: der Abgelaufene fällt sofort aus dem Faden, statt als Geist zu halten
             const fristAlt = function (f, reqId, dauerMs, beiAblauf) {
@@ -399,22 +441,37 @@ hauptLauf(async () => {
                     reqSeq: 1,
                 };
                 // die Probe fährt die echten Methoden an ihrem EIGENEN `this` (die Welt darunter, das Doppel und die Frist darauf):
-                // sie wartet 2 s echte Zeit, und die Welt behält derweil ihre Foundry (`mikro`, oben)
+                // sie wartet auf den Ablauf der ersten (ein Makrotask), und die Welt behält derweil ihre Foundry (`mikro`, oben)
                 const rT8 = Object.create(r, { _foundry: { value: f, writable: true }, _foundryFrist: { value: selbst ? fristAlt : fristGeist, writable: true } }); // prettier-ignore
-                const aus8 = { erster: "offen", zweiter: "offen", helferErster: "offen", helferZweiter: "offen" };
+                const wort = { erster: "offen", zweiter: "offen", helferErster: "offen", helferZweiter: "offen" };
                 const auftrag = (name, k) =>
                     rT8
                         ._foundryAuftrag(f, "r", { type: "build-asset", presetId: name }, null, 600, "-")
-                        .then((x) => (aus8[k] = x === null ? "abgelaufen" : "beantwortet"));
-                auftrag("lang", "erster");
-                auftrag("helfer-lang", "helferErster");
-                auftrag("dahinter", "zweiter");
-                auftrag("helfer-dahinter", "helferZweiter");
-                aus8.nummern = [...f.pending.keys()];
-                await sleep(2000);
-                // die Geister der ersten (r1, rw1_2) halten noch ihren Platz
-                aus8.geist = f.pending.has("r1");
-                aus8.helferGeist = f.pending.has("rw1_2");
+                        .then((x) => (wort[k] = x === null ? "abgelaufen" : "beantwortet"));
+                const besteller = [
+                    auftrag("lang", "erster"),
+                    auftrag("helfer-lang", "helferErster"),
+                    auftrag("dahinter", "zweiter"),
+                    auftrag("helfer-dahinter", "helferZweiter"),
+                ];
+                const aus8 = { nummern: [...f.pending.keys()] };
+                // der Stand am Ereignis, als Abbild (kein späterer Zeitgeber schreibt hinein): die Worte der Besteller, die Geister
+                // der ersten (r1, rw1_2), die Uhren der zweiten (r3, rw1_4)
+                const uhr = (id) => ((fr) => (!fr ? "keine" : fr.uhr === null ? "steht" : "läuft"))(f.fristen && f.fristen.get(id)); // prettier-ignore
+                const stand = () => ({ ...wort, geist: f.pending.has("r1"), helferGeist: f.pending.has("rw1_2"), uhr: uhr("r3"), helferUhr: uhr("rw1_4") }); // prettier-ignore
+                const werkAntwortet = (ids) => ids.forEach((reqId) => rT8._foundryAntwort(f, { type: "asset", reqId, meshes: [] })); // prettier-ignore
+                // EREIGNIS A: die Besteller der ersten bekamen null. Nur eine laufende Uhr läuft ab: steht die eines ersten nicht,
+                // wartet die Probe nicht auf ihn (ROT beim Namen „Besteller offen“, kein Hänger)
+                aus8.erstUhr = [uhr("r1"), uhr("rw1_2")];
+                if (aus8.erstUhr.every((u) => u === "läuft")) await Promise.all(besteller.slice(0, 2));
+                aus8.ablauf = stand();
+                // EREIGNIS B: das Werk hat die ersten fertig — seine späte Antwort löst die Geister ein
+                werkAntwortet(["r1", "rw1_2"]);
+                aus8.antwort = stand();
+                const imFlug = ["r3", "rw1_4"].every((id) => f.pending.has(id));
+                werkAntwortet(["r3", "rw1_4"]);
+                if (imFlug) await Promise.all(besteller.slice(2));
+                aus8.ende = { ...wort, uhren: f.fristen ? f.fristen.size : 0, offen: f.pending.size };
                 return aus8;
             })();
             // T9 — die Kappen des Lade-Takts: im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest
@@ -905,8 +962,22 @@ hauptLauf(async () => {
     const t8 = aus.t8;
     // je Faden dieselbe Reihe: Werk (r1 → r3) und Helfer (rw1_2 → rw1_4); der Helfer-Faden trug wirklich zwei (nicht vakuös)
     const helferNr = (t8.nummern || []).filter((k) => /w1_\d+$/.test(k));
-    const z8 = [t8.erster, t8.zweiter, t8.geist, helferNr, t8.helferErster, t8.helferZweiter, t8.helferGeist] + "";
-    const T8 = helferNr.length === 2 && z8 === `abgelaufen,offen,true,${helferNr},abgelaufen,offen,true`;
+    // je Faden an beiden Ereignissen: am Ablauf des ersten bekam sein Besteller null, sein Geist hält, der zweite ist offen und
+    // seine Uhr steht; an der späten Antwort des Werks ist der Geist eingelöst und die Uhr des zweiten läuft; am Ende trägt das
+    // Doppel keine Frist und keinen Auftrag mehr
+    const [a8, b8, e8] = [t8.ablauf || {}, t8.antwort || {}, t8.ende || {}];
+    const faden8 = (h) => {
+        const k = (n) => (h ? "helfer" + n[0].toUpperCase() + n.slice(1) : n);
+        return a8[k("erster")] === "abgelaufen" && a8[k("zweiter")] === "offen" && a8[k("geist")] === true && a8[k("uhr")] === "steht" && b8[k("geist")] === false && b8[k("uhr")] === "läuft" && e8[k("zweiter")] === "beantwortet"; // prettier-ignore
+    };
+    const z8 =
+        `die Uhr des ersten ${t8.erstUhr} | am Ablauf des ersten: Besteller ${a8.erster}/${a8.helferErster} · Geist ${a8.geist}/${a8.helferGeist} · der zweite ${a8.zweiter}/${a8.helferZweiter}, seine Uhr ${a8.uhr}/${a8.helferUhr} | ` +
+        `an der späten Antwort des Werks: Geist ${b8.geist}/${b8.helferGeist} · Uhr des zweiten ${b8.uhr}/${b8.helferUhr} | ` +
+        `am Ende: der zweite ${e8.zweiter}/${e8.helferZweiter} · ${e8.uhren} Fristen, ${e8.offen} Aufträge im Doppel (Werk/Helfer ${helferNr})`;
+    // im Selbsttest gilt das ROT nur mit der alten Klasse beim Namen: am Ablauf des ersten ist sein Platz frei und die Uhr des
+    // zweiten läuft, in beiden Fäden (eine fremde Abweichung beweist nichts)
+    const alt8 = (h) => a8[h ? "helferErster" : "erster"] === "abgelaufen" && a8[h ? "helferGeist" : "geist"] === false && a8[h ? "helferUhr" : "uhr"] === "läuft"; // prettier-ignore
+    const T8 = helferNr.length === 2 && (SELBST ? !(alt8(false) && alt8(true)) : faden8(false) && faden8(true) && e8.uhren === 0 && e8.offen === 0); // prettier-ignore
     const t9 = aus.t9;
     // je Leser der Klasse (`_kappeOffen`) alle zwölf statt seiner Kappe, die Frist ein Vielfaches; die Frist gilt je Aufgabe
     const frist = { _tickPendingVegSpawns: t9.pflanz === 12, "_kappeOffen (Frist)": t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _tickVoxelChunkStreaming: t9.strom > 3 && t9.strom < 625 && t9.stromGleich === 3, "_tickVoxelChunkStreaming (ms)": t9.stromMs > 4 && t9.stromMs < 625 && t9.stromMsGleich > 0 && t9.stromMsGleich <= 4, _ringWaechst: t9.ring === t9.ringSoll, _fernRingRefresh: t9.fern > t9.fernKappe, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
@@ -1018,12 +1089,12 @@ hauptLauf(async () => {
     // die Werte: K + 10 → Folge · Nummer · Flug · frei/n · Anhänger und seine Nummer
     zeile(T5, `T5 Schlange: ${z5}${aus.t5a.erster === 10 ? "" : " — Täter _foundryNaeher"}`); // prettier-ignore
     zeile(T6, `T6 Worker-Schlange nie verhungert: ${z6}`);
-    // die Werte: erster · zweiter · Geist, die Helfer-Nummern, ihr erster · zweiter · Geist
+    // die Werte je Ereignis: Werk/Helfer
     zeile(
         T8,
         `T8 Geist im Faden: ${z8}` +
             // der Täter: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden
-            (T8 || t8.helferZweiter !== "abgelaufen" || t8.zweiter !== "offen" ? "" : " — Täter _foundryUhren")
+            (!faden8(false) || faden8(true) ? "" : " — Täter _foundryUhren")
     );
     // die Soll-Werte: Pflanz, Dorf, Bau, Laub je 12; Frist und Aufgabe ≥ 20; Strom 4–624 und gleich 3; ms 5–624 und gleich 1–4; Ring
     // = Soll; Fern > Kappe; Frame 4
