@@ -1,6 +1,6 @@
 # Abgabe Welle `samen-ein-baum` — EIN Samen-Baum, der Würfel je Los, je DSL-Op ihr Strom (OMEN GTX 1060, 20.11.)
 
-**Kopf:** `samen-ein-baum` **b0b898696 (leerer Abgabe-Commit über 1c574fb1b)**. Baum = 1c574fb1b:
+**Kopf:** `samen-ein-baum` **9f70eaca1 (leerer Abgabe-Commit über a69426b28)**: die Heilung des Code-Checks, siehe den nächsten Abschnitt. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
 - die Welle 3e68a828a;
 - Merge main 3da9d9ae9 (Kosmos) und Merge `ein-schreiber-wand` c16c528cc mit dem Register-Anker (151204179);
 - die Prüfstand-Seite (fc148849f);
@@ -8,6 +8,33 @@
 - Merge main 31ea3847e (Wand, stein-ein-gesetz) und Merge main 3e362397e (z635: los-huelle-2, Zeit-Kalender, Vorab-Statik; V18.546.349).
 
 Zweig ab main 92b7afd07. Ich stempele nicht. Roh liegt auf dem OMEN unter `p3/n1911/samen/`.
+
+## Die Heilung am neuen Kopf 9f70eaca1 (Code-Check Lauf 44710772496 am b0b898696: ROT an 3 von 22 Gruppen, Probe grün)
+Baum = 1c574fb1b + Heilung 304f06b0d + Merge main a71e06c72 (z640: saison-am-laub, stamm-decke-vorab; V18.546.351) 26930ad06 + der Verkehr im Schritt der begegnung (3175754f4, a69426b28). Der Entscheid je Zeile:
+
+| Zeile | Entscheid | Schnitt | am b0b89869 → am Kopf |
+|---|---|---|---|
+| voll 1/18 Ankunft ❌ D9 | **Linse** | `diag-ankunft`: jeder Lauf auf demselben Grund. Nach jedem Lauf fällt, was er der Welt gab: Erdbau seiner Orte (`_erdbauOrtFaellt`), ihre Wahl (`_ortPlaene`), ihre Zellen. Der Mitspieler baute auf dem Erdbau des Sprechers und wählte dort neu (siedlung-k3-heil). | Dorf 0,19 m, ein Haus 2,03 m daneben → vier Akte am selben Grund byte-gleich 0,00 m; D9 ✅ 26 Häuser |
+| voll 10/18 Kreatur 1 ❌ bewohner | **Welt** | fachwerk `ORT_GESETZ.schwelleM` 0,15: Die Platte des Vorplatzes reicht unter die Schwelle. Der Türpunkt lag genau auf ihrer inneren Kante, und dort gewann der Grund des Hauses. | #508675 (Schwarzwald, Schwelle 0,55 m) stand auf 91,114 statt 91,389, die Diele 0,64 m über der Sohle > Stufe 0,6, 18 Takte in der Wand → bewohner ✅ 77/77 Leiber, quote 1 |
+| voll 8/18 Kreatur 3 ❌ zielplan | **Linse an das Gesetz** | `diag-kreatur-leben`: Die Probe fragt den Kern selbst (`tagesBindung`, 200 Samen je Mensch), wie oft das Gesetz eine Rolle ohne Fremden lässt (`gesetzLeer`). Eine leere Rolle ist nur dann der Täter, wenn das Gesetz die Leere unter 1 % macht. | Die EINE Scheune der Stadt liegt 95 m vom Herd ihrer Leute: nach dem Gesetz leer zu 0,117 (Schmiede 0,071, sonst ≤ 0,003) → zielplan ✅, 128 von 128 Menschen gefragt |
+| voll 8/18 Kreatur 3 ❌ begegnung | **Linse** | `kreatur-mensch` begegnung: Ihr Schritt taktet den Verkehr wie `_gameLoopTick` (`_verkehrSchritt` davor, `_tickVerkehr` danach). Ohne ihn stand ein Wagen im Zustand „fährt“ still und hielt seine Querung für immer. Die Probe wartet, bis der Zeuge am Ort seines Weichens steht (`b.weichen.ort`), und geht den vierten Gang durch diesen Stand. | Der Zeuge #724672 wartete 3 600 Takte am Fahrbahnrand vor einem Wagen 25,5 m fort (vlong 1,915 m/s); der vierte Gang lief durch seinen alten Stand: 0,45 m, 31 Takte Berührung. Am main ging feld #617311 aus dem Weg (d 8,534 m): Die Zeile bestand, ohne zu messen. → fort 22,2 m, d 1,37 → 2,05 m, Berührung 0 |
+
+### Tore am Baum a69426b28
+- **npm run check** (`check:statik` mit 51 Gliedern `&& gate:haus-fern`): alle Glieder grün. Die Logs liegen in `tore-26930ad0/` (statik00–04) und `tore-3175754f/` (statik05–50 ohne 49, haus-fern 260 s, porta-, schmiede-contract, studio-vertrag, format-check). Glied 49 (`diag-taille`) lief am Gerät (`heil3/taille.log`, grün, 10 s mit dem Schloss).
+  - Was sich danach noch änderte, liest kein statik-Glied (`kreatur-proben`, `kreatur-mensch`).
+  - Die Glieder beim Namen: check:vorab (33 × `node --check`, samen-core zuerst) · diag-atlas⟲ · bump-version⟲ · diag-phyto-tree · diag-studio-uebergabe · diag-studio-huelle⟲ · diag-altlasten⟲ + Lauf · diag-koerper-kern⟲ · diag-profiband⟲ · diag-wasser-leben⟲ · diag-chunk-satz⟲ · diag-hoehlen-sicht⟲ · diag-kamera-treue⟲ · werkbank diaet/lauf/takt/latenz/eval/licht ×3/bild/wirt/abdruck · diag-ego-schatten⟲ · diag-takt-atem⟲ · diag-sicht-arbeit⟲ · diag-wetter-wache⟲ · diag-weltakt-wache⟲ · diag-blocker-netz⟲ · diag-kollision-bild⟲ · diag-fall-waechter⟲ · diag-brennglas-takt⟲ · diag-raum-tags⟲ · omen-messfolge · diag-stand-takt⟲ · diag-post-kette⟲ · diag-ziel-zensus⟲ · diag-kamera-laub⟲ · diag-verdeckungs-abfrage⟲ · diag-start-rezept⟲ · diag-apparat⟲ + Lauf · diag-vendor-anker⟲ · diag-betriebsgesetz · diag-sprache⟲ · diag-ci-deckung⟲ + Lauf · diag-taille · diag-kreuz-mass⟲ (⟲ = `--selftest`).
+- **Die Linsen der roten Zeilen:**
+  - gate:kreatur-takt: Teil 3 (begegnung, zielplan und 13 weitere) mit Selbsttest grün am a69426b28 (`heil3/kt-self-3.log`, `heil3/kt-3.log`).
+  - Teil 2 mit Selbsttest (45 Täter) grün am a69426b28 (`heil2/r2/kt-self-2.log`, `heil3/kt-2.log`).
+  - Teil 1 (bewohner) mit Selbsttest grün am 26930ad06 (`heil2/kt-self-1.log`, `heil2/kt-1.log`); die Zeilen seiner Proben sind am Kopf dieselben.
+  - gate:ankunft mit Selbsttest grün (`heil2/ankunft*.log`).
+  - fachwerk-contract grün (198 s), settlement `--selftest` (101 s) und `--nur-a` (196 s) grün; das Golden `siedlung.json` bleibt byte-treu (e564ab23 / b7a6e6ee).
+- **Am Gerät** (je Lauf über `p3/gpu-lauf.sh`, `heil3/kette.txt`; auch die CPU-Linse fuhr unter dem Schloss, ein CI-Job hatte Vorfahrt):
+  - gate:kreatur-leben 3 s
+  - gate:haus-welt 1/2 540 s und 2/2 532 s; der Vorplatz liegt je Haus unverändert −0,36/−0,37 m unter der Diele
+  - gate:settlement voll 270 s; GT auf dem Dorfweg 97,85 / 82,97 m wie vorher, Vorplätze 20/20 und 16/16, Sockel max 0
+  - gate:welt-boot `--selbsttest`: Lauf 2 grün (`heil3/welt-boot-2.log`). Lauf 1 rot an EINEM Fall (offen 9)
+  - diag-taille grün, 10 s mit dem Schloss
 
 ## Die Zahlen
 | | main | Kopf |
@@ -94,7 +121,12 @@ Die Bilanz: main 8/8, Kopf 8/8, fuge-offen 3/3, `fehler` [] (`gpu-1c574fb1/bild-
    - Die Räumung (`_naturRaeumen`) räumt nur Grundriss und Weg, die Probe zählt den ganzen Grund (`!_ortFrei`).
    - Nicht geschnitten.
 5. **haus-fern** am 980bf4887: Der 1. Lauf starb nach 28 s ohne Meldung neben einem GPU-Lauf, der 2. Lauf war grün (285,6 s).
-6. **`npm run check`** (am Kopf `check:statik` mit 52 Gliedern `&& gate:haus-fern`): kein Glied steht offen, alle sind am Baum 1c574fb1b grün gefahren. Ich habe es nur nicht als EINEN Aufruf gefahren.
-   - 51 Glieder grün (`tore-1c574fb1/ZUSAMMEN.txt` statik00–50, Liste gleich `check:statik` am Kopf).
-   - Das 52. Glied `node scripts/diag-taille.cjs` ist grün am Gerät (`gpu-1c574fb1/taille.log`, 7 s).
-   - `gate:haus-fern` ist grün (273 s).
+6. **`npm run check`** am Kopf: kein Glied steht offen, aber ich habe es nicht als EINEN Aufruf gefahren. `diag-taille` ist ein GPU-Lauf und fuhr über `gpu-lauf.sh`, die übrigen Glieder liefen einzeln (oben unter „Tore am Baum a69426b28“).
+7. **Der Takt der Leute geht in den übrigen Proben ohne Verkehr** (`kreatur-proben` `leute`: bewohner, zielplan, kreatur-leben). Ich habe ihn dort probeweise mitgetaktet; dann fiel bewohner rot an Befunden des Verkehrs, die nicht diese Heilung sind:
+   - 72 978 Takte „in einer Wand“: die Fahrer am Steuer im Leib ihres Wagens, Limousine #828625280 und #302931469;
+   - Soll-Orte der Fahrer #952 und #617311 zu 48–53 % (Soll ≥ 90 %);
+   - 4 Berührungen (#731592 um 8,34 Uhr, #619833 um 8,47 Uhr);
+   - 2 Gänge nicht über die Tür (#952 an haus_schwarzwald #809070).
+   Die Linse der Leute kennt den fahrenden Wagen noch nicht. Die Klasse ist benannt offen, im Code an `leute` (`heil2/r2/kt-1.log`).
+8. **Wer am Fahrbahnrand wartet, macht dem Spieler keinen Platz.** `_verkehrVorrang` setzt das Tempo auf 0 und überschreibt dabei das Ausweichen vor dem Spieler. Am b0b89869 stand der Zeuge so im vierten Gang: 0,45 m, 31 Takte Berührung. Im Spiel fährt der Wagen in Sekunden vorbei. Nicht geschnitten.
+9. **welt-boot `--selbsttest`, der Fall „Tod der Seite (Absturz)“, flackert.** Lauf 1 am a69426b28 kam nach 20 min Warten hinter einem CI-echt-Job. Er sah statt des ABSTURZ nur STILLE nach 40 s (`heil3/welt-boot.log`). Lauf 2 nannte den Absturz nach 2,0 s beim Namen (0xc0000005, Abbild in `anazh-absturz`). Der Fall liegt nicht am Schnitt dieser Welle; die Ursache ist nicht gesucht.
