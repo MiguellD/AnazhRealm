@@ -5,14 +5,13 @@
 // Wuchs-/Asset-Mathematik lebt hier, phytogenesis.js ist die Display-/Welt-/UI-Shell + der
 // GL-Bäcker. THREE/__phytoCore sind zur Laufzeit global (Ladereihenfolge; das Verschmelzen ist phyto-core, kein Addon).
 
+// DER STROM (Welle SAMEN): mulberry32 lebt EINMAL — im Samen-Kern (samen-core.js `__samenCore`, die erste Zeile des
+// Manifests), gelesen je Ruf am globalen Namen (die Lese-Spur der Platte sieht ihn). Der globale Name bleibt den Lesern dieses
+// klassischen Skripts (foundry-bruecke.js, worlds/terrain/phytogenesis.js); fehlt der Samen-Kern, bricht der Ruf beim Namen.
 function mulberry32(a) {
-    return function () {
-        a |= 0;
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    const S = self.__samenCore;
+    if (!S) throw new Error("foundry-core: der Samen-Kern fehlt (samen-core.js lädt vor jedem Kern)");
+    return S.mulberry32(a);
 }
 
 function nearestFib(x) {

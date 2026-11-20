@@ -573,6 +573,7 @@ function ENGINE_THREE() {
 // w3s-sukzession lud jede Linse three und Kern in eigenen Zeilen (fünfzehn Mal).
 function studioKern(datei, name, frisch) {
     global.THREE ||= ENGINE_THREE();
+    require(path.join(ROOT, "samen-core.js")); // der Samen-Baum vor jedem Kern (Welle SAMEN: jeder Strom zieht aus ihm)
     if (frisch) delete require.cache[require.resolve(path.join(ROOT, datei))];
     require(path.join(ROOT, datei));
     return globalThis[name];
@@ -584,13 +585,14 @@ const QUELL_TEXT = {};
 // die Kerne des Ofens (Tier und Mensch: foundry-core BAKERS_BY_KIND) in der Folge ihres Fadens
 const OFEN_KERNE = ["phyto-core.js", "koerper-core.js", "tetrapoda-core.js", "foundry-core.js"];
 // THREE ist die Engine des Fadens (`ENGINE_THREE`, je Scope eine eigene Kopie des Namensraums) — der Faden rechnet auf
-// three r184, kein Linsen-Scope auf einer zweiten three.
+// three r184, kein Linsen-Scope auf einer zweiten three. Vor den Quellen steht der Samen-Baum (samen-core.js, die erste Zeile
+// des Manifests: jeder Faden lädt ihn vor jedem Kern).
 function fadenScope(quellen) {
     const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
     sb.self = sb.globalThis = sb.window = sb;
     sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
-    for (const f of quellen)
+    for (const f of quellen.includes("samen-core.js") ? quellen : ["samen-core.js", ...quellen])
         require("vm").runInContext((QUELL_TEXT[f] ||= ausDatei(f)), sb, {
             filename: f,
         });

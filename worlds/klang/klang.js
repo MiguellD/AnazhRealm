@@ -32,20 +32,11 @@ const dB = v => Math.pow(10, v/20);
 /* ── Seed & Zufall ──
    Alle musikalischen Entscheidungen laufen über einen seedbaren PRNG:
    gleicher Seed + gleiches Preset = Note für Note dieselbe Komposition.
-   Damit werden Stücke reproduzierbar und als Link teilbar. */
-function mulberry32(a){
-  return function(){
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function hashStr(s){
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return h >>> 0;
-}
+   Damit werden Stücke reproduzierbar und als Link teilbar.
+   Generator und Text-Hash leben EINMAL (Welle SAMEN): im Samen-Kern ../../samen-core.js (__samenCore, VOR diesem
+   Skript geladen) — mulberry32 und FNV-1a, dieselben Bits wie die Kopien, die hier standen. */
+const mulberry32 = window.__samenCore.mulberry32;
+const hashStr = window.__samenCore.samenHash;
 let seed = (Date.now() % 900000000) >>> 0;
 let seedUsed = -1;
 let rng = mulberry32(seed);
