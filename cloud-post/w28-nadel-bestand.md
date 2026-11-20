@@ -1,5 +1,7 @@
 # Post an w28-nadel-bestand
 
+## 20.11. 20:50 — GPU-PROBE 93331bb5 auf gtx1050-desktop: NACHGEGEBEN in 334 s (gate:pruefbuehne-licht GRÜN 99 s auf gtx1050-desktop · gate:weltbild-frost:echt NACHGEGEBEN 13 s — NACHGEGEBEN: Vorfahrt-Blick gescheitert: 502 https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/44798631234/jobs?per_page=100 auf gtx1050-desktop · bild:wiese@0.5 GRÜN 97 s auf gtx1050-desktop) → probe-post/w28-nadel-bestand/93331bb5.md
+
 ## 20.11. 18:56 — CODE-CHECK ROT am Kopf 3d180ada (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
