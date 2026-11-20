@@ -761,7 +761,7 @@ class AnazhRealm_stoff_instanz {
                 const zug = a._zuege.get(camera);
                 if (!zug || !zug.bereit) throw new Error("GPU-WAHL: die Arena zieht ohne die Wahl ihres Passes");
                 zug.bereit = false;
-                a._wahlSicht(zug, renderer);
+                a._wahlSicht(zug);
                 a._stapel[a._stapel.length - 1] = zug;
                 return;
             }
@@ -1397,7 +1397,7 @@ class AnazhRealm_stoff_instanz {
             // Aufträge dieser Kamera schreiben, die Liste so groß wie ihre Abschnitte — ihr Zug (`_arenaZug`) nimmt sie. Die
             // Liste liegt ab ihrer Geburt auf der GPU: rechnete in ihrem Frame kein Zug (jedes Glied außer Sicht), fand ein Leser
             // nach dem Frame (der Band-Zähler, die Blick-Sonde) eine Liste ohne Puffer („reading 'size'").
-            _wahlVor(rend, camera) {
+            _wahlVor(rend, camera, lage = null) {
                 this._rend = rend;
                 // DER TAKT ORDNETE DIESES BILD SCHON (`_arenaTakt`, vor jedem Pass; w27-takt-streu): jeder Pass liest sein Ergebnis,
                 // solange kein Glied seither kam, ging oder seine Zahl wechselte (`_geordnet`) — ein zweites Ordnen je Pass ging
@@ -1417,7 +1417,7 @@ class AnazhRealm_stoff_instanz {
                     L.set(camera, (zug.liste = new IND(new Uint32Array(this._nCap), 1)));
                     rend._attributes.update(zug.liste, 3); // r184 AttributeType.STORAGE
                 }
-                this._auftraege(zug, camera, rend, false);
+                this._auftraege(zug, camera, rend, false, lage);
                 zug.bereit = true;
                 return zug;
             }
@@ -1426,10 +1426,10 @@ class AnazhRealm_stoff_instanz {
             // nach dem Haken verborgen wurde (die Wahl einer Linse, `__linsenZiel`), fällt hier aus dem Zug. Befund (Radeon, die
             // Albedo-Tafel an Genesis, 900c28e6): jede Zeile zog Wiese, Kronen und Bänke der Wahl mit (Rinde 0,0807 → 0,1397, Tor
             // 0,6493 → 0,1256) — eine Zusage der Foundry zwischen zwei Schüssen schrieb `_instanzZahl` (visible = n > 0) vor dem Haken.
-            _wahlSicht(zug, renderer) {
+            _wahlSicht(zug) {
                 for (let j = zug.zuege.length - 1; j >= 0; j--) {
                     const m = zug.zuege[j];
-                    if (m === this || this._sichtbar(m, renderer)) continue;
+                    if (m === this || this._sichtbar(m)) continue;
                     const gz = zug.gpuZahl ? zug.gpuZahl.get(m) : undefined;
                     zug.tri -= (zug.arr[zug.offs[j] / 4 - zug.seg * this._segCap * 5] / 3) * (gz === undefined ? zug.wahl[j * 5 + 2] : gz); // prettier-ignore
                     zug.offs.splice(j, 1);
@@ -1685,12 +1685,11 @@ class AnazhRealm_stoff_instanz {
                 this._folgen();
                 return 0;
             }
-            _sichtbar(m, renderer) {
+            _sichtbar(m) {
                 if (m.visible === false) return false;
                 let p = m.parent;
                 while (p && p !== this.parent) {
                     if (p.visible === false) return false;
-                    if (p.occlusionTest === true && renderer.isOccluded(p)) return false;
                     p = p.parent;
                 }
                 return p === this.parent;
@@ -1747,6 +1746,9 @@ class AnazhRealm_stoff_instanz {
                     alt = z.n,
                     teil = m.__bereiche === true && alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[2] || x[0].updateRanges.length); // prettier-ignore
                 z.n = n;
+                // das Band der Sichthöhen des Glieds für das Fenster im Ganzen (`_fensterTraegt`, nur eine Stufe der Blende)
+                const F = m.__wahlFenster;
+                z.mass = F && F[0] >= 1 && F[0] <= 4 ? AnazhRealm._fensterMass(q, n, F[0]) : null;
                 for (const [a, d, anders] of quellen) {
                     if (teil && !anders && n <= alt) continue;
                     // die Plätze [i0, i1) der Quelle in den Block, im Schritt des Ziels (`_instanzSeite`: vec3 liegt auf 4)
@@ -1877,7 +1879,7 @@ class AnazhRealm_stoff_instanz {
                     L.takt(renderer, jetzt);
                     if (haupt)
                         for (const m of this.glieder) {
-                            if ((m.count | 0) <= 0 || !this._sichtbar(m, renderer)) continue;
+                            if ((m.count | 0) <= 0 || !this._sichtbar(m)) continue;
                             if (blick && m.frustumCulled !== false) {
                                 if (m.boundingSphere === null) m.computeBoundingSphere();
                                 if (!fr.intersectsSphere(kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld)))
@@ -1896,7 +1898,7 @@ class AnazhRealm_stoff_instanz {
             // füllt sie, und reichen sie nicht oder liegt mehr als die Hälfte brach, nimmt das Bündel neu auf — sonst nie, die
             // Wahl wechselt ohne Aufnahme. Befund 16.10. (Prüfung, Dorf): bis hier zog jedes Glied seinen Platz, auch leer —
             // die Züge des Hauptbilds 58 → 66.
-            _auftraege(zug, camera, renderer, auf) {
+            _auftraege(zug, camera, renderer, auf, lage = null) {
                 const fest = camera === null;
                 const args = zug.arr,
                     basis = zug.seg * this._segCap * 5,
@@ -1914,7 +1916,7 @@ class AnazhRealm_stoff_instanz {
                 for (const m of this.glieder) {
                     let n = m.count | 0;
                     if (n > 0) lebend++;
-                    if (n > 0 && !this._sichtbar(m, renderer)) n = 0;
+                    if (n > 0 && !this._sichtbar(m)) n = 0;
                     if (n > 0 && !fest && m.frustumCulled !== false) {
                         if (!frust) {
                             const R = globalThis.anazhRealm; // die Wahl des Spiels, auch im Mess-Fenster (`_wahlMatrix`)
@@ -1948,6 +1950,14 @@ class AnazhRealm_stoff_instanz {
                     if (jetzt === undefined || z.blockJetzt !== jetzt || z.n < 0 || n > z.n) {
                         z.blockJetzt = jetzt;
                         this._block(m, z, n);
+                    }
+                    // KOSTEN AM SCHIRM (laub-kante): behält die Maske der Blende keine seiner Instanzen in diesem Pass, zieht das
+                    // Glied nicht — die GPU zählte ihm 0, sein Befehl ginge leer ins Band (`_fensterTraegt`, das Auge der Wahl)
+                    const F = m.__wahlFenster;
+                    if (lage && wahl && F && F[0] >= 1 && F[0] <= 4) {
+                        if (m.boundingSphere === null) m.computeBoundingSphere();
+                        kugel.copy(m.boundingSphere).applyMatrix4(m.matrixWorld);
+                        if (!AnazhRealm._fensterTraegt(F, lage, kugel.center, kugel.radius, z.mass)) continue;
                     }
                     const o = k * 5;
                     // in der Wahl zählt der Compute die Instanzen, die erste ist der Block in der Liste dieser Kamera (`_wahlVor`)
@@ -2269,8 +2279,8 @@ class AnazhRealm_stoff_instanz {
     // Backend weitete die Mensch-Indizes, die Welt band acht Mensch-Meshes als uint32 auf 16-bit-Puffern („Index range …
     // does not fit", 1 760 Meldungen in Sekunden), jeder Render-Kontext der Welt wurde verworfen — das Bild stand, die Uhr
     // lief. Gerufen direkt nach dem Bau des Welt-Renderers (vor jedem init, vor jedem Attribut): jedes Backend der Seite
-    // erbt (1) den schmalen Index und das Index-Maximum, gebucht am EINEN Weg jedes Index auf die GPU (Anlegen ganz,
-    // Nachschreiben nur die geschriebenen Bereiche — die Sätze schreiben je Pass), (2) die Index-Wache am Draw (ein
+    // erbt (1) den schmalen Index am Anlegen und das Index-Maximum, gebucht am ersten Draw ganz, danach je Nachschreiben
+    // nur die geschriebenen Bereiche — die Sätze schreiben je Pass), (2) die Index-Wache am Draw (ein
     // Vergleich), (3) die GPU-Wache an seinem Device und an der Konsolen-Funktion von three.
     _backendGesetz(renderer) {
         const be = renderer && renderer.backend;
@@ -2289,10 +2299,6 @@ class AnazhRealm_stoff_instanz {
             } finally {
                 if (schmal) attr.normalized = false;
             }
-            const d = this.get(attr);
-            // die Puffer-Größe einmal gelesen (GPUBuffer.size ist ein Binding-Aufruf — je Draw kostete er ~0,3 µs)
-            d.__indexBytes = d.buffer ? d.buffer.size : 0;
-            AnazhRealm._indexMaxBuchen(d, attr.array, null);
             return aus;
         };
         const nachschreiben = P.updateAttribute;
@@ -2326,13 +2332,21 @@ class AnazhRealm_stoff_instanz {
     // (der Array-Typ), passt in den Puffer, der auf der GPU liegt, und kein gezeichneter Index greift über die Vertex-Zahl.
     // Ein Bruch steht beim NAMEN im Log (Objekt-Pfad · Geometrie · Zahlen · Backend), einmal je Geometrie und Art, gezählt
     // in `_indexWache` — vor der Device-Meldung, die nur „Index range … does not fit" kennt. Kosten: je Draw ein Vergleich
-    // gegen das am Anlegen/Nachschreiben gebuchte Maximum (`_indexMaxBuchen`); den gezeichneten Bereich liest sie nur im
+    // gegen das am ersten Draw/Nachschreiben gebuchte Maximum (`_indexMaxBuchen`); den gezeichneten Bereich liest sie nur im
     // Verdacht (Maximum ≥ Vertex-Zahl — ein Satz trägt Luft hinter seinem Hochwasser), einmal je Version und Bereich.
+    // DIE BUCHUNG AM DRAW (z637, Frost-Wand T1): jeder Index, den ein Draw bindet, geht HIER durch — gebucht wird er beim ersten
+    // (die Puffer-Größe einmal gelesen: GPUBuffer.size ist ein Binding-Aufruf, je Draw kostete er ~0,3 µs; das Maximum über das
+    // ganze Array, danach je Nachschreiben seine Bereiche). Bis hier buchte das Anlegen (`createIndexAttribute`), und die Wache
+    // ließ jeden Index ohne Buchung still durch (`!(bytes > 0)`) — einen, der als Storage vor seinem ersten Draw auf die GPU
+    // kam, hätte sie nie gesehen. Jetzt hat sie keinen Zweig, der einen Index durchwinkt.
     _indexWacheDraw(be, ro, idx) {
         const d = be.get(idx);
-        const bytes = d.__indexBytes;
-        if (!(bytes > 0)) return;
         const arr = idx.array;
+        if (d.__indexBytes === undefined) {
+            d.__indexBytes = d.buffer.size;
+            AnazhRealm._indexMaxBuchen(d, arr, null);
+        }
+        const bytes = d.__indexBytes;
         let art = null,
             detail = null;
         if (arr.byteLength > bytes) {

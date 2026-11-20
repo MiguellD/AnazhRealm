@@ -75,12 +75,16 @@ class AnazhRealm_bild_schatten {
     // Fern-Ring trug 17 > 16 (gate:webgl-probe W6: der Rückfall linkt ihn nie). Der Stoff ersetzt den Boden der Atmosphäre
     // (`_rueckstrahlHalbraum`: + (Boden − Atmosphäre) · (1 − n.y)/2, die Bestrahlung einer geneigten Fläche aus dem Halbraum).
     // Ein Boden aus Albedo 0 trägt nichts zurück. Der Pass läuft nach dem Bild (wie der Spiegel): EIN Dreieck über das Ziel.
+    // DIE SICHT DES BILDES (laub-messer, der Lichtmesser der Kamera): hinter der Spalte der Atmosphäre trägt dasselbe Ziel die
+    // Kacheln der unteren Bildhälfte ein zweites Mal — je Kachel den Sonnen-Schatten, den das Bild an ihren Proben zeichnet, und
+    // ihre Zahl (`_rueckstrahlPass`, der zweite Block). Das Ziel misst (2 · Kacheln + 1) × Zeilen; die Lesung trägt `sicht`
+    // (das Flächen-Mittel, ohne Lesung 1) und `sichtRichtung` (die Richtung des Lichts, unter der sie maß; 0 vor der ersten).
     _rueckstrahlLeser() {
         const st = this.state;
         if (st.rueckstrahlLeser) return st.rueckstrahlLeser;
         const T = THREE.TSL;
         const [kx, ky] = AnazhRealm.RUECKSTRAHL.kacheln;
-        const rt = new THREE.RenderTarget(kx + 1, ky, { type: THREE.HalfFloatType, depthBuffer: false });
+        const rt = new THREE.RenderTarget(2 * kx + 1, ky, { type: THREE.HalfFloatType, depthBuffer: false });
         rt.name = rt.texture.name = "rueckstrahl:boden";
         rt.texture.minFilter = rt.texture.magFilter = THREE.NearestFilter;
         rt.texture.generateMipmaps = false;
@@ -89,7 +93,10 @@ class AnazhRealm_bild_schatten {
             boden: T.uniform(new THREE.Vector3()),
             atmo: T.uniform(new THREE.Vector3()),
         });
-        st.rueckstrahlLeser = Object.assign({ rt, lesung: null, gelesen: false, licht: 0 }, U);
+        st.rueckstrahlLeser = Object.assign(
+            { rt, lesung: null, gelesen: false, licht: 0, sicht: 1, sichtRichtung: new THREE.Vector3() },
+            U
+        );
         // die Strahldichte, die die untere Hemisphäre ändert — EIN Knoten für jeden Leser
         st.rueckstrahlLeser.unten = U.boden.sub(U.atmo).mul(U.an);
         return st.rueckstrahlLeser;
@@ -104,19 +111,46 @@ class AnazhRealm_bild_schatten {
         return T.max(himmel.add(unten.mul(T.float(1).sub(n.y).mul(0.5))), T.vec3(0));
     }
 
+    // DIE KASKADEN, DEREN SCHATTEN DAS BILD ZEICHNET — für den zweiten Block des Passes (die Sicht des Bildes), gefragt nur, wo
+    // der Renderer Schatten zeichnet (`_rueckstrahlPass`): `false`, solange die Kaskaden nicht geboren sind (`_kaskadenGeburt`:
+    // der erste beleuchtete Stoff legt Lichter, Schatten-Knoten und Karten an — der Pass entsteht mit ihnen); sonst der Knoten
+    // der Kaskaden. Schatten ohne Kaskaden-Knoten (das Vendor-Symbol fehlt) oder ohne ihren weichen Übergang brechen laut: der
+    // Block stellt GENAU die Wahl der Kaskade nach, die `CSMShadowNode._setupFade` trifft.
+    _bildSichtKaskaden() {
+        const csm = this.state.csmNode;
+        if (!csm || csm.fade !== true || !Array.isArray(csm.lights) || !Array.isArray(csm._shadowNodes))
+            throw new Error(
+                "die Sicht des Bildes: die Kaskaden des Richtlichts fehlen (CSMShadowNode mit `fade`, Vendor-Drift)"
+            );
+        const n = csm.cascades;
+        if (csm.lights.length !== n || csm._shadowNodes.length !== n) return false;
+        for (let i = 0; i < n; i++) {
+            const sn = csm._shadowNodes[i];
+            if (!sn || !sn.shadowMap || !sn.shadowMap.depthTexture || !csm.lights[i].shadow.filterNode) return false;
+        }
+        return csm;
+    }
+
     _rueckstrahlPass() {
         const st = this.state;
         if (st.rueckstrahlPass) return st.rueckstrahlPass;
+        // ZEICHNET DER RENDERER SCHATTEN? Wo nicht (Holz kienspan: r184 baut keine Kaskade, kein Stoff trägt einen Sonnen-Schatten),
+        // entsteht der zweite Block nie und die Sicht ist 1 (`_bildSichtMisst`); wo ja, entsteht der Pass erst mit den Kaskaden
+        const wirft = !!(st.renderer && st.renderer.shadowMap && st.renderer.shadowMap.enabled === true);
+        const csm = wirft && this._bildSichtKaskaden();
+        if (wirft && !csm) return null;
         const T = THREE.TSL;
-        const { Fn, Loop, If, float, vec2, vec3, vec4, ivec2, uniform, select, abs, normalize, cross } = T;
+        const { Fn, Loop, If, float, vec2, vec3, vec4, ivec2, uniform, select, abs, normalize, cross, dot } = T;
         const R = AnazhRealm.RUECKSTRAHL;
         const [KX, KY] = R.kacheln;
+        const KYS = KY >> 1; // die Kachel-Zeilen der unteren Bildhälfte
         const tiefe = T.texture(st.scenePass.getTextureNode("depth").value);
         const farbe = T.texture(st.scenePass.getTextureNode().value);
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
         const U = this._uniformHeimatTeilen({
             invVP: uniform(new THREE.Matrix4()),
             auge: uniform(new THREE.Vector3()),
+            vor: uniform(new THREE.Vector3()),
             weissBoden: uniform(0),
         });
         // der Boden der Atmosphäre: dieselbe PMREM-Stufe und dasselbe Licht wie der Himmel jedes Stoffs (`_spiegelUmgebung`)
@@ -131,10 +165,22 @@ class AnazhRealm_bild_schatten {
         mat.fog = false;
         mat.depthTest = false;
         mat.depthWrite = false;
-        mat.fragmentNode = Fn(() => {
+        // die Wahl der Kaskade wie `CSMShadowNode._setupFade`: die lineare Tiefe der Ansicht zwischen `camera.near` und der
+        // Schatten-Reichweite, die Brüche der Kaskaden (`_cascades`) — dieselben Größen, die der Knoten der Kaskaden jedem Stoff reicht
+        const nah = csm && T.reference("camera.near", "float", csm).setGroup(T.renderGroup);
+        const kask = csm && T.reference("_cascades", "vec2", csm).setGroup(T.renderGroup);
+        const fern =
+            csm &&
+            uniform("float")
+                .setGroup(T.renderGroup)
+                .onRenderUpdate(() => Math.min(csm.maxFar, csm.camera.far));
+        mat.fragmentNode = Fn((builder) => {
             const summe = vec3(0).toVar();
             const n = float(0).toVar();
-            const gr = vec2(tiefe.size());
+            const sicht = float(0).toVar();
+            const sichtN = float(0).toVar();
+            // vor jedem Zweig geboren (Lehre 26: ein Knoten steht, wo er zuerst gebaut wird — beide Blöcke lesen die Größe)
+            const gr = vec2(tiefe.size()).toVar();
             const welt = (px) => {
                 const d = tiefe.load(px).r;
                 const uv = vec2(px).add(0.5).div(gr);
@@ -197,17 +243,138 @@ class AnazhRealm_bild_schatten {
                     });
                 });
             });
+            // DIE SICHT DES BILDES (laub-messer, M2 · M6): die Spalten hinter der Atmosphäre tragen die Kacheln der unteren
+            // Bildhälfte ein zweites Mal — dieselben `dichte`² Proben je Kachel (32 × 9 × 8² = 18 432), je Probe der Welt-Punkt aus
+            // der Tiefe und die Frage an DIESELBE Schatten-Funktion, die jeder Stoff des Bilds liest: je Kaskade r184
+            // `setupShadowCoord` + `setupShadowFilter` mit ihrem Filter (`shadow.filterNode` = `_schattenFilter`), ihrer Karte,
+            // ihrer Matrix, ihrem Bias längs der Normale der Fläche (aus der Tiefe, dem Auge zugewandt), gewählt und überblendet
+            // wie `_setupFade`; darüber die Sonnen-Sicht jenseits der Kaskaden (`_sonnenSicht`: Horizont × Wolke — derselbe Knoten,
+            // den die Kaskaden jedem Empfänger reichen). Der Himmel (Tiefe am fernen Ende) zählt nicht. Der Empfänger des Messers
+            // bleibt die waagrechte Karte (M1): die Lesung ist die SICHT 0 … 1, die Neigung trägt `_waagrechtIrradianz` (sin h☉).
+            if (csm) {
+                const imSicht = kachel.x.greaterThan(KX).and(kachel.y.lessThan(KYS));
+                const letzte = csm.cascades - 1;
+                If(imSicht, () => {
+                    const k = kachel.sub(vec2(KX + 1, -KYS)).toVar();
+                    Loop(R.dichte, R.dichte, ({ i, j }) => {
+                        const px = ivec2(
+                            k
+                                .mul(R.dichte)
+                                .add(vec2(float(i), float(j)))
+                                .add(0.5)
+                                .div(vec2(KX * R.dichte, KY * R.dichte))
+                                .mul(gr.sub(3))
+                                .add(1)
+                        );
+                        const p = welt(px).toVar();
+                        If(p.w.lessThan(0.99999), () => {
+                            const ax = welt(px.add(ivec2(1, 0))).xyz.sub(p.xyz);
+                            const ay = welt(px.add(ivec2(0, 1))).xyz.sub(p.xyz);
+                            const rel = p.xyz.sub(U.auge).toVar();
+                            const n0 = normalize(cross(ax, ay)).toVar();
+                            const N = n0.mul(select(dot(n0, rel).greaterThan(0), float(-1), float(1))).toVar();
+                            const lin = dot(rel, U.vor).sub(nah).div(fern.sub(nah)).toVar();
+                            const wert = float(1).toVar();
+                            for (let c = 0; c <= letzte; c++) {
+                                const lw = csm.lights[c];
+                                const sn = csm._shadowNodes[c];
+                                const sh = lw.shadow;
+                                const band = kask.element(c);
+                                const mitte = band.x.add(band.y).div(2);
+                                const kante = select(lin.lessThan(mitte), band.x, band.y);
+                                const rand = float(0.25).mul(kante.mul(kante)).toVar();
+                                const x0 = band.x.sub(rand.div(2)).toVar();
+                                const y0 = (c === letzte ? band.y : band.y.add(rand.div(2))).toVar();
+                                If(lin.greaterThanEqual(x0).and(lin.lessThanEqual(y0)), () => {
+                                    let anteil = T.min(lin.sub(x0), y0.sub(lin)).div(rand).clamp(0, 1);
+                                    if (c === 0) anteil = select(lin.greaterThan(mitte), anteil, float(1));
+                                    const nb = T.reference("normalBias", "float", sh).setGroup(T.renderGroup);
+                                    const pos = T.lightShadowMatrix(lw).mul(vec4(p.xyz.add(N.mul(nb)), 1));
+                                    const s = sn.setupShadowFilter(builder, {
+                                        filterFn: sh.filterNode,
+                                        shadowTexture: sn.shadowMap.texture,
+                                        depthTexture: sn.shadowMap.depthTexture,
+                                        shadowCoord: sn.setupShadowCoord(builder, pos),
+                                        shadow: sh,
+                                        depthLayer: sn.depthLayer,
+                                    });
+                                    wert.subAssign(float(1).sub(s).mul(anteil));
+                                });
+                            }
+                            sicht.addAssign(wert.mul(this._sonnenSicht(p.xyz)));
+                            sichtN.addAssign(1);
+                        });
+                    });
+                });
+            }
             // je Kachel das Mittel ihres Bodens und die Zahl seiner Proben (die Lesung wiegt die Kacheln nach ihr; eine Kachel
-            // ohne Boden trägt 0) — das Mittel, nie die Summe: 64 Proben einer hellen Sonne sprengten den Halb-Float
-            return select(imBild, vec4(summe.div(n.max(1)), n), vec4(atmoBoden, 1));
+            // ohne Boden trägt 0) — das Mittel, nie die Summe: 64 Proben einer hellen Sonne sprengten den Halb-Float. Die Kachel
+            // der Sicht trägt ihr Mittel und die Zahl ihrer Proben ebenso (r, g); die Spalte dazwischen den Boden der Atmosphäre
+            return select(
+                imBild,
+                vec4(summe.div(n.max(1)), n),
+                select(kachel.x.greaterThan(KX), vec4(sicht.div(sichtN.max(1)), sichtN, 0, 1), vec4(atmoBoden, 1))
+            );
         })();
         const pp = st.postProcessing;
         const Quad = pp && pp._quadMesh && pp._quadMesh.constructor;
         if (typeof Quad !== "function") throw new Error("RÜCKSTRAHL: Quad der Post-Kette fehlt (Vendor-Drift)");
         const quad = new Quad(mat);
         quad.name = "rueckstrahl:boden";
-        st.rueckstrahlPass = { quad, mat, U, vp: new THREE.Matrix4(), laeufe: 0, sig: null, sprung: false };
+        // `sicht`: der Pass trägt den Block der Sicht; `nachAb`: der Schatten-Frame einer Regung der Welt, nach der die
+        // Kaskaden noch zeichnen (`_rueckstrahlWach`)
+        st.rueckstrahlPass = {
+            quad,
+            mat,
+            U,
+            vp: new THREE.Matrix4(),
+            laeufe: 0,
+            sig: null,
+            sprung: false,
+            sicht: !!csm,
+            nachAb: null,
+            lichtDir: new THREE.Vector3(),
+        };
         return st.rueckstrahlPass;
+    }
+
+    // DIE SICHT DES BILDES FÜR DEN LICHTMESSER (laub-messer; Leser: `_waagrechtIrradianz`, die Belichtung): der Anteil der Sonne,
+    // den der Schatten des Bildes der unteren Bildhälfte lässt — das Flächen-Mittel der letzten Lesung (`_rueckstrahlZeichne`).
+    // EINE Quelle: der Messer führt keine eigene Gestalt der Welt mehr (bis hier Ellipsen im Rahmen der Karten mit fester Dichte,
+    // die Ebene unter dem Auge, das 32-m-Gitter des Grats — die Klasse, an der die Belichtung dem Bild beim Sonnenaufgang um
+    // 0,12–0,16 EV je 0,002 der Uhr davonlief, Tag-Achse Wiese, Radeon). Ohne Lesung gilt die letzte; ganz ohne (das erste Bild
+    // der Welt, der Null-Renderer, kein Wurf des Lichts — `_lichtWirft`, Holz kienspan —, kein Szenen-Pass, ein Bruch des Passes
+    // oder der Post-Kette, der sich beim EINEN Melder nennt) ist sie 1: das Bild zeichnet dort keinen Schatten oder niemand maß.
+    _bildSonnenSicht() {
+        const L = this.state.rueckstrahlLeser;
+        return L && this._bildSichtMisst() ? L.sicht : 1;
+    }
+
+    // MISST DER PASS DIE SICHT? Das Licht wirft (`_lichtWirft`) und der Pass läuft (Szenen-Pass, Post-Kette, kein Bruch)
+    _bildSichtMisst() {
+        const st = this.state;
+        return !!st.scenePass && !st.rueckstrahlBruch && st.postProcessingFailed !== true && this._lichtWirft();
+    }
+
+    // STEHT DIE SICHT DES LICHTS, DAS JETZT GILT? Nach einem Sprung der Uhr (der Uhr-Schreiber, das Laden, die Ankunft) zeichnet
+    // erst das nächste Bild die Schatten der neuen Stunde, seine Lesung kommt ein bis zwei Bilder später — bis dahin trägt die
+    // Belichtung die Sicht der Stunde davor. Leser: die Belichtung der Ankunft (`_belichtungSteht`, der Ladeschirm weicht erst
+    // nach der Lesung) und die Tag-Achse (ASYNC: die Bilder vom Uhr-Wort bis zur Lesung).
+    // DIE SICHT GILT DER RICHTUNG DES LICHTS, nie dem Zähler der Himmels-Sprünge (`licht`, das Maß des Bodens: seine Farbe ist
+    // Sonne × Albedo): sie ist Geometrie — sie steht, wenn das Licht, unter dem sie maß, höchstens `HORIZONT_KARTE.lichtRad`
+    // neben dem Licht von jetzt steht. Unter dem Ladeschirm springt der Himmel an JEDEM Lade-Bild (`tickDayNight`: zwischen zwei
+    // Lade-Bildern liegt über eine Sekunde Spielzeit) — am Zähler verfiel jede Lesung im Flug, das Licht des Orts stand nie und
+    // die Welt hing (Radeon, 1920 × 1080, Umstellen an die Mess-Wiese: „das Licht des Orts wird gemessen“ nach 3 815 Takten;
+    // Genesis in der Welt des Tors 4 070 Sprünge in 89 Bildern).
+    _bildSichtSteht() {
+        if (!this._bildSichtMisst()) return true;
+        const L = this.state.rueckstrahlLeser;
+        if (!L) return false;
+        const dl = this.state.directionalLight;
+        const l = this._bildSichtLicht || (this._bildSichtLicht = new THREE.Vector3());
+        l.copy(dl.position);
+        if (dl.target) l.sub(dl.target.position);
+        return l.lengthSq() > 0 && L.sichtRichtung.dot(l.normalize()) >= Math.cos(AnazhRealm.HORIZONT_KARTE.lichtRad);
     }
 
     // NACH DEM BILD (`_loopRender`, auf der Post-Kette, neben dem Spiegel): der Pass misst den Boden dieses Bilds in seiner
@@ -221,6 +388,7 @@ class AnazhRealm_bild_schatten {
         if (!st.scenePass || !st._skyEnvRT || st.rueckstrahlBruch) return;
         try {
             const P = this._rueckstrahlPass();
+            if (!P) return; // die Kaskaden sind noch nicht geboren (`_bildSichtKaskaden`): der Pass entsteht mit ihnen
             const cam = st.camera;
             // ein Sprung wartet auf die nächste Messung, solange eine Lesung unterwegs ist
             P.sprung = P.sprung || P.laeufe === 0 || !!(st._traaR && st._traaR.sprung);
@@ -230,6 +398,7 @@ class AnazhRealm_bild_schatten {
             P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
             P.U.invVP.value.copy(P.vp).invert();
             P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
+            cam.getWorldDirection(P.U.vor.value);
             P.U.weissBoden.value = this._rueckstrahlWeiss();
             const rend = st.renderer;
             if (typeof rend.readRenderTargetPixelsAsync !== "function")
@@ -245,12 +414,34 @@ class AnazhRealm_bild_schatten {
             P.laeufe++;
             const licht = L.licht; // das Licht dieser Messung: springt der Himmel, bis sie zurück ist, verfällt sie
             const [KX, KY] = AnazhRealm.RUECKSTRAHL.kacheln;
-            L.lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, KX + 1, KY).then(
+            const mitSicht = P.sicht;
+            // die Richtung des Lichts dieser Messung (`_rueckstrahlWach` stellt sie): EINE Lesung ist unterwegs
+            (P.messRichtung || (P.messRichtung = new THREE.Vector3())).copy(P.lichtDir);
+            L.lesung = rend.readRenderTargetPixelsAsync(L.rt, 0, 0, 2 * KX + 1, KY).then(
                 (px) => {
                     L.lesung = null;
-                    if (L.licht !== licht) return;
                     const w = (i) => (px instanceof Uint16Array ? AnazhRealm._halbZuFloat(px[i]) : px[i]);
-                    const zeile = __weltLicht.zeilenSchritt(px, KX + 1, KY); // die Zeilen liegen ausgerichtet (bytesPerRow)
+                    const zeile = __weltLicht.zeilenSchritt(px, 2 * KX + 1, KY); // die Zeilen liegen ausgerichtet (bytesPerRow)
+                    // DIE SICHT DES BILDES: das Flächen-Mittel über die Kacheln der unteren Bildhälfte, gewogen nach der Zahl
+                    // ihrer Proben; ohne eine Fläche im Bild (nur Himmel) hält die letzte Lesung. Sie gilt ohne Folge: die
+                    // Kamera misst das Bild, das steht (keine Zeitkonstante — M5 ist zurückgezogen). Sie gilt der Richtung des
+                    // Lichts ihrer Messung (`_bildSichtSteht`) — ein Sprung des Himmels im Flug nimmt ihr nichts, er nimmt den Boden
+                    if (mitSicht) {
+                        let ss = 0;
+                        let sm = 0;
+                        for (let y = 0; y < KY >> 1; y++)
+                            for (let x = KX + 1; x <= 2 * KX; x++) {
+                                const o = y * zeile + 4 * x;
+                                const k = w(o + 1);
+                                if (k > 0) {
+                                    ss += w(o) * k;
+                                    sm += k;
+                                }
+                            }
+                        if (sm > 0) L.sicht = Math.min(1, Math.max(0, ss / sm));
+                        L.sichtRichtung.copy(P.messRichtung);
+                    }
+                    if (L.licht !== licht) return;
                     L.atmo.value.set(w(4 * KX), w(4 * KX + 1), w(4 * KX + 2));
                     // DAS MITTEL DES GEZEICHNETEN BODENS: jede Kachel trägt das Mittel ihres Bodens und die Zahl seiner Proben
                     let [sr, sg, sb, sn] = [0, 0, 0, 0];
@@ -271,7 +462,8 @@ class AnazhRealm_bild_schatten {
                     st.rueckstrahlBruch = true;
                     L.an.value = 0;
                     this._stoffBruch(
-                        "die Lesung des Rückstrahls (schatten.K4) — die Umgebung trägt unten den Boden der Atmosphäre",
+                        "die Lesung des Rückstrahls (schatten.K4) — die Umgebung trägt unten den Boden der Atmosphäre, " +
+                            "der Lichtmesser misst ohne den Schatten des Bildes",
                         err
                     );
                 }
@@ -280,7 +472,8 @@ class AnazhRealm_bild_schatten {
             st.rueckstrahlBruch = true;
             L.an.value = 0;
             this._stoffBruch(
-                "der Rückstrahl des Bodens (schatten.K4) — die Umgebung trägt unten den Boden der Atmosphäre",
+                "der Rückstrahl des Bodens (schatten.K4) — die Umgebung trägt unten den Boden der Atmosphäre, " +
+                    "der Lichtmesser misst ohne den Schatten des Bildes",
                 err
             );
         }
@@ -326,6 +519,10 @@ class AnazhRealm_bild_schatten {
             if (L.lesung) await L.lesung;
             L.an.value = this._rueckstrahlAn(L);
         }
+        // DIE BELICHTUNG DES SCHUSSES (laub-messer): die Kamera misst die Sicht DIESES Bilds (`_bildSonnenSicht`, dieselbe Lesung) —
+        // im Loop wendet der Takt des Tags sie vor jedem Bild an, die Bilder des Schusses zeichnet die Aufnahme ohne Takt
+        // (`__loopBild`): ohne diesen Ruf trüge der Schuss die Belichtung der Sicht des Schusses davor. Der EINE Schreiber.
+        this._dayNightApplyBelichtung(this._tagAchse(this._sonnenRichtung().y));
     }
     // DER SCHALTER DES RÜCKSTRAHLS (die EINE Regel, `_rueckstrahlZeichne` je Bild und `_rueckstrahlJetzt` nach der Lesung): an erst,
     // wenn ein Boden gelesen ist; ohne Szenen-Pass, ohne Umgebung oder nach einem Bruch nie. DIE DECKE ÜBER DEM AUGE
@@ -357,24 +554,58 @@ class AnazhRealm_bild_schatten {
     // DIE RUHE DES RÜCKSTRAHLS: er misst neu, wenn das Auge weiter als `ruheM` wandert oder der Blick weiter als `ruheRad` dreht (die
     // Ruhe des Auges wie beim Spiegel, `AnazhRealm.SPIEGEL`), das Licht der Welt eine neue Sonde trägt (`_weltLicht().stand`) oder
     // das Auge springt (`sprung`: der erste Lauf, ein Sprung der Zeit-Auflösung — auch jede Aufnahme beginnt so).
+    // DAS BILD ÄNDERT SICH AUCH AM STEHENDEN AUGE (laub-messer): die Sonne wandert — der Pass misst neu, wenn die Richtung des
+    // Lichts sich um `HORIZONT_KARTE.lichtRad` dreht (0,05°: das Maß, nach dem die Horizont-Karte neu malt; am Tag des Spiels
+    // zwei Messungen je Sekunde), solange das Licht wirft; und die Welt lädt nach — jede Regung der Welt und des Baus
+    // (`_weltRegung`, `_bauRegung`: der Weckruf vor jedem Schreiben) weckt ihn. Bis hier maß er am stehenden Auge unter stehender
+    // Uhr nie neu, während Wald und Bauten ins Bild wuchsen: Boden und Sicht blieben die des leeren Bilds (Vor-Probe, Fund).
+    // Nach einer Regung zeichnen die Kaskaden die neuen Werfer erst auf ihrem Takt (`_loopShadowUpdate`, die ferne bis sechs
+    // Bilder später): hat jede seitdem gezeichnet (`_shadowLast.k`), misst er EINMAL nach — an dem Ereignis, nie auf einem Takt.
     _rueckstrahlWach(P, sprung) {
         const e = this.state.camera.matrixWorld.elements;
         const K = AnazhRealm.SPIEGEL;
-        const v = [e[12], e[13], e[14], e[8], e[9], e[10], this._weltLicht().stand];
+        const dl = this.state.directionalLight;
+        const l = P.lichtDir;
+        if (P.sicht && dl && this._lichtWirft()) {
+            l.copy(dl.position);
+            if (dl.target) l.sub(dl.target.position);
+            l.normalize();
+        } else l.set(0, 0, 0);
+        const v = [e[12], e[13], e[14], e[8], e[9], e[10], this._weltLicht().stand, l.x, l.y, l.z];
+        // … und die Horizont-Karte (`_sonnenSicht` liest sie in jedem Empfänger): ihr Gitter kommt erst nach dem ersten Weltbild
+        // (`_horizontGitterTakt`), bei tiefer Sonne fällt mit ihm der Schatten des Grats ins Bild — das gemalte Gitter und ihr
+        // Schalter wecken ihn (ihr Neu-Malen am Licht deckt die Richtung des Lichts oben, dasselbe Maß)
+        const HK = this.state.horizontKarte;
+        v.push(this._weltRegung | 0, this._bauRegung | 0, HK ? HK.gemalt | 0 : -1, HK ? +HK.U.aktiv.value : 0);
         const a = P.sig;
+        const lichtRad = AnazhRealm.HORIZONT_KARTE.lichtRad;
         let wach = sprung || !a;
         for (let i = 0; !wach && i < v.length; i++) {
             const d = Math.abs(v[i] - a[i]);
-            wach = i < 3 ? d > K.ruheM : i < 6 ? d > K.ruheRad : d !== 0;
+            wach = i < 3 ? d > K.ruheM : i < 6 ? d > K.ruheRad : i > 6 && i < 10 ? d > lichtRad : d !== 0;
         }
-        if (wach) P.sig = v;
+        const jetzt = this._shadowFrame | 0;
+        if (wach) {
+            if (a && (v[10] !== a[10] || v[11] !== a[11])) P.nachAb = jetzt;
+            P.sig = v;
+        } else if (P.nachAb != null) {
+            const k = this._shadowLast ? this._shadowLast.k : [];
+            const csm = this.state.csmNode;
+            const n = P.sicht && csm ? csm.cascades : 0;
+            let alle = true;
+            for (let i = 0; alle && i < n; i++) alle = k[i] >= P.nachAb;
+            if (alle) {
+                P.nachAb = null;
+                wach = true;
+            }
+        }
         return wach;
     }
 
     // WIRFT DAS LICHT? Das Richtlicht trägt seinen Wurf (`castShadow`) UND der Renderer zeichnet Schatten (`shadowMap.enabled`:
     // Holz kienspan schaltet sie GANZ aus, dann baut r184 keine Kaskade — `setupShadow` — und mit ihr fällt die Sonnen-Sicht,
     // die `csm.setup` jedem Empfänger des Netzes trägt). Die EINE Frage jedes Lesers eines Sonnen-Schattens: die Takte der
-    // Horizont- und der Wolken-Karte (sonst ruht ihre Sicht), die Grat-Sicht und der Karten-Wurf des Lichtmessers. Bis
+    // Horizont- und der Wolken-Karte (sonst ruht ihre Sicht) und die Sicht des Bildes im Lichtmesser (`_bildSonnenSicht`). Bis
     // w20-fern-hang fragten sie nur `castShadow`: unter kienspan lagen Luft, Feld und Himmelsband im Schatten des Grats, der
     // Boden nie, und der Messer nahm dem Boden der Mess-Wiese einen Wurf, den das Bild nie zeichnete (32 von 32 Strahlen).
     _lichtWirft() {
@@ -488,8 +719,7 @@ class AnazhRealm_bild_schatten {
 
     // DIE WAHL DES WURFS je Bild (aus `_leuchtTakt`, nach den Plätzen): unter den Plätzen mit Licht (ohne das Licht des Auges,
     // es folgt der Kamera und trägt nur ohne Himmel) die Quelle mit der größten Wichtigkeit im Bild — die Bestrahlung in
-    // `bezugM` (der Abfall des Gesetzes, wie der Stoff ihn rechnet) × die Fläche ihrer Reichweite im Bild (R / Abstand)²,
-    // ihre Kugel im Frustum —, wichtig erst, wenn sie in `bezugM` mindestens `wichtigAb` des Lichts der Welt trägt (die
+    // ihrem Abfall im Abstand des Auges (was sie ans Auge trägt, der Rang des Pools), ihre Kugel im Frustum —, wichtig erst, wenn sie in `bezugM` mindestens `wichtigAb` des Lichts der Welt trägt (die
     // waagrechte Bestrahlung der Belichtung, `_belichtungE`: mittags wirft kein Lagerfeuer sichtbar). Die Wahl hält,
     // solange keine andere um `halten` wichtiger ist. Die Karte zeichnet neu bei neuer Wahl oder Lage (die Lage des Lichts
     // springt nur mit der Karte: Karte und Abfrage tragen dieselbe Lage) und im Takt `takt` Bilder, wenn in diesem Bild
@@ -520,8 +750,14 @@ class AnazhRealm_bild_schatten {
                 Math.pow(LW.bezugM * LW.bezugM + atmo.lichtKern[k].value, -farbe.w / 2) *
                 Math.max(0, 1 - d ** 4) ** 2;
             if (!(eBezug >= LW.wichtigAb * eWelt)) continue;
+            // DIE WICHTIGKEIT IST, WAS SIE ANS AUGE TRÄGT (nacht-lichter, das Gesetz des Rangs im Pool `_leuchtQuellen`): die
+            // Bestrahlung ihres Abfalls im Abstand des Auges. Bis hier × die Fläche ihrer Reichweite im Bild (R / Abstand)²: seit die
+            // Reichweite aus der Lichtstärke folgt (die Laterne 12 → 28,1 m), nahm die Laterne 17 m weg dem Glutbrunnen 5 m vor dem
+            // Auge den Wurf (Radeon, Pfosten 2 m vom Feuer: Kontrast 1,65:1 an main, 1,00:1 hier)
             const ab = Math.max(1, Math.hypot(lage.x - cp.x, lage.y - cp.y, lage.z - cp.z));
-            const w = eBezug * (lage.w / ab) ** 2;
+            const w =
+                (0.2126 * farbe.x + 0.7152 * farbe.y + 0.0722 * farbe.z) *
+                Math.pow(ab * ab + atmo.lichtKern[k].value, -farbe.w / 2);
             if (q.id === W.id) ((altK = k), (altW = w));
             if (w > bestW) ((best = k), (bestW = w));
         }

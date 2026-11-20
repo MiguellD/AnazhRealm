@@ -988,7 +988,10 @@ function hoehenUrteil(roh, skala) {
 }
 // (H) DIE KRONE DES PFLANZ-GESETZES (T2): der Abstand des Walds liest die gewachsene Krone (phyto-core FOREST_PACK.crown) — je
 // Laub-Art der Tafel der sichtbare L0-Radius (Gestalt 1: Karten-Stichproben mit Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute
-// × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz.
+// × Welt-Skala) binnen ±12 %. Die Konifere steht seit laub-kante darunter: ihr Kegel (phyto-core `koniferenKegel`) liest dieselbe Zeile
+// (Fichte 2,51 / Tafel 2,75 m, Tanne 2,77 / 2,95 m; bis dahin wuchs sie ohne Maß, Fichte r/H 0,42–0,51). OFFEN (`KRONE_OFFEN`): der
+// Mammut misst 7,60 gegen 9,2 m — sein Kegel reicht an die Tafel, seine Quirle decken die Azimute nicht (Kronen-Fuß 0,49 H).
+const KRONE_OFFEN = new Set(["mammut"]);
 const KRONE_W = [0, 1, 2, 3, 4, 5, 6].flatMap((s) => [...Array(7 - s).keys()].map((r) => [1 - (s + r) / 6, s / 6, r / 6]));
 // der sichtbare Radius einer Laub-Krone in Vorlagen-Einheiten (Karten-Stichproben mit Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute)
 function sichtKrone(T, a) {
@@ -1007,7 +1010,7 @@ function pflanzKroneUrteil(roh, skala, a, nadel) {
     const v = [], m = {}; // prettier-ignore
     for (const [art, soll] of Object.entries(PC.FOREST_PACK.crown)) {
         const f = roh[`${art}-s1-L0`];
-        if (nadel(art) || !f) continue;
+        if (!f || KRONE_OFFEN.has(art)) continue;
         const ist = sichtKrone(f.T, a) * skala(art);
         m[art] = `${ist.toFixed(2)} m (Tafel ${soll})`;
         if (!(Math.abs(ist / soll - 1) <= 0.12)) v.push(`Krone ${art}: gewachsen ${ist.toFixed(2)} m, Tafel ${soll} m`);

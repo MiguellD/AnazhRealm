@@ -43,9 +43,9 @@ class AnazhRealm_bild_sicht {
         // das Wasser den Gegenstand, ein heller Saum von 1 px (Radeon, TRAA, 1921×1081: 57–85 von ~290 Kanten-Pixeln +8 Luma;
         // gate:post-kette (f), 321×241: 11 von 31 bis 45,5), der March verlor 1 px eines fernen Körpers.
         const knoten = T.texture(abbild).load(T.ivec2(T.screenCoordinate.xy).div(T.ivec2(2, 1)));
-        // je Render EINMAL, ausgelöst vom ersten Leser, der zeichnet (wie r184s Viewport-Tiefe)
+        // je Render EINMAL, ausgelöst vom ersten Leser, der zeichnet — hinter dem späten Zug der Sicht (E9, `_sichtAusloeser`)
         knoten.updateBeforeType = "render";
-        knoten.updateBefore = (frame) => this._tiefenAbbild(frame, abbild);
+        knoten.updateBefore = (frame) => this._tiefenAbbild(frame, abbild, "leser");
         this._szeneTiefeKnoten = knoten;
         this._szeneTiefeWert = knoten.x;
         return this._szeneTiefeWert;
@@ -71,12 +71,16 @@ class AnazhRealm_bild_sicht {
     // bleibt der Bruch
     // r184s Choreographie (gate:vendor-anker pinnt sie), und die Tiefe des Hauptbilds steht im Abbild, bevor der erste
     // Leser zeichnet.
-    _tiefenAbbild(frame, abbild) {
+    // ZWEI ZEITPUNKTE (E9 S5): "sicht" bricht vor dem späten Zug (die Pyramide misst darin), "leser" danach — Wasser,
+    // Feld-Pass, Rauch-Saum, Spiegel lesen die Tiefe MIT den spät gezeichneten Haufen; zog die Sicht nichts spät, kein 2. Bruch.
+    _tiefenAbbild(frame, abbild, punkt) {
         const st = this.state;
         const rend = frame.renderer;
         if (frame.scene !== st.scene || frame.camera !== st.camera) return;
         const ctx = rend._currentRenderContext;
         if (!ctx || !ctx.depthTexture) return;
+        const A0 = this._tiefenAbbildGpu || {};
+        if (punkt === "leser" && A0.render === frame.renderId && !A0.spaet) return;
         const be = rend.backend;
         const quelle = be.get(ctx.depthTexture).texture;
         if (!quelle) return;
@@ -156,10 +160,19 @@ class AnazhRealm_bild_sicht {
                 pass.setBindGroup(0, A.gruppe);
                 pass.draw(3);
                 pass.end();
+                // DIE SICHT (Bild/tiefe): auf demselben Encoder, bevor der Szenen-Pass wieder beginnt — die Pyramide dieses
+                // Bilds und der späte Zug der Bau-Sätze
+                A.bruch(this);
                 return undefined;
             };
             A.haken = true;
         }
+        // der Schirm der Tiefe des Hauptbilds — die Pyramide der Sicht misst in ihm
+        A.w = quelle.width;
+        A.h = quelle.height;
+        if (!A.bruch) A.bruch = (enc) => this._sichtTiefeBruch(enc, A);
+        A.render = frame.renderId;
+        A.spaet = false; // trägt der späte Zug Aufträge, setzt es der Bruch der Sicht (`_sichtTiefeBruch`)
         A.scharf = true;
         try {
             be.copyFramebufferToTexture(A.attrappe, ctx, A.rechteck);

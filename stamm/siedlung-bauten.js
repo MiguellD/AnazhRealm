@@ -1956,7 +1956,6 @@ class AnazhRealm_siedlung_bauten {
             p.needsUpdate = true;
             if (p.children.length === 0) {
                 if (p.parent) p.parent.remove(p);
-                this._bundleQueryProxyTod(p); // ④ — der Query-Proxy fällt mit dem Bundle
                 if (this.state._regionBundles) this.state._regionBundles.delete(p.userData.regionKey);
             }
         }
@@ -2121,7 +2120,8 @@ class AnazhRealm_siedlung_bauten {
             const alt = g.index;
             const iN = alt ? Math.min(s.iEnde, alt.array.length, iKap) : 0;
             if (iN > 0) idx.set(alt.array.subarray(0, iN));
-            g.setIndex(new THREE.BufferAttribute(idx, 1));
+            // ein Storage-Index: der Compute der Sicht (Bild/tiefe) liest den Abschnitt des Hauptbilds, wo er liegt
+            g.setIndex(this._sichtSpeicher(idx));
             s.iKap = iKap;
         }
         // die Render-Objekte lassen die getauschten Puffer los (`_renderObjekteFolgen`: ein Pass, der den Satz nicht mehr
@@ -2942,6 +2942,9 @@ class AnazhRealm_siedlung_bauten {
                 this._satzAbschnittMerke(s, a, L, kamera);
             }
             this._chunkSatzZeige(s, a, S.ab);
+            // DIE SICHT (Bild/tiefe, E7): ein Bau-Satz zeichnet im Hauptbild nur die Haufen, die die Tiefe nicht verdeckt —
+            // früh gegen das letzte Bild, spät gegen dieses (je Zug EIN indirekter Zug)
+            if (haupt && s.spec.userData && s.spec.userData.bauSatz !== undefined) this._sichtSatz(s, a, S);
         }
     }
 
@@ -3255,6 +3258,9 @@ class AnazhRealm_siedlung_bauten {
         const index = s.geom.index;
         index.addUpdateRange(ab, n);
         index.needsUpdate = true;
+        // der Schreib-Stand des Abschnitts: die Haufen-Tafel der Sicht (Bild/tiefe) legt sich neu, wenn er sich änderte
+        const a = s.abschnitte.get(wen);
+        if (a) a.ver = (a.ver | 0) + 1;
         const k = wer + ">" + wen;
         s.schreiben[k] = (s.schreiben[k] || 0) + 4 * n;
     }
