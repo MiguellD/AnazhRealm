@@ -1093,7 +1093,9 @@ class AnazhRealm_dirigent_takt {
         if (!kam) return F;
         kam.updateMatrixWorld();
         m.multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse);
-        return eigen ? F.setFromProjectionMatrix(m, kam.coordinateSystem, kam.reversedDepth) : F.setFromProjectionMatrix(m);
+        return eigen
+            ? F.setFromProjectionMatrix(m, kam.coordinateSystem, kam.reversedDepth)
+            : F.setFromProjectionMatrix(m);
     }
 
     // Steckt der Spieler nach einem fill-Edit im Fels: die nächste offene Luft-Lücke ÜBER ihm finden
@@ -1777,10 +1779,10 @@ class AnazhRealm_dirigent_takt {
     // DIE UHR EINER NEUEN WELT (`_weltUhrNeu(t)`): nur die Geburt stellt die Welt-Uhr zurück — eine Messung, die je Saat ab einer
     // festen Welt-Uhr misst (gate:kreatur-leben, gate:wetter-wache, die Stunde der Fahr-Probe) oder zu ihrem Anfang zurückkehrt,
     // bestellt sie hier. Der Anker des Tags springt mit (`_uhrSpielZeit`: sonst stünde der Tag, bis die Uhr den alten Anker
-    // einholt), und wer seinen Tag aus der Uhr liest, stellt sich neu wie bei jedem Sprung (`_weltUhrSprung`). Bis
+    // einholt). Ein Sprung (`_weltUhrSprung`) ist die Geburt NICHT: wer eine Welt gebiert, stellt ihren Bestand selbst — der
+    // Sprung nähme die Ströme der Saat (`_bestandSprung`: gate:kreatur-takt Teil 2 maß acht Saaten als eine). Bis
     // beobachter-ein-weg schrieben acht Proben die Welt-Uhr selbst (auch rückwärts), und der Tag stand.
     _weltUhrNeu(t = 0) {
-        this._weltUhrSprung = (this._weltUhrSprung | 0) + 1;
         this.state._uhrSpielZeit = t;
         this.state.spielZeit = t;
     }
