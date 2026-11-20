@@ -26,7 +26,8 @@
 //       der Farbton des Lichts des Feuers auf dem Boden 1–3 m (28–45° netto, die Farbtemperatur des Gesetzes) bei der
 //       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder der Schüsse ab (die Figur
 //       und das Feuer aus 6 m fielen 08.11. ohne Leser). Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, die Stärke des Welt-Feuers), das Auge des Tages. DIE NACHT
-//       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma, abgesoffen). Selbsttest: die
+//       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma am Gesetz: Licht je Albedo, abgesoffen).
+//       Selbsttest: der Wurf auf dunkles Korn (vorher ROT, am Gesetz GRÜN) und die
 //       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
 //       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt). Dazu DAS
@@ -1054,25 +1055,40 @@ async function himmelProbe(page, taub) {
 // das Korn der Albedo allein. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben).
 // Selbsttest: die Zahlen von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der
 // Probe-Post liest sie).
-const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
+// DAS LICHT JE ALBEDO (Welle SAMEN, Wort des Koordinators 20.11.): die Wand urteilt die Licht-Kette, nie den Wurf. Das Korn des
+// Boden-Stoffs liegt in der Welt (`_mikroStoff`: 1 + korn · h, mittelfrei), die Feuerstelle landet, wohin der Strom des Satzes sie
+// wirft (`near_player 3`) — ein anderer Strom (samen-core, je DSL-Op ihr Strom) warf sie 0,82 m daneben auf einen dunkleren Fleck
+// desselben Stoffs: Luma 22,3 → 21,8 am Ring bei GLEICHEM Licht (Belichtung 46 770,794, Pool, Himmel gleich; OMEN wie Radeon). Darum
+// misst der Schuss ohne das Feuer an derselben Kamera auch die ALBEDO (wie `__albedoSicht`: hell − dunkel unter weißem
+// Umgebungslicht π im linearen Ziel, `__linsenZiel`) am Ring (`ring`) und am Stoff um ihn (`stoffM`, 1–10 m: viele Körner, der
+// Wurf verschiebt ihn kaum), und das Urteil liest den Ring am Gesetz: jeder Pixel linear × k = Albedo des Stoffs ÷ Albedo des
+// Rings, zurück in sRGB (`gesetz.luma`). Die Soll bleibt 22. Gemessen (GTX 1060): Fleck 0,1067 (Samen) / 0,1085 (main), Stoff
+// 0,1169 / 0,1163, Licht je Albedo am Stoff gleich auf 0,2 % — am Gesetz Luma 26,8 / 26,9, am Fleck 21,8 / 22,3. Abgesoffen bleibt
+// am Pixel des Flecks (die Mulden des Korns sind der Stoff, nicht der Wurf).
+const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 }, ring: [1, 1.5, 2, 2.5, 3], stoffM: [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 7, 8, 9, 10] };
 function s0NachtUrteil(e, soll) {
     const g = e.grund;
     if (!g) return ["S0 Nacht: kein Boden im Schuss um Mitternacht — die Probe ist blind"];
-    if (g.luma >= soll.luma && g.schwarz <= soll.schwarz) return [];
+    const a = e.gesetz;
+    if (!a || !(a.aRing > 0) || !(a.aStoff > 0))
+        return [`S0 Nacht: keine Albedo am Ort des Schusses (${JSON.stringify(a)}) — die Probe ist blind (Licht je Albedo, \`__linsenZiel\`)`];
+    if (a.luma >= soll.luma && g.schwarz <= soll.schwarz) return [];
     const taeter =
-        g.luma >= soll.luma
+        a.luma >= soll.luma
             ? "das Mittel trägt, die Mulden saufen ab — das Korn des Mikro-Reliefs nimmt der Mulde zu viel Albedo (`_mikroStoff`, " +
               "die Spalte `korn` der Zeile erde in der Stoff-Tafel)"
             : `der Himmel trägt Licht (Sternen-Licht ${e.stern}, Umgebung ${e.himmel}), das Bild schwärzt es — die Belichtung ` +
               "der Nacht (`_dayNightApplyBelichtung`) oder die Post-Kette (Kontrast 25c, gate:post-kette (h))";
     return [
-        `S0 Nacht: der Boden 1–3 m ohne das Feuer um Mitternacht trägt Luma ${g.luma}, abgesoffen ${(100 * g.schwarz).toFixed(1)} % ` +
+        `S0 Nacht: der Boden 1–3 m ohne das Feuer um Mitternacht trägt am Gesetz Luma ${a.luma} (Licht je Albedo: der Fleck ${a.aRing}, ` +
+            `sein Stoff ${a.aStoff}; am Fleck ${g.luma}), abgesoffen ${(100 * g.schwarz).toFixed(1)} % ` +
             `(Soll ≥ ${soll.luma} und ≤ ${(100 * soll.schwarz).toFixed(1)} %, die Nacht der EINEN Licht-Kette) — ${taeter}`,
     ];
 }
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+    const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
     const ECHT = argv.includes("--echt");
     const HOLZ = opt("--holz", "kienspan");
     const BILD = opt("--bild", null);
@@ -1163,6 +1179,7 @@ async function lichtLauf() {
             await page.evaluate(AUSGABE_INSTALL);
             await page.evaluate(S0_NAH_INSTALL);
             await page.evaluate(S0_GESTALT_INSTALL);
+            await page.evaluate(LINSEN_INSTALL);
         });
         for (const taub of SELBSTTEST ? [false, true] : [false]) {
             himmel[taub ? "taub" : "sauber"] = await phase(taub ? "Himmel taub" : "Himmel", () => himmelProbe(page, taub));
@@ -1284,7 +1301,7 @@ async function lichtLauf() {
         const schuesse = ergebnis.sauber ? [] : [false, "nacht", ...(SELBSTTEST ? ["farbe", "kamera", "tag"] : [])];
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
-                page.evaluate(async (schein, nahM, palette) => {
+                page.evaluate(async (schein, nahM, palette, NACHT) => {
                     const s = st;
                     const T = window.THREE;
                     const rend = s.renderer;
@@ -1349,6 +1366,7 @@ async function lichtLauf() {
                     FC.lichtFlackern = () => 0; // die Flamme steht still (der Schuss misst das Gesetz, nicht den Atem)
                     const cam = s.camera;
                     let auf = null;
+                    let albedoBild = null;
                     let himmelL = null;
                     let sternL = null;
                     window.__s0Still = false; // der Schuss zeichnet
@@ -1391,6 +1409,37 @@ async function lichtLauf() {
                         const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
                         himmelL = env ? +(Math.PI * luma709(env.oben)).toFixed(4) : null;
                         sternL = +luma709(r._atmoSternenLicht(sonneY)).toFixed(4);
+                        // DIE ALBEDO AM ORT (oben `S0_NACHT`, Licht je Albedo): ohne das Feuer an derselben Kamera zwei Bilder ins lineare
+                        // Ziel unter der Lampe der Linse (weißes Umgebungslicht π, die übrigen Lichter, der Himmel und die Luft still).
+                        // Die Lampe ist eine Licht-Variante der Linse, kein Programm des Spiels: ihr Boden-Programm zählt das
+                        // Boden-Programm des Schusses (oben `S0_MS`, `S0_ZEICHEN`) nicht — am 20.11. hieß es „Boden-Programm 2 … synchron“
+                        if (ohneFeuer) {
+                            const zl = window.__linsenZiel(w, h);
+                            const sc = s.scene;
+                            const lichter = [];
+                            sc.traverse((o) => o.isLight && lichter.push([o, o.intensity]));
+                            const [envA, amb, luftZ, haken] = [sc.environment, new T.AmbientLight(0xffffff, 0), zl.ohneLuft(), objs.get];
+                            objs.get = roh;
+                            sc.add(amb);
+                            try {
+                                for (const [l] of lichter) l.intensity = 0;
+                                sc.environment = null;
+                                amb.intensity = Math.PI;
+                                await zl.ruhe(cam, "S0 Albedo");
+                                for (let i = 0; i < 2; i++) zl.zeichne(cam);
+                                const hell = await zl.lies();
+                                amb.intensity = 0;
+                                for (let i = 0; i < 2; i++) zl.zeichne(cam);
+                                albedoBild = { hell, dunkel: await zl.lies() };
+                            } finally {
+                                sc.remove(amb);
+                                for (const [l, i] of lichter) l.intensity = i;
+                                sc.environment = envA;
+                                luftZ();
+                                zl.rt.dispose();
+                                objs.get = haken;
+                            }
+                        }
                     } finally {
                         r._leuchtTakt = alt;
                         if (schein === "tag") {
@@ -1467,7 +1516,32 @@ async function lichtLauf() {
                             ? [PL.programs.vertex.size, PL.programs.fragment.size, PL.caches ? PL.caches.size : null]
                             : null;
                     const eigen = pool.find((p) => Math.hypot(p.x - f.x, p.z - f.z) <= 1.5);
+                    // DER RING AM GESETZ (oben `S0_NACHT`): die Albedo je geschriebenem Pixel (hell − dunkel), am Ring und am Stoff um ihn;
+                    // jeder Pixel des Rings linear × k (Albedo des Stoffs ÷ Albedo des Rings), zurück in sRGB
+                    let gesetz = null;
+                    if (albedoBild) {
+                        const { hell, dunkel } = albedoBild;
+                        const alb = (radien) => {
+                            let [n, sa] = [0, 0];
+                            ringe(radien, (i) => {
+                                if (!(hell[i + 3] > 0)) return;
+                                n++;
+                                sa += luma709([hell[i] - dunkel[i], hell[i + 1] - dunkel[i + 1], hell[i + 2] - dunkel[i + 2]]);
+                            });
+                            return n ? sa / n : 0;
+                        };
+                        const [aRing, aStoff] = [alb(NACHT.ring), alb(NACHT.stoffM)];
+                        const k = aRing > 0 ? aStoff / aRing : 0;
+                        let [n, sl] = [0, 0];
+                        ringe(NACHT.ring, (i) => {
+                            if (!(hell[i + 3] > 0)) return;
+                            n++;
+                            sl += 255 * linSrgb(Math.min(1, srgbLin(luma709(u8, i)) * k));
+                        });
+                        gesetz = { luma: n ? +(sl / n).toFixed(1) : null, aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: n / 9 };
+                    }
                     return {
+                        gesetz,
                         himmel: himmelL,
                         stern: sternL,
                         kreis: nk ? +(lk / nk).toFixed(4) : null,
@@ -1487,7 +1561,7 @@ async function lichtLauf() {
                         boden: [...bodenWgsl.keys()],
                         png: __png(u8, w, h),
                     };
-                }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette)
+                }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette, S0_NACHT)
             );
             zeit(schein ? `der Schuss (${schein}) aufgenommen` : "das Feuer aufgenommen");
         }
@@ -1521,7 +1595,7 @@ async function lichtLauf() {
             tag: "SCHEIN (das Auge des Tages)",
         }[k];
         console.log(
-            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+            `  S0 BILD ${wer}: Uhr ${e.uhr} · Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Boden 1–3 m Luma ${e.grund && e.grund.luma} abgesoffen ${e.grund && e.grund.schwarz}${e.gesetz ? ` · am Gesetz Luma ${e.gesetz.luma} (Albedo Fleck ${e.gesetz.aRing} → Stoff ${e.gesetz.aStoff}, k ${e.gesetz.k})` : ""} Farbton ${e.ton && e.ton.hue}° Sättigung ${e.ton && e.ton.sat} sRGB ${JSON.stringify(e.ton && e.ton.rgb)} (Soll ${S0_TON.hue[0]}–${S0_TON.hue[1]}°, ≤ ${S0_TON.satMax}) · Himmel ${e.himmel} Sternen-Licht ${e.stern} · Lichtfarbe linear ${JSON.stringify(e.lichtFarbe)} · kelvin ${e.kelvin} · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
     // DIE NACHT ohne das Feuer (oben `S0_NACHT`)
@@ -1682,12 +1756,26 @@ async function lichtLauf() {
         );
         pass =
             pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && zeitGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
-        const stoffTreffer = /`_mikroStoff`/.test(s0NachtUrteil({ grund: { luma: 24.6, schwarz: 0.1 } }, S0_NACHT.nacht));
+        const stoffTreffer = /`_mikroStoff`/.test(
+            s0NachtUrteil({ grund: { luma: 24.6, schwarz: 0.1 }, gesetz: { luma: 24.6, aRing: 0.11, aStoff: 0.11, k: 1 } }, S0_NACHT.nacht)
+        );
         console.log(`  SELBSTTEST S0 NACHT (z352): ${stoffTreffer ? "getroffen — der Stoff" : "BLIND"}`);
-        pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer;
+        // DER WURF AUF DUNKLES KORN (Welle SAMEN, Probe-Lauf 44765083728): das Feuer 0,82 m daneben, derselbe Stoff, dasselbe Licht —
+        // vorher las die Wand den Fleck (k = 1: ROT 21,8), am Gesetz liest sie das Licht (k = 0,1169 ÷ 0,1067: GRÜN). Ohne Albedo blind.
+        const wurf = { grund: { luma: 21.8, schwarz: 0 } };
+        const [wurfVorher, wurfGesetz, wurfBlind] = [
+            s0NachtUrteil({ ...wurf, gesetz: { luma: 21.8, aRing: 0.1067, aStoff: 0.1067, k: 1 } }, S0_NACHT.nacht),
+            s0NachtUrteil({ ...wurf, gesetz: { luma: 26.8, aRing: 0.1067, aStoff: 0.1169, k: 1.095 } }, S0_NACHT.nacht),
+            s0NachtUrteil(wurf, S0_NACHT.nacht),
+        ];
+        const wurfGetroffen = wurfVorher.length === 1 && wurfGesetz.length === 0 && /blind/.test(wurfBlind.join(""));
+        console.log(
+            `  SELBSTTEST S0 NACHT (der Wurf auf dunkles Korn, Licht je Albedo): ${wurfGetroffen ? "getroffen — am Fleck ROT, am Gesetz GRÜN, ohne Albedo blind" : "BLIND " + JSON.stringify([wurfVorher, wurfGesetz, wurfBlind])}`
+        );
+        pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer && wurfGetroffen;
     }
     console.log(
-        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht?.grund)} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
+        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht && { ...nacht.grund, gesetz: nacht.gesetz && nacht.gesetz.luma })} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
     );
     process.exit(pass ? 0 : 1);
 }
