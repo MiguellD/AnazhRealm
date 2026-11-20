@@ -24,10 +24,10 @@ Herde, gewollt (39)
   des Gaus liess den Faden ohne Hydrosphaere zurueck (voxel-worker.js gauFeldBauen, 09185a13).
 
 Herde, Ursache offen (2)
-- D7 stoffe MeshBasicNodeMaterial@Mesh 1/91 colorNode (genesis, wiese): Traeger, Farbe und Knoten-Graph bis Tiefe 6 gleich
-  (Sonde ab-sonde.cjs). Ungeprueft: der Graph-Hash merkt jeden Knoten je Abdruck einmal (abdruck.cjs:86-108, ein Knoten im
-  Kreis heisst auf dem ersten Weg „@kreis"), die Herde aendert die Folge der Stoffe davor. Messname: abdruck stoffe
-  MeshBasicNodeMaterial@Mesh.
+- D7 stoffe MeshBasicNodeMaterial@Mesh 1/91 colorNode (genesis, wiese): der Traeger ist ein Mesh am Szenen-Kopf
+  (Mesh<Scene, colorNode VarNode); Traeger, Farbe und die ersten 1 453 Zeichen des Knoten-Graphs gleich (Sonde an Kopf und
+  Basis, wiese). Geprueft und verworfen: die Folge der Stoffe vor ihm (Gedaechtnis des Graph-Hashes je Stoff neu, abdruck.cjs:69,
+  510) — die Klasse bleibt. Messname: abdruck stoffe MeshBasicNodeMaterial@Mesh.
 
 Nicht Herde (26)
 - Kopf gegen Kopf gleich anders (13): dorf instanzen f:eiche|2|1 und |3|1 (6), stoffe f:eiche|3|1 (3), foundry.cache 10/416,
