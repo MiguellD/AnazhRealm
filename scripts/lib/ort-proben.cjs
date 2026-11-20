@@ -95,7 +95,8 @@ function ortUrteil(v2, hoehe, o) {
         return !!K && u >= K[0] && u <= K[1] && v >= K[2] && v <= K[3];
     };
     const sockel = [];
-    for (const sl of v2.slots) {
+    const sockelJe = []; // der Täter beim Namen: je Haus mit Sockel > 0 sein Slot, seine Rolle, sein Maß und sein Ort im Plan
+    for (const [si, sl] of v2.slots.entries()) {
         const ob = sl.obb;
         if (!ob) continue;
         const c = Math.cos(ob.phi || 0);
@@ -108,8 +109,12 @@ function ortUrteil(v2, hoehe, o) {
                 const [px, pz] = [ob.cx + lx * c + lz * s, ob.cz - lx * s + lz * c];
                 if (!imKeller(sl, px, pz)) mn = Math.min(mn, hoehe(ox + px, oz + pz));
             }
-        sockel.push(Math.max(0, sl.y - mn));
+        const hoch = Math.max(0, sl.y - mn);
+        sockel.push(hoch);
+        if (hoch > 0)
+            sockelJe.push({ si, rolle: sl.rolle || null, m: Math.round(hoch * 1000) / 1000, x: Math.round(sl.x * 10) / 10, z: Math.round(sl.z * 10) / 10 });
     }
+    sockelJe.sort((a, b) => b.m - a.m);
     // die WAND je Haus: das Rechteck der Tür-Zeile (W × D um den Slot), sonst der Grundriss (das Dach ragt über die Wand)
     const waende = v2.slots
         .map((sl) =>
@@ -207,6 +212,7 @@ function ortUrteil(v2, hoehe, o) {
     return {
         sockelMedian: sockel.length ? Math.round(1000 * rang(sockel)) / 1000 : null,
         sockelMax: sockel.length ? Math.round(1000 * sockel[sockel.length - 1]) / 1000 : null,
+        sockelFehl: sockelJe.slice(0, 3),
         tuerenOk: tueren.filter((t) => t.ok).length,
         tuerenN: tueren.length,
         tuerenFehl: tueren.filter((t) => !t.ok),
@@ -250,7 +256,10 @@ function ortVerdikt(m) {
         fehl.push(
             `Häuser ${m.haeuser}/${m.slots} des Exports${m.wasserSlots ? ` (${m.wasserSlots} Slots im Wasser aus dem Plan v2 geworfen)` : ""}`
         );
-    if (!(m.sockelMax === 0)) fehl.push(`Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})`);
+    if (!(m.sockelMax === 0))
+        fehl.push(
+            `Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})${m.sockelFehl?.length ? ` — ${m.sockelFehl.map((h) => `Slot ${h.si} ${h.rolle || "?"} ${h.m} m bei ${h.x}/${h.z}`).join(" · ")}` : ""}`
+        );
     if (!(m.tuerenN > 0 && m.tuerenOk === m.tuerenN)) fehl.push(`Türen erreichbar ${m.tuerenOk}/${m.tuerenN}`);
     if (!(m.kronen === 0)) fehl.push(`Kronen in Grundrissen ${m.kronen}`);
     if (!(m.laternenPlan > 0 && m.laternenWelt === m.laternenPlan))
@@ -284,7 +293,7 @@ function ortVerdikt(m) {
     const gt8 = m.gtEnde > 0 ? Math.round((m.gtWeg / m.gtEnde) * 8 * 100) / 100 : m.gtWeg;
     if (!(gt8 >= GT_SOLL_M))
         fehl.push(
-            `GT auf dem Dorfweg ${m.gtWeg} m in ${m.gtEnde > 0 ? m.gtEnde : 8} s (${gt8} m je 8 s, Soll ≥ ${GT_SOLL_M})`
+            `GT auf dem Dorfweg ${m.gtWeg} m in ${m.gtEnde > 0 ? m.gtEnde : 8} s (${gt8} m je 8 s, Soll ≥ ${GT_SOLL_M})${m.gtSteckt ? ` — steckt nach ${m.gtSteckt.s} m: ${m.gtSteckt.naechster || "kein Bau"} in ${m.gtSteckt.abstand} m` : ""}`
         );
     if (!(m.quellenGasse >= GASSE_SOLL))
         fehl.push(`Dorf-Licht der Gasse nachts ${m.quellenGasse} sichtbare Quellen (Soll ≥ ${GASSE_SOLL})`);

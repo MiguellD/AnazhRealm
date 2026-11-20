@@ -350,6 +350,18 @@ async function gtDorfweg(v2, anker, sek) {
             0,
             0,
         ];
+        // der Bau mit Blocker, der dem Wagen am nächsten steht (der Täter beim Namen, wo er den Weg verlässt oder auf ihm steckt)
+        const naechsterBau = (pos) =>
+            st.architectures
+                .filter((a) => a && a !== e && a.position && Array.isArray(a.blockerAABBs) && a.blockerAABBs.length)
+                .reduce(
+                    (b, a) =>
+                        Math.hypot(a.position.x - pos.x, a.position.z - pos.z) < b[0]
+                            ? [Math.hypot(a.position.x - pos.x, a.position.z - pos.z), a.type]
+                            : b,
+                    [Infinity, null]
+                );
+        let sVor = F.s;
         for (let i = 0, N = Math.round(sek * 60); i < N; i++) {
             frame();
             const pos = st.playerMesh.position;
@@ -359,19 +371,20 @@ async function gtDorfweg(v2, anker, sek) {
                 res.endeNachS = Math.round(((i + 1) / 60) * 10) / 10;
                 break;
             }
+            // STECKT der Wagen auf dem Weg (eine Sekunde < 0,1 m Fortschritt nach der ersten), nennt die Probe den Bau davor —
+            // bis samen-ein-baum nannte sie nur den, an dem er den Weg verließ (Auto-Dorf −4,−4: 1,83 m, ablage 0, kein Name)
+            if (i % 60 === 59) {
+                if (i > 60 && F.s - sVor < 0.1 && !res.steckt) {
+                    const [nd, naechster] = naechsterBau(pos);
+                    res.steckt = { s: Math.round((F.s - s0) * 10) / 10, naechster, abstand: Math.round(nd * 10) / 10, bei: [Math.round(pos.x * 10) / 10, Math.round(pos.z * 10) / 10] };
+                }
+                sVor = F.s;
+            }
             gezaehlt++;
             if (F.quer <= hw) aufWeg++;
             else if (!res.verlassen) {
                 // der Täter beim Namen: der nächste Bau mit Blocker am Ort, wo der Wagen den Weg verlässt
-                const [nd, naechster] = st.architectures
-                    .filter((a) => a && a !== e && a.position && Array.isArray(a.blockerAABBs) && a.blockerAABBs.length)
-                    .reduce(
-                        (b, a) =>
-                            Math.hypot(a.position.x - pos.x, a.position.z - pos.z) < b[0]
-                                ? [Math.hypot(a.position.x - pos.x, a.position.z - pos.z), a.type]
-                                : b,
-                        [Infinity, null]
-                    );
+                const [nd, naechster] = naechsterBau(pos);
                 res.verlassen = { s: Math.round((F.s - s0) * 10) / 10, naechster, abstand: Math.round(nd * 10) / 10 };
             }
         }
@@ -3410,11 +3423,12 @@ hauptLauf(async () => {
             ...je(outO, "haeuser slots wasserSlots kronen laternenWelt laternenPlan laterneWand laterneWandSoll"),
             ...je(outO, "laterneWeg laterneWegSoll vorplatzOk vorplatzN vorplatzFehl terrasseWand terrasseWiese"),
             ...je(outO, "terrasseHalm terrasseFerne terrasseFerneFehl vorplatzFeld fremdBauten"),
-            ...je(u, "sockelMedian sockelMax tuerenOk tuerenN"),
+            ...je(u, "sockelMedian sockelMax sockelFehl tuerenOk tuerenN"),
         ]);
         Object.assign(m, {
             planHashGleich,
             gtWeg: gtO.gtWeg,
+            gtSteckt: gtO.steckt || null,
             gtEnde: gtO.endeNachS,
             quellenGasse: outO.gasse ? outO.gasse.n : null,
             poolGasse: outO.gasse ? outO.gasse.poolOrt : null,
