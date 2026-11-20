@@ -2896,7 +2896,13 @@
     // ab: die Gestalt des Solitärs (`solitaerGestalt`) — eine Baum-Art mit mindestens `ab` Bestand-Gestalten
     // (budget.gestalten, die Massen-Arten des Walds) trägt DAZU ihren Solitär als Gestalt V+1: der Bestand behält alle
     // V Individuen (kein Klon), der Solitär ist ein eigenes. Die Arten mit einer Gestalt (Weide, Mammut) tragen keinen.
-    const FREISTAND = Object.freeze({ hd: 0.45, abstand: 2, fuss: Object.freeze({ laub: 0.32, nadel: 0.12 }), seite: (2 * Math.PI) / 3, ab: 2 });
+    const FREISTAND = Object.freeze({
+        hd: 0.45,
+        abstand: 2,
+        fuss: Object.freeze({ laub: 0.32, nadel: 0.12 }),
+        seite: (2 * Math.PI) / 3,
+        ab: 2,
+    });
     // DAS SEITENLICHT (der Waldmantel): die größte Lücke (rad) zwischen den Richtungen `winkel` (rad, je stehendem Nachbarn)
     // rund um den Baum — ohne Nachbarn 2π. Rein; der EINE Leser des Freistands (`_forestStehtFrei`, gate:fernwald H).
     function forestSeitenlicht(winkel) {
