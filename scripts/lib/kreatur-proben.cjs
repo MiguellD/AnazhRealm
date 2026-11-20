@@ -303,6 +303,8 @@ async function kreaturProben(r, T, opts) {
                     this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
                 }
         );
+    // DIE UHR DER BÜHNE rückt um `d` Sekunden (der Takt des Spiels, `spielZeit += delta`) — der eine Uhr-Schritt der Proben
+    const uhrVor = (d) => (s.spielZeit += d);
     // DER TAKT WIE IM SPIEL (die Folge von `_gameLoopTick`): erst der feste Sim-Schritt der Leiber (`_kreaturStossSchritt`,
     // `_leibKontakte`), dann der Frame-Takt der Tiere (`updateCreatures`).
     const takt = (dt) => {
@@ -950,12 +952,12 @@ async function kreaturProben(r, T, opts) {
             // der Übergang: der Spieler geht fort, jenseits des Nah-Kreises, dann der nächste Takt des Lebenszyklus
             pm.x += 300;
             takt(dt);
-            s.spielZeit += 10;
+            uhrVor(10);
             r.tickFaunaLifecycle();
             // jedes Opfer fehlt im Bestand seiner Art, jedes lebende Kitz steht in ihm — gelesen am EINEN Leser (`_bestandArt`)
             const wo = (t) => [r._bestandKey(t.x, t.z), t.g, t.id];
             const L = [...[...genannt].map(([id, [key, g]]) => [key, g, id]), ...kitze.map(wo)];
-            s.spielZeit += 10;
+            uhrVor(10);
             await gauLies([...new Set(L.map((q) => q[0]))]);
             const imBestand = ([key, g, id]) => {
                 const B = r._bestandArt(key, g);
@@ -1009,23 +1011,32 @@ async function kreaturProben(r, T, opts) {
         // die alten Defekte: der Verband ohne seinen Zug (Ausrichtung und Kohäsion), ohne den Alarm aus zweiter Hand, die
         // Flucht endet am Radius
         if (taeter === "herde-zerfall") decke("_kreaturVerbandZug", () => () => {});
-        // das Revier je Glied statt je Wurf (w28-wander-revier): das Glied liest den Anker seines Leittiers nicht (der Leit-Anker
-        // ist ihm verborgen) und legt seinen eigenen drei Leinen weit in seine eigene Richtung — die Herde hat kein gemeinsames
-        // Revier mehr und zerfällt beim Wandern (eine Leine weit hielt der Zug des Verbands sie noch: 1). Seit das Ziel dem
-        // Verband gehört (Posen-Gesetz H1) übernimmt das Glied den Leit-Anker — die verschobene Lage allein traf nur das Leittier
+        // das Revier je Glied statt je Wurf (w28-wander-revier): das Glied wandert nicht im Revier seines Leittiers — sein
+        // Wandern liest sich selbst als Leittier (Anker, Leine und Ziel aus der eigenen Identität, `_kreaturLeittier` im Wandern),
+        // und sein Anker liegt drei Leinen weit in seiner eigenen Richtung (der Anker des Wurfs, versetzt, und jeder, den es selbst
+        // legt): die Herde hat kein gemeinsames Revier mehr und zerfällt beim Wandern. Seit das Ziel dem Verband gehört
+        // (Posen-Gesetz H1) übernimmt das Glied Anker und Ziel des Leittiers, und der Wurf legt den Anker schon gelegt — die
+        // verschobene Lage im Leger des Reviers allein traf keinen (0,98 im Fenster)
         if (taeter === "herde-revier") {
+            const weg = (c, a, leash) => {
+                const w = parseInt(String(c.userData.netId || "c0").slice(1), 10) || 0;
+                return { x: a.x + Math.cos(w) * 3 * leash, z: a.z + Math.sin(w) * 3 * leash };
+            };
             decke(
                 "_creatureCharacterWander",
                 (alt) =>
-                    function (c, ...rest) {
-                        const leit = this._kreaturLeittier(c);
-                        const LA = leit !== c && leit.userData.wanderAnchor;
-                        if (!LA) return alt.call(this, c, ...rest);
-                        leit.userData.wanderAnchor = { x: LA.x, z: LA.z };
+                    function (...arg) {
+                        const ud = arg[0].userData;
+                        if (ud.wanderAnchor && ud.wanderAnchor.revier && !ud._revierJeGlied) {
+                            const leash = this._gehegeLeine(arg[0], this._creatureMoveCharacter(arg[0]).leashM);
+                            [ud.wanderAnchor, ud._revierJeGlied] = [{ ...weg(arg[0], ud.wanderAnchor, leash), revier: true }, true];
+                        }
+                        const eigen = Object.prototype.hasOwnProperty.call(this, "_kreaturLeittier");
+                        this._kreaturLeittier = (c) => c;
                         try {
-                            return alt.call(this, c, ...rest);
+                            return alt.apply(this, arg);
                         } finally {
-                            leit.userData.wanderAnchor = LA;
+                            if (!eigen) delete this._kreaturLeittier;
                         }
                     }
             );
@@ -1033,9 +1044,7 @@ async function kreaturProben(r, T, opts) {
                 "_kreaturRevier",
                 (alt) =>
                     function (c, a, leash) {
-                        const w = parseInt(String(c.userData.netId || "c0").slice(1), 10) || 0;
-                        const b = { x: a.x + Math.cos(w) * 3 * leash, z: a.z + Math.sin(w) * 3 * leash };
-                        return alt.call(this, c, b, leash);
+                        return alt.call(this, c, weg(c, a, leash), leash);
                     }
             );
         }
@@ -2351,11 +2360,12 @@ async function kreaturProben(r, T, opts) {
         const b2 = r._restoreCreatureFromSnapshot(snapB);
         const neu = tier(heim, "wesen");
         r._bestandAdoptieren();
-        // der Gau antwortet nach dem Takt beider Akte (die Uhr rückt zwei Takte, kein Takt des Bestands): der Begleiter findet sein
-        // Tier im Bild, die Annahme steht im Bestand der Art — gelesen am EINEN Leser (`_bestandArt`)
+        // der Gau antwortet am Takt der Annahme (die Uhr rückt bis zu ihm, kein Takt des Bestands; danach rechnet das Gesetz — ein
+        // Tod im Takt danach ist sein Urteil, keiner der Annahme): der Begleiter findet sein Tier im Bild, die Annahme steht im
+        // Bestand der Art — gelesen am EINEN Leser (`_bestandArt`)
         const key = r._bestandKey(heim.x, heim.z);
-        const neuId = neu.userData._bestand.id;
-        s.spielZeit += 2 * A._bestandGesetz().B.taktS;
+        const [neuId, T] = [neu.userData._bestand.id, A._bestandGesetz().B.taktS];
+        while (Math.floor(r._feldHorizont() / T) < neu.userData._bestand.einTakt) uhrVor(T);
         await gauLies([key]);
         const B = r._bestandArt(key, A.TETRAPODA_SOUL_MAP.wesen);
         return {
@@ -2363,7 +2373,9 @@ async function kreaturProben(r, T, opts) {
             tierNah: r._bestandNah().includes(key),
             mitTier: !!b2 && !!b2.userData._bestand && b2.userData._bestand.id === kennung,
             kennung: [kennung, neuId],
-            annahmeTritt: !!B && B.tiere.some((t) => t.id === neuId),
+            // die Annahme tritt als EIGENER Kopf ein: ihre Kennung ist nicht die eines Tiers im Stand (dessen Akt „ein“ wirkte schon —
+            // der Kern ließe ihren fallen, und ihr Leib nähme dem Begleiter sein Tier)
+            annahmeTritt: neuId !== kennung && !!B && B.tiere.some((t) => t.id === neuId),
         };
     });
 

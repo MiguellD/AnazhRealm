@@ -30,7 +30,7 @@ const DAUER_S = {
     huepfer: 1,
     wachsen: 1,
     gier: 5,
-    jagd: 77,
+    jagd: 207,
     herde: 44,
     schwarm: 4,
     peer: 1,
@@ -52,15 +52,15 @@ const DAUER_S = {
     furcht: 31,
     lebensraum: 21,
     tagesbudget: 15,
-    kaskade: 350,
+    kaskade: 400,
     folgen: 42,
     zielplan: 80,
-    gehege: 110,
-    // (leben-erbe: headless an der Laptop-Maschine, eine Saat, ohne Täter)
-    erbe: 6,
-    muster: 16,
+    gehege: 70,
+    // (herde-gesetz: headless an der Laptop-Maschine unter fremder Last, eine Saat, ohne Täter — der Bestand liest den Gau)
+    erbe: 26,
+    muster: 62,
     // (leben-gau C2a: headless an der Laptop-Maschine, samt den vier Tätern in EINEM Lauf)
-    gau: 30,
+    gau: 35,
 };
 const TEIL = teilAus(argv);
 const gewaehlt = (() => {

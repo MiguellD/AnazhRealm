@@ -246,6 +246,7 @@ class AnazhRealm_kreatur_leben {
             verband: ud.verband != null ? String(ud.verband) : undefined,
             // das Tier des Bestands, das der Leib zeichnet (feld.K2#2): die Wiederkehr findet es im Bestand des Stands wieder
             bestand: ud._bestand ? ud._bestand.id : undefined,
+            bestandOrt: ud._bestand && ud._bestand.gau ? [ud._bestand.x, ud._bestand.z] : undefined, // der Ort seines Kopfs im Gau
             feldWurf: ud.feldWurf === true ? true : undefined, // die Herkunft weicht dem Bau auch nach dem Reload
             revier:
                 ud.wanderAnchor && Number.isFinite(ud.wanderAnchor.x) && Number.isFinite(ud.wanderAnchor.z)
@@ -360,7 +361,7 @@ class AnazhRealm_kreatur_leben {
         if (snap.revier && Number.isFinite(snap.revier.x) && Number.isFinite(snap.revier.z))
             c.userData.wanderAnchor = { x: snap.revier.x, z: snap.revier.z };
         if (snap.feldWurf === true) c.userData.feldWurf = true;
-        if (typeof snap.bestand === "string") this._bestandLeibWieder(c, snap.bestand);
+        if (typeof snap.bestand === "string") this._bestandLeibWieder(c, snap.bestand, snap.bestandOrt);
         // DER LEIB DES TIERS IST SEIN ERBE ZUR ZEIT (leben-erbe): kehrt er mit seinem Tier wieder, trägt er dessen Größe jetzt
         // (`_bestandBs`) — der Stand trug die Größe des Augenblicks, in dem er gespeichert wurde
         if (c.userData._bestand) this._kreaturGroesseSetzen(c, this._bestandBs(c.userData._bestand));
@@ -2607,16 +2608,18 @@ class AnazhRealm_kreatur_leben {
     // (`_ohneTier`, er geht außer Blick). Nie eine neue Annahme: das Tier trüge zweimal im Bestand, beim Mitspieler doppelt.
     // Gesucht wird die KENNUNG in jeder Region des Stands (≤ 4 nahe): bis w27-tiere-sicht las der Leib die Kachel aus dem Kopf der
     // Kennung — nach dem Umzug eines Stands in ein anderes Raster (`_lebenAusStand`) steht das Tier in der Kachel seines Ankers.
-    _bestandLeibWieder(c, id) {
+    _bestandLeibWieder(c, id, ort) {
         let t = null;
         for (const R of Object.values(this._bestandRegionen().regionen))
             if ((t = R.tiere.find((x) => x.id === id))) break;
         const a = !t && (this.state.feldAkte || []).find((x) => x.art === "annahme" && x.id === id);
         const tier = t || (a && Object.assign({ id }, a.tier, { zu: true }));
-        // ein Leib der Gattungen des Gesetzes (Leben C2b) sucht sein Tier im Bild seines Gaus (`_gauAntwort`); trägt er die
+        // ein Leib der Gattungen des Gesetzes (Leben C2b) sucht sein Tier im Bild seines Gaus (`_gauAntwort`) — am Ort, den sein
+        // Stand nennt (`ort`: der Anker des Kopfs; ein Begleiter steht beim Spieler, sein Kopf zwei Kacheln fern); trägt er die
         // Kennung eines Stands von vor dem Gau (ohne dessen Kopf), ist er ein Leib ohne Tier und wird angenommen
         if (!tier && this._gauRolle(AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul])) {
             if (typeof id === "string" && id[0] === "g" && id.indexOf("/") > 1) c.userData._gauWartet = id;
+            if (Array.isArray(ort) && ort.length === 2 && ort.every(Number.isFinite)) c.userData._gauWartetOrt = { x: ort[0], z: ort[1] }; // prettier-ignore
             return;
         }
         if (!tier || tier.leib) return void (c.userData._ohneTier = true);
@@ -2882,7 +2885,7 @@ class AnazhRealm_kreatur_leben {
             if (ud._bestand && !(ud.bond > 0) && !ud._rissVon && !jagen.has(c)) this._bestandEntkoerpern(c);
             // ein Leib, der bleibt, sucht seinen Kopf im Bild der neuen Uhr (Leben C2b: die Bilder der Gaue fallen mit dem Sprung)
             else if (ud._bestand && ud._bestand.gau && !ud._bestand.zu)
-                [ud._gauWartet, ud._bestand.leib, ud._bestand] = [ud._bestand.id, null, null];
+                [ud._gauWartet, ud._gauWartetOrt, ud._bestand.leib, ud._bestand] = [ud._bestand.id, { x: ud._bestand.x, z: ud._bestand.z }, null, null]; // prettier-ignore
         }
         [this._gauBildStand, this._gauMerk, this._gauJaegerOrt] = [null, null, null];
         for (const R of Object.values(this._bestandRegionen().regionen))

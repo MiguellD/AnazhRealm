@@ -403,16 +403,16 @@ class AnazhRealm_kreatur_erbe {
     // Region ihr trägt (Spiel, Linse, Probe): die Gattungen des Gesetzes (`_gauRolle`) aus dem Bild ihres Gaus (`_gauRevier`), die
     // Altlast aus dem Verzeichnis ihrer Region (`_kreaturBestand`). → { n, K, tiere, gau } — oder null: der Gau hat das Revier
     // (noch) nicht geantwortet (kein Bestand ist 0, ehe ihn jemand gelesen hat). K ist die Kapazität der Formel des Stamms
-    // (`_bestandKapazitaet`) über dem Feld der Region — dieselbe, die der Faden je Zelle rechnet (voxel-worker `gauKern`).
+    // (`_bestandKapazitaet`) über dem Feld der Region — dieselbe, die der Faden je Zelle rechnet (voxel-worker `gauKern`); im Gau
+    // erst gerechnet, wenn jemand sie liest (das Feld der Region kostet 16 Zellen — ein Zähler über den ganzen Gau fragt nur n).
     _bestandArt(key, g) {
         if (this._gauRolle(g)) {
             const R = this._gauRevier(key);
             if (!R) return null;
             const tiere = R.tiere.filter((t) => t.g === g);
-            const B = AnazhRealm._bestandGesetz().B;
-            const beute = Math.min(1, R.koepfe.beute / B.beuteVoll);
-            const K = +this._bestandKapazitaet(g, this._bestandFeld(key), beute).toFixed(2);
-            return { n: tiere.length, K, tiere, gau: true };
+            const beute = Math.min(1, R.koepfe.beute / AnazhRealm._bestandGesetz().B.beuteVoll);
+            const kap = () => +this._bestandKapazitaet(g, this._bestandFeld(key), beute).toFixed(2);
+            return { n: tiere.length, get K() { return kap(); }, tiere, gau: true }; // prettier-ignore
         }
         const b = this._kreaturBestand(null, key)[g];
         const R = this._bestandRegionen().regionen[key];
@@ -470,7 +470,7 @@ class AnazhRealm_kreatur_erbe {
         for (const c of this.state.creatures) {
             const [ud, t] = [c.userData, c.userData._bestand];
             if (t && t.gau) halte(t.gx, t.gz, t.revier);
-            else if (ud._gauWartet && ud.wanderAnchor) ort(ud.wanderAnchor.x, ud.wanderAnchor.z);
+            else if (ud._gauWartet && (ud._gauWartetOrt || ud.wanderAnchor)) ort((ud._gauWartetOrt || ud.wanderAnchor).x, (ud._gauWartetOrt || ud.wanderAnchor).z); // prettier-ignore
         }
         const H = this._gauHalt();
         for (const e of je.values()) {
@@ -587,11 +587,12 @@ class AnazhRealm_kreatur_erbe {
         // ein Leib, der sein Tier sucht (ein Stand kehrte wieder, `_bestandLeibWieder`), findet es im Bild seines Reviers
         for (const c of this.state.creatures) {
             const [ud, id] = [c.userData, c.userData._gauWartet];
-            if (!id || !id.startsWith(kopf) || !ud.wanderAnchor) continue;
-            const w = this._gauOrt(Math.floor(ud.wanderAnchor.x / S), Math.floor(ud.wanderAnchor.z / S));
+            const wo = ud._gauWartetOrt || ud.wanderAnchor; // der Ort seines Kopfs (der Stand nennt ihn), sonst sein Anker
+            if (!id || !id.startsWith(kopf) || !wo) continue;
+            const w = this._gauOrt(Math.floor(wo.x / S), Math.floor(wo.z / S));
             if (w.gx !== b.gx || w.gz !== b.gz || !b.reviere.has(w.revier)) continue;
             const t = neu.get(id);
-            ud._gauWartet = undefined;
+            [ud._gauWartet, ud._gauWartetOrt] = [undefined, undefined];
             if (t && !t.leib) [t.leib, ud._bestand] = [c, t];
             else ud._ohneTier = true;
         }
