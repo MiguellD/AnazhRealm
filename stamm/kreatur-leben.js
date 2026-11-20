@@ -1946,7 +1946,13 @@ class AnazhRealm_kreatur_leben {
     // herde.wurf) tritt mit dem Wurf-Ort als Anker ins Verzeichnis der Region, wer gezeichnet wird, wählt `_bestandVerkoerpern`
     // nach der Kappe am Schirm (vorher warf die Geburt Körper, so viele, wie die Kappe ließ — die Kappe setzte den Bestand).
     // Liefert die Geborenen (Tiere des Bestands).
-    _creatureNaturalBirth(bilanz, key = this._bestandHier(), rng = this._faunaRng("bestand:" + key), frisch = true) {
+    _creatureNaturalBirth(
+        bilanz,
+        key = this._bestandHier(),
+        rng = this._faunaRng("bestand:" + key),
+        frisch = true,
+        uhr = this.state.spielZeit
+    ) {
         if (bilanz && !Object.values(bilanz).some((b) => b.geburt > 0)) return []; // jedes Revier ist voll
         const S = this._bestandSeite();
         const [ix, iz] = key.split(",").map(Number);
@@ -1980,7 +1986,7 @@ class AnazhRealm_kreatur_leben {
                   .map((g) => bester[g]);
         // die Nummer zählt je Region, die Größe würfelt ihr Strom (`_creatureBodySize`): keine Region rückt die Tiere einer
         // anderen
-        const R = this._bestandRegion(key, false);
+        const R = this._bestandRegion(key, false, 0, Infinity, null, uhr);
         const geboren = [];
         for (const best of wuerfe) {
             const g = AnazhRealm.TETRAPODA_SOUL_MAP[best.soul];
@@ -2098,8 +2104,8 @@ class AnazhRealm_kreatur_leben {
 
     // DIE NAHRUNG EINES ORTS für den Bestand (Ökologie K2): die Äsung = das Leben des Felds (`auraAt`.lebendig — das Substrat
     // und das Leben-Overlay, das die Taten schreiben), 0..1.
-    _kreaturNahrung(x, z) {
-        const a = this.auraAt(x, z);
+    _kreaturNahrung(x, z, uhr) {
+        const a = this.auraAt(x, z, 0, uhr);
         return a && a.lebendig > 0 ? Math.min(1, a.lebendig) : 0;
     }
 
@@ -2188,11 +2194,12 @@ class AnazhRealm_kreatur_leben {
     // ihr Bestand liest (`zellen` aus `_kreaturBestand`), je Zelle nach ihrem Anteil Lebensraum × Äsung — die Herde äst, wo der
     // Jungwuchs steht, und die Kapazität liest, was sie ließ (negativ ins Feld). Vorher fraß jedes Tier an seinem Ort, den das
     // Raster nie las (Zeitraffer am main 45c6aa19: ohne die Wölfe Jungwuchs −0,1 %).
-    _kreaturFrass(bestand, zellen) {
+    _kreaturFrass(bestand, zellen, uhr) {
         for (const g in bestand) {
             const F = bestand[g].n * bestand[g].frass;
             const summe = F > 0 ? zellen.reduce((s, c) => s + c.je[g], 0) : 0;
-            if (summe > 0) for (const c of zellen) if (c.je[g] > 0) this._depositLife(c.x, c.z, (-F * c.je[g]) / summe);
+            if (summe > 0)
+                for (const c of zellen) if (c.je[g] > 0) this._depositLife(c.x, c.z, (-F * c.je[g]) / summe, uhr);
         }
     }
 
@@ -2281,10 +2288,10 @@ class AnazhRealm_kreatur_leben {
     // einer Stunde trug nur, was seit ihrer Geburt warf (Mess-Wiese 20 Spiel-s nach der Ankunft: 0–15 Tiere in den nahen Regionen,
     // nach 300 Spiel-s 28–46 — der Geher der ersten zehn Minuten ging durch leeres Land); ein Beginn aufholS vor dem LESEN hätte
     // den Gleichlauf gebrochen (gate:mp-sync (f): Leben 207 von 268 Zellen gleich, der Mitspieler liest später).
-    _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null) {
+    _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null, uhr = this.state.spielZeit) {
         const F = this._bestandRegionen();
         const B = AnazhRealm._bestandGesetz().B;
-        const jetzt = this.state.spielZeit || 0;
+        const jetzt = uhr || 0;
         const AH = AnazhRealm.BESTAND_REGION.aufholS;
         const fern = jetzt < AH ? -AH : Math.floor((jetzt - AH) / B.taktS) * B.taktS;
         const R = F.regionen[key] || (F.regionen[key] = { t: fern, seq: 0, tiere: [] });
@@ -2315,7 +2322,7 @@ class AnazhRealm_kreatur_leben {
     // DAS FELD DER REGION: ihre zellen × zellen Zellen (je Zelle ihre Mitte), die Boden-Klasse (eine Funktion der Welt — EINMAL
     // je Zelle gefragt, die Kosten hängen an der Bewegung, nie am Takt) und die Äsung (`_kreaturNahrung`). GEMERKT wird die
     // Klasse nur über stehender Wahrheit (`_bestandBereit`): ein Leser davor bekommt die Antwort des Augenblicks, nie ins Merkbuch.
-    _bestandFeld(key) {
+    _bestandFeld(key, uhr) {
         const BR = AnazhRealm.BESTAND_REGION;
         const S = this._bestandSeite();
         const [ix, iz] = key.split(",").map(Number);
@@ -2334,7 +2341,7 @@ class AnazhRealm_kreatur_leben {
                     klasse = this._bodenKlasseAt(x, z);
                     if (merken) kl.map.set(k, klasse);
                 }
-                zellen.push({ x, z, klasse, aesung: this._kreaturNahrung(x, z) });
+                zellen.push({ x, z, klasse, aesung: this._kreaturNahrung(x, z, uhr) });
             }
         return { ha: (S / BR.zellen) ** 2 / 1e4, zellen };
     }
@@ -2381,32 +2388,28 @@ class AnazhRealm_kreatur_leben {
     // Chance der Hungertod des Ältesten, der Riss der Jäger am Ältesten ihrer Beute (Ökologie K1); darunter die Geburt einer Gruppe
     // (`_creatureNaturalBirth`); jenseits der Lebensspanne der Tod des Ältesten. Entschieden wird am Verzeichnis, nie an
     // Körpern: der Tod eines gezeichneten Tiers wird zum Fall seines Leibs (`tode`) — dieselbe Zahl, ob gezeichnet oder nicht.
-    // DER TAKT IST EINE FUNKTION DER WELT-UHR UND DER AKTE (feld.K2#2, Lockstep): er steht auf SEINER Zeit (die Spiel-Uhr steht für
-    // ihn auf R.t, ein Vielfaches von taktS — was er ins Feld schreibt, trägt diesen Stempel), sein Wurf ist der Strom DIESES Takts
+    // DER TAKT IST EINE FUNKTION DER WELT-UHR UND DER AKTE (feld.K2#2, Lockstep): er steht auf SEINER Zeit (R.t, ein Vielfaches von
+    // taktS — was er ins Feld schreibt und aus ihm liest, trägt diesen Stempel: er reicht ihn als `uhr` an jeden Leser und Schreiber
+    // des Felds; bis zeit-ein-kalender bog er dafür die Welt-Uhr selbst je Schritt um und setzte sie zurück), sein Wurf ist der Strom DIESES Takts
     // (Saat, Region, Zeit — ein Reload und ein Mitspieler würfeln denselben), und kein Gemüt einer Seite rückt seine Chancen. Bis
     // feld.K2#2 stand der frische Takt auf der Bild-Uhr der Seite (A 2041,016 · B 2041,586), der Strom zählte die Würfe der Sitzung,
     // und die Trauer und der Frieden des eigenen Spielers hoben den Hungertod (Mehrspieler-Wand: Leben 15 von 1 172 Zellen gleich).
     _bestandSchritt(key, R, still, tode) {
         const B = AnazhRealm._bestandGesetz().B;
-        const jetzt = this.state.spielZeit;
         R.t += B.taktS;
         this._lebenGen = (this._lebenGen || 0) + 1; // die Marke des Lebens im Stand (`_lebenImStand`)
-        this.state.spielZeit = R.t;
-        try {
-            this._bestandTakt(key, R, still, tode);
-        } finally {
-            this.state.spielZeit = jetzt;
-        }
+        this._bestandTakt(key, R, still, tode);
     }
     _bestandTakt(key, R, still, tode) {
         const B = AnazhRealm._bestandGesetz().B;
+        const uhr = R.t; // die Zeit des Takts
         // die Freien liest das wilde Gesetz (`_bestandFreie`, frisch an jeder Stelle: ein Tod und eine Geburt dieses Takts zählen);
         // die Tiere eines Geheges gehen ihren eigenen Takt (`_gehegeSchritt`) — eine Region ohne Gehege liest dieselbe Liste
         for (const t of this._bestandFreie(R)) t.alterS += B.taktS;
         const rng = this._faunaRng("bestand:" + key + "@" + R.t, true);
         const zellen = [];
-        const bestand = this._kreaturBestand(zellen, key);
-        this._kreaturFrass(bestand, zellen);
+        const bestand = this._kreaturBestand(zellen, key, this._bestandFeld(key, uhr));
+        this._kreaturFrass(bestand, zellen, uhr);
         for (const g in bestand) {
             const { tod: p, riss, beute } = bestand[g];
             if (p > 0 && rng() < p) {
@@ -2416,7 +2419,7 @@ class AnazhRealm_kreatur_leben {
             const opfer = riss > 0 && rng() < riss && this._bestandAeltester(this._bestandFreie(R), g, beute);
             if (opfer) this._bestandStirbt(R, opfer, "jagd", tode, beute.get(opfer));
         }
-        this._creatureNaturalBirth(bestand, key, rng, !still);
+        this._creatureNaturalBirth(bestand, key, rng, !still, uhr);
         const frei = this._bestandFreie(R);
         const alt = frei.length > 2 && this._bestandAeltester(frei);
         if (alt && alt.alterS * 1000 > AnazhRealm.FAUNA_MAX_AGE_MS) this._bestandStirbt(R, alt, "alter", tode);
@@ -2434,10 +2437,10 @@ class AnazhRealm_kreatur_leben {
         R.tiere.splice(R.tiere.indexOf(t), 1);
         if (ursache !== "jagd") {
             const leb = Math.min(1, Math.max(0, this._creatureSoulTags(t.soul).lebendig || 0));
-            this._depositLife(t.x, t.z, AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + leb));
+            this._depositLife(t.x, t.z, AnazhRealm.LIFE_FIELD.pulseCenter * (0.8 + leb), R.t);
         }
         if (t.leib) tode.push({ R, t, ursache, jaeger });
-        else if (ursache === "jagd") this._depositEmotion(t.x, t.z, AnazhRealm._furchtGesetz().F.riss);
+        else if (ursache === "jagd") this._depositEmotion(t.x, t.z, AnazhRealm._furchtGesetz().F.riss, R.t);
     }
 
     // DER FALL DER GEZEICHNETEN, nach dem Gesetz aller Regionen eines Takts (kein Gefühl eines Falls färbt eine Wahl desselben
@@ -3059,7 +3062,7 @@ class AnazhRealm_kreatur_leben {
             tempo: K.froude.map((fr) => Math.sqrt(fr * g * tb.beinL)),
             schritt: K.baender.map(() => 0),
             ph0: K.baender.map(() => 0),
-            back: { band: 0, schritt: 0, k: -1, sub: 0, t: 0, m: 1, dt: 1 / 60 },
+            back: { band: 0, schritt: 0, k: -1, sub: 0, t: 0, m: 1, dt: AnazhRealm.FIXED_DT },
         };
         M.set(key, Z);
         return Z;
@@ -3095,7 +3098,7 @@ class AnazhRealm_kreatur_leben {
                 B.k = -1;
             }
             if (B.k < 0) {
-                schritt(1 / 60);
+                schritt(AnazhRealm.FIXED_DT);
                 if (++B.schritt < K.einschwingen) continue;
                 const T = (2 * Math.PI) / Math.max(1e-3, tb._gang.omega);
                 B.m = Math.max(1, Math.ceil((T / S.n) * 60));

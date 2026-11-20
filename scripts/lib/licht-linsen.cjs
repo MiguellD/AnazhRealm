@@ -690,7 +690,7 @@ function albedoSicht(opts) {
 function linsenZiel(W, H) {
     const T = window.THREE,
         { renderer: rend, scene: sc } = st,
-        rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+        rt = __messZiel(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
     let wahl;
     const zeichne = (cam) => {
         if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
@@ -945,7 +945,7 @@ function tafelGanz(o) {
                 e = q.y.mul(1.2).add(0.17);
             const dir = TSL.vec3(e.cos().mul(a.cos()), e.sin(), e.cos().mul(a.sin())).normalize();
             const male = async (node) => {
-                const rt = new T.RenderTarget(W, Hh, { type: T.HalfFloatType, depthBuffer: false });
+                const rt = __messZiel(W, Hh, { type: T.HalfFloatType, depthBuffer: false });
                 const s2 = new T.Scene(),
                     c2 = new T.OrthographicCamera(0, 1, 1, 0, -1, 1);
                 const m = new T.MeshBasicNodeMaterial();
@@ -1322,7 +1322,7 @@ function tagKurve(o) {
         } finally {
             // der Spion fällt, die Belichtung schreibt wieder der EINE Schreiber (die Kamera frei, an der Uhr der Seite)
             delete rend.toneMappingExposure;
-            r._belichtungHand(null);
+            r._blendeBestellen(null);
         }
         return { zeilen, schreiber, karte, mutant, bahn: o.uhren.length === 100 };
     })();
@@ -2641,13 +2641,13 @@ function luftTiefe(o) {
             if (dichte != null) U.beta.value = dichte;
         };
         // DIE BLENDE k ÜBER DER MESSUNG (laub-kante-3): die Kamera des Spiels folgt der Lesung dieses Schusses, k ist ihre Korrektur
-        // (`_belichtungHand(null, k)`, der EINE Kanal durch den EINEN Schreiber — auch durch die Lesung der Aufnahme). Bis hier
+        // (`_blendeBestellen({ mal: k })`, die EINE Tür der Welt zum EINEN Schreiber — auch durch die Lesung der Aufnahme). Bis hier
         // umhüllte die Linse den Schreiber (`toneMappingExposure *= blende`) und setzte die Belichtung neben ihm. GEMESSEN (Radeon,
         // Genesis): die feste Hand bei k × der Lesung VOR dem Schuss riss K1-1 (T/T_soll 0,50–0,79) und K2-1 (0,041 > 0,02), die
         // Korrektur über der Lesung DES Schusses steht wie die Hülle (K1-1, K2-1 GRÜN)
         const schuss = async (b, k) => {
             const alt = U.beta.value;
-            r._belichtungHand(null, k);
+            r._blendeBestellen({ mal: k });
             if (b != null) U.beta.value = dichte = b;
             if (st.fernRing) r._tickFeldPass(st.fernRing);
             try {
@@ -2655,7 +2655,7 @@ function luftTiefe(o) {
             } finally {
                 dichte = null;
                 U.beta.value = alt;
-                r._belichtungHand(null);
+                r._blendeBestellen(null);
             }
         };
         const blick = (az) => {
@@ -2799,7 +2799,7 @@ function luftTiefe(o) {
             }
         } finally {
             delete r._dayNightApplyLuft;
-            r._belichtungHand(null);
+            r._blendeBestellen(null);
             PU.bloomStrength.value = bloom0;
             cam.fov = fov0;
             cam.updateProjectionMatrix();

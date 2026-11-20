@@ -133,7 +133,6 @@ hauptLauf(async () => {
                 taktFehler1 = null;
             const tick = async () => {
                 try {
-                    if (st.world) st.world.timeOfDay = 0.5;
                     r._gameLoopTick(performance.now());
                 } catch (e) {
                     taktFehlerN++;

@@ -161,7 +161,7 @@ function karteOhneFarbe() {
         kam.up.set(0, 0, -1);
         kam.lookAt(0, 0, 0);
         kam.updateMatrixWorld(true);
-        const ziel = new T.RenderTarget(64, 64, { depthBuffer: true });
+        const ziel = __messZiel(64, 64, { depthBuffer: true });
         ziel.texture.name = "ziel-zensus:schatten-bild";
         // die Pässe in die Schatten-Karte: ihre Tiefe ist die Karten-Tiefe (DepthTexture des Schatten-Ziels)
         let schattenPaesse = 0,
@@ -226,7 +226,7 @@ function rundungProbe() {
         try {
             for (const t of [0, 0, 0, 0.5]) {
                 if (b.length && !t) await sleep(250);
-                const rt = new window.THREE.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+                const rt = __messZiel(W, H, { depthBuffer: true, samples: 0 });
                 lu.uDitherT.value = t;
                 nf.update();
                 rend.setOutputRenderTarget(rt);

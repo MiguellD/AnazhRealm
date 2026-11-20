@@ -780,7 +780,7 @@ async function probe(argW) {
                 let maxW = 0;
                 let nach = null;
                 for (let s = 0; s < 480; s++) {
-                    st.timeOfDay = s / 480;
+                    r._uhrSetzen(s / 480, "regler");
                     takt();
                     maxW = Math.max(maxW, eiche.heatBuildup || 0);
                     if (!st.architectures.includes(eiche)) {
@@ -802,22 +802,22 @@ async function probe(argW) {
             if (m.linse.gesetzt) {
                 // Nachts: 30 s Sonne-Wetter ohne Sonne.
                 const b0 = baum();
-                st.timeOfDay = 0.0;
+                r._uhrSetzen(0.0, "regler");
                 takt(30);
                 m.nacht = { waerme: +(b0.heatBuildup || 0).toFixed(3), steht: st.architectures.includes(b0) };
                 // Kühlung: im Brennpunkt (Mittag), bis die Eiche glimmt (die halbe Zünd-Wärme), höchstens 10 s, dann 30 s Nacht —
                 // feste 10 s entzündeten sie am Ort des Genesis-Plans (brennt nach 7 s), und die Wärme der Gefallenen kühlt nie
-                st.timeOfDay = 0.5;
+                r._uhrSetzen(0.5, "regler");
                 for (let s = 0; s < 10 && !/glimmt/.test(r._spielerSagtLetzte?.t); s++) takt();
                 const nachFokus = +(b0.heatBuildup || 0).toFixed(3);
-                st.timeOfDay = 0.0;
+                r._uhrSetzen(0.0, "regler");
                 takt(30);
                 m.kuehlung = { nachFokus, nachKuehlen: +(b0.heatBuildup || 0).toFixed(3) };
                 if (st.architectures.includes(b0)) r.removeArchitecture(b0);
                 // Mittag: glimmen, dann brennen — im Spieler-Kanal.
                 r._spielerSagtLetzte = null;
                 const b1 = baum();
-                st.timeOfDay = 0.5;
+                r._uhrSetzen(0.5, "regler");
                 const n0 = zeilen().length;
                 let glimmt = null;
                 let brennt = null;
@@ -851,7 +851,7 @@ async function probe(argW) {
             if (linse) r.removeArchitecture(linse);
         } finally {
             st.weather = wetterAlt;
-            st.timeOfDay = zeitAlt;
+            r._uhrSetzen(zeitAlt, "regler");
         }
     });
 

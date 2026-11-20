@@ -1857,24 +1857,25 @@ class AnazhRealm_feld_leben {
     // === Das lebendige Feld — die LESE-Seite (docs/das-lebendige-feld.md) ===
     // auraAt(x, z, t) ist die EINE Lese-Schnittstelle: das worldgen-eingefrorene Substrat (worldFieldAt) +
     // die dynamische Achse `emotion` + die Zeit `t`. Wer eine „lebendige Welt"-Wirkung baut, LIEST hier
-    // (kein eigener _tickX). `emotion` ist eine Live-Referenz — nicht mutieren.
-    auraAt(x, z, t = 0) {
+    // (kein eigener _tickX). `emotion` ist eine Live-Referenz — nicht mutieren. `uhr` (s der Welt-Uhr): der Augenblick, zu dem
+    // das Feld gelesen wird (der Takt des Bestands auf seinem Raster) — ohne ihn jetzt; die Welt-Uhr selbst biegt kein Leser.
+    auraAt(x, z, t = 0, uhr = this.state.spielZeit) {
         const f = this.worldFieldAt(x, z);
         const e = (this.state.player && this.state.player.emotions) || {};
         // SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem frozen Substrat, der Fraß senkt es (geklemmt auf 0..1, nie
         // überschreiben); leerer Overlay → lebendig == frozen. at_field_need + FIELD_TO_EMOTION lesen es mit.
-        const overlay = this._lifeOverlayAt(x, z);
+        const overlay = this._lifeOverlayAt(x, z, uhr);
         // DIE NARBE DER TAT (feld.K4) senkt es am Ort der Tat, bis sie heilt (`_narbeAt`) — leer → lebendig == frozen + overlay.
-        const narbe = this._narbeAt(x, z);
+        const narbe = this._narbeAt(x, z, uhr);
         // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
         // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
         // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
-        const imp = this._emotionOverlayAt(x, z);
+        const imp = this._emotionOverlayAt(x, z, uhr);
         // DER BRAND (feld.K3#2) glüht in der glut seiner Zelle, solange sie brennt
         const bf = this.state.brandFeld;
         const brand = bf && bf.size ? bf.get(this._lifeCellKey(x, z)) : null;
         // DIE LAVA (stoffe.K3-2) glüht in der glut ihrer Zelle, bis sie erkaltet (`_lavaAt`)
-        const lava = this._lavaAt(x, z);
+        const lava = this._lavaAt(x, z, uhr);
         let emotion = e;
         if (imp) {
             emotion = {};
@@ -2042,12 +2043,12 @@ class AnazhRealm_feld_leben {
 
     // Die aktuelle (zerfallene) Overlay-Menge an (x,z) — 0, wenn keine Zelle oder ihr Betrag unter `epsilon` zerfiel (tot: die
     // Räumung ist nur Gedächtnis, sie entscheidet nie, was gelesen wird).
-    _lifeOverlayAt(x, z) {
+    _lifeOverlayAt(x, z, uhr = this.state.spielZeit) {
         const lf = this.state.lifeField;
         if (!lf || lf.size === 0) return 0;
         const e = lf.get(this._lifeCellKey(x, z));
         if (!e) return 0;
-        const dt = Math.max(0, this.state.spielZeit - e.t);
+        const dt = Math.max(0, uhr - e.t);
         const a = dt === 0 ? e.a : e.a * Math.exp(-AnazhRealm.LIFE_FIELD.decayPerSec * dt);
         return Math.abs(a) < AnazhRealm.LIFE_FIELD.epsilon ? 0 : a;
     }
@@ -2056,13 +2057,13 @@ class AnazhRealm_feld_leben {
     // geklemmt auf [LIFE_FIELD.kahl, LIFE_FIELD.max] (Sättigung → der Nexus zieht weiter). Die EINE
     // Schreib-API — wer Leben in die Welt trägt (Geburt, Pflege, Kreatur-Trickle) und wer es frisst (der Fraß
     // des Bestands, negativ; Ökologie K1) ruft sie. Der Decay führt beides zum Substrat zurück → nie Überschreiben.
-    _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter) {
+    _depositLife(x, z, amount = AnazhRealm.LIFE_FIELD.pulseCenter, uhr = this.state.spielZeit) {
         if (!amount || !Number.isFinite(amount)) return;
         this._lebenGen = (this._lebenGen || 0) + 1; // die Marke des Lebens im Stand (`_lebenImStand`)
         if (!this.state.lifeField) this.state.lifeField = new Map();
         const lf = this.state.lifeField;
         const cfg = AnazhRealm.LIFE_FIELD;
-        const now = this.state.spielZeit;
+        const now = uhr;
         const cx = Math.floor(x / cfg.cell);
         const cz = Math.floor(z / cfg.cell);
         const neighborAmount = amount * (cfg.pulseNeighbor / cfg.pulseCenter);
@@ -2310,7 +2311,8 @@ class AnazhRealm_feld_leben {
         return h - AnazhRealm.FELD_VORLAUF_S;
     }
 
-    // Ein Feld-Akt wirkt — zu SEINER Zeit (die Spiel-Uhr steht für ihn auf `w`, was er schreibt, trägt diesen Stempel): Leben an
+    // Ein Feld-Akt wirkt — zu SEINER Zeit (`w`: was er schreibt, trägt diesen Stempel — er reicht ihn jedem Schreiber als `uhr`; bis
+    // zeit-ein-kalender bog er dafür die Welt-Uhr um und setzte sie zurück): Leben an
     // einem Ort (`leben`), ein Tier tritt in den Bestand seiner Region (`annahme`, der Leib der Seite, die es annahm, zeichnet es)
     // oder verlässt ihn (`aus`: sein Leib fiel außerhalb des Gesetzes — eine Zeichnung des Tiers auf dieser Seite geht, sobald
     // sie außer Blick steht).
@@ -2323,27 +2325,22 @@ class AnazhRealm_feld_leben {
         st.faunaLifecycle.feldLetzt = akt.w; // das zuletzt gerechnete Ereignis der Folge des Felds (`_feldTakt`)
         if (gewirkt.size > 512)
             for (const [k, w] of gewirkt) if (w < jetzt - 2 * AnazhRealm.AKT_NACHHOL_S) gewirkt.delete(k);
-        st.spielZeit = akt.w;
-        try {
-            if (akt.art === "leben") return void this._depositLife(akt.x, akt.z, akt.a);
-            if (akt.art === "brand") return this._brandFangen(akt.x, akt.z, akt.ein);
-            const R = this._bestandRegion(akt.key, false);
-            if (akt.art === "annahme") {
-                const offen = this._annahmeOffen && this._annahmeOffen.get(akt.id);
-                if (offen) this._annahmeOffen.delete(akt.id);
-                if (R.tiere.some((t) => t.id === akt.id)) return;
-                const t = offen || Object.assign({}, akt.tier, { id: akt.id });
-                delete t.zu;
-                R.tiere.push(t);
-                return;
-            }
-            const i = R.tiere.findIndex((t) => t.id === akt.id);
-            if (i < 0) return;
-            const [t] = R.tiere.splice(i, 1);
-            if (t.leib) [t.leib.userData._bestand, t.leib.userData._ohneTier, t.leib] = [null, true, null];
-        } finally {
-            st.spielZeit = jetzt;
+        if (akt.art === "leben") return void this._depositLife(akt.x, akt.z, akt.a, akt.w);
+        if (akt.art === "brand") return this._brandFangen(akt.x, akt.z, akt.ein, akt.w);
+        const R = this._bestandRegion(akt.key, false, 0, Infinity, null, akt.w);
+        if (akt.art === "annahme") {
+            const offen = this._annahmeOffen && this._annahmeOffen.get(akt.id);
+            if (offen) this._annahmeOffen.delete(akt.id);
+            if (R.tiere.some((t) => t.id === akt.id)) return;
+            const t = offen || Object.assign({}, akt.tier, { id: akt.id });
+            delete t.zu;
+            R.tiere.push(t);
+            return;
         }
+        const i = R.tiere.findIndex((t) => t.id === akt.id);
+        if (i < 0) return;
+        const [t] = R.tiere.splice(i, 1);
+        if (t.leib) [t.leib.userData._bestand, t.leib.userData._ohneTier, t.leib] = [null, true, null];
     }
 
     // DIE GABE EINER EINGABE (jedes Leben, das nicht das Gesetz des Bestands schreibt): ein Feld-Akt zur Welt-Uhr seines Akts.
@@ -2478,9 +2475,9 @@ class AnazhRealm_feld_leben {
 
     // Die Decke der Zelle unter (x, z) — der Zustand ihrer jüngsten Lava (`temperatur` °C, `glut` 0…1, `erstarrt`, `dampf`,
     // `alterS`) oder null ohne Lava.
-    _lavaAt(x, z) {
+    _lavaAt(x, z, uhr) {
         const a = this._lavaJuengste(this._lifeCellKey(x, z));
-        return a ? this._lavaZustand(a) : null;
+        return a ? this._lavaZustand(a, uhr) : null;
     }
     // Die jüngste Lava-Tat der Zelle mit dem Schlüssel `k` (`_lifeCellKey`) oder null — die EINE Wahl der Decke.
     _lavaJuengste(k) {
@@ -2491,8 +2488,8 @@ class AnazhRealm_feld_leben {
         if (je) for (const t of je) if (t.tat === "lava" && !(a && a.h >= t.h)) a = t;
         return a;
     }
-    _lavaZustand(a) {
-        const alterS = (this._weltStunde() - a.h) * 3600;
+    _lavaZustand(a, uhr) {
+        const alterS = (this._weltStunde(uhr) - a.h) * AnazhRealm.WELT_GESETZ_ERDE.kalender.stundeS;
         const z = globalThis.__gelaendeCore.lava(alterS, a.wasser === 1, this._temperaturAt(a.y, 0), {
             stein: this._stoff("stein"),
         });
@@ -2606,16 +2603,66 @@ class AnazhRealm_feld_leben {
     // und 23 Pflanzen mit tryMouseBreak — Δlebendig 0, kein Stumpf, nach dem Reload 23 von 23 Pflanzen zurück).
 
     // DER TAG DER PROZESSE (w28-lava-nachlauf): die EINE Zeit, an der alles altert, was ein Prozess ist — die Welt-Uhr
-    // (`spielZeit`: sie reist, geht nie zurück, die spätere gilt, `_weltUhrNimm`) im Tag des Gesetzes (`PEGEL_TAG_S` Welt-Uhr je
-    // Tag, nie die Tag-Länge einer Seite), ab dem Null-Punkt der Welt (`worldMeta.tagNull`, `_weltTagEichen`). Leser: die
+    // (`spielZeit`: sie reist, geht nie zurück, die spätere gilt, `_weltUhrNimm`) im Tag des Kalenders (die Kalender-Zeit, stetig
+    // über den Regler), ab dem Null-Punkt der Welt (`worldMeta.tagNull`, `_weltTagEichen`). Leser: die
     // Welt-Stunde (`_weltStunde`: das Erkalten der Lava, Stempel und Heilung der Taten, der Nachwuchs, die Sukzession), der
     // Pfad (`_trittJetzt`, sein Tag-Wechsel in `_tickWegeKarte`) und das Alter der Werke (`_werkAlter`, `_werkeAltern`). Bis
     // hier lasen sie den Tag der SICHT (`worldMeta.tag` + `timeOfDay`, der Sonnenstand des Spielers): ein Zug am Regler der Uhr
     // ließ die Lava erkalten und die Narbe heilen, Brand, Nässe und Wetter (an der Welt-Uhr) standen — zwei Uhren für eine
-    // Welt, und die eine reiste nie. Die Uhr des Spielers (`_uhrSetzen`) bewegt jetzt keinen Prozess mehr.
-    _weltTag() {
+    // Welt, und die eine reiste nie. Die Uhr des Spielers (`_uhrSetzen`) bewegt jetzt keinen Prozess mehr. `uhr` (s der Welt-Uhr):
+    // der Augenblick, zu dem ein Takt rechnet (der Takt des Bestands auf seinem Raster, ein Feld-Akt zu seinem Stempel) — ohne
+    // ihn jetzt. Der Tag ist der des Kalenders (`_kalenderZeit`, zeit-ein-kalender): bis dahin las er den festen Tag des Pegels
+    // (3 600 s Welt-Uhr), am 8-min-Tag lief das Licht 7,5-mal so schnell wie Lava, Narbe und Pegel.
+    _weltTag(uhr = this.state.spielZeit) {
+        const wm = this.state.worldMeta;
+        return (+(wm && wm.tagNull) || 0) + this._kalenderZeit(uhr) / this._kalender().normS;
+    }
+
+    // DER KALENDER DER WELT (zeit.K1, zeit-ein-kalender — `WELT_GESETZ_ERDE.kalender`): die EINE Tag-Länge `tagS` (die Wahl des
+    // Spielers, `dayLengthMinutes`, Sekunden der Welt-Uhr je Tag) und das Jahr in Kalender-Zeit (`jahrK` = normS ÷ `jahreJeTag`: es folgt dem Tag). Leser: der
+    // Gang der Uhr (`tickDayNight`), der Tag der Prozesse (`_weltTag`), der Pegel (über die Kalender-Zeit), die Nässe des Bodens,
+    // das Jahr (`_saisonAnkerGilt`, `setSeason`, das Laden) und die Stunde der Bewohner. Fehlt die Tag-Länge, WIRFT er beim Namen
+    // (kein Leser rechnet still mit einem anderen Tag). `normS`: der Standard-Tag (`DAY_LENGTH_DEFAULT_MINUTES`), die Einheit
+    // der Kalender-Zeit.
+    _kalender() {
         const st = this.state;
-        return (+(st.worldMeta && st.worldMeta.tagNull) || 0) + (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+        const K = AnazhRealm.WELT_GESETZ_ERDE.kalender;
+        const min = st.dayLengthMinutes;
+        if (!(typeof min === "number" && min > 0))
+            throw new Error(`Der Kalender: keine Tag-Länge (state.dayLengthMinutes ${min})`);
+        const tagS = min * 60;
+        const normS = AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES * 60;
+        return { tagS, normS, jahrK: normS / K.jahreJeTag, tagStunden: K.tagStunden, jahrTage: K.jahrTage };
+    }
+
+    // DIE KALENDER-ZEIT zur Welt-Uhr `z` (s, ohne sie jetzt): die Welt-Uhr im Gang des Kalenders, gezählt in Sekunden des
+    // Standard-Tags — k(z) = Versatz + z · normS ÷ tagS. Am Standard-Tag ist sie die Welt-Uhr selbst (Versatz 0: jede Welt am
+    // Standard rechnet byte-gleich wie vor dem Kalender). Was im Tag rechnet, liest sie: der Tag der Prozesse (`_weltTag`) und
+    // der Pegel (Stempel des Regens, Zustand, Lauf — sein Tag ist `normS` Kalender-Zeit, `tagS` Welt-Uhr). DER GANG IST STETIG
+    // ÜBER DEN REGLER: wechselt die Tag-Länge, legt sich der Versatz so, dass die Kalender-Zeit im Augenblick des Wechsels nicht
+    // springt (`worldMeta.kalender` = [Versatz, Tag-Länge]; ohne ihn [0, Standard] — so trug jeder Stand vor dem Kalender seine
+    // Zeit; er reist im worldMeta). Eine Tag-Länge, die die Zeit anhält (die Bühne: 10¹² min), hält damit jeden Prozess des Tags an.
+    _kalenderZeit(z = this.state.spielZeit) {
+        const st = this.state;
+        const { tagS, normS } = this._kalender();
+        const wm = st.worldMeta;
+        let [versatz, laenge] = (wm && wm.kalender) || [0, normS];
+        if (wm && laenge !== tagS) {
+            const jetzt = st.spielZeit || 0;
+            versatz += jetzt * (normS / laenge) - jetzt * (normS / tagS);
+            laenge = tagS;
+            if (versatz === 0 && laenge === normS) delete wm.kalender;
+            else wm.kalender = [versatz, laenge];
+        }
+        return versatz + (z || 0) * (normS / tagS); // am Standard-Tag × 1: die Welt-Uhr, bit-gleich
+    }
+    // die Welt-Uhr zur Kalender-Zeit `k` (die Umkehrung von `_kalenderZeit` im Gang, der jetzt gilt)
+    _kalenderUhr(k) {
+        const { tagS, normS } = this._kalender();
+        const wm = this.state.worldMeta;
+        this._kalenderZeit();
+        const versatz = (wm && wm.kalender && wm.kalender[0]) || 0;
+        return (k - versatz) * (tagS / normS);
     }
 
     // DER NULL-PUNKT EINES STANDS VON VOR DEM SCHNITT: seine Stempel (Taten `h`, Lava `h`, Werke `geburt`, Tritte) tragen den
@@ -2625,7 +2672,7 @@ class AnazhRealm_feld_leben {
     _weltTagEichen() {
         const [st, wm] = [this.state, this.state.worldMeta];
         if (!wm || Number.isFinite(wm.tagNull)) return;
-        wm.tagNull = (wm.tag || 0) + (st.timeOfDay || 0) - (st.spielZeit || 0) / AnazhRealm.PEGEL_TAG_S;
+        wm.tagNull = (wm.tag || 0) + (st.timeOfDay || 0) - this._kalenderZeit() / this._kalender().normS;
     }
 
     // DIE GEBURT EINER WELT (welt-tag-null): der EINE Ort, an dem ein worldMeta zur Welt wird — ihr Tag der Prozesse beginnt bei
@@ -2643,9 +2690,10 @@ class AnazhRealm_feld_leben {
         return this.state.worldMeta || (this.state.worldMeta = AnazhRealm._weltGeburt(AnazhRealm._weltMetaVorlage()));
     }
 
-    // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt, am Tag der Prozesse (`_weltTag`).
-    _weltStunde() {
-        return 24 * this._weltTag();
+    // DIE WELT-STUNDE: Stunden seit dem ersten Tag der Welt, am Tag der Prozesse (`_weltTag`, zur Uhr `uhr`), in den Stunden des
+    // Kalenders.
+    _weltStunde(uhr) {
+        return AnazhRealm.WELT_GESETZ_ERDE.kalender.tagStunden * this._weltTag(uhr);
     }
 
     // Die Tat schreibt: an ihren Ort, zur Welt-Stunde; `mehr` trägt, was ihre Klasse braucht (die Ernte ihre Kachel und Kennung,
@@ -2709,12 +2757,12 @@ class AnazhRealm_feld_leben {
     }
 
     // Die Narbe an (x,z): Σ Tiefe × Rest je Tat der Zelle (der Rest fällt linear von 1 auf 0 über ihre Dauer), gekappt.
-    _narbeAt(x, z) {
+    _narbeAt(x, z, uhr) {
         const I = this._tatIndex();
         const je = I.n ? I.je.get(this._lifeCellKey(x, z)) : null;
         if (!je) return 0;
         const N = AnazhRealm.TAT_NARBE;
-        const h = this._weltStunde();
+        const h = this._weltStunde(uhr);
         let s = 0;
         for (const a of je) s += N[a.tat].tiefe * Math.min(1, Math.max(0, 1 - (h - a.h) / I.dauer.get(a)));
         return Math.min(N.max, s);
@@ -2743,12 +2791,12 @@ class AnazhRealm_feld_leben {
     // === die SCHREIB-Seite der emotion-Achse (das räumliche Gedächtnis) ===
     // Eine emotionale Tat (`_feelAction`) prägt ihre Emotion an der Spieler-Zelle ein; `auraAt` blendet
     // den Abdruck über die globale Stimmung, der Welt-Tint liest das. Lazy-Decay, kein Frame-Sweep.
-    _depositEmotion(x, z, emotionMap) {
+    _depositEmotion(x, z, emotionMap, uhr = this.state.spielZeit) {
         if (!emotionMap) return;
         if (!this.state.emotionField) this.state.emotionField = new Map();
         const ef = this.state.emotionField;
         const cfg = AnazhRealm.EMOTION_FIELD;
-        const now = this.state.spielZeit;
+        const now = uhr;
         const key = this._lifeCellKey(x, z); // dieselbe 16-m-Zelle wie das Leben
         let cell = ef.get(key);
         if (cell) {
@@ -2770,12 +2818,12 @@ class AnazhRealm_feld_leben {
 
     // Der aktuelle (zerfallene) Emotions-Abdruck an (x,z) — null, wenn keine Zelle
     // (dann blendet auraAt nichts → emotion == globale Stimmung, backward-compat).
-    _emotionOverlayAt(x, z) {
+    _emotionOverlayAt(x, z, uhr = this.state.spielZeit) {
         const ef = this.state.emotionField;
         if (!ef || ef.size === 0) return null;
         const cell = ef.get(this._lifeCellKey(x, z));
         if (!cell) return null;
-        const dt = Math.max(0, this.state.spielZeit - cell.t);
+        const dt = Math.max(0, uhr - cell.t);
         const f = dt === 0 ? 1 : Math.exp(-AnazhRealm.EMOTION_FIELD.decayPerSec * dt);
         let out = null;
         let lebt = false; // tot, wenn jede Achse unter `epsilon` zerfiel (wie die Räumung urteilt)

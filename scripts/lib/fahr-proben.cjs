@@ -449,11 +449,11 @@ async function probeLeben(expected) {
         const lage = async (name, wort, halt) => {
             wetter("sunny", 1e6);
             const [n0, herd] = [(st.worldMeta.taten ||= []).length, r._brandEntfachen(start.x, start.z)];
-            st.spielZeit += A.BRAND.aufS;
+            r._weltUhrNimm(st.spielZeit + A.BRAND.aufS);
             r._tickBrand();
             const los = halt && halt();
             wetter(wort, K.sprungS);
-            st.spielZeit += A.BRAND.schrittS;
+            r._weltUhrNimm(st.spielZeit + A.BRAND.schrittS);
             r._tickBrand();
             const q = r._leuchtQuellen(start.x, 0, start.z, 1e3).find((l) => l.id === herd);
             const m = {
@@ -848,7 +848,8 @@ async function probeLeben(expected) {
             // jedem Lauf) und weit genug vor jedem Bild davor (der Takt deckelt den Sprung, `TAKT_DECKEL_S`). Bis hier zählte `tMs`
             // ab `performance.now()` beim Start der Seite: die Wanduhr der Probe ging ins letzte Bit jedes Takts (der Gang der
             // Bewohner, `_tickBewohner(delta)`; die Uhr des Tags) und von dort ins Gedränge der Wagen
-            [tMs, st.spielZeit] = [1e7 + 1e6 * lauf, 86400 * stunde];
+            tMs = 1e7 + 1e6 * lauf;
+            r._weltUhrNeu(86400 * stunde); // die Welt-Uhr der Stunde neu, bestellt bei der Welt (nie in den Zustand)
             for (const h of [stunde + 6, stunde]) {
                 r._uhrSetzen((h % 24) / 24, "regler");
                 frame(i++);
@@ -2392,9 +2393,10 @@ async function probeLeben(expected) {
             S.frei = { kisten: stapel(false) };
             A.FREI = Object.freeze({ ...FREI, ruheS: Infinity });
             S.frei.wachZittern = stapel(true).zittern;
-            [A.FREI, st.gravity] = [FREI, 0];
+            A.FREI = FREI;
+            r.dslEffects.gravity([0]); // die Schwere über das Wort der Welt (DSL `gravity`), nie in den Zustand
             S.frei.schwerelos = stapel(false);
-            st.gravity = schwere;
+            r.dslEffects.gravity([schwere]);
             const fass = async () => {
                 let kipp = 0;
                 const m = await stossProbe({

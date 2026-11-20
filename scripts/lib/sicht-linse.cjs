@@ -1024,9 +1024,9 @@ function sichtLauf(k) {
         if (k.regler === "voll") st.perfTargetMs = 1000;
         const tagAlt = st.dayLengthMinutes;
         // die Tageslänge je Phase: `steht` hält den Tag; die Phase `sonne` und `laeuft` fahren die Tageslänge des Spiels
+        // (die Tageslänge des Spiels ist die des Spielers — ohne Wahl der Standard; der Kalender wirft ohne Tag-Länge)
         const tagSetzen = (laeuft) => {
-            if (laeuft) delete st.dayLengthMinutes;
-            else st.dayLengthMinutes = 1e12;
+            st.dayLengthMinutes = laeuft ? (tagAlt ?? AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES) : 1e12;
         };
         tagSetzen(k.tag !== "steht");
         // der Spieler kehrt nach dem Gehen an seinen Ort zurück (die nächste Messung steht wieder am Messort)
@@ -1090,8 +1090,7 @@ function sichtLauf(k) {
             rend.setAnimationLoop(null);
             halt.vor = false;
             st.perfTargetMs = decke;
-            if (tagAlt === undefined) delete st.dayLengthMinutes;
-            else st.dayLengthMinutes = tagAlt;
+            st.dayLengthMinutes = tagAlt ?? AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
             L.aus();
         }
         const aus = {};

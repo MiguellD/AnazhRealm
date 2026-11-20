@@ -128,6 +128,13 @@ async function zielLesen(ziel, W, H, renderer = st.renderer) {
     for (let y = 0; y < H; y++) u8.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
     return u8;
 }
+// DAS EINE MESS-ZIEL (`window.__messZiel(W, H, o, T)`, die Bühnen-Tür der Mess-Seite, gate:constitution Beobachter): das Render-Ziel
+// einer Probe — LINEAR und ungetont, solange es nicht Ausgabe-Ziel ist (r184 tont nur dort; was der Spieler SIEHT, liest die
+// Aufnahme `__ausgabeAufnahme` oder ein Ziel unter `setOutputRenderTarget`). `T` die Engine des Renderers (ohne Wort die der Welt),
+// `art` ihr Ziel-Typ (`WebGLRenderTarget` am r128-Labor). Bis beobachter-ein-weg baute jede von 15 Proben ihr Ziel selbst.
+function messZiel(W, H, o, T = window.THREE, art = "RenderTarget") {
+    return art === "WebGLRenderTarget" ? new T.WebGLRenderTarget(W, H, o) : new T.RenderTarget(W, H, o);
+}
 // DIE EINE PUFFER-LESUNG (`await window.__pufferLesen(puffer, wer)`, gate:apparat Klinge 8): ein Puffer zurück von der GPU — liegt er
 // dort nicht (gefallen, nie geladen, oder kein Puffer: die Liste der Wahl je Kamera ist seit w25-gpu-wahl-2 eine Karte), nennt sie
 // Leser und Puffer; r184 brach anonym („reading 'size'" in getArrayBufferAsync: haar.K5, vegetation.K1 seit fbbeb318)
@@ -540,7 +547,7 @@ function uebergangFaellt(r) {
     r.state.weatherTransition = null;
     r.requestWeatherTransition(r.state.weather, 0, r.state.weather);
 }
-const WARTEN_SEITE = `${weltR} window.__uebergangFaellt = ${uebergangFaellt}; window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.__uebergangFaellt = ${uebergangFaellt}; window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__messZiel = ${messZiel}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

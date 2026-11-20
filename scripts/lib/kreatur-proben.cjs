@@ -230,9 +230,7 @@ async function kreaturProben(r, T, opts) {
         r._loopFrustumCulling();
     };
     const imBlick = (x, y, z) => {
-        const cam = s.camera;
-        const m = new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
-        return new T.Frustum().setFromProjectionMatrix(m).containsPoint(new T.Vector3(x, y, z));
+        return r._frustumVon(s.camera).containsPoint(new T.Vector3(x, y, z));
     };
     // DER PLATZ EINES SATZ-TIERS: die Instanz der Tier-Senke `teil` (fell · wurf …), deren Lage c trägt
     const satzPlatz = (c, teil) => {
@@ -879,7 +877,7 @@ async function kreaturProben(r, T, opts) {
             const peilKoerper = [...beute, s.playerMesh];
             const wv = woelfe.map((w) => w.position.clone());
             for (let k = 0; k < 10800; k++) {
-                s.spielZeit += dt;
+                r._weltUhrNimm(s.spielZeit + dt);
                 ruhigSpieler();
                 takt(dt);
                 r.tickFaunaLifecycle();
@@ -909,7 +907,7 @@ async function kreaturProben(r, T, opts) {
             // der Übergang: der Spieler geht fort, jenseits des Nah-Kreises, dann der nächste Takt des Lebenszyklus
             pm.x += 300;
             takt(dt);
-            s.spielZeit += 10;
+            r._weltUhrNimm(s.spielZeit + 10);
             r.tickFaunaLifecycle();
             for (const c of genannt) R.gefallen += !s.creatures.includes(c);
             genannt.clear();
@@ -1167,7 +1165,7 @@ async function kreaturProben(r, T, opts) {
         // DER TAKT: die Uhr, das Revier, der Spieler (`spieler(x, z)` am Zentrum der Uhr), das Auge auf das Leittier; liefert
         // die Züge des Verbands je Glied
         const takt = (spieler) => {
-            s.spielZeit += 1 / 60;
+            r._weltUhrNimm(s.spielZeit + (1 / 60));
             for (const q of sk.zellen.values()) [q.revier, q.frisch] = [q === c, s.spielZeit];
             VG.schwarmZentrum(c.wurf, s.spielZeit, sonne, regen, VG.V, zt);
             const [x, z] = [c.x + zt.dx, c.z + zt.dz];

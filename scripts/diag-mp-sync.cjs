@@ -176,7 +176,7 @@ function abdruck(bauten, nahe) {
         ]);
     const boden = edits.map(([, , x, y, z]) => [r._terrainDensityAt(x, y, z), r._voxelSurfaceY(x, z)]);
     const wt = st.weatherTransition;
-    const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.duration]]);
+    const wetter = JSON.stringify([st.weather, wt && [wt.from, wt.to, wt.startedAt, wt.dauer]]);
     const stand = r._lebenImStand(nahe);
     const leben = stand.feld.map(String).sort();
     // (f) DER BEFUND hinter „leben VERSCHIEDEN“ (`lebenBefund`): was das Leben rechnet, je Seite — die gemerkte Boden-Klasse je
@@ -368,7 +368,8 @@ function sturmSprung(ab) {
     const sturm = (k) => r._wetterAmOrt(p.x, p.z, k * Z) === "stormy";
     let k = Math.floor(r.state.spielZeit / Z) + ab;
     while (!sturm(k) || sturm(k - 1)) k++;
-    return [(r.state.spielZeit = k * Z - Z + 1), k * Z + 1];
+    r._weltUhrNimm(k * Z - Z + 1); // der Sprung über den EINEN Weg der Welt-Uhr von außen (wie der Stand und der Mitspieler)
+    return [r.state.spielZeit, k * Z + 1];
 }
 
 // (d) DAS GESETZ JE TAKT, wie `_lockstepTickPeers` es trägt: ein Takt von dt ms (seit dem vorigen Verbrauchs-Takt) verbraucht
@@ -980,7 +981,7 @@ hauptLauf(async () => {
             });
         const [vorSturm, sturm] = await pageA.evaluate(sturmSprung, 10);
         await folgt(vorSturm);
-        await pageA.evaluate((z) => (st.spielZeit = z), sturm);
+        await pageA.evaluate((z) => r._weltUhrNimm(z), sturm);
         await folgt(sturm);
         // (f) DIE TEIL-SIMULATIONEN beider Seiten im selben Moment: Wetter, Leben je lebender Zelle, Pegel, Brand — gleich, sonst ROT
         const fTeile = ["wetter", "leben", "pegel", "brand"];

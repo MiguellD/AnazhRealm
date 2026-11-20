@@ -340,7 +340,7 @@ async function kleberProbe(page, fmtWunsch) {
             cam.position.set(0, 4, 26);
             cam.lookAt(0, 4, 0);
             cam.updateMatrixWorld(true);
-            const rt = new T.RenderTarget(W, H);
+            const rt = __messZiel(W, H);
             // Die Schirm-Box des lebenden Quads (Anker −6, Halbbreite 4, Höhe 8) — in Quadranten geteilt.
             const px = (x, y) => {
                 const v = new T.Vector3(x, y, 0).project(cam);
@@ -419,7 +419,7 @@ async function kleberProbe(page, fmtWunsch) {
             const lage = new T.Matrix4().compose(new T.Vector3(30, 0, -10), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (-119 * Math.PI) / 180), new T.Vector3(1.5, 1.5, 1.5));
             // die Leinwand 256²: die Karte 149 px hoch, über KARTE_GITTER px[1] — ihre Ecken tragen die Tiefe (C7)
             const camO = new T.PerspectiveCamera(6, 1, 1, 600),
-                rtO = new T.RenderTarget(256, 256);
+                rtO = __messZiel(256, 256);
             // gedeckt = gezeichnet und nicht rot (die Tafel der Tiefe)
             const deckt = async (phi, ...o) => {
                 camO.position.set(30, 6 + 180 * Math.sin((phi * Math.PI) / 180), 180 * Math.cos((phi * Math.PI) / 180) - 10);
@@ -571,7 +571,7 @@ async function vergroessertProbe(page, fmtWunsch) {
             out.pxJeTexel = +(8 / at.ch / ((2 * d * Math.tan(Math.PI / 6)) / H)).toFixed(2);
             const treppe = async (stufe, name) => {
                 const z = await __fimpBacke(ren, at, "fimp:gateKante|" + name, stufe ? 94 : 93, kante(stufe));
-                const rt = new T.RenderTarget(W, H);
+                const rt = __messZiel(W, H);
                 // der Wind ruht: die Probe misst die Karte, nie den Ausschlag des Augenblicks (die Treppe streute 0,248-0,372)
                 if (st.windUniforms) st.windUniforms.uWindStrength.value = 0;
                 const buf = await __fimpBild(ren, rt, cam, __fimpKarte(z, mat, new T.Matrix4(), 1));
@@ -806,7 +806,7 @@ async function windProbe(page) {
             cam.up.set(0, 0, -1);
             cam.lookAt(anker.x, 0, anker.z);
             cam.updateMatrixWorld(true);
-            const rt = new T.RenderTarget(W, W);
+            const rt = __messZiel(W, W);
             // der Schwerpunkt des Säulen-Bilds, Pixel → Welt (Bild-x = Welt +x, Bild-y (unten → oben) = Welt −z)
             const schwerpunkt = async (mesh) => {
                 const buf = await __fimpBild(ren, rt, cam, mesh);
