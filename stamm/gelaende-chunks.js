@@ -1135,8 +1135,9 @@ class AnazhRealm_gelaende_chunks {
     // Takten überschritten, die offenen Chunks im 64-m-Kreis blieben kahl (4 → 4), und ob Wald oder kahler Hügel im Bild
     // stand, entschied allein der frei laufende Boot.
     // DIE RUHE IST DER FIXPUNKT (feld.K3): liegt nach einem Gang kein wartender Chunk im Radius, schläft der Wuchs, bis der
-    // Spieler um den Abstand des nächsten (`frei`) weiterging, der Radius oder die Chunk-Menge sich regt (`_wuchsSchlaf`) —
-    // vorher prüfte er je Bild jeden wartenden Chunk (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 32 400 Einheiten).
+    // Spieler um den Abstand des nächsten (`frei`) weiterging oder die Welt sich regt (`_wuchsSchlaf`: die Chunk-Menge, die
+    // Boden-Karte, der Schritt des Rings, der den Laub-Rand rückt — `_ringWaechst`; der Schlaf fragt das Gesetz nie, er hört sein
+    // Ereignis) — vorher prüfte er je Bild jeden wartenden Chunk (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 32 400 Einheiten).
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
         if (!pending || pending.size === 0) return;
@@ -1150,7 +1151,6 @@ class AnazhRealm_gelaende_chunks {
             s.n === pending.size &&
             s.welt === (this._weltRegung | 0) &&
             s.karte === (this._karteRegung | 0) &&
-            s.fr === this._laubRand() &&
             pm &&
             (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei &&
             ((pm.position.x === s.x && pm.position.z === s.z) || bahnRuht(this._bedarfVoraus(pm.position)))
@@ -1180,7 +1180,6 @@ class AnazhRealm_gelaende_chunks {
                 n: pending.size,
                 welt: this._weltRegung | 0,
                 karte: this._karteRegung | 0,
-                fr,
                 x: pm.position.x,
                 z: pm.position.z,
                 vx: v ? v.x : pm.position.x,

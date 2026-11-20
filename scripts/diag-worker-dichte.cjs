@@ -490,6 +490,11 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     const zellen = [];
                     for (let i = -4; i <= 4; i++)
                         for (let j = -4; j <= 4; j++) zellen.push(Math.floor(ort.x / C) + i, Math.floor(ort.z / C) + j);
+                    // die Wahrheit zuerst (wie `kernLesen`): die Hydro-Kacheln des Fensters stehen, bevor der Main fragt — sonst ist
+                    // seine Antwort vorläufig (`_forestCellDarts`: der Spiegel einer fehlenden Kachel liest das Meer, gelaende-core
+                    // `atlasSpiegel`), der Faden antwortet nach ihr (w28-laub-kante: Wiese 81 von 81 Zellen vorläufig, Erle ↔ Birke
+                    // an -25,-94 und -24,-93, die Selbst-Ausdünnung trug es nach -24,-92)
+                    await __weltDa(() => !r._ensureHydroTilesAround(ort.x, ort.z, (4 + AnazhRealm.WALD_PLAN.urteil + 1) * C));
                     r._forestDartMemo = null; // frisches Gedächtnis: der Main rechnet jede Zelle selbst
                     const main = [];
                     for (let k = 0; k < zellen.length; k += 2)
