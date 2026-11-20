@@ -1401,6 +1401,634 @@ var __weltLicht = (function () {
         return true;
     }
 
+    // ═══════════════════════════════════════ DER KOSMOS (kosmos-umfang) ═══════════════════════════════════════
+    // DIE WELT IST EINE FUNKTION IHRER SAAT — auch über dem Himmel. `kosmos(saat, heim)` → die Heim-Galaxie, eine Scheibe aus Sternen
+    // nach den Raumdichten der Sonnenumgebung (`KOSMOS.klassen`); `kosmosStern(K, i)` → der Stern i (Ort in der Galaxie in pc,
+    // Klasse, absolute Größe, Lichtwechsel); `kosmosSystem(K, i)` → sein System (Planeten auf Kepler-Bahnen, Monde, Ringe);
+    // `kosmosHimmel(K)` → was das bloße Auge vom Heim-Planeten aus sieht; `kosmosZeit(K, t)` → Lichtwechsel und Planeten am Tag t.
+    // NICHTS ist gespeichert: die Zahl der Sterne ist der Bereich des Index. Je Klasse teilt EIN Binomial-Baum die Sterne über die
+    // Galaxie — jeder Knoten teilt seine Zahl auf zwei Hälften nach dem Gewicht der Dichte, gewürfelt aus Saat und Pfad —, und der
+    // Stern i der Index-Sicht ist DERSELBE wie der Punkt am Himmel (die Orts-Sicht steigt nur in die Knoten in Sichtweite).
+    // Bis kosmos-umfang würfelte der Himmel 2 800 Punkte gleichverteilt auf eine Kuppel von 480 m (Mulberry32 aus der Saat) und drei
+    // feste Wandelsterne: kein Stern hatte einen Ort, kein Planet eine Bahn, keine Galaxie eine Ebene.
+    // Determinismus: Zufall nur über Ganzzahl-Hashes (Math.imul), die Gleitkomma-Funktionen sind die der Engine (V8: dieselben Bits
+    // auf jedem Gerät derselben Version) — dieselbe Saat gibt byte-gleich denselben Kosmos.
+    // `KM` = Math als Bindung des Moduls: im Faden-Kontext (node vm, `fadenScope`) ist jeder Griff an den globalen `Math` ein Abfang
+    // des Kontexts — der Himmel kostete so 233 statt 63 ms (spike kosmos-umfang, anazh-realm-seed).
+    const KM = Math;
+    const KOSMOS = Object.freeze({
+        // die schwächste Größe im Feld: die Grenzgröße der tiefen Nacht (`GRENZGROESSE`, −18° → +6) plus die halbe Klasse, um die
+        // der Stern-Knoten der Welt unter seiner Grenze noch leuchtet (`_buildStarField`: die Schwelle ½ Klasse unter der Grenze)
+        feldGrenze: GRENZGROESSE[GRENZGROESSE.length - 1][1] + 0.5,
+        blatt: 8, // ein Knoten mit höchstens so vielen Sternen ist ein Blatt (die Sterne liegen gleichverteilt in seiner Zelle)
+        // DIE STUFE DER GRÖSSE: je Klasse teilt sich der Bereich in Stufen von höchstens so viel mag, jede ein eigener Baum mit eigener
+        // Sichtweite (die schwache Stufe einer Klasse sieht man nur nah — der Himmel steigt nie in Kästen, deren hellster möglicher
+        // Stern unter der Grenze bleibt)
+        stufeMag: 0.5,
+        // die Scheibe: Skalenlänge (pc) und Sternzahl (log10) aus der Saat; die Dichte am Heim-Ort relativ zur Tafel
+        scheibe: Object.freeze({ hR: [2000, 3500], log10N: [10.5, 11.5], heimDichte: [0.7, 1.4], heimZ: 20 }),
+        // DER STAUB: Auslöschung in der Ebene je pc und seine Skalenhöhe (V-Band; 1 mag/kpc, 100 pc — gesetzt, Lehrbuch-Wert)
+        staub: Object.freeze({ magJePc: 0.001, hoehePc: 100 }),
+        // DIE KLASSEN: Raumdichte am Heim-Ort (pc⁻³), Skalenhöhe (pc), absolute Größe M_V von–bis, T_eff (K), Masse (M☉), Lichtwechsel
+        // [Art, Anteil, Periode d von–bis, Amplitude mag von–bis]. Gesetzt nach den Raumdichten der Sonnenumgebung (Allen,
+        // Astrophysical Quantities, aus dem Gedächtnis, ungeprüft); die Bedeckung (`bedeckung`) trägt jede Klasse.
+        klassen: Object.freeze(
+            [
+                ["O V", 2e-8, 50, -6, -4.5, 35000, 30, []],
+                ["B V früh", 1.5e-5, 60, -4.5, -1.5, 20000, 9, []],
+                ["B V spät", 8.5e-5, 70, -1.5, 0.5, 13000, 3.5, []],
+                ["A V", 5e-4, 120, 0.5, 2.5, 8500, 2, []],
+                ["F V", 2.5e-3, 190, 2.5, 4.2, 6600, 1.3, []],
+                ["G V", 6.3e-3, 300, 4.2, 5.8, 5700, 0.95, []],
+                ["K V", 1e-2, 330, 5.8, 8.8, 4400, 0.7, []],
+                ["M V", 5e-2, 350, 8.8, 16, 3200, 0.3, []],
+                ["G/K III", 2.4e-4, 300, -0.5, 1.5, 4700, 1.5, []],
+                [
+                    "M III",
+                    1.2e-5,
+                    300,
+                    -2,
+                    -0.5,
+                    3500,
+                    1.4,
+                    [
+                    ["halbregelmaessig", 0.4, 40, 200, 0.2, 1.2],
+                    ["mira", 0.06, 150, 500, 2.5, 6],
+                ],
+                ],
+                ["Überriesen", 1e-7, 60, -8, -5, 9000, 15, [["cepheide", 0.15, 3, 45, 0.4, 1.2]]],
+                ["Weiße Zwerge", 5e-3, 300, 11, 16, 10000, 0.6, []],
+            ].map(([name, n, hz, Mlo, Mhi, T, masse, wechsel]) =>
+                Object.freeze({ name, n, hz, M: Object.freeze([Mlo, Mhi]), T, masse, wechsel: Object.freeze(wechsel) })
+            )
+        ),
+        bedeckung: Object.freeze(["bedeckung", 0.01, 1, 12, 0.2, 1.5]),
+        // DAS SYSTEM: Planeten innen/außen um den Anker, Abstand der Bahnen als Perioden-Verhältnis, die Schneegrenze (AE · √L)
+        system: Object.freeze({ innen: [0, 3], aussen: [2, 7], verhaeltnis: [1.35, 2.65], schnee: 2.7, aMin: 0.03, aMax: 60 }),
+        // DER TON EINES PLANETEN am Himmel (die Farben der drei Wandelsterne bis kosmos-umfang): Fels zwischen rostig (Albedo 0,1,
+        // nackter Stein) und weißgelb (Albedo 0,5, Wolkendecke), Gasriese cremeweiß, Eisriese blassblau
+        planetTon: Object.freeze({
+            fels: Object.freeze([Object.freeze([1.0, 0.66, 0.46]), Object.freeze([1.0, 0.97, 0.88])]),
+            gasriese: Object.freeze([1.0, 0.94, 0.82]),
+            eisriese: Object.freeze([0.8, 0.9, 1.0]),
+        }),
+        // der Heim-Stern ist der sonnengleiche Stern der Funktion (G V, M_V 4,83 ± 0,1) nächst dem Heim-Ort der Saat
+        heimStern: Object.freeze({ klasse: 5, M: 4.83, toleranz: 0.1 }),
+    });
+    const KOSMOS_ERDRADIUS_KM = 6371;
+    // ganzzahliger Hash (32 bit) aus vier Zahlen, und der gleichverteilte Wurf in (0, 1)
+    function kHash(a, b, c, d) {
+        let h = KM.imul((a ^ 0x9e3779b9) >>> 0, 0x85ebca6b);
+        h = KM.imul(h ^ (h >>> 13) ^ b, 0xc2b2ae35);
+        h = KM.imul(h ^ (h >>> 16) ^ c, 0x27d4eb2f);
+        h = KM.imul(h ^ (h >>> 15) ^ d, 0x165667b1);
+        h ^= h >>> 16;
+        h = KM.imul(h, 0x85ebca6b);
+        h ^= h >>> 13;
+        h = KM.imul(h, 0xc2b2ae35);
+        h ^= h >>> 16;
+        return h >>> 0;
+    }
+    const kU = (a, b, c, d) => (kHash(a, b, c, d) + 0.5) / 4294967296;
+    function kSaat(saat) {
+        let h = 0x811c9dc5;
+        const s = String(saat);
+        for (let i = 0; i < s.length; i++) h = KM.imul(h ^ s.charCodeAt(i), 0x01000193);
+        return h >>> 0;
+    }
+    // ∫ exp(−|z|/h) dz von z0 bis z1
+    function kIz(z0, z1, h) {
+        const F = (z) => (z >= 0 ? h * (1 - KM.exp(-z / h)) : -h * (1 - KM.exp(z / h)));
+        return F(z1) - F(z0);
+    }
+    // ∫∫ exp(−√(x² + y²)/hR) dx dy über das Rechteck: Gauß 2×2 je Zelle ≤ hR (größere Zellen teilen sich)
+    const KG = 0.5 / KM.sqrt(3);
+    function kIxy(x0, x1, y0, y1, hR) {
+        const dx = x1 - x0,
+            dy = y1 - y0;
+        if (dx > hR || dy > hR) {
+            const xm = dx > hR ? (x0 + x1) / 2 : x1,
+                ym = dy > hR ? (y0 + y1) / 2 : y1;
+            let s = kIxy(x0, xm, y0, ym, hR);
+            if (xm < x1) s += kIxy(xm, x1, y0, ym, hR);
+            if (ym < y1) s += kIxy(x0, xm, ym, y1, hR);
+            if (xm < x1 && ym < y1) s += kIxy(xm, x1, ym, y1, hR);
+            return s;
+        }
+        const cx = (x0 + x1) / 2,
+            cy = (y0 + y1) / 2,
+            ax = dx * KG,
+            ay = dy * KG;
+        const xa = (cx - ax) * (cx - ax),
+            xb = (cx + ax) * (cx + ax),
+            ya = (cy - ay) * (cy - ay),
+            yb = (cy + ay) * (cy + ay);
+        const s =
+            KM.exp(-KM.sqrt(xa + ya) / hR) + KM.exp(-KM.sqrt(xa + yb) / hR) + KM.exp(-KM.sqrt(xb + ya) / hR) + KM.exp(-KM.sqrt(xb + yb) / hR);
+        return (s * dx * dy) / 4;
+    }
+    // DER BINOMIAL-WURF (n Sterne, Anteil p der linken Hälfte, zwei Würfe): klein exakt über die Verteilung, groß über die Normale,
+    // dünn (Erwartung < 20 auf einer Seite) über Poisson — immer in [0, n]
+    function kBinom(n, p, u1, u2) {
+        if (n <= 0 || !(p > 0)) return 0;
+        if (p >= 1) return n;
+        if (n < 40) {
+            const q = 1 - p;
+            let pk = KM.pow(q, n),
+                c = pk,
+                k = 0;
+            while (u1 > c && k < n) {
+                k++;
+                pk *= ((n - k + 1) / k) * (p / q);
+                c += pk;
+            }
+            return k;
+        }
+        const m = n * p;
+        if (m < 20 || n - m < 20) {
+            const links = m < 20,
+                lam = links ? m : n - m;
+            let pk = KM.exp(-lam),
+                c = pk,
+                k = 0;
+            while (u1 > c && k < n) {
+                k++;
+                pk *= lam / k;
+                c += pk;
+            }
+            return links ? k : n - k;
+        }
+        const z = KM.sqrt(-2 * KM.log(u1)) * KM.cos(2 * KM.PI * u2);
+        return KM.max(0, KM.min(n, KM.round(m + KM.sqrt(m * (1 - p)) * z)));
+    }
+    // die Drehung aus drei Würfen (Shoemake: gleichverteilt über alle Drehungen) als 3×3-Matrix (Zeilen)
+    function kDrehung(u1, u2, u3) {
+        const a = KM.sqrt(1 - u1),
+            b = KM.sqrt(u1);
+        const x = a * KM.sin(2 * KM.PI * u2),
+            y = a * KM.cos(2 * KM.PI * u2),
+            z = b * KM.sin(2 * KM.PI * u3),
+            w = b * KM.cos(2 * KM.PI * u3);
+        return [
+            1 - 2 * (y * y + z * z),
+            2 * (x * y - z * w),
+            2 * (x * z + y * w),
+            2 * (x * y + z * w),
+            1 - 2 * (x * x + z * z),
+            2 * (y * z - x * w),
+            2 * (x * z - y * w),
+            2 * (y * z + x * w),
+            1 - 2 * (x * x + y * y),
+        ];
+    }
+    const KOSMOS_MEMO = new Map();
+    // DIE GALAXIE DER SAAT: Skalenlänge, Sternzahl, Dichte am Heim-Ort → der Heim-Radius R0 (die Scheibe trägt dort genau die
+    // gewürfelte Dichte: N = Σ_c n_c · 2h_z,c · 2π hR² · e^(R0/hR)); je Stufe (Klasse × Größen-Stufe, `stufeMag`) ihre Zahl (größter
+    // Rest, Σ = N) und ihr Index-Bereich. `heim` = der Körper des Heim-Planeten, den die Welt trägt ({ jahrTage }, das Jahr des
+    // Ort-Gesetzes).
+    function kosmos(saat, heim) {
+        if (typeof saat !== "string" || !saat) throw new Error("kosmos: die Saat fehlt");
+        if (!heim || !(heim.jahrTage > 0)) throw new Error("kosmos: der Körper des Heim-Planeten fehlt (jahrTage)");
+        const schluessel = saat + "|" + heim.jahrTage;
+        if (KOSMOS_MEMO.has(schluessel)) return KOSMOS_MEMO.get(schluessel);
+        const s = kSaat(saat),
+            S = KOSMOS.scheibe,
+            KL = KOSMOS.klassen;
+        const u = (k) => kU(s, 0x6a1a, k, 0);
+        const hR = S.hR[0] + (S.hR[1] - S.hR[0]) * u(1);
+        const N = KM.round(KM.pow(10, S.log10N[0] + (S.log10N[1] - S.log10N[0]) * u(2)));
+        const f = S.heimDichte[0] + (S.heimDichte[1] - S.heimDichte[0]) * u(3);
+        const flaeche = KL.reduce((a, c) => a + c.n * f * 2 * c.hz, 0);
+        const R0 = hR * KM.log(N / (flaeche * 2 * KM.PI * hR * hR));
+        const zHeim = (u(4) - 0.5) * 2 * S.heimZ;
+        // die Stufen: je Klasse gleich breite Größen-Stufen (≤ stufeMag), die Zahl der Klasse gleich über ihre Stufen (M gleichverteilt)
+        const stufen = [];
+        KL.forEach((c, k) => {
+            const z = KM.max(1, KM.ceil((c.M[1] - c.M[0]) / KOSMOS.stufeMag - 1e-9));
+            for (let q = 0; q < z; q++)
+                stufen.push({ k, q, M: [c.M[0] + ((c.M[1] - c.M[0]) * q) / z, c.M[0] + ((c.M[1] - c.M[0]) * (q + 1)) / z], teil: z });
+        });
+        const roh = stufen.map((S) => (N * KL[S.k].n * 2 * KL[S.k].hz) / (flaeche / f) / S.teil);
+        const zahl = roh.map(KM.floor);
+        let rest = N - zahl.reduce((a, b) => a + b, 0);
+        for (const e of roh.map((r, si) => [r - KM.floor(r), si]).sort((a, b) => b[0] - a[0] || a[1] - b[1]))
+            if (rest-- > 0) zahl[e[1]]++;
+        let ab = 0;
+        for (let si = 0; si < stufen.length; si++) {
+            const S = stufen[si];
+            Object.assign(S, { zahl: zahl[si], ab, zMax: 12 * KL[S.k].hz });
+            ab += zahl[si];
+            Object.freeze(S.M);
+            Object.freeze(S);
+        }
+        const B = R0 + 5 * hR;
+        const K = {
+            saat,
+            s,
+            heim: { jahrTage: heim.jahrTage },
+            galaxie: { hR, R0, zHeim, N, heimDichte: f, kasten: B },
+            stufen: Object.freeze(stufen),
+            klassen: KL.map((c, k) => {
+                const eigen = stufen.filter((S) => S.k === k);
+                return { k, zahl: eigen.reduce((a, S) => a + S.zahl, 0), stufen: eigen.map((S) => stufen.indexOf(S)) };
+            }),
+            zahl: { sterne: N, systeme: N },
+            _gewicht: new Map(),
+        };
+        // der Heim-Stern: der sonnengleiche Stern nächst dem Heim-Ort (wachsender Suchradius; nur die Stufen, die M ± Toleranz tragen)
+        const HS = KOSMOS.heimStern;
+        let bester = null;
+        for (let r = 16; !bester && r <= 4096; r *= 2)
+            for (const si of K.klassen[HS.klasse].stufen) {
+                const S = stufen[si];
+                if (S.M[1] < HS.M - HS.toleranz || S.M[0] > HS.M + HS.toleranz) continue;
+                kOrtsSicht(K, si, R0, 0, zHeim, r, (st) => {
+                    if (KM.abs(st.M - HS.M) > HS.toleranz) return;
+                    const d = KM.hypot(st.x - R0, st.y, st.z - zHeim);
+                    if (!bester || d < bester.d || (d === bester.d && st.i < bester.st.i)) bester = { st, d };
+                });
+            }
+        if (!bester) throw new Error("kosmos: kein sonnengleicher Stern binnen 4 kpc um den Heim-Ort (Saat " + saat + ")");
+        K.heim.stern = bester.st;
+        K.heim.i = bester.st.i;
+        // die Ebene des Heim-Systems in der Galaxie (seine Drehung, `kosmosSystem`) — der Rahmen des Felds ist die Ekliptik
+        K.heim.system = kosmosSystem(K, bester.st.i);
+        if (KOSMOS_MEMO.size >= 4) KOSMOS_MEMO.delete(KOSMOS_MEMO.keys().next().value);
+        KOSMOS_MEMO.set(schluessel, K);
+        return K;
+    }
+    // das Gewicht der Fläche eines Kastens (das xy-Integral der Scheibe); Kästen über hR gemerkt je Kosmos an ihren Kanten — die
+    // Teilung ist dyadisch aus demselben Kasten, dieselbe Fläche hat in jeder Stufe dieselben Bits
+    function kGewichtXY(K, x0, x1, y0, y1) {
+        const hR = K.galaxie.hR;
+        if (x1 - x0 <= hR && y1 - y0 <= hR) return kIxy(x0, x1, y0, y1, hR);
+        const key = x0 + "," + x1 + "," + y0 + "," + y1;
+        let w = K._gewicht.get(key);
+        if (w === undefined) K._gewicht.set(key, (w = kIxy(x0, x1, y0, y1, hR)));
+        return w;
+    }
+    // DER KNOTEN-SCHRITT der Stufe si: teilt den Kasten an seiner längsten Achse und würfelt die Zahl der linken Hälfte → [nL, Kasten L,
+    // Kasten R]. Die Dichte ist ein Produkt (Scheibe × Höhe): beide Hälften teilen das Integral der Achsen, die nicht geteilt werden
+    // — der Anteil der linken Hälfte ist das Verhältnis der geteilten Achse allein (z: geschlossen, xy: das Flächen-Integral).
+    function kTeile(K, si, b, n, tiefe, lo, hi) {
+        const k = K.stufen[si].k;
+        const ex = b[1] - b[0],
+            ey = b[3] - b[2],
+            ez = b[5] - b[4];
+        const achse = ex >= ey && ex >= ez ? 0 : ey >= ez ? 2 : 4;
+        const m = (b[achse] + b[achse + 1]) / 2;
+        const L = b.slice(),
+            R = b.slice();
+        L[achse + 1] = m;
+        R[achse] = m;
+        const loR = tiefe < 32 ? (lo | (1 << tiefe)) >>> 0 : lo,
+            hiR = tiefe < 32 ? hi : (hi | (1 << (tiefe - 32))) >>> 0;
+        let wL, wR;
+        if (achse === 4) {
+            const h = KOSMOS.klassen[k].hz;
+            wL = kIz(L[4], L[5], h);
+            wR = kIz(R[4], R[5], h);
+        } else {
+            wL = kGewichtXY(K, L[0], L[1], L[2], L[3]);
+            wR = kGewichtXY(K, R[0], R[1], R[2], R[3]);
+        }
+        const a = (K.s ^ KM.imul(si + 1, 0x632be5ab) ^ KM.imul(tiefe + 1, 0x9e3779b1)) >>> 0;
+        const nL = kBinom(n, wL + wR > 0 ? wL / (wL + wR) : 0.5, kU(a, 1, lo, hi), kU(a, 2, lo, hi));
+        return [nL, L, R, loR, hiR];
+    }
+    // je Klasse die Lichtwechsel samt der Bedeckung, die jede trägt (einmal gebaut statt je Stern)
+    const KOSMOS_WECHSEL = KOSMOS.klassen.map((c) => Object.freeze([...c.wechsel, KOSMOS.bedeckung]));
+    // DER STERN eines Blatts der Stufe si: Ort gleichverteilt in der Zelle, absolute Größe in der Spanne der Stufe, Lichtwechsel nach
+    // Anteil. `sieb(x, y, z, M)` (die Orts-Sicht des Himmels): erst Ort und Größe — fällt der Stern durch, wird der Rest nie gewürfelt
+    // (dieselben Würfe, dieselben Bits: der Stern, der das Sieb besteht, ist byte-gleich der der Index-Sicht).
+    function kBlattStern(K, si, b, tiefe, lo, hi, j, i, sieb) {
+        const S = K.stufen[si],
+            k = S.k,
+            c = KOSMOS.klassen[k];
+        const a = (K.s ^ KM.imul(si + 1, 0x632be5ab) ^ KM.imul(tiefe + 1, 0x9e3779b1) ^ 0x5a5a5a5a) >>> 0;
+        const jj = j << 4;
+        const x = b[0] + (b[1] - b[0]) * kU(a, jj | 1, lo, hi),
+            y = b[2] + (b[3] - b[2]) * kU(a, jj | 2, lo, hi),
+            z = b[4] + (b[5] - b[4]) * kU(a, jj | 3, lo, hi),
+            M = S.M[0] + (S.M[1] - S.M[0]) * kU(a, jj | 4, lo, hi);
+        if (sieb && !sieb(x, y, z, M)) return null;
+        const st = {
+            klasse: k,
+            i,
+            x,
+            y,
+            z,
+            M,
+            T: c.T * (0.9 + 0.2 * kU(a, jj | 5, lo, hi)),
+            masse: c.masse * (0.8 + 0.4 * kU(a, jj | 6, lo, hi)),
+            wechsel: null,
+        };
+        let r = kU(a, jj | 7, lo, hi);
+        for (const v of KOSMOS_WECHSEL[k]) {
+            if (r < v[1]) {
+                st.wechsel = {
+                    art: v[0],
+                    P: v[2] + (v[3] - v[2]) * kU(a, jj | 8, lo, hi),
+                    amp: v[4] + (v[5] - v[4]) * kU(a, jj | 9, lo, hi),
+                    phase: kU(a, jj | 10, lo, hi),
+                };
+                break;
+            }
+            r -= v[1];
+        }
+        return st;
+    }
+    // DIE ORTS-SICHT: jeder Stern der Stufe si binnen r pc um (x, y, z) → fn(stern); steigt nur in Knoten, deren Kasten die Kugel
+    // trifft. `sieb` (optional) urteilt am Blatt vor dem vollen Stern (`kBlattStern`).
+    function kOrtsSicht(K, si, x, y, z, r, fn, sieb) {
+        const KK = K.stufen[si],
+            B = K.galaxie.kasten;
+        const stapel = [[[-B, B, -B, B, -KK.zMax, KK.zMax], KK.zahl, 0, 0, 0, KK.ab]];
+        while (stapel.length) {
+            const [b, n, tiefe, lo, hi, ab] = stapel.pop();
+            if (n <= 0) continue;
+            const dx = KM.max(b[0] - x, 0, x - b[1]),
+                dy = KM.max(b[2] - y, 0, y - b[3]),
+                dz = KM.max(b[4] - z, 0, z - b[5]);
+            if (dx * dx + dy * dy + dz * dz > r * r) continue;
+            if (n <= KOSMOS.blatt || tiefe >= 63) {
+                for (let j = 0; j < n; j++) {
+                    const st = kBlattStern(K, si, b, tiefe, lo, hi, j, ab + j, sieb);
+                    if (st) fn(st);
+                }
+                continue;
+            }
+            const [nL, L, R, loR, hiR] = kTeile(K, si, b, n, tiefe, lo, hi);
+            stapel.push([R, n - nL, tiefe + 1, loR, hiR, ab + nL]);
+            stapel.push([L, nL, tiefe + 1, lo, hi, ab]);
+        }
+    }
+    // DIE INDEX-SICHT: der Stern i ∈ [0, K.zahl.sterne) — derselbe Baum, derselbe Wurf, derselbe Stern wie am Himmel
+    function kosmosStern(K, i) {
+        if (!(i >= 0 && i < K.zahl.sterne) || i !== KM.floor(i))
+            throw new Error("kosmosStern: Index " + i + " außerhalb [0, " + K.zahl.sterne + ")");
+        // die Stufe: die letzte, deren Bereich bei oder vor i beginnt (eine leere Stufe teilt ihren Anfang mit der nächsten)
+        let u = 0,
+            o = K.stufen.length - 1;
+        while (u < o) {
+            const mi = (u + o + 1) >> 1;
+            if (K.stufen[mi].ab <= i) u = mi;
+            else o = mi - 1;
+        }
+        const si = u,
+            KK = K.stufen[si],
+            B = K.galaxie.kasten;
+        let b = [-B, B, -B, B, -KK.zMax, KK.zMax],
+            n = KK.zahl,
+            j = i - KK.ab,
+            tiefe = 0,
+            lo = 0,
+            hi = 0;
+        while (n > KOSMOS.blatt && tiefe < 63) {
+            const [nL, L, R, loR, hiR] = kTeile(K, si, b, n, tiefe, lo, hi);
+            if (j < nL) (b = L), (n = nL);
+            else (b = R), (n = n - nL), (j -= nL), (lo = loR), (hi = hiR);
+            tiefe++;
+        }
+        return kBlattStern(K, si, b, tiefe, lo, hi, j, i);
+    }
+    // die Auslöschung (mag) auf d pc unter der galaktischen Breite mit sin b = sb (Staub-Scheibe am Heim-Ort)
+    function kStaub(d, sb) {
+        const D = KOSMOS.staub,
+            a = KM.abs(sb);
+        return a * d < 1e-3 * D.hoehePc ? D.magJePc * d : (D.magJePc * D.hoehePc * (1 - KM.exp((-d * a) / D.hoehePc))) / a;
+    }
+    // DER TON EINES STERNS (Farbe aus T_eff, mild wie das Auge ihn sieht): kühl ↔ warm über log T zwischen 3 500 K und 12 000 K
+    function kTon(T, out, o) {
+        const q = KM.max(0, KM.min(1, (KM.log(T) - KM.log(3500)) / (KM.log(12000) - KM.log(3500))));
+        out[o] = 1.0 + (0.78 - 1.0) * q;
+        out[o + 1] = 0.92 + (0.86 - 0.92) * q;
+        out[o + 2] = 0.75 + (1.0 - 0.75) * q;
+    }
+    // DIE HELLIGKEIT DES LICHTWECHSELS am Tag t (mag über dem Maximum)
+    function kWechsel(v, t) {
+        let p = t / v.P + v.phase;
+        p -= KM.floor(p);
+        if (v.art === "bedeckung") {
+            const d = KM.abs(p - 0.5),
+                w = 0.06;
+            return d < w ? v.amp * (1 - (d / w) * (d / w)) : 0;
+        }
+        // Mira und Cepheide steigen rasch und fallen langsam (40 % der Periode Anstieg), halbregelmäßig als Sinus
+        const q = v.art === "halbregelmaessig" ? p : p < 0.6 ? (p / 0.6) * 0.5 : 0.5 + ((p - 0.6) / 0.4) * 0.5;
+        return v.amp * 0.5 * (1 - KM.cos(2 * KM.PI * q));
+    }
+    // DAS SYSTEM DES STERNS i: Planeten um einen Anker (am Heim-Stern der Heim-Planet mit dem Jahr des Ort-Gesetzes), innen und außen
+    // im gewürfelten Perioden-Verhältnis; Fels innerhalb der Schneegrenze, außerhalb Gas- und Eisriesen mit Monden und Ringen; die Ebene
+    // des Systems in der Galaxie (`ebene`, Zeilen: galaktisch → Ekliptik). Bahnen in AE, Perioden in Tagen, Winkel rad.
+    function kosmosSystem(K, i) {
+        const st = kosmosStern(K, i),
+            SY = KOSMOS.system;
+        const lo = i % 4294967296 >>> 0,
+            hi = KM.floor(i / 4294967296) >>> 0;
+        const a0 = (K.s ^ 0x51ed270b) >>> 0;
+        let z = 0;
+        const w = () => kU(a0, z++, lo, hi);
+        const L = KM.pow(10, -0.4 * (st.M - 4.83));
+        const heimat = i === K.heim.i;
+        const jahrE = 365.256; // das siderische Jahr der Erde um die Sonne (1 AE, 1 M☉): Kepler P² ∝ a³/M
+        const aAnker = heimat ? KM.cbrt(KM.pow(K.heim.jahrTage / jahrE, 2) * st.masse) : (0.5 + 2 * w()) * KM.sqrt(L);
+        const nIn = SY.innen[0] + KM.floor(w() * (SY.innen[1] - SY.innen[0] + 1));
+        const nAus = SY.aussen[0] + KM.floor(w() * (SY.aussen[1] - SY.aussen[0] + 1));
+        const halbachsen = [aAnker];
+        for (let k = 0, a = aAnker; k < nIn; k++) {
+            a /= KM.pow(SY.verhaeltnis[0] + (SY.verhaeltnis[1] - SY.verhaeltnis[0]) * w(), 2 / 3);
+            if (a < SY.aMin) break;
+            halbachsen.unshift(a);
+        }
+        for (let k = 0, a = aAnker; k < nAus; k++) {
+            a *= KM.pow(SY.verhaeltnis[0] + (SY.verhaeltnis[1] - SY.verhaeltnis[0]) * w(), 2 / 3);
+            if (a > SY.aMax) break;
+            halbachsen.push(a);
+        }
+        const schnee = SY.schnee * KM.sqrt(L);
+        const planeten = halbachsen.map((a, j) => {
+            const anker = a === aAnker;
+            const r = w();
+            let art, radius, albedo, masse, monde, ring;
+            if (a < schnee || r >= 0.85) {
+                art = "fels";
+                radius = a < schnee ? 0.35 + 1.4 * w() : 0.2 + 0.8 * w();
+                albedo = 0.1 + 0.4 * w();
+                masse = KM.pow(radius, 3.7);
+                monde = KM.floor(3 * w() * w());
+                ring = false;
+            } else if (r < 0.55) {
+                art = "gasriese";
+                radius = 6 + 6 * w();
+                albedo = 0.35 + 0.2 * w();
+                masse = 30 + 1500 * w() * w();
+                monde = 8 + KM.floor(140 * w() * w());
+                ring = w() < 0.6;
+            } else {
+                art = "eisriese";
+                radius = 3 + 1.5 * w();
+                albedo = 0.3 + 0.2 * w();
+                masse = 10 + 10 * w();
+                monde = 5 + KM.floor(25 * w());
+                ring = w() < 0.6;
+            }
+            const heimPlanet = heimat && anker;
+            return {
+                j,
+                art,
+                heim: heimPlanet,
+                a,
+                P: K.heim.jahrTage * KM.pow(a / halbachsen[halbachsen.indexOf(aAnker)], 1.5),
+                e: (heimPlanet ? 0.03 : 0.12) * w() * w(),
+                inkl: heimPlanet ? 0 : ((4 * KM.PI) / 180) * w(),
+                knoten: 2 * KM.PI * w(),
+                peri: 2 * KM.PI * w(),
+                M0: 2 * KM.PI * w(),
+                radius,
+                albedo,
+                masse,
+                monde,
+                ring,
+            };
+        });
+        const ebene = kDrehung(w(), w(), w());
+        return { stern: st, L, masse: st.masse, schnee, planeten, heim: planeten.findIndex((p) => p.heim), ebene };
+    }
+    // galaktisch → Rahmen des Felds (die Ekliptik des Heim-Systems, ŷ ihr Pol): die Zeilen der Ebene
+    function kInsFeld(E, x, y, z, out, o) {
+        out[o] = E[0] * x + E[1] * y + E[2] * z;
+        out[o + 1] = E[3] * x + E[4] * y + E[5] * z;
+        out[o + 2] = E[6] * x + E[7] * y + E[8] * z;
+    }
+    // DER HIMMEL DES HEIM-PLANETEN: jeder Stern der Funktion, der im Maximum seines Lichts heller als `feldGrenze` steht — Richtung im
+    // Rahmen des Felds, Größe im Maximum (`mag`), Ton, Index; je Stufe nur die Knoten in ihrer Sichtweite (der hellste Stern der
+    // Stufe ohne Staub). Gemerkt im Kosmos.
+    function kosmosHimmel(K) {
+        if (K._himmel) return K._himmel;
+        const H = K.heim.stern,
+            E = K.heim.system.ebene,
+            G = KOSMOS.feldGrenze;
+        const dir = [],
+            mag = [],
+            ton = [],
+            index = [],
+            wechsel = [];
+        const t = [0, 0, 0];
+        let hell6 = 0;
+        // das Sieb am Blatt: Entfernung und Größe aus Ort und M allein (der volle Stern nur für die Punkte des Felds)
+        let d = 0,
+            m = 0;
+        K.stufen.forEach((S, si) => {
+            const r = KM.pow(10, (G - S.M[0] + 5) / 5);
+            const sieb = (x, y, z, M) => {
+                const dx = x - H.x,
+                    dy = y - H.y,
+                    dz = z - H.z;
+                const d2 = dx * dx + dy * dy + dz * dz;
+                if (!(d2 > 0) || d2 > r * r) return false;
+                const mu = M + 2.5 * KM.log10(d2) - 5; // M + Entfernungsmodul (5 log10(d/10)) — der Staub legt nur zu
+                if (mu > G) return false;
+                d = KM.sqrt(d2);
+                m = mu + kStaub(d, dz / d);
+                return m <= G;
+            };
+            kOrtsSicht(
+                K,
+                si,
+                H.x,
+                H.y,
+                H.z,
+                r,
+                (st) => {
+                    if (st.i === H.i) return;
+                    kInsFeld(E, (st.x - H.x) / d, (st.y - H.y) / d, (st.z - H.z) / d, t, 0);
+                    dir.push(t[0], t[1], t[2]);
+                    mag.push(m);
+                    kTon(st.T, t, 0);
+                    ton.push(t[0], t[1], t[2]);
+                    index.push(st.i);
+                    if (st.wechsel) wechsel.push([mag.length - 1, st.wechsel]);
+                    if (m <= 6) hell6++;
+                },
+                sieb
+            );
+        });
+        // die Folge des Felds: nach Index (die Orts-Sicht steigt je Klasse in Stapel-Folge — die Folge des Felds ist die des Index)
+        const ord = index.map((_, n) => n).sort((a, b) => index[a] - index[b]);
+        const um = new Int32Array(ord.length);
+        ord.forEach((alt, neu) => (um[alt] = neu));
+        const n = ord.length;
+        const R = { n, hell6, richtung: new Float32Array(3 * n), mag: new Float32Array(n), ton: new Float32Array(3 * n), index: new Float64Array(n) };
+        ord.forEach((alt, neu) => {
+            for (let q = 0; q < 3; q++) {
+                R.richtung[3 * neu + q] = dir[3 * alt + q];
+                R.ton[3 * neu + q] = ton[3 * alt + q];
+            }
+            R.mag[neu] = mag[alt];
+            R.index[neu] = index[alt];
+        });
+        R.wechsel = wechsel.map(([alt, v]) => [um[alt], v]).sort((a, b) => a[0] - b[0]);
+        R.hellste = n ? KM.min(...R.mag) : Infinity;
+        K._himmel = R;
+        return R;
+    }
+    // die Lage eines Planeten im Heim-System am Tag t (AE, Rahmen der Ekliptik des Heim-Planeten: x Richtung des Knotens 0, ŷ Pol)
+    function kBahn(p, t, out) {
+        const M = p.M0 + (2 * KM.PI * t) / p.P;
+        let E = M;
+        for (let k = 0; k < 8; k++) E -= (E - p.e * KM.sin(E) - M) / (1 - p.e * KM.cos(E));
+        const xb = p.a * (KM.cos(E) - p.e),
+            yb = p.a * KM.sqrt(1 - p.e * p.e) * KM.sin(E);
+        const cw = KM.cos(p.peri),
+            sw = KM.sin(p.peri),
+            cO = KM.cos(p.knoten),
+            sO = KM.sin(p.knoten),
+            ci = KM.cos(p.inkl),
+            si = KM.sin(p.inkl);
+        const x1 = xb * cw - yb * sw,
+            y1 = xb * sw + yb * cw;
+        // in der Ebene der Ekliptik (x, z), der Pol ŷ: um den Knoten geneigt
+        out[0] = x1 * cO - y1 * ci * sO;
+        out[2] = x1 * sO + y1 * ci * cO;
+        out[1] = y1 * si;
+    }
+    // DIE ZEIT DES HIMMELS am Tag t (Tage seit der Epoche der Saat): die Größe jedes Wechselsterns (`wechselMag`, in der Folge von
+    // `himmel.wechsel`) und jeder Planet des Heim-Systems außer der Heimat — Richtung im Rahmen des Felds und scheinbare Größe
+    // (H aus Durchmesser und Albedo, Lambert-Phase). `hellste` = der hellste Punkt des Himmels an diesem Tag.
+    function kosmosZeit(K, t) {
+        const H = kosmosHimmel(K),
+            SY = K.heim.system;
+        const wechselMag = new Float32Array(H.wechsel.length);
+        H.wechsel.forEach(([n, v], q) => (wechselMag[q] = H.mag[n] + kWechsel(v, t)));
+        const rH = [0, 0, 0],
+            rP = [0, 0, 0];
+        kBahn(SY.planeten[SY.heim], t, rH);
+        const planeten = [];
+        let hellste = H.hellste;
+        for (const p of SY.planeten) {
+            if (p.heim) continue;
+            kBahn(p, t, rP);
+            const dx = rP[0] - rH[0],
+                dy = rP[1] - rH[1],
+                dz = rP[2] - rH[2];
+            const D = KM.hypot(dx, dy, dz),
+                r = KM.hypot(rP[0], rP[1], rP[2]);
+            const cosA = (rP[0] * dx + rP[1] * dy + rP[2] * dz) / (r * D);
+            const alpha = KM.acos(KM.max(-1, KM.min(1, cosA)));
+            const phase = (KM.sin(alpha) + (KM.PI - alpha) * KM.cos(alpha)) / KM.PI;
+            const Hmag = 5 * KM.log10(1329 / (2 * p.radius * KOSMOS_ERDRADIUS_KM * KM.sqrt(p.albedo)));
+            const m = Hmag + 5 * KM.log10(r * D) - 2.5 * KM.log10(KM.max(phase, 1e-6));
+            const PT = KOSMOS.planetTon;
+            const q = KM.max(0, KM.min(1, (p.albedo - 0.1) / 0.4));
+            const ton = p.art === "fels" ? PT.fels[0].map((v, c) => v + (PT.fels[1][c] - v) * q) : PT[p.art].slice();
+            planeten.push({ j: p.j, art: p.art, richtung: [dx / D, dy / D, dz / D], mag: m, ton, abstandAE: D });
+            hellste = KM.min(hellste, m);
+        }
+        for (let q = 0; q < wechselMag.length; q++) hellste = KM.min(hellste, wechselMag[q]);
+        return { t, wechselMag, planeten, hellste };
+    }
+
     return Object.freeze({
         ATMO_LUT,
         ATMO_BODEN,
@@ -1448,5 +2076,11 @@ var __weltLicht = (function () {
         durchsicht,
         buehne,
         buehneZeichnet,
+        KOSMOS,
+        kosmos,
+        kosmosStern,
+        kosmosSystem,
+        kosmosHimmel,
+        kosmosZeit,
     });
 })();
