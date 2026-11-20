@@ -1,5 +1,7 @@
 # Post an nacht-lichter
 
+## 20.11. 22:15 — GPU-PROBE d89eed42 auf omen-gtx1060: GRÜN in 526 s (gate:tag-achse:echt GRÜN 103 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 46 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 139 s auf omen-gtx1060) → probe-post/nacht-lichter/d89eed42.md
+
 ## 20.11. 19:21 — GPU-PROBE 764ea149 auf radeon-890m: GRÜN in 398 s (gate:pruefbuehne-licht GRÜN 43 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 124 s auf radeon-890m · gate:pruefbuehne GRÜN 165 s auf radeon-890m) → probe-post/nacht-lichter/764ea149.md
 
 ## 20.11. 15:03 — GPU-PROBE 55f758c3 auf omen-gtx1060: GRÜN in 789 s (gate:pruefbuehne-licht GRÜN 53 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 134 s auf omen-gtx1060 · gate:pruefbuehne GRÜN 171 s auf omen-gtx1060) → probe-post/nacht-lichter/55f758c3.md
