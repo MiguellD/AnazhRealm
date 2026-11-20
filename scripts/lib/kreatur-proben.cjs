@@ -4240,7 +4240,8 @@ const TAETER = {
         ["herde-zerfall", /zerfällt auf der Flucht: im Mittel 0\.[0-7]/],
         ["herde-revier", /zerfällt beim Wandern/],
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
-        ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
+        // der Fluchtweg am Radius der Witterung ist kurz — auch 0 m (kein Flüchter kommt vom Fleck) nennt den Täter
+        ["herde-fluchtweg", /Fluchtweg \d(\.\d+)? m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
         ["herde-park", /Probe vakuös: Glieder 1 \/ 1 /],
         ["herde-dorf", /Geburt im Reich des kommenden Orts -?\d+,-?\d+: 8 von 8/],
