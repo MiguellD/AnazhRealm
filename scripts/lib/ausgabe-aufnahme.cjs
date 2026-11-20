@@ -1685,15 +1685,23 @@ function baumStufeZensus() {
         const gesaet = !!(st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(k)) && !wartet(k);
         chunks.push({ k, d: Math.round(Math.hypot(mx - p.x, mz - p.z)), gesaet, baeume });
     }
+    // DAS DACH TRÄGT, WAS NOCH NICHT EINTRAT (K53 · w22): jenseits der inneren Kante des Kronendachs im Boden-Stoff (die Uniform
+    // `fernKroneNah.U.waldR`, vom Spieler gemessen) trägt der Boden den Baum, der noch keine Karte zeichnet; steht die Karte des
+    // Dachs nicht (`bereit`), trägt es nichts — jeder Baum ohne Instanz und Mesh ist dann ohne Stufe
+    const nk = st.fernKroneNah;
+    const dachAb = nk && nk.U && nk.U.bereit.value > 0 ? nk.U.waldR.value : Infinity;
     let wald = 0;
+    let dach = 0;
     const ohne = [];
     for (const e of st.architectures || []) {
         if (!e || e._waldDart !== true || !e.position || !imBlick(e.position)) continue;
         wald++;
-        if (!((e.instSlots && e.instSlots.length) || e.mesh))
-            ohne.push({ typ: e.type, d: Math.round(Math.hypot(e.position.x - p.x, e.position.z - p.z)) });
+        if ((e.instSlots && e.instSlots.length) || e.mesh) continue;
+        const d = Math.hypot(e.position.x - p.x, e.position.z - p.z);
+        if (d > dachAb) dach++;
+        else ohne.push({ typ: e.type, d: Math.round(d) });
     }
-    return { R, ring, laubRand: r._laubRand(), zeilen: r._schirm().hoehe, chunks, wald, ohne };
+    return { R, ring, laubRand: r._laubRand(), dachAb, zeilen: r._schirm().hoehe, chunks, wald, dach, ohne };
 }
 // DAS URTEIL DES BAUMS OHNE STUFE (rein; `baumStufeZensus`): ROT je Chunk des Samens im Blick (Mitte ≤ R), der nicht gesät ist oder
 // wartet — mit den Bäumen seines Plans —, und je Baum des Walds im Blick ohne Instanz und Mesh. → { rot, zeile }
@@ -1714,13 +1722,13 @@ function baumStufeUrteil(z) {
     }
     if (z.ohne.length)
         rot.push(
-            `BAUM OHNE STUFE: ${z.ohne.length} gesäte Bäume des Walds im Blick tragen weder Instanz noch Mesh: ${z.ohne
+            `BAUM OHNE STUFE: ${z.ohne.length} gesäte Bäume des Walds im Blick tragen weder Instanz noch Mesh noch Dach (das Dach ab ${Number.isFinite(z.dachAb) ? z.dachAb.toFixed(1) + " m" : "nirgends"}): ${z.ohne
                 .slice(0, 6)
                 .map((e) => `${e.typ} ${e.d} m`)
                 .join(" · ")}`
         );
     const gesaet = z.chunks.filter((c) => c.d <= z.R && c.gesaet).length;
-    const zeile = `Same im Blick: ${gesaet} von ${gesaet + ungesaet.length} Chunks gesät (≤ ${z.R.toFixed(1)} m, Ring ${z.ring}, Laub-Rand ${z.laubRand.toFixed(1)} m, ${z.zeilen} Zeilen), ${z.wald} Bäume des Walds, ${z.ohne.length} ohne Stufe`; // prettier-ignore
+    const zeile = `Same im Blick: ${gesaet} von ${gesaet + ungesaet.length} Chunks gesät (≤ ${z.R.toFixed(1)} m, Ring ${z.ring}, Laub-Rand ${z.laubRand.toFixed(1)} m, ${z.zeilen} Zeilen), ${z.wald} Bäume des Walds, ${z.dach || 0} unterm Dach, ${z.ohne.length} ohne Stufe`; // prettier-ignore
     return { rot, zeile };
 }
 
@@ -1943,13 +1951,13 @@ async function bildLinsenSelbsttest() {
     // zum gesäten Baum ohne Instanz
     {
         const c = (k, d, gesaet, baeume = 20) => ({ k, d, gesaet, baeume });
-        const wahr = { R: 216, ring: 4, laubRand: 216, zeilen: 1080, wald: 400, ohne: [], chunks: [c("-6,-24", 40, true), c("-9,-27", 132, true), c("-4,-25", 153, true, null), c("-12,-30", 240, false)] }; // prettier-ignore
+        const wahr = { R: 216, ring: 4, laubRand: 216, dachAb: 184, zeilen: 1080, wald: 400, dach: 12, ohne: [], chunks: [c("-6,-24", 40, true), c("-9,-27", 132, true), c("-4,-25", 153, true, null), c("-12,-30", 240, false)] }; // prettier-ignore
         const taeter = { ...wahr, laubRand: 129.6, chunks: [c("-6,-24", 40, true), c("-9,-27", 132, false), c("-4,-25", 153, false, null), c("-12,-30", 240, false)] }; // prettier-ignore
         const U = (z, f = baumStufeUrteil) => f(z).rot.join(" | ");
         if (U(wahr)) v.push(`S: der gesäte Same fällt: ${U(wahr)}`);
         klasse("S Baum ohne Stufe", (f) => !/^BAUM OHNE STUFE: 2 Chunks des Samens im Blick \(Mitte ≤ 216\.0 m\) sind nicht gesät, der Laub-Rand der Welt steht bei 129\.6 m — 20 Bäume des Plans ohne Stufe \(\+ 1 Chunks ohne Plan im Gedächtnis\): -9,-27 132 m 20 Bäume · -4,-25 153 m$/.test(U(taeter, f)) && (U(taeter, f) || "kein ROT"), baumStufeUrteil, mutante(baumStufeUrteil, "c.d <= z.R && !c.gesaet", "c.d <= z.laubRand && !c.gesaet", {})); // prettier-ignore
         const leer = { ...wahr, ohne: [{ typ: "baum_fichte", d: 150 }] };
-        klasse("S gesäter Baum ohne Instanz", (f) => !/^BAUM OHNE STUFE: 1 gesäte Bäume des Walds im Blick tragen weder Instanz noch Mesh: baum_fichte 150 m$/.test(U(leer, f)) && (U(leer, f) || "kein ROT"), baumStufeUrteil, mutante(baumStufeUrteil, "if (z.ohne.length)", "if (false)", {})); // prettier-ignore
+        klasse("S gesäter Baum ohne Instanz", (f) => !/^BAUM OHNE STUFE: 1 gesäte Bäume des Walds im Blick tragen weder Instanz noch Mesh noch Dach \(das Dach ab 184\.0 m\): baum_fichte 150 m$/.test(U(leer, f)) && (U(leer, f) || "kein ROT"), baumStufeUrteil, mutante(baumStufeUrteil, "if (z.ohne.length)", "if (false)", {})); // prettier-ignore
     }
     // R: die Ratsche des Orts
     const rot = [{ schluessel: "leib", grund: "Sicht verdeckt 4.9 %" }];
