@@ -341,8 +341,8 @@ return (async function leiterRahmen(H, P, lauf) {
                 });
             }); }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\31ea3847-radeon\karte2.erleben.schoepfen.teilen_2.json 15
 [linse-gpu] amd/rdna-3
-@@ 0.1 s · teilen Welt {"peers":0,"bibliothek":0,"welten":1,"suche":true}
-@@ 0.1 s · erleben.schoepfen.teilen S2 umfang {"art":"umfang","erzeugt":0,"was":"kein fremdes Gerät in der Sitzung (state.p2p.peers 0) — B mit leerem Speicher fehlt","t":0.1}
+@@ 0 s · teilen Welt {"peers":0,"bibliothek":0,"welten":1,"suche":true}
+@@ 0.1 s · erleben.schoepfen.teilen S2 umfang {"art":"umfang","erzeugt":0,"was":"kein fremdes Gerät in der Sitzung (state.p2p.peers 0) — B mit leerem Speicher fehlt","t":0}
 @@ 0.1 s · erleben.schoepfen.teilen S3 leser {"art":"leser","fehlt":"Zufallseintrag → Bild und Herkunft des Forks im Spiel: kein Weg des Spiels ruft `bibliothekFinde`/`bibliothekForke` (stamm/netz-identitaet.js:879, :909) — die Bibliothek der Sitzung trägt 0 Einträ
 @@ 0.1 s · erleben.schoepfen.teilen S4 umfang {"art":"umfang","erzeugt":0,"was":"kein Such-Korpus im Spiel-Baum (spec/abnahme: 0 Dateien) — die Suche der Werkstatt (#workshop-search true, stamm/werkstatt-vorschau.js:244) misst gegen keinen Satz","t":0.1}
 @@ 0.1 s · erleben.schoepfen.teilen S5 umfang {"art":"umfang","erzeugt":0,"was":"0 Fusionen in der Sitzung: jede lädt die Seite neu (`_confirmWorldFusion` → fuseWorlds reload, stamm/speicher-laden.js:1794); der Speicher hielte 1 Welten = 0 Paare","t":0.1}
