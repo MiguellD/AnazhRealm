@@ -344,12 +344,12 @@ async function jahrFeldProbe(o) {
     for (const [id, rec] of Object.entries(T)) {
         if (!(rec && (rec.kind === "flower" || rec.kind === "rock"))) continue;
         let fit = null;
-        for (const t0 = performance.now(); !fit && performance.now() - t0 < 30000;) {
+        for (let i = 0; !fit && i < 600; i++) {
             fit = r._streuGesetzFit(id, 1, 0, 0);
             if (!fit) await new Promise((f) => setTimeout(f, 50));
         }
         if (!fit) {
-            out.push({ id, kind: rec.kind, fehlt: "die Passung steht nach 30 s nicht" });
+            out.push({ id, kind: rec.kind, fehlt: "die Passung steht nach 600 Fragen nicht" });
             continue;
         }
         const pr = (j) => (j === SG.laub ? o.praesenz[0] : j === SG.bluete ? o.praesenz[1] : 1);
