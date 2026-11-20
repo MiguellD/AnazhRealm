@@ -285,7 +285,7 @@ function ortVerdikt(m) {
         );
     if (!(m.sockelMax === 0))
         fehl.push(
-            `Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})${m.sockelFehl?.length ? ` — ${m.sockelFehl.map((h) => `Slot ${h.si} ${h.rolle || "?"} ${h.m} m bei ${h.x}/${h.z} (tief ${h.tief}: Weg-Rand ${h.wegRand} m, Nachbar ${h.nachbar ? `Slot ${h.nachbar.si} ${h.nachbar.rolle} in ${h.nachbar.d} m, Boden ${h.nachbar.dy} m` : "–"})`).join(" · ")}` : ""}`
+            `Sockel max ${m.sockelMax} m (Median ${m.sockelMedian})${m.sockelFehl?.length ? ` — ${m.sockelFehl.map((h) => `Slot ${h.si} ${h.rolle || "?"} ${h.m} m bei ${h.x}/${h.z} (tief ${h.tief}: Weg-Rand ${h.wegRand} m, Nachbar ${h.nachbar ? `Slot ${h.nachbar.si} ${h.nachbar.rolle} in ${h.nachbar.d} m, Boden ${h.nachbar.dy} m` : "–"}${h.splats ? `, Splats ${h.splats}, Welt ${h.welt}` : ""})`).join(" · ")}` : ""}`
         );
     if (!(m.tuerenN > 0 && m.tuerenOk === m.tuerenN)) fehl.push(`Türen erreichbar ${m.tuerenOk}/${m.tuerenN}`);
     if (!(m.kronen === 0)) fehl.push(`Kronen in Grundrissen ${m.kronen}`);

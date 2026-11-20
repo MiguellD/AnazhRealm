@@ -2426,8 +2426,8 @@ hauptLauf(async () => {
                         await sleep(5);
                     }
                 } catch (f) {
-                    f.message = "DER ZUG " + zugZustand() + " · " + f.message;
-                    throw f;
+                    // ein NEUER Fehler: die Probe druckt den Stapel, und der trägt die Meldung seiner Geburt
+                    throw new Error("DER ZUG " + zugZustand() + " · " + (f && f.message));
                 }
                 ohneEnde();
                 r._bauFristTakt = null;
@@ -2821,6 +2821,32 @@ hauptLauf(async () => {
                     }
                     const ortW = { ort: anker, slots, roads: P.roads || [], platz: P.platz || null };
                     res.urteil = anker ? ortUrteil(ortW, (x, z) => r.getTerrainHeightAt(x, z)) : null;
+                    // DER SPLAT AM TIEFSTEN PUNKT je Sockel-Haus (die Linse nennt ihn beim Namen): jeder Splat der Normalform der Welt
+                    // (`_erdbauNorm`), der den Punkt deckt, in seiner Reihenfolge — auf der Fläche gewinnt der letzte (gelaende-core
+                    // `erdbauY`), unter einem freien (der Brücke) gilt der Grund
+                    const E = r._erdbauNorm;
+                    for (const h of (res.urteil && res.urteil.sockelFehl) || []) {
+                        if (!h.tief || !E || !E.zellen) continue;
+                        const [wx, wz] = [anker.x + h.tief[0], anker.z + h.tief[1]];
+                        const Zm = globalThis.__gelaendeCore.ERDBAU ? globalThis.__gelaendeCore.ERDBAU.zelleM : null;
+                        const liste = Zm ? E.zellen.get((Math.floor(wx / Zm) + 32768) * 65536 + (Math.floor(wz / Zm) + 32768)) || [] : [];
+                        const decken = [];
+                        for (const k of liste) {
+                            const q = E.splats[k];
+                            let d;
+                            if (q.frei || q.platte) {
+                                const ux = Math.abs((wx - q.cx) * q.c - (wz - q.cz) * q.s) - q.ex, vz = Math.abs((wx - q.cx) * q.s + (wz - q.cz) * q.c) - q.ez;
+                                d = Math.max(ux, vz, 0);
+                            } else {
+                                let s = q.len2 > 0 ? ((wx - q.x0) * q.dx + (wz - q.z0) * q.dz) / q.len2 : 0;
+                                s = s < 0 ? 0 : s > 1 ? 1 : s;
+                                d = Math.max(0, Math.hypot(wx - q.x0 - q.dx * s, wz - q.z0 - q.dz * s) - q.hw);
+                            }
+                            if (d === 0) decken.push(`${k}:${q.frei ? "frei" : q.platte ? "platte" : "trasse w" + q.weg} y${Math.round((q.platte ? q.y : q.y0) * 100) / 100}`);
+                        }
+                        h.splats = decken.length ? decken.slice(-5).join(" ") : Zm ? "keiner deckt" : "ERDBAU.zelleM fehlt";
+                        h.welt = Math.round(r.getTerrainHeightAt(wx, wz) * 100) / 100;
+                    }
                     // die Kronen des Wald-Plans über den Grundrissen (Dach-Fläche + Krone T)
                     const F = AnazhRealm.FOREST;
                     const seedInt = r._forestSeedInt();
