@@ -1881,3 +1881,4 @@ omen-gtx-gtx-f68dbf09-w023510-1-f68dbf09 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESS
 2026-11-20 03:01 landung Runde 1 am f68dbf09: WEICHT — samen-bild-neu wartete am GPU-Schloss, BEHALTEN 1, die Liste geht an derselben Station weiter
 2026-11-20 03:02 RUNDE 1 ALARM gtx: ohne Fortschritt seit 17 min (weicht, 1421/1428, Station mensch.K5#1, Kopf f68dbf09) — gesehen von radeon (radeon-dienst)
 2026-11-20 03:06 landung Runde 1 am f68dbf09: misst 7 von 1428 Stationen (1421 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
+omen-gtx-gtx-f68dbf09-w030546-1-f68dbf09 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN luftwasser.K3#2 ‖ luftwasser.K3#2: Bach -309.768/-822.525: Trupp 13 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.9 m, heim nach 20 s 12 (92 %, Soll ≥ 60 %) · Bild tier:fisch 12993 / 0 px (punkte-maschine 22255518 messung/f68dbf09-gtx.json)
