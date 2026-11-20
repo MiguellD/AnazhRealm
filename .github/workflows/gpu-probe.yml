@@ -355,8 +355,12 @@ jobs:
 
             - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2, am SHA
               if: always()
+              # DER VERSUCH STEHT IM NAMEN (20.11., w28-nacht-lichter ffd68679, Lauf 44821323126): der zweite Versuch eines
+              # nachgegebenen Beins fuhr GRÜN, der Post las das Artefakt des ERSTEN und urteilte wieder NACHGEGEBEN — zwei
+              # Artefakte „probe-gpu-probe“ am selben Lauf, und der Lader nimmt das mit der höheren Nummer (die ältere trug
+              # 14673770418, die jüngere 14673339580). Je Versuch ein eigener Name; der Post wählt je Bein den höchsten.
               with:
-                  name: probe-${{ matrix.label }}
+                  name: probe-${{ matrix.label }}-v${{ github.run_attempt }}
                   path: ${{ runner.temp }}/probe
                   if-no-files-found: ignore
                   retention-days: 7
@@ -374,7 +378,8 @@ jobs:
             ABGEWIESEN: ${{ needs.einlass.outputs.abgewiesen }}
             PROBE: ${{ needs.probe.result }}
         steps:
-            # je Bein ein Ordner probe/probe-<label>/
+            # je Bein und Versuch ein Ordner probe/probe-<label>-v<versuch>/ (ein grünes Bein fährt bei „nur die roten Jobs neu“
+            # nicht mit: sein Ordner bleibt der des früheren Versuchs)
             - uses: actions/download-artifact@v4
               if: needs.probe.result != 'skipped'
               continue-on-error: true
@@ -420,7 +425,9 @@ jobs:
                       NL=$'\n'
                       BEK=
                       for L in $(jq -r '.include[].label' <<< "$MATRIX"); do
-                          D="probe/probe-$L"
+                          # der JÜNGSTE Versuch des Beins urteilt (sort -V: v10 nach v9); ohne Ordner bleibt das Bein ohne Urteil
+                          D=$(ls -d "probe/probe-$L"-v* 2> /dev/null | sort -V | tail -n 1)
+                          [ -n "$D" ] || D="probe/probe-$L-v0"
                           BAND=
                           if [ "$L" = gpu-zeit ]; then BAND=" (Band-Gerät)"; fi
                           R="$(cat "$D/laeufer.txt" 2> /dev/null || echo "unbekannt [self-hosted, $L]")$BAND"

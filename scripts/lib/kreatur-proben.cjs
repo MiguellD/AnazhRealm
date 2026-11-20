@@ -2462,6 +2462,10 @@ async function kreaturProben(r, T, opts) {
     // DER TAKT DER LEUTE wie im Spiel: erst ihr Werk (der Job `bewohner` des Planers, hier ohne Ende — die Liste und, nach einem
     // Wechsel der Wache, die Prüfung ihrer Stände, `_bewohnerWacheTakt`), dann die Leute. Bis w25-stadt-takt-3 prüfte die Wache
     // im Takt der Leute selbst; ein Takt ohne das Werk ließe ihre Stände ungeprüft
+    // OFFEN (Welle SAMEN, benannt in ihrer Abgabe): der Takt der Leute geht ohne den Verkehr (`_verkehrSchritt`, `_tickVerkehr`) —
+    // mit ihm zeigt bewohner 72 978 Takte „in einer Wand“ (die Fahrer am Steuer im Leib ihres Wagens), die Soll-Orte der Fahrer
+    // #952 und #617311 zu 48–53 % und 4 Berührungen (#731592 um 8,34 Uhr, #619833 um 8,47 Uhr): die Linse der Leute kennt den
+    // fahrenden Wagen noch nicht. Die begegnung trägt ihn schon (`menschBuehnen`: ihr Zeuge quert eine Fahrbahn)
     const leute = (dt) => (r._bewohnerWerkTakt(Infinity), r._tickBewohner(dt));
     const leuteTakt = () => {
         for (let n = Infinity, still = 0, m; still < 5 && (m = (leute(0), r._weltOffen().leute)); n = m)
@@ -2623,11 +2627,13 @@ async function kreaturProben(r, T, opts) {
                         }
                     }
             );
-        const ring = (n, rMin, rMax, saat) => {
+        const ring = (n, rMin, rMax, saat, seite = 0) => {
             let k = 0;
             for (let i = 0; i < 400 && k < n; i++) {
                 const w = ((saat + i) * 2.39996) % TAU,
                     d = rMin + (rMax - rMin) * (((saat + i) * 0.618034) % 1);
+                // vorn: ±32° im Blick nach +x · hinten: außer ihm
+                if ((seite > 0 && Math.cos(w) < 0.85) || (seite < 0 && Math.cos(w) > 0)) continue;
                 const o = land(Math.cos(w) * d, Math.sin(w) * d);
                 if (ab(o, P0) < rMin - 1) continue;
                 tier(o, seelen[s.creatures.length % 4], 1);
@@ -2644,10 +2650,15 @@ async function kreaturProben(r, T, opts) {
         };
         // die 40 dazu hinter den ersten 10 (30–55 m): die Leiber der 50 sind die Tiere der 10 — mischten sie sich unter sie,
         // trügen andere Gattungen den Leib (Fuchs 6, Wolf 7 Befehle ohne Fell), und ihre Gestalt zählte als Kopfzahl
-        ring(10, 15, 30, 1);
+        // DER BLICK STEHT (w28-bau-rezept-tuer): die Nah-Wahl fragt das Bild (`_bedeutung`: außer Bild folgt jedes Tier jedem im
+        // Bild) — der Blick nach +x von Anfang an, die 10 tief in ihm (±32°, das halbe Bildfeld 45,7°: wer wandert, bleibt darin),
+        // die 40 hinter ihm: so bleiben die Leiber der 50 die der 10. Bis hier stand der Blick, wo die Bühne davor ihn ließ, und
+        // ein fernes der 40 im Bild trüge den Leib vor einem der 10 außer Bild
+        kamera(1, 0);
+        ring(10, 15, 30, 1, 1);
         laufen(240);
         const B10 = befehle();
-        ring(40, 30, 55, 101);
+        ring(40, 30, 55, 101, -1);
         laufen(240);
         const B50 = befehle();
         // DIE KOSTEN AN SCHIRM UND ÄNDERUNG (Gebot 7): ein Takt ohne Zeit schreibt nur die Plätze der Satz-Tiere, die sich

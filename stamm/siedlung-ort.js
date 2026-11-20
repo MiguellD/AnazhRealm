@@ -1374,13 +1374,8 @@ class AnazhRealm_siedlung_ort {
         const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});
         const n = (Number(z[art]) || 0) + 1;
         if (!blick) z[art] = n;
-        const s = `${wm.seed || "anazh-realm-seed"}:${art}:${n}`;
-        let h = 2166136261 >>> 0;
-        for (let i = 0; i < s.length; i++) {
-            h ^= s.charCodeAt(i);
-            h = Math.imul(h, 16777619) >>> 0;
-        }
-        return h >>> 0 || 1;
+        // der EINE Text-Hash (Welle SAMEN: FNV-1a, samen-core `samenHash`)
+        return globalThis.__samenCore.samenHash(`${wm.seed || "anazh-realm-seed"}:${art}:${n}`) || 1;
     }
     // Der Strom EINES Samens (LCG, [0, 1)): was ein Akt würfelt — Streuung, Drehung, Größe — ist eine Funktion seines Samens,
     // auf jedem Peer und nach jedem Reload dieselbe. Das EINE LCG der Welt: Leser `_streamRng` (der Strom eines Namens),

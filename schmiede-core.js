@@ -4203,16 +4203,12 @@
 
     // Ein Strom je (Same, Salz): nur Ganzzahl-Arithmetik (plattformgleich), eigene Ströme halten die Gestalt über die Stufen
     // deckungsgleich (L1 zieht dieselben Zahlen, baut nur gröber). Der Labor-Prüfstand zieht seine Würfe aus demselben Strom.
+    // Vor-Mischung und Generator leben EINMAL (Welle SAMEN): samen-core `salzStrom` — derselbe Strom wie die Ausstattung des
+    // Fachwerks (bis hier je Kern eine Kopie), gelesen je Ruf am globalen Namen (die Lese-Spur der Platte sieht ihn).
     function arenaStrom(seed, salz) {
-        var h = (Math.imul((seed >>> 0) ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(salz | 0, 0xc2b2ae35)) >>> 0;
-        h = (h ^ (h >>> 16)) >>> 0 || 0x6d2b79f5;
-        return function () {
-            h = (h + 0x6d2b79f5) >>> 0;
-            var t = h;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        var S = root.__samenCore;
+        if (!S) throw new Error("schmiede-core: der Samen-Kern fehlt (samen-core.js lädt vor jedem Kern)");
+        return S.salzStrom(seed, salz);
     }
 
     // DER TEILE-SAMMLER: eine Gestalt ist eine Liste reiner Zahlen (Form, Maße, Teilung, Stoff, Farbe, Lage, Drehung Euler XYZ,

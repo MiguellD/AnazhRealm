@@ -3456,9 +3456,10 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 });
 // DIE QUELLE DER FÄDEN DES GESETZES (`_fadenQuelle`, w28-faden-quelle): der Faden, seine Kerne in der Folge, in der er sie lädt,
 // und was er erst lädt, wenn er es braucht (der Name ist sein Schlüssel im Faden) — jede Datei holt der Wirt EINMAL mit `?v=`.
+// Der Samen-Baum (samen-core.js, Welle SAMEN) lädt vor jedem Kern: Wald, Wiese und das späte Fachwerk ziehen aus ihm.
 AnazhRealm.FADEN_QUELLE = Object.freeze({
     faden: "voxel-worker.js",
-    kerne: Object.freeze(["vendor/simplex-noise.js", "phyto-core.js", "gelaende-core.js"]),
+    kerne: Object.freeze(["vendor/simplex-noise.js", "samen-core.js", "phyto-core.js", "gelaende-core.js"]),
     spaet: Object.freeze({ fachwerk: "fachwerk-core.js", koerper: "koerper-core.js", planet: "planet-core.js" }),
 });
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den

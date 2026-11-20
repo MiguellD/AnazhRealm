@@ -869,6 +869,8 @@ const vorgeschichteVerdict = (vg) =>
     urteil([
         [!!vg && vg.bilder[0] === VERKEHR.zwillingS * 60 && vg.bilder[1] === vg.bilder[0], `die Stunde ohne Vorgeschichte ungezählt ${JSON.stringify(vg)}`], // prettier-ignore
         [!vg || vg.erst < 0, `die Stunde ${vg && vg.stunde} Uhr hängt an der Vorgeschichte der Seite: sie trennt sich in Bild ${vg && vg.erst} von ihrem Zwilling`], // prettier-ignore
+        // wer noch ankommt, steigt nicht ein (`_tickVerkehr`, der Fall des Sprungs vor dem ersten Lauf): ein Name = er stieg ein
+        [!vg || vg.einAnkunft === false, `wer noch ankommt, steigt ein: ${vg && vg.einAnkunft === null ? "keine Probe" : vg && vg.einAnkunft} — mit der Lage von vor dem Sprung (\`_tickVerkehr\` ohne \`ankunft\`)`], // prettier-ignore
     ]);
 const verkehrVerdict = (m) =>
     urteil([
@@ -2385,6 +2387,7 @@ hauptLauf(async () => {
             {
                 // DER KERN mit dem alten Rückwärts-Antrieb (0,4 × aEngine) fällt in FK; die Stimme mit falschem Motor-Ton in FK2
                 require(path.join(root, "vehicle-core.js"));
+                require(path.join(root, "samen-core.js")); // der Samen-Baum vor jedem Kern (Welle SAMEN)
                 require(path.join(root, "klang-core.js"));
                 const VCs = globalThis.__vehicleCore;
                 const KCs = globalThis.__klangCore;
@@ -2587,10 +2590,13 @@ hauptLauf(async () => {
                 JSON.stringify(brueche) + (altRot ? "" : " alt: " + alt.join(" · "))
             );
             // VK-V: gleich GRÜN; main (11.11., 10 Uhr nach 300 Bildern Vorlauf) trennt sich in Bild 307, ungezählt und zu kurz ROT
-            const vg = { stunde: 10, bilder: [1200, 1200], erst: -1 };
+            const vg = { stunde: 10, bilder: [1200, 1200], erst: -1, einAnkunft: false };
             const vgBrueche = [
                 [{ erst: 307 }, /10 Uhr hängt an der Vorgeschichte der Seite: sie trennt sich in Bild 307 von ihrem Zwilling/],
                 [{ bilder: [600, 1200] }, /ungezählt/],
+                // Bau-Rezept 20.11.: der Fahrer am Werk stieg vor seiner Ankunft ein (Wagen 20 in Bild 0 um 1,5 cm getrennt)
+                [{ einAnkunft: "Fahrer #4263651351 in Wagen 0 (faehrt)" }, /wer noch ankommt, steigt ein: Fahrer #4263651351/],
+                [{ einAnkunft: null }, /wer noch ankommt, steigt ein: keine Probe/],
             ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(vorgeschichteVerdict({ ...vg, ...an })));
             check(
                 "Selbst-Test VK-V: die Stunde ohne Vorgeschichte nennt das erste Bild, das sich trennt (ungezählt ROT)",
@@ -2974,6 +2980,7 @@ hauptLauf(async () => {
             fk.length === 0,
             `GT ${fkGt.map((z) => `${z.art} ${z.grad}° ${z.weg.toFixed(2)} m`).join(" · ")}${fk.length ? " — Täter: " + fk.slice(0, 6).join(" · ") : ""}`
         );
+        require(path.join(root, "samen-core.js"));
         require(path.join(root, "klang-core.js"));
         const fk2 = bahnKernStimme(globalThis.__klangCore, globalThis.__vehicleCore);
         check(
