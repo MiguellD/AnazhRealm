@@ -1639,11 +1639,7 @@ const STUFEN_OHNE = /^(tier:|vogel$|dorf-rauch$|vorbau:|rueckstrahl:|spiegel:|ko
 // stand die Saat bei 129,6 m, 53 Chunks warteten, 565 statt 1 416 Bäume, der Nadel-Bestand hinter dem Waldmantel fehlte.
 function baumStufeZensus() {
     const st = r.state;
-    const cam = st.camera;
-    cam.updateMatrixWorld(true);
-    const F = new THREE.Frustum().setFromProjectionMatrix(
-        new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
-    );
+    const F = r._frustumVon(st.camera); // der EINE Bau des Sichtkegels (die Ein-Schreiber-Wand: kein eigenes Frustum)
     const p = st.playerMesh.position;
     const { span } = r._voxelChunkConfig();
     const ring =
