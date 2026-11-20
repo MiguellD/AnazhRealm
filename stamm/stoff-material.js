@@ -695,6 +695,9 @@ class AnazhRealm_stoff_material {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            // DIE LICHT-KARTE (`LICHT_KARTE`): EIN Halb-Float-Gitter in drei Bändern (d0/d1 der Vektor je Lage, d0.w die Höhe des
+            // Bodens; c die Farbe) und seine Mitte in der Welt. EIN Schreiber: `_lichtKarteTakt`.
+            lichtKarte: AnazhRealm._lichtKarteNeu(TSL),
             // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
             // Szene in 0,75 × Ausgabe, ihr `fwidth` und ihr `screenSize` messen den Pixel der SZENE — das Mikro-Detail der Stoffe
             // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
@@ -2319,8 +2322,53 @@ class AnazhRealm_stoff_material {
                     this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
                 );
             });
+            summe.addAssign(this._lichtKarteTerm(Te, atmo));
             return summe;
         })();
+    }
+
+    // DIE LICHT-KARTE IM STOFF (`LICHT_KARTE`): der Vektor der Bestrahlung an der Lage des Fragments (zwischen den zwei Lagen über
+    // dem Boden der Zelle), in den Blick-Raum gedreht und gegen die Normale des Pools (`normalView`) — Lambert der Quellen ohne
+    // Platz, ohne Glanz und Wurf (die trägt der Platz der wichtigsten). Außerhalb des Gitters 0 (der Rand trägt 0).
+    _lichtKarteTerm(Te, atmo) {
+        const K = AnazhRealm.LICHT_KARTE;
+        const LK = atmo.lichtKarte;
+        const pw = Te.positionWorld;
+        // EIN Gitter, EIN Sampler (der Boden trägt 16 je Stufe — drei Gitter rissen die Grenze: 17): die drei Bänder übereinander
+        // (d0 · d1 · c), die Lage im Band auf die Mitte der Rand-Zellen geklemmt (sie tragen 0, kein Band blutet ins nächste)
+        const rand = 0.5 / K.texel;
+        const uv = pw.xz.sub(LK.mitte).div(K.texel * K.zelleM).add(0.5).clamp(rand, 1 - rand);
+        const band = (k) => Te.texture(LK.gitter, Te.vec2(uv.x, uv.y.add(k).div(3)));
+        const a = band(0);
+        const b = band(1);
+        const c = band(2).rgb;
+        const t = pw.y
+            .sub(a.w)
+            .sub(K.lagenM[0])
+            .div(K.lagenM[1] - K.lagenM[0])
+            .clamp();
+        const D = Te.cameraViewMatrix.mul(Te.vec4(Te.mix(a.xyz, b.xyz, t), 0)).xyz;
+        const E = Te.normalView.dot(D).max(0).mul(1 / K.skala);
+        return c
+            .mul(E)
+            .mul(Te.diffuseColor.rgb)
+            .mul(Te.metalness.oneMinus())
+            .mul(1 / Math.PI);
+    }
+
+    // DAS GITTER DER LICHT-KARTE (`LICHT_KARTE`): Halb-Float RGBA, n × 3n — die Bänder d0 (Zeilen 0…n−1), d1, c —, linear gefiltert,
+    // am Rand geklemmt (die Rand-Zellen jedes Bands tragen 0).
+    static _lichtKarteNeu(TSL) {
+        const n = AnazhRealm.LICHT_KARTE.texel;
+        const t = new THREE.DataTexture(new Uint16Array(n * 3 * n * 4), n, 3 * n, THREE.RGBAFormat, THREE.HalfFloatType);
+        t.name = "licht-karte";
+        t.magFilter = THREE.LinearFilter;
+        t.minFilter = THREE.LinearFilter;
+        t.wrapS = THREE.ClampToEdgeWrapping;
+        t.wrapT = THREE.ClampToEdgeWrapping;
+        t.generateMipmaps = false;
+        t.needsUpdate = true;
+        return { gitter: t, mitte: TSL.uniform(new THREE.Vector2(0, 0)) };
     }
 
     // DIE WAHL DES PLATZES (die Schleifen der Pools): die Glieder `k` (der Zähler der Schleife) ALLER Reihen eines Platzes in
@@ -3787,6 +3835,15 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_material]);
 // am nächsten kommt (das Licht des Auges, ein Feuer 9 m, eine Laterne 12 m, ein Tor 14 m), neu gewählt je `wahlS` Sekunden
 // oder nach `wahlM` Metern Weg; ein Platz blendet in `blendeS` Sekunden aus und ein (kein Licht springt).
 AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, blendeS: 0.5 });
+// DIE LICHT-KARTE (nacht-lichter-2, `_lichtKarteTakt`, `_lichtKarteTerm`): jede Quelle im Umkreis, die keinen Platz des Pools
+// hält (× 1 − ihre Blende, solange sie ein- oder ausblendet), schreibt ihre Bestrahlung als VEKTOR (Σ E · Richtung zur Quelle,
+// Luma) in ein Gitter von `texel`² Zellen à `zelleM` um das Auge — je Zelle in zwei Lagen über dem Boden (`lagenM`, die Höhe des
+// Bodens in d0.w) — und ihre Farbe (Σ E · Farbe ÷ Σ E); Boden und Wand lesen E = max(0, n · D) × Farbe × Albedo ÷ π: drei
+// Abgriffe je Fragment, gleich viele bei 5 wie bei 500 Quellen. Neu geschrieben nur bei neuer Mitte (`nachM` Weg) oder neuer
+// Stärke einer Quelle (Kosten an Änderung, Gebot 7); die Blende in `blendeStufen` Stufen (ein Platz, der ein- oder ausblendet,
+// schreibt die Karte höchstens so oft neu); die Höhen des Bodens einer neuen Mitte höchstens `hoehenJeBild` je Bild, die alte
+// Mitte trägt, bis alle da sind (gemessen 9 216 Höhen in 48 ms an einem Bild). `skala` hebt E in den Bereich des Halb-Floats.
+AnazhRealm.LICHT_KARTE = Object.freeze({ texel: 96, zelleM: 1, nachM: 12, lagenM: [0.1, 2.6], skala: 1000, blendeStufen: 4, hoehenJeBild: 1024 });
 // DIE NÄSSE (wetter.K2, `_naesseTakt` über `_naesseKurve`, `_naesseImStoff`): Regen benetzt mit τ = `benetzenS` / Regen-Stärke
 // (Wetter-Feld `rain` über `regenAb`; Regen 0,6 nach 10 min 0,91); ohne Regen VERDUNSTET der Film mit konstanter Rate (die erste
 // Trocken-Stufe, Penman: die Luft trägt das Wasser ab, solange die Fläche nass ist) — die Rate (sonne · Sonne + wind · Wind + luft)

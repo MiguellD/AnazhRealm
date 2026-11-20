@@ -1631,6 +1631,7 @@ class AnazhRealm {
             const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam));
             q.sort((a, b) => a.rang - b.rang);
             pool.wahl = q.slice(0, LP.plaetze);
+            pool.alle = q;
         }
         // die Plätze: gewählt bleibt und blendet ein, abgewählt blendet aus, der freie Platz nimmt die nächste Gewählte
         const H = pool.halter;
@@ -1696,8 +1697,140 @@ class AnazhRealm {
                 blende: pool.blende[k],
             });
         }
+        // DIE LICHT-KARTE: jede Quelle ohne Platz trägt ihr Licht dort (`_lichtKarteTakt`)
+        this._lichtKarteTakt(pool, cam);
         // DER WURF (schatten.K5): die wichtigste Quelle im Blick wirft — derselbe Platz, seine Karte (`_lichtWurfTakt`)
         this._lichtWurfTakt(pool, cam);
+    }
+
+    // DER SCHREIBER DER LICHT-KARTE (`LICHT_KARTE`, gelesen von `_lichtKarteTerm`): jede gewählte Quelle des Umkreises (`pool.alle`)
+    // ohne Platz — und die ein- oder ausblendende mit 1 − ihrer Blende — schreibt in jede Zelle in ihrer Reichweite, je Lage über
+    // dem Boden, E · (Quelle − Lage)/d (E = Stärke ohne Flackern × fachwerk `lichtAbfall`, dasselbe Gesetz wie der Platz) und
+    // E · Farbe. Neu nur bei neuer Mitte oder neuer Stärke. Die Höhe des Bodens je Zelle (`getTerrainHeightAt`) hält ein Speicher
+    // je Welt-Zelle: eine neue Mitte fragt nur die Zellen, die er nicht trägt, höchstens `hoehenJeBild` je Bild — bis alle da sind,
+    // trägt die alte Mitte (die erste Mitte ganz, vor ihr gibt es keine).
+    _lichtKarteTakt(pool, cam) {
+        const LK = this.state.atmoUniforms.lichtKarte;
+        if (!LK) return;
+        const K = AnazhRealm.LICHT_KARTE;
+        const n = K.texel;
+        const zm = K.zelleM;
+        const Z =
+            this._lichtKarteZ ||
+            (this._lichtKarteZ = {
+                mx: NaN,
+                mz: NaN,
+                ziel: null,
+                zeiger: 0,
+                hoehen: new Map(),
+                boden: new Float32Array(n * n),
+                d: [new Float32Array(n * n * 3), new Float32Array(n * n * 3)],
+                c: new Float32Array(n * n * 3),
+                e: new Float32Array(n * n),
+                stand: "",
+                schriften: 0,
+                hoehenGefragt: 0,
+            });
+        const cp = cam.position;
+        let mitteNeu = false;
+        if (Z.ziel || !(Math.hypot(cp.x - Z.mx, cp.z - Z.mz) <= K.nachM)) {
+            if (!Z.ziel) ((Z.ziel = [Math.round(cp.x / zm), Math.round(cp.z / zm)]), (Z.zeiger = 0));
+            const [tx, tz] = Z.ziel;
+            const zelle = (t) => (tx + (t % n) - n / 2) * 1048576 + (tz + Math.floor(t / n) - n / 2);
+            let rest = Number.isFinite(Z.mx) ? K.hoehenJeBild : Infinity;
+            for (; Z.zeiger < n * n; Z.zeiger++) {
+                const t = Z.zeiger;
+                const key = zelle(t);
+                if (Z.hoehen.has(key)) continue;
+                if (rest-- <= 0) break;
+                Z.hoehen.set(key, this.getTerrainHeightAt((tx + (t % n) + 0.5 - n / 2) * zm, (tz + Math.floor(t / n) + 0.5 - n / 2) * zm));
+                Z.hoehenGefragt++;
+            }
+            if (Z.zeiger >= n * n) {
+                const behalten = new Map();
+                for (let t = 0; t < n * n; t++) {
+                    const key = zelle(t);
+                    Z.boden[t] = Z.hoehen.get(key);
+                    behalten.set(key, Z.boden[t]);
+                }
+                Z.hoehen = behalten;
+                Z.mx = tx * zm;
+                Z.mz = tz * zm;
+                Z.ziel = null;
+                mitteNeu = true;
+            }
+        }
+        if (!Number.isFinite(Z.mx)) return;
+        const quellen = [];
+        let stand = `${Z.mx},${Z.mz}`;
+        for (const q of pool.alle || []) {
+            if (q.quelle === "auge" || q.L.ersatz) continue;
+            const k = pool.halter.findIndex((h) => h && h.id === q.id);
+            const w = k >= 0 ? Math.round((1 - pool.blende[k]) * K.blendeStufen) / K.blendeStufen : 1;
+            const I = w > 0 ? this._leuchtStaerke(q, 0, true) * w : 0;
+            if (!(I > 0)) continue;
+            quellen.push([q, I]);
+            stand += `|${q.x.toFixed(2)},${q.z.toFixed(2)}:${I.toPrecision(3)}`;
+        }
+        if (!mitteNeu && stand === Z.stand) return;
+        Z.stand = stand;
+        Z.schriften++;
+        const [d0, d1] = Z.d;
+        d0.fill(0);
+        d1.fill(0);
+        Z.c.fill(0);
+        Z.e.fill(0);
+        const FC = globalThis.__fachwerkCore;
+        const farbe = this._lichtKarteC || (this._lichtKarteC = new THREE.Color());
+        const [l0, l1] = K.lagenM;
+        for (const [q, I] of quellen) {
+            const L = q.L;
+            const R = L.reichweiteM;
+            this._lichtLinear(L, farbe);
+            const i0 = Math.max(1, Math.floor((q.x - R - Z.mx) / zm + n / 2 - 0.5));
+            const i1 = Math.min(n - 2, Math.ceil((q.x + R - Z.mx) / zm + n / 2 - 0.5));
+            const j0 = Math.max(1, Math.floor((q.z - R - Z.mz) / zm + n / 2 - 0.5));
+            const j1 = Math.min(n - 2, Math.ceil((q.z + R - Z.mz) / zm + n / 2 - 0.5));
+            for (let j = j0; j <= j1; j++) {
+                const vz = q.z - (Z.mz + (j + 0.5 - n / 2) * zm);
+                for (let i = i0; i <= i1; i++) {
+                    const vx = q.x - (Z.mx + (i + 0.5 - n / 2) * zm);
+                    if (vx * vx + vz * vz >= R * R) continue;
+                    const t = j * n + i;
+                    for (let l = 0; l < 2; l++) {
+                        const vy = q.y - (Z.boden[t] + (l ? l1 : l0));
+                        const d = Math.hypot(vx, vy, vz);
+                        const e = I * FC.lichtAbfall(L, d);
+                        if (!(e > 0)) continue;
+                        const D = Z.d[l];
+                        D[3 * t] += (e * vx) / d;
+                        D[3 * t + 1] += (e * vy) / d;
+                        D[3 * t + 2] += (e * vz) / d;
+                        Z.c[3 * t] += e * farbe.r;
+                        Z.c[3 * t + 1] += e * farbe.g;
+                        Z.c[3 * t + 2] += e * farbe.b;
+                        Z.e[t] += e;
+                    }
+                }
+            }
+        }
+        const halb = THREE.DataUtils.toHalfFloat;
+        const s = K.skala;
+        const h = (v) => halb(Math.max(-65000, Math.min(65000, v)));
+        // die drei Bänder des EINEN Gitters (`_lichtKarteNeu`): d0 ab Zelle 0, d1 ab n², c ab 2n²
+        const g = LK.gitter.image.data;
+        const [b1, b2] = [4 * n * n, 8 * n * n];
+        for (let t = 0; t < n * n; t++) {
+            const e = Z.e[t];
+            for (let a = 0; a < 3; a++) {
+                g[4 * t + a] = h(d0[3 * t + a] * s);
+                g[b1 + 4 * t + a] = h(d1[3 * t + a] * s);
+                g[b2 + 4 * t + a] = h(e > 0 ? Z.c[3 * t + a] / e : 0);
+            }
+            g[4 * t + 3] = h(Z.boden[t]);
+        }
+        LK.gitter.needsUpdate = true;
+        LK.mitte.value.set(Z.mx, Z.mz);
     }
 
     // DIE LEUCHTDICHTE DER LEUCHTENDEN FLÄCHE eines Datums (cd/m², nacht-lichter): das Fenster trägt seine (`cdM2`, die Fläche
