@@ -827,6 +827,9 @@ const FORBIDDEN = [
     // Punktlichts, der zweite Maßstab der Nacht, die Schwelle und Größe der Sterne (ein Punkt im Fußabdruck des Pixels, die
     // Größenklasse in `starField.userData.mags`), die Zahlen ohne Quelle für Sonne, Mond, Funken und Tor
     ...["_laborLichtStaerke", "luxJeEinheit", "sternKontrast", "uGrenze", '"aMag"', "sonneLeucht", "mondGegenHimmel", "FUNKEN.leucht", "uBelicht"].map((t) => [t, "licht-eine-skala — jede Quelle in der EINEN Skala (cd ÷ EINHEIT_LX), die Klasse Erscheinung durch `_erscheinung`", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
+    // kosmos-umfang — DER HIMMEL IST EINE FUNKTION DER SAAT (welt-licht.js `kosmos` · `kosmosHimmel` · `kosmosZeit`): der Würfel-Himmel
+    // (Mulberry32 aus worldMeta.seed, 2 800 gleichverteilte Punkte, Größen aus einer Zählungs-Kurve) und die drei festen Wandelsterne fielen
+    ...["_sternMag", "STERN_HELLSTE", "sternMagSchwach", "sternZaehlung", "wandelsterne", "_sternPixel", "FIX_COUNT"].map((t) => [t, "kosmos-umfang — die Punkte des Himmels sind die Sicht der Kosmos-Funktion (_kosmosJetzt)", ["scripts/playtest.cjs", "welt-licht.js"]]), // prettier-ignore
 ].map(([token, fiel, auch]) => ({ token, fiel, auch }));
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1339,6 +1342,7 @@ const ENTSORGUNG_BESITZER = {
     _p2pRefreshPeerNameLabel: { arten: ["material"], grund: "das Namensschild des Peers (Sprite-Stoff je Schild)" },
     _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
     createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
+    _buildStarField: { arten: ["geometry", "material"], grund: "das Sternfeld der Kosmos-Funktion beim Neubau (ein neuer Samen; je Bau frisch)" },
     _gangSatzAbschied: { arten: ["geometry", "material"], grund: "die Gang-Sätze (`_gangSatz`, je Satz frisch)" },
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
     _leibZeichenFrei: {
