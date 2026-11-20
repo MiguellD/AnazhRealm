@@ -250,6 +250,15 @@ class AnazhRealm_bild_tiefe {
         return V;
     }
 
+    // WAS FÜR EINEN SATZ ZEICHNET: er selbst und, trägt er die Sicht, seine zwei Züge (früh · spät) — im Hauptbild zeichnen nur
+    // sie (`_sichtSatz`), in jedem anderen Pass er. Der EINE Leser jeder Frage „zeichnete der Satz?" am gezeichneten Objekt (die
+    // Nah-Bühne der S0-Probe, der Werkstatt-Weg): fragte eine Wand nur das Satz-Mesh, fiel der Satz aus ihrem Hauptbild (S0:
+    // die Feuerstelle fehlte im Schuss, Nacht-Luma 22,4 → 21,4).
+    _sichtZeichner(s) {
+        const V = s.sicht;
+        return V ? [s.mesh, V.mesh, V.spaet.mesh] : [s.mesh];
+    }
+
     // Die Züge folgen den Puffern und dem Stoff ihres Satzes (ein Wachsen tauscht die Puffer, `_chunkSatzGeometrie`).
     _sichtSatzFolgen(s, V) {
         for (const Z of [V, V.spaet]) {

@@ -1019,7 +1019,7 @@ function wegHelfer(arg) {
             e?.instSlots?.length ? (!e.instFoundry || e._servedLod === 0 || (e._lodAmAbstand === true && e._servedLod === e._lodLevel)) && e.instSlots.map((x) => [st.archInstanceGroups.get(x.key), x.slot]).filter(([g]) => g && !g.shadowTwin) : e?.mesh?.parent && klassisch(e.mesh);
         // eine Satz-Art (Haus, Ausstattung, Tor: `BAU_SATZ`) zieht nie selbst: ihr Bereich liegt ganz im Satz ihres Stoffs (keine
         // offene Rate) und seine Zelle des Platzes im Abschnitt des Hauptbilds — die Lesung des Zug-Zählers (`satzInhalt`)
-        const satz = (g, slot, S = st.chunkSaetze.get(g.satz)) => !st.bauSatzRaten?.has(g.key) && zog.has(S?.mesh) && S.abschnitte.get("haupt")?.liste.includes(S.bloecke.get(g.key)?.zellen[slot]);
+        const satz = (g, slot, S = st.chunkSaetze.get(g.satz)) => !st.bauSatzRaten?.has(g.key) && !!S && r._sichtZeichner(S).some((o) => zog.has(o)) && S.abschnitte.get("haupt")?.liste.includes(S.bloecke.get(g.key)?.zellen[slot]);
         // der Zug dieses Bilds: lose je Pass (`_zuege`), in der festen Arena der des Bündels (`_zuegeB`, seine Aufträge schreibt der Takt)
         const zieht = ([g, slot]) => (g.satz ? satz(g, slot) : (g.mesh.count ?? 1) > slot && (g.mesh.__arena ? zog.has(g.mesh.__arena) && [st.camera, null].some((k) => [g.mesh.__arena._zuege, g.mesh.__arena._zuegeB].some((Z) => Z.get(k)?.zuege.includes(g.mesh))) : zog.has(g.mesh.__zeichner || g.mesh)));
         r._loopRender = function (...a) {
