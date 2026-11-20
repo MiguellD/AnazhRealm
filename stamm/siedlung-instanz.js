@@ -126,193 +126,23 @@ class AnazhRealm_siedlung_instanz {
         for (let i = 0; i < kinder.length; i++) this._werferBoxDazu(box, kinder[i]);
     }
 
-    // ═══ DER BERG-SCHATTEN (feld-natives Hi-Z) ═══
-    // Verdeckung aus dem EIGENEN Gesetz statt Depth-Pyramide: Sichtlinie Kamera → Kugel-OBERKANTE gegen
-    // `_terrainMacroSurfaceY`, drei Azimut-Linien (Mitte ± Radius); nur wenn ALLE drei überragt sind, ist
-    // die Region verdeckt. Amortisiert (Verdikt gecacht, Re-Test alle testMs); verdeckte Regionen testen
-    // HÄUFIGER (schneller Un-Cull). < minDist nie verdeckt. Headless aus (Hook __anazhBergCull=true).
-    _bergSchattenVerdeckt(s) {
-        const cam = this.state.camera;
-        if (!cam) return false;
-        const B = AnazhRealm.BERG_CULL;
-        const cx = cam.position.x,
-            cy = cam.position.y,
-            cz = cam.position.z;
-        const dx = s.center.x - cx,
-            dz = s.center.z - cz;
-        const distXZ = Math.hypot(dx, dz);
-        if (!(distXZ > B.minDist)) return false; // nahe Regionen nie verdeckt
-        const topY = s.center.y + s.radius;
-        const px = -dz / distXZ,
-            pz = dx / distXZ; // horizontale Senkrechte zur Sichtlinie
-        this._bergCullTests = (this._bergCullTests || 0) + 1; // Linse
-        for (let seit = -1; seit <= 1; seit++) {
-            let blockiert = false;
-            for (let i = 0; i < B.proben; i++) {
-                const t = B.tMin + ((B.tMax - B.tMin) * i) / (B.proben - 1);
-                const lx = cx + dx * t + px * seit * s.radius * t;
-                const lz = cz + dz * t + pz * seit * s.radius * t;
-                const ly = cy + (topY - cy) * t; // Sichtlinie zur Oberkante
-                if (this._terrainMacroSurfaceY(lx, lz, false) > ly + B.marge) {
-                    blockiert = true;
-                    break;
-                }
-            }
-            if (!blockiert) return false; // EINE freie Linie → sichtbar
-        }
-        return true;
-    }
-
-    // Pro Frame (aus _loopFrustumCulling): die Bundle-Sichtbarkeit IST das Region-Culling (_projectObject
-    // wertet `visible` auch für gecachte Bundles aus). Frustum (jeden Frame) → BERG-SCHATTEN (amortisiert,
-    // nur frustum-sichtbare Kugeln, 2-Treffer-Hysterese).
+    // DER FRAME-CULL DER REGION-BÜNDEL (aus _loopFrustumCulling): die Bundle-Sichtbarkeit IST das Region-Culling
+    // (_projectObject wertet `visible` auch für gecachte Bundles aus) — das Frustum jeden Frame, die Verdeckung aus der EINEN
+    // Sicht (Bild/tiefe, `_sichtBuendelVerdeckt`: die Region-Kiste gegen die Tiefen-Pyramide des letzten Bilds). Bis E7 trugen
+    // die Bündel zwei eigene Verdeckungen — den Berg aus der Makro-Höhe (drei Sichtlinien je Region, amortisiert) und den
+    // Query-Kasten „Wald-vor-Wald" (ein Stellvertreter je Bündel, jeder zehnte Frame) —, beide fielen mit der Pyramide.
     _archRegionBundleCull() {
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
         const fr = this._frustumCache;
         if (!fr) return;
-        this._occlProbeFrame = (this._occlProbeFrame || 0) + 1; // der Query-Probe-Takt (④)
-        const hook = typeof window !== "undefined" ? window.__anazhBergCull : undefined;
-        const bergAktiv =
-            hook !== false &&
-            (hook === true || !(this.state.renderer && this.state.renderer._isHeadlessNull)) &&
-            !!this.state.camera;
-        const B = AnazhRealm.BERG_CULL;
-        const now = performance.now();
-        let budget = B.budgetJeFrame;
         for (const bg of map.values()) {
             const s = bg.userData.cullSphere;
-            if (!s) {
-                bg.visible = true;
-                bg.userData._sichtHaupt = true;
-                continue;
-            }
-            let vis = fr.intersectsSphere(s);
-            if (vis && bergAktiv) {
-                const u = bg.userData;
-                const testMs = u._bergVerdeckt ? B.testMsVerdeckt : B.testMsSichtbar;
-                if (budget > 0 && (!u._bergTestAt || now - u._bergTestAt > testMs)) {
-                    budget--;
-                    u._bergTestAt = now;
-                    if (this._bergSchattenVerdeckt(s)) {
-                        u._bergTreffer = (u._bergTreffer || 0) + 1;
-                        if (u._bergTreffer >= 2) u._bergVerdeckt = true; // Hysterese: 2 Verdikte
-                    } else {
-                        u._bergTreffer = 0;
-                        u._bergVerdeckt = false; // frei → SOFORT sichtbar
-                    }
-                }
-                if (u._bergVerdeckt) {
-                    vis = false;
-                    this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1; // Linse (Frame-Summen)
-                }
-            }
+            const vis = !s || (fr.intersectsSphere(s) && !this._sichtBuendelVerdeckt(bg));
             bg.visible = vis;
-            if (s && this.state.camera) {
-                const cp = this.state.camera.position;
-                const kante = Math.hypot(s.center.x - cp.x, s.center.z - cp.z) - s.radius;
-                // ④ WALD-VOR-WALD (echtes Depth-Occlusion): der Query-Proxy testet
-                // die KOMPLETTE Frame-Tiefe (Bäume + Fern-Schirm) — nativ.
-                if (bergAktiv) this._bundleQueryTick(bg, s, kante);
-            }
-            // Das HAUPT-Urteil (Frustum · Berg · Query) — der Hauptpass liest es, jeder Schatten-Pass wählt selbst
-            // (_passSicht).
-            bg.userData._sichtHaupt = bg.visible;
+            // Das HAUPT-Urteil (Frustum · Sicht) — der Hauptpass liest es, jeder Schatten-Pass wählt selbst (_passSicht).
+            bg.userData._sichtHaupt = vis;
         }
-    }
-
-    // ═══ WALD-VOR-WALD (natives Depth-Occlusion) ═══
-    // Ein unsichtbarer Kugel-Kasten (colorWrite=false, transparent-Liste → nach allem Opaken) trägt
-    // occlusionTest (ANY_SAMPLES_PASSED): 0 Fragmente → Region TOTAL verdeckt. Verdikt async (1–2 Frames
-    // alt), 2er-Hysterese, Un-Cull sofort, < BERG_CULL.minDist nie. Der Render-Kontext wird am Proxy
-    // gefangen (onBeforeRender) → backend.isOccluded(ctx, proxy).
-    _bundleQueryTick(bg, s, kante) {
-        const st = this.state;
-        const u = bg.userData;
-        if (kante < AnazhRealm.BERG_CULL.minDist) {
-            if (u._occlProxy) u._occlProxy.visible = false;
-            u._occlTreffer = 0;
-            u._occlVerdeckt = false;
-            return;
-        }
-        // PROBE-TAKT: Queries jeden Frame zwängen den Vendor in QuerySet-Bau/-Destroy + Resolve + Map pro
-        // Frame → nur jeder queryTakt-te Frame fragt (dazwischen Proxys unsichtbar = 0 Queries); das Verdikt
-        // hält bis zur nächsten Probe (Verdeckung ist zeitlich kohärent).
-        this._occlProbeFrame = this._occlProbeFrame === undefined ? 0 : this._occlProbeFrame;
-        const probeFenster = this._occlProbeFrame % AnazhRealm.BERG_CULL.queryTakt === 0;
-        if (!probeFenster) {
-            if (u._occlProxy) u._occlProxy.visible = false;
-            if (u._occlVerdeckt) {
-                bg.visible = false;
-                this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1;
-            }
-            return;
-        }
-        let q = u._occlProxy;
-        if (!q) {
-            if (!this._occlProxyGeo) this._occlProxyGeo = new THREE.BoxGeometry(2, 2, 2);
-            if (!this._occlProxyMat) {
-                const m = new THREE.MeshBasicMaterial({ transparent: true });
-                m.colorWrite = false;
-                m.depthWrite = false;
-                this._occlProxyMat = m;
-            }
-            q = new THREE.Mesh(this._occlProxyGeo, this._occlProxyMat);
-            q.occlusionTest = true;
-            q.userData.inventar = "occl-proxy";
-            q.onBeforeRender = (r) => {
-                if (r && r._currentRenderContext) this._occlKontext = r._currentRenderContext;
-                q.userData._occlGerufen = this._occlProbeFrame; // der Renderer wollte ihn zeichnen (nach dem Culling)
-            };
-            u._occlProxy = q;
-            if (st.scene) st.scene.add(q);
-        }
-        q.visible = true;
-        q.position.set(s.center.x, s.center.y, s.center.z);
-        q.scale.setScalar(Math.max(1e-3, s.radius));
-        const be = st.renderer && st.renderer.backend;
-        const okt = this._occlKontext;
-        // DER STUMME STELLVERTRETER (0910-3 A, Gegenprüfung): wollte der Renderer ihn im letzten Probe-Fenster zeichnen, steht
-        // er im Abfrage-Feld dieses Renders (`occlusionQueryObjects`, r184 ersetzt es nur bei Zähler > 0 — also bis zum
-        // nächsten Probe-Frame). Fehlt er dort `STUMM_FENSTER` Fenster in Folge, steht seine Pipeline nicht oder gilt als
-        // gescheitert (r184s Fehler-Bereich um den asynchronen Bau vergiftet sie still mit einem FREMDEN Fehler) — ohne
-        // Abfrage gibt es nie wieder ein Verdikt: laut beim Namen, einmal je Welt.
-        if (be && okt && q.userData._occlGerufen !== undefined && q.userData._occlGerufen !== this._occlProbeFrame) {
-            const d = be.get(okt);
-            const begann = !!(d && d.occlusionQueryObjects && d.occlusionQueryObjects.indexOf(q) >= 0);
-            u._occlStumm = begann ? 0 : (u._occlStumm || 0) + 1;
-            q.userData._occlGerufen = undefined;
-            if (u._occlStumm >= AnazhRealm.BERG_CULL.stummFenster && !this._occlStummGemeldet) {
-                this._occlStummGemeldet = true;
-                this.log(
-                    `BERG-CULL STUMM: der Stellvertreter von ${bg.name} begann in ${u._occlStumm} Probe-Fenstern keine ` +
-                        "Verdeckungs-Abfrage — seine Pipeline steht nicht oder gilt als gescheitert (die GPU-Wache nennt den " +
-                        "Fehler); ohne Abfrage kein Verdikt",
-                    "ERROR"
-                );
-            }
-        }
-        if (be && okt && typeof be.isOccluded === "function") {
-            if (be.isOccluded(okt, q)) {
-                u._occlTreffer = (u._occlTreffer || 0) + 1;
-                if (u._occlTreffer >= 2) u._occlVerdeckt = true; // Hysterese: 2 Verdikte
-            } else {
-                u._occlTreffer = 0;
-                u._occlVerdeckt = false; // sichtbar → SOFORT zurück
-            }
-            if (u._occlVerdeckt) {
-                bg.visible = false;
-                this._bergCullVerdeckt = (this._bergCullVerdeckt || 0) + 1; // dieselbe Linse
-            }
-        }
-    }
-
-    // Proxy-Abbau (der Bundle-Tod räumt sein Query-Objekt — kein Szene-Leck).
-    _bundleQueryProxyTod(bg) {
-        const q = bg && bg.userData && bg.userData._occlProxy;
-        if (!q) return;
-        if (q.parent) q.parent.remove(q);
-        bg.userData._occlProxy = null;
     }
 
     // V18.300 — `regionKey` (optional): eine REGION-gekeyte Gruppe trägt nur die
@@ -1075,10 +905,7 @@ class AnazhRealm_siedlung_instanz {
         // T3 — verwaiste (bereits leere) Region-Bundles mit abbauen (Welt-Wechsel/Restore);
         // NACH den Gruppen (die Instanzen-Räumung oben kann Bundles schon leeren+löschen).
         if (this.state._regionBundles) {
-            for (const bg of this.state._regionBundles.values()) {
-                if (bg.parent) bg.parent.remove(bg);
-                this._bundleQueryProxyTod(bg); // ④ — Query-Proxys fallen mit (kein Szene-Leck)
-            }
+            for (const bg of this.state._regionBundles.values()) if (bg.parent) bg.parent.remove(bg);
             this.state._regionBundles.clear();
         }
         // DORF-ERLEBNIS — Zaun-Pool + Wege-Karte fallen mit; der settlementCells-Rebuild
@@ -1309,15 +1136,3 @@ AnazhRealm.LOD_INSTANZ_ATTRIBUTE = { aH0: 1, aH0L: 1, aKarte: 4, aEin: 1 };
 // trägt die Layer ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unverändert), ist so aber für einen
 // Laub-Pass (`pass.setLayers(FOLIAGE_LAYER)`) isoliert wählbar. Headless → 1.
 AnazhRealm.FOLIAGE_LAYER = 1; // eigene Render-Layer für den reduziert aufgelösten Laub-Pass (Layer 0 bleibt aktiv)
-AnazhRealm.BERG_CULL = Object.freeze({
-    minDist: 140, // m — nahe Regionen nie verdeckt (Sicherheits-Zone, Pop-frei)
-    proben: 5, // Höhen-Proben je Sichtlinie
-    tMin: 0.2, // Proben-Fenster entlang der Linie (Kamera 0 → Kugel 1):
-    tMax: 0.85, //   nie direkt an Kamera/Kugel (dort deckt minDist bzw. die Kugel selbst)
-    marge: 2, // m — das Terrain muss die Linie KLAR überragen (konservativ, nie knapp)
-    testMsSichtbar: 400, // Re-Test-Kadenz sichtbarer Regionen (amortisiert)
-    testMsVerdeckt: 150, // verdeckte testen HÄUFIGER → schneller Un-Cull hinterm Grat
-    budgetJeFrame: 6, // max Berg-Tests je Frame (≤ 6×15 Gesetz-Proben ≈ sub-ms)
-    queryTakt: 10, // Occlusion-Query-Probe-Fenster: nur jeder N-te Frame fragt (Dawn-QuerySet-Cliff)
-    stummFenster: 6, // so viele Probe-Fenster ohne begonnene Abfrage, dann meldet der Berg-Cull den Stellvertreter laut
-});
