@@ -1,5 +1,7 @@
 # Post an w28-laub-kante-5
 
+## 20.11. 19:12 — GPU-PROBE f6d83c42 auf radeon-890m: GRÜN in 331 s (bild:wiese@0.5 GRÜN 58 s auf radeon-890m · gate:pruefbuehne-licht GRÜN 52 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 128 s auf radeon-890m) → probe-post/w28-laub-kante-5/f6d83c42.md
+
 ## 20.11. 15:53 — GPU-PROBE 0d3f21c5 auf omen-gtx1060: GRÜN in 426 s (bild:wiese@0.5 GRÜN 53 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 50 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 144 s auf omen-gtx1060) → probe-post/w28-laub-kante-5/0d3f21c5.md
 
 ## 20.11. 14:47 — GPU-PROBE 1d28eb2b auf omen-gtx1060: ROT in 968 s (bild:wiese@0.5 GRÜN 47 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 49 s auf omen-gtx1060 · gate:weltbild-frost:echt ROT 439 s — Exit 2 ohne ROTE Zeile: at <anonymous> (:358:18) auf omen-gtx1060) → probe-post/w28-laub-kante-5/1d28eb2b.md
