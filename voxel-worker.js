@@ -510,7 +510,12 @@ function gauFeldBauen(msg, zeit) {
         hang: (x, z) => (G.hoehe(state, x, z, true, aus), aus.hang),
         bestand: (x, z) => self.__phytoCore.forestStandDensity(forestFbm, x, z),
     };
+    // die Hydro-Wahrheit, die der Faden für die Seite trägt (Heimat, Kacheln, Band — der Grund jedes Chunks und jeder Kachel, die
+    // die Seite danach bestellt), steht nach dem Feld wieder, wie sie war: das Feld rechnet in seiner eigenen (Abdruck am Kopf
+    // herde-gesetz: ohne das wichen an der Wiese 10 von 20 Hydro-Kacheln und an Genesis 5 Chunks im Wasser von der Basis ab)
+    const vorH = [state.hydrosphere, state.hydroTiles, state.hydroBand];
     const k0 = performance.now();
+    [state.hydrosphere, state.hydroTiles] = [null, null];
     hydroRegion("heim", null);
     zeit.kacheln++;
     zeit.hydroMs = performance.now() - k0;
@@ -545,10 +550,8 @@ function gauFeldBauen(msg, zeit) {
                     }
             }
         }
-    // die Kacheln gehen wieder (der Speicher folgt dem Blick: ein Gau hält sein Feld, nie die Hydrosphäre)
-    state.hydrosphere = null;
-    state.hydroTiles = null;
-    hydroBandNeu();
+    // die Kacheln des Felds gehen wieder (der Speicher folgt dem Blick: ein Gau hält sein Feld, nie die Hydrosphäre)
+    [state.hydrosphere, state.hydroTiles, state.hydroBand] = vorH;
     zeit.feldOhneHydroMs = performance.now() - k0 - zeit.hydroMs;
     return { S, LR };
 }
