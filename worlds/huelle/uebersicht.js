@@ -77,9 +77,10 @@
                     teller.add(g);
                     [k.g, k.ms] = [g, performance.now() - t0];
                     const zeile = ((buch.budget[g.userData.werk.art] || {})[0] || {}).tris || 0;
-                    const ueber = zeile > 0 && g.userData.werk.tris > zeile;
+                    // der Stein außer der Zeile (E8.1): `werk.frei`, der Bericht des Ausgangs — gezeigt wird alles, geurteilt ohne ihn
+                    const ueber = zeile > 0 && g.userData.werk.tris - (g.userData.werk.frei || 0) > zeile;
                     werkZeile.textContent = (st.arten[w.kind] || w.kind) + " · " + w.preset + (H.reiseFuer(st.arten, st.rezepte) ? " · das reisende Werk" : "");
-                    zahlen.textContent = "△ " + zahl(g.userData.werk.tris) + (zeile ? " / " + zahl(zeile) : "") + " · Neubau " + zahl(k.ms) + " ms" + (k4Text ? " · " + k4Text : "");
+                    zahlen.textContent = "△ " + zahl(g.userData.werk.tris) + (zeile ? " / " + zahl(zeile) : "") + (g.userData.werk.frei > 0 ? " (Stein frei " + zahl(g.userData.werk.frei) + ")" : "") + " · Neubau " + zahl(k.ms) + " ms" + (k4Text ? " · " + k4Text : "");
                     zahlen.classList.toggle("fail", ueber);
                 } catch (e) {
                     // eine Art ohne Gestalt (der Klang: eine Prägung ohne Körper) oder ein gebrochener Bau steht beim Namen
