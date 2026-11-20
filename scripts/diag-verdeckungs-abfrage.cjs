@@ -11,9 +11,11 @@
 //      in der Tafel, die Bilder trugen die Pyramide, jedes Bild brach, die Wand zeichnete).
 //   F  FREI: die Wand fällt — im ERSTEN Bild danach verdeckt der frühe Zug die Haufen noch (die Pyramide des letzten Bilds trägt
 //      die Wand), der späte zeichnet sie: jeder Haufen, den drei Bilder später das eingeschwungene Bild zeichnet, stand schon im
-//      ersten (0 Pop).
+//      ersten (0 Pop). Und die LESER der Szenen-Tiefe (Wasser, Feld-Pass, Rauch, Spiegel) lesen sie MIT dem späten Zug (E9 S5):
+//      das Abbild am Ende des ersten Bilds unterscheidet sich vom Abbild des Bruchs der Sicht in den Texeln des späten Zugs.
 //   S  SELBSTTEST AM ECHTEN FRAME: BLIND (der frühe Zug prüft nie — jedes Bild ohne Pyramide) macht V ROT „HAUFEN TROTZ VOLLER
-//      VERDECKUNG GEZEICHNET"; OHNE SPÄTEN ZUG (sein Auftrag nach dem Bruch geleert) macht F ROT „POP".
+//      VERDECKUNG GEZEICHNET"; OHNE SPÄTEN ZUG (sein Auftrag nach dem Bruch geleert) macht F ROT „POP"; OHNE LESER-BRUCH (die
+//      Leser lesen das Abbild der Sicht) macht F ROT „LESER OHNE SPÄTEN ZUG".
 //   In jeder Phase ROT bei jedem WebGPU-Validierungsfehler beim Namen: `uncapturederror`, die GPU-Wache des Stamms und jeder
 //   Seitenfehler. Gezählt wird in gerenderten Frames (die GPU-Leine), nie in Wanduhr-Wartezeiten (CI-Soll ≤ 3 min).
 //   --selftest (Node): das Urteil nennt jeden Täter und jede vakuöse Phase beim Namen.
@@ -52,6 +54,12 @@ function urteilFrei(F, marke) {
             `POP (${marke}): ${z.pop} von ${z.gezeichnet3} Haufen fehlten im ersten Bild nach dem Fall der Wand ` +
                 `(gezeichnet ${z.gezeichnet0}, davon spät ${z.spaet0})`
         );
+    if (!(z.leserTexel > 0)) v.push(`${marke} VAKUÖS: kein Zeuge des Abbilds (der Bruch der Sicht kopierte nie)`);
+    else if (z.spaet0 > 0 && !(z.leser0 > 0))
+        v.push(
+            `LESER OHNE SPÄTEN ZUG (${marke}): ${z.spaet0} Haufen spät gezeichnet, das Abbild der Leser trägt 0 von ` +
+                `${z.leserTexel} Texeln von ihnen — Wasser, Feld-Pass und Rauch lesen die Tiefe ohne sie`
+        );
     return v;
 }
 
@@ -79,6 +87,8 @@ function urteil(out) {
             v.push("SELBSTTEST VAKUÖS: der blinde frühe Zug zeichnete hinter der Wand nicht");
         if (!S.ohneSpaet?.z || !urteilFrei(S.ohneSpaet, "OHNE SPÄT").some((x) => x.startsWith("POP")))
             v.push("SELBSTTEST VAKUÖS: ohne späten Zug fehlte im ersten Bild kein Haufen");
+        if (!S.ohneLeser?.z || !urteilFrei(S.ohneLeser, "OHNE LESER").some((x) => x.startsWith("LESER OHNE SPÄTEN ZUG")))
+            v.push("SELBSTTEST VAKUÖS: ohne Leser-Bruch las jeder Leser den späten Zug");
     } else if (!out.abbruch) v.push("SELBSTTEST fehlt");
     return v;
 }
@@ -94,12 +104,13 @@ function selbsttest() {
             },
             frei: {
                 ...fehlerfrei(),
-                z: { haufen: 40, frueh0Verdeckt: 40, gezeichnet0: 31, spaet0: 31, gezeichnet3: 22, pop: 0 },
+                z: { haufen: 40, frueh0Verdeckt: 40, gezeichnet0: 31, spaet0: 31, gezeichnet3: 22, pop: 0, leser0: 120, leserTexel: 28800 },
             },
         },
         selbst: {
             blind: { z: { haufen: 40, wand: 6, frisch: 0, ohneBruch: 0, gezeichnet: 40, frueh: 40, spaet: 0 } },
-            ohneSpaet: { z: { haufen: 40, frueh0Verdeckt: 40, gezeichnet0: 0, spaet0: 0, gezeichnet3: 22, pop: 22 } },
+            ohneSpaet: { z: { haufen: 40, frueh0Verdeckt: 40, gezeichnet0: 0, spaet0: 0, gezeichnet3: 22, pop: 22, leser0: 0, leserTexel: 28800 } },
+            ohneLeser: { z: { haufen: 40, frueh0Verdeckt: 40, gezeichnet0: 31, spaet0: 31, gezeichnet3: 22, pop: 0, leser0: 0, leserTexel: 28800 } },
         },
     });
     const faelle = [
@@ -116,6 +127,8 @@ function selbsttest() {
         ["Frei: Pop", ["phasen.frei.z.pop=", 5], /POP \(FREI\): 5 von 22 Haufen fehlten/],
         ["Frei: nichts früh verdeckt", ["phasen.frei.z.frueh0Verdeckt=", 0], /FREI VAKUÖS: der frühe Zug verdeckte/],
         ["Frei: nichts eingeschwungen", ["phasen.frei.z.gezeichnet3=", 0], /FREI VAKUÖS: das eingeschwungene Bild/],
+        ["Frei: Leser ohne späten Zug", ["phasen.frei.z.leser0=", 0], /LESER OHNE SPÄTEN ZUG \(FREI\): 31 Haufen spät gezeichnet/],
+        ["Frei: ohne Zeuge", ["phasen.frei.z.leserTexel=", 0], /FREI VAKUÖS: kein Zeuge des Abbilds/],
         [
             "Boot: ein Fehler",
             (o) => (o.phasen.boot.gpu["Destroyed buffer"] = 1),
@@ -134,6 +147,7 @@ function selbsttest() {
         ["Phase fehlt", ["phasen.frei"], /FREI: Phase fehlt/],
         ["Selbsttest blind sieht", ["selbst.blind.z.gezeichnet=", 0], /SELBSTTEST VAKUÖS: der blinde frühe Zug/],
         ["Selbsttest ohne Spät heil", ["selbst.ohneSpaet.z.pop=", 0], /SELBSTTEST VAKUÖS: ohne späten Zug/],
+        ["Selbsttest ohne Leser heil", ["selbst.ohneLeser.z.leser0=", 50], /SELBSTTEST VAKUÖS: ohne Leser-Bruch/],
         ["Selbsttest fehlt", ["selbst"], /SELBSTTEST fehlt/],
         ["Abbruch", ["abbruch=", "Renderer stand nicht"], /ABBRUCH: Renderer stand nicht/],
     ];
@@ -181,7 +195,7 @@ async function sichtOrt() {
     const nf = rend._nodes && rend._nodes.nodeFrame;
     rend.setAnimationLoop(null);
     let tMs = performance.now();
-    const takt = async () => {
+    const schritt = async () => {
         tMs += 16.7;
         if (nf) nf.update();
         r._gameLoopTick(tMs);
@@ -189,6 +203,15 @@ async function sichtOrt() {
             await be.device.queue.onSubmittedWorkDone();
         } catch {}
         await sleep(0);
+    };
+    // EIN BILD, NIE EIN TAKT: die Linse zählt Hauptbilder der Sicht (`_sichtTiefeBeginn`). Unter dem Ladeschirm schickt der Loop
+    // sein Bild nur, wenn es fällig ist (`_ladeBildFaellig`) — auf der GTX 1050 lief die ganze Frei-Phase ohne ein Hauptbild
+    // (400 Renders zwischen zweien), die Linse las den Puffer des letzten Bilds als „erstes nach dem Fall der Wand"
+    const bilder = () => (r._sichtTiefeZahl() || { bilder: 0 }).bilder;
+    const takt = async () => {
+        const b0 = bilder();
+        for (let i = 0; i < 600 && bilder() === b0; i++) await schritt();
+        if (bilder() === b0) throw new Error("600 Takte ohne ein Hauptbild der Sicht");
     };
     window.__sichtTakt = takt;
     const p = st.playerMesh.position;
@@ -209,7 +232,9 @@ async function sichtOrt() {
     r.setCameraMode("first");
     st.yaw = haus.yaw;
     st.pitch = -0.04;
-    await __gebautNach(haus.e, { takt });
+    await __gebautNach(haus.e, { takt: schritt });
+    // das EINE Einschwingen: die Welt steht, das Bild ist jeden Takt fällig
+    await __weltStehtNach(schritt);
     for (let i = 0; i < 20; i++) await takt();
     window.__sichtHaus = haus.e;
     return { haus: [Math.round(haus.e.position.x), Math.round(haus.e.position.z)], yaw: haus.yaw };
@@ -319,6 +344,56 @@ async function sichtPhase(opts) {
             for (const V of jobs) enc.clearBuffer(be.get(V.spaet.auftrag).buffer, 0, 32);
         };
     };
+    // OHNE LESER-BRUCH: der Zeitpunkt der Leser bricht nie, sie lesen das Abbild vom Bruch der Sicht (vor E9)
+    const abbildRoh = r._tiefenAbbild;
+    const ohneLeser = () => {
+        r._tiefenAbbild = function (frame, abbild, punkt) {
+            if (punkt === "leser") return;
+            return abbildRoh.call(this, frame, abbild, punkt);
+        };
+    };
+    // DER LESER-ZEUGE (E9 S5): das Abbild der Szenen-Tiefe gleich nach dem Bruch der Sicht (vor dem späten Zug) und am Ende des
+    // Bilds (was die Leser lasen) — zwischen beiden zeichnet nur der späte Zug, jedes geänderte Texel ist seins
+    const abbildZeuge = () => {
+        const kopie = (enc, tex) => {
+            const bpr = Math.ceil((tex.width * 4) / 256) * 256;
+            const rb = dev.createBuffer({ size: bpr * tex.height, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+            enc.copyTextureToBuffer({ texture: tex }, { buffer: rb, bytesPerRow: bpr }, [tex.width, tex.height]);
+            return { rb, bpr, w: tex.width, h: tex.height };
+        };
+        let vor = null;
+        const bruchJetzt = r._sichtTiefeBruch;
+        r._sichtTiefeBruch = function (enc, A) {
+            const offen = !!(this._sichtTiefeZ && this._sichtTiefeZ.bruchOffen);
+            bruchJetzt.call(this, enc, A);
+            if (offen && !vor) vor = kopie(enc, A.ziel);
+        };
+        return async () => {
+            const A = r._tiefenAbbildGpu;
+            if (!vor || !A || !A.ziel) return { leser0: 0, leserTexel: 0 };
+            const enc = dev.createCommandEncoder({ label: "linse:leser" });
+            const nach = kopie(enc, A.ziel);
+            dev.queue.submit([enc.finish()]);
+            const f32 = async (k) => {
+                await k.rb.mapAsync(GPUMapMode.READ);
+                const a = new Float32Array(k.rb.getMappedRange().slice(0));
+                k.rb.unmap();
+                k.rb.destroy();
+                return a;
+            };
+            const a = await f32(vor),
+                b = await f32(nach);
+            if (vor.w !== nach.w || vor.h !== nach.h)
+                throw new Error(`das Abbild wechselte im Bild die Größe (${vor.w}×${vor.h} → ${nach.w}×${nach.h})`);
+            let leser0 = 0;
+            for (let y = 0; y < vor.h; y++)
+                for (let x = 0; x < vor.w; x++) {
+                    const i = y * (vor.bpr / 4) + x;
+                    if (a[i] !== b[i]) leser0++;
+                }
+            return { leser0, leserTexel: vor.w * vor.h };
+        };
+    };
     const zahl = () => r._sichtTiefeZahl() || { bilder: 0, ohneTiefe: 0, ohneBruch: 0 };
     const aus = { phase: marke };
     try {
@@ -356,9 +431,13 @@ async function sichtPhase(opts) {
             // FREI: die Wand fällt; das erste Bild danach, dann drei weitere
             wand.visible = false;
             if (opts.mutant === "ohneSpaet") ohneSpaet();
+            if (opts.mutant === "ohneLeser") ohneLeser();
+            const zeuge = abbildZeuge();
             await takt();
+            const leser = await zeuge();
             const l0 = await lesen();
             r._sichtTiefeBruch = bruchRoh;
+            r._tiefenAbbild = abbildRoh;
             for (let i = 0; i < 3; i++) await takt();
             const l3 = await lesen();
             let pop = 0;
@@ -370,6 +449,8 @@ async function sichtPhase(opts) {
                 spaet0: l0.spaet,
                 gezeichnet3: l3.gezeichnet.size,
                 pop,
+                leser0: leser.leser0,
+                leserTexel: leser.leserTexel,
             };
         }
     } catch (e) {
@@ -379,6 +460,7 @@ async function sichtPhase(opts) {
         r._sichtTiefeBruch = bruchRoh;
         delete r._sichtTiefeBeginn;
         delete r._sichtTiefeBruch;
+        delete r._tiefenAbbild;
     }
     // die Nachläufer der Phase (asynchron) noch in ihr buchen
     for (let i = 0; i < 2; i++) await takt();
@@ -427,12 +509,15 @@ async function sichtPhase(opts) {
         }
         // S: der Selbsttest am echten Frame — die Mutanten
         out.selbst = {};
-        selbstMarke("S (blind · ohne späten Zug)");
+        selbstMarke("S (blind · ohne späten Zug · ohne Leser-Bruch)");
         out.selbst.blind = await page.evaluate(sichtPhase, { phase: "verdeckt", mutant: "blind" });
         log(`SELBSTTEST blind: ${JSON.stringify(out.selbst.blind.z)}`);
         await page.evaluate(sichtPhase, { phase: "verdeckt" });
         out.selbst.ohneSpaet = await page.evaluate(sichtPhase, { phase: "frei", mutant: "ohneSpaet" });
         log(`SELBSTTEST ohne späten Zug: ${JSON.stringify(out.selbst.ohneSpaet.z)}`);
+        await page.evaluate(sichtPhase, { phase: "verdeckt" });
+        out.selbst.ohneLeser = await page.evaluate(sichtPhase, { phase: "frei", mutant: "ohneLeser" });
+        log(`SELBSTTEST ohne Leser-Bruch: ${JSON.stringify(out.selbst.ohneLeser.z)}`);
     } catch (e) {
         out.abbruch = fehlerText(e);
     }
@@ -446,7 +531,8 @@ async function sichtPhase(opts) {
     console.log(
         `\n✅ GRÜN — hinter der Wand ${V.haufen} Haufen, 0 gezeichnet (${V.frisch} Bilder mit Pyramide, jedes brach); die Wand ` +
             `fiel: im ersten Bild ${F.frueh0Verdeckt} früh verdeckt, ${F.spaet0} spät gezeichnet, 0 Pop gegen ${F.gezeichnet3} ` +
-            `eingeschwungene; blind fällt „HAUFEN TROTZ VOLLER VERDECKUNG GEZEICHNET“, ohne späten Zug „POP“ — 0 WebGPU-` +
+            `eingeschwungene, das Abbild der Leser trägt ${F.leser0} von ${F.leserTexel} Texeln des späten Zugs; blind fällt ` +
+            `„HAUFEN TROTZ VOLLER VERDECKUNG GEZEICHNET“, ohne späten Zug „POP“, ohne Leser-Bruch „LESER OHNE SPÄTEN ZUG“ — 0 WebGPU-` +
             `Validierungsfehler, 0 Seitenfehler.`
     );
 })();

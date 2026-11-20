@@ -117,12 +117,16 @@ function drawZensus(opts) {
         const spaet = [];
         const roh = rend._renderObjectDirect;
         rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
-            const kl0 = klasse(object);
+            const g = object.geometry;
+            const sicht = sichtOf.get(object);
+            // EIN INDIREKTER ZUG, DESSEN ZAHL DER ZÄHLER NICHT LIEST (weder Arena noch Sicht), ist ein Täter ohne Namen: die
+            // Band-Linse ist ROT bei ihm (bis zur Sicht stand dafür das Wort `IndirectStorageBufferAttribute` in der
+            // Rückkehr-Wand) — seine Index-Zahl wäre nie seine Zeichnung
+            const fremd = !!(g && g.indirect && object.isGeometrieArena !== true && !sicht);
+            const kl0 = fremd ? "UNBENANNT:indirekt " + klasse(object) : klasse(object);
             const pass = passOf(scene, camera);
             const k0 = kl0 + "|" + pass;
-            const g = object.geometry;
             const satz = satzOf.get(object);
-            const sicht = sichtOf.get(object);
             if (sicht) sichtSpaet.push([k0, sicht[0], sicht[1]]);
             if (satz && g) {
                 const n0 = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;

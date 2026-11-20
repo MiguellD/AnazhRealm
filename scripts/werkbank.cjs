@@ -2662,6 +2662,16 @@ async function starte() {
                     const o = await seite("__diaetLauf", b);
                     return send(Object.assign(o, { urteil: DIAET.diaetUrteil(o) }));
                 }
+                // DAS EINSCHWINGEN DES BANDS als eigener Ruf: der Pixel-Zensus schwingt mit derselben EINEN Funktion ein, die
+                // Regler-Decke steht danach wieder
+                if (req.url === "/einschwingen") {
+                    const o = await page.evaluate(bandEinschwingen, { capMs: Number(b.capMs) || 240000, ruhig: Number(b.ruhig) || 30 });
+                    await page.evaluate(() => {
+                        if (window.__bandDecke != null) st.perfTargetMs = window.__bandDecke;
+                        window.__bandDecke = null;
+                    });
+                    return send(o);
+                }
                 if (req.url === "/stand") {
                     const o = await seite("__standLauf", {
                         n: Number(b.n) || 120,

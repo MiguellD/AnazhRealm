@@ -3,7 +3,7 @@
 // EINE echte Welt (`werkbank start --echt --pixel`), je Ort × Sicht einschwingen wie das Band, dann EIN Frame — je Dreieck des
 // Hauptbilds gezählt: sichtbar · verdeckt · alpha-leer · rückseitig · unter dem Bildpunkt · außerhalb · Rest, je Klasse des Täters.
 //
-//   node scripts/diag-pixel-zensus.cjs [--orte wiese,genesis] [--sichten ego,third] [--port 4791] [--seite http://localhost:4312]
+//   node scripts/diag-pixel-zensus.cjs [--orte wiese,genesis] [--sichten ego,third] [--port 4791] [--seite <Ursprung>]
 //                                      [--K 4] [--datei f.json] [--ohne-start]   (die GPU nur über gpu-lauf.sh)
 "use strict";
 const path = require("path");
@@ -18,53 +18,16 @@ const opt = (k, d) => {
 };
 const hat = (k) => argv.includes("--" + k);
 const PORT = Number(opt("port", 4791));
-const SEITE = opt("seite", "http://localhost:4312");
+const SEITE = opt("seite", null); // ohne Wort wählt die Werkbank die Seite (WERKBANK_SEITE)
 const ORTE = opt("orte", "wiese,genesis").split(",");
 const SICHTEN = opt("sichten", "ego,third").split(",");
 const K = Number(opt("K", 4));
 const DATEI = opt("datei", null);
 
-// das Einschwingen wie das Band (werkbank `bandEinschwingen`): die volle Welt, bis der Bau ruht — Seiten-Kontext
-function einschwingen(k) {
-    return (async () => {
-        const st = r.state;
-        const vorDecke = st.perfTargetMs;
-        st.perfTargetMs = 1000;
-        const t0 = performance.now();
-        const dl = t0 + (k.capMs || 240000);
-        let takte = 0,
-            ruhig = 0,
-            vor = null,
-            o = {};
-        const stand = () => {
-            let instanzen = 0;
-            if (st.archInstanceGroups) for (const g of st.archInstanceGroups.values()) instanzen += g.mesh ? g.mesh.count : 0;
-            const ls = st.perfSense ? +st.perfSense.loadScale.toFixed(3) : 1;
-            return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut: __ungebaut(), loadScale: ls };
-        };
-        const ziel = Math.min(12, st.chunkRingRadius || 4);
-        while (performance.now() < dl) {
-            if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
-            const bild = __werkTakt();
-            takte++;
-            o = __einschwingOffen(r);
-            const s = stand();
-            if (s.loadScale < 1) o.loadScale = s.loadScale;
-            if (vor) for (const key of Object.keys(s)) if (s[key] !== vor[key]) o[key] = `${vor[key]}→${s[key]}`;
-            vor = s;
-            ruhig = Object.keys(o).length ? 0 : ruhig + 1;
-            if (takte >= 40 && ruhig >= (k.ruhig || 30)) break;
-            await bild;
-        }
-        st.perfTargetMs = vorDecke;
-        return { eingeschwungen: ruhig >= (k.ruhig || 30), takte, ms: Math.round(performance.now() - t0), offen: Object.keys(o).length ? o : null };
-    })();
-}
-
 const pct = (a, b) => (b ? ((100 * a) / b).toFixed(1) : "–");
 
 // DER ORT OHNE `/umstellen` (probe4 hing 30 min im Warten der Aufstellung auf einen Streu-Chunk): der Spieler am Platz der Spec,
-// der Blick des Orts, der Takt des Orts, die Sicht — das Einschwingen danach hat seine Frist (capMs)
+// der Blick des Orts, der Takt des Orts, die Sicht — danach schwingt die Werkbank ein (`/einschwingen`, Deckel capMs)
 function stellen(o) {
     return (() => {
         window.__ortTakt = o.takt || [];
@@ -91,7 +54,7 @@ async function main() {
         if (hat("ohne-start")) return;
         if (tor) tor.stop();
         console.log(`STUFE ${ort}: die Werkbank startet`);
-        tor = werkbankTor(PORT, ["--echt", "--pixel", "--seite", SEITE, "--ort", ort]);
+        tor = werkbankTor(PORT, ["--echt", "--pixel", ...(SEITE ? ["--seite", SEITE] : []), "--ort", ort]);
         await tor.bereit;
         await evalRuf(PZ.PIXEL_ZENSUS + " return true;", "pixel-zensus-install");
     };
@@ -112,7 +75,7 @@ async function main() {
                 const st0 = { x: spec.spieler[0], z: spec.spieler[1], gier: spec.blick ? BAND.ortGier(spec) : null, takt: spec.ortTakt || [], dorfZug: !!spec.dorfZug, kamera: haushalt.sichten[sicht].kamera };
                 const u = await evalRuf(`return (${stellen.toString()})(${JSON.stringify(st0)});`, "pixel-stellen");
                 console.log(`STUFE ${ort}/${sicht}: gestellt ${JSON.stringify(u)}`);
-                const ein = await evalRuf(`return (${einschwingen.toString()})({ capMs: 240000, ruhig: 30 });`, "pixel-einschwingen");
+                const ein = await rufe("/einschwingen", { capMs: 240000, ruhig: 30 }); // das EINE Einschwingen des Bands (werkbank `bandEinschwingen`)
                 console.log(`STUFE ${ort}/${sicht}: eingeschwungen ${JSON.stringify(ein)}`);
                 console.log(`STUFE ${ort}/${sicht}: Draw-Zähler`);
                 const dz = await evalRuf(`return __drawZensus({ top: 4 }).then((z) => ({ haupt: z.passe.haupt, gesamt: z.gesamt }));`, "pixel-drawzensus");

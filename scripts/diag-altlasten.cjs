@@ -520,7 +520,6 @@ const FORBIDDEN = [
     ["feldCull", "05.10. — der Feld-Cull (Compute-Kompaktierung + indirekte Draws) fiel ganz"],
     ["FeldCull", "05.10. — die Linsen-Haken __anazhFeldCull/__anazhFeldCullExtern"],
     ["FELD_CULL", "05.10."],
-    ["IndirectStorageBufferAttribute", "05.10. — kein indirekter Draw, den die Band-Linse nicht zählt"],
     ["g.mesh.dispose()", "W6 — _instanzAbschied (die Instanz-Gruppe)"],
     ["P.mesh.dispose()", "W6 — _instanzAbschied (Fundament- und Zaun-Pool)"],
     ["R.mesh.dispose()", "W6 — _instanzAbschied (der Rauch-Satz des Dorfs)"],

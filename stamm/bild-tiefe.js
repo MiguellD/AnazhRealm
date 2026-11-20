@@ -139,8 +139,11 @@ class AnazhRealm_bild_tiefe {
         for (const V of T.saetze) V.mesh.visible = V.spaet.mesh.visible = false;
     }
 
-    // DER AUSLÖSER DES BRUCHS: ein Dreieck ohne Fläche, dessen Stoff die Szenen-Tiefe liest (`_szeneTiefe`) — sein Zug bricht
-    // den Pass (je Render einmal), wenn kein Leser vor ihm brach; er zeichnet nach allen opaken Körpern und vor dem späten Zug.
+    // DER AUSLÖSER DES BRUCHS: ein Dreieck ohne Fläche, dessen Stoff das Abbild der Szenen-Tiefe zum Zeitpunkt der Sicht
+    // zeichnet — sein Zug bricht den Pass (je Render einmal); er zeichnet nach allen opaken Körpern und vor dem späten Zug.
+    // EIGENER KNOTEN (E9 S5): r184 bucht `updateBefore` je Referenz, ein Textur-Knoten referenziert seine Textur — las der
+    // Auslöser `_szeneTiefe`, galt sein Bruch für jeden Leser dieses Renders, und Wasser, Feld-Pass und Rauch lasen die Tiefe
+    // ohne die spät gezeichneten Haufen. Sein Knoten ist ein eigener Wert, die Leser brechen hinter dem späten Zug.
     _sichtAusloeser() {
         const T = this._sichtTiefeZ;
         if (T.ausloeser) return T.ausloeser;
@@ -149,7 +152,12 @@ class AnazhRealm_bild_tiefe {
         const m = new THREE.MeshBasicNodeMaterial({ depthWrite: false, depthTest: false });
         m.colorWrite = false;
         m.fog = false;
-        m.colorNode = THREE.TSL.vec4(this._szeneTiefe(), 0, 0, 1);
+        this._szeneTiefe();
+        const abbild = this._szeneTiefeKnoten.value;
+        const zeitpunkt = THREE.TSL.uniform(0);
+        zeitpunkt.updateBeforeType = "render";
+        zeitpunkt.updateBefore = (frame) => this._tiefenAbbild(frame, abbild, "sicht");
+        m.colorNode = THREE.TSL.vec4(zeitpunkt, 0, 0, 1);
         const mesh = new THREE.Mesh(g, m);
         mesh.name = "sicht-ausloeser";
         mesh.frustumCulled = false;
@@ -597,6 +605,8 @@ class AnazhRealm_bild_tiefe {
         const T = this._sichtTiefeZ;
         if (!T || !T.bruchOffen) return;
         T.bruchOffen = false;
+        // die Leser der Szenen-Tiefe brechen hinter dem späten Zug noch einmal (Bild/sicht `_tiefenAbbild` "leser")
+        A.spaet = T.auftraege.length > 0;
         const st = this.state;
         const rend = st.renderer;
         const be = rend.backend;
