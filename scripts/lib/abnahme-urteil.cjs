@@ -3240,6 +3240,12 @@ async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis })
             "Tafel-Pose",
             await rufe("/bild", { px, py, pz, lx, ly, lz, w: 1920, h: 1080, ziel: w[9], klasse, datei: datei("tafel") })
         );
+        // DER BAUM OHNE STUFE an derselben Pose, in derselben Welt (w28-nadel-bestand): jeder Baum des Samens im Blick trägt eine Stufe
+        const z = ergebnis(await evalRuf("return __baumStufeZensus();"));
+        if (!z.chunks) throw new Error(`Tafel-Pose: der Zensus des Samens kam nicht (${z.fehler})`);
+        const bs = require("./ausgabe-aufnahme.cjs").baumStufeUrteil(z);
+        console.log(`lod.K1#1 Tafel-Pose Baum-Stufe ${bs.rot.length ? "ROT" : "GRÜN"}: ${bs.zeile}`);
+        rot.push(...bs.rot);
         await umstellen({ ort: "wiese", sicht: "ego" });
         await rufe("/lauf", { sek: 8, ein: 2, regler: "frei", tiere: "halten", ruhe: 0, wandern: "bahn" });
         const [ax, ay, az, bx, by, bz] = ergebnis(
