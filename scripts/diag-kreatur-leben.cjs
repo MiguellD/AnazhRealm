@@ -267,6 +267,8 @@ async function lebenBuehnen() {
     // fährt den Gau im Gleichschritt mit der Uhr, je Takt des Lebenszyklus ein Takt des Gaus, `gauFahrt`) und je Takt die Kosten
     // des Lebenszyklus samt der Lesung des Gaus ──
     const GATTUNGEN = Object.keys(A._lebensraumGesetz().L.gattung);
+    // die Äsenden der Altlast: Gattungen außerhalb des Gaus, deren Kost Äsung trägt (diet < 1 — der Fuchs lebt von der Beute)
+    const AESEND = GATTUNGEN.filter((g) => !r._gauRolle(g) && r._bestandDiet()[g] < 1);
     // die Köpfe einer Region über alle Gattungen (`nur`: "alt" die Altlast, "gau" die Gattungen des Gesetzes)
     const koepfe = (key, nur) =>
         GATTUNGEN.reduce((n, g) => {
@@ -493,7 +495,7 @@ async function lebenBuehnen() {
             L[name] = [];
             for (let i = 1; i <= (taeter ? 2 : 8); i++) {
                 s.maxCreatures = name === "kappeHalb" ? 10 : 20;
-                const z = { jung: 0, jungMut: 0, spur: [], orte: [], leiber: 0, fremd: 0, fremdWer: {}, gesehen: new WeakSet(), gau: { deer: 0, wolf: 0, proben: 0 } };
+                const z = { jung: 0, jungMut: 0, aesend: 0, spur: [], orte: [], leiber: 0, fremd: 0, fremdWer: {}, gesehen: new WeakSet(), gau: { deer: 0, wolf: 0, proben: 0 } };
                 const l = await lauf(i, name === "grund" ? GRUND : LAUF, name === "halb", fern, (k, nah, tal, G) => {
                     if (eingriff) eingriff(k, nah, G);
                     if (G && fenster(k)) for (const g of ["deer", "wolf", "proben"]) z.gau[g] += g === "proben" ? 1 : gauZahl(G, g); // prettier-ignore
@@ -501,6 +503,7 @@ async function lebenBuehnen() {
                     // die fernen Regionen der Altlast holen je 10 Takte nach, was sie versäumten (ohne Leib)
                     if (!(k % 10)) for (const key of fern) (ruhigSpieler(), r._bestandRegion(key));
                     if (k >= 160 && k < LAUF && !(k % 10)) [...nah, ...fern].forEach((key, j) => (z.orte[j] = (z.orte[j] || 0) + koepfe(key) / ((LAUF - 160) / 10))); // prettier-ignore
+                    if (k >= LAUF / 2 && k < LAUF && !(k % 10)) z.aesend += [...nah, ...fern].reduce((n, key) => n + AESEND.reduce((m, g) => m + (r._bestandArt(key, g) || { n: 0 }).n, 0), 0) / (LAUF / 20); // prettier-ignore
                     if (/ohneWolf|kappeHalb/.test(name)) z.spur.push(nah.map((key) => GATTUNGEN.flatMap((g) => (r._bestandArt(key, g) || { tiere: [] }).tiere.map((t) => t.id)).join()).join("|")); // prettier-ignore
                     z.leiber = Math.max(z.leiber, s.creatures.length);
                     // jeder Leib wird aus einer nahen Region GEZEICHNET (gezählt, wo er zuerst steht: ein Jährling des Gaus, der danach
@@ -517,7 +520,7 @@ async function lebenBuehnen() {
         const richtung = (b, g, soll, a = "grund") => {
             // der Jungwuchs mit dem 95-%-Intervall des Mittels (er folgt den Hirschen des Gaus, je Saat um das Äsen der Herde gestreut)
             const t = /^jung/.test(g) ? 2.365 : undefined;
-            const e = effekt(L[a], L[b], (l) => (g === "jung" ? l.jung : g === "jungMut" ? l.jungMut : r._gauRolle(g) ? l.gau[g] / l.gau.proben : l.mittel(LAUF / 2, LAUF, g)), t); // prettier-ignore
+            const e = effekt(L[a], L[b], (l) => (g === "jung" ? l.jung : g === "jungMut" ? l.jungMut : g === "aesend" ? l.aesend : r._gauRolle(g) ? l.gau[g] / l.gau.proben : l.mittel(LAUF / 2, LAUF, g)), t); // prettier-ignore
             return Object.assign(e, { soll, haelt: soll > 0 ? e.ki[0] > 0 && e.effekt >= soll : e.ki[1] < 0 && e.effekt <= soll }); // prettier-ignore
         };
         const richtungen = {};
@@ -528,7 +531,11 @@ async function lebenBuehnen() {
             // der Jungwuchs fällt, wo die Hirsche des Gaus steigen (die Altlast verlangte −0,2 bei +0,3 Hirschen im Tal)
             ["jungwuchs", "ohneWolf", "jung", -0.03],
             ["woelfe", "halb", "wolf", 0],
-            ["nahrung", "halb", null, -0.3],
+            // die halbe Nahrung an JEDEM ihrer Leser: die Äsenden der Altlast (Kost < 1, der Bär: `_kreaturNahrung` je Takt am Feld,
+            // in allen nahen und fernen Regionen) und der Gau (das Feld seines Fadens, `_gauWirt`) — eine Zahl über alle trug den Gau
+            // und den Fuchs (er folgt der Beute), der Leser der Altlast konnte schweigen
+            ["nahrung", "halb", "aesend", -0.3],
+            ["nahrungGau", "halb", "deer", -0.3],
             ["mutante", "ohneWolf", "jungMut", -0.03],
         ])
             if (L[b]) richtungen[k] = richtung(b, g, soll);
@@ -2109,7 +2116,7 @@ function lebenUrteil(name, z, soll) {
         soll(B.nahrung.length >= 8 && B.nahrung.every((o) => o.grund >= 1), "fern lebt keine Zahl");
         soll(B.ms <= 5.8, `der Lebenszyklus kostet p95 ${B.ms} ms je Takt (Soll ≤ 5,8 ms, der CPU-Takt des Bands)`);
         soll(B.msGau <= 2, `die Antwort des Gaus kostet p95 ${B.msGau} ms (Soll ≤ 2 ms: acht Reviere werden das Bild)`);
-        const fehlt = ["hirsche", "jungwuchs", "woelfe", "nahrung", "mutante"].filter((k) => !z.richtungen[k]);
+        const fehlt = ["hirsche", "jungwuchs", "woelfe", "nahrung", "nahrungGau", "mutante"].filter((k) => !z.richtungen[k]);
         soll(!fehlt.length, `der Kaskade fehlt ein Szenario: ${fehlt.join(", ")}`);
         for (const [k, q] of Object.entries(z.richtungen))
             soll(
@@ -2284,7 +2291,7 @@ module.exports = {
         kaskade: [
             ["kaskade-riss", /die Kaskade hirsche/],
             ["kaskade-park", /Tal liegt im Genesis-Ort: [1-9]/],
-            ["bestand-nahrung", /die Kaskade nahrung/],
+            ["bestand-nahrung", /die Kaskade nahrung:/],
             ["bestand-deckel", /über seine Nahrung aus/],
             ["bestand-kappe", /die Kappe am Schirm ändert den Bestand/],
             ["bestand-fern", /fern lebt keine Zahl/],
