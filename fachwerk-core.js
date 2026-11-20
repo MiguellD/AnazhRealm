@@ -10456,6 +10456,7 @@
         trasse: 0.09, // so steil darf der Lauf einer Gasse steigen (`trasseLenk`; die Marge zum Fuß trägt die Feinform zwischen den Raster-Punkten)
         saumM: 0.6, // so weit steht eine Platte über den Grundriss, eine Trasse über den Weg hinaus
         vorplatzM: 1.6, // Tiefe des Vorplatzes vor der Haustür (mindestens: er reicht bis zur Gasse des Hauses)
+        schwelleM: 0.15, // so weit reicht die Platte des Vorplatzes unter die Schwelle: der Punkt der Tür liegt IN ihr, nie auf ihrer Kante
         gasseM: 5, // so weit vor der Tür (über die halbe Wegbreite hinaus) findet das Haus seine Gasse
         hangPlattform: 1.5, // Spanne des Grunds unter dem Grundriss bis zur Plattform (m)
         hangHanghaus: 4, // bis zum Hanghaus; darüber Stelzen
@@ -11617,13 +11618,22 @@
                             break;
                         }
                     }
+                // DIE STUFE TRÄGT DIE TÜR (Welle SAMEN): die Platte des Vorplatzes reicht `schwelleM` unter die Schwelle — der Punkt
+                // der Tür (`eingangVon`) lag genau auf ihrer inneren Kante, und auf der Kante gewann der Grund des Hauses (gelaende-core
+                // `erdbauY`: die Fläche des letzten Splats mit d = 0, die Kante entscheidet das Runden). Am Start-Dorf stand der
+                // Bewohner des Schwarzwaldhauses #508675 (Schwelle 0,55 m) in seiner Tür auf dem Grund 91,114 statt auf dem Vorplatz
+                // 91,389: die Diele 0,64 m über der Sohle, über der Stufe des Leibs (0,6) — 18 Takte in der Wand, gate:kreatur-takt
+                // bewohner. Der Saum der Gasse (`vorplatz`) bleibt am alten Rand: er misst von der Tür nach außen.
+                var tS = O.schwelleM / 2;
+                var cP = Math.cos(vf.phi || 0);
+                var sP = Math.sin(vf.phi || 0);
                 vorplaetze.push({
                     art: "platte",
-                    cx: r6(ox + vf.cx),
-                    cz: r6(oz + vf.cz),
+                    cx: r6(ox + vf.cx + sP * tS),
+                    cz: r6(oz + vf.cz + cP * tS),
                     phi: r6(vf.phi),
                     ex: r6(vf.ex),
-                    ez: r6(vf.ez),
+                    ez: r6(vf.ez + tS),
                     y: r6(y + ein.y / 2),
                     vorplatz: r6(saumG),
                 });
