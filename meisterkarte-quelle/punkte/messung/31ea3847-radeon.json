@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T05:16:06.500Z",
+ "zeit": "2026-11-20T06:06:29.399Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -2752,6 +2752,1069 @@
    "bahn": "sitzung",
    "zwilling": "karte2.erleben.sinn.ziele#2",
    "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: kein Wettkampf-Akt im Tages-Gesetz (Akte ): kein Lauf, kein Wurf, kein Sieger (koerper-core.js:5126) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S1 ROT: fehlender Leser: kein Wettkampf-Akt im Tages-Gesetz (Akte ): kein Lauf, kein Wurf, kein Sieger (koerper-core.js:5126) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c69a1414137",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 1.1,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 8.3,
+    "kerne": 3.265,
+    "fensterKerne": 3.265,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      2.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.78
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      0.78
+     ]
+    ],
+    "dienerS": 1.17,
+    "diener": [
+     [
+      "System",
+      0.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.45
+     ]
+    ],
+    "geraetS": 2.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.84
+     ],
+     [
+      "svchost.exe",
+      0.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 6.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:01:42.882Z",
+   "abdruck": "7b95ce2b04f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: kein Ballspiel, kein Gegner, keine Rolle Schiedsrichter (TAGES_GESETZ rollen) (koerper-core.js:5135) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S2 ROT: fehlender Leser: kein Ballspiel, kein Gegner, keine Rolle Schiedsrichter (TAGES_GESETZ rollen) (koerper-core.js:5135) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c69a1414137",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 1.1,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 8.3,
+    "kerne": 3.265,
+    "fensterKerne": 3.265,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      2.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.78
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      0.78
+     ]
+    ],
+    "dienerS": 1.17,
+    "diener": [
+     [
+      "System",
+      0.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.45
+     ]
+    ],
+    "geraetS": 2.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.84
+     ],
+     [
+      "svchost.exe",
+      0.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 6.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:01:42.882Z",
+   "abdruck": "2e876fc13d4e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.regeln#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#3": {
+   "gruen": false,
+   "zahl": "S3 ROT: Umfang nicht erzeugbar: 10 Sportarten aus einer Grammatik: 0 Sportarten in der Welt (0 Bewohner, kein Sport-Akt) (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: 10 Sportarten aus einer Grammatik: 0 Sportarten in der Welt (0 Bewohner, kein Sport-Akt) (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c69a1414137",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 1.1,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 8.3,
+    "kerne": 3.265,
+    "fensterKerne": 3.265,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      2.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.78
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      0.78
+     ]
+    ],
+    "dienerS": 1.17,
+    "diener": [
+     [
+      "System",
+      0.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.45
+     ]
+    ],
+    "geraetS": 2.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.84
+     ],
+     [
+      "svchost.exe",
+      0.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 6.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:01:42.882Z",
+   "abdruck": "996993923b39",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.regeln#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: Umfang nicht erzeugbar: 10² Saaten wählen ihre Art: eine Welt, 0 Arten (gemessen 1) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: 10² Saaten wählen ihre Art: eine Welt, 0 Arten (gemessen 1) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c69a1414137",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 1.1,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 8.3,
+    "kerne": 3.265,
+    "fensterKerne": 3.265,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      2.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.78
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      0.78
+     ]
+    ],
+    "dienerS": 1.17,
+    "diener": [
+     [
+      "System",
+      0.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.45
+     ]
+    ],
+    "geraetS": 2.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.84
+     ],
+     [
+      "svchost.exe",
+      0.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 6.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:01:42.882Z",
+   "abdruck": "456c38892da2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.regeln#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: fehlender Leser: keine Regel-Grammatik: die Arena bleibt Fläche, bis ein Gesetzbuch ihren Hof trägt (r 32.3 m) (fachwerk-core.js:11423) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S5 ROT: fehlender Leser: keine Regel-Grammatik: die Arena bleibt Fläche, bis ein Gesetzbuch ihren Hof trägt (r 32.3 m) (fachwerk-core.js:11423) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c69a1414137",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 1.1,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 8.3,
+    "kerne": 3.265,
+    "fensterKerne": 3.265,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      2.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.78
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      0.78
+     ]
+    ],
+    "dienerS": 1.17,
+    "diener": [
+     [
+      "System",
+      0.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.45
+     ]
+    ],
+    "geraetS": 2.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.84
+     ],
+     [
+      "svchost.exe",
+      0.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 6.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:01:42.882Z",
+   "abdruck": "f8032f32f6d6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.regeln#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: 10³–10⁴ Einträge des Inventars der Erde: 0 Spiele im Raum einer Grammatik (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: 10³–10⁴ Einträge des Inventars der Erde: 0 Spiele im Raum einer Grammatik (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c69a1414137",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 1.1,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 8.3,
+    "kerne": 3.265,
+    "fensterKerne": 3.265,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      2.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.78
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      0.78
+     ]
+    ],
+    "dienerS": 1.17,
+    "diener": [
+     [
+      "System",
+      0.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.45
+     ]
+    ],
+    "geraetS": 2.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.84
+     ],
+     [
+      "svchost.exe",
+      0.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 6.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:01:42.882Z",
+   "abdruck": "e66f8b0b8a74",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.regeln#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#7": {
+   "gruen": false,
+   "zahl": "S7 ROT: Umfang nicht erzeugbar: fremde Physik auf 10 Welten: eine Welt, Schwere -9.81 (gemessen 1, Soll 1000 Saaten auf 10 Welten fremder Physik) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S7 ROT: Umfang nicht erzeugbar: fremde Physik auf 10 Welten: eine Welt, Schwere -9.81 (gemessen 1, Soll 1000 Saaten auf 10 Welten fremder Physik) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c69a1414137",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 1.1,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 8.3,
+    "kerne": 3.265,
+    "fensterKerne": 3.265,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      2.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.78
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      0.78
+     ]
+    ],
+    "dienerS": 1.17,
+    "diener": [
+     [
+      "System",
+      0.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.45
+     ]
+    ],
+    "geraetS": 2.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.84
+     ],
+     [
+      "svchost.exe",
+      0.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 6.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:01:42.882Z",
+   "abdruck": "cf607fbfdf50",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.regeln#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.regeln#8": {
+   "gruen": false,
+   "zahl": "S8 ROT: Umfang nicht erzeugbar: jede Bevölkerung mit eigener Sportkultur: 0 Siedlung(en), 0 Sportkulturen, ein Planet (gemessen 0, Soll 1000 Bevölkerungen mit Sportkultur) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S8 ROT: Umfang nicht erzeugbar: jede Bevölkerung mit eigener Sportkultur: 0 Siedlung(en), 0 Sportkulturen, ein Planet (gemessen 0, Soll 1000 Bevölkerungen mit Sportkultur) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k6c69a1414137",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 1.1,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 8.3,
+    "kerne": 3.265,
+    "fensterKerne": 3.265,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      2.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.78
+     ],
+     [
+      "node scripts/diag-profiband.cjs --selftest",
+      0.78
+     ]
+    ],
+    "dienerS": 1.17,
+    "diener": [
+     [
+      "System",
+      0.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.45
+     ]
+    ],
+    "geraetS": 2.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.84
+     ],
+     [
+      "svchost.exe",
+      0.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.05
+     ]
+    ],
+    "eigenS": 6.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:01:42.882Z",
+   "abdruck": "9e1a9efa54ff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.regeln#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.mannschaft#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: kein Kampf 1 gegen 1 zweier Leiber: nur der Spieler schwingt (Hieb gegen Tier und Streitpuppe), kein Gegner mit Finte und Abwehr (stamm/kampf.js:92) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.09,
+   "grund": "ROT: S1 ROT: fehlender Leser: kein Kampf 1 gegen 1 zweier Leiber: nur der Spieler schwingt (Hieb gegen Tier und Streitpuppe), kein Gegner mit Finte und Abwehr (stamm/kampf.js:92) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k0c19508b6c1d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 3.9,
+   "fremd": {
+    "s": 9.9,
+    "takte": 3,
+    "fremdS": 184.5,
+    "kerne": 18.638,
+    "fensterKerne": 18.638,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28476-profil-NzqXdC --no-p",
+      64.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      44.17
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      22.77
+     ]
+    ],
+    "dienerS": 5.59,
+    "diener": [
+     [
+      "System",
+      2.59
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.77
+     ]
+    ],
+    "geraetS": 9.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.45
+     ],
+     [
+      "svchost.exe",
+      3.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 13.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:03:08.016Z",
+   "abdruck": "0065855cd6e0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.mannschaft#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: kein 5 gegen 5: keine Mannschaft, kein Ball, kein Pass (koerper-core.js:5135) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.09,
+   "grund": "ROT: S2 ROT: fehlender Leser: kein 5 gegen 5: keine Mannschaft, kein Ball, kein Pass (koerper-core.js:5135) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k0c19508b6c1d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 3.9,
+   "fremd": {
+    "s": 9.9,
+    "takte": 3,
+    "fremdS": 184.5,
+    "kerne": 18.638,
+    "fensterKerne": 18.638,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28476-profil-NzqXdC --no-p",
+      64.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      44.17
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      22.77
+     ]
+    ],
+    "dienerS": 5.59,
+    "diener": [
+     [
+      "System",
+      2.59
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.77
+     ]
+    ],
+    "geraetS": 9.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.45
+     ],
+     [
+      "svchost.exe",
+      3.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 13.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:03:08.016Z",
+   "abdruck": "b76c8d9169b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.mannschaft#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.mannschaft#3": {
+   "gruen": false,
+   "zahl": "S3 ROT: fehlender Leser: kein 11 gegen 11 mit Schiedsrichter: die Arena bleibt Fläche (fachwerk-core.js:11423) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.09,
+   "grund": "ROT: S3 ROT: fehlender Leser: kein 11 gegen 11 mit Schiedsrichter: die Arena bleibt Fläche (fachwerk-core.js:11423) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k0c19508b6c1d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 3.9,
+   "fremd": {
+    "s": 9.9,
+    "takte": 3,
+    "fremdS": 184.5,
+    "kerne": 18.638,
+    "fensterKerne": 18.638,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28476-profil-NzqXdC --no-p",
+      64.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      44.17
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      22.77
+     ]
+    ],
+    "dienerS": 5.59,
+    "diener": [
+     [
+      "System",
+      2.59
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.77
+     ]
+    ],
+    "geraetS": 9.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.45
+     ],
+     [
+      "svchost.exe",
+      3.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 13.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:03:08.016Z",
+   "abdruck": "5606425d2069",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.mannschaft#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.mannschaft#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: fehlender Leser: keine Vereine, keine Trainer, keine Stile (koerper-core.js:5135) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.09,
+   "grund": "ROT: S4 ROT: fehlender Leser: keine Vereine, keine Trainer, keine Stile (koerper-core.js:5135) · gemessen 0 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k0c19508b6c1d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 3.9,
+   "fremd": {
+    "s": 9.9,
+    "takte": 3,
+    "fremdS": 184.5,
+    "kerne": 18.638,
+    "fensterKerne": 18.638,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28476-profil-NzqXdC --no-p",
+      64.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      44.17
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      22.77
+     ]
+    ],
+    "dienerS": 5.59,
+    "diener": [
+     [
+      "System",
+      2.59
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.77
+     ]
+    ],
+    "geraetS": 9.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.45
+     ],
+     [
+      "svchost.exe",
+      3.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 13.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:03:08.016Z",
+   "abdruck": "ed1ed3ea0802",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.mannschaft#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.mannschaft#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: Umfang nicht erzeugbar: 10³–10⁴ Leiber im Volkslauf: 0 Bewohner am Ort, 0 im Lauf (gemessen 0, Soll 1000 Leiber im Volkslauf) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.09,
+   "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: 10³–10⁴ Leiber im Volkslauf: 0 Bewohner am Ort, 0 im Lauf (gemessen 0, Soll 1000 Leiber im Volkslauf) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k0c19508b6c1d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 3.9,
+   "fremd": {
+    "s": 9.9,
+    "takte": 3,
+    "fremdS": 184.5,
+    "kerne": 18.638,
+    "fensterKerne": 18.638,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28476-profil-NzqXdC --no-p",
+      64.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      44.17
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      22.77
+     ]
+    ],
+    "dienerS": 5.59,
+    "diener": [
+     [
+      "System",
+      2.59
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.77
+     ]
+    ],
+    "geraetS": 9.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.45
+     ],
+     [
+      "svchost.exe",
+      3.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 13.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:03:08.016Z",
+   "abdruck": "0127aae19d17",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.mannschaft#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.mannschaft#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: Taktik der Epochen: 0 Formationen (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.09,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: Taktik der Epochen: 0 Formationen (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k0c19508b6c1d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 3.9,
+   "fremd": {
+    "s": 9.9,
+    "takte": 3,
+    "fremdS": 184.5,
+    "kerne": 18.638,
+    "fensterKerne": 18.638,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28476-profil-NzqXdC --no-p",
+      64.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      44.17
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      22.77
+     ]
+    ],
+    "dienerS": 5.59,
+    "diener": [
+     [
+      "System",
+      2.59
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.77
+     ]
+    ],
+    "geraetS": 9.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.45
+     ],
+     [
+      "svchost.exe",
+      3.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 13.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:03:08.016Z",
+   "abdruck": "56b869cd651c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.mannschaft#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.mannschaft#7": {
+   "gruen": false,
+   "zahl": "S7 ROT: Umfang nicht erzeugbar: Weltklasse-Taktik: 0 Arten der Grammatik (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.09,
+   "grund": "ROT: S7 ROT: Umfang nicht erzeugbar: Weltklasse-Taktik: 0 Arten der Grammatik (gemessen 0) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "k0c19508b6c1d",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 3.9,
+   "fremd": {
+    "s": 9.9,
+    "takte": 3,
+    "fremdS": 184.5,
+    "kerne": 18.638,
+    "fensterKerne": 18.638,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-28476-profil-NzqXdC --no-p",
+      64.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      44.17
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      22.77
+     ]
+    ],
+    "dienerS": 5.59,
+    "diener": [
+     [
+      "System",
+      2.59
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.77
+     ]
+    ],
+    "geraetS": 9.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.45
+     ],
+     [
+      "svchost.exe",
+      3.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.33
+     ]
+    ],
+    "eigenS": 13.52,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:03:08.016Z",
+   "abdruck": "2f6ff567ea1c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.mannschaft#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -2763,7 +3826,10 @@
   "k2c6d526a19e7": "dVRNj5swEP0vOXbrNZ8BLO3BWVbKSq3KnnoewxhICEQ2hDZV/3sFwdkFtnO05s28efM8fzZnSI+Q4+NBN/WGbb5svm40XJBoVBdUjwe9YZsotR10Gb8F5Zw/D2mpKs+tplUpKIgaihOSTrVYVo/pCAttJ3Mko/0L7xNKExrQXf/0tIRWArOGtCDRAKNIuiGwZWKncxBIoJNjsynZDxGkz+gYYcyTAzWx6zmn/cuyo4A6mzONtn6A/jjgC18xzErAllRlrU3PNPOF67B7o/VUmYKeXAGLCtUEAjsAWxiio5R9EtEFUFad1rNmoZv5TsgoXeXmqMu0aMlZNQLrKV1ETmAD+0Tp/NwROWMkBIRiqXMBWOeoZhwsN5Vbm9Ff4bLoEU6ogNRQGC0tN3DEuzaU0v2aSzUSH1sY4ltL2l44Aw4LpfmgVJyPhejVvCc3M8acv3ET+aKJTotSnebySA8dy2Xf1pR0ARkqcmx0e88OPQAMJ+fHdOyVePES+T7MhHPE1vI/zhJSvl9ppxvZ9qCQ5OduAqKHfjA48XWV3MLpZDwvXc9Nl4vT7WDsjzR8D+1tMNDI/7OH2zcgVywrA5LS8yJ/Wfyi4ERA5KqU0mxa+KmMPjNmj1VLRNO0ZrWu5UY2o1da3xWJxi+wuy+PP/P4t/Nz//a25DhWa1R7n0psLekxeRl+XrrKLlVLekiL+y6kQIgYdVf6X1FVmONMsswTLmSM9vJG8xpyngTTN5cPM3Ne1xVLHMSsdaeNg6IgiyT75Ez0qI4C6uOU6G390HZGq+1+8P1Nk4MVP8Q06Tn/qFPWc/76HN9uyHe+468xjafiZ0zNNabmng9vZ9XIcrh8tIBOF1C17yf/7z8=",
   "k6de783ec5723": "dVRNj5swEP0vObb1ms8AlvbghJW2UqVmTz2PYQxsCCAbQkXV/17B4mSBdE4IvTfz5s14/uwaSM6Q4dO7rqsd233ZfdtpuCLRqK6ont71ju2ixHbQZfwjKOf8OMISVTStpmUhKIgK8guSTrVYlE/JRAttJ3Uko/0L70+UnmhAD/3z85paCkxr0oJEQ4wi6YbA1sBOZyCQQCenYjPYDxGkz+gUYcxP79QEf+Oc9i/rigKqdKk02vsB+lODL3yjMC0AW1IWlTY1k9QXrsNuhbZdpQp6MgDmJaqZBHYAtjBCJyv7U0RXRFl2Wi+KhW7qOyGjdIPNUBdJ3pJG1QKrGS4iJ7CBPXA6azoiF4qEgFCsfc4BqwzVQoPlJnJvM/o7XCc9wwUVkApy46XlBo64e0Mpfd1qKSfhUwkjfG9J2wsXxHGgNBudirMpER3M/9PHMsZ8HPIc2aqITvJCXZb2SA8dy2U/tpJ0Dikqcq51e0OHHgCG8+bH00LxkxevmfdmZp4j9pb/uZeQ8teNd7qWbQ8KSdZ0MxE99INxE79vwC1cLmbnpeu5yXpwuh0X+7MM30N7H4wysv/M4eMZkAGL0pCk9LzIXye/KrgQEJkqpDSTFn4io0eL2WPZElHXrRmta7mRzehAq5sj0fQEDrfh8SOPe+vXkb+tNU7ZatXeuhJ7S3pMXseXl2zQhWpJD0l+m4UUCBF7AB1QlZjhwrLUEy6kI/quLPbMx9fFcg6biQ4FjmZWutNmg6IgjSR7cCZ6VGcB1XkGens/tJ1p1Q4/+etc0Ip7voojT8d/x0M4JmswMdeXmvs9/mtULYvx0tEcOp1D2d5P/N9/",
   "k6c72c0d40030": "dVRNj5swEP0vObb1ms8AlvbghJVSqVXZU89jGAOBALIhtKn63ysIZBfYztF6b+bNm/H82TUQF5Di01nX1Y7tPu2+7DRckWhUV1RPZ71juyA2LbQZf+VDRJzz4wCLVd60mpa5oCAqyC5IOtViXj7FI803rcSSjPYvvI8ojahHD/3z85paCkxq0oLEmRgE0vaBrYGdTkEggU6OxSaw6yNIl9Ex/JBHZzrHoeec9i/rigKqZKk02Lseumzo7oVvFCY5YEvKvNJzzThxhW2xR6FtV4mCntwAsxLVRALTA1PMQkcr+yigK6IsO60XxXw7cS2fUbrBpqjzOGtJo2qB1QQXgeWZwD5wOm06IheKhABfrH3OAKsU1UKDYcdybzL6y18nLeCCCkgF2eylYXuWePOGUnraailH4WOJWfjekKbjL4jDQGk6OBWmYyJ6m9+j0UAe8mkrh0hXRXSc5eqytEc6aBk2+7aVpDNIUJGi1u0D7TsA6LOpFh1rRU64Zr41M/EssTfc9734lJ823ulatj0oJGnTTUR00PWGTfy6Abdwucw7L23HjteD0+2w2O9luA6ae2+Qkf5nDvdvQG6YlzNJSscJ3HXyq4ILAZGqXMp50sKNZfDRYvZYtkTUdTuP1jbswGT0RquHI8H4BQ6P4fEjD39bP0+vr2uNY7ZatY+uxN6QDpPX4efFG3SuWtJDnD1mIQVCwKi98f+GqsQUF5YljrAhYbSXd5k3n/PIm765/LxYzts2Y46DmZXu9LxBgZcEkn1wJnpUhYCqmIDO3vVNa1y1ww9+untyNsKer+LIk+HtGN5vyHd+4F9DGk7JG4zna0yLnEjMq4QUtWo6vbjxA65RtcyHa0gz6HQGZfsG+fsP",
-  "kc497f6c53232": "dVRNj5swEP0vHNt6zWcAS3twwkqp1KrZU89jGAMJAWRDaKn63ysIZBfYztF6b+bNmxn/MWqIL5Di01lXpcGMT8YXQ8MNiUZ1Q/V01gYzwtiy0WH8HpRzfhhgscrrRtMiFxRECdkVSasazIuneKQFlp3YktHuhXcnSk/Up/vu+XlNLQQmFWlA4kwMQ+kEwNbAVqcgkEArx2IT2AsQpMfoGEHET2c6x77jnHYv64oCymSpNNx5Pnpjgy98ozDJARtS5KWea8aJJxybPQptu0oUdKQHzApUEwksHywxCx2t7E4hXRFl0Wq9KBY4iWcHjNINNkWdx1lDalUJLCe4CG3fAvaB02ndErlQJAQEYu1zBlimqBYaTCeWO4vRX8E66QWuqICUkM1emo5vizdvKKXHrZZiFD6WmIXvTGm5wYI4DJSmg1NROiai/fx+ui9jxPkrnyNdFdFxlqvr0h7pom067NtWks4gQUUulW4e6MAFwGDa/IiOtU5utGa+NTPxbLEzvfe9BJQfN97pSjYdKCRp3U5EdNHzh038ugE3cL3OOy8d14nXg9PNsNjvZXguWjt/kJH+Zw73MyA95sVMktJ1Q2+d/KbgSkCkKpdynrTwYhl+tJgdFg0RVdXMo3VMJ7QY7Wn5cCQcT2D/GB4/8Oi3/fP4+rrWOGarVPPoSuxM6TJ5Gy4v3qBz1ZAO4uwxCykQBpkb/3tUBaa4sCxxhQMJo528y+wDzk/+dOby82I5+23GHAczS93qeYNCPwkl++Cb6FBdBJSXCejuvMCyx1Xb/+DHuydnM+r4Kg48Gd4O0f0P+c73/GtEoyl5jTGtVSXz4ZejGbQ6g6J5+97//gM="
+  "kc497f6c53232": "dVRNj5swEP0vHNt6zWcAS3twwkqp1KrZU89jGAMJAWRDaKn63ysIZBfYztF6b+bNmxn/MWqIL5Di01lXpcGMT8YXQ8MNiUZ1Q/V01gYzwtiy0WH8HpRzfhhgscrrRtMiFxRECdkVSasazIuneKQFlp3YktHuhXcnSk/Up/vu+XlNLQQmFWlA4kwMQ+kEwNbAVqcgkEArx2IT2AsQpMfoGEHET2c6x77jnHYv64oCymSpNNx5Pnpjgy98ozDJARtS5KWea8aJJxybPQptu0oUdKQHzApUEwksHywxCx2t7E4hXRFl0Wq9KBY4iWcHjNINNkWdx1lDalUJLCe4CG3fAvaB02ndErlQJAQEYu1zBlimqBYaTCeWO4vRX8E66QWuqICUkM1emo5vizdvKKXHrZZiFD6WmIXvTGm5wYI4DJSmg1NROiai/fx+ui9jxPkrnyNdFdFxlqvr0h7pom067NtWks4gQUUulW4e6MAFwGDa/IiOtU5utGa+NTPxbLEzvfe9BJQfN97pSjYdKCRp3U5EdNHzh038ugE3cL3OOy8d14nXg9PNsNjvZXguWjt/kJH+Zw73MyA95sVMktJ1Q2+d/KbgSkCkKpdynrTwYhl+tJgdFg0RVdXMo3VMJ7QY7Wn5cCQcT2D/GB4/8Oi3/fP4+rrWOGarVPPoSuxM6TJ5Gy4v3qBz1ZAO4uwxCykQBpkb/3tUBaa4sCxxhQMJo528y+wDzk/+dOby82I5+23GHAczS93qeYNCPwkl++Cb6FBdBJSXCejuvMCyx1Xb/+DHuydnM+r4Kg48Gd4O0f0P+c73/GtEoyl5jTGtVSXz4ZejGbQ6g6J5+97//gM=",
+  "k6c69a1414137": "dVRNr5swEPwvObb1M98flt7BCZFepUqlp57XsAZeCCAbQpuq/72CB0mAdE8Jmtkdz6z9Z9dAcoIMX951Xe3Y7tPuy07DBYlGdUH18q53bBcmpoU24x9FOeeHAZaoomk1LQtBQVSQn5F0qsWifElGWmBaqSUZ7Y+8jymNqU/3/evrmloKTGvSgsSZGIbSDoCtgZ3OQCCBTo7DJrAbIEiX0bGCiMfvdC7+g3PaH9cTBVTpUmnouT667Otvzo98ozAtAFtSFpWeZyapK2yL3QZtT5Uq6MkVMC9RTSQwfTDFLHS0so9DuiLKstN6MSywU9cKGKUbbIa6SPKWNKoWWE1wEVq+CeyJ01nTEblQJAQEYu1zDlhlqBYaDDuRnsnor2Dd9ARnVEAqyGcvDdu3xN0bSunbVks5Ch9HzMI9Q5pOsCAOgdJscCrKxkb0On+PP5Yx4kPIU2WrITrJC3Ve2iMdtAybfdtK0jmkqMip1u0NHTgAGEybH40LxWMnWjPvh5l4lvAM9/EsAeVvG+90LdseFJKs6SYiOuj6LuP86wbcwvk877y0HTtZB6fbYbEfZbgOmp4/yMj+k8PHNSBXLMqZJKXjhO66+UXBmYDIVCHlnLRwExk+W8wey5aIum7naG3DDk1GbVrdHAnHK7C/hccPPOqNn4eHPMc68rXmsXut2tsphWdIh8nLcBOTDbpQLekhyW/ZSIEQsifQK6oSM1xYmDrChnRA3yVFzvzj82JZr5uErwUO5la60/NGhX4aSvbk2ehRnQRUpwnoeG5gWuPq7b/zt2mgEdGIxv2jQQeeDv8P+2Bo1mBCG1XLYnjlaA6dzqFs78/7338=",
+  "k83e395db23ef": "jVRNj5swEP0vObb1OnwFsLQHZxM1e9g2PVU9js0YSAhENqzbVP3vFQSSBbZS54TQvJk3b57n9+IM8ggpPhxMVS7Y4sPi08LAKxKD+hX1w8Es2CKWjose49egnPPPbZrU+bk2tMgFBVFCdkLS6Brz4kF2sMhxE1cxarfc7ind05CuLb/Fmj8+TssUApOK1KBwKBLHyouATRMbk4JAAo3qGvfJQYSgAka7iDZ8f6BD8G+cU7uddhRQJmPW8SoIMWDPlvPtnGGSA9akyEsz9JRJIDyX3RrZOUaDJRfArEDdg8AJwRED0U4Ou4/pBKiKxphRs8hLAjdilM5yUzS5zGpy1pXAsk8XsRs6wNZzTum5IWrESAiIxFTnDLBMUY84LD2pVg6jP6Np0SOcUAMpIRu0XHqhK+7aUEp3cy5FR7xrMRBfLZXjRyNgu1Da2WeTdoXoZfi/vxpqw9sl95FOmhiZ5fo0lkf56C696cwmgwQ1OVamvmVGPgBG/QvYdGbie38zRd4H6XGuWC2Dt3NElO9muplK1RY0kvTc9ED0MQgDxtOXWXINp9Pgd+X5npwNULemfksj8NFZhS2N9B87uD4BcsG8GEBK+X4csKe1P01+1XAiIFKdKzVsWgRSxe8Z02JRE1FV9bBab+nFDqMeLW+qxBHnP/j6fhue1O6X+72U93128YVv36te6fo2qVgtlc9U9xLllLjNdU0syOy2HyUQ4qmAF9QFpjiSMPGFBwmjVt7pbPzh4+PIqJfZhi85tuKWpjGDo+IwidXVGf1RfB6fG4v6KKA89gB/FUSOy1r78698x1/4mj/t4o3l/xfb6+07o6RnXam8vXw0g8ZkUNT38//nLw==",
+  "k0c19508b6c1d": "dVRdj5swEPwveWzrM58BLN2DEyLlpFblnvq8hjWQEIhsCL1U/e8VBJIA130D7eyMZ9b+szpDfIQUXw66Klds9WX1baXhgkSjuqB6OegVWwWxaaHN+DvvKuKcb7u2WOXnWtMiFxRECdkJSaNqzIuXuIf5ppVYktF2x9uI0oh6dNO+vs6hhcCkIjVIHIFBIG0f2Lyx0SkIJNDInmxodn0E6TLalx/y6EDH2rSc03Y3ZxRQJlOlwdr10GVvH5zv+EJhkgPWpMhLPXLGiStsi92JlqdKFLTkCpgVqAYQmB6YYhTaW9lGAZ0BZdFoPSHz7cS1fEbpojdFncdZTc6qElgO7SKwPBPYJ06n54bIiSIhwBdznzPAMkU10WDYsVybjP7250OPcEIFpIRs9NKwPUs8vKGU7pdail54TzEKXxvSdPwJsAuUpp1TYdoPotfxf9QbyEM+bGVX6YxEx1muTlN7pIOWYbPvS0k6gwQVOVa6vnf7DgD6bOCiPVfkhHPk4zADzhJrw30+i0/5fuGdrmTdgkKSnpsBiA66nss4f1s013A6jTsvbceO58HpulvsZxmug+ba62Sk/8nhdg3IFfNiBEnpOIE7H35RcCIgUpVLOSYt3FgGny1mi0VNRFXVY7S2YQcmozYt744E/RXY3MPjWx5+WL/27488+9rxueZ+eqXq+ynF2pAOk5fuJsaL7lzVpIU4u2cjBUIne5HHFVWBKU4sTBxhQ8JoK2+yrz7nkTdce/l1sqzX5cQcO3NL3ehxowIvCST75NloUR0FlMeh0Vm7vmn1q7f5yfc3Mw5GSEMatc8GbXnSfW/D25vyg2/4W0jDYfgZY3pWlcy7V49m0OgMivrx3P/9Bw=="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -9387,6 +10453,395 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.sport.arena#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 26.1,
+    "takte": 10,
+    "fremdS": 192.45,
+    "kerne": 7.368,
+    "fensterKerne": 7.829,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      94.58
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      33.69
+     ],
+     [
+      "node scripts/diag-betriebsgesetz.cjs",
+      10.38
+     ]
+    ],
+    "dienerS": 16.28,
+    "diener": [
+     [
+      "System",
+      6.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.86
+     ]
+    ],
+    "geraetS": 37.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.91
+     ],
+     [
+      "svchost.exe",
+      11.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 72.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:05:54.873Z",
+   "abdruck": "3f30ee09887f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 26.1,
+    "takte": 10,
+    "fremdS": 192.45,
+    "kerne": 7.368,
+    "fensterKerne": 7.829,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      94.58
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      33.69
+     ],
+     [
+      "node scripts/diag-betriebsgesetz.cjs",
+      10.38
+     ]
+    ],
+    "dienerS": 16.28,
+    "diener": [
+     [
+      "System",
+      6.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.86
+     ]
+    ],
+    "geraetS": 37.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.91
+     ],
+     [
+      "svchost.exe",
+      11.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 72.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:05:54.873Z",
+   "abdruck": "6b130253ebeb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.kunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 26.1,
+    "takte": 10,
+    "fremdS": 192.45,
+    "kerne": 7.368,
+    "fensterKerne": 7.829,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      94.58
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      33.69
+     ],
+     [
+      "node scripts/diag-betriebsgesetz.cjs",
+      10.38
+     ]
+    ],
+    "dienerS": 16.28,
+    "diener": [
+     [
+      "System",
+      6.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.86
+     ]
+    ],
+    "geraetS": 37.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.91
+     ],
+     [
+      "svchost.exe",
+      11.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 72.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:05:54.873Z",
+   "abdruck": "e0beb99f0b7d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.kunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 26.1,
+    "takte": 10,
+    "fremdS": 192.45,
+    "kerne": 7.368,
+    "fensterKerne": 7.829,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      94.58
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      33.69
+     ],
+     [
+      "node scripts/diag-betriebsgesetz.cjs",
+      10.38
+     ]
+    ],
+    "dienerS": 16.28,
+    "diener": [
+     [
+      "System",
+      6.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.86
+     ]
+    ],
+    "geraetS": 37.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.91
+     ],
+     [
+      "svchost.exe",
+      11.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 72.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:05:54.873Z",
+   "abdruck": "fc5ace5868c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.kunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 26.1,
+    "takte": 10,
+    "fremdS": 192.45,
+    "kerne": 7.368,
+    "fensterKerne": 7.829,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      94.58
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      33.69
+     ],
+     [
+      "node scripts/diag-betriebsgesetz.cjs",
+      10.38
+     ]
+    ],
+    "dienerS": 16.28,
+    "diener": [
+     [
+      "System",
+      6.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.86
+     ]
+    ],
+    "geraetS": 37.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.91
+     ],
+     [
+      "svchost.exe",
+      11.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 72.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:05:54.873Z",
+   "abdruck": "6bfb7cb061b9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.kunst#1",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.kunst#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.41,
+   "grund": "Frist der Probe 24 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 24 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 24.3,
+   "fremd": {
+    "s": 26.1,
+    "takte": 10,
+    "fremdS": 192.45,
+    "kerne": 7.368,
+    "fensterKerne": 7.829,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36536-profil-42kTTV --no-p",
+      94.58
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-8176-profil-rQxAJP --no-pr",
+      33.69
+     ],
+     [
+      "node scripts/diag-betriebsgesetz.cjs",
+      10.38
+     ]
+    ],
+    "dienerS": 16.28,
+    "diener": [
+     [
+      "System",
+      6.55
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.86
+     ]
+    ],
+    "geraetS": 37.53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.91
+     ],
+     [
+      "svchost.exe",
+      11.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 72.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T06:05:54.873Z",
+   "abdruck": "778652a05ae0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.sport.kunst#1",
    "modus": "session"
   }
  }
