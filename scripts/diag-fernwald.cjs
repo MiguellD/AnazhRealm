@@ -64,8 +64,8 @@ hauptLauf(async () => {
         // DER ORT KOMMT AUS DER WELT (Integration K20 auf K16): die Probe geht die Mitten der Hydro-Kacheln in Ringen um den
         // Ursprung (Kanten-Länge aus HYDROSPHERE.regionSize), nimmt nur Kacheln ohne Wahrheit und prüft jede ganz (vor der
         // Wahrheit gefragt, dann die Wahrheit, gemerkt gegen frisch — jeder Täter jeder geprüften Kachel zählt); sie bleibt an
-        // der ersten Kachel stehen, die freie UND gebundene Eichen trägt und eine Eiche im Bestand mit genau EINEM stehenden
-        // Nachbarn (die Probe von F). Die Tabelle der alten Welt (vier Kachel-Mitten) fand in der Landform des Kerns nur
+        // der ersten Kachel stehen, die freie UND gebundene Eichen trägt und eine Eiche im Bestand, der EIN stehender Nachbar
+        // das Seitenlicht nimmt (die Probe von F). Die Tabelle der alten Welt (vier Kachel-Mitten) fand in der Landform des Kerns nur
         // geschlossenen Wald: 0 von 64 frei, F ohne Probe.
         {
             const kachelVon = (x, z) => globalThis.__gelaendeCore.kachelSchluessel(r._gelaende(), x, z);
@@ -108,23 +108,38 @@ hauptLauf(async () => {
                     if (k.startsWith(x + "," + z + ",") && k.endsWith("," + s + ",eiche")) return { eimer, k };
                 return null;
             };
-            // die Probe von F an einer Kachel: eine Eiche im Bestand mit genau EINEM stehenden Nachbarn (Abstand > 4 m)
+            // DAS SEITENLICHT EINER EICHE (der Waldmantel, laub-kante-4) aus eigener Geometrie: die stehenden Nachbarn im
+            // Freistand-Kreis (FREISTAND.abstand × die Summe der Kronen; der Bestand: jeder Dart steht), die die Wildnis trägt
+            // und die Wand des Orts durchlässt, und ihre Richtungen — die größte Lücke misst `forestSeitenlicht` des Kerns
+            const seitenlicht = (e) => {
+                const seedInt = r._forestSeedInt();
+                const gx = Math.floor(e.position.x / CELL);
+                const gz = Math.floor(e.position.z / CELL);
+                const nah = [];
+                for (let ax = -4; ax <= 4; ax++)
+                    for (let az = -4; az <= 4; az++)
+                        for (const o of r._forestCellDarts(gx + ax, gz + az, seedInt)) {
+                            if (o.alter) continue; // der Unterstand nimmt dem Dach kein Licht
+                            const d = Math.hypot(o.x - e.position.x, o.z - e.position.z);
+                            if (d < 1e-3 || d >= FS.abstand * (kr + o.T)) continue;
+                            if (!r._wildnisTraegt(o.x, o.z)) continue;
+                            if (r._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) continue;
+                            nah.push({ o, d, w: Math.atan2(o.z - e.position.z, o.x - e.position.x) });
+                        }
+                return { nah, luecke: seitenlicht.kern(nah.map((n) => n.w)) };
+            };
+            seitenlicht.kern = globalThis.__phytoCore.forestSeitenlicht; // gefangen VOR jeder Mutante (SELBSTTEST 9)
+            // die Probe von F an einer Kachel: eine Eiche im Bestand, der EIN stehender Nachbar (Abstand > 4 m, kein anderer
+            // näher als 8 m an ihm — das Haus nimmt nur ihn) das Seitenlicht nimmt: ohne ihn öffnet sich die Lücke ≥ FREISTAND.seite
             const wahlF = async (proben) => {
                 await frischAlle(proben);
-                const seedInt = r._forestSeedInt();
                 for (const e of proben) {
                     if ((await frag(e)) === V) continue;
-                    const gx = Math.floor(e.position.x / CELL);
-                    const gz = Math.floor(e.position.z / CELL);
-                    const nah = [];
-                    for (let ax = -4; ax <= 4; ax++)
-                        for (let az = -4; az <= 4; az++)
-                            for (const o of r._forestCellDarts(gx + ax, gz + az, seedInt)) {
-                                const d = Math.hypot(o.x - e.position.x, o.z - e.position.z);
-                                if (d < 1e-3 || d >= FS.abstand * (kr + o.T)) continue;
-                                nah.push({ o, d }); // der Bestand: jeder Dart steht
-                            }
-                    if (nah.length === 1 && nah[0].d > 4) return { e, o: nah[0].o };
+                    const { nah } = seitenlicht(e);
+                    for (const n of nah) {
+                        if (!(n.d > 4) || nah.some((m) => m !== n && Math.hypot(m.o.x - n.o.x, m.o.z - n.o.z) < 8)) continue;
+                        if (seitenlicht.kern(nah.filter((m) => m !== n).map((m) => m.w)) >= FS.seite) return { e, o: n.o };
+                    }
                 }
                 return null;
             };
@@ -199,9 +214,9 @@ hauptLauf(async () => {
                 });
             }
             // F DER GRUNDRISS-STAND: ein Wurf des Walds, den die Natur-Wand hält (`_naturWand`: der
-            // Grundriss eines Hauses), steht nie — die Eiche neben ihm steht frei. Eine Eiche im Bestand mit genau EINEM
-            // stehenden Nachbarn bekommt über diesem Nachbarn ein Haus; danach muss ihre Gestalt der Solitär sein, gemerkt
-            // (die Antwort vor dem Haus) wie frisch gefragt.
+            // Grundriss eines Hauses), steht nie — die Eiche neben ihm hat Licht. Eine Eiche im Bestand, der EIN stehender
+            // Nachbar das Seitenlicht nimmt, bekommt über diesem Nachbarn ein Haus; danach muss ihre Gestalt der Solitär sein,
+            // gemerkt (die Antwort vor dem Haus) wie frisch gefragt.
             res.E.F = { probe: !!wahl };
             if (wahl && gewaehlt) {
                 const { proben } = gewaehlt;
@@ -244,6 +259,71 @@ hauptLauf(async () => {
                     frisch: frischF,
                     V,
                 });
+            }
+            // H DER WALDMANTEL (laub-kante-4): die Krone jeder Eiche der Kachel folgt ihrem Seitenlicht. Wer eine Lücke
+            // ≥ FREISTAND.seite hat (der Solitär, der Baum am Trauf), trägt die Gestalt V mit der Krone bis zum Grund (Kronen-
+            // Fuß der L1 ≤ 0,2 der Höhe); wer Nachbarn ringsum hat, den Schaft des Bestands. Täter beim Namen: der Rand-Baum
+            // mit kahlem Stamm zur offenen Seite und der Baum im Innern mit der Krone des Traufs.
+            const mantel = async () => {
+                const proben = gewaehlt.proben;
+                const g = await frischAlle(proben);
+                const o = { rand: 0, randNachbar: 0, innen: 0, taeter: [] };
+                proben.forEach((e, i) => {
+                    const { nah, luecke } = seitenlicht(e);
+                    const grad = Math.round((luecke * 180) / Math.PI);
+                    if (luecke >= FS.seite) {
+                        o.rand++;
+                        if (nah.length) o.randNachbar++;
+                        if (g[i] !== V)
+                            o.taeter.push(
+                                `Rand-Baum mit kahlem Stamm zur offenen Seite: Eiche (${e.position.x}, ${e.position.z}), ${nah.length} Nachbarn, Lücke ${grad}°, Gestalt ${g[i]} statt ${V}`
+                            );
+                    } else {
+                        o.innen++;
+                        if (g[i] === V)
+                            o.taeter.push(`Baum im Innern mit der Krone des Traufs: Eiche (${e.position.x}, ${e.position.z}), Lücke ${grad}°`);
+                    }
+                });
+                return o;
+            };
+            if (gewaehlt) {
+                res.H = await mantel();
+                // der Kronen-Fuß der Gestalt V (L1, die Welt-Matrix der Teile, die Rinde zählt nicht): der Baum am Trauf trägt
+                // seine Krone bis zum Grund
+                const e = gewaehlt.proben.find((p) => r._foundryGestaltFor(p, "eiche") === V);
+                let fl = null;
+                for (let i = 0; e && !fl && i < 600; i++) {
+                    fl = r._foundryFlattenFor(e, "eiche", 1);
+                    if (!fl) await sleep(50);
+                }
+                if (fl && fl.leaves) {
+                    const v = new THREE.Vector3();
+                    let [H, fuss] = [0, Infinity];
+                    for (const lf of fl.leaves) {
+                        if (!lf.geom || lf.shadowTwin) continue;
+                        const name = (lf.leafKey || "") + " " + ((lf.mat && lf.mat.name) || "");
+                        const laub = !/rinde|bark|stamm|trunk|holz|wood/i.test(name);
+                        const pos = lf.geom.attributes.position;
+                        for (let k = 0; k < pos.count; k++) {
+                            v.fromBufferAttribute(pos, k);
+                            if (lf.localMatrix) v.applyMatrix4(lf.localMatrix);
+                            H = Math.max(H, v.y);
+                            if (laub) fuss = Math.min(fuss, v.y);
+                        }
+                    }
+                    res.H.kronenFuss = H > 0 ? +(fuss / H).toFixed(3) : null;
+                }
+                // SELBSTTEST 9: das alte Gesetz (bis laub-kante-4) — jeder stehende Nachbar nimmt das Seitenlicht; der Baum am
+                // Trauf steht wieder im Bestand, H muss ihn beim Namen nennen
+                const core = globalThis.__phytoCore;
+                const echt = core.forestSeitenlicht;
+                try {
+                    core.forestSeitenlicht = (w) => (w.length ? 0 : 2 * Math.PI);
+                    res.S9 = await mantel();
+                } finally {
+                    core.forestSeitenlicht = echt;
+                    await frischAlle(gewaehlt.proben);
+                }
             }
         }
         let taktFehler = null;
@@ -775,6 +855,23 @@ hauptLauf(async () => {
                 (F.gemerkt !== F.frisch ? " — _foundryGestaltFor merkt vor dem Grundriss" : "")
     );
     check("SELBSTTEST 5 (ein Haus ohne Grundriss macht F rot)", F.selbst === true, F.probe ? "" : "keine Probe");
+    // H: nicht vakuös — die Kachel trägt Rand-Bäume MIT Nachbarn (den Trauf, nicht nur den Solitär) und Bäume im Innern
+    const H = out.H || { taeter: ["nicht gelaufen"] };
+    const hZeile = (h) =>
+        `${h.rand} Rand-Bäume (${h.randNachbar} am Trauf, mit Nachbarn), ${h.innen} im Innern` +
+        (h.kronenFuss != null ? ` · Kronen-Fuß der Trauf-Gestalt ${h.kronenFuss} H` : "") +
+        (h.taeter.length ? ` · Täter (${h.taeter.length}): ${h.taeter.slice(0, 3).join(" | ")}` : "");
+    check(
+        "H WALDMANTEL (die Krone folgt dem Seitenlicht)",
+        H.randNachbar >= 1 && H.innen >= 1 && !H.taeter.length && H.kronenFuss != null && H.kronenFuss <= 0.2,
+        hZeile(H)
+    );
+    const S9 = out.S9 || { taeter: [] };
+    check(
+        "SELBSTTEST 9 (jeder Nachbar macht Bestand — H nennt den Rand-Baum mit kahlem Stamm)",
+        S9.taeter.some((x) => x.startsWith("Rand-Baum mit kahlem Stamm")),
+        hZeile(S9)
+    );
     check(
         "SELBSTTEST 4 (ein Gedächtnis mit gekippter Gestalt macht E rot)",
         E.selbst === true,
