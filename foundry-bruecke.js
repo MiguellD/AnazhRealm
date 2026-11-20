@@ -853,9 +853,11 @@ const foundryKanal = (() => {
     // DETAIL = PIXELFEHLER (E7): Halbkanten-Kollaps u → v über die Dreiecke `tris` (Nummern in I), in der Reihenfolge des kleinsten
     // Fehlers, solange er unter `eps` (m) bleibt. Die bleibende Ecke ist eine der L0 — jede Dreiecks-Ecke behält ihre Felder (Normale,
     // Farbe, Verband) und nimmt die Lage ihres Ziels; die Lage ist auf 1 mm verschweißt (eine flach schattierte Kiste ist EINE Fläche).
-    // Der Fehler einer Ecke = ihr Abstand zur neuen Fläche + der Fehler, den sie schon trug; ein Rand (Kante mit einem Dreieck: Umriss,
-    // Naht der Sicht) wandert nur entlang seiner selbst, kein Dreieck kippt (Normale dreht ≤ 60°), die Fläche bleibt mannigfaltig
-    // (Link-Bedingung). Antwort je Dreiecks-Ecke: `von` (Feld-Ecke der L0), `lage` (Ecke der Lage), `ur` (ihre Lage vorher), `xyz`.
+    // Der Fehler einer Ecke = der größte Abstand ihrer Lage zu JEDER Ebene der L0, die eine in sie gefallene Ecke trug (je Dreieck
+    // seine Ebene, je Rand dazu die Ebene senkrecht auf ihm) — nie der Abstand zur nächsten neuen Fläche: der lässt zwei Kollapse
+    // mit Fehler 0 eine Laibung je 57° und zusammen quer über die Fassade kippen (der Keil am Hochhaus). Ein Rand (Kante mit einem
+    // Dreieck: Umriss, Naht der Sicht) wandert nur entlang seiner selbst, kein Dreieck kippt (Normale dreht ≤ 60°), die Fläche bleibt
+    // mannigfaltig (Link-Bedingung). Antwort je Dreiecks-Ecke: `von` (Feld-Ecke der L0), `lage` (Ecke der Lage), `ur` (vorher), `xyz`.
     function __pixelKollaps(P, I, tris, eps) {
         const T = tris.length,
             von = new Int32Array(T * 3),
@@ -899,6 +901,48 @@ const foundryKanal = (() => {
             vt[x] = L;
             return L;
         };
+        // die Ebenen der L0 je Ecke (Normale, Abstand): jedes ihrer Dreiecke, jeder Rand dazu die Ebene senkrecht auf ihm
+        const ebene = Array.from({ length: W }, () => []);
+        const nimm = (x, nx, ny, nz, d) => {
+            for (const q of ebene[x]) if (Math.abs(q[0] - nx) < 1e-3 && Math.abs(q[1] - ny) < 1e-3 && Math.abs(q[2] - nz) < 1e-3 && Math.abs(q[3] - d) < 1e-4) return; // prettier-ignore
+            ebene[x].push([nx, ny, nz, d]);
+        };
+        const kanten = new Map();
+        for (let k = 0; k < T; k++) {
+            if (!lebt[k]) continue;
+            for (let j = 0; j < 3; j++) {
+                const a = ecke[k * 3 + j], b = ecke[k * 3 + ((j + 1) % 3)], key = Math.min(a, b) * W + Math.max(a, b); // prettier-ignore
+                kanten.set(key, (kanten.get(key) || 0) + 1);
+            }
+        }
+        for (let k = 0; k < T; k++) {
+            if (!lebt[k]) continue;
+            const e = [ecke[k * 3] * 3, ecke[k * 3 + 1] * 3, ecke[k * 3 + 2] * 3];
+            const ux = X[e[1]] - X[e[0]], uy = X[e[1] + 1] - X[e[0] + 1], uz = X[e[1] + 2] - X[e[0] + 2]; // prettier-ignore
+            const vx = X[e[2]] - X[e[0]], vy = X[e[2] + 1] - X[e[0] + 1], vz = X[e[2] + 2] - X[e[0] + 2]; // prettier-ignore
+            let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx; // prettier-ignore
+            const l = Math.hypot(nx, ny, nz);
+            if (!(l > 1e-12)) continue;
+            nx /= l;
+            ny /= l;
+            nz /= l;
+            const d = nx * X[e[0]] + ny * X[e[0] + 1] + nz * X[e[0] + 2];
+            for (let j = 0; j < 3; j++) nimm(ecke[k * 3 + j], nx, ny, nz, d);
+            for (let j = 0; j < 3; j++) {
+                const a = ecke[k * 3 + j], b = ecke[k * 3 + ((j + 1) % 3)]; // prettier-ignore
+                if (kanten.get(Math.min(a, b) * W + Math.max(a, b)) !== 1) continue;
+                const kx = X[b * 3] - X[a * 3], ky = X[b * 3 + 1] - X[a * 3 + 1], kz = X[b * 3 + 2] - X[a * 3 + 2]; // prettier-ignore
+                let rx = ky * nz - kz * ny, ry = kz * nx - kx * nz, rz = kx * ny - ky * nx; // prettier-ignore
+                const lr = Math.hypot(rx, ry, rz);
+                if (!(lr > 1e-12)) continue;
+                rx /= lr;
+                ry /= lr;
+                rz /= lr;
+                const dr = rx * X[a * 3] + ry * X[a * 3 + 1] + rz * X[a * 3 + 2];
+                nimm(a, rx, ry, rz, dr);
+                nimm(b, rx, ry, rz, dr);
+            }
+        }
         const hat = (k, x) => ecke[k * 3] === x || ecke[k * 3 + 1] === x || ecke[k * 3 + 2] === x;
         const nachbarn = (x) => {
             const N = new Set();
@@ -924,43 +968,6 @@ const foundryKanal = (() => {
             out[2] = ux * vy - uy * vx;
             return e;
         };
-        // Abstand des Punkts p zum Dreieck (a, b, c) — Ericson, Real-Time Collision Detection 5.1.5
-        const abstand = (p, a, b, c) => {
-            const d = (i, j) => [X[i] - X[j], X[i + 1] - X[j + 1], X[i + 2] - X[j + 2]];
-            const dot = (x, y) => x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
-            const ab = d(b, a), ac = d(c, a), ap = d(p, a);
-            const d1 = dot(ab, ap), d2 = dot(ac, ap); // prettier-ignore
-            let q;
-            if (d1 <= 0 && d2 <= 0) q = [0, 0];
-            else {
-                const bp = d(p, b), d3 = dot(ab, bp), d4 = dot(ac, bp); // prettier-ignore
-                if (d3 >= 0 && d4 <= d3) q = [1, 0];
-                else {
-                    const vc = d1 * d4 - d3 * d2;
-                    if (vc <= 0 && d1 >= 0 && d3 <= 0) q = [d1 / (d1 - d3), 0];
-                    else {
-                        const cp = d(p, c), d5 = dot(ab, cp), d6 = dot(ac, cp); // prettier-ignore
-                        if (d6 >= 0 && d5 <= d6) q = [0, 1];
-                        else {
-                            const vb = d5 * d2 - d1 * d6;
-                            if (vb <= 0 && d2 >= 0 && d6 <= 0) q = [0, d2 / (d2 - d6)];
-                            else {
-                                const va = d3 * d6 - d5 * d4;
-                                if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) {
-                                    const w = (d4 - d3) / (d4 - d3 + (d5 - d6));
-                                    q = [1 - w, w];
-                                } else {
-                                    const den = 1 / (va + vb + vc);
-                                    q = [vb * den, vc * den];
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            const x = ap[0] - ab[0] * q[0] - ac[0] * q[1], y = ap[1] - ab[1] * q[0] - ac[1] * q[1], z = ap[2] - ab[2] * q[0] - ac[2] * q[1]; // prettier-ignore
-            return Math.hypot(x, y, z);
-        };
         const n0 = [0, 0, 0],
             n1 = [0, 0, 0];
         // der Fehler des Kollaps u → v (Infinity: verboten)
@@ -973,19 +980,21 @@ const foundryKanal = (() => {
             for (const x of Nu) if (Nv.has(x)) gemeinsam++;
             for (const k of fan(u)) if (hat(k, v)) geteilt++;
             if (gemeinsam !== geteilt) return Infinity; // Link-Bedingung (Dreiecke an u·v: je ein Gegenüber)
-            let dmin = Infinity;
             for (const k of fan(u)) {
                 if (hat(k, v)) continue;
                 normale(k, -1, -1, n0);
-                const e = normale(k, u, v, n1);
+                normale(k, u, v, n1);
                 const l0 = Math.hypot(n0[0], n0[1], n0[2]),
                     l1 = Math.hypot(n1[0], n1[1], n1[2]);
                 if (!(l1 > 1e-12) || n0[0] * n1[0] + n0[1] * n1[1] + n0[2] * n1[2] < 0.5 * l0 * l1) return Infinity;
-                const d = abstand(u * 3, e[0], e[1], e[2]);
-                if (d < dmin) dmin = d;
             }
-            if (dmin === Infinity) dmin = Math.hypot(X[u * 3] - X[v * 3], X[u * 3 + 1] - X[v * 3 + 1], X[u * 3 + 2] - X[v * 3 + 2]);
-            return Math.max(fehler[v], fehler[u] + dmin);
+            // die Lage von v gegen jede Ebene der L0, die u trägt (die Ebenen von v hält sie schon: `fehler[v]`)
+            let d = fehler[v];
+            for (const q of ebene[u]) {
+                const e = Math.abs(q[0] * X[v * 3] + q[1] * X[v * 3 + 1] + q[2] * X[v * 3 + 2] - q[3]);
+                if (e > d) d = e;
+            }
+            return d;
         };
         // die Halde: je Ecke ihr bester Kollaps (Kosten, Ziel, Marke); veraltete Einträge fallen beim Ziehen
         const ziel = new Int32Array(W).fill(-1),
@@ -1055,6 +1064,8 @@ const foundryKanal = (() => {
             vt[u] = [];
             weg[u] = 1;
             fehler[v] = c;
+            for (const q of ebene[u]) nimm(v, q[0], q[1], q[2], q[3]);
+            ebene[u] = [];
             const ring = nachbarn(v);
             bewerte(v);
             for (const x of ring) bewerte(x);
