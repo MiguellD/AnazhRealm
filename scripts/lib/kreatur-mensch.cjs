@@ -874,7 +874,12 @@ async function menschBuehnen() {
         await bisDa("begegnung: die Leiber", () => !da());
         await uhrAuf(10, "begegnung: 10 Uhr", da);
         await stehtUm("begegnung: das Start-Dorf");
-        const schritt = () => [takt(dt), leute(dt)];
+        // DER VERKEHR GEHT MIT (Welle SAMEN), wie im Spiel (`_gameLoopTick`): der Schritt der Wagen vor den Leuten (`_verkehrSchritt`,
+        // im Sim-Schritt), nach ihnen Einsteigen, Heimfahrt, Aussteigen (`_tickVerkehr`, im Takt des Bilds). Ohne ihn stand ein Wagen im
+        // Zustand „fährt“ still und hielt seine Querung (`_verkehrVorrang`: die Bahn durch den Ort, den er hält) für immer — am
+        // Samen-Wurf wartete der Zeuge wohnhaus/schmiede #724672 3 600 Takte am Rand der Fahrbahn vor einem Wagen 25,5 m fort
+        // (vlong 1,915 m/s): er wich 0,712 m statt 22,2 m. Der Takt der übrigen Leute-Proben geht noch ohne ihn (offen, `leute`)
+        const schritt = () => [takt(dt), r._verkehrSchritt(dt), leute(dt), r._tickVerkehr()];
         // DER WEG: aus 9 m schräg vor ihm (± 0,6 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je halben Meter frei
         // von Grundriss — und derselbe 2 m daneben (der Vorbeigang); wer sonst dort steht, macht dem Spieler Platz
         const offen = (x, z) => r._landAt(x, z) && !["haus", "bau"].includes(r._imGrundriss(x, z, 0.5));
