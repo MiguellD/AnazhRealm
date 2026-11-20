@@ -485,7 +485,8 @@ class AnazhRealm_kreatur_erbe {
         const gx = Math.floor((ix + n / 2) / n);
         const gz = Math.floor((iz + n / 2) / n);
         let m = this._gauBildMemo;
-        if (!m || m.st !== st || m.gx !== gx || m.gz !== gz) m = this._gauBildMemo = { st, gx, gz, b: st.gaue.get(gx + "," + gz) };
+        if (!m || m.st !== st || m.gx !== gx || m.gz !== gz)
+            m = this._gauBildMemo = { st, gx, gz, b: st.gaue.get(gx + "," + gz) };
         return (m.b && m.b.reviere.get(ix - gx * n + n / 2 + (iz - gz * n + n / 2) * n)) || null;
     }
     // DER BESTAND EINER ART IN EINER REGION — der EINE Leser für jeden, der fragt, wie viele einer Gattung dort leben und was die
@@ -531,7 +532,10 @@ class AnazhRealm_kreatur_erbe {
         const iz = Math.floor(fz);
         const R = this._gauRevierAm(ix, iz);
         if (!R) return 0;
-        return R.frass[Math.min(zn - 1, Math.floor((fx - ix) * zn)) * zn + Math.min(zn - 1, Math.floor((fz - iz) * zn))] || 0;
+        return (
+            R.frass[Math.min(zn - 1, Math.floor((fx - ix) * zn)) * zn + Math.min(zn - 1, Math.floor((fz - iz) * zn))] ||
+            0
+        );
     }
     // DER TAKT-STEMPEL EINES AKTS (E2): der Takt NACH dem höchsten, den die Seite je bestellte — der Akt liegt nie vor dem Stand
     // des Gaus im Faden (ein Akt davor ließe ihn ab Takt 0 neu rechnen).
