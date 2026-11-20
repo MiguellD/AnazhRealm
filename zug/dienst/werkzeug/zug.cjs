@@ -1189,6 +1189,15 @@ function bauRumpf(args, { trocken = false } = {}) {
             git(["commit", "-q", "-m", `CI-Zeiten neu (der Zug heilt (T) ALT) [ci voll]\n\n${CO}`], ZUG);
             console.log("aufgefrischt: CI-Zeiten ((T) ALT)");
         }
+        // DIE DECKUNG NACH DEM AUFFRISCHEN (z633, 20.11.: das Neu-Messen warf die Einträge zweier neuer Schritte aus der Tafel —
+        // (T) UNGEMESSEN stand erst 35 min später in der CI, vier Abgaben fielen): dieselbe Linse noch einmal am aufgefrischten
+        // Kandidaten; was an der Zeit-Tafel dann noch rot ist, steht VOR dem Push beim Namen
+        const dn = spawnSync("node", ["scripts/diag-ci-deckung.cjs"], { cwd: ZUG, encoding: "utf8", maxBuffer: 1 << 26 });
+        const rest = zeitRest((dn.stdout || "") + (dn.stderr || ""));
+        if (rest.length) {
+            console.log(`KANDIDAT ROT an gate:ci-deckung nach dem Auffrischen der CI-Zeiten: ${rest.join(" | ")} (HEAD ${git(["rev-parse", "HEAD"]).slice(0, 8)}, nicht gestempelt)`);
+            return 1;
+        }
     }
     for (const [name, cmd, a, env] of pruef) {
         const r = laufe(cmd, a, env);
@@ -1685,6 +1694,12 @@ function selbsttestVorab(pr) {
         fs.rmSync(d, { recursive: true, force: true });
     }
 }
+// die roten Zeilen der Zeit-Tafel ((T) ALT · (T) UNGEMESSEN) aus der Ausgabe von diag-ci-deckung.cjs — nur sie, nie fremdes Rot
+const zeitRest = (text) =>
+    text
+        .split("\n")
+        .map((z) => z.trim())
+        .filter((z) => /\(T\) (ALT|UNGEMESSEN)/.test(z) && !z.startsWith("✅"));
 function selbsttest(args = []) {
     const fall = [];
     let faelle = 0;
@@ -1694,6 +1709,11 @@ function selbsttest(args = []) {
         console.log(fall.length ? `zug selbsttest --vorab ROT: ${fall.join(" · ")}` : `zug selbsttest --vorab grün (${faelle} Fälle)`);
         return fall.length ? 1 : 0;
     }
+    pr(
+        "Zeit-Tafel nach dem Auffrischen: (T) ALT und (T) UNGEMESSEN beim Namen, eine grüne Ausgabe und fremdes Rot bleiben still",
+        zeitRest("  ❌ (T) UNGEMESSEN: Knicken nach Euler\n  ✅ (T) Zeit-Tafel\n  ❌ (D) fremd\n❌ (T) ALT: 9 Merges").join("|") === "❌ (T) UNGEMESSEN: Knicken nach Euler|❌ (T) ALT: 9 Merges" &&
+            !zeitRest("  ✅ (T) Zeit-Tafel am Kopf\nGRÜN").length
+    );
     pr("a kürzere Kommentar-Seite", loeseBlock("x.js", ["// lang lang", "// zwei"], [], ["// kurz"]).z.join() === "// kurz");
     const au = loeseBlock("x.js", ["// a", "// c", "// d"], ["// a", "// b", "// c", "// d"], ["// a", "// b", "// d"]);
     pr("a beide strichen verschiedene Kommentar-Zeilen → beide Streichungen", au && au.kl === "a" && au.z.join() === "// a,// d");
