@@ -457,8 +457,8 @@ function nachricht(e) {
 //   der STAND leben-core `gauAnfang` am Takt 0 (voller Gründer-Bestand), `gauBis` bis zum Takt des Auftrags mit den Akten; ein
 //             Stand, der hereinreist (`stand`, Laden oder Mitspieler), ersetzt ihn. Ein Auftrag VOR dem Stand des Gaus oder mit
 //             anderen Akten als den gewirkten rechnet ab Takt 0 neu (die Antwort nennt es: `zeit.abNull`).
-// Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, takt, akte, lesen?, packen?, stand? }
-// Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, stand? }
+// Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, takt, akte, lesen?, packen?, stand?, tode? }
+// Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, stand?, tode? }
 // Ein Gau, den die Seite nicht mehr hält, geht (`gau-geht`: Feld und Lauf — sein Stand lebt als Bytes bei der Seite).
 const gaue = new Map();
 const gauFelder = new Map();
@@ -618,6 +618,8 @@ function gauAuftrag(msg) {
             s: Array.from(e.F.S.subarray(i * e.F.Z, (i + 1) * e.F.Z)),
             lr: Array.from(e.F.LR.subarray(i * e.F.Z, (i + 1) * e.F.Z)),
         }));
+    // die Tode des letzten Takts (nur eine Linse fragt sie, Takt für Takt): Kennung, Gattung, Ursache, Revier
+    if (msg.tode) antwort.tode = (z.ereignis ? z.ereignis.tod : []).map((d) => ({ id: d.t.id, g: d.t.g, ursache: d.ursache, wo: d.wo })); // prettier-ignore
     if (msg.packen) {
         const p0 = performance.now();
         antwort.stand = K.gauPack(e.g);

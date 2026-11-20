@@ -86,7 +86,10 @@ async function kreaturProben(r, T, opts) {
                 spielZeit: s.spielZeit,
                 faunaLifecycle: s.faunaLifecycle, // prettier-ignore
             }),
-            leihe(r, { _creatureAiFrame: 0, _faunaStroeme: null, _spielerLageAlt: null }),
+            // DER GAU GEHÖRT DER UHR (Leben C2b): seine Bilder, Akte und offenen Annahmen beginnen je Probe leer — die Uhr kehrt nach
+            // jeder Probe zurück, ein Bild der Probe davor trug ihren Takt und stempelte jeden Akt danach in die Zukunft (der
+            // Begleiter des Stands fand sein Tier nie, kein Kitz der Jagd stand im Bild)
+            leihe(r, { _creatureAiFrame: 0, _faunaStroeme: null, _spielerLageAlt: null, _gauBildStand: null, _gauHaltStand: null, _gauOffen: null }), // prettier-ignore
         ];
         pm.copy(P0);
         kamera(0, -1);
@@ -261,6 +264,30 @@ async function kreaturProben(r, T, opts) {
     };
     // Täter-Einspielung (Selbsttest): eine Methode der Instanz überdecken, im Aufräumen der Bühne zurück (oder früher über `ab`).
     const decke = (name, fn, ab = aufraeumen) => ab.push(leihe(r, { [name]: fn(r[name]) }));
+    // DER BESTAND EINER ART liest jede Probe am EINEN Leser des Spiels (`_bestandArt`): Hirsch und Wolf leben im Gau-Faden (Leben
+    // C2b), ihr Bestand ist das Bild seiner letzten Antwort. `gauLies(keys)` bestellt das Bild der Reviere der Regionen `keys` am
+    // Takt des Horizonts mit dem Ruf des Spiels (`_gauBis` → `_gauAntwort`, wie `_gauTakt` je Bild — dazu die Reviere, die das
+    // Bild schon trägt); eine Bestellung des Spiels im Flug landet vorher. Kein Bestand ist 0, ehe ihn jemand gelesen hat.
+    const gauLies = async (keys) => {
+        const [T, je] = [A._bestandGesetz().B.taktS, new Map()];
+        for (const key of keys) {
+            const [ix, iz] = key.split(",").map(Number);
+            const o = r._gauOrt(ix, iz);
+            (je.get(o.gx + "," + o.gz) || je.set(o.gx + "," + o.gz, { o, lesen: new Set() }).get(o.gx + "," + o.gz)).lesen.add(o.revier); // prettier-ignore
+        }
+        for (const [k, { o, lesen }] of je) {
+            const b = r._gauBild(o.gx, o.gz);
+            for (let i = 0; b.flug; i++) {
+                if (i > 2400) throw new Error(`der Gau ${k} antwortet nicht binnen 60 s`);
+                await sleep(25);
+            }
+            const L = [...new Set([...lesen, ...b.reviere.keys()])].sort((p, q) => p - q);
+            const takt = Math.max(0, Math.floor(r._feldHorizont() / T));
+            const aktN = (r._gauHalt().get(k) || []).length;
+            [b.flug, b.bestellt] = [true, Math.max(b.bestellt, takt)];
+            r._gauAntwort(b, await r._gauBis(o.gx, o.gz, takt, { lesen: L }), L.join(), aktN);
+        }
+    };
     // DER ALTE JAGD-WEG als Täter (jagdkreis, rudel): im Schritt-Tempo geradewegs auf das Ziel, kein Platz im Rudel, keine Hetze
     const schrittJagd = () =>
         decke(
@@ -786,26 +813,25 @@ async function kreaturProben(r, T, opts) {
     await buehne("jagd", async () => {
         r.setGameMode("pfad");
         s.player.hp = 1e9;
-        // der heutige Riss als Täter: er tötet das Opfer im Nah-Kreis wie fern (die Zahl, kein Jäger am Leib) — oder fällt nah aus
-        if (taeter === "riss") decke("_kreaturRiss", () => (c) => r._creatureCombatDeath(c, "jagd"));
-        if (taeter === "jagd-schritt") schrittJagd();
-        if (taeter === "riss-verloren") decke("_kreaturRiss", (alt) => (c, j) => r._kreaturNah(c) || alt.call(r, c, j));
-        // der Jäger fällt mitten in seinem Riss (28.10.: sein Tier verhungerte im Gesetz, und er fiel sofort, statt erst nach dem
-        // Biss — `_faelltNach`; 9 von 10 Opfern ohne Maul). Den Bruch stellt der Täter SICHER her: der Jäger fällt, sobald der
-        // Riss ihn nennt (fern fällt er mit) — vorher wartete er auf einen Hungertod mitten im Riss, den nur manche Saat
-        // brachte (z282: blind)
-        if (taeter === "jaeger-faellt")
-            decke("_kreaturRiss", (alt) => (c, j) => (alt.call(r, c, j), r._creatureNaturalDeath(j, "hunger", false)));
         const nah = (c) => ab(c.position, pm) < A.ANALOG_NAH_M;
-        const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
-        // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
-        const genannt = new Set();
-        decke("_kreaturRiss", (alt) => (c, j) => {
-            if (nah(c) && !c.userData._rissVon) (R.risse++, genannt.add(c));
-            return alt.call(r, c, j);
-        });
-        // jeder Tod durch Jagd im Nah-Kreis hat ein Maul am Leib — und der Jäger, den sein Riss nannte, lebt (VERWAIST, sein Jäger
-        // fiel mitten im Riss, zählt als ohne Jäger)
+        // der Riss des Gesetzes als Täter: er tötet das Opfer im Nah-Kreis wie fern (die Zahl, kein Jäger am Leib) — je Takt des
+        // Lebenszyklus das erste Kitz des Bestands im Nah-Kreis
+        if (taeter === "riss")
+            decke("tickFaunaLifecycle", (alt) => (...a) => {
+                const o = alt.apply(r, a);
+                const c = s.creatures.find((q) => q.userData._bestand && q.userData.soul === "wesen" && nah(q));
+                if (c) r._creatureCombatDeath(c, "jagd");
+                return o;
+            });
+        if (taeter === "jagd-schritt") schrittJagd();
+        // der Übergang verliert den Riss: der Tod im Nah-Kreis erreicht den Bestand nicht (sein Akt „aus“ fällt aus)
+        if (taeter === "riss-verloren")
+            decke("_bestandAus", (alt) => (c) => (nah(c) ? void (c.userData._bestand = null) : alt.call(r, c)));
+        const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0, lebend: 0, da: 0 };
+        // ein Riss: ein Tod durch Jagd im Nah-Kreis an einem Tier des Bestands (sein Kopf — im Gau für Hirsch und Wolf, Leben C2b)
+        const genannt = new Map();
+        // jeder Tod durch Jagd im Nah-Kreis hat ein Maul am Leib — und der Jäger lebt (VERWAIST, sein Jäger fiel mitten im Riss,
+        // zählt als ohne Jäger)
         decke("_creatureCombatDeath", (tod) => (c, quelle) => {
             if (quelle === "jagd" && nah(c)) {
                 R.nah++;
@@ -817,9 +843,22 @@ async function kreaturProben(r, T, opts) {
                             r._kreaturIstBeute(j, c) &&
                             r._kreaturBissSpalt(j, c) <= r._kreaturBissReich(j)
                     );
+                const t = c.userData._bestand;
+                if (t && !genannt.has(t.id)) (R.risse++, genannt.set(t.id, [r._bestandKey(t.x, t.z), t.g]));
             }
             return tod.call(r, c, quelle);
         });
+        // der Jäger fällt mitten in seinem Riss (28.10.: sein Tier verhungerte im Gesetz, und er fiel sofort, statt erst nach dem
+        // Biss — `_faelltNach`; 9 von 10 Opfern ohne Maul). Den Bruch stellt der Täter SICHER her: jeder Jäger, dessen Maul das
+        // Opfer erreicht, fällt, ehe es stirbt (vorher wartete er auf einen Hungertod mitten im Riss, den nur manche Saat brachte,
+        // z282: blind)
+        if (taeter === "jaeger-faellt")
+            decke("_creatureCombatDeath", (tod) => (c, quelle) => {
+                if (quelle === "jagd" && nah(c))
+                    for (const j of s.creatures.filter((q) => q !== c && r._kreaturIstBeute(q, c) && r._kreaturBissSpalt(q, c) <= r._kreaturBissReich(q))) // prettier-ignore
+                        r._creatureNaturalDeath(j, "hunger", false);
+                return tod.call(r, c, quelle);
+            });
         // die Richtung der Jagd auf eine Himmelsachse gerastet (am Jagd-Weg _kreaturJagdZug)
         if (taeter === "jagd")
             decke(
@@ -906,12 +945,24 @@ async function kreaturProben(r, T, opts) {
                 });
                 geschoben.clear();
             }
+            // die Kitze, die leben (ihr Tier im Bestand), vor dem Übergang
+            const kitze = beute.filter((c) => s.creatures.includes(c) && c.userData._bestand).map((c) => c.userData._bestand); // prettier-ignore
             // der Übergang: der Spieler geht fort, jenseits des Nah-Kreises, dann der nächste Takt des Lebenszyklus
             pm.x += 300;
             takt(dt);
             s.spielZeit += 10;
             r.tickFaunaLifecycle();
-            for (const c of genannt) R.gefallen += !s.creatures.includes(c);
+            // jedes Opfer fehlt im Bestand seiner Art, jedes lebende Kitz steht in ihm — gelesen am EINEN Leser (`_bestandArt`)
+            const wo = (t) => [r._bestandKey(t.x, t.z), t.g, t.id];
+            const L = [...[...genannt].map(([id, [key, g]]) => [key, g, id]), ...kitze.map(wo)];
+            s.spielZeit += 10;
+            await gauLies([...new Set(L.map((q) => q[0]))]);
+            const imBestand = ([key, g, id]) => {
+                const B = r._bestandArt(key, g);
+                return !!B && B.tiere.some((t) => t.id === id);
+            };
+            for (const [id, [key, g]] of genannt) R.gefallen += !imBestand([key, g, id]);
+            for (const t of kitze.filter((q) => !genannt.has(q.id))) (R.lebend++, (R.da += imBestand(wo(t))));
             genannt.clear();
             leer(1);
         }
@@ -958,10 +1009,26 @@ async function kreaturProben(r, T, opts) {
         // die alten Defekte: der Verband ohne seinen Zug (Ausrichtung und Kohäsion), ohne den Alarm aus zweiter Hand, die
         // Flucht endet am Radius
         if (taeter === "herde-zerfall") decke("_kreaturVerbandZug", () => () => {});
-        // das Revier je Glied statt je Wurf (w28-wander-revier): jedes Glied legt seinen Anker drei Leinen weit in seine eigene
-        // Richtung — die Herde hat kein gemeinsames Revier mehr und zerfällt beim Wandern (eine Leine weit hielt der Zug des
-        // Verbands sie noch: 1)
-        if (taeter === "herde-revier")
+        // das Revier je Glied statt je Wurf (w28-wander-revier): das Glied liest den Anker seines Leittiers nicht (der Leit-Anker
+        // ist ihm verborgen) und legt seinen eigenen drei Leinen weit in seine eigene Richtung — die Herde hat kein gemeinsames
+        // Revier mehr und zerfällt beim Wandern (eine Leine weit hielt der Zug des Verbands sie noch: 1). Seit das Ziel dem
+        // Verband gehört (Posen-Gesetz H1) übernimmt das Glied den Leit-Anker — die verschobene Lage allein traf nur das Leittier
+        if (taeter === "herde-revier") {
+            decke(
+                "_creatureCharacterWander",
+                (alt) =>
+                    function (c, ...rest) {
+                        const leit = this._kreaturLeittier(c);
+                        const LA = leit !== c && leit.userData.wanderAnchor;
+                        if (!LA) return alt.call(this, c, ...rest);
+                        leit.userData.wanderAnchor = { x: LA.x, z: LA.z };
+                        try {
+                            return alt.call(this, c, ...rest);
+                        } finally {
+                            leit.userData.wanderAnchor = LA;
+                        }
+                    }
+            );
             decke(
                 "_kreaturRevier",
                 (alt) =>
@@ -971,6 +1038,7 @@ async function kreaturProben(r, T, opts) {
                         return alt.call(this, c, b, leash);
                     }
             );
+        }
         if (taeter === "herde-alarm")
             decke(
                 "_kreaturVerbandAlarm",
@@ -2258,8 +2326,18 @@ async function kreaturProben(r, T, opts) {
         // Reihe (`_feldFolgeSteht`, w28-mp-boden — im Spiel tritt sie hinter die Takte, die die neuen nahen Regionen noch nachholen)
         aufraeumen.push(leihe(r, { _feldFolgeSteht: () => true }));
         const seite = { n: 0 };
-        if (taeter === "reload-fern") decke("_bestandReist", () => () => r._bestandNah());
-        if (taeter === "reload-kennung") decke("_annahmeKennung", () => (key) => key + ".ich." + ++seite.n);
+        // der Täter des Stands: die Akte seines Gaus reisen nicht (der Begleiter ist ein Kopf des Gaus, Leben C2b)
+        if (taeter === "reload-fern") decke("_gauImStand", () => () => []);
+        // der Täter der Kennung: die Annahme zählt die Sitzung statt der Akte ihres Gaus (die neue Seite beginnt wieder bei 1)
+        if (taeter === "reload-kennung")
+            decke("_gauAnnahme", (alt) => (c, ...rest) => {
+                alt.call(r, c, ...rest);
+                const t = c.userData._bestand;
+                const akt = r._gauHalt().get(t.gx + "," + t.gz).find((x) => x.art === "ein" && x.id === t.lokal);
+                r._gauOffen.delete(t.id);
+                akt.id = t.lokal = t.lokal.replace(/\d+$/, String(++seite.n));
+                r._gauOffen.set((t.id = t.gau + t.lokal), t);
+            });
         const heim = land(30, 12);
         const b = tier(heim, "wesen");
         r.assignCreatureTask(b, "follow_player", {}, { silent: true });
@@ -2273,13 +2351,19 @@ async function kreaturProben(r, T, opts) {
         const b2 = r._restoreCreatureFromSnapshot(snapB);
         const neu = tier(heim, "wesen");
         r._bestandAdoptieren();
-        const R = r._bestandRegionen().regionen[r._bestandKey(heim.x, heim.z)];
+        // der Gau antwortet nach dem Takt beider Akte (die Uhr rückt zwei Takte, kein Takt des Bestands): der Begleiter findet sein
+        // Tier im Bild, die Annahme steht im Bestand der Art — gelesen am EINEN Leser (`_bestandArt`)
+        const key = r._bestandKey(heim.x, heim.z);
+        const neuId = neu.userData._bestand.id;
+        s.spielZeit += 2 * A._bestandGesetz().B.taktS;
+        await gauLies([key]);
+        const B = r._bestandArt(key, A.TETRAPODA_SOUL_MAP.wesen);
         return {
             ...wunde,
-            tierNah: r._bestandNah().includes(r._bestandKey(heim.x, heim.z)),
+            tierNah: r._bestandNah().includes(key),
             mitTier: !!b2 && !!b2.userData._bestand && b2.userData._bestand.id === kennung,
-            kennung: [kennung, neu.userData._bestand.id],
-            annahmeTritt: !!R && R.tiere.includes(neu.userData._bestand),
+            kennung: [kennung, neuId],
+            annahmeTritt: !!B && B.tiere.some((t) => t.id === neuId),
         };
     });
 
@@ -3863,7 +3947,11 @@ function urteil(name, z) {
         );
         soll(
             R.risse >= 1 && R.gefallen === R.risse,
-            `der Riss geht im Übergang verloren: ${R.risse - R.gefallen} von ${R.risse} Rissen im Nah-Kreis ohne Tod`
+            `der Riss geht im Übergang verloren: ${R.risse - R.gefallen} von ${R.risse} Rissen im Nah-Kreis stehen nach ihm noch im Bestand ihrer Art`
+        );
+        soll(
+            R.da >= 1,
+            `der Bestand liest die Kitze nicht: ${R.da} von ${R.lebend} lebenden nach dem Übergang in ihm (das Gesetz nimmt manche, Soll ≥ 1 — sonst ist der Riss oben vakuös)`
         );
     }
     if (name === "herde") {
@@ -4210,8 +4298,8 @@ const TAETER = {
     sattel: [["sattel", /mountedArch/]],
     reload: [
         ["reload", /geheilt|Gier/],
-        ["reload-fern", /kehrt ohne sein Tier -?\d+,-?\d+\.ich\.1 wieder/],
-        ["reload-kennung", /trägt die Kennung -?\d+,-?\d+\.ich\.1 eines Tiers im Stand/],
+        ["reload-fern", /kehrt ohne sein Tier g-?\d+,-?\d+\/a\d+\.ich\.1 wieder/],
+        ["reload-kennung", /trägt die Kennung g-?\d+,-?\d+\/a\d+\.ich\.1 eines Tiers im Stand/],
     ],
     huepfer: [
         ["huepfer", /ohne Aktion|Luft-Anteil/],

@@ -2189,20 +2189,16 @@ class AnazhRealm_kreatur_leben {
         let beuteN = gau ? gau.koepfe.beute : 0;
         for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
         const beute = Math.min(1, beuteN / B.beuteVoll);
-        const K = {};
-        for (const g in n) K[g] = 0;
-        for (const c of feld.zellen) {
-            const je = {};
-            for (const g in n) {
-                const l = LG.lebensraum(g, c.klasse, LG.L);
-                if (l > 0) K[g] += l * feld.ha * BG.nahrung(diet[g], c.aesung, beute);
-                je[g] = l * c.aesung;
+        // je Zelle Lebensraum × Äsung (der Jungwuchs, den der Fraß liest); K aus der EINEN Formel (`_bestandKapazitaet`)
+        if (zellen)
+            for (const c of feld.zellen) {
+                const je = {};
+                for (const g in n) je[g] = LG.lebensraum(g, c.klasse, LG.L) * c.aesung;
+                zellen.push({ x: c.x, z: c.z, je });
             }
-            if (zellen) zellen.push({ x: c.x, z: c.z, je });
-        }
         const aus = {};
         for (const g in n) {
-            const k = B.kopfJeHa * K[g];
+            const k = this._bestandKapazitaet(g, feld, beute);
             const riss = BG.riss(jaeger[g], gejagt[g] / B.beuteVoll, B);
             aus[g] = Object.assign(
                 { n: n[g], K: +k.toFixed(2), frass: BG.frass(diet[g], B), riss, beute: beuteVon },

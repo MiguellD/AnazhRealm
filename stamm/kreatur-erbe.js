@@ -265,6 +265,7 @@ class AnazhRealm_kreatur_erbe {
         };
         if (opt.lesen) msg.lesen = opt.lesen;
         if (opt.packen) msg.packen = true;
+        if (opt.tode) msg.tode = true; // nur eine Linse: die Tode des letzten Takts (Kennung, Gattung, Ursache, Revier)
         if (opt.stand) msg.stand = opt.stand;
         return this._fadenQuelle().then(() => this._gauFrage(msg, opt.stand ? [opt.stand.buffer] : []));
     }
@@ -397,6 +398,38 @@ class AnazhRealm_kreatur_erbe {
         const o = this._gauOrt(ix, iz);
         const b = this._gauBildStand && this._gauBilder().get(o.gx + "," + o.gz);
         return (b && b.reviere.get(o.revier)) || null;
+    }
+    // DER BESTAND EINER ART IN EINER REGION — der EINE Leser für jeden, der fragt, wie viele einer Gattung dort leben und was die
+    // Region ihr trägt (Spiel, Linse, Probe): die Gattungen des Gesetzes (`_gauRolle`) aus dem Bild ihres Gaus (`_gauRevier`), die
+    // Altlast aus dem Verzeichnis ihrer Region (`_kreaturBestand`). → { n, K, tiere, gau } — oder null: der Gau hat das Revier
+    // (noch) nicht geantwortet (kein Bestand ist 0, ehe ihn jemand gelesen hat). K ist die Kapazität der Formel des Stamms
+    // (`_bestandKapazitaet`) über dem Feld der Region — dieselbe, die der Faden je Zelle rechnet (voxel-worker `gauKern`).
+    _bestandArt(key, g) {
+        if (this._gauRolle(g)) {
+            const R = this._gauRevier(key);
+            if (!R) return null;
+            const tiere = R.tiere.filter((t) => t.g === g);
+            const B = AnazhRealm._bestandGesetz().B;
+            const beute = Math.min(1, R.koepfe.beute / B.beuteVoll);
+            const K = +this._bestandKapazitaet(g, this._bestandFeld(key), beute).toFixed(2);
+            return { n: tiere.length, K, tiere, gau: true };
+        }
+        const b = this._kreaturBestand(null, key)[g];
+        const R = this._bestandRegionen().regionen[key];
+        const tiere = R ? this._bestandFreie(R).filter((t) => t.g === g) : [];
+        return { n: b.n, K: b.K, tiere, gau: false };
+    }
+    // DIE KAPAZITÄT EINER GATTUNG über dem Feld `feld` einer Region (`_bestandFeld`), bei der Beute-Dichte `beute` (0..1): Köpfe je
+    // ha × Σ je Zelle Lebensraum der Boden-Klasse × Fläche × Nahrung nach der Kost an der Äsung (tetrapoda BESTAND_GESETZ).
+    _bestandKapazitaet(g, feld, beute) {
+        const [BG, LG] = [AnazhRealm._bestandGesetz(), AnazhRealm._lebensraumGesetz()];
+        const d = this._bestandDiet()[g];
+        let K = 0;
+        for (const c of feld.zellen) {
+            const l = LG.lebensraum(g, c.klasse, LG.L);
+            if (l > 0) K += l * feld.ha * BG.nahrung(d, c.aesung, beute);
+        }
+        return BG.B.kopfJeHa * K;
     }
     // DER FRASS DES GAUS AM ORT (Feld-Einheiten wie das Leben-Overlay: ≤ 0 abgeäst; E3 — die Fraß-Schicht gehört dem Gau): die
     // Zelle des Reviers aus dem Bild, 0 ohne Bild.

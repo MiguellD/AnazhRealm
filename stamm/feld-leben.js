@@ -2229,6 +2229,10 @@ class AnazhRealm_feld_leben {
         if (!v || typeof v !== "object") return; // ein Stand ohne Leben (vor feld.K2#2) lässt das Leben der Sitzung stehen
         const lf = (st.lifeField = new Map());
         [this._lebenStand, this._lebenWecker, this._annahmeOffen] = [null, null, null];
+        // die offenen Annahmen und die Bilder der Gaue gehören der Sitzung (ihre Datensätze halten Leiber der alten Welt): der
+        // Stand bringt nur die Akte, der Faden antwortet ihm neu — sonst band der Leser des Gaus den wiedergekehrten Begleiter
+        // nie an sein Tier (sein Datensatz trug noch den Leib vor dem Laden)
+        this._gauOffen = this._gauBildStand = null;
         st.feldAkte = [];
         st.faunaBestand = undefined;
         this._lebenGen = (this._lebenGen || 0) + 1;
