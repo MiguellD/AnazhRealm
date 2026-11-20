@@ -1,6 +1,6 @@
 # Abgabe Welle `samen-ein-baum` — EIN Samen-Baum, der Würfel je Los, je DSL-Op ihr Strom (OMEN GTX 1060, 20.11.)
 
-**Kopf:** `samen-ein-baum` **b279ed1ce** (die S0-Nacht am Median, Soll 22,4, über 02447ebc7 und der Vorprüfung 60fb7c67d), Probe-Tag `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]`. Davor kam die Vorprüfung 60fb7c67d, leer über dem Merge-Kopf e07bb72db. Davor kam die Heilung 9f70eaca1 (leer über a69426b28), siehe die nächsten beiden Abschnitte. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
+**Kopf:** `samen-ein-baum` **d0104e7ec** (Merge main e0c93072 mit Laub-Kante 5, dazu der Median über den EINEN `rang` b3afaedc0; davor b279ed1ce, 02447ebc7 und die Vorprüfung 60fb7c67d), Probe-Tag `[gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]`. Davor kam die Vorprüfung 60fb7c67d, leer über dem Merge-Kopf e07bb72db. Davor kam die Heilung 9f70eaca1 (leer über a69426b28), siehe die nächsten beiden Abschnitte. Der erste Abgabe-Kopf war b0b898696 über dem Baum 1c574fb1b:
 - die Welle 3e68a828a;
 - Merge main 3da9d9ae9 (Kosmos) und Merge `ein-schreiber-wand` c16c528cc mit dem Register-Anker (151204179);
 - die Prüfstand-Seite (fc148849f);
@@ -8,6 +8,16 @@
 - Merge main 31ea3847e (Wand, stein-ein-gesetz) und Merge main 3e362397e (z635: los-huelle-2, Zeit-Kalender, Vorab-Statik; V18.546.349).
 
 Zweig ab main 92b7afd07. Ich stempele nicht. Roh liegt auf dem OMEN unter `p3/n1911/samen/`.
+
+## Der Kopf d0104e7ec (Wort des Koordinators 19:00 / 19:53: Code-Check ROT 1 von 22 an b279ed1c, Laub-Kante 5 in main)
+- **Die Rang-Wand der Stall-Akte** (Lauf 44781952988: „eigene Ränge neben rang: Träger diag-pruefbuehne.cjs“): Der Median des Lichts je Albedo zieht jetzt über den EINEN `rang` (welt-boot; in der Seite derselbe Text) mit `aufsteigend` (b3afaedc0). Der Ausdruck der Wand trifft die alte Zeile und die neue nicht. Die Zahl ist unverändert.
+- **Merge main e0c93072** (z646: Laub-Kante 5 mit dem LH-Schnitt in `scripts/diag-ankunft.cjs` ~1460, V18.546.353) ohne Konflikt; D9 (~2211) bleibt.
+  - Der zuerst lokal gebaute Merge mit `origin/w28-laub-kante-5` f6d83c42 (834093644) ist ersetzt. Er war nie gepusht, und sein Baum ist derselbe bis auf die Versions-Stufe (18 Dateien, nur `?v=`).
+- **Am Gerät** (gpu-lauf, `s0/kette.txt`):
+  - am Merge mit f6d83c42: gate:ankunft GRÜN, gate:pruefbuehne-licht zweimal 22,79 GRÜN;
+  - am Kopf d0104e7ec: gate:pruefbuehne-licht 22,79 GRÜN;
+  - jedes Urteil auch über `urteil-zeile.cjs`.
+- **Die Nacht-Lichter** (z647, `w28-nacht-lichter`) waren beim Push noch nicht in main und sind darum nicht im Kopf.
 
 ## Die S0-Nacht am Kopf b279ed1ce (Wort des Koordinators 18:0x: die Soll in der Einheit des Gesetzes, EINE Zahl)
 - **Die Zahl** ist der Median je Pixel: Licht ÷ Albedo des Pixels × Albedo des Stoffs (0,1177), zurück in sRGB.
