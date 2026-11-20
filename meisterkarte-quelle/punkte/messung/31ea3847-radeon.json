@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T08:36:59.828Z",
+ "zeit": "2026-11-20T09:25:23.791Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -19002,6 +19002,460 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.wirtschaft.markt#2",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.7,
+    "takte": 13,
+    "fremdS": 201.47,
+    "kerne": 5.981,
+    "fensterKerne": 8.584,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-19464-profil-5m75VQ --no-p",
+      99.09
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-17488-profil-DUkGKO --no-p",
+      12.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.2
+     ]
+    ],
+    "dienerS": 27.47,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.42
+     ]
+    ],
+    "geraetS": 30.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.8
+     ],
+     [
+      "svchost.exe",
+      9.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 90.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T09:25:23.791Z",
+   "abdruck": "ff4a347eac14",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.7,
+    "takte": 13,
+    "fremdS": 201.47,
+    "kerne": 5.981,
+    "fensterKerne": 8.584,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-19464-profil-5m75VQ --no-p",
+      99.09
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-17488-profil-DUkGKO --no-p",
+      12.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.2
+     ]
+    ],
+    "dienerS": 27.47,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.42
+     ]
+    ],
+    "geraetS": 30.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.8
+     ],
+     [
+      "svchost.exe",
+      9.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 90.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T09:25:23.791Z",
+   "abdruck": "a55d35aff3b4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.handel#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.7,
+    "takte": 13,
+    "fremdS": 201.47,
+    "kerne": 5.981,
+    "fensterKerne": 8.584,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-19464-profil-5m75VQ --no-p",
+      99.09
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-17488-profil-DUkGKO --no-p",
+      12.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.2
+     ]
+    ],
+    "dienerS": 27.47,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.42
+     ]
+    ],
+    "geraetS": 30.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.8
+     ],
+     [
+      "svchost.exe",
+      9.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 90.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T09:25:23.791Z",
+   "abdruck": "6088b6d1c3f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.handel#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.7,
+    "takte": 13,
+    "fremdS": 201.47,
+    "kerne": 5.981,
+    "fensterKerne": 8.584,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-19464-profil-5m75VQ --no-p",
+      99.09
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-17488-profil-DUkGKO --no-p",
+      12.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.2
+     ]
+    ],
+    "dienerS": 27.47,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.42
+     ]
+    ],
+    "geraetS": 30.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.8
+     ],
+     [
+      "svchost.exe",
+      9.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 90.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T09:25:23.791Z",
+   "abdruck": "0f9dc2b36d23",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.handel#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.7,
+    "takte": 13,
+    "fremdS": 201.47,
+    "kerne": 5.981,
+    "fensterKerne": 8.584,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-19464-profil-5m75VQ --no-p",
+      99.09
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-17488-profil-DUkGKO --no-p",
+      12.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.2
+     ]
+    ],
+    "dienerS": 27.47,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.42
+     ]
+    ],
+    "geraetS": 30.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.8
+     ],
+     [
+      "svchost.exe",
+      9.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 90.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T09:25:23.791Z",
+   "abdruck": "dc4da5ee1a60",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.handel#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.7,
+    "takte": 13,
+    "fremdS": 201.47,
+    "kerne": 5.981,
+    "fensterKerne": 8.584,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-19464-profil-5m75VQ --no-p",
+      99.09
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-17488-profil-DUkGKO --no-p",
+      12.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.2
+     ]
+    ],
+    "dienerS": 27.47,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.42
+     ]
+    ],
+    "geraetS": 30.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.8
+     ],
+     [
+      "svchost.exe",
+      9.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 90.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T09:25:23.791Z",
+   "abdruck": "7e640b43f809",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.handel#1",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.handel#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.52,
+   "grund": "Frist der Probe 29 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 29 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 30,
+   "fremd": {
+    "s": 33.7,
+    "takte": 13,
+    "fremdS": 201.47,
+    "kerne": 5.981,
+    "fensterKerne": 8.584,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-19464-profil-5m75VQ --no-p",
+      99.09
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-17488-profil-DUkGKO --no-p",
+      12.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.2
+     ]
+    ],
+    "dienerS": 27.47,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.42
+     ]
+    ],
+    "geraetS": 30.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.8
+     ],
+     [
+      "svchost.exe",
+      9.88
+     ],
+     [
+      "SearchIndexer.exe",
+      1.2
+     ]
+    ],
+    "eigenS": 90.73,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T09:25:23.791Z",
+   "abdruck": "13a70bf21b3b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.wirtschaft.handel#1",
    "modus": "session"
   }
  },
