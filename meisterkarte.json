@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "a71e06c7",
-    "zeit": "2026-11-20T14:23:44.696Z",
+    "zeit": "2026-11-20T14:40:22.708Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1586,7 +1586,7 @@
           "punkte": 0,
           "staffel": "1 = die Dichte der Bestäuber korreliert mit dem Blüten-Anteil am Ort (r ≥ 0,5) · 2 = sie folgen der Pflege-Geste (Feld K5) und der Uhr",
           "messung": "werkbank bild --zeit an der Mess-Wiese mit Klassen-Maske insekt.",
-          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +25)",
+          "beleg": "Maschine: gehalten: 9 Orte, Blüten-Anteil 0.241–0.829 (364 Blumen in 610 Gliedern), 41 Bestäuber, r 0.8 · der Leser sieht 81 Tiere binnen 300 m (Soll ≥ 6 Orte, Σ ≥ 9, r ≥ 0,5) an d3708675 headless · gehalten: Feld der Mitte 0.658 → 0.821 · Bestäuber der Mitte 5.4/5.557 → 9.314 nach der Geste, Nachbar 5.929/6.543 → 6.457 (Rauschen ±0.614) · Uhr: Mittag 15.771 → Mitternacht 0.171 (Aktivität 0.01) → Mittag 10.786 (Soll: Mitte +≥ max(0,5; 2·Rauschen; 10 %), Nachbar im Rauschen, Nacht ≤ 0,2 × Mittag) an d3708675 headless — offen: luftwasser.K4#1 radeon: Station seit der Messung geändert — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · luftwasser.K4#1 gtx: Konsum seit der Messung geändert (R6: phyto-core.js, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +25)",
           "schlupfloch": "Ein Partikel-Schwarm ohne Feld-Leser: die Korrelation mit Blüten am Ort und die Pflege-Mutation verlangen das Feld.",
           "maschine": true
         },
@@ -3024,7 +3024,7 @@
           "punkte": 1,
           "staffel": "1 = der Spieler geht durch die Tür bis Keller und Dachboden ohne Vertikal-Sprung > 0,3 m in einem Frame (Anti-Clip-Hub = ROT), an einem Haus · 2 = jedes Haus des Start-Dorfs, Innenraum lesbar (Luma ≥ 15 % des Außen-Schattens, Schatten K4), beide Geräte",
           "messung": "Spielgang-Station haus: Tür öffnen, Treppe, Keller (kellerY −2,40 m), Dachboden, Ego und Third, mittags und nachts.",
-          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +34) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49994388888888885\"}) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +50)",
+          "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +34) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · siedlung.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +50)",
           "schlupfloch": "Den Keller zählen statt zu begehen: die Station geht hinein; Labor und Welt durch ein abgedunkeltes Labor anzugleichen: die Albedo zählt Material K1 absolut.",
           "aenderung": "Die 1 der Synthese stand auf Gesetz-Merkmalen, während die Klasse haus am Kopf kein Ist trägt (B60) → 0; Labor = Welt zählt Studios K4, der Ton Material K3 (V16, V22); Schnitt haus-innen 0 → 1 (W10, b9537781).",
           "maschine": true
@@ -3794,7 +3794,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 31ea3847: Last: Referenz f 2,108 (Faden 2,108 · alle Kerne 1,81; vor 103,7/300,7 ms, nach 165,5/475 ms, Ruhe 78,5/262,4 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=ana · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an b7ed8419: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,533; vor 115,2/329,5 ms, nach 139,6/346,8 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
+          "beleg": "Maschine: gehalten: Gehen 108 Bilder · max 58.61 ms · 21.30 % > 33 ms · Fahrt 85 Bilder · max 66.97 ms · 37.65 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 21.30 % > 33 ms | Fahrt: 37.65 % > 33 ms an d39e0d6e radeon · gehalten: Gehen 107 Bilder · max 66.64 ms · 14.02 % > 33 ms · Fahrt 92 Bilder · max 75.03 ms · 19.57 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — daneben: Gehen: 14.02 % > 33 ms | Fahrt: 19.57 % > 33 ms an d39e0d6e gtx — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 31ea3847: Last: Referenz f 1,683 (Faden 1,683 · alle Kerne 1,322; vor 132,6/346,3 ms, nach 106,8/315,8 ms, Ruhe 78,8/262 ms seit 2026-11-16) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=an · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an b7ed8419: Last: Referenz f 1,558 (Faden 1,558 · alle Kerne 1,533; vor 115,2/329,5 ms, nach 139,6/346,8 ms, Ruhe 89,6/226,2 ms seit 2026-11-18) · fremd: git.exe -c core.quotepath=false -c safe.directory=* -c cor",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4387,9 +4387,9 @@
     ],
     "art": {
       "linse": 1,
-      "ungemessen": 19,
+      "ungemessen": 18,
       "rot": 0,
-      "anderes": 29
+      "anderes": 30
     }
   },
   "ohneHebel": [
