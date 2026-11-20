@@ -332,7 +332,7 @@
         return h >>> 0;
     }
     // DER GENERATOR IST GEREICHT (Ein-Schreiber-Wand, Größe Samen): der Kern hasht nur den Samen aus seinen vier Zahlen, den Strom
-    // zieht er aus `samen(same)` des Wirts — der EINE Strom der Welt (gelaende-core `samenStrom`, im Stamm `_samenStrom`). Ohne
+    // zieht er aus `samen(same)` des Wirts — der EINE Strom der Welt (samen-core `samenStrom`, im Stamm `_samenStrom`). Ohne
     // `samen` bricht er laut; einen eigenen Generator trägt kein Kern (bis 20.11. stand hier ein mulberry32).
     function strom(saat, takt, art, i, samen) {
         if (typeof samen !== "function") throw new Error("leben-core strom: der Wirt reicht keinen Strom (samen)");
@@ -354,7 +354,7 @@
         for (const k in ZEIT_JAGD) if (ZJ[k] == null) throw new Error("leben-core bestand: dem gereichten Gesetz fehlt " + k);
         const ankerZJ = (f, D) => anker(f, D, ZJ.anker);
         if (!wirt || !wirt.beute || !wirt.jaeger) throw new Error("leben-core bestand: der Wirt nennt beute und jaeger");
-        // der Strom der Welt, den der Wirt reicht (`samen(same)` → () => u): Seite und Faden reichen gelaende-core `samenStrom`
+        // der Strom der Welt, den der Wirt reicht (`samen(same)` → () => u): Seite und Faden reichen samen-core `samenStrom`
         const SAMEN = wirt.samen;
         if (typeof SAMEN !== "function") throw new Error("leben-core bestand: der Wirt reicht keinen Strom (wirt.samen)");
         const spanneVon = (v, wer) => {
@@ -1373,7 +1373,7 @@
         return Object.freeze({ ZEIT, RAUM, FENSTER, anfang, schritt, klon, verwundbar, bedarfVon, gauFeld, feldTakt, feldAesen, gauAnfang, gauSchritt, gauBis, akt, koepfe, tiereIn, frassAm, gauPack, gauEntpack });
     }
 
-    // ── SELBSTTEST — der Prüf-Strom ist der gereichte Strom der Welt (`samen`, gelaende-core `samenStrom`) an fester Saat ──────
+    // ── SELBSTTEST — der Prüf-Strom ist der gereichte Strom der Welt (`samen`, samen-core `samenStrom`) an fester Saat ──────
     function selbsttest(samen) {
         if (typeof samen !== "function") throw new Error("leben-core selbsttest: es fehlt der Strom (samen)");
         const u = samen(0x1eb3e);

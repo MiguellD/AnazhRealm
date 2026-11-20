@@ -44,16 +44,14 @@ const BASIS = {
     ],
     // S-S2 (Steigen): der Körper als Zylinder — die Kante stößt hinter dem Antritt an den Estrich
     kappe: [ZYLINDER],
-    // die Null-Spur: ohne Speicher und Keller hatte die rechte Spur 0 m
-    spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller) ? 0.90 : 0;"]],
+    // die Null-Spur: ab drei Geschossen trägt die rechte Spur den Lauf OG→2.OG — ohne Breite steigt er nicht. Die Basis der Welle L
+    // (0 m nur ohne Speicher UND Keller) traf im Dorf seit w28-bau-rezept-tuer kein Haus mehr (jedes dreigeschossige trägt eins von
+    // beiden): der Fall war blind, sein Rot kam vom Speicherlauf unter der Schräge. Der Defekt nimmt der Spur ab drei Geschossen die Breite.
+    spur: [[KERN, "||P.keller||levels.length>=3) ? 0.90 : 0;", "||P.keller)&&levels.length<3 ? 0.90 : 0;"]],
     // der Speicherlauf folgte stur der Kehre — bei drei Geschossen trat er unter der Schräge aus (Kopfraum 1,2 m)
-    austritt: [
-        [
-            KERN,
-            "    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;\n    if(austritt(dir)<=zBandTop){",
-            "    {",
-        ],
-    ],
+    // das flache Dach trug einen Dachraum (vor w28-bau-rezept-tuer): der Speicherlauf des Arkaden-Hauses stieg durch die Platte
+    dachlos: [[KERN, "const dachRaum = hasAttic && ROOFMODE!=='flat';", "const dachRaum = hasAttic;"]],
+    austritt: [[KERN, "    if(!frei(dir) && frei(-dir)) dir=-dir;\n    if(frei(dir)){", "    {"]],
     // K10: das Dorf stand flach — der Dorf-Boden 0 und jedes Haus auf y = 0, gleich wo die Welt es trug
     flach: [
         [
@@ -355,6 +353,7 @@ function b3Zahl(o) {
         laeufe: 0,
         klemm: 0,
         kopfZu: 0,
+        ohneDach: 0, // Speicher-Austritte, über denen der Strahl nichts trifft (der Kopf über dem Dach, 99)
         kopfMin: 99,
         ohneAntritt: 0,
         eg: 0,
@@ -375,6 +374,7 @@ function b3Zahl(o) {
             }
             z.laeufe++;
             if (c.klemm > 0) z.klemm++;
+            if (c.kopfraum === 99 && t.loft) z.ohneDach++;
             if (c.kopfraum != null) {
                 if (c.kopfraum < z.kopfMin) z.kopfMin = c.kopfraum;
                 if (c.kopfraum < o.PH) z.kopfZu++;
@@ -408,6 +408,9 @@ function urteil(o) {
     if (z.klemm) f.push(`B3 Kopf: ${z.klemm} von ${z.laeufe} Treppen-Läufen enden im Solid`);
     if (z.kopfZu)
         f.push(`B3 Kopfraum: ${z.kopfZu} Austritte unter ${o.PH} m (min ${z.kopfMin} m — der Kopf steht im Dach)`);
+    // DER SPEICHER LIEGT UNTER SEINEM DACH (w28-bau-rezept-tuer): trifft der Strahl über dem Austritt eines Speicherlaufs nichts,
+    // steht der Kopf über dem Dach — bis hier zählte 99 als Kopfraum (das gasthaus #846868 mit flachem Dach, Dorf 7/18)
+    if (z.ohneDach) f.push(`B3 Dach: ${z.ohneDach} Speicher-Austritte ohne Dach über dem Kopf (der Lauf steigt durch das Dach)`);
     if (!(z.eg >= 3) || !(z.og >= 1) || !(z.speicher >= 1))
         f.push(`B3 Steigen: die Probe trifft zu wenig Läufe (EG→OG ${z.eg} · OG→OG ${z.og} · Speicher ${z.speicher})`);
     if (z.alleOben !== z.alle)
@@ -464,6 +467,7 @@ hauptLauf(async () => {
                 kappe: ["B3 Steigen"],
                 spur: ["B3 Steigen"],
                 austritt: ["B3 Kopfraum"],
+                dachlos: ["B3 Dach"],
                 platte: ["B4 Keller-Decke"],
                 flach: ["B5 Weltgrund"],
             };
@@ -484,8 +488,7 @@ hauptLauf(async () => {
         const f = urteil(o);
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
-        if (process.env.STUDIO_BEGEHEN_JSON)
-            jsonSchreiben(process.env.STUDIO_BEGEHEN_JSON, o);
+        if (process.env.STUDIO_BEGEHEN_JSON) jsonSchreiben(process.env.STUDIO_BEGEHEN_JSON, o);
     } finally {
         await browser.close();
         server.close();

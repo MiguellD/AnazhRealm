@@ -19,7 +19,9 @@ const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 function studioSeite() {
     const gepostet = [];
     const f = { addEventListener() {}, parent: { postMessage: (m) => gepostet.push(jsonKlon(m)) } };
-    vm.runInNewContext(ausDatei("worlds/huelle/huelle.js"), f);
+    vm.createContext(f);
+    vm.runInContext(ausDatei("samen-core.js"), f); // der Samen-Baum vor der Hülle (Welle SAMEN: ihr Würfel zieht aus ihm)
+    vm.runInContext(ausDatei("worlds/huelle/huelle.js"), f);
     return { B: f.AnazhHuelle.bruecke({ welt: "probe" }), H: f.AnazhHuelle, gepostet };
 }
 const zufall = studioSeite().H.zufall(SAAT);

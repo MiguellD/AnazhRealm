@@ -211,11 +211,18 @@ function taeter(inj) {
         [r._gaitBodenY, r.createBlueprint] = [(x, z) => P._gaitBodenY.call(r, x, z) + 0.12, () => false];
     // sohle (K8): die Sohle der Pfote kippt nicht mit dem Boden unter ihr (vor K8 huf hielt sie die Lage des Rumpfs)
     if (inj === "sohle") r._gaitSohlenKipp = (...a) => (a[4] ? { laengs: 0, quer: 0 } : P._gaitSohlenKipp.apply(r, a));
-    // ring (K8): der Ring bleibt am Boden des ersten Weltbilds stehen (vor gelaende-ring-wachstum: Radeon Ring 2 von 4)
+    // ring (K8): der Ring bleibt am Boden des ersten Weltbilds stehen (vor gelaende-ring-wachstum: Radeon Ring 2 von 4) — sein
+    // Ziel steht am EINEN Schreiber auf 2 (`_ringWaechst` liest es), nie ein zweiter Schreiber hinter ihm: der klemmte den Schritt
+    // 2 → 3 je Takt zurück, und jeder Schritt regte die Welt (`_weltRegt`, w28-nadel-bestand) — sie stand nie
     if (inj === "ring")
         r._ringWaechst = function () {
-            P._ringWaechst.call(this);
-            this.state._activeRingRadius = Math.min(2, this.state._activeRingRadius);
+            const ziel = this.state.chunkRingRadius;
+            this.state.chunkRingRadius = Math.min(2, ziel || 4);
+            try {
+                P._ringWaechst.call(this);
+            } finally {
+                this.state.chunkRingRadius = ziel;
+            }
         };
     // nexus (K8): der Takt des Nexus wirft nach der Wanduhr in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht)
     // sprung (K9): der Abdruck ist das feste Tempo der Seele (vor leib-k2-sprung) — Masse und Kraft ziehen nichts

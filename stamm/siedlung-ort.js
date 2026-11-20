@@ -1374,20 +1374,15 @@ class AnazhRealm_siedlung_ort {
         const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});
         const n = (Number(z[art]) || 0) + 1;
         if (!blick) z[art] = n;
-        const s = `${wm.seed || "anazh-realm-seed"}:${art}:${n}`;
-        let h = 2166136261 >>> 0;
-        for (let i = 0; i < s.length; i++) {
-            h ^= s.charCodeAt(i);
-            h = Math.imul(h, 16777619) >>> 0;
-        }
-        return h >>> 0 || 1;
+        // der EINE Text-Hash (Welle SAMEN: FNV-1a, samen-core `samenHash`)
+        return globalThis.__samenCore.samenHash(`${wm.seed || "anazh-realm-seed"}:${art}:${n}`) || 1;
     }
     // Der Strom EINES Samens (LCG, [0, 1)): was ein Akt würfelt — Streuung, Drehung, Größe — ist eine Funktion seines Samens,
     // auf jedem Peer und nach jedem Reload dieselbe. Das EINE LCG der Welt: Leser `_streamRng` (der Strom eines Namens),
     // `dslCtx` (der Programm-Strom), `_dslSpawnStudioItems` und die Nexus-Komposition.
-    // Das LCG selbst steht im Gelände-Kern (`__gelaendeCore.samenStrom`): Seite und Faden lesen dieselbe Funktion.
+    // Das LCG selbst steht im Samen-Baum (`__samenCore.samenStrom`): Seite und Faden lesen dieselbe Funktion.
     _samenStrom(same) {
-        return globalThis.__gelaendeCore.samenStrom(same);
+        return globalThis.__samenCore.samenStrom(same);
     }
     // DER SAME EINES WERKS (Gegenprüfung 08.10.): EIN Same je Bauplan — der Wurf der Werkstatt (`_grownSeed` · `_rockSeedBase`
     // · `_crystalSeedBase`), sonst sein Name (ein Studio-Rezept ohne Bauplan: seine id) —, gehasht in die Gestalt-Wahl

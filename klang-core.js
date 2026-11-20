@@ -531,15 +531,12 @@
     };
 
     // ── Werkzeuge der Texturen (rein, deterministisch) ──
+    // Der Strom einer Saat ist der EINE Generator (Welle SAMEN: samen-core.js `__samenCore.mulberry32`, gelesen je Ruf am
+    // globalen Namen — die Lese-Spur der Platte sieht ihn); die Saat bleibt ihre 32 Bit (`saat >>> 0`).
     function umweltRng(saat) {
-        var a = saat >>> 0;
-        return function () {
-            a = (a + 0x6d2b79f5) >>> 0;
-            var t = a;
-            t = Math.imul(t ^ (t >>> 15), t | 1);
-            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        var S = root.__samenCore;
+        if (!S) throw new Error("klang-core: der Samen-Kern fehlt (samen-core.js lädt vor jedem Kern)");
+        return S.mulberry32(saat >>> 0);
     }
     // RBJ-Biquad, Direct Form I, in place (lowpass · highpass · bandpass mit 0 dB Spitze).
     function bq(x, sr, typ, f, q, von, bis) {

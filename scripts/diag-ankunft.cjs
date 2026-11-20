@@ -2295,17 +2295,26 @@ async function probe(arg) {
         for (const a of st.architectures.filter((a) => !vor.has(a)).reverse()) r.removeArchitecture(a);
         // DER MITSPIELER: „baue dorf hier", gesprochen an der Plattform, läuft beim Sprecher (Quelle human) und bei
         // einem Mitspieler 200 m weiter mit anderer Gier (Quelle remote) — dasselbe Dorf an derselben Stelle.
+        // JEDER LAUF AUF DEMSELBEN GRUND (Welle SAMEN): der Mitspieler hat das Dorf des Sprechers nie gebaut — in seiner Welt
+        // liegt weder dessen Erdbau noch dessen Wahl. Fällt das Dorf nur mit seinen Häusern, bleiben Platte, Grund und Wege
+        // seines Orts liegen (`_erdbauGrundFaellt`: „die Platte des Orts bleibt"), und der zweite Akt am selben Anker wählt
+        // auf ihnen neu (`_ortMitTrasse`, siedlung-k3-heil). Bis hier verglich die Probe einen ersten mit einem zweiten Akt: am
+        // Würfel je Los stand das Dorf des Mitspielers 0,19 m daneben, ein Haus 1,9 m (2,03 m); vier Akte am selben Grund — der
+        // Sprecher, der Mitspieler, der Sprecher, ein naher Mitspieler — stehen byte-gleich (0,00 m). Darum fällt nach jedem
+        // Lauf, was er der Welt gab: der Erdbau seiner Orte (`_erdbauOrtFaellt`), ihre Wahl (`_ortPlaene`), ihr Gedächtnis.
+        // Dieselbe Wurzel fand w28-laub-kante-5 an ihrem Kopf (der Mitspieler 29,83 m daneben, „jeder Peer in seiner Welt“):
+        // ihr Schnitt räumte Erdbau und Gedächtnis; hier räumt der Lauf dazu die Wahl seiner Orte und bricht beim Namen,
+        // wenn ein Erdbau nicht fällt.
         {
             const satz = r.parseChatToDsl("baue dorf hier");
             const haeuserVon = async (quelle, wo, gier) => {
                 st.playerMesh.position.set(wo.x, wo.y, wo.z);
                 st.yaw = gier;
                 const vorM = new Set(st.architectures);
-                // JEDER PEER IN SEINER WELT: der Mitspieler hat den Akt des Sprechers nie gesehen — der Akt fällt ganz (Häuser,
-                // der Erdbau seines Orts `_erdbauOrtFaellt`, sein Gedächtnis in settlementCells), bevor der nächste ihn spricht.
-                // Bis hier blieb der Erdbau des Sprechers liegen, und der Mitspieler wählte um ihn herum (29,83 m daneben).
                 const wm = st.worldMeta || {};
-                const [erdVor, zellVor] = [new Set(Object.keys(wm.erdbau || {})), new Set(Object.keys(wm.settlementCells || {}))];
+                const vorE = new Set(Object.keys(wm.erdbau || {}));
+                const vorP = new Set((r._ortPlaene || new Map()).keys());
+                const vorZ = new Set(Object.keys(wm.settlementCells || {}));
                 r.dslRun(satz.program, { source: quelle });
                 let n = -1;
                 let ruhig = 0;
@@ -2318,8 +2327,9 @@ async function probe(arg) {
                 const neuM = st.architectures.filter((a) => !vorM.has(a) && /^haus_/.test(a.type || ""));
                 const orte = neuM.map((a) => ({ x: a.position.x, z: a.position.z }));
                 for (const a of st.architectures.filter((a) => !vorM.has(a)).reverse()) r.removeArchitecture(a);
-                for (const k of Object.keys(wm.erdbau || {})) if (!erdVor.has(k)) r._erdbauOrtFaellt(k);
-                for (const k of Object.keys(wm.settlementCells || {})) if (!zellVor.has(k)) delete wm.settlementCells[k];
+                for (const k of Object.keys(wm.erdbau || {})) if (!vorE.has(k) && !r._erdbauOrtFaellt(k)) throw new Error(`D9: der Erdbau ${k} des Laufs fällt nicht`); // prettier-ignore
+                for (const k of [...(r._ortPlaene || new Map()).keys()]) if (!vorP.has(k)) r._ortPlaene.delete(k);
+                for (const k of Object.keys(wm.settlementCells || {})) if (!vorZ.has(k)) delete wm.settlementCells[k];
                 return orte;
             };
             ueber(P);

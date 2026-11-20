@@ -2109,8 +2109,16 @@ class AnazhRealm_stoff_material {
                 const glut = atmo.lichtGlut[licht];
                 if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
                 // die Leuchtdichte des Datums steht im Bild: ein durchsichtiges Glas mischt sein Fragment mit seiner Deckkraft
-                // (0,42) — ohne die Teilung trüge das Fenster 42 % seiner cd/m²
-                em = em.add(glut.div(Te.materialOpacity));
+                // (0,42) — ohne die Teilung trüge das Fenster 42 % seiner cd/m². DAS GLAS EINER LEUCHTE (nacht-lichter, Datum mit
+                // `glasStreu`): die Glut ist seine Leuchtdichte je Luma der Vertex-Farbe (`_leuchtFlaeche`), die Ecke trägt im Ton
+                // die Bestrahlung ihrer Flamme (fachwerk `laterneGlasTon`) — die Scheibe ist in der Mitte hell, an der Ecke 3 EV
+                // dunkler. Bis hier stand der Kopf flach in 640 cd/m² (nachts das Glas als ein Fleck Orange).
+                const LGl = globalThis.__fachwerkCore.LICHT_GESETZ[licht];
+                const jeEcke =
+                    LGl && LGl.glasStreu > 0
+                        ? glut.mul(Te.dot(Te.attribute("color", "vec3"), Te.vec3(0.2126, 0.7152, 0.0722)))
+                        : glut;
+                em = em.add(jeEcke.div(Te.materialOpacity));
             }
             knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
         }

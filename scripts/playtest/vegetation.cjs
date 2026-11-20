@@ -5,13 +5,13 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-// `foliageRadius` (der Rand am Schirm, lod.K5); ferne warten in `pendingFoliageChunks`, bis der
+// Laub-Rand (`_laubRand`, das Gesetz: der Haushalt am gebauten Ring); ferne warten in `pendingFoliageChunks`, bis der
 // Radius (mit dem gebauten Ring) zu ihnen wächst. Spawn leicht → wächst.
 async function checkBandV18275FoliageGrowth({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        // Headless (Null-Renderer): der Aktuator setzt foliageRadius sofort auf den Rand am Schirm (lod.K5, `_randSchirm`).
-        out.headlessFull = !st.renderer || !st.renderer._isHeadlessNull || st.foliageRadius === r._randSchirm("laub");
+        // Headless (Null-Renderer): der Laub-Rand ist der Haushalt ganz (lod.K5, `_randSchirm`).
+        out.headlessFull = !st.renderer || !st.renderer._isHeadlessNull || r._laubRand() === r._randSchirm("laub");
         const pm = st.playerMesh;
         if (!pm) {
             out.skip = true;
@@ -20,14 +20,15 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         const span = r._voxelChunkConfig().span;
         const pcx = Math.floor(pm.position.x / span),
             pcz = Math.floor(pm.position.z / span);
-        // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = der Start-Radius des
-        // Boots (`PERF_FOLIAGE_RADIUS_MIN`); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
+        // (1) kleiner Rand → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = 70 m, der Rand eines
+        // kleinen gebauten Rings (`_laubRand` = Haushalt ∩ Ring); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
         // Chunk-Eck (die Genesis-Plattform steht seit K16 auf dem Ursprung) fiel der eigene Chunk heraus.
-        st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
+        r._laubRand = () => 70; // der Rand eines kleinen Boot-Rings (die Probe stellt das Gesetz, `delete` unten)
         out.farDeferred = r._foliageChunkInRadius(pcx + 6, pcz + 6) === false;
         out.nearIncluded = r._foliageChunkInRadius(pcx, pcz) === true;
-        // (2) Radius wächst → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
-        st.foliageRadius = 9999;
+        // (2) Rand wächst (der Ring baut aus) → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
+        r._laubRand = () => 9999;
+        r._weltRegt(); // sein Ereignis (der Schritt des Rings, `_ringWaechst`): der Schlaf des Wuchses hört es, er fragt das Gesetz nie
         out.farIncludedAfterGrow = r._foliageChunkInRadius(pcx + 6, pcz + 6) === true;
         // (3) CONSUM: _tickFoliageGrowth drainiert einen wartenden, in-radius Chunk-Key. Drain-Mechanik
         // isoliert: _frameOverBudget (pausiert Wachstum legitim, siehe (4)) hier AUS — die warme
@@ -45,7 +46,8 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         const tk2 = `${pcx + 2},${pcz + 2}`;
         const tk3 = `${pcx + 4},${pcz + 4}`;
         for (const k of [tk2, tk3]) if (st.voxelChunks && st.voxelChunks.has(k)) r._disposeVoxelChunk(k);
-        st.foliageRadius = 9999;
+        r._laubRand = () => 9999;
+        r._weltRegt();
         st.pendingFoliageChunks = new Set([tk3, tk2]); // der fernere zuerst eingereiht: die Wahl folgt der Nähe
         st._frameOverBudget = true;
         r._wuchsNaechster = undefined;
@@ -60,6 +62,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         st._frameOverBudget = false;
         r._tickFoliageGrowth();
         out.growthResumesWhenFree = !st.pendingFoliageChunks.has(tk2); // jetzt gedrainiert
+        delete r._laubRand; // das Gesetz des Rands kehrt zurück
 
         const ppD = st.playerMesh?.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // CONSUM (behavioral): die Scatter-Region des Spielers (der Warmup baut sie nicht) bei voller vs
@@ -199,7 +202,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         check("Foliage-Growth-Band (realm)", false, res.error);
         return;
     }
-    check("headless (Null-Renderer) → foliageRadius = der Rand am Schirm (lod.K5)", res.headlessFull);
+    check("headless (Null-Renderer) → der Laub-Rand ist der Haushalt (lod.K5)", res.headlessFull);
     if (!res.skip) {
         check("kleiner Radius → ferner Chunk wartet, Spieler-Chunk füllt", res.farDeferred && res.nearIncluded);
         check("der Radius wächst → der ferne Chunk wird in-radius (Welt wächst)", res.farIncludedAfterGrow);

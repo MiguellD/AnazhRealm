@@ -777,9 +777,15 @@ class AnazhRealm_siedlung_verkehr {
                 const g = b.leib;
                 if (!g || !W.entry) continue;
                 const werk = b.orte.werk;
+                // WER NOCH ANKOMMT, STEIGT NICHT EIN (das Gesetz von `_tickBewohner`: wer ankommt, handelt nicht, bis seine Ankunft
+                // dran ist): springt die Uhr, steigt jeder Fahrer aus (`_verkehrSprung`) — bis hier stieg, wer vor dem Sprung an
+                // seinem Werk stand, im selben Bild mit Ziel und Lage von VOR dem Sprung wieder ein und verbrauchte die erste Fahrt
+                // seines Wagens (`W.ankunft`); seine Ankunft ließ ihn danach aus- und neu einsteigen, und der Wagen trug die
+                // Geschichte der Seite (VK-V: stadt-voll 10 Uhr, Fahrer #4263651351 in Wagen 20, Bild 0 um 1,5 cm getrennt, 3 von 3 Läufen)
                 if (
                     W.zustand === "steht" &&
                     !b.amSteuer &&
+                    !b.ankunft &&
                     b.da &&
                     b.ziel === werk &&
                     Math.hypot(g.position.x - werk.x, g.position.z - werk.z) < V.einsteigM

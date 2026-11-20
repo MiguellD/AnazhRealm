@@ -1159,7 +1159,10 @@ async function lebenBuehnen() {
         const rolleVon = (sl) => (typeof sl.rolle === "string" ? sl.rolle : "wohnhaus");
         const tueren = plan.slots.map((sl, si) => {
             const [c, sn, t] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0), sl.tuer || { x: 0, z: 0 }];
-            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
+            // der Eingang (fachwerk `eingangVon`, die EINE Regel, die auch der Wirt fährt): beim Hof-Haus das Tor vor dem Hof — dort liegt
+            // die Mitte des Rings (`ringStand`), an ihr misst die Schranke `ringM`; bis w28-bau-rezept maß sie an der Tür, 5–9 m dahinter
+            const e = sl.tuer && window.__fachwerkCore.eingangVon(sl), ez = e && e.hof ? e.z : t.z; // prettier-ignore
+            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, ein: { x: S.ox + sl.x + t.x * c + ez * sn, z: S.oz + sl.z - t.x * sn + ez * c }, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
         });
         const heimVon = new Map(tueren.map((t) => [t.k, t]));
         // im gedrehten Rechteck q (Mitte, Halbachsen, phi) samt Rand — der Platz dreht wie der Wirt ihn liest, der Acker längs phi
@@ -1272,7 +1275,7 @@ async function lebenBuehnen() {
                 const drinnen = !!b.drinnenSoll;
                 const st = standVon(b, ziel);
                 const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
-                const fernM = tuer ? ab(st.ur || st, tuer) : 0;
+                const fernM = tuer ? ab(st.ur || st, tuer.ein) : 0;
                 if (fernM > ringM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(fernM)} m von ${tuer.k}` }); // prettier-ignore
                 // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben; am Steuer
                 // ist es der Wagen selbst, `_bewohnerSoll`: kein Haus, an dem er vorbeifährt)
@@ -1309,6 +1312,31 @@ async function lebenBuehnen() {
                 // prettier-ignore
                 if (tk.rolle !== "wohnhaus" && tk.k !== "haus#" + b.heim) gebunden[tk.rolle] = (gebunden[tk.rolle] || 0) + 1;
         for (const ro in rollen) rollen[ro][2] = gebunden[ro] || 0;
+        // DAS GESETZ DER BINDUNG JE ROLLE (Welle SAMEN): wie oft lässt das Gesetz eine Rolle ohne Fremden? Die Wahl ist ein Wurf
+        // (tetrapoda `zielWahl`: Güte × Nähe, die Menge aus dem Samen — je Ort mit dem Anteil seines Nutzens), die Nähe fällt mit
+        // 0,5^((d / wegM)²): die EINE Scheune der Stadt am Würfel je Los, 95 m vom Herd ihrer Leute (arbeit 2 gegen den Markt 5),
+        // zog keinen — am alten Wurf zog eine von zwei Scheunen genau einen. Die Probe fragt den Kern selbst (`tagesBindung`, je
+        // Mensch `GESETZ_PROBEN` Samen) und fordert den Fremden nur, wo das Gesetz die Leere unwahrscheinlich macht (`GESETZ_LEER`):
+        // die Rolle, die der Wurf leer lassen darf, nennt sie mit ihrer Wahrscheinlichkeit, nie still.
+        const [KC, TC, GESETZ_PROBEN] = [window.__koerperCore, globalThis.__tetrapodaCore, 200];
+        const orteK = KC.tagesOrte(plan, (si) => tueren.some((t) => t.si === si && hausAn(t)));
+        const siVon = new Map(tueren.map((t) => [t.k, t.si]));
+        const gesetzLeer = {};
+        for (const ro in rollen) gesetzLeer[ro] = 1;
+        let gesetzN = 0;
+        for (const b of S.liste) {
+            const heimI = orteK.findIndex((o) => o.slot === siVon.get("haus#" + b.heim));
+            if (heimI < 0) continue;
+            gesetzN++;
+            const zahl = {};
+            for (let k = 0; k < GESETZ_PROBEN; k++) {
+                const B = KC.tagesBindung(TC, (b.same ^ Math.imul(k + 1, 0x9e3779b9)) >>> 0, b.rolle, heimI, orteK, null);
+                for (const art of new Set([B.werk, B.mahl, B.abend, B.besuch].filter((i) => i >= 0 && i !== heimI).map((i) => orteK[i].art))) // prettier-ignore
+                    if (art in gesetzLeer) zahl[art] = (zahl[art] || 0) + 1;
+            }
+            for (const art in zahl) gesetzLeer[art] *= 1 - zahl[art] / GESETZ_PROBEN;
+        }
+        for (const ro in gesetzLeer) gesetzLeer[ro] = q3(gesetzLeer[ro]);
         return {
             haeuser: tueren.length,
             gesamt: liste().length,
@@ -1316,6 +1344,8 @@ async function lebenBuehnen() {
             zielOrte: fremd.size,
             orte: tueren.filter((t) => t.rolle !== "wohnhaus").length + (pz ? 1 : 0) + aecker.length,
             rollen,
+            gesetzLeer,
+            gesetzN,
             bruchN: bruch.length,
             bruch: bruch.slice(0, 3),
             ringM: q3(ringM),
@@ -2114,10 +2144,13 @@ async function lebenBuehnen() {
         return z;
     });
 }
+// die Leere einer Rolle, die das Gesetz der Bindung trägt (zielplan `gesetzLeer`): so wahrscheinlich bleibt sie nach dem Gesetz
+// ohne Fremden — darunter ist die leere Rolle der Täter
+const GESETZ_LEER = 0.01;
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 // B4 — die Welt-Bindung, Saat 1 (gemessen am Feld des Haupt-Fadens: `--bestand-welt`): Wolf und Beute je 4 Jahre, Land, Zellen
 // der Beute und Σ K des Gaus (0, 0) der Heimat — das Soll des Gaus im Faden (G1). Am 20.11. neu gemünzt, seit der Kern den EINEN
-// Strom der Welt zieht (gelaende-core `samenStrom` statt seines mulberry32): dieselbe Rechnung an anderen Würfen, das Feld
+// Strom der Welt zieht (samen-core `samenStrom` statt seines mulberry32): dieselbe Rechnung an anderen Würfen, das Feld
 // gleich (Land 2240 · Zellen 10884 · Σ K 33989); vorher Wolf 27 … 58 · Beute 11339 … 14476 (18.11., Kopf 2672c409)
 const GAU_B4 = {
     wolf: [24, 36, 40, 44, 62, 47, 52, 53, 57, 58],
@@ -2169,7 +2202,7 @@ function lebenUrteil(name, z, soll) {
         return;
     }
     // DER ZIEL-PLAN (mensch Breite): zu jeder der fünf Stunden trägt höchstens jeder Zwanzigste kein Ziel, um 10 Uhr steht die
-    // Hälfte an ihrem Werk-Ort, und jede Rolle des Plans hat einen Ort, den ein Fremder am Tag erreicht
+    // Hälfte an ihrem Werk-Ort, und jede Rolle des Plans hat einen Ort, den ein Fremder am Tag erreicht, wo das Gesetz es trägt
     if (name === "zielplan") {
         const H = Object.entries(z.je);
         soll(
@@ -2186,12 +2219,23 @@ function lebenUrteil(name, z, soll) {
         );
         soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
         soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
+        // die Leere, die das Gesetz trägt (`gesetzLeer` ≥ GESETZ_LEER: der Wurf lässt die Rolle so oft ohne Fremden), fällt nicht —
+        // sie steht benannt in der Zeile; jede andere leere Rolle ist der Täter
+        const GL = z.gesetzLeer || {};
+        const darf = ([ro, [n]]) => !n && GL[ro] >= GESETZ_LEER;
         const leer = Object.entries(z.rollen)
-            .filter(([, [n]]) => !n)
-            .map(([ro, [, m, g]]) => `${ro} (${m}, gebunden ${g})`);
+            .filter((e) => !e[1][0] && !darf(e))
+            .map(([ro, [, m, g]]) => `${ro} (${m}, gebunden ${g}, das Gesetz lässt sie leer ${Math.round((GL[ro] || 0) * 1000) / 10} %)`); // prettier-ignore
+        const gesetzLeer = Object.entries(z.rollen)
+            .filter(darf)
+            .map(([ro]) => `${ro} ${Math.round(GL[ro] * 1000) / 10} %`);
+        soll(
+            z.gesetzN > 0 && z.gesetzN >= z.gesamt,
+            `das Gesetz der Bindung fragt ${z.gesetzN} Menschen von ${z.gesamt} (Soll: jeden mit Leib)`
+        );
         soll(
             !leer.length,
-            `Rollen ohne Ziel-Ort: ${leer.join(" · ")} — kein Fremder erreicht einen ihrer Orte (belebt ${z.zielOrte} von ${z.orte} Orten)`
+            `Rollen ohne Ziel-Ort: ${leer.join(" · ")} — kein Fremder erreicht einen ihrer Orte (belebt ${z.zielOrte} von ${z.orte} Orten${gesetzLeer.length ? `; leer nach dem Gesetz: ${gesetzLeer.join(" · ")}` : ""})` // prettier-ignore
         );
     }
     // DAS GEHEGE (Pflicht F): der Rand hält, die Zeile ist der Bestand, die Wildnis zählt sie nicht, die Tiere leben ihren Tag
@@ -2599,9 +2643,9 @@ if (V) {
 // ── die Größe ist das Gesetz des Lebens (leben-core `__lebenCore`, leben-erbe): die Spanne des Gesetzes umschließt das Art-Mittel
 // (das Neugeborene unten, das größte Erwachsene bei +4σ oben) — bis leben-erbe vier Größen-Bänder im Buch der Tiere ──
 require(path.join(root, "leben-core.js"));
-// der EINE Strom der Welt (gelaende-core `samenStrom`), den der Wirt dem Kern reicht — wie Seite und Faden
-require(path.join(root, "gelaende-core.js"));
-const SAMEN_STROM = global.__gelaendeCore.samenStrom;
+// der EINE Strom der Welt (samen-core `samenStrom`), den der Wirt dem Kern reicht — wie Seite und Faden
+require(path.join(root, "samen-core.js"));
+const SAMEN_STROM = global.__samenCore.samenStrom;
 const LK = global.__lebenCore;
 const sp = LK && LK.spanne();
 check(

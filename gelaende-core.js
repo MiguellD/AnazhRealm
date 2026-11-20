@@ -7824,19 +7824,7 @@
         };
     }
 
-    // DER EINE STROM EINES SAMENS (Ein-Schreiber-Wand, Größe Samen): das LCG der Welt, [0, 1). Hier im Kern, weil Seite UND Faden
-    // ihn lesen — der Stamm (`_samenStrom`) reicht ihn durch, ein Kern (leben-core `bestand`) bekommt ihn über seinen Wirt. Ein
-    // zweiter Generator in einer Datei ist ROT (gate:constitution, Muster `generator`).
-    function samenStrom(same) {
-        let s = Number(same) >>> 0 || 1;
-        return function () {
-            s = (s * 1664525 + 1013904223) >>> 0;
-            return s / 4294967296;
-        };
-    }
-
     root.__gelaendeCore = Object.freeze({
-        samenStrom: samenStrom,
         WELT_FELD: WELT_FELD,
         weltFeldRausch: weltFeldRausch,
         weltFeld: weltFeld,

@@ -444,13 +444,19 @@ class AnazhRealm_studio_stoff {
         const _tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
         // Die Rauheit (`rauh`) wiegt das Mikro-Relief des facettierten Felsens außerhalb des Satzes (`_mikroGestalt`): bis
         // w13-fels-korn stand sie als Zahl im Graphen, und der zweite Stoff einer Signatur zeichnete mit der Rauheit des ersten.
-        // DAS LEUCHTEN IN DER EINEN SKALA (licht-eine-skala P8, die EINE Stelle der Familie `leucht`): die Einheit des Labors
-        // IST die Einheit der Welt (`__weltLicht.EINHEIT_LX`, 16 090 cd/m²) — die Flamme des fachwerk-Feuers trägt an ihrer
-        // heißesten Ecke Farbe (Y 0,344) × `LEUCHT_FEUER` 2,5 = 0,86 Einheiten = 13 840 cd/m² (Hollan: 13 800–16 000 cd/m² am
-        // Holzfeuer). Ein Stoff ohne Licht-Antwort (`unbeleuchtet`: die Linien und die Scheibe der Tore) steht dagegen im
+        // DAS LEUCHTEN IN DER EINEN SKALA (licht-eine-skala P8, die EINE Stelle der Familie `leucht`): das Gesetzbuch trägt die
+        // Leuchtdichte je Luma der Vertex-Farbe in cd/m² (fachwerk `FEUER_LEUCHT_JE_LUMA`: die Wurzel der Flamme steht bei
+        // `FEUER_LEUCHTDICHTE` 15 000 cd/m², Hollan: 13 800–16 000 cd/m² am Holzfeuer), hier tritt sie in die Einheit der Welt
+        // (÷ `__weltLicht.EINHEIT_LX`). Bis nacht-lichter trug das Gesetzbuch die Zahl des Labors `LEUCHT_FEUER` 2,5 in Welt-
+        // Einheiten — eine zweite Leuchtdichte der Flamme (die Wurzel 13 560 cd/m²). Ein Stoff ohne Licht-Antwort (`unbeleuchtet`: die Linien und die Scheibe der Tore) steht dagegen im
         // Maß des Auges, wie die Membran (`_membranGraph`): sein Wert ÷ Belichtung, unten am Knoten.
         mat.userData.stoffWerte = {
-            leucht: mp && typeof mp.leucht === "number" && mp.leucht > 0 ? mp.leucht : 0,
+            leucht:
+                mp && typeof mp.leucht === "number" && mp.leucht > 0
+                    ? mp.unbeleuchtet === true
+                        ? mp.leucht
+                        : mp.leucht / __weltLicht.EINHEIT_LX
+                    : 0,
             tonL: _tonA ? Math.max(1e-4, 0.2126 * _tonA[0] + 0.7152 * _tonA[1] + 0.0722 * _tonA[2]) : 1,
             rauh: rough,
             verband: mp && mp.verband > 0 ? mp.verband | 0 : 0, // die Zeile des Verband-Gesetzes (außerhalb des Satzes)

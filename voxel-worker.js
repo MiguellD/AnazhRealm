@@ -32,10 +32,11 @@
 // window === self in unserem Shim).
 self.window = self;
 // DIE EINE QUELLE DES WIRTS (w28-faden-quelle): jeder Faden entsteht aus EINEM Blob des Wirts (`_fadenQuelle`) — vorn die Tafel
-// der Blob-Adressen (`self.__anazhQuelle`): die Kerne in Ladefolge (`FADEN_QUELLE.kerne`: simplex-noise, der Phyto-Kern, das
-// Gelände-Gesetzbuch — DIESELBEN Dateien wie der Main-Thread, kein Spiegel) und was er spät lädt (`spaet`). Kein Faden stellt
-// eine eigene HTTP-Anfrage für ein Skript, das ein anderer auch lädt: bis hier hingen spät geborene Fäden im Kalt-Boot hinter dem
-// Cache-Eintrag eines anderen und starteten nie. Ohne Tafel bricht der Faden beim Laden (fail-closed, nie ein Weg über die URL).
+// der Blob-Adressen (`self.__anazhQuelle`): die Kerne in Ladefolge (`FADEN_QUELLE.kerne`: simplex-noise, der Samen-Baum, der
+// Phyto-Kern, das Gelände-Gesetzbuch — DIESELBEN Dateien wie der Main-Thread, kein Spiegel) und was er spät lädt (`spaet`).
+// Kein Faden stellt eine eigene HTTP-Anfrage für ein Skript, das ein anderer auch lädt: bis hier hingen spät geborene Fäden im
+// Kalt-Boot hinter dem Cache-Eintrag eines anderen und starteten nie. Ohne Tafel bricht der Faden beim Laden (fail-closed, nie
+// ein Weg über die URL).
 const QUELLE = self.__anazhQuelle;
 if (!QUELLE || !Array.isArray(QUELLE.kerne) || !QUELLE.spaet)
     throw new Error("voxel-worker: geboren ohne die Quelle des Wirts (`_fadenQuelle`)");
@@ -484,7 +485,7 @@ function gauKern(wirt) {
         // K je Zelle = die Formel des Stamms (`_kreaturBestand`): Lebensraum × Fläche × Nahrung nach der Kost an der Äsung
         const kZelle = (aes, lr) => lr * f.ha * T.bestandNahrung(f.diet, aes, 0);
         K = self.__lebenCore.bestand(
-            Object.assign({}, wirt, { feld: Object.assign({}, f, { kZelle }), samen: self.__gelaendeCore.samenStrom })
+            Object.assign({}, wirt, { feld: Object.assign({}, f, { kZelle }), samen: self.__samenCore.samenStrom })
         );
         gauKerne.set(key, K);
     }
