@@ -842,6 +842,22 @@ async function probeLeben(expected) {
                 throw new Error(
                     `verkehr: der Stand ${sx.toFixed(1)} ${sz.toFixed(1)} (bahn[0] des Messorts) liegt außer der Bahn der Wagen — der Richter prüft den Spieler in ihr`
                 );
+            // WER NOCH ANKOMMT, STEIGT NICHT EIN (w28-bau-rezept-tuer, `_tickVerkehr`): der Fall des Sprungs, einmal vor dem ersten —
+            // der erste Wagen parkt, sein Fahrer steigt aus (`_verkehrAussteigen` sofort, wie im Sprung: am Werk, sein Ziel das Werk),
+            // seine Ankunft steht aus; ein Takt des Verkehrs darf ihn nicht ans Steuer setzen. Bis hier stieg er ein und verbrauchte
+            // die erste Fahrt seines Wagens mit der Lage von vor dem Sprung (VK-V 3 von 3 Läufen im Dorf des Bau-Rezepts, Bild 0).
+            // Der Sprung danach stellt jeden Wagen und jeden Leib neu (f(Same, t)).
+            if (!lauf) {
+                const W = S.verkehr.wagen[0];
+                const b = W.b;
+                if (b.amSteuer) r._verkehrAussteigen(S, b, true);
+                const vor = [b.ziel, b.da, b.ankunft];
+                [b.ziel, b.da, b.ankunft] = [b.orte.werk, true, true];
+                r._tickVerkehr();
+                Z.einAnkunft = b.amSteuer ? `Fahrer #${b.same >>> 0} in Wagen ${W.nr} (${W.zustand})` : false;
+                if (b.amSteuer) r._verkehrAussteigen(S, b, true);
+                [b.ziel, b.da, b.ankunft] = vor;
+            }
             [st._fixedAccumulator, st._fixedSimTime, i] = [0, 86400 * stunde, i + 8 - (i % 8)];
             // DIE UHREN DER STUNDE BEGINNEN BEI FESTEN ZAHLEN: die Welt-Uhr (`spielZeit`, der Wetter-Zug) am Rand ihres Tags, die
             // Bild-Uhr der Probe (`tMs`) je Lauf weiter vorn in EINER Binade (2^23–2^24 ms: jede Summe des Musters rundet gleich, in
@@ -1200,7 +1216,7 @@ async function probeLeben(expected) {
             }
             if (Z.abdruck && !nr) {
                 const erst = Z.abdruck.findIndex((x, j) => x !== abdruck[j]);
-                aus.vorgeschichte = { stunde, bilder: [Z.abdruck.length, abdruck.length], erst };
+                aus.vorgeschichte = { stunde, bilder: [Z.abdruck.length, abdruck.length], erst, einAnkunft: Z.einAnkunft ?? null };
             }
             // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
             // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner
