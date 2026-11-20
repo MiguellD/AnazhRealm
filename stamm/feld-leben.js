@@ -1829,9 +1829,9 @@ class AnazhRealm_feld_leben {
         const narbe = this._narbeAt(x, z, uhr);
         // DER FRASS DES GAUS (Leben C2b, E3): was die Herde des Gesetzes ließ, steht als Schicht im Zustand des Gaus — das nahe
         // Feld LIEST sie am Ort (`_gauFrassAt`: die Zelle des Reviers aus dem letzten Bild, ≤ 0 abgeäst, 0 ohne Bild), nie schreibt
-        // der Stamm sie ins Overlay. Ein Leser mit Stempel (`uhr`: der Takt des Bestands, der Brand) liest sie NICHT — sie trägt die
-        // Zeit des letzten Bilds der Seite, nie die des Takts (Mehrspieler-Gleichlauf; die Beute liest er an der Spur, `_gauBeuteAm`).
-        const gau = jetzt ? this._gauFrassAt(x, z) : 0;
+        // der Stamm sie ins Overlay. Ein Leser mit Stempel (`uhr`: der Takt des Bestands, der Brand) liest sie an SEINEM Takt aus der
+        // Spur des Fadens (`_gauFrassAm` — das Bild trägt die Zeit der Seite, der Takt die des Felds: Mehrspieler-Gleichlauf).
+        const gau = jetzt ? this._gauFrassAt(x, z) : this._gauFrassAm(x, z, uhr);
         // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
         // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
         // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).

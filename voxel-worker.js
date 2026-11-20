@@ -586,13 +586,14 @@ function gauAuftrag(msg) {
     if (!e) gaue.set(key, (e = Object.assign(gauFeldAm(K, msg.n, roh), { gx: msg.gx, gz: msg.gz, g: null, akte: [] })));
     const N = msg.n * msg.n;
     if (!e.spurT)
-        [e.spurT, e.spurN, e.spurUnten] = [new Int32Array(GAU_SPUR).fill(-1), new Int16Array(GAU_SPUR * N), 0];
+        [e.spurT, e.spurN, e.spurF, e.spurUnten] = [new Int32Array(GAU_SPUR).fill(-1), new Int16Array(GAU_SPUR * N), new Float32Array(GAU_SPUR * N * e.F.Z), 0]; // prettier-ignore
     const hat = (k) => e.spurT[k % GAU_SPUR] === k;
     const merke = () => {
         const [k, z] = [e.g.z.takt, e.g.z];
         const s = k % GAU_SPUR;
         e.spurT[s] = k;
         for (let i = 0; i < N; i++) e.spurN[s * N + i] = z.beute[i].length;
+        for (let i = 0; i < N; i++) for (let c = 0; c < e.F.Z; c++) e.spurF[(s * N + i) * e.F.Z + c] = K.frassAm(e.g, i, c); // prettier-ignore
     };
     const akte = msg.akte || [];
     const zeilen = akte.map((a) => JSON.stringify(a));
@@ -611,8 +612,9 @@ function gauAuftrag(msg) {
         e.akte.length >= e.g.aktN &&
         e.akte.slice(0, e.g.aktN).every((s, k) => s === zeilen[k]) &&
         !(zeilen.length > e.g.aktN && akte[e.g.aktN].takt < e.g.z.takt) &&
-        // eine Spur, die vor dem Lauf beginnen soll und die der Faden nicht mehr hält, rechnet ihn neu (seit dem Stand: ab ihm)
-        !(msg.spurAb != null && msg.spurAb >= e.spurUnten && msg.spurAb < e.g.z.takt && !hat(msg.spurAb));
+        // eine Spur, die vor dem Lauf beginnen soll und die der Faden nicht mehr hält, rechnet ihn neu (seit dem Stand: ab ihm) —
+        // nur, wenn der neue Lauf sie halten kann (höchstens GAU_SPUR Takte vor dem Ziel; sonst rechnete jede Bestellung ab 0)
+        !(msg.spurAb != null && msg.spurAb >= e.spurUnten && msg.spurAb > msg.takt - GAU_SPUR && msg.spurAb < e.g.z.takt && !hat(msg.spurAb)); // prettier-ignore
     if (!weiter) {
         zeit.abNull = !!e.g;
         e.g = K.gauAnfang(e.F, msg.saat);
@@ -653,8 +655,16 @@ function gauAuftrag(msg) {
         const beute = new Int16Array(n * L.length);
         for (let k = 0; k < n; k++)
             for (let j = 0; j < L.length; j++) beute[k * L.length + j] = e.spurN[((ab + k) % GAU_SPUR) * N + L[j]];
-        antwort.spur = { von: ab, unten: e.spurUnten, beute };
-        transfer.push(beute.buffer);
+        // und der Fraß je Zelle (Takt, Revier, Zelle): der gestempelte Leser des Felds liest ihn an SEINEM Takt (`_gauFrassAm`)
+        const Z = e.F.Z;
+        const frass = new Float32Array(n * L.length * Z);
+        for (let k = 0; k < n; k++)
+            for (let j = 0; j < L.length; j++) {
+                const q = (((ab + k) % GAU_SPUR) * N + L[j]) * Z;
+                frass.set(e.spurF.subarray(q, q + Z), (k * L.length + j) * Z);
+            }
+        antwort.spur = { von: ab, unten: e.spurUnten, beute, frass };
+        transfer.push(beute.buffer, frass.buffer);
     }
     // die Tode des letzten Takts (nur eine Linse fragt sie, Takt für Takt): Kennung, Gattung, Ursache, Revier
     if (msg.tode) antwort.tode = (z.ereignis ? z.ereignis.tod : []).map((d) => ({ id: d.t.id, g: d.t.g, ursache: d.ursache, wo: d.wo })); // prettier-ignore

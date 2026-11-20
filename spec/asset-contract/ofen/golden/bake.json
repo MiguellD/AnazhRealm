@@ -174,7 +174,7 @@
    "meshes": 1,
    "verts": 13064,
    "tris": 26084,
-   "sha256": "02a9d172a5a927aae1e38fcd8230b4745d3a2ce698031c7cb3d4f101f27ad338"
+   "sha256": "3699147396255491ef21030b1d1282b38d4a4f062e755c73207ddc69da50229f"
   },
   "wolf-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -612,7 +612,7 @@
    "meshes": 1,
    "verts": 13450,
    "tris": 26856,
-   "sha256": "baf4fa667b6876b2f6ce126fe28b5276ae0027685569a3e959891cde9143816f"
+   "sha256": "c14b516b3f8e0c3b4d9d59ee01089b8dbe762b0429876d4d21112e93e78814e4"
   },
   "fox-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1032,7 +1032,7 @@
    "meshes": 1,
    "verts": 14334,
    "tris": 28624,
-   "sha256": "8ee00fa5db1ba152139c2aaa47663182eb51dab2a8587863050b6e9d1fc8b513"
+   "sha256": "833ce1a8777240626a8bd590687cb73c6253481f792737fff08fbb936c0c857b"
   },
   "bear-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1374,7 +1374,7 @@
    "meshes": 1,
    "verts": 12714,
    "tris": 25384,
-   "sha256": "c533038d9c42693bcb3186d47c5f5143b8bb3ce95c7cebe954b2fd572e88b987"
+   "sha256": "5f8c0c2cbb87fe421f4aa921b77f6adafc7a711af20088037e87cfafe31f8e28"
   },
   "deer-L0|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"

@@ -341,7 +341,23 @@ class AnazhRealm_kreatur_erbe {
         const o = this._gauOrt(ix, iz);
         const b = this._gauBildStand && this._gauBilder().get(o.gx + "," + o.gz);
         const m = b && b.spur.get(o.revier);
-        return m ? m.get(Math.max(k, b.spurUnten)) : undefined;
+        const s = m && m.get(Math.max(k, b.spurUnten));
+        return s ? s.n : undefined;
+    }
+    // DER FRASS DES GAUS AN SEINEM TAKT (der gestempelte Leser des Felds: der Takt des Bestands, der Brand — `auraAt` mit `uhr`):
+    // die Zelle des Reviers an der Spur am Takt floor(uhr ÷ taktS), dieselbe auf jeder Seite; trägt die Spur den Takt noch nicht
+    // (die Antwort ist im Flug), liest er das Bild wie der Leser ohne Stempel (`_gauFrassAt`). Bis hier las der gestempelte Leser
+    // den Fraß gar nicht: dieselbe Zelle trug zwei Leben (gate:stand-takt L3-LAST, H·w 2909 statt 2654 bei leb 0,859).
+    _gauFrassAm(x, z, uhr) {
+        const [S, zn] = [this._bestandSeite(), AnazhRealm.BESTAND_REGION.zellen];
+        const [ix, iz] = [Math.floor(x / S), Math.floor(z / S)];
+        const o = this._gauOrt(ix, iz);
+        const b = this._gauBildStand && this._gauBilder().get(o.gx + "," + o.gz);
+        const m = b && b.spur.get(o.revier);
+        const s = m && m.get(Math.floor(uhr / AnazhRealm._bestandGesetz().B.taktS));
+        if (!s) return this._gauFrassAt(x, z);
+        const [a, c] = [Math.floor((x / S - ix) * zn), Math.floor((z / S - iz) * zn)];
+        return s.f[Math.min(zn - 1, a) * zn + Math.min(zn - 1, c)] || 0;
     }
     // DIE AKTE DER GAUE IM STAND: [[„gx,gz“, [Akt, …]], …] — nur Gaue mit Akten (ein Gau ohne Akte ist reine Funktion der Saat).
     _gauImStand() {
@@ -439,13 +455,14 @@ class AnazhRealm_kreatur_erbe {
                 takt: -1,
                 bestellt: -1,
                 flug: false,
+                wartet: null, // die Antwort des Fadens, bis der nächste Takt des Lesers sie wirken lässt (`_gauTakt`)
                 sig: "",
                 aktN: -1,
                 sperre: -1,
                 reviere: new Map(),
                 tiere: new Map(),
                 gefallen: new Map(),
-                spur: new Map(), // je Revier der Altlast: Takt → Köpfe der Beute (die Spur des Fadens, `_gauBeuteAm`)
+                spur: new Map(), // je Revier der Altlast: Takt → { n: Köpfe der Beute, f: Fraß je Zelle } (`_gauBeuteAm`, `_gauFrassAm`)
                 spurUnten: 0,
                 spurFall: Infinity, // der früheste Takt eines fremden Akts, den die Bestellung im Flug nicht trug (`_gauAktFremd`)
                 zahl: null,
@@ -513,6 +530,14 @@ class AnazhRealm_kreatur_erbe {
     // Leib zeichnet oder sucht. Bestellt wird nur, wenn Takt, Reviere oder Akte sich änderten; ein Gau ohne Revier am Schirm geht
     // (`_gauGeht`).
     _gauTakt() {
+        // DIE ANTWORT WIRKT IN DER FOLGE DES SPIELS (hier, im Takt des Lesers), nie in der Nachricht des Fadens: zwischen zwei
+        // Bildern ändert sie weder Leib noch Stand (gate:persistence (D): der Stand des Speicher-Fadens war sonst in jedem Stand
+        // ein anderer als die volle Serialisierung danach — creatures). Eine Antwort, die eine jüngere überholte, fällt.
+        for (const b of this._gauBilder().values()) {
+            const w = b.wartet;
+            b.wartet = null;
+            if (w && w[0].takt >= b.takt) this._gauAntwort(b, ...w);
+        }
         const [T, S] = [AnazhRealm._bestandGesetz().B.taktS, this._bestandSeite()];
         const takt = Math.max(0, Math.floor(this._feldHorizont() / T));
         const je = new Map();
@@ -543,7 +568,7 @@ class AnazhRealm_kreatur_erbe {
             b.flug = true;
             b.bestellt = Math.max(b.bestellt, takt);
             this._gauBis(e.gx, e.gz, takt, { lesen }).then(
-                (a) => this._gauAntwort(b, a, sig, aktN),
+                (a) => ((b.flug = false), (b.wartet = [a, sig, aktN])),
                 () => ((b.flug = false), (b.sperre = takt)) // der Wurf steht beim Namen (`_gauFrage`); der nächste Takt fragt wieder
             );
         }
@@ -588,8 +613,9 @@ class AnazhRealm_kreatur_erbe {
             if (!sp || !this._gauSpurRevier(b.gx, b.gz, rv.i)) return;
             const m = b.spur.get(rv.i) || b.spur.set(rv.i, new Map()).get(rv.i);
             const L = a.reviere.length;
+            const Z = sp.frass.length / sp.beute.length;
             for (let k = 0; k * L + j < sp.beute.length && sp.von + k < fall; k++)
-                m.set(sp.von + k, sp.beute[k * L + j]);
+                m.set(sp.von + k, { n: sp.beute[k * L + j], f: sp.frass.slice((k * L + j) * Z, (k * L + j + 1) * Z) });
             for (const t of m.keys()) if (t < a.takt - 400) m.delete(t);
         });
         const AJ = this._gauJaegerOrt || (this._gauJaegerOrt = new Map());
