@@ -1623,15 +1623,7 @@ class AnazhRealm {
         const jetzt = performance.now() / 1000;
         const schritt = Math.max(0, jetzt - pool.uhr) / LP.blendeS;
         pool.uhr = jetzt;
-        if (jetzt - pool.t >= LP.wahlS || !(Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM)) {
-            pool.t = jetzt;
-            pool.x = cp.x;
-            pool.y = cp.y;
-            pool.z = cp.z;
-            const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam));
-            q.sort((a, b) => a.rang - b.rang);
-            pool.wahl = q.slice(0, LP.plaetze);
-        }
+        this._leuchtWahl(pool, cam, jetzt);
         // die Plätze: gewählt bleibt und blendet ein, abgewählt blendet aus, der freie Platz nimmt die nächste Gewählte
         const H = pool.halter;
         for (let k = 0; k < H.length; k++) {
@@ -1700,6 +1692,21 @@ class AnazhRealm {
         this._lichtWurfTakt(pool, cam);
     }
 
+    // DIE WAHL DES ORTS (der eine Schritt, den Licht-Takt und Lichtmesser teilen): die `plaetze` Quellen mit dem höchsten Rang
+    // (`_leuchtQuellen`) — neu je `wahlS`, nach `wahlM` Weg und nach jedem Sprung der Uhr (`_uhrSetzen` setzt `t` auf −∞).
+    _leuchtWahl(pool, cam, jetzt = performance.now() / 1000) {
+        const LP = AnazhRealm.LICHT_POOL;
+        const cp = cam.position;
+        if (jetzt - pool.t < LP.wahlS && Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM) return;
+        pool.t = jetzt;
+        pool.x = cp.x;
+        pool.y = cp.y;
+        pool.z = cp.z;
+        const q = this._leuchtQuellen(cp.x, cp.y, cp.z, LP.umkreisM, this._leuchtKegel(cam));
+        q.sort((a, b) => a.rang - b.rang);
+        pool.wahl = q.slice(0, LP.plaetze);
+    }
+
     // DIE LEUCHTDICHTE DER LEUCHTENDEN FLÄCHE eines Datums (cd/m², nacht-lichter): das Fenster trägt seine (`cdM2`, die Fläche
     // eines erleuchteten Raums, flach), das Glas einer Leuchte die Scheibe, von innen beleuchtet — je Luma seiner Vertex-Farbe
     // (fachwerk `laterneGlasJeLuma`: die Mitte des Masts `glasStreu` · E ÷ π, E aus der Lichtstärke; die Ecke trägt im Ton die
@@ -1712,12 +1719,19 @@ class AnazhRealm {
         return globalThis.__fachwerkCore.laterneGlasJeLuma(L);
     }
 
-    // DER POOL AM AUGE (nacht-lichter, der Lichtmesser): die Beleuchtungsstärke, die die Plätze des Licht-Pools auf eine waagrechte
+    // DER POOL AM AUGE (nacht-lichter, der Lichtmesser): die Beleuchtungsstärke, die die Leuchten des Orts auf eine waagrechte
     // Fläche am Auge werfen (rgb, Welt-Einheiten, zu `w` addiert in `aus`) — dieselbe Stärke, derselbe Abfall, dieselbe Farbe wie
-    // im Stoff (`_leuchtTakt`, fachwerk `lichtAbfall`), ohne Flackern (der Messer mittelt), × die Blende des Platzes × cos θ der
-    // Quelle über der Fläche (unter dem Auge 0). Das Licht des Auges und der Himmels-Ersatz zählen nicht: der Messer misst die
-    // Lichter des Orts. Leser: die Belichtung (`_belichtungAusLicht`). Bis nacht-lichter las der Messer nur Sonne, Mond und
-    // Himmel — unter der Laterne stand die Blende des Mondlichts, jede Wand in ihrem Licht 2 100-mal über Bild-Weiß.
+    // im Stoff (`_leuchtTakt`, fachwerk `lichtAbfall`), ohne Flackern (der Messer mittelt), × cos θ der Quelle über der Fläche
+    // (unter dem Auge 0). Das Licht des Auges und der Himmels-Ersatz zählen nicht: der Messer misst die Lichter des Orts.
+    // Leser: die Belichtung (`_belichtungAusLicht`). Bis nacht-lichter las der Messer nur Sonne, Mond und Himmel — unter der
+    // Laterne stand die Blende des Mondlichts, jede Wand in ihrem Licht 2 100-mal über Bild-Weiß.
+    // DIE WAHL DES ORTS ZUR UHR, NIE DIE BLENDE DES BILDS (licht.K1: die Kamera folgt dem Licht des Orts, steht die Uhr, stehen
+    // Leuchten UND Messer im selben Bild): der Messer stellt eine fällige Wahl selbst (`_leuchtWahl` — nach dem Uhr-Wort liest er
+    // vor dem nächsten Licht-Takt) und liest die gewählten Quellen in voller Stärke; die Blende (`blendeS`) ist der Übergang des
+    // Bilds zwischen zwei Plätzen. Bis hier las er die Plätze × ihre Blende, und das Uhr-Wort (`setTimeOfDay` → ein Anwenden des
+    // Tags) fand die Wahl der alten Stunde: unter der Bühne kamen die Laternen erst mit dem nächsten Schuss in die Belichtung
+    // (gate:tag-achse:echt, genesis Uhr 0, Radeon: Bild 1–7 nach dem Wort Pool 0, k 50 721; `frisch` Pool 7,96e-6, k 34 391 —
+    // ASYNC 0,56 EV, Soll 0,05).
     _poolAmAuge(w, aus) {
         aus[0] = w[0];
         aus[1] = w[1];
@@ -1726,16 +1740,16 @@ class AnazhRealm {
         const pool = this._leuchtPool;
         const cam = this.state.camera;
         if (!pool || !cam) return aus;
+        this._leuchtWahl(pool, cam);
         const cp = cam.position;
         const c = this._poolAugeC || (this._poolAugeC = new THREE.Color());
         const FC = globalThis.__fachwerkCore;
-        for (let k = 0; k < pool.halter.length; k++) {
-            const q = pool.halter[k];
-            if (!q || q.quelle === "auge" || q.L.ersatz || !(pool.blende[k] > 0)) continue;
+        for (const q of pool.wahl) {
+            if (q.quelle === "auge" || q.L.ersatz) continue;
             const dy = q.y - cp.y;
             const d = Math.hypot(q.x - cp.x, dy, q.z - cp.z);
             if (!(dy > 0)) continue;
-            const e = this._leuchtStaerke(q, 0, true) * pool.blende[k] * FC.lichtAbfall(q.L, d) * (dy / d);
+            const e = this._leuchtStaerke(q, 0, true) * FC.lichtAbfall(q.L, d) * (dy / d);
             if (!(e > 0)) continue;
             this._lichtLinear(q.L, c);
             aus[0] += c.r * e;

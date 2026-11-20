@@ -2831,7 +2831,7 @@ class AnazhRealm_bild_himmel {
             return false;
         }
         // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`),
-        // und der Licht-Pool wählt im nächsten Takt neu (`_leuchtTakt`: seine Wahl liest den Zeitplan der Quellen zur Uhr — mit
+        // und der Licht-Pool wählt neu, sobald ihn Licht-Takt oder Lichtmesser lesen (`_leuchtWahl`: sie liest den Zeitplan der Quellen zur Uhr — mit
         // der Wahl der alten Stunde blendeten die Laternen des Genesis-Orts erst bis zu `wahlS` nach dem Sprung ein, mitten im
         // Schuss: gate:tag-achse:echt SPRUNG 0,2–0,6 EV an Dämmerung und Morgen)
         if (quelle !== "uhr" && v !== this.state.timeOfDay) {
