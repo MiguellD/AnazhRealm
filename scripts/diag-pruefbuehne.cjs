@@ -1553,8 +1553,9 @@ async function lichtLauf() {
                             const a = luma709([hell[i] - dunkel[i], hell[i + 1] - dunkel[i + 1], hell[i + 2] - dunkel[i + 2]]);
                             if (a > NACHT.albedoMin) je.push(255 * linSrgb(Math.min(1, (srgbLin(luma709(u8, i)) / a) * aStoff)));
                         });
-                        je.sort((x, y) => x - y);
-                        const q = (p) => (je.length ? +je[Math.min(je.length - 1, Math.floor(p * je.length))].toFixed(2) : null);
+                        // DER EINE RANG (welt-boot `rang`, in jeder Seite derselbe Text): der Median und die Quantile der Mulden
+                        je.sort(aufsteigend);
+                        const q = (p) => (je.length ? +rang(je, p).toFixed(2) : null);
                         gesetz = { luma: q(0.5), q10: q(0.1), q90: q(0.9), aRing: +aRing.toFixed(4), aStoff: +aStoff.toFixed(4), k: +k.toFixed(3), punkte: je.length / 9 };
                     }
                     return {
