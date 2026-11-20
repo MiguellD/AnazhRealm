@@ -1,9 +1,13 @@
 "use strict";
 // DER ABDRUCK DER WELT (`node scripts/werkbank.cjs abdruck`, w28-funktion-welt): die Welt ist eine FUNKTION — derselbe Kopf,
 // zweimal gebaut, ergibt 0 abweichende Dinge. Headless (Null-Renderer, keine GPU, keine laufende Werkbank): der EINE Welt-Boot
-// des Baums (welt-boot `nullWelt`), je Ort (genesis · wiese · dorf aus spec/profiband/haushalt.json) Ring + „die Welt steht",
-// dann DIE FESTE UHR — die Welt-Uhr springt über die Tür des Spiels (`_weltUhrNimm`, wie die Uhr eines Mitspielers) auf die
-// Stunde des Orts, der Takt bekommt exakte 1/64 s — und `TAKTE` Takte am Mittag; danach je BENANNTEM Ding ein Inhalt-Hash.
+// des Baums (welt-boot `nullWelt`), je Ort (genesis · wiese · dorf aus spec/profiband/haushalt.json) Ring + „die Welt steht"
+// in ZEITLOSEN Bau-Takten (die Welt baut und lebt nicht — gleich wie viele Takte das Gerät braucht, `abdruckFahrt`), dann DIE
+// FESTE UHR — die Welt-Uhr springt über die Tür des Spiels (`_weltUhrNimm`, wie die Uhr eines Mitspielers) auf die Stunde des
+// Orts — und genau `TAKTE` Lebens-Takte in exakten 1/64 s am Mittag, jeder mit zu Ende gebautem Bau; danach je BENANNTEM Ding
+// ein Inhalt-Hash. Die Zahl der gelebten Takte führt, nie die Wanduhr: ein Abdruck dieser Fahrt und einer der Fahrt davor
+// (das Einschwingen lebte nach der Wanduhr) sind zwei Maße — verglichen wird nur innerhalb EINER Fahrt (`--gegen <sha>` baut
+// beide Seiten mit der Linse des rufenden Baums).
 // Die Klassen (je Ort): halter (jedes ArrayBuffer-Byte am Pfad seines ersten Halters, Schlüssel sortiert) · saetze (je Block
 // die Quell-Geometrie, ohne Pack-Lage) · instanzen (je Instanz-Mesh die sortierte Menge seiner Instanzen) · netze (je Mesh der
 // Szene Geometrie und Lage, als Menge je Name) · stoffe (je Stoff jede Eigenschaft; Knoten als GRAPH: Typ + Werte + Kanten,
@@ -825,6 +829,68 @@ function vergleichText(v, zeige = 40) {
 const UHR_S = 3600;
 const STEMPEL_MS = 1e9;
 const DT_MS = 1000 / 64;
+// DIE FAHRT EINES ORTS (Seite und Selbsttest: derselbe Text; `G` trägt `st`, `r`, `sleep`, `__gebautNach`, `__weltStehtNach` —
+// in der Seite das Fenster). DIE WELT LEBT NUR IN GEZÄHLTEN TAKTEN (abdruck-am-takt): der Stempel `t` führt jeden Takt der Fahrt.
+// Ein BAU-Takt steht am Stempel des letzten — zeitlos (stamm/dirigent-takt.js `zeitlos`): die Welt baut (Strom, Foundry, Stufen,
+// Fege-Takte) und lebt nicht —, ein LEBENS-Takt geht exakt `dt` weiter. Das Einschwingen (Ring, dann „die Welt steht“) fährt
+// NUR Bau-Takte, gleich wie viele das Gerät braucht; gelebt wird der erste Takt am Ort (seit dem letzten Stempel der Welt — dem
+// Boot, dem Ort davor — verging mehr als der Deckel des Takts: er lebt genau `TAKT_DECKEL_S`) und danach genau `takte` Takte an
+// der festen Uhr. Bis hier ging jeder Takt des Einschwingens `dt` weiter, ab der Wanduhr (`performance.now()`): unter Last
+// brauchte der Ring mehr Takte, die Welt lebte vor der festen Uhr verschieden lang (dorf: 593 gegen 1198 Takte = 9,3 gegen
+// 18,7 s Spiel-Zeit), und was in der Zeit kam und ging, blieb im Abdruck — A gegen A an 94e4c615: die fünf Leiber des Wurfs am
+// Ort dorf mit anderer laufender Nummer (`tier:baer|fuchs|wesen|wolf`, D4 1 von 6 Läufen, auf Bestellung 2 von 2) und der
+// gemerkte Wege-Baum `netz.baeume[=3]` der Siedlung (D5 3 von 6).
+async function abdruckFahrt(G, { ziel, takte, uhr, stempel, dt }) {
+    const st = G.st,
+        r = G.r;
+    let t = stempel;
+    const takt = (lebt) => () => {
+        st._frameOverBudget = false;
+        if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
+        try {
+            r._gameLoopTick(lebt ? (t += dt) : t);
+        } catch (e) {
+            r._loopErrorBoundary(e);
+        }
+        return G.sleep(0);
+    };
+    const bau = takt(false),
+        leben = takt(true);
+    let n = await G.__gebautNach("abdruck: Ring " + ziel, {
+        fertig: () => r._builtRingRadius() >= ziel,
+        takt: bau,
+        max: 1800,
+    });
+    n += await G.__weltStehtNach(bau, 1800);
+    // DIE FESTE UHR: die Welt-Uhr über die Tür des Spiels (wie die Uhr eines Mitspielers, `_weltUhrNimm`) auf die Stunde des Orts
+    if (!(st.spielZeit < uhr)) throw new Error(`abdruck: die Uhr steht schon bei ${st.spielZeit} s ≥ ${uhr} s`);
+    r._weltUhrNimm(uhr);
+    // JEDER LEBENS-TAKT SIEHT EINE WELT OHNE OFFENEN BAU: was ein Takt bestellt (ein Faden rechnet, die Antwort kommt nach der
+    // Wanduhr), baut in Bau-Takten zu Ende, ehe der nächste lebt — sonst läse das Leben, wie weit der Bau unter der Last kam
+    const offen = () => {
+        const o = r._weltOffen();
+        for (const k in o) if (o[k]) return true;
+        return false;
+    };
+    let zwischen = 0;
+    for (let k = 0; k < takte; k++) {
+        r._uhrSetzen(0.5, "regler");
+        await leben();
+        zwischen += await G.__gebautNach("abdruck: der Bau nach Lebens-Takt " + (k + 1), {
+            fertig: () => !offen(),
+            takt: bau,
+            max: 1800,
+        });
+    }
+    // DIE WELT STEHT BEI DIESER UHR (w28-funktion-welt-2): was der Sprung und die Takte regten (der Schnee-Versatz wandert mit
+    // der Uhr, jede Stufe baut die Chunks im Band neu — unter der Frist der Wanduhr, also je Last verschieden weit), baut zu
+    // Ende in Bau-Takten — gleich wie viele es braucht, die Uhr und das Leben stehen. Bis hier hashte der Abdruck nach den
+    // Takten, gleich ob die Welt stand: an a1bf7f16 hielt sie beim Hash „Chunks offen 53“ (genesis) und „Chunks offen 27“
+    // (dorf), der Fege-Takt streuLod mitten in seiner Runde — er las, wie weit die Arbeit unter der Last kam.
+    // (jeder Lauf geht mindestens einen stillen Takt, das EINE Einschwingen: sein letzter Takt sieht dieselbe Uhr)
+    const still = await G.__weltStehtNach(bau, 1800);
+    return { still, takte: n, zwischen };
+}
 async function abdruckLauf({
     baum,
     orte = ["genesis", "wiese", "dorf"],
@@ -839,7 +905,7 @@ async function abdruckLauf({
     const server = WB.statikServer({ root: BAUM });
     const { browser, page } = await WB.nullWelt(server, { frist: 600000, da: "() => true" }, 600000);
     const tBoot = Date.now() - t0;
-    await page.evaluate(`window.__abd = (${abdruckKern})(window);`);
+    await page.evaluate(`window.__abd = (${abdruckKern})(window); window.__abdFahrt = ${abdruckFahrt};`);
     const kopf = (() => {
         try {
             return cp.execSync("git rev-parse HEAD", { cwd: BAUM }).toString().trim();
@@ -854,17 +920,6 @@ async function abdruckLauf({
             const t1 = Date.now();
             const steh = await page.evaluate(
                 async (x, z, dorf, TAKTE, uhr, stempel, dt) => {
-                    let t = performance.now();
-                    const takt = () => {
-                        st._frameOverBudget = false;
-                        if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
-                        try {
-                            r._gameLoopTick((t += dt));
-                        } catch (e) {
-                            r._loopErrorBoundary(e);
-                        }
-                        return sleep(0);
-                    };
                     window.__anazhAutoSettlement = !!dorf;
                     st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                     st.yaw = 0;
@@ -872,44 +927,11 @@ async function abdruckLauf({
                     r._uhrSetzen(0.5, "regler");
                     st.perfTargetMs = 1000;
                     const ziel = Math.min(12, st.chunkRingRadius || 4);
-                    let n = await __gebautNach("abdruck: Ring " + ziel, {
-                        fertig: () => r._builtRingRadius() >= ziel,
-                        takt,
-                        max: 1800,
-                    });
-                    n += await __weltStehtNach(takt, 1800);
-                    // DIE FESTE UHR: die Welt-Uhr über die Tür des Spiels (wie die Uhr eines Mitspielers, `_weltUhrNimm`) auf die
-                    // Stunde des Orts — das Einschwingen trug sie um n Takte (n je Lauf verschieden) —, der Stempel auf seine Folge
-                    if (!(st.spielZeit < uhr))
-                        throw new Error(`abdruck: die Uhr steht schon bei ${st.spielZeit} s ≥ ${uhr} s`);
-                    r._weltUhrNimm(uhr);
-                    t = stempel;
-                    for (let k = 0; k < TAKTE; k++) {
-                        r._uhrSetzen(0.5, "regler");
-                        await takt();
-                    }
-                    // DIE WELT STEHT BEI DIESER UHR (w28-funktion-welt-2): was der Sprung und die Takte regten (der Schnee-Versatz
-                    // wandert mit der Uhr, jede Stufe baut die Chunks im Band neu — unter der Frist der Wanduhr, also je Last
-                    // verschieden weit), baut zu Ende in ZEITLOSEN Takten (der Stempel des letzten Takts: das Spiel baut und lebt
-                    // nicht, `zeitlos` im Loop) — gleich wie viele es braucht, die Uhr und das Leben stehen. Bis hier hashte der
-                    // Abdruck nach den Takten, gleich ob die Welt stand: an a1bf7f16 hielt sie beim Hash „Chunks offen 53“ (genesis)
-                    // und „Chunks offen 27“ (dorf), der Fege-Takt streuLod mitten in seiner Runde — er las, wie weit die Arbeit unter
-                    // der Last kam.
-                    const still = () => {
-                        st._frameOverBudget = false;
-                        if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
-                        try {
-                            r._gameLoopTick(t);
-                        } catch (e) {
-                            r._loopErrorBoundary(e);
-                        }
-                        return sleep(0);
-                    };
-                    // jeder Lauf geht mindestens einen stillen Takt (das EINE Einschwingen): sein letzter Takt sieht dieselbe Uhr
-                    const nStill = await __weltStehtNach(still, 1800);
+                    const f = await window.__abdFahrt(window, { ziel, takte: TAKTE, uhr, stempel, dt });
                     return {
-                        still: nStill,
-                        takte: n,
+                        still: f.still,
+                        takte: f.takte,
+                        zwischen: f.zwischen,
                         ring: r._builtRingRadius(),
                         uhr: st.spielZeit,
                         tiere: (st.creatures || []).length,
@@ -1080,7 +1102,61 @@ function selbstAbdruck(w) {
         },
     };
 }
-function abdruckSelbsttest(log = console.log) {
+// DIE KLEINE WELT LEBT (der Selbsttest der Fahrt, `abdruckFahrt` — derselbe Text wie in der Seite): ihr Loop trägt das Gesetz des
+// Takts (stamm/dirigent-takt.js: ein Takt am Stempel des letzten ist zeitlos, er baut und lebt nicht; sonst lebt er sein Delta,
+// höchstens den Deckel). Der Ring steht nach `ringTakte` Takten (ein Gerät unter Last braucht mehr); der dritte Lebens-Takt
+// bestellt einen Bau, der `verzug` Takte später ankommt (ein Faden antwortet nach der Wanduhr). Was das Leben hinterlässt, trägt
+// der Abdruck: je gelebter Sekunde kam und ging ein Leib (der Wolf trägt die laufende Nummer), der Vogel zog so weit, wie die
+// Welt lebte, und er zählt jeden Lebens-Takt, der den bestellten Bau noch nicht sah.
+async function selbstFahrt({ ringTakte = 40, verzug = 5 } = {}, fahrt = abdruckFahrt) {
+    const w = selbstWelt();
+    let [letzter, gebaut, gelebt, lebensTakte, kommt, blind, zeit] = [4000, 0, 0, 0, -1, 0, 0];
+    w.st._activeRingRadius = 4;
+    // die Uhr der kleinen Welt ist ihre eigene Zahl (`zeit`); die Fahrt liest sie, wie sie die Uhr der Welt liest
+    Object.defineProperty(w.st, "spielZeit", { get: () => zeit });
+    Object.assign(w.r, {
+        _gameLoopTick(t) {
+            const delta = t === letzter ? 0 : Math.min(Math.max(0.001, (t - letzter) / 1000), 0.1);
+            letzter = t;
+            if (delta > 0) {
+                if (kommt >= 0 && gebaut < kommt) blind++;
+                if (++lebensTakte === 3) kommt = gebaut + 1 + verzug;
+                gelebt += delta;
+                zeit += delta;
+            }
+            gebaut++;
+        },
+        _builtRingRadius: () => (gebaut >= ringTakte ? 4 : 0),
+        _weltOffen: () => ({ foundry: kommt >= 0 && gebaut < kommt ? 1 : 0 }),
+        _weltUhrNimm: (u) => (zeit = u),
+        _uhrSetzen() {},
+        _loopErrorBoundary(e) {
+            throw e;
+        },
+    });
+    const G = {
+        st: w.st,
+        r: w.r,
+        sleep: () => Promise.resolve(),
+        __gebautNach: async (name, { fertig, takt }) => {
+            let n = 0;
+            for (; !fertig(); n++) await takt(n);
+            return n;
+        },
+        __weltStehtNach: async (takt) => (await takt(0), 1),
+    };
+    await fahrt(G, { ziel: 4, takte: 240, uhr: UHR_S, stempel: STEMPEL_MS, dt: DT_MS });
+    w.st.creatures.push({ userData: { soul: "wolf", netId: "c" + (1 + Math.floor(gelebt)) } });
+    w.r._vogelPool.lagen.set([gelebt, blind]);
+    return w;
+}
+// die Mutante der Fahrt: ihr Text mit EINER getauschten Stelle (die alte Klasse) — trifft der Tausch den Text nicht, wirft sie
+function fahrtMutante(alt, neu) {
+    const q = String(abdruckFahrt);
+    if (q.split(alt).length !== 2) throw new Error(`abdruck --selbsttest: die Mutante trifft die Fahrt nicht (${alt})`);
+    return new Function(`return (${q.replace(alt, neu)})`)();
+}
+async function abdruckSelbsttest(log = console.log) {
     const fehler = [];
     // die kleine Welt trägt jede geprüfte Klasse (sonst wäre „0 anders" leer)
     const leer = Object.entries(selbstAbdruck(selbstWelt()).orte.selbst)
@@ -1107,6 +1183,27 @@ function abdruckSelbsttest(log = console.log) {
         "Wanduhr im Pool",
         selbstWelt({ mutante: "uhr", uhr: performance.now() }),
         selbstWelt({ folge: false, idAb: 1000, mutante: "uhr", uhr: performance.now() + 16.7 }),
+        /\|halter\|r\._vogelPool/
+    );
+    // DIE FAHRT (abdruck-am-takt): ein Einschwingen, das 800 Takte länger baut, und ein Bau, der 60 statt 5 Takte nach seinem
+    // Lebens-Takt ankommt, sind 0 anders — die Welt lebt nur in gezählten Takten, jeder sieht eine Welt ohne offenen Bau. Die
+    // alte Klasse fällt ROT beim Namen: der Zeit-Takt (jeder Takt des Einschwingens lebt 1/64 s — der Wolf trägt eine andere
+    // laufende Nummer) und das Leben neben dem Bau (kein Warten zwischen den Lebens-Takten — der Vogel sah den Bau 5 gegen 60
+    // Takte lang nicht).
+    const zeitTakt = fahrtMutante("lebt ? (t += dt) : t", "(t += dt)");
+    const nebenBau = fahrtMutante("fertig: () => !offen(),", "fertig: () => true,");
+    fall("das Einschwingen 800 Takte länger", await selbstFahrt(), await selbstFahrt({ ringTakte: 840 }));
+    fall("der Bau eines Lebens-Takts kommt 60 statt 5 Takte später", await selbstFahrt(), await selbstFahrt({ verzug: 60 }));
+    fall(
+        "der Zeit-Takt im Einschwingen",
+        await selbstFahrt({}, zeitTakt),
+        await selbstFahrt({ ringTakte: 840 }, zeitTakt),
+        /\|bestand\|tier:wolf/
+    );
+    fall(
+        "das Leben neben dem Bau",
+        await selbstFahrt({}, nebenBau),
+        await selbstFahrt({ verzug: 60 }, nebenBau),
         /\|halter\|r\._vogelPool/
     );
     return fehler;

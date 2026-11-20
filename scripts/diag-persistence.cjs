@@ -414,7 +414,17 @@ async function tabTodProbe({ von, bis, selbst = false }) {
         };
         zyklen.push(zeile);
         if (z > bis) {
-            await sleep(1000);
+            // der letzte Boot urteilt an SEINEM Ereignis (abdruck-am-takt; bis hier 1 s Wanduhr — ein Stand, den der Boot unter
+            // Last später schrieb, blieb ungesehen): der Speicher-Faden ist still (`_speicherStill`: alles Gesendete ist fest),
+            // und die Marke „still" ist durch — sie nimmt denselben Kanal wie jeder Stand („tt" → `melde` → Konsole)
+            await page.evaluate(async () => {
+                await r._speicherStill();
+                await new Promise((ok) => {
+                    const hoert = new BroadcastChannel("tt");
+                    hoert.onmessage = ({ data: d }) => d && d.art === "still" && (hoert.close(), ok());
+                    new BroadcastChannel("tt").postMessage({ art: "still", at: Date.now() });
+                });
+            });
             halbe();
             await browser.close();
             break;
