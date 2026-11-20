@@ -96,6 +96,8 @@
                 // DIE GLATTE WAND (w28-putz-wand): der Stil, der sein Gerüst in die Wand malt, baut es nicht mehr — marokkanisch/1 L2
                 // 7224 → 2564, das Höchste der 512 Fälle trägt jetzt fraenkisch/7 mit 3594; die Zeile zurück auf 7000 (ihr Stand vor
                 // dem Zuschlag; dichter hieße, die Regler-Ränder der Fachwerk-Rezepte zu strecken: W=14, doppel, roofCurve bis 6236).
+                // DER STEIN AUSSER DER ZEILE (E8.1, 19.11.): jede Zeile trägt `ohneVerband` (gesetzt bei VERBAND_GESETZ, unten) — der
+                // Backstein zählt nicht gegen `tris`, sein Maß ist das Verband-Gesetz.
                 haus: {
                     0: { tris: 132000, band: 40000, draws: 12, schatten: 3 },
                     1: { tris: 44000, band: 10000, draws: 4, schatten: 3 },
@@ -237,9 +239,17 @@
   const roofUnderY=(x,z)=> { if(ROOFMODE==='dome')return eaveY+0.35; if(ROOFMODE==='flat')return eaveY+0.05; const s=roofSkinY(x,z); return s===Infinity?Infinity:s-0.05; };   // knapp unter die Ziegel
   // ════ METAGESETZ · EINDECKEN einer Dachfläche (EINE Schräge): Lattung + Ziegelreihen, parametrisch über First(rY)/Traufabwurf(eaveDropY)/Spanne(eZ)/First-z(zMid)/Ortgang(xRangeAt). EINE Quelle für Haupt- UND Wing-Sattel­dach — kein paralleler Deckungscode mehr. ════
   // DIE RANGFOLGE DES VERZICHTS über der Zeile (P.__sehne, buildInstance streckt höchstens viermal; auf der Zeile bleibt jeder Bau byte-gleich): zuerst das GROSSFORMAT
-  // jedes Verbands — Ziegel, Backstein (Gefach und Giebel), Diele und Keilstein werden weniger und größer, dieselbe Fläche, bis 1,6 —, und das Feine fällt (der Holznagel,
-  // 3,5 cm); ÜBER dem Großformat trägt das Gefach seine Fläche (die Flächen-Stufe, der Fugen-Ton reist mit); in der fernen Stufe (ohne Ständer) fluchten die Riegel
+  // jedes Verbands — Ziegel, Diele, Keilstein und die Bohle der Blockwand werden weniger und größer, dieselbe Fläche, bis 1,6 —, und das Feine fällt (der Holznagel,
+  // 3,5 cm); DER BACKSTEIN NIE (Einheit E8, 19.11.): sein Maß ist das Verband-Gesetz in jeder Zeile und jeder L0, der Stoff webt dasselbe — ein Haus über der Zeile
+  // trüge sonst andere Steine als eines darunter; in der fernen Stufe (ohne Ständer) fluchten die Riegel
   const GROSSFORMAT=()=>(P&&P.__sehne>1)?Math.min(1.6,Math.sqrt(P.__sehne)):1, UEBER_GROSSFORMAT=()=>P.__sehne>2.56;
+  // DER STEIN IST STEIN (Einheit E8.1, 19.11.): das Maß des Verband-Gesetzes trägt nur die Lage, die Backstein BLEIBT. Tauscht der Stil
+  // die Rolle (huette · stroh: `RM.backstein` → blockholz, sieben Rezepte), legt dieselbe Ausfachung Bohlen der Blockwand — ihr Maß
+  // bleibt die Bohle (0,32 × 0,15 m, Fuge 2,5 cm), sie streckt sich über der Zeile ins Großformat wie Ziegel und Diele (`gross`: Gefach
+  // und Giebel, der Flügel-Giebel nie) und trägt über dem Großformat ihre Fläche. Bis hier lag die Bohle im Raster des Ziegels (8,2 cm
+  // je Lage): alpenchalet L0 blockholz 23 124 → 45 876 Dreiecke, gegen die Zeile gezählt. `lage` = [Raster quer, Raster hoch, Fuge].
+  const STEIN_ECHT=!(sm&&sm.RM.backstein);
+  const lage=gross=>{ if(STEIN_ECHT){ const v=VERBAND_GESETZ.mauerwerk; return [v.steinM+v.fugeM, v.hoeheM+v.fugeM, v.fugeM]; } const z=gross?GROSSFORMAT():1; return [0.32*z, 0.15*z, 0.025]; };
   function eindeckenFlaeche(g,o){ const slope=(o.rY-o.eaveDropY)/o.eZ, th=Math.atan(slope), lift=(o.lift==null?0.08:o.lift), _zg=GROSSFORMAT(), tw=0.26*_zg, tl=0.34*_zg, tt=0.03, cs=0.205*_zg; const ax=o.axis||'z';   // über der Zeile (P.__sehne, buildInstance): das Großformat — weniger, größere Ziegel, dieselbe Fläche
     const _fl2=(typeof P!=='undefined'&&P&&P.flaechig);   // FLÄCHEN-STUFE (Stufe 1): je Reihe EIN Ziegel-Band (Kehl-/Gauben-Lücken bleiben Segmente), keine Lattung darunter
     const _cv=(typeof P!=='undefined'&&P&&P.roofCurve>0)?P.roofCurve:0, _cA=0;   // SCHWUNG global im deform-Feld   // SCHWUNG IM GESETZ: jede Fläche (Haupt/Flügel/Gaube/Balkon) konkav, relativ zur EIGENEN Traufe — keine Liste, nichts vergessen
@@ -648,13 +658,16 @@
   // Querwände treffen den Giebel daher am Pfosten ZWISCHEN den Fensterfeldern. Kein Veto nötig, kein Fenster blockiert.
   function infill(g,a0,a1,y0,y1,fixed,horiz,brick,dick){ if(a1-a0<0.04||y1-y0<0.04)return; const ac=(a0+a1)/2,yc=(y0+y1)/2,al=a1-a0,yl=y1-y0;   // dick (nur die glatte Wand, GLATT): die Zelle in voller Wandstärke, als Platte in EINEM Ton
     if(brick===false){ if(dick){ platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick); return; } if(horiz)beam(g,ac,yc,fixed,al,yl,0.09,'lehm'); else beam(g,fixed,yc,ac,0.09,yl,al,'lehm'); return; }  // glattes Putzfeld
-    const _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=dick||0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen (über der Zeile im Großformat)
-    if(P.flaechig||UEBER_GROSSFORMAT()){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
+    const [bw,bh,m]=lage(true), bt=dick||0.085; const nr=Math.max(1,Math.round(yl/bh)),rh=yl/nr;       // Backstein-Ausfachung, versetzte Lagen; EINE Quelle des Steins: das Verband-Gesetz (der Stoff webt dasselbe Maß; bis E8 0,32 × 0,15 m, Fuge 0,025 — heute das Maß der Bohle, `lage`)
+    if(P.flaechig||(!STEIN_ECHT&&UEBER_GROSSFORMAT())){ let _ab=0; for(let r=0;r<nr;r++){ const ox=(r%2)*bw*0.5; for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const w=Math.min(a1,bx0+bw)-Math.max(a0,bx0)-m; if(w>=0.05)_ab+=w*(rh-m); } }   // FLÄCHEN-STUFE (Stufe 1): das Gefach als EINE Backstein-Fläche; der Stein-Anteil des Verbands reist mit (__fuge), damit der kartenlose Bake den Fugen-Ton mischt
       const _s=dick?platte(g,horiz,fixed,a0,a1,y0,y1,'backstein',dick):horiz?beam(g,ac,yc,fixed,al,yl,bt,'backstein'):beam(g,fixed,yc,ac,bt,yl,al,'backstein'); _s.userData.__fuge={mat:mat('lehm'),anteil:_ab/(al*yl)}; return; }
     if(dick)platte(g,horiz,fixed,a0,a1,y0,y1,'lehm',dick-0.03); else if(horiz)beam(g,ac,yc,fixed,al,yl,0.06,'lehm'); else beam(g,fixed,yc,ac,0.06,yl,al,'lehm');   // zurückgesetzte Hinterfüllung (Holz steht vor; in der glatten Wand der Stein 1,5 cm)
-    for(let r=0;r<nr;r++){ const by=y0+(r+0.5)*rh, ox=(r%2)*bw*0.5;
+    // DIE LAGEN IM RASTER DES HAUSES (Einheit E8, die Phase der L0): die Lage k steht bei k · bh ab dem Grund des Hauses, am Gefach geklippt — wie
+    // die Stoßfugen längs der Wand; der Stoff webt dasselbe Raster in der Vorlage (`_verbandStoff`), Stein und Muster liegen deckungsgleich.
+    // Bis hier streckte jedes Gefach seine Lagen auf seine Höhe (rh = yl / nr): das Muster lag gegen die Steine verschoben.
+    for(let k=Math.floor(y0/bh); k*bh<y1-0.02; k++){ const ya=Math.max(y0,k*bh), yb=Math.min(y1,(k+1)*bh), hh=yb-ya-m; if(hh<0.03)continue; const by=(ya+yb)/2, ox=(((k%2)+2)%2)*bw*0.5;
       for(let bx0=Math.floor((a0-ox)/bw)*bw+ox; bx0<a1-0.02; bx0+=bw){ const cl=Math.max(a0,bx0), cr=Math.min(a1,bx0+bw), w=cr-cl-m; if(w<0.05)continue; const cc=(cl+cr)/2;   // FIX: Backstein auf GLOBALES Raster (Ursprung 0) statt Feldkante a0 → Wandfelder UND Giebel teilen EIN Raster, Stossfugen fluchten durchgehend
-        if(horiz)beam(g,cc,by,fixed,w,rh-m,bt,'backstein'); else beam(g,fixed,by,cc,bt,rh-m,w,'backstein'); } } }
+        if(horiz)beam(g,cc,by,fixed,w,hh,bt,'backstein'); else beam(g,fixed,by,cc,bt,hh,w,'backstein'); } } }
 
   function riegel(){const g=grp(); if(ROUND)return g; if(GLATT) return g;                                                  // GLATT (der Stil malt das Gerüst in die Wand): keine Riegel → glatte Wand
     const _flucht=!!(P.nur&&P.nur.fern&&P.__sehne>1), _fl=new Map();   // FLUCHT (die ferne Stufe über der Zeile trägt keine Ständer, DESTNUR): die fluchtenden Riegel einer Wand sind EIN Balken über die Ständer-Lücken
@@ -740,7 +753,7 @@
       const xf=sx*(W/2-0.02), apexY=hipStartY, half=gzTop;
       if(!GLATT)beam(g,xf,eaveY-P.raehm/2,0,0.12,P.raehm,Dp-0.04,'holz');                                // Schwellrähm
       // GLATT: das Giebelfeld in Wandstärke und EINEM Ton, bündig über der Giebelwand — kein Ständer, kein Brustriegel; der Verband nur, wo der Stil ihn zeigt (der Würfel fällt wie gebaut)
-      const gbrick=rnd()>0.5&&VERBAND, _zg=GROSSFORMAT(), bw=0.32*_zg,bh=0.15*_zg,m=0.025,bt=GLATT?P.post:0.075, gd=GLATT?P.post-(gbrick?0.03:0):0.05, gl=GLATT?eben:wieGebaut;
+      const gbrick=rnd()>0.5&&VERBAND, _zg=GROSSFORMAT(), [bw,bh,m]=lage(true),bt=GLATT?P.post:0.075, gd=GLATT?P.post-(gbrick?0.03:0):0.05, gl=GLATT?eben:wieGebaut;
       const zHalf=y=>eaveZ+(half-eaveZ)*(y-eaveY)/Math.max(0.1,apexY-eaveY);
       { const topY = half>0.02?apexY:ridgeY, nh=Math.max(3,Math.round((topY-eaveY)/0.24)), rh=(topY-eaveY)/nh;   // Hinterfüllung als Streifen — Fensteröffnung ECHT ausgespart (nicht nur Backstein)
         for(let r=0;r<nh;r++){ const by=eaveY+(r+0.5)*rh, zh=(half>0.02)?zHalf(by):eaveZ*(ridgeY-by)/Math.max(0.1,ridgeY-eaveY);
@@ -754,7 +767,8 @@
               if(zh>R+0.02){ const w=zh-R; gl(beam(g,xf,yMid,(R+zh)/2,gd,yH,w,'lehm')); } }
           } else gl(beam(g,xf,by,0,gd,rh,2*zh,'lehm')); } }
       if(gbrick){ const nr=Math.max(1,Math.round((apexY-eaveY)/bh)),rh=(apexY-eaveY)/nr;                  // Backstein im Dreieck (geklippt, Fensteröffnung ausgespart)
-        for(let r=0;r<nr;r++){ const by=eaveY+(r+0.5)*rh, zh=zHalf(by), ox=(r%2)*bw*0.5;
+        // die Lagen im Raster des Hauses wie `infill` (Einheit E8): Lage k bei k · bh, am Giebel geklippt — `rh` ist die Höhe DIESER Lage
+        for(let k=Math.floor(eaveY/bh); k*bh<apexY-0.02; k++){ const ya=Math.max(eaveY,k*bh), yb=Math.min(apexY,(k+1)*bh); if(yb-ya-m<0.03)continue; const rh=yb-ya, by=(ya+yb)/2, zh=zHalf(by), ox=(((k%2)+2)%2)*bw*0.5;
           if(P.flaechig&&_zg>1){ const band=(a,b)=>{ if(b-a<0.06)return; beam(g,xf,by,(a+b)/2,bt,rh-m,b-a,'backstein').userData.__fuge={mat:mat('lehm'),anteil:(bw-m)/bw}; };   // FLÄCHEN-STUFE über der Zeile: der Giebel trägt je Lage EIN Band (die Stoßfugen reisen als Fugen-Ton), die Öffnung bleibt frei
             if(gw && by+rh/2>gw.y0-0.05 && by-rh/2<gw.y1+0.05){ band(-zh,Math.min(zh,gw.z0-0.05)); band(Math.max(-zh,gw.z1+0.05),zh); } else band(-zh,zh); continue; }
           for(let z0=Math.floor((-zh-ox)/bw)*bw+ox; z0<zh-0.02; z0+=bw){ const cl=Math.max(-zh,z0),cr=Math.min(zh,z0+bw),wz=cr-cl-m; if(wz<0.06)continue;   // FIX: Backstein-Spalten auf festem z-Raster (Ursprung 0, Phase ox) → senkrechte Stossfugen wie die Hauptwand, an der Schräge geschnitten (vorher: Ursprung −zh wanderte je Zeile → seitliche Drift)
@@ -1425,7 +1439,7 @@
         const zWall=sz*(Dp/2+depth);                                                                      // FIX Issue1: Giebel-Ebene = Flügelwand (Dp/2+depth), NICHT der 0.3-Dachüberstand zOuter
         if(GLATT&&!VERBAND){ const zG=zWall+sz*post/2; eben(tri(g,[uc-half,eYw,zG],[uc+half,eYw,zG],[uc,rYw,zG],'gefach')); }   // GLATT: der Außengiebel in der Flucht der glatten Wand, EIN Ton — kein Verband, kein Ständer
         else poly(g,[[uc-half,eYw,zWall],[uc+half,eYw,zWall],[uc,rYw,zWall]],'gefach');                          // Außengiebel (glatt) — bündig mit der Flügelwand
-        if(VERBAND){ const bw2=0.32,bh2=0.15,mm=0.025,bt2=0.07, nr=Math.max(1,Math.round((rYw-eYw)/bh2)); for(let r=0;r<nr;r++){ const by=eYw+(r+0.5)*(rYw-eYw)/nr, xh=half*(rYw-by)/Math.max(0.1,rYw-eYw), ox=(r%2)*bw2*0.5; for(let x0b=Math.floor((-xh-ox)/bw2)*bw2+ox; x0b<xh-0.02; x0b+=bw2){ const cl=Math.max(-xh,x0b),cr=Math.min(xh,x0b+bw2),wx=cr-cl-mm; if(wx<0.06)continue; beam(g,uc+(cl+cr)/2,by,zWall+sz*0.03,wx,(rYw-eYw)/nr-mm,bt2,'backstein'); } } }   // Giebel-Backstein wie die Hauswand (festes x-Raster, an der Schräge geschnitten) — Flügelgiebel keine kahle weisse Fläche mehr
+        if(VERBAND){ const [bw2,bh2,mm]=lage(false),bt2=0.07, nr=Math.max(1,Math.round((rYw-eYw)/bh2)); for(let k=Math.floor(eYw/bh2); k*bh2<rYw-0.02; k++){ const ya=Math.max(eYw,k*bh2), yb=Math.min(rYw,(k+1)*bh2); if(yb-ya-mm<0.03)continue; const by=(ya+yb)/2, xh=half*(rYw-by)/Math.max(0.1,rYw-eYw), ox=(((k%2)+2)%2)*bw2*0.5; for(let x0b=Math.floor((uc-xh-ox)/bw2)*bw2+ox; x0b<uc+xh-0.02; x0b+=bw2){ const cl=Math.max(uc-xh,x0b),cr=Math.min(uc+xh,x0b+bw2),wx=cr-cl-mm; if(wx<0.06)continue; beam(g,(cl+cr)/2,by,zWall+sz*0.03,wx,yb-ya-mm,bt2,'backstein'); } } }   // die Lagen und Stoßfugen im Raster des Hauses wie `infill` (Einheit E8)   // Giebel-Backstein wie die Hauswand (festes x-Raster, an der Schräge geschnitten) — Flügelgiebel keine kahle weisse Fläche mehr
         if(!GLATT){ const ns=Math.max(2,Math.round(breadth/0.95)); for(let i=0;i<=ns;i++){ const xx=uc-half+breadth*i/ns, top=Math.min(rYw-Math.abs(xx-uc)*wPit, roofUnderY(xx,zWall+sz*0.02)-0.06); if(top>eYw+0.28)beam(g,xx,(eYw+top)/2,zWall+sz*0.02,0.1,top-eYw,0.1,'holz'); } }   // Giebel-Ständer — in der Wandebene, Außenfläche bündig mit den Wandständern
         [-1,1].forEach(s3=>strut(g,uc+s3*half,eYw+0.05,zOuter+sz*0.02, uc,rYw+0.05,zOuter+sz*0.02, 0.09,TRIMR));   // ORTGANG-GESETZ: die RAKE ist die Außengiebel-Kante (konstant zOuter) — vorher D→B = Flächendiagonale (dein Foto)
         [-1,1].forEach(s3=>{ const zF2=sz*(Dp/2-(eYw-eaveY)/mS); strut(g,uc+s3*half,eYw+0.03,zF2, uc,rYw+0.03,zRidge, 0.26,'dunkel'); });   // KEHLBLECH-GESETZ: breite dunkle Rinne exakt AUF der Talformel (Feld-Schnitt + Blech = echte Kehle)
@@ -1921,6 +1935,13 @@
         reihe: ["", "mauerwerk", "deckung", "putz", "naturstein", "fachwerk"],
         rolle: { backstein: "mauerwerk", ziegel: "deckung", ziegel2: "deckung", putz: "putz", stein: "naturstein" },
     };
+    // DER STEIN AUSSER DER ZEILE (Einheit E8.1, 19.11.): das Maß des Backsteins ist das Verband-Gesetz in jeder Stufe, nie ein
+    // Budget — jede Zeile des Hauses nennt seinen Verband (`ohneVerband`: die Nummer, die sein Stoff als mat.verband trägt), seine
+    // Dreiecke zählen nicht gegen ihre `tris`. EIN Feld, drei Leser: der Bau (`buildInstance`, je Rolle über `verbandReihe`),
+    // der Ausgang (phyto-core `budgetFrei` in `budgetErzwingen`, je Teil über mat.verband) und die Wände (sie lesen den Bericht).
+    HOST_STUFEN.forEach(function (s) {
+        PORTAL_RENDER_CONFIG.lod.budget.haus[s].ohneVerband = verbandReihe("backstein");
+    });
     function _verbandHex(hx) { return "#" + (hx + 0x1000000).toString(16).slice(1); }
     // Der Ton eines Steins im Licht: die Farbe `g` (0 … 255 je Kanal) mal t0 + Zufall · dt, wie der Maler sie setzt (ganze Zahl,
     // gedeckelt bei 255), durch die EINE Kurve `_lin` — das Mittel je Kanal über den Zufall und die halbe Spanne gegen das Mittel
@@ -2583,9 +2604,9 @@
   return kill.length;
 }
     // prettier-ignore
-    function wandTonAus(geoms, y0, y1){                                                          // WANDTON-GESETZ: flächengewichtete Farbe der Vertikalflächen im AO-freien Fenster — GEMESSEN am eigenen Stufe-1-Fragment, keine Stil-Vermutung
+    function wandTonAus(geoms, y0, y1, innen){                                                   // WANDTON-GESETZ: flächengewichtete Farbe der Vertikalflächen im AO-freien Fenster — GEMESSEN am eigenen Stufe-1-Fragment, keine Stil-Vermutung; `innen` (Rolle → Farbe oder null): dieselben Flächen von innen (`wandVonInnen`)
   let s0=0,s1=0,s2=0,w=0;
-  for(const role in geoms){ const G=geoms[role]; if(!G.vo)continue; const P2=G.pos,C2=G.col,I2=G.idx;
+  for(const role in geoms){ const G=geoms[role]; if(!G.vo)continue; const P2=G.pos,C2=G.col,I2=G.idx, f=innen&&innen(role);
     for(let i=0;i<I2.length;i+=3){ const a=I2[i]*3,b=I2[i+1]*3,c=I2[i+2]*3;
       const e1x=P2[b]-P2[a],e1y=P2[b+1]-P2[a+1],e1z=P2[b+2]-P2[a+2], e2x=P2[c]-P2[a],e2y=P2[c+1]-P2[a+1],e2z=P2[c+2]-P2[a+2];
       const nx=e1y*e2z-e1z*e2y, ny=e1z*e2x-e1x*e2z, nz=e1x*e2y-e1y*e2x;
@@ -2593,9 +2614,14 @@
       if(Math.abs(ny/l)>0.25) continue;                                                       // nur Wände
       const ym=(P2[a+1]+P2[b+1]+P2[c+1])/3; if(ym<y0||ym>y1) continue;
       const ar=l/2;
+      if(f){ s0+=f[0]*ar; s1+=f[1]*ar; s2+=f[2]*ar; w+=ar; continue; }
       s0+=(C2[a]+C2[b]+C2[c])/3*ar; s1+=(C2[a+1]+C2[b+1]+C2[c+1])/3*ar; s2+=(C2[a+2]+C2[b+2]+C2[c+2])/3*ar; w+=ar; } }
   return w>1.5? [s0/w,s1/w,s2/w] : null;
 }
+    // DIE WAND VON INNEN (der Raum hinter dem Glas, `_innenFaktor`): dieselben Flächen wie der Wand-Ton, nur der Backstein der
+    // AUSFACHUNG zeigt innen den Wand-Stoff des Raums (`H.raum`, der Stoff, den die L0 hinter dem Glas zeigt) — `infill` legt den
+    // Stein vor die Hinterfüllung, sein Ton ist ein Ton der Fassade. Ein Haus aus Backstein (`H.raum` backstein) ist innen, was es außen ist.
+    function wandVonInnen(raum, kol){ if(!raum||raum==='backstein') return null; const rc=innenTon(raum,kol)||_colFor(raum,kol); return role=>role==='backstein'?rc:null; }
     // ═══════════════════════════════════════════════════════════════════════
     //  DER STUFEN-TON (S8, material.K3): jede ferne Stufe zeigt die Albedo der nahen — gemessen, nie aus Rollen-Tönen
     //  vermutet. `sichtTon` ist die EINE Rechnung: was ein Auge von außen sieht (Z-Puffer, orthografisch, 9 Blicke —
@@ -2865,15 +2891,18 @@
     }
     // DER INNENKÖRPER hinter dem Glas (INNENDÄMMER-GESETZ der L1, kalibriert auf die gemessene Voll-Interieur-Leuchtdichte
     // 176 vs 60 bei 0,34): der Raum × 0,92 — die L1 (der Körper hinter den Laibungen) und die Fern-Stufe (die Fläche hinter
-    // der Scheibe) lesen dieselbe Zahl. DER RAUM ist die Wand von innen: der GEMESSENE Wand-Ton der L1 (`B.wandTon`, Gefach
-    // und Balken, Backstein, Blockholz — gegen den Raum, den der Strahl der L0 durchs Fenster trifft: hollaendisch
-    // 0,295/0,076/0,042 zu 0,294/0,072/0,039, italienisch 0,703/0,565/0,351 zu 0,626/0,511/0,322); der Turm ohne Flächen-Stufe
-    // trägt den Wand-Stoff seines Stils (`H.raum`), wie sein Körper (`_wandFaktor`). Vorher stand dort Putz für jeden Stil
-    // (Farbe gegen die L0 bis 0,34, gate:haus-fern G). Der Körper bakt im Stoff des Putzes: sein Ton ist der Faktor auf den Putz.
+    // der Scheibe) lesen dieselbe Zahl. DER RAUM ist die Wand von innen: der GEMESSENE Wand-Ton der L1 von INNEN (`B.innenTon`,
+    // `wandVonInnen`: Gefach und Balken, Blockholz wie außen, der Backstein der Ausfachung im Wand-Stoff des Raums — gegen den Raum,
+    // den der Strahl der L0 durchs Fenster trifft: hollaendisch 0,295/0,076/0,042 zu 0,294/0,072/0,039, italienisch
+    // 0,703/0,565/0,351 zu 0,626/0,511/0,322); der Turm ohne Flächen-Stufe trägt den Wand-Stoff seines Stils (`H.raum`), wie sein
+    // Körper (`_wandFaktor`). Vorher stand dort Putz für jeden Stil (Farbe gegen die L0 bis 0,34, gate:haus-fern G), danach der
+    // Wand-Ton von AUSSEN: der Stein der Ausfachung färbte den Raum, und das wahre Steinmaß (Einheit E8, mehr Stein in der Fuge der
+    // L1) trieb alemannisch/s7 auf 0,153 gegen die L0 (64 Fälle: max 0,153 → 0,104, Median 0,025 → 0,023, 54 unverändert).
+    // Der Körper bakt im Stoff des Putzes: sein Ton ist der Faktor auf den Putz.
     var INNEN_DAEMMER = 0.92;
     function _innenFaktor(B, raum) {
         var pu = _colFor("putz", B.p.col),
-            ra = innenTon(raum, B.p.col) || B.wandTon || _colFor(raum || "putz", B.p.col);
+            ra = innenTon(raum, B.p.col) || B.innenTon || _colFor(raum || "putz", B.p.col);
         return [0, 1, 2].map(function (i) {
             return (ra[i] * INNEN_DAEMMER) / Math.max(1e-4, pu[i]);
         });
@@ -3680,7 +3709,8 @@
     bakeLOD(st.g, B.p.col, geoms, stufe===2?KULLVOL:0, true);                                // LÜCKENLOS: Türen/Fenster werden Teil des Bakes
     if(stufe===1&&!turm){                                                                      // FENSTER-SCHLAF-GESETZ: die Nacht hat Rhythmus — der Würfel je Fenster lebt im Bau (fensterSchlaeft), jede Stufe gleich
       if(!B.wandTon){ const eY=(B.dims&&B.dims.eaveY)||6;                                     // WANDTON einmalig aus der ECHTEN Fassade messen (AO-freies Fenster 2.6..eY) — VOR dem Innenkörper: der Ton der Fassade, nie der des Raums (K38: er maß den Körper mit, hollaendisch 0,295/0,076/0,042 → 0,353/0,159/0,121)
-        B.wandTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY)); }
+        B.wandTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY));
+        B.innenTon=wandTonAus(geoms, AO_KNIE, Math.max(3.4,eY), wandVonInnen(st.H&&st.H.raum, B.p.col)); }   // dieselben Flächen von INNEN: der Raum hinter dem Glas (`_innenFaktor`)
       const rf=_innenFaktor(B, st.H&&st.H.raum), innen=new THREE.Group();                     // INNENDÄMMER-GESETZ: der Innenkörper ist GEDIMMTER RAUM, nicht Void-Schwarz — durch Laibungen und Geschoss-Schlitze las sich Schwarz, promoviert wurde es weiß (Michis Sprung); jetzt verschatteter Raum, der Promotions-Wechsel flüstert
       const fpx=(B.fp&&B.fp.length)?B.fp:[{x0:-((B.dims&&B.dims.W)||8)/2,x1:((B.dims&&B.dims.W)||8)/2,z0:-((B.dims&&B.dims.D)||8)/2,z1:((B.dims&&B.dims.D)||8)/2,eY:(B.dims&&B.dims.eaveY)||6}];
       for(const f2 of fpx){ const lw=f2.x1-f2.x0-0.55, ld=f2.z1-f2.z0-0.55, lh=Math.max(2,(f2.eY||6)-0.25);
@@ -6034,21 +6064,27 @@
     // Dieselbe Rechnung wie Box3.setFromObject (je Geometrie ihre Box unter der Welt-Matrix), ohne die Teilbäume der Öffnungen.
     // Befund (p3/n1911/los): der zugestellte Flügel änderte `ext` an 476 von 519 Plan-Häusern (≤ 0,360 m), die Stadt 7/4750 rückte
     // um Median 90,9 m. Linse: gate:settlement Teil A, `huelleProben` (scripts/lib/los-proben.cjs).
+    // DIE REICHWEITE DER ÖFFNUNGEN (los-huelle-2): derselbe Gang legt die Teile, die er am Körper überspringt, in ihre eigene Box und
+    // trägt je Seite, wie weit sie über den Körper reichen (`bx.reich` {x0, x1, z0, z1} ≥ 0, haus-lokal) — kein zweites Maß des
+    // Körpers, das Maß dessen, was er nicht ist. Leser: `brandwand` (vor welcher Seite ein fremder Körper näher steht, als ihre
+    // Öffnungen reichen); am Wohnturm 0,259 m je Giebel (der offene Flügel 0,51 m vor der Wand).
     function koerperHuelle(g) {
         var bx = new THREE.Box3(),
+            ob = new THREE.Box3(),
             b = new THREE.Box3();
         g.updateMatrixWorld(true);
-        (function lies(o) {
+        (function lies(o, auf) {
             var u = o.userData;
-            if (u && (u.oeffnung || u.window || u.door)) return;
+            if (u && (u.oeffnung || u.window || u.door)) auf = true;
             if (o.geometry) {
                 var q = o.boundingBox !== undefined ? o : o.geometry; // die Instanz-Senke trägt ihre eigene Box (wie expandByObject)
                 if (q.boundingBox === null) q.computeBoundingBox();
                 b.copy(q.boundingBox).applyMatrix4(o.matrixWorld);
-                bx.union(b);
+                (auf ? ob : bx).union(b);
             }
-            for (var i = 0; i < o.children.length; i++) lies(o.children[i]);
-        })(g);
+            for (var i = 0; i < o.children.length; i++) lies(o.children[i], auf);
+        })(g, false);
+        bx.reich = { x0: Math.max(0, bx.min.x - ob.min.x), x1: Math.max(0, ob.max.x - bx.max.x), z0: Math.max(0, bx.min.z - ob.min.z), z1: Math.max(0, ob.max.z - bx.max.z) };
         return bx;
     }
     // ── Der MASS-BAU → B-Struct — byte-Anker: buildHausLOD (Lab, LOD-Sonde)
@@ -6064,6 +6100,7 @@
             lod: "chunk",
             dyn: false,
             ext: { x0: bx.min.x, x1: bx.max.x, z0: bx.min.z, z1: bx.max.z, y1: bx.max.y },
+            reich: bx.reich, // DIE REICHWEITE DER ÖFFNUNGEN je Seite über die Hülle (los-huelle-2): `brandwand` liest sie
             dims: mass.H.dims,
             fp: fpVon(mass.H),
             masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
@@ -6559,16 +6596,25 @@
         // (Biegung, Schwung) misst die Sehne der Stufe — die gebogene Stufe 1 steht ab 12 m, die 2 ab 26 m, ihr Schritt
         // streckt sich um 2 bzw. 3 (gleicher Sehnenfehler im Bild); trägt der Bau mehr Dreiecke als die Zeile, streckt er
         // sich weiter (höchstens vier Mal). Ein Bau ohne Feld oder auf seiner Zeile bleibt byte-gleich.
-        var zeile = (PORTAL_RENDER_CONFIG.lod.budget.haus[stufe] || {}).tris;
+        var zeileB = PORTAL_RENDER_CONFIG.lod.budget.haus[stufe] || {},
+            zeile = zeileB.tris;
         if (p.bend > 0) p.__sehne = [1, 2, 3, 1][stufe];
         var gm = buildStufe(p, stufe);
         // der Schritt folgt dem Überschuss (n / Zeile, mindestens 1,5); bewegt ein Schritt weniger als 2 %, trägt die Stufe
         // kein Feld und keine Fläche, die sich streckt — der Bau bleibt, die Linse nennt ihn
-        for (var versuch = 0, n = hausDreiecke(gm), vorher = Infinity; versuch < 4 && n > zeile && n < vorher * 0.98; versuch++) {
+        // DER STEIN ZÄHLT NICHT GEGEN DIE ZEILE (Einheit E8, 19.11.): sein Maß ist das Verband-Gesetz in jeder Zeile — ein Haus, das nur durch
+        // seinen Backstein über der Zeile stünde, streckt sich nicht (sonst trüge es ein anderes Großformat als ein Haus darunter).
+        // Frei ist, was die Zeile nennt (`ohneVerband`, oben bei VERBAND_GESETZ) — dasselbe Feld liest der Ausgang (phyto-core `budgetFrei`)
+        var ohneStein = function (gm) {
+            var n = hausDreiecke(gm);
+            if (zeileB.ohneVerband > 0) for (var r in gm) if (gm[r] && gm[r].idx && verbandReihe(r) === zeileB.ohneVerband) n -= gm[r].idx.length / 3;
+            return n;
+        };
+        for (var versuch = 0, n = ohneStein(gm), vorher = Infinity; versuch < 4 && n > zeile && n < vorher * 0.98; versuch++) {
             p.__sehne = (p.__sehne || 1) * Math.max(1.5, n / zeile);
             gm = buildStufe(p, stufe);
             vorher = n;
-            n = hausDreiecke(gm);
+            n = ohneStein(gm);
         }
         var g = geomsZuGruppe(gm);
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
@@ -9925,8 +9971,15 @@
                 }
             flaechen.push(vorplatzFlaeche(sl, tief));
         }
+        // DER MUND DES WEGS: jedes Ende eines Wegs ist eine Kreuzung oder ihr Zulauf (die Wege des Plans enden vor ihrem Knoten) — kein
+        // Tritt, über den ein halber Wagen (`VERKEHR_GESETZ.halbM`) nicht an das Ende käme. Bis bau-rezept-tuer stand an der Stadt dorf 7 30
+        // ein Brunnen 2,6 m vor dem Anfang einer Gasse: die Naht des Wege-Netzes (`wegeNetz`) fand keinen freien Schritt, 21 Knoten hingen
+        // abseits, der Bewohner des Patrizierhauses #22772 ging 3 Wege am Tag (gate:kreatur-takt bewohner, `ausser`).
+        var enden = [];
+        for (a = 0; a < wege.length; a++) enden.push(wege[a].pts[0], wege[a].pts[wege[a].pts.length - 1]);
         var frei = function (x, z) {
             if (aufWeg(x, z, 0.35)) return false; // wie gezogen: die Mitte 0,6 m hinter dem Rand (der Kranz ragt 0,32 m hinein)
+            for (var e = 0; e < enden.length; e++) if (Math.hypot(x - enden[e].x, z - enden[e].z) < r + VERKEHR_GESETZ.halbM) return false;
             for (var j = 0; j < flaechen.length; j++) if (!fernOBB(x, z, flaechen[j], r) && distPunktOBB(x, z, flaechen[j]) < r) return false;
             for (j = 0; j < (lay.felder || []).length; j++) if (!fernOBB(x, z, lay.felder[j], r) && distPunktOBB(x, z, lay.felder[j]) < r) return false;
             for (j = 0; j < tore.length; j++) if (distPunktOBB(x, z, tore[j]) < r) return false; // der Torplatz ist der Raum der Wende
@@ -9964,25 +10017,28 @@
         lay.brunnen = neu;
         return aus;
     }
-    // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — parallele
-    // Nachbarn mit anliegender Fuge machen die anliegende Seite zur fensterlosen
-    // Brandmauer (der Same erfährt es via hp.brandwand). dorfB: [{dims,q,p}] —
-    // p wird MUTIERT (p.brandwand.{x0,x1,z0,z1}=1) · gap: plan.norm.gap.
-    // Rückgabe: Zahl der markierten anliegenden Seiten.
+    // BRANDWAND-GESETZ: verdichtetes Bauen wie in der Stadtgeschichte — die Seite eines Hauses, vor der ein fremder Körper steht, wird
+    // fensterlose Brandmauer (der Same erfährt es via hp.brandwand: keine Öffnung, kein Flügel in den Nachbarn). Gemessen an der EINEN
+    // Hülle (los-huelle-2): die obb des Loses (`q.obb`, die Körper-Hülle `koerperHuelle`) von A gegen die von B, B auf die Achsen von
+    // A projiziert (jede Gier), die Seite von A, die zu B zeigt (die dominante Achse), seitlich überdeckt (irgendwo in der Summe — bis bau-rezept-tuer nur 0,6 davon: an
+    // der Ecke zweier Körper ragten die Öffnungen des größeren Haushalts 2–10 cm in den Nachbarn, B1 3 Paare an 2/120 und 2/400), die Fuge der
+    // Körper unter der Norm (gap + 0,15) oder unter der Reichweite der Öffnungen dieser Seite (`reich`, derselbe Gang der Hülle): keine
+    // Öffnung reicht in einen fremden Körper. Bis los-huelle-2 maß sie „anliegend“ an dims.W/D (den Wänden) um die Mitten der Hülle,
+    // nur parallel (≤ 0,26 rad) und nur vor dem Los-Gesetz — an der Stadt 7/4750 (3 × 3) ragte an 26 Paaren (25 Häusern) die Öffnung
+    // einer Seite ohne Brandwand > 1 cm in den Körper des Nachbarn, am Wohnturm 712412 die offenen Flügel 0,265 m ins Patrizierhaus
+    // 400335. Linse: gate:settlement Teil A `brandwandProben` (scripts/lib/los-proben.cjs). dorfB: [{q, p, reich}] — p wird MUTIERT
+    // (p.brandwand.{x0,x1,z0,z1}=1) · gap: plan.norm.gap. Rückgabe: Zahl der Treffer (Paar × Seite).
     function brandwand(dorfB, gap){
       let bwN=0;
-      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!A.dims||!imOrt(A.q)) continue;
-        const Wi=A.dims.W||8, Di=A.dims.D||8, ci=Math.cos(A.q.phi), si=Math.sin(A.q.phi);
-        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!Bj.dims||!imOrt(Bj.q)) continue;
-          let dphi=Math.abs(A.q.phi-Bj.q.phi)%Math.PI; if(dphi>Math.PI/2) dphi=Math.PI-dphi;
-          if(dphi>0.26) continue;                                                             // nur parallele Reihen bilden Brandwände
-          const dx=Bj.q.obb.cx-A.q.obb.cx, dz=Bj.q.obb.cz-A.q.obb.cz;
-          const lx=dx*ci-dz*si, lz=dx*si+dz*ci;                                               // ins Haus-Lokal von A (R(-phi))
-          const Wj=Bj.dims.W||8, Dj=Bj.dims.D||8;
-          if(Math.abs(lz)<(Di+Dj)/2*0.6 && Math.abs(Math.abs(lx)-(Wi+Wj)/2)<((gap||0.06)+0.15)){   // Schwelle an die NORM gekoppelt — gedockte Marktgassen (0.6) werden ebenso Brandwände wie Metropol-Fugen (0.06)
-            A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[lx>0?'x1':'x0']=1; bwN++; }
-          if(Math.abs(lx)<(Wi+Wj)/2*0.6 && Math.abs(Math.abs(lz)-(Di+Dj)/2)<((gap||0.06)+0.15)){
-            A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[lz>0?'z1':'z0']=1; bwN++; } } }
+      const halb=(o,ux,uz)=>{ const c=Math.cos(o.phi), s=Math.sin(o.phi); return o.ex*Math.abs(ux*c-uz*s)+o.ez*Math.abs(ux*s+uz*c); };   // die halbe Ausdehnung der obb o längs (ux, uz)
+      for(let i=0;i<dorfB.length;i++){ const A=dorfB[i]; if(!imOrt(A.q)) continue;
+        const a=A.q.obb, ci=Math.cos(a.phi), si=Math.sin(a.phi), norm=(gap||0.06)+0.15;      // Schwelle an die NORM gekoppelt — gedockte Marktgassen (0.6) werden ebenso Brandwände wie Metropol-Fugen (0.06)
+        for(let j=0;j<dorfB.length;j++){ if(j===i) continue; const Bj=dorfB[j]; if(!imOrt(Bj.q)) continue;
+          const b=Bj.q.obb, dx=b.cx-a.cx, dz=b.cz-a.cz, lx=dx*ci-dz*si, lz=dx*si+dz*ci;          // ins Haus-Lokal von A (R(-phi))
+          const ex=a.ex+halb(b,ci,-si), ez=a.ez+halb(b,si,ci);                                  // die Summe der Körper längs der Achsen von A
+          const s=Math.abs(lx)/ex>=Math.abs(lz)/ez?(lx>0?'x1':'x0'):(lz>0?'z1':'z0'), aufX=s[0]==='x';
+          if(Math.abs(aufX?lz:lx)<(aufX?ez:ex) && Math.abs(aufX?lx:lz)-(aufX?ex:ez)<Math.max(norm,A.reich[s])){
+            A.p.brandwand=A.p.brandwand||{}; A.p.brandwand[s]=1; bwN++; } } }
       return bwN;
     }
     // ── DIE LEUTE EINES HAUSES (Meisterkarte mensch.K1, additiv) — das BAU-GESETZ von der anderen Seite: dort (`bauProgramm`) folgt die
@@ -10303,6 +10359,14 @@
                 plan.norm.gap
             );
             L.loseRest = loseEntzerren(Bt, L.pl, p.lose).rest; // die Lose überdecken sich nie (nach Snap und Brandwand, vor den Wand-Stücken)
+            // DIE BRANDWAND, WO DIE LOSE STEHEN (los-huelle-2): was das Los-Gesetz an einen Körper rückte, öffnet nicht zu ihm (der Ruf
+            // davor trägt die gedockte Reihe durch das Los-Gesetz, `losGrundriss`; wie das Labor, buildDorf)
+            brandwand(
+                Bt.filter(function (b) {
+                    return b.q;
+                }),
+                plan.norm.gap
+            );
             mastWeicht(L.pl, L);
             brunnenWeicht(Bt, L.pl, L);
             wandLaternen(Bt, L.pl, L);

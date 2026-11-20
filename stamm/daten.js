@@ -64,8 +64,17 @@ class AnazhRealm_daten {
     // jeder Welt), der Himmel (die Rayleigh-Tiefe je Kanal, foundry-core `ATMO_GESETZ.rayleighTiefe`), die Wetter-Tafel (je Zeile
     // der Front, phyto-core `wetterAt`, das Wort der Welt: `WETTER_WORT`) und das Gelände (das Erbgut, null = die Wildnis des
     // Gelände-Kerns). Jede Welt trägt ihr Gesetz in ihrem Speicher (`worldMeta.gesetz`, `_weltGesetz`); fehlt es, ist sie die Erde.
+    // DER KALENDER (zeit.K1, zeit-ein-kalender): `spielZeit` ist die EINE laufende Größe; Tag, Tag der Prozesse (Pegel, Lava, Taten)
+    // und Jahr sind Funktionen von ihr durch die EINE Tag-Länge (`_kalender`: die Wahl des Spielers, `dayLengthMinutes`). Das Gesetz
+    // trägt die Stunden des Tags und die Tage des Jahrs der Erde (planet-core `PLANET_ERDE.tagStunden` · `jahrTage`; im Haupt-Faden
+    // liest es das Jahr des Ort-Gesetzes, gelaende-core `TEMPERATUR.jahrTage` — R5: derselbe Wert, gate:wetter-wache (K) prüft beide)
+    // und die RAFFUNG des Jahrs: `jahreJeTag` Jahre vergehen in einem Spieltag — am Standard-Tag (60 min) dauert ein Jahr 40 min
+    // wie vor dem Gesetz (die Saison-Drift der Bühne), an jedem anderen folgt es dem Tag. `stundeS`: die Sekunden einer Stunde
+    // der Natur — ein Prozess, der in echter Zeit rechnet (das Erkalten der Lava im Kern), liest die Stunde des Tags der Prozesse so.
     static get WELT_GESETZ_ERDE() {
         const A = AnazhRealm.Gesetz("terrain:ATMO_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:ATMO_GESETZ");
+        const T = globalThis.__gelaendeCore && globalThis.__gelaendeCore.TEMPERATUR;
+        if (!(T && T.jahrTage > 0)) throw new Error("gelaende-core fehlt: TEMPERATUR.jahrTage (der Kalender der Welt)");
         return this._einmal(
             "WELT_GESETZ_ERDE",
             Object.freeze({
@@ -73,6 +82,7 @@ class AnazhRealm_daten {
                 himmel: Object.freeze({ rayleighTiefe: Object.freeze(A.rayleighTiefe.slice()) }),
                 wetter: AnazhRealm.WETTER_WORT,
                 gelaende: null,
+                kalender: Object.freeze({ tagStunden: 24, stundeS: 3600, jahrTage: T.jahrTage, jahreJeTag: 1.5 }),
             })
         );
     }
@@ -140,8 +150,10 @@ class AnazhRealm_daten {
     static get WIND_BOE() {
         return globalThis.__phytoCore.WIND_GESETZ.boe; // die Zahlen leben im Wind-Gesetz des Kerns (K19) — das Labor liest sie dort
     }
-    static get WEATHER_TRANSITION_DURATION_MS() {
-        return 45000; // 45 s — sanft, nicht zu lang
+    // DER ÜBERGANG DES WETTERS in Sekunden der Welt-Uhr (`spielZeit`, zeit-ein-kalender): sanft, nicht zu lang. Leser: der EINE
+    // Schreiber des Übergangs (`requestWeatherTransition`), sein Takt (`tickWeatherTransition`) und der Weg des Regens (`_regenWeg`).
+    static get WETTER_UEBERGANG_S() {
+        return 45;
     }
     static get DAY_LENGTH_MIN_MINUTES() {
         return 1; // Slider-Minimum
@@ -158,12 +170,6 @@ class AnazhRealm_daten {
     }
     static get DAY_LENGTH_DEFAULT_MINUTES() {
         return AnazhRealm.TAG_SZENE_MINUTEN * 4; // 60 min: Mittag bis Sonnenuntergang = eine Szene
-    }
-    // DER SPIELTAG DES PEGELS (wetter.K3, gelaende-core `pegelLauf`): die Sekunden der Welt-Uhr, die der Lauf des Regens und die
-    // Dürre als einen Tag rechnen — der Tag des Gesetzes, nie die Wahl der Tag-Länge einer Seite (die Uhr reist nie, der Pegel
-    // ist auf jeder Seite derselbe).
-    static get PEGEL_TAG_S() {
-        return AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES * 60;
     }
     // DER TAKT DES WETTER-ZUGS: das Wetter steht so lange, bevor der Zug das nächste Wort zieht (mit dem 45-s-Übergang steht
     // es ~75 s). Leser: der Zug (`_loopWeatherAndGrowth`) — und damit jeder Wunsch der Welt, den nur der Zug erfüllt.

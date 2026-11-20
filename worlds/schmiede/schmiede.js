@@ -384,7 +384,7 @@ document.getElementById('ring').onclick=triggerRing;
 function triggerRing(){if(P.modus!=='klinge'||!gBladeMesh)return;const m=measure(P),S=m.S;
   ring.x1=S.pivot;ring.x2=Math.min(m.xcop,S.xPoint*0.98);ring.xTip=S.xPoint;ring.f1=m.f1;
   let mx=1e-9;for(let s=0;s<=40;s++){const x=S.xBlade0+s/40*P.klinge;mx=Math.max(mx,Math.abs(modeRaw(x)));}ring.phiMax=mx;
-  ring.active=true;ring.t0=clock.getElapsedTime();
+  ring.active=true;ring.t0=uhr;
   const info=document.getElementById('ring-info');info.style.display='block';
   document.getElementById('ring-txt').innerHTML='Grundton <b>~'+(m.f1|0)+' Hz</b> (flach) · der <b>Knoten</b> steht still — das ist der Schlagpunkt. <span style="opacity:.6">(verlangsamt dargestellt)</span>';}
 
@@ -598,10 +598,10 @@ function tryHitArmored(handW,bladeDir,vel){const A=arena.armored;if(!A||A.hitCD>
   return true;}
 
 // ── DER FEDERPFAHL: die Stange federt nach dem Gesetz zurück ──
-function updateSpringPell(dt){const S=arena.springPell;if(!S)return;if(S.hitCD>0)S.hitCD-=dt;if(S.combo>0&&clock.getElapsedTime()-S.lastHitT>2.2)S.combo=0;}
+function updateSpringPell(dt){const S=arena.springPell;if(!S)return;if(S.hitCD>0)S.hitCD-=dt;if(S.combo>0&&uhr-S.lastHitT>2.2)S.combo=0;}
 function tryHitSpringPell(handW,bladeDir,vel){const S=arena.springPell;if(!S||S.hitCD>0.16)return false;
   const h=arenaHieb(S.T,handW,bladeDir,vel);if(!h)return false;S.hitCD=0.14;const sp=Math.hypot(vel.x,vel.z)*wMass();
-  if(sp>2.5){S.combo++;S.lastHitT=clock.getElapsedTime();popText('Treffer'+(S.combo>1?' x'+S.combo:'')+' — Pfahl federt zurück','#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.035);arena.cooldown=0.12;}
+  if(sp>2.5){S.combo++;S.lastHitT=uhr;popText('Treffer'+(S.combo>1?' x'+S.combo:'')+' — Pfahl federt zurück','#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.07);fx.freeze=Math.max(fx.freeze,0.035);arena.cooldown=0.12;}
   else{popText('zu zaghaft','#d4a843',0,0);bladeRecoil(0.4);}
   return true;}
 
@@ -609,12 +609,12 @@ function tryHitSpringPell(handW,bladeDir,vel){const S=arena.springPell;if(!S||S.
 function updateSequence(dt){const S=arena.sequence;if(!S)return;
   for(const p of S.pads)if(p.ton!==p.lit){p.ton=p.lit;if(p.lit)arenaTon(p.T,1.9,1.6,0.55);else arenaTon(p.T,1,1,1);}
   if(S.hitCD>0)S.hitCD-=dt;
-  if(S.combo>0&&clock.getElapsedTime()-S.lastT>3.5){if(S.combo>S.best)S.best=S.combo;S.combo=0;}}
+  if(S.combo>0&&uhr-S.lastT>3.5){if(S.combo>S.best)S.best=S.combo;S.combo=0;}}
 function tryHitSequence(handW,bladeDir,vel){const S=arena.sequence;if(!S||S.hitCD>0.18)return false;
   for(let pi=0;pi<S.pads.length;pi++){const p=S.pads[pi],ort=arenaKontakt(p.T,handW,bladeDir);
     if(!ort||p.T.h.worldToLocal(ort.clone()).y<1.15)continue;                                  // das Brett, nicht der Pfosten
     arenaHieb(p.T,handW,bladeDir,vel);
-    if(p.lit){p.lit=false;let nx;do{nx=Math.floor(zufall('folge')*S.pads.length);}while(nx===pi);S.pads[nx].lit=true;S.active=nx;S.combo++;S.lastT=clock.getElapsedTime();popText('Folge '+S.combo+(S.combo>S.best&&S.combo>2?' — Bestwert!':''),'#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.03);arena.cooldown=0.18;}
+    if(p.lit){p.lit=false;let nx;do{nx=Math.floor(zufall('folge')*S.pads.length);}while(nx===pi);S.pads[nx].lit=true;S.active=nx;S.combo++;S.lastT=uhr;popText('Folge '+S.combo+(S.combo>S.best&&S.combo>2?' — Bestwert!':''),'#6fcf73',0,-0.04);fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.03);arena.cooldown=0.18;}
     else{popText('falsches Ziel — Folge bricht','#d96a4a',0,0);if(S.combo>S.best)S.best=S.combo;S.combo=0;arena.cooldown=0.2;}
     S.hitCD=0.2;return true;}
   return false;}
@@ -644,14 +644,14 @@ function updateKnights(dt){if(!arena.knightArenas)return;arena._nearKnightField=
       for(let i=0;i<K.pips.length;i++){K.pips[i].visible=showPips;if(showPips){const lost=i>=K.hp;K.pips[i].material.color.setHex(lost?0x3a1a1a:(K.hp===1?0xff4040:K.hp===2&&K.maxHp>2?0xe0a040:0x40e060));}}
       if(K.state==='down'){if(K.downT>0)K.downT-=dt;continue;}
       if(K.actCD>0)K.actCD-=dt; if(K.flash>0)K.flash=Math.max(0,K.flash-dt*3.2); if(K.spark>0)K.spark=Math.max(0,K.spark-dt*4.5);
-      const tel=(K.state==='wind')?(0.5*Math.sin(clock.getElapsedTime()*16)+0.5):0,ton=K.flash+K.spark+tel;
+      const tel=(K.state==='wind')?(0.5*Math.sin(uhr*16)+0.5):0,ton=K.flash+K.spark+tel;
       if(ton>0||K._ton>0){K._ton=ton;arenaTon(T,1+0.8*K.flash+0.9*K.spark+0.7*tel,1+0.67*K.flash-0.33*K.spark+0.17*tel,1+0.29*K.flash-0.35*K.spark-0.29*tel);}
       if(!F.active){knightPose(K);continue;}
       const kw=T.basis,dx=arena.player.x-kw.x,dz=arena.player.z-kw.z,dist=Math.hypot(dx,dz)||1e-4;
       T.yaw=Math.atan2(dx,dz);
       if(K.state==='stagger'){K.stagT-=dt;kw.x-=(dx/dist)*K.knockSpeed*dt;kw.z-=(dz/dist)*K.knockSpeed*dt;if(K.stagT<=0)K.state='approach';knightPose(K);continue;}
       if(K.state==='approach'){
-        if(dist>2.05){const sp=1.4*dt;kw.x+=(dx/dist)*sp;kw.z+=(dz/dist)*sp;kw.y=Math.abs(Math.sin(clock.getElapsedTime()*5+kw.x))*0.025;}
+        if(dist>2.05){const sp=1.4*dt;kw.x+=(dx/dist)*sp;kw.z+=(dz/dist)*sp;kw.y=Math.abs(Math.sin(uhr*5+kw.x))*0.025;}
         else{kw.y=0;if(K.actCD<=0){K.state='wind';K.windT=0.95;}}
       } else if(K.state==='wind'){
         K.windT-=dt;const u=clamp(1-K.windT/0.95,0,1);K.A.h.rotation.x=-2.1*u;
@@ -747,25 +747,25 @@ function tryHitGauntlet(handW,bladeDir,vel){if(!arena.gauntlet)return false;
   return false;}
 // das Pendelziel ruht nie lange: der Ziel-Wart stößt es an, wenn es steht (ein Stoß nach dem Gesetz, quer zur Bahn)
 function updateSwingTarget(dt){const S=arena.swingTgt;if(!S)return;
-  if(S.T.z.ruht&&clock.getElapsedTime()>S.anstossAb){S.seite=-S.seite;SC.geraetStoss(S.T.z,S.T.z.m*2.0,[0,-1.55,0],[0,0,S.seite]);S.anstossAb=clock.getElapsedTime()+1.0;}
-  if(S.struck&&clock.getElapsedTime()>S.respawnAt)S.struck=false;}
+  if(S.T.z.ruht&&uhr>S.anstossAb){S.seite=-S.seite;SC.geraetStoss(S.T.z,S.T.z.m*2.0,[0,-1.55,0],[0,0,S.seite]);S.anstossAb=uhr+1.0;}
+  if(S.struck&&uhr>S.respawnAt)S.struck=false;}
 function tryArrowSwing(a){const S=arena.swingTgt;if(!S||S.struck)return false;
   const T=S.T;T.h.updateMatrixWorld(true);const c=T.h.localToWorld(_KA.set(0,-1.55,0)),nx=_KB.set(1,0,0).transformDirection(T.h.matrixWorld);
   const d=a.pos.clone().sub(c),dn=d.dot(nx),r=d.addScaledVector(nx,-dn).length();
   if(Math.abs(dn)<0.22&&r<S.R){const ring=clamp(Math.ceil(4*(1-r/S.R)),1,4);
-    S.struck=true;S.respawnAt=clock.getElapsedTime()+2.5;pfeilStoss(T,a);T.h.attach(a.mesh);
+    S.struck=true;S.respawnAt=uhr+2.5;pfeilStoss(T,a);T.h.attach(a.mesh);
     fx.shake=Math.max(fx.shake,0.08);popText('PENDELZIEL getroffen — vorgehalten! · '+ring,'#ffe07a',0,0);popText('+'+(ring*5),'#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=ring*5;arena.score.last={ring:ring*5,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
   return false;}
 
 // ── DIE WURFSCHEIBE: die Tontaube (eine Gestalt des Kerns) steigt — triff sie in der Luft; der Wurf stößt den Arm zurück ──
-function updateClay(dt){const C=arena.clay;if(!C)return;const t=clock.getElapsedTime();
+function updateClay(dt){const C=arena.clay;if(!C)return;const t=uhr;
   if(!C.active){if(t>C.nextT&&Math.hypot(arena.player.x-C.thrower.x,arena.player.z-C.thrower.z)<30){C.pos.copy(C.thrower);C.pos.y+=0.95;C.vel.set((zufall('ton')-0.5)*3,7.5+zufall('ton')*2.5,(zufall('ton')<0.5?1:-1)*(4+zufall('ton')*4));C.active=true;C.disc.visible=true;
       SC.geraetStoss(C.arm.z,C.mTon*C.vel.length(),[0,0.65,0.22],[0,0,-1]);popText('PULL! — Wurfscheibe steigt','#d8c050',0,-0.22);}return;}
   C.vel.y-=SC.GERAET_GESETZ.schwere*dt;C.pos.addScaledVector(C.vel,dt);
   C.disc.position.copy(C.pos);C.disc.rotation.x+=dt*7;C.disc.rotation.z+=dt*4;
   if(C.pos.y<0.12){C.active=false;C.disc.visible=false;C.nextT=t+2.0+zufall('ton')*2.2;}}
 function tryArrowClay(a){const C=arena.clay;if(!C||!C.active)return false;
-  if(a.pos.distanceTo(C.pos)<0.45){C.active=false;C.disc.visible=false;C.nextT=clock.getElapsedTime()+1.6+zufall('ton')*1.5;C.broke++;
+  if(a.pos.distanceTo(C.pos)<0.45){C.active=false;C.disc.visible=false;C.nextT=uhr+1.6+zufall('ton')*1.5;C.broke++;
     fx.shake=Math.max(fx.shake,0.1);popText('SCHEIBE ZERSPLITTERT — in der Luft getroffen!','#ffe07a',0,0);popText('+25','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=25;arena.score.last={ring:25,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};updateHUD();return true;}
   return false;}
 
@@ -789,18 +789,18 @@ function tryThrustRing(tip,prev,dt){if(!arena.thrustRings||!prev)return;
     const c=r.T.h.localToWorld(_KA.set(0,-0.94,0)).clone(),ax=_KB.set(0,0,1).transformDirection(r.T.h.matrixWorld).clone();
     const d0=prev.clone().sub(c).dot(ax),d1=tip.clone().sub(c).dot(ax);
     if(d0*d1<=0&&Math.abs(d1-d0)>1e-5){const t=d0/(d0-d1),cr=prev.clone().lerp(tip,t);const rad=cr.clone().sub(c).addScaledVector(ax,-cr.clone().sub(c).dot(ax)).length();
-      if(rad<r.R-0.035){r.scored=true;r.scoreUntil=clock.getElapsedTime()+1.4;r.flash=1;popText('◎ RING DURCHSTOCHEN — sauber durch die Mitte!','#6fcf73',0,-0.04);fx.freeze=Math.max(fx.freeze,0.06);}
+      if(rad<r.R-0.035){r.scored=true;r.scoreUntil=uhr+1.4;r.flash=1;popText('◎ RING DURCHSTOCHEN — sauber durch die Mitte!','#6fcf73',0,-0.04);fx.freeze=Math.max(fx.freeze,0.06);}
       else if(rad<r.R*1.7){const v=tip.clone().sub(prev).divideScalar(Math.max(1e-3,dt));
         arenaStoss(r.T,cr,v,SC.trefferUrteil(arena._m||measure(P),{vLat:0,vAx:v.length(),P}));
         popText('Rand erwischt — der Ring schwingt fort!','#d4a843',0,-0.04);fx.shake=Math.max(fx.shake,0.16);fx.freeze=Math.max(fx.freeze,0.05);}
       else if(rad<r.R*2.8){popText('knapp — '+(rad*100).toFixed(0)+' cm daneben','#d4a843',0,-0.04);}}}}
 function updateRings(dt){if(!arena.thrustRings)return;for(const r of arena.thrustRings){
-  if(r.scored&&r.scoreUntil&&clock.getElapsedTime()>r.scoreUntil){r.scored=false;r.scoreUntil=0;}
+  if(r.scored&&r.scoreUntil&&uhr>r.scoreUntil){r.scored=false;r.scoreUntil=0;}
   if(r.flash>0||r._ton){r.flash=Math.max(0,r.flash-dt*0.8);r._ton=r.flash>0;arenaTon(r.T,1-0.5*r.flash,1+0.4*r.flash,1);}}}
 
 // ── DAS PAPAGEIEN-FELD, DIE WEIDENRUTE: das Ziel wankt nach dem Gesetz, die Wertung ruht kurz ──
-function updatePopinjay(dt){if(!arena.popinjays)return;for(const P2 of arena.popinjays)if(P2.struck&&clock.getElapsedTime()>P2.respawnAt)P2.struck=false;}
-function updateWand(){const W=arena.wand;if(W&&W.struck&&clock.getElapsedTime()>W.respawnAt)W.struck=false;}
+function updatePopinjay(dt){if(!arena.popinjays)return;for(const P2 of arena.popinjays)if(P2.struck&&uhr>P2.respawnAt)P2.struck=false;}
+function updateWand(){const W=arena.wand;if(W&&W.struck&&uhr>W.respawnAt)W.struck=false;}
 
 // ── JEDES ÜBRIGE TEIL (Ziel, Ente, Fahne, Wurf-Arm, Gestell …): der EINE Stoß am getroffenen Teil ──
 function tryHitTeil(handW,bladeDir,vel){for(const T of arena.teile){if(T.eigen||!T.z||T.z.art==='fest')continue;
@@ -814,7 +814,7 @@ function tryArrowTeil(a){for(const T of arena.teile){if(T.eigen||T.pfeilEigen||!
 function carnivalUpdate(t){if(!arena.movers)return;
   for(const mv of arena.movers){if(mv.hit&&t-mv.hitAt>2.8)mv.hit=false;
     mv.T.basis.z=mv.z0+mv.amp*Math.sin(mv.w*t+mv.phase);mv.worldZ=mv.T.basis.z;arenaPose(mv.T);}}
-function hitMover(a){if(!arena.movers)return false;const t=clock.getElapsedTime();
+function hitMover(a){if(!arena.movers)return false;const t=uhr;
   for(const mv of arena.movers){if(mv.hit)continue;
     if(a.pos.x>=mv.baseX-0.22&&a.pos.x<mv.baseX+0.3&&Math.abs(a.pos.z-mv.worldZ)<0.28&&Math.abs(a.pos.y-mv.baseY)<0.26){
       mv.hit=true;mv.hitAt=t;pfeilStoss(mv.T,a);fx.shake+=0.06;arena.score.shots++;arena.score.sum+=10;arena.score.last={ring:10,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};
@@ -862,10 +862,10 @@ function cutBambooPole(b,yCut,cutDir,KE){b.cut=true;if(!arena.fallingBamboo)aren
   const bottomH=Math.max(0.05,yCut-b.baseY),topH=Math.max(0.05,(b.baseY+b.h)-yCut);
   bambusRohr(b,bottomH);                                                                        // der Stumpf bleibt (er federt weiter)
   fallendesStueck('bambusrohr',{hoeheM:topH},new THREE.Vector3(b.wx,yCut,b.wz),null,cutDir.clone().multiplyScalar(0.6+Math.min(2.5,KE*0.006)).add(new THREE.Vector3(0,0.4,0)),5);
-  b.respawnAt=clock.getElapsedTime()+(b.lane?0.9:1.6);
+  b.respawnAt=uhr+(b.lane?0.9:1.6);
   fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.05);
   popText('✁ SAUBERER SCHNITT — '+KE.toFixed(0)+' J','#ffe07a',0,-0.04);popText('die Spitze fällt','#9fb3c8',0.12,0.05);}
-function regrowBamboo(){if(!arena.bamboo)return;const t=clock.getElapsedTime();
+function regrowBamboo(){if(!arena.bamboo)return;const t=uhr;
   for(const b of arena.bamboo){if(b.cut===true&&b.respawnAt&&t>b.respawnAt){bambusRohr(b,b.h);b.cut=false;b.respawnAt=0;}}}
 function tryThrustBamboo(tip,prev,dt){if(!arena.bamboo)return false;
   for(const b of arena.bamboo){if(b.cut)continue;
@@ -902,10 +902,10 @@ function tryCutTatami(handW,bladeDir,vel){const T=arena.tatami;if(!T||!T.T||T.cu
   if(botLen>0.04){const q=T.T.h.getWorldQuaternion(new THREE.Quaternion()),pos=T.T.h.localToWorld(new THREE.Vector3(0,-0.55-topLen,0));
     fallendesStueck('tatamirolle',{rolleM:botLen,seilM:0},pos,q,cutDir.clone().multiplyScalar(0.6+Math.min(2,KE*0.005)).add(new THREE.Vector3(0,0.15,0)),4);}
   if(topLen>0.30)tatamiRolle(topLen);                                                            // das obere Stück bleibt am Seil → weiter schneidbar
-  else{arenaWeg(T.T);T.T=null;T.cut=true;T.respawnAt=clock.getElapsedTime()+2.2;}
+  else{arenaWeg(T.T);T.T=null;T.cut=true;T.respawnAt=uhr+2.2;}
   fx.shake=Math.max(fx.shake,0.05);fx.freeze=Math.max(fx.freeze,0.05);
   popText('✁ DURCHTRENNT — '+KE.toFixed(0)+' J'+(topLen>0.30?' · weiter!':''),eff>0.7?'#ffe07a':'#d4a843',0,-0.04);arena.cooldown=0.22;return;}
-function regrowTatami(){const T=arena.tatami;if(T&&T.cut&&T.respawnAt&&clock.getElapsedTime()>T.respawnAt&&!T.T)tatamiRolle(1.0);}
+function regrowTatami(){const T=arena.tatami;if(T&&T.cut&&T.respawnAt&&uhr>T.respawnAt&&!T.T)tatamiRolle(1.0);}
 
 function scoreArrowOn(a,T,r){const R=T.R;let ring=0;if(r<=R)ring=clamp(Math.ceil(10*(1-r/R)),1,10);const pen=a.KE*0.18;
   const dist=Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z);arena.score.shots++;arena.score.sum+=ring;arena.score.last={ring,pen,v0:a.v0,KE:a.KE,dist};
@@ -1098,7 +1098,7 @@ function doRelease(){if(arena.kind!=='bow')return;if(arena.drawFrac<0.25){arena.
 function stickArrow(a){a.stuck=true;a.vel.set(0,0,0);arena.stuck.push(a.mesh);if(arena.stuck.length>40){const o=arena.stuck.shift();if(o.parent)o.parent.remove(o);}if(a.line&&a.line.parent)a.line.parent.remove(a.line);}
 
 
-function arenaUpdate(realDt){if(!arena.active)return;const now=clock.getElapsedTime();
+function arenaUpdate(realDt){if(!arena.active)return;const now=uhr;
   if(fx.freeze>0)fx.freeze-=realDt;const dt=fx.freeze>0?realDt*0.05:realDt;updateMovement(realDt);pickupCheck();updateFalling(realDt);regrowBamboo();regrowTatami();carnivalUpdate(now);for(const d of (arena.devices||[])){if(d.update)d.update(realDt);}arenaTakt(realDt);
   if(arena.kind==='bow'){arena.raise=lerp(arena.raise,(arena.drawing||arena._wantAim)?1:0,clamp(realDt*8,0,1));
     if(arena.drawing){arena.drawFrac=Math.min(1,arena.drawFrac+dt/0.9);fx.fovT=lerp(75,54,arena.drawFrac);if(arena.drawFrac>=1){arena.holdT+=dt;arena.sway=clamp((arena.holdT-0.7)*0.5,0,1);}}
@@ -1107,9 +1107,9 @@ function arenaUpdate(realDt){if(!arena.active)return;const now=clock.getElapsedT
     for(const a of arena.arrows){if(a.stuck)continue;a.vel.y-=ARENA.g*dt;const sp=a.vel.length();a.vel.multiplyScalar(Math.max(0,1-0.0016*sp*dt));
       a.pos.addScaledVector(a.vel,dt);a.mesh.position.copy(a.pos);if(sp>0.01)a.mesh.quaternion.setFromUnitVectors(_AX,a.vel.clone().normalize());a.life+=dt;
       if(!a.scored)hitMover(a);
-      if(!a.scored&&arena.popinjays){for(const P2 of arena.popinjays){if(P2.struck)continue;const bp=P2.base;if(Math.hypot(a.pos.x-bp.x,a.pos.y-bp.y,a.pos.z-bp.z)<0.36){P2.struck=true;P2.respawnAt=clock.getElapsedTime()+3.5;pfeilStoss(P2.T,a);popText('Papagei getroffen!','#ffe07a',0,0);popText('+15','#6fcf73',0.12,0.06);a.scored=true;stickArrow(a);P2.T.h.attach(a.mesh);break;}}}
+      if(!a.scored&&arena.popinjays){for(const P2 of arena.popinjays){if(P2.struck)continue;const bp=P2.base;if(Math.hypot(a.pos.x-bp.x,a.pos.y-bp.y,a.pos.z-bp.z)<0.36){P2.struck=true;P2.respawnAt=uhr+3.5;pfeilStoss(P2.T,a);popText('Papagei getroffen!','#ffe07a',0,0);popText('+15','#6fcf73',0.12,0.06);a.scored=true;stickArrow(a);P2.T.h.attach(a.mesh);break;}}}
       if(!a.scored&&arena.dummy){const dp=arena.dummy.position;if(Math.hypot(a.pos.x-dp.x,a.pos.z-dp.z)<0.36&&a.pos.y>0.55&&a.pos.y<1.9){fx.shake+=0.05;pfeilStoss(arena.pell,a);popText('Pell getroffen','#d8b46a',0,0);popText('+8','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=8;arena.score.last={ring:8,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);arena.dummy.attach(a.mesh);updateHUD();}}
-      if(!a.scored&&arena.wand&&!arena.wand.struck){const W=arena.wand;if(Math.hypot(a.pos.x-W.x,a.pos.z-W.z)<W.R&&a.pos.y>W.y0&&a.pos.y<W.y1){W.struck=true;W.respawnAt=clock.getElapsedTime()+3.0;pfeilStoss(W.T,a);fx.shake+=0.05;popText('WEIDENRUTE GETROFFEN — reine Präzision','#ffe07a',0,0);popText('+20','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=20;arena.score.last={ring:20,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);W.T.h.attach(a.mesh);updateHUD();}}
+      if(!a.scored&&arena.wand&&!arena.wand.struck){const W=arena.wand;if(Math.hypot(a.pos.x-W.x,a.pos.z-W.z)<W.R&&a.pos.y>W.y0&&a.pos.y<W.y1){W.struck=true;W.respawnAt=uhr+3.0;pfeilStoss(W.T,a);fx.shake+=0.05;popText('WEIDENRUTE GETROFFEN — reine Präzision','#ffe07a',0,0);popText('+20','#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=20;arena.score.last={ring:20,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);W.T.h.attach(a.mesh);updateHUD();}}
       if(!a.scored&&arena.clout){const C=arena.clout,hd=Math.hypot(a.pos.x-C.x,a.pos.z-C.z);if(a.pos.y<0.35&&a.vel.y<0&&hd<C.R){const ring=clamp(Math.ceil(6*(1-hd/C.R)),1,6);fx.shake+=0.05;popText('CLOUT — die Parabel sitzt · '+ring,'#ffe07a',0,0);popText('+'+(ring*3),'#6fcf73',0.12,0.06);arena.score.shots++;arena.score.sum+=ring*3;arena.score.last={ring:ring*3,pen:a.KE*0.18,v0:a.v0,KE:a.KE,dist:Math.hypot(a.pos.x-arena.player.x,a.pos.z-arena.player.z)};a.scored=true;stickArrow(a);updateHUD();}}
       for(const d of (arena.devices||[])){if(!a.scored&&d.arrow&&d.arrow(a))a.scored=true;}
       if(!a.scored){for(const T of arena.targets){if(a.pos.x>=T.pos.x-0.05&&a.pos.x<T.pos.x+0.35){const rr=Math.hypot(a.pos.y-T.pos.y,a.pos.z-T.pos.z);if(rr<=T.R+0.12){scoreArrowOn(a,T,rr);break;}}}}
@@ -1124,7 +1124,7 @@ function arenaUpdate(realDt){if(!arena.active)return;const now=clock.getElapsedT
 function applyCamera(dt){fx.fov=lerp(fx.fov,fx.fovT,clamp(dt*9,0,1));cam.fov=fx.fov;
   fx.kick.addScaledVector(fx.kickV,dt);fx.kickV.multiplyScalar(Math.pow(0.0003,dt));fx.kick.multiplyScalar(Math.pow(0.015,dt));
   const sh=fx.shake;fx.shake*=Math.pow(0.0006,dt);if(fx.shake<0.0008)fx.shake=0;
-  const bob=Math.sin(clock.getElapsedTime()*9)*arena.bob*0.012,B=camBasis();
+  const bob=Math.sin(uhr*9)*arena.bob*0.012,B=camBasis();
   cam.position.set(arena.player.x+(zufall('kamera')-0.5)*sh,ARENA.eyeY-(arena._crouchY||0)+bob+(zufall('kamera')-0.5)*sh+fx.kick.y,arena.player.z+(zufall('kamera')-0.5)*sh);
   cam.lookAt(cam.position.clone().add(B.fwd));cam.updateProjectionMatrix();}
 
@@ -1152,7 +1152,7 @@ function appendArenaUI(){
     else{arena.yaw+=e.movementX*ARENA.sens;arena.pitch=clamp(arena.pitch-e.movementY*ARENA.sens,-1.2,1.2);}});
   document.addEventListener('mousedown',e=>{if(!arena.active||!arena.locked)return;
     if(arena.kind==='bow'){if(e.button===0)arena._wantAim=true;else if(e.button===2)arena.drawing=true;}
-    else{if(e.button===0){arena._pressing=true;arena._downT=clock.getElapsedTime();arena._dragMag=0;arena.swP=0;arena.swY=0;arena.trail.pts=[];}else if(e.button===2){arena.holdView=true;}}});  // links: Klick-Impuls=Stich, Halten/Ziehen=Ausgangsstellung
+    else{if(e.button===0){arena._pressing=true;arena._downT=uhr;arena._dragMag=0;arena.swP=0;arena.swY=0;arena.trail.pts=[];}else if(e.button===2){arena.holdView=true;}}});  // links: Klick-Impuls=Stich, Halten/Ziehen=Ausgangsstellung
   document.addEventListener('mouseup',e=>{if(!arena.active||!arena.locked)return;
     if(arena.kind==='bow'){if(e.button===2)doRelease();else if(e.button===0){arena._wantAim=false;}}
     else{if(e.button===0){if(arena._pressing&&!arena.swinging&&(arena._dragMag||0)<12&&arena.cooldown<=0)startThrust();arena.swinging=false;arena._pressing=false;}else if(e.button===2)arena.holdView=false;}});
@@ -1185,7 +1185,9 @@ function updateHUD(){const ro=document.getElementById('arena-readout');if(!ro)re
 // ANIMATION
 // ════════════════════════════════════════════════════════════════════
 const clock=new THREE.Clock();
-let _lastT=0;
+// DIE EINE UHR DES LABORS (zeit-ein-kalender): `uhr` ist die Spiel-Zeit der Schmiede, die Summe der gekappten Schritte (dt ≤ 0,05 s);
+// jeder Zeitgeber der Arena, das Klingen der Klinge und das Federn des Pfahls lesen sie — die Wanduhr misst nur den Schritt.
+let _lastT=0,uhr=0;
 // — DAS SEIL (physik.K4) — EIN Löser für Labor und Welt: der Kern rechnet Zustand, Schritt und die Pose jedes Teils (SC.seilZustand ·
 //   seilSchritt · seilPosen — die Hand der Welt ruft dieselben, `_seilTakt`). Je Gerät mit Seil-Teilen (userData.__seil, die Gestalt
 //   des Kerns) sein Zustand aus dem Seil des Geräts (SC.seilGesetz: Eintrag der Gattung, Anker am Ende des Schafts, Werkstoff); der Anker folgt dem Gerät, die Schwere der Szene treibt; ein
@@ -1200,7 +1202,7 @@ function seilTakt(g,dt){if(!g||!g.parent||!P.seil||P.modus!=='wucht')return;let 
   else if(!SC.seilSchritt(e.z,anker,dt,[0,-SC.SEIL_GESETZ.schwere*e.skala,0]))return;
   g.getWorldQuaternion(_sv.q);e.posen=SC.seilPosen(e.z,e.seil,[_sv.q.x,_sv.q.y,_sv.q.z,_sv.q.w],e.posen);
   e.teile.forEach((m,i)=>{_sv.inv.copy(m.parent.matrixWorld).invert();m.matrix.multiplyMatrices(_sv.inv,_sv.W.fromArray(e.posen,16*i));m.matrixWorldNeedsUpdate=true;});}
-function animate(){const t=clock.getElapsedTime();const dt=Math.min(0.05,t-_lastT);_lastT=t;
+function animate(){const w=clock.getElapsedTime();const dt=Math.min(0.05,w-_lastT);_lastT=w;uhr+=dt;const t=uhr;
   if(!arena.active)controls.update();
   if(arena.active)arenaUpdate(dt);
   seilTakt(gWeapon,dt);if(arena.active)seilTakt(arena.vmWeapon,dt);                                 // das Seil nach der Haltung dieses Bilds

@@ -2416,10 +2416,10 @@ class AnazhRealm_siedlung_bewohner {
         return null;
     }
 
-    // DIE SEKUNDEN EINER SPIELSTUNDE: der Tag des Spielers (`dayLengthMinutes`, Echtzeit je Zyklus) — der Gang der Uhr
-    // (`tickDayNight`) rückt sie um delta / (Minuten · 60) Tage je Takt.
+    // DIE SEKUNDEN EINER SPIELSTUNDE: der Tag des Kalenders (`_kalender`, zeit-ein-kalender) durch seine Stunden — der Gang der
+    // Uhr (`tickDayNight`) rückt sie um delta / tagS Tage je Takt.
     _bewohnerStundeSek() {
-        return ((this.state.dayLengthMinutes || AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES) * 60) / 24;
+        return this._kalender().tagS / AnazhRealm.WELT_GESETZ_ERDE.kalender.tagStunden;
     }
 
     // DER WEG (mensch.K2, „nie durch Hauswände"): vom Stand des Leibs zum Ziel — die Tür liegt in der Wand: wer aus ihr tritt
