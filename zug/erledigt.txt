@@ -1880,3 +1880,4 @@ omen-gtx-gtx-f68dbf09-w022211-1-f68dbf09 UNGEMESSEN 1 GRÜN / 0 ROT / 8 UNGEMESS
 omen-gtx-gtx-f68dbf09-w023510-1-f68dbf09 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN mensch.K5#1 ‖ mensch.K5#1 UNGEMESSEN roh: Last: Referenz f 1,458 (Faden 1,458 · alle Kerne 1,314; vor 108,6/299,9 ms, nach 131,2/299,2 ms, Ruhe 90/228,3 ms seit 2026-11-18) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --u (punkte-maschine 22255518 messung/f68dbf09-gtx.json)
 2026-11-20 03:01 landung Runde 1 am f68dbf09: WEICHT — samen-bild-neu wartete am GPU-Schloss, BEHALTEN 1, die Liste geht an derselben Station weiter
 2026-11-20 03:02 RUNDE 1 ALARM gtx: ohne Fortschritt seit 17 min (weicht, 1421/1428, Station mensch.K5#1, Kopf f68dbf09) — gesehen von radeon (radeon-dienst)
+2026-11-20 03:06 landung Runde 1 am f68dbf09: misst 7 von 1428 Stationen (1421 tragen an diesem Kopf schon einen Eintrag), rohe Zahl je Zeile
