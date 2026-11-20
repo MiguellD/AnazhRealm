@@ -288,7 +288,7 @@ hauptLauf(async () => {
             };
             if (gewaehlt) {
                 res.H = await mantel();
-                // der Kronen-Fuß der Gestalt V (L1, die Welt-Matrix der Teile, die Rinde zählt nicht): der Baum am Trauf trägt
+                // der Kronen-Fuß der Gestalt V (L1, die Welt-Matrix der Teile, die Rinde zählt nicht — wie gate:pflanzen-nah): der Baum am Trauf trägt
                 // seine Krone bis zum Grund
                 const e = gewaehlt.proben.find((p) => r._foundryGestaltFor(p, "eiche") === V);
                 let fl = null;
@@ -301,8 +301,7 @@ hauptLauf(async () => {
                     let [H, fuss] = [0, Infinity];
                     for (const lf of fl.leaves) {
                         if (!lf.geom || lf.shadowTwin) continue;
-                        const name = (lf.leafKey || "") + " " + ((lf.mat && lf.mat.name) || "");
-                        const laub = !/rinde|bark|stamm|trunk|holz|wood/i.test(name);
+                        const laub = !!(lf.mat && lf.mat.userData && lf.mat.userData.foundryKind !== "bark"); // die Krone: jeder Teil außer der Rinde
                         const pos = lf.geom.attributes.position;
                         for (let k = 0; k < pos.count; k++) {
                             v.fromBufferAttribute(pos, k);
@@ -863,7 +862,7 @@ hauptLauf(async () => {
         (h.taeter.length ? ` · Täter (${h.taeter.length}): ${h.taeter.slice(0, 3).join(" | ")}` : "");
     check(
         "H WALDMANTEL (die Krone folgt dem Seitenlicht)",
-        H.randNachbar >= 1 && H.innen >= 1 && !H.taeter.length && H.kronenFuss != null && H.kronenFuss <= 0.2,
+        H.randNachbar >= 1 && H.innen >= 1 && !H.taeter.length && H.kronenFuss > 0 && H.kronenFuss <= 0.2,
         hZeile(H)
     );
     const S9 = out.S9 || { taeter: [] };
