@@ -1833,11 +1833,18 @@ async function taeter(args) {
 // ── probe-tag: DAS BILD-TAG VOR DER FAHRT ───────────────────────────────────────────────────────────────────────────
 // dieselbe Wurzel wie taeter (z637): ein Beitrag an Sicht, Tiefe, Siedlung oder Ankunft trifft die Wände Prüfbühne S0 und Frost-Wand,
 // die nur am Kandidaten (echt omen) fahren — trägt sein Betreff sie nicht im [gpu-probe: …]-Tag, sah sie keine Probe am Zweig. Der
-// Zug lässt ihn dann nicht fahren; er wartet mit dem Grund beim Namen (zug-dienst.sh bereit). DIE EINE STELLE der Pfade und Wände:
-const PROBE_PFLICHT = {
-    pfade: [/^stamm\/siedlung-/, /^stamm\/bild-sicht\.js$/, /^stamm\/bild-tiefe\.js$/, /^stamm\/dirigent-ankunft\.js$/],
-    gates: ["gate:pruefbuehne-licht", "gate:weltbild-frost:echt"],
-};
+// Zug lässt ihn dann nicht fahren; er wartet mit dem Grund beim Namen (zug-dienst.sh bereit). DIE EINE STELLE der Pfade und Wände,
+// je Regel EINE Wurzel — jede kam aus einem roten Zug an einer Wand, die nur am Kandidaten fährt:
+//   Bau   (z637): Sicht, Tiefe, Siedlung, Ankunft → Prüfbühne S0 und Frost-Wand (echt omen)
+//   Haus  (z648): wer Häuser stellt (Siedlung, fachwerk-Kern, Samen-Baum) → das Studio-Dorf begehen (echt radeon; Samen allein riss
+//                 „B3 Kopfraum: 4 Austritte unter 1.7 m“)
+//   Licht (z647): Himmel und Leuchten → die Tag-Achse (echt omen; die Nacht-Lichter rissen „ASYNC genesis: Uhr 0 0.56 EV“)
+const PROBE_PFLICHT = [
+    { name: "Bau", pfade: [/^stamm\/siedlung-/, /^stamm\/bild-sicht\.js$/, /^stamm\/bild-tiefe\.js$/, /^stamm\/dirigent-ankunft\.js$/], gates: ["gate:pruefbuehne-licht", "gate:weltbild-frost:echt"] },
+    { name: "Haus", pfade: [/^stamm\/siedlung-/, /^fachwerk-core\.js$/, /^samen-core\.js$/], gates: ["gate:studio-begehen"] },
+    { name: "Licht", pfade: [/^stamm\/bild-himmel\.js$/, /^welt-licht\.js$/], gates: ["gate:tag-achse:echt"] },
+];
+const PFLICHT_GATES = [...new Set(PROBE_PFLICHT.flatMap((r) => r.gates))];
 // der Beitrag eines Stempels: git diff --name-only <basis> $(git merge-tree --write-tree <basis> <sha>) (auch mit Konflikt-Markern:
 // merge-tree schreibt den Baum dann trotzdem)
 function beitrag(basis, sha, repo) {
@@ -1846,29 +1853,37 @@ function beitrag(basis, sha, repo) {
     if (!/^[0-9a-f]{40}$/.test(baum)) throw new Error(`merge-tree ${basis.slice(0, 8)} ${sha.slice(0, 8)}: ${(mt.stderr || mt.stdout || "").trim().slice(0, 200)}`);
     return git(["diff", "--name-only", basis, baum], repo).split("\n").filter(Boolean);
 }
+// die Lücke über ALLE Regeln: je getroffener Regel die Wände, die das Tag nicht trägt; `noetig` = alle Wände der getroffenen Regeln
 function probeTagLuecke(dateien, betreff) {
-    const datei = dateien.find((d) => PROBE_PFLICHT.pfade.some((rx) => rx.test(d)));
-    if (!datei) return null;
     const tag = ((/\[gpu-probe:([^\]]*)\]/.exec(betreff) || [])[1] || "").split(",").map((s) => s.trim());
-    const fehlt = PROBE_PFLICHT.gates.filter((g) => !tag.includes(g));
-    return fehlt.length ? { datei, fehlt } : null;
+    const treffer = PROBE_PFLICHT.map((r) => ({ r, datei: dateien.find((d) => r.pfade.some((rx) => rx.test(d))) })).filter((t) => t.datei);
+    const offen = treffer.map((t) => ({ datei: t.datei, fehlt: t.r.gates.filter((g) => !tag.includes(g)) })).filter((t) => t.fehlt.length);
+    if (!offen.length) return null;
+    return { datei: offen[0].datei, fehlt: [...new Set(offen.flatMap((t) => t.fehlt))], noetig: [...new Set(treffer.flatMap((t) => t.r.gates))] };
 }
+// mehr Pflicht-Wände als der Einlass trägt, heilt kein Tag: der Grund nennt es (der Beitrag fährt in zwei Stempeln)
 function probeTagFehlt(dateien, betreff) {
     const l = probeTagLuecke(dateien, betreff);
-    return l ? `Probe-Tag ohne ${undListe(l.fehlt)} (Beitrag fasst ${l.datei} an)` : null;
+    if (!l) return null;
+    const ueber = l.noetig.length > PROBE_EINLASS_MAX ? ` — ${l.noetig.length} Pflicht-Wände über dem Einlass ${PROBE_EINLASS_MAX}: den Beitrag in zwei Stempel teilen` : "";
+    return `Probe-Tag ohne ${undListe(l.fehlt)} (Beitrag fasst ${l.datei} an)${ueber}`;
 }
 // DER EINLASS DER PROBE (.github/workflows/gpu-probe.yml, Schritt „Einlass“): genau EINE Marke [gpu-probe: …] und höchstens 3 Proben je
 // Push — ein Tag darüber weist die Probe ab, und der Kopf stünde für immer an „GPU-Probe nicht GRÜN“
 const PROBE_EINLASS_MAX = 3;
 const tagProben = (betreff) => ((/\[gpu-probe:([^\]]*)\]/.exec(betreff) || [])[1] || "").split(",").map((s) => s.trim()).filter(Boolean);
-// der neue Kopf eines Unschuldigen: ohne Lücke trägt er sein Tag unverändert; fehlt eine Pflicht-Wand des Bau-Pfads, trägt er die zwei
-// Pflicht-Wände + genau EINE Probe des alten Tags — mit Vorrang das bild: (nie eine sichtbare Änderung ohne Bild), sonst die erste —,
-// so bleibt er unter dem Deckel des Einlasses
+// der neue Kopf eines Unschuldigen: ohne Lücke trägt er sein Tag unverändert; fehlt eine Pflicht-Wand, trägt er ALLE Wände jeder Regel,
+// der eine fehlt, dazu die Pflicht-Wände, die sein altes Tag schon trug — und, solange der Einlass Platz lässt, genau EINE Probe des
+// alten Tags: mit Vorrang das bild: (nie eine sichtbare Änderung ohne Bild), sonst die erste. Füllen die Pflicht-Wände den Einlass
+// (Bau + Haus = 3), fällt das bild: — das Bildpaar kommt dann aus dem Bericht des Schneiders
 function tagErgaenzt(betreff, fehlt) {
     if (!fehlt.length) return betreff;
-    const alt = tagProben(betreff).filter((p) => !PROBE_PFLICHT.gates.includes(p));
-    const eine = alt.find((p) => p.startsWith("bild:")) || alt[0];
-    const tag = `[gpu-probe: ${[...(eine ? [eine] : []), ...PROBE_PFLICHT.gates].join(", ")}]`;
+    const altes = tagProben(betreff);
+    const pflicht = PFLICHT_GATES.filter((g) => altes.includes(g) || PROBE_PFLICHT.some((r) => r.gates.includes(g) && r.gates.some((x) => fehlt.includes(x))));
+    const alt = altes.filter((p) => !PFLICHT_GATES.includes(p));
+    const eine = pflicht.length < PROBE_EINLASS_MAX ? alt.find((p) => p.startsWith("bild:")) || alt[0] : null;
+    const tag = `[gpu-probe: ${[...(eine ? [eine] : []), ...pflicht].join(", ")}]`;
+    // (genau EINE alte Probe, auch wenn der Einlass zwei trüge: der neue Kopf eines Unschuldigen fährt so schmal wie möglich)
     if (/\[gpu-probe:[^\]]*\]/.test(betreff)) return betreff.replace(/\[gpu-probe:[^\]]*\]/, tag);
     return /\[ci voll\]\s*$/.test(betreff) ? betreff.replace(/\s*\[ci voll\]\s*$/, ` ${tag} [ci voll]`) : `${betreff} ${tag}`;
 }
@@ -2128,10 +2143,26 @@ function selbsttestTaeter(pr) {
     const t2 = probeTagFehlt(["stamm/siedlung-ort.js"], "Abgabe w28-a: x [ci voll]");
     pr("Probe-Tag am Bau-Pfad: fehlt eine Wand oder das ganze Tag, steht der Grund beim Namen; mit beiden Wänden oder ohne Bau-Pfad nichts",
         t1 === "Probe-Tag ohne gate:weltbild-frost:echt (Beitrag fasst stamm/bild-sicht.js an)" &&
-            t2 === "Probe-Tag ohne gate:pruefbuehne-licht und gate:weltbild-frost:echt (Beitrag fasst stamm/siedlung-ort.js an)" &&
+            t2 === "Probe-Tag ohne gate:pruefbuehne-licht, gate:weltbild-frost:echt und gate:studio-begehen (Beitrag fasst stamm/siedlung-ort.js an)" &&
             probeTagFehlt(["stamm/dirigent-ankunft.js"], "Abgabe w28-a: x [gpu-probe: gate:weltbild-frost:echt, gate:pruefbuehne-licht] [ci voll]") === null &&
             probeTagFehlt(["stamm/bild-tiefe-alt.js", "stamm/gelaende.js", "scripts/siedlung-x.cjs"], "Abgabe w28-a: x [ci voll]") === null &&
             probeTagFehlt(["stamm/bild-tiefe.js"], "Abgabe w28-a: x [gpu-probe: gate:pruefbuehne-licht:echt] [ci voll]") !== null);
+    // die Wände, die nur am Kandidaten fahren, je Regel am echten Fall: Samen (z648) riss das Begehen, die Nacht-Lichter (z647) die Tag-Achse
+    const samen = ["samen-core.js", "fachwerk-core.js", "stamm/siedlung-ort.js"];
+    const nacht = ["fachwerk-core.js", "stamm/bild-himmel.js", "stamm/bild-schatten.js", "welt-licht.js"];
+    const t3 = probeTagFehlt(samen, "Abgabe w28-samen-ein-baum: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]");
+    const t4 = probeTagFehlt(nacht, "Abgabe w28-nacht-lichter: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:pruefbuehne] [ci voll]");
+    const t5 = probeTagFehlt(["stamm/siedlung-tor.js", "welt-licht.js"], "Abgabe w28-a: x [gpu-probe: gate:tag-achse:echt] [ci voll]");
+    pr("Probe-Tag je Regel: der Samen-Stempel von z648 wartet am Begehen, der Nacht-Stempel von z647 an Begehen und Tag-Achse; mit den Wänden nichts; vier Pflicht-Wände nennt der Grund",
+        t3 === "Probe-Tag ohne gate:studio-begehen (Beitrag fasst samen-core.js an)" &&
+            t4 === "Probe-Tag ohne gate:studio-begehen und gate:tag-achse:echt (Beitrag fasst fachwerk-core.js an)" &&
+            probeTagFehlt(samen, "Abgabe w28-a: x [gpu-probe: gate:studio-begehen, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]") === null &&
+            probeTagFehlt(nacht, "Abgabe w28-a: x [gpu-probe: gate:tag-achse:echt, gate:studio-begehen, gate:pruefbuehne-licht] [ci voll]") === null &&
+            probeTagFehlt(["stamm/bild-schatten.js", "scripts/lib/licht-linsen.cjs"], "Abgabe w28-a: x [ci voll]") === null &&
+            t5 === "Probe-Tag ohne gate:pruefbuehne-licht, gate:weltbild-frost:echt und gate:studio-begehen (Beitrag fasst stamm/siedlung-tor.js an) — 4 Pflicht-Wände über dem Einlass 3: den Beitrag in zwei Stempel teilen");
+    pr("Neuer Kopf je Regel: fehlt das Begehen, bleiben die Bau-Wände des alten Tags und das bild: fällt am vollen Einlass; fehlt nur die Tag-Achse, bleibt das bild:",
+        tagErgaenzt("Abgabe w28-a: x [gpu-probe: bild:dorf@0.5, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]", ["gate:studio-begehen"]) === "Abgabe w28-a: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]" &&
+            tagErgaenzt("Abgabe w28-a: x [gpu-probe: bild:genesis@0, gate:pruefbuehne] [ci voll]", ["gate:tag-achse:echt"]) === "Abgabe w28-a: x [gpu-probe: bild:genesis@0, gate:tag-achse:echt] [ci voll]");
 }
 // die roten Zeilen der Zeit-Tafel ((T) ALT · (T) UNGEMESSEN) aus der Ausgabe von diag-ci-deckung.cjs — nur sie, nie fremdes Rot
 const zeitRest = (text) =>
