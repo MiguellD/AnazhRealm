@@ -1,0 +1,3205 @@
+{
+ "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
+ "geraet": "radeon",
+ "zeit": "2026-11-20T03:44:09.523Z",
+ "host": "MiguellD",
+ "je": {
+  "karte2.erleben.spieler.praesenz#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Leser fehlt: die drei Schwellen je Zufallslage: kein Leser, der in jeder Saat Lagen zieht und Taste → Bild, Fuß und Kamera je Lage urteilt (scripts/werkbank.cjs:1892 `/latenz` misst nur am Ort der Pose) — je Saat 2088 · 1086 · 879 · 733 · 735 · 670 · 943 · 794 · 755 · 754 ms, Heimweg 810 ms (zurück true, Versatz 0 m) (verlangt 10 Saaten der Sitzung, die Welt erzeugte 10) · gemessen vor dem Abbruch: Frist der Probe 39 s gerissen",
+   "exit": 3,
+   "minuten": 0.77,
+   "grund": "ROT: S2 · ROT Leser fehlt: die drei Schwellen je Zufallslage: kein Leser, der in jeder Saat Lagen zieht und Taste → Bild, Fuß und Kamera je Lage urteilt (scripts/werkbank.cjs:1892 `/latenz` misst nur am Ort der Pose) — je Saat 2088 · 1086 · 879 · 733 · 735 · 670 · 943 · 794 · 755 · 754 ms, Heimweg 810 ms (zurück true, Versatz 0 m) (verlangt 10 Saaten der Sitzung, die Welt erzeugte 10)",
+   "gpu": "amd/rdna-3",
+   "abbruch": "Frist der Probe 39 s gerissen",
+   "konsum": "kfe53d0000cd3",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 39.6,
+   "fremd": {
+    "s": 59.1,
+    "takte": 16,
+    "fremdS": 732.84,
+    "kerne": 12.393,
+    "fensterKerne": 13.307,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      201.95
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-Uejs6R --no-p",
+      151.22
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-StIsd9 --no-p",
+      100.19
+     ]
+    ],
+    "dienerS": 77.86,
+    "diener": [
+     [
+      "System",
+      34.84
+     ],
+     [
+      "dwm.exe",
+      27.92
+     ]
+    ],
+    "geraetS": 76.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.03
+     ],
+     [
+      "svchost.exe",
+      28.98
+     ],
+     [
+      "SearchIndexer.exe",
+      2.22
+     ]
+    ],
+    "eigenS": 295.52,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 13.318,
+     "nach": 12.163,
+     "station": 15.728
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 244.5,
+     "alle": 719.4,
+     "cpuEin": 187
+    },
+    "nach": {
+     "ein": 425.8,
+     "alle": 1267.1,
+     "cpuEin": 343
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 612,
+     "von": "2026-11-17"
+    },
+    "f": 5.466,
+    "fEin": 5.466,
+    "fAlle": 4.836,
+    "verdraengt": 1.207,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-20T03:31:44.174Z",
+   "abdruck": "f33eecb6866c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.wegfindung#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Umfang nicht erzeugbar: die Welt wechselte am Ort in 0 von 50 Saaten, gewachsen (≥ 1 Architektur am Erwachen) 0 — Architekturen je Saat —; je Saat — ms, Heimweg 0 ms (zurück true, Versatz 0 m); Ende: die Frist: 0 Saaten in 0 ms; die Wiese wuchs in 20513 ms, der Heimweg hält das Doppelte frei (verlangt 50 Saaten der Sitzung, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: S1 · ROT Umfang nicht erzeugbar: die Welt wechselte am Ort in 0 von 50 Saaten, gewachsen (≥ 1 Architektur am Erwachen) 0 — Architekturen je Saat —; je Saat — ms, Heimweg 0 ms (zurück true, Versatz 0 m); Ende: die Frist: 0 Saaten in 0 ms; die Wiese wuchs in 20513 ms, der Heimweg hält das Doppelte frei (verlangt 50 Saaten der Sitzung, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9cdfed886c6d",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 23.1,
+   "fremd": {
+    "s": 26,
+    "takte": 9,
+    "fremdS": 229.92,
+    "kerne": 8.839,
+    "fensterKerne": 11.145,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      58.64
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-DAr3Su --no-p",
+      35.31
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      28.53
+     ]
+    ],
+    "dienerS": 27.56,
+    "diener": [
+     [
+      "System",
+      11.08
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.92
+     ]
+    ],
+    "geraetS": 45.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.53
+     ],
+     [
+      "svchost.exe",
+      18.03
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 89.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:37:23.401Z",
+   "abdruck": "50537448dbe4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.wegfindung#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Leser fehlt: Erfolg und Umweg eines menschlichen Testspielers: kein Leser des Ziel-Gangs (Start, Ziel, gegangener Weg) — der Ort wäre eine Route neben `/latenz` (scripts/werkbank.cjs:1892), der Testspieler ein Panel (R11) (verlangt 1 Landmarken in 1 km um die Wiese, die Welt erzeugte 30)",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: S2 · ROT Leser fehlt: Erfolg und Umweg eines menschlichen Testspielers: kein Leser des Ziel-Gangs (Start, Ziel, gegangener Weg) — der Ort wäre eine Route neben `/latenz` (scripts/werkbank.cjs:1892), der Testspieler ein Panel (R11) (verlangt 1 Landmarken in 1 km um die Wiese, die Welt erzeugte 30)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9cdfed886c6d",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 23.1,
+   "fremd": {
+    "s": 26,
+    "takte": 9,
+    "fremdS": 229.92,
+    "kerne": 8.839,
+    "fensterKerne": 11.145,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      58.64
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-DAr3Su --no-p",
+      35.31
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      28.53
+     ]
+    ],
+    "dienerS": 27.56,
+    "diener": [
+     [
+      "System",
+      11.08
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.92
+     ]
+    ],
+    "geraetS": 45.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.53
+     ],
+     [
+      "svchost.exe",
+      18.03
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 89.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:37:23.401Z",
+   "abdruck": "94cbedd0c9ea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.wegfindung#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.wegfindung#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Leser fehlt: Karte aus dem Gesetz: kein Haken, der die Welt als Karte vor den Spieler legt (Höhenlinien, Wege, Ortsnamen) — `_wegeKarteEnsure` (stamm/siedlung-wege.js:16) ist eine Boden-Textur, keine Karte des Spielers (verlangt 10 km Weite des Planeten der Welt, die Welt erzeugte 40030,2)",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: S3 · ROT Leser fehlt: Karte aus dem Gesetz: kein Haken, der die Welt als Karte vor den Spieler legt (Höhenlinien, Wege, Ortsnamen) — `_wegeKarteEnsure` (stamm/siedlung-wege.js:16) ist eine Boden-Textur, keine Karte des Spielers (verlangt 10 km Weite des Planeten der Welt, die Welt erzeugte 40030,2)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9cdfed886c6d",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 23.1,
+   "fremd": {
+    "s": 26,
+    "takte": 9,
+    "fremdS": 229.92,
+    "kerne": 8.839,
+    "fensterKerne": 11.145,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      58.64
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-DAr3Su --no-p",
+      35.31
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      28.53
+     ]
+    ],
+    "dienerS": 27.56,
+    "diener": [
+     [
+      "System",
+      11.08
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.92
+     ]
+    ],
+    "geraetS": 45.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.53
+     ],
+     [
+      "svchost.exe",
+      18.03
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 89.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:37:23.401Z",
+   "abdruck": "a190c2ec0245",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.wegfindung#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.wegfindung#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: die größte Siedlung der Sitzung trägt 0 Bewohner (0 Siedlungen) — keine Stadt von 10⁶ (verlangt 1000000 Bewohner der größten Siedlung der Sitzung, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die größte Siedlung der Sitzung trägt 0 Bewohner (0 Siedlungen) — keine Stadt von 10⁶ (verlangt 1000000 Bewohner der größten Siedlung der Sitzung, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9cdfed886c6d",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 23.1,
+   "fremd": {
+    "s": 26,
+    "takte": 9,
+    "fremdS": 229.92,
+    "kerne": 8.839,
+    "fensterKerne": 11.145,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      58.64
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-DAr3Su --no-p",
+      35.31
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      28.53
+     ]
+    ],
+    "dienerS": 27.56,
+    "diener": [
+     [
+      "System",
+      11.08
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.92
+     ]
+    ],
+    "geraetS": 45.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.53
+     ],
+     [
+      "svchost.exe",
+      18.03
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 89.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:37:23.401Z",
+   "abdruck": "cd60225af8fd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.wegfindung#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.wegfindung#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT ❌ gestirn_fehler_grad 46,028 (Soll ≤ 1) · ❌ seereise_erfolg — (Soll ≥ 0,8) · ✅ Umfang verlangt 1000 km Weite des Planeten der Welt, die Welt erzeugte 40030,2 — Täter: die Sonnenbahn kennt weder Breite noch Saison (welt-licht.js:711 `sonnenRichtung`): Mittag winter 74,2° statt 28,2°; Pol der Sterne 67,1° statt 45,5° (stamm/dirigent-takt.js:2422 feste Achse); Seereise: kein Leser (stamm/feld-leben.js:1278 die Reise springt) · gestirn_fehler_grad 46,028 statt ≤ 1 · seereise_erfolg — statt ≥ 0,8",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: S5 · ROT ❌ gestirn_fehler_grad 46,028 (Soll ≤ 1) · ❌ seereise_erfolg — (Soll ≥ 0,8) · ✅ Umfang verlangt 1000 km Weite des Planeten der Welt, die Welt erzeugte 40030,2 — Täter: die Sonnenbahn kennt weder Breite noch Saison (welt-licht.js:711 `sonnenRichtung`): Mittag winter 74,2° statt 28,2°; Pol der Sterne 67,1° statt 45,5° (stamm/dirigent-takt.js:2422 feste Achse); Seereise: kein Leser (stamm/feld-leben.js:1278 die Reise springt) · gestirn_fehler_grad 46,028 statt ≤ 1 · seereise_erfolg — statt ≥ 0,8",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9cdfed886c6d",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 23.1,
+   "fremd": {
+    "s": 26,
+    "takte": 9,
+    "fremdS": 229.92,
+    "kerne": 8.839,
+    "fensterKerne": 11.145,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      58.64
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-DAr3Su --no-p",
+      35.31
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      28.53
+     ]
+    ],
+    "dienerS": 27.56,
+    "diener": [
+     [
+      "System",
+      11.08
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.92
+     ]
+    ],
+    "geraetS": 45.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.53
+     ],
+     [
+      "svchost.exe",
+      18.03
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 89.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:37:23.401Z",
+   "abdruck": "b6fa9ea92c78",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.wegfindung#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.wegfindung#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Leser fehlt: Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche (verlangt 40000 km Umfang des Planeten der Welt, die Welt erzeugte 40030,2)",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: S6 · ROT Leser fehlt: Mittel der Epoche: die Reise ist ein Sprung der Konsole in eine neue Welt (stamm/feld-leben.js:1278 → `_reiseBetreten` stamm/netz-portal.js:660), keine Fahrt mit Karte, Schiff oder Fahrzeug der Epoche (verlangt 40000 km Umfang des Planeten der Welt, die Welt erzeugte 40030,2)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9cdfed886c6d",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 23.1,
+   "fremd": {
+    "s": 26,
+    "takte": 9,
+    "fremdS": 229.92,
+    "kerne": 8.839,
+    "fensterKerne": 11.145,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      58.64
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-DAr3Su --no-p",
+      35.31
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      28.53
+     ]
+    ],
+    "dienerS": 27.56,
+    "diener": [
+     [
+      "System",
+      11.08
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.92
+     ]
+    ],
+    "geraetS": 45.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.53
+     ],
+     [
+      "svchost.exe",
+      18.03
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 89.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:37:23.401Z",
+   "abdruck": "3b3769ff4601",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.wegfindung#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.wegfindung#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Sitzung hält eine Saat (anazh-realm-seed) und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten (verlangt 100 Saaten der Sitzung, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.39,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung hält eine Saat (anazh-realm-seed) und einen Planeten — kein Nachbarplanet, keine Bahn zwischen Planeten (verlangt 100 Saaten der Sitzung, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k9cdfed886c6d",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 23.1,
+   "fremd": {
+    "s": 26,
+    "takte": 9,
+    "fremdS": 229.92,
+    "kerne": 8.839,
+    "fensterKerne": 11.145,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      58.64
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-DAr3Su --no-p",
+      35.31
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      28.53
+     ]
+    ],
+    "dienerS": 27.56,
+    "diener": [
+     [
+      "System",
+      11.08
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.92
+     ]
+    ],
+    "geraetS": 45.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.53
+     ],
+     [
+      "svchost.exe",
+      18.03
+     ],
+     [
+      "SearchIndexer.exe",
+      1.94
+     ]
+    ],
+    "eigenS": 89.33,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:37:23.401Z",
+   "abdruck": "1977f378a75f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.wegfindung#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.gemeinsam#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 10 Spieler der Sitzung, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 10 Spieler der Sitzung, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kcdd384bd7c37",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.4,
+   "fremd": {
+    "s": 5.4,
+    "takte": 2,
+    "fremdS": 58.03,
+    "kerne": 10.693,
+    "fensterKerne": 10.693,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      24.28
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      9.45
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      5.91
+     ]
+    ],
+    "dienerS": 3.81,
+    "diener": [
+     [
+      "System",
+      1.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.2
+     ]
+    ],
+    "geraetS": 9.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.31
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 21.98,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 10.693,
+     "nach": 11.034,
+     "station": 11.034
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 191.2,
+     "alle": 724.1,
+     "cpuEin": 157
+    },
+    "nach": {
+     "ein": 195.2,
+     "alle": 626.9,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 618,
+     "von": "2026-11-17"
+    },
+    "f": 2.764,
+    "fEin": 2.506,
+    "fAlle": 2.764,
+    "verdraengt": 1.108,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-20T03:39:11.108Z",
+   "abdruck": "3868e73de126",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.gemeinsam#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.gemeinsam#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 100000 Spieler der Sitzung, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 100000 Spieler der Sitzung, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kcdd384bd7c37",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.4,
+   "fremd": {
+    "s": 5.4,
+    "takte": 2,
+    "fremdS": 58.03,
+    "kerne": 10.693,
+    "fensterKerne": 10.693,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      24.28
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      9.45
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      5.91
+     ]
+    ],
+    "dienerS": 3.81,
+    "diener": [
+     [
+      "System",
+      1.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.2
+     ]
+    ],
+    "geraetS": 9.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.31
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 21.98,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 10.693,
+     "nach": 11.034,
+     "station": 11.034
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 191.2,
+     "alle": 724.1,
+     "cpuEin": 157
+    },
+    "nach": {
+     "ein": 195.2,
+     "alle": 626.9,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 618,
+     "von": "2026-11-17"
+    },
+    "f": 2.764,
+    "fEin": 2.506,
+    "fAlle": 2.764,
+    "verdraengt": 1.108,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-20T03:39:11.108Z",
+   "abdruck": "0952074e2ca9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.gemeinsam#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.gemeinsam#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 1000000 Spieler der Sitzung, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 1000000 Spieler der Sitzung, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kcdd384bd7c37",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.4,
+   "fremd": {
+    "s": 5.4,
+    "takte": 2,
+    "fremdS": 58.03,
+    "kerne": 10.693,
+    "fensterKerne": 10.693,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      24.28
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      9.45
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      5.91
+     ]
+    ],
+    "dienerS": 3.81,
+    "diener": [
+     [
+      "System",
+      1.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.2
+     ]
+    ],
+    "geraetS": 9.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.31
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 21.98,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 10.693,
+     "nach": 11.034,
+     "station": 11.034
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 191.2,
+     "alle": 724.1,
+     "cpuEin": 157
+    },
+    "nach": {
+     "ein": 195.2,
+     "alle": 626.9,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 618,
+     "von": "2026-11-17"
+    },
+    "f": 2.764,
+    "fEin": 2.506,
+    "fAlle": 2.764,
+    "verdraengt": 1.108,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-20T03:39:11.108Z",
+   "abdruck": "0d21a5822a27",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.gemeinsam#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.forscher#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Leser fehlt: Krater des Mondes: die Mondscheibe ist eine Kugel [16,16] ohne Karte und Farbknoten (stamm/dirigent-ankunft.js:340) — kein Krater, dessen Lage Fernrohr und Anflug teilen; kein Anflug an den Mond; das Fernrohr vergrößert nur das Bild (stamm/koerper-fahrt.js:2246 `setZoomActive`, 5 Fernrohr-Baupläne)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S1 · ROT Leser fehlt: Krater des Mondes: die Mondscheibe ist eine Kugel [16,16] ohne Karte und Farbknoten (stamm/dirigent-ankunft.js:340) — kein Krater, dessen Lage Fernrohr und Anflug teilen; kein Anflug an den Mond; das Fernrohr vergrößert nur das Bild (stamm/koerper-fahrt.js:2246 `setZoomActive`, 5 Fernrohr-Baupläne)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k3f3d30245f6f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1,
+   "fremd": {
+    "s": 6.2,
+    "takte": 2,
+    "fremdS": 90.44,
+    "kerne": 14.475,
+    "fensterKerne": 14.475,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      42.86
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      7.98
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      7.7
+     ]
+    ],
+    "dienerS": 7.59,
+    "diener": [
+     [
+      "System",
+      4.13
+     ],
+     [
+      "dwm.exe",
+      1.33
+     ]
+    ],
+    "geraetS": 11.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.08
+     ],
+     [
+      "svchost.exe",
+      2.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.73
+     ]
+    ],
+    "eigenS": 8.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:42:38.333Z",
+   "abdruck": "9a5746204d35",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.forscher#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: die Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1; geprüft 201 von 201) kennen als Instrument nur das Fernrohr — kein Mikroskop, Thermometer, Kompass, Lot (verlangt 5 Instrumente der Welt, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: die Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1; geprüft 201 von 201) kennen als Instrument nur das Fernrohr — kein Mikroskop, Thermometer, Kompass, Lot (verlangt 5 Instrumente der Welt, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k3f3d30245f6f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1,
+   "fremd": {
+    "s": 6.2,
+    "takte": 2,
+    "fremdS": 90.44,
+    "kerne": 14.475,
+    "fensterKerne": 14.475,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      42.86
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      7.98
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      7.7
+     ]
+    ],
+    "dienerS": 7.59,
+    "diener": [
+     [
+      "System",
+      4.13
+     ],
+     [
+      "dwm.exe",
+      1.33
+     ]
+    ],
+    "geraetS": 11.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.08
+     ],
+     [
+      "svchost.exe",
+      2.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.73
+     ]
+    ],
+    "eigenS": 8.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:42:38.333Z",
+   "abdruck": "7b3bcf3d8cce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.forscher#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.forscher#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — Wärme, Strömung, Wind, Bestand, Dichte der Menschen",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S3 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — Wärme, Strömung, Wind, Bestand, Dichte der Menschen",
+   "gpu": "amd/rdna-3",
+   "konsum": "k3f3d30245f6f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1,
+   "fremd": {
+    "s": 6.2,
+    "takte": 2,
+    "fremdS": 90.44,
+    "kerne": 14.475,
+    "fensterKerne": 14.475,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      42.86
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      7.98
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      7.7
+     ]
+    ],
+    "dienerS": 7.59,
+    "diener": [
+     [
+      "System",
+      4.13
+     ],
+     [
+      "dwm.exe",
+      1.33
+     ]
+    ],
+    "geraetS": 11.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.08
+     ],
+     [
+      "svchost.exe",
+      2.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.73
+     ]
+    ],
+    "eigenS": 8.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:42:38.333Z",
+   "abdruck": "796eed824c88",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.forscher#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.forscher#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: kein Zeit-Instrument in den Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1) — 0 Lesungen der Vergangenheit (verlangt 10 Lesungen eines Zeit-Instruments der Welt, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: kein Zeit-Instrument in den Affordanzen der Baupläne (stamm/bau-teile.js:202; balancing 36, moveable 20, magnifying 5, broadcasting 34, radiating 9, focusing 3, isPortal 20, sitzbar 1) — 0 Lesungen der Vergangenheit (verlangt 10 Lesungen eines Zeit-Instruments der Welt, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k3f3d30245f6f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1,
+   "fremd": {
+    "s": 6.2,
+    "takte": 2,
+    "fremdS": 90.44,
+    "kerne": 14.475,
+    "fensterKerne": 14.475,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      42.86
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      7.98
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      7.7
+     ]
+    ],
+    "dienerS": 7.59,
+    "diener": [
+     [
+      "System",
+      4.13
+     ],
+     [
+      "dwm.exe",
+      1.33
+     ]
+    ],
+    "geraetS": 11.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.08
+     ],
+     [
+      "svchost.exe",
+      2.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.73
+     ]
+    ],
+    "eigenS": 8.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:42:38.333Z",
+   "abdruck": "0d81d5d300e7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.forscher#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.forscher#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — die vorhergesagte Folge eines Versuchs hat keine Karte, die sie nennt",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S5 · ROT Leser fehlt: Feldkarte: kein Haken, der ein Feld der Welt (`worldFieldAt`, stamm/feld-leben.js:1793) als Karte vor den Spieler legt — die vorhergesagte Folge eines Versuchs hat keine Karte, die sie nennt",
+   "gpu": "amd/rdna-3",
+   "konsum": "k3f3d30245f6f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1,
+   "fremd": {
+    "s": 6.2,
+    "takte": 2,
+    "fremdS": 90.44,
+    "kerne": 14.475,
+    "fensterKerne": 14.475,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      42.86
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      7.98
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      7.7
+     ]
+    ],
+    "dienerS": 7.59,
+    "diener": [
+     [
+      "System",
+      4.13
+     ],
+     [
+      "dwm.exe",
+      1.33
+     ]
+    ],
+    "geraetS": 11.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.08
+     ],
+     [
+      "svchost.exe",
+      2.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.73
+     ]
+    ],
+    "eigenS": 8.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:42:38.333Z",
+   "abdruck": "7a53780502f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.forscher#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.forscher#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Leser fehlt: Lernen blinder Neulinge: kein Protokoll im Spiel (vor/nach 60 min, Kontrollgruppe Lehrfilm) — ein Panel nach R11 (vision/REGELN.md:17), kein Haken der Welt",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S6 · ROT Leser fehlt: Lernen blinder Neulinge: kein Protokoll im Spiel (vor/nach 60 min, Kontrollgruppe Lehrfilm) — ein Panel nach R11 (vision/REGELN.md:17), kein Haken der Welt",
+   "gpu": "amd/rdna-3",
+   "konsum": "k3f3d30245f6f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1,
+   "fremd": {
+    "s": 6.2,
+    "takte": 2,
+    "fremdS": 90.44,
+    "kerne": 14.475,
+    "fensterKerne": 14.475,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      42.86
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      7.98
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      7.7
+     ]
+    ],
+    "dienerS": 7.59,
+    "diener": [
+     [
+      "System",
+      4.13
+     ],
+     [
+      "dwm.exe",
+      1.33
+     ]
+    ],
+    "geraetS": 11.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.08
+     ],
+     [
+      "svchost.exe",
+      2.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.73
+     ]
+    ],
+    "eigenS": 8.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:42:38.333Z",
+   "abdruck": "663b0099d16c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.forscher#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.forscher#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: eine Saat (anazh-realm-seed) × 1 Instrumente = 1 (Saat, Instrument)-Paare (verlangt 100 (Saat, Instrument)-Paare der Sitzung, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: eine Saat (anazh-realm-seed) × 1 Instrumente = 1 (Saat, Instrument)-Paare (verlangt 100 (Saat, Instrument)-Paare der Sitzung, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k3f3d30245f6f",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1,
+   "fremd": {
+    "s": 6.2,
+    "takte": 2,
+    "fremdS": 90.44,
+    "kerne": 14.475,
+    "fensterKerne": 14.475,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      42.86
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      7.98
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      7.7
+     ]
+    ],
+    "dienerS": 7.59,
+    "diener": [
+     [
+      "System",
+      4.13
+     ],
+     [
+      "dwm.exe",
+      1.33
+     ]
+    ],
+    "geraetS": 11.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.08
+     ],
+     [
+      "svchost.exe",
+      2.89
+     ],
+     [
+      "SearchIndexer.exe",
+      0.73
+     ]
+    ],
+    "eigenS": 8.47,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:42:38.333Z",
+   "abdruck": "44477fad0ee9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.forscher#1",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.gespraech#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler (die Werkbank, kein Neuling am Gerät) — 20 Neulinge ab 10 Jahren verlangt (R11) (verlangt 20 Neulinge ab 10 Jahren, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler (die Werkbank, kein Neuling am Gerät) — 20 Neulinge ab 10 Jahren verlangt (R11) (verlangt 20 Neulinge ab 10 Jahren, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k2c6d526a19e7",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "Verzeichnis": 1,
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1.2,
+   "fremd": {
+    "s": 6.7,
+    "takte": 2,
+    "fremdS": 92.05,
+    "kerne": 13.71,
+    "fensterKerne": 13.71,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      39.25
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      22.92
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      7.55
+     ]
+    ],
+    "dienerS": 7.39,
+    "diener": [
+     [
+      "System",
+      4.16
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.41
+     ]
+    ],
+    "geraetS": 9.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.19
+     ],
+     [
+      "svchost.exe",
+      2.83
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 16.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:44:09.523Z",
+   "abdruck": "1726ae77b147",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.gespraech#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: die Leiter fährt 0.1 s, kein Gespräch einer Stunde; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 60 min Gespräch an einem Ort, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die Leiter fährt 0.1 s, kein Gespräch einer Stunde; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 60 min Gespräch an einem Ort, die Welt erzeugte 0)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k2c6d526a19e7",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "Verzeichnis": 1,
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1.2,
+   "fremd": {
+    "s": 6.7,
+    "takte": 2,
+    "fremdS": 92.05,
+    "kerne": 13.71,
+    "fensterKerne": 13.71,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      39.25
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      22.92
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      7.55
+     ]
+    ],
+    "dienerS": 7.39,
+    "diener": [
+     [
+      "System",
+      4.16
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.41
+     ]
+    ],
+    "geraetS": 9.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.19
+     ],
+     [
+      "svchost.exe",
+      2.83
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 16.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:44:09.523Z",
+   "abdruck": "733eaca5535a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.gespraech#1",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.gespraech#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: der Lauf der Leiter ist eine Sitzung — 10 Sitzungen über Wochen verlangt (verlangt 10 Sitzungen, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: der Lauf der Leiter ist eine Sitzung — 10 Sitzungen über Wochen verlangt (verlangt 10 Sitzungen, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k2c6d526a19e7",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "Verzeichnis": 1,
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1.2,
+   "fremd": {
+    "s": 6.7,
+    "takte": 2,
+    "fremdS": 92.05,
+    "kerne": 13.71,
+    "fensterKerne": 13.71,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      39.25
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      22.92
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      7.55
+     ]
+    ],
+    "dienerS": 7.39,
+    "diener": [
+     [
+      "System",
+      4.16
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.41
+     ]
+    ],
+    "geraetS": 9.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.19
+     ],
+     [
+      "svchost.exe",
+      2.83
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 16.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:44:09.523Z",
+   "abdruck": "5d288952d5dd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.gespraech#1",
+   "modus": "session"
+  },
+  "karte2.erleben.schoepfen.gespraech#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler — eine Gruppe von 10 mit der KI verlangt; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 10 Spieler mit der KI an einer Stadt, die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler — eine Gruppe von 10 mit der KI verlangt; der LLM-Lauf fehlt: llm.fehler.aus (Anbieter anthropic, stamm/dienst.js:93–96) (verlangt 10 Spieler mit der KI an einer Stadt, die Welt erzeugte 1)",
+   "gpu": "amd/rdna-3",
+   "konsum": "k2c6d526a19e7",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "Verzeichnis": 1,
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 1.2,
+   "fremd": {
+    "s": 6.7,
+    "takte": 2,
+    "fremdS": 92.05,
+    "kerne": 13.71,
+    "fensterKerne": 13.71,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      39.25
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-10128-profil-DcHNaM --no-p",
+      22.92
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      7.55
+     ]
+    ],
+    "dienerS": 7.39,
+    "diener": [
+     [
+      "System",
+      4.16
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.41
+     ]
+    ],
+    "geraetS": 9.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.19
+     ],
+     [
+      "svchost.exe",
+      2.83
+     ],
+     [
+      "SearchIndexer.exe",
+      0.14
+     ]
+    ],
+    "eigenS": 16.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:44:09.523Z",
+   "abdruck": "cf4cca8f636e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.schoepfen.gespraech#1",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kfe53d0000cd3": "dVRNj5swEP0vObb1mu8PS3twQqRdqVLpqecxjIENAWRDqFL1v1ewkARI55Sg92ae3xv7z66B5AQZvnzoutqx3Zfdt52GCxKN6oLq5UPv2C5MTAttxj+Lcs4PAyxRRdNqWhaCgqggPyPpVItF+ZKMtMC0Uksy2h95H1MaU5/u+9fXNbUUmNakBYkzMQylHQBbAzudgUACnRyHTWA3QJAuo2MFEY8/6Fz8J+e0P64nCqjSpdLQc3102XvP+ZFvFKYFYEvKotLzzCR1hW2x26DtqVIFPbkC5iWqiQSmD6aYhY5W9nFIV0RZdlovhgV26loBo3SDzVAXSd6SRtUCqwkuQss3gT1xOms6IheKhIBArH3OAasM1UKDYSfSMxn9HaybnuCMCkgF+eylYfuWuHtDKX3bailH4eOIWbhnSNMJFsQhUJoNTkXZ2Ihe5+/x5zJGfAh5qmw1RCd5oc5Le6SDlmGz71tJOocUFTnVur2hAwcAg2nzo3GheOxEa+b9MBPPEp7hPp4loPxt452uZduDQpI13UREB13fZZy/b8AtnM/zzkvbsZN1cLodFvtRhuug6fmDjOw/OXxeA3LFopxJUjpO6K6bXxScCYhMFVLOSQs3keGzxeyxbImo63aO1jbs0GTUptXNkXC8AvtbePzAo974dXjIc6wjX2seu9eqvZ1SeIZ0mLwMNzHZoAvVkh6S/JaNFAghewK9oioxw4WFqSNsSAf0XVLkzD++Lpb1ukn4WuBgbqU7PW9U6KehZE+ejR7VSUB1moCO5wamNa7e/gd/mwYaEY1o3D8adODp8P+wD4ZmDSa0UbUshleO5tDpHMr2/rz//Qc=",
+  "k70ee957387db": "jVRNj5swEP0vObb1OnwFsLQHZxM1e9g2e6ra29iMgQ2ByIZ1m6r/vYJAssBW6pwQmjfz5s3z/F6cQB4gxbsXU5ULtviw+LQw8IrEoH5FffdiFmwRS8dFj/FLUM755zZN6vxUG1rkgoIoITsiaXSNeXEnO1jkuImrGLVbbveU7mlI15ZfY83v76dlCoFJRWpQOBSJY+VFwKaJjUlBIIFGdY375CBCUAGjXUQbvn+hQ/BnzqndTjsKKJMx63gVhBiwR8v5ds4wyQFrUuSlGXrKJBCey66N7ByjwZIzYFag7kHghOCIgWgnh93HdAJURWPMqFnkJYEbMUpnuSmaXGY1OelKYNmni9gNHWDrOaf01BA1YiQERGKqcwZYpqhHHJaeVCuH0Z/RtOgBjqiBlJANWi690BU3bSiluzmXoiPetRiIr5bK8aMRsF0o7eyzSbtC9Dz8318MteHtkvtIJ02MzHJ9HMujfHSX3nRmk0GCmhwqU18zIx8Ao/4FbDoz8b2/mSJvg/Q4V6yWwds5Isp3M91MpWoLGkl6anog+hiEAePp0yy5huNx8LvyfE/OBqhbU7+lEfjorMKWRvqPHVyeADljXgwgpXw/DtjD2p8mv2o4EhCpzpUaNi0CqeL3jGmxqImoqnpYrbf0YodRj5ZXVeKI8+98fbsNDz92v9xvpbzts4svfPte9UrX10nFaql8prqXKKfEba5rYkFm1/0ogRBPBTyjLjDFkYSJLzxIGLXyRmfjDx8fR0Y9zzZ8zrEVtzSNGRwVh0msLs7oj+Lj+NxY1AcB5aEH+KsgclzW2p9/5Tv+xNf8YRdvLP+/2F5u3wklPelK5e3loxk0JoOivp3/P38B",
+  "k9cdfed886c6d": "dVVdj5swEPwvPLbHmc8Alu7BCZFyUqVyT1Uf17AGLgSQTeI2Vf97BYFcgOs+opnd8ezY/DFaSI+Q4/O7amqDGl+MJ6OtoMbOTBvZfzao4ThB6Ka0tshXckkI0T81Y/rFeDIUXNBUKC8ob9AotR10KbsVYYztelgqy7ZTpCo5AV5DcULzLDssq+d0oIW2kzmCEr1nOiEkIQHZ6peXJbXimDVmBwInYhQJNwS6BJ5VDhxNOIth2Aj2QwThUzJUGLPknUzF3hgjer+cyKHO5kqjjR+gT19/M7ZnK4VZCdiZVVmraWaa+dx16H3Q+lSZBG1eAYsK5UgCOwCbT0IHK3USkQVRVGelZsNCN/OdkBKywuaoyrTozFY2HOsRziMnsIF+4nTenk0xU8Q5hHzpcwFY5yhnGiw3FRubkl/hsukRTijBrKGYvLTcwOEf3hBCDmst1SB8GDEJ31jC9sIZsV8oyXun4nxoRK7T9+QWxpj1Sx4rXwxRaVHK09we4aFjufTbWpIqIENpHhvV3dGhB4DhmPx4CBRLvHjJ/DjMyHP4xvIfzxISdlh5pxrRaZBo5u15JKKHfuBTxl5X4A5OpynzwvXcdLk41fXBfpThe2hvgl5G/p893K6BecWymkhCeF7k0902X4IvEk4m8FyWQkzb5n4qos/CqbHqTN403bRe13IjmxKX1HdXouEabO8LZDsWa+tH/LDTofZsKWXo3sjuflK+sYRHxaW/jekKXcrO1JAW9/0IjtDLXu3kirLCHGc2Zh53IaNEp/fQsSQYr774Ogvsdd2xxN7gWp3VlKooyCJBP3k6NMojh/o4Ar2NH9rOEL/td3a4WXSIYhKTRD8atGOZZux1F9/eldfe0x3L327NW0xJKxtR9i8fKeCsCqi6j7/D338=",
+  "kcdd384bd7c37": "dVRNj5swEP0vHLv1mu8PS3twlpWyUquyp57HMAYSApENoU3V/15BILvA1kfrvZk3b579xzhDeoQcHw+6qQ1mfDG+GhouSDSqC6rHgzaYEaWWjQ7jt0M5588DLFXludW0KgUFUUNxQtKpFsvqMR1poWVntmS0f+F9QmlCA7rrn57W1Epg1pAWJM7EKJJOCGwN7HQOAgl0cmw2gb0QQXqMjieMeXKg89n1nNP+Zd1RQJ0tlUa+F6A3DvjCNwqzErAlVVnruWeaecKx2b3RdqpMQU+ugEWFaiKBFYAlZqGjlX0S0RVRVp3Wi2ahk3l2yCjdYHPUZVq05KwagfUEF5EdWMA+cTo/d0QuFAkBoVj7XADWOaqFBtNJpW8x+itcFz3CCRWQGorZS9MJbPHuDaV0v9VSjcLHFrNw35SWGy6Iw0JpPjgV52Mhep3vk1sYY87f+HzyVROdFqU6Le2RLtqmw75tJekCMlTk2Oj2jg5dAAyn5Md07JW48Zr5PszEs4Vveh9nCSnfb7zTjWx7UEjyczcR0UUvGJL4ugG3cDrNmZeO66Trxel2CPZHGZ6Llh8MMvL/7OH2DMgVy2omSem6kbcuflFwIiByVUo5b1p4qYw+C2aPVUtE07Tzah3TiSxGr7S+OxKNT2B3Xx5/5vFv++f+7W2tcazWqPY+lfBN6TJ5GV5eukGXqiU9pMV9F1IgDDI3/l9RVZjjwrLMFQ5kjPbyJvMacp4E0zOXD4twXrcVSxzMrHWn5wRFQRZJ9sk30aM6CqiPE9D1vdCyx6jtfvD9zZODGT/ENOk5/+hT1nP++hzf/pDvfMdfYxpPxc+Y0rNqZDn8crSAThdQte/f+99/",
+  "k3f3d30245f6f": "dVRNj5swEP0vHLv1mu8PS3twwkpZqVLZU89jGAMbApENoUrV/15BIFlg66P13sybN8/+Y5whPUKOzx+6qQ1mfDO+GxouSDSqC6rnD20wI0otGx3Gb4dyzvcDLFXludW0KgUFUUNxQtKpFsvqOR1poWVntmS0f+V9QmlCA7rrX17W1Epg1pAWJM7EKJJOCGwN7HQOAgl0cmw2gb0QQXqMjieMefJB58PfOaf967qjgDpbKo18L0BvHPCVbxRmJWBLqrLWc88084Rjs3uj7VSZgp5cAYsK1UQCKwBLzEJHK/skoiuirDqtF81CJ/PskFG6weaoy7RoyVk1AusJLiI7sIB94XR+7ohcKBICQrH2uQCsc1QLDaaTSt9i9He4LnqEEyogNRSzl6YT2OLhDaX0sNVSjcLHFrNw35SWGy6Iw0JpPjgV52Mhep3vk1sYYz4seTr5qolOi1KdlvZIF23TYT+2knQBGSpybHR7R4cuAIZT8uMxUDxx4zXzMczEs4Vvep9nCSk/bLzTjWx7UEjyczcR0UUvGJL4tgG3cDrNmZeO66Trxel2CPZnGZ6Llh8MMvL/7OH2DMgVy2omSem6kcf2u3wNvig4ERC5KqWcty28VEZfhbPHqiWiadp5vY7pRBajV1rfXYnGZ7C7L5Dvedybv2L+vm49VmtUe59M+KZ0mbwMry/doEvVkh7S4r4PKRAGmZsdXFFVmOPCtswVDmSM9uk9ZDwJpqcunxYBvW4rljgYWutOzymKgiyS7Iuvokd1FFAfJ6Dre6Flj3Hb/eSHmyWHKH6KadJz/tmnrOf8bR/f/pG3wcM9z99vxc+Y0rNqZDn8dLSAThdQtY8v/u8/",
+  "k2c6d526a19e7": "dVRNj5swEP0vOXbrNZ8BLO3BWVbKSq3KnnoewxhICEQ2hDZV/3sFwdkFtnO05s28efM8fzZnSI+Q4+NBN/WGbb5svm40XJBoVBdUjwe9YZsotR10Gb8F5Zw/D2mpKs+tplUpKIgaihOSTrVYVo/pCAttJ3Mko/0L7xNKExrQXf/0tIRWArOGtCDRAKNIuiGwZWKncxBIoJNjsynZDxGkz+gYYcyTAzWx6zmn/cuyo4A6mzONtn6A/jjgC18xzErAllRlrU3PNPOF67B7o/VUmYKeXAGLCtUEAjsAWxiio5R9EtEFUFad1rNmoZv5TsgoXeXmqMu0aMlZNQLrKV1ETmAD+0Tp/NwROWMkBIRiqXMBWOeoZhwsN5Vbm9Ff4bLoEU6ogNRQGC0tN3DEuzaU0v2aSzUSH1sY4ltL2l44Aw4LpfmgVJyPhejVvCc3M8acv3ET+aKJTotSnebySA8dy2Xf1pR0ARkqcmx0e88OPQAMJ+fHdOyVePES+T7MhHPE1vI/zhJSvl9ppxvZ9qCQ5OduAqKHfjA48XWV3MLpZDwvXc9Nl4vT7WDsjzR8D+1tMNDI/7OH2zcgVywrA5LS8yJ/Wfyi4ERA5KqU0mxa+KmMPjNmj1VLRNO0ZrWu5UY2o1da3xWJxi+wuy+PP/P4t/Nz//a25DhWa1R7n0psLekxeRl+XrrKLlVLekiL+y6kQIgYdVf6X1FVmONMsswTLmSM9vJG8xpyngTTN5cPM3Ne1xVLHMSsdaeNg6IgiyT75Ez0qI4C6uOU6G390HZGq+1+8P1Nk4MVP8Q06Tn/qFPWc/76HN9uyHe+468xjafiZ0zNNabmng9vZ9XIcrh8tIBOF1C17yf/7z8="
+ },
+ "ungemessen": {
+  "karte2.erleben.spieler.praesenz#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.77,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.6,
+   "fremd": {
+    "s": 59.1,
+    "takte": 16,
+    "fremdS": 732.84,
+    "kerne": 12.393,
+    "fensterKerne": 13.307,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      201.95
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-Uejs6R --no-p",
+      151.22
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-StIsd9 --no-p",
+      100.19
+     ]
+    ],
+    "dienerS": 77.86,
+    "diener": [
+     [
+      "System",
+      34.84
+     ],
+     [
+      "dwm.exe",
+      27.92
+     ]
+    ],
+    "geraetS": 76.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.03
+     ],
+     [
+      "svchost.exe",
+      28.98
+     ],
+     [
+      "SearchIndexer.exe",
+      2.22
+     ]
+    ],
+    "eigenS": 295.52,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 13.318,
+     "nach": 12.163,
+     "station": 15.728
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 244.5,
+     "alle": 719.4,
+     "cpuEin": 187
+    },
+    "nach": {
+     "ein": 425.8,
+     "alle": 1267.1,
+     "cpuEin": 343
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 612,
+     "von": "2026-11-17"
+    },
+    "f": 5.466,
+    "fEin": 5.466,
+    "fAlle": 4.836,
+    "verdraengt": 1.207,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-20T03:31:44.174Z",
+   "abdruck": "b7df6a2be9f3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.praesenz#2",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.praesenz#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.77,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.6,
+   "fremd": {
+    "s": 59.1,
+    "takte": 16,
+    "fremdS": 732.84,
+    "kerne": 12.393,
+    "fensterKerne": 13.307,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      201.95
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-Uejs6R --no-p",
+      151.22
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-StIsd9 --no-p",
+      100.19
+     ]
+    ],
+    "dienerS": 77.86,
+    "diener": [
+     [
+      "System",
+      34.84
+     ],
+     [
+      "dwm.exe",
+      27.92
+     ]
+    ],
+    "geraetS": 76.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.03
+     ],
+     [
+      "svchost.exe",
+      28.98
+     ],
+     [
+      "SearchIndexer.exe",
+      2.22
+     ]
+    ],
+    "eigenS": 295.52,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 13.318,
+     "nach": 12.163,
+     "station": 15.728
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 244.5,
+     "alle": 719.4,
+     "cpuEin": 187
+    },
+    "nach": {
+     "ein": 425.8,
+     "alle": 1267.1,
+     "cpuEin": 343
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 612,
+     "von": "2026-11-17"
+    },
+    "f": 5.466,
+    "fEin": 5.466,
+    "fAlle": 4.836,
+    "verdraengt": 1.207,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-20T03:31:44.174Z",
+   "abdruck": "53291fe6eb46",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.praesenz#2",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.praesenz#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.77,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.6,
+   "fremd": {
+    "s": 59.1,
+    "takte": 16,
+    "fremdS": 732.84,
+    "kerne": 12.393,
+    "fensterKerne": 13.307,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      201.95
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-Uejs6R --no-p",
+      151.22
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-StIsd9 --no-p",
+      100.19
+     ]
+    ],
+    "dienerS": 77.86,
+    "diener": [
+     [
+      "System",
+      34.84
+     ],
+     [
+      "dwm.exe",
+      27.92
+     ]
+    ],
+    "geraetS": 76.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.03
+     ],
+     [
+      "svchost.exe",
+      28.98
+     ],
+     [
+      "SearchIndexer.exe",
+      2.22
+     ]
+    ],
+    "eigenS": 295.52,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 13.318,
+     "nach": 12.163,
+     "station": 15.728
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 244.5,
+     "alle": 719.4,
+     "cpuEin": 187
+    },
+    "nach": {
+     "ein": 425.8,
+     "alle": 1267.1,
+     "cpuEin": 343
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 612,
+     "von": "2026-11-17"
+    },
+    "f": 5.466,
+    "fEin": 5.466,
+    "fAlle": 4.836,
+    "verdraengt": 1.207,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-20T03:31:44.174Z",
+   "abdruck": "4bf943a052bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.praesenz#2",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.praesenz#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.77,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.praesenz) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.6,
+   "fremd": {
+    "s": 59.1,
+    "takte": 16,
+    "fremdS": 732.84,
+    "kerne": 12.393,
+    "fensterKerne": 13.307,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      201.95
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-Uejs6R --no-p",
+      151.22
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35880-profil-StIsd9 --no-p",
+      100.19
+     ]
+    ],
+    "dienerS": 77.86,
+    "diener": [
+     [
+      "System",
+      34.84
+     ],
+     [
+      "dwm.exe",
+      27.92
+     ]
+    ],
+    "geraetS": 76.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      45.03
+     ],
+     [
+      "svchost.exe",
+      28.98
+     ],
+     [
+      "SearchIndexer.exe",
+      2.22
+     ]
+    ],
+    "eigenS": 295.52,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 13.318,
+     "nach": 12.163,
+     "station": 15.728
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 244.5,
+     "alle": 719.4,
+     "cpuEin": 187
+    },
+    "nach": {
+     "ein": 425.8,
+     "alle": 1267.1,
+     "cpuEin": 343
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 612,
+     "von": "2026-11-17"
+    },
+    "f": 5.466,
+    "fEin": 5.466,
+    "fAlle": 4.836,
+    "verdraengt": 1.207,
+    "schwankt": true,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-20T03:31:44.174Z",
+   "abdruck": "a5e168cf9636",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.praesenz#2",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.rolle#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.6,
+   "grund": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 35.5,
+   "fremd": {
+    "s": 39.7,
+    "takte": 14,
+    "fremdS": 416.03,
+    "kerne": 10.481,
+    "fensterKerne": 11.082,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-dWbiJO --no-p",
+      144.8
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      136.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      46.19
+     ]
+    ],
+    "dienerS": 63.39,
+    "diener": [
+     [
+      "System",
+      35.81
+     ],
+     [
+      "dwm.exe",
+      10.25
+     ]
+    ],
+    "geraetS": 76.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.2
+     ],
+     [
+      "svchost.exe",
+      22.14
+     ],
+     [
+      "SearchIndexer.exe",
+      1.72
+     ]
+    ],
+    "eigenS": 131.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:35:38.430Z",
+   "abdruck": "aae8de7d7cd3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.rolle#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.6,
+   "grund": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 35.5,
+   "fremd": {
+    "s": 39.7,
+    "takte": 14,
+    "fremdS": 416.03,
+    "kerne": 10.481,
+    "fensterKerne": 11.082,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-dWbiJO --no-p",
+      144.8
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      136.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      46.19
+     ]
+    ],
+    "dienerS": 63.39,
+    "diener": [
+     [
+      "System",
+      35.81
+     ],
+     [
+      "dwm.exe",
+      10.25
+     ]
+    ],
+    "geraetS": 76.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.2
+     ],
+     [
+      "svchost.exe",
+      22.14
+     ],
+     [
+      "SearchIndexer.exe",
+      1.72
+     ]
+    ],
+    "eigenS": 131.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:35:38.430Z",
+   "abdruck": "038f8b4c7b50",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.rolle#2",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.rolle#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.6,
+   "grund": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 35.5,
+   "fremd": {
+    "s": 39.7,
+    "takte": 14,
+    "fremdS": 416.03,
+    "kerne": 10.481,
+    "fensterKerne": 11.082,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-dWbiJO --no-p",
+      144.8
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      136.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      46.19
+     ]
+    ],
+    "dienerS": 63.39,
+    "diener": [
+     [
+      "System",
+      35.81
+     ],
+     [
+      "dwm.exe",
+      10.25
+     ]
+    ],
+    "geraetS": 76.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.2
+     ],
+     [
+      "svchost.exe",
+      22.14
+     ],
+     [
+      "SearchIndexer.exe",
+      1.72
+     ]
+    ],
+    "eigenS": 131.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:35:38.430Z",
+   "abdruck": "0f87b6e2cffb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.rolle#2",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.rolle#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.6,
+   "grund": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 35.5,
+   "fremd": {
+    "s": 39.7,
+    "takte": 14,
+    "fremdS": 416.03,
+    "kerne": 10.481,
+    "fensterKerne": 11.082,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-dWbiJO --no-p",
+      144.8
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      136.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      46.19
+     ]
+    ],
+    "dienerS": 63.39,
+    "diener": [
+     [
+      "System",
+      35.81
+     ],
+     [
+      "dwm.exe",
+      10.25
+     ]
+    ],
+    "geraetS": 76.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.2
+     ],
+     [
+      "svchost.exe",
+      22.14
+     ],
+     [
+      "SearchIndexer.exe",
+      1.72
+     ]
+    ],
+    "eigenS": 131.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:35:38.430Z",
+   "abdruck": "ed428a467531",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.rolle#2",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.rolle#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.6,
+   "grund": "Frist der Probe 34 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.rolle) · Täter: @@PUNKTE@@ FRIST 34 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 35.5,
+   "fremd": {
+    "s": 39.7,
+    "takte": 14,
+    "fremdS": 416.03,
+    "kerne": 10.481,
+    "fensterKerne": 11.082,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-dWbiJO --no-p",
+      144.8
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      136.16
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      46.19
+     ]
+    ],
+    "dienerS": 63.39,
+    "diener": [
+     [
+      "System",
+      35.81
+     ],
+     [
+      "dwm.exe",
+      10.25
+     ]
+    ],
+    "geraetS": 76.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      52.2
+     ],
+     [
+      "svchost.exe",
+      22.14
+     ],
+     [
+      "SearchIndexer.exe",
+      1.72
+     ]
+    ],
+    "eigenS": 131.78,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:35:38.430Z",
+   "abdruck": "d11b98456516",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.rolle#2",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.gemeinsam#1": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p 24,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p 9,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p 5,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,3 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 2 Spieler der Sitzung (echte Geräte), die Welt erzeugte 1))",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p 24,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p 9,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p 5,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,3 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S1 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 2 Spieler der Sitzung (echte Geräte), die Welt erzeugte 1))",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "kcdd384bd7c37",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.4,
+   "fremd": {
+    "s": 5.4,
+    "takte": 2,
+    "fremdS": 58.03,
+    "kerne": 10.693,
+    "fensterKerne": 10.693,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      24.28
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      9.45
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      5.91
+     ]
+    ],
+    "dienerS": 3.81,
+    "diener": [
+     [
+      "System",
+      1.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.2
+     ]
+    ],
+    "geraetS": 9.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.31
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 21.98,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 10.693,
+     "nach": 11.034,
+     "station": 11.034
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 191.2,
+     "alle": 724.1,
+     "cpuEin": 157
+    },
+    "nach": {
+     "ein": 195.2,
+     "alle": 626.9,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 618,
+     "von": "2026-11-17"
+    },
+    "f": 2.764,
+    "fEin": 2.506,
+    "fAlle": 2.764,
+    "verdraengt": 1.108,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-20T03:39:11.108Z",
+   "abdruck": "6ced8d07e1b1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.gemeinsam#3": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p 24,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p 9,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p 5,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,3 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 100 Spieler der Sitzung, die Welt erzeugte 1))",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p 24,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p 9,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p 5,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,3 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S3 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 100 Spieler der Sitzung, die Welt erzeugte 1))",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "kcdd384bd7c37",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.4,
+   "fremd": {
+    "s": 5.4,
+    "takte": 2,
+    "fremdS": 58.03,
+    "kerne": 10.693,
+    "fensterKerne": 10.693,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      24.28
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      9.45
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      5.91
+     ]
+    ],
+    "dienerS": 3.81,
+    "diener": [
+     [
+      "System",
+      1.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.2
+     ]
+    ],
+    "geraetS": 9.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.31
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 21.98,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 10.693,
+     "nach": 11.034,
+     "station": 11.034
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 191.2,
+     "alle": 724.1,
+     "cpuEin": 157
+    },
+    "nach": {
+     "ein": 195.2,
+     "alle": 626.9,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 618,
+     "von": "2026-11-17"
+    },
+    "f": 2.764,
+    "fEin": 2.506,
+    "fAlle": 2.764,
+    "verdraengt": 1.108,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-20T03:39:11.108Z",
+   "abdruck": "041f9ebea90b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.gemeinsam#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.gemeinsam#4": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p 24,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p 9,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p 5,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,3 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 1000 Spieler der Sitzung, die Welt erzeugte 1))",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p 24,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p 9,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p 5,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,3 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S4 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 1000 Spieler der Sitzung, die Welt erzeugte 1))",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "kcdd384bd7c37",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.4,
+   "fremd": {
+    "s": 5.4,
+    "takte": 2,
+    "fremdS": 58.03,
+    "kerne": 10.693,
+    "fensterKerne": 10.693,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      24.28
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      9.45
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      5.91
+     ]
+    ],
+    "dienerS": 3.81,
+    "diener": [
+     [
+      "System",
+      1.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.2
+     ]
+    ],
+    "geraetS": 9.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.31
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 21.98,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 10.693,
+     "nach": 11.034,
+     "station": 11.034
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 191.2,
+     "alle": 724.1,
+     "cpuEin": 157
+    },
+    "nach": {
+     "ein": 195.2,
+     "alle": 626.9,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 618,
+     "von": "2026-11-17"
+    },
+    "f": 2.764,
+    "fEin": 2.506,
+    "fAlle": 2.764,
+    "verdraengt": 1.108,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-20T03:39:11.108Z",
+   "abdruck": "b934e44d5a8e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.gemeinsam#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.gemeinsam#5": {
+   "gruen": false,
+   "zahl": "Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p 24,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p 9,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p 5,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,3 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 10000 Spieler der Sitzung, die Welt erzeugte 1))",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "Last: Referenz f 2,764 (Faden 2,506 · alle Kerne 2,764; vor 191,2/724,1 ms, nach 195,2/626,9 ms, Ruhe 77,9/262 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p 24,3 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p 9,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p 5,9 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,3 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,2 CPU-s — kein Maß gemessen (die Probe trug keine Zahl) — kein Urteil, UNGEMESSEN (die Probe sah: S5 · ROT Umfang nicht erzeugbar: die Sitzung trägt 1 Spieler: den eigenen Leib und 0 Peers (state.p2p.peers, stamm/dirigent-kern.js:541; p2p an false, verbunden false) (verlangt 10000 Spieler der Sitzung, die Welt erzeugte 1))",
+   "mass": [],
+   "gpu": "amd/rdna-3",
+   "konsum": "kcdd384bd7c37",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 0.4,
+   "fremd": {
+    "s": 5.4,
+    "takte": 2,
+    "fremdS": 58.03,
+    "kerne": 10.693,
+    "fensterKerne": 10.693,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      24.28
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      9.45
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-34436-profil-9F32ts --no-p",
+      5.91
+     ]
+    ],
+    "dienerS": 3.81,
+    "diener": [
+     [
+      "System",
+      1.56
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.2
+     ]
+    ],
+    "geraetS": 9.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.31
+     ],
+     [
+      "svchost.exe",
+      3.23
+     ],
+     [
+      "SearchIndexer.exe",
+      0.16
+     ]
+    ],
+    "eigenS": 21.98,
+    "rechnerKerne": 24,
+    "spannen": {
+     "vor": 10.693,
+     "nach": 11.034,
+     "station": 11.034
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 191.2,
+     "alle": 724.1,
+     "cpuEin": 157
+    },
+    "nach": {
+     "ein": 195.2,
+     "alle": 626.9,
+     "cpuEin": 188
+    },
+    "ruhe": {
+     "ein": 77.9,
+     "alle": 262,
+     "n": 618,
+     "von": "2026-11-17"
+    },
+    "f": 2.764,
+    "fEin": 2.506,
+    "fAlle": 2.764,
+    "verdraengt": 1.108,
+    "schwankt": false,
+    "rechner": "win32 · 24 Kerne · AMD Ryzen AI 9 HX 370 w/ Radeon 890M",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-20T03:39:11.108Z",
+   "abdruck": "bebebc84fc3d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.gemeinsam#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.nichtleib#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.9,
+    "takte": 14,
+    "fremdS": 612.77,
+    "kerne": 13.972,
+    "fensterKerne": 14.443,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      278.19
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      107.83
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      47.91
+     ]
+    ],
+    "dienerS": 43.22,
+    "diener": [
+     [
+      "System",
+      17.09
+     ],
+     [
+      "dwm.exe",
+      13.38
+     ]
+    ],
+    "geraetS": 66.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      40.59
+     ],
+     [
+      "svchost.exe",
+      24.13
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 133.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:40:36.214Z",
+   "abdruck": "aeb026853bc1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.nichtleib#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.9,
+    "takte": 14,
+    "fremdS": 612.77,
+    "kerne": 13.972,
+    "fensterKerne": 14.443,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      278.19
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      107.83
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      47.91
+     ]
+    ],
+    "dienerS": 43.22,
+    "diener": [
+     [
+      "System",
+      17.09
+     ],
+     [
+      "dwm.exe",
+      13.38
+     ]
+    ],
+    "geraetS": 66.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      40.59
+     ],
+     [
+      "svchost.exe",
+      24.13
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 133.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:40:36.214Z",
+   "abdruck": "f19c5d5bfc35",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.nichtleib#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.nichtleib#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.9,
+    "takte": 14,
+    "fremdS": 612.77,
+    "kerne": 13.972,
+    "fensterKerne": 14.443,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      278.19
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      107.83
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      47.91
+     ]
+    ],
+    "dienerS": 43.22,
+    "diener": [
+     [
+      "System",
+      17.09
+     ],
+     [
+      "dwm.exe",
+      13.38
+     ]
+    ],
+    "geraetS": 66.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      40.59
+     ],
+     [
+      "svchost.exe",
+      24.13
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 133.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:40:36.214Z",
+   "abdruck": "2e04517d390d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.nichtleib#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.nichtleib#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.9,
+    "takte": 14,
+    "fremdS": 612.77,
+    "kerne": 13.972,
+    "fensterKerne": 14.443,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      278.19
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      107.83
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      47.91
+     ]
+    ],
+    "dienerS": 43.22,
+    "diener": [
+     [
+      "System",
+      17.09
+     ],
+     [
+      "dwm.exe",
+      13.38
+     ]
+    ],
+    "geraetS": 66.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      40.59
+     ],
+     [
+      "svchost.exe",
+      24.13
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 133.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:40:36.214Z",
+   "abdruck": "cd815856450b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.nichtleib#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.nichtleib#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.9,
+    "takte": 14,
+    "fremdS": 612.77,
+    "kerne": 13.972,
+    "fensterKerne": 14.443,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      278.19
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      107.83
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      47.91
+     ]
+    ],
+    "dienerS": 43.22,
+    "diener": [
+     [
+      "System",
+      17.09
+     ],
+     [
+      "dwm.exe",
+      13.38
+     ]
+    ],
+    "geraetS": 66.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      40.59
+     ],
+     [
+      "svchost.exe",
+      24.13
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 133.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:40:36.214Z",
+   "abdruck": "2008ac727e97",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.nichtleib#1",
+   "modus": "session"
+  },
+  "karte2.erleben.spieler.nichtleib#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.68,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7 · kein Ergebnis der Sprosse im Lauf der Leiter erleben.spieler.nichtleib) · Täter: @@PUNKTE@@ FRIST 39 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 39.5,
+   "fremd": {
+    "s": 43.9,
+    "takte": 14,
+    "fremdS": 612.77,
+    "kerne": 13.972,
+    "fensterKerne": 14.443,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30560-profil-XyXal0 --no-p",
+      278.19
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27608-profil-vcMtM0 --no-p",
+      107.83
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38696-profil-pRuBDE --no-p",
+      47.91
+     ]
+    ],
+    "dienerS": 43.22,
+    "diener": [
+     [
+      "System",
+      17.09
+     ],
+     [
+      "dwm.exe",
+      13.38
+     ]
+    ],
+    "geraetS": 66.59,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      40.59
+     ],
+     [
+      "svchost.exe",
+      24.13
+     ],
+     [
+      "SearchIndexer.exe",
+      1.14
+     ]
+    ],
+    "eigenS": 133.27,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T03:40:36.214Z",
+   "abdruck": "1de84d99e8f3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.spieler.nichtleib#1",
+   "modus": "session"
+  }
+ }
+}
