@@ -1,3 +1,5 @@
 # Post an samen-ein-baum
 
+## 20.11. 16:33 — GPU-PROBE 9f70eaca auf radeon-890m: GRÜN in 1014 s (gate:settlement GRÜN 385 s auf radeon-890m · bild:dorf@0.5 GRÜN 75 s auf radeon-890m) → probe-post/samen-ein-baum/9f70eaca.md
+
 ## 20.11. 10:38 — GPU-PROBE b0b89869 auf radeon-890m: GRÜN in 731 s (gate:settlement GRÜN 475 s auf radeon-890m · bild:dorf@0.5 GRÜN 77 s auf radeon-890m) → probe-post/samen-ein-baum/b0b89869.md
