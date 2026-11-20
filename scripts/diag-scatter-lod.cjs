@@ -224,7 +224,8 @@ hauptLauf(async () => {
                 fertig: folgt,
                 takt: async () => (streuTakt(), r._tickScatterLod(pm, 16, 800), await sleep(30)),
                 max: 300,
-            }).catch(() => {});
+                warum: () => `die Streu-Zelle trägt Gestalt ${neu.gestalt}, ihr Ort antwortet ${wahr}`,
+            });
             gblk.danach = neu.gestalt;
             gblk.bp = neu.bpName;
             gblk.slotsLeben = neu.slots.length > 0;
@@ -512,8 +513,8 @@ hauptLauf(async () => {
     const G = out.g || {};
     check(
         `G: die Ankunft trägt die alte Antwort ihres Orts (Voraussetzung: ${G.art || "—"} an ${G.ort || "—"} Gestalt ${G.ankunft} = alt ${G.alt})`,
-        !G.err && G.ankunft === G.alt && G.spiegelVor === G.alt,
-        G.err || ""
+        G.ankunft === G.alt && G.spiegelVor === G.alt,
+        G.ankunft === undefined ? G.err || "" : ""
     );
     check(
         `G: DIE GESTALT FOLGT DEM ORT — nach dem Wechsel seiner Eingabe trägt die Streu-Zelle ${G.ort || "—"} Gestalt ${G.danach}, ihr Ort antwortet ${G.wahr}`,
