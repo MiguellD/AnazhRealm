@@ -1764,9 +1764,17 @@ async function taeter(args) {
             console.log(`KEINE TÄTER-SUCHE: kein roter echt-Job im Lauf ${laufId}`);
             return 0;
         }
-        const waende = echtBefehle(git(["show", `${kand}:.github/workflows/check.yml`], INTEG), namen);
-        const stempel = zweige.map((spec) => ({ spec, betreff: git(["log", "-1", "--format=%s", spec.split("@")[1]], INTEG) }));
-        console.log(`TÄTER-SUCHE ${zid} am Kandidaten ${kand.slice(0, 8)} (Lauf ${laufId}, Basis ${basis.slice(0, 8)}): ${stempel.length} Stempel × ${waende.length} Wände (${waende.map((w) => `${w.kurz} = ${w.run}`).join(" · ")})`);
+        // --stempel a,b / --wand <kurz>: NUR der Beweis-Aufruf von Hand wählt Paare aus (die Radeon trägt nicht 4 × 2 Fahrten neben der
+        // Mess-Sitzung); der Dienst ruft ohne und fährt jeden Stempel an jeder roten Wand
+        const nurS = wert("--stempel") && wert("--stempel").split(",");
+        const nurW = wert("--wand");
+        const waende = echtBefehle(git(["show", `${kand}:.github/workflows/check.yml`], INTEG), namen).filter((w) => !nurW || w.kurz === nurW);
+        const stempel = zweige
+            .filter((spec) => !nurS || nurS.includes(spec.split("@")[0]))
+            .map((spec) => ({ spec, betreff: git(["log", "-1", "--format=%s", spec.split("@")[1]], INTEG) }));
+        if ((nurS && stempel.length !== nurS.length) || (nurW && !waende.length)) throw new Error(`--stempel/--wand trifft nicht (${stempel.length} Stempel, ${waende.length} Wände)`);
+        console.log(`TÄTER-SUCHE ${zid} am Kandidaten ${kand.slice(0, 8)} (Lauf ${laufId}, Basis ${basis.slice(0, 8)}): ${stempel.length} Stempel × ${waende.length} Wände (${waende.map((w) => `${w.kurz} = ${w.run}`).join(" · ")})${nurS || nurW ? " — Auswahl des Beweis-Aufrufs" : ""}`);
+        for (const w of waende) console.log(`  Umgebung ${w.kurz} (Job echt aus check.yml am Kandidaten): ${Object.entries(w.env).map(([k, v]) => `${k}=${v}`).join(" ")}`);
         const leser = rotLeser();
         let baum = null; // je Stempel EIN Baum für alle seine Wände
         let u;
