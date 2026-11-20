@@ -5216,7 +5216,38 @@
         // mittags so voll wie in der Sonne; bis zum Bild am Genesis-Ort (Radeon, Regen um 13:16 Uhr) ging nur die Muße heim —
         // 31 von 77 standen bei der Arbeit im Regen auf dem Platz.
         regen: Object.freeze({ ab: 0.3, streuH: 0.15 }),
+        // DER CHARAKTERZUG (Meisterkarte 2 mensch.geist.absicht S1; Leser: `tagesPlan` und `tagesBindung`, ihr Wirt
+        // `_bewohnerSoll` und `binden`): jeder Mensch trägt aus seinem Samen EINEN Zug (`tagesZug`, die Anteile `anteil`), und
+        // der Zug ändert die Wenden und die Ortswahl seines Tags. Der Zug ist die EINE Quelle der Abweichung, streuH bleibt das
+        // Rauschen der Wende. fleissig: früher ans Werk (werkVorH) und länger (werkNachH), das Mittag am Werk; gesellig: der
+        // Abend am Treff (das eigene Haus bietet den Abend nur mit daheimTreff) und länger (ruheNachH, die Ruhe bleibt vor
+        // Mitternacht) — mit daheimTreff allein änderte sich der Tag von 6 der 24 Geselligen im Dorf der Linse, weil die
+        // Bindung die meisten schon an den Treff band (main ↔ Kopf, je 15 min); haeuslich: der Abend daheim (jeder Treff
+        // außer Haus × treffMal), der Morgengang × morgenMal — den Besuch behält er: er ist der Weg des Tags (≥ 100 m, mensch.K3
+        // Staffel 2), kein Zug nimmt ihn (bis hier `besuch: false`: der häusliche Wirt, dessen Werk sein Haus ist, ging 3 Wege und
+        // 25 m am Tag — gate:kreatur-takt bewohner, gasthaus #419347). Wer einen Posten hat (die Rolle
+        // `regenfest`: der Händler, der Fahrer, die Wache), hält seine Schicht — der Zug verschiebt sein Werk nicht. Bis hier
+        // verschob der Same jede Wende nur symmetrisch um ±streuH und die Bindung wählte jeden nach derselben Güte: ein
+        // blinder Zuordner traf an 100 Bewohnern eines Dorfs 0,19 (Zufall 0,25), mit dem Zug 0,72 (gate:mensch-zuege).
+        zuege: Object.freeze({
+            anteil: Object.freeze({ gesellig: 0.25, fleissig: 0.25, haeuslich: 0.25, ausgeglichen: 0.25 }),
+            gesellig: Object.freeze({ daheimTreff: 0.5, ruheNachH: 1 }),
+            fleissig: Object.freeze({ werkVorH: 1, werkNachH: 1.5, mittagAmWerk: true }),
+            haeuslich: Object.freeze({ treffMal: 0.1, morgenMal: 0.5 }),
+            ausgeglichen: Object.freeze({}),
+        }),
     });
+    // DER ZUG EINES MENSCHEN (TAGES_GESETZ.zuege): rein aus dem Samen — der Name seines Zugs
+    function tagesZug(same) {
+        var A = TAGES_GESETZ.zuege.anteil,
+            u = _tagZahl(same, "zug"),
+            last = null;
+        for (var k in A) {
+            last = k;
+            if ((u -= A[k]) < 0) return k;
+        }
+        return last;
+    }
     // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral)
     function tagesHaltung(akt, rolle) {
         var R = TAGES_GESETZ.rollen[rolle],
@@ -5268,8 +5299,12 @@
     // {werk, platz, mahl, abend, besuch}: je Bedürfnis der Index seines Orts (platz: der Markt seines Morgengangs) — heimI heißt daheim (das Werk: der eigene Hof), −1 keiner.
     function tagesBindung(TC, same, rolle, heimI, orte, ohne) {
         var G = TAGES_GESETZ,
-            H = orte[heimI];
-        var wahl = function (art, von, wort, daheim, fern, amWerk) {
+            H = orte[heimI],
+            Z = G.zuege[tagesZug(same)];
+        // der Zug am Abend: das eigene Haus (daheimTreff) und jeder Treff außer Haus (treffMal)
+        var daheimAbend = Z.daheimTreff != null ? { mahl: G.daheim.mahl, treff: Z.daheimTreff } : G.daheim;
+        var treffMal = Z.treffMal != null ? Z.treffMal : 1;
+        var wahl = function (art, von, wort, daheim, fern, amWerk, mal) {
             var drang = {};
             drang[art] = 1;
             var z = TC.zielWahl(drang, orte, von.x, von.z, {
@@ -5284,7 +5319,12 @@
                     return false;
                 },
                 bietet: function (o, i) {
-                    return i === heimI ? daheim : amWerk && i === werk ? amWerk : o.bietet;
+                    if (i === heimI) return daheim;
+                    if (amWerk && i === werk) return amWerk;
+                    if (mal == null || mal === 1 || !o.bietet) return o.bietet;
+                    var b = {};
+                    b[art] = (o.bietet[art] || 0) * mal;
+                    return b;
                 },
             });
             return z ? z.i : -1;
@@ -5312,7 +5352,7 @@
             werk: werk,
             platz: platz,
             mahl: wahl("mahl", orte[werk], "mahl", G.daheim, null, G.amWerk),
-            abend: wahl("treff", H, "abend", G.daheim),
+            abend: wahl("treff", H, "abend", daheimAbend, null, null, treffMal),
             besuch: wahl("besuch", H, "besuch", null, [H, orte[platz]]),
         };
     }
@@ -5326,16 +5366,27 @@
     function tagesPlan(same, rolle, stunde, orte, nass) {
         var G = TAGES_GESETZ;
         var R = G.rollen[rolle] || {};
+        // der Zug (TAGES_GESETZ.zuege): seine Wenden; wer einen Posten hat (regenfest), hält seine Schicht
+        var Z = G.zuege[tagesZug(same)],
+            post = !!R.regenfest;
         var h = (((Number(stunde) - (R.versatzH || 0)) % 24) + 24) % 24;
         var j = function (wort) {
             return (_tagZahl(same, wort) * 2 - 1) * G.streuH;
         };
         var wach = G.wach + j("wach");
-        var w0 = (R.werk || G.werk)[0] + j("werk0");
-        var w1 = (R.werk || G.werk)[1] + j("werk1");
+        var w0 = (R.werk || G.werk)[0] - (post ? 0 : Z.werkVorH || 0) + j("werk0");
+        var w1 = (R.werk || G.werk)[1] + (post ? 0 : Z.werkNachH || 0) + j("werk1");
+        var morgenH = G.morgenPlatzH * (Z.morgenMal != null ? Z.morgenMal : 1);
+        var mittagAmWerk = R.mittagAmWerk || Z.mittagAmWerk;
         var m0 = G.mittag[0] + j("mittag");
         var m1 = m0 + (G.mittag[1] - G.mittag[0]);
         var ruhe = (R.ruhe || G.ruhe) + j("ruhe");
+        // der gesellige Abend dauert länger (ruheNachH); die Ruhe bleibt vor Mitternacht seiner Stunde
+        if (Z.ruheNachH) ruhe = Math.max(ruhe, Math.min(ruhe + Z.ruheNachH, 23.75));
+        // der Zug verschiebt Wenden, er nimmt dem Tag keinen Weg (der Morgengang: 4–10 Wege je Tag): das längere Werk des Fleißigen
+        // endet besuchH vor der Ruhe — der Abend bleibt. Bis hier lief das Werk des fleißigen Wirts (10–23 Uhr + werkNachH) über
+        // seine Ruhe 23,6 hinaus: am Tag aus `tagesPlan` (je 0,02 h, 4 000 Samen) trug er ohne Besuch 3 Wege
+        if (!post && Z.werkNachH) w1 = Math.max((R.werk || G.werk)[1] + j("werk1"), Math.min(w1, ruhe - G.besuchH));
         var heim = orte.heim,
             besuch = orte.besuch;
         var W = G.regen,
@@ -5346,13 +5397,13 @@
             return { ort: orte[wo] || heim, wo: orte[wo] ? wo : "heim", akt: akt, drinnen: !!drinnen };
         };
         var bA = besuch && w1 + G.besuchH <= ruhe - 0.5;
-        var bM = besuch && !bA && wach + G.morgenPlatzH + G.besuchH <= w0;
+        var bM = besuch && !bA && wach + morgenH + G.besuchH <= w0;
         if (h < wach || h >= ruhe) return aus("heim", "schlaf", true);
-        if (h < wach + G.morgenPlatzH) return aus("platz", "morgen", false);
-        if (bM && h < wach + G.morgenPlatzH + G.besuchH) return aus("besuch", "besuch", false);
+        if (h < wach + morgenH) return aus("platz", "morgen", false);
+        if (bM && h < wach + morgenH + G.besuchH) return aus("besuch", "besuch", false);
         if (h < w0) return aus("heim", "morgen", false);
         // der Mittag: am Tisch seiner Bindung — ohne einen isst er daheim (drinnen)
-        if (h >= m0 && h < m1 && !R.mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
+        if (h >= m0 && h < m1 && !mittagAmWerk) return aus("mahl", "mittag", !orte.mahl);
         if (h < w1) return aus("werk", "arbeit", false);
         if (bA && h < w1 + G.besuchH) return aus("besuch", "besuch", false);
         return aus("abend", "abend", false);
@@ -9647,6 +9698,7 @@
         tagesOrte: tagesOrte,
         tagesBindung: tagesBindung,
         tagesPlan: tagesPlan,
+        tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,

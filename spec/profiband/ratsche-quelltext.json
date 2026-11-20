@@ -50,6 +50,14 @@
             "zweck": "Struktur: A/B an einem anderen Stamm (KAMERA_LAUB_STAMM)",
             "stamm": 1
         },
+        "scripts/diag-knick-euler.cjs": {
+            "zweck": "Messung: führt die Klasse von stamm/bau-buch.js im vm auf einem Wirt mit dem echten schmiede-core aus, dazu mit den zwei Mutanten (Eichfaktor 500 zurück · Lagerung beta 2)",
+            "datei": 1
+        },
+        "scripts/diag-mensch-zuege.cjs": {
+            "zweck": "Messung: führt koerper-core im vm mit dem eingeschmuggelten Täter aus (tagesZug liefert immer ausgeglichen)",
+            "datei": 1
+        },
         "scripts/diag-ofen-contract.cjs": {
             "zweck": "Messung: führt die Foundry-Brücke als Ofen im vm aus",
             "datei": 1
