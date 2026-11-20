@@ -67,6 +67,26 @@ taeter_anstoss() {
     ) </dev/null &
     echo "$(date +%H:%M) $id: Täter-Suche angestoßen (eigener Prozess, Sperre $TAETER_SPERRE)" >>"$L"
 }
+# probe_lauf — der Lauf der GPU-Probe am Kopf, gelesen aus der Ausgabe von ci.sh (stdin): die Zeile „    lauf: <id>“ direkt unter dem
+# ersten Urteil der Probe. EINE Quelle: derselbe Aufruf, der das Urteil trug, nennt den Lauf — nie eine Datei eines anderen Rufers
+# (20.11.: die tote ci-runs.tmp gab den Lauf 44651655142 eines fremden Zweigs, der Neu-Anstoß der nachgegebenen Probe fiel mit 403).
+probe_lauf() { awk '/^  GPU-Probe / { f = 1; next } f && /^    lauf: [0-9]+$/ { print $2; exit } f && /^  [^ ]/ { exit }'; }
+# --selbsttest-probe-lauf: der Lauf kommt aus der Ausgabe am Kopf; die Zeile eines fremden Blocks zählt nie
+if [ "$1" = "--selbsttest-probe-lauf" ]; then
+    n=0 ok=0
+    pr() { n=$((n + 1)); if [ "$2" = 0 ]; then ok=$((ok + 1)); echo "OK   $1"; else echo "ROT  $1"; fi; }
+    a=$(printf '== w28-x 11112222\n  Code-Check: completed success\n    voll: 18/18\n  GPU-Probe w28-x 1111: completed failure\n    lauf: 44821323126\n    rot (2/3): probe\n' | probe_lauf)
+    pr "der Lauf steht unter dem Urteil der Probe ($a)" $([ "$a" = 44821323126 ] && echo 0 || echo 1)
+    a=$(printf '== w28-x 11112222\n  GPU-Probe w28-x 1111: completed failure\n    lauf: 7\n  GPU-Probe w28-x 1111: completed success\n    lauf: 8\n' | probe_lauf)
+    pr "bei zwei Läufen am Kopf gilt der erste, der jüngste ($a)" $([ "$a" = 7 ] && echo 0 || echo 1)
+    a=$(printf '== w28-x 11112222\n  GPU-Probe w28-x 1111: completed failure\n  Code-Check: completed success\n    lauf: 9\n' | probe_lauf)
+    pr "ohne Lauf-Zeile unter der Probe bleibt die Antwort leer — kein fremder Lauf („$a“)" $([ -z "$a" ] && echo 0 || echo 1)
+    a=$(printf '44651655142\tGPU-Probe zug-vorab-statik 41032f4a\tcompleted\tskipped\n' | probe_lauf)
+    pr "die alte Lauf-Liste (Tab-Zeilen der toten ci-runs.tmp) gibt keinen Lauf („$a“)" $([ -z "$a" ] && echo 0 || echo 1)
+    echo "zug-dienst selbsttest-probe-lauf: $ok von $n grün"
+    [ $ok = $n ]
+    exit
+fi
 # --selbsttest-taeter: ohne Karte — eine gestellte Suche (sleep) läuft, der Anstoß kehrt sofort zurück, eine zweite startet nicht,
 # nach ihrem Ende (Sperre weg) und an einer toten PID startet sie wieder
 if [ "$1" = "--selbsttest-taeter" ]; then
@@ -204,7 +224,7 @@ bereit() {
                     git -C $R show "origin/koordination:probe-post/$b/${sha:0:8}.md" 2>/dev/null | head -1 | grep -q NACHGEGEBEN; then
                     pm="$W/probe-neu-${sha:0:8}"
                     if [ ! -f "$pm" ] || [ $(($(date +%s) - $(mzeit "$pm"))) -gt 1200 ]; then
-                        pl=$(awk -F'\t' '$2 ~ /^GPU-Probe/ { print $1; exit }' "$W/ci-runs.tmp" 2>/dev/null)
+                        pl=$(echo "$c" | probe_lauf)
                         if [ -n "$pl" ]; then
                             PT=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')
                             pc=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $PT" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/$pl/rerun-failed-jobs")

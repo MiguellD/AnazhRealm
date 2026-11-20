@@ -37,6 +37,11 @@ else{console.log("  Code-Check: completed failure");console.log("    rot ("+f.le
       continue
     fi
     echo "  $name: $st $co"
+    # DER LAUF BEIM NAMEN (20.11.): der Neu-Anstoß einer nachgegebenen Probe (zug-dienst.sh probe_lauf) las den Lauf aus der alten
+    # gemeinsamen ci-runs.tmp — seit der eigenen Liste je Aufruf eine tote Datei: die Anstöße des Abends gingen an den Lauf
+    # 44651655142 eines fremden Zweigs (HTTP 403, w28-nacht-lichter ffd68679 um 22:58), die Köpfe warteten auf eine Hand. Die
+    # Zeile steht direkt unter dem Urteil der Probe; ihr Leser ist zug-dienst.sh bereit().
+    case "$name" in GPU-Probe*) echo "    lauf: $id" ;; esac
     # „voll: n/m“ — wie viele Gruppen der VOLLEN Batterie dieser grüne Lauf trug (0/0 = nur der Puls); der Leser ist zug-dienst.sh bereit()
     if [ "$name" = "Code-Check" ] && [ "$co" = success ]; then
       vz=$(voll_zahl "$id")
