@@ -95,6 +95,13 @@ var __weltLicht = (function () {
         nachtKnotenE: MOND_E,
         nachtKnotenGrad: -6,
         nachtGrad: -32,
+        // DER WEG ZU WEISS (nacht-lichter): über Bild-Weiß zieht die Kurve den Ton zu seinem größten Kanal — `kappe` ist der höchste
+        // Anteil (weit über Weiß), `stufen` die Stufen über Weiß, nach denen die Hälfte erreicht ist — im QUADRAT der Stufen: am Knie
+        // (Weiß) steigt der Weg ohne Knick (gate:post-kette KNIE). Gebunden an das Feuer: der KERN (3 000 K bei k 20 000) hält mit 0,14
+        // Sättigung 0,44 über dem Band 0,42.
+        weiss: Object.freeze({ kappe: 0.14, stufen: 2 }),
+        // DER DECKEL DES SZENEN-ZIELS (Halb-Float): am GRÖSSTEN Kanal, das Verhältnis der Kanäle bleibt (`deckeln`)
+        deckel: 32768,
     });
     // DIE TONKURVE DER AUSGABE (licht-eine-skala) — die EINE Funktion, die jedes Bild der Welt und der Bühne an den Schirm legt
     // (`tonKurveSetzen`: der Platz `BELICHTUNG.kurve` in der Tafel des Renderers). Ihre Form ist Khronos PBR Neutral: Fuß
@@ -117,8 +124,21 @@ var __weltLicht = (function () {
             const ueber = spitze.greaterThanEqual(S);
             const p = spitze.max(S);
             const neu = T.float(1).sub(T.float(d * d).div(p.add(d - S)));
-            return c.mul(T.select(ueber, neu.div(p), 1));
+            const aus = c.mul(T.select(ueber, neu.div(p), 1)).toVar();
+            // DER WEG ZU WEISS (nacht-lichter, `BELICHTUNG.weiss`): Stufen über Weiß ziehen den Ton begrenzt zu seinem größten
+            // Kanal — genau 0 bis Weiß (der Tag, jedes Grau, jede Fläche unter Weiß bleibt Zahl für Zahl), die Kappe weit darüber.
+            // Bis hier blieb über Weiß jeder Ton in Farbton UND Sättigung: das Glas der Laterne unter der Blende der Nacht (18 ×
+            // Weiß) stand als flaches Orange, kein Licht trug je eine helle Mitte.
+            const s = T.log2(spitze.max(1)).div(B.weiss.stufen);
+            const w = T.float(B.weiss.kappe).mul(T.float(1).sub(T.exp2(s.mul(s).negate())));
+            return T.mix(aus, T.vec3(T.max(aus.r, T.max(aus.g, aus.b))), w);
         });
+    }
+    // DER DECKEL DES SZENEN-ZIELS (`BELICHTUNG.deckel`): der größte Kanal höchstens am Deckel, das Verhältnis der Kanäle bleibt — je
+    // Kanal gedeckelt stand die Flamme unter der Blende der Nacht auf (32 768, 32 768, B), gelb-weiß statt orange. Leser: das Ende
+    // der Post-Kette (`_vorBelichtung`), gate:post-kette.
+    function deckeln(T, rgb, B = BELICHTUNG) {
+        return rgb.mul(T.float(B.deckel).div(T.max(rgb.r, T.max(rgb.g, rgb.b)).max(B.deckel)));
     }
     // DER EINE SETZER: die Kurve in die Tafel des Renderers (einmal je Renderer) und auf seinen Platz
     const _tonKurveAn = new WeakSet();
@@ -2123,6 +2143,7 @@ var __weltLicht = (function () {
         KEY_BASE,
         LEGACY_LICHT,
         BELICHTUNG,
+        deckeln,
         tonKurve,
         tonKurveSetzen,
         GRENZGROESSE,
