@@ -957,7 +957,10 @@ async function lebenBuehnen() {
         const rolleVon = (sl) => (typeof sl.rolle === "string" ? sl.rolle : "wohnhaus");
         const tueren = plan.slots.map((sl, si) => {
             const [c, sn, t] = [Math.cos(sl.phi || 0), Math.sin(sl.phi || 0), sl.tuer || { x: 0, z: 0 }];
-            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
+            // der Eingang (fachwerk `eingangVon`, die EINE Regel, die auch der Wirt fährt): beim Hof-Haus das Tor vor dem Hof — dort liegt
+            // die Mitte des Rings (`ringStand`), an ihr misst die Schranke `ringM`; bis w28-bau-rezept maß sie an der Tür, 5–9 m dahinter
+            const e = sl.tuer && window.__fachwerkCore.eingangVon(sl), ez = e && e.hof ? e.z : t.z; // prettier-ignore
+            return { x: S.ox + sl.x + t.x * c + t.z * sn, z: S.oz + sl.z - t.x * sn + t.z * c, ein: { x: S.ox + sl.x + t.x * c + ez * sn, z: S.oz + sl.z - t.x * sn + ez * c }, rolle: rolleVon(sl), k: "haus#" + (sl.seed >>> 0), si, mitte: { x: S.ox + sl.x, z: S.oz + sl.z } }; // prettier-ignore
         });
         const heimVon = new Map(tueren.map((t) => [t.k, t]));
         // im gedrehten Rechteck q (Mitte, Halbachsen, phi) samt Rand — der Platz dreht wie der Wirt ihn liest, der Acker längs phi
@@ -1064,7 +1067,7 @@ async function lebenBuehnen() {
                 const drinnen = !!b.drinnenSoll;
                 const st = standVon(b, ziel);
                 const tuer = st && tueren.find((q) => ab(q, st.anker) < 0.05);
-                const fernM = tuer ? ab(st.ur || st, tuer) : 0;
+                const fernM = tuer ? ab(st.ur || st, tuer.ein) : 0;
                 if (fernM > ringM && !fern.some((f) => f.st === st)) fern.push({ st, text: `${wer(b)}: ${q3(fernM)} m von ${tuer.k}` }); // prettier-ignore
                 // (der Stand neben dem eigenen Wagen ist der Ort des Fahrers, `_verkehrAnlegen` — kein Haus daneben; am Steuer
                 // ist es der Wagen selbst, `_bewohnerSoll`: kein Haus, an dem er vorbeifährt)
