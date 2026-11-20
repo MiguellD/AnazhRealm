@@ -3402,8 +3402,10 @@ AnazhRealm.HIMMEL = Object.freeze({
     // DIE STREU-FUNKTION DES AUGES (stern-bild, `_buildStarField`; Spencer u. a. 1995): f(θ) = 2,61·10⁶ e^(−(θ/a)²) + 20,91/(θ + a)³
     // + 72,37/(θ + a)² (θ in Grad, a 0,02°) — die Anteile bis 10° Kern 3 280 · nah 3 284 · fern 2 365 von 8 929. Der Halbmesser der
     // Scheibe eines Punkts (`_sternKante`) wächst mit √Licht — dort fällt sein fernster Saum (∝ θ⁻²) auf den eines Sterns der
-    // Feldgrenze in `theta0`: 0,1° an der Feldgrenze, 2° bei m 0, 15° für Venus; mindestens `minPx` Pixel
-    sternBild: Object.freeze({ a: 0.02, kern: 0.367, nah: 0.368, fern: 0.265, theta0: 0.1, minPx: 2 }),
+    // Feldgrenze am Rand seines Kerns (`theta0` 0,03° = 1,5 a): 0,03° an der Feldgrenze, 0,6° bei m 0, 4,5° für Venus;
+    // mindestens `minPx` Pixel (der Kern, σ ≈ 0,3 Pixel) — der schwache Punkt deckt so viele Pixel wie bis stern-bild jeder
+    // (2 × 2), nur der helle trägt seinen Saum (mit 0,1° deckte das Feld 5- bis 10-mal die Fläche für Säume unter der Grenze)
+    sternBild: Object.freeze({ a: 0.02, kern: 0.367, nah: 0.368, fern: 0.265, theta0: 0.03, minPx: 1 }),
     // die Leuchtdichte der Vollmond-Scheibe in cd/m² (≈ 2 500; ihr Licht ADDIERT sich zum Himmel vor ihr — am Tag steht sie
     // als blasser Schleier im Blau, 2 500 gegen ≈ 5 000–8 000 cd/m², nachts als die hellste Fläche des Bilds)
     mondCd: 2500,
