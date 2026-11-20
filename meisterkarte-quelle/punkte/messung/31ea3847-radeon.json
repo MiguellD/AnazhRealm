@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "radeon",
- "zeit": "2026-11-20T14:36:59.770Z",
+ "zeit": "2026-11-20T16:09:58.240Z",
  "host": "MiguellD",
  "je": {
   "karte2.erleben.spieler.praesenz#2": {
@@ -13829,6 +13829,76 @@
    "bahn": "sitzung",
    "zwilling": "karte2.same.massstab.physik#2",
    "modus": "session"
+  },
+  "karte2.planet.kosmos.sternhimmel#1": {
+   "gruen": false,
+   "zahl": "❌ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 1 Median 4 · halbe Nacht bei Sonne -17.4° | -15.8° · γ 0.77 (n 53) · Grenzgröße des Felds — · ❌ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 0 Median 1 · halbe Nacht bei Sonne -16.0° | -18.0° · γ 0.95 (n 53) · Grenzgröße des Felds — · ❌ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 0 Median 3 · halbe Nacht bei Sonne -17.4° | -25.1° · γ 0.81 (n 53) · Grenzgröße des Felds — · ❌ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 0 Median 0 · halbe Nacht bei Sonne 73.4° | 74.3° · γ 0.96 (n 53) · Grenzgröße des Felds — · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 3↔2 2↔2 1↔0 0↔0; roh 11↔9 54↔43 6↔2 44↔39) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":2,\"hell\":0.24,\"Y\":0.0135,\"X\":0.0079,\"rb\":0.00 · [linse-gpu] amd/rdna-3",
+   "exit": 1,
+   "minuten": 5.88,
+   "grund": "ROT: ❌ genesis: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 1 Median 4 · halbe Nacht bei Sonne -17.4° | -15.8° · γ 0.77 (n 53) · Grenzgröße des Felds — · ❌ wiese: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 0 Median 1 · halbe Nacht bei Sonne -16.0° | -18.0° · γ 0.95 (n 53) · Grenzgröße des Felds — · ❌ genesis:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 0 Median 3 · halbe Nacht bei Sonne -17.4° | -25.1° · γ 0.81 (n 53) · Grenzgröße des Felds — · ❌ wiese:third: Tag ≥10° max 0 · ≥−3° max 0 · Nacht ≤−18° min 0 Median 0 · halbe Nacht bei Sonne 73.4° | 74.3° · γ 0.96 (n 53) · Grenzgröße des Felds — · WEG der Sterne gleich (Nacht kurz ↔ voll mit − ohne 3↔2 2↔2 1↔0 0↔0; roh 11↔9 54↔43 6↔2 44↔39) · Boden (Lesewert) Uhr 0 weicht ab: {\"uhr\":0,\"bilder\":2,\"hell\":0.24,\"Y\":0.0135,\"X\":0.0079,\"rb\":0.00 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "konsum": "ke3be5fbc03f7",
+   "konsumN": 30,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k83e395db23ef",
+   "s": 352.3,
+   "fremd": {
+    "s": 356.3,
+    "takte": 142,
+    "fremdS": 1253.89,
+    "kerne": 3.519,
+    "fensterKerne": 6.484,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-32496-profil-cllDJI --no-p",
+      354.72
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-13112-profil-9sQdpE --no-p",
+      195.27
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36624-profil-PklvwJ --no-p",
+      194.33
+     ]
+    ],
+    "dienerS": 145.8,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      70.42
+     ],
+     [
+      "System",
+      57.06
+     ]
+    ],
+    "geraetS": 222.66,
+    "geraet": [
+     [
+      "svchost.exe",
+      104.34
+     ],
+     [
+      "MsMpEng.exe",
+      103.58
+     ],
+     [
+      "SearchIndexer.exe",
+      11.16
+     ]
+    ],
+    "eigenS": 437.94,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-20T16:09:58.240Z",
+   "abdruck": "d546900e8e0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -13857,7 +13927,8 @@
   "k2b15b03fd4a9": "dVRNj5swEP0vHNt6zfeHpT14Q6SNVKnsqecxjIENgciG0Kbqf69gIQmwnSPMm/f83th/jDOkR8jx6V03tcGML8Y3Q8MFiUZ1QfX0rg1mRKllo8OGX6kqz62mVSkoiBqKE5JOtVhWT+nYGlp2ZktG+z3vE0oTGtCX/vl5Da0EZg1pQeIMjCLphLDh6HQOAgl0ciSbmr0QQXqMjhXGPHmnc/E3zmm/XzMKqLOl0sj3AvTY4Tfne75RmJWALanKWs+caeYJx2Y3ou2pMgU9uQIWFaoJBFYAlpiF8qH6JKIroKw6rRdkoZN5dsgo3fTmqMu0aMlZNQLrqV1EdmAB+8Tp/NwRuVAkBIRi7XMBWOeoFhpMJ5W+xeivcD30CCdUQGooZi9NJ7DF3RtK6etWSzUKHylm4b4pLTdcAIdAaT44FefjIHqdvyejgTzmQ8hT5SsSnRalOi3tkS7apsO+byXpAjJU5Njo9tYdugAYsolrXCieuPEaeT/MhLOFb3qPZwkpf914pxvZ9qCQ5OduAqKLXuAxzg+b5hZOp3nnpeM66To43Q6L/SjDc9Hyg0FG/p8cPq4BuWJZzSApXTfy1sMvCk4ERK5KKeekhZfK6LPF7LFqiWiado7WMZ3IYtSh9c2RaLwCL7fw+I7Hvflz95DnWHu+1jxOb1R7O6XwTekyeRluYrrpLlVLekiLWzZSIAyyN3lcUVWY48LCzBUOZIz26W3heBJM115+XSzrdTuxxMHcWnd63qgoyCLJPnk2elRHAfVxanR9L7TscfVefvDXid2MaUyT/tGgHc96zg+7+ONNOQye7jh/+xh+xpSeVSPL4dWjBXS6gKq9P/F//wE=",
   "kdd0f51deda0e": "dVRdj5swEPwveWzrM58BLN2Dc5yUq1o191T1cQ1rICGAbAi9VP3vFQSSAOk+opmdYXa9f1YVRAdI8Gmvy2LFVp9WX1YaTkg0qhOqp71esVUQmRbajF+Kcs5fOliksqrWNM8EBVFAekTSqBqz/Cnqab5pxZZktH3l7Y7SHfXopuXXeuHPz/M2ucC4JDVIHJsEgbR9YHNgoxMQSKCRvfAAdn0E6TLalx/y3Z6O1Sl3Th6oCijiqfNg7XrosrcPzl+X+DgDrEmeFXrUjWJX2Ba7irVLjoKWnAHTHNVAAtMDU4xm+0jaXUBnRJk3Wk/EfDt2LZ9RusAmqLMorUmlSoHFABeB5ZnANktPSdUQOXEkBPhinnUKWCSoJh4MO5Jrk9Hf/rzpAY6ogBSQjlkatmeJWzaU0u3SS94b7yVG42tDmo4/IXZDpUmXVJj0jeh5/L67LFXI+ft1w5KZiI7STB2n8UgHLcNm35aWdAoxKnIodX1F+w4A+sNLCGmvtXPCOfP2MwPPEmvDvf8Xn/LtIjtdyroFhSSpmoGIDrqeyzh/W4BrOB7HvZe2Y0fzwem6W+x7G66D5trrbCT/mcPlGZAzZvlIktJxAnfe/KTgSEAkKpNynLRwIxk8WswW85qIsqzH0dqGHZidj+Iuki7Tzf19CD+sn9v32zz7euVzz333UtXXvxRrQzpMnrqXGC3QmapJC1F6nY0UCJ3txTzOqHJMcBJh7AgbYkZbeXF99jnfecOzl58ny3pedsywC7fQjR43KvDiQLIHZ6NFdRBQHAags3Z902Jfu5B+8O0ljL0R0pDOK245//USXm7Kd77hbyENh+YVRrRSpcy6q0dTaHQKeX07/3//AQ==",
   "ke5ba1a6e065a": "dVRNj5tADP0vObZlzWeAkfYwWSJlpVZNT1WPHvAACYFoBkI3Vf97BYFkga2PIz/7+T17/qzOGB8xpaeDrsoVW31afVlpvJChSV1IPR30iq3C2LLJYfwWwDl/6dJilZ9rDUUuAEWJ2YmMRtWUF09xDwssO7Elg3bL2z3AHnzYtM/Pc2ghKKmMGiWNwDCUToBsntjoFAUZ2Mi+2ZDsBYTSY9BHEPH9AcbYtJxDu513FFgmU6bh2vPJY69vnG/5gmGSI9VGkZd67BknnnBsdm+0nCpR2BpXpKwgNYDQ8tESI9FeynYfwgwoi0brSbPASTw7YACL3JR0Hme1cVaVoHJIF6HtW8g+UDo9N4acMBICAzHXOUMqU1ITDqYTy7XF4HcwL3rEEyk0SsxGLU3Ht8VDGwDYLbkUPfG+xUh8bUrLDSbAzlBIO6WitC8E1/F9f1vGiPMffIx01kTHWa5OU3mkS7bpsK9LSjrDhJRxrHR9zw5cRAqGzY+g77V3oznyMcyAs8Xa9N7PEgDfLbTTlaxbVGSk52YAkkue7zHOXxfJNZ5O485Lx3XiuXG67hb7PQ3PJWvtdzTS//hwOwPjSnkxgqR03dCbF78oPBkoUpVLOTotvFiGHy1mS0VtiKqqR2sd0wktBg6Ud0XC/gQ2d/P4C4/e7J+7Hw8/+9jyOee+eqXq+5RibUqXyUt3ifEiO1e10WKc3b2RgrCjvfDjSqqglCYSJq5wMGHQyhvta8D53h/OXn6eLOt1WTGnTtxSN3rcqNBPQsk++DZaUkeB5XFIdNdeYNn96m2+891NjIMZQQSX6Y1A0nL+6yW6/Snf+Ia/RhANxc8Uw1lVMu9+Pciw0RkW9eO7//sP",
-  "k0c1712d641ca": "dVVdb5tAEPwvfmxKznwZOCkPaxPJkRKVPPV5D/YAG4N1B6Fx1f9eQcEO4N4b1szN7Ozu+ffqjPERU3o86Kpc8dW31feVxg8yNKkPUo8HveKrIDYtsjm8Q3cYAOw6WKzyc61ZkQuGosTsREajasqLx7in+aaVWJKz9hnaiLGIeWzbPj3NqYWgpDJqlDQSg0DaPvI5sNEpCjKwkb3YAHZ9Quly1h8/hOjAxrNtAVj7PFcUWCZTp8HG9cjlL58Az7BwmORItVHkpR4148QVtsWvQsuqEoWtcUHKClIDCU0PTTEa7aNso4DNiLJotJ6I+XbiWj5nbIFNSedxVhtnVQkqB7gILM9Efifp9NwYcuJICPTFPOcMqUxJTTys7VhuzM677O3rh0j+8gG2MBc54okUGiVmY7Zr27PELSvG2H7pregL6SXHQjZraTr+hNg1mKVdcmHaX8Qu4+9RHyiEMExpd9KZiI6zXJ2mcUmHrLXNX5eWdIYJKeNY6fqK9h1E8vmgxXqtyAnnzFsxA88Sm7X7tRafwd5fKFayblGRkZ6bgUgOuZ7LAV4W4BpPp3EHpO3YMYfFWcy+rrvh/2rNdcjceJ219D+9+bcqxoXyYiRJ6TiBO5+cD4UnA0WqcinH7gs3lsG94W2pqA1RVfXYbnttB/2IldeUgn5Ntrd6dhB+Wj/37++zMhdj2N9eqfpapdispcPlR7et8QKdq9poMc6u/ZKCMOB3oBdSBaU0iTBxhI0JZ+2/5WAXHyDyhqdBPkwG+LLo+iWnLtxSN3qcssBLAsnvPC0tqaPA8jgAnY3rmxZ/7UL6AXsAeAM4mCELWdR+DWgHSfe92677zzfYwkvIwuHyM8XsrCqZdy8jy7DRGRb17S/hz18="
+  "k0c1712d641ca": "dVVdb5tAEPwvfmxKznwZOCkPaxPJkRKVPPV5D/YAG4N1B6Fx1f9eQcEO4N4b1szN7Ozu+ffqjPERU3o86Kpc8dW31feVxg8yNKkPUo8HveKrIDYtsjm8Q3cYAOw6WKzyc61ZkQuGosTsREajasqLx7in+aaVWJKz9hnaiLGIeWzbPj3NqYWgpDJqlDQSg0DaPvI5sNEpCjKwkb3YAHZ9Quly1h8/hOjAxrNtAVj7PFcUWCZTp8HG9cjlL58Az7BwmORItVHkpR4148QVtsWvQsuqEoWtcUHKClIDCU0PTTEa7aNso4DNiLJotJ6I+XbiWj5nbIFNSedxVhtnVQkqB7gILM9Efifp9NwYcuJICPTFPOcMqUxJTTys7VhuzM677O3rh0j+8gG2MBc54okUGiVmY7Zr27PELSvG2H7pregL6SXHQjZraTr+hNg1mKVdcmHaX8Qu4+9RHyiEMExpd9KZiI6zXJ2mcUmHrLXNX5eWdIYJKeNY6fqK9h1E8vmgxXqtyAnnzFsxA88Sm7X7tRafwd5fKFayblGRkZ6bgUgOuZ7LAV4W4BpPp3EHpO3YMYfFWcy+rrvh/2rNdcjceJ219D+9+bcqxoXyYiRJ6TiBO5+cD4UnA0WqcinH7gs3lsG94W2pqA1RVfXYbnttB/2IldeUgn5Ntrd6dhB+Wj/37++zMhdj2N9eqfpapdispcPlR7et8QKdq9poMc6u/ZKCMOB3oBdSBaU0iTBxhI0JZ+2/5WAXHyDyhqdBPkwG+LLo+iWnLtxSN3qcssBLAsnvPC0tqaPA8jgAnY3rmxZ/7UL6AXsAeAM4mCELWdR+DWgHSfe92677zzfYwkvIwuHyM8XsrCqZdy8jy7DRGRb17S/hz18=",
+  "ke3be5fbc03f7": "dVRNj5swEP0vOW7rNZ8BLO3BCZE2Ululp57HMAY2BCLbLG2q/vcKAkmA3Tkh8d7Mmzfj+bs6Q3KEDJ/fdF2t2Opp9XWl4R2JRvWO6vlNr9gqSmwHXcavQTnn2w6WqOJsNC0LQUFUkJ+QNMpgUT4nPS20ndSRjLY73h4oPdCAblp+iw1/eZmnKQWmNTEgcUwSRdINgc2Bjc5AIIFG9oUH8NMMJqBKp5qitR+gz/Z/ON8t66cFoCFlUekxY5L6wnUYHaNdchS05AKYl6gGEtgB2GIghX2z7SGiM6IsG60nxUI39Z2QUbrAZqiLJDfkrGqB1QAXkRPYwDZLTdm5IXKiSAgIxdzFHLDKUE00WG4i1zajv8N50iOcUAGpIB+9tNzAEXdvKKWvSy1lL7wvUX0yJp3khTpNm5MeOpbLvi0T6hxSVORYa3NDhx4AhsOGxpT/5JwfvHjOvEsZeI5YW3740EJI+euic11L04JCkp2bgYge+oHPON8vwAZOpwHlS9dzk7nt2nRr+SjD99BeB52M7BMXr0tMLliUI0lKz4t8tt14c/C7ghMBkalCynFWwk9k9NFqtVgaIuraDMi1a7mR3Wmpbq5E4fXB3mLL49b6te19fogfnH+gva9QK3PrVqwt6THZv6dkgS6UIS0k+W1GUiBE7APoBVWJGU6sTD3hQtqh77Jib/z48ris9LKY9KXAzuRKN3rcrChII3ndkOF47aeHo0V1FFAdB4K39kPbYTGPM/pl9zoUtmIa00P7aNaWy5bz/XYTTjz8znnGd32BMyZUghJIDWREoZxc6e7vWdWy6K4czaHROZTmDvn3Hw=="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
