@@ -4330,7 +4330,8 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
         waldStand(x, z),
         waldSchnee(x, z, y),
         waldOrt(x, z),
-        state.ort.wuchs.wald
+        state.ort.wuchs.wald,
+        bodenSteilheit(x, z)
     );
     const S = K.kronenSchatten;
     let summe = 0;

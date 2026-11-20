@@ -3,8 +3,8 @@ class AnazhRealm_bild_wahl {
     // DIE SICHT JE PASS (scene.onBeforeRender / onAfterRender): die Region-Bundles tragen ihren Cull auf `visible`
     // (three-Culling friert im Replay ein). Bis V18.528 galt das Urteil der Haupt-Kamera für JEDEN Pass: ein Bundle im
     // Blick warf in beide Kaskaden (auch 2 km weit), eines hinter dem Blick oder hinter dem Berg warf nie — auch wenn
-    // sein Schatten ins Bild fiel. Jetzt liest der Hauptpass das Haupt-Urteil (_archRegionBundleCull: Frustum · Berg ·
-    // Query), jeder Schatten-Pass das EIGENE: je Region die Werfer-Hülle, darin je WERFER (jedes werfende Blatt-Mesh)
+    // sein Schatten ins Bild fiel. Jetzt liest der Hauptpass das Haupt-Urteil (_archRegionBundleCull: Frustum · die Tiefe
+    // der Sicht, Bild/tiefe), jeder Schatten-Pass das EIGENE: je Region die Werfer-Hülle, darin je WERFER (jedes werfende Blatt-Mesh)
     // sein Urteil nach dem EINEN Gesetz der Pass-Wahl (`_passTrifft`). Was in keiner Kaskade wirft, wirft nicht; was nur
     // im Schatten liegt, wirft. Im Schatten-Pass ist ein Region-Bundle eine Gruppe: ein Render unter dem Override-Stoff
     // sammelt keine Bundles (die Bundle-Wahrheit am Chokepoint `_renderScene`), three projiziert seine Kinder frisch — die
@@ -35,13 +35,17 @@ class AnazhRealm_bild_wahl {
         }
         // DER TAKT DER ARENEN im Hauptbild, vor jedem Pass dieses Frames (die Kaskaden rendern verschachtelt in ihm), dann
         // die Wahl der GPU: die Arenen legen die Aufträge dieses Passes, EIN Compute wählt jede Instanz jeder globalen Gruppe
-        if (!nach && k < 0 && kamera === this.state.camera) {
+        const hauptBild = !nach && k < 0 && kamera === this.state.camera;
+        if (hauptBild) {
             this._arenaTakt();
             this._wieseAugeTakt(kamera); // das Auge der Wiese für Stoff und Wahl dieses Bilds (die Nah-Wiese wirft nie)
-        }
+            this._sichtTiefeBeginn(kamera); // die Tiefe des letzten Bilds für den frühen Zug der Sicht (Bild/tiefe)
+        } else this._sichtTiefeRuht(); // die Züge der Sicht zeichnen nur im Hauptbild
         if (!nach) this._instanzWahlGpu(kamera, S);
-        // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
+        // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz; die Bau-Sätze des Hauptbilds
+        // schneiden danach ihre Haufen an der Tiefe (der frühe Zug: EIN Compute vor jedem Zeichnen dieses Bilds).
         this._chunkSatzPass(kamera, nach, k, S);
+        if (hauptBild) this._sichtTiefeRechnen(kamera);
 
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
@@ -227,23 +231,26 @@ class AnazhRealm_bild_wahl {
     }
 
     // DER WEG DES AUGES (w24-fahrt-takt, Gebot 7: der Takt kostet, was sich ändert — nie das Tempo): EIN Weg je Bild, die Richtung
-    // und das Tempo des letzten Schritts der Kamera (unter ZEIT_SPRUNG_M, binnen 250 ms; im Stand und nach einem Sprung Tempo 0).
-    // Leser: die Lage des Wegs (`_lageAnker`) und der Anker der Ferne der Wiese (`_wieseFernAnker`). Mehrere Pässe eines Bilds
-    // lesen denselben Schritt (das Auge steht zwischen ihnen).
+    // und das Tempo des letzten Schritts der Kamera (unter ZEIT_SPRUNG_M, binnen 0,25 s; im Stand und nach einem Sprung Tempo 0).
+    // Leser: die Lage des Wegs (`_lageAnker`), der Anker der Ferne der Wiese (`_wieseFernAnker`) und die Box der Kaskaden über den
+    // Weg (`_kaskadenPassen`). Mehrere Pässe eines Bilds lesen denselben Schritt (das Auge steht zwischen ihnen).
+    // DAS TEMPO AN DER WELT-UHR (`spielZeit`, s; einheit-sicht S5): an der Gerätezeit hing es an der Dauer jedes Takts — derselbe
+    // Weg ergab je Gerät und Last eine andere Box der nahen Kaskade, ihre Schatten-Kanten wanderten (Genesis-Flug Bild 23, GTX 1050:
+    // x0 −52,27 / −52,32 / −44,62 m bei 15,5 / 15,7 / 0 m/s). Ein Schritt ohne Welt-Zeit ist ein Sprung.
     _augeWegJetzt() {
         const W = this._augeWeg || (this._augeWeg = { x: NaN, y: 0, z: 0, t: -Infinity, u: [0, 0, 0], v: 0, n: 0 });
         const cam = this.state.camera;
         if (!cam) return W;
         const e = cam.matrixWorld.elements;
-        const t = performance.now();
+        const t = this.state.spielZeit;
         const [dx, dy, dz] = [e[12] - W.x, e[13] - W.y, e[14] - W.z];
         if (dx === 0 && dy === 0 && dz === 0) {
-            if (t - W.t > 250) W.v = 0;
+            if (t - W.t > 0.25) W.v = 0;
             return W;
         }
         const s = Math.hypot(dx, dy, dz);
         const dt = t - W.t;
-        W.v = s > 1e-4 && s < AnazhRealm.ZEIT_SPRUNG_M && dt < 250 ? (s / Math.max(dt, 1)) * 1000 : 0;
+        W.v = s > 1e-4 && s < AnazhRealm.ZEIT_SPRUNG_M && dt > 0 && dt < 0.25 ? s / dt : 0;
         // `n`: so viele Schritte in Folge in derselben Richtung (auf 25°) — ein einzelner Versatz ist noch kein Weg
         const gleich = W.v > 0 && W.n > 0 && (dx * W.u[0] + dy * W.u[1] + dz * W.u[2]) / s > 0.9;
         W.n = W.v > 0 ? (gleich ? W.n + 1 : 1) : 0;
@@ -605,6 +612,48 @@ class AnazhRealm_bild_wahl {
         return [at.aLodLevel.array[0], +blende, +(blende && ud.foundryCrossfadeKanal === "farbe"), 0];
     }
 
+    // DAS FENSTER EINES GLIEDS IM GANZEN (laub-kante, Kosten am Schirm): behält die Maske der Blende in diesem Pass IRGENDEINE
+    // Instanz des Glieds? Dieselbe Rechnung wie `fenster` in `PASS_WAHL_WGSL`, über das Glied als Intervall: der XZ-Abstand vom
+    // Auge der Blende zur Kugel des Glieds in der Welt (`c`, `r`) ± ihr Radius und der Rand der Blende, je Maß das Band der
+    // Sichthöhen seiner Instanzen (`M`, `_fensterMass`), das Urteil am EINEN Blend-Gesetz (`_blendeBehaelt`). Nein: das Glied
+    // zieht in diesem Pass nicht — ein Zug, dessen Instanzen alle jenseits seiner Stufe stehen, ist ein leerer Befehl im Band.
+    // Befund (Bildpaar paar4, Dorf, Radeon): 33 Züge ohne eine Instanz, eiche · birke · weide · strauch L1, ihre Bäume standen
+    // alle in der Karte. Ohne Fenster (Art 0, die Nähe), ohne Maske im Kanal des Passes oder ohne Maß behält es (die GPU wählt).
+    static _fensterTraegt(F, L, c, r, M) {
+        if (!F || !(F[0] >= 1 && F[0] <= 4) || !L || !L.an || !(L.fit ? F[2] : F[1]) || !M || M.verdeckt) return true;
+        const d = Math.hypot(c.x - L.ex, c.z - L.ez),
+            lo = Math.max(0, d - r - L.haltBlende) * L.perf,
+            hi = (d + r + L.haltBlende) * L.perf,
+            k = (h) => Math.min(L.ref / Math.max(h, 1e-3), 1);
+        if (F[0] === 4) return AnazhRealm._blendeBehaelt(L.kanten, "karte", lo * k(M.s1), hi * k(M.s0), 0, 0, false);
+        return AnazhRealm._blendeBehaelt(L.kanten, F[0], lo * k(M.s1), hi * k(M.s0), lo * k(M.l1), hi * k(M.l0), false);
+    }
+
+    // DAS MASS EINES GLIEDS (`_fensterTraegt`): das Band der Sichthöhen seiner ersten `n` Instanzen — Skelett `aH0` und Blatt
+    // `aH0L` (Art 1–3), die Karte `aKarte.w` (Art 4); ein negatives (die Stufe ohne Partner, die verdeckte Karte) behält das
+    // Glied voll, wie `fenster` in `PASS_WAHL_WGSL`. Gerechnet, wenn der Block des Glieds kopiert (`_block`: eine neue Version).
+    static _fensterMass(at, n, art) {
+        const M = { s0: Infinity, s1: 0, l0: Infinity, l1: 0, verdeckt: false };
+        const S = art === 4 ? at.aKarte : at.aH0,
+            B = art === 4 ? at.aKarte : at.aH0L;
+        if (!S || !B || n <= 0) return null;
+        const sS = art === 4 ? S.itemSize : 1,
+            oS = art === 4 ? 3 : 0;
+        for (let i = 0; i < n; i++) {
+            const s = S.array[i * sS + oS],
+                l = art === 4 ? s : B.array[i];
+            if (s < 0 || l < 0) {
+                M.verdeckt = true;
+                return M;
+            }
+            if (s < M.s0) M.s0 = s;
+            if (s > M.s1) M.s1 = s;
+            if (l < M.l0) M.l0 = l;
+            if (l > M.l1) M.l1 = l;
+        }
+        return M;
+    }
+
     // DIE WAHL DER GPU (Rang 7 des Luft-Urteils 28.10., gebaut nach dem Spike gpu-wahl). Befund (Luft-Urteil, Stadt-Gipfel
     // stadt-voll): der Hauptpass zog 1 368k Dreiecke, davon die Klasse bewohner 868k — Haut und Kleid jedes Bewohners im
     // Nah-Kreis, auch hinter dem Blick —, jede Kaskade ihren Wurf ganz (je ~110k): die Senken des Gang-Satzes wählte keine
@@ -623,7 +672,7 @@ class AnazhRealm_bild_wahl {
             const arenen = [];
             for (const a of reg.values()) {
                 if (!a._wahl || !kamera.layers.test(a.layers)) continue;
-                const zug = a._wahlVor(rend, kamera);
+                const zug = a._wahlVor(rend, kamera, S.lage.auge); // das Auge der Wahl (`_wahlRechnen`): das Fenster im Ganzen
                 if (zug && zug.wahl.length) arenen.push(a, zug);
             }
             // je Bild neu, darum in der Lage des Auges (`L.auge`, w24-fahrt-takt: der Halt am Punkt, kein Weg)

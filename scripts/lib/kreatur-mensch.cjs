@@ -860,9 +860,8 @@ async function menschBuehnen() {
     // Welt-Matrix, wie das Bild ihn zeichnet; im Fenster nach dem echten Frame `_loopRender`) auf 10° zum Spieler zeigt; der
     // kleinste Abstand des Spielers zu ihm und jede Berührung (näher als zwei Kapseln) mit jedem Bewohner draußen. Der
     // Vorbeigang und zwei Gänge ohne Erinnerung (der dritte die Gegenprobe), dann schlägt der Spieler ein Wesen 5 m neben ihm
-    // (`damageCreature`, Quelle Spieler), dann der vierte Gang — der Zeuge weicht (`_bewohnerWeichen`, kollektiv#1): sein Stand
-    // liegt im Kreis der Tat, am Ende des Gangs (vor dem Warten) steht er weiter von ihr als sein Stand (`fort`); kommt der Spieler
-    // ihm nicht mehr auf `begegnungM` nahe, wendet sich kein Kopf.
+    // (`damageCreature`, Quelle Spieler) — der Zeuge weicht (`_bewohnerWeichen`, kollektiv#1): sein Stand liegt im Kreis der Tat;
+    // steht er wieder, steht er weiter von ihr als sein alter Stand (`fort`), und der vierte Gang geht durch den Stand, den er jetzt hat.
     // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst · der Zeuge bleibt stehen.
     await buehne("begegnung", async (restore) => {
         const [dt, tag0] = [1 / 60, s.timeOfDay];
@@ -875,7 +874,12 @@ async function menschBuehnen() {
         await bisDa("begegnung: die Leiber", () => !da());
         await uhrAuf(10, "begegnung: 10 Uhr", da);
         await stehtUm("begegnung: das Start-Dorf");
-        const schritt = () => [takt(dt), leute(dt)];
+        // DER VERKEHR GEHT MIT (Welle SAMEN), wie im Spiel (`_gameLoopTick`): der Schritt der Wagen vor den Leuten (`_verkehrSchritt`,
+        // im Sim-Schritt), nach ihnen Einsteigen, Heimfahrt, Aussteigen (`_tickVerkehr`, im Takt des Bilds). Ohne ihn stand ein Wagen im
+        // Zustand „fährt“ still und hielt seine Querung (`_verkehrVorrang`: die Bahn durch den Ort, den er hält) für immer — am
+        // Samen-Wurf wartete der Zeuge wohnhaus/schmiede #724672 3 600 Takte am Rand der Fahrbahn vor einem Wagen 25,5 m fort
+        // (vlong 1,915 m/s): er wich 0,712 m statt 22,2 m. Der Takt der übrigen Leute-Proben geht noch ohne ihn (offen, `leute`)
+        const schritt = () => [takt(dt), r._verkehrSchritt(dt), leute(dt), r._tickVerkehr()];
         // DER WEG: aus 9 m schräg vor ihm (± 0,6 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je halben Meter frei
         // von Grundriss — und derselbe 2 m daneben (der Vorbeigang); wer sonst dort steht, macht dem Spieler Platz
         const offen = (x, z) => r._landAt(x, z) && !["haus", "bau"].includes(r._imGrundriss(x, z, 0.5));
@@ -888,14 +892,17 @@ async function menschBuehnen() {
         // #419347 binnen 3,2 m — der erste Stehende der Liste war ihr Fünfter (Bedeutung 134 gegen 139–241: als Leib im Bild
         // true,false,false,true). Die Gruppe ist eine eigene Klasse, offen im Rumpf der Abgabe.
         const allein = (k) => S.liste.filter((o) => o !== k && o.leib && !o.drinnen && ab(o.leib.position, k.leib.position) < 2 * A.BEWOHNER.begegnungM).length < A.BEWOHNER.nahLeiber - 1; // prettier-ignore
-        let [b, w] = [];
-        for (const k of S.liste)
+        // DER WEG UM IHN: aus 9 m schräg vor seinem Gesicht (±0,6 rad) durch seinen Stand, der Vorbeigang 2 m daneben — der erste freie
+        const wegUm = (k) => {
             for (const dw of [0.6, -0.6]) {
                 const u = { x: -Math.sin(k.leib.rotation.y + dw), z: -Math.cos(k.leib.rotation.y + dw) };
                 const [a, v] = [{ x: k.leib.position.x - u.x * 9, z: k.leib.position.z - u.z * 9 }, { x: -2 * Math.sign(dw) * u.z, z: 2 * Math.sign(dw) * u.x }]; // prettier-ignore
-                if (!b && !k.drinnen && !k.weg && k.da && allein(k) && frei(a, u) && frei({ x: a.x + v.x, z: a.z + v.z }, u))
-                    [b, w] = [k, { a, u, v }];
+                if (frei(a, u) && frei({ x: a.x + v.x, z: a.z + v.z }, u)) return { a, u, v };
             }
+            return null;
+        };
+        let [b, w] = [];
+        for (const k of S.liste) if (!b && !k.drinnen && !k.weg && k.da && allein(k) && (w = wegUm(k))) b = k;
         if (!b) return { fehler: "kein Stehender mit freiem Weg um 10 Uhr" };
         const [g, stand] = [b.leib, b.ziel];
         // DER KOPF IM BILD: seine Welt-Matrix (die dritte Spalte: wohin das Gesicht zeigt) gegen den Spieler
@@ -913,17 +920,16 @@ async function menschBuehnen() {
         // selbst MUSS er ihn tragen: dort bricht `kopf()` weiter beim Namen
         const traegt = () => !!g.userData.rig || ab(pm, g.position) <= A.BEWOHNER.nahM;
         // EIN GANG (versatz quer zum Weg): je Takt der Kreatur-Takt und die Bewohner, im Fenster der echte Frame aus Ego
-        let tat = null; // der Ort der Tat (der vierte Gang misst, wie weit der Zeuge von ihr fortging)
-        const gang = (v) => {
-            const a = { x: w.a.x + w.v.x * v, z: w.a.z + w.v.z * v };
+        const gang = (v, W = w) => {
+            const a = { x: W.a.x + W.v.x * v, z: W.a.z + W.v.z * v };
             stell(a.x, a.z);
             r._spielerLageAlt = null;
             for (let i = 0; i < 60; i++) schritt();
             const z = { zuS: null, dMin: 99, beruehrt: 0, imBild: null };
             for (let l = 0, t = 0, e = null; l <= 21; l += 1.4 * dt, t += dt) {
-                stell(a.x + w.u.x * l, a.z + w.u.z * l); // der Lauf: der Kreatur-Takt liest ihn aus der Lage
+                stell(a.x + W.u.x * l, a.z + W.u.z * l); // der Lauf: der Kreatur-Takt liest ihn aus der Lage
                 schritt();
-                if (echt) [kamera(w.u.x, w.u.z), r._loopRender()];
+                if (echt) [kamera(W.u.x, W.u.z), r._loopRender()];
                 const d = ab(pm, g.position);
                 z.dMin = Math.min(z.dMin, Math.round(d * 1000) / 1000);
                 z.beruehrt += S.liste.filter((o) => !o.drinnen && ab(pm, o.leib.position) < 2 * A.PLAYER_WALL_RADIUS).length; // prettier-ignore
@@ -931,9 +937,8 @@ async function menschBuehnen() {
                 if (e !== null && z.zuS === null && traegt() && gier() <= 10)
                     [z.zuS, z.imBild] = [Math.round((t - e) * 1000) / 1000, !!b.nah && (!echt || (g.visible && imBlick(kopf()[12], kopf()[13], kopf()[14])))]; // prettier-ignore
             }
-            if (tat) z.fort = Math.round((ab(g.position, tat) - ab(stand, tat)) * 1000) / 1000;
-            // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht
-            for (let i = 0; i < 1800 && !(b.da && !b.weg && !b.platz && ab(g.position, stand) < 0.5); i++) schritt();
+            // der Spieler steht am Ende, bis der Bewohner wieder an seinem Ort steht (der vierte Gang ist der letzte: kein Warten)
+            for (let i = 0; W === w && i < 1800 && !(b.da && !b.weg && !b.platz && ab(g.position, stand) < 0.5); i++) schritt(); // prettier-ignore
             return z;
         };
         // DER LAUF: der Vorbeigang, zwei Gänge ohne Erinnerung, der Schlag 5 m neben ihm, der vierte Gang
@@ -947,14 +952,29 @@ async function menschBuehnen() {
             const G = [gang(1), gang(0), gang(0)];
             const ort = spirale(stand.x + 5 - P0.x, stand.z - P0.z, 4, 1.5, (x, z) => offen(x, z) && neben(x, z));
             const opfer = tier(ort, "wesen"); // ohne Ort wirft der Wurf beim Namen
-            tat = { x: opfer.position.x, z: opfer.position.z };
+            const tat = { x: opfer.position.x, z: opfer.position.z };
             r.damageCreature(opfer, 1e9, { source: "player" });
             const furcht = r._kreaturFurchtErinnert(g);
-            G.push(gang(0));
+            // DER VIERTE GANG GEHT DURCH DEN STAND, AN DEM DER ZEUGE JETZT STEHT (Welle SAMEN): er weicht (`_bewohnerWeichen`, sein
+            // Weg beginnt im Schlag) — die Probe wartet, bis er wieder steht, misst dort, wie weit er von der Tat fortging (`fort`, gegen
+            // seinen alten Stand), und geht dann aus 9 m schräg vor ihm durch diesen Stand: das Gesetz der Furcht (der Raum, den ein
+            // Stehender dem Spieler lässt, `_bewohnerSpielerAbstand` bei Furcht 1: 1,84 m) an einem, der steht. Bis hier begann der
+            // Gang am alten Stand im Schlag selbst und lief mit der Flucht um die Wette: am main ging feld #617311 aus dem Weg (d 8,534 m,
+            // keine Begegnung — die Zeile bestand, ohne zu messen), am Samen-Wurf floh wohnhaus/schmiede #724672 in den Gang
+            // (0,45 m, 31 Takte Berührung, b0b898696, Lauf 44710772496). Wer weicht, geht als Gehender (`_bewohnerAusweichen`) —
+            // dass der Spieler ihn auf der Flucht überholen kann, ist ehrlich offen, nicht die Frage dieser Zeile
+            // (das Warten gilt dem Ort, den das Gesetz ihm gab — `b.weichen.ort`; im Schlag selbst steht er noch: sein Weg beginnt erst
+            // im nächsten Takt, ein Warten auf „steht“ endete dort sofort, fort 0,712 m. Ohne Weichen gibt es nichts zu warten)
+            const W4 = b.weichen && b.weichen.ort;
+            for (let i = 0; W4 && i < 3600 && !(b.da && !b.weg && !b.platz && ab(g.position, W4) < 0.5); i++) schritt();
+            const fort = Math.round((ab(g.position, tat) - ab(stand, tat)) * 1000) / 1000;
+            const w4 = wegUm(b);
+            if (!w4) return { fehler: `kein freier Weg um den Zeugen ${wer(b)} an seinem neuen Stand` };
+            G.push(gang(0, w4));
             const je = (k) => G.map((x) => x[k]);
             return {
                 ...{ wer: wer(b), furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis, begegnungM: A.BEWOHNER.begegnungM },
-                ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt"), fort: G[3].fort },
+                ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt"), fort },
             };
         };
         if (!taeter) return lauf();
@@ -1070,8 +1090,8 @@ function menschUrteil(name, z, soll) {
     // DIE BEGEGNUNG (mensch.K5 Staffel 1): je Gang (der Vorbeigang 2 m daneben, drei durch seinen Stand) der Kopf auf 10° zum
     // Spieler ≤ 0,5 s ab 3 m (als Leib, im Fenster im Bild), kein Bewohner näher als zwei Kapseln; die Gewalt neben ihm weitet
     // den Abstand des vierten Gangs um ≥ 0,3 m, die Gegenprobe ohne Erinnerung bleibt auf 0,15 m beim zweiten; nach der Gewalt WEICHT
-    // der Zeuge (`_bewohnerWeichen`): am Ende des vierten Gangs steht er ≥ begegnungM weiter von der Tat als sein Stand; kam der
-    // Spieler ihm dabei nicht auf begegnungM nahe, gab es keine Begegnung und keinen Kopf zu wenden
+    // der Zeuge (`_bewohnerWeichen`): steht er wieder, steht er ≥ begegnungM weiter von der Tat als sein alter Stand; kam der
+    // Spieler ihm im vierten Gang (durch seinen neuen Stand) nicht auf begegnungM nahe, gab es keinen Kopf zu wenden
     if (name === "begegnung") {
         const [zu, d] = [z.zuS, z.dMin];
         const begegnet = (i) => i < 3 || d[3] <= z.begegnungM;

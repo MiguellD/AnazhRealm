@@ -96,8 +96,20 @@ function drawZensus(opts) {
         // Formationen, ihr Wurf) — ihr Bereich ist eine Instanz-Gruppe; Boden und Wasser sind Chunks, die Streu Kacheln (ihr
         // Name ist ihr Täter).
         const satzOf = new Map();
+        // DIE SICHT (Bild/tiefe): im Hauptbild zeichnet ein Bau-Satz über seine zwei Züge (früh · spät) — je Zug EIN
+        // indirekter Zug, dessen Zahl der Compute schreibt; nach dem Frame liest der Zähler je Zug den Auftrag (Dreiecke) und
+        // je Haufen sein Ziel (gezeichnet oder nicht) — der Inhalt sind die Zellen der GEZEICHNETEN Haufen (`sichtSpaet`), nie
+        // der Abschnitt
+        const sichtOf = new Map();
         if (st.chunkSaetze)
-            for (const s of st.chunkSaetze.values()) if (s?.mesh && s.spec?.userData?.bauSatz) satzOf.set(s.mesh, s);
+            for (const s of st.chunkSaetze.values()) {
+                if (s?.mesh && s.spec?.userData?.bauSatz) satzOf.set(s.mesh, s);
+                if (s?.sicht) {
+                    sichtOf.set(s.sicht.mesh, [s.sicht, s.sicht]);
+                    sichtOf.set(s.sicht.spaet.mesh, [s.sicht, s.sicht.spaet]);
+                }
+            }
+        const sichtSpaet = [];
         const inhalt = {};
         const instanzKlasse = (key) => AnazhRealm._instanzKlasse(key);
         // DIE WAHL DER GPU (`_instanzWahlGpu`): die Zahl eines Zugs zählt der Compute — nach dem Frame liest der Zähler sie
@@ -105,11 +117,17 @@ function drawZensus(opts) {
         const spaet = [];
         const roh = rend._renderObjectDirect;
         rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
-            const kl0 = klasse(object);
+            const g = object.geometry;
+            const sicht = sichtOf.get(object);
+            // EIN INDIREKTER ZUG, DESSEN ZAHL DER ZÄHLER NICHT LIEST (weder Arena noch Sicht), ist ein Täter ohne Namen: die
+            // Band-Linse ist ROT bei ihm (bis zur Sicht stand dafür das Wort `IndirectStorageBufferAttribute` in der
+            // Rückkehr-Wand) — seine Index-Zahl wäre nie seine Zeichnung
+            const fremd = !!(g && g.indirect && object.isGeometrieArena !== true && !sicht);
+            const kl0 = fremd ? "UNBENANNT:indirekt " + klasse(object) : klasse(object);
             const pass = passOf(scene, camera);
             const k0 = kl0 + "|" + pass;
-            const g = object.geometry;
             const satz = satzOf.get(object);
+            if (sicht) sichtSpaet.push([k0, sicht[0], sicht[1]]);
             if (satz && g) {
                 const n0 = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
                 const dr0 = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n0) : n0;
@@ -131,7 +149,7 @@ function drawZensus(opts) {
                 const k = kl + "|" + pass;
                 const gpu = object._wahl; // die Arena der Wahl (`_wahlVor`): ihre Zahl zählt der Compute (unten)
                 let tris = arena && !gpu ? (arena.arr[j * 5] / 3) * arena.arr[j * 5 + 1] : 0;
-                if (g && !arena) {
+                if (g && !arena && !sicht) {
                     const n = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
                     const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
                     tris = dr / 3;
@@ -218,6 +236,53 @@ function drawZensus(opts) {
             const ind = await lies(a._ind, "Auftrags-Puffer"); // je Zug: Indizes, Zahl, …, Abschnitt der Liste
             zaehl[k].tris += (ind[arg - 1] / 3) * ind[arg];
             nahe(Array.from((await lies(liste, "Liste des Zugs")).subarray(li, li + ind[arg]), (x) => x - erst));
+        }
+        // DIE SICHT (Bild/tiefe): die Dreiecke aus dem Auftrag des Zugs, der Inhalt aus den sichtbaren Haufen (ihr Ziel im
+        // Sicht-Index; 0xffffffff = verdeckt) — Zelle → Bereich → Instanz-Klasse, ohne Rest
+        const dev = rend.backend?.device;
+        const roh32 = async (puffer, n) => {
+            const groesse = Math.max(4, n * 4);
+            const rb = dev.createBuffer({ size: groesse, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+            const e = dev.createCommandEncoder();
+            e.copyBufferToBuffer(puffer, 0, rb, 0, groesse);
+            dev.queue.submit([e.finish()]);
+            await rb.mapAsync(GPUMapMode.READ);
+            const aus = new Uint32Array(rb.getMappedRange().slice(0));
+            rb.unmap();
+            rb.destroy();
+            return aus;
+        };
+        for (const [k, V, Z] of sichtSpaet) {
+            const auf = await lies(Z.auftrag, "Auftrag der Sicht");
+            zaehl[k].tris += auf[0] / 3;
+            const ziel = await roh32(Z.zielPuffer, V.n);
+            const tafel = new Uint32Array(V.tafel.buffer);
+            const je = inhalt[k] || (inhalt[k] = new Map());
+            const gesehen = new Set();
+            let summe = 0;
+            for (let i = 0; i < V.n; i++) {
+                if (ziel[i] === 0xffffffff) continue;
+                const z = V.haufenZelle[i];
+                const b = z.bereich;
+                const kl = instanzKlasse(b.key);
+                const e = je.get(kl) || { zellen: 0, tris: 0, eintraege: new Set() };
+                if (!gesehen.has(z)) {
+                    gesehen.add(z);
+                    e.zellen++;
+                    const ein = slotEintrag.get(b.key);
+                    const id = ein ? ein.get(b.zellen.indexOf(z)) : undefined;
+                    if (id != null) e.eintraege.add(id);
+                }
+                e.tris += tafel[i * 8 + 7] / 3;
+                summe += tafel[i * 8 + 7] / 3;
+                je.set(kl, e);
+            }
+            const rest = Math.round(auf[0] / 3 - summe);
+            if (rest !== 0) {
+                const e = je.get("REST") || { zellen: 0, tris: 0, eintraege: new Set() };
+                e.tris += rest;
+                je.set("REST", e);
+            }
         }
         // Die Studio-Art je Foundry-Klasse (Rezept-`kind`): die Band-Wand ordnet über sie, nie über Art-Namen-Listen.
         const rezepte = r._foundry?.recipes ? r._foundry.recipes : {};

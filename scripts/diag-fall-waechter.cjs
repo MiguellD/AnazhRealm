@@ -99,7 +99,6 @@ const OBERKANTE_BENANNT = {
         "Platzierung: die Todes-Ebene hebt den Spieler unter der Welt auf die Oberfläche",
     ],
     _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
-    _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
     _bodenUmzug: [
         ["_voxelSurfaceY", "_terrainMacroSurfaceY"],
         "Platzierung: ein Save eines alten Bodens setzt Bauten, Gruben und Spieler auf die Oberfläche des neuen (K16)",
@@ -1033,7 +1032,8 @@ hauptLauf(async () => {
         bruecke: PRUEF_SATZ.stabil["Brücke auf zwei Pfeilern"],
     });
     if (!befund.turm.fehler) {
-        await sleep(1500); // der IDB-Put des Saves landet
+        // der Stand des Saves ist fest (die Schranke des Speicher-Fadens — bis abdruck-am-takt 1,5 s nach der Wanduhr)
+        await page.evaluate(() => r._speicherStill().then(() => true));
         await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
         await warteAufWelt(page, 180000);
         const nach = await page.evaluate(probe, { nach: befund.turm, nach2: befund.turm2 });
