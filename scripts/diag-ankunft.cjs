@@ -1083,12 +1083,13 @@ async function probe(arg) {
                 m.tastenHinter = { w: wLief, enter: fokus(ae), omnibox: omniAuf };
             }
             // (9) DER LADESCHIRM WEICHT GANZ: nach `_ladeschirmWeg` (Klasse `weg`, nach 750 ms `hidden`) fällt er aus dem Layout —
-            // `display: none`, keine laufende Animation
+            // `display: none`, keine laufende Animation. Geurteilt an SEINEM Ereignis (`hidden`), nie 1 s nach der Wanduhr
+            // (abdruck-am-takt); ein Schirm, der nie weicht, steht mit dieser Bedingung in der Stall-Akte.
             {
                 ls.hidden = false;
                 ls.classList.remove("weg");
                 r._ladeschirmWeg();
-                await sleep(1000);
+                await __weltDa(() => ls.hidden);
                 const cs = getComputedStyle(ls);
                 const laufen = ls.getAnimations
                     ? ls.getAnimations({ subtree: true }).filter((a) => a.playState === "running").length
@@ -2171,9 +2172,12 @@ async function probe(arg) {
         llm.providerConfig.ollama.endpoint = "http://127.0.0.1:" + arg.kiPort;
         llm.providerConfig.ollama.useProxy = false;
         const tg = document.getElementById("llm-toggle");
-        if (tg) tg.click();
-        await sleep(1500);
-        await r._llmErreichbarkeit();
+        if (!tg) throw new Error("kein Schalter #llm-toggle");
+        tg.click();
+        // das Ereignis des KLICKS: seine eigene Frage an den Dienst hat geantwortet (`lastError`, der EINE Schreiber
+        // `_llmErreichbarkeit`) — bis abdruck-am-takt 1,5 s Wanduhr und dahinter ein zweiter Ruf der Probe, der den Status auch
+        // dann setzte, wenn der Klick nie fragte
+        await __weltDa(() => !!llm.lastError);
         m.status = (document.getElementById("llm-status") || {}).textContent || "";
         // (b) ein Cloud-Begleiter ohne Schlüssel, der Schalter steht an
         const defs = r.llmProviderDefs();
