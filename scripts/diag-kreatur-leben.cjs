@@ -47,7 +47,8 @@ async function lebenBuehnen() {
                 const t0 = performance.now();
                 r._gauAntwort(b, a, lesen.join(), aktN);
                 aus.ms += performance.now() - t0;
-                for (const q of a.tode || []) aus.tode.push(Object.assign(q, { id: r._gauKopf(o.gx, o.gz) + q.id, gau: k }));
+                for (const q of a.tode || [])
+                    aus.tode.push(Object.assign(q, { id: r._gauKopf(o.gx, o.gz) + q.id, gau: k }));
             }
             return aus;
         };
@@ -258,7 +259,12 @@ async function lebenBuehnen() {
             erinnert,
             witterungM: A._verhaltenGesetz().furcht.noticeRadius,
             ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) },
-            brand: { flieht: mittel(brand.feuer), gegenlauf: mittel(brand.gegenlauf), herde: orte.length, je: brand.feuer },
+            brand: {
+                flieht: mittel(brand.feuer),
+                gegenlauf: mittel(brand.gegenlauf),
+                herde: orte.length,
+                je: brand.feuer,
+            },
         };
     });
     // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit, der Spieler an P0 — der Ecke von vier nahen
@@ -383,7 +389,7 @@ async function lebenBuehnen() {
     // gelesen am EINEN Leser; ein Kopf des Gaus ohne Leib geht mit dem Akt „aus“ (`_gauAus`, wie `_bestandAus` am Leib)
     const nimm = (art, n) => (k, nah) => {
         for (const key of nah)
-            for (const t of ((r._bestandArt(key, art) || { tiere: [] }).tiere).slice(0, n)) {
+            for (const t of (r._bestandArt(key, art) || { tiere: [] }).tiere.slice(0, n)) {
                 const c = t.leib;
                 if (c) (r._bestandAus(c), r.removeCreature(c));
                 else if (t.gau) r._gauAus(t);
@@ -438,7 +444,12 @@ async function lebenBuehnen() {
         const fern = [[-2, -2], [1, -2], [-2, 1], [1, 1]].map(([a, b]) => ix + a + "," + (iz + b)); // prettier-ignore
         // der Täter der Ferne: die fernen Regionen holen nicht nach (Altlast), und das Bild des Gaus trägt sie nicht
         if (taeter === "bestand-fern") {
-            decke("_bestandRegion", (alt) => (key, auf, ...a) => alt.call(r, key, !fern.includes(key) && auf, ...a));
+            decke(
+                "_bestandRegion",
+                (alt) =>
+                    (key, auf, ...a) =>
+                        alt.call(r, key, !fern.includes(key) && auf, ...a)
+            );
             decke("_gauRevier", (alt) => (key) => (fern.includes(key) ? null : alt.call(r, key)));
         }
         // ein Täter fährt den Grundlauf und nur die Szenarien, die seinen Befund tragen, in 2 Saaten (der Selbsttest fuhr je
@@ -482,7 +493,7 @@ async function lebenBuehnen() {
         // im Mittel), und kein Eingriff dort erreicht die Kaskade des Gesetzes. Gelesen wird der ganze Gau nur, wo ein Eingriff
         // oder das Fenster ihn braucht (`ganz`: ≈ 0,4 s je Lesung)
         const L = {};
-        const gauZahl = (G, g) => G.reduce((n, key) => n + ((r._bestandArt(key, g) || { n: 0 }).n), 0);
+        const gauZahl = (G, g) => G.reduce((n, key) => n + (r._bestandArt(key, g) || { n: 0 }).n, 0);
         const fenster = (k) => k >= LAUF / 2 && k < LAUF && !(k % 20);
         const GANZ = { grund: fenster, ohneWolf: (k) => !k || fenster(k), kappeHalb: (k) => !k, halb: fenster };
         for (const [name, eingriff] of Object.entries({
@@ -495,22 +506,47 @@ async function lebenBuehnen() {
             L[name] = [];
             for (let i = 1; i <= (taeter ? 2 : 8); i++) {
                 s.maxCreatures = name === "kappeHalb" ? 10 : 20;
-                const z = { jung: 0, jungMut: 0, aesend: 0, spur: [], orte: [], leiber: 0, fremd: 0, fremdWer: {}, gesehen: new WeakSet(), gau: { deer: 0, wolf: 0, proben: 0 } };
-                const l = await lauf(i, name === "grund" ? GRUND : LAUF, name === "halb", fern, (k, nah, tal, G) => {
-                    if (eingriff) eingriff(k, nah, G);
-                    if (G && fenster(k)) for (const g of ["deer", "wolf", "proben"]) z.gau[g] += g === "proben" ? 1 : gauZahl(G, g); // prettier-ignore
-                    if (k >= LAUF / 2 && k < LAUF && !(k % 10)) (z.jung += jungwuchs([...nah, ...fern]) / (LAUF / 20), (z.jungMut += jungwuchs([...nah, ...fern], true) / (LAUF / 20))); // prettier-ignore
-                    // die fernen Regionen der Altlast holen je 10 Takte nach, was sie versäumten (ohne Leib)
-                    if (!(k % 10)) for (const key of fern) (ruhigSpieler(), r._bestandRegion(key));
-                    if (k >= 160 && k < LAUF && !(k % 10)) [...nah, ...fern].forEach((key, j) => (z.orte[j] = (z.orte[j] || 0) + koepfe(key) / ((LAUF - 160) / 10))); // prettier-ignore
-                    if (k >= LAUF / 2 && k < LAUF && !(k % 10)) z.aesend += [...nah, ...fern].reduce((n, key) => n + AESEND.reduce((m, g) => m + (r._bestandArt(key, g) || { n: 0 }).n, 0), 0) / (LAUF / 20); // prettier-ignore
-                    if (/ohneWolf|kappeHalb/.test(name)) z.spur.push(nah.map((key) => GATTUNGEN.flatMap((g) => (r._bestandArt(key, g) || { tiere: [] }).tiere.map((t) => t.id)).join()).join("|")); // prettier-ignore
-                    z.leiber = Math.max(z.leiber, s.creatures.length);
-                    // jeder Leib wird aus einer nahen Region GEZEICHNET (gezählt, wo er zuerst steht: ein Jährling des Gaus, der danach
-                    // abwandert — Bock 0,80, leben-core Satz 5 —, trägt sein Tier in dessen neues Revier, das kann fern sein)
-                    for (const c of s.creatures.filter((c) => c.userData._bestand && !z.gesehen.has(c) && z.gesehen.add(c) && !nah.includes(r._bestandKey(c.userData._bestand.x, c.userData._bestand.z)))) // prettier-ignore
-                        (z.fremd++, (z.fremdWer[c.userData._bestand.g] = (z.fremdWer[c.userData._bestand.g] || 0) + 1));
-                }, GANZ[name]);
+                const z = {
+                    jung: 0,
+                    jungMut: 0,
+                    aesend: 0,
+                    spur: [],
+                    orte: [],
+                    leiber: 0,
+                    fremd: 0,
+                    fremdWer: {},
+                    gesehen: new WeakSet(),
+                    gau: { deer: 0, wolf: 0, proben: 0 },
+                };
+                const l = await lauf(
+                    i,
+                    name === "grund" ? GRUND : LAUF,
+                    name === "halb",
+                    fern,
+                    (k, nah, tal, G) => {
+                        if (eingriff) eingriff(k, nah, G);
+                        if (G && fenster(k)) for (const g of ["deer", "wolf", "proben"]) z.gau[g] += g === "proben" ? 1 : gauZahl(G, g); // prettier-ignore
+                        if (k >= LAUF / 2 && k < LAUF && !(k % 10)) (z.jung += jungwuchs([...nah, ...fern]) / (LAUF / 20), (z.jungMut += jungwuchs([...nah, ...fern], true) / (LAUF / 20))); // prettier-ignore
+                        // die fernen Regionen der Altlast holen je 10 Takte nach, was sie versäumten (ohne Leib)
+                        if (!(k % 10)) for (const key of fern) (ruhigSpieler(), r._bestandRegion(key));
+                        if (k >= 160 && k < LAUF && !(k % 10)) [...nah, ...fern].forEach((key, j) => (z.orte[j] = (z.orte[j] || 0) + koepfe(key) / ((LAUF - 160) / 10))); // prettier-ignore
+                        if (k >= LAUF / 2 && k < LAUF && !(k % 10)) z.aesend += [...nah, ...fern].reduce((n, key) => n + AESEND.reduce((m, g) => m + (r._bestandArt(key, g) || { n: 0 }).n, 0), 0) / (LAUF / 20); // prettier-ignore
+                        if (/ohneWolf|kappeHalb/.test(name)) z.spur.push(nah.map((key) => GATTUNGEN.flatMap((g) => (r._bestandArt(key, g) || { tiere: [] }).tiere.map((t) => t.id)).join()).join("|")); // prettier-ignore
+                        z.leiber = Math.max(z.leiber, s.creatures.length);
+                        // jeder Leib wird aus einer nahen Region GEZEICHNET (gezählt, wo er zuerst steht: ein Jährling des Gaus, der danach
+                        // abwandert — Bock 0,80, leben-core Satz 5 —, trägt sein Tier in dessen neues Revier, das kann fern sein)
+                        for (const c of s.creatures.filter(
+                            (c) =>
+                                c.userData._bestand &&
+                                !z.gesehen.has(c) &&
+                                z.gesehen.add(c) &&
+                                !nah.includes(r._bestandKey(c.userData._bestand.x, c.userData._bestand.z))
+                        ))
+                            // prettier-ignore
+                            (z.fremd++, (z.fremdWer[c.userData._bestand.g] = (z.fremdWer[c.userData._bestand.g] || 0) + 1));
+                    },
+                    GANZ[name]
+                );
                 L[name].push(Object.assign(l, z));
                 // zwischen den Läufen eine Aufgaben-Grenze (der EINE Schlaf der Seite): erst dort räumt die Speicher-Bereinigung die
                 // Leiber eines Laufs — ohne sie wuchs die Seite über die Läufe bis 4 GB (28.10., vier Regionen)
@@ -959,44 +995,57 @@ async function lebenBuehnen() {
                 if (!O[i]) throw new Error("kein Lebensraum der Gattung " + g + " im Quadrat 400 m um das Ufer");
                 return O[i];
             };
-            z.wander = tagLauf(["wesen", "baer", "fuchs", "wolf"], 2, 24, { budget: {}, ruhe: [0, 0] }, imRaum).map((t) => {
-                const w = { g: t.g, leineM: rund(t.leineM, 2), punkte: t.spur.length, flaecheM2: null, anteil: null };
-                if (!t.anker || !t.spur.length) return Object.assign(w, { fehler: "kein Anker der Leine" });
-                const nah = t.spur
-                    .map((p) => [Math.hypot(p.x - t.anker.x, p.z - t.anker.z), p])
-                    .sort((a, b) => a[0] - b[0])
-                    .slice(0, Math.ceil(0.95 * t.spur.length))
-                    .map((e) => e[1]);
-                w.flaecheM2 = rund(r._polygonArea2D(r._convexHull2D(nah)), 1);
-                w.anteil = rund(t.spur.filter((p) => lebt(t.g, p.x, p.z)).length / t.spur.length, 3);
-                // der Anker gegen das Ufer U (der Ort im Bild der Spur)
-                w.anker = [rund(t.anker.x - U.x, 1), rund(t.anker.z - U.z, 1)];
-                // DIE GETRAGENE SCHEIBE (der Maßstab der Fläche): im Raster zu Leine/10 der Anteil der Leinen-Scheibe um den Anker,
-                // den der Lebensraum auf trockenem Grund trägt (traegt), und davon der vom Anker aus über ihn erreichbare (erreicht:
-                // vier Nachbarn, Wasser trennt): trägt er ≥ 0,5, ist die Fläche ≥ 0,5·π·Leine² dort erreichbar, und ihr Fehlen ist
-                // das Wandern, nicht der Ort (17.11.: getragen 0,64–0,97 je Tier, die Bären 0,74/0,92/0,85)
-                const G = new Map();
-                for (let i = -10; i <= 10; i++)
-                    for (let j = -10; j <= 10; j++) {
-                        if (i * i + j * j > 100) continue;
-                        const [x, zz] = [t.anker.x + (i * t.leineM) / 10, t.anker.z + (j * t.leineM) / 10];
-                        G.set(i + "," + j, lebt(t.g, x, zz) && !r._nassAt(x, zz));
+            z.wander = tagLauf(["wesen", "baer", "fuchs", "wolf"], 2, 24, { budget: {}, ruhe: [0, 0] }, imRaum).map(
+                (t) => {
+                    const w = {
+                        g: t.g,
+                        leineM: rund(t.leineM, 2),
+                        punkte: t.spur.length,
+                        flaecheM2: null,
+                        anteil: null,
+                    };
+                    if (!t.anker || !t.spur.length) return Object.assign(w, { fehler: "kein Anker der Leine" });
+                    const nah = t.spur
+                        .map((p) => [Math.hypot(p.x - t.anker.x, p.z - t.anker.z), p])
+                        .sort((a, b) => a[0] - b[0])
+                        .slice(0, Math.ceil(0.95 * t.spur.length))
+                        .map((e) => e[1]);
+                    w.flaecheM2 = rund(r._polygonArea2D(r._convexHull2D(nah)), 1);
+                    w.anteil = rund(t.spur.filter((p) => lebt(t.g, p.x, p.z)).length / t.spur.length, 3);
+                    // der Anker gegen das Ufer U (der Ort im Bild der Spur)
+                    w.anker = [rund(t.anker.x - U.x, 1), rund(t.anker.z - U.z, 1)];
+                    // DIE GETRAGENE SCHEIBE (der Maßstab der Fläche): im Raster zu Leine/10 der Anteil der Leinen-Scheibe um den Anker,
+                    // den der Lebensraum auf trockenem Grund trägt (traegt), und davon der vom Anker aus über ihn erreichbare (erreicht:
+                    // vier Nachbarn, Wasser trennt): trägt er ≥ 0,5, ist die Fläche ≥ 0,5·π·Leine² dort erreichbar, und ihr Fehlen ist
+                    // das Wandern, nicht der Ort (17.11.: getragen 0,64–0,97 je Tier, die Bären 0,74/0,92/0,85)
+                    const G = new Map();
+                    for (let i = -10; i <= 10; i++)
+                        for (let j = -10; j <= 10; j++) {
+                            if (i * i + j * j > 100) continue;
+                            const [x, zz] = [t.anker.x + (i * t.leineM) / 10, t.anker.z + (j * t.leineM) / 10];
+                            G.set(i + "," + j, lebt(t.g, x, zz) && !r._nassAt(x, zz));
+                        }
+                    const [zu, weg] = [[[0, 0]], new Set(["0,0"])];
+                    let n = 0;
+                    while (zu.length) {
+                        const [i, j] = zu.pop();
+                        if (!G.get(i + "," + j)) continue;
+                        n++;
+                        for (const [a, b] of [
+                            [1, 0],
+                            [-1, 0],
+                            [0, 1],
+                            [0, -1],
+                        ]) {
+                            const k = i + a + "," + (j + b);
+                            if (G.has(k) && !weg.has(k)) (weg.add(k), zu.push([i + a, j + b]));
+                        }
                     }
-                const [zu, weg] = [[[0, 0]], new Set(["0,0"])];
-                let n = 0;
-                while (zu.length) {
-                    const [i, j] = zu.pop();
-                    if (!G.get(i + "," + j)) continue;
-                    n++;
-                    for (const [a, b] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-                        const k = i + a + "," + (j + b);
-                        if (G.has(k) && !weg.has(k)) (weg.add(k), zu.push([i + a, j + b]));
-                    }
+                    w.traegt = rund([...G.values()].filter(Boolean).length / G.size, 3);
+                    w.erreicht = rund(n / G.size, 3);
+                    return w;
                 }
-                w.traegt = rund([...G.values()].filter(Boolean).length / G.size, 3);
-                w.erreicht = rund(n / G.size, 3);
-                return w;
-            });
+            );
         }
         durstAus();
         z.durstAus = tagLauf(["wesen"], 0, 10, { budget: {}, ruhe: [0, 0] }).reduce((a, t) => a + t.trunk, 0);
@@ -1172,7 +1221,10 @@ async function lebenBuehnen() {
         // Ursprung des Stands liegt im Ring des Wirts um seine Tür (BEWOHNER.ring — dieselbe Tafel, die `ringStand` fährt), sonst
         // „fern von seiner Tür" (Täter zielplan-fremd); jedes Ziel ohne Marke (der Platz, der Acker, die Tür selbst) liest `ortVon`.
         const RG = A.BEWOHNER.ring;
-        const ringM = Math.hypot(RG.vor0M + (RG.alle / RG.jeStufe - 1) * RG.stufeM + RG.streuM, RG.quer0M + RG.alle / RG.jeStufe - 1);
+        const ringM = Math.hypot(
+            RG.vor0M + (RG.alle / RG.jeStufe - 1) * RG.stufeM + RG.streuM,
+            RG.quer0M + RG.alle / RG.jeStufe - 1
+        );
         const standVon = (b, ziel) => Object.values(b.orte).find((q) => q && q.anker && ab(q, ziel) < 0.05);
         // Täter (Selbsttest): die Marke eines Werk-Stands nennt die fernste Tür der Stadt, er steht, wo er stand
         if (taeter === "zielplan-fremd") {
@@ -1200,11 +1252,14 @@ async function lebenBuehnen() {
             const e = s.architectures.find((x) => /^haus_/.test(x.type || "") && (x.seed >>> 0) === +q.k.slice(5) && ab(x.position, q.mitte) < 2); // prettier-ignore
             r.removeArchitecture(e);
         }
-        const fehlt = tueren.filter((q) => !hausAn(q)).map((q) => {
-            const g = (plan.gefallen || []).find((x) => x.si === q.si);
-            return `Los ${q.si} ${q.rolle} #${q.k.slice(5)} steht nicht: ${g ? g.wand : "fiel still"}`;
-        });
-        for (const t of tueren) if (t.rolle !== "wohnhaus" && hausAn(t)) rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
+        const fehlt = tueren
+            .filter((q) => !hausAn(q))
+            .map((q) => {
+                const g = (plan.gefallen || []).find((x) => x.si === q.si);
+                return `Los ${q.si} ${q.rolle} #${q.k.slice(5)} steht nicht: ${g ? g.wand : "fiel still"}`;
+            });
+        for (const t of tueren)
+            if (t.rolle !== "wohnhaus" && hausAn(t)) rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
         const liste = () => S.liste.filter((b) => b.leib);
         for (const h of [6, 10, 13, 18, 23]) {
             await uhrAuf(h, `zielplan: ${h} Uhr`, da, 4 * nH);
@@ -1245,7 +1300,12 @@ async function lebenBuehnen() {
         // „keiner ist gebunden" sind zwei Täter
         const gebunden = {};
         for (const b of S.liste)
-            for (const tk of new Set(Object.values(b.orte).map((q) => q && q.anker && tueren.find((d) => ab(d, q.anker) < 0.05)).filter(Boolean))) // prettier-ignore
+            for (const tk of new Set(
+                Object.values(b.orte)
+                    .map((q) => q && q.anker && tueren.find((d) => ab(d, q.anker) < 0.05))
+                    .filter(Boolean)
+            ))
+                // prettier-ignore
                 if (tk.rolle !== "wohnhaus" && tk.k !== "haus#" + b.heim) gebunden[tk.rolle] = (gebunden[tk.rolle] || 0) + 1;
         for (const ro in rollen) rollen[ro][2] = gebunden[ro] || 0;
         return {
@@ -1277,7 +1337,8 @@ async function lebenBuehnen() {
         // die Zeile tritt ins wilde Gesetz (bis w28-gehege zählte die Bilanz das Gehege): ihr Leib wird angenommen wie ein freies Tier
         if (taeter === "gehege-term")
             decke("_bestandAdoptieren", (alt) => () => {
-                for (const c of s.creatures) if (c.userData._bestand && c.userData._bestand.gehege) c.userData._bestand = null;
+                for (const c of s.creatures)
+                    if (c.userData._bestand && c.userData._bestand.gehege) c.userData._bestand = null;
                 return alt.call(r);
             });
         // die Zeile tritt je Region einmal ein (bis w28-gehege): ein gefallenes Tier fehlte bis zum nächsten Laden
@@ -1298,11 +1359,25 @@ async function lebenBuehnen() {
         const tiefe = (x, z) =>
             Z.rand.reduce((m, p, i) => {
                 const q = Z.rand[(i + 1) % Z.rand.length];
-                return Math.min(m, ((q.x - p.x) * (z - p.z) - (q.z - p.z) * (x - p.x)) / Math.hypot(q.x - p.x, q.z - p.z));
+                return Math.min(
+                    m,
+                    ((q.x - p.x) * (z - p.z) - (q.z - p.z) * (x - p.x)) / Math.hypot(q.x - p.x, q.z - p.z)
+                );
             }, Infinity);
         const ort = (dz, blick) => (pm.set(gast.x, boden(gast.x, gast.z - dz) + 0.7, gast.z - dz), kamera(0, blick));
         const nummern = GG.tiere(Z, GG.G).map((t) => t.id).sort().join(); // prettier-ignore
-        const z = { tiere: Z.n, bilder: 0, aus: 0, randMin: Infinity, leer: 0, anders: 0, wild: 0, wildLesen: 0, alterS: 0, takte: 0 };
+        const z = {
+            tiere: Z.n,
+            bilder: 0,
+            aus: 0,
+            randMin: Infinity,
+            leer: 0,
+            anders: 0,
+            wild: 0,
+            wildLesen: 0,
+            alterS: 0,
+            takte: 0,
+        };
         const leiber = () => r._gehegeTiereVon(Z).map((t) => t.leib).filter(Boolean); // prettier-ignore
         const eintritt = new Map(); // je Kennung das Alter, mit dem ihr Tier in die Zeile trat
         const bild = (voll, B) => {
@@ -1334,10 +1409,15 @@ async function lebenBuehnen() {
         // Rand ein. Gelesen wird der GANZE Gau der Zeile: ein angenommener Wolf tritt ins Rudel, dem das Revier gehört, und steht
         // dort, wo es zuletzt riss (leben-core `akt` „ein“) — im Revier des Geheges fände ihn keine Lesung
         const [zeilenLeib, angenommen] = [new Set(), new Set()];
-        decke("_gauAnnahme", (alt) => function (c, ...a) {
-            alt.call(this, c, ...a);
-            if (tiefe(c.position.x, c.position.z) >= -2 && c.userData._bestand) angenommen.add(c.userData._bestand.id);
-        });
+        decke(
+            "_gauAnnahme",
+            (alt) =>
+                function (c, ...a) {
+                    alt.call(this, c, ...a);
+                    if (tiefe(c.position.x, c.position.z) >= -2 && c.userData._bestand)
+                        angenommen.add(c.userData._bestand.id);
+                }
+        );
         const wildLesen = async () => {
             for (const c of leiber()) zeilenLeib.add(c);
             const n = A.GAU.n;
@@ -1347,7 +1427,8 @@ async function lebenBuehnen() {
             for (const key of keys) {
                 const B = r._bestandArt(key, Z.gattung);
                 z.wildLesen += !!B;
-                if (B) z.wild += B.tiere.filter((t) => t.gehege || zeilenLeib.has(t.leib) || angenommen.has(t.id)).length;
+                if (B)
+                    z.wild += B.tiere.filter((t) => t.gehege || zeilenLeib.has(t.leib) || angenommen.has(t.id)).length;
             }
         };
         s.faunaLifecycle = { lastTick: 0 }; // die Marke der Bühne reist als Verweis — der Takt des Lebens beginnt hier
@@ -1359,7 +1440,10 @@ async function lebenBuehnen() {
         for (let k = 0; k < 3; k++) (leben(), bild(false));
         z.nahen = leiber().length;
         // (2) der Gast steht 300 s an S8 (ein Täter fährt 60 s und 1,2 Stunden des Tags: sein Befund steht am Hieb und am ersten Takt)
-        const blick = () => (pm.set(gast.x, boden(gast.x, gast.z) + 0.7, gast.z), kamera(mitte.x - gast.x, mitte.z - gast.z));
+        const blick = () => (
+            pm.set(gast.x, boden(gast.x, gast.z) + 0.7, gast.z),
+            kamera(mitte.x - gast.x, mitte.z - gast.z)
+        );
         for (let k = 0; k < (taeter ? 1800 : 9000); k++) {
             if (k % 300 === 0) (leben(), blick());
             takt(1 / 30);
@@ -1411,7 +1495,10 @@ async function lebenBuehnen() {
         ort(100, 1);
         for (let k = 0; k < 3; k++) (leben(), bild(false));
         z.wieder = leiber().length;
-        z.wiederPlatz = rund(Math.max(-1, ...leiber().map((c) => Math.min(...Z.ruhe.map((q) => ab(c.position, q))))), 2);
+        z.wiederPlatz = rund(
+            Math.max(-1, ...leiber().map((c) => Math.min(...Z.ruhe.map((q) => ab(c.position, q))))),
+            2
+        );
         // (6) DIE ANKUNFT: der Gast geht wieder fort (kein Leib) und wird an S8 GESTELLT, den Blick ins Gehege (ein Stand lädt ihn
         // dorthin, ein Tor, ein Instrument) — im ersten Bild des Spiels danach (ein Schritt von 1/30 s, kein Takt des Lebens)
         // stehen alle Tiere an ihren Ruhe-Plätzen
@@ -1556,7 +1643,12 @@ async function lebenBuehnen() {
         const z = { regionen: 0, gauRegionen: gauKeys.length, saaten: [], s: 0 };
         const [alle, aus] = [[], []];
         for (let i = 1; i <= SAATEN; i++) {
-            const [E, M, EG, MG] = [erbeAlt(i, false), erbeAlt(i, true), await erbeGau(i, false), await erbeGau(i, true)];
+            const [E, M, EG, MG] = [
+                erbeAlt(i, false),
+                erbeAlt(i, true),
+                await erbeGau(i, false),
+                await erbeGau(i, true),
+            ];
             alle.push(...E.mutter, ...EG.mutter);
             aus.push(...M.mutter, ...MG.mutter);
             z.regionen = E.regionen;
@@ -1636,7 +1728,9 @@ async function lebenBuehnen() {
                     }
                     P.splice(P.indexOf(o), 1); // das nächste Opfer desselben Takts wählt unter den übrigen
                 }
-                if (ohneWolf) for (const key of keys) for (const t of (r._bestandArt(key, W) || { tiere: [] }).tiere) r._gauAus(t);
+                if (ohneWolf)
+                    for (const key of keys)
+                        for (const t of (r._bestandArt(key, W) || { tiere: [] }).tiere) r._gauAus(t);
                 pool = new Map();
                 for (const key of keys) {
                     const B = r._bestandArt(key, H);
@@ -1647,7 +1741,7 @@ async function lebenBuehnen() {
                 if (k < TAKTE / 2 || k % 10) continue;
                 const hirsche = keys.flatMap((key) => (r._bestandArt(key, H) || { tiere: [] }).tiere);
                 const reif = hirsche.filter((t) => t.r);
-                q.woelfe += keys.reduce((n, key) => n + ((r._bestandArt(key, W) || { n: 0 }).n), 0);
+                q.woelfe += keys.reduce((n, key) => n + (r._bestandArt(key, W) || { n: 0 }).n, 0);
                 q.hirsch += hirsche.length;
                 q.proben++;
                 if (reif.length) q.mittel += reif.reduce((p, t) => p + lnM(t), 0) / reif.length;
@@ -1728,7 +1822,8 @@ async function lebenBuehnen() {
                 return p;
             };
         });
-        const frage = (takt, akte, opt) => r._gauAuftrag(0, 0, takt, akte || [], Object.assign({ saat: 1, kg: KG }, opt));
+        const frage = (takt, akte, opt) =>
+            r._gauAuftrag(0, 0, takt, akte || [], Object.assign({ saat: 1, kg: KG }, opt));
         const gleich = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
         const fnv = (b) => {
             let h = 2166136261;
@@ -1755,7 +1850,8 @@ async function lebenBuehnen() {
             wolf.push(a.jaeger);
             reh.push(a.beute);
             for (const f of ["rechenMs", "takte"]) zeit[f] += a.zeit[f];
-            if (a.zeit.neu) Object.assign(zeit, { feldMs: a.zeit.feldMs, hydroMs: a.zeit.hydroMs, kacheln: a.zeit.kacheln });
+            if (a.zeit.neu)
+                Object.assign(zeit, { feldMs: a.zeit.feldMs, hydroMs: a.zeit.hydroMs, kacheln: a.zeit.kacheln });
         }
         Object.assign(z, { wolf, reh, feld: Object.assign({}, a.feld, { kSumme: rund(a.feld.kSumme, 0) }) });
         z.zeit = {
@@ -1771,7 +1867,8 @@ async function lebenBuehnen() {
         {
             const [zn, seite] = [A.BESTAND_REGION.zellen, r._bestandSeite()];
             const orte = [];
-            for (let iz = -3; iz < 3; iz++) for (let ix = -3; ix < 3; ix++) orte.push([ix, iz, r._gauOrt(ix, iz).revier]);
+            for (let iz = -3; iz < 3; iz++)
+                for (let ix = -3; ix < 3; ix++) orte.push([ix, iz, r._gauOrt(ix, iz).revier]);
             const stamm = () =>
                 orte.map(([ix, iz]) => {
                     const [LG, lr, sub] = [A._lebensraumGesetz(), [], []];
@@ -1784,7 +1881,8 @@ async function lebenBuehnen() {
                         }
                     return { lr, s: sub };
                 });
-            const imFaden = async () => (await frage(0, [], { lesen: orte.map((o) => o[2]) })).reviere.map((R) => ({ lr: R.lr, s: R.s }));
+            const imFaden = async () =>
+                (await frage(0, [], { lesen: orte.map((o) => o[2]) })).reviere.map((R) => ({ lr: R.lr, s: R.s }));
             const eins = (p, q) => JSON.stringify(p) === JSON.stringify(q);
             const frisch = () => {
                 if (r._gauFadenStand) r._gauFadenStand.worker.terminate();
@@ -1799,37 +1897,66 @@ async function lebenBuehnen() {
                 const FQ = A.FADEN_QUELLE;
                 const u = (p) => new URL(p + "?v=" + A.VERSION, location.href).href;
                 const text = await (await fetch(u(datei))).text();
-                if (text.split(von).length !== 2) return { wer, fehler: "der Kern " + datei + " trägt die Formel nicht" };
+                if (text.split(von).length !== 2)
+                    return { wer, fehler: "der Kern " + datei + " trägt die Formel nicht" };
                 const neu = text.replace(von, () => zu);
                 // der Rumpf des Fadens, wie ihn die Quelle baut (`_quelleFaden`): die Tafel der Kerne vor dem Faden — der eine
                 // geänderte Kern als Blob, jeder andere an seiner Adresse
                 const blob = URL.createObjectURL(new Blob([neu], { type: "text/javascript" }));
                 const adr = (p) => (p === datei ? blob : u(p));
-                const tafel = { kerne: FQ.kerne.map(adr), spaet: Object.fromEntries(Object.entries(FQ.spaet).map(([k, p]) => [k, adr(p)])) };
+                const tafel = {
+                    kerne: FQ.kerne.map(adr),
+                    spaet: Object.fromEntries(Object.entries(FQ.spaet).map(([k, p]) => [k, adr(p)])),
+                };
                 const rumpf = await (await fetch(u(FQ.faden))).text();
                 const [altUrl, altKern] = [Q.url, globalThis[ns]];
                 await new Promise((ok, nein) => {
                     const sk = document.createElement("script");
-                    [sk.src, sk.onload, sk.onerror] = [blob, ok, () => nein(new Error("der geänderte Kern " + datei + " lädt nicht"))];
+                    [sk.src, sk.onload, sk.onerror] = [
+                        blob,
+                        ok,
+                        () => nein(new Error("der geänderte Kern " + datei + " lädt nicht")),
+                    ];
                     document.head.appendChild(sk);
                 });
                 A._lebensraumMemo = null;
                 let s1, f1;
                 try {
                     s1 = stamm();
-                    if (!nurSeite) Q.url = URL.createObjectURL(new Blob(["self.__anazhQuelle = " + JSON.stringify(tafel) + ";", rumpf], { type: "text/javascript" }));
+                    if (!nurSeite)
+                        Q.url = URL.createObjectURL(
+                            new Blob(["self.__anazhQuelle = " + JSON.stringify(tafel) + ";", rumpf], {
+                                type: "text/javascript",
+                            })
+                        );
                     frisch();
                     f1 = await imFaden();
                 } finally {
                     [Q.url, globalThis[ns], A._lebensraumMemo] = [altUrl, altKern, null];
                     frisch();
                 }
-                const anders = (p, q) => p.reduce((n, R, i) => n + R.lr.filter((v, j) => v !== q[i].lr[j] || R.s[j] !== q[i].s[j]).length, 0);
+                const anders = (p, q) =>
+                    p.reduce(
+                        (n, R, i) => n + R.lr.filter((v, j) => v !== q[i].lr[j] || R.s[j] !== q[i].s[j]).length,
+                        0
+                    );
                 return { wer, stamm: anders(s1, s0), faden: anders(f1, f0), gleich: eins(s1, f1) };
             };
             const M = [
-                ["Substrat (gelaende-core weltFeld)", "gelaende-core.js", "__gelaendeCore", "const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));", "const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2.5));"],
-                ["Boden-Klasse (tetrapoda bodenKlasseAm)", "tetrapoda-core.js", "__tetrapodaCore", "welt.hang(x, z) || 0, welt.bestand(x, z), L);", "welt.hang(x, z) || 0, welt.bestand(x, z) * 0.5, L);"],
+                [
+                    "Substrat (gelaende-core weltFeld)",
+                    "gelaende-core.js",
+                    "__gelaendeCore",
+                    "const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));",
+                    "const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2.5));",
+                ],
+                [
+                    "Boden-Klasse (tetrapoda bodenKlasseAm)",
+                    "tetrapoda-core.js",
+                    "__tetrapodaCore",
+                    "welt.hang(x, z) || 0, welt.bestand(x, z), L);",
+                    "welt.hang(x, z) || 0, welt.bestand(x, z) * 0.5, L);",
+                ],
             ];
             z.quelle = {
                 zellen: s0.length * zn * zn,
@@ -1838,7 +1965,8 @@ async function lebenBuehnen() {
                 mut: [await mutant(M[0]), await mutant(M[1])],
             };
             // Täter gau-feld: der Zwilling — die Änderung erreicht nur die Seite, der Faden rechnet seine eigene Formel
-            if (TT.includes("gau-feld")) z.sicht["gau-feld"] = { quelle: Object.assign({}, z.quelle, { mut: [await mutant(M[0], true)] }) };
+            if (TT.includes("gau-feld"))
+                z.sicht["gau-feld"] = { quelle: Object.assign({}, z.quelle, { mut: [await mutant(M[0], true)] }) };
         }
         // DIE LESE-NAHT am Takt T1: die Reviere der mittleren Zeile — Köpfe, Tiere, Fraß; der erste Kopf der Beute fällt im Akt
         const n = A.GAU.n;
@@ -1858,7 +1986,8 @@ async function lebenBuehnen() {
             ),
             abgeaest: L.reduce((p, R) => p + R.frass.filter((o) => o < 0).length, 0),
         };
-        if (!mitBeute) return Object.assign(z, { fehler: "die mittlere Zeile des Gaus trägt am Takt " + T1 + " keine Beute" });
+        if (!mitBeute)
+            return Object.assign(z, { fehler: "die mittlere Zeile des Gaus trägt am Takt " + T1 + " keine Beute" });
         const AKT = [{ takt: T1, art: "aus", id: mitBeute.tiere.find((t) => t.g === "beute").id }];
         const stand = async (akte, opt) => (await frage(T2, akte, Object.assign({ packen: true }, opt))).stand;
         const neuerFaden = () => {
@@ -1869,9 +1998,18 @@ async function lebenBuehnen() {
         const [a0, a1] = [await stand([]), await stand(AKT)];
         neuerFaden();
         const [b1, b0] = [await stand(AKT), await stand([])];
-        z.g3 = { gleich: gleich(a0, b0) && gleich(a1, b1), akt: !gleich(a0, a1), bytes: a0.length, hash: fnv(a0), hashAkt: fnv(a1) };
+        z.g3 = {
+            gleich: gleich(a0, b0) && gleich(a1, b1),
+            akt: !gleich(a0, a1),
+            bytes: a0.length,
+            hash: fnv(a0),
+            hashAkt: fnv(a1),
+        };
         if (TT.includes("gau-akt")) {
-            const c1 = await unter((m) => void (m.akte = []), () => stand(AKT));
+            const c1 = await unter(
+                (m) => void (m.akte = []),
+                () => stand(AKT)
+            );
             z.sicht["gau-akt"] = { g3: Object.assign({}, z.g3, { akt: !gleich(a0, c1) }) };
         }
         // G4 — der Stand am Takt T1 (mit dem Akt) reist heraus; geradeaus bis T2; dann herein und weiter bis T2
@@ -1879,7 +2017,13 @@ async function lebenBuehnen() {
         const gerade = await stand(AKT);
         const reise = async (bytes) => {
             const h = await frage(T2, AKT, { stand: bytes, packen: true });
-            return { gleich: gleich(gerade, h.stand), geradeaus: gleich(gerade, a1), takte: h.zeit.takte, soll: T2 - T1, bytes: s1.length };
+            return {
+                gleich: gleich(gerade, h.stand),
+                geradeaus: gleich(gerade, a1),
+                takte: h.zeit.takte,
+                soll: T2 - T1,
+                bytes: s1.length,
+            };
         };
         z.g4 = await reise(s1.slice());
         if (TT.includes("gau-stand")) {
@@ -1896,7 +2040,15 @@ async function lebenBuehnen() {
         // Was das Laden sonst setzt (Feld, Bestand, Reihe der Feld-Akte), kehrt danach zurück.
         const halt = r._gauHalt();
         const haltAlt = new Map(halt);
-        const merk = [s.lifeField, s.feldAkte, s.faunaBestand, r._lebenStand, r._lebenWecker, r._annahmeOffen, r._feldAktGewirkt];
+        const merk = [
+            s.lifeField,
+            s.feldAkte,
+            s.faunaBestand,
+            r._lebenStand,
+            r._lebenWecker,
+            r._annahmeOffen,
+            r._feldAktGewirkt,
+        ];
         halt.clear();
         r._gauAkt(0, 0, AKT[0]);
         const doppelt = r._gauAkt(0, 0, Object.assign({}, AKT[0]));
@@ -1909,18 +2061,33 @@ async function lebenBuehnen() {
         };
         const v = r._lebenImStand();
         const reihen = v.gaue || [];
-        z.stand = { gleich: await laden(v), akte: reihen.reduce((p, g) => p + g[1].length, 0), doppelt, zeichen: JSON.stringify(reihen).length };
-        if (TT.includes("gau-reihe")) z.sicht["gau-reihe"] = { stand: Object.assign({}, z.stand, { gleich: await laden(Object.assign({}, v, { gaue: undefined })) }) };
+        z.stand = {
+            gleich: await laden(v),
+            akte: reihen.reduce((p, g) => p + g[1].length, 0),
+            doppelt,
+            zeichen: JSON.stringify(reihen).length,
+        };
+        if (TT.includes("gau-reihe"))
+            z.sicht["gau-reihe"] = {
+                stand: Object.assign({}, z.stand, { gleich: await laden(Object.assign({}, v, { gaue: undefined })) }),
+            };
         halt.clear();
         for (const [k, l] of haltAlt) halt.set(k, l);
-        [s.lifeField, s.feldAkte, s.faunaBestand, r._lebenStand, r._lebenWecker, r._annahmeOffen, r._feldAktGewirkt] = merk;
+        [s.lifeField, s.feldAkte, s.faunaBestand, r._lebenStand, r._lebenWecker, r._annahmeOffen, r._feldAktGewirkt] =
+            merk;
         // DER WEG DES SPIELS (E6): der Wirt mit der Masse des GUSSES und der Saat des Gaus — die Geburt des Wirts (der Guss
         // zweier Leiber, einmal je Sitzung) und der Gau am Takt 1
         const w0 = performance.now();
         const wirt = r._gauWirt();
         const wirtMs = performance.now() - w0;
         const echt = await r._gauAuftrag(0, 0, 1, []);
-        z.spiel = { kg: [rund(wirt.beute.M, 2), rund(wirt.jaeger.M, 2)], saat: r._gauSaat(0, 0), beute: echt.beute, jaeger: echt.jaeger, wirtMs: rund(wirtMs, 2) };
+        z.spiel = {
+            kg: [rund(wirt.beute.M, 2), rund(wirt.jaeger.M, 2)],
+            saat: r._gauSaat(0, 0),
+            beute: echt.beute,
+            jaeger: echt.jaeger,
+            wirtMs: rund(wirtMs, 2),
+        };
         // G5 (nur `--gau`): das Aufholen eines Gaus ohne Akte — je Jahres-Zahl ab Takt 0 bis zu ihrem Takt, die Zeit im Faden
         if (O.jahre) {
             z.aufholen = [];
@@ -1928,7 +2095,14 @@ async function lebenBuehnen() {
                 await frage(0);
                 const t = Math.round(j * 26.25);
                 const h = await frage(t);
-                z.aufholen.push({ jahre: j, takte: h.zeit.takte, s: rund(h.zeit.rechenMs / 1000, 2), msJeJahr: rund((h.zeit.rechenMs / t) * 26.25, 1), beute: h.beute, jaeger: h.jaeger });
+                z.aufholen.push({
+                    jahre: j,
+                    takte: h.zeit.takte,
+                    s: rund(h.zeit.rechenMs / 1000, 2),
+                    msJeJahr: rund((h.zeit.rechenMs / t) * 26.25, 1),
+                    beute: h.beute,
+                    jaeger: h.jaeger,
+                });
             }
         }
         z.haupt = { maxMs: rund(haupt.maxMs, 2), wo: haupt.wo, rufe: haupt.rufe };
@@ -1950,7 +2124,9 @@ function lebenUrteil(name, z, soll) {
         const B = GAU_B4;
         const feld = (f) => `Land ${f.land} · Zellen ${f.zellen} · Σ K ${f.kSumme}`;
         soll(
-            z.wolf.join(" ") === B.wolf.join(" ") && z.reh.join(" ") === B.reh.join(" ") && feld(z.feld) === feld(B.feld),
+            z.wolf.join(" ") === B.wolf.join(" ") &&
+                z.reh.join(" ") === B.reh.join(" ") &&
+                feld(z.feld) === feld(B.feld),
             `der Gau im Faden verlässt den B4-Lauf: Wolf ${z.wolf.join(" ")} (Soll ${B.wolf.join(" ")}) · Beute ${z.reh.join(" ")} (Soll ${B.reh.join(" ")}) · ${feld(z.feld)} (Soll ${feld(B.feld)})`
         );
         const Q = z.quelle;
@@ -1968,7 +2144,10 @@ function lebenUrteil(name, z, soll) {
             L.reviere === 48 && L.beute > 0 && L.treu && L.abgeaest > 0,
             `die Lese-Naht des Gaus trägt nicht: ${L.reviere} Reviere, Beute ${L.beute}, Zeilen = Köpfe ${L.treu}, abgeäste Zellen ${L.abgeaest}`
         );
-        soll(z.g3.gleich, `zwei Fäden geben nicht denselben Gau (Stand ${z.g3.hash} · mit Akt ${z.g3.hashAkt}, ${z.g3.bytes} Bytes)`);
+        soll(
+            z.g3.gleich,
+            `zwei Fäden geben nicht denselben Gau (Stand ${z.g3.hash} · mit Akt ${z.g3.hashAkt}, ${z.g3.bytes} Bytes)`
+        );
         soll(z.g3.akt, `der Akt ändert den Gau nicht: der Stand mit EINEM Akt „aus“ ist der ohne (${z.g3.hash})`);
         soll(
             z.g4.gleich && z.g4.geradeaus && z.g4.takte === z.g4.soll,
@@ -1978,7 +2157,10 @@ function lebenUrteil(name, z, soll) {
             z.stand.gleich && z.stand.akte === 1 && z.stand.doppelt === false,
             `der Stand der Seite trägt die Akte des Gaus nicht: speichern, laden, weiter ≠ geradeaus (gleich ${z.stand.gleich}, ${z.stand.akte} Akt im Stand, derselbe Akt zweimal ${z.stand.doppelt}, ${z.stand.zeichen} Zeichen)`
         );
-        soll(z.spiel.beute > 0 && z.spiel.jaeger > 0, `der Gau des Spiels (Masse des Gusses ${z.spiel.kg}) ist leer: Beute ${z.spiel.beute}, Wolf ${z.spiel.jaeger}`);
+        soll(
+            z.spiel.beute > 0 && z.spiel.jaeger > 0,
+            `der Gau des Spiels (Masse des Gusses ${z.spiel.kg}) ist leer: Beute ${z.spiel.beute}, Wolf ${z.spiel.jaeger}`
+        );
         return;
     }
     // DER ZIEL-PLAN (mensch Breite): zu jeder der fünf Stunden trägt höchstens jeder Zwanzigste kein Ziel, um 10 Uhr steht die
@@ -1993,7 +2175,10 @@ function lebenUrteil(name, z, soll) {
             H.every(([, v]) => v.ohne <= 0.05),
             `Bewohner ohne Ziel: ${H.map(([h, v]) => `${h} Uhr ${Math.round(v.ohne * 100)} %`).join(" · ")} (Soll ≤ 5 % je Stunde; ${H.flatMap(([h, v]) => v.wer.slice(0, 1).map((w) => `${h} Uhr ${w}`)).join(" · ")})`
         );
-        soll(!z.fehlt.length, `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`);
+        soll(
+            !z.fehlt.length,
+            `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`
+        );
         soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
         soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
         const leer = Object.entries(z.rollen)
@@ -2010,7 +2195,10 @@ function lebenUrteil(name, z, soll) {
             z.nahen === z.tiere && z.leer === 0 && z.bilder > 0,
             `das Gehege steht leer: ${z.nahen} von ${z.tiere} Leibern nach dem Nahen, ${z.leer} Bilder am Rand ohne alle ${z.tiere}`
         );
-        soll(z.aus === 0, `Ausbruch: ${z.aus} von ${z.bilder} Leib-Bildern jenseits des Rands (tiefster ${z.randMin} m; Soll 0)`);
+        soll(
+            z.aus === 0,
+            `Ausbruch: ${z.aus} von ${z.bilder} Leib-Bildern jenseits des Rands (tiefster ${z.randMin} m; Soll 0)`
+        );
         soll(
             z.hieb.bilder > 0 && z.hieb.randMin < 1,
             `LEER: der Hieb trieb kein Tier an den Rand (${z.hieb.bilder} Bilder, nächstes ${z.hieb.randMin} m vor ihm; Soll < 1 m)`
@@ -2076,7 +2264,10 @@ function lebenUrteil(name, z, soll) {
         // DIE GRÖSSE BLEIBT IM GESETZ: mit und ohne Räuber trägt höchstens jeder zwanzigste reife Hirsch ein M∞ jenseits der
         // Spanne des Gesetzes (+4σ, bs 1,31) — die Nische (`eignung`) und das Wurf-Gewicht halten die Art im Gau
         const weg = z.saaten.flatMap((q, i) => [["an", q.an], ["aus", q.aus]].filter(([, l]) => !(l.ueberSpanne <= 0.05)).map(([k, l]) => `Saat ${i + 1} ${k}: ln M̄ ${l.lnM}, ${l.ueberSpanne} jenseits`)); // prettier-ignore
-        soll(!weg.length, `die Größe läuft davon (Rückkraft eignung · Wurf-Gewicht): ${weg.join(" · ")} (Soll ≤ 0,05 der reifen Hirsche jenseits der Spanne)`);
+        soll(
+            !weg.length,
+            `die Größe läuft davon (Rückkraft eignung · Wurf-Gewicht): ${weg.join(" · ")} (Soll ≤ 0,05 der reifen Hirsche jenseits der Spanne)`
+        );
     }
     if (name === "kaskade") {
         soll(
@@ -2086,7 +2277,12 @@ function lebenUrteil(name, z, soll) {
         const T = z.hungertod;
         const [leichtRel, kgRel] = [T.leicht / Math.max(1e-9, T.pLeicht) - 1, T.kg / Math.max(1e-9, T.kgSoll) - 1];
         soll(
-            T.n >= 1 && T.trauer === T.n && T.journal === T.n && T.bestand >= 30 && Math.abs(leichtRel) <= 0.1 && Math.abs(kgRel) <= 0.05,
+            T.n >= 1 &&
+                T.trauer === T.n &&
+                T.journal === T.n &&
+                T.bestand >= 30 &&
+                Math.abs(leichtRel) <= 0.1 &&
+                Math.abs(kgRel) <= 0.05,
             `der Hungertod nimmt nicht, wem die Reserve zuerst ausgeht (Risiko 1/fastenRang), trauert nicht oder schreibt kein Journal: ${T.bestand} Wahlen im Bestand (Soll ≥ 30), das Leichteste ${T.leicht}-mal gegen ${Math.round(T.pLeicht)} erwartet (${leichtRel.toFixed(3)}, Soll |·| ≤ 0,1), Masse ${kgRel.toFixed(3)} gegen die Erwartung (Soll |·| ≤ 0,05); gezeichnet ${T.n}, ${T.trauer} betrauert, ${T.journal} im Journal`
         );
         const paare = z.saaten.flatMap((je, i) =>
@@ -2116,7 +2312,9 @@ function lebenUrteil(name, z, soll) {
         soll(B.nahrung.length >= 8 && B.nahrung.every((o) => o.grund >= 1), "fern lebt keine Zahl");
         soll(B.ms <= 5.8, `der Lebenszyklus kostet p95 ${B.ms} ms je Takt (Soll ≤ 5,8 ms, der CPU-Takt des Bands)`);
         soll(B.msGau <= 2, `die Antwort des Gaus kostet p95 ${B.msGau} ms (Soll ≤ 2 ms: acht Reviere werden das Bild)`);
-        const fehlt = ["hirsche", "jungwuchs", "woelfe", "nahrung", "nahrungGau", "mutante"].filter((k) => !z.richtungen[k]);
+        const fehlt = ["hirsche", "jungwuchs", "woelfe", "nahrung", "nahrungGau", "mutante"].filter(
+            (k) => !z.richtungen[k]
+        );
         soll(!fehlt.length, `der Kaskade fehlt ein Szenario: ${fehlt.join(", ")}`);
         for (const [k, q] of Object.entries(z.richtungen))
             soll(
@@ -2337,7 +2535,13 @@ if (process.argv.includes("--akte")) {
     hauptLauf(async () => {
         const server = statikServer();
         const port = Number(process.env.KREATUR_TAKT_PORT || 4478);
-        const { browser, page } = await nullWelt(server, { port, frist: 3600000 }, 120000, "index.html", "networkidle0");
+        const { browser, page } = await nullWelt(
+            server,
+            { port, frist: 3600000 },
+            120000,
+            "index.html",
+            "networkidle0"
+        );
         page.setDefaultTimeout(3500000);
         try {
             await page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady));
@@ -2395,7 +2599,10 @@ require(path.join(root, "gelaende-core.js"));
 const SAMEN_STROM = global.__gelaendeCore.samenStrom;
 const LK = global.__lebenCore;
 const sp = LK && LK.spanne();
-check("Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]", !!sp && sp[0] > 0 && sp[0] < 1 && sp[1] > 1);
+check(
+    "Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]",
+    !!sp && sp[0] > 0 && sp[0] < 1 && sp[1] > 1
+);
 
 // ── DER BESTAND IST DAS GESETZ (leben-core `bestand`: das Gesetz der Zeit und der Jagd, sieben Sätze — Blatt und Läufe 1–4 im
 // Zweig koordination, vision/leben). Der Kern rechnet LAUF 4 des Spikes zahlengleich nach; die Welt von Lauf 4 (das Feld des
@@ -2406,7 +2613,53 @@ check("Spanne des Lebens-Gesetzes [Neugeborenes < 1 < größtes Erwachsenes]", !
 //                die S-Zeilen unten bleiben die Zahlen des Spikes, `--bestand` liest sie seither als Vergleich, nicht als Gleichheit), dazu der Mutant (V½ des Satzes 3: 246 → 300 muss die Spur verlassen; das Gesetz als Wert gereicht, kein Quelltext gelesen)
 //   --bestand    der volle Lauf (8 Saaten × 160 Jahre, ohne und mit Wolf, die S13-Zweige): S1–S15 Vorlage ↔ Kern
 //   --bestand --vorlage <zeit-kern-4.cjs> [--jahre 40]   Kern und Vorlage im Gleichschritt: Köpfe je Takt, ms je Jahres-Schritt
-const LAUF4 = {"soll":{"S1":{"wert":"8 von 8","jeSaat":[68,80,61,66,74,56,63,69]},"S2":{"wert":3.9865,"jeSaat":[4.0013,4.0579,3.9253,3.9355,4.0322,3.9131,3.9669,4.0596]},"S3":{"wert":0.0841,"jeSaat":[0.0885,0.0918,0.0935,0.0739,0.0685,0.077,0.0927,0.0868]},"S4":{"wert":0.8613,"jeSaat":[0.8479,0.8404,0.8462,0.883,0.8924,0.8802,0.8459,0.8545]},"S5":{"wert":0.6046,"jeSaat":[0.6053,0.6049,0.6051,0.6037,0.6009,0.6043,0.6087,0.6042]},"S6":{"wert":1.4844,"jeSaat":[1.4789,1.4524,1.4569,1.5519,1.5316,1.5442,1.4373,1.4223]},"S7":{"wert":0.4786,"jeSaat":[0.4767,0.4762,0.4732,0.4828,0.4872,0.4819,0.4731,0.4775]},"S8":{"wert":0.0011,"jeSaat":[0.0014,0.0013,0.0011,0.0009,0.0007,0.0008,0.0014,0.0011]},"S9":{"wert":0.0134,"jeSaat":[0.0131,0.011,0.0105,0.0127,0.0148,0.0173,0.017,0.011]},"S10":{"wert":"0 · 0","jeSaat":["0·0","0·0","0·0","0·0","0·0","0·0","0·0","0·0"]},"S11":{"wert":1.0047,"jeSaat":[1.1236,1.1078,0.9399,0.7154,0.8641,1.0376,1.2625,0.9864]},"S12":{"wert":0.9689,"jeSaat":[0.9683,0.9724,0.9691,0.9698,0.9665,0.9654,0.9723,0.9674]},"S13":{"wert":"Fall 38.3 % (7 von 8 Saaten ≥ 25 %) · Beute 98.5 % (8 von 8 ≥ 85 %) · lebt 8 von 8","jeSaat":["33%/98%/lebt","45%/101%/lebt","35%/97%/lebt","47%/100%/lebt","48%/98%/lebt","38%/99%/lebt","39%/97%/lebt","23%/99%/lebt"]},"S14":{"wert":"D 0,9–1,2: 0.0328 GRÜN (21279.2 Rudel-Jahre) · D ≥ 1,5: 0.8385 ROT (161.4 Rudel-Jahre) · D ≤ 0,6: -4.3839 GRÜN (16 Rudel-Jahre)","jeSaat":[]},"S15":{"wert":250.8978,"jeSaat":[249.9186,246.4353,254.7589,254.0979,248.0043,255.5524,252.0837,246.3311]}},"spur":{"1":{"wolf":[24,49,49,65,69,65,60,65,60,59,50],"reh":[11820,14684,17024,17022,16853,16754,17342,17646,17621,17348,17690]},"2":{"wolf":[23,43,55,78,78,56,68,79,69,55,68],"reh":[11816,15114,17213,16727,16499,16944,17058,17082,17340,17256,17401]}}};
+const LAUF4 = {
+    soll: {
+        S1: { wert: "8 von 8", jeSaat: [68, 80, 61, 66, 74, 56, 63, 69] },
+        S2: { wert: 3.9865, jeSaat: [4.0013, 4.0579, 3.9253, 3.9355, 4.0322, 3.9131, 3.9669, 4.0596] },
+        S3: { wert: 0.0841, jeSaat: [0.0885, 0.0918, 0.0935, 0.0739, 0.0685, 0.077, 0.0927, 0.0868] },
+        S4: { wert: 0.8613, jeSaat: [0.8479, 0.8404, 0.8462, 0.883, 0.8924, 0.8802, 0.8459, 0.8545] },
+        S5: { wert: 0.6046, jeSaat: [0.6053, 0.6049, 0.6051, 0.6037, 0.6009, 0.6043, 0.6087, 0.6042] },
+        S6: { wert: 1.4844, jeSaat: [1.4789, 1.4524, 1.4569, 1.5519, 1.5316, 1.5442, 1.4373, 1.4223] },
+        S7: { wert: 0.4786, jeSaat: [0.4767, 0.4762, 0.4732, 0.4828, 0.4872, 0.4819, 0.4731, 0.4775] },
+        S8: { wert: 0.0011, jeSaat: [0.0014, 0.0013, 0.0011, 0.0009, 0.0007, 0.0008, 0.0014, 0.0011] },
+        S9: { wert: 0.0134, jeSaat: [0.0131, 0.011, 0.0105, 0.0127, 0.0148, 0.0173, 0.017, 0.011] },
+        S10: { wert: "0 · 0", jeSaat: ["0·0", "0·0", "0·0", "0·0", "0·0", "0·0", "0·0", "0·0"] },
+        S11: { wert: 1.0047, jeSaat: [1.1236, 1.1078, 0.9399, 0.7154, 0.8641, 1.0376, 1.2625, 0.9864] },
+        S12: { wert: 0.9689, jeSaat: [0.9683, 0.9724, 0.9691, 0.9698, 0.9665, 0.9654, 0.9723, 0.9674] },
+        S13: {
+            wert: "Fall 38.3 % (7 von 8 Saaten ≥ 25 %) · Beute 98.5 % (8 von 8 ≥ 85 %) · lebt 8 von 8",
+            jeSaat: [
+                "33%/98%/lebt",
+                "45%/101%/lebt",
+                "35%/97%/lebt",
+                "47%/100%/lebt",
+                "48%/98%/lebt",
+                "38%/99%/lebt",
+                "39%/97%/lebt",
+                "23%/99%/lebt",
+            ],
+        },
+        S14: {
+            wert: "D 0,9–1,2: 0.0328 GRÜN (21279.2 Rudel-Jahre) · D ≥ 1,5: 0.8385 ROT (161.4 Rudel-Jahre) · D ≤ 0,6: -4.3839 GRÜN (16 Rudel-Jahre)",
+            jeSaat: [],
+        },
+        S15: {
+            wert: 250.8978,
+            jeSaat: [249.9186, 246.4353, 254.7589, 254.0979, 248.0043, 255.5524, 252.0837, 246.3311],
+        },
+    },
+    spur: {
+        1: {
+            wolf: [24, 49, 49, 65, 69, 65, 60, 65, 60, 59, 50],
+            reh: [11820, 14684, 17024, 17022, 16853, 16754, 17342, 17646, 17621, 17348, 17690],
+        },
+        2: {
+            wolf: [23, 43, 55, 78, 78, 56, 68, 79, 69, 55, 68],
+            reh: [11816, 15114, 17213, 16727, 16499, 16944, 17058, 17082, 17340, 17256, 17401],
+        },
+    },
+};
 function bestandTreiber(T, L, gesetz) {
     const B = T.BESTAND_GESETZ;
     const TG = T.VERHALTEN.temperament.gattung;
@@ -2418,20 +2671,38 @@ function bestandTreiber(T, L, gesetz) {
     };
     const DIET = { deer: dietVon("deer"), wolf: dietVon("wolf") };
     // „jagt mit“ ist das Temperament „wild“ des Tier-Buchs: für den Fleischfresser genau kg ≥ jagdKg (temperamentDerGattung)
-    if (!(DIET.wolf >= TG.fleischDiet)) throw new Error("bestand: der Wolf ist kein Fleischfresser — jagdKg trägt sein Temperament nicht");
+    if (!(DIET.wolf >= TG.fleischDiet))
+        throw new Error("bestand: der Wolf ist kein Fleischfresser — jagdKg trägt sein Temperament nicht");
     const TJ = L.gesetz().refS / B.taktS / L.zeitJagd().jahreRef;
     const SEITE = B.revierM * Math.sqrt(Math.PI);
     const M_ART = { deer: 94.24042032034154, wolf: 64.01114942302421 }; // die Masse des Gusses, wie Lauf 4 sie trug
     const HA = (SEITE / 4) ** 2 / 1e4;
     const K = L.bestand(
         {
-        taktS: B.taktS,
-        samen: SAMEN_STROM,
-        revierSeiteM: SEITE,
-        // das Feld des Gaus (C2a): 16 Zellen je Revier, die Zahlen von LIFE_FIELD (Zerfall, Klemme), K je Zelle = die Formel des Stamms
-        feld: { zellen: 16, zerfallJeS: 0.008, epsilon: 0.004, kahl: -1, max: 0.7, kopfJeHa: B.kopfJeHa, kZelle: (aes, lr) => lr * HA * T.bestandNahrung(DIET.deer, aes, 0) },
-        beute: { M: M_ART.deer, verband: T.VERHALTEN.herde.wurf.deer, frassJeJahr: T.bestandFrass(DIET.deer, B) * TJ },
-        jaeger: { M: M_ART.wolf, verband: T.VERHALTEN.herde.wurf.wolf, beuteMasse: T.VERHALTEN.jagd.beuteMasse, jagdKg: TG.jagdKg },
+            taktS: B.taktS,
+            samen: SAMEN_STROM,
+            revierSeiteM: SEITE,
+            // das Feld des Gaus (C2a): 16 Zellen je Revier, die Zahlen von LIFE_FIELD (Zerfall, Klemme), K je Zelle = die Formel des Stamms
+            feld: {
+                zellen: 16,
+                zerfallJeS: 0.008,
+                epsilon: 0.004,
+                kahl: -1,
+                max: 0.7,
+                kopfJeHa: B.kopfJeHa,
+                kZelle: (aes, lr) => lr * HA * T.bestandNahrung(DIET.deer, aes, 0),
+            },
+            beute: {
+                M: M_ART.deer,
+                verband: T.VERHALTEN.herde.wurf.deer,
+                frassJeJahr: T.bestandFrass(DIET.deer, B) * TJ,
+            },
+            jaeger: {
+                M: M_ART.wolf,
+                verband: T.VERHALTEN.herde.wurf.wolf,
+                beuteMasse: T.VERHALTEN.jagd.beuteMasse,
+                jagdKg: TG.jagdKg,
+            },
         },
         gesetz
     );
@@ -2455,7 +2726,7 @@ function bestandTreiber(T, L, gesetz) {
                     let c = 0;
                     for (let k = 0; k < Z; k++) {
                         const [u, s] = [fr(), fr()];
-                        if (u < 9 / 16) (S[i * Z + c] = 0.2 + s * (0.42 - 0.2)), (LR[i * Z + c++] = LR0);
+                        if (u < 9 / 16) ((S[i * Z + c] = 0.2 + s * (0.42 - 0.2)), (LR[i * Z + c++] = LR0));
                     }
                 }
             }
@@ -2501,13 +2772,15 @@ function bestandTreiber(T, L, gesetz) {
     return { K, TJ, M_ART, welt, zaehl, spur };
 }
 function bestandUrteil(L, gesetz) {
-    if (!L || typeof L.bestand !== "function" || typeof L.zeitJagd !== "function") return "leben-core trägt keinen Bestand (bestand · zeitJagd fehlen)";
+    if (!L || typeof L.bestand !== "function" || typeof L.zeitJagd !== "function")
+        return "leben-core trägt keinen Bestand (bestand · zeitJagd fehlen)";
     const { spur } = bestandTreiber(core, L, gesetz);
     const fehl = [];
     for (const saat of [1, 2]) {
         const [ist, soll] = [spur(saat, 1051), LAUF4.spur[saat]];
         for (const f of ["wolf", "reh"])
-            if (ist[f].join(" ") !== soll[f].join(" ")) fehl.push("Saat " + saat + " " + f + ": Kern " + ist[f].join(" ") + " ≠ Vorlage " + soll[f].join(" "));
+            if (ist[f].join(" ") !== soll[f].join(" "))
+                fehl.push("Saat " + saat + " " + f + ": Kern " + ist[f].join(" ") + " ≠ Vorlage " + soll[f].join(" "));
     }
     return fehl.join(" · ");
 }
@@ -2526,7 +2799,13 @@ if (process.argv.includes("--bestand-welt")) {
     hauptLauf(async () => {
         const server = statikServer();
         const port = Number(process.env.KREATUR_TAKT_PORT || 4478);
-        const { browser, page } = await nullWelt(server, { port, frist: 3600000 }, 120000, "index.html", "networkidle0");
+        const { browser, page } = await nullWelt(
+            server,
+            { port, frist: 3600000 },
+            120000,
+            "index.html",
+            "networkidle0"
+        );
         page.setDefaultTimeout(3500000);
         let F;
         try {
@@ -2540,7 +2819,8 @@ if (process.argv.includes("--bestand-welt")) {
                 const t0 = performance.now();
                 await window.__weltDa((r) => {
                     let fehlt = 0;
-                    for (let i = 0; i < N * N; i++) if (!r._bestandBereit(x0 + (i % N) + "," + (z0 + Math.floor(i / N)))) fehlt++;
+                    for (let i = 0; i < N * N; i++)
+                        if (!r._bestandBereit(x0 + (i % N) + "," + (z0 + Math.floor(i / N)))) fehlt++;
                     return fehlt === 0;
                 });
                 const hydroS = (performance.now() - t0) / 1000;
@@ -2570,7 +2850,21 @@ if (process.argv.includes("--bestand-welt")) {
                     } catch (e) {
                         kg[g] = String(e.message || e);
                     }
-                return { C, Sub, LR, klassen, wolfZellen, kg, S, zn, anker: [p.x, p.z], x0, z0, hydroS, saat: s.worldMeta && s.worldMeta.seed };
+                return {
+                    C,
+                    Sub,
+                    LR,
+                    klassen,
+                    wolfZellen,
+                    kg,
+                    S,
+                    zn,
+                    anker: [p.x, p.z],
+                    x0,
+                    z0,
+                    hydroS,
+                    saat: s.worldMeta && s.worldMeta.seed,
+                };
             }, W);
         } finally {
             await browser.close();
@@ -2583,13 +2877,16 @@ if (process.argv.includes("--bestand-welt")) {
         feld0.takt();
         const Ks = Array.from({ length: n }, (_, i) => feld0.futter(i));
         const land = Ks.filter((_, i) => feld0.land(i));
-        const med = (v) => (v.length ? v.slice().sort((a, b) => a - b)[Math.floor(v.length / 2)] : NaN);
+        const med = (v) => (v.length ? rang(v.slice().sort((a, b) => a - b)) : NaN);
         const sumK = Ks.reduce((a, b) => a + b, 0);
         const aes = Array.from(quelle.S).filter((_, j) => quelle.LR[j] > 0);
         const Z0 = [
             `B4 — die Welt-Bindung · Welt-Samen ${JSON.stringify(F.saat)} · Start-Anker (${rund(F.anker[0], 1)}, ${rund(F.anker[1], 1)}) · Gau ${W} × ${W} Regionen ab (${F.x0}, ${F.z0}), Seite ${rund(F.S)} m · Hydro-Wahrheit nach ${rund(F.hydroS, 1)} s`,
             `Soll (vor der Rechnung, nicht bewegt): W1 Wolf lebt am Ende 4 von 4 · W2 2–8 Wölfe je 1 000 Beute · W3 180–390 WÄ je Wolf`,
-            `Boden-Klassen der ${n * Z} Zellen: ${Object.entries(F.klassen).sort((a, b) => b[1] - a[1]).map(([k, v]) => k + " " + v).join(" · ")}`,
+            `Boden-Klassen der ${n * Z} Zellen: ${Object.entries(F.klassen)
+                .sort((a, b) => b[1] - a[1])
+                .map(([k, v]) => k + " " + v)
+                .join(" · ")}`,
             `Land (Revier mit Rotwild-Lebensraum): ${land.length} von ${n} = ${rund((100 * land.length) / n, 1)} % · Zellen mit Rotwild-Lebensraum ${aes.length} von ${n * Z} = ${rund((100 * aes.length) / (n * Z), 1)} % · Äsung dort Median ${rund(med(aes), 3)} (min ${rund(Math.min(...aes), 3)}, max ${rund(Math.max(...aes), 3)})`,
             `K je Revier (Köpfe Rotwild, Fraß-Schicht leer): Median über Land ${rund(med(land))} · Median über alle ${rund(med(Ks))} · Summe ${rund(sumK, 0)} — der Gesetz-Beweis stand bei ≈ 17 000 Köpfen; V_halt ${K.RAUM.vHalt} WÄ je Wolf trüge am Stand K ${rund(sumK / K.RAUM.vHalt, 1)} Wölfe`,
             `Wald-Zellen (Lebensraum des Wolfs im Tier-Buch): ${F.wolfZellen.reduce((a, b) => a + b, 0)} von ${n * Z} · Masse des Gusses in der Seite: ${JSON.stringify(F.kg)} (der Lauf rechnet mit der Masse von Lauf 4)`,
@@ -2614,7 +2911,14 @@ if (process.argv.includes("--bestand-welt")) {
             }
             const [d, w] = zaehl(z);
             const rudel = z.rudel.filter((R) => R.tiere.length >= 2).length;
-            const p = { saat, lebt: rudel >= 1 && w > 0, wolfEnde: w, rehEnde: d, W2: dS > 0 ? (1000 * wS) / dS : NaN, W3: wS > 0 ? dS / wS : NaN };
+            const p = {
+                saat,
+                lebt: rudel >= 1 && w > 0,
+                wolfEnde: w,
+                rehEnde: d,
+                W2: dS > 0 ? (1000 * wS) / dS : NaN,
+                W3: wS > 0 ? dS / wS : NaN,
+            };
             P.push(p);
             zeilen.push(
                 `Saat ${saat}: Anfang Beute ${d0} · Wolf ${w0} → Ende Beute ${d} · Wolf ${w} in ${z.rudel.length} Rudeln (${rudel} mit ≥ 2) · zweite Hälfte: ${rund(p.W2)} Wölfe je 1 000 Beute, ${rund(p.W3, 1)} WÄ je Wolf · ${rund(ms / JAHRE, 1)} ms je Jahres-Schritt`,
@@ -2622,7 +2926,9 @@ if (process.argv.includes("--bestand-welt")) {
             );
         }
         const lebt = P.filter((p) => p.lebt).length;
-        const mittel = (f) => P.reduce((a, p) => a + (Number.isFinite(p[f]) ? p[f] : 0), 0) / Math.max(1, P.filter((p) => Number.isFinite(p[f])).length);
+        const mittel = (f) =>
+            P.reduce((a, p) => a + (Number.isFinite(p[f]) ? p[f] : 0), 0) /
+            Math.max(1, P.filter((p) => Number.isFinite(p[f])).length);
         const [W2, W3] = [mittel("W2"), mittel("W3")];
         const ok = [lebt === SAATEN.length, W2 >= 2 && W2 <= 8, lebt > 0 && W3 >= 180 && W3 <= 390];
         const urteil = [
@@ -2650,12 +2956,22 @@ if (process.argv.includes("--gau")) {
         const boot = async (gau) => {
             const server = statikServer();
             const port = Number(process.env.KREATUR_TAKT_PORT || 4478);
-            const { browser, page } = await nullWelt(server, { port, frist: 3600000 }, 120000, "index.html", "networkidle0");
+            const { browser, page } = await nullWelt(
+                server,
+                { port, frist: 3600000 },
+                120000,
+                "index.html",
+                "networkidle0"
+            );
             page.setDefaultTimeout(3500000);
             try {
                 await page.evaluate(() => window.__weltDa((r) => r.state.voxelWorkerReady));
                 await page.evaluate(() => window.__weltStehtNach(() => r._gameLoopTick(performance.now())));
-                const aus = await page.evaluate((src, o) => (0, eval)("(" + src + ")")(r, window.THREE, o), KREATUR_PROBEN_SRC, { proben: ["gau"], gau });
+                const aus = await page.evaluate(
+                    (src, o) => (0, eval)("(" + src + ")")(r, window.THREE, o),
+                    KREATUR_PROBEN_SRC,
+                    { proben: ["gau"], gau }
+                );
                 return aus.gau;
             } finally {
                 await browser.close();
@@ -2673,7 +2989,10 @@ if (process.argv.includes("--gau")) {
             `${farbe(boote && A.g3.gleich && A.g3.akt && B.g3.gleich && B.g3.akt)} G3 Determinismus: Boot 1 ${A.g3.hash} · Boot 2 ${B.g3.hash} (ohne Akt) · mit EINEM Akt „aus“ am Takt 100 ${A.g3.hashAkt} · ${B.g3.hashAkt} · je Boot zwei Fäden gleich ${A.g3.gleich} · ${B.g3.gleich} · ${A.g3.bytes} Bytes am Takt 160`,
             `${farbe(A.g4.gleich && B.g4.gleich)} G4 Stand-Rundreise: heraus am Takt 100 (${A.g4.bytes} Bytes), herein, ${A.g4.takte} Takte weiter = geradeaus ${A.g4.gleich} · ${B.g4.gleich} · am Stand der Seite (die Akte im Leben des Stands, ${A.stand.zeichen} Zeichen je Akt-Reihe): speichern, laden, ab der Saat weiter = geradeaus ${A.stand.gleich} · ${B.stand.gleich}`,
             `G5 Kosten im Faden: Feld des Gaus ${A.zeit.feldS} s (davon ${A.zeit.kacheln} Hydro-Kacheln ${A.zeit.hydroS} s) · zweites Boot ${B.zeit.feldS} s · ${A.zeit.msJeJahr} · ${B.zeit.msJeJahr} ms je Jahres-Schritt über die ersten 36 Jahre`,
-            ...(A.aufholen || []).map((h) => `   Aufholen ohne Akte ${h.jahre} Jahre (${h.takte} Takte): ${h.s} s = ${h.msJeJahr} ms je Jahres-Schritt · am Ende Beute ${h.beute} · Wolf ${h.jaeger}${h.jahre === 100 && h.s > 2 ? " — FUND: über 2 s" : ""}`),
+            ...(A.aufholen || []).map(
+                (h) =>
+                    `   Aufholen ohne Akte ${h.jahre} Jahre (${h.takte} Takte): ${h.s} s = ${h.msJeJahr} ms je Jahres-Schritt · am Ende Beute ${h.beute} · Wolf ${h.jaeger}${h.jahre === 100 && h.s > 2 ? " — FUND: über 2 s" : ""}`
+            ),
             `Der Weg des Spiels (Masse des Gusses ${A.spiel.kg.join(" · ")} kg, Saat des Gaus ${A.spiel.saat}): am Takt 1 Beute ${A.spiel.beute} · Wolf ${A.spiel.jaeger}`,
             `Die Lese-Naht am Takt 100, mittlere Zeile: ${A.lesen.reviere} Reviere · Beute ${A.lesen.beute} · Wolf ${A.lesen.jaeger} · abgeäste Zellen ${A.lesen.abgeaest}`,
         ].join("\n");
@@ -2697,7 +3016,9 @@ if (process.argv.includes("--bestand")) {
         // DER GLEICHSCHRITT: Vorlage und Kern, Takt um Takt abwechselnd unter derselben Last — Köpfe je Takt und ms je Jahres-Schritt
         const VK = require(path.resolve(vorlage));
         const takte = Math.round(Number(arg("--jahre", "40")) * TJ);
-        console.log(`GLEICHSCHRITT Kern ↔ Vorlage · ${W} × ${W} Reviere · ${takte} Takte (${rund(takte / TJ, 1)} Jahre) · ms je Jahres-Schritt (${TJ} Takte)`);
+        console.log(
+            `GLEICHSCHRITT Kern ↔ Vorlage · ${W} × ${W} Reviere · ${takte} Takte (${rund(takte / TJ, 1)} Jahre) · ms je Jahres-Schritt (${TJ} Takte)`
+        );
         const zeilen = [];
         for (const saat of SAATEN) {
             const feld = welt(W, W);
@@ -2722,18 +3043,24 @@ if (process.argv.includes("--bestand")) {
             }
             const j = takte / TJ;
             zeilen.push({ saat, ungleich, kern: msK / j, welt: msW / j, vorlage: msV / j, koepfe: zaehl(zK) });
-            console.log(`  Saat ${saat} · Takte ungleich ${ungleich} von ${takte} · Kern ${rund(msK / j, 1)} ms + Welt-Leser ${rund(msW / j, 1)} ms · Vorlage ${rund(msV / j, 1)} ms · Ende Beute ${zaehl(zK)[0]} Wolf ${zaehl(zK)[1]}`);
+            console.log(
+                `  Saat ${saat} · Takte ungleich ${ungleich} von ${takte} · Kern ${rund(msK / j, 1)} ms + Welt-Leser ${rund(msW / j, 1)} ms · Vorlage ${rund(msV / j, 1)} ms · Ende Beute ${zaehl(zK)[0]} Wolf ${zaehl(zK)[1]}`
+            );
         }
         const mw = (f) => rund(mittel(zeilen.map((x) => x[f])), 1);
-        console.log(`MITTEL je Jahres-Schritt: Kern ${mw("kern")} ms + Welt-Leser ${mw("welt")} ms = ${rund(mw("kern") + mw("welt"), 1)} ms · Vorlage ${mw("vorlage")} ms · Takte ungleich ${sum(zeilen.map((x) => x.ungleich))}`);
+        console.log(
+            `MITTEL je Jahres-Schritt: Kern ${mw("kern")} ms + Welt-Leser ${mw("welt")} ms = ${rund(mw("kern") + mw("welt"), 1)} ms · Vorlage ${mw("vorlage")} ms · Takte ungleich ${sum(zeilen.map((x) => x.ungleich))}`
+        );
         process.exit(sum(zeilen.map((x) => x.ungleich)) ? 1 : 0);
     }
     // DER VOLLE LAUF 4 — die Messung des Spike-Läufers, auf S1–S15 gekürzt (jede Zahl gerechnet wie dort)
     const JAHR = (j) => Math.round(E + j * TJ);
     const quantil = (v, q) => {
         if (!v.length) return NaN;
-        const s = Array.from(v).sort((a, b) => a - b);
-        return s[Math.min(s.length - 1, Math.floor(q * s.length))];
+        return rang(
+            Array.from(v).sort((a, b) => a - b),
+            q
+        );
     };
     const jm = (reihe, a, b) => {
         let s = 0;
@@ -2753,7 +3080,8 @@ if (process.argv.includes("--bestand")) {
             return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
         let gefallen = 0;
-        for (const l of z.beute) for (let k = l.length - 1; k >= 0; k--) if (rng() < anteil) l.splice(k, 1), gefallen++;
+        for (const l of z.beute)
+            for (let k = l.length - 1; k >= 0; k--) if (rng() < anteil) (l.splice(k, 1), gefallen++);
         return gefallen;
     }
     function lauf(saat, jaeger, zweig, halt) {
@@ -2765,7 +3093,28 @@ if (process.argv.includes("--bestand")) {
         for (let i = 0; i < n; i++) if (feld.land(i)) habitat.push(i);
         const bs0 = [];
         for (const l of z.beute) for (const t of l) bs0.push(Math.cbrt(t.M / M_ART.deer));
-        const m = { takte: 0, rehS: 0, rehS2: 0, wolfS: 0, besetztHab: 0, leerIm: 0, gebReh: 0, reifReh: 0, reifWolf: 0, riss: 0, rissUnreif: 0, einwanderung: 0, bruchKopf: 0, bruchKg: 0, msKern: 0, msWelt: 0, wolfT: new Int32Array(TAKTE), rehT: new Int32Array(TAKTE), bs: [], klassen: KLASSEN.map(neuKlasse) };
+        const m = {
+            takte: 0,
+            rehS: 0,
+            rehS2: 0,
+            wolfS: 0,
+            besetztHab: 0,
+            leerIm: 0,
+            gebReh: 0,
+            reifReh: 0,
+            reifWolf: 0,
+            riss: 0,
+            rissUnreif: 0,
+            einwanderung: 0,
+            bruchKopf: 0,
+            bruchKg: 0,
+            msKern: 0,
+            msWelt: 0,
+            wolfT: new Int32Array(TAKTE),
+            rehT: new Int32Array(TAKTE),
+            bs: [],
+            klassen: KLASSEN.map(neuKlasse),
+        };
         let [dVor, wVor] = zaehl(z);
         if (zweig) {
             const gefallen = eingriff(z, saat, 0.5);
@@ -2809,7 +3158,11 @@ if (process.argv.includes("--bestand")) {
             }
             m.einwanderung += ev.einwanderung;
             if (d !== dVor + gD - tD || w !== wVor + gW - tW) m.bruchKopf++;
-            if (Math.abs(kgJ - ev.rissKg) > 1e-6 * (1 + kgJ) || Math.abs(ev.gedecktKg - nutz * ev.rissKg) > 1e-6 * (1 + kgJ)) m.bruchKg++;
+            if (
+                Math.abs(kgJ - ev.rissKg) > 1e-6 * (1 + kgJ) ||
+                Math.abs(ev.gedecktKg - nutz * ev.rissKg) > 1e-6 * (1 + kgJ)
+            )
+                m.bruchKg++;
             [dVor, wVor] = [d, w];
             // S14: Rudel-Takte, Geburten und Tode in die Klasse des D ihres Rudels
             {
@@ -2822,7 +3175,7 @@ if (process.argv.includes("--bestand")) {
                 const dVon = (id) => (dNow.has(id) && dNow.get(id) != null ? dNow.get(id) : deckVon.get(id));
                 for (const [id, kopf] of kopfVor) {
                     const kl = lege(dVon(id));
-                    if (kl) kl.rudelTakte++, (kl.kopfTakte += kopf);
+                    if (kl) (kl.rudelTakte++, (kl.kopfTakte += kopf));
                 }
                 for (const t of ev.geburt) {
                     const kl = t.g === "jaeger" ? lege(dVon(besitzerNeu.get(t))) : null;
@@ -2843,11 +3196,11 @@ if (process.argv.includes("--bestand")) {
             const probe = !((k - AB) % 105);
             for (const i of habitat) {
                 const l = z.beute[i];
-                if (z.besitz[i] >= 0) m.besetztHab++, !l.length && m.leerIm++;
+                if (z.besitz[i] >= 0) (m.besetztHab++, !l.length && m.leerIm++);
                 if (probe) for (const t of l) if (t.r) m.bs.push(Math.cbrt(t.M / M_ART.deer));
             }
             m.gebReh += gD;
-            for (const x of ev.tod) if (x.ursache === "jagd") m.riss++, !x.t.r && m.rissUnreif++;
+            for (const x of ev.tod) if (x.ursache === "jagd") (m.riss++, !x.t.r && m.rissUnreif++);
             m.reifReh += ev.reifReh;
             m.reifWolf += ev.reifWolf;
         }
@@ -2879,7 +3232,9 @@ if (process.argv.includes("--bestand")) {
     }
     const t0 = Date.now();
     const sek = () => Math.round((Date.now() - t0) / 1000) + " s";
-    console.log(`LAUF 4 im Kern · ${W} × ${W} Reviere · ${SAATEN.length} Saaten · ${TAKTE} Takte · Start ${new Date().toLocaleString("de-DE")}`);
+    console.log(
+        `LAUF 4 im Kern · ${W} × ${W} Reviere · ${SAATEN.length} Saaten · ${TAKTE} Takte · Start ${new Date().toLocaleString("de-DE")}`
+    );
     const O = SAATEN.map((saat) => lauf(saat, false));
     console.log("ohne Wolf gelaufen", sek());
     const Gm = SAATEN.map((saat) => lauf(saat, true, null, E));
@@ -2891,7 +3246,10 @@ if (process.argv.includes("--bestand")) {
         ist[nr] = { wert: rund(mittel(v.filter(Number.isFinite)), 4), jeSaat: v.map((x) => rund(x, 4)) };
     }
     ist.S1 = { wert: sum(P.map((p) => p.S1)) + " von " + P.length, jeSaat: P.map((p) => p.wolfEnde) };
-    ist.S10 = { wert: sum(P.map((p) => p.S10[0])) + " · " + sum(P.map((p) => p.S10[1])), jeSaat: P.map((p) => p.S10.join("·")) };
+    ist.S10 = {
+        wert: sum(P.map((p) => p.S10[0])) + " · " + sum(P.map((p) => p.S10[1])),
+        jeSaat: P.map((p) => p.S10.join("·")),
+    };
     // S13, die Rückstell-Probe: im Jahr 40 fällt die Hälfte der Beute; der Zweig läuft ab dem Zustand des Haupt-Laufs
     const klassen = KLASSEN.map(neuKlasse);
     const addiere = (b) => klassen.forEach((x, i) => Object.keys(x).forEach((f) => (x[f] += b[i][f])));
@@ -2903,51 +3261,108 @@ if (process.argv.includes("--bestand")) {
         addiere(b.klassen);
         let tief = Infinity;
         for (let j = 1; j <= 4; j++) tief = Math.min(tief, jm(b.wolfT, JAHR(j - 1), JAHR(j)));
-        return { fall: 1 - tief / wolfVor, verhaeltnis: jm(b.rehT, JAHR(14), JAHR(15)) / beuteVor, lebt: b.ende.rudelAb2 >= 1, brueche: b.bruchKopf + b.bruchKg + b.einwanderung };
+        return {
+            fall: 1 - tief / wolfVor,
+            verhaeltnis: jm(b.rehT, JAHR(14), JAHR(15)) / beuteVor,
+            lebt: b.ende.rudelAb2 >= 1,
+            brueche: b.bruchKopf + b.bruchKg + b.einwanderung,
+        };
     });
     console.log("S13-Zweige gelaufen", sek());
     {
-        const [fall, verh, lebt] = [mittel(S13.map((r) => r.fall)), mittel(S13.map((r) => r.verhaeltnis)), S13.filter((r) => r.lebt).length];
+        const [fall, verh, lebt] = [
+            mittel(S13.map((r) => r.fall)),
+            mittel(S13.map((r) => r.verhaeltnis)),
+            S13.filter((r) => r.lebt).length,
+        ];
         ist.S13 = {
-            wert: "Fall " + rund(100 * fall, 1) + " % (" + S13.filter((r) => r.fall >= 0.25).length + " von " + S13.length + " Saaten ≥ 25 %) · Beute " + rund(100 * verh, 1) + " % (" + S13.filter((r) => r.verhaeltnis >= 0.85).length + " von " + S13.length + " ≥ 85 %) · lebt " + lebt + " von " + S13.length,
-            jeSaat: S13.map((r) => rund(100 * r.fall, 0) + "%/" + rund(100 * r.verhaeltnis, 0) + "%/" + (r.lebt ? "lebt" : "tot")),
+            wert:
+                "Fall " +
+                rund(100 * fall, 1) +
+                " % (" +
+                S13.filter((r) => r.fall >= 0.25).length +
+                " von " +
+                S13.length +
+                " Saaten ≥ 25 %) · Beute " +
+                rund(100 * verh, 1) +
+                " % (" +
+                S13.filter((r) => r.verhaeltnis >= 0.85).length +
+                " von " +
+                S13.length +
+                " ≥ 85 %) · lebt " +
+                lebt +
+                " von " +
+                S13.length,
+            jeSaat: S13.map(
+                (r) => rund(100 * r.fall, 0) + "%/" + rund(100 * r.verhaeltnis, 0) + "%/" + (r.lebt ? "lebt" : "tot")
+            ),
         };
         const wachstum = (x) => (x.geb - x.welpe - x.deckung - x.alter - x.wanderung) / (x.kopfTakte / TJ);
-        const baender = [[2, (r) => r >= -0.1 && r <= 0.1], [4, (r) => r >= 0.15 && r <= 0.45], [0, (r) => r <= -0.15]];
+        const baender = [
+            [2, (r) => r >= -0.1 && r <= 0.1],
+            [4, (r) => r >= 0.15 && r <= 0.45],
+            [0, (r) => r <= -0.15],
+        ];
         ist.S14 = {
             wert: baender
                 .map(([i, ok]) => {
                     const [rj, r] = [rund(klassen[i].rudelTakte / TJ, 1), rund(wachstum(klassen[i]), 4)];
-                    return KLASSEN[i] + ": " + (rj < 10 ? "nicht gemessen (" + rj + " Rudel-Jahre)" : r + " " + (ok(r) ? "GRÜN" : "ROT") + " (" + rj + " Rudel-Jahre)");
+                    return (
+                        KLASSEN[i] +
+                        ": " +
+                        (rj < 10
+                            ? "nicht gemessen (" + rj + " Rudel-Jahre)"
+                            : r + " " + (ok(r) ? "GRÜN" : "ROT") + " (" + rj + " Rudel-Jahre)")
+                    );
                 })
                 .join(" · "),
             jeSaat: [],
         };
     }
     let ungleich = 0;
-    console.log("── S1–S15: Vorlage (ergebnis-zeit-4.json) ↔ Kern · gleich heißt Wert UND jede Saat zahlengleich (S11 ist Zeit)");
+    console.log(
+        "── S1–S15: Vorlage (ergebnis-zeit-4.json) ↔ Kern · gleich heißt Wert UND jede Saat zahlengleich (S11 ist Zeit)"
+    );
     for (const nr of Object.keys(LAUF4.soll)) {
         const [a, b] = [LAUF4.soll[nr], ist[nr]];
         const gleich = JSON.stringify([a.wert, a.jeSaat]) === JSON.stringify([b.wert, b.jeSaat]);
         if (!gleich && nr !== "S11") ungleich++;
         // die Urteils-Wörter der Vorlage (S14 steht dort wie gesetzt auf rot) klein: diese Tafel urteilt nur GLEICH ↔ UNGLEICH
         const zeig = (s) => String(s).replace(/ROT/g, "rot").replace(/GRÜN/g, "grün");
-        console.log(`${nr} · Vorlage ${zeig(a.wert)} · Kern ${zeig(b.wert)} · ${nr === "S11" ? "Zeit" : gleich ? "GLEICH" : "UNGLEICH"}${a.jeSaat.length ? " · je Saat Kern " + b.jeSaat.join(" ") : ""}`);
+        console.log(
+            `${nr} · Vorlage ${zeig(a.wert)} · Kern ${zeig(b.wert)} · ${nr === "S11" ? "Zeit" : gleich ? "GLEICH" : "UNGLEICH"}${a.jeSaat.length ? " · je Saat Kern " + b.jeSaat.join(" ") : ""}`
+        );
     }
-    console.log(`── KOSTEN je Jahres-Schritt (${TJ} Takte, ${n} Reviere, mit Wolf) je Saat: Kern ${P.map((p) => rund(p.msKernJahr, 1)).join(" ")} ms · Welt-Leser ${P.map((p) => rund(p.msWeltJahr, 1)).join(" ")} ms`);
-    console.log(`${ungleich ? "❌ " + ungleich + " Zeile(n) UNGLEICH" : "✅ Lauf 4 zahlengleich (S1–S10, S12–S15)"} · S13-Brüche ${sum(S13.map((r) => r.brueche))} · Ende ${new Date().toLocaleString("de-DE")} · ${sek()}`);
-    if (arg("--json", null)) fs.writeFileSync(arg("--json"), JSON.stringify({ ist, vorlage: LAUF4.soll, kosten: P.map((p) => [p.msKernJahr, p.msWeltJahr]) }));
+    console.log(
+        `── KOSTEN je Jahres-Schritt (${TJ} Takte, ${n} Reviere, mit Wolf) je Saat: Kern ${P.map((p) => rund(p.msKernJahr, 1)).join(" ")} ms · Welt-Leser ${P.map((p) => rund(p.msWeltJahr, 1)).join(" ")} ms`
+    );
+    console.log(
+        `${ungleich ? "❌ " + ungleich + " Zeile(n) UNGLEICH" : "✅ Lauf 4 zahlengleich (S1–S10, S12–S15)"} · S13-Brüche ${sum(S13.map((r) => r.brueche))} · Ende ${new Date().toLocaleString("de-DE")} · ${sek()}`
+    );
+    if (arg("--json", null))
+        fs.writeFileSync(
+            arg("--json"),
+            JSON.stringify({ ist, vorlage: LAUF4.soll, kosten: P.map((p) => [p.msKernJahr, p.msWeltJahr]) })
+        );
     process.exit(ungleich ? 1 : 0);
 }
 {
     const grund = bestandUrteil(LK);
-    check("Bestand = Gesetz: Lauf 4 zahlengleich (Saat 1 · 2, Jahre 0–40, Spur von Wolf und Beute gegen die Vorlage)", grund === "", grund);
+    check(
+        "Bestand = Gesetz: Lauf 4 zahlengleich (Saat 1 · 2, Jahre 0–40, Spur von Wolf und Beute gegen die Vorlage)",
+        grund === "",
+        grund
+    );
     if (grund === "") {
         // der Mutant: EIN Wert des Satzes 3 verstellt (V½ 246 → 300) — die Spur muss die Vorlage verlassen
         const verstellt = jsonKlon(LK.zeitJagd());
         verstellt.antwort.vHalb = 300;
         const mutant = bestandUrteil(LK, verstellt);
-        check("Bestand = Gesetz, Selbsttest: der Mutant V½ 246 → 300 fällt ROT", mutant !== "", mutant !== "" ? "" : "die Spur blieb gleich");
+        check(
+            "Bestand = Gesetz, Selbsttest: der Mutant V½ 246 → 300 fällt ROT",
+            mutant !== "",
+            mutant !== "" ? "" : "die Spur blieb gleich"
+        );
     }
 }
 // ── DER GAU (C2a, leben-core `gau*` · `akt`): der Bestand über EINEM Feld mit Fraß-Schicht und Akten ist STAND — eine Funktion von
@@ -2976,11 +3391,24 @@ function gauUrteil(L, mutant) {
         const vor = K.koepfe(g.z, i0).beute;
         if (K.akt(ziel, aus) !== true) fehl.akt.push("„aus“ meldet den Kopf nicht");
         if (K.koepfe(g.z, i0).beute !== vor - 1 || K.tiereIn(g.z, i0).some((t) => t.id === kopf.id))
-            fehl.akt.push("nach „aus“ steht der Kopf noch im Revier (" + K.koepfe(g.z, i0).beute + " Köpfe, davor " + vor + ")");
+            fehl.akt.push(
+                "nach „aus“ steht der Kopf noch im Revier (" + K.koepfe(g.z, i0).beute + " Köpfe, davor " + vor + ")"
+            );
         if (K.akt(ziel, aus) !== false) fehl.akt.push("ein zweites „aus“ desselben Kopfs wirkt");
-        K.akt(ziel, { takt: T1, art: "ein", g: "beute", revier: i0, id: "seite.1", a: kopf.a, e: kopf.e, alterS: kopf.alterS, m: null });
+        K.akt(ziel, {
+            takt: T1,
+            art: "ein",
+            g: "beute",
+            revier: i0,
+            id: "seite.1",
+            a: kopf.a,
+            e: kopf.e,
+            alterS: kopf.alterS,
+            m: null,
+        });
         const neu = K.tiereIn(g.z, i0).find((t) => t.id === "seite.1");
-        if (!neu || Math.abs(neu.kg - kopf.kg) > 1e-9 || K.koepfe(g.z, i0).beute !== vor) fehl.akt.push("nach „ein“ steht der Kopf nicht mit seinem Leib im Revier");
+        if (!neu || Math.abs(neu.kg - kopf.kg) > 1e-9 || K.koepfe(g.z, i0).beute !== vor)
+            fehl.akt.push("nach „ein“ steht der Kopf nicht mit seinem Leib im Revier");
         let wurf = false;
         try {
             K.akt(g, { takt: T1 + 1, art: "aus", id: "seite.1" });
@@ -3003,8 +3431,10 @@ function gauUrteil(L, mutant) {
         if (mutant === "g4") halb.O.fill(0);
         const stand = K.gauPack(halb);
         bytes = stand.length;
-        if (!gleich(durch, bis(T2, [aus], K.gauEntpack(stand, F)))) fehl.g4.push("speichern → laden → weiterrechnen ≠ durchrechnen");
-        if (mutant !== "g4" && !gleich(halb, K.gauEntpack(stand, F))) fehl.g4.push("entpacken ∘ packen ist nicht die Identität");
+        if (!gleich(durch, bis(T2, [aus], K.gauEntpack(stand, F))))
+            fehl.g4.push("speichern → laden → weiterrechnen ≠ durchrechnen");
+        if (mutant !== "g4" && !gleich(halb, K.gauEntpack(stand, F)))
+            fehl.g4.push("entpacken ∘ packen ist nicht die Identität");
     }
     return { akt: fehl.akt.join(" · "), g3: fehl.g3.join(" · "), g4: fehl.g4.join(" · "), bytes };
 }
@@ -3020,13 +3450,34 @@ function gauUrteil(L, mutant) {
         u = { akt: String(e.message || e), g3: String(e.message || e), g4: String(e.message || e), bytes: 0 };
     }
     const grund = (f) => (u ? u[f] : "leben-core bestand trägt kein " + fehlt.join(" · "));
-    check("Gau, der Akt (E2): „aus“ nimmt den Kopf, „ein“ setzt ihn mit seinem Leib, ein fremder Takt-Stempel wirft", grund("akt") === "", grund("akt"));
-    check("Gau, Determinismus (G3): zwei Läufe byte-gleich · EIN „aus“ am Takt 100 weicht ab · derselbe Akt wieder byte-gleich", grund("g3") === "", grund("g3"));
-    check("Gau, Stand-Rundreise (G4): packen → entpacken → weiterrechnen = durchrechnen, byte-gleich" + (u && u.bytes ? " (" + u.bytes + " Bytes am 32er-Raster)" : ""), grund("g4") === "", grund("g4"));
+    check(
+        "Gau, der Akt (E2): „aus“ nimmt den Kopf, „ein“ setzt ihn mit seinem Leib, ein fremder Takt-Stempel wirft",
+        grund("akt") === "",
+        grund("akt")
+    );
+    check(
+        "Gau, Determinismus (G3): zwei Läufe byte-gleich · EIN „aus“ am Takt 100 weicht ab · derselbe Akt wieder byte-gleich",
+        grund("g3") === "",
+        grund("g3")
+    );
+    check(
+        "Gau, Stand-Rundreise (G4): packen → entpacken → weiterrechnen = durchrechnen, byte-gleich" +
+            (u && u.bytes ? " (" + u.bytes + " Bytes am 32er-Raster)" : ""),
+        grund("g4") === "",
+        grund("g4")
+    );
     if (u && !u.akt && !u.g3 && !u.g4)
-        for (const [m, name] of [["akt", "der Akt wirkt an einer Kopie"], ["g3", "der Wirt verliert den Akt"], ["g4", "der Stand vergisst die Fraß-Schicht"]]) {
+        for (const [m, name] of [
+            ["akt", "der Akt wirkt an einer Kopie"],
+            ["g3", "der Wirt verliert den Akt"],
+            ["g4", "der Stand vergisst die Fraß-Schicht"],
+        ]) {
             const r = gauUrteil(LK, m)[m];
-            check("Gau, Selbsttest: der Mutant „" + name + "“ fällt ROT", r !== "", r !== "" ? "" : "die Zeile blieb grün");
+            check(
+                "Gau, Selbsttest: der Mutant „" + name + "“ fällt ROT",
+                r !== "",
+                r !== "" ? "" : "die Zeile blieb grün"
+            );
         }
 }
 
