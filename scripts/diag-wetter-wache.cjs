@@ -143,87 +143,10 @@ function uhrQuelle() {
     return { rot: uhrRotVon(befunde, T), B: Object.values(befunde) };
 }
 // ── (K) DER KALENDER (zeit-ein-kalender): `spielZeit` ist die EINE laufende Größe; Tag, Tag der Prozesse, Pegel und Jahr sind
-// Funktionen von ihr durch die EINE Tag-Länge (`_kalender`, `_kalenderZeit`, das Gesetz `WELT_GESETZ_ERDE.kalender`). Statisch
-// (`--quelle`, am AST, je Datei und Glied): die Welt-Uhr und die Stunde schreiben nur ihre Schreiber (`schreiber`: der Takt, die
-// Regel der Welt-Uhr, der EINE Uhr-Schreiber — kein Takt biegt sie für seine Zeit), der Schritt 1/60 steht EINMAL (`FIXED_DT`),
-// eine Zahl 3600/2400 nur, wo die Tafel ihren Grund nennt (das Gesetz und was keine Länge des Kalenders ist), und die gefallenen
-// Zwillinge (`tot`) stehen in keinem Glied. Im Lauf (Null-Renderer): bei jeder Tag-Länge gehen Licht, Tag der Prozesse, Pegel
-// und Jahr im Verhältnis 1 (vor dem Kalender am 8-min-Tag 7,5 : 1 : 1 : 1). Jeder Täter ROT beim Namen (Datei:Zeile, Leser).
-const KALENDER_TAFEL = {
-    schreiber: [
-        "dirigent-takt startEternalLoop spielZeit",
-        "dirigent-takt _weltUhrNimm spielZeit",
-        "bild-himmel _uhrSetzen timeOfDay",
-    ],
-    schritt: ["koerper-bewegung FIXED_DT"],
-    zahlen: {
-        "daten WELT_GESETZ_ERDE": "das Gesetz: die Sekunden einer Stunde der Natur (`kalender.stundeS`)",
-        "bild-himmel _tickRain": "die Falte der Bild-Uhr im Vertex (float), keine Länge des Kalenders",
-        "dirigent-takt _wolkenSaat": "die Saat der Wolken-Uhr (< 1 h)",
-        "kreatur-leben BESTAND_REGION":
-            "aufholS: die Frist des Bestands auf der Welt-Uhr (das Leben rechnet in Sekunden)",
-        "vegetation-streu _wuchsPlan": "eine Anzahl (countCap)",
-        "netz-p2p _lockstepCaptureFrame": "die Länge der Spur (Einträge)",
-        "netz-p2p _lockstepTickPeers": "die Länge der Spur (Einträge)",
-        "werkstatt-hof _creatureLatestDeed": "die Anzeige des Alters (Wanduhr)",
-        "werkstatt-hof _renderHofChronik": "die Anzeige des Alters (Wanduhr)",
-    },
-    tot: ["PEGEL_TAG_S", "seasonYearSeconds", "WEATHER_TRANSITION_DURATION_MS"],
-};
-function kalenderBefund(t) {
-    const { ast, wandere, zeileVon } = require("./lib/stamm.cjs");
-    const aus = [];
-    const zustand = (o) => (o.type === "Identifier" && o.name === "st") || o.property?.name === "state";
-    wandere(ast(t), (n, A, k = klasse(A)) => {
-        const g =
-            k?.key.name ||
-            A.map((a) => (a.type === "FunctionDeclaration" ? a.id : istFn(a.init || a.value) && (a.id || a.key))).find(
-                Boolean
-            )?.name ||
-            A.find((a) => a.type === "AssignmentExpression" && a.left?.type === "MemberExpression")?.left.property.name;
-        const Z = zeileVon(t, n.start);
-        if (n.type === "Literal" && (n.value === 3600 || n.value === 2400)) aus.push(["zahl", g, Z, n.value]);
-        if (n.type === "BinaryExpression" && n.operator === "/" && n.left.value === 1 && n.right.value === 60)
-            aus.push(["schritt", g, Z, "1 / 60"]);
-        const l = n.type === "AssignmentExpression" && n.left.type === "MemberExpression" && n.left;
-        if (l && /^(spielZeit|timeOfDay)$/.test(l.property.name) && zustand(l.object))
-            aus.push(["schreiber", g, Z, l.property.name]);
-        if ((n.type === "Identifier" || n.type === "PrivateName") && KALENDER_TAFEL.tot.includes(n.name))
-            aus.push(["tot", g, Z, n.name]);
-    });
-    return aus;
-}
-function kalenderRotVon(befunde, T = KALENDER_TAFEL) {
-    const rot = [];
-    for (const [d, B] of Object.entries(befunde))
-        for (const [art, g, z, w] of B) {
-            const wo = `${d}:${z}`;
-            if (art === "schreiber" && !T.schreiber.includes(`${d} ${g} ${w}`))
-                rot.push(
-                    `(K) KALENDER ${g} schreibt die Uhr (state.${w}) — ${wo}: nur der Takt, die Regel der Welt-Uhr und der EINE Uhr-Schreiber`
-                );
-            if (art === "schritt" && !T.schritt.includes(`${d} ${g}`))
-                rot.push(`(K) KALENDER ${g} trägt den Schritt 1/60 neben FIXED_DT — ${wo}`);
-            if (art === "zahl" && !T.zahlen[`${d} ${g}`])
-                rot.push(
-                    `(K) KALENDER ${g} trägt die Zahl ${w} als Zeit ohne Grund — ${wo}: der Tag und das Jahr liest der Kalender`
-                );
-            if (art === "tot") rot.push(`(K) KALENDER ${g} liest den gefallenen Zwilling ${w} — ${wo}`);
-        }
-    return rot;
-}
-function kalenderQuelle() {
-    const [fs, path] = [require("fs"), require("path")];
-    const R = path.resolve(__dirname, "..");
-    const befunde = {};
-    for (const f of require("./lib/stamm.cjs").dateien(R))
-        befunde[f.replace(/^stamm\/|\.js$/g, "")] = kalenderBefund(fs.readFileSync(path.join(R, f), "utf8"));
-    const n = (art) => Object.values(befunde).reduce((s, B) => s + B.filter((b) => b[0] === art).length, 0);
-    return {
-        rot: kalenderRotVon(befunde),
-        zahl: { schreiber: n("schreiber"), schritt: n("schritt"), zahl: n("zahl"), tot: n("tot") },
-    };
-}
+// Funktionen von ihr durch die EINE Tag-Länge (`_kalender`, `_kalenderZeit`, das Gesetz `WELT_GESETZ_ERDE.kalender`). Die Schreiber
+// der Uhr, der Schritt 1/60 und die Zahlen des Jahrs hält die Ein-Schreiber-Wand (`spec/stamm/grundgroessen.json`, gate:constitution);
+// hier urteilt der Lauf (Null-Renderer): bei jeder Tag-Länge gehen Licht, Tag der Prozesse, Pegel und Jahr im Verhältnis 1 (vor dem
+// Kalender am 8-min-Tag 7,5 : 1 : 1 : 1). Jeder Leser, der davon abweicht, ist ROT beim Namen.
 // (K) das Urteil des Laufs (rein): je Tag-Länge die Tage, die Licht, Tag der Prozesse, Pegel und Jahr im selben Fenster der
 // Welt-Uhr gingen — jedes Verhältnis zum Licht 1 (±1 %: der Pegel liest die volle Sekunde), sonst ROT beim Leser.
 function kalenderRot(je) {
@@ -245,22 +168,8 @@ function kalenderRot(je) {
     return rot;
 }
 function kalenderSelbsttest() {
-    const K = (r) => `class A {\n${r}\n}`;
-    const Q = (text) =>
-        kalenderRotVon(
-            { a: kalenderBefund(K(text)) },
-            { ...KALENDER_TAFEL, schreiber: ["a _uhr timeOfDay"], schritt: [], zahlen: { "a _gesetz": 1 } }
-        );
     const j = (o) => ({ min: 8, welt: 240, licht: 0.5, prozess: 0.5, pegel: 0.5, jahr: 0.5, ...o });
     return [
-        [Q("_uhr(v) { this.state.timeOfDay = v; }\n_gesetz() { return 3600; }"), null],
-        [
-            Q("_bestandSchritt(R) { const st = this.state; st.spielZeit = R.t; }"),
-            /_bestandSchritt schreibt die Uhr \(state\.spielZeit\) — a:2/,
-        ],
-        [Q("_saisonAnkerGilt() { return 2400; }"), /_saisonAnkerGilt trägt die Zahl 2400/],
-        [Q("_tierSatzBacken() { return 1 / 60; }"), /_tierSatzBacken trägt den Schritt 1\/60/],
-        [Q("_jahr() { return this.state.seasonYearSeconds; }"), /liest den gefallenen Zwilling seasonYearSeconds/],
         [kalenderRot([j(), j({ min: 60 })]), null],
         [
             kalenderRot([j({ pegel: 0.0667 }), j({ min: 60 })]),
@@ -350,16 +259,12 @@ function uhrSelbsttest() {
 }
 if (process.argv.includes("--quelle")) {
     const { rot, B } = uhrQuelle();
-    const KQ = kalenderQuelle();
     const n = (k) => B.reduce((s, b) => s + b[k].length, 0);
     console.log(
         `=== (W) WANDUHR — ${n("leser")} Leser der Gerätezeit in ${B.length} Dateien, ${n("weiter")} Weitergaben des rAF-Stempels (${UHR_TAFEL}) ===`
     );
-    console.log(
-        `=== (K) KALENDER — ${KQ.zahl.schreiber} Schreiber der Uhr, ${KQ.zahl.schritt}× 1/60, ${KQ.zahl.zahl} Zahlen 3600/2400 mit Grund, ${KQ.zahl.tot} gefallene Zwillinge ===`
-    );
     wandEnde(
-        [...rot, ...KQ.rot, ...uhrSelbsttest(), ...kalenderSelbsttest()],
+        [...rot, ...uhrSelbsttest()],
         "jeder Leser der Gerätezeit steht mit Grund in der Tafel; die Welt liest ihre eigene Uhr."
     );
     process.exit(0);

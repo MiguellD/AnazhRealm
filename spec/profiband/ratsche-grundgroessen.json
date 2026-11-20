@@ -2,12 +2,7 @@
     "zweck": "Die Ratsche der Ein-Schreiber-Wand (gate:constitution Teil 2, das Gesetz: spec/stamm/grundgroessen.json): je Grundgröße und Datei die Zwillinge von heute beim Anker (ein Textstück der Treffer-Zeile, `×n` = n Treffer). Vom Werkzeug geschrieben (`--schrumpfen`), sie sinkt nur: ein Anker ohne Treffer ist ROT, ein Treffer ohne Anker ist ROT — nie ein neuer Anker von Hand.",
     "zwillinge": {
         "zeit": {
-            "stamm/daten.js": ["PEGEL_TAG_S"],
-            "stamm/bild-himmel.js": ["seasonYearSeconds : 2400 ×2"],
-            "stamm/kreatur-leben.js": ["spielZeit ×2", "1 / 60 ×2"],
-            "stamm/kreatur-verhalten.js": ["1 / 60"],
-            "stamm/feld-leben.js": ["tagNull = (wm.tag", "spielZeit ×2"],
-            "stamm/speicher-laden.js": ["seasonYearSeconds : 2400"],
+            "stamm/feld-leben.js": ["tagNull = (wm.tag"],
             "stamm/werkstatt-vorschau.js": ["performance.now() / 1000"],
             "vehicle-core.js": ["1 / 60"],
             "koerper-core.js": ["1 / 60"],
@@ -25,7 +20,6 @@
             "stamm/vegetation-wiese.js": ["0x6d2b79f5 ×2"],
             "stamm/vegetation-baum.js": ["0x6d2b79f5"],
             "stamm/bild-sicht.js": ["1664525"],
-            "stamm/bild-himmel.js": ["0x6d2b79f5"],
             "stamm/klang.js": ["Math.random ×2", "0x6d2b79f5", "1664525 ×2"],
             "stamm/feld-leben.js": ["Math.random"],
             "stamm/speicher-welten.js": ["Math.random ×4"],
