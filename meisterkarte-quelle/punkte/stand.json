@@ -878,7 +878,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 90 s von gelaende.K2#1) — offen, UNGEMESSEN",
      "gehalten": true
     },
     {
@@ -964,7 +964,7 @@
      "gruen": true,
      "zahl": "Strömung 4 von 4 Fluss-Orten (Soll 4 von 4: Schwimmer, Boot, Tier > 0,5 m in 90 Takten, ohne Strömung < 0,05): schwimmer 1.8/0 boot 1.8/0 tier 1.8/0 | schwimmer 1.629/0 boot 1.666/0 tier 1.666/0 | schwimmer 1.114/0 boot 1.758/0 tier 1.758/0 | schwimmer 1.315/0 boot 1.666/0 tier 1.666/0 · Bilder 4/4",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +23)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +23) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 208 s von gelaende.K4#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2084,7 +2084,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 95 s von luftwasser.K3#1) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -2113,7 +2113,7 @@
      "gruen": true,
      "zahl": "Bach -309.768/-822.525: Trupp 12 Fische, Spieler am Stand → 0 binnen 3 m, der nächste 4.764 m, heim nach 20 s 12 (100 %, Soll ≥ 60 %) · Bild tier:fisch 3508 / 0 px",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +22)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/licht-linsen.cjs +22) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 88 s von luftwasser.K3#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2422,7 +2422,7 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 77/77 ≥ 0,9 (min 0.983), Wege je Tag 4–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1232 Lagen über ±2 m (max 1.826 m), Sprünge 0, Plan bit-gleich true | Schmiede 2 Werk(e): 10 Uhr 2 am Werk (> 0), 2 Uhr 0 (= 0) GRÜN",
      "sha": "ee9c196544e4376ea20c95921c852ad931bc1604",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +41) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +41) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 325 s von karte2.mensch.menge.bild#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2510,7 +2510,7 @@
      "gruen": true,
      "zahl": "rathaus/rathaus #952: Kopf-Zuwendung ab 3 m 0.283 / 0 / 0 / 0 s (Vorbeigang ab 73°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.44 / 1.44 / 1.834 m (Radien 0,7) · ohne Erinnerung 1.44, Gegenprobe 1.44, nach der Gewalt 1.834 m (Furcht 1)",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +44) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +44) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 90 s von mensch.K5#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3368,7 +3368,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.6 σ 21.5 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +91) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, index.html +91) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 151 s von siedlung.K4#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3562,7 +3562,7 @@
      "gruen": true,
      "zahl": "Taten im Stand und Blick vor 100/100 · nach dem Laden 100/100 · bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.18 %) · Pflicht vor {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · nach {\"bau\":50,\"grube\":50,\"wasser\":2,\"soll\":100} · [linse-gpu] amd/rdna-3",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +23) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +23) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 90 s von speicher.K4#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4538,7 +4538,7 @@
      "gruen": true,
      "zahl": "44 Häuser des Start-Dorfs, 58/58 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 20583 px",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, phyto-core.js +36)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, phyto-core.js +36) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 537 s von vegetation.K4#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -5946,7 +5946,7 @@
      "gruen": true,
      "zahl": "✅ Wind r 0.65 bei Lag 0 (n 104, CV Bild 0.29 / Ohr 0.63, Klang an) · ✅ Zensus: Wiese wind -36.3 · vogel -42 dB aus 13 Leibern (13 gezeichnet) · fahrend wind -36.3 · Dorf glut -27.2 · Feuer auf Armlänge glut -15.2",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-klang-zensus.cjs, scripts/lib/albedo-tafel.cjs +45) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: phyto-core.js, scripts/diag-klang-zensus.cjs, scripts/lib/albedo-tafel.cjs +45) — zuletzt an 31ea3847: Last: Referenz f 2,232 (Faden 2,021 · alle Kerne 2,232; vor 159,9/586,1 ms, nach 121,6/393,5 ms, Ruhe 79,1/262,6 ms seit 2026-11-17) · fremd: chrome.exe --type=renderer --noerrdialogs --user-data-dir=",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -7885,7 +7885,7 @@
   },
   "karte2.erleben.schoepfen.schutz": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 2/2 feindliche Welten am Welt-Tor abgewiesen, die eigene Welt im Bild gleich (Werk bank_sitzbank 13.0 % des Bilds) · gesetz abgewiesen Δ 0.00 % · pflug abgewiesen Δ 0.00 % · Werk-Codes abgewiesen 3/3 (Lesewert) · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.schoepfen.schutz#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +48) · karte2.erleben.schoepfen.schutz#2 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#2 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#3 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#3 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#4 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#4 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#5 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#5 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#6 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 2/2 feindliche Welten am Welt-Tor abgewiesen, die eigene Welt im Bild gleich (Werk bank_sitzbank 13.0 % des Bilds) · gesetz abgewiesen Δ 0.00 % · pflug abgewiesen Δ 0.00 % · Werk-Codes abgewiesen 3/3 (Lesewert) · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.schoepfen.schutz#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +48) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 120 s von karte2.erleben.schoepfen.teilen#1) — offen, UNGEMESSEN · karte2.erleben.schoepfen.schutz#2 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#2 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#3 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#3 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#4 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#4 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#5 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#5 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.schutz#6 radeon: Konsum seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6) · karte2.erleben.schoepfen.schutz#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.schutz#1",
@@ -7893,7 +7893,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +48)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +48) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 120 s von karte2.erleben.schoepfen.teilen#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -8008,7 +8008,7 @@
   },
   "karte2.erleben.schoepfen.teilen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.schoepfen.teilen#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +48) · karte2.erleben.schoepfen.teilen#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +7) · karte2.erleben.schoepfen.teilen#2 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.teilen#3 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +7) · karte2.erleben.schoepfen.teilen#3 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.teilen#4 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +7) · karte2.erleben.schoepfen.teilen#4 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.teilen#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.teilen#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.teilen#6 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +7) · karte2.erleben.schoepfen.teilen#6 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 2/2 Werke: Original ↔ Import an derselben Kamera gleich · bank_sitzbank Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 11.7 % · eigen_bruecke Δ 0.00 % · Rauschen 0.00 % · Werk im Bild 17.2 % · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.schoepfen.teilen#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +48) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 120 s von karte2.erleben.schoepfen.teilen#1) — offen, UNGEMESSEN · karte2.erleben.schoepfen.teilen#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +7) · karte2.erleben.schoepfen.teilen#2 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.teilen#3 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +7) · karte2.erleben.schoepfen.teilen#3 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.teilen#4 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +7) · karte2.erleben.schoepfen.teilen#4 gtx: Station seit der Messung geändert · karte2.erleben.schoepfen.teilen#5 radeon: ungemessen (R10) · karte2.erleben.schoepfen.teilen#5 gtx: ungemessen (R10) · karte2.erleben.schoepfen.teilen#6 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +7) · karte2.erleben.schoepfen.teilen#6 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "karte2.erleben.schoepfen.teilen#1",
@@ -8016,7 +8016,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +48)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, foundry-core.js +48) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 120 s von karte2.erleben.schoepfen.teilen#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -8810,7 +8810,7 @@
      "gruen": true,
      "zahl": "S1 · GRÜN ✅ rueckkehr_s 3,51 (Soll ≤ 5)",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 60 s von karte2.erleben.sinn.tod#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "beide": true
     },
@@ -10521,7 +10521,7 @@
      "gruen": true,
      "zahl": "4/4 Verb-Gruppen ändern die Welt sichtbar · Aufstellung gehen 0.01 s, bauen 0 s, fahren 0.2 s, kaempfen 0.01 s · gehen Änderung Δ 3.32 % (Rauschen 0.05 %) · bauen Änderung Δ 2.12 % (Rauschen 0.00 %) · fahren Änderung Δ 3.55 % (Rauschen 0.04 %) · kaempfen Änderung Δ 0.82 % (Rauschen 0.20 %) · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 245 s von karte2.erleben.spieler.rolle#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "beide": true
     },
@@ -12501,7 +12501,7 @@
      "gruen": true,
      "zahl": "8 Saaten · hirsche 0.354 [0.16, 0.556] · jungwuchs -0.225 [-0.334, -0.113] · woelfe -0.428 [-0.597, -0.26] · mutante 0.579 [0.513, 0.65] · Mutante ROT · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +24)",
+     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +24) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 420 s von karte2.leben.oeko.netz#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -12637,7 +12637,7 @@
      "gruen": true,
      "zahl": "8 Saaten · 29 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.81× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +24)",
+     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +24) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 420 s von karte2.leben.oeko.netz#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -14381,7 +14381,7 @@
      "gruen": true,
      "zahl": "8 Saaten · Grundbestand min 9.43 · halbe Nahrung -0.355 [-0.474, -0.205] · 17313 Hungertode, 17313 die Ältesten · Takte an der Kappe 0 · [linse-gpu] amd/rdna-3",
      "sha": "7de938ab63f59822e48b121a70a15d31f16f2489",
-     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +24)",
+     "grund": "Konsum seit der Messung geändert (R6: save-server.js, scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs +24) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 420 s von karte2.leben.oeko.netz#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -15870,7 +15870,7 @@
      "gruen": true,
      "zahl": "6 von 17 Gängen Tür → Keller → Dachboden ganz ohne Sprung > 0,3 m (Soll ≥ 1), Hub max 0.20 m (Soll ≤ 0,3), Sprung > 0,3 m 0 · ganz: haus_schwarzwald, haus_schwarzwald, haus_alpenchalet",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +27) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/albedo-tafel.cjs +27) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 270 s von karte2.mensch.bau.innen#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -20758,7 +20758,7 @@
      "gruen": true,
      "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +20)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +20) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 158 s von karte2.mensch.stadt.siedlungsnetz#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -21090,7 +21090,7 @@
      "gruen": true,
      "zahl": "25 Menschen im Bild, 15 gehend (Soll ≥ 10 · ≥ 3) am Dorfplatz um 08:04 (Soll 08:00), third · Stände 77, davon mit Leib 1 · 34.3 fps · [linse-gpu] amd/rdna-3",
      "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +40)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +40) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 93 s unter dem Grund-Deckel 325 s von karte2.mensch.menge.bild#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -24790,7 +24790,7 @@
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
      "sha": "d39e0d6e256ad44dbd8c338b1c870ef868ff2035",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +19) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, index.html, scripts/diag-settlement.cjs +19) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 158 s von karte2.mensch.stadt.siedlungsnetz#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -28043,8 +28043,9 @@
      "gruen": true,
      "zahl": "Gipfel -3880.4/198.937/-3745.6, 2229 freie Punkte 49.284–199.904 m über dem Meer · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · fruehling Bild 68.393 m · Gesetz 95.058 m (Versatz -106, Treffer 0.84 aus 2068, Falsch 0.028 aus 36) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · herbst Bild 152.416 m · Gesetz 152.999 m (Versatz -24, Treffer 0.85 aus 1736, Falsch 0.002 aus 433) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
      "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +12)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -31757,8 +31758,9 @@
      "gruen": true,
      "zahl": "am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3",
      "sha": "e489088a9bfca46817cd159efd64ffc1be80dbd4",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs, scripts/lib/sicht-linse.cjs +12)",
      "gehalten": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -36643,7 +36645,7 @@
      "gruen": true,
      "zahl": "4 Kalt-Boots, 4 mit Kontrolle von außen: 9.16 s · 8.30 s · 7.16 s · 7.08 s (max 9.16 s, Soll ≤ 60 s) · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, index.html, save-server.js +29) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991611111111106\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, index.html, save-server.js +29) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 330 s von karte2.same.preis.ankunft#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -36913,7 +36915,7 @@
      "gruen": true,
      "zahl": "4 Kalt-Boots, roh je Boot 32.11 MB · 32.11 MB · 32.11 MB · 32.11 MB (max 32.11 MB, Soll ≤ 50.00 MB), am größten 16.85 MB Draht, 179 Anfragen, bis zur Kontrolle 32.11 MB, 25 Ziele (24 Worker), am schwersten /fachwerk-core.js?v=18.546.317 0.98 MB | /fachwerk-core.js?v=18.546.317 0.98 MB · vor dem Lauf geschlossen (ohne eigene Anfrage): Boot 2 worker · Boot 3 worker+worker · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, index.html, save-server.js +30)",
+     "grund": "Konsum seit der Messung geändert (R6: foundry-bruecke.js, index.html, save-server.js +30) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 330 s von karte2.same.preis.ankunft#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -37623,7 +37625,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 321,
+  "konsum": 323,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -37864,10 +37866,10 @@
    "karte2.planet.wetter.wolken#6 radeon",
    "pflicht.C#1 headless"
   ],
-  "ohne": 3226
+  "ohne": 3224
  },
  "kopfVoll": "e0d37353c81bcc6e5bc64febb5522ee6cdc9c127",
- "zeit": "2026-11-20T16:20:02.632Z",
+ "zeit": "2026-11-20T16:57:16.571Z",
  "vorher": "e0d37353",
  "bilanz": {
   "gewinn": [],

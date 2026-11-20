@@ -906,3 +906,4 @@
 2026-11-20T15:40 karte=219 (gebucht am a71e06c7, buche.sh) karte2=36
 2026-11-20T16:22 karte=219 (gebucht am e0d37353, buche.sh) karte2=36
 2026-11-20T17:20 karte=219 (gebucht am e0d37353, buche.sh) karte2=35
+2026-11-20T17:57 karte=219 (gebucht am e0d37353, buche.sh) karte2=36

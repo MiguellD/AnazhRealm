@@ -15259,10 +15259,10 @@
    "summe": {
     "kriterien": 28,
     "sprossen": 198,
-    "heute": 6,
+    "heute": 7,
     "kern": 0,
     "kernDazu": 0,
-    "anteilHeute": 3.1,
+    "anteilHeute": 3.9,
     "anteilKern": 0
    },
    "perspektiven": [
@@ -16782,7 +16782,7 @@
        "richter": "N = 100 Körper log-gleichverteilt über 12 Größenordnungen: Verhalten im Band der dimensionslosen Gesetze ≥ 90 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "ungemessen",
      "beleg": "Körper- und Fahrt-Physik im Mensch-Maßstab vorhanden, gegen die Formel ungemessen; keine Physik über den Maßstab.",
@@ -20088,11 +20088,11 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 35,
+  "heute": 36,
   "davonKopplungen": 33,
   "kern": 7,
   "kernDazu": 7,
-  "anteilHeute": 2.1,
+  "anteilHeute": 2.2,
   "anteilKern": 0.3,
   "kapitel": 7,
   "perspektiven": 42,
@@ -20103,7 +20103,7 @@
   },
   "gliederLeitern": 9,
   "beide": 32,
-  "nachwache": 3
+  "nachwache": 4
  },
  "zusammengelegt": [
   {
