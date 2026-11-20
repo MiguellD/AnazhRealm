@@ -252,7 +252,13 @@ class AnazhRealm_studio_stoff {
         const nah = T.abs(T.dot(zumAuge, welt(n))).max(0.05);
         const sicht = (achse, M, Mz) =>
             T.clamp(
-                T.float(1.0).sub(tiefe.mul(T.abs(T.dot(zumAuge, welt(achse)))).div(nah).mul(Mz).div(M.mul(2.0))),
+                T.float(1.0).sub(
+                    tiefe
+                        .mul(T.abs(T.dot(zumAuge, welt(achse))))
+                        .div(nah)
+                        .mul(Mz)
+                        .div(M.mul(2.0))
+                ),
                 1e-3,
                 1.0
             );
@@ -293,7 +299,8 @@ class AnazhRealm_studio_stoff {
             ecken != null &&
             (typeof ecken !== "object" ||
                 Object.entries(ecken).some(
-                    ([k, v]) => (k !== "ton" && k !== "jahr" && k !== "verband" && k !== "lage") || typeof v !== "boolean"
+                    ([k, v]) =>
+                        (k !== "ton" && k !== "jahr" && k !== "verband" && k !== "lage") || typeof v !== "boolean"
                 ))
         )
             throw this._stoffBruch(
