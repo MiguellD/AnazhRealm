@@ -1895,3 +1895,4 @@ omen-gtx-gtx-f68dbf09-w030546-1-f68dbf09 UNGEMESSEN 2 GRÜN / 0 ROT / 3 UNGEMESS
 2026-11-20 06:42 RUNDE 2 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 60/1428, Station karte2.mensch.sport.mannschaft#7, Kopf 31ea3847) — gesehen von gtx (landung-dienst)
 2026-11-20 07:21 RUNDE 2 ALARM radeon: ohne Fortschritt seit 16 min (weicht, 370/1428, Station -, Kopf 31ea3847) — gesehen von radeon (radeon-dienst)
 2026-11-20 07:28 RUNDE 2 ALARM gtx: ohne Fortschritt seit 17 min (laeuft, 286/1428, Station karte2.mensch.macht.stand#6, Kopf 31ea3847) — gesehen von gtx (landung-dienst)
+2026-11-20 07:48 RUNDE 2 ALARM gtx: ohne Fortschritt seit 16 min (laeuft, 295/1428, Station karte2.mensch.macht.krieg#9, Kopf 31ea3847) — gesehen von radeon (radeon-dienst)
