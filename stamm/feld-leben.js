@@ -1817,7 +1817,9 @@ class AnazhRealm_feld_leben {
     // die dynamische Achse `emotion` + die Zeit `t`. Wer eine „lebendige Welt"-Wirkung baut, LIEST hier
     // (kein eigener _tickX). `emotion` ist eine Live-Referenz — nicht mutieren. `uhr` (s der Welt-Uhr): der Augenblick, zu dem
     // das Feld gelesen wird (der Takt des Bestands auf seinem Raster) — ohne ihn jetzt; die Welt-Uhr selbst biegt kein Leser.
-    auraAt(x, z, t = 0, uhr = this.state.spielZeit) {
+    auraAt(x, z, t = 0, uhr) {
+        const jetzt = uhr === undefined;
+        if (jetzt) uhr = this.state.spielZeit;
         const f = this.worldFieldAt(x, z);
         const e = (this.state.player && this.state.player.emotions) || {};
         // SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem frozen Substrat, der Fraß senkt es (geklemmt auf 0..1, nie
@@ -1827,8 +1829,9 @@ class AnazhRealm_feld_leben {
         const narbe = this._narbeAt(x, z, uhr);
         // DER FRASS DES GAUS (Leben C2b, E3): was die Herde des Gesetzes ließ, steht als Schicht im Zustand des Gaus — das nahe
         // Feld LIEST sie am Ort (`_gauFrassAt`: die Zelle des Reviers aus dem letzten Bild, ≤ 0 abgeäst, 0 ohne Bild), nie schreibt
-        // der Stamm sie ins Overlay. Bis hier las sie nur die Nahrung der Altlast (`_kreaturNahrung`): der Spieler sah keine Äsung.
-        const gau = this._gauFrassAt(x, z);
+        // der Stamm sie ins Overlay. Ein Leser mit Stempel (`uhr`: der Takt des Bestands, der Brand) liest sie NICHT — sie trägt die
+        // Zeit des letzten Bilds der Seite, nie die des Takts (Mehrspieler-Gleichlauf; die Beute liest er an der Spur, `_gauBeuteAm`).
+        const gau = jetzt ? this._gauFrassAt(x, z) : 0;
         // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
         // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
         // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
@@ -2116,6 +2119,7 @@ class AnazhRealm_feld_leben {
     _feldAktFremd(f, w, sofort = true) {
         const zahl = (v) => Number.isFinite(v);
         if (!f || typeof f !== "object" || !zahl(w)) return false;
+        if (f.art === "gau") return this._gauAktFremd(f); // ein Akt eines Gaus (Leben C2b) wirkt zu seinem Takt
         if (f.art === "leben")
             return zahl(f.x) && zahl(f.z) && zahl(f.a) && Math.abs(f.a) <= 1
                 ? this._feldAkt({ art: "leben", w, x: f.x, z: f.z, a: f.a }, false, sofort, true)

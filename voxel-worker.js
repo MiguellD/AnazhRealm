@@ -460,6 +460,10 @@ function nachricht(e) {
 // Auftrag: { samen, gx, gz, x0, z0, n, seite, zn, beute, saat, wirt, takt, akte, lesen?, packen?, stand?, tode? }
 // Antwort: { gx, gz, takt, beute, jaeger, rudel, feld { land, zellen, kSumme }, zeit, reviere?, stand?, tode? }
 // Ein Gau, den die Seite nicht mehr hält, geht (`gau-geht`: Feld und Lauf — sein Stand lebt als Bytes bei der Seite).
+// DIE SPUR DER BEUTE (`spur` je Gau): die Köpfe der Beute je Revier an jedem der letzten GAU_SPUR Takte — der Takt der Altlast
+// liest sie an SEINEM Takt (Mehrspieler-Gleichlauf: das Bild der Seite steht auf ihrer Zeit, der Takt auf der des Felds); die
+// Stunde des Aufholens (BESTAND_REGION.aufholS 3600 s / taktS 10) und ein Rand
+const GAU_SPUR = 400;
 const gaue = new Map();
 const gauFelder = new Map();
 const gauKerne = new Map();
@@ -580,12 +584,25 @@ function gauAuftrag(msg) {
     const key = [feldKey, msg.saat, JSON.stringify(msg.wirt)].join("|");
     let e = gaue.get(key);
     if (!e) gaue.set(key, (e = Object.assign(gauFeldAm(K, msg.n, roh), { gx: msg.gx, gz: msg.gz, g: null, akte: [] })));
+    const N = msg.n * msg.n;
+    if (!e.spurT)
+        [e.spurT, e.spurN, e.spurUnten] = [new Int32Array(GAU_SPUR).fill(-1), new Int16Array(GAU_SPUR * N), 0];
+    const hat = (k) => e.spurT[k % GAU_SPUR] === k;
+    const merke = () => {
+        const [k, z] = [e.g.z.takt, e.g.z];
+        const s = k % GAU_SPUR;
+        e.spurT[s] = k;
+        for (let i = 0; i < N; i++) e.spurN[s * N + i] = z.beute[i].length;
+    };
     const akte = msg.akte || [];
     const zeilen = akte.map((a) => JSON.stringify(a));
     if (msg.stand) {
         // der Stand reist herein: er trägt, wie viele Akte in ihm schon wirkten (`aktN`) — die Liste des Auftrags beginnt mit ihnen
         e.g = K.gauEntpack(msg.stand, e.F);
         e.akte = zeilen.slice(0, e.g.aktN);
+        // vor dem Stand kennt der Faden keinen Takt: die Spur beginnt an ihm (ein Leser davor liest seinen ersten)
+        e.spurT.fill(-1);
+        e.spurUnten = e.g.z.takt;
     }
     // derselbe Lauf geht weiter, wenn der Auftrag nicht vor ihm liegt und seine Akte mit den gewirkten beginnen; sonst ab Takt 0
     const weiter =
@@ -593,13 +610,20 @@ function gauAuftrag(msg) {
         msg.takt >= e.g.z.takt &&
         e.akte.length >= e.g.aktN &&
         e.akte.slice(0, e.g.aktN).every((s, k) => s === zeilen[k]) &&
-        !(zeilen.length > e.g.aktN && akte[e.g.aktN].takt < e.g.z.takt);
+        !(zeilen.length > e.g.aktN && akte[e.g.aktN].takt < e.g.z.takt) &&
+        // eine Spur, die vor dem Lauf beginnen soll und die der Faden nicht mehr hält, rechnet ihn neu (seit dem Stand: ab ihm)
+        !(msg.spurAb != null && msg.spurAb >= e.spurUnten && msg.spurAb < e.g.z.takt && !hat(msg.spurAb));
     if (!weiter) {
         zeit.abNull = !!e.g;
         e.g = K.gauAnfang(e.F, msg.saat);
+        e.spurUnten = 0;
+        e.spurT.fill(-1);
     }
     const [r0, von] = [performance.now(), e.g.z.takt];
-    K.gauBis(e.g, msg.takt, akte);
+    // Takt für Takt derselbe Lauf wie `gauBis` am Ziel (je Takt wirken die Akte bis zu ihm), jeder Takt in die Spur
+    K.gauBis(e.g, e.g.z.takt, akte);
+    merke();
+    while (e.g.z.takt < msg.takt) (K.gauBis(e.g, e.g.z.takt + 1, akte), merke());
     e.akte = zeilen;
     zeit.rechenMs = performance.now() - r0;
     zeit.takte = e.g.z.takt - von;
@@ -620,6 +644,18 @@ function gauAuftrag(msg) {
             s: Array.from(e.F.S.subarray(i * e.F.Z, (i + 1) * e.F.Z)),
             lr: Array.from(e.F.LR.subarray(i * e.F.Z, (i + 1) * e.F.Z)),
         }));
+    // die Spur der gelesenen Reviere ab `spurAb` (nie vor dem ersten Takt, den der Faden hält): je Takt eine Zeile
+    if (msg.lesen && msg.spurAb != null) {
+        let ab = Math.max(msg.spurAb, e.spurUnten, msg.takt - GAU_SPUR + 1);
+        while (ab < msg.takt && !hat(ab)) ab++;
+        const L = msg.lesen;
+        const n = msg.takt - ab + 1;
+        const beute = new Int16Array(n * L.length);
+        for (let k = 0; k < n; k++)
+            for (let j = 0; j < L.length; j++) beute[k * L.length + j] = e.spurN[((ab + k) % GAU_SPUR) * N + L[j]];
+        antwort.spur = { von: ab, unten: e.spurUnten, beute };
+        transfer.push(beute.buffer);
+    }
     // die Tode des letzten Takts (nur eine Linse fragt sie, Takt für Takt): Kennung, Gattung, Ursache, Revier
     if (msg.tode) antwort.tode = (z.ereignis ? z.ereignis.tod : []).map((d) => ({ id: d.t.id, g: d.t.g, ursache: d.ursache, wo: d.wo })); // prettier-ignore
     if (msg.packen) {

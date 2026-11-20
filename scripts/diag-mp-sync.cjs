@@ -297,7 +297,7 @@ function lebenBefund(A, B) {
     if (be.length || a.bestand.length !== b.bestand.length)
         teile.push(
             `BESTAND verschieden in ${be.length} von ${a.bestand.length} Regionen` +
-                be.slice(0, 2).map((x) => { const y = bB.get(x[0]) || []; return ` (${x[0]}: t ${x[1]}/${y[1]}, seq ${x[2]}/${y[2]}, Tiere ${x[3].split(" ").length}/${String(y[3] || "").split(" ").length})`; }).join("")
+                be.slice(0, 2).map((x) => { const y = bB.get(x[0]) || []; return ` (${x[0]}: t ${x[1]}/${y[1]}, Tiere ${String(x[2]).split(" ").length}/${String(y[2] || "").split(" ").length}; nur A ${String(x[2]).split(" ").filter((q) => !String(y[2] || "").split(" ").includes(q)).slice(0, 3).join(" ")} · nur B ${String(y[2] || "").split(" ").filter((q) => !String(x[2]).split(" ").includes(q)).slice(0, 3).join(" ")})`; }).join("")
         );
     const [gA, gB] = [new Set(a.gewirkt), new Set(b.gewirkt)];
     const [nurA, nurB] = [a.gewirkt.filter((k) => !gB.has(k)), b.gewirkt.filter((k) => !gA.has(k))];

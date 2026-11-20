@@ -267,6 +267,7 @@ class AnazhRealm_kreatur_erbe {
         if (opt.packen) msg.packen = true;
         if (opt.tode) msg.tode = true; // nur eine Linse: die Tode des letzten Takts (Kennung, Gattung, Ursache, Revier)
         if (opt.stand) msg.stand = opt.stand;
+        if (opt.spurAb != null) msg.spurAb = opt.spurAb; // die Spur der Beute ab diesem Takt (`_gauSpurAb`)
         return this._fadenQuelle().then(() => this._gauFrage(msg, opt.stand ? [opt.stand.buffer] : []));
     }
     // EIN GAU GEHT: die Seite hält ihn nicht mehr (er liegt nicht mehr am Schirm) — der Faden lässt Feld und Lauf fallen; kommt
@@ -307,7 +308,40 @@ class AnazhRealm_kreatur_erbe {
     }
     // DER GAU BIS ZUM TAKT, mit den Akten, die der Wirt für ihn hält (`_gauAuftrag`) — der Ruf jedes Lesers der Seite.
     _gauBis(gx, gz, takt, opt) {
+        const ab = opt && opt.lesen ? this._gauSpurAb(this._gauBild(gx, gz), opt.lesen, takt) : null;
+        if (ab != null) opt = Object.assign({}, opt, { spurAb: ab });
         return this._gauAuftrag(gx, gz, takt, (this._gauHalt().get(gx + "," + gz) || []).slice(), opt);
+    }
+    // DIE SPUR DER BEUTE AM TAKT DER ALTLAST (Mehrspieler-Gleichlauf): der Takt einer Region liest die Köpfe der Beute ihres Reviers
+    // an SEINEM Takt (`_gauBeuteAm`), nie am Bild der Seite — das steht auf ihrer Zeit, der Takt auf der des Felds (die
+    // Mehrspieler-Wand: der Bestand der Altlast verschieden in 3 von 4 Regionen). Die Seite bestellt die Spur ab dem ersten Takt,
+    // der einer Region der Altlast fehlt (ihr nächster, `R.t` + taktS; eine Region, die noch nicht steht, beginnt aufholS vor jetzt).
+    _gauSpurRevier(gx, gz, i) {
+        const n = AnazhRealm.GAU.n;
+        const key = gx * n - n / 2 + (i % n) + "," + (gz * n - n / 2 + Math.floor(i / n));
+        return this._bestandRegionen().regionen[key] || this._bestandNah().includes(key) ? key : null;
+    }
+    _gauSpurAb(b, lesen, takt) {
+        const T = AnazhRealm._bestandGesetz().B.taktS;
+        const frisch = Math.floor(((this.state.spielZeit || 0) - AnazhRealm.BESTAND_REGION.aufholS) / T) + 1;
+        let ab = null;
+        for (const i of lesen) {
+            const key = this._gauSpurRevier(b.gx, b.gz, i);
+            if (!key) continue;
+            const R = this._bestandRegionen().regionen[key];
+            let k = Math.max(0, R ? R.t / T + 1 : frisch);
+            const m = b.spur.get(i);
+            while (m && m.has(k) && k <= takt) k++;
+            ab = ab == null ? k : Math.min(ab, k);
+        }
+        return ab == null ? null : Math.min(ab, takt);
+    }
+    _gauBeuteAm(key, k) {
+        const [ix, iz] = key.split(",").map(Number);
+        const o = this._gauOrt(ix, iz);
+        const b = this._gauBildStand && this._gauBilder().get(o.gx + "," + o.gz);
+        const m = b && b.spur.get(o.revier);
+        return m ? m.get(Math.max(k, b.spurUnten)) : undefined;
     }
     // DIE AKTE DER GAUE IM STAND: [[„gx,gz“, [Akt, …]], …] — nur Gaue mit Akten (ein Gau ohne Akte ist reine Funktion der Saat).
     _gauImStand() {
@@ -318,8 +352,24 @@ class AnazhRealm_kreatur_erbe {
     _gauAusStand(v) {
         const H = this._gauHalt();
         H.clear();
-        const gilt = (a) =>
-            a &&
+        for (const z of Array.isArray(v) ? v : []) {
+            if (!Array.isArray(z) || !/^-?\d+,-?\d+$/.test(z[0]) || !Array.isArray(z[1])) continue;
+            const [gx, gz] = z[0].split(",").map(Number);
+            for (const a of z[1]) {
+                if (!this._gauAktGilt(a)) {
+                    this._bruchMelden(
+                        `GAU: der Stand trägt im Gau ${z[0]} einen Akt ohne Form — seine Reihe endet vor ihm`
+                    );
+                    break;
+                }
+                this._gauAkt(gx, gz, { ...a });
+            }
+        }
+    }
+    // DIE FORM EINES AKTS AUS FREMDER HAND (Stand, Draht): Takt, Kennung, Art — „ein“ mit Rolle, Revier, Alter und Erbe.
+    _gauAktGilt(a) {
+        return (
+            !!a &&
             Number.isInteger(a.takt) &&
             a.takt >= 0 &&
             typeof a.id === "string" &&
@@ -331,20 +381,28 @@ class AnazhRealm_kreatur_erbe {
                     Number.isInteger(a.revier) &&
                     Number.isFinite(a.alterS) &&
                     this._lebenErbeGilt(a.a) &&
-                    this._lebenErbeGilt(a.e)));
-        for (const z of Array.isArray(v) ? v : []) {
-            if (!Array.isArray(z) || !/^-?\d+,-?\d+$/.test(z[0]) || !Array.isArray(z[1])) continue;
-            const [gx, gz] = z[0].split(",").map(Number);
-            for (const a of z[1]) {
-                if (!gilt(a)) {
-                    this._bruchMelden(
-                        `GAU: der Stand trägt im Gau ${z[0]} einen Akt ohne Form — seine Reihe endet vor ihm`
-                    );
-                    break;
-                }
-                this._gauAkt(gx, gz, { ...a });
-            }
-        }
+                    this._lebenErbeGilt(a.e)))
+        );
+    }
+    // DER AKT REIST (Mehrspieler-Gleichlauf, wie die Annahme der Altlast `_feldAkt`): der Gau ist die Funktion von Saat, Akten und
+    // Takt — auf jeder Seite derselbe nur mit denselben Akten. Der eigene Akt tritt in die Reihe und reist über den dsl-Kanal (mit
+    // dem Stempel seines Takts, nachgeholt wie jeder Akt, `_aktSenden`); der fremde tritt in dieselbe Reihe (`_gauAktFremd`), und
+    // die Spur seines Gaus ab seinem Takt fällt — sie war ohne ihn gerechnet, der Faden rechnet sie mit ihm neu. Bis hier nahm jede
+    // Seite ihre Leiber nur in IHREN Gau (gate:mp-sync (f): die Akte A neun am Takt 2, B neun andere am Takt 1, die Beute der
+    // Altlast am Takt 1 A 3 · B 9, ihr Bestand verschieden in 3 von 4 Regionen).
+    _gauAktEigen(gx, gz, akt) {
+        if (this._gauAkt(gx, gz, akt))
+            this._aktSenden({ type: "dsl", w: akt.takt * AnazhRealm._bestandGesetz().B.taktS, feld: { art: "gau", gx, gz, akt } }); // prettier-ignore
+    }
+    _gauAktFremd(f) {
+        if (!Number.isInteger(f.gx) || !Number.isInteger(f.gz) || !this._gauAktGilt(f.akt)) return false;
+        const akt = Object.assign({}, f.akt);
+        if (!this._gauAkt(f.gx, f.gz, akt)) return false;
+        const b = this._gauBildStand && this._gauBilder().get(f.gx + "," + f.gz);
+        if (!b) return true;
+        for (const m of b.spur.values()) for (const k of m.keys()) if (k >= akt.takt) m.delete(k);
+        b.spurFall = Math.min(b.spurFall, akt.takt); // eine Antwort im Flug, ohne ihn bestellt, trägt die Spur nur davor
+        return true;
     }
 
     // ═══ DER LESER DES GAUS (Leben C2b) — die Seite LIEST den Bestand der Gattungen des Gesetzes, sie rechnet ihn nie ═══
@@ -387,6 +445,9 @@ class AnazhRealm_kreatur_erbe {
                 reviere: new Map(),
                 tiere: new Map(),
                 gefallen: new Map(),
+                spur: new Map(), // je Revier der Altlast: Takt → Köpfe der Beute (die Spur des Fadens, `_gauBeuteAm`)
+                spurUnten: 0,
+                spurFall: Infinity, // der früheste Takt eines fremden Akts, den die Bestellung im Flug nicht trug (`_gauAktFremd`)
                 zahl: null,
                 zeit: null,
             });
@@ -517,6 +578,20 @@ class AnazhRealm_kreatur_erbe {
         for (const [id, tk] of b.gefallen) if (a.takt >= tk) b.gefallen.delete(id);
         const vorher = b.reviere;
         b.reviere = new Map();
+        // die Spur des Fadens je Revier der Altlast (`_gauSpurAb`): Zeile je Takt ab `von`, Spalte je gelesenem Revier
+        const sp = a.spur;
+        if (sp) b.spurUnten = sp.unten;
+        const voll = aktN === (this._gauHalt().get(b.gx + "," + b.gz) || []).length;
+        const fall = voll ? Infinity : b.spurFall;
+        if (voll) b.spurFall = Infinity;
+        (a.reviere || []).forEach((rv, j) => {
+            if (!sp || !this._gauSpurRevier(b.gx, b.gz, rv.i)) return;
+            const m = b.spur.get(rv.i) || b.spur.set(rv.i, new Map()).get(rv.i);
+            const L = a.reviere.length;
+            for (let k = 0; k * L + j < sp.beute.length && sp.von + k < fall; k++)
+                m.set(sp.von + k, sp.beute[k * L + j]);
+            for (const t of m.keys()) if (t < a.takt - 400) m.delete(t);
+        });
         const AJ = this._gauJaegerOrt || (this._gauJaegerOrt = new Map());
         const stufen = AnazhRealm.LIFE_FIELD.stufen;
         for (const rv of a.reviere || []) {
@@ -624,7 +699,7 @@ class AnazhRealm_kreatur_erbe {
         ud._bestand = t;
         (this._gauOffen || (this._gauOffen = new Map())).set(t.id, t);
         const akt = { takt: t.einTakt, art: "ein", g: rolle, revier: o.revier, id: lokal, a: t.a, e: t.e };
-        this._gauAkt(o.gx, o.gz, Object.assign(akt, { alterS: t.alterS }));
+        this._gauAktEigen(o.gx, o.gz, Object.assign(akt, { alterS: t.alterS }));
     }
     // EIN KOPF DES GAUS FÄLLT AUSSERHALB DES GESETZES (E2, der Ruf von `_bestandAus`): der Akt „aus“ mit Takt-Stempel; die Seite
     // zeichnet ihn nicht wieder, während der Akt reist (`gefallen`). Eine offene Annahme fällt einen Takt nach ihrem Eintritt.
@@ -636,7 +711,7 @@ class AnazhRealm_kreatur_erbe {
         b.gefallen.set(t.id, takt);
         const R = b.reviere.get(t.revier);
         if (R) R.tiere = R.tiere.filter((x) => x !== t);
-        this._gauAkt(t.gx, t.gz, { takt, art: "aus", id: t.lokal });
+        this._gauAktEigen(t.gx, t.gz, { takt, art: "aus", id: t.lokal });
     }
     // DER STAND EINES GEGANGENEN LEIBS (Gedächtnis, Wunde, Name) überdauert sein Revier am Schirm: je Kennung gemerkt
     // (höchstens 256, der älteste fällt), gelesen, wenn der Kopf wieder ins Bild tritt.

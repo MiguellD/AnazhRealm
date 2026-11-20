@@ -2178,7 +2178,7 @@ class AnazhRealm_kreatur_leben {
     // `zellen` (wenn gegeben) sammelt je Zelle den Ort und je Gattung Lebensraum × Äsung — den Jungwuchs, den ihr Fraß liest
     // (`_kreaturFrass`). Ohne `key` die Region des Spielers.
     // Liefert { gattung: { n, K, frass, riss, beute, geburt, tod } } (beute: je Tier, das einem Jäger Beute ist, seine Jäger).
-    _kreaturBestand(zellen, key = this._bestandHier(), feld = this._bestandFeld(key)) {
+    _kreaturBestand(zellen, key = this._bestandHier(), feld = this._bestandFeld(key), takt = null) {
         const BG = AnazhRealm._bestandGesetz();
         const B = BG.B;
         const LG = AnazhRealm._lebensraumGesetz();
@@ -2187,13 +2187,12 @@ class AnazhRealm_kreatur_leben {
         const tiere = R ? this._bestandFreie(R) : [];
         const n = {};
         const diet = this._bestandDiet();
-        // DIE BILANZ RECHNET NUR DIE ALTLAST (Leben C2b): die Gattungen des Gesetzes (`_gauRolle`) stehen im Gau — für sie fährt
-        // hier kein Zwilling; ihre Köpfe LIEST die Altlast als Beute aus dem Bild des Gaus (`_gauRevier`), nie schreibt sie hinein.
+        // DIE BILANZ RECHNET NUR DIE ALTLAST (Leben C2b): die Gattungen des Gesetzes (`_gauRolle`) stehen im Gau, sie liest sie als Beute
         for (const g in diet) if (!this._gauRolle(g)) n[g] = 0;
         for (const t of tiere) if (t.g in n) n[t.g]++;
         const { jaeger, gejagt, beuteVon } = this._bestandJagd(tiere, diet);
         const gau = this._gauRevier(key);
-        let beuteN = gau ? gau.koepfe.beute : 0;
+        let beuteN = takt == null ? (gau ? gau.koepfe.beute : 0) : this._gauBeuteAm(key, takt); // am Takt: die Spur (`_gauSpurAb`)
         for (const g in n) if (diet[g] <= pflanz) beuteN += n[g];
         const beute = Math.min(1, beuteN / B.beuteVoll);
         // je Zelle Lebensraum × Äsung (der Jungwuchs, den der Fraß liest); K aus der EINEN Formel (`_bestandKapazitaet`)
@@ -2368,7 +2367,7 @@ class AnazhRealm_kreatur_leben {
         if (R.t < fern) R.t = fern;
         if (!aufholen) return R;
         const fall = tode || [];
-        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS && this._bestandGauSteht(key); k++)
+        for (let k = 0; k < max && jetzt - R.t >= (bis + 1) * B.taktS && this._bestandGauSteht(key, R); k++)
             this._bestandSchritt(key, R, true, fall);
         if (!tode) this._bestandTode(fall);
         return R;
@@ -2387,10 +2386,11 @@ class AnazhRealm_kreatur_leben {
         const [ix, iz] = key.split(",").map(Number);
         return this._ensureHydroTilesAround((ix + 0.5) * S, (iz + 0.5) * S, S / 2 + 1) === 0;
     }
-    // … UND ÜBER DEM BILD IHRES GAUS (Leben C2b): der Takt der Altlast liest die Köpfe der Beute und den Fraß aus dem Bild des
-    // Gaus (`_gauRevier`) — ohne Antwort des Fadens wartet die Folge geordnet, wie auf die Hydro-Wahrheit.
-    _bestandGauSteht(key) {
-        return this._bestandBereit(key) && !!this._gauRevier(key);
+    // … UND ÜBER DER SPUR SEINES GAUS (Leben C2b): der nächste Takt der Altlast liest die Köpfe der Beute an seinem Takt (`_gauBeuteAm`)
+    // — ohne die Zeile des Fadens wartet die Folge geordnet, wie auf die Hydro-Wahrheit.
+    _bestandGauSteht(key, R) {
+        const k = Math.max(0, R.t / AnazhRealm._bestandGesetz().B.taktS + 1);
+        return this._bestandBereit(key) && !!this._gauRevier(key) && this._gauBeuteAm(key, k) !== undefined;
     }
 
     // DAS FELD DER REGION: ihre zellen × zellen Zellen (je Zelle ihre Mitte), die Boden-Klasse (eine Funktion der Welt — EINMAL
@@ -2484,7 +2484,7 @@ class AnazhRealm_kreatur_leben {
         for (const t of this._bestandFreie(R)) t.alterS += B.taktS;
         const rng = this._faunaRng("bestand:" + key + "@" + R.t, true);
         const zellen = [];
-        const bestand = this._kreaturBestand(zellen, key, this._bestandFeld(key, uhr));
+        const bestand = this._kreaturBestand(zellen, key, this._bestandFeld(key, uhr), Math.max(0, uhr / B.taktS));
         this._kreaturFrass(bestand, zellen, uhr);
         for (const g in bestand) {
             const { tod: p, riss, beute } = bestand[g];
@@ -2929,7 +2929,7 @@ class AnazhRealm_kreatur_leben {
                 continue;
             }
             // die Folge wartet GEORDNET: der früheste Takt steht an, seine Region noch ohne ihre Hydro-Wahrheit (`_bestandBereit`)
-            if (!wahl || budget-- <= 0 || !this._bestandGauSteht(wahl[0])) break;
+            if (!wahl || budget-- <= 0 || !this._bestandGauSteht(wahl[0], wahl[1])) break;
             this._bestandSchritt(wahl[0], wahl[1], bis - wahl[1].t >= 2 * B.taktS, tode);
             L.feldLetzt = wahl[1].t; // das zuletzt gerechnete Ereignis der Folge (der Moment des Felds, gate:mp-sync (f))
         }
