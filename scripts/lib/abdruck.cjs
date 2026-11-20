@@ -1146,7 +1146,8 @@ async function selbstFahrt({ ringTakte = 40, verzug = 5 } = {}, fahrt = abdruckF
         __weltStehtNach: async (takt) => (await takt(0), 1),
     };
     await fahrt(G, { ziel: 4, takte: 240, uhr: UHR_S, stempel: STEMPEL_MS, dt: DT_MS });
-    w.st.creatures.push({ userData: { soul: "wolf", netId: "c" + (1 + Math.floor(gelebt)) } });
+    // der Wolf trägt seine Adresse im Bestand (`_bestand.id`, die Identität des Tiers im Abdruck) aus der gelebten Zeit
+    w.st.creatures.push({ userData: { soul: "wolf", _bestand: { id: "c" + (1 + Math.floor(gelebt)) } } });
     w.r._vogelPool.lagen.set([gelebt, blind]);
     return w;
 }
