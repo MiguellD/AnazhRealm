@@ -3272,7 +3272,7 @@ hauptLauf(async () => {
     else if (cmd === "bild" && SELBST) {
         selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
         // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche
-        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild und den Baum des Samens ohne Stufe ROT beim Namen, jede Mutante von main besteht nicht");
+        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild, den Baum des Samens ohne Stufe und den Baum, der nach dem Sprung im Saum seines Orts fällt, ROT beim Namen, jede Mutante von main besteht nicht");
         selbsttestEnde(await SP.fensterSelbsttest(), "`/fenster` antwortet am gleichen Fenster ohne Takt, auch wenn die Welt nicht steht, und lässt sie nach einem Wechsel des Schirms an ihm leben; die Mutanten (main 01a6714a, der Stand vor w28-probe-schirm) bestehen nicht");
         process.exit(0);
     } else if (cmd === "bild")
@@ -3336,6 +3336,14 @@ hauptLauf(async () => {
             o = ergebnis(await evalRuf(`return await (${popGang})();`));
             o.block = ergebnis(await evalRuf(`return await (${SICHT.blockTreue})();`)); // die Blöcke des letzten Bilds (sicht-linse)
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
+            // DER BAUM VOR DEM ORT (w28-ort-vor-wald): der Sprung an den Messort dorf (590 m, der Dorf-Zug lebt — an der Wiese ruhte er,
+            // dort stand kein Ort und kein Wald), dann warten, bis die Orte liegen (`__baumFallWarten`): jeder Baum des Walds, der
+            // danach im Laub-Rand fällt, stand vor dem Grund seines Orts — der Pop, den kein Schritt erklärt (`baumFallUrteil`)
+            ergebnis(await evalRuf("return __baumFallHaken();"));
+            const ab = ergebnis(await evalRuf("return performance.now();"));
+            await umstellen({ ort: "dorf" });
+            const w = ergebnis(await evalRuf("return await __baumFallWarten();"));
+            o.baumFall = Object.assign(ergebnis(await evalRuf(`return __baumFall(${ab});`)), w);
         } finally {
             halt?.();
         }
@@ -3347,6 +3355,10 @@ hauptLauf(async () => {
         // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): „lod.K2#1 ROT“ stand im Log, `fehler` setzte nur die Block-Treue — GRÜN über ROT
         const pop = je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : [];
         if (rot.length) pop.push("BLOCK-TREUE ROT"); // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
+        // der Baum vor dem Ort nach dem Sprung: ohne seinen Befund (der Gang brach davor) ist er ungemessen — ROT, nie still
+        const bf = o.baumFall ? AA.baumFallUrteil(o.baumFall) : { rot: ["BAUM VOR DEM ORT: ungemessen — kein Sprung"], zeile: "" };
+        console.log(`lod.K2#1 Baum vor dem Ort ${bf.rot.length ? "ROT" : "GRÜN"}: ${bf.rot.length ? bf.rot.join(" · ") + " — " : ""}${bf.zeile}`); // prettier-ignore
+        pop.push(...bf.rot);
         if (pop.length && typeof o.fehler !== "string") o.fehler = pop.join(" · ");
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
