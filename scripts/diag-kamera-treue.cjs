@@ -252,10 +252,24 @@ function buehne() {
                     for (const ro of q?.__renderObjekte || []) if ([].concat(ro.object.material).includes(ro.material)) ros.add(ro);
             });
             for (const ro of ros) {
-                const n = ro.material.name || ro.object.name || ro.object.type;
-                if (ro.initialCacheKey !== ro.getCacheKey()) schluessel.veraltet[n] = (schluessel.veraltet[n] || 0) + 1;
+                if (ro.initialCacheKey === ro.getCacheKey()) continue;
+                // DER TÄTER BEIM NAMEN (w28-pop-treue, Radeon dcbb5a20: „instanz-zeichner ×1"): die Senke hinter dem Zeichner und
+                // der Teil des Schlüssels, der wechselte — der dynamische (r184 `getDynamicCacheKey`: Licht, Umgebung, Nebel,
+                // Wurf-Empfang, Kontext) oder der des Stoffs samt Geometrie (`getMaterialCacheKey`)
+                const q = ro.object.__instanzQuelle;
+                const teil = ro.initialNodesCacheKey !== ro.getDynamicCacheKey() ? "Licht/Umgebung/Empfang" : "Stoff/Geometrie";
+                // … und ob der Zeichner noch zeichnet: eine Senke in der Geometrie-Arena (`_arenaNimmt`, nur mit
+                // `indirect-first-instance`) nahm ihn aus dem Graphen
+                const lage = q ? (q.__arena ? "Senke in der Arena" : ro.object.parent === q ? "zeichnet" : "ohne Graph") : "";
+                const n =
+                    (ro.material.name || ro.object.name || ro.object.type) +
+                    (q ? ` an ${q.name || q.type} (${ro.material.type}, ${teil}, ${lage})` : ` (${teil})`);
+                schluessel.veraltet[n] = (schluessel.veraltet[n] || 0) + 1;
             }
             schluessel.geprueft = ros.size;
+            // die Arena des Geräts (`_arenaKann`): ihr Nein beim Namen, sonst die Zahl ihrer Arenen
+            const AR = r.constructor;
+            schluessel.arena = AR.__arenaOhne || (AR.__arenen ? AR.__arenen.size : 0);
             const ro = [...ros].find((x) => Object.getOwnPropertyDescriptor(x.material, "setupObserver"));
             const d = ro && Object.getOwnPropertyDescriptor(ro.material, "setupObserver");
             if (d) {
