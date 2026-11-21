@@ -1613,12 +1613,17 @@ LEITERN.push(
                         k2_wurf_feder: { name: "k2_wurf_feder", label: "k2_wurf_feder", frei: true, builtIn: false, parts: [{ shape: "box", material: "federn", size: { x: 0.25, y: 0.003, z: 0.05 }, position: { x: 0, y: 0.0015, z: 0 } }] },
                     };
                     const RHO = 1.2, v0 = 10, h0 = 1.5, c45 = Math.SQRT1_2;
-                    // die Rechnung: m dv/dt = −m g ŷ − ½ ρ c_w A |v| v, bis die Unterkante den Grund erreicht (RK-frei, dt 1 ms)
+                    // der Wind der Welt am Abwurf (der EINE Wind, `_windAt`; still: 0): die Rechnung fliegt durch dieselbe Luft wie der
+                    // Körper — längs der Bahn (wa) und quer (wc). Vorher rechnete sie in stiller Luft, die Feder im Wind der Wiese wich ab.
+                    const wd = typeof r._windAt === "function" ? r._windAt(bahn.x0, bahn.z0, s._simZeit, {}) : null;
+                    const [wx, wz] = wd ? [wd.x * wd.ms, wd.z * wd.ms] : [0, 0];
+                    const [wa, wc] = [wx * bahn.ux + wz * bahn.uz, -wx * bahn.uz + wz * bahn.ux];
+                    // die Rechnung: m dv/dt = −m g ŷ − ½ ρ c_w A |v − w| (v − w), bis die Unterkante den Grund erreicht (RK-frei, dt 1 ms)
                     const rechnung = (mk, cw, fl, hy) => {
-                        let [x, y, vx, vy] = [0, h0 + bahn.g0, v0 * c45, v0 * c45];
+                        let [x, y, vx, vy, vc] = [0, h0 + bahn.g0, v0 * c45, v0 * c45, 0];
                         for (let i = 0; i < 20000; i++) {
-                            const v = Math.hypot(vx, vy), k = (0.5 * RHO * cw * fl * v) / mk;
-                            [vx, vy] = [vx - k * vx * 0.001, vy - (g + k * vy) * 0.001];
+                            const [ux, uc] = [vx - wa, vc - wc], v = Math.hypot(ux, vy, uc), k = (0.5 * RHO * cw * fl * v) / mk;
+                            [vx, vy, vc] = [vx - k * ux * 0.001, vy - (g + k * vy) * 0.001, vc - k * uc * 0.001];
                             [x, y] = [x + vx * 0.001, y + vy * 0.001];
                             const gr = r._koerperBodenUnter(bahn.x0 + x * bahn.ux, y, bahn.z0 + x * bahn.uz);
                             if (vy < 0 && y - hy <= (Number.isFinite(gr) ? gr : bahn.g0)) return x;
@@ -1668,6 +1673,7 @@ LEITERN.push(
                         feder: { weite: r3(fe.weite), rechnung: r3(rf), t: fe.t, m: r3(fe.m) },
                         stein_abw_pct: abw(st.weite, rs),
                         feder_abw_pct: abw(fe.weite, rf),
+                        wind_ms: r3(Math.hypot(wx, wz)),
                         wuerfe: (Number.isFinite(st.weite) ? 1 : 0) + (Number.isFinite(fe.weite) ? 1 : 0),
                     };
                 }
