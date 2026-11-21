@@ -62,6 +62,18 @@
         return mulberry32(h);
     }
 
+    // DER STROM EINES SAMENS (das LCG der Welt, [0, 1)): was ein Akt würfelt — Streuung, Drehung, Größe — und der Bestand des
+    // Gaus (leben-core `bestand`, über den Wirt `samen`). Hier im Baum, weil Seite UND Faden ihn lesen: der Stamm
+    // (`_samenStrom`) reicht ihn durch, der Gau-Faden (voxel-worker) reicht ihn dem Kern. Bis hier stand er im Stamm
+    // (stamm/siedlung-ort.js `_samenStrom`), der Faden kannte ihn nicht.
+    function samenStrom(same) {
+        let s = Number(same) >>> 0 || 1;
+        return function () {
+            s = (s * 1664525 + 1013904223) >>> 0;
+            return s / 4294967296;
+        };
+    }
+
     // DIE SAAT EINES PFADS: der Hash von „<wurzel>:<pfad>" — ein Pfad ist ein NAME, nie eine Stelle in einer Zieh-Reihenfolge.
     function samenSaat(wurzel, pfad) {
         return samenHash(String(wurzel) + ":" + String(pfad));
@@ -88,6 +100,7 @@
         mulberrySchritt: mulberrySchritt,
         samenHash: samenHash,
         salzStrom: salzStrom,
+        samenStrom: samenStrom,
         samenSaat: samenSaat,
         samenBaum: samenBaum,
         VERSION: VERSION,

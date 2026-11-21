@@ -1490,6 +1490,9 @@ class AnazhRealm_netz_p2p {
                 z: +c.position.z.toFixed(2),
                 yaw: +((c.rotation && c.rotation.y) || 0).toFixed(2),
                 soul: (c.userData && c.userData.soul) || "wesen",
+                // DIE GRÖSSE REIST (leben-erbe): die Skala des Leibs ist Physik seines Erbes über das Alter und wächst — keine
+                // Seite kann sie aus der Kennung würfeln; der Mitspieler zeichnet sie auf 3 Stellen, wie sie hier steht.
+                b: c.userData && Number.isFinite(c.userData.bodySize) ? +c.userData.bodySize.toFixed(3) : null,
             };
             // DER LEICHNAM REIST MIT SEINER LAGE (Welle LF kampf Nachbesserung 3): die Quaternion des Kipp-Takts
             // (_tickLeichname) — die Kopie liegt, wie der Leib beim Sender liegt, und sinkt liegend. Vorher reiste nur die
@@ -1517,22 +1520,26 @@ class AnazhRealm_netz_p2p {
             const ey = this._fremdeZahl(e.y);
             const ez = this._fremdeZahl(e.z);
             if (!Number.isFinite(ex) || !Number.isFinite(ey) || !Number.isFinite(ez)) continue;
+            // DIE GRÖSSE DES SENDERS (leben-erbe): die Sicht-Kopie trägt die Skala des Originals, wie sie reist (`b`, 3 Stellen) —
+            // sie würfelt nie, klemmt nie (das Original trägt die EINE Masse seines Tiers) und folgt dem Wachstum. Ein Eintrag ohne
+            // Größe oder über der doppelten Spanne des Gesetzes (`__lebenCore.spanne`) ist kein Leib (wie ein Ort ohne Zahl): keine
+            // Kopie entsteht, eine bestehende hält ihre letzte Größe. Bis leben-erbe würfelte der Empfänger sie aus der netId —
+            // dasselbe Tier stand beim Mitspieler bis ×4,5 anders groß.
+            const eb = this._fremdeZahl(e.b);
+            const b = eb > 0 && eb <= 2 * AnazhRealm._lebenKern().spanne()[1] ? eb : NaN;
             let rc = remote.get(key);
             if (!rc) {
+                if (!Number.isFinite(b)) continue;
                 const mesh = this._buildCreatureGroup(typeof e.soul === "string" ? e.soul : "wesen");
                 if (!mesh) continue;
-                // S7 — die Sicht-Kopie trägt die Körpergröße des Originals (aus seiner netId
-                // = e.id deterministisch abgeleitet → derselbe Wuchs wie beim Sender, ohne ein
-                // eigenes Sync-Feld; der gewachsene Wald-Disziplin Γ5 treu).
-                const _peerBs = this._creatureBodySize(e.id);
-                mesh.scale.setScalar(_peerBs);
+                mesh.scale.setScalar(b);
                 mesh.position.set(ex, ey, ez);
                 // die Kopie trägt kein Feld (kein Ziegel): ihr Nah-Kreis ist das Feld des Stufen-Gesetzes (`_kreaturNah`)
                 mesh.userData._kopie = true;
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
                 remote.set(key, rc);
-            }
+            } else if (Number.isFinite(b) && rc.mesh.scale.x !== b) rc.mesh.scale.setScalar(b);
             rc.tx = ex;
             rc.ty = ey;
             rc.tz = ez;
@@ -1567,7 +1574,7 @@ class AnazhRealm_netz_p2p {
             const fern = this._leibSicht(m, this.isInFrustum(m), auge);
             // DER LEICHNAM liegt still: die Kopie dreht auf die Lage des Senders nach (rc.tq) — kein Atem, kein Gang
             if (rc.tq) {
-                if (m.userData._satz) this._tierSatzAus(m);
+                if (m.userData._satz) this._tierSatzAus(m, true);
                 m.position.y += ((rc.ty || 0) - m.position.y) * k;
                 const q = this._p2pLageQ || (this._p2pLageQ = new THREE.Quaternion());
                 m.quaternion.slerp(q.set(rc.tq[0], rc.tq[1], rc.tq[2], rc.tq[3]).normalize(), k);

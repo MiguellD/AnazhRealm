@@ -1380,12 +1380,9 @@ class AnazhRealm_siedlung_ort {
     // Der Strom EINES Samens (LCG, [0, 1)): was ein Akt würfelt — Streuung, Drehung, Größe — ist eine Funktion seines Samens,
     // auf jedem Peer und nach jedem Reload dieselbe. Das EINE LCG der Welt: Leser `_streamRng` (der Strom eines Namens),
     // `dslCtx` (der Programm-Strom), `_dslSpawnStudioItems` und die Nexus-Komposition.
+    // Das LCG selbst steht im Samen-Baum (`__samenCore.samenStrom`): Seite und Faden lesen dieselbe Funktion.
     _samenStrom(same) {
-        let s = Number(same) >>> 0 || 1;
-        return () => {
-            s = (s * 1664525 + 1013904223) >>> 0;
-            return s / 4294967296;
-        };
+        return globalThis.__samenCore.samenStrom(same);
     }
     // DER SAME EINES WERKS (Gegenprüfung 08.10.): EIN Same je Bauplan — der Wurf der Werkstatt (`_grownSeed` · `_rockSeedBase`
     // · `_crystalSeedBase`), sonst sein Name (ein Studio-Rezept ohne Bauplan: seine id) —, gehasht in die Gestalt-Wahl

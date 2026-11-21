@@ -584,11 +584,15 @@ function abdruckKern(G) {
             r = G.r,
             aus = {},
             art = {};
-        // ein Tier ist, wer es ist (Seele, Gattung, Nummer, Größe, Gehege, Leben) — seine Lage ist die eines Leibs in Bewegung
-        // (`leiber`), sein Ort im Bestand trägt der Halter (`_bestandRegion`)
+        // ein Tier ist, wer es ist (Seele, Gattung, Adresse und Erbe im Bestand, Größe, Gehege, Leben) — seine Lage ist die eines
+        // Leibs in Bewegung (`leiber`), sein Ort im Bestand trägt der Halter (`_bestandRegion`). Die Adresse ist `indId` des
+        // Gesetzes (Region, Welt-Takt, Lauf-Nummer), das Erbe `a`; die netId ist Sync-Schlüssel (am Leib des Bestands der Hash
+        // dieser Adresse, `_bestandLeib`; am Leib ohne Tier zählt sie die Leiber der Seite) und kein Merkmal des Tiers — bis
+        // leben-erbe hashte der Abdruck sie, der Täter von A gegen A an tier:*.
         const tier = (c, tot) => {
             const u = c.userData || {};
-            return W({ s: u.soul, g: u.gattung, k: u.kind, n: u.netId, b: u.bodySize, h: u.gehege, tot }, 2);
+            const t = u._bestand || null;
+            return W({ s: u.soul, g: u.gattung, k: u.kind, n: t && t.id, a: t && t.a, e: t && t.e, b: u.bodySize, h: u.gehege, tot }, 2); // prettier-ignore
         };
         (st.creatures || []).forEach((c) => (art[(c.userData && c.userData.soul) || "?"] ||= []).push(tier(c, 0)));
         (st.leichname || []).forEach((c) => (art[(c.userData && c.userData.soul) || "?"] ||= []).push(tier(c, 1)));
@@ -1142,7 +1146,8 @@ async function selbstFahrt({ ringTakte = 40, verzug = 5 } = {}, fahrt = abdruckF
         __weltStehtNach: async (takt) => (await takt(0), 1),
     };
     await fahrt(G, { ziel: 4, takte: 240, uhr: UHR_S, stempel: STEMPEL_MS, dt: DT_MS });
-    w.st.creatures.push({ userData: { soul: "wolf", netId: "c" + (1 + Math.floor(gelebt)) } });
+    // der Wolf trägt seine Adresse im Bestand (`_bestand.id`, die Identität des Tiers im Abdruck) aus der gelebten Zeit
+    w.st.creatures.push({ userData: { soul: "wolf", _bestand: { id: "c" + (1 + Math.floor(gelebt)) } } });
     w.r._vogelPool.lagen.set([gelebt, blind]);
     return w;
 }

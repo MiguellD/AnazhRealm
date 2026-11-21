@@ -127,6 +127,7 @@ export default [
                 postMessage: "readonly",
                 onmessage: "writable",
                 MessageChannel: "readonly", // der Takt der Reihe im Voxel-Faden (die Nachrichten des Bodens gehen vor)
+                performance: "readonly", // die Wanduhr der Gau-Antwort im Voxel-Faden (`zeit` je Auftrag)
                 URLSearchParams: "readonly",
                 SimplexNoise: "readonly",
                 Float32Array: "readonly",

@@ -2266,6 +2266,8 @@ AnazhRealm.GESETZ_KERNE = Object.freeze({
     terrain: "__terrainCore",
     // K09a — das Gelände-Gesetzbuch (gelaende-core.js): die EINE 2D-Höhe für Stamm, voxel-worker und Studio.
     gelaende: "__gelaendeCore",
+    // leben-erbe — das Gesetz des Lebens (leben-core.js): Erbe, Leib über das Alter, Auslese nach dem Leib, Adresse.
+    leben: "__lebenCore",
 });
 AnazhRealm._gesetzBruch = function (pfad, grund) {
     const text = "GESETZ: " + pfad + " ist unlesbar — " + grund;
