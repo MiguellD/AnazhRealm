@@ -309,7 +309,10 @@ class AnazhRealm_koerper_frei {
         const fr = K.fussRichtung || (K.fussRichtung = [NaN, NaN]);
         if (q > 1e-3) {
             const [ux, uz] = [lx / q, lz / q];
-            K.fussLauf = fr[0] === fr[0] && dt > 0 ? Math.abs(Math.atan2(fr[0] * uz - fr[1] * ux, fr[0] * ux + fr[1] * uz)) / dt : 0;
+            K.fussLauf =
+                fr[0] === fr[0] && dt > 0
+                    ? Math.abs(Math.atan2(fr[0] * uz - fr[1] * ux, fr[0] * ux + fr[1] * uz)) / dt
+                    : 0;
             [fr[0], fr[1]] = [ux, uz];
         } else [K.fussLauf, fr[0], fr[1]] = [0, NaN, NaN];
         if (!(q > AnazhRealm.FREI.fussLiegt)) return;
@@ -320,8 +323,7 @@ class AnazhRealm_koerper_frei {
         for (let i = pk.length - 6; i < pk.length; i += 3) {
             pk[i] = fx;
             pk[i + 2] = fz;
-            for (let k = 0; k < 3; k++)
-                pw[i + k] = p[k] + R[k * 3] * fx + R[k * 3 + 1] * pk[i + 1] + R[k * 3 + 2] * fz;
+            for (let k = 0; k < 3; k++) pw[i + k] = p[k] + R[k * 3] * fx + R[k * 3 + 1] * pk[i + 1] + R[k * 3 + 2] * fz;
         }
     }
 
@@ -1054,7 +1056,8 @@ class AnazhRealm_koerper_frei {
             const wm = Math.hypot(K.w[0], K.w[1], K.w[2]);
             const lauf = K.kiste ? 1 : wm > 1e-9 ? Math.min(1, (K.fussLauf || 0) / wm) : 0;
             const crr = K.grund ? K.grund.roll : 0;
-            X[x + 25] = (lauf * crr * schwere * K.m * rr) / (1 / Math.max(K.invI[0], K.invI[1], K.invI[2]) + K.m * rr * rr);
+            X[x + 25] =
+                (lauf * crr * schwere * K.m * rr) / (1 / Math.max(K.invI[0], K.invI[1], K.invI[2]) + K.m * rr * rr);
             X[x + 26] = 0;
             X[x + 27] = K.invM;
             X.set(K.Iw, x + 28);
