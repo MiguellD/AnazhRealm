@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T10:33:46.584Z",
+ "zeit": "2026-11-21T10:35:30.130Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -51662,6 +51662,502 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.kosmos.welten#2",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#1": {
+   "gruen": false,
+   "zahl": "S1 · ROT ❌ lage_max_m 1000000000 (Soll ≤ 1) · ✅ Umfang verlangt 118 Bewohner der Test-Stadt, die Welt erzeugte 480 — Täter: 8 Lagen fehlen nach der Wiederkehr · wohnhaus/patrizierhaus #946697:3471934731 um 18.5 Uhr 124.70 m neben dem Zuschauer (4 Prüf-Stunden, je 6 h fort, 1912 Lagen) · lage_max_m 1000000000 statt ≤ 1",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S1 · ROT ❌ lage_max_m 1000000000 (Soll ≤ 1) · ✅ Umfang verlangt 118 Bewohner der Test-Stadt, die Welt erzeugte 480 — Täter: 8 Lagen fehlen nach der Wiederkehr · wohnhaus/patrizierhaus #946697:3471934731 um 18.5 Uhr 124.70 m neben dem Zuschauer (4 Prüf-Stunden, je 6 h fort, 1912 Lagen) · lage_max_m 1000000000 statt ≤ 1",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "dab2a50083a9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#2": {
+   "gruen": false,
+   "zahl": "S2 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen, 1 Tiere, 1052 Gewächse (verlangt 10000 Wesen (Menschen, Tiere, Wuchs), die Welt erzeugte 1053)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S2 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen, 1 Tiere, 1052 Gewächse (verlangt 10000 Wesen (Menschen, Tiere, Wuchs), die Welt erzeugte 1053)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "018a17d2382b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#3": {
+   "gruen": false,
+   "zahl": "S3 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen in 0 Siedlungen — keine Metropole (verlangt 1000000 Menschen einer Metropole, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S3 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen in 0 Siedlungen — keine Metropole (verlangt 1000000 Menschen einer Metropole, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "c44aa41f7f29",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#4": {
+   "gruen": false,
+   "zahl": "S4 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen — kein Kontinent, kein Lauf über 100 Jahre (verlangt 100000000 Menschen eines Kontinents, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S4 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen — kein Kontinent, kein Lauf über 100 Jahre (verlangt 100000000 Menschen eines Kontinents, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "53fd4ab4882f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#5": {
+   "gruen": false,
+   "zahl": "S5 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen auf einem Planeten (Samen anazh-realm-seed) — keine Stadtgrößen über Jahrhunderte (verlangt 10000000000 Menschen eines Planeten, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S5 · ROT Umfang nicht erzeugbar: die Welt trägt 0 Menschen auf einem Planeten (Samen anazh-realm-seed) — keine Stadtgrößen über Jahrhunderte (verlangt 10000000000 Menschen eines Planeten, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "4c366120900c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#6": {
+   "gruen": false,
+   "zahl": "S6 · ROT Umfang nicht erzeugbar: die Welt der Sitzung springt nie in der Epoche: sie steht in zeitMa 0 (eine Epoche), der Satz reise wechselt die Welt (stamm/feld-leben.js:1277) — 0 Jahre Zeitsprung (verlangt 1000000 Jahre Zeitsprung, die Welt erzeugte 0)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S6 · ROT Umfang nicht erzeugbar: die Welt der Sitzung springt nie in der Epoche: sie steht in zeitMa 0 (eine Epoche), der Satz reise wechselt die Welt (stamm/feld-leben.js:1277) — 0 Jahre Zeitsprung (verlangt 1000000 Jahre Zeitsprung, die Welt erzeugte 0)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "90ff48772a9e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
+   "modus": "session"
+  },
+  "karte2.same.entfaltung.abwesenheit#7": {
+   "gruen": false,
+   "zahl": "S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen Welten verlangen Welten, die Leiter teilt EINE (verlangt 1000 Besuche an zufälligen (Welt, Ort, Zeit), die Welt erzeugte 1)",
+   "exit": 0,
+   "minuten": 2.93,
+   "grund": "ROT: S7 · ROT Umfang nicht erzeugbar: die Sitzung trägt eine Welt (Saat anazh-realm-seed) — Besuche an zufälligen Welten verlangen Welten, die Leiter teilt EINE (verlangt 1000 Besuche an zufälligen (Welt, Ort, Zeit), die Welt erzeugte 1)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kcebfc3696cb6",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 175.6,
+   "fremd": {
+    "s": 177.9,
+    "takte": 80,
+    "fremdS": 60.08,
+    "kerne": 0.338,
+    "fensterKerne": 0.983,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      7.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.44
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      6.41
+     ]
+    ],
+    "dienerS": 62.23,
+    "diener": [
+     [
+      "dwm.exe",
+      28.23
+     ],
+     [
+      "System",
+      21.08
+     ]
+    ],
+    "geraetS": 65.63,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      41.72
+     ],
+     [
+      "svchost.exe",
+      21.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.25
+     ]
+    ],
+    "eigenS": 515.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:35:30.130Z",
+   "abdruck": "c108b98fd240",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.same.entfaltung.abwesenheit#1",
    "modus": "session"
   }
  },
