@@ -1897,14 +1897,17 @@ function probeTagFehlt(dateien, betreff) {
     const ueber = l.noetig.length > PROBE_EINLASS_MAX ? ` — ${l.noetig.length} Pflicht-Wände über dem Einlass ${PROBE_EINLASS_MAX}: den Beitrag in zwei Stempel teilen` : "";
     return `Probe-Tag ohne ${undListe(l.fehlt)} (Beitrag fasst ${l.datei} an)${ueber}`;
 }
-// DER EINLASS DER PROBE (.github/workflows/gpu-probe.yml, Schritt „Einlass“): genau EINE Marke [gpu-probe: …] und höchstens 3 Proben je
-// Push — ein Tag darüber weist die Probe ab, und der Kopf stünde für immer an „GPU-Probe nicht GRÜN“
-const PROBE_EINLASS_MAX = 3;
+// DER EINLASS DER PROBE (.github/workflows/gpu-probe.yml, Schritt „Einlass“): genau EINE Marke [gpu-probe: …] und höchstens 4 Proben je
+// Push — ein Tag darüber weist die Probe ab, und der Kopf stünde für immer an „GPU-Probe nicht GRÜN“. DIE ZAHL IST DIE ZAHL DER
+// PFLICHT-WÄNDE (21.11., saat-argument): ein Wurzel-Schnitt, der Bau, Haus und Licht trifft, braucht alle vier in EINEM Kopf — die
+// alte 3 (Läufer-Minuten, 3 × 8 min) zwang ihn in zwei Stempel, also zwei CI-Läufe und zwei Fahrten gegen 8 min Probe. Freie Proben
+// eines Auftrags bleiben bei höchstens 3 (das steht im Brief, nicht hier). Dieselbe Zahl steht in gpu-probe.yml (Schritt „Einlass“).
+const PROBE_EINLASS_MAX = 4;
 const tagProben = (betreff) => ((/\[gpu-probe:([^\]]*)\]/.exec(betreff) || [])[1] || "").split(",").map((s) => s.trim()).filter(Boolean);
 // der neue Kopf eines Unschuldigen: ohne Lücke trägt er sein Tag unverändert; fehlt eine Pflicht-Wand, trägt er ALLE Wände jeder Regel,
 // der eine fehlt, dazu die Pflicht-Wände, die sein altes Tag schon trug — und, solange der Einlass Platz lässt, genau EINE Probe des
 // alten Tags: mit Vorrang das bild: (nie eine sichtbare Änderung ohne Bild), sonst die erste. Füllen die Pflicht-Wände den Einlass
-// (Bau + Haus = 3), fällt das bild: — das Bildpaar kommt dann aus dem Bericht des Schneiders
+// (Bau + Haus + Licht = 4), fällt das bild: — das Bildpaar kommt dann aus dem Bericht des Schneiders
 function tagErgaenzt(betreff, fehlt) {
     if (!fehlt.length) return betreff;
     const altes = tagProben(betreff);
@@ -2112,9 +2115,13 @@ function selbsttestTaeter(pr) {
             probeTagFehlt(["stamm/dirigent-ankunft.js"], neuL.betreff) === null && probeTagEinlass(neuL.betreff) === null &&
             tagErgaenzt("Abgabe w28-a: x [gpu-probe: gate:a, gate:b] [ci voll]", ["gate:pruefbuehne-licht"]) === "Abgabe w28-a: x [gpu-probe: gate:a, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]" &&
             tagErgaenzt("Abgabe w28-a: x [ci voll]", ["gate:pruefbuehne-licht"]) === "Abgabe w28-a: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]");
-    // die Mutante: das alte Anhängen (vier Proben) — die Einlass-Wache nennt sie ROT beim Namen
-    pr("Einlass: ein Tag mit vier Proben ist ROT beim Namen (die Mutante „anhängen“), drei gehen durch",
-        /^4 Proben im \[gpu-probe: …\]-Tag, höchstens 3 je Push/.test(probeTagEinlass("Abgabe w28-l: x [gpu-probe: gate:post-kette, bild:wiese@0.5, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]") || "") &&
+    // die Mutante: das alte Anhängen (fünf Proben) — die Einlass-Wache nennt sie ROT beim Namen; die vier Pflicht-Wände eines
+    // Wurzel-Schnitts (Bau + Haus + Licht) gehen in EINEM Tag durch und lassen keine Lücke
+    const vier = "Abgabe w28-l: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt] [ci voll]";
+    pr("Einlass: ein Tag mit fünf Proben ist ROT beim Namen (die Mutante „anhängen“), die vier Pflicht-Wände gehen in EINEM Tag durch (Bau + Haus + Licht ohne Lücke), drei und keins ebenso",
+        /^5 Proben im \[gpu-probe: …\]-Tag, höchstens 4 je Push/.test(probeTagEinlass("Abgabe w28-l: x [gpu-probe: gate:post-kette, bild:wiese@0.5, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]") || "") &&
+            probeTagEinlass(vier) === null && probeTagFehlt(["stamm/siedlung-ort.js", "samen-core.js", "stamm/bild-himmel.js"], vier) === null &&
+            /^Probe-Tag ohne .*gate:tag-achse:echt.* \(Beitrag fasst /.test(probeTagFehlt(["stamm/siedlung-ort.js", "samen-core.js", "stamm/bild-himmel.js"], "Abgabe w28-l: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]") || "") &&
             probeTagEinlass("Abgabe w28-l: x [gpu-probe: gate:a, bild:wiese, gate:b] [ci voll]") === null && probeTagEinlass("Abgabe w28-l: x [ci voll]") === null);
     const b = taeterUrteil({ zid: "z637", stempel, waende, geraete: ["omen"], lauf: gestellt(() => false) });
     pr("Täter-Suche (b) kein Stempel allein rot → KEIN TÄTER AN DIESER KARTE (das rote Bein omen beim Namen), kein neuer Kopf",
@@ -2211,15 +2218,16 @@ function selbsttestTaeter(pr) {
     const t3 = probeTagFehlt(samen, "Abgabe w28-samen-ein-baum: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:settlement] [ci voll]");
     const t4 = probeTagFehlt(nacht, "Abgabe w28-nacht-lichter: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:pruefbuehne] [ci voll]");
     const t5 = probeTagFehlt(["stamm/siedlung-tor.js", "welt-licht.js"], "Abgabe w28-a: x [gpu-probe: gate:tag-achse:echt] [ci voll]");
-    pr("Probe-Tag je Regel: der Samen-Stempel von z648 wartet am Begehen, der Nacht-Stempel von z647 an Begehen und Tag-Achse; mit den Wänden nichts; vier Pflicht-Wände nennt der Grund",
+    pr("Probe-Tag je Regel: der Samen-Stempel von z648 wartet am Begehen, der Nacht-Stempel von z647 an Begehen und Tag-Achse; mit den Wänden nichts; vier Pflicht-Wände trägt der Einlass (der Grund nennt die Lücke, kein Teilen)",
         t3 === "Probe-Tag ohne gate:studio-begehen (Beitrag fasst samen-core.js an)" &&
             t4 === "Probe-Tag ohne gate:studio-begehen und gate:tag-achse:echt (Beitrag fasst fachwerk-core.js an)" &&
             probeTagFehlt(samen, "Abgabe w28-a: x [gpu-probe: gate:studio-begehen, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]") === null &&
             probeTagFehlt(nacht, "Abgabe w28-a: x [gpu-probe: gate:tag-achse:echt, gate:studio-begehen, gate:pruefbuehne-licht] [ci voll]") === null &&
             probeTagFehlt(["stamm/bild-schatten.js", "scripts/lib/licht-linsen.cjs"], "Abgabe w28-a: x [ci voll]") === null &&
-            t5 === "Probe-Tag ohne gate:pruefbuehne-licht, gate:weltbild-frost:echt und gate:studio-begehen (Beitrag fasst stamm/siedlung-tor.js an) — 4 Pflicht-Wände über dem Einlass 3: den Beitrag in zwei Stempel teilen");
-    pr("Neuer Kopf je Regel: fehlt das Begehen, bleiben die Bau-Wände des alten Tags und das bild: fällt am vollen Einlass; fehlt nur die Tag-Achse, bleibt das bild:",
-        tagErgaenzt("Abgabe w28-a: x [gpu-probe: bild:dorf@0.5, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]", ["gate:studio-begehen"]) === "Abgabe w28-a: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]" &&
+            t5 === "Probe-Tag ohne gate:pruefbuehne-licht, gate:weltbild-frost:echt und gate:studio-begehen (Beitrag fasst stamm/siedlung-tor.js an)");
+    pr("Neuer Kopf je Regel: fehlt das Begehen, bleiben die Bau-Wände des alten Tags und das bild: (drei Pflicht-Wände + das bild: = 4); erst am vollen Einlass (alle vier Pflicht-Wände) fällt das bild:; fehlt nur die Tag-Achse, bleibt das bild:",
+        tagErgaenzt("Abgabe w28-a: x [gpu-probe: bild:dorf@0.5, gate:pruefbuehne-licht, gate:weltbild-frost:echt] [ci voll]", ["gate:studio-begehen"]) === "Abgabe w28-a: x [gpu-probe: bild:dorf@0.5, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]" &&
+            tagErgaenzt("Abgabe w28-a: x [gpu-probe: bild:dorf@0.5, gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen] [ci voll]", ["gate:tag-achse:echt"]) === "Abgabe w28-a: x [gpu-probe: gate:pruefbuehne-licht, gate:weltbild-frost:echt, gate:studio-begehen, gate:tag-achse:echt] [ci voll]" &&
             tagErgaenzt("Abgabe w28-a: x [gpu-probe: bild:genesis@0, gate:pruefbuehne] [ci voll]", ["gate:tag-achse:echt"]) === "Abgabe w28-a: x [gpu-probe: bild:genesis@0, gate:tag-achse:echt] [ci voll]");
 }
 // die roten Zeilen der Zeit-Tafel ((T) ALT · (T) UNGEMESSEN) aus der Ausgabe von diag-ci-deckung.cjs — nur sie, nie fremdes Rot
