@@ -2648,7 +2648,8 @@ class AnazhRealm_kreatur_leben {
         const st = this.state;
         if (!st.playerMesh || !this._kreaturenBereit()) return;
         const F = this._bestandRegionen();
-        const p = st.playerMesh.position;
+        const a0 = this._lodAuge(); // das EINE Auge der Stufen: wer gezeichnet wird, misst vom Bild, nie vom Spieler
+        const p = a0 ? { x: a0.x, y: a0.y, z: a0.z } : st.playerMesh.position;
         const gruppen = new Map();
         for (const key of this._bestandNah()) {
             for (const t of F.regionen[key] ? F.regionen[key].tiere : []) {

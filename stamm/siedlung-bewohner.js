@@ -76,7 +76,7 @@ class AnazhRealm_siedlung_bewohner {
         // sich alle Kamine der Welt die 26 Teilchen eines Hauses (das Dorf der Mess-Orte, 34 Kamine: an keinem stand Rauch).
         // Ein Teilchen ist Daten (Lage, Größe, Deckkraft, Kamin, Same); ohne Quelle entsteht keins, die lebenden steigen weiter.
         const W = AnazhRealm.RAUCH_BILD;
-        const auge = st.camera ? st.camera.position : st.playerMesh && st.playerMesh.position;
+        const auge = this._lodAuge(); // das EINE Auge der Stufen
         const nah = auge
             ? quellen
                   .map((q) => [Math.hypot(q.x - auge.x, q.z - auge.z), q])

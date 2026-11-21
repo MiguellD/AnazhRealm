@@ -605,7 +605,7 @@ class AnazhRealm_feld_brand {
     // jede Quelle der Welt: ein Faden, durch den die Krone schien), und keine Flamme stand im Bild — nur der Fleck des Lichts.
     _brandBild(dt) {
         const st = this.state;
-        const auge = st.camera ? st.camera.position : st.playerMesh && st.playerMesh.position;
+        const auge = this._lodAuge(); // das EINE Auge der Stufen
         // die Flammen des Bilds aus dem Vorrat der Instanz (je Bild keine neuen Objekte: der Müll trüge die Spitzen)
         const [fl, vorrat] = [
             this._brandFlammen || (this._brandFlammen = []),

@@ -516,6 +516,22 @@ class AnazhRealm_daten {
                 fussNarbe: 1.86,
                 vorlauf: 2.5,
                 kachelnJeTakt: 1,
+                // DER FÄCHER DES AUGES (`_wieseFaecher`, stufe-ein-auge): die Kacheln der Nähe stehen im Sicht-Kegel des EINEN
+                // Auges, gedreht um den Saum (rad) `saum` + Dreh-Rate × `vorlaufS`; sie fallen erst `fallSaum` weiter; die Rate
+                // misst je `taktS`, vergisst mit `abklingS`, darunter `ruheRad`/s ist sie 0, über `sprungRad` je Messung ist der Blick
+                // gesprungen (keine Drehung); ab `vollRad` je Seite der Kreis.
+                // `lotM`: so weit reicht der Kasten einer Kachel lotrecht über die Höhe des Gesetzes an ihren Ecken hinaus.
+                faecher: Object.freeze({
+                    saum: 0.17,
+                    fallSaum: 0.09,
+                    vorlaufS: 0.3,
+                    taktS: 1 / 120,
+                    abklingS: 0.5,
+                    ruheRad: 0.05,
+                    sprungRad: 1,
+                    vollRad: 1.53,
+                    lotM: 3,
+                }),
                 fern: Object.freeze({
                     kachel: 12,
                     bis: 200,
