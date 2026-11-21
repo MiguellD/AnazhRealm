@@ -1758,7 +1758,9 @@ class AnazhRealm {
                 const t = B.zeiger;
                 const key = zelle(t);
                 if (!Z.hoehen.has(key)) {
-                    if (rest-- <= 0 || ((rest & 63) === 0 && performance.now() - t0 >= K.bauMs)) break;
+                    // die Frist JE Höhe: kalt kostet eine Höhe des Gesetzes Millisekunden (GTX 1050, i7-950: 64 Höhen zwischen
+                    // zwei Blicken auf die Uhr waren 451,67 ms in EINEM Takt an stadt-voll)
+                    if (rest-- <= 0 || performance.now() - t0 >= K.bauMs) break;
                     Z.hoehen.set(
                         key,
                         this.getTerrainHeightAt(
