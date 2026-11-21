@@ -1282,7 +1282,7 @@ function masseUrteil(b) {
 }
 // (N9) DAS URTEIL DER ZÜNDUNG (front-brand, gate:stand-takt BRAND-ZELLEN): eine Zündung liest, was sich ändert. SÄULE — unter
 // `_brandStoff` einer Gras-Zelle marschiert `_voxelSurfaceY` genau EINMAL (die Höhe des Betts; das Gefälle liest die 2D-Höhe
-// `_terrainMacroSurfaceY`). WIESE — der Neubau nach der Zündung (Entfachen + ein Schritt) lässt weniger Streu-Kacheln fallen
+// `_terrainMacroSurfaceY`). WIESE — der Neubau in den ersten zwölf Schritten des Brands lässt weniger Streu-Kacheln fallen
 // als der über der ganzen Zelle ±½. Die Mutante ist der Stand 8e2d76d1 (GPU-Probe 44943679460: zwei Zündungen in einem Schritt
 // mit 16 Zellen 1 099 Einheiten, Soll 1 024): das Gefälle aus zwei weiteren Märschen, der Neubau über der Zelle ±½.
 function zuendungUrteil(b) {
@@ -1290,9 +1290,9 @@ function zuendungUrteil(b) {
     if (!n) return ["N9-LEER: kein Befund der Zündung"];
     const [e, m] = [n.echt || {}, n.mutante || {}];
     return [
-        e.bett > 0 && e.maersche >= 1 && e.wiese > 0 && m.wiese > 0 ? "" : `N9-LEER: keine Messung der Zündung: Bett-Anteil ${e.bett}, ${e.maersche} Märsche, ${e.wiese} Streu-Kacheln im Neubau (ganze Zelle ±½: ${m.wiese})`,
+        e.bett > 0 && e.maersche >= 1 && e.wiese > 0 && m.wiese > 0 ? "" : `N9-LEER: keine Messung der Zündung: Bett-Anteil ${e.bett}, ${e.maersche} Märsche, ${e.neubauten} Neubauten der Wiese in zwölf Schritten mit ${e.wiese} Streu-Kacheln je Neubau (ganze Zelle ±½: ${m.neubauten} mit ${m.wiese})`,
         e.maersche === 1 ? "" : `N9-SÄULE: die Zündung marschiert ${e.maersche}-mal durch ihre Säule (\`_voxelSurfaceY\` unter \`_brandStoff\`, Soll 1: die Höhe des Betts — das Gefälle liest die 2D-Höhe \`_terrainMacroSurfaceY\`) — stamm/feld-brand.js _brandStoff`,
-        e.wiese < m.wiese ? "" : `N9-WIESE: der Neubau der Wiese nach der Zündung fällt über ${e.wiese} Streu-Kacheln — so viele wie über der ganzen Zelle ±½ (${m.wiese}); er gehört dem Rechteck der geänderten Viertel (\`wieseNeu\`) — stamm/feld-brand.js _brandMalen`,
+        e.wiese < m.wiese ? "" : `N9-WIESE: ein Neubau der Wiese fällt in den ersten zwölf Schritten des Brands über ${e.wiese} Streu-Kacheln — so viele wie über der ganzen Zelle ±½ (${m.wiese}); er gehört dem Rechteck der geänderten Viertel (\`wieseNeu\`) — stamm/feld-brand.js _brandMalen`,
         m.maersche >= 3 ? "" : `MUTANTE-N9: mit dem Gefälle aus zwei weiteren Märschen zählt die Linse ${m.maersche} Märsche — sie ist blind für die Säule`,
     ].filter(Boolean);
 }
@@ -1790,7 +1790,7 @@ async function narbeSeite(MESS) {
         N8.fahne.jung = zuenden() ? fahne({ vor: 0 }) : null;
         // N9 (front-brand, BRAND-ZELLEN) DIE ZÜNDUNG LIEST, WAS SICH ÄNDERT — gezählt an der Seite: die Märsche durch die Säule
         // (`_voxelSurfaceY`) unter EINEM frischen `_brandStoff` der Herd-Zelle, und die Streu-Kacheln, die der Neubau der Wiese
-        // nach der Zündung fallen lässt (Entfachen + ein Schritt). Die Mutante ist der Stand 8e2d76d1: das Gefälle aus zwei
+        // in den ersten zwölf Schritten des Brands fallen lässt. Die Mutante ist der Stand 8e2d76d1: das Gefälle aus zwei
         // weiteren Märschen (Zell-Mitte + ½ Zelle je Achse), der Neubau über der Zelle ±½.
         const gezaehlt = (name, fn) => {
             const [eigen, alt] = [Object.prototype.hasOwnProperty.call(r, name), r[name]];
@@ -1813,8 +1813,15 @@ async function narbeSeite(MESS) {
             let f = null;
             const maersche = gezaehlt("_voxelSurfaceY", () => (f = r._brandStoff(hx, hz, st.spielZeit)));
             leer();
-            const wiese = gezaehlt("_nahStreuKachelFaellt", () => (r._brandEntfachen(MESS.x, MESS.z), schritt()));
-            return { bett: f ? f.anteil : 0, maersche, wiese };
+            // der Neubau über die ersten zwölf Schritte des Brands (die Asche wächst mit der Front, je Zelle fällt er höchstens alle
+            // `BRAND.wieseS`): je Schritt die Streu-Kacheln, die er fallen lässt; das Maß sind die Kacheln JE Neubau (die zweite
+            // Zündung brennt auf der Asche der ersten und baut seltener — die Summe trüge die Zahl der Neubauten mit)
+            const je = [];
+            r._brandEntfachen(MESS.x, MESS.z);
+            for (let i = 0; i < 12; i++) je.push(gezaehlt("_nahStreuKachelFaellt", schritt));
+            const bau = je.filter(Boolean);
+            const wiese = bau.length ? Math.round((10 * bau.reduce((a, b) => a + b, 0)) / bau.length) / 10 : 0;
+            return { bett: f ? f.anteil : 0, maersche, wiese, neubauten: bau.length, je };
         };
         const N9 = (aus.n9 = { echt: zuendung() });
         r._brandStoff = function (cx, cz, ...a) {
@@ -2194,7 +2201,7 @@ if (SELBSTTEST) {
                     // die Masse (N8): die Zahlen der Mess-Wiese am Kopf front-brand, die Mutante mit der Deckung ohne Masse
                     n8: { soll: 33.349, mineral: 0.0555, kg: 33.349, buch: { mitte: { holz: 33.349, brannte: 23.318, asche: 1.294, rauch: 22.024 }, ende: { holz: 33.349, brannte: 33.349, asche: 1.851, rauch: 31.498 } }, mitteSoll: 23.3, fahne: { voll: { haelt: 0, zellen: 2, ballen: 54, strom: 1.146, masse: 1.152, optisch: 88.045, soll: 87.578, lebt: 47, erhalt: 1 }, halb: { haelt: 0.007, zellen: 1, ballen: 32, strom: 0.195, masse: 0.196, optisch: 14.45, soll: 14.895, lebt: 25, erhalt: 1 }, fern: { haelt: 0, zellen: 2, ballen: 65, strom: 1.148, masse: 1.151, optisch: 87.968, soll: 87.735, lebt: 61, erhalt: 1 }, lahm: { haelt: 0, zellen: 2, ballen: 28, strom: 1.162, masse: 1.194, optisch: 91.258, soll: 88.813, lebt: 28, erhalt: 1 }, jung: { haelt: 0, zellen: 1, ballen: 9, strom: 0.298, masse: 0.302, optisch: 23.082, soll: 22.793, lebt: 9, erhalt: 1 } }, ausgebrannt: true, tat: 1.851, mutante: { haelt: 0, zellen: 2, ballen: 61, strom: 1.149, masse: 1.157, optisch: 130.799, soll: 87.834, lebt: 43, erhalt: 1.548 } },
                     // die Zündung (N9): die Zahlen der Mess-Wiese, die Mutante im Stand 8e2d76d1
-                    n9: { echt: { bett: 1, maersche: 1, wiese: 16 }, mutante: { bett: 1, maersche: 3, wiese: 100 } },
+                    n9: { echt: { bett: 1, maersche: 1, wiese: 36, neubauten: 4 }, mutante: { bett: 1, maersche: 3, wiese: 60.3, neubauten: 3 } },
                     // die Lava-Linse (L1–L5): die Zahlen der Mess-Wiese; `l2` im Stand, in dem die Decke vor dem Zünden gemalt ist
                     l1: { brennend: 8, betten: 8, tK: 1650, tZuend: [523, 533], tau: 13956.667, mutante: 0, kalt: { brennend: 0, tK: 513, glut: 0 }, lau: { brennend: 8, tK: 543, glut: 0 } },
                     l2: { kanten: 4, ein: 9, einMax: 9, decke: 0, amRand: 7, tief: [-1.99, 3.51], uhr: 60, spanne: 16, spanneMax: 16, sicht: [5.75, 15.5, 16, 15.5], flammen: [24, 41, 18, 151], mutante: { kanten: 4, ein: 0, einMax: 0, decke: 0, amRand: 0, tief: null, uhr: 60, spanne: 1.75, spanneMax: 9.25, sicht: [4.75, 9.25, 9.25, 1.75], flammen: [19, 22, 19, 16] } },
