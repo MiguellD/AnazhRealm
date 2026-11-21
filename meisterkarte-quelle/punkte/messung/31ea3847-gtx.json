@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T11:18:35.324Z",
+ "zeit": "2026-11-21T11:21:35.959Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -57346,6 +57346,1992 @@
    "bahn": "sitzung",
    "zwilling": "karte2.leben.kopplung.leben-formt-planet#4",
    "modus": "session"
+  },
+  "karte2.mensch.kopplung.leib#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: keine Herkunfts-Breite am Leib: die Welt trägt EINEN Anker (-45.48° N, stamm/gelaende-chunks.js:680 _planetAnker) und das Genom liest keine — Hautton gleichverteilt über 8 Töne (stamm/koerper-leib.js:44 skinTone) · saaten 200 gegen Soll ≥ 200 ✓ · r ungemessen gegen Soll ≥ 0,7 ✗ · Täter: stamm/koerper-leib.js _rollHumanoidGenome (Hautton aus dem Samen, keine Breite)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: keine Herkunfts-Breite am Leib: die Welt trägt EINEN Anker (-45.48° N, stamm/gelaende-chunks.js:680 _planetAnker) und das Genom liest keine — Hautton gleichverteilt über 8 Töne (stamm/koerper-leib.js:44 skinTone) · saaten 200 gegen Soll ≥ 200 ✓ · r ungemessen gegen Soll ≥ 0,7 ✗ · Täter: stamm/koerper-leib.js _rollHumanoidGenome (Hautton aus dem Samen, keine Breite)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "df6ba47da85c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leib#3": {
+   "gruen": false,
+   "zahl": "S3 Umfang nicht erzeugbar: die Region trägt keine Erzeugnisse: 2 Felder ohne Frucht, keine Herde, 0 Stände ohne Ware — die Tracht (poncho/pants/boot) ist Wolle/Denim/Leder aus dem Schnitt (koerper-core.js:257 webe), nie aus Feld oder Handel · stoffProzent 0 % gegen Soll ≥ 100 % ✗ · Täter: fachwerk-core.js DORF (kleidung = Schnitt der Epoche, kein Stoff aus Feld/Herde/Handel)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S3 Umfang nicht erzeugbar: die Region trägt keine Erzeugnisse: 2 Felder ohne Frucht, keine Herde, 0 Stände ohne Ware — die Tracht (poncho/pants/boot) ist Wolle/Denim/Leder aus dem Schnitt (koerper-core.js:257 webe), nie aus Feld oder Handel · stoffProzent 0 % gegen Soll ≥ 100 % ✗ · Täter: fachwerk-core.js DORF (kleidung = Schnitt der Epoche, kein Stoff aus Feld/Herde/Handel)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "6e0dfab1e00a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leib#5": {
+   "gruen": false,
+   "zahl": "S5 epocheProzent 100 % gegen Soll ≥ 80 % ✓ · groesseAbwCm 6,305 cm gegen Soll ≤ 5 cm ✗ · Täter: stamm/koerper-leib.js _rollHumanoidGenome (kh aus dem Samen, kein Jahr)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S5 epocheProzent 100 % gegen Soll ≥ 80 % ✓ · groesseAbwCm 6,305 cm gegen Soll ≤ 5 cm ✗ · Täter: stamm/koerper-leib.js _rollHumanoidGenome (kh aus dem Samen, kein Jahr)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "84388c773878",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.sport#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: der Tag kennt kein Spiel: die Akte am Abend sind arbeit+abend (koerper-core.js:5326 tagesPlan — schlaf · morgen · besuch · arbeit · mittag · abend) · spielProzent 0 % gegen Soll 5–15 % ✗ · Täter: koerper-core.js tagesPlan (kein Spiel am Abend)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: der Tag kennt kein Spiel: die Akte am Abend sind arbeit+abend (koerper-core.js:5326 tagesPlan — schlaf · morgen · besuch · arbeit · mittag · abend) · spielProzent 0 % gegen Soll 5–15 % ✗ · Täter: koerper-core.js tagesPlan (kein Spiel am Abend)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "0187ef51e22d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.sport#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: der Tag kennt kein Spiel: die Akte am Abend sind arbeit+abend (koerper-core.js:5326 tagesPlan — schlaf · morgen · besuch · arbeit · mittag · abend); keine Partie, die der Regen abbricht, kein Eis unter 0 °C · regenRueckgangProzent ungemessen gegen Soll ≥ 50 % ✗ · eisMaxC ungemessen gegen Soll < 0 °C ✗ · Täter: koerper-core.js tagesPlan (keine Partie, kein Eis)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: der Tag kennt kein Spiel: die Akte am Abend sind arbeit+abend (koerper-core.js:5326 tagesPlan — schlaf · morgen · besuch · arbeit · mittag · abend); keine Partie, die der Regen abbricht, kein Eis unter 0 °C · regenRueckgangProzent ungemessen gegen Soll ≥ 50 % ✗ · eisMaxC ungemessen gegen Soll < 0 °C ✗ · Täter: koerper-core.js tagesPlan (keine Partie, kein Eis)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "ded667ca7efa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.sport#3": {
+   "gruen": false,
+   "zahl": "S3 Umfang nicht erzeugbar: keine Sportart an 200 Plänen der Zellen (Rollen kirche+gasthaus+wohnhaus+scheune+schmiede+pfarrhaus+patrizierhaus+rathaus+zunfthaus+werkstatt+burg+bergfried+torhaus+kapelle+kaufhaus+zeughaus+kontor+wohnturm+g) — fachwerk DORF kennt keine Sportstätte · saaten 200 gegen Soll ≥ 200 ✓ · cramersV ungemessen gegen Soll ≥ 0,3 ✗ · Täter: fachwerk-core.js DORF (keine Sportstätte, kein Boden)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S3 Umfang nicht erzeugbar: keine Sportart an 200 Plänen der Zellen (Rollen kirche+gasthaus+wohnhaus+scheune+schmiede+pfarrhaus+patrizierhaus+rathaus+zunfthaus+werkstatt+burg+bergfried+torhaus+kapelle+kaufhaus+zeughaus+kontor+wohnturm+g) — fachwerk DORF kennt keine Sportstätte · saaten 200 gegen Soll ≥ 200 ✓ · cramersV ungemessen gegen Soll ≥ 0,3 ✗ · Täter: fachwerk-core.js DORF (keine Sportstätte, kein Boden)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "c8ff86f618ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.sport#4": {
+   "gruen": false,
+   "zahl": "S4 Umfang nicht erzeugbar: kein Stadion und kein Spieltag: 0 Sportstätten unter 200 Plänen · verkehrPlusProzent ungemessen gegen Soll ≥ 30 % ✗ · Täter: fachwerk-core.js DORF (kein Stadion), stamm/siedlung-verkehr.js (kein Spieltag)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S4 Umfang nicht erzeugbar: kein Stadion und kein Spieltag: 0 Sportstätten unter 200 Plänen · verkehrPlusProzent ungemessen gegen Soll ≥ 30 % ✗ · Täter: fachwerk-core.js DORF (kein Stadion), stamm/siedlung-verkehr.js (kein Spieltag)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "a7f7b99d335b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leben#1": {
+   "gruen": true,
+   "zahl": "S1 draussenSinkt 0,815 gegen Soll ≥ 0,3 ✓ · Zeuge: der Regen treibt ins Haus, die Sonne zurück holt sie heraus (Gegenlauf)",
+   "exit": 0,
+   "minuten": 1.74,
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "616ce31136fe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leben#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: keine Missernte und keine Not in der Welt: Welt-Akte der Not keiner (von 69), 0 von 27 Bewohnern tragen ein Gedächtnis — niemand zieht um, niemand nennt ein Ereignis · umzugProzent ungemessen gegen Soll ≥ 10 % ✗ · tagGeaendertProzent ungemessen gegen Soll ≥ 10 % ✗ · umzugOhneProzent ungemessen gegen Soll < 10 % ✗ · nennenAnteil ungemessen gegen Soll ≥ 0,8 ✗ · Täter: stamm/siedlung-bewohner.js (keine Not, kein Gedächtnis eines Ereignisses)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: keine Missernte und keine Not in der Welt: Welt-Akte der Not keiner (von 69), 0 von 27 Bewohnern tragen ein Gedächtnis — niemand zieht um, niemand nennt ein Ereignis · umzugProzent ungemessen gegen Soll ≥ 10 % ✗ · tagGeaendertProzent ungemessen gegen Soll ≥ 10 % ✗ · umzugOhneProzent ungemessen gegen Soll < 10 % ✗ · nennenAnteil ungemessen gegen Soll ≥ 0,8 ✗ · Täter: stamm/siedlung-bewohner.js (keine Not, kein Gedächtnis eines Ereignisses)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "1d9a03887af9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leben#3": {
+   "gruen": false,
+   "zahl": "S3 Umfang nicht erzeugbar: in 20 Jahren baut keine Familie an: der Plan des Dorfs ohne Chronik ist im Jahr 1258 derselbe (0 Häuser wuchsen, 0 von 1 leeren verfielen) — die Leute folgen dem Haus (fachwerk-core.js:9527 leuteVon), das Haus nie der Familie · r -0,646 gegen Soll ≥ 0,5 ✗ · verfallProzent 0 % gegen Soll > 0 % ✗ · Täter: fachwerk-core.js DORF (die Familie folgt dem Haus — leuteVon —, nie das Haus der Familie)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S3 Umfang nicht erzeugbar: in 20 Jahren baut keine Familie an: der Plan des Dorfs ohne Chronik ist im Jahr 1258 derselbe (0 Häuser wuchsen, 0 von 1 leeren verfielen) — die Leute folgen dem Haus (fachwerk-core.js:9527 leuteVon), das Haus nie der Familie · r -0,646 gegen Soll ≥ 0,5 ✗ · verfallProzent 0 % gegen Soll > 0 % ✗ · Täter: fachwerk-core.js DORF (die Familie folgt dem Haus — leuteVon —, nie das Haus der Familie)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "0a100b68ba6a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leben#4": {
+   "gruen": false,
+   "zahl": "S4 Umfang nicht erzeugbar: kein Vulkan, keine Seuche, kein Krieg erreicht die Bewohner: keine Flucht vor einem Ereignis, kein Gedenken (0 Gedächtnis-Felder), keine Kohorte über die Zeit (5 Alters-Stufen, ohne Geburt und Tod) · gedenkenJahre ungemessen gegen Soll ≥ 50 J ✗ · messbar ungemessen gegen Soll ≥ 3 ✗ · Täter: stamm/siedlung-bewohner.js (kein Ereignis, kein Gedenken, keine Kohorte)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S4 Umfang nicht erzeugbar: kein Vulkan, keine Seuche, kein Krieg erreicht die Bewohner: keine Flucht vor einem Ereignis, kein Gedenken (0 Gedächtnis-Felder), keine Kohorte über die Zeit (5 Alters-Stufen, ohne Geburt und Tod) · gedenkenJahre ungemessen gegen Soll ≥ 50 J ✗ · messbar ungemessen gegen Soll ≥ 3 ✗ · Täter: stamm/siedlung-bewohner.js (kein Ereignis, kein Gedenken, keine Kohorte)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "e5ca8f0d689d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leben#5": {
+   "gruen": false,
+   "zahl": "S5 Umfang nicht erzeugbar: keine Geschichte aus Leben: 0 von 27 Bewohnern tragen einen Namen, die Welt kennt keinen Wendepunkt · personenAnteil ungemessen gegen Soll ≥ 0,8 ✗ · gegenProzent ungemessen gegen Soll ≥ 70 % ✗ · Täter: stamm/siedlung-bewohner.js (keine Geschichte aus Personen)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S5 Umfang nicht erzeugbar: keine Geschichte aus Leben: 0 von 27 Bewohnern tragen einen Namen, die Welt kennt keinen Wendepunkt · personenAnteil ungemessen gegen Soll ≥ 0,8 ✗ · gegenProzent ungemessen gegen Soll ≥ 70 % ✗ · Täter: stamm/siedlung-bewohner.js (keine Geschichte aus Personen)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "f38d65132b73",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.leben#6": {
+   "gruen": false,
+   "zahl": "S6 Umfang nicht erzeugbar: keine Wendepunkte und kein Planetenwechsel mit Personen (0 benannte Bewohner) · andereProzent ungemessen gegen Soll ≥ 70 % ✗ · dieselbenProzent ungemessen gegen Soll ≥ 95 % ✗ · Täter: stamm/siedlung-bewohner.js (keine Wendepunkte)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S6 Umfang nicht erzeugbar: keine Wendepunkte und kein Planetenwechsel mit Personen (0 benannte Bewohner) · andereProzent ungemessen gegen Soll ≥ 70 % ✗ · dieselbenProzent ungemessen gegen Soll ≥ 95 % ✗ · Täter: stamm/siedlung-bewohner.js (keine Wendepunkte)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "8c0275575e8c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kultur#2": {
+   "gruen": false,
+   "zahl": "S2 die Messung der Leiter warf nach 20,009 s: der Deckel der Leiter 20 s · Täter: fachwerk-core.js bauRezept (kein Klima am Dach)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S2 die Messung der Leiter warf nach 20,009 s: der Deckel der Leiter 20 s · Täter: fachwerk-core.js bauRezept (kein Klima am Dach)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "5b10aa98c19b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kultur#3": {
+   "gruen": false,
+   "zahl": "S3 die Messung der Leiter warf nach 20,009 s: der Deckel der Leiter 20 s · Täter: koerper-core.js tagesPlan (kein Fest, kein Kalender)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S3 die Messung der Leiter warf nach 20,009 s: der Deckel der Leiter 20 s · Täter: koerper-core.js tagesPlan (kein Fest, kein Kalender)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "c8ed43e3115d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kultur#4": {
+   "gruen": false,
+   "zahl": "S4 die Messung der Leiter warf nach 20,009 s: der Deckel der Leiter 20 s · Täter: fachwerk-core.js DORF (kein Gelände, keine Sprachgrenze)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S4 die Messung der Leiter warf nach 20,009 s: der Deckel der Leiter 20 s · Täter: fachwerk-core.js DORF (kein Gelände, keine Sprachgrenze)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "12e48a35b5a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kultur#5": {
+   "gruen": false,
+   "zahl": "S5 die Messung der Leiter warf nach 20,009 s: der Deckel der Leiter 20 s · Täter: fachwerk-core.js DORF (keine Kaskade Geologie → Kultur)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S5 die Messung der Leiter warf nach 20,009 s: der Deckel der Leiter 20 s · Täter: fachwerk-core.js DORF (keine Kaskade Geologie → Kultur)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "da6e4fc1f4cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kreislauf#1": {
+   "gruen": false,
+   "zahl": "S1 Umfang nicht erzeugbar: keine Ware mit Herkunft: das Mahl ist ein Ort der Bindung (koerper-core.js:5269 tagesBindung), nie ein Bissen aus der Flur — 0 von 20 tragen eine Herkunft; 0 Brunnen im Plan · personen 20 gegen Soll ≥ 20 ✓ · mahlFeldProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: koerper-core.js tagesBindung (das Mahl ist ein Ort, keine Ware)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S1 Umfang nicht erzeugbar: keine Ware mit Herkunft: das Mahl ist ein Ort der Bindung (koerper-core.js:5269 tagesBindung), nie ein Bissen aus der Flur — 0 von 20 tragen eine Herkunft; 0 Brunnen im Plan · personen 20 gegen Soll ≥ 20 ✓ · mahlFeldProzent 0 % gegen Soll ≥ 90 % ✗ · Täter: koerper-core.js tagesBindung (das Mahl ist ein Ort, keine Ware)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "2667f6deb70f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kreislauf#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: kein Gut mit Bilanz: 0 Stände ohne Ware, kein Brennholz, kein Werkzeug im Fluss · bilanzAbwProzent ungemessen gegen Soll ≤ 10 % ✗ · Täter: fachwerk-core.js DORF (Stände ohne Ware)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: kein Gut mit Bilanz: 0 Stände ohne Ware, kein Brennholz, kein Werkzeug im Fluss · bilanzAbwProzent ungemessen gegen Soll ≤ 10 % ✗ · Täter: fachwerk-core.js DORF (Stände ohne Ware)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "e4e8881241fd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kreislauf#3": {
+   "gruen": false,
+   "zahl": "S3 Umfang nicht erzeugbar: kein Stoff im Fluss: keine Leitung, kein Abwasser, kein Müll; 14 Laternen ohne Energie · bilanzAbwProzent ungemessen gegen Soll ≤ 5 % ✗ · Täter: fachwerk-core.js DORF (keine Leitung, kein Abwasser)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S3 Umfang nicht erzeugbar: kein Stoff im Fluss: keine Leitung, kein Abwasser, kein Müll; 14 Laternen ohne Energie · bilanzAbwProzent ungemessen gegen Soll ≤ 5 % ✗ · Täter: fachwerk-core.js DORF (keine Leitung, kein Abwasser)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "dd51100aecd5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kreislauf#4": {
+   "gruen": false,
+   "zahl": "S4 Umfang nicht erzeugbar: kein Bedarf je Person: Hinterland 321 m² Feld gegen 871 m² Grund, ohne Strom und Handel · hinterlandAbwProzent ungemessen gegen Soll ≤ 30 % ✗ · Täter: fachwerk-core.js DORF (Felder ohne Bedarf)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S4 Umfang nicht erzeugbar: kein Bedarf je Person: Hinterland 321 m² Feld gegen 871 m² Grund, ohne Strom und Handel · hinterlandAbwProzent ungemessen gegen Soll ≤ 30 % ✗ · Täter: fachwerk-core.js DORF (Felder ohne Bedarf)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "fb39846cc1bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kreislauf#5": {
+   "gruen": false,
+   "zahl": "S5 Umfang nicht erzeugbar: 10⁸ in EINER Stadt nicht erzeugbar (das Dorf der Probe trägt 27, die Stadt des Fachwerks klemmt ihre Häuser) und keine Person ist versorgt (keine Nahrung, keine Energie) · versorgtAnteil 0 gegen Soll ≥ 0,99 ✗ · bissenProzent ungemessen gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js STADT_FUNKTION / koerper-core.js tagesBindung (keine Versorgung)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S5 Umfang nicht erzeugbar: 10⁸ in EINER Stadt nicht erzeugbar (das Dorf der Probe trägt 27, die Stadt des Fachwerks klemmt ihre Häuser) und keine Person ist versorgt (keine Nahrung, keine Energie) · versorgtAnteil 0 gegen Soll ≥ 0,99 ✗ · bissenProzent ungemessen gegen Soll ≥ 90 % ✗ · Täter: fachwerk-core.js STADT_FUNKTION / koerper-core.js tagesBindung (keine Versorgung)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "675a0693953a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.kreislauf#6": {
+   "gruen": false,
+   "zahl": "S6 Umfang nicht erzeugbar: kein Mangel und keine Ursache: die Welt kennt keine Versorgung über 100 J · saaten ungemessen gegen Soll ≥ 16 ✗ · jahre ungemessen gegen Soll ≥ 100 J ✗ · mangelOhneUrsache ungemessen gegen Soll = 0 ✗ · Täter: die Welt (kein Kreislauf der Versorgung)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S6 Umfang nicht erzeugbar: kein Mangel und keine Ursache: die Welt kennt keine Versorgung über 100 J · saaten ungemessen gegen Soll ≥ 16 ✗ · jahre ungemessen gegen Soll ≥ 100 J ✗ · mangelOhneUrsache ungemessen gegen Soll = 0 ✗ · Täter: die Welt (kein Kreislauf der Versorgung)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "bd881eb2e630",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.antwort#2": {
+   "gruen": false,
+   "zahl": "S2 Umfang nicht erzeugbar: keine Trasse des Spielers: die DSL kennt keinen Weg-Akt, die Zellen der Welt lesen keine Erreichbarkeit — Dichte im Gürtel 1.26× der Kontrolle ohne Trasse · dichteFaktor 1,257 gegen Soll ≥ 2 ✗ · Täter: stamm/siedlung-ort.js _autoSettlementCellInfo (keine Erreichbarkeit)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S2 Umfang nicht erzeugbar: keine Trasse des Spielers: die DSL kennt keinen Weg-Akt, die Zellen der Welt lesen keine Erreichbarkeit — Dichte im Gürtel 1.26× der Kontrolle ohne Trasse · dichteFaktor 1,257 gegen Soll ≥ 2 ✗ · Täter: stamm/siedlung-ort.js _autoSettlementCellInfo (keine Erreichbarkeit)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "ce946b535df9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.antwort#3": {
+   "gruen": false,
+   "zahl": "S3 Umfang nicht erzeugbar: kein Neubau nach Zerstörung: der Ort wächst nur aus seinem Jahr (stamm/siedlung-ort.js:2915 _ortWaechst), kein Bodenwert und kein Wiederaufbau nach remove_architecture · abweichung ungemessen gegen Soll > 0 ✗ · bandProzent ungemessen gegen Soll ≥ 70 % ✗ · gegenAenderung 0 gegen Soll = 0 ✓ · Täter: stamm/siedlung-ort.js _ortWaechst (kein Wiederaufbau)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S3 Umfang nicht erzeugbar: kein Neubau nach Zerstörung: der Ort wächst nur aus seinem Jahr (stamm/siedlung-ort.js:2915 _ortWaechst), kein Bodenwert und kein Wiederaufbau nach remove_architecture · abweichung ungemessen gegen Soll > 0 ✗ · bandProzent ungemessen gegen Soll ≥ 70 % ✗ · gegenAenderung 0 gegen Soll = 0 ✓ · Täter: stamm/siedlung-ort.js _ortWaechst (kein Wiederaufbau)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "ca18fe4f89ed",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.antwort#4": {
+   "gruen": false,
+   "zahl": "S4 Umfang nicht erzeugbar: kein Sprung 50 J am Siedlungsnetz und kein Leerstand: der Rang der Zelle liest kein Jahr und keinen Eingriff (stamm/siedlung-ort.js:1410 _autoSettlementCellInfo) — unter 2 g verschoben 0 von 64 · sprungJ 0 J gegen Soll ≥ 50 J ✗ · rangVerschiebung 0 gegen Soll > 0 ✗ · leerstandProzent ungemessen gegen Soll ≥ 70 % ✗ · Täter: stamm/siedlung-ort.js _autoSettlementCellInfo (kein Jahr, kein Eingriff)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S4 Umfang nicht erzeugbar: kein Sprung 50 J am Siedlungsnetz und kein Leerstand: der Rang der Zelle liest kein Jahr und keinen Eingriff (stamm/siedlung-ort.js:1410 _autoSettlementCellInfo) — unter 2 g verschoben 0 von 64 · sprungJ 0 J gegen Soll ≥ 50 J ✗ · rangVerschiebung 0 gegen Soll > 0 ✗ · leerstandProzent ungemessen gegen Soll ≥ 70 % ✗ · Täter: stamm/siedlung-ort.js _autoSettlementCellInfo (kein Jahr, kein Eingriff)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "49d456a65cc7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.antwort#5": {
+   "gruen": false,
+   "zahl": "S5 orteAnders 0 gegen Soll ≥ 64 ✗ · sprungJ 300 J gegen Soll ≥ 300 J ✓ · ohneUngleich 0 gegen Soll = 0 ✓ · Täter: fachwerk-core.js DORF (der Plan liest keinen Eingriff)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S5 orteAnders 0 gegen Soll ≥ 64 ✗ · sprungJ 300 J gegen Soll ≥ 300 J ✓ · ohneUngleich 0 gegen Soll = 0 ✓ · Täter: fachwerk-core.js DORF (der Plan liest keinen Eingriff)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "97202889c14d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.antwort#6": {
+   "gruen": false,
+   "zahl": "S6 taten 100 gegen Soll ≥ 100 ✓ · folgeProzent 0 % gegen Soll ≥ 90 % ✗ · mutante 0 gegen Soll = 0 ✓ · Täter: stamm/feld-dsl.js gravity (die Tat erreicht nur _stepCharacter)",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: S6 taten 100 gegen Soll ≥ 100 ✓ · folgeProzent 0 % gegen Soll ≥ 90 % ✗ · mutante 0 gegen Soll = 0 ✓ · Täter: stamm/feld-dsl.js gravity (die Tat erreicht nur _stepCharacter)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k350f516c8d28",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 104.5,
+   "fremd": {
+    "s": 105.2,
+    "takte": 48,
+    "fremdS": 35.33,
+    "kerne": 0.336,
+    "fensterKerne": 0.651,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.86
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.64
+     ]
+    ],
+    "dienerS": 36.78,
+    "diener": [
+     [
+      "dwm.exe",
+      18.34
+     ],
+     [
+      "System",
+      11.33
+     ]
+    ],
+    "geraetS": 35.55,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.63
+     ],
+     [
+      "svchost.exe",
+      12.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.69
+     ]
+    ],
+    "eigenS": 194.41,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:21:35.959Z",
+   "abdruck": "15b6c3d2046e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kopplung.leib#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -57459,7 +59445,8 @@
   "k74a6ddcbd828": "nVXbbptAEP0XPzbdLJflKuVhbaImUi/OU59nYRaIMVi7S2hd9d8rsLEDJFLUfURzZs45c+HP6gDpDnK8fdZNvYpXn1afVxpekGhUL6hun/UqXkWp7aAb89OjnPNNH5aq8mA0zUrIyU4hmFaRCgXWt+kA8yJIwY/pB5+84dl7aQ3szDlrCNJiLF7nnH/jd3evEFUpKIgaij2SVhksqxFiO5kjY9rd825L6ZYGdN0toZXArCEGJI7AKJJuCPE8sNU5CCTQyqHYKDdEkN5Zbpjw7fNF2rrjnHb384oC6mzKNPK9AL3B6fuluKwENKQqaz3WTDNPuM7V4qWqTEFHjoBFheoMAjsAW4xEh55224jOgLJqtZ4UC93Mc8KY0kVsjrpMC0MOqrm2X0ROYEP8htP5oSVywkgICMXc5wKwzlFNOFhuKn07pr/CedId7FEBqaEYvbTcwBGT8XtYchknbI+1TkdoylgWyQ9NbvJ+yokbbuY6fjru0P+/df5lVq4arB9MGov5lrRZOOMfJjTvMyT5YAU9jt+3p8wJ50+XMvmsiE6LUu2nkiRDx3Ljr0sHdAEZKrJrtLlEhwwAw7MBCR1qbVkyR17FnHGO8C3vtZaQ8odF93UjTQcKSX5oz0Bk6AX9Lj0ugg3s9+PWSpe5b/fljcnVpl/Z1/Q8hrYf9PTydybstODkiGU1gqRkLPLizZrNg18U7AmIXJVSjnMsvFRGb61dh5UhomnG0+i7lhvZMXVpfXErGhZ8fVW14clv5+fD09NU7HeeyCX3oUKjzEWt8C3JYvnS35p0EV0qQzpIi0vvpEDoqS/6dURVYY4TKzMmXMhi2skT9WPI+TY4HzZ5Mxnm4zJjib3JtW71OHFRcNniqbQO1U5AvTsHMt8LbWeYgfUP/nAy5NlKbhK67V6btOGy4/xxk5yu5je+5o/J5QQcMKUH1ciyv+u0gFYXUJnJn/UU0qIULRY19vNkyqbG+hr19x8=",
   "k8889729fce1c": "dVVdj5swEPwvebzW5/AVwNI9OOGkXNVTc09VH9ewBhICkW2ONlX/ewWBXIDcPkYzu+OZZfN3cYL4ACk+7nVVLtjiYfF1oeEdiUb1jupxrxdsEcaWjQ7jl6Kc800Li1V+MpomOaSkQXXQBowhDaaPcUd7uAEVuaAgSsiOSGplMC96UGDZiS0ZbV55s6N0R326bvi1NvzpadqmEJhUxIDEoUkYSicANgXWOgWBBGrZDe7BXoAgPUa7CiK+29Oh2sm0eb43VUCZjJWHK89Hr3PleY5PckBDirzUw9w48YRjs+uwZs5R0JAzYFag6klg+WCJQWxnSbML6YQoi1rr0bDASTw7YJTOsCnqPM4MOalKYNnDRWj7FrD1XFN6qokcKRICAjH1OgMsU1QjDUsnliuL0d/BtOkBjqiAlJANXi4d3xYf3lBKt3MtRSe8GzEIXy2l5QYjYhsqTVunorRrRM/D77vLUkWcv103LJ0M0XGWq+PYHumivXTY97kknUGCihwqba7owAXAoP9cItrN2rnRlPnxmJ5ni9XSu31LQPl25p2upGlAIUlPdU9EFz2/3cSXGdjA8TjsvXRcJ2b8Tt3JXZt24W/leS5aK7+Vl36Sz+XzIGfMi4EkpeuGHtus3Sn4XcGRgEhVLuWwBcKLZXhvaRssDBFVZYbYnaUTWoz6tLyxq411fXs7oj/2z+3b22dRd10rZa4vFKuldJl8b7/OeCq4yZUhDcTZNS8pEFq5s4zOqApMcWRf4goHEkYbeVEbBZzv/P4UyC+jBT7PO+bYGlvqWg9bFvpJKNmdU9LeYgHloQe6Ky+wbPatzfkH33bniu+X0ZeITitpovTXJrrcmVe+5i8RjfrmJ4zpSVUyby8hzaDWGRRm9L9xgdQoNZgzFVBjSQ7OB+Tffw==",
   "kcaf574665a1b": "dVVNj5swEP0vObb1ms8AlvbgLFtlq1Ylp6rHMYyBhEBkQ2hT9b9XEMgGSOeI3sx782Y8/FmdID5Aik97XZUrtvqw+rTScEaiUZ1RPe31iq2C2LTQZvwalHP+0sFilZ9qTYtcUBAlZEckjaoxL57iPs03rcSSjLavvI0ojahHNy2/xQt/fp6XKQQmFalB4lgkCKTtA5sDG52CQAKN7IkHsOsjSJfRPvyQR3s6RsdM28/fo3Q3ZxVQJlPlwdr10GVvLeevS5VJDliTIi/1yBsnrrAtdiNrlzkKWnIBzApUQxKYHphiFNtb0kYBnSXKotF6QubbiWv5jNIFNkWdx1lNTqoSWA5wEVieCWyz1JSeGiInioQAX8y9zgDLFNVEg2HHcm0y+sufFz3AERWQErLRS8P2LPHuDaV0u9RS9MJ7ilH42pCm408Su6HStHMqTPtC9DJ+j65LFXK+u21YOiPRcZar49Qe6aBl2OzrUpLOIEFFDpWub2jfAUB/eAkh7bkiJ5xnvjcz5Flibbj3vfiUbxfe6UrWLSgk6akZEtFB13MZ528LcA3H47j30nbsmPEH8WDuuu4W/l6e66C59jp56X/mc30e5IJ5MSZJ6TiBy142zhx8VnAkIFKVSzlugXBjGTxa2haLmoiqqsex24YdmJ2W8s6uvpX72xH+tn5sd7tps6+cP9DeM1SqvnUr1oZ0mDx3LzVeoHNVkxbi7DY7KRA66Yt5XVAVmOLEysQRNiSMtvKqPPQ5j7zhLMiPk2W+LCvm2Jlc6kaPGxd4SSDZg7PSojoIKA8D0Fm7vmmxL51R3/n2asjeCGlI5yHbMP0Zhdeb841v+FtI90PxE8b0pCqZd1eRZtDoDIr6/ffw9x8=",
-  "k94cc53f5ec17": "dVVNj5swEP0vObb1OnwFsLQHZ1kpW7Vacqp6HMMYSAggG0Kbqv+9gkA2QDpH9Gbemzfj4c+qgugICT4ddFms2OrT6stKwxmJRnVG9XTQK7byI8NEi/FrUM75SweLVFbVmuaZoCAKSE9IGlVjlj9FfZpnmLEpGW1feRtSGlKXblt+ixf+/DwvkwuMS1KDxLGI70vLAzYHNjoBgQQa2RMPYMdDkA6jfXgBDw90jI65UxIm+zmrgCKeKvc3jotO3/DrUmWcAdYkzwo98kaxIyyT3cjaZY6CllwA0xzVkASGC4YYxfaWtKFPZ4kyb7SekHlW7Jgeo3SBTVBnUVqTSpUCiwEufNM1gG2XmpKqIXKiSAjwxNzrFLBIUE00rK1IbgxGf3nzokc4oQJSQDp6ubZcU3x4QyndLbXkvfCeYhS+WUvD9iaJ3VBp0jkVJH0hehm/h9elCjjf3zYsmZHoKM3UaWqPtNFcW+zbUpJOIUZFjqWub2jPBkBveAkB7blCO5hnfjQz5Jlis3bue/Eo3y2806WsW1BIkqoZEtFGx+028W0BruF0GvdeWrYVMf4gHsxd193C38tzbDQ2bicv+c98rs+DXDDLxyQpbdt32MvWnoPPCk4ERKIyKcctEE4k/UdL22JeE1GW9Th2a235BqMuLe7s6lu5vx3Bb/PHbr9f9PtAe89QqvrWrdispc3kuXup0QKdqZq0EKW32UmB0ElfzOuCKscEJ1bGtrAgZrSVV+UXj/PQHc6C/DxZ5suyYoadyYVu9Lhxvhv7kj04Ky2qo4DiOADtjeMZJvvaGfXOd1ebCj+gAZ2HbIPk53twvTnf+Za/BfQwFK8wopUqZdZdRZpCo1PI64/fw99/"
+  "k94cc53f5ec17": "dVVNj5swEP0vObb1OnwFsLQHZ1kpW7Vacqp6HMMYSAggG0Kbqv+9gkA2QDpH9Gbemzfj4c+qgugICT4ddFms2OrT6stKwxmJRnVG9XTQK7byI8NEi/FrUM75SweLVFbVmuaZoCAKSE9IGlVjlj9FfZpnmLEpGW1feRtSGlKXblt+ixf+/DwvkwuMS1KDxLGI70vLAzYHNjoBgQQa2RMPYMdDkA6jfXgBDw90jI65UxIm+zmrgCKeKvc3jotO3/DrUmWcAdYkzwo98kaxIyyT3cjaZY6CllwA0xzVkASGC4YYxfaWtKFPZ4kyb7SekHlW7Jgeo3SBTVBnUVqTSpUCiwEufNM1gG2XmpKqIXKiSAjwxNzrFLBIUE00rK1IbgxGf3nzokc4oQJSQDp6ubZcU3x4QyndLbXkvfCeYhS+WUvD9iaJ3VBp0jkVJH0hehm/h9elCjjf3zYsmZHoKM3UaWqPtNFcW+zbUpJOIUZFjqWub2jPBkBveAkB7blCO5hnfjQz5Jlis3bue/Eo3y2806WsW1BIkqoZEtFGx+028W0BruF0GvdeWrYVMf4gHsxd193C38tzbDQ2bicv+c98rs+DXDDLxyQpbdt32MvWnoPPCk4ERKIyKcctEE4k/UdL22JeE1GW9Th2a235BqMuLe7s6lu5vx3Bb/PHbr9f9PtAe89QqvrWrdispc3kuXup0QKdqZq0EKW32UmB0ElfzOuCKscEJ1bGtrAgZrSVV+UXj/PQHc6C/DxZ5suyYoadyYVu9Lhxvhv7kj04Ky2qo4DiOADtjeMZJvvaGfXOd1ebCj+gAZ2HbIPk53twvTnf+Za/BfQwFK8wopUqZdZdRZpCo1PI64/fw99/",
+  "k350f516c8d28": "dVVNr5swEPwvObb1M58BLPXghEh5Vavmnaoe17AGEgLIhtCm6n+vIJAXIN0jmt2ZnV0vf1YVRCdI8OWoy2LFVh9Wn1YaLkg0qguql6NesVUQmRbajN+Ccs63HSxSWVVrmmeCgiggPSNpVI1Z/hL1ab5pxZZktN3x9kDpgXp00/J7bPnnz/MyucC4JDVIHIsEgbR9YHNgoxMQSKCRPfEAdn0E6TLahx/yw5GO0THTdrd9wiqgiKfKg7XrocteW853S3ycAdYkzwo98kaxK2yL3cnaZY6CllwB0xzVkASmB6YYxfaWtIeAzhJl3mg9IfPt2LV8RukCm6DOorQmlSoFFgNcBJZnAtssNSVVQ+REkRDgi7nXKWCRoJpoMOxIrk1Gf/nzoic4owJSQDp6adieJd69oZTul1ryXnhPMQpfG9J0/EliN1SadE6FSV+IXsfvh9tShZy/3TcsmZHoKM3UeWqPdNAybPZ1KUmnEKMip1LXd7TvAKA/vISQ9lwHJ5xnvjcz5FlibbiPvfiU7xfe6VLWLSgkSdUMieig67mM89cFuIbzedx7aTt2xPiTeDJ3XXcL/yjPddBce5285D/zuT0PcsUsH5OkdJzAZduNMwdfFJwJiERlUo5bINxIBs+WtsW8JqIs63HstmEHZqeleLCrb+XxdoS/rR/7t7dps7tN+UR7z1Cq+t6tWBvSYfLSvdRogc5UTVqI0vvspEDopC/mdUWVY4ITK2NH2BAz2sqb8qPP+cEbzoL8OFnm67Jihp3JhW70uHGBFweSPTkrLaqTgOI0AJ2165sW+9IZ9Z3vbzYVQUhDOg/ZhsnPMLzdnG98w19DehyKVxjRSpUy664iTaHRKeT1++/h7z8="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -70706,1853 +72693,6 @@
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session"
-  },
-  "karte2.mensch.kopplung.leib#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "df6ba47da85c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.leib#3": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "6e0dfab1e00a",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.leib#5": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "84388c773878",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.sport#1": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "0187ef51e22d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.sport#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "ded667ca7efa",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.sport#3": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "c8ff86f618ba",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.sport#4": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "a7f7b99d335b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.leben#1": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "616ce31136fe",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.leben#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "1d9a03887af9",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.leben#3": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "0a100b68ba6a",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.leben#4": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "e5ca8f0d689d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.leben#5": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "f38d65132b73",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.leben#6": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "8c0275575e8c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kultur#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "5b10aa98c19b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kultur#3": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "c8ed43e3115d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kultur#4": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "12e48a35b5a0",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kultur#5": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "da6e4fc1f4cc",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kreislauf#1": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "2667f6deb70f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kreislauf#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "e4e8881241fd",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kreislauf#3": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "dd51100aecd5",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kreislauf#4": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "fb39846cc1bf",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kreislauf#5": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "675a0693953a",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.kreislauf#6": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "bd881eb2e630",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.antwort#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "ce946b535df9",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.antwort#3": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "ca18fe4f89ed",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.antwort#4": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "49d456a65cc7",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.antwort#5": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "97202889c14d",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.mensch.kopplung.antwort#6": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.84,
-    "kerne": 0.388,
-    "fensterKerne": 0.388,
-    "namen": [
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.27
-     ],
-     [
-      "bash.exe dienst-omen/landung-dienst.sh",
-      0.16
-     ],
-     [
-      "Explorer.EXE",
-      0.08
-     ]
-    ],
-    "dienerS": 0.64,
-    "diener": [
-     [
-      "dwm.exe",
-      0.33
-     ],
-     [
-      "System",
-      0.19
-     ]
-    ],
-    "geraetS": 0.92,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.77
-     ],
-     [
-      "svchost.exe",
-      0.11
-     ],
-     [
-      "SearchIndexer.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 3.55,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T23:18:06.340Z",
-   "abdruck": "15b6c3d2046e",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.mensch.kopplung.leib#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
   },
   "karte2.erleben.kopplung.emergenz#2": {
    "gruen": false,
