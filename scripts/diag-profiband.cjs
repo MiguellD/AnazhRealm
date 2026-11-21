@@ -27,6 +27,9 @@
 //       (haupt) und ≤ Haushalt
 //   P-Ferne DIE FERNE DER NAH-WIESE (vegetation.K1) an der echten Klasse: das Gesetz der Ferne (`WIESE_FERN_TAFEL`) — das Büschel
 //       unverformt (nur ein Anteil, der Block affin), die Lücke des Strahls bis zur Kappe, die Büschel je Pixel ≤ 2× der Übergabe
+//   H9  DAS SOLL DES TURMS (hochhaus-dach-speicher) am Kern des Werk-Fadens: die Fern-Stufen L2 · L3 · L1 eines frischen
+//       Klinker-Turms (modern, 22 Geschosse) legen zusammen höchstens die Ecken seiner Stufe 0 an — der Warm-Pfad `sollTon`
+//       baut die Stufe 0 je Bau einmal, nie je Auftrag (der Müll von 1,1–1,7 GB je Auftrag brach den Renderer der Metropole)
 //
 // Die Absenz der gefallenen Band-Täter prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -257,6 +260,50 @@ function wieseAmGesetz(haushalt) {
         for (const x of WO.wieseUrteil(m, o.wiese)) aus.befunde.push(`${o.id}: ${x}`);
     }
     return aus;
+}
+
+// H9 DAS SOLL DES TURMS (hochhaus-dach-speicher): der Werk-Faden (foundry-bruecke `build-asset` → fachwerk-core
+// `buildInstance`) baut die Fern-Stufen L1 · L2 · L3 eines Turms; ihr Warm-Pfad (`sollTon`) misst die Stufe 0. Bis
+// hochhaus-dach-speicher baute JEDE Stufe sie neu — ein Klinker-Turm (modern, 22 Geschosse) 2,8 Mio. Ecken je Auftrag,
+// 1,1–1,7 GB Allokation; die Metropole (216 Häuser, Türme bis 23 Geschosse) füllte so den geteilten 4-GB-Käfig der Fäden mit
+// Müll, der Renderer fiel (V8 OOM). Die Linse zählt die Ecken, die der Kern anlegt (`setAttribute("position")`): die drei
+// Fern-Stufen eines frischen Baus zusammen höchstens so viele wie seine Stufe 0 — die Stufe 0 je Bau EINMAL.
+const TURM_SOLL = { id: "modern", ov: { pitchDeg: 52, W: 10.5, D: 11, storeys: 22, brace: "wild", stil: "klinker" } };
+function sollWand(kernText) {
+    const { studioKern } = require("./lib/welt-boot.cjs");
+    let FC = studioKern("fachwerk-core.js", "__fachwerkCore");
+    if (kernText != null) {
+        const vor = globalThis.__fachwerkCore;
+        new Function(kernText)();
+        FC = globalThis.__fachwerkCore;
+        globalThis.__fachwerkCore = vor;
+    }
+    const BG = THREE.BufferGeometry.prototype,
+        setze = BG.setAttribute;
+    let ecken = 0;
+    BG.setAttribute = function (n, a) {
+        if (n === "position" && a) ecken += a.count;
+        return setze.call(this, n, a);
+    };
+    const bau = (samen, l) => {
+        const e = ecken;
+        FC.buildInstance(TURM_SOLL.id, samen, l, Object.assign({}, TURM_SOLL.ov)).traverse((o) => o.geometry && o.geometry.dispose());
+        return ecken - e;
+    };
+    try {
+        const e0 = bau(10, 0);
+        const je = [2, 3, 1].map((l) => ({ l, e: bau(11, l) }));
+        const summe = je.reduce((s, x) => s + x.e, 0);
+        const errs =
+            summe > e0
+                ? [`H9 sollTon: ${TURM_SOLL.id} ${TURM_SOLL.ov.storeys} Geschosse — L2 · L3 · L1 legen ${summe} Ecken an, ` +
+                      `${(summe / e0).toFixed(2)} × die Stufe 0 (${e0}; Soll ≤ 1): die Stufe 0 je Auftrag statt je Bau ` +
+                      `(${je.map((x) => `L${x.l} ${x.e}`).join(" · ")})`] // prettier-ignore
+                : [];
+        return { errs, e0, summe, je };
+    } finally {
+        BG.setAttribute = setze;
+    }
 }
 
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
@@ -1551,6 +1598,12 @@ function selbsttest() {
     t("Runde: Behälter mit Anlage, Geometrie mit Geburts-Stelle, Zell-Gedächtnis außerhalb des Blicks und unangemeldetes rot beim Namen, die geräumte Runde grün", DZ.rundenSelbsttest().length === 0);
     // DER JS-HEAP DER RUNDE (`heapBesteller`): ein Leib, der je Runde lebende Bytes bestellt, ist rot beim Besteller und bei der Stelle
     t("Runde: der JS-Heap-Zuwachs steht beim Besteller (Datei:Zeile) und der Stelle, ein voll gelaufener Cache grün, Splitter benannt", DZ.jsHeapSelbsttest().length === 0); // prettier-ignore
+    // DAS SOLL DES TURMS (H9): der Kern, der die Stufe 0 je Auftrag baut (das Gedächtnis `SOLL_TON` gestrichen, der Stand
+    // vor hochhaus-dach-speicher), ist rot bei sollTon; der Kern grün
+    const kernText = fs.readFileSync(path.join(root, "fachwerk-core.js"), "utf8");
+    const sollRot = sollWand(stammLib.ersetze(kernText, null, "if (SOLL_TON.has(sk)) return", "if (false) return"));
+    const sollGruen = sollWand();
+    t("Soll des Turms: die Stufe 0 je Auftrag ist rot bei sollTon, je Bau einmal grün", /^H9 sollTon: /.test(sollRot.errs[0] || "") && !sollGruen.errs.length); // prettier-ignore
 
     ende("die Band-Wand feuert");
 }
@@ -1598,6 +1651,9 @@ function main() {
         }));
         for (const f of DZ.wegUrteil(posen, ratsche)) errs.push("H8 " + f);
     }
+    const sw = sollWand();
+    errs.push(...sw.errs);
+    console.log(`H9 Soll des Turms ${TURM_SOLL.id}/${TURM_SOLL.ov.storeys}: L2 · L3 · L1 ${sw.summe} Ecken = ${(sw.summe / sw.e0).toFixed(2)} × Stufe 0 (${sw.e0})`); // prettier-ignore
     const A = klasseVon();
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
