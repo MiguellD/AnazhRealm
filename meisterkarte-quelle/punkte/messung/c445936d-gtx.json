@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T16:36:22.878Z",
+ "zeit": "2026-11-21T16:39:36.705Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kosmos.sternhimmel#1": {
@@ -1564,6 +1564,70 @@
    },
    "zeit": "2026-11-21T16:36:22.878Z",
    "abdruck": "72c45f3ab1e8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.rhythmus#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 71 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 71 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.19,
+   "grund": "Frist der Probe 71 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 71 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 71.1,
+   "fremd": {
+    "s": 74.2,
+    "takte": 34,
+    "fremdS": 27.42,
+    "kerne": 0.37,
+    "fensterKerne": 0.496,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.47
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      3.92
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.91
+     ]
+    ],
+    "dienerS": 23.42,
+    "diener": [
+     [
+      "dwm.exe",
+      11.39
+     ],
+     [
+      "System",
+      7.3
+     ]
+    ],
+    "geraetS": 24.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.73
+     ],
+     [
+      "svchost.exe",
+      8.69
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 173.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T16:39:36.705Z",
+   "abdruck": "fea5242f43a0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
