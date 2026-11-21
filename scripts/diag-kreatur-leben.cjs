@@ -1299,6 +1299,96 @@ async function lebenBuehnen() {
             }
             je[h] = { am: q3(z.am / z.n), unterwegs: q3(z.unterwegs / z.n), ohne: q3(z.ohne / z.n), wer: z.wer };
         }
+        // DER STAND HÄNGT NAHE SEINER TÜR AM NETZ (pendler-anschluss): wer zu einem Stand vor einer Tür geht, geht über das
+        // Wege-Netz des Orts an seinen Anschluss (`_bewohnerAnschluss`: der erste der `anschlussN` nächsten Knoten, frei in
+        // gerader Linie) — der Ursprung jedes Stands erreicht den Punkt vor seiner Tür über das Netz (der kürzeste Weg, hier
+        // eigens gerechnet) höchstens auf JENSEITS.umweg × der Luftlinie + JENSEITS.nahtM. Bis hier fragte der Wirt nur,
+        // OB ein Knoten frei liegt: an stadt-voll hingen 21 Stände der Werkstatt an der Kante der Klippe (die Tür auf der
+        // Terrasse) an Knoten an ihrem Fuß, 17–28 m vor der Tür, 630–730 m über das Netz — 21 ihrer Leute kamen um 10 Uhr
+        // nicht an; an der Stadt (`dorf 7 120`) lagen 231 von 1 902 Ständen jenseits (mit der Frage 0 von 1 834; der Punkt vor
+        // der Tür wie der Wirt ihn fragt — an der Tür selbst gemessen nannte die Probe 18 Ecken falsch). GERICHTET werden beide
+        // Listen des Wirts: die in DIESER Welt trocken neu gestellte (`_bewohnerListe`, dieselbe Funktion wie nach der
+        // Abwesenheit) und die der Stadt nach dem Tag (`jenseitsLeben`). Solange eine Tür, die keinen Knoten sah, ihre Stände
+        // ungefragt nahm, lagen nach dem Tag an der Stadt (dorf 7 30) 2 von 555 jenseits (beide an haus#134516, 16,7 m Luft,
+        // 182 m über das Netz); seit die Tür zur Seite tritt (stamm `amTuer`) 0 von 562. Täter (Selbsttest): der Stand fragt das
+        // Netz nicht (tetrapoda `wegLaengen` trägt 0).
+        const JENSEITS = { umweg: 2, nahtM: 25 };
+        const trocken = (mut) => {
+            const TC0 = globalThis.__tetrapodaCore;
+            if (mut) globalThis.__tetrapodaCore = Object.assign(Object.create(TC0), { wegLaengen: (n) => new Float64Array(n) }); // prettier-ignore
+            try {
+                const it = r._bewohnerListe(S);
+                let w;
+                while (!(w = it.next()).done);
+                return w.value || [];
+            } finally {
+                globalThis.__tetrapodaCore = TC0;
+            }
+        };
+        const standListe = trocken(taeter === "zielplan-jenseits");
+        const jenseitsVon = (standListe) => {
+            const G = S.netzGrund, K = G.knoten, n = K.length, LW = new Map(), vorM = A.BEWOHNER.vorM;
+            // der kürzeste Weg von a zu jedem Knoten über die Kanten des Grunds (kanten[i] = [j, Länge, …])
+            const laengen = (a) => {
+                const [D, H] = [new Float64Array(n).fill(Infinity), [[0, a]]];
+                D[a] = 0;
+                while (H.length) {
+                    const [d, i] = H[0];
+                    const l = H.pop();
+                    for (let p = 0; H.length; ) {
+                        const c = 2 * p + 1, m = c + 1 < H.length && H[c + 1][0] < (H[c] || l)[0] ? c + 1 : c; // prettier-ignore
+                        if (c >= H.length || H[m][0] >= l[0]) {
+                            H[p] = l;
+                            break;
+                        }
+                        [H[p], p] = [H[m], m];
+                    }
+                    if (d > D[i]) continue;
+                    const E = G.kanten[i] || [];
+                    for (let k = 0; k < E.length; k += 2) {
+                        const [j, dj] = [E[k], d + E[k + 1]];
+                        if (!(dj < D[j])) continue;
+                        D[j] = dj;
+                        H.push([dj, j]);
+                        for (let p = H.length - 1, q; p && H[(q = (p - 1) >> 1)][0] > dj; p = q) [H[p], H[q]] = [H[q], H[p]];
+                    }
+                }
+                return D;
+            };
+            const amNetz = (p) => {
+                const nah = K.map((k, i) => [(k.x - p.x) ** 2 + (k.z - p.z) ** 2, i]).sort((u, v) => u[0] - v[0] || u[1] - v[1]);
+                const c = nah.slice(0, A.BEWOHNER.anschlussN).find(([, i]) => !r._bewohnerWand(p, K[i]));
+                return c ? c[1] : -1;
+            };
+            // der Punkt vor jeder Tür (der Eingang, `vorM` aus dem Haus — der Ort, über den jeder Weg hinein und hinaus geht)
+            const vor = new Map();
+            for (const t of tueren) {
+                const sl = plan.slots[t.si], m = sl.obb ? { x: S.ox + sl.obb.cx, z: S.oz + sl.obb.cz } : t.mitte; // prettier-ignore
+                const [ul, hof] = [ab(t, m) || 1, t.ein.x !== t.x || t.ein.z !== t.z];
+                const u = hof ? { x: -Math.sin(sl.phi || 0), z: -Math.cos(sl.phi || 0) } : { x: (t.x - m.x) / ul, z: (t.z - m.z) / ul }; // prettier-ignore
+                vor.set(t, { x: t.ein.x + u.x * vorM, z: t.ein.z + u.z * vorM });
+            }
+            const [aus, an] = [[], new Map()];
+            let N = 0;
+            for (const b of standListe)
+                for (const q of Object.values(b.orte)) {
+                    const t = q && q.anker && tueren.find((d) => ab(d, q.anker) < 0.05);
+                    if (!t) continue;
+                    // (der Ort, an dem er steht und zu dem man geht — nach dem Tag auch der gerückte; die Liste neu gestellt steht am
+                    // Ursprung. Bis hier richtete die Linse den verlassenen Ursprung: an der Stadt dorf 7 30 rückten nach den Proben
+                    // davor zwei Stände an haus#134516 fort, weil eine Hülle ihren Ursprung vom Netz schnitt — die Linse nannte den Ursprung)
+                    const [v, p] = [vor.get(t), q];
+                    if (!an.has(t)) an.set(t, amNetz(v));
+                    const [a, e] = [an.get(t), amNetz(p)];
+                    if (a < 0 || e < 0) continue; // ohne Anschluss: die Probe der Wege nennt ihn (`kein Weg`)
+                    N++;
+                    if (!LW.has(a)) LW.set(a, laengen(a));
+                    const [weg, luft] = [ab(v, K[a]) + LW.get(a)[e] + ab(p, K[e]), ab(v, p)];
+                    if (weg > JENSEITS.umweg * luft + JENSEITS.nahtM) aus.push(`${wer(b)} an ${t.k}: ${q3(luft)} m Luft, ${Math.round(weg)} m über das Netz, die Tür am Netz bei der Geburt: ${q.tuerAm ? "Knoten " + q.tuerAm.i : q.tuerAm === null ? "keiner" : "-"}${q.ur && (q.x !== q.ur.x || q.z !== q.ur.z) ? ", gerückt" : ""}`); // prettier-ignore
+                }
+            return { N, n: aus.length, erste: aus.slice(0, 3) };
+        };
+        const [jenseits, jenseitsLeben] = [jenseitsVon(standListe), jenseitsVon(S.liste)];
         for (const ro of fremd.values()) if (rollen[ro]) rollen[ro][0]++;
         // je Rolle: so viele Fremde tragen einen Stand vor einer ihrer Türen (die Bindung des Wirts) — „keiner kommt an" und
         // „keiner ist gebunden" sind zwei Täter
@@ -1321,6 +1411,8 @@ async function lebenBuehnen() {
         const [KC, TC, GESETZ_PROBEN] = [window.__koerperCore, globalThis.__tetrapodaCore, 200];
         const orteK = KC.tagesOrte(plan, (si) => tueren.some((t) => t.si === si && hausAn(t)));
         const siVon = new Map(tueren.map((t) => [t.k, t.si]));
+        // die Nähe der Wahl ist der Weg, wie der Wirt ihn misst (koerper `tagesWege` über das Netz des Orts, pendler-anschluss)
+        const wegK = KC.tagesWege(TC, orteK, S.netzGrund, S.ox, S.oz);
         const gesetzLeer = {};
         for (const ro in rollen) gesetzLeer[ro] = 1;
         let gesetzN = 0;
@@ -1330,7 +1422,7 @@ async function lebenBuehnen() {
             gesetzN++;
             const zahl = {};
             for (let k = 0; k < GESETZ_PROBEN; k++) {
-                const B = KC.tagesBindung(TC, (b.same ^ Math.imul(k + 1, 0x9e3779b9)) >>> 0, b.rolle, heimI, orteK, null);
+                const B = KC.tagesBindung(TC, (b.same ^ Math.imul(k + 1, 0x9e3779b9)) >>> 0, b.rolle, heimI, orteK, null, wegK);
                 for (const art of new Set([B.werk, B.mahl, B.abend, B.besuch].filter((i) => i >= 0 && i !== heimI).map((i) => orteK[i].art))) // prettier-ignore
                     if (art in gesetzLeer) zahl[art] = (zahl[art] || 0) + 1;
             }
@@ -1352,6 +1444,9 @@ async function lebenBuehnen() {
             fehlt,
             fernN: fern.length,
             fern: fern.slice(0, 3).map((f) => f.text),
+            jenseits,
+            jenseitsLeben,
+            jenseitsSoll: JENSEITS,
         };
     });
     // ── gehege (Pflicht F, w28-gehege; tetrapoda GEHEGE_GESETZ): das Wolfs-Gehege des Ort-Plans, wie die Welt es liest
@@ -2218,6 +2313,13 @@ function lebenUrteil(name, z, soll) {
             `Lose des Plans stehen nicht: ${z.fehlt.length} von ${z.haeuser} (${z.fehlt.join(" · ")})`
         );
         soll(!z.fernN, `Stand fern von seiner Tür (Ring ${z.ringM} m): ${z.fernN} (${z.fern.join(" · ")})`);
+        // der Stand hängt nahe seiner Tür am Netz (pendler-anschluss): über das Netz höchstens umweg × Luftlinie + nahtM
+        const [J, JL] = [z.jenseits, z.jenseitsLeben];
+        const JR = J.n || !JL.n ? J : JL; // die Liste, die fällt: die neu gestellte zuerst, sonst die nach dem Tag
+        soll(
+            J.N > 0 && !J.n && !JL.n,
+            `Stand jenseits der Wand: ${JR.n} von ${JR.N} Ständen vor einer Tür erreichen sie über das Netz erst nach mehr als ${z.jenseitsSoll.umweg} × der Luftlinie + ${z.jenseitsSoll.nahtM} m (${JR === J ? "die Liste neu gestellt" : "die Liste nach dem Tag"}: ${JR.erste.join(" · ")})` // prettier-ignore
+        );
         soll(z.je[10].am >= 0.5, `um 10 Uhr am Werk-Ort angekommen: ${Math.round(z.je[10].am * 100)} % (Soll ≥ 50 %)`);
         // die Leere, die das Gesetz trägt (`gesetzLeer` ≥ GESETZ_LEER: der Wurf lässt die Rolle so oft ohne Fremden), fällt nicht —
         // sie steht benannt in der Zeile; jede andere leere Rolle ist der Täter
@@ -2528,6 +2630,7 @@ module.exports = {
             ["zielplan-einort", /Rollen ohne Ziel-Ort/],
             ["zielplan-fremd", /Stand fern von seiner Tür/],
             ["zielplan-los", /steht nicht: fiel still/],
+            ["zielplan-jenseits", /Stand jenseits der Wand: [1-9]/],
         ],
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],

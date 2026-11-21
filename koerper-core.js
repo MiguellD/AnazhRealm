@@ -5294,10 +5294,52 @@
             if (fe[j] && isFinite(fe[j].cx) && isFinite(fe[j].ex)) aus.push({ art: "feld", feld: j, x: fe[j].cx, z: fe[j].cz, bietet: A.feld });
         return aus;
     }
+    // DER WEG ZU EINEM ORT (pendler-anschluss; die Nähe der Bindung, `tagesBindung` `weg`): von einem Ort aus `orte` (tagesOrte,
+    // plan-lokal) zum Knoten, an dem er am Wege-Netz hängt (netz = {knoten (am Ursprung ox, oz), kanten}: fachwerk `wegeNetz`), über das
+    // Netz (tetrapoda `wegLaengen`, je Anfangs-Knoten EIN Baum, gemerkt), vom Knoten des Ziels zum Ziel; ein anderer Teil des
+    // Netzes: Infinity. Liefert weg(von, o, i). Bis pendler-anschluss wog die Wahl die Luftlinie: an stadt-voll nahm der Mensch auf
+    // der Terrasse das Werk am Fuß der Klippe 14 m unter sich und ging 648 m um den Ring — 43 von 1 338 kamen um 10 Uhr nicht an.
+    // anschluss(o, i) = der Knoten, an dem der Ort am Netz HÄNGT ({k, d} oder null: keiner) — der Wirt fragt ihn vor der Tür und
+    // hinter keiner Wand (`_bewohnerWand`), null hängt an keinem: der Weg dorthin (und von dort) ist Infinity, nie die Luftlinie;
+    // ohne anschluss der nächste Knoten des Orts. Der nächste allein lag am Werk an der Kante der Klippe am Fuß der Wand: die
+    // Wahl sah 36 m, der Mensch ging 640 m.
+    // Leser: der Wirt (`_bewohnerListe` → `binden`) und die Linse gate:kreatur-takt zielplan.
+    function tagesWege(TC, orte, netz, ox, oz, anschluss) {
+        var K = netz.knoten,
+            am = [],
+            laengen = {};
+        for (var i = 0; i < orte.length; i++) {
+            var k = -1,
+                d = Infinity;
+            if (anschluss) {
+                am.push(anschluss(orte[i], i) || { k: -1, d: Infinity });
+                continue;
+            }
+            for (var j = 0; j < K.length; j++) {
+                var q = Math.hypot(K[j].x - ox - orte[i].x, K[j].z - oz - orte[i].z);
+                if (q < d) {
+                    k = j;
+                    d = q;
+                }
+            }
+            am.push({ k: k, d: d });
+        }
+        var vor = null,
+            a = null;
+        return function (von, o, i) {
+            if (von !== vor) a = am[orte.indexOf((vor = von))]; // eine Wahl fragt jeden Ort vom selben Anfang
+            var e = am[i];
+            if (!a || !e || a.k < 0 || e.k < 0) return anschluss ? Infinity : Math.hypot(o.x - von.x, o.z - von.z);
+            var L = laengen[a.k] || (laengen[a.k] = TC.wegLaengen(K.length, netz.kanten, a.k));
+            return a.d + L[e.k] + e.d;
+        };
+    }
     // DIE BINDUNG EINES MENSCHEN an die Orte seines Tags: TC = der tetrapoda-Kern (die Ziel-Kette), heimI = der Index seines
     // Hauses in `orte` (tagesOrte), ohne(o, i) = der Ort ist nicht zu haben (der Wirt: kein freier Stand mehr). Liefert
     // {werk, platz, mahl, abend, besuch}: je Bedürfnis der Index seines Orts (platz: der Markt seines Morgengangs) — heimI heißt daheim (das Werk: der eigene Hof), −1 keiner.
-    function tagesBindung(TC, same, rolle, heimI, orte, ohne) {
+    // weg(von, o, i) = der Weg, den er von `von` (ein Ort aus `orte`) zum Ort o GEHT (der Wirt: das Wege-Netz des Plans; Infinity:
+    // keiner) — die Nähe jeder Wahl misst ihn (tetrapoda `zielWahl` `weg`), ohne ihn die Luftlinie.
+    function tagesBindung(TC, same, rolle, heimI, orte, ohne, weg) {
         var G = TAGES_GESETZ,
             H = orte[heimI],
             Z = G.zuege[tagesZug(same)];
@@ -5318,6 +5360,11 @@
                         if (fern[k] && Math.hypot(o.x - fern[k].x, o.z - fern[k].z) < G.besuchFernM) return true;
                     return false;
                 },
+                weg: weg
+                    ? function (o, i) {
+                          return weg(von, o, i);
+                      }
+                    : null,
                 bietet: function (o, i) {
                     if (i === heimI) return daheim;
                     if (amWerk && i === werk) return amWerk;
@@ -5339,7 +5386,7 @@
         for (var q = 0; R.werkAm && q < orte.length; q++) {
             var o = orte[q];
             if (!o || o.art !== R.werkAm || !(o.staende > 0) || (ohne && ohne(o, q))) continue;
-            var dq = Math.hypot(o.x - H.x, o.z - H.z);
+            var dq = weg ? weg(H, o, q) : Math.hypot(o.x - H.x, o.z - H.z);
             if (dq <= amD) {
                 am = q;
                 amD = dq;
@@ -9697,6 +9744,7 @@
         TAGES_GESETZ: TAGES_GESETZ,
         tagesOrte: tagesOrte,
         tagesBindung: tagesBindung,
+        tagesWege: tagesWege,
         tagesPlan: tagesPlan,
         tagesZug: tagesZug,
         tagesHaltung: tagesHaltung,
