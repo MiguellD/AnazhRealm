@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T18:13:49.882Z",
+ "zeit": "2026-11-21T18:20:53.689Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kosmos.sternhimmel#1": {
@@ -241,6 +241,76 @@
    },
    "zeit": "2026-11-21T17:49:46.498Z",
    "abdruck": "ff4a347eac14",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.technik#1": {
+   "gruen": false,
+   "zahl": "S1 ROT: fehlender Leser: keine Technik mit Voraussetzung: die Epoche ist eine Wahl von Region, Jahr und Tracht (EPOCHEN), keine Technik setzt eine andere voraus — nichts im Bild hat eine Voraussetzung (fachwerk-core.js:3622) · gemessen 1 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.24,
+   "grund": "ROT: S1 ROT: fehlender Leser: keine Technik mit Voraussetzung: die Epoche ist eine Wahl von Region, Jahr und Tracht (EPOCHEN), keine Technik setzt eine andere voraus — nichts im Bild hat eine Voraussetzung (fachwerk-core.js:3622) · gemessen 1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k4cfe3651a982",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd9ea79b134b1",
+   "s": 73.8,
+   "fremd": {
+    "s": 76.7,
+    "takte": 35,
+    "fremdS": 18.31,
+    "kerne": 0.239,
+    "fensterKerne": 0.423,
+    "namen": [
+     [
+      "bash.exe n0611/kandidat.sh gtx-c445936d-w191730 x listen/kandidat-gtx-c445936d-w191730.txt",
+      2.7
+     ],
+     [
+      "Explorer.EXE",
+      2.14
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.81
+     ]
+    ],
+    "dienerS": 20.95,
+    "diener": [
+     [
+      "dwm.exe",
+      7.75
+     ],
+     [
+      "System",
+      7.2
+     ]
+    ],
+    "geraetS": 27.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.2
+     ],
+     [
+      "svchost.exe",
+      9.78
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 182.59,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T18:20:53.689Z",
+   "abdruck": "debde65f83eb",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
