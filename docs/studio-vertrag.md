@@ -1048,7 +1048,7 @@ Generation des Bodens `BODEN_GENERATION` und der Kachel-Schlüssel `kachelSchlue
 Drainage-Netz einer Region `hydrosphaere(L, H, boden, origin)` (Flüsse, Seen, Fälle, der gepackte Kanal `kanal` mit
 `KANAL_FELDER` Zahlen je Segment, Wasser-Feld; `H` das Gesetz des Wirts, `boden` seine gebaute Fläche — der voxel-worker rechnet
 sie), die Bett-Tiefe `flussTiefe` und das Wasser-Band `hydroBand`. DER FELS-STOFF (K17): das Aussehen
-des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsNetz` (die Gestalten),
+des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden je Chunk im Worker), `felsStoffPunkt` (w28-pop-treue: derselbe Stoff an EINEM Punkt der obersten Fläche — der Wurf der Nah-Wiese liest sein Grün am Gesetz statt am Netz einer Stufe), `felsNetz` (die Gestalten),
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
 in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt

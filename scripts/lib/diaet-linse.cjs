@@ -111,6 +111,7 @@ function diaetZaehler() {
         return v;
     });
     haken("schreib", A, "_diaetGeteiltSchreiben", function (rr, ro, rid) {
+        if (c) verweiseLernen(ro);
         imGang++;
         try {
             return rahmen("gang", () => roh.schreib(rr, ro, rid));
@@ -118,14 +119,43 @@ function diaetZaehler() {
             imGang--;
         }
     });
-    // DER FREMDE VERWEIS (E-Diät): ein Verweis auf ein festes Objekt (Schatten-Bias · Radius · Kaskaden des Lichts)
-    // speist eine GETEILTE Uniform — EIN Wert je Render-Abschnitt; der Objekt-Gang stellte ihn je Objekt (Fremd).
+    // DER FREMDE VERWEIS (E-Diät, w28-pop-treue): ein Verweis, der eine GETEILTE Uniform speist — auf ein festes Objekt
+    // (Schatten-Bias · Radius · Kaskaden des Lichts) oder den Renderer (r184 `RendererReferenceNode`: die Belichtung
+    // `toneMappingExposure`) — trägt EINEN Wert je Render-Abschnitt; der Objekt-Gang stellte ihn je Objekt (Fremd).
     const fremd = (n) =>
         n.isMaterialReferenceNode !== true &&
         typeof n.getValueFromReference === "function" &&
-        n.object != null &&
         n.count === null &&
         !!(n.node?.groupNode && n.node.groupNode.shared === true);
+    // GETEILT ALT (w28-pop-treue): jede geteilte Gruppe trägt beim Hochladen den Wert der Quelle jedes Verweises, der sie
+    // speist — die Quelle fragt der Vendor selbst (`updateReference`: das feste Objekt oder der Renderer). Ein Verweis, der
+    // erst NACH dem Hochladen gestellt wird, schreibt das Bild mit dem Wert davor (die Vorbelichtung der Szene einen Render
+    // hinter der Belichtung: der Pop-Gang lod.K2#1 brach an der Treue). Gezählt je Verweis beim Namen, nur Zahl-Werte (ein
+    // Objekt-Wert ist die Quelle selbst).
+    const verweisVon = new Map();
+    const programme = new WeakSet();
+    const verweiseLernen = (ro) => {
+        const nbs = ro && ro.getNodeBuilderState && ro.getNodeBuilderState();
+        if (!nbs || programme.has(nbs)) return;
+        programme.add(nbs);
+        for (const n of nbs.updateNodes) if (n.getUpdateType() === "object" && fremd(n)) verweisVon.set(n.node, n);
+    };
+    const geteiltPruefen = (g) => {
+        for (const b of g.bindings) {
+            if (b.isUniformBuffer !== true || !b.uniforms) continue;
+            for (const u of b.uniforms) {
+                const n = verweisVon.get(u.nodeUniform && u.nodeUniform.node);
+                if (!n) continue;
+                const q = n.getValueFromReference(n.updateReference(nf));
+                if (typeof q !== "number" && typeof q !== "boolean") continue;
+                const w = u.getValue();
+                if (+w === +q) continue;
+                zaehle("geteiltAlt");
+                const name = `${n.constructor.type || "Verweis"} ${n.property}`;
+                c.geteiltA[name] = (c.geteiltA[name] || 0) + 1;
+            }
+        }
+    };
     haken("og", A, "_diaetObjektGang", function (...a) {
         imOG++;
         try {
@@ -145,7 +175,9 @@ function diaetZaehler() {
     });
     haken("bu", rend._bindings, "_update", function (g, alle) {
         if (imGang) besuch("Gruppe", g.id);
-        return roh.bu.call(this, g, alle);
+        const v = roh.bu.call(this, g, alle);
+        if (c && g.bindings[0]?.groupNode?.shared === true) geteiltPruefen(g);
+        return v;
     });
     haken("ub", be, "updateBinding", function (b) {
         zaehle(b?.groupNode && b.groupNode.shared === true ? "uploadGeteilt" : "uploadEigen");
@@ -212,6 +244,7 @@ function diaetZaehler() {
         return rahmen(replay ? "replay" : "aufnahme", () => roh.bundle.call(this, bundle, sceneRef, lightsNode));
     });
     haken("nUpd", rend._nodes, "updateForRender", function (ro) {
+        if (c) verweiseLernen(ro);
         return mitRo(ro, () => ohneGang(() => rahmen("vollKnoten", () => roh.nUpd.call(this, ro))));
     });
     haken("bUpd", rend._bindings, "updateForRender", function (ro) {
@@ -245,7 +278,7 @@ function diaetZaehler() {
         return roh.ubs.apply(this, a);
     });
     return {
-        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, regungO: {}, tot: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
+        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, regungO: {}, geteiltA: {}, tot: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
         aus: () => (c = null),
         zurueck: () => zurueck.forEach((z) => z()),
     };
@@ -327,6 +360,7 @@ function diaetLauf(opts) {
             ohneAenderung: top(mittel("ohne"), 12),
             ohneMeldung: top(mittel("ohneM"), 8),
             regungOhne: top(mittel("regungO"), 8),
+            geteiltAlt: top(mittel("geteiltA"), 8),
             geloescht: top(mittel("tot"), 8),
         };
     })();
@@ -354,6 +388,8 @@ function diaetUrteil(e) {
     }
     if (z.geloescht > 0.5) v.push(`ATTRIBUTE GELÖSCHT: ${z.geloescht} je Frame (${e.geloescht}) — zeichnet, prüft voll`);
     if (z.regungOhne > 0) v.push(`REGUNG OHNE MELDUNG: ${e.regungOhne.join(" · ")} — das Bild trüge die alte Lage`);
+    if (z.geteiltAlt > 0)
+        v.push(`GETEILT ALT: ${(e.geteiltAlt || []).join(" · ") || "?"} — die geteilte Uniform lud den Wert vor ihrer Quelle, das Bild trägt ihn einen Render zu spät`);
     return v;
 }
 
@@ -372,6 +408,7 @@ function selbsttest() {
         ["Prüfung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, ohneMeldung: 85 }, ohneMeldung: ["Ring: 12"] }), /RUHE: 85 Prüfungen ohne Meldung je Frame \(Ring: 12\)/],
         ["gelöschte Attribute", Object.assign({}, gruen, { zahl: { pruef: 85, geloescht: 5 }, geloescht: "bauSatz" }), /GELÖSCHT: 5 .*bauSatz/],
         ["statische Regung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, regungOhne: 1 }, regungOhne: ["haus Lage: 1"] }), /REGUNG OHNE MELDUNG: haus Lage/],
+        ["geteilter Verweis nach dem Hochladen (w28-pop-treue)", Object.assign({}, gruen, { modus: "drehen", zahl: { pruef: 85, geteiltAlt: 0.5 }, geteiltAlt: ["RendererReferenceNode toneMappingExposure: 0.5"] }), /GETEILT ALT: RendererReferenceNode toneMappingExposure: 0\.5 — die geteilte Uniform lud den Wert vor ihrer Quelle/],
     ];
     require("./welt-boot.cjs").taeterFaelle(faelle.map(([name, z, muss]) => ({ name, z, muss })), diaetUrteil, { fehler, gruen });
     // Drehen und Gehen dürfen Arbeit tragen (die Änderung) — das Urteil fällt dort nie über Wiederholung.

@@ -1297,6 +1297,7 @@ class AnazhRealm_stoff_instanz {
                 this._sicht();
                 this._gestaltNehmen(m);
                 if (m.__zeichner.parent === m) m.remove(m.__zeichner); // die Senke zeichnet nicht mehr selbst
+                AnazhRealm._zeichnerVerlassen(m);
                 quelleWeg(m);
                 // das Bündel nimmt neu auf: es trug den Zeichner (auch wenn es gerade aufnimmt — `_neuAuf`)
                 AnazhRealm._arenaBuendel(m);
@@ -2103,6 +2104,31 @@ class AnazhRealm_stoff_instanz {
         if (!ros) return;
         obj.__renderObjekte = null;
         for (const ro of ros) AnazhRealm._renderObjektLoesen(ro);
+    }
+    // DER ZEICHNER, DER IN DIE ARENA GEHT (w28-pop-treue): tritt eine Senke in die Arena (`nehmen`), verlässt ihr Zeichner den
+    // Graphen — seine Render-Objekte haben keinen Leser mehr. Bis hier hielt er jedes, das er vor dem Eintritt zeichnete, samt
+    // Bindegruppen, Uniform-Puffern und dem Schlüssel seines Baus, den kein Zug mehr frischte (Mess-Wiese: 3 von 91 Senken der
+    // Arena mit 4 Render-Objekten, 3 mit dem Stoff-Schlüssel von vor dem Eintritt; die Radeon nannte einen davon in
+    // gate:kamera-treue „SCHLÜSSEL: instanz-zeichner ×1"). Sie verlassen die Kette ihres Renderers und werden gelöst wie beim
+    // Abschied (`_renderObjektLoesen`; die Pipeline und der Knoten-Bau bleiben im Cache ihres Schlüssels) — nach dem Submit
+    // des Frames (ein offener Pass trägt sie noch); kehrt der Zeichner vorher zurück (`lassen`), behält er sie.
+    static _zeichnerVerlassen(m) {
+        const z = m.__zeichner;
+        const welt = globalThis.anazhRealm;
+        if (!z || !welt || !(z.__renderObjekte && z.__renderObjekte.length)) return;
+        welt._queueDispose({
+            dispose: () => {
+                const ros = z.__renderObjekte;
+                if (z.parent === m || !(ros && ros.length)) return;
+                z.__renderObjekte = null;
+                for (const ro of ros) {
+                    const ketten = (ro.renderer && ro.renderer._objects && ro.renderer._objects.chainMaps) || {};
+                    const kette = ro.getChainArray();
+                    for (const k in ketten) if (ketten[k].get(kette) === ro) ketten[k].delete(kette);
+                    AnazhRealm._renderObjektLoesen(ro);
+                }
+            },
+        });
     }
     // DIE RENDER-OBJEKTE FOLGEN DER GEOMETRIE ihres Objekts, sobald es seine Puffer tauscht (der Satz wächst oder schrumpft,
     // `_chunkSatzGeometrie`; die Arena zieht ins neue Lager, `_geoNeu`). r184 hält in jedem Render-Objekt die Geometrie und die
