@@ -550,6 +550,9 @@ function selbsttest() {
         ["kein Brand fängt (die Basis: kein Takt im Stamm)", ["simWecken.brand.start=", false], /LEER: an der Mess-Wiese fing kein Brand/],
         ["der Brand ohne Takt", (b) => b.simWecken.brand.einheiten.fill(0), /STUMPF: der Brand brennt, die Sim-Linse sieht keinen Takt/],
         ["der Brand fegt die Welt", ["simWecken.brand.einheiten.3=", 4000], /BRAND-ZELLEN: Schritt 4 kostete 4000 Einheiten bei 3 brennenden/],
+        // die Zündung marschiert für Höhe und Gefälle dreimal durch ihre Säule, die Wiese fällt über der ganzen Zelle (der Stand von
+        // 8e2d76d1, GPU-Probe 44943679460 und zwei Läufe an der GTX 1050: zwei Zündungen in einem Schritt mit 16 Zellen)
+        ["zwei Zündungen lesen ihre Säule je dreimal (8e2d76d1)", (b) => ((b.simWecken.brand.einheiten[3] = 1099), (b.simWecken.brand.zellen[3] = 16)), /BRAND-ZELLEN: Schritt 4 kostete 1099 Einheiten bei 16 brennenden/],
         ["eine Bett-Maske entschuldigt die Welt nicht", (b) => ((b.simWecken.brand.einheiten[3] = 9000), (b.simWecken.brand.masken = [0, 0, 0, 1, 0, 0])), /BRAND-ZELLEN: Schritt 4 kostete 9000 Einheiten bei 3 brennenden Zellen .*je gemessene Bett-Maske, hier 1/],
         ["der Brand erlischt im Regen nicht", ["simWecken.brand.brennt=", 7], /BRAND-ERLISCHT: im Regen brennen noch 7/],
         ["die Front kriecht mit dem Wind", ["simWecken.brand.mit=", 0.3], /FRONT-MIT: .* 0.3 m\/s/],

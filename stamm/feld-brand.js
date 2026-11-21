@@ -213,7 +213,8 @@ class AnazhRealm_feld_brand {
     }
 
     // DIE ASCHE FOLGT DER FRONT (w28-brand-bild): je Bild malt der Takt EIN Viertel der Fläche EINER glühenden Zelle (±½ Zelle,
-    // reihum) in die Boden-Decke — es kostet, was brennt; die Nah-Wiese darüber baut neu, je Zelle höchstens alle `BRAND.wieseS` s.
+    // reihum) in die Boden-Decke — es kostet, was brennt; die Nah-Wiese über den geänderten Vierteln baut neu, je Zelle höchstens
+    // alle `BRAND.wieseS` s.
     _brandMalen() {
         const [bf, wk] = [this.state.brandFeld, this.state.wegeKarte];
         const G = bf && bf.glueht;
@@ -222,11 +223,22 @@ class AnazhRealm_feld_brand {
         const [b, v, cs] = [G[n >> 2], n & 3, AnazhRealm.LIFE_FIELD.cell];
         const [x0, z0] = [(b.cx - 0.5 + (v & 1)) * cs, (b.cz - 0.5 + (v >> 1)) * cs];
         const zelle = this._brandZellen();
+        let neu = false;
         for (const stufe of wk.stufen)
-            if (stufe.zentriert && this._ascheFlaeche(stufe, x0, z0, x0 + cs, z0 + cs, zelle)) b.wieseNeu = true;
+            if (stufe.zentriert && this._ascheFlaeche(stufe, x0, z0, x0 + cs, z0 + cs, zelle)) neu = true;
+        // DIE WIESE BAUT NEU, WO DIE ASCHE SICH ÄNDERTE (front-brand): `wieseNeu` ist das Rechteck der Viertel, deren Texel sich
+        // seit dem letzten Neubau der Zelle änderten — nur seine Kacheln fallen. Bis hier fiel mit jedem geänderten Viertel die
+        // ganze Fläche ±½ Zelle (32 m: 100 Kacheln der Nah-Streu und 36 der Nah-Wiese je Neubau, gate:stand-takt BRAND-ZELLEN).
+        if (neu) {
+            const W = b.wieseNeu;
+            b.wieseNeu = W
+                ? [Math.min(W[0], x0), Math.min(W[1], z0), Math.max(W[2], x0 + cs), Math.max(W[3], z0 + cs)]
+                : [x0, z0, x0 + cs, z0 + cs];
+        }
         if (b.wieseNeu && !(this._brandUhr - b.wieseT < AnazhRealm.BRAND.wieseS)) {
-            [b.wieseNeu, b.wieseT] = [false, this._brandUhr];
-            this._nahRingNeuIn((b.cx - 0.5) * cs, (b.cz - 0.5) * cs, (b.cx + 1.5) * cs, (b.cz + 1.5) * cs);
+            const W = b.wieseNeu;
+            [b.wieseNeu, b.wieseT] = [null, this._brandUhr];
+            this._nahRingNeuIn(W[0], W[1], W[2], W[3]);
         }
     }
 
@@ -293,8 +305,18 @@ class AnazhRealm_feld_brand {
         const leb = this.auraAt(x, z, 0, uhr).lebendig;
         let f = null;
         if (leb >= AnazhRealm.BRAND.minStoff && !this._nassAt(x, z)) {
-            const [y, h] = [this._voxelSurfaceY(x, z), cs / 2];
-            const [gx, gz] = [(this._voxelSurfaceY(x + h, z) - y) / h, (this._voxelSurfaceY(x, z + h) - y) / h];
+            // DAS GEFÄLLE DES BETTS LIEST DIE EINE 2D-HÖHE DER WELT (front-brand, `_terrainMacroSurfaceY`: das Gelände-Gesetzbuch,
+            // auf jeder Seite dieselbe Zahl) — die Höhe `y`, auf der das Bett liegt, bleibt die der Säule (`_voxelSurfaceY`: Höhle,
+            // Edit). Bis hier marschierte jede Zündung für Höhe und Gefälle DREIMAL durch ihre Säule (je Marsch 17 Dichte-Proben,
+            // 57 Einheiten der Stand-Linse): mit ihren fünf Bett-Punkten 450 Einheiten je Zündung, zwei Zündungen in einem Schritt
+            // mit 16 Zellen 1 099 (gate:stand-takt BRAND-ZELLEN, Soll 64 je Zelle).
+            const [y, h, y0] = [this._voxelSurfaceY(x, z), cs / 2, this._terrainMacroSurfaceY(x, z)];
+            const [gx, gz] = [
+                (this._terrainMacroSurfaceY(x + h, z) - y0) / h,
+                (this._terrainMacroSurfaceY(x, z + h) - y0) / h,
+            ];
+            if (!Number.isFinite(gx + gz))
+                this._bruchMelden("BRAND-GEFÄLLE: die 2D-Höhe trägt an " + x + "/" + z + " keine Zahl");
             // DAS BETT LIEGT, WO DIE ZELLE BRENNSTOFF TRÄGT (w28-lava-nachlauf): die Zelle misst ihr Bett auf einem Gitter von
             // `bettGitter`² Punkten (der Stoff je Punkt auf der Ebene des Gefälles) — `bett` ist seine Maske (null: die ganze
             // Zelle), `anteil` seine Fläche, die Zeile die des häufigsten Brennstoffs. DIE LAST BLEIBT GANZ (`leb`): wo Bett liegt,
