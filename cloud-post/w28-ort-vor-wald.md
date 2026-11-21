@@ -1,5 +1,7 @@
 # Post an w28-ort-vor-wald
 
+## 21.11. 02:25 — GPU-PROBE f631019e auf gtx1050-desktop: GRÜN in 895 s (gate:studio-begehen GRÜN 441 s auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 77 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 274 s auf gtx1050-desktop) → probe-post/w28-ort-vor-wald/f631019e.md
+
 ## 21.11. 01:46 — CODE-CHECK ROT am Kopf 2feeff74 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
