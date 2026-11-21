@@ -329,7 +329,7 @@ class AnazhRealm_vegetation_wiese {
     // und `faecher.fallSaum` dazu (erst jenseits fällt sie: kein Flattern am Rand). Der Saum wächst mit der DREH-RATE des Blicks
     // (der Winkel der Blick-Richtung je Sekunde, gehalten und mit `abklingS` vergessen): saum = `saum` + Rate × `vorlaufS` —
     // was die Drehung binnen des Vorlaufs ins Bild trägt, steht schon. Reicht eine Seite samt Saum an `vollRad`, ist der Fächer
-    // der Kreis (`voll`). `wach`: der Saum steht über seiner Ruhe — der Takt bleibt wach, bis er schrumpfte. Bis stufe-ein-auge
+    // der Kreis (`voll`). `neu`: der Fächer rechnete in diesem Bild neu (sonst gelten seine Ebenen weiter). Bis stufe-ein-auge
     // stand der Ring um die Kamera: 70 % des nahen Bestands hinter dem Auge (Zensus 21.11. §7, Fächer 107,5° = 29,9 %).
     _wieseFaecher(p) {
         const st = this.state,
@@ -358,12 +358,22 @@ class AnazhRealm_vegetation_wiese {
             [F.t, F.f] = [jetzt, f];
         }
         [F.p.x, F.p.y, F.p.z, F.richtung] = [p.x, p.y, p.z, f];
-        const saum = FA.saum + F.rate * FA.vorlaufS;
+        // DIE KOSTEN HÄNGEN AN DER ÄNDERUNG (Lehre 25): der Saum steht in STUFEN (`saumStufe`), der Fächer rechnet neu (`neu`),
+        // nur wenn der Blick seit der letzten Rechnung um mehr als `sektorTeil` des Saums wanderte (der Rest des Saums trägt
+        // die Wanderung: das Bild bleibt im alten Fächer), die Saum-Stufe, Kreis oder Linse wechselten. Im Stand 0-mal je Bild.
+        const stufe = Math.max(0, Math.ceil((F.rate * FA.vorlaufS) / FA.saumStufe - 1e-9));
+        const saum = FA.saum + stufe * FA.saumStufe;
         const halbV = (cam.fov * Math.PI) / 360;
         const halbH = Math.atan(Math.tan(halbV) * cam.aspect);
-        F.saum = saum;
-        F.wach = F.rate > 0;
-        F.voll = !(Math.max(halbH, halbV) + saum + FA.fallSaum < FA.vollRad);
+        const voll = !(Math.max(halbH, halbV) + saum + FA.fallSaum < FA.vollRad);
+        const linse = cam.fov + ":" + cam.aspect;
+        const k = F.schluessel;
+        const wandert = k ? Math.acos(Math.max(-1, Math.min(1, f[0] * k[0] + f[1] * k[1] + f[2] * k[2]))) : Infinity;
+        // (im Kreis zählt weder Blick noch Saum-Stufe: der abklingende Saum einer schnellen Drehung rechnet erst, wenn er den
+        // Kreis verlässt — bis hier je Stufe, 29–52 Rechnungen in 240 Bildern nach einer Drehung)
+        F.neu = !k || voll !== F.voll || linse !== F.linse || (!voll && (stufe !== F.stufe || wandert > FA.sektorTeil * saum)); // prettier-ignore
+        if (!F.neu) return F;
+        [F.schluessel, F.stufe, F.saum, F.voll, F.linse] = [f, stufe, saum, voll, linse];
         const ebenen = (s) => {
             const [cA, sA, cB, sB] = [
                 Math.cos(halbH + s),
@@ -491,20 +501,23 @@ class AnazhRealm_vegetation_wiese {
         if (!a) return 0;
         const cam = { x: a.x, y: a.y, z: a.z };
         const F = this._wieseFaecher(cam);
-        // DIE STAND-WACHE: stehen Auge, Blick, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang. Der Anker ist der
-        // BLICKPUNKT (das Auge plus `radius` Meter in seine Richtung): er rückt mit jedem Schritt und mit jeder Drehung um
-        // STAND_RAND_M ÷ radius; ein Saum, der noch über seiner Ruhe steht, hält den Takt wach (er schrumpft, Kacheln fallen).
-        const [bx, by, bz] = F.richtung;
-        const blick = { x: cam.x + bx * NW.radius, y: cam.y + by * NW.radius, z: cam.z + bz * NW.radius };
-        if (this._standRuht("nahWiese", 1, { pos: blick, rand: AnazhRealm.STAND_RAND_M }, "karte") && !F.wach) return 0;
+        // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang. Der Anker ist das AUGE (auf
+        // STAND_RAND_M); dreht nur der Blick, geht allein der Fächer (`F.neu`: er wanderte über seinen Sektor, der Saum wechselte
+        // die Stufe) — ohne die Prüfung der Karten und ohne die Ferne, die am Blick nichts liest. Bis hier war der Anker der
+        // Blickpunkt, die Drehung brach den Stand alle 1,4° und ging den ganzen Takt samt Ferne (Radeon, Wiese Third: CPU je
+        // Bild 6,0 → 14,4 ms), der abklingende Saum hielt ihn 2,6 s nach jeder Drehung je Bild wach.
+        const ruht = this._standRuht("nahWiese", 1, { pos: cam, rand: AnazhRealm.STAND_RAND_M }, "karte");
+        if (ruht && !F.neu) return 0;
+        nw.rechnungen = (nw.rechnungen | 0) + 1; // die Rechnungen des Wunschs (die Linse P-Fächer zählt sie je 100 Bilder)
         let gefallen = 0;
         // Chunk-Neubau oder neues gezeichnetes Wasser → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden,
         // am alten Ufer): ihr Satz ist alt, sie stehen, bis der Bau unten sie ablöst (`_nahWieseKachelFaellt`); die Kachel der
         // Ferne prüft ihre eigenen Karten (`_nahWieseFernTakt`). Nur wer den Ring verlässt, fällt.
         const faellt = (key) => nw.kacheln.delete(key) && (nw.neu = true);
-        for (const k of nw.kacheln.values())
-            if (!k.satzAlt && (!this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunkKarten)))
-                k.satzAlt = true;
+        if (!ruht)
+            for (const k of nw.kacheln.values())
+                if (!k.satzAlt && (!this._wasserKennungenGleich(k.wasser) || !this._bodenKartenStehen(k.chunkKarten)))
+                    k.satzAlt = true;
         const wunsch = this._nahWieseWunsch(cam, F);
         const gewollt = new Set(wunsch.map((w) => w.key));
         for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key) && faellt(key)) gefallen++;
@@ -584,8 +597,8 @@ class AnazhRealm_vegetation_wiese {
             gebaut++;
         }
         if (gebaut + gefallen) this._nahWieseBestand(); // Geburt und Tod schreiben ihre Blöcke
-        const f = this._nahWieseFernTakt(cam, deadline, reich);
-        nw.offen += f.offen + (F.wach ? 1 : 0);
+        const f = ruht ? { gebaut: 0, gefallen: 0, offen: 0 } : this._nahWieseFernTakt(cam, deadline, reich);
+        nw.offen += f.offen;
         this._standMeldet("nahWiese", 1, gebaut + gefallen + f.gebaut + f.gefallen > 0, nw.offen > 0);
         return gebaut + f.gebaut;
     }
