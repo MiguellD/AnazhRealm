@@ -120,6 +120,66 @@ if [ "$1" = "--selbsttest-taeter" ]; then
 fi
 [ -n "$blick" ] || schloss zug || exit 0
 
+# DAS SAMMELN KOSTET JE NEUEM KOPF, NIE JE ZWEIG (21.11.: 278 Stempel-Zweige, je Zweig mindestens ein grep gegen zug-gefahren.txt —
+# unter Last kostet ein Prozess-Start am Laptop 1–3 s; das Sammeln stand 06:10 → 06:38 vor zwei bereiten Stempeln, z655 fuhr 38 min
+# nach der Landung von z654). offene_koepfe <refs> <gefahren>: EIN awk über alle Zweige, dieselben Regeln wie zuvor je Zweig —
+#   · ein -pm-Zweig zählt nie
+#   · EIN KOPF FÄHRT EINMAL (14.11. z428: w28-ziel-plan-wip trug denselben Kopf 91ae94fe wie w28-ziel-plan, der Kandidat stand doppelt
+#     im Bündel und kostete einen Ruf der Wand): ein -wip-Name weicht dem Zweig ohne -wip mit demselben Kopf, sonst zählt der erste
+#     Name der Liste (auch wenn er schon fuhr)
+#   · was mit diesem Kopf schon fuhr (zug-gefahren.txt „<zweig> <kopf>“), fällt
+#   · was mit diesem Kopf für immer RUHT (zug-kopf-ruht.txt, dieselbe Form), fällt: ein Kopf, der in main oder der Punkte-Maschine
+#     liegt, und ein Kopf, dessen Betreff keine Abgabe ist — beides ändert sich an demselben Kopf nie. Ohne das Register kosteten
+#     31 solche Köpfe JEDE Runde je drei git-Rufe (cat-file, log, merge-base: am 21.11. je 4–8 s).
+# Ausgabe „<kopf> <ref>“ je offenem Kopf, in der Reihe der Liste. Gemessen am lebenden Stand (278 Zweige, 285 gefahren): die Schleife
+# je Zweig 187 s, das EINE awk 3 s, dieselben 31 Köpfe byte-gleich.
+offene_koepfe() {
+    [ -s "$1" ] || return 0
+    awk -v G="$2" -v RUHT="$3" '
+        BEGIN {
+            while ((getline z < G) > 0) { split(z, a, " "); g[a[1] " " a[2]] = 1 }
+            if (RUHT != "") while ((getline z < RUHT) > 0) { split(z, a, " "); g[a[1] " " a[2]] = 1 }
+        }
+        FNR == 1 { lauf++ }
+        { b = $2; sub("^refs/heads/", "", b) }
+        lauf == 1 { if (b !~ /-wip$/) fest[$1] = 1; next }
+        b ~ /-pm$/ { next }
+        b ~ /-wip$/ && ($1 in fest) { next }
+        ($1 in kopf) { next }
+        { kopf[$1] = 1 }
+        ((b " " $1) in g) { next }
+        { print $1, $2 }
+    ' "$1" "$1"
+}
+# --selbsttest-sammeln: ohne Karte, ohne Netz — die offenen Köpfe an einem gestellten Stand, jede Regel ein Zweig der Liste
+if [ "$1" = "--selbsttest-sammeln" ]; then
+    n=0 ok=0
+    pr() { n=$((n + 1)); if [ "$2" = "$3" ]; then ok=$((ok + 1)); echo "OK   $1"; else echo "ROT  $1: »$2« statt »$3«"; fi; }
+    X=$(mktemp -d)
+    {
+        printf 'aaa\trefs/heads/w28-a\n'          # fuhr schon mit diesem Kopf
+        printf 'bbb\trefs/heads/w28-b\n'          # neu
+        printf 'bbb\trefs/heads/w28-b-zwilling\n' # derselbe Kopf: der erste Name zählt
+        printf 'ccc\trefs/heads/w28-c-wip\n'      # der -wip-Name weicht dem Namen ohne -wip
+        printf 'ccc\trefs/heads/w28-c\n'
+        printf 'ddd\trefs/heads/w28-d-wip\n'      # ein -wip-Name allein fährt
+        printf 'eee\trefs/heads/w28-e-pm\n'       # die Punkte-Maschine fährt nie im Zug
+        printf 'aaa\trefs/heads/w28-nach-a\n'     # derselbe Kopf wie der gefahrene erste Name
+        printf 'fff\trefs/heads/w28-f\n'          # fuhr mit einem ANDEREN Kopf: der neue fährt
+    } >"$X/refs"
+    printf 'w28-a aaa\nw28-f f00\n' >"$X/gefahren"
+    soll="bbb refs/heads/w28-b|ccc refs/heads/w28-c|ddd refs/heads/w28-d-wip|fff refs/heads/w28-f|"
+    pr "die offenen Köpfe am gestellten Stand (9 Zweige, 4 offen)" "$(offene_koepfe "$X/refs" "$X/gefahren" | tr '\n' '|')" "$soll"
+    pr "ohne gefahrenen Stand fährt auch der erste Name" "$(offene_koepfe "$X/refs" "$X/fehlt" | tr '\n' '|')" "aaa refs/heads/w28-a|$soll"
+    printf 'w28-b bbb\nw28-d-wip d00\n' >"$X/ruht"
+    pr "ein Kopf, der ruht, fällt samt seinem Zwilling; ein ANDERER Kopf desselben Zweigs fährt" "$(offene_koepfe "$X/refs" "$X/gefahren" "$X/ruht" | tr '\n' '|')" "ccc refs/heads/w28-c|ddd refs/heads/w28-d-wip|fff refs/heads/w28-f|"
+    : >"$X/leer"
+    pr "eine leere Liste gibt nichts" "$(offene_koepfe "$X/leer" "$X/gefahren" | tr '\n' '|')" ""
+    rm -rf "$X"
+    echo "zug-dienst selbsttest-sammeln: $ok von $n grün"
+    [ $ok = $n ]
+    exit
+fi
 bereit() {
     : >"$W/zug-nie-leer.wartet"
     git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
@@ -127,7 +187,7 @@ bereit() {
     # EIN ABRUF FÜR ALLE ZWEIGE (13.11. z424: das Sammeln stand 14:51:21 → 15:09:46 = 18 min vor einem Zug mit EINEM bereiten Zweig —
     # gemessen 11,2 s je Zweig-Abruf bei 128 Zweigen, alle auf einmal 17,3 s). Der Abruf je Zweig bleibt nur für den Kopf, der
     # zwischen ls-remote und diesem Abruf wanderte (sein Objekt fehlt dann noch).
-    local z rs="" kopf="" mh vr
+    local z rs="" mh vr
     for z in $ZWEIGE; do rs="$rs +$z:refs/remotes/origin/${z#refs/heads/}"; done
     git -C $R fetch -q origin $rs 2>/dev/null
     # DER TÄTER DER VORAB-STATIK WARTET BEIM NAMEN (20.11., z631): zug-vorab-rot.txt trägt „<zweig> <kopf> <main8> <❌-Zeilen>“ — er
@@ -138,16 +198,10 @@ bereit() {
         awk -v m="$mh" 'index(m, $3) == 1' "$W/zug-vorab-rot.txt" >"$W/zug-vorab-rot.txt.neu"
         mv "$W/zug-vorab-rot.txt.neu" "$W/zug-vorab-rot.txt"
     fi
+    local ruht="$W/zug-kopf-ruht.txt"
+    offene_koepfe "$W/zug-nie-leer.refs" "$G" "$ruht" >"$W/zug-nie-leer.offen"
     while read -r sha ref; do
         b=${ref#refs/heads/}
-        case "$b" in *-pm) continue ;; esac
-        # EIN KOPF FÄHRT EINMAL (14.11. z428: w28-ziel-plan-wip trug denselben Kopf 91ae94fe wie w28-ziel-plan, der Kandidat stand
-        # doppelt im Bündel und kostete einen Ruf der Wand): ein -wip-Name weicht dem Zweig ohne -wip mit demselben Kopf, sonst
-        # zählt der erste Name der Liste
-        case "$b" in *-wip) grep "^$sha	" "$W/zug-nie-leer.refs" | grep -qv -- "-wip$" && continue ;; esac
-        case " $kopf " in *" $sha "*) continue ;; esac
-        kopf="$kopf $sha"
-        grep -q "^$b $sha$" "$G" && continue
         vr=$(grep "^$b $sha " "$W/zug-vorab-rot.txt" 2>/dev/null | tail -1)
         if [ -n "$vr" ]; then
             echo "$b ${sha:0:8}: VORAB-STATIK ROT am Bündel mit main $(echo "$vr" | cut -d' ' -f3) — fährt wieder mit neuem Kopf oder neuem main: $(echo "$vr" | cut -d' ' -f4- | cut -c1-400)" >>"$W/zug-nie-leer.wartet"
@@ -164,15 +218,19 @@ bereit() {
                     echo "$b ${sha:0:8}: der Betreff BEGINNT nicht mit »Abgabe« (er beginnt mit »${t:0:14}«) — der Zug sieht ihn nicht" >>"$W/zug-nie-leer.wartet"
                 continue
                 ;;
-            *) continue ;;
+            *)
+                # nur ein GELESENER Betreff ruht: ein leerer hieße, der Kopf fehlt noch — er wird wieder angesehen
+                [ -n "$t" ] && echo "$b $sha" >>"$ruht"
+                continue
+                ;;
         esac
         # jede neu gesehene Abgabe steht EINMAL in w3/abgabe.log (der Blick liest ABGABEN und STAU daraus; die alte Abgabe-Wache starb)
         grep -q " ABGABE $b ${sha:0:8} " "$T/w3/abgabe.log" 2>/dev/null || echo "$(date +%H:%M) ABGABE $b ${sha:0:8} ${t#Abgabe }" >>"$T/w3/abgabe.log"
-        git -C $R merge-base --is-ancestor "$sha" origin/main 2>/dev/null && continue
+        git -C $R merge-base --is-ancestor "$sha" origin/main 2>/dev/null && { echo "$b $sha" >>"$ruht"; continue; }
         # ein Zweig der Punkte-Maschine OHNE die Endung -pm, der dort schon liegt, ist gelandet — er hat keinen Code-Check (sein Baum
         # trägt keine check.yml) und stand sonst für immer als „Code-Check nicht GRÜN ()“ in der Warteliste (11.11.: w28-r6-konsum
         # eec204c0 lag seit 11:53 in punkte-maschine und galt den ganzen Tag als wartend)
-        git -C $R merge-base --is-ancestor "$sha" origin/punkte-maschine 2>/dev/null && continue
+        git -C $R merge-base --is-ancestor "$sha" origin/punkte-maschine 2>/dev/null && { echo "$b $sha" >>"$ruht"; continue; }
         c=$(sh "$D/ci.sh" "$b" </dev/null 2>&1)
         echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed success" || {
             echo "$b ${sha:0:8}: Code-Check nicht GRÜN ($(echo "$c" | grep "Code-Check:" | head -1 | cut -c1-80))" >>"$W/zug-nie-leer.wartet"
@@ -237,7 +295,7 @@ bereit() {
             }
         }
         echo "$b"
-    done <"$W/zug-nie-leer.refs"
+    done <"$W/zug-nie-leer.offen"
 }
 # vorn <zweige> — DIE VORRANG-LISTE ($W/zug-zuerst.txt, je Zeile ein Zweig): was eine Wand der Züge heilt, fährt im NÄCHSTEN Zug, nie
 # hinter dem Alphabet (11.11.: w28-frost-rand heilte die Wand, an der z379 dreimal fiel, und wäre hinter vier w27-Zweigen draußen

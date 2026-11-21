@@ -102,10 +102,22 @@ selbsttest_kaputt() {
 # Datei, beweist sich das Werkzeug am installierten Ort (22 s); rot fällt beim Namen mit seinen letzten Zeilen und bleibt bei jedem
 # weiteren Start rot, bis ein grüner Lauf es ablöst. Die Schleifen starten trotzdem: die Messung hängt nicht am Zug-Werkzeug.
 # WERKZEUG_BEFEHL ersetzt den Ruf nur im Selbsttest.
+# Zwei Beweise in EINER Kette (21.11.): die Fälle des Zug-Werkzeugs UND der Sammler der Zug-Schleife (`--selbsttest-sammeln`: die
+# offenen Köpfe aus EINEM awk) — die letzte Zeile sagt nur dann „selbsttest grün“, wenn beide grün endeten.
+werkzeug_selbsttest() {
+    local z s
+    z=$(node $ZIEL_W/zug.cjs selbsttest 2>&1 | tail -3) || true
+    case "$z" in *"selbsttest grün"*) ;; *) echo "$z"; return 1 ;; esac
+    # ein Dienst am Ort, der die Frage nicht kennt (er blieb alt, weil seine Schleife lebt), würde als Schleife starten statt zu antworten
+    grep -q -- '"--selbsttest-sammeln"' "$ZIEL_D/zug-dienst.sh" 2>/dev/null || { echo "zug-dienst.sh am Ort kennt --selbsttest-sammeln nicht (alter Code einer lebenden Schleife: start.sh --stopp zug, dann start.sh)"; return 1; }
+    s=$(sh $ZIEL_D/zug-dienst.sh --selbsttest-sammeln 2>&1 | tail -3)
+    echo "$s" | tail -1 | grep -qE "selbsttest-sammeln: ([1-9][0-9]*) von \1 grün$" || { echo "$s"; return 1; }
+    echo "$(echo "$z" | tail -1) · $(echo "$s" | tail -1 | sed 's/^zug-dienst selbsttest-//; s/ grün$//') — beide selbsttest grün"
+}
 werkzeug_beweis() {
     local a
-    a=$(${WERKZEUG_BEFEHL:-node $ZIEL_W/zug.cjs selbsttest} 2>&1 | tail -3)
-    case "$a" in
+    a=$(${WERKZEUG_BEFEHL:-werkzeug_selbsttest} 2>&1 | tail -3)
+    case "$(echo "$a" | tail -1)" in
         *"selbsttest grün"*) echo "  bewiesen: $(echo "$a" | tail -1)" ;;
         *)
             echo "ROT: der Selbsttest des Zug-Werkzeugs fällt am installierten Stand — Täter-Suche und Puffer-Linse gelten nicht, bis er grün ist:"
