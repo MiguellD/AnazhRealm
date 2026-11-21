@@ -5567,11 +5567,11 @@
    "summe": {
     "kriterien": 84,
     "sprossen": 569,
-    "heute": 8,
-    "kern": 5,
-    "kernDazu": 5,
-    "anteilHeute": 1.3,
-    "anteilKern": 1
+    "heute": 9,
+    "kern": 7,
+    "kernDazu": 7,
+    "anteilHeute": 1.5,
+    "anteilKern": 1.2
    },
    "perspektiven": [
     {
@@ -7916,7 +7916,7 @@
       }
      ],
      "heute": 0,
-     "kern": 0,
+     "kern": 1,
      "fuss": "gemessen",
      "beleg": "höchster Typ hochhaus mit 7 Geschossen (fachwerk-core.js:1987); keine zweite Ebene, keine Arkologie (Grep 0) — KARTE: 0 — Beleg ist ein Code-Zitat (R2).",
      "alt": [
@@ -9501,7 +9501,7 @@
       }
      ],
      "heute": 0,
-     "kern": 1,
+     "kern": 2,
      "fuss": "kern",
      "beleg": "Graben füllt sich ≤ 2 s, eine Wasserfläche (gelaende.K2); Bewohner bauen keine Gräben — KARTE: Kern 1 — Graben füllt sich im Ausgabe-Bild an beiden Geräten (gelaende.K2); Bild-Preis beim Graben nicht gemessen.",
      "alt": [
@@ -9640,7 +9640,7 @@
        "richter": "20 Zufallsrollen ≤ 5 s spielbar, Tat ändert Welt ≥ 80 %"
       }
      ],
-     "heute": 0,
+     "heute": 1,
      "kern": 0,
      "fuss": "gemessen",
      "beleg": "Nah-Streu: Kraut, Stein, Holz pflücken, Mahd, Nachwachsen (stamm/vegetation-wiese.js:1741, 2710) — KARTE: 0 — Beleg ist ein Code-Zitat (R2); halten.K3 headless.",
@@ -20086,10 +20086,10 @@
  "summe": {
   "kriterien": 253,
   "sprossen": 1718,
-  "heute": 36,
+  "heute": 37,
   "davonKopplungen": 33,
-  "kern": 6,
-  "kernDazu": 6,
+  "kern": 8,
+  "kernDazu": 8,
   "anteilHeute": 2.2,
   "anteilKern": 0.3,
   "kapitel": 7,
@@ -20101,7 +20101,7 @@
   },
   "gliederLeitern": 9,
   "beide": 29,
-  "nachwache": 7
+  "nachwache": 8
  },
  "zusammengelegt": [
   {
