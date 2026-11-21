@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T11:05:14.178Z",
+ "zeit": "2026-11-21T11:07:18.897Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -54089,6 +54089,215 @@
    "bahn": "sitzung",
    "zwilling": "karte2.same.gedaechtnis.schicht#1",
    "modus": "session"
+  },
+  "karte2.leben.oeko.netz#1": {
+   "gruen": true,
+   "zahl": "8 Saaten · 27 ansässige Bestände · Stunde 8 gegen 2: 0.34–1.79× · außer Band 0 · Takte an der Kappe 0 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 4.79,
+   "gpu": "nvidia/pascal",
+   "konsum": "k74a6ddcbd828",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 287.1,
+   "fremd": {
+    "s": 291.4,
+    "takte": 134,
+    "fremdS": 91.05,
+    "kerne": 0.312,
+    "fensterKerne": 0.642,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      13.84
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.33
+     ]
+    ],
+    "dienerS": 67.08,
+    "diener": [
+     [
+      "dwm.exe",
+      31.09
+     ],
+     [
+      "System",
+      17.39
+     ]
+    ],
+    "geraetS": 89.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      55.58
+     ],
+     [
+      "svchost.exe",
+      31.8
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 375.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:07:18.897Z",
+   "abdruck": "18091a77a9d0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.leben.oeko.dynamik#1": {
+   "gruen": true,
+   "zahl": "8 Saaten · hirsche 0.394 [0.284, 0.522] · jungwuchs -0.245 [-0.328, -0.194] · woelfe -0.428 [-0.707, -0.245] · mutante 0.578 [0.457, 0.647] · Mutante ROT · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 4.79,
+   "gpu": "nvidia/pascal",
+   "konsum": "k74a6ddcbd828",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 287.1,
+   "fremd": {
+    "s": 291.4,
+    "takte": 134,
+    "fremdS": 91.05,
+    "kerne": 0.312,
+    "fensterKerne": 0.642,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      13.84
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.33
+     ]
+    ],
+    "dienerS": 67.08,
+    "diener": [
+     [
+      "dwm.exe",
+      31.09
+     ],
+     [
+      "System",
+      17.39
+     ]
+    ],
+    "geraetS": 89.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      55.58
+     ],
+     [
+      "svchost.exe",
+      31.8
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 375.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:07:18.897Z",
+   "abdruck": "b5b45bbdd18e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.oeko.netz#1",
+   "modus": "session"
+  },
+  "karte2.leben.tiere.lebenszyklus#1": {
+   "gruen": true,
+   "zahl": "8 Saaten · Grundbestand min 9.24 · halbe Nahrung -0.346 [-0.449, -0.181] · 17230 Hungertode, 17230 die Ältesten · Takte an der Kappe 0 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 4.79,
+   "gpu": "nvidia/pascal",
+   "konsum": "k74a6ddcbd828",
+   "konsumN": 34,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 287.1,
+   "fremd": {
+    "s": 291.4,
+    "takte": 134,
+    "fremdS": 91.05,
+    "kerne": 0.312,
+    "fensterKerne": 0.642,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      13.84
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      9.33
+     ]
+    ],
+    "dienerS": 67.08,
+    "diener": [
+     [
+      "dwm.exe",
+      31.09
+     ],
+     [
+      "System",
+      17.39
+     ]
+    ],
+    "geraetS": 89.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      55.58
+     ],
+     [
+      "svchost.exe",
+      31.8
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 375.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T11:07:18.897Z",
+   "abdruck": "09f5546de1b5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.leben.oeko.netz#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -54198,7 +54407,8 @@
   "ka4b79996f7fb": "dVZNk6NGDP0vPq4Xi283VO1Bdk/Fk9pNmKqkkjk2tBoYY3AabGadyn9PgcFr8KwOtguepKcntdr/LpJKU706iDJXVDert7oqF+Hi0+LzQokka0nvjQ6yeqsX4cKSPiMZQmBH+u/lO4uYxIgr6OwMAO0ScQnBZb2M8AWRn5B3z3G0Zw7gBLDr8ObvrgnBLwqjJcAOOMN/nt79V3zBLeIr4obtbn7t7Reqcwb4jUMEJm62CeILb8GVsOnfchPegxTxT+TRGcCB9nJxETk+4521uHFazhAxwk2LuOTQAvgRvr8Cx6cvi8+LvJT0vsqaQzGocRTJXqR0L1AtzmTUpM+kr/IEiWWTEw5ZurK3HSzR+bGpQeYiNWpqmoIOVDarpPdxyU4CL0TkLboc7kp9Gn9s8MuXuzhFHoOIS5EdyDjphvJiCMUsW9oqhPYJ2wgggjVs7pTjH4QpYpKV0QhFY5AgUA4T4Rx4qlMRkyFOqk88gD1GQnlh339gHKM3GK3L3DHZPmaNRSmnzAPfW5MXPrdd1Q94mQtqjCIv6zFvIr3YscNbsvbRR4vWuAjKCtKDk7DWwopHstdBiAKYOariVNeTZMyRns1CgAdsSnWeZI1x1FVM5QCPA3ttiXDzyCk9ngw1YRTHgsVzrTNBZUp6wsF0EuVbIbwz/JnBmc357cWBtDBKkY06m87ajn/oBgC7R55FX1SffizKN5Xlsolj13Dox4unfSC4jM+jceC6JTBYOk9S1VPdyLekL+diVHomr+v4ri9CxOc57TrJcn2YopVLtumEXx+LrDMhSRv7qm5uaOYKQWw4vxx69pHL554/5Bn87Ng3vXt1GOCOPWSsVNMKTUZ6PI01u+StvQ+LaYScVa4s5ShvLlDdiMNhPI7KcZ3kA0QpJ3w9lyx/3fFNfzIC19NpXCgvRielXDfwwu3GnYPPpPeU6bqk5jJrVizVOpgTOmtxMESc6lypcTBjL1HBR2espaIx4qoa96XvmE5gddzLO71VvyZvtkX+3f5r9zKOH0/7r9+Qf1Brn6HSzU2d2DeVG/a3Wps8oHPdGK1IslvzVUyio/7Q8AvpglKaSC/d2BEyhPZ6acIbQ4zWwxZTy8n5ujxGzKlrSlmf6nFkg7UM1HX0hl3/PN2g3RUei3I/tsT3mGWHvyJPvy5xuGLfTA4c5qYuf6SvW35dOd9w013fnGEf/EgJHHWl8m6ZQyZOdSaKyd+HhhotjpUUd/8fFKnA98Lxknu6fnQBz1TKSkOTaaJV73DIy6vTp/nrQyVPxR1AOCKQdrj4738=",
   "ka994bff963cb": "dVRdb6MwEPwvebyeaz6DsdQHJ1RKpZMulU6q7nENa6AhENkQTjndfz9BICnQ+tGa8c7Ozvrv6gTxAVJ8fDdVueKrb6vvKwNnJAb1GfXju1nxVRjbDrpcXA8VQmw7WKzzU21okUsKsoTsiKTRNebFY9zTmO0kjuK0fRbtntI9DeimfXqaUwuJSUVqUDgSw1C5DPgc2JgUJBJoVF9sAPsMQfmc9odFYv9OxyNehaDt87yihDKZKg3XfoB+3+CzWChMcsCaFHlpxppx4kvX4bdCy64SDS25AGYF6oEEdgC2HIX2Vrb7kM6IqmiMmRRjbuI7jFO6wKZo8jiryUlXEssBLkMnsIF/4nR6aoiaKJISmJz7nAGWKeqJBsuN1drm9A8TXx16ZnN9BziiBlJCNvpsuYEj775RSndLnUXfVF9+bGptKdtjE2I3bJp2laO0f4hexvv9VVEkugAMJ50VMXGW6+PUOuWhY7n8x1KSySBBTQ6VqW9o5gEgG7Yi6sMm9l40Z96bGXiOXFv+x14YFTu2qFipugWNJD01AxE99IMupS8LcA3H47gPyvXceD5UU3eh/yjD99BeB52M9Is5XFeEXDAvRpJSnhf6fLtJ5+CzhiMBmepcqXHa0o9V+FlwWyxqIquqHsfrWm5oc3qh5c2VsI/a5h6wrYha6y0Sr/PS/WuVrm+dybWlPK7O3WbGC3Sua9JCnN3moSRCJ3MxgwvqAlOc2JZ40oWE0za+hUzsg+EbUA+TgF6WL+bYGVqaxowpCoMkVPyTb6RFfZBQHgagt/aZ7fRx2/wUu6sluzB6iOh5uhc0ufxKf2+j666+dB5uhXi9Pn7CmJ50pfLuF6QZNCaDor5////+Aw==",
   "k2d58de3e0819": "dVVdj5swEPwveWzLmc9gLN2Dc1yVq1qVSJWqPq5hDSQEIhtCm6r/vYJALsDdPqLZndnZXfN3dYL4ACk+7HVVrtjqw+rTSsMZDY3qjOphr1dsFcSWjQ7j1yCc86cOFqv8VGtS5IKAKCE7otGoGvPiIe7TqGUntmSkfeZtREhEfLJp+S2e+OPjvEwhMKmMGiSORYJAOhTYHNjoFAQa0MieeAB7FEF6jPRBQx7tyRgdM2k/f4/S3ZxVQJlMlQdrz0ePvbScPy9VJjlgbRR5qUfeOPGEY7MbWbvMUdAaF8CsQDUkgeWDJUaxvSVtFJBZoiwarSdk1Ek8mzJCFtgUdR5ntXFSlcBygIvA9i1gm6Wm9NQYcqJICKBi7nUGWKaoJhpMJ5Zri5HflL8X5Ezn+g5wRAVGCdnos+n4tnj1jRCyXeos+qZ6+rGptSktl04Su4GTtGMO074QuYzfo6uikPPdTV46I9Fxlqvj1Drpom067OtSks4gQWUcKl3f0NQFQDpcSUh6rsgN55mvzQx5tlib3n0vlPAtXTBWsm5BoZGemiERXfR8j3H+sgDXcDyONyEd14nnQ9V1t/T3MjwXrbXfyUjfmcP1RIwL5sWYJKXrBh572rhz8FnB0QCRqlzKcdrCi2Xw1uK2WNSGqKp6HK9jOoHVaSnvbOl83dy/H+Ef++d2t5vu3fOmekN7z1Cp+tatWJvSZfLcXWu8QOeqNlqIs9uMpEDopC/mckFVYIoTKxNXOJAw0sqr8pByHvnD0yA/Tpb2sqyYY2dyqRs9blbgJ4FkbzwtLaqDgPIwAN21Ry2bfemM+s63V5vKICQhmYe8/Eh/ReH1fr/xDX8JyX4ofsKYnFQl8+5lJBk0OoOifv1F/PsP",
-  "kc4ea05c3c8cc": "dVVdj5swEPwveWzrM58BLN2DE666qyod99TnNayBC4HIhnOVqv+9goMkQLpPKJrxjGfXmz+bE6QHyPHhXTf1hm2+bL5tNHwg0ag+UD286w3bRKntoMv4Z1HO+b6Hpao8tZpWpaAgaiiOSDrVYlk9pAMttJ3MkYyaJ24SShMa0J3hl9rzx8flMZXArCEtSJwOiSLphsCWwE7nIJBAJwfhEeyHCNJndKgw5sk7nYq/cU7N99ckf1uqCqizufNo6wfosxfD+dPaZVYCtqQqaz3pppkvXIddxMyao8CQM2BRoRpJYAdgi8nsEIlJIrogyqrTeiYWupnvhIzSFTZHXaZFS06qEViPcBE5gQ1st/aUnzoiZ46EgFAssy4A6xzVzIPlpnJrM/o7XB56gCMqIDUUU5aWGzjimg2l9HntpRqMDxKT8a0lbS+cEfum0rxPKs6Hg+h5+j35HKqY940eK1+I6LQo1XEej/TQsVz2c21JF5ChIodGtxd06AFgOL6EeBgqnnjxknm9zMhzxNbyb+8SUv68yk43sjWgkOSnbiSih37gM85fVuAWjsdp7qXruemycbrtB/vWhu+hvQ16G/l/+vD5DMgZy2oiSel5kc/2O28J/lBwJCByVUo5dVv4qYzuDafBqiWiadqpva7lRnbvpb6Jpc91d7sjYmP92t/0dKinXXPH+6DQqPZyW7G1pMfkR/8i0xW6VC0xkBaXHkmBELE70DOqCnOcRZl5woWsR19txd708XU2tOdVp88l9iHXutPTZEVBFkl2Z30YVAcB9WEEels/tB32ow/qlT+PglZs+LBlb0sazt+SXXgbXT7usxOm9KQaWfbbjxbQ6QKq9vo38Pcf"
+  "kc4ea05c3c8cc": "dVVdj5swEPwveWzrM58BLN2DE666qyod99TnNayBC4HIhnOVqv+9goMkQLpPKJrxjGfXmz+bE6QHyPHhXTf1hm2+bL5tNHwg0ag+UD286w3bRKntoMv4Z1HO+b6Hpao8tZpWpaAgaiiOSDrVYlk9pAMttJ3MkYyaJ24SShMa0J3hl9rzx8flMZXArCEtSJwOiSLphsCWwE7nIJBAJwfhEeyHCNJndKgw5sk7nYq/cU7N99ckf1uqCqizufNo6wfosxfD+dPaZVYCtqQqaz3pppkvXIddxMyao8CQM2BRoRpJYAdgi8nsEIlJIrogyqrTeiYWupnvhIzSFTZHXaZFS06qEViPcBE5gQ1st/aUnzoiZ46EgFAssy4A6xzVzIPlpnJrM/o7XB56gCMqIDUUU5aWGzjimg2l9HntpRqMDxKT8a0lbS+cEfum0rxPKs6Hg+h5+j35HKqY940eK1+I6LQo1XEej/TQsVz2c21JF5ChIodGtxd06AFgOL6EeBgqnnjxknm9zMhzxNbyb+8SUv68yk43sjWgkOSnbiSih37gM85fVuAWjsdp7qXruemycbrtB/vWhu+hvQ16G/l/+vD5DMgZy2oiSel5kc/2O28J/lBwJCByVUo5dVv4qYzuDafBqiWiadqpva7lRnbvpb6Jpc91d7sjYmP92t/0dKinXXPH+6DQqPZyW7G1pMfkR/8i0xW6VC0xkBaXHkmBELE70DOqCnOcRZl5woWsR19txd708XU2tOdVp88l9iHXutPTZEVBFkl2Z30YVAcB9WEEels/tB32ow/qlT+PglZs+LBlb0sazt+SXXgbXT7usxOm9KQaWfbbjxbQ6QKq9vo38Pcf",
+  "k74a6ddcbd828": "nVXbbptAEP0XPzbdLJflKuVhbaImUi/OU59nYRaIMVi7S2hd9d8rsLEDJFLUfURzZs45c+HP6gDpDnK8fdZNvYpXn1afVxpekGhUL6hun/UqXkWp7aAb89OjnPNNH5aq8mA0zUrIyU4hmFaRCgXWt+kA8yJIwY/pB5+84dl7aQ3szDlrCNJiLF7nnH/jd3evEFUpKIgaij2SVhksqxFiO5kjY9rd825L6ZYGdN0toZXArCEGJI7AKJJuCPE8sNU5CCTQyqHYKDdEkN5Zbpjw7fNF2rrjnHb384oC6mzKNPK9AL3B6fuluKwENKQqaz3WTDNPuM7V4qWqTEFHjoBFheoMAjsAW4xEh55224jOgLJqtZ4UC93Mc8KY0kVsjrpMC0MOqrm2X0ROYEP8htP5oSVywkgICMXc5wKwzlFNOFhuKn07pr/CedId7FEBqaEYvbTcwBGT8XtYchknbI+1TkdoylgWyQ9NbvJ+yokbbuY6fjru0P+/df5lVq4arB9MGov5lrRZOOMfJjTvMyT5YAU9jt+3p8wJ50+XMvmsiE6LUu2nkiRDx3Ljr0sHdAEZKrJrtLlEhwwAw7MBCR1qbVkyR17FnHGO8C3vtZaQ8odF93UjTQcKSX5oz0Bk6AX9Lj0ugg3s9+PWSpe5b/fljcnVpl/Z1/Q8hrYf9PTydybstODkiGU1gqRkLPLizZrNg18U7AmIXJVSjnMsvFRGb61dh5UhomnG0+i7lhvZMXVpfXErGhZ8fVW14clv5+fD09NU7HeeyCX3oUKjzEWt8C3JYvnS35p0EV0qQzpIi0vvpEDoqS/6dURVYY4TKzMmXMhi2skT9WPI+TY4HzZ5Mxnm4zJjib3JtW71OHFRcNniqbQO1U5AvTsHMt8LbWeYgfUP/nAy5NlKbhK67V6btOGy4/xxk5yu5je+5o/J5QQcMKUH1ciyv+u0gFYXUJnJn/UU0qIULRY19vNkyqbG+hr19x8="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
