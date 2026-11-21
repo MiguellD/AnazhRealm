@@ -284,7 +284,9 @@ function sollWand(jeAuftrag) {
     const bau = (samen, l) => {
         const e = ecken;
         if (jeAuftrag) FC = studioKern("fachwerk-core.js", "__fachwerkCore", true);
-        FC.buildInstance(TURM_SOLL.id, samen, l, Object.assign({}, TURM_SOLL.ov)).traverse((o) => o.geometry && o.geometry.dispose());
+        FC.buildInstance(TURM_SOLL.id, samen, l, Object.assign({}, TURM_SOLL.ov)).traverse(
+            (o) => o.geometry && o.geometry.dispose()
+        );
         return ecken - e;
     };
     try {
@@ -301,6 +303,55 @@ function sollWand(jeAuftrag) {
     } finally {
         BG.setAttribute = setze;
     }
+}
+
+// H10 DIE FERNE SIEDLUNG HÄLT KEINEN KOPF (siedlung-heap, „Speicher folgt dem Blick“): fällt eine Siedlung aus dem Blick
+// (`_tickBewohner` jenseits nearM × fernFaktor → `_bewohnerFort`), hält ihr Eintrag in `_bewohnerSiedlungen` nichts mehr, was
+// aus ihrer Liste abgeleitet ist — keinen Kopf, keinen Leib; kehrt der Spieler zurück, legt der Takt die Liste und mit ihr
+// `aktivListe` · `aktiv` · `ruhend` · `raster` · `koepfe` neu aus dem Plan. Bis siedlung-heap hielten die fünf Takt-Felder jede
+// ferne Siedlung samt Leib (Radeon, Ziel der Wegenetz-Fahrt: 8 ferne Siedlungen, 434 Köpfe, `aktivListe[].leib.userData`
+// 88,3 MB nach GC). Die Linse fährt den echten Abschied der Klasse an einer Siedlung im Takt-Stand und sucht jeden Kopf, der
+// von ihrem Eintrag aus noch erreichbar ist, beim Pfad.
+function fernSiedlungWand(A) {
+    const w = weltVon(A, {});
+    for (const n of [
+        "_verkehrFort",
+        "_tonZeileFrei",
+        "_kreaturZiegelTod",
+        "_disposeSoulGroup",
+        "_gangSatzAbschied",
+        "_ofenMemoRaeumen",
+    ])
+        w[n] = () => {}; // die Abschiede der Nachbarn (eigene Organe) // prettier-ignore
+    const koepfe = [0, 1, 2].map((i) => ({
+        nr: i,
+        leib: { userData: { pose: new Float32Array(64) } },
+        tonZeilen: null,
+    }));
+    const liste = koepfe.slice();
+    const S = { key: "1,1", ox: 900, oz: 900, liste, aktivListe: liste, aktiv: liste.slice(0, 2), ruhend: [koepfe[2]], raster: new Map([["9,9", [koepfe[0]]]]), koepfe: [koepfe[0]], plan: { slots: [] }, satz: null, gestalten: [], raum: null, verkehr: null }; // prettier-ignore
+    // die Arbeits-Puffer des Takts hielten die Köpfe der zuletzt getakteten Siedlung
+    Object.assign(w, { _bewohnerKoepfe: [koepfe[0]], _bewohnerBewegt: [koepfe[1]], _bewohnerNachbarn: [koepfe[2]], _bewohnerNbZahl: { geachtet: [koepfe[2]], naechste: [koepfe[1]] } }); // prettier-ignore
+    A.prototype._bewohnerFort.call(w, S);
+    const kopf = new Set(koepfe);
+    const gesehen = new WeakSet();
+    const q = [
+        [S, "S"],
+        ...["_bewohnerKoepfe", "_bewohnerBewegt", "_bewohnerNachbarn", "_bewohnerNbZahl"].map((n) => [w[n], "r." + n]),
+    ];
+    const pfade = [];
+    for (let i = 0; i < q.length; i++) {
+        const [o, p] = q[i];
+        if (kopf.has(o)) {
+            pfade.push(p);
+            continue;
+        }
+        const kinder = o instanceof Map ? [...o].map(([k, v]) => [v, `${p}[${k}]`]) : Object.entries(o).map(([k, v]) => [v, Array.isArray(o) ? `${p}[]` : `${p}.${k}`]); // prettier-ignore
+        for (const [v, pp] of kinder)
+            if (v && typeof v === "object" && !gesehen.has(v)) (gesehen.add(v), q.push([v, pp]));
+    }
+    const ziel = [...new Set(pfade)];
+    return { errs: ziel.length ? [`H10 _bewohnerFort: die ferne Siedlung hält ${pfade.length} Köpfe (Soll 0) — ${ziel.join(" · ")}`] : [], n: pfade.length }; // prettier-ignore
 }
 
 const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
@@ -1592,7 +1643,10 @@ function selbsttest() {
     // DER WEG (Preis des Orts, Schnitt 2): je Naht ein Mutant (Render-Objekt · Saat · Bauer) ist rot beim Pfad, der geräumte Weg nicht
     t("Weg: der Speicher folgt dem Blick — N1 · N2 · N3 rot beim Pfad ihres Halters", DZ.wegSelbsttest().length === 0);
     // DIE RUNDE (`werkbank runde`): ein Zell-Gedächtnis, das je Runde wächst, und eine nie entsorgte Geometrie sind rot beim Namen
-    t("Runde: Behälter mit Anlage, Geometrie mit Geburts-Stelle, Zell-Gedächtnis außerhalb des Blicks und unangemeldetes rot beim Namen, die geräumte Runde grün", DZ.rundenSelbsttest().length === 0);
+    t(
+        "Runde: Behälter mit Anlage, Geometrie mit Geburts-Stelle, Zell-Gedächtnis außerhalb des Blicks und unangemeldetes rot beim Namen, die geräumte Runde grün",
+        DZ.rundenSelbsttest().length === 0
+    );
     // DER JS-HEAP DER RUNDE (`heapBesteller`): ein Leib, der je Runde lebende Bytes bestellt, ist rot beim Besteller und bei der Stelle
     t("Runde: der JS-Heap-Zuwachs steht beim Besteller (Datei:Zeile) und der Stelle, ein voll gelaufener Cache grün, Splitter benannt", DZ.jsHeapSelbsttest().length === 0); // prettier-ignore
     // DAS SOLL DES TURMS (H9): der Kern, dessen Gedächtnis je Auftrag lebt (frisch geladen vor jedem Auftrag — der Stand vor
@@ -1600,6 +1654,9 @@ function selbsttest() {
     const sollRot = sollWand(true);
     const sollGruen = sollWand();
     t("Soll des Turms: die Stufe 0 je Auftrag ist rot bei sollTon, je Bau einmal grün", /^H9 sollTon: /.test(sollRot.errs[0] || "") && !sollGruen.errs.length); // prettier-ignore
+    // DIE FERNE SIEDLUNG (H10): der Abschied, der die Takt-Felder stehen lässt (der Stand vor siedlung-heap), ist rot beim Pfad
+    const fernRot = fernSiedlungWand(klasseVon(stammLib.ersetze(st8, "_bewohnerFort", "[S.aktivListe, S.aktiv, S.ruhend, S.raster, S.koepfe] = [null, null, null, null, null];", ""))); // prettier-ignore
+    t("Ferne Siedlung: der Abschied ohne die Takt-Felder ist rot bei aktivListe, der Stamm grün", /^H10 _bewohnerFort: .*S\.aktivListe\[\]/.test(fernRot.errs[0] || "") && !fernSiedlungWand(A).errs.length); // prettier-ignore
 
     ende("die Band-Wand feuert");
 }
@@ -1651,6 +1708,9 @@ function main() {
     errs.push(...sw.errs);
     console.log(`H9 Soll des Turms ${TURM_SOLL.id}/${TURM_SOLL.ov.storeys}: L2 · L3 · L1 ${sw.summe} Ecken = ${(sw.summe / sw.e0).toFixed(2)} × Stufe 0 (${sw.e0})`); // prettier-ignore
     const A = klasseVon();
+    const fs10 = fernSiedlungWand(A);
+    errs.push(...fs10.errs);
+    console.log(`H10 die ferne Siedlung nach dem Abschied: ${fs10.n} Köpfe erreichbar (Soll 0)`);
     const tw = taeterWand(A);
     for (const f of tw.errs) errs.push("H4 " + f);
     const br = buendelReiheWand(A);
