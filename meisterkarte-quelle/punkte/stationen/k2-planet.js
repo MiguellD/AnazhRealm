@@ -1613,13 +1613,17 @@ L.perspektive("geologie", (() => {
             },
             4: {
                 u: {},
-                soll: [ohneZahl(LA, 4, "Abbau sichtbar und nach Reload bleibend", "abbau"), ohneZahl(LA, 4, "Senkung über Kohle messbar", "senkung")],
+                // ZAHL (auge-klasse.cjs): „sichtbar und bleibend“ und „messbar“ sind Schwellen des Worts selbst — die Grube steht nach dem
+                // Reload (1), die Senkung über dem Flöz ist > 0 m; das Bild ist Beleg
+                soll: [
+                    K.soll(LA, 4, "Abbau sichtbar und nach Reload bleibend", { key: "abbau", rel: "=", zahl: 1, refQuelle: "das Wort selbst: „nach Reload bleibend“ — 1 = die gegrabene Grube steht nach dem Reload an derselben Stelle" }),
+                    K.soll(LA, 4, "Senkung über Kohle messbar", { key: "senkung", rel: ">", zahl: 0, refQuelle: "das Wort selbst: „messbar“ — die Senkung über dem abgebauten Flöz ist > 0 m", einheit: "m" }),
+                ],
                 zeuge: zMin({ antworten: 1000 }),
                 auge: { pose: "Ego an der Grube nach Abbau und Reload (heute: keine Lagerstätte)", vorbild: "Fotos von Gruben, Halden und Bergsenkungen (Ruhrgebiet), Prüfer-Satz R11" },
                 taeter: "die Stoff-Tafel (keine Kohle) — kein Leser einer Senkung",
                 nicht: "keine Kohle, keine Senkung",
                 leser: "stamm/bau-buch.js:1554 _stoff — keine Kohle in der Stoff-Tafel; kein Leser einer Bergsenkung über einem Abbau",
-                unklar: "der Richter nennt keine Zahl — Vorschlag: „Senkung ≥ 0,5 m über einem Flöz nach Abbau, Grube nach Reload byte-gleich“",
                 gruen: gut({ abbau: 1, senkung: 0.8 }, { antworten: 5000 }),
                 attrappen: [{ name: "eine gegrabene Grube ohne Kohle", roh: leer({ abbau: 1, senkung: 0.8 }) }],
             },
