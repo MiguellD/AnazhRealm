@@ -1,5 +1,7 @@
 # Post an w28-pop-treue
 
+## 21.11. 18:16 — GPU-PROBE 7570379a auf omen-gtx1060: GRÜN in 1002 s (gate:pruefbuehne-licht GRÜN 69 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 193 s auf omen-gtx1060 · gate:studio-begehen GRÜN 275 s auf omen-gtx1060) → probe-post/w28-pop-treue/7570379a.md
+
 ## 21.11. 14:53 — GPU-PROBE eec363a5 auf radeon-890m: GRÜN in 1190 s (gate:pop GRÜN 248 s auf radeon-890m · gate:kamera-treue GRÜN 85 s auf radeon-890m) → probe-post/w28-pop-treue/eec363a5.md
 
 ## 21.11. 05:13 — CODE-CHECK ROT am Kopf dcbb5a20 (Zug-Dienst, ohne LLM)
