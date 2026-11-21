@@ -395,12 +395,36 @@ function bandProben(k) {
 // Pixel mit ΔLuma > 18 (Rec. 709) ist ein Pop, den keine Bewegung erklärt (die Blende dithert in beiden dieselbe Folge); die Treue
 // nimmt A ein zweites Mal und bricht an jedem Byte. Je Schritt beim Namen, was zwischen A und B eintrat: die Karten-Dinge, die zum
 // ersten Mal gezeichnet stehen (Zahl, nächster Abstand), und die Bauten, die ihre Stufe wechselten.
-function popGang() {
+// DER LICHTMESSER DER TREUE (w28-pop-treue): zwei Aufnahmen derselben Szene zeichnen mit derselben Belichtung und demselben Boden
+// des Rückstrahls (`info.licht` des gezählten Bilds, `__ausgabeAufnahme`) — sonst trug der erste Schuss den Lichtmesser seiner
+// Vorgeschichte (`_rueckstrahlJetzt`: beide Böden unter der Belichtung des Schusses davor gemessen, die Aufwärm-Bilder unter der
+// neuen; GTX 1050 an der Mess-Wiese: Boden 0,3866915 ↔ 0,3864365, die Treue 16 496 Bytes). Leer = gleich.
+function treueLicht(a, b) {
+    if (!a || !b || !Array.isArray(a.boden) || !Array.isArray(b.boden)) return "DER LICHTMESSER: ungemessen (das gezählte Bild trägt kein `info.licht`)";
+    const z = (v) => v.map((x) => +x.toPrecision(7)).join("/");
+    const t = [];
+    if (a.k !== b.k) t.push(`die Belichtung ${+a.k.toPrecision(7)} ↔ ${+b.k.toPrecision(7)}`);
+    if (z(a.boden) !== z(b.boden)) t.push(`der Boden des Rückstrahls ${z(a.boden)} ↔ ${z(b.boden)}`);
+    return t.length ? `DER LICHTMESSER: ${t.join(", ")} — der erste Schuss maß unter dem Licht seiner Vorgeschichte (_rueckstrahlJetzt)` : "";
+}
+
+function treueLichtSelbsttest() {
+    const g = { k: 0.51881, boden: [0.386436, 0.488962, 0.106928] };
+    const f = [];
+    if (treueLicht(g, { ...g, boden: [...g.boden] }) !== "") f.push("gleiches Licht nennt einen Täter");
+    if (!/Boden des Rückstrahls 0\.3866915/.test(treueLicht({ ...g, boden: [0.3866915, 0.488962, 0.106928] }, g))) f.push("der Boden von main (0,3866915 ↔ 0,386436) bleibt ungenannt");
+    if (!/Belichtung 0\.5219376 ↔ 0\.51881/.test(treueLicht({ ...g, k: 0.5219376 }, g))) f.push("die Belichtung des Schusses davor bleibt ungenannt");
+    if (!/ungemessen/.test(treueLicht({ k: 1 }, g))) f.push("ein Bild ohne Boden gilt als gleich");
+    return f;
+}
+
+function popGang(treueLicht) {
     return (async () => {
         const cam = st.camera, W = 1920, H = 1080, pm = st.playerMesh.position, start = pm.clone(), y = (p) => r._voxelSurfaceY(p.x, p.z);
         const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
         st.renderer.setAnimationLoop(null);
         window.__buehne({});
+        let licht = null; // das Licht des zuletzt gezählten Bilds (`info.licht`): Belichtung und Boden des Rückstrahls
         const schuss = async (p) => {
             cam.fov = r.constructor.KAM_FOV_GRAD;
             cam.updateProjectionMatrix();
@@ -409,6 +433,7 @@ function popGang() {
             cam.updateMatrixWorld(true);
             const f = await __ausgabeAufnahme(W, H, 1, { satz: "messung" }); // sie beginnt Folge und Dither neu (uDitherT 0)
             aus.kosten.push([f.info.drawCalls, f.info.triangles]); // Befehle und Dreiecke des gezählten Bilds
+            licht = f.info.licht;
             return f.u8;
         };
         const geh = async (p) => {
@@ -425,18 +450,19 @@ function popGang() {
                 const folgen = () => r.constructor.__arenaFolgen | 0, fA = folgen();
                 // die Zahl der GPU-Wahl je Glied und Kamera nach dem Schuss (`zug.gpuZahl`, ein Bild Verzug) — wählt A anders als A2?
                 const zahlen = async (z = new Map()) => { await sleep(80); for (const ar of r.constructor.__arenen.values()) for (const [k, zug] of ar._zuege || []) for (const [m, n] of zug.gpuZahl || []) z.set(`${r._taeterKlasse(m).slice(0, 40)}·${m.id}@${k === cam ? "auge" : "k" + k.id}`, n); return z; }; // prettier-ignore
-                const a = await schuss(p1), zA = await zahlen();
+                const a = await schuss(p1), lA = licht, zA = await zahlen();
                 if (aus.treue === undefined) {
                     // der Täter beim Namen: jede Senke der GPU-Wahl, die in A außerhalb ihrer Arena stand (sie zeichnete ohne Wahl oder nicht)
                     const ohne = [];
                     st.scene.traverse((o) => o.__wahlGpu === true && !o.__arena && ohne.push(o.name || o.uuid.slice(0, 8)));
-                    const [a2, fA2, zA2] = [await schuss(p1), folgen(), await zahlen()];
+                    const [a2, lA2, fA2, zA2] = [await schuss(p1), licht, folgen(), await zahlen()];
                     const wahl = [...new Set([...zA.keys(), ...zA2.keys()])].filter((k) => zA.get(k) !== zA2.get(k)).map((k) => `${k} ${zA.get(k) ?? "-"}→${zA2.get(k) ?? "-"}`); // prettier-ignore
                     aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
+                    aus.licht = treueLicht(lA, lA2); // der Lichtmesser beim Namen — auch, wenn die Bytes gleich sind
                     // der Ort beim Namen: abweichende Pixel je Feld (4 × 3, Zeilen oben → unten), der größte Luma-Sprung, und ob ein
                     // dritter Schuss dem zweiten gleicht (A unfertig) oder nicht (die Szene flackert)
                     const ort = (x, y) => { const f = Array(12).fill(0); let d = 0; for (let k = 0; k < W * H * 4; k += 4) if (x[k] !== y[k] || x[k + 1] !== y[k + 1] || x[k + 2] !== y[k + 2]) { const i = k / 4; f[Math.floor(((i / W) | 0) * 3 / H) * 4 + Math.floor((i % W) * 4 / W)]++; d = Math.max(d, Math.abs(luma709(x, k) - luma709(y, k))); } return `${f.join("/")} max ΔY ${d.toFixed(0)}`; }; // prettier-ignore
-                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}; Arena-Folgen vor A ${fA}, bis A2 ${fA2 - fA}; Wahl A↔A2 ${wahl.length} von ${zA.size} Zügen anders${wahl.length ? ": " + wahl.slice(0, 8).join(", ") : ""}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
+                    if (aus.treue || aus.licht) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab${aus.licht ? " — " + aus.licht : ""} — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}; Arena-Folgen vor A ${fA}, bis A2 ${fA2 - fA}; Wahl A↔A2 ${wahl.length} von ${zA.size} Zügen anders${wahl.length ? ": " + wahl.slice(0, 8).join(", ") : ""}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
                 }
                 await geh(p1);
                 const b = await schuss(p1);
@@ -3322,6 +3348,7 @@ hauptLauf(async () => {
         selbsttestEnde(f, "der eval-Text der Werkbank trägt seinen Namen in jedem Stapel (werkbank/eval/probe.js), der alte Rahmen bricht am End-Kommentar (" + alt + ")");
         return;
     } else if (cmd === "eval") o = await evalRuf(a[0]);
+    else if (cmd === "pop" && SELBST) return selbsttestEnde(treueLichtSelbsttest(), "die Treue des Gangs nennt den Lichtmesser beim Namen: den Boden von main (0,3866915 ↔ 0,386436), die Belichtung des Schusses davor und ein Bild ohne `info.licht`; gleiches Licht ist leer");
     else if (cmd === "pop") {
         // DER POP UNTER BEWEGUNG (`popGang`) an der Mess-Wiese im Ego-Auge, 1920 × 1080 — `--eigen` in eigener Welt (`gate:pop`, der
         // Messplatz des GPU-Probe-Dienstes); die Zahl misst, der Richter ist die Station lod.K2#1. Je Schritt die Pop-Pixel, `*` ein
@@ -3330,7 +3357,7 @@ hauptLauf(async () => {
         try {
             await rufe("/fenster", { w: 1920, h: 1080 });
             await umstellen({ ort: "wiese", sicht: "ego" });
-            o = ergebnis(await evalRuf(`return await (${popGang})();`));
+            o = ergebnis(await evalRuf(`return await (${popGang})(${treueLicht});`));
             o.block = ergebnis(await evalRuf(`return await (${SICHT.blockTreue})();`)); // die Blöcke des letzten Bilds (sicht-linse)
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
         } finally {

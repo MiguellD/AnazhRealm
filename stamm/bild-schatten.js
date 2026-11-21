@@ -513,16 +513,21 @@ class AnazhRealm_bild_schatten {
         if (!L || !st.rueckstrahlPass) return;
         if (L.lesung) await L.lesung;
         L.an.value = 0;
+        // DIE BELICHTUNG DES SCHUSSES (laub-messer): die Kamera misst die Sicht DIESES Bilds (`_bildSonnenSicht`, dieselbe Lesung) —
+        // im Loop wendet der Takt des Tags sie vor jedem Bild an, die Bilder des Schusses zeichnet die Aufnahme ohne Takt
+        // (`__loopBild`): ohne diesen Ruf trüge der Schuss die Belichtung der Sicht des Schusses davor. Der EINE Schreiber.
+        // NACH JEDER LESUNG (w28-pop-treue), wie der Takt vor jedem Bild: die zweite Messung steht unter der Belichtung der Sicht der
+        // ersten. Bis hier stellte erst das Ende die Belichtung — beide Böden waren unter der Belichtung des Schusses davor gemessen,
+        // die Messungen der Aufwärm-Bilder unter der neuen, und der Boden folgte (`folge` 0,5) einem Gemisch: der erste Schuss nach
+        // einem Wechsel der Sicht zeichnete den Boden 0,38669 statt 0,38644 (gate:pop lod.K2#1, die Treue: 16 496 Bytes; mit fester
+        // Blende 0).
         for (let i = 0; i < 2; i++) {
             st.rueckstrahlPass.sprung = true;
             bild();
             if (L.lesung) await L.lesung;
             L.an.value = this._rueckstrahlAn(L);
+            this._dayNightApplyBelichtung(this._tagAchse(this._sonnenRichtung().y));
         }
-        // DIE BELICHTUNG DES SCHUSSES (laub-messer): die Kamera misst die Sicht DIESES Bilds (`_bildSonnenSicht`, dieselbe Lesung) —
-        // im Loop wendet der Takt des Tags sie vor jedem Bild an, die Bilder des Schusses zeichnet die Aufnahme ohne Takt
-        // (`__loopBild`): ohne diesen Ruf trüge der Schuss die Belichtung der Sicht des Schusses davor. Der EINE Schreiber.
-        this._dayNightApplyBelichtung(this._tagAchse(this._sonnenRichtung().y));
     }
     // DER SCHALTER DES RÜCKSTRAHLS (die EINE Regel, `_rueckstrahlZeichne` je Bild und `_rueckstrahlJetzt` nach der Lesung): an erst,
     // wenn ein Boden gelesen ist; ohne Szenen-Pass, ohne Umgebung oder nach einem Bruch nie. DIE DECKE ÜBER DEM AUGE
