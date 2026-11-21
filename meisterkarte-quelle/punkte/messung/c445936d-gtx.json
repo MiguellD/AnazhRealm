@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T13:51:54.298Z",
+ "zeit": "2026-11-21T14:04:00.970Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -781,6 +781,460 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.stadt.habitat#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.1,
+   "fremd": {
+    "s": 86.3,
+    "takte": 38,
+    "fremdS": 103.33,
+    "kerne": 1.197,
+    "fensterKerne": 1.878,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.47
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.08
+     ]
+    ],
+    "dienerS": 54.33,
+    "diener": [
+     [
+      "System",
+      19.39
+     ],
+     [
+      "dwm.exe",
+      15.75
+     ]
+    ],
+    "geraetS": 54.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.95
+     ],
+     [
+      "svchost.exe",
+      22.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 199.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T14:04:00.970Z",
+   "abdruck": "2941b130ced7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.1,
+   "fremd": {
+    "s": 86.3,
+    "takte": 38,
+    "fremdS": 103.33,
+    "kerne": 1.197,
+    "fensterKerne": 1.878,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.47
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.08
+     ]
+    ],
+    "dienerS": 54.33,
+    "diener": [
+     [
+      "System",
+      19.39
+     ],
+     [
+      "dwm.exe",
+      15.75
+     ]
+    ],
+    "geraetS": 54.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.95
+     ],
+     [
+      "svchost.exe",
+      22.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 199.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T14:04:00.970Z",
+   "abdruck": "b13469b18e5d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.1,
+   "fremd": {
+    "s": 86.3,
+    "takte": 38,
+    "fremdS": 103.33,
+    "kerne": 1.197,
+    "fensterKerne": 1.878,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.47
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.08
+     ]
+    ],
+    "dienerS": 54.33,
+    "diener": [
+     [
+      "System",
+      19.39
+     ],
+     [
+      "dwm.exe",
+      15.75
+     ]
+    ],
+    "geraetS": 54.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.95
+     ],
+     [
+      "svchost.exe",
+      22.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 199.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T14:04:00.970Z",
+   "abdruck": "1cf478863452",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.1,
+   "fremd": {
+    "s": 86.3,
+    "takte": 38,
+    "fremdS": 103.33,
+    "kerne": 1.197,
+    "fensterKerne": 1.878,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.47
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.08
+     ]
+    ],
+    "dienerS": 54.33,
+    "diener": [
+     [
+      "System",
+      19.39
+     ],
+     [
+      "dwm.exe",
+      15.75
+     ]
+    ],
+    "geraetS": 54.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.95
+     ],
+     [
+      "svchost.exe",
+      22.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 199.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T14:04:00.970Z",
+   "abdruck": "8130cf11df80",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.1,
+   "fremd": {
+    "s": 86.3,
+    "takte": 38,
+    "fremdS": 103.33,
+    "kerne": 1.197,
+    "fensterKerne": 1.878,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.47
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.08
+     ]
+    ],
+    "dienerS": 54.33,
+    "diener": [
+     [
+      "System",
+      19.39
+     ],
+     [
+      "dwm.exe",
+      15.75
+     ]
+    ],
+    "geraetS": 54.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.95
+     ],
+     [
+      "svchost.exe",
+      22.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 199.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T14:04:00.970Z",
+   "abdruck": "2512a2ab7e11",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.1,
+   "fremd": {
+    "s": 86.3,
+    "takte": 38,
+    "fremdS": 103.33,
+    "kerne": 1.197,
+    "fensterKerne": 1.878,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.47
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.08
+     ]
+    ],
+    "dienerS": 54.33,
+    "diener": [
+     [
+      "System",
+      19.39
+     ],
+     [
+      "dwm.exe",
+      15.75
+     ]
+    ],
+    "geraetS": 54.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.95
+     ],
+     [
+      "svchost.exe",
+      22.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 199.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T14:04:00.970Z",
+   "abdruck": "5cd4b8bf1d31",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.sprache#7": {
+   "gruen": false,
+   "zahl": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S7: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 83 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 83.1,
+   "fremd": {
+    "s": 86.3,
+    "takte": 38,
+    "fremdS": 103.33,
+    "kerne": 1.197,
+    "fensterKerne": 1.878,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.47
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.08
+     ]
+    ],
+    "dienerS": 54.33,
+    "diener": [
+     [
+      "System",
+      19.39
+     ],
+     [
+      "dwm.exe",
+      15.75
+     ]
+    ],
+    "geraetS": 54.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.95
+     ],
+     [
+      "svchost.exe",
+      22.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 199.83,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T14:04:00.970Z",
+   "abdruck": "eb2ab74e47c1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.kultur.sprache#1",
    "modus": "session"
   }
  }
