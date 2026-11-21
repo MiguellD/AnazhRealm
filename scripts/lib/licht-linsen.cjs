@@ -3507,6 +3507,23 @@ function nachtSicht(o) {
             const mark = await schuss();
             zeichen.visible = false;
             const mit = await schuss();
+            // DIE KARTE IM BLICK (GTX 1050, Dorf third: ±232 K gegen ±43 K an der Radeon): bis hier las die Farbe jedes Pixel der Kartenmitte
+            // im Bildausschnitt, auch wo ein Bewohner, ein Halm oder eine Wand davor stand — dann las sie die Farbe des Verdeckers. Jetzt
+            // trägt jede Karte ihr Zeichen (unbeleuchtet grün) vor dem ersten und nach dem letzten Farb-Schuss; gelesen wird nur, wo beide
+            // es zeigen
+            const kartenStoff = karten.children.map((m) => m.material);
+            const kartenGruen = new T.MeshBasicMaterial({ color: 0x00ff00 });
+            const kMarke = async () => {
+                karten.children.forEach((m) => (m.material = kartenGruen));
+                karten.visible = true;
+                try {
+                    return await schuss();
+                } finally {
+                    karten.children.forEach((m, i) => (m.material = kartenStoff[i]));
+                    karten.visible = false;
+                }
+            };
+            const kMark0 = await kMarke();
             karten.visible = true;
             const kMit = await schuss();
             // OHNE KARTE: der Schreiber ruht, das Gitter leer (der Stand des Pools allein)
@@ -3542,7 +3559,7 @@ function nachtSicht(o) {
                 r._lichtKarteZ = null;
             }
             // OHNE DIE LICHTER DES ORTS: die Wahl hält nur das Licht des Auges (die Umgebung des Bilds bleibt, wie sie ist)
-            let ohne, kOhne;
+            let ohne, kOhne, kMark1;
             const wahl = r._leuchtQuellen;
             try {
                 r._leuchtQuellen = function (...a) {
@@ -3553,12 +3570,14 @@ function nachtSicht(o) {
                 karten.visible = true;
                 kOhne = await schuss();
                 karten.visible = false;
+                kMark1 = await kMarke();
             } finally {
                 r._leuchtQuellen = wahl;
                 if (r._leuchtQuellen === proto._leuchtQuellen) delete r._leuchtQuellen;
             }
-            const gesehen = (i) => i >= 0 && mark[4 * i + 1] > 0.5 && mark[4 * i + 1] - Math.max(mark[4 * i], mark[4 * i + 2]) > 0.4;
-            const med = (a) => (a.length ? a.slice().sort((x, y) => x - y)[a.length >> 1] : null);
+            const gruenIn = (b, i) => i >= 0 && b[4 * i + 1] > 0.5 && b[4 * i + 1] - Math.max(b[4 * i], b[4 * i + 2]) > 0.4;
+            const gesehen = (i) => gruenIn(mark, i);
+            const med = (a) => (a.length ? rang(a.slice().sort(aufsteigend)) : null);
             const ev = (a, b) => (b > 0 ? Math.log2(Math.max(a, 1e-12) / b) : a > 0 ? 99 : 0);
             // die Kelvin-Farbe aus linearem Rec.-709-RGB: XYZ → xy → uv (CIE 1960), der nächste Punkt des Planck-Orts 1 667–25 000 K
             const planck = (K) => {
@@ -3580,7 +3599,7 @@ function nachtSicht(o) {
                 }
                 return { K: best[1], duv: +best[0].toFixed(4) };
             };
-            let [sichtbar, gut, gutOhneK] = [0, 0, 0];
+            let [sichtbar, gut, gutOhneK, kartenVerdeckt] = [0, 0, 0, 0];
             const kelvin = [];
             for (const [i, q] of alle.entries()) {
                 const meine = pkt.filter((s) => s.i === i && gesehen(px(s.m))).map((s) => px(s.p)).filter((j) => j >= 0);
@@ -3597,14 +3616,16 @@ function nachtSicht(o) {
                 // nur, wo sie liegt) — die Farbe ihres Lichts, mit minus ohne die Lichter des Orts
                 const km = karten.children[i];
                 const j = px(km.position);
-                if (j >= 0 && q.L && q.L.kelvin > 0) {
+                if (j >= 0 && q.L && q.L.kelvin > 0 && !(gruenIn(kMark0, j) && gruenIn(kMark1, j))) kartenVerdeckt++;
+                else if (j >= 0 && q.L && q.L.kelvin > 0) {
                     const d3 = [0, 1, 2].map((c) => Math.max(0, kMit[4 * j + c] - kOhne[4 * j + c]));
                     const f = luma709(d3) > 0 ? cct(d3) : null;
                     if (f) kelvin.push({ art: q.quelle, soll: q.L.kelvin, ist: f.K, duv: f.duv, abw: Math.abs(f.K - q.L.kelvin) });
                 }
                 aus.je.push(e);
             }
-            Object.assign(aus, { sichtbar, gut, anteil: sichtbar ? +(gut / sichtbar).toFixed(3) : null, ohneKarte: { gut: gutOhneK, anteil: sichtbar ? +(gutOhneK / sichtbar).toFixed(3) : null }, kelvin });
+            Object.assign(aus, { sichtbar, gut, anteil: sichtbar ? +(gut / sichtbar).toFixed(3) : null, ohneKarte: { gut: gutOhneK, anteil: sichtbar ? +(gutOhneK / sichtbar).toFixed(3) : null }, kelvin, kartenVerdeckt });
+            kartenGruen.dispose();
             if (o.png) {
                 karten.visible = zeichen.visible = false;
                 await takt();
@@ -3633,6 +3654,12 @@ function nachtSicht(o) {
 // Pool Plätze hat, MUSS die Pose ohne Karte unter dem Soll liegen (sonst misst die Linse den Pool, nie die Karte — ROT beim Namen).
 // Ein Ort ohne sichtbare Quelle urteilt nichts (die Wildnis: nur die Kosten).
 const NACHT_SOLL = { anteil: 0.9, ev: 1, kelvin: 200 };
+// die Kelvin-Farbe DER GASSE (S1 „Gasse in der Kelvin-Farbe“): die Leuchten an Weg und Wand, der Median ihrer Abweichung; das Feuer
+// steht als Zahl daneben. EINE Regel für das Gate und die Station der Punkte-Maschine (karte2.erleben.bild.nacht#1)
+function nachtKelvin(m) {
+    const kel = ((m && m.kelvin) || []).filter((k) => /laterne/.test(k.art)).map((k) => k.abw).sort(aufsteigend);
+    return { kMed: kel.length ? rang(kel) : null, kel };
+}
 function nachtUrteil(welt) {
     const befunde = [];
     const zahlen = {};
@@ -3642,9 +3669,7 @@ function nachtUrteil(welt) {
             befunde.push(`${ort}: ${(m && m.fehler) || "keine Messung"}`);
             continue;
         }
-        // die Kelvin-Farbe DER GASSE (S1 „Gasse in der Kelvin-Farbe“): die Leuchten an Weg und Wand; das Feuer steht als Zahl daneben
-        const kel = (m.kelvin || []).filter((k) => /laterne/.test(k.art)).map((k) => k.abw).sort((a, b) => a - b);
-        const kMed = kel.length ? kel[kel.length >> 1] : null;
+        const { kMed, kel } = nachtKelvin(m);
         zahlen[ort] = `Bodenfleck ${m.gut}/${m.sichtbar} sichtbar (${m.quellen} in 50 m) = ${m.anteil} · ohne Karte ${m.ohneKarte.gut}/${m.sichtbar} = ${m.ohneKarte.anteil} · Kelvin ±${kMed} K (${kel.length})${m.karte ? ` · Karte: ein Fleck ${m.karte.einerMs} ms, Takt höchstens ${m.karte.taktMaxMs} ms, Bau der Mitte ${m.karte.bauMs} ms` : ""}`;
         if (!m.sichtbar) continue;
         if (!(m.anteil >= NACHT_SOLL.anteil)) {
@@ -3682,6 +3707,7 @@ function nachtSelbsttest() {
 module.exports = {
     nachtSicht,
     nachtUrteil,
+    nachtKelvin,
     nachtSelbsttest,
     NACHT_SOLL,
     kontaktSicht,
