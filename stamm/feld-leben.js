@@ -1804,54 +1804,12 @@ class AnazhRealm_feld_leben {
     // dem Noise. state.worldMeta.seed fließt in die Noise → jede Welt eigen, Multi-User-deterministisch.
     worldFieldAt(x, z) {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        // Lazy-Init pro Welt — bei Welt-Wechsel automatisch neu, weil seed
-        // anders ist. state.worldField hält den Cache.
-        if (!this.state.worldField || this.state.worldField.seed !== seed) {
-            this.state.worldField = {
-                seed,
-                lebendigNoise: new SimplexNoise(seed + "-veg-lebendig"),
-                dichteNoise: new SimplexNoise(seed + "-veg-dichte"),
-                glutNoise: new SimplexNoise(seed + "-veg-glut"),
-                magieNoise: new SimplexNoise(seed + "-veg-magie"),
-                // Sampling-RNG (deterministisch pro Position) für Spawn-Probe.
-                rngNoise: new SimplexNoise(seed + "-veg-rng"),
-                // V18.204 — Γ3 Domain-Warp-Noise. Eigener Stream, gen≥3-Gate.
-                warpNoise: new SimplexNoise(seed + "-veg-warp"),
-            };
-        }
-        const f = this.state.worldField;
-        const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
-        // FREQUENZ-FÄCHER: ab genVersion >= 3 hat jede Welt-Stimme ihre eigene Wellenlänge (lebendig 200,
-        // dichte 340, glut 520, magie 160 m); gen < 3 bleibt bit-identisch (s=0.005 = λ200). Die OFFSETS je
-        // Achse bleiben (Dekorrelation).
-        if (this._genVersion() >= 3) {
-            const FC = AnazhRealm.FIELD_CHARACTER;
-            const sL = 1 / FC.lambdaLebendig;
-            const sD = 1 / FC.lambdaDichte;
-            const sG = 1 / FC.lambdaGlut;
-            const sM = 1 / FC.lambdaMagieleitung;
-            // DOMAIN-WARP: vor den vier Noise-Reads wird die Sample-Koordinate per Zwei-Noise-Vektor verschoben —
-            // langsam (λ~600 m, FC.warpScale), Amplitude FC.warpAmp m; eigener Stream f.warpNoise.
-            const wpX = f.warpNoise.noise2D(x * FC.warpScale, z * FC.warpScale) * FC.warpAmp;
-            const wpZ = f.warpNoise.noise2D(x * FC.warpScale + 51.7, z * FC.warpScale - 23.1) * FC.warpAmp;
-            const wx = x + wpX;
-            const wz = z + wpZ;
-            return {
-                lebendig: n01(f.lebendigNoise.noise2D(wx * sL, wz * sL)),
-                dichte: n01(f.dichteNoise.noise2D(wx * sD + 100, wz * sD - 200)),
-                glut: n01(f.glutNoise.noise2D(wx * sG + 500, wz * sG + 700)),
-                magieleitung: n01(f.magieNoise.noise2D(wx * sM - 333, wz * sM + 999)),
-            };
-        }
-        // Legacy-Pfad: alle vier Stimmen auf s=0.005 (λ~200 m). Bit-identisch
-        // zu Pre-V18.203 für alte Welten.
-        const s = 0.005;
-        return {
-            lebendig: n01(f.lebendigNoise.noise2D(x * s, z * s)),
-            dichte: n01(f.dichteNoise.noise2D(x * s + 100, z * s - 200)),
-            glut: n01(f.glutNoise.noise2D(x * s + 500, z * s + 700)),
-            magieleitung: n01(f.magieNoise.noise2D(x * s - 333, z * s + 999)),
-        };
+        // die Ströme je Welt (`state.worldField`; ein anderer Samen baut sie neu) und die Formel sind Kern: gelaende-core
+        // `weltFeldRausch` · `weltFeld` — dieselbe Quelle liest jeder Faden (voxel-worker `worldFieldAt`, das Feld des Gaus)
+        const G = globalThis.__gelaendeCore;
+        if (!this.state.worldField || this.state.worldField.seed !== seed)
+            this.state.worldField = G.weltFeldRausch(SimplexNoise, seed);
+        return G.weltFeld(this.state.worldField, this._genVersion(), x, z);
     }
 
     // === Das lebendige Feld — die LESE-Seite (docs/das-lebendige-feld.md) ===
@@ -1859,7 +1817,9 @@ class AnazhRealm_feld_leben {
     // die dynamische Achse `emotion` + die Zeit `t`. Wer eine „lebendige Welt"-Wirkung baut, LIEST hier
     // (kein eigener _tickX). `emotion` ist eine Live-Referenz — nicht mutieren. `uhr` (s der Welt-Uhr): der Augenblick, zu dem
     // das Feld gelesen wird (der Takt des Bestands auf seinem Raster) — ohne ihn jetzt; die Welt-Uhr selbst biegt kein Leser.
-    auraAt(x, z, t = 0, uhr = this.state.spielZeit) {
+    auraAt(x, z, t = 0, uhr) {
+        const jetzt = uhr === undefined;
+        if (jetzt) uhr = this.state.spielZeit;
         const f = this.worldFieldAt(x, z);
         const e = (this.state.player && this.state.player.emotions) || {};
         // SCHREIB-Seite: das Leben-Overlay HEBT lebendig über dem frozen Substrat, der Fraß senkt es (geklemmt auf 0..1, nie
@@ -1867,6 +1827,11 @@ class AnazhRealm_feld_leben {
         const overlay = this._lifeOverlayAt(x, z, uhr);
         // DIE NARBE DER TAT (feld.K4) senkt es am Ort der Tat, bis sie heilt (`_narbeAt`) — leer → lebendig == frozen + overlay.
         const narbe = this._narbeAt(x, z, uhr);
+        // DER FRASS DES GAUS (Leben C2b, E3): was die Herde des Gesetzes ließ, steht als Schicht im Zustand des Gaus — das nahe
+        // Feld LIEST sie am Ort (`_gauFrassAt`: die Zelle des Reviers aus dem letzten Bild, ≤ 0 abgeäst, 0 ohne Bild), nie schreibt
+        // der Stamm sie ins Overlay. Ein Leser mit Stempel (`uhr`: der Takt des Bestands, der Brand) liest sie an SEINEM Takt aus der
+        // Spur des Fadens (`_gauFrassAm` — das Bild trägt die Zeit der Seite, der Takt die des Felds: Mehrspieler-Gleichlauf).
+        const gau = jetzt ? this._gauFrassAt(x, z) : this._gauFrassAm(x, z, uhr);
         // V17.32 — die emotion-Achse ist RÄUMLICH: der lokale emotionale Abdruck
         // (das Gedächtnis des Ortes) blendet ÜBER die globale Stimmung. Leerer
         // Abdruck → emotion == globale Stimmung (backward-compatible, kein Alloc).
@@ -1884,7 +1849,8 @@ class AnazhRealm_feld_leben {
             }
         }
         return {
-            lebendig: overlay || narbe > 0 ? Math.max(0, Math.min(1, f.lebendig + overlay - narbe)) : f.lebendig,
+            lebendig:
+                overlay || narbe > 0 || gau ? Math.max(0, Math.min(1, f.lebendig + overlay + gau - narbe)) : f.lebendig,
             dichte: f.dichte,
             glut: brand || lava ? Math.min(1, f.glut + (brand ? brand.glut : 0) + (lava ? lava.glut : 0)) : f.glut,
             magieleitung: f.magieleitung,
@@ -2153,6 +2119,7 @@ class AnazhRealm_feld_leben {
     _feldAktFremd(f, w, sofort = true) {
         const zahl = (v) => Number.isFinite(v);
         if (!f || typeof f !== "object" || !zahl(w)) return false;
+        if (f.art === "gau") return this._gauAktFremd(f); // ein Akt eines Gaus (Leben C2b) wirkt zu seinem Takt
         if (f.art === "leben")
             return zahl(f.x) && zahl(f.z) && zahl(f.a) && Math.abs(f.a) <= 1
                 ? this._feldAkt({ art: "leben", w, x: f.x, z: f.z, a: f.a }, false, sofort, true)
@@ -2168,8 +2135,13 @@ class AnazhRealm_feld_leben {
         const t = f.tier;
         const L = AnazhRealm._lebensraumGesetz().L.gattung;
         if (f.art !== "annahme" || !t || typeof t.soul !== "string" || !(t.g in L)) return false;
-        if (![t.bs, t.alterS, t.x, t.z].every(zahl)) return false;
-        const tier = { soul: t.soul.slice(0, 48), g: t.g, bs: t.bs, alterS: t.alterS, x: t.x, z: t.z };
+        // das Tier reist mit seinem Erbe (`a`, ein Vektor über die Achsen des Gesetzes des Lebens), seiner Umwelt-Streuung (`e`,
+        // ebenso) und seiner Mutter (`m`, null = Gründer) — nie mit einer Größe: die ist Physik des Erbes über das Alter auf jeder
+        // Seite (leben-erbe)
+        if (!this._lebenErbeGilt(t.a) || !this._lebenErbeGilt(t.e) || ![t.alterS, t.x, t.z].every(zahl)) return false;
+        if (t.m != null && !(typeof t.m === "string" && t.m.length <= 96)) return false;
+        const tier = { soul: t.soul.slice(0, 48), g: t.g, a: t.a.slice(), e: t.e.slice(), m: t.m == null ? null : t.m };
+        Object.assign(tier, { alterS: t.alterS, x: t.x, z: t.z });
         tier.v = typeof t.v === "string" ? t.v.slice(0, 48) : null;
         tier.name = typeof t.name === "string" ? t.name.slice(0, 48) : undefined;
         return this._feldAkt({ art: "annahme", w, key, id, tier }, false, sofort, true);
@@ -2183,6 +2155,31 @@ class AnazhRealm_feld_leben {
     // die nahen Regionen): jede Schrift zählt sie. Bis feld.K2#2 reiste keins davon: nach dem Reload rechnete die Seite ihre
     // Regionen ab leer nach, ihr Feld trug 0 von 1 172 Zellen des Mitspielers. Mit dem Nahen reist die Region jedes gezeichneten
     // Tiers (`_bestandReist`): kein Leib des Stands kehrt ohne sein Tier wieder.
+    // DAS ERBE AUS FREMDER HAND (Stand, Draht): ein Vektor endlicher Zahlen, je Achse des Gesetzes des Lebens eine
+    // (`__lebenCore.gesetz().achsen`) — alles andere ist kein Erbe.
+    _lebenErbeGilt(a) {
+        const n = AnazhRealm._lebenKern().gesetz().achsen.length;
+        return Array.isArray(a) && a.length === n && a.every((x) => typeof x === "number" && Number.isFinite(x));
+    }
+    // DIE WANDLUNG DES ALTEN STANDS (leben-erbe — benannt, deterministisch, nie still): ein Tier eines Stands von vor dem Erbe
+    // trägt kein `a`, nur seine gewürfelte Größe `bs` — es wird als GRÜNDER SEINER KENNUNG gelesen (`_erbeGruender(id)`: a und e
+    // aus Saat und Kennung, `m` null; ein Tier eines Geheges ebenso wie bei seinem Einsetzen, `_gehegeEinsetzen`), derselbe alte
+    // Stand ergibt auf jeder Seite und in jedem Boot dasselbe Tier. SEIN ALTER ist sein Anteil am Leben: im alten Stand trat jedes
+    // Tier ERWACHSEN bei alterS 0 ein und lebte die eine Spanne refS (35 min) — es steht jetzt reif plus derselbe Anteil seines
+    // eigenen erwachsenen Lebens, reifeS + (alterS / refS)·(lebensdauerS − reifeS): kein altes Tier schrumpft beim Laden zum
+    // Kalb, und keines stirbt im ersten Takt nur, weil seine Art kürzer lebt. Die alte Größe fällt ungelesen (sie war ein Wurf
+    // der Bänder, kein Erbe). Ein Tier mit Erbe kehrt wieder, wie es reiste.
+    _lebenWandeln(t) {
+        const tier = Object.assign({}, t, { v: t.v == null ? null : String(t.v) });
+        delete tier.bs;
+        if (t.a !== undefined)
+            return Object.assign(tier, { a: t.a.slice(), e: t.e.slice(), m: t.m == null ? null : t.m });
+        Object.assign(tier, this._erbeGruender(t.id), { m: null });
+        const L = AnazhRealm._lebenKern();
+        const [E, anteil] = [this._bestandErbe(tier), Math.min(1, Math.max(0, t.alterS) / L.gesetz().refS)];
+        tier.alterS = E.reif + anteil * (E.tod - E.reif);
+        return tier;
+    }
     _lebenImStand(nahe = this._bestandReist()) {
         const st = this.state;
         const seed = (st.worldMeta && st.worldMeta.seed) || "";
@@ -2195,11 +2192,13 @@ class AnazhRealm_feld_leben {
             kacheln.push([ix * S - cs, iz * S - cs, (ix + 1) * S + cs, (iz + 1) * S + cs]);
             const R = F[key];
             if (!R) continue;
-            const tiere = R.tiere.map(({ id, soul, g, bs, alterS, x, z, v, name, gehege }) => ({
+            const tiere = R.tiere.map(({ id, soul, g, a, e, m, alterS, x, z, v, name, gehege }) => ({
                 id,
                 soul,
                 g,
-                bs,
+                a, // das Erbe (leben-erbe) — die Größe reist nie, sie ist Physik des Erbes über das Alter
+                e, // die Umwelt-Streuung (nie vererbt, gezogen bei der Geburt)
+                m, // die Mutter (null = Gründer)
                 alterS,
                 x,
                 z,
@@ -2207,7 +2206,7 @@ class AnazhRealm_feld_leben {
                 name,
                 gehege, // der Term des Geheges (tetrapoda GEHEGE_GESETZ): das Tier kehrt als Tier seines Geheges wieder
             }));
-            bestand[key] = { t: R.t, seq: R.seq, tiere };
+            bestand[key] = { t: R.t, tiere }; // der Zähler der Geburt (`seq`) fiel: die Kennung ist `__lebenCore.indId`
         }
         const nah = (k) => {
             const [x, z] = k.split(",").map((n) => (Number(n) + 0.5) * cs);
@@ -2220,7 +2219,12 @@ class AnazhRealm_feld_leben {
         // die Akte, die schon wirkten (je Stempel und Inhalt): ein nachgeholter Akt (`_akteNachholen`) wirkt nach dem Reload nie zweimal
         const G = [...(this._feldAktGewirkt || [])];
         const bis = Math.max(-Infinity, ...G.map(([, w]) => w)) - 2 * AnazhRealm.AKT_NACHHOL_S;
-        return { feld, bestand, akte, gewirkt: G.filter(([, w]) => w >= bis).map(([k]) => k), seite: S };
+        const stand = { feld, bestand, akte, gewirkt: G.filter(([, w]) => w >= bis).map(([k]) => k), seite: S };
+        // DIE AKTE DER GAUE reisen mit (Leben C2a, `_gauImStand`): der Bestand unter dem Gesetz der Zeit und der Jagd ist die
+        // Funktion von Saat, Akten und Takt — ein Stand ohne Akte trägt das Feld nicht (seine Bytes bleiben, wie sie waren)
+        const gaue = this._gauImStand();
+        if (gaue.length) stand.gaue = gaue;
+        return stand;
     }
     _lebenAusStand(v) {
         const st = this.state;
@@ -2230,9 +2234,14 @@ class AnazhRealm_feld_leben {
         if (!v || typeof v !== "object") return; // ein Stand ohne Leben (vor feld.K2#2) lässt das Leben der Sitzung stehen
         const lf = (st.lifeField = new Map());
         [this._lebenStand, this._lebenWecker, this._annahmeOffen] = [null, null, null];
+        // die offenen Annahmen und die Bilder der Gaue gehören der Sitzung (ihre Datensätze halten Leiber der alten Welt): der
+        // Stand bringt nur die Akte, der Faden antwortet ihm neu — sonst band der Leser des Gaus den wiedergekehrten Begleiter
+        // nie an sein Tier (sein Datensatz trug noch den Leib vor dem Laden)
+        this._gauOffen = this._gauBildStand = null;
         st.feldAkte = [];
         st.faunaBestand = undefined;
         this._lebenGen = (this._lebenGen || 0) + 1;
+        this._gauAusStand(v.gaue); // die Akte der Gaue (Leben C2a): die Reihen des Stands ersetzen die der Sitzung
         const gewirkt = (this._feldAktGewirkt = new Map());
         for (const k of Array.isArray(v.gewirkt) ? v.gewirkt : [])
             if (typeof k === "string" && k.length < 400) gewirkt.set(k, Number(k.split("|")[0]));
@@ -2250,12 +2259,12 @@ class AnazhRealm_feld_leben {
         const LG = AnazhRealm._lebensraumGesetz().L.gattung;
         // DAS RASTER DES STANDS (`seite`, die Seite seiner Kacheln): ein Stand eines anderen Rasters (bis w27-tiere-sicht 354 m,
         // ohne Marke) nennt mit seinen Schlüsseln andere Orte — sein Bestand zieht um: jedes Tier in die Kachel seines Ankers (der
-        // Takt und der Zähler der Kachel sind die spätesten ihrer Quellen: keine Kennung kehrt wieder). Ohne den Umzug läse die
-        // Kachel am alten Schlüssel Tiere, die 500 m entfernt ankern.
+        // Takt der Kachel ist der späteste ihrer Quellen: keine Kennung `indId(key, t, j)` kehrt wieder). Ohne den Umzug läse die
+        // Kachel am alten Schlüssel Tiere, die 500 m entfernt ankern. Der Zähler der Geburt (`seq`) eines alten Stands fällt
+        // ungelesen (leben-erbe).
         const fremd = v.seite !== this._bestandSeite();
         for (const [key, r] of Object.entries(v.bestand && typeof v.bestand === "object" ? v.bestand : {})) {
-            if (!/^-?\d+,-?\d+$/.test(key) || !r || !zahl(r.t) || !Number.isInteger(r.seq) || !Array.isArray(r.tiere))
-                continue;
+            if (!/^-?\d+,-?\d+$/.test(key) || !r || !zahl(r.t) || !Array.isArray(r.tiere)) continue;
             const tiere = r.tiere
                 .filter(
                     (t) =>
@@ -2263,21 +2272,31 @@ class AnazhRealm_feld_leben {
                         typeof t.id === "string" &&
                         typeof t.soul === "string" &&
                         t.g in LG &&
-                        [t.bs, t.alterS, t.x, t.z].every(zahl)
+                        [t.alterS, t.x, t.z].every(zahl) &&
+                        (t.a === undefined || (this._lebenErbeGilt(t.a) && this._lebenErbeGilt(t.e))) &&
+                        (t.m == null || (typeof t.m === "string" && t.m.length <= 96))
                 )
-                .map((t) => ({ ...t, v: t.v == null ? null : String(t.v) }));
-            if (!fremd) R[key] = { t: r.t, seq: r.seq, tiere };
+                .map((t) => this._lebenWandeln(t));
+            if (!fremd) R[key] = { t: r.t, tiere };
             else
                 for (const t of tiere) {
                     const k = this._bestandKey(t.x, t.z);
-                    const Z = R[k] || (R[k] = { t: r.t, seq: r.seq, tiere: [] });
-                    [Z.t, Z.seq] = [Math.max(Z.t, r.t), Math.max(Z.seq, r.seq)];
+                    const Z = R[k] || (R[k] = { t: r.t, tiere: [] });
+                    Z.t = Math.max(Z.t, r.t);
                     Z.tiere.push(t);
                 }
         }
         // die offenen Akte treten in die Reihe (sie wirken in der Folge mit den Takten, nie beim Laden)
+        // (eine offene Annahme eines Stands von vor dem Erbe trägt ihr Tier ohne `a`: dieselbe Wandlung, `_lebenWandeln`)
         for (const a of Array.isArray(v.akte) ? v.akte : [])
-            if (a && typeof a === "object") this._feldAktFremd(a, a.w, false);
+            if (a && typeof a === "object")
+                this._feldAktFremd(
+                    a.art === "annahme" && a.tier && typeof a.tier === "object" && a.tier.a === undefined
+                        ? { ...a, tier: this._lebenWandeln({ ...a.tier, id: String(a.id) }) }
+                        : a,
+                    a.w,
+                    false
+                );
     }
 
     // DIE AKTE DER SEITE REISEN NACH (feld.K2#2): wer beitritt — ein neuer Mitspieler, eine Seite nach ihrem Reload —, trägt die
@@ -2355,10 +2374,12 @@ class AnazhRealm_feld_leben {
 
     // DIE LEBEN-STUFE am Ort (feld.K5): das Leben-Overlay in Stufen (`LIFE_FIELD.stufen` je Einheit) — die Nah-Streu liest sie
     // (`_nahStreuKachel`, das Boden-Gesetz `leben`: die gepflegte Wiese blüht), nie den stetigen Zerfall; so baut sie nur, wo
-    // eine Stufe springt. Ohne Overlay 0: die Streu steht byte-gleich.
+    // eine Stufe springt. Ohne Overlay 0: die Streu steht byte-gleich. DER FRASS DES GAUS (Leben C2b, E3) zählt in dieselbe Stufe
+    // (`_gauFrassAt`, die Zelle des Reviers): springt seine Stufe mit einer Antwort des Fadens, wächst die Streu der Zelle neu
+    // (`_gauAntwort` ruft `_nahStreuNeuIn`) — die abgeäste Wiese der Herde steht im Bild.
     _lebenStufe(x, z) {
         const S = AnazhRealm.LIFE_FIELD.stufen;
-        return Math.round(this._lebenStufeHalt(x, z)[0] * S) / S;
+        return Math.round((this._lebenStufeHalt(x, z)[0] + this._gauFrassAt(x, z)) * S) / S;
     }
     // DIE STUFE HÄLT ZWEI TAKTE DES BESTANDS (w27-tiere-sicht): ihr Zerfall zählt erst zwei Takte (`taktS`) nach der letzten Schrift
     // der Zelle — der Fraß der Herde schreibt je Takt, und die Stufe folgt dem Takt des Gesetzes, das sie schreibt, nie dem Zerfall
@@ -3040,21 +3061,9 @@ AnazhRealm.KIND_CHARAKTER = Object.freeze({
     }),
 });
 
-// FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520,
-// magie λ160 m) — der Welt-Charakter emergiert aus dem Überlagerungs-Muster (Ecotone an
-// argmax-Grenzen + AFFINITY_FLOOR-Linie). Nur bei gen >= 3 aktiv (alte Welten bit-identisch).
-AnazhRealm.FIELD_CHARACTER = Object.freeze({
-    // Wellenlängen (m). Erst-Wurf aus genese-plan §Γ3.
-    lambdaLebendig: 200,
-    lambdaDichte: 340,
-    lambdaGlut: 520,
-    lambdaMagieleitung: 160,
-    // Domain-Warp-Amplitude (m): verschiebt die Sample-Koordinaten VOR den Stimmen-Reads → die Stimmen
-    // mäandern statt parallel zu liegen. Eigener Stream `seed + "-veg-warp"` (re-rollt keinen anderen);
-    // λ~600 m, langsamer als die Stimmen, sonst überdeckt der Warp ihre Struktur.
-    warpAmp: 40,
-    warpScale: 1 / 600,
-});
+// FELD-CHARAKTER: jede Welt-Stimme hat ihre eigene Frequenz (lebendig λ200, dichte λ340, glut λ520, magie λ160 m) und der
+// Domain-Warp verschiebt die Lage vor dem Lesen — die Zahlen sind Kern (gelaende-core `WELT_FELD`, die Formel `weltFeld`).
+AnazhRealm.FIELD_CHARACTER = globalThis.__gelaendeCore.WELT_FELD;
 // Die Namen der Aktionen: je Aktion ihr Schlüssel der Sprach-Tafel (`taste.*`, der Leser ruft `_t`) — die Tasten-Liste, die
 // Hilfe und die Ankunfts-Linse lesen dieselbe Zeile.
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({

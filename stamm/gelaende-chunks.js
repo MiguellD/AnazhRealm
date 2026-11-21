@@ -3460,7 +3460,14 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 AnazhRealm.FADEN_QUELLE = Object.freeze({
     faden: "voxel-worker.js",
     kerne: Object.freeze(["vendor/simplex-noise.js", "samen-core.js", "phyto-core.js", "gelaende-core.js"]),
-    spaet: Object.freeze({ fachwerk: "fachwerk-core.js", koerper: "koerper-core.js", planet: "planet-core.js" }),
+    // (leben · tetrapoda: der Gau-Faden, `_gauFrage` — das Gesetz der Zeit und der Jagd am Feld des Gaus)
+    spaet: Object.freeze({
+        fachwerk: "fachwerk-core.js",
+        koerper: "koerper-core.js",
+        planet: "planet-core.js",
+        leben: "leben-core.js",
+        tetrapoda: "tetrapoda-core.js",
+    }),
 });
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.

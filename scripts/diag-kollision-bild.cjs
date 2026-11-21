@@ -706,7 +706,7 @@ async function tempo(K) {
             });
         A._steuerGesetz = () => steuer;
         // DIE TIERE im Galopp; der Riese ist der Bär in der größten Gestalt des Gesetzes
-        const riese = A._verhaltenGesetz().groessen.slice(-1)[0].max;
+        const riese = A._lebenKern().spanne()[1];
         for (const name of ["fuchs", "wolf", "baer", "riese"])
             for (const n of HINDERNISSE) for (const kad of TAKTE) await galopp(name, name === "riese" ? "baer" : name, name === "riese" ? riese : 1, n, kad);
         // (T) der Fuchs im Takt-Deckel mit EINEM Schritt je Takt

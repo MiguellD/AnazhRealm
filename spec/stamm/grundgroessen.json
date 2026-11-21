@@ -197,14 +197,12 @@
         "samen": {
             "name": "Samen",
             "welle": "SAMEN",
-            "schreiber": "samen-core.js `__samenCore` (der EINE Generator mulberry32, der Baum `samenBaum(wurzel)` → `samen(pfad)`) · stamm/siedlung-ort.js `_bauSame` (Welt-Same → benannter Teil-Same) → `_samenStrom`",
+            "schreiber": "samen-core.js `__samenCore` (der EINE Generator mulberry32, der Baum `samenBaum(wurzel)` → `samen(pfad)`, das LCG der Welt `samenStrom`: Seite über stamm/siedlung-ort.js `_samenStrom`, der Gau-Faden über den Wirt) · stamm/siedlung-ort.js `_bauSame` (Welt-Same → benannter Teil-Same)",
             "leser": "_samenStrom\\(|_bauSame\\(|__samenCore\\b",
             "kanon": {
                 "samen-core.js": [
-                    "const GAMMA = 0x6d2b79f5;"
-                ],
-                "stamm/siedlung-ort.js": [
-                    "s * 1664525 + 1013904223"
+                    "const GAMMA = 0x6d2b79f5;",
+                    "s = (s * 1664525 + 1013904223) >>> 0;"
                 ]
             }
         },
