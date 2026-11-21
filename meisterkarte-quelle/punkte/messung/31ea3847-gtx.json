@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T09:39:39.373Z",
+ "zeit": "2026-11-21T09:42:36.381Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -68633,436 +68633,367 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "die Seite warf: (b)(d) 18.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,92 (Faden 1,541 · alle Kerne 1,92; vor 124,9/318,7 ms, nach 138,8/438,8 ms, Ruhe 90,1/228,5 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf 2,7 CPU-s · Explorer.EXE 1,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 1,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,3 CPU-s · svchost.exe 5,4 CPU-s · SearchIndexer.exe 0,3 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 18.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "exit": 1,
+   "minuten": 0.42,
+   "grund": "die Seite warf: (b)(d) 18.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\":12,\"wasser\":24. — die Probe lief 5 s danach noch, beendet · Last: Referenz f 1,92 (Faden 1,541 · alle Kerne 1,92; vor 124,9/318,7 ms, nach 138,8/438,8 ms, Ruhe 90,1/228,5 ms seit 2026-11-17) · fremd: Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf 2,7 CPU-s · Explorer.EXE 1,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 1,3 CPU-s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,3 CPU-s · svchost.exe 5,4 CPU-s · SearchIndexer.exe 0,3 CPU-s — kein Urteil, UNGEMESSEN (die Probe sah: die Seite warf: (b)(d) 18.2 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"fluss\":24.97}],\"stromab\":[{\"d\":6,\"wasser\":24.63,\"fluss\":24.63},{\"d\")",
+   "konsumFehlt": "1 Prozess(e) ohne Ende (hart getötet oder ohne Antwort): 17124",
+   "s": 25.2,
+   "fremd": {
+    "s": 29.2,
+    "takte": 13,
+    "fremdS": 12.8,
+    "kerne": 0.439,
+    "fensterKerne": 0.495,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      2.73
+     ],
+     [
+      "Explorer.EXE",
+      1.38
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ]
+    ],
+    "dienerS": 10.42,
+    "diener": [
+     [
+      "dwm.exe",
+      4.45
+     ],
+     [
+      "System",
+      3.48
+     ]
+    ],
+    "geraetS": 13.28,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.33
+     ],
+     [
+      "svchost.exe",
+      5.39
+     ],
+     [
+      "SearchIndexer.exe",
+      0.25
+     ]
+    ],
+    "eigenS": 111.53,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.395,
+     "nach": 0.496,
+     "station": 0.845
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 124.9,
+     "alle": 318.7,
+     "cpuEin": 126
+    },
+    "nach": {
+     "ein": 138.8,
+     "alle": 438.8,
+     "cpuEin": 141
+    },
+    "ruhe": {
+     "ein": 90.1,
+     "alle": 228.5,
+     "n": 746,
+     "von": "2026-11-17"
+    },
+    "f": 1.92,
+    "fEin": 1.541,
+    "fAlle": 1.92,
+    "verdraengt": 1,
+    "schwankt": true,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-21T09:42:36.381Z",
+   "abdruck": "47cc56a17829",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-20T22:54:36.194Z",
-  "ordner": "sitzung-20261120-235436",
+  "start": "2026-11-21T09:33:27.784Z",
+  "ordner": "sitzung-20261121-103327",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.4,
+  "bootS": 6.6,
   "grundstellungS": [
    0.1,
-   0.2,
-   3.4,
-   3.4,
-   3.7,
    0.1,
    0.1,
-   5,
-   0.1,
-   3,
-   2.9
+   22.4
   ],
-  "proben": 12,
+  "proben": 5,
   "freigaben": [],
-  "offen": [
-   "karte2.erleben.kopplung.emergenz#2",
-   "karte2.erleben.kopplung.emergenz#3",
-   "karte2.erleben.kopplung.emergenz#7",
-   "karte2.erleben.kopplung.wahrnehmung#2",
-   "karte2.erleben.kopplung.wahrnehmung#3",
-   "karte2.erleben.kopplung.wahrnehmung#4",
-   "karte2.erleben.kopplung.wahrnehmung#5",
-   "karte2.erleben.kopplung.klang#1",
-   "karte2.erleben.kopplung.klang#2",
-   "karte2.erleben.kopplung.klang#3",
-   "karte2.erleben.kopplung.klang#4",
-   "karte2.erleben.kopplung.klang#5",
-   "karte2.erleben.kopplung.klang#6",
-   "karte2.erleben.kopplung.geteilter-sinn#2",
-   "karte2.erleben.kopplung.geteilter-sinn#3",
-   "karte2.erleben.kopplung.geteilter-sinn#4",
-   "karte2.erleben.kopplung.geteilter-sinn#5",
-   "karte2.erleben.kopplung.geteilter-sinn#6",
-   "karte2.erleben.kopplung.geteilter-sinn#7",
-   "karte2.erleben.kopplung.ein-ereignis#1",
-   "karte2.erleben.kopplung.ein-ereignis#2",
-   "karte2.erleben.kopplung.ein-ereignis#3",
-   "karte2.erleben.kopplung.ein-ereignis#5",
-   "karte2.erleben.kopplung.ein-ereignis#6",
-   "karte2.erleben.kopplung.epoche-ganz#1",
-   "karte2.erleben.kopplung.epoche-ganz#2",
-   "karte2.erleben.kopplung.epoche-ganz#3",
-   "karte2.erleben.kopplung.epoche-ganz#4",
-   "karte2.erleben.kopplung.epoche-ganz#5",
-   "karte2.erleben.kopplung.epoche-ganz#6"
-  ],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "luftwasser.K4#1",
-    "s": 23.1,
-    "takte": 604,
+    "vor": "luftwasser.K3#2",
+    "s": 23,
+    "takte": 541,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "wiese",
-    "vor": "karte2.planet.kosmos.welten#1",
-    "s": 3,
-    "takte": 150,
-    "chunks": 99,
+    "vor": "speicher.K4#2",
+    "s": 12.9,
+    "takte": 736,
+    "chunks": 90,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": "wiese",
+    "vor": "karte2.planet.kopplung.bahn-klima#1",
+    "s": 10.2,
+    "takte": 542,
+    "chunks": 90,
     "nach": "der Grundstellung"
    },
    {
     "ort": null,
-    "vor": "karte2.planet.wetter.lagen#2",
-    "s": 12.5,
-    "takte": 606,
+    "vor": "karte2.mensch.stadt.siedlungsnetz#1",
+    "s": 12.6,
+    "takte": 617,
     "chunks": 81,
     "nach": "der Grundstellung"
    },
    {
-    "ort": null,
-    "vor": "karte2.same.physik.koerper#1",
-    "s": 16.1,
-    "takte": 733,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.physik.tragen#1",
-    "s": 14.6,
-    "takte": 629,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.physik.fluid#2",
-    "s": 15,
-    "takte": 633,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.physik.feuer#1",
-    "s": 11.4,
-    "takte": 626,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.physik.flug#1",
-    "s": 11.3,
-    "takte": 610,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.same.physik.stoffe#2",
-    "s": 14.8,
-    "takte": 684,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.planet.kopplung.siedlungslage#3",
-    "s": 12,
-    "takte": 628,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.leben.kopplung.leben-formt-planet#4",
-    "s": 14.1,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "karte2.mensch.kopplung.leib#2",
-    "s": 14.7,
-    "takte": 684,
+    "ort": "wiese",
+    "vor": "gelaende.K2#1",
+    "s": 12.8,
+    "takte": 632,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "karte2.same.physik.tragen#1",
-    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [427.3,54.8,1081.8,810.5/2657] [660.2,284.5,992.9,577.1/4] …",
-    "s": 3.4
-   },
-   {
-    "vor": "karte2.same.physik.fluid#2",
-    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [427.3,54.8,1081.8,810.5/2657] [660.2,284.5,992.9,577.1/4] …",
-    "s": 3.7
+    "vor": "gelaende.K2#1",
+    "wege": "wege +8 [-119.1,-274.9,279.2,201/278] [-467.8,-1426.1,-347.1,-1284.2/3] [-481.4,-1420.8,-348.6,-1290.2/464] …",
+    "s": 22.4
    }
   ],
   "wirt": [
    {
-    "probe": "luftwasser.K4#1",
+    "probe": "luftwasser.K3#2",
     "anders": [
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt",
-     "window.__vorBild"
-    ],
-    "wie": {
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.__vorBild": "neu: async (x, z) => { await stehen(x, z); zug(180); const [px, py, pz, lx, ly, lz] ="
-    },
-    "haelt": [],
-    "heap": [
-     229.6,
-     314.8
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.planet.kosmos.welten#1",
-    "anders": [
-     "r._editGen",
-     "r._wegAnFn",
-     "r._wegBordFn",
-     "r._lavaKrusteFn",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
      "window.__wieseMessen",
      "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._editGen": "getauscht: () => (this._editGenZaehler = (this._editGenZaehler || 0) + 1)",
-     "r._wegAnFn": "getauscht: [object Function]",
-     "r._wegBordFn": "getauscht: [object Function]",
-     "r._lavaKrusteFn": "getauscht: [object Function]",
-     "r._wolkenZeit": "fehlt",
-     "r._weltaktGehalten": "fehlt",
-     "r._setWeather": "fehlt",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
      "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     327.1,
-     431.9
+     230.7,
+     280.2
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.planet.wetter.lagen#2",
-    "anders": [
-     "window.__ortSchritt"
+    "probe": "speicher.K4#2",
+    "anders": [],
+    "wie": {},
+    "haelt": [
+     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend."
     ],
-    "wie": {
-     "window.__ortSchritt": "fehlt"
-    },
-    "haelt": [],
     "heap": [
-     465.8,
-     465.8
+     306,
+     221.5
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.same.physik.koerper#1",
+    "probe": "karte2.planet.kopplung.bahn-klima#1",
     "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     194.2,
-     487.7
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.same.physik.tragen#1",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     189.7,
-     495.2
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.same.physik.fluid#2",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
      "window.__wieseMessen",
      "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     193.2,
-     208.5
+     255.7,
+     290.8
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.same.physik.feuer#1",
+    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
     "anders": [
-     "r._weltaktGehalten",
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     239.4,
-     253.6
+     267.6,
+     373.7
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.same.physik.flug#1",
+    "probe": "gelaende.K2#1",
     "anders": [
-     "r._weltaktGehalten",
-     "r._bildZeit",
-     "r._wolkenZeit",
+     "window.luma709",
      "window.__wieseMessen",
      "window.__wieseUrteil",
-     "window.__ortSchritt"
+     "window.__weltOrte",
+     "window.__weltOrt",
+     "window.__strecke",
+     "window.__ortSchritt",
+     "window.wasserRund",
+     "window.wasserFlaechen",
+     "window.wasserBoot",
+     "window.wasserTier",
+     "window.wasserPflanzen",
+     "window.wasserSchmelze",
+     "window.wasserErstarrung",
+     "window.wasserGluehen",
+     "window.__wasserOrte",
+     "window.__wasserLeser",
+     "window.__wasserLeib",
+     "window.__wasserMutation",
+     "window.__wasserKarte",
+     "window.__wasserLaeufe",
+     "window.__wasserTreibt",
+     "window.__wasserHoehle",
+     "window.__wasserWagen",
+     "window.__wasserSichtNetz",
+     "window.__wasserFlora",
+     "window.__wasserSee",
+     "window.__wasserQuelle",
+     "window.__wasserQuellTeil",
+     "window.__wasserBach",
+     "window.__wasserBank",
+     "window.__wasserFluss",
+     "window.__wasserKroneVon",
+     "window.__wasserUfer",
+     "window.__wasserStrom",
+     "window.__wasserFlussNah",
+     "window.__wasserGraben",
+     "window.__wasserDamm",
+     "window.__wasserUferFarbe",
+     "window.__wasserKoerper",
+     "window.__wasserBild",
+     "window.__wasserSeeAm",
+     "window.__wasserLicht",
+     "window.__wasserRegen",
+     "window.__zielen",
+     "window.__zielTier"
     ],
     "wie": {
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
+     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
+     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
+     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
+     "window.wasserRund": "neu: function wasserRund(n) { return (x, m = n) => (Number.isFinite(x) ? Math.round(x (globale Deklaration, auf undefined)",
+     "window.wasserFlaechen": "neu: function wasserFlaechen(r, x, z) { const span = r._voxelChunkConfig(0).span; con (globale Deklaration, auf undefined)",
+     "window.wasserBoot": "neu: function wasserBoot(st) { st.blueprints.__wasser_boot = { name: \"__wasser_boot\", (globale Deklaration, auf undefined)",
+     "window.wasserTier": "neu: function wasserTier(r, x, y, z, seele) { const st = r.state, cap = st.maxCreatur (globale Deklaration, auf undefined)",
+     "window.wasserPflanzen": "neu: function wasserPflanzen(sicht, kaesten, je) { const [r, n] = [window.anazhRealm, (globale Deklaration, auf undefined)",
+     "window.wasserSchmelze": "neu: function wasserSchmelze(r, x, z, P) { const [st, K, jahr] = [r.state, window.__g (globale Deklaration, auf undefined)",
+     "window.wasserErstarrung": "neu: function wasserErstarrung(r, orte) { const st = r.state; const wm = st.worldMeta (globale Deklaration, auf undefined)",
+     "window.wasserGluehen": "neu: async function wasserGluehen(r, [x, z]) { const [st, K, R, E] = [r.state, window (globale Deklaration, auf undefined)",
+     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
+     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
+     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
+     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
+     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
+     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
+     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
+     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
+     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
+     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
+     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
+     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
+     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
+     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
+     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
+     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
+     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
+     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
+     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
+     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
+     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
+     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
+     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
+     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
+     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
+     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
+     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
+     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st",
+     "window.__zielen": "neu: async (ziel) => { // ziel: {x,y,z} Welt-Punkt ODER {hoch: dy} (Blick nach oben, ",
+     "window.__zielTier": "neu: async (d, hoch) => { const r = window.anazhRealm, st = r.state, pm = st.playerMe"
     },
     "haelt": [],
     "heap": [
-     240.4,
-     254.8
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.same.physik.stoffe#2",
-    "anders": [
-     "r._bildZeit",
-     "r._wolkenZeit",
-     "r._weltaktGehalten",
-     "r._setWeather",
-     "r.state.weather",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T",
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
-     "r.state.weather": "neu: () => wert",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     189.6,
-     210.8
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "karte2.planet.kopplung.siedlungslage#3",
-    "anders": [
-     "r._weltaktGehalten",
-     "r._bildZeit",
-     "r._wolkenZeit"
-    ],
-    "wie": {
-     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
-     "r._bildZeit": "neu: () => S.T",
-     "r._wolkenZeit": "neu: () => S.T"
-    },
-    "haelt": [],
-    "heap": [
-     254.5,
-     254.5
+     219.4,
+     270.5
     ],
     "ungemessen": null
    }
   ],
   "wanderung": [
    {
-    "probe": "luftwasser.K4#1",
+    "probe": "luftwasser.K3#2",
     "ort": "wiese",
-    "m": 56.57,
+    "m": 223.27,
     "dreh": 0
    },
    {
-    "probe": "karte2.planet.kosmos.welten#1",
+    "probe": "speicher.K4#2",
     "ort": "wiese",
-    "m": 0,
-    "dreh": 1.972
+    "m": 72.99,
+    "dreh": 0.709
+   },
+   {
+    "probe": "karte2.planet.kopplung.bahn-klima#1",
+    "ort": "wiese",
+    "m": 4762.03,
+    "dreh": 0
+   },
+   {
+    "probe": "gelaende.K2#1",
+    "ort": "wiese",
+    "m": 1718.5,
+    "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "luftwasser.K4#1",
+    "probe": "luftwasser.K3#2",
     "gehalten": [
      "skala",
      "spiegel",
@@ -69071,7 +69002,7 @@
     "offen": []
    },
    {
-    "probe": "karte2.planet.kosmos.welten#1",
+    "probe": "speicher.K4#2",
     "gehalten": [
      "skala",
      "spiegel"
@@ -69079,84 +69010,7 @@
     "offen": []
    },
    {
-    "probe": "karte2.planet.wetter.lagen#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.planet.wetter.lagen#2",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.physik.koerper#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.physik.koerper#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.physik.tragen#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.physik.tragen#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.physik.fluid#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.physik.fluid#2",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.physik.feuer#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.physik.feuer#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.physik.flug#1",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.physik.flug#1",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.same.physik.stoffe#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.same.physik.stoffe#2",
+    "probe": "karte2.planet.kopplung.bahn-klima#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -69165,114 +69019,51 @@
     "offen": []
    },
    {
-    "probe": "karte2.planet.kopplung.siedlungslage#3",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.planet.kopplung.siedlungslage#3",
+    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
     "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.leben.kopplung.leben-formt-planet#4",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.leben.kopplung.leben-formt-planet#4",
-    "gehalten": [
-     "tiere"
-    ],
-    "offen": []
-   },
-   {
-    "probe": "karte2.mensch.kopplung.leib#2",
-    "halt": -1000000000,
-    "zurueck": 0
-   },
-   {
-    "probe": "karte2.mensch.kopplung.leib#2",
-    "gehalten": [
+     "skala",
+     "spiegel",
      "tiere"
     ],
     "offen": []
    }
   ],
-  "anOrt": [
-   {
-    "vor": "karte2.same.physik.stoffe#2",
-    "anders": [
-     "playerPathBuckets"
-    ],
-    "wie": {
-     "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
-    }
-   }
-  ],
-  "ciBlicke": 13,
+  "ciBlicke": 6,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 30213,
-   "frameP95": 25.11,
-   "taktP95": 18.21,
-   "vramMax": 199.7,
-   "seiten": 7,
+   "bilder": 13785,
+   "frameP95": 25.04,
+   "taktP95": 15.51,
+   "vramMax": 149.9,
+   "seiten": 3,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kosmos.welten#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.same.physik.fluid#2",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.same.physik.feuer#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.same.physik.flug#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "karte2.same.physik.stoffe#2",
-     "m": 1083,
+     "probe": "karte2.planet.kopplung.bahn-klima#1",
+     "m": 4762,
      "ringVor": 4,
      "ringMin": -1
     },
     {
-     "probe": "karte2.same.physik.koerper#1",
-     "m": 956,
+     "probe": "gelaende.K2#1",
+     "m": 1718,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     },
     {
-     "probe": "karte2.same.physik.tragen#1",
-     "m": 956,
+     "probe": "karte2.mensch.stadt.siedlungsnetz#1",
+     "m": 1349,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 1406,
-   "luecken": 3,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 542,
+   "luecken": 1,
+   "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 1483.3,
-  "grund": "die Fahrt riss 1800 s am Grund-Deckel von karte2.erleben.kopplung.emergenz#2 — offen: karte2.erleben.kopplung.emergenz#2, karte2.erleben.kopplung.emergenz#3, karte2.erleben.kopplung.emergenz#7, karte2.erleben.kopplung.wahrnehmung#2, karte2.erleben.kopplung.wahrnehmung#3, karte2.erleben.kopplung.wahrnehmung#4, karte2.erleben.kopplung.wahrnehmung#5, karte2.erleben.kopplung.klang#1, karte2.erleben.kopplung.klang#2, karte2.erleben.kopplung.klang#3, karte2.erleben.kopplung.klang#4, karte2.erleben.kopplung.klang#5, karte2.erleben.kopplung.klang#6, karte2.erleben.kopplung.geteilter-sinn#2, karte2.erleben.kopplung.geteilter-sinn#3, karte2.erleben.kopplung.geteilter-sinn#4, karte2.erleben.kopplung.geteilter-sinn#5, karte2.erleben.kopplung.geteilter-sinn#6, karte2.erleben.kopplung.geteilter-sinn#7, karte2.erleben.kopplung.ein-ereignis#1, karte2.erleben.kopplung.ein-ereignis#2, karte2.erleben.kopplung.ein-ereignis#3, karte2.erleben.kopplung.ein-ereignis#5, karte2.erleben.kopplung.ein-ereignis#6, karte2.erleben.kopplung.epoche-ganz#1, karte2.erleben.kopplung.epoche-ganz#2, karte2.erleben.kopplung.epoche-ganz#3, karte2.erleben.kopplung.epoche-ganz#4, karte2.erleben.kopplung.epoche-ganz#5, karte2.erleben.kopplung.epoche-ganz#6",
-  "minuten": 24.86
+  "fahrtS": 573,
+  "minuten": 9.73
  }
 }
