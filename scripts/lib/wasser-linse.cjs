@@ -343,6 +343,12 @@ async function wasserKoerper(o = {}) {
             z: mz,
             yaw: 0,
         };
+        // die Kamera steht, wo das Rig sie setzt: am Kopf des Spielers — das EINE Auge (`_lodAuge`) wählt die Gelenk-Stufe des
+        // Peers; die Medium-Probe (5) gab die Kamera an ihren ungesetzten Geburtsort zurück, km fern der See-Mitte
+        if (st.camera) {
+            st.camera.position.set(pm.position.x, pm.position.y + A.EGO_AUGE_M, pm.position.z);
+            st.camera.updateMatrixWorld(true);
+        }
         r._p2pApplyPeerSoul(peer);
         if (peer.mesh) {
             peer.lastMovedAt = 0;
