@@ -380,7 +380,7 @@ class AnazhRealm_speicher_laden {
         if (ort && ort.weltGleich) return;
         if (!ort) {
             // Welt-Wechsel ist eine WELT-IDENTITÄTS-GRENZE: lazy-cached Worldgen-Caches MÜSSEN zurück, sonst trägt
-            // die neue Welt alte Welt-Stempel (P2P-Drift). Die Grammatik der Bäume fällt mit der Saat (`_saatMerk`),
+            // die neue Welt alte Welt-Stempel (P2P-Drift). Die Grammatik der Bäume fällt mit der Saat (`_saatJe`),
             // _growTreeRing trägt alte Bauplan-Keys; grown_*-Baupläne räumt _loadStateRestoreGrownBlueprints.
             this._growTreeRing = [];
             // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming

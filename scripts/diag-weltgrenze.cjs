@@ -22,7 +22,7 @@
 //                       die Formen ohne worldId, ohne worldMeta, korrupt, nur IndexedDB fährt gate:boot-rettung)
 //   saat                DIE SAAT IM LAUF (saat-im-lauf): der Satz des Spielers „neue welt saat <Saat>“ in EINER Sitzung, Saat A → B → B
 //                       → A am Ort. Jede Welt trägt die genannte Saat in jedem Leser (worldMeta, Voxel-Faden, Planet, Anker) und in
-//                       jeder Stelle ihres GEDÄCHTNISSES (Welle saat-argument, `_saatMerk`: Gelände-Rausch, Grammatik der Bäume, Wiese
+//                       jeder Stelle ihres GEDÄCHTNISSES (Welle saat-argument, `_saatJe`: Gelände-Rausch, Grammatik der Bäume, Wiese
 //                       ×5, Ruf und Harmonie des Klangs, Fels und Kristall — je Stelle ihr Leser im Spiel gegen den frisch aus der Saat
 //                       gebauten Wert), dieselbe Saat ergibt dieselben Kennzahlen (Höhen, Rausch, Genesis-Ort, Start-Dorf, je Stelle
 //                       ihr Wert: A′ = A), B nie die von A (B ≠ A je Stelle) — ein Halter der alten Saat fällt beim Namen.
@@ -727,10 +727,11 @@ async function fahreSaat(browser, schein) {
         // Welt danach trägt (am Prototyp: der Abschied räumt jedes Feld der Seite, ein Glied am Prototyp reist)
         if (scheine.includes("gedaechtnis"))
             await page.evaluate(() => {
-                const roh = AnazhRealm.prototype._saatMerk;
+                const roh = AnazhRealm._saatJe;
                 const fest = new Map();
-                AnazhRealm.prototype._saatMerk = function (name, bau) {
-                    if (!fest.has(name)) fest.set(name, roh.call(this, name, bau));
+                AnazhRealm._saatJe = function (realm, name, bau) {
+                    if (name === undefined) return roh.call(this, realm);
+                    if (!fest.has(name)) fest.set(name, roh.call(this, realm, name, bau));
                     return fest.get(name);
                 };
             });

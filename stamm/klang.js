@@ -1236,13 +1236,13 @@ class AnazhRealm_klang {
     }
 
     // DIE STRÖME DES KLANGS (Welle saat-argument): der Ruf der Tiere (`umwelt`, ein LCG) und die Harmonie (`lofi`, mulberry32)
-    // ziehen aus der Saat der Welt; ihr Zustand steht im Gedächtnis der Saat (`_saatMerk`) und fällt mit ihr. Bis hier stand er im
+    // ziehen aus der Saat der Welt; ihr Zustand steht im Gedächtnis der Saat (`_saatJe`) und fällt mit ihr. Bis hier stand er im
     // Klang-Zustand der Seite — `symphony` reist über jeden Wechsel (`WELT_GRENZE.seite`): die Welt danach rief und spielte mit der
     // Saat der Welt davor. Der Same ist der EINE Text-Hash (`samenHash`; bis hier ein eigener ×31-Hash je Strom).
     // `anfang`: der Strom steht wieder am Anfang seiner Saat (die neue Lofi-Schicht, `_lofiRandom`)
     _klangStrom(zweck, anfang = false) {
         const start = (s) => globalThis.__samenCore.samenHash(s + ":" + zweck) || 1;
-        const R = this._saatMerk("klang." + zweck, (s) => ({ saat: s, zustand: start(s) }));
+        const R = AnazhRealm._saatJe(this, "klang." + zweck, (s) => ({ saat: s, zustand: start(s) }));
         if (anfang) R.zustand = start(R.saat);
         return R;
     }

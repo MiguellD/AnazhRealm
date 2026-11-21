@@ -16,7 +16,7 @@ class AnazhRealm_kreatur_fauna {
         const VG = AnazhRealm._vogelGesetz();
         const V = VG.V;
         const hw = AnazhRealm._umweltGesetz().UMWELT.stimmen.vogel.hoerweiteM;
-        const welt = this._saat();
+        const welt = AnazhRealm._saatJe(this);
         let vk = this._vogelKarte;
         if (!vk || vk.welt !== welt)
             vk = this._vogelKarte = {
@@ -83,7 +83,7 @@ class AnazhRealm_kreatur_fauna {
         const VG = AnazhRealm._vogelGesetz();
         const V = VG.V;
         const S = V.schwarm;
-        const welt = this._saat();
+        const welt = AnazhRealm._saatJe(this);
         let sk = this._schwarmKarte;
         if (!sk || sk.welt !== welt)
             sk = this._schwarmKarte = {
@@ -468,7 +468,7 @@ class AnazhRealm_kreatur_fauna {
         if (!pm || !st.scene) return;
         const FG = AnazhRealm._fischGesetz();
         const F = FG.F;
-        const welt = this._saat();
+        const welt = AnazhRealm._saatJe(this);
         let fk = this._fischKarte;
         if (!fk || fk.welt !== welt)
             fk = this._fischKarte = {

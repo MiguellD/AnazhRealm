@@ -1769,7 +1769,7 @@ class AnazhRealm_kreatur_leben {
     // Wechselt die Welt (ihr Seed), beginnen die Ströme neu.
     // `frisch`: ein Strom, den niemand weiterzählt (der Takt des Bestands, je Region und Zeit einer, feld.K2#2) — nicht gemerkt
     _faunaRng(zweck = "fauna", frisch = false) {
-        const seed = this._saat();
+        const seed = AnazhRealm._saatJe(this);
         let f = this._faunaStroeme;
         if (!f || f.seed !== seed) f = this._faunaStroeme = { seed, rng: Object.create(null) };
         const strom = f.rng[zweck] || this._streamRng(seed + "-" + zweck);
@@ -2283,7 +2283,7 @@ class AnazhRealm_kreatur_leben {
     // Kosten-Kappe `maxCreatures` wählt, WER gezeichnet wird, nie wer lebt. Vorher war der Bestand die Liste der Körper
     // (state.creatures, um den Spieler): geboren wurde nur, was die Kappe ließ, und fern gab es keinen Bestand.
     _bestandRegionen() {
-        const seed = this._saat();
+        const seed = AnazhRealm._saatJe(this);
         const F = this.state.faunaBestand;
         return F && F.seed === seed ? F : (this.state.faunaBestand = { seed, regionen: {} });
     }

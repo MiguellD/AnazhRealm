@@ -93,13 +93,18 @@ class AnazhRealm_speicher_welten {
     // DAS GEDÄCHTNIS DER SAAT: was die Seite aus der Saat der Welt ableitet und behält (Rausch-Felder, Ströme, Formationen), hält sie
     // HIER unter seinem Namen — an der Saat, die es gebar. Wechselt die Saat (`_weltWechsel`, ein Laden), fällt das ganze Gedächtnis,
     // gleich auf welchem Weg die Welt ging (bis hier merkten 11 Stellen ohne Saat im Schlüssel; zwei reisten über jeden Wechsel).
+    // DIE SAAT REICHT DURCH (Stand-Takt BRAND-ZELLEN an 403fd331: die Lage des Geländes rief je Höhe `_saatMerk` → `_saat`, 231 von
+    // 1 336 Einheiten des Brand-Schritts): je Zugriff EIN Vergleich — trägt die Welt noch die Saat des Gedächtnisses, liegt der Eintrag
+    // in ihm; erst ein Wechsel der Saat geht über den EINEN Leser (`_saat`, fail-closed). Ohne `name` die Saat selbst. Jeder Leser der
+    // Saat im Stamm ruft es — je Zelle, je Kachel und je Takt kostet die Saat nichts, nur ihr Wechsel (Gebot 7).
     // Leser: gate:weltgrenze (der Weg „saat“ vergleicht jeden Eintrag mit dem frisch aus der Saat gebauten).
-    _saatMerk(name, bau) {
-        const s = this._saat();
-        let M = this._saatGedaechtnis;
-        if (!M || M.saat !== s) M = this._saatGedaechtnis = { saat: s, je: new Map() };
+    static _saatJe(realm, name, bau) {
+        let M = realm._saatGedaechtnis;
+        const wm = realm.state.worldMeta;
+        if (!M || !wm || M.saat !== wm.seed) M = realm._saatGedaechtnis = { saat: realm._saat(), je: new Map() };
+        if (name === undefined) return M.saat;
         let v = M.je.get(name);
-        if (v === undefined) M.je.set(name, (v = bau(s)));
+        if (v === undefined) M.je.set(name, (v = bau(M.saat)));
         return v;
     }
 

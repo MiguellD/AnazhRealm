@@ -1803,7 +1803,7 @@ class AnazhRealm_feld_leben {
     // dichte → stein_block, magieleitung → kristall_geode, glut → glutbrunnen). Seltenheit emergiert aus
     // dem Noise. state.worldMeta.seed fließt in die Noise → jede Welt eigen, Multi-User-deterministisch.
     worldFieldAt(x, z) {
-        const seed = this._saat();
+        const seed = AnazhRealm._saatJe(this);
         // die Ströme je Welt (`state.worldField`; ein anderer Samen baut sie neu) und die Formel sind Kern: gelaende-core
         // `weltFeldRausch` · `weltFeld` — dieselbe Quelle liest jeder Faden (voxel-worker `worldFieldAt`, das Feld des Gaus)
         const G = globalThis.__gelaendeCore;
@@ -2182,7 +2182,7 @@ class AnazhRealm_feld_leben {
     }
     _lebenImStand(nahe = this._bestandReist()) {
         const st = this.state;
-        const seed = this._saat();
+        const seed = AnazhRealm._saatJe(this);
         const F = st.faunaBestand && st.faunaBestand.seed === seed ? st.faunaBestand.regionen : {};
         const [S, cs] = [this._bestandSeite(), AnazhRealm.LIFE_FIELD.cell];
         const bestand = {};

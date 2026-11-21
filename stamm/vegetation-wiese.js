@@ -2510,7 +2510,7 @@ class AnazhRealm_vegetation_wiese {
     // Ader-Sampler: Single-Octave-Ridge (1−|noise|)² auf (x,z) → vertikale Säulen in 3D, bewusst nicht
     // rotiert, [0,1]. Eigener Seed-Suffix `-iron-bands` (Γ5: re-rollt keinen anderen Welt-Stream).
     _eisenAderAt(x, z) {
-        const n = this._saatMerk("wiese.eisen", (s) => new SimplexNoise(s + "-iron-bands")); // das Gedächtnis der Saat
+        const n = AnazhRealm._saatJe(this, "wiese.eisen", (s) => new SimplexNoise(s + "-iron-bands")); // das Gedächtnis der Saat
         const SCALE = AnazhRealm.IRON_BANDS.scale;
         const v = n.noise2D(x * SCALE, z * SCALE);
         const nv = 1 - Math.abs(v);
@@ -2522,7 +2522,7 @@ class AnazhRealm_vegetation_wiese {
     // ist mittelwert-neutral (≈1): die Gesamt-Dichte bleibt, nur die Verteilung ändert sich. Main-only
     // Deko, seed-gebunden (alle Peers gleich); tag-neutral (reiner chance-Skalar, diag-arch-tags wacht).
     _clumpAt(x, z, freq) {
-        return this._saatMerk("wiese.klump", (s) => new SimplexNoise(s + ":clump")).noise2D(x * freq, z * freq);
+        return AnazhRealm._saatJe(this, "wiese.klump", (s) => new SimplexNoise(s + ":clump")).noise2D(x * freq, z * freq);
     }
 
     // STAND-Klumpung je Zweck (phytogenesis-standDensity): Γ5-Suffix ':forest' für Bäume λ~170 m,
@@ -2532,8 +2532,8 @@ class AnazhRealm_vegetation_wiese {
         const P = AnazhRealm.PLACEMENT_DENSITY;
         const wiese = purpose === "meadow";
         const n = wiese
-            ? this._saatMerk("wiese.stand:meadow", (s) => new SimplexNoise(s + ":meadow"))
-            : this._saatMerk("wiese.stand:forest", (s) => new SimplexNoise(s + ":forest"));
+            ? AnazhRealm._saatJe(this, "wiese.stand:meadow", (s) => new SimplexNoise(s + ":meadow"))
+            : AnazhRealm._saatJe(this, "wiese.stand:forest", (s) => new SimplexNoise(s + ":forest"));
         const freq = wiese ? P.meadowFreq : P.forestFreq;
         return n.noise2D(x * freq, z * freq);
     }
@@ -2585,11 +2585,11 @@ class AnazhRealm_vegetation_wiese {
     // trägt Darts (mulberry32 aus Zelle × Seed), ein Dart steht gegen die ±2-Nachbarzellen per reiner Wahl
     // (prio-Maximum im Konflikt-Radius, Positions-Tiebreak) → reihenfolge-unabhängig (Chunk A→B == B→A).
 
-    // Die geteilte Wald-Noise (im Gedächtnis der Saat `_saatMerk`, wie die Klumpung — kein Snapshot; der Wald-Faden zieht dieselbe
+    // Die geteilte Wald-Noise (im Gedächtnis der Saat `_saatJe`, wie die Klumpung — kein Snapshot; der Wald-Faden zieht dieselbe
     // Noise aus demselben Seed, `waldCtx` in voxel-worker.js, gate:worker-dichte Teil W). EIN Instanz, an verschiedenen Frequenzen/Offsets
     // gelesen (die Vorlage sampelt ihre `fbm2` genauso mehrkanalig). 2-Oktav-fbm → [0,1].
     _forestFbm(px, pz) {
-        const n = this._saatMerk("wiese.wald", (s) => new SimplexNoise(s + ":forest"));
+        const n = AnazhRealm._saatJe(this, "wiese.wald", (s) => new SimplexNoise(s + ":forest"));
         const a = (n.noise2D(px, pz) + 1) * 0.5;
         const b = (n.noise2D(px * 2.7 + 11.3, pz * 2.7 - 5.9) + 1) * 0.5;
         return a * 0.65 + b * 0.35;
@@ -2665,7 +2665,7 @@ class AnazhRealm_vegetation_wiese {
     // Der Welt-Seed als 32-bit-Int (fnv-1a, gecacht) — treibt die Zell-Hashes → alle
     // Peers/Reloads sehen denselben Wald (Γ5: seed-deterministisch, nie Math.random).
     _forestSeedInt() {
-        const s = this._saat();
+        const s = AnazhRealm._saatJe(this);
         if (this._forestSeedStr === s && this._forestSeedVal != null) return this._forestSeedVal;
         this._forestSeedStr = s;
         this._forestSeedVal = globalThis.__samenCore.samenHash(s); // der EINE Text-Hash (Welle SAMEN: FNV-1a, samen-core)

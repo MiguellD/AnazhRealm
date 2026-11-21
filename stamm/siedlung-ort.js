@@ -1430,7 +1430,7 @@ class AnazhRealm_siedlung_ort {
         if (!A) return null;
         const v = this._viertelInfo(cx, cz); // die Zelle als Viertel einer Stadt des Worts (w28-stadt-funktion)
         if (v) return v;
-        const ws = this._saat();
+        const ws = AnazhRealm._saatJe(this);
         if (!this._siedlungZellMemo || this._siedlungZellMemo.ws !== ws) this._siedlungZellMemo = { ws, M: new Map() }; // Instanz-Feld (die _editSaveTimer-Klasse)
         const hash = (x, z) => {
             const s = `${ws}:dorf:${x},${z}`;
@@ -1586,7 +1586,7 @@ class AnazhRealm_siedlung_ort {
     // gemerkt. Leser: das Wegenetz (`_wegenetzNachbarn`, offen mit ihm) und die Geburt (`_imReichEinesOrts`, offen: der Anker)
     // — bis tiere.K1#2 lebte die Frage im Wegenetz allein.
     _zellOrt(k) {
-        const ws = this._saat();
+        const ws = AnazhRealm._saatJe(this);
         if (!this._zellOrtMemo || this._zellOrtMemo.ws !== ws) this._zellOrtMemo = { ws, M: new Map() };
         const M = this._zellOrtMemo.M;
         if (M.has(k)) return M.get(k);
@@ -1636,7 +1636,7 @@ class AnazhRealm_siedlung_ort {
         // der Ort einer Zelle liegt in ihr ± der weitesten Probe der Stelle: k Zellen fort mindestens (k − ¾ − Probe) Zellen weit —
         // ein Reich, das weiter reicht als R Zellen fragen, bricht laut
         const grenze = (R + 0.25 - Math.max(...AnazhRealm.AUTO_SETTLEMENT.siteProbeR)) * S.cellM;
-        const ws = this._saat();
+        const ws = AnazhRealm._saatJe(this);
         if (!this._ortReichMemo || this._ortReichMemo.ws !== ws) this._ortReichMemo = { ws, M: new Map() };
         const M = this._ortReichMemo.M;
         // je Zelle [Ort x, z, Reich, Schlüssel] oder null, gemerkt an der Zahl der Zelle (der Schlüssel nur, wo ein Ort steht);
@@ -3347,7 +3347,7 @@ class AnazhRealm_siedlung_ort {
     _wegenetzNachbarn(key) {
         const SG = AnazhRealm._siedlungGesetz();
         if (!SG) return [];
-        const ws = this._saat();
+        const ws = AnazhRealm._saatJe(this);
         if (!this._wegenetzMemo || this._wegenetzMemo.ws !== ws) this._wegenetzMemo = { ws, nachbarn: new Map() };
         const M = this._wegenetzMemo;
         if (M.nachbarn.has(key)) return M.nachbarn.get(key);

@@ -25,7 +25,7 @@ class AnazhRealm_vegetation_streu {
     // Der Auftrag einer Region an die EINE Regel: Schichten, Same der Welt, Ort des Spielers und Dichte beim Bau.
     _streuAuftrag(regX, regZ, px, pz, fdScale) {
         const SC = AnazhRealm.SCATTER;
-        const worldSeed = this._saat();
+        const worldSeed = AnazhRealm._saatJe(this);
         let seedHash = 2166136261 >>> 0;
         for (let i = 0; i < worldSeed.length; i++) seedHash = ((seedHash ^ worldSeed.charCodeAt(i)) * 16777619) >>> 0;
         const { regionM, innerM, outerM, slopeMax, densityFloor, densityScale } = SC;
@@ -2458,12 +2458,12 @@ class AnazhRealm_vegetation_streu {
         return fehlt;
     }
 
-    // DIE GRAMMATIK DER BÄUME: das Rausch-Feld des Wuchses der Welt, im Gedächtnis ihrer Saat (`_saatMerk`) — es fällt mit ihr, auf
+    // DIE GRAMMATIK DER BÄUME: das Rausch-Feld des Wuchses der Welt, im Gedächtnis ihrer Saat (`_saatJe`) — es fällt mit ihr, auf
     // jedem Weg über die Weltgrenze (bis hier ein Feld der Seite, das nur das Laden beim Namen räumte: eine Ziel-Welt ohne Stand
     // wuchs mit der Grammatik der Welt davor). Der Wuchs der Built-ins liest das saat-freie Feld des Konstruktors (`_wuchsRausch`,
     // bau-vorlagen `_defaultBlueprints`). Leser: `_growTreeBlueprintRich`, `_growTreeBlueprintLegacy`, die Kronen-Hebung des Himmels.
     _baumGrammatik() {
-        return this._wuchsRausch || this._saatMerk("baum.grammatik", (s) => new SimplexNoise(s + "-veg-grammatik"));
+        return this._wuchsRausch || AnazhRealm._saatJe(this, "baum.grammatik", (s) => new SimplexNoise(s + "-veg-grammatik"));
     }
 
     _growTreeBlueprintRich(speciesKey, seed, opts) {

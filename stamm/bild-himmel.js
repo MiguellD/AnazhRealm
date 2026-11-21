@@ -1875,7 +1875,7 @@ class AnazhRealm_bild_himmel {
             // DER ZUG DER WOLKE (licht.K4): die Fronten ziehen mit `zugMS` längs der Grundrichtung der Saat (phyto-core
             // `windGrund`, der EINE Wind) — in Einheiten der Schicht je Sekunde; das Feld wandert mit (f(u − v·t))
             const P = globalThis.__phytoCore;
-            const g = P.windGrund(this._saat());
+            const g = P.windGrund(AnazhRealm._saatJe(this));
             const HG =
                 AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) ||
                 AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");

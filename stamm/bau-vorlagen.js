@@ -852,13 +852,13 @@ class AnazhRealm_bau_vorlagen {
         // dem stein_block-Affinitäts-Sieg seed-deterministisch wählt (`_rockVariant`). Tag-frozen
         // (noiserock+stein = stein_block-Tags, kein Affinitäts-Shift); persistiert trivial als Built-in.
         // DIE FORMATIONEN DER WELT (Welle saat-argument): Fels und Kristall wachsen aus der Saat der WELT, beim ersten Leser und im
-        // Gedächtnis der Saat (`_saatMerk`) — Teile und Form-Klasse lesen je Zugriff die Saat von jetzt und fallen mit ihr. Bis hier
+        // Gedächtnis der Saat (`_saatJe`) — Teile und Form-Klasse lesen je Zugriff die Saat von jetzt und fallen mit ihr. Bis hier
         // wuchsen sie im Konstruktor, wo die Welt noch keine Saat trägt: jede Welt stand auf den Felsen der Eingangs-Welt.
         const formation = (bp, art, i) => {
             // der Name im Gedächtnis der Saat — gefügt, nie als Vorlage `bau.${…}`: die liest gate:sprache als Familie der Text-Tafel
             const name = "bau." + art + ":" + i;
             const je = () =>
-                this._saatMerk(name, (s) => {
+                AnazhRealm._saatJe(this, name, (s) => {
                     const parts =
                         art === "fels"
                             ? this._rockVariant(`${s}-fels-${i}`)

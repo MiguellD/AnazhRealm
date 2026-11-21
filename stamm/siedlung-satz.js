@@ -900,7 +900,7 @@ class AnazhRealm_siedlung_satz {
     // DIE WETTERSEITE (`_alterLage` lauf): die Grundrichtung, mit der die Fronten ziehen (phyto-core `windGrund` aus der Saat
     // der Welt, derselbe Zug, den der Himmel trägt) — die Fläche, die ihr entgegenschaut, fängt den Schlagregen.
     _alterWind() {
-        const g = globalThis.__phytoCore.windGrund(this._saat());
+        const g = globalThis.__phytoCore.windGrund(AnazhRealm._saatJe(this));
         return { x: g.x, z: g.z };
     }
     // DER KERN DES ALTERS (stoffe.K4) — EINE Rechnung für jede Ecke jedes alternden Stoffs (das Bau-Teil `_werkAlterFaerbe`,

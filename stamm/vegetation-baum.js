@@ -1086,7 +1086,7 @@ class AnazhRealm_vegetation_baum {
     // Wurf. Die Scatter-Cell im Lookup REGISTRIEREN (species + variantIndex → der V18.221-Ω-H-Resolver mappt die Cell auf die
     // reale Form) + den „tree"-Zähler ERHÖHEN (Cap-Wand).
     _waldDartSetzen(d, alter) {
-        const worldSeed = this._saat();
+        const worldSeed = AnazhRealm._saatJe(this);
         const regionSeed = `${worldSeed}|${d.sp}|${Math.floor(d.x / 256)},${Math.floor(d.z / 256)}`;
         const variantIndex =
             typeof this._treeVariantIndexFor === "function" ? this._treeVariantIndexFor(d.sp, regionSeed) : 0;
@@ -1380,7 +1380,7 @@ class AnazhRealm_vegetation_baum {
                     if (this._genVersion && this._genVersion() >= 4 && this._growTreeBlueprintForSpawn) {
                         const bRegX = Math.floor(bxp / 256);
                         const bRegZ = Math.floor(bzp / 256);
-                        const bSeedW = this._saat();
+                        const bSeedW = AnazhRealm._saatJe(this);
                         try {
                             bushKey = this._growTreeBlueprintForSpawn(artB, `${bSeedW}|${artB}|${bRegX},${bRegZ}`);
                         } catch (_gbe) {
@@ -1672,7 +1672,7 @@ class AnazhRealm_vegetation_baum {
                     if (gV2 >= 4) {
                         const regX = Math.floor(sampleX / 256);
                         const regZ = Math.floor(sampleZ / 256);
-                        const worldSeed = this._saat();
+                        const worldSeed = AnazhRealm._saatJe(this);
                         const regionSeed = `${worldSeed}|${bushName}|${regX},${regZ}`;
                         const grownKey = this._growTreeBlueprintForSpawn(bushName, regionSeed);
                         if (grownKey) bushSpawnName = grownKey;
@@ -1713,7 +1713,7 @@ class AnazhRealm_vegetation_baum {
             if (!geoCls) return 0; // die Slope-Nische trägt hier keinen Stein (Mittelhang)
             const regX = Math.floor(sampleX / 256);
             const regZ = Math.floor(sampleZ / 256);
-            const worldSeed = this._saat();
+            const worldSeed = AnazhRealm._saatJe(this);
             const key = this._rockVariantForGeology(geoCls, regX, regZ, worldSeed);
             if (key && this.state.blueprints && this.state.blueprints[key]) spawnName = key;
             // GRÖSSE nach Nische: Findling groß, Talus klein, Aufschluss aufragend.
@@ -1721,7 +1721,7 @@ class AnazhRealm_vegetation_baum {
         } else if (landmarkPool && landmarkPool.n > 0) {
             const regX = Math.floor(sampleX / 256);
             const regZ = Math.floor(sampleZ / 256);
-            const worldSeed = this._saat();
+            const worldSeed = AnazhRealm._saatJe(this);
             // Die Form folgt dem Terrain (`_landmarkVariantIdx`): steil → aufragend (Nadel/Stapel/Druse/tiefe
             // Esse), flach → gedrungen (Brocken/Geröll/Cluster/Lava-See); der Region-Hash bricht Gleichstände
             // (HISM-kohärent). Affinität unberührt (Variante, nicht Art).

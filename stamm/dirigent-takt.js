@@ -1763,7 +1763,7 @@ class AnazhRealm_dirigent_takt {
     // DIE SAAT DER WOLKEN-UHR (s, < 1 h): aus der Saat der Welt gestreut — jede Welt beginnt mit ihrem eigenen Himmel, dieselbe Welt
     // auf jedem Gerät mit demselben
     _wolkenSaat() {
-        const s = this._saat(); // wie die Grammatik der Bäume
+        const s = AnazhRealm._saatJe(this); // wie die Grammatik der Bäume
         let h = 2166136261; // FNV-1a
         for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
         return (h >>> 0) % 3600;

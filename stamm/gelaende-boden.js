@@ -828,17 +828,17 @@ class AnazhRealm_gelaende_boden {
 
     // DIE GELÄNDE-LAGE: was das Gesetzbuch liest, unter den Namen des Worker-Zustands — eine LEBENDE Sicht auf
     // `state` (jeder Zugriff liest den Stand von jetzt; kein zweiter Speicher, nichts zu synchronisieren). Der Rausch-
-    // Strom entsteht beim ersten Lesen aus der Saat und steht im Gedächtnis der Saat (`_saatMerk`, er fällt mit ihr); `erbgut` ist
+    // Strom entsteht beim ersten Lesen aus der Saat und steht im Gedächtnis der Saat (`_saatJe`, er fällt mit ihr); `erbgut` ist
     // die gemerkte Normalform (sie trägt die Regler der Landform), `regionSize` die Kachel-Kante der Hydrosphäre.
     _gelaende() {
         if (this._gelaendeLage) return this._gelaendeLage;
         const realm = this;
         this._gelaendeLage = {
             get seed() {
-                return realm._saat();
+                return AnazhRealm._saatJe(realm);
             },
             get noise() {
-                return realm._saatMerk("gelaende.rausch", (s) => globalThis.__gelaendeCore.lageRausch(s, SimplexNoise));
+                return AnazhRealm._saatJe(realm, "gelaende.rausch", (s) => globalThis.__gelaendeCore.lageRausch(s, SimplexNoise));
             },
             get baseHeight() {
                 return realm.state.terrainBaseHeight;
