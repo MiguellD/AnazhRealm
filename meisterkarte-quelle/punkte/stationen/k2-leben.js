@@ -1260,12 +1260,14 @@ L.perspektive("pflanzen", (() => {
                     },
                     3: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(D_ID, 3, "Pop-Zähler unter Bewegung = 0", { key: "pops", einheit: "Pops" })],
+                        soll: [K.soll(D_ID, 3, "Pop-Zähler unter Bewegung = 0", { key: "pops", einheit: "Pops" }), K.soll(D_ID, 3, "Bildpaar 1 km", { key: "gangKm", rel: "≥", zahl: 1, einheit: "km" })],
                         auge: { pose: "gehend und fahrend über 1 km (Werkbank /gang)", vorbild: "Bildpaar 1 km gegen Foto (Prüfer-Satz R11)" },
                         taeter: "stamm/gelaende-fern.js (die Ferne als Kronen-Mittel) + stamm/vegetation-streu.js (die Reichweite der Streu)",
                         nicht: "jede Pflanze bis 1 km",
                         leser: "stamm/vegetation-streu.js:1603 _streuRegionInReichweite — keine einzelne Pflanze jenseits der Streu-Region",
-                        gruen: { werte: { pops: 0, fernstePflanzeM: 1200 }, zeuge: { pflanzen: 300, fernsteM: 1200, bilder: 60 } },
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeFrame,
+                        gruen: { werte: { pops: 0, gangKm: 1.2, fernstePflanzeM: 1200 }, zeuge: { pflanzen: 300, fernsteM: 1200, bilder: 60 } },
                         attrappen: [{ name: "0 Pops ohne Gang", roh: { werte: { pops: 0 }, zeuge: { pflanzen: 0 } } }],
                     },
                     4: {
@@ -5719,6 +5721,8 @@ L.perspektive("oeko", (() => {
                         soll: [K.soll(DY, 2, "Jungwuchs-Deckung −≥ 20 % gegen Gegenlauf", { key: "jungwuchsMinusProzent", einheit: "%" })],
                         auge: { pose: "Ego an der Wiese, dieselbe Kamera vor und nach 10 Spieljahren ohne Wölfe", vorbild: "Bildpaar gegen den Gegenlauf mit Wölfen: Jungwuchs-Deckung im Bild (Prüfer-Satz R11)" },
                         taeter: "stamm/kreatur-leben.js _kreaturFrass (die Äsung der Herde am Jungwuchs)",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(2, true),
                         gruen: gut({ jungwuchsMinusProzent: 26 }, 16),
                         attrappen: [{ name: "−26 % aus dem Kaskaden-Lauf ohne Bild", roh: flach({ jungwuchsMinusProzent: 26 }) }],
                     },
@@ -6028,6 +6032,8 @@ L.perspektive("oeko", (() => {
                         taeter: "foundry-core.js Totholz (zeitlose Gestalt)",
                         nicht: "Totholz ohne Zeit",
                         leser: "foundry-core.js:2045 __totholzSchnitt — Totholz als zeitlose Gestalt (Krone gebrochen, Reisig ab), keine Zerfallsklasse, die mit den Jahren fortschreitet",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, false),
                         gruen: gut({ totholzProzent: 18 }, 120),
                         attrappen: [{ name: "18 % aus der Forst-Inventur", roh: flach({ totholzProzent: 18 }) }],
                     },
@@ -6053,12 +6059,14 @@ L.perspektive("oeko", (() => {
                     },
                     6: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(ZE, 6, "Fehlbetrag ≤ 1 %", { key: "fehlbetragProzent", einheit: "%" })],
+                        soll: [K.soll(ZE, 6, "Fehlbetrag ≤ 1 %", { key: "fehlbetragProzent", einheit: "%" }), K.soll(ZE, 6, "Walfall-Gemeinschaft über 50 Spieljahre", { key: "walfallJahre", rel: "≥", zahl: 50, einheit: "a" })],
                         auge: { pose: "Tiefsee am Walfall (heute: die Wiese)", vorbild: "Walfall-Gemeinschaft über 50 Spieljahre in der Bildreihe (Prüfer-Satz R11)" },
                         taeter: "stamm/feld-leben.js _depositLife (das Leben-Feld verblasst, keine Bilanz)",
                         nicht: "keine Stoffbilanz, kein Walfall",
                         leser: "stamm/feld-leben.js:2047 _depositLife — schreibt Leben, das verblasst; kein Stoff wird gezählt, kein Meer-Kadaver",
-                        gruen: gut({ fehlbetragProzent: 0.6 }, 240),
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, false),
+                        gruen: gut({ fehlbetragProzent: 0.6, walfallJahre: 60 }, 240),
                         attrappen: [{ name: "Fehlbetrag behauptet", roh: flach({ fehlbetragProzent: 0.6 }) }],
                     },
                 },
@@ -6371,6 +6379,8 @@ L.perspektive("oeko", (() => {
                         ],
                         auge: { pose: "Ego am Acker der Wiese vor und nach 15 Ernten", vorbild: "Bildpaar gleicher Kamera: Wuchs sinkt sichtbar (Prüfer-Satz R11)" },
                         taeter: "stamm/vegetation-wiese.js _naehrstoffAt · _wuchsAt",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, true),
                         gruen: gut({ naehrVor: 1, naehrNach: 0.7, wuchsMinus: 0.05 }, 8),
                         attrappen: [{ name: "0,7 aus dem Beleg ohne Ernte", roh: flach({ naehrVor: 1, naehrNach: 0.7, wuchsMinus: 0.05 }) }],
                     },
@@ -6381,6 +6391,8 @@ L.perspektive("oeko", (() => {
                         taeter: "stamm/vegetation-wiese.js _naehrstoffAt (EIN Skalar, kein N und P)",
                         nicht: "N und P nicht getrennt",
                         leser: "stamm/vegetation-wiese.js:2097 _naehrstoffAt — ein Nährstoff; keine Bindung von N durch Leguminosen, kein P aus Gestein",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, true),
                         gruen: gut({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }, 8),
                         attrappen: [{ name: "Klee-Effekt behauptet", roh: flach({ jahre: 5, wuchsUnterschied: 0.2, naehrKanaele: 2 }) }],
                     },
@@ -6420,12 +6432,14 @@ L.perspektive("oeko", (() => {
                     },
                     6: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(ST, 6, "in ≥ 70 % erdähnlicher Saaten", { key: "saatenProzent", einheit: "%" }), K.soll(ST, 6, "Sauerstoff-Sprung im Fenster 2,5–2,0 Mrd. Jahre", { key: "sprungGa", rel: "band", zahl: 2, bis: 2.5, einheit: "Ga" })],
+                        soll: [K.soll(ST, 6, "in ≥ 70 % erdähnlicher Saaten", { key: "saatenProzent", einheit: "%" }), K.soll(ST, 6, "Sauerstoff-Sprung im Fenster 2,5–2,0 Mrd. Jahre", { key: "sprungGa", rel: "band", zahl: 2, bis: 2.5, einheit: "Ga" }), K.soll(ST, 6, "Bändereisen im Gestein sichtbar", { key: "baendereisen", rel: ">", zahl: 0, refQuelle: "der Richter: Bändereisen im Gestein sichtbar (Bändereisen-Lagen im Aufschluss > 0)" })],
                         auge: { pose: "Gestein der Wiese (Aufschluss)", vorbild: "Bändereisen im Gestein sichtbar (Prüfer-Satz R11)" },
                         taeter: "planet-core.js planetOrt (keine Atmosphäre über die Äonen)",
                         nicht: "kein Sauerstoff-Sprung",
                         leser: "planet-core.js:2290 planetOrt — liest die Zeit für das Gelände, keine Photosynthese, kein Eisen, kein Methan",
-                        gruen: gut({ saatenProzent: 75, sprungGa: 2.3 }, 32),
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, false),
+                        gruen: gut({ saatenProzent: 75, sprungGa: 2.3, baendereisen: 3 }, 32),
                         attrappen: [{ name: "GOE aus dem Lehrbuch", roh: flach({ saatenProzent: 75, sprungGa: 2.3 }) }],
                     },
                     7: {
@@ -6533,6 +6547,8 @@ L.perspektive("oeko", (() => {
                         auge: { pose: "Ego an der Mess-Wiese, dieselbe Kamera im Folgejahr mit und ohne Bestäuber", vorbild: "Bildpaar: Blüten-Dichte im Folgejahr −≥ 30 % ohne Bestäuber (Prüfer-Satz R11)" },
                         taeter: "stamm/vegetation-wiese.js _nahStreuKachel (die Blüte liest keinen Besuch)",
                         leser: "stamm/kreatur-fauna.js:656 _bestaeuberBlueten — liest die Blüten, nie umgekehrt; kein Samenansatz aus dem Besuch",
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, true),
                         gruen: gut({ blutenMinusProzent: 41, blueten: 180 }, 600),
                         attrappen: [{ name: "−41 % aus einer Studie", roh: flach({ blutenMinusProzent: 41, blueten: 180 }) }],
                     },
@@ -6572,12 +6588,14 @@ L.perspektive("oeko", (() => {
                     },
                     6: {
                         u: { auge: { ort: "wiese" } },
-                        soll: [K.soll(PA, 6, "Fischarten −≥ 50 %", { key: "fischMinusProzent", einheit: "%" })],
+                        soll: [K.soll(PA, 6, "Korallenfarbe kippt", { key: "korallenKipp", rel: "=", zahl: 1, refQuelle: "der Richter: Wärme-Gegenlauf — die Korallenfarbe kippt (1 = gekippt)" }), K.soll(PA, 6, "Fischarten −≥ 50 %", { key: "fischMinusProzent", einheit: "%" })],
                         auge: { pose: "das Riff im Bild (heute: Ego an der Wiese)", vorbild: "Bildpaar im Wärme-Gegenlauf: Korallenfarbe kippt (Prüfer-Satz R11)" },
                         taeter: "tetrapoda-core.js FISCH_GESETZ (kein Riff, keine Wärme)",
                         nicht: "kein Riff",
                         leser: "tetrapoda-core.js:2818 FISCH_GESETZ — eine Gestalt ohne Art und ohne Wärme; keine Koralle",
-                        gruen: gut({ fischMinusProzent: 55, fischArten: 40 }, 40),
+                        // ZAHL (auge-klasse.cjs): die Station urteilt die Zahl, das Bild ist Beleg
+                        zeuge: zeugeWelt(1, true),
+                        gruen: gut({ korallenKipp: 1, fischMinusProzent: 55, fischArten: 40 }, 40),
                         attrappen: [{ name: "Riff-Studie abgeschrieben", roh: flach({ fischMinusProzent: 55, fischArten: 40 }) }],
                     },
                     7: {
