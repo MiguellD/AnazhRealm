@@ -528,12 +528,14 @@ class AnazhRealm_dirigent_takt {
                                                       : null;
         // DER SCHIRM DIESES TAKTS (w28-probe-schirm): die Zeilen, an denen er wählte — wechselten sie seit dem letzten, bricht das die
         // Ruhe wie eine Regung (`_weltSteht` fragt zwischen den Takten selbst, ob der Schirm seither wechselte)
-        const zeilen = this._schirm().wahl;
+        // (stufe-ein-auge: `zeilen` bleibt die Zahl, die das Bild liest; `wahl` trägt dazu das Sichtfeld der EINEN Brennweite)
+        const { hoehe: zeilen, wahl } = this._schirm();
         const grund =
-            !gebrochen && W.zeilen !== undefined && zeilen !== W.zeilen
-                ? `Schirm-Wechsel ${W.zeilen} → ${zeilen} Zeilen`
+            !gebrochen && W.wahl !== undefined && wahl !== W.wahl
+                ? `Schirm-Wechsel ${W.wahl} → ${wahl} (Zeilen:Sichtfeld)`
                 : regung;
         W.zeilen = zeilen;
+        W.wahl = wahl;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -798,7 +800,7 @@ class AnazhRealm_dirigent_takt {
         // der Schuss ging ohne einen Takt (GTX 1050, Dorf: 10 von 50 Bewohnern als Feld-Kapseln bis 6,6 m ans Auge, 192
         // Bildpunkte hoch — die Grenze des Felds bei 64 px von 360 Zeilen statt bei 19,8 m; jedes Probe-Bild zeigte so die Stufen
         // eines Drittel-Schirms).
-        if (this._schirm().wahl !== W.zeilen) return false;
+        if (this._schirm().wahl !== W.wahl) return false;
         const o = this._weltOffen();
         for (const k in o) if (o[k]) return false; // jedes Feld, ohne Müll je Takt
         // DER SPRUNG DES ANKERS: stand die Kamera einer Sonde (das Auge der Stufen, `_lodAuge` setzt es neu) oder der Spieler seit
