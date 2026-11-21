@@ -3592,6 +3592,13 @@ hauptLauf(async () => {
             [LL.naesseUrteil({ wiese: m(0.66, null, 0.7), dorf: m(0.62, 1.01, 0.7) }).urteil, "GRUEN"],
             [LL.naesseUrteil({}).urteil, "ROT"],
         ];
+        // DAS GESETZ AM STAMM (planet.kopplung.wetter-welt#3): die Formel des Stoffs unter der Zahlen-Algebra im Band von Lekner &
+        // Dorf; die Mutante „Albedo zum Quadrat“ (das Gesetz bis main 9502aa0e) ist ROT beim Namen `_naesseGesetz`
+        const NG = LL.naesseGesetzAusStamm(root);
+        const quadrat = (A, albedo, rauh, metall, w) => ({ faktor: A.mix(A.k(1), albedo, A.mul(w, A.sub(A.k(1), metall))) });
+        f.push([LL.naesseGesetzBefunde(NG.gesetz, NG.naesse).join(" | "), ""]);
+        f.push([LL.naesseGesetzBefunde(quadrat, NG.naesse).join(" | "), /^_naesseGesetz: Albedo 0\.02 nass × 0\.02, Lekner–Dorf 0\.4\d+.*Luma porös nass\/trocken 0\.2\d* außerhalb/]); // prettier-ignore
+        for (const b of LL.naesseGesetzBefunde(NG.gesetz, NG.naesse)) console.log(`NÄSSE GESETZ ROT: ${b}`);
         const fehl = istSoll(f);
         console.log(`NÄSSE Selbsttest: ${f.length - fehl.length}/${f.length}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
