@@ -3,10 +3,12 @@
 // der Settlement-Linse (`node scripts/diag-settlement.cjs`, Teil A am Tisch) am Verkehr des Fachwerk-Kerns — `verkehrVon` (welches
 // Los einen Wagen trägt) und `verkehrsNetz` (die Wende jedes Endes: ihre Bahn, ihr Kranz der Plätze, der Stand des Fahrers) —
 // samt den Selbst-Tests 15d bis 15g, je am Stand bis w28-stadt-grammatik ROT beim Namen. Der Konsum-Leser am Gerät ist
-// gate:fahr-leben VK (der Fußweg zum Wagen, die Flotte vor der Wende, der Abstand Wagen an Wagen, der Fahrer ohne Weg).
+// gate:fahr-leben VK (der Fußweg zum Wagen, die Flotte vor der Wende, der Abstand Wagen an Wagen, der Fahrer ohne Weg). Dazu der
+// Weg zur Arbeit (pendler-anschluss): die Bindung des Menschen über koerper `tagesWege` (Selbst-Test 15h).
 
-// FC = der Fachwerk-Kern, wie die Linse ihn am Tisch lädt (`studioKern`), check = ihr Prüfer (Name, bestanden, Detail)
-function verkehrsnetzProben(FC, check) {
+// FC = der Fachwerk-Kern, wie die Linse ihn am Tisch lädt (`studioKern`), check = ihr Prüfer (Name, bestanden, Detail), KC und TC
+// der koerper- und der tetrapoda-Kern (die Bindung und ihr Weg)
+function verkehrsnetzProben(FC, check, KC, TC) {
     // DER WAGEN DER STADT GEHÖRT EINEM HAUS IM RING (w28-stadt-grammatik, fachwerk `verkehrVon`): kein Wagen an einem Los der
     // Vorstadt — sie hängt je Tor an EINER Ausfallstraße, ihr Ende liegt in der Luft nah an einem anderen Tor und zu Fuß weit
     // von ihm (stadt-voll: #548012 am Ende der Ausfallstraße des Ost-Tors trug Wagen 18 an der Wende des Nordost-Tors, 155 m
@@ -204,6 +206,60 @@ function verkehrsnetzProben(FC, check) {
             "Selbst-Test 15g: der freie Fahrer-Stand — die Stadt des Gesetzes besteht, dieselbe mit einem Platz, dessen Fahrer-Stand auf einer Spur liegt, fällt beim Namen",
             !!heil && heil.stand.length === 0 && !!inSpur && inSpur.stand.length === 1,
             JSON.stringify({ heil: heil && heil.stand.length, inSpur: inSpur && inSpur.stand[0] })
+        );
+    }
+    // DAS WERK LIEGT AM WEG (pendler-anschluss, koerper `tagesWege` → `tagesBindung` → tetrapoda `zielWahl` `weg`): kein Mensch eines
+    // Wohnhauses bindet ein Werk, zu dem er über `FERN` (4 × die halbe Nähe der Arbeit, TAGES_GESETZ.wegM.arbeit) und mehr als das
+    // Doppelte der Luftlinie GEHT — die Wahl misst den Weg über das Wege-Netz des Plans (fachwerk `wegeNetz`, wie der Wirt es baut:
+    // BEWOHNER.kreuzM 3, WEGENETZ.halbM 1,2 und nahtM 48), nie die Luftlinie. Bis pendler-anschluss wog sie die Luftlinie: an
+    // stadt-voll nahm der Mensch auf der Terrasse das Werk 14 m unter sich am Fuß der Klippe und ging 648 m um den Ring, 43 von
+    // 1 338 kamen um 10 Uhr nicht an (nach dem Weg gebunden 22; mit dem Stand nahe seiner Tür am Netz, stamm `_bewohnerListe`
+    // `frei`, und jeder Ort an dem Knoten vor seiner Tür, `anschliessen`: 1 von 1 336). Je Wohnhaus fünf Samen. Der Konsum-Leser am Gerät ist die Station
+    // karte2.mensch.menge.bevoelkerung S2 (die Stichprobe kommt um 10 Uhr an).
+    {
+        const FERN = 4 * KC.TAGES_GESETZ.wegM.arbeit;
+        const umwege = (seed, nH, mitWeg) => {
+            const pl = FC.exportSettlement({ seed, nH });
+            const orte = KC.tagesOrte(pl, () => true);
+            const weg = typeof KC.tagesWege === "function" ? KC.tagesWege(TC, orte, FC.wegeNetz(pl, 3, 1.2, 48), 0, 0) : null;
+            const aus = { n: 0, taeter: [] };
+            if (!weg) return Object.assign(aus, { fehlt: "der Kern trägt kein tagesWege" });
+            for (let h = 0; h < orte.length; h++) {
+                if (orte[h].art !== "wohnhaus") continue;
+                for (let k = 0; k < 5; k++) {
+                    const same = (Math.imul(seed * 1000 + h, 0x9e3779b9) ^ Math.imul(k + 1, 0x85ebca6b)) >>> 0;
+                    const B = KC.tagesBindung(TC, same, "wohnhaus", h, orte, null, mitWeg ? weg : undefined);
+                    if (B.werk < 0 || B.werk === h) continue;
+                    aus.n++;
+                    const [w, l] = [weg(orte[h], orte[B.werk], B.werk), Math.hypot(orte[B.werk].x - orte[h].x, orte[B.werk].z - orte[h].z)]; // prettier-ignore
+                    if (w > FERN && w > 2 * l) aus.taeter.push(`Haus ${orte[h].slot} → ${orte[B.werk].art} ${orte[B.werk].slot}: ${l.toFixed(0)} m Luft, ${Number.isFinite(w) ? w.toFixed(0) + " m" : "kein"} Weg`); // prettier-ignore
+                }
+            }
+            return aus;
+        };
+        const fehl = [];
+        let n = 0;
+        for (const [seed, nH] of [
+            [7, 120],
+            [7, 300],
+            [11, 200],
+        ]) {
+            const u = umwege(seed, nH, true);
+            n += u.n;
+            if (u.fehlt || u.taeter.length) fehl.push(`${seed}/${nH}: ${u.fehlt || u.taeter.length + " Bindungen, " + u.taeter[0]}`);
+        }
+        check(
+            `DAS WERK LIEGT AM WEG: kein Mensch eines Wohnhauses bindet ein Werk, zu dem er über ${FERN} m und mehr als das Doppelte der Luftlinie geht (3 Städte, ${n} Bindungen)`,
+            fehl.length === 0 && n > 0,
+            fehl.slice(0, 3).join(" · ") || (n > 0 ? "" : "keine Bindung (die Probe prüfte nichts)")
+        );
+        // Selbst-Test 15h: die Bindung nach der Luftlinie (`tagesBindung` ohne `weg`, wie bis pendler-anschluss) bindet in der
+        // Metropole des Gesetzes Werke hinter dem Umweg — beim Namen; die Bindung des Gesetzes keines
+        const [luft, gesetz] = [umwege(7, 300, false), umwege(7, 300, true)];
+        check(
+            "Selbst-Test 15h: der Weg zur Arbeit — die Bindung nach der Luftlinie (wie bis pendler-anschluss) fällt in der Metropole des Gesetzes je Bindung beim Namen, die nach dem Weg nicht",
+            !luft.fehlt && luft.taeter.length > 0 && gesetz.taeter.length === 0,
+            JSON.stringify({ luft: luft.fehlt || luft.taeter.length, erste: luft.taeter[0], gesetz: gesetz.fehlt || gesetz.taeter.length, n: gesetz.n })
         );
     }
 }
