@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T05:00:23.249Z",
+ "zeit": "2026-11-21T05:05:54.840Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -54630,6 +54630,432 @@
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.geist.innenleben#2",
    "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner einer Großstadt: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 100000 Bewohner einer Großstadt) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k224c10aaef00",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 67.1,
+   "fremd": {
+    "s": 70.7,
+    "takte": 32,
+    "fremdS": 55.16,
+    "kerne": 0.78,
+    "fensterKerne": 1.213,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.64
+     ]
+    ],
+    "dienerS": 29.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.02
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "geraetS": 30.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 147.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:05:54.840Z",
+   "abdruck": "640813858256",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: 10⁶ Bewohner einer Metropole: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 1000000 Bewohner einer Metropole) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k224c10aaef00",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 67.1,
+   "fremd": {
+    "s": 70.7,
+    "takte": 32,
+    "fremdS": 55.16,
+    "kerne": 0.78,
+    "fensterKerne": 1.213,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.64
+     ]
+    ],
+    "dienerS": 29.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.02
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "geraetS": 30.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 147.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:05:54.840Z",
+   "abdruck": "f99b6fdece9e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: 10⁷–4·10⁷ Bewohner einer Megastadt: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 10000000 Bewohner einer Megastadt) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k224c10aaef00",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 67.1,
+   "fremd": {
+    "s": 70.7,
+    "takte": 32,
+    "fremdS": 55.16,
+    "kerne": 0.78,
+    "fensterKerne": 1.213,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.64
+     ]
+    ],
+    "dienerS": 29.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.02
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "geraetS": 30.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 147.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:05:54.840Z",
+   "abdruck": "4f3a18a33f39",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#7": {
+   "gruen": false,
+   "zahl": "S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S7 ROT: Umfang nicht erzeugbar: 4·10⁸ Bewohner in einer Bebauung: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 400000000 Bewohner einer Bebauung) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k224c10aaef00",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 67.1,
+   "fremd": {
+    "s": 70.7,
+    "takte": 32,
+    "fremdS": 55.16,
+    "kerne": 0.78,
+    "fensterKerne": 1.213,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.64
+     ]
+    ],
+    "dienerS": 29.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.02
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "geraetS": 30.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 147.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:05:54.840Z",
+   "abdruck": "3feed06f97c2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#8": {
+   "gruen": false,
+   "zahl": "S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S8 ROT: Umfang nicht erzeugbar: 10⁹–10¹⁰ Menschen eines Planeten: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 1000000000 Menschen eines Planeten) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k224c10aaef00",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 67.1,
+   "fremd": {
+    "s": 70.7,
+    "takte": 32,
+    "fremdS": 55.16,
+    "kerne": 0.78,
+    "fensterKerne": 1.213,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.64
+     ]
+    ],
+    "dienerS": 29.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.02
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "geraetS": 30.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 147.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:05:54.840Z",
+   "abdruck": "11c57ce30d6c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#9": {
+   "gruen": false,
+   "zahl": "S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: S9 ROT: Umfang nicht erzeugbar: 10¹⁰ Menschen je Planet über die Jahre: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213 in 308 Häusern) (gemessen 1213, Soll 10000000000 Menschen je Planet und Jahr) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k224c10aaef00",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 67.1,
+   "fremd": {
+    "s": 70.7,
+    "takte": 32,
+    "fremdS": 55.16,
+    "kerne": 0.78,
+    "fensterKerne": 1.213,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.64
+     ]
+    ],
+    "dienerS": 29.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.02
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "geraetS": 30.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 147.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:05:54.840Z",
+   "abdruck": "754802e912fb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -54720,7 +55146,8 @@
   "kedcb762c6ed5": "dVVdj5swEPwvebyWM58BLN2DEyIlUqtyT31ewxpICEQ2iXup+t8rOEgC5PaNaGZ3PDt2/i5OkBwgw9e9qqsFXbwsvi8UXNBQKC8oX/dqQRdhYtnoUPbO2ooZY+sWlsji1CiSFpAZAnJplMixek06zssDoiw4AV5BfkTjLBssyh4UWHZqC0r0humYkJj4ZKXf3qbUkmNaGw0IHIhhKJwA6BR4VhlwNOAsumE92AsQhEdJV0HE4j0ZaqUZI3ozncihSsdKw6Xno0d3H4xt2ExhWgA2RllUapiZpB53bHobND9VKkEbV8C8RNmTwPLB4oPQzmwdh2RC7Kw+yfprr0V5VmokJ3BSzw4oIbNuGaoiyZtxQx7avgX0yS6y09kQI82cQ8Cnm8gBqwzlSIPpJGJpUfInmDY9wBElGBXkg9um49v87h4hZDvXUnbCuxGD8KUpLDcYEduVk6z1Msq6RuQ6/B53FrOI9cluK5sMUUleyOPYHuGibTr0x1ySyiFFaRxq1dzQgQuAAe1nkW5W7EZT5v0wPc/mS9N7PEtA2HbmnapFo0GikZ3OPRFd9HyPMrabgRs4HodbIRzXSaaLU00b/UcZnovW0m9lZF/s4fOiGFcsyoEkhOuGHl2v3Cn4IuFoAM9kIcSwbe4lInwWTg1KTVIEpmVa4WTDk9IJI5eHb2fmmsayMXhdN0NuHNMJLUocUt1YYXcDV7dksDWLPuzf2/d7WLrasKfda9ncLORLU7hUfGqboQvZGBqS/LZ4wRHaI85kX1GWmOHIkNTlDqSUaPEpex8wFvu9EeLbyJjrvGOB7eYqdVZDXEM/DQV98mpplAcO1aEHuksvsOwu16tfbNs5wfZmRCIS60eD1izVUbZbR59P2k+2YruIRH3zEybkJGtRtI8uyeGsciib+//Rv/8=",
   "kee681f564acb": "dVRNr5swEPwvObb1c/gKYOkdnBApkVqVnnpewxp4IRDZELep+t8rCCQPeN2jNbM7nln7z+oCyQkyfHnTdbViq0+rLysNVyQa1RXVy5tesVWYWDY6jN+Lcs53HSxRxaXRtCwEBVFBfkbSqgaL8iXpaYFlp7Zk1Oy5iSmNqU+35vV1Ti0FpjVpQOJIDEPpBMDmwFZnIJBAK/thA9gLEKTHaF9BxOM3OtbWcE7Nfj5RQJVOlYYbz0ePHQ3ne75QmBaADSmLSo8zk9QTjs0eg5a3ShUYcgPMS1QDCSwfLDEK7a00cUhnRFm2Wk+GBU7q2QGjdIHNUBdJ3pCLqgVWA1yEtm8B+8Dp7NISOVEkBARi7nMOWGWoJhrWTiI3FqO/gnnTE5xRAakgH71cO74tnt5QSg9LLWUvvB8xCt+speUGE2IXKM06p6Ksb0Rv43l8X8aI8x98rGw2RCd5oc5Te6SL9tphX5eSdA4pKnKqdfNABy4ABsPmR7SfFbvRnPm8zMCzxWbtvb9LQPlh4Z2uZWNAIcku7UBEFz3fY5wfF+AGzudx56XjOsk8ON10i/1ehueitfE7Gdl/crg/A3LDohxJUrpu6LHdNpuDrwrOBESmCinHtIWXyPCj5TRYNkTUdTPG66yd0GLUodXDlbB/BttHgHzHo9/2z8OPZ6Z97flcSt+9Vs3jpmKzli6T1+41Jgt0oRpiIMkf+UiB0MleZHJDVWKGExtTVziQMmrkXfYt4Dz2h6cvP08W9rbsWGBncKVbPW5V6KehZB98HQbVSUB1GoDuxgssu1+/7Xd+uFtUhRGNaGzeG7TjqYmy4y66/yvf+JYfIxoNzS+Y0IuqZdH9fDSHVudQNs8v/+8/",
   "k960bf8c427e0": "dVVNj5swFPwvOW7rNZ8BLO3BCZF2pUqlp6rHZ3gGNgSQDaFN1f9eQSBZIPtOKJphxvPG5O+mhvgIKT6/66rcsM3T5utGwxmJRnVG9fyuN2wTxKaFNuPXoZzzfQ+LVV43miY5pOQIJ1RACmjFczyQnlaQClWNiugGyuQBqMgFBVFCdkLSqgbzYgT5ppVYktHuwLuI0oh6dNe9vCyphcCkIg1InIhBIG0f2BLY6hQEEmjlIDaCXR9BuowO44c8eqfT8B+c0+6wVBRQJnOnwdb10GVvfzg/8JXDJAdsSJGXetKME1fYFrsJrU+VKOjIBTArUI0kMD0wxWR0WEkXBXRBlEWr9UzMtxPX8hmlK2yKOo+zhtSqEliOcBFYngnsQdJp3RI5cyQE+GKZcwZYpqhmHgw7lluT0d8+/2zomdJoHfZYsBKyKWvD9ixxz45S+rr2WgwHGyxMB9sa0nT8GbFfOE179TAdXkQv0+/R1VXI+xKMky5EdJzl6jSPTzpoGTb7trakM0hQkWOlmxvadwDQH29YOBSOR064ZN4PM/IssTXcj2fxKX/1V4qVbDpQSNK6HYnooOu5jPO3FbiB02m6E9J27Hi52OECz2y4Dppbr7eRfrKH6zUhF8yLiSSl4wQu2++cJfis4ERApCqXctq2cGMZPCpvB1ovWgaGaZjBYsOL6eKhabexV6l1WDREVFUz9cY27MBk1KbljRUMPd7d27vnYWf83H8oyzAHzh+EMihUqrnFKLaGdJi8+luhc9WQDuLstnwpEAL2AHpBVWCKs1ASR9iQ9Oi7rdCZHr7Mwrmswrjk2G+v1K2eKht4SSDZg+9Wh+oooDyOQGfr+qY1dHv3nb+OgkZIQxp1H0Pac3n5xd/2O79/WY0xrVUl8/4zSzNodQZFc/+f+vcf",
-  "k1e709cc6c307": "dVRNr5swEPwvHNvyNnwFsNSDEyLlSa2ad+p5DWsgIRDZENpU/e8VBJIHvO7Rmtkdz6z9x7hgfMKUXo66Kg1mfDK+GBqvZGpSV1IvR20wI4wtmxzG33hXwDnfdrBY5ZdaQ5ELQFFidiazUTXlxUvc0wLLTmzJoN3x9gBwAB827devc2ohKKnMGiWNxDCUToBsDmx0ioJMbGQ/bAB7AaH0GPQVRPxwhLE2LefQ7uYTBZbJVGm49nzy2GvL+Y4vFCY5Um0WeanHmXHiCcdmj0HLWyUKW/OGlBWkBhJaPlpiFNpb2R5CmBFl0Wg9GRY4iWcHDGCBTUnncVabF1UJKge4CG3fQvaB0+mlMeVEkRAYiLnPGVKZkppoWDmxXFsMfgXzpic8k0KzxGz0cuX4tnh6AwD7pZaiF96PGIWvV9JygwmxCxTSzqko7RvBbTw/9AbyiA9b2VU6G6LjLFfnqT3SJXvlsG9LSTrDhJR5qnT9QAcuIgVsmAX9rIMbzZnPyww8W6xX3vu7BMD3C+90JesWFZnppRmI5JLne4zz1wW4xvN53HnpuE48D07X3WK/l+G5ZK39Tkb6nxzuz8C8UV6MJCldN/TYdpPOwVeFZxNFqnIpx7SFF8vwo+VsqahNUVX1GK+zckKLgQPlw5WwfwabR4B8y6Pf9s/92zPTvnZ8LqXvXqn6cVOxXkmXyWv3GuMFOle12WKcPfKRgrCTvcjkRqqglCY2Jq5wMGHQyrvsW8D5wR+evvw8WdjbsmNOncGlbvS4VaGfhJJ98HW0pE4Cy9MAdNdeYNn9+m1+8P3dojKMIIJ5JS3nb9vo/q985xv+GsFxaH6hGC6qknn380GGjc6wqJ9f/t9/"
+  "k1e709cc6c307": "dVRNr5swEPwvHNvyNnwFsNSDEyLlSa2ad+p5DWsgIRDZENpU/e8VBJIHvO7Rmtkdz6z9x7hgfMKUXo66Kg1mfDK+GBqvZGpSV1IvR20wI4wtmxzG33hXwDnfdrBY5ZdaQ5ELQFFidiazUTXlxUvc0wLLTmzJoN3x9gBwAB827devc2ohKKnMGiWNxDCUToBsDmx0ioJMbGQ/bAB7AaH0GPQVRPxwhLE2LefQ7uYTBZbJVGm49nzy2GvL+Y4vFCY5Um0WeanHmXHiCcdmj0HLWyUKW/OGlBWkBhJaPlpiFNpb2R5CmBFl0Wg9GRY4iWcHDGCBTUnncVabF1UJKge4CG3fQvaB0+mlMeVEkRAYiLnPGVKZkppoWDmxXFsMfgXzpic8k0KzxGz0cuX4tnh6AwD7pZaiF96PGIWvV9JygwmxCxTSzqko7RvBbTw/9AbyiA9b2VU6G6LjLFfnqT3SJXvlsG9LSTrDhJR5qnT9QAcuIgVsmAX9rIMbzZnPyww8W6xX3vu7BMD3C+90JesWFZnppRmI5JLne4zz1wW4xvN53HnpuE48D07X3WK/l+G5ZK39Tkb6nxzuz8C8UV6MJCldN/TYdpPOwVeFZxNFqnIpx7SFF8vwo+VsqahNUVX1GK+zckKLgQPlw5WwfwabR4B8y6Pf9s/92zPTvnZ8LqXvXqn6cVOxXkmXyWv3GuMFOle12WKcPfKRgrCTvcjkRqqglCY2Jq5wMGHQyrvsW8D5wR+evvw8WdjbsmNOncGlbvS4VaGfhJJ98HW0pE4Cy9MAdNdeYNn9+m1+8P3dojKMIIJ5JS3nb9vo/q985xv+GsFxaH6hGC6qknn380GGjc6wqJ9f/t9/",
+  "k224c10aaef00": "dVRNj5tADP0vObZlHb4CjNTDJETKSq2aPfXsAQ+QEEAzENpU/e8VBJIFtj6O3rOfn+35s6owOmNCLyddFiu2+rT6stJ4JUOTupJ6OekVWwWRaZHN+D2Ac77rYJHKqlpDnglAUWB6IaNRNWX5S9TTfNOKLcmg3fP2CHAED7bt169zai4oLo0aJY3EIJC2j2wObHSCggxsZF9sALs+oXQZ9OGH/HiCMbYt59Du5xUFFvFUabBxPXLZa8v5ni8UxhlSbeRZoceaUewK22KPQsuuYoWtcUNKc1IDCU0PTTEK7a1sjwHMiDJvtJ4U8+3YtXwGsMAmpLMorY1KlYKKAS4CyzORfeB0UjWGnCgSAn0x9zlFKhJSEw1rO5Ibk8Evf570jBdSaBSYjl6ubc8ST28A4LDUkvfC+xKj8M1amo4/IXYDhaRzKkz6RHAb34/3ZQw5f+NjJLMiOkozdZnaIx2y1jb7tpSkU4xJGedS1w+07yCSP2x+CH2toxPOmc9mBp4lNmv3fS8+8MPCO13KukVFRlI1A5Eccj2Xcf66ANd4uYw7L23HjuaD03W32O9luA6ZG6+TkfxnDvczMG6U5SNJSscJXLbbJnPwVeHFQJGoTMpx2sKNZPDRcraU14Yoy3ocr722A5OBDcXDlaA/g+1jgHzHw9/Wz8Pbc6Z97PlcSp+9VPWjU7FZS4fJa3eN0QKdqdpoMUof85GCsJO9mMmNVE4JTWyMHWFjzKCVd9knn/OjN5y+/DxZ2NsyY0adwYVu9LhVgRcHkn3wdbSkzgKL8wB0Nq5vWv36bX/ww92iIgghhOv0TiBuOX/bhfd/5Tvf8tcQTkPyiiKoVCmz7ueDFBudYl4/v/y//wA="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -66326,6 +66753,135 @@
    "abdruck": "0ee80dd36a77",
    "port": 7804,
    "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ 67 s · S2 warf: /eval ohne Antwort binnen 9 s",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ 67 s · S2 warf: /eval ohne Antwort binnen 9 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 67.1,
+   "fremd": {
+    "s": 70.7,
+    "takte": 32,
+    "fremdS": 55.16,
+    "kerne": 0.78,
+    "fensterKerne": 1.213,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.64
+     ]
+    ],
+    "dienerS": 29.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.02
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "geraetS": 30.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 147.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:05:54.840Z",
+   "abdruck": "45bdc9dce0bd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.menge.bevoelkerung#3": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ 67 s · S3 an der Frist ausgelassen (67 s)",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ 67 s · S3 an der Frist ausgelassen (67 s)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 67.1,
+   "fremd": {
+    "s": 70.7,
+    "takte": 32,
+    "fremdS": 55.16,
+    "kerne": 0.78,
+    "fensterKerne": 1.213,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.64
+     ]
+    ],
+    "dienerS": 29.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.02
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "geraetS": 30.38,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.42
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 147.7,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:05:54.840Z",
+   "abdruck": "a15e547b44f6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.menge.bevoelkerung#2",
    "modus": "session"
   }
  },
