@@ -464,8 +464,10 @@
             // Taschen — proportional zu seiner BRENNENDEN Flaeche frei (Q = q''·A): Schall-Leistung ∝ A. Bezug ist das
             // Glutbett der Studio-Feuerstelle (fachwerk DIE MASSE: Glutbett Ø 0,76 m) — refDb gilt fuer genau dieses
             // Feuer. Die Kugel-Huelle eines Bauplans traegt Flammen-Luft ueber dem Bett, keinen Brennstoff: der Wirt
-            // misst die Grundflaeche seiner Glut-Teile, nie ihr Volumen.
-            glut:   { textur: ["glut"], sr: 32000, sek: 7.9, saat: 71, quellen: 1, filter: "lowpass", gerichtet: true,
+            // misst die Grundflaeche seiner Glut-Teile, nie ihr Volumen. EREIGNIS (erleben.kopplung.ein-ereignis#1, rein additiv):
+            // ein Feuer erscheint mit einem Schlag (gebaut, entzuendet) — sein Paket liegt bereit, bevor es brennt (`umweltGraph`
+            // bestellt es, sobald er steht): das erste Feuer der Sitzung klang 251 ms nach seinem Bild (die Werkstatt rechnete).
+            glut:   { textur: ["glut"], sr: 32000, sek: 7.9, saat: 71, quellen: 1, filter: "lowpass", gerichtet: true, ereignis: true,
                       refDb: -18, dRef: 1.5, dMin: 0.6, bettRefM: 0.76, hoerweiteM: 26, hzFern: 4500, hzNah: 12000, hzHalbM: 8, kalibHz: 12000 },
             // Voegel: JEDER RUF HAT EINEN LEIB (klang.K1, 25.10.) — der Chor ist die Summe der singenden Leiber am Ohr
             // (lage.voegel: je Leib {d, pan}, d der Abstand in Metern), jeder eine PUNKT-Quelle (refDb in dRef Metern, −6 dB je
@@ -1042,6 +1044,13 @@
             st.quellen = [];
             delete stimmen[st.name];
         }
+        // DER VORRAT DER EREIGNISSE: jede Stimme eines Ereignisses (`ereignis`) ist bestellt, sobald der Graph steht (die
+        // Werkstatt haelt die Bestellung, bis ihr Kern da ist) — sie klingt im Bild, in dem ihr Ereignis geschieht
+        for (var ev in W)
+            if (W[ev].ereignis) {
+                bestellt[ev] = true;
+                bestelle(ev);
+            }
         return {
             knoten: knoten,
             aufnehmen: aufnehmen,
