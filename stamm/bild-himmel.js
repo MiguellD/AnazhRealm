@@ -386,9 +386,11 @@ class AnazhRealm_bild_himmel {
 
         const uOpacity = uniform(0.5);
         // DAS PIXEL AUF DER KUGEL (licht-eine-skala, S13): die Kante eines Pixels des Szenen-Ziels in Welt-Einheiten auf der
-        // Stern-Kugel (`_dayNightApplyStarField` schreibt sie aus Blickfeld und Höhe des Ziels). Die Sichtbarkeit ist der Kontrast
-        // gegen den Himmel daneben — kein Schwellen-Term (`sternKontrast` fiel mit licht-eine-skala).
+        // Stern-Kugel (`_dayNightApplyStarField` schreibt sie aus Blickfeld und Höhe des Ziels).
         const uPixel = uniform(1);
+        // DAS AUGE (stern-sicht): die Verstärkung Auge → Schirm aus der Grenzgröße der EINEN Tag-Achse (`_sternAuge`, EIN Schreiber
+        // `_dayNightApplyStarField`) — die Schwelle des angepassten Auges für einen Punkt am Himmel daneben
+        const uAuge = uniform(0);
 
         const planeGeo = new THREE.PlaneGeometry(1, 1);
         // DER HALBMESSER JE PUNKT in Grad (`aKante`, `_sternPunkt` schreibt ihn mit seinem Licht): so weit, wie sein Bild reicht
@@ -444,10 +446,27 @@ class AnazhRealm_bild_himmel {
         // (NodeMaterial.setupDiffuseColor, `vInstanceColor`) — EINMAL. Bis licht-eine-skala las der Knoten sie zusätzlich als
         // Attribut: die Farbe stand im Quadrat (bei Tönen um 1 unsichtbar; mit dem Licht in der EINEN Skala, 10⁻¹⁰ je Punkt,
         // trug das Quadrat 10⁻²⁰ — kein Stern im Bild, auch mit tausendfachem Licht und einem roten Stoff nicht).
-        // DIE LEUCHTDICHTE AM PIXEL: sein Licht am Auge (die Instanz-Farbe, lx in der EINEN Skala) × PSF ÷ der Raumwinkel eines
-        // Pixels (Pixel² ÷ Radius²) — außerhalb der Scheibe nichts (der Kreis, der die Normierung trägt)
-        const raumwinkel = uPixel.mul(uPixel).mul(1 / (RADIUS * RADIUS));
-        starMat.colorNode = vec4(TSL.vec3(psf.div(raumwinkel)), TSL.step(dw, halb).mul(uOpacity));
+        // DAS GLIED AUGE → SCHIRM (stern-sicht): EIN PUNKT IST KEIN STÜCK FLÄCHE. Sein Licht bleibt lx in der EINEN Skala (die
+        // Instanz-Farbe), doch das Auge löst ihn bis auf seine Streu-Scheibe (Bogenminuten), das Pixel des Schirms ist 6- bis
+        // 18-mal so breit: als Leuchtdichte über den Raumwinkel des Pixels verteilt (bis hier: lx × PSF ÷ Pixel²/R²) stand ein
+        // Stern der Klasse 4 an genesis bei 1080 Zeilen unter dem Fuß der Tonkurve, bei 360 Zeilen jeder schwächer als 3 —
+        // die Station sah in klarer Nacht 1–4 Sterne statt 62–78. Darum steht der Punkt im Bild genau dann, wenn das angepasste
+        // Auge ihn sähe: sein Licht E an der Grenzgröße G der Tag-Achse (E_G = sternLx0 · 10^(−0,4·G)) steht am Kern-Pixel auf
+        // der Schwelle des SCHIRMS (`sternBild.schwelle`, im belichteten Raum: L × k), darüber wächst sein Bild mit E ÷ E_G — die
+        // Streu-Scheibe trägt die Spanne (der helle Punkt breiter und glühend). Unabhängig von Auflösung und Belichtung (k
+        // kürzt sich mit der Vor-Belichtung); unter G blendet der Punkt in einer halben Klasse aus (die Schwelle des Auges:
+        // ein Punkt ½ Klasse unter der Grenzgröße ist nie gesehen). `uAuge` = Schwelle ÷ (E_G × Spitze des Kerns) im belichteten
+        // Raum; hier ÷ k (die Belichtung DIESES Bilds, derselbe Knoten wie die Vor-Belichtung): die Spitze steht bei E × uAuge ×
+        // Spitze, für jede Belichtung im selben Bild.
+        const kernSpitze = float(SB.kern).div(s2.mul(2 * Math.PI)); // = `kern` oben an der Mitte (rPx 0)
+        // E ÷ E_G des Punkts (die Luma der Instanz-Farbe, ihr Ton trägt Luma 1): nur der Faktor des Ausblendens — die Farbe selbst
+        // multipliziert r184 EINMAL hinein
+        const ueber = TSL.luminance(attribute("instanceColor", "vec3")).mul(uAuge).mul(kernSpitze).div(SB.schwelle);
+        const gesehen = TSL.smoothstep(float(10 ** -0.2), float(1), ueber);
+        starMat.colorNode = vec4(
+            TSL.vec3(psf.mul(uAuge).div(TSL.toneMappingExposure).mul(gesehen)),
+            TSL.step(dw, halb).mul(uOpacity)
+        );
 
         // Material-Properties: identisch zur V10.0-f-2-PointsMaterial-Variante.
         starMat.transparent = true;
@@ -473,6 +492,9 @@ class AnazhRealm_bild_himmel {
         this.state.starFieldUniforms = {
             opacity: uOpacity,
             pixel: uPixel,
+            auge: uAuge,
+            // die Grenzgröße, aus der `auge` steht (der Kanal `grenze` der Tag-Achse; Lesewert der Linsen)
+            grenze: { value: -10 },
             radius: RADIUS,
         };
 
@@ -1907,12 +1929,15 @@ class AnazhRealm_bild_himmel {
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
         u.opacity.value = skyMul;
+        u.grenze.value = achse.grenze;
         // das Pixel: ein Pixel des Ziels, in das die Szene zeichnet, auf der Stern-Kugel (Blickfeld ÷ Zeilen × Radius) — das
         // Szenen-Ziel der Post-Kette, ohne sie der Zeichenpuffer (`_schirm`); bis hier blieb es ohne Szenen-Ziel ungeschrieben
         const cam = this.state.camera;
         const ziel = this.state.scenePass && this.state.scenePass.renderTarget;
         const zeilen = ziel && ziel.height > 0 ? ziel.height : this._schirm().hoehe;
         if (cam && zeilen > 0) u.pixel.value = ((2 * Math.tan((cam.fov * Math.PI) / 360)) / zeilen) * u.radius;
+        // das Auge aus der Grenzgröße und dem Pixel (stern-sicht)
+        u.auge.value = AnazhRealm._sternAuge(achse.grenze, u.pixel.value, u.radius);
         const sf = this.state.starField;
         if (sf) sf.visible = zeigt;
     }
@@ -3440,7 +3465,18 @@ AnazhRealm.HIMMEL = Object.freeze({
     // Feldgrenze am Rand seines Kerns (`theta0` 0,03° = 1,5 a): 0,03° an der Feldgrenze, 0,6° bei m 0, 4,5° für Venus;
     // mindestens `minPx` Pixel (der Kern, σ ≈ 0,3 Pixel) — der schwache Punkt deckt so viele Pixel wie bis stern-bild jeder
     // (2 × 2), nur der helle trägt seinen Saum (mit 0,1° deckte das Feld 5- bis 10-mal die Fläche für Säume unter der Grenze)
-    sternBild: Object.freeze({ a: 0.02, kern: 0.367, nah: 0.368, fern: 0.265, theta0: 0.03, minPx: 1 }),
+    // `schwelle` (stern-sicht): DIE SCHWELLE DES SCHIRMS — der belichtete Wert (L × k) am Kern-Pixel eines Punkts an der Grenzgröße
+    // des Auges: 0,0334 legt die Tonkurve (Fuß 6,25·x²) auf 0,0070 linear = 20 von 255 über schwarzem Himmel, der feinste Punkt,
+    // der auf dem Schirm als Punkt steht; eine Klasse heller 2,5-mal, zwei Klassen bis zur Schulter
+    sternBild: Object.freeze({
+        a: 0.02,
+        kern: 0.367,
+        nah: 0.368,
+        fern: 0.265,
+        theta0: 0.03,
+        minPx: 1,
+        schwelle: 0.0334,
+    }),
     // die Leuchtdichte der Vollmond-Scheibe in cd/m² (≈ 2 500; ihr Licht ADDIERT sich zum Himmel vor ihr — am Tag steht sie
     // als blasser Schleier im Blau, 2 500 gegen ≈ 5 000–8 000 cd/m², nachts als die hellste Fläche des Bilds)
     mondCd: 2500,
@@ -3454,6 +3490,17 @@ AnazhRealm.HIMMEL = Object.freeze({
 // DER HALBMESSER DER SCHEIBE eines Punkts der Größenklasse m in Grad (`_sternPunkt`): θ0 · 10^(0,2·(G − m)) — der ferne Saum des
 // Auges fällt mit θ⁻², so steht er am Rand jeder Scheibe gleich hell (der eines Sterns der Feldgrenze G in θ0). Die Fläche wächst
 // mit dem Licht.
+// DAS AUGE EINES PUNKTS (stern-sicht, `_buildStarField`): die Verstärkung Auge → Schirm im belichteten Raum — Schwelle ÷ (E_G ×
+// Spitze des Kerns): ein Punkt an der Grenzgröße G (E_G = sternLx0 · 10^(−0,4·G) ÷ EINHEIT_LX) steht am Kern-Pixel auf
+// `sternBild.schwelle`; die Spitze des Kerns SB.kern ÷ (2π σ²) mit σ² = (a/√2)² ÷ (Grad je Pixel)² + 1/12, dieselbe wie im Knoten.
+// `pixel` die Kante eines Pixels auf der Kugel des Halbmessers `radius`. Leser: `_dayNightApplyStarField`, die Linse 12 SICHT.
+AnazhRealm._sternAuge = (G, pixel, radius) => {
+    const S = AnazhRealm.HIMMEL.sternBild;
+    const gp = (pixel / radius) * (180 / Math.PI);
+    const s2 = (S.a * S.a) / 2 / (gp * gp) + 1 / 12;
+    const eG = (__weltLicht.KOSMOS.sternLx0 * 10 ** (-0.4 * G)) / __weltLicht.EINHEIT_LX;
+    return S.schwelle / (eG * (S.kern / (2 * Math.PI * s2)));
+};
 AnazhRealm._sternKante = (m) => {
     const S = AnazhRealm.HIMMEL.sternBild;
     return S.theta0 * Math.pow(10, 0.2 * (__weltLicht.KOSMOS.feldGrenze - m));
