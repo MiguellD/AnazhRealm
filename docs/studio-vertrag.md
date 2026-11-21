@@ -576,8 +576,7 @@ hopHochM hopBasisM }` · `sprung { impulsProM }` (VERTRAGS-AKT Welle L
 gefallen — DAS SPRUNG-GESETZ: die Huepf-Hoehe der Freude ist die
   EINE Quelle eines Sprungs, froh `hopHochM`, sonst `hopBasisM`, der Abflug
   v0 = √(2·g·h) mit `GANG_GESETZ.g` im Wirt `creatureJump`; eine Aktion
-  trägt nur `hop: true`, der Abflug in m/s fiel mit) · `groessen[]`
-  (Körpergrößen-Bänder) · `separation { raumKugel strength }` (der
+  trägt nur `hop: true`, der Abflug in m/s fiel mit) · `separation { raumKugel strength }` (der
   Stamm-Zwilling `CREATURE_SEPARATION` fiel, Absenz-Wand; VERTRAGS-AKT Welle LF
 DER PERSÖNLICHE RAUM — je Leib die Körper-Kugel × `raumKugel`, der
   Paar-Raum ist die Summe, der feste Paar-Radius `radiusBaseM` fiel) · `aufgaben`
@@ -1093,6 +1092,11 @@ die Krone `spiegelQuer`, am Rand `flussRand` und im Schnitt `schnittSpiegel`, de
 Kern-Probe (`gate:worker-dichte --kern`) mutiert sie. Die Felder selbst: der Überlauf `stauUeberlauf`, der Spiegel am Werk
 `stauWerkY` (die Wahl der Werke im Stamm) und die Felder der Werke `stauFelder` — jeder Faden rechnet sie, nie der Haupt-Faden
 (`gate:worker-dichte --faden` zählt sie).
+DAS WELT-FELD (Leben C2a2): die vier Stimmen der Saat `weltFeld` an den Strömen `weltFeldRausch` mit den Zahlen `WELT_FELD`
+(Wellenlängen, Domain-Warp) — die Stimme „lebendig“ ist das Substrat der Äsung; Stamm (`worldFieldAt`), jeder Faden und das
+Feld des Gaus lesen sie hier, die Probe `gau` in `gate:kreatur-takt` ändert die Formel EINMAL und sieht Stamm und Faden gleich gehen.
+DER EINE STROM EINES SAMENS `samenStrom` (Ein-Schreiber-Wand, Größe Samen): das LCG der Welt — der Stamm (`_samenStrom`) reicht
+es durch, der Faden reicht es dem Kern des Lebens als `wirt.samen` (leben-core `bestand`), kein Kern trägt einen eigenen Generator.
 DAS ORT-GESETZ DER HEIMAT `ortGesetz` (Reise): EINE Tafel dessen, was am Ort dieser Welt gilt — die Kühlung je Meter, das Meer
 unter der Basis, die Regler der Landform mit ihren Grenzen, das Klima von heute samt der Abflussspende im Jahr der Tafel —, in
 der Form, die der Planet als sein Ort-Gesetz liest; der Planet-Faden und der Richter des Planeten lesen sie, keiner baut sie nach.
@@ -1136,10 +1140,21 @@ der Richter (`scripts/diag-planet.cjs --bytes`) hält den SHA je `VERSION`; `_in
 im Faden: die Quelle der Fäden lädt ihn spät (`FADEN_QUELLE.spaet`), der Auftrag `planet-anker` des voxel-worker rechnet nach
 dem ersten Weltbild den Anker der Welt (`_planetAnker`), der Satz „reise“ der Konsole sagt ihn — die Seite trägt keinen
 Skript-Stempel für ihn.
+`leben-core.js` (`__lebenCore`) — DAS GESETZ DES LEBENS: die Konstanten `gesetz` (LEBEN_GESETZ: Erb-Achsen mit h² und sdP,
+Mutation, die Exponenten von Lebensdauer, Wachstum, Fasten und Wurf, die Breite der Nische, Geburts-Anteil, Reife, der Zeit-Anker Wolf), die Normale aus zwei
+Gleichverteilten `normal`, das Erbe nach dem Infinitesimal-Modell — der Gründer `gruender`, das Kind aus Mutter und Vater `kind`,
+die Umwelt-Streuung `umwelt`, der gemessene Leib ohne Herkunft `erbeAusLeib` —, der Leib als Physik des Erbes über das Alter — die Masse `masseAdult`, die Lebensdauer
+`lebensdauerS`, die Zeit-Konstante `tau`, das Wachstum `masseZurZeit` und seine Umkehr `alterZurMasse`, die Reife `reifeS` —, die Auslese nach dem Leib
+`fastenRang`/`rissGewicht`/`wurfGewicht` und die Nische der Art `eignung`, die Größen-Grenzen des Gesetzes `spanne` und die Adresse `artId`/`indId`; der Bestand als reine Funktion
+(das Gesetz der Zeit und der Jagd: Zustand hinein, Zustand heraus, Futter und Land über den Leser der Welt) — seine Werte `zeitJagd`, die
+Anker-Tafel `anker`, der am Samen verankerte Strom `strom` und die Funktion `bestand`; sein Selbsttest
+`selbsttest`. Rein: der Zufall kommt aus den Strömen des Wirts, im Bestand allein aus `strom`. Geladen vom Stamm (Script-Zeile neben `tetrapoda-core.js`) und
+vom Foundry-Worker. DIE ERKLÄRUNG: `VERSION`, `STUDIO_VERTRAG`, `FUNKTION`.
 `samen-core.js` (`__samenCore`) — DER SAMEN-BAUM (Welle SAMEN): der EINE Generator `mulberry32` (32-bit-Zustand, Schritt
 γ = 0x6d2b79f5), sein Schritt auf einem Zustand des Wirts `mulberrySchritt` (die Harmonie der Lofi-Musik, der Strauch des
 Waldes), der EINE Text-Hash `samenHash` (FNV-1a über die UTF-16-Einheiten: Bau-Same, Strom eines Namens, Same des Walds), der
-Strom je Same und Salz `salzStrom` (die Ausstattung des Fachwerks, die Arena der Schmiede), die Saat eines Pfads `samenSaat` und
+Strom eines Samens `samenStrom` (das LCG der Welt: die Würfe eines Akts im Stamm `_samenStrom`, der Bestand des Gaus über den
+Wirt im Gau-Faden), der Strom je Same und Salz `salzStrom` (die Ausstattung des Fachwerks, die Arena der Schmiede), die Saat eines Pfads `samenSaat` und
 der Baum `samenBaum` (Welt-Samen → je benanntem Pfad ein eigener Strom: das Los eines Dorfs `los:<i>`, die Op eines Programms
 `dsl:op:<n>` — eine Ziehung mehr in einem Pfad verschiebt nie einen anderen). Geladen VOR jedem Kern in jedem Kontext (die erste
 Zeile des Manifests, index.html vor phyto-core, die Fäden des Gesetzes `FADEN_QUELLE.kerne`, die Klang-Werkstatt, jede

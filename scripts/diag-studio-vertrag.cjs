@@ -854,8 +854,9 @@ function validateManifest(m, kern) {
             Number.isFinite(V.freude.hopBasisM) &&
             V.sprung === undefined &&
             Object.values(V.aktionen || {}).every((a) => a.hop === undefined || a.hop === true) &&
-            Array.isArray(V.groessen) &&
-            V.groessen.length >= 2 &&
+            // DIE GRÖSSE IST DAS GESETZ DES LEBENS (leben-core `__lebenCore.spanne`, leben-erbe): die vier Größen-Bänder des
+            // Buchs kehren nicht zurück (ein Wurf neben dem Erbe wäre ein Zwilling).
+            !("groessen" in V) &&
             V.separation &&
             // DER PERSOENLICHE RAUM: der Raum je Leib (raumKugel × Koerper-Kugel), das
             // Herden-Fenster im Paar-Raum; der feste Paar-Radius, das feste Fenster und der Neugier-Stopp kehren nicht zurueck.
@@ -873,7 +874,7 @@ function validateManifest(m, kern) {
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt und Spieler-Radius, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt und Spieler-Radius, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · ohne Größen-Bänder (die Größe ist leben-core) · separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
             );
     }
     return v;
@@ -1044,8 +1045,7 @@ function validateManifest(m, kern) {
                 // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke:
                 m.verhalten.stimmung.schwellen &&
                 m.verhalten.freude &&
-                // (sprung fiel mit dem Sprung-Gesetz)
-                m.verhalten.groessen &&
+                // (sprung fiel mit dem Sprung-Gesetz, die Größen-Bänder mit dem Gesetz des Lebens, leben-erbe)
                 m.verhalten.separation &&
                 m.verhalten.aufgaben &&
                 m.verhalten.herde &&
@@ -1353,6 +1353,13 @@ function validateManifest(m, kern) {
             sig.some((s) => s.includes("ohne Substanz-Signaturen")) &&
                 ohneG.some((s) => s.includes("ohne Substanz-Signaturen")),
             `Signaturen ${sig.length} · ohne Gattung ${ohneG.length}`
+        );
+        // DIE GRÖSSE IST DAS GESETZ DES LEBENS: kehren die Größen-Bänder ins Buch zurück (der Wurf neben dem Erbe), feuert die Wand
+        const baender = tm ? mitZwilling((V) => (V["groessen"] = [{ name: "mittel", min: 0.82, max: 1.25, bis: 1 }])) : [];
+        check(
+            "SELBST-TEST: der Größen-Zwilling (Bänder im Buch neben leben-core) feuert die VERHALTEN-Wand",
+            baender.some((s) => s.includes("ohne Größen-Bänder")),
+            `Bänder ${baender.length}`
         );
     }
     // S3 — DIE ABSENZ-WAND DER FINAL GESTRICHENEN: (a) budgetErzwingen faltet nur Zweit-Kern-Gestalten

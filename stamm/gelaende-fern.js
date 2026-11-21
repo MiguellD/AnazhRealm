@@ -2067,10 +2067,14 @@ class AnazhRealm_gelaende_fern {
         if (!fr) return 0;
         const done = this._fernRingEinhaengen(fr);
         if (fr.cursor >= fr.totalVerts) {
+            fr.stehtGanz = true;
             this._fernRingUmEdits(fr); // vor der Deck-Wache: sie schreibt den Edit-Stand
             this._fernRingDeckWache(fr);
             return done;
         }
+        // DER STAND BLEIBT (die Schneegrenze rechnet nur die Farben neu, `_fernRingNeuBestellen(fr, true)`): der Ring steht ganz,
+        // ein neuer Edit wartet nicht auf die letzte Scheibe — seine Ecken fliegen sofort (`_fernRingUmEdits`)
+        if (fr.stehtGanz) this._fernRingUmEdits(fr);
         const F = AnazhRealm.FERN_RING;
         if (!this._nebenFaden("fern")) return done; // der Fern-Faden steht noch nicht (der Voxel-Faden kommt) — der Ring wartet
         // DIE SCHEIBEN IM FLUG sind eine Drossel des Spiels (`scheibenImFlug` je Takt, die Tiefe der Faden-Schlange); im Lade-Takt
@@ -2172,16 +2176,18 @@ class AnazhRealm_gelaende_fern {
         }
         if (!gs.size) return;
         const liste = Int32Array.from(gs);
-        const gen = fr.gen | 0;
+        // `vor`: die Scheiben, die vor dem Edit bestellt waren (ihre Antworten tragen den Stand ohne ihn) — ihre Ecken setzt das
+        // Einhängen erst, wenn die Scheibe hängt (`_fernRingEinhaengen`); gilt nur in derselben Bestellung (`gen`)
+        const [gen, editGen, vor] = [fr.gen | 0, fr.editGen | 0, fr.auftrag];
         fr.editFlug++;
         this._fernRingBestellen(fr, liste)
             .then((antwort) => {
-                if (this.state.fernRing !== fr || (fr.gen | 0) !== gen) return; // überholt (Re-Anker/neue Liste)
+                if (this.state.fernRing !== fr || (fr.editGen | 0) !== editGen) return; // überholt (Re-Anker/neue Liste)
                 fr.editFlug--;
-                fr.nachEdit.push({ liste, antwort });
+                fr.nachEdit.push({ liste, antwort, gen, vor });
             })
             .catch((e) => {
-                if (this.state.fernRing === fr && (fr.gen | 0) === gen) fr.editFlug--;
+                if (this.state.fernRing === fr && (fr.editGen | 0) === editGen) fr.editFlug--;
                 this._stoffBruch("der Fern-Ring (der Fern-Faden, Edit)", e);
             });
     }
@@ -2192,15 +2198,21 @@ class AnazhRealm_gelaende_fern {
     // die Farben des Gesetzes wandern). Bis heil-horizont setzte der Schnee-Takt die Bestellung selbst zurück und vergaß den
     // Edit-Auftrag im Flug: seine Antwort fiel als überholt, `editFlug` blieb 1, der Horizont blieb für immer offen und die
     // Welt stand nie mehr („Horizont offen 1“, CI 40594858957 · 40608571003; gate:fern-ring 15).
+    // BLEIBT DER STAND (die Schneegrenze), bleiben die Edit-Aufträge im Flug und ihre Antworten: ihre Höhen trägt der Stand
+    // weiter, die Farben bringt die Scheibe. Bis hier fiel mit jeder Stufe der Grenze der Edit im Flug, und der Turm stand
+    // erst mit der letzten Scheibe des ganzen Rings im Horizont (gate:fall-waechter B2 Brücke Ego: 60 Takte am Laptop, 91 im
+    // CI, verlangt ≤ 60).
     _fernRingNeuBestellen(fr, standBleibt) {
         fr.cursor = 0;
         fr.auftrag = 0;
         fr.flug = 0;
         fr.einhaengen.length = 0;
-        fr.nachEdit.length = 0;
-        fr.editFlug = 0;
         fr.gen = (fr.gen || 0) + 1;
         if (standBleibt) return;
+        fr.nachEdit.length = 0;
+        fr.editFlug = 0;
+        fr.editGen = (fr.editGen || 0) + 1;
+        fr.stehtGanz = false;
         fr.vollY.fill(NaN);
         fr.feldY.fill(NaN);
     }
@@ -2246,9 +2258,21 @@ class AnazhRealm_gelaende_fern {
             }
             fr.einhaengen.shift();
         }
-        // die Ecken um einen Edit: nur wo der Ring schon hängt (dahinter bringt die Scheibe den Edit mit)
-        for (const { liste, antwort: a } of fr.nachEdit.splice(0))
-            for (let k = 0; k < liste.length; k++) if (liste[k] < fr.cursor) setze(liste[k], a, k);
+        // die Ecken um einen Edit: wo der Ring schon hängt, und wo keine Scheibe von vor dem Edit mehr kommt (`vor`; nach einer
+        // neuen Bestellung des Stands kommt keine); die Ecken einer Scheibe von vor dem Edit warten, bis sie hängt
+        const offen = [];
+        for (const e of fr.nachEdit.splice(0)) {
+            const vor = e.gen === (fr.gen | 0) ? e.vor : 0;
+            let rest = 0;
+            for (let k = 0; k < e.liste.length; k++) {
+                const g = e.liste[k];
+                if (g < 0) continue;
+                if (g < fr.cursor || g >= vor) (setze(g, e.antwort, k), (e.liste[k] = -1));
+                else rest++;
+            }
+            if (rest) offen.push(e);
+        }
+        fr.nachEdit.push(...offen);
         this._fernRingHoch(fr, bewegt);
         fr.refreshed += done;
         if (!fr.ready && fr.cursor >= fr.totalVerts) {

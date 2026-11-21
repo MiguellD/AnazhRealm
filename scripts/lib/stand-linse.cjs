@@ -181,7 +181,7 @@ function standLinseAn(takte, blaetter, eigeneUhr) {
     const orig = {};
     const stapel = [];
     const leer = () => Object.fromEntries(namen.map((n) => [n, 0]));
-    let [frame, ms, wirkt] = [leer(), leer(), leer()];
+    let [frame, ms, wirkt, geweckt] = [leer(), leer(), leer(), leer()];
     // je Methode EINE Hülle (die erste gewinnt): `h(f)` baut die neue um das Original `f`
     const um = (m, h) => typeof P[m] === "function" && !orig[m] && (P[m] = h((orig[m] = P[m])));
     for (const n of namen)
@@ -211,9 +211,15 @@ function standLinseAn(takte, blaetter, eigeneUhr) {
             }
         });
     // DIE TREUE: jeder Gang, der die Welt änderte (`_standMeldet(…, gewirkt)`) — nach einer Ruhe zeigt ein Gang mit
-    // gebrochener Wache, ob die Wache eine Änderung verschlief (er wirkte dann).
+    // gebrochener Wache, ob die Wache eine Änderung verschlief (er wirkte dann). VERSCHLAFEN heißt: die heile Wache hätte den
+    // Gang schlafen lassen — ihr Urteil legt die Treue-Phase je Takt in `__standWacheUrteil` (`_standRuht` geht dort weiter
+    // und antwortet nur nicht). Ein Gang, den die heile Wache selbst ging (ein Weckruf, `_standWecken`, während der Phase: die
+    // Antwort des Gau-Fadens, deren Fraß-Stufe springt, `_gauAntwort` → `_nahStreuNeuIn`), ist `geweckt`, nie verschlafen.
+    // Bis w28-herde zählte jeder Gang mit Wirkung als verschlafen: Code-Check 44759649370 (ce961ceb) fiel „TREUE: nahStreu …
+    // nach dem Bau in 4 Gängen“, während die heile Wache 20 Frames davor ruhte — die Antwort des Gaus kam in die Phase.
     um("_standMeldet", (f) => function (name, besucht, gewirkt, offen) {
-        if (gewirkt && name in wirkt) wirkt[name]++;
+        const U = window.__standWacheUrteil;
+        if (gewirkt && name in wirkt) (U && U[name] === false ? geweckt : wirkt)[name]++;
         return f.call(this, name, besucht, gewirkt, offen);
     });
     // DIE WELT-MATRIZEN: jeder Besuch von `updateMatrixWorld` (ein Knoten je Gang) und jede neu gesetzte lokale Matrix.
@@ -230,8 +236,8 @@ function standLinseAn(takte, blaetter, eigeneUhr) {
     return {
         namen,
         frame() {
-            const aus = Object.assign(frame, { ms, wirkt, matrix: { ...mx } });
-            [frame, ms, wirkt] = [leer(), leer(), leer()];
+            const aus = Object.assign(frame, { ms, wirkt, geweckt, matrix: { ...mx } });
+            [frame, ms, wirkt, geweckt] = [leer(), leer(), leer(), leer()];
             mx.knoten = mx.compose = 0;
             return aus;
         },
@@ -246,7 +252,7 @@ function standLinseAn(takte, blaetter, eigeneUhr) {
 function standPhase(frames) {
     const aus = { frames: frames.length, takte: {} };
     const namen = frames.length
-        ? Object.keys(frames[0]).filter((n) => !["ms", "wirkt", "matrix", "cpu"].includes(n))
+        ? Object.keys(frames[0]).filter((n) => !["ms", "wirkt", "geweckt", "matrix", "cpu"].includes(n))
         : [];
     const mittel = (f) =>
         frames.length ? +(frames.reduce((a, x) => a + (f(x) || 0), 0) / frames.length).toFixed(3) : 0;
@@ -267,6 +273,7 @@ function standPhase(frames) {
             mitArbeit,
             ms: mittel((f) => f.ms && f.ms[n]),
             wirkt: frames.reduce((a, f) => a + ((f.wirkt && f.wirkt[n]) | 0), 0),
+            geweckt: frames.reduce((a, f) => a + ((f.geweckt && f.geweckt[n]) | 0), 0),
         };
     }
     aus.summe = Object.values(aus.takte).reduce((a, t) => a + t.summe, 0);
@@ -581,6 +588,15 @@ function standUrteil(b) {
         else {
             treue(W.treue, "nach dem Bau");
             runde(W.treue, "nach dem Bau");
+            // die Weck-Probe der Treue: ein Weckruf in der Phase ist ein Gang der heilen Wache — die Linse sieht ihn als geweckt
+            const P = W.weckProbe;
+            const g = W.treue.takte && W.treue.takte.nahStreu ? W.treue.takte.nahStreu.geweckt | 0 : 0;
+            if (!P || !(P.kacheln > 0)) v.push("LEER: die Weck-Probe der Treue weckte keine Kachel der Nah-Streu");
+            else if (!(g > 0))
+                v.push(
+                    `STUMPF: der Weckruf in der Treue-Phase (${P.kacheln} Kacheln neu) zeigt keinen geweckten Gang der Nah-Streu — ` +
+                        `die Linse trennt Geweckt und Verschlafen nicht`
+                );
         }
         if (!W.regler) v.push("LEER: kein Regler-Schritt in der Weck-Phase");
         else if (!W.regler.takte.archCull || !(W.regler.takte.archCull.summe > 0))

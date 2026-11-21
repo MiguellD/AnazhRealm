@@ -1779,18 +1779,15 @@ async function checkBandTodZensus({ page, check }) {
             o.zeichenVorher = [...zeichen.values()].reduce((n, z) => n + z.length, 0);
 
             // DIE KOPIE BEIM MITSPIELER: der Strom trägt die Lage eines Gefallenen (q) — je ein Leichnam des Mitspielers 1,5 m
-            // neben A und neben B (Ids mit Größe ≈ 1: die Stufen-Grenze 35 m wie bei A und B); seine Sicht wählt derselbe Weg
+            // neben A und neben B (Größe 1, wie der Sender sie schickt — `b`: die Stufen-Grenze 35 m wie bei A und B); seine Sicht
+            // wählt derselbe Weg. Bis leben-erbe würfelte der Empfänger die Größe aus der Id, die Probe suchte Ids mit Größe ≈ 1.
             const remote = s.p2p && s.p2p.remoteCreatures;
             if (!remote) return { fehler: "kein p2p-Zustand" };
             restore.push(() => {
                 for (const [key, rc] of remote) if (rc.peerId === "zensus-peer") r._disposeRemoteCreature(key, rc);
             });
             const qLiegt = new T.Quaternion().setFromAxisAngle(new T.Vector3(ort.dx, 0, ort.dz), A.TOD_KIPP_RAD);
-            const ids = [];
-            for (let i = 0; i < 400 && ids.length < 2; i++) {
-                const g = r._creatureBodySize("c99" + i);
-                if (g > 0.95 && g < 1.05) ids.push("c99" + i);
-            }
+            const ids = ["c990", "c991"];
             const kopieListe = [2, 40].map((m, i) => {
                 const x = ort.px + ort.dx * m + ort.dz * 1.5,
                     z = ort.pz + ort.dz * m - ort.dx * 1.5;
@@ -1800,6 +1797,7 @@ async function checkBandTodZensus({ page, check }) {
                     y: r.getTerrainHeightAt(x, z),
                     z,
                     yaw: 0,
+                    b: 1,
                     soul: i ? "wolf" : "wesen",
                     q: [qLiegt.x, qLiegt.y, qLiegt.z, qLiegt.w],
                 };

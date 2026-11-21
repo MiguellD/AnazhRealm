@@ -1645,17 +1645,35 @@ async function wasserRegen(o = {}) {
         r._bildZeit = t; // die Bild-Uhr (A9), die der Regen liest
         // das Licht des Orts steht, ehe der Regen es zurückwirft (licht-eine-skala: die Schliere liest den Lichtmesser, `uLicht`):
         // der Sturm wechselt das Medium, der Himmel verwirft seine Bestrahlungs-Tafel bis zur neuen Lesung (`_atmoTakt`) — die Probe
-        // wartet auf sie und wendet das Licht an; bis hier trug der Regen ein eigenes, unbeleuchtetes Licht
-        r._applyDayNightToScene();
-        for (let i = 0; i < 100 && !(st.atmoLut && st.atmoLut.tafel); i++) await sleep(30);
-        if (!(st.atmoLut && st.atmoLut.tafel))
-            return { fehler: "die Bestrahlungs-Tafel des Sturms kam nicht zurück (der Lichtmesser liest nichts)" };
-        r._applyDayNightToScene();
+        // TREIBT den Takt des Lichts (die Schleife der Welt steht), bis der Lichtmesser die Tafel DES STURMS gelesen hat: genau die
+        // Lesung, die der Regen liest (`_belichtungGelesen` an der Tafel mit dem Medium, das jetzt gilt). Bis Nachbesserung wendete
+        // sie das Licht einmal an und wartete passiv auf IRGENDEINE Tafel: das neue Medium zeichnet seine Tafeln erst, wenn ihre
+        // Pipelines stehen (`_atmoTakt`: `_atmoZeichne` false → zurück, der NÄCHSTE Takt zeichnet) — ohne zweiten Takt kam die
+        // Tafel des Sturms nie (Radeon, main und Kopf je 3 von 3: „kam nicht zurück“), oder die alte Tafel des klaren Himmels stand
+        // noch, die zweite Anwendung verwarf sie und der Regen tickte ohne Lesung (GTX 1060: uLicht 0,0,0, schlieren 0). Am Kopf
+        // brauchte die Lesung des Sturms 39 Takte (Radeon), die Leine war beim ersten nicht gespannt.
+        const A = st.atmoLut;
+        const sturmGelesen = () => !!(r._belichtungGelesen && A && A.tafel && A.tafel.medium === A.mediumBeta);
+        // die Leine beim ersten Takt (gespannt: er zeichnet keine Tafel) — die Lage trägt sie und die Zahl der Takte
+        const leineErst = !!r._gpuLeineStraff();
+        let takte = 0;
+        for (; takte < 200 && !sturmGelesen(); takte++) {
+            r._applyDayNightToScene();
+            if (!sturmGelesen()) await sleep(30);
+        }
+        if (!sturmGelesen())
+            return {
+                fehler: `der Lichtmesser las die Tafel des Sturms nach ${takte} Takten nicht (gelesen ${!!r._belichtungGelesen}, Tafel ${
+                    A && A.tafel ? "Medium " + A.tafel.medium : "keine"
+                }, Medium jetzt ${A && A.mediumBeta}, Leine gespannt ${!!r._gpuLeineStraff()})`,
+            };
         r._tickRain();
         const sys = r._rainSystem;
         // die Lage der Probe im Urteil: die Stunde und das Licht, das die Schliere zurückwirft
         lage = {
             uhr: +st.timeOfDay.toFixed(3),
+            takte,
+            leineErst,
             uLicht:
                 sys && sys.uLicht
                     ? [sys.uLicht.value.x, sys.uLicht.value.y, sys.uLicht.value.z].map((v) => +v.toPrecision(3))

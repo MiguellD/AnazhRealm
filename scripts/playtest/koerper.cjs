@@ -311,17 +311,30 @@ async function checkBandRing5Soul({ page, check }) {
         const wingRotB = phGroup.userData.parts.leftWing.rotation.z;
         out.phoenixWingsFlapInIdle = Math.abs(wingRotA - wingRotB) > 0.05;
 
-        // Der Schweif wellt sich am HIRSCH-Körper: _tierBaum.tailSegs, profil-getrieben (idle: tailRate 0.5 ·
-        // tailAmp 0.1); t 0.1→3.1 hebt die Phase auf ~sin(1.55)≈1 → Delta ~0.095, robust über 0.05.
+        // Der Schweif wellt sich am HIRSCH-Körper im GANG: _tierBaum.tailSegs schwingen in der Phase des Vorderfußes, die Weite
+        // trägt die Gangart (Posen-Gesetz H1 — im Stand ruht er; bis dahin wedelte er an der Wanduhr auch im Stand). Der Hirsch
+        // geht eine Sekunde auf dem Spielpfad (`animatePlayerSoul` bei 1,15 m/s); gemessen der größte Ausschlag gegen den Stand.
         r.applyPlayerSoul("hirsch");
         const drGroup = currentMesh();
+        const drTail = ((drGroup.userData._tierBaum || {}).tailSegs || [])[0] || null;
+        const velAlt = st.playerVel;
         st.player.animationLastTick = -Infinity;
         r.animatePlayerSoul(0.1);
-        const drTail = ((drGroup.userData._tierBaum || {}).tailSegs || [])[0] || null;
-        const tailA = drTail ? drTail.rotation.y : 0;
-        r.animatePlayerSoul(3.1);
-        const tailB = drTail ? drTail.rotation.y : 0;
-        out.dragonTailWaves = !!drTail && Math.abs(tailA - tailB) > 0.05;
+        const ruhe = drTail ? drTail.rotation.clone() : null;
+        // der Leib geht wirklich: der Gang liest seinen Weg (Lage je Kreatur-Uhr, tetrapoda `gangWahl`), nie nur das Tempo
+        st.playerVel = { x: () => 1.15, y: () => 0, z: () => 0 };
+        const [x0, c0] = [drGroup.position.x, st.creatureAnimationTime];
+        let tailAusschlag = 0;
+        for (let i = 1; drTail && i <= 60; i++) {
+            st.creatureAnimationTime = c0 + i / 60;
+            drGroup.position.x = x0 + (1.15 * i) / 60;
+            r.animatePlayerSoul(0.1 + i / 60);
+            const d = drTail.rotation;
+            tailAusschlag = Math.max(tailAusschlag, Math.abs(d.x - ruhe.x), Math.abs(d.y - ruhe.y), Math.abs(d.z - ruhe.z));
+        }
+        [st.playerVel, drGroup.position.x, st.creatureAnimationTime] = [velAlt, x0, c0];
+        out.dragonTailWaves = tailAusschlag > 0.05;
+        out.dragonTailAusschlag = +tailAusschlag.toFixed(3);
         Object.assign(st.player.emotions, savedEmo);
         delete st.customSouls.fluegelprobe;
 
@@ -379,8 +392,9 @@ async function checkBandRing5Soul({ page, check }) {
             ring5Results.phoenixWingsFlapInIdle
         );
         check(
-            "Ring 5 V2 (NULL): Hirsch-Schweif wellt sich (schwanz-Rolle im EINEN Kern)",
-            ring5Results.dragonTailWaves
+            "Ring 5 V2 (NULL): Hirsch-Schweif wellt sich im Gang (schwanz-Rolle im EINEN Kern)",
+            ring5Results.dragonTailWaves,
+            "größter Ausschlag " + ring5Results.dragonTailAusschlag + " rad"
         );
     }
 
