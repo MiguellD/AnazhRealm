@@ -1448,7 +1448,7 @@ async function checkBandV18164WarumLicht({ page, check }) {
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
-        out.ladeNebelKonsum = __fehlt(r._dayNightApplyLuft, /_builtRingRadius|foliageRadius/);
+        out.ladeNebelKonsum = __fehlt(r._dayNightApplyLuft, /_builtRingRadius|foliageRadius|_laubRand/);
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
         out.fogDeckel = !st.scene.fog;
@@ -1737,13 +1737,7 @@ async function checkBandHimmelTag({ page, check }) {
             // der Himmel bis kosmos-umfang: Mulberry32 aus worldMeta.seed, gleichverteilt auf der Kuppel von 480 m
             let s = 0;
             for (const c of String(st.worldMeta && st.worldMeta.seed)) s = (s * 31 + c.charCodeAt(0)) >>> 0;
-            const rng = () => {
-                s = (s + 0x6d2b79f5) >>> 0;
-                let t = s;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
+            const rng = window.__samenCore.mulberry32(s); // der EINE Generator (Welle SAMEN)
             const M = new T.Matrix4();
             for (let i = 0; i < st.starField.count; i++) {
                 const th = 2 * Math.PI * rng(),

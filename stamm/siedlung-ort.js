@@ -1374,23 +1374,15 @@ class AnazhRealm_siedlung_ort {
         const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});
         const n = (Number(z[art]) || 0) + 1;
         if (!blick) z[art] = n;
-        const s = `${wm.seed || "anazh-realm-seed"}:${art}:${n}`;
-        let h = 2166136261 >>> 0;
-        for (let i = 0; i < s.length; i++) {
-            h ^= s.charCodeAt(i);
-            h = Math.imul(h, 16777619) >>> 0;
-        }
-        return h >>> 0 || 1;
+        // der EINE Text-Hash (Welle SAMEN: FNV-1a, samen-core `samenHash`)
+        return globalThis.__samenCore.samenHash(`${wm.seed || "anazh-realm-seed"}:${art}:${n}`) || 1;
     }
     // Der Strom EINES Samens (LCG, [0, 1)): was ein Akt würfelt — Streuung, Drehung, Größe — ist eine Funktion seines Samens,
     // auf jedem Peer und nach jedem Reload dieselbe. Das EINE LCG der Welt: Leser `_streamRng` (der Strom eines Namens),
     // `dslCtx` (der Programm-Strom), `_dslSpawnStudioItems` und die Nexus-Komposition.
+    // Das LCG selbst steht im Samen-Baum (`__samenCore.samenStrom`): Seite und Faden lesen dieselbe Funktion.
     _samenStrom(same) {
-        let s = Number(same) >>> 0 || 1;
-        return () => {
-            s = (s * 1664525 + 1013904223) >>> 0;
-            return s / 4294967296;
-        };
+        return globalThis.__samenCore.samenStrom(same);
     }
     // DER SAME EINES WERKS (Gegenprüfung 08.10.): EIN Same je Bauplan — der Wurf der Werkstatt (`_grownSeed` · `_rockSeedBase`
     // · `_crystalSeedBase`), sonst sein Name (ein Studio-Rezept ohne Bauplan: seine id) —, gehasht in die Gestalt-Wahl
@@ -2145,7 +2137,7 @@ class AnazhRealm_siedlung_ort {
     _dorfBereiten(key, i2) {
         const M = this._dorfVorraete || (this._dorfVorraete = new Map());
         if (M.has(key)) return M.get(key).fertig;
-        const v = { da: false, x: i2.x, z: i2.z, mehrM: i2.mehrM || 0 };
+        const v = { da: false, x: i2.x, z: i2.z, mehrM: i2.mehrM || 0, nH: i2.nH }; // nH: sein Reich vor dem Plan (`_ortInArbeit`)
         // DER ORT DER WELT IST EINE FUNKTION (Lehre 7): der Wunsch ist der Ort der Zelle, die Ort-Wahl fragt keinen Spieler
         // (`frei` null) — wer ihn berührt, wartet im Zug (`_dorfZugSchritt`). Bis stadt-erwachen rückte das Dorf vor den
         // Spieler (`_siedlungsAnker`), sobald er im Vorlauf in seiner Reichweite stand: nH 300 reicht 422 m, der Vorlauf
@@ -2779,7 +2771,9 @@ class AnazhRealm_siedlung_ort {
         const st = this.state;
         if (!playerPos || !this._dorfTaktLebt()) return;
         this._stadtFerneTakt(playerPos); // die Kacheln der Stadt, die nicht stehen, tragen ihre Massen
-        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (nearM, der Vorlauf)
+        // DER ORT LIEGT VOR SEINEM WALD (w28-ort-vor-wald): der Vorlauf (`_dorfVorlauf`: die Vorräte, ihr Wasser, ihr Grund und der
+        // nächste fällige Ort) geht in JEDEM Takt vor dem Akt — ein Zug, ein Export unterwegs, die Wiederkehr hielten ihn an
+        const reihe = this._dorfVorlauf(playerPos);
         // (a) DIE MATERIALISIERUNG IN RATEN zuerst: ein angekommener Export baut seine
         // Häuser über Takte verteilt — erst fertig wachsen, dann die nächste Zelle.
         // EXISTENZ VOR FRAMERATE (Lehre 13, Leben-Prüfung N-D9): der Takt ist ein Bauer der EINEN Frist (`TAKT_BAUER.dorf`),
@@ -2802,8 +2796,8 @@ class AnazhRealm_siedlung_ort {
             }
             return;
         }
-        if (this._autoSettlementPendingKey) return; // ein Export-Roundtrip zur Zeit
-        if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
+        // ein Erwachen zur Zeit; ohne Kanal (M8) oder Gesetz (`reihe` null) kein Akt
+        if (this._autoSettlementPendingKey || !reihe) return;
         const wm = st.worldMeta || {};
         const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
         // DER ORT KEHRT WIEDER (speicher.K3, Lehre 7): eine Zelle mit Gedächtnis {seed, nH, x, z} steht je Sitzung, sobald
@@ -2845,22 +2839,34 @@ class AnazhRealm_siedlung_ort {
         if (this._ortWachstumTakt(playerPos)) return; // EIN Dorf-Akt pro Tick
         // Start-Dorf zuerst (einmalig je Welt) — bestellt schon sein Wecker am Buch (`_startDorfAmBuch`), der Takt fängt den Rest
         if (this._startDorfBestellen(playerPos)) return; // EIN Dorf-Akt pro Tick
+        for (const [, cx, cz] of reihe) if (this._autoSettlementZelle(cx, cz, playerPos, cells, true)) return; // EIN Dorf-Akt pro Tick
+    }
+    // DER VORLAUF DER ORTE (`_tickAutoSettlement`, w28-ort-vor-wald): je Takt vor jedem Akt die Vorräte (`_dorfBereiten`) — EINE Rate
+    // ihres Wasser-Urteils oder EIN Grund (der Grund liegt im Vorlauf, w12-dorf-strom) — und EIN fälliger Ort, der seinen Vorrat
+    // beginnt (`_autoSettlementZelle` ohne Erwachen). Jeder Export fliegt, sobald sein Ort fällig ist: der Faden des Walds wartet auf
+    // jeden Ort in Arbeit, der seinen Chunk erreicht (`_ortInArbeit`). Bis w28-ort-vor-wald flog EIN Export zur Zeit, und der Vorlauf
+    // stand hinter dem Zug, dem Export des Erwachens, der Wiederkehr, dem Wachstum und dem Start-Dorf still (GTX 1050, Sprung an die
+    // Mess-Wiese: die Orte 2–5 legten ihren Grund 33–60 s nach dem Sprung, 264 Bäume des Walds fielen im Laub-Rand im Saum).
+    // → die Reihe der Zellen um den Spieler (nach dem EINEN Rang) für den Akt, null ohne Kanal (M8) oder Gesetz.
+    _dorfVorlauf(playerPos) {
+        if (!this._autoSettlementChannelLive()) return null; // der Dispatch-Kanal entscheidet (M8)
         if (!this._autoSettlementRejected) this._autoSettlementRejected = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
         // ZENSUS 17.07. — DASSELBE Zell-Raster wie die Zell-Wahrheit
         // (_autoSettlementCellInfo): SIEDLUNG.cellM, das fachwerk-Gesetz.
         const SGz = AnazhRealm._siedlungGesetz();
-        if (!SGz) return;
+        if (!SGz) return null;
+        const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (nearM, der Vorlauf)
+        const wm = this.state.worldMeta || {};
+        const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
         const cellM = SGz.cellM;
         const pcx = Math.floor(playerPos.x / cellM);
         const pcz = Math.floor(playerPos.z / cellM);
-        // die Vorräte (`_dorfBereiten`): EIN Export zur Zeit fliegt; ein fertiger, dessen Ort hinter dem Spieler zurückbleibt
-        // (jenseits des Rings seiner Sicht um `vorlaufM` und außer der doppelten Zeit seines Vorlaufs, `_autoSettlementZelle` —
-        // die Trasse rückt den Anker bis 128 m), fällt; kehrt er zurück, bereitet er sich neu vor
+        // die Vorräte (`_dorfBereiten`): ein fertiger, dessen Ort hinter dem Spieler zurückbleibt (jenseits des Rings seiner Sicht
+        // um `vorlaufM` und außer der doppelten Zeit seines Vorlaufs, `_autoSettlementZelle` — die Trasse rückt den Anker bis
+        // 128 m), fällt; kehrt er zurück, bereitet er sich neu vor
         const V = this._dorfVorraete || (this._dorfVorraete = new Map());
-        let fliegt = false;
         let rate = 1; // je Takt EINE Rate des Wasser-Urteils eines bereiten Vorrats (`_dorfWasserUrteil`)
         for (const [k, w] of V) {
-            fliegt = fliegt || !w.da;
             const sicht = A.nearM + w.mehrM + A.vorlaufM;
             if (
                 w.da &&
@@ -2886,8 +2892,8 @@ class AnazhRealm_siedlung_ort {
         }
         // DIE ZELLEN NACH DER ZEIT BIS BEDARF (w13-dorf-strom): die Ringe um den Spieler reichen so weit, wie der Vorlauf eines
         // Orts im Tempo der Bahn trägt (im Stand zwei Zellen, je `cellM` Weg in `bereitS` eine mehr), die Zellen in der Reihe
-        // des EINEN Rangs (`_spielerD2` am Ort der Zelle) — der Ort, den die Bahn zuerst braucht, tut den Akt des Takts. Bis
-        // w13-dorf-strom gingen Ring 1 und Ring 2 in der Reihe des Rasters, und im Ring 2 erwachte nur die Stadt.
+        // des EINEN Rangs (`_spielerD2` am Ort der Zelle) — der Ort, den die Bahn zuerst braucht, beginnt seinen Vorrat und tut
+        // den Akt des Takts. Bis w13-dorf-strom gingen Ring 1 und Ring 2 in der Reihe des Rasters, und im Ring 2 erwachte nur die Stadt.
         const [vx, vz] = this._bedarfTempo();
         const ringe = 2 + Math.ceil((Math.hypot(vx, vz) * (A.bereitS + (this._dorfRate ? A.bauZeitMaxS : 0))) / cellM);
         const reihe = [];
@@ -2899,7 +2905,49 @@ class AnazhRealm_siedlung_ort {
                 reihe.push([info ? this._spielerD2(info.x, info.z) : 0, pcx + dx, pcz + dz]);
             }
         reihe.sort((a, b) => a[0] - b[0]);
-        for (const [, cx, cz] of reihe) if (this._autoSettlementZelle(cx, cz, playerPos, cells, V, fliegt)) return; // EIN Dorf-Akt pro Tick
+        for (const [, cx, cz] of reihe) if (this._autoSettlementZelle(cx, cz, playerPos, cells, false)) break; // EIN Vorrat je Takt
+        return reihe;
+    }
+    // DER ORT IN ARBEIT (w28-ort-vor-wald, das EINE Urteil des Dorf-Zugs für den Wald): ein Ort, dessen Grund noch nicht liegt — ein
+    // Vorrat (`_dorfVorraete`) vor seinem Grund oder die Zelle des Zugs vor ihrem Erdbau (`_dorfErwachen`, das Erwachen ohne
+    // Vorlauf) —, dessen Rand samt Saum (fachwerk `siedlungsReich` über die Häuser des Plans + phyto-core `bestand.saum`, wie
+    // `_ortRandSetzen` und `_saumRaeumen`; vor dem Plan die Häuser der Zelle und die Trasse, die den Anker bis 128 m rückt) den
+    // Kasten x0…x1 · z0…z1 erreicht → sein Schlüssel, sonst null. Leser: der Pflanz-Gang des Walds (`_forestPlantChunk`: der Chunk
+    // wartet, bis der Grund liegt — sonst räumte ihn der Saum nach dem Bild, `_saumRaeumen`).
+    // IN ARBEIT IST NUR, WAS EIN TAKT BAUT: ruht der Dorf-Takt (`_dorfTaktLebt`, das EINE Urteil des Siedlungs-Takts, des
+    // Genesis-Orts, des ersten Weltbilds und von `_dorfOffen`: der Messort ohne Dorf-Zug), legt kein Vorrat und kein Zug seinen
+    // Grund — der Wald pflanzt. Bis hier wartete er auf die Vorräte des Boots, die der ruhende Takt nie weiterführt (Zug z653,
+    // OMEN gate:tag-achse:echt an genesis: 25 Karten im Pflanz-Warten, die Welt stand nach 8 579 Takten nicht, dorf 0).
+    _ortInArbeit(x0, z0, x1, z1) {
+        if (!this._dorfTaktLebt()) return null;
+        const V = this._dorfVorraete;
+        const q = this._autoSettlementQueue;
+        if (!(V && V.size) && !(q && q.plan)) return null;
+        const S = AnazhRealm._siedlungGesetz();
+        if (!S) return null;
+        const reich = AnazhRealm.Gesetz("fachwerk:siedlungsReich");
+        const saum = globalThis.__phytoCore.FOREST_PACK.bestand.saum;
+        const W = AnazhRealm.ORT_WAHL;
+        const wm = this.state.worldMeta || {};
+        const E = wm.erdbau && typeof wm.erdbau === "object" ? wm.erdbau : {};
+        const um = (x, z, r) => {
+            const dx = Math.max(x0 - x, 0, x - x1);
+            const dz = Math.max(z0 - z, 0, z - z1);
+            return dx * dx + dz * dz <= (r + saum) * (r + saum);
+        };
+        for (const [k, w] of V || []) {
+            if (w.grund || (w.ort && E[w.ort])) continue;
+            const r = w.da && w.v2 ? reich(S, w.v2.slots.length) : reich(S, w.nH) + W.schrittM * W.ringe;
+            // ein Vorrat ohne Größe ist ein Bruch beim Namen — der Wald wartet auf ihn, nie still an seinem Saum vorbei
+            if (!(r >= 0)) {
+                this._bruchMelden(`ORT IN ARBEIT: der Vorrat ${k} trägt keine Größe (nH ${w.nH})`);
+                return k;
+            }
+            if (um(w.x, w.z, r)) return k;
+        }
+        const c = q && q.plan && wm.settlementCells && wm.settlementCells[q.cellKey];
+        if (c && c.ort && !E[c.ort] && um(c.x, c.z, reich(S, q.plan.slots.length))) return q.cellKey;
+        return null;
     }
     // DAS GEDÄCHTNIS DES WACHSTUMS (siedlung.K4 Staffel 2): ein Ort mit Chronik beginnt im Jahr seines Plans, ohne Kraft, zur Uhr
     // der Welt; ohne Chronik (keine Zeitachse) wächst er nicht
@@ -3112,8 +3160,8 @@ class AnazhRealm_siedlung_ort {
         }
         return false;
     }
-    // EINE ZELLE IM TAKT (`_tickAutoSettlement`): verworfen, im Vorlauf bereitet oder erwacht — true, wenn der Takt dabei seinen
-    // EINEN Dorf-Akt getan hat.
+    // EINE ZELLE IM TAKT (`_tickAutoSettlement`): verworfen, im Vorlauf bereitet (`erwachen` false, der Vorlauf `_dorfVorlauf`) oder
+    // erwacht (`erwachen` true, der Akt) — true, wenn der Takt dabei seinen EINEN Vorrat bzw. Dorf-Akt getan hat.
     // DER ORT MISST AM ORT, SEIN VORLAUF IST ZEIT (w13-dorf-strom): jeder Abstand gilt dem Ort, an dem die Zelle stehen wird —
     // dem Anker ihres Vorrats, sobald die Wahl steht (`_dorfBereiten`), davor der Stelle, die sie trägt
     // (`_autoSettlementFindSite`), nie dem Zellpunkt. Sie erwacht, sobald die Bahn ihren Ring `nah` binnen des Vorlaufs der Bahn
@@ -3123,7 +3171,7 @@ class AnazhRealm_siedlung_ort {
     // Ring 2 erwachte nur die Stadt: in der Fahrt-Probe erwachte das Dorf −4,−4 (Zellpunkt 141 m hinter dem Anker) 124 m vor
     // dem Anker, die Orte im GT legten ihren Grund 269–301 m vor dem Anker — der Wald fiel im Kegel, 45–134 Bäume je Ort traten
     // ohne Gestalt ein.
-    _autoSettlementZelle(cx, cz, playerPos, cells, V, fliegt) {
+    _autoSettlementZelle(cx, cz, playerPos, cells, erwachen) {
         const A = AnazhRealm.AUTO_SETTLEMENT;
         const key = cx + "," + cz;
         if ((cells && cells[key]) || this._autoSettlementRejected.has(key)) return false;
@@ -3147,10 +3195,10 @@ class AnazhRealm_siedlung_ort {
         const bereit = A.bereitS + bau - AnazhRealm.BEDARF.vorlaufS;
         const imRing = (x, z, r, T) =>
             (x - playerPos.x) ** 2 + (z - playerPos.z) ** 2 <= r * r || this._bedarfZeit(x, z, r) <= T;
-        const w = V.get(key);
+        const w = this._dorfVorraete && this._dorfVorraete.get(key);
         // OHNE VORRAT FRAGT DER TAKT DIE STELLE NUR, WENN EIN AKT MÖGLICH IST: sie liegt höchstens `siteProbeR` Zellen neben dem
         // Zellpunkt (`um`) — erwachen kann die Zelle, wenn die Bahn diesen Ring um `nah` binnen ihres Vorlaufs erreicht, bereiten,
-        // wenn kein Export fliegt und sie den Ring der Sicht binnen `bereitS` erreicht. DIE WAHRHEIT VOR DEM URTEIL (wie der
+        // wenn sie den Ring der Sicht binnen `bereitS` erreicht (jeder Export fliegt, w28-ort-vor-wald). DIE WAHRHEIT VOR DEM URTEIL (wie der
         // Chunk-Bau, `_hydroSteht`): die Wasser-Wand der Stelle (`_landAt`) liest die Hydro-Kacheln um die Probe-Ringe — fehlt
         // eine, ist sie bestellt, und die Zelle wartet (kein Urteil, kein Verwerfen). Ein Takt, der am Zellpunkt maß, fragte die
         // Stelle erst im Ring; am Ort gemessen urteilte sie über die halb geladene Welt (gate:settlement C-K3: am Hang-Ort fiel
@@ -3158,7 +3206,7 @@ class AnazhRealm_siedlung_ort {
         const um = Math.max(...A.siteProbeR) * AnazhRealm._siedlungGesetz().cellM;
         let i3 = info;
         if (!w) {
-            if (!imRing(info.x, info.z, nah + um, bau) && (fliegt || !imRing(info.x, info.z, sicht + um, bereit)))
+            if (erwachen ? !imRing(info.x, info.z, nah + um, bau) : !imRing(info.x, info.z, sicht + um, bereit))
                 return false;
             if (this._ensureHydroTilesAround(info.x, info.z, um)) return false;
             const site = this._autoSettlementFindSite(info); // Anker zuerst, dann die Probe-Ringe
@@ -3169,8 +3217,10 @@ class AnazhRealm_siedlung_ort {
             if (site.x !== info.x || site.z !== info.z) i3 = Object.assign({}, info, { x: site.x, z: site.z });
         }
         const ort = w || i3;
-        if (imRing(ort.x, ort.z, nah, bau)) this._autoSettlementSpawnCell(cx, cz, i3);
-        else if (!w && !fliegt && imRing(ort.x, ort.z, sicht, bereit))
+        if (erwachen) {
+            if (!imRing(ort.x, ort.z, nah, bau)) return false;
+            this._autoSettlementSpawnCell(cx, cz, i3);
+        } else if (!w && imRing(ort.x, ort.z, sicht, bereit))
             this._dorfBereiten(key, i3).catch(this._ortWahlWartet(key));
         else return false;
         return true;

@@ -466,6 +466,10 @@ async function WELLE_L(ort) {
                     reach = r._kampfBladeReach(),
                     w20 = r._trefferWirkung(r._kampfUrteil(20, 0, null));
                 stelle(hirsch, 1.5);
+                // derselbe Leib für jeden Hieb (die neutrale Stance): der Hirsch trägt sonst die Pose, in der ihn der letzte
+                // Takt ließ (herde-gesetz) — der Hieb traf den Bauch an der Spitze (eff 0,75) statt der Brust am Schlagpunkt,
+                // das Tempo am Kontakt streute je Lauf um 10 %, und schneide messer fiel 0,17 → 0,15 (in einem anderen Lauf stieg es)
+                if (hirsch.userData._tierBaum) r._tierBaumNeutralStance(hirsch);
                 zielen(punkt(hirsch, null));
                 const sw = schwung(),
                     t = traf(sw, hirsch),
@@ -850,8 +854,8 @@ async function WELLE_L(ort) {
         const grobTor = (c, x, z, sp) => r._trefferErreichbar(c, x, z, sp);
         const gestaltSchar = [];
         {
-            const G = A._verhaltenGesetz().groessen;
-            const groessen = [...new Set(G.flatMap((k) => [k.min, k.max]))].sort(aufsteigend);
+            // die Grenzen des Lebens-Gesetzes (`__lebenCore.spanne()`: das Neugeborene, das größte Erwachsene) und das Art-Mittel
+            const groessen = [...new Set([...A._lebenKern().spanne(), 1])].sort(aufsteigend);
             let n = 0;
             for (const seele of ["wesen", "wolf", "fuchs", "baer"]) {
                 for (const bs of groessen) {
@@ -2157,13 +2161,15 @@ async function WELLE_L(ort) {
             w.z.tod = tod;
             if (hT.parent) r.removeCreature(hT);
         });
-        // (T25) die Wunde reist als Anteil des Lebens: Hirsch (1,0) und Bär (1,75), ein alter Stand (hp absolut, leibV = 0)
-        // und ein neuer mit 30 %.
+        // (T25) die Wunde reist als Anteil des Lebens: Hirsch (1,0) und Bär am größten Erwachsenen des Gesetzes (+4σ,
+        // `__lebenCore.spanne()`), ein alter Stand (hp absolut, leibV = 0) und ein neuer mit 30 %. Bis leben-erbe der Bär
+        // 1,75 — jenseits der Spanne: der Restore stellt einen Leib ohne Tier auf die Grenze des Gesetzes, die absolute
+        // Wunde des alten Stands traf dann ein kleineres Leben (0,538 statt 0,5).
         await teil("T25", async () => {
             const wunde = [];
             for (const [seele, L] of [
                 ["wesen", 1],
-                ["baer", 1.75],
+                ["baer", A._lebenKern().spanne()[1]],
             ]) {
                 s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
                 const c = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 320, "happy", seele, {

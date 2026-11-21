@@ -994,8 +994,15 @@ async function probe(K) {
             const kopf = st.worldMeta.voxelEdits[st.worldMeta.voxelEdits.length - 1];
             r.dslRun(["voxel_fill", kopf.x, ring.krone, kopf.z, K.turmR], { source: "human" });
             const krone2 = r._voxelSurfaceY(t.x, t.z);
+            // DIE SCHNEEGRENZE IM FLUG: eine Stufe der Grenze (der EINE Weg des Schnee-Takts, `_fernRingNeuBestellen(fr, true)`)
+            // vor dem ersten Takt nach dem Edit und eine nach ihm, während seine Ecken fliegen — das Jahr der Welt-Uhr trägt sie
+            // in jeden Lauf (Herbst: 27 Stufen zwischen zwei Türmen); bis w28-herde-gesetz fiel der Edit mit ihr, und der Turm
+            // stand erst mit der letzten Scheibe des ganzen Rings im Horizont (CI B2 Brücke Ego 91 Takte, 1,52 s)
+            const schnee = () => r._fernRingNeuBestellen(st.fernRing, true);
+            schnee();
             for (let i = 1; i <= 120 && !ring.takte; i++) {
                 takt();
+                if (i === 1) schnee();
                 await sleep();
                 const bytes = lage().reduce((n, b, s) => n + b.filter((x, k) => x !== vor[s][k]).length, 0);
                 if (bytes && ringY() >= krone2 - K.sohleM) Object.assign(ring, { takte: i, bytes });
@@ -1032,7 +1039,8 @@ hauptLauf(async () => {
         bruecke: PRUEF_SATZ.stabil["Brücke auf zwei Pfeilern"],
     });
     if (!befund.turm.fehler) {
-        await sleep(1500); // der IDB-Put des Saves landet
+        // der Stand des Saves ist fest (die Schranke des Speicher-Fadens — bis abdruck-am-takt 1,5 s nach der Wanduhr)
+        await page.evaluate(() => r._speicherStill().then(() => true));
         await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
         await warteAufWelt(page, 180000);
         const nach = await page.evaluate(probe, { nach: befund.turm, nach2: befund.turm2 });

@@ -211,11 +211,18 @@ function taeter(inj) {
         [r._gaitBodenY, r.createBlueprint] = [(x, z) => P._gaitBodenY.call(r, x, z) + 0.12, () => false];
     // sohle (K8): die Sohle der Pfote kippt nicht mit dem Boden unter ihr (vor K8 huf hielt sie die Lage des Rumpfs)
     if (inj === "sohle") r._gaitSohlenKipp = (...a) => (a[4] ? { laengs: 0, quer: 0 } : P._gaitSohlenKipp.apply(r, a));
-    // ring (K8): der Ring bleibt am Boden des ersten Weltbilds stehen (vor gelaende-ring-wachstum: Radeon Ring 2 von 4)
+    // ring (K8): der Ring bleibt am Boden des ersten Weltbilds stehen (vor gelaende-ring-wachstum: Radeon Ring 2 von 4) — sein
+    // Ziel steht am EINEN Schreiber auf 2 (`_ringWaechst` liest es), nie ein zweiter Schreiber hinter ihm: der klemmte den Schritt
+    // 2 → 3 je Takt zurück, und jeder Schritt regte die Welt (`_weltRegt`, w28-nadel-bestand) — sie stand nie
     if (inj === "ring")
         r._ringWaechst = function () {
-            P._ringWaechst.call(this);
-            this.state._activeRingRadius = Math.min(2, this.state._activeRingRadius);
+            const ziel = this.state.chunkRingRadius;
+            this.state.chunkRingRadius = Math.min(2, ziel || 4);
+            try {
+                P._ringWaechst.call(this);
+            } finally {
+                this.state.chunkRingRadius = ziel;
+            }
         };
     // nexus (K8): der Takt des Nexus wirft nach der Wanduhr in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht)
     // sprung (K9): der Abdruck ist das feste Tempo der Seele (vor leib-k2-sprung) — Masse und Kraft ziehen nichts
@@ -823,7 +830,11 @@ async function rollen(n) {
         const je = knochen.map(() => []);
         leib.traverse((o) => {
             const ebene = o.userData._maskeVorEgo !== undefined ? o.userData._maskeVorEgo : o.layers.mask;
-            if (!o.isSkinnedMesh || !(ebene & 1)) return;
+            // DIE SOHLE IST DIE HAUT, nie das Fell (das Gesetz des Stands, koerper-leib `_ofenKreatur` „die Sohle steht auf dem
+            // Boden, nie das Fell darunter“, und tetrapoda `tierBeinMass`): die Fell-Schalen (aSchale) reichen unter der Pfote um
+            // ihre Länge tiefer — bis leben-erbe las die Linse sie mit, und der Bär (Fell 2,0) „sank“ um sein Fell (bs 1: Median
+            // −2,8 cm, p95 3,4; bs 1,31: −3,7 / 4,4), während seine Haut stand
+            if (!o.isSkinnedMesh || !(ebene & 1) || o.geometry.attributes.aSchale) return;
             const si = o.geometry.attributes.skinIndex;
             const sw = o.geometry.attributes.skinWeight;
             const bi = knochen.map((b) => o.skeleton.bones.indexOf(b));
@@ -941,17 +952,27 @@ async function rollen(n) {
             return { ...mass(a), stecken: stecken + (a.length < n) };
         };
         R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
-        // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
-        // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
+        // der Huf: je Grenze der Spanne des Lebens-Gesetzes (`__lebenCore.spanne()`: das Neugeborene an −4σ, das Art-Mittel 1, das
+        // größte Erwachsene an +4σ) ein Reh 4 m neben dem Spieler, dazu der Bär an +4σ (die längste Sohle der Welt: der Sohlengänger
+        // der größten Gattung), frei im Gang (die Beine im Stand: Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg
+        // hängen nie an der Fauna vor ihm. Bis leben-erbe: die Obergrenzen der vier Größen-Bänder (das Reh bis bs 2,7 — die Größe,
+        // an der die Sohle ohne Kipp über 3 cm fiel, gibt es seit dem Gesetz des Lebens nicht mehr).
         const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
-        for (const [k, band] of AnazhRealm._verhaltenGesetz().groessen.entries()) {
+        const [klein, gross] = AnazhRealm._lebenKern().spanne();
+        const spanne = [
+            { name: "jung", max: klein, seele: "wesen" },
+            { name: "mittel", max: 1, seele: "wesen" },
+            { name: "gross", max: gross, seele: "wesen" },
+            { name: "baer gross", max: gross, seele: "baer" },
+        ];
+        for (const [k, band] of spanne.entries()) {
             [s.maxCreatures, s._creatureNetSeq, s.creatureAnimationTime] = [s.creatures.length + 3, 9e5 + k, 1000];
             const reh = r.spawnCreatureAt(
                 P.x + 4,
                 r._voxelSurfaceY(P.x + 4, P.z + 3) + 0.5,
                 P.z + 3,
                 "happy",
-                "wesen",
+                band.seele,
                 {
                     bodySize: band.max,
                 }

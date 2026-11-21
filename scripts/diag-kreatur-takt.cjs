@@ -30,7 +30,7 @@ const DAUER_S = {
     huepfer: 1,
     wachsen: 1,
     gier: 5,
-    jagd: 77,
+    jagd: 207,
     herde: 44,
     schwarm: 4,
     peer: 1,
@@ -52,10 +52,15 @@ const DAUER_S = {
     furcht: 31,
     lebensraum: 21,
     tagesbudget: 15,
-    kaskade: 350,
+    kaskade: 400,
     folgen: 42,
     zielplan: 80,
-    gehege: 110,
+    gehege: 70,
+    // (herde-gesetz: headless an der Laptop-Maschine unter fremder Last, eine Saat, ohne Täter — der Bestand liest den Gau)
+    erbe: 26,
+    muster: 62,
+    // (leben-gau C2a: headless an der Laptop-Maschine, samt den vier Tätern in EINEM Lauf)
+    gau: 35,
 };
 const TEIL = teilAus(argv);
 const gewaehlt = (() => {
@@ -175,7 +180,7 @@ hauptLauf(async () => {
     for (const p of gewaehlt) {
         const [T, ein] = [SELBSTTEST ? taeterVon(p) : [[null]], SELBSTTEST && EIN_LAUF.includes(p)];
         if (ein) laeufe.push({ proben: [p], taeter: T.map(([t]) => t), ort: ORT });
-        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT }) - 1, t, re }); // prettier-ignore
+        for (const [t, re] of T) faelle.push({ li: ein ? laeufe.length - 1 : laeufe.push({ proben: [p], taeter: t, ort: ORT, art: opt("--art", undefined) }) - 1, t, re }); // prettier-ignore
     }
     const t0 = Date.now();
     const { aus, dauer } = WERKBANK ? await imFenster(laeufe) : await headless(laeufe);

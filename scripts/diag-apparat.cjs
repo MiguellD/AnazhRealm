@@ -11,11 +11,12 @@
 //
 // Dritte Aufgabe (Klinge 3, K38-N2): jede Linse findet eine Methode am NAMEN, nie an ihrer Parameter-Liste.
 // Vierte Aufgabe (Klinge 4, K38-N2 Runde 3): jede Linse ordnet Code seiner Methode am AST zu, nie an einem Kopf-Muster.
-// Fünfte Aufgabe (Klinge 5, K60-N5): keine Linse hält eine Taste über einen Zeitgeber statt bis zu ihrem Ereignis.
+// Fünfte Aufgabe (Klinge 5, K60-N5): keine Linse hält eine Taste über einen Zeitgeber statt bis zu ihrem Ereignis — und keine
+// schläft fest ab 1 s, ehe sie liest (zweite Schneide, abdruck-am-takt: die Tafel `SCHLAF_REST` nennt jede bleibende Stelle).
 // Sechste Aufgabe (Klinge 6, D2-N1/N2): jede Linse schneidet einen Block über den EINEN Schneider (stammLib.rumpf) und
 // trifft eine Stelle des Stamms über die EINE Engstelle (stammLib.ersetze/treffer), nie am ersten Text-Treffer.
 // Siebte Aufgabe (Klinge 7, w22-gpu-probe, w26-probe-zeit): der Einlass der GPU-Probe lässt nur gate:, zeit:gate: und bild:
-// durch, zeit: nur auf die Band-Geräte.
+// durch, zeit: nur auf die Band-Geräte; ihr Artefakt trägt den Versuch im Namen, der Post urteilt am jüngsten je Bein.
 // Achte Aufgabe (Klinge 8, w27-gpu-wahl-heil): jede Linse liest einen GPU-Puffer über die EINE Puffer-Lesung, nie am Rohen.
 // Neunte Aufgabe (Klinge 9, w28-probe-urteil, Lehre 6): eine gedruckte ROTE Zeile ist Urteil — der Kopf der GPU-Probe urteilt Log UND
 // Exit über scripts/lib/urteil-zeile.cjs (BEKANNT heißt nur die Ratsche des Messorts, sichtbar im Kopf), die Wache am
@@ -231,7 +232,9 @@ function tastenVon(code, m) {
     if (!tasten.size && seg.trim()) tasten.add(seg.trim());
     return tasten;
 }
-function tasteNachWanduhr(name, src) {
+// Der Code einer Linse ohne Kommentare (Leerzeichen an ihrer Stelle, die Zeilen bleiben) und die Frage, ob eine Stelle IN einer
+// Zeichenkette steht — der EINE Leser beider Schneiden der Klinge 5; null: nicht lesbar (das nennt Klinge 3 beim Namen).
+function codeOhneKommentare(src) {
     const acorn = require("acorn");
     const kommentare = [];
     let texte;
@@ -245,7 +248,7 @@ function tasteNachWanduhr(name, src) {
             }),
         ].filter((t) => t.type.label === "string" || t.type.label === "template");
     } catch {
-        return []; // nicht lesbar: das nennt Klinge 3 beim Namen
+        return null;
     }
     const teile = [];
     let bis = 0;
@@ -254,9 +257,13 @@ function tasteNachWanduhr(name, src) {
         bis = b;
     }
     teile.push(src.slice(bis));
-    const code = teile.join("");
     // ein Druck IN einer Zeichenkette ist Text, kein Code (die Proben des Selbsttests unten)
-    const imText = (i) => texte.some((t) => t.start <= i && i < t.end);
+    return { code: teile.join(""), imText: (i) => texte.some((t) => t.start <= i && i < t.end) };
+}
+function tasteNachWanduhr(name, src) {
+    const gelesen = codeOhneKommentare(src);
+    if (!gelesen) return [];
+    const { code, imText } = gelesen;
     const los = [...code.matchAll(TASTE_LOS)].map((m) => ({ i: m.index, tasten: tastenVon(code, m) }));
     const errs = [];
     for (const m of code.matchAll(TASTE_DRUCK)) {
@@ -273,6 +280,53 @@ function tasteNachWanduhr(name, src) {
             );
     }
     return errs;
+}
+// KLINGE 5, ZWEITE SCHNEIDE (abdruck-am-takt) — DER FESTE SCHLAF: eine Linse wartet auf ihr Ereignis (welt-boot `waitFor` ·
+// `__weltDa` · `__gebautNach`, die Schranke des Speicher-Fadens `_speicherStill`) oder zählt Takte — nie `await sleep(≥ 1 s)`
+// mit fester Zahl: was sie danach liest, hängt an der Last des Geräts. Zensus 20.11.: 20 Stellen in 14 Linsen (gate:takt T8
+// fällt in takt-t8-geist, 15 fielen in abdruck-am-takt auf ihr Ereignis oder ihre Takt-Zahl). Was bleibt, steht in
+// `SCHLAF_REST` je Datei mit Zahl und Grund — ein Messfenster, der Abstand einer Ereignis-Frage, ein Werkzeug —, die Zahl sinkt
+// nur; eine Stelle über der Tafel nennt jede feste Stelle ihrer Datei.
+const SCHLAF_FEST = /\bawait\s+(?:sleep|warte|warten|pause)\s*\(\s*(\d[\d_]*)\s*\)|\.waitForTimeout\s*\(\s*(\d[\d_]*)\s*\)/g;
+const SCHLAF_AB_MS = 1000;
+const SCHLAF_REST = {
+    "scripts/diag-hitch-telemetrie.cjs": [1, "das Messfenster des Flugschreibers — seine Ringe falten je echter Sekunde (die Schleife führt spec/ci/frist-rest.json)"],
+    "scripts/diag-takt.cjs": [1, "T8 — fällt mit takt-t8-geist auf sein Ereignis"],
+    "scripts/lib/speicher-proben.cjs": [1, "der Abstand der Frage in der gezählten Warte auf `__einschwingOffen` — kein Urteil nach ihm"],
+    "scripts/lib/welt-boot.cjs": [1, "Selbsttest der Todes-Wache — das Fenster, in dem eine gesunde Seite keinen Alarm auslösen darf"],
+    "scripts/omen-messfolge.cjs": [2, "Werkzeug — die Frist, in der ein beendeter Prozess fort sein muss (`warte` meldet sein Ereignis)"],
+    "scripts/werkbank.cjs": [1, "Werkzeug — 2 s Anlauf vor der Spur der leeren Leinwand (das Boden-Maß der Belegung)"],
+};
+function festerSchlaf(src) {
+    const gelesen = codeOhneKommentare(src);
+    if (!gelesen) return [];
+    const { code, imText } = gelesen;
+    const out = [];
+    for (const m of code.matchAll(SCHLAF_FEST)) {
+        const ms = Number((m[1] || m[2]).replace(/_/g, ""));
+        if (ms >= SCHLAF_AB_MS && !imText(m.index))
+            out.push({ zeile: code.slice(0, m.index).split("\n").length, ms, text: m[0].replace(/\s+/g, " ") });
+    }
+    return out;
+}
+function scanSchlaf(dateien, rest = SCHLAF_REST) {
+    const errs = [],
+        unter = [];
+    let n = 0;
+    for (const d of dateien) {
+        const s = festerSchlaf(d.src);
+        const darf = (rest[d.name] || [0])[0];
+        n += s.length;
+        if (s.length < darf) unter.push(`${d.name} ${s.length} < ${darf}`);
+        if (s.length > darf)
+            for (const x of s)
+                errs.push(
+                    `${d.name}:${x.zeile} schläft fest ${x.ms} ms („${x.text}“) — die Datei trägt ${s.length} feste Schlafe ab 1 s, ` +
+                        `SCHLAF_REST nennt ${darf}: die Linse wartet auf ihr Ereignis (welt-boot waitFor · __weltDa · __gebautNach, ` +
+                        `_speicherStill) oder zählt Takte; was sie nach der Wanduhr liest, hängt an der Last (Klinge 5)`
+                );
+    }
+    return { n, errs, unter };
 }
 // KLINGE 6 (D2-N1) — DER EINE RUMPF-SCHNEIDER: eine Linse schneidet einen Block über `stammLib.rumpf` (den Block an
 // seiner DEFINITION), nie mit eigenem Klammer-Zähler (der ERSTE Text-Treffer hängt an der Datei-Reihenfolge). Ein
@@ -510,6 +564,18 @@ function probeGesetz(doc) {
     if (!/KOPF="\$KOPF\$\{KOPF:\+ · \}\$p \$U \$d s\$\{GRUND:\+/.test(lauf))
         v.push("Klinge 9: der Kopf nennt den Grund der Probe nicht");
     if (!/ROT wie an main \(bekannt\): \$BEK/.test(post)) v.push("Klinge 9: das BEKANNTE ROT fehlt dem Kopf des Posts");
+    // Klinge 7, der Versuch (20.11., w28-nacht-lichter ffd68679, Lauf 44821323126): der zweite Versuch eines nachgegebenen Beins
+    // fuhr GRÜN, der Post las das gleichnamige Artefakt des ersten und urteilte wieder NACHGEGEBEN. Je Versuch ein eigener Name,
+    // und der Post urteilt am jüngsten Versuch des Beins — nie am festen Ordner.
+    const hoch = doc.jobs.probe.steps.find((s) => /upload-artifact/.test(s.uses || ""))?.with?.name;
+    if (hoch !== "probe-${{ matrix.label }}-v${{ github.run_attempt }}")
+        v.push(`Versuch: das Artefakt der Probe trägt den Versuch nicht im Namen (${hoch})`);
+    const postLauf = doc.jobs.post.steps.find((s) => /^Post/.test(s.name || ""))?.run || "";
+    if (
+        /D="probe\/probe-\$L"\n/.test(postLauf) ||
+        !/D=\$\(ls -d "probe\/probe-\$L"-v\* 2> \/dev\/null \| sort -V \| tail -n 1\)\n/.test(postLauf)
+    )
+        v.push("Versuch: der Post liest einen festen Ordner je Bein statt des jüngsten Versuchs");
     return v;
 }
 
@@ -741,6 +807,31 @@ function selftest() {
     ];
     for (const q of tasteStill)
         if (tasteNachWanduhr("probe.cjs", q).length) fails.push(`Klinge 5 feuert ohne Lauf nach der Uhr: ${q}`);
+    // Klinge 5, zweite Schneide: der Save vor dem Reload nach der Uhr (gate:nervensystem bis abdruck-am-takt), ein
+    // `waitForTimeout` und die Grenze 1 s fallen mit Datei:Zeile; unter 1 s, eine gerechnete Dauer, ein Rennen ohne `await`, ein
+    // Kommentar und eine Zeichenkette schweigen; in der Tafel schweigt genau ihre Zahl, eine Stelle mehr nennt jede der Datei.
+    const schlaf = (q, rest = {}) => scanSchlaf([{ name: "probe.cjs", src: q }], rest);
+    const schlafRot = [
+        "r.saveState();\nawait sleep(1500);\nawait page.reload();\n",
+        "await page.waitForTimeout(2_000);\n",
+        "await warte(1000);\n",
+    ];
+    for (const q of schlafRot) {
+        const e = schlaf(q).errs;
+        if (e.length !== 1 || !/^probe\.cjs:\d+ schläft fest \d+ ms/.test(e[0])) fails.push(`Klinge 5 nennt den festen Schlaf nicht: ${q}`);
+    }
+    const schlafStill = [
+        "await sleep(999);\n",
+        "await sleep(sek * 1000);\n",
+        "const wort = await Promise.race([frage, sleep(15000)]);\n",
+        "// await sleep(1500);\nconst a = 1;\n",
+        "const probe = 'await sleep(1500);';\n",
+    ];
+    for (const q of schlafStill) if (schlaf(q).errs.length) fails.push(`Klinge 5 feuert ohne festen Schlaf: ${q}`);
+    const tafel = { "probe.cjs": [1, "Probe"] };
+    if (schlaf(schlafRot[0], tafel).errs.length) fails.push("Klinge 5 feuert an einer Stelle der Tafel SCHLAF_REST");
+    if (schlaf(schlafRot[0] + schlafRot[2], tafel).errs.length !== 2) fails.push("Klinge 5 nennt die Stelle über der Tafel nicht");
+    if (schlaf("const a = 1;\n", tafel).unter.join() !== "probe.cjs 0 < 1") fails.push("Klinge 5 meldet die gesunkene Zahl der Tafel nicht");
     // Klinge 6: der Schneider von gate:vehicle-drive bis D2-N1 und ein `case "{"` fallen mit Datei:Zeile; der EINE Schneider,
     // ein JSON-Text, ein Kommentar und dieselbe Probe im freien Schneider schweigen.
     const schneiderRot = [
@@ -815,6 +906,9 @@ function selftest() {
             ["Exit allein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/UG=\$\(node scripts\/lib\/urteil-zeile[\s\S]*?esac\n/, 'elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi\n'); }, /Klinge 9: der Kopf der Probe urteilt am Exit allein/], // prettier-ignore
             ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/\$\{GRUND:\+ — \$\{GRUND:0:240\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
             ["bekannt still", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = s.run.replace(/ROT wie an main \(bekannt\): \$BEK/, ""); }, /Klinge 9: das BEKANNTE ROT/], // prettier-ignore
+            // der Versuch: der Stand bis 20.11. — EIN Name je Bein über alle Versuche, der Post am festen Ordner
+            ["Artefakt ohne Versuch", (z) => { z.jobs.probe.steps.find((x) => /upload-artifact/.test(x.uses || "")).with.name = "probe-${{ matrix.label }}"; }, /Versuch: das Artefakt/], // prettier-ignore
+            ["Post am festen Ordner", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = s.run.replace(/D=\$\(ls -d [^\n]*\n/, 'D="probe/probe-$L"\n'); }, /Versuch: der Post/], // prettier-ignore
         ],
         probeGesetz,
         { fehler: fails, gruen: require("js-yaml").load(ausDatei(PROBE_DATEI)) }
@@ -867,6 +961,7 @@ function main() {
     const dateien = linsenDateien(root);
     const param = scanParameterAnker(dateien, stammSrc);
     const tasten = scanTasten(dateien);
+    const schlaf = scanSchlaf(dateien);
     const probe = probeGesetz(require("js-yaml").load(ausDatei(PROBE_DATEI))).map((e) => `${PROBE_DATEI}: ${e}`);
     const linsen = Object.fromEntries(
         fs
@@ -874,18 +969,21 @@ function main() {
             .filter((f) => f.endsWith(".cjs"))
             .map((f) => ["scripts/" + f, ausDatei(path.join(root, "scripts", f))])
     );
-    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe, urteilFaelle(), wacheLuecken(linsen));
+    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, schlaf.errs, probe, urteilFaelle(), wacheLuecken(linsen));
     // die EINE rote Liste (welt-boot rotListe) statt einer eigenen Schleife daneben
     rotListe(errs);
     if (ratchet.nT < FROZEN_TYPEOF)
         console.log(
             `ℹ️  Der typeof-Bestand sank (${ratchet.nT} < ${FROZEN_TYPEOF}) — FROZEN_TYPEOF nachziehen (der Ratchet darf enger).`
         );
+    if (schlaf.unter.length)
+        console.log(`ℹ️  Der Bestand fester Schlafe sank (${schlaf.unter.join(" · ")}) — SCHLAF_REST nachziehen (die Tafel darf enger).`);
     // der Grün-Satz nennt die Zahlen: typeof-Existenz-Proben gegen den Ratchet (nur sinkend), Anker auf lebendem Stamm-Code
     // (__consumes + __anker installiert), Linsen ohne Parameter-Anker, Kopf-Muster, Taste nach der Wanduhr, eigenen Schneider und
-    // ersten Treffer im ganzen Stamm, die Rufe am Einlass der GPU-Probe
+    // ersten Treffer im ganzen Stamm, die festen Schlafe ab 1 s gegen ihre Tafel (nur sinkend), die Rufe am Einlass der GPU-Probe
+    const schlafTafel = Object.values(SCHLAF_REST).reduce((a, [n]) => a + n, 0);
     console.log(
-        `✅ DIE APPARAT-LINSE steht — typeof ${ratchet.nT}/${FROZEN_TYPEOF} · ${anker.entries.length} Anker · ${param.n} Linsen sauber (0 von ${tasten.n}) · GPU-Probe ${PROBE_RUFE.length} Rufe · ${URTEIL_FAELLE.length} Urteils-Fälle · ${Object.keys(linsen).length} Linsen unter der Urteils-Wache`
+        `✅ DIE APPARAT-LINSE steht — typeof ${ratchet.nT}/${FROZEN_TYPEOF} · ${anker.entries.length} Anker · ${param.n} Linsen sauber (0 von ${tasten.n}) · feste Schlafe ab 1 s ${schlaf.n} von ${schlafTafel} der Tafel · GPU-Probe ${PROBE_RUFE.length} Rufe · ${URTEIL_FAELLE.length} Urteils-Fälle · ${Object.keys(linsen).length} Linsen unter der Urteils-Wache`
     );
 }
 

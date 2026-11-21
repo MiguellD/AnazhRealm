@@ -29,7 +29,7 @@
   "bild-sicht": "laden _spiegelFeldTakt",
   "dienst": "messung _analogZensus _weltFeldEintrag · frist _handBauErlaubt:2 _weltBakeErlaubt:2 _weltBakeSchuld _weltBakeWecker _weltLeibTakt _weltPlatzTakt · ki _kiRegung _kiRuhe llmCall:2 · anzeige _spielerSagt _spracheSetzen logError · laden _weltFeldAktiv:2 _weltSchwundTakt · speicher journalAppend",
   "dirigent-ankunft": "messung _ankunftsBild:2 _nachlaufTakt _weltbildSteht · eingabe _eingabeRuht init · laden _stufenVorlaufWahl",
-  "dirigent-kern": "laden _leuchtTakt _spiegelPassWach",
+  "dirigent-kern": "laden _leuchtTakt _leuchtWahl _spiegelPassWach",
   "dirigent-regler": "messung _exportPerfTrace _flightRecorderBuildTrace:3 _flightRecorderInit:2 _flightRecorderSampleSizes:2 _flightRecorderTick:3 _perfGpuResolveKick:3 _perfGpuSample:2 _perfPanelRender:2 _perfSenseLap _perfSenseRender",
   "dirigent-takt": "frist _bauPflichtGang:2 _bauer:2 _buildDeferrableJobs:9 _fristAufgabe _fristRest _kappeOffen _ladeBildFaellig _ladeFrist:2 · messung _gpuLeineBinden _gpuLeineFrei:2 _loopWeatherAndGrowth · gpu _loopRender · takt startEternalLoop:10",
   "feld-dsl": "anzeige grokSpeakFromJournal:3",
@@ -69,6 +69,6 @@
   "werkstatt-hud": "anzeige _untertitelTakt _untertitelZeile grokSpeak",
   "werkstatt-sozial": "speicher _renderWorldPicker _socialSignOwnComment _socialSignOwnRating renderWorldJournal updateWorldInfo",
   "werkstatt-vorschau": "werkstatt _workshopInstallPreviewListeners:4 _workshopProbeJoints _workshopStartRAF:2 · frist _werkstattBau",
-  "voxel-worker": "messung genesisPlan:2 kammKrone:4 ortWahl:4"
+  "voxel-worker": "messung genesisPlan:2 kammKrone:4 ortWahl:4 gauFeldBauen:5 gauAuftrag:6"
  }
 }

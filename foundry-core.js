@@ -5,14 +5,13 @@
 // Wuchs-/Asset-Mathematik lebt hier, phytogenesis.js ist die Display-/Welt-/UI-Shell + der
 // GL-Bäcker. THREE/__phytoCore sind zur Laufzeit global (Ladereihenfolge; das Verschmelzen ist phyto-core, kein Addon).
 
+// DER STROM (Welle SAMEN): mulberry32 lebt EINMAL — im Samen-Kern (samen-core.js `__samenCore`, die erste Zeile des
+// Manifests), gelesen je Ruf am globalen Namen (die Lese-Spur der Platte sieht ihn). Der globale Name bleibt den Lesern dieses
+// klassischen Skripts (foundry-bruecke.js, worlds/terrain/phytogenesis.js); fehlt der Samen-Kern, bricht der Ruf beim Namen.
 function mulberry32(a) {
-    return function () {
-        a |= 0;
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    const S = self.__samenCore;
+    if (!S) throw new Error("foundry-core: der Samen-Kern fehlt (samen-core.js lädt vor jedem Kern)");
+    return S.mulberry32(a);
 }
 
 function nearestFib(x) {
@@ -8525,6 +8524,7 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         "hrT",
         "hrC",
         "hrP",
+        "neckRoot",
         "headGroup",
         "jawGroup",
         "earL",
@@ -9145,11 +9145,15 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     };
     const jWurzel = gelenkIdx(root);
     if (jWurzel < 0) throw new Error("FELL: die Wurzel trägt keine Leib-Haut");
+    // Der Hals ist ein Gelenk (Posen-Gesetz H1, neckRoot), sein Fell bleibt das der Wurzel: Mantel, Zeilen und Fläche des Halses
+    // zählen zur Wurzel (ohne das stand der Hals kahl — gate:tier-anatomie `kahl sonst` 0,60–0,88).
+    const jHals = jIdx.has("neckRoot") ? jIdx.get("neckRoot") : -1;
+    const fellJ = (j) => (j === jHals ? jWurzel : j);
     const straehnen = new Float64Array(NJ);
     const zeilenJe = Array.from({ length: NJ }, () => []);
     const zeile = (node, c, r, sc, d, n, l) => {
         if (!(n > 0) || !(l > 0)) return;
-        const j = gelenkIdx(node);
+        const j = fellJ(gelenkIdx(node));
         if (j < 0) throw new Error("FELL: die Zeile " + (nodeName.get(node) || node.name || "?") + " liegt auf keiner Haut");
         const M = new THREE.Matrix4().multiplyMatrices(invRoot, node.matrixWorld);
         const dw = new THREE.Vector3(d[0], d[1], d[2]).transformDirection(M);
@@ -9226,7 +9230,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             vz = P0[c + 2] - P0[a + 2];
         const drittel = Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) / 6;
         for (const v of [hX[q], hX[q + 1], hX[q + 2]])
-            for (let k = 0; k < 4; k++) flaeche[hI[v * 4 + k]] += drittel * hW[v * 4 + k];
+            for (let k = 0; k < 4; k++) flaeche[fellJ(hI[v * 4 + k])] += drittel * hW[v * 4 + k];
     }
     const dichteJe = Float64Array.from(straehnen, (n, j) => (flaeche[j] > 0 ? n / flaeche[j] : 0));
     for (const m of mantel) m.dichte = ((4 * Math.PI) / 3) * (m.n / flaeche[jWurzel]);
@@ -9248,7 +9252,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         for (let k = 0; k < 4; k++) {
             const wj = hW[i * 4 + k];
             if (!(wj > 0)) continue;
-            const j = hI[i * 4 + k];
+            const j = fellJ(hI[i * 4 + k]);
             D += wj * dichteJe[j];
             if (j === jWurzel)
                 for (const m of mantel) {

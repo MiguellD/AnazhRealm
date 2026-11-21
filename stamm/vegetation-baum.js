@@ -1262,8 +1262,17 @@ class AnazhRealm_vegetation_baum {
             const R = AnazhRealm.WALD_PLAN.reich;
             this._waldPlanKasten(ga - R, ha - R, gb + R, hb + R);
             const S = AnazhRealm.UNDERGROWTH.saumZellen; // das Licht des Saums liest den Plan um den Chunk (`_waldLichtFeld`)
-            if (!this._waldPlanKasten(ga - S, ha - S, gb + S, hb + S)) {
+            // DER ORT LIEGT VOR SEINEM WALD (w28-ort-vor-wald): erreicht der Saum eines Orts in Arbeit den Chunk (`_ortInArbeit`:
+            // sein Grund liegt noch nicht), wartet der Gang wie auf seinen Plan — der Grund legt den Rand, und der Chunk pflanzt am
+            // Plan mit ihm. Bis hier pflanzte er vorher, und der Saum räumte den Wald nach dem Bild (`_saumRaeumen`; GTX 1050,
+            // Sprung an die Mess-Wiese: 264 Bäume im Laub-Rand)
+            // der Ort, auf den der Chunk wartet, steht beim Namen in den Akten des Offenen (`_weltOffenAkte`: „am Ort …")
+            const ort = this._waldPlanKasten(ga - S, ha - S, gb + S, hb + S)
+                ? this._ortInArbeit(ox, oz, ox + span, oz + span)
+                : false;
+            if (ort !== null) {
                 (this._waldPflanzWarten || (this._waldPflanzWarten = new Set())).add(ck);
+                if (ort) this._waldWartetAmOrt = ort;
                 return 0;
             }
         }
@@ -1332,16 +1341,13 @@ class AnazhRealm_vegetation_baum {
             const g1x = Math.ceil((ox + span) / bushStep) - 1;
             const g0z = Math.ceil(oz / bushStep);
             const g1z = Math.ceil((oz + span) / bushStep) - 1;
+            // der EINE Generator (Welle SAMEN: samen-core `mulberrySchritt`) auf dem Zustand des Raster-Punkts — der Same des
+            // Strauchs liest ihn nach dem dritten Wurf (`seed` unten)
+            const SK = globalThis.__samenCore;
             for (let bgz = g0z; bgz <= g1z; bgz++) {
                 for (let bgx = g0x; bgx <= g1x; bgx++) {
-                    let hs = ((bgx * 73856093) ^ (bgz * 19349663) ^ seedInt ^ 0x5bd1e995) >>> 0 || 1;
-                    const hrnd = () => {
-                        hs = (hs + 0x6d2b79f5) >>> 0;
-                        let t = hs;
-                        t = Math.imul(t ^ (t >>> 15), t | 1);
-                        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-                    };
+                    const zu = { hs: ((bgx * 73856093) ^ (bgz * 19349663) ^ seedInt ^ 0x5bd1e995) >>> 0 || 1 };
+                    const hrnd = () => SK.mulberrySchritt(zu, "hs");
                     const bxp = bgx * bushStep + (hrnd() - 0.5) * 4.0; // Studio-Jitter ±2 m
                     const bzp = bgz * bushStep + (hrnd() - 0.5) * 4.0;
                     if (bxp < ox || bxp >= ox + span || bzp < oz || bzp >= oz + span) continue;
@@ -1387,7 +1393,7 @@ class AnazhRealm_vegetation_baum {
                         bushKey,
                         { x: bxp, y: bsy + 0.5, z: bzp },
                         {
-                            seed: (hs ^ 0x2f6e2b1) >>> 0,
+                            seed: (zu.hs ^ 0x2f6e2b1) >>> 0,
                             silent: true,
                             // Studio: SCALE.strauch × (0.8 + RNG()·0.5) — die Tabellen-Skala
                             // (0.332) trägt der Render-Pfad (V18.418), hier nur die Streuung.

@@ -196,7 +196,8 @@ function abdruck(bauten, nahe) {
     }
     const bestand = Object.entries(stand.bestand)
         .sort()
-        .map(([k, R]) => [k, R.t, R.seq, R.tiere.map((t) => t.id + "@" + t.alterS).sort().join(" ")]);
+        // je Tier Adresse, Alter und Erbe `a` (leben-erbe: die Region zählt keine `seq` mehr, die Kennung ist `indId`)
+        .map(([k, R]) => [k, R.t, R.tiere.map((t) => t.id + "@" + t.alterS + "#" + [].concat(t.a, t.e).join(",")).sort().join(" ")]); // prettier-ignore
     const befund = {
         uhr: st.spielZeit,
         horizont: r._feldHorizont(),
@@ -296,7 +297,7 @@ function lebenBefund(A, B) {
     if (be.length || a.bestand.length !== b.bestand.length)
         teile.push(
             `BESTAND verschieden in ${be.length} von ${a.bestand.length} Regionen` +
-                be.slice(0, 2).map((x) => { const y = bB.get(x[0]) || []; return ` (${x[0]}: t ${x[1]}/${y[1]}, seq ${x[2]}/${y[2]}, Tiere ${x[3].split(" ").length}/${String(y[3] || "").split(" ").length})`; }).join("")
+                be.slice(0, 2).map((x) => { const y = bB.get(x[0]) || []; return ` (${x[0]}: t ${x[1]}/${y[1]}, Tiere ${String(x[2]).split(" ").length}/${String(y[2] || "").split(" ").length}; nur A ${String(x[2]).split(" ").filter((q) => !String(y[2] || "").split(" ").includes(q)).slice(0, 3).join(" ")} · nur B ${String(y[2] || "").split(" ").filter((q) => !String(x[2]).split(" ").includes(q)).slice(0, 3).join(" ")})`; }).join("")
         );
     const [gA, gB] = [new Set(a.gewirkt), new Set(b.gewirkt)];
     const [nurA, nurB] = [a.gewirkt.filter((k) => !gB.has(k)), b.gewirkt.filter((k) => !gA.has(k))];
@@ -589,7 +590,14 @@ hauptLauf(async () => {
         // ── (b) TÜR: der nackte Aufruf, Server beim Aufbau aus ──
         const vorTuer = await pageA.evaluate(() => st.p2p.enabled === true);
         await pageA.evaluate(() => r.initP2PSync(null));
-        await sleep(3000);
+        // der Server kommt nach SEINEM Ereignis, nie nach der Uhr (abdruck-am-takt): der erste Aufbau von A ist gefallen — sein
+        // close-Zweig hat den Rejoin geplant (`reconnectAttempt` ≥ 1), oder ohne Absicht steht der tote Socket (readyState 3).
+        // Bis hier 3 s Schlaf: fiel der Aufbau unter Last später, traf er den frischen Server, und die Tür blieb ungeprüft grün.
+        await waitFor(
+            pageA,
+            () => st.p2p.reconnectAttempt >= 1 || (!!st.p2p.ws && st.p2p.ws.readyState === 3),
+            "A: der erste Aufbau ohne Server ist gefallen"
+        );
         signaling = await startProc("signaling-server.js", /lauscht/, {
             PORT: String(PORT),
             ANAZH_SIGNALING_PORT: String(SIGNAL_PORT),
@@ -604,7 +612,7 @@ hauptLauf(async () => {
         const nachTuer = await bericht(pageA);
         const rejoinS = nachTuer.connected && rejoinMs <= REJOIN_DECKEL_S * 1000 ? rejoinMs / 1000 : null;
         check(
-            `(b) Tür: der nackte Aufruf heilt nach ${3} s Server-Ausfall (Rejoin ≤ ${REJOIN_DECKEL_S} s)`,
+            `(b) Tür: der nackte Aufruf heilt nach dem Server-Ausfall (sein erster Aufbau fiel; Rejoin ≤ ${REJOIN_DECKEL_S} s)`,
             rejoinS !== null,
             rejoinS !== null
                 ? `Rejoin ${rejoinS.toFixed(1)} s nach Server-Start, Absicht ${vorTuer}→${nachTuer.enabled}`
@@ -701,6 +709,22 @@ hauptLauf(async () => {
         );
         await sleep(800);
 
+        // B HAT A EINGEHOLT — sein Ereignis, nie die Wanduhr (abdruck-am-takt): B's Ghost hat jeden Schritt gerechnet, den A bis zu
+        // diesem Ruf fing (`_lockstepSeq` bei A ≤ `doneSeq` bei B). Bis hier 1,2–1,5 s Schlaf je Stelle: unter Last stand der
+        // Rückstau danach noch. Wie schnell B aufholt, urteilt das Gesetz je Takt im Fenster von (d), nie diese Warte.
+        const eingeholt = async (wann) => {
+            const q = await pageA.evaluate(() => st.p2p._lockstepSeq);
+            await waitFor(
+                pageB,
+                (id, q) => {
+                    const ls = st.p2p.peers.get(id)?.lockstep;
+                    return !!ls && ls.doneSeq >= q;
+                },
+                `B rechnet A bis Schritt ${q} (${wann})`,
+                idA,
+                q
+            );
+        };
         // ── A läuft über die Tastatur, B sieht zu ── (ein Lauf: A geht LAUF_M, steht wieder, B zeigt ihn an dessen Ort)
         const laufUndSicht = async () => {
             await kennt(pageB, idA, true, "B rechnet A mit Gestalt über die Leitung");
@@ -731,7 +755,7 @@ hauptLauf(async () => {
                 },
                 "A steht wieder"
             );
-            await sleep(1200);
+            await eingeholt("A steht");
             // B urteilt nach seinem EREIGNIS: zwei eigene Takte, seit A steht — nie nach der Uhr des Läufers (ein Hintergrund-
             // Takt unter Last kam lokal 1,9 s nach dem Stand noch nicht: Abstand 1,905 m bei Rückstau 111, K60-N3/mp-3.txt)
             const takteB = await pageB.evaluate(() => __mp.lsTakte);
@@ -954,7 +978,7 @@ hauptLauf(async () => {
             `Lauf ${l1.lauf.toFixed(2)} m · ${sichtSatz(l1)} · ${fensterSatz(f1)}` +
                 (m1.length ? ` — ${m1.join(" · ")}${dTaeter(m1)}` : "")
         );
-        await sleep(1500); // B holt bei kurzen Takten auf
+        await eingeholt("kurze Takte nach dem Fenster"); // B holt bei kurzen Takten auf
         await langeTakte(true, true);
         const l2 = await laufUndSicht();
         const f2 = await fensterZu();
@@ -969,7 +993,7 @@ hauptLauf(async () => {
                 m2.length ? "ROT: " + m2.join(" · ") + dTaeter(m2) : "GRÜN, die Linse ist blind"
             }${gestresst ? "" : ` — das Szenario stresst die alte Kappe nicht (Zufluss ≤ ${lsGesetz.aufhol} je Takt)`}`
         );
-        await sleep(1500);
+        await eingeholt("nach der alten Kappe");
 
         // ── (f) DIE WELT-UHR: A springt 20 min Spielzeit in einen Sturm, erst in den Zug davor (er nimmt jeden
         // alten Wunsch der Welt); B folgt je Sprung seinem Ereignis, der Uhr von A — nie der Wanduhr ──
@@ -1173,12 +1197,14 @@ hauptLauf(async () => {
                 for (let i = 2; i < Z; i += 4)
                     for (let j = 2; j < Z; j += 4)
                         P.push([(Math.floor(key / 65536) - 32768) * Z + i, ((key % 65536) - 32768) * Z + j]);
-            const alt = (x, z) => {
-                const h = r._hydroDistAt(x, z);
-                const aus = {};
-                r._terrainMacroSurfaceY(x, z, true, aus);
-                return LG.bodenKlasse(h.dist - Math.max(1, h.halfW), aus.hang || 0, r._forestStandDensity(x, z), LG.L);
+            // der alte Leser: die EINE Formel des Kerns (tetrapoda `bodenKlasseAm`) am Hang ÜBER dem Erdbau
+            const aus = {};
+            const altWelt = {
+                flussRand: (x, z) => r._hydroDistAt(x, z),
+                hang: (x, z) => (r._terrainMacroSurfaceY(x, z, true, aus), aus.hang),
+                bestand: (x, z) => r._forestStandDensity(x, z),
             };
+            const alt = (x, z) => LG.bodenKlasseAm(altWelt, x, z, LG.L);
             const lies = () => [P.map(([x, z]) => r._bodenKlasseAt(x, z)), P.map(([x, z]) => alt(x, z))];
             const mit = lies();
             const roh = wm.erdbau;

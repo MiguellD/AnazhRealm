@@ -48,6 +48,8 @@
 //   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei|n] [--wetter w] [--ruhe max-s] [--wandern bahn|kreis]
 //                                                           | lauf --selbsttest — DER ECHTE LAUF: Frame- und GPU-Zeit, Befehle, Dreiecke und VRAM je Frame und Pass;
 //                                                           `kreis` geht eine Runde in [sek] Spiel-s und zählt die Tiere im Bild (`KREIS`, tiere.K5)
+//   node scripts/werkbank.cjs lauf --buehne herde [--art wolf] [--kontakt] [--ordner d] DIE BÜHNE DER HERDE (Probe herde-bild): Kamera H
+//                                                           40 m quer, stehen → äsen → ziehen → flucht, S1–S5; `--kontakt` der Bogen 4 × 3
 //   node scripts/werkbank.cjs latenz [--proben 50] [--sicht ego,third] [--verb gehen,wechsel,springen,einsteigen,hieb] [--json datei] | --selbsttest | --verzugprobe
 //                                                           DIE LATENZ (leib.K1): Taste → erstes Bild mit bewegtem Leib, je Sicht × Verb, ROT über 50 ms
 //   node scripts/werkbank.cjs bedienung [--runden 3]       DIE BEDIENUNG (spielgang.K3): HUD-Deckung im Bild des Spielers, INP über HUD und Menü
@@ -696,10 +698,9 @@ async function starte() {
                 }
                 window.__ortTakt = o?.takt || [];
                 // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — sonst
-                // wanderten Laub-Radius und Lade-Ring je Sitzung (der Ring wächst nur bei Kopfraum und vollem Ring,
+                // wanderten Lade-Ring (und mit ihm der Laub-Rand, `_laubRand`) je Sitzung (der Ring wächst nur bei Kopfraum und vollem Ring,
                 // `_activeRingRadius`) und mit ihnen die Bank. `ring` setzt Ziel UND aktiven Ring, wie der Null-Renderer es tut.
                 const FELD = {
-                    foliageRadius: ["foliageRadius"],
                     architectureCullingRadius: ["architectureCullingRadius"],
                     dichte: ["_foliageDensityScale"],
                     perfTargetMs: ["perfTargetMs"],
@@ -2748,6 +2749,7 @@ async function starte() {
                     if (b.stichprobe) o.js = await heapStichprobe((stichCdp = stichCdp || (await page.target().createCDPSession())), b.stichprobe); // prettier-ignore
                     return send(o);
                 }
+                if (req.url === "/faeden") return send(await require("./lib/speicher-proben.cjs").fadenHeap(page, !!b.gc));
                 if (req.url === "/gang")
                     return send(await gangLauf(page, pufferStand, b));
                 if (req.url === "/zaehlen") {
@@ -3223,8 +3225,8 @@ async function abdruckBefehl() {
     const AB = require("./lib/abdruck.cjs");
     if (SELBST)
         return selbsttestEnde(
-            AB.abdruckSelbsttest(),
-            "dieselbe Welt mit anderen Erzeugungs-ids und anderer Folge ist 0 anders; die Erzeugungs-ID im Schlüssel und die Wanduhr im Pool fallen ROT beim Namen ihres Dings"
+            await AB.abdruckSelbsttest(),
+            "dieselbe Welt mit anderen Erzeugungs-ids und anderer Folge ist 0 anders, ebenso ein Einschwingen, das 800 Takte länger baut, und ein Bau, der später ankommt; die Erzeugungs-ID im Schlüssel, die Wanduhr im Pool, der Zeit-Takt im Einschwingen und das Leben neben dem Bau fallen ROT beim Namen ihres Dings"
         );
     const kopf = () => require("child_process").execSync("git rev-parse HEAD", { cwd: root }).toString().trim();
     const lauf = { orte: String(opt("--orte", "genesis,wiese,dorf")).split(","), takte: Number(opt("--takte", 240)) };
@@ -3270,7 +3272,7 @@ hauptLauf(async () => {
     else if (cmd === "bild" && SELBST) {
         selbsttestEnde(boeSelbsttest(), "die Zeit-Linse (`--zeit`) misst ΔY² im Nah-Feld, nennt die Böe der Mess-Wiese GRÜN, Wind 0 am Rausch-Boden, einen Sinus je Schicht an der Laufzeit und ein Bild ohne Nah-Feld beim Namen ROT");
         // DIE BILD-LINSEN (w28-linse-wahr): Leib vor der Linse, leeres Ziel, Inhalt des Orts, Leinwand, der Punkt, der durchfällt, die Ratsche
-        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand und den Fuß unter dem Bild ROT beim Namen, jede Mutante von main besteht nicht");
+        selbsttestEnde(await AA.bildLinsenSelbsttest(), "die Bild-Linsen nennen den Leib vor der Linse, das leere Ziel, Gras in Magenta, die hochgerechnete Leinwand, den Fuß unter dem Bild, den Baum des Samens ohne Stufe und den Baum, der nach dem Sprung im Saum seines Orts fällt, ROT beim Namen, jede Mutante von main besteht nicht");
         selbsttestEnde(await SP.fensterSelbsttest(), "`/fenster` antwortet am gleichen Fenster ohne Takt, auch wenn die Welt nicht steht, und lässt sie nach einem Wechsel des Schirms an ihm leben; die Mutanten (main 01a6714a, der Stand vor w28-probe-schirm) bestehen nicht");
         process.exit(0);
     } else if (cmd === "bild")
@@ -3334,6 +3336,14 @@ hauptLauf(async () => {
             o = ergebnis(await evalRuf(`return await (${popGang})();`));
             o.block = ergebnis(await evalRuf(`return await (${SICHT.blockTreue})();`)); // die Blöcke des letzten Bilds (sicht-linse)
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
+            // DER BAUM VOR DEM ORT (w28-ort-vor-wald): der Sprung an den Messort dorf (590 m, der Dorf-Zug lebt — an der Wiese ruhte er,
+            // dort stand kein Ort und kein Wald), dann warten, bis die Orte liegen (`__baumFallWarten`): jeder Baum des Walds, der
+            // danach im Laub-Rand fällt, stand vor dem Grund seines Orts — der Pop, den kein Schritt erklärt (`baumFallUrteil`)
+            ergebnis(await evalRuf("return __baumFallHaken();"));
+            const ab = ergebnis(await evalRuf("return performance.now();"));
+            await umstellen({ ort: "dorf" });
+            const w = ergebnis(await evalRuf("return await __baumFallWarten();"));
+            o.baumFall = Object.assign(ergebnis(await evalRuf(`return __baumFall(${ab});`)), w);
         } finally {
             halt?.();
         }
@@ -3345,6 +3355,10 @@ hauptLauf(async () => {
         // DAS URTEIL TRÄGT DEN EXIT (w28-probe-urteil): „lod.K2#1 ROT“ stand im Log, `fehler` setzte nur die Block-Treue — GRÜN über ROT
         const pop = je.length && !(o.anteilJeSekunde <= 0.05) ? [`lod.K2#1 ROT ${o.anteilJeSekunde} % Pop-Pixel/s > 0,05`] : [];
         if (rot.length) pop.push("BLOCK-TREUE ROT"); // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
+        // der Baum vor dem Ort nach dem Sprung: ohne seinen Befund (der Gang brach davor) ist er ungemessen — ROT, nie still
+        const bf = o.baumFall ? AA.baumFallUrteil(o.baumFall) : { rot: ["BAUM VOR DEM ORT: ungemessen — kein Sprung"], zeile: "" };
+        console.log(`lod.K2#1 Baum vor dem Ort ${bf.rot.length ? "ROT" : "GRÜN"}: ${bf.rot.length ? bf.rot.join(" · ") + " — " : ""}${bf.zeile}`); // prettier-ignore
+        pop.push(...bf.rot);
         if (pop.length && typeof o.fehler !== "string") o.fehler = pop.join(" · ");
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
@@ -3988,6 +4002,48 @@ hauptLauf(async () => {
                 (neu ? `\nDer Re-Mint hebt ${hebt.length} Zeilen: ${hebt.join(" · ") || "keine"}` : ""),
             true
         );
+    } else if (cmd === "lauf" && opt("--buehne")) {
+        // DIE ISOLIERTE BÜHNE DER HERDE (`lauf --buehne herde [--art wolf] [--kontakt] [--ordner d] [--eigen]`): die Probe herde-bild der
+        // Familie gate:kreatur-takt (scripts/lib/kreatur-proben.cjs — derselbe Wurf, derselbe Takt, die Kamera H 40 m quer, der Fahrplan
+        // stehen → äsen → ziehen → flucht) in der laufenden Welt; `--kontakt` schießt je Zustand drei Bilder im Ausgabe-Pfad (Schirm-Größe,
+        // die Tiere frei) von H und je eines von der nahen Kamera N und fügt den Kontaktbogen (je Zustand die Zeile H, darunter N).
+        // Abgelegt: kontakt-<art>.jpg, die zwölf Bilder H, die zwölf N (-nah), mess-<art>.json (S1–S5 mit Einheit).
+        // Exit 1 nur, wenn die Bühne selbst nicht misst (Wurf, Bewegung, Bilder); das Soll S1–S5 steht als Zeile, ROT ist der Stand.
+        if (opt("--buehne") !== "herde") endeMit(`--buehne kennt „herde“, nicht „${opt("--buehne")}“`);
+        const KP = require("./lib/kreatur-proben.cjs");
+        const art = opt("--art", "hirsch") === "wolf" ? "wolf" : "hirsch";
+        const halt = await eigeneWelt();
+        const t0 = Date.now();
+        // die EINE Warte der Familie (diag-kreatur-takt `bereit` + `einschwingen`): erwacht samt Voxel-Worker, dann steht die Welt
+        const a1 = await rufe("/eval", {
+            name: "herdeBild",
+            code: `if (!window.__fehlt) { ${require("./lib/welt-boot.cjs").CODE_OF_SEITE} } await window.__weltDa((r) => r.state.voxelWorkerReady); await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch {} }); return await (${KP.KREATUR_PROBEN_SRC})(r, T, ${JSON.stringify({ proben: ["herde-bild"], art, bilder: hat("kontakt") })});`, // prettier-ignore
+        });
+        if (halt) halt();
+        const z = ergebnis(a1)["herde-bild"];
+        if (!z || z.fehler) endeMit(`BÜHNE ROT: ${z ? z.fehler : JSON.stringify(a1).slice(0, 600)}`);
+        const ordner = path.resolve(opt("--ordner") || ablage(`herde-${art}-${Date.now()}`));
+        fs.mkdirSync(ordner, { recursive: true });
+        const jpgAb = (datei, url) => fs.writeFileSync(path.join(ordner, datei), Buffer.from(url.split(",")[1], "base64"));
+        for (const b of z.jpg || []) jpgAb(`bild-${art}-${b.zustand}-${b.t}s.jpg`, b.jpg);
+        for (const b of z.jpgNah || []) jpgAb(`bild-${art}-${b.zustand}-${b.t}s-nah.jpg`, b.jpg);
+        if (z.bogen) jpgAb(`kontakt-${art}.jpg`, z.bogen);
+        const u = KP.urteil("herde-bild", z);
+        const mess = Object.assign({}, z, { jpg: undefined, jpgNah: undefined, bogen: undefined, wandMs: Date.now() - t0, urteil: u.ok ? "GRÜN" : "ROT", befunde: u.grund ? u.grund.split(" · ") : [] }); // prettier-ignore
+        jsonAb(path.join(ordner, `mess-${art}.json`), mess);
+        const zeile = (s) => mess.befunde.filter((b) => b.startsWith(s + ":") || b.startsWith(s + " "));
+        for (const s of ["S1", "S2", "S3", "S4", "S5"]) {
+            const rot = zeile(s);
+            const ungemessen = s === "S5" && art !== "wolf";
+            console.log(`${s} ${ungemessen ? "ungemessen (S5 urteilt --art wolf)" : rot.length ? "ROT — " + rot.join(" · ") : "GRÜN"}`);
+        }
+        console.log(`BÜHNE ${z.n}/${z.soll} ${z.art}, Bewegung ${z.bewegungM} m, Stufen äsen Leib ${z.phasen[1].leib} · Satz ${z.phasen[1].satz} · fern ${z.phasen[1].fern}, ${z.ms} ms ohne Bilder, ${z.schussMs} ms Bilder → ${ordner}`); // prettier-ignore
+        const kaputt = [
+            z.n !== z.soll && `der Wurf trägt ${z.n} von ${z.soll}`,
+            !(z.bewegungM > 1) && `die Tiere stehen (Bewegung ${z.bewegungM} m)`,
+            hat("kontakt") && !(z.bogen && z.jpg.length === 12 && (z.jpgNah || []).length === 12) && `der Bogen trägt ${(z.jpg || []).length} von 12 Bildern H und ${(z.jpgNah || []).length} von 12 N`,
+        ].filter(Boolean);
+        endeMit(kaputt.length ? `BÜHNE ROT: ${kaputt.join(" · ")}` : "BÜHNE GRÜN — sie misst; das Soll S1–S5 steht oben", !kaputt.length); // prettier-ignore
     } else if (cmd === "lauf") {
         if (SELBST) {
             selbsttestEnde([...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...buehneSelbsttest()], "die Pass-Teilung trennt zwei Gipfel " +

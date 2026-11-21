@@ -12,6 +12,9 @@
 //     jetzt ALLE geschnittenen Regionen — der 2×2-Fächer um den Spieler wird
 //     abgedeckt (Quell-Probe: der Block walkt rx0..rx1/rz0..rz1, nicht nur
 //     die Home-Region).
+//   G (Gestalt am Ort): ein Streu-Baum kam mit einer Antwort seines Orts an, die nicht mehr gilt (die Nachbarschaft stand
+//     noch nicht — je nach Tempo des Rechners); fällt die Eingabe des Orts, trägt die Zelle die Gestalt, die ihr Ort JETZT
+//     antwortet, samt Slots, Spiegel und Kronen-Scheitel (vorher ROT: Gestalt 2, der Ort antwortet 1, Scheitel −0,357 m).
 //   F: platzierte Fern-Leaves
 //     (Impostor-Quads) über ein 4×4-Region-Raster, A/B durch DIESELBE Pipe:
 //     S=1 vs S=SCATTER_FERN_
@@ -166,6 +169,76 @@ hauptLauf(async () => {
         let re = 0;
         for (let i = 0; i < 40; i++) re += r._tickScatterLod(pm, 16, 800);
         res.h = { nachlauf: re, drainiert: leer >= 3 };
+        // ── G (DIE GESTALT FOLGT DEM ORT, streu-gestalt-am-ort): ein Streu-Baum, dessen Ort wählt (Bestand oder Solitär), kam an,
+        //     als sein Ort eine andere Gestalt antwortete (im Spiel: der Nachbar stand noch im künftigen Grundriss des Dorfs — je
+        //     nach Tempo des Rechners); dann ändert sich die Eingabe des Orts (`_ortSameFaellt`, der EINE Räumer für Grundriss und
+        //     Wald). Die Zelle trägt danach die Gestalt, die ihr Ort JETZT antwortet — Slots, Spiegel und Scheitel der Krone mit.
+        //     Die Ankunft geht den echten Weg: die Region fällt und streut neu, ihr Ort antwortet aus dem Gedächtnis die alte Antwort.
+        const gblk = {};
+        try {
+            const AR = r.constructor;
+            let gz = null;
+            // der nächste zum Spieler jenseits des Promotions-Kreises (seine Region streut der Ring um ihn neu, kein Eintrag nimmt ihn)
+            const sucheG = () => {
+                let d0 = Infinity;
+                const dMin = 2 * AR.SCATTER.promoteM;
+                for (const [key, reg] of map)
+                    for (const c of reg.cells || []) {
+                        if (!Number.isInteger(c.gestalt) || !c.slots || !c.slots.length || c.wartet) continue;
+                        const p = r._foundryPresetFor(c.species);
+                        const d = Math.hypot(c.x - pm.x, c.z - pm.z);
+                        if (d < d0 && d > dMin && p && AR._ortWaehlt(p) && AR.FOREST.crown[c.species] > 0) [d0, gz] = [d, { key, c, preset: p }];
+                    }
+                return gz;
+            };
+            await __gebautNach("ein Streu-Baum mit Gestalt des Orts", { fertig: sucheG, takt: streuSchritt, max: 300 });
+            const { key, c, preset } = gz;
+            const wer = (z) => z && z.cellX === c.cellX && z.cellZ === c.cellZ && z.variantIndex === c.variantIndex && z.layer === c.layer;
+            const roh = r._scatterRohSame(c.cellX, c.cellZ, c.variantIndex);
+            const m = {};
+            const wahr = r._foundryVariantFor(r._ortGestaltSame(c.x, c.z, AR.FOREST.crown[c.species] * c.scale, roh, preset, m), preset);
+            let alt = 1;
+            while (r._foundryVariantFor(alt, preset) === wahr) alt++;
+            Object.assign(gblk, { art: preset, ort: [+c.x.toFixed(1), +c.z.toFixed(1)], wahr, alt: r._foundryVariantFor(alt, preset) });
+            m.eimer.set(m.k, alt); // die Antwort des Orts zur Zeit der Ankunft
+            r._disposeScatterRegion(key);
+            let neu = null;
+            const angekommen = () => {
+                const reg = map.get(key);
+                neu = reg && (reg.cells || []).find(wer);
+                return !!(neu && neu.slots && neu.slots.length && r._streuWartet(pm) === 0);
+            };
+            const warum = () => {
+                const reg = map.get(key);
+                return `${c.layer}/${c.species} ${c.cellX},${c.cellZ}#${c.variantIndex} · Region ${reg ? (reg.cells || []).length + " Zellen" : "fehlt"} · Zelle ${neu ? "da, Slots " + (neu.slots && neu.slots.length) + ", Gestalt " + neu.gestalt : "fehlt"} · Streu wartet ${r._streuWartet(pm)} · Spieler ${pm.x | 0},${pm.z | 0}`;
+            };
+            await __gebautNach("die Zelle kommt mit der alten Antwort an", { fertig: angekommen, takt: streuSchritt, max: 600, warum });
+            gblk.ankunft = neu.gestalt;
+            const S = {};
+            const sg0 = r._spiegelStreuGestalt(neu, S);
+            gblk.spiegelVor = sg0 && sg0.g;
+            // die Eingabe des Orts ändert sich: sein Gedächtnis fällt, die Epoche wechselt
+            r._ortSameFaellt(c.x - 1, c.z - 1, c.x + 1, c.z + 1);
+            const folgt = () => neu.gestalt === wahr;
+            await __gebautNach("die Zelle folgt ihrem Ort", {
+                fertig: folgt,
+                takt: async () => (streuTakt(), r._tickScatterLod(pm, 16, 800), await sleep(30)),
+                max: 300,
+                warum: () => `die Streu-Zelle trägt Gestalt ${neu.gestalt}, ihr Ort antwortet ${wahr}`,
+            });
+            gblk.danach = neu.gestalt;
+            gblk.bp = neu.bpName;
+            gblk.slotsLeben = neu.slots.length > 0;
+            const sg1 = r._spiegelStreuGestalt(neu, S);
+            gblk.spiegel = sg1 && sg1.g;
+            const layer = r._scatterLayerByName.get(neu.layer);
+            const visH = r._scatterSichtHoehe(layer, neu.species, neu.cellX, neu.cellZ, neu.variantIndex, { x: neu.x, z: neu.z, scale: neu.scale });
+            const kr = r.state.wegeKarte && r.state.wegeKarte.kronen.get(`s:${neu.layer}:${neu.cellX},${neu.cellZ}`);
+            gblk.scheitel = kr ? +(kr[3] - (neu.fuss.y + visH)).toFixed(3) : "keine Krone";
+        } catch (e) {
+            gblk.err = fehlerText(e);
+        }
+        res.g = gblk;
         // ── D (DIE RÜCK-WANDERUNG, der B2-Einweg-Freeze fällt): eine
         //     private Boden-Zelle (@reg-Slots, lod<2) demotet auf die Fern-Stufe,
         //     sobald der Spieler geht — Slots wandern nach @s:, die private Hülle
@@ -437,6 +510,22 @@ hauptLauf(async () => {
             `nachlauf=${out.h.nachlauf} drainiert=${out.h.drainiert}`
         );
     else check("H: Hysterese-Block erreicht", false);
+    const G = out.g || {};
+    check(
+        `G: die Ankunft trägt die alte Antwort ihres Orts (Voraussetzung: ${G.art || "—"} an ${G.ort || "—"} Gestalt ${G.ankunft} = alt ${G.alt})`,
+        G.ankunft === G.alt && G.spiegelVor === G.alt,
+        G.ankunft === undefined ? G.err || "" : ""
+    );
+    check(
+        `G: DIE GESTALT FOLGT DEM ORT — nach dem Wechsel seiner Eingabe trägt die Streu-Zelle ${G.ort || "—"} Gestalt ${G.danach}, ihr Ort antwortet ${G.wahr}`,
+        !G.err && G.danach === G.wahr && G.slotsLeben === true && String(G.bp).includes(`:${G.wahr}:`) === /^fscatter:/.test(String(G.bp)),
+        G.err || `bp=${G.bp}`
+    );
+    check(
+        `G: Spiegel und Krone folgen der Gestalt (Spiegel ${G.spiegel}, Scheitel − Fuß − Sichthöhe ${G.scheitel})`,
+        !G.err && G.spiegel === G.wahr && G.scheitel === 0,
+        G.err || ""
+    );
     if (out.d) {
         check(
             "D: private Boden-Zelle GEFUNDEN (B2-Population, zwei-stufig)",

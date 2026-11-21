@@ -217,7 +217,6 @@
             "dorfZug": false,
             "ortTakt": [],
             "stell": {
-                "foliageRadius": 240,
                 "architectureCullingRadius": 150,
                 "dichte": 1,
                 "perfTargetMs": 1000,
@@ -364,10 +363,10 @@
         },
         {
             "id": "hochhaus-dach",
-            "titel": "Das Hochhaus-Dach (der Stadt-Gipfel): die Metropole der Epoche moderne aus dem Rang-Gesetz (Zelle 2,−14, 216 Häuser, Türme bis 23 Geschosse); der Spieler schwingt am Platz ein und steht dann auf dem Dach des höchsten Glasturms, der Blick über die Türme zum Platz.",
+            "titel": "Das Hochhaus-Dach (der Stadt-Gipfel): die Metropole der Epoche moderne aus dem Rang-Gesetz (Zelle 2,−14, 216 Häuser, Türme bis 23 Geschosse); der Spieler schwingt am Platz ein und steht dann auf dem Dach des höchsten Turms (Klinker, 21 Geschosse), der Blick über die Türme zum Platz.",
             "spieler": [
-                750.5,
-                -3614.2
+                696.6,
+                -3558.7
             ],
             "blick": [
                 686.4,
@@ -377,7 +376,7 @@
                 686.4,
                 -3506.4
             ],
-            "dach": 179.75,
+            "dach": 178.0,
             "imBild": { "bauSatz": 0.02 },
             "dorfZug": true,
             "ortTakt": []

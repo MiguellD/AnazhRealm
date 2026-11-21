@@ -460,7 +460,7 @@ class AnazhRealm_koerper_leib {
     // Ruhe-Pose seiner Vorlage (die Pose, die das Standbild der Basis trug).
     _gelenkRuhe(gruppe) {
         const ruhe = gruppe.userData._gelenk.ruhe;
-        if (!ruhe) return this._tierBaumNeutralStance(gruppe);
+        if (!ruhe) return this._tierBaumNeutralStance(gruppe, true);
         for (const [k, p, q, s] of ruhe) {
             k.position.copy(p);
             k.quaternion.copy(q);
@@ -2381,11 +2381,14 @@ class AnazhRealm_koerper_leib {
         // KREATUR-LEBEN/SCHWIMM-HEIMAT — der Körper-Zustand des Halters
         // (updateCreatures stempelt ud._motionZustand) führt in der EINEN Brücke.
         const zust = (group.userData && group.userData._motionZustand) || null;
-        const name = this._motionProfileName(moving, emotions, "kreatur", zust) || (moving ? "joy" : "idle");
-        // Die Kern-Tafel ist die EINZIGE Basis: unbekannter Profil-Name → idle-Zeile; Kern kalt → keine
-        // Animation.
-        const MOT = core && core.MOTION;
-        const P = this._motionStudioProfile(moving, emotions, zust) || (MOT && (MOT[name] || MOT.idle)) || null;
+        // DIE HALTUNG DES KÖRPER-ZUSTANDS (Posen-Gesetz H1): jagd, hetzen, flucht, schwimmen tragen ihr Profil, sonst die
+        // Ruhe-Zeile — im Buch der EIGENEN Gattung (`_motionStudioProfile` je Rezept), nie eine Stimmung des Gemüts. Den
+        // Rhythmus (Federn, Wiegen, Nicken, Schwanz) trägt das Posen-Gesetz aus Gangart und Phase. Vorher wählte jedes laufende
+        // Tier jeder Art das Profil joy des Wolfs (MOTION_HOST_RECIPE, MOTION_PROFILE_MAP kreatur moving).
+        const zrow = zust && AnazhRealm.MOTION_ZUSTAND_PROFILES[zust];
+        const name = (zrow && zrow.kreatur) || "idle";
+        const recId = AnazhRealm.TETRAPODA_SOUL_MAP[group.userData.soul];
+        const P = this._motionStudioProfil(name, recId) || this._motionStudioProfil("idle", recId);
         if (!P) return;
         // DIE POSE IST KERN-GESETZ (w11-leib): tetrapoda `tierPose` — derselbe Leib im Labor worlds/tetrapoda
         return core.tierPose(this._tierWirt(), group, tb, t, walkPhase, moving, P, zust);
@@ -2417,6 +2420,92 @@ class AnazhRealm_koerper_leib {
         const ebene = group.position.y;
         if (!Number.isFinite(ud._traegerY) || ud._motionZustand === "schwimmen" || ud._hopH > 0) return ebene;
         return this._fussBoden(x, z, ud._traegerY, ud._traegerStruktur === true);
+    }
+    // DIE GESTALT ZWISCHEN DEN STUFEN DER LEITER (S3 der Herde H3, `KREATUR_POSE_SPRUNG` rad je Bild): wertet die Leiter nur
+    // jedes 2.–8. Bild aus, sprang die Gestalt — ein ziehender Hirsch auf 37–64 m nach 5–8 stillen Bildern um bis zu 0,28 rad
+    // am Hals und 0,26 am Schwanz. Die Kanäle der Gestalt (Rumpf, Hals, Kopf, jedes Schwanz-Glied; je Kanal die Achse, die der
+    // Kern stellt — die Beine der Auswertung stehen im Raum des Rumpfs: sein Nicken zwischen zwei Auswertungen, ≤ 0,05 rad je
+    // Bild, trägt die Pfoten um ≤ 4 cm je Meter Bein mit, nur auf den groben Stufen jenseits der halben Gestalt-Grenze), halten nach jeder
+    // Auswertung ihren Stand als Ziel (`_kreaturPoseZiel`) und das Bild gleitet je Bild ein `animDiv`-tel zu ihm
+    // (`_kreaturPoseGleit`, höchstens KREATUR_POSE_SPRUNG) — die Pose des Kerns (seine Haltung, sein Gang) bleibt unberührt,
+    // nur die gezeichneten Knoten gleiten. Kosten: eine Handvoll Winkel je Leib und Bild auf den groben Stufen. Friert die
+    // Leiter den Leib (`_kreaturPoseStand`), ist das Bild die Ruhe-Pose: der erwachende Leib gleitet aus ihr, nie aus dem
+    // Stand vor dem Einfrieren (ein Baum-Wechsel beginnt das Bild neu).
+    _kreaturPoseKanaele(tb) {
+        const T = tb && tb.teile;
+        if (!T) return null;
+        const K = tb._poseKanaele || (tb._poseKanaele = []);
+        if (!K.length) {
+            if (T.wolf) K.push([T.wolf.rotation, "x"]);
+            if (T.neckRoot) K.push([T.neckRoot.rotation, "x"]);
+            if (T.headGroup) K.push([T.headGroup.rotation, "x"]);
+            for (const g of tb.tailSegs || []) K.push([g.rotation, "y"]);
+        }
+        return K;
+    }
+    _kreaturPoseZiel(creature) {
+        const U = creature.userData;
+        const K = this._kreaturPoseKanaele(U._tierBaum);
+        if (!K) return;
+        if (U._poseBild && U._poseBaum !== U._tierBaum) U._poseBild = null;
+        const Z =
+            U._poseZiel && U._poseZiel.length === K.length ? U._poseZiel : (U._poseZiel = new Array(K.length).fill(0));
+        const B = U._poseBild;
+        for (let k = 0; k < K.length; k++) {
+            Z[k] = K[k][0][K[k][1]];
+            // das Bild bleibt, wo es war: es gleitet ab hier zum neuen Ziel
+            if (B) K[k][0][K[k][1]] = B[k];
+        }
+        if (!B) U._poseBild = Z.slice();
+        U._poseBaum = U._tierBaum;
+    }
+    // DIE POSE VOR DEM ERSTEN BILD (S3 der Herde H3): ein Leib, der wieder ins Bild tritt (der Austritt aus dem Satz,
+    // `_tierSatzAus`, am Ende des Kreatur-Takts — nach der Auswertung), zeichnete ein Bild lang die Pose mit allen Winkeln null
+    // und sprang im nächsten Takt in seine Gestalt (GPU v17: Hirsch-Hals 0 → 1,27 rad, Wolf-Kopf 0 → 0,21; die Gleitung
+    // begann am Bild von vor dem Satz). Er hält seine Haltung (Rumpf, Hals, Kopf, Ohr), wird im selben Takt ausgewertet,
+    // bevor er sichtbar wird, und die Gleitung beginnt an dieser Pose. Ein Leichnam (`liegt`) liegt in der Pose bei 0.
+    _kreaturPoseFrisch(creature, liegt) {
+        const U = creature.userData;
+        this._tierBaumNeutralStance(creature, !liegt);
+        U._poseBild = null;
+        const mroles = !liegt && U._tierBaum && this._motionRolesForSoul(U.soul);
+        if (!mroles) return;
+        creature.updateMatrixWorld(true);
+        U._animFade = 1;
+        const geht = !!U._steuer && U._steuer.v > 0.1;
+        this._animateCompoundMotion(
+            creature,
+            mroles,
+            this.state.creatureAnimationTime,
+            U.walkPhase || 0,
+            geht,
+            U.emotions
+        );
+    }
+    _kreaturPoseStand(creature) {
+        const U = creature.userData;
+        const K = this._kreaturPoseKanaele(U._tierBaum);
+        U._poseBild = K ? K.map((k) => k[0][k[1]]) : null;
+        U._poseZiel = U._poseBild && U._poseBild.slice();
+        U._poseBaum = U._tierBaum;
+    }
+    _kreaturPoseGleit(creature, animDiv) {
+        const U = creature.userData;
+        const B = U._poseBild;
+        const Z = U._poseZiel;
+        const K = B && Z && this._kreaturPoseKanaele(U._tierBaum);
+        if (!K) return;
+        const S = AnazhRealm.KREATUR_POSE_SPRUNG;
+        let rest = 0;
+        for (let k = 0; k < K.length; k++) {
+            const d = (Z[k] - B[k]) / animDiv;
+            B[k] += d > S ? S : d < -S ? -S : d;
+            K[k][0][K[k][1]] = B[k];
+            rest += Math.abs(Z[k] - B[k]);
+        }
+        // auf der vollen Stufe (ein Biss, das nahe Tier) gleitet das Bild aus, bis es die Auswertung trifft — erst dann zeichnet
+        // die Auswertung allein (v18: ein Hirsch, der aus der Stufe 1/8 zum Schnappen ansetzt, sprang 0,081 rad am Hals)
+        if (animDiv === 1 && rest < 1e-4) U._poseBild = null;
     }
 
     _tetrapodaSoulParts(soulKey, ovOpt) {
@@ -2540,24 +2629,24 @@ class AnazhRealm_koerper_leib {
         return null;
     }
 
-    // KÖRPERGRÖSSE-ACHSE: aus der netId eine deterministische Größe in BÄNDERN (klein/normal/gross/
-    // GIGANT, Koloss selten) über den geteilten Roller (UNSIGNED) → Peer- und Re-Wachstum-konsistent.
-    _creatureBodySize(idStr) {
-        const g = this._rollGenome(String(idStr == null ? "c0" : idStr), "creature-size");
-        const roll = g.axis("class");
-        // SCHLUSS-WELLE — die Größen-Bänder (klein/normal/groß/GIGANT) sind
-        // tetrapoda-Gesetz (VERHALTEN.groessen, Lehre 8: DIE Differenzierungs-
-        // Achse); derselbe Wurf (axis/range) → gleiche Welt bei gleichem Kern.
-        const K = AnazhRealm._verhaltenGesetz().groessen;
-        for (let i = 0; i < K.length - 1; i++) {
-            if (roll < K[i].bis) return g.range(K[i].name, K[i].min, K[i].max);
-        }
-        const letzte = K[K.length - 1];
-        return g.range(letzte.name, letzte.min, letzte.max);
+    // DAS ERBE EINES GRÜNDERS AUS SEINER KENNUNG (leben-erbe): ein Tier ohne Mutter, dessen Erbe keine Geburt im Bestand zog —
+    // das Tier eines Geheges (`_gehegeEinsetzen`) und das Tier eines Stands von vor dem Erbe (`_lebenWandeln`) —, trägt den
+    // Gründer-Zug des Gesetzes (`__lebenCore.gruender`) und seine Umwelt-Streuung (`umwelt`) aus dem Genom-Strom der Saat der Welt
+    // und seiner Kennung (`_rollGenome(Saat/Kennung, "erbe")`, je Achse des Gesetzes zwei Paare Gleichverteilter → Box-Muller):
+    // dieselbe Welt und Kennung, dasselbe Tier in jedem Boot und auf jeder Seite; eine andere Saat, ein anderes. Liefert { a, e }.
+    // Die Größe würfelt hier nichts mehr: sie ist Physik dieses Erbes über das Alter (`__lebenCore.masseZurZeit`).
+    _erbeGruender(kennung) {
+        const L = AnazhRealm._lebenKern();
+        const welt = (this.state.worldMeta && this.state.worldMeta.seed) || "";
+        // der Sub-Strom (`seq`), nie zwei Achsen: Achsen-Namen, die sich nur im letzten Zeichen unterscheiden, tragen fast dieselbe
+        // Gleichverteilte (FNV, r ≈ 0,96) — ein Paar daraus ist keine Normale
+        const u = this._rollGenome(welt + "/" + String(kennung), "erbe").seq("erbe");
+        const n = () => L.gesetz().achsen.map(() => L.normal(u(), u()));
+        return { a: L.gruender(n()), e: L.umwelt(n()) };
     }
 
     // Der size-Dial braucht KEINE eigene Achse (ein Doppel-Faktor wäre falsch): er reist durch die EINE
-    // Pipe (_tetrapodaStudioDials → _ofenKreaturDials); die Spawn-Höhe = Template-Höhe × bodySize-Wurf
+    // Pipe (_tetrapodaStudioDials → _ofenKreaturDials); die Spawn-Höhe = Template-Höhe × bodySize
     // (gate:studio-uebergabe).
 
     // === DIE MOTION-RESONANZ ===
@@ -2830,23 +2919,27 @@ class AnazhRealm_koerper_leib {
         return roles;
     }
 
-    // STUDIO-BEWEGUNGS-PROFIL: der EINE Leser der tetrapoda-fx.motion-Daten (Vertrag §8.2). Rezept =
-    // Daten-Zeile MOTION_HOST_RECIPE, Zustand→Profil = MOTION_PROFILE_MAP. Kein zweites Animations-System:
+    // STUDIO-BEWEGUNGS-PROFIL: der EINE Leser der tetrapoda-fx.motion-Daten (Vertrag §8.2) im Buch der Gattung `recId` (die
+    // Seele über TETRAPODA_SOUL_MAP), Zustand→Profil = MOTION_PROFILE_MAP. Kein zweites Animations-System:
     // _animateCompoundMotion LIEST die Zahlen (Schwanz: tailRate/tailAmp); _animateHumanoidRig bleibt
-    // unberührt. Kaltes Buch → null, jeder Leser fällt auf seine Konstante.
-    _motionStudioProfile(moving, emotions, zustand) {
+    // unberührt. Kaltes Buch oder keine Gattung → die Zeile der Kern-Tafel (MOTION, der Alias derselben Quelle, wie
+    // `_tetrapodaVerhalten`); null nur, wenn Buch und Kern kalt sind.
+    _motionStudioProfile(moving, emotions, zustand, recId) {
+        return this._motionStudioProfil(this._motionProfileName(moving, emotions, "kreatur", zustand), recId);
+    }
+    _motionStudioProfil(name, recId) {
         const f = this._foundry;
-        const rec = f && f.recipes ? f.recipes[AnazhRealm.MOTION_HOST_RECIPE] : null;
+        const rec = recId && f && f.recipes ? f.recipes[recId] : null;
         const m = rec && rec.fx && rec.fx.motion && rec.fx.motion.presets;
-        if (!m) return null;
-        const p = m[this._motionProfileName(moving, emotions, "kreatur", zustand)];
+        const core = globalThis.__tetrapodaCore;
+        const p = (m && m[name]) || (core && core.MOTION[name]);
         return p && typeof p === "object" ? p : null;
     }
-    // DER EINE VERHALTENS-LESER: Aktions-Katalog + Stimmung→Wahl wohnen im tetrapoda-Gesetzbuch
+    // DER EINE VERHALTENS-LESER: Aktions-Katalog + Stimmung→Wahl wohnen im tetrapoda-Gesetzbuch der Gattung `recId`
     // (fx.verhalten, LIVE-Buch; Kern-Alias derselben Quelle). null = Buch UND Kern kalt → kein Verhalten.
-    _tetrapodaVerhalten() {
+    _tetrapodaVerhalten(recId) {
         const f = this._foundry;
-        const rec = f && f.recipes ? f.recipes[AnazhRealm.MOTION_HOST_RECIPE] : null;
+        const rec = recId && f && f.recipes ? f.recipes[recId] : null;
         const v = rec && rec.fx && rec.fx.verhalten;
         if (v && v.aktionen && v.stimmung) return v;
         const core = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -2898,7 +2991,7 @@ class AnazhRealm_koerper_leib {
             ud._verhaltenAktion = null;
             return;
         }
-        const V = this._tetrapodaVerhalten();
+        const V = this._tetrapodaVerhalten(AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul]);
         if (!V) return;
         const Z = ud._gezeigt ? AnazhRealm._lebensraumGesetz().E.zeigt[ud._gezeigt] : null;
         let mood;
@@ -2911,7 +3004,11 @@ class AnazhRealm_koerper_leib {
             // Zeilen (tetrapoda VERHALTEN.stimmung.schwellen, fail-closed).
             const SW = AnazhRealm._verhaltenGesetz().stimmung.schwellen;
             const em = ud.emotions;
-            if (em && (Number(em.chaos) || 0) >= SW.chaos) mood = "alert";
+            // DIE HERDE TEILT EINE TÄTIGKEIT (Posen-Gesetz H1): wer eine trägt (das Ethogramm der Gattung, `_kreaturTaetigkeit` —
+            // im Verband die des Leittiers), zeigt sie; das Gemüt wählt nur, wo keine ist. Vorher spielte ein „glückliches“ Tier
+            // Verbeugung und Bocksprung, während die Herde äste.
+            if (Z) mood = Z.stimmung;
+            else if (em && (Number(em.chaos) || 0) >= SW.chaos) mood = "alert";
             else if (em && (Number(em.joy) || 0) >= SW.joy) mood = "joy";
             else {
                 // DIE TÄTIGKEIT ZEIGT SICH (Tiere K4, tetrapoda ETHOGRAMM_GESETZ.zeigt): wer wandernd ruht, ruht (nacht), wer
@@ -3046,8 +3143,9 @@ class AnazhRealm_koerper_leib {
         const studioProf = () => {
             if (!_mpDone) {
                 _mpDone = true;
-                _mp = this._motionStudioProfile(moving, emotions);
-                _mpRef = _mp ? this._motionStudioProfile(false, null) : null;
+                const recId = AnazhRealm.TETRAPODA_SOUL_MAP[group.userData && group.userData.soul];
+                _mp = this._motionStudioProfile(moving, emotions, null, recId);
+                _mpRef = _mp ? this._motionStudioProfile(false, null, null, recId) : null;
             }
             return _mp;
         };
@@ -3132,24 +3230,10 @@ class AnazhRealm_koerper_leib {
                 const flap = Math.sin(t * (moving ? 11 : 5.5) + r.phase) * (moving ? 0.65 : 0.3);
                 c.rotation.z = b.rz + flap * r.side;
             } else if (r.role === "schwanz") {
-                // Schwanz: tailRate/tailAmp aus dem Studio-Profil, sonst aus der synchronen Kern-Tafel (MOTION
-                // joy/idle, dieselbe Brücke wie der Baum-Animator). Kern kalt → kein Wedeln.
+                // Schwanz: tailRate/tailAmp aus dem Profil des EINEN Lesers (das Buch der Gattung, ohne Rezept die Kern-Zeile
+                // derselben Stimmung; seit H1 ohne Wirt-Rezept). Buch und Kern kalt → kein Wedeln.
                 const mp = studioProf();
-                const _tc = typeof window !== "undefined" && window.__tetrapodaCore;
-                const kernRow = _tc && _tc.MOTION && (_tc.MOTION[moving ? "joy" : "idle"] || _tc.MOTION.idle);
-                const tr =
-                    mp && Number.isFinite(mp.tailRate)
-                        ? mp.tailRate
-                        : kernRow && Number.isFinite(kernRow.tailRate)
-                          ? kernRow.tailRate
-                          : 0;
-                const ta =
-                    mp && Number.isFinite(mp.tailAmp)
-                        ? mp.tailAmp
-                        : kernRow && Number.isFinite(kernRow.tailAmp)
-                          ? kernRow.tailAmp
-                          : 0;
-                c.rotation.y = b.ry + Math.sin(t * tr + r.phase) * ta;
+                if (mp) c.rotation.y = b.ry + Math.sin(t * mp.tailRate + r.phase) * mp.tailAmp;
             } else if (r.role === "kopf") {
                 // ABSCHIEDS-WELLE — der KOPF liest die Studio-Haltung als DELTA relativ
                 // zum Lab-idle (hunt: −0.12 gesenkt/pirschend · joy: +0.04 gehoben);
@@ -3177,6 +3261,83 @@ class AnazhRealm_koerper_leib {
         const soul = soulName && AnazhRealm.CREATURE_SOULS[soulName];
         if (!soul) return {};
         return this.computeCompoundTags({ parts: soul.bodyParts });
+    }
+
+    // EIN STAND DES SATZES (Zeile baender·n + k): der Back-Leib in der Stand-Pose, mit der Aktion der Tätigkeit h (null: der
+    // neutrale) 4 s im Posen-Gesetz eingeschwungen (die Haltung folgt kritisch gedämpft, ω ≥ √(g/L) ≈ 3/s), dann gestellt.
+    // Zurück: steht die Kopf-Mitte unter der halben Schulterhöhe über der Ebene des Leibs (das Maß S1 der Herden-Bühne).
+    _tierSatzStand(S, leib, k, h) {
+        const tb = leib.userData._tierBaum;
+        this._tierBaumNeutralStance(leib);
+        leib.position.set(0, 0, 0);
+        const zeigt = h && AnazhRealm._lebensraumGesetz().E.zeigt[h];
+        const def = zeigt && zeigt.aktion && AnazhRealm._verhaltenGesetz().aktionen[zeigt.aktion];
+        if (def) {
+            const t0 = this.state.creatureAnimationTime;
+            leib.userData._verhaltenAktion = { name: zeigt.aktion, def, start: t0, bis: Infinity };
+            for (let i = 0; i <= 240; i++) {
+                leib.updateMatrixWorld(true);
+                this._animateTierBaum(leib, i / 60, 0, false, null);
+            }
+            leib.userData._verhaltenAktion = null;
+        }
+        leib.updateMatrixWorld(true);
+        this._gangSatzPose(S, S.baender * S.n + k, tb.teile, leib.matrixWorld);
+        const T = tb.teile;
+        if (!T.headGroup || !T.legFL) return false;
+        const v = new THREE.Vector3();
+        let [y, n] = [0, 0];
+        T.headGroup.traverse((o) => ((y += v.setFromMatrixPosition(o.matrixWorld).y), n++));
+        const sch = v.setFromMatrixPosition(T.legFL.matrixWorld).y;
+        const boden = leib.position.y;
+        return y / n - boden < 0.5 * (sch - boden);
+    }
+    // NEUTRALE STAND-POSE (die Ruhe des Tiers jenseits der Grenze, auch `_gelenkRuhe`): friert den bauTier-Baum in der
+    // Kern-STAND_POSE ein (Ketten = Stand-Winkel, Schwanz/Kopf/Roll = 0) statt mitten im Schritt. tb._gang fällt → beim
+    // Aufwachen seedet der CPG frisch aus walkPhase. Ketten-Ordnung = _animateTierBaum.
+    _tierBaumNeutralStance(group, haltHalten) {
+        const tb = group && group.userData && group.userData._tierBaum;
+        if (!tb || !tb.teile) return;
+        const core = typeof window !== "undefined" && window.__tetrapodaCore;
+        const SP = core.STAND_POSE;
+        const T = tb.teile;
+        // haltHalten (die Ruhe hinter der Anim-Leiter und am Stufen-Schalter): die Haltung des Posen-Gesetzes (tb._halt —
+        // Rumpf, Hals, Kopf, Ohr) bleibt stehen, nur der Rhythmus fällt; sonst (der Satz, der Bau) steht alles bei 0
+        const Hh = haltHalten && tb._halt ? tb._halt : null;
+        const hx = (k) => (Hh && Hh[k] ? Hh[k].x : 0);
+        if (T.wolf) {
+            T.wolf.rotation.z = 0;
+            T.wolf.rotation.x = hx("rumpf") + hx("bissRumpf");
+            if (tb._rumpfRuhe) T.wolf.position.copy(tb._rumpfRuhe); // die Senke des Schritts (Welle LF) fällt mit
+        }
+        if (T.headGroup) {
+            T.headGroup.rotation.x = hx("kopf") + hx("bissKopf");
+            T.headGroup.rotation.y = hx("kopfY");
+        }
+        if (T.neckRoot) T.neckRoot.rotation.x = hx("hals"); // der Hals des Posen-Gesetzes (H1)
+        if (!Hh) tb._halt = null; // ohne Halten beginnt die Haltung mit der Pose bei 0
+        // V18.491.80 — ear-Kanäle mit einfrieren (sonst Mid-ear-Pop beim Aufwachen).
+        if (T.earL) T.earL.rotation.z = hx("ohr");
+        if (T.earR) T.earR.rotation.z = -hx("ohr");
+        const ketten = [
+            [T.legFL, T.flU, T.flL, T.flP],
+            [T.legFR, T.frU, T.frL, T.frP],
+            [T.legHL, T.hlT, T.hlC, T.hlP],
+            [T.legHR, T.hrT, T.hrC, T.hrP],
+        ];
+        // DIE PFOTEN DER RUHE (H1, die Hufe am Boden): ein Leib, der hinter der Leiter STEHEND einfriert (alle vier Pfoten
+        // tragen, keine im Tritt), behält die Lösung seiner Pfoten-IK — jede Sohle auf dem Grund unter ihr; die STAND_POSE stand
+        // auf der Ebene des Leibs, am Hang 4 cm über oder im Grund. Ein Gehender fällt in die STAND_POSE (nie im Schritt erstarrt).
+        const F = Hh && tb._gang && tb._gang.fuss;
+        const steht = !!F && F.every((L) => L.an && !(L.tritt >= 0));
+        for (let i = 0; i < 4 && !steht; i++) {
+            const K = ketten[i];
+            // das Abspreizen der Pfoten-IK (Welle LF) und die Sohle am Hang (K8 huf) fallen mit
+            for (let k = 0; k < 4; k++) if (K[k]) K[k].rotation.set(SP[i][k], 0, 0);
+        }
+        const ts = tb.tailSegs || [];
+        for (let i = 0; i < ts.length; i++) ts[i].rotation.y = 0;
+        tb._gang = null;
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_koerper_leib]);
@@ -3393,10 +3554,8 @@ AnazhRealm.REITTIER_SKELETON_G = Object.freeze({
         kern: 0.22,
     }),
 });
-// Welches tetrapoda-Rezept den Host-Bewegungs-Charakter führt (`_motionStudioProfile` liest
-// f.recipes[..].fx.motion live) + die Zustands→Profil-Zuordnung (Host moving/idle ↔ Lab joy/idle —
-// eine Tabelle, kein if).
-AnazhRealm.MOTION_HOST_RECIPE = "wolf";
+// Die Zustands→Profil-Zuordnung (Host moving/idle ↔ Lab-Profil — eine Tabelle, kein if); das Buch ist das der Gattung
+// (`_motionStudioProfile` liest f.recipes[recId].fx.motion live).
 // ABSCHIEDS-WELLE (Motion-Vollendung) — welches koerper-Rezept den Avatar-Gestalt-
 // und Bewegungs-Charakter führt (`_koerperStudioDials`/`_koerperMotionProfile`
 // lesen f.recipes[..].s bzw. fx.motion LIVE — das KLANG_HOST_RECIPE-Muster).
@@ -3404,7 +3563,7 @@ AnazhRealm.KOERPER_HOST_RECIPE = "mensch";
 // Zustands→Profil-Tabelle je Lab-Spalte: kreatur (tetrapoda) moving→joy · idle→idle; koerper
 // (Da Vinci) moving→run · idle→idle.
 AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({
-    kreatur: Object.freeze({ moving: "joy", idle: "idle" }),
+    kreatur: Object.freeze({ moving: "idle", idle: "idle" }),
     koerper: Object.freeze({ moving: "run", idle: "idle" }),
 });
 // Zustand→Profil-Vorrang: der echte Körper-Zustand (updateCreatures stempelt ud._motionZustand:
@@ -3456,7 +3615,6 @@ AnazhRealm.MOTION_EMOTION_PROFILES = Object.freeze([
         axis: "joy",
         min: 0.5,
         koerper: Object.freeze({ idle: "joy", moving: "run" }),
-        kreatur: Object.freeze({ idle: "joy", moving: "joy" }),
     }),
 ]);
 // Profil→Rig-Zuordnung als Daten: welches koerper-fx.motion-Feld welches Rig-Bone um welche Achse
@@ -3490,7 +3648,7 @@ AnazhRealm.TETRAPODA_SOUL_MAP = Object.freeze({
 // TETRAPODA_DIAL_MAP — Dial→Archetyp-Zuordnung (axis = base + mul·dial, auf das deer-Paar geeicht:
 // bei Lab-Startwerten fallen die Archetyp-Werte fast byte-gleich): neck→neckFrac · leg→legFrac
 // (Einheiten-Brücke) · build→torsoW · diet→eyeFront (Carnivor frontal, Herbivor lateral).
-// Bewusst unmapped: size (die Welt-Größe trägt `_creatureBodySize`, g.size ist stats-tragend).
+// Bewusst unmapped: size (die Welt-Größe ist Physik des Erbes über das Alter, leben-core; g.size ist stats-tragend).
 // Die EINE Quelle ist tetrapoda-core.DIAL_MAP (Gesetz-Strom, fail-closed wie KOERPER_DIAL_MAP).
 Object.defineProperty(AnazhRealm, "TETRAPODA_DIAL_MAP", {
     get() {
@@ -3505,6 +3663,9 @@ AnazhRealm.GANG_DECKEL_RAD = 0.6;
 // Höhle liegt die Karte um Höhlen-Höhe (≥ 2,4 m) plus Decke darüber, sie trägt dort die Oberkante der Säule, nie den Boden
 // unter dem Körper.
 AnazhRealm.STAND_SICHT_BAND = 2.0;
+// Der größte Sprung eines Gestalt-Kanals (Hals, Kopf, Rumpf, Schwanz) je Bild, den die Anim-Raten-Leiter zulässt (rad; S3 der
+// Herde H3): zwischen zwei Auswertungen gleitet das Bild höchstens so weit je Bild (`_kreaturPoseGleit`).
+AnazhRealm.KREATUR_POSE_SPRUNG = 0.05;
 AnazhRealm.SOHLE_PUNKT = Object.freeze([0]); // die Sohle ohne gebauten Fuß: die Stelle unter dem Knöchel (`_gaitProbe`)
 // Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
 AnazhRealm.PLAYER_KH = globalThis.__koerperCore.LEIB.kopfM; // die Kopf-Einheit des Gesetzbuchs (koerper-core LEIB.kopfM)

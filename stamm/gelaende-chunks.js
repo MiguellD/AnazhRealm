@@ -1109,8 +1109,8 @@ class AnazhRealm_gelaende_chunks {
         };
     }
 
-    // V18.275 — liegt der Chunk-Mittelpunkt im perf-geregelten `foliageRadius`? (Die
-    // KAPAZITÄTS-Wand für die Vegetation: nah → füllen, fern → warten bis der Radius wächst.)
+    // V18.275 — liegt der Chunk-Mittelpunkt im Laub-Rand (`_laubRand`, das Gesetz: der Haushalt am gebauten Ring)? Nah → füllen,
+    // fern → warten, bis der Ring zu ihm wächst.
     _foliageChunkInRadius(cx, cz) {
         const pm = this.state.playerMesh;
         if (!pm) return true; // kein Spieler (Boot/Test) → nicht gaten
@@ -1126,8 +1126,8 @@ class AnazhRealm_gelaende_chunks {
         return this._bedarfAbstand(ccx, ccz, pm.position) <= fr && this._blickDerAnkunft(ccx, ccz, span * Math.SQRT1_2);
     }
 
-    // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des `foliageRadius` gebaut
-    // wurden, füllen ihre Vegetation, sobald der (kapazitäts-gewachsene) Radius sie erreicht.
+    // V18.275 — die Vegetation WÄCHST nach: Chunks, die jenseits des Laub-Rands (`_laubRand`) gebaut wurden, füllen ihre
+    // Vegetation, sobald der Rand mit dem gebauten Ring sie erreicht.
     // Budgetiert (sanftes Pop-In statt Freeze). Aufruf am Ende von `_tickVoxelChunkStreaming`.
     // EXISTENZ VOR FRAMERATE (Lehre 13, Prüfer K22-3): über dem Budget drosselt der Frame das TEMPO des Wachstums, nie
     // seine Existenz — je WUCHS_DROSSEL_MS (Wanduhr) wächst EIN Chunk, der nächste zum Spieler. Bis hierher kehrte das
@@ -1135,8 +1135,9 @@ class AnazhRealm_gelaende_chunks {
     // Takten überschritten, die offenen Chunks im 64-m-Kreis blieben kahl (4 → 4), und ob Wald oder kahler Hügel im Bild
     // stand, entschied allein der frei laufende Boot.
     // DIE RUHE IST DER FIXPUNKT (feld.K3): liegt nach einem Gang kein wartender Chunk im Radius, schläft der Wuchs, bis der
-    // Spieler um den Abstand des nächsten (`frei`) weiterging, der Radius oder die Chunk-Menge sich regt (`_wuchsSchlaf`) —
-    // vorher prüfte er je Bild jeden wartenden Chunk (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 32 400 Einheiten).
+    // Spieler um den Abstand des nächsten (`frei`) weiterging oder die Welt sich regt (`_wuchsSchlaf`: die Chunk-Menge, die
+    // Boden-Karte, der Schritt des Rings, der den Laub-Rand rückt — `_ringWaechst`; der Schlaf fragt das Gesetz nie, er hört sein
+    // Ereignis) — vorher prüfte er je Bild jeden wartenden Chunk (gate:stand-takt RUHE-SIM, Mess-Wiese 60 s: 32 400 Einheiten).
     _tickFoliageGrowth() {
         const pending = this.state.pendingFoliageChunks;
         if (!pending || pending.size === 0) return;
@@ -1150,7 +1151,6 @@ class AnazhRealm_gelaende_chunks {
             s.n === pending.size &&
             s.welt === (this._weltRegung | 0) &&
             s.karte === (this._karteRegung | 0) &&
-            s.fr === this.state.foliageRadius &&
             pm &&
             (pm.position.x - s.x) ** 2 + (pm.position.z - s.z) ** 2 < s.frei * s.frei &&
             ((pm.position.x === s.x && pm.position.z === s.z) || bahnRuht(this._bedarfVoraus(pm.position)))
@@ -1180,7 +1180,6 @@ class AnazhRealm_gelaende_chunks {
                 n: pending.size,
                 welt: this._weltRegung | 0,
                 karte: this._karteRegung | 0,
-                fr: this.state.foliageRadius,
                 x: pm.position.x,
                 z: pm.position.z,
                 vx: v ? v.x : pm.position.x,
@@ -1683,9 +1682,8 @@ class AnazhRealm_gelaende_chunks {
             const nb = this.state.voxelChunks.get(`${nx},${nz}`);
             if (nb && nb.waterCells) this._enqueueWaterIso(nx, nz);
         }
-        // V18.275 — KAPAZITÄTS-GATE: nur füllen, wenn der Chunk im `foliageRadius` liegt;
-        // sonst wartet er in `pendingFoliageChunks`, bis der Radius (mit der gemessenen
-        // Render-Kapazität) zu ihm wächst (`_tickFoliageGrowth`). So bleibt der Spawn leicht.
+        // V18.275 — nur füllen, wenn der Chunk im Laub-Rand liegt (`_laubRand`); sonst wartet er in `pendingFoliageChunks`, bis
+        // der Rand mit dem gebauten Ring zu ihm wächst (`_tickFoliageGrowth`).
         if (!this._bepflanzungWartet() && this._foliageChunkInRadius(cx, cz)) {
             this._populateVoxelChunkVegetation(cx, cz);
         } else {
@@ -3458,10 +3456,18 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 });
 // DIE QUELLE DER FÄDEN DES GESETZES (`_fadenQuelle`, w28-faden-quelle): der Faden, seine Kerne in der Folge, in der er sie lädt,
 // und was er erst lädt, wenn er es braucht (der Name ist sein Schlüssel im Faden) — jede Datei holt der Wirt EINMAL mit `?v=`.
+// Der Samen-Baum (samen-core.js, Welle SAMEN) lädt vor jedem Kern: Wald, Wiese und das späte Fachwerk ziehen aus ihm.
 AnazhRealm.FADEN_QUELLE = Object.freeze({
     faden: "voxel-worker.js",
-    kerne: Object.freeze(["vendor/simplex-noise.js", "phyto-core.js", "gelaende-core.js"]),
-    spaet: Object.freeze({ fachwerk: "fachwerk-core.js", koerper: "koerper-core.js", planet: "planet-core.js" }),
+    kerne: Object.freeze(["vendor/simplex-noise.js", "samen-core.js", "phyto-core.js", "gelaende-core.js"]),
+    // (leben · tetrapoda: der Gau-Faden, `_gauFrage` — das Gesetz der Zeit und der Jagd am Feld des Gaus)
+    spaet: Object.freeze({
+        fachwerk: "fachwerk-core.js",
+        koerper: "koerper-core.js",
+        planet: "planet-core.js",
+        leben: "leben-core.js",
+        tetrapoda: "tetrapoda-core.js",
+    }),
 });
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.

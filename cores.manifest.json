@@ -1,5 +1,12 @@
 [
     {
+        "id": "samen",
+        "scripts": ["samen-core.js"],
+        "vertrag": "samen-core.js",
+        "ns": "__samenCore",
+        "funktion": true
+    },
+    {
         "id": "phyto",
         "scripts": ["phyto-core.js", "foundry-core.js"],
         "vertrag": "foundry-core.js",
@@ -48,6 +55,13 @@
         "scripts": ["tetrapoda-core.js"],
         "vertrag": "tetrapoda-core.js",
         "ns": "__tetrapodaCore"
+    },
+    {
+        "id": "leben",
+        "scripts": ["leben-core.js"],
+        "vertrag": "leben-core.js",
+        "ns": "__lebenCore",
+        "funktion": true
     },
     {
         "id": "gelaende",

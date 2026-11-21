@@ -52,14 +52,14 @@
             "rx": "0x6d2b79f5|\\b1664525\\b|\\b1103515245\\b",
             "i": true,
             "was": "eigener Zufalls-Generator (mulberry32 oder LCG)",
-            "lies": "den EINEN Strom `_samenStrom(_bauSame(name))`; ein Kern nimmt den gereichten Strom (Welle SAMEN: `samen(pfad)`)",
+            "lies": "den EINEN Generator `__samenCore` (samen-core.js: `samenBaum(wurzel)` → `samen(pfad)`, `mulberry32(saat)`, `salzStrom`); im Stamm `_samenStrom(_bauSame(name))`",
             "mutant": "a = (a + 0x6D2B79F5) | 0;"
         },
         "zufall": {
             "groesse": "samen",
             "rx": "Math\\.random\\b(?!\\(\\)\\.toString\\(36\\))",
             "was": "Math.random außerhalb der Geburt einer Kennung",
-            "lies": "den EINEN Strom `_samenStrom(_bauSame(name))`",
+            "lies": "den EINEN Generator `__samenCore` (`samen(pfad)`); im Stamm `_samenStrom(_bauSame(name))`",
             "mutant": "const wurf = Math.random() * 6;"
         },
         "belichtung": {
@@ -197,11 +197,12 @@
         "samen": {
             "name": "Samen",
             "welle": "SAMEN",
-            "schreiber": "stamm/siedlung-ort.js `_bauSame` (Welt-Same → benannter Teil-Same) → `_samenStrom`",
-            "leser": "_samenStrom\\(|_bauSame\\(",
+            "schreiber": "samen-core.js `__samenCore` (der EINE Generator mulberry32, der Baum `samenBaum(wurzel)` → `samen(pfad)`, das LCG der Welt `samenStrom`: Seite über stamm/siedlung-ort.js `_samenStrom`, der Gau-Faden über den Wirt) · stamm/siedlung-ort.js `_bauSame` (Welt-Same → benannter Teil-Same)",
+            "leser": "_samenStrom\\(|_bauSame\\(|__samenCore\\b",
             "kanon": {
-                "stamm/siedlung-ort.js": [
-                    "s * 1664525 + 1013904223"
+                "samen-core.js": [
+                    "const GAMMA = 0x6d2b79f5;",
+                    "s = (s * 1664525 + 1013904223) >>> 0;"
                 ]
             }
         },

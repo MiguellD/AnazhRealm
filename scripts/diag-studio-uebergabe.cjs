@@ -19,7 +19,9 @@ const SAAT = Number(argOpt("--saat")) >>> 0 || Date.now() >>> 0;
 function studioSeite() {
     const gepostet = [];
     const f = { addEventListener() {}, parent: { postMessage: (m) => gepostet.push(jsonKlon(m)) } };
-    vm.runInNewContext(ausDatei("worlds/huelle/huelle.js"), f);
+    vm.createContext(f);
+    vm.runInContext(ausDatei("samen-core.js"), f); // der Samen-Baum vor der Hülle (Welle SAMEN: ihr Würfel zieht aus ihm)
+    vm.runInContext(ausDatei("worlds/huelle/huelle.js"), f);
     return { B: f.AnazhHuelle.bruecke({ welt: "probe" }), H: f.AnazhHuelle, gepostet };
 }
 const zufall = studioSeite().H.zufall(SAAT);
@@ -304,7 +306,9 @@ async function weltPruefen() {
             const c = r.spawnCreatureAt(pm.x + 30, pm.y + 1, pm.z, "happy", "wolf", { precise: true });
             s.maxCreatures = alt;
             if (!c) return null;
-            const n = hoehe(c) / (r._creatureBodySize(c.userData.netId) || 1);
+            // ein Leib trägt immer seine Größe (spawnCreatureAt) — fehlt sie, bricht die Probe laut, nie still bei 1
+            if (!(c.userData.bodySize > 0)) throw new Error("Übergabe: der Leib trägt keine Größe (" + c.userData.bodySize + ")");
+            const n = hoehe(c) / c.userData.bodySize;
             r.removeCreature(c);
             return n;
         };
