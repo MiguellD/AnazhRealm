@@ -269,15 +269,11 @@ function wieseAmGesetz(haushalt) {
 // Müll, der Renderer fiel (V8 OOM). Die Linse zählt die Ecken, die der Kern anlegt (`setAttribute("position")`): die drei
 // Fern-Stufen eines frischen Baus zusammen höchstens so viele wie seine Stufe 0 — die Stufe 0 je Bau EINMAL.
 const TURM_SOLL = { id: "modern", ov: { pitchDeg: 52, W: 10.5, D: 11, storeys: 22, brace: "wild", stil: "klinker" } };
-function sollWand(kernText) {
+// `jeAuftrag` (der Selbsttest): der Kern frisch vor jedem Auftrag (der EINE Lader `studioKern`, `frisch`) — sein Gedächtnis
+// lebt dann je Auftrag statt je Faden, der Stand vor hochhaus-dach-speicher
+function sollWand(jeAuftrag) {
     const { studioKern } = require("./lib/welt-boot.cjs");
-    let FC = studioKern("fachwerk-core.js", "__fachwerkCore");
-    if (kernText != null) {
-        const vor = globalThis.__fachwerkCore;
-        new Function(kernText)();
-        FC = globalThis.__fachwerkCore;
-        globalThis.__fachwerkCore = vor;
-    }
+    let FC = studioKern("fachwerk-core.js", "__fachwerkCore", true);
     const BG = THREE.BufferGeometry.prototype,
         setze = BG.setAttribute;
     let ecken = 0;
@@ -287,6 +283,7 @@ function sollWand(kernText) {
     };
     const bau = (samen, l) => {
         const e = ecken;
+        if (jeAuftrag) FC = studioKern("fachwerk-core.js", "__fachwerkCore", true);
         FC.buildInstance(TURM_SOLL.id, samen, l, Object.assign({}, TURM_SOLL.ov)).traverse((o) => o.geometry && o.geometry.dispose());
         return ecken - e;
     };
@@ -1598,10 +1595,9 @@ function selbsttest() {
     t("Runde: Behälter mit Anlage, Geometrie mit Geburts-Stelle, Zell-Gedächtnis außerhalb des Blicks und unangemeldetes rot beim Namen, die geräumte Runde grün", DZ.rundenSelbsttest().length === 0);
     // DER JS-HEAP DER RUNDE (`heapBesteller`): ein Leib, der je Runde lebende Bytes bestellt, ist rot beim Besteller und bei der Stelle
     t("Runde: der JS-Heap-Zuwachs steht beim Besteller (Datei:Zeile) und der Stelle, ein voll gelaufener Cache grün, Splitter benannt", DZ.jsHeapSelbsttest().length === 0); // prettier-ignore
-    // DAS SOLL DES TURMS (H9): der Kern, der die Stufe 0 je Auftrag baut (das Gedächtnis `SOLL_TON` gestrichen, der Stand
-    // vor hochhaus-dach-speicher), ist rot bei sollTon; der Kern grün
-    const kernText = fs.readFileSync(path.join(root, "fachwerk-core.js"), "utf8");
-    const sollRot = sollWand(stammLib.ersetze(kernText, null, "if (SOLL_TON.has(sk)) return", "if (false) return"));
+    // DAS SOLL DES TURMS (H9): der Kern, dessen Gedächtnis je Auftrag lebt (frisch geladen vor jedem Auftrag — der Stand vor
+    // hochhaus-dach-speicher), ist rot bei sollTon; der Kern grün
+    const sollRot = sollWand(true);
     const sollGruen = sollWand();
     t("Soll des Turms: die Stufe 0 je Auftrag ist rot bei sollTon, je Bau einmal grün", /^H9 sollTon: /.test(sollRot.errs[0] || "") && !sollGruen.errs.length); // prettier-ignore
 
