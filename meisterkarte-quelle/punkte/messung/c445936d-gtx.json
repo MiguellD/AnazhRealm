@@ -1,0 +1,333 @@
+{
+ "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
+ "geraet": "gtx",
+ "zeit": "2026-11-21T13:45:21.412Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "ungemessen": {
+  "karte2.mensch.stadt.siedlungsnetz#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.09,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.2,
+   "fremd": {
+    "s": 68.6,
+    "takte": 31,
+    "fremdS": 34.78,
+    "kerne": 0.507,
+    "fensterKerne": 0.942,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.63
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.23
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.38
+     ]
+    ],
+    "dienerS": 25,
+    "diener": [
+     [
+      "System",
+      9.89
+     ],
+     [
+      "dwm.exe",
+      8.69
+     ]
+    ],
+    "geraetS": 33.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.14
+     ],
+     [
+      "svchost.exe",
+      12
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 166.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:45:21.412Z",
+   "abdruck": "2310fa94a1b9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#3": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.09,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.2,
+   "fremd": {
+    "s": 68.6,
+    "takte": 31,
+    "fremdS": 34.78,
+    "kerne": 0.507,
+    "fensterKerne": 0.942,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.63
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.23
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.38
+     ]
+    ],
+    "dienerS": 25,
+    "diener": [
+     [
+      "System",
+      9.89
+     ],
+     [
+      "dwm.exe",
+      8.69
+     ]
+    ],
+    "geraetS": 33.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.14
+     ],
+     [
+      "svchost.exe",
+      12
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 166.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:45:21.412Z",
+   "abdruck": "20a3fcf68a2e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.siedlungsnetz#2",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#4": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.09,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S4: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.2,
+   "fremd": {
+    "s": 68.6,
+    "takte": 31,
+    "fremdS": 34.78,
+    "kerne": 0.507,
+    "fensterKerne": 0.942,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.63
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.23
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.38
+     ]
+    ],
+    "dienerS": 25,
+    "diener": [
+     [
+      "System",
+      9.89
+     ],
+     [
+      "dwm.exe",
+      8.69
+     ]
+    ],
+    "geraetS": 33.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.14
+     ],
+     [
+      "svchost.exe",
+      12
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 166.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:45:21.412Z",
+   "abdruck": "e3f102608a71",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.siedlungsnetz#2",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#5": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.09,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S5: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.2,
+   "fremd": {
+    "s": 68.6,
+    "takte": 31,
+    "fremdS": 34.78,
+    "kerne": 0.507,
+    "fensterKerne": 0.942,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.63
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.23
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.38
+     ]
+    ],
+    "dienerS": 25,
+    "diener": [
+     [
+      "System",
+      9.89
+     ],
+     [
+      "dwm.exe",
+      8.69
+     ]
+    ],
+    "geraetS": 33.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.14
+     ],
+     [
+      "svchost.exe",
+      12
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 166.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:45:21.412Z",
+   "abdruck": "539813347350",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.siedlungsnetz#2",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.siedlungsnetz#6": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.09,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S6: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.2,
+   "fremd": {
+    "s": 68.6,
+    "takte": 31,
+    "fremdS": 34.78,
+    "kerne": 0.507,
+    "fensterKerne": 0.942,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.63
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      3.23
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.38
+     ]
+    ],
+    "dienerS": 25,
+    "diener": [
+     [
+      "System",
+      9.89
+     ],
+     [
+      "dwm.exe",
+      8.69
+     ]
+    ],
+    "geraetS": 33.08,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.14
+     ],
+     [
+      "svchost.exe",
+      12
+     ],
+     [
+      "SearchIndexer.exe",
+      0.39
+     ]
+    ],
+    "eigenS": 166.14,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T13:45:21.412Z",
+   "abdruck": "9e3eaabdd1d0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.stadt.siedlungsnetz#2",
+   "modus": "session"
+  }
+ }
+}
