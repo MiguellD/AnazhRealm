@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T04:56:20.819Z",
+ "zeit": "2026-11-21T05:00:23.249Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -54271,6 +54271,365 @@
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.geist.netz#1",
    "modus": "session"
+  },
+  "karte2.mensch.geist.innenleben#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: fehlender Leser: kein Tod eines Bewohners und keine Trauer: das Soll der Stunde liest Plan und Weichen, nie einen Verlust (1213 Bewohner der Stadt, keiner stirbt) (stamm/siedlung-bewohner.js:2219) · gemessen 1213 · [linse-gpu] nvidia/pascal · gemessen vor dem Abbruch: Frist der Probe 155 s gerissen",
+   "exit": 3,
+   "minuten": 2.59,
+   "grund": "ROT: S2 ROT: fehlender Leser: kein Tod eines Bewohners und keine Trauer: das Soll der Stunde liest Plan und Weichen, nie einen Verlust (1213 Bewohner der Stadt, keiner stirbt) (stamm/siedlung-bewohner.js:2219) · gemessen 1213 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Frist der Probe 155 s gerissen",
+   "konsum": "k1e709cc6c307",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 155.2,
+   "fremd": {
+    "s": 159.4,
+    "takte": 72,
+    "fremdS": 171.22,
+    "kerne": 1.074,
+    "fensterKerne": 2.104,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      50.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      13.97
+     ]
+    ],
+    "dienerS": 84.34,
+    "diener": [
+     [
+      "System",
+      35.84
+     ],
+     [
+      "dwm.exe",
+      34.14
+     ]
+    ],
+    "geraetS": 95.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      59.75
+     ],
+     [
+      "svchost.exe",
+      33.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 288.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:00:23.249Z",
+   "abdruck": "ea3d92d10efc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.innenleben#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner, 100 Paare über 1 Spieljahr: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal · gemessen vor dem Abbruch: Frist der Probe 155 s gerissen",
+   "exit": 3,
+   "minuten": 2.59,
+   "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: 10⁴ Bewohner, 100 Paare über 1 Spieljahr: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 10000 Bewohner) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Frist der Probe 155 s gerissen",
+   "konsum": "k1e709cc6c307",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 155.2,
+   "fremd": {
+    "s": 159.4,
+    "takte": 72,
+    "fremdS": 171.22,
+    "kerne": 1.074,
+    "fensterKerne": 2.104,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      50.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      13.97
+     ]
+    ],
+    "dienerS": 84.34,
+    "diener": [
+     [
+      "System",
+      35.84
+     ],
+     [
+      "dwm.exe",
+      34.14
+     ]
+    ],
+    "geraetS": 95.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      59.75
+     ],
+     [
+      "svchost.exe",
+      33.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 288.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:00:23.249Z",
+   "abdruck": "437f8008621a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.geist.innenleben#2",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.innenleben#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner mit Humor, Traum und Not: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 100000 Bewohner) · [linse-gpu] nvidia/pascal · gemessen vor dem Abbruch: Frist der Probe 155 s gerissen",
+   "exit": 3,
+   "minuten": 2.59,
+   "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: 10⁵ Bewohner mit Humor, Traum und Not: die Welt trägt 1213 Bewohner in 1 Siedlungen (die Stadt 1213) (gemessen 1213, Soll 100000 Bewohner) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Frist der Probe 155 s gerissen",
+   "konsum": "k1e709cc6c307",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 155.2,
+   "fremd": {
+    "s": 159.4,
+    "takte": 72,
+    "fremdS": 171.22,
+    "kerne": 1.074,
+    "fensterKerne": 2.104,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      50.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      13.97
+     ]
+    ],
+    "dienerS": 84.34,
+    "diener": [
+     [
+      "System",
+      35.84
+     ],
+     [
+      "dwm.exe",
+      34.14
+     ]
+    ],
+    "geraetS": 95.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      59.75
+     ],
+     [
+      "svchost.exe",
+      33.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 288.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:00:23.249Z",
+   "abdruck": "a5ab175fa761",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.geist.innenleben#2",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.innenleben#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: keine Rolle für den Spieler: kein Bewohner ist als Spieler-Leib zu tragen (0 von 1213 Bewohnern als Rolle, 5 min je blindem Spieler) (gemessen 0) · [linse-gpu] nvidia/pascal · gemessen vor dem Abbruch: Frist der Probe 155 s gerissen",
+   "exit": 3,
+   "minuten": 2.59,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: keine Rolle für den Spieler: kein Bewohner ist als Spieler-Leib zu tragen (0 von 1213 Bewohnern als Rolle, 5 min je blindem Spieler) (gemessen 0) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Frist der Probe 155 s gerissen",
+   "konsum": "k1e709cc6c307",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 155.2,
+   "fremd": {
+    "s": 159.4,
+    "takte": 72,
+    "fremdS": 171.22,
+    "kerne": 1.074,
+    "fensterKerne": 2.104,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      50.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      13.97
+     ]
+    ],
+    "dienerS": 84.34,
+    "diener": [
+     [
+      "System",
+      35.84
+     ],
+     [
+      "dwm.exe",
+      34.14
+     ]
+    ],
+    "geraetS": 95.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      59.75
+     ],
+     [
+      "svchost.exe",
+      33.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 288.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:00:23.249Z",
+   "abdruck": "1a3a50506ae7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.geist.innenleben#2",
+   "modus": "session"
+  },
+  "karte2.mensch.geist.innenleben#7": {
+   "gruen": false,
+   "zahl": "S7 ROT: Umfang nicht erzeugbar: jede Art jeder Welt: eine Welt in der Sitzung (Saat anazh-realm-seed), eine Art (gemessen 1) · [linse-gpu] nvidia/pascal · gemessen vor dem Abbruch: Frist der Probe 155 s gerissen",
+   "exit": 3,
+   "minuten": 2.59,
+   "grund": "ROT: S7 ROT: Umfang nicht erzeugbar: jede Art jeder Welt: eine Welt in der Sitzung (Saat anazh-realm-seed), eine Art (gemessen 1) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "abbruch": "Frist der Probe 155 s gerissen",
+   "konsum": "k1e709cc6c307",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 155.2,
+   "fremd": {
+    "s": 159.4,
+    "takte": 72,
+    "fremdS": 171.22,
+    "kerne": 1.074,
+    "fensterKerne": 2.104,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      50.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      13.97
+     ]
+    ],
+    "dienerS": 84.34,
+    "diener": [
+     [
+      "System",
+      35.84
+     ],
+     [
+      "dwm.exe",
+      34.14
+     ]
+    ],
+    "geraetS": 95.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      59.75
+     ],
+     [
+      "svchost.exe",
+      33.59
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 288.48,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T05:00:23.249Z",
+   "abdruck": "a2dfcf4998b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.geist.innenleben#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -54360,7 +54719,8 @@
   "k3c7506d71de7": "dVRNj5tADP0vObZlzWeAkfYwCZGyUqump6pHD3iADYFoBkI3Vf97BYFkga2Po/fs52d7/qzOGB8xpadXXZUrtvq0+rLSeCFDk7qQenrVK7YKY8smh/FbAOd828FilZ9rDUUuAEWJ2YmMRtWUF09xTwssO7Elg3bH2wPAAXzYtM/Pc2ohKKmMGiWNxDCUToBsDmx0ioIMbGRfbAB7AaH0GPQRRPzwCmNsWs6h3c0rCiyTqdJw7fnksZc3znd8oTDJkWqjyEs91owTTzg2uxdadpUobI0rUlaQGkho+WiJUWhvZXsIYUaURaP1pFjgJJ4dMIAFNiWdx1ltnFUlqBzgIrR9C9kHTqfnxpATRUJgIOY+Z0hlSmqiwXRiubYY/A7mSY94IoVGidnopen4tnh4AwD7pZaiF96XGIWvTWm5wYTYDRTSzqko7RPBdXw/3JYx4vwHHyOdFdFxlqvT1B7pkm067OtSks4wIWUcK13f0YGLSMGw+RH0tQ5uNGc+mhl4tlib3vteAuD7hXe6knWLioz03AxEcsnzPcb5ywJc4+k07rx0XCeeD07X3WK/l+G5ZK39Tkb6nznczsC4Ul6MJCldN/TYdpPOwReFJwNFqnIpx2kLL5bhR8vZUlEboqrqcbyO6YQWAwfKuythfwab+wD5lkdv9s/9j8dM+9jxuZQ+e6Xqe6dibUqXyUt3jfECnavaaDHO7vORgrCTvZjJlVRBKU1sTFzhYMKglTfZ14Dzgz+cvvw8WdjrMmNOncGlbvS4VaGfhJJ98HW0pI4Cy+MAdNdeYNn9+m2+8/3NojKMIILL9E4gaTn/tY1u/8o3vuEvEURD8jPFcFaVzLufDzJsdIZF/fjy//4D",
   "kedcb762c6ed5": "dVVdj5swEPwvebyWM58BLN2DEyIlUqtyT31ewxpICEQ2iXup+t8rOEgC5PaNaGZ3PDt2/i5OkBwgw9e9qqsFXbwsvi8UXNBQKC8oX/dqQRdhYtnoUPbO2ooZY+sWlsji1CiSFpAZAnJplMixek06zssDoiw4AV5BfkTjLBssyh4UWHZqC0r0humYkJj4ZKXf3qbUkmNaGw0IHIhhKJwA6BR4VhlwNOAsumE92AsQhEdJV0HE4j0ZaqUZI3ozncihSsdKw6Xno0d3H4xt2ExhWgA2RllUapiZpB53bHobND9VKkEbV8C8RNmTwPLB4oPQzmwdh2RC7Kw+yfprr0V5VmokJ3BSzw4oIbNuGaoiyZtxQx7avgX0yS6y09kQI82cQ8Cnm8gBqwzlSIPpJGJpUfInmDY9wBElGBXkg9um49v87h4hZDvXUnbCuxGD8KUpLDcYEduVk6z1Msq6RuQ6/B53FrOI9cluK5sMUUleyOPYHuGibTr0x1ySyiFFaRxq1dzQgQuAAe1nkW5W7EZT5v0wPc/mS9N7PEtA2HbmnapFo0GikZ3OPRFd9HyPMrabgRs4HodbIRzXSaaLU00b/UcZnovW0m9lZF/s4fOiGFcsyoEkhOuGHl2v3Cn4IuFoAM9kIcSwbe4lInwWTg1KTVIEpmVa4WTDk9IJI5eHb2fmmsayMXhdN0NuHNMJLUocUt1YYXcDV7dksDWLPuzf2/d7WLrasKfda9ncLORLU7hUfGqboQvZGBqS/LZ4wRHaI85kX1GWmOHIkNTlDqSUaPEpex8wFvu9EeLbyJjrvGOB7eYqdVZDXEM/DQV98mpplAcO1aEHuksvsOwu16tfbNs5wfZmRCIS60eD1izVUbZbR59P2k+2YruIRH3zEybkJGtRtI8uyeGsciib+//Rv/8=",
   "kee681f564acb": "dVRNr5swEPwvObb1c/gKYOkdnBApkVqVnnpewxp4IRDZELep+t8rCCQPeN2jNbM7nln7z+oCyQkyfHnTdbViq0+rLysNVyQa1RXVy5tesVWYWDY6jN+Lcs53HSxRxaXRtCwEBVFBfkbSqgaL8iXpaYFlp7Zk1Oy5iSmNqU+35vV1Ti0FpjVpQOJIDEPpBMDmwFZnIJBAK/thA9gLEKTHaF9BxOM3OtbWcE7Nfj5RQJVOlYYbz0ePHQ3ne75QmBaADSmLSo8zk9QTjs0eg5a3ShUYcgPMS1QDCSwfLDEK7a00cUhnRFm2Wk+GBU7q2QGjdIHNUBdJ3pCLqgVWA1yEtm8B+8Dp7NISOVEkBARi7nMOWGWoJhrWTiI3FqO/gnnTE5xRAakgH71cO74tnt5QSg9LLWUvvB8xCt+speUGE2IXKM06p6Ksb0Rv43l8X8aI8x98rGw2RCd5oc5Te6SL9tphX5eSdA4pKnKqdfNABy4ABsPmR7SfFbvRnPm8zMCzxWbtvb9LQPlh4Z2uZWNAIcku7UBEFz3fY5wfF+AGzudx56XjOsk8ON10i/1ehueitfE7Gdl/crg/A3LDohxJUrpu6LHdNpuDrwrOBESmCinHtIWXyPCj5TRYNkTUdTPG66yd0GLUodXDlbB/BttHgHzHo9/2z8OPZ6Z97flcSt+9Vs3jpmKzli6T1+41Jgt0oRpiIMkf+UiB0MleZHJDVWKGExtTVziQMmrkXfYt4Dz2h6cvP08W9rbsWGBncKVbPW5V6KehZB98HQbVSUB1GoDuxgssu1+/7Xd+uFtUhRGNaGzeG7TjqYmy4y66/yvf+JYfIxoNzS+Y0IuqZdH9fDSHVudQNs8v/+8/",
-  "k960bf8c427e0": "dVVNj5swFPwvOW7rNZ8BLO3BCZF2pUqlp6rHZ3gGNgSQDaFN1f9eQSBZIPtOKJphxvPG5O+mhvgIKT6/66rcsM3T5utGwxmJRnVG9fyuN2wTxKaFNuPXoZzzfQ+LVV43miY5pOQIJ1RACmjFczyQnlaQClWNiugGyuQBqMgFBVFCdkLSqgbzYgT5ppVYktHuwLuI0oh6dNe9vCyphcCkIg1InIhBIG0f2BLY6hQEEmjlIDaCXR9BuowO44c8eqfT8B+c0+6wVBRQJnOnwdb10GVvfzg/8JXDJAdsSJGXetKME1fYFrsJrU+VKOjIBTArUI0kMD0wxWR0WEkXBXRBlEWr9UzMtxPX8hmlK2yKOo+zhtSqEliOcBFYngnsQdJp3RI5cyQE+GKZcwZYpqhmHgw7lluT0d8+/2zomdJoHfZYsBKyKWvD9ixxz45S+rr2WgwHGyxMB9sa0nT8GbFfOE179TAdXkQv0+/R1VXI+xKMky5EdJzl6jSPTzpoGTb7trakM0hQkWOlmxvadwDQH29YOBSOR064ZN4PM/IssTXcj2fxKX/1V4qVbDpQSNK6HYnooOu5jPO3FbiB02m6E9J27Hi52OECz2y4Dppbr7eRfrKH6zUhF8yLiSSl4wQu2++cJfis4ERApCqXctq2cGMZPCpvB1ovWgaGaZjBYsOL6eKhabexV6l1WDREVFUz9cY27MBk1KbljRUMPd7d27vnYWf83H8oyzAHzh+EMihUqrnFKLaGdJi8+luhc9WQDuLstnwpEAL2AHpBVWCKs1ASR9iQ9Oi7rdCZHr7Mwrmswrjk2G+v1K2eKht4SSDZg+9Wh+oooDyOQGfr+qY1dHv3nb+OgkZIQxp1H0Pac3n5xd/2O79/WY0xrVUl8/4zSzNodQZFc/+f+vcf"
+  "k960bf8c427e0": "dVVNj5swFPwvOW7rNZ8BLO3BCZF2pUqlp6rHZ3gGNgSQDaFN1f9eQSBZIPtOKJphxvPG5O+mhvgIKT6/66rcsM3T5utGwxmJRnVG9fyuN2wTxKaFNuPXoZzzfQ+LVV43miY5pOQIJ1RACmjFczyQnlaQClWNiugGyuQBqMgFBVFCdkLSqgbzYgT5ppVYktHuwLuI0oh6dNe9vCyphcCkIg1InIhBIG0f2BLY6hQEEmjlIDaCXR9BuowO44c8eqfT8B+c0+6wVBRQJnOnwdb10GVvfzg/8JXDJAdsSJGXetKME1fYFrsJrU+VKOjIBTArUI0kMD0wxWR0WEkXBXRBlEWr9UzMtxPX8hmlK2yKOo+zhtSqEliOcBFYngnsQdJp3RI5cyQE+GKZcwZYpqhmHgw7lluT0d8+/2zomdJoHfZYsBKyKWvD9ixxz45S+rr2WgwHGyxMB9sa0nT8GbFfOE179TAdXkQv0+/R1VXI+xKMky5EdJzl6jSPTzpoGTb7trakM0hQkWOlmxvadwDQH29YOBSOR064ZN4PM/IssTXcj2fxKX/1V4qVbDpQSNK6HYnooOu5jPO3FbiB02m6E9J27Hi52OECz2y4Dppbr7eRfrKH6zUhF8yLiSSl4wQu2++cJfis4ERApCqXctq2cGMZPCpvB1ovWgaGaZjBYsOL6eKhabexV6l1WDREVFUz9cY27MBk1KbljRUMPd7d27vnYWf83H8oyzAHzh+EMihUqrnFKLaGdJi8+luhc9WQDuLstnwpEAL2AHpBVWCKs1ASR9iQ9Oi7rdCZHr7Mwrmswrjk2G+v1K2eKht4SSDZg+9Wh+oooDyOQGfr+qY1dHv3nb+OgkZIQxp1H0Pac3n5xd/2O79/WY0xrVUl8/4zSzNodQZFc/+f+vcf",
+  "k1e709cc6c307": "dVRNr5swEPwvHNvyNnwFsNSDEyLlSa2ad+p5DWsgIRDZENpU/e8VBJIHvO7Rmtkdz6z9x7hgfMKUXo66Kg1mfDK+GBqvZGpSV1IvR20wI4wtmxzG33hXwDnfdrBY5ZdaQ5ELQFFidiazUTXlxUvc0wLLTmzJoN3x9gBwAB827devc2ohKKnMGiWNxDCUToBsDmx0ioJMbGQ/bAB7AaH0GPQVRPxwhLE2LefQ7uYTBZbJVGm49nzy2GvL+Y4vFCY5Um0WeanHmXHiCcdmj0HLWyUKW/OGlBWkBhJaPlpiFNpb2R5CmBFl0Wg9GRY4iWcHDGCBTUnncVabF1UJKge4CG3fQvaB0+mlMeVEkRAYiLnPGVKZkppoWDmxXFsMfgXzpic8k0KzxGz0cuX4tnh6AwD7pZaiF96PGIWvV9JygwmxCxTSzqko7RvBbTw/9AbyiA9b2VU6G6LjLFfnqT3SJXvlsG9LSTrDhJR5qnT9QAcuIgVsmAX9rIMbzZnPyww8W6xX3vu7BMD3C+90JesWFZnppRmI5JLne4zz1wW4xvN53HnpuE48D07X3WK/l+G5ZK39Tkb6nxzuz8C8UV6MJCldN/TYdpPOwVeFZxNFqnIpx7SFF8vwo+VsqahNUVX1GK+zckKLgQPlw5WwfwabR4B8y6Pf9s/92zPTvnZ8LqXvXqn6cVOxXkmXyWv3GuMFOle12WKcPfKRgrCTvcjkRqqglCY2Jq5wMGHQyrvsW8D5wR+evvw8WdjbsmNOncGlbvS4VaGfhJJ98HW0pE4Cy9MAdNdeYNn9+m1+8P3dojKMIIJ5JS3nb9vo/q985xv+GsFxaH6hGC6qknn380GGjc6wqJ9f/t9/"
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
