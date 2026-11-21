@@ -40,8 +40,15 @@ class AnazhRealm_gelaende_boden {
         // und kam dort je Kachel der Ferne ein Büschel der Nah-Wiese (gate:pop „DER WURF DER STUFE“: 6 Büschel in 96 Kacheln, 526
         // Pop-Pixel). Die Karten der Lesung stehen im Satz `_bodenKarten` (ohne Zuteilung je Lesung): je Karte ihre Höhen, ihre
         // Stufe, ihre Kante und der Versatz ihres Rasters gegen das der Welt, dazu DER GEOMORPH DER STUFE (K51-2: im Übergangs-Band
-        // zeichnet der Stoff zwischen der Karte der Lage und der des Ziels, `_bodenStufeMisch`).
+        // zeichnet der Stoff zwischen der Karte der Lage und der des Ziels, `_bodenStufeMisch`) — ihn fragt erst die Karte, die
+        // am Rasterpunkt trägt (`_bodenFlaeche`; der Punkt der Lesung steht am Satz).
+        // DIE LESUNG KOSTET, WAS SIE LIEST: je Ecke EIN Gang über die Karten, der Geomorph je tragender Karte einmal, der Hang
+        // des Grüns aus den vier Ecken derselben Zelle. Bis hier fragte jede Lesung jede der vier Karten nach ihrem Geomorph, je
+        // Ecke und Karte ein eigenes Glied, und das Grün las für seinen Hang vier weitere Punkte: 175 Rufe je Punkt des EINEN
+        // Stoff-Lesers (`_kontaktStoffAt`), die Zündung einer Zelle des Brands 1 347 Einheiten bei 12 brennenden (gate:stand-takt
+        // BRAND-ZELLEN, Soll ≤ 64 je Zelle).
         const K = this._bodenKarten || (this._bodenKarten = [{}, {}, {}, {}]);
+        [K.x, K.z, K.stufe] = [x, z, stufe];
         let n = 0;
         for (let q = 0; q < 4; q++) {
             const ax = cx - (q & 1);
@@ -56,7 +63,7 @@ class AnazhRealm_gelaende_boden {
             k.M = T * (ce.dim + 3) + 1;
             k.i0 = T - ax * ce.dim * T;
             k.j0 = T - az * ce.dim * T;
-            k.st = this._bodenStufeMisch(E, ax, az, x, z, stufe);
+            [k.E, k.ax, k.az, k.st] = [E, ax, az, undefined];
         }
         let a = this._bodenFlaeche(n, gx, gz, lod),
             b = this._bodenFlaeche(n, gx + 1, gz, lod),
@@ -104,38 +111,50 @@ class AnazhRealm_gelaende_boden {
         if (S && S.size)
             for (const s of S.values()) if ((x - s.x) ** 2 + (z - s.z) ** 2 < s.rr && !(y >= s.krone)) y = s.krone;
         if (!(y > -Infinity)) return null;
-        if (aus) aus.gruen = this._bodenGruenAt(x, y, z);
+        // DER HANG DES GRÜNS IST DER DER GELESENEN ZELLE: |∇| ihrer Fläche am Punkt, aus ihren vier Ecken (über einer Säule
+        // ohne Netz trägt das Grün ohnehin nichts)
+        if (aus)
+            aus.gruen = this._bodenGruenAt(
+                x,
+                y,
+                z,
+                traegt ? Math.hypot((b - a) * (1 - fv) + (d - c) * fv, (c - a) * (1 - fu) + (d - b) * fu) / h : 0
+            );
         return y;
     }
     // DIE FLÄCHE AM RASTERPUNKT (w28-pop-treue): die oberste Fläche, die eine der `n` Karten der Lesung (`_bodenKarten`) am
-    // Rasterpunkt (G, J) des Rasters der Stufe `c` trägt (Welt-Punkt G · Schritt/Teilung); −Infinity, wo keine trägt.
+    // Rasterpunkt (G, J) des Rasters der Stufe `c` trägt (Welt-Punkt G · Schritt/Teilung); −Infinity, wo keine trägt. Eine Karte
+    // derselben oder einer feineren Stufe trägt den Punkt selbst (die Raster aller Stufen liegen ineinander: Schritt
+    // 1,8 · 2^Stufe, Ursprung Chunk − Schritt, der Chunk ein Vielfaches), eine gröbere in ihrer Zelle (`_bodenKarteEcke`). Den
+    // Geomorph ihrer Stufe (`_bodenStufeMisch`) fragt eine Karte beim ersten Punkt, den sie trägt.
     _bodenFlaeche(n, G, J, c) {
         const K = this._bodenKarten;
         let y = -Infinity;
         for (let q = 0; q < n; q++) {
-            const v = this._bodenKarteEcke(K[q], n, G, J, c);
+            const k = K[q];
+            let v;
+            if (k.el <= c) {
+                const f = 1 << (c - k.el);
+                const i = G * f + k.i0;
+                const j = J * f + k.j0;
+                if (i < 0 || j < 0 || i >= k.M || j >= k.M) continue;
+                if (k.st === undefined) k.st = this._bodenStufeMisch(k.E, k.ax, k.az, K.x, K.z, K.stufe);
+                v = k.st ? k.st(k.m, i + j * k.M) : k.m[i + j * k.M];
+            } else v = this._bodenKarteEcke(k, n, G, J, c);
             if (v > y) y = v;
         }
         return y;
     }
-    // DIE ECKE EINER KARTE (w28-pop-treue, die Stufen-Naht): die Höhe der Karte `k` der Lesung am Rasterpunkt (G, J) des Rasters der
-    // Stufe `c` — die Raster aller Stufen liegen ineinander (Schritt 1,8 · 2^Stufe, Ursprung Chunk − Schritt, der Chunk ein
-    // Vielfaches): eine Karte derselben oder einer feineren Stufe trägt den Punkt selbst, eine gröbere ihn in ihrer Zelle, bilinear
+    // DIE ECKE EINER GRÖBEREN KARTE (w28-pop-treue, die Stufen-Naht): die Höhe der Karte `k` der Lesung (ihre Stufe über `c`) am
+    // Rasterpunkt (G, J) des Rasters der Stufe `c` — sie trägt ihn in ihrer Zelle, bilinear
     // mit den exakten Gewichten der Teilung (eine Ecke mit Gewicht 0 fragt sie nicht). Am Rand ihres Netzes trägt die gröbere Karte
     // eine Ecke ihrer Zelle nicht (dort zeichnet das Netz des Nachbarn): sie nimmt sie von den anderen Karten an DEMSELBEN
     // Welt-Punkt (`_bodenFlaeche` im eigenen Raster — die feinere trägt ihn selbst) und nur, wo sie selbst eine Ecke trägt; vorher
     // fiel der Punkt, den ihr Netz zwischen zwei Punkten ihres Rasters zeichnet.
-    // −Infinity, wo die Karte keinen Boden trägt oder nicht hinreicht. Der Leser: `_bodenSichtAt`.
+    // −Infinity, wo die Karte keinen Boden trägt oder nicht hinreicht. Der Leser: `_bodenFlaeche`.
     _bodenKarteEcke(k, n, G, J, c) {
-        const { m, M, st } = k;
-        if (k.el <= c) {
-            const f = 1 << (c - k.el);
-            const i = G * f + k.i0;
-            const j = J * f + k.j0;
-            if (i < 0 || j < 0 || i >= M || j >= M) return -Infinity;
-            const y = st ? st(m, i + j * M) : m[i + j * M];
-            return y > -Infinity ? y : -Infinity;
-        }
+        const { m, M } = k;
+        const K = this._bodenKarten;
         const f = 1 << (k.el - c);
         const i0 = Math.floor(G / f);
         const j0 = Math.floor(J / f);
@@ -149,7 +168,11 @@ class AnazhRealm_gelaende_boden {
             if (!(w > 0)) continue;
             const i = i0 + (q & 1) + k.i0;
             const j = j0 + (q >> 1) + k.j0;
-            const y = i < 0 || j < 0 || i >= M || j >= M ? -Infinity : st ? st(m, i + j * M) : m[i + j * M];
+            let y = -Infinity;
+            if (!(i < 0 || j < 0 || i >= M || j >= M)) {
+                if (k.st === undefined) k.st = this._bodenStufeMisch(k.E, k.ax, k.az, K.x, K.z, K.stufe);
+                y = k.st ? k.st(m, i + j * M) : m[i + j * M];
+            }
             if (y > -Infinity) {
                 s += y * w;
                 eigen = true;
@@ -2717,8 +2740,9 @@ class AnazhRealm_gelaende_boden {
 
     // DAS GRÜN DES GESETZES AM PUNKT (w28-pop-treue): die Wiesen-Wache (`gruenSchwelle`: smoothstep(0, gs, g − (r+b)/2), dieselbe
     // wie das Boden-Fragment) über der Farbe, die das Gesetz dem Boden an (x, y, z) gibt — DIE EINE BODEN-FARBE (`_bodenFarbeAt`)
-    // mit dem Fels-Stoff am Punkt (gelaende-core `felsStoffPunkt`; die Steile aus `hang` = |∇h| des gezeichneten Bodens, ohne ihn
-    // misst `_slopeAt` über ±1 m), dazu der Belag der Wege-Karte (der Rasen grünt, das Pflaster deckt); 0 auf der Krone einer
+    // mit dem Fels-Stoff am Punkt (gelaende-core `felsStoffPunkt`; die Steile aus `hang` = |∇h| des gezeichneten Bodens —
+    // `_bodenSichtAt` reicht den der Zelle, die er las, der Wurf der Wiese den seines Fußes; ohne ihn misst `_slopeAt` über
+    // ±1 m), dazu der Belag der Wege-Karte (der Rasen grünt, das Pflaster deckt); 0 auf der Krone einer
     // Säule ohne Netz (`saeulenVorlaeufig`). Eine Funktion der Welt, nie der Stufe ihrer Chunks: bis hier las `_bodenSichtAt` das
     // Grün aus der Boden-Karte der Stufe (die Vertex-Farbe, über die Dreiecke der Stufe gerastert, ohne ihren Geomorph) — an jedem
     // Wechsel der Stufe warfen die neu gebauten Kacheln der Wiese an denselben Zellen andere Büschel (gate:pop „DER WURF DER
