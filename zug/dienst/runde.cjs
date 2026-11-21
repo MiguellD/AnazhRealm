@@ -157,7 +157,16 @@ function urteil(m, s) {
     if (u && String(u.zeit || "") >= String(v.zeit || "")) return null;
     return v.gruen ? "GRUEN" : "ROT";
 }
-const hatEintrag = (m, s) => !!(((m && m.je) || {})[s] || ((m && m.ungemessen) || {})[s]);
+// EIN EINTRAG, DEN DER APPARAT NIE ERREICHTE, IST KEINE MESSUNG (Koordinator 21.11.; die Radeon hieß am 31ea3847 „durch 1428/1428“ mit
+// 219 Urteilen und 1 212 ungemessenen Stationen — das Verb `offen` zählte jeden Eintrag unter `ungemessen` als gemessen, die Liste war
+// leer, die Runde „durch“): der EINE Schreiber der Mess-Datei (punkte.cjs `eintragen`) zählt an einem Eintrag „— offen, UNGEMESSEN“
+// oder „Läufer starb“ ohne die laufende Probe das Feld `offen` (seine Versuche an diesem Kopf). Solange es unter OFFEN_MAX steht,
+// bleibt die Station in der Liste und fährt in der nächsten Fahrt nach; mit OFFEN_MAX Versuchen steht sie beim Grund (die Runde
+// endet, nie eine Schleife). Ein Eintrag ohne das Feld — beim Namen der Station (Frist, Grund-Stellung, Täter-Ort, Urteils-Zeile)
+// oder aus der Zeit vor dem Feld — steht wie bisher.
+const OFFEN_MAX = 3;
+const apparatOffen = (u) => !!u && u.offen >= 1 && u.offen < OFFEN_MAX;
+const hatEintrag = (m, s) => { const u = ((m && m.ungemessen) || {})[s]; return !!(((m && m.je) || {})[s] || (u && !apparatOffen(u))); };
 
 const [was, ...arg] = process.argv.slice(2);
 const opt = (n) => { const i = arg.indexOf("--" + n); return i < 0 ? null : arg[i + 1]; };

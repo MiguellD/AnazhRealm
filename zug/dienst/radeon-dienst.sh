@@ -483,7 +483,7 @@ st_gesetz() {
     else echo "ROT g1 Gesetz der Liste ohne Berührung: Fahrten $g2 (Soll 0), LISTE-ROT-Zeilen $(grep -c "LISTE ROT: Gesetz der Liste" "$L") (Soll ≥ 1), Zeile „$(feld radeon | cut -c1-80)“ (Soll offen … liste -)"; fi
 }
 st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ oder „ROT <fall> …“
-    local X K j a1 a2 c3 b1 b2 vor mp alt z1 z2
+    local X K j a1 a2 c3 o1 b1 b2 vor mp alt z1 z2
     X=$(mktemp -d)
     R=$X/spiel PM=$X/pm W=$X/w S=$X/s GS=$X/schloss STUB=$X/stub
     L=$W/log WACHE=$S/radeon.wache BILD_ABLAGE=$X/ablage TAKT_S=0.1 BIS_SPIEL_S=0 WEICH_MAX_S=20 HAND_NACH_S=0 HAND_ZEIT_S=9999999999
@@ -511,6 +511,16 @@ st_lauf() { # $1 = Mutante (leer = echt); druckt je Fall „OK <fall> …“ ode
     if [ "$a1" = gehalten ] && [ "$a2" = VERWAIST ] && [ "$c3" = gehalten ]; then echo "OK c  lebender gpu-lauf-Halter nach 300 s gehalten · toter Halter der Punkte-Sitzung gelöst · verschwundenes Schloss überlebt"
     else echo "ROT c  lebender Halter baum-ganz (pid in Zeile 1, 300 s): $a1 (Soll gehalten) · toter Halter (pid in Zeile 2): $a2 (Soll VERWAIST) · Schloss verschwindet vor stat: '${c3:-GESTORBEN}' (Soll gehalten)"; fi
     [ "$1" = pid ] && { command rm -rf "$X"; return; }
+    # o — EIN EINTRAG, DEN DER APPARAT NIE ERREICHTE, IST KEINE MESSUNG (21.11.; die Radeon hieß am 31ea3847 „durch 1428/1428“ mit 219
+    # Urteilen und 1 212 ungemessenen): das Verb `offen` lässt eine Station in der Liste, deren Eintrag das Feld `offen` unter der
+    # Grenze trägt (a: 1 Versuch, b: 2), und ohne Eintrag (f); mit 3 Versuchen (c), beim Namen ohne das Feld (d) und mit Urteil (e)
+    # steht sie. Vorher: der Rest war nur f
+    mkdir -p "$X/o/meisterkarte-quelle/punkte/messung"
+    printf '%s\n' '{"sha":"aaaaaaaa","je":{"e#1":{"gruen":false}},"ungemessen":{"a#1":{"ungemessen":true,"offen":1},"b#1":{"ungemessen":true,"offen":2},"c#1":{"ungemessen":true,"offen":3},"d#1":{"ungemessen":true}}}' \
+        >"$X/o/meisterkarte-quelle/punkte/messung/aaaaaaaa-radeon.json"
+    o1=$(node "$RUNDE_CJS" offen "$X/o" - radeon aaaaaaaa00000000000000000000000000000000 "a#1,b#1,c#1|d#1,e#1,f#1" 2>/dev/null)
+    if [ "$o1" = "a#1,b#1,f#1" ]; then echo "OK o  das Verb offen: 1 und 2 Versuche des Apparats bleiben in der Liste, 3 Versuche, ein Eintrag beim Namen und ein Urteil stehen"
+    else echo "ROT o  das Verb offen gab '$o1' (Soll a#1,b#1,f#1: ein Eintrag mit offen < 3 ist keine Messung)"; fi
     git init -q --bare "$X/spiel.git" && git init -q -b main "$R" && git -C "$R" remote add origin "$X/spiel.git"
     git init -q --bare "$X/pm.git" && git init -q -b punkte-maschine "$PM" && git -C "$PM" remote add origin "$X/pm.git"
     git -C "$R" config core.autocrlf false && git -C "$PM" config core.autocrlf false
@@ -817,14 +827,14 @@ selbsttest() {
     echt=$(grep -E "^(OK|ROT)" "$O/echt")
     echo "$echt" | sed 's/^/  /'
     echo "$echt" | grep -q "^ROT" && rot=1
-    [ "$(echo "$echt" | grep -c "^OK")" = 16 ] || rot=1
+    [ "$(echo "$echt" | grep -c "^OK")" = 17 ] || rot=1
     for m in $MUT; do
         mz=$((mz + 1))
         r=$(grep "^ROT" "$O/$m" | cut -c1-160)
         if [ -n "$r" ]; then mr=$((mr + 1)); echo "  Mutante „$m“ ROT an: $(echo "$r" | cut -c5-110 | tr '\n' '|' | sed 's/|$//;s/|/ · /g')"; else echo "  Mutante „$m“ bleibt GRÜN"; fi
     done
     rm -rf "$O"
-    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 16 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
+    if [ $rot = 0 ] && [ $mr = $mz ]; then echo "radeon-dienst SELBSTTEST GRÜN: 17 Fälle grün, $mr/$mz Mutanten ROT"; return 0; fi
     echo "radeon-dienst SELBSTTEST ROT: Fälle $([ $rot = 0 ] && echo grün || echo ROT), $mr/$mz Mutanten ROT"
     return 1
 }
