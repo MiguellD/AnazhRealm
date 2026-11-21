@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T10:42:14.473Z",
+ "zeit": "2026-11-21T10:46:49.623Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -52532,6 +52532,145 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "breite.siedlung#1": {
+   "gruen": true,
+   "zahl": "dorf 7 9310: 145 Kacheln, 9654 Häuser (Kern 9, Rand 56 Kacheln) · Straßenwand Kern 0,305 ↔ Rand 0,055 = 5,6:1 (Soll ≥ 2) · Dichte-Fit R² 0,960 (Soll ≥ 0,8, λ 847 m) · Traufe Median Kern 19,4 m ↔ Rand 3,2 m = 6,1 (Soll ≥ 5) · höchstes Haus 22,9 m",
+   "exit": 0,
+   "minuten": 2.54,
+   "gpu": "nvidia/pascal",
+   "konsum": "ka994bff963cb",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 151.8,
+   "fremd": {
+    "s": 154.8,
+    "takte": 68,
+    "fremdS": 77.97,
+    "kerne": 0.504,
+    "fensterKerne": 0.974,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.08
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.44
+     ]
+    ],
+    "dienerS": 86.08,
+    "diener": [
+     [
+      "dwm.exe",
+      40.03
+     ],
+     [
+      "System",
+      32.25
+     ]
+    ],
+    "geraetS": 75.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.31
+     ],
+     [
+      "svchost.exe",
+      29.08
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 901.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:46:49.623Z",
+   "abdruck": "cd5ba7853ffa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.stadt.vertikal#1": {
+   "gruen": true,
+   "zahl": "dorf 7 9310: höchstes Haus 22,9 m bis zum First (Kachel 1/-5) · im Bild 4 von 5 Punkten seiner Achse (Soll ≥ 2, im Rahmen 4) vom Straßenpunkt 18,8 m · begehbare Ebenen 1 (Überführungen 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 2.54,
+   "gpu": "nvidia/pascal",
+   "konsum": "ka994bff963cb",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 151.8,
+   "fremd": {
+    "s": 154.8,
+    "takte": 68,
+    "fremdS": 77.97,
+    "kerne": 0.504,
+    "fensterKerne": 0.974,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      8.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.08
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      7.44
+     ]
+    ],
+    "dienerS": 86.08,
+    "diener": [
+     [
+      "dwm.exe",
+      40.03
+     ],
+     [
+      "System",
+      32.25
+     ]
+    ],
+    "geraetS": 75.19,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      43.31
+     ],
+     [
+      "svchost.exe",
+      29.08
+     ],
+     [
+      "SearchIndexer.exe",
+      1.39
+     ]
+    ],
+    "eigenS": 901.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:46:49.623Z",
+   "abdruck": "c74671988637",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "breite.siedlung#1",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -52637,7 +52776,9 @@
   "k4c0a86219703": "dVRdj5swEPwveWzrM58BLN2DEyIlUqtyT31ewxpICEQ2hF6q/vcKAskB1320ZnbHM2v/WV0gPkGKL0ddlSu2+rL6ttJwRaJRXVG9HPWKrYLYtNBm/F6Uc77tYLHKL7WmRS4oiBKyM5JG1ZgXL3FP800rsSSj7Y63EaUR9eimfX2dUwuBSUVqkDgSg0DaPrA5sNEpCCTQyH7YAHZ9BOky2pcf8uhIx9q0nNN2N58ooEymSoO166HLDu+c7/hCYZID1qTISz3OjBNX2BZ7DFreKlHQkhtgVqAaSGB6YIpRaG9lGwV0RpRFo/VkmG8nruUzShfYFHUeZzW5qEpgOcBFYHkmsE+cTi8NkRNFQoAv5j5ngGWKaqLBsGO5Nhn97c+bnuCMCkgJ2eilYXuWeHpDKd0vtRS98H7EKHxtSNPxJ8QuUJp2ToVp34jexvPovowh5298rHQ2RMdZrs5Te6SDlmGz70tJOoMEFTlVun6gfQcA/WHzQ9rPipxwznxeZuBZYm24H+/iU75feKcrWbegkKSXZiCig67nMs4PC3AN5/O489J27HgenK67xf4ow3XQXHudjPQ/OdyfAblhXowkKR0ncOfNrwrOBESqcinHpIUby+CzxWyxqImoqnqM1jbswGTUpuXDkaB/AptHeHzLw3fr1/7tmWdfOz7X3HevVP24pVgb0mHy2r3EeIHOVU1aiLNHNlIgdLIXedxQFZjixMLEETYkjLbyLjv0OY+84dnLr5NlvS075tiZW+pGjxsVeEkg2SffRovqJKA8DUBn7fqm1a/e5iff3804GiENadR+NGjLk5bzwza8/yk/+IYfQhoOzS8Y04uqZN79ejSDRmdQ1M/v/u8/",
   "k80e74eb9452f": "dVRdj5swEPwveWzrc/gKYOkenBApkVqVe+rzGtZAQgDZEHqp+t8rCCQHXPfRmtkdz6z9Z1VBdIYEX066LFZs9WX1baXhikSjuqJ6OekVW/mRYaLF+L0o53zXwSKVVbWmeSYoiALSC5JG1ZjlL1FP8wwzNiWj7Z63IaUhdem2fX2dU3OBcUlqkDgSfV9aHrA5sNEJCCTQyH7YAHY8BOkw2pcX8PBEx9q2nNN2P58ooIinSv2N46LDju+c7/lCYZwB1iTPCj3OjGJHWCZ7DFreKlbQkhtgmqMaSGC4YIhRaG9lG/p0RpR5o/VkmGfFjukxShfYBHUWpTWpVCmwGODCN10D2CdOJ1VD5ESREOCJuc8pYJGgmmhYW5HcGIz+9uZNz3BBBaSAdPRybbmmeHpDKT0steS98H7EKHyzlobtTYhdoDTpnAqSvhG9jefhfRkDzt/4WMlsiI7STF2m9kgbzbXFvi8l6RRiVORc6vqB9mwA9IbND2g/K7SDOfN5mYFnis3a+XgXj/LDwjtdyroFhSSpmoGINjquwzg/LsA1XC7jzkvLtqJ5cLruFvujDMdGY+N2MpL/5HB/BuSGWT6SpLRt32G7bTIHXxVcCIhEZVKOaQsnkv5ny9liXhNRlvUYr7W2fINRixYPV/z+GWwfAfIdD97NX4e3Z6Z97flcSt+9VPXjpmKzljaT1+41Rgt0pmrSQpQ+8pECoZO9yOSGKscEJzbGtrAgZrSVd9knj/PQHZ6+/DpZ2NuyY4adwYVu9LhVvhv7kn3ydbSozgKK8wC0N45nmP36bX/yw92iwg9oQMP2o0E7HrecH3fB/V/5wbf8GNBgaF5hRCtVyqz7+WgKjU4hr59f/t9/",
   "k908f081ef941": "dVVdj5swEPwveWzLbfgKYOkenBApJ7Uq99TnNayBC4HIhtCm6n+vIJAccOdHNLMzO7s2f1dnjI+Y0tObrsoVW31ZfVtpvJChSV1IPb3pFVsFsWmRzfjtAOd818FilZ9rDUUuAEWJ2YmMRtWUF09xT/NNK7Ekg3bP2wggAg+27fPznFoISiqjRkkjMQik7SObAxudoiADG9mLDWDXJ5Qug/74IY/eYDzblnNo93NFgWUydRpsXI9c9vKH8z1fOExypNoo8lKPmnHiCttid6FlV4nC1rgiZQWpgYSmh6YYjfZRtlEAM6IsGq0nYr6duJbPABbYlHQeZ7VxVpWgcoCLwPJMZB8knZ4bQ04cCYG+mOecIZUpqYmHtR3Ljcngt88/O3DpgliEfcQTKTRKzMas17ZniUd2AHBYei36xnoLY2ObtTQdf0LsBg5ppx6mfSG4jt+jm6uQ89e7xXQmouMsV6dpfNIha22z70tLOsOElHGsdH1H+w4i+cPNCKHXipxwznw0M/AssVm773vxgR/8hWIl6xYVGem5GYjkkOu5jPOXBbjG02m8E9J27Hg+WF13i//ehuuQufE6G+knc7hdE+NKeTGSpHScwGW7bToHXxSeDBSpyqUcpy3cWAYfLW9LRW2IqqrH8dprOzAZ2FDeUwn6dds+lmzHwz/Wr8Pr63T39nxupa9eqfreqdispcNkv6TxAp2r2mgxzu7zkYKws72YyZVUQSlNYkwcYWPCoJU321ef88gbngb5dbKw12XFnLqAS93ocasCLwkk++BpaUkdBZbHAehsXN+0+vXb/uSHPoldGYQQQtS+D2jHk6tIX3bh7f7+4Fv+EkI4FD9TDGdVybx7GSHDRmdY1I9fwr//",
-  "k911763ef5837": "dVVdj5swEPwveeyVM5/BWLoHJ5yUq1o1kSpVfVzDGkgIRDaENlX/ewWBXIDcPqLZndnZXfN3cYLoAAk+73VZLNji0+LzQsMZDY3qjOp5rxdsEUSWjQ7j1yCc83ULi1R2qjTJM0FAFJAe0ahVhVn+HHVp1LJjWzLSvPJmS8iW+GTV8Fus+cvLtEwuMC6NCiQORYJAOhTYFFjrBAQaUMuOuAd7FEF6jHRBQ77dkyFa5lbJA1YBRTxWHiw9H72u4dc5Ps4AKyPPCj3wRrEnHJvdyJp5joLGuACmOao+CSwfLDGI7SxptgGZJMq81npERp3YsykjZIZNUGdRWhknVQosergIbN8CtpprSk61IUeKhAAqpl6ngEWCaqTBdCK5tBj5TflHQc50qu8AR1RgFJAOPpuOb4t33wghm7nOvGuqox+aWprScukosR046dYrTLpC5DJ8314VhZzvbvKSCYmO0kwdx9ZJF23TYV/nknQKMSrjUOrqhqYuANL+SkLScW3dcJr53kyfZ4ul6d33Qgnf0BljKasGFBrJqe4T0UXPb7f0bQau4HgcbkI6rhNNh6qrdunvZXguWku/lZF8MIfriRgXzPIhSUrXDTy2XrlT8FnB0QCRqEzKYdrCi2TwaHEbzCtDlGU1jNcxncBixCfFnS2tr6v79yP8Y//c7HZ8Gg+0dwylqm7diqUpXSbP7bVGM3SmKqOBKL3NSAqEVvpsLhdUOSY4sjJ2hQMxI428Kr9Qzrd+/zTIp9HSXuYVM2xNLnSth80K/DiQ7MHT0qA6CCgOPdBdetSy2ZfWqO980z1ffG+GTyGZhrz8SH6tw+v9fuMr/haSsC9+woicVCmz9mUkKdQ6hbx6/0X8+w8="
+  "k911763ef5837": "dVVdj5swEPwveeyVM5/BWLoHJ5yUq1o1kSpVfVzDGkgIRDaENlX/ewWBXIDcPqLZndnZXfN3cYLoAAk+73VZLNji0+LzQsMZDY3qjOp5rxdsEUSWjQ7j1yCc83ULi1R2qjTJM0FAFJAe0ahVhVn+HHVp1LJjWzLSvPJmS8iW+GTV8Fus+cvLtEwuMC6NCiQORYJAOhTYFFjrBAQaUMuOuAd7FEF6jHRBQ77dkyFa5lbJA1YBRTxWHiw9H72u4dc5Ps4AKyPPCj3wRrEnHJvdyJp5joLGuACmOao+CSwfLDGI7SxptgGZJMq81npERp3YsykjZIZNUGdRWhknVQosergIbN8CtpprSk61IUeKhAAqpl6ngEWCaqTBdCK5tBj5TflHQc50qu8AR1RgFJAOPpuOb4t33wghm7nOvGuqox+aWprScukosR046dYrTLpC5DJ8314VhZzvbvKSCYmO0kwdx9ZJF23TYV/nknQKMSrjUOrqhqYuANL+SkLScW3dcJr53kyfZ4ul6d33Qgnf0BljKasGFBrJqe4T0UXPb7f0bQau4HgcbkI6rhNNh6qrdunvZXguWku/lZF8MIfriRgXzPIhSUrXDTy2XrlT8FnB0QCRqEzKYdrCi2TwaHEbzCtDlGU1jNcxncBixCfFnS2tr6v79yP8Y//c7HZ8Gg+0dwylqm7diqUpXSbP7bVGM3SmKqOBKL3NSAqEVvpsLhdUOSY4sjJ2hQMxI428Kr9Qzrd+/zTIp9HSXuYVM2xNLnSth80K/DiQ7MHT0qA6CCgOPdBdetSy2ZfWqO980z1ffG+GTyGZhrz8SH6tw+v9fuMr/haSsC9+woicVCmz9mUkKdQ6hbx6/0X8+w8=",
+  "ka4b79996f7fb": "dVZNk6NGDP0vPq4Xi283VO1Bdk/Fk9pNmKqkkjk2tBoYY3AabGadyn9PgcFr8KwOtguepKcntdr/LpJKU706iDJXVDert7oqF+Hi0+LzQokka0nvjQ6yeqsX4cKSPiMZQmBH+u/lO4uYxIgr6OwMAO0ScQnBZb2M8AWRn5B3z3G0Zw7gBLDr8ObvrgnBLwqjJcAOOMN/nt79V3zBLeIr4obtbn7t7Reqcwb4jUMEJm62CeILb8GVsOnfchPegxTxT+TRGcCB9nJxETk+4521uHFazhAxwk2LuOTQAvgRvr8Cx6cvi8+LvJT0vsqaQzGocRTJXqR0L1AtzmTUpM+kr/IEiWWTEw5ZurK3HSzR+bGpQeYiNWpqmoIOVDarpPdxyU4CL0TkLboc7kp9Gn9s8MuXuzhFHoOIS5EdyDjphvJiCMUsW9oqhPYJ2wgggjVs7pTjH4QpYpKV0QhFY5AgUA4T4Rx4qlMRkyFOqk88gD1GQnlh339gHKM3GK3L3DHZPmaNRSmnzAPfW5MXPrdd1Q94mQtqjCIv6zFvIr3YscNbsvbRR4vWuAjKCtKDk7DWwopHstdBiAKYOariVNeTZMyRns1CgAdsSnWeZI1x1FVM5QCPA3ttiXDzyCk9ngw1YRTHgsVzrTNBZUp6wsF0EuVbIbwz/JnBmc357cWBtDBKkY06m87ajn/oBgC7R55FX1SffizKN5Xlsolj13Dox4unfSC4jM+jceC6JTBYOk9S1VPdyLekL+diVHomr+v4ri9CxOc57TrJcn2YopVLtumEXx+LrDMhSRv7qm5uaOYKQWw4vxx69pHL554/5Bn87Ng3vXt1GOCOPWSsVNMKTUZ6PI01u+StvQ+LaYScVa4s5ShvLlDdiMNhPI7KcZ3kA0QpJ3w9lyx/3fFNfzIC19NpXCgvRielXDfwwu3GnYPPpPeU6bqk5jJrVizVOpgTOmtxMESc6lypcTBjL1HBR2espaIx4qoa96XvmE5gddzLO71VvyZvtkX+3f5r9zKOH0/7r9+Qf1Brn6HSzU2d2DeVG/a3Wps8oHPdGK1IslvzVUyio/7Q8AvpglKaSC/d2BEyhPZ6acIbQ4zWwxZTy8n5ujxGzKlrSlmf6nFkg7UM1HX0hl3/PN2g3RUei3I/tsT3mGWHvyJPvy5xuGLfTA4c5qYuf6SvW35dOd9w013fnGEf/EgJHHWl8m6ZQyZOdSaKyd+HhhotjpUUd/8fFKnA98Lxknu6fnQBz1TKSkOTaaJV73DIy6vTp/nrQyVPxR1AOCKQdrj4738=",
+  "ka994bff963cb": "dVRdb6MwEPwvebyeaz6DsdQHJ1RKpZMulU6q7nENa6AhENkQTjndfz9BICnQ+tGa8c7Ozvrv6gTxAVJ8fDdVueKrb6vvKwNnJAb1GfXju1nxVRjbDrpcXA8VQmw7WKzzU21okUsKsoTsiKTRNebFY9zTmO0kjuK0fRbtntI9DeimfXqaUwuJSUVqUDgSw1C5DPgc2JgUJBJoVF9sAPsMQfmc9odFYv9OxyNehaDt87yihDKZKg3XfoB+3+CzWChMcsCaFHlpxppx4kvX4bdCy64SDS25AGYF6oEEdgC2HIX2Vrb7kM6IqmiMmRRjbuI7jFO6wKZo8jiryUlXEssBLkMnsIF/4nR6aoiaKJISmJz7nAGWKeqJBsuN1drm9A8TXx16ZnN9BziiBlJCNvpsuYEj775RSndLnUXfVF9+bGptKdtjE2I3bJp2laO0f4hexvv9VVEkugAMJ50VMXGW6+PUOuWhY7n8x1KSySBBTQ6VqW9o5gEgG7Yi6sMm9l40Z96bGXiOXFv+x14YFTu2qFipugWNJD01AxE99IMupS8LcA3H47gPyvXceD5UU3eh/yjD99BeB52M9Is5XFeEXDAvRpJSnhf6fLtJ5+CzhiMBmepcqXHa0o9V+FlwWyxqIquqHsfrWm5oc3qh5c2VsI/a5h6wrYha6y0Sr/PS/WuVrm+dybWlPK7O3WbGC3Sua9JCnN3moSRCJ3MxgwvqAlOc2JZ40oWE0za+hUzsg+EbUA+TgF6WL+bYGVqaxowpCoMkVPyTb6RFfZBQHgagt/aZ7fRx2/wUu6sluzB6iOh5uhc0ufxKf2+j666+dB5uhXi9Pn7CmJ50pfLuF6QZNCaDor5////+Aw=="
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -74654,6 +74795,221 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.same.preis.eingabe#1",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\")  | const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co — Heap nach der Rücknahme 307.2 → 385.7 MB (+78.5 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 21/21, die alten 0.917 · Ring 10 neu, Median 23 m vom Haus / 72 m vom Ort · S)",
+   "exit": 0,
+   "minuten": 1.55,
+   "gpu": "nvidia/pascal",
+   "konsum": "ka4b79996f7fb",
+   "konsumN": 40,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 91.6,
+   "fremd": {
+    "s": 95.2,
+    "takte": 41,
+    "fremdS": 61.61,
+    "kerne": 0.647,
+    "fensterKerne": 1.483,
+    "namen": [
+     [
+      "Explorer.EXE",
+      12.2
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.52
+     ]
+    ],
+    "dienerS": 44.55,
+    "diener": [
+     [
+      "System",
+      18.38
+     ],
+     [
+      "dwm.exe",
+      18.16
+     ]
+    ],
+    "geraetS": 47.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.17
+     ],
+     [
+      "svchost.exe",
+      16.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.86
+     ]
+    ],
+    "eigenS": 480.3,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\")  | const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co — Heap nach der Rücknahme 307.2 → 385.7 MB (+78.5 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 21/21, die alten 0.917 · Ring 10 neu, Median 23 m vom Haus / 72 m vom Ort · S)",
+   "zeit": "2026-11-21T10:44:49.865Z",
+   "abdruck": "30c04fe5894d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kopplung.antwort#1": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\")  | const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co — Heap nach der Rücknahme 307.2 → 385.7 MB (+78.5 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: mit Haus (Kern ja, 1500 s): Ring 10 neu, Median 23 m vom Haus / 72 m vom Ort, binnen 30 m 6 · ohne Haus (B, dieselbe Saat, dieselbe Uhr): 8 neu, Median 58 m von der Stelle / 64 m vom Ort, binnen 30 m 2 · [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 1.55,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\")  | const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co — Heap nach der Rücknahme 307.2 → 385.7 MB (+78.5 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: mit Haus (Kern ja, 1500 s): Ring 10 neu, Median 23 m vom Haus / 72 m vom Ort, binnen 30 m 6 · ohne Haus (B, dieselbe Saat, dieselbe Uhr): 8 neu, Median 58 m von der Stelle / 64 m vom Ort, binnen 30 m 2 · [linse-gpu] nvidia/pascal)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ka4b79996f7fb",
+   "konsumN": 40,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 91.6,
+   "fremd": {
+    "s": 95.2,
+    "takte": 41,
+    "fremdS": 61.61,
+    "kerne": 0.647,
+    "fensterKerne": 1.483,
+    "namen": [
+     [
+      "Explorer.EXE",
+      12.2
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.52
+     ]
+    ],
+    "dienerS": 44.55,
+    "diener": [
+     [
+      "System",
+      18.38
+     ],
+     [
+      "dwm.exe",
+      18.16
+     ]
+    ],
+    "geraetS": 47.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.17
+     ],
+     [
+      "svchost.exe",
+      16.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.86
+     ]
+    ],
+    "eigenS": 480.3,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:44:49.865Z",
+   "abdruck": "0af45ebf8880",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K4#2",
+   "modus": "session"
+  },
+  "karte2.mensch.zeit.kausal#1": {
+   "gruen": false,
+   "zahl": "Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\")  | const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co — Heap nach der Rücknahme 307.2 → 385.7 MB (+78.5 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1744, Häuser 9 → 16 (+7) über dieselbe Uhr · [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 1.55,
+   "gpu": "nvidia/pascal",
+   "konsum": "ka4b79996f7fb",
+   "konsumN": 40,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 91.6,
+   "fremd": {
+    "s": 95.2,
+    "takte": 41,
+    "fremdS": 61.61,
+    "kerne": 0.647,
+    "fensterKerne": 1.483,
+    "namen": [
+     [
+      "Explorer.EXE",
+      12.2
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      5.52
+     ]
+    ],
+    "dienerS": 44.55,
+    "diener": [
+     [
+      "System",
+      18.38
+     ],
+     [
+      "dwm.exe",
+      18.16
+     ]
+    ],
+    "geraetS": 47.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.17
+     ],
+     [
+      "svchost.exe",
+      16.77
+     ],
+     [
+      "SearchIndexer.exe",
+      1.86
+     ]
+    ],
+    "eigenS": 480.3,
+    "rechnerKerne": 12
+   },
+   "ungemessen": true,
+   "grund": "Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\")  | const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co — Heap nach der Rücknahme 307.2 → 385.7 MB (+78.5 > 64) — kein Urteil, UNGEMESSEN (die Probe sah: mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1744, Häuser 9 → 16 (+7) über dieselbe Uhr · [linse-gpu] nvidia/pascal)",
+   "zeit": "2026-11-21T10:44:49.865Z",
+   "abdruck": "ea4cd263c0f4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K4#2",
    "modus": "session"
   }
  },
