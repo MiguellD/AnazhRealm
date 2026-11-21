@@ -994,8 +994,15 @@ async function probe(K) {
             const kopf = st.worldMeta.voxelEdits[st.worldMeta.voxelEdits.length - 1];
             r.dslRun(["voxel_fill", kopf.x, ring.krone, kopf.z, K.turmR], { source: "human" });
             const krone2 = r._voxelSurfaceY(t.x, t.z);
+            // DIE SCHNEEGRENZE IM FLUG: eine Stufe der Grenze (der EINE Weg des Schnee-Takts, `_fernRingNeuBestellen(fr, true)`)
+            // vor dem ersten Takt nach dem Edit und eine nach ihm, während seine Ecken fliegen — das Jahr der Welt-Uhr trägt sie
+            // in jeden Lauf (Herbst: 27 Stufen zwischen zwei Türmen); bis w28-herde-gesetz fiel der Edit mit ihr, und der Turm
+            // stand erst mit der letzten Scheibe des ganzen Rings im Horizont (CI B2 Brücke Ego 91 Takte, 1,52 s)
+            const schnee = () => r._fernRingNeuBestellen(st.fernRing, true);
+            schnee();
             for (let i = 1; i <= 120 && !ring.takte; i++) {
                 takt();
+                if (i === 1) schnee();
                 await sleep();
                 const bytes = lage().reduce((n, b, s) => n + b.filter((x, k) => x !== vor[s][k]).length, 0);
                 if (bytes && ringY() >= krone2 - K.sohleM) Object.assign(ring, { takte: i, bytes });

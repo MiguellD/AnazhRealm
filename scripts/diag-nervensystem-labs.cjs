@@ -125,8 +125,8 @@ hauptLauf(async () => {
         // ===== M: DER MOTION-ERSTKONSUMENT (die Schwanz-Rolle liest fx.motion) =====
         try {
             res.m = {};
-            const pi = r._motionStudioProfile(false); // idle
-            const pm = r._motionStudioProfile(true); // moving -> joy (MOTION_PROFILE_MAP)
+            const pi = r._motionStudioProfile(false, null, null, "wolf"); // idle (das Buch der Gattung wolf)
+            const pm = r._motionStudioProfile(true, null, null, "wolf"); // moving -> idle (MOTION_PROFILE_MAP; Posen-Gesetz H1: kein joy je Lauf)
             res.m.idle = pi ? { tailRate: pi.tailRate, tailAmp: pi.tailAmp } : null;
             res.m.moving = pm ? { tailRate: pm.tailRate, tailAmp: pm.tailAmp } : null;
             // KONSUM (Verhaltens-Zahl): eine synthetische Schwanz-Rolle durch den EINEN
@@ -310,7 +310,7 @@ hauptLauf(async () => {
             res.e = {};
             res.e.fleeName = r._motionProfileName(true, { chaos: 1 }, "kreatur"); // flee
             res.e.sadName = r._motionProfileName(false, { sorrow: 0.8 }, "koerper"); // sad
-            res.e.defName = r._motionProfileName(true, null, "kreatur"); // joy (byte-alt Default)
+            res.e.defName = r._motionProfileName(true, null, "kreatur"); // idle (H1: kein joy je Lauf)
             // Kreatur-ZAHL: Schwanz unter Furcht (chaos) = flee 11.0/0.006 geklemmt.
             const mkGroup = () => ({
                 children: [{ rotation: { x: 0, y: 0, z: 0 }, position: { x: 0, y: 0, z: 0 } }],
@@ -498,14 +498,14 @@ hauptLauf(async () => {
         `fallback semi2=${out.k.semi2Fallback} restored=${out.k.semi2Restored}`
     );
     check(
-        "M (W-A6-Erstkonsument): _motionStudioProfile liest idle 0.5/0.10 · moving[joy] 5.5/0.38",
+        "M (W-A6-Erstkonsument): _motionStudioProfile liest im Buch der Gattung idle 0.5/0.10 · moving[idle] 0.5/0.10 (H1: der Rhythmus gehört der Gangart)",
         !!out.m &&
             !!out.m.idle &&
             out.m.idle.tailRate === 0.5 &&
             out.m.idle.tailAmp === 0.1 &&
             !!out.m.moving &&
-            out.m.moving.tailRate === 5.5 &&
-            out.m.moving.tailAmp === 0.38,
+            out.m.moving.tailRate === 0.5 &&
+            out.m.moving.tailAmp === 0.1,
         (out.m && out.m.err) || JSON.stringify(out.m && out.m.idle)
     );
     check(
@@ -554,8 +554,8 @@ hauptLauf(async () => {
         !!out.d && out.d.wesenFallback === true && out.d.wesenStudioBuild === true
     );
     check(
-        "E (Emotions-Bruecke): der EINE Resolver waehlt flee (kreatur/chaos) · sad (koerper/sorrow) · joy (Default byte-alt)",
-        !!out.e && out.e.fleeName === "flee" && out.e.sadName === "sad" && out.e.defName === "joy",
+        "E (Emotions-Bruecke): der EINE Resolver waehlt flee (kreatur/chaos) · sad (koerper/sorrow) · idle (Default, H1: kein joy je Lauf)",
+        !!out.e && out.e.fleeName === "flee" && out.e.sadName === "sad" && out.e.defName === "idle",
         (out.e && out.e.err) || (out.e ? `${out.e.fleeName}/${out.e.sadName}/${out.e.defName}` : "")
     );
     check(

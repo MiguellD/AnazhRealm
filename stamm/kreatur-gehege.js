@@ -30,12 +30,13 @@ class AnazhRealm_kreatur_gehege {
         return this._gehegeListe().find((Z) => Z.id === id) || null;
     }
     // DIE TIERE DER GEHEGE im Verzeichnis der Region `key` (dort, wo ihr Platz liegt): wie jedes Tier — die Seele ihrer
-    // Gattung, die Größe aus ihrer Nummer (`_creatureBodySize`, das EINE Größen-Gesetz: dieselbe in jedem Boot), Alter 0, der
+    // Gattung, ein GRÜNDER (ohne Mutter, `m` null): sein Erbe aus der Saat der Welt und seiner Kennung (`_erbeGruender(id)`, der
+    // Genom-Strom „erbe“: dasselbe Tier in jedem Boot — und dasselbe wie die Wandlung eines alten Stands, `_lebenWandeln`), erwachsen (Alter = seine Reife, `_bestandErbe(t).reif` an seiner Masse M∞), der
     // Anker an ihrem Ruhe-Platz, der Verband des Geheges — mit dem Term `gehege` (die Nummer der Zeile; er reist im Stand,
     // `_lebenImStand`). DIE ZEILE IST DER BESTAND: je Region und Plan liest das Verzeichnis sie einmal (`R._gehege`: der Plan
     // kommt aus dem Faden, eine Region liest ihn, sobald er steht) und wieder, sobald es ihre Zahl nicht trägt (`R._gehegeN`) —
     // ein Tier, das dort steht, tritt nie zweimal ein; eines, das fiel (der Feld-Akt „aus“), steht beim nächsten Lesen wieder
-    // darin (Alter 0, ohne Stand: sein Leib entsteht an seinem Ruhe-Platz, `_gehegeLeiber`); eines, dessen Zeile der Plan nicht
+    // darin (erwachsen, ohne Stand: sein Leib entsteht an seinem Ruhe-Platz, `_gehegeLeiber`); eines, dessen Zeile der Plan nicht
     // mehr trägt, verlässt das Verzeichnis (sein Leib geht, sobald er außer Blick steht, `_ohneTier`). Ohne Plan bleibt, was der
     // Stand trug. Bis hierher trat die Zeile je Sitzung einmal ein: ein gefallenes Tier fehlte bis zum nächsten Laden.
     _gehegeEinsetzen(key, R) {
@@ -61,18 +62,15 @@ class AnazhRealm_kreatur_gehege {
                 const da = R.tiere.find((t) => t.id === p.id);
                 if (da) [da.x, da.z] = [p.x, p.z];
                 else {
-                    const bs = this._creatureBodySize("g" + p.id);
-                    R.tiere.push({
-                        id: p.id,
-                        soul,
-                        g: p.g,
-                        bs,
-                        alterS: 0,
+                    const t = Object.assign({ id: p.id, soul, g: p.g }, this._erbeGruender(p.id), {
+                        m: null,
                         x: p.x,
                         z: p.z,
                         v: "g" + Z.id,
                         gehege: Z.id,
                     });
+                    t.alterS = this._bestandErbe(t).reif; // erwachsen, wie der Gründer der Geburt
+                    R.tiere.push(t);
                     anders++;
                 }
             }
@@ -131,7 +129,8 @@ class AnazhRealm_kreatur_gehege {
         return false;
     }
     // EIN TAKT DER GEHEGE der Region R (tetrapoda GEHEGE_GESETZ): je Gehege seine Gemeinschaft — das Altern mit raten.alter, der
-    // Tod am Hunger mit raten.hunger (das Älteste), der Riss NUR unter seinen Tieren (`_bestandJagd`, bestandRiss) — aus seinem
+    // Tod am Hunger mit raten.hunger (wem die Reserve zuerst ausgeht, `_bestandHungerOpfer`), der Riss NUR unter seinen Tieren
+    // (`_bestandJagd`, bestandRiss) nach dem Ertrag (`_bestandRissOpfer`) — aus seinem
     // eigenen Strom dieses Takts (`gehege:<Nummer>@<Zeit>`: ein Wurf im Gehege re-rollt nie den wilden Strom der Region). Geboren
     // wird nie (die Zeile ist der Bestand); unter Raten 0 und ohne Beute ändert der Takt nichts.
     _gehegeSchritt(R, tode) {
@@ -144,12 +143,12 @@ class AnazhRealm_kreatur_gehege {
             for (const t of tiere) t.alterS += BG.B.taktS * G.raten.alter;
             const rng = this._faunaRng("gehege:" + id + "@" + R.t, true);
             const lebt = () => tiere.filter((t) => R.tiere.includes(t));
-            const alt = G.raten.hunger > 0 && rng() < G.raten.hunger && this._bestandAeltester(tiere);
-            if (alt) this._bestandStirbt(R, alt, "hunger", tode);
+            const hunger = G.raten.hunger > 0 && rng() < G.raten.hunger && this._bestandHungerOpfer(tiere, null, rng);
+            if (hunger) this._bestandStirbt(R, hunger, "hunger", tode);
             const { jaeger, gejagt, beuteVon } = this._bestandJagd(lebt(), diet);
             for (const g in diet) {
                 const riss = BG.riss(jaeger[g], gejagt[g] / BG.B.beuteVoll, BG.B);
-                const opfer = riss > 0 && rng() < riss && this._bestandAeltester(lebt(), g, beuteVon);
+                const opfer = riss > 0 && rng() < riss && this._bestandRissOpfer(lebt(), g, beuteVon, rng);
                 if (opfer) this._bestandStirbt(R, opfer, "jagd", tode, beuteVon.get(opfer));
             }
         }
@@ -165,7 +164,7 @@ class AnazhRealm_kreatur_gehege {
         for (const t of fehlt) {
             if (platz <= 0) break;
             const nah = !ankunft && Math.hypot(t.x - p.x, t.z - p.z) <= AnazhRealm.ANALOG_NAH_M;
-            if (nah && this._kreaturLeibImBlick(t.x, t.z, t.g, t.bs)) continue;
+            if (nah && this._kreaturLeibImBlick(t.x, t.z, t.g, this._bestandBs(t))) continue;
             const gY = this.getTerrainHeightAt(t.x, t.z);
             const c = this._bestandLeib(t, t.x, (Number.isFinite(gY) ? gY : p.y) + 1, t.z);
             if (!c) break;
