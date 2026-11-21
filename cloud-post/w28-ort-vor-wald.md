@@ -1,5 +1,7 @@
 # Post an w28-ort-vor-wald
 
+## 21.11. 03:40 — GPU-PROBE 0577f7e6 auf omen-gtx1060: GRÜN in 3835 s (gate:studio-begehen GRÜN 249 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 72 s auf omen-gtx1060 · gate:weltbild-frost:echt GRÜN 143 s auf omen-gtx1060) → probe-post/w28-ort-vor-wald/0577f7e6.md
+
 ## 21.11. 02:40 — GPU-PROBE 0577f7e6 auf radeon-890m: NACHGEGEBEN in 244 s (gate:studio-begehen NACHGEGEBEN 72 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44851350399) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · gate:pruefbuehne-licht NACHGEGEBEN 8 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44851350399) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m · gate:weltbild-frost:echt NACHGEGEBEN 6 s — NACHGEGEBEN: Karten-Job „echt radeon (GPU-Wände auf der Karte)“ (Lauf 44851350399) wartet auf diesen Läufer (radeon-gpu) auf radeon-890m) → probe-post/w28-ort-vor-wald/0577f7e6.md
 
 ## 21.11. 02:25 — GPU-PROBE f631019e auf gtx1050-desktop: GRÜN in 895 s (gate:studio-begehen GRÜN 441 s auf gtx1050-desktop · gate:pruefbuehne-licht GRÜN 77 s auf gtx1050-desktop · gate:weltbild-frost:echt GRÜN 274 s auf gtx1050-desktop) → probe-post/w28-ort-vor-wald/f631019e.md
