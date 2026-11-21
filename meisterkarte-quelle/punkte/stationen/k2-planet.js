@@ -179,8 +179,23 @@ const KERN = (() => {
             if (kz) return rot(kz);
             const L = j.leitern[leiter];
             if (!L) return rot("die Leiter " + leiter + " ist im Lauf nicht gemessen (die Probe endete vor ihr)");
-            if (L.warf) return rot("die Messung der Leiter warf nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 220), sp.taeter);
-            const roh = L.sprossen && L.sprossen[nr];
+            // DER DECKEL DER LEITER IST KEIN URTEIL (pm-front-f1, 21.11.; GTX 31ea3847: 13 Sprossen der Front standen ROT „die Messung der
+            // Leiter warf nach 25 s: der Deckel der Leiter 25 s“, ohne dass ein Wert gelesen war). Die Sprosse ist die Einheit des Ergebnisses
+            // (punkte.cjs keinUrteil (e)): was die Leiter vor dem Deckel in `M.teil` schrieb, urteilt wie jede Messung, der Deckel steht
+            // daneben; die Sprosse ohne Wert ist UNGEMESSEN beim Namen (`ohneUrteil`, keinUrteil (f)), nie ROT. Ein anderer Wurf der
+            // Leiter (die Welt warf, der Code der Leiter warf) bleibt ROT mit seinem Text.
+            const roh0 = L.sprossen && L.sprossen[nr];
+            const deckelL = L.warf && (L.deckel === true || /^der Deckel der Leiter \d+ s$/.test(String(L.warf)));
+            if (L.warf && !(roh0 && typeof roh0 === "object")) {
+                if (deckelL) {
+                    const grund = "der Deckel der Leiter riss nach " + deutsch(L.s) + " s vor dem Wert der Sprosse";
+                    return { gruen: false, zahl: kopf + grund + " · " + String(L.warf).slice(0, 120), ohneUrteil: grund };
+                }
+                return rot("die Messung der Leiter warf nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 220), sp.taeter);
+            }
+            const vorDeckel = L.warf ? " · gemessen vor dem Wurf der Leiter nach " + deutsch(L.s) + " s: " + String(L.warf).slice(0, 120) : "";
+            const roh = roh0;
+            const mit = (u) => (vorDeckel ? { ...u, zahl: u.zahl + vorDeckel } : u);
             if (!roh || typeof roh !== "object") return rot("die Sprosse ist im Lauf nicht gemessen", sp.taeter);
             const werte = roh.werte || {};
             const teile = sp.soll.map((s) => {
@@ -192,24 +207,24 @@ const KERN = (() => {
             if (richtetAuge) {
                 const a = roh.auge || {};
                 const k = AUGE.klasse(leiter, nr);
-                return {
+                return mit({
                     gruen: false,
                     zahl: kopf + (mess ? mess + " · " : "") + "auge: Pose " + (a.pose || sp.auge.pose) + " · Vorbild " + sp.auge.vorbild + " · Bild " + (a.bild || "fehlt" + (a.grund ? " (" + String(a.grund).slice(0, 120) + ")" : "")) +
                         (k.klasse === "panel" ? " — R11 Panel („" + k.wort + "“): das Urteil fällt im Panel, die Station behauptet kein GRÜN" : " — Korpus fehlt (" + k.wort + "): die Station behauptet kein GRÜN") +
                         (roh.nicht ? " · Umfang nicht erzeugbar: " + roh.nicht : ""),
-                };
+                });
             }
-            if (roh.nicht) return rot("Umfang nicht erzeugbar: " + String(roh.nicht).slice(0, 260) + (mess ? " · " + mess : "") + beleg(roh), roh.taeter || sp.taeter);
+            if (roh.nicht) return mit(rot("Umfang nicht erzeugbar: " + String(roh.nicht).slice(0, 260) + (mess ? " · " + mess : "") + beleg(roh), roh.taeter || sp.taeter));
             const fall = teile.find((t) => !t.ok);
-            if (fall) return rot(mess + beleg(roh), roh.taeter || sp.taeter);
+            if (fall) return mit(rot(mess + beleg(roh), roh.taeter || sp.taeter));
             let zg;
             try {
                 zg = sp.zeuge(roh);
             } catch (e) {
                 zg = "der Zeuge warf: " + String((e && e.message) || e).slice(0, 120);
             }
-            if (zg) return rot(mess + " · der Zeuge der Welt fehlt: " + zg + beleg(roh), roh.taeter || sp.taeter);
-            return { gruen: true, zahl: kopf + mess + " · Zeuge: " + String(sp.zeugeText || "die Welt geändert").slice(0, 120) + beleg(roh) };
+            if (zg) return mit(rot(mess + " · der Zeuge der Welt fehlt: " + zg + beleg(roh), roh.taeter || sp.taeter));
+            return mit({ gruen: true, zahl: kopf + mess + " · Zeuge: " + String(sp.zeugeText || "die Welt geändert").slice(0, 120) + beleg(roh) });
         };
     }
 
@@ -335,18 +350,21 @@ const KERN = (() => {
             H.schritt("dorf");
             fs.writeFileSync(H.aus, JSON.stringify(aus));
         }
+        // DIE SPROSSE IST DIE EINHEIT (pm-front-f1): eine Leiter legt jedes fertige Ergebnis in `M.teil[nr]`, sobald es steht; reißt ihr
+        // Deckel, bleibt es gemessen (`deckel: true` daneben) — die Sprosse ohne Wert ist UNGEMESSEN (urteilBauen), nie ROT
         for (const id of Object.keys(LEITERN)) {
             const L = LEITERN[id];
             M.t0 = Date.now();
-            let uhr = null;
+            M.teil = {};
+            let uhr = null, deckel = false;
             try {
                 const r = await Promise.race([
                     L.mess(H, L.U, M),
-                    new Promise((_, nein) => (uhr = setTimeout(() => nein(new Error("der Deckel der Leiter " + L.sek + " s")), L.sek * 1000))),
+                    new Promise((_, nein) => (uhr = setTimeout(() => ((deckel = true), nein(new Error("der Deckel der Leiter " + L.sek + " s"))), L.sek * 1000))),
                 ]);
                 aus.leitern[id] = { s: (Date.now() - M.t0) / 1000, sprossen: (r && r.sprossen) || {} };
             } catch (e) {
-                aus.leitern[id] = { s: (Date.now() - M.t0) / 1000, warf: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+                aus.leitern[id] = Object.assign({ s: (Date.now() - M.t0) / 1000, warf: String((e && e.message) || e).split("\n")[0].slice(0, 300) }, deckel ? { deckel: true } : {}, { sprossen: Object.assign({}, M.teil) });
             }
             clearTimeout(uhr);
             H.schritt(id);
@@ -431,6 +449,19 @@ const KERN = (() => {
         return stationen;
     }
 
+    // DER DECKEL DER LEITER IM SELBSTTEST (pm-front-f1): je Station zwei Proben aus ihrer ersten („gemessen im Soll“) — ohne Wert der
+    // Sprosse UNGEMESSEN beim Namen (`ohneUrteil`, nie ROT „warf“); mit Wert aus `M.teil` urteilt die Sprosse wie gemessen, der Deckel daneben
+    function mitDeckelProben(st) {
+        const leiter = st.kriterium.slice(7), nr = st.staffel, p0 = st.proben[0];
+        const roh = p0.j.leitern[leiter].sprossen[nr];
+        const j = (sprossen) => ({ leitern: { [leiter]: { s: 25, warf: "der Deckel der Leiter 25 s", deckel: true, sprossen } } });
+        st.proben = st.proben.concat([
+            { name: "der Deckel der Leiter riss vor dem Wert", j: j({}), stdout: p0.stdout, gruen: false, zahl: /der Deckel der Leiter riss nach 25 s vor dem Wert der Sprosse/ },
+            { name: "gemessen vor dem Deckel der Leiter", j: j({ [nr]: roh }), stdout: p0.stdout, gruen: p0.gruen, zahl: /gemessen vor dem Wurf der Leiter nach 25 s/ },
+        ]);
+        return st;
+    }
+
     // DAS KAPITEL: sammelt die Perspektiven, die Datei exportiert `stationen()`. EINE Perspektive darf aus mehreren Teilen kommen
     // (19.11., zusammenspiel.same: neun Leitern, gebaut von mehreren Händen): jedes Teil ruft L.perspektive(pid, { leitern }), das
     // Kapitel sammelt die Leitern je pid und baut daraus EINE Probe (eine Welt, eine Gruppen-Zeile) — zwei Teile mit derselben Leiter werfen
@@ -445,7 +476,7 @@ const KERN = (() => {
                 }
                 defs.set(pid, d);
             },
-            stationen: () => [...defs].flatMap(([pid, d]) => perspektive(name, pid, d)),
+            stationen: () => [...defs].flatMap(([pid, d]) => perspektive(name, pid, d)).map(mitDeckelProben),
         };
     }
     return { kapitel, soll, zahlVon, zahlenIn, sprosseVon, leiterVon, perspektiveVon, belegt, haelt, deutsch, leitern, urteilBauen, probenBauen, knapp };

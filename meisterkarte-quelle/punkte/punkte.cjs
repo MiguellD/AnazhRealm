@@ -733,7 +733,9 @@ function urteilVon(st, j, lauf) {
     try {
         const u = st.urteil(j, lauf);
         if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl) return { fehler: "Urteil ungültig (verlangt { gruen: bool, zahl: Text })" };
-        return { gruen: u.gruen, zahl: u.zahl, ...massDerStation(st, j, lauf, u) };
+        // (f) `ohneUrteil`: die Station sagt selbst, dass sie keinen Wert las (keinUrteil (f)) — der Grund wörtlich, nie an einem GRÜN
+        const ohne = u.gruen === false && typeof u.ohneUrteil === "string" && u.ohneUrteil ? { ohneUrteil: u.ohneUrteil.slice(0, 300) } : {};
+        return { gruen: u.gruen, zahl: u.zahl, ...ohne, ...massDerStation(st, j, lauf, u) };
     } catch (e) {
         return { fehler: "Urteil warf: " + String((e && e.message) || e).split("\n")[0] };
     }
@@ -778,6 +780,9 @@ function massDerStation(st, j, lauf, u) {
 //       Ausgabe, den die Probe nach jeder Sprosse schreibt: steht ihr Ergebnis, trägt sie ihr Urteil über jeden Abbruch der Probe
 //       (Frist, Deckel, Messort) — der Abbruch steht daneben (`abbruch`, er zensiert die Sekunden und ruft die Grundstellung); UNGEMESSEN
 //       bleibt nur die Sprosse ohne Ergebnis. Jede andere Station urteilt nie über den Stand eines abgebrochenen Laufs.
+//   (f) DIE STATION SAGT ES SELBST (pm-front-f1, 21.11.; GTX 31ea3847: 13 Sprossen der Front standen ROT „die Messung der Leiter warf
+//       nach 25 s: der Deckel der Leiter 25 s“ — die Leiter las keinen Wert, ihr Deckel riss): ein Urteil mit `ohneUrteil: <grund>` (nur
+//       ROT, stationen/k2-planet.js urteilBauen am Deckel der Leiter) ist UNGEMESSEN beim Grund, vor jedem anderen Fall.
 const FRIST_MARKE = /^@@PUNKTE@@ FRIST (\d+(?:\.\d+)?) s der Probe gerissen\b/m;
 const MESSORT_MARKE = /^@@PUNKTE@@ MESSORT (.+)$/m;
 // der Abbruch eines Laufs beim Namen (deckel: der Riss der Leine, den der Läufer selbst sah) oder null
@@ -792,6 +797,7 @@ function abbruchVon(stdout, deckel) {
 const liestErgebnis = (u, leer) => !u.fehler && !leer.fehler && !(leer.gruen === false && leer.zahl === u.zahl);
 const sprosseTraegt = (st, u, leer) => !!st && st.karte2 === true && liestErgebnis(u, leer);
 function keinUrteil(u, leer, stdout, st, deckel) {
+    if (u && u.ohneUrteil) return u.ohneUrteil;
     const ab = abbruchVon(stdout, deckel);
     if (ab) return sprosseTraegt(st, u, leer) ? null : ab;
     if (u.gruen || u.fehler || leer.fehler) return null;
@@ -6504,21 +6510,21 @@ async function selbsttest(o = {}) {
         // ersetzt die Falte durch die des Registers; eine gleiche bleibt still. Vorher ROT: jede Abweichung blieb stehen (282 „fehlt“ nach
         // dem alten Vertrag „auge = fehlt“, auch wo die Klasse ZAHL an der Zahl urteilt). Dazu die Klassen-Tafel: PANEL und KORPUS tragen
         // nie „gleich“, auch mit Soll; ZAHL nur mit Soll
-        const zeileAlt = (richter, grund) => ({ station: "karte2.mensch.leib.verschieden#3", leiter: "mensch.leib.verschieden", sprosse: 3, richter, ...(grund ? { grund } : {}) });
-        const fa = tafelFalte(tz([zeileAlt("fehlt", "auge: der alte Vertrag ohne Klasse")]), [mitT({ richter: "gleich" })]);
-        const fg = tafelFalte(tz([zeileAlt("fehlt", "R11 Panel: der alte Grund")]), [mitT({ richter: "fehlt", grund: "R11 Panel: der neue Grund" })]);
-        const fs0 = tafelFalte(tz([zeileAlt("gleich")]), [mitT({ richter: "gleich" })]);
-        const AK = require(path.join(DIR, "stationen", "auge-klasse.cjs"));
-        const kz = Object.entries(AK.KLASSE).map(([k, [c]]) => [k.split("#"), c]);
-        const kl = (c) => kz.find((x) => x[1] === c)[0];
-        const klassenOk = AK.tafel(kl("P")[0], +kl("P")[1], true).richter === "fehlt" && AK.tafel(kl("K")[0], +kl("K")[1], true).richter === "fehlt" &&
-            AK.tafel(kl("Z")[0], +kl("Z")[1], true).richter === "gleich" && AK.tafel(kl("Z")[0], +kl("Z")[1], false).richter === "fehlt" &&
-            /^R11 Panel: /.test(AK.tafel(kl("P")[0], +kl("P")[1], false).grund) && /^Korpus fehlt: /.test(AK.tafel(kl("K")[0], +kl("K")[1], false).grund);
-        let wirft = false;
-        try { AK.klasse("keine.leiter", 1); } catch { wirft = true; }
-        pruef("TAFEL-FALTE: eine abweichende Zeile (Richter oder Grund) ersetzt das Register, eine gleiche bleibt still; die Klassen-Tafel: PANEL und KORPUS nie „gleich“, ZAHL nur mit Soll, eine Sprosse ohne Klasse wirft",
-            fa.ersetze.length === 1 && fa.ersetze[0][1].richter === "gleich" && fg.ersetze.length === 1 && fg.ersetze[0][1].grund === "R11 Panel: der neue Grund" && fs0.ersetze.length === 0 && !fs0.abweichung.length && klassenOk && wirft,
-            JSON.stringify([fa.abweichung, fg.abweichung, fs0.abweichung, klassenOk, wirft]));
+        const tfZeile = (richter, grund) => ({ station: "karte2.mensch.leib.verschieden#3", leiter: "mensch.leib.verschieden", sprosse: 3, richter, ...(grund ? { grund } : {}) });
+        const tfA = tafelFalte(tz([tfZeile("fehlt", "auge: der alte Vertrag ohne Klasse")]), [mitT({ richter: "gleich" })]);
+        const tfG = tafelFalte(tz([tfZeile("fehlt", "R11 Panel: der alte Grund")]), [mitT({ richter: "fehlt", grund: "R11 Panel: der neue Grund" })]);
+        const tfS = tafelFalte(tz([tfZeile("gleich")]), [mitT({ richter: "gleich" })]);
+        const tfAK = require(path.join(DIR, "stationen", "auge-klasse.cjs"));
+        const tfK = Object.entries(tfAK.KLASSE).map(([k, [c]]) => [k.split("#"), c]);
+        const tfL = (c) => tfK.find((x) => x[1] === c)[0];
+        const tfKlasse = tfAK.tafel(tfL("P")[0], +tfL("P")[1], true).richter === "fehlt" && tfAK.tafel(tfL("K")[0], +tfL("K")[1], true).richter === "fehlt" &&
+            tfAK.tafel(tfL("Z")[0], +tfL("Z")[1], true).richter === "gleich" && tfAK.tafel(tfL("Z")[0], +tfL("Z")[1], false).richter === "fehlt" &&
+            /^R11 Panel: /.test(tfAK.tafel(tfL("P")[0], +tfL("P")[1], false).grund) && /^Korpus fehlt: /.test(tfAK.tafel(tfL("K")[0], +tfL("K")[1], false).grund);
+        let tfWirft = false;
+        try { tfAK.klasse("keine.leiter", 1); } catch { tfWirft = true; }
+        pruef("TAFEL-FALTE: eine abweichende Zeile (Richter oder Grund) ersetzt das Register, eine gleiche bleibt still; die Klassen-Tafel: PANEL und KORPUS nie „gleich“, ZAHL nur mit Soll, eine Sprosse ohne Klasse tfWirft",
+            tfA.ersetze.length === 1 && tfA.ersetze[0][1].richter === "gleich" && tfG.ersetze.length === 1 && tfG.ersetze[0][1].grund === "R11 Panel: der neue Grund" && tfS.ersetze.length === 0 && !tfS.abweichung.length && tfKlasse && tfWirft,
+            JSON.stringify([tfA.abweichung, tfG.abweichung, tfS.abweichung, tfKlasse, tfWirft]));
         // eine Staffel mit headless-Hälfte und Karten-Hälfte ist EINE Staffel auf drei Geräten, nie doppelt — ihre zweite headless-Hälfte schon
         const halb = { ...st0, staffel: 2, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" };
         const karteHalb = { ...halb, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 } };
@@ -7278,6 +7284,18 @@ async function selbsttest(o = {}) {
                     s2.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN \(die Probe sah: S2 · kein Ergebnis der Sprosse\) · Täter: @@ 1 s · probe S2 warf: Leser erschienen$/.test(s2.grund) &&
                     alt1.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN/.test(alt1.grund) && mut === "Frist der Probe 27 s gerissen",
                 JSON.stringify([s1, s2.grund, alt1.grund, mut]));
+            // (f) DIE STATION SAGT ES SELBST (pm-front-f1; GTX 31ea3847 planet.relief.wandel#1 „die Messung der Leiter warf nach 45 s: der
+            // Deckel der Leiter 45 s“ als ROT): eine Sprosse, deren Urteil `ohneUrteil` trägt, ist UNGEMESSEN beim Grund; dieselbe Sprosse mit
+            // Wert urteilt ROT. DIE MUTANTE (vorher ROT am Täter): keinUrteil ohne (f) — das Feld fällt in urteilVon — lässt sie ROT stehen
+            const deckelU = (j) => (!j ? { gruen: false, zahl: "S1 keine Messung: kein JSON" } : j.wert != null ? { gruen: false, zahl: "S1 · abtrag " + j.wert + " gegen Soll ≥ 1" } : { gruen: false, zahl: "S1 der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse", ohneUrteil: "der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse" });
+            const schreibt = (inhalt) => ["node", "-e", "require('fs').writeFileSync(process.argv[1], " + JSON.stringify(JSON.stringify(inhalt)) + ")", "{AUS}"];
+            const dOhne = await fahreStation(k2(1, { urteil: deckelU, befehl: schreibt({ leer: 1 }) }), ctx("k2-deckel-ohne"));
+            const dMit = await fahreStation(k2(1, { urteil: deckelU, befehl: schreibt({ wert: 0 }) }), ctx("k2-deckel-mit"));
+            const dMut = keinUrteil({ gruen: false, zahl: deckelU({ leer: 1 }).zahl }, deckelU(null), "", k2(1), null);
+            pruef("KEIN URTEIL (f) DER DECKEL DER LEITER: die Sprosse ohne Wert (ohneUrteil) UNGEMESSEN beim Grund, mit Wert ROT; die Mutante (das Feld fehlt) ROT",
+                dOhne.ungemessen === true && /^der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN/.test(dOhne.grund) &&
+                    dMit.gruen === false && !dMit.ungemessen && dMit.grund === "ROT: S1 · abtrag 0 gegen Soll ≥ 1" && dMut === null,
+                JSON.stringify([dOhne.grund, dMit.grund, dMut]));
         }
         const id = schluessel(at);
         const lauf = (sha, e) => {

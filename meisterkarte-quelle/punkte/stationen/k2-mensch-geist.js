@@ -91,6 +91,50 @@ const STADT = (r, T) => {
 const ZENSUS = async (r, T, arg, HILF) => (HILF.L.length ? HILF.zensus() : { fehler: "keine Bewohner am Messort" });
 const POSE = async (r, T, arg, HILF) => HILF.pose() || { fehler: "keine Gruppe draußen binnen 20 m am Spieler" };
 
+// DER ZUG AM TAG (absicht S1, wörtlich „20 Personen nach 1 Spieltag ihrem Zug zugeordnet ≥ 0,6“): je Bewohner der Stadt sein Soll der
+// Stunde, wie der Takt es liest (`_bewohnerSoll`: der Plan seines Samens, seiner Rolle, seiner gebundenen Orte und des Regens am Ort),
+// alle 15 min über 24 h; der Ort des Solls ist der Name des Orts, dessen Stand das Ziel ist (drinnen: daheim). EIN BLINDER ZUORDNER
+// (der von gate:mensch-zuege, scripts/diag-mensch-zuege.cjs `zuordnen`: er liest nie den Zug, nur den Tag und die Rolle) ordnet nach
+// Stunden am Werk über dem Maß der Rolle (≥ 1,5 fleißig), am Treff außer Haus (≥ 2 gesellig), daheim in der Freizeit (≥ 5,4 häuslich);
+// verglichen mit dem Zug seines Samens (koerper `tagesZug`). Der Anteil ist das kleinere von den ersten 20 und der ganzen Stadt
+const ZUEGE = async (r, T, arg, HILF) => {
+    const { L } = HILF;
+    const KC = window.__koerperCore;
+    if (!L.length) return { fehler: "keine Bewohner am Messort" };
+    if (!KC || typeof KC.tagesZug !== "function" || !KC.TAGES_GESETZ || !KC.TAGES_GESETZ.zuege) return { fehler: "der Kern trägt keinen Zug (koerper tagesZug)" };
+    const G = KC.TAGES_GESETZ;
+    const ORTE = ["abend", "heim", "werk", "platz", "mahl", "besuch"];
+    let t20 = 0, tAlle = 0, n = 0, weicht = 0;
+    const tafel = {};
+    for (const b of L) {
+        if (!b.orte || !Number.isFinite(b.same)) continue;
+        const R = G.rollen[b.rolle] || {};
+        const W = R.werk || G.werk;
+        const mass = W[1] - W[0] - (R.mittagAmWerk ? 0 : G.mittag[1] - G.mittag[0]);
+        let werk = 0, treff = 0, heimFrei = 0;
+        for (let q = 0; q < 96; q++) {
+            const p = r._bewohnerSoll(b, q / 4);
+            const wo = p.drinnen ? "heim" : ORTE.find((k) => b.orte[k] && b.orte[k] === p.ziel) || null;
+            if (!wo && p.akt !== "arbeit") weicht++;
+            if (p.akt === "arbeit") werk += 0.25;
+            else if (p.akt !== "schlaf" && wo === "abend") treff += 0.25;
+            else if (p.akt !== "schlaf" && wo === "heim") heimFrei += 0.25;
+        }
+        const rat = werk - mass >= 1.5 ? "fleissig" : treff >= 2 ? "gesellig" : heimFrei >= 5.4 ? "haeuslich" : "ausgeglichen";
+        const ist = KC.tagesZug(b.same);
+        const ok = rat === ist ? 1 : 0;
+        if (n < 20) t20 += ok;
+        tAlle += ok;
+        n++;
+        const Z = (tafel[ist] = tafel[ist] || { n: 0, ok: 0 });
+        Z.n++;
+        Z.ok += ok;
+    }
+    if (!n) return { fehler: "kein Bewohner trägt Orte und Samen" };
+    const w = r._weatherFieldFor();
+    return { n, t20: +(t20 / Math.min(20, n)).toFixed(4), alle: +(tAlle / n).toFixed(4), tafel, weicht, regen: +Number((w && w.rain) || 0).toFixed(3) };
+};
+
 // DER TAG ÜBER SIEBEN TAGE (tag S2): je Tag die Stunden des Arguments, die Uhr springt (über Mitternacht vorwärts: der Tag der
 // Welt zählt, `_uhrSetzen`), jeder Bewohner kommt an; gelesen je Bewohner sein Akt (`b.akt`, den der Takt setzt), ob er dort ist
 // (drinnen an seiner Tür oder ≤ 1,5 m an seinem Ziel) oder unterwegs, und die Hauptkategorie der Zeitverwendungs-Erhebung (das
@@ -517,19 +561,19 @@ module.exports = (F) => [
         },
     }),
 
-    // ── mensch.geist.absicht ── kein Charakter, kein Ziel: S1, S2 der fehlende Leser am Ergebnis gezählt; S3–S6 jenseits der Stadt
+    // ── mensch.geist.absicht ── S1 der Zug am Tag der Stadt (blind zugeordnet), S2 der fehlende Leser am Ergebnis gezählt; S3–S6 jenseits der Stadt
     F.leiter("mensch.geist.absicht", {
         sek: 45,
         pfad: PFAD,
         sprossen: {
-            1: leser(um(100, "Bewohner"), [ge("zug", "Anteil ihrem Zug zugeordnet", 0.6)], "kein Charakterzug: der Plan der Stunde liest Same, Rolle, Stunde, Orte und Regen", "koerper-core.js:5326"),
+            1: { umfang: um(100, "Bewohner"), masse: [ge("zug", "Anteil ihrem Zug zugeordnet", 0.6)] },
             2: leser(um(1000, "Bewohner"), [ge("fortschritt", "Anteil sichtbarer Fortschritt nach 1 Spieljahr", 0.5)], "kein Ziel über Monate: der Satz des Bewohners trägt kein Ziel, keinen Vorrat, keinen Fortschritt", "stamm/siedlung-bewohner.js:887"),
             3: nicht(um(10000, "Bewohner"), [ge("ziele", "Anteil erklärter Ziele in der Welt", 0.3), ge("rueckfuehrbar", "Anteil Ziele auf eine Person rückführbar", 1)], "10⁴ Bewohner über einen Sprung von 10 J"),
             4: { auge: { pose: "stadt-voll, je Saat die Geschichte eines Bewohners", vorbild: "Geschichten „erzählenswert und folgerichtig“ (Panel ≥ 0,5)" }, erwartet: "nicht", fehlt: "10⁶ Bewohner in 100 Saaten" },
             5: nicht(um(1000000000, "Menschen über Epochen"), [le("anachron", "Anteil anachronistischer Ziele", 0.01), ge("verteilung", "Verteilung der Ziele im historischen Band (1 = ja)", 1)], "10⁹ Menschen über Epochen"),
             6: nicht(um(100, "Welten fremder Gesellschaften"), [ge("rang", "Rang des vorhergesagten Lebensentwurfs", 0.7)], FREMD),
         },
-        seite: { STADT, ZENSUS },
+        seite: { STADT, ZENSUS, ZUEGE },
         messe: async (H, K) => {
             await K.messort("stadt-voll");
             const welt = (name, arg) =>
@@ -546,7 +590,14 @@ module.exports = (F) => [
             const zensus = async () => zen || (zen = pruef(await welt("ZENSUS"), "der Zensus der Stadt"));
             await K.schritt(1, async () => {
                 const z = await zensus();
-                K.leser(1, { fehlt: "kein Charakterzug: der Plan der Stunde liest Same, Rolle, Stunde, Orte und Regen (" + z.stadt + " Bewohner der Stadt, je Rolle ein Tag)", wo: "koerper-core.js:5326", n: z.stadt });
+                const zg = pruef(await welt("ZUEGE"), "der Zug am Tag der Stadt");
+                H.zeile("S1 Zug zugeordnet erste 20 " + zg.t20 + ", Stadt " + zg.alle + " (" + zg.n + " Bewohner)");
+                K.zahl(1, {
+                    n: zg.n,
+                    werte: { zug: Math.min(zg.t20, zg.alle) },
+                    beleg: "das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 " + zg.t20 + ", Stadt " + zg.alle + " von " + zg.n + " (" + z.stadt + " in der Stadt), je Zug " + JSON.stringify(zg.tafel) + ", Regen " + zg.regen + ", Viertelstunden ohne Ort " + zg.weicht,
+                    taeter: "koerper-core.js tagesPlan · TAGES_GESETZ.zuege — der Zug verschiebt die Wenden des Tags nicht weit genug, dass der Tag ihn trägt",
+                });
             });
             await K.schritt(2, async () => {
                 const z = await zensus();
@@ -559,7 +610,10 @@ module.exports = (F) => [
                 });
         },
         proben: {
-            1: [{ name: "Attrappe: 20 Personen, Zuordnung beim Raten (1 von 8) — ROT am Anteil", j: mut("mensch.geist.absicht", 1, 100, { zug: 0.125 }), gruen: false, zahl: /ROT an Anteil ihrem Zug zugeordnet 0\.125 verfehlt ≥ 0\.6/ }],
+            1: [{ name: "Attrappe: 20 Personen, Zuordnung beim Raten (1 von 8) — ROT am Anteil", j: mut("mensch.geist.absicht", 1, 100, { zug: 0.125 }), gruen: false, zahl: /ROT an Anteil ihrem Zug zugeordnet 0\.125 verfehlt ≥ 0\.6/ },
+                { name: "die Stadt trägt ihren Zug (0,72 über 1 092)", j: mut("mensch.geist.absicht", 1, 1092, { zug: 0.72 }), gruen: true },
+                { name: "zu wenige Bewohner — ROT am Umfang", j: mut("mensch.geist.absicht", 1, 40, { zug: 0.9 }), gruen: false, zahl: /ROT an Umfang 40 < 100/ },
+            ],
         },
     }),
 

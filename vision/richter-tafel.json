@@ -8,7 +8,7 @@
   { "station": "gelaende.K2#1", "leiter": "mensch.nahrung.erdbau", "sprosse": 1, "richter": "gleich" },
   { "station": "siedlung.K4#2", "leiter": "mensch.zeit.palimpsest", "sprosse": 1, "richter": "gleich" },
   { "station": "speicher.K4#2", "leiter": "same.entfaltung.akte", "sprosse": 1, "richter": "gleich" },
-  { "station": "affekt.K1#2", "leiter": "erleben.sinn.ziele", "sprosse": 1, "richter": "gleich" },
+  { "station": "karte2.erleben.sinn.ziele#1", "leiter": "erleben.sinn.ziele", "sprosse": 1, "richter": "gleich" },
   { "station": "mensch.K2#2", "leiter": "mensch.menge.rhythmus", "sprosse": 1, "richter": "gleich" },
   { "station": "mensch.K5#1", "leiter": "mensch.menge.dichte", "sprosse": 1, "richter": "gleich" },
   { "station": "siedlung.K1#2", "leiter": "mensch.bau.innen", "sprosse": 2, "richter": "gleich" },

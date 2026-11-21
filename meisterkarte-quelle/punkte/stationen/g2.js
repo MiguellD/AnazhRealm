@@ -976,9 +976,12 @@ async function wertLauf() {
     try {
         await tor.bereit;
         for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
-        if (art === "wert") {
+        // DER ZEHN-GANG ALS EIGENER LAUF (pm-front-f1; GTX 31ea3847: affekt.K1#2 „Gänge 2/2 (Exit 0: der Baum fällt nicht (0 Hiebe))“
+        // verschwieg die zehn Taten, die im selben Lauf 9 → −0,62 dB maßen): art „zehn“ fährt NUR die zehn Taten (Station
+        // karte2.erleben.sinn.ziele#1), art „wert“ nur die Wert-Gänge (affekt.K1#2)
+        if (art === "zehn") await ruf({ uhr: 0.5, sicht: "first", zehn: true });
+        else if (art === "wert") {
             for (const [uhr, sicht] of [[0.5, "first"], [0.92, "third"]]) await ruf({ uhr, sicht });
-            await ruf({ uhr: 0.5, sicht: "first", zehn: true });
         } else
             for (const sicht of ["first"]) {
                 const a = await ruf({ sicht });
@@ -1562,6 +1565,25 @@ const zeilenVon = (lauf, marke) =>
         .split(/\r?\n/)
         .filter((z) => z.startsWith(marke + " {"))
         .map((z) => JSON.parse(z.slice(marke.length + 1)));
+// DIE ZEHN TATEN (karte2.erleben.sinn.ziele#1; der Preis der Sprosse: Antwort ≤ 2 s): fehlt eine Tat oder ihre Antwort, ist es ROT beim Namen
+const zehnUrteil = (j, lauf) => {
+    const out = String((lauf && lauf.stdout) || "");
+    const karte = /^\[linse-gpu\] (.+)$/m.exec(out);
+    if (!karte || /swiftshader|llvmpipe/.test(karte[1])) return { gruen: false, zahl: "zehn Taten: kein Zeuge einer Karte (" + (karte ? karte[1] : "[linse-gpu] fehlt") + ", Exit " + (lauf && lauf.exit) + ")" };
+    const Z = (zeilenVon(lauf, "ZEHN-TATEN")[0] || {}).zehn || [];
+    const za = Z.map((x) => x.db), [a1, a10] = [za[0], za[9]];
+    const zFehlt = Z.length !== 10 ? "Taten " + Z.length + "/10" : Z.findIndex((x) => x.neu !== 1 || !Number.isFinite(x.db) || !Number.isFinite(x.nachbar));
+    const zNach = Z.length ? Math.max(...Z.map((x) => Math.abs(x.nachbar))) : null;
+    const gut = zFehlt === -1 && a1 > 0 && Math.abs(a10) <= 0.3 * a1 && zNach === 0 && Z[0].s <= 2;
+    return {
+        gruen: gut,
+        zahl: "zehn Taten: " + (zFehlt !== -1 && typeof zFehlt === "string" ? zFehlt + " (Exit " + (lauf && lauf.exit) + ")" : zFehlt !== -1 ? "Tat " + (zFehlt + 1) + " ohne Tat oder Antwort" :
+            "Antwort Tat 1 " + a1 + " dB → Tat 10 " + a10 + " dB (" + (a1 > 0 ? (Math.abs(a10) / a1).toFixed(3) : "—") + " ≤ 0,3), Nachbar max " + zNach + " dB, Antwort Tat 1 nach " + Z[0].s + " s (≤ 2) [" + za.join(" ") + "]") +
+            " " + (gut ? "GRÜN" : "ROT · Täter: stamm/feld-sprache.js Gewöhnung (die gleiche Tat ist erwartet, ihr δ fällt)"),
+    };
+};
+const ZEHN_GTX = [[1, 9, 0.233], [1, 5.7, 0.267], [1, 0.2, 0.4], [1, -0.99, 0.317], [1, -1.72, 0.3], [1, -2.47, 0.35], [1, -2.09, 0.317], [1, -1.39, 0.35], [1, -0.93, 0.3], [1, -0.62, 0.333]];
+const zehnRoh = (f = (Z) => Z) => "[linse-gpu] nvidia/pascal\nZEHN-TATEN " + JSON.stringify({ uhr: 0.5, sicht: "first", sonne: 0.96, zehn: f(ZEHN_GTX.map(([neu, db, s]) => ({ neu, op: "deposit_life", stimme: "vogel", db, s, nachbar: 0 }))) });
 
 // ───────── HAAR UND FELL IN DER SOLL-TAFEL (haar.K1#1, haar.K2#1; Zweig haar-fell-soll) ─────────
 // EINE Werkbank-Sitzung `--echt` gegen einen eigenen save-server an der Mess-Wiese, 1920×1080; zwei Schüsse der Klasse aus dem
@@ -1886,7 +1908,12 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
 // ihm näher als jedem anderen Ziel der Stunde; FEHLT = ein Bewohner des Solls ohne gezeichneten Stand ≤ R_M am Ort; DOPPELT =
 // ein Bewohner mit zwei Hüllen in der Szene oder zwei Bewohner mit einem Samen
 async function dorfZaehlung(r, T) {
-    const UHREN = [3, 10, 15, 20], ORTE_N = 5, R_M = 10;
+    // DIE UHREN NACH DEM SOLL DES GESETZES (pm-front-f1; GTX F68: jede Stichprobe ±10 %, niemand fehlt, doppelt 0 — ROT allein an
+    // „Σ Soll 18 < 20“, die Uhr 3 trug Soll 0): aus den Wenden des Tags (Nacht 3, Werk 8–17, Abend 18–20) die VIER Uhren, an denen der
+    // Plan der Stunde (`_bewohnerSoll`) die meisten Bewohner draußen an einem Ort führt — die Zählung misst, wo das Gesetz Menschen stellt
+    const KANDIDATEN = [3, 8, 10, 12, 15, 18, 20];
+    let UHREN = [3, 10, 15, 20];
+    const ORTE_N = 5, R_M = 10;
     const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
     // DAS START-DORF BESTELLEN (17.11., Radeon 389a6496: „kein Start-Dorf“ an bevoelkerung und kollektiv — die Grundstellung der
     // Sitzung spielte das Dorf zurück, `umstellen --ort genesis` baut es nicht; die Probe bewohner bestellt es selbst, wie hier):
@@ -1920,6 +1947,7 @@ async function dorfZaehlung(r, T) {
     // den fünf Orten
     const amWagen = (b, z) => !!(z && z.ziel && b.wagen && b.wagen.entry && z.ziel === b.wagen.entry.position);
     const zielVon = (b, h) => { const z = r._bewohnerSoll(b, h); return z.drinnen || !z.ziel || amWagen(b, z) ? null : z.ziel; };
+    UHREN = KANDIDATEN.map((h) => [h, L.reduce((n, b) => n + (zielVon(b, h) ? 1 : 0), 0)]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 4).map((x) => x[0]).sort((a, b) => a - b);
     const summe = new Map();
     for (const h of UHREN) for (const b of L) { const z = zielVon(b, h); if (!z) continue; const e = summe.get(schl(z)) || { x: z.x, z: z.z, n: 0 }; e.n++; summe.set(schl(z), e); }
     const orte = [];
@@ -6022,8 +6050,7 @@ const stationen = [
     // headless) ROT: fällen und töten keine Tat (das Buch nennt keinen Op, 0 dB), nachts 0 dB auch beim Pflegen.
     // IN DER SITZUNG (29.10.): die Diagonale WERT_GAENGE (12 Uhr Ego, 22 Uhr Third) — die Gänge fällen, töten und bauen in der Welt
     // (mutiert)
-    // DIE ZEHN TATEN (w28-ernte2-pm, der Richter von erleben.sinn.ziele S1 der Karte 2): nach den Gängen 10× „pflege das land“ am Ort,
-    // je 30 s Spielzeit, 12 Uhr Ego — die Antwort im Ausgabe-Pfad fällt von Tat 1 auf Tat 10 auf ≤ 30 %, 32 m daneben 0 dB
+    // DIE ZEHN TATEN (erleben.sinn.ziele S1 der Karte 2) fahren seit pm-front-f1 als eigene Station karte2.erleben.sinn.ziele#1 (unten)
     {
         kriterium: "affekt.K1",
         staffel: 2,
@@ -6050,26 +6077,48 @@ const stationen = [
             };
             const ganz = G.some((g) => g.sonne > 0) && G.some((g) => g.sonne < 0) && new Set(G.map((g) => g.sicht)).size === 2;
             const db = (x) => x.delta + " " + x.db + " dB";
-            // DIE ZEHN TATEN (erleben.sinn.ziele S1, wörtlich: „dieselbe Tat 10×: Antwort am Ort (dB) fällt von Tat 1 auf Tat 10 auf ≤ 30 %,
-            // Nachbarzelle 0“; der Preis der Sprosse: Antwort ≤ 2 s): fehlt eine Tat oder ihre Antwort, ist es ROT beim Namen
-            const Z = (zeilenVon(lauf, "ZEHN-TATEN")[0] || {}).zehn || [];
-            const za = Z.map((x) => x.db), [a1, a10] = [za[0], za[9]];
-            const zFehlt = Z.length !== 10 ? "Taten " + Z.length + "/10" : Z.findIndex((x) => x.neu !== 1 || !Number.isFinite(x.db) || !Number.isFinite(x.nachbar));
-            const zNach = Z.length ? Math.max(...Z.map((x) => Math.abs(x.nachbar))) : null;
-            const zehnGut = zFehlt === -1 && a1 > 0 && Math.abs(a10) <= 0.3 * a1 && zNach === 0 && Z[0].s <= 2;
-            const zehn = "zehn Taten: " + (zFehlt !== -1 && typeof zFehlt === "string" ? zFehlt : zFehlt !== -1 ? "Tat " + (zFehlt + 1) + " ohne Tat oder Antwort" :
-                "Antwort Tat 1 " + a1 + " dB → Tat 10 " + a10 + " dB (" + (Math.abs(a10) / a1).toFixed(3) + " ≤ 0,3), Nachbar max " + zNach + " dB, Antwort Tat 1 nach " + Z[0].s + " s (≤ 2) [" + za.join(" ") + "]") +
-                " " + (zehnGut ? "GRÜN" : "ROT");
             return {
-                gruen: ganz && G.every(gut) && zehnGut,
+                gruen: ganz && G.every(gut),
                 zahl: G.map((g) => (g.sonne > 0 ? "Tag " : "Nacht ") + g.sicht + " " + (gut(g) ? "GRÜN" : "ROT") + ": fällen " + db(g.faellen) + " · töten " +
-                    db(g.toeten) + " · pflegen " + db(g.pflegen) + " · nach 30 min " + db(g.ruhe) + " (Ertrag " + g.ruhe.ertrag + ")").join(" | ") + " | " + zehn,
+                    db(g.toeten) + " · pflegen " + db(g.pflegen) + " · nach 30 min " + db(g.ruhe) + " (Ertrag " + g.ruhe.ertrag + ")").join(" | "),
             };
         },
         pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/klang.js", "klang-core.js", "stamm/werkstatt-bauen.js",
             "stamm/kreatur-leben.js", "stamm/kampf.js", "stamm/dirigent-takt.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte",
+    },
+
+    // ───────── KARTE 2 erleben.sinn.ziele S1 — DIE ZEHN TATEN (w28-ernte2-pm; eigener Lauf seit pm-front-f1) ─────────
+    // Wörtlich: „dieselbe Tat 10×: Antwort am Ort (dB) fällt von Tat 1 auf Tat 10 auf ≤ 30 %, Nachbarzelle 0“. Der Zehn-Gang (wertGang
+    // mit o.zehn) in der warmen Welt an der Mess-Wiese, 12 Uhr Ego: 10× „pflege das land“ über den echten Weg (processChatCommand), je
+    // 30 s Spielzeit; je Tat die Antwort im Ausgabe-Pfad (der Graph der Umwelt-Mischung) und 32 m daneben. Bis pm-front-f1 trug
+    // affekt.K1#2 die Sprosse mit: ihr Fäll-Gang („der Baum fällt nicht (0 Hiebe)“, Fadenkreuz-Pick) verschwieg das Urteil der Taten.
+    {
+        kriterium: "karte2.erleben.sinn.ziele",
+        karte2: true,
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: { sek: 10, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "zehn", knapp(wertGang)], mutiert: true },
+        gpu: true,
+        zeit: false,
+        minuten: 2,
+        urteil: zehnUrteil,
+        proben: [
+            { name: "die GTX am 31ea3847: 9 → −0,62 dB, Nachbar 0, Antwort 0,233 s", stdout: zehnRoh(), gruen: true },
+            { name: "ATTRAPPE die Antwort fällt nicht (Tat 10 = 5 dB)", stdout: zehnRoh((Z) => ((Z[9].db = 5), Z)), gruen: false },
+            { name: "ATTRAPPE die Nachbarzelle antwortet (0,4 dB)", stdout: zehnRoh((Z) => ((Z[4].nachbar = 0.4), Z)), gruen: false },
+            { name: "ATTRAPPE eine Tat schreibt kein Buch (neu 0)", stdout: zehnRoh((Z) => ((Z[3].neu = 0), Z)), gruen: false },
+            { name: "neun Taten", stdout: zehnRoh((Z) => Z.slice(0, 9)), gruen: false },
+            { name: "Tat 1 antwortet nicht (0 dB)", stdout: zehnRoh((Z) => ((Z[0].db = 0), Z)), gruen: false },
+            { name: "Antwort Tat 1 nach 2,5 s", stdout: zehnRoh((Z) => ((Z[0].s = 2.5), Z)), gruen: false },
+            { name: "swiftshader", stdout: zehnRoh().replace("nvidia/pascal", "google/swiftshader"), gruen: false },
+            { name: "kein Lauf", stdout: "[linse-gpu] nvidia/pascal\nFEHLER umstellen", gruen: false },
+        ],
+        pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/klang.js", "klang-core.js", "stamm/dirigent-takt.js",
+            "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
+        quelle: "KARTE2 erleben.sinn.ziele S1 = dieselbe Tat 10×: Antwort am Ort (dB, Licht) fällt von Tat 1 auf Tat 10 auf ≤ 30 %, Nachbarzelle 0",
     },
 
     // ───────── affekt.K2 Staffel 1 — die Emotion formt die Welt über ein Gesetz mit Quelle (Zweig affekt-emotion) ─────────
