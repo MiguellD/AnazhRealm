@@ -1280,6 +1280,22 @@ function masseUrteil(b) {
         m.mutante && !nahBei(m.mutante.erhalt, 1, T.strom) && !nahBei(m.mutante.optisch, m.mutante.soll, T.strom) ? "" : `MUTANTE-N8: mit der Deckung ohne Masse (a0 × b0 ÷ s) liest die Linse Erhalt × ${m.mutante?.erhalt} und τ·A ${m.mutante?.optisch} ↔ ${m.mutante?.soll} m² — sie misst die Masse der Ballen nicht`,
     ].filter(Boolean);
 }
+// (N9) DAS URTEIL DER ZÜNDUNG (front-brand, gate:stand-takt BRAND-ZELLEN): eine Zündung liest, was sich ändert. SÄULE — unter
+// `_brandStoff` einer Gras-Zelle marschiert `_voxelSurfaceY` genau EINMAL (die Höhe des Betts; das Gefälle liest die 2D-Höhe
+// `_terrainMacroSurfaceY`). WIESE — der Neubau nach der Zündung (Entfachen + ein Schritt) lässt weniger Streu-Kacheln fallen
+// als der über der ganzen Zelle ±½. Die Mutante ist der Stand 8e2d76d1 (GPU-Probe 44943679460: zwei Zündungen in einem Schritt
+// mit 16 Zellen 1 099 Einheiten, Soll 1 024): das Gefälle aus zwei weiteren Märschen, der Neubau über der Zelle ±½.
+function zuendungUrteil(b) {
+    const n = b?.n9;
+    if (!n) return ["N9-LEER: kein Befund der Zündung"];
+    const [e, m] = [n.echt || {}, n.mutante || {}];
+    return [
+        e.bett > 0 && e.maersche >= 1 && e.wiese > 0 && m.wiese > 0 ? "" : `N9-LEER: keine Messung der Zündung: Bett-Anteil ${e.bett}, ${e.maersche} Märsche, ${e.wiese} Streu-Kacheln im Neubau (ganze Zelle ±½: ${m.wiese})`,
+        e.maersche === 1 ? "" : `N9-SÄULE: die Zündung marschiert ${e.maersche}-mal durch ihre Säule (\`_voxelSurfaceY\` unter \`_brandStoff\`, Soll 1: die Höhe des Betts — das Gefälle liest die 2D-Höhe \`_terrainMacroSurfaceY\`) — stamm/feld-brand.js _brandStoff`,
+        e.wiese < m.wiese ? "" : `N9-WIESE: der Neubau der Wiese nach der Zündung fällt über ${e.wiese} Streu-Kacheln — so viele wie über der ganzen Zelle ±½ (${m.wiese}); er gehört dem Rechteck der geänderten Viertel (\`wieseNeu\`) — stamm/feld-brand.js _brandMalen`,
+        m.maersche >= 3 ? "" : `MUTANTE-N9: mit dem Gefälle aus zwei weiteren Märschen zählt die Linse ${m.maersche} Märsche — sie ist blind für die Säule`,
+    ].filter(Boolean);
+}
 function narbeUrteil(b) {
     const [a, e, l, s, n, z, h] = [b?.n1, b?.n2, b?.n3, b?.n4, b?.n5, b?.n6, b?.n7];
     if (!a || !e || !l || !s || !n || !z || !h || !b.l1 || !b.l2 || !b.l3 || !b.l4 || !b.l5) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
@@ -1311,6 +1327,7 @@ function narbeUrteil(b) {
         Math.abs(h.mutanteTon?.tag - h.mutanteTon?.nacht) > 0.2 * h.mutanteTon?.nacht ? "" : `MUTANTE-N7-TON: mit der Masse ÷ Belichtung liest die Linse am Mittag ${h.mutanteTon?.tag} ↔ nachts ${h.mutanteTon?.nacht} — sie sieht das Licht am Bild-Ton nicht`,
         h.mutante?.quellen >= 1 && ausserBand({ max: h.mutante.max, soll: h.soll }) && h.mutante?.zeit >= 1 ? "" : `MUTANTE-N7: als Herdfeuer-Punkt × BRAND.licht (Lichtstärke cd des Herdfeuers, mit Zeitplan) liest die Linse Schein ${h.mutante?.max} im Band ${scheinBand(h)} (Zeitplan an ${h.mutante?.zeit} von ${h.mutante?.quellen} Quellen) — sie sieht den Herdfeuer-Punkt nicht`,
         ...masseUrteil(b),
+        ...zuendungUrteil(b),
         ...lavaUrteil(b),
     ].filter(Boolean);
 }
@@ -1771,6 +1788,51 @@ async function narbeSeite(MESS) {
         N8.fahne.fern = zuenden() ? fahne({ fernM: 100 }) : null;
         N8.fahne.lahm = zuenden() ? fahne({ dt: 0.25 }) : null;
         N8.fahne.jung = zuenden() ? fahne({ vor: 0 }) : null;
+        // N9 (front-brand, BRAND-ZELLEN) DIE ZÜNDUNG LIEST, WAS SICH ÄNDERT — gezählt an der Seite: die Märsche durch die Säule
+        // (`_voxelSurfaceY`) unter EINEM frischen `_brandStoff` der Herd-Zelle, und die Streu-Kacheln, die der Neubau der Wiese
+        // nach der Zündung fallen lässt (Entfachen + ein Schritt). Die Mutante ist der Stand 8e2d76d1: das Gefälle aus zwei
+        // weiteren Märschen (Zell-Mitte + ½ Zelle je Achse), der Neubau über der Zelle ±½.
+        const gezaehlt = (name, fn) => {
+            const [eigen, alt] = [Object.prototype.hasOwnProperty.call(r, name), r[name]];
+            let n = 0;
+            r[name] = function (...a) {
+                n++;
+                return alt.apply(this, a);
+            };
+            try {
+                fn();
+            } finally {
+                if (eigen) r[name] = alt;
+                else delete r[name];
+            }
+            return n;
+        };
+        const zuendung = () => {
+            leer();
+            r._brandBett = null;
+            let f = null;
+            const maersche = gezaehlt("_voxelSurfaceY", () => (f = r._brandStoff(hx, hz, st.spielZeit)));
+            leer();
+            const wiese = gezaehlt("_nahStreuKachelFaellt", () => (r._brandEntfachen(MESS.x, MESS.z), schritt()));
+            return { bett: f ? f.anteil : 0, maersche, wiese };
+        };
+        const N9 = (aus.n9 = { echt: zuendung() });
+        r._brandStoff = function (cx, cz, ...a) {
+            const neu = !(this._brandBett && this._brandBett.has(cx + "," + cz));
+            const f = P._brandStoff.call(this, cx, cz, ...a);
+            if (neu && f) (this._voxelSurfaceY(f.x + cs / 2, f.z), this._voxelSurfaceY(f.x, f.z + cs / 2));
+            return f;
+        };
+        r._nahRingNeuIn = function (x0, z0, x1, z1) {
+            const [cx, cz] = zelle((x0 + x1) / 2, (z0 + z1) / 2);
+            return P._nahRingNeuIn.call(this, (cx - 0.5) * cs, (cz - 0.5) * cs, (cx + 1.5) * cs, (cz + 1.5) * cs);
+        };
+        try {
+            N9.mutante = zuendung();
+        } finally {
+            delete r._brandStoff;
+            delete r._nahRingNeuIn;
+        }
         leer();
         return aus;
     } finally {
@@ -2131,6 +2193,8 @@ if (SELBSTTEST) {
                     n7: { quellen: 4, max: 3.2, min: 2.3, tag: 3.2, mutanteTon: { nacht: 2.1, tag: 6.3 }, kern: 2, zeit: 0, herd: 45, belichtung: 1.5, soll: 2.929, mutante: { quellen: 4, max: 0.012, min: 0.008, kern: 0.76, zeit: 4, herd: 45, belichtung: 1.5, soll: 2.929 } },
                     // die Masse (N8): die Zahlen der Mess-Wiese am Kopf front-brand, die Mutante mit der Deckung ohne Masse
                     n8: { soll: 33.349, mineral: 0.0555, kg: 33.349, buch: { mitte: { holz: 33.349, brannte: 23.318, asche: 1.294, rauch: 22.024 }, ende: { holz: 33.349, brannte: 33.349, asche: 1.851, rauch: 31.498 } }, mitteSoll: 23.3, fahne: { voll: { haelt: 0, zellen: 2, ballen: 54, strom: 1.146, masse: 1.152, optisch: 88.045, soll: 87.578, lebt: 47, erhalt: 1 }, halb: { haelt: 0.007, zellen: 1, ballen: 32, strom: 0.195, masse: 0.196, optisch: 14.45, soll: 14.895, lebt: 25, erhalt: 1 }, fern: { haelt: 0, zellen: 2, ballen: 65, strom: 1.148, masse: 1.151, optisch: 87.968, soll: 87.735, lebt: 61, erhalt: 1 }, lahm: { haelt: 0, zellen: 2, ballen: 28, strom: 1.162, masse: 1.194, optisch: 91.258, soll: 88.813, lebt: 28, erhalt: 1 }, jung: { haelt: 0, zellen: 1, ballen: 9, strom: 0.298, masse: 0.302, optisch: 23.082, soll: 22.793, lebt: 9, erhalt: 1 } }, ausgebrannt: true, tat: 1.851, mutante: { haelt: 0, zellen: 2, ballen: 61, strom: 1.149, masse: 1.157, optisch: 130.799, soll: 87.834, lebt: 43, erhalt: 1.548 } },
+                    // die Zündung (N9): die Zahlen der Mess-Wiese, die Mutante im Stand 8e2d76d1
+                    n9: { echt: { bett: 1, maersche: 1, wiese: 16 }, mutante: { bett: 1, maersche: 3, wiese: 100 } },
                     // die Lava-Linse (L1–L5): die Zahlen der Mess-Wiese; `l2` im Stand, in dem die Decke vor dem Zünden gemalt ist
                     l1: { brennend: 8, betten: 8, tK: 1650, tZuend: [523, 533], tau: 13956.667, mutante: 0, kalt: { brennend: 0, tK: 513, glut: 0 }, lau: { brennend: 8, tK: 543, glut: 0 } },
                     l2: { kanten: 4, ein: 9, einMax: 9, decke: 0, amRand: 7, tief: [-1.99, 3.51], uhr: 60, spanne: 16, spanneMax: 16, sicht: [5.75, 15.5, 16, 15.5], flammen: [24, 41, 18, 151], mutante: { kanten: 4, ein: 0, einMax: 0, decke: 0, amRand: 0, tief: null, uhr: 60, spanne: 1.75, spanneMax: 9.25, sicht: [4.75, 9.25, 9.25, 1.75], flammen: [19, 22, 19, 16] } },
@@ -2147,6 +2211,8 @@ if (SELBSTTEST) {
                     // die Fahne am Bild (der Stand von 44d954be2: der Strom in den Winkeln des Bilds, die Masse im Takt des Bilds): das Auge
                     // 100 m ab trug 0,884 von 1,135 kg, das Bild in 250 ms 0,435 von 1,134 kg
                     ["N8-BILD", "n8.fahne.fern.masse", 0.884], ["N8-BILD", "n8.fahne.lahm.masse", 0.435], ["N8-BILD", "n8.fahne.fern", null], ["N8-BILD", "n8.fahne.jung", null],
+                    // die Täter der Zündung (N9): der Stand 8e2d76d1 — drei Märsche je Zündung, der Neubau über der Zelle ±½
+                    ["N9-LEER", "n9", null], ["N9-LEER", "n9.echt.wiese", 0], ["N9-LEER", "n9.echt.bett", 0], ["N9-SÄULE", "n9.echt.maersche", 3], ["N9-WIESE", "n9.echt.wiese", 100], ["MUTANTE-N9", "n9.mutante.maersche", 1],
                     // die Täter der Lava-Linse: je Fall der Stand vor w28-lava-zuendet (L2-DECKE: der Kopf 163a65de — alle Eintritte 2 m in der Zelle der Lava)
                     ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-KERN", "l5.kern", 0.76], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 6.5], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
                     ["L6-LEER", "l6.sprung.tempVor", 20], ["L6-SICHT", "l6.regler.dStunde", 4], ["L6-SICHT", "l6.regler.dTemp", -400], ["L6-SICHT", "l6.regler.dUhr", 600], ["L6-SPRUNG", "l6.sprung.dStunde", 0], ["L6-SPRUNG", "l6.sprung.tempNach", 1377], ["L6-SPRUNG", "l6.sprung.dBrandUhr", 0], ["L6-SCHLEIFE", "l6.sprung.leer", 1], ["MUTANTE-L6-SICHT", "l6.mutanteSicht.regler.dStunde", 0], ["MUTANTE-L6-SICHT", "l6.mutanteSicht", null], ["MUTANTE-L6-SCHLEIFE", "l6.mutanteSchleife.sprung.leer", 0],
