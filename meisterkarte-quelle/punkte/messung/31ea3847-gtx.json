@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T10:46:49.623Z",
+ "zeit": "2026-11-21T10:54:30.793Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -52671,6 +52671,999 @@
    "bahn": "sitzung",
    "zwilling": "breite.siedlung#1",
    "modus": "session"
+  },
+  "karte2.planet.relief.grossform#2": {
+   "gruen": false,
+   "zahl": "S2 anteilProzent 5 % gegen Soll ≥ 80 % ✗ · Täter: gelaende-core.js flussLaeufe (das Netz der Reise-Welt: Hack-Exponent und Bifurkation)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S2 anteilProzent 5 % gegen Soll ≥ 80 % ✗ · Täter: gelaende-core.js flussLaeufe (das Netz der Reise-Welt: Hack-Exponent und Bifurkation)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "a1c0e24fa932",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#3": {
+   "gruen": false,
+   "zahl": "S3 wassersteinP80Grad ungemessen gegen Soll ≤ 3 ° ✗ · anteilProzent ungemessen gegen Soll ≥ 80 % ✗ · Täter: die Erd-Tafel der Hangverteilung je Klima fehlt (Karte und Welt) · gelaende-core.js hoehe",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S3 wassersteinP80Grad ungemessen gegen Soll ≤ 3 ° ✗ · anteilProzent ungemessen gegen Soll ≥ 80 % ✗ · Täter: die Erd-Tafel der Hangverteilung je Klima fehlt (Karte und Welt) · gelaende-core.js hoehe",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "2f949c3676e2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#4": {
+   "gruen": false,
+   "zahl": "S4 Umfang nicht erzeugbar: Seen je Größenklasse: die Hydro-Kacheln der Heimat (5 Kacheln um den Spawn) tragen 0 Seen — kein Potenzgesetz aus weniger als 10; über 10⁵ km² rechnet die Welt keine Hydrosphäre (stamm/wasser-hydro.js, Kacheln zu 2 048 m nur um den Spieler) · kuesteD 0,85 gegen Soll 1,25 ± 0,05 ✗ · seenSteigung ungemessen gegen Soll 1 ± 20 % ✗ · Täter: planet-core.js planetPunkt (die Küste) · stamm/wasser-hydro.js (Seen nur in den Kacheln um den Spieler)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S4 Umfang nicht erzeugbar: Seen je Größenklasse: die Hydro-Kacheln der Heimat (5 Kacheln um den Spawn) tragen 0 Seen — kein Potenzgesetz aus weniger als 10; über 10⁵ km² rechnet die Welt keine Hydrosphäre (stamm/wasser-hydro.js, Kacheln zu 2 048 m nur um den Spieler) · kuesteD 0,85 gegen Soll 1,25 ± 0,05 ✗ · seenSteigung ungemessen gegen Soll 1 ± 20 % ✗ · Täter: planet-core.js planetPunkt (die Küste) · stamm/wasser-hydro.js (Seen nur in den Kacheln um den Spieler)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "a27184340d1a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.grossform#7": {
+   "gruen": false,
+   "zahl": "S7 Umfang nicht erzeugbar: 100 Welten beliebiger Konstanten nicht erzeugbar: der Faden liest den Körper nicht (voxel-worker.js:1176 planetPlanVon(msg.samen) — die Antwort mit Schwere 3,71 und Radius 3 390 km ist byte-gleich der ohne: true) · anteilProzent ungemessen gegen Soll ≥ 80 % ✗ · Täter: voxel-worker.js planetOrtAuftrag (liest den Körper nicht)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S7 Umfang nicht erzeugbar: 100 Welten beliebiger Konstanten nicht erzeugbar: der Faden liest den Körper nicht (voxel-worker.js:1176 planetPlanVon(msg.samen) — die Antwort mit Schwere 3,71 und Radius 3 390 km ist byte-gleich der ohne: true) · anteilProzent ungemessen gegen Soll ≥ 80 % ✗ · Täter: voxel-worker.js planetOrtAuftrag (liest den Körper nicht)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "9afd8f38c010",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.formschatz#4": {
+   "gruen": false,
+   "zahl": "S4 die Messung der Leiter warf nach 30,005 s: der Deckel der Leiter 30 s · Täter: gelaende-core.js (7 Formen statt ~100)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S4 die Messung der Leiter warf nach 30,005 s: der Deckel der Leiter 30 s · Täter: gelaende-core.js (7 Formen statt ~100)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "be73618a149f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.formschatz#6": {
+   "gruen": false,
+   "zahl": "S6 die Messung der Leiter warf nach 30,005 s: der Deckel der Leiter 30 s · Täter: gelaende-core.js flussBreite (das einzige Breiten-Gesetz)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S6 die Messung der Leiter warf nach 30,005 s: der Deckel der Leiter 30 s · Täter: gelaende-core.js flussBreite (das einzige Breiten-Gesetz)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "fe7e346a9bef",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.formschatz#8": {
+   "gruen": false,
+   "zahl": "S8 die Messung der Leiter warf nach 30,005 s: der Deckel der Leiter 30 s · Täter: gelaende-core.js flussBreite (liest nur A)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S8 die Messung der Leiter warf nach 30,005 s: der Deckel der Leiter 30 s · Täter: gelaende-core.js flussBreite (liest nur A)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "a1b65bd2f72c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.boden#2": {
+   "gruen": false,
+   "zahl": "S2 die Messung der Leiter warf nach 20,015 s: der Deckel der Leiter 20 s · Täter: stamm/vegetation-wiese.js _terrainMaterialAt (kein Korn)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S2 die Messung der Leiter warf nach 20,015 s: der Deckel der Leiter 20 s · Täter: stamm/vegetation-wiese.js _terrainMaterialAt (kein Korn)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "9e00246f269b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.boden#3": {
+   "gruen": false,
+   "zahl": "S3 die Messung der Leiter warf nach 20,015 s: der Deckel der Leiter 20 s · Täter: stamm/vegetation-wiese.js _terrainMaterialAt (zwei Stoffe nach Tiefe)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S3 die Messung der Leiter warf nach 20,015 s: der Deckel der Leiter 20 s · Täter: stamm/vegetation-wiese.js _terrainMaterialAt (zwei Stoffe nach Tiefe)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "e6d079daff1f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#1": {
+   "gruen": false,
+   "zahl": "S1 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: stamm/gelaende-chunks.js _voxelSurfaceY (Gesetz + Erdbau, kein Abtrag)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S1 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: stamm/gelaende-chunks.js _voxelSurfaceY (Gesetz + Erdbau, kein Abtrag)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "a29761ac132f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#2": {
+   "gruen": false,
+   "zahl": "S2 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: gelaende-core.js hoehe (kein Regen im Relief)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S2 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: gelaende-core.js hoehe (kein Regen im Relief)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "ad76e9b4ddf3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#4": {
+   "gruen": false,
+   "zahl": "S4 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: gelaende-core.js (kein Sediment an der Mündung, kein Sand im Wind)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S4 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: gelaende-core.js (kein Sediment an der Mündung, kein Sand im Wind)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "a008cc63f80b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#5": {
+   "gruen": false,
+   "zahl": "S5 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: planet-core.js planetKlimaGlobal (keine Bahn-Zyklen) · gelaende-core.js ortSaat (kein Eis im Relief)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S5 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: planet-core.js planetKlimaGlobal (keine Bahn-Zyklen) · gelaende-core.js ortSaat (kein Eis im Relief)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "8bdc2c0ba085",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
+  },
+  "karte2.planet.relief.wandel#6": {
+   "gruen": false,
+   "zahl": "S6 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: gelaende-core.js flussLaeufe (Hack/Bifurkation der Reise-Welt je Epoche)",
+   "exit": 0,
+   "minuten": 2.05,
+   "grund": "ROT: S6 die Messung der Leiter warf nach 45,011 s: der Deckel der Leiter 45 s · Täter: gelaende-core.js flussLaeufe (Hack/Bifurkation der Reise-Welt je Epoche)",
+   "gpu": "nvidia/pascal",
+   "konsum": "k2d58de3e0819",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k70ee957387db",
+   "s": 123.1,
+   "fremd": {
+    "s": 126.8,
+    "takte": 57,
+    "fremdS": 44.64,
+    "kerne": 0.352,
+    "fensterKerne": 0.909,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.52
+     ],
+     [
+      "Explorer.EXE",
+      4.44
+     ]
+    ],
+    "dienerS": 52.8,
+    "diener": [
+     [
+      "dwm.exe",
+      26.16
+     ],
+     [
+      "System",
+      17.56
+     ]
+    ],
+    "geraetS": 49.39,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.95
+     ],
+     [
+      "svchost.exe",
+      16.95
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "eigenS": 369.88,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T10:51:10.606Z",
+   "abdruck": "606d30b60d34",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.planet.relief.grossform#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -52778,7 +53771,8 @@
   "k908f081ef941": "dVVdj5swEPwveWzLbfgKYOkenBApJ7Uq99TnNayBC4HIhtCm6n+vIJAccOdHNLMzO7s2f1dnjI+Y0tObrsoVW31ZfVtpvJChSV1IPb3pFVsFsWmRzfjtAOd818FilZ9rDUUuAEWJ2YmMRtWUF09xT/NNK7Ekg3bP2wggAg+27fPznFoISiqjRkkjMQik7SObAxudoiADG9mLDWDXJ5Qug/74IY/eYDzblnNo93NFgWUydRpsXI9c9vKH8z1fOExypNoo8lKPmnHiCttid6FlV4nC1rgiZQWpgYSmh6YYjfZRtlEAM6IsGq0nYr6duJbPABbYlHQeZ7VxVpWgcoCLwPJMZB8knZ4bQ04cCYG+mOecIZUpqYmHtR3Ljcngt88/O3DpgliEfcQTKTRKzMas17ZniUd2AHBYei36xnoLY2ObtTQdf0LsBg5ppx6mfSG4jt+jm6uQ89e7xXQmouMsV6dpfNIha22z70tLOsOElHGsdH1H+w4i+cPNCKHXipxwznw0M/AssVm773vxgR/8hWIl6xYVGem5GYjkkOu5jPOXBbjG02m8E9J27Hg+WF13i//ehuuQufE6G+knc7hdE+NKeTGSpHScwGW7bToHXxSeDBSpyqUcpy3cWAYfLW9LRW2IqqrH8dprOzAZ2FDeUwn6dds+lmzHwz/Wr8Pr63T39nxupa9eqfreqdispcNkv6TxAp2r2mgxzu7zkYKws72YyZVUQSlNYkwcYWPCoJU321ef88gbngb5dbKw12XFnLqAS93ocasCLwkk++BpaUkdBZbHAehsXN+0+vXb/uSHPoldGYQQQtS+D2jHk6tIX3bh7f7+4Fv+EkI4FD9TDGdVybx7GSHDRmdY1I9fwr//",
   "k911763ef5837": "dVVdj5swEPwveeyVM5/BWLoHJ5yUq1o1kSpVfVzDGkgIRDaENlX/ewWBXIDcPqLZndnZXfN3cYLoAAk+73VZLNji0+LzQsMZDY3qjOp5rxdsEUSWjQ7j1yCc83ULi1R2qjTJM0FAFJAe0ahVhVn+HHVp1LJjWzLSvPJmS8iW+GTV8Fus+cvLtEwuMC6NCiQORYJAOhTYFFjrBAQaUMuOuAd7FEF6jHRBQ77dkyFa5lbJA1YBRTxWHiw9H72u4dc5Ps4AKyPPCj3wRrEnHJvdyJp5joLGuACmOao+CSwfLDGI7SxptgGZJMq81npERp3YsykjZIZNUGdRWhknVQosergIbN8CtpprSk61IUeKhAAqpl6ngEWCaqTBdCK5tBj5TflHQc50qu8AR1RgFJAOPpuOb4t33wghm7nOvGuqox+aWprScukosR046dYrTLpC5DJ8314VhZzvbvKSCYmO0kwdx9ZJF23TYV/nknQKMSrjUOrqhqYuANL+SkLScW3dcJr53kyfZ4ul6d33Qgnf0BljKasGFBrJqe4T0UXPb7f0bQau4HgcbkI6rhNNh6qrdunvZXguWku/lZF8MIfriRgXzPIhSUrXDTy2XrlT8FnB0QCRqEzKYdrCi2TwaHEbzCtDlGU1jNcxncBixCfFnS2tr6v79yP8Y//c7HZ8Gg+0dwylqm7diqUpXSbP7bVGM3SmKqOBKL3NSAqEVvpsLhdUOSY4sjJ2hQMxI428Kr9Qzrd+/zTIp9HSXuYVM2xNLnSth80K/DiQ7MHT0qA6CCgOPdBdetSy2ZfWqO980z1ffG+GTyGZhrz8SH6tw+v9fuMr/haSsC9+woicVCmz9mUkKdQ6hbx6/0X8+w8=",
   "ka4b79996f7fb": "dVZNk6NGDP0vPq4Xi283VO1Bdk/Fk9pNmKqkkjk2tBoYY3AabGadyn9PgcFr8KwOtguepKcntdr/LpJKU706iDJXVDert7oqF+Hi0+LzQokka0nvjQ6yeqsX4cKSPiMZQmBH+u/lO4uYxIgr6OwMAO0ScQnBZb2M8AWRn5B3z3G0Zw7gBLDr8ObvrgnBLwqjJcAOOMN/nt79V3zBLeIr4obtbn7t7Reqcwb4jUMEJm62CeILb8GVsOnfchPegxTxT+TRGcCB9nJxETk+4521uHFazhAxwk2LuOTQAvgRvr8Cx6cvi8+LvJT0vsqaQzGocRTJXqR0L1AtzmTUpM+kr/IEiWWTEw5ZurK3HSzR+bGpQeYiNWpqmoIOVDarpPdxyU4CL0TkLboc7kp9Gn9s8MuXuzhFHoOIS5EdyDjphvJiCMUsW9oqhPYJ2wgggjVs7pTjH4QpYpKV0QhFY5AgUA4T4Rx4qlMRkyFOqk88gD1GQnlh339gHKM3GK3L3DHZPmaNRSmnzAPfW5MXPrdd1Q94mQtqjCIv6zFvIr3YscNbsvbRR4vWuAjKCtKDk7DWwopHstdBiAKYOariVNeTZMyRns1CgAdsSnWeZI1x1FVM5QCPA3ttiXDzyCk9ngw1YRTHgsVzrTNBZUp6wsF0EuVbIbwz/JnBmc357cWBtDBKkY06m87ajn/oBgC7R55FX1SffizKN5Xlsolj13Dox4unfSC4jM+jceC6JTBYOk9S1VPdyLekL+diVHomr+v4ri9CxOc57TrJcn2YopVLtumEXx+LrDMhSRv7qm5uaOYKQWw4vxx69pHL554/5Bn87Ng3vXt1GOCOPWSsVNMKTUZ6PI01u+StvQ+LaYScVa4s5ShvLlDdiMNhPI7KcZ3kA0QpJ3w9lyx/3fFNfzIC19NpXCgvRielXDfwwu3GnYPPpPeU6bqk5jJrVizVOpgTOmtxMESc6lypcTBjL1HBR2espaIx4qoa96XvmE5gddzLO71VvyZvtkX+3f5r9zKOH0/7r9+Qf1Brn6HSzU2d2DeVG/a3Wps8oHPdGK1IslvzVUyio/7Q8AvpglKaSC/d2BEyhPZ6acIbQ4zWwxZTy8n5ujxGzKlrSlmf6nFkg7UM1HX0hl3/PN2g3RUei3I/tsT3mGWHvyJPvy5xuGLfTA4c5qYuf6SvW35dOd9w013fnGEf/EgJHHWl8m6ZQyZOdSaKyd+HhhotjpUUd/8fFKnA98Lxknu6fnQBz1TKSkOTaaJV73DIy6vTp/nrQyVPxR1AOCKQdrj4738=",
-  "ka994bff963cb": "dVRdb6MwEPwvebyeaz6DsdQHJ1RKpZMulU6q7nENa6AhENkQTjndfz9BICnQ+tGa8c7Ozvrv6gTxAVJ8fDdVueKrb6vvKwNnJAb1GfXju1nxVRjbDrpcXA8VQmw7WKzzU21okUsKsoTsiKTRNebFY9zTmO0kjuK0fRbtntI9DeimfXqaUwuJSUVqUDgSw1C5DPgc2JgUJBJoVF9sAPsMQfmc9odFYv9OxyNehaDt87yihDKZKg3XfoB+3+CzWChMcsCaFHlpxppx4kvX4bdCy64SDS25AGYF6oEEdgC2HIX2Vrb7kM6IqmiMmRRjbuI7jFO6wKZo8jiryUlXEssBLkMnsIF/4nR6aoiaKJISmJz7nAGWKeqJBsuN1drm9A8TXx16ZnN9BziiBlJCNvpsuYEj775RSndLnUXfVF9+bGptKdtjE2I3bJp2laO0f4hexvv9VVEkugAMJ50VMXGW6+PUOuWhY7n8x1KSySBBTQ6VqW9o5gEgG7Yi6sMm9l40Z96bGXiOXFv+x14YFTu2qFipugWNJD01AxE99IMupS8LcA3H47gPyvXceD5UU3eh/yjD99BeB52M9Is5XFeEXDAvRpJSnhf6fLtJ5+CzhiMBmepcqXHa0o9V+FlwWyxqIquqHsfrWm5oc3qh5c2VsI/a5h6wrYha6y0Sr/PS/WuVrm+dybWlPK7O3WbGC3Sua9JCnN3moSRCJ3MxgwvqAlOc2JZ40oWE0za+hUzsg+EbUA+TgF6WL+bYGVqaxowpCoMkVPyTb6RFfZBQHgagt/aZ7fRx2/wUu6sluzB6iOh5uhc0ufxKf2+j666+dB5uhXi9Pn7CmJ50pfLuF6QZNCaDor5////+Aw=="
+  "ka994bff963cb": "dVRdb6MwEPwvebyeaz6DsdQHJ1RKpZMulU6q7nENa6AhENkQTjndfz9BICnQ+tGa8c7Ozvrv6gTxAVJ8fDdVueKrb6vvKwNnJAb1GfXju1nxVRjbDrpcXA8VQmw7WKzzU21okUsKsoTsiKTRNebFY9zTmO0kjuK0fRbtntI9DeimfXqaUwuJSUVqUDgSw1C5DPgc2JgUJBJoVF9sAPsMQfmc9odFYv9OxyNehaDt87yihDKZKg3XfoB+3+CzWChMcsCaFHlpxppx4kvX4bdCy64SDS25AGYF6oEEdgC2HIX2Vrb7kM6IqmiMmRRjbuI7jFO6wKZo8jiryUlXEssBLkMnsIF/4nR6aoiaKJISmJz7nAGWKeqJBsuN1drm9A8TXx16ZnN9BziiBlJCNvpsuYEj775RSndLnUXfVF9+bGptKdtjE2I3bJp2laO0f4hexvv9VVEkugAMJ50VMXGW6+PUOuWhY7n8x1KSySBBTQ6VqW9o5gEgG7Yi6sMm9l40Z96bGXiOXFv+x14YFTu2qFipugWNJD01AxE99IMupS8LcA3H47gPyvXceD5UU3eh/yjD99BeB52M9Is5XFeEXDAvRpJSnhf6fLtJ5+CzhiMBmepcqXHa0o9V+FlwWyxqIquqHsfrWm5oc3qh5c2VsI/a5h6wrYha6y0Sr/PS/WuVrm+dybWlPK7O3WbGC3Sua9JCnN3moSRCJ3MxgwvqAlOc2JZ40oWE0za+hUzsg+EbUA+TgF6WL+bYGVqaxowpCoMkVPyTb6RFfZBQHgagt/aZ7fRx2/wUu6sluzB6iOh5uhc0ufxKf2+j666+dB5uhXi9Pn7CmJ50pfLuF6QZNCaDor5////+Aw==",
+  "k2d58de3e0819": "dVVdj5swEPwveWzLmc9gLN2Dc1yVq1qVSJWqPq5hDSQEIhtCm6r/vYJALsDdPqLZndnZXfN3dYL4ACk+7HVVrtjqw+rTSsMZDY3qjOphr1dsFcSWjQ7j1yCc86cOFqv8VGtS5IKAKCE7otGoGvPiIe7TqGUntmSkfeZtREhEfLJp+S2e+OPjvEwhMKmMGiSORYJAOhTYHNjoFAQa0MieeAB7FEF6jPRBQx7tyRgdM2k/f4/S3ZxVQJlMlQdrz0ePvbScPy9VJjlgbRR5qUfeOPGEY7MbWbvMUdAaF8CsQDUkgeWDJUaxvSVtFJBZoiwarSdk1Ek8mzJCFtgUdR5ntXFSlcBygIvA9i1gm6Wm9NQYcqJICKBi7nUGWKaoJhpMJ5Zri5HflL8X5Ezn+g5wRAVGCdnos+n4tnj1jRCyXeos+qZ6+rGptSktl04Su4GTtGMO074QuYzfo6uikPPdTV46I9Fxlqvj1Drpom067OtSks4gQWUcKl3f0NQFQDpcSUh6rsgN55mvzQx5tlib3n0vlPAtXTBWsm5BoZGemiERXfR8j3H+sgDXcDyONyEd14nnQ9V1t/T3MjwXrbXfyUjfmcP1RIwL5sWYJKXrBh572rhz8FnB0QCRqlzKcdrCi2Xw1uK2WNSGqKp6HK9jOoHVaSnvbOl83dy/H+Ef++d2t5vu3fOmekN7z1Cp+tatWJvSZfLcXWu8QOeqNlqIs9uMpEDopC/mckFVYIoTKxNXOJAw0sqr8pByHvnD0yA/Tpb2sqyYY2dyqRs9blbgJ4FkbzwtLaqDgPIwAN21Ry2bfemM+s63V5vKICQhmYe8/Eh/ReH1fr/xDX8JyX4ofsKYnFQl8+5lJBk0OoOifv1F/PsP"
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
@@ -64515,2313 +65509,319 @@
    "zwilling": "karte2.mensch.menge.bevoelkerung#2",
    "modus": "session"
   },
-  "karte2.planet.relief.grossform#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "a1c0e24fa932",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.grossform#3": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "2f949c3676e2",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.grossform#4": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "a27184340d1a",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.grossform#7": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "9afd8f38c010",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.formschatz#4": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "be73618a149f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.formschatz#6": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "fe7e346a9bef",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.formschatz#8": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "a1b65bd2f72c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.boden#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "9e00246f269b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.boden#3": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "e6d079daff1f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.wandel#1": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "a29761ac132f",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.wandel#2": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "ad76e9b4ddf3",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.wandel#4": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "a008cc63f80b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.wandel#5": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "8bdc2c0ba085",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
-  "karte2.planet.relief.wandel#6": {
-   "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
-   "exit": null,
-   "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.67,
-    "kerne": 0.307,
-    "fensterKerne": 0.307,
-    "namen": [
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.3
-     ],
-     [
-      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
-      0.16
-     ],
-     [
-      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
-      0.05
-     ]
-    ],
-    "dienerS": 0.91,
-    "diener": [
-     [
-      "dwm.exe",
-      0.48
-     ],
-     [
-      "System",
-      0.27
-     ]
-    ],
-    "geraetS": 0.8,
-    "geraet": [
-     [
-      "MsMpEng.exe",
-      0.42
-     ],
-     [
-      "svchost.exe",
-      0.33
-     ],
-     [
-      "SearchProtocolHost.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 5.03,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T20:57:26.402Z",
-   "abdruck": "606d30b60d34",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "karte2.planet.relief.grossform#2",
-   "modus": "session",
-   "ungemessen": true,
-   "offen": 1
-  },
   "karte2.planet.wetter.lagen#2": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "635385e0dfc8",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.lagen#4": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "d893d9bb7087",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.lagen#5": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "6d059ffdc527",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.lagen#7": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "e76c1aefdd3b",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.wolken#3": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "8c4708163229",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.wolken#4": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "67a31a7eecd6",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.wolken#5": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "bdb66169854b",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.wolken#6": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "478cc4400eae",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.klimazonen#3": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "0238bd2c04b9",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.klimazonen#5": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "4af225430bce",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.extreme#2": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "5a4636da6abb",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.extreme#3": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "9d81bdbc4404",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.extreme#4": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "3eb2fea56446",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.vorhersage#1": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "65c8db8c370d",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.vorhersage#3": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "819e8595515c",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.vorhersage#4": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "088e56040073",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.vorhersage#5": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "714fc903c1fd",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.vorhersage#6": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "4670ba17dd0a",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.fremde-atmosphaeren#2": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "85b9fc051d8f",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.fremde-atmosphaeren#3": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "0b6111d488c0",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.wetter.fremde-atmosphaeren#5": {
    "gruen": false,
-   "zahl": "Start: spawn ENAMETOOLONG",
+   "zahl": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "exit": null,
    "minuten": 0,
-   "grund": "Start: spawn ENAMETOOLONG",
-   "konsumFehlt": "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)",
-   "s": 0,
-   "fremd": {
-    "s": 2.2,
-    "takte": 1,
-    "fremdS": 0.63,
-    "kerne": 0.283,
-    "fensterKerne": 0.283,
-    "namen": [
-     [
-      "powershell -NoProfile -NonInteractive -Command $ErrorActionPreference='Stop'; [Console…",
-      0.17
-     ],
-     [
-      "PAD.Console.Host.exe",
-      0.09
-     ],
-     [
-      "node.exe dienst-omen/schloss-puls.cjs --geraet omen --repo AnazhRealm-OMEN/AnazhRealm-mess",
-      0.08
-     ]
-    ],
-    "dienerS": 1.09,
-    "diener": [
-     [
-      "System",
-      0.66
-     ],
-     [
-      "dwm.exe",
-      0.31
-     ]
-    ],
-    "geraetS": 1.05,
-    "geraet": [
-     [
-      "svchost.exe",
-      0.5
-     ],
-     [
-      "MsMpEng.exe",
-      0.47
-     ],
-     [
-      "OmenCommandCenterBackground.exe",
-      0.03
-     ]
-    ],
-    "eigenS": 4.56,
-    "rechnerKerne": 12
-   },
-   "zeit": "2026-11-20T22:58:50.582Z",
+   "grund": "die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
+   "ungemessen": true,
+   "zeit": "2026-11-21T10:54:30.793Z",
    "abdruck": "d90e802ae65f",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "karte2.planet.wetter.lagen#2",
    "modus": "session",
-   "ungemessen": true,
-   "offen": 1
+   "offen": 2
   },
   "karte2.planet.kopplung.siedlungslage#3": {
    "gruen": false,
@@ -75014,270 +74014,478 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-21T09:33:27.784Z",
-  "ordner": "sitzung-20261121-103327",
+  "start": "2026-11-21T10:27:53.249Z",
+  "ordner": "sitzung-20261121-112753",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.6,
+  "bootS": 6.3,
   "grundstellungS": [
    0.1,
    0.1,
+   5.9,
    0.1,
-   22.4
+   3.2,
+   0.1,
+   0.1,
+   24,
+   9.1
   ],
-  "proben": 5,
+  "proben": 10,
   "freigaben": [],
+  "offen": [
+   "karte2.planet.wetter.lagen#2",
+   "karte2.planet.wetter.lagen#4",
+   "karte2.planet.wetter.lagen#5",
+   "karte2.planet.wetter.lagen#7",
+   "karte2.planet.wetter.wolken#3",
+   "karte2.planet.wetter.wolken#4",
+   "karte2.planet.wetter.wolken#5",
+   "karte2.planet.wetter.wolken#6",
+   "karte2.planet.wetter.klimazonen#3",
+   "karte2.planet.wetter.klimazonen#5",
+   "karte2.planet.wetter.extreme#2",
+   "karte2.planet.wetter.extreme#3",
+   "karte2.planet.wetter.extreme#4",
+   "karte2.planet.wetter.vorhersage#1",
+   "karte2.planet.wetter.vorhersage#3",
+   "karte2.planet.wetter.vorhersage#4",
+   "karte2.planet.wetter.vorhersage#5",
+   "karte2.planet.wetter.vorhersage#6",
+   "karte2.planet.wetter.fremde-atmosphaeren#2",
+   "karte2.planet.wetter.fremde-atmosphaeren#3",
+   "karte2.planet.wetter.fremde-atmosphaeren#5"
+  ],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "luftwasser.K3#2",
-    "s": 23,
-    "takte": 541,
+    "ort": null,
+    "vor": "karte2.planet.kosmos.himmelsmechanik#2",
+    "s": 22.5,
+    "takte": 830,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "wiese",
-    "vor": "speicher.K4#2",
-    "s": 12.9,
-    "takte": 736,
-    "chunks": 90,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "karte2.planet.kopplung.bahn-klima#1",
-    "s": 10.2,
-    "takte": 542,
-    "chunks": 90,
-    "nach": "der Grundstellung"
-   },
-   {
     "ort": null,
-    "vor": "karte2.mensch.stadt.siedlungsnetz#1",
-    "s": 12.6,
-    "takte": 617,
+    "vor": "karte2.planet.kosmos.sternhimmel#2",
+    "s": 11.6,
+    "takte": 625,
     "chunks": 81,
     "nach": "der Grundstellung"
    },
    {
-    "ort": "wiese",
-    "vor": "gelaende.K2#1",
-    "s": 12.8,
-    "takte": 632,
+    "ort": null,
+    "vor": "karte2.planet.kosmos.sterne#1",
+    "s": 11.5,
+    "takte": 614,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.planet.kosmos.welten#2",
+    "s": 16.6,
+    "takte": 660,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.same.entfaltung.abwesenheit#1",
+    "s": 12.5,
+    "takte": 627,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.same.preis.eingabe#1",
+    "s": 19,
+    "takte": 733,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.mensch.bau.bauen#1",
+    "s": 12.1,
+    "takte": 628,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K4#2",
+    "s": 2.5,
+    "takte": 129,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "breite.siedlung#1",
+    "s": 0.1,
+    "takte": 1,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "karte2.planet.relief.grossform#2",
+    "s": 16,
+    "takte": 657,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "gelaende.K2#1",
-    "wege": "wege +8 [-119.1,-274.9,279.2,201/278] [-467.8,-1426.1,-347.1,-1284.2/3] [-481.4,-1420.8,-348.6,-1290.2/464] …",
-    "s": 22.4
+    "vor": "karte2.same.preis.eingabe#1",
+    "wege": "wege +5 [-119.1,-274.9,279.2,201/278] [425.2,300.7,907.5,555.4/885] [540.5,401.4,785.3,496/3] …",
+    "s": 3.2
+   },
+   {
+    "vor": "breite.siedlung#1",
+    "wege": "wege +13 [-119.1,-274.9,279.2,201/278] [183.4,275.4,395.3,482.5/27] [198.5,156.7,384.1,621.4/244] …",
+    "s": 24
+   },
+   {
+    "vor": "karte2.planet.relief.grossform#2",
+    "wege": "wege +73 [-119.1,-274.9,279.2,201/278] [-320.2,-206.1,-55.6,58.5/241] [-320.2,305.9,-55.6,570.5/238] …",
+    "s": 9.1
    }
   ],
   "wirt": [
    {
-    "probe": "luftwasser.K3#2",
+    "probe": "karte2.planet.kosmos.himmelsmechanik#2",
     "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
      "window.__wieseMessen",
      "window.__wieseUrteil",
      "window.__ortSchritt"
     ],
     "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
      "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
      "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     230.7,
-     280.2
+     189.5,
+     225.5
     ],
     "ungemessen": null
    },
    {
-    "probe": "speicher.K4#2",
-    "anders": [],
-    "wie": {},
+    "probe": "karte2.planet.kosmos.sternhimmel#2",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     245.4,
+     259.8
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.planet.kosmos.sterne#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     248.2,
+     260.1
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.planet.kosmos.welten#2",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     187.6,
+     208.1
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.same.entfaltung.abwesenheit#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     240.9,
+     438.4
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.same.preis.eingabe#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
+     "window.__wieseMessen",
+     "window.__wieseUrteil",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
+     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     190.2,
+     236.8
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "karte2.mensch.bau.bauen#1",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T"
+    },
+    "haelt": [],
+    "heap": [
+     256.1,
+     312.3
+    ],
+    "ungemessen": null
+   },
+   {
+    "probe": "siedlung.K4#2",
+    "anders": [
+     "r._weltaktGehalten",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
     "haelt": [
-     "return (function stromSeite(r, a) { const st = r && r.state, rend = st && st.renderer; if (!rend || typeof rend."
+     "const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S =",
+     "const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\") ",
+     "const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co"
     ],
     "heap": [
-     306,
-     221.5
+     307.2,
+     385.7
+    ],
+    "ungemessen": "den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith(\"d:7@\")  | const K = window.__k4, Z = r.state.worldMeta.settlementCells, BS = r._bewohnerSiedlungen; const haeuserVon = (k) => { co — Heap nach der Rücknahme 307.2 → 385.7 MB (+78.5 > 64)"
+   },
+   {
+    "probe": "breite.siedlung#1",
+    "anders": [
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather"
+    ],
+    "wie": {
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert"
+    },
+    "haelt": [],
+    "heap": [
+     188.7,
+     472
     ],
     "ungemessen": null
    },
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#1",
+    "probe": "karte2.planet.relief.grossform#2",
     "anders": [
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
+     "r._bildZeit",
+     "r._wolkenZeit",
+     "r._weltaktGehalten",
+     "r._setWeather",
+     "r.state.weather",
      "window.__ortSchritt"
     ],
     "wie": {
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+     "r._bildZeit": "neu: () => S.T",
+     "r._wolkenZeit": "neu: () => S.T",
+     "r._weltaktGehalten": "neu: function (op, ctx) { buche({ art: \"verweigert\", op, quelle: ctx?.source || \"?\" }",
+     "r._setWeather": "neu: function (name, quelle) { const vor = this.state.weather; const q0 = S.quelle, s",
+     "r.state.weather": "neu: () => wert",
+     "window.__ortSchritt": "neu: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
     },
     "haelt": [],
     "heap": [
-     255.7,
-     290.8
+     187.4,
+     275
     ],
     "ungemessen": null
-   },
-   {
-    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
-    "anders": [
-     "window.__ortSchritt"
-    ],
-    "wie": {
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
-    },
-    "haelt": [],
-    "heap": [
-     267.6,
-     373.7
-    ],
-    "ungemessen": null
-   },
-   {
-    "probe": "gelaende.K2#1",
-    "anders": [
-     "window.luma709",
-     "window.__wieseMessen",
-     "window.__wieseUrteil",
-     "window.__weltOrte",
-     "window.__weltOrt",
-     "window.__strecke",
-     "window.__ortSchritt",
-     "window.wasserRund",
-     "window.wasserFlaechen",
-     "window.wasserBoot",
-     "window.wasserTier",
-     "window.wasserPflanzen",
-     "window.wasserSchmelze",
-     "window.wasserErstarrung",
-     "window.wasserGluehen",
-     "window.__wasserOrte",
-     "window.__wasserLeser",
-     "window.__wasserLeib",
-     "window.__wasserMutation",
-     "window.__wasserKarte",
-     "window.__wasserLaeufe",
-     "window.__wasserTreibt",
-     "window.__wasserHoehle",
-     "window.__wasserWagen",
-     "window.__wasserSichtNetz",
-     "window.__wasserFlora",
-     "window.__wasserSee",
-     "window.__wasserQuelle",
-     "window.__wasserQuellTeil",
-     "window.__wasserBach",
-     "window.__wasserBank",
-     "window.__wasserFluss",
-     "window.__wasserKroneVon",
-     "window.__wasserUfer",
-     "window.__wasserStrom",
-     "window.__wasserFlussNah",
-     "window.__wasserGraben",
-     "window.__wasserDamm",
-     "window.__wasserUferFarbe",
-     "window.__wasserKoerper",
-     "window.__wasserBild",
-     "window.__wasserSeeAm",
-     "window.__wasserLicht",
-     "window.__wasserRegen",
-     "window.__zielen",
-     "window.__zielTier"
-    ],
-    "wie": {
-     "window.luma709": "getauscht: (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2]",
-     "window.__wieseMessen": "getauscht: function wieseMessen(r, x, z, blick, S, nurBoden) { const H = (px, pz) => r._ter",
-     "window.__wieseUrteil": "getauscht: function wieseUrteil(m, S, mitGras) { const f = []; if (!m || m.fehler) return [",
-     "window.__weltOrte": "getauscht: function weltOrte(art, opts) { const o = opts || {}; const [mx, mz] = o.mitte ||",
-     "window.__weltOrt": "getauscht: function weltOrt(art, opts) { return window.__weltOrte(art, Object.assign({}, op",
-     "window.__strecke": "getauscht: function strecke(mitte, ringe, stufeMax = Infinity, querMax = Infinity, naechste",
-     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit",
-     "window.wasserRund": "neu: function wasserRund(n) { return (x, m = n) => (Number.isFinite(x) ? Math.round(x (globale Deklaration, auf undefined)",
-     "window.wasserFlaechen": "neu: function wasserFlaechen(r, x, z) { const span = r._voxelChunkConfig(0).span; con (globale Deklaration, auf undefined)",
-     "window.wasserBoot": "neu: function wasserBoot(st) { st.blueprints.__wasser_boot = { name: \"__wasser_boot\", (globale Deklaration, auf undefined)",
-     "window.wasserTier": "neu: function wasserTier(r, x, y, z, seele) { const st = r.state, cap = st.maxCreatur (globale Deklaration, auf undefined)",
-     "window.wasserPflanzen": "neu: function wasserPflanzen(sicht, kaesten, je) { const [r, n] = [window.anazhRealm, (globale Deklaration, auf undefined)",
-     "window.wasserSchmelze": "neu: function wasserSchmelze(r, x, z, P) { const [st, K, jahr] = [r.state, window.__g (globale Deklaration, auf undefined)",
-     "window.wasserErstarrung": "neu: function wasserErstarrung(r, orte) { const st = r.state; const wm = st.worldMeta (globale Deklaration, auf undefined)",
-     "window.wasserGluehen": "neu: async function wasserGluehen(r, [x, z]) { const [st, K, R, E] = [r.state, window (globale Deklaration, auf undefined)",
-     "window.__wasserOrte": "neu: async function wasserOrte(o = {}) { const G = window.__gelaendeCore; const mitte",
-     "window.__wasserLeser": "neu: async function wasserLeser(o = {}) { if (!st.hydrosphere || !st.hydrosphere.read",
-     "window.__wasserLeib": "neu: function wasserLeib() { const [r, A] = [window.anazhRealm, window.anazhRealm.con",
-     "window.__wasserMutation": "neu: async function wasserMutation(o = {}) { const A = AnazhRealm; const [RHO, TIEF] ",
-     "window.__wasserKarte": "neu: async function wasserKarte(o) { const [orte, zufall] = [[], window.__phytoCore.m",
-     "window.__wasserLaeufe": "neu: async function wasserLaeufe() { const [G, L] = [window.__gelaendeCore, r._gelaen",
-     "window.__wasserTreibt": "neu: async function wasserTreibt(o) { const [r, A] = [window.anazhRealm, window.anazh",
-     "window.__wasserHoehle": "neu: async function wasserHoehle(o = {}) { const A = AnazhRealm; const cfg = r._voxel",
-     "window.__wasserWagen": "neu: async function wasserWagen(o = {}) { const ziel = o.see || (await window.__wasse",
-     "window.__wasserSichtNetz": "neu: function wasserSichtNetz() { const cfg = r._voxelChunkConfig(0); const span = cf",
-     "window.__wasserFlora": "neu: function wasserFlora(o = {}) { const sicht = o.sicht || window.__wasserSichtNetz",
-     "window.__wasserSee": "neu: async function wasserSee(o = {}) { const f = o.fenster || (await window.__wasser",
-     "window.__wasserQuelle": "neu: async function wasserQuelle(o = {}) { if (!st.hydrosphere || !st.hydrosphere.rea",
-     "window.__wasserQuellTeil": "neu: function wasserQuellTeil(p, n) { const h = (Math.imul(Math.round(p.x * 4), 73856",
-     "window.__wasserBach": "neu: async function wasserBach(o = {}) { const R = wasserRund(2); const bachOrt = Num",
-     "window.__wasserBank": "neu: async function wasserBank(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserFluss": "neu: function wasserFluss() { const h = st.hydrosphere; if (!h || !h.ready || !Array.",
-     "window.__wasserKroneVon": "neu: function __wasserKroneVon(r, p) { const A = r.constructor; const HC = A.HYDROSPH",
-     "window.__wasserUfer": "neu: async function wasserUfer(o = {}) { const h = st.hydrosphere; if (!h || !h.ready",
-     "window.__wasserStrom": "neu: async function wasserStrom(ort, hoehe) { const zurueck = [leihe(st, { postProces",
-     "window.__wasserFlussNah": "neu: function __wasserFlussNah(r, x, z) { const st = r.state; const fluesse = []; for",
-     "window.__wasserGraben": "neu: async function wasserGraben(o = {}) { const K = AnazhRealm.NAH_WIESE.kachel; con",
-     "window.__wasserDamm": "neu: async function wasserDamm(o = {}) { const f2 = wasserRund(2); const S = (q) => r",
-     "window.__wasserUferFarbe": "neu: async function wasserUferFarbe(o = {}) { const h = st.hydrosphere; if (!h || !h.",
-     "window.__wasserKoerper": "neu: async function wasserKoerper(o = {}) { const A = AnazhRealm; const DT = A.FIXED_",
-     "window.__wasserBild": "neu: async function wasserBild(o = {}) { const T = window.THREE; const renderer = st.",
-     "window.__wasserSeeAm": "neu: function __wasserSeeAm(r, ziel) { const st = r.state; const h = r._hydroFor(ziel",
-     "window.__wasserLicht": "neu: async function wasserLicht(o = {}) { if (!st.renderer || st.renderer._isHeadless",
-     "window.__wasserRegen": "neu: async function wasserRegen(o = {}) { const T = window.THREE; const renderer = st",
-     "window.__zielen": "neu: async (ziel) => { // ziel: {x,y,z} Welt-Punkt ODER {hoch: dy} (Blick nach oben, ",
-     "window.__zielTier": "neu: async (d, hoch) => { const r = window.anazhRealm, st = r.state, pm = st.playerMe"
-    },
-    "haelt": [],
-    "heap": [
-     219.4,
-     270.5
-    ],
-    "ungemessen": null
-   }
-  ],
-  "wanderung": [
-   {
-    "probe": "luftwasser.K3#2",
-    "ort": "wiese",
-    "m": 223.27,
-    "dreh": 0
-   },
-   {
-    "probe": "speicher.K4#2",
-    "ort": "wiese",
-    "m": 72.99,
-    "dreh": 0.709
-   },
-   {
-    "probe": "karte2.planet.kopplung.bahn-klima#1",
-    "ort": "wiese",
-    "m": 4762.03,
-    "dreh": 0
-   },
-   {
-    "probe": "gelaende.K2#1",
-    "ort": "wiese",
-    "m": 1718.5,
-    "dreh": 0
    }
   ],
   "messHalt": [
    {
-    "probe": "luftwasser.K3#2",
+    "probe": "karte2.planet.kosmos.himmelsmechanik#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kosmos.himmelsmechanik#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.planet.kosmos.sternhimmel#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kosmos.sternhimmel#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.planet.kosmos.sterne#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kosmos.sterne#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.planet.kosmos.welten#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.kosmos.welten#2",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.same.entfaltung.abwesenheit#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.entfaltung.abwesenheit#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.same.preis.eingabe#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.same.preis.eingabe#1",
+    "gehalten": [
+     "tiere"
+    ],
+    "offen": []
+   },
+   {
+    "probe": "karte2.mensch.bau.bauen#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.mensch.bau.bauen#1",
     "gehalten": [
      "skala",
      "spiegel",
@@ -75286,7 +74494,12 @@
     "offen": []
    },
    {
-    "probe": "speicher.K4#2",
+    "probe": "siedlung.K4#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "siedlung.K4#2",
     "gehalten": [
      "skala",
      "spiegel"
@@ -75294,60 +74507,124 @@
     "offen": []
    },
    {
-    "probe": "karte2.planet.kopplung.bahn-klima#1",
+    "probe": "breite.siedlung#1",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "breite.siedlung#1",
     "gehalten": [
-     "skala",
-     "spiegel",
      "tiere"
     ],
     "offen": []
    },
    {
-    "probe": "karte2.mensch.stadt.siedlungsnetz#1",
+    "probe": "karte2.planet.relief.grossform#2",
+    "halt": -1000000000,
+    "zurueck": 0
+   },
+   {
+    "probe": "karte2.planet.relief.grossform#2",
     "gehalten": [
      "skala",
-     "spiegel",
-     "tiere"
+     "spiegel"
     ],
     "offen": []
    }
   ],
-  "ciBlicke": 6,
+  "anOrt": [
+   {
+    "vor": "karte2.planet.kosmos.welten#2",
+    "anders": [
+     "playerPathBuckets"
+    ],
+    "wie": {
+     "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
+    }
+   },
+   {
+    "vor": "breite.siedlung#1",
+    "anders": [
+     "playerPathBuckets"
+    ],
+    "wie": {
+     "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
+    }
+   }
+  ],
+  "ciBlicke": 11,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 13785,
-   "frameP95": 25.04,
-   "taktP95": 15.51,
-   "vramMax": 149.9,
-   "seiten": 3,
+   "bilder": 24429,
+   "frameP95": 25.35,
+   "taktP95": 19.07,
+   "vramMax": 181.8,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "karte2.planet.kopplung.bahn-klima#1",
-     "m": 4762,
+     "probe": "karte2.planet.relief.grossform#2",
+     "m": 10272,
      "ringVor": 4,
      "ringMin": -1
     },
     {
-     "probe": "gelaende.K2#1",
-     "m": 1718,
+     "probe": "breite.siedlung#1",
+     "m": 1461,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "karte2.planet.kosmos.himmelsmechanik#2",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "karte2.planet.kosmos.sternhimmel#2",
+     "m": 1083,
      "ringVor": 4,
      "ringMin": 0
     },
     {
-     "probe": "karte2.mensch.stadt.siedlungsnetz#1",
-     "m": 1349,
+     "probe": "karte2.planet.kosmos.sterne#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "karte2.planet.kosmos.welten#2",
+     "m": 1083,
      "ringVor": 4,
      "ringMin": -1
+    },
+    {
+     "probe": "karte2.same.preis.eingabe#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "karte2.same.entfaltung.abwesenheit#1",
+     "m": 891,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "siedlung.K4#2",
+     "m": 639,
+     "ringVor": 4,
+     "ringMin": 0
     }
    ],
-   "zapfen": 542,
-   "luecken": 1,
-   "letzteLuecke": "THREE is not defined"
+   "zapfen": 1452,
+   "luecken": 3,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 573,
-  "minuten": 9.73
+  "fahrtS": 1593.4,
+  "grund": "die Fahrt riss 1800 s am Grund-Deckel von karte2.planet.wetter.lagen#2 — offen: karte2.planet.wetter.lagen#2, karte2.planet.wetter.lagen#4, karte2.planet.wetter.lagen#5, karte2.planet.wetter.lagen#7, karte2.planet.wetter.wolken#3, karte2.planet.wetter.wolken#4, karte2.planet.wetter.wolken#5, karte2.planet.wetter.wolken#6, karte2.planet.wetter.klimazonen#3, karte2.planet.wetter.klimazonen#5, karte2.planet.wetter.extreme#2, karte2.planet.wetter.extreme#3, karte2.planet.wetter.extreme#4, karte2.planet.wetter.vorhersage#1, karte2.planet.wetter.vorhersage#3, karte2.planet.wetter.vorhersage#4, karte2.planet.wetter.vorhersage#5, karte2.planet.wetter.vorhersage#6, karte2.planet.wetter.fremde-atmosphaeren#2, karte2.planet.wetter.fremde-atmosphaeren#3, karte2.planet.wetter.fremde-atmosphaeren#5",
+  "minuten": 26.7
  }
 }
