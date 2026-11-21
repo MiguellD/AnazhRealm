@@ -461,6 +461,8 @@ class AnazhRealm_siedlung_bewohner {
         const [KC, TC] = [window.__koerperCore, globalThis.__tetrapodaCore];
         if (!KC || typeof KC.tagesBindung !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesBindung");
         if (!TC || typeof TC.zielWahl !== "function") return AnazhRealm._kernPflichtBruch("tetrapoda:zielWahl");
+        if (typeof TC.wegLaengen !== "function") return AnazhRealm._kernPflichtBruch("tetrapoda:wegLaengen");
+        if (typeof KC.tagesWege !== "function") return AnazhRealm._kernPflichtBruch("koerper:tagesWege");
         const BW = AnazhRealm.BEWOHNER;
         const plan = S.plan;
         const belegt = new Map(); // das Raster des Raums (`frei`): je Zelle x, z, x, z …
@@ -552,7 +554,58 @@ class AnazhRealm_siedlung_bewohner {
         };
         const realm = this;
         let naheKnoten = null;
-        const frei = function* (x, z, amRand = true) {
+        // DER STAND HÄNGT NAHE SEINER TÜR AM NETZ (pendler-anschluss): wer an einer Tür steht (`ringStand`), erreicht sie über das
+        // Wege-Netz des Plans (`S.netzGrund`, sein erster frei erreichter Knoten wie `_bewohnerAnschluss`, die Länge über das Netz
+        // tetrapoda `wegLaengen`) höchstens auf `standUmweg` × der Luftlinie plus einer Naht (`naehtM`) — sonst hängt er jenseits
+        // einer Wand am Netz, die die Gerade nicht sieht (die Klippe, der Block). An stadt-voll stand eine Werkstatt an der
+        // Kante der Klippe, ihre Tür (948/168) auf der Terrasse: 21 Stände ihrer Station lagen 17–28 m vor der Tür am Fuß der
+        // Klippe, frei erreicht hing jeder an einem Knoten unten — der Weg von der Tür ging 630–730 m um den Ring, 21 ihrer
+        // Leute kamen um 10 Uhr nicht an (mit der Bindung nach dem Weg 22 → 1 von 1 336 nicht angekommen; der Richter:
+        // gate:kreatur-takt zielplan „Stand jenseits der Wand", an der Stadt dorf 7 120 ohne diese Frage 231 von 1 902).
+        let grundRaster = null;
+        const grundLaengen = new Map();
+        // (in Raten: je Knoten hinter einer Wand ein Schritt der Liste, wie die Frage des Stands, `frei`)
+        const amGrundGang = function* (p) {
+            const G = S.netzGrund || (S.netzGrund = realm._wegeNetzGrund(plan, S.ox, S.oz));
+            for (const c of (grundRaster || (grundRaster = knotenRaster(G.knoten)))(p.x, p.z, BW.anschlussN)) {
+                if (!realm._bewohnerWand(p, c.k)) return c;
+                yield;
+            }
+            return null;
+        };
+        const amGrund = (p) => {
+            const it = amGrundGang(p);
+            for (let w = it.next(); ; w = it.next()) if (w.done) return w.value;
+        };
+        // DIE TÜR AM NETZ: der Punkt vor ihr an seinem ersten Knoten hinter keiner Wand — sieht er keinen (die Tür öffnet in einen
+        // Winkel, 2 m vor ihr die Wand des Nachbarn), tritt man vor ihr zur Seite: der nächste freie Punkt im Umkreis bis zur Naht
+        // (je 2 m, 16 Richtungen), den die Gerade von der Tür frei erreicht und der selbst einen Knoten sieht; {i, k, d} mit
+        // d = der Weg bis zum Knoten. An der Stadt dorf 7 sah die Tür von 4 der 5 Scheunen keinen der 48 nächsten Knoten.
+        const amTuer = (p) => {
+            const ab = (u, v) => Math.hypot(u.x - v.x, u.z - v.z);
+            const c = amGrund(p);
+            if (c) return { i: c.i, k: c.k, d: ab(p, c.k) };
+            for (let r = 2; r <= BW.naehtM; r += 2)
+                for (let w = 0; w < 16; w++) {
+                    const q = { x: p.x + r * Math.cos((w * Math.PI) / 8), z: p.z + r * Math.sin((w * Math.PI) / 8) };
+                    if (realm._bewohnerWand(q, q, true) || realm._bewohnerWand(p, q)) continue;
+                    const e = amGrund(q);
+                    if (e) return { i: e.i, k: e.k, d: r + ab(q, e.k) };
+                }
+            return null;
+        };
+        const tuerNetz = new Map();
+        // die Tür am Netz, gemerkt je Tür (`amTuer`)
+        const tuerAm = (tuer) => {
+            const wo = tuer.x + "," + tuer.z;
+            let a = tuerNetz.get(wo);
+            if (a === undefined) tuerNetz.set(wo, (a = amTuer(tuer)));
+            return a;
+        };
+        // (e: der Knoten, an dem der Stand q hängt — `frei` fragt ihn EINMAL, `amGrundGang`; das Gesetz: `_bewohnerAnTuer`)
+        const nahAnTuer = (q, tuer, e) => realm._bewohnerAnTuer(S, { tuerAm: tuerAm(tuer), tuerVor: tuer }, q, e.i, grundLaengen); // prettier-ignore
+        let freiK = -1;
+        const frei = function* (x, z, amRand = true, tuer = null) {
             const [ix, iz] = [Math.floor(x / BW.raumM), Math.floor(z / BW.raumM)];
             for (let i = -1; i <= 1; i++)
                 for (let j = -1; j <= 1; j++)
@@ -574,6 +627,16 @@ class AnazhRealm_siedlung_bewohner {
             // das Netz ein Schritt der Liste (`yield`): eine Probe, die scheitert, fragt `anschlussN` Strecken — am Start-Dorf
             // 478 von 765 Proben, unter swiftshader-Last eine Probe bis 180 ms
             if (!knoten.length) return true;
+            // DER STAND AN EINER TÜR HÄNGT AM NETZ, DAS MAN GEHT (pendler-anschluss): sein Knoten ist der erste frei erreichte des
+            // Grunds (`amGrundGang`, `S.netzGrund` — das Netz des Gangs, `_bewohnerNetz`), und an ihm misst die Tür ihren Weg
+            // (`nahAnTuer`). Bis hier fragte der Stand erst die Punkte der Straßen des Plans und danach den Grund noch einmal:
+            // zwei Netze, die Wände je Probe doppelt — an stadt-voll 15 621 statt 7 208 Läufe über die Knoten, 245 480 statt
+            // 114 335 Wände, die Liste 10,6 s gegen 7,2 s an main (Radeon headless, je drei Läufe)
+            if (tuer) {
+                const e = yield* amGrundGang(q);
+                freiK = e ? e.i : -1; // (sein Knoten: der Stand merkt ihn, `ringStand` — die Wache prüft den Strich zu ihm)
+                return !!e && nahAnTuer(q, tuer, e);
+            }
             for (const c of (naheKnoten || (naheKnoten = knotenRaster(knoten)))(x, z, BW.anschlussN)) {
                 if (!realm._bewohnerWand(q, c.k)) return true;
                 yield;
@@ -719,6 +782,7 @@ class AnazhRealm_siedlung_bewohner {
         // der Stand im Ring vor der Tür (`wort` trennt den Heim-Stand von der Station des Werks) am Rand der Gasse, sonst in ihr
         // und weiteren Ringen; `gilt` (x, z): was er darüber trägt; `anker`: die Tür, der er gehört (beim Hof-Haus: Ring vor dem Tor)
         const ringStand = function* (g, wort, tx, tz, ux, uz, gilt = null, nurRand = false, anker = { x: tx, z: tz }) {
+            const tuer = { x: tx + ux * BW.vorM, z: tz + uz * BW.vorM }; // der Punkt vor der Tür: dort geht jeder Weg hinein
             // (die Maße des Rings: BEWOHNER.ring — dieselbe Tafel liest gate:kreatur-takt zielplan als Schranke eines Stands). Der Gast (`nurRand`) geht am Rand ALLE Ringe bis an die Schranke: bis hier endete er nach `amRand` Versuchen (±9 m), an der 9,3-m-Gasse vor gasthaus #846868 (die Stadt dorf 7 30) fand 19 von 22 keinen Stand, kein Fremder kam an (zielplan) // prettier-ignore
             const RG = BW.ring;
             for (const amRand of nurRand ? [true] : [true, false])
@@ -729,13 +793,15 @@ class AnazhRealm_siedlung_bewohner {
                     const x = tx + ux * vor - uz * quer;
                     const z = tz + uz * vor + ux * quer;
                     if (gilt && !gilt(x, z)) continue;
-                    if (yield* frei(x, z, amRand))
+                    if (yield* frei(x, z, amRand, tuer))
                         return nimm(
                             {
                                 x,
                                 z,
                                 blick: Math.atan2(ux, uz) + (g.axis(wort + "dreh") - 0.5) * 1.6,
                                 anker, // er sieht von seiner Tür fort
+                                // seine Tür am Netz (`_bewohnerAnTuer`: auch gerückt hängt er nahe ihr am Netz)
+                                ...(knoten.length && { tuerAm: tuerAm(tuer), tuerVor: tuer, tuerK: freiK }),
                             },
                             amRand
                         );
@@ -790,21 +856,37 @@ class AnazhRealm_siedlung_bewohner {
         const NG = S.netzGrund || (S.netzGrund = this._wegeNetzGrund(plan, S.ox, S.oz));
         const teile = TC.wegTeile(NG.knoten.length, NG.kanten);
         const zerfaellt = teile.some((t) => t > 0);
-        const naheGrund = zerfaellt ? knotenRaster(NG.knoten) : null;
         const teilVon = (o) => {
             if (!zerfaellt || !o) return 0;
-            const c = naheGrund(o.x, o.z, BW.anschlussN).find((c) => !realm._bewohnerWand(o, c.k));
+            const c = amGrund(o);
             return c ? teile[c.i] : -1;
         };
-        // (vorab je Ort der Teil seines nächsten Knotens: wer wählt, wählt nur am Teil seiner Tür — der Stand prüft danach genau)
-        const ortTeil = orte.map((o) => {
-            let [t, d] = [0, Infinity];
-            for (let i = 0; zerfaellt && i < NG.knoten.length; i++) {
-                const q = (NG.knoten[i].x - S.ox - o.x) ** 2 + (NG.knoten[i].z - S.oz - o.z) ** 2;
-                if (q < d) [t, d] = [teile[i], q];
+        // DER ANSCHLUSS EINES ORTS ANS NETZ (pendler-anschluss): ein Haus hängt dort, wo man vor seine Tür tritt (der Punkt vor dem
+        // Eingang, die Stände), an seinem ersten Knoten hinter keiner Wand (`amGrund`) — Platz und Acker an ihrer Mitte. Bis
+        // pendler-anschluss nahmen Bindung und Teil den nächsten Knoten der Mitte des Hauses: an der Werkstatt an der Kante der
+        // Klippe lag er am Fuß der Wand (36 m), die Wahl sah dort den kurzen Weg, der Mensch ging 640 m. Sieht der Punkt vor der
+        // Tür keinen Knoten, tritt man zur Seite (`amTuer`) — ohne auch das an keinem: laut, und keiner wählt es (`tagesWege`:
+        // Infinity). Die erste Fassung wog ein solches Haus nach der Luftlinie: an stadt-voll band eine Scheune, deren Tür keinen
+        // Knoten sah, 9 Leute der Terrasse 60–122 m Luft, 536–644 m Weg — keiner kam um 10 Uhr an.
+        let ortTeil = null;
+        let wegZu = null;
+        // (in Raten: je Ort ein Schritt der Liste — an stadt-voll 15 ms in EINEM Schritt über 1 000 Orte)
+        const anschliessen = function* () {
+            const ortAm = [];
+            for (const o of orte) {
+                yield;
+                const T = o.art === "platz" || o.art === "feld" ? null : tuerVon.get(o.slot);
+                const p = T ? { x: T.ex + T.ux * BW.vorM, z: T.ez + T.uz * BW.vorM } : { x: S.ox + o.x, z: S.oz + o.z };
+                const c = amTuer(p);
+                if (!c) realm._bruchMelden(`BEWOHNER: ${o.art} #${(plan.slots[o.slot] || {}).seed >>> 0} in „${plan.name || "?"}" hängt an keinem Knoten des Netzes`); // prettier-ignore
+                ortAm.push(c ? { k: c.i, d: c.d } : null);
             }
-            return t;
-        });
+            // (vorab je Ort der Teil seines Knotens: wer wählt, wählt nur am Teil seiner Tür — der Stand prüft danach genau)
+            ortTeil = ortAm.map((a) => (!zerfaellt ? 0 : a ? teile[a.k] : -1));
+            // DER WEG ZU EINEM ORT (koerper `tagesWege`): die Bindung wählt nach dem Weg, den der Mensch über das Wege-Netz des
+            // Plans GEHT, nie nach der Luftlinie (pendler-anschluss)
+            wegZu = KC.tagesWege(TC, orte, NG, S.ox, S.oz, (o, i) => ortAm[i]);
+        };
         const standAm = function* (g, i, heimI, platz) {
             const o = orte[i];
             if (o.art === "platz") return (yield* marktStand(g)) || platz;
@@ -818,7 +900,7 @@ class AnazhRealm_siedlung_bewohner {
         // Tisch drinnen die Tür (koerper-core `tagesPlan`). Liefert (wo) → sein Stand dort oder null.
         const binden = function* (P, namen) {
             for (let v = 0, neu = true; neu && v < 8; v++) {
-                P.bind = KC.tagesBindung(TC, P.same, P.rolle, P.heimI, orte, (o, i) => P.voll.has(i) || (i !== P.heimI && ortTeil[i] !== P.heimTeil)); // prettier-ignore
+                P.bind = KC.tagesBindung(TC, P.same, P.rolle, P.heimI, orte, (o, i) => P.voll.has(i) || (i !== P.heimI && ortTeil[i] !== P.heimTeil), wegZu); // prettier-ignore
                 neu = false;
                 for (const wo of namen) {
                     const i = P.bind[wo];
@@ -833,6 +915,12 @@ class AnazhRealm_siedlung_bewohner {
         };
         const liste = [];
         const besuche = [];
+        // ERST STEHT JEDER VOR SEINER EIGENEN TÜR (pendler-anschluss): der Stand vor der Tür und der am Platz für jeden Bewohner
+        // jedes Hauses, dann erst die Bindung (deren Stationen und Gäste stehen in den Ringen fremder Türen). Bis hier band jeder,
+        // sobald er stand — die Station eines Werks nahm den Ring einer Tür, deren Leute noch nicht standen; seit der Stand nahe
+        // seiner Tür am Netz hängt (`frei`), fand an stadt-voll so mancher Bewohner nur noch Stände jenseits (1 368 → 1 349
+        // Leute; erst die eigene Tür: 1 366, je 17 und 19 ohne Stand vor der Tür, laut).
+        const geboren = [];
         for (const T of tueren) {
             const { si, sl, haus, tx, tz, ux, uz, ex, ez } = T;
             const n = FC.leuteVon(sl.ov);
@@ -845,7 +933,6 @@ class AnazhRealm_siedlung_bewohner {
                 yield;
                 S.listeRest--;
                 const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
-                const same = Math.floor(g.axis("tag") * 4294967296) >>> 0;
                 const heim = yield* ringStand(g, "", ex, ez, ux, uz, null, false, { x: tx, z: tz });
                 if (!heim) {
                     this._bruchMelden(
@@ -853,37 +940,43 @@ class AnazhRealm_siedlung_bewohner {
                     );
                     continue;
                 }
-                const platz = yield* platzStand(g);
-                // DIE BINDUNG (`binden`): das Werk, der Tisch, der Abend — der Besuch folgt, wenn jeder steht
-                const P = {
-                    g,
-                    same,
-                    rolle,
-                    heimI,
-                    heimTeil: teilVon(heim),
-                    platz,
-                    am: new Map(),
-                    voll: new Set(),
-                    bind: null,
-                };
-                const ort = yield* binden(P, ["werk", "mahl", "abend"]);
-                const bind = P.bind;
-                const werk = ort("werk") || (bind.werk === heimI && rolle !== "wohnhaus" ? heim : null);
-                // der Beruf nennt das Werk: die Rolle seines Hauses, der Markt, der Acker, die Art des Orts — ohne Ort der Hof
-                const wA = werk && bind.werk !== heimI ? orte[bind.werk].art : rolle;
-                const beruf = !werk ? "hof" : wA === "platz" ? "markt" : wA;
-                // DIE EINE GESTALT DES BEWOHNERS (Lehre 25): der Satz trägt ab seiner Geburt jedes Feld, das ein Takt je an ihm
-                // schreibt (ungesetzt `undefined`, wie ein fehlendes) — so teilen alle Sätze EINE versteckte Klasse, und jeder Zugriff
-                // der Schleifen des Takts liest an fester Stelle. Bis hier trug der Satz 11 Felder, die übrigen ~60 schrieb der Takt in
-                // der Reihe seiner Geschichte nach (an stadt-voll 19 Gestalten unter 1 096 Sätzen, ein Nachtrag über
-                // `Object.assign` kippt ihn ins Wörterbuch): `_tickBewohner` trug 0,68 ms Selbst-Zeit je Bild, die Hälfte davon
-                // Zugriffe wie `b.leib` und `b.d2`. Ein Literal (kein Spread: der trüge die Felder wieder einzeln nach); die Zeilen:
-                // wer er ist · der Leib (`_bewohnerGenome`, `_bewohnerGeburt`) · der Takt der Köpfe und sein Raster
-                // (`_tickBewohner`, `_bewohnerRasterLage`) · der Tag (`_bewohnerZiel`, `_bewohnerAnkunft`) · der Gang (`_bewohnerWeg`,
-                // `_bewohnerGehen`, `_bewohnerSchritt`, `_gaitTick`) · am Steuer (`_verkehrAnlegen`).
-                const u = undefined;
-                // prettier-ignore
-                liste.push({
+                geboren.push({ sl, si, k, g, rolle, tuer, vor, ein, heimI, heim, platz: yield* platzStand(g) });
+            }
+        }
+        yield* anschliessen();
+        for (const { sl, si, k, g, rolle, tuer, vor, ein, heimI, heim, platz } of geboren) {
+            yield;
+            const same = Math.floor(g.axis("tag") * 4294967296) >>> 0;
+            // DIE BINDUNG (`binden`): das Werk, der Tisch, der Abend — der Besuch folgt, wenn jeder steht
+            const P = {
+                g,
+                same,
+                rolle,
+                heimI,
+                heimTeil: teilVon(heim),
+                platz,
+                am: new Map(),
+                voll: new Set(),
+                bind: null,
+            };
+            const ort = yield* binden(P, ["werk", "mahl", "abend"]);
+            const bind = P.bind;
+            const werk = ort("werk") || (bind.werk === heimI && rolle !== "wohnhaus" ? heim : null);
+            // der Beruf nennt das Werk: die Rolle seines Hauses, der Markt, der Acker, die Art des Orts — ohne Ort der Hof
+            const wA = werk && bind.werk !== heimI ? orte[bind.werk].art : rolle;
+            const beruf = !werk ? "hof" : wA === "platz" ? "markt" : wA;
+            // DIE EINE GESTALT DES BEWOHNERS (Lehre 25): der Satz trägt ab seiner Geburt jedes Feld, das ein Takt je an ihm
+            // schreibt (ungesetzt `undefined`, wie ein fehlendes) — so teilen alle Sätze EINE versteckte Klasse, und jeder Zugriff
+            // der Schleifen des Takts liest an fester Stelle. Bis hier trug der Satz 11 Felder, die übrigen ~60 schrieb der Takt in
+            // der Reihe seiner Geschichte nach (an stadt-voll 19 Gestalten unter 1 096 Sätzen, ein Nachtrag über
+            // `Object.assign` kippt ihn ins Wörterbuch): `_tickBewohner` trug 0,68 ms Selbst-Zeit je Bild, die Hälfte davon
+            // Zugriffe wie `b.leib` und `b.d2`. Ein Literal (kein Spread: der trüge die Felder wieder einzeln nach); die Zeilen:
+            // wer er ist · der Leib (`_bewohnerGenome`, `_bewohnerGeburt`) · der Takt der Köpfe und sein Raster
+            // (`_tickBewohner`, `_bewohnerRasterLage`) · der Tag (`_bewohnerZiel`, `_bewohnerAnkunft`) · der Gang (`_bewohnerWeg`,
+            // `_bewohnerGehen`, `_bewohnerSchritt`, `_gaitTick`) · am Steuer (`_verkehrAnlegen`).
+            const u = undefined;
+            // prettier-ignore
+            liste.push({
                     heim: sl.seed >>> 0, rolle, beruf, same,
                     orte: { tuer, vor, ein, heim, platz, werk, mahl: ort("mahl"), abend: ort("abend"), besuch: null },
                     seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
@@ -896,8 +989,7 @@ class AnazhRealm_siedlung_bewohner {
                     tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, grundGx: 0, grundGz: 0, _gait: u, _gaitW: u, walkPhase: u,
                     wagen: u, amSteuer: u,
                 });
-                besuche.push(P);
-            }
+            besuche.push(P);
         }
         for (const [i, b] of liste.entries()) {
             yield;
@@ -1697,11 +1789,27 @@ class AnazhRealm_siedlung_bewohner {
     // feld #617311 am Dorfrand (sein Anschluss 4,2 m neben der Tat) blieb stehen (gate:kreatur-takt begegnung, fort 0). Am Steuer bleibt er.
     _bewohnerWeichen(S, b, o, stunde, belegt) {
         if (b.amSteuer || b.ankunft || !b.ziel || !(this._kreaturFurchtErinnert(b.leib) > 0)) return false;
+        b.weichen = null;
+        const W = this._bewohnerWeichOrt(S, b, o, stunde, belegt);
+        if (!W) return false;
+        const { ort, soll } = W;
+        const bis = this._bewohnerWende(b, stunde, stunde + 24);
+        b.weichen = { ort, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
+        belegt.add(ort);
+        this._bewohnerUhrNach(S, b);
+        this._bewohnerZiel(b, stunde, true);
+        this._bewohnerWecken(S, b);
+        return true;
+    }
+
+    // DER ORT DES WEICHENS (`_bewohnerWeichen`), ohne ihn zu setzen: wohin der Zeuge b vor der Tat am Ort o wiche — `{ ort, soll }`
+    // oder null (sein Soll liegt jenseits des Kreises oder drinnen, kein Ort trägt). Leser: das Weichen selbst und die Kreatur-Linse
+    // (begegnung: sie wählt ihren Zeugen nach dem Ort, den ihm das Gesetz gäbe — der vierte Gang geht durch ihn)
+    _bewohnerWeichOrt(S, b, o, stunde, belegt) {
         const B = { x: o.x, z: o.z, r: AnazhRealm.BEWOHNER.zeugeM };
         const R = AnazhRealm._furchtGesetz().fluchtRadius(B, null, false);
-        b.weichen = null;
         const soll = this._bewohnerSoll(b, stunde);
-        if (soll.drinnen || Math.hypot(soll.ziel.x - o.x, soll.ziel.z - o.z) >= R) return false;
+        if (soll.drinnen || Math.hypot(soll.ziel.x - o.x, soll.ziel.z - o.z) >= R) return null;
         const p = { x: b.leib.position.x, z: b.leib.position.z };
         const [T, d2] = [{ minX: o.x, maxX: o.x, minZ: o.z, maxZ: o.z }, (p.x - o.x) ** 2 + (p.z - o.z) ** 2 - 1e-6];
         const fern = (w) => !!w && [p, ...w].every((e, i, v) => !i || this._streckeBoxAbstand2(T, v[i - 1].x, v[i - 1].z, e.x, e.z) >= d2); // prettier-ignore
@@ -1715,14 +1823,7 @@ class AnazhRealm_siedlung_bewohner {
             const q = { x: o.x + vx * R, z: o.z + vz * R, blick: Math.atan2(vx, vz) };
             if (!ort && this._landAt(q.x, q.z) && !["haus", "bau"].includes(this._imGrundriss(q.x, q.z, 0.5)) && !this._bewohnerWand(p, q) && fern([q])) ort = q; // prettier-ignore
         }
-        if (!ort) return false;
-        const bis = this._bewohnerWende(b, stunde, stunde + 24);
-        b.weichen = { ort, plan: soll.ziel, ab: stunde, dauer: bis === null ? 24 : bis - stunde };
-        belegt.add(ort);
-        this._bewohnerUhrNach(S, b);
-        this._bewohnerZiel(b, stunde, true);
-        this._bewohnerWecken(S, b);
-        return true;
+        return ort ? { ort, soll } : null;
     }
 
     // DAS SOLL DER STUNDE (mensch.K2): der Plan des Gesetzes (koerper-core `tagesPlan`) aus dem Samen, der Rolle seines
@@ -2998,6 +3099,24 @@ class AnazhRealm_siedlung_bewohner {
     // DER ANSCHLUSS eines Orts: der nächste der `anschlussN` nächsten Knoten des Netzes, den er in gerader Linie frei
     // erreicht (`_bewohnerWand`). Kein Knoten: laut, und -1 (die Strecke trägt
     // keinen Weg, `_bewohnerStrecke`: er bleibt) — nie durch die Wand zum nächsten.
+    // DER STAND HÄNGT NAHE SEINER TÜR AM NETZ (pendler-anschluss) — das EINE Gesetz der Geburt (`_bewohnerListe` frei) und des
+    // gerückten Stands (`_bewohnerStandPruefen`): wer an einer Tür steht (o.tuerAm: ihr Knoten {i, k, d}, o.tuerVor: der Punkt vor
+    // ihr), erreicht sie vom Punkt q über seinen Knoten i des Grunds (`S.netzGrund`) höchstens auf `standUmweg` × der Luftlinie
+    // plus einer Naht. `laengen`: die Längen je Knoten einer Tür (tetrapoda `wegLaengen`), gemerkt beim Leser. Bis hier hielt nur
+    // die Geburt das Gesetz: der gerückte Stand fragte allein den Anschluss — an der Stadt dorf 7 30 rückten zwei Stände an
+    // haus#134516 16,7 m Luft, 182 m über das Netz (gate:kreatur-takt zielplan „Stand jenseits der Wand", die Liste nach dem Tag)
+    _bewohnerAnTuer(S, o, q, i, laengen) {
+        const a = o.tuerAm;
+        if (!a) return true; // die Tür hängt an keinem Knoten (laut, `_bewohnerListe`): es urteilt die Gerade allein
+        const G = S.netzGrund;
+        const K = G && G.knoten[i];
+        if (!K) return false;
+        let L = laengen.get(a.i);
+        if (!L) laengen.set(a.i, (L = globalThis.__tetrapodaCore.wegLaengen(G.knoten.length, G.kanten, a.i)));
+        const [BW, T] = [AnazhRealm.BEWOHNER, o.tuerVor];
+        return a.d + L[i] + Math.hypot(q.x - K.x, q.z - K.z) <= BW.standUmweg * Math.hypot(T.x - q.x, T.z - q.z) + BW.naehtM; // prettier-ignore
+    }
+
     _bewohnerAnschluss(N, o) {
         if (o._knoten !== undefined) return o._knoten;
         const nah = N.knoten
@@ -3041,7 +3160,8 @@ class AnazhRealm_siedlung_bewohner {
         rand = 0,
         frei = null,
         weit = AnazhRealm.BEWOHNER.auswegM,
-        gesetz = null
+        gesetz = null,
+        amTuer = null
     ) {
         if (o._ausweg !== undefined) return o._ausweg;
         const BW = AnazhRealm.BEWOHNER;
@@ -3067,7 +3187,9 @@ class AnazhRealm_siedlung_bewohner {
                 if (frei && !frei(q)) continue;
                 if (this._bewohnerWand(q, q, true, rand) || (!ausDerWand && this._bewohnerWand(o, q))) continue;
                 if (!this._landAt(q.x, q.z, 0.2)) continue;
-                if (this._bewohnerAnschluss(N, q) >= 0) gefunden = q;
+                // (`amTuer` (q, k): der Stand an einer Tür hängt nahe ihr am Netz, `_bewohnerAnTuer`)
+                const k = this._bewohnerAnschluss(N, q);
+                if (k >= 0 && (!amTuer || amTuer(q, k))) gefunden = q;
                 else yield;
             }
         }
@@ -3097,6 +3219,13 @@ class AnazhRealm_siedlung_bewohner {
         const weg = (o) => o.ur && (o.x !== o.ur.x || o.z !== o.ur.z);
         // die Stände, deren Gesetz neben der Spur keinen Ort trägt (der Fehler des Plans, laut; die Kreatur-Linse liest ihn)
         const ohneOrt = S.standOhneOrt || (S.standOhneOrt = new Set());
+        // WER AM RAUM DER ANDEREN HÄNGT (mensch.K2): jeder, dessen Suche lief (`_standR` > 0) — der gerückte, der ohne Ort und der,
+        // dessen Suche scheiterte und der darum an seinem Ursprung blieb (diesseits der Fahrbahn kein Ort, `dort`): er urteilt neu wie
+        // der gerückte, sobald der Raum in seiner Scheibe frei wird. Bis hier urteilte nur der gerückte neu: an der Stadt (stadt-voll,
+        // das Werk-Viertel bei 827/446) fand der Stand 819,7/445,1 im ersten Gang diesseits seiner Tür keinen Ort, im zweiten gingen
+        // 43 Stände um ihn (`_bewohnerOhneStand`), und er rückte erst, als eine Hülle zufällig auf ihn traf — im Lauf nach dem
+        // Zwilling, nie in ihm (VK-V: die Stunde 10 Uhr trennt sich in Bild 0, vier Werk-Stände 1–8 m anders)
+        const haengt = (o) => weg(o) || ohneOrt.has(o) || o._standR > 0;
         // DER RAUM ZU ALLEN STÄNDEN (der Ursprung jedes anderen und der Ort jedes gerückten) als RASTER in Zellen von `raumM`
         // (Lehre 25): die Probe eines Punkts fragt die 3 × 3 Zellen um ihn, nie jeden Stand; gebaut mit dem ersten geprüften
         // Stand, nachgeführt mit jedem, der rückt (je Eintrag x, z, Eigner). Bis hier baute jeder geprüfte Stand die Liste aller
@@ -3108,6 +3237,8 @@ class AnazhRealm_siedlung_bewohner {
         // DER VORRANG DER REIHE (mensch.K2): jeder Ursprung sperrt jeden, der gerückte Ort nur Spätere der Reihe — der Ort ist Funktion der
         // Früheren, nie der Folge der Gänge (bis hier stellte dieselbe Saat kaufhaus #1295281832 je nach Vorgeschichte anders, VK-V)
         const rang = new Map([...staende].map((p, i) => [p, i]));
+        const laengen = new Map(); // die Längen je Tür-Knoten (`_bewohnerAnTuer`), für diesen Gang
+
         const legen = (x, z, p, urs) => {
             const k = zelle(Math.floor(x / RM), Math.floor(z / RM));
             const L = gitter.get(k);
@@ -3157,7 +3288,7 @@ class AnazhRealm_siedlung_bewohner {
         }
         if (trifft || wechsel.length || !vorher)
             for (const p of staende) {
-                if (!weg(p) || p._standSchmutz === true) continue;
+                if (!haengt(p) || p._standSchmutz === true) continue;
                 const R = scheibe(p);
                 const K = N.knoten[p._standK];
                 let schmutz =
@@ -3174,7 +3305,8 @@ class AnazhRealm_siedlung_bewohner {
         for (const o of staende) {
             S.listeRest--;
             const ur = o.ur || (o.ur = { x: o.x, z: o.z, blick: o.blick });
-            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(weg(o) && o._standSchmutz !== false)) continue;
+            const urK = o.tuerK >= 0 ? N.knoten[o.tuerK] : null; // der Knoten seiner Geburt (`_bewohnerListe`, `tuerK`)
+            if (trifft && !trifft(o, o) && !trifft(ur, ur) && !(urK && trifft(ur, urK)) && !(haengt(o) && o._standSchmutz !== false)) continue; // prettier-ignore
             if (!gitter) {
                 gitter = new Map();
                 for (const p of staende) {
@@ -3194,6 +3326,7 @@ class AnazhRealm_siedlung_bewohner {
             // `R` misst die Scheibe, die seine Suche ging
             let R = 0;
             const realm = this;
+            const amTuer = o.tuerAm ? (q, k) => realm._bewohnerAnTuer(S, o, q, k, laengen) : null;
             const neu = function* (rand, frei, weit = BW.auswegM, gesetz = o.gilt) {
                 const p = yield* realm._bewohnerAuswegGang(
                     N,
@@ -3203,7 +3336,8 @@ class AnazhRealm_siedlung_bewohner {
                     rand,
                     frei,
                     weit,
-                    gesetz
+                    gesetz,
+                    amTuer
                 );
                 R = Math.max(R, p ? Math.hypot(p.x - ur.x, p.z - ur.z) : weit);
                 return p;
@@ -3227,7 +3361,13 @@ class AnazhRealm_siedlung_bewohner {
             // Ring ihn fand, auch jenseits der Trasse: die sechs Leute des Hauses 7:1 der Metropole gingen zwischen Tür und Stand
             // über die Fahrbahn (stadt-voll 23 Uhr: rund 390 von 704 Proben auf ihr, der Anteil 5,27 %)
             const dies = frei && o.anker ? (p) => frei(p) && !this._verkehrFahrbahnM(S, o.anker, [p], 0) : frei;
-            const wand = this._bewohnerWand(ur, ur, true, BW.standRandM);
+            // DER URSPRUNG HÄLT DAS GESETZ DER TÜR (`_bewohnerAnTuer`) WIE DER GERÜCKTE: tritt eine Hülle auf den Strich zu seinem Knoten
+            // (der Wald-Takt, die Stufen der Häuser), hängt er über den nächsten frei erreichten nahe seiner Tür am Netz — sonst steht
+            // er dort wie in einer Wand und rückt nach demselben Gesetz. Bis hier fragte die Wache am Ursprung nur seinen Punkt: an
+            // der Stadt dorf 7 30 standen nach den Proben davor zwei Stände an haus#134516 16,7 m Luft, 182 m über das Netz
+            // (gate:kreatur-takt zielplan, die Liste nach dem Tag; die Probe allein grün)
+            const tuerFern = !!urK && !!this._bewohnerWand(ur, urK) && !amTuer(ur, this._bewohnerAnschluss(N, { x: ur.x, z: ur.z })); // prettier-ignore
+            const wand = tuerFern || this._bewohnerWand(ur, ur, true, BW.standRandM);
             const dort = !wand && (!frei || frei(ur));
             let q =
                 dort && (dies === frei || dies(ur))
@@ -3270,7 +3410,7 @@ class AnazhRealm_siedlung_bewohner {
                 const hin = q.x !== ur.x || q.z !== ur.z;
                 if (hin) legen(q.x, q.z, o, false);
                 for (const p of staende)
-                    if (rang.get(p) > rang.get(o) && weg(p) && p._standSchmutz === false)
+                    if (rang.get(p) > rang.get(o) && haengt(p) && p._standSchmutz === false)
                         if (
                             (alt && inScheibe(p, alt[0], alt[1])) ||
                             (hin && (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < RM * RM)
@@ -3503,6 +3643,8 @@ AnazhRealm.BEWOHNER = Object.freeze({
     gasseFreiM: 1.6,
     gasseZelleM: 8,
     anschlussN: 48,
+    // der Stand vor einer Tür erreicht sie über das Netz höchstens auf standUmweg × der Luftlinie + naehtM (`_bewohnerListe` frei)
+    standUmweg: 2,
     auswegM: 3,
     // DER RING EINES STANDS VOR EINER TÜR (`_bewohnerListe` ringStand): Versuch v liegt vor0M + ⌊v / jeStufe⌋ · stufeM (+ bis streuM
     // aus dem Samen) vor der Tür und bis quer0M + ⌊v / jeStufe⌋ m quer zu ihr; amRand Versuche am Rand der Gasse, dann alle.
