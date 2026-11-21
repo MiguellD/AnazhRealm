@@ -12,8 +12,9 @@ class AnazhRealm_gelaende_boden {
     // Trab 12–22 cm über dem Boden, ein stehender Wolf hangauf mit den Hinterpfoten 0,40 m — gate:koerper-stand K6). null ohne
     // Karte (fern, ungebaut) oder ohne Boden an einer Ecke. DER EINE LESER DES GEZEICHNETEN BODENS (K21): Stand-Leser, Nah-Wiese
     // (Fuß, Hang, Grün) und Nah-Streu (Fuß, Hang) lesen nur ihn — bis K21 lasen Wiese und Streu nur die Karte des Eigners, im
-    // Rand-Streifen fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). `aus` (optional) trägt den
-    // Grün-Kanal (0…1) der Karte, die an jeder Ecke gewinnt, mit dem Belag der Wege-Karte (der Rasen grünt, das Pflaster deckt); welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
+    // Rand-Streifen fiel kaum ein Büschel (Dichte 0,11 gegen 1,31 je m², gate:koerper-stand K7). `aus` (optional) trägt das Grün
+    // (0…1) des Gesetzes am gezeichneten Boden (`_bodenGruenAt`, mit dem Belag der Wege-Karte — nie das Grün der Karte einer
+    // Stufe, w28-pop-treue); welche Karten ein Rechteck liest, nennt `_bodenSichtChunks`.
     // `stufe` (optional, 0…1) legt das Stufen-Gewicht fest, statt es am Auge zu messen: die Enden des Geomorphs, Lage (0) und
     // Ziel (1), zwischen denen der Fuß der Streu dem Auge folgt (`_streuFuss`).
     _bodenSichtAt(x, z, aus, stufe) {
@@ -27,97 +28,169 @@ class AnazhRealm_gelaende_boden {
         const cfg = this._voxelChunkConfig(lod);
         const T = AnazhRealm.BODEN_KARTE_TEILUNG;
         const h = cfg.step / T;
-        const M = T * (cfg.dim + 3) + 1;
-        const n = cfg.dim * T; // Raster-Abstände je Chunk
         const gx = Math.floor(x / h);
         const gz = Math.floor(z / h);
-        let a = -Infinity,
-            b = -Infinity,
-            c = -Infinity,
-            d = -Infinity;
-        let ga = 0,
-            gb = 0,
-            gc = 0,
-            gd = 0;
-        // DIE STUFEN-NAHT (K51): ein unterer Nachbar einer anderen Stufe tastet sein eigenes Raster ab — er trägt seine Fläche
-        // bilinear in SEINEM Raster bei (alle vier Ecken), die Karten der Stufe des Eigners je Ecke. Bis K51 las der Leser über die
-        // Stufen-Grenze nichts: im Rand-Streifen einer Naht (die Nah-Zone 3×3, 43–65 m vor dem Auge) fiel er auf den Träger
-        // (gate:koerper-stand K6: 346 von 772 Punkten mehr als 25 cm neben dem gezeichneten Boden, Pfoten 24 cm).
-        let fremd = -Infinity,
-            fremdG = 0;
+        // DIE STUFEN-NAHT (K51, w28-pop-treue): JEDE Ecke der Raster-Zelle des Eigners nimmt die oberste Fläche ALLER Karten, die dort
+        // zeichnen (`_bodenFlaeche`) — die Karten der Stufe des Eigners an ihrem Rasterpunkt, ein unterer Nachbar einer anderen Stufe an
+        // DEMSELBEN Welt-Punkt (`_bodenKarteEcke`: die Raster der Stufen liegen ineinander). Bis K51 las der Leser über die
+        // Stufen-Grenze nichts (gate:koerper-stand K6: 346 von 772 Punkten mehr als 25 cm neben dem gezeichneten Boden, Pfoten 24 cm);
+        // bis w28-pop-treue trug der Nachbar seine Fläche nur am Punkt bei, bilinear in SEINEM Raster: dort, wo die beiden Netze sich
+        // treffen, liegt die Zelle jeder Karte halb jenseits ihres Netzes — der Leser antwortete null, wo der Boden gezeichnet ist (die
+        // Naht 1/0 bei 1,8–2,7 m, 2/1 bei 3,6–5,4 m, 1/2 bei 1,8–2,7 m im Eigner; 144 Nähte der Mess-Wiese). Am Wechsel einer Stufe fiel
+        // und kam dort je Kachel der Ferne ein Büschel der Nah-Wiese (gate:pop „DER WURF DER STUFE“: 6 Büschel in 96 Kacheln, 526
+        // Pop-Pixel). Die Karten der Lesung stehen im Satz `_bodenKarten` (ohne Zuteilung je Lesung): je Karte ihre Höhen, ihre
+        // Stufe, ihre Kante und der Versatz ihres Rasters gegen das der Welt, dazu DER GEOMORPH DER STUFE (K51-2: im Übergangs-Band
+        // zeichnet der Stoff zwischen der Karte der Lage und der des Ziels, `_bodenStufeMisch`) — ihn fragt erst die Karte, die
+        // am Rasterpunkt trägt (`_bodenFlaeche`; der Punkt der Lesung steht am Satz).
+        // DIE LESUNG KOSTET, WAS SIE LIEST: je Ecke EIN Gang über die Karten, der Geomorph je tragender Karte einmal, der Hang
+        // des Grüns aus den vier Ecken derselben Zelle. Bis hier fragte jede Lesung jede der vier Karten nach ihrem Geomorph, je
+        // Ecke und Karte ein eigenes Glied, und das Grün las für seinen Hang vier weitere Punkte: 175 Rufe je Punkt des EINEN
+        // Stoff-Lesers (`_kontaktStoffAt`), die Zündung einer Zelle des Brands 1 347 Einheiten bei 12 brennenden (gate:stand-takt
+        // BRAND-ZELLEN, Soll ≤ 64 je Zelle).
+        const K = this._bodenKarten || (this._bodenKarten = [{}, {}, {}, {}]);
+        [K.x, K.z, K.stufe] = [x, z, stufe];
+        let n = 0;
         for (let q = 0; q < 4; q++) {
             const ax = cx - (q & 1);
             const az = cz - (q >> 1);
             const E = q === 0 ? e : vc.get(`${ax},${az}`);
-            if (E && E.surfMap && (E.lod || 0) !== lod) {
-                const v = this._bodenKarteBilinear(E, ax, az, x, z, aus, stufe);
-                if (v !== null && v.y > fremd) {
-                    fremd = v.y;
-                    fremdG = v.gruen;
-                }
-                continue;
-            }
-            const m = E && (E.lod || 0) === lod ? E.surfMap : null;
-            if (!m) continue;
-            const i = gx - ax * n + T;
-            const j = gz - az * n + T;
-            if (i < 0 || j < 0 || i + 1 >= M || j + 1 >= M) continue;
-            const o = i + j * M;
-            const g = aus ? E.gruenMap : null;
-            // DER GEOMORPH DER STUFE (K51-2): im Übergangs-Band zeichnet der Stoff zwischen der Karte der Lage und der des Ziels
-            const st = this._bodenStufeMisch(E, ax, az, x, z, stufe);
-            const ka = st ? st(m, o) : m[o],
-                kb = st ? st(m, o + 1) : m[o + 1],
-                kc = st ? st(m, o + M) : m[o + M],
-                kd = st ? st(m, o + M + 1) : m[o + M + 1];
-            if (ka > a) {
-                a = ka;
-                ga = g ? g[o] : 0;
-            }
-            if (kb > b) {
-                b = kb;
-                gb = g ? g[o + 1] : 0;
-            }
-            if (kc > c) {
-                c = kc;
-                gc = g ? g[o + M] : 0;
-            }
-            if (kd > d) {
-                d = kd;
-                gd = g ? g[o + M + 1] : 0;
+            if (!E || !E.surfMap) continue;
+            const el = E.lod || 0;
+            const ce = el === lod ? cfg : this._voxelChunkConfig(el);
+            const k = K[n++];
+            k.m = E.surfMap;
+            k.el = el;
+            k.M = T * (ce.dim + 3) + 1;
+            k.i0 = T - ax * ce.dim * T;
+            k.j0 = T - az * ce.dim * T;
+            [k.E, k.ax, k.az, k.st] = [E, ax, az, undefined];
+        }
+        let a = this._bodenFlaeche(n, gx, gz, lod),
+            b = this._bodenFlaeche(n, gx + 1, gz, lod),
+            c = this._bodenFlaeche(n, gx, gz + 1, lod),
+            d = this._bodenFlaeche(n, gx + 1, gz + 1, lod);
+        // DIE FUGE DER NETZE (w28-pop-treue): wo ein feines Netz an die Rand-Ecke eines groben stößt, klafft zwischen ihnen ein
+        // Splitter (Mess-Wiese: 1–12 cm an 5 Ecken von 81 Chunks) — der Rasterpunkt in ihm trägt keine Karte. Trägt GENAU EINE Ecke
+        // der Zelle nicht, liest die Zelle die Ebene ihrer drei tragenden Ecken; vorher fiel die ganze Zelle (3,2 m² in Stufe 2).
+        // Tragen ZWEI Ecken EINER Kante nicht (der Riss läuft längs der Raster-Linie — gate:koerper-stand K6b: 59 Punkte in zwei
+        // Zellen an einem 30-cm-Riss), setzt die Zelle die Ebene der Nachbar-Zelle hinter ihrer tragenden Kante fort (je Ecke
+        // 2 · Kante − Nachbar); trägt auch die nicht, fehlt die Diagonale oder fehlen drei, bleibt die Zelle leer.
+        const luecken =
+            (a > -Infinity ? 0 : 1) + (b > -Infinity ? 0 : 1) + (c > -Infinity ? 0 : 1) + (d > -Infinity ? 0 : 1);
+        let traegt = luecken <= 1;
+        if (luecken === 1) {
+            if (!(a > -Infinity)) a = b + c - d;
+            else if (!(b > -Infinity)) b = a + d - c;
+            else if (!(c > -Infinity)) c = a + d - b;
+            else d = b + c - a;
+        } else if (luecken === 2) {
+            const F = (i, j) => this._bodenFlaeche(n, gx + i, gz + j, lod);
+            const [A, B, C, D] = [a > -Infinity, b > -Infinity, c > -Infinity, d > -Infinity];
+            // die zwei tragenden Ecken und ihre Nachbarn hinter der tragenden Kante
+            const k =
+                A && C ? [a, c, F(-1, 0), F(-1, 1)]
+                : B && D ? [b, d, F(2, 0), F(2, 1)]
+                : A && B ? [a, b, F(0, -1), F(1, -1)]
+                : C && D ? [c, d, F(0, 2), F(1, 2)]
+                : null; // prettier-ignore
+            if (k && k[2] > -Infinity && k[3] > -Infinity) {
+                const [u, v] = [2 * k[0] - k[2], 2 * k[1] - k[3]];
+                if (A && C) [b, d] = [u, v];
+                else if (B && D) [a, c] = [u, v];
+                else if (A && B) [c, d] = [u, v];
+                else [a, b] = [u, v];
+                traegt = true;
             }
         }
-        const eigen = a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity;
         const fu = x / h - gx;
         const fv = z / h - gz;
-        let y = eigen ? (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv : -Infinity;
-        let gruen = 0;
-        if (fremd > y) {
-            y = fremd;
-            gruen = fremdG;
-        } else if (eigen && aus) gruen = ((ga * (1 - fu) + gb * fu) * (1 - fv) + (gc * (1 - fu) + gd * fu) * fv) / 255;
+        let y = traegt ? (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv : -Infinity;
         // DIE SÄULE, DIE KEIN NETZ TRÄGT (`_saeuleVorlaeufig`): bis zum Neubau ihrer Chunks ist ihre Krone der gezeichnete Boden
-        // über ihrem Grundriss (ohne Grün) — der Fuß auf dem Block, der Block auf dem Dachboden
+        // über ihrem Grundriss (ohne Grün, `_bodenGruenAt`) — der Fuß auf dem Block, der Block auf dem Dachboden
         const S = this.state.saeulenVorlaeufig;
         if (S && S.size)
-            for (const s of S.values())
-                if ((x - s.x) ** 2 + (z - s.z) ** 2 < s.rr && !(y >= s.krone)) {
-                    y = s.krone;
-                    gruen = 0;
-                }
+            for (const s of S.values()) if ((x - s.x) ** 2 + (z - s.z) ** 2 < s.rr && !(y >= s.krone)) y = s.krone;
         if (!(y > -Infinity)) return null;
-        if (aus) {
-            // DER BELAG (`_wegeBelagAt`, die Flächen eines Plans): der Rasen grünt den Grund, das Pflaster deckt ihn — der Boden-Stoff
-            // zeichnet beide (`_wegeBodenFarbe`), Wiese und Schritt lesen sie hier
-            const B = this._bodenBelagAus || (this._bodenBelagAus = {});
-            this._wegeBelagAt(x, z, B);
-            aus.gruen = (gruen > B.rasen ? gruen : B.rasen) * (1 - B.pflaster);
+        // DER HANG DES GRÜNS IST DER DER GELESENEN ZELLE: |∇| ihrer Fläche am Punkt, aus ihren vier Ecken (über einer Säule
+        // ohne Netz trägt das Grün ohnehin nichts)
+        if (aus)
+            aus.gruen = this._bodenGruenAt(
+                x,
+                y,
+                z,
+                traegt ? Math.hypot((b - a) * (1 - fv) + (d - c) * fv, (c - a) * (1 - fu) + (d - b) * fu) / h : 0
+            );
+        return y;
+    }
+    // DIE FLÄCHE AM RASTERPUNKT (w28-pop-treue): die oberste Fläche, die eine der `n` Karten der Lesung (`_bodenKarten`) am
+    // Rasterpunkt (G, J) des Rasters der Stufe `c` trägt (Welt-Punkt G · Schritt/Teilung); −Infinity, wo keine trägt. Eine Karte
+    // derselben oder einer feineren Stufe trägt den Punkt selbst (die Raster aller Stufen liegen ineinander: Schritt
+    // 1,8 · 2^Stufe, Ursprung Chunk − Schritt, der Chunk ein Vielfaches), eine gröbere in ihrer Zelle (`_bodenKarteEcke`). Den
+    // Geomorph ihrer Stufe (`_bodenStufeMisch`) fragt eine Karte beim ersten Punkt, den sie trägt.
+    _bodenFlaeche(n, G, J, c) {
+        const K = this._bodenKarten;
+        let y = -Infinity;
+        for (let q = 0; q < n; q++) {
+            const k = K[q];
+            let v;
+            if (k.el <= c) {
+                const f = 1 << (c - k.el);
+                const i = G * f + k.i0;
+                const j = J * f + k.j0;
+                if (i < 0 || j < 0 || i >= k.M || j >= k.M) continue;
+                if (k.st === undefined) k.st = this._bodenStufeMisch(k.E, k.ax, k.az, K.x, K.z, K.stufe);
+                v = k.st ? k.st(k.m, i + j * k.M) : k.m[i + j * k.M];
+            } else v = this._bodenKarteEcke(k, n, G, J, c);
+            if (v > y) y = v;
         }
         return y;
     }
-    // Die Karte EINES Chunks (ax, az) bilinear am Punkt in ihrem eigenen Raster (Schritt ihrer Stufe / Teilung): { y, gruen }
-    // oder null (der Punkt liegt nicht über der Karte, eine Ecke ohne Boden). Der Leser der Stufen-Naht (`_bodenSichtAt`).
-    _bodenKarteBilinear(E, ax, az, x, z, aus, stufe) {
+    // DIE ECKE EINER GRÖBEREN KARTE (w28-pop-treue, die Stufen-Naht): die Höhe der Karte `k` der Lesung (ihre Stufe über `c`) am
+    // Rasterpunkt (G, J) des Rasters der Stufe `c` — sie trägt ihn in ihrer Zelle, bilinear
+    // mit den exakten Gewichten der Teilung (eine Ecke mit Gewicht 0 fragt sie nicht). Am Rand ihres Netzes trägt die gröbere Karte
+    // eine Ecke ihrer Zelle nicht (dort zeichnet das Netz des Nachbarn): sie nimmt sie von den anderen Karten an DEMSELBEN
+    // Welt-Punkt (`_bodenFlaeche` im eigenen Raster — die feinere trägt ihn selbst) und nur, wo sie selbst eine Ecke trägt; vorher
+    // fiel der Punkt, den ihr Netz zwischen zwei Punkten ihres Rasters zeichnet.
+    // −Infinity, wo die Karte keinen Boden trägt oder nicht hinreicht. Der Leser: `_bodenFlaeche`.
+    _bodenKarteEcke(k, n, G, J, c) {
+        const { m, M } = k;
+        const K = this._bodenKarten;
+        const f = 1 << (k.el - c);
+        const i0 = Math.floor(G / f);
+        const j0 = Math.floor(J / f);
+        const u = (G - i0 * f) / f;
+        const v = (J - j0 * f) / f;
+        let s = 0;
+        let eigen = false;
+        let luecke = 0;
+        for (let q = 0; q < 4; q++) {
+            const w = (q & 1 ? u : 1 - u) * (q >> 1 ? v : 1 - v);
+            if (!(w > 0)) continue;
+            const i = i0 + (q & 1) + k.i0;
+            const j = j0 + (q >> 1) + k.j0;
+            let y = -Infinity;
+            if (!(i < 0 || j < 0 || i >= M || j >= M)) {
+                if (k.st === undefined) k.st = this._bodenStufeMisch(k.E, k.ax, k.az, K.x, K.z, K.stufe);
+                y = k.st ? k.st(m, i + j * M) : m[i + j * M];
+            }
+            if (y > -Infinity) {
+                s += y * w;
+                eigen = true;
+            } else luecke |= 1 << q;
+        }
+        if (!eigen) return -Infinity;
+        for (let q = 0; luecke && q < 4; q++) {
+            if (!(luecke & (1 << q))) continue;
+            const y = this._bodenFlaeche(n, i0 + (q & 1), j0 + (q >> 1), k.el);
+            if (!(y > -Infinity)) return -Infinity;
+            s += y * ((q & 1 ? u : 1 - u) * (q >> 1 ? v : 1 - v));
+        }
+        return s;
+    }
+    // Die Karte EINES Chunks (ax, az) bilinear am Punkt in ihrem eigenen Raster (Schritt ihrer Stufe / Teilung): die Höhe oder
+    // null (der Punkt liegt nicht über der Karte, eine Ecke ohne Boden). Die Leser: die Linsen, die eine Karte allein fragen
+    // (gate:koerper-stand `eignerKarte`, diag-chunk-satz).
+    _bodenKarteBilinear(E, ax, az, x, z, stufe) {
         const cfg = this._voxelChunkConfig(E.lod || 0);
         const T = AnazhRealm.BODEN_KARTE_TEILUNG;
         const h = cfg.step / T;
@@ -138,13 +211,7 @@ class AnazhRealm_gelaende_boden {
         if (!(a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity)) return null;
         const fu = x / h - gx;
         const fv = z / h - gz;
-        const g = aus ? E.gruenMap : null;
-        return {
-            y: (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv,
-            gruen: g
-                ? ((g[o] * (1 - fu) + g[o + 1] * fu) * (1 - fv) + (g[o + M] * (1 - fu) + g[o + M + 1] * fu) * fv) / 255
-                : 0,
-        };
+        return (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv;
     }
     // DIE KARTE DES ZIELS (K51-2): die Boden-Karte des Chunks aus seinen Morph-Zielen (`aMorphTarget` — das Netz der nächst
     // gröberen Stufe, an der Naht der gröbere Nachbar) — der Faden schickt sie mit dem Netz und mit jedem Naht-Morph
@@ -176,7 +243,7 @@ class AnazhRealm_gelaende_boden {
         const out = new Map();
         out.rechteck = [x0, z0, x1, z1];
         // je Chunk die Lage-Karte, die die Kachel las, und ihr Stand bei der Lesung (`_bodenKarteNaht` rastert an Ort und Stelle),
-        // dazu ihr Grün (`gruenMap`, das `_bodenSichtAt` … `gruen` liest)
+        // dazu ihr Grün (`gruenMap`: die Wiesen-Wache über der Vertex-Farbe — wechselt es, malte das Gesetz den Boden neu)
         [out.lage, out.stand, out.gruen] = [new Map(), new Map(), new Map()];
         for (let cz = Math.floor((z0 - 2 * cfg.step) / cfg.span); cz <= Math.floor(z1 / cfg.span); cz++) {
             for (let cx = Math.floor((x0 - 2 * cfg.step) / cfg.span); cx <= Math.floor(x1 / cfg.span); cx++) {
@@ -211,8 +278,8 @@ class AnazhRealm_gelaende_boden {
             const L = karten.lage ? karten.lage.get(ck) : null;
             const gelesen = karten.stand ? karten.stand.get(ck) | 0 : 0;
             const S = L && (L.stand | 0) !== gelesen ? L.zelleStand : null;
-            // DAS GRÜN DER KARTE (w28-funktion-welt-2): die Kachel liest neben der Höhe das Grün jeder Zelle (`_wieseGrund`, der
-            // Wurf der Streu) — der Schnee, der mit der Uhr wandert, die Saison und der Belag malen es neu, bei gleicher Höhe. Bis
+            // DAS GRÜN DER KARTE (w28-funktion-welt-2): die Kachel liest neben der Höhe das Grün des Gesetzes (`_wieseGrund` über
+            // `_bodenGruenAt`) — der Schnee, der mit der Uhr wandert, die Saison und der Belag malen es neu, bei gleicher Höhe. Bis
             // hier verglich die Wache nur die Höhe: ein Chunk, der mit neuem Grün neu baute, ließ jede Kachel über ihm stehen, und
             // was sie trug, hing an der Uhr ihres Baus (dorf: 34 Büschel auf Grün 0 am Auge, wiese: 0 Büschel auf Grün 1).
             const G = karten.gruen ? karten.gruen.get(ck) : e.gruenMap;
@@ -2669,6 +2736,48 @@ class AnazhRealm_gelaende_boden {
         out[1] = c[1];
         out[2] = c[2];
         return out;
+    }
+
+    // DAS GRÜN DES GESETZES AM PUNKT (w28-pop-treue): die Wiesen-Wache (`gruenSchwelle`: smoothstep(0, gs, g − (r+b)/2), dieselbe
+    // wie das Boden-Fragment) über der Farbe, die das Gesetz dem Boden an (x, y, z) gibt — DIE EINE BODEN-FARBE (`_bodenFarbeAt`)
+    // mit dem Fels-Stoff am Punkt (gelaende-core `felsStoffPunkt`; die Steile aus `hang` = |∇h| des gezeichneten Bodens —
+    // `_bodenSichtAt` reicht den der Zelle, die er las, der Wurf der Wiese den seines Fußes; ohne ihn misst `_slopeAt` über
+    // ±1 m), dazu der Belag der Wege-Karte (der Rasen grünt, das Pflaster deckt); 0 auf der Krone einer
+    // Säule ohne Netz (`saeulenVorlaeufig`). Eine Funktion der Welt, nie der Stufe ihrer Chunks: bis hier las `_bodenSichtAt` das
+    // Grün aus der Boden-Karte der Stufe (die Vertex-Farbe, über die Dreiecke der Stufe gerastert, ohne ihren Geomorph) — an jedem
+    // Wechsel der Stufe warfen die neu gebauten Kacheln der Wiese an denselben Zellen andere Büschel (gate:pop „DER WURF DER
+    // STUFE“: 23 Kacheln, die Mess-Wiese 0,0604 % Pop-Pixel/s an der GTX 1050). In Stufe 0 tragen Karte und Gesetz dasselbe Grün
+    // (1 667 Zellen der Nähe, Mittel |Δ| 0), fern kippten 442 von 17 836 Zellen. Leser: `_bodenSichtAt(…, aus).gruen` (Schritt,
+    // Rad, Messort) und der Wurf der Nah-Wiese mit seinem eigenen Hang (`_nahWieseKachelBueschel`).
+    _bodenGruenAt(x, y, z, hang) {
+        const S = this.state.saeulenVorlaeufig;
+        if (S && S.size)
+            for (const s of S.values()) if ((x - s.x) ** 2 + (z - s.z) ** 2 < s.rr && !(y > s.krone)) return 0;
+        const c = this._bodenGruenFarbe || (this._bodenGruenFarbe = [0, 0, 0]);
+        this._bodenFarbeAt(x, y, z, c);
+        const boden = (px, pz) => {
+            const v = this._bodenSichtAt(px, pz);
+            return v === null ? NaN : v;
+        };
+        const h = hang == null ? this._slopeAt(x, z, boden, 1) : hang;
+        const FS = AnazhRealm.FELS_STOFF;
+        const fe = this._feuchteLeser || (this._feuchteLeser = (px, pz, py) => this._feuchteAt(px, pz, py));
+        globalThis.__gelaendeCore.felsStoffPunkt(
+            this._gelaende(),
+            FS.basis,
+            FS.netz,
+            x,
+            y,
+            z,
+            1 / Math.sqrt(1 + h * h),
+            c,
+            fe
+        );
+        const t = Math.max(0, Math.min(1, (c[1] - 0.5 * (c[0] + c[2])) / AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle));
+        const B = this._bodenBelagAus || (this._bodenBelagAus = {});
+        this._wegeBelagAt(x, z, B);
+        const g = t * t * (3 - 2 * t);
+        return (g > B.rasen ? g : B.rasen) * (1 - B.pflaster);
     }
 
     // Test-Chunk (`voxel test`): ein Voxel-Chunk wird neben dem Spieler gemesht und in die Szene gestellt

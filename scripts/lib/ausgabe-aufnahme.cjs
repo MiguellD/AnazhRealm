@@ -1062,6 +1062,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 triangles: pf.renderTris ?? ri.triangles,
                 // die Erst-Zeichnung vor dem Schuss: offen 0 (sonst brach die Aufnahme oben ab) und die Wartezeit
                 erst,
+                // DAS LICHT DES GEZÄHLTEN BILDS (w28-pop-treue): die Belichtung und der Boden des Rückstrahls, mit denen es zeichnete —
+                // die Treue des Gangs nennt den Lichtmesser beim Namen (`werkbank pop`, `treueLicht`)
+                licht: { k: rend.toneMappingExposure, boden: st.rueckstrahlLeser ? st.rueckstrahlLeser.boden.value.toArray() : null },
             };
             // die EINE Ziel-Lesung (welt-boot): das Polster der 256-Byte-Zeilen fällt dort
             const voll = await window.__zielLesen(rt, BW, BH);

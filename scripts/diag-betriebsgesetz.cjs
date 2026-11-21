@@ -92,7 +92,7 @@ const stamm = require("./lib/stamm.cjs");
 //     den das Werkzeug VERALTET schreibt, ist gleich viele Atome). Bis 30.10. maß die Teilung siedlung-satz → satz · instanz ·
 //     wege (88da99be) Prüf +471 (Tafeln 384, Karte 87) bei Spiel 80: jede Modul-Teilung traf die Wand, die Ordnung zahlte.
 //     Der Richter (`--richter`) zählt wie bisher — er rückt geschriebene Bänder um, eine Teilung bewegt ihn atom-neutral.
-const { werkzeugVon, TAFELN } = require("./stamm-umzug.cjs");
+const { werkzeugVon, TAFELN, DATEI_DECKE } = require("./stamm-umzug.cjs");
 const git = (args) => stamm.gitIn(root, args);
 const deckeMass = (text) => (text.match(/[\p{L}\p{N}_$]+|[^\s\p{L}\p{N}_$]/gu) || []).length;
 const atome = (p, t) => deckeMass(/\.(?:[cm]?js|html|css)$/.test(p) ? stamm.ohneKommentare(t) : t);
@@ -347,8 +347,8 @@ function stripperBefund(dateien) {
 // 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 6 000 Zeilen (bis 15.11. 4 000: die Kante traf den Zweig mit der letzten Zeile); ROT beim Namen samt dem Weg, der teilt. Den
 //     Richter (scripts/playtest.cjs + scripts/playtest/<domaene>.cjs) teilt das Werkzeug: `stamm-umzug --richter` gibt
 //     eine Domäne über der Decke nach Modul/teil ab. Jede andere Linse teilt von Hand nach Domäne (scripts/lib/<domaene>-proben.cjs
-//     wie fahr-proben, kampf-proben) — `--nach-karte` teilt nur den Stamm, kein Skript.
-const DATEI_DECKE = 6000;
+//     wie fahr-proben, kampf-proben) — `--nach-karte` teilt nur den Stamm, kein Skript. Die Zahl selbst lebt in stamm-umzug.cjs
+//     (DATEI_DECKE, EINE Konstante für Stamm und scripts/ seit 21.11.) und wird oben von dort gelesen.
 const teilWeg = (pfad) =>
     /^scripts\/playtest(?:\.cjs|\/)/.test(pfad)
         ? "teilt: node scripts/stamm-umzug.cjs --richter"
