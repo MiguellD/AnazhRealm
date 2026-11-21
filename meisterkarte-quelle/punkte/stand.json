@@ -33084,7 +33084,7 @@
   },
   "karte2.same.entfaltung.abwesenheit": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.abwesenheit#1 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#1 gtx: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 gtx: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 gtx: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 gtx: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 gtx: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 gtx: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.same.entfaltung.abwesenheit#1 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17) · karte2.same.entfaltung.abwesenheit#2 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17) · karte2.same.entfaltung.abwesenheit#3 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#3 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17) · karte2.same.entfaltung.abwesenheit#4 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#4 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17) · karte2.same.entfaltung.abwesenheit#5 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#5 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17) · karte2.same.entfaltung.abwesenheit#6 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17) · karte2.same.entfaltung.abwesenheit#7 radeon: ungemessen (R10) · karte2.same.entfaltung.abwesenheit#7 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17)",
    "stationen": [
     {
      "id": "karte2.same.entfaltung.abwesenheit#1",
@@ -33102,8 +33102,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17)",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -33121,8 +33122,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.entfaltung.abwesenheit#3",
@@ -33139,8 +33141,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.entfaltung.abwesenheit#4",
@@ -33157,8 +33160,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.entfaltung.abwesenheit#5",
@@ -33175,8 +33179,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.entfaltung.abwesenheit#6",
@@ -33193,8 +33198,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.entfaltung.abwesenheit#7",
@@ -33211,8 +33217,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +17)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -37639,7 +37646,7 @@
   },
   "karte2.same.preis.eingabe": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) an f68dbf09 gtx — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: Station seit der Messung geändert · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100) an f68dbf09 gtx — offen: karte2.same.preis.eingabe#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.same.preis.eingabe#2 radeon: ungemessen (R10) · karte2.same.preis.eingabe#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerP · karte2.same.preis.eingabe#3 radeon: ungemessen (R10) · karte2.same.preis.eingabe#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerP · karte2.same.preis.eingabe#4 radeon: ungemessen (R10) · karte2.same.preis.eingabe#4 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +9) · karte2.same.preis.eingabe#5 radeon: ungemessen (R10) · karte2.same.preis.eingabe#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerP · karte2.same.preis.eingabe#6 radeon: ungemessen (R10) · karte2.same.preis.eingabe#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +9) · karte2.same.preis.eingabe#7 radeon: ungemessen (R10) · karte2.same.preis.eingabe#7 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +9)",
    "stationen": [
     {
      "id": "karte2.same.preis.eingabe#1",
@@ -37657,7 +37664,7 @@
      "gruen": true,
      "zahl": "S1 · GRÜN ✅ eingabe_pixel_p95_ms 50 (Soll ≤ 100) · ✅ verben_pct 100 (Soll ≥ 100)",
      "sha": "f68dbf09d2d06ee10c312f9ee8271ae19e0a9f41",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 31ea3847: Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerP",
      "gehalten": true,
      "beide": true
     },
@@ -37676,7 +37683,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerP",
      "ungemessen": true
     },
     {
@@ -37694,7 +37701,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerP",
      "ungemessen": true
     },
     {
@@ -37712,8 +37719,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +9)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.preis.eingabe#5",
@@ -37730,7 +37738,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Last: Referenz f 1,377 (Faden 1,377 · alle Kerne 1,274; vor 104,8/263,6 ms, nach 124,1/291 ms, Ruhe 90,1/228,5 ms seit 2026-11-16) · fremd: Explorer.EXE 2,6 CPU-s · LightStudio-background.exe InvokerP",
      "ungemessen": true
     },
     {
@@ -37748,8 +37756,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +9)",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.same.preis.eingabe#7",
@@ -37766,8 +37775,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +9)",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
@@ -38233,7 +38243,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 1010,
+  "konsum": 1020,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -38395,10 +38405,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 2616
+  "ohne": 2606
  },
  "kopfVoll": "1a90e9f978d2303402d2fc35339a0b941fec6d93",
- "zeit": "2026-11-21T10:39:29.306Z",
+ "zeit": "2026-11-21T10:45:31.170Z",
  "vorher": "1a90e9f9",
  "bilanz": {
   "gewinn": [],
