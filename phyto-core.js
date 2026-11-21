@@ -2979,7 +2979,7 @@
     }
     // Arten-Nische Basis-Gewichte (wF/wT/wE/wB + base-wW ohne Wasser-Nähe).
     // Klima × Patch × Feuchte × Trockenheit × Offenheit — EINE Formel für Lab+Host.
-    // wW = wet²·(1-dry)·0.8 + 0.01; Caller addiert waterProx²·6 (Host: feu, Lab: _wp).
+    // wW = wet²·(1-dry)·0.8 im Saum (wet ≥ FOREST_PACK.ufer), sonst 0; Caller addiert waterProx²·6 (Host: feu im Saum, Lab: _wp).
     // Lab-only (pathDist→wB·1.5, species-ids) bleibt AUSSERHALB. extras-Loop bleibt in planForestCell.
     function forestNicheWeights(clim, dry, wet, open, patch, opts) {
         const ss =
@@ -3015,7 +3015,8 @@
         const wT = (sT * 0.38 + dry * 0.3 + 0.03) * (0.16 + 4.2 * pT); // Tanne: höher/feuchter
         const wE = ((1 - dry) * 0.65 + wet * 0.35 + 0.04) * (0.18 + 4.6 * pE); // Eiche: tiefe, feuchte Lagen
         const wB = ((0.14 + 0.45 * open) * (1 - aC * 0.9) + 0.03) * (0.2 + 3.6 * pB); // Birke: Pionier in Lücken
-        const wW = wet * wet * (1 - dry) * 0.8 + 0.01; // Weide→erle base; Caller + waterProx²·6
+        // Weide→erle: nur im Saum (`FOREST_PACK.ufer`, die Feuchte `wet` ist dort der Wasser-Abstand); Caller + waterProx²·6 im Saum
+        const wW = wet >= FOREST_PACK.ufer ? wet * wet * (1 - dry) * 0.8 : 0;
         return { wF, wT, wE, wB, wW };
     }
 
@@ -3249,7 +3250,7 @@
             wT: NW.wT * W.nadel,
             wE: NW.wE * W.laub,
             wB: NW.wB * W.laub,
-            wW: (NW.wW + feu * feu * 6.0) * W.laub, // Host: waterProx = feu
+            wW: (feu >= FOREST_PACK.ufer ? NW.wW + feu * feu * 6.0 : 0) * W.laub, // Host: waterProx = feu, nur im Saum
             clim,
             patch,
             feu,
@@ -3345,6 +3346,12 @@
         // s · alter: 96 % seiner Bäume unter 0,55 (Median 0,30), die Invariante W-H GRÖSSEN-SPAN fiel. Gemessen (Stand 0,5,
         // flach): Dach 106,5 + Schicht 246,9 = 353,4 → 106,5 + 35,6 = 142,1 Stämme/ha.
         schicht: { alter: [0.7, 0.4], pack: 1 },
+        // DAS UFER (`ufer`): die Feuchte des Bodens (Wirt `_feuchteAt`: die Nähe des Flusses über `flussReichweite`, die Niederung),
+        // ab der die Uferart steht — die Erle des Walds (`forestNicheWeights` wW) und der Streu, der Farn des Krautstratums. Die Erle
+        // wurzelt im Grundwasser des Saums (Alnus glutinosa: Bruch- und Auwald, der Wasserspiegel nah unter dem Grund; Ellenberg F 9),
+        // nie im trockenen Hang: bis hier trug wW einen Sockel 0,01 überall und den Feuchte-Term schon im äußeren Saum (feu 0,25 in
+        // 17 m) — an der Mess-Wiese 29 von 89 Erlen ohne Wasser in 15 m (64,7 % am Wasser). 0,6 ist die Feuchte in 11 m vom Fluss.
+        ufer: 0.6,
         // DER GRÖSSEN-SPAN DES WALDS (die Invariante W-H, scripts/playtest/siedlung.cjs liest ihn hier): die reverse-J-Größe des
         // Darts (`forestTreeSize`, ihr Boden und ihre Klemme) und jede Schicht des Bestands (`forestSchicht`) stehen darin.
         groesse: [0.55, 1.95],

@@ -5779,6 +5779,16 @@
     function ortBaum(W, nass, nadel) {
         return (nadel ? W.nadel : W.laub) * (W.wald + (W.oase - W.wald) * nass);
     }
+    // DIE WÄRME-ART AM ORT (die Palme): sie steht nur, wo der Winter an ihrer Höhe y ihren Frost nicht kennt — das Mittel der
+    // Winter-Mitte (`temperaturFeld`: Mittel − Jahres-Amplitude − Kühlung der Höhe) mindestens `WAERME_ART.winterC`. Die Palme
+    // hat kein Ruhe-Meristem gegen Frost: ihre Grenze ist das Mittel des kältesten Monats über 5 °C (Greenwood & Wing 1995,
+    // Geology 23). Die Heimat trägt am Meer einen Winter von −4 °C — dort steht keine; am warmen Ort der Reise steht sie.
+    // Leser: die Art der Streu (Stamm `_scatterSpeciesForCell`).
+    const WAERME_ART = Object.freeze({ winterC: 5 });
+    function waermeTraegt(L, y) {
+        const f = temperaturFeld(L, y);
+        return f.mittel - f.jahr.amp - f.kuehlung >= WAERME_ART.winterC;
+    }
     // DIE LANDUNG DER REISE (K5, w28-reise-ort): trägt das Makro-Gesetz der Lage `L` Grund an der Ankunft — am Ursprung oder auf
     // der Ring-Spirale (je `LANDUNG.ringM` bis `LANDUNG.bisM`, 8 Richtungen; dieselbe Spirale wie der Plan der Ankunft im Faden):
     // die Fläche `LANDUNG.ueberM` über dem Meer der Lage. → {x, z} des ersten tragenden Punkts oder null.
@@ -7843,6 +7853,8 @@
         kahlGrund: kahlGrund,
         ortKraut: ortKraut,
         ortBaum: ortBaum,
+        WAERME_ART: WAERME_ART,
+        waermeTraegt: waermeTraegt,
         ortLandung: ortLandung,
         ortSaat: ortSaat,
         ortSaatWahl: ortSaatWahl,
