@@ -1,0 +1,16 @@
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf radeon am b0953407 · Sitzung 1 Proben in EINER Welt (Deckel Σ 1 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon)
+  WELLEN radeon am b0953407: 1 rest 1 Läufe Σ Deckel 60 s · das Älteste zuerst · hängt zuletzt: —
+  SITZUNG radeon · die Welt steht nach 11 s (Schloss nach 40.82 min) · 1 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 86 Größen in 0 s
+  SITZUNG Ort dorf vor karte2.erleben.bild.nacht#1: 57.5 s (940 Takte, 95 Chunks)
+  SITZUNG karte2.erleben.bild.nacht#1 — die Probe ließ stehen: window.__ortSchritt (getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit) · Heap 347.6 → 454.5 MB (+106.9) — zurück vor dem Preis
+  SITZUNG karte2.erleben.bild.nacht#1 ließ die Welt verändert und trägt kein mutiert: orte +d:7@836,438 · wege +4 [425.5,53.7,1072.3,817.4/2672] [660.2,284.5,992.9,577.1/4] [661.6,278.2,1001.1,585/797] … (d:7@836,438, netz:d:7@836,438, verkehr:d:7@836,438) — die Grundstellung folgt
+  SITZUNG karte2.erleben.bild.nacht#1 ließ den Spieler 2084.52 m vom Stand des Orts dorf — der nächste stellt neu um
+  OFFEN karte2.erleben.bild.nacht#1 · Deckel 60 s gerissen: Stille seit 59.4 s nach 60 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN karte2.erleben.bild.nacht#2 · Deckel 60 s gerissen: Stille seit 59.4 s nach 60 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3) · Sitzung · ungemessen, `run --offen` misst neu
+  KARTE2 keine Akte erleben.bild.nacht S 1 (karte2.erleben.bild.nacht#1): die Station ist ungemessen: Deckel 60 s gerissen: Stille seit 59.4 s nach 60 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] a
+  KARTE2 keine Akte erleben.bild.nacht S 2 (karte2.erleben.bild.nacht#2): die Station ist ungemessen: Deckel 60 s gerissen: Stille seit 59.4 s nach 60 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] a
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): karte2.erleben.bild.nacht#1 2085 m (Ring 4 → 0)
+  SITZUNG Fahrt 221.3 s (Soll ≤ 1800 s) · 1 Proben · Grundstellung 0×
+→ meisterkarte-quelle\punkte\messung\b0953407-radeon.json
+EXIT=0

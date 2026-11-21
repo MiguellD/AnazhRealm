@@ -1,0 +1,213 @@
+{
+ "sha": "b095340774136e7193727347909a75e80b8c78d4",
+ "geraet": "radeon",
+ "zeit": "2026-11-21T17:24:44.429Z",
+ "host": "MiguellD",
+ "je": {},
+ "ungemessen": {
+  "karte2.erleben.bild.nacht#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 60 s gerissen: Stille seit 59.4 s nach 60 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 1.03,
+   "grund": "Deckel 60 s gerissen: Stille seit 59.4 s nach 60 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 61.9,
+   "fremd": {
+    "s": 66.6,
+    "takte": 23,
+    "fremdS": 269.34,
+    "kerne": 4.046,
+    "fensterKerne": 4.884,
+    "namen": [
+     [
+      "node scripts/diag-sprache.cjs --selftest",
+      26.55
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.89
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… ^EXIT= $S/pm-run.log; do sleep 5; don",
+      18.42
+     ]
+    ],
+    "dienerS": 132.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      62.67
+     ],
+     [
+      "System",
+      47.34
+     ]
+    ],
+    "geraetS": 58.48,
+    "geraet": [
+     [
+      "svchost.exe",
+      29.55
+     ],
+     [
+      "MsMpEng.exe",
+      26.47
+     ],
+     [
+      "SearchIndexer.exe",
+      2.13
+     ]
+    ],
+    "eigenS": 290.59,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-21T17:24:44.429Z",
+   "abdruck": "be7e0cba54cd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.erleben.bild.nacht#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 60 s gerissen: Stille seit 59.4 s nach 60 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 1.03,
+   "grund": "Deckel 60 s gerissen: Stille seit 59.4 s nach 60 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 61.9,
+   "fremd": {
+    "s": 66.6,
+    "takte": 23,
+    "fremdS": 269.34,
+    "kerne": 4.046,
+    "fensterKerne": 4.884,
+    "namen": [
+     [
+      "node scripts/diag-sprache.cjs --selftest",
+      26.55
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.89
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… ^EXIT= $S/pm-run.log; do sleep 5; don",
+      18.42
+     ]
+    ],
+    "dienerS": 132.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      62.67
+     ],
+     [
+      "System",
+      47.34
+     ]
+    ],
+    "geraetS": 58.48,
+    "geraet": [
+     [
+      "svchost.exe",
+      29.55
+     ],
+     [
+      "MsMpEng.exe",
+      26.47
+     ],
+     [
+      "SearchIndexer.exe",
+      2.13
+     ]
+    ],
+    "eigenS": 290.59,
+    "rechnerKerne": 24
+   },
+   "zeit": "2026-11-21T17:24:44.429Z",
+   "abdruck": "fc08257e485b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.erleben.bild.nacht#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-21T16:41:38.296Z",
+  "ordner": "sitzung-20261121-174138",
+  "port": 7804,
+  "warten": 40.82,
+  "bootS": 11,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "karte2.erleben.bild.nacht#1",
+    "s": 57.5,
+    "takte": 940,
+    "chunks": 95,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "wirt": [
+   {
+    "probe": "karte2.erleben.bild.nacht#1",
+    "anders": [
+     "window.__ortSchritt"
+    ],
+    "wie": {
+     "window.__ortSchritt": "getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit"
+    },
+    "haelt": [],
+    "heap": [
+     347.6,
+     454.5
+    ],
+    "ungemessen": null
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "karte2.erleben.bild.nacht#1",
+    "wie": "orte +d:7@836,438 · wege +4 [425.5,53.7,1072.3,817.4/2672] [660.2,284.5,992.9,577.1/4] [661.6,278.2,1001.1,585/797] … (d:7@836,438, netz:d:7@836,438, verkehr:d:7@836,438)"
+   }
+  ],
+  "wanderung": [
+   {
+    "probe": "karte2.erleben.bild.nacht#1",
+    "ort": "dorf",
+    "m": 2084.52,
+    "dreh": 0.106
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "karte2.erleben.bild.nacht#1",
+     "m": 2085,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 159,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 221.3,
+  "minuten": 45.19
+ }
+}

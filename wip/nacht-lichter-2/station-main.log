@@ -1,0 +1,21 @@
+Punkte-Maschine: der Spiel-Baum radeon ist belegt (pid 24960), warte
+Punkte-Maschine: die Sperre des Spiel-Baums radeon ist verwaist (pid 5312 lebt nicht mehr) — gelöst
+Punkte-Maschine: 2 Station(en) in 1 Läufen auf radeon am 9502aa0e · Sitzung 1 Proben in EINER Welt (Deckel Σ 1 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon)
+  WELLEN radeon am 9502aa0e: 1 rest 1 Läufe Σ Deckel 60 s · das Älteste zuerst · hängt zuletzt: —
+  SITZUNG radeon · die Welt steht nach 9.4 s (Schloss nach 42.49 min) · 1 Proben · Welt :27804
+  SITZUNG die Leine lernt aus den Zahlen: 1 Proben über dem Deckel der Tafel — karte2.erleben.bild.nacht#1 60 → 130 s
+  SITZUNG der Grund der Welt: 86 Größen in 0 s
+  SITZUNG Ort dorf vor karte2.erleben.bild.nacht#1: 45.3 s (1154 Takte, 95 Chunks)
+  SITZUNG karte2.erleben.bild.nacht#1 — die Probe ließ stehen: window.__ortSchritt (getauscht: () => { if (window.__ortStell) __ortStell(); const pm = r.state.playerMesh.posit) · Heap 345.6 → 552.3 MB (+206.7) — zurück vor dem Preis
+  KARTE2 Preis-Lauf nach karte2.erleben.bild.nacht#1: 79.5 s Loop des Spiels an der Pose der Probe · Referenz f 1.378 (Faden 1.378 · alle 1.003) · nach GC VRAM 201.1 MB, Heap 566.6 MB · Ruhe nach 3.3 s · Skala 0.75 → 0.75 (Regler-Fenster bei 0.75: p95 41.7 ms · CPU p50 17.2 ms · Leine 0.4 · NICHT an die GPU gebunden) · das Stück nach der Ruhe p95 33.91 ms, max 75.32 ms (823 Bilder)
+  SITZUNG karte2.erleben.bild.nacht#1 ließ die Welt verändert und trägt kein mutiert: orte +d:7@836,438 · wege +4 [425.5,53.7,1072.3,817.4/2672] [660.2,284.5,992.9,577.1/4] [661.6,278.2,1001.1,585/797] … (d:7@836,438, netz:d:7@836,438, verkehr:d:7@836,438) — die Grundstellung folgt
+  SITZUNG karte2.erleben.bild.nacht#1 ließ den Spieler 2084.52 m vom Stand des Orts dorf — der nächste stellt neu um
+  SITZUNG karte2.erleben.bild.nacht#1 ließ den Halter stehen (tiere) — frei
+  ROT  karte2.erleben.bild.nacht#1 · S1 · ROT Leser fehlt: Kelvin der Gasse: kein Leser am SHA — nachtSicht und nachtKelvin fehlen in scripts/lib/licht-linsen.cjs (gate:nacht-licht:echt) (verlangt 1 Leuchtquellen, die Welt erzeugte 504) · gemessen vor dem Abbruch: Deckel 130 s gerissen: Stille seit 47.4 s nach 130 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) · Sitzung · Exit 1 · 2.18 min
+  ROT  karte2.erleben.bild.nacht#2 · S2 · ROT Leser fehlt: Bodenfleck ≥ 1 EV je sichtbarer Quelle in 50 m: kein Leser am SHA — nachtSicht und nachtKelvin fehlen in scripts/lib/licht-linsen.cjs (gate:nacht-licht:echt) (verlangt 100 Leuchtquellen der Welt, die Welt erzeugte 504) · gemessen vor dem Abbruch: Deckel 130 s gerissen: Stille seit 47.4 s nach 130 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) · Sitzung · Exit 1 · 2.18 min (Zwilling von karte2.erleben.bild.nacht#1)
+  KARTE2 Akte erleben.bild.nacht.1.9502aa0e-radeon.json: Richter ROT · Preis ROT: p95 33.76 ms · max 75.32 ms · Heap 566.6 MB gehalten (Spitze 644.3) · VRAM 201.1 MB gehalten (Spitze 204.3) · 652 Bilder · Referenz f 1.378 · Einlauf 37.8 s (Lesewert): p95 42.43 ms, max 133.91 ms · der Lauf selbst p95 33.91 ms (823 Bilder)
+  KARTE2 Akte erleben.bild.nacht.2.9502aa0e-radeon.json: Richter ROT · Preis ROT: p95 33.76 ms · max 75.32 ms · Heap 566.6 MB gehalten (Spitze 644.3) · VRAM 201.1 MB gehalten (Spitze 204.3) · 652 Bilder · Referenz f 1.378 · Einlauf 37.8 s (Lesewert): p95 42.43 ms, max 133.91 ms · der Lauf selbst p95 33.91 ms (823 Bilder)
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): karte2.erleben.bild.nacht#1 2085 m (Ring 4 → 0)
+  SITZUNG Fahrt 332.3 s (Soll ≤ 1800 s) · 1 Proben · Grundstellung 0×
+→ meisterkarte-quelle\punkte\messung\9502aa0e-radeon.json
+EXIT=0
