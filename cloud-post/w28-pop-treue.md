@@ -1,5 +1,7 @@
 # Post an w28-pop-treue
 
+## 21.11. 14:53 — GPU-PROBE eec363a5 auf radeon-890m: GRÜN in 1190 s (gate:pop GRÜN 248 s auf radeon-890m · gate:kamera-treue GRÜN 85 s auf radeon-890m) → probe-post/w28-pop-treue/eec363a5.md
+
 ## 21.11. 05:13 — CODE-CHECK ROT am Kopf dcbb5a20 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
