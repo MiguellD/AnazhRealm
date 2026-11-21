@@ -30681,7 +30681,7 @@
   },
   "karte2.planet.relief.boden": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.boden#1 radeon: ungemessen (R10) · karte2.planet.relief.boden#1 gtx: ungemessen (R10) · karte2.planet.relief.boden#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.boden#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.boden#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.boden#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.boden#4 radeon: ungemessen (R10) · karte2.planet.relief.boden#4 gtx: ungemessen (R10) · karte2.planet.relief.boden#5 radeon: ungemessen (R10) · karte2.planet.relief.boden#5 gtx: ungemessen (R10) · karte2.planet.relief.boden#6 radeon: ungemessen (R10) · karte2.planet.relief.boden#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.boden#1 radeon: ungemessen (R10) · karte2.planet.relief.boden#1 gtx: ungemessen (R10) · karte2.planet.relief.boden#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.boden#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.boden#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.boden#3 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.boden#4 radeon: ungemessen (R10) · karte2.planet.relief.boden#4 gtx: ungemessen (R10) · karte2.planet.relief.boden#5 radeon: ungemessen (R10) · karte2.planet.relief.boden#5 gtx: ungemessen (R10) · karte2.planet.relief.boden#6 radeon: ungemessen (R10) · karte2.planet.relief.boden#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.relief.boden#1",
@@ -30718,8 +30718,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.boden#3",
@@ -30736,8 +30737,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.boden#4",
@@ -30797,7 +30799,7 @@
   },
   "karte2.planet.relief.formschatz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.formschatz#1 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#1 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#2 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#2 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#3 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#3 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#5 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#5 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#7 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#7 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#8 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#8 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.formschatz#1 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#1 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#2 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#2 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#3 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#3 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#4 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#5 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#5 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#6 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#7 radeon: ungemessen (R10) · karte2.planet.relief.formschatz#7 gtx: ungemessen (R10) · karte2.planet.relief.formschatz#8 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.formschatz#8 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.planet.relief.formschatz#1",
@@ -30870,8 +30872,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.formschatz#5",
@@ -30906,8 +30909,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.formschatz#7",
@@ -30942,14 +30946,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.relief.grossform": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +31) — zuletzt an 31ea3847: die Fahrt riss 1800 s (vor karte2.planet.relief.grossform#1) — offen, UNGEMESSEN · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.grossform#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.planet.relief.grossform#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +31) — zuletzt an 31ea3847: die Fahrt riss 1800 s (vor karte2.planet.relief.grossform#1) — offen, UNGEMESSEN · karte2.planet.relief.grossform#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#3 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#4 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#5 radeon: ungemessen (R10) · karte2.planet.relief.grossform#5 gtx: ungemessen (R10) · karte2.planet.relief.grossform#6 radeon: ungemessen (R10) · karte2.planet.relief.grossform#6 gtx: ungemessen (R10) · karte2.planet.relief.grossform#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.grossform#7 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.planet.relief.grossform#1",
@@ -30987,8 +30992,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.grossform#3",
@@ -31005,8 +31011,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.grossform#4",
@@ -31023,8 +31030,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.grossform#5",
@@ -31077,14 +31085,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.planet.relief.wandel": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.relief.wandel#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#3 radeon: ungemessen (R10) · karte2.planet.relief.wandel#3 gtx: ungemessen (R10) · karte2.planet.relief.wandel#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#7 radeon: ungemessen (R10) · karte2.planet.relief.wandel#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.relief.wandel#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#1 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#2 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#3 radeon: ungemessen (R10) · karte2.planet.relief.wandel#3 gtx: ungemessen (R10) · karte2.planet.relief.wandel#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#4 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#5 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#6 gtx: Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.planet.relief.wandel#7 radeon: ungemessen (R10) · karte2.planet.relief.wandel#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.relief.wandel#1",
@@ -31102,8 +31111,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -31121,8 +31131,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.wandel#3",
@@ -31157,8 +31168,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.wandel#5",
@@ -31175,8 +31187,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.wandel#6",
@@ -31193,8 +31206,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: gelaende-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.planet.relief.wandel#7",
@@ -31986,7 +32000,7 @@
   },
   "karte2.planet.wetter.extreme": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.extreme#1 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#1 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#5 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#5 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#6 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.extreme#1 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#1 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.extreme#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.extreme#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.extreme#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.extreme#5 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#5 gtx: ungemessen (R10) · karte2.planet.wetter.extreme#6 radeon: ungemessen (R10) · karte2.planet.wetter.extreme#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.extreme#1",
@@ -32023,7 +32037,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32041,7 +32055,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32059,7 +32073,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32102,7 +32116,7 @@
   },
   "karte2.planet.wetter.fremde-atmosphaeren": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.fremde-atmosphaeren#1 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#1 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#4 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#4 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#6 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#6 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#7 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.fremde-atmosphaeren#1 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#1 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.fremde-atmosphaeren#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.fremde-atmosphaeren#4 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#4 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.fremde-atmosphaeren#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.fremde-atmosphaeren#6 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#6 gtx: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#7 radeon: ungemessen (R10) · karte2.planet.wetter.fremde-atmosphaeren#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.fremde-atmosphaeren#1",
@@ -32139,7 +32153,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32157,7 +32171,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32193,7 +32207,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32236,7 +32250,7 @@
   },
   "karte2.planet.wetter.klimazonen": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.wetter.klimazonen#2 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#2 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.klimazonen#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.klimazonen#4 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#4 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.klimazonen#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.klimazonen#6 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#6 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#7 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.858 aus 2229, Falsch null aus 0) · sommer Bild 164.23 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.574 m (Soll ≥ 100) · [linse-gpu] amd/rdna-3 an e489088a radeon · gehalten: am Meer Tagesmittel Sommer 18 °C (Soll 18 ± 0,5), Winter -4 °C (Soll −4 ± 0,5) · winter Bild 54.656 m · Gesetz 55.586 m (Versatz -160, Treffer 0.859 aus 2229, Falsch null aus 0) · sommer Bild 164.285 m · Gesetz 169.031 m (Versatz 0, Treffer 0.87 aus 1464, Falsch 0 aus 581) · Sommer − Winter 109.629 m (Soll ≥ 100) · [linse-gpu] nvidia/pascal an b7ed8419 gtx — offen: karte2.planet.wetter.klimazonen#2 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#2 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.klimazonen#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.klimazonen#4 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#4 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.klimazonen#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.klimazonen#6 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#6 gtx: ungemessen (R10) · karte2.planet.wetter.klimazonen#7 radeon: ungemessen (R10) · karte2.planet.wetter.klimazonen#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.klimazonen#1",
@@ -32293,7 +32307,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32329,7 +32343,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32372,7 +32386,7 @@
   },
   "karte2.planet.wetter.lagen": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.lagen#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#3 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#3 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#6 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#6 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.lagen#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.lagen#3 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#3 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.lagen#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.lagen#6 radeon: ungemessen (R10) · karte2.planet.wetter.lagen#6 gtx: ungemessen (R10) · karte2.planet.wetter.lagen#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.lagen#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.planet.wetter.lagen#2",
@@ -32389,7 +32403,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32425,7 +32439,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32443,7 +32457,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32479,14 +32493,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "karte2.planet.wetter.vorhersage": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.vorhersage#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#2 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#2 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.vorhersage#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.vorhersage#2 radeon: ungemessen (R10) · karte2.planet.wetter.vorhersage#2 gtx: ungemessen (R10) · karte2.planet.wetter.vorhersage#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.vorhersage#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.vorhersage#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.vorhersage#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.vorhersage#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
    "stationen": [
     {
      "id": "karte2.planet.wetter.vorhersage#1",
@@ -32504,7 +32518,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "beide": true
     },
@@ -32541,7 +32555,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32559,7 +32573,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32577,7 +32591,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32595,14 +32609,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     }
    ]
   },
   "karte2.planet.wetter.wolken": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.wolken#1 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#1 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#2 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#2 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#7 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#7 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: karte2.planet.wetter.wolken#1 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#1 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#2 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#2 gtx: ungemessen (R10) · karte2.planet.wetter.wolken#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.wolken#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.wolken#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.wolken#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.planet.wetter.wolken#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN · karte2.planet.wetter.wolken#7 radeon: ungemessen (R10) · karte2.planet.wetter.wolken#7 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.planet.wetter.wolken#1",
@@ -32657,7 +32671,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32675,7 +32689,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32693,7 +32707,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -32711,7 +32725,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "ungemessen (R10) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 207 s unter dem Grund-Deckel 247 s von karte2.planet.wetter.lagen#2) — offen, UNGEMESSEN",
      "ungemessen": true
     },
     {
@@ -38243,7 +38257,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 1020,
+  "konsum": 1034,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -38405,11 +38419,11 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 2606
+  "ohne": 2592
  },
  "kopfVoll": "44446d65797ab71bb77976f2583f096bc69949e9",
- "zeit": "2026-11-21T10:53:06.089Z",
- "vorher": "1a90e9f9",
+ "zeit": "2026-11-21T10:59:19.079Z",
+ "vorher": "44446d65",
  "bilanz": {
   "gewinn": [],
   "fall": [],
