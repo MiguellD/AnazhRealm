@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T16:33:37.256Z",
+ "zeit": "2026-11-21T16:36:22.878Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kosmos.sternhimmel#1": {
@@ -1500,6 +1500,70 @@
    },
    "zeit": "2026-11-21T16:33:37.256Z",
    "abdruck": "8f498cce655a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.wirtschaft.beruf#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ 84 s · S2 warf: keine Messung am Werk: /eval ohne Antwort binnen 9 s",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S2: keine Messung der Sprosse) · Täter: @@ 84 s · S2 warf: keine Messung am Werk: /eval ohne Antwort binnen 9 s",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.1,
+   "fremd": {
+    "s": 87.5,
+    "takte": 40,
+    "fremdS": 30.98,
+    "kerne": 0.354,
+    "fensterKerne": 0.554,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.3
+     ],
+     [
+      "bash.exe n0611/kandidat.sh gtx-c445936d-w172741 x listen/kandidat-gtx-c445936d-w172741.txt",
+      3.72
+     ]
+    ],
+    "dienerS": 27.77,
+    "diener": [
+     [
+      "dwm.exe",
+      13.16
+     ],
+     [
+      "System",
+      8.97
+     ]
+    ],
+    "geraetS": 29.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.48
+     ],
+     [
+      "svchost.exe",
+      10.81
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 189.38,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T16:36:22.878Z",
+   "abdruck": "72c45f3ab1e8",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
