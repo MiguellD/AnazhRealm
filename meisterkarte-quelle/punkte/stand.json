@@ -1,5 +1,5 @@
 {
- "kopf": "44446d65",
+ "kopf": "c445936d",
  "je": {
   "affekt.K1": {
    "punkte": 1,
@@ -3368,7 +3368,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1724, Häuser 12 → 20/20, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 64 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 99.6 σ 21.5 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "105c9bd397cc1b5d68391db2420b984a0741b573",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +97) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 151 s von siedlung.K4#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, foundry-core.js +98) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 151 s von siedlung.K4#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3378,7 +3378,7 @@
      "gruen": true,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 21/21, die alten 0.917 · Ring 10 neu, Median 23 m vom Haus / 72 m vom Ort · Schuss vom Hügel 208 m, 12.1 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 133.4 m · Luma 98.7 σ 21.5 schwarz 0.0 % weiß 0.0 % · ",
      "sha": "08a8397ba498a8c89c72ce9cd287232ccf6591ae",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +31) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +32) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3552,7 +3552,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +177)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +178)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3588,7 +3588,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +177)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +178)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3598,7 +3598,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +177)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +178)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -17656,7 +17656,7 @@
   },
   "karte2.mensch.kopplung.antwort": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.antwort#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +32) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta · karte2.mensch.kopplung.antwort#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.mensch.kopplung.antwort#1 radeon: Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +33) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Wirt-Wache: den Kontext der Probe hält noch: const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = | const K = window.__k4, Z = r.sta · karte2.mensch.kopplung.antwort#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.mensch.kopplung.antwort#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.kopplung.antwort#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +19) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.mensch.kopplung.antwort#1",
@@ -17664,7 +17664,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +32) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +33) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
      "ungemessen": true,
      "r6": "konsum",
      "beide": true
@@ -21137,7 +21137,7 @@
      "gruen": true,
      "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +22) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 158 s von karte2.mensch.stadt.siedlungsnetz#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +23) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 158 s von karte2.mensch.stadt.siedlungsnetz#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -21148,7 +21148,7 @@
      "gruen": true,
      "zahl": "✅ Ring: 21/21 Segmente stehen, 3 Tore, Türme 3/3 · ✅ Spalt max -1,363 m (Soll ≤ 0,05, bei -476.5/-1301.4) · ✅ frei im Schuss 21/21 Wände (im Rahmen 21, Soll ≥ 25 %) · mittags ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · Dämmerung ✅ ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickzi · [linse-gpu] nvidia/pascal",
      "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +21) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991638888888884\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +22) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991638888888884\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -21289,7 +21289,7 @@
   },
   "karte2.mensch.menge.bevoelkerung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +31) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +26) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures leben weather · wie {\"creatures\":{\"vorher\":5,\"nachher\":0,\"fehlt\":[\"Quin\",\"Yto\",\"Glim\",\"Ilen\"],\"neu\":[],\"anders\":[] · karte2.mensch.menge.bevoelkerung#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/stand-linse.cjs +11) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#3 gtx: Station seit der Messung geändert — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ 67 s · S3 an der Frist ausgelassen (67 s) · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#7 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#8 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#9 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
+   "beleg": "Maschine: gehalten: S2 GRÜN · Stichproben-Personen ± 2 m angetroffen 20 (Soll ≥ 20) · Umfang 1211 (Soll ≥ 1000 Bewohner der Stadt) · 20 Personen über die Liste der Stadt (309 Häuser) um 10.01 Uhr, Wohnort ≠ Arbeitsort (> 20 m) 13 von 20 · [linse-gpu] nvidia/pascal an f68dbf09 gtx — offen: karte2.mensch.menge.bevoelkerung#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +31) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.menge.bevoelkerung#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-bruecke.js, koerper-core.js +26) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures leben weather · wie {\"creatures\":{\"vorher\":5,\"nachher\":0,\"fehlt\":[\"Quin\",\"Yto\",\"Glim\",\"Ilen\"],\"neu\":[],\"anders\":[] · karte2.mensch.menge.bevoelkerung#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +12) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.mensch.menge.bevoelkerung#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#3 gtx: Station seit der Messung geändert — zuletzt an 31ea3847: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: S3: keine Messung der Sprosse) · Täter: @@ 67 s · S3 an der Frist ausgelassen (67 s) · karte2.mensch.menge.bevoelkerung#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#7 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#8 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#8 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25) · karte2.mensch.menge.bevoelkerung#9 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval: {\"ms\":1,\"fehler\":\"ABSTURZ der Seite: renderer · Ausnahme 0xe0000008 (Speicher erschöpft) · Abbild C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\a · karte2.mensch.menge.bevoelkerung#9 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +25)",
    "stationen": [
     {
      "id": "karte2.mensch.menge.bevoelkerung#1",
@@ -21319,7 +21319,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/stand-linse.cjs +11) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs +12) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -25248,7 +25248,7 @@
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
      "sha": "9f24b5b8a72d910481281c6f46ecd3da9010b080",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +21) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 158 s von karte2.mensch.stadt.siedlungsnetz#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +22) — zuletzt an 31ea3847: die Fahrt riss 1800 s (der Rest 92 s unter dem Grund-Deckel 158 s von karte2.mensch.stadt.siedlungsnetz#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -25259,7 +25259,7 @@
      "gruen": true,
      "zahl": "✅ Stadt binnen 2 km in 7/8 Saaten (Soll ≥ 6) · ✅ ζ 1.022 (Soll 0,8–1,2; Intervall [0.956; 1.158]) über 8 Saaten × 32 × 32 km",
      "sha": "b7ed8419454b22964d72b81d26f1f56128e41735",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +21) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991638888888884\"}) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +22) — zuletzt an f68dbf09: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: worldMeta.tagNull · wie {\"worldMeta.tagNull\":\"undefined → 0.49991638888888884\"}) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -26517,7 +26517,7 @@
      "gruen": true,
      "zahl": "mit Gewalt (C: 3 Schläge, 27 Zeugen draußen, 3 Akten): 1412 → 1539, Häuser 12 → 15 (+3) · ohne (B): 1412 → 1724, Häuser 9 → 15 (+6) über dieselbe Uhr · [linse-gpu] amd/rdna-3",
      "sha": "389a6496e128c30ec99fe73c64f44b3cef0dbe19",
-     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +32) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
+     "grund": "Konsum seit der Messung geändert (R6: cores.manifest.json, fachwerk-core.js, index.html +33) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\",
      "gehalten": true,
      "r6": "konsum",
      "beide": true
@@ -38526,8 +38526,8 @@
   ],
   "ohne": 2487
  },
- "kopfVoll": "44446d65797ab71bb77976f2583f096bc69949e9",
- "zeit": "2026-11-21T11:37:01.410Z",
+ "kopfVoll": "c445936d5da0a0f0c78139fbc6d4229524c56093",
+ "zeit": "2026-11-21T12:44:37.737Z",
  "vorher": "44446d65",
  "bilanz": {
   "gewinn": [],
