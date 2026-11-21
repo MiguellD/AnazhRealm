@@ -1,7 +1,7 @@
 {
  "sha": "31ea3847e7fd1702f4b84e051f2bb51fe06cc31c",
  "geraet": "gtx",
- "zeit": "2026-11-21T09:51:10.932Z",
+ "zeit": "2026-11-21T09:54:03.589Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.mensch.leib.verschieden#2": {
@@ -48333,6 +48333,431 @@
    "bahn": "sitzung",
    "zwilling": "karte2.mensch.menge.dichte#2",
    "modus": "session"
+  },
+  "karte2.mensch.zeit.spanne#2": {
+   "gruen": false,
+   "zahl": "S2 ROT: Umfang nicht erzeugbar: das Jahr wählt nur die Epoche (fachwerk epocheImJahr): 60 Halte über 3 000 J, Schritt 50 J, tragen 5 verschiedene Orte (mittelalter, hanse, barock, gruenderzeit, moderne; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 5) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "ROT: S2 ROT: Umfang nicht erzeugbar: das Jahr wählt nur die Epoche (fachwerk epocheImJahr): 60 Halte über 3 000 J, Schritt 50 J, tragen 5 verschiedene Orte (mittelalter, hanse, barock, gruenderzeit, moderne; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 5) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k08245dac43a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 83.9,
+   "fremd": {
+    "s": 85.8,
+    "takte": 38,
+    "fremdS": 31.84,
+    "kerne": 0.371,
+    "fensterKerne": 0.675,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.89
+     ]
+    ],
+    "dienerS": 44.19,
+    "diener": [
+     [
+      "dwm.exe",
+      19.5
+     ],
+     [
+      "System",
+      17.47
+     ]
+    ],
+    "geraetS": 35.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.61
+     ],
+     [
+      "svchost.exe",
+      11.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.86
+     ]
+    ],
+    "eigenS": 455.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:54:03.589Z",
+   "abdruck": "dba078a48ded",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.zeit.spanne#3": {
+   "gruen": false,
+   "zahl": "S3 ROT: Umfang nicht erzeugbar: vor 1560 steht derselbe Ort des Mittelalters, kein Lager, kein Dorf ohne Metall, kein Tell: 1 200 Halte über 12 000 J tragen 5 verschiedene Orte (mittelalter, hanse, barock, gruenderzeit, moderne; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 5) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "ROT: S3 ROT: Umfang nicht erzeugbar: vor 1560 steht derselbe Ort des Mittelalters, kein Lager, kein Dorf ohne Metall, kein Tell: 1 200 Halte über 12 000 J tragen 5 verschiedene Orte (mittelalter, hanse, barock, gruenderzeit, moderne; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 5) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k08245dac43a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 83.9,
+   "fremd": {
+    "s": 85.8,
+    "takte": 38,
+    "fremdS": 31.84,
+    "kerne": 0.371,
+    "fensterKerne": 0.675,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.89
+     ]
+    ],
+    "dienerS": 44.19,
+    "diener": [
+     [
+      "dwm.exe",
+      19.5
+     ],
+     [
+      "System",
+      17.47
+     ]
+    ],
+    "geraetS": 35.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.61
+     ],
+     [
+      "svchost.exe",
+      11.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.86
+     ]
+    ],
+    "eigenS": 455.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:54:03.589Z",
+   "abdruck": "082f4b2e7bf7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.zeit.spanne#2",
+   "modus": "session"
+  },
+  "karte2.mensch.zeit.spanne#4": {
+   "gruen": false,
+   "zahl": "S4 ROT: Umfang nicht erzeugbar: die Zukunft ist ein Halt (moderne), kein Zeitraffer, keine wachsende Stadt: 1 001 Jahre 2000–3000 tragen 1 verschiedene Orte (moderne; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 1) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "ROT: S4 ROT: Umfang nicht erzeugbar: die Zukunft ist ein Halt (moderne), kein Zeitraffer, keine wachsende Stadt: 1 001 Jahre 2000–3000 tragen 1 verschiedene Orte (moderne; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 1) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k08245dac43a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 83.9,
+   "fremd": {
+    "s": 85.8,
+    "takte": 38,
+    "fremdS": 31.84,
+    "kerne": 0.371,
+    "fensterKerne": 0.675,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.89
+     ]
+    ],
+    "dienerS": 44.19,
+    "diener": [
+     [
+      "dwm.exe",
+      19.5
+     ],
+     [
+      "System",
+      17.47
+     ]
+    ],
+    "geraetS": 35.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.61
+     ],
+     [
+      "svchost.exe",
+      11.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.86
+     ]
+    ],
+    "eigenS": 455.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:54:03.589Z",
+   "abdruck": "c29143eba604",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.zeit.spanne#2",
+   "modus": "session"
+  },
+  "karte2.mensch.zeit.spanne#5": {
+   "gruen": false,
+   "zahl": "S5 ROT: Umfang nicht erzeugbar: 300 000 J und 10⁴ J Zukunft geben dieselben Halte, keine Kultur vor dem Mittelalter: 1 000 Zufallsjahre tragen 4 verschiedene Orte (mittelalter, hanse, moderne, barock; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 4) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "ROT: S5 ROT: Umfang nicht erzeugbar: 300 000 J und 10⁴ J Zukunft geben dieselben Halte, keine Kultur vor dem Mittelalter: 1 000 Zufallsjahre tragen 4 verschiedene Orte (mittelalter, hanse, moderne, barock; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 4) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k08245dac43a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 83.9,
+   "fremd": {
+    "s": 85.8,
+    "takte": 38,
+    "fremdS": 31.84,
+    "kerne": 0.371,
+    "fensterKerne": 0.675,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.89
+     ]
+    ],
+    "dienerS": 44.19,
+    "diener": [
+     [
+      "dwm.exe",
+      19.5
+     ],
+     [
+      "System",
+      17.47
+     ]
+    ],
+    "geraetS": 35.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.61
+     ],
+     [
+      "svchost.exe",
+      11.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.86
+     ]
+    ],
+    "eigenS": 455.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:54:03.589Z",
+   "abdruck": "8ba8594fedae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.zeit.spanne#2",
+   "modus": "session"
+  },
+  "karte2.mensch.zeit.spanne#6": {
+   "gruen": false,
+   "zahl": "S6 ROT: Umfang nicht erzeugbar: der Ort trägt die Kultur seiner Region und Epoche, kein Schlüssel der Erde: 1 000 Stichproben (4 Orte × Jahr) tragen 20 verschiedene Orte (mittelalter, hanse, barock, gruenderzeit, moderne; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 20) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "ROT: S6 ROT: Umfang nicht erzeugbar: der Ort trägt die Kultur seiner Region und Epoche, kein Schlüssel der Erde: 1 000 Stichproben (4 Orte × Jahr) tragen 20 verschiedene Orte (mittelalter, hanse, barock, gruenderzeit, moderne; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 20) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k08245dac43a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 83.9,
+   "fremd": {
+    "s": 85.8,
+    "takte": 38,
+    "fremdS": 31.84,
+    "kerne": 0.371,
+    "fensterKerne": 0.675,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.89
+     ]
+    ],
+    "dienerS": 44.19,
+    "diener": [
+     [
+      "dwm.exe",
+      19.5
+     ],
+     [
+      "System",
+      17.47
+     ]
+    ],
+    "geraetS": 35.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.61
+     ],
+     [
+      "svchost.exe",
+      11.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.86
+     ]
+    ],
+    "eigenS": 455.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:54:03.589Z",
+   "abdruck": "d3f881804ba2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.zeit.spanne#2",
+   "modus": "session"
+  },
+  "karte2.mensch.zeit.spanne#7": {
+   "gruen": false,
+   "zahl": "S7 ROT: Umfang nicht erzeugbar: eine Welt, eine Art (Mensch), keine 10⁶ J: 1 001 Halte tragen 1 verschiedene Orte (mittelalter; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 1) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.4,
+   "grund": "ROT: S7 ROT: Umfang nicht erzeugbar: eine Welt, eine Art (Mensch), keine 10⁶ J: 1 001 Halte tragen 1 verschiedene Orte (mittelalter; der Ort ist eine Funktion seines Auftrags: derselbe Auftrag, derselbe Ort) (gemessen 1) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "k08245dac43a0",
+   "konsumN": 29,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kdc07caa11311",
+   "s": 83.9,
+   "fremd": {
+    "s": 85.8,
+    "takte": 38,
+    "fremdS": 31.84,
+    "kerne": 0.371,
+    "fensterKerne": 0.675,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      4.55
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.89
+     ]
+    ],
+    "dienerS": 44.19,
+    "diener": [
+     [
+      "dwm.exe",
+      19.5
+     ],
+     [
+      "System",
+      17.47
+     ]
+    ],
+    "geraetS": 35.2,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      21.61
+     ],
+     [
+      "svchost.exe",
+      11.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.86
+     ]
+    ],
+    "eigenS": 455.3,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T09:54:03.589Z",
+   "abdruck": "a7f27e666fc8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "karte2.mensch.zeit.spanne#2",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -48431,7 +48856,8 @@
   "kf3306f93b734": "dVRdj5swEPwveWzrWz4DWLoHJ0S6kyo1far6uIY1cCEQ2XC0qfrfKzjIHZDuI8x6xjO7/rO5YHLCjB5eTF1t+ObT5svG4CsxQ/qV9MOL2fBNlNgOubz/leji0hgoCwkoK8zPxFrdUFE+JAM0tJ3UURy6g+iOAEcIYNc9Pi5bS0lpzRpUNDVGkXJDXHG0JkNJDFs1kI1gPyRUPoehwlgcX2Aq8V0I6A5LRolVOlcabf2AfP78W4iDWClMC6SGlUVlJs4k9aXr8BvR+lapxo5dkfKS9NiEdoC2nISKvrpjBItGVbbGzMhCN/WdkAOssBmZIskbdtG1pGqEy8gJbOR3nM4uLVMzRVJiKJc+50hVRnqmwXITtbU5/AqXh57wTBpZhfnkpeUGjnz3BgCe1lrKQfhAMQnfWsr2wlljHyhkvVNxNhwE1+n7cTBQxKIPeaxsQWKSvNDnuT3KI8dy+de1JJNjSpqdatPc0KGHSCEfuYaBEkcvXna+X2bsc+TW8j/eJQTxtPLO1KrpUBPLLu3YSB75gc+FeF6BGzyfp5lXrucmy+BM0w/2Rxm+R/Y26GVk/8nhbQ3YlYpyalLK8yKf73feEvyq8cxQZrpQakpb+omK7g1nR2XDZF03U7yu5UY2BxeqmyvRsAa7W4BiL+LO+rH/kOlQByHuaB8Yat3cbiu3lvK4GjYyWaEL3bAOk/yWkZKEEQd3lcuVdEkZzaxMPeliyqFLboMnjsG4/urzbGiv6xML6k2uTGumyYqCNFL8zvPRkT5JrE4j0Nv6oe0MI7j7Jp5GdiuGGF7nuwKqE+LnPn57W557X/dCfH87/EIJXHStiv71gxxbk2PZvD/1f/8B",
   "k60c7daed1327": "dVbLkqtGDP0XL+OLxftVdRfCTJXnVh7MKnWXDa0GbAxONzYTp/LvKTDMGJhoYxccSUdHajX/bLJGktqdWV0KUu3uqJp6E25+2XzbCJYVHcmT1kN2R7UJNwZ3feIhBABgbd/9xOeYxAJ6uwFAt0XcQgAeAL4hxleM++c42WsMYAVw6PH6HzZAcBCYbAEOEPv418u7+xPfcI/4EzHyk8kNRkssB+B2zLPAgxvoGO0zxLe4A5tDNCBj/QZzu99txBhf8ck6jKwu9hExwahD3CY9cpvguwdelH0C9/i2+bYpa07vu6I9V6MyF5adWE7PYil2I02RvJF8SBVkhklWOFXQB+thmSwvrQJeslxT1LYVnalud9ngY5OZBU7YJZ+lj/Yy/Ynw+/enOFWZAktrVpxJu8qWymoM5RsmN0UI3Qt2CUACHvSVThZ/EaZKiTdaywRNQYJAWD4Ll8CryllKGruKIfEIdnxiwgkfqvsxJsePHvSZeyb7ddaU1XzOPHAdj5zwteurXuF5yajVqrJWU96MO6llhh/JurWPZJ12Z1RUJEcnZnjMSCeyj6FIAlg4iuqq1CyZb3HH9EOAFTYnVWZFq11kk1I9wtPA9AwWRmtO+eWqiRmjNGV+utS6YFTnJGccdCsTrhHCu78MemJnkkyrWTFpqVuemYbP5+Gw5lINxIcUE3FXF4btzxz7psIwQnE+BIL79DyZhqo/9KPlyySNmmtDrsFdviy4kQsJbcu1XTaeo7iD7mVJX2VFKc9zL2GTqVvhr+tiVcE4Se3UqPYD7duMkT/lGFYXJna89PyUafQzU1d3nlXyAQ+rrqhGtB2TpOWX61S7TY7nhIivK3DL+EIBYQhLOEuhVMvO5+noCcu2si8QNZ/xdWwyXK/nm//PKDxOonanspqchLDtwAn3kb0E30ieqJCqpva+aFrKhRcsCd0kO2sszWUpxDSgqZOJ4Kvz1FHVamnTTLvRtXQrMHru9ZPeYliJT/s6/tv88/A2jWGUDz+/I35R65Chke2HOqmrCzscbrMuW6FL2Wody4qP5ouUWE991fA7yYpymknP7dRiPITucVnC0UdMvHFjie38ylpHLKlvSq2uahrZwOOBeIzeuNdf59uyv7pTVp+mlriOb5jhD4zzH1s8PFyOegwxLE10iD/38WMt/oZRf23HPg7BL5TBRTai7Bc3FOyqClbNPhtuVPNGQltIot3w6XAu68eduHp9bvi1egIwiwXcDDf//gc=",
   "k47ffa86850c2": "dVRNj5swEP0vHNt6zfeHpT04IdKuVKnpqecxjIENAWRDqFL1v1ewkARI54TQe5437439x2ggOUGGLx+6rgxmfDG+GRouSDSqC6qXD20wI0osGx3GP4tyzvcDLFFF02paFoKCqCA/I+lUi0X5koy00LJTWzLaH3h/pPRIA7rrX1/X1FJgWpMWJM7EKJJOCGwN7HQGAgl0cmw2gb0QQXqMjhXG/PhB5+I/Oaf9Yd1RQJUulUa+F6DH3nvOD3yjMC0AW1IWlZ57JqknHJvdGm2nShX05AqYl6gmElgBWGIWOlrZHyO6Isqy03rRLHRSzw4ZpRtshrpI8pY0qhZYTXAR2YEF7InTWdMRuVAkBIRi7XMOWGWoFhpMJ5G+xejvcH3oCc6ogFSQz16aTmCLuzeU0retlnIUPraYhfumtNxwQRwCpdngVJyNB9Hr/P/4uYwxH0KeKls10UleqPPSHumibTrs+1aSziFFRU61bm/o0AXAcNr8eFwofnTjNfM+zMSzhW96j7OElL9tvNO1bHtQSLKmm4joohd4jPP3DbiF83neeem4TrIOTrfDYj/K8Fy0/GCQkf0nh89rQK5YlDNJSteNvPXhFwVnAiJThZRz0sJLZPRsMXssWyLqup2jdUwnshh1aHVzJBqvwO4WHt/zuDd/7R/yHOvA15rH02vV3qYUvildJi/DTUw26EK1pIckv2UjBULEnkCvqErMcGFh6goH0gF9lxS788fXxbJeNwlfCxzMrXSn542KgjSS7Mmz0aM6CahOE9D1vdCyx9Xb/eBvU0MzpjFdV9pz/nO/Cx9ty6Z3rMGENqqWxfDq0Rw6nUPZ3p/7v/8A",
-  "k2027ed401b24": "dVRNj5tADP0vObaddfgKMFIPkxApK7Vq9tSzBzzAhkA0A6FN1f9ewUKywNbH0Xv287M9f1YXjE+Y0tOrqcoVX31afVkZvBIzpK+kn17Niq/C2LLJ4eJFdAFCiF0Hi3V+qQ0UuQSUJWZnYo2uKS+e4p4WWHZiKw7tXrRHgCP4sG2/fp1TC0lJxWpUNBLDUDkB8jmwMSlKYtiovtgA9gJC5XHoI4jE8RXG2LZCQLufV5RYJlOl4cbzyePPrRB7sVCY5Eg1K/LSjDXjxJOOze+Fll0lGlt2Q8oK0gMJLR8tOQrtrWyPIcyIqmiMmRQLnMSzAw6wwKZk8jir2UVXksoBLkPbt5B/4HR6aZiaKJISAzn3OUMqU9ITDWsnVhuLw69gnvSEZ9LISsxGL9eOb8uHNwBwWGopeuF9iVH4Zq0sN5gQu4FC2jkVpX0iuI3vx95AEYlhK7tIZ0VMnOX6PLVHuWSvHf5tKclkmJBmp8rUd3TgIlLAh1rQ1zq60Zz5aGbg2XKz9t73EoA4LLwzlapb1MTSSzMQySXP97gQzwtwjefzuPPKcZ14PjhTd4v9XobnkrXxOxnpf+bwdgbsRnkxkpRy3dDju206B181nhnKVOdKjdOWXqzCj5azpaJmsqrqcbzO2gktDg6Ud1fC/gy29wGKnYh+2z8PL4+Z9rEXcyl99krX907lZq1crq7dNcYLdK5r1mKc3eejJGEnezGTG+mCUprYmLjSwYRDq95k3wIhjv5w+urzZGFvy4w5dQaXpjHjVoV+Eir+wdfRkj5JLE8D0N14gWX367f9IQ5vFpVhBBFcp3cCSSvEyy56+1e+i614jiAakl8ohouuVN79fJBhYzIs6seX//cf"
+  "k2027ed401b24": "dVRNj5tADP0vObaddfgKMFIPkxApK7Vq9tSzBzzAhkA0A6FN1f9ewUKywNbH0Xv287M9f1YXjE+Y0tOrqcoVX31afVkZvBIzpK+kn17Niq/C2LLJ4eJFdAFCiF0Hi3V+qQ0UuQSUJWZnYo2uKS+e4p4WWHZiKw7tXrRHgCP4sG2/fp1TC0lJxWpUNBLDUDkB8jmwMSlKYtiovtgA9gJC5XHoI4jE8RXG2LZCQLufV5RYJlOl4cbzyePPrRB7sVCY5Eg1K/LSjDXjxJOOze+Fll0lGlt2Q8oK0gMJLR8tOQrtrWyPIcyIqmiMmRQLnMSzAw6wwKZk8jir2UVXksoBLkPbt5B/4HR6aZiaKJISAzn3OUMqU9ITDWsnVhuLw69gnvSEZ9LISsxGL9eOb8uHNwBwWGopeuF9iVH4Zq0sN5gQu4FC2jkVpX0iuI3vx95AEYlhK7tIZ0VMnOX6PLVHuWSvHf5tKclkmJBmp8rUd3TgIlLAh1rQ1zq60Zz5aGbg2XKz9t73EoA4LLwzlapb1MTSSzMQySXP97gQzwtwjefzuPPKcZ14PjhTd4v9XobnkrXxOxnpf+bwdgbsRnkxkpRy3dDju206B181nhnKVOdKjdOWXqzCj5azpaJmsqrqcbzO2gktDg6Ud1fC/gy29wGKnYh+2z8PL4+Z9rEXcyl99krX907lZq1crq7dNcYLdK5r1mKc3eejJGEnezGTG+mCUprYmLjSwYRDq95k3wIhjv5w+urzZGFvy4w5dQaXpjHjVoV+Eir+wdfRkj5JLE8D0N14gWX367f9IQ5vFpVhBBFcp3cCSSvEyy56+1e+i614jiAakl8ohouuVN79fJBhYzIs6seX//cf",
+  "k08245dac43a0": "dVVdj5swEPwvPLb1OXwFsHQPTjgpV7Uq99TnNayBCwFkQ2hT9b9XEEgCXPcRzeyMZ9fmj1FDfIQUn951VRrM+GR8MTSckWhUZ1RP79pgRhCbFtqMX4tyzvc9LFZ53Wha5IKCKCE7IWlVg3nxFA8037QSSzLavfAuojSiHt11/FZ7/vy8bFMITCrSgMSpSRBI2we2BLY6BYEEWjkIj2DXR5Auo0P5IY/e6VS9cu/kA1UBZTJ3HmxdD132+pvzlzU+yQEbUuSlnnTjxBW2xW5i3ZqjoCMXwKxANZLA9MAUk9khki4K6IIoi1brmZhvJ67lM0pX2BR1HmcNqVUlsBzhIrA8E9hu7SmtWyJnjoQAXyyzzgDLFNXMw8aO5dZk9Je/bHqEEyogJWRTlhvbs8Q9G0rpYe2lGIwPEpPx7Uaajj8j9kOlaZ9UmA6N6GX6Hl2XKuT87bZh6UJEx1muTvN4pIPWxmbf1pZ0Bgkqcqx0c0P7DgD6400I6aAVOeGSeT/MyLPEduM+nsWn/LDKTley6UAhSet2JKKDrucyzl9X4AZOp2nvpe3Y8XJwuukX+9GG66C59Xob6X/mcL0G5IJ5MZGkdJzAZftdugSfFZwIiFTlUk7TFm4sg4+Ws8OiIaKqmmm89sYOzN5L+RBLn+vu8Y0If1s/D2/3mQ71wpdWhu6Vam4nFduNdJg897cxXqFz1ZAO4uw2HykQeturmVxQFZjiLMbEETYkjHby6vricx5549WXn2cLe1l3zLEPuNStnrYq8JJAsg+ejg7VUUB5HIHO1vVNi33tQ/rBD9eIyiCkIV1W0nH+tg+v78p3vuOvIQ3H5jXGtFaVzPuXj2bQ6gyK5v4L+PsP"
  },
  "ungemessen": {
   "karte2.erleben.spieler.praesenz#3": {
