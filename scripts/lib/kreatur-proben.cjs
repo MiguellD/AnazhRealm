@@ -2707,10 +2707,21 @@ async function kreaturProben(r, T, opts) {
         kamera(1, 0);
         ring(10, 15, 30, 1, 1);
         laufen(240);
-        const B10 = befehle();
+        const zehn = new Set(s.creatures);
         ring(40, 30, 55, 101, -1);
         laufen(240);
         const B50 = befehle();
+        // DIE ZEHN ALLEIN IM SELBEN MOMENT (samen-tier-leser 21.11.): die 40 gehen, zwei Takte wählen die Leiber neu, dann zählen
+        // die 10 — und die 40 kommen wieder (dieselben Plätze, 240 Takte), für die Proben dahinter. Bis hier zählten die 10 VOR den
+        // 40, vier Sekunden früher: mit den Losen des Samen-Baums flohen zwei Füchse der 10 vor den Wölfen unter ihnen (5,8 m/s,
+        // 20 → 44 m, dieselben vier Leiber), und am Fell-Gesetz des Schirms (44 m: eine Fell-Senke statt zwei) zählte die Zeit
+        // als Kopfzahl: 10 Tiere 33 Befehle, 50 Tiere 31
+        for (const c of s.creatures.filter((c) => !zehn.has(c))) r.removeCreature(c);
+        bildTakt(0);
+        bildTakt(0);
+        const B10 = befehle();
+        ring(40, 30, 55, 101, -1);
+        laufen(240);
         // DIE KOSTEN AN SCHIRM UND ÄNDERUNG (Gebot 7): ein Takt ohne Zeit schreibt nur die Plätze der Satz-Tiere, die sich
         // rührten; im Blick nach +x trägt das Auge jedes Satz-Tier im Frustum (keines fehlt) und nicht alle, der Wurf ebenso.
         const schreibe = A._gangSatzInstanz;
