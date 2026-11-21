@@ -96,7 +96,7 @@ const POSE = async (r, T, arg, HILF) => HILF.pose() || { fehler: "keine Gruppe d
 // alle 15 min über 24 h; der Ort des Solls ist der Name des Orts, dessen Stand das Ziel ist (drinnen: daheim). EIN BLINDER ZUORDNER
 // (der von gate:mensch-zuege, scripts/diag-mensch-zuege.cjs `zuordnen`: er liest nie den Zug, nur den Tag und die Rolle) ordnet nach
 // Stunden am Werk über dem Maß der Rolle (≥ 1,5 fleißig), am Treff außer Haus (≥ 2 gesellig), daheim in der Freizeit (≥ 5,4 häuslich);
-// verglichen mit dem Zug seines Samens (koerper `tagesZug`). Der Anteil ist das kleinere von den ersten 20 und der ganzen Stadt
+// verglichen mit dem Zug seines Samens (koerper `tagesZug`). Der Anteil ist das kleinere von den ersten 20 und den ersten 100 (der Umfang)
 const ZUEGE = async (r, T, arg, HILF) => {
     const { L } = HILF;
     const KC = window.__koerperCore;
@@ -104,9 +104,12 @@ const ZUEGE = async (r, T, arg, HILF) => {
     if (!KC || typeof KC.tagesZug !== "function" || !KC.TAGES_GESETZ || !KC.TAGES_GESETZ.zuege) return { fehler: "der Kern trägt keinen Zug (koerper tagesZug)" };
     const G = KC.TAGES_GESETZ;
     const ORTE = ["abend", "heim", "werk", "platz", "mahl", "besuch"];
+    // die ersten arg.n Bewohner der Stadt (der Umfang der Sprosse), solange die Frist der Probe trägt (arg.ms)
+    const bis = performance.now() + arg.ms;
     let t20 = 0, tAlle = 0, n = 0, weicht = 0;
     const tafel = {};
     for (const b of L) {
+        if (n >= arg.n || performance.now() > bis) break;
         if (!b.orte || !Number.isFinite(b.same)) continue;
         const R = G.rollen[b.rolle] || {};
         const W = R.werk || G.werk;
@@ -590,12 +593,12 @@ module.exports = (F) => [
             const zensus = async () => zen || (zen = pruef(await welt("ZENSUS"), "der Zensus der Stadt"));
             await K.schritt(1, async () => {
                 const z = await zensus();
-                const zg = pruef(await welt("ZUEGE"), "der Zug am Tag der Stadt");
-                H.zeile("S1 Zug zugeordnet erste 20 " + zg.t20 + ", Stadt " + zg.alle + " (" + zg.n + " Bewohner)");
+                const zg = pruef(await welt("ZUEGE", { n: 100 }), "der Zug am Tag der Stadt");
+                H.zeile("S1 Zug zugeordnet erste 20 " + zg.t20 + ", erste " + zg.n + " " + zg.alle + " (" + zg.n + " Bewohner)");
                 K.zahl(1, {
                     n: zg.n,
                     werte: { zug: Math.min(zg.t20, zg.alle) },
-                    beleg: "das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 " + zg.t20 + ", Stadt " + zg.alle + " von " + zg.n + " (" + z.stadt + " in der Stadt), je Zug " + JSON.stringify(zg.tafel) + ", Regen " + zg.regen + ", Viertelstunden ohne Ort " + zg.weicht,
+                    beleg: "das Soll der Stunde (`_bewohnerSoll`) je 15 min über 24 h, der blinde Zuordner von gate:mensch-zuege gegen koerper `tagesZug`: erste 20 " + zg.t20 + ", erste " + zg.n + " " + zg.alle + " (" + z.stadt + " in der Stadt), je Zug " + JSON.stringify(zg.tafel) + ", Regen " + zg.regen + ", Viertelstunden ohne Ort " + zg.weicht,
                     taeter: "koerper-core.js tagesPlan · TAGES_GESETZ.zuege — der Zug verschiebt die Wenden des Tags nicht weit genug, dass der Tag ihn trägt",
                 });
             });
