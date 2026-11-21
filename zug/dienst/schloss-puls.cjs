@@ -179,7 +179,7 @@ async function messen(geraet, alt, jetzt = sek(Date.now())) {
 
 // ── PUSHEN: ein eltern-loser Commit in einem eigenen nackten Repo (die Geschichte keines Zweigs wächst, der Klon sammelt keine Objekte) ──
 const PULS_GIT = path.join(TEMP_CLAUDE, "puls.git");
-function git(args, opt = {}) { return execFileSync("git", args, { encoding: "utf8", timeout: 90000, windowsHide: true, stdio: ["pipe", "pipe", "pipe"], ...opt }).trim(); }
+function git(args, opt = {}) { return execFileSync("git", args, { encoding: "utf8", timeout: 90000, windowsHide: true, stdio: ["pipe", "pipe", "pipe"], maxBuffer: 1 << 28, ...opt }).trim(); }
 function pushen(repo, geraet, puls, n) {
     // GANZ oder neu (14.11. 11:01–11:42, OMEN: ein Aufräumer des Temp-Ordners nahm dem Ablage-Repo den leeren Ordner `refs` — `HEAD` stand
     // noch, also kein init, und jeder Takt endete 41 min lang mit „not a git repository“; der Blick zeigte die OMEN als BLIND): fehlt HEAD,

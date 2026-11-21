@@ -217,7 +217,7 @@ function fristText(r, stunden, quellen, befehle) {
 async function fristSelbsttest() {
   const X = fs.mkdtempSync(path.join(os.tmpdir(), 'frist-selbsttest-'));
   const J = 1763500000; // die feste Uhr des Sandkastens
-  const sh = (cwd, a, env = {}) => execFileSync('git', a, { cwd, encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...env } });
+  const sh = (cwd, a, env = {}) => execFileSync('git', a, { cwd, encoding: 'utf8', windowsHide: true, maxBuffer: 1 << 28, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...env } });
   const ursprung = path.join(X, 'u.git'), r = path.join(X, 'r');
   sh(X, ['init', '-q', '--bare', ursprung]); sh(X, ['init', '-q', '-b', 'main', r]); sh(r, ['remote', 'add', 'origin', ursprung]);
   sh(r, ['config', 'user.name', 'Sandkasten']); sh(r, ['config', 'user.email', 's@k']); sh(r, ['config', 'core.autocrlf', 'false']);

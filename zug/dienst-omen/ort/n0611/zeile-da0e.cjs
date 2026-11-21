@@ -8,7 +8,9 @@ const O = "C:/Users/micha/Desktop/AnazhRealm-OMEN", MESS = O + "/AnazhRealm-mess
 const WER = { GIT_AUTHOR_NAME: "MiguellD", GIT_AUTHOR_EMAIL: "87209049+MiguellD@users.noreply.github.com",
     GIT_COMMITTER_NAME: "MiguellD", GIT_COMMITTER_EMAIL: "87209049+MiguellD@users.noreply.github.com" };
 const [K, LISTE, ZUSATZ] = process.argv.slice(2), k8 = K.slice(0, 8);
-const git = (a, o = {}) => cp.execFileSync("git", a, { cwd: MESS, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], ...o }).trim();
+// DIE PUFFER-GRENZE (21.11., wie zeile-erledigt.cjs): ohne `maxBuffer` trägt execFileSync 1 MiB, `zug/erledigt.txt` ist größer (ENOBUFS)
+const PUFFER = 1 << 28;
+const git = (a, o = {}) => cp.execFileSync("git", a, { cwd: MESS, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], maxBuffer: PUFFER, ...o }).trim();
 const f = PM + "/meisterkarte-quelle/punkte/messung/" + k8 + "-gtx.json";
 const m = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : { je: {}, ungemessen: {} };
 const liste = fs.readFileSync(LISTE, "utf8").trim().split(/[,\s]+/).filter(Boolean);
@@ -44,7 +46,7 @@ for (let v = 1; v <= 5; v++) {
         const basis = git(["rev-parse", "refs/omen/erledigt-koord"]);
         fs.rmSync(IDX, { force: true });
         git(["read-tree", basis], { env });
-        let alt = cp.execFileSync("git", ["show", basis + ":zug/erledigt.txt"], { cwd: MESS }).toString("utf8");
+        let alt = cp.execFileSync("git", ["show", basis + ":zug/erledigt.txt"], { cwd: MESS, maxBuffer: PUFFER }).toString("utf8");
         const nl = alt.includes("\r\n") ? "\r\n" : "\n";
         if (alt && !alt.endsWith("\n")) alt += nl;
         const blob = git(["hash-object", "-w", "--no-filters", "--stdin"], { input: alt + zeile + nl });

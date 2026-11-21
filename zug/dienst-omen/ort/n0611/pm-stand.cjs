@@ -77,7 +77,7 @@ function holeStand(pm = PM_ORT, o = {}) {
 
 function selbsttest() {
     const os = require("os"), tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pm-stand-"));
-    const sh = (cwd, a) => cp.execFileSync("git", a, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+    const sh = (cwd, a) => cp.execFileSync("git", a, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 1 << 28 }).trim();
     const fern = path.join(tmp, "fern"), pm = path.join(tmp, "pm");
     const schreibe = (wurzel, p, o) => { fs.mkdirSync(path.dirname(path.join(wurzel, p)), { recursive: true }); fs.writeFileSync(path.join(wurzel, p), typeof o === "string" ? o : JSON.stringify(o, null, 1)); };
     const A = AKTEN + "/a.b.1.aaaaaaaa-gtx.json", B = AKTEN + "/a.b.2.aaaaaaaa-gtx.json", C = AKTEN + "/a.b.3.aaaaaaaa-gtx.json", M = MESSUNG + "/aaaaaaaa-gtx.json", CODE = "meisterkarte-quelle/punkte/punkte.cjs";

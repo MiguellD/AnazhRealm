@@ -88,7 +88,7 @@ async function api(u) {
     if (!r.ok) throw new Error(`Actions-API ${u.split("?")[0]} antwortet ${r.status}`);
     return r.json();
 }
-const git = (...a) => { try { return execFileSync("git", ["-C", R, ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 60000 }).trim(); } catch (_e) { return ""; } };
+const git = (...a) => { try { return execFileSync("git", ["-C", R, ...a], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 60000, maxBuffer: 1 << 28 }).trim(); } catch (_e) { return ""; } };
 // der laufende Job je Läufer: Nummer, Name, Zahl der beendeten Schritte, der laufende Schritt mit seiner Startzeit
 async function jobs() {
     const aus = {};

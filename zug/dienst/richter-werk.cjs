@@ -93,12 +93,12 @@ if (was === "faelle") {
             fs.rmSync(IDX, { force: true });
             git(["read-tree", basis], { env });
             // die erste Zeile legt die Datei an (bis 11.11. warf `git show` an der fehlenden Datei: der echte Täter 2b2cef32 blieb 5 Versuche ungeschrieben)
-            let alt = git(["ls-tree", basis, "zug/richter.txt"]) ? cp.execFileSync("git", ["show", basis + ":zug/richter.txt"], { cwd: REPO, stdio: ["ignore", "pipe", "ignore"] }).toString("utf8") : "";
+            let alt = git(["ls-tree", basis, "zug/richter.txt"]) ? cp.execFileSync("git", ["show", basis + ":zug/richter.txt"], { cwd: REPO, stdio: ["ignore", "pipe", "ignore"], maxBuffer: 256e6 }).toString("utf8") : "";
             if (alt && !alt.endsWith("\n")) alt += "\n";
             git(["update-index", "--add", "--cacheinfo", "100644," + blobAus(alt + zeile + "\n") + ",zug/richter.txt"], { env });
             if (abschnitt) {
                 let post = "";
-                try { post = cp.execFileSync("git", ["show", basis + ":cloud-post/" + ZWEIG + ".md"], { cwd: REPO, stdio: ["ignore", "pipe", "ignore"] }).toString("utf8"); } catch { post = "# Post an " + ZWEIG + "\n\n"; }
+                try { post = cp.execFileSync("git", ["show", basis + ":cloud-post/" + ZWEIG + ".md"], { cwd: REPO, stdio: ["ignore", "pipe", "ignore"], maxBuffer: 256e6 }).toString("utf8"); } catch { post = "# Post an " + ZWEIG + "\n\n"; }
                 const i = post.search(/^## /m), kopf = i < 0 ? post.replace(/\s*$/, "\n\n") : post.slice(0, i), rumpf = i < 0 ? "" : post.slice(i);
                 git(["update-index", "--add", "--cacheinfo", "100644," + blobAus(kopf + abschnitt + "\n\n" + rumpf) + ",cloud-post/" + ZWEIG + ".md"], { env });
             }

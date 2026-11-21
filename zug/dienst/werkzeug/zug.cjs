@@ -1413,7 +1413,7 @@ const zeitStempel = (d = new Date()) => {
 };
 function fortschritt(zeile) {
     const t0 = Date.now();
-    const g = (a, opt = {}) => spawnSync("git", a, { cwd: VOLL, encoding: "utf8", ...opt });
+    const g = (a, opt = {}) => spawnSync("git", a, { cwd: VOLL, encoding: "utf8", maxBuffer: 1 << 28, ...opt });
     const idx = path.join(os.tmpdir(), `zug-fortschritt-${process.pid}.idx`);
     const env = { ...process.env, GIT_INDEX_FILE: idx };
     let grund = "";
@@ -1610,7 +1610,13 @@ function neuerBetreff(alt, zid, waende) {
 // DAS URTEIL (rein, der Selbsttest ersetzt nur `lauf`): stempel = [{ spec, betreff }], waende = echtBefehle, statik = Set der Zweige,
 // die die Vorab-Statik fallen ließ; lauf(spec, wand) → { rot, zeile } · { ohne } (kein Urteil nach allen Fahrten) · { abbruch }; pflicht(stempel) → die Pflicht-Wände, die
 // seinem Probe-Tag fehlen (probeTagLuecke am Beitrag). Zurück: die Zeilen und die neuen Köpfe.
-function taeterUrteil({ zid, stempel, waende, statik = new Set(), geraete = [], lauf, pflicht = () => [], bis = Infinity, jetzt = Date.now }) {
+// DIE BASIS-PROBE (21.11., z652 und z653): „ROT allein“ beweist nur dann einen Täter, wenn dieselbe Wand an der Basis OHNE jeden
+// Stempel grün ist. z652 schrieb „TÄTER w28-herde-gesetz: Wasser-Bild ROT allein (❌ B4 REGEN … uLicht [0,0,0])“ — die Regen-Probe
+// war an main 9f24b5b8 selbst rot (Radeon 3 von 3), z653 fiel mit einem anderen Stempel an derselben Wand, der Schneider suchte zwei
+// Stunden im falschen Schnitt. Jede Wand, an der ein Stempel allein rot fällt, fährt darum EINMAL an der Basis (lauf(null, wand)):
+// fällt sie dort rot, trägt kein Stempel sie (UNSCHULDIG „… ROT auch an der Basis“, kein neuer Kopf, solange die Basis rot ist);
+// bleibt die Basis ohne Urteil, steht das beim Täter. Kosten: je roter Wand eine Fahrt.
+function taeterUrteil({ zid, stempel, waende, statik = new Set(), geraete = [], lauf, pflicht = () => [], bis = Infinity, jetzt = Date.now, basis = "" }) {
     const n = waende.length;
     if (stempel.length > TAETER_DECKEL.stempel || n > TAETER_DECKEL.waende)
         return { zeilen: [`TÄTER-SUCHE ABGEBROCHEN: Deckel ${TAETER_DECKEL.stempel} Stempel × ${TAETER_DECKEL.waende} Wände, der Zug trägt ${stempel.length} × ${n}`], neu: [] };
@@ -1626,28 +1632,49 @@ function taeterUrteil({ zid, stempel, waende, statik = new Set(), geraete = [], 
         }
         je.push({ st, urteile });
     }
+    const basisRot = []; // { w, zeile }: die Wand fällt ohne jeden Stempel
+    const basisOhne = new Map(); // Wand → Grund: die Basis blieb ohne Urteil, das Urteil am Stempel steht mit diesem Vermerk
+    for (const w of waende) {
+        const rote = je.flatMap((x) => x.urteile).filter((u) => u.w === w && u.rot);
+        if (!rote.length) continue;
+        if (jetzt() > bis) return { zeilen: [`TÄTER-SUCHE ABGEBROCHEN: Frist ${TAETER_DECKEL.frist_min} min über alles verstrichen (vor der Basis an ${w.kurz}), nichts gestempelt`], neu: [] };
+        const r = lauf(null, w);
+        if (r.abbruch) return { zeilen: [`TÄTER-SUCHE ABGEBROCHEN: die Basis an ${w.kurz}: ${r.abbruch}`], neu: [] };
+        if (r.ohne) basisOhne.set(w, r.ohne);
+        if (!r.rot) continue;
+        basisRot.push({ w, zeile: r.zeile });
+        for (const u of rote) (u.rot = false), (u.basis = true);
+    }
     const zeilen = [];
     const taeter = je.filter((x) => x.urteile.some((u) => u.rot));
     for (const { st, urteile } of je) {
         const z = st.spec.split("@")[0];
         const rot = urteile.filter((u) => u.rot);
         const ohne = urteile.filter((u) => u.ohne);
-        const gruen = n - rot.length - ohne.length;
-        const rest = `${ohne.length && rot.length ? ` · ${ohne.map((u) => `${u.w.kurz} ohne Urteil`).join(" · ")}` : ""}${gruen && gruen < n ? ` · ${gruen} von ${n} allein GRÜN` : ""}`;
+        const anBasis = urteile.filter((u) => u.basis);
+        const gruen = n - rot.length - ohne.length - anBasis.length;
+        const auch = anBasis.map((u) => `${u.w.kurz} ROT auch an der Basis`).join(" · ");
+        const rest = `${auch && rot.length ? ` · ${auch}` : ""}${ohne.length && rot.length ? ` · ${ohne.map((u) => `${u.w.kurz} ohne Urteil`).join(" · ")}` : ""}${gruen && gruen < n ? ` · ${gruen} von ${n} allein GRÜN` : ""}`;
         zeilen.push(
             rot.length
-                ? `TÄTER ${z}: ${rot.map((u) => `${u.w.kurz} ROT allein (${u.zeile})`).join(" · ")}${rest}`
+                ? `TÄTER ${z}: ${rot.map((u) => `${u.w.kurz} ROT allein (${u.zeile})${basisOhne.has(u.w) ? " · die Basis dort ohne Urteil" : ""}`).join(" · ")}${rest}`
                 : ohne.length
-                  ? `OHNE URTEIL ${z}: ${ohne.map((u) => `${u.w.kurz} ohne Urteil (${u.ohne})`).join(" · ")}${gruen ? ` · ${gruen} von ${n} allein GRÜN` : ""} — weder Täter noch neuer Kopf`
-                  : `UNSCHULDIG ${z}: ${n} von ${n} roten Wänden allein GRÜN${statik.has(z) ? " — doch Täter der Vorab-Statik, kein neuer Kopf" : ""}`
+                  ? `OHNE URTEIL ${z}: ${ohne.map((u) => `${u.w.kurz} ohne Urteil (${u.ohne})`).join(" · ")}${auch ? ` · ${auch}` : ""}${gruen ? ` · ${gruen} von ${n} allein GRÜN` : ""} — weder Täter noch neuer Kopf`
+                  : anBasis.length
+                    ? `UNSCHULDIG ${z}: ${auch}${gruen ? ` · ${gruen} von ${n} allein GRÜN` : ""} — kein neuer Kopf, solange die Basis rot ist`
+                    : `UNSCHULDIG ${z}: ${n} von ${n} roten Wänden allein GRÜN${statik.has(z) ? " — doch Täter der Vorab-Statik, kein neuer Kopf" : ""}`
         );
     }
     if (!taeter.length) {
-        zeilen.push(`KEIN TÄTER AN DIESER KARTE (${TAETER_KARTE}): kein Stempel allein rot — Kombination oder Gerät (rot fiel am Bein ${geraete.join(", ") || "?"}), nichts gestempelt`);
+        zeilen.push(
+            basisRot.length
+                ? `KEIN TÄTER AN DIESER KARTE (${TAETER_KARTE}): BASIS ROT${basis ? ` ${basis.slice(0, 8)}` : ""} — ${basisRot.map((b) => `${b.w.kurz} fällt ohne jeden Stempel (${b.zeile})`).join(" · ")}; sie fällt mit jedem Zug, bis main oder die Wand geheilt ist, nichts gestempelt`
+                : `KEIN TÄTER AN DIESER KARTE (${TAETER_KARTE}): kein Stempel allein rot — Kombination oder Gerät (rot fiel am Bein ${geraete.join(", ") || "?"}), nichts gestempelt`
+        );
         return { zeilen, neu: [] };
     }
     const neu = je
-        .filter((x) => x.urteile.every((u) => !u.rot && !u.ohne) && !statik.has(x.st.spec.split("@")[0]))
+        .filter((x) => x.urteile.every((u) => !u.rot && !u.ohne && !u.basis) && !statik.has(x.st.spec.split("@")[0]))
         .map(({ st }) => ({ spec: st.spec, betreff: tagErgaenzt(neuerBetreff(st.betreff, zid, waende.map((w) => w.kurz)), pflicht(st)) }));
     return { zeilen, neu };
 }
@@ -1670,6 +1697,8 @@ function stempelBaum(zid, basis, spec) {
     try {
         git(["worktree", "add", "-q", "--detach", wt, basis], INTEG);
         fs.symlinkSync(path.join(VOLL, "node_modules"), path.join(wt, "node_modules"), "junction");
+        // die Basis-Probe (spec null): derselbe Baum ohne jeden Stempel
+        if (!spec) return { wt, weg };
         const k = spawnSync(process.execPath, ["-e", `const z=require(${JSON.stringify(__filename)});console.log("BAU "+JSON.stringify(z.mergeAlle(${JSON.stringify(basis)},${JSON.stringify([spec])})))`], {
             encoding: "utf8",
             maxBuffer: 1 << 26,
@@ -1728,7 +1757,7 @@ function wandLauf(zid, wt, spec, w, taeterZeile, melde = () => {}, bis = Infinit
     let u;
     for (let f = 1; f <= TAETER_DECKEL.fahrten && (f === 1 || Date.now() < bis); f++) {
         const port = portUmgebung(wt, w.run);
-        const r = spawnSync("sh", [path.join(__dirname, "gpu-lauf.sh"), `taeter-${zid}-${zweigKurz(spec.split("@")[0])}`, "sh", "-c", w.run], {
+        const r = spawnSync("sh", [path.join(__dirname, "gpu-lauf.sh"), `taeter-${zid}-${spec ? zweigKurz(spec.split("@")[0]) : "basis"}`, "sh", "-c", w.run], {
             cwd: wt,
             encoding: "utf8",
             maxBuffer: 1 << 28,
@@ -1786,14 +1815,14 @@ async function taeter(args) {
         let u;
         try {
             u = taeterUrteil({
-                zid, stempel, waende, statik, geraete, bis,
+                zid, stempel, waende, statik, geraete, bis, basis,
                 pflicht: (st) => (probeTagLuecke(beitrag(basis, st.spec.split("@")[1], INTEG), st.betreff) || { fehlt: [] }).fehlt,
                 lauf: (spec, w) => {
                     if (!baum || baum.spec !== spec) {
                         if (baum) baum.weg();
                         baum = { spec, ...stempelBaum(zid, basis, spec) };
                     }
-                    const ort = `  ${spec.split("@")[0]} · ${w.kurz}:`;
+                    const ort = `  ${spec ? spec.split("@")[0] : `Basis ${basis.slice(0, 8)} ohne Stempel`} · ${w.kurz}:`;
                     const r = baum.abbruch ? { abbruch: baum.abbruch } : wandLauf(zid, baum.wt, spec, w, leser, (z) => console.log(`${ort} ${z}`), bis);
                     console.log(`${ort} ${r.abbruch ? `ABBRUCH ${r.abbruch}` : r.ohne ? `OHNE URTEIL ${r.s} s — ${r.ohne}` : r.rot ? `ROT ${r.s} s — ${r.zeile}` : `GRÜN ${r.s} s`}`);
                     return r;
@@ -2066,7 +2095,8 @@ function selbsttestTaeter(pr) {
         { spec: "w28-laub-kante-4@f578d89c", betreff: `Abgabe w28-laub-kante-4: der Waldmantel trägt tiefe Kronen-Ansätze ${tag}` },
         { spec: "w28-saison-am-laub@fe837c5c", betreff: "Abgabe w28-saison-am-laub: jede Pflanzen-Klasse liest das Jahr [gpu-probe: bild:wiese@0.5] [ci voll]" },
     ];
-    const gestellt = (rotAn) => (spec, w) => (rotAn(spec, w) ? { rot: true, zeile: `❌ ${w.kurz} gestellt` } : { rot: false });
+    // die Basis ohne Stempel (spec null, die Basis-Probe) ist in den gestellten Fällen grün, wo der Fall sie nicht selbst stellt
+    const gestellt = (rotAn) => (spec, w) => (spec && rotAn(spec, w) ? { rot: true, zeile: `❌ ${w.kurz} gestellt` } : { rot: false });
     // laub-kante-4 fasst stamm/dirigent-ankunft.js an (Bau-Pfad): seinem Tag fehlen die Pflicht-Wände; saison-am-laub gestellt ohne Lücke
     const pflicht = (st) => (st.spec.startsWith("w28-laub-kante-4@") ? probeTagLuecke(["stamm/dirigent-ankunft.js"], st.betreff).fehlt : []);
     const a = taeterUrteil({ zid: "z637", stempel, waende, geraete: ["omen"], pflicht, lauf: gestellt((s) => s.startsWith("w28-einheit-sicht-2@")) });
@@ -2120,11 +2150,39 @@ function selbsttestTaeter(pr) {
             s0.wort === "ROT" && /luma":21\.4/.test(s0.zeile) && tf.wort === "ROT" && /^❌ T1 die Index-Wache/.test(tf.zeile) &&
             sturz.wort === "OHNE" && fu(124, ["…"]).wort === "OHNE" && fu(75, ["SCHLOSS BLOCKIERT von ci-runner"]).wort === "OHNE");
     const e = taeterUrteil({ zid: "z637", stempel, waende, geraete: ["omen"],
-        lauf: (spec, w) => (spec.startsWith("w28-einheit") && w.kurz === "Pruefbuehne S0" ? { rot: true, zeile: s0.zeile } : spec.startsWith("w28-laub") && w.kurz === "Pruefbuehne S0" ? { ohne: `${eaddr.grund} — 3 Fahrten` } : { rot: false }) }); // prettier-ignore
+        lauf: (spec, w) => (!spec ? { rot: false } : spec.startsWith("w28-einheit") && w.kurz === "Pruefbuehne S0" ? { rot: true, zeile: s0.zeile } : spec.startsWith("w28-laub") && w.kurz === "Pruefbuehne S0" ? { ohne: `${eaddr.grund} — 3 Fahrten` } : { rot: false }) }); // prettier-ignore
     pr("Täter-Suche (e) eine Fahrt, die mit EADDRINUSE endet, wird nie Täter: der Stempel steht OHNE URTEIL, ohne neuen Kopf; einheit-sicht-2 ist der eine Täter",
         e.zeilen.filter((z) => /^TÄTER /.test(z)).length === 1 && /^TÄTER w28-einheit-sicht-2: Pruefbuehne S0 ROT allein .* · 1 von 2 allein GRÜN$/.test(e.zeilen[0]) &&
             /^OHNE URTEIL w28-laub-kante-4: Pruefbuehne S0 ohne Urteil \(Absturz der Fahrt.*EADDRINUSE.*\) · 1 von 2 allein GRÜN — weder Täter noch neuer Kopf$/.test(e.zeilen[1]) &&
             e.neu.map((x) => x.spec.split("@")[0]).join() === "w28-saison-am-laub");
+    // DIE BASIS-PROBE am echten Fall z652 (21.11.): die Herde allein rot an der Regen-Probe, main 9f24b5b8 ohne Stempel ebenso
+    const regen = { kurz: "Wasser-Bild", run: "npm run gate:wasser-leben:bild", env: {} };
+    const herde = [{ spec: "w28-herde-gesetz@456b865c", betreff: "Abgabe w28-herde-gesetz: die Herde folgt dem Gesetz [gpu-probe: gate:kreatur-leben] [ci voll]" }];
+    const b4 = '❌ B4 REGEN: {"litAnteil":0,"schlieren":0,"neigung":0,"lage":{"uhr":0.5,"uLicht":[0,0,0]}}';
+    const b4Basis = '❌ B4 REGEN: {"fehler":"die Bestrahlungs-Tafel des Sturms kam nicht zurück (der Lichtmesser liest nichts)"}';
+    let basisFahrten = 0;
+    const f = taeterUrteil({ zid: "z652", stempel: herde, waende: [regen], geraete: ["omen"], basis: "9f24b5b8a72d910481281c6f46ecd3da9010b080",
+        lauf: (spec) => (spec ? { rot: true, zeile: b4 } : (basisFahrten++, { rot: true, zeile: b4Basis })) }); // prettier-ignore
+    pr("Täter-Suche (f) BASIS-PROBE am Fall z652: die Wand fällt auch ohne jeden Stempel → kein TÄTER, UNSCHULDIG „ROT auch an der Basis“, die Basis beim Namen, EINE Basis-Fahrt, kein neuer Kopf",
+        !f.zeilen.some((z) => /^TÄTER /.test(z)) && basisFahrten === 1 && !f.neu.length &&
+            f.zeilen[0] === "UNSCHULDIG w28-herde-gesetz: Wasser-Bild ROT auch an der Basis — kein neuer Kopf, solange die Basis rot ist" &&
+            f.zeilen[1] === `KEIN TÄTER AN DIESER KARTE (radeon): BASIS ROT 9f24b5b8 — Wasser-Bild fällt ohne jeden Stempel (${b4Basis}); sie fällt mit jedem Zug, bis main oder die Wand geheilt ist, nichts gestempelt`);
+    // die Gegenprobe: dieselbe rote Wand an grüner Basis bleibt ein Täter (das Urteil vor dem Schnitt, hier zu Recht)
+    const fg = taeterUrteil({ zid: "z652", stempel: herde, waende: [regen], geraete: ["omen"], lauf: (spec) => (spec ? { rot: true, zeile: b4 } : { rot: false }) });
+    pr("Täter-Suche (f) Gegenprobe: an grüner Basis bleibt der Stempel der TÄTER mit der Zeile der Wand",
+        fg.zeilen.length === 1 && fg.zeilen[0] === `TÄTER w28-herde-gesetz: Wasser-Bild ROT allein (${b4})` && !fg.neu.length);
+    // gemischt: einheit-sicht-2 allein rot an S0 (Basis dort grün), die Frost-Wand rot an jedem Stempel UND an der Basis
+    const g = taeterUrteil({ zid: "z637", stempel, waende, geraete: ["omen"],
+        lauf: (spec, w) => (w.kurz === "Frost-Wand" ? { rot: true, zeile: "❌ Frost gestellt" } : spec && spec.startsWith("w28-einheit") ? { rot: true, zeile: s0.zeile } : { rot: false }) }); // prettier-ignore
+    pr("Täter-Suche (g) gemischt: der Täter an der eigenen Wand steht, die Basis-rote Wand zählt bei keinem als Tat, und kein Unschuldiger bekommt einen neuen Kopf, solange die Basis rot ist",
+        g.zeilen.length === 3 && /^TÄTER w28-einheit-sicht-2: Pruefbuehne S0 ROT allein \(⛔ S0 BILD ROT.*\) · Frost-Wand ROT auch an der Basis$/.test(g.zeilen[0]) &&
+            g.zeilen.slice(1).every((z) => /^UNSCHULDIG w28-\S+: Frost-Wand ROT auch an der Basis · 1 von 2 allein GRÜN — kein neuer Kopf, solange die Basis rot ist$/.test(z)) && !g.neu.length);
+    // die Basis ohne Urteil nimmt dem Stempel die Tat nicht, sie steht als Vermerk; ein Abbruch an der Basis bricht die Suche ab
+    const h = taeterUrteil({ zid: "z652", stempel: herde, waende: [regen], lauf: (spec) => (spec ? { rot: true, zeile: b4 } : { ohne: "Deckel 600 s — 3 Fahrten" }) });
+    const ha = taeterUrteil({ zid: "z652", stempel: herde, waende: [regen], lauf: (spec) => (spec ? { rot: true, zeile: b4 } : { abbruch: "GPU-Schloss blockiert" }) });
+    pr("Täter-Suche (h) die Basis ohne Urteil steht als Vermerk am Täter · ein Abbruch an der Basis bricht die Suche ab, nichts gestempelt",
+        h.zeilen[0] === `TÄTER w28-herde-gesetz: Wasser-Bild ROT allein (${b4}) · die Basis dort ohne Urteil` &&
+            ha.zeilen.length === 1 && ha.zeilen[0] === "TÄTER-SUCHE ABGEBROCHEN: die Basis an Wasser-Bild: GPU-Schloss blockiert" && !ha.neu.length);
     // der Port je Fahrt aus der Quelle der Linse (npm run → package.json → scripts/… → process.env.<…PORT>)
     const pd = fs.mkdtempSync(path.join(os.tmpdir(), "zug-port-"));
     try {
@@ -2275,8 +2333,51 @@ function selbsttest(args = []) {
     pr("Format: stamm/x.js und phyto-core.js geprüft, stamm/u/y.js · stamm/k.json · scripts/z.cjs nicht",
         formatGeprueft("stamm/x.js", fp) && formatGeprueft("phyto-core.js", fp) && !formatGeprueft("stamm/u/y.js", fp) && !formatGeprueft("stamm/k.json", fp) && !formatGeprueft("scripts/z.cjs", fp));
     selbsttestTaeter(pr);
+    selbsttestPuffer(pr);
     console.log(fall.length ? `zug selbsttest ROT: ${fall.join(" · ")}` : `zug selbsttest grün (${faelle} Fälle)`);
     return fall.length ? 1 : 0;
+}
+// DIE PUFFER-GRENZE DER GIT-LESER (21.11.): `execFileSync`/`spawnSync` tragen ohne `maxBuffer` 1 MiB. `zug/erledigt.txt` wuchs auf
+// 1 148 674 Bytes, `zeile-erledigt.cjs` las sie mit `git show` ohne Grenze und fiel an der OMEN 255× mit „spawnSync git ENOBUFS“ —
+// still, bis das Gerät es meldete. Eine Lücke ist ein git-Ruf OHNE `maxBuffer`, der (a) ein allgemeiner Helfer ist (die Argumente
+// sind eine Variable oder tragen ein `...`: er liest, was der Rufer will) oder (b) den Inhalt einer Datei liest (`"show"`). Rufe mit
+// festem, kleinem Ausgang (rev-parse, fetch, commit-tree, cat-file einer Puls-Datei, log -1) tragen keine. Zurück: [{ zeile, text }].
+function pufferLuecken(quelle) {
+    const z = quelle.split("\n");
+    const aus = [];
+    z.forEach((l, i) => {
+        const m = /(?:execFileSync|spawnSync)\(\s*["'`]git["'`]\s*,\s*(.*)$/.exec(l);
+        if (!m || /^\s*(\/\/|\*)/.test(l)) return;
+        // die Aussage bis zum Ende des Rufs: höchstens vier Zeilen (die Optionen stehen bei jedem Leser dieser Skripte dort)
+        const aussage = z.slice(i, i + 4).join(" ");
+        // wer keinen Ausgang sammelt (`stdio: "ignore"`), füllt keinen Puffer
+        if (/maxBuffer/.test(aussage) || /stdio:\s*["'`]ignore["'`]/.test(aussage)) return;
+        const arg = m[1];
+        const liste = /^\[([^\]]*)\]/.exec(arg);
+        const helfer = !liste || /\.\.\./.test(liste[1]);
+        // die Optionen aus einer Funktion (`opt(repo)`) trägt deren Quelle: sie steht in derselben Datei mit `maxBuffer`
+        const optAus = /,\s*\{\s*\.\.\.(\w+)\(/.exec(arg);
+        if (optAus && new RegExp(`const ${optAus[1]} = [^\\n]*maxBuffer`).test(quelle)) return;
+        if (helfer || /["'`]show["'`]/.test(liste[1])) aus.push({ zeile: i + 1, text: l.trim().slice(0, 140) });
+    });
+    return aus;
+}
+function selbsttestPuffer(pr) {
+    // § steht für den Ruf (die Linse liest auch diese Datei: ihre Test-Zeilen sind keine Rufe)
+    const ruf = (s) => s.split("§").join("execFileSync");
+    const alt = ruf('let alt = cp.§("git", ["show", basis + ":zug/erledigt.txt"], { cwd: MESS }).toString("utf8");');
+    const helfer = ruf('const git = (a, o = {}) => cp.§("git", a, { cwd: MESS, encoding: "utf8", ...o }).trim();');
+    const spreiz = ruf('const git = (...a) => §("git", ["-C", R, ...a], { encoding: "utf8", timeout: 60000 }).trim();');
+    const fest = ['const pm = cp.§("git", ["rev-parse", "--short=8", "refs/omen/dauer-pm"], { cwd: PM, encoding: "utf8" }).trim();', '§("git", fetchArgs, { timeout: 30000, windowsHide: true, stdio: "ignore" });', '// §("git", a, {})'].map(ruf);
+    const heil = [alt.replace("{ cwd: MESS }", "{ cwd: MESS, maxBuffer: PUFFER }"), helfer.replace("...o }", "maxBuffer: 1 << 28, ...o }"), ruf("const opt = (repo) => ({ cwd: repo, maxBuffer: 1 << 30 });\nsync: (a, input) => §('git', a, { ...opt(repo), input });")];
+    pr("Puffer-Grenze: der Leser der wachsenden Datei (der Täter der OMEN, ENOBUFS), der allgemeine Helfer und der Helfer mit `...` sind Lücken beim Namen; feste kleine Rufe, Kommentare und die geheilten Zeilen nicht",
+        [alt, helfer, spreiz].every((q) => pufferLuecken(q).length === 1 && pufferLuecken(q)[0].zeile === 1) && !pufferLuecken(fest.join("\n")).length && heil.every((q) => !pufferLuecken(q).length));
+    // DER LESER: jeder Selbsttest des Zug-Werkzeugs urteilt über die Skripte NEBEN ihm — in der Quelle zug/dienst und zug/dienst-omen,
+    // installiert artifacts/profiband (dienst/, werkzeug/)
+    const geh = (d) => (fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (e.name === "node_modules" ? [] : geh(path.join(d, e.name))) : /\.cjs$/.test(e.name) ? [path.join(d, e.name)] : [])) : []);
+    const orte = [path.join(__dirname, ".."), path.join(__dirname, "..", "..", "dienst-omen")];
+    const funde = orte.flatMap(geh).flatMap((f) => pufferLuecken(fs.readFileSync(f, "utf8")).map((x) => `${path.relative(path.join(__dirname, ".."), f).split(path.sep).join("/")}:${x.zeile}`));
+    pr(`Puffer-Grenze: jeder git-Leser der Dienst-Skripte trägt maxBuffer${funde.length ? ` — OHNE: ${funde.join(", ")}` : ""}`, !funde.length);
 }
 
 if (require.main !== module) module.exports = { loeseDatei, loeseBlock, loeseKarte, dreiWege, baumErbe, erbeVoll, urteilVon, nachweisUrteil, zugAufbau, rotSchritte, WACKEL_RE, mergeAlle, vorabLauf, vorabStatik, taeterUrteil, echtBefehle, neuerBetreff, probeTagFehlt };

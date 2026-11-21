@@ -32,7 +32,9 @@ const stempel = () => { const d = new Date(); return d.getFullYear() + "-" + zwe
 const log = (s) => fs.appendFileSync(LOG, stempel() + " " + s + "\n");
 const ruhe = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 const schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
-const git = (args, cwd = MESS, o = {}) => cp.execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], ...o }).trim();
+// DIE PUFFER-GRENZE (21.11., wie zeile-erledigt.cjs): ohne `maxBuffer` trägt execFileSync 1 MiB — der Bericht wächst mit jeder Runde
+const PUFFER = 1 << 28;
+const git = (args, cwd = MESS, o = {}) => cp.execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], maxBuffer: PUFFER, ...o }).trim();
 const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch { return null; } };
 const speichere = (st) => fs.writeFileSync(STAND, JSON.stringify(st, null, 1) + "\n");
 const kurz = (s, n = 150) => { s = String(s).replace(/\s+/g, " ").trim(); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
@@ -88,7 +90,7 @@ function pushe(zweig, dateien, nachricht, berichtZeile) {
             };
             for (const d of dateien) rein(d.pfad, fs.readFileSync(d.von));
             if (berichtZeile) {
-                let alt = cp.execFileSync("git", ["show", basis + ":" + BERICHT], { cwd: MESS }).toString("utf8");
+                let alt = cp.execFileSync("git", ["show", basis + ":" + BERICHT], { cwd: MESS, maxBuffer: PUFFER }).toString("utf8");
                 const nl = alt.includes("\r\n") ? "\r\n" : "\n";
                 if (!alt.endsWith("\n")) alt += nl;
                 if (!alt.includes("## Dauerauftrag 10:15")) alt += nl + "## Dauerauftrag 10:15: GTX-Stationen je Kopf von main" + nl + nl +

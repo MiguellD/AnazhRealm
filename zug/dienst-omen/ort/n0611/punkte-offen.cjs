@@ -8,7 +8,8 @@ const { pushe, messDateien, referenzDateien } = require("./gtx-dauer.cjs");
 const O = "C:/Users/micha/Desktop/AnazhRealm-OMEN", PM = O + "/n0611-pm";
 const [was, K] = process.argv.slice(2);
 const AUS = O + "/p3/n0611/punkte-offen-" + K.slice(0, 8) + (process.env.TEIL ? "-" + process.env.TEIL : "") + ".out";
-const git = (a) => cp.execFileSync("git", a, { cwd: PM, encoding: "utf8" }).trim();
+// DIE PUFFER-GRENZE (21.11., wie zeile-erledigt.cjs): ohne `maxBuffer` trägt execFileSync 1 MiB (ENOBUFS an wachsenden Dateien)
+const git = (a) => cp.execFileSync("git", a, { cwd: PM, encoding: "utf8", maxBuffer: 1 << 28 }).trim();
 if (was === "lauf") {
     // der Stand von punkte-maschine; eine jüngere Messung im Baum überlebt (pm-stand.cjs, 14.11.)
     for (const z of require("./pm-stand.cjs").holeStand(PM).behalten) console.log("BEHALTEN " + z);
