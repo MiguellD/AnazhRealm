@@ -1944,3 +1944,4 @@ omen-gtx-gtx-f68dbf09-w030546-1-f68dbf09 UNGEMESSEN 2 GRÜN / 0 ROT / 3 UNGEMESS
 2026-11-21 03:39 RUNDE 2 ALARM gtx: ohne Fortschritt seit 156 min (weicht, 1297/1428, Station karte2.mensch.geist.tag#8, Kopf 31ea3847) — gesehen von gtx (landung-dienst)
 2026-11-21 03:39 RUNDE 2 ALARM gtx: OMEN: 460 Messungen ungepusht seit 05:53 — weicht 1297/1428, Station karte2.mensch.geist.tag#8, Kopf 31ea3847; die Runde setzt an derselben Station fort — gesehen von gtx (landung-dienst)
 2026-11-21 03:52 w28-pop-treue Zwischenstand: ABGABE dcbb5a20 [gpu-probe: gate:pop, gate:kamera-treue] — Treue des Pop-Gangs 16 496 -> 0 Bytes (Diät-Belichtung, Lichtmesser je Lesung), Linse treueLicht; offen lod.K2#1 0,0592 % = Stand von main (Chunk-Stufe 2→1 an der Halm-Linie, bericht/2111-pop-treue)
+2026-11-21 04:40 RUNDE 2 ALARM gtx: ohne Fortschritt seit 217 min (laeuft, 1297/1428, Station karte2.mensch.geist.tag#8, Kopf 31ea3847) — gesehen von radeon (radeon-dienst)
