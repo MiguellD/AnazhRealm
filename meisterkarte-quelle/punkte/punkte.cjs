@@ -4775,13 +4775,22 @@ const stationsEintrag = (e, o) => ({ ...e, zeit: o.zeit, abdruck: o.abdruck, por
 // das Feld nie und steht.
 // DER START (21.11.): ein Lauf, dessen Prozess nie startete („Start: …“, fahreStation), erreichte den Apparat nie — er zählt seine
 // Versuche wie jeder Eintrag oben.
+// DAS SCHLOSS (22.11., pm-schloss-offen; GTX c445936d Runde 3: eine Stations-Sitzung wartete 2 713 s hinter der Tor-Kette
+// 'omen-omen-saat-tore', gab mit Exit 75 auf und legte ihre 35 Front-Stationen „GPU-Schloss blockiert …“ ohne das Feld ab — die
+// Runde zählte 15 → 50 erledigt, keine fuhr nach): ein Lauf, der das GPU-Schloss nie bekam (blockiert: Exit 75 · nie bekommen:
+// gpu-lauf.sh schwieg beim Warten — fahreStation und die Sitzung schreiben beide Texte), erreichte den Apparat nie.
 const START_GRUND = /^Start: /;
-const apparatOffen = (grund) => /— offen, UNGEMESSEN$/.test(grund) || START_GRUND.test(grund) || (/^UNGEMESSEN: Läufer starb/.test(grund) && !/· die laufende Probe$/.test(grund));
+const SCHLOSS_NIE = /^GPU-Schloss (blockiert|nie bekommen)\b/;
+const apparatOffen = (grund) =>
+    /— offen, UNGEMESSEN$/.test(grund) || START_GRUND.test(grund) || SCHLOSS_NIE.test(grund) || (/^UNGEMESSEN: Läufer starb/.test(grund) && !/· die laufende Probe$/.test(grund));
 // DIE ALTEN START-FEHLER IM BUCH (startOffen; 31ea3847: GTX 162, Radeon 79; f68dbf09: GTX 162 — bis 21.11. schrieb der Läufer „Start:
 // spawn ENAMETOOLONG“ als ROT nach m.je): jede gelesene Mess-Datei (messungLesen: ladeMessungen, run, vereine) trägt einen solchen
 // Eintrag unter m.ungemessen mit `offen` 1 — frischUrteil, `run --offen`, beruehrt und die Buchung sehen ihn UNGEMESSEN, nie als
 // Urteil; der nächste Schreiber der Datei legt ihn so ab (zug/dienst/runde.cjs `startFehler` liest die Datei am Ursprung dasselbe).
+// DIE ALTEN SCHLOSS-LÜCKEN IM BUCH (pm-schloss-offen; GTX c445936d: 35 Einträge „GPU-Schloss blockiert …“ vor der Regel, ohne
+// `offen`): jede gelesene Mess-Datei trägt sie mit `offen` 1 — der nächste Schreiber legt sie so ab, die Runde fährt sie nach.
 function startOffen(m) {
+    for (const e of Object.values((m && m.ungemessen) || {})) if (e && e.offen === undefined && SCHLOSS_NIE.test(String(e.grund || ""))) e.offen = 1;
     if (!m || !m.je) return m;
     for (const [id, e] of Object.entries(m.je)) {
         if (!e || e.ungemessen || !START_GRUND.test(String(e.grund || ""))) continue;
@@ -6714,7 +6723,7 @@ async function selbsttest(o = {}) {
         eintragen(nachher, "gelaende.K4#1", { gruen: true, zahl: "z", exit: 0, minuten: 1 });
         pruef("LÄUFER GPU-Schloss blockiert (Exit 75) ist UNGEMESSEN beim Namen, nie ROT in der Messung — run --offen misst neu",
             e.ungemessen === true && e.gruen === false && /Schloss blockiert.*Nachtruhe 0325-0415/.test(e.grund) && !mb.je["gelaende.K4#1"] &&
-            !!mb.ungemessen["gelaende.K4#1"] && fr.ungemessen === true && /R10/.test(fr.grund) && nachher.je["gelaende.K4#1"].gruen && !nachher.ungemessen,
+            !!mb.ungemessen["gelaende.K4#1"] && mb.ungemessen["gelaende.K4#1"].offen === 1 && fr.ungemessen === true && /R10/.test(fr.grund) && nachher.je["gelaende.K4#1"].gruen && !nachher.ungemessen,
             JSON.stringify([e, mb, fr]));
         const c3 = { ...ctx("schweigt"), gpuLauf: path.join(tmp, "schweigt.sh"), stillS: 2 };
         fs.writeFileSync(c3.gpuLauf, "#!/bin/bash\necho 'gpu-lauf: probe (bild) wartet auf ?' >&2\nsleep 60\n");
@@ -6725,7 +6734,7 @@ async function selbsttest(o = {}) {
         fs.writeFileSync(c4.gpuLauf, '#!/bin/bash\nN="$1"; shift\necho "gpu-lauf: Schloss $N (bild, Platz 1 von 2) nach 0 s" >&2\nsleep 18\n"$@"\n');
         const e4 = await fahreStation({ ...st0, geraet: "radeon", gpu: true, befehl: mitKarte(["[linse-gpu] amd/rdna-3"]), urteil: lies }, { ...c4, deckelMinS: 120 });
         pruef("LÄUFER ein Schloss, das nie kommt (gpu-lauf.sh schweigt beim Warten), ist UNGEMESSEN; der Deckel zählt erst ab dem Schloss",
-            e.ungemessen === true && /nie bekommen: gpu-lauf.sh schwieg 2 s/.test(e.grund) && e4.gruen === true && !e4.ungemessen, JSON.stringify([e, e4]));
+            e.ungemessen === true && /nie bekommen: gpu-lauf.sh schwieg 2 s/.test(e.grund) && apparatOffen(e.grund) && e4.gruen === true && !e4.ungemessen, JSON.stringify([e, e4]));
         // (3e) DAS WARTEN: die Minuten bis zur Zeile „gpu-lauf: Schloss …“ stehen als `warten` neben `minuten` (die Arbeit ist die Differenz)
         const c5 = { ...ctx("wartet"), gpuLauf: path.join(tmp, "wartet.sh"), stillS: 30 };
         fs.writeFileSync(c5.gpuLauf, '#!/bin/bash\nN="$1"; shift\necho "gpu-lauf: $N (zeit) wartet auf Vorfahrt" >&2\nsleep 3\necho "gpu-lauf: Schloss $N (zeit) nach 3 s" >&2\n"$@"\n');
@@ -7821,6 +7830,21 @@ async function selbsttest(o = {}) {
             pruef("EINTRAG `offen` zählt die Versuche des Apparats: „— offen, UNGEMESSEN“ und „Läufer starb“ ohne die laufende Probe tragen 1, dann 2; die laufende Probe, der Täter-Ort und die " +
                 "gerissene Frist tragen das Feld nie; ein Urteil räumt den Eintrag (vorher: kein Feld — die Runde zählte jeden als gemessen)",
                 o1 === 1 && o2 === 2 && frei && !mo.ungemessen["a#1"] && mo.je["a#1"].gruen === true, JSON.stringify([o1, o2, mo.ungemessen]));
+            // DAS SCHLOSS IST EINE LÜCKE DES APPARATS (pm-schloss-offen): die Texte wörtlich, wie die Sitzung sie ablegt — der Täter der
+            // GTX-Runde 3 am c445936d (35 Front-Stationen „blockiert“ ohne `offen`, die Runde zählte sie erledigt) und der stille Warter
+            const blockiert = "GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von 'omen-omen-saat-tore' nach 2713 s Warten) — ungemessen";
+            eintragen(mo, "s#1", U(blockiert));
+            const s1 = mo.ungemessen["s#1"].offen;
+            eintragen(mo, "s#1", U(blockiert));
+            pruef("EINTRAG `offen` am blockierten Schloss: „GPU-Schloss blockiert (Exit 75 …)“ trägt 1, dann 2 — UNGEMESSEN, nie ROT, die Runde fährt ihn nach (vorher: kein Feld, 35 Front-Stationen der GTX-Runde 3 zählten erledigt)",
+                s1 === 1 && mo.ungemessen["s#1"].offen === 2 && !mo.je["s#1"] && mo.ungemessen["s#1"].gruen === false, JSON.stringify([s1, mo.ungemessen["s#1"]]));
+            eintragen(mo, "t#1", U("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 900 s beim Warten"));
+            eintragen(mo, "u#1", U("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 900 s beim Warten — beendet, ungemessen"));
+            pruef("EINTRAG `offen` am Schloss, das nie kam: „GPU-Schloss nie bekommen“ (Sitzung und Läufer) trägt 1 — UNGEMESSEN, nie ROT, die Runde fährt ihn nach (vorher: kein Feld)",
+                mo.ungemessen["t#1"].offen === 1 && mo.ungemessen["u#1"].offen === 1 && !mo.je["t#1"] && !mo.je["u#1"], JSON.stringify([mo.ungemessen["t#1"], mo.ungemessen["u#1"]]));
+            const buch = messungLesen(JSON.stringify({ je: {}, ungemessen: { "v#1": U(blockiert), "w#1": U("Frist der Probe gerissen (60 s)"), "x#1": { ...U(blockiert), offen: 2 } } }));
+            pruef("BUCH die alte Schloss-Lücke ohne Feld (die 35 der GTX-Runde 3) liest sich mit offen 1, eine gezählte bleibt, die Frist bleibt ohne Feld",
+                buch.ungemessen["v#1"].offen === 1 && buch.ungemessen["x#1"].offen === 2 && buch.ungemessen["w#1"].offen === undefined, JSON.stringify(buch.ungemessen));
         }
         // KEIN STILLER RÜCKFALL: ein Prozess ohne Ende (hart getötet) macht den Konsum ungültig — beim Namen, nie still klein
         const ord = path.join(tmp, "getoetet.konsum");
