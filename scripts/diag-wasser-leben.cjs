@@ -298,6 +298,9 @@ function urteil(b) {
             if (!(mu.temperatur >= 0 && mu.schwimmFrames > 0)) rot("E2 BLIND", mu);
             if (!(ue.erster >= 0) || !(ue.traegt - ue.erster >= 2) || ue.wechsel !== 2 || Math.max(...ue.tagesgang)) rot("E4 KANTE", ue);
             if (!(me.kalt > 0) || me.traegt || !(me.tiefst > me.gefrier)) rot("E5 MEER", me);
+            // E6: das Eis trägt am Ufer, wo der Grund über dem Spiegel liegt (keine Säule friert) — der Täter `_eisAt`
+            const uf = (k.eis || {}).ufer || {};
+            if (!(uf.proben > 0) || uf.traegt) rot("E6 OHNE SÄULE (_eisAt)", uf);
             // stoffe.K3-2: der Schnee schmilzt über 0 °C und die Grenze liest ihn; die Lava erstarrt, am Wasser schneller
             const sm = k.schmelze || {};
             if (!(sm.pegel > 0.01 && sm.schmilzt > 0) || sm.gegen || !(sm.halt <= 0.001)) rot("S1 EINGEFROREN", sm);
@@ -600,6 +603,7 @@ function selbsttest() {
                 mutation: { temperatur: 5.3, schwimmFrames: 900 },
                 uebergang: { erster: 19, traegt: 26, wechsel: 2, tagesgang: [0, 0] },
                 meer: { tiefst: 1.3, gefrier: -1.89, traegt: 0, kalt: 46 },
+                ufer: { proben: 651, traegt: 0, hochCm: 0 },
             },
             schmelze: { pegel: 0.16, schmilzt: 3, gegen: 0, versatz: 178, weiss: 0.5, neuBau: 81, halt: 0 },
             erstarrung: [
@@ -705,6 +709,10 @@ function selbsttest() {
         ["E4 KANTE", ["koerper.eis.uebergang", { erster: 11, traegt: 11, wechsel: 1, tagesgang: [0, 1] }]],
         ["E5 MEER", ["koerper.eis.meer", { tiefst: -4.25, traegt: 15 }]],
         ["E5 MEER", ["koerper.eis.meer.kalt=", 0]],
+        // same.physik.feuer#1 an main 9f24b5b8: das Ufer-Blatt trug Eis ohne Säule — 651 von 651 Uferpunkten, bis 79,85 cm
+        // über dem Grund (die Station: der Fuß 33,66 cm über dem Spiegel)
+        ["E6 OHNE SÄULE (_eisAt)", ["koerper.eis.ufer", { proben: 651, traegt: 651, hochCm: 79.85 }]],
+        ["E6 OHNE SÄULE (_eisAt)", ["koerper.eis.ufer.proben=", 0]],
         // stoffe.K3-2 an der Basis b2c6c627: die Schneegrenze war Höhe allein (der Pegel stand), die glut-Achse eingefroren
         ["S1 EINGEFROREN", ["koerper.schmelze", { pegel: 0, schmilzt: 0 }]],
         ["S1 EINGEFROREN", ["koerper.schmelze.halt=", 0.16]],

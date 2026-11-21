@@ -370,6 +370,20 @@ async function wasserKoerper(o = {}) {
             winter: gang(),
             tier: ["wolf", "fuchs", "baer"].map((seele) => tierLage(seele, 8)).filter(Boolean),
         };
+        // (9b) OHNE SÄULE KEIN EIS (same.physik.feuer#1): am Ufer (±8 m, je 0,5 m) jeder Punkt, an dem die Wahrheit einen Spiegel
+        // nennt (das gezeichnete Ufer-Blatt reicht über den Rand), der Grund aber über ihm liegt — dort trägt kein Eis; trägt es,
+        // steht der Körper über dem Gelände (`hochCm`: Grund − Eis, der Fuß über einem Spiegel, den er nie berührt).
+        aus.eis.ufer = { proben: 0, traegt: 0, hochCm: 0 };
+        for (let i = -16; i <= 16; i++)
+            for (let j = -16; j <= 16; j++) {
+                const [ux, uz] = [x0 + i * 0.5, mz + j * 0.5];
+                const [s, g] = [r._koerperWasser(ux, uz, -Infinity), r._voxelSurfaceY(ux, uz)];
+                if (!(Number.isFinite(s) && g !== null && g >= s)) continue;
+                const U = aus.eis.ufer;
+                U.proben++;
+                const e = r._eisAt(ux, uz, NaN, Infinity);
+                if (e !== null) [U.traegt, U.hochCm] = [U.traegt + 1, Math.max(U.hochCm, R(100 * (g - e), 1))];
+            }
         // (10) DER ÜBERGANG: je Tag ab Saison 0,7 an der See-Mitte, ob das Bild Eis zeigt (über der Linie `null` an ihrer Säule,
         // `_eisLinien` wie der Stoff) und ob es trägt (`_eisAt`) — vom ersten Eis zum tragenden vergehen Tage, je Lage EIN
         // Wechsel; am Tag des ersten und des tragenden Eises ändern 24 Uhr-Lagen nichts (das Eis integriert den Tag).
