@@ -6652,7 +6652,7 @@
   },
   "karte2.erleben.kopplung.ein-ereignis": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.ein-ereignis#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.ein-ereignis#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.ein-ereignis#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.ein-ereignis#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.ein-ereignis#4 gtx: ungemessen (R10) · karte2.erleben.kopplung.ein-ereignis#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.ein-ereignis#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.ein-ereignis#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#1 gtx: Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.ein-ereignis#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#2 gtx: Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.ein-ereignis#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#3 gtx: Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.ein-ereignis#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.ein-ereignis#4 gtx: ungemessen (R10) · karte2.erleben.kopplung.ein-ereignis#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#5 gtx: Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.ein-ereignis#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.ein-ereignis#6 gtx: Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.ein-ereignis#1",
@@ -6670,8 +6670,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6689,8 +6690,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.ein-ereignis#3",
@@ -6707,8 +6709,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.ein-ereignis#4",
@@ -6743,8 +6746,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.ein-ereignis#6",
@@ -6761,14 +6765,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, koerper-core.js, scripts/lib/abnahme-urteil.cjs +18) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.erleben.kopplung.emergenz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.emergenz#1 radeon: ungemessen (R10) · karte2.erleben.kopplung.emergenz#1 gtx: ungemessen (R10) · karte2.erleben.kopplung.emergenz#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.emergenz#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.emergenz#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.emergenz#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.emergenz#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.emergenz#4 gtx: ungemessen (R10) · karte2.erleben.kopplung.emergenz#5 radeon: ungemessen (R10) · karte2.erleben.kopplung.emergenz#5 gtx: ungemessen (R10) · karte2.erleben.kopplung.emergenz#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.emergenz#6 gtx: ungemessen (R10) · karte2.erleben.kopplung.emergenz#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.emergenz#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.emergenz#1 radeon: ungemessen (R10) · karte2.erleben.kopplung.emergenz#1 gtx: ungemessen (R10) · karte2.erleben.kopplung.emergenz#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.emergenz#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.emergenz#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.emergenz#3 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.emergenz#4 radeon: ungemessen (R10) · karte2.erleben.kopplung.emergenz#4 gtx: ungemessen (R10) · karte2.erleben.kopplung.emergenz#5 radeon: ungemessen (R10) · karte2.erleben.kopplung.emergenz#5 gtx: ungemessen (R10) · karte2.erleben.kopplung.emergenz#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.emergenz#6 gtx: ungemessen (R10) · karte2.erleben.kopplung.emergenz#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.emergenz#7 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.emergenz#1",
@@ -6805,8 +6810,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.emergenz#3",
@@ -6823,8 +6829,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.emergenz#4",
@@ -6895,14 +6902,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.erleben.kopplung.epoche-ganz": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.epoche-ganz#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.epoche-ganz#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.epoche-ganz#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.epoche-ganz#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.epoche-ganz#1",
@@ -6920,8 +6928,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -6939,8 +6948,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.epoche-ganz#3",
@@ -6957,8 +6967,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.epoche-ganz#4",
@@ -6975,8 +6986,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.epoche-ganz#5",
@@ -6993,8 +7005,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.epoche-ganz#6",
@@ -7011,14 +7024,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, koerper-core.js +16) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.erleben.kopplung.geteilter-sinn": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.geteilter-sinn#1 radeon: ungemessen (R10) · karte2.erleben.kopplung.geteilter-sinn#1 gtx: ungemessen (R10) · karte2.erleben.kopplung.geteilter-sinn#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#7 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.geteilter-sinn#1 radeon: ungemessen (R10) · karte2.erleben.kopplung.geteilter-sinn#1 gtx: ungemessen (R10) · karte2.erleben.kopplung.geteilter-sinn#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#3 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#4 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#5 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#6 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.geteilter-sinn#7 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.geteilter-sinn#7 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.geteilter-sinn#1",
@@ -7055,8 +7069,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.geteilter-sinn#3",
@@ -7073,8 +7088,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.geteilter-sinn#4",
@@ -7091,8 +7107,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.geteilter-sinn#5",
@@ -7109,8 +7126,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.geteilter-sinn#6",
@@ -7127,8 +7145,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.geteilter-sinn#7",
@@ -7145,14 +7164,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +12) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.erleben.kopplung.klang": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.klang#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#1 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#6 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+   "beleg": "Maschine: 0 — offen: karte2.erleben.kopplung.klang#1 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#1 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#3 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#4 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#5 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.klang#6 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.klang#6 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.klang#1",
@@ -7170,8 +7190,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
      "ungemessen": true,
+     "r6": "konsum",
      "beide": true
     },
     {
@@ -7189,8 +7210,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.klang#3",
@@ -7207,8 +7229,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.klang#4",
@@ -7225,8 +7248,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.klang#5",
@@ -7243,8 +7267,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.klang#6",
@@ -7261,14 +7286,15 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, klang-core.js, scripts/lib/abnahme-urteil.cjs +14) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     }
    ]
   },
   "karte2.erleben.kopplung.wahrnehmung": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.4/12.3/12.4/12.2/12.2/14.3/13.7 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.kopplung.wahrnehmung#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.wahrnehmung#2 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.wahrnehmung#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.wahrnehmung#3 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.wahrnehmung#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.wahrnehmung#4 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.wahrnehmung#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.wahrnehmung#5 gtx: ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.wahrnehmung#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#6 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.6/12.1/12/12.1/12.1/12.2/14.6/12.3 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] amd/rdna-3 an 389a6496 radeon · gehalten: mit Witterung 50 m: 8/8 Risse (8 Jagden mit Hetze, bei 12.3/12.4/12.3/12.4/12.2/12.2/14.3/13.7 s) · Witterung aus (0 m): 0/8 Risse (0 Jagden mit Hetze) · first · [linse-gpu] nvidia/pascal an 18058dba gtx — offen: karte2.erleben.kopplung.wahrnehmung#2 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.wahrnehmung#2 gtx: Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.wahrnehmung#3 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.wahrnehmung#3 gtx: Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.wahrnehmung#4 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.wahrnehmung#4 gtx: Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.wahrnehmung#5 radeon: ungemessen (R10) — zuletzt an 31ea3847: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures weather · wie {\"creatures\":{\"vorher\":1,\"nachher\":0,\"fehlt\":[\"Quin\"],\"neu\":[],\"anders\":[]},\"weather\":\"undefined → \\ · karte2.erleben.kopplung.wahrnehmung#5 gtx: Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG · karte2.erleben.kopplung.wahrnehmung#6 radeon: ungemessen (R10) · karte2.erleben.kopplung.wahrnehmung#6 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#1",
@@ -7307,8 +7333,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#3",
@@ -7325,8 +7352,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#4",
@@ -7343,8 +7371,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#5",
@@ -7361,8 +7390,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 31ea3847: Start: spawn ENAMETOOLONG",
-     "ungemessen": true
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an f68dbf09: Start: spawn ENAMETOOLONG",
+     "ungemessen": true,
+     "r6": "konsum"
     },
     {
      "id": "karte2.erleben.kopplung.wahrnehmung#6",
@@ -38332,7 +38362,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 3785,
-  "konsum": 1109,
+  "konsum": 1139,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K3#1 headless",
@@ -38494,10 +38524,10 @@
    "wetter.K5#2 headless",
    "pflicht.C#1 headless"
   ],
-  "ohne": 2517
+  "ohne": 2487
  },
  "kopfVoll": "44446d65797ab71bb77976f2583f096bc69949e9",
- "zeit": "2026-11-21T11:29:56.360Z",
+ "zeit": "2026-11-21T11:37:01.410Z",
  "vorher": "44446d65",
  "bilanz": {
   "gewinn": [],
