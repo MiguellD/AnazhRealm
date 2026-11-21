@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T19:08:47.987Z",
+ "zeit": "2026-11-21T19:26:56.103Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kosmos.sternhimmel#1": {
@@ -2131,6 +2131,70 @@
    },
    "zeit": "2026-11-21T19:08:47.987Z",
    "abdruck": "f8f087c02bc6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.sport.koennen#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 55 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 55 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 0.94,
+   "grund": "Frist der Probe 55 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 55 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 55.2,
+   "fremd": {
+    "s": 57.7,
+    "takte": 26,
+    "fremdS": 77.39,
+    "kerne": 1.341,
+    "fensterKerne": 2.135,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      44.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.25
+     ]
+    ],
+    "dienerS": 34.55,
+    "diener": [
+     [
+      "System",
+      14.67
+     ],
+     [
+      "dwm.exe",
+      11.02
+     ]
+    ],
+    "geraetS": 32.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.38
+     ],
+     [
+      "svchost.exe",
+      13.73
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 130.22,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T19:26:56.103Z",
+   "abdruck": "eb201688ed4e",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
