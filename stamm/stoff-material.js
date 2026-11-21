@@ -44,8 +44,10 @@ class AnazhRealm_stoff_material {
     // DER HALM DER FERNE (w4-gras-saum, w4-gras-l2, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese),
     // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der waagrechte Abstand ihres Fußes (der Ursprung der
     // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das `_wieseAugeTakt` je Hauptbild legt), ihr
-    // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die Ebene ihres Hangs aus den waagrechten Achsen der Instanz, die Höhe des
-    // Auges über dem eigenen Boden), o ihre Ordnung (`_wieseOrdnung` über der Wort-Algebra des Stoffs: die Ziehung des Orts
+    // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die EBENE DES GESETZES aus der vierten Zeile der Instanz — `naht.fracht` x, y =
+    // gx, gz, `_wieseHang`: eine Funktion von Ort und Gesetz, nie der Stufe des Bodens; bis w28-pop-treue die Stand-Ebene aus den
+    // waagrechten Achsen der Instanz, sie würfelte an jedem Stufen-Wechsel des Chunks neu —, die Höhe des Auges über dem
+    // eigenen Boden), o ihre Ordnung (`_wieseOrdnung` über der Wort-Algebra des Stoffs: die Ziehung des Orts
     // `_ortZiehung`, Zug 0, geschichtet über dem Gitter der Wiese — dieselbe Rechnung wie die CPU), der Anteil a aus dem EINEN
     // Gesetz `_wieseFern` über der TSL-Algebra (der Takt in Zahlen, die Wahl der GPU als WGSL). Steht o unter a, steht das
     // Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu
@@ -73,8 +75,8 @@ class AnazhRealm_stoff_material {
             const ank = naht.anker;
             const auge = this._halmFerneAuge;
             const d = ank.xz.sub(auge.xz).length();
-            // die Ebene des Hangs: die waagrechten Achsen der Instanz liegen in ihr (`_nahWieseKachelDaten`, y += gx·x + gz·z)
-            const n = T.cross(naht.spalte(2), naht.spalte(0));
+            // die Ebene des Gesetzes (`_wieseHang`): ihre Normale (−gx, 1, −gz) aus der Fracht der Instanz (`_nahWieseBestand`)
+            const n = T.vec3(naht.fracht.x.negate(), 1, naht.fracht.y.negate());
             const v0 = ank.sub(auge.xyz);
             const o = AnazhRealm._wieseOrdnung(ank.x, ank.z, AnazhRealm._wortAlgebra(T));
             const A = AnazhRealm._windTsl(T);
@@ -3315,8 +3317,10 @@ class AnazhRealm_stoff_material {
     // `positionLocal = …positionNode…`, dann `positionLocal = instanzMatrix × positionLocal`), dort lesen positionLocal,
     // normalLocal und positionWorld den VORLAGEN-Raum. Jede InstancedMesh entsteht in `_instanzMesh`, also gilt das für
     // jeden Stoff einer Instanz. Die Naht trägt Mw = Objekt × Instanz-Matrix: `lage` die Welt-Lage des Vertex, `anker` die
-    // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `richtung(n)` eine Vorlagen-Richtung in
-    // der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
+    // des Instanz-Ursprungs, `skala` die Instanz-Skala, `spalte(i)` die Achsen, `fracht` die vierte Zeile der Instanz-Matrix
+    // (Element 3, 7, 11 — die Fracht ihres Bestands: die Ferne der Wiese trägt dort die Ebene des Gesetzes und ihre Ordnung,
+    // `_nahWieseBestand`; die Welt-Matrix des Objekts ist affin, ihre vierte Zeile reicht sie durch), `richtung(n)` eine
+    // Vorlagen-Richtung in der Welt und `vorlage(w)` einen Welt-Versatz (Meter, Welt-Richtung) zurück in die Vorlage (Spalten c_i ⟂: c_i·w / |c_i|²)
     // — sonst drehte und skalierte die Matrix ihn mit jeder Instanz (der Wind wehte in der Drehung seines Baums,
     // gate:foundry-impostor C4). Die Wurzel der Reihenfolge im Vendor (three.webgpu.min.js): `setupPosition` legt die
     // Zuweisung des positionNode auf den Stapel; Instanz-, Batch- und Skin-Knoten hängen ihr `positionLocal.assign(M × …)`
@@ -3341,6 +3345,7 @@ class AnazhRealm_stoff_material {
             lage: Mw.mul(T.vec4(T.positionLocal, 1.0)).xyz,
             skala: c0.length(),
             spalte: (i) => (i === 0 ? c0 : i === 1 ? c1 : c2),
+            fracht: T.vec3(Mw.element(0).w, Mw.element(1).w, Mw.element(2).w),
             richtung: (n) => merk(jeRichtung, n, (r) => T.normalize(Mw.mul(T.vec4(r, 0.0)).xyz)),
             vorlage: (w) =>
                 merk(jeVorlage, w, (v) =>

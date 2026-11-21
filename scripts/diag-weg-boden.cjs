@@ -235,7 +235,9 @@ function trittProbe(stoerung) {
         return i < 0 || j < 0 || i >= nah.N || j >= nah.N ? -1 : (nah.daten[(j * nah.N + i) * 2] - A.WEGE_KARTE.null) / A.WEGE_KARTE.voll; // prettier-ignore
     };
     // Je Ring EINE Kachel über der Feuerstelle: steht dort keine (der Null-Renderer baut die Wiese nicht), sät die
-    // Probe einen leeren Platzhalter — die Probe zählt, ob der Abbau sie fallen lässt (der Takt baut Fehlendes neu).
+    // Probe einen leeren Platzhalter — die Probe zählt, ob der Abbau sie fallen lässt: ihr Satz gilt als alt, sie steht, bis
+    // ihr Takt den Neubau an ihre Stelle setzt (w28-pop-treue, `_nahWieseKachelFaellt` · `_nahStreuKachelFaellt`; bis dahin
+    // verschwand sie sofort aus der Karte). Eine Kachel, deren Satz beim Säen schon alt war, zählt nicht.
     const vorWiese = st.nahWiese;
     const vorStreu = st.nahStreu;
     const eigenWiese = !vorWiese;
@@ -247,17 +249,23 @@ function trittProbe(stoerung) {
     const kw = `${Math.floor(o.x / KW)},${Math.floor(o.z / KW)}`;
     const ks = `${Math.floor(o.x / KS)},${Math.floor(o.z / KS)}`;
     const gesaet = new Set();
+    const warAlt = new Set();
     const saeen = () => {
+        warAlt.clear();
         for (const [ring, key, k] of [
             [st.nahWiese, kw, { meshes: null, quellen: null }],
             [st.nahStreu, ks, { key: ks, senken: new Set(), zustand: null }],
-        ])
-            if (!ring.kacheln.has(key)) {
+        ]) {
+            const da = ring.kacheln.get(key);
+            if (!da) {
                 ring.kacheln.set(key, k);
                 gesaet.add(k);
-            }
+            } else if (gesaet.has(da)) da.satzAlt = false; // der eigene Platzhalter gilt wieder
+            else if (da.satzAlt) warAlt.add(da);
+        }
     };
-    const gefallen = () => (st.nahWiese.kacheln.has(kw) ? 0 : 1) + (st.nahStreu.kacheln.has(ks) ? 0 : 1);
+    const gefallen = () =>
+        [st.nahWiese.kacheln.get(kw), st.nahStreu.kacheln.get(ks)].filter((k) => !k || (k.satzAlt && !warAlt.has(k))).length;
     const out = { ort: o };
     saeen(); // vor dem Bau: auf gebautem Boden setzt der Studio-Platz die Fläche schon im Spawn
     const entry = r.spawnArchitecture(

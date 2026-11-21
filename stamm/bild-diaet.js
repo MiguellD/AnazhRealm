@@ -203,18 +203,26 @@ AnazhRealm._diaetGang = function (ro, nbs) {
     // (10) DIE OBJEKT-VERWEISE (E1): ein Verweis je Zeichen-Objekt (`reference`, Takt object — der Stoff-Wert `_stoffWert`,
     // `material.userData.…`) liest seinen Wert erst im Refresh; equals() sieht userData nie. Ein fester Stoff-Wert (die Art-
     // Größe des Winds) wechselt nie, ein atmender (die Membran des Tors: Zeit · Aktiv · Puls · Tiefe) je Bild.
+    // Ein Verweis, der eine GETEILTE Uniform speist, trägt keinen Wert je Objekt (der Renderer: die Belichtung, (12)).
+    const geteilt = (n) => !!(n.node && n.node.groupNode && n.node.groupNode.shared === true);
     const verweise = nbs.updateNodes.filter(
         (n) =>
             n.getUpdateType() === "object" &&
             typeof n.getValueFromReference === "function" &&
             n.isMaterialReferenceNode !== true &&
             n.object === null &&
-            n.count === null
+            n.count === null &&
+            !geteilt(n)
     );
     // (11) DER OBJEKT-GANG (E1): die Knoten im Takt object (Welt-Matrix, Knochen, Stoff-Verweise) und die Stellen der eigenen
     // Gruppen — Render-Objekte desselben Programms tragen ihre eigenen Gruppen an derselben Stelle (`createBindings`).
-    // NACH EINGANG (E-Diät, 19.10.): ein FREMDER Verweis (festes Objekt, geteilte Uniform: Schatten-Bias · normalBias · Radius ·
-    // mapSize · Kaskaden des Lichts) trägt EINEN Wert je Render-Abschnitt — der Gang stellt ihn (12), nie das Objekt; ein
+    // NACH EINGANG (E-Diät, 19.10.): ein FREMDER Verweis (geteilte Uniform — ein festes Objekt: Schatten-Bias · normalBias · Radius ·
+    // mapSize · Kaskaden des Lichts; oder der Renderer, w28-pop-treue: r184 `RendererReferenceNode` `toneMappingExposure`, die
+    // Vorbelichtung jedes Szenen-Programms, Objekt null, Quelle `updateReference` → der Renderer) trägt EINEN Wert je
+    // Render-Abschnitt — der Gang stellt ihn (12), nie das Objekt. Bis w28-pop-treue fiel die Belichtung als „Objekt null“ in
+    // die Regung (und in die Verweise je Objekt, die sie am Objekt nie fanden): ihre Gruppe lud im Bild nach jedem Wechsel den
+    // Wert davor, solange kein Objekt sich regte — das Szenen-Ziel stand ×k_alt, sein Rückleser teilte durch k_neu (der Pop-Gang
+    // brach an der Treue, gate:kamera-treue BELICHTUNG 0,52 gleich dem vollen Refresh); ein
     // STOFF-Verweis, dessen Eigenschaft equals() prüft (r184 `refreshUniforms`), ist gleich, solange der Stoff-Stand seines
     // Render-Objekts gleich ist (13 `_diaetStoffVerpasst` — equals() merkt je STOFF, nie je Render-Objekt). Die REGUNG ist der Rest (Lage, Knochen, Objekt-Verweise, jeder Knoten ohne Zuordnung). Gemessen am Kopf e93134f4 (Radeon,
     // Genesis Third, Stand): am Leib 28 Objekt-Knoten je Gang, 11 fremde und 5–9 Stoff-Verweise; 108 fremde Gänge je Frame für
@@ -235,10 +243,8 @@ AnazhRealm._diaetGang = function (ro, nbs) {
             u &&
             n.isMaterialReferenceNode !== true &&
             typeof n.getValueFromReference === "function" &&
-            n.object != null &&
             n.count === null &&
-            u.groupNode &&
-            u.groupNode.shared === true
+            geteilt(n)
         )
             fremd.push(n);
         else if (u && n.isMaterialReferenceNode === true && ru.has(n.property)) stoffUniform.add(u);
@@ -600,7 +606,8 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     }
     // (12) DER FREMDE VERWEIS (E-Diät, s. (11)): EIN Wert je Render-Abschnitt, gestempelt an seiner geteilten Uniform (jedes
     // Programm trägt seinen eigenen Verweis-Knoten auf dieselbe Uniform) — vor den Gruppen, die sie laden. `_schattenBias` und
-    // die Kaskaden-Karten setzen bias · normalBias · mapSize zur Laufzeit: der Wert folgt im nächsten Abschnitt.
+    // die Kaskaden-Karten setzen bias · normalBias · mapSize zur Laufzeit: der Wert folgt im nächsten Abschnitt; die Belichtung
+    // (`_dayNightApplyBelichtung`, der EINE Schreiber) steht im Abschnitt nach ihrem Wechsel, das Szenen-Ziel trägt k = kBild.
     for (const n of k.fremd) {
         const u = n.node;
         if (u._anazhFremdRid === rid && u._anazhFremdRuf === ruf) continue;
