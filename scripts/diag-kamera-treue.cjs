@@ -284,8 +284,8 @@ function buehne() {
         // DIE BELICHTUNG DER BÜHNE (w28-pop-treue): der Boden liest die Belichtung des Renderers wie das Szenen-Ziel der Welt
         // (die Vorbelichtung `_vorBelichtung().k` = r184 `toneMappingExposure`, ein Verweis auf den Renderer in der geteilten
         // Gruppe des Renders) — die Bühne steht bei 1 (jedes Bild der übrigen Proben unverändert), BELICHTUNG (f) wechselt sie.
-        const belichtungAlt = rend.toneMappingExposure;
-        rend.toneMappingExposure = 1;
+        // Die Blende bestellt die Bühne bei der Welt (`_blendeBestellen`, der EINE Schreiber), am Ende gibt sie sie dem Gesetz zurück
+        r._blendeBestellen({ k: 1 });
         const szene = new T.Scene();
         const licht = new T.DirectionalLight(0xffffff, 3);
         licht.position.set(6, 12, 4);
@@ -619,11 +619,11 @@ function buehne() {
                     // Wechsel ändert das Bild. Die Diät-Linse nennt den Verweis, dessen Gruppe den Wert vor seiner Quelle lud.
                     await mitDiaet(immer);
                     const vorBild = await mitDiaet(null);
-                    rend.toneMappingExposure = 1.6;
+                    r._blendeBestellen({ k: 1.6 });
                     let belichtet = null;
                     const zb = await gezaehlt(async () => (belichtet = await mitDiaet(null)));
                     const wahrB = await mitDiaet(immer);
-                    rend.toneMappingExposure = 1;
+                    r._blendeBestellen({ k: 1 });
                     await mitDiaet(immer);
                     belichtung[bundle ? "replay" : "direkt"] = { diaet: gleich(belichtet, wahrB), blind: gleich(vorBild, wahrB), alt: Object.keys(zb.geteiltA || {}) };
                 }
@@ -819,7 +819,7 @@ function buehne() {
             rend._renderObjectDirect = odRoh;
             rend._renderScene = spielSzene;
             rend.shadowMap.enabled = schattenAlt;
-            rend.toneMappingExposure = belichtungAlt;
+            r._blendeBestellen(null);
             rend.setAnimationLoop = loopRoh;
             if (loopVerlangt) rend.setAnimationLoop(loopVerlangt);
             if (rt.dispose) rt.dispose();
