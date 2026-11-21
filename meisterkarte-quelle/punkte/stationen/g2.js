@@ -1908,12 +1908,7 @@ const BEWOHNER_SITZUNG = { sek: 90, befehl: [
 // ihm näher als jedem anderen Ziel der Stunde; FEHLT = ein Bewohner des Solls ohne gezeichneten Stand ≤ R_M am Ort; DOPPELT =
 // ein Bewohner mit zwei Hüllen in der Szene oder zwei Bewohner mit einem Samen
 async function dorfZaehlung(r, T) {
-    // DIE UHREN NACH DEM SOLL DES GESETZES (pm-front-f1; GTX F68: jede Stichprobe ±10 %, niemand fehlt, doppelt 0 — ROT allein an
-    // „Σ Soll 18 < 20“, die Uhr 3 trug Soll 0): aus den Wenden des Tags (Nacht 3, Werk 8–17, Abend 18–20) die VIER Uhren, an denen der
-    // Plan der Stunde (`_bewohnerSoll`) die meisten Bewohner draußen an einem Ort führt — die Zählung misst, wo das Gesetz Menschen stellt
-    const KANDIDATEN = [3, 8, 10, 12, 15, 18, 20];
-    let UHREN = [3, 10, 15, 20];
-    const ORTE_N = 5, R_M = 10;
+    const UHREN = [3, 10, 15, 20], ORTE_N = 5, R_M = 10;
     const s = r.state, wm = s.worldMeta, pm = s.playerMesh.position, A = r.constructor;
     // DAS START-DORF BESTELLEN (17.11., Radeon 389a6496: „kein Start-Dorf“ an bevoelkerung und kollektiv — die Grundstellung der
     // Sitzung spielte das Dorf zurück, `umstellen --ort genesis` baut es nicht; die Probe bewohner bestellt es selbst, wie hier):
@@ -1947,7 +1942,6 @@ async function dorfZaehlung(r, T) {
     // den fünf Orten
     const amWagen = (b, z) => !!(z && z.ziel && b.wagen && b.wagen.entry && z.ziel === b.wagen.entry.position);
     const zielVon = (b, h) => { const z = r._bewohnerSoll(b, h); return z.drinnen || !z.ziel || amWagen(b, z) ? null : z.ziel; };
-    UHREN = KANDIDATEN.map((h) => [h, L.reduce((n, b) => n + (zielVon(b, h) ? 1 : 0), 0)]).sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 4).map((x) => x[0]).sort((a, b) => a - b);
     const summe = new Map();
     for (const h of UHREN) for (const b of L) { const z = zielVon(b, h); if (!z) continue; const e = summe.get(schl(z)) || { x: z.x, z: z.z, n: 0 }; e.n++; summe.set(schl(z), e); }
     const orte = [];
