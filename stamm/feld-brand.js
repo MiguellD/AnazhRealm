@@ -125,7 +125,7 @@ class AnazhRealm_feld_brand {
     // Narbe und Flammen lesen (`_brandWeg`, auf `masseGitter`² Punkten, gewichtet mit der Maske, `_brandBettFn`): ausgebrannt
     // das ganze Holz, vom Regen gelöscht der Teil hinter der Front. Davon bleibt der Mineral-Anteil des Gesetzes als ASCHE am
     // Boden (`BRAND.mineral.gesamt`, Rothermels S_T — derselbe, der die Reaktion mindert; die Tat `brand` trägt sie,
-    // `_brandArbeit`), der Rest steigt als RAUCH — im Bild tragen ihn die Ballen: `_brandBild` misst seinen Strom an der Front,
+    // `_brandArbeit`), der Rest steigt als RAUCH — im Bild tragen ihn die Ballen: `_brandStrom` misst ihn an der Front,
     // `_brandRauch` gibt ihn weiter. Bis front-brand war die Asche eine Decke ohne Masse und der Rauch eine Zahl von Ballen je
     // Sekunde (gate:stand-takt --narbe N8: die optische Masse eines Ballens wuchs im Steigen × 1,58, volle ↔ halbe Last × 1,41).
     _brandMasse(b, t = this._brandUhr) {
@@ -150,6 +150,44 @@ class AnazhRealm_feld_brand {
         const brannte = b.kg * teil;
         const asche = brannte * B.mineral.gesamt;
         return { holz: b.kg, brannte, asche, rauch: brannte - asche };
+    }
+
+    // DER STROM DER FRONT (front-brand, same.physik.reaktion#1) → kg Holz je Sekunde, die die Front der Zelle zur Uhr t verzehrt:
+    // die Fläche, die ihre Ellipsen im Bett der Zelle je Sekunde überstreichen — ∫ R(θ)·r(θ) dθ in `masseWinkel` Strahlen (je
+    // Eintritt seine Ellipse, wo keine andere sie schon verzehrte, gewogen mit der Maske des Betts wie im Buch `_brandMasse`) —
+    // mal die Masse je m² Bett. ER HÄNGT NIE AM BILD: bis hier zählte ihn `_brandBild` in den Winkeln, mit denen es die Front
+    // für das Auge abtastet, und `_brandRauch` gab ihn im Takt des Bilds weiter — 100 m vom Brand trug die Fahne 78 % ihres
+    // Rauchs, bei einem Bild von 250 ms 38 % (gate:stand-takt --narbe N8-BILD).
+    _brandStrom(b, t) {
+        const [N, K, G] = [AnazhRealm.BRAND.masseWinkel, AnazhRealm.LIFE_FIELD.cell, AnazhRealm.BRAND.masseGitter];
+        const tau = t - b.t0;
+        if (!(tau > 0 && b.R > 0)) return 0;
+        const [x0, z0, [px, pz]] = [b.cx * K, b.cz * K, b.kopf];
+        const bett = this._brandBettFn(b.bett, b.cx, b.cz);
+        if (bett && !(b.bettM2 > 0)) {
+            let n = 0;
+            for (let k = 0; k < G * G; k++)
+                n += bett((b.cx + ((k % G) + 0.5) / G) * K, (b.cz + (Math.floor(k / G) + 0.5) / G) * K);
+            b.bettM2 = (n / (G * G)) * K * K; // die Fläche ihres Betts im Maß der Maske
+        }
+        const m2 = bett ? b.bettM2 : K * K;
+        if (!(m2 > 0)) return 0;
+        const [E, weg, reich] = [
+            b.ein || [b.ex, b.ez],
+            b.ein && this._brandWeg(b, b.ecc, px, pz),
+            tau * b.R * (1 - b.ecc),
+        ];
+        let flaeche = 0;
+        for (let j = 0; j < E.length; j += 2)
+            for (let i = 0; i < N; i++) {
+                const w = Math.PI * ((2 * i + 1) / N - 1);
+                const [c, sn] = [Math.cos(w), Math.sin(w)];
+                const Rt = (b.R * (1 - b.ecc)) / (1 - b.ecc * c);
+                const [x, z] = [E[j] + tau * Rt * (px * c - pz * sn), E[j + 1] + tau * Rt * (pz * c + px * sn)];
+                if (x < x0 || x >= x0 + K || z < z0 || z >= z0 + K || (weg && weg(x, z) < reich - 0.01)) continue;
+                flaeche += tau * Rt * Rt * (bett ? bett(x, z) : 1);
+            }
+        return ((b.kg / m2) * flaeche * 2 * Math.PI) / N;
     }
 
     // DAS BETT EINER ZELLE ALS FLÄCHE (w28-lava-nachlauf) → null (die ganze Zelle trägt Bett) oder die Funktion (x, z) ∈ [0, 1]:
@@ -710,7 +748,7 @@ class AnazhRealm_feld_brand {
             const umfang = Math.ceil((2 * Math.PI * b.R * (t - b.t0)) / B.abstandMinM);
             const N = Math.max(B.winkelMin, Math.min(B.winkel, Math.round((B.winkel * B.nahM) / d), umfang));
             const wt = tafel(N);
-            let [s, naechste, vx, vz, flaeche] = [0, 0, null, null, 0];
+            let [s, naechste, vx, vz] = [0, 0, null, null];
             const bett = this._brandBettFn(b.bett, b.cx, b.cz); // die Flamme steht, wo Bett liegt
             const [E, weg] = [b.ein || [b.ex, b.ez], b.ein && this._brandWeg(b, b.ecc, px, pz)]; // je Eintritt seine Ellipse, gezeichnet, wo keine andere sie schon verzehrte
             for (let j = 0; j < E.length; j += 2)
@@ -724,9 +762,6 @@ class AnazhRealm_feld_brand {
                     if (vx !== null) s += Math.sqrt((x - vx) * (x - vx) + (z - vz) * (z - vz));
                     [vx, vz] = [x, z];
                     if (x < x0 || x >= x0 + K || z < z0 || z >= z0 + K || (bett && bett(x, z) < 0.5)) continue;
-                    // DER STROM DER FRONT (`_brandMasse`): die Fläche, die sie je Sekunde verzehrt, ist ∫ R(θ)·r(θ) dθ über ihre
-                    // Stücke in der Zelle und auf dem Bett — dieselben Punkte, auf denen ihre Flammen stehen
-                    if (i) flaeche += Rt * r;
                     if (s < naechste) continue;
                     const lang = 0.0775 * Math.pow(b.iw * Rt, 0.46);
                     naechste = s + Math.max(B.abstandMinM, B.abstand * lang);
@@ -745,8 +780,21 @@ class AnazhRealm_feld_brand {
                     fl.push(f);
                 }
             if (fl.length > n0) {
-                // `strom`: das Holz, das die Front der Zelle je Sekunde verzehrt (kg/s: Last × Fläche je Sekunde) — ihr Rauch
-                qu.push({ b, von: n0, bis: fl.length, strom: (b.w * flaeche * 2 * Math.PI) / N });
+                // `holz`: was die Front der Zelle seit ihrem letzten Bild verzehrte (kg) — ihr Rauch. Ihr Strom (`_brandStrom`, kg/s),
+                // gemessen einmal je `schrittS` der Welt-Uhr zur Mitte dieser Sekunde (die Kosten trägt die Änderung, Gebot 7), mal
+                // die Spanne an der Uhr der WELT, die die Front treibt — nie am Takt des Bilds. Tritt die Zelle neu ins Bild, zählt
+                // die letzte Sekunde (höchstens seit ihrem Zünden) mit dem Strom zu deren Mitte: Rauch von früher bringt sie nicht mit.
+                const S = AnazhRealm.BRAND.schrittS;
+                if (!(t < b.stromBis)) [b.strom, b.stromBis] = [this._brandStrom(b, t + S / 2), t + S];
+                const neu = !(t - b.rauchT <= S);
+                const seit = neu ? Math.max(b.t0, t - S) : b.rauchT;
+                qu.push({
+                    b,
+                    von: n0,
+                    bis: fl.length,
+                    holz: (neu ? this._brandStrom(b, (seit + t) / 2) : b.strom) * (t - seit),
+                });
+                b.rauchT = t;
                 // DAS LICHT STEHT BEI DEN FLAMMEN (w28-brand-bild): 1 m über der stärksten der Zelle — bis hier über der Zell-Mitte
                 let k = n0;
                 for (let i = n0 + 1; i < fl.length; i++) if (fl[i].I > fl[k].I) k = i;
@@ -758,17 +806,17 @@ class AnazhRealm_feld_brand {
         this._brandRauch(dt, qu, wind);
     }
 
-    // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild und dem Strom ihrer
-    // Front (`strom` kg Holz je Sekunde). Je Zelle und Sekunde `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist
+    // DIE FAHNE DES BRANDS (`_brandBild`): `qu` die glühenden Zellen mit ihren Flammen [von, bis) im Bild und dem Holz, das ihre
+    // Front seit ihrem letzten Bild verzehrte (`holz` kg). Je Zelle und Sekunde `rauch.jeS` × Glut Ballen an einer ihrer Flammen (der Same ist
     // der Zähler der Fahne, kein Zufall der Bild-Uhr), höchstens `rauch.max` im Himmel (der älteste weicht dem neuen); jeder
     // steigt, wächst, verdünnt und zieht (`_windAt` am Ballen, zur Welt-Uhr wie die Front, die ihn trägt).
-    // DER BALLEN TRÄGT DIE MASSE SEINES RAUCHS (same.physik.reaktion#1, `_brandMasse`): was die Front in seinem Takt verzehrt,
+    // DER BALLEN TRÄGT DIE MASSE SEINES RAUCHS (same.physik.reaktion#1, `_brandMasse`): was die Front seit dem letzten verzehrte,
     // ohne die Asche (`m` kg). Sichtbar ist sein Schwebstoff (`BRAND.partikel`: `jeKg` kg je kg verbranntem Holz, mit dem
     // Auslösch-Querschnitt `km` m² je kg): die optische Dicke über seine Fläche ist km × Schwebstoff — im Maß des Rauch-Bilds
     // (`_rauchStoff`: τ im Kern, die Dicke (1 − ρ²)^profil) steht im Kern τ = `tr2` ÷ r², tr2 = km × Schwebstoff × (profil + 1)
     // ÷ π. Seine Deckung ist 1 − e^(−τ) (Beer-Lambert) und fällt im Wachsen mit 1 ÷ r²: der Ballen verdünnt, er verliert und
     // erfindet keinen Rauch. Ein frischer Ballen deckt höchstens `a0` — trägt er mehr, ist er größer (dieselbe Masse über
-    // mehr Fläche); deckt er unter `aKill`, steigt keiner. Bis front-brand deckte jeder Ballen jeder Last anfangs `a0` und
+    // mehr Fläche); deckt er unter `aKill`, wartet sein Rauch auf den nächsten. Bis front-brand deckte jeder Ballen jeder Last anfangs `a0` und
     // verdünnte mit b0 ÷ s: ein dünnes Bett rauchte wie ein dichtes, und im Steigen wuchs der Rauch.
     _brandRauch(dt, qu, wind = (x, z) => this._windAt(x, z, this.state.spielZeit)) {
         const st = this.state;
@@ -782,21 +830,29 @@ class AnazhRealm_feld_brand {
         const anteil = R.max / (Math.max(1, qu.length) * R.lebenS);
         const [B, W] = [AnazhRealm.BRAND, AnazhRealm.RAUCH_BILD];
         const [optik, tau0] = [(B.partikel.km * B.partikel.jeKg * (W.profil + 1)) / Math.PI, -Math.log(1 - R.a0)];
+        // geboren wird ein Ballen erst zwischen Tod und Kappe (das geometrische Mittel von `aKill` und `a0`): an der Schwelle
+        // selbst verdünnte ihn sein erstes Bild unter die Sicht — er stürbe, ehe ihn ein Auge sah, und sein Rauch mit ihm
+        const aGeburt = Math.sqrt(R.aKill * R.a0);
         for (const q of qu) {
-            const voll = R.jeS * q.b.glut;
+            const b = q.b;
+            const voll = R.jeS * b.glut;
             const rate = Math.min(voll, anteil);
             const k = rate > 0 ? Math.min(R.kMax, Math.sqrt(voll / rate)) : 1;
-            const holz = rate > 0 ? q.strom / rate : 0; // kg Holz, die die Front im Takt EINES Ballens verzehrt
-            const [m, tr2] = [holz * (1 - B.mineral.gesamt), holz * optik];
-            q.b.rauchSchuld = (q.b.rauchSchuld || 0) + rate * s;
-            for (; q.b.rauchSchuld >= 1; q.b.rauchSchuld--) {
+            // DIE SCHULD DER MASSE (`rauchKg`): das Holz, das die Front seit dem letzten Ballen verzehrte (`holz` je Bild, gezählt an
+            // der Uhr der Welt). Der Ballen nimmt sie mit; deckt er unter der Sicht, bleibt sie beim nächsten.
+            b.rauchKg = (b.rauchKg || 0) + q.holz;
+            b.rauchSchuld = (b.rauchSchuld || 0) + rate * s;
+            for (; b.rauchSchuld >= 1; b.rauchSchuld--) {
+                const holz = b.rauchKg / Math.floor(b.rauchSchuld); // die Schuld teilt sich auf die Ballen dieses Bilds
+                const [m, tr2] = [holz * (1 - B.mineral.gesamt), holz * optik];
                 const h = Math.imul(++st.brandRauch.n, 2654435761) >>> 0;
                 const f = fl[q.von + (h % (q.bis - q.von))];
                 // der Ballen entsteht ÜBER der Spitze seiner Flamme (sein Fuß an ihr): bis front-brand lag seine Mitte an der
                 // Spitze — mit dem Radius `b0` × Länge hüllte er die Flamme ein, die ihn trägt (am Tag ein graues Knäuel)
                 const b0 = Math.max(R.b0 * f.lang * k, Math.sqrt(tr2 / tau0) / R.size);
                 const a = 1 - Math.exp(-tr2 / (R.size * b0) ** 2);
-                if (a < R.aKill) continue; // unter der Sicht: kein Ballen
+                if (a < aGeburt) continue; // unter der Sicht: sein Rauch bleibt beim nächsten Ballen
+                b.rauchKg -= holz;
                 if (T.length >= R.max) T.shift(); // die ältesten Ballen verwehen, der Fuß der Fahne bleibt dicht
                 const y = f.y + f.lang + b0 * R.size;
                 T.push({
@@ -1088,7 +1144,10 @@ AnazhRealm.BRAND = Object.freeze({
     // misst (32² Punkte, ½ m); der Schwebstoff des Rauchs — `jeKg` kg je kg verbranntem trockenem Brennstoff (Andreae & Merlet
     // 2001, Global Biogeochem. Cycles 15: Savanne und Grasland, Gesamt-Schwebstoff 8,3 g/kg) mit dem Auslösch-Querschnitt
     // `km` m²/kg (Mulholland & Croarkin 2000, Fire and Materials 24: 8,7 m²/g für Rauch flammender Verbrennung)
+    // `masseWinkel` die Strahlen, in denen `_brandStrom` die Front abtastet (bei der größten Exzentrizität, lbMax 8 → 0,992,
+    // auf 0,1 % genau)
     masseGitter: 32,
+    masseWinkel: 96,
     partikel: Object.freeze({ jeKg: 0.0083, km: 8700 }),
     lbMax: 8,
     nachbarn: Object.freeze(

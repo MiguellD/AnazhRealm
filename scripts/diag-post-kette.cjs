@@ -2095,7 +2095,7 @@ function rauchProbe(ort, P) {
             // die Fahne des Brands: EINE glühende Zelle mit EINER Flamme unter dem Ballen, der echte Leser legt den Satz an
             st.brandRauch = { teilchen: [], n: 0 };
             r._brandFlammen = [{ x: M.x, y: M.y - 3, z: M.z, lang: 1, I: 500 }];
-            const zelle = [{ b: { glut: 1 }, von: 0, bis: 1, strom: 0.2 }]; // ihre Front verzehrt 0,2 kg Holz je Sekunde: der Ballen trägt Masse (`_brandRauch`)
+            const zelle = [{ b: { glut: 1 }, von: 0, bis: 1, holz: 0.02 }]; // ihre Front verzehrt 0,02 kg Holz je Bild (0,2 kg/s): der Ballen trägt Masse (`_brandRauch`)
             for (let i = 0; i < 20 && !st.brandRauch.teilchen.length; i++) r._brandRauch(0.1, zelle, () => ({ x: 1, z: 0, ms: 1 }));
             const brand = leser("brandRauchSatz", st.brandRauch.teilchen, R.steigMs);
             [st.brandRauch, r._brandFlammen] = [vor.brandRauch, vor.flammen];

@@ -1244,6 +1244,10 @@ const ausserBand = (x) => !!x && x.soll > 0 && (x.max > NARBE_SCHEIN_MAX * x.sol
 // die Fahne (Masse, optische Masse, Erhalt, Verhältnis voll ÷ halb). Gemessen am Stand vor front-brand (main 9502aa0e): die Zelle
 // trägt keine Masse, das Gesetz kein Buch, die Tat keine Asche, die Ballen keine Masse — ihre optische Masse je kg Rauch-Strom
 // steht bei voller Last × NARBE_MASSE_TAETER.proportional der halben, und im Steigen wächst sie × NARBE_MASSE_TAETER.erhalt.
+// N8-BILD — die Masse der Fahne hängt nie am Bild: dieselbe Fahne mit dem Auge 100 m ab (`fern`: die Front in wenigen Winkeln),
+// bei einem Bild von 250 ms (`lahm`) und in den ersten 3 s (`jung`: schwacher Strom, die Zelle tritt erst ins Bild) trägt die
+// Masse ihres Stroms im Band `strom`. Am Stand 44d954be2 zählte `_brandBild` den Strom in den Winkeln, mit denen es die Front
+// für das Auge abtastet, und `_brandRauch` gab ihn im Takt des Bilds weiter (fern 0,884 von 1,135 kg, lahm 0,435 von 1,134 kg).
 const NARBE_MASSE = { holz: 0.01, bilanz: 0.001, front: 0.03, strom: 0.1 };
 const nahBei = (x, soll, tol) => Number.isFinite(x) && Number.isFinite(soll) && Math.abs(x - soll) <= tol * Math.abs(soll);
 function masseUrteil(b) {
@@ -1268,6 +1272,7 @@ function masseUrteil(b) {
         nahBei(m.tat, m.mineral * m.soll, T.holz) ? "" : `N8-ASCHE: die Tat \`brand\` der ausgebrannten Zelle trägt ihre Asche nicht: kg ${m.tat} ↔ ${Math.round(m.mineral * m.soll * 1e3) / 1e3} kg (Mineral ${m.mineral} × Holz ${m.soll} kg)`,
         ...je(v, "volle Last"),
         ...je(h, "halbe Last"),
+        ...[["fern", "das Auge 100 m ab"], ["lahm", "das Bild in 250 ms"], ["jung", "die ersten 3 s"]].map(([k, was]) => ((x) => (x && x.strom > 0 && nahBei(x.masse, x.strom, T.strom) ? "" : `N8-BILD: die Masse der Fahne hängt am Bild (${was}): Σ m ${x?.masse} kg (${x?.ballen} Ballen, davon gehalten ${x?.haelt} kg) ↔ Strom der Front ${x?.strom} kg in 3 s (verlangt ± ${T.strom * 100} %; stamm/feld-brand.js \`_brandStrom\` · \`_brandRauch\`)`))(m.fahne?.[k])), // prettier-ignore
         nahBei(verh, 1, T.strom) ? "" : `N8-PROPORTIONAL: die Rauchmenge im Bild folgt der Masse nicht: optische Masse je kg Rauch-Strom bei voller Last × ${verh} der halben (voll ${v?.optisch} m² ÷ ${v?.strom} kg, halb ${h?.optisch} m² ÷ ${h?.strom} kg; verlangt 1 ± ${T.strom})`,
         m.mutante && !nahBei(m.mutante.erhalt, 1, T.strom) && !nahBei(m.mutante.optisch, m.mutante.soll, T.strom) ? "" : `MUTANTE-N8: mit der Deckung ohne Masse (a0 × b0 ÷ s) liest die Linse Erhalt × ${m.mutante?.erhalt} und τ·A ${m.mutante?.optisch} ↔ ${m.mutante?.soll} m² — sie misst die Masse der Ballen nicht`,
     ].filter(Boolean);
@@ -1605,29 +1610,65 @@ async function narbeSeite(MESS) {
         };
         const [W8, R8, P8] = [C.RAUCH_BILD, B.bild.rauch, B.partikel];
         const optisch = (p) => (-Math.log(1 - Math.min(W8.deckMax, p.a)) * Math.PI * (R8.size * p.s) ** 2) / (W8.profil + 1);
-        const fahne = () => {
-            for (let i = 0; i < 10; i++) schritt();
+        // das Holz, das die Front der Zelle zwischen t1 und t2 verzehrte (kg): ihr Bett auf einem Gitter von N² Punkten ÜBER DEM BRAND
+        // (das Quadrat um den Eintritt, so weit der Kopf lief — der junge Brand misst Dezimeter), gewogen mit der Maske des Betts
+        const bettM2 = new Map();
+        const verzehrtKg = (q, t1, t2, N = 384) => {
+            const bett = r._brandBettFn(q.bett, q.cx, q.cz);
+            const k = q.cx + "," + q.cz;
+            if (!bettM2.has(k)) {
+                let n = 0;
+                for (let i = 0; i < 64 * 64; i++) n += bett ? bett((q.cx + ((i % 64) + 0.5) / 64) * cs, (q.cz + (Math.floor(i / 64) + 0.5) / 64) * cs) : 1;
+                bettM2.set(k, (n / 4096) * cs * cs);
+            }
+            const reich = Math.max(0, t2 - q.t0) * q.R;
+            const [xa, xb, za, zb] = [Math.max(q.cx * cs, q.ex - reich), Math.min((q.cx + 1) * cs, q.ex + reich), Math.max(q.cz * cs, q.ez - reich), Math.min((q.cz + 1) * cs, q.ez + reich)];
+            if (!(xb > xa && zb > za)) return 0;
+            let u = 0;
+            for (let i = 0; i < N; i++)
+                for (let j = 0; j < N; j++) {
+                    const [x, z] = [xa + ((i + 0.5) / N) * (xb - xa), za + ((j + 0.5) / N) * (zb - za)];
+                    const an = q.t0 + zeit(q, x, z);
+                    if (an > t1 && an <= t2) u += bett ? bett(x, z) : 1;
+                }
+            return (holzSoll(q) * u * (xb - xa) * (zb - za)) / (N * N) / bettM2.get(k);
+        };
+        // DIE FAHNE im Fenster von 3 s: `dt` der Takt des Bilds, `fernM` der Abstand des Auges vom Herd (die Winkel-Zahl der Front
+        // fällt mit ihm), `vor` die Schritte des Brands vor dem Fenster. `haelt` das Holz, das die Zellen am Ende für ihren nächsten
+        // Ballen halten (`rauchKg`, abzüglich des Stands am Anfang) — die Masse der Fahne ist geborene + gehaltene
+        const fahne = ({ dt = 0.1, fernM = 0, vor = 10 } = {}) => {
+            for (let i = 0; i < vor; i++) schritt();
             const T = st.brandRauch.teilchen;
+            const auge = st.camera ? st.camera.position : st.playerMesh.position;
+            const merk = auge.clone();
+            if (fernM) auge.set((hx + 0.5) * cs + fernM, auge.y, (hz + 0.5) * cs);
+            const schuld = () => [...bf().values()].reduce((s, q) => s + (q.rauchKg || 0), 0) * (1 - S_T);
+            // das Fenster beginnt mit einem ersten Bild: von ihm an zählt die Zelle ihr Holz an der Uhr der Welt (wie im Spiel, wo das
+            // Bild den Brand von seinem Zünden an begleitet)
+            const eins = () => (r._weltUhrNimm(st.spielZeit + dt), r._tickBrand(), r._brandArbeit(Infinity), (r._bildZeit = (r._bildZeit || 0) + dt), r._brandBild(dt));
+            eins();
             T.length = st.brandRauch.n = 0;
-            const [t1, gesehen, geboren] = [st.spielZeit, new Set(), []];
+            const [t1, gesehen, geboren, h1] = [st.spielZeit, new Set(), [], schuld()];
             const bilder = (n, zaehlen) => {
                 for (let i = 0; i < n; i++) {
-                    r._weltUhrNimm(st.spielZeit + 0.1);
+                    r._weltUhrNimm(st.spielZeit + dt);
                     r._tickBrand();
                     r._brandArbeit(Infinity);
-                    r._bildZeit = (r._bildZeit || 0) + 0.1;
-                    r._brandBild(0.1);
+                    r._bildZeit = (r._bildZeit || 0) + dt;
+                    r._brandBild(dt);
                     if (zaehlen) for (const p of T) if (!gesehen.has(p)) (gesehen.add(p), geboren.push({ p, m: p.m, o: optisch(p) }));
                 }
             };
-            bilder(30, true);
-            const [Z, t2] = [[...bf().values()].filter((q) => q.t0 !== null), st.spielZeit];
-            const strom = Z.reduce((s, q) => s + holzSoll(q) * (verzehrt(q, t2) - verzehrt(q, t1)) * (1 - S_T), 0);
-            bilder(30, false);
+            bilder(Math.round(3 / dt), true);
+            const [Z, t2, haelt] = [[...bf().values()].filter((q) => q.t0 !== null), st.spielZeit, schuld() - h1];
+            const strom = Z.reduce((s, q) => s + verzehrtKg(q, t1, t2) * (1 - S_T), 0);
+            bilder(Math.round(3 / dt), false);
+            auge.copy(merk);
             const lebt = geboren.filter((g) => T.includes(g.p));
             const sum = (G, f) => G.reduce((s, g) => s + f(g), 0);
-            const masse = sum(geboren, (g) => g.m);
+            const masse = sum(geboren, (g) => g.m) + haelt;
             return {
+                haelt: r3(haelt),
                 zellen: Z.length,
                 ballen: geboren.length,
                 strom: r3(strom),
@@ -1722,6 +1763,12 @@ async function narbeSeite(MESS) {
         };
         N4.mutante = bauen().abrufe;
         delete r._wegeBodenFarbe;
+        // N8, die Fahne hängt nie am Bild: das Auge 100 m ab · das Bild in 250 ms · die ersten 3 s des Brands
+        holzMerk.clear();
+        N8.fahne.fern = zuenden() ? fahne({ fernM: 100 }) : null;
+        N8.fahne.lahm = zuenden() ? fahne({ dt: 0.25 }) : null;
+        N8.fahne.jung = zuenden() ? fahne({ vor: 0 }) : null;
+        leer();
         return aus;
     } finally {
         for (const k of ["_naesseTakt", "_feuchteAt", "_feldFolgeSteht", "_brandFront", "_brandBild", "_brandZuenden", "_wegeBodenFarbe", "_flammenLicht", "_brandStoff", "_brandRauch"]) delete r[k];
@@ -2080,7 +2127,7 @@ if (SELBSTTEST) {
                     n6: { flammen: 27, sigma: 0.246, min: 0.652, max: 1.35, puls: 0.35, uhr: 0.259, mutante: { flammen: 27, sigma: 0, min: 1, max: 1, puls: 0 } },
                     n7: { quellen: 4, max: 3.2, min: 2.3, tag: 3.2, mutanteTon: { nacht: 2.1, tag: 6.3 }, kern: 2, zeit: 0, herd: 45, belichtung: 1.5, soll: 2.929, mutante: { quellen: 4, max: 0.012, min: 0.008, kern: 0.76, zeit: 4, herd: 45, belichtung: 1.5, soll: 2.929 } },
                     // die Masse (N8): die Zahlen der Mess-Wiese am Kopf front-brand, die Mutante mit der Deckung ohne Masse
-                    n8: { soll: 33.349, mineral: 0.0555, kg: 33.349, buch: { mitte: { holz: 33.349, brannte: 23.318, asche: 1.294, rauch: 22.024 }, ende: { holz: 33.349, brannte: 33.349, asche: 1.851, rauch: 31.498 } }, mitteSoll: 23.3, fahne: { voll: { zellen: 2, ballen: 72, strom: 1.135, masse: 1.144, optisch: 87.458, soll: 86.752, lebt: 42, erhalt: 1 }, halb: { zellen: 1, ballen: 36, strom: 0.194, masse: 0.195, optisch: 14.896, soll: 14.808, lebt: 26, erhalt: 1 } }, ausgebrannt: true, tat: 1.851, mutante: { zellen: 2, ballen: 72, strom: 1.138, masse: 1.141, optisch: 177.845, soll: 86.998, lebt: 43, erhalt: 1.589 } },
+                    n8: { soll: 33.349, mineral: 0.0555, kg: 33.349, buch: { mitte: { holz: 33.349, brannte: 23.318, asche: 1.294, rauch: 22.024 }, ende: { holz: 33.349, brannte: 33.349, asche: 1.851, rauch: 31.498 } }, mitteSoll: 23.3, fahne: { voll: { haelt: 0, zellen: 2, ballen: 54, strom: 1.146, masse: 1.152, optisch: 88.045, soll: 87.578, lebt: 47, erhalt: 1 }, halb: { haelt: 0.007, zellen: 1, ballen: 32, strom: 0.195, masse: 0.196, optisch: 14.45, soll: 14.895, lebt: 25, erhalt: 1 }, fern: { haelt: 0, zellen: 2, ballen: 65, strom: 1.148, masse: 1.151, optisch: 87.968, soll: 87.735, lebt: 61, erhalt: 1 }, lahm: { haelt: 0, zellen: 2, ballen: 28, strom: 1.162, masse: 1.194, optisch: 91.258, soll: 88.813, lebt: 28, erhalt: 1 }, jung: { haelt: 0, zellen: 1, ballen: 9, strom: 0.298, masse: 0.302, optisch: 23.082, soll: 22.793, lebt: 9, erhalt: 1 } }, ausgebrannt: true, tat: 1.851, mutante: { haelt: 0, zellen: 2, ballen: 61, strom: 1.149, masse: 1.157, optisch: 130.799, soll: 87.834, lebt: 43, erhalt: 1.548 } },
                     // die Lava-Linse (L1–L5): die Zahlen der Mess-Wiese; `l2` im Stand, in dem die Decke vor dem Zünden gemalt ist
                     l1: { brennend: 8, betten: 8, tK: 1650, tZuend: [523, 533], tau: 13956.667, mutante: 0, kalt: { brennend: 0, tK: 513, glut: 0 }, lau: { brennend: 8, tK: 543, glut: 0 } },
                     l2: { kanten: 4, ein: 9, einMax: 9, decke: 0, amRand: 7, tief: [-1.99, 3.51], uhr: 60, spanne: 16, spanneMax: 16, sicht: [5.75, 15.5, 16, 15.5], flammen: [24, 41, 18, 151], mutante: { kanten: 4, ein: 0, einMax: 0, decke: 0, amRand: 0, tief: null, uhr: 60, spanne: 1.75, spanneMax: 9.25, sicht: [4.75, 9.25, 9.25, 1.75], flammen: [19, 22, 19, 16] } },
@@ -2094,6 +2141,9 @@ if (SELBSTTEST) {
                     // Asche, die Ballen ohne Masse (optische Masse 219,31 m² bei 1,223 kg Strom; im Steigen × 1,575, halbe Last × 1,704)
                     ["N8-LEER", "n8.fahne.voll.ballen", 0], ["N8-LEER", "n8.ausgebrannt", false], ["N8-LEER", "n8.fahne.halb", null], ["N8-HOLZ", "n8.kg", null], ["N8-HOLZ", "n8.kg", 66.7], ["N8-BILANZ", "n8.buch", null], ["N8-BILANZ", "n8.buch.ende.rauch", 33.349], ["N8-BILANZ", "n8.buch.mitte.brannte", 33.349], ["N8-ASCHE", "n8.tat", null], ["N8-ASCHE", "n8.tat", 0],
                     ["N8-RAUCH", "n8.fahne.voll.masse", null], ["N8-DECKUNG", "n8.fahne.voll.optisch", 219.31], ["N8-ERHALT", "n8.fahne.voll.erhalt", 1.575], ["N8-RAUCH", "n8.fahne.halb.masse", null], ["N8-DECKUNG", "n8.fahne.halb.optisch", 27.067], ["N8-ERHALT", "n8.fahne.halb.erhalt", 1.704], ["N8-PROPORTIONAL", "n8.fahne.voll.optisch", 94.5, "n8.fahne.halb.optisch", 13.6], ["MUTANTE-N8", "n8.mutante.erhalt", 1], ["MUTANTE-N8", "n8.mutante", null],
+                    // die Fahne am Bild (der Stand von 44d954be2: der Strom in den Winkeln des Bilds, die Masse im Takt des Bilds): das Auge
+                    // 100 m ab trug 0,884 von 1,135 kg, das Bild in 250 ms 0,435 von 1,134 kg
+                    ["N8-BILD", "n8.fahne.fern.masse", 0.884], ["N8-BILD", "n8.fahne.lahm.masse", 0.435], ["N8-BILD", "n8.fahne.fern", null], ["N8-BILD", "n8.fahne.jung", null],
                     // die Täter der Lava-Linse: je Fall der Stand vor w28-lava-zuendet (L2-DECKE: der Kopf 163a65de — alle Eintritte 2 m in der Zelle der Lava)
                     ["LEER", "l3", null], ["L1-LEER", "l1.betten", 0, "l1.brennend", 0], ["L1-LEER", "l1.kalt.tK", 600], ["L1-LEER", "l1.lau", null], ["L1-ZÜNDUNG", "l1.brennend", 0], ["L1-ZÜNDUNG", "l1.brennend", 5], ["L1-KALT", "l1.kalt.brennend", 8], ["L1-LAU", "l1.lau.brennend", 0], ["MUTANTE-L1", "l1.mutante", 8], ["L2-LEER", "l2.kanten", 0], ["L2-LEER", "l2.uhr", 12], ["L2-EIN", "l2.ein", 0], ["L2-DECKE", "l2.decke", 1, "l2.tief", [-1.99, -1.99]], ["L2-DECKE", "l2.decke", 0.3], ["L2-ABSEITS", "l2.amRand", 0], ["L2-SPANNE", "l2.spanne", 9.25], ["MUTANTE-L2", "l2.mutante.einMax", 9], ["MUTANTE-L2", "l2.mutante.spanneMax", 16], ["MUTANTE-L2", "l2.mutante", null], ["L3-LEER", "l3.voll", null], ["L3-LEER", "l3.voll.narbe", [1, 0]], ["L3-LEER", "l3.halb.faengt", false], ["L3-LEER", "l3.halb.gras", 2], ["L3-LEER", "l3.halb.anteil", 1], ["L3-LAST", "l3.halb.iw", 2100, "l3.halb.leb", 0.401], ["L3-LAST", "l3.halb.leb", 0.401], ["L3-FLAMME", "l3.halb.stein", 25], ["L3-NARBE", "l3.halb.narbe", [1, 0.946]], ["L3-NARBE", "l3.halb.narbe", [0, 0]], ["MUTANTE-L3-LAST", "l3.mutanteLast.iw", 4200], ["MUTANTE-L3-LAST", "l3.mutanteLast", null], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.stein", 0], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche.narbe", [1, 0]], ["MUTANTE-L3-FLAECHE", "l3.mutanteFlaeche", null], ["L4-LEER", "l4.punkte", 0], ["L4-LEER", "l4.aussen", 0], ["L4-HALM", "l4.max", 0.957], ["MUTANTE-L4", "l4.mutante.max", 0], ["MUTANTE-L4", "l4.mutante", null], ["L5-LEER", "l5.quellen", 0], ["L5-LEER", "l5.herd", 1], ["L5-SCHEIN", "l5.max", 519.05], ["L5-SCHEIN", "l5.zeit", 1], ["L5-DUNKEL", "l5.max", 1], ["L5-KERN", "l5.kern", 0.76], ["L5-HÖHE", "l5.hoch", 1], ["MUTANTE-L5", "l5.mutante.max", 6.5], ["MUTANTE-L5", "l5.mutante.zeit", 0], ["MUTANTE-L5", "l5.mutante.hoch", 0], ["MUTANTE-L5", "l5.mutante", null],
                     ["L6-LEER", "l6.sprung.tempVor", 20], ["L6-SICHT", "l6.regler.dStunde", 4], ["L6-SICHT", "l6.regler.dTemp", -400], ["L6-SICHT", "l6.regler.dUhr", 600], ["L6-SPRUNG", "l6.sprung.dStunde", 0], ["L6-SPRUNG", "l6.sprung.tempNach", 1377], ["L6-SPRUNG", "l6.sprung.dBrandUhr", 0], ["L6-SCHLEIFE", "l6.sprung.leer", 1], ["MUTANTE-L6-SICHT", "l6.mutanteSicht.regler.dStunde", 0], ["MUTANTE-L6-SICHT", "l6.mutanteSicht", null], ["MUTANTE-L6-SCHLEIFE", "l6.mutanteSchleife.sprung.leer", 0],
