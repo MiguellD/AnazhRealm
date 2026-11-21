@@ -2403,7 +2403,10 @@
     A[g==='og'?'og':g==='alle'?'alle':'eg']+=a; }
   const pz=hp.parzelle||hp, F0=Math.max(20,pz.W*pz.D), dicht=!!rahmen.dicht, kultSt=(KULTUR[hp.kultur]||{}).st||1;
   const turmig=A.turm>0&&A.turm>=0.5*(A.eg+A.og+A.alle), capK=Math.min(165, F0*(turmig?0.55:dicht?1.3:1.6)), capL=F0*(dicht?1.6:4);
-  const gmin=N.geschosse[0], sOrt=(pz.storeys||1)>kultSt?pz.storeys:gmin, gmax=Math.max(N.geschosse[1],sOrt);   // was der Ort über die Kultur hob (Stadtkörper, Viertel), steht über dem Maximum der Zeile
+  // DAS WORT DES ORTS gilt in beide Richtungen (stadt-rueckfall): was er über die Kultur hob (Stadtkörper, Viertel), steht über dem Maximum der Zeile;
+  // was er unter sie senkte (die Höhe des Viertels fällt zum Rand, `erbe.hoch`), ist ihr Deckel — der Haushalt breitet sich, er steigt nicht.
+  // Bis hier hörte das Programm nur das Heben: am Rand von „dorf 7 9310“ stieg das Wohnhaus von 1 auf 3 bis 5 Geschosse (Traufe Rand 3,2 → 8,6 m)
+  const sO=pz.storeys||1, senkt=sO<kultSt, gmin=senkt?Math.min(N.geschosse[0],sO):N.geschosse[0], sOrt=sO>kultSt||senkt?sO:gmin, gmax=senkt?Math.max(gmin,Math.min(N.geschosse[1],sO)):Math.max(N.geschosse[1],sOrt);
   const fuss=(eg,s)=>(s>1?Math.max(eg+A.alle/s, A.og/(s-1)+A.alle/s):eg+A.og+A.alle)/nutz;
   let gr='I', armF=0;
   for(const g of N.grundriss){
