@@ -1215,6 +1215,7 @@ class AnazhRealm_klang {
             degree: 0,
             bar: 0, // ZENSUS-REST V18.488 — der Takt-Zähler der progressionDeg-Wanderung
             lastChordAt: -Infinity, // der Harmonie-Strom: `_klangStrom("lofi")` (jede Welt ihr eigenes Lied)
+            anfang: true, // das Lied beginnt mit seiner Schicht: der erste Zug setzt den Harmonie-Strom an den Anfang der Saat
         };
     }
 
@@ -1226,18 +1227,24 @@ class AnazhRealm_klang {
     _lofiRandom() {
         const lofi = this.state.symphony && this.state.symphony.lofi;
         if (!lofi) throw new Error("Lofi: der Harmonie-Strom zieht ohne Lofi-Zustand (state.symphony.lofi fehlt)");
-        return globalThis.__samenCore.mulberrySchritt(this._klangStrom("lofi"), "zustand");
+        // DAS LIED BEGINNT MIT SEINER SCHICHT (bis saat-argument `rngState` je Schicht): der erste Zug einer neuen Lofi-Schicht
+        // stellt den Strom an den Anfang ihrer Saat — dieselbe Schicht spielt dasselbe Lied (gate:regler-wirkt, das Ohr: der Grund
+        // klingt zweimal gleich; ohne den Anfang lief der Strom über jede neue Schicht weiter, das Ohr hörte jede Klang-Zeile tot)
+        const anfang = lofi.anfang === true;
+        lofi.anfang = false;
+        return globalThis.__samenCore.mulberrySchritt(this._klangStrom("lofi", anfang), "zustand");
     }
 
     // DIE STRÖME DES KLANGS (Welle saat-argument): der Ruf der Tiere (`umwelt`, ein LCG) und die Harmonie (`lofi`, mulberry32)
     // ziehen aus der Saat der Welt; ihr Zustand steht im Gedächtnis der Saat (`_saatMerk`) und fällt mit ihr. Bis hier stand er im
     // Klang-Zustand der Seite — `symphony` reist über jeden Wechsel (`WELT_GRENZE.seite`): die Welt danach rief und spielte mit der
     // Saat der Welt davor. Der Same ist der EINE Text-Hash (`samenHash`; bis hier ein eigener ×31-Hash je Strom).
-    _klangStrom(zweck) {
-        return this._saatMerk("klang." + zweck, (s) => ({
-            saat: s,
-            zustand: globalThis.__samenCore.samenHash(s + ":" + zweck) || 1,
-        }));
+    // `anfang`: der Strom steht wieder am Anfang seiner Saat (die neue Lofi-Schicht, `_lofiRandom`)
+    _klangStrom(zweck, anfang = false) {
+        const start = (s) => globalThis.__samenCore.samenHash(s + ":" + zweck) || 1;
+        const R = this._saatMerk("klang." + zweck, (s) => ({ saat: s, zustand: start(s) }));
+        if (anfang) R.zustand = start(R.saat);
+        return R;
     }
     // ein Zug des Ruf-Stroms (LCG) → der neue Zustand (uint32)
     _klangZug(zweck) {
