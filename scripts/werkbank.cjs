@@ -32,6 +32,8 @@
 //                                                           (Ist je Tafel, die verzögerte Pipeline von Ψ_ms, die Mutante: gate:tafel-ganz:echt)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
 //   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
+//   node scripts/werkbank.cjs licht --nacht [stadt-voll:third,dorf:third,wiese:third] [--bilder d] [--datei f] | --selbsttest
+//                                                           DIE NACHT-LICHTER (erleben.bild.nacht): Bodenfleck je Quelle in 50 m, Kelvin
 //   node scripts/werkbank.cjs licht --naesse [wiese,wiese:third,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]  DER DRAW-ZÄHLER je Pass (scripts/lib/draw-zaehler.cjs)
 //   node scripts/werkbank.cjs puffer [--top n]             DIE PUFFER-LINSE: jeder Geometrie-Puffer beim Halter nach GC
@@ -3581,6 +3583,31 @@ hauptLauf(async () => {
         const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m, hat("zuwachs")).befunde.map((b) => `Uhr ${uhr} ${b}`));
         console.log(JSON.stringify(welt, null, 1));
         endeMit(`KONTAKT ${rot.length ? "ROT: " + rot.join(" | ") : "GRUEN"}`, !rot.length);
+    } else if (cmd === "licht" && hat("nacht")) {
+        // DIE NACHT-LICHTER (erleben.bild.nacht S1 · S2): je Ort und Sicht `nachtSicht` an der Pose des Spiels um Mitternacht — der
+        // Bodenfleck je sichtbarer Quelle in 50 m mit Karte und ohne (der Pool allein), die Kelvin-Farbe je Quelle, die Kosten einer
+        // Schrift der Karte; das Urteil `nachtUrteil`, je Ort EINE Zeile `NACHT <ort> ROT|GRUEN:`. `--selbsttest` ohne Welt.
+        const fehl = LL.nachtSelbsttest();
+        console.log(`NACHT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "7/7"}`);
+        if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
+        const halt = await eigeneWelt();
+        const welt = {};
+        try {
+            const orte = /^[a-z]/.test(opt("--nacht", "")) ? opt("--nacht").split(",") : ["stadt-voll:third", "dorf:third", "wiese:third"];
+            for (const wahl of orte) {
+                const [ort, sicht = "ego"] = wahl.split(":");
+                await umstellen({ ort, sicht });
+                const m = (welt[wahl] = ergebnis(await evalRuf(`return await (${LL.nachtSicht})(${JSON.stringify({ png: !!opt("--bilder") })});`)));
+                if (m.png) pngDatei(path.resolve(opt("--bilder"), `nacht-${wahl.replace(":", "-")}.png`), m.png), delete m.png;
+            }
+        } finally {
+            if (halt) await halt();
+        }
+        dateiAb(welt);
+        const u = LL.nachtUrteil(welt);
+        console.log(JSON.stringify(welt, null, 1));
+        for (const [ort, z] of Object.entries(u.zahlen)) console.log(`NACHT ${ort} ${u.befunde.some((b) => b.startsWith(`${ort}: `)) ? "ROT" : "GRUEN"}: ${z}`);
+        urteilEnde("NACHT", u);
     } else if (cmd === "licht" && hat("naesse")) {
         // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, Regen im Haus und nasse Punkte unter dem Dach bei Median 1 (die
         // Gefache von main 5fb21e29: 5 716 von 13 141), nasser Marktstand, helles Regenbild ROT

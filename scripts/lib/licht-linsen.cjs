@@ -3421,7 +3421,269 @@ function kontaktSelbsttest() {
         .map(([ist, soll]) => `${soll} ≠ ${ist}`);
 }
 
+// DIE NACHT-LICHTER IM BILD (erleben.bild.nacht S1 · S2, nacht-lichter-2; `werkbank licht --nacht`): an der Pose des Spiels (Kamera
+// des Orts, Mitternacht der Bühne) je brennende Quelle des Orts in `nahM` um den Spieler (`_leuchtQuellen` ohne Sichtkegel, ohne das
+// Licht des Auges, den Himmels-Ersatz und den Stahl der Hand) ihr BODENFLECK: je Ring um ihren Fuß (`ringeM` × 8 Richtungen, auf dem
+// gezeichneten Boden `_bodenSichtAt`) die Luma der linearen Szene (`__linsenZiel`) MIT den Lichtern des Orts gegen OHNE sie (die
+// Umgebung: Mond, Himmel, Sterne) — der Fleck in EV ist log2 der Mediane über die Ring-Punkte, die das Auge sieht (ein grünes
+// Plättchen je Punkt in einem eigenen Schuss: Wand, Dach und Mast verdecken). Sichtbar ist eine Quelle mit ≥ `sichtAb` gesehenen
+// Punkten. Dieselbe Pose dreimal mehr: OHNE KARTE (`_lichtKarteTakt` schreibt nicht, das Gitter leer — der Pool der vier Plätze allein,
+// der Stand von main) und je Quelle die KELVIN-FARBE ihres Lichts an einer 18-%-Karte (Stoff der Welt `_buildToonNodeMaterial`) auf
+// ihrem innersten Ring, mit minus ohne (die Umgebung fällt heraus), xy → CCT am Planck-Ort (Kang 2002, CIE-1960-uv: unabhängig vom
+// Gesetz, das die Farbe macht). Dazu die Kosten der Karte: ihre Schriften und die Zeit einer Schrift an dieser Pose. → { quellen,
+// sichtbar, gut, anteil, ohneKarte {gut, anteil}, kelvin [{art, soll, ist, abw}], karte {schriften, ms, zellen}, plaetze, png? }
+function nachtSicht(o) {
+    return (async () => {
+        o = Object.assign({ uhr: 0, nahM: 50, ringeM: [0.8, 1.4, 2], sichtAb: 3, W: 1920, H: 1080 }, o || {});
+        const [r, T] = [window.anazhRealm, window.THREE];
+        const st = r.state;
+        const { renderer: rend, camera: cam, scene: sc } = st;
+        rend.setAnimationLoop(null);
+        window.__buehne({ uhr: o.uhr });
+        const { W, H } = o;
+        const pp = st.playerMesh.position.clone();
+        const proto = Object.getPrototypeOf(r);
+        // die Quellen der Welt um den Spieler: dieselbe Wahl wie der Pool, ohne Kegel (jede brennende, auch hinter dem Auge)
+        const alle = r._leuchtQuellen(pp.x, pp.y, pp.z, o.nahM, null).filter((q) => q.quelle !== "auge" && q.quelle !== "stahl" && !(q.L && q.L.ersatz) && Math.hypot(q.x - pp.x, q.z - pp.z) <= o.nahM);
+        const aus = { uhr: o.uhr, ort: [Math.round(pp.x), Math.round(pp.z)], quellen: alle.length, plaetze: window.anazhRealm.constructor.LICHT_POOL.plaetze, je: [] };
+        const pkt = [];
+        for (const [i, q] of alle.entries())
+            for (const R of o.ringeM)
+                for (let k = 0; k < 8; k++) {
+                    const [x, z] = [q.x + R * Math.cos((k * Math.PI) / 4), q.z + R * Math.sin((k * Math.PI) / 4)];
+                    const y = r._bodenSichtAt(x, z);
+                    if (y !== null) pkt.push({ i, R, p: new T.Vector3(x, y + 0.02, z) });
+                }
+        const zeichen = new T.Mesh(new T.BufferGeometry(), new T.MeshBasicMaterial({ color: 0x00ff00, side: T.DoubleSide }));
+        // das Zeichen STEHT (12 × 8 cm, quer zum Blick, sein Fuß auf dem Punkt): flach sähe das Auge aus 2,6 m Höhe in 30 m keine 0,5 cm
+        // davon (die erste Fahrt: 5 von 42 Quellen der Stadt gesehen); geprüft wird seine Mitte, gemessen der Boden am Punkt
+        const lage = [];
+        const quer = new T.Vector3();
+        for (const s of pkt) {
+            const p = s.p;
+            quer.set(p.z - cam.position.z, 0, cam.position.x - p.x).normalize().multiplyScalar(0.06);
+            s.m = p.clone().setY(p.y + 0.04);
+            const [a, b, c, d] = [[-1, 0], [1, 0], [1, 0.08], [-1, 0.08]].map(([u, h]) => [p.x + quer.x * u, p.y + h, p.z + quer.z * u]);
+            lage.push(...a, ...b, ...c, ...a, ...c, ...d);
+        }
+        zeichen.geometry.setAttribute("position", new T.Float32BufferAttribute(lage, 3));
+        zeichen.frustumCulled = false;
+        zeichen.castShadow = zeichen.receiveShadow = false;
+        // die 18-%-Karten der Farbe: je Quelle 0,3 m waagrecht auf ihrem innersten Ring zum Auge hin, im Stoff der Welt (Pool und Karte)
+        const karten = new T.Group();
+        for (const q of alle) {
+            const zu = new T.Vector3(cam.position.x - q.x, 0, cam.position.z - q.z).normalize().multiplyScalar(o.ringeM[0]);
+            const y = r._bodenSichtAt(q.x + zu.x, q.z + zu.z);
+            const m = new T.Mesh(new T.PlaneGeometry(0.3, 0.3), r._buildToonNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18) }));
+            m.rotation.x = -Math.PI / 2;
+            m.position.set(q.x + zu.x, (y === null ? q.y - 2 : y) + 0.03, q.z + zu.z);
+            m.frustumCulled = false;
+            m.castShadow = false;
+            m.receiveShadow = true;
+            karten.add(m);
+        }
+        sc.add(zeichen, karten);
+        const { zeichne, lies, bundles, ruhe, ohneLuft, kamera } = window.__linsenZiel(W, H);
+        const kamZurueck = kamera(cam);
+        const luftZurueck = ohneLuft();
+        const v = new T.Vector3();
+        const px = (p) => (v.copy(p).project(cam), v.z < 1 && Math.abs(v.x) < 1 && Math.abs(v.y) < 1 ? Math.round(((1 - v.y) / 2) * H - 0.5) * W + Math.round(((v.x + 1) / 2) * W - 0.5) : -1);
+        // DER POOL NEU: ohne Pool füllt der erste Takt jeden Platz in voller Blende (der Schritt ab −∞), die Karte schreibt danach neu
+        // — und die Karte baut im Hintergrund des Takts (`bauMs` je Bild): takten, bis sie steht
+        const takt = async () => {
+            r._leuchtPool = null;
+            r._leuchtTakt();
+            for (let k = 0; k < 400 && r._lichtKarteZ && (r._lichtKarteZ.bau || !r._lichtKarteZ.g || r._lichtKarteZ.offen > 0); k++) r._leuchtTakt();
+            await ruhe(cam, "die Nacht-Lichter");
+            r._leuchtTakt();
+        };
+        const schuss = async () => (zeichne(cam), lies());
+        const Y = (b, i) => luma709([b[4 * i], b[4 * i + 1], b[4 * i + 2]]);
+        try {
+            // Plättchen und Karten sichtbar in der Wahl (der Haken des Passes verbirgt nur, was die Wahl nicht hält)
+            bundles();
+            await takt();
+            karten.visible = false;
+            const mark = await schuss();
+            zeichen.visible = false;
+            const mit = await schuss();
+            karten.visible = true;
+            const kMit = await schuss();
+            // OHNE KARTE: der Schreiber ruht, das Gitter leer (der Stand des Pools allein)
+            const LK = st.atmoUniforms.lichtKarte;
+            const schreiber = r._lichtKarteTakt;
+            const Z0 = r._lichtKarteZ;
+            // DIE KOSTEN DER KARTE an dieser Pose: der teuerste Takt (Bau im Hintergrund und Unterschiede), der Bau der Mitte ganz, und
+            // EIN Unterschied — die Quelle mit Platz blendet eine Stufe (ihr Fleck allein)
+            let einer = null;
+            if (Z0 && Z0.g) {
+                const k = r._leuchtPool.halter.findIndex((h) => h && h.quelle !== "auge");
+                if (k >= 0) {
+                    const b0 = r._leuchtPool.blende[k];
+                    r._leuchtPool.blende[k] = 0.5;
+                    const t0 = performance.now();
+                    r._lichtKarteTakt(r._leuchtPool, cam);
+                    einer = +(performance.now() - t0).toFixed(2);
+                    r._leuchtPool.blende[k] = b0;
+                    r._lichtKarteTakt(r._leuchtPool, cam);
+                }
+            }
+            aus.karte = LK && Z0 ? { schriften: Z0.schriften, baue: Z0.baue, flecken: Z0.flecken, taktMaxMs: +Z0.msMax.toFixed(2), bauMs: +Z0.bauMs.toFixed(2), einerMs: einer, ms: einer, zellen: window.anazhRealm.constructor.LICHT_KARTE.texel ** 2 } : null;
+            karten.visible = false;
+            let ohneK;
+            try {
+                r._lichtKarteTakt = () => {};
+                if (LK) (LK.gitter.image.data.fill(0), (LK.gitter.needsUpdate = true));
+                await takt();
+                ohneK = await schuss();
+            } finally {
+                r._lichtKarteTakt = schreiber;
+                if (r._lichtKarteTakt === proto._lichtKarteTakt) delete r._lichtKarteTakt;
+                r._lichtKarteZ = null;
+            }
+            // OHNE DIE LICHTER DES ORTS: die Wahl hält nur das Licht des Auges (die Umgebung des Bilds bleibt, wie sie ist)
+            let ohne, kOhne;
+            const wahl = r._leuchtQuellen;
+            try {
+                r._leuchtQuellen = function (...a) {
+                    return proto._leuchtQuellen.apply(this, a).filter((q) => q.quelle === "auge");
+                };
+                await takt();
+                ohne = await schuss();
+                karten.visible = true;
+                kOhne = await schuss();
+                karten.visible = false;
+            } finally {
+                r._leuchtQuellen = wahl;
+                if (r._leuchtQuellen === proto._leuchtQuellen) delete r._leuchtQuellen;
+            }
+            const gesehen = (i) => i >= 0 && mark[4 * i + 1] > 0.5 && mark[4 * i + 1] - Math.max(mark[4 * i], mark[4 * i + 2]) > 0.4;
+            const med = (a) => (a.length ? a.slice().sort((x, y) => x - y)[a.length >> 1] : null);
+            const ev = (a, b) => (b > 0 ? Math.log2(Math.max(a, 1e-12) / b) : a > 0 ? 99 : 0);
+            // die Kelvin-Farbe aus linearem Rec.-709-RGB: XYZ → xy → uv (CIE 1960), der nächste Punkt des Planck-Orts 1 667–25 000 K
+            const planck = (K) => {
+                const [t, t2, t3] = [K, K * K, K * K * K];
+                const x = K <= 4000 ? -0.2661239e9 / t3 - 0.2343589e6 / t2 + 0.8776956e3 / t + 0.17991 : -3.0258469e9 / t3 + 2.1070379e6 / t2 + 0.2226347e3 / t + 0.24039;
+                const y = K <= 2222 ? -1.1063814 * x ** 3 - 1.3481102 * x ** 2 + 2.18555832 * x - 0.20219683 : K <= 4000 ? -0.9549476 * x ** 3 - 1.37418593 * x ** 2 + 2.09137015 * x - 0.16748867 : 3.081758 * x ** 3 - 5.8733867 * x ** 2 + 3.75112997 * x - 0.37001483;
+                return [x, y];
+            };
+            const uv = ([x, y]) => [(4 * x) / (-2 * x + 12 * y + 3), (6 * y) / (-2 * x + 12 * y + 3)];
+            const cct = ([R, G, B]) => {
+                const X = 0.4124 * R + 0.3576 * G + 0.1805 * B, Yy = 0.2126 * R + 0.7152 * G + 0.0722 * B, Z = 0.0193 * R + 0.1192 * G + 0.9505 * B;
+                if (!(X + Yy + Z > 0)) return null;
+                const [u, w] = uv([X / (X + Yy + Z), Yy / (X + Yy + Z)]);
+                let best = [Infinity, null];
+                for (let K = 1667; K <= 25000; K += K < 4000 ? 5 : 50) {
+                    const [pu, pw] = uv(planck(K));
+                    const d = Math.hypot(u - pu, w - pw);
+                    if (d < best[0]) best = [d, K];
+                }
+                return { K: best[1], duv: +best[0].toFixed(4) };
+            };
+            let [sichtbar, gut, gutOhneK] = [0, 0, 0];
+            const kelvin = [];
+            for (const [i, q] of alle.entries()) {
+                const meine = pkt.filter((s) => s.i === i && gesehen(px(s.m))).map((s) => px(s.p)).filter((j) => j >= 0);
+                const e = { art: q.quelle, x: +q.x.toFixed(1), z: +q.z.toFixed(1), d: +Math.hypot(q.x - pp.x, q.z - pp.z).toFixed(1), punkte: meine.length };
+                if (meine.length >= o.sichtAb) {
+                    sichtbar++;
+                    const [a, b, c] = [mit, ohne, ohneK].map((bild) => med(meine.map((j) => Y(bild, j))));
+                    e.ev = +ev(a, b).toFixed(2);
+                    e.evOhneKarte = +ev(c, b).toFixed(2);
+                    if (e.ev >= 1) gut++;
+                    if (e.evOhneKarte >= 1) gutOhneK++;
+                }
+                // die Karte der Quelle: ihre Mitte im Bild, gesehen (nicht verdeckt: die Karte steht in beiden Schüssen, die Differenz trägt
+                // nur, wo sie liegt) — die Farbe ihres Lichts, mit minus ohne die Lichter des Orts
+                const km = karten.children[i];
+                const j = px(km.position);
+                if (j >= 0 && q.L && q.L.kelvin > 0) {
+                    const d3 = [0, 1, 2].map((c) => Math.max(0, kMit[4 * j + c] - kOhne[4 * j + c]));
+                    const f = luma709(d3) > 0 ? cct(d3) : null;
+                    if (f) kelvin.push({ art: q.quelle, soll: q.L.kelvin, ist: f.K, duv: f.duv, abw: Math.abs(f.K - q.L.kelvin) });
+                }
+                aus.je.push(e);
+            }
+            Object.assign(aus, { sichtbar, gut, anteil: sichtbar ? +(gut / sichtbar).toFixed(3) : null, ohneKarte: { gut: gutOhneK, anteil: sichtbar ? +(gutOhneK / sichtbar).toFixed(3) : null }, kelvin });
+            if (o.png) {
+                karten.visible = zeichen.visible = false;
+                await takt();
+                const { x: BW, y: BH } = rend.getDrawingBufferSize(new T.Vector2());
+                aus.png = window.__png((await window.__ausgabeAufnahme(BW, BH, 1, { satz: "messung" })).u8.slice(), BW, BH);
+                aus.schirm = [BW, BH];
+            }
+        } finally {
+            sc.remove(zeichen, karten);
+            zeichen.geometry.dispose();
+            zeichen.material.dispose();
+            for (const m of karten.children) (m.geometry.dispose(), m.material.dispose());
+            bundles();
+            luftZurueck();
+            kamZurueck();
+            cam.updateMatrixWorld(true);
+            r._leuchtPool = null;
+            r._leuchtTakt();
+        }
+        return aus;
+    })();
+}
+
+// DAS URTEIL DER NACHT (erleben.bild.nacht S2 und S1-Kelvin) je Ort: der Anteil sichtbarer Quellen in 50 m mit Bodenfleck ≥ 1 EV
+// ≥ 0,9; die Kelvin-Farbe je Quelle (Median der Abweichung) ≤ 200 K; DIE LINSE SIEHT DEN TÄTER: wo mehr Quellen sichtbar sind als der
+// Pool Plätze hat, MUSS die Pose ohne Karte unter dem Soll liegen (sonst misst die Linse den Pool, nie die Karte — ROT beim Namen).
+// Ein Ort ohne sichtbare Quelle urteilt nichts (die Wildnis: nur die Kosten).
+const NACHT_SOLL = { anteil: 0.9, ev: 1, kelvin: 200 };
+function nachtUrteil(welt) {
+    const befunde = [];
+    const zahlen = {};
+    if (!welt || !Object.keys(welt).length) return { urteil: "ROT", befunde: ["keine Messung"], zahlen };
+    for (const [ort, m] of Object.entries(welt)) {
+        if (!m || m.fehler) {
+            befunde.push(`${ort}: ${(m && m.fehler) || "keine Messung"}`);
+            continue;
+        }
+        // die Kelvin-Farbe DER GASSE (S1 „Gasse in der Kelvin-Farbe“): die Leuchten an Weg und Wand; das Feuer steht als Zahl daneben
+        const kel = (m.kelvin || []).filter((k) => /laterne/.test(k.art)).map((k) => k.abw).sort((a, b) => a - b);
+        const kMed = kel.length ? kel[kel.length >> 1] : null;
+        zahlen[ort] = `Bodenfleck ${m.gut}/${m.sichtbar} sichtbar (${m.quellen} in 50 m) = ${m.anteil} · ohne Karte ${m.ohneKarte.gut}/${m.sichtbar} = ${m.ohneKarte.anteil} · Kelvin ±${kMed} K (${kel.length})${m.karte ? ` · Karte: ein Fleck ${m.karte.einerMs} ms, Takt höchstens ${m.karte.taktMaxMs} ms, Bau der Mitte ${m.karte.bauMs} ms` : ""}`;
+        if (!m.sichtbar) continue;
+        if (!(m.anteil >= NACHT_SOLL.anteil)) {
+            const dunkel = (m.je || []).filter((e) => e.ev != null && e.ev < NACHT_SOLL.ev).slice(0, 3).map((e) => `${e.art} ${e.d} m ${e.ev} EV`);
+            const taeter = m.karte && m.karte.schriften > 0 ? "die Stärke der Karte (`_lichtKarteTerm`)" : "die Karte schreibt nicht (`_lichtKarteTakt`)";
+            befunde.push(`${ort}: Bodenfleck ≥ ${NACHT_SOLL.ev} EV an ${m.gut} von ${m.sichtbar} sichtbaren Quellen (${m.anteil}, Soll ≥ ${NACHT_SOLL.anteil}; ${dunkel.join(", ")}) — Täter ${taeter}`);
+        }
+        if (m.sichtbar > m.plaetze && !(m.ohneKarte.anteil < NACHT_SOLL.anteil))
+            befunde.push(`${ort}: ohne Karte ${m.ohneKarte.anteil} — die Linse sieht den Täter nicht (${m.sichtbar} sichtbare Quellen, ${m.plaetze} Plätze)`);
+        if (kel.length && !(kMed <= NACHT_SOLL.kelvin)) befunde.push(`${ort}: Kelvin-Farbe ±${kMed} K (Soll ±${NACHT_SOLL.kelvin})`);
+    }
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, zahlen };
+}
+
+// DER SELBSTTEST: die Gasse mit Karte grün, DIE MUTANTE „Pool allein“ (4 Plätze, die Karte schreibt nie — der Stand von main) ROT beim
+// Täter `_lichtKarteTakt`, eine Karte ohne Wirkung ROT bei `_lichtKarteTerm`, eine Linse, die den Pool misst, ROT, die Kelvin-Farbe des
+// falschen Lichts ROT, die Wildnis ohne Quelle urteilt nichts.
+function nachtSelbsttest() {
+    const je = (n, ev) => Array.from({ length: n }, (_, i) => ({ art: "laterne", d: 10 + i, ev: i < ev ? 2 : 0.2 }));
+    const m = (sichtbar, gut, ohneGut, schriften = 3, kelvin = [{ art: "laterne_dorf", abw: 60 }]) => ({ quellen: sichtbar + 2, sichtbar, gut, anteil: +(gut / sichtbar).toFixed(3), ohneKarte: { gut: ohneGut, anteil: +(ohneGut / sichtbar).toFixed(3) }, plaetze: 4, je: je(sichtbar, gut), kelvin, karte: { schriften, ms: 4 } });
+    const U = (w) => nachtUrteil(w).befunde.join(" | ");
+    return [
+        [U({ gasse: m(40, 38, 4) }), /^$/],
+        [U({ gasse: m(40, 4, 4, 0) }), /^gasse: Bodenfleck ≥ 1 EV an 4 von 40 .*Täter die Karte schreibt nicht \(`_lichtKarteTakt`\)/],
+        [U({ gasse: m(40, 5, 4, 7) }), /Täter die Stärke der Karte \(`_lichtKarteTerm`\)/],
+        [U({ gasse: m(40, 38, 38) }), /die Linse sieht den Täter nicht/],
+        [U({ dorf: m(4, 4, 4, 1, [{ art: "laterne_dorf", abw: 700 }, { art: "wandlaterne_dorf", abw: 650 }, { art: "glutbrunnen", abw: 20 }]) }), /^dorf: Kelvin-Farbe ±700 K/],
+        [U({ wildnis: { quellen: 0, sichtbar: 0, gut: 0, anteil: null, ohneKarte: { gut: 0, anteil: null }, plaetze: 4, kelvin: [] } }), /^$/],
+        [nachtUrteil({}).urteil, /^ROT$/],
+    ]
+        .filter(([ist, soll]) => !soll.test(ist))
+        .map(([ist, soll]) => `${soll} ≠ ${ist}`);
+}
+
 module.exports = {
+    nachtSicht,
+    nachtUrteil,
+    nachtSelbsttest,
+    NACHT_SOLL,
     kontaktSicht,
     kontaktUrteil,
     kontaktSelbsttest,

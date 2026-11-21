@@ -1323,6 +1323,14 @@ jobs:
               # 0,002 (SPRUNG gegen den steilsten Feinschritt des Lichts) — lokal 2,5 min samt Boot (Radeon)
               run: npm run gate:tag-achse:echt
 
+            - name: Nacht-Lichter auf der Karte (jede sichtbare Quelle in 50 m leuchtet ihren Boden um mindestens 1 EV, die Gasse in der Kelvin-Farbe)
+              timeout-minutes: 5
+              if: ${{ !cancelled() && matrix.karte == 'omen' }}
+              # werkbank licht --nacht (erleben.bild.nacht S1 S2, nacht-lichter-2): stadt-voll und Dorf in dritter Person um Mitternacht,
+              # je Quelle der Bodenfleck mit und ohne die Lichter des Orts, die Pose ohne Licht-Karte muss ROT sein (Radeon: Stadt 13 von 13
+              # gegen 3 von 13), Kelvin der Leuchten der Gasse; lokal 3 min samt Boot (Radeon)
+              run: npm run gate:nacht-licht:echt
+
             - name: Tafeln der Atmosphaere auf der Karte (jede Tafel gezeichnet, die verzoegerte Pipeline von Psi_ms haelt die Kette offen)
               timeout-minutes: 5
               if: ${{ !cancelled() && matrix.karte == 'omen' }}
