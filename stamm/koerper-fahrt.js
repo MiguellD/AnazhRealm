@@ -861,6 +861,12 @@ class AnazhRealm_koerper_fahrt {
                 for (const v of node.__ofenVorlagen) this._ofenVorlageLoesen(v);
                 node.__ofenVorlagen = null;
             }
+            // der verschmolzene Bau gibt seine Vorlage zurück (`_archMergeLoslassen`): die letzte Rückgabe nimmt sie mit
+            const vorlage = node.userData && node.userData.archMergeQuelle;
+            if (vorlage) {
+                node.userData.archMergeQuelle = null;
+                this._archMergeLoslassen(vorlage);
+            }
         });
     }
 
