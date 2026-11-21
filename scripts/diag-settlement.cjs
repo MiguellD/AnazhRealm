@@ -791,6 +791,12 @@ function erdUrteil(FC, o = {}) {
     if (koeln.region !== "mitteleuropa" || !(mass.koelnAchs < 0.9))
         fehl.push(`E2 Köln 1300 ${koeln.region}, achsgleich ${mass.koelnAchs}`);
     if (kk.some((k) => !/japanisch|chinesisch/.test(k))) fehl.push(`E2 Kyoto 1000 baut ${[...new Set(kk)].join("/")}`);
+    // E2 DER SCHLÜSSEL STEHT IM JAHR DES ORTS: der Akt mit Epoche (die Chronik Mitteleuropas läuft bis in die Gegenwart) trägt den
+    // Schlüssel seines Jahrs, nie den der Gegenwart seiner Chronik (der Akt von 1300 trug „2007 moderne“)
+    const akt = ex({ seed: 7, nH: 12, epoche: "mittelalter", erde: { breite: 50.94, laenge: 6.96, jahr: 1300 } });
+    je.push(`Akt Köln 1300 mit Epoche → ${akt.erde && akt.erde.jahr} ${akt.erde && akt.erde.epoche}`);
+    if (!(akt.erde && akt.erde.jahr === 1300 && akt.erde.epoche === "mittelalter"))
+        fehl.push(`E2 der Akt von 1300 trägt den Schlüssel von ${akt.erde && akt.erde.jahr} ${akt.erde && akt.erde.epoche}`);
     // E2 DAS RASTER STEHT NUR AUF DEM GRUND, DER ES TRÄGT: dieselbe Kolonie auf ebenem Grund (dp.hoehe 0) bleibt im Raster, am
     // Hang (15 % quer zur Achse, über dem Gesetz der Trasse) wächst sie (form "gewachsen", grund "hang") — nie die gerade Achse
     // über den Hang, die den Sockel der Kirche auf 12 m hob
