@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T17:49:46.498Z",
+ "zeit": "2026-11-21T18:13:49.882Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kosmos.sternhimmel#1": {
@@ -1933,6 +1933,70 @@
    "ungemessen": true,
    "zeit": "2026-11-21T16:46:15.372Z",
    "abdruck": "6805cdf2a85c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.diffusion#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.11,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.9,
+   "fremd": {
+    "s": 70.3,
+    "takte": 31,
+    "fremdS": 82.77,
+    "kerne": 1.178,
+    "fensterKerne": 2.171,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      43.59
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ]
+    ],
+    "dienerS": 41.3,
+    "diener": [
+     [
+      "System",
+      17.34
+     ],
+     [
+      "dwm.exe",
+      11.42
+     ]
+    ],
+    "geraetS": 37.8,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.05
+     ],
+     [
+      "svchost.exe",
+      14.66
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 174.95,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T18:13:49.882Z",
+   "abdruck": "d058398a21cc",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
