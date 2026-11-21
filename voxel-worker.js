@@ -1449,6 +1449,7 @@ function planetOrtAuftrag(msg) {
             meer: { waterLevelM: d.meer.waterLevelM },
             wetter: { regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote },
             wuchs: { decke: d.wuchs.decke, wald: d.wuchs.wald },
+            eis: { zeit: d.eis.zeit },
             wildnis: Object.assign({}, d.wildnis),
         },
     };

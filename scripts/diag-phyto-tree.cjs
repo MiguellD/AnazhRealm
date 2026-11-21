@@ -336,4 +336,52 @@ function uferWaermeBefunde(nische, artVon) {
     );
 }
 
+// DER FINDLING DES EISES (Karte 2 planet.kopplung.gegenwart#1/#6, die Station „Merkmale ohne Ursache = 0"): der Erratiker liegt am
+// flachen Grund nur, wo die Eis-Zeit des Orts (`ort.eis`) 1 ist — die Linse zieht `_rockGeologyClass` aus dem Stamm und fragt sie
+// über die Hänge an der Heimat (eis 0) und an einem Ort unter dem Eis (eis 1); die Eis-Zeit der Heimat fragt sie den Planeten
+// (planet-core `ortEisZeit` am Anker des Welt-Samens).
+const findlingStamm = (mutiere) => {
+    const t = stammLib.text(ROOT);
+    const x = stammLib.glieder(t).find((y) => y.name === "_rockGeologyClass" && !y.statisch);
+    if (!x) throw new Error("diag-phyto-tree: das Glied _rockGeologyClass fehlt im Stamm");
+    const a = t.indexOf("AnazhRealm.ROCK_GEOLOGY = Object.freeze(");
+    const AR = {};
+    new Function("AnazhRealm", t.slice(a, t.indexOf("\n});", a) + 4))(AR);
+    return new Function("AnazhRealm", `return ({ ${(mutiere || ((s) => s))(t.slice(x.start, x.ende))} });`)(AR);
+};
+function findlingBefunde(wirtVon) {
+    const out = [];
+    const heimat = GC.ortGesetz(null);
+    const z = { heimat: 0, eis: 0, punkte: 0 };
+    for (const [ort, n] of [[heimat, "heimat"], [Object.assign({}, heimat, { eis: 1 }), "eis"]]) {
+        const w = wirtVon();
+        w._gelaende = () => ({ ort });
+        for (let s = 0; s <= 1.2; s += 0.01) {
+            if (n === "heimat") z.punkte++;
+            if (w._rockGeologyClass(s, 0) === "findling") z[n]++;
+        }
+    }
+    if (z.heimat) out.push(`_rockGeologyClass: ${z.heimat} Findlinge von ${z.punkte} Hängen an der Heimat ohne Eis (ort.eis 0)`);
+    if (!z.eis) out.push("_rockGeologyClass: auch unter dem Eis (ort.eis 1) kein Findling");
+    return { out, z };
+}
+{
+    globalThis.self = globalThis;
+    require("../planet-core.js");
+    const PC = globalThis.__planetCore;
+    const plan = PC.planetPlan("anazh-realm-seed", PC.PLANET_ERDE);
+    const A = PC.planetAnker(plan, 0, GC.ortGesetz(null));
+    const eisAnker = PC.ortEisZeit(plan, A.breite);
+    ok(
+        "Findling: die Eis-Zeit der Heimat ist die ihres Ankers auf dem Planeten",
+        eisAnker === GC.ortGesetz(null).eis,
+        `Anker ${((A.breite * 180) / Math.PI).toFixed(1)}° · Eisgrenze ${((PC.planetKlimaGlobal(plan, 0).eisBreite * 180) / Math.PI).toFixed(1)}° · Planet ${eisAnker}, Heimat ${GC.ortGesetz(null).eis}`
+    );
+    const F = findlingBefunde(() => findlingStamm());
+    for (const b of F.out) console.log("      FINDLING " + b);
+    ok("Findling: der Erratiker nur, wo das Eis lag (`ort.eis`)", F.out.length === 0, `Heimat ${F.z.heimat}, unter dem Eis ${F.z.eis} von ${F.z.punkte} Hängen`);
+    const M = findlingBefunde(() => findlingStamm((s) => s.replace('this._gelaende().ort.eis ? "findling" : null', '"findling"'))).out.join(" | ");
+    ok("Findling Selbsttest: der Findling am flachen Grund ohne Eis fällt an _rockGeologyClass", /^_rockGeologyClass: \d+ Findlinge von \d+ Hängen an der Heimat ohne Eis/.test(M), M);
+}
+
 wandEnde(errs, "PHYTO-KERN: der Wuchs trägt die Gesetze, Main + Worker aus EINER Quelle (Gesetz #0).");

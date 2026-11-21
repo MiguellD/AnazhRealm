@@ -2657,6 +2657,16 @@
   // Reise, Welle 3: der Wuchs des Orts reist als Verhältnis zum Anker wie die Spende — am Anker genau 1 (x / x). Trägt der Anker
   // selbst nichts (0), fehlt das Maß: das Verhältnis ist 1, der Wuchs der Heimat gilt (immer endlich — der Ort reist als JSON).
   const ORT_WUCHS = ['decke', 'wald'];
+  // DIE EIS-ZEIT DES ORTS (Karte 2 planet.kopplung.gegenwart): lag der Ort in einer Zeit des Quartärs (`EIS_ZEITEN`, Ma: heute, das
+  // letzte Hochglazial, 0,1 … 2,6 Ma) polwärts der Eisgrenze des Planeten (`planetKlimaGlobal(plan, t).eisBreite`), trug ihn das Eis
+  // — 1, sonst 0. Sie reist als Δ zum Anker wie jede Größe (am Anker +0); der Leser ist der Findling (Stamm `_rockGeologyClass`: der
+  // Erratiker liegt, wo das Eis ihn ablud).
+  const EIS_ZEITEN = Object.freeze([0, -0.02, -0.1, -0.5, -1, -2, -2.6]);
+  function ortEisZeit(plan, breite) {
+    const ab = breite < 0 ? -breite : breite;
+    for (const t of EIS_ZEITEN) if (ab >= planetKlimaGlobal(plan, t).eisBreite) return 1;
+    return 0;
+  }
   function ortKopie(o) { return { wildnis: Object.assign({}, o.wildnis), meer: Object.assign({}, o.meer), klima: Object.assign({}, o.klima), wetter: Object.assign({}, o.wetter),
     wuchs: Object.assign({}, o.wuchs), leit: { huelleM: Float64Array.from(o.leit.huelleM), landC: Float64Array.from(o.leit.landC) } }; }
   function ortAnkerRoh(plan, og) {
@@ -2689,6 +2699,8 @@
     for (const f of ORT_DELTA_WETTER) d.wetter[f] = o.wetter[f] - a.wetter[f];
     for (const f of ORT_WUCHS) d.wuchs[f] = a.wuchs[f] > 0 ? o.wuchs[f] / a.wuchs[f] : 1;
     for (let k = 0; k < 81; k++) { d.leit.huelleM[k] = o.leit.huelleM[k] - a.leit.huelleM[k]; d.leit.landC[k] = o.leit.landC[k] - a.leit.landC[k]; }
+    const anker = planetAnker(S.plan, 0, og);
+    d.eis = { zeit: ortEisZeit(S.plan, breite) - ortEisZeit(S.plan, anker.breite) };
     o.delta = d; return o;
   }
   function ortRoh(S, breite, laenge, og, aus) {
@@ -2782,7 +2794,7 @@
     planetPlan, planetScheibe, planetRichtung, planetBreiteLaenge, planetPunkt, planetPunktR, planetHuelle, planetMeer, planetVulkane, planetKarte, planetKarteAusschnitt,
     KLIMA, KOEPPEN, WHITTAKER, planetKlimaGlobal, planetKlima, planetKlimaR, planetBiom, planetPet: petMm,
     PLANET_WASSER_N: WASSER_N, planetWasserGitter, planetWasserR,
-    planetAnker, planetFlaeche, planetKarteVon, planetOrt, planetOrtDerZeit, NACHKLANG_MA,
+    planetAnker, planetFlaeche, planetKarteVon, planetOrt, ortEisZeit, EIS_ZEITEN, planetOrtDerZeit, NACHKLANG_MA,
     _intern: Object.freeze({ terme, planBytes, scheibeBytes, abschnitt, acosF, gdh1, fib, biomFarbe, wasserZellen, wasserLauf, guertelP, scheibeKern, tempoAbl, abschnittIndex }),
   });
   root.__planetCore = api;

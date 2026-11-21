@@ -5700,7 +5700,12 @@
         meer: Object.freeze(["waterLevelM"]),
         wetter: Object.freeze(["regenQuote", "sturmQuote"]),
         wuchs: Object.freeze(["decke", "wald"]),
+        eis: Object.freeze(["zeit"]),
     });
+    // DIE EIS-ZEIT (Karte 2 planet.kopplung.gegenwart, `eis` der Tafel): 1, wo das Eis des Quartärs den Ort trug (planet-core
+    // `ortEisZeit`: polwärts der Eisgrenze des Planeten in einer der `EIS_ZEITEN`), sonst 0. Die Heimat trägt 0 — ihr Anker liegt
+    // nie unter dem Eis (scripts/diag-phyto-tree.cjs fragt den Planeten); am Ziel Heimat + Δ. Leser: der Findling (Stamm
+    // `_rockGeologyClass`).
     // DER WUCHS DES ORTS (Reise, Welle 3: Bewuchs und Grund nach Klima) — ein Teil der EINEN Tafel (`ortGesetz(teil).wuchs`): was
     // Klima und Zeit des Orts an Pflanzen tragen, je Größe ein Faktor ∈ [0, 1]; in der Heimat ist jeder genau 1 (x · 1 und
     // Gewicht 0 in jedem Leser: byte-gleich ohne Bedingung).
@@ -5863,6 +5868,7 @@
                     klimaHeute,
                     spendeVerh: 1,
                     schneeBandM: 0,
+                    eis: 0,
                     wetter: null,
                     wuchs: ortWuchs(klimaHeute, 0, { decke: 1, wald: 1 }),
                     siedlung: null,
@@ -5897,6 +5903,7 @@
                 if (!(d[g] && Number.isFinite(d[g][f]))) nein(`Δ ${g}.${f} fehlt`);
         if (!(d.klima.spendeVerh >= 0)) nein(`Δ klima.spendeVerh ${d.klima.spendeVerh} (≥ 0)`);
         for (const f of ORT_FELDER.wuchs) if (!(d.wuchs[f] >= 0)) nein(`Δ wuchs.${f} ${d.wuchs[f]} (≥ 0)`);
+        if (![-1, 0, 1].includes(d.eis.zeit)) nein(`Δ eis.zeit ${d.eis.zeit} (−1, 0 oder 1)`);
         if (!d.wildnis || typeof d.wildnis !== "object") nein("Δ wildnis fehlt");
         for (const id of Object.keys(d.wildnis)) {
             if (!LANDFORM_REGLER.some((r) => r.id === id)) nein(`Δ des unbekannten Reglers „${id}"`);
@@ -5927,6 +5934,7 @@
             Object.assign(ohneBand, {
                 spendeVerh: k.spendeVerh,
                 schneeBandM: linie(ohneBand) - linie(H),
+                eis: Math.min(1, Math.max(0, H.eis + d.eis.zeit)),
                 wetter: Object.freeze({ regenQuote: d.wetter.regenQuote, sturmQuote: d.wetter.sturmQuote }),
                 wuchs: ortWuchs(klimaHeute, teil.zeitMa, d.wuchs),
                 siedlung: ortSiedlung(teil.zeitMa, ortWuchs(klimaHeute, teil.zeitMa, d.wuchs), false),
