@@ -721,7 +721,9 @@ function urteilVon(st, j, lauf) {
     try {
         const u = st.urteil(j, lauf);
         if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl) return { fehler: "Urteil ungültig (verlangt { gruen: bool, zahl: Text })" };
-        return { gruen: u.gruen, zahl: u.zahl, ...massDerStation(st, j, lauf, u) };
+        // (f) `ohneUrteil`: die Station sagt selbst, dass sie keinen Wert las (keinUrteil (f)) — der Grund wörtlich, nie an einem GRÜN
+        const ohne = u.gruen === false && typeof u.ohneUrteil === "string" && u.ohneUrteil ? { ohneUrteil: u.ohneUrteil.slice(0, 300) } : {};
+        return { gruen: u.gruen, zahl: u.zahl, ...ohne, ...massDerStation(st, j, lauf, u) };
     } catch (e) {
         return { fehler: "Urteil warf: " + String((e && e.message) || e).split("\n")[0] };
     }
@@ -766,6 +768,9 @@ function massDerStation(st, j, lauf, u) {
 //       Ausgabe, den die Probe nach jeder Sprosse schreibt: steht ihr Ergebnis, trägt sie ihr Urteil über jeden Abbruch der Probe
 //       (Frist, Deckel, Messort) — der Abbruch steht daneben (`abbruch`, er zensiert die Sekunden und ruft die Grundstellung); UNGEMESSEN
 //       bleibt nur die Sprosse ohne Ergebnis. Jede andere Station urteilt nie über den Stand eines abgebrochenen Laufs.
+//   (f) DIE STATION SAGT ES SELBST (pm-front-f1, 21.11.; GTX 31ea3847: 13 Sprossen der Front standen ROT „die Messung der Leiter warf
+//       nach 25 s: der Deckel der Leiter 25 s“ — die Leiter las keinen Wert, ihr Deckel riss): ein Urteil mit `ohneUrteil: <grund>` (nur
+//       ROT, stationen/k2-planet.js urteilBauen am Deckel der Leiter) ist UNGEMESSEN beim Grund, vor jedem anderen Fall.
 const FRIST_MARKE = /^@@PUNKTE@@ FRIST (\d+(?:\.\d+)?) s der Probe gerissen\b/m;
 const MESSORT_MARKE = /^@@PUNKTE@@ MESSORT (.+)$/m;
 // der Abbruch eines Laufs beim Namen (deckel: der Riss der Leine, den der Läufer selbst sah) oder null
@@ -780,6 +785,7 @@ function abbruchVon(stdout, deckel) {
 const liestErgebnis = (u, leer) => !u.fehler && !leer.fehler && !(leer.gruen === false && leer.zahl === u.zahl);
 const sprosseTraegt = (st, u, leer) => !!st && st.karte2 === true && liestErgebnis(u, leer);
 function keinUrteil(u, leer, stdout, st, deckel) {
+    if (u && u.ohneUrteil) return u.ohneUrteil;
     const ab = abbruchVon(stdout, deckel);
     if (ab) return sprosseTraegt(st, u, leer) ? null : ab;
     if (u.gruen || u.fehler || leer.fehler) return null;
@@ -7247,6 +7253,18 @@ async function selbsttest(o = {}) {
                     s2.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN \(die Probe sah: S2 · kein Ergebnis der Sprosse\) · Täter: @@ 1 s · probe S2 warf: Leser erschienen$/.test(s2.grund) &&
                     alt1.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN/.test(alt1.grund) && mut === "Frist der Probe 27 s gerissen",
                 JSON.stringify([s1, s2.grund, alt1.grund, mut]));
+            // (f) DIE STATION SAGT ES SELBST (pm-front-f1; GTX 31ea3847 planet.relief.wandel#1 „die Messung der Leiter warf nach 45 s: der
+            // Deckel der Leiter 45 s“ als ROT): eine Sprosse, deren Urteil `ohneUrteil` trägt, ist UNGEMESSEN beim Grund; dieselbe Sprosse mit
+            // Wert urteilt ROT. DIE MUTANTE (vorher ROT am Täter): keinUrteil ohne (f) — das Feld fällt in urteilVon — lässt sie ROT stehen
+            const deckelU = (j) => (!j ? { gruen: false, zahl: "S1 keine Messung: kein JSON" } : j.wert != null ? { gruen: false, zahl: "S1 · abtrag " + j.wert + " gegen Soll ≥ 1" } : { gruen: false, zahl: "S1 der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse", ohneUrteil: "der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse" });
+            const schreibt = (inhalt) => ["node", "-e", "require('fs').writeFileSync(process.argv[1], " + JSON.stringify(JSON.stringify(inhalt)) + ")", "{AUS}"];
+            const dOhne = await fahreStation(k2(1, { urteil: deckelU, befehl: schreibt({ leer: 1 }) }), ctx("k2-deckel-ohne"));
+            const dMit = await fahreStation(k2(1, { urteil: deckelU, befehl: schreibt({ wert: 0 }) }), ctx("k2-deckel-mit"));
+            const dMut = keinUrteil({ gruen: false, zahl: deckelU({ leer: 1 }).zahl }, deckelU(null), "", k2(1), null);
+            pruef("KEIN URTEIL (f) DER DECKEL DER LEITER: die Sprosse ohne Wert (ohneUrteil) UNGEMESSEN beim Grund, mit Wert ROT; die Mutante (das Feld fehlt) ROT",
+                dOhne.ungemessen === true && /^der Deckel der Leiter riss nach 45 s vor dem Wert der Sprosse — kein Urteil, UNGEMESSEN/.test(dOhne.grund) &&
+                    dMit.gruen === false && !dMit.ungemessen && dMit.grund === "ROT: S1 · abtrag 0 gegen Soll ≥ 1" && dMut === null,
+                JSON.stringify([dOhne.grund, dMit.grund, dMut]));
         }
         const id = schluessel(at);
         const lauf = (sha, e) => {
