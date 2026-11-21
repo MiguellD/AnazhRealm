@@ -6112,7 +6112,7 @@ const stationen = [
         ],
         pfad: ["stamm/feld-sprache.js", "stamm/feld-dsl.js", "stamm/feld-leben.js", "stamm/klang.js", "klang-core.js", "stamm/dirigent-takt.js",
             "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
-        quelle: "KARTE2 erleben.sinn.ziele S1 = dieselbe Tat 10×: Antwort am Ort (dB) fällt von Tat 1 auf Tat 10 auf ≤ 30 %, Nachbarzelle 0",
+        quelle: "KARTE2 erleben.sinn.ziele S1 = dieselbe Tat 10×: Antwort am Ort (dB, Licht) fällt von Tat 1 auf Tat 10 auf ≤ 30 %, Nachbarzelle 0",
     },
 
     // ───────── affekt.K2 Staffel 1 — die Emotion formt die Welt über ein Gesetz mit Quelle (Zweig affekt-emotion) ─────────

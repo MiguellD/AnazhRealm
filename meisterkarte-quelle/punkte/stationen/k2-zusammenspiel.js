@@ -5395,7 +5395,19 @@ L.perspektive("erleben", (() => {
                         const sied = r._bewohnerSiedlungen ? [...r._bewohnerSiedlungen.values()] : [];
                         const bew = sied.flatMap((x) => x.liste || []).slice(0, 60);
                         const aus = [];
+                        // DER HOCHSOMMER DER UHREN (pm-front-f1; GTX 31ea3847: 0 Widersprüche, aber „die Grillen schweigen an diesem Ort zu
+                        // jeder Uhr (zu kalt)“): die Grille singt nach dem Gesetz nur über tStumm 12 °C Bodenwärme (klang-core.js grille,
+                        // Dolbear) — in der Jahreszeit der Sitzung prüfte die Probe den Kanal Grillen nie. Die 24 Uhren laufen im Hochsommer
+                        // (seasonPhase der Mitte des Sommers, `_tickSeason` wie die Monate unten); danach kehrt das Jahr der Sitzung zurück
+                        const altJahr = { phase: s.seasonPhase, anker: r._saisonAnker };
+                        // der Gipfel der Wärme am Ort ist das Wort des Gelände-Kerns (`klimaHeute.sommerPhase`, dieselbe Phase liest `_schneeTafel`)
+                        const L0 = r._gelaende && r._gelaende();
+                        const sp = L0 && L0.ort && L0.ort.klimaHeute ? L0.ort.klimaHeute.sommerPhase : null;
+                        const SOMMER = Number.isFinite(sp) ? sp : a.sommer;
                         try {
+                            s.seasonPhase = SOMMER;
+                            r._saisonAnker = { anker: SOMMER, t: s.spielZeit, jahr: s.seasonYearSeconds > 0 ? s.seasonYearSeconds : 2400, phase: SOMMER };
+                            r._tickSeason();
                             for (const t of a.uhren) {
                                 r.setTimeOfDay(t, "regler");
                                 r._vogelTakt();
@@ -5409,10 +5421,13 @@ L.perspektive("erleben", (() => {
                                 });
                             }
                         } finally {
+                            s.seasonPhase = altJahr.phase;
+                            r._saisonAnker = altJahr.anker;
+                            r._tickSeason();
                             r.setTimeOfDay(alt, "regler");
                             r._vogelTakt();
                         }
-                        return { aus, bewohner: bew.length, schwelle: G.UMWELT.hoerschwelleDb, temperatur: aus.length ? null : null };
+                        return { aus, bewohner: bew.length, schwelle: G.UMWELT.hoerschwelleDb, season: SOMMER, temperatur: aus.length ? null : null };
                     };
                     const monate = async (r, T, a) => {
                         const s = r.state;
@@ -5498,7 +5513,7 @@ L.perspektive("erleben", (() => {
                     for (let i = 0; i < 12; i++) phasen.push(+((i + 0.5) / 12).toFixed(4));
                     try {
                         await S(ohr, { an: true });
-                        if (U[1]) U1 = await S(uhren, { uhren: uhrenListe });
+                        if (U[1]) U1 = await S(uhren, { uhren: uhrenListe, sommer: 0.375 }); // 0,375: die Mitte von „summer“ (bild-himmel phaseFor), nur ohne Ort
                         if (U[2]) U2 = await S(monate, { phasen });
                     } catch (e) {
                         fe = kurz(e);

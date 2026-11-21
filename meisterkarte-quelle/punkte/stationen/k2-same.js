@@ -913,7 +913,12 @@ LEITERN.push(
                     };
                     const holz = r._stoff("holz");
                     if (!holz || !(holz.E > 0)) return { fehler: "die Zeile holz trägt kein E" };
-                    const euler = (E) => (Math.PI * Math.PI * E * (b ** 4 / 12)) / (Lh * Lh);
+                    // EULER MIT DER LAGERUNG DER SÄULE (pm-front-f1; GTX 31ea3847 rechnete die Knicklänge = L, β = 1): die Säule steht
+                    // eingespannt im Grund, ihr Kopf trägt die Platte, die keinen zweiten Kopf deckt — eingespannt-frei, Knicklänge
+                    // β·L mit β = 2 (Euler-Fall 1; dieselbe Lagerung, die das Spiel ihr gibt: `_failsUnderLoad`, stamm/bau-buch.js
+                    // „ein Glied ohne Halt oben ist eingespannt-frei (β = 2)“). F_cr = π²·E·I / (β·L)²
+                    const BETA = 2;
+                    const euler = (E) => (Math.PI * Math.PI * E * (b ** 4 / 12)) / ((BETA * Lh) * (BETA * Lh));
                     const eigen = Object.prototype.hasOwnProperty.call(r, "_stoff") ? r._stoff : null;
                     const basis = r._stoff;
                     let voll, halb;
@@ -933,6 +938,7 @@ LEITERN.push(
                     return {
                         E: holz.E,
                         lambda: Lh / b,
+                        beta: BETA,
                         F_euler: Math.round(euler(holz.E)),
                         F_voll: voll.F && Math.round(voll.F * 10) / 10,
                         F_halb: halb.F && Math.round(halb.F * 10) / 10,
@@ -1045,12 +1051,12 @@ LEITERN.push(
                 const ohneStatik = z.haeuser + " Häuser binnen 120 m sind Studio-Gestalten ohne Statik (stamm/bau-teile.js:2493)";
                 await L.je(1, async () => {
                     const f = await ev(saeule, null, Math.max(5, L.rest() - 25));
-                    L.zeile("Säule λ 30 gegen Euler: " + JSON.stringify(f));
+                    L.zeile("Säule λ 30 gegen Euler (β 2): " + JSON.stringify(f));
                     if (f.fehler) throw new Error(f.fehler);
                     L.gemessen(
                         1,
                         { abw_pct: f.abw_pct, abw_halbe_pct: f.abw_halbe_pct },
-                        { erzeugt: 1, welt: { knick: f.knick, steht: f.steht }, taeter: "Holzsäule 0,1 × 3 m: versagt bei " + f.F_voll + " N (E/2: " + f.F_halb + " N), Euler " + f.F_euler + " N — knickSicherheit " + f.knickSicherheit + " (stamm/bau-buch.js:2592)" + (f.grund ? " · " + f.grund : "") }
+                        { erzeugt: 1, welt: { knick: f.knick, steht: f.steht }, taeter: "Holzsäule 0,1 × 3 m: versagt bei " + f.F_voll + " N (E/2: " + f.F_halb + " N), Euler " + f.F_euler + " N (β " + f.beta + ", eingespannt-frei) — stamm/bau-buch.js _failsUnderLoad · schmiede-core.js tragSpannung" + (f.grund ? " · " + f.grund : "") }
                     );
                 });
                 await L.je(2, async () => {

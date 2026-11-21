@@ -3190,10 +3190,23 @@ const LEITERN = [];
                             Object.assign(r, { _creatureAiFrame: 0, _faunaStroeme: null });
                             const ab2 = alarm ? [] : [leihe(r, { _kreaturVerbandAlarm: (c, NAT, von, w) => ((c.userData._alarmEigen = w >= NAT.fleeThreshold), w) })];
                             try {
+                                // DER WURF NACH DEM GESETZ DES SPIELS (pm-front-f1; GTX 31ea3847 „Herde 1“): `_kreaturWurf` stellt jeden
+                                // weiteren Geworfenen nur fern vom Spieler (≥ CREATURE_SPAWN_FAR_MIN 130 m) und außer Blick — der Spieler
+                                // stand 30 m daneben, die Herde der Rothirsche (wesen → deer, Kopfzahl 3–7) fiel auf EIN Tier. Der Spieler
+                                // steht beim Wurf 200 m westlich, der Blick ist leer (kein Frustum: die Kamera der Probe zeigt nicht hin);
+                                // danach beginnt der Gang 30 m vor der Herde wie zuvor
+                                const fern = neben(heim.x - 200, heim.z);
+                                pm.set(fern.x, fern.y, fern.z);
+                                const blick = leihe(r, { _frustumCache: null });
+                                let glieder;
+                                try {
+                                    glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("verband"), 7) || [];
+                                } finally {
+                                    blick();
+                                }
                                 const p0 = neben(heim.x - 30, heim.z);
                                 pm.set(p0.x, p0.y, p0.z);
                                 if (s.playerVel) s.playerVel.setValue(0, 0, 0);
-                                const glieder = r._kreaturWurf({ x: heim.x, z: heim.z }, "wesen", "happy", r._faunaRng("verband"), 7) || [];
                                 if (!glieder.length) return { fehler: "der Wurf trug kein Glied" };
                                 const alt = glieder.map((c) => c.position.clone());
                                 const beginn = [];
