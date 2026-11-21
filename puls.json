@@ -1,0 +1,26 @@
+{
+ "v": 1,
+ "geraet": "omen",
+ "t": 1795272187,
+ "welten": [
+  "4691/4692"
+ ],
+ "frei": false,
+ "halter": {
+  "wer": "ci-runner 44913880308/1 echt",
+  "art": "CI",
+  "pid": 26244,
+  "seit": 1795271341,
+  "lebt": true,
+  "cpu": 12.1,
+  "n": 4,
+  "regt": 1795271617
+ },
+ "warten": 4,
+ "wartende": [
+  "saat-reload-treue",
+  "punkte-gtx-sitzung",
+  "saat-format",
+  "saat-pruefbuehne-licht"
+ ]
+}
