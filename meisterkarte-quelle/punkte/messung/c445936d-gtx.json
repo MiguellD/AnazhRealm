@@ -1,7 +1,7 @@
 {
  "sha": "c445936d5da0a0f0c78139fbc6d4229524c56093",
  "geraet": "gtx",
- "zeit": "2026-11-21T22:53:32.858Z",
+ "zeit": "2026-11-21T23:17:32.995Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "karte2.planet.kosmos.sternhimmel#1": {
@@ -2733,6 +2733,70 @@
    "ungemessen": true,
    "zeit": "2026-11-21T22:53:32.858Z",
    "abdruck": "1eb9c38b7f1a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "karte2.mensch.kultur.erzaehlkunst#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.09,
+   "grund": "Frist der Probe 64 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: S1: keine Messung der Sprosse) · Täter: @@PUNKTE@@ FRIST 64 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 64.1,
+   "fremd": {
+    "s": 65.8,
+    "takte": 30,
+    "fremdS": 34.42,
+    "kerne": 0.523,
+    "fensterKerne": 0.74,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=1 --user-data-dir=claude_pzs8sxrjxf",
+      6.63
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.5
+     ]
+    ],
+    "dienerS": 22.98,
+    "diener": [
+     [
+      "dwm.exe",
+      11.05
+     ],
+     [
+      "System",
+      7.75
+     ]
+    ],
+    "geraetS": 24.78,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      14.95
+     ],
+     [
+      "svchost.exe",
+      8.91
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 162.78,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-21T23:17:32.995Z",
+   "abdruck": "faac0023181f",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
