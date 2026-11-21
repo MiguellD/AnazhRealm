@@ -40,7 +40,17 @@ blick() {
         a=$([ -n "$t" ] && echo "$(((jetzt - t) / 60)) min" || echo "—")
         if lebt $n; then echo "  $n LEBT (PID $(cat "$S/$n.pid")) · Puls vor $a: ${p:20:160}"; else echo "  $n STEHT · letzter Puls vor $a: ${p:20:160}"; fi
     done
-    [ -s "$S/zug.fahrt" ] && echo "  in Fahrt: $(cat "$S/zug.fahrt" | cut -c1-200)"
+    # Der Blick ist eine Anzeige, kein Urteil (21.11.: ohne Fahrt gab die Test-Zeile hier 1 zurück — `start.sh` endete nach jeder
+    # gelungenen Installation mit Exit 1, weil der Blick sein letzter Befehl ist).
+    if [ -s "$S/zug.fahrt" ]; then echo "  in Fahrt: $(cat "$S/zug.fahrt" | cut -c1-200)"; fi
+}
+selbsttest_blick() {
+    local t=$S/selbsttest-blick r=0
+    rm -rf "$t"; mkdir -p "$t"
+    (S=$t; MAN=$t/manifest.txt; blick >/dev/null) || r=1 # ohne Fahrt: Anzeige, Ende 0
+    echo "z999 fährt: w28-probe" >"$t/zug.fahrt"
+    (S=$t; MAN=$t/manifest.txt; blick | grep -q "in Fahrt: z999 fährt: w28-probe") || r=1
+    rm -rf "$t"; return $r
 }
 # der MSYS-Baum ab PID $1, Kinder zuerst (10.11. 22:34: taskkill /T auf die Schleife ließ ihr Kind buche.sh leben — der
 # Windows-Elter eines MSYS-Kinds ist nicht immer sein Elter)
@@ -136,7 +146,7 @@ selbsttest_beweis() {
     echo "$a" | grep -q "keine Zeile" || return 1
 }
 case "$1" in
-    --selbsttest) selbsttest_lebt && selbsttest_kaputt && selbsttest_beweis && sh "$(cd "$(dirname "$0")" && pwd)/werkzeug/buche.sh" --selbsttest && sh "$(cd "$(dirname "$0")" && pwd)/zug-dienst.sh" --selbsttest-probe-lauf && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt, beweis, buche, probe-lauf)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
+    --selbsttest) selbsttest_lebt && selbsttest_kaputt && selbsttest_beweis && selbsttest_blick && sh "$(cd "$(dirname "$0")" && pwd)/werkzeug/buche.sh" --selbsttest && sh "$(cd "$(dirname "$0")" && pwd)/zug-dienst.sh" --selbsttest-probe-lauf && echo "start.sh SELBSTTEST GRÜN (schleife_lebt, kaputt, beweis, blick, buche, probe-lauf)" && exit 0; echo "start.sh SELBSTTEST ROT"; exit 1 ;;
     --blick) blick; exit 0 ;;
     --stopp) stopp "$2"; exit 0 ;;
 esac
